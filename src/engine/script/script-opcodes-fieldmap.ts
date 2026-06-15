@@ -58,7 +58,7 @@ registerOpcode('setmaplayoutindex', (_ctx, args) => {
 registerOpcode('setstepcallback', (_ctx, args) => {
   const callbackId = parseValue(args[0] ?? '0');
   void (async () => {
-    const { ActivatePerStepCallback } = await import('../field/step-callbacks');
+    const { ActivatePerStepCallback } = await import('../../game/field_tasks');
     ActivatePerStepCallback(callbackId);
   })();
   return false;

@@ -1950,6 +1950,20 @@ export function FindTaskIdByFunc(funcRef: ((task: any) => void) | ((task: any, r
   return TASK_NONE;
 }
 
+/** 1:1 décomp `src/task.c:FuncIsActiveTask` — TRUE si une task active a
+ *  `func === funcRef`. (Décomp : `FindTaskIdByFunc(func) != TASK_NONE`.) */
+export function FuncIsActiveTask(funcRef: ((task: any) => void) | ((task: any, rt: any) => void)): boolean {
+  return FindTaskIdByFunc(funcRef) !== TASK_NONE;
+}
+
+/** Accès 1:1 décomp `gTasks[taskId].data` — retourne le tableau `data` (Int16Array
+ *  vue `number[]`) d'une task par id, ou `null` si absente. Pour les ports qui font
+ *  `s16 *data = gTasks[taskId].data` après `FindTaskIdByFunc` (= field_tasks.c). */
+export function GetTaskData(taskId: number): number[] | null {
+  const task = rt().gTasks.get(taskId);
+  return task ? task.data : null;
+}
+
 /** 1:1 décomp src/sprite.c:SetSubspriteTables — installs a subsprite layout
  *  on a sprite. The decomp's subsprite system renders a SINGLE sprite as N
  *  OAM entries with offsets. Our compositor doesn't natively handle multi-OAM

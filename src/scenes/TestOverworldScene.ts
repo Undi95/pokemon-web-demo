@@ -137,6 +137,7 @@ import {
 } from '../game/field_effect_helpers';
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
+import { SetUpFieldTasks } from '../game/field_tasks';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (jump-impact config-driven, préchargé via preloadJumpImpactEffects, tické par le callback global).
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
@@ -897,6 +898,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // sHorizontalCameraPan = 0 (= default). Sans ça, valeurs stale d'une
     // session précédente persistent → BG_VOFS mal aligné post-warp.
     InstallCameraPanAheadCallback();
+
+    // 1:1 décomp `SetUpFieldTasks()` (overworld.c:2149, appelé par ResumeMap juste
+    // après InstallCameraPanAheadCallback:2139). Crée la task persistante
+    // `Task_RunPerStepCallback` (idempotent via FuncIsActiveTask) qui dispatch les
+    // per-step callbacks (cendres Route 113, ponts, glace…) CHAQUE FRAME via RunTasks.
+    SetUpFieldTasks();
 
     // 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) — no args,
     // lit `gSaveBlock1Ptr->pos.x/y` (= `_camPos` côté TS) + gMapHeader.mapLayout

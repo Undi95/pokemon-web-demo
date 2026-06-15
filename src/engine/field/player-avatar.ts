@@ -1449,13 +1449,12 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       SyncPlayerObjectEvent(nx, ny, GetPlayerFacingDirection(), stepDirAtEnd, true);
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
-      // 1:1 décomp `RunOnSteppedCallback` (overworld.c:1930) : dispatch
-      // active per-step callback at end of each tile step. Triggers ash piles
-      // (Route 113), sinking bridges (Fortree/Pacifidlog), ice cracks (Sootopolis),
-      // step counter increment + daily flag thresholds.
-      void import('./step-callbacks').then(({ DoPerStepCallback }) => {
-        DoPerStepCallback();
-      });
+      // 1:1 décomp : les per-step callbacks NE sont PAS dispatchés ici. La décomp
+      // les tourne via la task `Task_RunPerStepCallback` (field_tasks.c, créée par
+      // SetUpFieldTasks au map-load) qui tick CHAQUE FRAME par RunTasks() et compare
+      // PlayerGetDestCoords pour détecter le pas. L'ancien `DoPerStepCallback()`
+      // per-step était une invention (modèle direct-call) → retiré au profit du
+      // miroir field_tasks.ts. Cf. src/game/field_tasks.ts.
       // 1:1 décomp `GroundEffect_StepOnTallGrass` : le rustle d'herbe est DÉSORMAIS géré
       // par le spine DoGroundEffects (le player object event slot 0 traverse Tick
       // ObjectEventMovements → DoGroundEffects_OnSpawn/OnBeginStep comme la décomp).
