@@ -431,8 +431,17 @@ function renderOamSpriteNormal(
   palette: PaletteBanks,
   priorityBufs: Uint8ClampedArray[],
 ): void {
-  const localY = scanline - sprite.y;
-  if (localY < 0 || localY >= hPx) return;
+  // 1:1 HW GBA : l'OAM y est un champ 8-bit NON-SIGNÉ. Le hardware tronque la
+  // position à [0,255] puis dessine la scanline si `(scanline - objY) & 0xFF < height`.
+  // Conséquence : un sprite dont le bas dépasse 256 RÉAPPARAÎT en haut de l'écran
+  // (TOP-WRAP) — c'est ce qui rend les champs météo continus (cendre/brouillard/neige
+  // qui défilent et bouclent ; cf. field_weather_effect.c UpdateAshSprite y=coordOffsetY
+  // +tOffsetY non borné). Les sprites à y NÉGATIF restent 1:1 : oam.y=-46 → objY=210,
+  // (scanline-210)&0xFF = scanline+46 → identique à l'ancien `scanline-(-46)` (drops
+  // d'eau à oam.y=-46 inchangés). Seule nouveauté : y≥160 (positif) qui re-boucle.
+  const objY = (sprite.y | 0) & 0xFF;
+  const localY = (scanline - objY) & 0xFF;
+  if (localY >= hPx) return;
 
   const wTiles = wPx / 8;
 
@@ -516,6 +525,10 @@ function renderOamSpriteAffine(
   const bboxH = isDouble ? hPx * 2 : hPx;
 
   // Y position : top du bbox (le sprite est centré dans bbox en mode DOUBLE)
+  // NB : le TOP-WRAP 8-bit OAM y (cf. renderOamSpriteNormal) n'est PAS modélisé ici —
+  // aucun sprite affine actuel ne défile au-delà de 256 (météo = non-affine, mons de
+  // combat = centrés à l'écran). On garde le y signé complet (préserve le sub-pixel
+  // des anims affine). À ajouter si un sprite affine wrappant apparaît.
   const bboxYTop = sprite.y;
   const localBboxY = scanline - bboxYTop;
   if (localBboxY < 0 || localBboxY >= bboxH) return;

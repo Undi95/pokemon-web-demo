@@ -443,16 +443,11 @@ function UpdateAshSprite(sprite: DecompSprite): void {
   }
 
   // 1:1 décomp `sprite->y = gSpriteCoordOffsetY + sprite->tOffsetY`. tOffsetY croît sans
-  // borne ; le HW GBA tronque oam.y à 8 bits → la cendre BOUCLE (sort en bas, réapparaît
-  // en haut). Notre compositor garde le y complet (pour les sprites à y négatif/grand) →
-  // on réplique le wrap 8-bit ici, sinon les sprites dérivent à l'infini et la cendre
-  // « marche mais ne reste pas ».
-  // 🐛 BUG CONNU (« creux » dans la cendre) : le GBA fait aussi le TOP-WRAP — un sprite 64px
-  // à oam.y∈[193,255] (y+64>256) affiche sa portion haute wrappée en HAUT de l'écran. Notre
-  // compositor ne le fait PAS → les 4 rangées (espacées 64px sur 256px) laissent une bande
-  // morte de ~32px → l'anim « descend en bloc » avec un trou. FIX = wrap 8-bit OAM y dans
-  // gba/compositor.ts (rendre aussi le sprite à y-256 si y+height>256). Cf. prompt de reprise.
-  sprite.y = (_rt().gSpriteCoordOffsetY + sprite.data[0]) & 0xFF;
+  // borne ; le HW GBA tronque oam.y à 8 bits ET fait le TOP-WRAP → la cendre BOUCLE (les 4
+  // rangées espacées 64px défilent et réapparaissent en haut, champ continu). Modélisé 1:1
+  // par le compositor (renderOamSpriteNormal : `objY = oam.y & 0xFF`, top-wrap) → ici on
+  // garde le calcul décomp PUR, sans masque.
+  sprite.y = _rt().gSpriteCoordOffsetY + sprite.data[0];
   sprite.x = gWeatherPtr.ashBaseSpritesX + 32 + sprite.data[2] * 64;
   if (sprite.x > DISPLAY_WIDTH + 31) {
     sprite.x = gWeatherPtr.ashBaseSpritesX + (DISPLAY_WIDTH * 2) - (4 - sprite.data[2]) * 64;
