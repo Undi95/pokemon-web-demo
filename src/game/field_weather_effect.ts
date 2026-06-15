@@ -441,7 +441,12 @@ function UpdateAshSprite(sprite: DecompSprite): void {
     sprite.data[0]++;
   }
 
-  sprite.y = _rt().gSpriteCoordOffsetY + sprite.data[0];
+  // 1:1 décomp `sprite->y = gSpriteCoordOffsetY + sprite->tOffsetY`. tOffsetY croît sans
+  // borne ; le HW GBA tronque oam.y à 8 bits → la cendre BOUCLE (sort en bas, réapparaît
+  // en haut). Notre compositor garde le y complet (pour les sprites à y négatif/grand) →
+  // on réplique le wrap 8-bit ici, sinon les sprites dérivent à l'infini et la cendre
+  // « marche mais ne reste pas ».
+  sprite.y = (_rt().gSpriteCoordOffsetY + sprite.data[0]) & 0xFF;
   sprite.x = gWeatherPtr.ashBaseSpritesX + 32 + sprite.data[2] * 64;
   if (sprite.x > DISPLAY_WIDTH + 31) {
     sprite.x = gWeatherPtr.ashBaseSpritesX + (DISPLAY_WIDTH * 2) - (4 - sprite.data[2]) * 64;
