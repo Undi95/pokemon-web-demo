@@ -30,8 +30,7 @@
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
-import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
-import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords, DoShadowFieldEffect } from './object-events';
 import { ConvertMovementActionsToIds, ScriptMovement_StartObjectMovementScript, ScriptMovement_IsObjectMovementFinished } from './script-movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
@@ -901,10 +900,15 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       // Bug user-flag 2026-05-21 : "Le joueur saute du camion sans le bon
       // sprite ni l'ombre en dessous". 1:1 décomp `InitJumpRegular` :
       //   - jumpFramesLeft drive sprite y2 arc + walk anim frame
-      //   - DoShadowFieldEffect → CreateShadowSprite sous player
+      //   - DoShadowFieldEffect (ombre de saut, game/field_effect_helpers.ts)
       gPlayerAvatar.jumpFramesLeft = totalFrames;
       gPlayerAvatar.stepFramesLeft = totalFrames;
-      if (_activeRt) CreateShadowSprite(_activeRt);
+      // 1:1 décomp `InitJumpRegular → DoShadowFieldEffect` : ombre de saut (migrée
+      // game/field_effect_helpers.ts, despawn via hasShadow=FALSE au step end ci-dessous).
+      {
+        const jumpSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+        if (jumpSlot && jumpSlot.active && jumpSlot.isPlayer) DoShadowFieldEffect(jumpSlot);
+      }
     } else if (target.npc) {
       // 1:1 STRICT décomp ShiftObjectEventCoords (= previous=current, current+=d*dist).
       ShiftObjectEventCoords(target.npc, target.npc.currentCoordsX + dxLogical, target.npc.currentCoordsY + dyLogical);
@@ -975,7 +979,7 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       gPlayerAvatar.jumpFramesLeft = 0;
       gPlayerAvatar.stepFramesLeft = 0;
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
-      if (_activeRt) DestroyShadowSprite(_activeRt);
+      // Ombre de saut : despawn via `slot.hasShadow = false` (ci-dessus) → UpdateShadowFieldEffect.
       // Le dust d'atterrissage est posé par le spine via `slot.landingJump` (ci-dessus),
       // plus de spawn ad-hoc (1:1 : GroundEffect_JumpLandingDust depuis DoGroundEffects_OnFinishStep).
     } else if (target.npc) {

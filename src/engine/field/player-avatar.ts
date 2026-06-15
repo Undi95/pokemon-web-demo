@@ -41,7 +41,6 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventSetHeldMovement,
@@ -52,6 +51,7 @@ import {
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
   SetObjectEventDirection,
+  DoShadowFieldEffect,
   OBJECT_EVENTS_COUNT,
   ELEVATION_DEFAULT,
 } from './object-events';
@@ -765,7 +765,13 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const panX = GetCameraPanX();
   const panY = GetCameraPanY();
   sprite.x = 120 - panX;
-  sprite.y = 72 + jumpY - panY;
+  // M3a (1:1 décomp) : l'arc de saut va dans sprite.y2 (= sprite->y2 du décomp,
+  // event_object_movement.c DoJumpSpriteMovement) et NON dans sprite.y. oam.y =
+  // sprite.y + sprite.y2 + centerToCornerVecY (decomp-runtime syncSpritesToOam) →
+  // visuel IDENTIQUE, mais sprite.y devient la base AU SOL (= linkedSprite->y du
+  // shadow → ground-lock naturel pendant le saut, sans soustraire le jumpY).
+  sprite.y = 72 - panY;
+  sprite.y2 = jumpY;
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
@@ -1420,10 +1426,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         if (slot && slot.active && slot.isPlayer) {
           slot.landingJump = true;
           slot.triggerGroundEffectsOnStop = true;
+          // 1:1 décomp `MovementAction_Jump2*_Step1` : `objectEvent->hasShadow = FALSE`
+          // au jump end → UpdateShadowFieldEffect despawn l'ombre (FieldEffectStop).
+          slot.hasShadow = false;
         }
-        // 1:1 décomp `MovementAction_Jump2*_Step1` : `objectEvent->hasShadow = FALSE`
-        // au jump end → UpdateShadowFieldEffect détruit le sprite. Notre impl : direct.
-        DestroyShadowSprite(rt);
       }
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
       gPlayerAvatar.stepDirection = DIR_NONE;
@@ -1632,9 +1638,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       gPlayerAvatar.stepDirection = inputDir;
       _pendingLedgeJump = true;  // = step end appliquera 2nd moveCoords (= 2 tiles)
       // 1:1 décomp `InitJumpRegular` → `DoShadowFieldEffect` (event_object_movement.c:5450) :
-      // spawn shadow sous player AU START du jump. Shadow tracks player x,y mais
-      // sans le jumpYOffset → reste au sol pendant l'arc visuel.
-      CreateShadowSprite(rt);
+      // spawn l'ombre de saut sous le joueur AU START. UpdateShadowFieldEffect la garde au
+      // SOL (linked.y ; l'arc est dans sprite.y2 via M3a) pendant le saut → effet 3D ; despawn
+      // à l'atterrissage (hasShadow=FALSE).
+      {
+        const ledgeSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+        if (ledgeSlot && ledgeSlot.active && ledgeSlot.isPlayer) DoShadowFieldEffect(ledgeSlot);
+      }
       const jumpSpeed = dirToCameraSpeed(inputDir);
       // Speed × 2 pour 2 tiles en 32 frames (= 1 tile per 16 frames standard).
       gFieldCamera.movementSpeedX = jumpSpeed.x * WALK_SPEED_PX_PER_FRAME;

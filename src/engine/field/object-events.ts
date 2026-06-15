@@ -96,7 +96,7 @@ import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY,
 // Reflets relocalisés au miroir 1:1 (field_effect_helpers.c) — appelé par le spine
 // GroundEffect_Water/IceReflection (corps de fonction → cycle ESM sûr).
 import { SetUpReflection } from '../../game/field_effect_helpers';
-import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_SHADOW, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
   FLDEFF_TALL_GRASS, FLDEFF_LONG_GRASS, FLDEFF_RIPPLE, FLDEFF_DUST, FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS, FLDEFF_BIKE_TIRE_TRACKS,
   FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER, FLDEFF_BERRY_TREE_GROWTH_SPARKLE } from './field-effect';
 // 1:1 décomp prédicats `MetatileBehavior_Is*` (metatile_behavior.c) — miroir game/.
@@ -3071,6 +3071,7 @@ export interface GfxMeta {
   width: number; height: number; tracks: number;
   paletteSlot: number; paletteTag: number; reflectionPaletteTag: number;
   disableReflectionPaletteLoad: 0 | 1;
+  shadowSize: number;  // 1:1 décomp `shadowSize:2` (0..3, SHADOW_SIZE_S/M/L/XL) — pour FldEff_Shadow.
 }
 const _gfxMetaCache = new Map<string, GfxMeta>();
 const _gfxMetaEmptyPic = new Uint8Array(0);
@@ -3092,6 +3093,7 @@ export function _getGfxMeta(graphicsIdRaw: string): GfxMeta {
     width: 16, height: 16, tracks: TRACKS_NONE,
     paletteSlot: PALSLOT_NPC_1, paletteTag: OBJ_EVENT_PAL_TAG_NONE,
     reflectionPaletteTag: OBJ_EVENT_PAL_TAG_NONE, disableReflectionPaletteLoad: 0,
+    shadowSize: 1,  // SHADOW_SIZE_M (défaut décomp).
   };
   try {
     const info = GetObjectEventGraphicsInfo(graphicsId, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic);
@@ -3100,6 +3102,7 @@ export function _getGfxMeta(graphicsIdRaw: string): GfxMeta {
       paletteSlot: info.paletteSlot, paletteTag: info.paletteTag,
       reflectionPaletteTag: info.reflectionPaletteTag,
       disableReflectionPaletteLoad: info.disableReflectionPaletteLoad,
+      shadowSize: info.shadowSize ?? 1,
     };
   } catch {
     // métadonnées indispo (factory non-purement-littérale) → défauts ci-dessus.
@@ -3316,6 +3319,16 @@ export function StartFieldEffectForObjectEvent(fieldEffectId: number, npc: Objec
   gFieldEffectArguments[1] = npc.mapNum;
   gFieldEffectArguments[2] = npc.mapGroup;
   return FieldEffectStart(fieldEffectId);
+}
+
+/** 1:1 décomp `DoShadowFieldEffect(objectEvent)` (event_object_movement.c:8770). Appelé au
+ *  DÉBUT d'un saut (InitJumpRegular/InitAcroWheelieJump) : spawn l'ombre de saut une fois
+ *  (gardé par hasShadow), despawn à l'atterrissage (hasShadow=FALSE → UpdateShadowFieldEffect). */
+export function DoShadowFieldEffect(npc: ObjectEvent): void {
+  if (!npc.hasShadow) {
+    npc.hasShadow = true;
+    StartFieldEffectForObjectEvent(FLDEFF_SHADOW, npc);
+  }
 }
 
 /** Sprite visuel d'un object event. 1:1 décomp = &gSprites[objectEvent->spriteId], MAIS
@@ -4806,6 +4819,8 @@ function _makeJumpAction(dir: number, distance: number, type: number): MovementA
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitJump(rt, npc, dir, distance, type);
+      // 1:1 décomp InitJumpRegular : DoShadowFieldEffect (ombre de saut).
+      DoShadowFieldEffect(npc);
       // Step0 retourne Step1 chain (1:1 décomp).
     }
     // Step1 : UpdateJumpAnim → JUMP_FINISHED set sActionFuncId = 2 + hasShadow = FALSE.
@@ -4916,6 +4931,8 @@ function _makeJumpInPlaceAlternatingAction(dir: number): MovementActionFunc {
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitJump(rt, npc, dir, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+      // 1:1 décomp InitJumpRegular (in-place utilise aussi InitJumpRegular) : DoShadowFieldEffect.
+      DoShadowFieldEffect(npc);
     }
     if (_UpdateJumpInPlaceAnim(rt, npc)) {
       npc.hasShadow = false;
@@ -4999,7 +5016,8 @@ function _makeAcroWheelieJumpAction(dir: number, distance: number, type: number)
           StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
         }
       }
-      // DETTE H3 : DoShadowFieldEffect cascade.
+      // 1:1 décomp InitAcroWheelieJump : DoShadowFieldEffect (ombre de saut).
+      DoShadowFieldEffect(npc);
     }
     if (_UpdateJumpAnim(rt, npc)) {
       npc.hasShadow = false;

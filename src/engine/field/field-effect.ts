@@ -41,6 +41,7 @@ import {
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
   FldEff_SurfBlob,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
+  FldEff_Shadow,
 } from '../../game/field_effect_helpers';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
@@ -49,6 +50,7 @@ export const gFieldEffectArguments: number[] = new Array(8).fill(0);
 
 /** 1:1 décomp `FLDEFF_*` constants (include/constants/field_effects.h). */
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
+export const FLDEFF_SHADOW                     = 3;
 export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
 export const FLDEFF_ASH                        = 7;
@@ -233,6 +235,12 @@ export function FieldEffectStart(id: number): number {
   }
   // ─── Effets MORTS (0 caller en Émeraude, anims en boucle infinie = jamais despawn).
   //   Portés 1:1 pour la complétude (field_effect_helpers.c:844-908). ──
+  if (id === FLDEFF_SHADOW) {
+    // 1:1 décomp FldEff_Shadow (field_effect_helpers.c:233) — ombre de saut (ledge hop),
+    // migrée dans game/field_effect_helpers.ts. Lit gFieldEffectArguments[0..2] = localId/
+    // mapNum/mapGroup de l'object event (posés par DoShadowFieldEffect).
+    return FldEff_Shadow(rt);
+  }
   if (id === FLDEFF_UNUSED_GRASS) return FldEff_UnusedGrass(rt);
   if (id === FLDEFF_UNUSED_GRASS_2) return FldEff_UnusedGrass2(rt);
   if (id === FLDEFF_UNUSED_SAND) return FldEff_UnusedSand(rt);

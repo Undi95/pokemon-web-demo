@@ -66,7 +66,8 @@ import { MoveCoords } from '../engine/field/direction-coords';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
-import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType } from './metatile_behavior';
+import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
+  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective } from './metatile_behavior';
 // 1:1 décomp : constantes de slot/tag palette (object-event-graphics-info). Utilisées par
 // la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
 import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
@@ -2399,6 +2400,118 @@ export function FldEff_UnusedGrass2(rt: DecompRuntime): number { return _spawnUn
 export function FldEff_UnusedSand(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_UNUSED_SAND); }
 /** 1:1 décomp `FldEff_WaterSurfacing` (field_effect_helpers.c:892). */
 export function FldEff_WaterSurfacing(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_WATER_SURFACING); }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Shadow (field_effect_helpers.c:213-274) — ombre de SAUT (ledge hop) ground-locked.
+//  Spawnée par DoShadowFieldEffect au début d'un saut (InitJumpRegular/AcroWheelieJump),
+//  suit l'object event au SOL (linkedSprite.y = base ; le saut est dans y2 → effet 3D),
+//  despawn à l'atterrissage (hasShadow=FALSE) ou sur herbe/eau/reflet.
+//  4 tailles (S 8×8 / M 16×8 / L 32×8 / XL 64×32) selon graphicsInfo.shadowSize.
+//  Adaptation coord : nos sprites OW sont écran-positionnés (worldX+offX manuel, ≠
+//  coordOffsetEnabled) → le shadow copie linked.x/y (écran) + matche le coordOffsetEnabled
+//  du linked (comme les reflets), au lieu du coordOffsetEnabled=TRUE + gSpriteCoordOffset
+//  du décomp. Joueur : linkedSprite = gPlayerAvatar.spriteId (slot OE spriteId=-1).
+//  data 1:1 : sLocalId=data[0] sMapNum=data[1] sMapGroup=data[2] sYOffset=data[3].
+// ════════════════════════════════════════════════════════════════════════════
+
+const FLDEFF_SHADOW = 3;
+/** 1:1 décomp `gShadowVerticalOffsets[]` (field_effect_helpers.c:220), indexé par shadowSize. */
+const gShadowVerticalOffsets: ReadonlyArray<number> = [4, 4, 4, 16];
+
+interface ShadowCfg { png: string; tiles: number; shape: 0 | 1; size: 0 | 1 | 2 | 3; tag: string; }
+/** 1:1 décomp sShadowEffectTemplateIds → templates ShadowSmall/Medium/Large/ExtraLarge
+ *  (field_effect_objects.h:31-66). OAM 8×8/16×8/32×8/64×32, pics dédiés, bank 0 (TAG_NONE). */
+const SHADOW_CFG: ShadowCfg[] = [
+  { png: `${FE_BASE}/shadow_small.png`, tiles: 1, shape: 0, size: 0, tag: 'FE_SHADOW_S' },         // 8×8
+  { png: `${FE_BASE}/shadow_medium.png`, tiles: 2, shape: 1, size: 0, tag: 'FE_SHADOW_M' },        // 16×8
+  { png: `${FE_BASE}/shadow_large.png`, tiles: 4, shape: 1, size: 1, tag: 'FE_SHADOW_L' },         // 32×8
+  { png: `${FE_BASE}/shadow_extra_large.png`, tiles: 32, shape: 1, size: 3, tag: 'FE_SHADOW_XL' }, // 64×32
+];
+/** 1:1 décomp `sAnim_Shadow` (field_effect_objects.h:4) : FRAME(0,1) END (statique, 1 frame). */
+const sAnims_Shadow: AnimCmd[][] = [[ANIMCMD_FRAME(0, 1), ANIMCMD_END]];
+
+const _shadowTileStart = new Map<number, number>();
+let _shadowInit = false;
+let _shadowInitPromise: Promise<void> | null = null;
+
+/** Préchargement assets des 4 tailles de shadow. À call au boot field (= LoadFieldEffectGraphics). */
+export function preloadShadowEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _shadowInit && IndexOfSpriteTileTag(SHADOW_CFG[1].tag) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_shadowInitPromise && !_shadowInit) return _shadowInitPromise;
+  _shadowInit = false; _shadowInitPromise = null;
+  _shadowInitPromise = (async () => {
+    for (let sz = 0; sz < SHADOW_CFG.length; sz++) {
+      const cfg = SHADOW_CFG[sz];
+      const png = await loadIndexedPngStrict(cfg.png, 4);
+      const sheet = png.charData.slice(0, cfg.tiles * 32);  // single frame, layout row-major = 1D obj
+      _shadowTileStart.set(sz, LoadSpriteSheet({ data: sheet, size: sheet.length, tag: cfg.tag }));
+    }
+    _shadowInit = true;
+  })();
+  return _shadowInitPromise;
+}
+
+/** 1:1 décomp `FldEff_Shadow` (field_effect_helpers.c:233). Lit gFieldEffectArguments[0..2] =
+ *  localId/mapNum/mapGroup (posés par StartFieldEffectForObjectEvent → DoShadowFieldEffect). */
+export function FldEff_Shadow(rt: DecompRuntime): number {
+  if (!_shadowInit) { void preloadShadowEffect(rt); return 64; }
+  const objectEventId = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+  if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
+  const npc = gObjectEvents[objectEventId];
+  const meta = _getGfxMeta(npc.graphicsId);
+  const shadowSize = meta.shadowSize & 3;
+  const tileStart = _shadowTileStart.get(shadowSize);
+  const cfg = SHADOW_CFG[shadowSize];
+  if (tileStart === undefined || !cfg) return 64;
+  // 1:1 : CreateSpriteAtEnd(template[shadowSize], 0, 0, 148).
+  const result = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: 0,  // 1:1 paletteTag TAG_NONE → bank 0 (palette joueur)
+    x: 0, y: 0, shape: cfg.shape, size: cfg.size,
+    priority: 2, paletteMode: 0, affineMode: 0, subpriority: 148,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateShadowFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_Shadow, tileStart);
+  sprite.subpriority = 148;
+  sprite.data[0] = gFieldEffectArguments[0];  // sLocalId
+  sprite.data[1] = gFieldEffectArguments[1];  // sMapNum
+  sprite.data[2] = gFieldEffectArguments[2];  // sMapGroup
+  // 1:1 : sYOffset = (graphicsInfo->height >> 1) - gShadowVerticalOffsets[shadowSize].
+  sprite.data[3] = (meta.height >> 1) - (gShadowVerticalOffsets[shadowSize] ?? 4);
+  return 0;
+}
+
+/** 1:1 décomp `UpdateShadowFieldEffect` (field_effect_helpers.c:249). Callback per-frame :
+ *  suit l'object event au SOL (linked.y, le saut est dans y2) ; despawn si l'OE a disparu OU
+ *  !hasShadow (fin de saut) OU herbe-Pokémon/eau-surfable/tuile réfléchissante. */
+export function UpdateShadowFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[0], sprite.data[1], sprite.data[2]);
+  if (notFound) { FieldEffectStop(rt, sprite, FLDEFF_SHADOW); return; }
+  const npc = gObjectEvents[objectEventId];
+  // 1:1 : linkedSprite = gSprites[objectEvent->spriteId]. Joueur (slot spriteId=-1) → visuel
+  // sur gPlayerAvatar.spriteId.
+  const linkedId = npc.isPlayer ? gPlayerAvatar.spriteId : npc.spriteId;
+  const linked = linkedId >= 0 ? rt.gSprites.get(linkedId) : undefined;
+  if (!linked) { FieldEffectStop(rt, sprite, FLDEFF_SHADOW); return; }
+  const loam = rt.gba.oam[linked.oamIndex];
+  const soam = rt.gba.oam[sprite.oamIndex];
+  if (loam && soam) soam.priority = loam.priority;  // 1:1 : oam.priority = linkedSprite->oam.priority.
+  // Adaptation coord (modèle manual-offX) : copier la position ÉCRAN du linked + matcher son
+  // coordOffsetEnabled (comme les reflets), au lieu du coordOffsetEnabled=TRUE décomp.
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
+  sprite.x = linked.x;
+  sprite.y = linked.y + sprite.data[3];  // 1:1 : linkedSprite->y (SOL, saut en y2) + sYOffset.
+  if (!npc.active || !npc.hasShadow
+    || MetatileBehavior_IsPokeGrass(npc.currentMetatileBehavior)
+    || MetatileBehavior_IsSurfableWaterOrUnderwater(npc.currentMetatileBehavior)
+    || MetatileBehavior_IsSurfableWaterOrUnderwater(npc.previousMetatileBehavior)
+    || MetatileBehavior_IsReflective(npc.currentMetatileBehavior)
+    || MetatileBehavior_IsReflective(npc.previousMetatileBehavior)) {
+    FieldEffectStop(rt, sprite, FLDEFF_SHADOW);
+  }
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Reflets (field_effect_helpers.c:47-163) — SetUpReflection + GetReflectionVerticalOffset

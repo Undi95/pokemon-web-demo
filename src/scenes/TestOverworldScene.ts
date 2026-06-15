@@ -167,12 +167,7 @@ import { preloadAshEffect } from '../game/field_effect_helpers';
 // (sprite.callback UpdateSurfBlobFieldEffect + SpriteCB_UnderwaterSurfBlob, tickés par le callback global).
 import { preloadSurfBlobEffect } from '../game/field_effect_helpers';
 import { preloadDisguiseEffects } from '../game/field_effect_helpers';
-import {
-  preloadShadowEffect,
-  CreateShadowSprite,
-  UpdateShadowSprite,
-  DestroyShadowSprite,
-} from '../engine/field/field-effect-shadow';
+import { preloadShadowEffect } from '../game/field_effect_helpers';
 import { PlaySE } from '../engine/system/decomp-globals';
 import {
   SE_EXIT,
@@ -640,11 +635,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // par le callback global.
         // Disguises (tree/mountain/sand) : migrés (game/field_effect_helpers.ts), tickés par leur
         // callback UpdateDisguiseFieldEffect via runSpriteCallbacks. Trigger = MovementActions.
-        // Emotes (! ? ♥) : migrés (game/trainer_see.ts) → SpriteCB_TrainerIcons est un VRAI
-        // sprite.callback tické par runSpriteCallbacks (plus de tick externe).
-        // 1:1 décomp UpdateShadowFieldEffect : shadow copie player sprite x
-        // mais reste à y baseline (= no jump arc) → ground-locked effet 3D.
-        UpdateShadowSprite(rt, gPlayerAvatar.spriteId);
+        // Emotes (! ? ♥) + Shadow : migrés (game/trainer_see.ts + field_effect_helpers.ts)
+        // → SpriteCB_TrainerIcons / UpdateShadowFieldEffect sont de VRAIS sprite.callback
+        // tickés par runSpriteCallbacks (plus de tick externe).
         // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
         // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
         // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
@@ -1143,10 +1136,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Disguises (tree/mountain/sand recouvrant le joueur déguisé) : assets seuls (migrés
     // game/field_effect_helpers.ts, callback-driven via le dispatcher).
     await preloadDisguiseEffects(this.rt);
-    // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
-    // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
-    // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.
-    DestroyShadowSprite(this.rt);
+    // 1:1 décomp `FldEff_Shadow` (migré game/field_effect_helpers.ts) : l'ombre de saut
+    // spawn DYNAMIQUEMENT au ledge/acro jump (DoShadowFieldEffect) et despawn au jump end
+    // (hasShadow=FALSE → UpdateShadowFieldEffect). Pas de spawn permanent — preload assets only.
     await preloadShadowEffect(this.rt);
     InitFieldMessageBox();
     ScriptContext_Init();
