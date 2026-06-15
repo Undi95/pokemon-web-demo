@@ -2976,40 +2976,8 @@ export function ObjectEventUpdateSubpriority(rt: DecompRuntime, npc: ObjectEvent
   SetObjectSubpriorityByElevation(rt, npc.previousElevation, sprite, 1);
 }
 
-/** 1:1 décomp `UpdateGrassFieldEffectSubpriority` (field_effect_helpers.c:1662). Pose la
- *  subpriority du sprite grass (formule Y + offset 0/4) PUIS, s'il chevauche un object event
- *  ET passerait devant lui, le repousse DERRIÈRE (subpriority = linkedSprite.subpriority + 2).
- *  C'est ce qui donne le bon dynamique (rustle derrière la tête du NPC pendant un pas, devant
- *  les pieds à l'arrêt).
- *
- *  Adaptation archi : la décomp compare grass.x/y vs linkedSprite.x/y (tous world-positionnés) ;
- *  chez nous le grass est world (coordOffsetEnabled) et les NPCs screen → on convertit tout en
- *  coords ÉCRAN pour la comparaison (sprite.x/y + gSpriteCoordOffset si coordOffsetEnabled). */
-export function UpdateGrassFieldEffectSubpriority(rt: DecompRuntime, sprite: DecompSprite, elevation: number, subpriority: number): void {
-  SetObjectSubpriorityByElevation(rt, elevation, sprite, subpriority);
-  const sX = sprite.x + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
-  const sY = sprite.y + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
-  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
-    const objEvent = gObjectEvents[i];
-    if (!objEvent.active) continue;
-    const linked = objEvent.spriteId >= 0 ? rt.gSprites.get(objEvent.spriteId) : undefined;
-    if (!linked) continue;
-    const lX = linked.x + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
-    const lY = linked.y + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
-    const xhi = sX + sprite.centerToCornerVecX;
-    let varv = sX - sprite.centerToCornerVecX;
-    if (xhi < lX && varv > lX) {
-      const lyhi = lY + linked.centerToCornerVecY;
-      varv = lY;
-      const ylo = sY - sprite.centerToCornerVecY;
-      const yhi = ylo + linked.centerToCornerVecY;
-      if ((lyhi < yhi || lyhi < ylo) && varv > yhi && sprite.subpriority <= linked.subpriority) {
-        sprite.subpriority = (linked.subpriority + 2) & 0xFF;
-        break;
-      }
-    }
-  }
-}
+// `UpdateGrassFieldEffectSubpriority` (field_effect_helpers.c:1662) relocalisé au miroir
+// game/field_effect_helpers.ts (= son .c). Appelé par Update{Tall,Long,Short}GrassFieldEffect.
 
 /** 1:1 décomp `u8 ElevationToPriority(u8 elevation)` (event_object_movement.c:7754). */
 export function ElevationToPriority(elevation: number): number {

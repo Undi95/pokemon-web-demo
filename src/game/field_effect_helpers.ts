@@ -56,7 +56,7 @@ import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
-  SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority, ElevationToPriority,
+  SetObjectSubpriorityByElevation, ElevationToPriority,
   ELEVATION_DEFAULT,
   _getGfxMeta, type GfxMeta,
   LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
@@ -1089,55 +1089,71 @@ export function SetSurfBlob_PlayerOffset(rt: DecompRuntime, spriteId: number, ha
   s.data[1] = offset; // sPlayerOffset
 }
 
-/** 1:1 décomp `UpdateSurfBlobFieldEffect` (1052) = SynchronizeSurfAnim + SynchronizeSurfPosition
- *  + UpdateBobbingEffect + oam.priority = playerSprite priority. Callback per-frame. */
+/** 1:1 décomp `GetSurfBlob_BobState` (field_effect_helpers.c:1036). data[0]=sBitfield. */
+function GetSurfBlob_BobState(sprite: DecompSprite): number { return sprite.data[0] & 0xF; }
+/** 1:1 décomp `GetSurfBlob_DontSyncAnim` (field_effect_helpers.c:1042) — « Never TRUE ». */
+function GetSurfBlob_DontSyncAnim(sprite: DecompSprite): number { return (sprite.data[0] & 0xF0) >> 4; }
+/** 1:1 décomp `GetSurfBlob_HasPlayerOffset` (field_effect_helpers.c:1047). */
+function GetSurfBlob_HasPlayerOffset(sprite: DecompSprite): number { return (sprite.data[0] & 0xF00) >> 8; }
+
+/** 1:1 décomp `UpdateSurfBlobFieldEffect` (field_effect_helpers.c:1052). Callback per-frame. */
 export function UpdateSurfBlobFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
   const playerObj = gObjectEvents[sprite.data[2]]; // sPlayerObjId
   if (!playerObj) return;
   const playerSpriteId = GetObjectEventMainSpriteId(playerObj);
   const playerSprite = playerSpriteId >= 0 ? rt.gSprites.get(playerSpriteId) : undefined;
   if (!playerSprite) return;
-  const oam = rt.gba.oam[sprite.oamIndex];
-  const pOam = rt.gba.oam[playerSprite.oamIndex];
+  SynchronizeSurfAnim(playerObj, sprite, rt);
+  SynchronizeSurfPosition(playerObj, sprite);
+  UpdateBobbingEffect(playerObj, playerSprite, sprite);
+  // 1:1 : sprite->oam.priority = playerSprite->oam.priority.
+  const oam = rt.gba.oam[sprite.oamIndex], pOam = rt.gba.oam[playerSprite.oamIndex];
+  if (oam && pOam) oam.priority = pOam.priority;
+}
 
-  // ── SynchronizeSurfAnim : StartSpriteAnimIfDifferent(sprite, dirAnim[movementDirection]). ──
-  // (GetSurfBlob_DontSyncAnim = bitfield 0xF0 ; « Never TRUE » en pratique.)
-  if (((sprite.data[0] & 0xF0) >> 4) === 0) {
+/** 1:1 décomp `SynchronizeSurfAnim` (field_effect_helpers.c:1062) : StartSpriteAnimIfDifferent
+ *  (sprite, surfBlobDirectionAnims[playerObj->movementDirection]) sauf si DontSyncAnim. */
+function SynchronizeSurfAnim(playerObj: ObjectEvent, sprite: DecompSprite, rt: DecompRuntime): void {
+  if (!GetSurfBlob_DontSyncAnim(sprite)) {
     const animIdx = SURF_BLOB_DIRECTION_ANIMS[playerObj.movementDirection] ?? 0;
-    if (sprite.animNum !== animIdx) rt.StartSpriteAnim(sprite.spriteId, animIdx);
+    if (sprite.animNum !== animIdx) rt.StartSpriteAnim(sprite.spriteId, animIdx); // StartSpriteAnimIfDifferent
   }
+}
 
-  // ── SynchronizeSurfPosition : détecte le déplacement + le démontage (élévation). ──
+/** 1:1 décomp `SynchronizeSurfPosition` (field_effect_helpers.c:1081) : détecte le déplacement
+ *  du joueur en surf + le démontage (tuile élévation par défaut autour) → bobbing plus lent. */
+function SynchronizeSurfPosition(playerObj: ObjectEvent, sprite: DecompSprite): void {
   const x = playerObj.currentCoordsX, y = playerObj.currentCoordsY;
-  if (sprite.y2 === 0 && (x !== sprite.data[6] || y !== sprite.data[7])) {
+  if (sprite.y2 === 0 && (x !== sprite.data[6] || y !== sprite.data[7])) {  // sPrevX/sPrevY
     sprite.data[5] = 0; // sIntervalIdx
     sprite.data[6] = x; sprite.data[7] = y;
     for (let i = DIR_SOUTH_; i <= DIR_EAST_; i++) {
       const m = MoveCoords(i, sprite.data[6], sprite.data[7]);
       if (MapGridGetElevationAt(m.x, m.y) === ELEVATION_DEFAULT) {
-        // En train de descendre de la monture → bobbing plus lent (intervalIdx=1).
-        sprite.data[5]++;
+        sprite.data[5]++;  // démontage → intervalIdx=1 (bobbing plus lent)
         break;
       }
     }
   }
+}
 
-  // ── UpdateBobbingEffect : bobbing vertical (y2) + sync joueur. ──
+/** 1:1 décomp `UpdateBobbingEffect` (field_effect_helpers.c:1107) : bobbing vertical (y2) du blob
+ *  + sync de la position/y2 du joueur (sauf BOB_JUST_MON). */
+function UpdateBobbingEffect(playerObj: ObjectEvent, playerSprite: DecompSprite, sprite: DecompSprite): void {
+  void playerObj; // 1:1 signature (le décomp passe playerObj mais ne l'utilise pas dans le corps).
   const intervals = [0x3, 0x7];
-  const bobState = sprite.data[0] & 0xF; // GetSurfBlob_BobState
+  const bobState = GetSurfBlob_BobState(sprite);
   if (bobState !== BOB_NONE) {
     sprite.data[4] = (sprite.data[4] + 1) & 0xFFFF; // ++sTimer
     if ((sprite.data[4] & intervals[sprite.data[5]]) === 0) sprite.y2 += sprite.data[3]; // += sVelocity
     if ((sprite.data[4] & 15) === 0) sprite.data[3] = -sprite.data[3]; // reverse velocity
     if (bobState !== BOB_JUST_MON) {
-      const hasOffset = (sprite.data[0] & 0xF00) >> 8;
-      playerSprite.y2 = hasOffset ? (sprite.data[1] + sprite.y2) : sprite.y2;
+      if (!GetSurfBlob_HasPlayerOffset(sprite)) playerSprite.y2 = sprite.y2;
+      else playerSprite.y2 = sprite.data[1] + sprite.y2; // sPlayerOffset
       sprite.x = playerSprite.x; sprite.y = playerSprite.y + 8;
       sprite.coordOffsetEnabled = playerSprite.coordOffsetEnabled; // archi : matcher le joueur écran.
     }
   }
-  // 1:1 : sprite->oam.priority = playerSprite->oam.priority.
-  if (oam && pOam) oam.priority = pOam.priority;
 }
 
 /** 1:1 décomp `StartUnderwaterSurfBlobBobbing` (1157) : un sprite dummy invisible qui fait bober
@@ -1533,7 +1549,7 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: Decom
 const ASH_PNG = '/decomp/em/field_effects/ash.png';
 const TAG_ASH_GFX = 'FIELD_EFFECT_ASH_GFX';
 const ASH_TILES_PER_FRAME = 4;  // 16×16
-const ASH_STATE_WAIT = 0, ASH_STATE_SHOW = 1;
+const ASH_STATE_WAIT = 0, ASH_STATE_SHOW = 1, ASH_STATE_END = 2;
 
 /** 1:1 décomp `sAnim_Ash` : 5 frames durées 12,12,8,12,12, END. imageValue = frameIdx×4. */
 const sAnims_Ash: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
@@ -1613,28 +1629,44 @@ export function FldEff_Ash(rt: DecompRuntime): number {
 
 /** 1:1 décomp `UpdateAshFieldEffect` (field_effect_helpers.c:953) = gAshFieldEffectFuncs[sState].
  *  L'anim est pilotée par le moteur (respecte animPaused) ; le callback ne fait que la machine. */
+/** 1:1 décomp `UpdateAshFieldEffect_Wait` (field_effect_helpers.c:958). invisible+animPaused,
+ *  décrémente sDelay → passe à SHOW à 0. */
+function UpdateAshFieldEffect_Wait(sprite: DecompSprite, _rt: DecompRuntime): void {
+  sprite.invisible = true;
+  sprite.animPaused = true;
+  sprite.data[4] -= 1;  // --sDelay
+  if (sprite.data[4] === 0) sprite.data[0] = ASH_STATE_SHOW;  // sState = 1
+}
+
+/** 1:1 décomp `UpdateAshFieldEffect_Show` (field_effect_helpers.c:966). visible, anim repart,
+ *  révèle la tuile ashgrass (MapGridSetMetatileIdAt + redraw) + trigger ground-effects joueur. */
+function UpdateAshFieldEffect_Show(sprite: DecompSprite, _rt: DecompRuntime): void {
+  sprite.invisible = false;
+  sprite.animPaused = false;
+  MapGridSetMetatileIdAt(sprite.data[1], sprite.data[2], sprite.data[3]);  // sX/sY/sMetatileId
+  const cam = GetCameraTopLeftCoords();
+  CurrentMapDrawMetatileAt(cam.x, cam.y, sprite.data[1], sprite.data[2]);
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (player) player.triggerGroundEffectsOnMove = true;
+  sprite.data[0] = ASH_STATE_END;  // sState = 2
+}
+
+/** 1:1 décomp `UpdateAshFieldEffect_End` (field_effect_helpers.c:976). despawn à animEnded. */
+function UpdateAshFieldEffect_End(sprite: DecompSprite, rt: DecompRuntime): void {
+  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  if (sprite.animEnded) FieldEffectStop(rt, sprite, FLDEFF_ASH);
+}
+
+/** 1:1 décomp `gAshFieldEffectFuncs[]` (field_effect_helpers.c:947). */
+const gAshFieldEffectFuncs: ReadonlyArray<(sprite: DecompSprite, rt: DecompRuntime) => void> = [
+  UpdateAshFieldEffect_Wait,
+  UpdateAshFieldEffect_Show,
+  UpdateAshFieldEffect_End,
+];
+
+/** 1:1 décomp `UpdateAshFieldEffect` (field_effect_helpers.c:953) : dispatch par sState. */
 export function UpdateAshFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
-  if (sprite.data[0] === ASH_STATE_WAIT) {
-    // 1:1 UpdateAshFieldEffect_Wait : invisible + animPaused, décrémente sDelay.
-    sprite.invisible = true;
-    sprite.animPaused = true;
-    sprite.data[4] -= 1;
-    if (sprite.data[4] === 0) sprite.data[0] = ASH_STATE_SHOW;
-  } else if (sprite.data[0] === ASH_STATE_SHOW) {
-    // 1:1 UpdateAshFieldEffect_Show : visible, anim repart, révèle la tuile, trigger joueur.
-    sprite.invisible = false;
-    sprite.animPaused = false;
-    MapGridSetMetatileIdAt(sprite.data[1], sprite.data[2], sprite.data[3]);
-    const cam = GetCameraTopLeftCoords();
-    CurrentMapDrawMetatileAt(cam.x, cam.y, sprite.data[1], sprite.data[2]);
-    const player = gObjectEvents[gPlayerAvatar.objectEventId];
-    if (player) player.triggerGroundEffectsOnMove = true;
-    sprite.data[0] = 2; // ASH_STATE_END
-  } else {
-    // 1:1 UpdateAshFieldEffect_End : invis offscreen ; despawn quand l'anim finit.
-    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
-    if (sprite.animEnded) FieldEffectStop(rt, sprite, FLDEFF_ASH);
-  }
+  gAshFieldEffectFuncs[sprite.data[0]](sprite, rt);  // sState
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -2241,6 +2273,41 @@ export function WaitFieldEffectSpriteAnim(sprite: DecompSprite, rt: DecompRuntim
     FieldEffectStop(rt, sprite, sprite.data[0]);
   } else {
     UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  }
+}
+
+/** 1:1 décomp `UpdateGrassFieldEffectSubpriority` (field_effect_helpers.c:1662). Pose la
+ *  subpriority du sprite grass (formule Y + offset 0/4) PUIS, s'il chevauche un object event
+ *  ET passerait devant lui, le repousse DERRIÈRE (subpriority = linkedSprite.subpriority + 2).
+ *  C'est ce qui donne le bon dynamique (rustle derrière la tête du NPC pendant un pas, devant
+ *  les pieds à l'arrêt).
+ *
+ *  Adaptation archi : la décomp compare grass.x/y vs linkedSprite.x/y (tous world-positionnés) ;
+ *  chez nous le grass est world (coordOffsetEnabled) et les NPCs screen → on convertit tout en
+ *  coords ÉCRAN pour la comparaison (sprite.x/y + gSpriteCoordOffset si coordOffsetEnabled). */
+export function UpdateGrassFieldEffectSubpriority(rt: DecompRuntime, sprite: DecompSprite, elevation: number, subpriority: number): void {
+  SetObjectSubpriorityByElevation(rt, elevation, sprite, subpriority);
+  const sX = sprite.x + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
+  const sY = sprite.y + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const objEvent = gObjectEvents[i];
+    if (!objEvent.active) continue;
+    const linked = objEvent.spriteId >= 0 ? rt.gSprites.get(objEvent.spriteId) : undefined;
+    if (!linked) continue;
+    const lX = linked.x + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
+    const lY = linked.y + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
+    const xhi = sX + sprite.centerToCornerVecX;
+    let varv = sX - sprite.centerToCornerVecX;
+    if (xhi < lX && varv > lX) {
+      const lyhi = lY + linked.centerToCornerVecY;
+      varv = lY;
+      const ylo = sY - sprite.centerToCornerVecY;
+      const yhi = ylo + linked.centerToCornerVecY;
+      if ((lyhi < yhi || lyhi < ylo) && varv > yhi && sprite.subpriority <= linked.subpriority) {
+        sprite.subpriority = (linked.subpriority + 2) & 0xFF;
+        break;
+      }
+    }
   }
 }
 
