@@ -39,15 +39,18 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { getRuntime } from '../system/decomp-globals';
+import { OBJ_PLTT_ID } from '../system/decomp-runtime';
+import { getRuntime, LoadPalette } from '../system/decomp-globals';
 import {
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
   LoadSpritePalette as _LoadSpritePalette_1to1,
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
+  sSpritePaletteTags as _sSpritePaletteTags,
 } from '../system/sprite';
 import { loadGbaPal, loadTileBin } from '../gba/png-loader';
+import { PALSLOT_NPC_SPECIAL } from './object-event-graphics-info';
 
 // ─── OBJ_EVENT_GFX_* constants (= subset; 1:1 décomp include/event_object_movement.h) ─
 
@@ -281,7 +284,10 @@ const TRAINER_WALKING_INFO = {
   totalFrames: 9,
   shape: SpriteShape.VRect,
   size: 2,
-  paletteSlot: 0,
+  // 1:1 décomp gObjectEventGraphicsInfo_RivalBrendan/MayNormal.paletteSlot = PALSLOT_NPC_SPECIAL
+  // (event_object_movement.c). Était 0 (placeholder = collision avec le joueur slot 0 + slot
+  // dynamique [12,16) clobbant la météo). Le rival charge sa palette dans le slot 10 fixe.
+  paletteSlot: PALSLOT_NPC_SPECIAL,
   animsTableName: 'sAnimTable_Standard',
 } as const;
 
@@ -332,17 +338,17 @@ export async function loadObjectEventGraphicsInfo(rt: DecompRuntime, gfxId: numb
     const existing = _GetSpriteTileStartByTag_1to1(info.tileTag);
     if (existing !== 0xFFFF) return existing;
   }
-  // 1:1 STRICT décomp `LoadSpritePalette(sObjectEventSpritePalette_X)`
-  // (sprite.c:1589-1608) : check existing tag → return ; sinon find first free
-  // dans [gReservedSpritePaletteCount, 16) + DoLoadSpritePalette + sync arrays.
-  // Source unique = sSpritePaletteTags array primary (= sync auto Map secondary).
-  if (_IndexOfSpritePaletteTag_1to1(info.paletteTag) === 0xFF) {
+  // FIX over-alloc PALSLOT (cause-racine météo rose) : charge la palette dans le SLOT OBJ
+  // FIXE `info.paletteSlot` (∈ [0,11]) via LoadPalette direct + marque le tag du slot (pour
+  // que AllocSpritePalette/météo le SKIP), au lieu de l'allocateur dynamique. Les graphics
+  // enregistrés (rival = PALSLOT_NPC_SPECIAL) ne prennent donc plus un slot [12,16) réservé à
+  // la météo. 1:1 décomp PatchObjectPalette (event_object_movement.c:2043). Idempotent : un
+  // même slot rechargé par 2 graphics partageant le slot = même palette (asset-compatible).
+  {
     const pal = await loadGbaPal(info.palUrl);
-    const slot = _LoadSpritePalette_1to1({ data: pal, tag: info.paletteTag });
-    if (slot === 0xFF) {
-      console.warn(`[object-event-graphics] OBJ palette saturated (16/16), cannot load ${info.paletteTag}`);
-      return 0;
-    }
+    LoadPalette(pal, OBJ_PLTT_ID(info.paletteSlot), 32); // PLTT_SIZE_4BPP
+    _sSpritePaletteTags[info.paletteSlot] =
+      (typeof info.paletteTag === 'number' ? info.paletteTag : (0x1300 + info.paletteSlot)) & 0xFFFF;
   }
   // Load gfx + frame-major repack. 1:1 décomp `IndexOfSpriteTileTag` check.
   if (_GetSpriteTileStartByTag_1to1(info.tileTag) === 0xFFFF) {
@@ -444,13 +450,14 @@ export function CreateObjectGraphicsSprite(
   // 1:1 STRICT décomp `GetSpriteTileStartByTag` (sprite.c:1542) + `IndexOf
   // SpritePaletteTag` (sprite.c:1637) — lecture array primary, pas Map secondary.
   const tileBaseRaw = _GetSpriteTileStartByTag_1to1(info.tileTag);
-  const palSlotRaw = _IndexOfSpritePaletteTag_1to1(info.paletteTag);
-  if (tileBaseRaw === 0xFFFF || palSlotRaw === 0xFF) {
+  if (tileBaseRaw === 0xFFFF) {
     console.warn(`[object-event-graphics] gfxId 0x${gfxId.toString(16)} not loaded — call loadObjectEventGraphicsInfo first`);
     return -1;
   }
   const tileBase = tileBaseRaw;
-  const palSlot = palSlotRaw;
+  // FIX PALSLOT : le sprite utilise le SLOT OBJ FIXE de la graphics (chargé par
+  // loadObjectEventGraphicsInfo dans OBJ_PLTT_ID(info.paletteSlot)), pas un slot dynamique.
+  const palSlot = info.paletteSlot;
   // Bridge anim defs into runtime registry (idempotent set).
   _bridgeAnimsToRuntime(rt);
   // Create the OAM sprite at (x, y). Shape/size/priority widened à `number` dans

@@ -141,6 +141,8 @@ import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites } from '../game/field_weather_effect';
+import { setReservedSpritePaletteCount } from '../engine/system/sprite';
+import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../game/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
@@ -1113,14 +1115,20 @@ export class TestOverworldScene extends Phaser.Scene {
       await SpawnObjectEventsOnReturnToField(this.rt);
     }
 
+    // 1:1 décomp PALSLOT : réserve [0, OBJ_PALSLOT_COUNT=12) pour les object events (qui ont
+    // chargé leurs palettes dans des slots FIXES [0,11] marqués via PatchObjectEventPalette).
+    // → StartWeather/AllocSpritePalette n'alloue plus que dans [12,16) (field effects + météo),
+    // DISJOINT des objets → la palette météo n'est JAMAIS clobbée par un object event (même si
+    // le spawn charge en async). C'est le fix timing-proof de la météo à sprites (cf.
+    // [[chantier-palslot-object-event-palettes]]). Le joueur (slot 0) reste dans la zone réservée.
+    setReservedSpritePaletteCount(OBJ_PALSLOT_COUNT);
+
     // 1:1 décomp ordre ResumeMap (overworld.c:2146) : StartWeather APRÈS le spawn des object
-    // events → la palette météo (AllocSpritePalette/PALTAG_WEATHER) prend un slot OBJ LIBRE
-    // au-dessus de ceux des objets (plus de clobber → la météo à sprites rend ses vraies
-    // couleurs). preloadWeatherFogPalette (démarré plus haut) a eu le temps de finir → la
-    // palette fog est chargée dans le slot. readyForInit : notre fade n'appelle pas FadeScreen
-    // → posé ici (sinon Task_WeatherInit ne passe jamais à Task_WeatherMain). Dette : fade-in
-    // via game FadeScreen. DoCurrentWeather (overworld.c:818) APPLIQUE la météo sauvegardée
-    // (header reset + override OnTransition) → SetNextWeather → transition (ex. Route113 cendre).
+    // events. La palette météo (AllocSpritePalette/PALTAG_WEATHER) prend un slot dans [12,16).
+    // preloadWeatherFogPalette (démarré plus haut) a eu le temps de finir → palette fog chargée.
+    // readyForInit : notre fade n'appelle pas FadeScreen → posé ici (sinon Task_WeatherInit ne
+    // passe jamais à Task_WeatherMain). Dette : fade-in via game FadeScreen. DoCurrentWeather
+    // (overworld.c:818) APPLIQUE la météo sauvegardée → SetNextWeather → transition (cendre).
     StartWeather();
     gWeatherPtr.readyForInit = true;
     DoCurrentWeather();

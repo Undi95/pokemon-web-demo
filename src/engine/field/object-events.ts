@@ -23,7 +23,9 @@
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
-import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system/sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../system/sprite';
+import { LoadPalette } from '../system/decomp-globals';
+import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter
 // les matrices OAM 0/1 animées par CreateReflectionEffectSprites (= ondulation des reflets eau).
 import { ObjAffineSet } from '../system/decomp-bridge';
@@ -48,6 +50,7 @@ import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTre
 // + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
 // reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
 import {
+  PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_PALSLOT_COUNT, gReflectionEffectPaletteMap,
   PALSLOT_NPC_1, PALSLOT_NPC_2, PALSLOT_NPC_3, PALSLOT_NPC_4,
   OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION,
   OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION,
@@ -3418,10 +3421,36 @@ export async function PreloadReflectionPalettes(): Promise<void> {
   }));
 }
 
-/** Charge le .pal reflet (si préchargé) dans un slot OBJ dynamique et renvoie le bank,
- *  ou -1 si indisponible (= reflet non teinté, réutilise la palette du main). LoadSprite
- *  Palette dédoublonne par tag → un tag reflet n'occupe qu'UN slot quel que soit le nombre
- *  de reflets (= comme la réservation permanente décomp). */
+/** 1:1 décomp `PatchObjectPalette(paletteTag, paletteSlot)` (event_object_movement.c:2043) —
+ *  charge une palette object-event dans son slot OBJ FIXE via LoadPalette (buffers unfaded+
+ *  faded). Les objets occupent les slots [0, OBJ_PALSLOT_COUNT) ; combiné à
+ *  `FreeAndReserveObjectSpritePalettes` (gReservedSpritePaletteCount=12), ça isole [12,16) pour
+ *  la météo / field effects / UI — TIMING-PROOF (les objets n'utilisent JAMAIS AllocSpritePalette
+ *  → la météo dans [12,16) n'est jamais clobbée, même si le spawn charge en async). Renvoie le slot. */
+export function PatchObjectEventPalette(palData: Uint16Array, paletteSlot: number, markTag: number): number {
+  LoadPalette(palData, OBJ_PLTT_ID(paletteSlot), 32); // PLTT_SIZE_4BPP = 16 couleurs × 2 octets
+  // MARQUE le slot (sSpritePaletteTags) → AllocSpritePalette (météo / field effects) le SKIP.
+  // C'est ce qui rend la météo timing-proof : les object events occupent des slots OBJ fixes
+  // MARQUÉS [0,11], la météo alloue dynamiquement un slot LIBRE (haut) que les objets (fixed,
+  // ne passant pas par AllocSpritePalette) ne reprendront jamais — même si le spawn est async.
+  sSpritePaletteTags[paletteSlot] = markTag & 0xFFFF;
+  return paletteSlot;
+}
+
+/** 1:1 décomp `FreeAndReserveObjectSpritePalettes()` (event_object_movement.c:2008) : libère
+ *  tous les slots palette OBJ + réserve [0, OBJ_PALSLOT_COUNT) pour les object events (slots
+ *  fixes). AllocSpritePalette (météo, field effects) n'alloue alors plus que dans [12,16).
+ *  À appeler au map load AVANT le spawn des object events. */
+export function FreeAndReserveObjectSpritePalettes(): void {
+  FreeAllSpritePalettes();
+  setReservedSpritePaletteCount(OBJ_PALSLOT_COUNT);
+}
+
+/** Charge le .pal reflet (si préchargé) dans un slot OBJ dynamique et renvoie le bank, ou -1.
+ *  ⚠️ DETTE (chantier [[chantier-palslot-object-event-palettes]]) : à convertir en slot FIXE
+ *  `gReflectionEffectPaletteMap[mainSlot]` comme le main (sinon, sous reserved=12, un reflet
+ *  alloué dynamiquement prendrait [12,16) et clobberait la météo). OK pour l'instant : les
+ *  reflets sont INACTIFS hors maps à eau (Route 113 = pas d'eau → pas de reflet → pas de slot). */
 export function _loadReflectionPaletteByTag(tag: number): number {
   if (!tag || tag === OBJ_EVENT_PAL_TAG_NONE) return -1;
   const data = _reflectionPalData.get(tag);
@@ -5932,6 +5961,7 @@ interface BerryStageGfx {
   picTable: ReturnType<(typeof gBerryTreePicTableBuilders)[number]['build']>;
   palData: Uint16Array;
   palTag: string;
+  palSlot: number;
   firstFrame: number;
 }
 
@@ -5974,7 +6004,7 @@ function _resolveBerryTreeStageGfx(npc: ObjectEvent): BerryStageGfx | null {
   const palSlot = animNum === 0 ? 3 : animNum === 1 ? 4 : (gBerryTreeBerryPaletteSlot[berryId] ?? 2);
   return {
     visible, animNum, width: 16, height: isLate ? 32 : 16,
-    picTable, palData: palSrc.palette as Uint16Array, palTag: `NPC_PAL_BERRY_SLOT_${palSlot}`,
+    picTable, palData: palSrc.palette as Uint16Array, palTag: `NPC_PAL_BERRY_SLOT_${palSlot}`, palSlot,
     firstFrame: BERRY_TREE_FIRST_FRAME_BY_ANIM[animNum] ?? 0,
   };
 }
@@ -5995,8 +6025,9 @@ function _applyBerryTreeStageGraphicsLive(rt: DecompRuntime, npc: ObjectEvent): 
   sprite.invisible = true;
   const g = _resolveBerryTreeStageGfx(npc);
   if (!g || !g.visible) return;
-  const paletteBank = LoadSpritePalette({ data: g.palData, tag: g.palTag });
-  if (paletteBank === 0xFF) return;
+  // FIX PALSLOT : slot OBJ FIXE de la baie (palSlot ∈ [0,11], partagé comme la décomp), pas
+  // l'allocateur dynamique → le berry ne prend plus un slot [12,16) réservé à la météo.
+  const paletteBank = PatchObjectEventPalette(g.palData, g.palSlot, 0x1300 + g.palSlot);
   npc.invisible = false;
   sprite.invisible = false;
   // Recopie la frame initiale du nouveau stade en VRAM (objTileBase réutilisé, pas de réalloc).
@@ -6066,7 +6097,7 @@ function _setupBerryTreeSpriteGraphics(npc: ObjectEvent, rt: DecompRuntime): boo
   //  frame initiale). Partagé avec le swap live `_applyBerryTreeStageGraphicsLive`.
   const g = _resolveBerryTreeStageGfx(npc);
   if (!g) return false;  // PNGs (dirt/sprout/baie) pas encore en cache → caller retry.
-  const { visible, animNum, width, height, picTable, palData, palTag, firstFrame } = g;
+  const { visible, animNum, width, height, picTable, palData, palSlot, firstFrame } = g;
 
   // 1:1 décomp : AllocSpriteTiles(graphicsInfo->size / TILE_SIZE_4BPP) = 256/32 = 8.
   // (gObjectEventGraphicsInfo_BerryTree{,EarlyStages,LateStages}.size = 256 = la
@@ -6075,11 +6106,8 @@ function _setupBerryTreeSpriteGraphics(npc: ObjectEvent, rt: DecompRuntime): boo
   const objTileBase = AllocSpriteTiles(objTileCount);
   if (objTileBase < 0) return false;
 
-  const paletteBank = LoadSpritePalette({ data: palData, tag: palTag });
-  if (paletteBank === 0xFF) {
-    MarkObjTilesFree(objTileBase * 32, objTileCount * 32);
-    return false;
-  }
+  // FIX PALSLOT : slot OBJ FIXE de la baie (cf. _applyBerryTreeStageGraphicsLive) → hors [12,16).
+  const paletteBank = PatchObjectEventPalette(palData, palSlot, 0x1300 + palSlot);
 
   // Copie la frame initiale du stade en VRAM (= état avant que l'anim ne tourne).
   rt.gba.objVram.set(picTable[firstFrame].data, objTileBase * 32);
@@ -6376,19 +6404,16 @@ function _spawnSingleNpcFromTemplate(
   // palettes NPC (npc_1..4) : N graphics NPC_1 → 1 seul slot. On dédoublonne donc par le
   // VRAI tag partagé `_graphicsInfo_1to1.paletteTag` → ≤ ~12 slots objet, [12,16) libre
   // pour la météo (cf. PALSLOT scheme décomp, OBJ_PALSLOT_COUNT=12).
+  // FIX over-alloc PALSLOT (cause-racine météo rose) : charge la palette dans le SLOT OBJ
+  // FIXE de la graphics (`paletteSlot` ∈ [0,11]) via PatchObjectEventPalette (LoadPalette direct),
+  // au lieu de l'allocateur dynamique. Les object events n'utilisent JAMAIS AllocSpritePalette →
+  // ils ne touchent jamais [12,16) (réservé à la météo par FreeAndReserveObjectSpritePalettes).
+  // Les graphics d'un même slot PARTAGENT la palette (npc_1..4 ; asset-compatible, vérifié A/B).
+  const _palSlot = _graphicsInfo_1to1?.paletteSlot ?? PALSLOT_NPC_1;
   const _palTag1to1 = _graphicsInfo_1to1?.paletteTag;
-  const paletteTag = (typeof _palTag1to1 === 'number' && _palTag1to1 !== OBJ_EVENT_PAL_TAG_NONE)
-    ? _palTag1to1
-    : `NPC_PAL_${graphicsKey}`;
-  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion. Le 1er NPC d'un
-  // tag charge sa palette ; les suivants (même tag) dédup → réutilisent le slot (= partage
-  // décomp : les graphics d'un même tag sont authored sur la même palette npc_X).
-  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
-  if (paletteBank === 0xFF) {
-    // Saturation 16 slots palette OBJ → free tiles + abort 1:1 décomp.
-    MarkObjTilesFree(objTileBase * 32, _objTileCount * 32);
-    return false;
-  }
+  const _markTag = typeof _palTag1to1 === 'number' && _palTag1to1 !== OBJ_EVENT_PAL_TAG_NONE
+    ? _palTag1to1 : (0x1300 + _palSlot);
+  const paletteBank = PatchObjectEventPalette(png.palette as Uint16Array, _palSlot, _markTag);
 
   if (_hasNewFlow && _graphicsInfo_1to1) {
     // Flow 1:1 strict : copie SEULEMENT frame 0 en VRAM (= état initial).
@@ -6959,13 +6984,13 @@ async function _respawnNpcSpriteForReturnToField(
   const objTileBase = AllocSpriteTiles(_objTileCount);
   if (objTileBase < 0) return false;
 
-  // Palette via tag system (= dedup si même graphicsId).
-  const paletteTag = `NPC_PAL_${npc.graphicsId}`;
-  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
-  if (paletteBank === 0xFF) {
-    MarkObjTilesFree(objTileBase * 32, _objTileCount * 32);
-    return false;
-  }
+  // FIX over-alloc PALSLOT : slot OBJ FIXE (paletteSlot) via PatchObjectEventPalette (cf. spawn
+  // principal) — les objets ne touchent jamais [12,16) (réservé météo). Return-to-field path.
+  const _palSlot = _graphicsInfo_1to1?.paletteSlot ?? PALSLOT_NPC_1;
+  const _palTag1to1 = _graphicsInfo_1to1?.paletteTag;
+  const _markTag = typeof _palTag1to1 === 'number' && _palTag1to1 !== OBJ_EVENT_PAL_TAG_NONE
+    ? _palTag1to1 : (0x1300 + _palSlot);
+  const paletteBank = PatchObjectEventPalette(png.palette as Uint16Array, _palSlot, _markTag);
 
   if (_hasNewFlow && _graphicsInfo_1to1) {
     // Copy frame 0 in VRAM (= état initial).
