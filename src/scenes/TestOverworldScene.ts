@@ -41,6 +41,7 @@ import {
   DrawWholeMapView,
   ResetFieldCamera,
   ResetCameraUpdateInfo,
+  InitCameraUpdateCallback,
   InstallCameraPanAheadCallback,
   UpdateCameraPanning,
   FieldUpdateBgTilemapScroll,
@@ -855,6 +856,20 @@ export class TestOverworldScene extends Phaser.Scene {
     // 1:1 décomp field_player_avatar.c : lit `gSaveBlock2Ptr->playerGender`.
     const playerGender: 'MALE' | 'FEMALE' = gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE';
     await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
+
+    // [M3-C3.2] 1:1 décomp `SetCameraToTrackPlayer()` (overworld.c:2187-2191) —
+    // appelé APRÈS InitObjectEventsLocal (= InitPlayerAvatar), AVANT ResetFieldCamera
+    // (case 3 puis case 5 du LoadMapInStepsLocal, overworld.c:1908-1919). Active le
+    // mécanisme caméra 1:1 : le CameraObject (sprite invisible) suit gPlayerAvatar.
+    // spriteId et mesure son delta worldX/Y → CameraUpdateCallback ÉCRASE gFieldCamera.
+    // movementSpeed depuis ce delta chaque frame → la caméra DÉRIVE du sprite joueur
+    // (les drivers manuels deviennent morts, retirés en C3.3). CameraObject_Init
+    // s'aligne sur la position courante (delta=0) → pas de saut au spawn.
+    {
+      const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+      if (playerSlot) playerSlot.trackedByCamera = true;
+      InitCameraUpdateCallback(gPlayerAvatar.spriteId);
+    }
 
     // 1:1 décomp `ResetFieldCamera()` (field_camera.c:69-72) — case 5 du
     // LoadMapInStepsLocal (overworld.c:1893+) — APRÈS InitObjectEventsLocal +
