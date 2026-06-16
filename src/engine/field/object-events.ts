@@ -5985,6 +5985,24 @@ export function GetWalkNormalMovementAction(dir: number): number {
   return gWalkNormalMovementActions[dir];
 }
 
+/** 1:1 décomp `gWalkFastMovementActions[]` (event_object_movement.c). */
+const gWalkFastMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_FAST_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_FAST_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_FAST_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_FAST_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_FAST_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkFastMovementAction` (event_object_movement.c:4954, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_FAST_* (= surf speed,
+ *  même vitesse que run). Utilisé par `PlayerWalkFast` (branche SURFING de
+ *  PlayerNotOnBikeMoving — surf = étape 5, jamais atteint en démo mais porté 1:1). */
+export function GetWalkFastMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkFastMovementActions[dir];
+}
+
 /** 1:1 décomp `GetPlayerRunMovementAction` (event_object_movement.c:4964, via
  *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_PLAYER_RUN_*. */
 export function GetPlayerRunMovementAction(dir: number): number {

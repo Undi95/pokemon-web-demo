@@ -105,11 +105,20 @@ import {
   ScriptContext_Restore,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
+  ArePlayerFieldControlsLocked,
   RunOnTransitionMapScript,
   RunOnResumeMapScript,
   TryRunOnFrameMapScript,
   TryRunOnWarpIntoMapScript,
 } from '../engine/script/script-runtime';
+// 1:1 décomp `DoCB1_Overworld` (overworld.c:1438) : la couche INPUT joueur passe par
+// FieldClearPlayerInput → FieldGetPlayerInput → ProcessPlayerFieldInput → PlayerStep.
+import {
+  FieldClearPlayerInput,
+  FieldGetPlayerInput,
+  ProcessPlayerFieldInput,
+  type FieldInput,
+} from '../engine/field/field-control-avatar';
 import {
   getPendingWarp,
   setPendingWarp,
@@ -478,6 +487,9 @@ export class TestOverworldScene extends Phaser.Scene {
       const rt = this.rt;
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this;
+      // 1:1 décomp `struct FieldInput inputStruct` (DoCB1_Overworld, stack-local). Persistant
+      // ici (réinitialisé chaque frame par FieldClearPlayerInput avant FieldGetPlayerInput).
+      const sFieldInput = {} as FieldInput;
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
         // Audit session 126 LOT E3 : 1:1 décomp `CB2_Overworld` (overworld.c:
         // 1453-1480) ne skip QUE player input pendant un fade, pas tout le
@@ -553,12 +565,31 @@ export class TestOverworldScene extends Phaser.Scene {
         //  en tête du body, l.508.)
         // ════════════════════════════════════════════════════════════════════
         // ── CB1_Overworld : input joueur (pose le held movement du pas) ──
-        // 1:1 décomp `DoCB1_Overworld` (overworld.c:1442) : UpdatePlayerAvatarTransitionState
-        // s'exécute en TÊTE de CB1, AVANT l'input/PlayerStep — dérive tileTransitionState
-        // du held movement du slot joueur (writer 1:1 unique). FieldGetPlayerInput
-        // (étape 2) l'attend pour lire l'input aux frontières de tuile (T_TILE_CENTER).
+        // 1:1 STRICT décomp `DoCB1_Overworld` (overworld.c:1438) :
+        //   UpdatePlayerAvatarTransitionState();           // dérive tileTransitionState du held
+        //   FieldClearPlayerInput(&inputStruct);
+        //   FieldGetPlayerInput(&inputStruct, newKeys, heldKeys);   // gate l'input à T_TILE_CENTER
+        //   if (!ArePlayerFieldControlsLocked()) {
+        //     if (ProcessPlayerFieldInput(&inputStruct) == 1) { LockPlayerFieldControls(); HideMapNamePopUpWindow(); }
+        //     else { PlayerStep(inputStruct.dpadDirection, newKeys, heldKeys); }
+        //   }
+        // ProcessPlayerFieldInput consomme les events de step-end (coord/warp/encounter) + interactions ;
+        // PlayerStep est la machine de MOUVEMENT pure (held movements). Quand locked, on appelle quand
+        // même PlayerStep (sa branche lock interne = stand-in des door warp tasks, forced door-walk).
         UpdatePlayerAvatarTransitionState();
-        PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
+        FieldClearPlayerInput(sFieldInput);
+        FieldGetPlayerInput(sFieldInput, rt.gMain.newKeys, rt.gMain.heldKeys);
+        let _inputConsumed = false;
+        if (!ArePlayerFieldControlsLocked()) {
+          _inputConsumed = ProcessPlayerFieldInput(sFieldInput);
+          if (_inputConsumed) {
+            LockPlayerFieldControls();
+            // HideMapNamePopUpWindow() — non porté (no-op).
+          }
+        }
+        if (!_inputConsumed) {
+          PlayerStep(sFieldInput.dpadDirection, rt.gMain.newKeys, rt.gMain.heldKeys);
+        }
         // ── RunTasks (overworld.c:1468) ──
         // tickMovementQueues : pose gFieldCamera.movementSpeedX/Y (forced/scripted).
         tickMovementQueues(rt);

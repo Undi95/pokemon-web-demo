@@ -15,7 +15,7 @@ import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { VarGet, gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
+import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, T_TILE_TRANSITION } from '../field/player-avatar';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { getRuntime } from '../system/decomp-globals';
 
@@ -188,17 +188,20 @@ export function resolveObjectLocalIdRaw(arg: string): string {
   return arg;
 }
 
-/** 1:1 décomp `IsFreezePlayerFinished` (event_object_movement.c) :
- *  retourne TRUE quand le player a fini son current step (= safe to msgbox).
- *  Sans cette wait, un msgbox peut interrompre un walk mid-step → glitch
- *  visuel + désync facingDirection.
+/** 1:1 STRICT décomp `IsPlayerStandingStill` (event_object_lock.c:11) :
+ *    if (gPlayerAvatar.tileTransitionState == T_TILE_TRANSITION) return FALSE; else return TRUE;
+ *  C'est la condition de `Task_FreezePlayer` (event_object_lock.c:20) → `IsFreezePlayerFinished`
+ *  (event_object_lock.c:29), le wait que `lock`/`lockall` posent via SetupNativeScript : on attend
+ *  que le joueur soit centré sur sa tuile (pas en transition) avant de freeze + afficher le msgbox.
+ *  Sans cette wait, un msgbox peut interrompre un walk mid-step → glitch visuel + désync facing.
  *
- *  Fix Audit BIG section 2.3 : avant, `lock`/`lockall` retournaient false sans
- *  wait → script peut afficher dialog avant que le step end snap les coords. */
+ *  ⚠️ Depuis la ré-écriture 1:1 de `PlayerStep` (étape 1b-iii), les compteurs maison
+ *  stepFramesLeft/turnFramesLeft/collideFramesLeft/jumpFramesLeft ne sont PLUS posés sur le
+ *  chemin déverrouillé (le pas est piloté par le held movement). La source de vérité 1:1 est
+ *  `tileTransitionState`, maintenu par `UpdatePlayerAvatarTransitionState` depuis le held —
+ *  exactement ce que lit le décomp. T_TILE_TRANSITION couvre walk/dash/turn/collide/ledge-jump
+ *  (held actif et pas centré). On garde le check `forceMovement` (door-walk = stand-in tasks). */
 export function isPlayerStepFinished(): boolean {
-  return gPlayerAvatar.stepFramesLeft <= 0
-      && gPlayerAvatar.collideFramesLeft <= 0
-      && gPlayerAvatar.turnFramesLeft <= 0
-      && gPlayerAvatar.jumpFramesLeft <= 0
+  return gPlayerAvatar.tileTransitionState !== T_TILE_TRANSITION
       && gPlayerAvatar.forceMovement === 0;  // DIR_NONE
 }

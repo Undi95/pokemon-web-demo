@@ -42,14 +42,18 @@ import {
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
 import {
+  type ObjectEvent,
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
   ObjectEventClearHeldMovementIfFinished,
+  ObjectEventClearHeldMovement,
+  ObjectEventGetHeldMovementActionId,
   ObjectEventCheckHeldMovementStatus,
   ObjectEventIsHeldMovementActive,
   ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
+  GetWalkFastMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
   GetWalkInPlaceFastMovementAction,
@@ -83,6 +87,8 @@ import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
 import {
   COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2,
   MOVEMENT_ACTION_FACE_RIGHT,
+  MOVEMENT_ACTION_WALK_FAST_RIGHT,
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN,
   MOVEMENT_ACTION_DELAY_1, MOVEMENT_ACTION_DELAY_16,
   MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
@@ -774,8 +780,15 @@ const COLLISION_ISOLATED_HORIZONTAL_RAIL   = 11;
 const COLLISION_VERTICAL_RAIL              = 12;
 const COLLISION_HORIZONTAL_RAIL            = 13;
 
-/** 1:1 décomp `PLAYER_AVATAR_FLAG_SURFING = (1 << 3)` (global.fieldmap.h:51). */
-const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
+/** 1:1 décomp `PLAYER_AVATAR_FLAG_*` (global.fieldmap.h:49-56). Bitmask de l'état
+ *  du joueur, lu/écrit par la machine de mouvement (npc_clear_strange_bits clear
+ *  DASH au début de chaque pas, PlayerNotOnBikeMoving set DASH, etc.). */
+const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
+const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
+const PLAYER_AVATAR_FLAG_SURFING     = 1 << 3;
+const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
+const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
+const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
 
 // 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87` (include/constants/event_objects.h:99).
 // Migré vers import decomp-data event_objects-data.ts (cleanup B7).
@@ -1094,6 +1107,13 @@ export function CheckForObjectEventStaticCollision(
  *  (= +MAP_OFFSET, 1:1 décomp). Pass direct à GetCollisionAtCoords + helpers.
  *  Fallback inline si slot 0 pas init utilise pa.x/y (LOGICAL) → convert. */
 export function CheckForPlayerAvatarCollision(direction: number): number {
+  // Dev-only noclip (= devmenu touche « " » toggle ; cf. DebugOverlayScene) — hook NON décomp.
+  // Bypass tous les checks → le joueur marche à travers murs/NPCs/ledges/elevation. Placé ici
+  // (et non dans un wrapper) car `PlayerNotOnBikeMoving` appelle `CheckForPlayerAvatarCollision`
+  // directement (1:1 décomp). N'affecte PAS la variante "static" (le bump n'existe pas en noclip).
+  if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
+    return COLLISION_NONE;
+  }
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
   let sx: number, sy: number;  // INTERNAL coords (1:1 décomp).
@@ -1151,18 +1171,6 @@ export function CheckForPlayerAvatarStaticCollision(direction: number): number {
   const { x: tx, y: ty } = moveCoords(direction, sx, sy);
   const metatileBehavior = MapGridGetMetatileBehaviorAt(tx, ty);
   return CheckForObjectEventStaticCollision(obj, tx, ty, direction, metatileBehavior);
-}
-
-/** Wrapper local : `checkPlayerCollision(direction)` = noclip dev + delegate à
- *  `CheckForPlayerAvatarCollision` 1:1 strict. Used par PlayerStep + autres
- *  call-sites internes du module. */
-function checkPlayerCollision(direction: number): number {
-  // Dev-only noclip (= devmenu touche « " » toggle ; cf. DebugOverlayScene).
-  // Bypass tous les checks → player marche à travers murs/NPCs/ledges/elevation.
-  if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
-    return COLLISION_NONE;
-  }
-  return CheckForPlayerAvatarCollision(direction);
 }
 
 /** 1:1 STRICT décomp `PlayCollisionSoundIfNotFacingWarp(direction)`
@@ -1340,18 +1348,17 @@ function PlayerFaceDirection(direction: number): void {
   PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
 }
 
-/** 1:1 décomp `PlayerNotOnBikeNotMoving` (field_player_avatar.c:598) :
- *    PlayerFaceDirection(GetPlayerFacingDirection());
+/** 1:1 STRICT décomp `PlayerNotOnBikeNotMoving` (field_player_avatar.c:598) :
+ *    static void PlayerNotOnBikeNotMoving(u8 direction, u16 heldKeys) {
+ *        PlayerFaceDirection(GetPlayerFacingDirection());
+ *    }
  *  Appelé chaque frame quand le joueur est à l'arrêt (input DIR_NONE) → re-pose un held
  *  FACE (stationnaire) → le sprite revient à la frame de face de sa direction. Le held FACE
- *  fini du frame précédent est clear par `ObjectEventClearHeldMovementIfFinished` (= rôle de
- *  `TryInterruptObjectEventSpecialAnim` dans la décomp, gating complet porté à l'étape 1b). */
-function PlayerNotOnBikeNotMoving(): void {
-  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
-  if (slot && slot.active && slot.isPlayer) {
-    ObjectEventClearHeldMovementIfFinished(slot);
-    PlayerFaceDirection(GetPlayerFacingDirection());
-  }
+ *  fini du frame précédent est clear par `TryInterruptObjectEventSpecialAnim`
+ *  (→ ObjectEventClearHeldMovementIfFinished) AVANT cet appel dans PlayerStep, ce qui ouvre
+ *  le guard `!PlayerIsAnimActive()` de PlayerSetAnimId pour re-poser. */
+function PlayerNotOnBikeNotMoving(_direction: number, _heldKeys: number): void {
+  PlayerFaceDirection(GetPlayerFacingDirection());
 }
 
 /** 1:1 décomp `UpdatePlayerAvatarTransitionState` (field_player_avatar.c:884).
@@ -1376,7 +1383,183 @@ export function UpdatePlayerAvatarTransitionState(): void {
   }
 }
 
-export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
+// ─── 1:1 décomp `field_player_avatar.c` — machine de mouvement à pied (étape 1b-iii) ──
+// Remplacement de la machine MAISON à compteurs (stepFramesLeft/turnFramesLeft/
+// collideFramesLeft) par le call-graph décomp PUR. Le pas AVANCE via le held movement
+// (TickObjectEventMovements, indépendant de PlayerStep) ; le GATE est
+// `TryInterruptObjectEventSpecialAnim` (clear le held fini → ouvre le gate en fin de pas) ;
+// l'input→action passe par `MovePlayerNotOnBike`. Les warps/rencontres/coord/interactions
+// sont SORTIS de PlayerStep → `ProcessPlayerFieldInput` (field-control-avatar.ts, étape 2),
+// gaté par `tileTransitionState` (T_TILE_CENTER). Cf. docs/FIELD-PLAYER-AVATAR-1TO1-PLAN.md.
+
+/** 1:1 décomp `PlayerWalkFast` (field_player_avatar.c:968) :
+ *    PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
+ *  Vitesse surf (= même que run). Branche SURFING de `PlayerNotOnBikeMoving` (surf = étape 5,
+ *  jamais atteint en démo car PLAYER_AVATAR_FLAG_SURFING jamais set, mais porté 1:1). */
+function PlayerWalkFast(direction: number): void {
+  PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 STRICT décomp `Bike_TryAcroBikeHistoryUpdate` (acro bike) — étape 5, stub no-op. */
+function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): void {
+  // étape 5 (acro bike) — non porté.
+}
+
+/** 1:1 STRICT décomp `DoPlayerAvatarTransition` (field_player_avatar.c:707).
+ *  Dispatch l'état du joueur (à pied/mach bike/acro bike/surf/underwater/return-to-field).
+ *  Étape 4 — non porté (le joueur reste ON_FOOT en démo) → stub no-op. */
+function DoPlayerAvatarTransition(): void {
+  // étape 4 (états vélo/surf/plongée) — non porté.
+}
+
+/** 1:1 STRICT décomp `TryDoMetatileBehaviorForcedMovement` (field_player_avatar.c:399) :
+ *    return sForcedMovementFuncs[GetForcedMovementByMetatileBehavior()]();
+ *  Forced movement (glace, courants, slides, mat jump/spin, pente boueuse). Étape 3 —
+ *  non porté → `return 0` (= ForcedMovement_None, aucun forced movement déclenché). */
+function TryDoMetatileBehaviorForcedMovement(): number {
+  // étape 3 (glace/courant/slide/…) — non porté. 0 = aucun forced movement.
+  return 0;
+}
+
+/** 1:1 STRICT décomp `TryInterruptObjectEventSpecialAnim` (field_player_avatar.c:355).
+ *  LE GATE de PlayerStep (remplace les compteurs maison). Si un held movement est en cours ET
+ *  PAS fini → return TRUE (PlayerStep ne fait RIEN ce frame ; le pas avance tout seul via
+ *  TickObjectEventMovements). `ObjectEventClearHeldMovementIfFinished` clear le held quand il
+ *  est FINI et retourne truthy → le `&&` court-circuite → return FALSE → gate ouvert : c'est
+ *  ÇA qui ouvre le gate en fin de pas (et permet à PlayerSetAnimId de re-poser via son guard
+ *  `!PlayerIsAnimActive()`). Exception interruptible : WALK_IN_PLACE_SLOW (collide bump, id ∈
+ *  ]WALK_FAST_RIGHT, WALK_IN_PLACE_NORMAL_DOWN[ = 0x19..0x1C) → si on change de direction ou
+ *  que le mur a disparu (static collision NONE), on interrompt le bump (clear + return FALSE). */
+function TryInterruptObjectEventSpecialAnim(playerObjEvent: ObjectEvent, direction: number): number {
+  if (ObjectEventIsMovementOverridden(playerObjEvent)
+   && !ObjectEventClearHeldMovementIfFinished(playerObjEvent)) {
+    const heldMovementActionId = ObjectEventGetHeldMovementActionId(playerObjEvent);
+    if (heldMovementActionId > MOVEMENT_ACTION_WALK_FAST_RIGHT
+     && heldMovementActionId < MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN) {
+      if (direction === DIR_NONE) {
+        return 1;  // TRUE
+      }
+      if (playerObjEvent.movementDirection !== direction) {
+        ObjectEventClearHeldMovement(playerObjEvent);
+        return 0;  // FALSE
+      }
+      if (CheckForPlayerAvatarStaticCollision(direction) === COLLISION_NONE) {
+        ObjectEventClearHeldMovement(playerObjEvent);
+        return 0;  // FALSE
+      }
+    }
+    return 1;  // TRUE — gate : held en cours → PlayerStep ne fait rien ce frame.
+  }
+  return 0;  // FALSE — held fini (cleared) OU aucun → on procède.
+}
+
+/** 1:1 STRICT décomp `npc_clear_strange_bits` (field_player_avatar.c:380) :
+ *    objEvent->inanimate = FALSE; objEvent->disableAnim = FALSE;
+ *    objEvent->facingDirectionLocked = FALSE; gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_DASH; */
+function npc_clear_strange_bits(objEvent: ObjectEvent): void {
+  objEvent.inanimate = false;
+  objEvent.disableAnim = false;
+  objEvent.facingDirectionLocked = false;
+  gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_DASH;
+  gPlayerAvatar.dashing = false;  // miroir de DASH pour GetPlayerSpeed (re-set par PlayerNotOnBikeMoving).
+}
+
+/** 1:1 STRICT décomp `MovePlayerAvatarUsingKeypadInput` (field_player_avatar.c:559) :
+ *    if (flags & (MACH_BIKE | ACRO_BIKE)) MovePlayerOnBike(...); else MovePlayerNotOnBike(...);
+ *  Vélo = étape 5 → on route toujours vers `MovePlayerNotOnBike` (à pied). */
+function MovePlayerAvatarUsingKeypadInput(direction: number, newKeys: number, heldKeys: number): void {
+  void newKeys;  // (utilisé par MovePlayerOnBike — étape 5)
+  // if (gPlayerAvatar.flags & (MACH_BIKE | ACRO_BIKE)) MovePlayerOnBike(...); — non porté.
+  MovePlayerNotOnBike(direction, heldKeys);
+}
+
+/** 1:1 STRICT décomp `PlayerAllowForcedMovementIfMovingSameDirection` (field_player_avatar.c:570) :
+ *    if (gPlayerAvatar.runningState == MOVING) gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE; */
+function PlayerAllowForcedMovementIfMovingSameDirection(): void {
+  if (gPlayerAvatar.runningState === MOVING) {
+    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;
+  }
+}
+
+/** 1:1 STRICT décomp `CheckMovementInputNotOnBike` (field_player_avatar.c:589) :
+ *  ÉCRIT gPlayerAvatar.runningState ET le retourne. DIR_NONE → NOT_MOVING ;
+ *  dir != GetPlayerMovementDirection() && runningState != MOVING → TURN_DIRECTION ; else MOVING. */
+function CheckMovementInputNotOnBike(direction: number): number {
+  if (direction === DIR_NONE) {
+    return gPlayerAvatar.runningState = NOT_MOVING;
+  } else if (direction !== GetPlayerMovementDirection() && gPlayerAvatar.runningState !== MOVING) {
+    return gPlayerAvatar.runningState = TURN_DIRECTION;
+  } else {
+    return gPlayerAvatar.runningState = MOVING;
+  }
+}
+
+/** 1:1 STRICT décomp `PlayerNotOnBikeTurningInPlace` (field_player_avatar.c:603) :
+ *    PlayerTurnInPlace(direction); */
+function PlayerNotOnBikeTurningInPlace(direction: number, _heldKeys: number): void {
+  PlayerTurnInPlace(direction);
+}
+
+/** 1:1 STRICT décomp `PlayerNotOnBikeMoving` (field_player_avatar.c:608).
+ *  collision = CheckForPlayerAvatarCollision(dir) ; LEDGE_JUMP→PlayerJumpLedge ; (faraway Mew
+ *  skip) ; sinon `(u8)(collision - COLLISION_STOP_SURFING) > 3`→PlayerNotOnBikeCollide ;
+ *  SURFING→PlayerWalkFast ; (B & FLAG_SYS_B_DASH & !IsRunningDisallowed)→PlayerRun+DASH ;
+ *  else→PlayerWalkNormal. ⚠️ Le `> 3` est en arithmétique u8 (wraparound) : pour un mur normal
+ *  (collision 2 ou 4), `(2-5)&0xFF = 253 > 3` → bump ; pour 5/6/7/8 (stop-surf/ledge/boulder/
+ *  rotating-gate) → pas de bump (gérés ailleurs). Le `& 0xFF` réplique le u8 décomp. */
+function PlayerNotOnBikeMoving(direction: number, heldKeys: number): void {
+  const collision = CheckForPlayerAvatarCollision(direction);
+
+  if (collision) {
+    if (collision === COLLISION_LEDGE_JUMP) {
+      PlayerJumpLedge(direction);
+      return;
+    } else {
+      // !< French Difference (décomp) : pas de Faraway Island Mew en démo → on saute ce cas.
+      const adjustedCollision = (collision - COLLISION_STOP_SURFING) & 0xFF;
+      if (adjustedCollision > 3) {
+        PlayerNotOnBikeCollide(direction);
+      }
+      return;
+    }
+  }
+
+  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING) {
+    // même vitesse que run
+    PlayerWalkFast(direction);
+    return;
+  }
+
+  if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER)
+   && (heldKeys & B_BUTTON) && FlagGet('FLAG_SYS_B_DASH')
+   && !IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior)) {
+    PlayerRun(direction);
+    gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;
+    gPlayerAvatar.dashing = true;  // miroir DASH pour GetPlayerSpeed.
+    return;
+  } else {
+    PlayerWalkNormal(direction);
+  }
+}
+
+/** 1:1 STRICT décomp `sPlayerNotOnBikeFuncs[]` (field_player_avatar.c) — indexé par
+ *  le retour de `CheckMovementInputNotOnBike` (NOT_MOVING/TURN_DIRECTION/MOVING). */
+const sPlayerNotOnBikeFuncs: ReadonlyArray<(direction: number, heldKeys: number) => void> = [
+  PlayerNotOnBikeNotMoving,       // [NOT_MOVING]
+  PlayerNotOnBikeTurningInPlace,  // [TURN_DIRECTION]
+  PlayerNotOnBikeMoving,          // [MOVING]
+];
+
+/** 1:1 STRICT décomp `MovePlayerNotOnBike` (field_player_avatar.c:583) :
+ *    sPlayerNotOnBikeFuncs[CheckMovementInputNotOnBike(direction)](direction, heldKeys); */
+function MovePlayerNotOnBike(direction: number, heldKeys: number): void {
+  sPlayerNotOnBikeFuncs[CheckMovementInputNotOnBike(direction)](direction, heldKeys);
+}
+
+/** 1:1 STRICT décomp `PlayerStep` (field_player_avatar.c:332). Machine de MOUVEMENT pure :
+ *  aucun warp/rencontre/coord/interaction ici (ils vivent dans ProcessPlayerFieldInput, qui
+ *  tourne AVANT PlayerStep dans DoCB1_Overworld). `direction` = inputStruct.dpadDirection. */
+export function PlayerStep(direction: number, newKeys: number, heldKeys: number): void {
   if (gPlayerAvatar.spriteId < 0) return;
 
   // 1:1 décomp `field_player_avatar.c:PlayerAvatarTransition_*` : si controls
@@ -1449,425 +1632,27 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     return;
   }
 
-  const inputDir = getInputDirection(heldKeys);
-
-  // Phase 4.4.e : A button interaction. Only when not MOVING (= 1:1 décomp).
-  if ((newKeys & A_BUTTON) && gPlayerAvatar.runningState !== MOVING && gPlayerAvatar.turnFramesLeft === 0) {
-    tryInteractWithFacingNPC();
-    // Don't return — laisse le PlayerStep continuer (= input direction
-    // toujours géré). Le décomp wire ensuite vers script-runner.
-  }
-
-  // 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
-  //   PlayCollisionSoundIfNotFacingWarp(direction);  // = SE_WALL_HIT
-  //   PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
-  //
-  // WalkInPlaceSlow = 32 frames cycle (= InitMoveInPlace duration=32). Anim
-  // ralentie : sprite alterne walk_a → face → walk_b → face mais sur 32 frames
-  // au lieu de 16 (= effet "bump" visual). Position physique inchangée.
-  //
-  // Tant que user tient direction vers wall + collision encore active, le cycle
-  // 32-frame se relance + SE re-played (= re-tap audio à chaque cycle).
-  // Le mecanism décomp : `TryInterruptObjectEventSpecialAnim` returns FALSE
-  // quand override done → keypad runs → re-collision check → re-PlayerNotOnBikeCollide.
-  if (gPlayerAvatar.collideFramesLeft > 0) {
-    gPlayerAvatar.collideFramesLeft--;
-    if (gPlayerAvatar.collideFramesLeft === 0) {
-      // Cycle done. Check if still colliding same direction → re-trigger.
-      const inputDir = getInputDirection(heldKeys);
-      if (inputDir !== DIR_NONE && inputDir === GetPlayerFacingDirection()) {
-        const collision = checkPlayerCollision(inputDir);
-        if (collision !== 0) {
-          // Re-trigger : new 32 frames + flip walkAnimAlt. 1:1 décomp `PlayerNotOnBikeCollide`
-          // ré-appelé à chaque cycle tant que la collision persiste (sound + held re-posé).
-          gPlayerAvatar.collideFramesLeft = 32;
-          gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
-          {
-            const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-            if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
-              ObjectEventClearHeldMovementIfActive(collideSlot);  // stand-in TryInterrupt (étape 1b)
-              PlayerNotOnBikeCollide(inputDir);
-            }
-          }
-          return;
-        }
-      }
-      // Not colliding anymore → fall through to keypad logic (= dispatch new
-      // step or NOT_MOVING). runningState reste NOT_MOVING (= jamais set à
-      // MOVING pendant collide).
-    } else {
-      return;  // collide en cours → skip keypad
-    }
-  }
-
-  // Si une step walk est en cours : tick frames, advance, et finir au tile boundary.
-  if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
-    gPlayerAvatar.stepFramesLeft--;
-    // 1:1 décomp ledge jump : decrement jumpFramesLeft pour suivre la curve
-    // sJumpY_High dans updateSpriteFrame.
-    if (gPlayerAvatar.jumpFramesLeft > 0) gPlayerAvatar.jumpFramesLeft--;
-    if (gPlayerAvatar.stepFramesLeft === 0) {
-      // Step complete : update player position en map coords, stop camera.
-      // 1:1 décomp `field_player_avatar.c:588-596 CheckMovementInputNotOnBike` :
-      // `runningState` n'est PAS reset à NOT_MOVING en fin de step. Il reste
-      // MOVING (= état conservé entre frames) jusqu'au prochain keypad check
-      // qui le décidera : DIR_NONE → NOT_MOVING, dir != current && !MOVING →
-      // TURN_DIRECTION (mais MOVING ici donc skip), else → MOVING (= continuous
-      // walk dans nouvelle direction sans pause).
-      // → Mid-walk turn = 0 frame de turn anim, walk continu dans new dir.
-      // C'est ce qui donne le feel "tournera et continuera a marcher sans pause"
-      // de la GBA réelle (cf. user testing session 100).
-      // Capture stepDirection AVANT reset à DIR_NONE — utilisé pour
-      // `isArrowWarpMetatileBehavior(behavior, direction)` check ci-dessous.
-      // Sinon : reset → DIR_NONE → IsArrowWarpMetatileBehavior(SOUTH_ARROW, NONE)
-      // = false → walk DOWN sur carpette ne TP pas (= player bloqué).
-      const stepDirAtEnd = gPlayerAvatar.stepDirection;
-      // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche JAMAIS
-      // `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c) mute pos au tile
-      // boundary du CameraUpdate. À ce point, pos = post-step (= via CameraMove
-      // appliquée durant les 16 frames du step).
-      //
-      // CRITICAL : lire pos DIRECT depuis `gSaveBlock1Ptr.pos` (= source updated
-      // par CameraMove), NON via `gSaveBlock1Ptr.pos.x` getter (= lit slot 0 stale
-      // pré-step → circular sync au write). Le slot 0 doit être SYNCED à new
-      // pos = post-step value via SyncPlayerObjectEvent ci-dessous.
-      const nx = gSaveBlock1Ptr.pos.x;
-      const ny = gSaveBlock1Ptr.pos.y;
-      // [M3 jump-as-MovementAction] L'atterrissage du ledge (triggerGroundEffectsOnStop
-      // + landingJump + hasShadow=FALSE) est DÉSORMAIS posé par le held Jump2 lui-même
-      // au JUMP_FINISHED (_UpdateJumpAnim / _makeJumpAction, object-events.ts) — plus
-      // de _pendingLedgeJump inline. Le spine DoGroundEffects_OnFinishStep lit ces flags.
-      // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
-      gPlayerAvatar.stepDirection = DIR_NONE;
-      gFieldCamera.movementSpeedX = 0;
-      gFieldCamera.movementSpeedY = 0;
-      // Audit session 126 C7 : update currentElevation au step end (= 1:1
-      // décomp ObjectEventUpdateElevation appelé après chaque step). Sans
-      // ça, currentElevation reste à 3 (= default neutre) → IsElevationMismatchAt
-      // ne fire jamais → ledges/staircases pas 1:1.
-      const newElev = MapGridGetElevationAt(
-        gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
-      if (newElev !== 0) gPlayerAvatar.currentElevation = newElev;
-      // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
-      // :7415) : ObjectEventUpdateMetatileBehaviors(playerObjEvent) au step end
-      // pour refresh `currentMetatileBehavior` + `previousMetatileBehavior`.
-      // Notre `SyncPlayerObjectEvent` shift coords + update behaviors 1:1.
-      SyncPlayerObjectEvent(nx, ny, GetPlayerFacingDirection(), stepDirAtEnd, true);
-      // Switch walk anim alt for next step (= alternate walk1/walk2).
-      gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
-      // 1:1 décomp : les per-step callbacks NE sont PAS dispatchés ici. La décomp
-      // les tourne via la task `Task_RunPerStepCallback` (field_tasks.c, créée par
-      // SetUpFieldTasks au map-load) qui tick CHAQUE FRAME par RunTasks() et compare
-      // PlayerGetDestCoords pour détecter le pas. L'ancien `DoPerStepCallback()`
-      // per-step était une invention (modèle direct-call) → retiré au profit du
-      // miroir field_tasks.ts. Cf. src/game/field_tasks.ts.
-      // 1:1 décomp `GroundEffect_StepOnTallGrass` : le rustle d'herbe est DÉSORMAIS géré
-      // par le spine DoGroundEffects (le player object event slot 0 traverse Tick
-      // ObjectEventMovements → DoGroundEffects_OnSpawn/OnBeginStep comme la décomp).
-      // L'ancien spawn ad-hoc ici faisait double-fire une fois le player câblé au spine →
-      // retiré. Le tall grass (+ reflet / ondulations / eau peu profonde …) sort maintenant
-      // du chemin générique. `newTileBehavior` reste lu pour le check d'encounter ci-dessous.
-      const newTileBehavior = MapGridGetMetatileBehaviorAt(nx + MAP_OFFSET, ny + MAP_OFFSET);
-      // Phase 4.6 : check warp tile au step end. 1:1 décomp `field_control_avatar.c
-      // ProcessPlayerFieldInput → TryStartWarpEventScript` qui run après le step.
-      // Si player vient de finir step ON un warp tile → set pending warp + freeze.
-      // La scene détecte _gPendingWarp dans MainCB2_Overworld et lance la
-      // transition asynchrone (= fade + load + spawn). PlayerStep skip son
-      // input via `ArePlayerFieldControlsLocked` pendant la transition.
-      // FIX 2026-06-13 : passer l'élévation RÉELLE du joueur (PlayerGetElevation),
-      // pas 0 en dur. 1:1 décomp GetWarpEventAtMapPosition utilise position->elevation.
-      // Bug : les warps extérieurs (entrées forêt) ont elevation=3 (sol standard) →
-      // findWarpEventAt(x,y,0) ne matchait jamais (3 !== 0). Les portes (elev 0)
-      // marchaient via le check `=== 0`. D'où « les warps marchent sauf la forêt ».
-      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, PlayerGetElevation());
-      if (warp) {
-        // 1:1 décomp `TryStartWarpEventScript` (field_control_avatar.c:702) +
-        // `IsWarpMetatileBehavior` (line 751) : SEULEMENT door/ladder/escalator/
-        // non_anim_door/lavaridge/aqua_hideout/mt_pyre_hole/mossdeep_gym
-        // triggent un warp INSTANT à step end. Les ARROW_WARP ne sont PAS dans
-        // cette liste → ne triggent PAS au step end.
-        //
-        // Pour ARROW_WARP, le warp se déclenche via `TryArrowWarp` AU FRAME
-        // suivant (= pre-step check au-dessus, ligne ~770), quand player est
-        // STILL ON la tile + heldDirection match arrow direction.
-        //
-        // Cas couvert : player walks DOWN onto carpet (= step end on
-        // MB_SOUTH_ARROW_WARP). Step-end check ne trigger PAS (kind='arrow' →
-        // skip). Player s'arrête sur la carpette. Pour TP, user doit ré-appuyer
-        // DOWN (= TryArrowWarp pre-step check trigger au prochain frame).
-        const playerBehavior = MapGridGetMetatileBehaviorAt(
-          gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
-        const kind = getWarpKindFor(playerBehavior);
-        // Skip 'arrow' kind here : géré par pre-step TryArrowWarp.
-        if (kind && kind !== 'arrow') {
-          console.log(`[player-avatar] stepped onto warp tile (${warp.x},${warp.y}) kind=${kind} stepDir=${stepDirAtEnd} → ${warp.destMap}#${warp.warpId}`);
-          setPendingWarp(warp, kind);
-          gPlayerAvatar.runningState = NOT_MOVING;  // freeze player
-          return;  // skip keypad : don't start new step
-        }
-        // 'arrow' kind : let player land on tile, TryArrowWarp handles next frame.
-      }
-      // Phase 4.10 : check coord triggers (= 1:1 décomp `TryRunCoordEventScript`,
-      // field_control_avatar.c:733). Si player step end on a coord_event tile
-      // qui match VAR_X = value, run le script. Used par truck SetIntroFlags.
-      if (TryRunCoordEventScript(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y)) {
-        // Script triggered : freeze player + return (= no keypad).
-        return;
-      }
-      // 1:1 décomp `CheckStandardWildEncounter` (field_control_avatar.c:162).
-      // Called au step-end APRÈS TryStartStepBasedScript (= coord/warp/misc/step/repel)
-      // ET AVANT TryArrowWarp. Si le player a stepped sur une tile encounter
-      // (= tall grass / long grass / cave / water surf / etc.) ET les checks
-      // (encounterRate * 16, 4-step immunity, prevBehavior change, etc.) passent
-      // → setup gEnemyParty + start wild battle scene swap. Returns true =
-      // encounter triggered, freeze player + skip keypad.
-      if (CheckStandardWildEncounter(newTileBehavior)) {
-        return;
-      }
-      // ↓ NOTE : pas de `return` — fall through au keypad logic ci-dessous.
-      // Si direction held → start new step (= continuous walk).
-      // Si DIR_NONE → keypad set runningState = NOT_MOVING (= step graceful end).
-    } else {
-      return;  // step pas fini → skip keypad
-    }
-  }
-
-  // 1:1 décomp `TryInterruptObjectEventSpecialAnim` (field_player_avatar.c:353) :
-  // Pendant une anim WalkInPlaceFast (= TURN_DIRECTION), le keypad logic est
-  // BLOQUÉ. Le user voit le sprite tourner pendant 8 frames sans pouvoir
-  // walker pendant ce temps. C'est ce qui permet le "tap-to-turn" :
-  //   - Tap nouvelle direction → 8 frames de turn anim, puis NOT_MOVING.
-  //   - Hold nouvelle direction → 8 frames turn anim, puis MOVING.
-  //   - Hold/tap MÊME direction → MOVING immédiat (pas de turn anim).
-  if (gPlayerAvatar.runningState === TURN_DIRECTION && gPlayerAvatar.turnFramesLeft > 0) {
-    gPlayerAvatar.turnFramesLeft--;
-    if (gPlayerAvatar.turnFramesLeft === 0) {
-      // Anim done MAINTENANT (= 1:1 décomp ObjectEventClearHeldMovementIfFinished
-      // returns TRUE et TryInterrupt returns FALSE same-frame). Fall through
-      // au keypad logic : si input tjrs held même direction → MOVING dans
-      // CETTE frame. Avant on returnait ici → 1 frame de delay extra.
-      gPlayerAvatar.runningState = NOT_MOVING;
-      // Ne pas return, continue au keypad check ci-dessous.
-    } else {
-      return;  // skip keypad pendant l'anim
-    }
-  }
-
-  // 1:1 décomp `CheckMovementInputNotOnBike` (field_player_avatar.c:588-596) :
-  //   if (direction == DIR_NONE) → NOT_MOVING
-  //   else if (direction != currentDir && runningState != MOVING) → TURN_DIRECTION
-  //   else → MOVING
-  //
-  // Le check `runningState != MOVING` est CRUCIAL : si on vient de finir un
-  // step (= runningState reste MOVING via le bloc step ci-dessus), on tombe
-  // direct sur MOVING dans la nouvelle direction → continuous walk sans turn anim.
-  // Sinon (NOT_MOVING ou TURN_DIRECTION), on fait l'anim TURN_DIRECTION 8 frames.
-
-  if (inputDir === DIR_NONE) {
-    // 1:1 décomp `CheckMovementInputNotOnBike` (DIR_NONE → NOT_MOVING) +
-    // `sPlayerNotOnBikeFuncs[NOT_MOVING] = PlayerNotOnBikeNotMoving` → PlayerFaceDirection :
-    // le joueur revient à la frame de FACE de sa direction au repos (vrai 1:1, remplace
-    // l'interim parity de _npcEndWalkAnim).
-    gPlayerAvatar.runningState = NOT_MOVING;
-    PlayerNotOnBikeNotMoving();
-    return;
-  }
-
-  if (inputDir !== GetPlayerFacingDirection() && gPlayerAvatar.runningState !== MOVING) {
-    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → `PlayerTurnInPlace` →
-    // `GetWalkInPlaceFastMovementAction` (= 8-frame anim).
-    // Pendant 8 frames : user voit sprite tourner, keypad bloqué (cf.
-    // TryInterruptObjectEventSpecialAnim qui returns TRUE car heldMovementId
-    // n'est PAS dans la slow range = 0x19..0x1C).
-    // Si user release → reste turné. Si user hold même direction → MOVING
-    // après les 8 frames.
-    SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
-    gPlayerAvatar.runningState = TURN_DIRECTION;
-    gPlayerAvatar.turnFramesLeft = 8;  // 1:1 décomp WalkInPlaceFast duration
-    // [M3] 1:1 décomp `PlayerTurnInPlace` (field_player_avatar.c) :
-    //   PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);
-    // = ObjectEventSetHeldMovement(WALK_IN_PLACE_FAST) → l'anim de turn (GO 8 frames →
-    // FACE) est rendue par le système partagé sur le sprite du slot (unifié). turnFramesLeft
-    // (ci-dessus) gate le keypad ; le held movement gère le VISUEL. Durées alignées (8).
-    {
-      const turnSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-      if (turnSlot && turnSlot.active && turnSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(turnSlot);  // stand-in TryInterrupt (étape 1b)
-        PlayerTurnInPlace(inputDir);
-      }
-    }
-    return;
-  }
-
-  // 1:1 décomp `TryArrowWarp` (field_control_avatar.c:688) — check BEFORE walk
-  // step. Si player on MB_*_ARROW_WARP tile + intended direction matches arrow
-  // direction → trigger warp INSTEAD of walking.
-  //
-  // Cas couvert : player on carpet faces UP, presses DOWN. Turn 8 frames done,
-  // facing now SOUTH. Sans ce check, walk step DOWN se lance → player walks
-  // off carpet → step end check trigger pas (= player no longer on warp tile).
-  // Avec ce check, warp triggers BEFORE walking, player still on carpet.
-  //
-  // Décomp note : TryArrowWarp s'exécute dans ProcessPlayerFieldInput chaque
-  // frame, AVANT le step movement. C'est ici l'équivalent.
-  {
-    const playerBehavior = MapGridGetMetatileBehaviorAt(
-      gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
-    if (isArrowWarpMetatileBehavior(playerBehavior, inputDir)) {
-      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, PlayerGetElevation());
-      if (warp) {
-        console.log(`[player-avatar] TryArrowWarp at (${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) dir=${inputDir} → ${warp.destMap}#${warp.warpId}`);
-        setPendingWarp(warp, 'arrow');
-        SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
-        gPlayerAvatar.runningState = NOT_MOVING;
-        return;
+  // [étape 1b-iii] Machine de mouvement à pied PURE (1:1 décomp field_player_avatar.c:332).
+  // Le pas avance via le held movement (TickObjectEventMovements, indépendant) ; le gate =
+  // TryInterruptObjectEventSpecialAnim (clear le held fini → ouvre le gate en fin de pas).
+  // Aucun warp/rencontre/coord/interaction ici : ils vivent dans ProcessPlayerFieldInput
+  // (field-control-avatar.ts), qui tourne AVANT PlayerStep dans DoCB1_Overworld, gaté par
+  // tileTransitionState. Les compteurs stepFramesLeft/turnFramesLeft/collideFramesLeft ne sont
+  // plus utilisés sur ce chemin (la branche lock ci-dessus les garde pour le forced door-walk).
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!playerObjEvent || !playerObjEvent.active || !playerObjEvent.isPlayer) return;
+  // HideShowWarpArrow(playerObjEvent) : piloté par la scène (TestOverworldScene), status quo.
+  if (gPlayerAvatar.preventStep === false) {
+    Bike_TryAcroBikeHistoryUpdate(newKeys, heldKeys);
+    if (TryInterruptObjectEventSpecialAnim(playerObjEvent, direction) === 0) {
+      npc_clear_strange_bits(playerObjEvent);
+      DoPlayerAvatarTransition();
+      if (TryDoMetatileBehaviorForcedMovement() === 0) {
+        MovePlayerAvatarUsingKeypadInput(direction, newKeys, heldKeys);
+        PlayerAllowForcedMovementIfMovingSameDirection();
       }
     }
   }
-
-  // MOVING dispatch : facing match (= réactif) OR mid-walk turn (= continuous).
-  // 1:1 décomp `PlayerNotOnBikeMoving` : update facing first, puis check collision.
-  SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
-  const collision = checkPlayerCollision(inputDir);
-  if (collision !== COLLISION_NONE) {
-    // 1:1 décomp `PlayerNotOnBikeMoving` line 614-618 : COLLISION_LEDGE_JUMP →
-    // PlayerJumpLedge(direction) (= SE_LEDGE + jump anim 16 frames). Check
-    // AVANT le bump car le ledge tile a `MapGridGetCollisionAt > 0` mais le
-    // ShouldJumpLedge return TRUE → COLLISION_LEDGE_JUMP override.
-    if (collision === COLLISION_LEDGE_JUMP) {
-      // 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) :
-      //   PlaySE(SE_LEDGE);
-      //   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
-      //
-      // [M3 jump-as-MovementAction] Le saut de ledge est DÉSORMAIS un held
-      // MovementAction (MOVEMENT_ACTION_JUMP_2_*, = InitJumpRegular(JUMP_DISTANCE_FAR,
-      // JUMP_TYPE_HIGH)) exécuté par TickObjectEventMovements → `_DoJumpSpriteMovement`
-      // avance worldX/Y du slot (2 tiles / 32 frames), shift les currentCoords au
-      // halfway, et pose triggerGroundEffectsOnStop + landingJump + hasShadow=FALSE
-      // au finish + DoShadowFieldEffect au start — comme la décomp. AVANT : tout
-      // était dupliqué inline (_pendingLedgeJump + DoShadowFieldEffect) et worldX
-      // n'était PAS avancé → le joueur décentrait une fois en coords-monde (C2).
-      // Maintenant le sprite reste CENTRÉ : worldX avance de 2 tiles via le held
-      // movement ET le driver caméra scrolle de 2 tiles → s'annulent.
-      gPlayerAvatar.runningState = MOVING;
-      // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
-      gPlayerAvatar.stepFramesLeft = 32;
-      // jumpFramesLeft = garde "saut en cours" (lue par script-opcodes-helpers +
-      // movement-system). L'ARC (sprite.y2) sort désormais de `_DoJumpSpriteMovement`
-      // (sprite joueur unifié au slot → spriteId>=0), plus de courbe locale.
-      gPlayerAvatar.jumpFramesLeft = 32;
-      gPlayerAvatar.stepDirection = inputDir;
-      // 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) = PlaySE(SE_LEDGE) +
-      // PlayerSetAnimId(GetJump2MovementAction, COPY_MOVE_JUMP2).
-      const ledgeSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-      if (ledgeSlot && ledgeSlot.active && ledgeSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(ledgeSlot);  // stand-in TryInterrupt (étape 1b)
-        PlayerJumpLedge(inputDir);
-      }
-      // [M3-C3.3] Driver caméra manuel RETIRÉ : le CameraObject suit le sprite joueur
-      // (worldX/Y avancé de 2 tiles par le held Jump2 via _DoJumpSpriteMovement). 1:1 décomp.
-      return;
-    }
-
-    // 1:1 décomp `TryDoorWarp` (field_control_avatar.c:833) : si player face
-    // NORTH + tile en face = MB_ANIMATED_DOOR + warp event match → DoDoorWarp.
-    // Check AVANT le bump anim car le door tile est marqué impassable mais
-    // le push UP doit warp pas bump.
-    if (inputDir === DIR_NORTH) {
-      const { x: dx, y: dy } = moveCoords(inputDir, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
-      const behavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-      const kind = getWarpKindFor(behavior);
-      if (kind === 'door') {
-        const doorWarp = findWarpEventAt(dx, dy, PlayerGetElevation());
-        if (doorWarp) {
-          console.log(`[player-avatar] door warp at (${dx},${dy}) → ${doorWarp.destMap}#${doorWarp.warpId}`);
-          setPendingWarp(doorWarp, kind);
-          gPlayerAvatar.runningState = NOT_MOVING;
-          return;
-        }
-      }
-    }
-
-    // 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
-    //   1. PlayCollisionSoundIfNotFacingWarp(direction) → PlaySE(SE_WALL_HIT)
-    //      sauf si direction face une warp door OU player sur arrow warp.
-    //   2. PlayerSetAnimId(GetWalkInPlaceSlowMovementAction) → 32-frame slow
-    //      walk-in-place anim (= "bump" visual avec sprite alternance ralentie).
-    //
-    // Position physique inchangée (= player reste sur sa cellule). Le user voit
-    // sprite jolt vers le mur puis reset, et entend SE_WALL_HIT à chaque cycle
-    // (sauf si arrow warp / door où no SE = comportement 1:1 décomp).
-    gPlayerAvatar.runningState = NOT_MOVING;
-    gPlayerAvatar.collideFramesLeft = 32;
-    // [M3] 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) = PlayCollisionSound
-    // IfNotFacingWarp + PlayerSetAnimId(GetWalkInPlaceSlow..., COPY_MOVE_WALK) → bump 32 frames
-    // rendu par le système partagé. collideFramesLeft gate le keypad ; le held gère le visuel.
-    {
-      const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-      if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(collideSlot);  // stand-in TryInterrupt (étape 1b)
-        PlayerNotOnBikeCollide(inputDir);
-      }
-    }
-    return;
-  }
-
-  // 1:1 décomp `PlayerWalkNormal` / `PlayerRun` (field_player_avatar.c:641-651) :
-  //   if (!UNDERWATER && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)
-  //       && !IsRunningDisallowed(metatileBehavior))
-  //       PlayerRun(direction);  // = MOVEMENT_ACTION_PLAYER_RUN_* = 8-frame step à 2 px/frame
-  //   else
-  //       PlayerWalkNormal(direction);  // = MOVEMENT_ACTION_WALK_NORMAL_* = 16-frame step à 1 px/frame
-  const playerBehavior = MapGridGetMetatileBehaviorAt(
-    gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
-  const wantDash = (heldKeys & B_BUTTON) !== 0
-                && FlagGet('FLAG_SYS_B_DASH')
-                && !IsRunningDisallowed(playerBehavior);
-  gPlayerAvatar.dashing = wantDash;
-  // 1:1 décomp `sPicTable_BrendanNormal[0..8 walk, 9..17 run]`. Le dash pose un held
-  // MOVEMENT_ACTION_PLAYER_RUN (ci-dessous) → _makePlayerRunAction = StartRunningAnim
-  // (ANIM_RUN_X = frames running 9-17), animé par le système partagé sur le sprite unifié.
-  gPlayerAvatar.runningState = MOVING;
-  // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
-  // Dash : 8 frames step à 2 px/frame = 16 px = 1 metatile (= 2× plus rapide).
-  // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
-  gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
-  gPlayerAvatar.stepDirection = inputDir;
-  // 1:1 décomp `PlayerWalkNormal` (field_player_avatar.c:958) / `PlayerRun` (978) :
-  //   PlayerSetAnimId(Get{WalkNormal,PlayerRun}MovementAction(direction), …);  // :949
-  //   → ObjectEventSetHeldMovement(&gObjectEvents[player], movementActionId);   // :954
-  //
-  // M1 (chantier unif mouvement joueur → object-event) : le déplacement réel du
-  // slot joueur (currentCoords += step, facing/movementDirection, walkFrames ET
-  // surtout `triggerGroundEffectsOnMove = TRUE`) n'est PLUS dupliqué inline ici.
-  // Il est posé par `MovementAction_WalkNormal_Step0 → InitNpcForMovement`, exécuté
-  // DANS `TickObjectEventMovements` (la boucle, scène:606) PILE entre
-  // `DoGroundEffects_OnSpawn` (4042 — skip : flag pas encore posé) et
-  // `DoGroundEffects_OnBeginStep` (4065 — consomme le flag → GroundEffect_StepOnTallGrass
-  // = RUSTLE). Avant, le bloc inline posait le flag AVANT la boucle → OnSpawn le
-  // captait+effaçait → herbe STATIQUE (SpawnOn). C'est le fix 1:1 du timing.
-  // Cf. [[chantier-player-movement-unify-decomp]]. La caméra (movementSpeedX/Y +
-  // stepFramesLeft) reste le driver visuel (rendu caméra-relatif) — M3 basculera
-  // le rendu en coords-monde + caméra-suit-sprite.
-  {
-    const playerSlot = gPlayerAvatar.objectEventId;
-    const slot = gObjectEvents[playerSlot];
-    if (slot && slot.active && slot.isPlayer) {
-      // `ObjectEventSetHeldMovement` refuse si déjà overridden (singleMovementActive
-      // || heldMovementActive). Le held movement du pas précédent est FINI (le slot
-      // termine son action ~1 frame avant que stepFramesLeft atteigne 0) mais pas
-      // encore clear → on le clear avant d'en poser un neuf (1:1 décomp : le held
-      // movement est clear entre deux pas).
-      ObjectEventClearHeldMovementIfActive(slot);  // stand-in TryInterrupt (étape 1b)
-      // 1:1 décomp `PlayerNotOnBikeMoving` : PlayerRun (B+dash) ou PlayerWalkNormal.
-      if (wantDash) PlayerRun(inputDir);
-      else PlayerWalkNormal(inputDir);
-    }
-  }
-  // [M3-C3.3] Driver caméra manuel RETIRÉ : la caméra dérive du CameraObject qui suit
-  // le sprite joueur (worldX/Y avancé par le held WalkNormal/PlayerRun posé ci-dessus,
-  // exécuté dans TickObjectEventMovements). CameraUpdateCallback écrase movementSpeedX/Y
-  // depuis le delta du sprite chaque frame → le driver était mort (overwrite). 1:1 décomp.
 }
 
 /** Reset le player avatar (= cleanup OAM + state). À call lors d'un map switch.

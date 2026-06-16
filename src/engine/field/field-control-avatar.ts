@@ -80,8 +80,18 @@ import {
 import { MapGridGetElevationAt } from './map-loader';
 import { LOCALID_PLAYER } from '../system/decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
-import { ScriptContext_SetupScript } from '../script/script-runtime';
+import { ScriptContext_SetupScript, TryRunCoordEventScript } from '../script/script-runtime';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
+import { LOCALID_NONE } from '../system/decomp-bridge';
+// ProcessPlayerFieldInput : dispatch warp/rencontre via les helpers PROUVÉS (warp-system +
+// wild-encounter). Ces modules N'IMPORTENT PAS field-control-avatar → pas de nouveau cycle ESM.
+import {
+  findWarpEventAt,
+  setPendingWarp,
+  getWarpKindFor,
+  isArrowWarpMetatileBehavior,
+} from './warp-system';
+import { CheckStandardWildEncounter } from './wild-encounter';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
@@ -215,6 +225,89 @@ export function FieldGetPlayerInput(input: FieldInput, newKeys: number, heldKeys
   else if (heldKeys & DPAD_DOWN)   input.dpadDirection = DIR_SOUTH;
   else if (heldKeys & DPAD_LEFT)   input.dpadDirection = DIR_WEST;
   else if (heldKeys & DPAD_RIGHT)  input.dpadDirection = DIR_EAST;
+}
+
+/** 1:1 STRICT décomp `ProcessPlayerFieldInput` (field_control_avatar.c:134). Master dispatcher
+ *  des actions consommatrices d'input — tourne AVANT PlayerStep dans `DoCB1_Overworld`, gaté par
+ *  `!ArePlayerFieldControlsLocked()`. Retourne TRUE si une action a consommé l'input (la scène
+ *  appelle alors `LockPlayerFieldControls()` + skip PlayerStep). Les flags
+ *  (tookStep/checkStandardWildEncounter/heldDirection/pressedAButton) sont posés par
+ *  `FieldGetPlayerInput`, eux-mêmes gatés par `tileTransitionState` (T_TILE_CENTER) → c'est ce
+ *  qui fait fire les events de step-end au BON moment (remplace l'ancien déclenchement par
+ *  `stepFramesLeft === 0` dans PlayerStep).
+ *
+ *  ⚠️ Le dispatch warp réutilise les helpers PROUVÉS `findWarpEventAt`/`getWarpKindFor`/
+ *  `setPendingWarp` (mécanisme warp-system, récupéré par `MainCB2_Overworld::getPendingWarp`),
+ *  PAS les `TryArrowWarp`/`TryStartWarpEventScript` de ce fichier (lookup différent, jamais
+ *  activé en jeu). Non portés (gérés ailleurs / hors démo, documenté) : `CheckForTrainersWanting
+ *  Battle`, `TryRunOnFrameMapScript` (appelé par la scène), dive emerge/down, start menu
+ *  (`TickStartMenu`), select item, misc/step-count/repel scripts. */
+export function ProcessPlayerFieldInput(input: FieldInput): boolean {
+  gSpecialVar.LastTalked = LOCALID_NONE;
+  gSelectedObjectEvent.index = 0;
+
+  const playerDirection = GetPlayerFacingDirection();
+  const position: MapPosition = { x: 0, y: 0, elevation: 0 };
+  GetPlayerPosition(position);  // INTERNAL coords + elevation
+  let metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
+
+  // input->tookStep : 1:1 décomp `TryStartStepBasedScript` (coord events + step-on warp).
+  if (input.tookStep) {
+    // `TryStartCoordEventScript(position)` — coord events (= truck SetIntroFlags). Coords LOGIQUES.
+    if (TryRunCoordEventScript(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
+      return true;
+    }
+    // `TryStartWarpEventScript(position, mb)` — step-on warp (door/ladder/escalator/…), PAS arrow.
+    const stepWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+    if (stepWarp) {
+      const kind = getWarpKindFor(metatileBehavior);
+      if (kind && kind !== 'arrow') {
+        setPendingWarp(stepWarp, kind);
+        return true;
+      }
+    }
+  }
+
+  // input->checkStandardWildEncounter : 1:1 décomp `CheckStandardWildEncounter`.
+  if (input.checkStandardWildEncounter && CheckStandardWildEncounter(metatileBehavior)) {
+    return true;
+  }
+
+  // input->heldDirection && dpad == facing : 1:1 décomp `TryArrowWarp` (arrow warp pré-step).
+  if (input.heldDirection && input.dpadDirection === playerDirection) {
+    if (isArrowWarpMetatileBehavior(metatileBehavior, playerDirection)) {
+      const arrowWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+      if (arrowWarp) {
+        setPendingWarp(arrowWarp, 'arrow');
+        return true;
+      }
+    }
+  }
+
+  // 1:1 décomp : à partir d'ici `position` = la tuile DEVANT le joueur (GetInFrontOfPlayerPosition).
+  GetInFrontOfPlayerPosition(position);
+  metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
+
+  // input->pressedAButton : 1:1 décomp `TryStartInteractionScript` (NPC / panneau / PC / …).
+  if (input.pressedAButton && TryStartInteractionScript(position, metatileBehavior, playerDirection)) {
+    return true;
+  }
+
+  // input->heldDirection2 && dpad == facing : 1:1 décomp `TryDoorWarp` (DIR_NORTH uniquement).
+  if (input.heldDirection2 && input.dpadDirection === playerDirection) {
+    if (playerDirection === DIR_NORTH) {
+      const kind = getWarpKindFor(metatileBehavior);
+      if (kind === 'door') {
+        const doorWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+        if (doorWarp) {
+          setPendingWarp(doorWarp, kind);
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 // ─── Position helpers 1:1 décomp ────────────────────────────────────────────
