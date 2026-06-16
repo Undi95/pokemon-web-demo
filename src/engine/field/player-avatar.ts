@@ -46,6 +46,7 @@ import {
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
   ObjectEventIsHeldMovementActive,
+  ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
@@ -77,6 +78,7 @@ import { B_BUTTON } from '../ui/gba-menu-system';
 import { GetFaceDirectionAnimNum } from './direction-coords';
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
 import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
+import { COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2 } from '../decomp-data/include/constants/event_object_movement-data';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -1235,6 +1237,65 @@ function tryInteractWithFacingNPC(): void {
   TryStartInteractionScript(position, metatileBehavior, GetPlayerFacingDirection());
 }
 
+// ─── 1:1 décomp `field_player_avatar.c` — fonctions feuilles d'action ────────
+// [chantier INPUT joueur, étape 1a] Ces wrappers SONT le call-graph décomp pour
+// poser le held movement du joueur. `PlayerStep` (ci-dessous) les appelle au lieu
+// d'`ObjectEventSetHeldMovement(GetXxx)` inline (graphe d'appels 1:1). Cf.
+// docs/FIELD-PLAYER-AVATAR-1TO1-PLAN.md + [[next-chantier-field-player-avatar]].
+//
+// ⚠️ Étape 1a : `PlayerSetAnimId` GUARD sur `!PlayerIsAnimActive()` (1:1 strict, ne
+// clear PAS). Le clear du held « fini mais actif » vient de `TryInterruptObjectEventSpecialAnim`
+// dans la décomp ; pas encore porté → PlayerStep garde un `ObjectEventClearHeldMovementIfActive`
+// explicite avant ces appels (stand-in du clear de TryInterrupt, retiré à l'étape 1b).
+
+/** 1:1 décomp `PlayerSetCopyableMovement` (field_player_avatar.c:934). */
+function PlayerSetCopyableMovement(movement: number): void {
+  gObjectEvents[gPlayerAvatar.objectEventId].playerCopyableMovement = movement;
+}
+
+/** 1:1 décomp `PlayerIsAnimActive` (field_player_avatar.c:1052). */
+function PlayerIsAnimActive(): boolean {
+  return ObjectEventIsMovementOverridden(gObjectEvents[gPlayerAvatar.objectEventId]);
+}
+
+/** 1:1 décomp `PlayerSetAnimId` (field_player_avatar.c:949) :
+ *    if (!PlayerIsAnimActive()) { PlayerSetCopyableMovement(c); ObjectEventSetHeldMovement(player, id); } */
+function PlayerSetAnimId(movementActionId: number, copyableMovement: number): void {
+  if (!PlayerIsAnimActive()) {
+    PlayerSetCopyableMovement(copyableMovement);
+    ObjectEventSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);
+  }
+}
+
+/** 1:1 décomp `PlayerWalkNormal` (field_player_avatar.c:958). */
+function PlayerWalkNormal(direction: number): void {
+  PlayerSetAnimId(GetWalkNormalMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerRun` (field_player_avatar.c:978). */
+function PlayerRun(direction: number): void {
+  PlayerSetAnimId(GetPlayerRunMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
+ *    PlayCollisionSoundIfNotFacingWarp(dir); PlayerSetAnimId(GetWalkInPlaceSlow..., COPY_MOVE_WALK); */
+function PlayerNotOnBikeCollide(direction: number): void {
+  PlayCollisionSoundIfNotFacingWarp(direction);
+  PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerTurnInPlace` (field_player_avatar.c:1010). */
+function PlayerTurnInPlace(direction: number): void {
+  PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) :
+ *    PlaySE(SE_LEDGE); PlayerSetAnimId(GetJump2MovementAction(dir), COPY_MOVE_JUMP2); */
+function PlayerJumpLedge(direction: number): void {
+  PlaySE(SE_LEDGE);
+  PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
+}
+
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
 
@@ -1337,19 +1398,15 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       if (inputDir !== DIR_NONE && inputDir === GetPlayerFacingDirection()) {
         const collision = checkPlayerCollision(inputDir);
         if (collision !== 0) {
-          // Re-trigger : SE + new 32 frames + flip walkAnimAlt.
-          // 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) call
-          // `PlayCollisionSoundIfNotFacingWarp` qui skip SE si arrow warp / door.
-          PlayCollisionSoundIfNotFacingWarp(inputDir);
+          // Re-trigger : new 32 frames + flip walkAnimAlt. 1:1 décomp `PlayerNotOnBikeCollide`
+          // ré-appelé à chaque cycle tant que la collision persiste (sound + held re-posé).
           gPlayerAvatar.collideFramesLeft = 32;
           gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
-          // [M3] Re-trigger du bump : re-pose le held WALK_IN_PLACE_SLOW (1:1 décomp,
-          // PlayerNotOnBikeCollide ré-appelé à chaque cycle tant que la collision persiste).
           {
             const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
             if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
-              ObjectEventClearHeldMovementIfActive(collideSlot);
-              ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
+              ObjectEventClearHeldMovementIfActive(collideSlot);  // stand-in TryInterrupt (étape 1b)
+              PlayerNotOnBikeCollide(inputDir);
             }
           }
           return;
@@ -1550,8 +1607,8 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     {
       const turnSlot = gObjectEvents[gPlayerAvatar.objectEventId];
       if (turnSlot && turnSlot.active && turnSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(turnSlot);
-        ObjectEventSetHeldMovement(turnSlot, GetWalkInPlaceFastMovementAction(inputDir));
+        ObjectEventClearHeldMovementIfActive(turnSlot);  // stand-in TryInterrupt (étape 1b)
+        PlayerTurnInPlace(inputDir);
       }
     }
     return;
@@ -1607,22 +1664,20 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // n'était PAS avancé → le joueur décentrait une fois en coords-monde (C2).
       // Maintenant le sprite reste CENTRÉ : worldX avance de 2 tiles via le held
       // movement ET le driver caméra scrolle de 2 tiles → s'annulent.
-      PlaySE(SE_LEDGE);
       gPlayerAvatar.runningState = MOVING;
       gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
       gPlayerAvatar.stepFramesLeft = 32;
-      // jumpFramesLeft drive l'ARC visuel (sprite.y2) via updateSpriteFrame. Le held
-      // Jump2 ne pose PAS sprite.y2 pour le joueur (`_DoJumpSpriteMovement` gate sur
-      // npc.spriteId>=0, or le player slot a spriteId<0 — le sprite réel est
-      // gPlayerAvatar.spriteId) → on garde la courbe sJumpY_High ici.
+      // jumpFramesLeft = garde "saut en cours" (lue par script-opcodes-helpers +
+      // movement-system). L'ARC (sprite.y2) sort désormais de `_DoJumpSpriteMovement`
+      // (sprite joueur unifié au slot → spriteId>=0), plus de courbe locale.
       gPlayerAvatar.jumpFramesLeft = 32;
       gPlayerAvatar.stepDirection = inputDir;
-      // 1:1 décomp PlayerSetAnimId → ObjectEventSetHeldMovement (clear le held
-      // movement précédent d'abord, comme le walk à PlayerWalkNormal).
+      // 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) = PlaySE(SE_LEDGE) +
+      // PlayerSetAnimId(GetJump2MovementAction, COPY_MOVE_JUMP2).
       const ledgeSlot = gObjectEvents[gPlayerAvatar.objectEventId];
       if (ledgeSlot && ledgeSlot.active && ledgeSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(ledgeSlot);
-        ObjectEventSetHeldMovement(ledgeSlot, GetJump2MovementAction(inputDir));
+        ObjectEventClearHeldMovementIfActive(ledgeSlot);  // stand-in TryInterrupt (étape 1b)
+        PlayerJumpLedge(inputDir);
       }
       // [M3-C3.3] Driver caméra manuel RETIRÉ : le CameraObject suit le sprite joueur
       // (worldX/Y avancé de 2 tiles par le held Jump2 via _DoJumpSpriteMovement). 1:1 décomp.
@@ -1657,18 +1712,16 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     // Position physique inchangée (= player reste sur sa cellule). Le user voit
     // sprite jolt vers le mur puis reset, et entend SE_WALL_HIT à chaque cycle
     // (sauf si arrow warp / door où no SE = comportement 1:1 décomp).
-    PlayCollisionSoundIfNotFacingWarp(inputDir);
     gPlayerAvatar.runningState = NOT_MOVING;
     gPlayerAvatar.collideFramesLeft = 32;
-    // [M3] 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
-    //   PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
-    // = held WALK_IN_PLACE_SLOW (32 frames, anim GO ralentie = "bump") rendu par le
-    // système partagé. collideFramesLeft gate le keypad ; le held gère le visuel.
+    // [M3] 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) = PlayCollisionSound
+    // IfNotFacingWarp + PlayerSetAnimId(GetWalkInPlaceSlow..., COPY_MOVE_WALK) → bump 32 frames
+    // rendu par le système partagé. collideFramesLeft gate le keypad ; le held gère le visuel.
     {
       const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
       if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
-        ObjectEventClearHeldMovementIfActive(collideSlot);
-        ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
+        ObjectEventClearHeldMovementIfActive(collideSlot);  // stand-in TryInterrupt (étape 1b)
+        PlayerNotOnBikeCollide(inputDir);
       }
     }
     return;
@@ -1720,11 +1773,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // termine son action ~1 frame avant que stepFramesLeft atteigne 0) mais pas
       // encore clear → on le clear avant d'en poser un neuf (1:1 décomp : le held
       // movement est clear entre deux pas).
-      ObjectEventClearHeldMovementIfActive(slot);
-      const movementActionId = wantDash
-        ? GetPlayerRunMovementAction(inputDir)
-        : GetWalkNormalMovementAction(inputDir);
-      ObjectEventSetHeldMovement(slot, movementActionId);
+      ObjectEventClearHeldMovementIfActive(slot);  // stand-in TryInterrupt (étape 1b)
+      // 1:1 décomp `PlayerNotOnBikeMoving` : PlayerRun (B+dash) ou PlayerWalkNormal.
+      if (wantDash) PlayerRun(inputDir);
+      else PlayerWalkNormal(inputDir);
     }
   }
   // [M3-C3.3] Driver caméra manuel RETIRÉ : la caméra dérive du CameraObject qui suit
