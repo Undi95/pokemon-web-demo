@@ -5706,8 +5706,13 @@ function _MovementAction_StartAnimInDirection_Step0(rt: DecompRuntime, npc: Obje
   if (npc.actionStep === 0) {
     // 1:1 `StartSpriteAnimInDirection` (event_object_movement.c:6084) : SetAndStartSpriteAnim(animNum, 0)
     // (re-démarre l'anim courante depuis frame 0) + SetObjectEventDirection + sActionFuncId = 1.
+    // `SetAndStartSpriteAnim` (event_object_movement.c:8549) fait : animNum=animNum ; animPaused=FALSE ;
+    // SeekSpriteAnim(0). Le `animPaused = FALSE` est CRITIQUE : `UpdateMovementNormal` (fin de pas) laisse
+    // le sprite avec `animPaused=TRUE` → sans ce clear, l'anim de pose ne rejoue jamais → `SpriteAnimEnded`
+    // jamais TRUE → held jamais fini (ex. pose field-move de la montée de surf bloquée après une marche).
     SetObjectEventDirection(npc, npc.movementDirection);
     if (sprite) {
+      sprite.animPaused = false;
       sprite.animBeginning = true;
       sprite.animEnded = false;
       sprite.animCmdIndex = 0;
