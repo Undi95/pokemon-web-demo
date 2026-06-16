@@ -59,6 +59,7 @@ import type { PendingConnection } from '../engine/field/field-camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
+  UpdatePlayerAvatarTransitionState,
   DestroyPlayerAvatar,
   SetPlayerVisibility,
   GetPlayerFacingDirection,
@@ -552,6 +553,11 @@ export class TestOverworldScene extends Phaser.Scene {
         //  en tête du body, l.508.)
         // ════════════════════════════════════════════════════════════════════
         // ── CB1_Overworld : input joueur (pose le held movement du pas) ──
+        // 1:1 décomp `DoCB1_Overworld` (overworld.c:1442) : UpdatePlayerAvatarTransitionState
+        // s'exécute en TÊTE de CB1, AVANT l'input/PlayerStep — dérive tileTransitionState
+        // du held movement du slot joueur (writer 1:1 unique). FieldGetPlayerInput
+        // (étape 2) l'attend pour lire l'input aux frontières de tuile (T_TILE_CENTER).
+        UpdatePlayerAvatarTransitionState();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         // ── RunTasks (overworld.c:1468) ──
         // tickMovementQueues : pose gFieldCamera.movementSpeedX/Y (forced/scripted).

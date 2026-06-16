@@ -46,6 +46,7 @@ import {
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
   ObjectEventClearHeldMovementIfFinished,
+  ObjectEventCheckHeldMovementStatus,
   ObjectEventIsHeldMovementActive,
   ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
@@ -79,7 +80,14 @@ import { B_BUTTON } from '../ui/gba-menu-system';
 import { GetFaceDirectionAnimNum } from './direction-coords';
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
 import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
-import { COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2 } from '../decomp-data/include/constants/event_object_movement-data';
+import {
+  COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2,
+  MOVEMENT_ACTION_FACE_RIGHT,
+  MOVEMENT_ACTION_DELAY_1, MOVEMENT_ACTION_DELAY_16,
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
+} from '../decomp-data/include/constants/event_object_movement-data';
 import { GetFaceDirectionMovementAction } from '../system/decomp-bridge';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
@@ -1260,6 +1268,34 @@ function PlayerIsAnimActive(): boolean {
   return ObjectEventIsMovementOverridden(gObjectEvents[gPlayerAvatar.objectEventId]);
 }
 
+/** 1:1 décomp `PlayerCheckIfAnimFinishedOrInactive` (field_player_avatar.c:931) :
+ *    return ObjectEventCheckHeldMovementStatus(&gObjectEvents[player]);
+ *  Retourne le status brut (0 = actif&pas fini, 1 = fini, 16 = pas actif). */
+function PlayerCheckIfAnimFinishedOrInactive(): number {
+  return ObjectEventCheckHeldMovementStatus(gObjectEvents[gPlayerAvatar.objectEventId]);
+}
+
+/** 1:1 décomp `PlayerAnimIsMultiFrameStationary` (field_player_avatar.c:902) :
+ *  true si le movementActionId est une anim stationnaire multi-frame (face,
+ *  delays, walk-in-place, acro wheelie/in-place) — par opposition à un vrai pas
+ *  qui translate. Sert à distinguer "centré sur la tuile" (T_TILE_CENTER) d'un
+ *  "pas en cours" (T_TILE_TRANSITION) dans UpdatePlayerAvatarTransitionState. */
+function PlayerAnimIsMultiFrameStationary(): boolean {
+  const movementActionId = gObjectEvents[gPlayerAvatar.objectEventId].movementActionId;
+  if (movementActionId <= MOVEMENT_ACTION_FACE_RIGHT
+   || (movementActionId >= MOVEMENT_ACTION_DELAY_1 && movementActionId <= MOVEMENT_ACTION_DELAY_16)
+   || (movementActionId >= MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN && movementActionId <= MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT)
+   || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT)
+   || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT))
+    return true;
+  return false;
+}
+
+/** 1:1 décomp `PlayerAnimIsMultiFrameStationaryAndStateNotTurning` (field_player_avatar.c:916). */
+function PlayerAnimIsMultiFrameStationaryAndStateNotTurning(): boolean {
+  return PlayerAnimIsMultiFrameStationary() && gPlayerAvatar.runningState !== TURN_DIRECTION;
+}
+
 /** 1:1 décomp `PlayerSetAnimId` (field_player_avatar.c:949) :
  *    if (!PlayerIsAnimActive()) { PlayerSetCopyableMovement(c); ObjectEventSetHeldMovement(player, id); } */
 function PlayerSetAnimId(movementActionId: number, copyableMovement: number): void {
@@ -1318,6 +1354,28 @@ function PlayerNotOnBikeNotMoving(): void {
   }
 }
 
+/** 1:1 décomp `UpdatePlayerAvatarTransitionState` (field_player_avatar.c:884).
+ *
+ *  Dérive `gPlayerAvatar.tileTransitionState` de l'état du held movement du slot
+ *  joueur — appelée chaque frame en TÊTE de `DoCB1_Overworld` (overworld.c:1442),
+ *  AVANT `FieldGetPlayerInput`/`PlayerStep`. C'est LE writer 1:1 unique de
+ *  tileTransitionState : T_NOT_MOVING (aucune anim active), T_TILE_TRANSITION
+ *  (pas qui translate, en cours), T_TILE_CENTER (pile centré sur la tuile, 1 frame —
+ *  c'est cette valeur que `FieldGetPlayerInput` attend pour lire l'input aux
+ *  frontières de tuile). Remplace les sets crus dispersés dans PlayerStep. */
+export function UpdatePlayerAvatarTransitionState(): void {
+  gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+  if (PlayerIsAnimActive()) {
+    if (!PlayerCheckIfAnimFinishedOrInactive()) {
+      if (!PlayerAnimIsMultiFrameStationary())
+        gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
+    } else {
+      if (!PlayerAnimIsMultiFrameStationaryAndStateNotTurning())
+        gPlayerAvatar.tileTransitionState = T_TILE_CENTER;
+    }
+  }
+}
+
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
 
@@ -1335,7 +1393,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // 1:1 décomp : facing via SetObjectEventDirection (= slot source unique).
       SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], gPlayerAvatar.forceMovement);
       gPlayerAvatar.runningState = MOVING;
-      gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
+      // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
       gPlayerAvatar.stepFramesLeft = 16;
       gPlayerAvatar.stepDirection = gPlayerAvatar.forceMovement;
       // [M3-C3.2c] 1:1 décomp `Task_ExitDoor` case 1 (field_screen_effect.c:338) /
@@ -1362,7 +1420,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         // pos via CameraUpdate au tile boundary. À ce point, pos = post-step
         // car CameraMove a déjà été appelée durant les frames du step.
         gPlayerAvatar.runningState = NOT_MOVING;
-        gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+        // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
         gPlayerAvatar.stepDirection = DIR_NONE;
         gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
         // Clear forceMovement après step done → la scene attend ça pour next phase.
@@ -1479,7 +1537,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // + landingJump + hasShadow=FALSE) est DÉSORMAIS posé par le held Jump2 lui-même
       // au JUMP_FINISHED (_UpdateJumpAnim / _makeJumpAction, object-events.ts) — plus
       // de _pendingLedgeJump inline. Le spine DoGroundEffects_OnFinishStep lit ces flags.
-      gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+      // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
       gPlayerAvatar.stepDirection = DIR_NONE;
       gFieldCamera.movementSpeedX = 0;
       gFieldCamera.movementSpeedY = 0;
@@ -1692,7 +1750,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // Maintenant le sprite reste CENTRÉ : worldX avance de 2 tiles via le held
       // movement ET le driver caméra scrolle de 2 tiles → s'annulent.
       gPlayerAvatar.runningState = MOVING;
-      gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
+      // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
       gPlayerAvatar.stepFramesLeft = 32;
       // jumpFramesLeft = garde "saut en cours" (lue par script-opcodes-helpers +
       // movement-system). L'ARC (sprite.y2) sort désormais de `_DoJumpSpriteMovement`
@@ -1770,7 +1828,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // MOVEMENT_ACTION_PLAYER_RUN (ci-dessous) → _makePlayerRunAction = StartRunningAnim
   // (ANIM_RUN_X = frames running 9-17), animé par le système partagé sur le sprite unifié.
   gPlayerAvatar.runningState = MOVING;
-  gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
+  // tileTransitionState dérivé 1:1 par UpdatePlayerAvatarTransitionState (du held).
   // Dash : 8 frames step à 2 px/frame = 16 px = 1 metatile (= 2× plus rapide).
   // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
   gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
