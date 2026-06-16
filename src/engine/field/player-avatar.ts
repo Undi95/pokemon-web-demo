@@ -161,7 +161,13 @@ import {
 } from './metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
 import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../decomp-data/include/constants/game_stat-data';
-import { OBJ_EVENT_GFX_PUSHABLE_BOULDER } from '../decomp-data/include/constants/event_objects-data';
+import {
+  OBJ_EVENT_GFX_PUSHABLE_BOULDER,
+  OBJ_EVENT_GFX_BRENDAN_NORMAL, OBJ_EVENT_GFX_BRENDAN_MACH_BIKE, OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,
+  OBJ_EVENT_GFX_BRENDAN_SURFING, OBJ_EVENT_GFX_BRENDAN_UNDERWATER,
+  OBJ_EVENT_GFX_MAY_NORMAL, OBJ_EVENT_GFX_MAY_MACH_BIKE, OBJ_EVENT_GFX_MAY_ACRO_BIKE,
+  OBJ_EVENT_GFX_MAY_SURFING, OBJ_EVENT_GFX_MAY_UNDERWATER,
+} from '../decomp-data/include/constants/event_objects-data';
 import { NUM_ACRO_BIKE_COLLISIONS } from '../decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
@@ -803,6 +809,7 @@ const COLLISION_HORIZONTAL_RAIL            = 13;
 /** 1:1 décomp `PLAYER_AVATAR_FLAG_*` (global.fieldmap.h:49-56). Bitmask de l'état
  *  du joueur, lu/écrit par la machine de mouvement (npc_clear_strange_bits clear
  *  DASH au début de chaque pas, PlayerNotOnBikeMoving set DASH, etc.). */
+const PLAYER_AVATAR_FLAG_ON_FOOT     = 1 << 0;
 const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
 const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
 const PLAYER_AVATAR_FLAG_SURFING     = 1 << 3;
@@ -1462,11 +1469,165 @@ function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): voi
   // étape 5 (acro bike) — non porté.
 }
 
-/** 1:1 STRICT décomp `DoPlayerAvatarTransition` (field_player_avatar.c:707).
- *  Dispatch l'état du joueur (à pied/mach bike/acro bike/surf/underwater/return-to-field).
- *  Étape 4 — non encore porté (tant que vélo/surf ne sont pas câblés) → stub no-op. */
+// ─── 1:1 décomp `field_player_avatar.c` — TRANSITION D'ÉTAT JOUEUR (étape 4) ───
+// Machine d'état du player avatar (à pied / mach bike / acro bike / surf / plongée).
+// `transitionFlags` (set par SetPlayerAvatarTransitionFlags / SetPlayerAvatarExtraStateTransition)
+// est consommé bit-à-bit par DoPlayerAvatarTransition → sPlayerAvatarTransitionFuncs[i].
+// ⚠️ Les transitions GRAPHIQUES (Normal gfx, bike/surf/underwater) appellent
+// `ObjectEventSetGraphicsId`/`ObjectEventTurn`/`FieldEffectStart` = sous-système graphics-id +
+// surf/bike (étape 5, PAS encore porté). Ici on porte la part FLAGS (SetPlayerAvatarStateMask) +
+// ReturnToField (CONTROLLABLE) qui n'ont AUCUNE dépendance graphique ; la part gfx est élidée
+// pour le cas À PIED où elle est idempotente (le joueur a déjà le gfx Normal + le bon facing —
+// preuve : slot préservé), et explicitement stagée pour les états vélo/surf.
+
+/** 1:1 décomp `enum PLAYER_AVATAR_STATE_*` (global.fieldmap.h) — index de sPlayerAvatarTransitionFuncs. */
+const PLAYER_AVATAR_STATE_NORMAL     = 0;
+const PLAYER_AVATAR_STATE_MACH_BIKE  = 1;
+const PLAYER_AVATAR_STATE_ACRO_BIKE  = 2;
+const PLAYER_AVATAR_STATE_SURFING    = 3;
+const PLAYER_AVATAR_STATE_UNDERWATER = 4;
+const PLAYER_AVATAR_STATE_FIELD_MOVE = 5;
+const PLAYER_AVATAR_STATE_FISHING    = 6;
+const PLAYER_AVATAR_STATE_WATERING   = 7;
+
+/** 1:1 STRICT décomp `sPlayerAvatarGfxToStateFlag[GENDER_COUNT][5]` (field_player_avatar.c:270).
+ *  Map graphicsId → flag d'état. Indexé par genre (notre `gPlayerAvatar.gender` = string). */
+const sPlayerAvatarGfxToStateFlag: Record<'MALE' | 'FEMALE', ReadonlyArray<{ graphicsId: number; playerFlag: number }>> = {
+  MALE: [
+    { graphicsId: OBJ_EVENT_GFX_BRENDAN_NORMAL,     playerFlag: PLAYER_AVATAR_FLAG_ON_FOOT },
+    { graphicsId: OBJ_EVENT_GFX_BRENDAN_MACH_BIKE,  playerFlag: PLAYER_AVATAR_FLAG_MACH_BIKE },
+    { graphicsId: OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,  playerFlag: PLAYER_AVATAR_FLAG_ACRO_BIKE },
+    { graphicsId: OBJ_EVENT_GFX_BRENDAN_SURFING,    playerFlag: PLAYER_AVATAR_FLAG_SURFING },
+    { graphicsId: OBJ_EVENT_GFX_BRENDAN_UNDERWATER, playerFlag: PLAYER_AVATAR_FLAG_UNDERWATER },
+  ],
+  FEMALE: [
+    { graphicsId: OBJ_EVENT_GFX_MAY_NORMAL,         playerFlag: PLAYER_AVATAR_FLAG_ON_FOOT },
+    { graphicsId: OBJ_EVENT_GFX_MAY_MACH_BIKE,      playerFlag: PLAYER_AVATAR_FLAG_MACH_BIKE },
+    { graphicsId: OBJ_EVENT_GFX_MAY_ACRO_BIKE,      playerFlag: PLAYER_AVATAR_FLAG_ACRO_BIKE },
+    { graphicsId: OBJ_EVENT_GFX_MAY_SURFING,        playerFlag: PLAYER_AVATAR_FLAG_SURFING },
+    { graphicsId: OBJ_EVENT_GFX_MAY_UNDERWATER,     playerFlag: PLAYER_AVATAR_FLAG_UNDERWATER },
+  ],
+};
+
+/** 1:1 STRICT décomp `GetPlayerAvatarStateTransitionByGraphicsId` (field_player_avatar.c:1331).
+ *  Cherche le flag d'état pour un graphicsId ; DÉFAUT `PLAYER_AVATAR_FLAG_ON_FOOT` si pas trouvé
+ *  (= notre slot joueur a un gfx aliasé non-numérique → tombe sur le défaut = correct à pied). */
+function GetPlayerAvatarStateTransitionByGraphicsId(graphicsId: number | string, gender: 'MALE' | 'FEMALE'): number {
+  // !< notre `ObjectEvent.graphicsId` du slot joueur est une STRING aliasée ('Brendan'/'May'),
+  // pas le u8 numérique du décomp → la comparaison numérique échoue volontairement → on tombe
+  // sur le défaut ON_FOOT (1:1 décomp pour un gfx non-listé). Câblé pour les vrais gfx étape 5.
+  const table = sPlayerAvatarGfxToStateFlag[gender];
+  for (let i = 0; i < table.length; i++) {
+    if (table[i].graphicsId === graphicsId)
+      return table[i].playerFlag;
+  }
+  return PLAYER_AVATAR_FLAG_ON_FOOT;
+}
+
+/** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :
+ *    flags &= (DASH | FORCED_MOVE | CONTROLLABLE); flags |= flags_param;
+ *  Préserve les 3 bits transverses (dash/forced/controllable), reset les bits d'ÉTAT
+ *  (ON_FOOT/MACH/ACRO/SURF/UNDERWATER), pose le nouvel état. */
+function SetPlayerAvatarStateMask(flags: number): void {
+  gPlayerAvatar.flags &= (PLAYER_AVATAR_FLAG_DASH | PLAYER_AVATAR_FLAG_FORCED_MOVE | PLAYER_AVATAR_FLAG_CONTROLLABLE);
+  gPlayerAvatar.flags |= flags;
+}
+
+/** 1:1 STRICT décomp `SetPlayerAvatarTransitionFlags` (field_player_avatar.c:805) :
+ *    gPlayerAvatar.transitionFlags |= transitionFlags; DoPlayerAvatarTransition(); */
+export function SetPlayerAvatarTransitionFlags(transitionFlags: number): void {
+  gPlayerAvatar.transitionFlags |= transitionFlags;
+  DoPlayerAvatarTransition();
+}
+
+/** 1:1 STRICT décomp `SetPlayerAvatarExtraStateTransition` (field_player_avatar.c:1356) :
+ *    stateFlag = GetPlayerAvatarStateTransitionByGraphicsId(graphicsId, gender);
+ *    transitionFlags |= stateFlag | transitionFlag; DoPlayerAvatarTransition();
+ *  Appelé par `SetPlayerAvatarObjectEventIdAndObjectId` au spawn du player object event
+ *  (= au chargement de map / ReturnToField) avec transitionFlag=CONTROLLABLE → ré-établit
+ *  flags = ÉTAT_du_gfx | CONTROLLABLE (à pied : ON_FOOT | CONTROLLABLE). */
+export function SetPlayerAvatarExtraStateTransition(graphicsId: number | string, transitionFlag: number): void {
+  const stateFlag = GetPlayerAvatarStateTransitionByGraphicsId(graphicsId, gPlayerAvatar.gender);
+  gPlayerAvatar.transitionFlags |= stateFlag | transitionFlag;
+  DoPlayerAvatarTransition();
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Normal` (field_player_avatar.c:832).
+ *  Décomp : ObjectEventSetGraphicsId(Normal) + ObjectEventTurn(movementDir) + StateMask(ON_FOOT).
+ *  La part gfx/turn est élidée (idempotente à pied : gfx Normal + facing déjà bons, slot préservé) ;
+ *  elle sera portée avec le sous-système graphics-id (étape 5, pour les transitions bike/surf→pied). */
+function PlayerAvatarTransition_Normal(_objEvent: ObjectEvent): void {
+  // ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(NORMAL)); — étape 5 (graphics-id)
+  // ObjectEventTurn(objEvent, objEvent->movementDirection);                          — étape 5 (graphics-id)
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_MachBike` (fpa.c:839). Part flags portée ; gfx +
+ *  BikeClearState = sous-système vélo (étape 5). Non atteignable tant que le vélo n'est pas câblé. */
+function PlayerAvatarTransition_MachBike(_objEvent: ObjectEvent): void {
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_MACH_BIKE);
+  // ObjectEventSetGraphicsId(MachBike) + ObjectEventTurn + BikeClearState(0,0) — étape 5 (vélo)
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_AcroBike` (fpa.c:847). Idem (étape 5 vélo). */
+function PlayerAvatarTransition_AcroBike(_objEvent: ObjectEvent): void {
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+  // ObjectEventSetGraphicsId(AcroBike) + ObjectEventTurn + BikeClearState + Bike_HandleBumpySlopeJump — étape 5
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Surfing` (fpa.c:856). Part flags portée ; gfx +
+ *  FieldEffectStart(FLDEFF_SURF_BLOB) + SetSurfBlob_BobState = sous-système surf (étape 5). */
+function PlayerAvatarTransition_Surfing(_objEvent: ObjectEvent): void {
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
+  // ObjectEventSetGraphicsId(Surfing) + ObjectEventTurn + FieldEffectStart(FLDEFF_SURF_BLOB) — étape 5 (surf)
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Underwater` (fpa.c:871). Part flags portée ;
+ *  gfx + StartUnderwaterSurfBlobBobbing = sous-système plongée (étape 5). */
+function PlayerAvatarTransition_Underwater(_objEvent: ObjectEvent): void {
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_UNDERWATER);
+  // ObjectEventSetGraphicsId(Underwater) + ObjectEventTurn + StartUnderwaterSurfBlobBobbing — étape 5
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_ReturnToField` (field_player_avatar.c:879) :
+ *    gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;
+ *  Re-set CONTROLLABLE (= suppression du forced movement pour le 1er cycle après une transition /
+ *  un chargement de map). AUCUNE dépendance graphique → porté en entier. */
+function PlayerAvatarTransition_ReturnToField(_objEvent: ObjectEvent): void {
+  gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;
+}
+
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Dummy` (field_player_avatar.c:827) — fishing/watering, no-op. */
+function PlayerAvatarTransition_Dummy(_objEvent: ObjectEvent): void {
+  // no-op (décomp)
+}
+
+/** 1:1 STRICT décomp `sPlayerAvatarTransitionFuncs[]` (field_player_avatar.c:214).
+ *  Indexé par PLAYER_AVATAR_STATE_* (= position du bit dans transitionFlags). */
+const sPlayerAvatarTransitionFuncs: ReadonlyArray<(objEvent: ObjectEvent) => void> = [
+  PlayerAvatarTransition_Normal,        // [PLAYER_AVATAR_STATE_NORMAL]
+  PlayerAvatarTransition_MachBike,      // [PLAYER_AVATAR_STATE_MACH_BIKE]
+  PlayerAvatarTransition_AcroBike,      // [PLAYER_AVATAR_STATE_ACRO_BIKE]
+  PlayerAvatarTransition_Surfing,       // [PLAYER_AVATAR_STATE_SURFING]
+  PlayerAvatarTransition_Underwater,    // [PLAYER_AVATAR_STATE_UNDERWATER]
+  PlayerAvatarTransition_ReturnToField, // [PLAYER_AVATAR_STATE_FIELD_MOVE]
+  PlayerAvatarTransition_Dummy,         // [PLAYER_AVATAR_STATE_FISHING]
+  PlayerAvatarTransition_Dummy,         // [PLAYER_AVATAR_STATE_WATERING]
+];
+
+/** 1:1 STRICT décomp `DoPlayerAvatarTransition` (field_player_avatar.c:811).
+ *  Consomme `transitionFlags` bit-à-bit : pour chaque bit i set, exécute
+ *  sPlayerAvatarTransitionFuncs[i] (state i), puis remet transitionFlags à 0.
+ *  Appelée chaque frame en tête de PlayerStep (no-op si transitionFlags==0). */
 function DoPlayerAvatarTransition(): void {
-  // étape 4 (états vélo/surf/plongée) — non porté.
+  let flags = gPlayerAvatar.transitionFlags;
+  if (flags !== 0) {
+    for (let i = 0; i < sPlayerAvatarTransitionFuncs.length; i++, flags >>= 1) {
+      if (flags & 1)
+        sPlayerAvatarTransitionFuncs[i](gObjectEvents[gPlayerAvatar.objectEventId]);
+    }
+    gPlayerAvatar.transitionFlags = 0;
+  }
 }
 
 // ─── 1:1 décomp `field_player_avatar.c` — FORCED MOVEMENT (étape 3) ───────────

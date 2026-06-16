@@ -7355,12 +7355,21 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
   const catalog = _graphicsCatalog;
   // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
   // Reset gPlayerAvatar fields (preserve objectEventId/spriteId pour notre archi).
-  const { ClearPlayerAvatarInfo } = await import('./player-avatar');
+  const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('./player-avatar');
   ClearPlayerAvatarInfo();
+  // 1:1 STRICT décomp `SetPlayerAvatarObjectEventIdAndObjectId` (event_object_movement.c:1812)
+  // appelé au re-spawn du player object event : ré-établit gPlayerAvatar.flags via
+  // `SetPlayerAvatarExtraStateTransition(playerGfx, CONTROLLABLE)` (= ÉTAT_du_gfx | CONTROLLABLE
+  // = à pied ON_FOOT | CONTROLLABLE). Sans ça, ClearPlayerAvatarInfo laissait flags=0 (CONTROLLABLE
+  // clear → forced movement armé dès le 1er pas au lieu d'être suppressé 1 cycle). Notre archi
+  // préserve objectEventId/spriteId/gender → on n'appelle QUE la part transition (1:1 flags).
+  {
+    const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+    if (playerSlot) SetPlayerAvatarExtraStateTransition(playerSlot.graphicsId, 1 << 5 /* PLAYER_AVATAR_FLAG_CONTROLLABLE */);
+  }
   // DETTE 1:1 décomp restante (event_object_movement.c:1715-1726) :
-  //   - Player slot skip (= notre archi délègue le re-spawn player à
-  //     InitPlayerAvatar). Décomp re-spawn player aussi via SpawnObjectEvent
-  //     OnReturnToField + SetPlayerAvatarObjectEventIdAndObjectId (1779-1783).
+  //   - Player slot re-spawn graphique délégué à notre archi (InitPlayerAvatar) ; ici on porte
+  //     seulement la part flags de SetPlayerAvatarObjectEventIdAndObjectId (ci-dessus).
   //   - CreateReflectionEffectSprites() (= reflexion sur eau pour NPCs) pas
   //     porté (notre port n'a pas le reflection sprite system).
   for (const npc of gObjectEvents) {
