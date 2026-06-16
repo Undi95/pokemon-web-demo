@@ -1965,6 +1965,13 @@ export function GetTaskData(taskId: number): number[] | null {
   return task ? task.data : null;
 }
 
+/** Accès 1:1 décomp `&gTasks[taskId]` — retourne l'objet task complet (taskId/func/data)
+ *  ou `null` si absent. Pour les ports qui appellent immédiatement leur task func après
+ *  `CreateTask` (= pattern `Func(CreateTask(Func, prio))`, ex. StartStrengthAnim). */
+export function GetTask(taskId: number): import('./decomp-runtime').DecompTask | null {
+  return rt().gTasks.get(taskId) ?? null;
+}
+
 /** 1:1 décomp src/sprite.c:SetSubspriteTables — installs a subsprite layout
  *  on a sprite. The decomp's subsprite system renders a SINGLE sprite as N
  *  OAM entries with offsets. Our compositor doesn't natively handle multi-OAM

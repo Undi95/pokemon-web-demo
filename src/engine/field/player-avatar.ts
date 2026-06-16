@@ -32,7 +32,7 @@
  *     6=face_right, 7=walk_right1, 8=walk_right2 (= mirror H pour left)
  *   - Loaded en OBJ 1D map mode (= 8 tiles sequential per frame)
  */
-import type { DecompRuntime } from '../system/decomp-runtime';
+import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
 import {
   MapGridGetCollisionAt,
@@ -59,6 +59,7 @@ import {
   GetJump2MovementAction,
   GetWalkInPlaceFastMovementAction,
   GetWalkInPlaceSlowMovementAction,
+  GetWalkInPlaceNormalMovementAction,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -79,6 +80,7 @@ import {
   ArePlayerFieldControlsLocked,
   TryRunCoordEventScript,
   LockPlayerFieldControls,
+  UnlockPlayerFieldControls,
 } from '../script/script-runtime';
 import { FlagGet } from '../script/script-vars';
 import { B_BUTTON } from '../ui/gba-menu-system';
@@ -95,7 +97,13 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
-import { GetFaceDirectionMovementAction } from '../system/decomp-bridge';
+import {
+  GetFaceDirectionMovementAction,
+  CreateTask, DestroyTask,
+  GetWalkSlowMovementAction,
+} from '../system/decomp-bridge';
+import { FindTaskIdByFunc, GetTask, getRuntime } from '../system/decomp-globals';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field-effect';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -891,28 +899,92 @@ function CreateStopSurfingTask(direction: number): void {
     + ') — flags/lock OK, Task_StopSurfingInit (anim + sprite swap) non porté.');
 }
 
-/** 1:1 décomp `StartStrengthAnim(u8 objectEventId, u8 direction)`
- *  (field_player_avatar.c:1796-1804).
- *
- *  ```c
- *  u8 taskId = CreateTask(Task_PushBoulder, 0xFF);
- *  gTasks[taskId].data[1] = objectEventId;
- *  gTasks[taskId].data[2] = direction;
- *  Task_PushBoulder(taskId);
- *  ```
- *
- *  Task_PushBoulder lock controls + setup ObjectEventSetHeldMovement (=
- *  walk_slow direction) sur le boulder + play SE_PUSH_BOULDER.
- *
- *  R4 dette : Task_PushBoulder + SE_PUSH_BOULDER + boulder movement non
- *  portés (= HM Strength subsystem hors démo). Utilisé uniquement par
- *  `TryPushBoulder` qui early-returns false si FLAG_SYS_USE_STRENGTH non set
- *  (= jamais en démo). */
+// ─── 1:1 décomp `field_player_avatar.c` /* Strength */ — poussée de rocher (HM Strength) ──
+// tState = data[0], tBoulderObjId = data[1], tDirection = data[2].
+// Déclenché par `TryPushBoulder` (collision OBJECT_EVENT sur un OBJ_EVENT_GFX_PUSHABLE_BOULDER
+// avec FLAG_SYS_USE_STRENGTH) → le joueur marche-sur-place pendant que le rocher glisse d'une
+// tuile (held WalkSlow) + nuage de poussière (FLDEFF_DUST).
+
+/** 1:1 STRICT décomp `PushBoulder_Start` (field_player_avatar.c:1473). Lock + preventStep. */
+function PushBoulder_Start(task: DecompTask, _player: ObjectEvent, _boulder: ObjectEvent): boolean {
+  LockPlayerFieldControls();
+  gPlayerAvatar.preventStep = true;
+  task.data[0]++;  // tState++
+  return false;
+}
+
+/** 1:1 STRICT décomp `PushBoulder_Move` (field_player_avatar.c:1481). Quand joueur ET rocher
+ *  ne bougent plus : pose le held du joueur (WalkInPlaceNormal) + du rocher (WalkSlow), lance
+ *  FLDEFF_DUST sur le rocher. (PlaySE(SE_M_STRENGTH) = audio → skip.) */
+function PushBoulder_Move(task: DecompTask, player: ObjectEvent, boulder: ObjectEvent): boolean {
+  if (ObjectEventIsHeldMovementActive(player))
+    ObjectEventClearHeldMovementIfFinished(player);
+  if (ObjectEventIsHeldMovementActive(boulder))
+    ObjectEventClearHeldMovementIfFinished(boulder);
+
+  if (!ObjectEventIsMovementOverridden(player)
+   && !ObjectEventIsMovementOverridden(boulder)) {
+    ObjectEventClearHeldMovementIfFinished(player);
+    ObjectEventClearHeldMovementIfFinished(boulder);
+    ObjectEventSetHeldMovement(player, GetWalkInPlaceNormalMovementAction(task.data[2] & 0xFF));
+    ObjectEventSetHeldMovement(boulder, GetWalkSlowMovementAction(task.data[2] & 0xFF));
+    // 1:1 décomp : FLDEFF_DUST sur le rocher (args INTERNAL = currentCoords + elevation + priority OAM).
+    const rt = getRuntime();
+    const bSprite = boulder.spriteId >= 0 ? rt.gSprites.get(boulder.spriteId) : null;
+    const priority = bSprite && bSprite.oamIndex >= 0 ? (rt.gba.oam[bSprite.oamIndex].priority ?? 2) : 2;
+    gFieldEffectArguments[0] = boulder.currentCoordsX;
+    gFieldEffectArguments[1] = boulder.currentCoordsY;
+    gFieldEffectArguments[2] = boulder.previousElevation;
+    gFieldEffectArguments[3] = priority;
+    FieldEffectStart(FLDEFF_DUST);
+    // PlaySE(SE_M_STRENGTH) — audio (skip 1:1 strict : on ne touche pas au son).
+    task.data[0]++;  // tState++
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `PushBoulder_End` (field_player_avatar.c:1507). Quand les deux held sont
+ *  finis : clear, preventStep=FALSE, déverrouille, détruit la task. */
+function PushBoulder_End(task: DecompTask, player: ObjectEvent, boulder: ObjectEvent): boolean {
+  void task;
+  if (ObjectEventCheckHeldMovementStatus(player)
+   && ObjectEventCheckHeldMovementStatus(boulder)) {
+    ObjectEventClearHeldMovementIfFinished(player);
+    ObjectEventClearHeldMovementIfFinished(boulder);
+    gPlayerAvatar.preventStep = false;
+    UnlockPlayerFieldControls();
+    DestroyTask(FindTaskIdByFunc(Task_PushBoulder));
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `sPushBoulderFuncs[]` (field_player_avatar.c:302). */
+const sPushBoulderFuncs: ReadonlyArray<(task: DecompTask, player: ObjectEvent, boulder: ObjectEvent) => boolean> = [
+  PushBoulder_Start,
+  PushBoulder_Move,
+  PushBoulder_End,
+];
+
+/** 1:1 STRICT décomp `Task_PushBoulder` (field_player_avatar.c:1465) :
+ *    while (sPushBoulderFuncs[tState](&task, &player, &boulder));
+ *  Tické chaque frame par le runtime ; boucle les step-funcs tant qu'elles retournent TRUE
+ *  (ici toutes retournent FALSE → 1 step/frame). */
+function Task_PushBoulder(task: DecompTask): void {
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  const boulder = gObjectEvents[task.data[1]];  // tBoulderObjId
+  while (sPushBoulderFuncs[task.data[0]](task, player, boulder));
+}
+
+/** 1:1 STRICT décomp `StartStrengthAnim(u8 objectEventId, u8 direction)` (field_player_avatar.c:1456) :
+ *    taskId = CreateTask(Task_PushBoulder, 0xFF); gTasks[taskId].data[1]=objId; data[2]=dir;
+ *    Task_PushBoulder(taskId);  // 1er appel synchrone (state 0 = PushBoulder_Start) */
 function StartStrengthAnim(objectEventId: number, direction: number): void {
-  // R4 dette : Task_PushBoulder non porté. Signature 1:1 conservée pour wire
-  // future. À porter avec HM Strength subsystem.
-  console.warn('[player-avatar] R4 TODO: StartStrengthAnim(' + objectEventId + ', '
-    + direction + ') — Task_PushBoulder non porté (hors démo).');
+  const taskId = CreateTask(Task_PushBoulder, 0xFF);
+  const task = GetTask(taskId);
+  if (!task) return;
+  task.data[1] = objectEventId;  // tBoulderObjId
+  task.data[2] = direction;      // tDirection
+  Task_PushBoulder(task);        // 1:1 appel synchrone immédiat
 }
 
 /** 1:1 décomp `IncrementGameStat(u8 index)` (overworld.c:433-445).
@@ -1015,8 +1087,14 @@ function CanStopSurfing(x: number, y: number, direction: number): boolean {
 function TryPushBoulder(x: number, y: number, direction: number): boolean {
   if (FlagGet('FLAG_SYS_USE_STRENGTH')) {
     const objectEventId = GetObjectEventIdByXY(x, y);
+    // 1:1 décomp `gObjectEvents[objectEventId].graphicsId == OBJ_EVENT_GFX_PUSHABLE_BOULDER`.
+    // Notre port stocke le `graphicsId` d'un NPC comme le NOM du constant décomp (= graphicsIdRaw
+    // du template), pas le u8 numérique → on compare au nom (même convention que le check
+    // `=== 'OBJ_EVENT_GFX_BERRY_TREE'` ailleurs). L'ancienne comparaison `String(87)` était un
+    // bug latent (jamais atteint car StartStrengthAnim était stubbé).
     if (objectEventId !== OBJECT_EVENTS_COUNT
-        && gObjectEvents[objectEventId].graphicsId === String(OBJ_EVENT_GFX_PUSHABLE_BOULDER)) {
+        && gObjectEvents[objectEventId].graphicsId === 'OBJ_EVENT_GFX_PUSHABLE_BOULDER') {
+      void OBJ_EVENT_GFX_PUSHABLE_BOULDER;  // (constant numérique = doc de l'identité décomp)
       // 1:1 décomp : boulder pos + direction = new target.
       const bx = gObjectEvents[objectEventId].currentCoordsX;
       const by = gObjectEvents[objectEventId].currentCoordsY;

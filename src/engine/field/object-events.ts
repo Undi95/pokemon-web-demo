@@ -6100,6 +6100,25 @@ export function GetWalkInPlaceSlowMovementAction(dir: number): number {
   return gWalkInPlaceSlowMovementActions[dir];
 }
 
+/** 1:1 décomp `gWalkInPlaceNormalMovementActions[]` (event_object_movement.c). */
+const gWalkInPlaceNormalMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkInPlaceNormalMovementAction` (event_object_movement.c, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_* (= marche
+ *  sur place, 16 frames). Utilisé par PlayerOnBikeCollide + PushBoulder_Move (Strength).
+ *  ⚠️ NE PAS confondre avec la version de `decomp-bridge` (numérotation décomp-réelle
+ *  ≠ notre table gMovementActionFuncs → renverrait JUMP_LEFT=68). */
+export function GetWalkInPlaceNormalMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkInPlaceNormalMovementActions[dir];
+}
+
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
  *  Quand action done (= return TRUE), set heldMovementFinished = TRUE.
