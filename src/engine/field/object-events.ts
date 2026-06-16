@@ -733,9 +733,12 @@ export function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
  *  Note coords : `currentCoords` / `previousCoords` sont en INTERNAL coords
  *  (= +MAP_OFFSET, 1:1 décomp ObjectEvent struct convention). `MapGridGetMetatile
  *  BehaviorAt` prend des internal coords directement. */
-/** 1:1 décomp `MOVEMENT_ACTION_NONE = 0xFE` (= include/constants/event_object_movement.h).
- *  Sentinel value pour `movementActionId` indiquant "no action active". */
-const MOVEMENT_ACTION_NONE = 0xFE;
+/** 1:1 STRICT décomp `MOVEMENT_ACTION_NONE = 0xFF` (include/constants/event_object_movement.h:247).
+ *  Sentinel pour `movementActionId` indiquant "no action active".
+ *  ⚠️ FIX : valait 0xFE (= la valeur de MOVEMENT_ACTION_STEP_END, l.246 !) → collision +
+ *  incohérence avec l'init du slot (0xFF, l.652) et les autres usages hardcodés 0xFF
+ *  (2697/6051). Un held cleared portait donc movementActionId=254=STEP_END au lieu de 255. */
+const MOVEMENT_ACTION_NONE = 0xFF;
 
 /** 1:1 décomp `ObjectEventIsMovementOverridden` (event_object_movement.c:4854-4860).
  *
