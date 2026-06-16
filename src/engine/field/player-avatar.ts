@@ -1888,12 +1888,21 @@ export function DestroyPlayerAvatar(rt: DecompRuntime): void {
   gPlayerAvatar.stepFramesLeft = 0;
 }
 
-/** 1:1 décomp `SetPlayerVisibility` (field_player_avatar.c).
- *  Utilisé par Task_ExitDoor / Task_ExitNonAnimDoor pour cacher le sprite player
- *  pendant fade-in (= sprite respawné post-warp avec son default facing avant
- *  que le walk-down dispatch ne prenne effet). Appelé `false` avant fade-in,
- *  `true` après fade-in done juste avant le walk-down forceMovement. */
-export function SetPlayerVisibility(rt: DecompRuntime, visible: boolean): void {
-  if (gPlayerAvatar.spriteId < 0) return;
-  rt.setSpriteInvisible(gPlayerAvatar.spriteId, !visible);
+/** 1:1 STRICT décomp `SetPlayerInvisibility(bool8 invisible)` (field_player_avatar.c) :
+ *    gObjectEvents[gPlayerAvatar.objectEventId].invisible = invisible;
+ *
+ *  Utilisé par Task_DoDoorWarp (cacher le joueur DANS la porte avant la fermeture)
+ *  et Task_ExitDoor / Task_ExitNonAnimDoor (cacher pendant fade-in). Appelé `false`
+ *  (= invisible) avant la fermeture/fade, `true` après juste avant le walk forceMovement.
+ *
+ *  ⚠️ FIX : on set le flag du SLOT object-event, PAS le sprite directement. Depuis
+ *  l'unification M3, le sprite joueur appartient au slot et `UpdateObjectEvents`
+ *  resynchronise `slot.invisible → sprite.invisible` CHAQUE frame. L'ancien
+ *  `rt.setSpriteInvisible(...)` était donc écrasé au frame suivant (slot.invisible
+ *  restait false) → le sprite joueur RÉAPPARAISSAIT pendant la fermeture de porte
+ *  (« on ne disparait pas quand elle s'ouvre »). Set le slot = 1:1 + la sync s'en charge. */
+export function SetPlayerVisibility(_rt: DecompRuntime, visible: boolean): void {
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!slot) return;
+  slot.invisible = !visible;
 }
