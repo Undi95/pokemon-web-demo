@@ -48,26 +48,27 @@ registerOpcode('showobject', (_ctx, args) => {
   return false;
 });
 
-// 1:1 décomp `SetPlayerInvisibility(TRUE)` (field_player_avatar.c:1396) via
-// le mnémonique `hideplayer` (= SCR_OP_HIDEOBJECTAT avec LOCALID_PLAYER).
+// 1:1 STRICT décomp `SetPlayerInvisibility(TRUE)` (field_player_avatar.c:1396) via
+// le mnémonique `hideplayer` (= SCR_OP_HIDEOBJECTAT avec LOCALID_PLAYER) :
+//   gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;
+// ⚠️ FIX : on set le SLOT object-event, PAS le sprite. Depuis l'unification M3, le sprite
+// joueur appartient au slot et UpdateObjectEvents resync `slot.invisible → sprite.invisible`
+// CHAQUE frame → cacher le sprite directement était écrasé au frame suivant. Symptôme :
+// le joueur ne disparaissait PAS dans la porte lors de l'entrée auto scriptée (GoInsideWithMom
+// → applymovement PlayerEnterHouse puis `hideplayer`). Identique au fix SetPlayerVisibility.
+// Cohérent avec hideobject/showobject ci-dessus (qui set déjà npc.invisible sur le slot).
 registerOpcode('hideplayer', (_ctx) => {
-  const rt = getRuntime();
-  if (rt && gPlayerAvatar.spriteId >= 0) {
-    const s = rt.gSprites.get(gPlayerAvatar.spriteId);
-    if (s) s.invisible = true;
-  }
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (slot) slot.invisible = true;
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_showobjectat` via le mnémonique `showplayer`
- *  (= SCR_OP_SHOWOBJECTAT avec LOCALID_PLAYER) :
- *  `SetObjectInvisibility(localId, ..., FALSE)`. Miroir exact de `hideplayer`. */
+ *  (= SCR_OP_SHOWOBJECTAT avec LOCALID_PLAYER) : SetPlayerInvisibility(FALSE).
+ *  Miroir exact de `hideplayer` — set le SLOT (cf. note ci-dessus). */
 registerOpcode('showplayer', (_ctx) => {
-  const rt = getRuntime();
-  if (rt && gPlayerAvatar.spriteId >= 0) {
-    const s = rt.gSprites.get(gPlayerAvatar.spriteId);
-    if (s) s.invisible = false;
-  }
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (slot) slot.invisible = false;
   return false;
 });
 
