@@ -202,6 +202,11 @@ function applyNoIntroPreset(): void {
   // FLAG_SYS_POKEDEX_GET set par Prof Birch après combat zigzagton.
   FlagSet('FLAG_SYS_POKEMON_GET');
   FlagSet('FLAG_SYS_POKEDEX_GET');
+  // ⚠️ DEBUG ONLY : les 8 badges d'arène (FLAG_BADGE01..08_GET). Débloque les CS
+  // gatées par badge (Surf=BADGE05, Strength=BADGE03, Waterfall=BADGE08, Dive=BADGE07,
+  // Rock Smash=BADGE03, Cut=BADGE01, Fly=BADGE03, Flash=BADGE01) pour pouvoir tester
+  // les field moves en jeu. 1:1 noms décomp (flags.h FLAG_BADGE0N_GET).
+  for (let n = 1; n <= 8; n++) FlagSet(`FLAG_BADGE0${n}_GET`);
   // Vars post-intro.
   // ⚠️ HOTFIX 2026-05-09 : était à 6, ce qui fait que walking dans
   // une maison fire le coord trigger `PetalburgGymReport` (= map_script_2
@@ -336,6 +341,34 @@ function applyNoIntroPreset(): void {
     egg.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
     GiveMonToPlayer(pokemonInstanceToPokemon(egg));
     console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
+
+    // ⚠️ DEBUG ONLY : 3 mons « porteurs de CS + capacités hors-combat » pour tester les field
+    // moves overworld (surf/strength/cut/rocksmash/fly/flash/waterfall/dive + sweet scent/dig/
+    // teleport/secret power). Moves donnés en enums décomp ('MOVE_*' → makeMoveSlot 1:1). Couvre
+    // les 8 CS + les principales capacités utilisables depuis le menu, réparties sans doublon.
+    const fieldMons: Array<{ species: string; lvl: number; ability: string; moves: string[] }> = [
+      // Léviator — eau : Surf, Cascade, Plongée, Force.
+      { species: 'SPECIES_GYARADOS', lvl: 100, ability: 'Intimidate',
+        moves: ['MOVE_SURF', 'MOVE_WATERFALL', 'MOVE_DIVE', 'MOVE_STRENGTH'] },
+      // Linéon — utilitaire terre : Coupe, Éclate-Roc, Tunnel, Doux Parfum.
+      { species: 'SPECIES_LINOONE', lvl: 100, ability: 'Pickup',
+        moves: ['MOVE_CUT', 'MOVE_ROCK_SMASH', 'MOVE_DIG', 'MOVE_SWEET_SCENT'] },
+      // Hélédelle — vol/divers : Vol, Flash, Téléport, Pouvoir Secret.
+      { species: 'SPECIES_SWELLOW', lvl: 100, ability: 'Guts',
+        moves: ['MOVE_FLY', 'MOVE_FLASH', 'MOVE_TELEPORT', 'MOVE_SECRET_POWER'] },
+    ];
+    for (const fm of fieldMons) {
+      const mon = createPokemonInstance(fm.species, fm.lvl, {
+        ability: fm.ability,
+        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        moves: fm.moves,
+      });
+      mon.metLocation = 'MAPSEC_MOSSDEEP_CITY';
+      mon.metLevel = fm.lvl;
+      GiveMonToPlayer(pokemonInstanceToPokemon(mon));
+      console.log(`[boot-mode] ?debug field-mon ajouté : ${fm.species} Lv${fm.lvl} [${fm.moves.join(', ')}]`);
+    }
   }
 
   // Migration Pokémon (palier B) : la party DEBUG ci-dessus est créée via
@@ -376,10 +409,12 @@ export function decideBootMode(): BootSpawn {
     // `?debug` = preset complet testing : tous les items, all flags.
     // Toujours appliqué (même si save existante = override en RAM only).
     applyNoIntroPreset();
-    const isFemale = gSaveBlock2Ptr.playerGender === FEMALE;
-    const spawnX = isFemale ? 14 : 5;
-    console.log(`[boot-mode] ?debug → preset complet, spawn (${spawnX}, 9) (SRAM bloquée)`);
-    return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
+    // Spawn ALGATIA (= MAP_MOSSDEEP_CITY, FR « ALGATIA ») : ville insulaire entourée d'océan
+    // (connexions Route 124 gauche / Route 125 haut / Route 127 bas = eau surfable de tous côtés),
+    // cyclisme autorisé → hub idéal pour tester surf/vélo/field moves. (28, 17) = devant le Centre
+    // Pokémon (warp 28,16).
+    console.log(`[boot-mode] ?debug → preset complet, spawn ALGATIA/Mossdeep (28, 17) (SRAM bloquée)`);
+    return { mapId: 'MAP_MOSSDEEP_CITY', x: 28, y: 17, facing: DIR_SOUTH, mode: 'nointro' };
   }
 
   if (hasNoIntroParam()) {
