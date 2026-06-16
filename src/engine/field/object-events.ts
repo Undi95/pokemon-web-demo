@@ -5694,20 +5694,38 @@ function _makeAcroEndWheelieMoveAction(dir: number): MovementActionFunc {
  *
  *  StartSpriteAnimInDirection (3958) : SetObjectEventDirection + StartSpriteAnim. */
 function _MovementAction_StartAnimInDirection_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // 1:1 décomp : utilise sprite->animNum existant (= continue l'anim courante).
-  // Used par BerryTreeGrowth_Normal (= continue le berry stage anim).
-  SetObjectEventDirection(npc, npc.movementDirection);
-  if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+  // 1:1 STRICT décomp `gMovementActionFuncs_StartAnimInDirection[]` (movement_action_func_tables.h:990) :
+  //   [0] MovementAction_StartAnimInDirection_Step0 (lance l'anim courante, sActionFuncId=1)
+  //   [1] MovementAction_WaitSpriteAnim (attend SpriteAnimEnded → sActionFuncId=2, return TRUE = FINISH)
+  //   [2] MovementAction_PauseSpriteAnim
+  // Notre table aplatit les sActionFuncId dans `npc.actionStep`. AVANT (DETTE H1) : seul Step0 →
+  // le held ne finissait JAMAIS (heldMovementFinished restait FALSE) → bloquait p.ex. la pose
+  // field-move de la montée de surf (SurfFieldEffect_ShowMon attend ObjectEventCheckHeldMovementStatus).
+  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  if (npc.actionStep === 0) {
+    // 1:1 `StartSpriteAnimInDirection` (event_object_movement.c:6084) : SetAndStartSpriteAnim(animNum, 0)
+    // (re-démarre l'anim courante depuis frame 0) + SetObjectEventDirection + sActionFuncId = 1.
+    SetObjectEventDirection(npc, npc.movementDirection);
     if (sprite) {
-      // 1:1 décomp StartSpriteAnim(sprite, sprite->animNum) — re-start current anim.
       sprite.animBeginning = true;
       sprite.animEnded = false;
       sprite.animCmdIndex = 0;
       sprite.animDelayCounter = 0;
     }
+    npc.actionStep = 1;
+    return false;
   }
-  return false;  // 1:1 décomp : return FALSE (= continue dispatch).
+  if (npc.actionStep === 1) {
+    // 1:1 `MovementAction_WaitSpriteAnim` (event_object_movement.c:6097) : SpriteAnimEnded → finish.
+    if (sprite && sprite.animEnded) {
+      npc.actionStep = 2;
+      return true;  // heldMovementFinished = TRUE
+    }
+    return false;
+  }
+  // 1:1 `MovementAction_PauseSpriteAnim` (sActionFuncId 2) — gèle l'anim (pose tenue).
+  if (sprite) sprite.animPaused = true;
+  return false;
 }
 
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
@@ -6064,6 +6082,25 @@ const gJump2MovementActions: readonly number[] = [
 export function GetJump2MovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gJump2MovementActions[dir];
+}
+
+/** 1:1 décomp `gJumpSpecialMovementActions[]` (event_object_movement.c:1003). */
+const gJumpSpecialMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_JUMP_SPECIAL_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_JUMP_SPECIAL_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_JUMP_SPECIAL_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_JUMP_SPECIAL_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetJumpSpecialMovementAction` (event_object_movement.c:4969, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_JUMP_SPECIAL_* (= saut sur le blob de surf,
+ *  JUMP_DISTANCE_NORMAL/JUMP_TYPE_HIGH). Utilisé par `SurfFieldEffect_JumpOnSurfBlob`.
+ *  ⚠️ NE PAS confondre avec la version `decomp-bridge` (numérotation décomp-réelle 0x60 ≠ notre
+ *  table gMovementActionFuncs où JUMP_SPECIAL_DOWN=58 ; cf. gotcha-movement-action-getter-dual-source). */
+export function GetJumpSpecialMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gJumpSpecialMovementActions[dir];
 }
 
 /** 1:1 décomp `gWalkInPlaceFastMovementActions[]` (event_object_movement.c). */

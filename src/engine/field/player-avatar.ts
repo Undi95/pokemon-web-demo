@@ -57,9 +57,12 @@ import {
   GetRideWaterCurrentMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
+  GetJumpSpecialMovementAction,
   GetWalkInPlaceFastMovementAction,
   GetWalkInPlaceSlowMovementAction,
   GetWalkInPlaceNormalMovementAction,
+  ObjectEventSetGraphicsId,
+  PreloadObjectEventGraphics,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -96,6 +99,7 @@ import {
   MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
+  ANIM_FIELD_MOVE,
 } from '../decomp-data/include/constants/event_object_movement-data';
 import {
   GetFaceDirectionMovementAction,
@@ -820,7 +824,7 @@ const COLLISION_HORIZONTAL_RAIL            = 13;
 const PLAYER_AVATAR_FLAG_ON_FOOT     = 1 << 0;
 const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
 const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
-const PLAYER_AVATAR_FLAG_SURFING     = 1 << 3;
+export const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
 const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
 const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
 const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
@@ -1562,7 +1566,7 @@ function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): voi
 const PLAYER_AVATAR_STATE_NORMAL     = 0;
 const PLAYER_AVATAR_STATE_MACH_BIKE  = 1;
 const PLAYER_AVATAR_STATE_ACRO_BIKE  = 2;
-const PLAYER_AVATAR_STATE_SURFING    = 3;
+export const PLAYER_AVATAR_STATE_SURFING = 3;
 const PLAYER_AVATAR_STATE_UNDERWATER = 4;
 const PLAYER_AVATAR_STATE_FIELD_MOVE = 5;
 const PLAYER_AVATAR_STATE_FISHING    = 6;
@@ -1644,11 +1648,24 @@ export function GetPlayerAvatarGraphicsIdByStateId(state: number): string {
   return GetPlayerAvatarGraphicsIdByStateIdAndGender(state, gPlayerAvatar.gender);
 }
 
+/** 1:1 STRICT décomp `SetPlayerAvatarFieldMove` (field_player_avatar.c:1403) :
+ *    ObjectEventSetGraphicsId(player, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE));
+ *    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], ANIM_FIELD_MOVE);
+ *  Swap le sprite joueur vers la pose « field move » (main levée) + lance l'anim de pose.
+ *  Utilisé par `SurfFieldEffect_FieldMovePose` (et les autres HM field moves). Le gfx FIELD_MOVE
+ *  doit être préchargé (`PreloadObjectEventGraphics`). */
+export function SetPlayerAvatarFieldMove(): void {
+  ObjectEventSetGraphicsId(gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE));
+  // 1:1 décomp `StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], ANIM_FIELD_MOVE)` — l'API runtime
+  // par id délègue à la `StartSpriteAnim` 1:1 strict de sprite-animation (decomp-runtime.ts:2256).
+  getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, ANIM_FIELD_MOVE);
+}
+
 /** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :
  *    flags &= (DASH | FORCED_MOVE | CONTROLLABLE); flags |= flags_param;
  *  Préserve les 3 bits transverses (dash/forced/controllable), reset les bits d'ÉTAT
  *  (ON_FOOT/MACH/ACRO/SURF/UNDERWATER), pose le nouvel état. */
-function SetPlayerAvatarStateMask(flags: number): void {
+export function SetPlayerAvatarStateMask(flags: number): void {
   gPlayerAvatar.flags &= (PLAYER_AVATAR_FLAG_DASH | PLAYER_AVATAR_FLAG_FORCED_MOVE | PLAYER_AVATAR_FLAG_CONTROLLABLE);
   gPlayerAvatar.flags |= flags;
 }

@@ -39,7 +39,7 @@ import {
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
-  FldEff_SurfBlob,
+  FldEff_SurfBlob, FldEff_UseSurf,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow,
 } from '../../game/field_effect_helpers';
@@ -55,6 +55,7 @@ export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
 export const FLDEFF_ASH                        = 7;
 export const FLDEFF_SURF_BLOB                  = 8;
+export const FLDEFF_USE_SURF                   = 9;
 export const FLDEFF_DUST                       = 10;
 export const FLDEFF_JUMP_TALL_GRASS            = 12;
 export const FLDEFF_SAND_FOOTPRINTS            = 13;
@@ -226,6 +227,11 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_SurfBlob (field_effect_helpers.c:999) — migré dans game/field_effect_helpers.ts.
     // Retourne le spriteId du blob (le code de surf l'utilise pour SetSurfBlob_*).
     return FldEff_SurfBlob(rt);
+  }
+  if (id === FLDEFF_USE_SURF) {
+    // 1:1 décomp FldEff_UseSurf (field_effect.c:2985) — migré dans game/field_effect_helpers.ts.
+    // Crée Task_SurfFieldEffect (montée de surf : pose → saut sur blob → assis+bobbing).
+    return FldEff_UseSurf(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

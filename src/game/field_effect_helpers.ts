@@ -62,8 +62,21 @@ import {
   _getGfxMeta, type GfxMeta,
   LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
   _genericNpcReflectionTag, _loadReflectionPaletteByTag,
+  // 1:1 décomp Task_SurfFieldEffect (field_effect.c) — montée de surf.
+  ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
+  ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
+  GetJumpSpecialMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
 } from '../engine/field/object-events';
 import { MoveCoords } from '../engine/field/direction-coords';
+import {
+  SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
+  GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,
+} from '../engine/field/player-avatar';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/script/script-runtime';
+import { FieldEffectActiveListContains } from '../engine/field/field-effect-active-list';
+import { GetFaceDirectionMovementAction, DestroyTask } from '../engine/system/decomp-bridge';
+import { FindTaskIdByFunc, getRuntime } from '../engine/system/decomp-globals';
+import type { DecompTask } from '../engine/system/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
@@ -110,8 +123,11 @@ const FLDEFF_UNUSED_GRASS_2 = 20;
 const FLDEFF_UNUSED_SAND = 21;
 const FLDEFF_WATER_SURFACING = 22;
 const FLDEFF_SURF_BLOB = 8;
+const FLDEFF_USE_SURF = 9;
+const FLDEFF_FIELD_MOVE_SHOW_MON = 6;
+const FLDEFF_FIELD_MOVE_SHOW_MON_INIT = 59;
 // 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
-const BOB_NONE = 0, BOB_JUST_MON = 2;
+const BOB_NONE = 0, BOB_PLAYER_AND_MON = 1, BOB_JUST_MON = 2;
 const LOCALID_PLAYER = 0xFF;
 const MAX_SPRITES = 64;
 
@@ -1096,6 +1112,129 @@ function GetSurfBlob_BobState(sprite: DecompSprite): number { return sprite.data
 function GetSurfBlob_DontSyncAnim(sprite: DecompSprite): number { return (sprite.data[0] & 0xF0) >> 4; }
 /** 1:1 décomp `GetSurfBlob_HasPlayerOffset` (field_effect_helpers.c:1047). */
 function GetSurfBlob_HasPlayerOffset(sprite: DecompSprite): number { return (sprite.data[0] & 0xF00) >> 8; }
+
+// ─── 1:1 décomp `field_effect.c` /* Surf */ — montée de surf (Task_SurfFieldEffect) ──────────
+// tState=data[0], tDestX=data[1], tDestY=data[2], tMonId=data[15] (field_effect.c:2980-2983).
+// Déclenché par `FieldEffectStart(FLDEFF_USE_SURF)` (A face à l'eau surfable, badge 5 + mon Surf).
+// Séquence : pose field-move (main levée) → (show-mon) → SAUT sur le blob (jump special, gfx surf) →
+// assis face direction + bobbing BOB_PLAYER_AND_MON.
+//
+// ⚠️ DÉPENDANCE NON PORTÉE : FLDEFF_FIELD_MOVE_SHOW_MON (le Pokémon apparaît, effet commun à TOUS
+// les HM field moves) n'est pas dans le dispatch → `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)`
+// est gardé 1:1 mais no-op → `FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)` = false →
+// la séquence enchaîne (le mount marche ; le mon-show est un effet à porter à part).
+
+/** 1:1 `SHOW_MON_CRY_NO_DUCKING` (field_effect.c:2582). OR'd au monId pour le show-mon. */
+const SHOW_MON_CRY_NO_DUCKING = (1 << 31);
+/** 1:1 `MOVEMENT_ACTION_START_ANIM_IN_DIRECTION` (event_object_movement.h). */
+const MOVEMENT_ACTION_START_ANIM_IN_DIRECTION = 57;
+/** 1:1 `PLAYER_AVATAR_STATE_FIELD_MOVE` (global.fieldmap.h). */
+const PLAYER_AVATAR_STATE_FIELD_MOVE = 5;
+/** 1:1 `PLAYER_AVATAR_FLAG_CONTROLLABLE` (global.fieldmap.h). */
+const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
+
+/** Préchargement des gfx d'état joueur surfing/field_move (notre modèle d'assets async charge ce que
+ *  le décomp a en ROM). `FldEff_UseSurf` le lance ; `SurfFieldEffect_FieldMovePose` gate dessus pour
+ *  garantir un swap gfx SYNC 1:1 (ObjectEventSetGraphicsId suppose le PNG préchargé). */
+let _surfGfxReady = false;
+function _preloadSurfPlayerGfx(): void {
+  _surfGfxReady = false;
+  const surfGfx = GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING);
+  const poseGfx = GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE);
+  Promise.all([PreloadObjectEventGraphics(surfGfx), PreloadObjectEventGraphics(poseGfx)])
+    .then(() => { _surfGfxReady = true; })
+    .catch(() => { _surfGfxReady = true; });
+}
+
+/** 1:1 STRICT décomp `SurfFieldEffect_Init` (field_effect.c:3007). */
+function SurfFieldEffect_Init(task: DecompTask): void {
+  LockPlayerFieldControls();
+  FreezeObjectEvents();
+  gPlayerAvatar.preventStep = true;
+  SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
+  const dest = PlayerGetDestCoords();
+  const moved = MoveCoords(gObjectEvents[gPlayerAvatar.objectEventId].movementDirection, dest.x, dest.y);
+  task.data[1] = moved.x;  // tDestX
+  task.data[2] = moved.y;  // tDestY
+  task.data[0]++;          // tState
+}
+
+/** 1:1 STRICT décomp `SurfFieldEffect_FieldMovePose` (field_effect.c:3018). */
+function SurfFieldEffect_FieldMovePose(task: DecompTask): void {
+  if (!_surfGfxReady) return;  // attend le préload des gfx surf (swap sync 1:1)
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    SetPlayerAvatarFieldMove();
+    ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+    task.data[0]++;
+  }
+}
+
+/** 1:1 STRICT décomp `SurfFieldEffect_ShowMon` (field_effect.c:3030). */
+function SurfFieldEffect_ShowMon(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (ObjectEventCheckHeldMovementStatus(objectEvent)) {
+    gFieldEffectArguments[0] = task.data[15] | SHOW_MON_CRY_NO_DUCKING;  // tMonId
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op (mon-show à part)
+    task.data[0]++;
+  }
+}
+
+/** 1:1 STRICT décomp `SurfFieldEffect_JumpOnSurfBlob` (field_effect.c:3042) — le saut sur le blob. */
+function SurfFieldEffect_JumpOnSurfBlob(task: DecompTask): void {
+  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
+    ObjectEventClearHeldMovementIfFinished(objectEvent);
+    ObjectEventSetHeldMovement(objectEvent, GetJumpSpecialMovementAction(objectEvent.movementDirection));
+    gFieldEffectArguments[0] = task.data[1];  // tDestX
+    gFieldEffectArguments[1] = task.data[2];  // tDestY
+    gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;
+    objectEvent.fieldEffectSpriteId = FieldEffectStart(FLDEFF_SURF_BLOB);
+    task.data[0]++;
+  }
+}
+
+/** 1:1 STRICT décomp `SurfFieldEffect_End` (field_effect.c:3059) — assis + bobbing, déverrouille. */
+function SurfFieldEffect_End(_task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    gPlayerAvatar.preventStep = false;
+    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;
+    ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(objectEvent.movementDirection));
+    SetSurfBlob_BobState(getRuntime(), objectEvent.fieldEffectSpriteId, BOB_PLAYER_AND_MON);
+    UnfreezeObjectEvents();
+    UnlockPlayerFieldControls();
+    FieldEffectActiveListRemove(FLDEFF_USE_SURF);
+    DestroyTask(FindTaskIdByFunc(Task_SurfFieldEffect));
+  }
+}
+
+/** 1:1 STRICT décomp `sSurfFieldEffectFuncs[]` (field_effect.c:2994). */
+const sSurfFieldEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  SurfFieldEffect_Init,
+  SurfFieldEffect_FieldMovePose,
+  SurfFieldEffect_ShowMon,
+  SurfFieldEffect_JumpOnSurfBlob,
+  SurfFieldEffect_End,
+];
+
+/** 1:1 STRICT décomp `Task_SurfFieldEffect` (field_effect.c:3002). */
+function Task_SurfFieldEffect(task: DecompTask): void {
+  sSurfFieldEffectFuncs[task.data[0]](task);
+}
+
+/** 1:1 STRICT décomp `FldEff_UseSurf` (field_effect.c:2985) :
+ *    taskId = CreateTask(Task_SurfFieldEffect, 0xff); gTasks[taskId].tMonId = gFieldEffectArguments[0];
+ *    Overworld_ClearSavedMusic(); Overworld_ChangeMusicTo(MUS_SURF); return FALSE;
+ *  (Musique = audio → skip 1:1 strict.) Lance aussi le préload des gfx d'état joueur. */
+export function FldEff_UseSurf(rt: DecompRuntime): number {
+  const taskId = rt.CreateTask(Task_SurfFieldEffect, 0xFF);
+  const task = rt.gTasks.get(taskId);
+  if (task) task.data[15] = gFieldEffectArguments[0];  // tMonId
+  _preloadSurfPlayerGfx();
+  return 0;  // FALSE
+}
 
 /** 1:1 décomp `UpdateSurfBlobFieldEffect` (field_effect_helpers.c:1052). Callback per-frame. */
 export function UpdateSurfBlobFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
