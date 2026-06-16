@@ -113,3 +113,83 @@ se porte d'un bloc, pas en confettis.
 - `PlayerSetAnimId` ne CLEAR pas — il guard sur `!PlayerIsAnimActive()`. Le clear vient de
   `TryInterruptObjectEventSpecialAnim` (à porter dans la même étape 1, sinon le guard bloque le re-pose).
 - NE PAS déplacer player-avatar.ts/object-events.ts vers `src/game/` tant que pas 100% ligne-par-ligne.
+
+---
+
+## 📐 Étape 1b-iii + 2 — call-graph PRÉCIS (recherche décomp 2026-06-16) + résolution du couplage
+
+### Déjà 1:1 (rien à faire)
+- ✅ `UpdatePlayerAvatarTransitionState` + helpers (commit `4cd5cd73`) — pose enfin `T_TILE_CENTER`.
+- ✅ Chaîne de collision : `CheckForPlayerAvatarCollision` → `CheckForObjectEventCollision` (+ static variant)
+  → `GetCollisionAtCoords` (ledge/boulder/rotating gate/acro). `checkPlayerCollision` = noclip dev + delegate 1:1.
+- ✅ Leaf actions : `PlayerWalkNormal`/`PlayerRun`/`PlayerTurnInPlace`/`PlayerJumpLedge`/`PlayerNotOnBikeCollide`/
+  `PlayerFaceDirection`/`PlayerSetAnimId`/`PlayerSetCopyableMovement`/`PlayerIsAnimActive`.
+- ✅ `PlayerNotOnBikeNotMoving` (commit `f2ab1b62`).
+
+### `PlayerStep` cible (field_player_avatar.c:332) — à RÉ-ÉCRIRE 1:1
+```
+HideShowWarpArrow(playerObjEvent)
+if (!preventStep):
+  Bike_TryAcroBikeHistoryUpdate(newKeys, heldKeys)            // étape 5 (acro) → stub no-op
+  if (TryInterruptObjectEventSpecialAnim(playerObjEvent, dir) == 0):   // ← LE GATE (remplace compteurs)
+    npc_clear_strange_bits(playerObjEvent)                    // inanimate/disableAnim/facingLocked=FALSE + clear DASH flag
+    DoPlayerAvatarTransition()                                // étape 4 (états) → stub no-op pour l'instant
+    if (TryDoMetatileBehaviorForcedMovement() == 0):          // étape 3 (glace/courant) → stub return 0
+      MovePlayerAvatarUsingKeypadInput(dir, newKeys, heldKeys)   // → MovePlayerNotOnBike (vélo = étape 5)
+      PlayerAllowForcedMovementIfMovingSameDirection()        // if runningState==MOVING → clear CONTROLLABLE flag
+```
+
+### `TryInterruptObjectEventSpecialAnim` (fpa.c:355) — LE remplaçant des compteurs
+```
+if (ObjectEventIsMovementOverridden(p) && !ObjectEventClearHeldMovementIfFinished(p)):  // held actif ET pas fini
+  id = ObjectEventGetHeldMovementActionId(p)
+  if (id > WALK_FAST_RIGHT(0x18) && id < WALK_IN_PLACE_NORMAL_DOWN(0x1D)):   // = WALK_IN_PLACE_SLOW (collide bump), interruptible
+    if (dir == DIR_NONE) return TRUE
+    if (p->movementDirection != dir) { ObjectEventClearHeldMovement(p); return FALSE }       // change de dir → interrompt le bump
+    if (CheckForPlayerAvatarStaticCollision(dir) == COLLISION_NONE) { ObjectEventClearHeldMovement(p); return FALSE }  // mur parti → interrompt
+  return TRUE      // gate : held en cours → PlayerStep ne fait RIEN ce frame (le held avance via TickObjectEventMovements)
+return FALSE       // held fini (cleared par IfFinished) OU aucun → on procède
+```
+⚠️ `ObjectEventClearHeldMovementIfFinished` = quand le held est FINI il le CLEAR + return truthy → `!...` = false →
+le `&&` court-circuite → return FALSE → gate ouvert. **C'est ça qui ouvre le gate en fin de pas, pas un compteur.**
+
+### Dispatch (fpa.c:583)
+```
+MovePlayerNotOnBike(dir, held): sPlayerNotOnBikeFuncs[CheckMovementInputNotOnBike(dir)](dir, held)
+CheckMovementInputNotOnBike(dir):                                   // ÉCRIT runningState ET le retourne
+  dir==DIR_NONE → runningState=NOT_MOVING ; dir!=GetPlayerMovementDirection() && runningState!=MOVING → TURN_DIRECTION ; else MOVING
+sPlayerNotOnBikeFuncs = {[NOT_MOVING]=PlayerNotOnBikeNotMoving, [TURN_DIRECTION]=…TurningInPlace, [MOVING]=…Moving}
+PlayerNotOnBikeNotMoving(dir,held)    → PlayerFaceDirection(GetPlayerFacingDirection())   // ✅ déjà porté
+PlayerNotOnBikeTurningInPlace(dir,held) → PlayerTurnInPlace(dir)
+PlayerNotOnBikeMoving(dir,held):
+  collision = CheckForPlayerAvatarCollision(dir)
+  if (collision): LEDGE_JUMP→PlayerJumpLedge ; (mew island skip) ; else (collision-COLLISION_STOP_SURFING > 3)→PlayerNotOnBikeCollide
+  SURFING→PlayerWalkFast (étape 5) ; (B & FLAG_SYS_B_DASH & !IsRunningDisallowed)→PlayerRun+set DASH flag ; else→PlayerWalkNormal
+```
+
+### 🔴 LE COUPLAGE (= pourquoi pas incrémentable, à porter d'un bloc avec une amorce d'étape 2)
+Notre `PlayerStep` actuel utilise les compteurs `stepFramesLeft/turnFramesLeft/collideFramesLeft` pour DEUX choses :
+(a) **gater l'input** (→ remplacé par `TryInterruptObjectEventSpecialAnim`), (b) **déclencher le step-end**
+(warp/rencontre/coord + `SyncPlayerObjectEvent`) à `stepFramesLeft===0`. Le pas AVANCE déjà via le held movement
+(TickObjectEventMovements, indépendant de PlayerStep) → (a) est pur remplacement. MAIS (b) : dans la décomp le
+warp/rencontre est dans **`ProcessPlayerFieldInput`** (fca.c:134, tourne AVANT PlayerStep dans CB1), gaté par
+`tileTransitionState == T_TILE_CENTER`. Donc retirer les compteurs OBLIGE à déplacer le step-end → c'est l'**étape 2**.
+→ 1b-iii et 2 se portent ENSEMBLE.
+
+⚠️ **Risque à vérifier en premier** (déterministe, AVANT la ré-écriture) : `SyncPlayerObjectEvent` au step-end
+réconcilie `slot.currentCoords` (avancé par le held `ShiftStillObjectEventCoords`) avec `gSaveBlock1Ptr.pos`
+(avancé par `CameraMove` au tile boundary). **Tester** : après un held walk, `slot.currentCoords === gSaveBlock1Ptr.pos` ?
+Si OUI → SyncPlayerObjectEvent redondant (le held + caméra suffisent), ré-écriture simplifiée. Si NON (drift) →
+il faut déclencher Sync sur held-finished. (Sonde : `gSaveBlock1Ptr` PAS sur `rt` au runtime — trouver l'accesseur,
+ex. `window.gSaveBlock1Ptr` ou via dev-scope, avant de tester.)
+
+### Plan d'attaque du bloc (focused, A/B à chaque sous-étape, git checkout = filet)
+1. Vérifier le sync pos/coords (ci-dessus) → décide si on garde/retire SyncPlayerObjectEvent.
+2. Porter `TryInterruptObjectEventSpecialAnim` + `npc_clear_strange_bits` + `MovePlayerNotOnBike`/
+   `CheckMovementInputNotOnBike`/`sPlayerNotOnBikeFuncs`/`PlayerNotOnBikeTurningInPlace`/`PlayerNotOnBikeMoving`.
+3. Ré-écrire `PlayerStep` = la structure cible ci-dessus (DoPlayerAvatarTransition + TryDoMetatileBehaviorForcedMovement
+   = stubs). Retirer `stepFramesLeft/turnFramesLeft/collideFramesLeft`.
+4. Amorcer étape 2 : sortir warp/rencontre/coord/arrow de PlayerStep → check gaté `T_TILE_CENTER` (activer
+   `field-control-avatar.ts::FieldGetPlayerInput`/`ProcessPlayerFieldInput` déjà ~porté).
+5. A/B EXHAUSTIF : walk/dash/turn/collide(bump+SE)/ledge jump/door warp/arrow warp/encounter herbe/coord event/
+   interact PNJ/cutscène scriptée. Aucune régression tolérée.
