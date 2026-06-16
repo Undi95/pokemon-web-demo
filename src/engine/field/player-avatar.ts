@@ -45,6 +45,7 @@ import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
+  ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsHeldMovementActive,
   ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
@@ -79,6 +80,7 @@ import { GetFaceDirectionAnimNum } from './direction-coords';
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
 import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
 import { COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2 } from '../decomp-data/include/constants/event_object_movement-data';
+import { GetFaceDirectionMovementAction } from '../system/decomp-bridge';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -1296,6 +1298,26 @@ function PlayerJumpLedge(direction: number): void {
   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
 }
 
+/** 1:1 décomp `PlayerFaceDirection` (field_player_avatar.c:1007) :
+ *    PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE); */
+function PlayerFaceDirection(direction: number): void {
+  PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerNotOnBikeNotMoving` (field_player_avatar.c:598) :
+ *    PlayerFaceDirection(GetPlayerFacingDirection());
+ *  Appelé chaque frame quand le joueur est à l'arrêt (input DIR_NONE) → re-pose un held
+ *  FACE (stationnaire) → le sprite revient à la frame de face de sa direction. Le held FACE
+ *  fini du frame précédent est clear par `ObjectEventClearHeldMovementIfFinished` (= rôle de
+ *  `TryInterruptObjectEventSpecialAnim` dans la décomp, gating complet porté à l'étape 1b). */
+function PlayerNotOnBikeNotMoving(): void {
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (slot && slot.active && slot.isPlayer) {
+    ObjectEventClearHeldMovementIfFinished(slot);
+    PlayerFaceDirection(GetPlayerFacingDirection());
+  }
+}
+
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
 
@@ -1584,7 +1606,12 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // Sinon (NOT_MOVING ou TURN_DIRECTION), on fait l'anim TURN_DIRECTION 8 frames.
 
   if (inputDir === DIR_NONE) {
+    // 1:1 décomp `CheckMovementInputNotOnBike` (DIR_NONE → NOT_MOVING) +
+    // `sPlayerNotOnBikeFuncs[NOT_MOVING] = PlayerNotOnBikeNotMoving` → PlayerFaceDirection :
+    // le joueur revient à la frame de FACE de sa direction au repos (vrai 1:1, remplace
+    // l'interim parity de _npcEndWalkAnim).
     gPlayerAvatar.runningState = NOT_MOVING;
+    PlayerNotOnBikeNotMoving();
     return;
   }
 

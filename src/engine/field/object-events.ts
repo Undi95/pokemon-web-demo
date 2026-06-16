@@ -1985,20 +1985,14 @@ function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite || !sprite.anims) return;
-  // 1:1 décomp `UpdateMovementNormal` (event_object_movement.c:5116) fin de pas : `animPaused
-  // = TRUE` SEULEMENT. L'anim de marche [walk_a, face, walk_b, face] (GO anims) finit sur une
-  // cmd FACE (index IMPAIR) pour un pas de 16 frames (2 cmds de 8), et `animCmdIndex` est
-  // PRÉSERVÉ → le pas SUIVANT (_npcSetStepAnim) lit ce cmdIndex (1/3) et alterne vers walk_b
-  // (cmd 2) → les DEUX frames de marche jouent. (L'ancien fix « H4.1 » resetait à walk_a →
-  // walk_b jamais joué = régression marche haut/bas signalée.)
-  //
-  // INTERIM (avant étape 1b = PlayerNotOnBikeNotMoving→PlayerFaceDirection + MovementType NPC
-  // qui reposent FACE au repos) : si l'anim est figée sur une cmd de MARCHE (index PAIR — cas
-  // WALK_IN_PLACE_FAST 8f = 1 cmd → finit sur walk_a), on remet FACE pour ne pas rester jambes
-  // écartées. Sur une cmd FACE (impair) on PRÉSERVE → alternance intacte.
-  if (!npc.inanimate && (sprite.animCmdIndex & 1) === 0) {
-    StartSpriteAnim(sprite as never, GetFaceDirectionAnimNum(npc.facingDirection));
-  }
+  // 1:1 STRICT décomp `UpdateMovementNormal` (event_object_movement.c:5116) fin de pas :
+  //   sprite->animPaused = TRUE;  ← SEULEMENT, ne touche PAS animNum/animCmdIndex.
+  // L'anim de marche [walk_a, face, walk_b, face] (GO anims) finit naturellement sur une cmd
+  // FACE (index impair, un pas = 16 frames = 2 cmds de 8) et `animCmdIndex` est PRÉSERVÉ → le
+  // pas SUIVANT (_npcSetStepAnim) lit ce cmdIndex et alterne vers walk_b → les DEUX frames de
+  // marche jouent. Le retour à FACE au REPOS vient (1:1) de PlayerNotOnBikeNotMoving→
+  // PlayerFaceDirection (joueur) / du MovementType (NPC), PAS d'un reset ici (l'ancien « H4.1 »
+  // resetait à walk_a → walk_b jamais joué = régression marche haut/bas, retiré).
   sprite.animPaused = true;
 }
 

@@ -2569,12 +2569,17 @@ export function GetFaceDirectionMovementAction(direction: number): number {
   // MOVEMENT_ACTION_FACE_DOWN..LEFT = 0..3 (the direction enum + 0)
   // MOVEMENT_ACTION_FACE_DOWN = 0x0, FACE_UP = 0x1, FACE_LEFT = 0x2, FACE_RIGHT = 0x3
   // Mapping from include/constants/event_object_movement.h.
+  // 1:1 décomp `gFaceDirectionMovementActions[]` (event_object_movement.c) :
+  //   [DIR_SOUTH]=FACE_DOWN, [DIR_NORTH]=FACE_UP, [DIR_WEST]=FACE_LEFT, [DIR_EAST]=FACE_RIGHT.
+  // FIX : NORD/SUD étaient INVERSÉS (SOUTH→0x01/UP, NORTH→0x00/DOWN) — bug dormant jamais
+  // détecté car cette fonction n'était utilisée que par des NPCs jusqu'au câblage idle-FACE
+  // joueur (PlayerNotOnBikeNotMoving) → twitch haut/bas au repos.
   switch (direction) {
-    case 1: return 0x01; // DIR_SOUTH → FACE_DOWN
-    case 2: return 0x00; // DIR_NORTH → FACE_UP (?? double-check)
+    case 1: return 0x00; // DIR_SOUTH → FACE_DOWN
+    case 2: return 0x01; // DIR_NORTH → FACE_UP
     case 3: return 0x02; // DIR_WEST → FACE_LEFT
     case 4: return 0x03; // DIR_EAST → FACE_RIGHT
-    default: return 0x01;
+    default: return 0x00;
   }
 }
 
