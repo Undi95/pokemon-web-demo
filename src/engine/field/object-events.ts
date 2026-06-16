@@ -4552,15 +4552,35 @@ function _MovementAction_WalkInPlace_Step1(rt: DecompRuntime, npc: ObjectEvent):
   return false;
 }
 
+/** 1:1 STRICT décomp `MovementAction_WalkInPlaceSlow_Step1` (event_object_movement.c:5724) :
+ *    if (sprite->data[3] & 1) sprite->animDelayCounter++;
+ *    return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
+ *  C'est CE qui distingue WALK_IN_PLACE_**SLOW** (collide bump mur) des autres in-place : sur
+ *  les frames où le compteur de durée (`data[3]` = notre `actionTimer`) est IMPAIR, on incrémente
+ *  `animDelayCounter` AVANT le tick d'anim (`animateSprites`, qui le décrémente) → net 0 cette
+ *  frame → l'anim n'avance pas → les jambes bougent à MOITIÉ de la vitesse de la marche normale.
+ *  Sans ça le bump jouait à vitesse de marche (bug user « même vitesse en marchant dans le mur »).
+ *  ⚠️ check `& 1` AVANT le décrément (le décrément est dans _MovementAction_WalkInPlace_Step1). */
+function _MovementAction_WalkInPlaceSlow_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.actionTimer & 1) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.animDelayCounter++;
+  }
+  return _MovementAction_WalkInPlace_Step1(rt, npc);
+}
+
 /** Factory pour WalkInPlace actions (= animNum + duration selon SLOW/NORMAL/FAST/FASTER).
  *  1:1 décomp : chaque MovementAction_WalkInPlace{Slow,Normal,Fast,Faster}X_Step0 passe
- *  l'anim de SA vitesse à InitMoveInPlace (GetMoveDirection{,Fast,Faster}AnimNum). */
-function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number): MovementActionFunc {
+ *  l'anim de SA vitesse à InitMoveInPlace (GetMoveDirection{,Fast,Faster}AnimNum). `slow=true`
+ *  route le tick vers `_MovementAction_WalkInPlaceSlow_Step1` (ralentissement 1:1 du bump mur). */
+function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number, slow = false): MovementActionFunc {
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitMoveInPlace(rt, npc, dir, animNum, duration);
     }
-    return _MovementAction_WalkInPlace_Step1(rt, npc);
+    return slow
+      ? _MovementAction_WalkInPlaceSlow_Step1(rt, npc)
+      : _MovementAction_WalkInPlace_Step1(rt, npc);
   };
 }
 
@@ -5782,10 +5802,10 @@ gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT] = _Move
 // 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) + WalkInPlace_Step1 (5713).
 // SLOW + NORMAL : anim NORMALE (GetMoveDirectionAnimNum, 8f/cmd). FAST : anim FAST (4f/cmd).
 // FASTER : anim FASTER (2f/cmd). 1:1 décomp MovementAction_WalkInPlace{Slow,Normal,Fast,Faster}X_Step0.
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH),       32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP]      = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH),       32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionAnimNum(DIR_WEST),        32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionAnimNum(DIR_EAST),        32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH),       32, true);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP]      = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH),       32, true);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionAnimNum(DIR_WEST),        32, true);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionAnimNum(DIR_EAST),        32, true);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH),       16);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP]    = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH),       16);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionAnimNum(DIR_WEST),        16);
