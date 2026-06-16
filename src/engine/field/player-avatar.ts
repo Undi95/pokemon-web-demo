@@ -1602,6 +1602,48 @@ function GetPlayerAvatarStateTransitionByGraphicsId(graphicsId: number | string,
   return PLAYER_AVATAR_FLAG_ON_FOOT;
 }
 
+/** 1:1 STRICT décomp `sPlayerAvatarGfxIds[][GENDER_COUNT]` (field_player_avatar.c:246).
+ *  Map (état joueur, genre) → graphicsId. Le décomp utilise le u8 numérique ; notre port
+ *  identifie un gfx par le NOM du constant décomp (= clé du catalogue object-event-graphics.json
+ *  ET valeur de `ObjectEvent.graphicsId`). Le catalogue CONTIENT bien les sprites d'état joueur
+ *  (`OBJ_EVENT_GFX_BRENDAN_SURFING` → people/brendan/surfing.png, etc.) → `ObjectEventSetGraphicsId`
+ *  les charge via le chemin gfx partagé (seul NORMAL = cas spécial = feuille combinée walking+running). */
+const sPlayerAvatarGfxIds: Record<'MALE' | 'FEMALE', readonly string[]> = {
+  // index = PLAYER_AVATAR_STATE_* (NORMAL..WATERING)
+  MALE: [
+    'OBJ_EVENT_GFX_BRENDAN_NORMAL',     // STATE_NORMAL
+    'OBJ_EVENT_GFX_BRENDAN_MACH_BIKE',  // STATE_MACH_BIKE
+    'OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE',  // STATE_ACRO_BIKE
+    'OBJ_EVENT_GFX_BRENDAN_SURFING',    // STATE_SURFING
+    'OBJ_EVENT_GFX_BRENDAN_UNDERWATER', // STATE_UNDERWATER
+    'OBJ_EVENT_GFX_BRENDAN_FIELD_MOVE', // STATE_FIELD_MOVE
+    'OBJ_EVENT_GFX_BRENDAN_FISHING',    // STATE_FISHING
+    'OBJ_EVENT_GFX_BRENDAN_WATERING',   // STATE_WATERING
+  ],
+  FEMALE: [
+    'OBJ_EVENT_GFX_MAY_NORMAL',
+    'OBJ_EVENT_GFX_MAY_MACH_BIKE',
+    'OBJ_EVENT_GFX_MAY_ACRO_BIKE',
+    'OBJ_EVENT_GFX_MAY_SURFING',
+    'OBJ_EVENT_GFX_MAY_UNDERWATER',
+    'OBJ_EVENT_GFX_MAY_FIELD_MOVE',
+    'OBJ_EVENT_GFX_MAY_FISHING',
+    'OBJ_EVENT_GFX_MAY_WATERING',
+  ],
+};
+
+/** 1:1 STRICT décomp `GetPlayerAvatarGraphicsIdByStateIdAndGender` (field_player_avatar.c:1224) :
+ *    return sPlayerAvatarGfxIds[state][gender]; */
+export function GetPlayerAvatarGraphicsIdByStateIdAndGender(state: number, gender: 'MALE' | 'FEMALE'): string {
+  return sPlayerAvatarGfxIds[gender][state];
+}
+
+/** 1:1 STRICT décomp `GetPlayerAvatarGraphicsIdByStateId` (field_player_avatar.c:1239) :
+ *    return GetPlayerAvatarGraphicsIdByStateIdAndGender(state, gPlayerAvatar.gender); */
+export function GetPlayerAvatarGraphicsIdByStateId(state: number): string {
+  return GetPlayerAvatarGraphicsIdByStateIdAndGender(state, gPlayerAvatar.gender);
+}
+
 /** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :
  *    flags &= (DASH | FORCED_MOVE | CONTROLLABLE); flags |= flags_param;
  *  Préserve les 3 bits transverses (dash/forced/controllable), reset les bits d'ÉTAT

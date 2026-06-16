@@ -7358,6 +7358,119 @@ async function _respawnNpcSpriteForReturnToField(
   return true;
 }
 
+/** Précharge les PNG d'un graphicsId catalogue dans `_npcPngCache` (pour que
+ *  `ObjectEventSetGraphicsId` puisse swapper en SYNC, comme la décomp suppose le gfx déjà chargé).
+ *  Utilisé pour les sprites d'ÉTAT joueur (surfing/field_move/bike…) qui ne sont pas auto-préchargés
+ *  comme les NPC de la map. */
+export async function PreloadObjectEventGraphics(graphicsId: string): Promise<void> {
+  const catalog = await loadGraphicsCatalog();
+  const g = catalog[graphicsId];
+  if (!g || !g.png) return;
+  await loadNpcPng(`${BASE}/${g.png}`);
+  const sec = MULTI_PNG_SECONDARY_PATHS[graphicsId];
+  if (sec) await loadNpcPng(`${BASE}/${sec}`);
+}
+
+/** 1:1 STRICT décomp `ObjectEventSetGraphicsId(struct ObjectEvent *, u8 graphicsId)`
+ *  (event_object_movement.c:1820) — SWAP LIVE du gfx d'un object event existant.
+ *
+ *  ```c
+ *  graphicsInfo = GetObjectEventGraphicsInfo(graphicsId);
+ *  sprite = &gSprites[objectEvent->spriteId];
+ *  ... PatchObjectPalette(...) selon paletteSlot ...
+ *  sprite->oam.shape/size = graphicsInfo->oam->shape/size;
+ *  sprite->images = graphicsInfo->images; sprite->anims = graphicsInfo->anims;
+ *  sprite->oam.paletteNum = paletteSlot; objectEvent->inanimate = graphicsInfo->inanimate;
+ *  objectEvent->graphicsId = graphicsId;
+ *  SetSpritePosToMapCoords(...); ... centerToCornerVec ...
+ *  if (objectEvent->trackedByCamera) CameraObjectReset();
+ *  ```
+ *
+ *  Notre port : réutilise le chemin gfx partagé (catalogue → GetObjectEventGraphicsInfo →
+ *  AllocSpriteTiles → copie VRAM → repoint sprite.images/anims/oam), comme le spawn NPC +
+ *  `_applyBerryTreeStageGraphicsLive`. Le PNG doit être préchargé (`PreloadObjectEventGraphics`).
+ *  graphicsId = NOM du constant décomp (convention de notre port).
+ *
+ *  ⚠️ DETTE (1er incrément keystone) : on ne LIBÈRE pas encore l'ancienne feuille VRAM (le sheet
+ *  NORMAL du joueur est RÉSERVÉ, pas alloué par AllocSpriteTiles). Le free/restore propre (retour
+ *  à NORMAL = démontage surf) viendra avec StopSurfing. Ici : alloc + repoint (valide le rendu). */
+export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: string): void {
+  const rt = getRuntime();
+  if (objectEvent.spriteId < 0) return;
+  const sprite = rt.gSprites.get(objectEvent.spriteId);
+  if (!sprite) return;
+  const catalog = _graphicsCatalog;
+  if (!catalog) { console.warn('[ObjectEventSetGraphicsId] catalogue non chargé'); return; }
+  const graphics = catalog[graphicsId];
+  if (!graphics || !graphics.png) { console.warn('[ObjectEventSetGraphicsId] gfx absent du catalogue: ' + graphicsId); return; }
+  const png = _npcPngCache.get(`${BASE}/${graphics.png}`);
+  if (!png) { console.warn('[ObjectEventSetGraphicsId] PNG non préchargé (appeler PreloadObjectEventGraphics): ' + graphicsId); return; }
+
+  // Build 1D-OBJ layout + résolution graphicsInfo (1:1 spawn flow).
+  const pic1dObj = pngTo1dObjLayoutAllFrames(png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight);
+  const factory = gObjectEventGraphicsInfoPointers[graphicsId];
+  const numPics = factory ? factory.length : 1;
+  const picsArgs: Uint8Array[] = [pic1dObj];
+  if (numPics > 1) {
+    const secPath = MULTI_PNG_SECONDARY_PATHS[graphicsId];
+    const secPng = secPath ? _npcPngCache.get(`${BASE}/${secPath}`) : undefined;
+    picsArgs.push(secPng
+      ? pngTo1dObjLayoutAllFrames(secPng.charData, secPng.widthTiles, graphics.frameWidth, graphics.frameHeight)
+      : pic1dObj);
+  }
+  const graphicsInfo = GetObjectEventGraphicsInfo(graphicsId, ...picsArgs);
+  if (!graphicsInfo || graphicsInfo.images.length === 0) { console.warn('[ObjectEventSetGraphicsId] graphicsInfo vide: ' + graphicsId); return; }
+
+  // 1:1 décomp `AllocSpriteTiles(images->size / TILE_SIZE_4BPP)` (= UNE frame, dynamic-copy flow).
+  const objTileCount = Math.ceil(graphicsInfo.images[0].size / 32);
+  const objTileBase = AllocSpriteTiles(objTileCount);
+  if (objTileBase < 0) { console.warn('[ObjectEventSetGraphicsId] AllocSpriteTiles échec'); return; }
+
+  // Palette (1:1 décomp PatchObjectPalette par paletteSlot ; FIX PALSLOT : slot fixe).
+  const palSlot = graphicsInfo.paletteSlot ?? PALSLOT_NPC_1;
+  const palTag = typeof graphicsInfo.paletteTag === 'number' && graphicsInfo.paletteTag !== OBJ_EVENT_PAL_TAG_NONE
+    ? graphicsInfo.paletteTag : (0x1300 + palSlot);
+  const paletteBank = PatchObjectEventPalette(png.palette as Uint16Array, palSlot, palTag);
+
+  // Copie la frame 0 du nouveau gfx en VRAM.
+  rt.gba.objVram.set(graphicsInfo.images[0].data, objTileBase * 32);
+
+  // Repoint sprite + OAM (1:1 décomp : oam shape/size/paletteNum, images, anims, inanimate, graphicsId).
+  const oam = rt.gba.oam[sprite.oamIndex];
+  oam.shape = graphicsInfo.oam.shape;
+  oam.size = graphicsInfo.oam.size;
+  oam.tileId = objTileBase;
+  oam.paletteBank = paletteBank;
+  oam.priority = graphicsInfo.oam.priority;
+  sprite.tileBase = objTileBase;
+  sprite.images = graphicsInfo.images;
+  sprite.anims = graphicsInfo.anims as ReadonlyArray<ReadonlyArray<unknown>> | null;
+  sprite.usingSheet = false;
+  sprite.sheetTileStart = 0;
+  objectEvent.inanimate = graphicsInfo.inanimate === 1;
+  objectEvent.graphicsId = graphicsId;
+  objectEvent.objTileBase = objTileBase;
+  objectEvent.objTileCount = objTileCount;
+  objectEvent.paletteBank = paletteBank;
+  // centerToCornerVec + ancre Y (1:1 décomp lignes 1851-1854 ; reposition gérée par le spine M3).
+  sprite.centerToCornerVecX = -(graphicsInfo.width >> 1);
+  sprite.centerToCornerVecY = -(graphicsInfo.height >> 1);
+  sprite.y2 = 16 + sprite.centerToCornerVecY;
+  // Init anim (1:1 spawn : animNum = FaceDirection du nouveau gfx).
+  if (!objectEvent.inanimate && sprite.anims && sprite.anims.length > 0) {
+    sprite.animNum = GetFaceDirectionAnimNum(objectEvent.facingDirection);
+    sprite.animBeginning = true;
+    sprite.animEnded = false;
+    sprite.animCmdIndex = 0;
+    sprite.animDelayCounter = 0;
+  }
+  if (objectEvent.trackedByCamera) CameraObjectReset();
+}
+
+// Dev hooks (A/B keystone graphics-id swap). Cf. __updateNpcSpriteFrame.
+(globalThis as Record<string, unknown>).__ObjectEventSetGraphicsId = ObjectEventSetGraphicsId;
+(globalThis as Record<string, unknown>).__PreloadObjectEventGraphics = PreloadObjectEventGraphics;
+
 /** 1:1 décomp `SpawnObjectEventsOnReturnToField(s16 x, s16 y)`
  *  (event_object_movement.c:1715-1726) :
  *
