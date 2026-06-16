@@ -54,6 +54,7 @@ import {
   ClearBgRedrawPending,
   getPendingConnection,
   clearPendingConnection,
+  gCamera,
 } from '../engine/field/field-camera';
 import type { PendingConnection } from '../engine/field/field-camera';
 import {
@@ -83,6 +84,7 @@ import {
   resetObjectEventAllocations,
   destroyAllNpcSprites,
   UpdateObjectEventsForCameraUpdate,
+  UpdateObjectEventCoordsForCameraUpdate,
   preloadNpcGraphicsForMap,
   FreezeObjectEvents,
   UnfreezeAllNpcs as UnfreezeObjectEvents,
@@ -1742,6 +1744,24 @@ export class TestOverworldScene extends Phaser.Scene {
       LoadObjEventTemplatesFromHeader(newHeader.id, headerTemplates);
     }
 
+    // ── FIX BUG « sprite joueur invisible quelques frames au cross-border » (1:1) ──
+    // 1:1 STRICT décomp : `UpdateObjectEventsForCameraUpdate` (donc le shift des coords
+    // `UpdateObjectEventCoordsForCameraUpdate`) s'exécute SYNCHRONE dans `CameraUpdate`,
+    // MÊME FRAME que `CameraMove` (qui décale `gSaveBlock1Ptr.pos` du delta de connexion).
+    // Notre port différait TOUT le bloc en async (gaté par `preloadNpcGraphicsForMap`) → sur
+    // une map NON-CACHÉE, le shift des `currentCoords` du joueur arrivait ~2 frames après le
+    // shift de `pos` → désync (cx ≠ px+MAP_OFFSET) → le joueur "hors-vue" était masqué (sprite
+    // .invisible) jusqu'à ce que l'async tourne (« disparaît quelques frames avant de se
+    // replacer »). Ce désync était auparavant masqué par `SyncPlayerObjectEvent` (retiré à
+    // l'étape 1b-iii car redondant en marche normale, mais pas au cross-border). Fix : faire le
+    // shift des coords SYNCHRONE ici (le joueur n'a pas besoin de graphics), et laisser SEUL le
+    // spawn NPC (qui a besoin des PNGs) en async. On pose `gCamera.active = false` après le shift
+    // pour que l'`UpdateObjectEventsForCameraUpdate` async skippe son re-shift (guard
+    // `if (!gCamera.active) return` — seul lecteur de ce flag) → pas de double-décalage.
+    UpdateObjectEventCoordsForCameraUpdate();  // shift currentCoords joueur + NPCs SYNCHRONE (1:1)
+    gCamera.active = false;                    // empêche le re-shift dans le bloc async ci-dessous
+    UpdateObjectEvents(this.rt);               // resync slot.invisible→sprite + positions, même frame
+
     // 1:1 décomp NPC orchestrator post-cross.
     // J — BUG FIX (2026-05-26) : sync preload BEFORE spawn. Avant : `void preloadNpcGraphicsForMap`
     // (= fire-and-forget async) + `UpdateObjectEventsForCameraUpdate` immediate → TrySpawn
@@ -1749,7 +1769,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // spawn skip silently → NPCs cross-map invisibles (= ex. ZIGZAGOON_1 absent sur
     // Route101 alors que PROF_BIRCH apparaît car son PNG est déjà cached depuis LittlerootTown).
     // Fix : await preload puis spawn dans le .then() callback. Le rest du handleConnection
-    // (BGM, popup, etc.) continue immédiat — independent du spawn timing.
+    // (BGM, popup, etc.) continue immédiat — independent du spawn timing. Le shift des coords
+    // ci-dessus a déjà tourné SYNCHRONE (gCamera.active=false → UpdateObjectEventsForCameraUpdate
+    // ne re-shifte pas, ne fait que TrySpawnObjectEvents + RemoveObjectEventsOutsideView).
     void preloadNpcGraphicsForMap(newHeader).then(() => {
       // Re-check gMapHeader (= user n'a pas cross une autre border entretemps).
       const curHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader | undefined;
