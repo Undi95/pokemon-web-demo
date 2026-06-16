@@ -1985,16 +1985,18 @@ function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite || !sprite.anims) return;
-  // H4.1 fix : à la fin d'un walk action, le décomp via MovementAction_Pause
-  // SpriteAnim Step2 set animPaused=TRUE seulement. Le sprite reste sur la
-  // dernière anim cmd qui peut être une step frame (= jambes en mouvement)
-  // selon timing exact des anim cmds. Le ROM gère ça via StepAnimTable +
-  // SeekSpriteAnim qui aligne animCmdIndex pour finir sur face frame.
+  // 1:1 décomp `UpdateMovementNormal` (event_object_movement.c:5116) fin de pas : `animPaused
+  // = TRUE` SEULEMENT. L'anim de marche [walk_a, face, walk_b, face] (GO anims) finit sur une
+  // cmd FACE (index IMPAIR) pour un pas de 16 frames (2 cmds de 8), et `animCmdIndex` est
+  // PRÉSERVÉ → le pas SUIVANT (_npcSetStepAnim) lit ce cmdIndex (1/3) et alterne vers walk_b
+  // (cmd 2) → les DEUX frames de marche jouent. (L'ancien fix « H4.1 » resetait à walk_a →
+  // walk_b jamais joué = régression marche haut/bas signalée.)
   //
-  // Notre TS n'a pas porté le StepAnimTable system complet — fix pragmatique
-  // 1:1 strict architectural : set animNum = FACE_X explicit avant pause pour
-  // que le sprite revienne à face frame (= comportement ROM observable).
-  if (!npc.inanimate) {
+  // INTERIM (avant étape 1b = PlayerNotOnBikeNotMoving→PlayerFaceDirection + MovementType NPC
+  // qui reposent FACE au repos) : si l'anim est figée sur une cmd de MARCHE (index PAIR — cas
+  // WALK_IN_PLACE_FAST 8f = 1 cmd → finit sur walk_a), on remet FACE pour ne pas rester jambes
+  // écartées. Sur une cmd FACE (impair) on PRÉSERVE → alternance intacte.
+  if (!npc.inanimate && (sprite.animCmdIndex & 1) === 0) {
     StartSpriteAnim(sprite as never, GetFaceDirectionAnimNum(npc.facingDirection));
   }
   sprite.animPaused = true;
