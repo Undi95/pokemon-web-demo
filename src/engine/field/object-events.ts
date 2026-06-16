@@ -6023,6 +6023,25 @@ export function GetWalkFastMovementAction(dir: number): number {
   return gWalkFastMovementActions[dir];
 }
 
+/** 1:1 décomp `gRideWaterCurrentMovementActions[]` (event_object_movement.c:947). */
+const gRideWaterCurrentMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetRideWaterCurrentMovementAction` (event_object_movement.c:4961, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_RIDE_WATER_CURRENT_* (= poussé par
+ *  un courant d'eau en surf, vitesse FASTER). Utilisé par `PlayerRideWaterCurrent`
+ *  (forced movement `ForcedMovement_Pushed*ByCurrent` — courants = surf, étape 5 jamais
+ *  atteint en démo mais porté 1:1). */
+export function GetRideWaterCurrentMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gRideWaterCurrentMovementActions[dir];
+}
+
 /** 1:1 décomp `GetPlayerRunMovementAction` (event_object_movement.c:4964, via
  *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_PLAYER_RUN_*. */
 export function GetPlayerRunMovementAction(dir: number): number {

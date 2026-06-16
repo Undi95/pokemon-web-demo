@@ -54,6 +54,7 @@ import {
   ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
   GetWalkFastMovementAction,
+  GetRideWaterCurrentMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
   GetWalkInPlaceFastMovementAction,
@@ -103,6 +104,25 @@ import {
   MetatileBehavior_IsVerticalRail,
   MetatileBehavior_IsHorizontalRail,
   MetatileBehavior_IsNonAnimDoor,
+  // 1:1 décomp `sForcedMovementTestFuncs[]` (field_player_avatar.c:144) — étape 3.
+  MetatileBehavior_IsTrickHouseSlipperyFloor,
+  MetatileBehavior_IsIce_2,
+  MetatileBehavior_IsWalkSouth,
+  MetatileBehavior_IsWalkNorth,
+  MetatileBehavior_IsWalkWest,
+  MetatileBehavior_IsWalkEast,
+  MetatileBehavior_IsSouthwardCurrent,
+  MetatileBehavior_IsNorthwardCurrent,
+  MetatileBehavior_IsWestwardCurrent,
+  MetatileBehavior_IsEastwardCurrent,
+  MetatileBehavior_IsSlideSouth,
+  MetatileBehavior_IsSlideNorth,
+  MetatileBehavior_IsSlideWest,
+  MetatileBehavior_IsSlideEast,
+  MetatileBehavior_IsWaterfall,
+  MetatileBehavior_IsSecretBaseJumpMat,
+  MetatileBehavior_IsSecretBaseSpinMat,
+  MetatileBehavior_IsMuddySlope,
 } from '../../game/metatile_behavior';
 import { CheckStandardWildEncounter } from './wild-encounter';
 import {
@@ -788,7 +808,14 @@ const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
 const PLAYER_AVATAR_FLAG_SURFING     = 1 << 3;
 const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
 const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
+const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
 const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
+
+/** 1:1 décomp `enum` (bike.h:21-24). Vitesse courante du joueur, lue par
+ *  `ForcedMovement_MuddySlope` (à pied = toujours NORMAL=0 < FASTEST=3 → glisse). */
+const PLAYER_SPEED_NORMAL  = 0;
+const PLAYER_SPEED_FAST    = 1;
+const PLAYER_SPEED_FASTEST = 3;
 
 // 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87` (include/constants/event_objects.h:99).
 // Migré vers import decomp-data event_objects-data.ts (cleanup B7).
@@ -1394,10 +1421,40 @@ export function UpdatePlayerAvatarTransitionState(): void {
 
 /** 1:1 décomp `PlayerWalkFast` (field_player_avatar.c:968) :
  *    PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
- *  Vitesse surf (= même que run). Branche SURFING de `PlayerNotOnBikeMoving` (surf = étape 5,
- *  jamais atteint en démo car PLAYER_AVATAR_FLAG_SURFING jamais set, mais porté 1:1). */
+ *  Vitesse surf (= même que run). Branche SURFING de `PlayerNotOnBikeMoving` ET moveFunc des
+ *  `ForcedMovement_Slip`/`ForcedMovement_Slide*` (glace/slides — atteint à pied). Câblé 1:1. */
 function PlayerWalkFast(direction: number): void {
   PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerRideWaterCurrent` (field_player_avatar.c:968) :
+ *    PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), COPY_MOVE_WALK);
+ *  moveFunc des `ForcedMovement_Pushed*ByCurrent` (courants d'eau). S'active quand le
+ *  joueur surfe sur une tuile *Current — le surf est porté à l'étape 5 ; ce chemin est
+ *  câblé 1:1 et opérationnel dès que SURFING entre en jeu. */
+function PlayerRideWaterCurrent(direction: number): void {
+  PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `GetPlayerSpeed` (bike.c:1022). À pied (ni vélo, ni surf, ni dash) →
+ *  PLAYER_SPEED_NORMAL ; DASH/SURFING → FAST. FASTEST n'est rendu qu'en mach bike à
+ *  bikeFrameCounter==2 (= étape 5). Tant que le vélo n'est pas porté, le mach-bike est
+ *  approximé à FAST (la vraie table sMachBikeSpeeds[bikeFrameCounter] arrive avec l'étape 5). */
+function GetPlayerSpeed(): number {
+  if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE)) {
+    return PLAYER_SPEED_FAST;
+  } else if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_DASH)) {
+    return PLAYER_SPEED_FAST;
+  } else {
+    return PLAYER_SPEED_NORMAL;
+  }
+}
+
+/** 1:1 STRICT décomp `Bike_UpdateBikeCounterSpeed` (bike.c) — reset du compteur de vitesse
+ *  vélo, appelé par `ForcedMovement_MuddySlope`. Le moteur vélo (bikeFrameCounter) est porté
+ *  à l'étape 5 ; à pied l'appel est sans effet (rien à reset) → no-op câblé 1:1. */
+function Bike_UpdateBikeCounterSpeed(_speed: number): void {
+  // bikeFrameCounter porté avec le vélo (étape 5) — à pied : aucun compteur à reset.
 }
 
 /** 1:1 STRICT décomp `Bike_TryAcroBikeHistoryUpdate` (acro bike) — étape 5, stub no-op. */
@@ -1407,18 +1464,214 @@ function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): voi
 
 /** 1:1 STRICT décomp `DoPlayerAvatarTransition` (field_player_avatar.c:707).
  *  Dispatch l'état du joueur (à pied/mach bike/acro bike/surf/underwater/return-to-field).
- *  Étape 4 — non porté (le joueur reste ON_FOOT en démo) → stub no-op. */
+ *  Étape 4 — non encore porté (tant que vélo/surf ne sont pas câblés) → stub no-op. */
 function DoPlayerAvatarTransition(): void {
   // étape 4 (états vélo/surf/plongée) — non porté.
 }
 
-/** 1:1 STRICT décomp `TryDoMetatileBehaviorForcedMovement` (field_player_avatar.c:399) :
- *    return sForcedMovementFuncs[GetForcedMovementByMetatileBehavior()]();
- *  Forced movement (glace, courants, slides, mat jump/spin, pente boueuse). Étape 3 —
- *  non porté → `return 0` (= ForcedMovement_None, aucun forced movement déclenché). */
-function TryDoMetatileBehaviorForcedMovement(): number {
-  // étape 3 (glace/courant/slide/…) — non porté. 0 = aucun forced movement.
+// ─── 1:1 décomp `field_player_avatar.c` — FORCED MOVEMENT (étape 3) ───────────
+// Mouvement imposé par le terrain : glace (Slip), tuiles de marche forcée (Walk*),
+// courants d'eau (Pushed*ByCurrent), slides (Slide*), pente boueuse (MuddySlope),
+// tapis secret base (MatJump/MatSpin). Gate par PLAYER_AVATAR_FLAG_CONTROLLABLE :
+// après le 1er pas, `PlayerAllowForcedMovementIfMovingSameDirection` clear CONTROLLABLE,
+// ce qui ARME le check forced movement à chaque tuile suivante (re-set CONTROLLABLE =
+// suppression d'un cycle, via PlayerAvatarTransition_ReturnToField — étape 4).
+
+/** 1:1 STRICT décomp `ForcedMovement_None` (field_player_avatar.c:429).
+ *  Sort de l'état forced (FORCED_MOVE) : ré-active l'anim + déverrouille la face. return FALSE
+ *  (= 0 → PlayerStep procède à l'input normal). Aussi appelé par `CancelPlayerForcedMovement`. */
+function ForcedMovement_None(): number {
+  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE) {
+    const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    playerObjEvent.facingDirectionLocked = false;
+    playerObjEvent.enableAnim = true;
+    SetObjectEventDirection(playerObjEvent, playerObjEvent.facingDirection);
+    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_FORCED_MOVE;
+  }
+  return 0;  // FALSE
+}
+
+/** 1:1 STRICT décomp `DoForcedMovement` (field_player_avatar.c:443).
+ *  Set FORCED_MOVE, teste la collision dans `direction` : collision NONE → moveFunc(dir) +
+ *  runningState=MOVING + return TRUE ; collision < STOP_SURFING (mur) → ForcedMovement_None +
+ *  return FALSE (= bloqué) ; sinon (LEDGE_JUMP→PlayerJumpLedge, etc.) → MOVING + return TRUE. */
+function DoForcedMovement(direction: number, moveFunc: (dir: number) => void): number {
+  const playerAvatar = gPlayerAvatar;
+  const collision = CheckForPlayerAvatarCollision(direction);
+
+  playerAvatar.flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;
+  if (collision) {
+    ForcedMovement_None();
+    if (collision < COLLISION_STOP_SURFING) {
+      return 0;  // FALSE — mur : forced movement bloqué.
+    } else {
+      if (collision === COLLISION_LEDGE_JUMP)
+        PlayerJumpLedge(direction);
+      playerAvatar.flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;
+      playerAvatar.runningState = MOVING;
+      return 1;  // TRUE
+    }
+  } else {
+    playerAvatar.runningState = MOVING;
+    moveFunc(direction);
+    return 1;  // TRUE
+  }
+}
+
+/** 1:1 STRICT décomp `DoForcedMovementInCurrentDirection` (field_player_avatar.c:473).
+ *  disableAnim=TRUE (l'anim de marche est gelée → glisse sans bouger les jambes), puis
+ *  DoForcedMovement dans la `movementDirection` courante. Utilisé par `ForcedMovement_Slip`. */
+function DoForcedMovementInCurrentDirection(moveFunc: (dir: number) => void): number {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  playerObjEvent.disableAnim = true;
+  return DoForcedMovement(playerObjEvent.movementDirection, moveFunc);
+}
+
+/** 1:1 STRICT décomp `ForcedMovement_Slip` (field_player_avatar.c:481) — glace : glisse vite
+ *  dans la direction courante, anim gelée. */
+function ForcedMovement_Slip(): number {
+  return DoForcedMovementInCurrentDirection(PlayerWalkFast);
+}
+
+/** 1:1 STRICT décomp `ForcedMovement_Walk*` (field_player_avatar.c:486-504) — tuiles de
+ *  marche forcée (escalator-like) : marche normale dans une direction imposée. */
+function ForcedMovement_WalkSouth(): number { return DoForcedMovement(DIR_SOUTH, PlayerWalkNormal); }
+function ForcedMovement_WalkNorth(): number { return DoForcedMovement(DIR_NORTH, PlayerWalkNormal); }
+function ForcedMovement_WalkWest(): number  { return DoForcedMovement(DIR_WEST,  PlayerWalkNormal); }
+function ForcedMovement_WalkEast(): number  { return DoForcedMovement(DIR_EAST,  PlayerWalkNormal); }
+
+/** 1:1 STRICT décomp `ForcedMovement_Pushed*ByCurrent` (field_player_avatar.c:506-524) —
+ *  courants d'eau (en surf) : poussé vite (RideWaterCurrent) dans la direction du courant. */
+function ForcedMovement_PushedSouthByCurrent(): number { return DoForcedMovement(DIR_SOUTH, PlayerRideWaterCurrent); }
+function ForcedMovement_PushedNorthByCurrent(): number { return DoForcedMovement(DIR_NORTH, PlayerRideWaterCurrent); }
+function ForcedMovement_PushedWestByCurrent(): number  { return DoForcedMovement(DIR_WEST,  PlayerRideWaterCurrent); }
+function ForcedMovement_PushedEastByCurrent(): number  { return DoForcedMovement(DIR_EAST,  PlayerRideWaterCurrent); }
+
+/** 1:1 STRICT décomp `ForcedMovement_Slide` (field_player_avatar.c:526) — slides (ice puzzles) :
+ *  disableAnim + facingDirectionLocked (glisse sans tourner ni animer), direction imposée. */
+function ForcedMovement_Slide(direction: number, moveFunc: (dir: number) => void): number {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  playerObjEvent.disableAnim = true;
+  playerObjEvent.facingDirectionLocked = true;
+  return DoForcedMovement(direction, moveFunc);
+}
+
+function ForcedMovement_SlideSouth(): number { return ForcedMovement_Slide(DIR_SOUTH, PlayerWalkFast); }
+function ForcedMovement_SlideNorth(): number { return ForcedMovement_Slide(DIR_NORTH, PlayerWalkFast); }
+function ForcedMovement_SlideWest(): number  { return ForcedMovement_Slide(DIR_WEST,  PlayerWalkFast); }
+function ForcedMovement_SlideEast(): number  { return ForcedMovement_Slide(DIR_EAST,  PlayerWalkFast); }
+
+/** 1:1 STRICT décomp `ForcedMovement_MatJump`/`ForcedMovement_MatSpin` (field_player_avatar.c:555).
+ *  Tapis de saut/rotation des bases secrètes. La machine à tâches (`DoPlayerMatJump`/
+ *  `DoPlayerMatSpin`) est la feature SECRET BASE (étape 5) ; le test (IsSecretBaseJumpMat/
+ *  SpinMat) est câblé 1:1 dans la table → le dispatch s'active dès que l'étape 5 porte les
+ *  tâches. return TRUE (= forced movement déclenché). */
+function ForcedMovement_MatJump(): number { DoPlayerMatJump(); return 1; }
+function ForcedMovement_MatSpin(): number { DoPlayerMatSpin(); return 1; }
+
+/** 1:1 STRICT décomp `ForcedMovement_MuddySlope` (field_player_avatar.c:567) — pente boueuse :
+ *  si on ne monte pas (movementDirection != NORD) OU qu'on n'est pas à vitesse FASTEST (mach
+ *  bike) → on est repoussé vers le SUD (glisse en bas). À pied GetPlayerSpeed=NORMAL<FASTEST
+ *  → toujours repoussé. Sinon (mach bike plein gaz vers le nord) → FALSE (on franchit). */
+function ForcedMovement_MuddySlope(): number {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (playerObjEvent.movementDirection !== DIR_NORTH || GetPlayerSpeed() < PLAYER_SPEED_FASTEST) {
+    Bike_UpdateBikeCounterSpeed(0);
+    playerObjEvent.facingDirectionLocked = true;
+    return DoForcedMovement(DIR_SOUTH, PlayerWalkFast);
+  } else {
+    return 0;  // FALSE
+  }
+}
+
+/** 1:1 STRICT décomp `sForcedMovementTestFuncs[NUM_FORCED_MOVEMENTS]` (field_player_avatar.c:144).
+ *  Index i → si le test passe, `GetForcedMovementByMetatileBehavior` retourne i+1. */
+const sForcedMovementTestFuncs: ReadonlyArray<(mb: number) => boolean> = [
+  MetatileBehavior_IsTrickHouseSlipperyFloor,
+  MetatileBehavior_IsIce_2,
+  MetatileBehavior_IsWalkSouth,
+  MetatileBehavior_IsWalkNorth,
+  MetatileBehavior_IsWalkWest,
+  MetatileBehavior_IsWalkEast,
+  MetatileBehavior_IsSouthwardCurrent,
+  MetatileBehavior_IsNorthwardCurrent,
+  MetatileBehavior_IsWestwardCurrent,
+  MetatileBehavior_IsEastwardCurrent,
+  MetatileBehavior_IsSlideSouth,
+  MetatileBehavior_IsSlideNorth,
+  MetatileBehavior_IsSlideWest,
+  MetatileBehavior_IsSlideEast,
+  MetatileBehavior_IsWaterfall,
+  MetatileBehavior_IsSecretBaseJumpMat,
+  MetatileBehavior_IsSecretBaseSpinMat,
+  MetatileBehavior_IsMuddySlope,
+];
+
+/** 1:1 STRICT décomp `sForcedMovementFuncs[NUM_FORCED_MOVEMENTS + 1]` (field_player_avatar.c:167).
+ *  Index 0 = ForcedMovement_None ; index i+1 = handler du test i. Note décomp : TrickHouse +
+ *  Ice_2 partagent ForcedMovement_Slip, Waterfall partage ForcedMovement_PushedSouthByCurrent. */
+const sForcedMovementFuncs: ReadonlyArray<() => number> = [
+  ForcedMovement_None,
+  ForcedMovement_Slip,                    // TrickHouseSlipperyFloor
+  ForcedMovement_Slip,                    // Ice_2
+  ForcedMovement_WalkSouth,
+  ForcedMovement_WalkNorth,
+  ForcedMovement_WalkWest,
+  ForcedMovement_WalkEast,
+  ForcedMovement_PushedSouthByCurrent,
+  ForcedMovement_PushedNorthByCurrent,
+  ForcedMovement_PushedWestByCurrent,
+  ForcedMovement_PushedEastByCurrent,
+  ForcedMovement_SlideSouth,
+  ForcedMovement_SlideNorth,
+  ForcedMovement_SlideWest,
+  ForcedMovement_SlideEast,
+  ForcedMovement_PushedSouthByCurrent,    // Waterfall
+  ForcedMovement_MatJump,
+  ForcedMovement_MatSpin,
+  ForcedMovement_MuddySlope,
+];
+
+/** 1:1 STRICT décomp `GetForcedMovementByMetatileBehavior` (field_player_avatar.c:412).
+ *  UNIQUEMENT si CONTROLLABLE est CLEAR (= forced movement armé après le 1er pas) : scanne les
+ *  18 tests sur le `currentMetatileBehavior` du joueur, retourne i+1 au premier match, sinon 0. */
+function GetForcedMovementByMetatileBehavior(): number {
+  if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_CONTROLLABLE)) {
+    const metatileBehavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
+    for (let i = 0; i < sForcedMovementTestFuncs.length; i++) {
+      if (sForcedMovementTestFuncs[i](metatileBehavior))
+        return i + 1;
+    }
+  }
   return 0;
+}
+
+/** 1:1 STRICT décomp `TryDoMetatileBehaviorForcedMovement` (field_player_avatar.c:407) :
+ *    return sForcedMovementFuncs[GetForcedMovementByMetatileBehavior()]();
+ *  Appelé par PlayerStep AVANT l'input clavier : si non-zéro (forced movement déclenché),
+ *  PlayerStep SAUTE MovePlayerAvatarUsingKeypadInput (le terrain a la priorité). */
+function TryDoMetatileBehaviorForcedMovement(): number {
+  return sForcedMovementFuncs[GetForcedMovementByMetatileBehavior()]();
+}
+
+/** 1:1 STRICT décomp `DoPlayerMatJump` (field_player_avatar.c:1527) — tapis de saut des bases
+ *  secrètes. Machine à tâches (CreateTask + sPlayerAvatarSecretBaseMatJump) = feature SECRET
+ *  BASE, portée à l'étape 5. Le test IsSecretBaseJumpMat est câblé → s'active dès l'étape 5. */
+function DoPlayerMatJump(): void {
+  // étape 5 (secret base — tâche DoPlayerAvatarSecretBaseMatJump) — non encore portée.
+}
+
+/** 1:1 STRICT décomp `DoPlayerMatSpin` (field_player_avatar.c:1559) — tapis de rotation des
+ *  bases secrètes. Machine à tâches 5-étapes = feature SECRET BASE, portée à l'étape 5. */
+function DoPlayerMatSpin(): void {
+  // étape 5 (secret base — tâche PlayerAvatar_DoSecretBaseMatSpin) — non encore portée.
+}
+
+/** 1:1 STRICT décomp `CancelPlayerForcedMovement` (field_player_avatar.c:1201) :
+ *    ForcedMovement_None();
+ *  Sort le joueur de l'état forced (utilisé par les scripts/warps). */
+export function CancelPlayerForcedMovement(): void {
+  ForcedMovement_None();
 }
 
 /** 1:1 STRICT décomp `TryInterruptObjectEventSpecialAnim` (field_player_avatar.c:355).
@@ -1515,7 +1768,7 @@ function PlayerNotOnBikeMoving(direction: number, heldKeys: number): void {
       PlayerJumpLedge(direction);
       return;
     } else {
-      // !< French Difference (décomp) : pas de Faraway Island Mew en démo → on saute ce cas.
+      // Faraway Island Mew (collision spéciale fuite) — porté avec Faraway Island ; ailleurs no-op.
       const adjustedCollision = (collision - COLLISION_STOP_SURFING) & 0xFF;
       if (adjustedCollision > 3) {
         PlayerNotOnBikeCollide(direction);
