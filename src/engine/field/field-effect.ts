@@ -110,6 +110,12 @@ export function FieldEffectStop(rt: DecompRuntime, sprite: DecompSprite, fieldEf
  *  si pas de sprite spawné, sinon spriteId numeric).
  *
  *  Used par MovementAction_Emote* / Disguise / BerryTreeGrowth sparkle / etc. */
+// Expose `FieldEffectStart` au runtime de scripts : l'opcode `dofieldeffect` (1:1 décomp
+// `ScrCmd_dofieldeffect`, scrcmd.c:1973 → `FieldEffectStart(id)`) le lit via `globalThis.FieldEffectStart`.
+// Sans cette exposition, les field moves scriptés (Surf/Cut/Fly/Strength/Rock Smash…) étaient SKIPPÉS
+// (l'opcode warn « FieldEffectStart not exposed »). Le dispatcher gère gracieusement les FLDEFF non portés.
+(globalThis as Record<string, unknown>).FieldEffectStart = FieldEffectStart;
+
 export function FieldEffectStart(id: number): number {
   const rt = _activeRuntime;
   if (!rt) {

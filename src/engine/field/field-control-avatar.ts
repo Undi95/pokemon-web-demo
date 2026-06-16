@@ -32,7 +32,10 @@ import {
   PlayerGetElevation,
   PlayerGetDestCoords,
   GetXYCoordsOneStepInFrontOfPlayer,
+  PartyHasMonWithSurf,
+  IsPlayerFacingSurfableFishableWater,
 } from './player-avatar';
+import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gPlayerParty } from '../battle/party-storage';
 import { STATUS1_POISON, STATUS1_TOXIC_POISON } from '../battle/constants';
@@ -719,7 +722,24 @@ export function GetInteractionScript(
   if (script !== null) return script;
   script = GetInteractedMetatileScript(position, metatileBehavior, direction);
   if (script !== null) return script;
-  // GetInteractedWaterScript skip (= Surf/Waterfall, badges 5/8 pas relevant démo).
+  script = GetInteractedWaterScript(position, metatileBehavior, direction);
+  if (script !== null) return script;
+  return null;
+}
+
+/** 1:1 STRICT décomp `GetInteractedWaterScript` (field_control_avatar.c:448) :
+ *    if (FlagGet(FLAG_BADGE05_GET) && PartyHasMonWithSurf() && IsPlayerFacingSurfableFishableWater())
+ *        return EventScript_UseSurf;
+ *    if (MetatileBehavior_IsWaterfall(metatileBehavior)) { ... EventScript_UseWaterfall (badge 8) ... }
+ *    return NULL;
+ *  Entrée HM Surf : A face à de l'eau surfable (badge 5 + un mon connaît Surf) → script UseSurf
+ *  (checkpartymove → msgbox OUI/NON → dofieldeffect FLDEFF_USE_SURF). La branche Waterfall (badge 8)
+ *  reste à porter (étape suivante). `position` non utilisé côté Surf (1:1 : `unused1`). */
+function GetInteractedWaterScript(
+  _position: MapPosition, _metatileBehavior: number, _direction: number,
+): string | null {
+  if (FlagGet('FLAG_BADGE05_GET') && PartyHasMonWithSurf() && IsPlayerFacingSurfableFishableWater())
+    return 'EventScript_UseSurf';
   return null;
 }
 

@@ -110,6 +110,8 @@ import {
 import { FindTaskIdByFunc, GetTask, getRuntime } from '../system/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field-effect';
 import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
+import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES } from '../battle/party-storage';
+import { MOVE_SURF } from '../decomp-data/include/constants/moves-data';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -137,6 +139,7 @@ import {
   MetatileBehavior_IsSecretBaseJumpMat,
   MetatileBehavior_IsSecretBaseSpinMat,
   MetatileBehavior_IsMuddySlope,
+  MetatileBehavior_IsSurfableFishableWater,
 } from '../../game/metatile_behavior';
 import { CheckStandardWildEncounter } from './wild-encounter';
 import {
@@ -493,6 +496,43 @@ export function GetXYCoordsOneStepInFrontOfPlayer(): { x: number; y: number } {
   const pos = PlayerGetDestCoords();
   return MoveCoords(GetPlayerFacingDirection(), pos.x, pos.y);
 }
+
+/** 1:1 STRICT décomp `PartyHasMonWithSurf` (field_player_avatar.c:1280) :
+ *    if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+ *        for (i = 0; i < PARTY_SIZE; i++) {
+ *            if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) == SPECIES_NONE) break;
+ *            if (MonKnowsMove(&gPlayerParty[i], MOVE_SURF)) return TRUE;
+ *        }
+ *    return FALSE;
+ *  Gate de l'entrée HM Surf (cf. GetInteractedWaterScript). */
+export function PartyHasMonWithSurf(): boolean {
+  if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)) {
+    for (let i = 0; i < 6; i++) {  // PARTY_SIZE
+      if (!GetMonData(gPlayerParty[i], MON_DATA_SPECIES)) break;  // SPECIES_NONE = fin party
+      if (MonKnowsMove(gPlayerParty[i], MOVE_SURF)) return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `IsPlayerFacingSurfableFishableWater` (field_player_avatar.c:1305) :
+ *    p = &gObjectEvents[gPlayerAvatar.objectEventId]; x = p->currentCoords.x; y = p->currentCoords.y;
+ *    MoveCoords(p->facingDirection, &x, &y);
+ *    if (GetCollisionAtCoords(p, x, y, p->facingDirection) == COLLISION_ELEVATION_MISMATCH
+ *     && PlayerGetElevation() == ELEVATION_DEFAULT
+ *     && MetatileBehavior_IsSurfableFishableWater(MapGridGetMetatileBehaviorAt(x, y))) return TRUE;
+ *    return FALSE; */
+export function IsPlayerFacingSurfableFishableWater(): boolean {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  const { x, y } = MoveCoords(playerObjEvent.facingDirection, playerObjEvent.currentCoordsX, playerObjEvent.currentCoordsY);
+  return _GetCollisionAtCoords(playerObjEvent, x, y, playerObjEvent.facingDirection) === COLLISION_ELEVATION_MISMATCH
+    && PlayerGetElevation() === ELEVATION_DEFAULT
+    && MetatileBehavior_IsSurfableFishableWater(MapGridGetMetatileBehaviorAt(x, y));
+}
+
+// Dev hooks (A/B entrée HM surf : les 2 portes de GetInteractedWaterScript).
+(globalThis as Record<string, unknown>).__PartyHasMonWithSurf = PartyHasMonWithSurf;
+(globalThis as Record<string, unknown>).__IsPlayerFacingSurfableFishableWater = IsPlayerFacingSurfableFishableWater;
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 

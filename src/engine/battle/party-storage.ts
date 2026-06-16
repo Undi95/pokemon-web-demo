@@ -254,6 +254,18 @@ export const gEnemyParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createE
 /** 1:1 décomp `GetMonData(mon, field, data)`. Pour les champs string
  *  (NICKNAME/OT_NAME), passe `data` = u8[] buffer destination ; sinon retourne
  *  la valeur. Notre port simplifié : retourne `string | number`. */
+/** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
+ *    for (i = 0; i < MAX_MON_MOVES; i++)
+ *        if (GetMonData(mon, MON_DATA_MOVE1 + i, NULL) == move) return TRUE;
+ *    return FALSE;
+ *  Les moves natifs sont stockés en IDs numériques (cf. setmonmove/battle-trainer-party). */
+export function MonKnowsMove(mon: Pokemon, move: number): boolean {
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES = 4
+    if (GetMonData(mon, MON_DATA_MOVE1 + i) === move) return true;
+  }
+  return false;
+}
+
 export function GetMonData(mon: Pokemon, field: number): number | string {
   switch (field) {
     case MON_DATA_PERSONALITY: return mon.personality >>> 0;

@@ -15,6 +15,8 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarSet, gSpecialVar } from './script-vars';
+import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_IS_EGG } from '../battle/party-storage';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import { gObjectEvents } from '../field/object-events';
 import { gPlayerAvatar } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -95,11 +97,33 @@ registerOpcode('countpokemon', (_ctx) => {
   return false;
 });
 
-// 1:1 décomp `ScrCmd_checkpartymove` (scrcmd.c:1712-1731) :
-//   for each mon in party, check if mon knows move → set VAR_RESULT = slot.
-//   Si aucun mon ne connaît le move → VAR_RESULT = PARTY_SIZE (6).
-// Notre port : VAR_RESULT = 0 (= MVP, move lookup à porter en session dédiée).
-registerOpcode('checkpartymove', (_ctx, _args) => {
-  VarSet('VAR_RESULT', 0);
+// 1:1 STRICT décomp `ScrCmd_checkpartymove` (scrcmd.c:1712-1731) :
+//   gSpecialVar_Result = PARTY_SIZE;
+//   for (i = 0; i < PARTY_SIZE; i++) {
+//       species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
+//       if (!species) break;
+//       if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG) && MonKnowsMove(&gPlayerParty[i], move)) {
+//           gSpecialVar_Result = i; gSpecialVar_0x8004 = species; break;
+//       }
+//   }
+// Le move arg est une halfword (enum décomp 'MOVE_*' → id numérique). VAR_RESULT = slot du 1er mon
+// (non-œuf) qui connaît le move, ou PARTY_SIZE si aucun. Utilisé par les scripts de field move
+// (EventScript_UseSurf/Cut/Fly/Strength/RockSmash…) pour choisir le mon + gater l'usage.
+registerOpcode('checkpartymove', (_ctx, args) => {
+  const move = resolveDecompConstant(args[0] ?? 'MOVE_NONE') ?? 0;
+  const PARTY_SIZE = 6;
+  let result = PARTY_SIZE;
+  let species0x8004 = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES);
+    if (!species) break;  // slot vide → fin de party
+    if (!GetMonData(gPlayerParty[i], MON_DATA_IS_EGG) && MonKnowsMove(gPlayerParty[i], move)) {
+      result = i;
+      species0x8004 = typeof species === 'number' ? species : 0;
+      break;
+    }
+  }
+  VarSet('VAR_RESULT', result);
+  VarSet('VAR_0x8004', species0x8004);
   return false;
 });
