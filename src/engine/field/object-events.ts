@@ -153,6 +153,38 @@ export function GetMoveDirectionAnimNum(direction: number): number {
   return sMoveDirectionAnimNums[direction] ?? 4;
 }
 
+// 1:1 STRICT décomp `sMoveDirectionFastAnimNums` (event_object_movement.c) :
+// direction → animNum walk RAPIDE. ANIM_STD_GO_FAST_SOUTH=8 (cmds de 4 frames).
+const sMoveDirectionFastAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 8,
+  [DIR_SOUTH]: 8,   // ANIM_STD_GO_FAST_SOUTH
+  [DIR_NORTH]: 9,   // ANIM_STD_GO_FAST_NORTH
+  [DIR_WEST]: 10,   // ANIM_STD_GO_FAST_WEST
+  [DIR_EAST]: 11,   // ANIM_STD_GO_FAST_EAST
+};
+
+/** 1:1 décomp `u8 GetMoveDirectionFastAnimNum(u8 direction)`. Défini en LOCAL (pas
+ *  d'import depuis direction-coords) car appelé au module-load par les registrations
+ *  gMovementActionFuncs ci-dessous → évite un cycle ESM (TDZ). */
+function GetMoveDirectionFastAnimNum(direction: number): number {
+  return sMoveDirectionFastAnimNums[direction] ?? 8;
+}
+
+// 1:1 STRICT décomp `sMoveDirectionFasterAnimNums` (event_object_movement.c) :
+// direction → animNum walk PLUS RAPIDE. ANIM_STD_GO_FASTER_SOUTH=12 (cmds de 2 frames).
+const sMoveDirectionFasterAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 12,
+  [DIR_SOUTH]: 12,  // ANIM_STD_GO_FASTER_SOUTH
+  [DIR_NORTH]: 13,  // ANIM_STD_GO_FASTER_NORTH
+  [DIR_WEST]: 14,   // ANIM_STD_GO_FASTER_WEST
+  [DIR_EAST]: 15,   // ANIM_STD_GO_FASTER_EAST
+};
+
+/** 1:1 décomp `u8 GetMoveDirectionFasterAnimNum(u8 direction)` (local, cf. ci-dessus). */
+function GetMoveDirectionFasterAnimNum(direction: number): number {
+  return sMoveDirectionFasterAnimNums[direction] ?? 12;
+}
+
 // 1:1 STRICT décomp `sRunningDirectionAnimNums` (event_object_movement.c:869-878).
 // Maps direction → animNum course. ANIM_RUN_SOUTH=20, etc. (= sAnimTable_BrendanMayNormal
 // [20..23] → sAnim_RunSouth/North/West/East = frames running 9-17). Utilisé par le
@@ -1972,13 +2004,21 @@ function _npcSetStepAnim(rt: DecompRuntime, npc: ObjectEvent, animNum: number): 
   SeekSpriteAnim(rt, sprite as never, sprite.animCmdIndex);
 }
 
-function _npcStartWalkAnim(rt: DecompRuntime, npc: ObjectEvent, dir: number): void {
+/** 1:1 décomp `SetStepAnimHandleAlternation(obj, sprite, animNum)` + `animPaused=FALSE`.
+ *  animNum est explicite (= l'anim de la VITESSE voulue : normal/fast/faster), pas
+ *  forcé à l'anim normale. Base partagée par `_npcStartWalkAnim` (walk) et
+ *  `_InitMoveInPlace` (walk-in-place fast/faster). */
+function _npcStartStepAnimWithNum(rt: DecompRuntime, npc: ObjectEvent, animNum: number): void {
   if (npc.spriteId < 0) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite || !sprite.anims) return;
   if (npc.inanimate) return;
   sprite.animPaused = false;
-  _npcSetStepAnim(rt, npc, GetMoveDirectionAnimNum(dir));
+  _npcSetStepAnim(rt, npc, animNum);
+}
+
+function _npcStartWalkAnim(rt: DecompRuntime, npc: ObjectEvent, dir: number): void {
+  _npcStartStepAnimWithNum(rt, npc, GetMoveDirectionAnimNum(dir));
 }
 
 function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
@@ -4479,11 +4519,18 @@ function _MovementAction_DisableJumpLandingGroundEffect_Step0(_rt: DecompRuntime
 /** 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) :
  *    SetObjectEventDirection + SetStepAnimHandleAlternation(animNum) +
  *    sprite->animPaused = FALSE + sprite->sActionFuncId = 1 + data[3] = duration. */
-function _InitMoveInPlace(rt: DecompRuntime, npc: ObjectEvent, dir: number, duration: number): void {
+function _InitMoveInPlace(rt: DecompRuntime, npc: ObjectEvent, dir: number, animNum: number, duration: number): void {
   SetObjectEventDirection(npc, dir);
-  // 1:1 décomp : SetStepAnimHandleAlternation. _npcStartWalkAnim fait :
-  //   sprite->animPaused = FALSE + StartSpriteAnim(GetMoveDirectionAnimNum).
-  _npcStartWalkAnim(rt, npc, dir);
+  // 1:1 STRICT décomp `InitMoveInPlace` (event_object_movement.c:5704) :
+  //   SetStepAnimHandleAlternation(obj, sprite, animNum) + sprite->animPaused = FALSE.
+  // ⚠️ `animNum` vient du CALLER selon la VITESSE (normal / fast / faster) — PAS forcé à
+  // l'anim normale. C'est CE qui fait avancer l'anim exactement 2 cmds sur la durée :
+  //   slow/normal = anim normale (8f/cmd) × 16-32f ; fast = anim fast (4f/cmd) × 8f ;
+  //   faster = anim faster (2f/cmd) × 4f. → finit TOUJOURS sur la cmd neutre (= frame de face).
+  // Bug réparé : avec l'anim normale (8f/cmd) sur 4-8 frames, l'anim n'avançait pas → le NPC
+  // figeait sur la frame de MARCHE (cmd0). C'était le « PNJ figé en marche » du greeting mère
+  // (LittlerootTown_Movement_MomApproachPlayerAtTruck → walk_in_place_faster_left).
+  _npcStartStepAnimWithNum(rt, npc, animNum);
   npc.actionStep = 1;
   npc.actionTimer = duration;
 }
@@ -4502,11 +4549,13 @@ function _MovementAction_WalkInPlace_Step1(rt: DecompRuntime, npc: ObjectEvent):
   return false;
 }
 
-/** Factory pour WalkInPlace actions (= duration selon SLOW/NORMAL/FAST/FASTER). */
-function _makeWalkInPlaceAction(dir: number, duration: number): MovementActionFunc {
+/** Factory pour WalkInPlace actions (= animNum + duration selon SLOW/NORMAL/FAST/FASTER).
+ *  1:1 décomp : chaque MovementAction_WalkInPlace{Slow,Normal,Fast,Faster}X_Step0 passe
+ *  l'anim de SA vitesse à InitMoveInPlace (GetMoveDirection{,Fast,Faster}AnimNum). */
+function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number): MovementActionFunc {
   return (rt, npc) => {
     if (npc.actionStep === 0) {
-      _InitMoveInPlace(rt, npc, dir, duration);
+      _InitMoveInPlace(rt, npc, dir, animNum, duration);
     }
     return _MovementAction_WalkInPlace_Step1(rt, npc);
   };
@@ -5728,22 +5777,24 @@ gMovementActionFuncs[MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT]  = _Move
 gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT] = _MovementAction_DisableJumpLandingGroundEffect_Step0;
 // H1.6 : WALK_IN_PLACE_SLOW/NORMAL/FAST/FASTER_X (16 actions, durations 32/16/8/4).
 // 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) + WalkInPlace_Step1 (5713).
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, 32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP]      = _makeWalkInPlaceAction(DIR_NORTH, 32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  32);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, 16);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP]    = _makeWalkInPlaceAction(DIR_NORTH, 16);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  16);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  16);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, 8);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP]      = _makeWalkInPlaceAction(DIR_NORTH, 8);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  8);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  8);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, 4);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP]    = _makeWalkInPlaceAction(DIR_NORTH, 4);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  4);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  4);
+// SLOW + NORMAL : anim NORMALE (GetMoveDirectionAnimNum, 8f/cmd). FAST : anim FAST (4f/cmd).
+// FASTER : anim FASTER (2f/cmd). 1:1 décomp MovementAction_WalkInPlace{Slow,Normal,Fast,Faster}X_Step0.
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH),       32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP]      = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH),       32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionAnimNum(DIR_WEST),        32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionAnimNum(DIR_EAST),        32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH),       16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP]    = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH),       16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionAnimNum(DIR_WEST),        16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionAnimNum(DIR_EAST),        16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionFastAnimNum(DIR_SOUTH),    8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP]      = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionFastAnimNum(DIR_NORTH),    8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionFastAnimNum(DIR_WEST),     8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionFastAnimNum(DIR_EAST),     8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, GetMoveDirectionFasterAnimNum(DIR_SOUTH),  4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP]    = _makeWalkInPlaceAction(DIR_NORTH, GetMoveDirectionFasterAnimNum(DIR_NORTH),  4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  GetMoveDirectionFasterAnimNum(DIR_WEST),   4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  GetMoveDirectionFasterAnimNum(DIR_EAST),   4);
 // H1.7 : SET_FIXED_PRIORITY / CLEAR_FIXED_PRIORITY / START_ANIM_IN_DIRECTION.
 gMovementActionFuncs[MOVEMENT_ACTION_SET_FIXED_PRIORITY]      = _MovementAction_SetFixedPriority_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY]    = _MovementAction_ClearFixedPriority_Step0;
