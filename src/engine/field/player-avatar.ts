@@ -63,6 +63,7 @@ import {
   GetWalkInPlaceNormalMovementAction,
   ObjectEventSetGraphicsId,
   PreloadObjectEventGraphics,
+  _setPlayerNormalGfxSnapshot,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -108,6 +109,7 @@ import {
 } from '../system/decomp-bridge';
 import { FindTaskIdByFunc, GetTask, getRuntime } from '../system/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field-effect';
+import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -734,6 +736,22 @@ export async function InitPlayerAvatar(
       sprite.animPaused = false;
       // oam.tileId = tileBase (= 0) : AnimateSprite DMA la frame courante dans les tiles 0-7.
       rt.gba.oam[result.oamIndex].tileId = PLAYER_OBJ_TILE_START;
+      // [Déviation M3] Snapshot de l'état de rendu NORMAL (feuille combinée walking+running réservée)
+      // pour que `ObjectEventSetGraphicsId(player, NORMAL)` (= démontage surf/vélo/...) RESTAURE le joueur
+      // sans réallouer (les tiles 0..143 sont réservées, jamais libérées). 1:1 décomp : ObjectEventSetGraphicsId
+      // repointe sprite->images vers la table ROM du gfx ; ici NORMAL = la feuille combinée → repoint depuis ce snapshot.
+      _setPlayerNormalGfxSnapshot({
+        graphicsId: GetPlayerAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, gender),
+        images: sprite.images,
+        anims: sprite.anims,
+        palette: walkingPng.palette,
+        tileBase: PLAYER_OBJ_TILE_START,
+        shape: 2, size: 2,             // 16×32 (tall)
+        priority: 2,
+        centerToCornerVecX: -(16 >> 1),
+        centerToCornerVecY: -(32 >> 1),
+        y2: sprite.y2,
+      });
     }
   }
   // 1:1 décomp `gPlayerAvatar.spriteId = objectEvent->spriteId` → ici le slot POSSÈDE le
@@ -865,43 +883,68 @@ const sAcroBikeTrickCollisionTypes: number[] = [
   COLLISION_HORIZONTAL_RAIL,
 ];
 
-// ─── Side-effects R4 dette explicite (= hors démo Brendan house) ───────────
+// ─── 1:1 décomp `field_player_avatar.c` /* Surf */ — démontage de surf (StopSurfing) ─────────
+// Déclenché par `CanStopSurfing` (collision ELEVATION_MISMATCH face à la terre, en surfant) :
+// le joueur SAUTE du blob (jump special) vers la terre → swap gfx SURFING→NORMAL → le blob disparaît.
+// `BOB_JUST_MON` = le blob ne bobbe plus que le mon (le joueur s'en détache).
 
-/** 1:1 décomp `CreateStopSurfingTask(u8 direction)` (field_player_avatar.c:1630-1644).
- *
- *  ```c
- *  LockPlayerFieldControls();
- *  Overworld_ClearSavedMusic();
- *  Overworld_ChangeMusicToDefault();
- *  gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
- *  gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
- *  gPlayerAvatar.preventStep = TRUE;
- *  taskId = CreateTask(Task_StopSurfingInit, 0xFF);
- *  gTasks[taskId].data[0] = direction;
- *  Task_StopSurfingInit(taskId);
- *  ```
- *
- *  Port partiel 1:1 strict :
- *  - flags / preventStep / lock : portés.
- *  - Overworld music change : R4 dette (= Surf BGM hors démo).
- *  - Task_StopSurfingInit (= jump anim surf→land + sprite swap + UnlockPlayerFieldControls)
- *    : R4 dette (= gTasks Phaser + ObjectEventSetGraphicsId visuel hors démo).
- *
- *  Note : utilisé uniquement par `CanStopSurfing` qui early-returns false si
- *  PLAYER_AVATAR_FLAG_SURFING non set (= jamais en démo). */
+/** 1:1 décomp `BOB_JUST_MON` (field_effect_helpers.c — enum sBobbingState). Const locale (le module
+ *  source ne l'exporte pas ; cycle ESM → on n'importe pas la valeur, juste la fonction au runtime). */
+const BOB_JUST_MON = 2;
+
+/** 1:1 STRICT décomp `CreateStopSurfingTask(u8 direction)` (field_player_avatar.c:1630) :
+ *    LockPlayerFieldControls(); Overworld_ClearSavedMusic(); Overworld_ChangeMusicToDefault();
+ *    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING; gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
+ *    gPlayerAvatar.preventStep = TRUE; taskId = CreateTask(Task_StopSurfingInit, 0xFF);
+ *    gTasks[taskId].data[0] = direction; Task_StopSurfingInit(taskId);
+ *  (Overworld_ClearSavedMusic/ChangeMusicToDefault = AUDIO → skip 1:1 strict, on ne touche pas au son.) */
 function CreateStopSurfingTask(direction: number): void {
   LockPlayerFieldControls();
-  // R4 dette : Overworld_ClearSavedMusic + Overworld_ChangeMusicToDefault non
-  // portés (= Surf BGM hors démo, MUSIQUE = ne pas toucher sans demande user).
+  // Overworld_ClearSavedMusic() + Overworld_ChangeMusicToDefault() — audio (skip : on ne touche pas au son).
   gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
-  gPlayerAvatar.flags |= 1 << 0;  // PLAYER_AVATAR_FLAG_ON_FOOT = (1 << 0)
+  gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
   gPlayerAvatar.preventStep = true;
-  // R4 dette : Task_StopSurfingInit (= jump anim Surf→land + sprite swap Brendan
-  // Normal + DestroySprite blob + UnlockPlayerFieldControls) non porté.
-  // À porter avec Surf subsystem (= besoin gTasks Phaser + ObjectEventSetGraphicsId).
-  console.warn('[player-avatar] R4 partiel: CreateStopSurfingTask(' + direction
-    + ') — flags/lock OK, Task_StopSurfingInit (anim + sprite swap) non porté.');
+  const taskId = CreateTask(Task_StopSurfingInit, 0xFF);
+  const task = GetTask(taskId);
+  if (!task) return;
+  task.data[0] = direction;
+  Task_StopSurfingInit(task);  // 1:1 appel synchrone immédiat
 }
+
+/** 1:1 STRICT décomp `Task_StopSurfingInit(u8 taskId)` (field_player_avatar.c:1645) : attend la fin
+ *  d'un éventuel mouvement override, met le blob en BOB_JUST_MON, lance le SAUT du joueur hors du blob
+ *  (jump special dans `direction`), puis bascule sur `Task_WaitStopSurfing`. */
+function Task_StopSurfingInit(task: DecompTask): void {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (ObjectEventIsMovementOverridden(playerObjEvent)) {
+    if (!ObjectEventClearHeldMovementIfFinished(playerObjEvent))
+      return;
+  }
+  SetSurfBlob_BobState(getRuntime(), playerObjEvent.fieldEffectSpriteId, BOB_JUST_MON);
+  ObjectEventSetHeldMovement(playerObjEvent, GetJumpSpecialMovementAction(task.data[0] & 0xFF));
+  task.func = Task_WaitStopSurfing;
+}
+
+/** 1:1 STRICT décomp `Task_WaitStopSurfing(u8 taskId)` (field_player_avatar.c:1659) : quand le saut
+ *  est fini → swap gfx vers NORMAL (restaure la feuille combinée réservée), pose face direction,
+ *  preventStep=FALSE, déverrouille, DÉTRUIT le sprite du blob, et (BUGFIX) ré-arme les ground effects. */
+function Task_WaitStopSurfing(task: DecompTask): void {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (ObjectEventClearHeldMovementIfFinished(playerObjEvent)) {
+    ObjectEventSetGraphicsId(playerObjEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL));
+    ObjectEventSetHeldMovement(playerObjEvent, GetFaceDirectionMovementAction(playerObjEvent.facingDirection));
+    gPlayerAvatar.preventStep = false;
+    UnlockPlayerFieldControls();
+    getRuntime().DestroySprite(playerObjEvent.fieldEffectSpriteId);
+    // #ifdef BUGFIX : sans ça, en marchant dans l'herbe depuis le surf, le joueur apparaît AU-DESSUS
+    // de l'herbe au lieu de DEDANS → on ré-arme triggerGroundEffectsOnMove.
+    playerObjEvent.triggerGroundEffectsOnMove = true;
+    DestroyTask(task.taskId);
+  }
+}
+
+// Dev hook (A/B démontage surf : force-trigge depuis la console après un mount forcé).
+(globalThis as Record<string, unknown>).__CreateStopSurfingTask = CreateStopSurfingTask;
 
 // ─── 1:1 décomp `field_player_avatar.c` /* Strength */ — poussée de rocher (HM Strength) ──
 // tState = data[0], tBoulderObjId = data[1], tDirection = data[2].

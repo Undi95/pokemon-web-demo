@@ -23,7 +23,8 @@
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
-import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../system/sprite';
+import type { OamEntry } from '../gba/types';
+import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../system/sprite';
 import { LoadPalette } from '../system/decomp-globals';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter
@@ -7408,6 +7409,79 @@ export async function PreloadObjectEventGraphics(graphicsId: string): Promise<vo
   if (sec) await loadNpcPng(`${BASE}/${sec}`);
 }
 
+// ─── [Déviation M3] Snapshot de rendu du gfx NORMAL joueur (feuille combinée réservée) ──────
+//
+// Le décomp `ObjectEventSetGraphicsId` repointe simplement `sprite->images` vers la table ROM du
+// nouveau gfx (slot VRAM fixe par sprite + DMA par frame, PAS de réalloc). Notre archi M3 charge le
+// gfx NORMAL joueur comme une FEUILLE COMBINÉE walking+running RÉSERVÉE (tiles 0..143, jamais
+// libérées) — pas un sprite dynamic-copy. Pour que `ObjectEventSetGraphicsId(player, NORMAL)` (= retour
+// à pied : démontage surf/vélo/...) restaure ce rendu, `InitPlayerAvatar` mémorise ici l'état NORMAL
+// (images/anims/palette/oam) → `_restorePlayerNormalGfx` le ré-applique sans AllocSpriteTiles.
+interface PlayerNormalGfxSnapshot {
+  graphicsId: string;
+  images: ReadonlyArray<{ data: Uint8Array; size: number }> | null;
+  anims: ReadonlyArray<ReadonlyArray<unknown>> | null;
+  palette: Uint16Array;
+  tileBase: number;
+  shape: 0 | 1 | 2;
+  size: 0 | 1 | 2 | 3;
+  priority: number;
+  centerToCornerVecX: number;
+  centerToCornerVecY: number;
+  y2: number;
+}
+let _playerNormalGfxSnapshot: PlayerNormalGfxSnapshot | null = null;
+/** Appelé par `InitPlayerAvatar` (player-avatar.ts) une fois le sprite joueur NORMAL monté. */
+export function _setPlayerNormalGfxSnapshot(snap: PlayerNormalGfxSnapshot): void {
+  _playerNormalGfxSnapshot = snap;
+}
+
+/** Restaure le rendu NORMAL joueur (feuille combinée réservée) depuis le snapshot. Libère d'abord
+ *  l'alloc VRAM dynamique courante (surfing/field-move), re-patche la palette NORMAL dans PALSLOT_PLAYER
+ *  (1:1 décomp `PatchObjectPalette` sur le gfx NORMAL), puis repointe images/anims/oam vers les tiles
+ *  réservées 0..143. La feuille réservée (objTileBase < reservedCount) n'est JAMAIS libérée. */
+function _restorePlayerNormalGfx(objectEvent: ObjectEvent, sprite: DecompSprite, oam: OamEntry): void {
+  const snap = _playerNormalGfxSnapshot;
+  if (!snap) return;
+  // 1) Libère l'alloc dynamique précédente (la feuille réservée a objTileBase < reservedCount).
+  const reserved = getReservedSpriteTileCount();
+  if (objectEvent.objTileBase >= reserved && objectEvent.objTileBase > 0 && objectEvent.objTileCount > 0)
+    MarkObjTilesFree(objectEvent.objTileBase * 32, objectEvent.objTileCount * 32);
+  // 2) Re-charge la palette NORMAL dans PALSLOT_PLAYER (le surf a réécrit ce slot — mêmes couleurs
+  //    partagées, mais 1:1 décomp on re-patche). Tag = OBJ_EVENT_PAL_TAG_BRENDAN/MAY selon le gfx.
+  const palTag = snap.graphicsId === 'OBJ_EVENT_GFX_MAY_NORMAL' ? OBJ_EVENT_PAL_TAG_MAY : OBJ_EVENT_PAL_TAG_BRENDAN;
+  const paletteBank = PatchObjectEventPalette(snap.palette, PALSLOT_PLAYER, palTag);
+  // 3) Repointe le rendu vers la feuille combinée réservée (usingSheet=false + images/anims NORMAL).
+  sprite.images = snap.images;
+  sprite.anims = snap.anims;
+  sprite.usingSheet = false;
+  sprite.sheetTileStart = 0;
+  sprite.tileBase = snap.tileBase;
+  sprite.centerToCornerVecX = snap.centerToCornerVecX;
+  sprite.centerToCornerVecY = snap.centerToCornerVecY;
+  sprite.y2 = snap.y2;
+  oam.shape = snap.shape;
+  oam.size = snap.size;
+  oam.tileId = snap.tileBase;
+  oam.paletteBank = paletteBank;
+  oam.priority = snap.priority;
+  objectEvent.inanimate = false;
+  objectEvent.graphicsId = snap.graphicsId;
+  objectEvent.objTileBase = snap.tileBase;
+  objectEvent.objTileCount = 0;
+  objectEvent.paletteBank = paletteBank;
+  // Re-init anim (face direction courante — 1:1 spawn StartSpriteAnim(GetFaceDirectionAnimNum)).
+  if (sprite.anims && sprite.anims.length > 0) {
+    sprite.animNum = GetFaceDirectionAnimNum(objectEvent.facingDirection);
+    sprite.animBeginning = true;
+    sprite.animEnded = false;
+    sprite.animCmdIndex = 0;
+    sprite.animDelayCounter = 0;
+    sprite.animPaused = false;
+  }
+  if (objectEvent.trackedByCamera) CameraObjectReset();
+}
+
 /** 1:1 STRICT décomp `ObjectEventSetGraphicsId(struct ObjectEvent *, u8 graphicsId)`
  *  (event_object_movement.c:1820) — SWAP LIVE du gfx d'un object event existant.
  *
@@ -7428,14 +7502,24 @@ export async function PreloadObjectEventGraphics(graphicsId: string): Promise<vo
  *  `_applyBerryTreeStageGraphicsLive`. Le PNG doit être préchargé (`PreloadObjectEventGraphics`).
  *  graphicsId = NOM du constant décomp (convention de notre port).
  *
- *  ⚠️ DETTE (1er incrément keystone) : on ne LIBÈRE pas encore l'ancienne feuille VRAM (le sheet
- *  NORMAL du joueur est RÉSERVÉ, pas alloué par AllocSpriteTiles). Le free/restore propre (retour
- *  à NORMAL = démontage surf) viendra avec StopSurfing. Ici : alloc + repoint (valide le rendu). */
+ *  VRAM (déviation M3) : on free l'alloc dynamique précédente avant la nouvelle (anti-fuite), et le
+ *  retour au gfx NORMAL joueur RESTAURE la feuille combinée réservée (`_restorePlayerNormalGfx`) au lieu
+ *  d'allouer — le sheet NORMAL (tiles 0..143) est RÉSERVÉ, jamais libéré. (Dette free/restore soldée.) */
 export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: string): void {
   const rt = getRuntime();
   if (objectEvent.spriteId < 0) return;
   const sprite = rt.gSprites.get(objectEvent.spriteId);
   if (!sprite) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+
+  // [Déviation M3] Retour au gfx NORMAL du joueur = RESTAURE la feuille combinée réservée
+  // (walking+running, tiles 0..143) au lieu du flux dynamic-copy. Libère aussi l'alloc surf/field-move
+  // courante → solde la dette free/restore VRAM du keystone. (Snapshot posé par InitPlayerAvatar.)
+  if (_playerNormalGfxSnapshot && objectEvent.isPlayer && graphicsId === _playerNormalGfxSnapshot.graphicsId) {
+    _restorePlayerNormalGfx(objectEvent, sprite, oam);
+    return;
+  }
+
   const catalog = _graphicsCatalog;
   if (!catalog) { console.warn('[ObjectEventSetGraphicsId] catalogue non chargé'); return; }
   const graphics = catalog[graphicsId];
@@ -7458,6 +7542,16 @@ export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: s
   const graphicsInfo = GetObjectEventGraphicsInfo(graphicsId, ...picsArgs);
   if (!graphicsInfo || graphicsInfo.images.length === 0) { console.warn('[ObjectEventSetGraphicsId] graphicsInfo vide: ' + graphicsId); return; }
 
+  // Libère l'alloc VRAM dynamique précédente AVANT la nouvelle (évite la fuite à chaque swap, ex.
+  // NORMAL→FIELD_MOVE→SURFING). La feuille combinée réservée du joueur (objTileBase < reservedCount)
+  // n'est JAMAIS libérée. Le décomp n'a pas ce free (slot VRAM fixe par sprite + DMA par frame) — ici
+  // on gère NOS allocations dynamiques (déviation M3 assumée du keystone).
+  {
+    const reserved = getReservedSpriteTileCount();
+    if (objectEvent.objTileBase >= reserved && objectEvent.objTileBase > 0 && objectEvent.objTileCount > 0)
+      MarkObjTilesFree(objectEvent.objTileBase * 32, objectEvent.objTileCount * 32);
+  }
+
   // 1:1 décomp `AllocSpriteTiles(images->size / TILE_SIZE_4BPP)` (= UNE frame, dynamic-copy flow).
   const objTileCount = Math.ceil(graphicsInfo.images[0].size / 32);
   const objTileBase = AllocSpriteTiles(objTileCount);
@@ -7473,7 +7567,6 @@ export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: s
   rt.gba.objVram.set(graphicsInfo.images[0].data, objTileBase * 32);
 
   // Repoint sprite + OAM (1:1 décomp : oam shape/size/paletteNum, images, anims, inanimate, graphicsId).
-  const oam = rt.gba.oam[sprite.oamIndex];
   oam.shape = graphicsInfo.oam.shape;
   oam.size = graphicsInfo.oam.size;
   oam.tileId = objTileBase;
