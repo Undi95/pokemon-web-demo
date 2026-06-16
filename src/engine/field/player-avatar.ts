@@ -46,7 +46,6 @@ import {
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
   ObjectEventIsHeldMovementActive,
-  GetHeldMovementVisual,
   GetWalkNormalMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
@@ -453,8 +452,6 @@ export function GetXYCoordsOneStepInFrontOfPlayer(): { x: number; y: number } {
 const PLAYER_OBJ_TILE_START = 0;
 const TILES_PER_FRAME = 8;  // 16x32 sprite = 2x4 tiles 4bpp
 const NUM_WALK_FRAMES = 9;  // = 1:1 décomp gObjectEventPic_BrendanNormal frame count
-const RUN_FRAME_OFFSET = 9;  // = 1:1 décomp sPicTable_BrendanNormal[9..17] offset
-const TOTAL_PLAYER_FRAMES = 18;  // = walking + running
 const PLAYER_PALETTE_BANK = 0;
 
 // ─── Async loader : sprite + palette ────────────────────────────────────────
@@ -731,40 +728,11 @@ export async function InitPlayerAvatar(
 // `dirToCameraSpeed` re-exporté ici via alias pour back-compat.
 const dirToCameraSpeed = _dirToCameraSpeed;
 
-// ─── 1:1 décomp jump anim (event_object_movement.c:8426-8444) ──────────────
-
-/** 1:1 décomp `sJumpY_High[]` (event_object_movement.c:8426).
- *  Y offsets pour la courbe de saut "high" (= ledge jump JUMP_TYPE_HIGH).
- *  16 entries → 32-frame jump (= JUMP_DISTANCE_FAR), each entry covers 2 frames
- *  via `sJumpY_High[timer / 2]`. Negative = sprite va vers le HAUT. */
-const sJumpY_High: ReadonlyArray<number> = [
-  -4, -6, -8, -10, -11, -12, -12, -12,
-  -11, -10, -9, -8, -6, -4, 0, 0,
-];
-
-/** Compute jump y offset based on timer (= 0..31, 32-frame ledge jump).
- *  Décomp utilise `GetJumpY(timer/2, JUMP_TYPE_HIGH)`. */
-function getJumpYOffset(timer: number): number {
-  const idx = Math.min(15, Math.max(0, timer >> 1));
-  return sJumpY_High[idx];
-}
-
-
-// ─── Sprite frame update ─────────────────────────────────────────────────────
-
-/** [M3] Le sprite joueur est désormais UNIFIÉ avec son slot object-event
- *  (gObjectEvents[objectEventId].spriteId = gPlayerAvatar.spriteId, câblé dans
- *  InitPlayerAvatar). Tout le rendu passe par le chemin 1:1 décomp partagé :
- *   - position : `UpdateObjectEvents` (sprite.x = worldX + visualOffsetX) ;
- *   - anim/tile : `AnimateSprite` (tickSpriteAnims) piloté par les MovementActions
- *     (held WalkNormal/PlayerRun/Jump2/WalkInPlace posés par PlayerStep + scripts) ;
- *   - arc de saut : `_DoJumpSpriteMovement` (sprite.y2).
- *  → `updateSpriteFrame` n'a plus aucun rôle (le pont `GetHeldMovementVisual` +
- *  le rendu manuel oam.tileId/x/y/y2 sont retirés). Conservé comme no-op pour ne pas
- *  toucher les ~15 call-sites de PlayerStep ; sera supprimé au nettoyage. */
-function updateSpriteFrame(_rt: DecompRuntime): void {
-  /* no-op : voir doc ci-dessus (rendu joueur = chemin object-event 1:1). */
-}
+// [M3] Le rendu du sprite joueur est UNIFIÉ avec son slot object-event (cf.
+// InitPlayerAvatar) : position par UpdateObjectEvents, anim/tile par AnimateSprite
+// (MovementActions), arc de saut par _DoJumpSpriteMovement. L'ancien rendu manuel
+// (updateSpriteFrame + pont GetHeldMovementVisual + courbe sJumpY_High locale) est
+// retiré — le sprite s'anime comme tout NPC.
 
 // [M3-C3.2c] Le pont AdvancePlayerSpriteWorldPos est SUPPRIMÉ. Le forced movement
 // (door warp) passe maintenant par un held WALK_NORMAL (PlayerStep forced path →
@@ -1337,7 +1305,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       gPlayerAvatar.runningState = NOT_MOVING;
       gPlayerAvatar.collideFramesLeft = 0;  // = pas de bump anim pendant lock
     }
-    updateSpriteFrame(rt);
     return;
   }
 
@@ -1385,7 +1352,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
               ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
             }
           }
-          updateSpriteFrame(rt);
           return;
         }
       }
@@ -1393,7 +1359,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // step or NOT_MOVING). runningState reste NOT_MOVING (= jamais set à
       // MOVING pendant collide).
     } else {
-      updateSpriteFrame(rt);
       return;  // collide en cours → skip keypad
     }
   }
@@ -1501,7 +1466,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
           console.log(`[player-avatar] stepped onto warp tile (${warp.x},${warp.y}) kind=${kind} stepDir=${stepDirAtEnd} → ${warp.destMap}#${warp.warpId}`);
           setPendingWarp(warp, kind);
           gPlayerAvatar.runningState = NOT_MOVING;  // freeze player
-          updateSpriteFrame(rt);
           return;  // skip keypad : don't start new step
         }
         // 'arrow' kind : let player land on tile, TryArrowWarp handles next frame.
@@ -1511,7 +1475,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // qui match VAR_X = value, run le script. Used par truck SetIntroFlags.
       if (TryRunCoordEventScript(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y)) {
         // Script triggered : freeze player + return (= no keypad).
-        updateSpriteFrame(rt);
         return;
       }
       // 1:1 décomp `CheckStandardWildEncounter` (field_control_avatar.c:162).
@@ -1522,14 +1485,12 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // → setup gEnemyParty + start wild battle scene swap. Returns true =
       // encounter triggered, freeze player + skip keypad.
       if (CheckStandardWildEncounter(newTileBehavior)) {
-        updateSpriteFrame(rt);
         return;
       }
       // ↓ NOTE : pas de `return` — fall through au keypad logic ci-dessous.
       // Si direction held → start new step (= continuous walk).
       // Si DIR_NONE → keypad set runningState = NOT_MOVING (= step graceful end).
     } else {
-      updateSpriteFrame(rt);
       return;  // step pas fini → skip keypad
     }
   }
@@ -1549,10 +1510,8 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // au keypad logic : si input tjrs held même direction → MOVING dans
       // CETTE frame. Avant on returnait ici → 1 frame de delay extra.
       gPlayerAvatar.runningState = NOT_MOVING;
-      updateSpriteFrame(rt);
       // Ne pas return, continue au keypad check ci-dessous.
     } else {
-      updateSpriteFrame(rt);
       return;  // skip keypad pendant l'anim
     }
   }
@@ -1569,7 +1528,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
 
   if (inputDir === DIR_NONE) {
     gPlayerAvatar.runningState = NOT_MOVING;
-    updateSpriteFrame(rt);
     return;
   }
 
@@ -1596,7 +1554,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         ObjectEventSetHeldMovement(turnSlot, GetWalkInPlaceFastMovementAction(inputDir));
       }
     }
-    updateSpriteFrame(rt);
     return;
   }
 
@@ -1621,7 +1578,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         setPendingWarp(warp, 'arrow');
         SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
         gPlayerAvatar.runningState = NOT_MOVING;
-        updateSpriteFrame(rt);
         return;
       }
     }
@@ -1670,7 +1626,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       }
       // [M3-C3.3] Driver caméra manuel RETIRÉ : le CameraObject suit le sprite joueur
       // (worldX/Y avancé de 2 tiles par le held Jump2 via _DoJumpSpriteMovement). 1:1 décomp.
-      updateSpriteFrame(rt);
       return;
     }
 
@@ -1688,7 +1643,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
           console.log(`[player-avatar] door warp at (${dx},${dy}) → ${doorWarp.destMap}#${doorWarp.warpId}`);
           setPendingWarp(doorWarp, kind);
           gPlayerAvatar.runningState = NOT_MOVING;
-          updateSpriteFrame(rt);
           return;
         }
       }
@@ -1717,7 +1671,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
       }
     }
-    updateSpriteFrame(rt);
     return;
   }
 
@@ -1733,9 +1686,9 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
                 && FlagGet('FLAG_SYS_B_DASH')
                 && !IsRunningDisallowed(playerBehavior);
   gPlayerAvatar.dashing = wantDash;
-  // 1:1 décomp `sPicTable_BrendanNormal[0..8 walk, 9..17 run]` preloaded au boot.
-  // updateSpriteFrame applique `RUN_FRAME_OFFSET` quand dashing=true → utilise
-  // les running frames (= sprite course distinct). Pas de VRAM swap nécessaire.
+  // 1:1 décomp `sPicTable_BrendanNormal[0..8 walk, 9..17 run]`. Le dash pose un held
+  // MOVEMENT_ACTION_PLAYER_RUN (ci-dessous) → _makePlayerRunAction = StartRunningAnim
+  // (ANIM_RUN_X = frames running 9-17), animé par le système partagé sur le sprite unifié.
   gPlayerAvatar.runningState = MOVING;
   gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
   // Dash : 8 frames step à 2 px/frame = 16 px = 1 metatile (= 2× plus rapide).
@@ -1778,7 +1731,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // le sprite joueur (worldX/Y avancé par le held WalkNormal/PlayerRun posé ci-dessus,
   // exécuté dans TickObjectEventMovements). CameraUpdateCallback écrase movementSpeedX/Y
   // depuis le delta du sprite chaque frame → le driver était mort (overwrite). 1:1 décomp.
-  updateSpriteFrame(rt);
 }
 
 /** Reset le player avatar (= cleanup OAM + state). À call lors d'un map switch.
