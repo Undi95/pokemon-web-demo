@@ -170,7 +170,10 @@ function _whereObj(): Record<string, unknown> {
     primaryMapGroup: sb1?.location?.mapGroup,
     primaryMapNum: sb1?.location?.mapNum,
     elevation: pa?.currentElevation,
-    walking: (pa?.stepFramesLeft ?? 0) > 0,
+    // 1:1 post étape 1b-iii : « walking » = en translation réelle = tileTransitionState != T_NOT_MOVING
+    // (l'ancien `stepFramesLeft > 0` n'est plus posé sur le chemin déverrouillé — le held movement
+    // EST le timer du pas ; tileTransitionState est dérivé du held par UpdatePlayerAvatarTransitionState).
+    walking: (pa?.tileTransitionState ?? 0) !== 0,
   };
 }
 
@@ -203,7 +206,7 @@ function _see(): Record<string, unknown> {
     where: _where(),
     player: pa
       ? { x: playerPos.x, y: playerPos.y, facing: _DIR_NAMES[playerPos.facing ?? 0],
-          gender: pa.gender, walking: (pa.stepFramesLeft ?? 0) > 0,
+          gender: pa.gender, walking: (pa.tileTransitionState ?? 0) !== 0,
           elevation: pa.currentElevation }
       : null,
     location: sb1.location,
@@ -1144,13 +1147,17 @@ function _movement(): Record<string, unknown> {
   const slot0 = objs[0];
   // Post R3 : coords/facing LOGIQUES depuis sb1.pos (pa.x/y/facing n'existent plus).
   const _pp = _readPlayerPos();
+  const _paFull = pa as (PlayerAvatar & { runningState?: number }) | undefined;
   const player: Record<string, unknown> = pa ? {
     x: _pp.x, y: _pp.y,
     facing: _DIR_NAMES[_pp.facing ?? 0],
-    stepFramesLeft: pa.stepFramesLeft,
-    tileTransitionState: pa.tileTransitionState,
+    // post étape 1b-iii : le mouvement joueur est piloté par le held movement du slot0
+    // (voir slot0_movement ci-dessous), PAS par stepFramesLeft (= seulement le locked door-walk).
+    runningState: ['NOT_MOVING', 'TURN_DIRECTION', 'MOVING'][_paFull?.runningState ?? 0] ?? _paFull?.runningState,
+    tileTransitionState: ['T_NOT_MOVING', 'T_TILE_TRANSITION', 'T_TILE_CENTER'][pa.tileTransitionState ?? 0] ?? pa.tileTransitionState,
+    stepFramesLeft_lockedDoorWalkOnly: pa.stepFramesLeft,
     elevation: pa.currentElevation,
-    walking: (pa.stepFramesLeft ?? 0) > 0,
+    walking: (pa.tileTransitionState ?? 0) !== 0,
   } : { error: 'no gPlayerAvatar' };
   if (slot0) {
     player.slot0_movement = {
@@ -1192,14 +1199,17 @@ function _movement(): Record<string, unknown> {
 //   2. ArePlayerFieldControlsLocked()        (sLockFieldControls = TRUE)
 //   3. gPaletteFade.active                   (fade en cours)
 //   4. preventStep                           (forceStop, surfing setup, etc.)
-//   5. collideFramesLeft > 0                 (anim bump active)
-//   6. forceMovement != DIR_NONE             (warp exit task drive le step)
-//   7. runningState === MOVING && stepFramesLeft > 0  (step en cours)
-//   8. ScriptContext SHUTDOWN? RUNNING?
-//   9. message box ouvert ?
+//   5. held movement actif & PAS fini        (TryInterruptObjectEventSpecialAnim = LE gate : un
+//                                             pas/turn/collide-bump/jump est en cours → PlayerStep
+//                                             ne lit PAS l'input ce frame ; le held EST le timer)
+//   6. forceMovement != DIR_NONE             (warp exit task drive le step, branche lock)
+//   7. ScriptContext SHUTDOWN? RUNNING?
+//   8. message box ouvert ?
 //
-// `scope.canWalk()` retourne la première raison qui bloque l'input, ou null si
-// l'input devrait passer. Utile quand le user dit "je peux pas bouger".
+// ⚠️ post étape 1b-iii : les anciens gates « collideFramesLeft > 0 » et « stepFramesLeft > 0 »
+// (compteurs MAISON) sont REMPLACÉS par le gate held movement (gate 5). Les compteurs ne sont plus
+// posés sur le chemin déverrouillé (TryInterruptObjectEventSpecialAnim renvoie TRUE tant que le held
+// du slot0 est actif & pas fini). `scope.canWalk()` retourne les raisons qui bloquent l'input.
 
 interface CanWalkGate { blocked: boolean; reason: string; details?: Record<string, unknown> }
 
@@ -1231,15 +1241,15 @@ function _canWalk(): CanWalkGate[] {
   // Gate 4 : preventStep
   gates.push({ blocked: pa.preventStep === true, reason: `preventStep=${pa.preventStep}` });
 
-  // Gate 5 : collideFramesLeft (= bump anim active, input skip)
-  gates.push({ blocked: (pa.collideFramesLeft ?? 0) > 0, reason: `collideFramesLeft=${pa.collideFramesLeft}` });
+  // Gate 5 : held movement actif & PAS fini (= TryInterruptObjectEventSpecialAnim renvoie TRUE →
+  // PlayerStep ne lit pas l'input ce frame). Remplace les compteurs collide/stepFramesLeft maison
+  // (post étape 1b-iii : le held movement du slot0 EST le timer du pas/turn/collide/jump).
+  const slot0Held = (_g<ObjectEventMovementFields[]>('__gObjectEvents') ?? [])[pa.objectEventId ?? 0];
+  const heldGating = slot0Held?.heldMovementActive === true && slot0Held?.heldMovementFinished !== true;
+  gates.push({ blocked: heldGating, reason: `heldMovement en cours (action=${slot0Held?.movementActionId} active=${slot0Held?.heldMovementActive} finished=${slot0Held?.heldMovementFinished})` });
 
-  // Gate 6 : forceMovement (= warp exit drive le step)
+  // Gate 6 : forceMovement (= warp exit / door-walk drive le step via la branche lock de PlayerStep)
   gates.push({ blocked: (pa.forceMovement ?? 0) !== 0, reason: `forceMovement=${_DIR_NAMES[pa.forceMovement ?? 0]}` });
-
-  // Gate 7 : runningState MOVING + stepFramesLeft
-  const moving = (pa.runningState ?? 0) === 2 && (pa.stepFramesLeft ?? 0) > 0;
-  gates.push({ blocked: moving, reason: `runningState=MOVING stepFramesLeft=${pa.stepFramesLeft}` });
 
   // Gate 8 : script status
   const sc = _script() as { status?: number; statusName?: string };
@@ -1283,9 +1293,11 @@ function _diag(): Record<string, unknown> {
     },
     pa: {
       flags: pa?.flags?.toString(2).padStart(8, '0'),
-      runningState: pa?.runningState,
-      tileTransitionState: pa?.tileTransitionState,
-      stepFramesLeft: pa?.stepFramesLeft,
+      runningState: ['NOT_MOVING', 'TURN_DIRECTION', 'MOVING'][pa?.runningState ?? 0] ?? pa?.runningState,
+      tileTransitionState: ['T_NOT_MOVING', 'T_TILE_TRANSITION', 'T_TILE_CENTER'][pa?.tileTransitionState ?? 0] ?? pa?.tileTransitionState,
+      // post étape 1b-iii : le mouvement joueur est piloté par le held movement du slot0 (vrai gate).
+      heldMovement: slot0 ? { action: slot0.movementActionId, active: slot0.heldMovementActive, finished: slot0.heldMovementFinished } : null,
+      stepFramesLeft_lockedDoorWalkOnly: pa?.stepFramesLeft,
       objectEventId: pa?.objectEventId,
       spriteId: pa?.spriteId,
     },
