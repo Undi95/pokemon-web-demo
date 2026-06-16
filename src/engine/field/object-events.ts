@@ -153,6 +153,23 @@ export function GetMoveDirectionAnimNum(direction: number): number {
   return sMoveDirectionAnimNums[direction] ?? 4;
 }
 
+// 1:1 STRICT décomp `sRunningDirectionAnimNums` (event_object_movement.c:869-878).
+// Maps direction → animNum course. ANIM_RUN_SOUTH=20, etc. (= sAnimTable_BrendanMayNormal
+// [20..23] → sAnim_RunSouth/North/West/East = frames running 9-17). Utilisé par le
+// dash joueur (StartRunningAnim) — distinct de GO_FAST (8-11) qui n'a pas de pic course.
+const sRunningDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 20,   // ANIM_RUN_SOUTH
+  [DIR_SOUTH]: 20,  // ANIM_RUN_SOUTH
+  [DIR_NORTH]: 21,  // ANIM_RUN_NORTH
+  [DIR_WEST]: 22,   // ANIM_RUN_WEST
+  [DIR_EAST]: 23,   // ANIM_RUN_EAST
+};
+
+/** 1:1 décomp `u8 GetRunningDirectionAnimNum(u8 direction)` (event_object_movement.c:4565). */
+export function GetRunningDirectionAnimNum(direction: number): number {
+  return sRunningDirectionAnimNums[direction] ?? 20;
+}
+
 // ─── Object event graphics catalog ──────────────────────────────────────────
 
 interface GraphicsInfo {
@@ -1111,6 +1128,13 @@ export function resetObjectEventAllocations(): void {
  *  À appeler AVANT resetObjectEventAllocations + SpawnObjectEventsOnMap. */
 export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: number; inUse: boolean }>; gba: { oam: Array<{ visible: boolean }> } }): void {
   for (const npc of gObjectEvents) {
+    // [M3] Ne PAS détruire le sprite du joueur : son slot le POSSÈDE désormais
+    // (slot.spriteId = gPlayerAvatar.spriteId, unifié), mais le sprite est (re)créé
+    // par `InitPlayerAvatar` (qui tourne AVANT ce reset au map-load) et détruit par
+    // `DestroyPlayerAvatar`. Sans ce skip, ce reset NPC tuerait le sprite joueur
+    // fraîchement créé (= id libéré → repris par le 1er NPC → collision). 1:1
+    // décomp : ResetObjectEvents reset les NPCs, le player object event est géré à part.
+    if (npc.isPlayer) continue;
     if (npc.active && npc.spriteId >= 0) {
       const sprite = rt.gSprites.get(npc.spriteId);
       if (sprite) {
@@ -4224,6 +4248,28 @@ function _makeWalkAction(dir: number, speed: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `MovementAction_PlayerRunDown_Step0` (event_object_movement.c:6020) :
+ *    StartRunningAnim(objectEvent, sprite, DIR_SOUTH);
+ *    return MovementAction_PlayerRunDown_Step1(objectEvent, sprite);
+ *
+ *  `StartRunningAnim` (5110) = InitNpcForMovement(MOVE_SPEED_FAST_1) +
+ *  SetStepAnimHandleAlternation(GetRunningDirectionAnimNum(facingDirection)).
+ *  Notre `_InitNpcForMovement` bundle déjà le walk anim (= décomp InitMovementNormal) ;
+ *  on l'override ensuite avec l'anim RUN (= ANIM_RUN_X, frames running 9-17) via
+ *  `_npcSetStepAnim`. Step1 = `_MovementAction_WalkNormal_Step1` (= NpcTakeStep, identique
+ *  à MovementAction_PlayerRunDown_Step1). Remplace la dette R3 (_makeWalkAction → walk anim).
+ *  La distance/vitesse sont identiques à WALK_FAST (speed 1) ; seul le pic course diffère. */
+function _makePlayerRunAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
+      _npcSetStepAnim(rt, npc, GetRunningDirectionAnimNum(npc.facingDirection));
+      return _MovementAction_WalkNormal_Step1(rt, npc);
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
 // ─── WALK_SLOW path séparé 1:1 strict décomp ─────────────────────────────────
 // Source : event_object_movement.c:5128-5160 (= path DISTINCT de
 // InitMovementNormal + UpdateMovementNormal qui utilise NpcTakeStep + step
@@ -5718,15 +5764,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_DOWN]  = _makeWalkAction(DIR_SOUTH, 4
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_UP]    = _makeWalkAction(DIR_NORTH, 4);
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_LEFT]  = _makeWalkAction(DIR_WEST,  4);
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_RIGHT] = _makeWalkAction(DIR_EAST,  4);
-// H1.9 : PLAYER_RUN_X (= speed FAST_1, 12 frames/tile, running).
-// Source : MovementAction_PlayerRunDown_Step0 (StartRunningAnim = InitNpcForMovement + MOVE_SPEED_FAST_1).
-// Dette R3 : décomp utilise GetRunningDirectionAnimNum (= ANIM_RUN_X), notre
-// _npcStartWalkAnim utilise GetMoveDirectionAnimNum (= ANIM_WALK_X).
-// Anim running vs walking = sprite frames différents. Acceptable visual partial.
-gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_DOWN]  = _makeWalkAction(DIR_SOUTH, 1);
-gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_UP]    = _makeWalkAction(DIR_NORTH, 1);
-gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_LEFT]  = _makeWalkAction(DIR_WEST,  1);
-gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_RIGHT] = _makeWalkAction(DIR_EAST,  1);
+// H1.9 : PLAYER_RUN_X (= speed FAST_1, 8 frames/tile, running) — 1:1 StartRunningAnim
+// (GetRunningDirectionAnimNum = ANIM_RUN_X, frames running 9-17). Cf. _makePlayerRunAction.
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_DOWN]  = _makePlayerRunAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_UP]    = _makePlayerRunAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_LEFT]  = _makePlayerRunAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_RIGHT] = _makePlayerRunAction(DIR_EAST);
 // H1.10 : WALK_NORMAL_DIAGONAL_X / WALK_SLOW_DIAGONAL_X (8 actions).
 // Source : MovementAction_WalkNormalDiagonalUpLeft_Step0 (InitMovementNormal + DIR_NORTHWEST).
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT]    = _makeWalkAction(DIR_NORTHWEST, 0);
@@ -5914,6 +5957,40 @@ const gJump2MovementActions: readonly number[] = [
 export function GetJump2MovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gJump2MovementActions[dir];
+}
+
+/** 1:1 décomp `gWalkInPlaceFastMovementActions[]` (event_object_movement.c). */
+const gWalkInPlaceFastMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkInPlaceFastMovementAction` (event_object_movement.c, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_IN_PLACE_FAST_* (= turn
+ *  in place, 8 frames). Utilisé par PlayerTurnInPlace. */
+export function GetWalkInPlaceFastMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkInPlaceFastMovementActions[dir];
+}
+
+/** 1:1 décomp `gWalkInPlaceSlowMovementActions[]` (event_object_movement.c). */
+const gWalkInPlaceSlowMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkInPlaceSlowMovementAction` (event_object_movement.c, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_* (= collide
+ *  bump, 32 frames). Utilisé par PlayerNotOnBikeCollide. */
+export function GetWalkInPlaceSlowMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkInPlaceSlowMovementActions[dir];
 }
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :

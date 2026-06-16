@@ -50,6 +50,8 @@ import {
   GetWalkNormalMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
+  GetWalkInPlaceFastMovementAction,
+  GetWalkInPlaceSlowMovementAction,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -73,6 +75,9 @@ import {
 } from '../script/script-runtime';
 import { FlagGet } from '../script/script-vars';
 import { B_BUTTON } from '../ui/gba-menu-system';
+import { GetFaceDirectionAnimNum } from './direction-coords';
+import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
+import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -637,13 +642,50 @@ export async function InitPlayerAvatar(
   });
   gPlayerAvatar.spriteId = result.spriteId;
 
-  // Apply initial flip selon direction (= west = mirror right).
-  // Set sur sprite state (= survives syncSpritesToOam).
+  // ─── [M3] Unification sprite joueur ↔ slot object-event (vrai 1:1 décomp) ───
+  // 1:1 décomp `InitPlayerAvatar` (field_player_avatar.c:1391) :
+  //   `gPlayerAvatar.spriteId = objectEvent->spriteId;`
+  // = le sprite joueur EST le sprite du slot (gObjectEvents[objectEventId]). On câble
+  // donc `images`+`anims`+`usingSheet=FALSE` (= flow 1:1 strict CreateSprite/TrySetupObjectEventSprite)
+  // et on rend le SLOT propriétaire (`slot.spriteId = gPlayerAvatar.spriteId`). À partir de là :
+  //   - `UpdateObjectEvents` positionne le sprite (sprite.x=worldX) — comme tout NPC ;
+  //   - `tickSpriteAnims`→`AnimateSprite` anime via les MovementActions (held WalkNormal/PlayerRun/
+  //     Jump2/WalkInPlace posés par PlayerStep) + DMA frame→tiles 0-7 ;
+  //   - l'arc de saut sort de `_DoJumpSpriteMovement` (sprite.y2), plus de updateSpriteFrame.
+  // Le sprite garde sa VRAM préchargée (18 frames, tiles 0-143) ; AnimateSprite recopie la
+  // frame courante dans les tiles 0-7 (tileBase=0) → oam.tileId reste 0. La réservation VRAM/
+  // palette (bag/menu) est INCHANGÉE.
+  const playerImages = gender === 'FEMALE'
+    ? build_sPicTable_MayNormal(walkingReordered, runningReordered)
+    : build_sPicTable_BrendanNormal(walkingReordered, runningReordered);
   if (gPlayerAvatar.spriteId >= 0) {
     const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
-    if (sprite) sprite.hFlip = initialFrame.hFlip;
-    rt.gba.oam[result.oamIndex].flipH = initialFrame.hFlip;
+    if (sprite) {
+      // 1:1 décomp TrySetupObjectEventSprite : sprite->images = graphicsInfo->images ;
+      // sprite->anims = template->anims ; usingSheet = FALSE.
+      sprite.images = playerImages as unknown as typeof sprite.images;
+      sprite.anims = sAnimTable_BrendanMayNormal as unknown as typeof sprite.anims;
+      sprite.usingSheet = false;
+      sprite.sheetTileStart = 0;
+      sprite.tileBase = PLAYER_OBJ_TILE_START;
+      // 1:1 décomp : centerToCornerVec depuis graphicsInfo (16×32 → -8,-16). Déjà posé par
+      // CreateSpriteAtOam (CalcCenterToCornerVec) mais explicite pour parité NPC.
+      sprite.centerToCornerVecX = -(16 >> 1);
+      sprite.centerToCornerVecY = -(32 >> 1);
+      // 1:1 décomp event_object_movement.c:1470-1471 : StartSpriteAnim(GetFaceDirectionAnimNum).
+      sprite.animNum = GetFaceDirectionAnimNum(direction);
+      sprite.animBeginning = true;
+      sprite.animEnded = false;
+      sprite.animCmdIndex = 0;
+      sprite.animDelayCounter = 0;
+      sprite.animPaused = false;
+      // oam.tileId = tileBase (= 0) : AnimateSprite DMA la frame courante dans les tiles 0-7.
+      rt.gba.oam[result.oamIndex].tileId = PLAYER_OBJ_TILE_START;
+    }
   }
+  // 1:1 décomp `gPlayerAvatar.spriteId = objectEvent->spriteId` → ici le slot POSSÈDE le
+  // sprite (lien inverse). UpdateObjectEvents (skip si spriteId<0) gère désormais le joueur.
+  gObjectEvents[gPlayerAvatar.objectEventId].spriteId = result.spriteId;
 
   // Set camera focus = player position. 1:1 décomp `gSaveBlock1Ptr->pos = (mapX, mapY)`
   // en LOGICAL coords. Player drawn at view (7, 7) (= MAP_OFFSET, MAP_OFFSET) avec
@@ -710,127 +752,18 @@ function getJumpYOffset(timer: number): number {
 
 // ─── Sprite frame update ─────────────────────────────────────────────────────
 
-/** Set la sprite frame courante (face/walk1/walk2) selon direction + state. */
-function updateSpriteFrame(rt: DecompRuntime): void {
-  if (gPlayerAvatar.spriteId < 0) return;
-  const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
-  if (!sprite) return;
-  const oam = rt.gba.oam[sprite.oamIndex];
-  const cfg = SPRITE_FRAMES[GetPlayerFacingDirection() as keyof typeof SPRITE_FRAMES];
-  if (!cfg) return;
-
-  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-
-  // [M3-C3.4] Mouvement scripté / forcé (controls locked) : 1:1 décomp script_movement.c,
-  // le held movement du SLOT joueur pilote la position (worldX via _NpcTakeStep) ET l'anim.
-  // Le sprite joueur étant découplé (slot.spriteId<0), on lit l'état du held movement
-  // (phase de pas + arc de saut, vraies tables sJumpY*/sStepTimes) et on le rend ici —
-  // exactement comme la MovementAction animerait le sprite du slot dans la décomp. Le chemin
-  // input (controls NON locked : walk/dash/ledge piloté par gPlayerAvatar.*) reste INTACT.
-  const heldVis = (playerSlot && ArePlayerFieldControlsLocked())
-    ? GetHeldMovementVisual(playerSlot)
-    : null;
-
-  let frameIdx: number;
-  if (heldVis) {
-    // Anim de marche dérivée du slot (walk_a/face alternance via slot.walkAnimAlt).
-    // halfStep = totalFrames>>1 (= 8 walk, 4 run/dash, 16 walk_slow) → 1:1 cycle décomp.
-    const halfStep = heldVis.totalFrames >> 1;
-    if (heldVis.framesLeft >= halfStep) {
-      frameIdx = (playerSlot.walkAnimAlt === 0) ? cfg.walk1 : cfg.walk2;
-    } else {
-      frameIdx = cfg.face;
-    }
-    const dashOffset = heldVis.running ? RUN_FRAME_OFFSET : 0;
-    oam.tileId = PLAYER_OBJ_TILE_START + (frameIdx + dashOffset) * TILES_PER_FRAME;
-    sprite.hFlip = cfg.hFlip;
-    oam.flipH = cfg.hFlip;
-    sprite.coordOffsetEnabled = true;
-    sprite.x = playerSlot.worldX;
-    sprite.y = playerSlot.worldY;
-    sprite.y2 = heldVis.jumpYOffset;
-    return;
-  }
-
-  // Session 124 fix : gate étendu pour scripted movement (= applymovement
-  // LOCALID_PLAYER walk_*). Le scripted movement set `stepFramesLeft` mais
-  // PAS `runningState = MOVING` (= éviter double-tick PlayerStep). Donc on
-  // accept aussi `stepFramesLeft > 0` standalone pour render walk anim.
-  // User feedback : "Mon perso glide toujours" → cause = condition trop
-  // stricte qui rejetait le scripted movement.
-  if (gPlayerAvatar.stepFramesLeft > 0) {
-    // Walk anim 1:1 décomp `sAnim_GoSouth` (object_event_anims.h) :
-    //   ANIMCMD_FRAME(walk_a, 8)
-    //   ANIMCMD_FRAME(face, 8)
-    //   ANIMCMD_FRAME(walk_b, 8)
-    //   ANIMCMD_FRAME(face, 8)
-    //   ANIMCMD_JUMP(0)
-    // Cycle = 32 game-frames = 2 metatile steps.
-    //
-    // Walk : step 16 frames → walk_a/b (8) + face (8). Threshold = 8.
-    // Dash : step 8 frames → walk_a/b (4) + face (4). Threshold = 4 (= /2).
-    //   Phase 4.9 first cut : utilise walk frames pour dash. Task (1) ajoutera
-    //   les vraies dash frames (= sprite course distinct) via running.png.
-    const halfStep = gPlayerAvatar.dashing ? 4 : 8;
-    if (gPlayerAvatar.stepFramesLeft >= halfStep) {
-      frameIdx = gPlayerAvatar.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
-    } else {
-      frameIdx = cfg.face;
-    }
-  } else if (gPlayerAvatar.collideFramesLeft > 0) {
-    // 1:1 décomp `WalkInPlaceSlow` : anim ralentie sur 32 frames (= 2× normal).
-    // Cycle 32 frames : walk (16 render frames) → face (16 render frames).
-    // collideFramesLeft DECREMENTS de 32→1.
-    // Frames 32-17 : walk_a OR walk_b (= bump ralenti)
-    // Frames 16-1 : face (= reset position pour next bump)
-    // walkAnimAlt switche entre cycles (= alternance walk_a/walk_b).
-    if (gPlayerAvatar.collideFramesLeft >= 16) {
-      frameIdx = gPlayerAvatar.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
-    } else {
-      frameIdx = cfg.face;
-    }
-  } else {
-    frameIdx = cfg.face;
-  }
-
-  // 1:1 décomp `sPicTable_BrendanNormal` : frames 0..8 = walking, 9..17 = running.
-  // Quand dashing pendant un step actif : shift frameIdx de RUN_FRAME_OFFSET (= 9)
-  // → utilise running pic. Hors step actif (= idle face / collide / turn), revient
-  // aux walking frames même si dashing reste true. 1:1 décomp `npc_clear_strange_bits`
-  // (field_player_avatar.c:390) clear le flag PLAYER_AVATAR_FLAG_DASH chaque frame
-  // avant keypad logic ; notre impl gate le visual sur runningState=MOVING + step.
-  const inActiveDashStep = gPlayerAvatar.dashing
-    && gPlayerAvatar.runningState === MOVING
-    && gPlayerAvatar.stepFramesLeft > 0;
-  const dashOffset = inActiveDashStep ? RUN_FRAME_OFFSET : 0;
-  oam.tileId = PLAYER_OBJ_TILE_START + (frameIdx + dashOffset) * TILES_PER_FRAME;
-  // Set hFlip sur le SPRITE state (= source of truth pour syncSpritesToOam,
-  // appelé chaque frame dans tickFixed). Setter oam.flipH directement serait
-  // overridden au prochain syncSpritesToOam.
-  sprite.hFlip = cfg.hFlip;
-  oam.flipH = cfg.hFlip;
-  // 1:1 décomp ledge jump : sprite y2 offset suit sJumpY_High[timer/2] curve.
-  // Le sprite OAM y est SCREEN_CENTER_Y + jumpYOffset. jumpYOffset négatif =
-  // sprite vers le HAUT (= effet d'arc de saut). À 0 = sprite à position normale.
-  const jumpY = gPlayerAvatar.jumpFramesLeft > 0
-    ? getJumpYOffset(32 - gPlayerAvatar.jumpFramesLeft)
-    : 0;
-  // [M3-C2] 1:1 décomp : le player object event est posé en coords MONDE
-  // (sprite.x/y = worldX/Y, le `sprite->x/y` posé par SetSpritePosToMapCoords)
-  // avec coordOffsetEnabled=TRUE, exactement comme les NPCs depuis C1. Le runtime
-  // (UpdateOamCoords) ajoute gSpriteCoordOffsetX/Y = gTotalCameraPixelOffsetX - pan
-  // → le joueur reste CENTRÉ car worldX += dx au walk pendant que la caméra scrolle
-  // de dx (gSpriteCoordOffsetX -= dx) : les deux s'annulent. Avant : sprite.x=120
-  // figé (écran-ancré, hybride non-1:1) → remplacé par le chemin object-event unifié.
-  if (!playerSlot) return;
-  sprite.coordOffsetEnabled = true;
-  sprite.x = playerSlot.worldX;
-  // M3a (1:1 décomp) : l'arc de saut va dans sprite.y2 (= sprite->y2 du décomp,
-  // event_object_movement.c DoJumpSpriteMovement) et NON dans sprite.y. oam.y =
-  // sprite.y + sprite.y2 + centerToCornerVecY (+ gSpriteCoordOffsetY) → sprite.y
-  // = base AU SOL (= linkedSprite->y du shadow → ground-lock naturel au saut).
-  sprite.y = playerSlot.worldY;
-  sprite.y2 = jumpY;
+/** [M3] Le sprite joueur est désormais UNIFIÉ avec son slot object-event
+ *  (gObjectEvents[objectEventId].spriteId = gPlayerAvatar.spriteId, câblé dans
+ *  InitPlayerAvatar). Tout le rendu passe par le chemin 1:1 décomp partagé :
+ *   - position : `UpdateObjectEvents` (sprite.x = worldX + visualOffsetX) ;
+ *   - anim/tile : `AnimateSprite` (tickSpriteAnims) piloté par les MovementActions
+ *     (held WalkNormal/PlayerRun/Jump2/WalkInPlace posés par PlayerStep + scripts) ;
+ *   - arc de saut : `_DoJumpSpriteMovement` (sprite.y2).
+ *  → `updateSpriteFrame` n'a plus aucun rôle (le pont `GetHeldMovementVisual` +
+ *  le rendu manuel oam.tileId/x/y/y2 sont retirés). Conservé comme no-op pour ne pas
+ *  toucher les ~15 call-sites de PlayerStep ; sera supprimé au nettoyage. */
+function updateSpriteFrame(_rt: DecompRuntime): void {
+  /* no-op : voir doc ci-dessus (rendu joueur = chemin object-event 1:1). */
 }
 
 // [M3-C3.2c] Le pont AdvancePlayerSpriteWorldPos est SUPPRIMÉ. Le forced movement
@@ -1443,6 +1376,15 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
           PlayCollisionSoundIfNotFacingWarp(inputDir);
           gPlayerAvatar.collideFramesLeft = 32;
           gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
+          // [M3] Re-trigger du bump : re-pose le held WALK_IN_PLACE_SLOW (1:1 décomp,
+          // PlayerNotOnBikeCollide ré-appelé à chaque cycle tant que la collision persiste).
+          {
+            const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+            if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
+              ObjectEventClearHeldMovementIfActive(collideSlot);
+              ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
+            }
+          }
           updateSpriteFrame(rt);
           return;
         }
@@ -1642,6 +1584,18 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
     gPlayerAvatar.runningState = TURN_DIRECTION;
     gPlayerAvatar.turnFramesLeft = 8;  // 1:1 décomp WalkInPlaceFast duration
+    // [M3] 1:1 décomp `PlayerTurnInPlace` (field_player_avatar.c) :
+    //   PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);
+    // = ObjectEventSetHeldMovement(WALK_IN_PLACE_FAST) → l'anim de turn (GO 8 frames →
+    // FACE) est rendue par le système partagé sur le sprite du slot (unifié). turnFramesLeft
+    // (ci-dessus) gate le keypad ; le held movement gère le VISUEL. Durées alignées (8).
+    {
+      const turnSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+      if (turnSlot && turnSlot.active && turnSlot.isPlayer) {
+        ObjectEventClearHeldMovementIfActive(turnSlot);
+        ObjectEventSetHeldMovement(turnSlot, GetWalkInPlaceFastMovementAction(inputDir));
+      }
+    }
     updateSpriteFrame(rt);
     return;
   }
@@ -1752,6 +1706,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     PlayCollisionSoundIfNotFacingWarp(inputDir);
     gPlayerAvatar.runningState = NOT_MOVING;
     gPlayerAvatar.collideFramesLeft = 32;
+    // [M3] 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
+    //   PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
+    // = held WALK_IN_PLACE_SLOW (32 frames, anim GO ralentie = "bump") rendu par le
+    // système partagé. collideFramesLeft gate le keypad ; le held gère le visuel.
+    {
+      const collideSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+      if (collideSlot && collideSlot.active && collideSlot.isPlayer) {
+        ObjectEventClearHeldMovementIfActive(collideSlot);
+        ObjectEventSetHeldMovement(collideSlot, GetWalkInPlaceSlowMovementAction(inputDir));
+      }
+    }
     updateSpriteFrame(rt);
     return;
   }
@@ -1825,6 +1790,10 @@ export function DestroyPlayerAvatar(rt: DecompRuntime): void {
     rt.gba.oam[sprite.oamIndex].visible = false;
     sprite.inUse = false;
   }
+  // [M3] Le slot joueur POSSÈDE le sprite (unifié) → clear aussi son lien pour ne pas
+  // laisser un spriteId détruit (sinon destroyAllNpcSprites/UpdateObjectEvents le relirait).
+  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (playerSlot) playerSlot.spriteId = -1;
   gPlayerAvatar.spriteId = -1;
   gPlayerAvatar.runningState = NOT_MOVING;
   gPlayerAvatar.stepFramesLeft = 0;
