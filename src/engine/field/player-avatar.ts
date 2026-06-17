@@ -1,36 +1,28 @@
 /**
- * player-avatar.ts — moteur du player avatar overworld 1:1 décomp.
+ * player-avatar.ts — moteur du player avatar overworld, miroir 1:1 de
+ * `field_player_avatar.c`.
  *
  * Source de vérité (= ne JAMAIS diverger) :
- *   - `D:/Projet 1/decomps/pokeemeraude/src/field_player_avatar.c` (= state
- *     machine PlayerStep + MovePlayerNotOnBike + PlayerWalkNormal etc.)
- *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h` (= struct
- *     PlayerAvatar fields + enums NOT_MOVING/TURN_DIRECTION/MOVING)
- *   - `D:/Projet 1/decomps/pokeemeraude/src/event_object_movement.c` (= step
- *     timings, sprite anim cycles)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/field_player_avatar.c`
+ *     (PlayerStep + MovePlayerNotOnBike + ForcedMovement_* + leaf actions +
+ *      DoPlayerAvatarTransition + surf/Strength/Task_Fishing)
+ *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h`
+ *     (struct PlayerAvatar + enums NOT_MOVING/TURN_DIRECTION/MOVING)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/event_object_movement.c`
+ *     (timings de pas, cycles d'anim sprite)
  *
- * Phase 4.3 MVP — simplifications :
- *   - Pas de bike (= MovePlayerOnBike skip)
- *   - Pas de surf / underwater
- *   - Pas de forced movement (= escalators, ice, etc.)
- *   - Pas de ledge jumping
- *   - Pas de running (= no B button speed boost) — Phase 4.3+ ajoutera
- *   - Pas d'object event collision (= NPCs, Phase 4.4)
+ * Couches portées 1:1 (détail : docs/FIELD-PLAYER-AVATAR-1TO1-PLAN.md) :
+ * input/mouvement (PlayerStep, TryInterruptObjectEventSpecialAnim,
+ * MovePlayerNotOnBike), forced movement (glace/courants/slides/pente),
+ * transitions d'état (DoPlayerAvatarTransition), features (montée/démontage
+ * surf, boulder Strength, pêche complète, keystone ObjectEventSetGraphicsId).
  *
- * Implémenté :
- *   - Walk normal (= 16 frames per metatile à speed 1 = 1:1 ROM walk speed)
- *   - 4 directions (down/up/left/right) + face/turn/walk states
- *   - Collision via MapGridGetCollisionAt (= map block collision bits)
- *   - Camera follow (= gFieldCamera.movementSpeedX/Y set during walk)
- *   - Sprite anim cycle (= 3 frames par direction, alternate walk1/walk2)
- *
- * Sprite layout :
- *   - walking.png 144×32 = 18×4 tiles (= 9 frames × 8 tiles each en 16×32 OBJ)
- *   - 9 frames PNG :
- *     0=face_down, 1=walk_down1, 2=walk_down2,
- *     3=face_up, 4=walk_up1, 5=walk_up2,
- *     6=face_right, 7=walk_right1, 8=walk_right2 (= mirror H pour left)
- *   - Loaded en OBJ 1D map mode (= 8 tiles sequential per frame)
+ * ⚠️ Déviations M3 ASSUMÉES (= pourquoi ce fichier n'est PAS `#100% done` et
+ * ne le sera jamais) : le sprite joueur est UNIFIÉ au slot object-event
+ * (positionné en coords-monde par UpdateObjectEvents, animé par le système
+ * partagé) au lieu du DMA-par-frame GBA. Adaptateurs harness localisés :
+ * chargement VRAM async (InitPlayerAvatar + pngTo1dObjLayout + snapshot/restore
+ * gfx), cycle de vie sprite (DestroyPlayerAvatar / SetPlayerVisibility).
  */
 import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
@@ -100,7 +92,6 @@ import {
 } from '../field/field-camera';
 import {
   ArePlayerFieldControlsLocked,
-  TryRunCoordEventScript,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
 } from '../script/script-runtime';
@@ -195,9 +186,6 @@ import {
 } from '../system/sprite';
 import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../decomp-data/include/constants/songs-data';
 import {
-  getWarpAtPlayerPos,
-  findWarpEventAt,
-  setPendingWarp,
   getWarpKindFor,
   isArrowWarpMetatileBehavior,
 } from './warp-system';
@@ -231,16 +219,6 @@ import { NUM_ACRO_BIKE_COLLISIONS } from '../decomp-data/src/field_player_avatar
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-// 1:1 décomp `field_control_avatar.c` interaction chain. ESM cycle safe :
-// field-control-avatar importe player-avatar (gPlayerAvatar/GetXY...) au top-level,
-// nous l'importons ici aussi mais ses fonctions sont appelées uniquement DANS
-// les bodies (= au runtime A button frame), donc tous les modules sont init avant l'usage.
-import {
-  TryStartInteractionScript,
-  GetInFrontOfPlayerPosition,
-  type MapPosition,
-} from '../field/field-control-avatar';
-
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
 /** Direction enum re-exporté depuis direction-coords (= source unique).
@@ -1192,9 +1170,11 @@ function StartStrengthAnim(objectEventId: number, direction: number): void {
  *  NUM_USED_GAME_STATS = 52 (= game_stat.h:57). gSaveBlock1Ptr.gameStats[]
  *  est XOR'd avec gSaveBlock2Ptr.encryptionKey (= save protection).
  *  Cap 0xFFFFFF (16M) car compteur 24-bit dans le save format.
- *  ⚠️ DETTE 1:1 : IncrementGameStat/GetGameStat/SetGameStat vivent en décomp dans
- *  pokemon.c, pas overworld.c/player-avatar — placement à consolider (game_stat).
- *  Exporté ici (faute de home canonique) pour field_weather_effect.ts (UpdateRainCounter). */
+ *  ⚠️ DETTE 1:1 (placement) : IncrementGameStat/GetGameStat/SetGameStat vivent en
+ *  décomp dans overworld.c (≈l.433-459) → à relocaliser dans game/overworld.ts.
+ *  DÉFÉRÉ : un importeur est field_weather_effect.ts (UpdateRainCounter), fichier
+ *  INTERDIT de commit → relocaliser casserait le build committé tant qu'on n'a pas
+ *  traité ce fichier. Exporté ici (home temporaire) en attendant. */
 export function IncrementGameStat(index: number): void {
   if (index < NUM_USED_GAME_STATS) {
     let statVal = GetGameStat(index);
@@ -1535,28 +1515,6 @@ const getInputDirection = _getInputDirection;
 /** GBA A button mask. 1:1 décomp `A_BUTTON` (gba/io_reg.h). Import depuis
  *  decomp-data (= A8 audit). */
 import { A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
-
-/** 1:1 décomp `ProcessPlayerFieldInput` snippet lines 170-173 :
- *  ```c
- *  GetInFrontOfPlayerPosition(&position);
- *  metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
- *  if (input->pressedAButton && TryStartInteractionScript(&position, metatileBehavior, playerDirection) == TRUE)
- *      return TRUE;
- *  ```
- *
- *  Délégué à `field-control-avatar.TryStartInteractionScript` qui implémente
- *  le port 1:1 strict de la chaîne `GetInteractedObjectEventScript` →
- *  `GetInteractedBackgroundEventScript` → `GetInteractedMetatileScript`.
- *
- *  ScriptContext_SetupScript appelle LockPlayerFieldControls() qui fait que
- *  PlayerStep skip son keypad logic la frame suivante. Les opcodes lock /
- *  faceplayer / msgbox / release gèrent eux-mêmes l'état NPC frozen. */
-function tryInteractWithFacingNPC(): void {
-  const position: MapPosition = { x: 0, y: 0, elevation: 0 };
-  GetInFrontOfPlayerPosition(position);
-  const metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
-  TryStartInteractionScript(position, metatileBehavior, GetPlayerFacingDirection());
-}
 
 // ─── 1:1 décomp `field_player_avatar.c` — fonctions feuilles d'action ────────
 // [chantier INPUT joueur, étape 1a] Ces wrappers SONT le call-graph décomp pour
