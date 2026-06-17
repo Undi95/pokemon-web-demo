@@ -327,20 +327,21 @@ function applyNoIntroPreset(): void {
     jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
     GiveMonToPlayer(pokemonInstanceToPokemon(jirachi));
     console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
-    // ⚠️ DEBUG ONLY : Œuf de Leveinard (Chansey) — test page résumé œuf 1:1
-    // (user : "pas pour le faire éclore, juste afficher sa page"). isEgg →
-    // PrintEggInfo/State/Memo + page_info_egg bg + 1 page. friendship élevé
-    // (œuf frais) → "mettre du temps à éclore". metLevel=0 (œuf).
-    const egg = createPokemonInstance('SPECIES_CHANSEY', 5, {
+    // ⚠️ DEBUG ONLY : Leveinard (Chansey) — testeur des field moves de SOIN/utilitaire que les 3
+    // field-mons ne couvrent pas. PAS un œuf (`isEgg=false`) : un œuf est SKIPPÉ par checkpartymove /
+    // la détection field-move du party menu (= inutilisable pour tester). Lui donne les 2 moves
+    // GENUINEMENT manquants dans l'équipe (Soin = MILK_DRINK + SOFT_BOILED, sur personne d'autre) +
+    // Doux Parfum (3e, déjà sur Linoone mais pratique sur le soigneur). [Avant : œuf pour tester la
+    // page résumé œuf — repassser `isEgg=true` + retirer `moves` si on veut re-tester cette page.]
+    const leveinard = createPokemonInstance('SPECIES_CHANSEY', 5, {
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      moves: ['MOVE_SOFT_BOILED', 'MOVE_MILK_DRINK', 'MOVE_SWEET_SCENT'],
     });
-    egg.isEgg = true;
-    egg.friendship = 80;          // frais → gText_EggWillTakeALongTime
-    egg.metLevel = 0;             // œuf
-    egg.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    GiveMonToPlayer(pokemonInstanceToPokemon(egg));
-    console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
+    leveinard.metLevel = 5;
+    leveinard.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
+    GiveMonToPlayer(pokemonInstanceToPokemon(leveinard));
+    console.log(`[boot-mode] ?debug Leveinard ajouté (field-move tester : SOFT_BOILED/MILK_DRINK/SWEET_SCENT)`);
 
     // ⚠️ DEBUG ONLY : 3 mons « porteurs de CS + capacités hors-combat » pour tester les field
     // moves overworld (surf/strength/cut/rocksmash/fly/flash/waterfall/dive + sweet scent/dig/
