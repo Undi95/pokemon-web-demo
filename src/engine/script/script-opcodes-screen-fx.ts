@@ -90,6 +90,25 @@ registerOpcode('fadescreenswapbuffers', (ctx, args) => {
  *  scene lit cette valeur pour appliquer le mask. */
 let _gFlashLevel = 0;
 
+/** 1:1 décomp `gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1 = 8`
+ *  (field_screen_effect.c:54). Niveau 8 = noir total, 7 = plus petit cercle. */
+export const gMaxFlashLevel = 8;
+
+/** 1:1 décomp `SetFlashLevel(s32 flashLevel)` (overworld.c:981) :
+ *    if (flashLevel < 0 || flashLevel > gMaxFlashLevel) flashLevel = 0;
+ *    gSaveBlock1Ptr->flashLevel = flashLevel;
+ *  Le port utilise `globalThis.gFlashLevel` comme source du masque (flash-mask.ts)
+ *  ET `_gFlashLevel` comme niveau de départ de l'anim `animateflash` → on pose les
+ *  DEUX (sinon animateflash lerp depuis un niveau périmé). */
+export function SetFlashLevel(flashLevel: number): void {
+  if (flashLevel < 0 || flashLevel > gMaxFlashLevel) flashLevel = 0;
+  _gFlashLevel = flashLevel & 0xF;
+  (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
+}
+// Exposé pour SetDefaultFlashLevel (game/overworld.ts) sans import statique :
+// overworld.ts → ce module fermait un cycle ESM (TDZ DIR_SOUTH au boot).
+(globalThis as Record<string, unknown>).__SetFlashLevel = SetFlashLevel;
+
 // `setflashlevel` early stub (= last-wins, real impl ci-dessous écrase).
 registerOpcode('setflashlevel', (_ctx, _args) => false);
 
@@ -100,9 +119,7 @@ registerOpcode('animateflash', (_ctx, _args) => false);
 //   SetFlashLevel(VarGet(level)).
 // Level 0 = pas d'obscurité (= salle illuminée), 7 = obscurité maximale.
 registerOpcode('setflashlevel', (_ctx, args) => {
-  const level = parseValue(args[0] ?? '0') & 0xF;
-  _gFlashLevel = level;
-  (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
+  SetFlashLevel(parseValue(args[0] ?? '0') & 0xF);
   return false;
 });
 

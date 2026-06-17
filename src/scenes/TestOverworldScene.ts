@@ -155,6 +155,7 @@ import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites } from '../game/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../engine/system/sprite';
+import { SetDefaultFlashLevel } from '../game/overworld';
 import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../game/coord_event_weather';
@@ -1077,6 +1078,11 @@ export class TestOverworldScene extends Phaser.Scene {
     // NOUVELLE map → RESET la météo entre maps (sinon la cendre de Route 113 PERSISTE sur
     // Littleroot). OnTransition (ci-dessous) peut ensuite l'override (ex. Route113 → ash).
     SetSavedWeatherFromCurrMapHeader();
+    // 1:1 décomp `SetDefaultFlashLevel()` (overworld.c:805, juste avant
+    // RunOnTransitionMapScript) : une grotte (cave) sans CS Flash s'affiche en
+    // pénombre (gFlashLevel = 7 → masque circulaire). OnTransition peut ensuite
+    // override via setflashlevel. Sans ça les grottes étaient pleinement éclairées.
+    SetDefaultFlashLevel();
     RunOnTransitionMapScript();
 
     // 1:1 décomp `RunOnResumeMapScript()` (overworld.c:2150, ResumeMap). Ici (et pas

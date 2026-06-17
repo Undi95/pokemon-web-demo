@@ -46,6 +46,10 @@ import {
 import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
 import { FldEff_UseRockSmash } from '../../game/fldeff_rocksmash';
 import { FldEff_SweetScent } from '../../game/fldeff_sweetscent';
+// Side-effect : charge game/fldeff_flash.ts → expose __FieldCallback_Flash sur
+// globalThis (le move FLASH n'a PAS de FLDEFF dispatch — FldEff_UseFlash est un
+// callback de field-move task, pas un FieldEffectStart, cf. fldeff_flash.c:87).
+import '../../game/fldeff_flash';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */

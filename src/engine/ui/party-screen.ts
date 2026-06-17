@@ -2138,6 +2138,27 @@ function SetUpFieldMove_Surf(): boolean {
   return false;
 }
 
+/** 1:1 décomp `SetUpFieldMove_Flash(void)` (fldeff_flash.c:73) :
+ *      if (ShouldDoBrailleRegisteelEffect()) { ... }              // dette (tombe Registeel)
+ *      else if (gMapHeader.cave == TRUE && !FlagGet(FLAG_SYS_USE_FLASH)) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Flash;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  FieldCallback_Flash vit dans game/fldeff_flash.ts (exposé __FieldCallback_Flash,
+ *  anti-cycle ESM). gMapHeader.cave = json.requires_flash. */
+function SetUpFieldMove_Flash(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const hdr = g.gMapHeader as { cave?: boolean } | null | undefined;
+  if (hdr?.cave === true && !FlagGet('FLAG_SYS_USE_FLASH')) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_Flash as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
 /** 1:1 décomp `FieldCallback_SweetScent(void)` (fldeff_sweetscent.c:33) :
  *      FieldEffectStart(FLDEFF_SWEET_SCENT);
  *      gFieldEffectArguments[0] = GetCursorSelectionMonId();
@@ -2317,6 +2338,7 @@ interface FieldMoveCursorCallback {
   msgId: string;
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
+  [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
   [FIELD_MOVE_MILK_DRINK]:  { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SOFT_BOILED]: { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
@@ -2391,6 +2413,12 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
           (testFlags?.(8) ?? 0) !== 0 ? 'gText_AlreadySurfing' : 'gText_CantSurfHere');
         break;
       }
+      case FIELD_MOVE_FLASH:
+        // 1:1 décomp DisplayCantUseFlashMessage (party_menu.c:3844) :
+        //   if (FlagGet(FLAG_SYS_USE_FLASH)) ALREADY_IN_USE  else CANT_USE_HERE.
+        _displayFieldMoveErrorMessage(
+          FlagGet('FLAG_SYS_USE_FLASH') ? 'gText_InUseAlready_PM' : 'gText_CantUseHere');
+        break;
       default:
         _displayFieldMoveErrorMessage(cb.msgId);
         break;

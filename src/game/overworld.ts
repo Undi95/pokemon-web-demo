@@ -12,6 +12,30 @@ import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gMapHeader } from '../engine/field/map-loader';
 import { PlayBGM } from '../engine/system/decomp-globals';
 import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
+import { FlagGet } from '../engine/script/script-vars';
+
+/** 1:1 décomp `gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1 = 8`. Const
+ *  locale (import statique de script-opcodes-screen-fx ferme un cycle ESM → TDZ). */
+const gMaxFlashLevel = 8;
+
+/** 1:1 STRICT décomp `SetDefaultFlashLevel(void)` (overworld.c:970) :
+ *    if (!gMapHeader.cave)            gSaveBlock1Ptr->flashLevel = 0;          // pleine lumière
+ *    else if (FlagGet(FLAG_SYS_USE_FLASH)) gSaveBlock1Ptr->flashLevel = 1;    // grand cercle (Flash utilisé)
+ *    else                            gSaveBlock1Ptr->flashLevel = gMaxFlashLevel - 1;  // = 7 (petit cercle, grotte sombre)
+ *  Appelé au map load (overworld.c:805, juste avant RunOnTransitionMapScript) →
+ *  une grotte (cave = json.requires_flash) sans CS Flash s'affiche en pénombre
+ *  (masque circulaire flash-mask.ts). `SetFlashLevel` pose `globalThis.gFlashLevel`
+ *  (source du masque) + `_gFlashLevel` (niveau de départ d'`animateflash`). */
+export function SetDefaultFlashLevel(): void {
+  let level: number;
+  if (!gMapHeader || !gMapHeader.cave) level = 0;
+  else if (FlagGet('FLAG_SYS_USE_FLASH')) level = 1;
+  else level = gMaxFlashLevel - 1;  // = 7
+  // SetFlashLevel via globalThis (anti-cycle ESM) — pose globalThis.gFlashLevel
+  // (masque) + _gFlashLevel (départ animateflash).
+  const setFlash = (globalThis as Record<string, unknown>).__SetFlashLevel as ((l: number) => void) | undefined;
+  setFlash?.(level);
+}
 
 /** 1:1 décomp `Overworld_SetSavedMusic` (overworld.c:1160) :
  *    gSaveBlock1Ptr->savedMusic = songNum; */
