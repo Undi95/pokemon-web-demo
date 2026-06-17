@@ -28,7 +28,17 @@
 ## ✅ Déjà miroir dans `game/`
 bike, overworld, field_specials, field_effect_helpers, field_tasks, field_weather,
 field_weather_effect (Clouds, en pause), metatile_behavior, wild_encounter, trainer_see,
-coord_event_weather, event_data, secret_base, fldeff_misc.
+coord_event_weather, event_data, secret_base, fldeff_misc, heal_location,
+fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
+**field_player_avatar** (`17e81061`, port en cours — déviations M3 permanentes, PAS #100%).
+
+## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
+Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
+importent **player-avatar (fait), object-events ET map-loader** → migrer ces gros
+fichiers oblige à changer leur ligne d'import. Technique retenue (décision user) :
+**import-hunk** = stager UNIQUEMENT la ligne d'import retargetée via blob forgé
+(`git show HEAD:f | sed 's#old#new#' | git hash-object -w` + `git update-index --cacheinfo`),
+le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]].
 
 ## 🗺️ À migrer — par fichier (engine/field → game/)
 
@@ -43,8 +53,8 @@ coord_event_weather, event_data, secret_base, fldeff_misc.
 | `field-message-box.ts` (249) | `field_message_box.ts` | ? | à vérifier | candidat |
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
 | `field-camera.ts` (924) | `field_camera.ts` (field_camera.c) | 16 | proche ? | 🟥 chantier |
-| `player-avatar.ts` (2866) | `field_player_avatar.ts` | 18 | majoritairement 1:1 | 🟥 GROS chantier |
-| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME chantier |
+| ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
+| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME — ⚠️ PIN (import-hunk) |
 | `map-loader.ts` (2004) | split `fieldmap.ts` + `overworld.ts` | 32 | mix fieldmap.c+overworld.c | 🟥 GROS chantier (split) |
 | `movement-system.ts` (1032) | event_object_movement.c (part) | 4 | maison (éclaté) | 🔧 fusionner dans event_object_movement |
 | `movement-action-dispatch.ts` (200) | event_object_movement.c (part) | ? | maison | 🔧 fusionner |
