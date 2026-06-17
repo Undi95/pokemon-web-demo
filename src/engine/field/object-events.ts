@@ -4941,7 +4941,11 @@ function _InitJump(rt: DecompRuntime, npc: ObjectEvent, dir: number, distance: n
   // disableCoveringGroundEffects = TRUE (event_object_movement.c:5442-5443).
   npc.triggerGroundEffectsOnMove = true;
   npc.disableCoveringGroundEffects = true;
-  _npcStartWalkAnim(rt, npc, dir);
+  // 1:1 décomp `InitJumpRegular` (event_object_movement.c:5449) : l'anim suit `facingDirection`,
+  // PAS la direction du saut. Crucial pour le SIDE JUMP acro (facingDirectionLocked garde la face
+  // perpendiculaire pendant qu'on saute sur le côté) — sinon le sprite se tournait vers le côté.
+  // (Pour un saut de ledge facingDirection == dir → identique.)
+  _npcStartWalkAnim(rt, npc, npc.facingDirection);
   // Visual : worldX/Y reflect previousCoords (= source position), npc walks vers dest.
   // Sans shift visuel direct (= y2 anim parabolic handle ça).
 }
