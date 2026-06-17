@@ -226,6 +226,27 @@ function GetMoveDirectionFasterAnimNum(direction: number): number {
   return sMoveDirectionFasterAnimNums[direction] ?? 12;
 }
 
+// 1:1 STRICT décomp `sMoveDirectionFastestAnimNums` : ANIM_STD_GO_FASTEST_SOUTH=16 (cmds de 1 frame).
+const sMoveDirectionFastestAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 16,
+  [DIR_SOUTH]: 16, [DIR_NORTH]: 17, [DIR_WEST]: 18, [DIR_EAST]: 19,
+};
+/** 1:1 décomp `u8 GetMoveDirectionFastestAnimNum(u8 direction)` (local). */
+function GetMoveDirectionFastestAnimNum(direction: number): number {
+  return sMoveDirectionFastestAnimNums[direction] ?? 16;
+}
+
+/** 1:1 STRICT décomp `sDirectionAnimFuncsBySpeed[]` (movement_action_func_tables.h:605) :
+ *  l'anim de pas dépend de MOVE_SPEED. ⚠️ FAST_2 (2) → Fast (PAS Faster) : c'est ce qui rendait
+ *  l'acro bike (RIDE_WATER_CURRENT, speed 2) + le mach top speed (WALK_FASTER, speed 2) trop rapides. */
+const _sDirectionAnimFuncsBySpeed: ReadonlyArray<(d: number) => number> = [
+  GetMoveDirectionAnimNum,         // MOVE_SPEED_NORMAL (0)
+  GetMoveDirectionFastAnimNum,     // MOVE_SPEED_FAST_1 (1)
+  GetMoveDirectionFastAnimNum,     // MOVE_SPEED_FAST_2 (2)
+  GetMoveDirectionFasterAnimNum,   // MOVE_SPEED_FASTER (3)
+  GetMoveDirectionFastestAnimNum,  // MOVE_SPEED_FASTEST (4)
+];
+
 // 1:1 STRICT décomp `sRunningDirectionAnimNums` (event_object_movement.c:869-878).
 // Maps direction → animNum course. ANIM_RUN_SOUTH=20, etc. (= sAnimTable_BrendanMayNormal
 // [20..23] → sAnim_RunSouth/North/West/East = frames running 9-17). Utilisé par le
@@ -4275,14 +4296,11 @@ function _InitNpcForMovement(rt: DecompRuntime, npc: ObjectEvent, dir: number, s
   // H4.3 fix : 1:1 strict décomp InitNpcForMovement set triggerGroundEffectsOnMove=TRUE.
   npc.triggerGroundEffectsOnMove = true;
   // 1:1 décomp `InitMovementNormal` (event_object_movement.c:5101-5107) : l'anim de pas dépend
-  // de la VITESSE via `functions[speed]` = {GetMoveDirectionAnimNum, ...Fast..., ...Faster...},
-  // PAS toujours l'anim normale. (Bug mach bike : à vitesse FASTER le pas est court → l'anim
-  // normale (8 frames/cmd) n'atteignait jamais une cmd impaire → SetStepAnimHandleAlternation
-  // jamais déclenché → pédalage gelé. L'anim Faster (4 frames/cmd) cycle dans le pas court.)
-  const stepAnimNum = speed === 1 ? GetMoveDirectionFastAnimNum(npc.facingDirection)
-    : speed === 2 ? GetMoveDirectionFasterAnimNum(npc.facingDirection)
-    : GetMoveDirectionAnimNum(npc.facingDirection);
-  _npcStartStepAnimWithNum(rt, npc, stepAnimNum);
+  // de MOVE_SPEED via `sDirectionAnimFuncsBySpeed[speed]` (table exacte ci-dessus). Corrige le
+  // pédalage gelé (l'anim normale ne cyclait pas dans un pas court) ET le « trop rapide » de l'acro
+  // (FAST_2 → Fast, pas Faster). Fallback Normal pour les speeds hors table (sécurité).
+  const animFn = _sDirectionAnimFuncsBySpeed[speed] ?? GetMoveDirectionAnimNum;
+  _npcStartStepAnimWithNum(rt, npc, animFn(npc.facingDirection));
 }
 
 /** 1:1 décomp `MovementAction_WalkNormalX_Step0` (event_object_movement.c:5278+) :
