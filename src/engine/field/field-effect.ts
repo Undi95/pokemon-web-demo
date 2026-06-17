@@ -46,6 +46,7 @@ import {
 import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
 import { FldEff_UseRockSmash } from '../../game/fldeff_rocksmash';
 import { FldEff_SweetScent } from '../../game/fldeff_sweetscent';
+import { FldEff_UseTeleport } from '../../game/fldeff_teleport';
 // Side-effect : charge game/fldeff_flash.ts → expose __FieldCallback_Flash sur
 // globalThis (le move FLASH n'a PAS de FLDEFF dispatch — FldEff_UseFlash est un
 // callback de field-move task, pas un FieldEffectStart, cf. fldeff_flash.c:87).
@@ -88,6 +89,7 @@ export const FLDEFF_SAND_PILE                  = 39;
 export const FLDEFF_SHORT_GRASS                = 41;
 export const FLDEFF_USE_ROCK_SMASH             = 37;
 export const FLDEFF_SWEET_SCENT                = 51;
+export const FLDEFF_USE_TELEPORT               = 63;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_USE_WATERFALL              = 43;
 export const FLDEFF_USE_DIVE                   = 44;
@@ -275,6 +277,11 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_SweetScent (fldeff_sweetscent.c:43) — migré dans game/fldeff_sweetscent.ts.
     // CreateFieldMoveTask(StartSweetScentFieldEffect) : pose → flash ROUGE → encounter forcé / fail.
     return FldEff_SweetScent(rt);
+  }
+  if (id === FLDEFF_USE_TELEPORT) {
+    // FldEff_UseTeleport (fldeff_teleport.c:34) — game/fldeff_teleport.ts. CŒUR WARP
+    // (simplifié) : warp vers lastHealLocation + fade. Spin-out/in 1:1 = follow-up.
+    return FldEff_UseTeleport(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

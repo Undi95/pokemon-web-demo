@@ -45,6 +45,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './gba-menu-system';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../game/menu_specialized';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -302,7 +303,8 @@ interface PartyAssets {
 
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
-  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg' = 'idle';
+  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg'
+  | 'fieldmove_yesno' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -995,7 +997,8 @@ function _drawMsg(): void {
     template = MSG_WINDOW_TEMPLATE;
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
       || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
-      || _phase === 'field_move_err' || _phase === 'softboiled_msg') && _itemUsedMsgText) {
+      || _phase === 'field_move_err' || _phase === 'softboiled_msg'
+      || _phase === 'fieldmove_yesno') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
@@ -2081,7 +2084,8 @@ const FIELD_MOVE_SURF         = 4;
 const FIELD_MOVE_FLY          = 5;
 const FIELD_MOVE_DIVE         = 6;
 const FIELD_MOVE_WATERFALL    = 7;
-// (TELEPORT=8, DIG=9, SECRET_POWER=10 — branchés au fur et à mesure de leur port.)
+const FIELD_MOVE_TELEPORT     = 8;
+// (DIG=9, SECRET_POWER=10 — branchés au fur et à mesure de leur port.)
 const FIELD_MOVE_MILK_DRINK   = 11;
 const FIELD_MOVE_SOFT_BOILED  = 12;
 const FIELD_MOVE_SWEET_SCENT  = 13;
@@ -2157,6 +2161,53 @@ function SetUpFieldMove_Flash(): boolean {
     return true;
   }
   return false;
+}
+
+/** 1:1 décomp `SetUpFieldMove_Teleport(void)` (fldeff_teleport.c:13) :
+ *      if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType)) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Teleport;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  mapType allows = ROUTE/TOWN/OCEAN_ROUTE/CITY (= extérieur). FieldCallback_Teleport
+ *  vit dans game/fldeff_teleport.ts (exposé __FieldCallback_Teleport, anti-cycle). */
+function SetUpFieldMove_Teleport(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const hdr = g.gMapHeader as { mapType?: string } | null | undefined;
+  const mt = hdr?.mapType;
+  const allows = mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN'
+    || mt === 'MAP_TYPE_OCEAN_ROUTE' || mt === 'MAP_TYPE_CITY';
+  if (allows) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_Teleport as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `sPartyMenuYesNoWindowTemplate` (party_menu.h:518) : boîte Oui/Non
+ *  à (21,9), 5×4, bg2, pal14. */
+const PARTY_YESNO_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 2, tilemapLeft: 21, tilemapTop: 9, width: 5, height: 4, paletteNum: 14, baseBlock: 0x2E9,
+};
+
+/** 1:1 décomp `PartyMenuDisplayYesNoMenu` (party_menu.c:2573) :
+ *    CreateYesNoMenu(&sPartyMenuYesNoWindowTemplate, 0x4F, 13, 0). */
+function PartyMenuDisplayYesNoMenu(): void {
+  CreateYesNoMenu(PARTY_YESNO_WINDOW_TEMPLATE, 0x4F, 13, 0);
+}
+
+/** 1:1 décomp `DisplayFieldMoveExitAreaMessage` (party_menu.c:3782) : affiche le
+ *  message (« Retourner au dernier lieu de soins? ») puis la boîte Oui/Non. Le
+ *  printer du port est instantané → on crée la boîte directement. Phase
+ *  'fieldmove_yesno' → tick Menu_ProcessInputNoWrapClearOnChoose. */
+function _displayFieldMoveExitAreaMessage(stringKey: string): void {
+  const raw = getString(stringKey) || '';
+  _itemUsedMsgText = raw.replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _phase = 'fieldmove_yesno';
+  _drawMsg();
+  PartyMenuDisplayYesNoMenu();
 }
 
 /** 1:1 décomp `FieldCallback_SweetScent(void)` (fldeff_sweetscent.c:33) :
@@ -2340,6 +2391,7 @@ interface FieldMoveCursorCallback {
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
+  [FIELD_MOVE_TELEPORT]:    { fieldMoveFunc: SetUpFieldMove_Teleport,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_MILK_DRINK]:  { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SOFT_BOILED]: { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SWEET_SCENT]: { fieldMoveFunc: SetUpFieldMove_SweetScent, msgId: 'gText_CantUseHere' },
@@ -2392,6 +2444,13 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
         // 1:1 décomp : ChooseMonForSoftboiled(taskId) — reste DANS le menu
         // (choix du receveur + transfert PV), pas de close/retour-field.
         ChooseMonForSoftboiled();
+        break;
+      case FIELD_MOVE_TELEPORT:
+        // 1:1 décomp : message « Retourner au dernier lieu de soins? » + Oui/Non.
+        // (Le décomp buffer aussi le nom de la map via GetMapNameGeneric mais
+        // gText_ReturnToHealingSpot ne l'utilise PAS → skip.) Sur OUI → retour-field
+        // → FieldCallback_Teleport → warp vers lastHealLocation.
+        _displayFieldMoveExitAreaMessage('gText_ReturnToHealingSpot');
         break;
       default:
         // 1:1 décomp : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.
@@ -2547,6 +2606,29 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       _itemUsedMsgText = null;
       const cb = _softboiledMsgOnAck; _softboiledMsgOnAck = null;
       cb?.();
+    }
+    return;
+  }
+  // Sub-state Oui/Non field-move (Téléport « Retourner au dernier lieu de soins? »).
+  // 1:1 décomp Task_HandleFieldMoveExitAreaYesNoInput (party_menu.c:3793) :
+  //   case 0 (OUI)  : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.
+  //   case 1/B (NON): gFieldCallback2 = NULL; gPostMenuFieldCallback = NULL; retour choix-mon.
+  if (_phase === 'fieldmove_yesno') {
+    const res = Menu_ProcessInputNoWrapClearOnChoose();  // -2 rien, -1 B, 0 OUI, 1 NON
+    if (res === 0) {
+      _itemUsedMsgText = null;
+      _partyTransientExitCb = CB2_ReturnToField_Manual;
+      ClosePartyScreen();
+    } else if (res === 1 || res === -1) {
+      PlaySE(5);  // SE_SELECT (1:1 : MENU_B_PRESSED rejoue SE_SELECT)
+      _itemUsedMsgText = null;
+      const g = globalThis as Record<string, unknown>;
+      g.gFieldCallback2 = null;
+      g.gPostMenuFieldCallback = null;
+      _actionList = [];
+      _actionCursor = 0;
+      _phase = 'open';
+      _drawMsg();
     }
     return;
   }

@@ -12,11 +12,36 @@ import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gMapHeader } from '../engine/field/map-loader';
 import { PlayBGM } from '../engine/system/decomp-globals';
 import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
-import { FlagGet } from '../engine/script/script-vars';
+import { FlagGet, FlagClear } from '../engine/script/script-vars';
 
 /** 1:1 décomp `gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1 = 8`. Const
  *  locale (import statique de script-opcodes-screen-fx ferme un cycle ESM → TDZ). */
 const gMaxFlashLevel = 8;
+
+/** 1:1 STRICT décomp `Overworld_MapTypeAllowsTeleportAndFly(u8 mapType)` (overworld.c:1366) :
+ *    return (mapType == ROUTE || TOWN || OCEAN_ROUTE || CITY).
+ *  `mapType` = STRING dans le port (= json.map_type, ex. "MAP_TYPE_TOWN"). */
+export function Overworld_MapTypeAllowsTeleportAndFly(mapType: string | number | undefined): boolean {
+  return mapType === 'MAP_TYPE_ROUTE'
+      || mapType === 'MAP_TYPE_TOWN'
+      || mapType === 'MAP_TYPE_OCEAN_ROUTE'
+      || mapType === 'MAP_TYPE_CITY';
+}
+
+/** 1:1 STRICT décomp `Overworld_ResetStateAfterTeleport(void)` (overworld.c:partie sup.) :
+ *    ResetInitialPlayerAvatarState();
+ *    FlagClear(FLAG_SYS_CYCLING_ROAD/CRUISE_MODE/SAFARI_MODE/USE_STRENGTH/USE_FLASH);
+ *    RunScriptImmediately(EventScript_ResetMrBriney);
+ *  Port : les FlagClear (état de map transitoire). `ResetInitialPlayerAvatarState`
+ *  (re-spawn avatar) + `RunScriptImmediately(EventScript_ResetMrBriney)` (reset NPC
+ *  bateau M. Brine) = dette mineure (non porté ici). */
+export function Overworld_ResetStateAfterTeleport(): void {
+  FlagClear('FLAG_SYS_CYCLING_ROAD');
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+  FlagClear('FLAG_SYS_SAFARI_MODE');
+  FlagClear('FLAG_SYS_USE_STRENGTH');
+  FlagClear('FLAG_SYS_USE_FLASH');
+}
 
 /** 1:1 STRICT décomp `SetDefaultFlashLevel(void)` (overworld.c:970) :
  *    if (!gMapHeader.cave)            gSaveBlock1Ptr->flashLevel = 0;          // pleine lumière
