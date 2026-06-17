@@ -73,6 +73,11 @@ import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, Get
 // on utilise une canne → le dynamic import résout instantané (cache), sans cycle d'éval.
 let _playerAvatarMod: typeof import('../field/player-avatar') | null = null;
 void import('../field/player-avatar').then((m) => { _playerAvatarMod = m; });
+// Lazy import bike.ts (anti-cycle/TDZ : il tire tout le graphe field via player-avatar).
+let _bikeMod: typeof import('../../game/bike') | null = null;
+void import('../../game/bike').then((m) => { _bikeMod = m; });
+let _overworldMod: typeof import('../../game/overworld') | null = null;
+void import('../../game/overworld').then((m) => { _overworldMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
@@ -551,14 +556,36 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       SetUpItemUseCallback(task);
       return;
     }
-    case 'ItemUseOutOfBattle_Bike':
-      // 1:1 décomp `ItemUseOutOfBattle_Bike` (item_use.c:200) : toggle l'avatar vélo
-      // (PLAYER_AVATAR_FLAG_MACH/ACRO_BIKE via GetOnOffBike) → fade+close vers le field.
-      // ⚠️ Le sous-système avatar vélo (bike.c : transition + machine Mach/Acro) = **CIBLE SUIVANTE**,
-      // pas encore porté → NO-OP volontaire : on ferme le sac (le « use » a lieu) sans monter sur le vélo.
-      // (Pas de DadsAdvice : le vélo EST sélectionnable/utilisable, juste sans effet pour l'instant.)
-      Task_FadeAndCloseBagMenu(task);
-      return;
+    case 'ItemUseOutOfBattle_Bike': {
+      // 1:1 décomp `ItemUseOutOfBattle_Bike` (item_use.c:200) :
+      //   if (Overworld_IsBikingAllowed() && !IsBikingDisallowedByPlayer()) {
+      //     sItemUseOnFieldCB = ItemUseOnFieldCB_Bike; SetUpItemUseOnFieldCallback(taskId); }
+      //   else DisplayDadsAdviceCannotUseItemMessage();
+      // `ItemUseOnFieldCB_Bike` → GetOnOffBike(MACH/ACRO selon GetItemSecondaryId). On pose
+      // `gFieldCallback` (run au retour OW via RunFieldCallback) + Task_FadeAndCloseBagMenu, comme le rod.
+      // (Branche cycling-road/rails « can't dismount » = dette mineure, Cycling Road seulement.)
+      if (_bikeMod && _playerAvatarMod && _overworldMod
+        && _overworldMod.Overworld_IsBikingAllowed() && !_bikeMod.IsBikingDisallowedByPlayer()) {
+        const sec = GetItemSecondaryId(itemId);  // 'MACH_BIKE' / 'ACRO_BIKE'
+        const flag = sec === 'ACRO_BIKE'
+          ? _playerAvatarMod.PLAYER_AVATAR_FLAG_ACRO_BIKE
+          : _playerAvatarMod.PLAYER_AVATAR_FLAG_MACH_BIKE;
+        const state = sec === 'ACRO_BIKE'
+          ? _playerAvatarMod.PLAYER_AVATAR_STATE_ACRO_BIKE
+          : _playerAvatarMod.PLAYER_AVATAR_STATE_MACH_BIKE;
+        const bk = _bikeMod;
+        const pa = _playerAvatarMod;
+        // Précharge la gfx vélo (keystone) avant le swap dans GetOnOffBike (au retour OW).
+        (globalThis as Record<string, unknown>).gFieldCallback = () => {
+          Promise.resolve(pa.PreloadObjectEventGraphics(pa.GetPlayerAvatarGraphicsIdByStateId(state)))
+            .then(() => { bk.GetOnOffBike(flag); });
+        };
+        Task_FadeAndCloseBagMenu(task);
+        return;
+      }
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      break;
+    }
     case 'ItemUseOutOfBattle_EscapeRope':
       // Escape Rope : warp out (SetEscapeWarp + DoEscapeRopeFieldEffect) non porté → DadsAdvice 1:1.
       msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;

@@ -61,6 +61,18 @@ import {
   GetWalkInPlaceFastMovementAction,
   GetWalkInPlaceSlowMovementAction,
   GetWalkInPlaceNormalMovementAction,
+  GetWalkFasterMovementAction,
+  GetJumpInPlaceTurnAroundMovementAction,
+  GetAcroWheelieFaceDirectionMovementAction,
+  GetAcroPopWheelieFaceDirectionMovementAction,
+  GetAcroEndWheelieFaceDirectionMovementAction,
+  GetAcroWheelieHopFaceDirectionMovementAction,
+  GetAcroWheelieHopDirectionMovementAction,
+  GetAcroWheelieJumpDirectionMovementAction,
+  GetAcroWheelieInPlaceDirectionMovementAction,
+  GetAcroPopWheelieMoveDirectionMovementAction,
+  GetAcroWheelieMoveDirectionMovementAction,
+  GetAcroEndWheelieMoveDirectionMovementAction,
   ObjectEventSetGraphicsId,
   PreloadObjectEventGraphics,
   _setPlayerNormalGfxSnapshot,
@@ -94,7 +106,13 @@ import {
 } from '../script/script-runtime';
 import { FlagGet } from '../script/script-vars';
 import { B_BUTTON } from '../ui/gba-menu-system';
-import { GetFaceDirectionAnimNum } from './direction-coords';
+import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './direction-coords';
+import {
+  GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,
+  BikeClearState, Bike_HandleBumpySlopeJump, MovePlayerOnBike, GetOnOffBike,
+} from '../../game/bike';
+// Re-export pour le sac (bag-menu-ctx précharge la gfx vélo via _playerAvatarMod avant GetOnOffBike).
+export { PreloadObjectEventGraphics };
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
 import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
 import {
@@ -133,7 +151,7 @@ import { Random as _RandomFishing } from '../system/random';
 import {
   FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
 } from '../battle/battle-windows';
-import { IsRunningDisallowed } from './metatile-behavior-helpers';
+import { IsRunningDisallowed } from '../../game/bike';
 import {
   MetatileBehavior_IsBumpySlope,
   MetatileBehavior_IsIsolatedVerticalRail,
@@ -175,7 +193,7 @@ import {
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
 } from '../system/sprite';
-import { SE_WALL_HIT, SE_LEDGE } from '../decomp-data/include/constants/songs-data';
+import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../decomp-data/include/constants/songs-data';
 import {
   getWarpAtPlayerPos,
   findWarpEventAt,
@@ -925,20 +943,19 @@ const COLLISION_HORIZONTAL_RAIL            = 13;
 /** 1:1 décomp `PLAYER_AVATAR_FLAG_*` (global.fieldmap.h:49-56). Bitmask de l'état
  *  du joueur, lu/écrit par la machine de mouvement (npc_clear_strange_bits clear
  *  DASH au début de chaque pas, PlayerNotOnBikeMoving set DASH, etc.). */
-const PLAYER_AVATAR_FLAG_ON_FOOT     = 1 << 0;
-const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
-const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
+export const PLAYER_AVATAR_FLAG_ON_FOOT     = 1 << 0;
+export const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
+export const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
 export const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
-const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
+export const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
 const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
 const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
-const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
+export const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
 
-/** 1:1 décomp `enum` (bike.h:21-24). Vitesse courante du joueur, lue par
- *  `ForcedMovement_MuddySlope` (à pied = toujours NORMAL=0 < FASTEST=3 → glisse). */
-const PLAYER_SPEED_NORMAL  = 0;
-const PLAYER_SPEED_FAST    = 1;
-const PLAYER_SPEED_FASTEST = 3;
+/** 1:1 décomp `enum` (bike.h:21-24). `PLAYER_SPEED_FASTEST = 4` (STANDING=0, NORMAL=1,
+ *  FAST=2, FASTER=3, FASTEST=4). Lue par `ForcedMovement_MuddySlope` : à pied GetPlayerSpeed
+ *  renvoie NORMAL(1) < FASTEST(4) → glisse ; seul le mach bike à pleine vitesse atteint FASTEST. */
+const PLAYER_SPEED_FASTEST = 4;
 
 // 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87` (include/constants/event_objects.h:99).
 // Migré vers import decomp-data event_objects-data.ts (cleanup B7).
@@ -1031,6 +1048,18 @@ function Task_WaitStopSurfing(task: DecompTask): void {
 
 // Dev hook (A/B démontage surf : force-trigge depuis la console après un mount forcé).
 (globalThis as Record<string, unknown>).__CreateStopSurfingTask = CreateStopSurfingTask;
+
+// Dev hooks vélo (A/B : monter/descendre depuis la console). 'mach' (défaut) | 'acro'.
+(globalThis as Record<string, unknown>).__GetOnOffBike = async (kind: string = 'mach') => {
+  const flag = kind === 'acro' ? PLAYER_AVATAR_FLAG_ACRO_BIKE : PLAYER_AVATAR_FLAG_MACH_BIKE;
+  const state = kind === 'acro' ? PLAYER_AVATAR_STATE_ACRO_BIKE : PLAYER_AVATAR_STATE_MACH_BIKE;
+  // précharge la gfx vélo avant le swap (keystone), seulement au MONTAGE (le démontage restaure NORMAL).
+  if (!(gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE)))
+    await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(state));
+  GetOnOffBike(flag);
+  return 'flags=0x' + gPlayerAvatar.flags.toString(16) + ' bikeSpeed=' + gPlayerAvatar.bikeSpeed
+    + ' bikeFrameCounter=' + gPlayerAvatar.bikeFrameCounter + ' acroState=' + gPlayerAvatar.acroBikeState;
+};
 
 // ─── 1:1 décomp `field_player_avatar.c` /* Strength */ — poussée de rocher (HM Strength) ──
 // tState = data[0], tBoulderObjId = data[1], tDirection = data[2].
@@ -1551,7 +1580,7 @@ function PlayerAnimIsMultiFrameStationaryAndStateNotTurning(): boolean {
 
 /** 1:1 décomp `PlayerSetAnimId` (field_player_avatar.c:949) :
  *    if (!PlayerIsAnimActive()) { PlayerSetCopyableMovement(c); ObjectEventSetHeldMovement(player, id); } */
-function PlayerSetAnimId(movementActionId: number, copyableMovement: number): void {
+export function PlayerSetAnimId(movementActionId: number, copyableMovement: number): void {
   if (!PlayerIsAnimActive()) {
     PlayerSetCopyableMovement(copyableMovement);
     ObjectEventSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);
@@ -1559,7 +1588,7 @@ function PlayerSetAnimId(movementActionId: number, copyableMovement: number): vo
 }
 
 /** 1:1 décomp `PlayerWalkNormal` (field_player_avatar.c:958). */
-function PlayerWalkNormal(direction: number): void {
+export function PlayerWalkNormal(direction: number): void {
   PlayerSetAnimId(GetWalkNormalMovementAction(direction), COPY_MOVE_WALK);
 }
 
@@ -1576,20 +1605,20 @@ function PlayerNotOnBikeCollide(direction: number): void {
 }
 
 /** 1:1 décomp `PlayerTurnInPlace` (field_player_avatar.c:1010). */
-function PlayerTurnInPlace(direction: number): void {
+export function PlayerTurnInPlace(direction: number): void {
   PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);
 }
 
 /** 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) :
  *    PlaySE(SE_LEDGE); PlayerSetAnimId(GetJump2MovementAction(dir), COPY_MOVE_JUMP2); */
-function PlayerJumpLedge(direction: number): void {
+export function PlayerJumpLedge(direction: number): void {
   PlaySE(SE_LEDGE);
   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
 }
 
 /** 1:1 décomp `PlayerFaceDirection` (field_player_avatar.c:1007) :
  *    PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE); */
-function PlayerFaceDirection(direction: number): void {
+export function PlayerFaceDirection(direction: number): void {
   PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
 }
 
@@ -1641,7 +1670,7 @@ export function UpdatePlayerAvatarTransitionState(): void {
  *    PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
  *  Vitesse surf (= même que run). Branche SURFING de `PlayerNotOnBikeMoving` ET moveFunc des
  *  `ForcedMovement_Slip`/`ForcedMovement_Slide*` (glace/slides — atteint à pied). Câblé 1:1. */
-function PlayerWalkFast(direction: number): void {
+export function PlayerWalkFast(direction: number): void {
   PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
 }
 
@@ -1650,34 +1679,110 @@ function PlayerWalkFast(direction: number): void {
  *  moveFunc des `ForcedMovement_Pushed*ByCurrent` (courants d'eau). S'active quand le
  *  joueur surfe sur une tuile *Current — le surf est porté à l'étape 5 ; ce chemin est
  *  câblé 1:1 et opérationnel dès que SURFING entre en jeu. */
-function PlayerRideWaterCurrent(direction: number): void {
+export function PlayerRideWaterCurrent(direction: number): void {
   PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), COPY_MOVE_WALK);
 }
 
-/** 1:1 décomp `GetPlayerSpeed` (bike.c:1022). À pied (ni vélo, ni surf, ni dash) →
- *  PLAYER_SPEED_NORMAL ; DASH/SURFING → FAST. FASTEST n'est rendu qu'en mach bike à
- *  bikeFrameCounter==2 (= étape 5). Tant que le vélo n'est pas porté, le mach-bike est
- *  approximé à FAST (la vraie table sMachBikeSpeeds[bikeFrameCounter] arrive avec l'étape 5). */
-function GetPlayerSpeed(): number {
-  if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE)) {
-    return PLAYER_SPEED_FAST;
-  } else if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_DASH)) {
-    return PLAYER_SPEED_FAST;
-  } else {
-    return PLAYER_SPEED_NORMAL;
-  }
+// `GetPlayerSpeed` / `Bike_UpdateBikeCounterSpeed` / `Bike_TryAcroBikeHistoryUpdate` sont des
+// fonctions de bike.c → vivent maintenant dans `game/bike.ts` (source unique 1:1). Importées
+// ci-dessus. (Le `GetPlayerSpeed` correct utilise sMachBikeSpeeds[bikeFrameCounter] ∈ {NORMAL,
+// FAST, FASTEST} pour le mach bike, FASTER pour l'acro — vs l'ancienne approximation FAST.)
+
+/** 1:1 décomp `PlayerWalkFaster` (field_player_avatar.c:973) — mach bike vitesse max. */
+export function PlayerWalkFaster(direction: number): void {
+  PlayerSetAnimId(GetWalkFasterMovementAction(direction), COPY_MOVE_WALK);
 }
 
-/** 1:1 STRICT décomp `Bike_UpdateBikeCounterSpeed` (bike.c) — reset du compteur de vitesse
- *  vélo, appelé par `ForcedMovement_MuddySlope`. Le moteur vélo (bikeFrameCounter) est porté
- *  à l'étape 5 ; à pied l'appel est sans effet (rien à reset) → no-op câblé 1:1. */
-function Bike_UpdateBikeCounterSpeed(_speed: number): void {
-  // bikeFrameCounter porté avec le vélo (étape 5) — à pied : aucun compteur à reset.
+/** 1:1 décomp `PlayerOnBikeCollide` (field_player_avatar.c:983) :
+ *    PlayCollisionSoundIfNotFacingWarp(dir); PlayerSetAnimId(GetWalkInPlaceNormal..., COPY_MOVE_WALK); */
+export function PlayerOnBikeCollide(direction: number): void {
+  PlayCollisionSoundIfNotFacingWarp(direction);
+  PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);
 }
 
-/** 1:1 STRICT décomp `Bike_TryAcroBikeHistoryUpdate` (acro bike) — étape 5, stub no-op. */
-function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): void {
-  // étape 5 (acro bike) — non porté.
+/** 1:1 décomp `PlayerOnBikeCollideWithFarawayIslandMew` (field_player_avatar.c:989). */
+export function PlayerOnBikeCollideWithFarawayIslandMew(direction: number): void {
+  PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `IsPlayerCollidingWithFarawayIslandMew` (faraway_island.c). Faraway Island
+ *  (le Mew fuyant) n'est pas portée → toujours FALSE (= jamais ce cas spécial de collision). */
+export function IsPlayerCollidingWithFarawayIslandMew(_direction: number): boolean {
+  return false;
+}
+
+// ─── 1:1 décomp `field_player_avatar.c` — Player* wheelie (acro bike) ──────────
+// Chaque fonction pose un held movement wheelie via PlayerSetAnimId(GetAcro*MovementAction(dir)).
+// Les movement actions Acro (step funcs + anims) sont déjà dans event_object_movement.ts.
+
+/** 1:1 décomp `PlayerIdleWheelie` (field_player_avatar.c:1032) — wheelie idle. */
+export function PlayerIdleWheelie(direction: number): void {
+  PlayerSetAnimId(GetAcroWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerStartWheelie` (field_player_avatar.c:1038) — normal → wheelie. */
+export function PlayerStartWheelie(direction: number): void {
+  PlayerSetAnimId(GetAcroPopWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerEndWheelie` (field_player_avatar.c:1044) — wheelie → normal. */
+export function PlayerEndWheelie(direction: number): void {
+  PlayerSetAnimId(GetAcroEndWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerStandingHoppingWheelie` (field_player_avatar.c:1050) — bunny hop sur place. */
+export function PlayerStandingHoppingWheelie(direction: number): void {
+  PlaySE(SE_BIKE_HOP);
+  PlayerSetAnimId(GetAcroWheelieHopFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerMovingHoppingWheelie` (field_player_avatar.c:1057) — hop wheelie en mouvement. */
+export function PlayerMovingHoppingWheelie(direction: number): void {
+  PlaySE(SE_BIKE_HOP);
+  PlayerSetAnimId(GetAcroWheelieHopDirectionMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerLedgeHoppingWheelie` (field_player_avatar.c:1064) — saut ledge en wheelie. */
+export function PlayerLedgeHoppingWheelie(direction: number): void {
+  PlaySE(SE_BIKE_HOP);
+  PlayerSetAnimId(GetAcroWheelieJumpDirectionMovementAction(direction), COPY_MOVE_JUMP2);
+}
+
+/** 1:1 décomp `PlayerAcroTurnJump` (field_player_avatar.c:1071) — turn jump (demi-tour sauté). */
+export function PlayerAcroTurnJump(direction: number): void {
+  PlaySE(SE_BIKE_HOP);
+  PlayerSetAnimId(GetJumpInPlaceTurnAroundMovementAction(direction), COPY_MOVE_FACE);
+}
+
+/** 1:1 décomp `PlayerWheelieInPlace` (field_player_avatar.c:1077) — wheelie sur place (mur). */
+export function PlayerWheelieInPlace(direction: number): void {
+  PlaySE(SE_WALL_HIT);
+  PlayerSetAnimId(GetAcroWheelieInPlaceDirectionMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerPopWheelieWhileMoving` (field_player_avatar.c:1083) — lever le wheelie en roulant. */
+export function PlayerPopWheelieWhileMoving(direction: number): void {
+  PlayerSetAnimId(GetAcroPopWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerWheelieMove` (field_player_avatar.c:1088) — rouler en wheelie. */
+export function PlayerWheelieMove(direction: number): void {
+  PlayerSetAnimId(GetAcroWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerEndWheelieWhileMoving` (field_player_avatar.c:1093) — baisser le wheelie en roulant. */
+export function PlayerEndWheelieWhileMoving(direction: number): void {
+  PlayerSetAnimId(GetAcroEndWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+}
+
+/** 1:1 décomp `PlayerUseAcroBikeOnBumpySlope` (field_player_avatar.c:1415) — pose la gfx acro
+ *  + anim wheelie (bumpy slope mount). */
+export function PlayerUseAcroBikeOnBumpySlope(direction: number): void {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  ObjectEventSetGraphicsId(playerObjEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_ACRO_BIKE));
+  const rt = getRuntime();
+  rt.StartSpriteAnim(gPlayerAvatar.spriteId, GetAcroWheelieDirectionAnimNum(direction));
+  rt.SeekSpriteAnim(gPlayerAvatar.spriteId, 1);
 }
 
 // ─── 1:1 décomp `field_player_avatar.c` — TRANSITION D'ÉTAT JOUEUR (étape 4) ───
@@ -1693,8 +1798,8 @@ function Bike_TryAcroBikeHistoryUpdate(_newKeys: number, _heldKeys: number): voi
 
 /** 1:1 décomp `enum PLAYER_AVATAR_STATE_*` (global.fieldmap.h) — index de sPlayerAvatarTransitionFuncs. */
 const PLAYER_AVATAR_STATE_NORMAL     = 0;
-const PLAYER_AVATAR_STATE_MACH_BIKE  = 1;
-const PLAYER_AVATAR_STATE_ACRO_BIKE  = 2;
+export const PLAYER_AVATAR_STATE_MACH_BIKE  = 1;
+export const PLAYER_AVATAR_STATE_ACRO_BIKE  = 2;
 export const PLAYER_AVATAR_STATE_SURFING = 3;
 const PLAYER_AVATAR_STATE_UNDERWATER = 4;
 const PLAYER_AVATAR_STATE_FIELD_MOVE = 5;
@@ -2165,6 +2270,12 @@ const sFishingStateFuncs: ReadonlyArray<(task: DecompTask) => boolean> = [
   return 'StartFishing rod=' + rod;
 };
 
+/** 1:1 STRICT décomp `TestPlayerAvatarFlags` (field_player_avatar.c:1330) :
+ *    return gPlayerAvatar.flags & flags; */
+export function TestPlayerAvatarFlags(flags: number): number {
+  return gPlayerAvatar.flags & flags;
+}
+
 /** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :
  *    flags &= (DASH | FORCED_MOVE | CONTROLLABLE); flags |= flags_param;
  *  Préserve les 3 bits transverses (dash/forced/controllable), reset les bits d'ÉTAT
@@ -2193,27 +2304,34 @@ export function SetPlayerAvatarExtraStateTransition(graphicsId: number | string,
   DoPlayerAvatarTransition();
 }
 
-/** 1:1 STRICT décomp `PlayerAvatarTransition_Normal` (field_player_avatar.c:832).
- *  Décomp : ObjectEventSetGraphicsId(Normal) + ObjectEventTurn(movementDir) + StateMask(ON_FOOT).
- *  La part gfx/turn est élidée (idempotente à pied : gfx Normal + facing déjà bons, slot préservé) ;
- *  elle sera portée avec le sous-système graphics-id (étape 5, pour les transitions bike/surf→pied). */
-function PlayerAvatarTransition_Normal(_objEvent: ObjectEvent): void {
-  // ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(NORMAL)); — étape 5 (graphics-id)
-  // ObjectEventTurn(objEvent, objEvent->movementDirection);                          — étape 5 (graphics-id)
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Normal` (field_player_avatar.c:832) :
+ *    ObjectEventSetGraphicsId(Normal) + ObjectEventTurn(movementDir) + StateMask(ON_FOOT).
+ *  La part gfx RESTAURE la feuille NORMAL réservée (keystone `_restorePlayerNormalGfx`, idempotent
+ *  à pied) — indispensable au DÉMONTAGE vélo/surf (retour pied via SetPlayerAvatarTransitionFlags(ON_FOOT)). */
+function PlayerAvatarTransition_Normal(objEvent: ObjectEvent): void {
+  ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL));
+  ObjectEventTurn(objEvent, objEvent.movementDirection);
   SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
 }
 
-/** 1:1 STRICT décomp `PlayerAvatarTransition_MachBike` (fpa.c:839). Part flags portée ; gfx +
- *  BikeClearState = sous-système vélo (étape 5). Non atteignable tant que le vélo n'est pas câblé. */
-function PlayerAvatarTransition_MachBike(_objEvent: ObjectEvent): void {
+/** 1:1 STRICT décomp `PlayerAvatarTransition_MachBike` (fpa.c:839) :
+ *    ObjectEventSetGraphicsId(MachBike) + ObjectEventTurn + StateMask(MACH_BIKE) + BikeClearState(0,0). */
+function PlayerAvatarTransition_MachBike(objEvent: ObjectEvent): void {
+  ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_MACH_BIKE));
+  ObjectEventTurn(objEvent, objEvent.movementDirection);
   SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_MACH_BIKE);
-  // ObjectEventSetGraphicsId(MachBike) + ObjectEventTurn + BikeClearState(0,0) — étape 5 (vélo)
+  BikeClearState(0, 0);
 }
 
-/** 1:1 STRICT décomp `PlayerAvatarTransition_AcroBike` (fpa.c:847). Idem (étape 5 vélo). */
-function PlayerAvatarTransition_AcroBike(_objEvent: ObjectEvent): void {
+/** 1:1 STRICT décomp `PlayerAvatarTransition_AcroBike` (fpa.c:847) :
+ *    ObjectEventSetGraphicsId(AcroBike) + ObjectEventTurn + StateMask(ACRO_BIKE) + BikeClearState(0,0)
+ *    + Bike_HandleBumpySlopeJump(). */
+function PlayerAvatarTransition_AcroBike(objEvent: ObjectEvent): void {
+  ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_ACRO_BIKE));
+  ObjectEventTurn(objEvent, objEvent.movementDirection);
   SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ACRO_BIKE);
-  // ObjectEventSetGraphicsId(AcroBike) + ObjectEventTurn + BikeClearState + Bike_HandleBumpySlopeJump — étape 5
+  BikeClearState(0, 0);
+  Bike_HandleBumpySlopeJump();
 }
 
 /** 1:1 STRICT décomp `PlayerAvatarTransition_Surfing` (fpa.c:856). Part flags portée ; gfx +
@@ -2520,12 +2638,12 @@ function npc_clear_strange_bits(objEvent: ObjectEvent): void {
 }
 
 /** 1:1 STRICT décomp `MovePlayerAvatarUsingKeypadInput` (field_player_avatar.c:559) :
- *    if (flags & (MACH_BIKE | ACRO_BIKE)) MovePlayerOnBike(...); else MovePlayerNotOnBike(...);
- *  Vélo = étape 5 → on route toujours vers `MovePlayerNotOnBike` (à pied). */
+ *    if (flags & (MACH_BIKE | ACRO_BIKE)) MovePlayerOnBike(...); else MovePlayerNotOnBike(...); */
 function MovePlayerAvatarUsingKeypadInput(direction: number, newKeys: number, heldKeys: number): void {
-  void newKeys;  // (utilisé par MovePlayerOnBike — étape 5)
-  // if (gPlayerAvatar.flags & (MACH_BIKE | ACRO_BIKE)) MovePlayerOnBike(...); — non porté.
-  MovePlayerNotOnBike(direction, heldKeys);
+  if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+    MovePlayerOnBike(direction, newKeys, heldKeys);
+  else
+    MovePlayerNotOnBike(direction, heldKeys);
 }
 
 /** 1:1 STRICT décomp `PlayerAllowForcedMovementIfMovingSameDirection` (field_player_avatar.c:570) :

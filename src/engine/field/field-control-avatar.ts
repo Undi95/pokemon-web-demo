@@ -159,6 +159,7 @@ import {
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
 } from '../decomp-data/include/gba/io_reg-data';
 import { ENUM_PLAYER_0 } from '../decomp-data/include/bike-data';
+import { GetPlayerSpeed } from '../../game/bike';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;
@@ -177,12 +178,10 @@ function GetPlayerCurMetatileBehavior(_runningState: number): number {
   return MapGridGetMetatileBehaviorAt(pos.x, pos.y);
 }
 
-/** 1:1 décomp `GetPlayerSpeed` (field_player_avatar.c).
- *  Returns la vitesse du player (= 1 = walking, 2 = running, 4 = fastest bike).
- *  Stub : retourne 1 normalement, 2 si dashing. */
-export function GetPlayerSpeed(): number {
-  return gPlayerAvatar.dashing ? 2 : 1;
-}
+// `GetPlayerSpeed` est une fonction de bike.c → source UNIQUE dans `game/bike.ts` (1:1,
+// utilise sMachBikeSpeeds pour le mach bike). Importée pour l'usage local (FieldGetPlayerInput)
+// + re-exportée pour les importeurs existants (field_tasks.ts) sans changer leur chemin.
+export { GetPlayerSpeed };
 
 /** 1:1 décomp `FieldGetPlayerInput` (field_control_avatar.c:89-132).
  *

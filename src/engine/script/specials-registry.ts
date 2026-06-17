@@ -27,6 +27,7 @@
  */
 
 import { registerSpecial } from './script-opcodes';
+import { gBikeCycling } from '../../game/field_specials';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -249,9 +250,9 @@ registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
  *  `gBikeCollisions=u8`, `sBikeCyclingTimer=u32`. Stockés ici comme statics
  *  module-level (= EWRAM_DATA équivalent). */
 registerSpecial('ResetCyclingRoadChallengeData', () => {
-  _gBikeCyclingChallenge = 0;
-  _gBikeCollisions = 0;
-  _sBikeCyclingTimer = 0;
+  gBikeCycling.challenge = 0;
+  gBikeCycling.collisions = 0;
+  gBikeCycling.timer = 0;
 });
 
 /** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c:161-166) :
@@ -265,18 +266,13 @@ registerSpecial('ResetCyclingRoadChallengeData', () => {
  *  vblankCounter1 = frame counter ; notre équivalent = performance.now() | 0
  *  pour granularité comparable (= timer monotonic). */
 registerSpecial('Special_BeginCyclingRoadChallenge', () => {
-  _gBikeCyclingChallenge = 1;
-  _gBikeCollisions = 0;
-  _sBikeCyclingTimer = (performance.now() | 0) >>> 0;
+  gBikeCycling.challenge = 1;
+  gBikeCycling.collisions = 0;
+  gBikeCycling.timer = (performance.now() | 0) >>> 0;
 });
 
-// 1:1 décomp EWRAM_DATA static globals (field_specials.c:78-80).
-let _gBikeCyclingChallenge = 0;
-let _gBikeCollisions = 0;
-let _sBikeCyclingTimer = 0;
-// Reference to suppress unused vars warning ; appelants futurs accéderont via
-// helpers exportés si cycling road code ported (= cf. roadmap C7 task).
-void _gBikeCyclingChallenge; void _gBikeCollisions; void _sBikeCyclingTimer;
+// `gBikeCycling` (EWRAM field_specials.c) vit dans `game/field_specials.ts` (feuille zéro-dup
+// sans import lourd, pour éviter les cycles ESM avec bike.ts). Importé ci-dessus.
 
 /** 1:1 décomp `Special_ShowDiploma` (field_specials.c:3739) :
  *  ```c

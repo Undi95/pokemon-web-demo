@@ -17,9 +17,7 @@ import {
   MetatileBehavior_IsEastBlocked, MetatileBehavior_IsWestBlocked,
   MetatileBehavior_IsJumpSouth, MetatileBehavior_IsJumpNorth,
   MetatileBehavior_IsJumpWest, MetatileBehavior_IsJumpEast,
-  MetatileBehavior_IsRunningDisallowed,
 } from '../../game/metatile_behavior';
-import { gMapHeader } from './map-loader';
 
 // Tous les prédicats `MetatileBehavior_*` viennent du miroir (source unique, 1:1).
 export * from '../../game/metatile_behavior';
@@ -65,15 +63,5 @@ export function ShouldJumpLedge(targetBehavior: number, direction: number): bool
   return sJumpFuncs[idx](targetBehavior);
 }
 
-/** 1:1 décomp `IsRunningDisallowedByMetatile` (bike.c:901). (Fortree-bridge edge
- *  case omis = rare, requiert elevation odd-bit.) */
-export function IsRunningDisallowedByMetatile(behavior: number): boolean {
-  return MetatileBehavior_IsRunningDisallowed(behavior);
-}
-
-/** 1:1 décomp `IsRunningDisallowed` (bike.c:1056). TRUE si gMapHeader.allowRunning
- *  FALSE OU si le metatile courant interdit running. */
-export function IsRunningDisallowed(behavior: number): boolean {
-  if (!gMapHeader) return true;
-  return !gMapHeader.allowRunning || IsRunningDisallowedByMetatile(behavior);
-}
+// `IsRunningDisallowedByMetatile` + `IsRunningDisallowed` (bike.c:901/1056) vivent maintenant
+// dans `game/bike.ts` (source unique 1:1, avec le cas Fortree-bridge complet). Cf. le header.

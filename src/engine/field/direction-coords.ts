@@ -215,9 +215,34 @@ const sMoveDirectionFastestAnimNums: readonly number[] = [
   ANIM_STD_GO_FASTEST_NORTH,
 ];
 
+// 1:1 décomp ANIM_BUNNY_HOP_BACK_WHEEL_* (= ANIM_STD_COUNT + 0..3 ; ANIM_STD_COUNT = 20).
+// Indices d'anim du sprite acro bike (wheelie sur la roue arrière).
+const ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH = 20;
+const ANIM_BUNNY_HOP_BACK_WHEEL_NORTH = 21;
+const ANIM_BUNNY_HOP_BACK_WHEEL_WEST  = 22;
+const ANIM_BUNNY_HOP_BACK_WHEEL_EAST  = 23;
+
+/** 1:1 décomp `sAcroWheelieDirectionAnimNums[]` (event_object_movement.c:781). */
+const sAcroWheelieDirectionAnimNums: readonly number[] = [
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_NONE
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTH
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTH
+  ANIM_BUNNY_HOP_BACK_WHEEL_WEST,   // DIR_WEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_EAST,   // DIR_EAST
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTHWEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTHEAST
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTHWEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTHEAST
+];
+
 /** 1:1 décomp `GetFaceDirectionAnimNum` (event_object_movement.c:4495-4498). */
 export function GetFaceDirectionAnimNum(direction: number): number {
   return sFaceDirectionAnimNums[direction] ?? ANIM_STD_FACE_SOUTH;
+}
+
+/** 1:1 décomp `GetAcroWheelieDirectionAnimNum` (event_object_movement.c:4525). */
+export function GetAcroWheelieDirectionAnimNum(direction: number): number {
+  return sAcroWheelieDirectionAnimNums[direction] ?? ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH;
 }
 
 /** 1:1 décomp `GetMoveDirectionAnimNum` (event_object_movement.c:4500-4503). */

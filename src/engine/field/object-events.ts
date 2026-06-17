@@ -1549,6 +1549,11 @@ export const COLLISION_STOP_SURFING        = 5;
 export const COLLISION_LEDGE_JUMP          = 6;
 export const COLLISION_PUSHED_BOULDER      = 7;
 export const COLLISION_ROTATING_GATE       = 8;
+export const COLLISION_WHEELIE_HOP             = 9;
+export const COLLISION_ISOLATED_VERTICAL_RAIL  = 10;
+export const COLLISION_ISOLATED_HORIZONTAL_RAIL = 11;
+export const COLLISION_VERTICAL_RAIL           = 12;
+export const COLLISION_HORIZONTAL_RAIL         = 13;
 
 /** 1:1 décomp `enum Elevation` (global.fieldmap.h:14-20). */
 export const ELEVATION_TRANSITION  = 0;
@@ -4123,15 +4128,24 @@ import {
   MOVEMENT_ACTION_JUMP_SPECIAL_LEFT, MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT,
   MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP, MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN,
   MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT,
-  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN,
-  MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN,
-  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN,
-  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN,
-  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN,
-  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN,
-  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN,
-  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN,
-  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_FACE_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_FACE_RIGHT,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN, MOVEMENT_ACTION_ACRO_POP_WHEELIE_UP,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_LEFT, MOVEMENT_ACTION_ACRO_POP_WHEELIE_RIGHT,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_UP,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_LEFT, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_UP,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_LEFT, MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_RIGHT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_UP,
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_LEFT, MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_RIGHT,
   MOVEMENT_ACTION_INIT_AFFINE_ANIM, MOVEMENT_ACTION_CLEAR_AFFINE_ANIM,
   MOVEMENT_ACTION_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE,
   MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
@@ -4140,7 +4154,8 @@ import {
   MOVEMENT_ACTION_WALK_LEFT_AFFINE, MOVEMENT_ACTION_WALK_RIGHT_AFFINE,
   MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
   MOVEMENT_ACTION_LOCK_ANIM, MOVEMENT_ACTION_UNLOCK_ANIM,
-  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -4259,7 +4274,15 @@ function _InitNpcForMovement(rt: DecompRuntime, npc: ObjectEvent, dir: number, s
   npc.actionStep = 1;
   // H4.3 fix : 1:1 strict décomp InitNpcForMovement set triggerGroundEffectsOnMove=TRUE.
   npc.triggerGroundEffectsOnMove = true;
-  _npcStartWalkAnim(rt, npc, dir);
+  // 1:1 décomp `InitMovementNormal` (event_object_movement.c:5101-5107) : l'anim de pas dépend
+  // de la VITESSE via `functions[speed]` = {GetMoveDirectionAnimNum, ...Fast..., ...Faster...},
+  // PAS toujours l'anim normale. (Bug mach bike : à vitesse FASTER le pas est court → l'anim
+  // normale (8 frames/cmd) n'atteignait jamais une cmd impaire → SetStepAnimHandleAlternation
+  // jamais déclenché → pédalage gelé. L'anim Faster (4 frames/cmd) cycle dans le pas court.)
+  const stepAnimNum = speed === 1 ? GetMoveDirectionFastAnimNum(npc.facingDirection)
+    : speed === 2 ? GetMoveDirectionFasterAnimNum(npc.facingDirection)
+    : GetMoveDirectionAnimNum(npc.facingDirection);
+  _npcStartStepAnimWithNum(rt, npc, stepAnimNum);
 }
 
 /** 1:1 décomp `MovementAction_WalkNormalX_Step0` (event_object_movement.c:5278+) :
@@ -6200,6 +6223,155 @@ const gWalkInPlaceNormalMovementActions: readonly number[] = [
 export function GetWalkInPlaceNormalMovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gWalkInPlaceNormalMovementActions[dir];
+}
+
+// ─── 1:1 décomp getters movement action vélo (event_object_movement.c, via `dirn_to_anim`) ───
+// Tables 5 éléments indexées par direction (DIR_NONE=0/SOUTH=1/NORTH=2/WEST=3/EAST=4).
+// Utilisées par bike.c (game/bike.ts) + les Player*Wheelie* (player-avatar.ts).
+// ⚠️ NE PAS confondre avec les versions de `decomp-bridge` (numérotation décomp-réelle).
+
+/** 1:1 décomp `gWalkFasterMovementActions` (event_object_movement.c:954). */
+const gWalkFasterMovementActions = [
+  MOVEMENT_ACTION_WALK_FASTER_DOWN, MOVEMENT_ACTION_WALK_FASTER_DOWN,
+  MOVEMENT_ACTION_WALK_FASTER_UP, MOVEMENT_ACTION_WALK_FASTER_LEFT, MOVEMENT_ACTION_WALK_FASTER_RIGHT,
+];
+/** 1:1 décomp `GetWalkFasterMovementAction` (mach bike speed 3). */
+export function GetWalkFasterMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkFasterMovementActions[dir];
+}
+
+/** 1:1 décomp `gJumpMovementActions` (event_object_movement.c:996). */
+const gJumpMovementActions = [
+  MOVEMENT_ACTION_JUMP_DOWN, MOVEMENT_ACTION_JUMP_DOWN,
+  MOVEMENT_ACTION_JUMP_UP, MOVEMENT_ACTION_JUMP_LEFT, MOVEMENT_ACTION_JUMP_RIGHT,
+];
+/** 1:1 décomp `GetJumpMovementAction` (acro side jump). */
+export function GetJumpMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gJumpMovementActions[dir];
+}
+
+/** 1:1 décomp `gJumpInPlaceTurnAroundMovementActions` (event_object_movement.c:989). */
+const gJumpInPlaceTurnAroundMovementActions = [
+  MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN, MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN,
+  MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT,
+  MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT,
+];
+/** 1:1 décomp `GetJumpInPlaceTurnAroundMovementAction` (acro turn jump). */
+export function GetJumpInPlaceTurnAroundMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gJumpInPlaceTurnAroundMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieFaceDirectionMovementActions` (event_object_movement.c:1038). */
+const gAcroWheelieFaceDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_UP, MOVEMENT_ACTION_ACRO_WHEELIE_FACE_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_RIGHT,
+];
+export function GetAcroWheelieFaceDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieFaceDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroPopWheelieFaceDirectionMovementActions` (event_object_movement.c:1045). */
+const gAcroPopWheelieFaceDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN, MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_UP, MOVEMENT_ACTION_ACRO_POP_WHEELIE_LEFT,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_RIGHT,
+];
+export function GetAcroPopWheelieFaceDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroPopWheelieFaceDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroEndWheelieFaceDirectionMovementActions` (event_object_movement.c:1052). */
+const gAcroEndWheelieFaceDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_UP, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_LEFT,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
+];
+export function GetAcroEndWheelieFaceDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroEndWheelieFaceDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieHopFaceDirectionMovementActions` (event_object_movement.c:1059). */
+const gAcroWheelieHopFaceDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_UP, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_RIGHT,
+];
+export function GetAcroWheelieHopFaceDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieHopFaceDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieHopDirectionMovementActions` (event_object_movement.c:1066). */
+const gAcroWheelieHopDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_UP, MOVEMENT_ACTION_ACRO_WHEELIE_HOP_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_RIGHT,
+];
+export function GetAcroWheelieHopDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieHopDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieJumpDirectionMovementActions` (event_object_movement.c:1073). */
+const gAcroWheelieJumpDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_UP, MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_RIGHT,
+];
+export function GetAcroWheelieJumpDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieJumpDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieInPlaceDirectionMovementActions` (event_object_movement.c:1080). */
+const gAcroWheelieInPlaceDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_UP, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
+];
+export function GetAcroWheelieInPlaceDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieInPlaceDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroPopWheelieMoveDirectionMovementActions` (event_object_movement.c:1087). */
+const gAcroPopWheelieMoveDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_UP, MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_LEFT,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_RIGHT,
+];
+export function GetAcroPopWheelieMoveDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroPopWheelieMoveDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroWheelieMoveDirectionMovementActions` (event_object_movement.c:1094). */
+const gAcroWheelieMoveDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_UP, MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_RIGHT,
+];
+export function GetAcroWheelieMoveDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroWheelieMoveDirectionMovementActions[dir];
+}
+
+/** 1:1 décomp `gAcroEndWheelieMoveDirectionMovementActions` (event_object_movement.c:1101). */
+const gAcroEndWheelieMoveDirectionMovementActions = [
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT,
+];
+export function GetAcroEndWheelieMoveDirectionMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gAcroEndWheelieMoveDirectionMovementActions[dir];
 }
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
