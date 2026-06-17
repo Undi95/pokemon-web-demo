@@ -1017,6 +1017,21 @@ function IsPosInConnectingMap(connection: MapConnection, x: number, y: number): 
   return false;
 }
 
+/** 1:1 STRICT décomp `GetMapConnection(u8 dir)` (overworld.c:740) :
+ *    for (i = 0; i < count; i++, connection++)
+ *        if (connection->direction == dir) return connection;
+ *    return NULL;
+ *  Retourne la PREMIÈRE connexion de la map courante dont la direction == dir
+ *  (≠ GetMapConnectionAtPos qui filtre par position border). Utilisé par le warp
+ *  Dive (`SetDiveWarp` cherche la connexion CONNECTION_DIVE / CONNECTION_EMERGE). */
+export function GetMapConnection(dir: number): MapConnection | null {
+  if (!gMapHeader || !gMapHeader.connections) return null;
+  for (const connection of gMapHeader.connections) {
+    if (connection.direction === dir) return connection;
+  }
+  return null;
+}
+
 /** 1:1 décomp `GetMapConnectionAtPos(s16 x, s16 y)` (fieldmap.c:758-790).
  *  Returns la connexion appropriée à la position gBackup (x, y), si on est dans
  *  la zone border. Utilisé par metatile dispatch sur les borders pour rerouter

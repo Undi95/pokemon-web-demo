@@ -75,6 +75,8 @@ import {
   MetatileBehavior_IsQuestionnaire,
   MetatileBehavior_IsTrainerHillTimer,
   MetatileBehavior_IsWaterfall,
+  MetatileBehavior_IsDiveable,
+  MetatileBehavior_IsUnableToEmerge,
 } from '../../game/metatile_behavior';
 import {
   gObjectEvents,
@@ -95,6 +97,9 @@ import {
   setPendingWarp,
   getWarpKindFor,
   isArrowWarpMetatileBehavior,
+  SetDiveWarpDive,
+  SetDiveWarpEmerge,
+  DoDiveWarp,
 } from './warp-system';
 import { CheckStandardWildEncounter } from '../../game/wild_encounter';
 
@@ -255,6 +260,12 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
   GetPlayerPosition(position);  // INTERNAL coords + elevation
   let metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
 
+  // input->pressedBButton : 1:1 décomp `TrySetupDiveEmergeScript` (field_control_avatar.c:153) —
+  // B en underwater sur tuile émergeable → remonte. Placé TÔT (avant tookStep), comme la décomp.
+  if (input.pressedBButton && TrySetupDiveEmergeScript()) {
+    return true;
+  }
+
   // input->tookStep : 1:1 décomp `TryStartStepBasedScript` (coord events + step-on warp).
   if (input.tookStep) {
     // `TryStartCoordEventScript(position)` — coord events (= truck SetIntroFlags). Coords LOGIQUES.
@@ -309,6 +320,13 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
         }
       }
     }
+  }
+
+  // input->pressedAButton : 1:1 décomp `TrySetupDiveDownScript` (field_control_avatar.c:180) —
+  // A sur eau profonde plongeable (badge 7) → plonge. Placé APRÈS TryStartInteractionScript +
+  // TryDoorWarp (ordre décomp), avant le menu Start.
+  if (input.pressedAButton && TrySetupDiveDownScript()) {
+    return true;
   }
 
   return false;
@@ -769,6 +787,79 @@ export function TryStartInteractionScript(
   console.log(`[field-control] interaction script → '${script}' at INTERNAL=(${position.x},${position.y}) dir=${direction} mb=0x${metatileBehavior.toString(16)}`);
   ScriptContext_SetupScript(script);
   return true;
+}
+
+// ─── Dive (HM Plongée) 1:1 décomp field_control_avatar.c:940-983 ─────────────
+// ⚠️ Le port stocke `gMapHeader.mapType` comme le NOM string du constant décomp
+// (= json.map_type, ex. "MAP_TYPE_UNDERWATER") → on compare à la string (différence
+// de représentation des données, pas une approximation de logique).
+
+/** 1:1 STRICT décomp `TryDoDiveWarp(struct MapPosition *position, u16 metatileBehavior)`
+ *  (field_control_avatar.c:940) :
+ *    if (UNDERWATER && !IsUnableToEmerge) { if SetDiveWarpEmerge → Store + DoDiveWarp + SE; return TRUE }
+ *    else if (IsDiveable) { if SetDiveWarpDive → Store + DoDiveWarp + SE; return TRUE }
+ *    return FALSE;
+ *  Appelé par `DiveFieldEffect_TryWarp` (Task_UseDive) → exécute le warp.
+ *  `position` = coords INTERNAL du joueur ; SetDiveWarp* veut du LOCAL (− MAP_OFFSET).
+ *  ⚠️ DETTE : `StoreInitialPlayerAvatarState()` non porté (le joueur se ré-init sur la
+ *  map dest, cohérent avec __devGotoMap) ; PlaySE(SE_M_DIVE) skip (audio). */
+export function TryDoDiveWarp(position: MapPosition, metatileBehavior: number): boolean {
+  if (gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER' && !MetatileBehavior_IsUnableToEmerge(metatileBehavior)) {
+    if (SetDiveWarpEmerge(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
+      DoDiveWarp();
+      return true;
+    }
+  } else if (MetatileBehavior_IsDiveable(metatileBehavior) === true) {
+    if (SetDiveWarpDive(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
+      DoDiveWarp();
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `TrySetDiveWarp(void)` (field_control_avatar.c:965) :
+ *    PlayerGetDestCoords(&x, &y); metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);
+ *    if (UNDERWATER && !IsUnableToEmerge) { if SetDiveWarpEmerge(x-OFF, y-OFF) return 1; }
+ *    else if (IsDiveable) { if SetDiveWarpDive(x-OFF, y-OFF) return 2; }
+ *    return 0;
+ *  Pose la dest du warp Dive (sans déclencher) + renvoie 1 (emerge) / 2 (dive) / 0 (rien).
+ *  Le joueur est SUR la tuile (coords courantes), pas devant. */
+export function TrySetDiveWarp(): number {
+  const coords = PlayerGetDestCoords();  // INTERNAL
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(coords.x, coords.y);
+  if (gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER' && !MetatileBehavior_IsUnableToEmerge(metatileBehavior)) {
+    if (SetDiveWarpEmerge(coords.x - MAP_OFFSET, coords.y - MAP_OFFSET) === true) return 1;
+  } else if (MetatileBehavior_IsDiveable(metatileBehavior) === true) {
+    if (SetDiveWarpDive(coords.x - MAP_OFFSET, coords.y - MAP_OFFSET) === true) return 2;
+  }
+  return 0;
+}
+
+/** 1:1 STRICT décomp `TrySetupDiveDownScript(void)` (field_control_avatar.c:463) :
+ *    if (FlagGet(FLAG_BADGE07_GET) && TrySetDiveWarp() == 2) { ScriptContext_SetupScript(EventScript_UseDive); return TRUE; }
+ *    return FALSE;
+ *  Entrée HM Plongée DESCENTE : A sur eau profonde plongeable (badge 7) → EventScript_UseDive
+ *  (checkpartymove MOVE_DIVE → msgbox OUI/NON → dofieldeffect FLDEFF_USE_DIVE → warp underwater). */
+function TrySetupDiveDownScript(): boolean {
+  if (FlagGet('FLAG_BADGE07_GET') && TrySetDiveWarp() === 2) {
+    ScriptContext_SetupScript('EventScript_UseDive');
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `TrySetupDiveEmergeScript(void)` (field_control_avatar.c:473) :
+ *    if (FlagGet(FLAG_BADGE07_GET) && gMapHeader.mapType == MAP_TYPE_UNDERWATER && TrySetDiveWarp() == 1) {
+ *        ScriptContext_SetupScript(EventScript_UseDiveUnderwater); return TRUE; }
+ *    return FALSE;
+ *  Entrée HM Plongée ÉMERSION : B en underwater sur une tuile émergeable (badge 7) → remonte. */
+function TrySetupDiveEmergeScript(): boolean {
+  if (FlagGet('FLAG_BADGE07_GET') && gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER' && TrySetDiveWarp() === 1) {
+    ScriptContext_SetupScript('EventScript_UseDiveUnderwater');
+    return true;
+  }
+  return false;
 }
 
 // ─── Step counter helpers 1:1 décomp ───────────────────────────────────────

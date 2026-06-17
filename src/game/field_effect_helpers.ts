@@ -128,6 +128,7 @@ const FLDEFF_USE_SURF = 9;
 const FLDEFF_FIELD_MOVE_SHOW_MON = 6;
 const FLDEFF_FIELD_MOVE_SHOW_MON_INIT = 59;
 const FLDEFF_USE_WATERFALL = 43;
+const FLDEFF_USE_DIVE = 44;
 // 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
 const BOB_NONE = 0, BOB_PLAYER_AND_MON = 1, BOB_JUST_MON = 2;
 const LOCALID_PLAYER = 0xFF;
@@ -1330,6 +1331,85 @@ export function FldEff_UseWaterfall(rt: DecompRuntime): number {
   if (task) {
     task.data[1] = gFieldEffectArguments[0];  // tMonId
     Task_UseWaterfall(task);
+  }
+  return 0;  // FALSE
+}
+
+// ─── 1:1 décomp `field_effect.c` /* Dive */ — warp Plongée/Émersion (Task_UseDive) ────────────
+// data[0]=tState, data[15]=monId, data[14]=arg1 (field_effect.c:1902-1946). Déclenché par
+// `FieldEffectStart(FLDEFF_USE_DIVE)` (A sur eau profonde plongeable, ou B en underwater, badge 7).
+// Séquence : preventStep → (show-mon no-op) → TryDoDiveWarp (warp vers la map underwater/surface).
+//
+// ⚠️ MÊME DÉPENDANCE NON PORTÉE QUE SURF/WATERFALL : FLDEFF_FIELD_MOVE_SHOW_MON no-op →
+// FieldEffectActiveListContains = false → on enchaîne directement sur le warp.
+//
+// ⚠️ `TryDoDiveWarp` vit dans field-control-avatar.ts (gros module field). On l'appelle en
+// import LAZY au runtime (leçon ESM : un module field qui en appelle un gros au runtime → lazy,
+// sinon cycle/TDZ). Le warp est de toute façon différé (setPendingWarp consommé par la scène).
+
+/** 1:1 STRICT décomp `DiveFieldEffect_Init` (field_effect.c:1917). */
+function DiveFieldEffect_Init(task: DecompTask): boolean {
+  gPlayerAvatar.preventStep = true;
+  task.data[0]++;
+  return false;
+}
+
+/** 1:1 STRICT décomp `DiveFieldEffect_ShowMon` (field_effect.c:1924). */
+function DiveFieldEffect_ShowMon(task: DecompTask): boolean {
+  LockPlayerFieldControls();
+  gFieldEffectArguments[0] = task.data[15];  // monId
+  FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op
+  task.data[0]++;
+  return false;
+}
+
+/** 1:1 STRICT décomp `DiveFieldEffect_TryWarp` (field_effect.c:1933) :
+ *    PlayerGetDestCoords(&mapPosition.x, &mapPosition.y);
+ *    if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+ *        TryDoDiveWarp(&mapPosition, currentMetatileBehavior);
+ *        DestroyTask(FindTaskIdByFunc(Task_UseDive));
+ *        FieldEffectActiveListRemove(FLDEFF_USE_DIVE);
+ *    } */
+function DiveFieldEffect_TryWarp(_task: DecompTask): boolean {
+  const coords = PlayerGetDestCoords();  // INTERNAL
+  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+    const behavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
+    const mapPosition = { x: coords.x, y: coords.y, elevation: 0 };
+    // import LAZY de TryDoDiveWarp (field-control-avatar = gros module field) — anti-cycle ESM.
+    void import('../engine/field/field-control-avatar').then(m => {
+      m.TryDoDiveWarp(mapPosition, behavior);
+    });
+    DestroyTask(FindTaskIdByFunc(Task_UseDive));
+    FieldEffectActiveListRemove(FLDEFF_USE_DIVE);
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `sDiveFieldEffectFuncs[]` (field_effect.c). */
+const sDiveFieldEffectFuncs: ReadonlyArray<(task: DecompTask) => boolean> = [
+  DiveFieldEffect_Init,
+  DiveFieldEffect_ShowMon,
+  DiveFieldEffect_TryWarp,
+];
+
+/** 1:1 STRICT décomp `Task_UseDive` (field_effect.c:1912) :
+ *    while (sDiveFieldEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId])); */
+function Task_UseDive(task: DecompTask): void {
+  while (sDiveFieldEffectFuncs[task.data[0]](task));
+}
+
+/** 1:1 STRICT décomp `FldEff_UseDive` (field_effect.c:1902) :
+ *    taskId = CreateTask(Task_UseDive, 0xff);
+ *    gTasks[taskId].data[15] = gFieldEffectArguments[0];
+ *    gTasks[taskId].data[14] = gFieldEffectArguments[1];
+ *    Task_UseDive(taskId); return FALSE; */
+export function FldEff_UseDive(rt: DecompRuntime): number {
+  const taskId = rt.CreateTask(Task_UseDive, 0xFF);
+  const task = rt.gTasks.get(taskId);
+  if (task) {
+    task.data[15] = gFieldEffectArguments[0];
+    task.data[14] = gFieldEffectArguments[1];
+    Task_UseDive(task);
   }
   return 0;  // FALSE
 }

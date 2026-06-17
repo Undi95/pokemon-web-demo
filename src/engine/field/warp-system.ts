@@ -30,7 +30,8 @@
  */
 
 import type { WarpEvent, MapHeader } from './map-loader';
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, GetMapConnection } from './map-loader';
+import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../decomp-data/include/constants/global-data';
 import type { WarpData } from '../save/save-blocks';
 import {
   MAP_TYPE_TOWN, MAP_TYPE_CITY, MAP_TYPE_ROUTE,
@@ -400,6 +401,63 @@ export function GetDynamicWarp(): { mapId: string; x: number; y: number } | unde
   const mapId = (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId;
   if (!mapId || !w) return undefined;
   return { mapId, x: w.x, y: w.y };
+}
+
+// ─── Dive warp (1:1 décomp overworld.c:740-781 + field_screen_effect.c:495) ──
+//
+// Le décomp stocke la destination dans le global `sWarpDestination` (consommé par
+// WarpIntoMap au chargement). Notre modèle warp transporte la dest DANS l'objet
+// pending-warp (destMap/x/y, warpId:-1 = coords directes — même chemin que
+// __devGotoMap, PROUVÉ : une map underwater charge bien). On stocke donc la dest
+// dans `_sDiveWarpDest` puis `DoDiveWarp` la pousse via setPendingWarp.
+
+/** Destination du prochain warp Dive, posée par SetDiveWarp, consommée par DoDiveWarp. */
+let _sDiveWarpDest: { destMap: string; x: number; y: number } | null = null;
+
+/** 1:1 STRICT décomp `SetDiveWarp(u8 dir, u16 x, u16 y)` (overworld.c:756) :
+ *    connection = GetMapConnection(dir);
+ *    if (connection != NULL) SetWarpDestination(connection->mapGroup, mapNum, WARP_ID_NONE, x, y);
+ *    else { RunOnDiveWarpMapScript(); if (IsDummyWarp(&sFixedDiveWarp)) return FALSE; SetWarpDestinationToDiveWarp(); }
+ *    return TRUE;
+ *  (x, y) = coords LOCALES du joueur. Branche connexion = cas commun (Route124→Underwater).
+ *  ⚠️ DETTE : la branche `sFixedDiveWarp` (maps à dive warp fixe via opcode `setdivewarp` :
+ *  Marine Cave, Sealed Chamber…) n'est pas portée → on retourne FALSE s'il n'y a pas de
+ *  connexion (= "pas de dive ici", comportement honnête, pas un stub qui fait semblant). */
+function SetDiveWarp(dir: number, x: number, y: number): boolean {
+  const connection = GetMapConnection(dir);
+  if (connection !== null) {
+    // SetWarpDestination(connection->map, WARP_ID_NONE, x, y) : dest = map connectée aux (x,y).
+    _sDiveWarpDest = { destMap: connection.destMap, x, y };
+    return true;
+  }
+  // Branche fixed-dive-warp non portée (dette documentée).
+  return false;
+}
+
+/** 1:1 STRICT décomp `SetDiveWarpEmerge(u16 x, u16 y)` (overworld.c:774). */
+export function SetDiveWarpEmerge(x: number, y: number): boolean {
+  return SetDiveWarp(CONNECTION_EMERGE, x, y);
+}
+
+/** 1:1 STRICT décomp `SetDiveWarpDive(u16 x, u16 y)` (overworld.c:779). */
+export function SetDiveWarpDive(x: number, y: number): boolean {
+  return SetDiveWarp(CONNECTION_DIVE, x, y);
+}
+
+/** 1:1 décomp `DoDiveWarp(void)` (field_screen_effect.c:495) :
+ *    LockPlayerFieldControls(); TryFadeOutOldMapMusic(); WarpFadeOutScreen();
+ *    PlayRainStoppingSoundEffect(); gFieldCallback = FieldCB_DefaultWarpExit;
+ *    CreateTask(Task_WarpAndLoadMap, 10);
+ *  Adaptation port : le warp = `setPendingWarp(dest, 'step')` (la scène MainCB2 le
+ *  consomme → fade + Task_WarpAndLoadMap + exit task selon la tuile dest, comme
+ *  __devGotoMap). Musique/SE = skip 1:1 (audio). La dest doit avoir été posée par
+ *  SetDiveWarpDive/Emerge. */
+export function DoDiveWarp(): void {
+  if (!_sDiveWarpDest) return;
+  setPendingWarp(
+    { destMap: _sDiveWarpDest.destMap, x: _sDiveWarpDest.x, y: _sDiveWarpDest.y, elevation: 0, warpId: -1 },
+    'step',
+  );
 }
 
 // ─── Map type helpers (1:1 décomp overworld.c:1334-1364) ────────────────────

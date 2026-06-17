@@ -686,6 +686,14 @@ export async function InitPlayerAvatar(
   gSaveBlock1Ptr.pos.y = mapY;
   gPlayerAvatar.runningState = NOT_MOVING;
   gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+  // 1:1 décomp : `preventStep` est reset à FALSE au map-load par `ClearPlayerAvatarInfo`
+  // (event_object_movement.c ResetObjectEvents). Le port n'appelle pas ClearPlayerAvatarInfo
+  // sur les warps inter-map → on le reset ICI, où InitPlayerAvatar fait déjà les autres
+  // resets transitoires de ClearPlayerAvatarInfo (runningState/tileTransitionState/stepFramesLeft…).
+  // Sans ça, un warp déclenché alors que preventStep=TRUE (= HM Dive : DiveFieldEffect_Init le
+  // pose) laissait le joueur GELÉ à l'arrivée (ProcessPlayerFieldInput tournait mais PlayerStep
+  // bloqué). Vérifié en jeu : dive → underwater → émersion, joueur re-mobile aux 2 bouts.
+  gPlayerAvatar.preventStep = false;
   gPlayerAvatar.stepFramesLeft = 0;
   gPlayerAvatar.stepDirection = DIR_NONE;
   gPlayerAvatar.turnFramesLeft = 0;
