@@ -55,6 +55,8 @@ import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
 } from '../../game/metatile_behavior';
+import { IncrementGameStat } from './player-avatar';
+import { GAME_STAT_FISHING_ENCOUNTERS } from '../decomp-data/include/constants/game_stat-data';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;
@@ -321,6 +323,73 @@ function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, _flags: 
   CreateWildMon(wildMonInfo.wildPokemon[wildMonIndex].species, level);
   return true;
 }
+
+// ─── Fishing wild encounter (= 1:1 décomp wild_encounter.c) ───────────────────
+// 1:1 décomp `include/constants/items.h` rod secondary ids (= GetItemSecondaryId).
+const OLD_ROD = 0, GOOD_ROD = 1, SUPER_ROD = 2;
+
+/** 1:1 STRICT décomp `ChooseWildMonIndex_Fishing(u8 rod)` (wild_encounter.c:229) : choisit le slot
+ *  (0..9) selon la canne, via des chances cumulatives `ENCOUNTER_CHANCE_FISHING_MONS_*` (total 100,
+ *  `rand = Random() % max(...,100)`). OLD `[70,30]` slots 0-1 · GOOD `[60,20,20]` slots 2-4 ·
+ *  SUPER `[40,40,15,4,1]` slots 5-9. (Seuils cumulatifs : OLD 70 · GOOD 60/80/100 · SUPER 40/80/95/99/100.) */
+function ChooseWildMonIndex_Fishing(rod: number): number {
+  let wildMonIndex = 0;
+  const rand = Random() % 100;  // max(OLD_TOTAL, GOOD_TOTAL, SUPER_TOTAL) = 100
+  switch (rod) {
+    case OLD_ROD:
+      wildMonIndex = rand < 70 ? 0 : 1;
+      break;
+    case GOOD_ROD:
+      if (rand < 60) wildMonIndex = 2;
+      else if (rand < 80) wildMonIndex = 3;
+      else wildMonIndex = 4;
+      break;
+    case SUPER_ROD:
+      if (rand < 40) wildMonIndex = 5;
+      else if (rand < 80) wildMonIndex = 6;
+      else if (rand < 95) wildMonIndex = 7;
+      else if (rand < 99) wildMonIndex = 8;
+      else wildMonIndex = 9;
+      break;
+  }
+  return wildMonIndex;
+}
+
+/** 1:1 STRICT décomp `GenerateFishingWildMon(const struct WildPokemonInfo *, u8 rod)` (wild_encounter.c:267) :
+ *    idx = ChooseWildMonIndex_Fishing(rod); level = ChooseWildMonLevel(&wildMonInfo->wildPokemon[idx]);
+ *    CreateWildMon(wildMonInfo->wildPokemon[idx].species, level); return species; */
+function GenerateFishingWildMon(wildMonInfo: WildPokemonInfo, rod: number): string {
+  const wildMonIndex = ChooseWildMonIndex_Fishing(rod);
+  const mon = wildMonInfo.wildPokemon[wildMonIndex];
+  if (!mon) return '';  // garde : table de pêche < 10 slots (la décomp suppose toujours 10)
+  const level = ChooseWildMonLevel(mon);
+  CreateWildMon(mon.species, level);  // → boot du combat (bootDecompBattleLoop), comme TryGenerateWildMon
+  return mon.species;
+}
+
+/** 1:1 STRICT décomp `DoesCurrentMapHaveFishingMons` (wild_encounter.c:584) :
+ *    headerId != HEADER_NONE && gWildMonHeaders[headerId].fishingMonsInfo != NULL. */
+export function DoesCurrentMapHaveFishingMons(): boolean {
+  const header = GetCurrentMapWildMonHeader();
+  return !!(header && header.fishingMonsInfo);
+}
+
+/** 1:1 STRICT décomp `FishingWildEncounter(u8 rod)` (wild_encounter.c:567) :
+ *    (CheckFeebas → sWildFeebas, sinon) species = GenerateFishingWildMon(fishingMonsInfo, rod);
+ *    IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS); SetPokemonAnglerSpecies(species);
+ *    BattleSetup_StartWildBattle();
+ *  CheckFeebas (spots Feebas Route 119) + SetPokemonAnglerSpecies (TV) = dette R3 (skip). Le boot du
+ *  combat (`BattleSetup_StartWildBattle`) est replié dans `CreateWildMon` chez nous (voie L). */
+export function FishingWildEncounter(rod: number): void {
+  const header = GetCurrentMapWildMonHeader();
+  if (!header || !header.fishingMonsInfo) return;  // 1:1 gWildMonHeaders[id].fishingMonsInfo
+  GenerateFishingWildMon(header.fishingMonsInfo, rod);
+  IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS);
+}
+
+// Dev hook (A/B encounter pêche : force-déclenche un combat de pêche par canne 0=OLD/1=GOOD/2=SUPER).
+(globalThis as Record<string, unknown>).__FishingWildEncounter = FishingWildEncounter;
+(globalThis as Record<string, unknown>).__DoesCurrentMapHaveFishingMons = DoesCurrentMapHaveFishingMons;
 
 // ─── Immunity counter (= 1:1 décomp field_control_avatar.c:668-686) ───────
 
