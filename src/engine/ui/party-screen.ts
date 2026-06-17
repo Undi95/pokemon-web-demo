@@ -57,11 +57,12 @@ import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-  PlayFanfareByFanfareNum, WaitFanfare,
+  PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
 } from '../system/decomp-globals';
+import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
 import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
@@ -300,7 +301,7 @@ interface PartyAssets {
 
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
-  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' = 'idle';
+  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -992,7 +993,8 @@ function _drawMsg(): void {
     msg = getString('gText_MoveToWhere');
     template = MSG_WINDOW_TEMPLATE;
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
-      || _phase === 'levelup_pg2' || _phase === 'levelup_learn') && _itemUsedMsgText) {
+      || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
+      || _phase === 'field_move_err') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
@@ -2055,6 +2057,196 @@ function _switchSelectedMons(): void {
   _slideTaskFn = _taskSlideSelectedSlotsOffscreen;
 }
 
+// ─── Field moves party-menu (1:1 décomp party_menu.c:3702+) ──────────────────
+// Entrée party-menu des field moves (CursorCb_FieldMove). Complète les entrées
+// par INTERACTION (A sur l'objet) déjà faites (Surf/Cascade/Plongée/Force/Coupe/
+// Éclate-Roc) : ici on couvre Vol/Flash (pas d'entrée interaction) + les moves
+// hors-combat (Téléport/Tunnel/Doux Parfum/Soin/Pouvoir Secret), et le doublon
+// menu des HM.
+//
+// ⚠️ PIÈGE ESM : ce module UI n'importe PAS les gros modules field
+// (player-avatar/field-effect) → import statique = TDZ au boot. Les helpers
+// field sont appelés via globalThis (déjà exposés) : __PartyHasMonWithSurf,
+// __IsPlayerFacingSurfableFishableWater, FieldEffectStart, gFieldEffectArguments.
+
+/** 1:1 décomp enum FieldMove (include/constants/party_menu.h) — MÊME ordre que
+ *  sFieldMoves/sFieldMoveMoveConstants. */
+const FIELD_MOVE_CUT          = 0;
+const FIELD_MOVE_FLASH        = 1;
+const FIELD_MOVE_ROCK_SMASH   = 2;
+const FIELD_MOVE_STRENGTH     = 3;
+const FIELD_MOVE_SURF         = 4;
+const FIELD_MOVE_FLY          = 5;
+const FIELD_MOVE_DIVE         = 6;
+const FIELD_MOVE_WATERFALL    = 7;
+// (TELEPORT=8, DIG=9, SECRET_POWER=10, MILK_DRINK=11, SOFT_BOILED=12,
+//  SWEET_SCENT=13 — branchés au fur et à mesure de leur port.)
+
+/** 1:1 décomp `FLDEFF_USE_SURF` (field_effect.h) — const locale (pattern
+ *  "FLDEFF_* locales par module" anti-cycle ESM field-effect). */
+const FLDEFF_USE_SURF = 9;
+
+/** 1:1 décomp `GetCursorSelectionMonId(void)` (party_menu.c) = gPartyMenu.slotId. */
+function GetCursorSelectionMonId(): number {
+  return _slotId;
+}
+
+/** 1:1 décomp `GetFieldMoveMonSpecies(void)` (party_menu.c:3833) :
+ *      return GetMonData(&gPlayerParty[gPartyMenu.slotId], MON_DATA_SPECIES); */
+function GetFieldMoveMonSpecies(): number {
+  return _slotMon(_slotId)?.species ?? 0;
+}
+
+/** Pose `gFieldEffectArguments[i]` (= le tableau lu par le dispatcher
+ *  FieldEffectStart, exposé sur globalThis par script-opcodes-fieldeffect.ts). */
+function _setFieldEffectArgument(i: number, value: number): void {
+  const args = (globalThis as Record<string, unknown>).gFieldEffectArguments as number[] | undefined;
+  if (args) args[i] = value;
+}
+
+/** 1:1 décomp `FieldCallback_Surf(void)` (party_menu.c:3852) :
+ *      gFieldEffectArguments[0] = GetCursorSelectionMonId();
+ *      FieldEffectStart(FLDEFF_USE_SURF); */
+function FieldCallback_Surf(): void {
+  _setFieldEffectArgument(0, GetCursorSelectionMonId());
+  const start = (globalThis as Record<string, unknown>).FieldEffectStart as ((id: number) => void) | undefined;
+  start?.(FLDEFF_USE_SURF);
+}
+
+/** 1:1 décomp `SetUpFieldMove_Surf(void)` (party_menu.c:3858) :
+ *      if (PartyHasMonWithSurf() && IsPlayerFacingSurfableFishableWater()) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Surf;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  Helpers field appelés via globalThis (anti-cycle ESM). */
+function SetUpFieldMove_Surf(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const hasSurf = (g.__PartyHasMonWithSurf as (() => boolean) | undefined)?.() ?? false;
+  const facing = (g.__IsPlayerFacingSurfableFishableWater as (() => boolean) | undefined)?.() ?? false;
+  if (hasSurf && facing) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = FieldCallback_Surf;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `Task_FieldMoveWaitForFade(u8 taskId)` (party_menu.c:3823) :
+ *      if (IsWeatherNotFadingIn() == TRUE) {
+ *          gFieldEffectArguments[0] = GetFieldMoveMonSpecies();
+ *          gPostMenuFieldCallback();
+ *          DestroyTask(taskId);
+ *      }
+ *  Port : attend la fin du palette fade (lancé par FieldCallback_PrepareFadeInFromMenu)
+ *  puis lance le post-callback (= l'effet field). */
+function Task_FieldMoveWaitForFade(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  _setFieldEffectArgument(0, GetFieldMoveMonSpecies());
+  const g = globalThis as Record<string, unknown>;
+  const post = g.gPostMenuFieldCallback as (() => void) | undefined;
+  g.gPostMenuFieldCallback = null;
+  post?.();
+  rt.DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `bool8 FieldCallback_PrepareFadeInFromMenu(void)` (party_menu.c:3816) :
+ *      FadeInFromBlack();
+ *      CreateTask(Task_FieldMoveWaitForFade, 8);
+ *      return TRUE;
+ *  Appelé via gFieldCallback2 par RunFieldCallback_Manual (case 2 du retour-field).
+ *  Le party-close a fait FADE_TO_BLACK → on ré-allume (FROM_BLACK, pattern
+ *  anti-flash de FieldCB_ReturnToFieldStartMenu) puis on attend la fin du fade. */
+function FieldCallback_PrepareFadeInFromMenu(): boolean {
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);
+  getRuntime().CreateTask(Task_FieldMoveWaitForFade, 8);
+  return true;
+}
+
+/** 1:1 décomp `sFieldMoveCursorCallbacks[FIELD_MOVES_COUNT]` (data/party_menu.h:770).
+ *  {fieldMoveFunc, msgId}. msgId = clé string gText_* (≈ PARTY_MSG_*). Une entrée
+ *  absente (fieldMoveFunc NULL) = field move pas encore porté en menu → early
+ *  return dans CursorCb_FieldMove (1:1 avec `fieldMoveFunc == NULL`). */
+interface FieldMoveCursorCallback {
+  fieldMoveFunc: (() => boolean) | null;
+  msgId: string;
+}
+const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
+  [FIELD_MOVE_SURF]: { fieldMoveFunc: SetUpFieldMove_Surf, msgId: 'gText_CantSurfHere' },
+};
+
+/** Affiche un message d'erreur field-move FR dans WIN_MSG puis attend A/B pour
+ *  REVENIR au choix du mon (≈ décomp Task_ReturnToChooseMonAfterText /
+ *  Task_CancelAfterAorBPress — ne FERME pas le menu, contrairement à
+ *  item_used_msg). Strip des placeholders {…} (PAUSE_UNTIL_PRESS, etc.). */
+function _displayFieldMoveErrorMessage(stringKey: string): void {
+  const raw = getString(stringKey) || '';
+  _itemUsedMsgText = raw.replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _phase = 'field_move_err';
+  _drawMsg();
+}
+
+/** 1:1 décomp `void CursorCb_FieldMove(u8 taskId)` (party_menu.c:3702). Remplace
+ *  le stub "dette R3". `action` = _actionList[_actionCursor] (>= MENU_FIELD_MOVES).
+ *  Branche link/union-room sautée (port = solo). Switch cases spéciaux
+ *  (TELEPORT/DIG/FLY/SOFT_BOILED) ajoutés avec leur SetUpFieldMove respectif. */
+function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): void {
+  if (!rt) return;
+  const fieldMove = action - MENU_FIELD_MOVES;
+  // PlaySE(SE_SELECT) déjà joué par _handleActionMenuInput au press A.
+  const cb = sFieldMoveCursorCallbacks[fieldMove];
+  if (!cb || !cb.fieldMoveFunc) {
+    // 1:1 décomp : fieldMoveFunc == NULL → return (move pas encore porté en menu).
+    console.log(`[party-screen] FIELD_MOVE[${fieldMove}=${_fieldMoveName(fieldMove) || '?'}] pas d'entrée menu (interaction-only pour l'instant)`);
+    return;
+  }
+  // 1:1 décomp : PartyMenuRemoveWindow(windowId[0]) + windowId[1] — ferme
+  // l'action window "Que faire" avant la suite.
+  if (_actionWindowId >= 0) {
+    ClearStdWindowAndFrame(_actionWindowId, false);
+    CopyWindowToVram(_actionWindowId, 3);
+    RemoveWindow(_actionWindowId);
+    _actionWindowId = -1;
+  }
+  // 1:1 décomp : badge gate. All field moves before WATERFALL are HMs.
+  // FlagGet(FLAG_BADGE01_GET + fieldMove) — badges consécutifs → on résout
+  // FLAG_BADGE0{n}_GET par nom (n = fieldMove+1, ∈ [1,8]).
+  if (fieldMove <= FIELD_MOVE_WATERFALL && FlagGet(`FLAG_BADGE0${fieldMove + 1}_GET`) !== true) {
+    _displayFieldMoveErrorMessage('gText_CantUseUntilNewBadge');
+    return;
+  }
+  if (cb.fieldMoveFunc() === true) {
+    switch (fieldMove) {
+      default:
+        // 1:1 décomp : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.
+        // Le retour-field (Local, PAS WithOpenMenu) run gFieldCallback2 =
+        // FieldCallback_PrepareFadeInFromMenu → l'effet. Routé via _partyTransientExitCb.
+        _partyTransientExitCb = CB2_ReturnToField_Manual;
+        ClosePartyScreen();
+        break;
+    }
+  } else {
+    // 1:1 décomp : can't use field move → message dédié + retour choose-mon.
+    switch (fieldMove) {
+      case FIELD_MOVE_SURF: {
+        // 1:1 décomp DisplayCantUseSurfMessage (party_menu.c:3869) :
+        //   if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING)) ALREADY_SURFING
+        //   else CANT_SURF_HERE.  (PLAYER_AVATAR_FLAG_SURFING = 1<<3 = 8.)
+        const testFlags = (globalThis as Record<string, unknown>).__TestPlayerAvatarFlags as ((f: number) => number) | undefined;
+        _displayFieldMoveErrorMessage(
+          (testFlags?.(8) ?? 0) !== 0 ? 'gText_AlreadySurfing' : 'gText_CantSurfHere');
+        break;
+      }
+      default:
+        _displayFieldMoveErrorMessage(cb.msgId);
+        break;
+    }
+  }
+}
+
 /** Action menu input handler 1:1 décomp `Task_HandleSelectionMenuInput`
  *  (party_menu.c:2740) : UP/DOWN navigate, A select, B = cancel (= action
  *  at index numActions-1 = RETOUR). */
@@ -2109,16 +2301,8 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
       console.log('[party-screen] MAIL → dette R3 (cascade CursorCb_Mail U-tier)');
       _closeActionMenu();
     } else if (action >= MENU_FIELD_MOVES) {
-      // Dette R3 documentée : 1:1 décomp `CursorCb_FieldMove` (party_menu.c:3702)
-      // cascade vers :
-      //  1. Check badge requis (= FLAG_BADGE01..08 pour field moves 0..7).
-      //  2. Si badge OK → trigger sFieldMoveCursorCallbacks[j].cursorCb + setup
-      //     gPostMenuFieldCallback → fade screen + close party + run field move.
-      //  3. Si pas badge → afficher "Pas la marque pour utiliser X".
-      // Demande wire field-effect.c subsystem + flag check + script setup.
-      const fieldMoveIdx = action - MENU_FIELD_MOVES;
-      console.log(`[party-screen] FIELD_MOVE[${fieldMoveIdx}=${_fieldMoveName(fieldMoveIdx) || '?'}] → dette R3 (cascade CursorCb_FieldMove U-tier)`);
-      _closeActionMenu();
+      // 1:1 décomp `CursorCb_FieldMove` (party_menu.c:3702).
+      CursorCb_FieldMove(rt, action);
     }
   } else if (newKeys & KEY_B) {
     PlaySE(5);
@@ -2152,6 +2336,23 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       PlaySE(5);  // SE_SELECT
       _itemUsedMsgText = null;
       ClosePartyScreen();
+    }
+    return;
+  }
+  // Sub-state message d'erreur field-move (badge manquant / can't use) : attend
+  // A/B → REVIENT au choix du mon (≈ Task_ReturnToChooseMonAfterText /
+  // Task_CancelAfterAorBPress — ne ferme PAS le menu). L'action window a déjà
+  // été retiré par CursorCb_FieldMove → on réaffiche juste "Choisir un POKéMON".
+  if (_phase === 'field_move_err') {
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (newKeys & (KEY_A | KEY_B)) {
+      PlaySE(5);  // SE_SELECT
+      _itemUsedMsgText = null;
+      _actionList = [];
+      _actionCursor = 0;
+      _phase = 'open';
+      _drawMsg();
     }
     return;
   }

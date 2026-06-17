@@ -206,6 +206,17 @@ function ReturnToFieldLocal_Manual(): boolean {
           void restore().then(() => {
             gMain.state++;
             _isRestoringOverworld = false;
+            // ⚠️ `_restoreOverworldFromMenu` fait `SetMainCallback2(MainCB2_Overworld)`
+            // à sa FIN (TestOverworldScene, fix retour-combat "voie L") → le state
+            // machine n'est plus tické → case 2 (RunFieldCallback) ne tourne JAMAIS
+            // via le tick. Or le décomp run RunFieldCallback (case 2) AVANT
+            // SetMainCallback2(CB2_Overworld). Pour un field-move party-menu en
+            // attente (gPostMenuFieldCallback posé par SetUpFieldMove_X), on run
+            // donc RunFieldCallback ICI, juste après le restore (= place 1:1 de
+            // case 2). Gardé pour ne pas changer le retour option-menu/normal.
+            if ((globalThis as Record<string, unknown>).gPostMenuFieldCallback) {
+              RunFieldCallback_Manual();
+            }
           }).catch(e => {
             console.error('[CB2_ReturnToFieldLocal_Manual case 1] restore THREW:', e);
             _isRestoringOverworld = false;
@@ -275,6 +286,27 @@ export function CB2_ReturnToFieldWithOpenMenu_Manual(): void {
   // 1:1 décomp `gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu`.
   (globalThis as Record<string, unknown>).gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu;
   // Reset state machine pour la nouvelle séquence.
+  gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
+}
+
+/** 1:1 décomp `void CB2_ReturnToField(void)` (overworld.c:1657) — branche
+ *  non-link :
+ *
+ *      FieldClearVBlankHBlankCallbacks();
+ *      SetMainCallback2(CB2_ReturnToFieldLocal);
+ *
+ *  Identique à `CB2_ReturnToFieldWithOpenMenu_Manual` MAIS **sans** poser
+ *  `gFieldCallback2` : ici l'appelant (= `SetUpFieldMove_X` du party menu) a
+ *  DÉJÀ posé `gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu`, donc on
+ *  ne doit PAS l'écraser avec FieldCB_ReturnToFieldOpenStartMenu (= ré-ouvre le
+ *  start menu). RunFieldCallback (case 2) appellera donc le callback field-move.
+ *  C'est le `gPartyMenu.exitCallback = CB2_ReturnToField` du switch default de
+ *  `CursorCb_FieldMove` (party_menu.c:3757). */
+export function CB2_ReturnToField_Manual(): void {
+  const rt = getRuntime();
+  rt.SetVBlankCallback(null);
+  // NE PAS toucher gFieldCallback2 (posé par SetUpFieldMove_X).
   gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }

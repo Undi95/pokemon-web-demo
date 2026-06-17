@@ -588,6 +588,8 @@ export function IsPlayerFacingSurfableFishableWater(): boolean {
 (globalThis as Record<string, unknown>).__PartyHasMonWithSurf = PartyHasMonWithSurf;
 (globalThis as Record<string, unknown>).__IsPlayerFacingSurfableFishableWater = IsPlayerFacingSurfableFishableWater;
 (globalThis as Record<string, unknown>).__CanFish = () => CanFish();
+// Lu par le party-menu (DisplayCantUseSurfMessage) sans import statique (anti-cycle ESM).
+(globalThis as Record<string, unknown>).__TestPlayerAvatarFlags = (f: number) => TestPlayerAvatarFlags(f);
 
 /** 1:1 STRICT décomp `CanFish(void)` (item_use.c:236) : peut-on pêcher là où on regarde ?
  *    GetXYCoordsOneStepInFrontOfPlayer(&x, &y); tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
