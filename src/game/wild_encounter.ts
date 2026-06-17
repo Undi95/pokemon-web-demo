@@ -393,6 +393,31 @@ export function FishingWildEncounter(rod: number): void {
 (globalThis as Record<string, unknown>).__FishingWildEncounter = FishingWildEncounter;
 (globalThis as Record<string, unknown>).__DoesCurrentMapHaveFishingMons = DoesCurrentMapHaveFishingMons;
 
+/** 1:1 STRICT décomp `RockSmashWildEncounter` (wild_encounter.c) :
+ *    headerId = GetCurrentMapWildMonHeaderId();
+ *    if (headerId != HEADER_NONE) {
+ *        info = gWildMonHeaders[headerId].rockSmashMonsInfo;
+ *        if (info == NULL) Result = FALSE;
+ *        else if (WildEncounterCheck(info->encounterRate, TRUE)
+ *              && TryGenerateWildMon(info, WILD_AREA_ROCKS, WILD_CHECK_REPEL|WILD_CHECK_KEEN_EYE))
+ *            { BattleSetup_StartWildBattle(); Result = TRUE; }
+ *        else Result = FALSE;
+ *    } else Result = FALSE;
+ *  Le combat (BattleSetup_StartWildBattle) est déclenché via `_onBattleStartCallback`, comme
+ *  StandardWildEncounter. Returns TRUE si un combat démarre (le special handler le pose dans VAR_RESULT).
+ *  WILD_CHECK_REPEL/KEEN_EYE = dette R3 (flags ignorés par notre TryGenerateWildMon → param 0). */
+export function RockSmashWildEncounter(): boolean {
+  const header = GetCurrentMapWildMonHeader();
+  if (!header || header.rockSmashMonsInfo === null) return false;
+  const info = header.rockSmashMonsInfo;
+  if (WildEncounterCheck(info.encounterRate, true) && TryGenerateWildMon(info, WILD_AREA_ROCKS, 0)) {
+    _onBattleStartCallback?.();
+    return true;
+  }
+  return false;
+}
+(globalThis as Record<string, unknown>).__RockSmashWildEncounter = RockSmashWildEncounter;
+
 // ─── Immunity counter (= 1:1 décomp field_control_avatar.c:668-686) ───────
 
 /** 1:1 décomp `static u8 sWildEncounterImmunitySteps` (field_control_avatar.c).

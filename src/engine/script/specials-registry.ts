@@ -2268,7 +2268,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
   'RejectEggFromDayCare', 'ResetTVShowState',
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
-  'ReturnFromLinkRoom', 'RockSmashWildEncounter',
+  'ReturnFromLinkRoom',
+  // 'RockSmashWildEncounter' — porté 1:1 décomp wild_encounter.c (game/wild_encounter.ts) → registré ci-bas.
   // 'SaveBardSongLyrics' — porté 1:1 décomp mauville_old_man.c:156 ci-bas (batch B37).
   // 'SaveGame' — porté 1:1 décomp start_menu.c:896 ci-bas (batch B40).
   'ScriptCheckFreePokemonStorageSpace',
@@ -2362,6 +2363,17 @@ const _SESSION_131_DECOMP_SPECIALS = [
 for (const name of _SESSION_131_DECOMP_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// 1:1 décomp `RockSmashWildEncounter` (wild_encounter.c) — combat sauvage possible après cassure d'un
+// rocher (EventScript_SmashRock). Pose gSpecialVar_Result = TRUE si un combat démarre, sinon FALSE.
+// L'impl vit dans game/wild_encounter.ts (réutilise GetCurrentMapWildMonHeader/WildEncounterCheck/
+// TryGenerateWildMon) ; appelée via le hook globalThis (cycle-safe : specials-registry est lourd,
+// import statique de wild_encounter → risque cycle ESM).
+registerSpecial('RockSmashWildEncounter', () => {
+  const fn = (globalThis as Record<string, unknown>).__RockSmashWildEncounter as (() => boolean) | undefined;
+  VarSet('VAR_RESULT', fn && fn() ? 1 : 0);
+  return 0;
+});
 
 // ─── Berry tree field interaction — récolte (1:1 décomp berry.c:1252-1313) ───
 // Specials retirés de _SESSION_131_DECOMP_SPECIALS (étaient no-op) → handlers
