@@ -15,7 +15,7 @@ import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { VarGet, gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, T_TILE_TRANSITION } from '../field/player-avatar';
+import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, T_TILE_TRANSITION } from '../../game/field_player_avatar';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { getRuntime } from '../system/decomp-globals';
 

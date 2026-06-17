@@ -36,7 +36,7 @@ import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../eng
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
 import { gObjectEvents, TryGetObjectEventIdByLocalIdAndMap } from '../engine/field/object-events';
-import { gPlayerAvatar } from '../engine/field/player-avatar';
+import { gPlayerAvatar } from './field_player_avatar';
 import { gFieldEffectArguments, FieldEffectStop } from '../engine/field/field-effect';
 import { setFieldEffectAnims } from './field_effect_helpers';
 

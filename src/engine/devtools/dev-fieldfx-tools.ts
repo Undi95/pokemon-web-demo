@@ -31,7 +31,7 @@
 
 import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
 import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
-import { gPlayerAvatar } from '../field/player-avatar';
+import { gPlayerAvatar } from '../../game/field_player_avatar';
 import { MapGridGetMetatileIdAt } from '../field/map-loader';
 import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
 import { StartRevealDisguise } from '../../game/field_effect_helpers';

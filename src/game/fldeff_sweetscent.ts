@@ -19,7 +19,7 @@ import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
 import { SetWeatherScreenFadeOut, SetWeatherPalStateIdle } from './field_weather';
 import { SweetScentWildEncounter } from './wild_encounter';
-import { GetPlayerAvatarSpriteId } from '../engine/field/player-avatar';
+import { GetPlayerAvatarSpriteId } from './field_player_avatar';
 import { ScriptContext_SetupScript } from '../engine/script/script-runtime';
 import { getRuntime, gPaletteDecompressionBuffer, BlendPalettes } from '../engine/system/decomp-globals';
 import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';

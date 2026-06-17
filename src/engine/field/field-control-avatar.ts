@@ -35,7 +35,7 @@ import {
   PartyHasMonWithSurf,
   IsPlayerFacingSurfableFishableWater,
   IsPlayerSurfingNorth,
-} from './player-avatar';
+} from '../../game/field_player_avatar';
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gPlayerParty } from '../battle/party-storage';

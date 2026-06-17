@@ -40,7 +40,7 @@ import {
   PlayerWheelieMove,
   PlayerEndWheelieWhileMoving,
   PlayerUseAcroBikeOnBumpySlope,
-} from '../engine/field/player-avatar';
+} from './field_player_avatar';
 import { gObjectEvents, SetObjectEventDirection } from '../engine/field/object-events';
 import {
   COLLISION_OBJECT_EVENT, COLLISION_STOP_SURFING, COLLISION_LEDGE_JUMP,
@@ -58,7 +58,7 @@ import {
   MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsRunningDisallowed,
   MetatileBehavior_IsFortreeBridge,
 } from './metatile_behavior';
-import { PlayerGetElevation } from '../engine/field/player-avatar';
+import { PlayerGetElevation } from './field_player_avatar';
 import {
   Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic,
   Overworld_SetSavedMusic, Overworld_ChangeMusicTo,
@@ -73,7 +73,7 @@ import {
   PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,
   PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER, PLAYER_AVATAR_FLAG_DASH,
   NOT_MOVING, MOVING, TURN_DIRECTION,
-} from '../engine/field/player-avatar';
+} from './field_player_avatar';
 import type { ObjectEvent } from '../engine/field/object-events';
 
 // ─── bike.h enums ────────────────────────────────────────────────────────────

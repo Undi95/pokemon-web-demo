@@ -57,7 +57,7 @@ import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
 } from './metatile_behavior';
-import { IncrementGameStat, PlayerGetDestCoords } from '../engine/field/player-avatar';
+import { IncrementGameStat, PlayerGetDestCoords } from './field_player_avatar';
 import { MapGridGetMetatileBehaviorAt } from '../engine/field/map-loader';
 import { GAME_STAT_FISHING_ENCOUNTERS } from '../engine/decomp-data/include/constants/game_stat-data';
 

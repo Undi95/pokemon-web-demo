@@ -48,7 +48,7 @@ import { InitMenuInUpperLeftCornerNormal } from '../ui/gba-menu-system';
 import { getMultichoiceList } from '../system/multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
-} from '../field/player-avatar';
+} from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { getRuntime } from '../system/decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';

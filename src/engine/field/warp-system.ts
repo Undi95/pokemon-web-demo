@@ -38,7 +38,7 @@ import {
   MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
 } from '../decomp-data/include/constants/map_types-data';
 import { Overworld_GetMapHeaderByGroupAndId } from '../system/decomp-bridge';
-import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from './player-avatar';
+import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   MB_ANIMATED_DOOR,

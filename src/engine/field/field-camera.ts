@@ -51,7 +51,7 @@ import {
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
 } from './map-loader';
-import { gPlayerAvatar } from './player-avatar';
+import { gPlayerAvatar } from '../../game/field_player_avatar';
 import type { MapConnection } from './map-loader';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,

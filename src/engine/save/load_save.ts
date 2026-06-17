@@ -36,7 +36,7 @@ import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
 } from '../field/object-events';
-import { GetPlayerFacingDirection } from '../field/player-avatar';
+import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { GetCameraTopLeftCoords } from '../field/field-camera';
 import { SaveMapView, MAP_OFFSET } from '../field/map-loader';

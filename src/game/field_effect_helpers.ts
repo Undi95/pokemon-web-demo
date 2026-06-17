@@ -72,7 +72,7 @@ import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
   GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,
   GetPlayerAvatarGraphicsIdByCurrentState, GetXYCoordsOneStepInFrontOfPlayer, GetPlayerFacingDirection,
-} from '../engine/field/player-avatar';
+} from './field_player_avatar';
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/script/script-runtime';
 import { FieldEffectActiveListContains } from '../engine/field/field-effect-active-list';
@@ -89,7 +89,7 @@ import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBeh
 // la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
 import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
-import { gPlayerAvatar } from '../engine/field/player-avatar';
+import { gPlayerAvatar } from './field_player_avatar';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
 } from '../engine/field/field-effect';

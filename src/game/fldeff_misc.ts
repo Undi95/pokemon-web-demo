@@ -19,7 +19,7 @@ import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import { GetTaskData } from '../engine/system/decomp-globals';
 import { MapGridSetMetatileIdAt } from '../engine/field/map-loader';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
-import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH } from '../engine/field/player-avatar';
+import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH } from './field_player_avatar';
 import {
   METATILE_SecretBase_BreakableDoor_BottomOpen,
   METATILE_SecretBase_BreakableDoor_TopOpen,

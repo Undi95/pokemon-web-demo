@@ -79,7 +79,7 @@ import {
 } from './map-loader';
 import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from '../field/field-camera';
-import { gPlayerAvatar, GetPlayerFacingDirection } from './player-avatar';
+import { gPlayerAvatar, GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
@@ -7930,7 +7930,7 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
   const catalog = _graphicsCatalog;
   // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
   // Reset gPlayerAvatar fields (preserve objectEventId/spriteId pour notre archi).
-  const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('./player-avatar');
+  const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('../../game/field_player_avatar');
   ClearPlayerAvatarInfo();
   // 1:1 STRICT décomp `SetPlayerAvatarObjectEventIdAndObjectId` (event_object_movement.c:1812)
   // appelé au re-spawn du player object event : ré-établit gPlayerAvatar.flags via

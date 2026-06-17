@@ -18,7 +18,7 @@ import { VarSet, gSpecialVar } from './script-vars';
 import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_IS_EGG } from '../battle/party-storage';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { gObjectEvents } from '../field/object-events';
-import { gPlayerAvatar } from '../field/player-avatar';
+import { gPlayerAvatar } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetCurrentMap } from '../save/load_save';
 import { getRuntime } from '../system/decomp-globals';

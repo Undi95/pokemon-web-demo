@@ -18,7 +18,7 @@
  */
 
 import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../field/map-loader';
-import { GetPlayerFacingDirection } from '../field/player-avatar';
+import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
 import { DrawWholeMapView } from '../field/field-camera';

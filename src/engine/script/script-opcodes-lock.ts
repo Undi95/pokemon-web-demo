@@ -18,7 +18,7 @@ import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHe
 import { ScriptMovement_UnfreezeObjectEvents } from '../field/script-movement';
 import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
+import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../../game/field_player_avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { getRuntime } from '../system/decomp-globals';
 import {

@@ -71,8 +71,8 @@ import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, Get
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
 // (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où
 // on utilise une canne → le dynamic import résout instantané (cache), sans cycle d'éval.
-let _playerAvatarMod: typeof import('../field/player-avatar') | null = null;
-void import('../field/player-avatar').then((m) => { _playerAvatarMod = m; });
+let _playerAvatarMod: typeof import('../../game/field_player_avatar') | null = null;
+void import('../../game/field_player_avatar').then((m) => { _playerAvatarMod = m; });
 // Lazy import bike.ts (anti-cycle/TDZ : il tire tout le graphe field via player-avatar).
 let _bikeMod: typeof import('../../game/bike') | null = null;
 void import('../../game/bike').then((m) => { _bikeMod = m; });

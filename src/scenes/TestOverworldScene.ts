@@ -72,7 +72,7 @@ import {
   NOT_MOVING,
   T_NOT_MOVING,
   gPlayerAvatar,
-} from '../engine/field/player-avatar';
+} from '../game/field_player_avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/field/object-events';
 import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/save/load_save';

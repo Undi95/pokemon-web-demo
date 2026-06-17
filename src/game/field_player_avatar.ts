@@ -1,5 +1,5 @@
 /**
- * player-avatar.ts — moteur du player avatar overworld, miroir 1:1 de
+ * field_player_avatar.ts — moteur du player avatar overworld, miroir 1:1 de
  * `field_player_avatar.c`.
  *
  * Source de vérité (= ne JAMAIS diverger) :
@@ -24,15 +24,15 @@
  * chargement VRAM async (InitPlayerAvatar + pngTo1dObjLayout + snapshot/restore
  * gfx), cycle de vie sprite (DestroyPlayerAvatar / SetPlayerVisibility).
  */
-import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
-import { loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
+import type { DecompRuntime, DecompTask } from '../engine/system/decomp-runtime';
+import { loadIndexedPngStrict, extractPngPlte } from '../engine/gba/png-loader';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
   MAP_OFFSET,
-} from './map-loader';
-import { MB_TALL_GRASS } from './tilemap-loader';
+} from '../engine/field/map-loader';
+import { MB_TALL_GRASS } from '../engine/field/tilemap-loader';
 import {
   type ObjectEvent,
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
@@ -81,7 +81,7 @@ import {
   DoShadowFieldEffect,
   OBJECT_EVENTS_COUNT,
   ELEVATION_DEFAULT,
-} from './object-events';
+} from '../engine/field/object-events';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,
@@ -89,23 +89,23 @@ import {
   GetCameraPanX,
   GetCameraPanY,
   SetSpritePosToMapCoords,
-} from '../field/field-camera';
+} from '../engine/field/field-camera';
 import {
   ArePlayerFieldControlsLocked,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
-} from '../script/script-runtime';
-import { FlagGet } from '../script/script-vars';
-import { B_BUTTON } from '../ui/gba-menu-system';
-import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './direction-coords';
+} from '../engine/script/script-runtime';
+import { FlagGet } from '../engine/script/script-vars';
+import { B_BUTTON } from '../engine/ui/gba-menu-system';
+import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from '../engine/field/direction-coords';
 import {
   GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,
   BikeClearState, Bike_HandleBumpySlopeJump, MovePlayerOnBike, GetOnOffBike,
-} from '../../game/bike';
+} from './bike';
 // Re-export pour le sac (bag-menu-ctx précharge la gfx vélo via _playerAvatarMod avant GetOnOffBike).
 export { PreloadObjectEventGraphics };
-import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
-import { sAnimTable_BrendanMayNormal } from './object-event-anims-data';
+import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from '../engine/field/object-event-graphics-info-data';
+import { sAnimTable_BrendanMayNormal } from '../engine/field/object-event-anims-data';
 import {
   COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2,
   MOVEMENT_ACTION_FACE_RIGHT,
@@ -116,33 +116,33 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
   ANIM_FIELD_MOVE,
-} from '../decomp-data/include/constants/event_object_movement-data';
+} from '../engine/decomp-data/include/constants/event_object_movement-data';
 import {
   GetFaceDirectionMovementAction,
   CreateTask, DestroyTask,
   GetWalkSlowMovementAction,
-} from '../system/decomp-bridge';
-import { FindTaskIdByFunc, GetTask, getRuntime } from '../system/decomp-globals';
-import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field-effect';
-import { SetSurfBlob_BobState, SetSurfBlob_PlayerOffset } from '../../game/field_effect_helpers';
-import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from '../battle/party-storage';
-import { MOVE_SURF } from '../decomp-data/include/constants/moves-data';
+} from '../engine/system/decomp-bridge';
+import { FindTaskIdByFunc, GetTask, getRuntime } from '../engine/system/decomp-globals';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from '../engine/field/field-effect';
+import { SetSurfBlob_BobState, SetSurfBlob_PlayerOffset } from './field_effect_helpers';
+import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from '../engine/battle/party-storage';
+import { MOVE_SURF } from '../engine/decomp-data/include/constants/moves-data';
 // ─── Pêche (Task_Fishing) : combat + texte/fenêtre + anim ───
-import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from '../../game/wild_encounter';
+import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from './wild_encounter';
 import {
   AddWindow, ClearDialogWindowAndFrame, DrawDialogueFrame, FillWindowPixelBuffer,
   CopyWindowToVram, PutWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
-} from '../ui/gba-window-system';
-import { LoadMessageBoxGfx } from '../../game/text_window';
+} from '../engine/ui/gba-window-system';
+import { LoadMessageBoxGfx } from './text_window';
 import {
   AddTextPrinterParameterized, AddTextPrinterParameterized2, RunTextPrinters, IsTextPrinterActive,
-} from '../ui/gba-text-system';
-import { getString } from '../ui/gba-strings';
-import { Random as _RandomFishing } from '../system/random';
+} from '../engine/ui/gba-text-system';
+import { getString } from '../engine/ui/gba-strings';
+import { Random as _RandomFishing } from '../engine/system/random';
 import {
   FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
-} from '../battle/battle-windows';
-import { IsRunningDisallowed } from '../../game/bike';
+} from '../engine/battle/battle-windows';
+import { IsRunningDisallowed } from './bike';
 import {
   MetatileBehavior_IsBumpySlope,
   MetatileBehavior_IsIsolatedVerticalRail,
@@ -172,23 +172,23 @@ import {
   MetatileBehavior_IsSurfableFishableWater,
   MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsBridgeOverWaterNoEdge,
-} from '../../game/metatile_behavior';
-import { CheckStandardWildEncounter } from '../../game/wild_encounter';
+} from './metatile_behavior';
+import { CheckStandardWildEncounter } from './wild_encounter';
 import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
-} from './rotating-gate';
-import { PlaySE } from '../system/decomp-globals';
+} from '../engine/field/rotating-gate';
+import { PlaySE } from '../engine/system/decomp-globals';
 import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
-} from '../system/sprite';
-import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../decomp-data/include/constants/songs-data';
+} from '../engine/system/sprite';
+import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../engine/decomp-data/include/constants/songs-data';
 import {
   getWarpKindFor,
   isArrowWarpMetatileBehavior,
-} from './warp-system';
+} from '../engine/field/warp-system';
 import {
   DIR_NONE as _DIR_NONE,
   DIR_SOUTH as _DIR_SOUTH,
@@ -200,25 +200,25 @@ import {
   MoveCoords,
   dirToCameraSpeed as _dirToCameraSpeed,
   getInputDirection as _getInputDirection,
-} from './direction-coords';
+} from '../engine/field/direction-coords';
 import {
   IsMetatileDirectionallyImpassable,
   ShouldJumpLedge,
-} from './metatile-behavior-helpers';
+} from '../engine/field/metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
-import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../decomp-data/include/constants/game_stat-data';
+import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../engine/decomp-data/include/constants/game_stat-data';
 import {
   OBJ_EVENT_GFX_PUSHABLE_BOULDER,
   OBJ_EVENT_GFX_BRENDAN_NORMAL, OBJ_EVENT_GFX_BRENDAN_MACH_BIKE, OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,
   OBJ_EVENT_GFX_BRENDAN_SURFING, OBJ_EVENT_GFX_BRENDAN_UNDERWATER,
   OBJ_EVENT_GFX_MAY_NORMAL, OBJ_EVENT_GFX_MAY_MACH_BIKE, OBJ_EVENT_GFX_MAY_ACRO_BIKE,
   OBJ_EVENT_GFX_MAY_SURFING, OBJ_EVENT_GFX_MAY_UNDERWATER,
-} from '../decomp-data/include/constants/event_objects-data';
-import { NUM_ACRO_BIKE_COLLISIONS } from '../decomp-data/src/field_player_avatar-data';
+} from '../engine/decomp-data/include/constants/event_objects-data';
+import { NUM_ACRO_BIKE_COLLISIONS } from '../engine/decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
 /** Direction enum re-exporté depuis direction-coords (= source unique).
@@ -1514,7 +1514,7 @@ const getInputDirection = _getInputDirection;
  */
 /** GBA A button mask. 1:1 décomp `A_BUTTON` (gba/io_reg.h). Import depuis
  *  decomp-data (= A8 audit). */
-import { A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
+import { A_BUTTON } from '../engine/decomp-data/include/gba/io_reg-data';
 
 // ─── 1:1 décomp `field_player_avatar.c` — fonctions feuilles d'action ────────
 // [chantier INPUT joueur, étape 1a] Ces wrappers SONT le call-graph décomp pour

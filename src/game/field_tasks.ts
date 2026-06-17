@@ -42,7 +42,7 @@ import {
   TASK_NONE,
   gMain,
 } from '../engine/system/decomp-globals';
-import { PlayerGetDestCoords, PlayerGetElevation } from '../engine/field/player-avatar';
+import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
 import { ArePlayerFieldControlsLocked } from '../engine/script/script-runtime';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from '../engine/field/map-loader';
