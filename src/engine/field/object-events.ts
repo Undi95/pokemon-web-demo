@@ -154,6 +154,34 @@ export function GetMoveDirectionAnimNum(direction: number): number {
   return sMoveDirectionAnimNums[direction] ?? 4;
 }
 
+// ─── 1:1 STRICT décomp tables d'anim de PÊCHE (event_object_movement.c:836-868) ───
+// Indices dans `sAnimTable_Fishing` : ANIM_TAKE_OUT_ROD_* = 0..3, ANIM_PUT_AWAY_ROD_* = 4..7,
+// ANIM_HOOKED_POKEMON_* = 8..11. (Le décomp mappe aussi les diagonales SW/SE→SOUTH, NW/NE→NORTH ;
+// le joueur est TOUJOURS cardinal en pêche → on ne liste que les cardinales, le `?? <south>` couvre le reste.)
+const sFishingDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 0, [DIR_SOUTH]: 0, [DIR_NORTH]: 1, [DIR_WEST]: 2, [DIR_EAST]: 3,  // ANIM_TAKE_OUT_ROD_*
+};
+/** 1:1 décomp `u8 GetFishingDirectionAnimNum(u8 direction)` (event_object_movement.c:4550). */
+export function GetFishingDirectionAnimNum(direction: number): number {
+  return sFishingDirectionAnimNums[direction] ?? 0;
+}
+
+const sFishingNoCatchDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 4, [DIR_SOUTH]: 4, [DIR_NORTH]: 5, [DIR_WEST]: 6, [DIR_EAST]: 7,  // ANIM_PUT_AWAY_ROD_*
+};
+/** 1:1 décomp `u8 GetFishingNoCatchDirectionAnimNum(u8 direction)` (event_object_movement.c:4555). */
+export function GetFishingNoCatchDirectionAnimNum(direction: number): number {
+  return sFishingNoCatchDirectionAnimNums[direction] ?? 4;
+}
+
+const sFishingBiteDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 8, [DIR_SOUTH]: 8, [DIR_NORTH]: 9, [DIR_WEST]: 10, [DIR_EAST]: 11,  // ANIM_HOOKED_POKEMON_*
+};
+/** 1:1 décomp `u8 GetFishingBiteDirectionAnimNum(u8 direction)` (event_object_movement.c:4560). */
+export function GetFishingBiteDirectionAnimNum(direction: number): number {
+  return sFishingBiteDirectionAnimNums[direction] ?? 8;
+}
+
 // 1:1 STRICT décomp `sMoveDirectionFastAnimNums` (event_object_movement.c) :
 // direction → animNum walk RAPIDE. ANIM_STD_GO_FAST_SOUTH=8 (cmds de 4 frames).
 const sMoveDirectionFastAnimNums: Readonly<Record<number, number>> = {

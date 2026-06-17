@@ -64,6 +64,7 @@ import {
   ObjectEventSetGraphicsId,
   PreloadObjectEventGraphics,
   _setPlayerNormalGfxSnapshot,
+  GetFishingDirectionAnimNum,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -1743,6 +1744,24 @@ export function SetPlayerAvatarFieldMove(): void {
   // par id délègue à la `StartSpriteAnim` 1:1 strict de sprite-animation (decomp-runtime.ts:2256).
   getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, ANIM_FIELD_MOVE);
 }
+
+/** 1:1 STRICT décomp `SetPlayerAvatarFishing(u8 direction)` (field_player_avatar.c:1409) :
+ *    ObjectEventSetGraphicsId(player, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));
+ *    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFishingDirectionAnimNum(direction));
+ *  Swap le sprite joueur vers le gfx « pêche » (BRENDAN/MAY_FISHING) + lance l'anim « sortir la canne »
+ *  (ANIM_TAKE_OUT_ROD_* selon la direction). Le gfx FISHING doit être préchargé (PreloadObjectEventGraphics).
+ *  Utilisé par `Fishing_GetRodOut` (state 1 de Task_Fishing). */
+function SetPlayerAvatarFishing(direction: number): void {
+  ObjectEventSetGraphicsId(gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));
+  getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, GetFishingDirectionAnimNum(direction));
+}
+
+// Dev hook (A/B pêche : précharge le gfx FISHING + force la pose « sortir la canne »).
+(globalThis as Record<string, unknown>).__SetPlayerAvatarFishing = async (dir = 1) => {
+  await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));
+  SetPlayerAvatarFishing(dir);
+  return 'fishing pose ' + dir;
+};
 
 /** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :
  *    flags &= (DASH | FORCED_MOVE | CONTROLLABLE); flags |= flags_param;
