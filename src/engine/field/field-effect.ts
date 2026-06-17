@@ -44,6 +44,7 @@ import {
   FldEff_Shadow,
 } from '../../game/field_effect_helpers';
 import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
+import { FldEff_UseRockSmash } from '../../game/fldeff_rocksmash';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -80,6 +81,7 @@ export const FLDEFF_FEET_IN_FLOWING_WATER      = 34;
 export const FLDEFF_BIKE_TIRE_TRACKS           = 35;
 export const FLDEFF_SAND_PILE                  = 39;
 export const FLDEFF_SHORT_GRASS                = 41;
+export const FLDEFF_USE_ROCK_SMASH             = 37;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_USE_WATERFALL              = 43;
 export const FLDEFF_USE_DIVE                   = 44;
@@ -257,6 +259,11 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_UseCutOnTree (fldeff_cut.c:300) — migré dans game/fldeff_cut.ts.
     // CreateFieldMoveTask(StartCutTreeFieldEffect) : pose → ScriptContext_Enable → EventScript_CutTreeDown.
     return FldEff_UseCutOnTree(rt);
+  }
+  if (id === FLDEFF_USE_ROCK_SMASH) {
+    // 1:1 décomp FldEff_UseRockSmash (fldeff_rocksmash.c:150) — migré dans game/fldeff_rocksmash.ts.
+    // CreateFieldMoveTask(FieldMove_RockSmash) : pose → SE + Enable → EventScript_SmashRock (break + combat).
+    return FldEff_UseRockSmash(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

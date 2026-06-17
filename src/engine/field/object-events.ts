@@ -4856,18 +4856,30 @@ function _MovementAction_NurseJoyBowDown_Step0(rt: DecompRuntime, npc: ObjectEve
   return false;
 }
 
-/** 1:1 décomp `MovementAction_RockSmashBreak_Step0` :
- *    SetAndStartSpriteAnim(sprite, ANIM_REMOVE_OBSTACLE, 0);
- *    sActionFuncId = 1; return FALSE; */
-function _MovementAction_RockSmashBreak_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
-    if (sprite && sprite.anims) {
-      // 1:1 décomp SetAndStartSpriteAnim = StartSpriteAnim + sub-anim frame 0.
-      StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE);
-    }
+// 1:1 STRICT décomp `gMovementActionFuncs_RockSmashBreak[]` (Step0/1/2) — le rocher se brise/disparaît.
+// MÊME pattern + MÊME bug que CUT_TREE : avant, un seul func (Step0) re-démarrait l'anim chaque frame
+// → boucle infinie, held jamais fini → `waitmovement 0` (EventScript_SmashRock) bloqué. Maintenant
+// dispatcher multi-step (Step0 start anim → Step1 WaitSpriteAnim + SetMovementDelay(32) → Step2 flicker
+// invisible + WaitForMovementDelay → invisible + DONE).
+function _MovementAction_RockSmashBreak(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  if (npc.actionStep === 0) {
+    if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE); sprite.animPaused = false; }
+    npc.actionStep = 1;
+    return false;
   }
-  npc.actionStep = 1;
+  if (npc.actionStep === 1) {
+    if (!sprite || !sprite.anims || sprite.animEnded) {
+      if (sprite) sprite.data[3] = 32;  // SetMovementDelay(32)
+      npc.actionStep = 2;
+    }
+    return false;
+  }
+  npc.invisible = !npc.invisible;
+  if (!sprite || --sprite.data[3] === 0) {
+    npc.invisible = true;
+    return true;
+  }
   return false;
 }
 
@@ -6027,7 +6039,7 @@ gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_HEART]           = _MovementAction_Em
 // Dette R3 : SetAndStartSpriteAnim sub-anim frame param skipped (= ramène anim
 // à frame 0, ce qu'on fait via StartSpriteAnim normal).
 gMovementActionFuncs[MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN] = _MovementAction_NurseJoyBowDown_Step0;
-gMovementActionFuncs[MOVEMENT_ACTION_ROCK_SMASH_BREAK]   = _MovementAction_RockSmashBreak_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_ROCK_SMASH_BREAK]   = _MovementAction_RockSmashBreak;
 gMovementActionFuncs[MOVEMENT_ACTION_CUT_TREE]           = _MovementAction_CutTree;
 // H1.15 : JUMP_X (66-69) + JUMP_2_X (12-15) + JUMP_IN_PLACE_X (70-73) 1:1 strict.
 // Source : InitJump (5427) + DoJumpSpriteMovement (8464) + UpdateJumpAnim (5455)
