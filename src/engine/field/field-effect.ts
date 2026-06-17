@@ -43,6 +43,7 @@ import {
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow,
 } from '../../game/field_effect_helpers';
+import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -50,6 +51,7 @@ export const gFieldEffectArguments: number[] = new Array(8).fill(0);
 
 /** 1:1 décomp `FLDEFF_*` constants (include/constants/field_effects.h). */
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
+export const FLDEFF_USE_CUT_ON_TREE            = 2;
 export const FLDEFF_SHADOW                     = 3;
 export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
@@ -250,6 +252,11 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_UseDive (field_effect.c:1902) — logé dans game/field_effect_helpers.ts.
     // Crée Task_UseDive (preventStep → show-mon no-op → TryDoDiveWarp vers la map underwater/surface).
     return FldEff_UseDive(rt);
+  }
+  if (id === FLDEFF_USE_CUT_ON_TREE) {
+    // 1:1 décomp FldEff_UseCutOnTree (fldeff_cut.c:300) — migré dans game/fldeff_cut.ts.
+    // CreateFieldMoveTask(StartCutTreeFieldEffect) : pose → ScriptContext_Enable → EventScript_CutTreeDown.
+    return FldEff_UseCutOnTree(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

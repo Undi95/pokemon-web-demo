@@ -25,6 +25,11 @@ import {
   METATILE_SecretBase_BreakableDoor_TopOpen,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
 
+/** 1:1 STRICT décomp `EWRAM_DATA struct MapPosition gPlayerFacingPosition = {0}` (fldeff_misc.c:27).
+ *  Posée par `CreateFieldMoveTask` (GetXYCoordsOneStepInFrontOfPlayer) ; lue par les field moves qui
+ *  agissent sur la tuile DEVANT le joueur (Cut grass/hyper-cutter…). Coords INTERNAL (= +MAP_OFFSET). */
+export const gPlayerFacingPosition: { x: number; y: number; elevation: number } = { x: 0, y: 0, elevation: 0 };
+
 // Adaptateur 1:1 : `CurrentMapDrawMetatileAt(x, y)` décomp (sFieldCameraOffset
 // global) → notre signature 4-args (position caméra explicite).
 function _drawMapMetatileAt(x: number, y: number): void {

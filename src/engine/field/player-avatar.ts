@@ -1903,6 +1903,23 @@ export function GetPlayerAvatarGraphicsIdByStateId(state: number): string {
   return GetPlayerAvatarGraphicsIdByStateIdAndGender(state, gPlayerAvatar.gender);
 }
 
+/** 1:1 STRICT décomp `GetPlayerAvatarGraphicsIdByCurrentState` (field_player_avatar.c:1244) :
+ *    for (i) if (sPlayerAvatarGfxToStateFlag[gender][i].playerFlag & flags) return graphicsId; return 0;
+ *  Le gfx correspondant à l'état COURANT du joueur (selon ses flags). Utilisé pour RESTAURER le
+ *  sprite après une pose field-move (`CreateFieldMoveTask` → Task_DoFieldMove_WaitForMon).
+ *  Port : `sPlayerAvatarGfxToStateFlag` et `sPlayerAvatarGfxIds` sont PARALLÈLES (index i = STATE i)
+ *  → on retourne le NOM string `sPlayerAvatarGfxIds[gender][i]` (convention port) au lieu du u8. */
+export function GetPlayerAvatarGraphicsIdByCurrentState(): string {
+  const flags = gPlayerAvatar.flags;
+  const flagTable = sPlayerAvatarGfxToStateFlag[gPlayerAvatar.gender];
+  for (let i = 0; i < flagTable.length; i++) {
+    if (flagTable[i].playerFlag & flags) {
+      return sPlayerAvatarGfxIds[gPlayerAvatar.gender][i];
+    }
+  }
+  return sPlayerAvatarGfxIds[gPlayerAvatar.gender][0];  // 1:1 décomp return 0 = gfx NORMAL
+}
+
 /** 1:1 STRICT décomp `SetPlayerAvatarFieldMove` (field_player_avatar.c:1403) :
  *    ObjectEventSetGraphicsId(player, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE));
  *    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], ANIM_FIELD_MOVE);

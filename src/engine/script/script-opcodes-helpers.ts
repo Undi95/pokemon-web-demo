@@ -178,12 +178,16 @@ export function resolveObjectLocalIdRaw(arg: string): string {
   if (arg.startsWith('LOCALID_')) return arg;
   if (arg.startsWith('VAR_') || /^-?\d+$/.test(arg) || /^0x[0-9a-fA-F]+$/.test(arg)) {
     const num = VarGet(arg);
-    const resolved = reverseDecompConstant(num, 'LOCALID_');
-    if (resolved) return resolved;
-    // Fallback : match par numeric localId dans gMapHeader (= map.json local_id
-    // assignment-order).
+    // Match par numeric localId dans la map COURANTE d'ABORD (= match EXACT 1:1 décomp : localId
+    // est l'index 1-based de l'object event de CETTE map). Prioritaire sur reverseDecompConstant
+    // qui est AMBIGU (chaque map a ses propres LOCALID_X = 1, 2, … → renvoie le 1er trouvé global,
+    // souvent le mauvais objet). Avec le localIdRaw synthétique `__LOCALID_<n>` (map-loader), ce
+    // lookup retourne toujours un localIdRaw non vide → removeobject/applymovement matchent l'objet.
     const tplByLocalId = gMapHeader?.events?.objectEvents?.find(t => t.localId === num);
     if (tplByLocalId?.localIdRaw) return tplByLocalId.localIdRaw;
+    // Fallback (objet hors map courante) : reverseDecompConstant.
+    const resolved = reverseDecompConstant(num, 'LOCALID_');
+    if (resolved) return resolved;
   }
   return arg;
 }

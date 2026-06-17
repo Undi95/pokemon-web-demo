@@ -596,7 +596,14 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     // Les constants LOCALID_X (= e.local_id) résolvent à cet index au compile-time
     // dans le décomp. On l'assigne ici uniformly (= peu importe si localIdRaw set).
     localId: i + 1,
-    localIdRaw: e.local_id ?? '',
+    // FIX localId↔localIdRaw : les opcodes (removeobject/applymovement/…) matchent par
+    // `localIdRaw` (string), mais `gSpecialVar_LastTalked = objectEvent.localId` (number). Un objet
+    // SANS constante `local_id` nommée (= arbre coupable, rocher Rock Smash…) avait localIdRaw=''
+    // → `VAR_LAST_TALKED` (= localId 1) ne résolvait vers AUCUN localIdRaw → removeobject échouait
+    // (arbre jamais retiré après Cut). On donne un localIdRaw SYNTHÉTIQUE unique `__LOCALID_<n>`
+    // (préfixe `__` = zéro collision avec un vrai LOCALID_X) → template + objet spawné cohérents,
+    // `resolveObjectLocalIdRaw` (fallback par localId numérique) retourne ce synthétique → match OK.
+    localIdRaw: e.local_id ?? `__LOCALID_${i + 1}`,
     graphicsId: parseGraphicsId(e.graphics_id),
     graphicsIdRaw: e.graphics_id,
     kind: 0,

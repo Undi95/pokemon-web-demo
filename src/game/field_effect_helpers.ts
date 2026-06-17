@@ -67,19 +67,21 @@ import {
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
   GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
 } from '../engine/field/object-events';
-import { MoveCoords, DIR_NORTH } from '../engine/field/direction-coords';
+import { MoveCoords, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../engine/field/direction-coords';
 import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
   GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,
+  GetPlayerAvatarGraphicsIdByCurrentState, GetXYCoordsOneStepInFrontOfPlayer, GetPlayerFacingDirection,
 } from '../engine/field/player-avatar';
+import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/script/script-runtime';
 import { FieldEffectActiveListContains } from '../engine/field/field-effect-active-list';
-import { GetFaceDirectionMovementAction, DestroyTask } from '../engine/system/decomp-bridge';
+import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../engine/system/decomp-bridge';
 import { FindTaskIdByFunc, getRuntime } from '../engine/system/decomp-globals';
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
-import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
+import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET, gMapHeader } from '../engine/field/map-loader';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
   MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,
   MetatileBehavior_IsWaterfall } from './metatile_behavior';
@@ -1412,6 +1414,94 @@ export function FldEff_UseDive(rt: DecompRuntime): number {
     Task_UseDive(task);
   }
   return 0;  // FALSE
+}
+
+// ─── 1:1 décomp tâche field-move COMMUNE (fldeff_rocksmash.c:48-117) ───────────────────────────
+// Utilisée par Cut/RockSmash/Dig/Flash/secret base : pose field-move (le joueur lève le Pokémon) →
+// show-mon (no-op) → restore gfx joueur → run le callback de l'effet → preventStep=FALSE.
+//
+// ⚠️ Le décomp stocke la fn de l'effet en data[8]/data[9] (moitiés du pointeur). En TS on garde la
+// réf directe dans `_fieldMoveFuncs` (Map taskId→fn). La pose réutilise l'infra surf (gfx field-move
+// préchargé → swap sync via keystone ; restore via GetPlayerAvatarGraphicsIdByCurrentState).
+
+/** Callbacks d'effet field-move, par taskId. */
+const _fieldMoveFuncs = new Map<number, () => void>();
+
+/** Préchargement gfx pose field-move (swap gfx sync 1:1, comme surf). */
+let _fieldMoveGfxReady = false;
+function _preloadFieldMovePoseGfx(): void {
+  _fieldMoveGfxReady = false;
+  const poseGfx = GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE);
+  PreloadObjectEventGraphics(poseGfx).then(() => { _fieldMoveGfxReady = true; }).catch(() => { _fieldMoveGfxReady = true; });
+}
+
+/** 1:1 STRICT décomp `Task_DoFieldMove_Init` (fldeff_rocksmash.c:54). */
+function Task_DoFieldMove_Init(task: DecompTask): void {
+  LockPlayerFieldControls();
+  gPlayerAvatar.preventStep = true;
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    if (gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER') {
+      // Skip field move pose underwater.
+      FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // no-op
+      task.func = Task_DoFieldMove_WaitForMon;
+    } else {
+      if (!_fieldMoveGfxReady) return;  // attend le préload de la pose (swap sync 1:1)
+      SetPlayerAvatarFieldMove();
+      ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+      task.func = Task_DoFieldMove_ShowMonAfterPose;
+    }
+  }
+}
+
+/** 1:1 STRICT décomp `Task_DoFieldMove_ShowMonAfterPose` (fldeff_rocksmash.c:80). */
+function Task_DoFieldMove_ShowMonAfterPose(task: DecompTask): void {
+  if (ObjectEventCheckHeldMovementStatus(gObjectEvents[gPlayerAvatar.objectEventId])) {
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // no-op
+    task.func = Task_DoFieldMove_WaitForMon;
+  }
+}
+
+/** 1:1 STRICT décomp `Task_DoFieldMove_WaitForMon` (fldeff_rocksmash.c:89). */
+function Task_DoFieldMove_WaitForMon(task: DecompTask): void {
+  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+    gFieldEffectArguments[1] = GetPlayerFacingDirection();
+    if (gFieldEffectArguments[1] === DIR_SOUTH) gFieldEffectArguments[2] = 0;
+    if (gFieldEffectArguments[1] === DIR_NORTH) gFieldEffectArguments[2] = 1;
+    if (gFieldEffectArguments[1] === DIR_WEST) gFieldEffectArguments[2] = 2;
+    if (gFieldEffectArguments[1] === DIR_EAST) gFieldEffectArguments[2] = 3;
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByCurrentState());
+    const sprite = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+    if (sprite) StartSpriteAnim(sprite, gFieldEffectArguments[2]);
+    FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+    task.func = Task_DoFieldMove_RunFunc;
+  }
+}
+
+/** 1:1 STRICT décomp `Task_DoFieldMove_RunFunc` (fldeff_rocksmash.c:109) :
+ *    fieldMoveFunc(); gPlayerAvatar.preventStep = FALSE; DestroyTask(taskId); */
+function Task_DoFieldMove_RunFunc(task: DecompTask): void {
+  const fn = _fieldMoveFuncs.get(task.taskId);
+  _fieldMoveFuncs.delete(task.taskId);
+  if (fn) fn();
+  gPlayerAvatar.preventStep = false;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 STRICT décomp `CreateFieldMoveTask` (fldeff_rocksmash.c:48) :
+ *    GetXYCoordsOneStepInFrontOfPlayer(&gPlayerFacingPosition.x, &gPlayerFacingPosition.y);
+ *    return CreateTask(Task_DoFieldMove_Init, 8);
+ *  `fieldMoveFunc` = la fn de l'effet (stockée en data[8]/data[9] dans le décomp). */
+export function CreateFieldMoveTask(fieldMoveFunc: () => void): number {
+  const rt = getRuntime();
+  const front = GetXYCoordsOneStepInFrontOfPlayer();
+  gPlayerFacingPosition.x = front.x;
+  gPlayerFacingPosition.y = front.y;
+  _preloadFieldMovePoseGfx();
+  const taskId = rt.CreateTask(Task_DoFieldMove_Init, 8);
+  _fieldMoveFuncs.set(taskId, fieldMoveFunc);
+  return taskId;
 }
 
 /** 1:1 décomp `UpdateSurfBlobFieldEffect` (field_effect_helpers.c:1052). Callback per-frame. */

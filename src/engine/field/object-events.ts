@@ -4871,15 +4871,34 @@ function _MovementAction_RockSmashBreak_Step0(rt: DecompRuntime, npc: ObjectEven
   return false;
 }
 
-/** 1:1 décomp `MovementAction_CutTree_Step0` : idem RockSmashBreak. */
-function _MovementAction_CutTree_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
-    if (sprite && sprite.anims) {
-      StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE);
-    }
+// 1:1 STRICT décomp `gMovementActionFuncs_CutTree[]` (Step0/1/2) — l'arbre coupable chute/disparaît.
+// ⚠️ AVANT : un SEUL func (Step0) re-démarrait l'anim CHAQUE frame (posait actionStep=1 sans dispatcher
+// par actionStep) → boucle infinie, held jamais fini → `waitmovement 0` (EventScript_CutTreeDown)
+// bloqué → l'arbre n'était jamais retiré après Cut. Maintenant dispatcher multi-step :
+//   Step0 : SetAndStartSpriteAnim(ANIM_REMOVE_OBSTACLE) ; actionStep=1.
+//   Step1 : WaitSpriteAnim (arbre inanimate → anim tickée par le système global) ;
+//           à animEnded : SetMovementDelay(32) (= sprite.data[3]) ; actionStep=2.
+//   Step2 : invisible ^= TRUE (clignote) ; WaitForMovementDelay (--data[3]==0) → invisible=TRUE + DONE.
+function _MovementAction_CutTree(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  if (npc.actionStep === 0) {
+    if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE); sprite.animPaused = false; }
+    npc.actionStep = 1;
+    return false;
   }
-  npc.actionStep = 1;
+  if (npc.actionStep === 1) {
+    if (!sprite || !sprite.anims || sprite.animEnded) {
+      if (sprite) sprite.data[3] = 32;  // SetMovementDelay(32)
+      npc.actionStep = 2;
+    }
+    return false;
+  }
+  // Step2 : flicker + wait delay → invisible + complete.
+  npc.invisible = !npc.invisible;
+  if (!sprite || --sprite.data[3] === 0) {
+    npc.invisible = true;
+    return true;  // held movement complete → step_end → waitmovement done → removeobject
+  }
   return false;
 }
 
@@ -6009,7 +6028,7 @@ gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_HEART]           = _MovementAction_Em
 // à frame 0, ce qu'on fait via StartSpriteAnim normal).
 gMovementActionFuncs[MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN] = _MovementAction_NurseJoyBowDown_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_ROCK_SMASH_BREAK]   = _MovementAction_RockSmashBreak_Step0;
-gMovementActionFuncs[MOVEMENT_ACTION_CUT_TREE]           = _MovementAction_CutTree_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_CUT_TREE]           = _MovementAction_CutTree;
 // H1.15 : JUMP_X (66-69) + JUMP_2_X (12-15) + JUMP_IN_PLACE_X (70-73) 1:1 strict.
 // Source : InitJump (5427) + DoJumpSpriteMovement (8464) + UpdateJumpAnim (5455)
 // + sJumpY_High/Low/Normal tables.
