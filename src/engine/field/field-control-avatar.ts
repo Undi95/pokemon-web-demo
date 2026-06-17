@@ -159,7 +159,7 @@ import {
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
 } from '../decomp-data/include/gba/io_reg-data';
 import { ENUM_PLAYER_0 } from '../decomp-data/include/bike-data';
-import { GetPlayerSpeed } from '../../game/engine/field/bike';
+import { GetPlayerSpeed } from '../../game/bike';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;

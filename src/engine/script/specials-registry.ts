@@ -27,7 +27,7 @@
  */
 
 import { registerSpecial } from './script-opcodes';
-import { gBikeCycling } from '../../game/engine/field/field_specials';
+import { gBikeCycling } from '../../game/field_specials';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
