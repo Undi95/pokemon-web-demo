@@ -1936,6 +1936,10 @@ export class DecompRuntime {
   reset(): void {
     this.gIntroFrameCounter = 0;
     this.gMain = new MainStruct();
+    // Exposé pour les gates low-level qui n'ont pas le runtime (ex. flash-mask.ts
+    // : la pénombre de grotte ne doit s'appliquer qu'en overworld). Re-exposé ici
+    // car gMain est recréé à chaque reset().
+    (globalThis as Record<string, unknown>).gMain = this.gMain;
     this.gPaletteFade = new PaletteFade();
     this.gTasks.clear();
     this.gSprites.clear();

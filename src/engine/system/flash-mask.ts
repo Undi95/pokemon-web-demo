@@ -47,6 +47,13 @@ function _getFlashLevel(): number {
 export function applyFlashMask(frameBuffer: Uint8ClampedArray): boolean {
   const level = _getFlashLevel();
   if (level <= 0) return false;  // pleine vue, no mask
+  // Gate OVERWORLD : le décomp tear-down le WIN0 flash en quittant le field, donc
+  // la pénombre n'affecte PAS les menus/combat. En post-process on lit le CB2
+  // courant : on n'applique le masque QUE si l'overworld est actif (sinon ouvrir
+  // le party menu / un combat dans une grotte sombre assombrit tout l'écran).
+  const cb2name = (globalThis as { gMain?: { callback2?: { name?: string } } })
+    .gMain?.callback2?.name ?? '';
+  if (!cb2name.startsWith('MainCB2_Overworld')) return false;
   const radius = sFlashLevelToRadius[Math.min(level, 8)];
   if (radius >= 200) return false;  // rayon assez large pour couvrir tout l'écran
   const radiusSq = radius * radius;
