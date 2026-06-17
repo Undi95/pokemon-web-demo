@@ -173,6 +173,11 @@ export function getAsset(symbol: string): Uint8Array | Uint16Array | null {
 export const BG_SCREEN_SIZE = 0x800;
 /** 1:1 décomp PLTT_SIZE = 0x400 bytes (= 256 colors × 2). */
 export const PLTT_SIZE = 0x400;
+/** 1:1 décomp `u16 gPaletteDecompressionBuffer[PLTT_BUFFER_SIZE]` (palette.c) —
+ *  scratch buffer PLTT (512 entries u16). Utilisé p.ex. par Doux Parfum
+ *  (fldeff_sweetscent.c) pour sauver/restaurer gPlttBufferUnfaded autour du
+ *  flash rouge. */
+export const gPaletteDecompressionBuffer = new Uint16Array(512);
 /** 1:1 décomp VRAM_SIZE = 0x18000 bytes. */
 export const VRAM_SIZE = 0x18000;
 // Re-export depuis decomp-helpers (= source de vérité unique pour ces consts).

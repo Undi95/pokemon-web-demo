@@ -2079,12 +2079,14 @@ const FIELD_MOVE_SURF         = 4;
 const FIELD_MOVE_FLY          = 5;
 const FIELD_MOVE_DIVE         = 6;
 const FIELD_MOVE_WATERFALL    = 7;
-// (TELEPORT=8, DIG=9, SECRET_POWER=10, MILK_DRINK=11, SOFT_BOILED=12,
-//  SWEET_SCENT=13 — branchés au fur et à mesure de leur port.)
+// (TELEPORT=8, DIG=9, SECRET_POWER=10, MILK_DRINK=11, SOFT_BOILED=12 —
+//  branchés au fur et à mesure de leur port.)
+const FIELD_MOVE_SWEET_SCENT  = 13;
 
-/** 1:1 décomp `FLDEFF_USE_SURF` (field_effect.h) — const locale (pattern
+/** 1:1 décomp `FLDEFF_*` (field_effect.h) — const locales (pattern
  *  "FLDEFF_* locales par module" anti-cycle ESM field-effect). */
 const FLDEFF_USE_SURF = 9;
+const FLDEFF_SWEET_SCENT = 51;
 
 /** 1:1 décomp `GetCursorSelectionMonId(void)` (party_menu.c) = gPartyMenu.slotId. */
 function GetCursorSelectionMonId(): number {
@@ -2133,6 +2135,28 @@ function SetUpFieldMove_Surf(): boolean {
   return false;
 }
 
+/** 1:1 décomp `FieldCallback_SweetScent(void)` (fldeff_sweetscent.c:33) :
+ *      FieldEffectStart(FLDEFF_SWEET_SCENT);
+ *      gFieldEffectArguments[0] = GetCursorSelectionMonId();
+ *  (l'ordre décomp pose l'argument APRÈS le start — quirk inoffensif, répliqué.) */
+function FieldCallback_SweetScent(): void {
+  const start = (globalThis as Record<string, unknown>).FieldEffectStart as ((id: number) => void) | undefined;
+  start?.(FLDEFF_SWEET_SCENT);
+  _setFieldEffectArgument(0, GetCursorSelectionMonId());
+}
+
+/** 1:1 décomp `SetUpFieldMove_SweetScent(void)` (fldeff_sweetscent.c:26) :
+ *      gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *      gPostMenuFieldCallback = FieldCallback_SweetScent;
+ *      return TRUE;
+ *  Doux Parfum est toujours utilisable (pas de condition de map/badge). */
+function SetUpFieldMove_SweetScent(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+  g.gPostMenuFieldCallback = FieldCallback_SweetScent;
+  return true;
+}
+
 /** 1:1 décomp `Task_FieldMoveWaitForFade(u8 taskId)` (party_menu.c:3823) :
  *      if (IsWeatherNotFadingIn() == TRUE) {
  *          gFieldEffectArguments[0] = GetFieldMoveMonSpecies();
@@ -2175,7 +2199,8 @@ interface FieldMoveCursorCallback {
   msgId: string;
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
-  [FIELD_MOVE_SURF]: { fieldMoveFunc: SetUpFieldMove_Surf, msgId: 'gText_CantSurfHere' },
+  [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
+  [FIELD_MOVE_SWEET_SCENT]: { fieldMoveFunc: SetUpFieldMove_SweetScent, msgId: 'gText_CantUseHere' },
 };
 
 /** Affiche un message d'erreur field-move FR dans WIN_MSG puis attend A/B pour

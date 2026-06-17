@@ -57,7 +57,8 @@ import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
 } from './metatile_behavior';
-import { IncrementGameStat } from '../engine/field/player-avatar';
+import { IncrementGameStat, PlayerGetDestCoords } from '../engine/field/player-avatar';
+import { MapGridGetMetatileBehaviorAt } from '../engine/field/map-loader';
 import { GAME_STAT_FISHING_ENCOUNTERS } from '../engine/decomp-data/include/constants/game_stat-data';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
@@ -417,6 +418,47 @@ export function RockSmashWildEncounter(): boolean {
   return false;
 }
 (globalThis as Record<string, unknown>).__RockSmashWildEncounter = RockSmashWildEncounter;
+
+/** 1:1 STRICT décomp `SweetScentWildEncounter` (wild_encounter.c:697) :
+ *    PlayerGetDestCoords(&x, &y);
+ *    headerId = GetCurrentMapWildMonHeaderId();
+ *    if (headerId == HEADER_NONE) { ...Battle Pike/Pyramid... }     ← dette R3 (Frontier)
+ *    else {
+ *        if (IsLandWildEncounter(MapGridGetMetatileBehaviorAt(x,y))) {
+ *            if (landMonsInfo == NULL) return FALSE;
+ *            ...roamer/outbreak...                                   ← dette R3
+ *            TryGenerateWildMon(landMonsInfo, WILD_AREA_LAND, 0);
+ *            BattleSetup_StartWildBattle(); return TRUE;
+ *        } else if (IsWaterWildEncounter(...)) { ...water... }
+ *    }
+ *    return FALSE;
+ *
+ *  Doux Parfum = encounter FORCÉ (PAS de WildEncounterCheck / encounterRate roll,
+ *  contrairement à StandardWildEncounter). Le combat (BattleSetup_StartWildBattle)
+ *  démarre via `_onBattleStartCallback`. Returns TRUE si un combat démarre. */
+export function SweetScentWildEncounter(): boolean {
+  const { x, y } = PlayerGetDestCoords();
+  const header = GetCurrentMapWildMonHeader();
+  // headerId == HEADER_NONE → branches Battle Pike/Pyramid (dette R3, Frontier non porté).
+  if (!header) return false;
+  const behavior = MapGridGetMetatileBehaviorAt(x, y);
+  if (MetatileBehavior_IsLandWildEncounter(behavior)) {
+    if (header.landMonsInfo === null) return false;
+    // Dette R3 : TryStartRoamerEncounter + DoMassOutbreakEncounterTest.
+    TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, 0);
+    _onBattleStartCallback?.();
+    return true;
+  } else if (MetatileBehavior_IsWaterWildEncounter(behavior)) {
+    if (AreLegendariesInSootopolisPreventingEncounters()) return false;
+    if (header.waterMonsInfo === null) return false;
+    // Dette R3 : TryStartRoamerEncounter.
+    TryGenerateWildMon(header.waterMonsInfo, WILD_AREA_WATER, 0);
+    _onBattleStartCallback?.();
+    return true;
+  }
+  return false;
+}
+(globalThis as Record<string, unknown>).__SweetScentWildEncounter = SweetScentWildEncounter;
 
 // ─── Immunity counter (= 1:1 décomp field_control_avatar.c:668-686) ───────
 

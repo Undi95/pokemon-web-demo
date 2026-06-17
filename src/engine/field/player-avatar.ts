@@ -584,6 +584,12 @@ export function IsPlayerFacingSurfableFishableWater(): boolean {
     && MetatileBehavior_IsSurfableFishableWater(MapGridGetMetatileBehaviorAt(x, y));
 }
 
+/** 1:1 STRICT décomp `GetPlayerAvatarSpriteId(void)` (field_player_avatar.c) :
+ *    return gPlayerAvatar.spriteId; */
+export function GetPlayerAvatarSpriteId(): number {
+  return gPlayerAvatar.spriteId;
+}
+
 // Dev hooks (A/B entrée HM surf : les 2 portes de GetInteractedWaterScript).
 (globalThis as Record<string, unknown>).__PartyHasMonWithSurf = PartyHasMonWithSurf;
 (globalThis as Record<string, unknown>).__IsPlayerFacingSurfableFishableWater = IsPlayerFacingSurfableFishableWater;
