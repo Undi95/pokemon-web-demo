@@ -39,7 +39,7 @@ import {
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
-  FldEff_SurfBlob, FldEff_UseSurf,
+  FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow,
 } from '../../game/field_effect_helpers';
@@ -79,6 +79,7 @@ export const FLDEFF_BIKE_TIRE_TRACKS           = 35;
 export const FLDEFF_SAND_PILE                  = 39;
 export const FLDEFF_SHORT_GRASS                = 41;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
+export const FLDEFF_USE_WATERFALL              = 43;
 export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
 export const FLDEFF_SPARKLE                    = 54;
@@ -238,6 +239,11 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_UseSurf (field_effect.c:2985) — migré dans game/field_effect_helpers.ts.
     // Crée Task_SurfFieldEffect (montée de surf : pose → saut sur blob → assis+bobbing).
     return FldEff_UseSurf(rt);
+  }
+  if (id === FLDEFF_USE_WATERFALL) {
+    // 1:1 décomp FldEff_UseWaterfall (field_effect.c:1828) — logé dans game/field_effect_helpers.ts.
+    // Crée Task_UseWaterfall (grimpe lente vers le nord en boucle tant que la tuile est MB_WATERFALL).
+    return FldEff_UseWaterfall(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

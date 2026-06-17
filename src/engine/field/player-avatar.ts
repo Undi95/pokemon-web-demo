@@ -492,6 +492,19 @@ export function GetPlayerMovementDirection(): number {
   return DIR_SOUTH;
 }
 
+/** 1:1 STRICT décomp `IsPlayerSurfingNorth` (field_player_avatar.c) :
+ *    if (GetPlayerMovementDirection() == DIR_NORTH && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+ *        return TRUE;
+ *    else
+ *        return FALSE;
+ *
+ *  Gate de l'entrée HM Cascade : on grimpe une cascade uniquement en surfant VERS LE NORD
+ *  (face à la tuile MB_WATERFALL). Utilisé par `GetInteractedWaterScript`. */
+export function IsPlayerSurfingNorth(): boolean {
+  return GetPlayerMovementDirection() === DIR_NORTH
+    && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING) !== 0;
+}
+
 /** 1:1 décomp `PlayerGetElevation` (field_player_avatar.c:1175-1178).
  *
  *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].previousElevation;`

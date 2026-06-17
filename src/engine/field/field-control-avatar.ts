@@ -34,6 +34,7 @@ import {
   GetXYCoordsOneStepInFrontOfPlayer,
   PartyHasMonWithSurf,
   IsPlayerFacingSurfableFishableWater,
+  IsPlayerSurfingNorth,
 } from './player-avatar';
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -73,6 +74,7 @@ import {
   MetatileBehavior_IsCableBoxResults2,
   MetatileBehavior_IsQuestionnaire,
   MetatileBehavior_IsTrainerHillTimer,
+  MetatileBehavior_IsWaterfall,
 } from '../../game/metatile_behavior';
 import {
   gObjectEvents,
@@ -729,16 +731,29 @@ export function GetInteractionScript(
 /** 1:1 STRICT décomp `GetInteractedWaterScript` (field_control_avatar.c:448) :
  *    if (FlagGet(FLAG_BADGE05_GET) && PartyHasMonWithSurf() && IsPlayerFacingSurfableFishableWater())
  *        return EventScript_UseSurf;
- *    if (MetatileBehavior_IsWaterfall(metatileBehavior)) { ... EventScript_UseWaterfall (badge 8) ... }
+ *    if (MetatileBehavior_IsWaterfall(metatileBehavior)) {
+ *        if (FlagGet(FLAG_BADGE08_GET) && IsPlayerSurfingNorth())
+ *            return EventScript_UseWaterfall;
+ *        else
+ *            return EventScript_CannotUseWaterfall;
+ *    }
  *    return NULL;
- *  Entrée HM Surf : A face à de l'eau surfable (badge 5 + un mon connaît Surf) → script UseSurf
- *  (checkpartymove → msgbox OUI/NON → dofieldeffect FLDEFF_USE_SURF). La branche Waterfall (badge 8)
- *  reste à porter (étape suivante). `position` non utilisé côté Surf (1:1 : `unused1`). */
+ *  Entrée HM Surf : A face à de l'eau surfable (badge 5 + un mon connaît Surf) → UseSurf.
+ *  Entrée HM Cascade : A face à une tuile MB_WATERFALL en surfant VERS LE NORD (badge 8) → UseWaterfall
+ *  (checkpartymove → msgbox OUI/NON → dofieldeffect FLDEFF_USE_WATERFALL → grimpe). Sinon (pas badge 8
+ *  ou pas en surf-nord) → CannotUseWaterfall (lockall + "Un mur d'eau s'abat…"). `position` = unused1. */
 function GetInteractedWaterScript(
-  _position: MapPosition, _metatileBehavior: number, _direction: number,
+  _position: MapPosition, metatileBehavior: number, _direction: number,
 ): string | null {
   if (FlagGet('FLAG_BADGE05_GET') && PartyHasMonWithSurf() && IsPlayerFacingSurfableFishableWater())
     return 'EventScript_UseSurf';
+
+  if (MetatileBehavior_IsWaterfall(metatileBehavior)) {
+    if (FlagGet('FLAG_BADGE08_GET') && IsPlayerSurfingNorth())
+      return 'EventScript_UseWaterfall';
+    else
+      return 'EventScript_CannotUseWaterfall';
+  }
   return null;
 }
 

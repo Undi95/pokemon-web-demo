@@ -62,12 +62,12 @@ import {
   _getGfxMeta, type GfxMeta,
   LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
   _genericNpcReflectionTag, _loadReflectionPaletteByTag,
-  // 1:1 décomp Task_SurfFieldEffect (field_effect.c) — montée de surf.
+  // 1:1 décomp Task_SurfFieldEffect / Task_UseWaterfall (field_effect.c) — montée de surf + cascade.
   ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
-  GetJumpSpecialMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
+  GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
 } from '../engine/field/object-events';
-import { MoveCoords } from '../engine/field/direction-coords';
+import { MoveCoords, DIR_NORTH } from '../engine/field/direction-coords';
 import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
   GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,
@@ -81,7 +81,8 @@ import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } 
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
-  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective } from './metatile_behavior';
+  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,
+  MetatileBehavior_IsWaterfall } from './metatile_behavior';
 // 1:1 décomp : constantes de slot/tag palette (object-event-graphics-info). Utilisées par
 // la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
 import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
@@ -126,6 +127,7 @@ const FLDEFF_SURF_BLOB = 8;
 const FLDEFF_USE_SURF = 9;
 const FLDEFF_FIELD_MOVE_SHOW_MON = 6;
 const FLDEFF_FIELD_MOVE_SHOW_MON_INIT = 59;
+const FLDEFF_USE_WATERFALL = 43;
 // 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
 const BOB_NONE = 0, BOB_PLAYER_AND_MON = 1, BOB_JUST_MON = 2;
 const LOCALID_PLAYER = 0xFF;
@@ -1233,6 +1235,102 @@ export function FldEff_UseSurf(rt: DecompRuntime): number {
   const task = rt.gTasks.get(taskId);
   if (task) task.data[15] = gFieldEffectArguments[0];  // tMonId
   _preloadSurfPlayerGfx();
+  return 0;  // FALSE
+}
+
+// ─── 1:1 décomp `field_effect.c` /* Waterfall */ — montée de cascade (Task_UseWaterfall) ──────
+// tState=data[0], tMonId=data[1] (field_effect.c:1825-1826). Déclenché par
+// `FieldEffectStart(FLDEFF_USE_WATERFALL)` (A face à MB_WATERFALL en surfant vers le nord, badge 8).
+// Séquence : Lock + preventStep → (show-mon) → grimpe lente vers le nord (WALK_SLOW) en boucle tant
+// que la tuile courante est une cascade → Unlock.
+//
+// ⚠️ MÊME DÉPENDANCE NON PORTÉE QUE LE SURF : FLDEFF_FIELD_MOVE_SHOW_MON (le Pokémon apparaît) n'est pas
+// dans le dispatch → `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)` gardé 1:1 mais no-op →
+// `FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)` = false → la séquence enchaîne directement.
+//
+// ⚠️ `Task_UseWaterfall` a une BOUCLE `while (func(...))` (≠ surf, une func/tick) : dans un même tick,
+// on ré-exécute la func de l'état courant tant qu'elle renvoie TRUE (= avance multi-états par frame).
+
+/** 1:1 STRICT décomp `WaterfallFieldEffect_Init` (field_effect.c:1842). */
+function WaterfallFieldEffect_Init(task: DecompTask, _objectEvent: ObjectEvent): boolean {
+  LockPlayerFieldControls();
+  gPlayerAvatar.preventStep = true;
+  task.data[0]++;  // tState
+  return false;
+}
+
+/** 1:1 STRICT décomp `WaterfallFieldEffect_ShowMon` (field_effect.c:1850). */
+function WaterfallFieldEffect_ShowMon(task: DecompTask, objectEvent: ObjectEvent): boolean {
+  LockPlayerFieldControls();
+  if (!ObjectEventIsMovementOverridden(objectEvent)) {
+    ObjectEventClearHeldMovementIfFinished(objectEvent);
+    gFieldEffectArguments[0] = task.data[1];  // tMonId
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op (mon-show à part)
+    task.data[0]++;
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `WaterfallFieldEffect_WaitForShowMon` (field_effect.c:1863). */
+function WaterfallFieldEffect_WaitForShowMon(task: DecompTask, _objectEvent: ObjectEvent): boolean {
+  if (FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+    return false;
+  }
+  task.data[0]++;
+  return true;
+}
+
+/** 1:1 STRICT décomp `WaterfallFieldEffect_RideUp` (field_effect.c:1873). */
+function WaterfallFieldEffect_RideUp(task: DecompTask, objectEvent: ObjectEvent): boolean {
+  ObjectEventSetHeldMovement(objectEvent, GetWalkSlowMovementAction(DIR_NORTH));
+  task.data[0]++;
+  return false;
+}
+
+/** 1:1 STRICT décomp `WaterfallFieldEffect_ContinueRideOrEnd` (field_effect.c:1880). */
+function WaterfallFieldEffect_ContinueRideOrEnd(task: DecompTask, objectEvent: ObjectEvent): boolean {
+  if (!ObjectEventClearHeldMovementIfFinished(objectEvent))
+    return false;
+
+  if (MetatileBehavior_IsWaterfall(objectEvent.currentMetatileBehavior)) {
+    // Toujours en train de grimper la cascade → retour à WaterfallFieldEffect_RideUp.
+    task.data[0] = 3;
+    return true;
+  }
+
+  UnlockPlayerFieldControls();
+  gPlayerAvatar.preventStep = false;
+  DestroyTask(FindTaskIdByFunc(Task_UseWaterfall));
+  FieldEffectActiveListRemove(FLDEFF_USE_WATERFALL);
+  return false;
+}
+
+/** 1:1 STRICT décomp `sWaterfallFieldEffectFuncs[]` (field_effect.c). */
+const sWaterfallFieldEffectFuncs: ReadonlyArray<(task: DecompTask, objectEvent: ObjectEvent) => boolean> = [
+  WaterfallFieldEffect_Init,
+  WaterfallFieldEffect_ShowMon,
+  WaterfallFieldEffect_WaitForShowMon,
+  WaterfallFieldEffect_RideUp,
+  WaterfallFieldEffect_ContinueRideOrEnd,
+];
+
+/** 1:1 STRICT décomp `Task_UseWaterfall` (field_effect.c:1837) :
+ *    while (sWaterfallFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId])); */
+function Task_UseWaterfall(task: DecompTask): void {
+  while (sWaterfallFieldEffectFuncs[task.data[0]](task, gObjectEvents[gPlayerAvatar.objectEventId]));
+}
+
+/** 1:1 STRICT décomp `FldEff_UseWaterfall` (field_effect.c:1828) :
+ *    taskId = CreateTask(Task_UseWaterfall, 0xff); gTasks[taskId].tMonId = gFieldEffectArguments[0];
+ *    Task_UseWaterfall(taskId); return FALSE;
+ *  (Appelle Task_UseWaterfall une fois immédiatement, comme le décomp.) */
+export function FldEff_UseWaterfall(rt: DecompRuntime): number {
+  const taskId = rt.CreateTask(Task_UseWaterfall, 0xFF);
+  const task = rt.gTasks.get(taskId);
+  if (task) {
+    task.data[1] = gFieldEffectArguments[0];  // tMonId
+    Task_UseWaterfall(task);
+  }
   return 0;  // FALSE
 }
 

@@ -6140,6 +6140,23 @@ export function GetWalkNormalMovementAction(dir: number): number {
   return gWalkNormalMovementActions[dir];
 }
 
+/** 1:1 décomp `gWalkSlowMovementActions[]` (event_object_movement.c). */
+const gWalkSlowMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_SLOW_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_SLOW_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_SLOW_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_SLOW_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_SLOW_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkSlowMovementAction` (event_object_movement.c:4958, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_SLOW_*. Utilisé par la
+ *  montée de cascade (`WaterfallFieldEffect_RideUp` : grimpe lente vers le nord). */
+export function GetWalkSlowMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkSlowMovementActions[dir];
+}
+
 /** 1:1 décomp `gWalkFastMovementActions[]` (event_object_movement.c). */
 const gWalkFastMovementActions: readonly number[] = [
   MOVEMENT_ACTION_WALK_FAST_DOWN,   // DIR_NONE  → DOWN (default)
