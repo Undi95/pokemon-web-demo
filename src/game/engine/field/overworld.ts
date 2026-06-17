@@ -8,10 +8,10 @@
 // (= le moteur son, qu'on ne touche pas — no-op silencieux dans notre moteur). Le contrat :
 // on porte la logique musique, on ne remplace PAS le moteur son.
 
-import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
-import { gMapHeader } from '../engine/field/map-loader';
-import { PlayBGM } from '../engine/system/decomp-globals';
-import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
+import { gSaveBlock1Ptr } from '../../../engine/save/save-block-state';
+import { gMapHeader } from '../../../engine/field/map-loader';
+import { PlayBGM } from '../../../engine/system/decomp-globals';
+import { MUS_DUMMY } from '../../../engine/decomp-data/include/constants/songs-data';
 
 /** 1:1 décomp `Overworld_SetSavedMusic` (overworld.c:1160) :
  *    gSaveBlock1Ptr->savedMusic = songNum; */

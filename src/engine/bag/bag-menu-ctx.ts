@@ -74,10 +74,10 @@ import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, Get
 let _playerAvatarMod: typeof import('../field/player-avatar') | null = null;
 void import('../field/player-avatar').then((m) => { _playerAvatarMod = m; });
 // Lazy import bike.ts (anti-cycle/TDZ : il tire tout le graphe field via player-avatar).
-let _bikeMod: typeof import('../../game/bike') | null = null;
-void import('../../game/bike').then((m) => { _bikeMod = m; });
-let _overworldMod: typeof import('../../game/overworld') | null = null;
-void import('../../game/overworld').then((m) => { _overworldMod = m; });
+let _bikeMod: typeof import('../../game/engine/field/bike') | null = null;
+void import('../../game/engine/field/bike').then((m) => { _bikeMod = m; });
+let _overworldMod: typeof import('../../game/engine/field/overworld') | null = null;
+void import('../../game/engine/field/overworld').then((m) => { _overworldMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.

@@ -110,7 +110,7 @@ import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './direc
 import {
   GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,
   BikeClearState, Bike_HandleBumpySlopeJump, MovePlayerOnBike, GetOnOffBike,
-} from '../../game/bike';
+} from '../../game/engine/field/bike';
 // Re-export pour le sac (bag-menu-ctx précharge la gfx vélo via _playerAvatarMod avant GetOnOffBike).
 export { PreloadObjectEventGraphics };
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './object-event-graphics-info-data';
@@ -151,7 +151,7 @@ import { Random as _RandomFishing } from '../system/random';
 import {
   FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
 } from '../battle/battle-windows';
-import { IsRunningDisallowed } from '../../game/bike';
+import { IsRunningDisallowed } from '../../game/engine/field/bike';
 import {
   MetatileBehavior_IsBumpySlope,
   MetatileBehavior_IsIsolatedVerticalRail,

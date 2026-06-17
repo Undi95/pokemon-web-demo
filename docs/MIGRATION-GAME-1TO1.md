@@ -1,9 +1,18 @@
 # Migration `src/engine/field/` → `src/game/` (miroir 1:1 décomp)
 
 > But : éliminer la dette de **placement/nommage**. Tout fichier port d'un `.c` décomp
-> doit finir dans `src/game/` avec le **nom décomp** (`event_object_movement.ts`, pas
-> `object-events.ts`), fonctions/globals aux **noms décomp**, **zéro-dup**. C'est ce qui
-> évite la « Nème réécriture » : on navigue par paire `decomps/.../src/X.c` ↔ `src/game/X.ts`.
+> doit finir sous **`src/game/engine/<sous-dossier>/`** avec le **nom décomp**
+> (`game/engine/field/event_object_movement.ts`, pas `engine/field/object-events.ts`),
+> fonctions/globals aux **noms décomp**, **zéro-dup**. C'est ce qui évite la « Nème
+> réécriture » : on navigue par paire `decomps/.../src/X.c` ↔ `src/game/engine/.../X.ts`.
+>
+> **STRUCTURE CIBLE (verrouillée 2026-06-17)** : `src/game/` reflète l'arbo de `src/engine/`.
+>   `src/engine/field/X.ts` → `src/game/engine/field/<décomp>.ts`
+>   `src/engine/battle/X.ts` → `src/game/engine/battle/<décomp>.ts` … etc.
+> Les ~71 fichiers `game/` actuellement PLATS (game/bike.ts…) sont à RE-déplacer sous
+> `game/engine/<sous-dossier>/` pour cohérence. Méthode : **par sous-dossier, vérifié**
+> (move + maj imports + tsc=0 + A/B + commit). À grande échelle = codemod (éviter le
+> hand-edit de masse = source d'erreurs).
 
 ## Règles
 - **Déplacer vers `game/`** dès qu'un fichier est **1:1 ligne-à-ligne** (structure/noms décomp),

@@ -40,44 +40,44 @@ import {
   PlayerWheelieMove,
   PlayerEndWheelieWhileMoving,
   PlayerUseAcroBikeOnBumpySlope,
-} from '../engine/field/player-avatar';
-import { gObjectEvents, SetObjectEventDirection } from '../engine/field/object-events';
+} from '../../../engine/field/player-avatar';
+import { gObjectEvents, SetObjectEventDirection } from '../../../engine/field/object-events';
 import {
   COLLISION_OBJECT_EVENT, COLLISION_STOP_SURFING, COLLISION_LEDGE_JUMP,
   COLLISION_PUSHED_BOULDER, COLLISION_ROTATING_GATE, COLLISION_WHEELIE_HOP,
   COLLISION_ISOLATED_VERTICAL_RAIL, COLLISION_ISOLATED_HORIZONTAL_RAIL,
   COLLISION_VERTICAL_RAIL, COLLISION_HORIZONTAL_RAIL, COLLISION_NONE,
   COLLISION_IMPASSABLE, GetJumpMovementAction,
-} from '../engine/field/object-events';
-import { MoveCoords, GetOppositeDirection } from '../engine/field/direction-coords';
-import { MAP_TYPE_INDOOR } from '../engine/decomp-data/include/constants/map_types-data';
-import { gMapHeader, MapGridGetMetatileBehaviorAt } from '../engine/field/map-loader';
+} from '../../../engine/field/object-events';
+import { MoveCoords, GetOppositeDirection } from '../../../engine/field/direction-coords';
+import { MAP_TYPE_INDOOR } from '../../../engine/decomp-data/include/constants/map_types-data';
+import { gMapHeader, MapGridGetMetatileBehaviorAt } from '../../../engine/field/map-loader';
 import {
   MetatileBehavior_IsBumpySlope, MetatileBehavior_IsVerticalRail,
   MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail,
   MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsRunningDisallowed,
   MetatileBehavior_IsFortreeBridge,
-} from './metatile_behavior';
-import { PlayerGetElevation } from '../engine/field/player-avatar';
+} from '../../metatile_behavior';
+import { PlayerGetElevation } from '../../../engine/field/player-avatar';
 import {
   Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic,
   Overworld_SetSavedMusic, Overworld_ChangeMusicTo,
 } from './overworld';
 import { gBikeCycling } from './field_specials';
-import { MUS_CYCLING } from '../engine/decomp-data/include/constants/songs-data';
-import { SE_BIKE_HOP } from '../engine/decomp-data/include/constants/songs-data';
-import { PlaySE } from '../engine/system/decomp-globals';
-import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from '../engine/field/direction-coords';
-import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from '../engine/decomp-data/include/gba/io_reg-data';
+import { MUS_CYCLING } from '../../../engine/decomp-data/include/constants/songs-data';
+import { SE_BIKE_HOP } from '../../../engine/decomp-data/include/constants/songs-data';
+import { PlaySE } from '../../../engine/system/decomp-globals';
+import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from '../../../engine/field/direction-coords';
+import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from '../../../engine/decomp-data/include/gba/io_reg-data';
 import {
   PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,
   PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER, PLAYER_AVATAR_FLAG_DASH,
   NOT_MOVING, MOVING, TURN_DIRECTION,
-} from '../engine/field/player-avatar';
-import type { ObjectEvent } from '../engine/field/object-events';
+} from '../../../engine/field/player-avatar';
+import type { ObjectEvent } from '../../../engine/field/object-events';
 
 // ─── bike.h enums ────────────────────────────────────────────────────────────
-import { ENUM_PLAYER_0, ENUM_MACH_1, ENUM_ACRO_2, ENUM_ACRO_3 } from '../engine/decomp-data/include/bike-data';
+import { ENUM_PLAYER_0, ENUM_MACH_1, ENUM_ACRO_2, ENUM_ACRO_3 } from '../../../engine/decomp-data/include/bike-data';
 const { PLAYER_SPEED_STANDING, PLAYER_SPEED_NORMAL, PLAYER_SPEED_FAST, PLAYER_SPEED_FASTER, PLAYER_SPEED_FASTEST } = ENUM_PLAYER_0;
 const { MACH_TRANS_FACE_DIRECTION, MACH_TRANS_TURN_DIRECTION, MACH_TRANS_KEEP_MOVING, MACH_TRANS_START_MOVING } = ENUM_MACH_1;
 const { ACRO_STATE_NORMAL, ACRO_STATE_TURNING, ACRO_STATE_WHEELIE_STANDING, ACRO_STATE_BUNNY_HOP, ACRO_STATE_WHEELIE_MOVING, ACRO_STATE_SIDE_JUMP, ACRO_STATE_TURN_JUMP } = ENUM_ACRO_2;
