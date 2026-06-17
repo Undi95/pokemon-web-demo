@@ -65,6 +65,11 @@ import {
   PreloadObjectEventGraphics,
   _setPlayerNormalGfxSnapshot,
   GetFishingDirectionAnimNum,
+  GetFishingBiteDirectionAnimNum,
+  GetFishingNoCatchDirectionAnimNum,
+  ObjectEventTurn,
+  FreezeObjectEvents,
+  UnfreezeObjectEvents,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -110,9 +115,24 @@ import {
 } from '../system/decomp-bridge';
 import { FindTaskIdByFunc, GetTask, getRuntime } from '../system/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field-effect';
-import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
-import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES } from '../battle/party-storage';
+import { SetSurfBlob_BobState, SetSurfBlob_PlayerOffset } from '../../game/field_effect_helpers';
+import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from '../battle/party-storage';
 import { MOVE_SURF } from '../decomp-data/include/constants/moves-data';
+// ─── Pêche (Task_Fishing) : combat + texte/fenêtre + anim ───
+import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from '../../game/wild_encounter';
+import {
+  AddWindow, ClearDialogWindowAndFrame, DrawDialogueFrame, FillWindowPixelBuffer,
+  CopyWindowToVram, PutWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
+} from '../ui/gba-window-system';
+import { LoadMessageBoxGfx } from '../../game/text_window';
+import {
+  AddTextPrinterParameterized, AddTextPrinterParameterized2, RunTextPrinters, IsTextPrinterActive,
+} from '../ui/gba-text-system';
+import { getString } from '../ui/gba-strings';
+import { Random as _RandomFishing } from '../system/random';
+import {
+  FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
+} from '../battle/battle-windows';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -141,6 +161,8 @@ import {
   MetatileBehavior_IsSecretBaseSpinMat,
   MetatileBehavior_IsMuddySlope,
   MetatileBehavior_IsSurfableFishableWater,
+  MetatileBehavior_IsSurfableWaterOrUnderwater,
+  MetatileBehavior_IsBridgeOverWaterNoEdge,
 } from '../../game/metatile_behavior';
 import { CheckStandardWildEncounter } from '../../game/wild_encounter';
 import {
@@ -534,6 +556,29 @@ export function IsPlayerFacingSurfableFishableWater(): boolean {
 // Dev hooks (A/B entrée HM surf : les 2 portes de GetInteractedWaterScript).
 (globalThis as Record<string, unknown>).__PartyHasMonWithSurf = PartyHasMonWithSurf;
 (globalThis as Record<string, unknown>).__IsPlayerFacingSurfableFishableWater = IsPlayerFacingSurfableFishableWater;
+(globalThis as Record<string, unknown>).__CanFish = () => CanFish();
+
+/** 1:1 STRICT décomp `CanFish(void)` (item_use.c:236) : peut-on pêcher là où on regarde ?
+ *    GetXYCoordsOneStepInFrontOfPlayer(&x, &y); tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
+ *    if (IsWaterfall) return FALSE;
+ *    if (UNDERWATER) return FALSE;
+ *    if (!SURFING) { if (IsPlayerFacingSurfableFishableWater()) return TRUE; }
+ *    else { if (IsSurfableWaterOrUnderwater && MapGridGetCollisionAt==0) return TRUE; if (IsBridgeOverWaterNoEdge) return TRUE; }
+ *    return FALSE;
+ *  Gate de `ItemUseOutOfBattle_Rod` (canne → StartFishing). */
+export function CanFish(): boolean {
+  const { x, y } = GetXYCoordsOneStepInFrontOfPlayer();
+  const tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
+  if (MetatileBehavior_IsWaterfall(tileBehavior)) return false;
+  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) return false;
+  if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)) {
+    if (IsPlayerFacingSurfableFishableWater()) return true;
+  } else {
+    if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior) && MapGridGetCollisionAt(x, y) === 0) return true;
+    if (MetatileBehavior_IsBridgeOverWaterNoEdge(tileBehavior)) return true;
+  }
+  return false;
+}
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 
@@ -1761,6 +1806,363 @@ function SetPlayerAvatarFishing(direction: number): void {
   await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));
   SetPlayerAvatarFishing(dir);
   return 'fishing pose ' + dir;
+};
+
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// 1:1 STRICT décomp `field_player_avatar.c` /* Fishing */ — StartFishing + Task_Fishing (16 états)
+// Déclenché par `ItemUseOutOfBattle_Rod` (sac) → `StartFishing(rod)`. Sort la canne (gfx FISHING via
+// keystone), minigame de points (window dialogue), check morsure (DoesCurrentMapHaveFishingMons),
+// puis `FishingWildEncounter` (combat) ou « Rien de rien… ». Macros data 1:1 (field_player_avatar.c:1678).
+// ════════════════════════════════════════════════════════════════════════════════════════════
+
+// Macros data — accès typé sur task.data (number[]).
+const T_FISH_STEP = 0;            // tStep
+const T_FISH_FRAME_COUNTER = 1;   // tFrameCounter
+const T_FISH_NUM_DOTS = 2;        // tNumDots
+const T_FISH_DOTS_REQUIRED = 3;   // tDotsRequired
+const T_FISH_ROUNDS_PLAYED = 12;  // tRoundsPlayed
+const T_FISH_MIN_ROUNDS = 13;     // tMinRoundsRequired
+const T_FISH_ROD = 15;            // tFishingRod
+// tPlayerGfxId (data[14]) = u8 dans le décomp, mais notre graphicsId joueur est une STRING → stocké
+// dans un module-var (un seul joueur, une pêche à la fois).
+let sFishingPlayerGfxId = '';
+
+// états sautés directement (field_player_avatar.c:1688).
+const FISHING_START_ROUND = 3, FISHING_GOT_BITE = 6, FISHING_ON_HOOK = 9;
+const FISHING_NO_BITE = 11, FISHING_GOT_AWAY = 12, FISHING_SHOW_RESULT = 13;
+
+// Fenêtre dialogue pêche (= window 0 décomp). Template standard text box (cf. field-message-box).
+const sFishingTextBoxTemplate = {
+  bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 27, height: 4, paletteNum: 15, baseBlock: 0x194,
+} as const;
+let sFishingWindowId = -1;
+
+/** 1:1 décomp `LoadMessageBoxAndFrameGfx(0, TRUE)` (Fishing_InitDots) : charge les tiles/palette du
+ *  message box + dessine le cadre dialogue sur la fenêtre pêche. */
+function _fishingLoadMessageBoxAndFrameGfx(): void {
+  if (sFishingWindowId < 0) sFishingWindowId = AddWindow(sFishingTextBoxTemplate);
+  LoadMessageBoxGfx(sFishingWindowId, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
+  DrawDialogueFrame(sFishingWindowId, true);
+}
+
+/** 1:1 STRICT décomp `AlignFishingAnimationFrames(void)` (field_player_avatar.c:2028) : avance l'anim
+ *  de pêche du sprite joueur (seul driver pendant la pêche — le spine n'anime que les `inanimate`) et
+ *  pose l'offset x2/y2 selon la frame courante (`.type` = imageValue de l'AnimCmd : 1/2/3 → x2=±8,
+ *  5 → y2=-8, 10/11 → y2=8). */
+function AlignFishingAnimationFrames(): void {
+  const rt = getRuntime();
+  const playerSprite = gPlayerAvatar.spriteId >= 0 ? rt.gSprites.get(gPlayerAvatar.spriteId) : null;
+  if (!playerSprite) return;
+  rt.AnimateSprite(gPlayerAvatar.spriteId);
+  playerSprite.x2 = 0;
+  playerSprite.y2 = 0;
+  // `.type` 1:1 : frame → imageValue, end → -1 (union AnimCmd décomp).
+  const anims = playerSprite.anims;
+  const cmdType = (i: number): number => {
+    const cmd = anims && anims[playerSprite.animNum] ? (anims[playerSprite.animNum] as ReadonlyArray<{ kind?: string; imageValue?: number }>)[i] : undefined;
+    if (!cmd) return -1;
+    if (cmd.kind === 'end') return -1;
+    if (cmd.kind === 'frame') return cmd.imageValue ?? 0;
+    return cmd.kind === 'jump' ? -2 : -3;
+  };
+  let animCmdIndex = playerSprite.animCmdIndex;
+  if (cmdType(animCmdIndex) === -1) {
+    animCmdIndex--;
+  } else {
+    playerSprite.animDelayCounter++;
+    if (cmdType(animCmdIndex) === -1)
+      animCmdIndex--;
+  }
+  const animType = cmdType(animCmdIndex);
+  if (animType === 1 || animType === 2 || animType === 3) {
+    playerSprite.x2 = 8;
+    if (GetPlayerFacingDirection() === 3)  // DIR_WEST
+      playerSprite.x2 = -8;
+  }
+  if (animType === 5)
+    playerSprite.y2 = -8;
+  if (animType === 10 || animType === 11)
+    playerSprite.y2 = 8;
+  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+    SetSurfBlob_PlayerOffset(rt, gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, true, playerSprite.y2);
+}
+
+/** 1:1 STRICT décomp `void StartFishing(u8 rod)` (field_player_avatar.c:1715). */
+export function StartFishing(rod: number): void {
+  const taskId = CreateTask(Task_Fishing, 0xFF);
+  const task = GetTask(taskId);
+  if (!task) return;
+  task.data[T_FISH_ROD] = rod;
+  Task_Fishing(task);  // 1:1 appel synchrone immédiat
+}
+
+/** 1:1 STRICT décomp `Task_Fishing(u8 taskId)` (field_player_avatar.c:1723) :
+ *    while (sFishingStateFuncs[tStep](&gTasks[taskId])) ;
+ *  + tick du texte 1×/frame : le décomp s'appuie sur le `RunTextPrinters()` global de la boucle
+ *  overworld (que NOTRE overworld ne tick pas) → on le tick ici (scope pêche, effet identique). */
+function Task_Fishing(task: DecompTask): void {
+  if (sFishingWindowId >= 0) {
+    RunTextPrinters();
+    CopyWindowToVram(sFishingWindowId, 2);  // COPYWIN_GFX
+  }
+  while (sFishingStateFuncs[task.data[T_FISH_STEP]](task));
+}
+
+function Fishing_Init(task: DecompTask): boolean {
+  LockPlayerFieldControls();
+  gPlayerAvatar.preventStep = true;
+  task.data[T_FISH_STEP]++;
+  return false;
+}
+
+function Fishing_GetRodOut(task: DecompTask): boolean {
+  // 1:1 minRounds1/minRounds2 (field_player_avatar.c:1740) : OLD/GOOD/SUPER.
+  const minRounds1 = [1, 1, 1];          // [OLD, GOOD, SUPER]
+  const minRounds2 = [1, 3, 6];
+  const rod = task.data[T_FISH_ROD];
+  task.data[T_FISH_ROUNDS_PLAYED] = 0;
+  task.data[T_FISH_MIN_ROUNDS] = minRounds1[rod] + (_RandomFishing() % minRounds2[rod]);
+  // tPlayerGfxId = graphicsId du joueur avant la pêche (restauré à la fin par ObjectEventSetGraphicsId).
+  // ⚠️ Déviation port : le slot joueur NORMAL porte l'alias 'Brendan'/'May' (pas le nom catalogue) que
+  // le keystone ne sait pas restaurer → on le normalise vers le gfx NORMAL d'état. (Surf/vélo gardent
+  // leur vrai nom catalogue, restaurable tel quel.)
+  let gfxBefore = gObjectEvents[gPlayerAvatar.objectEventId].graphicsId;
+  if (gfxBefore === 'Brendan' || gfxBefore === 'May')
+    gfxBefore = GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL);
+  sFishingPlayerGfxId = gfxBefore;
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  ObjectEventClearHeldMovementIfActive(playerObjEvent);
+  playerObjEvent.enableAnim = true;
+  SetPlayerAvatarFishing(playerObjEvent.facingDirection);
+  task.data[T_FISH_STEP]++;
+  return false;
+}
+
+function Fishing_WaitBeforeDots(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  // attend 1 seconde
+  task.data[T_FISH_FRAME_COUNTER]++;
+  if (task.data[T_FISH_FRAME_COUNTER] >= 60)
+    task.data[T_FISH_STEP]++;
+  return false;
+}
+
+function Fishing_InitDots(task: DecompTask): boolean {
+  _fishingLoadMessageBoxAndFrameGfx();  // 1:1 LoadMessageBoxAndFrameGfx(0, TRUE)
+  task.data[T_FISH_STEP]++;
+  task.data[T_FISH_FRAME_COUNTER] = 0;
+  task.data[T_FISH_NUM_DOTS] = 0;
+  let randVal = _RandomFishing();
+  randVal %= 10;
+  task.data[T_FISH_DOTS_REQUIRED] = randVal + 1;
+  if (task.data[T_FISH_ROUNDS_PLAYED] === 0)
+    task.data[T_FISH_DOTS_REQUIRED] = randVal + 4;
+  if (task.data[T_FISH_DOTS_REQUIRED] >= 10)
+    task.data[T_FISH_DOTS_REQUIRED] = 10;
+  return true;
+}
+
+function Fishing_ShowDots(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  task.data[T_FISH_FRAME_COUNTER]++;
+  if (getRuntime().gMain.newKeys & A_BUTTON) {
+    task.data[T_FISH_STEP] = FISHING_NO_BITE;
+    if (task.data[T_FISH_ROUNDS_PLAYED] !== 0)
+      task.data[T_FISH_STEP] = FISHING_GOT_AWAY;
+    return true;
+  } else {
+    if (task.data[T_FISH_FRAME_COUNTER] >= 20) {
+      task.data[T_FISH_FRAME_COUNTER] = 0;
+      if (task.data[T_FISH_NUM_DOTS] >= task.data[T_FISH_DOTS_REQUIRED]) {
+        task.data[T_FISH_STEP]++;
+        if (task.data[T_FISH_ROUNDS_PLAYED] !== 0)
+          task.data[T_FISH_STEP]++;
+        task.data[T_FISH_ROUNDS_PLAYED]++;
+      } else {
+        // 1:1 AddTextPrinterParameterized(0, FONT_NORMAL, dot, numDots*8, 1, 0, NULL) — un point "·".
+        AddTextPrinterParameterized(sFishingWindowId, FONT_NORMAL, '·', task.data[T_FISH_NUM_DOTS] * 8, 1, 0, null);
+        task.data[T_FISH_NUM_DOTS]++;
+      }
+    }
+    return false;
+  }
+}
+
+function Fishing_CheckForBite(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  task.data[T_FISH_STEP]++;
+  let bite = false;
+  if (!DoesCurrentMapHaveFishingMons()) {
+    task.data[T_FISH_STEP] = FISHING_NO_BITE;
+  } else {
+    // 1:1 : bonus de morsure Suction Cups / Sticky Hold (GetMonAbility) — dette R3 (GetMonAbility non
+    // porté, comme dans wild_encounter). Le chemin de morsure normal (50%) s'applique.
+    if (!bite) {
+      if (_RandomFishing() & 1)
+        task.data[T_FISH_STEP] = FISHING_NO_BITE;
+      else
+        bite = true;
+    }
+    if (bite === true)
+      getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, GetFishingBiteDirectionAnimNum(GetPlayerFacingDirection()));
+  }
+  return true;
+}
+
+function Fishing_GotBite(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  // 1:1 AddTextPrinterParameterized(0, FONT_NORMAL, gText_OhABite, 0, 17, 0, NULL).
+  AddTextPrinterParameterized(sFishingWindowId, FONT_NORMAL, getString('gText_OhABite'), 0, 17, 0, null);
+  task.data[T_FISH_STEP]++;
+  task.data[T_FISH_FRAME_COUNTER] = 0;
+  return false;
+}
+
+function Fishing_WaitForA(task: DecompTask): boolean {
+  // 1:1 reelTimeouts : OLD 36 / GOOD 33 / SUPER 30.
+  const reelTimeouts = [36, 33, 30];
+  AlignFishingAnimationFrames();
+  task.data[T_FISH_FRAME_COUNTER]++;
+  if (task.data[T_FISH_FRAME_COUNTER] >= reelTimeouts[task.data[T_FISH_ROD]])
+    task.data[T_FISH_STEP] = FISHING_GOT_AWAY;
+  else if (getRuntime().gMain.newKeys & A_BUTTON)
+    task.data[T_FISH_STEP]++;
+  return false;
+}
+
+function Fishing_CheckMoreDots(task: DecompTask): boolean {
+  // 1:1 moreDotsChance[rod][round] : OLD {0,0} / GOOD {40,10} / SUPER {70,30}.
+  const moreDotsChance = [[0, 0], [40, 10], [70, 30]];
+  AlignFishingAnimationFrames();
+  task.data[T_FISH_STEP]++;
+  if (task.data[T_FISH_ROUNDS_PLAYED] < task.data[T_FISH_MIN_ROUNDS]) {
+    task.data[T_FISH_STEP] = FISHING_START_ROUND;
+  } else if (task.data[T_FISH_ROUNDS_PLAYED] < 2) {
+    const probability = _RandomFishing() % 100;
+    if (moreDotsChance[task.data[T_FISH_ROD]][task.data[T_FISH_ROUNDS_PLAYED]] > probability)
+      task.data[T_FISH_STEP] = FISHING_START_ROUND;
+  }
+  return false;
+}
+
+function Fishing_MonOnHook(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  FillWindowPixelBuffer(sFishingWindowId, PIXEL_FILL(1));
+  AddTextPrinterParameterized2(sFishingWindowId, FONT_NORMAL, getString('gText_PokemonOnHook'), 1, null,
+    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+  task.data[T_FISH_STEP]++;
+  task.data[T_FISH_FRAME_COUNTER] = 0;
+  return false;
+}
+
+function Fishing_StartEncounter(task: DecompTask): boolean {
+  if (task.data[T_FISH_FRAME_COUNTER] === 0)
+    AlignFishingAnimationFrames();
+  RunTextPrinters();
+  if (task.data[T_FISH_FRAME_COUNTER] === 0) {
+    if (!IsTextPrinterActive(sFishingWindowId)) {
+      const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+      ObjectEventSetGraphicsId(playerObjEvent, sFishingPlayerGfxId);
+      ObjectEventTurn(playerObjEvent, playerObjEvent.movementDirection);
+      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+        SetSurfBlob_PlayerOffset(getRuntime(), playerObjEvent.fieldEffectSpriteId, false, 0);
+      const sp = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+      if (sp) { sp.x2 = 0; sp.y2 = 0; }
+      ClearDialogWindowAndFrame(sFishingWindowId, true);
+      task.data[T_FISH_FRAME_COUNTER]++;
+      return false;
+    }
+  }
+  if (task.data[T_FISH_FRAME_COUNTER] !== 0) {
+    gPlayerAvatar.preventStep = false;
+    UnlockPlayerFieldControls();
+    FishingWildEncounter(task.data[T_FISH_ROD]);
+    // RecordFishingAttemptForTV(TRUE) — TV, dette R3 (skip).
+    DestroyTask(FindTaskIdByFunc(Task_Fishing));
+  }
+  return false;
+}
+
+function Fishing_NotEvenNibble(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));
+  FillWindowPixelBuffer(sFishingWindowId, PIXEL_FILL(1));
+  AddTextPrinterParameterized2(sFishingWindowId, FONT_NORMAL, getString('gText_NotEvenANibble'), 1, null,
+    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+  task.data[T_FISH_STEP] = FISHING_SHOW_RESULT;
+  return true;
+}
+
+function Fishing_GotAway(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  getRuntime().StartSpriteAnim(gPlayerAvatar.spriteId, GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));
+  FillWindowPixelBuffer(sFishingWindowId, PIXEL_FILL(1));
+  AddTextPrinterParameterized2(sFishingWindowId, FONT_NORMAL, getString('gText_ItGotAway'), 1, null,
+    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+  task.data[T_FISH_STEP]++;
+  return true;
+}
+
+function Fishing_NoMon(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  task.data[T_FISH_STEP]++;
+  return false;
+}
+
+function Fishing_PutRodAway(task: DecompTask): boolean {
+  AlignFishingAnimationFrames();
+  const sp = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+  if (sp && sp.animEnded) {
+    const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    ObjectEventSetGraphicsId(playerObjEvent, sFishingPlayerGfxId);
+    ObjectEventTurn(playerObjEvent, playerObjEvent.movementDirection);
+    if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+      SetSurfBlob_PlayerOffset(getRuntime(), playerObjEvent.fieldEffectSpriteId, false, 0);
+    sp.x2 = 0; sp.y2 = 0;
+    task.data[T_FISH_STEP]++;
+  }
+  return false;
+}
+
+function Fishing_EndNoMon(task: DecompTask): boolean {
+  void task;
+  RunTextPrinters();
+  if (!IsTextPrinterActive(sFishingWindowId)) {
+    gPlayerAvatar.preventStep = false;
+    UnlockPlayerFieldControls();
+    UnfreezeObjectEvents();
+    ClearDialogWindowAndFrame(sFishingWindowId, true);
+    // RecordFishingAttemptForTV(FALSE) — TV, dette R3 (skip).
+    DestroyTask(FindTaskIdByFunc(Task_Fishing));
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `sFishingStateFuncs[]` (field_player_avatar.c:1695). */
+const sFishingStateFuncs: ReadonlyArray<(task: DecompTask) => boolean> = [
+  Fishing_Init,
+  Fishing_GetRodOut,
+  Fishing_WaitBeforeDots,
+  Fishing_InitDots,       // FISHING_START_ROUND
+  Fishing_ShowDots,
+  Fishing_CheckForBite,
+  Fishing_GotBite,        // FISHING_GOT_BITE
+  Fishing_WaitForA,
+  Fishing_CheckMoreDots,
+  Fishing_MonOnHook,      // FISHING_ON_HOOK
+  Fishing_StartEncounter,
+  Fishing_NotEvenNibble,  // FISHING_NO_BITE
+  Fishing_GotAway,        // FISHING_GOT_AWAY
+  Fishing_NoMon,          // FISHING_SHOW_RESULT
+  Fishing_PutRodAway,
+  Fishing_EndNoMon,
+];
+
+// Dev hook (A/B pêche : force StartFishing après préchargement du gfx canne).
+(globalThis as Record<string, unknown>).__StartFishing = async (rod = 2) => {
+  await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));
+  StartFishing(rod);
+  return 'StartFishing rod=' + rod;
 };
 
 /** 1:1 STRICT décomp `SetPlayerAvatarStateMask` (field_player_avatar.c:1325) :

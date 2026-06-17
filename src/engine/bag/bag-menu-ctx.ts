@@ -66,7 +66,13 @@ import { JOY_NEW, PALETTES_ALL, getRuntime } from '../system/decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from '../ui/gba-text-system';
-import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from '../system/decomp-bridge';
+import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../system/decomp-bridge';
+// ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe
+// fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
+// (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où
+// on utilise une canne → le dynamic import résout instantané (cache), sans cycle d'éval.
+let _playerAvatarMod: typeof import('../field/player-avatar') | null = null;
+void import('../field/player-avatar').then((m) => { _playerAvatarMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
@@ -546,16 +552,15 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       return;
     }
     case 'ItemUseOutOfBattle_Bike':
+      // 1:1 décomp `ItemUseOutOfBattle_Bike` (item_use.c:200) : toggle l'avatar vélo
+      // (PLAYER_AVATAR_FLAG_MACH/ACRO_BIKE via GetOnOffBike) → fade+close vers le field.
+      // ⚠️ Le sous-système avatar vélo (bike.c : transition + machine Mach/Acro) = **CIBLE SUIVANTE**,
+      // pas encore porté → NO-OP volontaire : on ferme le sac (le « use » a lieu) sans monter sur le vélo.
+      // (Pas de DadsAdvice : le vélo EST sélectionnable/utilisable, juste sans effet pour l'instant.)
+      Task_FadeAndCloseBagMenu(task);
+      return;
     case 'ItemUseOutOfBattle_EscapeRope':
-      // 1:1 décomp item_use.c:200-224/930-941 : ces handlers DOIVENT toggle
-      // l'avatar bike (PLAYER_AVATAR_FLAG_MACH/ACRO_BIKE via GetOnOffBike)
-      // ou warp out (SetEscapeWarp + DoEscapeRopeFieldEffect). Aucun message
-      // intermédiaire dans le décomp — le sac fade direct vers l'effet field.
-      // Ces subsystems overworld (= bike avatar form switching, escape rope
-      // warp anim) ne sont PAS portés. Pour rester 1:1 strict, fallback
-      // DadsAdvice (= 1:1 décomp comportement quand prerequisite check
-      // échoue, e.g. !Overworld_IsBikingAllowed || !allowEscaping). À porter
-      // proprement = chantier overworld subsystem dédié, voir DETTE-OVERWORLD.
+      // Escape Rope : warp out (SetEscapeWarp + DoEscapeRopeFieldEffect) non porté → DadsAdvice 1:1.
       msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Repel': {
@@ -702,19 +707,31 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       }
       break;
     }
+    case 'ItemUseOutOfBattle_Rod': {
+      // 1:1 décomp `ItemUseOutOfBattle_Rod` (item_use.c:267) :
+      //   if (CanFish()) { sItemUseOnFieldCB = ItemUseOnFieldCB_Rod; SetUpItemUseOnFieldCallback(taskId); }
+      //   else DisplayDadsAdviceCannotUseItemMessage();
+      // `SetUpItemUseOnFieldCallback` pose `gFieldCallback` (run au retour OW via RunFieldCallback) +
+      // `Task_FadeAndCloseBagMenu`. `ItemUseOnFieldCB_Rod` → `StartFishing(GetItemSecondaryId(itemId))`.
+      if (_playerAvatarMod && _playerAvatarMod.CanFish()) {
+        // GetItemSecondaryId renvoie 'OLD_ROD'/'GOOD_ROD'/'SUPER_ROD' (string) → rod 0/1/2.
+        const rodSec = GetItemSecondaryId(itemId);
+        const rod = rodSec === 'GOOD_ROD' ? 1 : rodSec === 'SUPER_ROD' ? 2 : 0;
+        const pa = _playerAvatarMod;
+        (globalThis as Record<string, unknown>).gFieldCallback = () => { pa.StartFishing(rod); };
+        Task_FadeAndCloseBagMenu(task);
+        return;
+      }
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      break;
+    }
     case 'ItemUseOutOfBattle_Mail':
-    case 'ItemUseOutOfBattle_Rod':
     case 'ItemUseOutOfBattle_PokeblockCase':
     case 'ItemUseOutOfBattle_Berry':
     case 'ItemUseOutOfBattle_WailmerPail':
-      // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou
-      // un sous-système overworld (rod/wailmer berry/plant berry). Quand la
-      // condition prerequisite n'est pas remplie (cf. décomp Rod :269
-      // CanFish()==FALSE → DadsAdvice, WailmerPail :721 same), le décomp
-      // affiche DadsAdvice. Notre port : condition jamais remplie (pas
-      // d'overworld subsystem), donc DadsAdvice = 1:1 valide pour ces items
-      // en l'état. À étendre quand fishing/mail/pokeblock/berry-water
-      // seront portés (= chantiers indépendants).
+      // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou un sous-système overworld
+      // (wailmer berry / plant berry) pas encore portés → DadsAdvice 1:1 (condition prerequisite jamais
+      // remplie). À étendre quand mail/pokeblock/berry-water seront portés (chantiers indépendants).
       msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     default:

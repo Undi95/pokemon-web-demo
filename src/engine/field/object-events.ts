@@ -182,6 +182,18 @@ export function GetFishingBiteDirectionAnimNum(direction: number): number {
   return sFishingBiteDirectionAnimNums[direction] ?? 8;
 }
 
+/** 1:1 STRICT décomp `ObjectEventTurn(struct ObjectEvent *, u8 direction)` (event_object_movement.c:1779) :
+ *    SetObjectEventDirection(objectEvent, direction);
+ *    if (!objectEvent->inanimate) { StartSpriteAnim(sprite, GetFaceDirectionAnimNum(facingDirection)); SeekSpriteAnim(sprite, 0); }
+ *  Tourne l'object event vers `direction` + (re)lance l'anim « face » depuis la frame 0. */
+export function ObjectEventTurn(objectEvent: ObjectEvent, direction: number): void {
+  SetObjectEventDirection(objectEvent, direction);
+  if (!objectEvent.inanimate && objectEvent.spriteId >= 0) {
+    // StartSpriteAnim(...) + SeekSpriteAnim(0) → notre StartSpriteAnim repart déjà de la frame 0.
+    getRuntime().StartSpriteAnim(objectEvent.spriteId, GetFaceDirectionAnimNum(objectEvent.facingDirection));
+  }
+}
+
 // 1:1 STRICT décomp `sMoveDirectionFastAnimNums` (event_object_movement.c) :
 // direction → animNum walk RAPIDE. ANIM_STD_GO_FAST_SOUTH=8 (cmds de 4 frames).
 const sMoveDirectionFastAnimNums: Readonly<Record<number, number>> = {

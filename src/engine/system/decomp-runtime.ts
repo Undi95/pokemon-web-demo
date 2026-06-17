@@ -2293,6 +2293,17 @@ export class DecompRuntime {
     if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
   }
 
+  /** 1:1 décomp `src/sprite.c AnimateSprite(&gSprites[id])` — avance d'UN cran l'anim frame du sprite
+   *  (BeginAnim/ContinueAnim + RequestSpriteFrameImageCopy). API par id qui délègue à la fonction 1:1
+   *  STRICT `AnimateSprite` (sprite-animation.ts) ; le pont DecompSprite→AnimDispatchSprite (anims
+   *  `unknown[][]`) est encapsulé ici, comme `StartSpriteAnim`/`tickSpriteAnims`. Pour les drivers
+   *  manuels (ex. `AlignFishingAnimationFrames` qui anime le sprite joueur pendant la pêche). */
+  AnimateSprite(spriteId: number): void {
+    const sprite = this.gSprites.get(spriteId);
+    if (sprite && sprite.anims)
+      _AnimateSprite_1to1(this, sprite as never);
+  }
+
   /** 1:1 décomp `src/sprite.c:1359 SeekSpriteAnim(sprite, animCmdIndex)` — avance l'anim au
    *  cmd index donné + applique la frame correspondante immédiatement (= sprite avance à un
    *  point précis de sa séquence, ex FldEff_SandPile démarre sur la frame "sable retombé").
