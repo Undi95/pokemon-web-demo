@@ -5141,35 +5141,61 @@ function _makeAcroWheelieFaceAction(dir: number): MovementActionFunc {
   };
 }
 
-/** 1:1 décomp `MovementAction_AcroPopWheelieX_Step0` :
- *    StartSpriteAnimInDirection(obj, sprite, dir, GetAcroWheelieDirectionAnimNum(dir));
- *    return FALSE; */
+/** 1:1 décomp table `gMovementActionFuncs_AcroPopWheelieX` = [Step0, WaitSpriteAnim, PauseSpriteAnim] :
+ *    Step0: StartSpriteAnimInDirection(obj, sprite, dir, GetAcroWheelieDirectionAnimNum(dir)); return FALSE.
+ *    Step1 (WaitSpriteAnim): attend sprite->animEnded → avance. Step2 (PauseSpriteAnim): animPaused=TRUE; return TRUE.
+ *  ⚠️ Le décomp avance l'anim via AnimateSprites() (tick global par frame) ; notre port ne tick PAS
+ *  le sprite joueur ailleurs (seulement les `inanimate`) → la WaitSpriteAnim avance l'anim ICI
+ *  (AnimateSprite) pour que l'anim one-shot pop wheelie [frame,frame,end] se joue et set animEnded.
+ *  Sans ça : action jamais finie → held bloqué → TryInterrupt gèle l'input wheelie (bfc reste 0). */
 function _makeAcroPopWheelieAction(dir: number): MovementActionFunc {
   return (rt, npc) => {
-    SetObjectEventDirection(npc, dir);
-    if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
-      if (sprite && sprite.anims) {
-        StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
-      }
+    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+    if (npc.actionStep === 0) {
+      SetObjectEventDirection(npc, dir);
+      // 1:1 décomp StartSpriteAnimInDirection→SetAndStartSpriteAnim : clear animPaused (sinon l'anim
+      // héritée paused — ex. depuis l'idle wheelie PauseSpriteAnim — n'avance pas → WaitSpriteAnim gèle).
+      if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0); sprite.animPaused = false; }
+      npc.actionStep = 1;
+      return false;
     }
-    return false;
+    if (npc.actionStep === 1) {  // WaitSpriteAnim
+      if (sprite && sprite.anims) {
+        AnimateSprite(rt, sprite as never);
+        if (sprite.animEnded) npc.actionStep = 2;
+      } else {
+        npc.actionStep = 2;
+      }
+      return false;
+    }
+    if (sprite) sprite.animPaused = true;  // PauseSpriteAnim
+    return true;
   };
 }
 
-/** 1:1 décomp `MovementAction_AcroEndWheelieFaceX_Step0` :
- *    StartSpriteAnimInDirection(obj, sprite, dir, GetAcroEndWheelieDirectionAnimNum(dir));
- *    return FALSE; */
+/** 1:1 décomp table `gMovementActionFuncs_AcroEndWheelieFaceX` = [Step0, WaitSpriteAnim, PauseSpriteAnim].
+ *  Idem pop wheelie : anim one-shot end-wheelie avancée ici (notre port ne tick pas le joueur ailleurs). */
 function _makeAcroEndWheelieFaceAction(dir: number): MovementActionFunc {
   return (rt, npc) => {
-    SetObjectEventDirection(npc, dir);
-    if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
-      if (sprite && sprite.anims) {
-        StartSpriteAnim(sprite as never, sAcroEndWheelieDirectionAnimNums[dir] ?? 0);
-      }
+    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+    if (npc.actionStep === 0) {
+      SetObjectEventDirection(npc, dir);
+      // 1:1 SetAndStartSpriteAnim : clear animPaused (l'idle wheelie a posé animPaused=TRUE).
+      if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, sAcroEndWheelieDirectionAnimNums[dir] ?? 0); sprite.animPaused = false; }
+      npc.actionStep = 1;
+      return false;
     }
-    return false;
+    if (npc.actionStep === 1) {  // WaitSpriteAnim
+      if (sprite && sprite.anims) {
+        AnimateSprite(rt, sprite as never);
+        if (sprite.animEnded) npc.actionStep = 2;
+      } else {
+        npc.actionStep = 2;
+      }
+      return false;
+    }
+    if (sprite) sprite.animPaused = true;  // PauseSpriteAnim
+    return true;
   };
 }
 
