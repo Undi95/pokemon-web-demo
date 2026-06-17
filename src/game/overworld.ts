@@ -43,6 +43,18 @@ export function Overworld_ResetStateAfterTeleport(): void {
   FlagClear('FLAG_SYS_USE_FLASH');
 }
 
+/** 1:1 STRICT décomp `Overworld_ResetStateAfterDigEscRope(void)` (overworld.c) :
+ *    ResetInitialPlayerAvatarState();   // dette mineure (re-spawn avatar)
+ *    FlagClear(FLAG_SYS_CYCLING_ROAD/CRUISE_MODE/SAFARI_MODE/USE_STRENGTH/USE_FLASH);
+ *  (= identique à ResetStateAfterTeleport sans le RunScriptImmediately(ResetMrBriney).) */
+export function Overworld_ResetStateAfterDigEscRope(): void {
+  FlagClear('FLAG_SYS_CYCLING_ROAD');
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+  FlagClear('FLAG_SYS_SAFARI_MODE');
+  FlagClear('FLAG_SYS_USE_STRENGTH');
+  FlagClear('FLAG_SYS_USE_FLASH');
+}
+
 /** 1:1 STRICT décomp `SetDefaultFlashLevel(void)` (overworld.c:970) :
  *    if (!gMapHeader.cave)            gSaveBlock1Ptr->flashLevel = 0;          // pleine lumière
  *    else if (FlagGet(FLAG_SYS_USE_FLASH)) gSaveBlock1Ptr->flashLevel = 1;    // grand cercle (Flash utilisé)

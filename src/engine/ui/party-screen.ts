@@ -62,7 +62,7 @@ import {
 } from '../system/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN, GetMapNameGeneric } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
@@ -2085,7 +2085,8 @@ const FIELD_MOVE_FLY          = 5;
 const FIELD_MOVE_DIVE         = 6;
 const FIELD_MOVE_WATERFALL    = 7;
 const FIELD_MOVE_TELEPORT     = 8;
-// (DIG=9, SECRET_POWER=10 — branchés au fur et à mesure de leur port.)
+const FIELD_MOVE_DIG          = 9;
+// (SECRET_POWER=10 — branché au fur et à mesure de son port.)
 const FIELD_MOVE_MILK_DRINK   = 11;
 const FIELD_MOVE_SOFT_BOILED  = 12;
 const FIELD_MOVE_SWEET_SCENT  = 13;
@@ -2202,12 +2203,46 @@ function PartyMenuDisplayYesNoMenu(): void {
  *  message (« Retourner au dernier lieu de soins? ») puis la boîte Oui/Non. Le
  *  printer du port est instantané → on crée la boîte directement. Phase
  *  'fieldmove_yesno' → tick Menu_ProcessInputNoWrapClearOnChoose. */
-function _displayFieldMoveExitAreaMessage(stringKey: string): void {
-  const raw = getString(stringKey) || '';
+function _displayFieldMoveExitAreaMessage(stringKey: string, var1?: string): void {
+  let raw = getString(stringKey) || '';
+  if (var1 != null) raw = raw.replace('{STR_VAR_1}', var1);
   _itemUsedMsgText = raw.replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
   _phase = 'fieldmove_yesno';
   _drawMsg();
   PartyMenuDisplayYesNoMenu();
+}
+
+/** 1:1 décomp `SetUpFieldMove_Dig(void)` (fldeff_dig.c:17) :
+ *      if (CanUseDigOrEscapeRopeOnCurMap()) {   // = gMapHeader.allowEscaping (item_use.c)
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Dig;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  FieldCallback_Dig vit dans game/fldeff_dig.ts (exposé __FieldCallback_Dig). */
+function SetUpFieldMove_Dig(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const hdr = g.gMapHeader as { allowEscaping?: boolean } | null | undefined;
+  if (hdr?.allowEscaping === true) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_Dig as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
+/** Nom FR du lieu d'évasion (escapeWarp) pour le message Dig. Le port stocke
+ *  `__escapeWarp = {mapName, x, y}` (mapName sans préfixe MAP_) → on convertit en
+ *  `MAPSEC_*` et on résout via GetMapNameGeneric (= map-names-fr.json). 1:1 décomp :
+ *  GetMapNameGeneric(gStringVar1, mapHeader->regionMapSectionId) de l'escapeWarp.
+ *  (Pour une ville d'entrée de donjon, MAP_X ↔ MAPSEC_X — exact ; cas exotiques
+ *  → fallback nom vide.) */
+function _escapeDestFriendlyName(): string {
+  const esc = (globalThis as Record<string, unknown>).__escapeWarp as { mapName?: string } | undefined;
+  const mapName = esc?.mapName ?? '';
+  if (!mapName) return '';
+  const mapsec = `MAPSEC_${mapName.replace(/^MAP_/, '')}`;
+  return GetMapNameGeneric(null, mapsec) || '';
 }
 
 /** 1:1 décomp `FieldCallback_SweetScent(void)` (fldeff_sweetscent.c:33) :
@@ -2392,6 +2427,7 @@ const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
   [FIELD_MOVE_TELEPORT]:    { fieldMoveFunc: SetUpFieldMove_Teleport,   msgId: 'gText_CantUseHere' },
+  [FIELD_MOVE_DIG]:         { fieldMoveFunc: SetUpFieldMove_Dig,        msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_MILK_DRINK]:  { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SOFT_BOILED]: { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SWEET_SCENT]: { fieldMoveFunc: SetUpFieldMove_SweetScent, msgId: 'gText_CantUseHere' },
@@ -2451,6 +2487,11 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
         // gText_ReturnToHealingSpot ne l'utilise PAS → skip.) Sur OUI → retour-field
         // → FieldCallback_Teleport → warp vers lastHealLocation.
         _displayFieldMoveExitAreaMessage('gText_ReturnToHealingSpot');
+        break;
+      case FIELD_MOVE_DIG:
+        // 1:1 décomp : « Fuir d'ici et retourner à {STR_VAR_1}? » ({STR_VAR_1} =
+        // nom FR du lieu d'évasion) + Oui/Non. Sur OUI → FieldCallback_Dig → warp escapeWarp.
+        _displayFieldMoveExitAreaMessage('gText_EscapeFromHere', _escapeDestFriendlyName());
         break;
       default:
         // 1:1 décomp : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.

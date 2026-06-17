@@ -47,6 +47,7 @@ import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
 import { FldEff_UseRockSmash } from '../../game/fldeff_rocksmash';
 import { FldEff_SweetScent } from '../../game/fldeff_sweetscent';
 import { FldEff_UseTeleport } from '../../game/fldeff_teleport';
+import { FldEff_UseDig } from '../../game/fldeff_dig';
 // Side-effect : charge game/fldeff_flash.ts → expose __FieldCallback_Flash sur
 // globalThis (le move FLASH n'a PAS de FLDEFF dispatch — FldEff_UseFlash est un
 // callback de field-move task, pas un FieldEffectStart, cf. fldeff_flash.c:87).
@@ -90,6 +91,7 @@ export const FLDEFF_SHORT_GRASS                = 41;
 export const FLDEFF_USE_ROCK_SMASH             = 37;
 export const FLDEFF_SWEET_SCENT                = 51;
 export const FLDEFF_USE_TELEPORT               = 63;
+export const FLDEFF_USE_DIG                    = 38;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_USE_WATERFALL              = 43;
 export const FLDEFF_USE_DIVE                   = 44;
@@ -282,6 +284,11 @@ export function FieldEffectStart(id: number): number {
     // FldEff_UseTeleport (fldeff_teleport.c:34) — game/fldeff_teleport.ts. CŒUR WARP
     // (simplifié) : warp vers lastHealLocation + fade. Spin-out/in 1:1 = follow-up.
     return FldEff_UseTeleport(rt);
+  }
+  if (id === FLDEFF_USE_DIG) {
+    // FldEff_UseDig (fldeff_dig.c:38) — game/fldeff_dig.ts. CŒUR WARP (simplifié) :
+    // warp vers escapeWarp + fade. Anim de creusage 1:1 = follow-up.
+    return FldEff_UseDig(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
