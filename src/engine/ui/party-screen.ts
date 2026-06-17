@@ -79,6 +79,7 @@ import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
+  PARTY_ACTION_SOFTBOILED,
 } from '../decomp-data/include/constants/party_menu-data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
@@ -301,7 +302,7 @@ interface PartyAssets {
 
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
-  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' = 'idle';
+  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -994,7 +995,7 @@ function _drawMsg(): void {
     template = MSG_WINDOW_TEMPLATE;
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
       || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
-      || _phase === 'field_move_err') && _itemUsedMsgText) {
+      || _phase === 'field_move_err' || _phase === 'softboiled_msg') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
@@ -1003,10 +1004,11 @@ function _drawMsg(): void {
     // gardent ce même message ("X est promu au N.Y") affiché sous la box.
     msg = _itemUsedMsgText;
     template = ITEM_USED_MSG_WINDOW_TEMPLATE;
-  } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
+  } else if (_partyAction === PARTY_ACTION_USE_ITEM || _partyAction === PARTY_ACTION_SOFTBOILED) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
     // (party_menu.c:4646 ; party_menu.h:605 → gText_UseOnWhichPokemon ;
     //  strings.c:433 = "Utiliser sur quel POKéMON?"). Famille fenêtre CHOOSE_MON.
+    // SOFTBOILED (Soin/E-Coque) : choix du receveur du transfert PV.
     msg = getString('gText_UseOnWhichPokemon');
     template = MSG_WINDOW_TEMPLATE;
   } else {
@@ -2079,8 +2081,9 @@ const FIELD_MOVE_SURF         = 4;
 const FIELD_MOVE_FLY          = 5;
 const FIELD_MOVE_DIVE         = 6;
 const FIELD_MOVE_WATERFALL    = 7;
-// (TELEPORT=8, DIG=9, SECRET_POWER=10, MILK_DRINK=11, SOFT_BOILED=12 —
-//  branchés au fur et à mesure de leur port.)
+// (TELEPORT=8, DIG=9, SECRET_POWER=10 — branchés au fur et à mesure de leur port.)
+const FIELD_MOVE_MILK_DRINK   = 11;
+const FIELD_MOVE_SOFT_BOILED  = 12;
 const FIELD_MOVE_SWEET_SCENT  = 13;
 
 /** 1:1 décomp `FLDEFF_*` (field_effect.h) — const locales (pattern
@@ -2157,6 +2160,121 @@ function SetUpFieldMove_SweetScent(): boolean {
   return true;
 }
 
+// ─── Soin / E-Coque (Soft-Boiled / Milk Drink) — transfert PV intra-party ────
+// 1:1 décomp fldeff_softboiled.c + party_menu.c (HandleChooseMonSelection cas
+// PARTY_ACTION_SOFTBOILED). Entièrement interne au party menu : le mon
+// sélectionné (= _slotId2, le DONNEUR) cède maxHP/5 PV à un autre mon choisi au
+// curseur (= _slotId, le RECEVEUR). Convention curseur du port : le curseur bouge
+// _slotId (receveur), _slotId2 reste fixe (donneur) — comme le mode SWITCH.
+
+/** Montant de PV transféré (= maxHP_donneur/5), partagé entre l'étape -PV (donneur)
+ *  et +PV (receveur). 1:1 décomp : les 2 PartyMenuModifyHP utilisent maxHP[slotId]/5. */
+let _softboiledAmount = 0;
+/** Continuation après ack (A/B) d'un message softboiled (phase 'softboiled_msg'). */
+let _softboiledMsgOnAck: (() => void) | null = null;
+
+/** Affiche un message softboiled FR (placeholders déjà résolus) puis attend A/B
+ *  → exécute `onAck`. */
+function _displaySoftboiledMessage(text: string, onAck: () => void): void {
+  _itemUsedMsgText = text;
+  _softboiledMsgOnAck = onAck;
+  _phase = 'softboiled_msg';
+  _drawMsg();
+}
+
+/** 1:1 décomp `SetUpFieldMove_SoftBoiled(void)` (fldeff_softboiled.c:18) :
+ *      maxHp = MAX_HP(user); hp = HP(user);
+ *      return (hp > maxHp / 5);   // assez de PV à donner */
+function SetUpFieldMove_SoftBoiled(): boolean {
+  const mon = _slotMon(_slotId);
+  if (!mon) return false;
+  return mon.hp > Math.floor(mon.maxHP / 5);
+}
+
+/** 1:1 décomp `ChooseMonForSoftboiled(u8 taskId)` (fldeff_softboiled.c:33) :
+ *      gPartyMenu.action = PARTY_ACTION_SOFTBOILED;
+ *      gPartyMenu.slotId2 = gPartyMenu.slotId;          // mémorise le DONNEUR
+ *      AnimatePartySlot(GetCursorSelectionMonId(), 1);
+ *      DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);
+ *      gTasks[taskId].func = Task_HandleChooseMonInput;  // re-choix de mon
+ *  L'action window a déjà été retirée par CursorCb_FieldMove. */
+function ChooseMonForSoftboiled(): void {
+  _partyAction = PARTY_ACTION_SOFTBOILED;
+  _slotId2 = _slotId;               // 1:1 : slotId2 = DONNEUR (port : curseur = _slotId)
+  AnimatePartySlot(_slotId, 1);
+  _actionList = [];
+  _actionCursor = 0;
+  _phase = 'open';
+  _drawMsg();                       // "Utiliser sur quel POKéMON?" (cf. _drawMsg)
+}
+
+/** 1:1 décomp `Task_FinishSoftboiled` (fldeff_softboiled.c:80) : reset action,
+ *  curseur revient sur le donneur, message CHOOSE_MON, re-choix. */
+function Task_FinishSoftboiled(): void {
+  _partyAction = PARTY_ACTION_CHOOSE_MON;
+  AnimatePartySlot(_slotId, 0);
+  _slotId = _slotId2;               // 1:1 :88 slotId = slotId2 (retour sur le donneur)
+  AnimatePartySlot(_slotId, 1);
+  _phase = 'open';
+  _drawMsg();
+}
+
+/** 1:1 décomp `Task_DisplayHPRestoredMessage` (fldeff_softboiled.c:71) :
+ *      GetMonNickname(recipient, gStringVar1);
+ *      StringExpandPlaceholders(gStringVar4, gText_PkmnHPRestoredByVar2);
+ *      DisplayPartyMenuMessage(...); -> Task_FinishSoftboiled */
+function Task_DisplayHPRestoredMessage(): void {
+  const recipient = _slotMon(_slotId);
+  const nick = recipient?.nickname ?? '';
+  const raw = getString('gText_PkmnHPRestoredByVar2') || '';
+  const msg = raw
+    .replace('{STR_VAR_1}', nick)
+    .replace('{STR_VAR_2}', String(_softboiledAmount))
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\\n/g, '\n');
+  _displaySoftboiledMessage(msg, Task_FinishSoftboiled);
+}
+
+/** 1:1 décomp `Task_SoftboiledRestoreHealth` (fldeff_softboiled.c:64) :
+ *      PlaySE(SE_USE_ITEM);   // audio skip
+ *      PartyMenuModifyHP(taskId, slotId2 [receveur], +1, maxHP[slotId]/5, Task_DisplayHPRestoredMessage); */
+function Task_SoftboiledRestoreHealth(): void {
+  const recipient = _slotMon(_slotId);   // port : curseur = receveur
+  if (!recipient) { Task_DisplayHPRestoredMessage(); return; }
+  const newHp = Math.min(recipient.hp + _softboiledAmount, recipient.maxHP);
+  PartyMenuAnimateHP(_slotId, recipient.hp, newHp, Task_DisplayHPRestoredMessage);
+}
+
+/** 1:1 décomp `CantUseSoftboiledOnMon` (fldeff_softboiled.c:111) :
+ *      DisplayPartyMenuMessage(gText_CantBeUsedOnPkmn); -> Task_ChooseNewMonForSoftboiled
+ *  (= re-affiche "Utiliser sur quel POKéMON?" et reste en mode SOFTBOILED). */
+function CantUseSoftboiledOnMon(): void {
+  const raw = getString('gText_CantBeUsedOnPkmn') || '';
+  const msg = raw.replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _displaySoftboiledMessage(msg, () => { _phase = 'open'; _drawMsg(); });
+}
+
+/** 1:1 décomp `Task_TryUseSoftboiledOnPartyMon(u8 taskId)` (fldeff_softboiled.c:42).
+ *  user = slotId (décomp) = _slotId2 (port, DONNEUR) ; recipient = slotId2 (décomp)
+ *  = _slotId (port, curseur/RECEVEUR). Validation : receveur K.O. / == donneur /
+ *  déjà au max → CantUse ; sinon -PV donneur puis +PV receveur. */
+function Task_TryUseSoftboiledOnPartyMon(): void {
+  const userId = _slotId2;        // DONNEUR
+  const recipientId = _slotId;    // RECEVEUR (curseur)
+  const user = _slotMon(userId);
+  const recipient = _slotMon(recipientId);
+  if (!user || !recipient) { CantUseSoftboiledOnMon(); return; }
+  if (recipient.hp === 0 || userId === recipientId || recipient.maxHP === recipient.hp) {
+    CantUseSoftboiledOnMon();
+    return;
+  }
+  // PlaySE(SE_USE_ITEM) : skip (règle audio). amount = maxHP_donneur/5.
+  _softboiledAmount = Math.floor(user.maxHP / 5);
+  const userNewHp = Math.max(user.hp - _softboiledAmount, 0);
+  // -PV donneur d'abord, puis +PV receveur (chaîne 1:1 via callbacks).
+  PartyMenuAnimateHP(userId, user.hp, userNewHp, Task_SoftboiledRestoreHealth);
+}
+
 /** 1:1 décomp `Task_FieldMoveWaitForFade(u8 taskId)` (party_menu.c:3823) :
  *      if (IsWeatherNotFadingIn() == TRUE) {
  *          gFieldEffectArguments[0] = GetFieldMoveMonSpecies();
@@ -2200,6 +2318,8 @@ interface FieldMoveCursorCallback {
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
+  [FIELD_MOVE_MILK_DRINK]:  { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
+  [FIELD_MOVE_SOFT_BOILED]: { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SWEET_SCENT]: { fieldMoveFunc: SetUpFieldMove_SweetScent, msgId: 'gText_CantUseHere' },
 };
 
@@ -2245,6 +2365,12 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
   }
   if (cb.fieldMoveFunc() === true) {
     switch (fieldMove) {
+      case FIELD_MOVE_MILK_DRINK:
+      case FIELD_MOVE_SOFT_BOILED:
+        // 1:1 décomp : ChooseMonForSoftboiled(taskId) — reste DANS le menu
+        // (choix du receveur + transfert PV), pas de close/retour-field.
+        ChooseMonForSoftboiled();
+        break;
       default:
         // 1:1 décomp : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.
         // Le retour-field (Local, PAS WithOpenMenu) run gFieldCallback2 =
@@ -2381,6 +2507,21 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     }
     return;
   }
+  // Sub-state message softboiled (PV restaurés / inutilisable) : A/B → continuation
+  // (Task_FinishSoftboiled ou re-choix receveur). 1:1 décomp Task_FinishSoftboiled /
+  // Task_ChooseNewMonForSoftboiled (qui attendent !IsPartyMenuTextPrinterActive ;
+  // notre msg = {PAUSE_UNTIL_PRESS} → ack par A/B).
+  if (_phase === 'softboiled_msg') {
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (newKeys & (KEY_A | KEY_B)) {
+      PlaySE(5);  // SE_SELECT
+      _itemUsedMsgText = null;
+      const cb = _softboiledMsgOnAck; _softboiledMsgOnAck = null;
+      cb?.();
+    }
+    return;
+  }
   // Sub-states boîte de stats level-up (Rare Candy / Super Bonbon) — 1:1 décomp
   // Task_DisplayLevelUpStatsPg1 → Pg2 → Task_TryLearnNewMoves (party_menu.c:5009-5073).
   if (_phase === 'levelup_pg1') {
@@ -2503,13 +2644,24 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         (globalThis as Record<string, unknown>).__battleSwitchResultSlot = fieldId;
       }
       ClosePartyScreen();
+    } else if (_partyAction === PARTY_ACTION_SOFTBOILED) {
+      // 1:1 décomp HandleChooseMonSelection case PARTY_ACTION_SOFTBOILED
+      // (party_menu.c:1302) : A sur un mon (≠ CANCEL, mappé à B) → tente le
+      // transfert PV sur le receveur (= _slotId). PlaySE déjà géré par le SE
+      // interne des sous-tâches ; ici on ne re-joue pas SE_SELECT (le décomp
+      // joue SE_USE_ITEM dans Task_TryUse).
+      Task_TryUseSoftboiledOnPartyMon();
     } else {
       // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
       _openActionMenu(rt);
     }
   } else if (result === KEY_B) {
     PlaySE(5);
-    if (_partyAction === PARTY_ACTION_SWITCH) {
+    if (_partyAction === PARTY_ACTION_SOFTBOILED) {
+      // 1:1 décomp HandleChooseMonCancel case SOFTBOILED (party_menu.c:1386) :
+      // annule le transfert → retour au choix de mon normal (curseur sur le donneur).
+      Task_FinishSoftboiled();
+    } else if (_partyAction === PARTY_ACTION_SWITCH) {
       // 1:1 net : B / Cancel pendant SWITCH = annule (= SwitchSelectedMons
       // slot2==slot1 → FinishTwoMonAction, party_menu.c:2827-2830).
       _finishTwoMonAction();
