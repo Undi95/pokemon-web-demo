@@ -51,6 +51,7 @@ import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { gMoveNames } from '../data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag } from '../system/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
@@ -1629,13 +1630,23 @@ const ACTION_MENU_STRINGS_FR: Record<number, string> = {
   // Résolution dynamique dans _renderActionMenuContents (= pas table statique).
 };
 
-/** Field move names FR — sMovesNamesFR mapped via sFieldMoves order. */
-const FIELD_MOVE_NAMES_FR: readonly string[] = [
-  'COUPE', 'FLASH', 'EBOULEMENT', 'FORCE',
-  'SURF', 'VOL', 'PLONGEE', 'CASCADE',
-  'TELEPORT', 'TUNNEL', 'POUVOIRSECRET', 'BUVECLAIR',
-  'DOUXFOYER', 'DOUXPARFUM',  // 1:1 ordering decomp
+/** 1:1 décomp `sFieldMoves[]` (data/party_menu.h:745) = les MOVE_* de chaque field move,
+ *  MÊME ORDRE que `sFieldMoves` kebab ci-dessus. Le NOM affiché vient de `gMoveNames[move]`
+ *  (1:1 décomp : `DisplaySelectionWindow` → `StringCopy(.., gMoveNames[move])`), PAS d'une table
+ *  FR codée en dur — celle-ci dérivait (EBOULEMENT au lieu d'ECLATE-ROC, POUVOIRSECRET au lieu de
+ *  FORCE CACHEE, BUVECLAIR/DOUXFOYER/DOUXPARFUM faux). gMoveNames = source canonique (move-names-fr.json). */
+const sFieldMoveMoveConstants: readonly string[] = [
+  'MOVE_CUT', 'MOVE_FLASH', 'MOVE_ROCK_SMASH', 'MOVE_STRENGTH',
+  'MOVE_SURF', 'MOVE_FLY', 'MOVE_DIVE', 'MOVE_WATERFALL',
+  'MOVE_TELEPORT', 'MOVE_DIG', 'MOVE_SECRET_POWER', 'MOVE_MILK_DRINK',
+  'MOVE_SOFT_BOILED', 'MOVE_SWEET_SCENT',
 ];
+
+/** Nom FR d'un field move (index j) via `gMoveNames[move]` — 1:1 décomp. */
+function _fieldMoveName(j: number): string {
+  const moveId = resolveDecompConstant(sFieldMoveMoveConstants[j] ?? '') ?? 0;
+  return gMoveNames[moveId] ?? '';
+}
 
 /** Re-render action menu contents (= called au open + après cursor move).
  *  Le cursor "▶" est blit devant l'item selected. 1:1 décomp pattern
@@ -1657,7 +1668,7 @@ function _renderActionMenuContents(): void {
     // FIELD_MOVE_NAMES_FR[j] où j = action - MENU_FIELD_MOVES.
     const actionKey = _actionList[i];
     const str = actionKey >= MENU_FIELD_MOVES
-      ? (FIELD_MOVE_NAMES_FR[actionKey - MENU_FIELD_MOVES] ?? '')
+      ? _fieldMoveName(actionKey - MENU_FIELD_MOVES)
       : (ACTION_MENU_STRINGS_FR[actionKey] ?? '');
     const isSelected = i === _actionCursor;
     // Cursor arrow ▶ devant le selected item à x=0, text à x=8 (= cursorDim).
@@ -2106,7 +2117,7 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
       //  3. Si pas badge → afficher "Pas la marque pour utiliser X".
       // Demande wire field-effect.c subsystem + flag check + script setup.
       const fieldMoveIdx = action - MENU_FIELD_MOVES;
-      console.log(`[party-screen] FIELD_MOVE[${fieldMoveIdx}=${FIELD_MOVE_NAMES_FR[fieldMoveIdx] ?? '?'}] → dette R3 (cascade CursorCb_FieldMove U-tier)`);
+      console.log(`[party-screen] FIELD_MOVE[${fieldMoveIdx}=${_fieldMoveName(fieldMoveIdx) || '?'}] → dette R3 (cascade CursorCb_FieldMove U-tier)`);
       _closeActionMenu();
     }
   } else if (newKeys & KEY_B) {
