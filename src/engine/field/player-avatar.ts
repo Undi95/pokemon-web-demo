@@ -141,7 +141,7 @@ import {
   MetatileBehavior_IsMuddySlope,
   MetatileBehavior_IsSurfableFishableWater,
 } from '../../game/metatile_behavior';
-import { CheckStandardWildEncounter } from './wild-encounter';
+import { CheckStandardWildEncounter } from '../../game/wild_encounter';
 import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,

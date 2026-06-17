@@ -1,5 +1,7 @@
 /**
- * wild-encounter.ts — Port 1:1 strict `src/wild_encounter.c` (= ~700l C).
+ * game/wild_encounter.ts — MIROIR 1:1 strict de `src/wild_encounter.c` (= ~700l C).
+ * (Migré depuis engine/field/wild-encounter.ts vers le tree miroir game/ — but : 2 fichiers
+ *  identiques ligne-à-ligne en langage différent, src décomp ↔ game/ jeu propre.)
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/wild_encounter.c`.
  *
@@ -41,22 +43,22 @@
  *   - LayoutId checks LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS etc.
  */
 
-import { Random } from '../system/random';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gMapHeader } from './map-loader';
+import { Random } from '../engine/system/random';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { gMapHeader } from '../engine/field/map-loader';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
-import { bootDecompBattleLoop } from '../battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle } from '../battle/party-storage';
-import { createPokemonInstance, type PokemonInstance } from '../pokemon/pokemon';
-import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
-import { BATTLE_TYPE_TRAINER } from '../battle/constants';
+import { bootDecompBattleLoop } from '../engine/battle/battle-decomp-loop';
+import { setupEnemyPartyForBattle } from '../engine/battle/party-storage';
+import { createPokemonInstance, type PokemonInstance } from '../engine/pokemon/pokemon';
+import { setBattleTypeFlags, gBattleTypeFlags } from '../engine/battle/state';
+import { BATTLE_TYPE_TRAINER } from '../engine/battle/constants';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
-} from '../../game/metatile_behavior';
-import { IncrementGameStat } from './player-avatar';
-import { GAME_STAT_FISHING_ENCOUNTERS } from '../decomp-data/include/constants/game_stat-data';
+} from './metatile_behavior';
+import { IncrementGameStat } from '../engine/field/player-avatar';
+import { GAME_STAT_FISHING_ENCOUNTERS } from '../engine/decomp-data/include/constants/game_stat-data';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;

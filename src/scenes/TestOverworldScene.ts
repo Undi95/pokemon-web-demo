@@ -299,7 +299,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // PlayerStep step-end via CheckStandardWildEncounter (= 4-step immunity
     // counter + prevBehavior track 1:1 field_control_avatar.c:668-686).
     void (async () => {
-      const { InitWildEncountersFromJson, ResetWildEncounterImmunity } = await import('../engine/field/wild-encounter');
+      const { InitWildEncountersFromJson, ResetWildEncounterImmunity } = await import('../game/wild_encounter');
       try {
         const res = await fetch('/decomp/em/wild-encounters.json');
         const data = await res.json();

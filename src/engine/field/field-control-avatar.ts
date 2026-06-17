@@ -94,7 +94,7 @@ import {
   getWarpKindFor,
   isArrowWarpMetatileBehavior,
 } from './warp-system';
-import { CheckStandardWildEncounter } from './wild-encounter';
+import { CheckStandardWildEncounter } from '../../game/wild_encounter';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
