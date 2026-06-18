@@ -124,7 +124,7 @@ import {
   GetWalkSlowMovementAction,
 } from '../engine/system/decomp-bridge';
 import { FindTaskIdByFunc, GetTask, getRuntime } from '../engine/system/decomp-globals';
-import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from '../engine/field/field-effect';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
 import { SetSurfBlob_BobState, SetSurfBlob_PlayerOffset } from './field_effect_helpers';
 import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from '../engine/battle/party-storage';
 import { MOVE_SURF } from '../engine/decomp-data/include/constants/moves-data';

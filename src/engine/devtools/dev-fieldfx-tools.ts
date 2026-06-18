@@ -29,7 +29,7 @@
  *   dev.fx.selftest()                   — santé de l'outil (refs live résolues ?)
  */
 
-import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
+import { FieldEffectStart, gFieldEffectArguments } from '../../game/field_effect';
 import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../../game/event_object_movement';
 import { gPlayerAvatar } from '../../game/field_player_avatar';
 import { MapGridGetMetatileIdAt } from '../../game/fieldmap';

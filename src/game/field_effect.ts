@@ -1,6 +1,11 @@
 /**
- * field-effect.ts — Port 1:1 strict `field_effect.c` minimal (= dispatcher
+ * field_effect.ts — Port 1:1 strict `field_effect.c` minimal (= dispatcher
  * FieldEffectStart + gFieldEffectArguments + helpers communs).
+ *
+ * NB anti-cycle : `sActiveList[32]` + FieldEffectActiveList* (field_effect.c:846-886)
+ * restent dans le leaf `engine/field/field-effect-active-list.ts` (zéro import) car
+ * field_effect_helpers les consomme — les fusionner ici créerait field_effect ↔
+ * field_effect_helpers (même logique que direction-coords gardé en foundation).
  *
  * Source : D:/Projet 1/decomps/pokeemeraude/src/field_effect.c.
  *
@@ -28,9 +33,9 @@
  * args[0..2] = localId/mapNum/mapGroup typiquement.
  */
 
-import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { FieldEffectActiveListRemove } from './field-effect-active-list';
-import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from '../../game/trainer_see';
+import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
+import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
+import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
@@ -42,16 +47,16 @@ import {
   FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall, FldEff_UseDive,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow,
-} from '../../game/field_effect_helpers';
-import { FldEff_UseCutOnTree } from '../../game/fldeff_cut';
-import { FldEff_UseRockSmash } from '../../game/fldeff_rocksmash';
-import { FldEff_SweetScent } from '../../game/fldeff_sweetscent';
-import { FldEff_UseTeleport } from '../../game/fldeff_teleport';
-import { FldEff_UseDig } from '../../game/fldeff_dig';
+} from './field_effect_helpers';
+import { FldEff_UseCutOnTree } from './fldeff_cut';
+import { FldEff_UseRockSmash } from './fldeff_rocksmash';
+import { FldEff_SweetScent } from './fldeff_sweetscent';
+import { FldEff_UseTeleport } from './fldeff_teleport';
+import { FldEff_UseDig } from './fldeff_dig';
 // Side-effect : charge game/fldeff_flash.ts → expose __FieldCallback_Flash sur
 // globalThis (le move FLASH n'a PAS de FLDEFF dispatch — FldEff_UseFlash est un
 // callback de field-move task, pas un FieldEffectStart, cf. fldeff_flash.c:87).
-import '../../game/fldeff_flash';
+import './fldeff_flash';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */

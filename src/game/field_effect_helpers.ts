@@ -92,7 +92,7 @@ import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
-} from '../engine/field/field-effect';
+} from './field_effect';
 import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
 
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour

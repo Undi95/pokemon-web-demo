@@ -95,7 +95,7 @@ import {
 } from '../game/event_object_movement';
 import { applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script_movement';
-import { SetFieldEffectRuntime } from '../engine/field/field-effect';
+import { SetFieldEffectRuntime } from '../game/field_effect';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
