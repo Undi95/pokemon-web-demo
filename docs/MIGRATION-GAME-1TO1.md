@@ -27,10 +27,11 @@
 
 ## ✅ Déjà miroir dans `game/`
 bike, overworld, field_specials, field_effect_helpers, field_tasks, field_weather,
-field_weather_effect (Clouds, en pause), metatile_behavior, wild_encounter, trainer_see,
+field_weather_effect (Clouds, fini `7b459430`), metatile_behavior, wild_encounter, trainer_see,
 coord_event_weather, event_data, secret_base, fldeff_misc, heal_location,
 fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
-**field_player_avatar** (`17e81061`, port en cours — déviations M3 permanentes, PAS #100%).
+**field_player_avatar** (`17e81061`, port en cours — déviations M3 permanentes, PAS #100%),
+**fieldmap** (`47e02c00`, ex-map-loader — fieldmap.c + glu chargement async maison, PAS #100%).
 
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
@@ -52,10 +53,10 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `region-map.ts` (997) | `region_map.ts` + `field_region_map.c` | 3 | 🟥 HYBRIDE (overlay Phaser, mappe 2 .c décomp) | ⛔ DÉFÉRÉ (faux miroir) |
 | ~~`field-message-box.ts`~~ → `game/field_message_box.ts` | — | 9 | port en cours | ✅ **MIGRÉ** (`a9b213f7`) |
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
-| `field-camera.ts` (924) | `field_camera.ts` (field_camera.c) | 16 | proche ? | 🟥 chantier |
+| `field-camera.ts` (924) | `field_camera.ts` (field_camera.c) | 16 | proche ? (a reçu DrawMetatile+buffers+flush de map-loader `7523799e`) | 🟥 chantier (engine→game) |
 | ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
 | `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME (pin LEVÉ → git add normal) |
-| `map-loader.ts` (2004) | split `fieldmap.ts` + `overworld.ts` | 32 | mix fieldmap.c+overworld.c | 🟥 GROS (split ; pin LEVÉ) |
+| ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
 
 > 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
 | `movement-system.ts` (1032) | event_object_movement.c (part) | 4 | maison (éclaté) | 🔧 fusionner dans event_object_movement |
