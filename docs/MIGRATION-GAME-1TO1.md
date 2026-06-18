@@ -44,18 +44,20 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 
 | engine/field | → game/ (décomp) | importeurs | statut 1:1 | action |
 |---|---|---|---|---|
-| `rotating-gate.ts` (466) | `rotating_gate.ts` (rotating_gate.c) | 0 | à vérifier | **move pilote** (0 risque) |
+| ~~`rotating-gate.ts`~~ → `game/rotating_gate.ts` | — | 2 | port en cours (visuel = dette) | ✅ **MIGRÉ** (`139d0c3f`) |
 | `tilemap-loader.ts` (371) | ? (pas un .c direct) | 0 | helper maison | différer/évaluer |
-| `tileset-anims.ts` (1234) | `tileset_anims.ts` | ? | à vérifier | candidat |
-| `field-door.ts` (962) | `field_door.ts` (field_door.c) | 1 | à vérifier | candidat |
-| `script-movement.ts` (517) | `script_movement.ts` (script_movement.c) | 2 | à vérifier | candidat |
-| `region-map.ts` (997) | `region_map.ts` (region_map.c) | 1 | à vérifier | candidat |
-| `field-message-box.ts` (249) | `field_message_box.ts` | ? | à vérifier | candidat |
+| ~~`tileset-anims.ts`~~ → `game/tileset_anims.ts` | — | 3 | port en cours | ✅ **MIGRÉ** (`a9b213f7`) |
+| ~~`field-door.ts`~~ → `game/field_door.ts` | — | 2 | port en cours | ✅ **MIGRÉ** (`dc510518`) |
+| ~~`script-movement.ts`~~ → `game/script_movement.ts` | — | 3 | port en cours | ✅ **MIGRÉ** (`afab535a`) |
+| `region-map.ts` (997) | `region_map.ts` + `field_region_map.c` | 3 | 🟥 HYBRIDE (overlay Phaser, mappe 2 .c décomp) | ⛔ DÉFÉRÉ (faux miroir) |
+| ~~`field-message-box.ts`~~ → `game/field_message_box.ts` | — | 9 | port en cours | ✅ **MIGRÉ** (`a9b213f7`) |
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
 | `field-camera.ts` (924) | `field_camera.ts` (field_camera.c) | 16 | proche ? | 🟥 chantier |
 | ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
-| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME — ⚠️ PIN (import-hunk) |
-| `map-loader.ts` (2004) | split `fieldmap.ts` + `overworld.ts` | 32 | mix fieldmap.c+overworld.c | 🟥 GROS chantier (split) |
+| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME (pin LEVÉ → git add normal) |
+| `map-loader.ts` (2004) | split `fieldmap.ts` + `overworld.ts` | 32 | mix fieldmap.c+overworld.c | 🟥 GROS (split ; pin LEVÉ) |
+
+> 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
 | `movement-system.ts` (1032) | event_object_movement.c (part) | 4 | maison (éclaté) | 🔧 fusionner dans event_object_movement |
 | `movement-action-dispatch.ts` (200) | event_object_movement.c (part) | ? | maison | 🔧 fusionner |
 | `direction-coords.ts` (266) | event_object_movement.c (anim-num getters) | 4 | maison | 🔧 fusionner (dup) |
