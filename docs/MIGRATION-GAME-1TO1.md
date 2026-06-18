@@ -70,13 +70,15 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `direction-coords.ts` (266) | event_object_movement.c + global.fieldmap.h (enum Direction) | 13 | **foundation autonome** (zéro import) | 🟢 GARDER (anti-cycle : fusionner créerait fieldmap↔eom ; dup anim-num soldé `b61a6e12`) |
 | ~~`metatile-behavior-helpers.ts`~~ | — | 5 | barrel hybride (2 .c) | ✅ **FUSIONNÉ/SUPPRIMÉ** (`1dea2c5a` : IsMetatileDirectionallyImpassable→eom, ShouldJumpLedge→field_player_avatar, prédicats→game/metatile_behavior) |
 | `object-event-graphics*.ts` / `*-data.ts` / `*-oam.ts` | data décomp | — | data générée | laisser (data) |
-| `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
-| `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
+| `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison amalgame (3 .c + abstraction pending-warp/WarpKind maison) | 🟥 split dédié (faux-miroir si migré en bloc, cf. region_map) |
 | ~~`truck-cinematic.ts`~~ → `game/field_special_scene.ts` | — | 2 | port en cours (séquence camion intro) | ✅ **MIGRÉ** (`05e5e6ba`) |
 | ~~`field-effect.ts`~~ → `game/field_effect.ts` | — | 6 | dispatcher FieldEffectStart (field_effect.c) | ✅ **MIGRÉ** (`8c3ab7c3`) |
 | `field-effect-active-list.ts` (128) | `field_effect.c:846-886` (sActiveList[32]) | ~8 | leaf zéro-import | 🟢 **GARDER en `engine/`** (anti-cycle : field_effect_helpers le consomme → fusion = cycle field_effect↔helpers ; cf. direction-coords) |
-| `field-effect-arrow.ts` (156) | **`field_player_avatar.c`** (`HideShowWarpArrow`:1428 + prédicats arrow) | 1 | mal nommé : PAS field_effect.c (les vraies fns arrow déjà dans field_effect_helpers.ts) | 🟢 → `game/field_player_avatar.ts` (séparé, reste à faire) |
-| `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts`, `movement.ts`, `tilemap-loader.ts` | divers | — | maison (Phaser/helpers, pas de .c direct) | reste `engine/` (harness) |
+| ~~`field-effect-arrow.ts`~~ → `game/field_player_avatar.ts` | — | 1 | HideShowWarpArrow (field_player_avatar.c:1428) ; prédicats arrow dédupliqués → metatile_behavior | ✅ **FUSIONNÉ** (`67cdef1e`) |
+| `swap-line.ts` (170) | `menu_helpers.c:393-453` | 1 | **frontière HW documentée** (menu_helpers.ts exclut explicitement les sprites swap-line de son scope) | 🟡 reste `engine/` (HW sprite, pas la logique) |
+| `map-layout-swap.ts` (73) | `fieldmap.c:SetCurrentMapLayout` | bridge globalThis | **STUB** (`_LAYOUT_IDX_TO_ID` vide → no-op) | 🟡 reste `engine/` jusqu'à extraction `layouts.h` (vrai portage, pas reloc) |
+| `virtual-objects.ts` (150) | `event_object_movement.c:CreateVirtualObject` | bridge globalThis | **port maison simplifié** (pas de camera-tracking ni sVirtualObjectIds) | 🟡 reste `engine/` jusqu'à port strict 1:1 |
+| `npc-loader.ts`, `character-anims.ts`, `field-globals.ts`, `movement.ts`, `tilemap-loader.ts` | divers | — | maison (Phaser/JSON/bridge, pas de .c direct) | reste `engine/` (harness) |
 
 > ⚠️ **Reframing movement-system (2026-06-18)** : la cible planifiée « fusionner les
 > MovementAction Step funcs maison de `movement-system` DANS `event_object_movement.ts` »
