@@ -32,7 +32,8 @@ coord_event_weather, event_data, secret_base, fldeff_misc, heal_location,
 fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
 **field_player_avatar** (`17e81061`, port en cours — déviations M3 permanentes, PAS #100%),
 **fieldmap** (`47e02c00`, ex-map-loader — fieldmap.c + glu chargement async maison, PAS #100%),
-**field_camera** (`c5cdc8fe`, ex-field-camera — field_camera.c + glu M3, dette CameraMove/mirage à extraire, PAS #100%).
+**field_camera** (`c5cdc8fe`, ex-field-camera — field_camera.c + glu M3, dette CameraMove/mirage à extraire, PAS #100%),
+**event_object_movement** (`7206beeb`, ex-object-events — le + gros, 8490 l ; déviation M3 rendu Vigoroth/truck cutscène, PAS #100%).
 
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
@@ -56,7 +57,7 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
 | ~~`field-camera.ts`~~ → `game/field_camera.ts` | — | 20 | port en cours (field_camera.c + glu M3 ; dette : CameraMove fieldmap.c + mirage_tower helper hébergés) | ✅ **MIGRÉ** (`c5cdc8fe`) |
 | ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
-| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (rendu NPC) — **dé-hybridation M3-NPC en cours** | 🟧 bloqué sur M3-NPC (voir ci-dessous) |
+| ~~`object-events.ts`~~ → `game/event_object_movement.ts` | — | 14 | port en cours (event_object_movement.c + déviation M3 rendu NPC : Vigoroth/truck cutscène) | ✅ **MIGRÉ** (`7206beeb` ; cadrage démo nettoyé `0bcbcfb3`) |
 | ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
 
 > 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
@@ -69,24 +70,23 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
 | `truck-cinematic.ts`, `map-name-popup.ts`, `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts` | divers | — | maison | évaluer cas par cas |
 
-## 🟧 Chantier M3-NPC (pré-requis pour migrer object-events)
-`object-events.ts` est décomp-structuré (event_object_movement.c : TrySpawnObjectEvents,
-MovementType_*_Step*, gObjectEventGraphicsInfo) MAIS son rendu NPC reste hybride
-(`updateNpcSpriteFrame` maison) → faux miroir si renommé tel quel. Dé-hybridation
-staged (= pendant NPC du chantier M3-joueur déjà soldé : tout le rendu via le chemin
-décomp AnimateSprite / AnimCmd).
-
-**Découverte clé** : le rendu NPC standard est DÉJÀ ~95% unifié — les 245 records
-gObjectEventGraphicsInfo ont tous une anim table → `sprite.anims` toujours wired →
-AnimateSprite drive `oam.tileNum`. Le rendu manuel (NPC_SPRITE_FRAMES) était mort.
-
+## 🟧 Chantier M3-NPC (raffinage rendu NPC, POST-migration)
+**Découverte clé** : le rendu NPC standard est DÉJÀ ~95% unifié sur le chemin décomp —
+les 245 records gObjectEventGraphicsInfo ont tous une anim table → `sprite.anims`
+toujours wired → AnimateSprite drive `oam.tileNum`. Le rendu manuel (NPC_SPRITE_FRAMES)
+était mort. Après M1, ne restent que 2 cas de **cutscène d'intro** (Vigoroth 32×32,
+truck subsprites) = MOINS de déviation que field_camera (CameraMove) à la migration.
+→ object-events **MIGRÉ** (`7206beeb`) avec ces 2 cas documentés comme déviations M3 ;
+le raffinage (les porter sur AnimateSprite) continue EN `game/event_object_movement.ts` :
 - ✅ **M1** (`549963e9`) — retrait du rendu manuel mort (legacy NPC_SPRITE_FRAMES →
   oam.tileId). A/B : 8/13 NPCs animés Rustboro + interact OK.
-- ⬜ **M2** — Vigoroth 32×32 (`is32x32`, intro déménagement) → anims décomp (hFlip W/E).
+- ✅ **migration** (`7206beeb`) — git mv → game/, Vigoroth/truck = déviations M3 doc.
+- ⬜ **M2** — Vigoroth 32×32 (`is32x32`) → AnimateSprite. ⚠️ quasi-intestable (Vigoroth
+  = intro déménagement uniquement ; 32×32 sur chemin standard = garbage historique) +
+  faible valeur gameplay → à faire si un véhicule de test apparaît.
 - ⬜ **M3** — truck 48×48 (`useSubsprites`, intro) → chemin subsprite décomp.
 - ⬜ **M4** — supprimer `updateNpcSpriteFrame` + `NPC_SPRITE_FRAMES`/`TILES_PER_FRAME_16x32`
-  (setup initial à reporter sur StartSpriteAnim) + globalThis/register → object-events
-  propre → `git mv` → `game/event_object_movement.ts`.
+  (setup initial à reporter sur StartSpriteAnim) + globalThis/register → rendu NPC 100% décomp.
 
 ## 🟥 Dups restants à solder (pendant la migration)
 - `GetMoveDirection{,Fast,Faster}AnimNum` + `GetAcroWheelieDirectionAnimNum` + `GetFaceDirectionAnimNum`
