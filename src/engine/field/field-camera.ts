@@ -35,13 +35,14 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import {
   type MapLayout,
-  DrawMetatile,
   MapGridGetMetatileIdAt,
   MapGridGetMetatileLayerTypeAt,
   NUM_METATILES_IN_PRIMARY,
   NUM_METATILES_TOTAL,
   NUM_TILES_PER_METATILE,
+  METATILE_LAYER_TYPE_NORMAL,
   METATILE_LAYER_TYPE_COVERED,
+  METATILE_LAYER_TYPE_SPLIT,
   gMapHeader,
   GetMapBorderIdAt,
   GetIncomingConnection,
@@ -353,6 +354,107 @@ export function GetCameraOffsetWithPan(): { x: number; y: number } {
     x: sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan,
     y: sFieldCameraOffset.yPixelOffset + sVerticalCameraPan + 8,
   };
+}
+
+// ─── 1:1 décomp DrawMetatile + buffers tilemap (field_camera.c:245-310) ─────
+
+/** Tilemap buffers BG1/BG2/BG3 (= 32x32 u16 = 1024 entries each).
+ *  1:1 décomp `gOverworldTilemapBuffer_Bg1/Bg2/Bg3` (field_camera.c). Écrits par
+ *  DrawMetatile, copiés en VRAM mapBase via flushOverworldTilemaps().
+ *
+ *  Note : décomp utilise BG3 = bottom, BG2 = middle, BG1 = top. Notre rt.gba
+ *  expose bg(1).tilemap, bg(2).tilemap, bg(3).tilemap qui sont des views
+ *  Uint16Array sur la VRAM unifié. On peut donc écrire directement dans ces
+ *  views — mais on garde un buffer séparé pour matcher décomp + permettre les
+ *  scrolls partiels via copyBGToVRAM. */
+const gOverworldTilemapBuffer_Bg1 = new Uint16Array(32 * 32);
+const gOverworldTilemapBuffer_Bg2 = new Uint16Array(32 * 32);
+const gOverworldTilemapBuffer_Bg3 = new Uint16Array(32 * 32);
+
+/** 1:1 décomp `DrawMetatile(layerType, tiles, offset)` (field_camera.c:245-310).
+ *  Place les 8 BG tiles d'un metatile dans les 3 BG layers selon layerType. */
+function DrawMetatile(layerType: number, tiles: Uint16Array, tilesOffset: number, mapOffset: number): void {
+  // tilesOffset = index dans tiles[] où démarrent les 8 u16 du metatile (= metatileId * 8).
+  // mapOffset = position dans le 32x32 BG screen (= y*32 + x). Le metatile occupe
+  //             4 BG tiles : (mapOffset, mapOffset+1, mapOffset+0x20, mapOffset+0x21).
+  const t = tiles;
+  const o = tilesOffset;
+  const m = mapOffset;
+
+  switch (layerType) {
+    case METATILE_LAYER_TYPE_SPLIT:
+      // Bottom 4 → BG3
+      gOverworldTilemapBuffer_Bg3[m] = t[o];
+      gOverworldTilemapBuffer_Bg3[m + 1] = t[o + 1];
+      gOverworldTilemapBuffer_Bg3[m + 0x20] = t[o + 2];
+      gOverworldTilemapBuffer_Bg3[m + 0x21] = t[o + 3];
+      // Middle = transparent
+      gOverworldTilemapBuffer_Bg2[m] = 0;
+      gOverworldTilemapBuffer_Bg2[m + 1] = 0;
+      gOverworldTilemapBuffer_Bg2[m + 0x20] = 0;
+      gOverworldTilemapBuffer_Bg2[m + 0x21] = 0;
+      // Top 4 → BG1
+      gOverworldTilemapBuffer_Bg1[m] = t[o + 4];
+      gOverworldTilemapBuffer_Bg1[m + 1] = t[o + 5];
+      gOverworldTilemapBuffer_Bg1[m + 0x20] = t[o + 6];
+      gOverworldTilemapBuffer_Bg1[m + 0x21] = t[o + 7];
+      break;
+
+    case METATILE_LAYER_TYPE_COVERED:
+      // Bottom 4 → BG3
+      gOverworldTilemapBuffer_Bg3[m] = t[o];
+      gOverworldTilemapBuffer_Bg3[m + 1] = t[o + 1];
+      gOverworldTilemapBuffer_Bg3[m + 0x20] = t[o + 2];
+      gOverworldTilemapBuffer_Bg3[m + 0x21] = t[o + 3];
+      // Top 4 → BG2
+      gOverworldTilemapBuffer_Bg2[m] = t[o + 4];
+      gOverworldTilemapBuffer_Bg2[m + 1] = t[o + 5];
+      gOverworldTilemapBuffer_Bg2[m + 0x20] = t[o + 6];
+      gOverworldTilemapBuffer_Bg2[m + 0x21] = t[o + 7];
+      // Top BG1 = transparent
+      gOverworldTilemapBuffer_Bg1[m] = 0;
+      gOverworldTilemapBuffer_Bg1[m + 1] = 0;
+      gOverworldTilemapBuffer_Bg1[m + 0x20] = 0;
+      gOverworldTilemapBuffer_Bg1[m + 0x21] = 0;
+      break;
+
+    case METATILE_LAYER_TYPE_NORMAL:
+    default:
+      // 1:1 décomp : "garbage" pattern 0x3014 sur BG3 (= caché par BG2 normalement).
+      gOverworldTilemapBuffer_Bg3[m] = 0x3014;
+      gOverworldTilemapBuffer_Bg3[m + 1] = 0x3014;
+      gOverworldTilemapBuffer_Bg3[m + 0x20] = 0x3014;
+      gOverworldTilemapBuffer_Bg3[m + 0x21] = 0x3014;
+      // Bottom 4 → BG2
+      gOverworldTilemapBuffer_Bg2[m] = t[o];
+      gOverworldTilemapBuffer_Bg2[m + 1] = t[o + 1];
+      gOverworldTilemapBuffer_Bg2[m + 0x20] = t[o + 2];
+      gOverworldTilemapBuffer_Bg2[m + 0x21] = t[o + 3];
+      // Top 4 → BG1 (couvre player)
+      gOverworldTilemapBuffer_Bg1[m] = t[o + 4];
+      gOverworldTilemapBuffer_Bg1[m + 1] = t[o + 5];
+      gOverworldTilemapBuffer_Bg1[m + 0x20] = t[o + 6];
+      gOverworldTilemapBuffer_Bg1[m + 0x21] = t[o + 7];
+      break;
+  }
+}
+
+/** Push les 3 tilemap buffers BG1/BG2/BG3 vers la VRAM mapBase respective.
+ *  À call après DrawWholeMapView ou DrawMetatileAt. */
+export function flushOverworldTilemaps(rt: DecompRuntime): void {
+  // BG1 mapBase = e.g. 28 (= mapBaseIndex 28 → VRAM offset 28 * 0x800 = 0xE000).
+  // bg(N).tilemap est un Uint16Array view sur la VRAM unifié à l'offset mapBase.
+  rt.gba.bg(1).tilemap.set(gOverworldTilemapBuffer_Bg1);
+  rt.gba.bg(2).tilemap.set(gOverworldTilemapBuffer_Bg2);
+  rt.gba.bg(3).tilemap.set(gOverworldTilemapBuffer_Bg3);
+}
+
+/** Reset les buffers tilemap (= clear). À call avant DrawWholeMapView pour
+ *  éviter résidu de map précédente. */
+export function clearOverworldTilemaps(): void {
+  gOverworldTilemapBuffer_Bg1.fill(0);
+  gOverworldTilemapBuffer_Bg2.fill(0);
+  gOverworldTilemapBuffer_Bg3.fill(0);
 }
 
 // ─── 1:1 décomp DrawMetatileAt + DrawWholeMapView (field_camera.c:226-243 + 100-121) ──

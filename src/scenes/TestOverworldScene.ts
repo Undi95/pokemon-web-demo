@@ -25,8 +25,6 @@ import {
   InitMapFromSavedGame,
   CopyMapTilesetsToVram,
   LoadMapTilesetPalettes,
-  flushOverworldTilemaps,
-  clearOverworldTilemaps,
   MAP_OFFSET,
   TransitionToConnection,
   MoveMapViewToBackup,
@@ -39,6 +37,8 @@ import {
 import type { MapHeader, WarpEvent } from '../engine/field/map-loader';
 import {
   DrawWholeMapView,
+  flushOverworldTilemaps,
+  clearOverworldTilemaps,
   ResetFieldCamera,
   ResetCameraUpdateInfo,
   InitCameraUpdateCallback,
