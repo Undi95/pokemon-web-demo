@@ -755,6 +755,17 @@ OW INSPECTION (post R3 INTERNAL/LOGICAL coords audit) :
   scope.map(opts?)        Map ASCII (15×11 par défaut) avec player + NPCs + collision
   scope.movement()        State machine MovementAction_* du player + NPCs
 
+NAVIGATION SPATIALE (= « connais la carte + déplace-toi/tp JUSTE ») :
+  scope.find(q)           Trouve features/PNJ + case d'APPROCHE walkable + direction.
+                          q : 'water'|'waterfall'|'grass'|'sand'|'cave'|'ice'|'door'|
+                          'ladder'|'warp'|'arrow_warp'|'walkable'/'land'|'ledge',
+                          un substring de nom MB, ou 'npc'/'npc:<substr>'. Trié par dist.
+  await scope.approach(q) One-shot : find le + proche → pathfind à l'approche → regarde
+                          la cible (pour interagir/surfer). Ex: await scope.approach('water')
+  scope.here()            ⚑ APRÈS UN TP : suis-je coincé ? cases walkables autour +
+                          nearestWalkable si bloqué. (évite « tp dans un mur/bâtiment »)
+  scope.nearestWalkable(x,y) Case walkable la plus proche (ring search)
+
 DIAGNOSTIC INPUT (= debug "je peux plus marcher") :
   scope.canWalk()         Liste des 9 gates PlayerStep + 🔴/✅ par gate
   scope.diag()            Diagnostic complet : blockers + coords drift + pa state
@@ -1667,6 +1678,212 @@ const _recorder = {
   },
 };
 
+// ─── Navigation spatiale (scope.find / approach / here / nearestWalkable) ────
+// But : que je SACHE lire la carte et me déplacer correctement (trouver eau/
+// terre/PNJ/porte/warp + une case d'APPROCHE walkable + la direction à regarder).
+// Tout en coords LOGICAL ; conversion INTERNAL = +MAP_OFFSET gérée ici.
+
+type TileCat = 'wall' | 'walkable' | 'water' | 'waterfall' | 'grass' | 'sand'
+             | 'cave' | 'ice' | 'door' | 'ladder' | 'arrow_warp';
+
+/** Classe une tuile via behavior + collision (mêmes seuils que _behaviorSymbol).
+ *  ⚠️ Les behaviors NOTABLES (porte/échelle/arrow-warp/cascade) sont sur des
+ *  tuiles collision≠0 → on les classe AVANT le fallback mur (sinon find('door')
+ *  rate les entrées de bâtiment). 'wall'/'walkable' = fallback selon collision. */
+function _classifyTile(behavior: number, collision: number): TileCat {
+  if (behavior === 0x13) return 'waterfall';                                   // MB_WATERFALL
+  if (behavior === 0x60 || behavior === 0x69 || behavior === 0x6C) return 'door';
+  if (behavior === 0x61) return 'ladder';
+  if (behavior >= 0x62 && behavior <= 0x65) return 'arrow_warp';
+  if (behavior === 0x02 || behavior === 0x03 || behavior === 0x09 || behavior === 0x24) return 'grass';
+  if (behavior >= 0x10 && behavior <= 0x1A) return 'water';
+  if (behavior === 0x06 || behavior === 0x21) return 'sand';
+  if (behavior === 0x08) return 'cave';
+  if (behavior === 0x20 || behavior === 0x26 || behavior === 0x27) return 'ice';
+  return collision !== 0 ? 'wall' : 'walkable';
+}
+
+/** Walkable = collision 0 (= 1:1 gate PlayerStep + A*). LOGICAL coords. */
+function _isWalkable(lx: number, ly: number): boolean {
+  const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
+  return (collFn?.(lx + MAP_OFFSET, ly + MAP_OFFSET) ?? 1) === 0;
+}
+
+/** Dimensions de la map courante (gMapHeader.mapLayout). null si inconnues. */
+function _mapDims(): { w: number; h: number } | null {
+  const hdr = _g<{ mapLayout?: { width?: number; height?: number } }>('gMapHeader');
+  const w = hdr?.mapLayout?.width, h = hdr?.mapLayout?.height;
+  if (typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0) return { w, h };
+  return null;
+}
+
+/** Case walkable la plus proche de (lx,ly) — ring search. Retourne la case
+ *  elle-même si déjà walkable. Pour « je me suis tp dans un mur, où aller ? ». */
+function _nearestWalkable(lx: number, ly: number, maxR = 12): { x: number; y: number; dist: number } | null {
+  if (_isWalkable(lx, ly)) return { x: lx, y: ly, dist: 0 };
+  for (let r = 1; r <= maxR; r++) {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -r; dy <= r; dy++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;  // anneau seulement
+        if (_isWalkable(lx + dx, ly + dy)) return { x: lx + dx, y: ly + dy, dist: Math.abs(dx) + Math.abs(dy) };
+      }
+    }
+  }
+  return null;
+}
+
+/** Case walkable adjacente à une cible (eau/PNJ/porte…) + la direction pour
+ *  REGARDER la cible depuis cette case (= pour interagir/surfer). 1:1 layout :
+ *  approche au sud → on regarde 'up', etc. Si (fromX,fromY) fourni, choisit la
+ *  case adjacente la PLUS PROCHE de ce point (= chemin sensé, pas de détour). */
+function _approachTile(tx: number, ty: number, fromX?: number, fromY?: number): { x: number; y: number; face: 'up' | 'down' | 'left' | 'right' } | null {
+  const opts: Array<[number, number, 'up' | 'down' | 'left' | 'right']> = [
+    [0, 1, 'up'], [0, -1, 'down'], [1, 0, 'left'], [-1, 0, 'right'],
+  ];
+  const walkable = opts
+    .map(([dx, dy, face]) => ({ x: tx + dx, y: ty + dy, face }))
+    .filter(o => _isWalkable(o.x, o.y));
+  if (!walkable.length) return null;
+  if (fromX !== undefined && fromY !== undefined) {
+    walkable.sort((a, b) =>
+      (Math.abs(a.x - fromX) + Math.abs(a.y - fromY)) - (Math.abs(b.x - fromX) + Math.abs(b.y - fromY)));
+  }
+  return walkable[0];
+}
+
+/** « Où suis-je et où puis-je aller ? » — à appeler APRÈS un tp pour savoir si
+ *  je suis coincé (mur/bâtiment) et la case walkable la plus proche. */
+function _here(): Record<string, unknown> {
+  const behFn = _g<(x: number, y: number) => number>('MapGridGetMetatileBehaviorAt');
+  const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
+  if (!behFn || !collFn) return { error: 'MapGrid* non exposé (map pas chargée ?)' };
+  const pp = _readPlayerPos();
+  const x = pp.x ?? 0, y = pp.y ?? 0;
+  const at = (lx: number, ly: number) => {
+    const beh = behFn(lx + MAP_OFFSET, ly + MAP_OFFSET);
+    const coll = collFn(lx + MAP_OFFSET, ly + MAP_OFFSET);
+    return { at: [lx, ly], walkable: coll === 0, cat: _classifyTile(beh, coll), behavior: _behaviorName(beh) };
+  };
+  const here = at(x, y);
+  const around = { up: at(x, y - 1), down: at(x, y + 1), left: at(x - 1, y), right: at(x + 1, y) };
+  const canMove = Object.values(around).filter(a => a.walkable).map((_, i) => ['up', 'down', 'left', 'right'][i]);
+  const dirsOpen = (['up', 'down', 'left', 'right'] as const).filter(d => around[d].walkable);
+  return {
+    at: [x, y], facing: _FACING_SYMBOL[pp.facing ?? 0] ?? '?',
+    onTile: here, around,
+    canMove: dirsOpen,
+    stuck: !here.walkable || dirsOpen.length === 0,
+    nearestWalkable: here.walkable ? null : _nearestWalkable(x, y),
+    hint: here.walkable
+      ? (dirsOpen.length ? `OK sur ${here.cat}. Directions libres : ${dirsOpen.join('/')}` : '⚠️ entouré de murs')
+      : `⚠️ COINCÉ sur ${here.cat} (${here.behavior}). nearestWalkable → ${JSON.stringify(_nearestWalkable(x, y))}`,
+  };
+}
+
+/** Trouve des features/PNJ sur la map + une case d'APPROCHE walkable pour chacun.
+ *  query : 'water'|'waterfall'|'grass'|'sand'|'cave'|'ice'|'door'|'ladder'|
+ *          'arrow_warp'|'warp'|'walkable'/'land'|'ledge', un substring de nom MB,
+ *          ou 'npc'/'npc:<substr>'. Retourne les N plus proches (par dist Manhattan). */
+function _find(query: string, opts?: { limit?: number; maxScan?: number }): Record<string, unknown> {
+  const limit = opts?.limit ?? 12;
+  const pp = _readPlayerPos();
+  const px = pp.x ?? 0, py = pp.y ?? 0;
+  const q = String(query).toLowerCase().trim();
+
+  // ── PNJ ──
+  if (q === 'npc' || q.startsWith('npc:')) {
+    const sub = q.startsWith('npc:') ? q.slice(4) : '';
+    const objs = _g<ObjectEvent[]>('__gObjectEvents') ?? [];
+    const matches: Array<Record<string, unknown>> = [];
+    for (let i = 1; i < objs.length; i++) {
+      const npc = objs[i];
+      if (!npc?.active) continue;
+      const name = `${npc.localIdRaw ?? ''} ${npc.graphicsId ?? ''}`.toLowerCase();
+      if (sub && !name.includes(sub)) continue;
+      const lx = (npc.currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET;
+      const ly = (npc.currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET;
+      matches.push({
+        slot: i, localId: npc.localIdRaw ?? npc.localId, gfx: npc.graphicsId,
+        at: [lx, ly], invisible: !!npc.invisible,
+        dist: Math.abs(lx - px) + Math.abs(ly - py), approach: _approachTile(lx, ly, px, py),
+      });
+    }
+    matches.sort((a, b) => (a.dist as number) - (b.dist as number));
+    const top = matches.slice(0, limit);
+    return {
+      query, kind: 'npc', count: matches.length, player: [px, py], matches: top,
+      hint: top[0]?.approach
+        ? `→ scope.go(${(top[0].approach as { x: number }).x}, ${(top[0].approach as { y: number }).y}) puis scope.press('${(top[0].approach as { face: string }).face}')`
+        : (top.length ? 'PNJ trouvé mais aucune case d\'approche walkable adjacente' : 'aucun PNJ'),
+    };
+  }
+
+  // ── Tuiles / features ──
+  const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
+  const behFn = _g<(x: number, y: number) => number>('MapGridGetMetatileBehaviorAt');
+  if (!collFn || !behFn) return { error: 'MapGrid* non exposé (map pas chargée ?)' };
+
+  const dims = _mapDims();
+  const maxScan = opts?.maxScan ?? 60;
+  const x0 = dims ? 0 : px - maxScan, y0 = dims ? 0 : py - maxScan;
+  const x1 = dims ? dims.w - 1 : px + maxScan, y1 = dims ? dims.h - 1 : py + maxScan;
+
+  const KNOWN = new Set<string>(['wall', 'walkable', 'water', 'waterfall', 'grass', 'sand', 'cave', 'ice', 'door', 'ladder', 'arrow_warp']);
+  const warpKeys = (q === 'warp')
+    ? new Set<string>((_g<{ events?: { warps?: Array<{ x: number; y: number }> } }>('gMapHeader')?.events?.warps ?? []).map(w => `${w.x},${w.y}`))
+    : null;
+  const nameQuery = q === 'ledge' ? 'jump' : q;  // alias pratique (ledges = MB_JUMP_*)
+
+  const matches: Array<{ at: [number, number]; behavior: string; cat: string; dist: number; approach: ReturnType<typeof _approachTile> }> = [];
+  let scanned = 0;
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      scanned++;
+      const beh = behFn(x + MAP_OFFSET, y + MAP_OFFSET);
+      const coll = collFn(x + MAP_OFFSET, y + MAP_OFFSET);
+      const cat = _classifyTile(beh, coll);
+      let ok: boolean;
+      if (q === 'warp') ok = (warpKeys?.has(`${x},${y}`) ?? false) || cat === 'arrow_warp';
+      else if (q === 'land' || q === 'walkable') ok = cat === 'walkable';
+      else if (KNOWN.has(q)) ok = cat === q;
+      else ok = _behaviorName(beh).toLowerCase().includes(nameQuery);  // substring nom MB
+      if (!ok) continue;
+      matches.push({
+        at: [x, y], behavior: _behaviorName(beh), cat,
+        dist: Math.abs(x - px) + Math.abs(y - py),
+        approach: cat === 'walkable' ? { x, y, face: 'down' } : _approachTile(x, y, px, py),
+      });
+    }
+  }
+  matches.sort((a, b) => a.dist - b.dist);
+  const top = matches.slice(0, limit);
+  const n0 = top[0];
+  return {
+    query, kind: 'tile', scannedTiles: scanned, totalMatches: matches.length,
+    player: [px, py], scanBounds: dims ? `full ${dims.w}×${dims.h}` : `±${maxScan} autour du joueur`,
+    nearest: top,
+    hint: n0
+      ? `→ scope.go(${n0.approach?.x ?? n0.at[0]}, ${n0.approach?.y ?? n0.at[1]})` + (n0.approach && n0.cat !== 'walkable' ? ` puis scope.press('${n0.approach.face}')` : '') + `  [ou scope.approach('${query}')]`
+      : `aucun match pour '${query}'`,
+  };
+}
+
+/** One-shot : trouve le '${query}' le plus proche → pathfind jusqu'à sa case
+ *  d'approche walkable → regarde la cible. Pour « va à l'eau/au PNJ/à la porte et
+ *  interagis ». Retourne le détail (ok, target, approachedAt, facing, walked). */
+async function _approach(query: string): Promise<Record<string, unknown>> {
+  const found = _find(query, { limit: 1 });
+  const list = (found.nearest ?? found.matches) as Array<Record<string, unknown>> | undefined;
+  const n0 = list?.[0];
+  if (!n0) return { ok: false, reason: `aucun '${query}' trouvé`, found };
+  const ap = n0.approach as { x: number; y: number; face: 'up' | 'down' | 'left' | 'right' } | null;
+  if (!ap) return { ok: false, reason: `'${query}' à ${JSON.stringify(n0.at)} mais aucune case d'approche walkable adjacente`, target: n0.at };
+  const goRes = await _go(ap.x, ap.y);
+  if (!goRes.ok) return { ok: false, reason: `pathfind échoué vers l'approche (${ap.x},${ap.y}) : ${goRes.reason}`, target: n0.at, approach: ap, goRes };
+  if (n0.cat !== 'walkable') await _press(ap.face);
+  return { ok: true, target: n0.at, what: n0.behavior ?? n0.gfx, approachedAt: [ap.x, ap.y], facing: n0.cat !== 'walkable' ? ap.face : null, walked: goRes.walked };
+}
+
 // Build the scope API as a fresh object on every install. We expose the latest
 // fn references to support HMR re-install (= les nouvelles versions des _xxx
 // après edit sont propagées au prochain install).
@@ -1698,6 +1915,11 @@ function _buildScopeApi(): Record<string, unknown> {
     findNpc: _findNpc,
     map: _map,
     movement: _movement,
+    // Navigation spatiale (= « connais la carte + déplace-toi juste »)
+    find: _find,
+    approach: _approach,
+    here: _here,
+    nearestWalkable: _nearestWalkable,
     // Diagnostic input gates (= scope.canWalk / diag / locks)
     canWalk: _canWalk,
     diag: _diag,
