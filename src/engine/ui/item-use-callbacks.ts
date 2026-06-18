@@ -73,7 +73,9 @@ import {
 import { GetMonLevelUpWindowStats } from '../../game/menu_specialized';
 import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
-import { getRuntime, PlaySE } from '../system/decomp-globals';
+import { getRuntime, PlaySE, FillPalBufferBlack } from '../system/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
+import { CB2_ReturnToField_Manual } from './option-menu-return';
 import { gPlayerParty } from '../battle/party-storage';
 import { gMoveNames } from '../data/game-data';
 import { RemoveBagItem } from '../bag/bag';
@@ -119,8 +121,12 @@ export function CB2_ShowPartyMenuForItemUse(): void {
 // Indexed par `GetItemType(itemId) - 1`.
 const _sItemUseCallbacks: Array<(() => void) | null> = [
   CB2_ShowPartyMenuForItemUse,  // ITEM_USE_PARTY_MENU - 1 = 0
-  null,  // ITEM_USE_FIELD - 1 = 1 — CB2_ReturnToField (= retour overworld,
-         //   posé par caller via gBagPosition.exitCallback, donc null ici OK)
+  // ITEM_USE_FIELD - 1 = 1 → CB2_ReturnToField (1:1 item_use.c:85). CRITIQUE : retour OW
+  // SANS poser gFieldCallback2 (contrairement à CB2_ReturnToFieldWithOpenMenu = exitCallback
+  // par défaut, qui pose gFieldCallback2 = open start menu → écraserait notre gFieldCallback).
+  // C'est ce qui permet à RunFieldCallback d'exécuter gFieldCallback = FieldCB_UseItemOnField
+  // (= la chaîne vélo/canne). Avant : null → fallback exitCallback WithOpenMenu → vélo no-op.
+  CB2_ReturnToField_Manual,
   null,  // ITEM_USE_PBLOCK_CASE - 1 = 2
 ];
 
@@ -142,6 +148,57 @@ export function SetUpItemUseCallback(task: DecompTask): void {
   if (!gBagMenu) return;
   gBagMenu.newScreenCallback = _sItemUseCallbacks[typeIdx];
   Task_FadeAndCloseBagMenu(task);
+}
+
+// ─── Field-callback infra (item_use.c:75,117-140) — pour les items ITEM_USE_FIELD ─
+// (vélo, canne, détecteur d'objets, corde sortie…). Le flux 1:1 :
+//   ItemUseOutOfBattle_X → sItemUseOnFieldCB = ItemUseOnFieldCB_X ; SetUpItemUseOnFieldCallback(task)
+//   → gFieldCallback = FieldCB_UseItemOnField + SetUpItemUseCallback (newScreenCallback =
+//     CB2_ReturnToField) + Task_FadeAndCloseBagMenu.
+//   → fade-out sac → CB2_ReturnToField → retour OW → RunFieldCallback exécute gFieldCallback
+//     = FieldCB_UseItemOnField → fade-in + CreateTask(Task_CallItemUseOnFieldCallback)
+//   → quand le fade est fini, Task_CallItemUseOnFieldCallback appelle sItemUseOnFieldCB(task)
+//     = l'effet réel (GetOnOffBike, StartFishing, …) qui DOIT DestroyTask pour ne tourner qu'une fois.
+
+/** 1:1 décomp `EWRAM_DATA static TaskFunc sItemUseOnFieldCB` (item_use.c:75). */
+let sItemUseOnFieldCB: ((task: DecompTask) => void) | null = null;
+export function setItemUseOnFieldCB(cb: ((task: DecompTask) => void) | null): void {
+  sItemUseOnFieldCB = cb;
+}
+
+/** 1:1 décomp `Task_CallItemUseOnFieldCallback` (item_use.c:136) :
+ *      if (IsWeatherNotFadingIn() == 1) sItemUseOnFieldCB(taskId);
+ *  Port : attend la fin du palette fade (= équivalent IsWeatherNotFadingIn, cf.
+ *  Task_FieldMoveWaitForFade) puis lance le CB réel. sItemUseOnFieldCB DOIT
+ *  DestroyTask(task.taskId) (sinon re-tické chaque frame). */
+function Task_CallItemUseOnFieldCallback(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  sItemUseOnFieldCB?.(task);
+}
+
+/** 1:1 décomp `FieldCB_UseItemOnField` (item_use.c:130) :
+ *      FadeInFromBlack();
+ *      CreateTask(Task_CallItemUseOnFieldCallback, 8);
+ *  Posé comme `gFieldCallback` par SetUpItemUseOnFieldCallback → exécuté par
+ *  RunFieldCallback au retour OW. gFieldCallback retourne void (≠ gFieldCallback2). */
+function FieldCB_UseItemOnField(): void {
+  // 1:1 FadeInFromBlack() = FillPalBufferBlack + FadeScreen(FADE_FROM_BLACK,0)
+  // (pattern anti-flash, cf. FieldCallback_PrepareFadeInFromMenu party-screen).
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);
+  getRuntime().CreateTask(Task_CallItemUseOnFieldCallback, 8);
+}
+
+/** 1:1 décomp `SetUpItemUseOnFieldCallback` (item_use.c:117) :
+ *      if (tUsingRegisteredKeyItem != TRUE) { gFieldCallback = FieldCB_UseItemOnField;
+ *                                             SetUpItemUseCallback(taskId); }
+ *      else sItemUseOnFieldCB(taskId);
+ *  La branche "registered key item on field" (select-button registered item) n'est
+ *  pas portée → on prend toujours la branche normale (depuis le sac). */
+export function SetUpItemUseOnFieldCallback(task: DecompTask): void {
+  (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_UseItemOnField;
+  SetUpItemUseCallback(task);
 }
 
 // ─── RemoveBagItem helper (1:1 sem `RemoveBagItem(itemId, 1)`) ──────────────

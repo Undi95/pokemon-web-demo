@@ -40,6 +40,7 @@ import { getItem as _getItem, getItemKeyById } from '../system/data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   setItemUseCB, SetUpItemUseCallback,
+  setItemUseOnFieldCB, SetUpItemUseOnFieldCallback,
   ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp,
   ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
@@ -566,21 +567,23 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // (Branche cycling-road/rails « can't dismount » = dette mineure, Cycling Road seulement.)
       if (_bikeMod && _playerAvatarMod && _overworldMod
         && _overworldMod.Overworld_IsBikingAllowed() && !_bikeMod.IsBikingDisallowedByPlayer()) {
-        const sec = GetItemSecondaryId(itemId);  // 'MACH_BIKE' / 'ACRO_BIKE'
-        const flag = sec === 'ACRO_BIKE'
-          ? _playerAvatarMod.PLAYER_AVATAR_FLAG_ACRO_BIKE
-          : _playerAvatarMod.PLAYER_AVATAR_FLAG_MACH_BIKE;
-        const state = sec === 'ACRO_BIKE'
-          ? _playerAvatarMod.PLAYER_AVATAR_STATE_ACRO_BIKE
-          : _playerAvatarMod.PLAYER_AVATAR_STATE_MACH_BIKE;
         const bk = _bikeMod;
         const pa = _playerAvatarMod;
-        // Précharge la gfx vélo (keystone) avant le swap dans GetOnOffBike (au retour OW).
-        (globalThis as Record<string, unknown>).gFieldCallback = () => {
+        const bikeItemId = itemId;
+        // 1:1 décomp `sItemUseOnFieldCB = ItemUseOnFieldCB_Bike; SetUpItemUseOnFieldCallback(taskId)`
+        // (item_use.c:216-217). Le CB tourne au retour OW (RunFieldCallback → FieldCB_UseItemOnField
+        // → Task_CallItemUseOnFieldCallback). ItemUseOnFieldCB_Bike (item_use.c:226) : GetOnOffBike
+        // (MACH/ACRO selon GetItemSecondaryId) puis DestroyTask. M3 : précharge la gfx vélo (keystone)
+        // avant GetOnOffBike. DestroyTask SYNCHRONE en tête (le task re-tique chaque frame sinon).
+        setItemUseOnFieldCB((t) => {
+          getRuntime()?.DestroyTask(t.taskId);
+          const sec = GetItemSecondaryId(bikeItemId);  // 'MACH_BIKE' / 'ACRO_BIKE'
+          const flag = sec === 'ACRO_BIKE' ? pa.PLAYER_AVATAR_FLAG_ACRO_BIKE : pa.PLAYER_AVATAR_FLAG_MACH_BIKE;
+          const state = sec === 'ACRO_BIKE' ? pa.PLAYER_AVATAR_STATE_ACRO_BIKE : pa.PLAYER_AVATAR_STATE_MACH_BIKE;
           Promise.resolve(pa.PreloadObjectEventGraphics(pa.GetPlayerAvatarGraphicsIdByStateId(state)))
             .then(() => { bk.GetOnOffBike(flag); });
-        };
-        Task_FadeAndCloseBagMenu(task);
+        });
+        SetUpItemUseOnFieldCallback(task);
         return;
       }
       msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
@@ -745,8 +748,13 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const rodSec = GetItemSecondaryId(itemId);
         const rod = rodSec === 'GOOD_ROD' ? 1 : rodSec === 'SUPER_ROD' ? 2 : 0;
         const pa = _playerAvatarMod;
-        (globalThis as Record<string, unknown>).gFieldCallback = () => { pa.StartFishing(rod); };
-        Task_FadeAndCloseBagMenu(task);
+        // 1:1 décomp `sItemUseOnFieldCB = ItemUseOnFieldCB_Rod; SetUpItemUseOnFieldCallback` (item_use.c:271).
+        // ItemUseOnFieldCB_Rod (item_use.c:280) : StartFishing(secondaryId) puis DestroyTask.
+        setItemUseOnFieldCB((t) => {
+          getRuntime()?.DestroyTask(t.taskId);
+          pa.StartFishing(rod);
+        });
+        SetUpItemUseOnFieldCallback(task);
         return;
       }
       msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;

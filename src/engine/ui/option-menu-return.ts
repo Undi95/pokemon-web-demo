@@ -214,7 +214,13 @@ function ReturnToFieldLocal_Manual(): boolean {
             // attente (gPostMenuFieldCallback posé par SetUpFieldMove_X), on run
             // donc RunFieldCallback ICI, juste après le restore (= place 1:1 de
             // case 2). Gardé pour ne pas changer le retour option-menu/normal.
-            if ((globalThis as Record<string, unknown>).gPostMenuFieldCallback) {
+            // gPostMenuFieldCallback : field-move party-menu (gFieldCallback2 = PrepareFadeInFromMenu).
+            // gFieldCallback : item-use field (vélo/canne/détecteur → FieldCB_UseItemOnField, posé par
+            // SetUpItemUseOnFieldCallback ; newScreenCallback = CB2_ReturnToField, donc PAS de
+            // gFieldCallback2 ici). On N'inclut PAS gFieldCallback2 seul (= retour WithOpenMenu normal
+            // = ré-ouverture start menu) pour ne pas changer le retour-sac/options standard.
+            const g = globalThis as Record<string, unknown>;
+            if (g.gPostMenuFieldCallback || g.gFieldCallback) {
               RunFieldCallback_Manual();
             }
           }).catch(e => {
