@@ -445,9 +445,15 @@ function renderOamSpriteNormal(
 
   const wTiles = wPx / 8;
 
+  // OAM X = 9-bit (0-511) côté HW GBA → wrap-around horizontal (symétrique du
+  // wrap Y 8-bit ci-dessus, objY & 0xFF). Sans ça, un sprite qui dérive loin à
+  // gauche (nuages WEATHER_SUNNY_CLOUDS : `sprite->x--` non borné) reste hors
+  // champ au lieu de réapparaître à droite → « passe une seule fois » au lieu
+  // d'en continu. Sprites dans [-256, 511] inchangés (la maths concorde).
+  const objX = (sprite.x | 0) & 0x1FF;
   for (let dx = 0; dx < wPx; dx++) {
-    const screenX = sprite.x + dx;
-    if (screenX < 0 || screenX >= SCREEN_W) continue;
+    const screenX = (objX + dx) & 0x1FF;
+    if (screenX >= SCREEN_W) continue;
 
     const localX = sprite.flipH ? (wPx - 1 - dx) : dx;
     const adjLocalY = sprite.flipV ? (hPx - 1 - localY) : localY;
