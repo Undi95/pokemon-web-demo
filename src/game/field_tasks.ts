@@ -64,7 +64,7 @@ import {
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
 import { GetPlayerSpeed, PLAYER_SPEED_FASTEST } from './field_control_avatar';
-import { EndTruckSequence } from '../engine/field/truck-cinematic';
+import { EndTruckSequence } from './field_special_scene';
 import { SecretBasePerStepCallback } from './secret_base';
 import { VarGet, VarSet } from './event_data';
 import {

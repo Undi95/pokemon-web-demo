@@ -455,7 +455,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // + camera wobble + door tile open). Lock player controls le temps que
       // le task soit terminé. Cf. truck-cinematic.ts pour les détails 1:1.
       if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
-        const { ExecuteTruckSequence } = await import('../engine/field/truck-cinematic');
+        const { ExecuteTruckSequence } = await import('../game/field_special_scene');
         ExecuteTruckSequence(this.rt);
       } else if (boot.mode === 'resume') {
         // 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1750) :

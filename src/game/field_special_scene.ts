@@ -1,5 +1,6 @@
 /**
- * truck-cinematic.ts — Port 1:1 STRICT décomp `field_special_scene.c`
+ * field_special_scene.ts — Port 1:1 STRICT décomp `field_special_scene.c`
+ * (= partie séquence camion d'intro, src/field_special_scene.c:22-279).
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/field_special_scene.c`
  * lignes 22-279.
@@ -56,15 +57,15 @@
  * IMPORTANT : task.data est un Int16Array dans notre runtime (= s16 1:1 décomp).
  * `++tTimer == 30000` wrap correctement parce que 30000 fits dans s16.
  */
-import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
-import { PlaySE, FuncIsActiveTask } from '../system/decomp-globals';
-import { stopPrerenderedSE, preloadPrerenderedSEs } from '../m4a/se-noise-prerendered';
+import type { DecompRuntime, DecompTask } from '../engine/system/decomp-runtime';
+import { PlaySE, FuncIsActiveTask } from '../engine/system/decomp-globals';
+import { stopPrerenderedSE, preloadPrerenderedSEs } from '../engine/m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
   SE_TRUCK_UNLOAD,
   SE_TRUCK_DOOR,
-} from '../decomp-data/include/constants/songs-data';
+} from '../engine/decomp-data/include/constants/songs-data';
 import {
   METATILE_InsideOfTruck_DoorClosedFloor_Top,
   METATILE_InsideOfTruck_DoorClosedFloor_Mid,
@@ -72,11 +73,11 @@ import {
   METATILE_InsideOfTruck_ExitLight_Top,
   METATILE_InsideOfTruck_ExitLight_Mid,
   METATILE_InsideOfTruck_ExitLight_Bottom,
-} from '../decomp-data/include/constants/metatile_labels-data';
-import { MAP_OFFSET, MapGridSetMetatileIdAt } from '../../game/fieldmap';
-import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from '../../game/field_camera';
-import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
-import { SetObjectEventSpritePosByLocalIdAndMap } from '../../game/event_object_movement';
+} from '../engine/decomp-data/include/constants/metatile_labels-data';
+import { MAP_OFFSET, MapGridSetMetatileIdAt } from './fieldmap';
+import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/script/script-runtime';
+import { SetObjectEventSpritePosByLocalIdAndMap } from './event_object_movement';
 
 // ─── 1:1 décomp box offsets (field_special_scene.c:27-34) ───────────────────
 // "Most of the boxes in the moving truck are map tiles, with the exception of
