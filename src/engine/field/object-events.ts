@@ -1987,58 +1987,21 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
     oam32.flipH = flip;
     return;
   }
-  // Phase 4.10 : NPCs subsprite-driven (= truck) skip le frame update car leur
-  // tile layout n'est pas un grid 16×32 frame. Le rendu visuel passe par
-  // syncSubspriteOam qui refresh les child OAMs depuis sprite.tileBase + offsets.
-  if (npc.useSubsprites) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
-  if (!sprite) return;
-  // C1.4 — 1:1 STRICT décomp : si sprite.anims est wired (= flow 1:1 par
-  // graphicsInfo + AnimateSprite tick), on sync sprite.animNum selon le state
-  // (walking → MoveDirectionAnimNum ; standing → FaceDirectionAnimNum), puis
-  // skip le legacy frame update (= AnimCmd dispatch via AnimateSprite drive
-  // déjà oam.tileNum).
+  // [M3-NPC M1] Tous les NPCs non-32×32 : le frame OAM est rendu à 100 % par le
+  // chemin décomp. `sprite.anims` est TOUJOURS wired (245/245 graphicsInfo ont une
+  // anim table — vérifié déterministe + 0 hit legacy sur 57 NPCs/5 villes) → c'est
+  // AnimateSprite qui drive `oam.tileNum` via les AnimCmd (1:1 décomp). Les
+  // MovementActions managent animNum/animCmdIndex (step start → SetStepAnimHandle
+  // Alternation : GO_X + alterne cmdIdx 1↔2/3↔0, animPaused=FALSE ; step end →
+  // animPaused=TRUE ; face_X → StartSpriteAnim(FACE_X)) ; câblage dans
+  // movement-system.ts (_tickWalk frame 0/end, _setFacing) + ici (tickWanderAround/
+  // tickLookAround). useSubsprites (truck) → rendu par syncSubspriteOam ailleurs.
   //
-  // 1:1 décomp event_object_movement.c:5052/5147/5449 etc. :
-  //   SetStepAnim(objectEvent, sprite, GetMoveDirectionAnimNum(facingDirection));
-  // simplifié ici en StartSpriteAnimIfDifferent (= équivalent fonctionnel sans
-  // alternation tracking inanimate-aware).
-  if (sprite.anims) {
-    // G6 — 1:1 STRICT décomp : sprite.animNum/animCmdIndex/animPaused sont
-    // managés par les MovementActions (= 1:1 décomp pattern) :
-    //   - Step start : InitMovementNormal → SetStepAnimHandleAlternation
-    //     (= sprite->animNum = GO_X + alterne cmdIdx 1↔2 / 3↔0) + animPaused=FALSE
-    //   - Step end : UpdateMovementNormal → animPaused=TRUE (= freeze cycle)
-    //   - face_X action : FaceDirection → StartSpriteAnim(FACE_X)
-    //
-    // updateNpcSpriteFrame ne touche PLUS animNum/animCmdIndex (= bug user
-    // "lévite" pré-G6 : écrasement chaque frame reset cmdIdx=0 → toujours
-    // left foot frame 7 → pas d'alternance walk1↔walk2 entre 2 steps).
-    //
-    // Wire MovementActions : voir movement-system.ts (_tickWalk frame 0/end,
-    // _setFacing) et object-events.ts tickWanderAround/tickLookAround.
-    return;
-  }
-  const oam = rt.gba.oam[sprite.oamIndex];
-  const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
-
-  let frameIdx: number;
-  if (npc.walkFramesLeft > 0) {
-    if (npc.walkFramesLeft >= 8) {
-      frameIdx = npc.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
-    } else {
-      frameIdx = cfg.face;
-    }
-  } else {
-    frameIdx = cfg.face;
-  }
-
-  // Fix B3 : pour les sprites 16x16 (= NINJA_BOY kids), 4 tiles par frame
-  // (= 16x16 = 2x2 tiles). Pour les 16x32 standard NPCs, 8 tiles par frame.
-  const tilesPerFrame = npc.is16x16 ? 4 : TILES_PER_FRAME_16x32;
-  oam.tileId = npc.objTileBase + frameIdx * tilesPerFrame;
-  sprite.hFlip = cfg.hFlip;
-  oam.flipH = cfg.hFlip;
+  // Le legacy de rendu MANUEL (NPC_SPRITE_FRAMES → oam.tileId recalculé chaque
+  // frame) était du code MORT (`sprite.anims` jamais falsy en pratique) et causait
+  // le bug « lévite » pré-G6 (reset cmdIdx → pas d'alternance walk1↔walk2) → retiré.
+  // NPC_SPRITE_FRAMES + TILES_PER_FRAME_16x32 restent utilisés pour le frame de
+  // départ (= face) au CreateSprite. [M2/M3 : Vigoroth 32×32 + truck subsprites.]
 }
 
 (globalThis as Record<string, unknown>).__updateNpcSpriteFrame = (rt: DecompRuntime, npc: ObjectEvent) => updateNpcSpriteFrame(rt, npc);
