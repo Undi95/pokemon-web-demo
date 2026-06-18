@@ -125,7 +125,13 @@ import {
 } from '../engine/system/decomp-bridge';
 import { FindTaskIdByFunc, GetTask, getRuntime } from '../engine/system/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
-import { SetSurfBlob_BobState, SetSurfBlob_PlayerOffset } from './field_effect_helpers';
+import {
+  SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
+  preloadWarpArrowEffect,
+  CreateWarpArrowSprite as _CreateWarpArrowSprite,
+  ShowWarpArrowSprite as _ShowWarpArrowSprite,
+  SetSpriteInvisible as _SetSpriteInvisible,
+} from './field_effect_helpers';
 import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from '../engine/battle/party-storage';
 import { MOVE_SURF } from '../engine/decomp-data/include/constants/moves-data';
 // ─── Pêche (Task_Fishing) : combat + texte/fenêtre + anim ───
@@ -175,6 +181,9 @@ import {
   MetatileBehavior_IsBridgeOverWaterNoEdge,
   MetatileBehavior_IsJumpSouth, MetatileBehavior_IsJumpNorth,
   MetatileBehavior_IsJumpWest, MetatileBehavior_IsJumpEast,
+  // 1:1 décomp `sArrowWarpMetatileBehaviorChecks2[]` (field_player_avatar.c:294) — HideShowWarpArrow.
+  MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsNorthArrowWarp,
+  MetatileBehavior_IsWestArrowWarp, MetatileBehavior_IsEastArrowWarp,
 } from './metatile_behavior';
 import { CheckStandardWildEncounter } from './wild_encounter';
 import {
@@ -2881,4 +2890,117 @@ export function SetPlayerVisibility(_rt: DecompRuntime, visible: boolean): void 
   const slot = gObjectEvents[gPlayerAvatar.objectEventId];
   if (!slot) return;
   slot.invisible = !visible;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Warp arrow driver `HideShowWarpArrow` — 1:1 décomp field_player_avatar.c:1428
+// (ex-engine/field/field-effect-arrow.ts, fusionné ici = son vrai .c). Les FldEff
+// arrow (CreateWarpArrowSprite:175/ShowWarpArrowSprite:193/SetSpriteInvisible:188)
+// vivent dans field_effect_helpers.c (importés _aliasés) ; les prédicats
+// MetatileBehavior_Is*ArrowWarp dans metatile_behavior.c (importés).
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MAX_SPRITES = 64;
+
+/** spriteId de la flèche (1:1 décomp : objectEvent->warpArrowSpriteId ; notre driver
+ *  le garde en module-global, créé au map load). MAX_SPRITES = aucun. */
+let _arrowSpriteId = MAX_SPRITES;
+
+// Reset hook : clear au ResetSpriteData (1:1 décomp : tous sprite.inUse=FALSE).
+// Notre _arrowSpriteId externe n'a pas cette propagation auto → sans ce hook, après
+// un reset (bag/menu/warp) il reste STALE et un DestroyWarpArrowSprite écraserait un
+// AUTRE sprite (slot réutilisé par un NPC respawné). Cf. bug "moitié de maman".
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  callbacks.push(() => { _arrowSpriteId = MAX_SPRITES; });
+  g.__spriteResetCallbacks = callbacks;
+})();
+
+/** Debug helper exposé sur globalThis (devtools console). */
+export function getArrowState(): { spriteId: number } | null {
+  return _arrowSpriteId === MAX_SPRITES ? null : { spriteId: _arrowSpriteId };
+}
+(globalThis as Record<string, unknown>).getArrowState = getArrowState;
+
+/** 1:1 décomp `CreateWarpArrowSprite` (field_effect_helpers.c:175) — wrapper : précharge
+ *  l'asset (concern plateforme) puis crée le sprite via le miroir. À appeler au map load. */
+export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> {
+  if (_arrowSpriteId !== MAX_SPRITES) DestroyWarpArrowSprite(rt);
+  await preloadWarpArrowEffect(rt);
+  _arrowSpriteId = _CreateWarpArrowSprite(rt);
+  return _arrowSpriteId;
+}
+
+/** Cleanup au map switch (= 1:1 DestroyWarpArrowSprite). */
+export function DestroyWarpArrowSprite(rt: DecompRuntime): void {
+  if (_arrowSpriteId === MAX_SPRITES) return;
+  const sprite = rt.gSprites.get(_arrowSpriteId);
+  if (sprite) {
+    rt.gba.oam[sprite.oamIndex].visible = false;
+    sprite.inUse = false;
+  }
+  _arrowSpriteId = MAX_SPRITES;
+}
+
+/** Direction → check fn 1:1 décomp `sArrowWarpMetatileBehaviorChecks2`
+ *  (field_player_avatar.c:294-300). */
+const ARROW_CHECKS: Record<number, (b: number) => boolean> = {
+  [_DIR_SOUTH]: MetatileBehavior_IsSouthArrowWarp,
+  [_DIR_NORTH]: MetatileBehavior_IsNorthArrowWarp,
+  [_DIR_WEST]:  MetatileBehavior_IsWestArrowWarp,
+  [_DIR_EAST]:  MetatileBehavior_IsEastArrowWarp,
+};
+
+/** 1:1 décomp `HideShowWarpArrow` (field_player_avatar.c:1428). Wrapper coords/dir
+ *  séparées (= notre TestOverworldScene actuel ; playerX/Y LOGICAL → INTERNAL). */
+export function HideShowWarpArrow(
+  rt: DecompRuntime, playerX: number, playerY: number, movementDir: number,
+): void {
+  if (_arrowSpriteId === MAX_SPRITES) return;
+  const internalX = playerX + MAP_OFFSET;
+  const internalY = playerY + MAP_OFFSET;
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
+  // 1:1 décomp loop : test chaque dir ; si la tuile a le ARROW_WARP behavior matchant
+  // cette dir ET movementDirection == cette dir → show arrow sur la tuile adjacente.
+  for (const dir of [_DIR_SOUTH, _DIR_NORTH, _DIR_WEST, _DIR_EAST]) {
+    if (ARROW_CHECKS[dir]!(metatileBehavior) && dir === movementDir) {
+      const target = MoveCoords(dir, internalX, internalY);
+      _ShowWarpArrowSprite(rt, _arrowSpriteId, dir, target.x, target.y);
+      return;
+    }
+  }
+  _SetSpriteInvisible(rt, _arrowSpriteId);
+}
+
+/** 1:1 STRICT décomp signature `HideShowWarpArrow(struct ObjectEvent *objectEvent)`
+ *  (field_player_avatar.c:1428). Lit currentMetatileBehavior + movementDirection +
+ *  currentCoords directement (INTERNAL). */
+export function HideShowWarpArrowFromObjectEvent(
+  rt: DecompRuntime,
+  objectEvent: {
+    currentCoordsX: number;
+    currentCoordsY: number;
+    currentMetatileBehavior: number;
+    movementDirection: number;
+    active: boolean;
+    isPlayer: boolean;
+  },
+): void {
+  if (_arrowSpriteId === MAX_SPRITES) return;
+  if (!objectEvent.active || !objectEvent.isPlayer) {
+    _SetSpriteInvisible(rt, _arrowSpriteId);
+    return;
+  }
+  const metatileBehavior = objectEvent.currentMetatileBehavior;
+  const internalX = objectEvent.currentCoordsX;
+  const internalY = objectEvent.currentCoordsY;
+  for (const dir of [_DIR_SOUTH, _DIR_NORTH, _DIR_WEST, _DIR_EAST]) {
+    if (ARROW_CHECKS[dir]!(metatileBehavior) && dir === objectEvent.movementDirection) {
+      const target = MoveCoords(dir, internalX, internalY);
+      _ShowWarpArrowSprite(rt, _arrowSpriteId, dir, target.x, target.y);
+      return;
+    }
+  }
+  _SetSpriteInvisible(rt, _arrowSpriteId);
 }

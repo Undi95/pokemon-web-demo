@@ -142,7 +142,7 @@ import {
   CreateWarpArrowSprite,
   DestroyWarpArrowSprite,
   HideShowWarpArrow,
-} from '../engine/field/field-effect-arrow';
+} from '../game/field_player_avatar';
 import { preloadEmoteIcons } from '../game/trainer_see';
 import { UpdateTVScreensOnMap } from '../engine/ui/tv-screen';
 import {
