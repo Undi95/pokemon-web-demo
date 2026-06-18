@@ -93,7 +93,7 @@ import {
   InitReflectionDistortion,
   UpdateReflectionDistortionMatrices,
 } from '../game/event_object_movement';
-import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
+import { applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script_movement';
 import { SetFieldEffectRuntime } from '../engine/field/field-effect';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
@@ -594,8 +594,6 @@ export class TestOverworldScene extends Phaser.Scene {
           PlayerStep(sFieldInput.dpadDirection, rt.gMain.newKeys, rt.gMain.heldKeys);
         }
         // ── RunTasks (overworld.c:1468) ──
-        // tickMovementQueues : pose gFieldCamera.movementSpeedX/Y (forced/scripted).
-        tickMovementQueues(rt);
         // 1:1 décomp `RunTasks()` : tick le registre gTasks (door anim, fade…).
         // Idempotent (guard _runTasksCalledThisFrame) → tickFixed ne le rejoue pas.
         rt.runTasks();
@@ -981,9 +979,6 @@ export class TestOverworldScene extends Phaser.Scene {
       // Phase 4.4.a : destroy old NPC sprites first (= 1:1 décomp ResetObjectEvents).
       destroyAllNpcSprites(this.rt);
       resetObjectEventAllocations();
-      // Phase 4.10 : reset movement queues au map switch (= old map's queues
-      // pourraient référencer des NPCs de l'ancienne map).
-      resetMovementQueues();
       // H2 : reset ScriptMovement task data (= 1:1 décomp Script_ResetTask au
       // map switch, sinon objEventIds stale référencent ancienne map NPCs).
       ScriptMovement_Reset();
@@ -1344,7 +1339,7 @@ export class TestOverworldScene extends Phaser.Scene {
     try {
       // ─── Phase 1 : kind-specific pre-warp anim (= Task_DoDoorWarp pour 'door') ───
       // 1:1 décomp `Task_DoDoorWarp` (field_screen_effect.c:677-728).
-      // warpInProgress = false : tickMovementQueues run = applyMovement tick.
+      // warpInProgress = false : ScriptMovement_MoveObjects tick = applymovement avance.
       if (kind === 'door') {
         // Door tile = position en face du player (= player.x, player.y - 1
         // car player face NORTH au moment du collision dispatch).
@@ -1581,8 +1576,8 @@ export class TestOverworldScene extends Phaser.Scene {
         gPlayerAvatar.forceMovement = adjustedDir;
         await this.waitForForceMovementDone();
         // case 2 : FieldAnimateDoorClose à la door position originale +
-        // ObjectEventClearHeldMovementIfFinished (= la queue est déjà clear
-        // par tickMovementQueues quand q.done est set à TRUE).
+        // ObjectEventClearHeldMovementIfFinished (= le held movement est déjà
+        // clear par ScriptMovement quand l'action courante est finie).
         await FieldAnimateDoorClose(doorX, doorY);
         // case 3 : UnfreezeObjectEvents (= reset frozen sur tous les NPCs).
         // case 4 : UnlockPlayerFieldControls + DestroyTask (= fait en finally).
