@@ -248,7 +248,7 @@ export function FieldGetPlayerInput(input: FieldInput, newKeys: number, heldKeys
  *  ⚠️ Le dispatch warp réutilise les helpers PROUVÉS `findWarpEventAt`/`getWarpKindFor`/
  *  `setPendingWarp` (mécanisme warp-system, récupéré par `MainCB2_Overworld::getPendingWarp`),
  *  PAS les `TryArrowWarp`/`TryStartWarpEventScript` de ce fichier (lookup différent, jamais
- *  activé en jeu). Non portés (gérés ailleurs / hors démo, documenté) : `CheckForTrainersWanting
+ *  activé en jeu). Non encore portés (gérés ailleurs ou sous-système dédié absent) : `CheckForTrainersWanting
  *  Battle`, `TryRunOnFrameMapScript` (appelé par la scène), dive emerge/down, start menu
  *  (`TickStartMenu`), select item, misc/step-count/repel scripts. */
 export function ProcessPlayerFieldInput(input: FieldInput): boolean {
@@ -632,7 +632,7 @@ export function GetInteractedObjectEventScript(
   gSpecialVar.LastTalked = gObjectEvents[objectEventId].localId;
   // 1:1 décomp `gSpecialVar_Facing = direction` (field_control_avatar.c:305).
   gSpecialVar.Facing = direction;
-  // TrainerHill skip pour MVP.
+  // DETTE : branche Trainer Hill non portée (sous-système Trainer Hill absent).
   const script = gObjectEvents[objectEventId].scriptLabel;
   if (!script) return null;
   // GetRamScript filter skip — pas de RAM scripts dynamic dans notre port.
@@ -660,7 +660,7 @@ export function GetInteractedBackgroundEventScript(
   if (bgEvent.kind === 'hidden_item') {
     return 'EventScript_HiddenItemScript';
   }
-  // Secret base entrance (= kind 'secret_base'). Skip MVP — pas critique démo Littleroot.
+  // DETTE : secret base entrance (kind 'secret_base') non portée (sous-système base secrète).
   if (bgEvent.kind === 'secret_base') {
     return null;
   }
@@ -681,7 +681,7 @@ export function GetInteractedBackgroundEventScript(
  *  Lookup un EventScript_* global selon le metatile behavior face au joueur.
  *  Order des checks 1:1 strict avec décomp.
  *
- *  Secret base + decoration metatiles skip MVP (= pas de secret base démo). */
+ *  DETTE : secret base + decoration metatiles non portés (sous-système base secrète). */
 export function GetInteractedMetatileScript(
   _position: MapPosition, metatileBehavior: number, direction: number,
 ): string | null {
@@ -731,7 +731,7 @@ export function GetInteractedMetatileScript(
 /** 1:1 décomp `GetInteractionScript` (field_control_avatar.c:240-259).
  *
  *  Chain : ObjectEventScript → BackgroundEventScript → MetatileScript → WaterScript.
- *  Returns le premier non-NULL. WaterScript (Surf/Waterfall) skip pour MVP. */
+ *  Returns le premier non-NULL. WaterScript (Surf/Cascade) = porté, cf. GetInteractedWaterScript. */
 export function GetInteractionScript(
   position: MapPosition, metatileBehavior: number, direction: number,
 ): string | null {
