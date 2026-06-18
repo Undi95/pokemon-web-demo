@@ -15,7 +15,7 @@
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../field/object-events';
-import { ScriptMovement_UnfreezeObjectEvents } from '../field/script-movement';
+import { ScriptMovement_UnfreezeObjectEvents } from '../../game/script_movement';
 import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../../game/field_player_avatar';

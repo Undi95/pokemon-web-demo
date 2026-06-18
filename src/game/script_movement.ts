@@ -1,5 +1,5 @@
 /**
- * script-movement.ts — Port 1:1 strict `script_movement.c` (= ScriptMovement_X task).
+ * script_movement.ts — miroir 1:1 de `script_movement.c` (= ScriptMovement_X task).
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/script_movement.c`.
  *
@@ -81,7 +81,7 @@ import {
   MOVEMENT_ACTION_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
   MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
   MOVEMENT_ACTION_STEP_END,
-} from '../decomp-data/include/constants/event_object_movement-data';
+} from '../engine/decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `asm/macros/movement.inc:create_movement_action` table.
  *  Maps action name string (snake_case) → numeric MOVEMENT_ACTION_X (u8).
@@ -276,7 +276,7 @@ import {
   ObjectEventSetHeldMovement,
   FreezeObjectEvent,
   UnfreezeObjectEvent,
-} from './object-events';
+} from '../engine/field/object-events';
 
 /** 1:1 décomp `OBJECT_EVENTS_COUNT` (= include/constants/global.h) : max 16
  *  NPCs simultanés. La task data stocke 16 entries (objEventId per slot). */

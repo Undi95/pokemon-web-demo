@@ -31,7 +31,7 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { gPlayerAvatar } from '../../game/field_player_avatar';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords, DoShadowFieldEffect } from './object-events';
-import { ConvertMovementActionsToIds, ScriptMovement_StartObjectMovementScript, ScriptMovement_IsObjectMovementFinished } from './script-movement';
+import { ConvertMovementActionsToIds, ScriptMovement_StartObjectMovementScript, ScriptMovement_IsObjectMovementFinished } from '../../game/script_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
 import { MAP_OFFSET } from './map-loader';

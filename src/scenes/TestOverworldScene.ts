@@ -94,7 +94,7 @@ import {
   UpdateReflectionDistortionMatrices,
 } from '../engine/field/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
-import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../engine/field/script-movement';
+import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script_movement';
 import { SetFieldEffectRuntime } from '../engine/field/field-effect';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
