@@ -64,7 +64,7 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `movement-system.ts` (1032) | event_object_movement.c (MovementAction Step funcs) | 4 | maison (éclaté) | 🔧 fusion dédiée dans event_object_movement (gros refactor) |
 | ~~`movement-action-dispatch.ts`~~ | — | 0 | bridge DÉSACTIVÉ (no-op) = code mort | ✅ **SUPPRIMÉ** (`437dbfe9`) |
 | `direction-coords.ts` (266) | event_object_movement.c + global.fieldmap.h (enum Direction) | 13 | **foundation autonome** (zéro import) | 🟢 GARDER (anti-cycle : fusionner créerait fieldmap↔eom ; dup anim-num soldé `b61a6e12`) |
-| `metatile-behavior-helpers.ts` (67) | éclaté (event_object_movement.c / field_player_avatar.c) | 1 | maison | 🔧 fusionner (⚠️ cycle fieldmap potentiel) |
+| ~~`metatile-behavior-helpers.ts`~~ | — | 5 | barrel hybride (2 .c) | ✅ **FUSIONNÉ/SUPPRIMÉ** (`1dea2c5a` : IsMetatileDirectionallyImpassable→eom, ShouldJumpLedge→field_player_avatar, prédicats→game/metatile_behavior) |
 | `object-event-graphics*.ts` / `*-data.ts` / `*-oam.ts` | data décomp | — | data générée | laisser (data) |
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
