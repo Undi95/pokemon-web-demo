@@ -153,7 +153,7 @@ import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
-import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites } from '../game/field_weather_effect';
+import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../game/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../engine/system/sprite';
 import { SetDefaultFlashLevel } from '../game/overworld';
 import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
@@ -933,6 +933,7 @@ export class TestOverworldScene extends Phaser.Scene {
     void preloadWeatherFogPalette();
     void preloadWeatherAshSprites();
     void preloadWeatherFogHorizontalSprites();
+    void preloadWeatherCloudSprites();  // WEATHER_SUNNY_CLOUDS (Route 119/120) — sinon CreateCloudSprites tile 0 garbage.
     // ⚠️ StartWeather() + readyForInit + DoCurrentWeather() sont posés APRÈS SpawnObjectEventsOnMap
     // (ordre décomp ResumeMap : objets d'abord). Avant, StartWeather tournait ICI (avant le spawn)
     // → la palette météo (AllocSpritePalette) prenait un slot OBJ bas que les object events

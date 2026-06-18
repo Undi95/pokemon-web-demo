@@ -14,8 +14,9 @@
  *      UpdateRainCounter/Task_DoAbnormalWeather/CreateAbnormalWeatherTask) + l'effet
  *      ASH (WEATHER_VOLCANIC_ASH : nuages de cendre dérivants, Route 113).
  *   ✅ C3 : WEATHER_SUNNY + WEATHER_SHADE (color-map only) + WEATHER_FOG_HORIZONTAL
- *      (= aussi WEATHER_UNDERWATER, mêmes callbacks).
- *   ⏳ C3+ : Clouds/Rain/Snow/Thunderstorm/FogDiagonal/Sandstorm/Bubbles/Drought.
+ *      (= aussi WEATHER_UNDERWATER, mêmes callbacks) + WEATHER_SUNNY_CLOUDS (3 nuages
+ *      map-positionnés, palette custom).
+ *   ⏳ C3+ : Rain/Snow/Thunderstorm/Downpour/FogDiagonal/Sandstorm/Bubbles/Drought.
  *
  * ⚠️ AUDIO SKIP (exception projet) : aucun PlaySE.
  */
@@ -43,6 +44,8 @@ import {
   gWeatherPtr,
   GFXTAG_ASH,
   GFXTAG_FOG_H,
+  GFXTAG_CLOUD,
+  LoadCustomWeatherSpritePalette,
   Weather_SetBlendCoeffs,
   Weather_SetTargetBlendCoeffs,
   Weather_UpdateBlend,
@@ -50,6 +53,8 @@ import {
   SetCurrentAndNextWeather,
   _registerWeatherFuncs,
 } from './field_weather';
+import { MAP_OFFSET } from '../engine/field/map-loader';
+import { SetSpritePosToMapCoords } from '../engine/field/field-camera';
 
 const _rt = (): DecompRuntime => getRuntime();
 
@@ -266,6 +271,179 @@ function _mapHeaderWeatherId(): number {
   }
   return 0;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER_SUNNY_CLOUDS (field_weather_effect.c:33-226)
+//  3 nuages 64×64 OBJ_BLEND positionnés en coords MAP (bas de la Route 120) via
+//  SetSpritePosToMapCoords + coordOffsetEnabled → ils SUIVENT la map (caméra, géré
+//  1:1 par UpdateOamCoords). Dérivent 1px vers la gauche toutes les 2 frames. Palette
+//  = cloud (PALTAG_WEATHER_2, chargée par LoadCustomWeatherSpritePalette depuis
+//  gCloudsWeatherPalette = palette de cloud.png).
+// ════════════════════════════════════════════════════════════════════════════
+
+const CLOUD_PNG = '/decomp/em/weather/cloud.png';
+const NUM_CLOUD_SPRITES = 3; // constants/field_weather.h
+
+/** 1:1 décomp `sCloudSpriteMapCoords[]` (field_weather_effect.c:42) : coords MAP du
+ *  bas de la Route 120 (avant +MAP_OFFSET). */
+const sCloudSpriteMapCoords: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 0, y: 66 },
+  { x: 5, y: 73 },
+  { x: 10, y: 78 },
+];
+
+/** 1:1 décomp `sCloudSpriteAnimCmds` (field_weather_effect.c:73-82) : 1 anim 1-frame. */
+const sCloudSpriteAnimCmds: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 16), ANIMCMD_END],
+];
+
+let _cloudTileStart = -1;
+let _cloudCharData: Uint8Array | null = null;
+let _cloudPalette: Uint16Array | null = null;
+let _cloudInit = false;
+let _cloudInitPromise: Promise<void> | null = null;
+
+/** Préchargement plateforme du sprite sheet + palette cloud (le décomp les a en
+ *  INCBIN/INCGFX compile-time : gWeatherCloudTiles + gCloudsWeatherPalette, tous deux
+ *  depuis cloud.png). cloud.png = 64×64 → OBJ 1D 64×64 direct. À appeler avant StartWeather. */
+export async function preloadWeatherCloudSprites(): Promise<void> {
+  if (_cloudInit) return;
+  if (_cloudInitPromise) return _cloudInitPromise;
+  _cloudInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(CLOUD_PNG, 4);
+    _cloudCharData = png.charData;
+    _cloudPalette = png.palette;
+    _cloudInit = true;
+  })();
+  return _cloudInitPromise;
+}
+
+/** 1:1 décomp `Clouds_InitVars(void)` (field_weather_effect.c:95). */
+function Clouds_InitVars(): void {
+  gWeatherPtr.targetColorMapIndex = 0;
+  gWeatherPtr.colorMapStepDelay = 20;
+  gWeatherPtr.weatherGfxLoaded = 0;
+  gWeatherPtr.initStep = 0;
+  if (gWeatherPtr.cloudSpritesCreated === 0) Weather_SetBlendCoeffs(0, 16);
+}
+
+/** 1:1 décomp `Clouds_InitAll(void)` (field_weather_effect.c:105). */
+function Clouds_InitAll(): void {
+  Clouds_InitVars();
+  while (gWeatherPtr.weatherGfxLoaded === 0) Clouds_Main();
+}
+
+/** 1:1 décomp `Clouds_Main(void)` (field_weather_effect.c:112). */
+function Clouds_Main(): void {
+  switch (gWeatherPtr.initStep) {
+    case 0:
+      CreateCloudSprites();
+      gWeatherPtr.initStep++;
+      break;
+    case 1:
+      Weather_SetTargetBlendCoeffs(12, 8, 1);
+      gWeatherPtr.initStep++;
+      break;
+    case 2:
+      if (Weather_UpdateBlend()) {
+        gWeatherPtr.weatherGfxLoaded = 1;
+        gWeatherPtr.initStep++;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `Clouds_Finish(void)` (field_weather_effect.c:134). */
+function Clouds_Finish(): boolean {
+  switch (gWeatherPtr.finishStep) {
+    case 0:
+      Weather_SetTargetBlendCoeffs(0, 16, 1);
+      gWeatherPtr.finishStep++;
+      return true;
+    case 1:
+      if (Weather_UpdateBlend()) {
+        DestroyCloudSprites();
+        gWeatherPtr.finishStep++;
+      }
+      return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `CreateCloudSprites(void)` (field_weather_effect.c:173). */
+function CreateCloudSprites(): void {
+  const rt = _rt();
+
+  if (gWeatherPtr.cloudSpritesCreated) return;
+
+  // 1:1 : LoadSpriteSheet(&sCloudSpriteSheet) + LoadCustomWeatherSpritePalette(gCloudsWeatherPalette).
+  if (_cloudCharData === null) {
+    console.error('[field_weather_effect] cloud.png non préchargé — appeler preloadWeatherCloudSprites() avant StartWeather.');
+    _cloudTileStart = 0;
+  } else {
+    _cloudTileStart = LoadSpriteSheet({ data: _cloudCharData, size: _cloudCharData.length, tag: GFXTAG_CLOUD });
+  }
+  if (_cloudPalette !== null) LoadCustomWeatherSpritePalette(_cloudPalette);
+
+  for (let i = 0; i < NUM_CLOUD_SPRITES; i++) {
+    // 1:1 : CreateSprite(&sCloudSpriteTemplate, 0, 0, 0xFF) — CreateSprite (PAS AtEnd).
+    const { spriteId } = rt.CreateSpriteAtOam({
+      tileId: _cloudTileStart,
+      paletteBank: gWeatherPtr.weatherPicSpritePalIndex,
+      x: 0, y: 0,
+      shape: 0, size: 3,           // SPRITE_SHAPE/SIZE(64x64)
+      priority: 3,                 // 1:1 oam.priority = 3
+      paletteMode: 0, affineMode: 0,
+      subpriority: 0xFF,
+      fromEnd: false,
+    });
+    if (spriteId !== MAX_SPRITES) {
+      const sprite = rt.gSprites.get(spriteId)!;
+      // 1:1 : oam.objMode = ST_OAM_OBJ_BLEND.
+      sprite.objMode = 1;
+      sprite.callback = UpdateCloudSprite;
+      setFieldEffectAnims(sprite, sCloudSpriteAnimCmds, _cloudTileStart);
+      // 1:1 : SetSpritePosToMapCoords(mapX+MAP_OFFSET, mapY+MAP_OFFSET, &sprite->x, &sprite->y).
+      const pos = SetSpritePosToMapCoords(sCloudSpriteMapCoords[i].x + MAP_OFFSET, sCloudSpriteMapCoords[i].y + MAP_OFFSET);
+      sprite.x = pos.x;
+      sprite.y = pos.y;
+      // 1:1 : sprite->coordOffsetEnabled = TRUE → suit la caméra (UpdateOamCoords).
+      sprite.coordOffsetEnabled = true;
+      gWeatherPtr.sprites.s1.cloudSprites[i] = sprite;
+    } else {
+      gWeatherPtr.sprites.s1.cloudSprites[i] = null;
+    }
+  }
+
+  gWeatherPtr.cloudSpritesCreated = 1;
+}
+
+/** 1:1 décomp `DestroyCloudSprites(void)` (field_weather_effect.c:203). */
+function DestroyCloudSprites(): void {
+  if (!gWeatherPtr.cloudSpritesCreated) return;
+
+  for (let i = 0; i < NUM_CLOUD_SPRITES; i++) {
+    const s = gWeatherPtr.sprites.s1.cloudSprites[i] as DecompSprite | null;
+    if (s !== null) DestroySprite(s);
+  }
+
+  FreeSpriteTilesByTag(GFXTAG_CLOUD);
+  gWeatherPtr.cloudSpritesCreated = 0;
+}
+
+/** 1:1 décomp `UpdateCloudSprite(struct Sprite *sprite)` (field_weather_effect.c:220). */
+function UpdateCloudSprite(sprite: DecompSprite): void {
+  // Move 1 pixel left every 2 frames.
+  sprite.data[0] = (sprite.data[0] + 1) & 1;
+  if (sprite.data[0]) sprite.x--;
+}
+
+_registerWeatherFuncs(WEATHER_SUNNY_CLOUDS, {
+  initVars: Clouds_InitVars,
+  main: Clouds_Main,
+  initAll: Clouds_InitAll,
+  finish: Clouds_Finish,
+});
 
 // ════════════════════════════════════════════════════════════════════════════
 //  WEATHER_SUNNY (field_weather_effect.c:153-171)
