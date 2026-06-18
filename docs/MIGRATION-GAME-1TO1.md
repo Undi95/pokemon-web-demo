@@ -36,7 +36,8 @@ fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
 **event_object_movement** (`7206beeb`, ex-object-events — le + gros, 8490 l ; déviation M3 rendu Vigoroth/truck cutscène, PAS #100%),
 **field_control_avatar** (`697896d8`, ex-field-control-avatar — master dispatcher input/warps/interactions ; wiring progressif + dette TrainerHill/secret base, PAS #100%),
 **map_name_popup** (`238df9f3`, ex-map-name-popup — map_name_popup.c + glu chargement async des thèmes, PAS #100%),
-**field_special_scene** (`05e5e6ba`, ex-truck-cinematic — field_special_scene.c:22-279 séquence camion intro, PAS #100%).
+**field_special_scene** (`05e5e6ba`, ex-truck-cinematic — field_special_scene.c:22-279 séquence camion intro, PAS #100%),
+**field_effect** (`8c3ab7c3`, ex-field-effect — field_effect.c dispatcher FieldEffectStart ; sActiveList reste en leaf anti-cycle, PAS #100%).
 
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
@@ -72,8 +73,9 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
 | ~~`truck-cinematic.ts`~~ → `game/field_special_scene.ts` | — | 2 | port en cours (séquence camion intro) | ✅ **MIGRÉ** (`05e5e6ba`) |
-| `field-effect.ts` (324) + `field-effect-active-list.ts` (128) | `field_effect.c` (dispatcher + sActiveList[32]) | ~14 | 1:1 propre, 2 fichiers | 🟢 **FUSIONNER → `game/field_effect.ts`** (chunk dédié, critical-path FieldEffectStart) |
-| `field-effect-arrow.ts` (156) | **`field_player_avatar.c`** (`HideShowWarpArrow`:1428 + prédicats arrow) | 1 | mal nommé : PAS field_effect.c (les vraies fns arrow déjà dans field_effect_helpers.ts) | 🟢 → `game/field_player_avatar.ts` (séparé) |
+| ~~`field-effect.ts`~~ → `game/field_effect.ts` | — | 6 | dispatcher FieldEffectStart (field_effect.c) | ✅ **MIGRÉ** (`8c3ab7c3`) |
+| `field-effect-active-list.ts` (128) | `field_effect.c:846-886` (sActiveList[32]) | ~8 | leaf zéro-import | 🟢 **GARDER en `engine/`** (anti-cycle : field_effect_helpers le consomme → fusion = cycle field_effect↔helpers ; cf. direction-coords) |
+| `field-effect-arrow.ts` (156) | **`field_player_avatar.c`** (`HideShowWarpArrow`:1428 + prédicats arrow) | 1 | mal nommé : PAS field_effect.c (les vraies fns arrow déjà dans field_effect_helpers.ts) | 🟢 → `game/field_player_avatar.ts` (séparé, reste à faire) |
 | `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts`, `movement.ts`, `tilemap-loader.ts` | divers | — | maison (Phaser/helpers, pas de .c direct) | reste `engine/` (harness) |
 
 > ⚠️ **Reframing movement-system (2026-06-18)** : la cible planifiée « fusionner les
