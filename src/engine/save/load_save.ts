@@ -35,7 +35,7 @@ import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from '../battle
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
-} from '../field/object-events';
+} from '../../game/event_object_movement';
 import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { GetCameraTopLeftCoords } from '../../game/field_camera';

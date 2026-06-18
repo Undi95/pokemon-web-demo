@@ -28,7 +28,7 @@ import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '
 import {
   gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfFinished,
-} from '../field/object-events';
+} from '../../game/event_object_movement';
 import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from '../../game/field_player_avatar';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,

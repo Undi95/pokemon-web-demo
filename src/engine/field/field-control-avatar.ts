@@ -83,7 +83,7 @@ import {
   OBJECT_EVENTS_COUNT,
   GetObjectEventIdByPosition,
   ELEVATION_TRANSITION,
-} from './object-events';
+} from '../../game/event_object_movement';
 import { MapGridGetElevationAt } from '../../game/fieldmap';
 import { LOCALID_PLAYER } from '../system/decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';

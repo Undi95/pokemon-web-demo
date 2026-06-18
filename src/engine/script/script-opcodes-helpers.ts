@@ -8,8 +8,8 @@
  * partagés entre les fichiers `script-opcodes-<section>.ts`.
  */
 
-import type { ObjectEvent } from '../field/object-events';
-import { gObjectEvents } from '../field/object-events';
+import type { ObjectEvent } from '../../game/event_object_movement';
+import { gObjectEvents } from '../../game/event_object_movement';
 import type { ObjectEventTemplate } from '../../game/fieldmap';
 import { gMapHeader, MAP_OFFSET } from '../../game/fieldmap';
 import { GetCurrentMap } from '../save/load_save';

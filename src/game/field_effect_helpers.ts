@@ -66,7 +66,7 @@ import {
   ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
   GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
-} from '../engine/field/object-events';
+} from './event_object_movement';
 import { MoveCoords, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../engine/field/direction-coords';
 import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,

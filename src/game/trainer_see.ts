@@ -35,7 +35,7 @@ import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtim
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../engine/system/sprite';
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
-import { gObjectEvents, TryGetObjectEventIdByLocalIdAndMap } from '../engine/field/object-events';
+import { gObjectEvents, TryGetObjectEventIdByLocalIdAndMap } from './event_object_movement';
 import { gPlayerAvatar } from './field_player_avatar';
 import { gFieldEffectArguments, FieldEffectStop } from '../engine/field/field-effect';
 import { setFieldEffectAnims } from './field_effect_helpers';

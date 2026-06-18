@@ -30,7 +30,7 @@
  */
 
 import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
-import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
+import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../../game/event_object_movement';
 import { gPlayerAvatar } from '../../game/field_player_avatar';
 import { MapGridGetMetatileIdAt } from '../../game/fieldmap';
 import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';

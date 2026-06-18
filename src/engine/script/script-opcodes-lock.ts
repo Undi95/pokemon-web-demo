@@ -14,7 +14,7 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../field/object-events';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../../game/event_object_movement';
 import { ScriptMovement_UnfreezeObjectEvents } from '../../game/script_movement';
 import { HideFieldMessageBox } from '../../game/field_message_box';
 import { gSelectedObjectEvent } from './script-vars';

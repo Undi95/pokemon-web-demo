@@ -1,52 +1,52 @@
 /**
- * object-events.ts — NPCs / object events overworld 1:1 décomp.
+ * event_object_movement.ts — miroir 1:1 décomp `src/event_object_movement.c`
+ * (NPCs / object events overworld : spawn, MovementType, collision, interact,
+ * anims, reflets, palettes object-event).
  *
  * Source de vérité (= ne JAMAIS diverger) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/event_object_movement.c`
- *     (= TrySpawnObjectEvents, MovementType_*_Step*)
- *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h`
+ *     (TrySpawnObjectEvents, MovementType_*_Step*, GetObjectEventGraphicsInfo,
+ *     les MovementAction funcs, GroundEffects/reflets, palettes object-event)
+ *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h` (struct
+ *     ObjectEvent, ObjectEventTemplate)
  *
- * Phase 4.4.a — MVP statique (DONE)
- * Phase 4.4.b — Face direction initial (DONE)
- * Phase 4.4.c — LOOK_AROUND / WANDER (DONE)
- * Phase 4.4.c.2 — Plus de movement types (THIS) :
- *   - WANDER_UP_AND_DOWN, WANDER_LEFT_AND_RIGHT (= 2-direction wander)
- *   - LOOK_DOWN_AND_UP, LOOK_LEFT_AND_RIGHT, LOOK_DOWN_LEFT_RIGHT etc.
- *   - WALK_IN_PLACE_NORMAL_* (= just face anim, no walk)
- *   - WANDER_AROUND avec player-as-blocker (= NPC ne walk pas dans player)
- * Phase 4.4.d — Player ↔ NPC collision (DONE via globalThis)
- * Phase 4.4.e — A button interact (DONE) + sprite update au interact (THIS)
- *
- * Phase suivante :
- *   - 4.5 : script engine + dialogue
+ * ── DÉVIATION M3 assumée (rendu sprite NPC) ──
+ * Le rendu du sprite NPC est unifié sur le chemin décomp (AnimateSprite drive
+ * oam.tileNum via les AnimCmd ; sprite.anims wired via graphicsInfo, 245/245
+ * records) — comme le sprite joueur (chantier M3). Le rendu manuel legacy
+ * (NPC_SPRITE_FRAMES) a été retiré (chantier M3-NPC M1, code mort). RESTENT 2 cas
+ * spéciaux de cutscène d'intro encore rendus à la main par `updateNpcSpriteFrame`,
+ * à porter sur AnimateSprite (M3-NPC M2/M3) :
+ *   - Vigoroth 32×32 (`is32x32`, déménageurs de l'intro de Bourg-en-Vol)
+ *   - truck 48×48 (`useSubsprites`, camion de l'intro) → syncSubspriteOam
  */
-import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
-import type { LoadedPng } from '../gba/png-loader';
-import type { OamEntry } from '../gba/types';
-import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../system/sprite';
-import { LoadPalette } from '../system/decomp-globals';
-import { OBJ_PLTT_ID } from '../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
+import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
+import type { LoadedPng } from '../engine/gba/png-loader';
+import type { OamEntry } from '../engine/gba/types';
+import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../engine/system/sprite';
+import { LoadPalette } from '../engine/system/decomp-globals';
+import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
 // 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter
 // les matrices OAM 0/1 animées par CreateReflectionEffectSprites (= ondulation des reflets eau).
-import { ObjAffineSet } from '../system/decomp-bridge';
-import { SetOamMatrix } from '../system/decomp-helpers';
+import { ObjAffineSet } from '../engine/system/decomp-bridge';
+import { SetOamMatrix } from '../engine/system/decomp-helpers';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
 // 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port
 // dérive le template depuis frameWidth/frameHeight catalog (= équivalent
 // fonctionnel à `graphicsInfo->oam`).
-import { GetBaseOamForDimensions } from './object-event-base-oam';
+import { GetBaseOamForDimensions } from '../engine/field/object-event-base-oam';
 // G6 — 1:1 STRICT décomp anim helpers pour MovementType callbacks
 // (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
 // pour alterner walk1/walk2 entre 2 steps consécutifs.
-import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from '../system/sprite-animation';
+import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from '../engine/system/sprite-animation';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
 // depuis base_oam template authoritative). Fallback dimensions-based pour les
 // rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
-import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './object-event-graphics-info-data';
+import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTreePicTableBuilders, sAnimTable_BerryTree } from '../engine/field/object-event-graphics-info-data';
 // 1:1 décomp : constantes PALSLOT_* + OBJ_EVENT_PAL_TAG_* (event_object_movement.c:435-471
 // + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
 // reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
@@ -65,7 +65,7 @@ import {
   OBJ_EVENT_PAL_TAG_GROUDON, OBJ_EVENT_PAL_TAG_GROUDON_REFLECTION,
   OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW, OBJ_EVENT_PAL_TAG_RED_LEAF,
   OBJ_EVENT_PAL_TAG_NONE,
-} from './object-event-graphics-info';
+} from '../engine/field/object-event-graphics-info';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -76,33 +76,33 @@ import {
   MapGridGetMetatileBehaviorAt,
   GetMapBorderIdAt,
   CanCameraMoveInDirection,
-} from '../../game/fieldmap';
-import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
-import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from '../../game/field_camera';
-import { gPlayerAvatar, GetPlayerFacingDirection } from '../../game/field_player_avatar';
+} from './fieldmap';
+import { IsMetatileDirectionallyImpassable } from '../engine/field/metatile-behavior-helpers';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from './field_camera';
+import { gPlayerAvatar, GetPlayerFacingDirection } from './field_player_avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
-} from './direction-coords';
-import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from '../field/field-globals';
-import { FlagGet, VarGet } from '../script/script-vars';
-import { Random } from '../system/random';
+} from '../engine/field/direction-coords';
+import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from '../engine/field/field-globals';
+import { FlagGet, VarGet } from '../engine/script/script-vars';
+import { Random } from '../engine/system/random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
-import { reverseDecompConstant as _reverseDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstant } from '../engine/system/decomp-constants';
 // 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`
 // (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { GetSaveBlock1 } from '../save/save-system';
-import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../../game/berry';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { GetSaveBlock1 } from '../engine/save/save-system';
+import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from './berry';
 // Reflets relocalisés au miroir 1:1 (field_effect_helpers.c) — appelé par le spine
 // GroundEffect_Water/IceReflection (corps de fonction → cycle ESM sûr).
-import { SetUpReflection } from '../../game/field_effect_helpers';
+import { SetUpReflection } from './field_effect_helpers';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_SHADOW, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
   FLDEFF_TALL_GRASS, FLDEFF_LONG_GRASS, FLDEFF_RIPPLE, FLDEFF_DUST, FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS, FLDEFF_BIKE_TIRE_TRACKS,
-  FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER, FLDEFF_BERRY_TREE_GROWTH_SPARKLE } from './field-effect';
+  FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER, FLDEFF_BERRY_TREE_GROWTH_SPARKLE } from '../engine/field/field-effect';
 // 1:1 décomp prédicats `MetatileBehavior_Is*` (metatile_behavior.c) — miroir game/.
 // Utilisés par le spine ground-effect (GetGroundEffectFlags_* + reflection type).
 import {
@@ -112,7 +112,7 @@ import {
   MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
   MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
   MetatileBehavior_HasRipples,
-} from '../../game/metatile_behavior';
+} from './metatile_behavior';
 
 const BASE = '/decomp/em';
 
@@ -1372,8 +1372,8 @@ const TILES_PER_FRAME_16x32 = 8;
 //   - size : 0..3 selon dimensions (cf. oamShapeSizeFromWH)
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
-import type { NamingSubsprite } from '../system/decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../system/decomp-globals';
+import type { NamingSubsprite } from '../engine/system/decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../engine/system/decomp-globals';
 
 /**
  * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour
@@ -4140,7 +4140,7 @@ import {
   MOVEMENT_ACTION_LOCK_ANIM, MOVEMENT_ACTION_UNLOCK_ANIM,
   MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP,
   MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT,
-} from '../decomp-data/include/constants/event_object_movement-data';
+} from '../engine/decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
  *    SetObjectEventDirection(objectEvent, direction);
@@ -7893,7 +7893,7 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
   const catalog = _graphicsCatalog;
   // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
   // Reset gPlayerAvatar fields (preserve objectEventId/spriteId pour notre archi).
-  const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('../../game/field_player_avatar');
+  const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('./field_player_avatar');
   ClearPlayerAvatarInfo();
   // 1:1 STRICT décomp `SetPlayerAvatarObjectEventIdAndObjectId` (event_object_movement.c:1812)
   // appelé au re-spawn du player object event : ré-établit gPlayerAvatar.flags via

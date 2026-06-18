@@ -74,7 +74,7 @@ import {
   gPlayerAvatar,
 } from '../game/field_player_avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
-import { SetObjectEventDirection, gObjectEvents } from '../engine/field/object-events';
+import { SetObjectEventDirection, gObjectEvents } from '../game/event_object_movement';
 import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/save/load_save';
 import {
   SpawnObjectEventsOnMap,
@@ -92,7 +92,7 @@ import {
   ResetLevitateMovementTasks,
   InitReflectionDistortion,
   UpdateReflectionDistortionMatrices,
-} from '../engine/field/object-events';
+} from '../game/event_object_movement';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script_movement';
 import { SetFieldEffectRuntime } from '../engine/field/field-effect';
@@ -204,7 +204,7 @@ import { TickStartMenu } from '../engine/ui/start-menu';
 import { TickBedroomPC } from '../engine/ui/bedroom-pc';
 import { TickPCAnim } from '../engine/pokemon/pc-anim';
 import { TickRegionMap } from '../engine/field/region-map';
-import { syncSubspriteOam } from '../engine/field/object-events';
+import { syncSubspriteOam } from '../game/event_object_movement';
 import { preloadFontData } from '../engine/ui/gba-text-system';
 import { preloadTextWindowFrames } from '../game/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../engine/system/decomp-globals';

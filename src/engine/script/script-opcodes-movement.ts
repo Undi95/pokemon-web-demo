@@ -31,7 +31,7 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
-import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../field/object-events';
+import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../../game/event_object_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader, MAP_OFFSET } from '../../game/fieldmap';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';

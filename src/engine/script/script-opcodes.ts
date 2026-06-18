@@ -28,7 +28,7 @@ import { PlaySE } from '../system/decomp-globals';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
-} from '../field/object-events';
+} from '../../game/event_object_movement';
 import type { ObjectEventTemplate } from '../../game/fieldmap';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../field/warp-system';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';

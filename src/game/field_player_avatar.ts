@@ -81,7 +81,7 @@ import {
   DoShadowFieldEffect,
   OBJECT_EVENTS_COUNT,
   ELEVATION_DEFAULT,
-} from '../engine/field/object-events';
+} from './event_object_movement';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,

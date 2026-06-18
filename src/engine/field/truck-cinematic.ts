@@ -76,7 +76,7 @@ import {
 import { MAP_OFFSET, MapGridSetMetatileIdAt } from '../../game/fieldmap';
 import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from '../../game/field_camera';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
-import { SetObjectEventSpritePosByLocalIdAndMap } from './object-events';
+import { SetObjectEventSpritePosByLocalIdAndMap } from '../../game/event_object_movement';
 
 // ─── 1:1 décomp box offsets (field_special_scene.c:27-34) ───────────────────
 // "Most of the boxes in the moving truck are map tiles, with the exception of

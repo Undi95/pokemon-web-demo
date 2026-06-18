@@ -635,7 +635,7 @@ export function OpenStartMenu(): void {
   // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
   // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
   // menu ET ses sous-menus, même mid-step."
-  void import('../field/object-events').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
+  void import('../../game/event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
   // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
   // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même
@@ -669,7 +669,7 @@ export function CloseStartMenu(): void {
   // 1:1 inverse de FreezeObjectEvents au open : tous les NPCs reprennent leur
   // mouvement normal au close du menu. Le player a déjà UnlockPlayerFieldControls
   // donc reprend ses inputs.
-  void import('../field/object-events').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
+  void import('../../game/event_object_movement').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
   sIsOpen = false;
   sSubState = 'menu';
   console.log('[start-menu] closed');

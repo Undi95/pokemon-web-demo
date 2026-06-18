@@ -276,7 +276,7 @@ import {
   ObjectEventSetHeldMovement,
   FreezeObjectEvent,
   UnfreezeObjectEvent,
-} from '../engine/field/object-events';
+} from './event_object_movement';
 
 /** 1:1 décomp `OBJECT_EVENTS_COUNT` (= include/constants/global.h) : max 16
  *  NPCs simultanés. La task data stocke 16 entries (objEventId per slot). */

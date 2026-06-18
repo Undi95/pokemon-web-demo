@@ -22,7 +22,7 @@
  */
 
 import { gMapHeader } from '../../game/fieldmap';
-import { gObjectEvents } from '../field/object-events';
+import { gObjectEvents } from '../../game/event_object_movement';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Rt = any;

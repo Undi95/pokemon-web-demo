@@ -41,14 +41,14 @@ import {
   PlayerEndWheelieWhileMoving,
   PlayerUseAcroBikeOnBumpySlope,
 } from './field_player_avatar';
-import { gObjectEvents, SetObjectEventDirection } from '../engine/field/object-events';
+import { gObjectEvents, SetObjectEventDirection } from './event_object_movement';
 import {
   COLLISION_OBJECT_EVENT, COLLISION_STOP_SURFING, COLLISION_LEDGE_JUMP,
   COLLISION_PUSHED_BOULDER, COLLISION_ROTATING_GATE, COLLISION_WHEELIE_HOP,
   COLLISION_ISOLATED_VERTICAL_RAIL, COLLISION_ISOLATED_HORIZONTAL_RAIL,
   COLLISION_VERTICAL_RAIL, COLLISION_HORIZONTAL_RAIL, COLLISION_NONE,
   COLLISION_IMPASSABLE, GetJumpMovementAction,
-} from '../engine/field/object-events';
+} from './event_object_movement';
 import { MoveCoords, GetOppositeDirection } from '../engine/field/direction-coords';
 import { MAP_TYPE_INDOOR } from '../engine/decomp-data/include/constants/map_types-data';
 import { gMapHeader, MapGridGetMetatileBehaviorAt } from './fieldmap';
@@ -74,7 +74,7 @@ import {
   PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER, PLAYER_AVATAR_FLAG_DASH,
   NOT_MOVING, MOVING, TURN_DIRECTION,
 } from './field_player_avatar';
-import type { ObjectEvent } from '../engine/field/object-events';
+import type { ObjectEvent } from './event_object_movement';
 
 // ─── bike.h enums ────────────────────────────────────────────────────────────
 import { ENUM_PLAYER_0, ENUM_MACH_1, ENUM_ACRO_2, ENUM_ACRO_3 } from '../engine/decomp-data/include/bike-data';
