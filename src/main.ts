@@ -68,9 +68,6 @@ import './engine/devtools/dev-bridge-audit-tools';
 // tp, player, force-spawn FLDEFF_* via le chemin live, list sprites d'effet). Cf.
 // dev-fieldfx-tools.ts. Sert à vérifier les ports field_effect_helpers.c en jeu.
 import './engine/devtools/dev-fieldfx-tools';
-// Side-effect import : pose window.dev.movementDispatch.* — bridge string
-// action names → MovementAction_*_StepN auto-fonctions.
-import './engine/field/movement-action-dispatch';
 // Side-effect import : pose window.dev.battle.startTrainer (= trainer battle
 // flow registered au boot pour debug). Sans ça, le devtool n'est registered
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.

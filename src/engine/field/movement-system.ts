@@ -539,14 +539,6 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
     return _tickWalk(target, dir, frame, 32, 0.5);
   }
 
-  // ─── Phase 5.3c : Auto-dispatch fallback via event_object_movement-all-auto.
-  // Si l'action a un MovementAction_X_Step0/1 dans le décomp auto-porté, on
-  // tente de l'appeler. Si ça throw (= helper/data manquant), on tombe sur
-  // le warning + skip. Ça permet d'activer les actions auto-portées sans
-  // breaker celles déjà gérées.
-  const autoResult = _tryAutoDispatch(action, target, frame);
-  if (autoResult !== null) return autoResult;
-
   // ─── Unknown action : log warning + skip. ────────────────────────────────
   if (frame === 0) {
     console.warn(`[movement-system] unknown action '${action}' (skipping)`);
@@ -554,52 +546,6 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   return true;  // skip immediately
 }
 
-/** Tracks per-target sActionFuncId for the auto dispatch.
- *  Décomp utilise sprite->data[2] mais nous on utilise un Map externe pour
- *  éviter de polluer ObjectEvent struct. Reset à 0 quand action change. */
-const _autoDispatchState = new WeakMap<object, { action: string; sActionFuncId: number; sprite: any }>();
-
-/** Try to dispatch an action via the auto-ported MovementAction_*_StepN funcs.
- *  Returns:
- *  - null     : dispatch not bridged (= caller falls through to warn+skip)
- *  - true     : action complete, advance queue
- *  - false    : action still ticking */
-function _tryAutoDispatch(action: string, target: MovementTarget, frame: number): boolean | null {
-  // Lazy-import to avoid circular dependency.
-  let dispatchMod: any;
-  try {
-    dispatchMod = (globalThis as any).__movementDispatchMod;
-    if (!dispatchMod) return null;
-  } catch { return null; }
-  if (!dispatchMod.isAutoBridged(action)) return null;
-  // Build/reuse per-target state.
-  const targetKey = (target.npc ?? gPlayerAvatar) as object;
-  let state = _autoDispatchState.get(targetKey);
-  if (!state || state.action !== action) {
-    state = {
-      action,
-      sActionFuncId: 0,
-      sprite: { sActionFuncId: 0, data: new Array(16).fill(0), animPaused: false },
-    };
-    _autoDispatchState.set(targetKey, state);
-  }
-  // ObjectEvent : utiliser le NPC ou un wrapper pour player.
-  const objectEvent = target.npc ?? gPlayerAvatar;
-  // Sync sActionFuncId.
-  state.sprite.sActionFuncId = state.sActionFuncId;
-  state.sprite.data[2] = state.sActionFuncId;
-  // Try dispatch.
-  const r = dispatchMod.tryDispatch(action, objectEvent, state.sprite);
-  if (!r.handled) return null;
-  if (r.threw && frame === 0) {
-    // Log once per action+target.
-    console.warn(`[movement-system] auto-dispatch '${action}' threw : ${r.threw}`);
-  }
-  // Advance sActionFuncId : dans le décomp, c'est incremented manually par
-  // les Step bodies (= state.sprite.sActionFuncId est mis à jour pendant l'exec).
-  state.sActionFuncId = state.sprite.sActionFuncId ?? state.sActionFuncId;
-  return r.done;
-}
 
 // ─── Action implementations ──────────────────────────────────────────────────
 
