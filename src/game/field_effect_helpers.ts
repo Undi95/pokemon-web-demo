@@ -1378,7 +1378,7 @@ function DiveFieldEffect_TryWarp(_task: DecompTask): boolean {
     const behavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
     const mapPosition = { x: coords.x, y: coords.y, elevation: 0 };
     // import LAZY de TryDoDiveWarp (field-control-avatar = gros module field) — anti-cycle ESM.
-    void import('../engine/field/field-control-avatar').then(m => {
+    void import('./field_control_avatar').then(m => {
       m.TryDoDiveWarp(mapPosition, behavior);
     });
     DestroyTask(FindTaskIdByFunc(Task_UseDive));

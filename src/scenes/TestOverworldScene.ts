@@ -120,7 +120,7 @@ import {
   FieldGetPlayerInput,
   ProcessPlayerFieldInput,
   type FieldInput,
-} from '../engine/field/field-control-avatar';
+} from '../game/field_control_avatar';
 import {
   getPendingWarp,
   setPendingWarp,

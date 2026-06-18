@@ -1,5 +1,5 @@
 /**
- * field-control-avatar.ts — 1:1 décomp port `src/field_control_avatar.c`.
+ * field_control_avatar.ts — 1:1 décomp port `src/field_control_avatar.c`.
  *
  * Master dispatcher des actions player (= input, interactions, warps, encounter,
  * scripts coord/step). Ce module définit :
@@ -24,7 +24,7 @@
  *  scattered par `ProcessPlayerFieldInput`) est progressif.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from '../../game/fieldmap';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from './fieldmap';
 import {
   gPlayerAvatar,
   DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
@@ -35,11 +35,11 @@ import {
   PartyHasMonWithSurf,
   IsPlayerFacingSurfableFishableWater,
   IsPlayerSurfingNorth,
-} from '../../game/field_player_avatar';
-import { FlagGet } from '../script/script-vars';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gPlayerParty } from '../battle/party-storage';
-import { STATUS1_POISON, STATUS1_TOXIC_POISON } from '../battle/constants';
+} from './field_player_avatar';
+import { FlagGet } from '../engine/script/script-vars';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { gPlayerParty } from '../engine/battle/party-storage';
+import { STATUS1_POISON, STATUS1_TOXIC_POISON } from '../engine/battle/constants';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -77,19 +77,19 @@ import {
   MetatileBehavior_IsWaterfall,
   MetatileBehavior_IsDiveable,
   MetatileBehavior_IsUnableToEmerge,
-} from '../../game/metatile_behavior';
+} from './metatile_behavior';
 import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,
   GetObjectEventIdByPosition,
   ELEVATION_TRANSITION,
-} from '../../game/event_object_movement';
-import { MapGridGetElevationAt } from '../../game/fieldmap';
-import { LOCALID_PLAYER } from '../system/decomp-bridge';
-import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
-import { ScriptContext_SetupScript, TryRunCoordEventScript } from '../script/script-runtime';
-import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
-import { LOCALID_NONE } from '../system/decomp-bridge';
+} from './event_object_movement';
+import { MapGridGetElevationAt } from './fieldmap';
+import { LOCALID_PLAYER } from '../engine/system/decomp-bridge';
+import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../engine/script/script-vars';
+import { ScriptContext_SetupScript, TryRunCoordEventScript } from '../engine/script/script-runtime';
+import { DIR_TO_DX, DIR_TO_DY } from '../engine/field/direction-coords';
+import { LOCALID_NONE } from '../engine/system/decomp-bridge';
 // ProcessPlayerFieldInput : dispatch warp/rencontre via les helpers PROUVÉS (warp-system +
 // wild-encounter). Ces modules N'IMPORTENT PAS field-control-avatar → pas de nouveau cycle ESM.
 import {
@@ -100,8 +100,8 @@ import {
   SetDiveWarpDive,
   SetDiveWarpEmerge,
   DoDiveWarp,
-} from './warp-system';
-import { CheckStandardWildEncounter } from '../../game/wild_encounter';
+} from '../engine/field/warp-system';
+import { CheckStandardWildEncounter } from './wild_encounter';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
@@ -164,9 +164,9 @@ export function FieldClearPlayerInput(input: FieldInput): void {
 import {
   START_BUTTON, SELECT_BUTTON, A_BUTTON, B_BUTTON,
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
-} from '../decomp-data/include/gba/io_reg-data';
-import { ENUM_PLAYER_0 } from '../decomp-data/include/bike-data';
-import { GetPlayerSpeed } from '../../game/bike';
+} from '../engine/decomp-data/include/gba/io_reg-data';
+import { ENUM_PLAYER_0 } from '../engine/decomp-data/include/bike-data';
+import { GetPlayerSpeed } from './bike';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;
@@ -882,7 +882,7 @@ export function UpdateFriendshipStepCounter(): void {
   VarSet('VAR_FRIENDSHIP_STEP_COUNTER', counter);
   if (counter === 0) {
     // 1:1 décomp : pour chaque mon du party, AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING).
-    void import('../battle/party-storage').then(({ AdjustFriendship }) => {
+    void import('../engine/battle/party-storage').then(({ AdjustFriendship }) => {
       const party = gPlayerParty;
       const FRIENDSHIP_EVENT_WALKING = 5;  // 1:1 décomp include/constants/pokemon.h:179.
       for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
