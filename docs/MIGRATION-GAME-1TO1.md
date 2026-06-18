@@ -31,7 +31,8 @@ field_weather_effect (Clouds, fini `7b459430`), metatile_behavior, wild_encounte
 coord_event_weather, event_data, secret_base, fldeff_misc, heal_location,
 fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
 **field_player_avatar** (`17e81061`, port en cours — déviations M3 permanentes, PAS #100%),
-**fieldmap** (`47e02c00`, ex-map-loader — fieldmap.c + glu chargement async maison, PAS #100%).
+**fieldmap** (`47e02c00`, ex-map-loader — fieldmap.c + glu chargement async maison, PAS #100%),
+**field_camera** (`c5cdc8fe`, ex-field-camera — field_camera.c + glu M3, dette CameraMove/mirage à extraire, PAS #100%).
 
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
@@ -53,7 +54,7 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `region-map.ts` (997) | `region_map.ts` + `field_region_map.c` | 3 | 🟥 HYBRIDE (overlay Phaser, mappe 2 .c décomp) | ⛔ DÉFÉRÉ (faux miroir) |
 | ~~`field-message-box.ts`~~ → `game/field_message_box.ts` | — | 9 | port en cours | ✅ **MIGRÉ** (`a9b213f7`) |
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
-| `field-camera.ts` (924) | `field_camera.ts` (field_camera.c) | 16 | proche ? (a reçu DrawMetatile+buffers+flush de map-loader `7523799e`) | 🟥 chantier (engine→game) |
+| ~~`field-camera.ts`~~ → `game/field_camera.ts` | — | 20 | port en cours (field_camera.c + glu M3 ; dette : CameraMove fieldmap.c + mirage_tower helper hébergés) | ✅ **MIGRÉ** (`c5cdc8fe`) |
 | ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
 | `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME (pin LEVÉ → git add normal) |
 | ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
