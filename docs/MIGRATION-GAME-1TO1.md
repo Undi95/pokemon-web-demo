@@ -34,7 +34,8 @@ fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
 **fieldmap** (`47e02c00`, ex-map-loader — fieldmap.c + glu chargement async maison, PAS #100%),
 **field_camera** (`c5cdc8fe`, ex-field-camera — field_camera.c + glu M3, dette CameraMove/mirage à extraire, PAS #100%),
 **event_object_movement** (`7206beeb`, ex-object-events — le + gros, 8490 l ; déviation M3 rendu Vigoroth/truck cutscène, PAS #100%),
-**field_control_avatar** (`697896d8`, ex-field-control-avatar — master dispatcher input/warps/interactions ; wiring progressif + dette TrainerHill/secret base, PAS #100%).
+**field_control_avatar** (`697896d8`, ex-field-control-avatar — master dispatcher input/warps/interactions ; wiring progressif + dette TrainerHill/secret base, PAS #100%),
+**map_name_popup** (`238df9f3`, ex-map-name-popup — map_name_popup.c + glu chargement async des thèmes, PAS #100%).
 
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
@@ -69,7 +70,9 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `object-event-graphics*.ts` / `*-data.ts` / `*-oam.ts` | data décomp | — | data générée | laisser (data) |
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
-| `truck-cinematic.ts`, `map-name-popup.ts`, `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts` | divers | — | maison | évaluer cas par cas |
+| `truck-cinematic.ts` (→ `field_special_scene.ts`) | `field_special_scene.c` | — | **1:1 propre** (Task_HandleTruckSequence/Task_Truck1-3) | 🟢 migrer (prochain quick-win) |
+| `field-effect.ts` (+`-arrow`/`-active-list`) | `field_effect.c` | 4 | 1:1 propre, éparpillé 3 fichiers | 🟢 consolider → `game/field_effect.ts` |
+| `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts`, `movement.ts`, `tilemap-loader.ts` | divers | — | maison (Phaser/helpers, pas de .c direct) | reste `engine/` (harness) |
 
 > ⚠️ **Reframing movement-system (2026-06-18)** : la cible planifiée « fusionner les
 > MovementAction Step funcs maison de `movement-system` DANS `event_object_movement.ts` »
