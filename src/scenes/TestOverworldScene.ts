@@ -137,7 +137,7 @@ import {
   FieldAnimateDoorClose,
   FieldSetDoorOpened,
   preloadDoorTiles,
-} from '../engine/field/field-door';
+} from '../game/field_door';
 import {
   CreateWarpArrowSprite,
   DestroyWarpArrowSprite,

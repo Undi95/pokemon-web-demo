@@ -1,5 +1,5 @@
 /**
- * field-door.ts — Phase 4.7 1:1 décomp `src/field_door.c`.
+ * field_door.ts — miroir 1:1 de `src/field_door.c`.
  *
  * Manage les animations des portes (open/close) + sound effects associés.
  * Utilisé par :
@@ -27,13 +27,13 @@
  * DOOR_SOUND_ARENA → SE_REPEL.
  */
 
-import type { DecompRuntime } from '../system/decomp-runtime';
-import { getRuntime } from '../system/decomp-globals';
-import { loadTileBin } from '../gba/png-loader';
-import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from '../decomp-data/include/constants/songs-data';
-import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './map-loader';
-import { MB_ANIMATED_DOOR } from './tilemap-loader';
-import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from './field-camera';
+import type { DecompRuntime } from '../engine/system/decomp-runtime';
+import { getRuntime } from '../engine/system/decomp-globals';
+import { loadTileBin } from '../engine/gba/png-loader';
+import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from '../engine/decomp-data/include/constants/songs-data';
+import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from '../engine/field/map-loader';
+import { MB_ANIMATED_DOOR } from '../engine/field/tilemap-loader';
+import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import {
   METATILE_General_Door,
   METATILE_General_Door_Gym,
@@ -87,7 +87,7 @@ import {
   METATILE_BattleTent_Door,
   METATILE_TrainerHill_Door_Elevator_Lobby,
   METATILE_TrainerHill_Door_Elevator_Roof,
-} from '../decomp-data/include/constants/metatile_labels-data';
+} from '../engine/decomp-data/include/constants/metatile_labels-data';
 import {
   sDoorAnimPalettes_General,
   sDoorAnimPalettes_PokeCenter,
@@ -139,7 +139,7 @@ import {
   sDoorAnimPalettes_BattleTentInterior,
   sDoorAnimPalettes_TrainerHillLobbyElevator,
   sDoorAnimPalettes_TrainerHillRoofElevator,
-} from '../decomp-data/src/field_door-data';
+} from '../engine/decomp-data/src/field_door-data';
 
 // ─── Sound types 1:1 décomp ─────────────────────────────────────────────────
 
