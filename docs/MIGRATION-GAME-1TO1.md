@@ -56,7 +56,7 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-control-avatar.ts` (874) | `field_control_avatar.ts` | 3 | hybride | 🟥 chantier |
 | ~~`field-camera.ts`~~ → `game/field_camera.ts` | — | 20 | port en cours (field_camera.c + glu M3 ; dette : CameraMove fieldmap.c + mirage_tower helper hébergés) | ✅ **MIGRÉ** (`c5cdc8fe`) |
 | ~~`player-avatar.ts`~~ → `game/field_player_avatar.ts` | — | 25 | port en cours (déviations M3) | ✅ **MIGRÉ** (`17e81061`, cleanup `549083e9`) |
-| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (NPC_SPRITE_FRAMES, updateNpcSpriteFrame legacy) | 🟥 ÉNORME (pin LEVÉ → git add normal) |
+| `object-events.ts` (8490) | `event_object_movement.ts` | 14 | HYBRIDE (rendu NPC) — **dé-hybridation M3-NPC en cours** | 🟧 bloqué sur M3-NPC (voir ci-dessous) |
 | ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
 
 > 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
@@ -68,6 +68,25 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
 | `truck-cinematic.ts`, `map-name-popup.ts`, `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts` | divers | — | maison | évaluer cas par cas |
+
+## 🟧 Chantier M3-NPC (pré-requis pour migrer object-events)
+`object-events.ts` est décomp-structuré (event_object_movement.c : TrySpawnObjectEvents,
+MovementType_*_Step*, gObjectEventGraphicsInfo) MAIS son rendu NPC reste hybride
+(`updateNpcSpriteFrame` maison) → faux miroir si renommé tel quel. Dé-hybridation
+staged (= pendant NPC du chantier M3-joueur déjà soldé : tout le rendu via le chemin
+décomp AnimateSprite / AnimCmd).
+
+**Découverte clé** : le rendu NPC standard est DÉJÀ ~95% unifié — les 245 records
+gObjectEventGraphicsInfo ont tous une anim table → `sprite.anims` toujours wired →
+AnimateSprite drive `oam.tileNum`. Le rendu manuel (NPC_SPRITE_FRAMES) était mort.
+
+- ✅ **M1** (`549963e9`) — retrait du rendu manuel mort (legacy NPC_SPRITE_FRAMES →
+  oam.tileId). A/B : 8/13 NPCs animés Rustboro + interact OK.
+- ⬜ **M2** — Vigoroth 32×32 (`is32x32`, intro déménagement) → anims décomp (hFlip W/E).
+- ⬜ **M3** — truck 48×48 (`useSubsprites`, intro) → chemin subsprite décomp.
+- ⬜ **M4** — supprimer `updateNpcSpriteFrame` + `NPC_SPRITE_FRAMES`/`TILES_PER_FRAME_16x32`
+  (setup initial à reporter sur StartSpriteAnim) + globalThis/register → object-events
+  propre → `git mv` → `game/event_object_movement.ts`.
 
 ## 🟥 Dups restants à solder (pendant la migration)
 - `GetMoveDirection{,Fast,Faster}AnimNum` + `GetAcroWheelieDirectionAnimNum` + `GetFaceDirectionAnimNum`
