@@ -61,7 +61,7 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
 
 > 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
-| `movement-system.ts` (1032) | event_object_movement.c (MovementAction Step funcs) | 4 | maison (éclaté) | 🔧 fusion dédiée dans event_object_movement (gros refactor) |
+| ~~`movement-system.ts`~~ (1032→190) | applymovement/waitmovement glu → ScriptMovement (script_movement.c + scrcmd.c) | 4 | glu opcode mince (dispatcher maison `_queues` ÉLIMINÉ) | ✅ **FALLBACK SUPPRIMÉ** (`4e169ff6`) |
 | ~~`movement-action-dispatch.ts`~~ | — | 0 | bridge DÉSACTIVÉ (no-op) = code mort | ✅ **SUPPRIMÉ** (`437dbfe9`) |
 | `direction-coords.ts` (266) | event_object_movement.c + global.fieldmap.h (enum Direction) | 13 | **foundation autonome** (zéro import) | 🟢 GARDER (anti-cycle : fusionner créerait fieldmap↔eom ; dup anim-num soldé `b61a6e12`) |
 | ~~`metatile-behavior-helpers.ts`~~ | — | 5 | barrel hybride (2 .c) | ✅ **FUSIONNÉ/SUPPRIMÉ** (`1dea2c5a` : IsMetatileDirectionallyImpassable→eom, ShouldJumpLedge→field_player_avatar, prédicats→game/metatile_behavior) |
@@ -69,6 +69,18 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
 | `truck-cinematic.ts`, `map-name-popup.ts`, `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts` | divers | — | maison | évaluer cas par cas |
+
+> ⚠️ **Reframing movement-system (2026-06-18)** : la cible planifiée « fusionner les
+> MovementAction Step funcs maison de `movement-system` DANS `event_object_movement.ts` »
+> était FAUSSE. Les vraies Step funcs décomp vivent DÉJÀ dans eom (`gMovementActionFuncs[]`,
+> via le chemin `applyMovement → ConvertMovementActionsToIds → ScriptMovement_StartObjectMovementScript
+> → ObjectEventSetHeldMovement`). Le `_tickWalk`/`_tickJump`/… de movement-system était un
+> **DOUBLON maison en fallback**, vérifié MORT en runtime (intro + batterie exotique → 0 hit).
+> Copier ce doublon dans le mirror = injecter de la dette maison (anti-1:1). Le vrai 1:1 =
+> **éliminer le fallback** → movement-system devient la glu opcode mince (route 100% décomp).
+> Cf. [[feedback-1to1-structural-not-behavioral]] (« remonter à la racine non-1:1 »).
+> RESTE optionnel : inliner la glu mince dans les handlers opcode (script-opcodes-movement) /
+> `script_movement.ts` pour faire disparaître le fichier — faible valeur, à décider.
 
 ## 🟧 Chantier M3-NPC (raffinage rendu NPC, POST-migration)
 **Découverte clé** : le rendu NPC standard est DÉJÀ ~95% unifié sur le chemin décomp —
@@ -99,6 +111,6 @@ le raffinage (les porter sur AnimateSprite) continue EN `game/event_object_movem
 2. **Petits 1:1** (`field-door`, `script-movement`, `region-map`, `field-message-box`).
 3. **Moyens** (`field-control-avatar` 3, `field-camera` 16).
 4. **Gros** (`player-avatar`→field_player_avatar 18 ; `object-events`→event_object_movement 14 ; `map-loader` split 32). Chacun = plusieurs sous-milestones (move+importeurs d'abord, raffinage 1:1 ensuite).
-5. **Fusion helpers** (movement-system/movement-action-dispatch/direction-coords/metatile-behavior-helpers → event_object_movement) + dups.
+5. ✅ **Fusion helpers FAITE** : movement-action-dispatch SUPPRIMÉ (`437dbfe9`), metatile-behavior-helpers FUSIONNÉ/SUPPRIMÉ (`1dea2c5a`), dup anim-num SOLDÉ (`b61a6e12`), movement-system fallback `_queues` ÉLIMINÉ (`4e169ff6`). direction-coords = GARDÉ (foundation anti-cycle).
 
 > Statut : tenir cette table à jour à chaque migration (cocher / marquer `// #100%`).
