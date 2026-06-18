@@ -18,7 +18,7 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarSet } from './script-vars';
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import { getPendingWarp } from '../field/warp-system';
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
 import { StartFirstBattle } from '../battle/battle-setup-helpers';

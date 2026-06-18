@@ -29,8 +29,8 @@
  *   - Au load de la dest map, executeExitTask selon metatile à player pos
  */
 
-import type { WarpEvent, MapHeader } from './map-loader';
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
+import type { WarpEvent, MapHeader } from '../../game/fieldmap';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../game/fieldmap';
 import { GetMapConnection } from '../../game/overworld';
 import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../decomp-data/include/constants/global-data';
 import type { WarpData } from '../save/save-blocks';

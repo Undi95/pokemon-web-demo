@@ -171,7 +171,7 @@ export async function SaveGame(): Promise<boolean> {
   // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
     const lsMod = await import('./load_save');
-    const mapMod = await import('../field/map-loader');
+    const mapMod = await import('../../game/fieldmap');
     // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
     // SyncPlayerPositionToBlock = notre helper port (le décomp update
     // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save

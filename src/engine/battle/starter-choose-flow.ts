@@ -57,7 +57,7 @@ import { CreateMon } from '../pokemon/pokemon';
 import { GiveMonToPlayer } from './party-storage';
 import { VarSet } from '../script/script-vars';
 import { Sin } from '../system/decomp-helpers';
-import { CopyMapTilesetsToVram, gMapHeader } from '../field/map-loader';
+import { CopyMapTilesetsToVram, gMapHeader } from '../../game/fieldmap';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from '../../game/tileset_anims';
 import { setFieldCameraSuspended, flushOverworldTilemaps } from '../field/field-camera';
 import { setObjectEventsSuspended } from '../field/object-events';

@@ -9,7 +9,7 @@
 // on porte la logique musique, on ne remplace PAS le moteur son.
 
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
-import { gMapHeader, type MapConnection } from '../engine/field/map-loader';
+import { gMapHeader, type MapConnection } from './fieldmap';
 import { PlayBGM } from '../engine/system/decomp-globals';
 import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
 import { FlagGet, FlagClear } from '../engine/script/script-vars';

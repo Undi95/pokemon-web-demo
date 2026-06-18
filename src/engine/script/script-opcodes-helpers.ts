@@ -10,8 +10,8 @@
 
 import type { ObjectEvent } from '../field/object-events';
 import { gObjectEvents } from '../field/object-events';
-import type { ObjectEventTemplate } from '../field/map-loader';
-import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
+import type { ObjectEventTemplate } from '../../game/fieldmap';
+import { gMapHeader, MAP_OFFSET } from '../../game/fieldmap';
 import { GetCurrentMap } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { VarGet, gSelectedObjectEvent } from './script-vars';

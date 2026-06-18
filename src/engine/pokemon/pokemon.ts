@@ -36,7 +36,7 @@ import type { Pokemon } from '../battle/party-storage';
 import { pokemonInstanceToPokemon } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {

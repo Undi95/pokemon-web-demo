@@ -21,7 +21,7 @@
  * persistant, passe `{ once: false }`.
  */
 
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import { gObjectEvents } from '../field/object-events';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

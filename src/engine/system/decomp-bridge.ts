@@ -3137,7 +3137,7 @@ export {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
-} from '../field/map-loader';
+} from '../../game/fieldmap';
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 

@@ -23,7 +23,7 @@ import {
   MapGridGetMetatileIdAt,
   GetMapBorderIdAt,
   GetMetatileAttributesById,
-} from '../field/map-loader';
+} from '../../game/fieldmap';
 const dg = _dg as any;
 const cb = _cb as any;
 

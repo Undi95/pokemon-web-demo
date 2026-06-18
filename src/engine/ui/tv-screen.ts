@@ -35,7 +35,7 @@
  *   - specials-registry : TurnOnTVScreen / TurnOffTVScreen wirés.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from '../field/map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from '../../game/fieldmap';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../system/decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from '../script/script-vars';

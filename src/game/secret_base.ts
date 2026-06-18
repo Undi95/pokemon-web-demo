@@ -16,7 +16,7 @@
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { VarGet, VarSet } from './event_data';
 import { PlayerGetDestCoords } from './field_player_avatar';
-import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt } from '../engine/field/map-loader';
+import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt } from './fieldmap';
 import {
   MetatileBehavior_IsSecretBaseGlitterMat,
   MetatileBehavior_IsSecretBaseBalloon,

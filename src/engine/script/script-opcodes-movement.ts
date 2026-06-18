@@ -33,7 +33,7 @@ import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-ru
 import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../field/object-events';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
+import { gMapHeader, MAP_OFFSET } from '../../game/fieldmap';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../system/decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';

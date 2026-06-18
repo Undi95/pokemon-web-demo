@@ -45,7 +45,7 @@
 
 import { Random } from '../engine/system/random';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
-import { gMapHeader } from '../engine/field/map-loader';
+import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from '../engine/battle/battle-decomp-loop';
@@ -58,7 +58,7 @@ import {
   MetatileBehavior_IsWaterWildEncounter,
 } from './metatile_behavior';
 import { IncrementGameStat, PlayerGetDestCoords } from './field_player_avatar';
-import { MapGridGetMetatileBehaviorAt } from '../engine/field/map-loader';
+import { MapGridGetMetatileBehaviorAt } from './fieldmap';
 import { GAME_STAT_FISHING_ENCOUNTERS } from '../engine/decomp-data/include/constants/game_stat-data';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */

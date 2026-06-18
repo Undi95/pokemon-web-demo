@@ -31,7 +31,7 @@ import {
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
   MAP_OFFSET,
-} from '../engine/field/map-loader';
+} from './fieldmap';
 import { MB_TALL_GRASS } from '../engine/field/tilemap-loader';
 import {
   type ObjectEvent,

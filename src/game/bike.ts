@@ -51,7 +51,7 @@ import {
 } from '../engine/field/object-events';
 import { MoveCoords, GetOppositeDirection } from '../engine/field/direction-coords';
 import { MAP_TYPE_INDOOR } from '../engine/decomp-data/include/constants/map_types-data';
-import { gMapHeader, MapGridGetMetatileBehaviorAt } from '../engine/field/map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt } from './fieldmap';
 import {
   MetatileBehavior_IsBumpySlope, MetatileBehavior_IsVerticalRail,
   MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail,

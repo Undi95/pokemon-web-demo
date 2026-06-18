@@ -789,7 +789,7 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
-import { setOnLoadMapScriptHook, gMapHeader } from '../field/map-loader';
+import { setOnLoadMapScriptHook, gMapHeader } from '../../game/fieldmap';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
 
 // Hook DoCoordEventWeather (game/coord_event_weather) — posé par ce module au boot via

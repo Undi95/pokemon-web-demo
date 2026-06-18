@@ -17,7 +17,7 @@
  * -1 si WEST, +1 si EAST.
  */
 
-import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../field/map-loader';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../../game/fieldmap';
 import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';

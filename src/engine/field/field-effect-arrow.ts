@@ -17,7 +17,7 @@
  */
 
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
+import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../game/fieldmap';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
 import { ENUM_MB_0 as MB } from '../decomp-data/include/constants/metatile_behaviors-data';
 import {

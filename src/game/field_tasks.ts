@@ -45,7 +45,7 @@ import {
 import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
 import { ArePlayerFieldControlsLocked } from '../engine/script/script-runtime';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
-import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from '../engine/field/map-loader';
+import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from './fieldmap';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import {

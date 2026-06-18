@@ -14,7 +14,7 @@ import { registerSpecial } from '../script/script-opcodes';
 import { VarGet, VarSet, gSpecialVar } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SECRET_BASES_COUNT, TRAINER_ID_LENGTH, LANGUAGE_FRENCH } from '../decomp-data/include/constants/global-data';
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import { resolveDecompConstant } from '../system/decomp-constants';
 
 /** 1:1 décomp `static EWRAM_DATA u8 sCurSecretBaseId = 0` (secret_base.c:78). */

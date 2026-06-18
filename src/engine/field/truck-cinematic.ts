@@ -73,7 +73,7 @@ import {
   METATILE_InsideOfTruck_ExitLight_Mid,
   METATILE_InsideOfTruck_ExitLight_Bottom,
 } from '../decomp-data/include/constants/metatile_labels-data';
-import { MAP_OFFSET, MapGridSetMetatileIdAt } from './map-loader';
+import { MAP_OFFSET, MapGridSetMetatileIdAt } from '../../game/fieldmap';
 import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from '../field/field-camera';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
 import { SetObjectEventSpritePosByLocalIdAndMap } from './object-events';

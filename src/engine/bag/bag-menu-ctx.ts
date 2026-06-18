@@ -46,7 +46,7 @@ import {
 } from '../ui/item-use-callbacks';
 import { getString } from '../ui/gba-strings';
 import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import {
   GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP,

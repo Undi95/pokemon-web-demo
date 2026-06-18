@@ -24,7 +24,7 @@
  *  scattered par `ProcessPlayerFieldInput`) est progressif.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from './map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from '../../game/fieldmap';
 import {
   gPlayerAvatar,
   DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
@@ -84,7 +84,7 @@ import {
   GetObjectEventIdByPosition,
   ELEVATION_TRANSITION,
 } from './object-events';
-import { MapGridGetElevationAt } from './map-loader';
+import { MapGridGetElevationAt } from '../../game/fieldmap';
 import { LOCALID_PLAYER } from '../system/decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
 import { ScriptContext_SetupScript, TryRunCoordEventScript } from '../script/script-runtime';

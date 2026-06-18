@@ -33,7 +33,7 @@
  *   tile swap + BG re-render.
  */
 
-import { gMapHeader, loadLayout } from './map-loader';
+import { gMapHeader, loadLayout } from '../../game/fieldmap';
 
 /** Tableau idx → layoutId pour Em (= 1:1 data/layouts/layouts.h enum order).
  *  Extraction TODO : générer ce mapping depuis le décomp `include/constants/layouts.h`

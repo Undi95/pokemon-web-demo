@@ -10,7 +10,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import * as WeatherConstants from '../decomp-data/include/constants/weather-data';

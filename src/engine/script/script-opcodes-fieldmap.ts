@@ -13,7 +13,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
-import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../field/map-loader';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../game/fieldmap';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp scrcmd.c:ScrCmd_setmetatile (lignes 2034-2048).

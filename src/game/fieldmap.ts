@@ -1,15 +1,33 @@
 /**
- * map-loader.ts — moteur natif de chargement de map décomp 1:1.
+ * fieldmap.ts — miroir 1:1 décomp `src/fieldmap.c` (moteur de map overworld).
  *
  * Source de vérité (= ne JAMAIS diverger) :
- *   - `D:/Projet 1/decomps/pokeemeraude/src/fieldmap.c` (= InitMap, MapGridGet*,
- *     CopyMapTilesetsToVram, LoadMapTilesetPalettes)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/fieldmap.c` (= InitMap,
+ *     InitMapFromSavedGame, MapGridGet* + MapGridSet*, SaveMapView,
+ *     LoadSavedMapView, MoveMapViewToBackup, GetMapBorderIdAt,
+ *     GetPostCameraMoveMapBorderId,
+ *     CanCameraMoveInDirection, SetPositionFromConnection, GetIncomingConnection,
+ *     GetMapConnectionAtPos, SetCameraFocusCoords, CopyMapTilesetsToVram,
+ *     LoadMapTilesetPalettes)
  *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h` (= struct
  *     Tileset, MapLayout, MapHeader, MapEvents, masks/shifts)
  *   - `D:/Projet 1/decomps/pokeemeraude/include/fieldmap.h` (= constantes
  *     NUM_TILES_*, NUM_PALS_*, MAP_OFFSET, MAX_MAP_DATA_SIZE)
  *
- * Données consommées (= déjà extraites par scripts/extract-decomp-all.mjs) :
+ * Voisins décomp (= NE sont PAS ici) : le RENDU des metatiles (DrawMetatile,
+ * DrawWholeMapView, RedrawMapSlice*, DrawMetatileAt) est dans `field-camera.ts`
+ * (field_camera.c) ; `GetMapConnection(dir)` est dans `game/overworld.ts`
+ * (overworld.c:740).
+ *
+ * ── DÉVIATION assumée (couche de chargement async maison) ──
+ * Le décomp suppose les données de map déjà mappées en ROM (accès sync). Notre
+ * port FETCH les assets extraits par scripts/extract-decomp-all.mjs ; cette
+ * couche async (loadTileset / loadLayout / loadMapHeader / loadMapByName) + les
+ * hooks d'intégration scene (setOnLoadMapScriptHook / setRedrawWholeMapViewHook)
+ * n'ont pas d'équivalent décomp = glu maison nécessaire (≈ le ROM mapping). Une
+ * fois loadMapByName() résolu, InitMap + MapGridGet* tournent sync 1:1 strict.
+ *
+ * Données consommées :
  *   - `/decomp/em/maps/<MapName>.json`               — header + events
  *   - `/decomp/em/layouts-index.json`                — table layouts
  *   - `/decomp/em/layouts/<MapName>/{map,border}.bin` — blockdata u16
@@ -25,45 +43,37 @@
  *   - metatile_attributes.bin : 2 bytes par metatile = u8 behavior + u4 unused
  *     + u4 layerType (0=NORMAL, 1=COVERED, 2=SPLIT).
  *
- * BG Layer assignement overworld (1:1 décomp field_camera.c) :
- *   - BG0 : windows / dialogue (= pas géré ici, séparément)
- *   - BG1 : top layer (= NORMAL/SPLIT top tiles → couvre player)
- *   - BG2 : middle layer (= COVERED top tiles, NORMAL/SPLIT bottom alt)
- *   - BG3 : bottom layer (= NORMAL fallback, COVERED bottom, SPLIT bottom)
- *
  * VRAM layout (1:1 décomp fieldmap.c) :
  *   - charBase 0 : tileset tiles (= primary 0..511 puis secondary 512..1023).
  *     Chaque tile = 32 bytes (4bpp 8x8). Total = 1024 × 32 = 32 KB.
- *   - mapBase BG1/BG2/BG3 : 32x32 u16 tilemaps = 2 KB each.
+ *   - mapBase BG1/BG2/BG3 : 32x32 u16 tilemaps = 2 KB each (écrits par le rendu
+ *     dans field-camera.ts).
  *
  * Palette banks (1:1 décomp BG_PLTT_ID) :
  *   - Banks 0-5 : primary tileset palettes[0..5]
  *   - Banks 6-12 : secondary tileset palettes[6..12]
  *   - Banks 13-15 : réservé (text windows, sprites overflow, etc.)
- *
- * Ce module n'est PAS asynchrone à l'exécution : les fonctions InitMap +
- * MapGridGet* sont synchrones après loadMapByName() async qui pré-fetch tout.
  */
-import { LoadBgTiles, LoadPalette } from '../system/decomp-globals';
-import { extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
-import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from '../../game/tileset_anims';
+import { LoadBgTiles, LoadPalette } from '../engine/system/decomp-globals';
+import { extractPngPlte, loadIndexedPngStrict } from '../engine/gba/png-loader';
+import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset_anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
-import { GetSaveBlock1 } from '../save/save-system';
+import { GetSaveBlock1 } from '../engine/save/save-system';
 // Chantier OW 1:1 — `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) source unique
 // pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
 // Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
 // args (= élimine désync historique cam.x ≠ player.x).
-import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
-import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
-import { BERRY_TREE_ID_BY_NAME } from '../decomp-data/include/constants/berry-data';
+import { gSaveBlock1Ptr } from '../engine/ui/gba-menu-system';
+import { DIR_TO_DX, DIR_TO_DY } from '../engine/field/direction-coords';
+import { BERRY_TREE_ID_BY_NAME } from '../engine/decomp-data/include/constants/berry-data';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,
-} from '../decomp-data/include/constants/global-data';
+} from '../engine/decomp-data/include/constants/global-data';
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
-} from './metatile-behavior-helpers';
+} from '../engine/field/metatile-behavior-helpers';
 import {
   METATILE_General_Grass,
   METATILE_Fortree_LongGrass_Root,
@@ -78,7 +88,7 @@ import {
   METATILE_SecretBase_SandOrnament_Base1,
   METATILE_SecretBase_BreakableDoor_TopClosed,
   METATILE_SecretBase_BreakableDoor_BottomClosed,
-} from '../decomp-data/include/constants/metatile_labels-data';
+} from '../engine/decomp-data/include/constants/metatile_labels-data';
 
 // ─── Hook registry RunOnLoadMapScript (HOISTÉ — anti-TDZ) ───────────────────
 //

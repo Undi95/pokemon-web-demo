@@ -29,7 +29,7 @@
 import { getRuntime } from '../system/decomp-globals';
 import { REG_OFFSET_BG0VOFS } from '../system/decomp-runtime';
 import { FlagGet } from '../script/script-vars';
-import { gMapHeader } from './map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import type { DecompTask } from '../system/decomp-runtime';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,

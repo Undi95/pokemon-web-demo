@@ -33,8 +33,8 @@ import {
   CONNECTION_WEST,
   CONNECTION_EAST,
   gMapHeader,
-} from '../engine/field/map-loader';
-import type { MapHeader, WarpEvent } from '../engine/field/map-loader';
+} from '../game/fieldmap';
+import type { MapHeader, WarpEvent } from '../game/fieldmap';
 import {
   DrawWholeMapView,
   flushOverworldTilemaps,

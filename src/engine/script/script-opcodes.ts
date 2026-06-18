@@ -29,11 +29,11 @@ import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
 } from '../field/object-events';
-import type { ObjectEventTemplate } from '../field/map-loader';
+import type { ObjectEventTemplate } from '../../game/fieldmap';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../field/warp-system';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
-import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../field/map-loader';
+import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../game/fieldmap';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag/bag';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,

@@ -76,7 +76,7 @@ import {
   MapGridGetMetatileBehaviorAt,
   GetMapBorderIdAt,
   CanCameraMoveInDirection,
-} from './map-loader';
+} from '../../game/fieldmap';
 import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from '../field/field-camera';
 import { gPlayerAvatar, GetPlayerFacingDirection } from '../../game/field_player_avatar';

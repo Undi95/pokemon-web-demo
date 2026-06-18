@@ -124,7 +124,7 @@ import {
 } from '../engine/decomp-data/include/constants/trainers-data';
 import {
   gMapHeader,
-} from '../engine/field/map-loader';
+} from './fieldmap';
 import type {
   PokemonInstance,
 } from '../engine/pokemon/pokemon';

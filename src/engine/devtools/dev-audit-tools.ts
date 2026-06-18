@@ -34,7 +34,7 @@ import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '.
 import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { assetCache, getRuntime } from '../system/decomp-globals';
-import { gMapHeader } from '../field/map-loader';
+import { gMapHeader } from '../../game/fieldmap';
 import { bagContents } from '../bag/bag';
 // Migration miroir : flags/vars sont id-indexés (number[]) → on énumère via les
 // tables résolues nom→id + le bridge FlagGet/VarGet.

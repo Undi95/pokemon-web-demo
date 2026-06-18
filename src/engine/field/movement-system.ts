@@ -34,7 +34,7 @@ import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, Se
 import { ConvertMovementActionsToIds, ScriptMovement_StartObjectMovementScript, ScriptMovement_IsObjectMovementFinished } from '../../game/script_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
-import { MAP_OFFSET } from './map-loader';
+import { MAP_OFFSET } from '../../game/fieldmap';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,

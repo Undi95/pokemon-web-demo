@@ -17,7 +17,7 @@
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import { GetTaskData } from '../engine/system/decomp-globals';
-import { MapGridSetMetatileIdAt } from '../engine/field/map-loader';
+import { MapGridSetMetatileIdAt } from './fieldmap';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH } from './field_player_avatar';
 import {
