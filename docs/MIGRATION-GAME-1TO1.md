@@ -61,10 +61,10 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | ~~`map-loader.ts`~~ → `game/fieldmap.ts` | — | 45 | port en cours (fieldmap.c + glu chargement maison) | ✅ **MIGRÉ** (split 3/3 : `7523799e` DrawMetatile→field-camera, `05042707` GetMapConnection→overworld, `47e02c00` git mv) |
 
 > 🔧 **Tool de migration** : `scripts/migrate-game.cjs <oldRelNoExt> <newRelNoExt>` (non-tracké) réécrit tous les imports après un `git mv`. Process moyen : assess 1:1 (header+fonctions décomp-nommées, .c existe, pas hybride/overlay) → `git mv` → `node scripts/migrate-game.cjs ...` → fix header (nom + retrait « démo ») → tsc=0 → A/B → `git add` explicite (jamais COVERAGE) → commit.
-| `movement-system.ts` (1032) | event_object_movement.c (part) | 4 | maison (éclaté) | 🔧 fusionner dans event_object_movement |
-| `movement-action-dispatch.ts` (200) | event_object_movement.c (part) | ? | maison | 🔧 fusionner |
-| `direction-coords.ts` (266) | event_object_movement.c (anim-num getters) | 4 | maison | 🔧 fusionner (dup) |
-| `metatile-behavior-helpers.ts` (67) | éclaté (event_object_movement.c / field_player_avatar.c) | 1 | maison | 🔧 fusionner |
+| `movement-system.ts` (1032) | event_object_movement.c (MovementAction Step funcs) | 4 | maison (éclaté) | 🔧 fusion dédiée dans event_object_movement (gros refactor) |
+| ~~`movement-action-dispatch.ts`~~ | — | 0 | bridge DÉSACTIVÉ (no-op) = code mort | ✅ **SUPPRIMÉ** (`437dbfe9`) |
+| `direction-coords.ts` (266) | event_object_movement.c + global.fieldmap.h (enum Direction) | 13 | **foundation autonome** (zéro import) | 🟢 GARDER (anti-cycle : fusionner créerait fieldmap↔eom ; dup anim-num soldé `b61a6e12`) |
+| `metatile-behavior-helpers.ts` (67) | éclaté (event_object_movement.c / field_player_avatar.c) | 1 | maison | 🔧 fusionner (⚠️ cycle fieldmap potentiel) |
 | `object-event-graphics*.ts` / `*-data.ts` / `*-oam.ts` | data décomp | — | data générée | laisser (data) |
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
@@ -89,9 +89,10 @@ le raffinage (les porter sur AnimateSprite) continue EN `game/event_object_movem
   (setup initial à reporter sur StartSpriteAnim) + globalThis/register → rendu NPC 100% décomp.
 
 ## 🟥 Dups restants à solder (pendant la migration)
-- `GetMoveDirection{,Fast,Faster}AnimNum` + `GetAcroWheelieDirectionAnimNum` + `GetFaceDirectionAnimNum`
-  dupliqués `object-events.ts` ↔ `direction-coords.ts` → source unique = `event_object_movement.ts`
-  (résolu en fusionnant direction-coords dedans). ✅ `IsRunningDisallowed*` déjà soldé (→ bike.ts, `6d16ad27`).
+- ✅ **SOLDÉ** (`b61a6e12`) `GetFaceDirectionAnimNum` + `GetMoveDirection{,Fast,Faster,Fastest}AnimNum`
+  étaient dupliqués `event_object_movement.ts` ↔ `direction-coords.ts` → **source unique = `direction-coords.ts`**
+  (= foundation autonome anti-cycle ; eom importe d'ici, copies locales retirées). `GetAcroWheelieDirectionAnimNum`
+  n'était que dans direction-coords (pas de dup). ✅ `IsRunningDisallowed*` déjà soldé (→ bike.ts, `6d16ad27`).
 
 ## 📋 Ordre d'exécution recommandé
 1. **Pilotes 0-importeur** (`rotating-gate`, `tileset-anims`, `tilemap-loader`) : valider le process move+A/B+commit sans risque d'import.
