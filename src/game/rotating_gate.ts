@@ -1,19 +1,18 @@
 /**
- * rotating-gate.ts — 1:1 décomp port `src/rotating_gate.c`.
+ * rotating_gate.ts — miroir 1:1 de `src/rotating_gate.c`.
  *
  * Source de vérité (= ne JAMAIS diverger) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/rotating_gate.c`
  *
  * Rotating gates puzzle = Fortree City Gym + Trick House Puzzle 6.
- * Aucune de ces maps n'est dans la démo (= Brendan house / Litoral 101+102 /
- * Bourg-en-Vol). Port complet 1:1 strict de la LOGIQUE (= collision, rotation,
- * arm layout, push). Sprites visuels (LoadRotatingGatePics, CreateGate,
- * SpriteCallback, AffineAnim tables) = R4 dette explicite, à porter quand
- * Fortree/Trick House ajoutés (= besoin Phaser sprites + affine anims).
+ * Port 1:1 strict de la LOGIQUE (collision, rotation, arm layout, push). La part
+ * VISUELLE (LoadRotatingGatePics, CreateGate, SpriteCallback, AffineAnim tables)
+ * = dette explicite, à porter quand Fortree/Trick House seront câblés (besoin
+ * sprites Phaser + affine anims). PAS #100% (visuel manquant).
  */
 
-import { gMapHeader, MapGridGetCollisionAt, MAP_OFFSET } from './map-loader';
-import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from './direction-coords';
+import { gMapHeader, MapGridGetCollisionAt, MAP_OFFSET } from '../engine/field/map-loader';
+import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../engine/field/direction-coords';
 
 // ─── Constants 1:1 décomp rotating_gate.c ──────────────────────────────────
 
@@ -29,7 +28,7 @@ const GATE_ROT_NONE = 255;
 /** MAX_SPRITES sentinel (= rotating_gate.c:621 sRotatingGate_GateSpriteIds default).
  *  Notre impl : valeur sentinel "pas de sprite" pour gateSpriteIds.
  *  Migré vers import decomp-data sprite-data.ts (cleanup B7). */
-import { MAX_SPRITES } from '../decomp-data/include/sprite-data';
+import { MAX_SPRITES } from '../engine/decomp-data/include/sprite-data';
 
 /** 1:1 décomp `enum` (rotating_gate.c:25-121) GATE_SHAPE_*. */
 const GATE_SHAPE_L1           = 0;

@@ -177,7 +177,7 @@ import { CheckStandardWildEncounter } from './wild_encounter';
 import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
-} from '../engine/field/rotating-gate';
+} from './rotating_gate';
 import { PlaySE } from '../engine/system/decomp-globals';
 import {
   LoadSpriteSheet, LoadSpritePalette,

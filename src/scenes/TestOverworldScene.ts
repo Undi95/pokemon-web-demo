@@ -997,7 +997,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // `RotatingGate_InitPuzzleAndGraphics` (= overworld.c LoadMap step). Init
     // puzzle config + reset gate orientations à VAR_TEMP_0. No-op si current
     // map n'a pas de rotating gate puzzle (= démo maps).
-    void import('../engine/field/rotating-gate').then(m => m.RotatingGate_InitPuzzle());
+    void import('../game/rotating_gate').then(m => m.RotatingGate_InitPuzzle());
 
     // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
     // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
