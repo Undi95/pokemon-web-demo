@@ -72,7 +72,8 @@ le WIP Clouds reste non-committé. Cf. [[gotcha-forbidden-file-pin-import-hunk]]
 | `field-effect*.ts` (arrow/active-list) | `field_effect.ts` | 4 | éparpillé | 🔧 regrouper |
 | `warp-system.ts` (466) | field_screen_effect.c / overworld.c warps | 6 | maison | évaluer |
 | ~~`truck-cinematic.ts`~~ → `game/field_special_scene.ts` | — | 2 | port en cours (séquence camion intro) | ✅ **MIGRÉ** (`05e5e6ba`) |
-| `field-effect.ts` (+`-arrow`/`-active-list`) | `field_effect.c` | 4 | 1:1 propre, éparpillé 3 fichiers | 🟢 consolider → `game/field_effect.ts` |
+| `field-effect.ts` (324) + `field-effect-active-list.ts` (128) | `field_effect.c` (dispatcher + sActiveList[32]) | ~14 | 1:1 propre, 2 fichiers | 🟢 **FUSIONNER → `game/field_effect.ts`** (chunk dédié, critical-path FieldEffectStart) |
+| `field-effect-arrow.ts` (156) | **`field_player_avatar.c`** (`HideShowWarpArrow`:1428 + prédicats arrow) | 1 | mal nommé : PAS field_effect.c (les vraies fns arrow déjà dans field_effect_helpers.ts) | 🟢 → `game/field_player_avatar.ts` (séparé) |
 | `swap-line.ts`, `map-layout-swap.ts`, `npc-loader.ts`, `virtual-objects.ts`, `character-anims.ts`, `field-globals.ts`, `movement.ts`, `tilemap-loader.ts` | divers | — | maison (Phaser/helpers, pas de .c direct) | reste `engine/` (harness) |
 
 > ⚠️ **Reframing movement-system (2026-06-18)** : la cible planifiée « fusionner les
