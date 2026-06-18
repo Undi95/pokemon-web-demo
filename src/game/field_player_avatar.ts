@@ -42,6 +42,9 @@ import {
   ObjectEventClearHeldMovement,
   ObjectEventGetHeldMovementActionId,
   ObjectEventCheckHeldMovementStatus,
+  ObjectEventForceSetHeldMovement,
+  CameraObjectFreeze,
+  CameraObjectReset,
   ObjectEventIsHeldMovementActive,
   ObjectEventIsMovementOverridden,
   GetWalkNormalMovementAction,
@@ -90,6 +93,7 @@ import {
   GetCameraPanX,
   GetCameraPanY,
   SetSpritePosToMapCoords,
+  gTotalCamera,
 } from './field_camera';
 import {
   ArePlayerFieldControlsLocked,
@@ -123,7 +127,7 @@ import {
   CreateTask, DestroyTask,
   GetWalkSlowMovementAction,
 } from '../engine/system/decomp-bridge';
-import { FindTaskIdByFunc, GetTask, getRuntime } from '../engine/system/decomp-globals';
+import { FindTaskIdByFunc, GetTask, getRuntime, FuncIsActiveTask } from '../engine/system/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
 import {
   SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
@@ -2612,6 +2616,183 @@ function DoPlayerMatJump(): void {
  *  bases secrètes. Machine à tâches 5-étapes = feature SECRET BASE, portée à l'étape 5. */
 function DoPlayerMatSpin(): void {
   // étape 5 (secret base — tâche PlayerAvatar_DoSecretBaseMatSpin) — non encore portée.
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Warp spin (DoPlayerSpinEntrance/Exit) — 1:1 décomp field_player_avatar.c:2063-2226.
+// Le joueur tourne sur lui-même (cycle facing S→W→E→N via face-direction held
+// movements) en montant (exit, sort de l'écran) / descendant (entrance, retombe
+// au sol). Utilisé par les warps "spin" (Teleport, salles spéciales).
+// Task data (1:1 #define :2077-2085) : [0]=tState [1]=tSpinDelayTimer [2]=tSpeed
+// [3]=tCurY [4]=tDestY [5]=tStartDir [6]=tPriority [7]=tSubpriority [8]=tGroundTimer.
+//
+// ⚠️ PORT EN COURS — NON ENCORE CÂBLÉ À UN WARP (fonctions dormantes). État :
+//   ✅ logique 1:1 + tâches tickées (signature `(task: DecompTask)`).
+//   ✅ arc vertical adapté M3 : le décomp manipule `sprite->y` mais notre sprite
+//      joueur est resync chaque frame par UpdateObjectEvents (slot→sprite) → on
+//      passe par `sprite.y2` (offset additif, comme _tickJump). A/B : y2 -117→0. ✔
+//   ❌ DETTE M3 : la ROTATION (face-cycle via `ObjectEventForceSetHeldMovement`)
+//      ne tourne PAS — le held movement forcé du joueur n'est jamais EXÉCUTÉ
+//      (seul `ScriptMovement_MoveObjects` tick les held movements, par registration ;
+//      le décomp les exécute via le tick object-event général). À résoudre :
+//      exécuter le held movement forcé du joueur chaque frame (fix M3 réutilisable
+//      pour d'autres features player-movement) → PUIS câbler à EventScript_UseTeleport
+//      + warps spin (MB_*), A/B sur tiles spin.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `sSpinStartFacingDir` (field_player_avatar.c) — DIR_NONE par défaut. */
+let sSpinStartFacingDir = DIR_NONE;
+
+/** 1:1 décomp `SetSpinStartFacingDir` (field_player_avatar.c:2063). */
+export function SetSpinStartFacingDir(direction: number): void {
+  sSpinStartFacingDir = direction;
+}
+
+/** 1:1 décomp `GetSpinStartFacingDir` (field_player_avatar.c:2068). */
+function GetSpinStartFacingDir(): number {
+  if (sSpinStartFacingDir === DIR_NONE) return DIR_SOUTH;
+  return sSpinStartFacingDir;
+}
+
+/** 1:1 décomp `sSpinDirections[]` (field_player_avatar.c:2150). */
+const sSpinDirections: ReadonlyArray<number> = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+
+/** 1:1 décomp `TrySpinPlayerForWarp` (field_player_avatar.c:2215). Tous les 8 frames,
+ *  avance la facing d'un cran dans sSpinDirections (held movement face-direction) →
+ *  l'effet "spin". `data[delayIdx]` = &tSpinDelayTimer. Retourne la facing courante/nouvelle. */
+function TrySpinPlayerForWarp(object: ObjectEvent, data: number[], delayIdx: number): number {
+  if (data[delayIdx] < 8 && ++data[delayIdx] < 8)
+    return object.facingDirection;
+  if (!ObjectEventCheckHeldMovementStatus(object))
+    return object.facingDirection;
+  ObjectEventForceSetHeldMovement(object, GetFaceDirectionMovementAction(sSpinDirections[object.facingDirection]));
+  data[delayIdx] = 0;
+  return sSpinDirections[object.facingDirection];
+}
+
+/** 1:1 décomp `Task_DoPlayerSpinExit` (field_player_avatar.c:2087) — spin en montant hors écran. */
+function Task_DoPlayerSpinExit(task: DecompTask): void {
+  const rt = getRuntime();
+  const object = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!object) return;
+  const sprite = rt.gSprites.get(object.spriteId);
+  if (!sprite) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const data = task.data;
+  // case 0 (Init) — 1:1 décomp : fallthrough vers case 1 (même frame).
+  if (data[0] === 0) {
+    if (!ObjectEventClearHeldMovementIfFinished(object)) return;
+    SetSpinStartFacingDir(object.facingDirection);
+    data[1] = 0;
+    data[2] = 1;
+    data[3] = ((sprite.y + sprite.y2) & 0xFFFF) << 4;
+    data[4] = sprite.y;  // [M3] base resting y (cf. note y2 ci-dessous)
+    sprite.y2 = 0;
+    CameraObjectFreeze();
+    object.fixedPriority = true;
+    oam.priority = 0;
+    sprite.subpriority = 0;
+    sprite.subspriteMode = 'off';  // SUBSPRITES_OFF
+    data[0] = 1;
+  }
+  switch (data[0]) {
+    case 1:  // Spin while rising
+      TrySpinPlayerForWarp(object, data, 1);
+      data[3] -= data[2];
+      data[2] += 3;
+      // [M3] sprite.y est resync chaque frame par UpdateObjectEvents (slot→sprite) →
+      // on applique l'arc vertical via sprite.y2 (offset additif qui survit, comme
+      // _tickJump). data[4] = base resting y ; l'arc absolu décomp = data[3]>>4.
+      sprite.y2 = (data[3] >> 4) - data[4];
+      if ((data[3] >> 4) + (gTotalCamera.pixelOffsetY | 0) < -32)
+        data[0] = 2;
+      break;
+    case 2:
+      DestroyTask(task.taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `Task_DoPlayerSpinEntrance` (field_player_avatar.c:2152) — spin en retombant au sol. */
+function Task_DoPlayerSpinEntrance(task: DecompTask): void {
+  const rt = getRuntime();
+  const object = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!object) return;
+  const sprite = rt.gSprites.get(object.spriteId);
+  if (!sprite) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const data = task.data;
+  // case 0 (Init) — 1:1 décomp : fallthrough vers case 1 (même frame).
+  if (data[0] === 0) {
+    // 1:1 décomp : la facing de départ n'étant jamais set pour ce type de warp,
+    // le joueur ressort toujours face au SUD (comportement ROM, peut-être voulu).
+    data[5] = GetSpinStartFacingDir();
+    ObjectEventForceSetHeldMovement(object, GetFaceDirectionMovementAction(sSpinDirections[data[5]]));
+    data[1] = 0;
+    data[2] = 116;
+    data[4] = sprite.y;
+    data[6] = oam.priority ?? 2;
+    data[7] = sprite.subpriority;
+    data[3] = -(((sprite.y2 & 0xFFFF)) + 32) * 16;
+    sprite.y2 = 0;
+    CameraObjectFreeze();
+    object.fixedPriority = true;
+    oam.priority = 1;
+    sprite.subpriority = 0;
+    sprite.subspriteMode = 'off';
+    data[0] = 1;
+  }
+  switch (data[0]) {
+    case 1:  // Spin while descending
+      TrySpinPlayerForWarp(object, data, 1);
+      data[3] += data[2];
+      data[2] -= 3;
+      if (data[2] < 4) data[2] = 4;
+      // [M3] arc vertical via sprite.y2 (sprite.y resync par UpdateObjectEvents) ;
+      // data[4] = tDestY = base resting y. y2 = arc absolu décomp - base.
+      sprite.y2 = (data[3] >> 4) - data[4];
+      if ((data[3] >> 4) >= data[4]) {
+        sprite.y2 = 0;
+        data[8] = 0;
+        data[0]++;
+      }
+      break;
+    case 2:  // Spin on ground
+      TrySpinPlayerForWarp(object, data, 1);
+      if (++data[8] > 8) data[0]++;
+      break;
+    case 3:  // Spin until facing original direction
+      if (data[5] === TrySpinPlayerForWarp(object, data, 1)) {
+        object.fixedPriority = false;
+        oam.priority = data[6];
+        sprite.subpriority = data[7];
+        CameraObjectReset();
+        DestroyTask(task.taskId);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `DoPlayerSpinEntrance` (field_player_avatar.c:2130). */
+export function DoPlayerSpinEntrance(): void {
+  const task = GetTask(CreateTask(Task_DoPlayerSpinEntrance, 0));
+  if (task) Task_DoPlayerSpinEntrance(task);
+}
+
+/** 1:1 décomp `IsPlayerSpinEntranceActive` (field_player_avatar.c:2135). */
+export function IsPlayerSpinEntranceActive(): boolean {
+  return FuncIsActiveTask(Task_DoPlayerSpinEntrance);
+}
+
+/** 1:1 décomp `DoPlayerSpinExit` (field_player_avatar.c:2140). */
+export function DoPlayerSpinExit(): void {
+  const task = GetTask(CreateTask(Task_DoPlayerSpinExit, 0));
+  if (task) Task_DoPlayerSpinExit(task);
+}
+
+/** 1:1 décomp `IsPlayerSpinExitActive` (field_player_avatar.c:2145). */
+export function IsPlayerSpinExitActive(): boolean {
+  return FuncIsActiveTask(Task_DoPlayerSpinExit);
 }
 
 /** 1:1 STRICT décomp `CancelPlayerForcedMovement` (field_player_avatar.c:1201) :
