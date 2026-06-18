@@ -54,7 +54,7 @@ import {
   _registerWeatherFuncs,
 } from './field_weather';
 import { MAP_OFFSET } from './fieldmap';
-import { SetSpritePosToMapCoords } from '../engine/field/field-camera';
+import { SetSpritePosToMapCoords } from './field_camera';
 
 const _rt = (): DecompRuntime => getRuntime();
 

@@ -89,7 +89,7 @@ import {
   GetCameraPanX,
   GetCameraPanY,
   SetSpritePosToMapCoords,
-} from '../engine/field/field-camera';
+} from './field_camera';
 import {
   ArePlayerFieldControlsLocked,
   LockPlayerFieldControls,

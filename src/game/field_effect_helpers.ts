@@ -80,7 +80,7 @@ import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '..
 import { FindTaskIdByFunc, getRuntime } from '../engine/system/decomp-globals';
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
-import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
+import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from './field_camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET, gMapHeader } from './fieldmap';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
   MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,

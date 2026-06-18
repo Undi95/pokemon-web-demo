@@ -59,7 +59,7 @@ import { VarSet } from '../script/script-vars';
 import { Sin } from '../system/decomp-helpers';
 import { CopyMapTilesetsToVram, gMapHeader } from '../../game/fieldmap';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from '../../game/tileset_anims';
-import { setFieldCameraSuspended, flushOverworldTilemaps } from '../field/field-camera';
+import { setFieldCameraSuspended, flushOverworldTilemaps } from '../../game/field_camera';
 import { setObjectEventsSuspended } from '../field/object-events';
 import { getString, initStringsFromDecomp } from '../ui/gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from '../system/data-tables';

@@ -33,7 +33,7 @@ import { loadTileBin } from '../engine/gba/png-loader';
 import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from '../engine/decomp-data/include/constants/songs-data';
 import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './fieldmap';
 import { MB_ANIMATED_DOOR } from '../engine/field/tilemap-loader';
-import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
+import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from './field_camera';
 import {
   METATILE_General_Door,
   METATILE_General_Door_Gym,

@@ -46,7 +46,7 @@ import {
   GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
-} from '../field/field-camera';
+} from '../../game/field_camera';
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../script/script-runtime';
 import { buildBattleDevtools } from '../battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../../util/key-bindings';

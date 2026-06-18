@@ -55,8 +55,8 @@ import {
   getPendingConnection,
   clearPendingConnection,
   gCamera,
-} from '../engine/field/field-camera';
-import type { PendingConnection } from '../engine/field/field-camera';
+} from '../game/field_camera';
+import type { PendingConnection } from '../game/field_camera';
 import {
   InitPlayerAvatar,
   PlayerStep,

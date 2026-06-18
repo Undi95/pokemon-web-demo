@@ -39,7 +39,7 @@ import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_O
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../system/decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from '../script/script-vars';
-import { DrawWholeMapView } from '../field/field-camera';
+import { DrawWholeMapView } from '../../game/field_camera';
 import {
   METATILE_Building_TV_On,
   METATILE_Building_TV_Off,

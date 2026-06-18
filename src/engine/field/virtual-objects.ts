@@ -28,7 +28,7 @@
 
 import { CreateObjectGraphicsSprite, loadObjectEventGraphicsInfo } from './object-event-graphics';
 import { getRuntime } from '../system/decomp-globals';
-import { gFieldCamera } from '../field/field-camera';
+import { gFieldCamera } from '../../game/field_camera';
 
 // ─── Directions → anim index (1:1 décomp sAnimTable_Standard) ───────────────
 // Migré vers imports decomp-data global-data.ts (cleanup B7).

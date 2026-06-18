@@ -18,7 +18,7 @@ import type { DecompTask } from '../engine/system/decomp-runtime';
 import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import { GetTaskData } from '../engine/system/decomp-globals';
 import { MapGridSetMetatileIdAt } from './fieldmap';
-import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
+import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from './field_camera';
 import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH } from './field_player_avatar';
 import {
   METATILE_SecretBase_BreakableDoor_BottomOpen,

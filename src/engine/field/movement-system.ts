@@ -39,7 +39,7 @@ import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
 } from './direction-coords';
-import { gFieldCamera } from '../field/field-camera';
+import { gFieldCamera } from '../../game/field_camera';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON } from './field-effect';
 
 // G6 — 1:1 STRICT anim helpers exposés via globalThis depuis object-events.ts

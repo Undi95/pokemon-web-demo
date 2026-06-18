@@ -1,8 +1,19 @@
 /**
- * field-camera.ts — moteur scrolling overworld 1:1 décomp field_camera.c.
+ * field_camera.ts — miroir 1:1 décomp `src/field_camera.c` (moteur scroll overworld).
  *
  * Source de vérité (= ne JAMAIS diverger) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/field_camera.c`
+ *
+ * Dette d'extraction (= fonctions hébergées ici mais d'un autre .c, à terme à
+ * sortir) : `CameraMove` (fieldmap.c:649 — version M3-adaptée intimement couplée
+ * au système caméra `_camPos`/`_pendingConnection`) + `_clearMirageTowerPulseBlend
+ * Effect` (mirage_tower.c:303 — no-op, Mirage Tower pas porté).
+ *
+ * Glu maison / déviations M3 (= sans équivalent décomp strict) : couche de push
+ * VRAM (flushOverworldTilemaps/clearOverworldTilemaps), signal de transition de
+ * connexion (_pendingConnection / getPendingConnection), focus caméra via `_camPos`
+ * local (au lieu de gSaveBlock1Ptr->pos direct), flags redraw, hooks scene, trace
+ * devtools. Tout le reste = field_camera.c 1:1 strict.
  *
  * Architecture circular buffer 32x32 BG (= 16x16 metatiles) :
  *   - Le BG screen GBA = 32x32 BG tiles = 256x256 px = 16x16 metatiles.
@@ -32,7 +43,7 @@
  *   - "tile" = BG tile (= 8x8 px)
  *   - 1 metatile = 2x2 BG tiles
  */
-import type { DecompRuntime } from '../system/decomp-runtime';
+import type { DecompRuntime } from '../engine/system/decomp-runtime';
 import {
   type MapLayout,
   MapGridGetMetatileIdAt,
@@ -51,19 +62,19 @@ import {
   TransitionToConnection,
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
-} from '../../game/fieldmap';
-import { gPlayerAvatar } from '../../game/field_player_avatar';
-import type { MapConnection } from '../../game/fieldmap';
+} from './fieldmap';
+import { gPlayerAvatar } from './field_player_avatar';
+import type { MapConnection } from './fieldmap';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-} from '../system/decomp-runtime';
-import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from './field-globals';
-import { getRuntime } from '../system/decomp-globals';
-import { DestroySprite } from '../system/decomp-bridge';
-import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
-import { CONNECTION_NONE, CONNECTION_INVALID } from '../decomp-data/include/constants/global-data';
+} from '../engine/system/decomp-runtime';
+import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from '../engine/field/field-globals';
+import { getRuntime } from '../engine/system/decomp-globals';
+import { DestroySprite } from '../engine/system/decomp-bridge';
+import { gSaveBlock1Ptr } from '../engine/ui/gba-menu-system';
+import { CONNECTION_NONE, CONNECTION_INVALID } from '../engine/decomp-data/include/constants/global-data';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 
@@ -760,7 +771,7 @@ export function clearPendingConnection(): void {
  *    [DestroyTask + Unmark/Unload palettes]
  *
  *  Notre port : early-return strict 1:1. Le PulseBlend palette system + tasks
- *  Mirage Tower ne sont pas implémentés (= post-démo, Route 111 only). Comme
+ *  Mirage Tower ne sont pas (encore) portés (feature Route 111). Comme
  *  `sMirageTowerPulseBlend` est toujours NULL dans notre engine, le décomp
  *  early-return aussi. Comportement 1:1 strict. */
 function _clearMirageTowerPulseBlendEffect(): void {
@@ -834,8 +845,8 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // 1:1 STRICT décomp fieldmap.c:664 : ClearMirageTowerPulseBlendEffect().
   // Body 1:1 (mirage_tower.c:303-317) : check Route 111 + FLAG_MIRAGE_TOWER_VISIBLE
   // + sMirageTowerPulseBlend non-null → DestroyTask + Unmark/Unload palettes.
-  // Notre port : early-return (= condition Route 111 jamais true depuis démo
-  // Littleroot, et PulseBlend palette system pas porté = jamais initialisé).
+  // Notre port : early-return (= condition Route 111 false hors Route 111, et
+  // PulseBlend palette system pas porté = sMirageTowerPulseBlend jamais initialisé).
   // Conforme 1:1 strict : skip si conditions non remplies (= identique au décomp
   // qui early-return aussi).
   _clearMirageTowerPulseBlendEffect();
@@ -948,7 +959,7 @@ export function CameraUpdate(): void {
     // iter gObjectEvents avec movementType MOVEMENT_TYPE_BERRY_TREE_GROWTH dans
     // rect cam (left .. left+14, top+3 .. top+3+8) → AllowBerryTreeGrowth(treeId).
     // Demande wire BERRY_TREE_GROWTH movement type + helper AllowBerryTreeGrowth
-    // (stopGrowth = false). Pas critique démo Littleroot (= zéro berry tree).
+    // (stopGrowth = false) — pas encore câblé (dépendance de feature berry trees).
     AddCameraTileOffset(sFieldCameraOffset, deltaX * 2, deltaY * 2);
     _trace('boundary_cross', {
       deltaX, deltaY,

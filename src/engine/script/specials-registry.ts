@@ -62,7 +62,7 @@ import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
-import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
+import { SetCameraPanning, SetCameraPanningCallback } from '../../game/field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { getGObjectEvents } from '../field/field-globals';
 import { AddBagItem } from '../bag/bag';

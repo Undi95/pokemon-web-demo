@@ -21,7 +21,7 @@ import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../../game/field
 import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
-import { DrawWholeMapView } from '../field/field-camera';
+import { DrawWholeMapView } from '../../game/field_camera';
 import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
   METATILE_BrendansMaysHouse_BrendanPC_On, METATILE_BrendansMaysHouse_BrendanPC_Off,
