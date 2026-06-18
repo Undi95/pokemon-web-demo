@@ -58,7 +58,7 @@ import { GiveMonToPlayer } from './party-storage';
 import { VarSet } from '../script/script-vars';
 import { Sin } from '../system/decomp-helpers';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../field/map-loader';
-import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';
+import { pauseTilesetAnimations, resumeTilesetAnimations } from '../../game/tileset_anims';
 import { setFieldCameraSuspended } from '../field/field-camera';
 import { setObjectEventsSuspended } from '../field/object-events';
 import { getString, initStringsFromDecomp } from '../ui/gba-strings';

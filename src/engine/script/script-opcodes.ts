@@ -20,7 +20,7 @@ import {
 } from './script-vars';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox,
-} from '../field/field-message-box';
+} from '../../game/field_message_box';
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from '../field/movement-system';

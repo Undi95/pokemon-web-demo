@@ -1,5 +1,5 @@
 /**
- * tileset-anims.ts — 1:1 décomp `src/tileset_anims.c` (~1700L).
+ * tileset_anims.ts — miroir 1:1 de `src/tileset_anims.c` (~1700L).
  *
  * Implémente le système d'animation de tiles du tileset overworld Émeraude :
  *   - Double buffer VRAM (= sTilesetDMA3TransferBuffer[20])
@@ -52,8 +52,8 @@
  *   InitTilesetAnimations();
  */
 
-import { loadTileBin } from '../gba/png-loader';
-import type { DecompRuntime } from '../system/decomp-runtime';
+import { loadTileBin } from '../engine/gba/png-loader';
+import type { DecompRuntime } from '../engine/system/decomp-runtime';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

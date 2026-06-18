@@ -24,7 +24,7 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { encodeOwText } from '../../game/include/text';  // préproc : littéral → bytes (ShowFieldMessage byte)
 import { gSpecialVar } from './script-vars';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../game/field_message_box';
 import {
   gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfFinished,

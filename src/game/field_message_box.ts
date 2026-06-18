@@ -1,5 +1,5 @@
 /**
- * field-message-box.ts — overworld dialog box state machine.
+ * field_message_box.ts — overworld dialog box state machine, miroir 1:1 de `field_message_box.c`.
  *
  * 1:1 décomp `D:/Projet 1/decomps/pokeemeraude/src/field_message_box.c` :
  *   - sFieldMessageBoxMode (HIDDEN | NORMAL | AUTO_SCROLL)
@@ -22,18 +22,18 @@ import {
   DrawDialogueFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
-} from '../ui/gba-window-system';
-import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from '../../game/text_window';
-import { BG_PLTT_ID } from '../system/decomp-runtime';
+} from '../engine/ui/gba-window-system';
+import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
+import { BG_PLTT_ID } from '../engine/system/decomp-runtime';
 import {
   AddTextPrinterParameterized3,
   IsTextPrinterActive,
   gStringVar4,
   StringExpandPlaceholders,
-} from '../ui/gba-text-system';
-import { decodeOwBytes } from '../../game/include/text';
-import { gTextFlags } from '../ui/gba-text-printer';
-import { getRuntime } from '../system/decomp-globals';
+} from '../engine/ui/gba-text-system';
+import { decodeOwBytes } from './include/text';
+import { gTextFlags } from '../engine/ui/gba-text-printer';
+import { getRuntime } from '../engine/system/decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

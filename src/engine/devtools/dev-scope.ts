@@ -37,7 +37,7 @@ import {
   GetCurrentFieldMessageText,
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
-} from '../field/field-message-box';
+} from '../../game/field_message_box';
 import {
   gCamera as _gCamera,
   gFieldCamera as _gFieldCamera,

@@ -44,7 +44,7 @@ import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/con
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from '../system/rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
-import { ShowFieldMessage } from '../field/field-message-box';
+import { ShowFieldMessage } from '../../game/field_message_box';
 import { gStringVar4 } from '../ui/gba-text-system';
 import { Random } from '../system/random';
 import { reverseDecompConstant } from '../system/decomp-constants';

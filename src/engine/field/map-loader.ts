@@ -49,7 +49,7 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadBgTiles, LoadPalette } from '../system/decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
-import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset-anims';
+import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from '../../game/tileset_anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
 import { GetSaveBlock1 } from '../save/save-system';

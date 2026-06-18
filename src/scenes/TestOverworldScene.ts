@@ -199,7 +199,7 @@ import {
   InitFieldMessageBox,
   TickFieldMessageBox,
   preloadStandardMenuPalette,
-} from '../engine/field/field-message-box';
+} from '../game/field_message_box';
 import { TickStartMenu } from '../engine/ui/start-menu';
 import { TickBedroomPC } from '../engine/ui/bedroom-pc';
 import { TickPCAnim } from '../engine/pokemon/pc-anim';
@@ -224,7 +224,7 @@ import {
   InitTilesetAnimations,
   UpdateTilesetAnimations,
   TransferTilesetAnimsBuffer,
-} from '../engine/field/tileset-anims';
+} from '../game/tileset_anims';
 
 /** 1:1 décomp `GetWalkNormalMovementAction` (event_object_movement.c:4959,
  *  via `dirn_to_anim` macro). Map direction → walk_normal movement action

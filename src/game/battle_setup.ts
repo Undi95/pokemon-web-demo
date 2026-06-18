@@ -39,7 +39,7 @@ import {
 import { registerSpecial } from '../engine/script/script-opcodes';
 import { FlagSet, FlagGet, gSpecialVar, gSelectedObjectEvent } from '../engine/script/script-vars';
 import { parseValue } from '../engine/script/script-opcodes-helpers';
-import { ShowFieldMessage } from '../engine/field/field-message-box';
+import { ShowFieldMessage } from './field_message_box';
 import { BattleSetup_StartTrainerBattle } from '../engine/battle/battle-setup-helpers';
 import { resolveTrainerNumId, ensureGTrainersLoaded } from '../engine/battle/battle-trainer-data-bridge';
 import {

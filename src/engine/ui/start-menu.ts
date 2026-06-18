@@ -55,7 +55,7 @@ import {
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
   FIELD_MESSAGE_BOX_HIDDEN,
-} from '../field/field-message-box';
+} from '../../game/field_message_box';
 // Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
 import { encodeOwText } from '../../game/include/text';
