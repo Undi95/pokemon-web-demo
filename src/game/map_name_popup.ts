@@ -1,5 +1,5 @@
 /**
- * map-name-popup.ts — 1:1 décomp `src/map_name_popup.c`.
+ * map_name_popup.ts — 1:1 décomp `src/map_name_popup.c`.
  *
  * Source de vérité (1:1 décomp) :
  *   - `src/map_name_popup.c` (= ShowMapNamePopup, Task_MapNamePopUpWindow,
@@ -26,20 +26,20 @@
  *  inside window). Window stays plain white. Frame border + palette = fonctionnel.
  */
 
-import { getRuntime } from '../system/decomp-globals';
-import { REG_OFFSET_BG0VOFS } from '../system/decomp-runtime';
-import { FlagGet } from '../script/script-vars';
-import { gMapHeader } from '../../game/fieldmap';
-import type { DecompTask } from '../system/decomp-runtime';
+import { getRuntime } from '../engine/system/decomp-globals';
+import { REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
+import { FlagGet } from '../engine/script/script-vars';
+import { gMapHeader } from './fieldmap';
+import type { DecompTask } from '../engine/system/decomp-runtime';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
-} from '../ui/gba-window-system';
-import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
-import { LoadBgTiles } from '../system/decomp-globals';
-import { LoadPalette } from '../system/decomp-globals';
-import { loadIndexedPngStrict } from '../gba/png-loader';
+} from '../engine/ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../engine/ui/gba-text-system';
+import { LoadBgTiles } from '../engine/system/decomp-globals';
+import { LoadPalette } from '../engine/system/decomp-globals';
+import { loadIndexedPngStrict } from '../engine/gba/png-loader';
 
 // ─── 1:1 décomp constants (map_name_popup.c:212-229, menu.c:521-526) ────────
 
@@ -186,7 +186,7 @@ export async function preloadMapNames(): Promise<void> {
   // Aussi charger dans le module partagé src/data/map-names-fr.ts (= utilisé
   // par start-menu.ts ShowSaveInfoWindow + autres consumers via getMapNameFr).
   try {
-    const { loadMapNamesFr } = await import('../../data/map-names-fr');
+    const { loadMapNamesFr } = await import('../data/map-names-fr');
     loadMapNamesFr(_mapNamesFr);
   } catch (e) {
     console.warn('[map-name-popup] failed to bridge to map-names-fr module:', e);

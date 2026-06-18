@@ -218,7 +218,7 @@ import '../engine/script/specials-registry';
 import '../engine/pokemon/pokemon-size-record';
 // Side-effect import : registers secret_base specials (cur base helpers).
 import '../engine/pokemon/secret-base';
-import { ShowMapNamePopup, preloadMapNames } from '../engine/field/map-name-popup';
+import { ShowMapNamePopup, preloadMapNames } from '../game/map_name_popup';
 import { loadGameData, installDexDevtools } from '../engine/data/game-data';
 import {
   InitTilesetAnimations,

@@ -61,7 +61,7 @@ import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
-import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
+import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../game/map_name_popup';
 import { SetCameraPanning, SetCameraPanningCallback } from '../../game/field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { getGObjectEvents } from '../field/field-globals';

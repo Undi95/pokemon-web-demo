@@ -66,7 +66,7 @@ import { PlaySE, getRuntime, gMain } from '../system/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
 import { HasValidSave } from '../save/save-system';
 import { bagContents } from '../bag/bag';
-import { HideMapNamePopUpWindow } from '../field/map-name-popup';
+import { HideMapNamePopUpWindow } from '../../game/map_name_popup';
 import { GetStringRightAlignXOffset } from './gba-text-system';
 import { gMapHeader } from '../../game/fieldmap';
 import { getMapNameFr } from '../../data/map-names-fr';
