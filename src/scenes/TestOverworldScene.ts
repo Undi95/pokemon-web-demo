@@ -150,6 +150,9 @@ import {
   TrySpawnTallGrassOnReturnToField,
 } from '../game/field_effect_helpers';
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
+// Réserve GENERAL_0/GENERAL_1 dans [12,16) AVANT les autres field effects (sinon famine
+// de slots → poussière/splash/feet-in-water rendus noirs, palBank=255). Cf. field_effect_helpers.ts.
+import { preloadGeneralFieldEffectPalettes } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
@@ -1164,6 +1167,13 @@ export class TestOverworldScene extends Phaser.Scene {
     StartWeather();
     gWeatherPtr.readyForInit = true;
     DoCurrentWeather();
+
+    // Réserve les 2 palettes générales de field effect (GENERAL_0/GENERAL_1) dans [12,16)
+    // JUSTE APRÈS la météo (qui a pris son slot) et AVANT tous les autres préchargements de
+    // field effects. Sans ça, GENERAL_0 (poussière de saut, splash, feet-in-flowing-water)
+    // était demandé après saturation de [12,16) → paletteBank=255 → rendu NOIR. Cf.
+    // field_effect_helpers.ts:preloadGeneralFieldEffectPalettes + [[diag-glitches-2026-06-18]].
+    await preloadGeneralFieldEffectPalettes(this.rt);
 
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
     // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran

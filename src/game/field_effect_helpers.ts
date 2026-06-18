@@ -52,7 +52,7 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../engine/system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../engine/system/sprite';
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
@@ -2094,6 +2094,29 @@ const SAND_PILE_PNG = '/decomp/em/field_effects/sand_pile.png';
 const GENERAL_0_PAL = '/decomp/em/field_effects/general_0.pal';
 const TAG_SAND_PILE_GFX = 'FIELD_EFFECT_SAND_PILE_GFX';
 const TAG_GENERAL_0_PAL = 'FLDEFF_PAL_TAG_GENERAL_0';
+
+/** Réserve les DEUX palettes générales de field effect (`gSpritePalette_GeneralFieldEffect0/1`,
+ *  field_effect_objects.h:1-2) dans `[gReservedSpritePaletteCount, 16)`, AVANT les autres
+ *  préchargements de field effects.
+ *
+ *  Pourquoi : en décomp, `[12,16)` (= au-delà des 12 slots object-event réservés, PALSLOT)
+ *  ne contient JAMAIS que GENERAL_0, GENERAL_1 et la palette météo — tous les autres effets
+ *  prennent un slot FIXE (surf blob → 0, sparkle → 5, reflets → gReflectionEffectPaletteMap)
+ *  ou rien (TAG_NONE), et la décomp charge GENERAL_0/1 à la volée (`field_eff_loadfadedpal`).
+ *  Notre port précharge ~10 tags DISTINCTS à l'init pour 4 slots → famine : GENERAL_0 (poussière
+ *  FLDEFF_DUST, splash, feet-in-flowing-water) était demandé APRÈS saturation de `[12,16)` →
+ *  `LoadSpritePalette` renvoyait `0xFF` → sprite `paletteBank=255` → rendu NOIR.
+ *  En chargeant GENERAL_0 et GENERAL_1 en premier, ils obtiennent un slot résident ; les
+ *  préchargements suivants qui re-demandent ces tags récupèrent le même slot (dédup par tag).
+ *  Idempotent (LoadSpritePalette dédup par tag). */
+export async function preloadGeneralFieldEffectPalettes(_rt: DecompRuntime): Promise<void> {
+  if (IndexOfSpritePaletteTag(TAG_GENERAL_0_PAL) === 0xFF) {
+    try { LoadSpritePalette({ data: await loadGbaPal(GENERAL_0_PAL), tag: TAG_GENERAL_0_PAL }); } catch { /* asset indispo : laissé aux préchargements suivants */ }
+  }
+  if (IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL) === 0xFF) {
+    try { LoadSpritePalette({ data: await loadGbaPal(GENERAL_1_PAL), tag: TAG_GENERAL_1_PAL }); } catch { /* idem */ }
+  }
+}
 
 /** 1:1 décomp `sAnim_SandPile` (field_effect_objects.h:793) : FRAME(0,4)(1,4)(2,4) END.
  *  imageValue = offset tile (16×8 = 2 tiles/frame → frames 0,2,4). */
