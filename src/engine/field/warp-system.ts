@@ -30,7 +30,8 @@
  */
 
 import type { WarpEvent, MapHeader } from './map-loader';
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, GetMapConnection } from './map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
+import { GetMapConnection } from '../../game/overworld';
 import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../decomp-data/include/constants/global-data';
 import type { WarpData } from '../save/save-blocks';
 import {

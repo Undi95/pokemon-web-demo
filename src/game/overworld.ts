@@ -9,7 +9,7 @@
 // on porte la logique musique, on ne remplace PAS le moteur son.
 
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
-import { gMapHeader } from '../engine/field/map-loader';
+import { gMapHeader, type MapConnection } from '../engine/field/map-loader';
 import { PlayBGM } from '../engine/system/decomp-globals';
 import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
 import { FlagGet, FlagClear } from '../engine/script/script-vars';
@@ -114,4 +114,19 @@ export function Overworld_IsBikingAllowed(): boolean {
     return false;
   else
     return true;
+}
+
+/** 1:1 STRICT décomp `GetMapConnection(u8 dir)` (overworld.c:740) :
+ *    for (i = 0; i < count; i++, connection++)
+ *        if (connection->direction == dir) return connection;
+ *    return NULL;
+ *  Retourne la PREMIÈRE connexion de la map courante dont la direction == dir
+ *  (≠ GetMapConnectionAtPos qui filtre par position border, fieldmap.c). Utilisé
+ *  par le warp Dive (`SetDiveWarp` cherche la connexion CONNECTION_DIVE/EMERGE). */
+export function GetMapConnection(dir: number): MapConnection | null {
+  if (!gMapHeader || !gMapHeader.connections) return null;
+  for (const connection of gMapHeader.connections) {
+    if (connection.direction === dir) return connection;
+  }
+  return null;
 }
