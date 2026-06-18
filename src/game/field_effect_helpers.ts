@@ -1700,7 +1700,11 @@ export function UpdateSplashFieldEffect(sprite: DecompSprite, rt: DecompRuntime)
   if (!linked) return;
   sprite.x = linked.x; sprite.y = linked.y;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
-  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  // ADAPTATION M3 (cf. UpdateFeetInFlowingWaterFieldEffect) : hérite de la visibilité du PNJ
+  // porteur comme base, car les sprites des PNJ hors-écran sont parkés à (0,0) dans notre système
+  // → sans ça le splash d'un PNJ hors-écran fuiterait en haut-gauche. Résultat 1:1 (décomp = FALSE
+  // + culling position, qui marche là-bas car la position du PNJ off-screen y est correcte).
+  UpdateObjectEventSpriteInvisibility(rt, sprite, linked.invisible);
 }
 
 /** 1:1 décomp `FldEff_FeetInFlowingWater` (field_effect_helpers.c:725). Lit gFieldEffectArguments[0..2]. */
@@ -1729,7 +1733,14 @@ export function UpdateFeetInFlowingWaterFieldEffect(sprite: DecompSprite, rt: De
   sprite.x = linked.x; sprite.y = linked.y;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
   sprite.subpriority = linked.subpriority & 0xFF;
-  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  // 1:1 décomp passe FALSE (le culling se fait sur la POSITION du sprite, copiée du PNJ).
+  // ADAPTATION M3 : notre système parke les sprites des object-events HORS-ÉCRAN à (0,0)+invisible
+  // (au lieu de leur position-écran projetée comme la décomp) → la position copiée (0,0 ≈ coin
+  // haut-gauche) paraît DANS l'écran, donc UpdateObjectEventSpriteInvisibility ne culle pas et le
+  // clapotis d'un PNJ hors-écran (dans l'eau au loin) « fuite » en haut-gauche. On hérite donc de
+  // la visibilité du PNJ porteur comme base : masqué SSI le PNJ est hors-écran = même résultat que
+  // la décomp, via son flag `invisible` (fiable) au lieu de sa position parkée (indispo en M3).
+  UpdateObjectEventSpriteInvisibility(rt, sprite, linked.invisible);
   // 1:1 : au changement de tuile (currentCoords), re-PlaySE(SE_PUDDLE) si visible — SKIP (audio).
   if (objectEvent.currentCoordsX !== sprite.data[3] || objectEvent.currentCoordsY !== sprite.data[4]) {
     sprite.data[3] = objectEvent.currentCoordsX;
