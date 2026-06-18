@@ -979,7 +979,7 @@ export function ObjectEventGetHeldMovementActionId(objectEvent: ObjectEvent): nu
  *  @param mapX        Player position LOGICAL X (= sans MAP_OFFSET).
  *  @param mapY        Player position LOGICAL Y.
  *  @param direction   Initial facing direction (DIR_*).
- *  @param graphicsKey Player graphics ID (= 'Brendan' / 'May' for the demo). */
+ *  @param graphicsKey Player graphics ID (= 'Brendan' / 'May'). */
 export function InitPlayerObjectEvent(
   mapX: number, mapY: number, direction: number, graphicsKey: string,
 ): void {
@@ -2960,11 +2960,11 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     return true;
   }
   // WALK_SLOWLY_IN_PLACE_* : facing static + slower in-place walk anim.
-  // MVP : static face (= same as WALK_IN_PLACE).
+  // Dette : static face (= comme WALK_IN_PLACE) ; l'anim in-place ralentie reste à porter.
   if (mt.startsWith('MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_')) {
     return true;
   }
-  // JOG_IN_PLACE_* : faster in-place anim. MVP : static face.
+  // JOG_IN_PLACE_* : faster in-place anim. Dette : static face (anim in-place non portée).
   if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) {
     return true;
   }
@@ -2979,7 +2979,7 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     }
     return true;
   }
-  // RUN_IN_PLACE_* : run anim in place. Same as WALK_IN_PLACE for MVP.
+  // RUN_IN_PLACE_* : run anim in place. Dette : traité comme WALK_IN_PLACE (anim run non portée).
   if (mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) {
     return true;
   }
@@ -3143,7 +3143,7 @@ const _gfxMetaEmptyPic = new Uint8Array(0);
 // InitPlayerAvatar) qui n'est PAS une clé du registre graphics-info. Pour le spine
 // ground-effect (reflet : paletteSlot=PLAYER + height 32), on l'aliase vers la vraie
 // fiche overworld du joueur (= OBJ_EVENT_GFX_BRENDAN/MAY_NORMAL, ce que le slot 0 décomp
-// porte). Les autres états (vélo/surf) restent hors démo à pied.
+// porte). Les autres états (vélo/surf) = chantier graphics-id séparé (pas aliasés ici).
 const _playerGfxAlias: Readonly<Record<string, string>> = {
   Brendan: 'OBJ_EVENT_GFX_BRENDAN_NORMAL',
   May: 'OBJ_EVENT_GFX_MAY_NORMAL',
@@ -3494,8 +3494,8 @@ const _reflectionPalUrls: ReadonlyArray<readonly [number, string]> = [
   [OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION, '/decomp/em/object_events/palettes/brendan_reflection.pal'],
   [OBJ_EVENT_PAL_TAG_MAY_REFLECTION, '/decomp/em/object_events/palettes/may_reflection.pal'],
   [OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION, '/decomp/em/object_events/palettes/bridge_reflection.pal'],
-  // Reflets teintés des objets spéciaux (sSpecialObjectReflectionPaletteSets). Hors démo
-  // mais préchargés pour la complétude 1:1. Les autres entrées de la table (TRUCK/VIGOROTH/
+  // Reflets teintés des objets spéciaux (sSpecialObjectReflectionPaletteSets). Préchargés
+  // pour la complétude 1:1 (objets surf/dive/cable-car). Les autres entrées de la table (TRUCK/VIGOROTH/
   // CABLE_CAR/SSTIDAL/SUBMARINE/RED_LEAF) reflètent leur PROPRE palette (déjà chargée par le
   // main) → pas de .pal reflet dédié à précharger ; NPC_3_REFLECTION est déjà au-dessus.
   [OBJ_EVENT_PAL_TAG_QUINTY_PLUMP_REFLECTION, '/decomp/em/object_events/palettes/quinty_plump_reflection.pal'],
@@ -3913,8 +3913,8 @@ const sGroundEffectFuncs: ((rt: DecompRuntime, npc: ObjectEvent, sprite: DecompS
 ];
 
 function DoFlaggedGroundEffects(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined, flags: number): void {
-  // 1:1 décomp : garde ObjectEventIsFarawayIslandMew non portée (Faraway Island hors
-  // démo, toujours false) → pas de early-return.
+  // 1:1 décomp : garde ObjectEventIsFarawayIslandMew non portée (Faraway Island =
+  // dépendance d'étape, toujours false ici) → pas de early-return.
   for (let i = 0; i < sGroundEffectFuncs.length; i++, flags >>= 1) {
     if (flags & 1) sGroundEffectFuncs[i](rt, npc, sprite);
   }
@@ -4053,8 +4053,8 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
 //
 // Dispatch table 1:1 décomp `gMovementActionFuncs[]` (= 256 entries pour
 // chaque MOVEMENT_ACTION_X). Chaque entry est un Step0/1/2 callback.
-// Pour la démo, on porte les actions critiques (FACE_X, WALK_X, etc.).
-// Les autres sont stub no-op qui retournent done immédiatement.
+// Actions critiques portées (FACE_X, WALK_X, etc.) ; les autres = stub no-op
+// qui retournent done immédiatement (dette à porter au fil des étapes).
 
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
@@ -6163,7 +6163,7 @@ const gWalkFastMovementActions: readonly number[] = [
 /** 1:1 décomp `GetWalkFastMovementAction` (event_object_movement.c:4954, via
  *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_FAST_* (= surf speed,
  *  même vitesse que run). Utilisé par `PlayerWalkFast` (branche SURFING de
- *  PlayerNotOnBikeMoving — surf = étape 5, jamais atteint en démo mais porté 1:1). */
+ *  PlayerNotOnBikeMoving — surf = dépendance d'étape, porté 1:1). */
 export function GetWalkFastMovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gWalkFastMovementActions[dir];
@@ -6181,8 +6181,8 @@ const gRideWaterCurrentMovementActions: readonly number[] = [
 /** 1:1 décomp `GetRideWaterCurrentMovementAction` (event_object_movement.c:4961, via
  *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_RIDE_WATER_CURRENT_* (= poussé par
  *  un courant d'eau en surf, vitesse FASTER). Utilisé par `PlayerRideWaterCurrent`
- *  (forced movement `ForcedMovement_Pushed*ByCurrent` — courants = surf, étape 5 jamais
- *  atteint en démo mais porté 1:1). */
+ *  (forced movement `ForcedMovement_Pushed*ByCurrent` — courants = surf, dépendance
+ *  d'étape, porté 1:1). */
 export function GetRideWaterCurrentMovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gRideWaterCurrentMovementActions[dir];
@@ -7328,7 +7328,7 @@ function _spawnSingleNpcFromTemplate(
     // (= cycle oam.tileId entre 3 frames consecutivement chargées en VRAM :
     // face=base, walk1=base+16, walk2=base+32). 1:1 décomp sAnim_Go* alterne
     // walk1/face/walk2/face sur 32 frames (= 4 sub-frames × 8 ticks) — notre
-    // approximation MVP : walkFramesLeft cycle 16 → 0, walkAnimAlt toggle pour
+    // approximation actuelle (M3-NPC M2 : à porter sur AnimateSprite) : walkFramesLeft cycle 16 → 0, walkAnimAlt toggle pour
     // alterner walk1/walk2. updateNpcSpriteFrame branche is32x32 mappe :
     //   - walkFramesLeft >= 8 → walk1 (alt=0) ou walk2 (alt=1)
     //   - walkFramesLeft < 8  → face
@@ -8054,7 +8054,7 @@ function _SetObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
  *  ```
  *  Notre TS : sprite.x/y = npc.worldX/worldY. centerToCornerVec stocké sur npc.
  *  x, y = INTERNAL frame (= +MAP_OFFSET, caller fait l'add).
- *  trackedByCamera + CameraObjectReset : dette R3 (hors-démo). */
+ *  trackedByCamera + CameraObjectReset : dette R3 (rarement utilisé). */
 export function MoveObjectEventToMapCoords(npc: ObjectEvent, x: number, y: number): void {
   _SetObjectEventCoords(npc, x, y);
   const { destX, destY } = _SetSpritePosToMapCoords(npc.currentCoordsX, npc.currentCoordsY);
@@ -8086,7 +8086,7 @@ export function MoveObjectEventToMapCoords(npc: ObjectEvent, x: number, y: numbe
     npc.heldMovementFinished = false;
     npc.movementActionId = MOVEMENT_ACTION_NONE;
   }
-  // Dette R3 : CameraObjectReset si trackedByCamera (= rarely used, hors-démo).
+  // Dette R3 : CameraObjectReset si trackedByCamera (= rarement utilisé).
   // Notre TS : reset walk progression résiduelle pour que UpdateObjectEvents
   // le dessine statique à worldX/Y. Pas dans le décomp (= geree autrement)
   // mais nécessaire pour notre tick model qui caches walk state.
