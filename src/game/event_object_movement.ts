@@ -84,6 +84,8 @@ import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
+  GetFaceDirectionAnimNum, GetMoveDirectionAnimNum, GetMoveDirectionFastAnimNum,
+  GetMoveDirectionFasterAnimNum, GetMoveDirectionFastestAnimNum,
 } from '../engine/field/direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from '../engine/field/field-globals';
 import { FlagGet, VarGet } from '../engine/script/script-vars';
@@ -123,36 +125,14 @@ export const OBJECT_EVENTS_COUNT = 16;
 const sMovementDelaysMedium = [32, 64, 96, 128];
 const gStandardDirections = [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST];
 
-// 1:1 STRICT décomp `sFaceDirectionAnimNums` (event_object_movement.c:715-725).
-// Maps direction → animNum dans sAnimTable_Standard. ANIM_STD_FACE_SOUTH=0, etc.
-// Utilisé par GetFaceDirectionAnimNum (= 1:1 décomp event_object_movement.c:4495).
-const sFaceDirectionAnimNums: Readonly<Record<number, number>> = {
-  [DIR_NONE]: 0,   // ANIM_STD_FACE_SOUTH
-  [DIR_SOUTH]: 0,  // ANIM_STD_FACE_SOUTH
-  [DIR_NORTH]: 1,  // ANIM_STD_FACE_NORTH
-  [DIR_WEST]: 2,   // ANIM_STD_FACE_WEST
-  [DIR_EAST]: 3,   // ANIM_STD_FACE_EAST
-};
-
-/** 1:1 décomp `u8 GetFaceDirectionAnimNum(u8 direction)` (event_object_movement.c:4495-4498). */
-function GetFaceDirectionAnimNum(direction: number): number {
-  return sFaceDirectionAnimNums[direction] ?? 0;
-}
-
-// 1:1 STRICT décomp `sMoveDirectionAnimNums` (event_object_movement.c:726-736).
-// Maps direction → animNum walking. ANIM_STD_GO_SOUTH=4, etc.
-const sMoveDirectionAnimNums: Readonly<Record<number, number>> = {
-  [DIR_NONE]: 4,   // ANIM_STD_GO_SOUTH
-  [DIR_SOUTH]: 4,  // ANIM_STD_GO_SOUTH
-  [DIR_NORTH]: 5,  // ANIM_STD_GO_NORTH
-  [DIR_WEST]: 6,   // ANIM_STD_GO_WEST
-  [DIR_EAST]: 7,   // ANIM_STD_GO_EAST
-};
-
-/** 1:1 décomp `u8 GetMoveDirectionAnimNum(u8 direction)`. */
-export function GetMoveDirectionAnimNum(direction: number): number {
-  return sMoveDirectionAnimNums[direction] ?? 4;
-}
+// Les anim-num getters par direction (GetFaceDirectionAnimNum, GetMoveDirectionAnimNum
+// + Fast/Faster/Fastest) + leurs tables 1:1 décomp (sFace/sMoveDirection*AnimNums,
+// event_object_movement.c:715-769) sont importés depuis `direction-coords.ts` (= fichier
+// foundation autonome, source unique → plus de dup). Appelés au module-load
+// (gMovementActionFuncs + _sDirectionAnimFuncsBySpeed) ; direction-coords n'importe rien
+// → son module est résolu AVANT le corps d'ici → pas de cycle/TDZ. Bonus 1:1 : la version
+// direction-coords couvre les diagonales NW/NE (= FACE_NORTH), là où les copies locales
+// retirées les approximaient en SOUTH via `?? 0`.
 
 // ─── 1:1 STRICT décomp tables d'anim de PÊCHE (event_object_movement.c:836-868) ───
 // Indices dans `sAnimTable_Fishing` : ANIM_TAKE_OUT_ROD_* = 0..3, ANIM_PUT_AWAY_ROD_* = 4..7,
@@ -194,47 +174,6 @@ export function ObjectEventTurn(objectEvent: ObjectEvent, direction: number): vo
   }
 }
 
-// 1:1 STRICT décomp `sMoveDirectionFastAnimNums` (event_object_movement.c) :
-// direction → animNum walk RAPIDE. ANIM_STD_GO_FAST_SOUTH=8 (cmds de 4 frames).
-const sMoveDirectionFastAnimNums: Readonly<Record<number, number>> = {
-  [DIR_NONE]: 8,
-  [DIR_SOUTH]: 8,   // ANIM_STD_GO_FAST_SOUTH
-  [DIR_NORTH]: 9,   // ANIM_STD_GO_FAST_NORTH
-  [DIR_WEST]: 10,   // ANIM_STD_GO_FAST_WEST
-  [DIR_EAST]: 11,   // ANIM_STD_GO_FAST_EAST
-};
-
-/** 1:1 décomp `u8 GetMoveDirectionFastAnimNum(u8 direction)`. Défini en LOCAL (pas
- *  d'import depuis direction-coords) car appelé au module-load par les registrations
- *  gMovementActionFuncs ci-dessous → évite un cycle ESM (TDZ). */
-function GetMoveDirectionFastAnimNum(direction: number): number {
-  return sMoveDirectionFastAnimNums[direction] ?? 8;
-}
-
-// 1:1 STRICT décomp `sMoveDirectionFasterAnimNums` (event_object_movement.c) :
-// direction → animNum walk PLUS RAPIDE. ANIM_STD_GO_FASTER_SOUTH=12 (cmds de 2 frames).
-const sMoveDirectionFasterAnimNums: Readonly<Record<number, number>> = {
-  [DIR_NONE]: 12,
-  [DIR_SOUTH]: 12,  // ANIM_STD_GO_FASTER_SOUTH
-  [DIR_NORTH]: 13,  // ANIM_STD_GO_FASTER_NORTH
-  [DIR_WEST]: 14,   // ANIM_STD_GO_FASTER_WEST
-  [DIR_EAST]: 15,   // ANIM_STD_GO_FASTER_EAST
-};
-
-/** 1:1 décomp `u8 GetMoveDirectionFasterAnimNum(u8 direction)` (local, cf. ci-dessus). */
-function GetMoveDirectionFasterAnimNum(direction: number): number {
-  return sMoveDirectionFasterAnimNums[direction] ?? 12;
-}
-
-// 1:1 STRICT décomp `sMoveDirectionFastestAnimNums` : ANIM_STD_GO_FASTEST_SOUTH=16 (cmds de 1 frame).
-const sMoveDirectionFastestAnimNums: Readonly<Record<number, number>> = {
-  [DIR_NONE]: 16,
-  [DIR_SOUTH]: 16, [DIR_NORTH]: 17, [DIR_WEST]: 18, [DIR_EAST]: 19,
-};
-/** 1:1 décomp `u8 GetMoveDirectionFastestAnimNum(u8 direction)` (local). */
-function GetMoveDirectionFastestAnimNum(direction: number): number {
-  return sMoveDirectionFastestAnimNums[direction] ?? 16;
-}
 
 /** 1:1 STRICT décomp `sDirectionAnimFuncsBySpeed[]` (movement_action_func_tables.h:605) :
  *  l'anim de pas dépend de MOVE_SPEED. ⚠️ FAST_2 (2) → Fast (PAS Faster) : c'est ce qui rendait
