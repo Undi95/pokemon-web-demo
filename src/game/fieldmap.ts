@@ -73,7 +73,7 @@ import {
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
-} from '../engine/field/metatile-behavior-helpers';
+} from './metatile_behavior';
 import {
   METATILE_General_Grass,
   METATILE_Fortree_LongGrass_Root,

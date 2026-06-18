@@ -81,6 +81,7 @@ import {
   DoShadowFieldEffect,
   OBJECT_EVENTS_COUNT,
   ELEVATION_DEFAULT,
+  IsMetatileDirectionallyImpassable,
 } from './event_object_movement';
 import {
   gFieldCamera,
@@ -172,6 +173,8 @@ import {
   MetatileBehavior_IsSurfableFishableWater,
   MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsBridgeOverWaterNoEdge,
+  MetatileBehavior_IsJumpSouth, MetatileBehavior_IsJumpNorth,
+  MetatileBehavior_IsJumpWest, MetatileBehavior_IsJumpEast,
 } from './metatile_behavior';
 import { CheckStandardWildEncounter } from './wild_encounter';
 import {
@@ -201,10 +204,6 @@ import {
   dirToCameraSpeed as _dirToCameraSpeed,
   getInputDirection as _getInputDirection,
 } from '../engine/field/direction-coords';
-import {
-  IsMetatileDirectionallyImpassable,
-  ShouldJumpLedge,
-} from '../engine/field/metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
 import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../engine/decomp-data/include/constants/game_stat-data';
 import {
@@ -1484,6 +1483,21 @@ function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
     if (getWarpKindFor(MapGridGetMetatileBehaviorAt(tx, ty)) === 'door') return;
   }
   PlaySE(SE_WALL_HIT);
+}
+
+// ─── 1:1 décomp `ShouldJumpLedge` (field_player_avatar.c:727) ───────────────
+// (Rapatrié de l'ex-`metatile-behavior-helpers.ts`, sa vraie maison décomp.)
+/** Lookup ledge (jump) direction → check function. Indexé par direction-1. */
+const sJumpFuncs: ReadonlyArray<(b: number) => boolean> = [
+  MetatileBehavior_IsJumpSouth, MetatileBehavior_IsJumpNorth,
+  MetatileBehavior_IsJumpWest, MetatileBehavior_IsJumpEast,
+];
+/** 1:1 décomp `ShouldJumpLedge` (field_player_avatar.c:727). TRUE si le tile target
+ *  = MB_JUMP_X et direction = X (= ledge drop). direction = DIR_SOUTH/NORTH/WEST/EAST. */
+function ShouldJumpLedge(targetBehavior: number, direction: number): boolean {
+  const idx = direction - 1;
+  if (idx < 0 || idx >= 4) return false;
+  return sJumpFuncs[idx](targetBehavior);
 }
 
 /** 1:1 STRICT décomp `ShouldJumpLedge(x, y, direction)` (field_player_avatar.c:727-733) :

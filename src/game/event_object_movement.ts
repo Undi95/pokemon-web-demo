@@ -77,7 +77,6 @@ import {
   GetMapBorderIdAt,
   CanCameraMoveInDirection,
 } from './fieldmap';
-import { IsMetatileDirectionallyImpassable } from '../engine/field/metatile-behavior-helpers';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from './field_camera';
 import { gPlayerAvatar, GetPlayerFacingDirection } from './field_player_avatar';
 import {
@@ -114,6 +113,8 @@ import {
   MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
   MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
   MetatileBehavior_HasRipples,
+  MetatileBehavior_IsSouthBlocked, MetatileBehavior_IsNorthBlocked,
+  MetatileBehavior_IsEastBlocked, MetatileBehavior_IsWestBlocked,
 } from './metatile_behavior';
 
 const BASE = '/decomp/em';
@@ -133,6 +134,32 @@ const gStandardDirections = [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST];
 // → son module est résolu AVANT le corps d'ici → pas de cycle/TDZ. Bonus 1:1 : la version
 // direction-coords couvre les diagonales NW/NE (= FACE_NORTH), là où les copies locales
 // retirées les approximaient en SOUTH via `?? 0`.
+
+// ─── 1:1 décomp `IsMetatileDirectionallyImpassable` (event_object_movement.c:4715) ───
+// (Rapatrié de l'ex-`metatile-behavior-helpers.ts`, sa vraie maison décomp.)
+/** 1:1 décomp `gOppositeDirectionBlockedMetatileFuncs` (event_object_movement.c:893).
+ *  Indexé par direction-1. Check si le tile COURANT bloque l'EXIT dans la direction. */
+const sOppositeDirectionBlockedFuncs: ReadonlyArray<(b: number) => boolean> = [
+  MetatileBehavior_IsSouthBlocked, MetatileBehavior_IsNorthBlocked,
+  MetatileBehavior_IsWestBlocked, MetatileBehavior_IsEastBlocked,
+];
+/** 1:1 décomp `gDirectionBlockedMetatileFuncs` (event_object_movement.c:899). Indexé par
+ *  direction-1. Check si le tile TARGET bloque l'ENTRY depuis la direction opposée. */
+const sDirectionBlockedFuncs: ReadonlyArray<(b: number) => boolean> = [
+  MetatileBehavior_IsNorthBlocked, MetatileBehavior_IsSouthBlocked,
+  MetatileBehavior_IsEastBlocked, MetatileBehavior_IsWestBlocked,
+];
+/** 1:1 décomp `IsMetatileDirectionallyImpassable` (event_object_movement.c:4715).
+ *  TRUE si (current bloque l'exit dans la direction) OU (target bloque l'entry depuis
+ *  la direction opposée). direction = DIR_SOUTH/NORTH/WEST/EAST (1..4). */
+export function IsMetatileDirectionallyImpassable(
+  currentBehavior: number, targetBehavior: number, direction: number,
+): boolean {
+  const idx = direction - 1;
+  if (idx < 0 || idx >= 4) return false;
+  return sOppositeDirectionBlockedFuncs[idx](currentBehavior)
+      || sDirectionBlockedFuncs[idx](targetBehavior);
+}
 
 // ─── 1:1 STRICT décomp tables d'anim de PÊCHE (event_object_movement.c:836-868) ───
 // Indices dans `sAnimTable_Fishing` : ANIM_TAKE_OUT_ROD_* = 0..3, ANIM_PUT_AWAY_ROD_* = 4..7,

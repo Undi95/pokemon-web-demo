@@ -3185,11 +3185,10 @@ export {
   MetatileBehavior_IsJumpSouth,
   MetatileBehavior_IsPacifidlogLog,
   MetatileBehavior_IsRunningDisallowed,
-} from '../field/metatile-behavior-helpers';
+} from '../../game/metatile_behavior';
 
-// Other metatile predicates (= 1:1 décomp `metatile_behavior.c`).
-// Hand-portés dans metatile-behavior-helpers.ts pour éviter le circular import
-// (= bridge → auto/src-all/metatile_behavior → bridge cycle).
+// Other metatile predicates (= 1:1 décomp `metatile_behavior.c`), re-exportés
+// depuis le miroir `game/metatile_behavior.ts` (source unique).
 export {
   MetatileBehavior_IsTallGrass,
   MetatileBehavior_IsLongGrass,
@@ -3204,7 +3203,7 @@ export {
   MetatileBehavior_IsFootprints,
   MetatileBehavior_HasRipples,
   MetatileBehavior_IsDeepSand,
-} from '../field/metatile-behavior-helpers';
+} from '../../game/metatile_behavior';
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 
