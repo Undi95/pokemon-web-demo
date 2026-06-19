@@ -48,6 +48,7 @@ import {
   FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall, FldEff_UseDive,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow,
+  LoadGeneralFieldEffectPalette,
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
 import { FldEff_UseRockSmash } from './fldeff_rocksmash';
@@ -167,12 +168,76 @@ export function FieldEffectStop(rt: DecompRuntime, sprite: DecompSprite, fieldEf
 // (l'opcode warn « FieldEffectStart not exposed »). Le dispatcher gère gracieusement les FLDEFF non portés.
 (globalThis as Record<string, unknown>).FieldEffectStart = FieldEffectStart;
 
+// ════════════════════════════════════════════════════════════════════════════
+//  1:1 décomp `FieldEffectScript` bytecode (field_effect.c:166-805 + data/field_effect_scripts.s)
+//  Décomp : `FieldEffectStart(id)` = `while (gFieldEffectScriptFuncs[*script](&script, &val))`,
+//  où `gFieldEffectScriptPointers[id]` est un bytecode (opcodes loadtiles/loadfadedpal/loadpal/
+//  callnative/end/loadgfx_callnative/loadtiles_callnative/loadfadedpal_callnative).
+//  Notre port : les scripts sont des tableaux de commandes (les ptrs sheet/pal/native deviennent
+//  des thunks JS). FieldEffectStart exécute le script s'il existe (effets MIGRÉS), sinon retombe
+//  sur le dispatcher if-chain (effets pas encore migrés — migration incrémentale, dual-path).
+//  `loadtiles` n'est PAS porté : nos sheets sont préchargées RÉSIDENTES (LoadSpriteSheet, ≠
+//  FieldEffectScript_LoadTiles) — déviation documentée, les tiles ne saturent pas.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 commandes `gFieldEffectScriptFuncs[]` (field_effect.c:274). `loadfadedpal`/`loadpal`
+ *  portent un thunk qui charge la palette (LoadSpritePalette[+weather], dédup) ; `callnative`
+ *  porte la fonction native FldEff_X. Le FldEff lit ensuite le slot via IndexOfSpritePaletteTag
+ *  (= 1:1 résolution du `template.paletteTag`). */
+type FieldEffectScriptCmd =
+  | { op: 'loadfadedpal'; loadPal: () => number }   // 1:1 FieldEffectScript_LoadFadedPalette (field_effect.c:781)
+  | { op: 'loadpal'; loadPal: () => number }        // 1:1 FieldEffectScript_LoadPalette (field_effect.c:789, sans weather)
+  | { op: 'callnative'; native: (rt: DecompRuntime) => number }  // 1:1 FieldEffectScript_CallNative (field_effect.c:795)
+  | { op: 'end' };                                  // 1:1 FieldEffectCmd_end (field_effect.c:734)
+
+/** 1:1 `gFieldEffectScriptPointers[]` (data/field_effect_scripts.s) — entrées MIGRÉES au bytecode.
+ *  Famille GENERAL (`field_eff_loadfadedpal_callnative GENERAL_N, FldEff_X`). Les G0/G1 sont 1:1
+ *  les scripts décomp. Les effets absents de cette table passent par le dispatcher if-chain. */
+const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>> = {
+  [FLDEFF_TALL_GRASS]:           [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_TallGrass }, { op: 'end' }],
+  [FLDEFF_LONG_GRASS]:           [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_LongGrass }, { op: 'end' }],
+  [FLDEFF_SHORT_GRASS]:          [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_ShortGrass }, { op: 'end' }],
+  [FLDEFF_RIPPLE]:               [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_Ripple }, { op: 'end' }],
+  [FLDEFF_ASH]:                  [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_Ash }, { op: 'end' }],
+  [FLDEFF_HOT_SPRINGS_WATER]:    [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_HotSpringsWater }, { op: 'end' }],
+  [FLDEFF_DUST]:                 [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_Dust }, { op: 'end' }],
+  [FLDEFF_SAND_FOOTPRINTS]:      [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_SandFootprints }, { op: 'end' }],
+  [FLDEFF_DEEP_SAND_FOOTPRINTS]: [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_DeepSandFootprints }, { op: 'end' }],
+  [FLDEFF_BIKE_TIRE_TRACKS]:     [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_BikeTireTracks }, { op: 'end' }],
+  [FLDEFF_JUMP_TALL_GRASS]:      [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_JumpTallGrass }, { op: 'end' }],
+  [FLDEFF_JUMP_LONG_GRASS]:      [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_JumpLongGrass }, { op: 'end' }],
+  [FLDEFF_JUMP_BIG_SPLASH]:      [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_JumpBigSplash }, { op: 'end' }],
+  [FLDEFF_JUMP_SMALL_SPLASH]:    [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_JumpSmallSplash }, { op: 'end' }],
+  [FLDEFF_SPLASH]:               [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_Splash }, { op: 'end' }],
+  [FLDEFF_FEET_IN_FLOWING_WATER]:[{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_FeetInFlowingWater }, { op: 'end' }],
+  [FLDEFF_SAND_PILE]:            [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_SandPile }, { op: 'end' }],
+  [FLDEFF_BUBBLES]:              [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_Bubbles }, { op: 'end' }],
+};
+
+/** 1:1 décomp boucle d'interprétation `FieldEffectStart` (field_effect.c:166) :
+ *  `while (gFieldEffectScriptFuncs[*script](&script, &val)); return val;`. */
+function _runFieldEffectScript(rt: DecompRuntime, script: FieldEffectScriptCmd[]): number {
+  let val = 0;
+  for (const cmd of script) {
+    if (cmd.op === 'end') break;                       // FieldEffectCmd_end → FALSE (sort de la boucle)
+    else if (cmd.op === 'loadfadedpal') cmd.loadPal(); // FieldEffectScript_LoadFadedPalette
+    else if (cmd.op === 'loadpal') cmd.loadPal();      // FieldEffectScript_LoadPalette
+    else if (cmd.op === 'callnative') val = cmd.native(rt); // FieldEffectScript_CallNative
+  }
+  return val;
+}
+
 export function FieldEffectStart(id: number): number {
   const rt = _activeRuntime;
   if (!rt) {
     console.warn(`[FieldEffectStart] no active runtime — effect id=${id} skipped`);
     return 64;  // MAX_SPRITES sentinel
   }
+
+  // 1:1 décomp : exécute le bytecode `gFieldEffectScriptPointers[id]` s'il existe (effets migrés).
+  // Sinon, dispatcher if-chain ci-dessous (effets pas encore migrés — dual-path incrémental).
+  const script = gFieldEffectScriptPointers[id];
+  if (script) return _runFieldEffectScript(rt, script);
 
   // ─── Emote icons (= EXCLAMATION_MARK / QUESTION_MARK / HEART) ──────────────
   // 1:1 décomp trainer_see.c : FldEff_*Icon (migré dans game/trainer_see.ts, vrai callback
