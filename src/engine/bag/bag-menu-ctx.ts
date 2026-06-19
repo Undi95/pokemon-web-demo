@@ -750,9 +750,15 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const pa = _playerAvatarMod;
         // 1:1 décomp `sItemUseOnFieldCB = ItemUseOnFieldCB_Rod; SetUpItemUseOnFieldCallback` (item_use.c:271).
         // ItemUseOnFieldCB_Rod (item_use.c:280) : StartFishing(secondaryId) puis DestroyTask.
+        // ⚠️ M3 keystone : précharge le gfx FISHING (canne) AVANT StartFishing — sinon
+        // SetPlayerAvatarFishing (Fishing_GetRodOut) swappe vers un gfx non chargé → le perso
+        // reste en gfx NORMAL (pas de canne en main) ET l'anim « no-catch » tombe sur une anim de
+        // marche qui BOUCLE → Fishing_PutRodAway attend `animEnded` à jamais → tâche zombie + jitter
+        // x2. (Même nécessité que le bike + les dev-hooks __StartFishing/__SetPlayerAvatarFishing.)
         setItemUseOnFieldCB((t) => {
           getRuntime()?.DestroyTask(t.taskId);
-          pa.StartFishing(rod);
+          Promise.resolve(pa.PreloadObjectEventGraphics(pa.GetPlayerAvatarGraphicsIdByStateId(pa.PLAYER_AVATAR_STATE_FISHING)))
+            .then(() => { pa.StartFishing(rod); });
         });
         SetUpItemUseOnFieldCallback(task);
         return;
