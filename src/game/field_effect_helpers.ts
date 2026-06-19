@@ -2118,20 +2118,6 @@ const GENERAL_0_PAL = '/decomp/em/field_effects/general_0.pal';
 const TAG_SAND_PILE_GFX = 'FIELD_EFFECT_SAND_PILE_GFX';
 const TAG_GENERAL_0_PAL = 'FLDEFF_PAL_TAG_GENERAL_0';
 
-/** Réserve les DEUX palettes générales de field effect (`gSpritePalette_GeneralFieldEffect0/1`,
- *  field_effect_objects.h:1-2) dans `[gReservedSpritePaletteCount, 16)`, AVANT les autres
- *  préchargements de field effects.
- *
- *  Pourquoi : en décomp, `[12,16)` (= au-delà des 12 slots object-event réservés, PALSLOT)
- *  ne contient JAMAIS que GENERAL_0, GENERAL_1 et la palette météo — tous les autres effets
- *  prennent un slot FIXE (surf blob → 0, sparkle → 5, reflets → gReflectionEffectPaletteMap)
- *  ou rien (TAG_NONE), et la décomp charge GENERAL_0/1 à la volée (`field_eff_loadfadedpal`).
- *  Notre port précharge ~10 tags DISTINCTS à l'init pour 4 slots → famine : GENERAL_0 (poussière
- *  FLDEFF_DUST, splash, feet-in-flowing-water) était demandé APRÈS saturation de `[12,16)` →
- *  `LoadSpritePalette` renvoyait `0xFF` → sprite `paletteBank=255` → rendu NOIR.
- *  En chargeant GENERAL_0 et GENERAL_1 en premier, ils obtiennent un slot résident ; les
- *  préchargements suivants qui re-demandent ces tags récupèrent le même slot (dédup par tag).
- *  Idempotent (LoadSpritePalette dédup par tag). */
 /** Données palette GENERAL_0/1 mises en CACHE au préchargement. AUCUN slot pris à l'init :
  *  `LoadGeneralFieldEffectPalette` les charge À LA VOLÉE quand un effet GENERAL se déclenche
  *  (= 1:1 décomp `field_eff_loadfadedpal`) + `FieldEffectFreePaletteIfUnused` les LIBÈRE au stop
@@ -2147,18 +2133,25 @@ export async function preloadGeneralFieldEffectPalettes(_rt: DecompRuntime): Pro
   try { if (!_general1PalData) _general1PalData = await loadGbaPal(GENERAL_1_PAL); } catch { /* idem */ }
 }
 
-/** 1:1 décomp `FieldEffectScript_LoadFadedPalette(&gSpritePalette_GeneralFieldEffectN)` (field_effect.c:781,
- *  appelé par `field_eff_loadfadedpal_callnative GENERAL_N, FldEff_X`) : LoadSpritePalette (alloue/dédup
- *  un slot dynamique [12,16)) + UpdateSpritePaletteWithWeather. Appelé par le dispatcher FieldEffectStart
- *  AVANT le FldEff (callnative). Le FldEff lit ensuite le slot via IndexOfSpritePaletteTag(tag) (= 1:1
- *  résolution du `template.paletteTag`). Retourne le slot (0xFF si [12,16) saturée — edge décomp-fidèle). */
-export function LoadGeneralFieldEffectPalette(which: 0 | 1): number {
-  const data = which === 0 ? _general0PalData : _general1PalData;
-  const tag = which === 0 ? TAG_GENERAL_0_PAL : TAG_GENERAL_1_PAL;
+/** 1:1 décomp `FieldEffectScript_LoadFadedPalette` (field_effect.c:781, appelé par
+ *  `field_eff_loadfadedpal[_callnative]`) : LoadSpritePalette (alloue/dédup un slot dynamique
+ *  [12,16)) + UpdateSpritePaletteWithWeather. Le FldEff l'appelle au déclenchement (= loadfadedpal
+ *  juste avant le callnative) ; FieldEffectStop libère le slot au stop. Retourne le slot (0xFF si
+ *  [12,16) saturée — edge décomp-fidèle, rare). C'est CE mécanisme qui rend la zone future-proof. */
+export function FieldEffectScript_LoadFadedPalette(data: Uint16Array | null, tag: string | number): number {
   if (!data) return 0xFF;
   const slot = LoadSpritePalette({ data, tag });
   if (slot !== 0xFF) UpdateSpritePaletteWithWeather(slot);
   return slot;
+}
+
+/** loadfadedpal des palettes GENERAL_0/1 (= la majorité des field effects : herbe/poussière/
+ *  splash/ripple/ash/empreintes/sandpile/bubbles/hotsprings). 1:1 `field_eff_loadfadedpal GENERAL_N`. */
+export function LoadGeneralFieldEffectPalette(which: 0 | 1): number {
+  return FieldEffectScript_LoadFadedPalette(
+    which === 0 ? _general0PalData : _general1PalData,
+    which === 0 ? TAG_GENERAL_0_PAL : TAG_GENERAL_1_PAL,
+  );
 }
 
 /** 1:1 décomp `sAnim_SandPile` (field_effect_objects.h:793) : FRAME(0,4)(1,4)(2,4) END.
@@ -2423,11 +2416,13 @@ const sAnims_SmallSparkle: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _sparkleTileStart = -1;
-let _sparklePalSlot = -1;
 let _sparkleInit = false;
 let _sparkleInitPromise: Promise<void> | null = null;
 let _smallSparkleTileStart = -1;
-let _smallSparklePalSlot = -1;
+/** Palettes sparkle CACHÉES au préchargement → chargées on-demand (FieldEffectScript_LoadFadedPalette)
+ *  dans un slot dynamique [12,16) au déclenchement + libérées au stop (zone dégagée par GENERAL on-demand). */
+let _sparklePalData: Uint16Array | null = null;
+let _smallSparklePalData: Uint16Array | null = null;
 
 /** sparkle.png = 96×16 = 12×2 tiles row-major → 1D OBJ frame-major (6 frames 16×16, 4 tiles/frame :
  *  row0 2F,2F+1 ; row1 12+2F,12+2F+1). Même schéma que pngTo1dObjLayoutRipple, sheet 12 de large. */
@@ -2472,14 +2467,15 @@ export function preloadSparkleEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(SPARKLE_PNG, 4);
     const reordered = pngTo1dObjLayoutSparkle(png.charData);
     _sparkleTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SPARKLE_GFX });
-    _sparklePalSlot = LoadSpritePalette({ data: png.palette, tag: TAG_SPARKLE_PAL });
+    // CACHE la palette (load-on-demand dans FldEff via FieldEffectScript_LoadFadedPalette + free au stop).
+    _sparklePalData = png.palette as Uint16Array;
     const smallPng = await loadIndexedPngStrict(SMALL_SPARKLE_PNG, 4);
     const smallReordered = pngTo1dObjLayoutSmallSparkle(smallPng.charData);
     _smallSparkleTileStart = LoadSpriteSheet({ data: smallReordered, size: smallReordered.length, tag: TAG_SMALL_SPARKLE_GFX });
     let smallPal: Uint16Array;
     try { smallPal = await loadGbaPal(SMALL_SPARKLE_PAL); }
     catch { smallPal = smallPng.palette as Uint16Array; }
-    _smallSparklePalSlot = LoadSpritePalette({ data: smallPal, tag: TAG_SMALL_SPARKLE_PAL });
+    _smallSparklePalData = smallPal;
     _sparkleInit = true;
   })();
   return _sparkleInitPromise;
@@ -2492,7 +2488,9 @@ export function FldEff_BerryTreeGrowthSparkle(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 4);
   const result = rt.CreateSpriteAtOam({
     tileId: _sparkleTileStart,
-    paletteBank: _sparklePalSlot,
+    // Load-on-demand (palette propre du sparkle) + free au stop. Décomp = paletteNum 5 (NPC_4
+    // partagé) ; notre asset a sa palette → on la charge dans un slot dynamique (zone dégagée).
+    paletteBank: FieldEffectScript_LoadFadedPalette(_sparklePalData, TAG_SPARKLE_PAL),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3, // 1:1 sprite->oam.priority = args[3]
@@ -2523,7 +2521,8 @@ export function FldEff_Sparkle(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _smallSparkleTileStart,
-    paletteBank: _smallSparklePalSlot,
+    // 1:1 décomp `field_eff_loadfadedpal gSpritePalette_SmallSparkle` (load-on-demand + free au stop).
+    paletteBank: FieldEffectScript_LoadFadedPalette(_smallSparklePalData, TAG_SMALL_SPARKLE_PAL),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[2] & 3) as 0 | 1 | 2 | 3, // 1:1 oam.priority = args[2]
@@ -2613,7 +2612,9 @@ const sAnims_Disguise: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 const _disguiseTileStart: number[] = [-1, -1, -1];
-const _disguisePalSlot: number[] = [-1, -1, -1];
+/** Palettes disguise CACHÉES → load-on-demand (FieldEffectScript_LoadFadedPalette) + free au stop.
+ *  Décomp = paletteNum 4/3/2 (NPC slots partagés) ; notre asset a sa palette → slot dynamique. */
+const _disguisePalData: (Uint16Array | null)[] = [null, null, null];
 let _disguiseInit = false;
 let _disguiseInitPromise: Promise<void> | null = null;
 
@@ -2646,7 +2647,8 @@ export function preloadDisguiseEffects(_rt: DecompRuntime): Promise<void> {
       const png = await loadIndexedPngStrict(c.png, 4);
       const reordered = pngTo1dObjLayoutDisguise(png.charData);
       _disguiseTileStart[i] = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: c.gfxTag });
-      _disguisePalSlot[i] = LoadSpritePalette({ data: png.palette as Uint16Array, tag: c.palTag });
+      // CACHE la palette (load-on-demand dans ShowDisguiseFieldEffect + free au stop).
+      _disguisePalData[i] = png.palette as Uint16Array;
     }
     _disguiseInit = true;
   })();
@@ -2666,7 +2668,7 @@ function ShowDisguiseFieldEffect(rt: DecompRuntime, fldEff: number): number {
   if (notFound) { FieldEffectActiveListRemove(fldEff); return MAX_SPRITES; }
   const result = rt.CreateSpriteAtOam({
     tileId: _disguiseTileStart[cfgIdx],
-    paletteBank: _disguisePalSlot[cfgIdx],
+    paletteBank: FieldEffectScript_LoadFadedPalette(_disguisePalData[cfgIdx], DISGUISE_CFGS[cfgIdx].palTag),
     x: 0, y: 0,
     shape: 2, size: 2,  // 16×32 (gObjectEventBaseOam_16x32)
     priority: 2, paletteMode: 0, affineMode: 0,
