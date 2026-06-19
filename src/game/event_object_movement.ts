@@ -4781,19 +4781,34 @@ const sAcroWheeliePedalDirectionAnimNums: readonly number[] = [
 ];
 void ANIM_BUNNY_HOP_BACK_WHEEL;
 
-/** 1:1 décomp `MovementAction_NurseJoyBowDown_Step0` :
- *    StartSpriteAnimInDirection(obj, sprite, DIR_SOUTH, ANIM_NURSE_BOW);
- *    return FALSE; */
-function _MovementAction_NurseJoyBowDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  SetObjectEventDirection(npc, DIR_SOUTH);
-  if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
-    if (sprite && sprite.anims) {
-      // 1:1 décomp StartSpriteAnim(sprite, ANIM_NURSE_BOW).
-      StartSpriteAnim(sprite as never, ANIM_NURSE_BOW);
-    }
+// 1:1 STRICT décomp `gMovementActionFuncs_NurseJoyBowDown[]` (movement_action_func_tables.h:1117) :
+//   { MovementAction_NurseJoyBowDown_Step0, MovementAction_WaitSpriteAnim, MovementAction_PauseSpriteAnim }.
+// ⚠️ AVANT : un SEUL func (Step0) re-démarrait l'anim CHAQUE frame sans dispatcher par actionStep →
+// `StartSpriteAnimInDirection` du décomp avance `sActionFuncId=1` (→ WaitSpriteAnim), notre mono-step ne
+// l'a JAMAIS fait → held jamais fini → `waitmovement 0` (EventScript_PkmnCenterNurse_ReturnPkmn, le SALUT
+// de l'infirmière après le soin) bloqué → GEL du jeu en sortie de Centre Pokémon. MÊME bug + MÊME fix que
+// CUT_TREE / ROCK_SMASH_BREAK. De plus le sprite nurse a son anim PAUSÉE par défaut (NPC stationnaire) →
+// poser `animPaused = false` au Step0 (sinon l'anim ne tick pas → animEnded jamais → WaitSpriteAnim boucle).
+//   Step0 : StartSpriteAnimInDirection(DIR_SOUTH, ANIM_NURSE_BOW) + animPaused=false ; actionStep=1.
+//   Step1 : MovementAction_WaitSpriteAnim (à animEnded → actionStep=2).
+//   Step2 : MovementAction_PauseSpriteAnim (animPaused=TRUE) → DONE.
+function _MovementAction_NurseJoyBowDown(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  if (npc.actionStep === 0) {
+    // 1:1 décomp StartSpriteAnimInDirection(obj, sprite, DIR_SOUTH, ANIM_NURSE_BOW) (+ sActionFuncId=1).
+    SetObjectEventDirection(npc, DIR_SOUTH);
+    if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, ANIM_NURSE_BOW); sprite.animPaused = false; }
+    npc.actionStep = 1;
+    return false;
   }
-  return false;
+  if (npc.actionStep === 1) {
+    // 1:1 décomp MovementAction_WaitSpriteAnim : attend animEnded.
+    if (!sprite || !sprite.anims || sprite.animEnded) npc.actionStep = 2;
+    return false;
+  }
+  // 1:1 décomp MovementAction_PauseSpriteAnim : pause l'anim sur la dernière frame → held fini.
+  if (sprite) sprite.animPaused = true;
+  return true;
 }
 
 // 1:1 STRICT décomp `gMovementActionFuncs_RockSmashBreak[]` (Step0/1/2) — le rocher se brise/disparaît.
@@ -5978,7 +5993,7 @@ gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_HEART]           = _MovementAction_Em
 // Tous utilisent StartSpriteAnim avec animNum dédié (= ANIM_NURSE_BOW/REMOVE_OBSTACLE).
 // Dette R3 : SetAndStartSpriteAnim sub-anim frame param skipped (= ramène anim
 // à frame 0, ce qu'on fait via StartSpriteAnim normal).
-gMovementActionFuncs[MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN] = _MovementAction_NurseJoyBowDown_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN] = _MovementAction_NurseJoyBowDown;
 gMovementActionFuncs[MOVEMENT_ACTION_ROCK_SMASH_BREAK]   = _MovementAction_RockSmashBreak;
 gMovementActionFuncs[MOVEMENT_ACTION_CUT_TREE]           = _MovementAction_CutTree;
 // H1.15 : JUMP_X (66-69) + JUMP_2_X (12-15) + JUMP_IN_PLACE_X (70-73) 1:1 strict.
