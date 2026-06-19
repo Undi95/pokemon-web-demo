@@ -207,6 +207,19 @@ function applyNoIntroPreset(): void {
   // Rock Smash=BADGE03, Cut=BADGE01, Fly=BADGE03, Flash=BADGE01) pour pouvoir tester
   // les field moves en jeu. 1:1 noms décomp (flags.h FLAG_BADGE0N_GET).
   for (let n = 1; n <= 8; n++) FlagSet(`FLAG_BADGE0${n}_GET`);
+  // ⚠️ DEBUG ONLY : marque toutes les villes comme VISITÉES (FLAG_VISITED_*). Cohérent avec
+  // l'état 8-badges fin de jeu (un joueur à 8 badges a parcouru tout Hoenn). En jeu réel ces
+  // flags se posent à l'entrée de chaque ville (OnTransition pour Oldale/Littleroot… ou un
+  // coord_event trigger VAR_TEMP_1==0 pour Mossdeep — VÉRIFIÉ en jeu : marcher sur la tuile
+  // trigger pose le flag). Le preset spawn DIRECT (sans transition) ne les déclenche pas → on
+  // les pose ici pour que la carte région (Vol) propose des destinations CITY_CANFLY 1:1
+  // (region_map.c GetMapsecType : FlagGet(FLAG_VISITED_X) → CANFLY/CANTFLY).
+  for (const city of [
+    'LITTLEROOT_TOWN', 'OLDALE_TOWN', 'DEWFORD_TOWN', 'LAVARIDGE_TOWN', 'FALLARBOR_TOWN',
+    'VERDANTURF_TOWN', 'PACIFIDLOG_TOWN', 'PETALBURG_CITY', 'SLATEPORT_CITY', 'MAUVILLE_CITY',
+    'RUSTBORO_CITY', 'FORTREE_CITY', 'LILYCOVE_CITY', 'MOSSDEEP_CITY', 'SOOTOPOLIS_CITY',
+    'EVER_GRANDE_CITY',
+  ]) FlagSet(`FLAG_VISITED_${city}`);
   // Vars post-intro.
   // ⚠️ HOTFIX 2026-05-09 : était à 6, ce qui fait que walking dans
   // une maison fire le coord trigger `PetalburgGymReport` (= map_script_2
