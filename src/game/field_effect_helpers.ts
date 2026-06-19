@@ -1018,7 +1018,6 @@ export function UpdateFootprintsTireTracksFieldEffect(sprite: DecompSprite, rt: 
 
 const SURF_BLOB_PNG = '/decomp/em/field_effects/surf_blob.png';
 const TAG_SURF_BLOB_GFX = 'FIELD_EFFECT_SURF_BLOB_GFX';
-const TAG_SURF_BLOB_PAL = 'FIELD_EFFECT_SURF_BLOB_PAL';
 const SURF_BLOB_NUM_FRAMES = 3;
 const SURF_BLOB_TILES_PER_FRAME = 16; // 32×32 = 4×4 tiles
 const SURF_BLOB_PNG_W_TILES = 12;     // 96px
@@ -1035,7 +1034,6 @@ const sAnims_SurfBlob: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _surfBlobTileStart = -1;
-let _surfBlobPalSlot = -1;
 let _surfBlobInit = false;
 let _surfBlobInitPromise: Promise<void> | null = null;
 
@@ -1064,8 +1062,10 @@ export function preloadSurfBlobEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(SURF_BLOB_PNG, 4);
     const reordered = pngTo1dObjLayoutSurfBlob(png.charData);
     _surfBlobTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SURF_BLOB_GFX });
-    // Adaptation : palette embarquée du PNG dans un slot dédié (décomp oam.paletteNum=0 partagé).
-    _surfBlobPalSlot = LoadSpritePalette({ data: png.palette as Uint16Array, tag: TAG_SURF_BLOB_PAL });
+    // 1:1 décomp : on NE charge PAS de palette. Le blob utilise paletteNum=0 (PALSLOT_PLAYER) =
+    // la palette joueur déjà résidente au slot 0. La palette embarquée du surf_blob.png est
+    // d'ailleurs == brendan.pal (vérifié 16/16). Allouer un tag dynamique dédié saturait [12,16)
+    // (météo×2 + GENERAL_0 + GENERAL_1) → 0xFF → blob NOIR. Cf. [[diag-glitches-2026-06-18]].
     _surfBlobInit = true;
   })();
   return _surfBlobInitPromise;
@@ -1078,7 +1078,10 @@ export function FldEff_SurfBlob(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _surfBlobTileStart,
-    paletteBank: _surfBlobPalSlot,
+    // 1:1 décomp `sprite->oam.paletteNum = 0` (FldEff_SurfBlob, field_effect_helpers.c:1009) :
+    // PALSLOT_PLAYER. Le blob PARTAGE la palette joueur (slot 0, == brendan.pal). Zéro slot
+    // dynamique consommé (≠ ancien tag dynamique qui saturait [12,16) → noir).
+    paletteBank: 0,
     x: world.x, y: world.y,
     shape: 0, size: 2,  // 32×32
     priority: 2, paletteMode: 0, affineMode: 0,
