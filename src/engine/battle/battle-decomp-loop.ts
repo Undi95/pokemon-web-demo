@@ -515,29 +515,61 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       if (restored) return;
       restored = true;
       // 1:1 decomp CB2_EndWildBattle/CB2_EndTrainerBattle (battle_setup.c:614/1327) :
-      // defaite (B_OUTCOME_LOST=2) ou nul (DREW=3) -> CB2_WhiteOut (overworld.c) :
-      // money/2 + HealPlayerParty + warp lastHealLocation (EventScript_WhiteOut).
-      // Port net-effect (C4, goal tranche 3) : money/2 + heal directs (filets) puis
-      // RunScriptImmediately(EventScript_WhiteOut) — le script bytecode fait le
-      // message + respawn warp si ses opcodes/specials sont disponibles.
+      // defaite (B_OUTCOME_LOST=2) ou nul (DREW=3) -> CB2_WhiteOut (overworld.c) ->
+      // DoWhiteOut (overworld.c:358) : RunScriptImmediately(EventScript_WhiteOut) +
+      // SetMoney(money/2) + HealPlayerParty() + Overworld_ResetStateAfterWhiteOut() +
+      // SetWarpDestinationToLastHealLocation() + WarpIntoMap().
+      // Port : money/2 + heal directs ici ; le WARP de respawn (vers le dernier Centre)
+      // est pose comme pending warp dans le .then() du restore (= MainCB2_Overworld le
+      // consomme au frame suivant). isWhiteout gate ce warp (PAS sur victoire).
+      let isWhiteout = false;
       try {
         const oc = (globalThis as { __battleState?: { getBattleOutcome?: () => number } }).__battleState?.getBattleOutcome?.() ?? 0;
-        if (oc === 2 || oc === 3) {
+        isWhiteout = (oc === 2 || oc === 3);
+        if (isWhiteout) {
           const sb1 = (globalThis as Record<string, unknown>).gSaveBlock1 as { money?: number } | undefined;
           if (sb1 && typeof sb1.money === 'number') sb1.money = Math.floor(sb1.money / 2);
-          const sp = (globalThis as Record<string, unknown>).__specials as { HealPlayerParty?: () => void } | undefined;
-          sp?.HealPlayerParty?.();
+          // 1:1 décomp `HealPlayerParty()` : soigne l'équipe (PV/PP/statuts). ⚠️ FIX : l'ancien
+          // appel `__specials.HealPlayerParty()` était un NO-OP (__specials jamais exposé sur
+          // globalThis) → l'équipe N'ÉTAIT PAS soignée au whiteout. invokeSpecial dispatch le
+          // handler 1:1 enregistré (le MÊME que `special HealPlayerParty` de la nurse).
+          void import('../script/script-opcodes-special').then((m) => {
+            try { m.invokeSpecial('HealPlayerParty'); } catch (e) { console.warn('[whiteout] heal KO', e); }
+          });
           void import('../script/script-runtime').then((m) => {
-            try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[whiteout] script KO (dette warp)', e); }
+            // EventScript_WhiteOut (event_scripts.s:584) = reset Elite Four + Mr Briney
+            // (PAS le warp ; le warp est fait en C par DoWhiteOut, porté ci-dessous).
+            try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[whiteout] script reset KO', e); }
           });
         }
-      } catch (e) { console.warn('[whiteout] C4 net-effect KO', e); }
+      } catch (e) { console.warn('[whiteout] net-effect KO', e); }
       const restore = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
       if (typeof restore === 'function') {
         // Reprend la BGM OW (sauvée par _playBattleBGM) après le re-init du field
         // (= 1:1 décomp CB2_ReturnToField → Overworld_PlaySpecialMapMusic).
         restore()
           .then(() => {
+            // 1:1 décomp `DoWhiteOut` (overworld.c:364-365) : SetWarpDestinationToLastHealLocation()
+            // + WarpIntoMap() → warp vers le DERNIER CENTRE (respawnLocation, posé par setrespawn à
+            // l'entrée du Centre). Le port résout respawnLocation (string) → heal location (map,x,y)
+            // via la table heal_location → pending warp, consommé par MainCB2_Overworld au frame
+            // suivant (= même mécanisme que Téléport). Sans ça : perdre → soigné mais reste sur place.
+            if (isWhiteout) {
+              void Promise.all([
+                import('../../game/heal_location'),
+                import('../field/warp-system'),
+                import('../save/save-block-state'),
+              ]).then(([hl, ws, sb]) => {
+                const respawn = (sb.gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation;
+                const heal = hl.GetHealLocationByName(respawn);
+                if (heal) {
+                  ws.setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+                  console.log(`[whiteout] respawn warp → ${heal.map} (${heal.x},${heal.y})`);
+                } else {
+                  console.warn('[whiteout] respawnLocation non résolue:', respawn);
+                }
+              });
+            }
             // 1:1 décomp `FieldCB_ReturnToFieldNoScriptCheckMusic` (field_screen_effect.c:463),
             // lancé par `CB2_EndWildBattle` (battle_setup.c:614) via gFieldCallback →
             // `RunFieldCallback` au case 2 de `ReturnToFieldLocal` (overworld.c) :
