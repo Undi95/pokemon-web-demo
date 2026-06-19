@@ -48,6 +48,7 @@ import {
   FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall, FldEff_UseDive,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow, FldEff_PokecenterHeal,
+  FldEff_FieldMoveShowMon, FldEff_FieldMoveShowMonInit,
   LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette, LoadPokeballGlowFieldEffectPalette,
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
@@ -109,6 +110,8 @@ export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
 export const FLDEFF_SPARKLE                    = 54;
 export const FLDEFF_POKECENTER_HEAL            = 25;
+export const FLDEFF_FIELD_MOVE_SHOW_MON        = 6;
+export const FLDEFF_FIELD_MOVE_SHOW_MON_INIT   = 59;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -244,6 +247,13 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   [FLDEFF_USE_TELEPORT]:          [{ op: 'callnative', native: FldEff_UseTeleport }, { op: 'end' }],
   [FLDEFF_USE_DIG]:               [{ op: 'callnative', native: FldEff_UseDig }, { op: 'end' }],
   [FLDEFF_SHADOW]:                [{ op: 'callnative', native: FldEff_Shadow }, { op: 'end' }],
+
+  // ── Field Move Show Mon (field_effect.c:2570/2584) : anim PARTAGÉE des CS (le mon apparaît +
+  //    cri). 1:1 `gFieldEffectScript_FieldMoveShowMon` / `…Init` (field_effect_scripts.s:100/314)
+  //    = `field_eff_callnative` seul. INIT lit l'équipe puis lance SHOW_MON. Débloque le mon-show
+  //    de Surf/Cut/Fly/Strength/Waterfall/Dive (qui attendaient cet effet dans la liste active). ──
+  [FLDEFF_FIELD_MOVE_SHOW_MON]:      [{ op: 'callnative', native: FldEff_FieldMoveShowMon }, { op: 'end' }],
+  [FLDEFF_FIELD_MOVE_SHOW_MON_INIT]: [{ op: 'callnative', native: FldEff_FieldMoveShowMonInit }, { op: 'end' }],
 
   // ── Effets « morts » (0 caller en Émeraude) + WaterSurfacing (plongée) : `loadfadedpal_callnative GENERAL_N`. ──
   [FLDEFF_UNUSED_GRASS]:          [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_UnusedGrass }, { op: 'end' }],

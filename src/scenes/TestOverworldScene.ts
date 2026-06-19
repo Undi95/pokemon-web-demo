@@ -193,7 +193,7 @@ import { preloadAshEffect } from '../game/field_effect_helpers';
 import { preloadSurfBlobEffect } from '../game/field_effect_helpers';
 import { preloadDisguiseEffects } from '../game/field_effect_helpers';
 import { preloadShadowEffect } from '../game/field_effect_helpers';
-import { preloadPokecenterHealEffect } from '../game/field_effect_helpers';
+import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../game/field_effect_helpers';
 import { PlaySE } from '../engine/system/decomp-globals';
 import {
   SE_EXIT,
@@ -1249,6 +1249,10 @@ export class TestOverworldScene extends Phaser.Scene {
     // game/field_effect_helpers.ts). Déclenché par `dofieldeffect FLDEFF_POKECENTER_HEAL` du
     // script nurse → débloque le soin (waitfieldeffect ne gèle plus).
     await preloadPokecenterHealEffect(this.rt);
+    // Field Move Show Mon (anim partagée des CS : bannière de stries + le mon glisse + cri) :
+    // assets streaks OUTDOORS seuls. Déclenché par `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)`
+    // depuis Surf/Cut/Fly/Strength/Waterfall/Dive (ces effets l'attendaient dans la liste active).
+    await preloadFieldMoveShowMonEffect(this.rt);
     InitFieldMessageBox();
     ScriptContext_Init();
 

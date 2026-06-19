@@ -52,10 +52,12 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
-import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../engine/system/sprite';
+import { OBJ_PLTT_ID, BG_PLTT_ID,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
-import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
@@ -80,8 +82,13 @@ import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/sc
 import { FieldEffectActiveListContains } from '../engine/field/field-effect-active-list';
 import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../engine/system/decomp-bridge';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
-  PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite } from '../engine/system/decomp-globals';
-import { CalculatePlayerPartyCount } from '../engine/battle/party-storage';
+  PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
+  LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from '../engine/system/decomp-globals';
+import { CalculatePlayerPartyCount, gPlayerParty, GetMonData,
+  MON_DATA_SPECIES, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from '../engine/battle/party-storage';
+import { GetCurrentMapType, IsMapTypeOutdoors } from '../engine/field/warp-system';
+import { reverseDecompConstant } from '../engine/system/decomp-constants';
+import { InitTextBoxGfxAndPrinters } from './menu';
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from './field_camera';
@@ -1421,6 +1428,374 @@ export function FldEff_UseDive(rt: DecompRuntime): number {
     Task_UseDive(task);
   }
   return 0;  // FALSE
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  1:1 STRICT décomp `field_effect.c` /* Field Move Show Mon */ (field_effect.c:2551-2972)
+//  L'anim PARTAGÉE de TOUTES les CS/field moves : une BANNIÈRE de stries apparaît, le Pokémon
+//  GLISSE depuis la droite + pousse son CRI, patiente ~30 frames, puis glisse vers la gauche ;
+//  la bannière se referme et la CS s'enchaîne. Déclenchée par
+//  `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)` (Surf/Cut/Fly/Strength/Waterfall/Dive).
+//  Tant que l'effet n'était pas porté, `FieldEffectActiveListContains(SHOW_MON)` restait false →
+//  les CS enchaînaient SANS montrer le mon (= le « no-op » historique de surf/waterfall/dive).
+//
+//  Deux variantes (field_effect.c:2566) : OUTDOORS (fond noir, stries blanches épaisses, fenêtre
+//  qui s'étire vertical+horizontal depuis le centre) et INDOORS (fond bleu, stries fines, slide).
+//  CE COMMIT = OUTDOORS (le cas commun : Surf/Fly/Waterfall/Dive sont en extérieur). L'INDOORS
+//  (Task_FieldMoveShowMonIndoors, masquage WIN1 + slide tilemap) = commit suivant ; en attendant
+//  FldEff_FieldMoveShowMon route les maps intérieures vers la task OUTDOORS (mon+cri OK, pas de
+//  hang ; seule la bannière diffère — déviation TEMPORAIRE documentée, levée au commit indoors).
+//
+//  ── BANNIÈRE = registres WINDOW + BG0 (1:1) ──
+//  Les stries vivent sur BG0 (= couche UI/dialogue de l'OW : charBase 2, mapBase 31), révélées
+//  UNIQUEMENT à l'intérieur de WIN0 (WININ=tous BGs+OBJ ; WINOUT=BG1/2/3+OBJ SANS BG0 → la map
+//  reste visible autour). La fenêtre s'agrandit pas à pas (CreateBanner) puis rétrécit
+//  (ShrinkBanner). BG0HOFS décrémenté chaque frame → les stries défilent. Le port a une VRAM
+//  unifiée (`bg(0).vram`/`tilemap` = vues sur charBase/mapBase) + un SetGpuReg complet
+//  (WIN0H/V/WININ/WINOUT/BG0HOFS) → on réplique le CpuCopy16/CpuFill32 + les écritures registre.
+//
+//  ── ADAPTATIONS PLATEFORME (documentées, pas des approximations) ──
+//   - Le décomp swappe `gMain.vblankCallback` pour ré-appliquer les registres WIN/BG à CHAQUE
+//     VBlank. Notre boucle n'a pas ce timing HW → on PLIE l'application registre dans le tick de
+//     la task (après la func d'état) : équivalent (le compositor lit l'état registre une fois/
+//     frame, après le tick). data[13]/[14] (sauvegarde vblankCB du décomp) inutilisés.
+//   - WIN0 n'est PAS activé par défaut dans l'OW → on l'active (windows.win0.enabled=true) en
+//     Init + on le RESTAURE (état antérieur) à RestoreBg (le décomp suppose l'état HW). SANS la
+//     restauration, une fenêtre pleine + WININ restauré masquerait des layers (flash noir).
+//   - mon-pic : `CreateMonSprite_FieldMove` charge le front pic en ASYNC (PNG pré-extrait ≠ ROM
+//     sync). On crée un sprite INVISIBLE immédiatement (la task a un id valide) + on le peuple au
+//     chargement (repoint tile/palette + visible + data[8]=picLoaded). L'état CreateBanner attend
+//     `picLoaded` avant d'assigner le slide → la bannière atteint sa pleine taille et PATIENTE le
+//     temps du load (déviation minime, sync ROM → async asset).
+//   - PlayCry : le décomp `PlayCry_Normal` ducke le BGM (m4aMPlayVolumeControl) = moteur son
+//     (qu'on ne modifie pas) → on appelle `PlayCryInternal` (la lecture du cri), pas le ducking.
+// ════════════════════════════════════════════════════════════════════════════
+
+const FIELD_MOVE_STREAKS_OUTDOORS_PNG = '/decomp/em/field_effects/field_move_streaks.png';
+const FIELD_MOVE_STREAKS_OUTDOORS_BIN = '/decomp/em/field_effects/field_move_streaks.bin';
+const TAG_FIELD_MOVE_MON_GFX = 'FLDEFF_FIELD_MOVE_MON_GFX';
+const TAG_FIELD_MOVE_MON_PAL = 'FLDEFF_FIELD_MOVE_MON_PAL';
+
+// 1:1 dimensions écran (include/gba/defines.h) + WIN_RANGE (gba/io_reg.h).
+const FMSM_DISPLAY_WIDTH = 240;
+const FMSM_DISPLAY_HEIGHT = 160;
+const WIN_RANGE = (a: number, b: number): number => ((a << 8) | b) & 0xFFFF;
+
+// 1:1 WININ/WINOUT (include/gba/io_reg.h) :
+//   WININ_WIN0_BG_ALL(0x0F) | WININ_WIN0_OBJ(0x10) | WININ_WIN0_CLR(0x20) = 0x3F (intérieur : tout)
+//   WINOUT_WIN01_BG1|BG2|BG3(0x0E) | OBJ(0x10) | CLR(0x20)               = 0x3E (extérieur : SAUF BG0)
+const WININ_FIELD_MOVE_SHOW_MON = 0x3F;
+const WINOUT_FIELD_MOVE_SHOW_MON = 0x3E;
+
+// 1:1 cri (include/constants/sound.h) : CRY_VOLUME=120, CRY_VOLUME_RS=125, CRY_MODE_NORMAL=0.
+const FMSM_CRY_VOLUME = 120;
+const FMSM_CRY_VOLUME_RS = 125;
+const FMSM_CRY_MODE_NORMAL = 0;
+
+// Cache assets streaks OUTDOORS (concern plateforme, comme Pokécenter heal). Le PNG indexé
+// fournit tiles (4bpp) + palette ; le .bin = tilemap 320 u16.
+let _streaksOutdoorsGfx: Uint8Array | null = null;
+let _streaksOutdoorsPal: Uint16Array | null = null;
+let _streaksOutdoorsTilemap: Uint16Array | null = null;
+let _fieldMoveShowMonInit = false;
+
+/** Préchargement assets FieldMoveShowMon OUTDOORS (concern plateforme — gfx dispo SYNC au
+ *  LoadGfx de la task). */
+export async function preloadFieldMoveShowMonEffect(_rt: DecompRuntime): Promise<void> {
+  if (_fieldMoveShowMonInit) return;
+  const png = await loadIndexedPngStrict(FIELD_MOVE_STREAKS_OUTDOORS_PNG, 4);
+  _streaksOutdoorsGfx = png.charData;
+  _streaksOutdoorsPal = png.palette.subarray(0, 16);
+  _streaksOutdoorsTilemap = await loadTilemapBin(FIELD_MOVE_STREAKS_OUTDOORS_BIN);
+  _fieldMoveShowMonInit = true;
+}
+
+/** 1:1 décomp `SpriteCallbackDummy` (sprite.c) — no-op. */
+function FMSM_SpriteCallbackDummy(): void { /* no-op */ }
+
+// Sprite data du mon field-move — 1:1 (field_effect.c:2561) :
+//   sSpecies=data[0] sOnscreenTimer=data[1] data[6]=noDucking sSlidOffscreen=data[7]
+//   + data[8]=picLoaded (port-local : gate du load async, ≠ index décomp).
+
+/** 1:1 STRICT décomp `CreateMonSprite_FieldMove` (field_effect.c:925) :
+ *    CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, x, y, 0, palTag)
+ *    + PreservePaletteInWeather(slot).
+ *  Port : crée un sprite 64×64 INVISIBLE immédiatement (la task a besoin d'un id sync) puis
+ *  charge le front pic en ASYNC et le peuple (repoint tile/palette + visible). */
+function CreateMonSprite_FieldMove(species: number, otId: number, personality: number, x: number, y: number, subpriority: number): number {
+  const rt = getRuntime();
+  if (!rt) return -1;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0, x, y, shape: 0, size: 3, priority: 0, subpriority,
+  });
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) sprite.invisible = true;
+  void _loadFieldMoveMonPic(rt, spriteId, species, otId, personality);
+  return spriteId;
+}
+
+/** Charge le front pic (front.png 64×64) + palette shiny|normal → peuple le sprite placeholder.
+ *  ≈ décomp `CreateMonPicSprite_HandleDeoxys` (LoadSpecialPokePic + LoadPicPaletteByTagOrSlot)
+ *  modulo le chargement ASYNC (PNG pré-extrait). Le choix shiny = 1:1 GET_SHINY_VALUE. */
+async function _loadFieldMoveMonPic(rt: DecompRuntime, spriteId: number, species: number, otId: number, personality: number): Promise<void> {
+  const enumName = reverseDecompConstant(species, 'SPECIES_');
+  if (!enumName) { console.warn('[show_mon] species inconnue', species); return; }
+  const folder = enumName.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // 1:1 GET_SHINY_VALUE(otId, personality) < SHINY_ODDS(8) → shiny.pal (= GetMonSpritePalStruct…).
+  const shinyValue = ((otId >>> 16) & 0xFFFF) ^ (otId & 0xFFFF) ^ ((personality >>> 16) & 0xFFFF) ^ (personality & 0xFFFF);
+  const palFile = shinyValue < 8 ? 'shiny.pal' : 'normal.pal';
+  try {
+    const png = await loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4);
+    const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/${palFile}`);
+    FreeSpriteTilesByTag(TAG_FIELD_MOVE_MON_GFX);
+    const tileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: TAG_FIELD_MOVE_MON_GFX });
+    FreeSpritePaletteByTag(TAG_FIELD_MOVE_MON_PAL);
+    const palSlot = LoadSpritePalette({ data: pal.subarray(0, 16), tag: TAG_FIELD_MOVE_MON_PAL });
+    const sprite = rt.gSprites.get(spriteId);
+    if (!sprite || !sprite.inUse) return;  // effet déjà terminé pendant le load
+    const oam = rt.gba.oam[sprite.oamIndex];
+    oam.tileId = tileStart;
+    oam.paletteBank = palSlot;
+    sprite.tileBase = tileStart;
+    sprite.invisible = false;
+    sprite.data[8] = 1;  // picLoaded → débloque CreateBanner
+  } catch (e) {
+    console.error('[show_mon] front pic load failed:', e);
+    const sprite = rt.gSprites.get(spriteId);
+    if (sprite) sprite.data[8] = 1;  // débloque la task même en échec (anti-freeze)
+  }
+}
+
+/** Libère les ressources du mon-pic field-move (≈ décomp `FreeResourcesAndDestroySprite` →
+ *  FreeAndDestroyMonPicSprite). Non-affine → pas de matrice OAM à libérer. */
+function _freeFieldMoveMonSprite(rt: DecompRuntime, spriteId: number): void {
+  FreeSpriteTilesByTag(TAG_FIELD_MOVE_MON_GFX);
+  FreeSpritePaletteByTag(TAG_FIELD_MOVE_MON_PAL);
+  rt.DestroySprite(spriteId);
+}
+
+/** 1:1 STRICT décomp `InitFieldMoveMonSprite` (field_effect.c:2930). */
+function InitFieldMoveMonSprite(species: number, otId: number, personality: number): number {
+  const noDucking = (species & SHOW_MON_CRY_NO_DUCKING) ? 1 : 0;
+  species &= ~SHOW_MON_CRY_NO_DUCKING;
+  const monSprite = CreateMonSprite_FieldMove(species, otId, personality, 320, 80, 0);
+  const rt = getRuntime();
+  const sprite = rt?.gSprites.get(monSprite);
+  if (rt && sprite) {
+    sprite.callback = FMSM_SpriteCallbackDummy;
+    rt.gba.oam[sprite.oamIndex].priority = 0;
+    sprite.data[0] = species;   // sSpecies
+    sprite.data[6] = noDucking;
+  }
+  return monSprite;
+}
+
+/** 1:1 STRICT décomp `SpriteCB_FieldMoveMonSlideOnscreen` (field_effect.c:2946) :
+ *  glisse de 20px/frame jusqu'au centre, puis CRI + passe en attente. */
+function SpriteCB_FieldMoveMonSlideOnscreen(sprite: DecompSprite, _rt: DecompRuntime): void {
+  sprite.x -= 20;
+  if (sprite.x <= FMSM_DISPLAY_WIDTH / 2) {
+    sprite.x = FMSM_DISPLAY_WIDTH / 2;
+    sprite.data[1] = 30;  // sOnscreenTimer
+    sprite.callback = SpriteCB_FieldMoveMonWaitAfterCry;
+    // 1:1 : data[6] (noDucking) → PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL)
+    //       sinon PlayCry_Normal(species, 0). On appelle la LECTURE du cri (PlayCryInternal).
+    if (sprite.data[6])
+      PlayCryInternal(sprite.data[0], 0, FMSM_CRY_VOLUME_RS, CRY_PRIORITY_NORMAL, FMSM_CRY_MODE_NORMAL);
+    else
+      PlayCryInternal(sprite.data[0], 0, FMSM_CRY_VOLUME, CRY_PRIORITY_NORMAL, FMSM_CRY_MODE_NORMAL);
+  }
+}
+
+/** 1:1 STRICT décomp `SpriteCB_FieldMoveMonWaitAfterCry` (field_effect.c:2960). */
+function SpriteCB_FieldMoveMonWaitAfterCry(sprite: DecompSprite, _rt: DecompRuntime): void {
+  if (--sprite.data[1] === 0)  // sOnscreenTimer
+    sprite.callback = SpriteCB_FieldMoveMonSlideOffscreen;
+}
+
+/** 1:1 STRICT décomp `SpriteCB_FieldMoveMonSlideOffscreen` (field_effect.c:2966). */
+function SpriteCB_FieldMoveMonSlideOffscreen(sprite: DecompSprite, _rt: DecompRuntime): void {
+  if (sprite.x < -64)
+    sprite.data[7] = 1;  // sSlidOffscreen
+  else
+    sprite.x -= 20;
+}
+
+/** 1:1 STRICT décomp `FldEff_FieldMoveShowMonInit` (field_effect.c:2584) :
+ *  lit gPlayerParty[(u8)arg0] → pose species/otId/personality (+ bit noDucking) → lance SHOW_MON. */
+export function FldEff_FieldMoveShowMonInit(_rt: DecompRuntime): number {
+  const noDucking = gFieldEffectArguments[0] & SHOW_MON_CRY_NO_DUCKING;
+  const pokemon = gPlayerParty[gFieldEffectArguments[0] & 0xFF];
+  gFieldEffectArguments[0] = GetMonData(pokemon, MON_DATA_SPECIES) as number;
+  gFieldEffectArguments[1] = GetMonData(pokemon, MON_DATA_OT_ID) as number;
+  gFieldEffectArguments[2] = GetMonData(pokemon, MON_DATA_PERSONALITY) as number;
+  gFieldEffectArguments[0] |= noDucking;
+  FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON);
+  FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+  return 0;  // FALSE
+}
+
+/** 1:1 STRICT décomp `FldEff_FieldMoveShowMon` (field_effect.c:2570). */
+export function FldEff_FieldMoveShowMon(rt: DecompRuntime): number {
+  // 1:1 : IsMapTypeOutdoors → Task_FieldMoveShowMonOutdoors, sinon Indoors.
+  // ⚠️ TEMPORAIRE (commit indoors à venir) : les maps intérieures utilisent AUSSI la task
+  // outdoors (mon+cri OK, pas de hang ; bannière outdoor au lieu de la variante slide).
+  const taskId = rt.CreateTask(Task_FieldMoveShowMonOutdoors, 0xFF);
+  const task = rt.gTasks.get(taskId);
+  if (task) {
+    task.data[15] = InitFieldMoveMonSprite(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);  // tMonSpriteId
+  }
+  return 0;  // FALSE
+}
+
+// Task data OUTDOORS — 1:1 #defines (field_effect.c:2551) :
+//   tState=data[0] tWinHoriz=data[1] tWinVert=data[2] tWinIn=data[3] tWinOut=data[4]
+//   tBgHoriz=data[5] tBgVert=data[6] tMonSpriteId=data[15]
+//   + data[11]=savedWININ data[12]=savedWINOUT data[10]=priorWin0Enabled (port).
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_Init` (field_effect.c:2613). */
+function FieldMoveShowMonOutdoorsEffect_Init(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  task.data[11] = rt.GetGpuReg(REG_OFFSET_WININ);
+  task.data[12] = rt.GetGpuReg(REG_OFFSET_WINOUT);
+  task.data[10] = rt.gba.windows.win0.enabled ? 1 : 0;  // port : sauve l'état WIN0 (l'OW ne l'active pas)
+  task.data[1] = WIN_RANGE(FMSM_DISPLAY_WIDTH, FMSM_DISPLAY_WIDTH + 1);            // tWinHoriz
+  task.data[2] = WIN_RANGE(FMSM_DISPLAY_HEIGHT / 2, FMSM_DISPLAY_HEIGHT / 2 + 1);  // tWinVert
+  task.data[3] = WININ_FIELD_MOVE_SHOW_MON;   // tWinIn
+  task.data[4] = WINOUT_FIELD_MOVE_SHOW_MON;  // tWinOut
+  rt.gba.windows.win0.enabled = true;         // port : active WIN0 (le décomp suppose l'état HW)
+  rt.SetGpuReg(REG_OFFSET_WIN0H, task.data[1]);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, task.data[2]);
+  rt.SetGpuReg(REG_OFFSET_WININ, task.data[3]);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, task.data[4]);
+  // SetVBlankCallback(VBlankCB_FieldMoveShowMonOutdoors) → plié dans le tick (cf. en-tête).
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_LoadGfx` (field_effect.c:2630) :
+ *  charge les stries dans BG0 (charBase 2) + clear le screenblock (mapBase 31) + palette 15
+ *  + écrit la tilemap des stries (offset 0x140 octets = entrée u16 160, |0xF000). */
+function FieldMoveShowMonOutdoorsEffect_LoadGfx(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const bg0 = rt.gba.bg(0);
+  // CpuCopy16(sFieldMoveStreaksOutdoors_Gfx, VRAM+offset, 0x200) — 16 tuiles 4bpp à charBase 2.
+  if (_streaksOutdoorsGfx) bg0.vram.set(_streaksOutdoorsGfx.subarray(0, 0x200), 0);
+  // CpuFill32(0, VRAM+delta, 0x800) — clear le screenblock mapBase 31 (1024 entrées u16).
+  bg0.tilemap.fill(0);
+  // LoadPalette(sFieldMoveStreaksOutdoors_Pal, BG_PLTT_ID(15), 32) — palette des stries en banque 15.
+  if (_streaksOutdoorsPal) LoadPalette(_streaksOutdoorsPal, BG_PLTT_ID(15), 32);
+  // LoadFieldMoveOutdoorStreaksTilemap(delta) : 320 entrées à l'offset 0x140 octets = entrée 160, |0xF000.
+  if (_streaksOutdoorsTilemap) {
+    const tm = bg0.tilemap;
+    for (let i = 0; i < 320; i++) tm[160 + i] = (_streaksOutdoorsTilemap[i] | 0xF000) & 0xFFFF;
+  }
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_CreateBanner` (field_effect.c:2641) :
+ *  agrandit la fenêtre WIN0 (horiz vers 0, vert vers [H/4, W/2]) ; pleine taille + picLoaded →
+ *  lance le slide du mon. */
+function FieldMoveShowMonOutdoorsEffect_CreateBanner(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  task.data[5] -= 16;  // tBgHoriz
+  let horiz = (task.data[1] >> 8) & 0xFF;
+  let vertHi = (task.data[2] >> 8) & 0xFF;
+  let vertLo = task.data[2] & 0xFF;
+  horiz -= 16;
+  vertHi -= 2;
+  vertLo += 2;
+  if (horiz < 0) horiz = 0;
+  if (vertHi < FMSM_DISPLAY_HEIGHT / 4) vertHi = FMSM_DISPLAY_HEIGHT / 4;       // 40
+  if (vertLo > FMSM_DISPLAY_WIDTH / 2) vertLo = FMSM_DISPLAY_WIDTH / 2;          // 120
+  task.data[1] = ((horiz << 8) | (task.data[1] & 0xFF)) & 0xFFFF;
+  task.data[2] = ((vertHi << 8) | vertLo) & 0xFFFF;
+  const monSprite = rt.gSprites.get(task.data[15]);
+  if (horiz === 0 && vertHi === FMSM_DISPLAY_HEIGHT / 4 && vertLo === FMSM_DISPLAY_WIDTH / 2
+      && monSprite && monSprite.data[8] /* picLoaded : déviation async (cf. en-tête) */) {
+    monSprite.callback = SpriteCB_FieldMoveMonSlideOnscreen;
+    task.data[0]++;
+  }
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_WaitForMon` (field_effect.c:2672). */
+function FieldMoveShowMonOutdoorsEffect_WaitForMon(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  task.data[5] -= 16;  // tBgHoriz
+  const monSprite = rt.gSprites.get(task.data[15]);
+  if (monSprite && monSprite.data[7] /* sSlidOffscreen */)
+    task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_ShrinkBanner` (field_effect.c:2680). */
+function FieldMoveShowMonOutdoorsEffect_ShrinkBanner(task: DecompTask): void {
+  task.data[5] -= 16;  // tBgHoriz
+  let vertHi = (task.data[2] >> 8) & 0xFF;
+  let vertLo = task.data[2] & 0xFF;
+  vertHi += 6;
+  vertLo -= 6;
+  if (vertHi > FMSM_DISPLAY_HEIGHT / 2) vertHi = FMSM_DISPLAY_HEIGHT / 2;          // 80
+  if (vertLo < FMSM_DISPLAY_HEIGHT / 2 + 1) vertLo = FMSM_DISPLAY_HEIGHT / 2 + 1;  // 81
+  task.data[2] = ((vertHi << 8) | vertLo) & 0xFFFF;
+  if (vertHi === FMSM_DISPLAY_HEIGHT / 2 && vertLo === FMSM_DISPLAY_HEIGHT / 2 + 1)
+    task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_RestoreBg` (field_effect.c:2702). */
+function FieldMoveShowMonOutdoorsEffect_RestoreBg(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.bg(0).tilemap.fill(0);  // CpuFill32(0, VRAM+bg0cnt, 0x800)
+  task.data[1] = FMSM_DISPLAY_WIDTH + 1;   // tWinHoriz off-écran
+  task.data[2] = FMSM_DISPLAY_HEIGHT + 1;  // tWinVert off-écran
+  task.data[3] = task.data[11];            // tWinIn restauré
+  task.data[4] = task.data[12];            // tWinOut restauré
+  // port : restaure l'état WIN0 antérieur (sinon fenêtre pleine + WININ restauré masque des layers).
+  rt.gba.windows.win0.enabled = (task.data[10] === 1);
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_End` (field_effect.c:2713). */
+function FieldMoveShowMonOutdoorsEffect_End(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // SetVBlankCallback(callback) — plié (cf. en-tête) : pas de restauration vblankCB.
+  InitTextBoxGfxAndPrinters();
+  _freeFieldMoveMonSprite(rt, task.data[15]);
+  FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+  DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors));
+}
+
+/** 1:1 STRICT `sFieldMoveShowMonOutdoorsEffectFuncs[]` (field_effect.c:2598). */
+const sFieldMoveShowMonOutdoorsEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  FieldMoveShowMonOutdoorsEffect_Init,
+  FieldMoveShowMonOutdoorsEffect_LoadGfx,
+  FieldMoveShowMonOutdoorsEffect_CreateBanner,
+  FieldMoveShowMonOutdoorsEffect_WaitForMon,
+  FieldMoveShowMonOutdoorsEffect_ShrinkBanner,
+  FieldMoveShowMonOutdoorsEffect_RestoreBg,
+  FieldMoveShowMonOutdoorsEffect_End,
+];
+
+/** 1:1 STRICT décomp `Task_FieldMoveShowMonOutdoors` (field_effect.c:2608) + VBlankCB plié.
+ *  La func d'état met à jour task.data ; on RÉ-APPLIQUE ensuite les registres WIN/BG (=
+ *  VBlankCB_FieldMoveShowMonOutdoors, field_effect.c:2724), sauf à l'état End (= le décomp y
+ *  restaure le vblankCB d'origine → plus d'application). */
+function Task_FieldMoveShowMonOutdoors(task: DecompTask): void {
+  const state = task.data[0];
+  sFieldMoveShowMonOutdoorsEffectFuncs[state](task);
+  if (state >= sFieldMoveShowMonOutdoorsEffectFuncs.length - 1) return;  // End → plus de ré-apply
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_WIN0H, task.data[1] & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, task.data[2] & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_WININ, task.data[3] & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, task.data[4] & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_BG0HOFS, task.data[5] & 0x1FF);
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, task.data[6] & 0x1FF);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
