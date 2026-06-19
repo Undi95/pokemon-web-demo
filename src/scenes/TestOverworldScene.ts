@@ -193,6 +193,7 @@ import { preloadAshEffect } from '../game/field_effect_helpers';
 import { preloadSurfBlobEffect } from '../game/field_effect_helpers';
 import { preloadDisguiseEffects } from '../game/field_effect_helpers';
 import { preloadShadowEffect } from '../game/field_effect_helpers';
+import { preloadPokecenterHealEffect } from '../game/field_effect_helpers';
 import { PlaySE } from '../engine/system/decomp-globals';
 import {
   SE_EXIT,
@@ -1244,6 +1245,10 @@ export class TestOverworldScene extends Phaser.Scene {
     // spawn DYNAMIQUEMENT au ledge/acro jump (DoShadowFieldEffect) et despawn au jump end
     // (hasShadow=FALSE → UpdateShadowFieldEffect). Pas de spawn permanent — preload assets only.
     await preloadShadowEffect(this.rt);
+    // PokéCenter heal (pokéballs montent + glow palette + moniteur) : assets seuls (migrés
+    // game/field_effect_helpers.ts). Déclenché par `dofieldeffect FLDEFF_POKECENTER_HEAL` du
+    // script nurse → débloque le soin (waitfieldeffect ne gèle plus).
+    await preloadPokecenterHealEffect(this.rt);
     InitFieldMessageBox();
     ScriptContext_Init();
 

@@ -47,8 +47,8 @@ import {
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
   FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall, FldEff_UseDive,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
-  FldEff_Shadow,
-  LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette,
+  FldEff_Shadow, FldEff_PokecenterHeal,
+  LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette, LoadPokeballGlowFieldEffectPalette,
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
 import { FldEff_UseRockSmash } from './fldeff_rocksmash';
@@ -105,6 +105,7 @@ export const FLDEFF_USE_DIVE                   = 44;
 export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
 export const FLDEFF_SPARKLE                    = 54;
+export const FLDEFF_POKECENTER_HEAL            = 25;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -246,6 +247,12 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   [FLDEFF_UNUSED_GRASS_2]:        [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_UnusedGrass2 }, { op: 'end' }],
   [FLDEFF_UNUSED_SAND]:           [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_UnusedSand }, { op: 'end' }],
   [FLDEFF_WATER_SURFACING]:       [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_WaterSurfacing }, { op: 'end' }],
+
+  // ── PokéCenter heal (field_effect.c:1010) : 1:1 `gFieldEffectScript_PokeCenterHeal`
+  //    (field_effect_scripts.s:176) = loadfadedpal pokeball_glow + loadfadedpal general_0 + callnative.
+  //    Le 1er loadfadedpal charge la palette pulsée (FLDEFF_PAL_TAG_POKEBALL_GLOW), le 2e charge
+  //    GENERAL_0 (palette du moniteur). Débloque le soin nurse (waitfieldeffect ne gèle plus). ──
+  [FLDEFF_POKECENTER_HEAL]:       [{ op: 'loadfadedpal', loadPal: LoadPokeballGlowFieldEffectPalette }, { op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_PokecenterHeal }, { op: 'end' }],
 };
 
 /** 1:1 décomp boucle d'interprétation `FieldEffectStart` (field_effect.c:166) :

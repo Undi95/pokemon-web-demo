@@ -52,6 +52,7 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
+import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../engine/system/sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
@@ -78,7 +79,9 @@ import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../engine/script/script-runtime';
 import { FieldEffectActiveListContains } from '../engine/field/field-effect-active-list';
 import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../engine/system/decomp-bridge';
-import { FindTaskIdByFunc, getRuntime } from '../engine/system/decomp-globals';
+import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
+  PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite } from '../engine/system/decomp-globals';
+import { CalculatePlayerPartyCount } from '../engine/battle/party-storage';
 import type { DecompTask } from '../engine/system/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from './field_camera';
@@ -94,9 +97,9 @@ import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
 import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo } from './overworld';
-import { MUS_SURF } from '../engine/decomp-data/include/constants/songs-data';
+import { MUS_SURF, SE_BALL, MUS_HEAL } from '../engine/decomp-data/include/constants/songs-data';
 import {
-  gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
+  gFieldEffectArguments, FieldEffectStop, FieldEffectStart, FieldEffectFreeGraphicsResources,
 } from './field_effect';
 import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
 
@@ -1418,6 +1421,369 @@ export function FldEff_UseDive(rt: DecompRuntime): number {
     Task_UseDive(task);
   }
   return 0;  // FALSE
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  1:1 décomp `field_effect.c` /* PokéCenter heal */ (field_effect.c:988-1337)
+//  L'animation de soin du Centre Pokémon : les pokéballs de l'équipe MONTENT une
+//  à une sur le comptoir (PlaySE SE_BALL), puis pulsent en palette (glow vert →
+//  noir) pendant que le fanfare MUS_HEAL joue, + le moniteur mural clignote.
+//  Déclenché par `dofieldeffect FLDEFF_POKECENTER_HEAL` du script nurse
+//  (pkmn_center_nurse.inc) ; `waitfieldeffect` attend que l'effet se retire de
+//  la liste active (= _WaitForSoundAndEnd → FieldEffectActiveListRemove) AVANT
+//  `special HealPlayerParty`. SANS ce port, waitfieldeffect bloquait à l'infini
+//  (l'id restait dans la liste active) → le soin gelait le jeu.
+//
+//  Assets : pokeball_glow.png (8×8 = 1 tuile, glow) + pokeball_glow.pal (tag
+//  FLDEFF_PAL_TAG_POKEBALL_GLOW, pulsée par MultiplyInvertedPaletteRGBComponents)
+//  + pokecenter_monitor_0/1.png (24×16 ×2 frames, subsprite-tablé, palette
+//  GENERAL_0). Coords ÉCRAN (coordOffsetEnabled=false) : balls (93,36)+offsets,
+//  moniteur (124,24).
+//
+//  ⚠️ DÉVIATION DOCUMENTÉE (moniteur) : le flicker du moniteur est `StartSpriteAnim(1)`
+//  = sAnim_Flicker (8 frames @16, imageValue 0/1). Le renderer subsprite lit
+//  `sprite.tileBase + sub.tileOffset` SANS l'offset d'anim → le flicker est
+//  reproduit À LA MAIN via un compteur de ticks (data[1]/data[2]/data[3]) qui
+//  bascule `tileBase` entre frame 0 (tile+0) et frame 1 (tile+6) aux MÊMES durées
+//  que sAnim_Flicker (technique « frames à la main » documentée en tête de fichier).
+// ════════════════════════════════════════════════════════════════════════════
+
+const FLDEFF_POKECENTER_HEAL = 25;
+
+const POKEBALL_GLOW_PNG = '/decomp/em/field_effects/pokeball_glow.png';
+const POKEBALL_GLOW_PAL = '/decomp/em/field_effects/pokeball_glow.pal';
+const POKECENTER_MONITOR_0_PNG = '/decomp/em/field_effects/pokecenter_monitor_0.png';
+const POKECENTER_MONITOR_1_PNG = '/decomp/em/field_effects/pokecenter_monitor_1.png';
+const TAG_POKEBALL_GLOW_GFX = 'FIELD_EFFECT_POKEBALL_GLOW_GFX';
+const TAG_POKECENTER_MONITOR_GFX = 'FIELD_EFFECT_POKECENTER_MONITOR_GFX';
+const TAG_POKEBALL_GLOW_PAL = 'FLDEFF_PAL_TAG_POKEBALL_GLOW';
+const MONITOR_FRAME_TILES = 6; // 24×16 = 3×2 tuiles 8×8
+
+/** 1:1 décomp `sPokeballCoordOffsets[PARTY_SIZE]` (field_effect.c:597). */
+const sPokeballCoordOffsets: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 0, y: 0 }, { x: 6, y: 0 }, { x: 0, y: 4 },
+  { x: 6, y: 4 }, { x: 0, y: 8 }, { x: 6, y: 8 },
+];
+
+/** 1:1 décomp `sPokeballGlowReds/Greens/Blues[]` (field_effect.c:607). */
+const sPokeballGlowReds: ReadonlyArray<number>   = [16, 12, 8, 0];
+const sPokeballGlowGreens: ReadonlyArray<number> = [16, 12, 8, 0];
+const sPokeballGlowBlues: ReadonlyArray<number>  = [0, 0, 0, 0];
+
+/** 1:1 décomp `sSubsprites_PokecenterMonitor[]` (field_effect.c:413). 24×16 en 4 pièces :
+ *  16×8 (tiles 0-1), 8×8 (tile 2), 16×8 (tiles 3-4), 8×8 (tile 5). */
+const sSubsprites_PokecenterMonitor: ReadonlyArray<NamingSubsprite> = [
+  { x: -12, y: -8, shape: 1, size: 0, tileOffset: 0, priority: 2 }, // 16×8 haut-gauche
+  { x: 4, y: -8, shape: 0, size: 0, tileOffset: 2, priority: 2 },   // 8×8 haut-droite
+  { x: -12, y: 0, shape: 1, size: 0, tileOffset: 3, priority: 2 },  // 16×8 bas-gauche
+  { x: 4, y: 0, shape: 0, size: 0, tileOffset: 5, priority: 2 },    // 8×8 bas-droite
+];
+
+let _pokeballGlowTileStart = -1;
+let _monitorTileStart = -1;
+let _pokeballGlowPalData: Uint16Array | null = null;
+let _pokecenterHealInit = false;
+
+/** Préchargement assets PokéCenter heal (concern plateforme). pokeball_glow.png (1 tuile) +
+ *  pokecenter_monitor_0/1.png concaténés (2 frames × 6 tuiles). pokeball_glow.pal CACHÉE
+ *  (chargée on-demand par le script via loadfadedpal). */
+export async function preloadPokecenterHealEffect(_rt: DecompRuntime): Promise<void> {
+  if (_pokecenterHealInit && IndexOfSpriteTileTag(TAG_POKEBALL_GLOW_GFX) !== 0xFF) return;
+  _pokecenterHealInit = false;
+  const ballPng = await loadIndexedPngStrict(POKEBALL_GLOW_PNG, 4); // 8×8 = 1 tuile
+  _pokeballGlowTileStart = LoadSpriteSheet({ data: ballPng.charData, size: ballPng.charData.length, tag: TAG_POKEBALL_GLOW_GFX });
+  // Moniteur : 2 frames séparées (0.png, 1.png) de 24×16 = 6 tuiles row-major chacune.
+  // loadIndexedPngStrict produit du row-major 8×8 → exactement le layout des subsprites.
+  const m0 = await loadIndexedPngStrict(POKECENTER_MONITOR_0_PNG, 4);
+  const m1 = await loadIndexedPngStrict(POKECENTER_MONITOR_1_PNG, 4);
+  const monData = new Uint8Array(m0.charData.length + m1.charData.length);
+  monData.set(m0.charData, 0);
+  monData.set(m1.charData, m0.charData.length);
+  _monitorTileStart = LoadSpriteSheet({ data: monData, size: monData.length, tag: TAG_POKECENTER_MONITOR_GFX });
+  _pokeballGlowPalData = await loadGbaPal(POKEBALL_GLOW_PAL);
+  _pokecenterHealInit = true;
+}
+
+/** loadfadedpal de la palette pokeball_glow (1:1 `field_eff_loadfadedpal gSpritePalette_PokeballGlow`,
+ *  1re cmd du script gFieldEffectScript_PokeCenterHeal). Pulsée ensuite par les états Flash1/Flash2. */
+export function LoadPokeballGlowFieldEffectPalette(): number {
+  return FieldEffectScript_LoadFadedPalette(_pokeballGlowPalData, TAG_POKEBALL_GLOW_PAL);
+}
+
+/** 1:1 décomp `CreateInvisibleSprite(callback)` (sprite.c:524) : CreateSprite(gDummySpriteTemplate,
+ *  0,0,31) puis invisible + callback. Sprite contrôleur sans gfx (pilote la machine d'états). */
+function CreateInvisibleSprite(rt: DecompRuntime, callback: (sprite: DecompSprite, rt: DecompRuntime) => void): number {
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0, x: 0, y: 0, shape: 0, size: 0, priority: 0, subpriority: 31, fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) { sprite.invisible = true; sprite.callback = callback; }
+  return spriteId;
+}
+
+// Task data — 1:1 décomp #defines (field_effect.c:988) :
+//   tState=data[0] tNumMons=data[1] tFirstBallX=data[2] tFirstBallY=data[3]
+//   tMonitorX=data[4] tMonitorY=data[5] tBallSpriteId=data[6] tMonitorSpriteId=data[7]
+// Sprite data contrôleur glow — 1:1 (field_effect.c:999) :
+//   sState=data[0] sTimer=data[1] sCounter=data[2] data[3]=phase counter
+//   sPlayHealSe=data[5] sNumMons=data[6] sSpriteId=data[7]
+// Sprite data pokeball glow : sEffectSpriteId=data[0] (field_effect.c:1008).
+
+/** 1:1 décomp `FldEff_PokecenterHeal` (field_effect.c:1010). */
+export function FldEff_PokecenterHeal(rt: DecompRuntime): number {
+  const nPokemon = CalculatePlayerPartyCount();
+  const taskId = rt.CreateTask(Task_PokecenterHeal, 0xFF);
+  const task = rt.gTasks.get(taskId);
+  if (task) {
+    task.data[1] = nPokemon; // tNumMons
+    task.data[2] = 93;       // tFirstBallX
+    task.data[3] = 36;       // tFirstBallY
+    task.data[4] = 124;      // tMonitorX
+    task.data[5] = 24;       // tMonitorY
+  }
+  return 0; // FALSE
+}
+
+/** 1:1 décomp `Task_PokecenterHeal` (field_effect.c:1025). */
+function Task_PokecenterHeal(task: DecompTask): void {
+  sPokecenterHealEffectFuncs[task.data[0]](task);
+}
+
+/** 1:1 décomp `PokecenterHealEffect_Init` (field_effect.c:1032). */
+function PokecenterHealEffect_Init(task: DecompTask): void {
+  task.data[0]++; // tState
+  task.data[6] = CreateGlowingPokeballsEffect(task.data[1], task.data[2], task.data[3], true); // tBallSpriteId
+  task.data[7] = CreatePokecenterMonitorSprite(task.data[4], task.data[5]); // tMonitorSpriteId
+}
+
+/** 1:1 décomp `PokecenterHealEffect_WaitForBallPlacement` (field_effect.c:1039). */
+function PokecenterHealEffect_WaitForBallPlacement(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites.get(task.data[6]);
+  if (ball && ball.data[0] > 1) { // sState > 1
+    const monitor = rt.gSprites.get(task.data[7]);
+    if (monitor) monitor.data[0]++; // déclenche le moniteur
+    task.data[0]++; // tState
+  }
+}
+
+/** 1:1 décomp `PokecenterHealEffect_WaitForBallFlashing` (field_effect.c:1048). */
+function PokecenterHealEffect_WaitForBallFlashing(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites.get(task.data[6]);
+  if (ball && ball.data[0] > 4) task.data[0]++; // sState > 4 → tState
+}
+
+/** 1:1 décomp `PokecenterHealEffect_WaitForSoundAndEnd` (field_effect.c:1056). */
+function PokecenterHealEffect_WaitForSoundAndEnd(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites.get(task.data[6]);
+  if (ball && ball.data[0] > 6) { // sState > 6 (Idle)
+    rt.DestroySprite(task.data[6]);
+    FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);
+    DestroyTask(FindTaskIdByFunc(Task_PokecenterHeal));
+  }
+}
+
+/** 1:1 décomp `sPokecenterHealEffectFuncs[]` (field_effect.c:569). */
+const sPokecenterHealEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  PokecenterHealEffect_Init,
+  PokecenterHealEffect_WaitForBallPlacement,
+  PokecenterHealEffect_WaitForBallFlashing,
+  PokecenterHealEffect_WaitForSoundAndEnd,
+];
+
+/** 1:1 décomp `CreateGlowingPokeballsEffect` (field_effect.c:1126). */
+function CreateGlowingPokeballsEffect(numMons: number, x: number, y: number, playHealSe: boolean): number {
+  const rt = getRuntime();
+  const spriteId = CreateInvisibleSprite(rt, SpriteCB_PokeballGlowEffect);
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) {
+    sprite.x2 = x;
+    sprite.y2 = y;
+    sprite.data[5] = playHealSe ? 1 : 0; // sPlayHealSe
+    sprite.data[6] = numMons;            // sNumMons
+    sprite.data[7] = spriteId;           // sSpriteId
+  }
+  return spriteId;
+}
+
+/** 1:1 décomp `SpriteCB_PokeballGlowEffect` (field_effect.c:1140). */
+function SpriteCB_PokeballGlowEffect(sprite: DecompSprite): void {
+  sPokeballGlowEffectFuncs[sprite.data[0]](sprite);
+}
+
+/** 1:1 décomp `PokeballGlowEffect_PlaceBalls` (field_effect.c:1145). */
+function PokeballGlowEffect_PlaceBalls(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  if (sprite.data[1] === 0 || (--sprite.data[1]) === 0) { // sTimer
+    sprite.data[1] = 25;
+    const off = sPokeballCoordOffsets[sprite.data[2]]; // sCounter
+    const { spriteId } = rt.CreateSpriteAtOam({
+      tileId: _pokeballGlowTileStart,
+      paletteBank: IndexOfSpritePaletteTag(TAG_POKEBALL_GLOW_PAL),
+      x: off.x + sprite.x2, y: off.y + sprite.y2,
+      shape: 0, size: 0, priority: 2, subpriority: 0, fromEnd: true,
+    });
+    const ball = rt.gSprites.get(spriteId);
+    if (ball) {
+      ball.callback = SpriteCB_PokeballGlow;
+      ball.data[0] = sprite.data[7]; // sEffectSpriteId = sSpriteId (contrôleur)
+    }
+    sprite.data[2]++; // sCounter
+    sprite.data[6]--; // sNumMons
+    PlaySE(SE_BALL);
+  }
+  if (sprite.data[6] === 0) { // sNumMons
+    sprite.data[1] = 32;
+    sprite.data[0]++; // sState
+  }
+}
+
+/** 1:1 décomp `PokeballGlowEffect_TryPlaySe` (field_effect.c:1165). */
+function PokeballGlowEffect_TryPlaySe(sprite: DecompSprite): void {
+  if ((--sprite.data[1]) === 0) { // sTimer
+    sprite.data[0]++; // sState
+    sprite.data[1] = 8;
+    sprite.data[2] = 0; // sCounter
+    sprite.data[3] = 0;
+    if (sprite.data[5]) PlayFanfare(MUS_HEAL); // sPlayHealSe
+  }
+}
+
+/** Pulse une entrée de la palette pokeball_glow (1:1 ligne MultiplyInvertedPaletteRGBComponents). */
+function _pulseGlow(entryOffset: number, phase: number): void {
+  MultiplyInvertedPaletteRGBComponents(
+    OBJ_PLTT_ID(IndexOfSpritePaletteTag(TAG_POKEBALL_GLOW_PAL)) + entryOffset,
+    sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase],
+  );
+}
+
+/** 1:1 décomp `PokeballGlowEffect_Flash1` (field_effect.c:1180). */
+function PokeballGlowEffect_Flash1(sprite: DecompSprite): void {
+  if ((--sprite.data[1]) === 0) { // sTimer
+    sprite.data[1] = 8;
+    sprite.data[2]++;        // sCounter
+    sprite.data[2] &= 3;
+    if (sprite.data[2] === 0) sprite.data[3]++;
+  }
+  _pulseGlow(8, (sprite.data[2] + 3) & 3);
+  _pulseGlow(6, (sprite.data[2] + 2) & 3);
+  _pulseGlow(2, (sprite.data[2] + 1) & 3);
+  _pulseGlow(5, sprite.data[2]);
+  _pulseGlow(3, sprite.data[2]);
+  if (sprite.data[3] > 2) {
+    sprite.data[0]++; // sState
+    sprite.data[1] = 8;
+    sprite.data[2] = 0;
+  }
+}
+
+/** 1:1 décomp `PokeballGlowEffect_Flash2` (field_effect.c:1209). */
+function PokeballGlowEffect_Flash2(sprite: DecompSprite): void {
+  if ((--sprite.data[1]) === 0) { // sTimer
+    sprite.data[1] = 8;
+    sprite.data[2]++;       // sCounter
+    sprite.data[2] &= 3;
+    if (sprite.data[2] === 3) {
+      sprite.data[0]++; // sState
+      sprite.data[1] = 30;
+    }
+  }
+  const phase = sprite.data[2];
+  _pulseGlow(8, phase);
+  _pulseGlow(6, phase);
+  _pulseGlow(2, phase);
+  _pulseGlow(5, phase);
+  _pulseGlow(3, phase);
+}
+
+/** 1:1 décomp `PokeballGlowEffect_WaitAfterFlash` (field_effect.c:1231). */
+function PokeballGlowEffect_WaitAfterFlash(sprite: DecompSprite): void {
+  if ((--sprite.data[1]) === 0) sprite.data[0]++; // sTimer → sState
+}
+
+/** 1:1 décomp `PokeballGlowEffect_Dummy` (field_effect.c:1237). */
+function PokeballGlowEffect_Dummy(sprite: DecompSprite): void {
+  sprite.data[0]++; // sState
+}
+
+/** 1:1 décomp `PokeballGlowEffect_WaitForSound` (field_effect.c:1242). */
+function PokeballGlowEffect_WaitForSound(sprite: DecompSprite): void {
+  if (sprite.data[5] === 0 || IsFanfareTaskInactive()) sprite.data[0]++; // sPlayHealSe / sState
+}
+
+/** 1:1 décomp `PokeballGlowEffect_Idle` (field_effect.c:1250). */
+function PokeballGlowEffect_Idle(_sprite: DecompSprite): void {
+  // Idle jusqu'à destruction par la task.
+}
+
+/** 1:1 décomp `sPokeballGlowEffectFuncs[]` (field_effect.c:585). */
+const sPokeballGlowEffectFuncs: ReadonlyArray<(sprite: DecompSprite) => void> = [
+  PokeballGlowEffect_PlaceBalls,
+  PokeballGlowEffect_TryPlaySe,
+  PokeballGlowEffect_Flash1,
+  PokeballGlowEffect_Flash2,
+  PokeballGlowEffect_WaitAfterFlash,
+  PokeballGlowEffect_Dummy,
+  PokeballGlowEffect_WaitForSound,
+  PokeballGlowEffect_Idle,
+];
+
+/** 1:1 décomp `SpriteCB_PokeballGlow` (field_effect.c:1255). */
+function SpriteCB_PokeballGlow(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  const effect = rt.gSprites.get(sprite.data[0]); // sEffectSpriteId
+  if (effect && effect.data[0] > 4) { // contrôleur sState > 4
+    FieldEffectFreeGraphicsResources(rt, sprite);
+  }
+}
+
+/** 1:1 décomp `CreatePokecenterMonitorSprite` (field_effect.c:1263). */
+function CreatePokecenterMonitorSprite(x: number, y: number): number {
+  const rt = getRuntime();
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: _monitorTileStart,
+    paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_0_PAL),
+    x, y, shape: 0, size: 1, priority: 2, subpriority: 0, fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) {
+    sprite.invisible = true;
+    sprite.tileBase = _monitorTileStart;
+    sprite.callback = SpriteCB_PokecenterMonitor;
+    SetSubspriteTables(spriteId, sSubsprites_PokecenterMonitor);
+  }
+  return spriteId;
+}
+
+/** 1:1 décomp `SpriteCB_PokecenterMonitor` (field_effect.c:1275). Flicker reproduit à la main
+ *  (cf. note de section : le renderer subsprite n'applique pas l'offset d'anim). data[0]=trigger,
+ *  data[1]=ticks frame, data[2]=index frame anim (0..7, 8=END), data[3]=flag anim active. */
+function SpriteCB_PokecenterMonitor(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  if (sprite.data[0] !== 0) {
+    sprite.data[0] = 0;
+    sprite.invisible = false;
+    // StartSpriteAnim(sprite, 1) = sAnim_Flicker : frame 0 = imageValue 0 (tile+0).
+    sprite.data[1] = 16;
+    sprite.data[2] = 0;
+    sprite.data[3] = 1;
+    sprite.tileBase = _monitorTileStart;
+  }
+  if (sprite.data[3] === 1) {
+    if ((--sprite.data[1]) === 0) {
+      sprite.data[2]++;
+      if (sprite.data[2] > 7) { // ANIMCMD_END → animEnded
+        clearSubspriteTable(sprite.spriteId);
+        FieldEffectFreeGraphicsResources(rt, sprite);
+        return;
+      }
+      sprite.data[1] = 16;
+      // imageValue 0,1,0,1… → frame impair = monitor frame 1 (tile+6).
+      sprite.tileBase = _monitorTileStart + ((sprite.data[2] & 1) ? MONITOR_FRAME_TILES : 0);
+    }
+  }
 }
 
 // ─── 1:1 décomp tâche field-move COMMUNE (fldeff_rocksmash.c:48-117) ───────────────────────────
