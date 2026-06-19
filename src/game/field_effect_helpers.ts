@@ -2366,7 +2366,6 @@ export function UpdateBubblesFieldEffect(sprite: DecompSprite, rt: DecompRuntime
 
 const SPARKLE_PNG = '/decomp/em/field_effects/sparkle.png';
 const TAG_SPARKLE_GFX = 'FIELD_EFFECT_SPARKLE_GFX';
-const TAG_SPARKLE_PAL = 'FLDEFF_PAL_TAG_SPARKLE';
 const SPARKLE_TILES_PER_FRAME = 4; // 16×16 = 2×2 tiles 4bpp
 
 /** 1:1 décomp `sAnim_Sparkle` (field_effect_objects.h:902) : bloc A (6 frames @8) + LOOP(0)
@@ -2398,9 +2397,8 @@ let _sparkleTileStart = -1;
 let _sparkleInit = false;
 let _sparkleInitPromise: Promise<void> | null = null;
 let _smallSparkleTileStart = -1;
-/** Palettes sparkle CACHÉES au préchargement → chargées on-demand (FieldEffectScript_LoadFadedPalette)
- *  dans un slot dynamique [12,16) au déclenchement + libérées au stop (zone dégagée par GENERAL on-demand). */
-let _sparklePalData: Uint16Array | null = null;
+/** Palette du sparkle GÉNÉRIQUE cachée au préchargement → chargée on-demand (1:1 script
+ *  `loadfadedpal gSpritePalette_SmallSparkle`). Le berry sparkle, lui, ne charge rien (slot NPC fixe). */
 let _smallSparklePalData: Uint16Array | null = null;
 
 /** sparkle.png = 96×16 = 12×2 tiles row-major → 1D OBJ frame-major (6 frames 16×16, 4 tiles/frame :
@@ -2446,8 +2444,7 @@ export function preloadSparkleEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(SPARKLE_PNG, 4);
     const reordered = pngTo1dObjLayoutSparkle(png.charData);
     _sparkleTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SPARKLE_GFX });
-    // CACHE la palette (load-on-demand dans FldEff via FieldEffectScript_LoadFadedPalette + free au stop).
-    _sparklePalData = png.palette as Uint16Array;
+    // Berry sparkle = paletteNum 5 (PALSLOT_NPC_4) en jeu → AUCUNE palette à charger ici (1:1 décomp).
     const smallPng = await loadIndexedPngStrict(SMALL_SPARKLE_PNG, 4);
     const smallReordered = pngTo1dObjLayoutSmallSparkle(smallPng.charData);
     _smallSparkleTileStart = LoadSpriteSheet({ data: smallReordered, size: smallReordered.length, tag: TAG_SMALL_SPARKLE_GFX });
@@ -2467,9 +2464,11 @@ export function FldEff_BerryTreeGrowthSparkle(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 4);
   const result = rt.CreateSpriteAtOam({
     tileId: _sparkleTileStart,
-    // Load-on-demand (palette propre du sparkle) + free au stop. Décomp = paletteNum 5 (NPC_4
-    // partagé) ; notre asset a sa palette → on la charge dans un slot dynamique (zone dégagée).
-    paletteBank: FieldEffectScript_LoadFadedPalette(_sparklePalData, TAG_SPARKLE_PAL),
+    // 1:1 décomp `sprite->oam.paletteNum = 5` (PALSLOT_NPC_4) — réutilise la palette du NPC
+    // chargé au slot 5 (typiquement l'arbre à baies à l'écran). Le script berry est callnative
+    // SEUL (aucun loadfadedpal) → on ne charge AUCUNE palette propre ; slot OBJ réservé [0,12)
+    // → jamais 0xFF, ne touche jamais la zone dynamique [12,16).
+    paletteBank: 5,
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3, // 1:1 sprite->oam.priority = args[3]
@@ -2573,11 +2572,11 @@ export function UpdateRayquazaSpotlightEffect(_sprite: DecompSprite, _rt: Decomp
 const DISGUISE_TILES_PER_FRAME = 8; // 16×32 = 2×4 tiles 4bpp
 const DISGUISE_NUM_FRAMES = 7;
 
-interface DisguiseCfg { fldEff: number; png: string; gfxTag: string; palTag: string; paletteNum: number; }
+interface DisguiseCfg { fldEff: number; png: string; gfxTag: string; paletteNum: number; }
 const DISGUISE_CFGS: ReadonlyArray<DisguiseCfg> = [
-  { fldEff: FLDEFF_TREE_DISGUISE,     png: '/decomp/em/field_effects/tree_disguise.png',             gfxTag: 'FIELD_EFFECT_TREE_DISGUISE_GFX',     palTag: 'FIELD_EFFECT_TREE_DISGUISE_PAL',     paletteNum: 4 },
-  { fldEff: FLDEFF_MOUNTAIN_DISGUISE, png: '/decomp/em/field_effects/mountain_disguise.png',         gfxTag: 'FIELD_EFFECT_MOUNTAIN_DISGUISE_GFX', palTag: 'FIELD_EFFECT_MOUNTAIN_DISGUISE_PAL', paletteNum: 3 },
-  { fldEff: FLDEFF_SAND_DISGUISE,     png: '/decomp/em/field_effects/sand_disguise_placeholder.png', gfxTag: 'FIELD_EFFECT_SAND_DISGUISE_GFX',     palTag: 'FIELD_EFFECT_SAND_DISGUISE_PAL',     paletteNum: 2 },
+  { fldEff: FLDEFF_TREE_DISGUISE,     png: '/decomp/em/field_effects/tree_disguise.png',             gfxTag: 'FIELD_EFFECT_TREE_DISGUISE_GFX',     paletteNum: 4 },
+  { fldEff: FLDEFF_MOUNTAIN_DISGUISE, png: '/decomp/em/field_effects/mountain_disguise.png',         gfxTag: 'FIELD_EFFECT_MOUNTAIN_DISGUISE_GFX', paletteNum: 3 },
+  { fldEff: FLDEFF_SAND_DISGUISE,     png: '/decomp/em/field_effects/sand_disguise_placeholder.png', gfxTag: 'FIELD_EFFECT_SAND_DISGUISE_GFX',     paletteNum: 2 },
 ];
 
 /** 1:1 décomp sAnimTable_TreeDisguise (field_effect_objects.h:970) : anim 0 = statique
@@ -2591,9 +2590,6 @@ const sAnims_Disguise: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 const _disguiseTileStart: number[] = [-1, -1, -1];
-/** Palettes disguise CACHÉES → load-on-demand (FieldEffectScript_LoadFadedPalette) + free au stop.
- *  Décomp = paletteNum 4/3/2 (NPC slots partagés) ; notre asset a sa palette → slot dynamique. */
-const _disguisePalData: (Uint16Array | null)[] = [null, null, null];
 let _disguiseInit = false;
 let _disguiseInitPromise: Promise<void> | null = null;
 
@@ -2626,8 +2622,7 @@ export function preloadDisguiseEffects(_rt: DecompRuntime): Promise<void> {
       const png = await loadIndexedPngStrict(c.png, 4);
       const reordered = pngTo1dObjLayoutDisguise(png.charData);
       _disguiseTileStart[i] = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: c.gfxTag });
-      // CACHE la palette (load-on-demand dans ShowDisguiseFieldEffect + free au stop).
-      _disguisePalData[i] = png.palette as Uint16Array;
+      // Disguise = paletteNum 4/3/2 (PALSLOT_NPC_3/2/1) en jeu → AUCUNE palette à charger (1:1 décomp).
     }
     _disguiseInit = true;
   })();
@@ -2647,7 +2642,10 @@ function ShowDisguiseFieldEffect(rt: DecompRuntime, fldEff: number): number {
   if (notFound) { FieldEffectActiveListRemove(fldEff); return MAX_SPRITES; }
   const result = rt.CreateSpriteAtOam({
     tileId: _disguiseTileStart[cfgIdx],
-    paletteBank: FieldEffectScript_LoadFadedPalette(_disguisePalData[cfgIdx], DISGUISE_CFGS[cfgIdx].palTag),
+    // 1:1 décomp `sprite->oam.paletteNum = paletteNum` (4/3/2 = PALSLOT_NPC_3/NPC_2/NPC_1) —
+    // réutilise la palette de la déco/NPC de base secrète chargée à ce slot. Script disguise =
+    // callnative SEUL → AUCUNE palette propre chargée ; slot OBJ réservé → jamais 0xFF.
+    paletteBank: DISGUISE_CFGS[cfgIdx].paletteNum,
     x: 0, y: 0,
     shape: 2, size: 2,  // 16×32 (gObjectEventBaseOam_16x32)
     priority: 2, paletteMode: 0, affineMode: 0,
