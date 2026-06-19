@@ -90,6 +90,10 @@ import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBeh
 import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
+// Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
+// l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
+import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo } from './overworld';
+import { MUS_SURF } from '../engine/decomp-data/include/constants/songs-data';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
 } from './field_effect';
@@ -1232,11 +1236,15 @@ function Task_SurfFieldEffect(task: DecompTask): void {
 /** 1:1 STRICT décomp `FldEff_UseSurf` (field_effect.c:2985) :
  *    taskId = CreateTask(Task_SurfFieldEffect, 0xff); gTasks[taskId].tMonId = gFieldEffectArguments[0];
  *    Overworld_ClearSavedMusic(); Overworld_ChangeMusicTo(MUS_SURF); return FALSE;
- *  (Musique = audio → skip 1:1 strict.) Lance aussi le préload des gfx d'état joueur. */
+ *  Musique = on PILOTE la lecture existante (PlayBGM), on ne touche pas l'engine son. */
 export function FldEff_UseSurf(rt: DecompRuntime): number {
   const taskId = rt.CreateTask(Task_SurfFieldEffect, 0xFF);
   const task = rt.gTasks.get(taskId);
   if (task) task.data[15] = gFieldEffectArguments[0];  // tMonId
+  // 1:1 décomp : joue la musique de surf (MUS_SURF). PlayBGM = m4aSongNumStart (engine son
+  // bricolé, fonctionnel) — on l'appelle, on ne le modifie pas.
+  Overworld_ClearSavedMusic();
+  Overworld_ChangeMusicTo(MUS_SURF);
   _preloadSurfPlayerGfx();
   return 0;  // FALSE
 }

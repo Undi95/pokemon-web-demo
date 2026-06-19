@@ -100,6 +100,8 @@ import {
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
 } from '../engine/script/script-runtime';
+// Musique surf (stop) : on PILOTE la lecture existante, on ne modifie pas l'engine son.
+import { Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic } from './overworld';
 import { FlagGet } from '../engine/script/script-vars';
 import { B_BUTTON } from '../engine/ui/gba-menu-system';
 import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from '../engine/field/direction-coords';
@@ -1022,7 +1024,12 @@ const BOB_JUST_MON = 2;
  *  (Overworld_ClearSavedMusic/ChangeMusicToDefault = AUDIO → skip 1:1 strict, on ne touche pas au son.) */
 function CreateStopSurfingTask(direction: number): void {
   LockPlayerFieldControls();
-  // Overworld_ClearSavedMusic() + Overworld_ChangeMusicToDefault() — audio (skip : on ne touche pas au son).
+  // 1:1 décomp : Overworld_ClearSavedMusic() + Overworld_ChangeMusicToDefault() (= rétablit la
+  // musique de map). On PILOTE la lecture existante (pas de modif engine son). NB : la résolution
+  // de la musique de map par défaut (GetCurrLocationDefaultMusic) appartient au chantier sound.c
+  // non porté → PlaySpecialMapMusic est best-effort (même limite que le vélo), à compléter avec sound.c.
+  Overworld_ClearSavedMusic();
+  Overworld_PlaySpecialMapMusic();
   gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
   gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
   gPlayerAvatar.preventStep = true;
