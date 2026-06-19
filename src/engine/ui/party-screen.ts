@@ -53,7 +53,7 @@ import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Poke
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { gMoveNames } from '../data/game-data';
-import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag } from '../system/sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../system/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -2848,7 +2848,15 @@ export function CB2_InitPartyMenu(): void {
       ResetPaletteFade();
       rt.gPaletteFade.bufferTransferDisabled = true;
       rt.gMain.state++; break;
-    case 4: ResetSpriteData(); rt.gMain.state++; break;
+    case 4:
+      ResetSpriteData();
+      // 1:1 décomp `ShowPartyMenu` case 4 (party_menu.c:584) : FreeAllSpritePalettes().
+      // Sans ça, les tags de palette OBJ de l'overworld (météo×2 + GENERAL_0/1 dans [12,16))
+      // restaient marqués → LoadSpritePalette(pokeball/status/helditem) renvoyait 0xFF →
+      // paletteBank=255 → icône pokéball/SORTIR/gros-icône NOIRES. (Le bag le faisait déjà ;
+      // l'OW ré-établit ses palettes au retour via CB2_ReturnToField.) [[diag-glitches-2026-06-18]]
+      FreeAllSpritePalettes();
+      rt.gMain.state++; break;
     case 5: rt.gMain.state++; break;
     case 6: ResetTasks(); rt.gMain.state++; break;
     case 7:
