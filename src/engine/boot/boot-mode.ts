@@ -220,6 +220,11 @@ function applyNoIntroPreset(): void {
     'RUSTBORO_CITY', 'FORTREE_CITY', 'LILYCOVE_CITY', 'MOSSDEEP_CITY', 'SOOTOPOLIS_CITY',
     'EVER_GRANDE_CITY',
   ]) FlagSet(`FLAG_VISITED_${city}`);
+  // ⚠️ DEBUG ONLY : point de réapparition par défaut = Centre de Clémenti-Ville/Algatia
+  // (le preset spawn à Algatia/Mossdeep). En jeu réel, `setrespawn` le pose à l'entrée
+  // de chaque Centre (vérifié). Le preset spawn DIRECT ne le pose pas → sans ça, perdre
+  // un combat (whiteout) ne saurait pas où réapparaître. Cf. DoWhiteOut (overworld.c).
+  (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation = 'HEAL_LOCATION_MOSSDEEP_CITY';
   // Vars post-intro.
   // ⚠️ HOTFIX 2026-05-09 : était à 6, ce qui fait que walking dans
   // une maison fire le coord trigger `PetalburgGymReport` (= map_script_2
