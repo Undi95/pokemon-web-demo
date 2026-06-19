@@ -2142,6 +2142,12 @@ export function LoadGeneralFieldEffectPalette(which: 0 | 1): number {
   );
 }
 
+/** loadfadedpal de la palette small-sparkle (1:1 `field_eff_loadfadedpal gSpritePalette_SmallSparkle`,
+ *  utilisé par le script FLDEFF_SPARKLE). _smallSparklePalData est mis en cache au préchargement. */
+export function LoadSmallSparkleFieldEffectPalette(): number {
+  return FieldEffectScript_LoadFadedPalette(_smallSparklePalData, TAG_SMALL_SPARKLE_PAL);
+}
+
 /** 1:1 décomp `sAnim_SandPile` (field_effect_objects.h:793) : FRAME(0,4)(1,4)(2,4) END.
  *  imageValue = offset tile (16×8 = 2 tiles/frame → frames 0,2,4). */
 const sAnims_SandPile: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
@@ -2505,8 +2511,8 @@ export function FldEff_Sparkle(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _smallSparkleTileStart,
-    // 1:1 décomp `field_eff_loadfadedpal gSpritePalette_SmallSparkle` (load-on-demand + free au stop).
-    paletteBank: FieldEffectScript_LoadFadedPalette(_smallSparklePalData, TAG_SMALL_SPARKLE_PAL),
+    // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
+    paletteBank: IndexOfSpritePaletteTag(TAG_SMALL_SPARKLE_PAL),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[2] & 3) as 0 | 1 | 2 | 3, // 1:1 oam.priority = args[2]
@@ -2916,8 +2922,8 @@ function _spawnUnusedFieldEffect(rt: DecompRuntime, fldEff: number): number {
   const palG1 = (fldEff === FLDEFF_UNUSED_GRASS || fldEff === FLDEFF_UNUSED_GRASS_2);
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
-    // 1:1 décomp : ces effets font `field_eff_loadfadedpal GENERAL_0/1` → on-demand + free au stop.
-    paletteBank: LoadGeneralFieldEffectPalette(palG1 ? 1 : 0),
+    // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
+    paletteBank: IndexOfSpritePaletteTag(palG1 ? TAG_GENERAL_1_PAL : TAG_GENERAL_0_PAL),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // gObjectEventBaseOam_16x16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
