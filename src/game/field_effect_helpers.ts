@@ -339,10 +339,8 @@ export function preloadTallGrassEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(TALL_GRASS_PNG, 4);
     const reordered = pngTo1dObjLayoutRipple(png.charData); // 10-wide, 5 frames (identique à ripple)
     _tallGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_TALL_GRASS_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _tallGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : chargée ON-DEMAND dans FldEff_TallGrass (LoadGeneralFieldEffectPalette) +
+    // libérée au stop. Plus de load résident à l'init (= 1:1 décomp, zone [12,16) libre au repos).
     _tallGrassInit = true;
   })();
   return _tallGrassInitPromise;
@@ -509,10 +507,7 @@ export function preloadLongGrassEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(LONG_GRASS_PNG, 4);
     const reordered = pngTo1dObjLayoutLongGrass(png.charData);
     _longGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_LONG_GRASS_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _longGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : on-demand dans FldEff_LongGrass + free au stop (plus de load résident).
     _longGrassInit = true;
   })();
   return _longGrassInitPromise;
@@ -635,10 +630,7 @@ export function preloadShortGrassEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(SHORT_GRASS_PNG, 4);
     const reordered = pngTo1dObjLayoutShortGrass(png.charData);
     _shortGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SHORT_GRASS_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _shortGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : on-demand dans FldEff_ShortGrass + free au stop (plus de load résident).
     _shortGrassInit = true;
   })();
   return _shortGrassInitPromise;
@@ -805,8 +797,8 @@ export function preloadJumpImpactEffects(_rt: DecompRuntime): Promise<void> {
   if (_jumpInitPromise && !_jumpInit) return _jumpInitPromise;
   _jumpInit = false; _jumpInitPromise = null;
   _jumpInitPromise = (async () => {
-    try { _jumpPalG0 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _jumpPalG0 = 0; }
-    try { _jumpPalG1 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_1.pal`), tag: TAG_GENERAL_1_PAL }); } catch { _jumpPalG1 = 0; }
+    // Palettes GENERAL_0/1 : on-demand dans spawnJumpImpactEffect (LoadGeneralFieldEffectPalette) +
+    // free au stop. Plus de load résident à l'init.
     for (const key of Object.keys(JUMP_CFG)) {
       const fldeff = Number(key);
       const cfg = JUMP_CFG[fldeff];
@@ -936,7 +928,7 @@ export function preloadFootprintsEffects(_rt: DecompRuntime): Promise<void> {
   if (_footprintInitPromise && !_footprintInit) return _footprintInitPromise;
   _footprintInit = false; _footprintInitPromise = null;
   _footprintInitPromise = (async () => {
-    try { _footprintPalSlot = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _footprintPalSlot = 0; }
+    // Palette GENERAL_0 : on-demand dans les FldEff footprints/tire-tracks + free au stop.
     for (const key of Object.keys(FOOTPRINTS_CFG)) {
       const fldeff = Number(key);
       const cfg = FOOTPRINTS_CFG[fldeff];
@@ -1651,10 +1643,7 @@ export function preloadSplashEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(SPLASH_PNG, 4);
     const reordered = pngTo1dObjLayoutSplash(png.charData);
     _splashTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SPLASH_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_0_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _splashPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_0_PAL });
+    // Palette GENERAL_0 : on-demand dans FldEff_Splash/FeetInFlowingWater + free au stop.
     _splashInit = true;
   })();
   return _splashInitPromise;
@@ -1820,10 +1809,7 @@ export function preloadRippleEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(RIPPLE_PNG, 4);
     const reordered = pngTo1dObjLayoutRipple(png.charData);
     _rippleTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_RIPPLE_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _ripplePalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : on-demand dans FldEff_Ripple + free au stop.
     _rippleInit = true;
   })();
   return _rippleInitPromise;
@@ -1895,10 +1881,7 @@ export function preloadHotSpringsEffect(_rt: DecompRuntime): Promise<void> {
     // PNG 16×16 = 4 tiles 2×2, ordre PNG brut (row-major) = ordre obj. Frame unique.
     const png = await loadIndexedPngStrict(HOT_SPRINGS_PNG, 4);
     _hotSpringsTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: TAG_HOT_SPRINGS_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _hotSpringsPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : on-demand dans FldEff_HotSpringsWater + free au stop.
     _hotSpringsInit = true;
   })();
   return _hotSpringsInitPromise;
@@ -2003,10 +1986,7 @@ export function preloadAshEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(ASH_PNG, 4);
     const reordered = pngTo1dObjLayoutRipple(png.charData);
     _ashTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_ASH_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_1_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _ashPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    // Palette GENERAL_1 : on-demand dans FldEff_Ash + free au stop.
     _ashInit = true;
   })();
   return _ashInitPromise;
@@ -2175,10 +2155,7 @@ export function preloadSandPileEffect(_rt: DecompRuntime): Promise<void> {
     // PNG 48×8 = 6 tiles en UNE rangée → ordre PNG brut = ordre frame (pas de reorder).
     const png = await loadIndexedPngStrict(SAND_PILE_PNG, 4);
     _sandPileTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: TAG_SAND_PILE_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_0_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _sandPilePalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_0_PAL });
+    // Palette GENERAL_0 : on-demand dans FldEff_SandPile + free au stop.
     _sandPileInit = true;
   })();
   return _sandPileInitPromise;
@@ -2317,10 +2294,7 @@ export function preloadBubblesEffect(_rt: DecompRuntime): Promise<void> {
     const png = await loadIndexedPngStrict(BUBBLES_PNG, 4);
     const reordered = pngTo1dObjLayoutBubbles(png.charData);
     _bubblesTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_BUBBLES_GFX });
-    let palette: Uint16Array;
-    try { palette = await loadGbaPal(GENERAL_0_PAL); }
-    catch { palette = png.palette as Uint16Array; }
-    _bubblesPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_0_PAL });
+    // Palette GENERAL_0 : on-demand dans FldEff_Bubbles + free au stop.
     _bubblesInit = true;
   })();
   return _bubblesInitPromise;
