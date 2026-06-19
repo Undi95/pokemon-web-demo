@@ -62,7 +62,7 @@ import {
   ELEVATION_DEFAULT,
   _getGfxMeta, type GfxMeta,
   LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
-  _genericNpcReflectionTag, _loadReflectionPaletteByTag,
+  _genericNpcReflectionTag, _patchReflectionPaletteToSlot,
   // 1:1 décomp Task_SurfFieldEffect / Task_UseWaterfall (field_effect.c) — montée de surf + cascade.
   ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
@@ -3076,40 +3076,37 @@ const sBridgeReflectionVerticalOffsets: ReadonlyArray<number> = [12, 28, 44];
 /** 1:1 décomp `LoadObjectReflectionPalette` (field_effect_helpers.c:75) — adapté.
  *  Pose l'offset vertical de pont sur le sprite reflet (data[2]) + dispatch pont-haut vs
  *  régulier. Renvoie le bank reflet (slot OBJ dynamique), ou -1 si non teinté. */
-function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
+function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite, reflSlot: number): void {
   const meta = _getGfxMeta(npc.graphicsId);
   refl.data[2] = 0; // sReflectionVerticalOffset
   let bridgeType = MetatileBehavior_GetBridgeType(npc.previousMetatileBehavior);
   if (!bridgeType) bridgeType = MetatileBehavior_GetBridgeType(npc.currentMetatileBehavior);
   if (!meta.disableReflectionPaletteLoad && bridgeType) {
     refl.data[2] = sBridgeReflectionVerticalOffsets[bridgeType - 1] ?? 0;
-    return LoadObjectHighBridgeReflectionPalette(meta);
+    LoadObjectHighBridgeReflectionPalette(meta, reflSlot);
+    return;
   }
-  // Régulier : la décomp ne patche que si reflectionPaletteTag != NONE ; sinon le slot
-  // garde la palette préchargée. Notre archi n'ayant pas de slot réservé, on charge
-  // TOUJOURS la palette reflet déduite du slot (= le contenu de ce slot préchargé), sauf
-  // si disableReflectionPaletteLoad (alors reflet non teinté = réutilise la palette main).
-  if (meta.disableReflectionPaletteLoad) return -1;
-  return LoadObjectRegularReflectionPalette(meta);
+  if (meta.disableReflectionPaletteLoad) return;
+  LoadObjectRegularReflectionPalette(meta, reflSlot);
 }
 
-/** 1:1 décomp `LoadObjectRegularReflectionPalette` (field_effect_helpers.c:97) — adapté.
- *  Dispatch par slot palette ; joueur/NPC spécial délèguent aux fonctions PUBLIQUES
- *  event_object_movement.c (object-events.ts), générique NPC_1..4 charge le reflet préchargé.
- *  Renvoie le bank reflet, ou -1. */
-function LoadObjectRegularReflectionPalette(meta: GfxMeta): number {
-  if (meta.paletteSlot === PALSLOT_PLAYER) return LoadPlayerObjectReflectionPalette(meta.paletteTag);
-  if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) return LoadSpecialObjectReflectionPalette(meta.paletteTag);
-  // Générique NPC : 1:1 décomp `PatchObjectPalette(GetObjectPaletteTag(slot), slot)` →
-  // adaptation = charge le reflet teinté npc_X_reflection préchargé pour ce slot.
-  return _loadReflectionPaletteByTag(_genericNpcReflectionTag[meta.paletteSlot] ?? 0);
+/** 1:1 STRICT décomp `LoadObjectRegularReflectionPalette` (field_effect_helpers.c:97) : ne re-patche
+ *  le slot reflet FIXE `reflSlot` QUE si reflectionPaletteTag != NONE — sinon NO-OP (le NPC régulier
+ *  garde la palette npc_X_reflection DÉJÀ préchargée dans le slot par PreloadReflectionPalettes =
+ *  InitObjectEventPalettes). Player → reflet gender-correct ; NPC spécial → slot 11 ; générique → re-patch. */
+function LoadObjectRegularReflectionPalette(meta: GfxMeta, reflSlot: number): void {
+  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return; // slot déjà préchargé (1:1)
+  if (meta.paletteSlot === PALSLOT_PLAYER) { LoadPlayerObjectReflectionPalette(meta.paletteTag, reflSlot); return; }
+  if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) { LoadSpecialObjectReflectionPalette(meta.paletteTag, reflSlot); return; }
+  // 1:1 : PatchObjectPalette(GetObjectPaletteTag(reflSlot), reflSlot) → re-patche le reflet générique.
+  _patchReflectionPaletteToSlot(_genericNpcReflectionTag[meta.paletteSlot] ?? 0, reflSlot);
 }
 
-/** 1:1 décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) — adapté.
- *  Pont haut au-dessus d'eau sombre (Route 120) : reflet bleu sombre uni (bridge_reflection). */
-function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta): number {
-  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return -1;
-  return _loadReflectionPaletteByTag(meta.reflectionPaletteTag);
+/** 1:1 STRICT décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) : pont haut
+ *  au-dessus d'eau sombre (Route 120) → reflet bleu sombre uni (bridge_reflection) dans le slot FIXE. */
+function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta, reflSlot: number): void {
+  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return;
+  _patchReflectionPaletteToSlot(meta.reflectionPaletteTag, reflSlot);
 }
 
 /** 1:1 décomp `UpdateObjectReflectionSprite` (field_effect_helpers.c:124). Callback
@@ -3203,8 +3200,11 @@ export function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: Dec
   // 1:1 ; data[2]=0 = pas d'offset (OK hors Route 120 high bridge). player + NPC réguliers OK.
   const _mainBank = sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].paletteBank ?? 0) : 0;
   refl.data[6] = -1;
-  refl.data[2] = 0;
   roam.paletteBank = gReflectionEffectPaletteMap[_mainBank] ?? _mainBank;
+  // 1:1 décomp (field_effect_helpers.c:64) : LoadObjectReflectionPalette(objectEvent, reflectionSprite)
+  // → pose data[2] (offset pont haut) + re-patche le slot reflet FIXE (Change C) pour player-gender/
+  // spécial(slot 11)/pont. NO-OP pour un NPC régulier (reflectionPaletteTag NONE → slot préchargé).
+  LoadObjectReflectionPalette(npc, refl, roam.paletteBank);
   // 1:1 décomp (field_effect_helpers.c:66-67) : if (!stillReflection) oam.affineMode = NORMAL.
   // Eau → mode affine dès la création (matrixNum/flip posés chaque frame par
   // UpdateObjectReflectionSprite) ; glace → OAM vflip. Les matrices 0/1 sont animées par

@@ -3524,39 +3524,31 @@ export function FreeAndReserveObjectSpritePalettes(): void {
   setReservedSpritePaletteCount(OBJ_PALSLOT_COUNT);
 }
 
-/** Charge le .pal reflet (si préchargé) dans un slot OBJ dynamique et renvoie le bank, ou -1.
- *  ⚠️ DETTE (chantier [[chantier-palslot-object-event-palettes]]) : à convertir en slot FIXE
- *  `gReflectionEffectPaletteMap[mainSlot]` comme le main (sinon, sous reserved=12, un reflet
- *  alloué dynamiquement prendrait [12,16) et clobberait la météo). OK pour l'instant : les
- *  reflets sont INACTIFS hors maps à eau (Route 113 = pas d'eau → pas de reflet → pas de slot). */
-export function _loadReflectionPaletteByTag(tag: number): number {
-  if (!tag || tag === OBJ_EVENT_PAL_TAG_NONE) return -1;
-  const data = _reflectionPalData.get(tag);
-  if (!data) return -1;
-  const bank = LoadSpritePalette({ data, tag });
-  return bank === 0xFF ? -1 : bank;
+/** 1:1 décomp `PatchObjectPalette(reflTag, slot)` côté reflet : patche le .pal reflet préchargé
+ *  dans son slot OBJ FIXE réservé (gReflectionEffectPaletteMap[mainSlot]) via PatchObjectEventPalette.
+ *  Remplace l'ancienne alloc dynamique [12,16) (Change C — dette `_loadReflectionPaletteByTag` soldée). */
+export function _patchReflectionPaletteToSlot(reflTag: number, slot: number): void {
+  if (!reflTag || reflTag === OBJ_EVENT_PAL_TAG_NONE) return;
+  const data = _reflectionPalData.get(reflTag);
+  if (data) PatchObjectEventPalette(data, slot, reflTag);
 }
 
-/** 1:1 décomp `LoadPlayerObjectReflectionPalette` (event_object_movement.c:2073) — adapté.
- *  Fonction PUBLIQUE (include/event_object_movement.h:115), appelée par la chaîne palette
- *  reflet de field_effect_helpers.c (LoadObjectRegularReflectionPalette, désormais au miroir)
- *  + plusieurs LoadObjectEventPalette*. Cherche le tag reflet teinté du joueur dans
- *  `sPlayerReflectionPaletteSets` (statique, reste ici) et le charge dans un slot OBJ
- *  dynamique. Renvoie le bank, ou -1. */
-export function LoadPlayerObjectReflectionPalette(tag: number): number {
+/** 1:1 décomp `LoadPlayerObjectReflectionPalette(tag, slot)` (event_object_movement.c:2073).
+ *  PUBLIQUE. Cherche le tag reflet teinté du joueur (gender-correct : brendan/may_reflection)
+ *  dans `sPlayerReflectionPaletteSets` et le patche dans le slot reflet FIXE `slot`. */
+export function LoadPlayerObjectReflectionPalette(tag: number, slot: number): void {
   let reflTag = 0;
   for (const [t, rt] of sPlayerReflectionPaletteSets) if (t === tag) { reflTag = rt; break; }
-  return _loadReflectionPaletteByTag(reflTag);
+  _patchReflectionPaletteToSlot(reflTag, slot);
 }
 
-/** 1:1 décomp `LoadSpecialObjectReflectionPalette` (event_object_movement.c:2088) — adapté.
- *  Fonction PUBLIQUE (include/event_object_movement.h:116). Idem pour les objets spéciaux
- *  (`sSpecialObjectReflectionPaletteSets` ; certains reflètent leur propre palette = pas de
- *  tint). Renvoie le bank, ou -1. */
-export function LoadSpecialObjectReflectionPalette(tag: number): number {
+/** 1:1 décomp `LoadSpecialObjectReflectionPalette(tag, slot)` (event_object_movement.c:2088).
+ *  PUBLIQUE. Idem pour les objets spéciaux (`sSpecialObjectReflectionPaletteSets` ; certains
+ *  reflètent leur propre palette = pas de tint) → patche le slot reflet FIXE `slot`. */
+export function LoadSpecialObjectReflectionPalette(tag: number, slot: number): void {
   let reflTag = 0;
   for (const [t, rt] of sSpecialObjectReflectionPaletteSets) if (t === tag) { reflTag = rt; break; }
-  return _loadReflectionPaletteByTag(reflTag);
+  _patchReflectionPaletteToSlot(reflTag, slot);
 }
 
 // ─── Reflection distortion = petites vagues (1:1 CreateReflectionEffectSprites) ────
