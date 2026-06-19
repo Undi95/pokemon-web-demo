@@ -88,7 +88,7 @@ import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBeh
   MetatileBehavior_IsWaterfall } from './metatile_behavior';
 // 1:1 décomp : constantes de slot/tag palette (object-event-graphics-info). Utilisées par
 // la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
-import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
+import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE, gReflectionEffectPaletteMap } from '../engine/field/object-event-graphics-info';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
@@ -3133,15 +3133,11 @@ function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): vo
   }
   const moam = rt.gba.oam[main.oamIndex];
   const roam = rt.gba.oam[refl.oamIndex];
-  // 1:1 : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[main paletteNum]
-  // (= le slot reflet teinté). Notre adaptation : bank reflet résolu une fois (data[6]).
-  // Si pas encore chargé (-1 ; .pal préchargé arrivé APRÈS le SetUpReflection), on
-  // ré-essaie ; tant qu'indispo (ou disableReflectionPaletteLoad), on réutilise le main.
-  if (refl.data[6] < 0) {
-    const b = LoadObjectReflectionPalette(npc, refl);
-    if (b >= 0) refl.data[6] = b;
-  }
-  roam.paletteBank = refl.data[6] >= 0 ? refl.data[6] : moam.paletteBank;
+  // 1:1 STRICT décomp (field_effect_helpers.c:134) : reflectionSprite->oam.paletteNum =
+  // gReflectionEffectPaletteMap[mainSprite->oam.paletteNum] — le slot reflet FIXE réservé
+  // (player→1, npc_1..4→6-9), rempli au map-init par PreloadReflectionPalettes (= InitObjectEvent
+  // Palettes). Plus d'alloc dynamique [12,16) (qui clobbait météo + donnait la mauvaise couleur).
+  roam.paletteBank = gReflectionEffectPaletteMap[moam.paletteBank] ?? moam.paletteBank;
   roam.shape = moam.shape;
   roam.size = moam.size;
   roam.tileId = moam.tileId;
@@ -3198,17 +3194,17 @@ export function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: Dec
   refl.data[0] = gObjectEvents.indexOf(npc);  // sReflectionObjEventId
   refl.data[1] = npc.localId;                  // sReflectionObjEventLocalId
   refl.data[7] = stillReflection ? 1 : 0;      // sIsStillReflection
-  // 1:1 décomp : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[paletteNum]
-  // (slot reflet) + LoadObjectReflectionPalette(objectEvent, reflectionSprite). Notre
-  // adaptation charge la palette reflet teintée dans un slot OBJ dynamique (data[6]=bank,
-  // -1 si .pal pas encore préchargée → ré-essai par frame côté UpdateObjectReflectionSprite)
-  // et pose data[2] (sReflectionVerticalOffset = offset de pont haut, 0 sinon).
+  // 1:1 STRICT décomp (field_effect_helpers.c:54) : reflectionSprite->oam.paletteNum =
+  // gReflectionEffectPaletteMap[reflectionSprite->oam.paletteNum] (= main copié → slot reflet
+  // FIXE réservé, rempli au map-init par PreloadReflectionPalettes). Plus d'alloc dynamique
+  // [12,16) (clobbait la météo + mauvaise couleur). Calculé depuis le sprite main (robuste au
+  // split OAM). ⚠️ DETTE résiduelle (Change C) : le re-patch du slot fixe pour player-gender/
+  // special/pont (LoadObjectReflectionPalette + sReflectionVerticalOffset data[2]) reste à porter
+  // 1:1 ; data[2]=0 = pas d'offset (OK hors Route 120 high bridge). player + NPC réguliers OK.
+  const _mainBank = sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].paletteBank ?? 0) : 0;
   refl.data[6] = -1;
-  const reflBank = LoadObjectReflectionPalette(npc, refl);
-  if (reflBank >= 0) {
-    refl.data[6] = reflBank;
-    roam.paletteBank = reflBank;
-  }
+  refl.data[2] = 0;
+  roam.paletteBank = gReflectionEffectPaletteMap[_mainBank] ?? _mainBank;
   // 1:1 décomp (field_effect_helpers.c:66-67) : if (!stillReflection) oam.affineMode = NORMAL.
   // Eau → mode affine dès la création (matrixNum/flip posés chaque frame par
   // UpdateObjectReflectionSprite) ; glace → OAM vflip. Les matrices 0/1 sont animées par

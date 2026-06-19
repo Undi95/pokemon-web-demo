@@ -3478,6 +3478,25 @@ export async function PreloadReflectionPalettes(): Promise<void> {
     try { _reflectionPalData.set(tag, await loadGbaPal(url)); }
     catch (e) { console.warn(`[reflets] échec préchargement ${url}`, e); }
   }));
+  // 1:1 décomp `InitObjectEventPalettes` (event_object_movement.c:2532) → `PatchObjectPaletteRange(
+  // ..., PALSLOT_PLAYER, PALSLOT_NPC_4_REFLECTION + 1)` : pose les palettes reflet GÉNÉRIQUES dans
+  // leurs slots OBJ FIXES réservés (player→1, npc_1..4→6-9, via gReflectionEffectPaletteMap).
+  // `UpdateObjectReflectionSprite` pointe alors `oam.paletteNum = gReflectionEffectPaletteMap[mainSlot]`
+  // dessus. SANS ce patch, les slots reflet restaient VIDES → les reflets retombaient sur une
+  // alloc dynamique [12,16) (slots field-effect/météo) → mauvaise couleur (bug « 3 reflets, 3
+  // couleurs » sur maps à eau). Le slot 1 défaut brendan_reflection est re-patché au gender au
+  // spawn joueur (LoadPlayerObjectReflectionPalette), 1:1 sObjectPaletteTags0.
+  const _reflectionSlotPatches: ReadonlyArray<readonly [number, number]> = [
+    [gReflectionEffectPaletteMap[PALSLOT_PLAYER], OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION], // slot 1
+    [gReflectionEffectPaletteMap[PALSLOT_NPC_1],  OBJ_EVENT_PAL_TAG_NPC_1_REFLECTION],   // slot 6
+    [gReflectionEffectPaletteMap[PALSLOT_NPC_2],  OBJ_EVENT_PAL_TAG_NPC_2_REFLECTION],   // slot 7
+    [gReflectionEffectPaletteMap[PALSLOT_NPC_3],  OBJ_EVENT_PAL_TAG_NPC_3_REFLECTION],   // slot 8
+    [gReflectionEffectPaletteMap[PALSLOT_NPC_4],  OBJ_EVENT_PAL_TAG_NPC_4_REFLECTION],   // slot 9
+  ];
+  for (const [slot, tag] of _reflectionSlotPatches) {
+    const data = _reflectionPalData.get(tag);
+    if (data) PatchObjectEventPalette(data, slot, tag);
+  }
 }
 
 /** 1:1 décomp `PatchObjectPalette(paletteTag, paletteSlot)` (event_object_movement.c:2043) —
