@@ -2187,6 +2187,29 @@ function SetUpFieldMove_Teleport(): boolean {
   return false;
 }
 
+/** 1:1 décomp `SetUpFieldMove_Fly(void)` (region_map.c) :
+ *      if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE) return TRUE;
+ *      return FALSE;
+ *  Même gate map-type que Téléport (extérieur). Sur OUI, le case default de CursorCb_FieldMove
+ *  ferme le menu → retour-field → `gPostMenuFieldCallback = FieldCallback_Fly` ouvre la carte
+ *  région en mode FLY (game/fldeff_fly.ts, exposé __FieldCallback_Fly, anti-cycle ESM).
+ *  ⚠️ déviation port : le décomp pose `gPartyMenu.exitCallback = CB2_OpenFlyMap` (swap CB2) ;
+ *  notre carte région est un OVERLAY au-dessus de l'OW → on passe par gPostMenuFieldCallback
+ *  (comme Téléport) qui ouvre l'overlay au retour-field. Résultat identique (carte Fly affichée). */
+function SetUpFieldMove_Fly(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const hdr = g.gMapHeader as { mapType?: string } | null | undefined;
+  const mt = hdr?.mapType;
+  const allows = mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN'
+    || mt === 'MAP_TYPE_OCEAN_ROUTE' || mt === 'MAP_TYPE_CITY';
+  if (allows) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_Fly as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
 /** 1:1 décomp `sPartyMenuYesNoWindowTemplate` (party_menu.h:518) : boîte Oui/Non
  *  à (21,9), 5×4, bg2, pal14. */
 const PARTY_YESNO_WINDOW_TEMPLATE: WindowTemplate = {
@@ -2427,6 +2450,7 @@ const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
   [FIELD_MOVE_TELEPORT]:    { fieldMoveFunc: SetUpFieldMove_Teleport,   msgId: 'gText_CantUseHere' },
+  [FIELD_MOVE_FLY]:         { fieldMoveFunc: SetUpFieldMove_Fly,        msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_DIG]:         { fieldMoveFunc: SetUpFieldMove_Dig,        msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_MILK_DRINK]:  { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
   [FIELD_MOVE_SOFT_BOILED]: { fieldMoveFunc: SetUpFieldMove_SoftBoiled, msgId: 'gText_NotEnoughHp' },
