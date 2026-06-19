@@ -324,7 +324,6 @@ const sAnims_TallGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _tallGrassTileStart = -1;
-let _tallGrassPalSlot = -1;
 let _tallGrassInit = false;
 let _tallGrassInitPromise: Promise<void> | null = null;
 
@@ -478,7 +477,6 @@ const sAnims_LongGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _longGrassTileStart = -1;
-let _longGrassPalSlot = -1;
 let _longGrassInit = false;
 let _longGrassInitPromise: Promise<void> | null = null;
 
@@ -602,7 +600,6 @@ const sAnims_ShortGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _shortGrassTileStart = -1;
-let _shortGrassPalSlot = -1;
 let _shortGrassInit = false;
 let _shortGrassInitPromise: Promise<void> | null = null;
 
@@ -770,7 +767,6 @@ function buildJumpAnims(cfg: JumpCfg): AnimCmd[][] {
 }
 const _jumpAnims: Record<number, AnimCmd[][]> = {};
 const _jumpTileStart = new Map<number, number>();
-let _jumpPalG0 = -1, _jumpPalG1 = -1;
 let _jumpInit = false;
 let _jumpInitPromise: Promise<void> | null = null;
 
@@ -904,7 +900,6 @@ function buildFootprintAnims(cfg: FootprintsCfg): AnimCmd[][] {
 }
 const _footprintAnims: Record<number, AnimCmd[][]> = {};
 const _footprintTileStart = new Map<number, number>();
-let _footprintPalSlot = -1;
 let _footprintInit = false;
 let _footprintInitPromise: Promise<void> | null = null;
 
@@ -1626,7 +1621,6 @@ const sAnims_Splash: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _splashTileStart = -1;
-let _splashPalSlot = -1;
 let _splashInit = false;
 let _splashInitPromise: Promise<void> | null = null;
 
@@ -1781,7 +1775,6 @@ const sAnims_Ripple: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _rippleTileStart = -1;
-let _ripplePalSlot = -1;
 let _rippleInit = false;
 let _rippleInitPromise: Promise<void> | null = null;
 
@@ -1873,7 +1866,6 @@ const sAnims_HotSpringsWater: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _hotSpringsTileStart = -1;
-let _hotSpringsPalSlot = -1;
 let _hotSpringsInit = false;
 let _hotSpringsInitPromise: Promise<void> | null = null;
 
@@ -1978,7 +1970,6 @@ const sAnims_Ash: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _ashTileStart = -1;
-let _ashPalSlot = -1;
 let _ashInit = false;
 let _ashInitPromise: Promise<void> | null = null;
 
@@ -2155,7 +2146,6 @@ const sAnims_SandPile: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _sandPileTileStart = -1;
-let _sandPilePalSlot = -1;
 let _sandPileInit = false;
 let _sandPileInitPromise: Promise<void> | null = null;
 
@@ -2279,7 +2269,6 @@ const sAnims_Bubbles: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
 ];
 
 let _bubblesTileStart = -1;
-let _bubblesPalSlot = -1;
 let _bubblesInit = false;
 let _bubblesInitPromise: Promise<void> | null = null;
 
@@ -2865,7 +2854,6 @@ function _extractFrames2x2(charData: Uint8Array, pngWidthTiles: number, frameInd
 
 const _deadTileStart = new Map<number, number>();
 const _deadAnims: Record<number, AnimCmd[][]> = {};
-let _deadPalG0 = -1, _deadPalG1 = -1;
 let _deadInit = false;
 let _deadInitPromise: Promise<void> | null = null;
 
