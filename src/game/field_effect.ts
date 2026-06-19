@@ -35,6 +35,7 @@
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
+import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE } from '../engine/system/sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
@@ -111,16 +112,45 @@ export function SetFieldEffectRuntime(rt: DecompRuntime): void {
   _activeRuntime = rt;
 }
 
-/** 1:1 décomp `FieldEffectStop(sprite, fieldEffectId)` (field_effect.c:380) :
- *    FieldEffectFreeGraphicsResources(sprite);   // free sheet/palette si plus aucun user
- *    FieldEffectActiveListRemove(fieldEffectId);
+/** 1:1 décomp `FieldEffectFreePaletteIfUnused(u8 paletteNum)` (field_effect.c:832) :
+ *  libère le slot de palette OBJ ssi PLUS AUCUN sprite in-use ne le porte.
  *
- *  Adaptation : on ne libère PAS le sheet/palette (préchargé une fois, partagé par tous
- *  les sprites du même effet — réutilisé). On fait juste DestroySprite (= invisible OAM +
- *  inUse=false + callback=null, 1:1 décomp DestroySprite) + retrait de l'active-list.
+ *  ⚠️ Naturellement SÛR pour les slots RÉSERVÉS [0,12) : `FreeSpritePaletteByTag` →
+ *  `IndexOfSpritePaletteTag` ne scanne QUE [gReservedSpritePaletteCount, 16) → un slot réservé
+ *  (blob→0, emote→0, cœur→2, NPC palettes) est INVISIBLE → free = no-op (1:1 décomp). Ne libère
+ *  donc EFFECTIVEMENT que les slots dynamiques [12,16) (GENERAL_0/1, small sparkle…) quand
+ *  plus aucun sprite ne les utilise → la zone dynamique respire comme la décomp (future-proof). */
+export function FieldEffectFreePaletteIfUnused(rt: DecompRuntime, paletteNum: number): void {
+  const tag = GetSpritePaletteTagByPaletteNum(paletteNum);
+  if (tag === TAG_NONE) return;
+  // 1:1 décomp : si un autre sprite in-use porte ce paletteNum → ne pas libérer.
+  for (const s of rt.gSprites.values()) {
+    if (!s.inUse) continue;
+    const oam = rt.gba.oam[s.oamIndex];
+    if (oam && oam.paletteBank === paletteNum) return;
+  }
+  FreeSpritePaletteByTag(tag);
+}
+
+/** 1:1 décomp `FieldEffectFreeGraphicsResources(struct Sprite *sprite)` (field_effect.c:803) :
+ *  lit le paletteNum AVANT DestroySprite, détruit, puis libère la palette si inutilisée.
+ *
+ *  ⚠️ DÉVIATION assumée : on ne libère PAS les tiles (`FieldEffectFreeTilesIfUnused`) — nos sheets
+ *  sont préchargées RÉSIDENTES (LoadSpriteSheet une fois, PAS via FieldEffectScript_LoadTiles) ;
+ *  les libérer orphelinerait les `_xTileStart`. Seules les PALETTES saturent [12,16). */
+export function FieldEffectFreeGraphicsResources(rt: DecompRuntime, sprite: DecompSprite): void {
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const paletteNum = oam ? oam.paletteBank : 0xFF;
+  rt.DestroySprite(sprite.spriteId);
+  FieldEffectFreePaletteIfUnused(rt, paletteNum);
+}
+
+/** 1:1 décomp `FieldEffectStop(sprite, fieldEffectId)` (field_effect.c:380) :
+ *    FieldEffectFreeGraphicsResources(sprite);   // free palette si plus aucun user
+ *    FieldEffectActiveListRemove(fieldEffectId);
  *  Appelé par les UpdateXFieldEffect de field_effect_helpers.ts quand l'effet se termine. */
 export function FieldEffectStop(rt: DecompRuntime, sprite: DecompSprite, fieldEffectId: number): void {
-  rt.DestroySprite(sprite.spriteId);
+  FieldEffectFreeGraphicsResources(rt, sprite);
   FieldEffectActiveListRemove(fieldEffectId);
 }
 

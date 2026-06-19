@@ -53,6 +53,7 @@
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../engine/system/sprite';
+import { UpdateSpritePaletteWithWeather } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
@@ -356,7 +357,7 @@ export function FldEff_TallGrass(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _tallGrassTileStart,
-    paletteBank: _tallGrassPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
@@ -525,7 +526,7 @@ export function FldEff_LongGrass(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _longGrassTileStart,
-    paletteBank: _longGrassPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     // 1:1 : sprite->oam.priority = ElevationToPriority(gFieldEffectArguments[2]) (≠ tall grass = args[3]).
@@ -661,7 +662,7 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
     tileId: _shortGrassTileStart,
-    paletteBank: _shortGrassPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: parentSprite.x, y: parentSprite.y,
     shape: 0, size: 1,  // 16×16
     // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
@@ -829,7 +830,7 @@ function spawnJumpImpactEffect(rt: DecompRuntime, fldeff: number): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], cfg.dx, cfg.dy);
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
-    paletteBank: cfg.pal === 'g0' ? _jumpPalG0 : _jumpPalG1,
+    paletteBank: LoadGeneralFieldEffectPalette(cfg.pal === 'g0' ? 0 : 1),
     x: world.x, y: world.y,
     shape: cfg.shape, size: cfg.size,
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
@@ -960,7 +961,7 @@ function spawnFootprintsEffect(rt: DecompRuntime, fldeff: number): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
-    paletteBank: _footprintPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(0),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
@@ -1669,7 +1670,7 @@ function createSplashSprite(rt: DecompRuntime, localId: number, mapNum: number, 
   if (!parentSprite) return null;
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
-    tileId: _splashTileStart, paletteBank: _splashPalSlot,
+    tileId: _splashTileStart, paletteBank: LoadGeneralFieldEffectPalette(0),
     x: parentSprite.x, y: parentSprite.y,
     shape: 1, size: 0,  // 16×8
     // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
@@ -1837,7 +1838,7 @@ export function FldEff_Ripple(rt: DecompRuntime): number {
   const subpriority = gFieldEffectArguments[2], priority = gFieldEffectArguments[3];
   const result = rt.CreateSpriteAtOam({
     tileId: _rippleTileStart,
-    paletteBank: _ripplePalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: worldX, y: worldY,
     shape: 0, size: 1,  // 16×16
     priority: (priority & 3) as 0 | 1 | 2 | 3,
@@ -1922,7 +1923,7 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
     tileId: _hotSpringsTileStart,
-    paletteBank: _hotSpringsPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: parentSprite.x, y: parentSprite.y,
     shape: 0, size: 1,  // 16×16
     // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
@@ -2032,7 +2033,7 @@ export function FldEff_Ash(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(x, y, 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _ashTileStart,
-    paletteBank: _ashPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(1),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // 16×16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
@@ -2131,13 +2132,33 @@ const TAG_GENERAL_0_PAL = 'FLDEFF_PAL_TAG_GENERAL_0';
  *  En chargeant GENERAL_0 et GENERAL_1 en premier, ils obtiennent un slot résident ; les
  *  préchargements suivants qui re-demandent ces tags récupèrent le même slot (dédup par tag).
  *  Idempotent (LoadSpritePalette dédup par tag). */
+/** Données palette GENERAL_0/1 mises en CACHE au préchargement. AUCUN slot pris à l'init :
+ *  `LoadGeneralFieldEffectPalette` les charge À LA VOLÉE quand un effet GENERAL se déclenche
+ *  (= 1:1 décomp `field_eff_loadfadedpal`) + `FieldEffectFreePaletteIfUnused` les LIBÈRE au stop
+ *  → [12,16) respire EXACTEMENT comme la décomp (météo×2 + GENERAL on-demand, slots libres au repos
+ *  pour les effets à palette propre : small sparkle, cut grass…). Cf. [[diag-glitches-2026-06-18]]. */
+let _general0PalData: Uint16Array | null = null;
+let _general1PalData: Uint16Array | null = null;
+
 export async function preloadGeneralFieldEffectPalettes(_rt: DecompRuntime): Promise<void> {
-  if (IndexOfSpritePaletteTag(TAG_GENERAL_0_PAL) === 0xFF) {
-    try { LoadSpritePalette({ data: await loadGbaPal(GENERAL_0_PAL), tag: TAG_GENERAL_0_PAL }); } catch { /* asset indispo : laissé aux préchargements suivants */ }
-  }
-  if (IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL) === 0xFF) {
-    try { LoadSpritePalette({ data: await loadGbaPal(GENERAL_1_PAL), tag: TAG_GENERAL_1_PAL }); } catch { /* idem */ }
-  }
+  // 1:1 décomp : on ne charge PLUS GENERAL_0/1 dans un slot à l'init — on CACHE juste les données
+  // (le chargement se fait au déclenchement via LoadGeneralFieldEffectPalette = loadfadedpal).
+  try { if (!_general0PalData) _general0PalData = await loadGbaPal(GENERAL_0_PAL); } catch { /* asset indispo */ }
+  try { if (!_general1PalData) _general1PalData = await loadGbaPal(GENERAL_1_PAL); } catch { /* idem */ }
+}
+
+/** 1:1 décomp `FieldEffectScript_LoadFadedPalette(&gSpritePalette_GeneralFieldEffectN)` (field_effect.c:781,
+ *  appelé par `field_eff_loadfadedpal_callnative GENERAL_N, FldEff_X`) : LoadSpritePalette (alloue/dédup
+ *  un slot dynamique [12,16)) + UpdateSpritePaletteWithWeather. Appelé par le dispatcher FieldEffectStart
+ *  AVANT le FldEff (callnative). Le FldEff lit ensuite le slot via IndexOfSpritePaletteTag(tag) (= 1:1
+ *  résolution du `template.paletteTag`). Retourne le slot (0xFF si [12,16) saturée — edge décomp-fidèle). */
+export function LoadGeneralFieldEffectPalette(which: 0 | 1): number {
+  const data = which === 0 ? _general0PalData : _general1PalData;
+  const tag = which === 0 ? TAG_GENERAL_0_PAL : TAG_GENERAL_1_PAL;
+  if (!data) return 0xFF;
+  const slot = LoadSpritePalette({ data, tag });
+  if (slot !== 0xFF) UpdateSpritePaletteWithWeather(slot);
+  return slot;
 }
 
 /** 1:1 décomp `sAnim_SandPile` (field_effect_objects.h:793) : FRAME(0,4)(1,4)(2,4) END.
@@ -2190,7 +2211,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   // 1:1 décomp `CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SAND_PILE], 0,0,0)`.
   const result = rt.CreateSpriteAtOam({
     tileId: _sandPileTileStart,
-    paletteBank: _sandPilePalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(0),
     x: parentSprite.x, y: parentSprite.y,
     shape: 1, size: 0,  // 16×8 (horizontal)
     // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
@@ -2320,7 +2341,7 @@ export function FldEff_Bubbles(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 0);
   const result = rt.CreateSpriteAtOam({
     tileId: _bubblesTileStart,
-    paletteBank: _bubblesPalSlot,
+    paletteBank: LoadGeneralFieldEffectPalette(0),
     x: world.x, y: world.y,
     shape: 2, size: 2,  // 16×32 (tall)
     priority: 1,        // 1:1 : sprite->oam.priority = 1.
