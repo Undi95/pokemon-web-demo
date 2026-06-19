@@ -2860,8 +2860,8 @@ export function preloadUnusedFieldEffects(_rt: DecompRuntime): Promise<void> {
   if (_deadInitPromise && !_deadInit) return _deadInitPromise;
   _deadInit = false; _deadInitPromise = null;
   _deadInitPromise = (async () => {
-    try { _deadPalG0 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _deadPalG0 = 0; }
-    try { _deadPalG1 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_1.pal`), tag: TAG_GENERAL_1_PAL }); } catch { _deadPalG1 = 0; }
+    // Palettes GENERAL_0/1 : on-demand dans _spawnUnusedFieldEffect (LoadGeneralFieldEffectPalette) +
+    // free au stop. Plus de load résident (cohérence avec les autres field effects).
     // 3 effets à pic unique.
     for (const cfg of DEAD_CFG) {
       const png = await loadIndexedPngStrict(cfg.png, 4);
@@ -2906,7 +2906,8 @@ function _spawnUnusedFieldEffect(rt: DecompRuntime, fldEff: number): number {
   const palG1 = (fldEff === FLDEFF_UNUSED_GRASS || fldEff === FLDEFF_UNUSED_GRASS_2);
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
-    paletteBank: palG1 ? _deadPalG1 : _deadPalG0,
+    // 1:1 décomp : ces effets font `field_eff_loadfadedpal GENERAL_0/1` → on-demand + free au stop.
+    paletteBank: LoadGeneralFieldEffectPalette(palG1 ? 1 : 0),
     x: world.x, y: world.y,
     shape: 0, size: 1,  // gObjectEventBaseOam_16x16
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
