@@ -12,7 +12,7 @@ import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gMapHeader, type MapConnection } from './fieldmap';
 import { PlayBGM } from '../engine/system/decomp-globals';
 import { MUS_DUMMY } from '../engine/decomp-data/include/constants/songs-data';
-import { FlagGet, FlagClear } from '../engine/script/script-vars';
+import { FlagGet, FlagClear, VarGet, VarSet } from '../engine/script/script-vars';
 
 /** 1:1 décomp `gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1 = 8`. Const
  *  locale (import statique de script-opcodes-screen-fx ferme un cycle ESM → TDZ). */
@@ -53,6 +53,28 @@ export function Overworld_ResetStateAfterDigEscRope(): void {
   FlagClear('FLAG_SYS_SAFARI_MODE');
   FlagClear('FLAG_SYS_USE_STRENGTH');
   FlagClear('FLAG_SYS_USE_FLASH');
+}
+
+/** 1:1 STRICT décomp `Overworld_ResetStateAfterWhiteOut(void)` (overworld.c:399) :
+ *    ResetInitialPlayerAvatarState();   // dette mineure (re-spawn avatar, idem Teleport/DigEscRope)
+ *    FlagClear(FLAG_SYS_CYCLING_ROAD/CRUISE_MODE/SAFARI_MODE/USE_STRENGTH/USE_FLASH);
+ *    if (VarGet(VAR_SHOULD_END_ABNORMAL_WEATHER) == 1) {
+ *        VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 0);
+ *        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, ABNORMAL_WEATHER_NONE);  // = 0
+ *    }
+ *  Appelé par DoWhiteOut (overworld.c:363) après HealPlayerParty, AVANT le warp respawn :
+ *  remet l'avatar à pied + coupe surf/strength/flash/vélo (sinon on réapparaît en surfant). */
+export function Overworld_ResetStateAfterWhiteOut(): void {
+  FlagClear('FLAG_SYS_CYCLING_ROAD');
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+  FlagClear('FLAG_SYS_SAFARI_MODE');
+  FlagClear('FLAG_SYS_USE_STRENGTH');
+  FlagClear('FLAG_SYS_USE_FLASH');
+  // Fin de la météo anormale (Kyogre/Groudon) si le compteur de pas a saturé.
+  if (VarGet('VAR_SHOULD_END_ABNORMAL_WEATHER') === 1) {
+    VarSet('VAR_SHOULD_END_ABNORMAL_WEATHER', 0);
+    VarSet('VAR_ABNORMAL_WEATHER_LOCATION', 0);  // ABNORMAL_WEATHER_NONE
+  }
 }
 
 /** 1:1 STRICT décomp `SetDefaultFlashLevel(void)` (overworld.c:970) :
