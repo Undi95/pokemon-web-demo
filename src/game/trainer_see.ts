@@ -32,8 +32,8 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../engine/system/sprite';
-import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../engine/system/sprite';
+import { loadIndexedPngStrict } from '../engine/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
 import { gObjectEvents, TryGetObjectEventIdByLocalIdAndMap } from './event_object_movement';
 import { gPlayerAvatar } from './field_player_avatar';
@@ -66,16 +66,20 @@ const sAnims_HeartIcon: AnimCmd[][] = [
 
 const TAG_ICONS_EXCLQ = 'TRSEE_ICONS_EXCLQ';
 const TAG_ICONS_HEART = 'TRSEE_ICONS_HEART';
-const TAG_ICONS_PAL = 'TRSEE_ICONS_PAL';
 
 let _exclQTileStart = -1;
 let _heartTileStart = -1;
-let _iconPalSlot = -1;
 let _iconsInit = false;
 let _iconsInitPromise: Promise<void> | null = null;
 
-/** Préchargement assets (2 sheets + palette). À call au boot field (= 1:1 décomp
- *  LoadFieldEffectGraphics). Idempotent. */
+/** Préchargement assets (2 sheets SEULEMENT — pas de palette). À call au boot field
+ *  (= 1:1 décomp LoadFieldEffectGraphics). Idempotent.
+ *
+ *  1:1 décomp : les icônes !/? ont paletteTag=TAG_NONE → utilisent la palette JOUEUR
+ *  (slot 0) ; le cœur force paletteNum=2 (PALSLOT_NPC_1). AUCUN n'alloue de slot palette
+ *  dynamique [12,16) (qui est saturée : météo×2 + GENERAL_0 + GENERAL_1). Les glyphes
+ *  !/? n'utilisent que les indices 0/14/15 (transparent/blanc/noir, identiques dans
+ *  brendan.pal — vérifié). Cf. [[diag-glitches-2026-06-18]]. */
 export function preloadEmoteIcons(_rt: DecompRuntime): Promise<void> {
   const stillAlloc = _iconsInit && IndexOfSpriteTileTag(TAG_ICONS_EXCLQ) !== 0xFF;
   if (stillAlloc) return Promise.resolve();
@@ -90,10 +94,6 @@ export function preloadEmoteIcons(_rt: DecompRuntime): Promise<void> {
     eq.set(excl.charData, 0); eq.set(qst.charData, excl.charData.length);
     _exclQTileStart = LoadSpriteSheet({ data: eq, size: eq.length, tag: TAG_ICONS_EXCLQ });
     _heartTileStart = LoadSpriteSheet({ data: hrt.charData, size: hrt.charData.length, tag: TAG_ICONS_HEART });
-    let pal: Uint16Array;
-    try { pal = await loadGbaPal(`${FE_BASE}/emotion_exclamation.gbapal`); }
-    catch { pal = excl.palette as Uint16Array; }
-    _iconPalSlot = LoadSpritePalette({ data: pal, tag: TAG_ICONS_PAL });
     _iconsInit = true;
   })();
   return _iconsInitPromise;
@@ -104,13 +104,17 @@ export function preloadEmoteIcons(_rt: DecompRuntime): Promise<void> {
 function _createIconSprite(rt: DecompRuntime, which: 'exclQ' | 'heart', subpriority: number): number {
   if (!_iconsInit) { void preloadEmoteIcons(rt); return MAX_SPRITES; }  // lazy fallback
   const tileStart = which === 'heart' ? _heartTileStart : _exclQTileStart;
-  if (tileStart < 0 || _iconPalSlot < 0) return MAX_SPRITES;
+  if (tileStart < 0) return MAX_SPRITES;
+  // 1:1 décomp : !/? (TAG_NONE) → paletteNum 0 (PALSLOT_PLAYER, palette joueur) ; cœur →
+  // paletteNum 2 (PALSLOT_NPC_1, posé dans FldEff_HeartIcon). Slots RÉSERVÉS [0,12), jamais
+  // dynamiques (zone [12,16) saturée). Les glyphes !/? n'usent que 0/14/15 (transp/blanc/noir).
+  const paletteBank = which === 'heart' ? 2 : 0;
   // 1:1 : CreateSpriteAtEnd alloue le slot gSprites depuis la fin (sinon l'icône 16×16
   // écrase un NPC slot bas → "moitié de maman", bug connu). x/y = 0 : SpriteCB_TrainerIcons
   // les pose à l'object event chaque frame.
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
-    paletteBank: _iconPalSlot,
+    paletteBank,
     x: 0, y: 0,
     shape: 0, size: 1,  // 16×16 (sOamData_Icons)
     priority: 1,        // 1:1 sOamData_Icons.priority = 1
