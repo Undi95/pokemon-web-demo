@@ -66,7 +66,17 @@ import './fldeff_fly';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
-export const gFieldEffectArguments: number[] = new Array(8).fill(0);
+// ⚠️ UN SEUL global partagé. Ce buffer est AUSSI écrit par l'opcode script
+// `setfieldeffectargument` (engine/script/script-opcodes-fieldeffect.ts) AVANT `dofieldeffect` :
+// les deux modules DOIVENT référencer le MÊME array, sinon le slot du mon CS posé par le script
+// (ex. `setfieldeffectargument 0, VAR_RESULT` dans EventScript_UseSurf) n'atteint PAS FldEff_UseSurf
+// → tMonId reste invalide (255) → FldEff_FieldMoveShowMonInit lit gPlayerParty[255]=undefined = freeze.
+// Adopt-or-create via globalThis (pas d'import statique entre game/ et le moteur script → pas de
+// cycle ESM ; le 1er des deux modules chargé crée l'array, l'autre l'adopte).
+const _sharedFieldEffectArgs: number[] =
+  ((globalThis as Record<string, unknown>).gFieldEffectArguments as number[] | undefined) ?? new Array(8).fill(0);
+(globalThis as Record<string, unknown>).gFieldEffectArguments = _sharedFieldEffectArgs;
+export const gFieldEffectArguments: number[] = _sharedFieldEffectArgs;
 
 /** 1:1 décomp `FLDEFF_*` constants (include/constants/field_effects.h). */
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;

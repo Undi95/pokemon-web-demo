@@ -26,7 +26,13 @@ let _sFieldEffectScriptId = 0;
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c). Buffer s16 utilisé
  *  pour passer params aux field effects. Set par `setfieldeffectargument`
  *  opcode + utilisé par `dofieldeffect`. */
-const _gFieldEffectArguments: number[] = new Array(8).fill(0);
+// ⚠️ MÊME array partagé que game/field_effect.ts (adopt-or-create via globalThis). Sinon le slot
+// posé ici par `setfieldeffectargument`/`dofieldeffectsparkle` n'atteint pas les FldEff_* qui
+// importent gFieldEffectArguments de field_effect.ts (bug surf freeze : tMonId=255 → gPlayerParty[255]
+// undefined). Pas d'import statique (moteur script → game/) = pas de cycle ESM ; le 1er chargé crée.
+const _gFieldEffectArguments: number[] =
+  ((globalThis as Record<string, unknown>).gFieldEffectArguments as number[] | undefined) ?? new Array(8).fill(0);
+(globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
 
 /** _vget = VarGet avec fallback '0'. Local au fichier (= 1:1 décomp inline read). */
 function _vget(arg: string | undefined): number {
