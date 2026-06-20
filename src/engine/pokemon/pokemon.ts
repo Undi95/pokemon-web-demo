@@ -294,16 +294,14 @@ export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp
  *  Méthodes gérées (1:1) :
  *    - EVO_LEVEL (level >= param)
  *    - EVO_FRIENDSHIP (friendship >= 220) — Crobat/Blissey/Pikachu/Clefable/Mélo/Granivol…
+ *    - EVO_FRIENDSHIP_DAY/NIGHT (Eevee→Mentali/Noctali) : friendship>=220 + plage RTC
+ *      (jour [12,24) / nuit [0,12), pokemon.c:5524/5529). RTC lu via `globalThis.__rtc`
+ *      (cycle-break ESM : import statique rtc.ts deadlocke le boot — exposé par rtc.ts).
  *    - EVO_LEVEL_SILCOON / _CASCOON (Wurmple : (upperPersonality % 10) <=4 / >4)
  *    - EVO_LEVEL_NINJASK (Nincada → Ninjask, level >= param)
  *  Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque tout (1:1 pokemon.c:5503-5510).
  *
  *  Déférés (Dette R3, données non triviales — à compléter pour full 1:1) :
- *    - EVO_FRIENDSHIP_DAY/NIGHT (Eevee→Mentali/Noctali) : friendship>=220 + plage RTC
- *      (jour 12-23 / nuit 0-11, pokemon.c:5526/5531). ⚠️ BLOQUÉ : importer rtc.ts ici
- *      (RtcCalcLocalTime/gLocalTime) DEADLOCKE le boot — cycle d'init ESM
- *      pokemon→rtc→save-system→…→pokemon (vérifié runtime : import présent = boot stall
- *      sans erreur ; commenté = boot OK). Fix = cycle-break à la racine (cf. mémoire).
  *    - EVO_LEVEL_ATK_GT/EQ/LT_DEF (Tyrogue→Kicklee/Kapoera/Tygnon) : besoin atk/def calculés.
  *    - EVO_BEAUTY (Feebas→Milobellus) : stat beauté (contest) non trackée sur l'instance. */
 export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | null {
@@ -336,6 +334,29 @@ export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | nul
       case 'EVO_FRIENDSHIP':
         if (friendship >= FRIENDSHIP_EVO_THRESHOLD) target = e.target;
         break;
+      case 'EVO_FRIENDSHIP_DAY': {
+        // 1:1 décomp pokemon.c:5524-5527 : RtcCalcLocalTime() ;
+        //   gLocalTime.hours >= DAY_EVO_HOUR_BEGIN(12) && < DAY_EVO_HOUR_END(24) && friendship>=220.
+        // RTC via globalThis.__rtc (cycle-break ESM : import statique rtc.ts deadlocke le boot).
+        const rtc = (globalThis as { __rtc?: { RtcCalcLocalTime: () => void; gLocalTime: { hours: number } } }).__rtc;
+        if (rtc) {
+          rtc.RtcCalcLocalTime();
+          const h = rtc.gLocalTime.hours;
+          if (h >= 12 && h < 24 && friendship >= FRIENDSHIP_EVO_THRESHOLD) target = e.target;
+        }
+        break;
+      }
+      case 'EVO_FRIENDSHIP_NIGHT': {
+        // 1:1 décomp pokemon.c:5529-5532 : RtcCalcLocalTime() ;
+        //   gLocalTime.hours >= NIGHT_EVO_HOUR_BEGIN(0) && < NIGHT_EVO_HOUR_END(12) && friendship>=220.
+        const rtc = (globalThis as { __rtc?: { RtcCalcLocalTime: () => void; gLocalTime: { hours: number } } }).__rtc;
+        if (rtc) {
+          rtc.RtcCalcLocalTime();
+          const h = rtc.gLocalTime.hours;
+          if (h >= 0 && h < 12 && friendship >= FRIENDSHIP_EVO_THRESHOLD) target = e.target;
+        }
+        break;
+      }
       case 'EVO_LEVEL_SILCOON':
         if (level >= e.param && (upperPersonality % 10) <= 4) target = e.target;
         break;
@@ -345,11 +366,17 @@ export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | nul
       case 'EVO_LEVEL_NINJASK':
         if (level >= e.param) target = e.target;
         break;
-      // (EVO_FRIENDSHIP_DAY/NIGHT, EVO_LEVEL_ATK_*_DEF, EVO_BEAUTY = déférés, cf. JSDoc.)
+      // (EVO_LEVEL_ATK_*_DEF, EVO_BEAUTY = déférés, cf. JSDoc.)
     }
   }
   return target;
 }
+
+// Hook dev/test : la logique d'évolution au level-up n'est PAS encore câblée au flux de jeu
+// (aucun appelant de getEvolutionTargetForLevelUp/evolveInstance — câblage = chantier à part qui
+// touche le flux combat + la scène d'évolution). Exposé pour vérification déterministe de la table
+// de méthodes (test : monter un mon dans les conditions → l'espèce cible attendue).
+(globalThis as Record<string, unknown>).__getEvolutionTargetForLevelUp = getEvolutionTargetForLevelUp;
 
 /** 1:1 décomp évolution : change l'espèce d'une instance (garde PID/IVs/EVs/exp/moves/
  *  niveau), recalcule maxHP (currentHp += diff, comme Gen3) + nom + ability + growthRate. */

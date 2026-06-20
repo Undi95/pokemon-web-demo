@@ -216,6 +216,15 @@ export function RtcCalcLocalTime(): void {
   RtcCalcTimeDifference(sRtc, gLocalTime, GetSaveBlock2().localTimeOffset);
 }
 
+// ─── Pont globalThis (cycle-break ESM) ───────────────────────────────────────
+// rtc.ts importe `save-system` → un import STATIQUE de rtc.ts depuis pokemon.ts fermerait le
+// cycle pokemon→rtc→save-system→…→pokemon (vérifié runtime : DEADLOCKE le boot, sans erreur).
+// Les consommateurs « profonds » accèdent donc au RTC via `globalThis.__rtc` (lazy, pas d'import
+// statique = pas de cycle). 1er user : pokemon.ts évolution Évoli `EVO_FRIENDSHIP_DAY/NIGHT` qui
+// lit `gLocalTime.hours` (1:1 décomp pokemon.c:5526/5531 `RtcCalcLocalTime(); gLocalTime.hours`).
+// gLocalTime est l'objet const stable (muté en place par RtcCalcLocalTime) → ref exposée directement.
+(globalThis as Record<string, unknown>).__rtc = { RtcCalcLocalTime, gLocalTime };
+
 /** 1:1 décomp `void RtcCalcLocalTimeOffset(s32,s32,s32,s32)` (rtc.c:301).
  *  Calcule l'offset pour que gLocalTime = (days,h,m,s) MAINTENANT, et le
  *  STOCKE dans gSaveBlock2.localTimeOffset (→ persisté par la save). */
