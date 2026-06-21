@@ -595,19 +595,35 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     (helpers as unknown as { StartFirstBattle?: () => void }).StartFirstBattle?.();
     return 'Birch tutorial (voie L) started';
   };
-  battleNs.startWild = async (species: string, level: number): Promise<string> => {
+  battleNs.startWild = async (species?: string | number, level?: number): Promise<string> => {
     // VOIE L (depose voie V) : scripted wild 1:1.
+    // `CreateScriptedWildMon` attend un SPECIES numérique (reverseDecompConstant → nom).
+    // On accepte ici un nom ("SPECIES_PIKACHU"/"PIKACHU") OU un numéro, et on résout en
+    // numéro. Défaut Pikachu Lv1 (mon valide au lieu de SPECIES_NONE = "????").
+    const constMod = await import('../system/decomp-constants');
+    const lvl = level ?? 1;
+    let speciesId: number;
+    if (typeof species === 'number') {
+      speciesId = species;
+    } else if (typeof species === 'string') {
+      speciesId = constMod.resolveDecompConstant(species)
+        ?? constMod.resolveDecompConstant('SPECIES_' + species.toUpperCase())
+        ?? 0;
+    } else {
+      speciesId = constMod.resolveDecompConstant('SPECIES_PIKACHU') ?? 0;
+    }
     const helpers = await import('../battle/battle-setup-helpers');
     const sbsMod2 = await import('../save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon/pokemon');
-      const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, level - 1));
+      const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, lvl - 1));
       pokeMod.GiveMonToPlayer(starter);
     }
-    const h = helpers as unknown as { CreateScriptedWildMon?: (s: string, l: number, i: number) => void; BattleSetup_StartScriptedWildBattle?: () => void };
-    h.CreateScriptedWildMon?.(species, level, 0);
+    const h = helpers as unknown as { CreateScriptedWildMon?: (s: number, l: number, i: number) => void; BattleSetup_StartScriptedWildBattle?: () => void };
+    h.CreateScriptedWildMon?.(speciesId, lvl, 0);
     h.BattleSetup_StartScriptedWildBattle?.();
-    return `wild battle (voie L) vs ${species} Lv${level} started`;
+    const name = constMod.reverseDecompConstant(speciesId, 'SPECIES_') ?? String(speciesId);
+    return `wild battle (voie L) vs ${name} Lv${lvl} started`;
   };
   battleNs.state = (): string => {
     const bmf = (globalThis as { __battleMainFunctions?: { getBattleMainFunc?: () => { name?: string } } }).__battleMainFunctions?.getBattleMainFunc?.();
