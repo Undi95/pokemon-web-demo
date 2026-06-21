@@ -80,6 +80,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
+import { loadTileBin, loadGbaPal, loadTilemapBin } from '../gba/png-loader';
 import {
   AddTextPrinterParameterized3,
   RunTextPrinters,
@@ -166,7 +167,7 @@ interface MailLayout {
 interface MailGraphics {
   palette: Uint16Array | null;
   tiles: Uint8Array | null;
-  tileMap: Uint8Array | null;
+  tileMap: Uint16Array | null;
   unused: number;
   textColor: number;
   textShadow: number;
@@ -239,16 +240,16 @@ const sBgColors: readonly (readonly number[])[] = (() => {
 // ─── sMailGraphics[12] 1:1 décomp (mail.c:134-231) ───────────────────────────
 //
 // Les assets `gMailPalette_*`, `gMailTiles_*`, `gMailTilemap_*` sont des
-// symboles `extern const ...` du décomp pointant vers les fichiers
-// `graphics/mail/<name>/*.bin.lz`. Tant que le pipeline d'extraction n'a
-// pas livré ces assets dans `public/decomp/em/mail/`, on garde palette /
-// tiles / tileMap = null (= MailReadBuildGraphics no-op les copies, pas
-// crash). Le diff est ZÉRO une fois les assets posés (= juste loader).
+// symboles `extern const ...` du décomp pointant vers `graphics/mail/<name>/`.
+// Le décomp les a EN ROM (synchrone) ; nous on les charge depuis le réseau
+// (async) via `_mailLoadGraphics(mailType)` au premier hit du case 8 de
+// `MailReadBuildGraphics`. Les champs partent à `null` (valeur initiale) et
+// sont remplis une fois le fetch fini → le case 8 GATE (return false) le temps
+// du chargement. Déviation M3 minimale (1 ligne de gate), sinon 1:1.
 
 function _stubAsset(_name: string): null {
-  // Dette tracking : décomp lookup symbol → asset bytes.
-  // 1:1 TODO : extract `graphics/mail/<*>/*.{gbapal,4bpp.lz,bin.lz}`
-  //            vers `public/decomp/em/mail/`.
+  // Valeur initiale `null` (rempli async par _mailLoadGraphics). Le nom du
+  // symbole décomp est gardé pour la traçabilité 1:1.
   return null;
 }
 
@@ -362,6 +363,58 @@ const sMailGraphics: readonly MailGraphics[] = [
     textShadow: RGB(25, 25, 25),
   },
 ];
+
+// ─── Chargement async des graphismes mail (pont M3 ROM→réseau) ───────────────
+//
+// Le décomp lit `sMailGraphics[t].{tiles,tileMap,palette}` direct depuis la ROM.
+// Ici on fetch les assets extraits (`public/decomp/em/mail/<design>/`) :
+//   - tiles.png   → loadTileBin (charge le `.4bpp.bin` sibling = indices bruts ;
+//                   taille = champ `unused` du décomp, vérifié byte-exact)
+//   - palette.pal → loadGbaPal (= gMailPalette_<design>, 16 RGB15 ; == PLTE 16/16)
+//   - map.bin     → loadTilemapBin (Uint16Array d'entries tilemap)
+// Une fois chargés, on remplit les champs (mutables) de la table → le case 8 de
+// MailReadBuildGraphics débloque (gate). Idempotent (guard _mailGfxLoading).
+
+/** Dossiers `graphics/mail/<design>/` indexés par mailType (= ITEM_TO_MAIL). */
+const sMailDesignDirs = [
+  'orange', 'harbor', 'glitter', 'mech', 'wood', 'wave',
+  'bead', 'shadow', 'tropic', 'dream', 'fab', 'retro',
+] as const;
+
+const _mailGfxLoaded: boolean[] = new Array(sMailDesignDirs.length).fill(false);
+const _mailGfxLoading: Array<Promise<void> | null> = new Array(sMailDesignDirs.length).fill(null);
+// M3 : set par le case 8 quand il GATE sur le fetch async → signale à
+// CB2_InitMailRead de yield la frame (sinon son do-while solo spin → freeze).
+let _mailGfxWaiting = false;
+
+/** Charge (une fois) tiles/palette/tileMap du design `mailType` dans la table.
+ *  Fire-and-forget : le case 8 gate sur `_mailGfxLoaded[mailType]`. En cas
+ *  d'échec réseau, release quand même le gate → mail rendu wireframe (= ancien
+ *  fallback), jamais de freeze. */
+function _mailLoadGraphics(mailType: number): void {
+  if (mailType < 0 || mailType >= sMailDesignDirs.length) return;
+  if (_mailGfxLoaded[mailType] || _mailGfxLoading[mailType]) return;
+  const dir = sMailDesignDirs[mailType];
+  const base = `/decomp/em/mail/${dir}`;
+  _mailGfxLoading[mailType] = (async () => {
+    try {
+      const [tiles, palette, tileMap] = await Promise.all([
+        loadTileBin(`${base}/tiles.png`, 4),
+        loadGbaPal(`${base}/palette.pal`),
+        loadTilemapBin(`${base}/map.bin`),
+      ]);
+      const g = sMailGraphics[mailType];
+      g.tiles = tiles;
+      g.palette = palette;
+      g.tileMap = tileMap;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`[mail] échec chargement graphismes ${dir} (mail rendu wireframe) :`, e);
+    } finally {
+      _mailGfxLoaded[mailType] = true; // release le gate (succès → réel, échec → wireframe)
+    }
+  })();
+}
 
 // ─── sLineLayouts_Wide / sMailLayouts_Wide 1:1 décomp ────────────────────────
 
@@ -578,9 +631,17 @@ function MailReadBuildGraphics(): boolean {
       DeactivateAllTextPrinters();
       break;
     case 8: {
+      // M3 : les assets sont chargés async (ROM→réseau). Kick-off au 1er hit +
+      // GATE (return false → reste au même state) le temps du fetch. Une fois
+      // _mailGfxLoaded, on enchaîne 1:1 (cases 8/10/12 consomment les assets).
+      if (!_mailGfxLoaded[sMailRead.mailType]) {
+        _mailLoadGraphics(sMailRead.mailType);
+        _mailGfxWaiting = true; // → CB2_InitMailRead yield la frame
+        return false;
+      }
       const tiles = sMailGraphics[sMailRead.mailType].tiles;
       // 1:1 décomp : DecompressAndCopyTileDataToVram(1, gMailGraphics[t].tiles, 0, 0, 0).
-      // Si tiles == null (asset pas extrait), on no-op (= mail wireframe).
+      // Si tiles == null (échec réseau), on no-op (= mail wireframe).
       if (tiles) DecompressAndCopyTileDataToVram(1, tiles, 0, 0, 0);
       break;
     }
@@ -589,13 +650,16 @@ function MailReadBuildGraphics(): boolean {
       // Notre engine ne défère pas les uploads tile-data → toujours done.
       if (FreeTempTileDataBuffersIfPossible()) return false;
       break;
-    case 10:
+    case 10: {
       FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
       FillBgTilemapBufferRect_Palette0(2, 1, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-      if (sMailGraphics[sMailRead.mailType].tileMap) {
-        CopyToBgTilemapBuffer(1, sMailGraphics[sMailRead.mailType].tileMap as any, 0, 0);
+      // 1:1 décomp : CopyToBgTilemapBuffer(1, gMailGraphics[t].tileMap, 0, 0).
+      const tileMap = sMailGraphics[sMailRead.mailType].tileMap;
+      if (tileMap) {
+        CopyToBgTilemapBuffer(1, tileMap, 0, 0);
       }
       break;
+    }
     case 11:
       CopyBgTilemapBufferToVram(0);
       CopyBgTilemapBufferToVram(1);
@@ -687,10 +751,16 @@ function MailReadBuildGraphics(): boolean {
  */
 function CB2_InitMailRead(): void {
   do {
+    _mailGfxWaiting = false;
     if (MailReadBuildGraphics()) {
       SetMainCallback2(CB2_MailRead);
       break;
     }
+    // M3 : le décomp boucle tous les states en 1 frame (assets ROM). Nous, le
+    // case 8 GATE sur un fetch async → on YIELD la frame (break) pour laisser
+    // les microtasks du loader résoudre, sinon ce do-while solo spin → freeze.
+    // Les autres states restent 1:1 (spin synchrone dans la même frame).
+    if (_mailGfxWaiting) break;
   } while (MenuHelpers_IsLinkActive() !== true);
 }
 
