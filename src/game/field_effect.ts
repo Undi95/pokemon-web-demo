@@ -62,7 +62,7 @@ import { FldEff_UseDig } from './fldeff_dig';
 import './fldeff_flash';
 // Side-effect : charge game/fldeff_fly.ts → expose __FieldCallback_Fly (ouvre la carte région
 // en mode FLY + warp vers la ville visitée sélectionnée). Move VOL = CS hors-combat restante.
-import './fldeff_fly';
+import '../engine/field/fly-field-move';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */

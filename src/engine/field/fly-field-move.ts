@@ -1,5 +1,10 @@
 /**
- * fldeff_fly.ts — CS/move Vol (Fly).
+ * fly-field-move.ts — CS/move Vol (Fly). GLU MAISON (pas un miroir décomp).
+ *
+ * ⚠️ PAS DE `fldeff_fly.c` dans le décomp : ce fichier est de la glu maison qui AMALGAME +
+ * SIMPLIFIE la chaîne Fly répartie sur 2 fichiers décomp (region_map.c CB2_OpenFlyMap +
+ * field_effect.c ReturnToFieldFromFlyMapSelect). Il reste donc en `engine/` (non-1:1) tant que
+ * la vraie chaîne n'est pas portée ligne-à-ligne dans `game/region_map.ts` + `game/field_effect.ts`.
  *
  * Source de vérité : D:/Projet 1/decomps/pokeemeraude/src/region_map.c (CB2_OpenFlyMap +
  * sMapHealLocations) + field_effect.c:1339 (ReturnToFieldFromFlyMapSelect).
@@ -18,10 +23,10 @@
  * curseur peut se poser n'importe où (le préfixe le confirme → no-op si non visitée).
  */
 
-import { setPendingWarp } from '../engine/field/warp-system';
-import { GetHealLocationByName } from './heal_location';
-import { FadeScreen, FADE_TO_BLACK } from '../engine/system/fade-screen';
-import { FlagGet } from '../engine/script/script-vars';
+import { setPendingWarp } from './warp-system';
+import { GetHealLocationByName } from '../../game/heal_location';
+import { FadeScreen, FADE_TO_BLACK } from '../system/fade-screen';
+import { FlagGet } from '../script/script-vars';
 
 /** 1:1 décomp `sMapHealLocations[]` (region_map.c:289) — mapsec → HEAL_LOCATION_* (destination
  *  Vol de chaque ville). Les 16 villes Fly-ables ; les routes = HEAL_LOCATION_NONE (non listées). */
@@ -80,7 +85,7 @@ export function FieldCallback_Fly(): void {
   // import LAZY de region-map (anti-cycle ESM TDZ : l'import STATIQUE tire tout le gros graphe
   // field → gba-global-scope.BG_SCREEN_SIZE avant son init = crash boot. Piège déjà payé sur
   // fishing/bag-menu → import dynamique au runtime quand le module léger appelle le gros).
-  void import('../engine/field/region-map').then(({ OpenRegionMap, SetFlyMapCallback }) => {
+  void import('./region-map').then(({ OpenRegionMap, SetFlyMapCallback }) => {
     SetFlyMapCallback(_flyWarp);
     void OpenRegionMap('FLY');
   });
