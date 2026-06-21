@@ -1377,3 +1377,39 @@ export function DestroySprite(rt: DecompRuntime, spriteId: number): void {
   }
   rt.spriteAnimStates.delete(spriteId);
 }
+
+/** 1:1 décomp `void ResetSpriteData(void)` (sprite.c:294-306) : ResetOamRange +
+ *  ResetAllSprites + ClearSpriteCopyRequests + ResetAffineAnimData + FreeSpriteTile
+ *  Ranges. CRITIQUE entre 2 scènes (libère les tiles OBJ VRAM avant le load suivant,
+ *  sinon overflow 1024 tiles → frames transparentes). Forme transitionnelle `(rt)` ;
+ *  le harness `DecompRuntime.ResetSpriteData` y délègue (13 call-sites).
+ *  E2.3b : accède aux arrays `sSpriteTile*` EN DIRECT (statics du MÊME module = 1:1
+ *  décomp) au lieu du hack `globalThis.__sprite`, et `setReservedSpriteTileCount(0)`. */
+export function ResetSpriteData(rt: DecompRuntime): void {
+  // ⚠️ Fix 2026-05-24 : avant de clear gSprites + OAMs, notifier les modules qui
+  // maintiennent leur propre pool de spriteIds (= field-effect-emotes `_activeEmotes`)
+  // — sinon leur state pointe vers des slots ré-attribués → tickXxxSprites overwrite
+  // les NPC respawnés (bug user "moitié de maman"). La décomp s'appuie sur le check
+  // `sprite->inUse` du game loop ; nos pools module-level n'ont pas cette propagation.
+  const resetCallbacks = (globalThis as Record<string, unknown>).__spriteResetCallbacks as Array<() => void> | undefined;
+  if (resetCallbacks) {
+    for (const cb of resetCallbacks) {
+      try { cb(); } catch (e) { console.warn('[ResetSpriteData] cleanup hook failed', e); }
+    }
+  }
+  for (let i = 0; i < 128; i++) rt.gba.oam[i].visible = false;
+  rt.gSprites.fill(undefined);
+  rt.spriteAnimStates.clear();
+  rt.nextOamSlot = 0;
+  rt.nextSpriteId = 0;
+  // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM).
+  rt.freedSpriteTileRanges.length = 0;
+  // 1:1 STRICT décomp sprite.c:294-306 : reset sSpriteTileRangeTags + sSpriteTileRanges
+  // + sSpriteTileAllocBitmap + gReservedSpriteTileCount = 0. Arrays = statics de CE module.
+  sSpriteTileRangeTags.fill(0xFFFF);
+  sSpriteTileRanges.fill(0);
+  sSpriteTileAllocBitmap.fill(0);
+  setReservedSpriteTileCount(0);
+  // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release les 32 matrix OAM.
+  rt._matrixUsed.clear();
+}

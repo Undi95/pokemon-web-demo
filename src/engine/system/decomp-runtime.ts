@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -567,12 +567,13 @@ export class DecompRuntime {
    *  éviter un cycle d'import decomp-runtime ↔ field-camera. */
   gSpriteCoordOffsetX = 0;
   gSpriteCoordOffsetY = 0;
-  /** Auto-incrementing OAM slot (next free) */
-  private nextOamSlot = 0;
+  /** Auto-incrementing OAM slot (next free). Accessible (non-private) : reset par
+   *  `ResetSpriteData` (game/sprite.ts, E2.3b). */
+  nextOamSlot = 0;
   /** Auto-incrementing task ID */
   nextTaskId = 0;
-  /** Auto-incrementing sprite ID */
-  private nextSpriteId = 0;
+  /** Auto-incrementing sprite ID. Accessible (non-private) : reset par `ResetSpriteData`. */
+  nextSpriteId = 0;
   /** État précédent des touches pour calculer newKeys (front montant) chaque frame. */
   private prevHeldKeys = 0;
   /** Flag pour ne logger OAM slots exhausted qu'une seule fois (évite spam 999×). */
@@ -1971,52 +1972,10 @@ export class DecompRuntime {
    *  load Scene 2 (BRENDAN/MAY/BICYCLE/FLYGON_LATIAS/VOLBEAT/TORCHIC/MANECTRIC).
    *  Sans ça : 1024+ tiles d'OBJ VRAM overflow → Manectric tile_id 1056 hors
    *  range → frame 4 transparent → clignotement. */
+  /** Délègue à la fonction sprite.c 1:1 extraite vers game/sprite.ts (E2.3b).
+   *  Méthode conservée transitionnellement (13 call-sites `rt.ResetSpriteData`). */
   ResetSpriteData(): void {
-    // ⚠️ Fix 2026-05-24 : avant de clear gSprites + OAMs, notifier les modules
-    // qui maintiennent leur propre pool de spriteIds (= field-effect-emotes
-    // `_activeEmotes`, etc.). Sans ça, leur state contient des spriteIds qui
-    // pointent vers des slots maintenant ré-attribués → tickXxxSprites overwrite
-    // les sprites NPC respawnés (= bug user "moitié de maman" : emote re-fire
-    // post-bag-close écrase MOM avec shape=0 size=1).
-    //
-    // 1:1 décomp : sprite.c:294 ResetSpriteData iterate `for (i = 0; i < MAX_
-    // SPRITES; i++) ResetSprite(&gSprites[i])` qui set `inUse=FALSE`. Les
-    // callbacks de sprite (= SpriteCB_TrainerIcons) checkent `sprite->inUse`
-    // implicitly via game loop → cessent de fire. Notre port utilise des pools
-    // module-level (`_activeEmotes`) qui n'ont pas cette propagation auto.
-    const resetCallbacks = (globalThis as Record<string, unknown>).__spriteResetCallbacks as Array<() => void> | undefined;
-    if (resetCallbacks) {
-      for (const cb of resetCallbacks) {
-        try { cb(); } catch (e) { console.warn('[ResetSpriteData] cleanup hook failed', e); }
-      }
-    }
-    for (let i = 0; i < 128; i++) this.gba.oam[i].visible = false;
-    this.gSprites.fill(undefined);
-    this.spriteAnimStates.clear();
-    this.nextOamSlot = 0;
-    this.nextSpriteId = 0;
-    // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM)
-    this.freedSpriteTileRanges.length = 0;
-    // 1:1 STRICT décomp sprite.c:294-306 ResetSpriteData : aussi reset les
-    // sSpriteTileRangeTags + sSpriteTileRanges arrays + sSpriteTileAllocBitmap.
-    // gReservedSpriteTileCount = 0 + AllocSpriteTiles(0) (= free all unreserved
-    // tiles in bitmap). Accès via globalThis.__sprite exposé par decomp-globals.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      sSpriteTileRangeTags?: Uint16Array;
-      sSpriteTileRanges?: Uint16Array;
-    } | undefined;
-    if (sp?.sSpriteTileRangeTags) sp.sSpriteTileRangeTags.fill(0xFFFF);
-    if (sp?.sSpriteTileRanges) sp.sSpriteTileRanges.fill(0);
-    // Clear sSpriteTileAllocBitmap (= will be re-populated by next allocs).
-    const spBitmap = (globalThis as Record<string, unknown>).__sprite as {
-      sSpriteTileAllocBitmap?: Uint8Array;
-    } | undefined;
-    if (spBitmap?.sSpriteTileAllocBitmap) spBitmap.sSpriteTileAllocBitmap.fill(0);
-    (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0;
-    // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release toutes les 32
-    // matrix OAM. Sans ça, ré-ouvrir le sac alloue matrix 2, 3, … (= leak)
-    // jusqu'à saturer le pool 32 → CreateSprite échoue silencieusement.
-    this._matrixUsed.clear();
+    _ResetSpriteData_1to1(this);
   }
 
   /** IntroResetGpuRegs : reset DISPCNT et BG/blend regs (mimique décomp intro.c). */
