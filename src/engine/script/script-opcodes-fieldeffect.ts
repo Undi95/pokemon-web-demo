@@ -49,10 +49,10 @@ function _vget(arg: string | undefined): number {
 // l'auto-file (= field_effect-all-auto.ts).
 registerOpcode('dofieldeffect', (_ctx, args) => {
   const effectId = VarGet(args[0] ?? '0');
-  // Session 132 : track active list pour waitfieldeffect consumer.
-  // 1:1 décomp `FieldEffectStart(id)` ajoute id à gFieldEffectActiveList.
-  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number) => void } }).__fieldEffectActiveList;
-  fa?.FieldEffectActiveListAdd?.(effectId);
+  // ⚠️ NE PAS ajouter à la liste active ici : `FieldEffectStart` le fait désormais lui-même (1:1
+  // décomp `FieldEffectStart` → `FieldEffectActiveListAdd`). Ajouter ici en PLUS = double-add (la
+  // liste n'est pas idempotente) → `…Remove` ne retire qu'1 occurrence → `…Contains` reste true →
+  // `waitfieldeffect` / les gates CS bloqueraient. (= 1:1 `ScrCmd_dofieldeffect` qui n'ajoute pas.)
   const fieldEffectStart = (globalThis as Record<string, unknown>).FieldEffectStart as
     ((id: number) => unknown) | undefined;
   if (typeof fieldEffectStart === 'function') {
@@ -115,14 +115,12 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   const FLDEFF_SPARKLE = 36;
   const fa = (globalThis as {
     __fieldEffectActiveList?: {
-      FieldEffectActiveListAdd?: (id: number) => void;
       FieldEffectActiveListRemove?: (id: number) => void;
     };
   }).__fieldEffectActiveList;
-  fa?.FieldEffectActiveListAdd?.(FLDEFF_SPARKLE);
-  // Dette R3 : sprite callback `FldEff_Sparkle` (= field_effect_helpers.c) pas
-  // encore porté. Le décomp wire la sprite anim auto-remove via FieldEffectStop
-  // → FieldEffectActiveListRemove à fin d'anim. En attendant, scheduler local
+  // L'add est fait par dofieldeffect→FieldEffectStart ci-dessous (PAS ici = évite le double-add).
+  // Dette R3 : sprite callback `FldEff_Sparkle` (= field_effect_helpers.c) pas encore porté → le
+  // décomp wire l'auto-remove via FieldEffectStop à fin d'anim ; en attendant, scheduler local
   // setTimeout 500ms (~30 frames) pour matcher la durée visuelle attendue.
   setTimeout(() => fa?.FieldEffectActiveListRemove?.(FLDEFF_SPARKLE), 500);
   return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;

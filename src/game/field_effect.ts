@@ -34,7 +34,7 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
-import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove, FieldEffectActiveListAdd } from '../engine/field/field-effect-active-list';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE } from '../engine/system/sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
 import {
@@ -297,6 +297,15 @@ export function FieldEffectStart(id: number): number {
     console.warn(`[FieldEffectStart] no active runtime — effect id=${id} skipped`);
     return 64;  // MAX_SPRITES sentinel
   }
+
+  // 1:1 STRICT décomp `FieldEffectStart` (field_effect.c:697) : la PREMIÈRE chose est
+  // `FieldEffectActiveListAdd(id)` — l'effet entre dans la liste active. C'est ce qui fait que
+  // `FieldEffectActiveListContains(id)` tient le temps de l'anim, et que les séquences CS attendent
+  // (ex. SurfFieldEffect_JumpOnSurfBlob attend `!Contains(SHOW_MON)` AVANT de monter sur le blob).
+  // Chaque effet se RETIRE lui-même (FieldEffectStop/…Remove dans son sprite callback / sa task End).
+  // ⚠️ AVANT : seul l'opcode `dofieldeffect` ajoutait → un FieldEffectStart DIRECT (show-mon depuis
+  // surf/cut/…) n'ajoutait jamais → le gate ne tenait pas → le perso enchaînait la CS pendant l'anim.
+  FieldEffectActiveListAdd(id);
 
   // 1:1 décomp `FieldEffectStart` : exécute le bytecode `gFieldEffectScriptPointers[id]`.
   // TOUS les FLDEFF portés sont dans la table (l'ancien dispatcher if-chain a été retiré).
