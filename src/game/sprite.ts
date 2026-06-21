@@ -1351,3 +1351,29 @@ export function SeekSpriteAnim(rt: DecompRuntime, sprite: AnimDispatchSprite, an
     sprite.animDelayCounter = tempDelayCounter;
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SPRITE LIFECYCLE (1:1 décomp sprite.c) — extraction du harness (E2.3)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `void DestroySprite(struct Sprite *sprite)` (sprite.c:618-631).
+ *  Forme transitionnelle (rt explicite + id au lieu du pointeur sprite, comme
+ *  AnimateSprite) : le harness `DecompRuntime.DestroySprite` y délègue. Cache
+ *  l'OAM, marque le slot libre (inUse=false), retire le callback. NE remet PAS
+ *  `gSprites[id] = undefined` — 1:1 décomp, le slot reste jusqu'à réallocation
+ *  (les sprites enfants lisent encore `gSprites[parentId].data`). */
+export function DestroySprite(rt: DecompRuntime, spriteId: number): void {
+  const sprite = rt.gSprites[spriteId];
+  if (!sprite) return;
+  rt.gba.oam[sprite.oamIndex].visible = false;
+  sprite.invisible = true;
+  sprite.inUse = false;
+  sprite.callback = null;
+  // Si la matrice affine du sprite a été ALLOUÉE via AllocOamMatrix (_matrixUsed),
+  // la libérer (≈ FreeSpriteOamMatrix décomp). Sans ça, les matrices des mons de
+  // combat (1 alloc/sprite) fuieraient.
+  if (sprite.matrixNum > 0 && rt._matrixUsed?.has?.(sprite.matrixNum)) {
+    rt.FreeOamMatrix(sprite.matrixNum);
+  }
+  rt.spriteAnimStates.delete(spriteId);
+}

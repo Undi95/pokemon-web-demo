@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -639,8 +639,10 @@ export class DecompRuntime {
   //  - AllocSpriteTiles (sprite.c:702-753) scan first-free dans bitmap
   //  - AllocSpritePalette (sprite.c:1623-1635) scan first-free sSpritePaletteTags
   // Source UNIQUE = arrays primary + bitmap, pas de cursor.
-  /** State des sprite anims actives : spriteId → state. */
-  private spriteAnimStates = new Map<number, SpriteAnimState>();
+  /** State des sprite anims actives : spriteId → state.
+   *  Accessible (non-private) : lu par les fonctions sprite.c extraites vers
+   *  game/sprite.ts (ex. `DestroySprite`) — la décomp expose son état en globals. */
+  spriteAnimStates = new Map<number, SpriteAnimState>();
 
   /** Runtime registry for dynamically-defined sprite anims (= 1:1 décomp pattern
    *  d'enregistrement par module sans toucher le static auto-generated registry).
@@ -1696,7 +1698,9 @@ export class DecompRuntime {
    *  the 32 OAM matrix slots are claimed. Slot 0 is reserved for the "identity"
    *  default and must NOT be allocated (= screen wide identity, used by every
    *  affineMode=OFF sprite). */
-  private _matrixUsed = new Set<number>();
+  // Accessible (non-private) : lu par `DestroySprite` (game/sprite.ts) pour libérer
+  // la matrice affine allouée. (Suivi M3 de l'alloc OAM matrix, ≈ gOamMatrixAllocBitmap.)
+  _matrixUsed = new Set<number>();
 
   /** 1:1 décomp src/sprite.c:AllocOamMatrix (l.1427-1446) — find a free slot in
    *  `gba.affineParams[1..31]`, mark it used, return its index.
@@ -2704,23 +2708,10 @@ export class DecompRuntime {
   }
 
   /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. */
+  /** Délègue à la fonction sprite.c 1:1 extraite vers game/sprite.ts (E2.3a).
+   *  Méthode conservée transitionnellement (102 call-sites `rt.DestroySprite`). */
   DestroySprite(spriteId: number): void {
-    const sprite = this.gSprites[spriteId];
-    if (!sprite) return;
-    this.gba.oam[sprite.oamIndex].visible = false;
-    sprite.invisible = true;
-    sprite.inUse = false;
-    sprite.callback = null;
-    // Contrat plateforme : si la matrice affine du sprite a été ALLOUÉE via
-    // AllocOamMatrix (_matrixUsed), la libérer (≈ FreeSpriteOamMatrix décomp).
-    // Sans ça, les matrices des mons de combat (1 alloc/sprite) fuieraient.
-    if (sprite.matrixNum > 0 && this._matrixUsed?.has?.(sprite.matrixNum)) {
-      this.FreeOamMatrix(sprite.matrixNum);
-    }
-    // NOTE: ne PAS this.gSprites[spriteId] = undefined — les sprites enfants
-    // (e.g. water drop halves) lisent encore gSprites[parentId].data[7].
-    // Le vrai décomp garde le slot jusqu'à réallocation.
-    this.spriteAnimStates.delete(spriteId);
+    _DestroySprite_1to1(this, spriteId);
   }
 
   /** Reset additionnel pour les nouveaux maps (sprite-system).
