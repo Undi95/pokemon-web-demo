@@ -13,13 +13,13 @@
 | ✅ miroir | 37 |
 | 🟡 partiel | 50 |
 | 🟠 dispersé | 14 |
-| 🟡 amorce | 36 |
-| 🔴 manquant | 161 |
+| 🟡 amorce | 38 |
+| 🔴 manquant | 159 |
 | ⚪ vide/data | 12 |
 
 **Complétude pondérée par lignes de C** (effort réel) :
 - **STRICT** (fn présente dans NOTRE fichier homonyme propre) : **~28 %** ← la vraie jauge miroir.
-- LARGE (fn implémentée n'importe où, même dispersée/mal nommée) : ~33 %.
+- LARGE (fn implémentée n'importe où, même dispersée/mal nommée) : ~34 %.
 - L'écart STRICT↔LARGE = le travail de **consolidation** (logique présente mais pas encore dans le bon fichier 1:1).
 
 **Autres axes** :
@@ -35,12 +35,12 @@
 | Overworld/Field | 84 | 10 | 29 | 44 | 117446 |
 | Combat | 75 | 15 | 35 | 24 | 147341 |
 | Pokémon/Party | 32 | 0 | 3 | 29 | 61271 |
-| UI/Menu/Gfx | 34 | 6 | 12 | 12 | 36036 |
+| UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
 | Item/Bag | 10 | 1 | 6 | 3 | 8806 |
 | Save/RTC | 17 | 1 | 5 | 10 | 5676 |
 | Système/GBA | 17 | 3 | 8 | 5 | 8645 |
 | Son (harness) | 5 | 0 | 1 | 3 | 3551 |
-| Link/IO (N-A) | 29 | 0 | 1 | 26 | 30115 |
+| Link/IO (N-A) | 29 | 0 | 2 | 25 | 30115 |
 | Autre | 7 | 1 | 0 | 5 | 3233 |
 
 ## Axe A détail — les 310 `.c` (le backlog)
@@ -52,7 +52,7 @@
 
 | .c décomp | lignes | fn | chez nous | compl(fichier) | compl(partout) | statut |
 |---|---|---|---|---|---|---|
-| `slot_machine.c` | 7956 | 256 | — **manquant** | 0/256 (0%) | 0/256 (0%) | 🔴 manquant |
+| `slot_machine.c` | 7956 | 270 | — **manquant** | 0/270 (0%) | 0/270 (0%) | 🔴 manquant |
 | `roulette.c` | 4761 | 104 | `engine/m4a/voicegroups-data/roulette.ts` | 0/104 (0%) | 0/104 (0%) | 🔴 manquant |
 | `berry_blender.c` | 3923 | 81 | — **manquant** | 0/81 (0%) | 0/81 (0%) | 🔴 manquant |
 | `frontier_util.c` | 2639 | 93 | — **manquant** | 0/93 (0%) | 0/93 (0%) | 🔴 manquant |
@@ -80,14 +80,14 @@
 | `fldeff_strength.c` | 51 | 4 | — **manquant** | 0/4 (0%) | 0/4 (0%) | 🔴 manquant |
 | `berry_fix_graphics.c` | 50 | 1 | — **manquant** | 0/1 (0%) | 0/1 (0%) | 🔴 manquant |
 | `trade.c` | 5101 | 134 | `game/battle_main.ts` _(nom≠)_ | 2/134 (1%) | 2/134 (1%) | 🔴 manquant |
-| `berry_crush.c` | 3508 | 74 | — **manquant** | 0/74 (0%) | 1/74 (1%) | 🔴 manquant |
 | `decoration.c` | 2749 | 135 | — **manquant** | 0/135 (0%) | 1/135 (1%) | 🔴 manquant |
 | `field_specials.c` | 4281 | 191 | `game/field_specials.ts` | 0/191 (0%) | 4/191 (2%) | 🔴 manquant |
 | `scrcmd.c` | 2308 | 231 | `game/battle_setup.ts` _(nom≠)_ | 4/231 (2%) | 5/231 (2%) | 🔴 manquant |
 | `mauville_old_man.c` | 1483 | 59 | — **manquant** | 0/59 (0%) | 1/59 (2%) | 🔴 manquant |
 | `apprentice.c` | 1312 | 53 | — **manquant** | 0/53 (0%) | 1/53 (2%) | 🔴 manquant |
 | `tv.c` | 6829 | 207 | `engine/ui/tv-screen.ts` _(nom≠)_ | 5/207 (2%) | 7/207 (3%) | 🔴 manquant |
-| `dodrio_berry_picking.c` | 5225 | 157 | `engine/battle/battle-link-end.ts` _(nom≠)_ | 2/157 (1%) | 4/157 (3%) | 🔴 manquant |
+| `dodrio_berry_picking.c` | 5225 | 159 | `engine/battle/battle-link-end.ts` _(nom≠)_ | 2/159 (1%) | 4/159 (3%) | 🔴 manquant |
+| `berry_crush.c` | 3508 | 74 | `engine/decomp-data/src/intro-callbacks-auto.ts` _(nom≠)_ | 2/74 (3%) | 2/74 (3%) | 🔴 manquant |
 | `secret_base.c` | 2076 | 99 | `game/secret_base.ts` | 1/99 (1%) | 3/99 (3%) | 🔴 manquant |
 | `match_call.c` | 2113 | 56 | `engine/system/decomp-bridge.ts` _(nom≠)_ | 2/56 (4%) | 2/56 (4%) | 🔴 manquant |
 | `berry_tag_screen.c` | 692 | 27 | — **manquant** | 0/27 (0%) | 1/27 (4%) | 🔴 manquant |
@@ -95,20 +95,20 @@
 | `trainer_pokemon_sprites.c` | 396 | 23 | `engine/ui/main-menu-impl.ts` _(nom≠)_ | 2/23 (9%) | 2/23 (9%) | 🔴 manquant |
 | `fldeff_misc.c` | 1327 | 62 | `game/fldeff_misc.ts` | 5/62 (8%) | 6/62 (10%) | 🔴 manquant |
 | `region_map.c` | 2028 | 60 | `engine/field/region-map-data.ts` _(nom≠)_ | 5/60 (8%) | 8/60 (13%) | 🔴 manquant |
-| `trainer_see.c` | 815 | 38 | `game/trainer_see.ts` | 5/38 (13%) | 5/38 (13%) | 🔴 manquant |
+| `trainer_see.c` | 815 | 39 | `game/trainer_see.ts` | 5/39 (13%) | 5/39 (13%) | 🔴 manquant |
 | `fldeff_flash.c` | 369 | 20 | `game/fldeff_flash.ts` | 2/20 (10%) | 3/20 (15%) | 🟡 amorce |
 | `roamer.c` | 247 | 13 | `game/battle_main.ts` _(nom≠)_ | 2/13 (15%) | 2/13 (15%) | 🟡 amorce |
 | `script_pokemon_util.c` | 229 | 13 | — **manquant** | 0/13 (0%) | 2/13 (15%) | 🟡 amorce |
-| `player_pc.c` | 1511 | 85 | `engine/ui/bedroom-pc.ts` _(nom≠)_ | 18/85 (21%) | 19/85 (22%) | 🟡 amorce |
 | `overworld.c` | 3227 | 227 | `game/overworld.ts` | 11/227 (5%) | 54/227 (24%) | 🟡 amorce |
-| `event_object_movement.c` | 8984 | 726 | `game/event_object_movement.ts` | 177/726 (24%) | 196/726 (27%) | 🟡 amorce |
+| `event_object_movement.c` | 8984 | 733 | `game/event_object_movement.ts` | 180/733 (25%) | 199/733 (27%) | 🟡 amorce |
 | `fldeff_cut.c` | 648 | 17 | `game/fldeff_cut.ts` | 2/17 (12%) | 5/17 (29%) | 🟡 amorce |
-| `field_effect.c` | 3919 | 227 | `game/field_effect.ts` | 4/227 (2%) | 76/227 (33%) | 🟡 amorce |
 | `heal_location.c` | 38 | 3 | `game/heal_location.ts` | 0/3 (0%) | 1/3 (33%) | 🟡 amorce |
+| `field_effect.c` | 3919 | 247 | `game/field_effect.ts` | 4/247 (2%) | 83/247 (34%) | 🟡 amorce |
 | `field_weather_effect.c` | 2637 | 106 | `game/field_weather_effect.ts` | 43/106 (41%) | 43/106 (41%) | 🟡 partiel |
-| `field_message_box.c` | 162 | 17 | `game/field_message_box.ts` | 7/17 (41%) | 7/17 (41%) | 🟡 partiel |
-| `easy_chat.c` | 5876 | 248 | `engine/ui/easy-chat-render.ts` _(nom≠)_ | 104/248 (42%) | 108/248 (44%) | 🟡 amorce |
+| `player_pc.c` | 1511 | 85 | `engine/ui/bedroom-pc.ts` _(nom≠)_ | 39/85 (46%) | 40/85 (47%) | 🟡 amorce |
+| `field_message_box.c` | 162 | 17 | `game/field_message_box.ts` | 7/17 (41%) | 8/17 (47%) | 🟡 partiel |
 | `wild_encounter.c` | 968 | 34 | `game/wild_encounter.ts` | 17/34 (50%) | 17/34 (50%) | 🟡 partiel |
+| `easy_chat.c` | 5876 | 248 | `engine/ui/easy-chat-render.ts` _(nom≠)_ | 127/248 (51%) | 130/248 (52%) | 🟡 amorce |
 | `script_movement.c` | 232 | 19 | `game/script_movement.ts` | 11/19 (58%) | 11/19 (58%) | 🟡 partiel |
 | `tileset_anims.c` | 1189 | 84 | `game/tileset_anims.ts` | 50/84 (60%) | 50/84 (60%) | 🟡 partiel |
 | `field_door.c` | 573 | 23 | `game/field_door.ts` | 13/23 (57%) | 14/23 (61%) | 🟡 partiel |
@@ -121,15 +121,15 @@
 | `fldeff_dig.c` | 64 | 4 | `game/fldeff_dig.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `fldeff_teleport.c` | 45 | 4 | `game/fldeff_teleport.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `fieldmap.c` | 942 | 55 | `game/fieldmap.ts` | 43/55 (78%) | 45/55 (82%) | 🟡 partiel |
-| `field_player_avatar.c` | 2227 | 168 | `game/field_player_avatar.ts` | 141/168 (84%) | 142/168 (85%) | 🟡 partiel |
+| `field_player_avatar.c` | 2227 | 177 | `game/field_player_avatar.ts` | 148/177 (84%) | 151/177 (85%) | 🟡 partiel |
 | `map_name_popup.c` | 427 | 7 | `game/map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
 | `event_data.c` | 234 | 25 | `game/event_data.ts` | 21/25 (84%) | 23/25 (92%) | 🟡 partiel |
-| `field_effect_helpers.c` | 1718 | 80 | `game/field_effect_helpers.ts` | 75/80 (94%) | 75/80 (94%) | ✅ miroir |
-| `field_weather.c` | 1106 | 49 | `game/field_weather.ts` | 46/49 (94%) | 46/49 (94%) | ✅ miroir |
+| `field_effect_helpers.c` | 1718 | 81 | `game/field_effect_helpers.ts` | 76/81 (94%) | 76/81 (94%) | ✅ miroir |
 | `starter_choose.c` | 670 | 18 | `game/starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
-| `bike.c` | 1063 | 54 | `game/bike.ts` | 52/54 (96%) | 52/54 (96%) | ✅ miroir |
-| `metatile_behavior.c` | 1403 | 144 | `game/metatile_behavior.ts` | 140/144 (97%) | 140/144 (97%) | ✅ miroir |
+| `field_weather.c` | 1106 | 49 | `game/field_weather.ts` | 48/49 (98%) | 48/49 (98%) | ✅ miroir |
+| `metatile_behavior.c` | 1403 | 144 | `game/metatile_behavior.ts` | 144/144 (100%) | 144/144 (100%) | ✅ miroir |
+| `bike.c` | 1063 | 56 | `game/bike.ts` | 56/56 (100%) | 56/56 (100%) | ✅ miroir |
 | `field_tasks.c` | 958 | 28 | `game/field_tasks.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
 | `field_camera.c` | 508 | 28 | `game/field_camera.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
 | `decoration_inventory.c` | 160 | 11 | `game/decoration_inventory.ts` | 11/11 (100%) | 11/11 (100%) | ✅ miroir |
@@ -153,7 +153,7 @@
 | `contest_painting.c` | 601 | 20 | — **manquant** | 0/20 (0%) | 0/20 (0%) | 🔴 manquant |
 | `contest_link.c` | 564 | 17 | — **manquant** | 0/17 (0%) | 0/17 (0%) | 🔴 manquant |
 | `battle_records.c` | 525 | 31 | — **manquant** | 0/31 (0%) | 0/31 (0%) | 🔴 manquant |
-| `battle_tent.c` | 429 | 30 | — **manquant** | 0/30 (0%) | 0/30 (0%) | 🔴 manquant |
+| `battle_tent.c` | 429 | 32 | — **manquant** | 0/32 (0%) | 0/32 (0%) | 🔴 manquant |
 | `contest_link_util.c` | 345 | 12 | — **manquant** | 0/12 (0%) | 0/12 (0%) | 🔴 manquant |
 | `battle_palace.c` | 213 | 12 | — **manquant** | 0/12 (0%) | 0/12 (0%) | 🔴 manquant |
 | `post_battle_event_funcs.c` | 93 | 2 | — **manquant** | 0/2 (0%) | 0/2 (0%) | 🔴 manquant |
@@ -187,29 +187,29 @@
 | `battle_anim_mons.c` | 2555 | 128 | `game/battle_anim_mons.ts` | 70/128 (55%) | 102/128 (80%) | 🟡 partiel |
 | `battle_anim_fire.c` | 1377 | 35 | `game/battle_anim_fire.ts` | 28/35 (80%) | 28/35 (80%) | 🟡 partiel |
 | `battle_util.c` | 4016 | 52 | `game/battle_util.ts` | 36/52 (69%) | 42/52 (81%) | 🟡 partiel |
-| `battle_controller_player.c` | 3148 | 124 | `game/battle_controller_player.ts` | 102/124 (82%) | 103/124 (83%) | 🟡 partiel |
 | `battle_anim_water.c` | 1600 | 48 | `game/battle_anim_water.ts` | 40/48 (83%) | 40/48 (83%) | 🟡 partiel |
 | `battle_anim_flying.c` | 1237 | 31 | `game/battle_anim_flying.ts` | 20/31 (65%) | 26/31 (84%) | 🟡 partiel |
 | `battle_anim_ground.c` | 775 | 25 | `game/battle_anim_ground.ts` | 21/25 (84%) | 21/25 (84%) | 🟡 partiel |
+| `battle_controller_player.c` | 3148 | 124 | `game/battle_controller_player.ts` | 103/124 (83%) | 105/124 (85%) | 🟡 partiel |
 | `battle_anim_throw.c` | 2508 | 78 | `game/battle_anim_throw.ts` | 66/78 (85%) | 67/78 (86%) | ✅ miroir |
 | `battle_anim_rock.c` | 888 | 22 | `game/battle_anim_rock.ts` | 17/22 (77%) | 19/22 (86%) | 🟡 partiel |
-| `battle_controller_opponent.c` | 2028 | 88 | `game/battle_controller_opponent.ts` | 71/88 (81%) | 78/88 (89%) | 🟡 partiel |
 | `battle_anim_psychic.c` | 1167 | 27 | `game/battle_anim_psychic.ts` | 22/27 (81%) | 24/27 (89%) | 🟡 partiel |
+| `battle_controller_opponent.c` | 2028 | 88 | `game/battle_controller_opponent.ts` | 72/88 (82%) | 79/88 (90%) | 🟡 partiel |
 | `battle_intro.c` | 620 | 11 | `game/battle_intro.ts` | 10/11 (91%) | 10/11 (91%) | ✅ miroir |
 | `battle_anim_dragon.c` | 452 | 11 | `game/battle_anim_dragon.ts` | 8/11 (73%) | 10/11 (91%) | 🟡 partiel |
-| `battle_main.c` | 5271 | 106 | `game/battle_main.ts` | 93/106 (88%) | 98/106 (92%) | ✅ miroir |
 | `battle_anim_ghost.c` | 1341 | 37 | `game/battle_anim_ghost.ts` | 34/37 (92%) | 34/37 (92%) | ✅ miroir |
 | `battle_anim_electric.c` | 1337 | 37 | `game/battle_anim_electric.ts` | 34/37 (92%) | 34/37 (92%) | ✅ miroir |
 | `battle_anim_effects_1.c` | 5647 | 154 | `game/battle_anim_effects_1.ts` | 112/154 (73%) | 143/154 (93%) | 🟡 partiel |
 | `battle_anim_utility_funcs.c` | 1102 | 42 | `game/battle_anim_utility_funcs.ts` | 39/42 (93%) | 39/42 (93%) | ✅ miroir |
 | `battle_script_commands.c` | 10332 | 287 | `game/battle_script_commands.ts` | 257/287 (90%) | 270/287 (94%) | ✅ miroir |
-| `pokemon_animation.c` | 5545 | 241 | `game/pokemon_animation.ts` | 104/241 (43%) | 227/241 (94%) | 🟡 partiel |
-| `battle_anim.c` | 1842 | 79 | `engine/battle/battle-anim-interpreter.ts` _(nom≠)_ | 74/79 (94%) | 74/79 (94%) | 🟠 dispersé |
+| `battle_main.c` | 5271 | 108 | `game/battle_main.ts` | 95/108 (88%) | 101/108 (94%) | ✅ miroir |
 | `battle_anim_ice.c` | 1616 | 32 | `game/battle_anim_ice.ts` | 28/32 (88%) | 30/32 (94%) | ✅ miroir |
 | `battle_anim_fight.c` | 1036 | 31 | `game/battle_anim_fight.ts` | 29/31 (94%) | 29/31 (94%) | ✅ miroir |
 | `battle_anim_effects_3.c` | 5548 | 140 | `game/battle_anim_effects_3.ts` | 131/140 (94%) | 133/140 (95%) | ✅ miroir |
+| `battle_anim.c` | 1842 | 79 | `engine/battle/battle-anim-interpreter.ts` _(nom≠)_ | 75/79 (95%) | 75/79 (95%) | 🟠 dispersé |
 | `battle_anim_effects_2.c` | 3832 | 121 | `game/battle_anim_effects_2.ts` | 101/121 (83%) | 116/121 (96%) | 🟡 partiel |
-| `battle_ai_script_commands.c` | 2297 | 115 | `game/battle_ai_script_commands.ts` | 114/115 (99%) | 114/115 (99%) | ✅ miroir |
+| `pokemon_animation.c` | 5545 | 241 | `game/pokemon_animation.ts` | 104/241 (43%) | 237/241 (98%) | 🟡 partiel |
+| `battle_ai_script_commands.c` | 2297 | 115 | `game/battle_ai_script_commands.ts` | 115/115 (100%) | 115/115 (100%) | ✅ miroir |
 | `battle_anim_mon_movement.c` | 1053 | 34 | `game/battle_anim_mon_movement.ts` | 34/34 (100%) | 34/34 (100%) | ✅ miroir |
 | `battle_ai_switch_items.c` | 945 | 13 | `game/battle_ai_switch_items.ts` | 13/13 (100%) | 13/13 (100%) | ✅ miroir |
 | `battle_anim_bug.c` | 488 | 13 | `game/battle_anim_bug.ts` | 13/13 (100%) | 13/13 (100%) | ✅ miroir |
@@ -225,7 +225,7 @@
 | `pokenav_match_call_gfx.c` | 1301 | 65 | — **manquant** | 0/65 (0%) | 0/65 (0%) | 🔴 manquant |
 | `pokenav_ribbons_summary.c` | 1272 | 55 | — **manquant** | 0/55 (0%) | 0/55 (0%) | 🔴 manquant |
 | `pokeblock_feed.c` | 1194 | 28 | — **manquant** | 0/28 (0%) | 0/28 (0%) | 🔴 manquant |
-| `pokenav_match_call_data.c` | 1166 | 56 | — **manquant** | 0/56 (0%) | 0/56 (0%) | 🔴 manquant |
+| `pokenav_match_call_data.c` | 1166 | 59 | — **manquant** | 0/59 (0%) | 0/59 (0%) | 🔴 manquant |
 | `move_relearner.c` | 960 | 19 | — **manquant** | 0/19 (0%) | 0/19 (0%) | 🔴 manquant |
 | `egg_hatch.c` | 947 | 25 | — **manquant** | 0/25 (0%) | 0/25 (0%) | 🔴 manquant |
 | `pokenav_conditions_gfx.c` | 895 | 28 | — **manquant** | 0/28 (0%) | 0/28 (0%) | 🔴 manquant |
@@ -234,7 +234,7 @@
 | `pokenav_ribbons_list.c` | 745 | 37 | — **manquant** | 0/37 (0%) | 0/37 (0%) | 🔴 manquant |
 | `evolution_graphics.c` | 694 | 37 | — **manquant** | 0/37 (0%) | 0/37 (0%) | 🔴 manquant |
 | `pokedex_area_region_map.c` | 70 | 4 | — **manquant** | 0/4 (0%) | 0/4 (0%) | 🔴 manquant |
-| `pokemon_jump.c` | 4241 | 177 | — **manquant** | 0/177 (0%) | 1/177 (1%) | 🔴 manquant |
+| `pokemon_jump.c` | 4241 | 178 | — **manquant** | 0/178 (0%) | 1/178 (1%) | 🔴 manquant |
 | `pokemon_storage_system.c` | 10060 | 380 | `engine/system/decomp-bridge.ts` _(nom≠)_ | 6/380 (2%) | 8/380 (2%) | 🔴 manquant |
 | `pokenav_menu_handler_gfx.c` | 1381 | 56 | — **manquant** | 0/56 (0%) | 1/56 (2%) | 🔴 manquant |
 | `pokenav_list.c` | 1018 | 47 | — **manquant** | 0/47 (0%) | 1/47 (2%) | 🔴 manquant |
@@ -269,7 +269,7 @@
 | `credits.c` | 1588 | 38 | `engine/m4a/voicegroups-data/credits.ts` | 0/38 (0%) | 1/38 (3%) | 🔴 manquant |
 | `start_menu.c` | 1440 | 80 | — **manquant** | 0/80 (0%) | 2/80 (3%) | 🔴 manquant |
 | `menu_specialized.c` | 1637 | 57 | `game/menu_specialized.ts` | 3/57 (5%) | 3/57 (5%) | 🔴 manquant |
-| `diploma.c` | 210 | 10 | — **manquant** | 0/10 (0%) | 1/10 (10%) | 🔴 manquant |
+| `diploma.c` | 210 | 10 | `engine/decomp-data/src/option_menu-callbacks-auto.ts` _(nom≠)_ | 2/10 (20%) | 2/10 (20%) | 🟡 amorce |
 | `bg.c` | 1248 | 52 | `engine/ui/gba-window-system.ts` _(nom≠)_ | 13/52 (25%) | 21/52 (40%) | 🟡 amorce |
 | `window.c` | 715 | 30 | `engine/ui/gba-window-system.ts` _(nom≠)_ | 15/30 (50%) | 15/30 (50%) | 🟡 amorce |
 | `gpu_regs.c` | 196 | 12 | `engine/system/decomp-helpers.ts` _(nom≠)_ | 5/12 (42%) | 6/12 (50%) | 🟡 amorce |
@@ -278,15 +278,15 @@
 | `sprite.c` | 1760 | 102 | `engine/system/sprite.ts` | 25/102 (25%) | 62/102 (61%) | 🟠 dispersé |
 | `palette.c` | 1043 | 40 | `engine/system/palette.ts` | 17/40 (43%) | 25/40 (63%) | 🟡 partiel |
 | `menu.c` | 2148 | 123 | `game/menu.ts` | 72/123 (59%) | 81/123 (66%) | 🟡 partiel |
-| `naming_screen.c` | 2595 | 113 | `game/naming_screen.ts` | 85/113 (75%) | 85/113 (75%) | 🟡 partiel |
+| `naming_screen.c` | 2595 | 117 | `game/naming_screen.ts` | 85/117 (73%) | 85/117 (73%) | 🟡 partiel |
 | `main_menu.c` | 2308 | 82 | `engine/decomp-data/src/main_menu-callbacks-auto.ts` _(nom≠)_ | 53/82 (65%) | 77/82 (94%) | 🟠 dispersé |
 | `list_menu.c` | 1448 | 48 | `game/list_menu.ts` | 45/48 (94%) | 45/48 (94%) | ✅ miroir |
-| `title_screen.c` | 872 | 20 | `engine/decomp-data/src/title_screen-callbacks-auto.ts` _(nom≠)_ | 17/20 (85%) | 19/20 (95%) | 🟠 dispersé |
-| `option_menu.c` | 672 | 24 | `engine/ui/option-menu-impl.ts` _(nom≠)_ | 17/24 (71%) | 23/24 (96%) | 🟠 dispersé |
 | `strings.c` | 1830 | 0 | `game/include/strings.ts` | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
 | `graphics.c` | 1639 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
+| `title_screen.c` | 872 | 20 | `engine/decomp-data/src/title_screen-callbacks-auto.ts` _(nom≠)_ | 18/20 (90%) | 20/20 (100%) | 🟠 dispersé |
 | `string_util.c` | 782 | 44 | `game/string_util.ts` | 44/44 (100%) | 44/44 (100%) | ✅ miroir |
 | `mail.c` | 754 | 10 | `engine/ui/mail.ts` | 10/10 (100%) | 10/10 (100%) | ✅ miroir |
+| `option_menu.c` | 672 | 24 | `engine/ui/option-menu-impl.ts` _(nom≠)_ | 17/24 (71%) | 24/24 (100%) | 🟠 dispersé |
 | `fonts.c` | 293 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
 | `scanline_effect.c` | 255 | 9 | `game/scanline_effect.ts` | 9/9 (100%) | 9/9 (100%) | ✅ miroir |
 | `text_window.c` | 198 | 11 | `game/text_window.ts` | 11/11 (100%) | 11/11 (100%) | ✅ miroir |
@@ -312,16 +312,16 @@
 
 | .c décomp | lignes | fn | chez nous | compl(fichier) | compl(partout) | statut |
 |---|---|---|---|---|---|---|
-| `reset_rtc_screen.c` | 741 | 19 | — **manquant** | 0/19 (0%) | 0/19 (0%) | 🔴 manquant |
 | `siirtc.c` | 464 | 16 | — **manquant** | 0/16 (0%) | 0/16 (0%) | 🔴 manquant |
-| `save_failed_screen.c` | 404 | 12 | — **manquant** | 0/12 (0%) | 0/12 (0%) | 🔴 manquant |
 | `agb_flash.c` | 297 | 15 | — **manquant** | 0/15 (0%) | 0/15 (0%) | 🔴 manquant |
-| `clear_save_data_screen.c` | 210 | 9 | — **manquant** | 0/9 (0%) | 0/9 (0%) | 🔴 manquant |
 | `agb_flash_mx.c` | 194 | 5 | — **manquant** | 0/5 (0%) | 0/5 (0%) | 🔴 manquant |
 | `save_location.c` | 140 | 10 | — **manquant** | 0/10 (0%) | 0/10 (0%) | 🔴 manquant |
 | `time_events.c` | 119 | 10 | — **manquant** | 0/10 (0%) | 0/10 (0%) | 🔴 manquant |
 | `agb_flash_1m.c` | 87 | 2 | — **manquant** | 0/2 (0%) | 0/2 (0%) | 🔴 manquant |
 | `reload_save.c` | 31 | 1 | — **manquant** | 0/1 (0%) | 0/1 (0%) | 🔴 manquant |
+| `reset_rtc_screen.c` | 741 | 19 | — **manquant** | 0/19 (0%) | 1/19 (5%) | 🔴 manquant |
+| `save_failed_screen.c` | 404 | 12 | — **manquant** | 0/12 (0%) | 1/12 (8%) | 🔴 manquant |
+| `clear_save_data_screen.c` | 210 | 9 | — **manquant** | 0/9 (0%) | 1/9 (11%) | 🔴 manquant |
 | `clock.c` | 87 | 6 | — **manquant** | 0/6 (0%) | 1/6 (17%) | 🟡 amorce |
 | `save.c` | 1053 | 35 | `engine/save/save-sectors.ts` _(nom≠)_ | 5/35 (14%) | 7/35 (20%) | 🟡 amorce |
 | `load_save.c` | 294 | 21 | `engine/save/load_save.ts` | 9/21 (43%) | 10/21 (48%) | 🟡 partiel |
@@ -378,7 +378,6 @@
 | `multiboot.c` | 472 | 9 | — **manquant** | 0/9 (0%) | 0/9 (0%) | 🔴 manquant |
 | `librfu_intr.c` | 419 | 10 | — **manquant** | 0/10 (0%) | 0/10 (0%) | 🔴 manquant |
 | `mystery_event_script.c` | 401 | 30 | — **manquant** | 0/30 (0%) | 0/30 (0%) | 🔴 manquant |
-| `mystery_event_menu.c` | 322 | 6 | — **manquant** | 0/6 (0%) | 0/6 (0%) | 🔴 manquant |
 | `mystery_gift_client.c` | 303 | 18 | — **manquant** | 0/18 (0%) | 0/18 (0%) | 🔴 manquant |
 | `mystery_gift_server.c` | 291 | 15 | — **manquant** | 0/15 (0%) | 0/15 (0%) | 🔴 manquant |
 | `union_room_battle.c` | 234 | 5 | — **manquant** | 0/5 (0%) | 0/5 (0%) | 🔴 manquant |
@@ -392,6 +391,7 @@
 | `link.c` | 2370 | 125 | `game/battle_main.ts` _(nom≠)_ | 6/125 (5%) | 9/125 (7%) | 🔴 manquant |
 | `link_rfu_3.c` | 986 | 30 | `game/battle_main.ts` _(nom≠)_ | 2/30 (7%) | 2/30 (7%) | 🔴 manquant |
 | `mystery_gift.c` | 667 | 45 | `engine/system/decomp-bridge.ts` _(nom≠)_ | 5/45 (11%) | 5/45 (11%) | 🔴 manquant |
+| `mystery_event_menu.c` | 322 | 6 | — **manquant** | 0/6 (0%) | 1/6 (17%) | 🟡 amorce |
 | `reshow_battle_screen.c` | 317 | 7 | `game/reshow_battle_screen.ts` | 5/7 (71%) | 5/7 (71%) | 🟡 partiel |
 | `mystery_gift_scripts.c` | 218 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
 | `mystery_event_msg.c` | 15 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
@@ -405,6 +405,6 @@
 | `trader.c` | 216 | 13 | — **manquant** | 0/13 (0%) | 0/13 (0%) | 🔴 manquant |
 | `dma3_manager.c` | 184 | 5 | — **manquant** | 0/5 (0%) | 0/5 (0%) | 🔴 manquant |
 | `cable_car.c` | 1066 | 22 | `engine/m4a/voicegroups-data/cable_car.ts` | 0/22 (0%) | 1/22 (5%) | 🔴 manquant |
-| `mail_data.c` | 206 | 12 | `game/mail_data.ts` | 11/12 (92%) | 11/12 (92%) | ✅ miroir |
 | `data.c` | 329 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
+| `mail_data.c` | 206 | 12 | `game/mail_data.ts` | 12/12 (100%) | 12/12 (100%) | ✅ miroir |
 
