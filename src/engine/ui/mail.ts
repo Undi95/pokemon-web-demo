@@ -81,6 +81,7 @@ import {
 } from './gba-window-system';
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
 import { loadTileBin, loadGbaPal, loadTilemapBin } from '../gba/png-loader';
+import { ConvertEasyChatWordsToString, CopyEasyChatWord } from '../../game/easy_chat';
 import {
   AddTextPrinterParameterized3,
   RunTextPrinters,
@@ -1150,34 +1151,9 @@ function SpriteCallbackDummy(_sprite: any): void {
   // 1:1 décomp : no-op callback.
 }
 
-// ─── Easy chat stubs (= easy_chat.c non porté 1:1) ───────────────────────────
-
-let _warnedEasyChat = false;
-function _warnEasyChat(): void {
-  if (_warnedEasyChat) return;
-  _warnedEasyChat = true;
-  // eslint-disable-next-line no-console
-  console.warn('[mail] easy_chat.c non porté 1:1 — mail content vide (placeholder). Wire CopyEasyChatWord/ConvertEasyChatWordsToString quand easy_chat.c sera porté.');
-}
-
-/** 1:1 TODO : `easy_chat.c CopyEasyChatWord(dest, wordId)` — copy le mot
- *  associé à wordId dans dest (= u8* buffer). */
-function CopyEasyChatWord(dest: any, _wordId: number): any {
-  _warnEasyChat();
-  return dest;
-}
-
-/** 1:1 TODO : `easy_chat.c ConvertEasyChatWordsToString(dest, src, columns, rows)`.
- *  Format les words en string multi-ligne avec séparateurs CHAR_NEWLINE. */
-function ConvertEasyChatWordsToString(dest: Uint8Array | any, _src: any, _columns: number, _rows: number): string {
-  _warnEasyChat();
-  // 1:1 placeholder : empty string (le PrintMailText va skip cette ligne car
-  // first byte = EOS dans un buffer fraîchement Allocated).
-  if (dest instanceof Uint8Array) {
-    dest[0] = 0xFF; // EOS marker
-  }
-  return '';
-}
+// ─── Easy chat : ConvertEasyChatWordsToString importé de game/easy_chat.ts ────
+// (1:1 décomp easy_chat.c, données FR src/game/data/easy-chat-words.ts).
+// L'ancien stub renvoyait '' (mail content vide) ; maintenant le vrai texte.
 
 let _warnedConvertIntlName = false;
 /** 1:1 TODO : `international_string_util.c ConvertInternationalPlayerName`.
