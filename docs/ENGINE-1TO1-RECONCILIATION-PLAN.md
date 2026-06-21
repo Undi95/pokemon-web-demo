@@ -27,10 +27,23 @@ La logique vidéo décomp vit dans le **harness** (`decomp-runtime.ts` 2723 l, `
 **Phase E0 — TYPES** : aligner `struct Sprite` + `struct OamData` 1:1 (décomp `include/sprite.h`) dans
 `game/sprite.ts` (ou include/). Bas risque (types). Base des phases suivantes.
 
-**Phase E1 — KEYSTONE `gSprites` Map → `Sprite[64]` array** (le gros morceau, 87 call-sites).
-Migrer `decomp-runtime.ts:552 gSprites: Map` → tableau fixe indexé (1:1 `CreateSprite` qui scanne le 1er slot
-libre). Incrémental : adapter les accès `gSprites.get(id)` → `gSprites[id]` par lots, tsc + boot + A/B sprite
-(le perso bouge, les NPC s'animent, un combat rend) après chaque lot. ⚠️ haut risque → petits lots vérifiés.
+**Phase E1 — KEYSTONE `gSprites` Map → `Sprite[64]` array** (LE refactor du cœur, le + couplé du projet).
+Accès analysés (2026-06-21) : `.get(id)`=239 (→`[id]`, mécanique) · `.set/.delete/.has`=0 (Map jamais mutée
+via API — CreateSprite/DestroySprite gèrent en interne) · itérations `.forEach/.values/.size`=37 (SENSIBLE :
+la décomp itère les 64 slots + check `inUse` ; Map.values ne voit que les set → à convertir avec soin) · chokepoint
+`rt.gSprites` (424). ⚠️ **3 COUPLAGES DURS découverts (pas un simple swap)** :
+  1. **Modèle d'ID** : notre Map est keyée par `spriteId` MONOTONE (`nextSpriteId++`) ≠ décomp `gSprites[64]`
+     indexé par SLOT 0-63 réutilisé. Le keystone DOIT reconcilier le modèle (monotone→slot), ce qui change
+     la sémantique des IDs partout (DestroySprite par id, les 239 `.get(id)`, spriteAnimStates…).
+  2. **Signature callback** : `DecompSprite.callback = (sprite, rt) => void` — le `rt` passé explicitement est
+     un ajout M3 ; décomp = `(sprite)` (rt global). Le 1:1 = retirer `rt` → touche TOUS les callbacks sprite.
+  3. **Cycle ESM** : le type `Sprite` référence `DecompRuntime` (via le callback) → `game/sprite.ts` ↔
+     `decomp-runtime.ts` cycle. À casser (rt global / type forward).
+`DecompSprite` (decomp-runtime.ts:380) est DÉJÀ un `struct Sprite` 1:1 fidèle (champs cités sprite.h) → renommer
+`DecompSprite`→`Sprite` dans `game/sprite.ts`. Exécution = lots vérifiés (scaffold transitionnel dual-API →
+migrer les sites → retirer le compat), tsc + boot 59.5fps + **A/B sprite** (perso bouge / NPC s'animent / combat
+rend) après CHAQUE lot. NE PAS big-bang. Aucune petite brique isolable (type/storage/signature/ID tous couplés)
+→ c'est un run dédié et focalisé, pas une fin de tour.
 
 **Phase E2 — EXTRAIRE sprite.c → `game/sprite.ts`** : sortir CreateSprite/CreateSpriteAtEnd/DestroySprite/
 AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le home 1:1, noms/structure décomp,
