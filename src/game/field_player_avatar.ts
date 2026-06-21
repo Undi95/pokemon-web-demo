@@ -2960,7 +2960,15 @@ export function PlayerStep(direction: number, newKeys: number, heldKeys: number)
     // `Task_ExitDoor` / `Task_ExitNonAnimDoor` qui call `ObjectEventSetHeldMovement`
     // pour walk player UP/DOWN automatiquement avant/après warp. Si pas de
     // step actif + forceMovement set → start un step dans cette dir.
-    if (gPlayerAvatar.runningState !== MOVING && gPlayerAvatar.forceMovement !== DIR_NONE) {
+    // ⚠️ Gate = `stepFramesLeft === 0` (= aucun pas EN COURS), PAS `runningState !== MOVING`.
+    // BUG porte (2026-06-21) : si on tourne vers une porte PILE quand un pas latéral finit, le
+    // pas se termine (stepFramesLeft→0) mais runningState reste MOVING (le reset n'a pas eu lieu
+    // avant que le door-warp lock engage). Avec l'ancien proxy `runningState !== MOVING`, la
+    // branche 1 (lancer le pas forcé) ne firait JAMAIS → forceMovement jamais consommé ni cleared
+    // → la tâche door-warp poll forceMovement===DIR_NONE à l'infini → joueur FIGÉ. `stepFramesLeft
+    // === 0` est le vrai discriminant « pas de pas en cours » (le cas normal rs=NOT_MOVING marche
+    // pareil : sfl y vaut 0). Repro : marche gauche → presser haut vers la porte du Centre Po.
+    if (gPlayerAvatar.forceMovement !== DIR_NONE && gPlayerAvatar.stepFramesLeft === 0) {
       // 1:1 décomp : facing via SetObjectEventDirection (= slot source unique).
       SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], gPlayerAvatar.forceMovement);
       gPlayerAvatar.runningState = MOVING;
