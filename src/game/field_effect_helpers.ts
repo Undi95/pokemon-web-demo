@@ -53,11 +53,11 @@
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { OBJ_PLTT_ID, BG_PLTT_ID,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
@@ -86,7 +86,6 @@ import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsF
   LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from '../engine/system/decomp-globals';
 import { CalculatePlayerPartyCount, gPlayerParty, GetMonData,
   MON_DATA_SPECIES, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from '../engine/battle/party-storage';
-import { GetCurrentMapType, IsMapTypeOutdoors } from '../engine/field/warp-system';
 import { reverseDecompConstant } from '../engine/system/decomp-constants';
 import { InitTextBoxGfxAndPrinters } from './menu';
 import type { DecompTask } from '../engine/system/decomp-runtime';
@@ -1492,21 +1491,59 @@ const FMSM_CRY_VOLUME = 120;
 const FMSM_CRY_VOLUME_RS = 125;
 const FMSM_CRY_MODE_NORMAL = 0;
 
-// Cache assets streaks OUTDOORS (concern plateforme, comme Pokécenter heal). Le PNG indexé
-// fournit tiles (4bpp) + palette ; le .bin = tilemap 320 u16.
+const FIELD_MOVE_STREAKS_INDOORS_PNG = '/decomp/em/field_effects/field_move_streaks_indoors.png';
+const FIELD_MOVE_STREAKS_INDOORS_BIN = '/decomp/em/field_effects/field_move_streaks_indoors.bin';
+
+// Cache assets streaks OUTDOORS + INDOORS (concern plateforme, comme Pokécenter heal). Le PNG
+// indexé fournit tiles (4bpp) + palette ; le .bin = tilemap 320 u16. Outdoors gfx = 16 tuiles
+// (0x200), indoors = 4 tuiles (0x80) — 1:1 décomp CpuCopy16 (field_effect.c:2634/2797).
 let _streaksOutdoorsGfx: Uint8Array | null = null;
 let _streaksOutdoorsPal: Uint16Array | null = null;
 let _streaksOutdoorsTilemap: Uint16Array | null = null;
+let _streaksIndoorsGfx: Uint8Array | null = null;
+let _streaksIndoorsPal: Uint16Array | null = null;
+let _streaksIndoorsTilemap: Uint16Array | null = null;
 let _fieldMoveShowMonInit = false;
 
-/** Préchargement assets FieldMoveShowMon OUTDOORS (concern plateforme — gfx dispo SYNC au
- *  LoadGfx de la task). */
+/** Charge le gfx des stries en INDICES BRUTS (tuilé 4bpp), comme le `.4bpp` INCGFX du décomp.
+ *  ⚠️ NE PAS utiliser `loadIndexedPngStrict` ici : il matche les pixels PAR COULEUR
+ *  (`loadIndexedPngWithPal` first-insert-wins) → la palette outdoor a idx0 ET idx1 = NOIR identiques
+ *  → idx1 (noir OPAQUE) est fusionné dans idx0 (TRANSPARENT) → le fond noir de la bannière devient
+ *  transparent → la map transparaît au lieu d'être masquée (bug « ne marche pas à l'extérieur »).
+ *  La voie brute préserve l'index réel (idx1 = noir opaque, 1:1 `sFieldMoveStreaks*_Gfx`). */
+async function _loadStreaksGfxRaw(url: string): Promise<{ charData: Uint8Array; palette: Uint16Array }> {
+  const raw = await loadIndexedPngRawIndices(url);        // indices PLTE bruts, row-major
+  const plte = await extractPngPlte(url);                 // PLTE RGB15 (idx0/1=noir, idx2=blanc, …)
+  const tilesW = raw.widthPx >> 3, tilesH = raw.heightPx >> 3;
+  const charData = new Uint8Array(tilesW * tilesH * 32);  // 4bpp tuilé : 32 octets/tuile
+  for (let ty = 0; ty < tilesH; ty++) {
+    for (let tx = 0; tx < tilesW; tx++) {
+      const tileIdx = ty * tilesW + tx;
+      for (let row = 0; row < 8; row++) {
+        const srcBase = (ty * 8 + row) * raw.widthPx + tx * 8;
+        for (let pc = 0; pc < 4; pc++) {
+          const left = raw.indices[srcBase + pc * 2] & 0xF;
+          const right = raw.indices[srcBase + pc * 2 + 1] & 0xF;
+          charData[tileIdx * 32 + row * 4 + pc] = left | (right << 4);  // 1:1 decodeTile4bpp (low=left)
+        }
+      }
+    }
+  }
+  return { charData, palette: (plte ?? new Uint16Array(16)).subarray(0, 16) };
+}
+
+/** Préchargement assets FieldMoveShowMon OUTDOORS + INDOORS (concern plateforme — gfx dispo SYNC
+ *  au LoadGfx de la task). Gfx chargé en indices BRUTS (cf. _loadStreaksGfxRaw). */
 export async function preloadFieldMoveShowMonEffect(_rt: DecompRuntime): Promise<void> {
   if (_fieldMoveShowMonInit) return;
-  const png = await loadIndexedPngStrict(FIELD_MOVE_STREAKS_OUTDOORS_PNG, 4);
-  _streaksOutdoorsGfx = png.charData;
-  _streaksOutdoorsPal = png.palette.subarray(0, 16);
+  const o = await _loadStreaksGfxRaw(FIELD_MOVE_STREAKS_OUTDOORS_PNG);
+  _streaksOutdoorsGfx = o.charData;
+  _streaksOutdoorsPal = o.palette;
   _streaksOutdoorsTilemap = await loadTilemapBin(FIELD_MOVE_STREAKS_OUTDOORS_BIN);
+  const i = await _loadStreaksGfxRaw(FIELD_MOVE_STREAKS_INDOORS_PNG);
+  _streaksIndoorsGfx = i.charData;
+  _streaksIndoorsPal = i.palette;
+  _streaksIndoorsTilemap = await loadTilemapBin(FIELD_MOVE_STREAKS_INDOORS_BIN);
   _fieldMoveShowMonInit = true;
 }
 
@@ -1635,12 +1672,20 @@ export function FldEff_FieldMoveShowMonInit(_rt: DecompRuntime): number {
   return 0;  // FALSE
 }
 
-/** 1:1 STRICT décomp `FldEff_FieldMoveShowMon` (field_effect.c:2570). */
+/** 1:1 STRICT décomp `FldEff_FieldMoveShowMon` (field_effect.c:2570) :
+ *    IsMapTypeOutdoors(GetCurrentMapType()) → Task_FieldMoveShowMonOutdoors, sinon …Indoors.
+ *  ⚠️ Port : on route sur `gMapHeader.mapType` (type de la map COURANTE chargée = FIABLE) au lieu de
+ *  `IsMapTypeOutdoors(GetCurrentMapType())` — `GetCurrentMapType` lit `gSaveBlock1Ptr.location`, qui
+ *  peut être DÉSYNC de la map réelle (preset boot / __devGotoMap laissent location=(0,0) → toujours
+ *  Indoors). Même ensemble 1:1 qu'`IsMapTypeOutdoors` (overworld.c:1354) : ROUTE|TOWN|UNDERWATER|
+ *  CITY|OCEAN_ROUTE. (mapType est une STRING dans le port.) */
 export function FldEff_FieldMoveShowMon(rt: DecompRuntime): number {
-  // 1:1 : IsMapTypeOutdoors → Task_FieldMoveShowMonOutdoors, sinon Indoors.
-  // ⚠️ TEMPORAIRE (commit indoors à venir) : les maps intérieures utilisent AUSSI la task
-  // outdoors (mon+cri OK, pas de hang ; bannière outdoor au lieu de la variante slide).
-  const taskId = rt.CreateTask(Task_FieldMoveShowMonOutdoors, 0xFF);
+  const mt = gMapHeader?.mapType;
+  const isOutdoors = mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN' || mt === 'MAP_TYPE_UNDERWATER'
+                  || mt === 'MAP_TYPE_CITY' || mt === 'MAP_TYPE_OCEAN_ROUTE';
+  const taskId = isOutdoors
+    ? rt.CreateTask(Task_FieldMoveShowMonOutdoors, 0xFF)
+    : rt.CreateTask(Task_FieldMoveShowMonIndoors, 0xFF);
   const task = rt.gTasks.get(taskId);
   if (task) {
     task.data[15] = InitFieldMoveMonSprite(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);  // tMonSpriteId
@@ -1796,6 +1841,188 @@ function Task_FieldMoveShowMonOutdoors(task: DecompTask): void {
   rt.SetGpuReg(REG_OFFSET_WINOUT, task.data[4] & 0xFFFF);
   rt.SetGpuReg(REG_OFFSET_BG0HOFS, task.data[5] & 0x1FF);
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, task.data[6] & 0x1FF);
+}
+
+// ─── 1:1 décomp `field_effect.c` /* Field Move Show Mon — variante INDOORS */ (c:2758-2921) ───
+// Fond bleu, stries fines. La bannière (BG0) se DÉVOILE colonne par colonne dans la tilemap
+// (SlideIndoorBanner), clippée verticalement par WIN1 sur la bande [H/4, 3H/4] = [40,120].
+// Task data 1:1 (field_effect.c:2758) : tState=data[0] tBgHoriz=data[1] tBgVert=data[2]
+//   tBgOffsetIdx=data[3] tBgOffset=data[4] tMonSpriteId=data[15].
+//   + port : data[7]=priorWin1Enabled data[8]=savedWININ data[9]=savedWINOUT.
+// ⚠️ DÉVIATIONS (documentées, comme l'outdoors) :
+//  - VBlankCB plié dans le tick (pas de timing HW) ; data[13] (vblankCB du décomp) inutilisé.
+//  - Le décomp INDOORS ne pose PAS WININ/WINOUT (il suppose l'état HW ambiant des maps intérieures)
+//    et ne pose WIN1H/V qu'APRÈS le slide-in. Pour un rendu correct quel que soit l'état ambiant, on
+//    configure WIN1 (bande + masques win1Inside=tout / outsideEnable=sans BG0) + on l'active DÈS
+//    l'Init, et on RESTAURE l'état antérieur à End. Le SetGpuReg(WIN1H/V) du décomp dans SlideBannerOn
+//    est gardé 1:1 (redondant). + gate `picLoaded` sur l'avance (mon-pic async, comme l'outdoors).
+//  - tilemap écrite dans `bg(0).tilemap[160 + …]` (= VRAM + 0x140 + delta ; la vue u16 du port pointe
+//    déjà sur le mapBase → delta data[12] non nécessaire).
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_Init` (field_effect.c:2781). */
+function FieldMoveShowMonIndoorsEffect_Init(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BG0HOFS, task.data[1] & 0x1FF);  // tBgHoriz (=0)
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, task.data[2] & 0x1FF);  // tBgVert (=0)
+  // port : sauve + configure WIN1 (le décomp suppose l'état HW ambiant).
+  task.data[7] = rt.gba.windows.win1.enabled ? 1 : 0;
+  task.data[8] = rt.GetGpuReg(REG_OFFSET_WININ);
+  task.data[9] = rt.GetGpuReg(REG_OFFSET_WINOUT);
+  rt.gba.windows.win1Inside = WININ_FIELD_MOVE_SHOW_MON;       // 0x3F : BG_ALL+OBJ à l'intérieur de WIN1
+  rt.gba.windows.win1BlendEnable = true;
+  rt.gba.windows.outsideEnable = WINOUT_FIELD_MOVE_SHOW_MON;   // 0x3E : sans BG0 à l'extérieur
+  rt.gba.windows.outsideBlendEnable = true;
+  rt.gba.windows.win1.enabled = true;
+  rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0, FMSM_DISPLAY_WIDTH));
+  rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(FMSM_DISPLAY_HEIGHT / 4, FMSM_DISPLAY_HEIGHT - FMSM_DISPLAY_HEIGHT / 4));
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_LoadGfx` (field_effect.c:2790) : stries indoors (4 tuiles)
+ *  dans BG0 (charBase 2) + clear screenblock (mapBase 31) + palette 15. */
+function FieldMoveShowMonIndoorsEffect_LoadGfx(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const bg0 = rt.gba.bg(0);
+  if (_streaksIndoorsGfx) bg0.vram.set(_streaksIndoorsGfx.subarray(0, 0x80), 0);  // CpuCopy16 0x80 = 4 tuiles
+  bg0.tilemap.fill(0);                                                            // CpuFill32(0, VRAM+delta, 0x800)
+  if (_streaksIndoorsPal) LoadPalette(_streaksIndoorsPal, BG_PLTT_ID(15), 32);
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_SlideBannerOn` (field_effect.c:2803) : dévoile la bannière
+ *  colonne par colonne ; slide fini + picLoaded → re-pose WIN1 (1:1) + lance le slide du mon. */
+function FieldMoveShowMonIndoorsEffect_SlideBannerOn(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (SlideIndoorBannerOnscreen(task)) {
+    const monSprite = rt.gSprites.get(task.data[15]);
+    if (monSprite && monSprite.data[8] /* picLoaded : déviation async (cf. en-tête outdoors) */) {
+      rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0, FMSM_DISPLAY_WIDTH));
+      rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(FMSM_DISPLAY_HEIGHT / 4, FMSM_DISPLAY_HEIGHT - FMSM_DISPLAY_HEIGHT / 4));
+      monSprite.callback = SpriteCB_FieldMoveMonSlideOnscreen;
+      task.data[0]++;
+    }
+  }
+  AnimateIndoorShowMonBg(task);
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_WaitForMon` (field_effect.c:2815). */
+function FieldMoveShowMonIndoorsEffect_WaitForMon(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  AnimateIndoorShowMonBg(task);
+  const monSprite = rt.gSprites.get(task.data[15]);
+  if (monSprite && monSprite.data[7] /* sSlidOffscreen */)
+    task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_RestoreBg` (field_effect.c:2822). */
+function FieldMoveShowMonIndoorsEffect_RestoreBg(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  AnimateIndoorShowMonBg(task);
+  task.data[3] = task.data[1] & 7;  // tBgOffsetIdx = tBgHoriz & 7
+  task.data[4] = 0;                 // tBgOffset = 0
+  rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0xFF, 0xFF));
+  rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(0xFF, 0xFF));
+  task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_SlideBannerOff` (field_effect.c:2832). */
+function FieldMoveShowMonIndoorsEffect_SlideBannerOff(task: DecompTask): void {
+  AnimateIndoorShowMonBg(task);
+  if (SlideIndoorBannerOffscreen(task))
+    task.data[0]++;
+}
+
+/** 1:1 STRICT `FieldMoveShowMonIndoorsEffect_End` (field_effect.c:2839). */
+function FieldMoveShowMonIndoorsEffect_End(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.bg(0).tilemap.fill(0);  // CpuFill32(0, VRAM+bg0cnt, 0x800)
+  InitTextBoxGfxAndPrinters();   // vblankCB restauré = plié (skip)
+  _freeFieldMoveMonSprite(rt, task.data[15]);
+  FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+  // port : restaure l'état WIN1 antérieur (le décomp suppose l'état HW ambiant).
+  rt.SetGpuReg(REG_OFFSET_WININ, task.data[8] & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, task.data[9] & 0xFFFF);
+  rt.gba.windows.win1.enabled = (task.data[7] === 1);
+  rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0xFF, 0xFF));
+  rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(0xFF, 0xFF));
+  DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonIndoors));
+}
+
+/** 1:1 STRICT `AnimateIndoorShowMonBg` (field_effect.c:2864). */
+function AnimateIndoorShowMonBg(task: DecompTask): void {
+  task.data[1] -= 16;  // tBgHoriz
+  task.data[3] += 16;  // tBgOffsetIdx
+}
+
+/** 1:1 STRICT `SlideIndoorBannerOnscreen` (field_effect.c:2870) → TRUE quand le slide est fini
+ *  (tBgOffset >= 32). Écrit 2 colonnes de la tilemap des stries par appel (slide-in). */
+function SlideIndoorBannerOnscreen(task: DecompTask): boolean {
+  if (task.data[4] >= 32) return true;  // tBgOffset
+  const rt = getRuntime();
+  if (!rt) return true;
+  let dstOffs = (task.data[3] >> 3) & 0x1f;  // tBgOffsetIdx
+  if (dstOffs >= task.data[4]) {
+    dstOffs = (32 - dstOffs) & 0x1f;
+    const srcOffs = (32 - task.data[4]) & 0x1f;
+    const tm = rt.gba.bg(0).tilemap;
+    const src = _streaksIndoorsTilemap;
+    if (src) {
+      for (let i = 0; i < 10; i++) {
+        tm[160 + dstOffs + i * 32] = (src[srcOffs + i * 32] | 0xf000) & 0xFFFF;
+        const d1 = (dstOffs + 1) & 0x1f, s1 = (srcOffs + 1) & 0x1f;
+        tm[160 + d1 + i * 32] = (src[s1 + i * 32] | 0xf000) & 0xFFFF;
+      }
+    }
+    task.data[4] += 2;  // tBgOffset
+  }
+  return false;
+}
+
+/** 1:1 STRICT `SlideIndoorBannerOffscreen` (field_effect.c:2899) → TRUE quand l'effacement est fini.
+ *  Réécrit 2 colonnes à 0xF000 (tile 0 palette 15 = vide) par appel (slide-out). */
+function SlideIndoorBannerOffscreen(task: DecompTask): boolean {
+  if (task.data[4] >= 32) return true;  // tBgOffset
+  const rt = getRuntime();
+  if (!rt) return true;
+  const dstOffsIdx = task.data[3] >> 3;  // tBgOffsetIdx (PAS de & 0x1f ici, 1:1 décomp)
+  if (dstOffsIdx >= task.data[4]) {
+    const dstOffs = (task.data[1] >> 3) & 0x1f;  // (tBgHoriz >> 3) & 0x1f
+    const tm = rt.gba.bg(0).tilemap;
+    for (let i = 0; i < 10; i++) {
+      tm[160 + dstOffs + i * 32] = 0xf000;
+      tm[160 + ((dstOffs + 1) & 0x1f) + i * 32] = 0xf000;
+    }
+    task.data[4] += 2;  // tBgOffset
+  }
+  return false;
+}
+
+/** 1:1 STRICT `sFieldMoveShowMonIndoorsEffectFuncs[]` (field_effect.c:2766). */
+const sFieldMoveShowMonIndoorsEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  FieldMoveShowMonIndoorsEffect_Init,
+  FieldMoveShowMonIndoorsEffect_LoadGfx,
+  FieldMoveShowMonIndoorsEffect_SlideBannerOn,
+  FieldMoveShowMonIndoorsEffect_WaitForMon,
+  FieldMoveShowMonIndoorsEffect_RestoreBg,
+  FieldMoveShowMonIndoorsEffect_SlideBannerOff,
+  FieldMoveShowMonIndoorsEffect_End,
+];
+
+/** 1:1 STRICT `Task_FieldMoveShowMonIndoors` (field_effect.c:2776) + VBlankCB plié (BG0 scroll). */
+function Task_FieldMoveShowMonIndoors(task: DecompTask): void {
+  const state = task.data[0];
+  sFieldMoveShowMonIndoorsEffectFuncs[state](task);
+  if (state >= sFieldMoveShowMonIndoorsEffectFuncs.length - 1) return;  // End → plus de ré-apply
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BG0HOFS, task.data[1] & 0x1FF);  // VBlankCB_FieldMoveShowMonIndoors (c:2853)
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, task.data[2] & 0x1FF);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
