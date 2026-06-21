@@ -35,24 +35,13 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 
-/** HOTFIX 2026-05-09 : auto-extracted SPRITE_ANIMS data has tileNum stored
- *  as STRING for unresolved constants (= "VERSION_BANNER_RIGHT_TILEOFFSET").
- *  Previously the runtime fell back to 0 when tileNum was a string → ALL
- *  sprites with named tile offsets shared tileNum=0 → visible bug : title
- *  screen "VERSION EMERAUDE" right banner showed LEFT banner tiles
- *  (= duplicated "VERSI EMERA"). User reported "title screen cassé".
- *  Fix : resolve string constants via decomp-constants at runtime. */
-function _resolveTileNum(raw: number | string | undefined): number {
-  if (typeof raw === 'number') return raw;
-  if (typeof raw !== 'string') return 0;
-  const resolved = resolveDecompConstant(raw);
-  return typeof resolved === 'number' ? resolved : 0;
-}
+// _resolveTileNum : relocalisé vers game/sprite.ts (chantier A2), importé ci-dessus
+// (_resolveTileNum) — utilisé par les 3 sites SPRITE_ANIMS du harness + tickSpriteAnims.
 
 /** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
  *  Retourne [shape, size] depuis (width, height) en pixels. */
@@ -651,8 +640,9 @@ export class DecompRuntime {
    *  Consulté par tickSpriteAnims/StartSpriteAnim en fallback après SPRITE_ANIMS.
    *  Foundation : object-event-graphics.ts registers 4-direction walk anims here ;
    *  Phase 4 ajoutera surf/bike/fishing variants. */
-  private _extraAnims = new Map<string, { frames: ReadonlyArray<{ tileNum: number, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: 'END' | 'JUMP', jumpTo?: number }>();
-  private _extraAnimTables = new Map<string, { anims: ReadonlyArray<string> }>();
+  /** Public (chantier A2) : lu par tickSpriteAnims relocalisé dans game/sprite.ts. */
+  _extraAnims = new Map<string, { frames: ReadonlyArray<{ tileNum: number, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: 'END' | 'JUMP', jumpTo?: number }>();
+  _extraAnimTables = new Map<string, { anims: ReadonlyArray<string> }>();
 
   /** Register a runtime sprite anim (= named cmd table + terminator). Idempotent. */
   registerExtraAnim(name: string, def: { frames: ReadonlyArray<{ tileNum: number, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: 'END' | 'JUMP', jumpTo?: number }): void {
@@ -2130,70 +2120,10 @@ export class DecompRuntime {
     this.syncSpritesToOam();
   }
 
-  /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter.
-   *  Consulte d'abord _extraAnimTables/_extraAnims (= runtime registry des
-   *  modules comme object-event-graphics), fallback sur SPRITE_ANIM_TABLES/
-   *  SPRITE_ANIMS auto-generated. Cette double lookup permet d'enregistrer
-   *  des anims dynamiques sans modifier le auto-generated. */
+  /** Délègue à la fonction sprite.c 1:1 relocalisée vers game/sprite.ts (chantier A2).
+   *  Méthode conservée (appelée par runOneFrame + tickSpriteAnimsPublic). */
   private tickSpriteAnims(): void {
-    // C1.1 — 1:1 STRICT décomp sprite.c AnimateSprites + ProcessSpriteCopy
-    // Requests : pour chaque sprite avec .anims configurées (= via le nouveau
-    // SpriteTemplate flow Phase 3), tick BeginAnim/ContinueAnim + drain queue.
-    // Les sprites legacy (= anims === null) sont skip par AnimateSprite (=
-    // early-return interne) et restent driven par le path SPRITE_ANIMS plus
-    // bas (= legacy state machine via spriteAnimStates).
-    for (let i = 0; i < MAX_SPRITES; i++) {
-      const sprite = this.gSprites[i];
-      if (sprite === undefined || !sprite.inUse) continue;
-      if (sprite.anims === null) continue;  // skip legacy path
-      _AnimateSprite_1to1(this, sprite as never);
-    }
-    _ProcessSpriteCopyRequests_1to1(this);
-    // ─── Legacy SPRITE_ANIMS state machine (gardé pour migration progressive) ──
-    for (const [spriteId, state] of this.spriteAnimStates) {
-      if (state.framesRemaining > 1) {
-        state.framesRemaining--;
-        continue;
-      }
-      const animTable = this._extraAnimTables.get(state.animTableName)
-        ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
-      if (!animTable) { this.spriteAnimStates.delete(spriteId); continue; }
-      const animName = animTable.anims[state.animIdx];
-      const anim = this._extraAnims.get(animName)
-        ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
-      if (!anim) { this.spriteAnimStates.delete(spriteId); continue; }
-
-      state.frameIdx++;
-      if (state.frameIdx >= anim.frames.length) {
-        if (anim.terminator === 'JUMP') {
-          state.frameIdx = anim.jumpTo ?? 0;
-        } else {
-          // END terminator : marque l'anim comme terminée mais GARDE le state
-          // (= permet à StartSpriteAnim de re-entrer + permet sprite.animEnded
-          // sentinel pour les callbacks). Tile reste sur la dernière frame.
-          state.frameIdx = anim.frames.length - 1;
-          state.framesRemaining = 1;  // attente perpétuelle
-          const sprite = this.gSprites[spriteId];
-          if (sprite) sprite.animEnded = true;
-          continue;
-        }
-      }
-      const frame = anim.frames[state.frameIdx];
-      state.framesRemaining = frame.duration;
-      const tileNum = _resolveTileNum(frame.tileNum);
-      const sprite = this.gSprites[spriteId];
-      if (sprite) {
-        this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
-        // Per-frame hFlip/vFlip (= OAM hardware mirror, e.g. EAST anim utilise
-        // les tiles WEST avec hFlip=true). 1:1 décomp ANIMCMD_FRAME flags.
-        if (typeof (frame as { hFlip?: boolean }).hFlip === 'boolean') {
-          this.gba.oam[sprite.oamIndex].flipH = (frame as { hFlip?: boolean }).hFlip!;
-        }
-        if (typeof (frame as { vFlip?: boolean }).vFlip === 'boolean') {
-          this.gba.oam[sprite.oamIndex].flipV = (frame as { vFlip?: boolean }).vFlip!;
-        }
-      }
-    }
+    _tickSpriteAnims_1to1(this);
   }
 
   // ============================================================================

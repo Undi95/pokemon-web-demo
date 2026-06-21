@@ -74,6 +74,8 @@
  */
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { OBJ_PLTT_ID } from '../engine/system/palette';
+import { resolveDecompConstant } from '../engine/system/decomp-constants';
+import { SPRITE_ANIM_TABLES, SPRITE_ANIMS } from '../engine/decomp-data/src/sprite-system';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
 
@@ -1656,6 +1658,77 @@ export function syncSpritesToOam(rt: DecompRuntime): void {
       oam.affineMode = 0;
     } else {
       oam.affineMode = merged;
+    }
+  }
+}
+
+/** HOTFIX 2026-05-09 : les data SPRITE_ANIMS auto-extraites stockent tileNum en
+ *  STRING pour les constantes non résolues (= "VERSION_BANNER_RIGHT_TILEOFFSET").
+ *  Résolution via decomp-constants au runtime (sans ça : tous les sprites à tile
+ *  offset nommé partagent tileNum=0 → bug title screen "VERSI EMERA" dupliqué).
+ *  Relocalisé du harness (chantier A2) ; le harness l'importe pour ses 3 autres sites. */
+export function _resolveTileNum(raw: number | string | undefined): number {
+  if (typeof raw === 'number') return raw;
+  if (typeof raw !== 'string') return 0;
+  const resolved = resolveDecompConstant(raw);
+  return typeof resolved === 'number' ? resolved : 0;
+}
+
+/** 1:1 décomp tick anims de `AnimateSprites` (sprite.c) : (1) sprites avec `.anims`
+ *  configurées → AnimateSprite + drain ProcessSpriteCopyRequests ; (2) legacy
+ *  SPRITE_ANIMS state machine (spriteAnimStates), gardée pour migration. Consulte
+ *  d'abord le registry runtime (_extraAnimTables/_extraAnims) puis les tables
+ *  auto-générées. Relocalisé du harness (chantier A2) ; la méthode runtime délègue. */
+export function tickSpriteAnims(rt: DecompRuntime): void {
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const sprite = rt.gSprites[i];
+    if (sprite === undefined || !sprite.inUse) continue;
+    if (sprite.anims === null) continue;  // skip legacy path
+    AnimateSprite(rt, sprite as never);
+  }
+  ProcessSpriteCopyRequests(rt);
+  // ─── Legacy SPRITE_ANIMS state machine (gardé pour migration progressive) ──
+  for (const [spriteId, state] of rt.spriteAnimStates) {
+    if (state.framesRemaining > 1) {
+      state.framesRemaining--;
+      continue;
+    }
+    const animTable = rt._extraAnimTables.get(state.animTableName)
+      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
+    if (!animTable) { rt.spriteAnimStates.delete(spriteId); continue; }
+    const animName = animTable.anims[state.animIdx];
+    const anim = rt._extraAnims.get(animName)
+      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
+    if (!anim) { rt.spriteAnimStates.delete(spriteId); continue; }
+
+    state.frameIdx++;
+    if (state.frameIdx >= anim.frames.length) {
+      if (anim.terminator === 'JUMP') {
+        state.frameIdx = anim.jumpTo ?? 0;
+      } else {
+        // END terminator : marque l'anim terminée mais GARDE le state (permet
+        // re-entrée via StartSpriteAnim + sentinel sprite.animEnded). Tile reste
+        // sur la dernière frame.
+        state.frameIdx = anim.frames.length - 1;
+        state.framesRemaining = 1;
+        const sprite = rt.gSprites[spriteId];
+        if (sprite) sprite.animEnded = true;
+        continue;
+      }
+    }
+    const frame = anim.frames[state.frameIdx];
+    state.framesRemaining = frame.duration;
+    const tileNum = _resolveTileNum(frame.tileNum);
+    const sprite = rt.gSprites[spriteId];
+    if (sprite) {
+      rt.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+      // Per-frame hFlip/vFlip (= OAM hardware mirror, 1:1 ANIMCMD_FRAME flags).
+      if (typeof (frame as { hFlip?: boolean }).hFlip === 'boolean') {
+        rt.gba.oam[sprite.oamIndex].flipH = (frame as { hFlip?: boolean }).hFlip!;
+      }
+      if (typeof (frame as { vFlip?: boolean }).vFlip === 'boolean') {
+        rt.gba.oam[sprite.oamIndex].flipV = (frame as { vFlip?: boolean }).vFlip!;
+      }
     }
   }
 }
