@@ -28,6 +28,7 @@ import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
 } from '../engine/system/decomp-globals';
+import { DestroySprite } from './sprite';
 import { loadIndexedPng } from '../engine/gba/png-loader';
 import { Random } from '../engine/system/random';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
@@ -260,7 +261,7 @@ export function SpriteCB_FldEffPokeballTrail(sprite: TrailSprite): void {
       // 1:1 FieldEffectStop : destroy + retire de l'active list.
       const rt = getRuntime();
       const id = _findSpriteId(sprite);
-      if (rt && id >= 0) rt.DestroySprite(id);
+      if (rt && id >= 0) DestroySprite(rt, id);
       sprite.inUse = false;
       sprite.callback = null;
       _activeTrailBalls--;

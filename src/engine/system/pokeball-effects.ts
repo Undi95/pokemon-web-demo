@@ -28,6 +28,7 @@ import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../system/decomp-helper
 import {
   MarkObjTilesAllocated, MarkObjPaletteAllocated,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
+  DestroySprite,
 } from '../../game/sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
@@ -469,7 +470,7 @@ function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number,
     }
     if (s.data[1] >= 50) {
       // 1:1 décomp DestroyBallOpenAnimationParticle : free the sprite.
-      rt.DestroySprite(s.spriteId);
+      DestroySprite(rt, s.spriteId);
     }
   };
 }

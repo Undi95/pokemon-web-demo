@@ -24,6 +24,7 @@
  */
 
 import { MAX_BATTLERS_COUNT } from '../engine/battle/state';
+import { DestroySprite } from './sprite';
 
 /** 1:1 décomp `u8 GetScaledHPFraction(s16 hp, s16 maxhp, u8 scale)`
  *  (battle_interface.c:2517-2525). Re-homé ici depuis engine/battle/util.ts
@@ -785,10 +786,10 @@ function _destroySummarySprites(task: Tsk, freeResources: boolean): void {
     FreeSpritePaletteByTag(TAG_STATUS_SUMMARY_BAR_PAL);
     FreeSpritePaletteByTag(TAG_STATUS_SUMMARY_BALLS_PAL);
   }
-  rt.DestroySprite(barId);
+  DestroySprite(rt, barId);
   for (let i = 0; i < PARTY_SIZE; i++) {
     const id = task.data[3 + i];
-    if (id >= 0) rt.DestroySprite(id);
+    if (id >= 0) DestroySprite(rt, id);
   }
 }
 
@@ -2154,7 +2155,7 @@ export function destroyHealthboxSprite(handle: HealthboxHandle): void {
   // 1:1 : libère d'abord les child OAM des sous-sprites de la barre (sinon ils
   // fuient = OAM visibles orphelins au combat suivant).
   clearSubspriteTable(handle.healthbarSpriteId);
-  for (const spriteId of _allSpriteIds(handle)) rt.DestroySprite(spriteId);
+  for (const spriteId of _allSpriteIds(handle)) DestroySprite(rt, spriteId);
 }
 
 /** 1:1 décomp `UpdateOamPriorityInAllHealthboxes` (ll. 1056-1070) : update

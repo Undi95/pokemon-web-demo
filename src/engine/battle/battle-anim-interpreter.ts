@@ -48,7 +48,7 @@
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import { MAX_SPRITES } from '../system/decomp-runtime';
-import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap } from '../../game/sprite';
+import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite } from '../../game/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
 import {
@@ -357,7 +357,7 @@ function _purgeScriptSprites(): void {
       // (healthbox re-render pendant l'anim) — detruire par id nu detruisait
       // la healthbox (paye 2026-06-11). On ne purge que NOTRE objet.
       if (sp && (sp as unknown) === e.ref && (sp as { inUse?: boolean }).inUse !== false) {
-        try { rt.DestroySprite(e.id); } catch { /* deja mort */ }
+        try { DestroySprite(rt, e.id); } catch { /* deja mort */ }
       }
     }
   }
@@ -539,7 +539,7 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
   if (sprite && sprite.matrixNum !== 0) {
     rt.FreeOamMatrix(sprite.matrixNum);
   }
-  try { rt.DestroySprite(spriteId); } catch (e) { void e; }
+  try { DestroySprite(rt, spriteId); } catch (e) { void e; }
   // PAS de gSprites.delete : le runtime garde le slot jusqu'a reallocation
   // (1:1 decomp — le delete cassait la healthbox composee, fix user 2026-06-11).
   if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--;

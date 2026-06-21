@@ -4,6 +4,7 @@ import {
   setPaydayMoney,
   setLastUsedItem as setLastUsedItemSME,
 } from '../engine/battle/state';
+import { DestroySprite } from './sprite';
 import {
   HITMARKER_CHARGING,
   HITMARKER_STATUS_ABILITY_EFFECT,
@@ -10478,7 +10479,7 @@ import {
   GetSpriteTileStartByTag as _GetSpriteTileStartByTagBSC,
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
 } from './sprite';
-import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC } from '../engine/system/decomp-globals';
+import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from '../engine/system/decomp-globals';
 import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from '../engine/decomp-data/src/battle_bg-data';
 import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from './menu_specialized';
 import {
@@ -10643,7 +10644,7 @@ function SpriteCB_MonIconOnLvlUpBanner(sprite: { data: number[]; x2: number; spr
     sprite.data[0] = 1;  // sDestroy
   } else if (sprite.data[0]) {
     const rt = _rtBSC();
-    if (rt && typeof sprite.spriteId === 'number') rt.DestroySprite(sprite.spriteId);
+    if (rt && typeof sprite.spriteId === 'number') DestroySprite(_getRuntimeBSC(), sprite.spriteId);
     _FreeSpriteTilesByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
     _FreeSpritePaletteByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
   }

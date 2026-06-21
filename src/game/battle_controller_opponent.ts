@@ -27,6 +27,7 @@
  * __battleControllerOpponent + import './battle-faint-anim').
  */
 
+import { DestroySprite } from './sprite';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -769,7 +770,7 @@ function _freeOppMonSpriteAndHideHealthbox(battler: number): void {
   if (rt && monId >= 0) {
     const spr = rt.gSprites[monId];
     if (spr) { (spr as { inUse: boolean }).inUse = false; (spr as { callback: unknown }).callback = null; }
-    rt.DestroySprite(monId);
+    DestroySprite(rt, monId);
     _battlerMonSpriteIds[battler] = -1;
   }
   // 1:1 HideBattlerShadowSprite (l'ombre du volant disparaît au rappel).

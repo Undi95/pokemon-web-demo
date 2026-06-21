@@ -36,6 +36,7 @@ import './battle_message';
 // + MoveBattleBarGraphically). Side-effect import : s'enregistre sur globalThis.__battleHealthbox
 // (que _gHealthboxSpriteId / _UpdateHealthboxAttribute lisent) + branche le hook MoveBattleBarGraphically.
 import './battle_interface'; // side-effect miroir (ex-shim battle-healthbox-l)
+import { DestroySprite } from './sprite';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -1003,7 +1004,7 @@ function _freeMonSpriteAndHideHealthbox(battler: number): void {
   if (sprite && rt) {
     sprite.inUse = false;
     sprite.callback = null;
-    rt.DestroySprite(spriteId);
+    DestroySprite(rt, spriteId);
   }
   const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
   hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(battler));
@@ -1284,7 +1285,7 @@ function _FreeMonSpriteAfterFaintAnim(): void {
     // 1:1 DestroySprite : cacher l'OAM AVANT de retirer de la Map (même bug fantôme
     // que le faint adverse, cf. DestroySprite de battle_main section C1) — sinon
     // l'image du back-sprite resterait affichée (slot orphelin, plus aucun sync).
-    if (sprite && rt?.gSprites) { rt.DestroySprite(spriteId); rt.gSprites[spriteId] = undefined; }
+    if (sprite && rt?.gSprites) { DestroySprite(rt, spriteId); rt.gSprites[spriteId] = undefined; }
     const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
     hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
     PlayerBufferExecCompleted();

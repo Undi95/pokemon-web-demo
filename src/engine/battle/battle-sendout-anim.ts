@@ -28,7 +28,7 @@
 
 import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag } from '../../game/sprite';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite } from '../../game/sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
@@ -407,7 +407,7 @@ function _cleanup(rt: DecompRuntime): void {
     if (ball) {
       // Libère la matrice OAM du spin (sinon fuite d'un slot affine par combat).
       if ((ball.matrixNum ?? 0) > 0) { rt.FreeOamMatrix(ball.matrixNum); ball.matrixNum = 0; }
-      rt.DestroySprite(_so.ballSpriteId);
+      DestroySprite(rt, _so.ballSpriteId);
     }
   }
   _so = null;
@@ -463,7 +463,7 @@ export function tickReturnToBall(): void {
   if (_rtb.frame >= 4 && mon) mon.invisible = true;
   // Fin du recall (~frame 18) : la ball disparaît.
   if (_rtb.frame >= 18) {
-    if (ball) rt.DestroySprite(_rtb.ballSpriteId);
+    if (ball) DestroySprite(rt, _rtb.ballSpriteId);
     _rtb = null; _rtbStatus = 'done'; _rtbLastFc = -1;
   }
 }
@@ -566,7 +566,7 @@ export function getTrainerSpriteId(): number { return _trainerSpriteId; }
 /** Détruit le sprite de dos du dresseur (= au lancer / teardown). */
 export function destroyTrainerBackSprite(): void {
   const rt = getRuntime();
-  if (rt && _trainerSpriteId >= 0) rt.DestroySprite(_trainerSpriteId);
+  if (rt && _trainerSpriteId >= 0) DestroySprite(rt, _trainerSpriteId);
   _trainerSpriteId = -1;
   // Libère les 256 tiles VRAM du dresseur DÈS qu'il sort (fin du lancer) — inutile de
   // les garder tout le combat (le mon a émergé). Rend l'espace 704+ libre pour la capture.
@@ -670,7 +670,7 @@ export function getOpponentTrainerSpriteId(): number { return _oppTrainerSpriteI
  *  1:1 SpriteCB_FreeOpponentSprite (FreeTrainerFrontPicPalette + DestroySprite). */
 export function destroyOpponentTrainerSprite(): void {
   const rt = getRuntime();
-  if (rt && _oppTrainerSpriteId >= 0) rt.DestroySprite(_oppTrainerSpriteId);
+  if (rt && _oppTrainerSpriteId >= 0) DestroySprite(rt, _oppTrainerSpriteId);
   _oppTrainerSpriteId = -1;
   if (_oppTrainerTileStart >= 0) { FreeSpriteTilesByTag(TAG_OPP_TRAINER); _oppTrainerTileStart = -1; _oppTrainerLoaded = false; }
 }

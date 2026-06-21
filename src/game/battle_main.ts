@@ -67,7 +67,7 @@ import {
 } from '../engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
-import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl } from './sprite';
+import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl } from './sprite';
 import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   SCANLINE_EFFECT_DMACNT_16BIT,
@@ -1056,7 +1056,7 @@ function DestroySprite(sprite: FaintSprite): void {
       // À JAMAIS. 1:1 DestroySpriteAndFreeResources : le runtime cache l'OAM
       // (oam.visible=false + invisible + inUse=false + callback=null), PUIS on
       // retire le slot de la Map (le mon faint n'a pas d'enfants-data).
-      r.DestroySprite(id);
+      _DestroySpriteImpl(r, id);
       r.gSprites[id] = undefined;
       return;
     }
@@ -3021,7 +3021,7 @@ function _CreateInvisibleSpriteWithCallback(cb: (sprite: BattleSprite) => void):
 function _DestroySprite(sprite: BattleSprite): void {
   const rt = getRuntime();
   const id = (sprite as { spriteId?: number }).spriteId;
-  if (rt && typeof id === 'number') rt.DestroySprite(id);
+  if (rt && typeof id === 'number') _DestroySpriteImpl(rt, id);
   else sprite.callback = null;
 }
 

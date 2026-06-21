@@ -46,6 +46,7 @@
 import { getRuntime } from '../engine/system/decomp-globals';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { Sin, Cos } from './trig';
+import { DestroySprite } from './sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
@@ -681,7 +682,7 @@ function _startAffine(sprite: BallSprite, n: number): void {
 function _destroyBall(sprite: BallSprite): void {
   const id = _spriteIdOf(sprite);
   const rt = getRuntime();
-  if (rt && id >= 0) { rt.DestroySprite(id); rt.gSprites[id] = undefined; }
+  if (rt && id >= 0) { DestroySprite(rt, id); rt.gSprites[id] = undefined; }
 }
 function _updateOamPriorityInAllHealthboxes(priority: number): void {
   const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
@@ -1005,7 +1006,7 @@ function SpriteCB_Ball_Capture_Step(sprite: BallSprite): void {
   } else if (sprite.data[4] === 315) {
     const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
     const rt = getRuntime();
-    if (rt && monSpriteId >= 0) { rt.DestroySprite(monSpriteId); rt.gSprites[monSpriteId] = undefined; }
+    if (rt && monSpriteId >= 0) { DestroySprite(rt, monSpriteId); rt.gSprites[monSpriteId] = undefined; }
     sprite.data[0] = 0;
     sprite.callback = SpriteCB_Ball_FadeOut;
   }

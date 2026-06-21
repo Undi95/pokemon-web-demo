@@ -39,7 +39,7 @@ import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPEC
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../engine/system/decomp-globals';
-import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';
+import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
@@ -524,7 +524,7 @@ function HandleBallAnimEnd(sprite: DecompSprite, rt: DecompRuntime): void {
     setGDoingBattleAnim(false);
     setBallAnimActive(battler, false);
     rt.FreeOamMatrix(sprite.matrixNum);
-    rt.DestroySprite(sprite.spriteId);
+    DestroySprite(rt, sprite.spriteId);
 
     let doneBattlers = 0;
     for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
@@ -641,8 +641,8 @@ function SpriteCB_HitAnimHealthoxEffect(sprite: { data: number[] }): void {
   if (sprite.data[2] === 21) {
     if (hb) { hb.x2 = 0; hb.y2 = 0; }
     const self = sprite as { spriteId?: number };
-    if (rt?.DestroySprite && self.spriteId !== undefined) {
-      rt.DestroySprite(self.spriteId);
+    if (rt && self.spriteId !== undefined) {
+      DestroySprite(getRuntime(), self.spriteId);
       // pas de gSprites.delete (slot garde, 1:1)
     } else {
       // fallback : neutraliser le callback
