@@ -13,8 +13,9 @@
 - **260 manquants** (226 utilisés en script) — MAIS le top des manquants est **bas en usage (≤3) et
   quasi tout en sous-systèmes DÉFÉRÉS** (secret base, contest, link, daycare, frontier, mystery gift).
   → Le cœur n'est pas dans les manquants. C'est un backlog de **fidélité** (stubs), pas de couverture.
-- ⚠️ `npm run audit:specials` est **CASSÉ** (chemin périmé `src/engine/specials-registry.ts`), comme
-  `audit:scrcmd`. À réparer (les 2 fichiers ont bougé dans `src/engine/script/`).
+- ✅ `npm run audit:specials` **RÉPARÉ** (2026-06-21) : scannait un chemin périmé
+  `src/engine/specials-registry.ts` → scanne maintenant tout `src/`. Sortie : 294 enregistrés, **0 manquant
+  en main-story** (les manquants sont tous en contenu déféré/postgame).
 
 ## Résultat sur les 40 audités (✅ CONFIRMÉ-CONVERGENCE)
 - **0 manquant** (les 40 sont enregistrés), **24/40 = sous-systèmes déférés** (link/cable_club/contest/
@@ -71,4 +72,4 @@ Cross-check a de nouveau payé : convergence forte sur le gros + **A1 a attrapé
 1. **Fixer `DrawWholeMapView`** (trivial + #1 levier, A/B métatile requis).
 2. Les autres stubs de cœur (caméra, PlayerFace, MauvilleGym, légendaires) = **chantiers** (vrai portage,
    pas des wire-ups) → à planifier séparément.
-3. Réparer `audit:specials`/`audit:scrcmd` (chemins périmés) pour un cross-check déterministe permanent.
+3. ✅ FAIT : `audit:specials`/`audit:scrcmd` réparés (scannent `src/`) → cross-check déterministe permanent dispo.

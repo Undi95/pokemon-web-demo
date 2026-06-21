@@ -72,8 +72,8 @@ moitié de `money-coins.ts` (boxes UI argent/jetons via globalThis).
 ---
 
 ## Notes outillage
-- ⚠️ **`npm run audit:scrcmd` est CASSÉ** (`scripts/audit-scrcmd.mjs` lit un chemin périmé
-  `src/engine/script-opcodes.ts` qui n'existe plus). À réparer pour servir de 2e cross-check déterministe.
+- ✅ **`npm run audit:scrcmd` RÉPARÉ** (2026-06-21) : scannait un chemin périmé `src/engine/script-opcodes.ts`
+  → scanne maintenant tout `src/`. Sortie : 214/217 couverts, **0 manquant** (corrobore « fidélité pas couverture »).
 - Hook de vérif : `window.__scriptRuntime.getOpcodeHandler('nom')` (commit `2427b631`) permet d'invoquer
   un opcode en isolation avec un ctx contrôlé (`comparisonResult`, args) — réutilisable pour la suite.
 - Énumération déterministe : `data/script_cmd_table.inc` (décomp) vs `grep "registerOpcode('"` (nous).

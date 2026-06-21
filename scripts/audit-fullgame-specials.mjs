@@ -4,7 +4,18 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const SCRIPTS_DIR = 'public/decomp/em/scripts';
-const SPECIALS_FILE = 'src/engine/specials-registry.ts';
+// Les registerSpecial sont éclatés (specials-registry.ts a bougé dans src/engine/script/ +
+// d'autres fichiers) → on scanne TOUT src/ (l'ancien chemin src/engine/specials-registry.ts
+// n'existe plus → l'outil plantait, fix 2026-06-21).
+function readAllTs(dir) {
+  let out = '';
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const full = dir + '/' + e.name;
+    if (e.isDirectory()) { if (/node_modules|\.git/.test(full)) continue; out += readAllTs(full); }
+    else if (e.name.endsWith('.ts')) out += readFileSync(full, 'utf8') + '\n';
+  }
+  return out;
+}
 
 const POSTGAME_PATTERNS = [
   /^BattleFrontier/,
@@ -58,7 +69,7 @@ for (const f of files) {
   } catch {}
 }
 
-const src = readFileSync(SPECIALS_FILE, 'utf8');
+const src = readAllTs('src');
 const re = /registerSpecial\(['"]([^'"]+)['"]/g;
 const registered = new Set();
 let m;

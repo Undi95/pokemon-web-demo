@@ -9,14 +9,26 @@
 // (SCR_OP → ScrCmd_* @ 0xNN). Confronté à `src/engine/script-opcodes.ts`
 // (registerOpcode('<nom>')). Rapport couvert / manquant / stub. Read-only.
 // = analogue de l'audit 249 opcodes combat. Sans clé naïve (cf. combat).
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const DEC = 'D:/Projet 1/decomps/pokeemeraude';
 const P = 'D:/Projet 1/pokemon-web-demo';
 const EVENT = `${DEC}/asm/macros/event.inc`;
 const INC = `${DEC}/data/script_cmd_table.inc`;
 const SCRCMD = `${DEC}/src/scrcmd.c`;
-const OURS = `${P}/src/engine/script-opcodes.ts`;
+// Les registerOpcode sont éclatés sur ~36 fichiers src/engine/script/script-opcodes-*.ts
+// (+ quelques-uns dans src/game/) → on scanne TOUT src/, pas un seul fichier (l'ancien
+// chemin src/engine/script-opcodes.ts n'existe plus → l'outil plantait, fix 2026-06-21).
+const OURS_DIR = `${P}/src`;
+function readAllTs(dir) {
+  let out = '';
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const full = dir + '/' + e.name;
+    if (e.isDirectory()) { if (/node_modules|\.git/.test(full)) continue; out += readAllTs(full); }
+    else if (e.name.endsWith('.ts')) out += readFileSync(full, 'utf8') + '\n';
+  }
+  return out;
+}
 
 // 1) event.inc : chaque `.macro <nom> …` jusqu'à `.endm` ; on retient le
 //    1er `.byte SCR_OP_X` du corps = l'opcode émis. Macro SANS .byte
@@ -57,7 +69,7 @@ for (const m of inc.matchAll(/script_cmd_table_entry\s+(SCR_OP_\S+)\s+(ScrCmd_\w
 // 3) Nous : TOUS les registerOpcode('<nom>' (capture ROBUSTE du nom seul
 //    — un parse du corps casse sur multi-ligne/accolades imbriquées et
 //    sous-compte = faux "manquant", cf. leçon outil-naïf combat).
-const src = readFileSync(OURS, 'utf8');
+const src = readAllTs(OURS_DIR);
 const reg = new Set([...src.matchAll(/registerOpcode\('([^']+)'/g)].map(m => m[1]));
 // STUB CONFIRMÉ uniquement = marqueur EXPLICITE (STUB/TODO/unimplemented/
 // FIXME/placeholder) dans la fenêtre handler. IMPORTANT : `return false`
