@@ -73,7 +73,7 @@
  *   appelle le setter au boot via setGlobalRuntime. Évite TDZ cycle.
  */
 import type { DecompRuntime } from '../engine/system/decomp-runtime';
-import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
+import { OBJ_PLTT_ID } from '../engine/system/palette';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
 

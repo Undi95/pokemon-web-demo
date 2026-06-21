@@ -34,6 +34,7 @@ import {
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
+import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
 import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline } from './sprite-animation';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
@@ -186,8 +187,11 @@ export const BLDCNT_TGT2_BD  = 0x2000;
 //   OBJ_PLTT_ID(n) = OBJ_PLTT_OFFSET + PLTT_ID(n) = 256 + n × 16
 // LoadPalette utilise offset < 256 = BG, ≥ 256 = OBJ. Donc OBJ_PLTT_ID DOIT
 // inclure le 256 sinon les LoadPalette OBJ écrivent dans BG palette.
-export const BG_PLTT_ID = (n: number) => n * 16;
-export const OBJ_PLTT_ID = (n: number) => 256 + n * 16;
+// 1:1 décomp include/palette.h — DÉFINIS dans palette.ts (home miroir de palette.h,
+// avec PALETTES_BG/OBJECTS/ALL + FAST_FADE_*). Importés en tête pour l'usage interne
+// + re-export transitionnel pour les importeurs historiques ; game/sprite.ts importe
+// désormais direct depuis palette.ts.
+export { BG_PLTT_ID, OBJ_PLTT_ID };
 /** 1:1 décomp `gba/defines.h:41-46` :
  *    BG_VRAM           = VRAM           = 0x06000000
  *    BG_CHAR_SIZE      = 0x4000

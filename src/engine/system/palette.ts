@@ -49,6 +49,14 @@ export const PALETTES_BG      = 0x0000FFFF;
 export const PALETTES_OBJECTS = 0xFFFF0000;
 export const PALETTES_ALL     = PALETTES_BG | PALETTES_OBJECTS;
 
+// ─── PLTT ID macros 1:1 décomp include/palette.h:20-25 ──────────────────────
+export const PLTT_ID = (n: number) => n * 16;
+export const BG_PLTT_OFFSET = 0x000;
+export const OBJ_PLTT_OFFSET = 0x100;
+export const BG_PLTT_ID = (n: number) => BG_PLTT_OFFSET + PLTT_ID(n);
+export const OBJ_PLTT_ID = (n: number) => OBJ_PLTT_OFFSET + PLTT_ID(n);
+export const OBJ_PLTT_ID2 = (n: number) => PLTT_ID(n + 16);
+
 export const FAST_FADE_IN_FROM_WHITE  = 0;
 export const FAST_FADE_OUT_TO_WHITE   = 1;
 export const FAST_FADE_IN_FROM_BLACK  = 2;
@@ -320,7 +328,7 @@ export function UpdateFastPaletteFade(): number {
     return r.gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
   }
   // Range : BG palettes (0..OBJ_PLTT_OFFSET) ou OBJ palettes selon objPaletteToggle.
-  const OBJ_PLTT_OFFSET = 0x100;
+  // (OBJ_PLTT_OFFSET = constante module 1:1 palette.h.)
   let paletteOffsetStart: number, paletteOffsetEnd: number;
   if (r.gPaletteFade.objPaletteToggle) {
     paletteOffsetStart = OBJ_PLTT_OFFSET;
