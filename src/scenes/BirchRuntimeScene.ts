@@ -139,7 +139,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
       //    CB2_LoadNamingScreen + naming screen helpers sur globalThis. Sans ce
       //    import, Task_NewGameBirchSpeech_StartNamingScreen → DoNamingScreen
       //    serait undefined (cf. globalThis dispatch).
-      await import('../engine/ui/naming-screen-impl');
+      await import('../game/naming_screen');
 
       // 3. Side-effect import : main-menu-impl pose AddBirchSpeechObjects,
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.

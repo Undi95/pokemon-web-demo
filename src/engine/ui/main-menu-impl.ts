@@ -1022,7 +1022,7 @@ export function DoNamingScreen(
 ): void {
   // Lazy import pour éviter circular dep : naming-screen-impl importe depuis decomp-globals
   // qui peut éventuellement importer main-menu-impl (= chain d'import).
-  void import('./naming-screen-impl').then((mod) => {
+  void import('../../game/naming_screen').then((mod) => {
     mod.DoNamingScreen(
       type, dest as number[], monSpecies, monGender, monPersonality, callback as any,
     );

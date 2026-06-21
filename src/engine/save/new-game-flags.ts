@@ -21,7 +21,7 @@
 import { FlagSet } from '../script/script-vars';
 import { Random, GetGeneratedTrainerIdLower } from '../system/random';
 import { gSaveBlock2Ptr } from './save-block-state';
-import { SetMoney } from '../ui/money';
+import { SetMoney } from '../../game/money';
 import { ClearBerryTrees } from '../../game/berry';
 import { ResetAllBerries } from './reset-all-berries';
 

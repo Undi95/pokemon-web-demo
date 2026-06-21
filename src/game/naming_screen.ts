@@ -1,5 +1,5 @@
 /**
- * naming-screen-impl.ts
+ * naming_screen.ts
  * ─────────────────────
  * 1:1 décomp `src/naming_screen.c` (= 2594 lignes).
  *
@@ -19,15 +19,15 @@
  * État global : `sNamingScreen` exposé sur `globalThis` pour que les
  * auto-callbacks y accèdent.
  */
-import { OBJ_PLTT_ID } from '../system/decomp-runtime';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../system/sprite';
+import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../engine/system/sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
   FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
-} from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+} from '../engine/ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../engine/ui/gba-text-system';
 import {
   getRuntime,
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,
@@ -40,17 +40,17 @@ import {
   CpuFill32, CpuFill16,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
-} from '../system/decomp-globals';
-import { gSaveBlock2Ptr } from './gba-menu-system';
-import { loadGbaPal, loadTileBin, loadTilemapBin } from '../gba/png-loader';
-import type { DecompSprite, DecompTask } from '../system/decomp-runtime';
-import { gKeyRepeat } from '../system/decomp-runtime';
+} from '../engine/system/decomp-globals';
+import { gSaveBlock2Ptr } from '../engine/ui/gba-menu-system';
+import { loadGbaPal, loadTileBin, loadTilemapBin } from '../engine/gba/png-loader';
+import type { DecompSprite, DecompTask } from '../engine/system/decomp-runtime';
+import { gKeyRepeat } from '../engine/system/decomp-runtime';
 import {
   OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
   ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,
   GetRivalAvatarGraphicsIdByStateIdAndGender,
   loadObjectEventGraphicsInfo, CreateObjectGraphicsSprite,
-} from '../field/object-event-graphics';
+} from '../engine/field/object-event-graphics';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //

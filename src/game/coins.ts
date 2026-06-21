@@ -13,7 +13,7 @@
  * strict : `coins ^ 0 === coins`). Cf. la même décision documentée dans money.ts.
  */
 
-import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 
 /** 1:1 décomp `#define MAX_COINS 9999` (constants/coins.h:4). */
 export const MAX_COINS = 9999;

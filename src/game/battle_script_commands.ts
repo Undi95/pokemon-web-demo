@@ -137,7 +137,7 @@ import {
 } from '../engine/system/random';
 import {
   AddMoney as _AddMoneyFull,
-} from '../engine/ui/money';
+} from './money';
 import {
   FLAG_GET_CAUGHT,
   FLAG_SET_CAUGHT,

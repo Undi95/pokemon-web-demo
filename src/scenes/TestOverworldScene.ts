@@ -219,7 +219,7 @@ import '../engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
-import '../engine/pokemon/pokemon-size-record';
+import '../game/pokemon_size_record';
 // Side-effect import : registers secret_base specials (cur base helpers).
 import '../engine/pokemon/secret-base';
 import { ShowMapNamePopup, preloadMapNames } from '../game/map_name_popup';

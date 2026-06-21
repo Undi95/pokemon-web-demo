@@ -127,7 +127,7 @@ import {
   AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite,
   AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
   AddSwitchPocketRotatingBallSprite,
-} from './bag-menu-icons';
+} from '../../game/item_menu_icons';
 // Swap line — barre grise ▶ rouge affichée pendant SELECT swap (1:1 menu_helpers.c).
 import {
   preloadSwapLineAssets, LoadListMenuSwapLineGfx,

@@ -1,5 +1,5 @@
 /**
- * pokemon-size-record.ts — 1:1 port complet de `src/pokemon_size_record.c`.
+ * pokemon_size_record.ts — 1:1 port complet de `src/pokemon_size_record.c`.
  *
  * Source de vérité (1:1 décomp) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/pokemon_size_record.c` (189l)
@@ -18,23 +18,23 @@
  * Pas d'unit conversion impérial (= #ifdef UNITS_IMPERIAL pas activé en FR).
  */
 
-import { registerSpecial } from '../script/script-opcodes';
-import { VarSet, VarGet, gSpecialVar } from '../script/script-vars';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { registerSpecial } from '../engine/script/script-opcodes';
+import { VarSet, VarGet, gSpecialVar } from '../engine/script/script-vars';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
 import {
   GetMonData, MON_DATA_PERSONALITY,
   MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV,
   MON_DATA_SPEED_IV, MON_DATA_SPATK_IV, MON_DATA_SPDEF_IV,
   MON_DATA_IS_EGG, MON_DATA_SPECIES,
-} from '../battle/party-storage';
-import type { Pokemon } from '../battle/party-storage';
-import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from '../ui/pokedex-flags';
-import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from '../system/decomp-bridge';
-import { setStringVar } from '../system/string-buffers';
+} from '../engine/battle/party-storage';
+import type { Pokemon } from '../engine/battle/party-storage';
+import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from '../engine/ui/pokedex-flags';
+import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from '../engine/system/decomp-bridge';
+import { setStringVar } from '../engine/system/string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
-} from '../decomp-data/include/constants/species-data';
-import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from '../decomp-data/include/constants/vars-data';
+} from '../engine/decomp-data/include/constants/species-data';
+import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from '../engine/decomp-data/include/constants/vars-data';
 
 // 1:1 décomp pokemon_size_record.c:12 — `#define DEFAULT_MAX_SIZE 0x8000`.
 const DEFAULT_MAX_SIZE = 0x8000;

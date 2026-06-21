@@ -1,5 +1,5 @@
 /**
- * bag-menu-icons.ts — 1:1 décomp `src/item_menu_icons.c` (sous-ensemble sac)
+ * item_menu_icons.ts — 1:1 décomp `src/item_menu_icons.c` (sous-ensemble sac)
  * ============================================================================
  * Couche fine au-dessus de `item-icon.ts` (AddItemIconSprite 1:1). Gère le
  * double-buffer d'icône objet du sac (2 slots TAG_ITEM_ICON+0/+1 = anti-
@@ -10,24 +10,24 @@
  * → pas de TDZ malgré l'arête bag-menu ↔ bag-menu-icons (cf. leçon
  * feedback-map-loader-var-tdz : le danger = usage AU TOP-LEVEL d'un hub).
  */
-import { AddItemIconSprite, MAX_SPRITES } from '../ui/item-icon';
-import { gBagMenu } from './bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../system/sprite';
+import { AddItemIconSprite, MAX_SPRITES } from '../engine/ui/item-icon';
+import { gBagMenu } from '../engine/bag/bag-menu';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../engine/system/sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
-} from '../system/decomp-globals';
-import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../system/decomp-bridge';
-import { getItemKeyById } from '../system/data-tables';
-import { ENUM_ITEMMENUSPRITE_2 } from '../decomp-data/include/item_menu-data';
-import { ITEM_LIST_END } from '../decomp-data/include/constants/items-data';
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../decomp-data/src/item_menu_icons-data';
+} from '../engine/system/decomp-globals';
+import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../engine/system/decomp-bridge';
+import { getItemKeyById } from '../engine/system/data-tables';
+import { ENUM_ITEMMENUSPRITE_2 } from '../engine/decomp-data/include/item_menu-data';
+import { ITEM_LIST_END } from '../engine/decomp-data/include/constants/items-data';
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../engine/decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
 const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
-import { registerAffineAnim, registerAffineAnimTable } from '../decomp-impls/sprite-affine-extras';
-import type { DecompSprite, DecompRuntime } from '../system/decomp-runtime';
+import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
+import type { DecompSprite, DecompRuntime } from '../engine/system/decomp-runtime';
 
 // 1:1 décomp `SPRITE_NONE` (sprite.h:6 TAIL_SENTINEL 0xFF).
 const SPRITE_NONE = 0xFF;

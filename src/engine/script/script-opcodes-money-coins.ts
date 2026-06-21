@@ -23,7 +23,7 @@ import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
-import { GetCoins, AddCoins, RemoveCoins } from '../ui/coins';
+import { GetCoins, AddCoins, RemoveCoins } from '../../game/coins';
 
 /** Alias non-canonique « givecoins » (la macro canonique = `addcoins`, cf. plus
  *  bas). Délègue à `AddCoins` 1:1 (coins.c) = même résultat que l'ancien
