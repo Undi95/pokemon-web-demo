@@ -90,13 +90,16 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
     - 🏁 **CONSTAT (fin de la série « extract method »)** : les extractions SUBSTANTIELLES du cœur sprite sont FAITES
       (DestroySprite, ResetSpriteData, allocateur matrix + bug, CreateSpriteAtOam). `game/sprite.ts` est le home
       consolidé du système sprite. Ce qui reste est d'une AUTRE nature, à faire en chantiers DÉDIÉS :
-      - **(A) hot-path** : extraire `runSpriteCallbacks`/`syncSpritesToOam`/`tickSpriteAnims` (les méthodes per-frame
-        = vraie logique d'AnimateSprites/BuildOamBuffer) → couplées à la boucle `tick()` du runtime, surcoût/frame.
+      - ✅ **(A) hot-path FAIT** : `runSpriteCallbacks`+`syncSpritesToOam` (A1 `bd558ba6`) + `tickSpriteAnims`
+        +`_resolveTileNum` (A2 `9c5bb11d`) relocalisés vers game/sprite.ts (relocalisation pure, méthodes délèguent ;
+        cycle ESM géré : sprite-system/decomp-constants = leaves, edge runtime one-way decomp-runtime→game/sprite).
+        A/B hot-path OW (`.anims` cyclent) + combat (legacy spriteAnimStates+_resolveTileNum) OK. **Le cœur sprite.c
+        per-frame est 100% dans game/sprite.ts.**
       - **(B) `CreateSprite` 1:1** : unifier le dispatcher 3-voies (images inline / tileTag / nom) en
         `CreateSprite(template)→CreateSpriteAt` lisant `struct SpriteTemplate` = fusion des modèles gfx-loading. GROS.
       - **(C) cleanup délégués** : migrer les call-sites `rt.{DestroySprite=102,ResetSpriteData=13,CreateSpriteAtOam=112,…}`
         → free fns + retirer les méthodes-déléguées du harness. Mécanique mais large (receveurs variés, optional-chaining).
-      - **(D) dédup mail.ts** (animateAllSprites/buildOamBuffer locaux).
+      - ✅ **(D) dédup mail.ts FAIT** (`cdd32bd7` : animateAllSprites/buildOamBuffer locaux → globales).
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
 directs 1:1 (`gSprites[i]`, `gBattle_BG1_X`…) dans les battle-anims + field effects. A/B par famille (anim par anim).
