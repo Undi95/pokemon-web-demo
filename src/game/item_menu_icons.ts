@@ -75,12 +75,12 @@ export function RemoveBagSprite(id: number): void {
     _rtFreeSpriteTilesByTag(id + TAG_BAG_GFX);
     _spFreeSpritePaletteByTag(id + TAG_BAG_GFX);
     const rt = getRuntime() as unknown as {
-      gSprites?: Map<number, { matrixNum: number; affineMode: number }>;
+      gSprites?: Array<{ matrixNum: number; affineMode: number } | undefined>;
       FreeOamMatrix?: (matrixNum: number) => void;
     } | null;
     // 1:1 :431 FreeSpriteOamMatrix(&gSprites[*spriteId]) — libère la matrix
     // OAM si le sprite était affine (= ITEMMENUSPRITE_BAG, ITEMMENUSPRITE_BALL).
-    const spr = rt?.gSprites?.get(spriteId);
+    const spr = rt?.gSprites?.[spriteId];
     if (spr && spr.affineMode && rt?.FreeOamMatrix) rt.FreeOamMatrix(spr.matrixNum);
     DestroySprite(spriteId);
     bm.spriteIds[id] = SPRITE_NONE;
@@ -106,8 +106,8 @@ export function AddBagItemIconSprite(itemId: number, id: number): void {
     if (iconSpriteId !== MAX_SPRITES) {
       bm.spriteIds[slot] = iconSpriteId;
       // 1:1 :549-550 gSprites[iconSpriteId].x2 = 24 ; .y2 = 88 (case gauche).
-      const rt = getRuntime() as unknown as { gSprites?: Map<number, { x2: number; y2: number }> } | null;
-      const spr = rt?.gSprites?.get(iconSpriteId);
+      const rt = getRuntime() as unknown as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | null;
+      const spr = rt?.gSprites?.[iconSpriteId];
       if (spr) { spr.x2 = 24; spr.y2 = 88; }
     }
   }
@@ -221,7 +221,7 @@ export function AddBagVisualSprite(bagPocketId: number): void {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
     AllocOamMatrix: () => number;
     spriteAnimStatesRegister: (id: number, name: string, idx: number, base: number) => void;
-    gSprites?: Map<number, DecompSprite>;
+    gSprites?: Array<DecompSprite | undefined>;
     StartSpriteAffineAnim: (id: number, num: number) => void;
   } | null;
   if (!rt) return;
@@ -249,7 +249,7 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   bm.spriteIds[ITEMMENUSPRITE_BAG] = spriteId;
   // Bind anim table (= sBagSpriteAnimTable) + affine anim table sur le sprite.
   rt.spriteAnimStatesRegister(spriteId, BAG_ANIM_TABLE_NAME, 0, tileStart);
-  const spr = rt.gSprites?.get(spriteId);
+  const spr = rt.gSprites?.[spriteId];
   if (spr) spr.affineAnimsTableName = BAG_AFFINE_TABLE_NAME;
   // Init affine = NORMAL (scale 1.0, no rotation).
   rt.StartSpriteAffineAnim(spriteId, ANIM_BAG_NORMAL);
@@ -267,7 +267,7 @@ export function SetBagVisualPocketId(bagPocketId: number, isSwitchingPockets: bo
   if (!rt) return;
   const spriteId = bm.spriteIds[ITEMMENUSPRITE_BAG];
   if (spriteId === SPRITE_NONE) return;
-  const spr = rt.gSprites.get(spriteId);
+  const spr = rt.gSprites[spriteId];
   if (!spr) return;
   if (isSwitchingPockets) {
     spr.y2 = -5;
@@ -302,7 +302,7 @@ export function ShakeBagSprite(): void {
   if (!rt) return;
   const spriteId = bm.spriteIds[ITEMMENUSPRITE_BAG];
   if (spriteId === SPRITE_NONE) return;
-  const spr = rt.gSprites.get(spriteId);
+  const spr = rt.gSprites[spriteId];
   if (!spr) return;
   if (spr.affineAnimEnded) {
     StartSpriteAffineAnim(spriteId, ANIM_BAG_SHAKE);
@@ -366,7 +366,7 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
     AllocOamMatrix: () => number;
     FreeOamMatrix?: (n: number) => void;
-    gSprites?: Map<number, DecompSprite>;
+    gSprites?: Array<DecompSprite | undefined>;
   } | null;
   if (!rt) return;
   // 1:1 :500-501 : assets chargés à chaque switch (idempotents au substrat
@@ -398,7 +398,7 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
   // décomp le fait via template.callback). Le runtime appelle ce callback
   // chaque frame → 1er tick = init de l'affine (oam mode + table) + bascule
   // vers SpriteCB_Continue.
-  const spr = rt.gSprites?.get(spriteId);
+  const spr = rt.gSprites?.[spriteId];
   if (spr) {
     spr.data[0] = rotationDirection;
     spr.callback = SpriteCB_SwitchPocketRotatingBallInit;

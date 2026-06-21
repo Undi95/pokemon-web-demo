@@ -296,7 +296,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', () => {
       console.log('[GameScene] click | tasks:', this.rt.gTasks.size,
-                  '| sprites:', this.rt.gSprites.size,
+                  '| sprites:', this.rt.gSprites.filter(Boolean).length,
                   '| frame:', this.rt.gIntroFrameCounter);
     });
 

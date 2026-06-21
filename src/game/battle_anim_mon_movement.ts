@@ -44,8 +44,8 @@ type AnimSprite = {
 };
 type AnimTask = { taskId: number; data: number[]; func?: (t: AnimTask) => void };
 
-function _sprites(): Map<number, AnimSprite> | undefined {
-  return (getRuntime() as unknown as { gSprites?: Map<number, AnimSprite> })?.gSprites;
+function _sprites(): Array<AnimSprite | undefined> | undefined {
+  return (getRuntime() as unknown as { gSprites?: Array<AnimSprite | undefined> })?.gSprites;
 }
 /** Sprite id d'un battler — meme resolution que battle_anim_throw (validee
  *  capture) : __battleControllerOpponent.getBattlerMonSpriteId. */
@@ -81,7 +81,7 @@ function SetCallbackToStoredInData6(sprite: AnimSprite): void {
 function TranslateSpriteLinearById(sprite: AnimSprite): void {
   if (sprite.data[0] > 0) {
     sprite.data[0]--;
-    const target = _sprites()?.get(sprite.data[3]);
+    const target = _sprites()?.[sprite.data[3]];
     if (target) {
       target.x2 += sprite.data[1];
       target.y2 += sprite.data[2];
@@ -99,7 +99,7 @@ function AnimTask_ShakeMon(task: AnimTask): void {
     DestroyAnimVisualTask(task.taskId);
     return;
   }
-  const sp = _sprites()?.get(spriteId);
+  const sp = _sprites()?.[spriteId];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   // GARDE-FOU opérandes désalignées (sweep 2026-06-11 : numShakes=-1347/-3372,
   // delay=4172 sur Ice Beam & co — la dette bytecode QUICK_ATTACK généralisée,
@@ -122,7 +122,7 @@ function AnimTask_ShakeMon(task: AnimTask): void {
   task.func(task);
 }
 function AnimTask_ShakeMon_Step(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   // Garde-fou (2026-06-11) : numShakes aberrant = args pollues par un script
   // aux operandes desalignees (vu : QUICK_ATTACK data[1]=-1031 -> --x===0
@@ -159,7 +159,7 @@ function AnimTask_ShakeMon2(task: AnimTask): void {
     spriteId = _battlerSpriteId(_atk());
     if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
   }
-  const sp = _sprites()?.get(spriteId);
+  const sp = _sprites()?.[spriteId];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 = _args()[1];
   sp.y2 = _args()[2];
@@ -173,7 +173,7 @@ function AnimTask_ShakeMon2(task: AnimTask): void {
   task.func(task);
 }
 function AnimTask_ShakeMon2_Step(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   if (task.data[3] === 0) {
     sp.x2 = (sp.x2 === task.data[4]) ? -task.data[4] : task.data[4];
@@ -230,7 +230,7 @@ function TranslateSpriteLinearByIdFixedPoint(sprite: AnimSprite): void {
     sprite.data[0]--;
     sprite.data[3] += sprite.data[1];
     sprite.data[4] += sprite.data[2];
-    const mon = _sprites()?.get(sprite.data[5]);
+    const mon = _sprites()?.[sprite.data[5]];
     if (mon) {
       mon.x2 = _s16(sprite.data[3]) >> 8;
       mon.y2 = _s16(sprite.data[4]) >> 8;
@@ -246,7 +246,7 @@ function SlideMonToOffset(sprite: AnimSprite): void {
   const args = _args();
   const battler = !args[0] ? _atk() : (_itf()?.getTarget() ?? 1);
   const monSpriteId = _battlerSpriteId(battler);
-  const mon = _sprites()?.get(monSpriteId);
+  const mon = _sprites()?.[monSpriteId];
   if (!mon) { DestroyAnimSprite(sprite); return; }
   if (GetBattlerSide(battler) !== 0 /* B_SIDE_PLAYER */) {
     args[1] = -args[1];
@@ -270,7 +270,7 @@ function SlideMonToOffset(sprite: AnimSprite): void {
 function SlideMonToOriginalPos(sprite: AnimSprite): void {
   const args = _args();
   const monSpriteId = _battlerSpriteId(!args[0] ? _atk() : (_itf()?.getTarget() ?? 1));
-  const mon = _sprites()?.get(monSpriteId);
+  const mon = _sprites()?.[monSpriteId];
   if (!mon) { DestroyAnimSprite(sprite); return; }
   sprite.data[0] = args[2];
   sprite.data[1] = mon.x + mon.x2;
@@ -291,7 +291,7 @@ function SlideMonToOriginalPos(sprite: AnimSprite): void {
 function SlideMonToOriginalPos_Step(sprite: AnimSprite): void {
   const lo = sprite.data[7] & 0xFF;
   const monSpriteId = sprite.data[7] >> 8;
-  const mon = _sprites()?.get(monSpriteId);
+  const mon = _sprites()?.[monSpriteId];
   if (sprite.data[0] === 0) {
     if (mon) {
       if (lo < 2) mon.x2 = 0;
@@ -336,8 +336,8 @@ function AnimTask_TranslateMonEllipticalRespectSide(task: AnimTask): void {
   AnimTask_TranslateMonElliptical(task);
 }
 function AnimTask_TranslateMonElliptical_Step(task: AnimTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 = Sin(task.data[5], _s16(task.data[1]));
   sp.y2 = -Cos(task.data[5], task.data[2]) + task.data[2];
@@ -403,7 +403,7 @@ function AnimTask_ShakeMonInPlace(task: AnimTask): void {
   const a = _args();
   const spriteId = GetAnimBattlerSpriteId(a[0]);
   if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
-  const sp = _sprites()?.get(spriteId);
+  const sp = _sprites()?.[spriteId];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 += a[1];
   sp.y2 += a[2];
@@ -418,7 +418,7 @@ function AnimTask_ShakeMonInPlace(task: AnimTask): void {
   AnimTask_ShakeMonInPlace_Step(task);
 }
 function AnimTask_ShakeMonInPlace_Step(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   if (task.data[3] === 0) {
     if (task.data[1] & 1) { sp.x2 += task.data[5]; sp.y2 += task.data[6]; }
@@ -452,7 +452,7 @@ function AnimTask_SwayMon(task: AnimTask): void {
   task.func = AnimTask_SwayMonStep;
 }
 function AnimTask_SwayMonStep(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[4]);
+  const sp = _sprites()?.[task.data[4]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   const sineIndex = (task.data[10] + task.data[2]) & 0xFFFF;
   task.data[10] = sineIndex;
@@ -495,7 +495,7 @@ function AnimTask_WindUpLunge(task: AnimTask): void {
   task.func = AnimTask_WindUpLunge_Step1;
 }
 function AnimTask_WindUpLunge_Step1(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   task.data[11] += task.data[1];
   sp.x2 = task.data[11] >> 8;
@@ -505,7 +505,7 @@ function AnimTask_WindUpLunge_Step1(task: AnimTask): void {
 }
 function AnimTask_WindUpLunge_Step2(task: AnimTask): void {
   if (task.data[4] > 0) { task.data[4]--; return; }
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   task.data[12] += task.data[5];
   sp.x2 = (task.data[12] >> 8) + (task.data[11] >> 8);
@@ -528,7 +528,7 @@ function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(task: AnimTask): void {
   task.data[10] = a[3];
   task.data[11] = a[4];
   task.data[7] = GetAnimBattlerSpriteId(1 /* ANIM_TARGET */);
-  const sp = _sprites()?.get(task.data[7]);
+  const sp = _sprites()?.[task.data[7]];
   task.data[8] = sp?.x2 ?? 0;
   task.data[9] = sp?.y2 ?? 0;
   task.data[0] = 0;
@@ -537,7 +537,7 @@ function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(task: AnimTask): void {
   task.func = AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step;
 }
 function AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[7]);
+  const sp = _sprites()?.[task.data[7]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   if (++task.data[0] > task.data[1]) {
     task.data[0] = 0;
@@ -559,8 +559,8 @@ function AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step(task: AnimTask): void {
 // ─── VAGUE F2 (sweep final 2026-06-11) ──────────────────────────────────────
 /** 1:1 `SetBattlerSpriteYOffsetFromRotation` (battle_anim_mons.c.c:1320) : y2 = |sin|>>3. */
 function _SetYOffsetFromRotation(spriteId: number): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; oamIndex: number }>; gOamMatrices?: Array<{ c: number }>; gba?: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ y2: number; oamIndex: number } | undefined>; gOamMatrices?: Array<{ c: number }>; gba?: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } } | undefined;
+  const sp = rt?.gSprites?.[spriteId];
   if (!sp) return;
   const oam = rt?.gba?.oam[sp.oamIndex];
   const m = rt?.gOamMatrices?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0];
@@ -643,7 +643,7 @@ function AnimTask_SlideOffScreen(task: AnimTask): void {
   task.func = AnimTask_SlideOffScreen_Step;
 }
 function AnimTask_SlideOffScreen_Step(task: AnimTask): void {
-  const sp = _sprites()?.get(task.data[0]);
+  const sp = _sprites()?.[task.data[0]];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 += task.data[1];
   if (sp.x2 + sp.x < -32 || sp.x2 + sp.x > 272) {
@@ -708,7 +708,7 @@ function SlideMonToOffsetAndBack(sprite: AnimSprite): void {
   const args = _args();
   const battler = args[0] === 0 /* ANIM_ATTACKER */ ? _atk() : (_itf()?.getTarget() ?? 1);
   const spriteId = _battlerSpriteId(battler);
-  const mon = _sprites()?.get(spriteId);
+  const mon = _sprites()?.[spriteId];
   if (!mon) { DestroyAnimSprite(sprite); return; } // garde-fou runtime (pattern SlideMonToOffset)
   if (GetBattlerSide(battler)) {
     args[1] = -args[1]; // mutation in-place 1:1 (gBattleAnimArgs partagé)
@@ -733,7 +733,7 @@ function SlideMonToOffsetAndBack(sprite: AnimSprite): void {
 }
 /** 1:1 `SlideMonToOffsetAndBack_End` (battle_anim_mon_movement.c:624). */
 function SlideMonToOffsetAndBack_End(sprite: AnimSprite): void {
-  const mon = _sprites()?.get(sprite.data[5]);
+  const mon = _sprites()?.[sprite.data[5]];
   if (mon) {
     mon.x2 = 0;
     mon.y2 = 0;
@@ -766,8 +766,8 @@ function AnimTask_ShakeAndSinkMon(task: _SasTask): void {
   const args = itf.getArgs?.() ?? [0, 4, 2, 96, 30];
   const spriteId = _sasSpriteId(args[0]);
   if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[spriteId];
   if (sp) sp.x2 = args[1] | 0;
   task.data[0] = spriteId;
   task.data[1] = args[1] | 0;
@@ -780,8 +780,8 @@ function AnimTask_ShakeAndSinkMon(task: _SasTask): void {
   AnimTask_ShakeAndSinkMon_Step(task); // 1:1 gTasks[taskId].func(taskId)
 }
 function AnimTask_ShakeAndSinkMon_Step(task: _SasTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[0]];
   let x = task.data[1];
   if (task.data[2] === task.data[8]++) {
     task.data[8] = 0;

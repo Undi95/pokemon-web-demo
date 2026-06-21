@@ -30,6 +30,7 @@ import {
 } from '../engine/system/decomp-globals';
 import { loadIndexedPng } from '../engine/gba/png-loader';
 import { Random } from '../engine/system/random';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
@@ -164,7 +165,9 @@ export function tickBattleTransitionPokeballsTrail(): boolean {
 function _tickTrailSprites(): void {
   const rt = getRuntime();
   if (!rt?.gSprites) return;
-  for (const spr of (rt.gSprites as unknown as Map<number, TrailSprite & { name?: string }>).values()) {
+  for (let _si = 0; _si < MAX_SPRITES; _si++) {
+    const spr = rt.gSprites[_si] as (TrailSprite & { name?: string }) | undefined;
+    if (spr === undefined) continue;
     if (spr.inUse !== false && spr.callback === SpriteCB_FldEffPokeballTrail) {
       spr.callback(spr);
     }
@@ -199,7 +202,7 @@ function _fldEffPokeballTrail(x: number, y: number, side: number, delay: number)
     IndexOfSpritePaletteTag?: (t: number) => number;
     CreateSpriteInline?: (tpl: unknown, x: number, y: number, sub?: number) => number;
     AllocOamMatrix?: () => number;
-    gSprites?: Map<number, TrailSprite>;
+    gSprites?: Array<TrailSprite | undefined>;
   };
   let pal = r.IndexOfSpritePaletteTag?.(OBJ_PAL_TAG_TRAIL) ?? 0xFF;
   if (pal === 0xFF && _ballPal && r.LoadSpritePalette) {
@@ -215,7 +218,7 @@ function _fldEffPokeballTrail(x: number, y: number, side: number, delay: number)
     callback: SpriteCB_FldEffPokeballTrail,
   } as never, x, y, 0) ?? -1;
   if (spriteId < 0) return;
-  const spr = r.gSprites?.get(spriteId);
+  const spr = r.gSprites?.[spriteId];
   if (spr) {
     spr.matrixNum = matrix;
     spr.data[0] = side;     // sSide
@@ -268,7 +271,9 @@ export function SpriteCB_FldEffPokeballTrail(sprite: TrailSprite): void {
 function _findSpriteId(sprite: TrailSprite): number {
   const rt = getRuntime();
   if (!rt?.gSprites) return -1;
-  for (const [id, s] of (rt.gSprites as unknown as Map<number, TrailSprite>).entries()) {
+  for (let id = 0; id < MAX_SPRITES; id++) {
+    const s = rt.gSprites[id] as TrailSprite | undefined;
+    if (s === undefined) continue;
     if (s === sprite) return id;
   }
   return -1;

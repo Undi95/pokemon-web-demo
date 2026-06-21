@@ -445,7 +445,7 @@ interface Tsk { taskId: number; func: ((t: Tsk) => void) | null; data: number[];
 
 function _rt(): ReturnType<typeof getRuntime> { return getRuntime(); }
 function _spr(id: number): Spr | undefined {
-  return _rt()?.gSprites.get(id) as unknown as Spr | undefined;
+  return _rt()?.gSprites[id] as unknown as Spr | undefined;
 }
 function _playSE(id: number): void {
   const g = globalThis as { __PlaySE?: (id: number) => void };
@@ -933,7 +933,7 @@ function _partyMon(battler: number): Mon {
 function _handleFromSpriteId(healthboxSpriteId: number): HealthboxHandle | null {
   const rt = getRuntime();
   if (!rt) return null;
-  const left = rt.gSprites.get(healthboxSpriteId);
+  const left = rt.gSprites[healthboxSpriteId];
   if (!left || !left.data) return null;
   const battler = left.data[6] | 0;
   return {
@@ -951,7 +951,7 @@ function _handleFromSpriteId(healthboxSpriteId: number): HealthboxHandle | null 
 function SpriteCB_HealthBar(sprite: { data: number[]; x: number; y: number; x2: number; y2: number }): void {
   const rt = getRuntime();
   if (!rt) return;
-  const box = rt.gSprites.get(sprite.data[5] | 0);
+  const box = rt.gSprites[sprite.data[5] | 0];
   if (!box) return;
   const data6 = sprite.data[6] | 0;
   // 1:1 décomp : case 0/1 → +16 ; case 2 (opp) → +8.
@@ -966,7 +966,7 @@ function SpriteCB_HealthBar(sprite: { data: number[]; x: number; y: number; x2: 
 function SpriteCB_HealthBoxOther(sprite: { data: number[]; x: number; y: number; x2: number; y2: number }): void {
   const rt = getRuntime();
   if (!rt) return;
-  const main = rt.gSprites.get(sprite.data[5] | 0);
+  const main = rt.gSprites[sprite.data[5] | 0];
   if (!main) return;
   sprite.x = main.x + 64;
   sprite.y = main.y;
@@ -989,9 +989,9 @@ export async function CreateBattlerHealthboxSprites(battler: number): Promise<nu
   if (!handle) return -1;
 
   const data6 = side === 'player' ? 0 : 2;  // 1:1 décomp single (player=0, opp=2)
-  const left = rt.gSprites.get(handle.leftSpriteId);
-  const right = rt.gSprites.get(handle.rightSpriteId);
-  const bar = rt.gSprites.get(handle.healthbarSpriteId);
+  const left = rt.gSprites[handle.leftSpriteId];
+  const right = rt.gSprites[handle.rightSpriteId];
+  const bar = rt.gSprites[handle.healthbarSpriteId];
 
   // 1:1 décomp ll. 940-948 : liens par data fields (= remplace handle persistant).
   if (left && left.data) {
@@ -1024,7 +1024,7 @@ export function InitBattlerHealthboxCoords(battler: number): void {
   if (!rt) return;
   const spriteId = gHealthboxSpriteIds[battler];
   if (spriteId < 0) return;
-  const left = rt.gSprites.get(spriteId);
+  const left = rt.gSprites[spriteId];
   if (!left) return;
   const isPlayer = _sideOf(battler) === 'player';
   left.x = isPlayer ? 158 : 44;
@@ -1084,7 +1084,7 @@ export function StartHealthboxSlideIn(battler: number): void {
   if (!rt) return;
   const spriteId = gHealthboxSpriteIds[battler];
   if (spriteId < 0) return;
-  const healthboxSprite = rt.gSprites.get(spriteId);
+  const healthboxSprite = rt.gSprites[spriteId];
   if (!healthboxSprite || !healthboxSprite.data) return;
 
   healthboxSprite.data[0] = 5;     // sSpeedX
@@ -1099,7 +1099,7 @@ export function StartHealthboxSlideIn(battler: number): void {
     healthboxSprite.y2 = -healthboxSprite.y2;
   }
   // 1:1 décomp l.1257 : kick le callback de la barre (data[5] = bar id) → sync x2 frame 1.
-  const bar = rt.gSprites.get((healthboxSprite.data[5] | 0));
+  const bar = rt.gSprites[(healthboxSprite.data[5] | 0)];
   if (bar && typeof bar.callback === 'function') (bar.callback as (s: unknown) => void)(bar);
   if (GetBattlerPosition(battler) === B_POSITION_PLAYER_RIGHT)
     healthboxSprite.callback = SpriteCB_HealthboxSlideInDelayed as never;
@@ -1155,7 +1155,7 @@ export function UpdateHealthboxAttribute(healthboxSpriteId: number, monRaw: unkn
   const mon = monRaw as Mon;
   const battler = (() => {
     const rt = getRuntime();
-    const left = rt?.gSprites.get(healthboxSpriteId);
+    const left = rt?.gSprites[healthboxSpriteId];
     return left?.data ? (left.data[6] | 0) : 0;
   })();
   const isPlayer = handle.side === 'player';
@@ -1323,7 +1323,7 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: number, value: number
   const handle = _handleFromSpriteId(healthboxSpriteId);
   if (!handle || handle.side !== 'player') return;
   const rt = getRuntime();
-  const left = rt?.gSprites.get(healthboxSpriteId);
+  const left = rt?.gSprites[healthboxSpriteId];
   const battler = left?.data ? (left.data[6] | 0) : 0;
   const mon = _partyMon(battler);
   const currHp = hpId === HP_CURRENT ? value : (GetMonData(mon, MON_DATA_HP) as number);
@@ -1956,7 +1956,7 @@ export async function createBattlerHealthboxSprites(
   const forceSquareKeepWideCtcv = (h: { spriteId: number; oamIndex: number }): void => {
     const oam = rt.gba.oam[h.oamIndex];
     if (oam) oam.shape = 0;  // ST_OAM_SQUARE (64×64 render), size reste 3
-    const sp = rt.gSprites.get(h.spriteId);
+    const sp = rt.gSprites[h.spriteId];
     if (sp) sp.shape = 0;    // garde centerToCornerVec calculé pour WIDE
   };
 
@@ -2005,7 +2005,7 @@ export async function createBattlerHealthboxSprites(
       priority: 1,
       subpriority: 0,   // 1:1 décomp bar = CreateSpriteAtEnd(...,0) → DEVANT la boîte (subpri 1)
     });
-    const barSp = rt.gSprites.get(bar.spriteId);
+    const barSp = rt.gSprites[bar.spriteId];
     if (barSp) barSp.tileBase = HPBAR_PLAYER_LEFT_VRAM / 32;
     SetSubspriteTables(bar.spriteId, HEALTHBAR_SUBSPRITES_PLAYER);
     return {
@@ -2051,7 +2051,7 @@ export async function createBattlerHealthboxSprites(
       priority: 1,
       subpriority: 0,   // 1:1 décomp bar = CreateSpriteAtEnd(...,0) → DEVANT la boîte (subpri 1)
     });
-    const barSp = rt.gSprites.get(bar.spriteId);
+    const barSp = rt.gSprites[bar.spriteId];
     if (barSp) barSp.tileBase = HPBAR_OPP_LEFT_VRAM / 32;
     SetSubspriteTables(bar.spriteId, HEALTHBAR_SUBSPRITES_OPPONENT);
     return {
@@ -2076,7 +2076,7 @@ export function setHealthboxVisible(handle: HealthboxHandle, visible: boolean): 
   const rt = getRuntime();
   if (!rt) return;
   for (const spriteId of _allSpriteIds(handle)) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) {
       sprite.invisible = !visible;
       const oam = rt.gba.oam[sprite.oamIndex];
@@ -2104,7 +2104,7 @@ export function startHealthboxSlideIn(handle: HealthboxHandle): void {
   const startX2 = isPlayer ? 0x73 : -0x73;   // 1:1 : x2 = 0x73, négativé côté opp
   const speedX = isPlayer ? 5 : -5;          // 1:1 : sSpeedX = 5, négativé côté opp
   for (const spriteId of _allSpriteIds(handle)) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (!sprite) continue;
     sprite.x2 = startX2;
     sprite.y2 = 0;
@@ -2133,7 +2133,7 @@ export function tickHealthboxSlideIn(): void {
     const { handle, speedX } = _hbSlides[s];
     let done = false;
     for (const spriteId of _allSpriteIds(handle)) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (!sprite) continue;
       let x2 = (sprite.x2 ?? 0) - speedX;   // 1:1 : x2 -= sSpeedX
       // clamp au passage par 0 (évite l'overshoot avec un pas de 5).
@@ -2163,7 +2163,7 @@ export function setHealthboxPriority(handle: HealthboxHandle, priority: number):
   const rt = getRuntime();
   if (!rt) return;
   for (const spriteId of _allSpriteIds(handle)) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (!sprite) continue;
     const oam = rt.gba.oam[sprite.oamIndex];
     if (oam) oam.priority = priority;

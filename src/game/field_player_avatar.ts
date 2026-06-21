@@ -839,7 +839,7 @@ export async function InitPlayerAvatar(
     ? build_sPicTable_MayNormal(walkingReordered, runningReordered)
     : build_sPicTable_BrendanNormal(walkingReordered, runningReordered);
   if (gPlayerAvatar.spriteId >= 0) {
-    const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
+    const sprite = rt.gSprites[gPlayerAvatar.spriteId];
     if (sprite) {
       // 1:1 décomp TrySetupObjectEventSprite : sprite->images = graphicsInfo->images ;
       // sprite->anims = template->anims ; usingSheet = FALSE.
@@ -909,7 +909,7 @@ export async function InitPlayerAvatar(
     // saut de +40 → la caméra scrolle de 40px → joueur 40px trop haut en permanence
     // après chaque warp (bug oam.y=16 au lieu de 56). En posant sprite.x/y=worldX/Y ici,
     // le CameraObject s'aligne sur la bonne position dès l'Init (delta=0, pas de lurch).
-    const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
+    const sprite = rt.gSprites[gPlayerAvatar.spriteId];
     if (sprite) {
       sprite.coordOffsetEnabled = true;
       sprite.x = playerSlot.worldX;
@@ -1118,7 +1118,7 @@ function PushBoulder_Move(task: DecompTask, player: ObjectEvent, boulder: Object
     ObjectEventSetHeldMovement(boulder, GetWalkSlowMovementAction(task.data[2] & 0xFF));
     // 1:1 décomp : FLDEFF_DUST sur le rocher (args INTERNAL = currentCoords + elevation + priority OAM).
     const rt = getRuntime();
-    const bSprite = boulder.spriteId >= 0 ? rt.gSprites.get(boulder.spriteId) : null;
+    const bSprite = boulder.spriteId >= 0 ? rt.gSprites[boulder.spriteId] : null;
     const priority = bSprite && bSprite.oamIndex >= 0 ? (rt.gba.oam[bSprite.oamIndex].priority ?? 2) : 2;
     gFieldEffectArguments[0] = boulder.currentCoordsX;
     gFieldEffectArguments[1] = boulder.currentCoordsY;
@@ -1994,7 +1994,7 @@ function _fishingLoadMessageBoxAndFrameGfx(): void {
  *  5 → y2=-8, 10/11 → y2=8). */
 function AlignFishingAnimationFrames(): void {
   const rt = getRuntime();
-  const playerSprite = gPlayerAvatar.spriteId >= 0 ? rt.gSprites.get(gPlayerAvatar.spriteId) : null;
+  const playerSprite = gPlayerAvatar.spriteId >= 0 ? rt.gSprites[gPlayerAvatar.spriteId] : null;
   if (!playerSprite) return;
   rt.AnimateSprite(gPlayerAvatar.spriteId);
   playerSprite.x2 = 0;
@@ -2209,7 +2209,7 @@ function Fishing_StartEncounter(task: DecompTask): boolean {
       ObjectEventTurn(playerObjEvent, playerObjEvent.movementDirection);
       if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
         SetSurfBlob_PlayerOffset(getRuntime(), playerObjEvent.fieldEffectSpriteId, false, 0);
-      const sp = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+      const sp = getRuntime().gSprites[gPlayerAvatar.spriteId];
       if (sp) { sp.x2 = 0; sp.y2 = 0; }
       ClearDialogWindowAndFrame(sFishingWindowId, true);
       task.data[T_FISH_FRAME_COUNTER]++;
@@ -2254,7 +2254,7 @@ function Fishing_NoMon(task: DecompTask): boolean {
 
 function Fishing_PutRodAway(task: DecompTask): boolean {
   AlignFishingAnimationFrames();
-  const sp = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+  const sp = getRuntime().gSprites[gPlayerAvatar.spriteId];
   if (sp && sp.animEnded) {
     const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
     ObjectEventSetGraphicsId(playerObjEvent, sFishingPlayerGfxId);
@@ -2682,7 +2682,7 @@ function Task_DoPlayerSpinExit(task: DecompTask): void {
   const rt = getRuntime();
   const object = gObjectEvents[gPlayerAvatar.objectEventId];
   if (!object) return;
-  const sprite = rt.gSprites.get(object.spriteId);
+  const sprite = rt.gSprites[object.spriteId];
   if (!sprite) return;
   const oam = rt.gba.oam[sprite.oamIndex];
   const data = task.data;
@@ -2725,7 +2725,7 @@ function Task_DoPlayerSpinEntrance(task: DecompTask): void {
   const rt = getRuntime();
   const object = gObjectEvents[gPlayerAvatar.objectEventId];
   if (!object) return;
-  const sprite = rt.gSprites.get(object.spriteId);
+  const sprite = rt.gSprites[object.spriteId];
   if (!sprite) return;
   const oam = rt.gba.oam[sprite.oamIndex];
   const data = task.data;
@@ -3055,7 +3055,7 @@ export function PlayerStep(direction: number, newKeys: number, heldKeys: number)
  *  Phase 4.6 (warps) wirera ça. */
 export function DestroyPlayerAvatar(rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
-  const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
+  const sprite = rt.gSprites[gPlayerAvatar.spriteId];
   if (sprite) {
     rt.gba.oam[sprite.oamIndex].visible = false;
     sprite.inUse = false;
@@ -3131,7 +3131,7 @@ export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> 
 /** Cleanup au map switch (= 1:1 DestroyWarpArrowSprite). */
 export function DestroyWarpArrowSprite(rt: DecompRuntime): void {
   if (_arrowSpriteId === MAX_SPRITES) return;
-  const sprite = rt.gSprites.get(_arrowSpriteId);
+  const sprite = rt.gSprites[_arrowSpriteId];
   if (sprite) {
     rt.gba.oam[sprite.oamIndex].visible = false;
     sprite.inUse = false;

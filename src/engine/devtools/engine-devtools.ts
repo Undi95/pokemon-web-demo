@@ -19,12 +19,12 @@
  * ║   dev.back(N)        : reload + replay to frame (current-N)          ║
  * ║                                                                      ║
  * ║ AUTO-PAUSE                                                           ║
- * ║   dev.pauseAt(rt => rt.gSprites.size === 21, 'release')              ║
+ * ║   dev.pauseAt(rt => rt.gSprites.filter(Boolean).length === 21, 'release')              ║
  * ║     → fires once when condition met, sets paused=true                ║
  * ║   dev.clearPauseAt() : disarm                                        ║
  * ║                                                                      ║
  * ║ INPUT AUTOMATION (= si scene a passé { setHeldKeys })                ║
- * ║   await dev.skipUntil(rt => rt.gSprites.size > 10, 30000)            ║
+ * ║   await dev.skipUntil(rt => rt.gSprites.filter(Boolean).length > 10, 30000)            ║
  * ║     → toggles A button until predicate returns true (or timeout)     ║
  * ║                                                                      ║
  * ║ SAVESTATES (= bonus pour scenes runtime ; incomplet pour closures)   ║
@@ -66,7 +66,7 @@
  * ║   dev.unhookFn('BlendPalette')                                       ║
  * ║                                                                      ║
  * ║ TYPICAL DEBUG SESSION                                                ║
- * ║   1. await dev.skipUntil(rt => rt.gSprites.size > 10) // get to flash║
+ * ║   1. await dev.skipUntil(rt => rt.gSprites.filter(Boolean).length > 10) // get to flash║
  * ║   2. dev.savestate('flash-start')                     // checkpoint  ║
  * ║   3. dev.pause()                                      // freeze      ║
  * ║   4. dev.pixelTrace(80, 50)                           // inspect     ║
@@ -184,7 +184,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       gSprites: ((): [number, Record<string, unknown>][] => {
         const o: [number, Record<string, unknown>][] = [];
         for (let i = 0; i < MAX_SPRITES; i++) {
-          const s = rt.gSprites.get(i);
+          const s = rt.gSprites[i];
           if (s !== undefined) o.push([i, { ...s, data: Array.from(s.data || []) }]);
         }
         return o;
@@ -239,9 +239,9 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     }
     Object.assign(rt.gba.blend, ss.blend);
     Object.assign(rt.gba.windows, ss.windows);
-    rt.gSprites.clear();
+    rt.gSprites.fill(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const [id, s] of ss.gSprites) rt.gSprites.set(id, s as any);
+    for (const [id, s] of ss.gSprites) rt.gSprites[id] = s as any;
     rt.gTasks.clear();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const [id, t] of ss.gTasks) rt.gTasks.set(id, t as any);
@@ -419,7 +419,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out: any[] = [];
     for (let id = 0; id < MAX_SPRITES; id++) {
-      const s = rt.gSprites.get(id);
+      const s = rt.gSprites[id];
       if (s === undefined) continue;
       const oam = rt.gba.oam[s.oamIndex];
       out.push({
@@ -453,7 +453,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const ql = sub.toLowerCase();
     const out: unknown[] = [];
     for (let id = 0; id < MAX_SPRITES; id++) {
-      const s = rt.gSprites.get(id);
+      const s = rt.gSprites[id];
       if (s === undefined) continue;
       if (ql && !(s.callback?.name || '').toLowerCase().includes(ql)) continue;
       out.push(_spriteRow(id, s));
@@ -485,7 +485,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       while (rt.stepBudget > 0 && guard++ < 250) await new Promise(r => setTimeout(r, 4));
       const rows: unknown[] = [];
       for (let id = 0; id < MAX_SPRITES; id++) {
-        const s = rt.gSprites.get(id);
+        const s = rt.gSprites[id];
         if (s === undefined) continue;
         if (pick(id, s)) rows.push(_spriteRow(id, s));
       }
@@ -515,7 +515,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     taskCount: rt.gTasks.size,
     spriteCount: ((): number => {
       let n = 0;
-      for (let i = 0; i < MAX_SPRITES; i++) { const s = rt.gSprites.get(i); if (s !== undefined && !s.invisible) n++; }
+      for (let i = 0; i < MAX_SPRITES; i++) { const s = rt.gSprites[i]; if (s !== undefined && !s.invisible) n++; }
       return n;
     })(),
     bg2: rt.gba.bg(2).config,

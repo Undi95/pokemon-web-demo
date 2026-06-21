@@ -403,7 +403,7 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // SANS la table, StartSpriteAffineAnim pose ended immédiatement (sémantique
     // plateforme) → l'EMERGE du send-out ne grossissait jamais (bug user #2a).
     {
-      const monSpr = getRuntime()?.gSprites.get(spriteId);
+      const monSpr = getRuntime()?.gSprites[spriteId];
       if (monSpr) {
         monSpr.affineAnimsTableName = isOpponent
           ? 'gAffineAnims_BattleSpriteOpponentSide'
@@ -420,7 +420,7 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // (gate sur sprite->animEnded) ne se déclencherait JAMAIS (mon glisse mais healthbox/dé-teinte
     // jamais). Côté JOUEUR (back-sprite) : pas de slide ici (il sort d'une ball = chantier send-out).
     const rt2 = getRuntime();
-    const spr = rt2?.gSprites?.get(spriteId);
+    const spr = rt2?.gSprites?.[spriteId];
     // sBattler=data[0], sSpeciesId=data[2] (1:1 battle_controller_opponent.c:1150-1151 +
     // battle_main.c:2664-2665) — POUR LES DEUX COTES : le mon JOUEUR en a besoin aussi
     // (SpriteCB_PlayerMonFromBall lit data[2]=species + le cri du send-out). Avant : pose seulement
@@ -433,7 +433,7 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       // SpriteCB_WildMonAnimate (wild) / SpriteCB_OpponentMonFromBall (sortie de ball).
       void _ensureFrontAnims().then((seqs) => {
         const rt3 = getRuntime();
-        const sprNow = rt3?.gSprites?.get(spriteId);
+        const sprNow = rt3?.gSprites?.[spriteId];
         const seq = seqs[enumName];
         if (!rt3 || !sprNow || !seq || !seq.length) return;
         rt3.registerExtraAnim('MONFRONT_F0', { frames: [{ tileNum: 0, duration: 1 }], terminator: 'END' });
@@ -517,7 +517,7 @@ function _registerBattlerMonSprite(battler: number, spriteId: number): void {
   _battlerMonSpriteIds[battler] = spriteId;
   // Cache le sprite jusqu'à ce que sa palette OBJ soit live (anti « sprite noir »).
   const rt = getRuntime();
-  const spr = rt?.gSprites?.get(spriteId);
+  const spr = rt?.gSprites?.[spriteId];
   if (spr) spr.invisible = true;
   // Remplace toute révélation en attente pour ce battler (re-création = switch).
   for (let i = _pendingMonReveals.length - 1; i >= 0; i--) {
@@ -528,7 +528,7 @@ function _registerBattlerMonSprite(battler: number, spriteId: number): void {
   // + la REFERENCE objet du sprite : si le slot est recycle avant le reveal
   // (sprite detruit -> id reutilise par un sprite d'anim), on droppe au lieu
   // de reveler un orphelin (bug particules Sand-Attack, fix 2026-06-11).
-  const _sprRef = getRuntime()?.gSprites?.get(spriteId);
+  const _sprRef = getRuntime()?.gSprites?.[spriteId];
   _pendingMonReveals.push({ battler, spriteId, frames: 0, sprRef: _sprRef as unknown });
 }
 
@@ -550,7 +550,7 @@ export function tickBattlerMonReveals(): void {
     // Révèle quand le transfer palette est activé (→ la palette OBJ du mon a flushé live) ET
     // qu'au moins 2 frames ont passé. Filet de sécurité à 30f (jamais invisible en permanence).
     if ((transferOk && p.frames >= 2) || p.frames >= 30) {
-      const spr = rt.gSprites?.get(p.spriteId);
+      const spr = rt.gSprites?.[p.spriteId];
       // identite : le slot peut avoir ete recycle (destroy -> id reutilise par
       // un sprite d'anim) -> reveler l'orphelin etait le bug des particules.
       if (spr && (p.sprRef === undefined || (spr as unknown) === p.sprRef)) spr.invisible = false;
@@ -651,7 +651,7 @@ function SwitchIn_TryShinyAnim(): void {
 /** 1:1 décomp `SwitchIn_ShowHealthbox()` (:482-499). */
 function SwitchIn_ShowHealthbox(): void {
   const monId = getBattlerMonSpriteId(gActiveBattler);
-  const spr = getRuntime()?.gSprites?.get(monId);
+  const spr = getRuntime()?.gSprites?.[monId];
   // GARDE-FOU (pas 1:1 — cas d'erreur impossible en décomp) : si la création du
   // sprite a ÉCHOUÉ (species 0 : gEnemyParty[1+] party-storage vide alors que
   // gBattleMons/harness ont le mon — désync CreateNPCTrainerParty, DETTE
@@ -767,7 +767,7 @@ function _freeOppMonSpriteAndHideHealthbox(battler: number): void {
   const rt = getRuntime();
   const monId = getBattlerMonSpriteId(battler);
   if (rt && monId >= 0) {
-    const spr = rt.gSprites.get(monId);
+    const spr = rt.gSprites[monId];
     if (spr) { (spr as { inUse: boolean }).inUse = false; (spr as { callback: unknown }).callback = null; }
     rt.DestroySprite(monId);
     _battlerMonSpriteIds[battler] = -1;
@@ -851,7 +851,7 @@ function OpponentHandleDrawTrainerPic(): void {
   // 1:1 ll.1306+1313 : xPos=176, yPos=(8-size)*4+40 = 40 (front pic 64x64 = size 8). Dette : pics
   // < 64px (size!=8) auraient un yPos different (gTrainerFrontPicCoords[picId].size non lu ici).
   void showOpponentTrainerSprite(picEnum, 176, 40).then((tid) => {
-    const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+    const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
     if (tr) {
       tr.data[0] = 2;                         // sSpeedX = 2 (1:1 l.1317)
       tr.callback = SpriteCB_TrainerSlideIn;  // slide-in 1:1 (x2 -DISPLAY_WIDTH -> 0, gate gIntroSlideFlags)
@@ -867,7 +867,7 @@ function _CompleteOnOpponentTrainerSlideIn(): void {
   if (!_oppTrainerSlideStarted) return;
   const rt = getRuntime();
   const tid = getOpponentTrainerSpriteId();
-  const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+  const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
   if (!tr || tr.callback === SpriteCallbackDummy) OpponentBufferExecCompleted();
 }
 
@@ -890,7 +890,7 @@ function OpponentHandleTrainerSlide(): void {
   // et pose x2=-DISPLAY_WIDTH → écrasé ci-dessous par la pose slide (x2=96). Même dette yPos
   // que DrawTrainerPic (front 64×64 → (8-8)*4+40 = 40 ; gTrainerFrontPicCoords.size non lu).
   void showOpponentTrainerSprite(picEnum, 176 + 32, 40).then((tid) => {
-    const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+    const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
     if (tr) {
       tr.x2 = 96;                              // 1:1 :1385 (remplace le -DISPLAY_WIDTH d'intro)
       tr.data[0] = -2;                         // 1:1 :1387 sSpeedX = -2 (arrive de la droite)
@@ -906,7 +906,7 @@ function _CompleteOnOpponentTrainerSlide2(): void {
   if (!_oppTrainerSlide2Started) return;
   const rt = getRuntime();
   const tid = getOpponentTrainerSpriteId();
-  const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+  const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
   if (!tr || tr.callback === SpriteCallbackDummy) OpponentBufferExecCompleted();
 }
 /** 1:1 décomp `OpponentHandleTrainerSlideBack()` (:1396-1405) : le dresseur repart
@@ -915,7 +915,7 @@ function _CompleteOnOpponentTrainerSlide2(): void {
 function OpponentHandleTrainerSlideBack(): void {
   const rt = getRuntime();
   const tid = getOpponentTrainerSpriteId();
-  const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+  const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
   if (!tr) { OpponentBufferExecCompleted(); return; }
   SetSpritePrimaryCoordsFromSecondaryCoords(tr);   // 1:1 :1398 (fold x2/y2 → x/y)
   tr.data[0] = 35;        // 1:1 :1399 nbFrames
@@ -931,7 +931,7 @@ function OpponentHandleTrainerSlideBack(): void {
 function _FreeTrainerSpriteAfterSlide_Opp(): void {
   const rt = getRuntime();
   const tid = getOpponentTrainerSpriteId();
-  const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+  const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
   if (!tr || tr.callback === SpriteCallbackDummy) {
     destroyOpponentTrainerSprite();
     OpponentBufferExecCompleted();
@@ -1017,7 +1017,7 @@ function _PlaySE12WithPanning(seId: number, _pan: number): void {
  *  vient d'AnimateSprites→runSpriteCallbacksPublic, appelé chaque frame par BattleMainCB2. */
 function _startOpponentFaintAnim(battler: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(battler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(battler)];
   if (!sprite) return;
   const fa = (globalThis as { __battleFaintAnim?: { TriggerFaintOpponent?: (s: unknown, b: number, sp: number) => void } }).__battleFaintAnim;
   // species → y_offset (front-pic coords) : _getMonFrontPicYOffset stub=8 (Dette R3) → ~8 steps
@@ -1030,7 +1030,7 @@ function _startOpponentFaintAnim(battler: number): void {
  *  DestroySprite retire le sprite de gSprites → get()===undefined.) */
 function _HideHealthboxAfterMonFaint(): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite || sprite.inUse === false) {
     const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
     hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
@@ -1497,7 +1497,7 @@ function OpponentHandleToggleUnkFlag(): void {
  *  (le mon adverse CLIGNOTE 32 frames quand touché). DoHitAnimHealthboxEffect = Dette R3 (déféré). */
 function OpponentHandleHitAnimation(): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite || sprite.invisible === true) { OpponentBufferExecCompleted(); return; }
   sprite.data[1] = 0;
   _setBattlerControllerFunc(gActiveBattler, _DoHitAnimBlinkSpriteEffect_Opp);
@@ -1505,7 +1505,7 @@ function OpponentHandleHitAnimation(): void {
 /** 1:1 décomp `DoHitAnimBlinkSpriteEffect()` (battle_controller_*.c) côté adverse. */
 function _DoHitAnimBlinkSpriteEffect_Opp(): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite) { OpponentBufferExecCompleted(); return; }
   if (sprite.data[1] === 32) {
     sprite.data[1] = 0;
@@ -1585,7 +1585,7 @@ function OpponentHandleIntroTrainerBallThrow(): void {
   // 1:1 ll.1871-1878 : le front-pic dresseur slide-off DROITE (destX=280, 35f) ; a la fin de la
   // translation, SpriteCB_FreeOpponentSprite (stocke en data6) le libere.
   const trainerId = getOpponentTrainerSpriteId();
-  const tr = rt && trainerId >= 0 ? rt.gSprites.get(trainerId) : null;
+  const tr = rt && trainerId >= 0 ? rt.gSprites[trainerId] : null;
   if (tr) {
     SetSpritePrimaryCoordsFromSecondaryCoords(tr);   // fold x2/y2 -> x/y (fige la pose slid-in)
     tr.data[0] = 35;        // nbFrames (1:1 l.1873)
@@ -1655,7 +1655,7 @@ function _OpponentIntroSendOutWait(): void {
       _oppSendOutHbFrames++;
       const hb = (globalThis as Record<string, unknown>).__battleHealthbox as { gHealthboxSpriteIds?: number[] } | undefined;
       const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
-      const hbSpr = hbId >= 0 ? rt?.gSprites?.get(hbId) : null;
+      const hbSpr = hbId >= 0 ? rt?.gSprites?.[hbId] : null;
       const cbName = (hbSpr?.callback as { name?: string } | null | undefined)?.name;
       const slideDone = !hbSpr || cbName !== 'SpriteCB_HealthboxSlideIn';
       if (slideDone || _oppSendOutHbFrames > 40) {
@@ -1748,7 +1748,7 @@ function OpponentHandleSpriteInvisibility(): void {
     __battleGfxSfxUtil?: { CopyBattleSpriteInvisibility?: (b: number) => void };
   };
   const monId = g.__battleControllerOpponent?.getBattlerMonSpriteId?.(gActiveBattler) ?? -1;
-  const spr = monId >= 0 ? getRuntime()?.gSprites.get(monId) : undefined;
+  const spr = monId >= 0 ? getRuntime()?.gSprites[monId] : undefined;
   if (spr && (spr as { inUse?: boolean }).inUse) {
     (spr as { invisible: boolean }).invisible = gBattleBufferA[gActiveBattler][1] !== 0;
     g.__battleGfxSfxUtil?.CopyBattleSpriteInvisibility?.(gActiveBattler);

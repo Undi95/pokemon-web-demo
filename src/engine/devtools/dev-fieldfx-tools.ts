@@ -111,7 +111,7 @@ const fx = {
     const p = playerObjEvent();
     if (!p) return null;
     const r = rt();
-    const spr = r && gPlayerAvatar.spriteId >= 0 ? r.gSprites.get(gPlayerAvatar.spriteId) : null;
+    const spr = r && gPlayerAvatar.spriteId >= 0 ? r.gSprites[gPlayerAvatar.spriteId] : null;
     return {
       objectEventId: GetObjectEventIdByLocalIdAndMap(p.localId, p.mapNum, p.mapGroup),
       localId: p.localId, mapNum: p.mapNum, mapGroup: p.mapGroup,
@@ -187,7 +187,7 @@ const fx = {
     const owned = objectEventSpriteIds();
     const out: any[] = [];
     for (let i = 0; i < MAX_SPRITES; i++) {
-      const s = r.gSprites.get(i);
+      const s = r.gSprites[i];
       if (s === undefined) continue;
       if (owned.has(s.spriteId)) continue;
       const oam = r.gba.oam[s.oamIndex];

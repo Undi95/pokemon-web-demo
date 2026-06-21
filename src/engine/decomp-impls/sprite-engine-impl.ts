@@ -355,7 +355,7 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
  *  uniquement, ET impl manuels qui set sprite.affineMode). */
 export function tickAllAffineAnims(rt: DecompRuntime): void {
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const sprite = rt.gSprites.get(i);
+    const sprite = rt.gSprites[i];
     if (sprite === undefined) continue;
     if (!sprite.affineAnimsTableName) continue;
     const oam = rt.gba.oam[sprite.oamIndex];

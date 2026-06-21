@@ -3001,7 +3001,7 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
     });
     const spriteId = created.spriteId;
     if (spriteId >= 0 && spriteId < 64) {
-      const s = rt.gSprites.get(spriteId);
+      const s = rt.gSprites[spriteId];
       if (s) {
         s.callback = template.callback ?? null;
         s.anims = template.anims ?? null;

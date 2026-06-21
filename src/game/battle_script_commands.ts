@@ -10515,7 +10515,7 @@ export function captureBeforeLvlUpStats(): void {
 function _bg2X(): number { return ((globalThis as Record<string, unknown>).gBattle_BG2_X as number) | 0; }
 function _setBg2X(v: number): void { (globalThis as Record<string, unknown>).gBattle_BG2_X = v; }
 function _setBg2Y(v: number): void { (globalThis as Record<string, unknown>).gBattle_BG2_Y = v; }
-function _rtBSC(): { gba: { bg: (i: number) => { config: { priority: number; visible: boolean } } }; gMain: { newKeys: number }; LoadPaletteBg?: (pal: Uint16Array, slot: number) => void; CreateSpriteAtOam: (cfg: Record<string, unknown>) => { spriteId: number }; gSprites: Map<number, { data: number[]; x2: number; callback: unknown }>; DestroySprite: (id: number) => void; LoadPalette?: (pal: Uint16Array, slot: number) => void } | null {
+function _rtBSC(): { gba: { bg: (i: number) => { config: { priority: number; visible: boolean } } }; gMain: { newKeys: number }; LoadPaletteBg?: (pal: Uint16Array, slot: number) => void; CreateSpriteAtOam: (cfg: Record<string, unknown>) => { spriteId: number }; gSprites: Array<{ data: number[]; x2: number; callback: unknown } | undefined>; DestroySprite: (id: number) => void; LoadPalette?: (pal: Uint16Array, slot: number) => void } | null {
   return ((globalThis as Record<string, unknown>).__rt as ReturnType<typeof _rtBSC>) ?? null;
 }
 
@@ -10623,7 +10623,7 @@ function PutMonIconOnLvlUpBanner(): void {
         x: 256, y: 10, shape: 0, size: 2, tileId: tileStart,
         paletteBank: palSlot, priority: 0, subpriority: 0,
       });
-      const spr = rt.gSprites.get(spriteId);
+      const spr = rt.gSprites[spriteId];
       if (spr) {
         spr.data[0] = 0;            // sDestroy
         spr.data[1] = bg2AtSpawn;   // sXOffset (le BG2_X au moment du Put 1:1)

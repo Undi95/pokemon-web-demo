@@ -337,7 +337,7 @@ function _restoreBattlerSprites(): void {
   for (let b = 0; b < 4; b++) {
     const id = co.getBattlerMonSpriteId(b);
     if (id === undefined || id < 0) continue;
-    const sp = rt.gSprites?.get(id) as { x2?: number; y2?: number; hFlip?: boolean; vFlip?: boolean } | undefined;
+    const sp = rt.gSprites?.[id] as { x2?: number; y2?: number; hFlip?: boolean; vFlip?: boolean } | undefined;
     if (sp) { sp.x2 = 0; sp.y2 = 0; sp.hFlip = false; sp.vFlip = false; }
     // PAS de ResetSpriteRotScale AVEUGLE : sur un mon SAIN ca togglait
     // l affine/double-size -> POSITION DECALEE (retour user : « probleme de
@@ -352,7 +352,7 @@ function _purgeScriptSprites(): void {
   const rt = getRuntime();
   if (rt) {
     for (const e of _scriptSpriteIds) {
-      const sp = rt.gSprites?.get(e.id);
+      const sp = rt.gSprites?.[e.id];
       // IDENTITE obligatoire : l'id peut etre recycle par un sprite SYSTEME
       // (healthbox re-render pendant l'anim) — detruire par id nu detruisait
       // la healthbox (paye 2026-06-11). On ne purge que NOTRE objet.
@@ -520,7 +520,7 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
   if (!rt) return;
   // FIX user 2026-06-11 (« les animations restent bloquees sur la scene ») :
   // les callbacks registry passent l OBJET sprite ; la version id-only faisait
-  // gSprites.get(objet)=undefined -> DestroySprite(objet)=no-op SILENCIEUX ->
+  // gSprites[objet]=undefined -> DestroySprite(objet)=no-op SILENCIEUX ->
   // les sprites d anim restaient a l ecran. Accepte objet|id (pattern _gTasks).
   let spriteId = typeof spriteOrId === 'number' ? spriteOrId : -1;
   if (spriteId < 0 && rt.gSprites) {
@@ -528,14 +528,14 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
     if (direct !== undefined && direct >= 0) spriteId = direct;
     else {
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
-        const sp = rt.gSprites.get(sid);
+        const sp = rt.gSprites[sid];
         if (sp === undefined) continue;
         if ((sp as unknown) === spriteOrId) { spriteId = sid; break; }
       }
     }
   }
   if (spriteId < 0) return;
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite && sprite.matrixNum !== 0) {
     rt.FreeOamMatrix(sprite.matrixNum);
   }
@@ -667,7 +667,7 @@ export function MoveBattlerSpriteToBG(battler: number, toBG_2: boolean, setSprit
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(battler);
   if (sid === undefined || sid === 0xFF) return;
-  const sprite = rt.gSprites.get(sid);
+  const sprite = rt.gSprites[sid];
   if (!sprite) return;
   const oam = (rt as unknown as { gba: { oam: Array<{ tileId: number }> } }).gba.oam[sprite.oamIndex];
   const gba = (rt as unknown as { gba: { bg: (i: number) => { vram: Uint8Array; tilemap: Uint16Array; config: { charBaseIndex: number } }; objVram: Uint8Array } }).gba;
@@ -1083,7 +1083,7 @@ function _markLiveSpriteTiles(): void {
   const bmp = sSpriteTileAllocBitmap;
   if (!rt || !bmp) return;
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s === undefined) continue;
     if (!s.inUse) continue;
     const oam = rt.gba.oam[s.oamIndex];
@@ -1288,7 +1288,7 @@ function Cmd_createsprite(): void {
       }
       _vtrace({ op: 'sprite', name: tplName, resolved: true, spriteId, tileTag: tpl.tileTag, cb: (tpl.callback as { name?: string } | undefined)?.name ?? 'none' });
       if (spriteId >= 0) {
-        const sp = rt.gSprites?.get(spriteId) as { data?: number[]; callback?: unknown; invisible?: boolean; spriteId?: number } | undefined;
+        const sp = rt.gSprites?.[spriteId] as { data?: number[]; callback?: unknown; invisible?: boolean; spriteId?: number } | undefined;
         if (sp) {
           sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
           sp.spriteId = spriteId;
@@ -1318,9 +1318,9 @@ function Cmd_createsprite(): void {
           // relatifs (+=). (Fix ciblage crocs/projectiles, 2026-06-11.)
           {
             const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-            const rtg = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x?: number; y?: number; x2?: number; y2?: number }> } | undefined;
+            const rtg = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x?: number; y?: number; x2?: number; y2?: number } | undefined> } | undefined;
             const tgtId = co?.getBattlerMonSpriteId?.(gBattleAnimTarget);
-            const tgtSp = tgtId !== undefined && tgtId >= 0 ? rtg?.gSprites?.get(tgtId) : undefined;
+            const tgtSp = tgtId !== undefined && tgtId >= 0 ? rtg?.gSprites?.[tgtId] : undefined;
             if (tgtSp) {
               (sp as { x: number; y: number }).x = (tgtSp.x ?? 120) + (tgtSp.x2 ?? 0);
               (sp as { x: number; y: number }).y = (tgtSp.y ?? 80) + (tgtSp.y2 ?? 0);
@@ -1403,7 +1403,7 @@ function _battlerCoordT4(battler: number, coordType: number): number {
     getBattlerMonSpriteId?: (b: number) => number;
   } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler) ?? -1;
-  const sp = rt?.gSprites?.get(id) as { x?: number; y?: number } | undefined;
+  const sp = rt?.gSprites?.[id] as { x?: number; y?: number } | undefined;
   if (!sp) return coordType === 2 ? 120 : 80;
   return (coordType === 2 ? sp.x : sp.y) ?? 80;
 }
@@ -1625,7 +1625,7 @@ const _sMonAnimTaskIdArray: number[] = [TASK_NONE, TASK_NONE]; // 1:1 sMonAnimTa
 function _monSpriteOf(battler: number): { x: number; y: number; x2: number; y2: number; invisible?: boolean } | undefined {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(battler);
-  return sid !== undefined && sid !== 0xFF ? getRuntime()?.gSprites.get(sid) as never : undefined;
+  return sid !== undefined && sid !== 0xFF ? getRuntime()?.gSprites[sid] as never : undefined;
 }
 /** 1:1 battle_anim.c Task_InitUpdateMonBg : cache le SPRITE (seule la copie BG
  *  s'affiche) + lance Task_UpdateMonBg qui RECALE le scroll BG sur la position
@@ -1695,7 +1695,7 @@ function Cmd_clearmonbg(): void {
     const rt = getRuntime();
     const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
     const sid = co?.getBattlerMonSpriteId?.(battler);
-    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites.get(sid) : undefined;
+    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites[sid] : undefined;
     if (sprite) (sprite as { invisible?: boolean }).invisible = false;
     // 1:1 Task_ClearMonBg : detruire les Task_UpdateMonBg actives (sinon elles
     // continuent d'ecraser le scroll BG apres le demontage)
@@ -2017,7 +2017,7 @@ function Cmd_clearmonbg_static(): void {
     const rt = getRuntime();
     const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
     const sid = co?.getBattlerMonSpriteId?.(battler);
-    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites.get(sid) : undefined;
+    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites[sid] : undefined;
     if (sprite) (sprite as { invisible?: boolean }).invisible = false;
     const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
     const g = globalThis as Record<string, unknown>;
@@ -2140,7 +2140,7 @@ function Cmd_invisible(): void {
   if (spriteId >= 0) {
     const rt = getRuntime();
     if (rt) {
-      const s = rt.gSprites.get(spriteId);
+      const s = rt.gSprites[spriteId];
       if (s) s.invisible = true;
     }
   }
@@ -2153,7 +2153,7 @@ function Cmd_visible(): void {
   if (spriteId >= 0) {
     const rt = getRuntime();
     if (rt) {
-      const s = rt.gSprites.get(spriteId);
+      const s = rt.gSprites[spriteId];
       if (s) s.invisible = false;
     }
   }
@@ -2383,12 +2383,12 @@ export function tickAnimScript(): void {
     try {
       const rt = getRuntime() as unknown as {
         gPlttBufferUnfaded?: Uint16Array; gPlttBufferFaded?: Uint16Array;
-        gSprites?: Map<number, { x2: number; inUse?: boolean; callback?: { name?: string } | null }>;
+        gSprites?: Array<{ x2: number; inUse?: boolean; callback?: { name?: string } | null } | undefined>;
       } | null;
       _restoreAnimPalettes(); // snapshot du Launch (Unfaded = alias Faded ici)
       if (rt?.gSprites) {
         for (let i = 0; i < MAX_SPRITES; i++) {
-          const sp = rt.gSprites.get(i);
+          const sp = rt.gSprites[i];
           if (sp === undefined) continue;
           const n = sp.callback?.name ?? '';
           if (sp.inUse && /HealthBox|MonFromBall|CallbackDummy/i.test(n)) sp.x2 = 0;

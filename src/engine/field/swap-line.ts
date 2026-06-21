@@ -160,7 +160,7 @@ export function UpdateSwapLineSpritesPos(spriteIds: number[], baseIdx: number, c
   const hasMargin = (count & SWAP_LINE_HAS_MARGIN) !== 0;
   const n = count & ~SWAP_LINE_HAS_MARGIN;
   for (let i = 0; i < n; i++) {
-    const spr = rt.gSprites.get(spriteIds[baseIdx + i]);
+    const spr = rt.gSprites[spriteIds[baseIdx + i]];
     if (!spr) continue;
     // 1:1 :446-449 — last sprite avec margin → x-8 ; sinon x.
     spr.x2 = (i === n - 1 && hasMargin) ? x - 8 : x;

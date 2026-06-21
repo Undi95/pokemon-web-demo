@@ -29,7 +29,7 @@
  * │ sont PLATS sur le sprite + `oamIndex` → `gba.oam[oamIndex]` (= l'équiv.   │
  * │ web de struct Sprite + oamBuffer → OAM hardware). C'est le standard de    │
  * │ TOUT le port, Y COMPRIS le miroir certifié (pokeball.ts/battle_anim_mons. │
- * │ ts : `rt.gSprites.get(id)` + `rt.gba.oam[s.oamIndex]`). Introduire `.oam` │
+ * │ ts : `rt.gSprites[id]` + `rt.gba.oam[s.oamIndex]`). Introduire `.oam` │
  * │ casserait ~300 accès + le miroir déjà validé → EXCLU.                     │
  * │                                                                          │
  * │ DETTES (à résorber AU MOMENT des migrations combat, PAS maintenant — on   │

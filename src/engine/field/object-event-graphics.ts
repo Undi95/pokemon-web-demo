@@ -471,7 +471,7 @@ export function CreateObjectGraphicsSprite(
     priority: Math.max(0, Math.min(3, subPriority | 0)) as 0 | 1 | 2 | 3,
   });
   if (spriteId < 0) return -1;
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) {
     sprite.tileBase = tileBase;
     if (callback) sprite.callback = callback;

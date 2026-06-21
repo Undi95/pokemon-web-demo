@@ -145,7 +145,7 @@ export function FieldEffectFreePaletteIfUnused(rt: DecompRuntime, paletteNum: nu
   // 1:1 décomp : si un autre sprite in-use porte ce paletteNum → ne pas libérer.
   // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[i]).
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s === undefined || !s.inUse) continue;
     const oam = rt.gba.oam[s.oamIndex];
     if (oam && oam.paletteBank === paletteNum) return;

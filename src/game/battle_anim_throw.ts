@@ -260,7 +260,7 @@ export function AnimTask_ThrowBall(taskId: number): void {
   //   sTargetX  = data[1] = enemy X
   //   sTargetY  = data[2] = enemy Y - 16
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   if (sprite) {
     sprite.data[0] = 34;
     sprite.data[1] = _GetBattlerSpriteCoord(_getAnimState().target, 0 /* BATTLER_COORD_X */);
@@ -270,7 +270,7 @@ export function AnimTask_ThrowBall(taskId: number): void {
 
   // 1:1 décomp : track wild mon visibility pour restore plus tard.
   const targetSprite = _getBattlerSpriteId(_getAnimState().target);
-  const targetWasInvisible = rt?.gSprites?.get(targetSprite)?.invisible ?? false;
+  const targetWasInvisible = rt?.gSprites?.[targetSprite]?.invisible ?? false;
   ((gBattleStruct as unknown) as { wildMonInvisible?: boolean }).wildMonInvisible = targetWasInvisible;
 
   _gTasks(taskId).data[0] = spriteId;
@@ -282,7 +282,7 @@ export function AnimTask_ThrowBall_Step(taskId: number): void {
   const task = _gTasks(taskId);
   const spriteId = task.data[0];
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   // 1:1 décomp : si sDuration (data[0]) === 0xFFFF (= -1 cast u16), animation done.
   if (sprite && (sprite.data[0] & 0xFFFF) === 0xFFFF) {
     DestroyAnimVisualTask(taskId);
@@ -304,7 +304,7 @@ export function AnimTask_ThrowBall_StandingTrainer(taskId: number): void {
   const x = 23, y = 5;  // assume non-Wally
   const spriteId = _CreateBallSprite(ballId, x + 32, y | 80, 1);
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   if (sprite) {
     sprite.data[0] = 34;
     sprite.data[1] = _GetBattlerSpriteCoord(_getAnimState().target, 0);
@@ -432,7 +432,7 @@ export function AnimTask_SwitchOutShrinkMon(taskId: number): void {
       break;
     case 2: {
       ResetSpriteRotScale(spriteId);
-      const spr = getRuntime()?.gSprites?.get(spriteId) as { invisible?: boolean } | undefined;
+      const spr = getRuntime()?.gSprites?.[spriteId] as { invisible?: boolean } | undefined;
       if (spr) spr.invisible = true;
       DestroyAnimVisualTask(taskId);
       break;
@@ -455,7 +455,7 @@ export function AnimTask_SwitchOutBallEffect(taskId: number): void {
   switch (task.data[0]) {
     case 0: {
       const spriteId = _getBattlerSpriteId(attacker);
-      const spr = rt.gSprites?.get(spriteId) as { oamIndex: number; subpriority?: number } | undefined;
+      const spr = rt.gSprites?.[spriteId] as { oamIndex: number; subpriority?: number } | undefined;
       const oam = (rt as unknown as { gba?: { oam?: Array<{ priority?: number }> } }).gba?.oam?.[spr?.oamIndex ?? -1];
       const ball = GetBattlerPokeballItemId(attacker);
       const ballId = ItemIdToBallId(ball);
@@ -648,21 +648,21 @@ function _wildMonInvisible(): boolean {
  *  LaunchBallFadeMonTask — battler==slot sur GBA, pas chez nous). */
 function _monPalNum(): number {
   const rt = getRuntime();
-  const sp = rt?.gSprites?.get(_getBattlerSpriteId(_getAnimState().target)) as { oamIndex?: number } | undefined;
+  const sp = rt?.gSprites?.[_getBattlerSpriteId(_getAnimState().target)] as { oamIndex?: number } | undefined;
   if (!rt || !sp || sp.oamIndex === undefined) return _getAnimState().target;
   const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteBank?: number }> } }).gba?.oam?.[sp.oamIndex];
   return oam?.paletteBank ?? _getAnimState().target;
 }
 
 function _rtSprite(spriteId: number): BallSprite | undefined {
-  return getRuntime()?.gSprites?.get(spriteId) as unknown as BallSprite | undefined;
+  return getRuntime()?.gSprites?.[spriteId] as unknown as BallSprite | undefined;
 }
 function _spriteIdOf(sprite: BallSprite): number {
   if (sprite.spriteId !== undefined) return sprite.spriteId;
   const rt = getRuntime();
   if (!rt?.gSprites) return -1;
   for (let id = 0; id < MAX_SPRITES; id++) {
-    const sp = rt.gSprites.get(id);
+    const sp = rt.gSprites[id];
     if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) return id;
   }
@@ -681,7 +681,7 @@ function _startAffine(sprite: BallSprite, n: number): void {
 function _destroyBall(sprite: BallSprite): void {
   const id = _spriteIdOf(sprite);
   const rt = getRuntime();
-  if (rt && id >= 0) { rt.DestroySprite(id); rt.gSprites.delete(id); }
+  if (rt && id >= 0) { rt.DestroySprite(id); rt.gSprites[id] = undefined; }
 }
 function _updateOamPriorityInAllHealthboxes(priority: number): void {
   const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
@@ -1005,7 +1005,7 @@ function SpriteCB_Ball_Capture_Step(sprite: BallSprite): void {
   } else if (sprite.data[4] === 315) {
     const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
     const rt = getRuntime();
-    if (rt && monSpriteId >= 0) { rt.DestroySprite(monSpriteId); rt.gSprites.delete(monSpriteId); }
+    if (rt && monSpriteId >= 0) { rt.DestroySprite(monSpriteId); rt.gSprites[monSpriteId] = undefined; }
     sprite.data[0] = 0;
     sprite.callback = SpriteCB_Ball_FadeOut;
   }
@@ -1771,7 +1771,7 @@ type _ShinySprite = {
 };
 
 function _shinyRt(): {
-  gSprites?: Map<number, _ShinySprite>;
+  gSprites?: Array<_ShinySprite | undefined>;
   gTasks?: Map<number, { data: number[]; taskId: number; func?: unknown }>;
   CreateTask?: (fn: unknown, prio: number) => number;
   DestroyTask?: (id: number) => void;
@@ -1854,7 +1854,7 @@ function Task_ShinyStars(task: { data: number[]; taskId: number; func?: unknown 
   if (timer % 4) return;
   const battler = task.data[0];
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-  const monSp = rt.gSprites?.get(co?.getBattlerMonSpriteId?.(battler) ?? -1);
+  const monSp = rt.gSprites?.[co?.getBattlerMonSpriteId?.(battler) ?? -1];
   const x = monSp ? monSp.x : 120;
   const y = monSp ? monSp.y : 60;
   const starIdx = task.data[4];
@@ -1870,7 +1870,7 @@ function Task_ShinyStars(task: { data: number[]; taskId: number; func?: unknown 
     callback: null,
   } as never, x, y, 5);
   if (spriteId >= 0) {
-    const sp = rt.gSprites?.get(spriteId);
+    const sp = rt.gSprites?.[spriteId];
     if (sp) {
       sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
       sp.invisible = false;
@@ -1911,7 +1911,9 @@ function _shinyStarDone(sprite: _ShinySprite): void {
   const task = rt.gTasks?.get(sprite.data[6]);
   if (task) task.data[5]--;
   // destroy
-  for (const [id, sp] of rt.gSprites?.entries() ?? []) {
+  for (let id = 0; id < MAX_SPRITES; id++) {
+    const sp = rt.gSprites?.[id];
+    if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) {
       rt.DestroySprite?.(id);
       // pas de gSprites.delete (slot garde jusqu'a reallocation, 1:1)

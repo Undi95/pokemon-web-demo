@@ -122,7 +122,7 @@ function _createIconSprite(rt: DecompRuntime, which: 'exclQ' | 'heart', subprior
     subpriority: subpriority & 0xFF,
     fromEnd: true,      // 1:1 CreateSpriteAtEnd
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return MAX_SPRITES;
   setFieldEffectAnims(sprite, which === 'heart' ? sAnims_HeartIcon : sAnims_ExclamationQuestion, tileStart);
   sprite.subpriority = subpriority & 0xFF;
@@ -147,7 +147,7 @@ function SetIconSpriteData(rt: DecompRuntime, sprite: DecompSprite, fldEffId: nu
 export function FldEff_ExclamationMarkIcon(rt: DecompRuntime): number {
   const spriteId = _createIconSprite(rt, 'exclQ', 0x53);
   if (spriteId !== MAX_SPRITES) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) { sprite.callback = SpriteCB_TrainerIcons; SetIconSpriteData(rt, sprite, FLDEFF_EXCLAMATION_MARK_ICON, 0); }
   }
   return 0;
@@ -157,7 +157,7 @@ export function FldEff_ExclamationMarkIcon(rt: DecompRuntime): number {
 export function FldEff_QuestionMarkIcon(rt: DecompRuntime): number {
   const spriteId = _createIconSprite(rt, 'exclQ', 0x52);
   if (spriteId !== MAX_SPRITES) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) { sprite.callback = SpriteCB_TrainerIcons; SetIconSpriteData(rt, sprite, FLDEFF_QUESTION_MARK_ICON, 1); }
   }
   return 0;
@@ -169,7 +169,7 @@ export function FldEff_QuestionMarkIcon(rt: DecompRuntime): number {
 export function FldEff_HeartIcon(rt: DecompRuntime): number {
   const spriteId = _createIconSprite(rt, 'heart', 0x52);
   if (spriteId !== MAX_SPRITES) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) { sprite.callback = SpriteCB_TrainerIcons; SetIconSpriteData(rt, sprite, FLDEFF_HEART_ICON, 0); }
   }
   return 0;
@@ -188,7 +188,7 @@ export function SpriteCB_TrainerIcons(sprite: DecompSprite, rt: DecompRuntime): 
   // 1:1 décomp : objEventSprite = &gSprites[gObjectEvents[objEventId].spriteId]. Le joueur
   // porte son visuel sur gPlayerAvatar.spriteId (slot OE = -1).
   const mainSpriteId = objEvent.isPlayer ? gPlayerAvatar.spriteId : objEvent.spriteId;
-  const objSprite = mainSpriteId >= 0 ? rt.gSprites.get(mainSpriteId) : undefined;
+  const objSprite = mainSpriteId >= 0 ? rt.gSprites[mainSpriteId] : undefined;
   if (!objSprite) return;
   sprite.data[4] += sprite.data[3];      // sYOffset += sYVelocity
   sprite.x = objSprite.x;

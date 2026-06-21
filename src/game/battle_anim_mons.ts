@@ -417,7 +417,7 @@ function _shouldRotScaleSpeciesBeFlipped(): boolean { return false; }
  *  matrice OAM du sprite (slot sprite.matrixNum, champ PLAT). */
 export function SetSpriteRotScale(spriteId: number, xScale: number, yScale: number, rotation: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   let sx = xScale;
   if (_shouldRotScaleSpeciesBeFlipped()) sx = -sx;
@@ -432,7 +432,7 @@ export function SetSpriteRotScale(spriteId: number, xScale: number, yScale: numb
  *  + OamEntry hardware rt.gba.oam[oamIndex]). */
 export function PrepareBattlerSpriteForRotScale(spriteId: number, objMode: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   sprite.invisible = false;
   sprite.affineAnimPaused = true;
@@ -455,7 +455,7 @@ export function PrepareBattlerSpriteForRotScale(spriteId: number, objMode: numbe
 /** 1:1 décomp `ResetSpriteRotScale` (battle_anim_mons.c:1309). */
 export function ResetSpriteRotScale(spriteId: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   SetSpriteRotScale(spriteId, 0x100, 0x100, 0);
   // 1:1 décomp : ST_OAM_AFFINE_NORMAL (1), PAS OFF — et CalcCenterToCornerVec
@@ -480,7 +480,7 @@ export function ResetSpriteRotScale(spriteId: number): void {
  *  affine (oam.affineMode & 1). */
 export function TrySetSpriteRotScale(spriteId: number, recalcCenterVector: boolean, xScale: number, yScale: number, rotation: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   if (((sprite.affineMode ?? 0) & 1) === 0) return;
   sprite.affineAnimPaused = true;
@@ -496,7 +496,7 @@ export function TrySetSpriteRotScale(spriteId: number, recalcCenterVector: boole
 export function ResetSpriteRotScale_PreserveAffine(spriteId: number): void {
   TrySetSpriteRotScale(spriteId, true, 0x100, 0x100, 0);
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as RotScaleSprite | undefined;
   if (sprite) sprite.affineAnimPaused = false;
 }
 
@@ -504,7 +504,7 @@ export function ResetSpriteRotScale_PreserveAffine(spriteId: number): void {
  *  (battle_anim_mons.c:1342) : y2 = |c| >> 3 de la matrice courante. */
 export function SetBattlerSpriteYOffsetFromRotation(spriteId: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as (RotScaleSprite & { y2?: number }) | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as (RotScaleSprite & { y2?: number }) | undefined;
   if (!rt || !sprite) return;
   const m = (rt as unknown as { gba?: { affineParams?: Array<{ pc?: number }> } }).gba?.affineParams?.[sprite.matrixNum ?? 0];
   let c = m?.pc ?? 0;
@@ -525,9 +525,9 @@ function _projBattlerSprite(battler: number): DecompSprite | undefined {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
     getBattlerMonSpriteId?: (b: number) => number;
   } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, DecompSprite> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<DecompSprite | undefined> } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? rt?.gSprites?.get(id) : undefined;
+  return id !== undefined && id >= 0 ? rt?.gSprites?.[id] : undefined;
 }
 
 /** 1:1 `TranslateAnimSpriteToTargetMonLocation` : args [startXOff, startYOff,
@@ -567,13 +567,13 @@ export function CloneBattlerSpriteWithBlend(animBattler: number): number {
   if (b < 0) return -1;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(b);
-  const rt = getRuntime() as unknown as { gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number }> } } | null;
-  const mon = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  const rt = getRuntime() as unknown as { gSprites?: Array<{ x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number }> } } | null;
+  const mon = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
   if (!mon || !rt) return -1;
   const monOam = rt.gba?.oam[mon.oamIndex];
   const cloneId = rt.CreateSpriteInline?.({ oam: { shape: monOam?.shape ?? 0, size: monOam?.size ?? 3, priority: monOam?.priority ?? 2 }, images: [] } as never, mon.x + mon.x2, mon.y + mon.y2, mon.subpriority ?? 3) ?? -1;
   if (cloneId < 0) return -1;
-  const clone = rt.gSprites?.get(cloneId);
+  const clone = rt.gSprites?.[cloneId];
   const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
   if (cloneOam && monOam) {
     cloneOam.tileId = monOam.tileId;
@@ -592,7 +592,9 @@ export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void 
   if (!rt) return;
   let id = typeof spriteOrId === 'number' ? spriteOrId : -1;
   if (id < 0) {
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if ((sp as unknown) === spriteOrId) { id = sid as number; break; }
     }
   }
@@ -619,7 +621,7 @@ export function AnimTask_BlendMonInAndOut(task: _F1Task): void {
   const spriteId = _f1SpriteId(args[0]);
   if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   const rt = getRuntime();
-  const sp = rt?.gSprites?.get(spriteId) as { oamIndex: number } | undefined;
+  const sp = rt?.gSprites?.[spriteId] as { oamIndex: number } | undefined;
   const oam = sp ? (rt as unknown as { gba: { oam: Array<{ paletteBank: number }> } }).gba.oam[sp.oamIndex] : undefined;
   task.data[0] = 256 + (oam?.paletteBank ?? 0) * 16 + 1; // OBJ_PLTT_ID + 1
   AnimTask_BlendPalInAndOutSetup(task, args);
@@ -697,7 +699,7 @@ export function PrepareAffineAnimInTaskData(task: _TaskLike, spriteId: number, c
  *  réduction verticale (le mon « s'écrase » au sol, pas au centre). */
 export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as { y2: number; oamIndex: number } | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as { y2: number; oamIndex: number } | undefined;
   if (!rt || !sprite) return;
   const MON_PIC_HEIGHT = 64;
   const v = MON_PIC_HEIGHT; // GetBattlerYDeltaFromSpriteId ≈ 0 (dette douce species delta)
@@ -715,7 +717,7 @@ export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
  *  SetBattlerSpriteYOffsetFromYScale : GetBattlerYDeltaFromSpriteId ≈ 0). */
 export function SetBattlerSpriteYOffsetFromOtherYScale(spriteId: number, _otherSpriteId: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as { y2: number; oamIndex: number } | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as { y2: number; oamIndex: number } | undefined;
   if (!rt || !sprite) return;
   const MON_PIC_HEIGHT = 64;
   const v = MON_PIC_HEIGHT; // - GetBattlerYDeltaFromSpriteId(other)*2 (≈ 0)
@@ -761,7 +763,7 @@ export function RunAffineAnimFromTaskData(task: _TaskLike): boolean {
       }
     }
     const rt = getRuntime();
-    const sprite = rt?.gSprites?.get(task.data[15]) as { y2: number } | undefined;
+    const sprite = rt?.gSprites?.[task.data[15]] as { y2: number } | undefined;
     if (sprite) sprite.y2 = 0;
     ResetSpriteRotScale(task.data[15]);
     _taskAffineCmds.delete(task.taskId);
@@ -1066,8 +1068,8 @@ function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
   const spriteId = CloneBattlerSpriteWithBlend(0);
   if (spriteId < 0) return;
   const rt = getRuntime();
-  const clone = rt?.gSprites?.get(spriteId) as { data: number[]; x2: number; oamIndex: number; callback: unknown; subpriority?: number } | undefined;
-  const atk = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
+  const clone = rt?.gSprites?.[spriteId] as { data: number[]; x2: number; oamIndex: number; callback: unknown; subpriority?: number } | undefined;
+  const atk = rt?.gSprites?.[task.data[0]] as { x2: number } | undefined;
   if (!clone) return;
   const oam = (rt as unknown as { gba?: { oam: Array<{ priority: number; paletteBank: number }> } }).gba?.oam[clone.oamIndex];
   if (oam) {
@@ -1103,7 +1105,7 @@ function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
   task.data[2] = 0;                                                 // tState
   task.data[3] = 0;                                                 // tCounter
   const rt = getRuntime();
-  const atkSp = rt?.gSprites?.get(task.data[0]) as { x2: number; oamIndex: number } | undefined;
+  const atkSp = rt?.gSprites?.[task.data[0]] as { x2: number; oamIndex: number } | undefined;
   // 1:1 décomp (bug ROM conservé) : x2 -= spriteId.
   if (atkSp) atkSp.x2 -= task.data[0];
   task.data[4] = _pwSpriteApi().AllocSpritePalette?.(_PW_TAG_BENT_SPOON) ?? 0xFF;  // tPaletteNum
@@ -1131,7 +1133,7 @@ function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
 /** 1:1 `AnimTask_AttackerPunchWithTrace_Step` (battle_anim_mons.c.c:2437). */
 function _AttackerPunchWithTrace_Step(task: _PwTask): void {
   const rt = getRuntime();
-  const atkSp = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
+  const atkSp = rt?.gSprites?.[task.data[0]] as { x2: number } | undefined;
   switch (task.data[2]) {
     case 0:
       _CreateBattlerTrace(task, task.taskId);
@@ -1238,7 +1240,7 @@ function _pmVisible(battler: number): boolean {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(battler);
   if (sid === undefined || sid === 0xFF) return false;
-  const sp = getRuntime()?.gSprites?.get(sid) as { invisible?: boolean; inUse?: boolean } | undefined;
+  const sp = getRuntime()?.gSprites?.[sid] as { invisible?: boolean; inUse?: boolean } | undefined;
   return !!sp && sp.inUse !== false && !sp.invisible;
 }
 /** 1:1 `GetBattlePalettesMask` (battle_anim_mons.c.c:1402). */
@@ -1309,7 +1311,7 @@ export function UpdateEruptAnimTask(task: _TaskLike): number {
   if (task.data[8]) {
     SetBattlerSpriteYOffsetFromYScale(task.data[15]);
   } else {
-    const sp = getRuntime()?.gSprites?.get(task.data[15]) as { y2: number } | undefined;
+    const sp = getRuntime()?.gSprites?.[task.data[15]] as { y2: number } | undefined;
     if (sp) sp.y2 = 0;
   }
   return task.data[8];
@@ -1327,7 +1329,7 @@ export function UpdateEruptAnimTask(task: _TaskLike): number {
 export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _species: number): number {
   const rt = getRuntime();
   void battler;
-  const src = rt?.gSprites?.get(spriteId) as { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number } | undefined;
+  const src = rt?.gSprites?.[spriteId] as { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number } | undefined;
   if (!rt || !src) return -1;
   const gba = (rt as unknown as { gba: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number; hFlip?: boolean; vFlip?: boolean }> } }).gba;
   const srcOam = gba.oam[src.oamIndex];
@@ -1336,7 +1338,7 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
     src.x, src.y, src.subpriority ?? 3,
   ) ?? -1;
   if (newId < 0) return -1;
-  const clone = rt.gSprites?.get(newId) as { x2: number; y2: number; oamIndex: number; callback: unknown; objMode?: number } | undefined;
+  const clone = rt.gSprites?.[newId] as { x2: number; y2: number; oamIndex: number; callback: unknown; objMode?: number } | undefined;
   const cloneOam = clone ? gba.oam[clone.oamIndex] : undefined;
   if (clone && cloneOam && srcOam) {
     clone.x2 = src.x2;
@@ -1439,7 +1441,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
   if (!tiles || tiles.length < 0x800) return -1;
   const rt = getRuntime() as unknown as {
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
-    gSprites?: Map<number, { oamIndex: number }>;
+    gSprites?: Array<{ oamIndex: number } | undefined>;
     gba?: { oam: Array<{ paletteBank: number }> };
     gPlttBufferUnfaded?: { set: (i: number, v: number) => void };
     gPlttBufferFaded?: { set: (i: number, v: number) => void };
@@ -1475,6 +1477,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
 // Leurs maisons C : battle_anim_mons.c.c:468 / :593 / :551 / :1155. fire.ts (et tout autre
 // fichier d'effets) consomme par import — zero transcription locale residuelle.
 import { Sin as _tgSin, Cos as _tgCos } from './trig';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 /** 1:1 TranslateSpriteInGrowingCircle (battle_anim_mons.c.c:468). */
 export function TranslateSpriteInGrowingCircle(sprite: DecompSprite): void {
   const sp = sprite as unknown as { data: number[]; x2: number; y2: number };

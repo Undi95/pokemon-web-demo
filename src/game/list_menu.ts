@@ -1118,8 +1118,8 @@ function _freeSpritePaletteByTag(tag: number): void {
 
 /** Accès runtime sprite (1:1 `gSprites[id]`). */
 function _getSprite(spriteId: number): { x: number; y: number; x2: number; y2: number; data: number[]; callback: ((s: unknown) => void) | null } | undefined {
-  const rt = getRuntime() as unknown as { gSprites?: Map<number, unknown> } | null;
-  return rt?.gSprites?.get(spriteId) as { x: number; y: number; x2: number; y2: number; data: number[]; callback: ((s: unknown) => void) | null } | undefined;
+  const rt = getRuntime() as unknown as { gSprites?: Array<unknown | undefined> } | null;
+  return rt?.gSprites?.[spriteId] as { x: number; y: number; x2: number; y2: number; data: number[]; callback: ((s: unknown) => void) | null } | undefined;
 }
 
 /** 1:1 décomp `static u8 ListMenuAddRedOutlineCursorObject(struct CursorStruct
@@ -1403,8 +1403,8 @@ function _getSpriteFull(spriteId: number): {
   x: number; y: number; x2: number; y2: number; data: number[];
   invisible: boolean; callback: ((s: unknown) => void) | null;
 } | undefined {
-  const rt = getRuntime() as unknown as { gSprites?: Map<number, unknown> } | null;
-  return rt?.gSprites?.get(spriteId) as {
+  const rt = getRuntime() as unknown as { gSprites?: Array<unknown | undefined> } | null;
+  return rt?.gSprites?.[spriteId] as {
     x: number; y: number; x2: number; y2: number; data: number[];
     invisible: boolean; callback: ((s: unknown) => void) | null;
   } | undefined;

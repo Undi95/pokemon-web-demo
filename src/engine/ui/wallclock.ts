@@ -536,7 +536,7 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
     affineMode: 1,  // ST_OAM_AFFINE_NORMAL
   });
   _state.spriteIds.minute = minuteSpr.spriteId;
-  const minuteSprObj = rt.gSprites.get(minuteSpr.spriteId);
+  const minuteSprObj = rt.gSprites[minuteSpr.spriteId];
   if (minuteSprObj) {
     minuteSprObj.matrixNum = 0;
     minuteSprObj.affineMode = 1;
@@ -550,7 +550,7 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
     affineMode: 1,
   });
   _state.spriteIds.hour = hourSpr.spriteId;
-  const hourSprObj = rt.gSprites.get(hourSpr.spriteId);
+  const hourSprObj = rt.gSprites[hourSpr.spriteId];
   if (hourSprObj) {
     hourSprObj.matrixNum = 1;
     hourSprObj.affineMode = 1;
@@ -584,7 +584,7 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
 function _tickMinuteHand(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.minute;
   if (sprId < 0) return;
-  const sprite = rt.gSprites.get(sprId);
+  const sprite = rt.gSprites[sprId];
   if (!sprite) return;
   const angle = _state.minuteHandAngle & 0x1FF;  // mask to 0..511 just in case
   const safeAngle = angle % 360;
@@ -600,7 +600,7 @@ function _tickMinuteHand(rt: DecompRuntime): void {
 function _tickHourHand(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.hour;
   if (sprId < 0) return;
-  const sprite = rt.gSprites.get(sprId);
+  const sprite = rt.gSprites[sprId];
   if (!sprite) return;
   const safeAngle = _state.hourHandAngle % 360;
   const sin = Math.trunc(Sin2(safeAngle) / 16);
@@ -621,7 +621,7 @@ function _tickHourHand(rt: DecompRuntime): void {
 function _tickPMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.pm;
   if (sprId < 0) return;
-  const sprite = rt.gSprites.get(sprId);
+  const sprite = rt.gSprites[sprId];
   if (!sprite) return;
   // Hide PM indicator if period is AM (= unused).
   sprite.invisible = _state.period === PERIOD_AM;
@@ -642,7 +642,7 @@ function _tickPMIndicator(rt: DecompRuntime): void {
 function _tickAMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.am;
   if (sprId < 0) return;
-  const sprite = rt.gSprites.get(sprId);
+  const sprite = rt.gSprites[sprId];
   if (!sprite) return;
   // Hide AM indicator if period is PM (= unused).
   sprite.invisible = _state.period !== PERIOD_AM;
@@ -944,21 +944,21 @@ function _freeWallClock(): void {
   const preOpenSet = new Set(_state.preOpenSpriteIds);
   const toDestroy: number[] = [];
   for (let k = 0; k < MAX_SPRITES; k++) {
-    const s = rt.gSprites.get(k);
+    const s = rt.gSprites[k];
     if (s === undefined) continue;
     if (!s.inUse) continue;
     if (preOpenSet.has(k)) continue;  // était actif avant → préserver
     toDestroy.push(k);
   }
   for (const k of toDestroy) {
-    const spr = rt.gSprites.get(k);
+    const spr = rt.gSprites[k];
     if (spr) {
       spr.inUse = false;
       spr.invisible = true;
       const oam = rt.gba.oam[spr.oamIndex];
       if (oam) oam.visible = false;
     }
-    rt.gSprites.delete(k);
+    rt.gSprites[k] = undefined;
   }
   console.log(`[wallclock] _freeWallClock destroyed ${toDestroy.length} sprites (preOpen=${_state.preOpenSpriteIds.length})`);
   // Reset tracked sprite ids.
@@ -1022,7 +1022,7 @@ export function OpenWallClock(mode: Mode): void {
   // tous sprites créés depuis sont destroyed (= cleanup leak OAM zombies).
   _state.preOpenSpriteIds = [];
   for (let k = 0; k < MAX_SPRITES; k++) {
-    const s = rt.gSprites.get(k);
+    const s = rt.gSprites[k];
     if (s !== undefined && s.inUse) _state.preOpenSpriteIds.push(k);
   }
   // 1:1 décomp `SetMainCallback2(CB2_StartWallClock)` pattern : savedCallback

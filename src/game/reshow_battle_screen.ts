@@ -179,7 +179,7 @@ function CB2_ReshowBattleScreenAfterMenu(): void {
             ? g.__battleControllerPlayer?.getBattlerMonSpriteId
             : g.__battleControllerOpponent?.getBattlerMonSpriteId;
           const monId = getId ? getId(battler) : -1;
-          const spr = monId >= 0 ? getRuntime()?.gSprites.get(monId) : undefined;
+          const spr = monId >= 0 ? getRuntime()?.gSprites[monId] : undefined;
           if (spr) (spr as { invisible: boolean }).invisible = isBattlerDataInvisible(battler);
           _reshowBusy = false;
         });

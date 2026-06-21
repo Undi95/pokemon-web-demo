@@ -51,7 +51,7 @@ function _restoreDecompBufferToUnfaded(rt: DecompRuntime): void {
 function _fadeMaskExcludingPlayer(rt: DecompRuntime): number {
   // décomp : gSprites[spriteId].oam.paletteNum. Port : la palette OBJ vit dans
   // l'entrée OAM (rt.gba.oam[oamIndex].paletteBank), pas sur DecompSprite.
-  const sprite = rt.gSprites.get(GetPlayerAvatarSpriteId());
+  const sprite = rt.gSprites[GetPlayerAvatarSpriteId()];
   const palNum = sprite ? (rt.gba.oam[sprite.oamIndex]?.paletteBank ?? 0) : 0;
   return ~(1 << (palNum + 16));
 }

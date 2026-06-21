@@ -36,7 +36,7 @@ function _vItf(): {
 }
 type _RtOam = { tileId?: number; priority?: number; paletteBank?: number };
 type _Rt = {
-  gSprites?: Map<number, _VSprite>;
+  gSprites?: Array<_VSprite | undefined>;
   gba?: { oam?: _RtOam[] };
   AllocOamMatrix?: () => number;
   DestroySprite?: (id: number) => void;
@@ -363,7 +363,7 @@ function AnimThunderWave(sprite: _VSprite): void {
     subpriority: sprite.subpriority ?? 0xFF,
   });
   const second = created && created.spriteId >= 0 && created.spriteId < 64
-    ? rt?.gSprites?.get(created.spriteId) : undefined;
+    ? rt?.gSprites?.[created.spriteId] : undefined;
   if (second) {
     _oamTileNumAdd(second, 8); // gSprites[spriteId].oam.tileNum += 8
     second.callback = _AnimThunderWave_Step_Second;
@@ -456,7 +456,7 @@ function AnimVoltTackleOrbSlide_Step(sprite: _VSprite): void {
       break;
     case 1: {
       sprite.x += sprite.data[7];
-      const mon = sprite.data[6] >= 0 ? _rt()?.gSprites?.get(sprite.data[6]) : undefined;
+      const mon = sprite.data[6] >= 0 ? _rt()?.gSprites?.[sprite.data[6]] : undefined;
       if (mon) mon.x2 += sprite.data[7];
       if (((sprite.x + 80) & 0xFFFF) > 400) DestroySpriteAndMatrix(sprite);
       break;
@@ -549,12 +549,12 @@ function AnimTask_ElectricBolt_Step(task: { taskId: number; data: number[] }): v
     void cs;
     // pattern minimal robuste : créer par le même chemin que les callbacks
     // (CreateSprite système avec le tag du bolt 10011=ANIM_TAG_LIGHTNING ?)
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; oamIndex: number; callback: unknown }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number }> } } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; oamIndex: number; callback: unknown } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number }> } } | undefined;
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
     const tileStart = dg?.GetSpriteTileStartByTag?.(10038) ?? 0xFFFF; // ANIM_TAG_ELECTRIC_BOLT? — si absent, segment invisible (net doux)
     const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 0, priority: 2 }, images: [] } as never, x, y + r12, 2) ?? -1;
     if (sid >= 0) {
-      const spr = rt?.gSprites?.get(sid);
+      const spr = rt?.gSprites?.[sid];
       const oam = spr ? rt?.gba?.oam[spr.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart + r8;
       if (spr) {
@@ -569,7 +569,7 @@ function AnimTask_ElectricBolt_Step(task: { taskId: number; data: number[] }): v
   task.data[10]++;
 }
 function AnimElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam: Array<{ shape: number; size: number }> }; DestroySprite?: (id: number) => void; gSprites?: Map<number, unknown> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam: Array<{ shape: number; size: number }> }; DestroySprite?: (id: number) => void; gSprites?: Array<unknown | undefined> } | undefined;
   const oam = rt?.gba?.oam[sprite.oamIndex];
   if (oam) {
     if (!sprite.data[0]) { oam.shape = 2; oam.size = 0; } // 8x16
@@ -577,7 +577,9 @@ function AnimElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): 
   }
   if (++sprite.data[1] === 15) {
     // DestroySprite(sprite) : retrouver l'id
-    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt?.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
     }
   }
@@ -638,12 +640,12 @@ function _VoltTackleBolt_Step(task: { taskId: number; data: number[] }): void {
   }
 }
 function CreateVoltTackleBolt(task: { taskId: number; data: number[] }): boolean {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
   const tileStart = dg?.GetSpriteTileStartByTag?.(10011) ?? 0xFFFF; // ANIM_TAG_LIGHTNING? net : si absent, bolt invisible doux
   const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, task.data[3], task.data[5], 35) ?? -1;
   if (sid >= 0) {
-    const sp = rt?.gSprites?.get(sid);
+    const sp = rt?.gSprites?.[sid];
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
     if (sp) {
@@ -663,10 +665,12 @@ function CreateVoltTackleBolt(task: { taskId: number; data: number[] }): boolean
 }
 function AnimVoltTackleBolt(sprite: { data: number[] }): void {
   if (++sprite.data[0] > 12) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
     const t = rt?.gTasks?.get(sprite.data[6]);
     if (t) t.data[sprite.data[7]]--;
-    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt?.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
     }
   }
@@ -687,7 +691,7 @@ function _swItf(): { getAttacker?: () => number; getTarget?: () => number; Destr
 }
 function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamShape: number, oamSize: number): number {
   const rt = (globalThis as Record<string, unknown>).__rt as {
-    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+    gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
@@ -697,7 +701,7 @@ function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamSha
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt?.CreateSpriteInline?.({ oam: { shape: oamShape, size: oamSize, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid >= 0) {
-    const sp = rt?.gSprites?.get(sid);
+    const sp = rt?.gSprites?.[sid];
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
@@ -708,8 +712,10 @@ function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamSha
   return sid;
 }
 function _swDestroySelf(sprite: unknown): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
-  for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+  for (let sid = 0; sid < MAX_SPRITES; sid++) {
+    const sp = rt?.gSprites?.[sid];
+    if (sp === undefined) continue;
     if (sp === sprite) { rt?.DestroySprite?.(sid); break; }
   }
 }
@@ -771,8 +777,8 @@ function AnimTask_ShockWaveProgressingBolt(task: _SwTask): void {
 function _CreateShockWaveBoltSprite(task: _SwTask, taskId: number): boolean {
   const sid = _swSpawn('gShockWaveProgressingBoltSpriteTemplate', task.data[6], task.data[7], 35, 0, 1);
   if (sid >= 0) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-    const sp = rt?.gSprites?.get(sid);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+    const sp = rt?.gSprites?.[sid];
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
     if (oam) oam.tileId += task.data[4];
     task.data[4] += task.data[5];
@@ -836,8 +842,8 @@ function AnimTask_ShockWaveLightning(task: _SwTask): void {
 function _CreateShockWaveLightningSprite(task: _SwTask, taskId: number): boolean {
   const sid = _swSpawn('gLightningSpriteTemplate', task.data[13], task.data[14], task.data[12], 0, 2);
   if (sid >= 0) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown }> } | undefined;
-    const sp = rt?.gSprites?.get(sid);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown } | undefined> } | undefined;
+    const sp = rt?.gSprites?.[sid];
     if (sp) {
       sp.data[6] = taskId;
       sp.data[7] = 10;
@@ -867,6 +873,7 @@ _ebRegT({
 // --- VAGUE F45b : ElectricChargingParticles (battle_anim_electric.c.c:805-893) ------------
 // Particules aspirées vers le mon (16 offsets cycliques, vitesse croissante).
 import { InitAnimLinearTranslation as _ecInitLin, AnimTranslateLinear as _ecRunLin } from './battle_anim_mons';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 const _sElecChargeOffsets: ReadonlyArray<readonly [number, number]> = [
   [58, -60], [-56, -36], [8, -56], [-16, 56], [58, -10], [-58, 10], [48, -18], [-8, 56],
@@ -895,8 +902,8 @@ function AnimTask_ElectricChargingParticles_Step(task: _SwTask): void {
       task.data[12] = 0;
       const sid = _swSpawn('gElectricChargingParticlesSpriteTemplate', task.data[14], task.data[15], 2, 0, 1);
       if (sid >= 0) {
-        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown }> } | undefined;
-        const sp = rt?.gSprites?.get(sid);
+        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x: number; y: number; data: number[]; callback: unknown } | undefined> } | undefined;
+        const sp = rt?.gSprites?.[sid];
         if (sp) {
           sp.x += _sElecChargeOffsets[task.data[9]][0];
           sp.y += _sElecChargeOffsets[task.data[9]][1];
@@ -949,7 +956,7 @@ _ebRegT({ AnimTask_ElectricChargingParticles: AnimTask_ElectricChargingParticles
 function AnimTask_VoltTackleAttackerReappear(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; invisible?: boolean }> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; invisible?: boolean } | undefined> } | undefined;
   switch (task.data[0]) {
     case 0: {
       const atk = itf.getAttacker?.() ?? 0;
@@ -957,7 +964,7 @@ function AnimTask_VoltTackleAttackerReappear(task: { taskId: number; data: numbe
       if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
       if ((atk & 1) === 0) { task.data[14] = -32; task.data[13] = 2; }
       else { task.data[14] = 32; task.data[13] = -2; }
-      const sp = rt?.gSprites?.get(task.data[15]);
+      const sp = rt?.gSprites?.[task.data[15]];
       if (sp) sp.x2 = task.data[14];
       task.data[0]++;
       break;
@@ -965,7 +972,7 @@ function AnimTask_VoltTackleAttackerReappear(task: { taskId: number; data: numbe
     case 1:
       if (++task.data[1] > 1) {
         task.data[1] = 0;
-        const sp = rt?.gSprites?.get(task.data[15]);
+        const sp = rt?.gSprites?.[task.data[15]];
         if (sp) sp.invisible = !sp.invisible;
         if (task.data[14]) {
           task.data[14] += task.data[13];
@@ -978,13 +985,13 @@ function AnimTask_VoltTackleAttackerReappear(task: { taskId: number; data: numbe
     case 2:
       if (++task.data[1] > 1) {
         task.data[1] = 0;
-        const sp = rt?.gSprites?.get(task.data[15]);
+        const sp = rt?.gSprites?.[task.data[15]];
         if (sp) sp.invisible = !sp.invisible;
         if (++task.data[2] === 8) task.data[0]++;
       }
       break;
     case 3: {
-      const sp = rt?.gSprites?.get(task.data[15]);
+      const sp = rt?.gSprites?.[task.data[15]];
       if (sp) sp.invisible = false;
       itf.DestroyAnimVisualTask?.(task.taskId);
       break;

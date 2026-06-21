@@ -908,7 +908,7 @@ function AnimatePartySlot(slotIdx: number, animNum: number): void {
       const rt = getRuntime();
       const pkId = _pokeballOamBySlot[slotIdx];
       if (rt && pkId >= 0) {
-        const spr = rt.gSprites.get(pkId);
+        const spr = rt.gSprites[pkId];
         if (spr) {
           const oam = rt.gba.oam[spr.oamIndex];
           if (oam) {
@@ -930,7 +930,7 @@ function AnimatePartySlot(slotIdx: number, animNum: number): void {
     // 1:1 décomp PartyMenuStartSpriteAnim. Frame 0 = tile 0..15, frame 1 = tile 16..31.
     const rt = getRuntime();
     if (!rt || _cancelButtonOamId < 0) return;
-    const spr = rt.gSprites.get(_cancelButtonOamId);
+    const spr = rt.gSprites[_cancelButtonOamId];
     if (!spr) return;
     const oam = rt.gba.oam[spr.oamIndex];
     if (!oam) return;
@@ -1152,7 +1152,7 @@ function _updatePartyMonAilmentGfx(slot: number): void {
   const rt = getRuntime();
   const id = _statusOamBySlot[slot];
   if (!rt || id === undefined || id < 0) return;
-  const spr = rt.gSprites.get(id);
+  const spr = rt.gSprites[id];
   if (!spr) return;
   const mon = _slotMon(slot);
   const ailment = _ailmentFromStatus(mon);
@@ -1211,7 +1211,7 @@ function _updatePartyMonHeldItem(slot: number): void {
   const rt = getRuntime();
   const id = _itemOamBySlot[slot];
   if (!rt || id === undefined || id < 0) return;
-  const spr = rt.gSprites.get(id);
+  const spr = rt.gSprites[id];
   if (!spr) return;
   const mon = _slotMon(slot);
   const item = mon?.heldItem;
@@ -1328,9 +1328,9 @@ function _freePartyMenu(): void {
   for (let b = 0; b < 6; b++) FreeSpritePaletteByTag(TAG_ICON_PAL_RESERVE + b);
   const freeOam = (id: number) => {
     if (!rt || id < 0) return;
-    const spr = rt.gSprites.get(id);
+    const spr = rt.gSprites[id];
     if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
-    rt.gSprites.delete(id);
+    rt.gSprites[id] = undefined;
   };
   for (const id of _iconOamBySlot) freeOam(id);
   _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
@@ -1494,7 +1494,7 @@ const sMonIconAnims: _IconAnimCmd[][] = [
 function _setIconFrame(slot: number, img: number): void {
   const rt = getRuntime(); if (!rt) return;
   const id = _iconOamBySlot[slot]; if (id < 0) return;
-  const spr = rt.gSprites.get(id); if (!spr) return;
+  const spr = rt.gSprites[id]; if (!spr) return;
   const oam = rt.gba.oam[spr.oamIndex]; if (!oam) return;
   const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + slot * ICON_TILES_PER_SLOT;
   oam.tileId = slotTileBase + img * ICON_TILES_PER_FRAME;
@@ -1547,7 +1547,7 @@ function _updateMonIconFrame(slot: number): number {
 function _animateSelectedPartyIcon(slot: number, animNum: number): void {
   const rt = getRuntime(); if (!rt) return;
   const id = _iconOamBySlot[slot]; if (id < 0) return;
-  const spr = rt.gSprites.get(id); if (!spr) return;
+  const spr = rt.gSprites[id]; if (!spr) return;
   if (spr.data) spr.data[0] = 0; // 1:1 gSprites[spriteId].data[0] = 0;
   if (animNum === 0) {
     if (spr.x === 16) { spr.x2 = 0;  spr.y2 = -4; } // slot 0 = grande box gauche
@@ -1576,7 +1576,7 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
     if (_iconOamBySlot[i] < 0) continue;
     const animCmd = _updateMonIconFrame(i);
     if (_iconMode[i] === 1 && animCmd !== 0) {
-      const spr = rt.gSprites.get(_iconOamBySlot[i]);
+      const spr = rt.gSprites[_iconOamBySlot[i]];
       if (spr) spr.y2 = (animCmd & 1) ? -3 : 1;
     }
   }
@@ -1811,8 +1811,8 @@ function _switchMenuBoxSprites(arr: number[], i: number, j: number): void {
   const a = arr[i], b = arr[j];
   arr[i] = b; arr[j] = a;
   if (!rt) return;
-  const sa = rt.gSprites.get(arr[i]);   // = ex-b
-  const sb = rt.gSprites.get(arr[j]);   // = ex-a
+  const sa = rt.gSprites[arr[i]];   // = ex-b
+  const sb = rt.gSprites[arr[j]];   // = ex-a
   if (!sa || !sb) return;
   const x1 = sa.x, y1 = sa.y, x2 = sa.x2, y2 = sa.y2;
   sa.x = sb.x; sa.y = sb.y; sa.x2 = sb.x2; sa.y2 = sb.y2;
@@ -1953,10 +1953,10 @@ function _moveAndBufferPartySlot(rectSrc: Uint16Array, x: number, y: number, wid
 function _movePartyMenuBoxSprites(slot: number, offset: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const pk = rt.gSprites.get(_pokeballOamBySlot[slot]);
-  const ic = rt.gSprites.get(_iconOamBySlot[slot]);
-  const st = rt.gSprites.get(_statusOamBySlot[slot]);
-  const it = rt.gSprites.get(_itemOamBySlot[slot]);
+  const pk = rt.gSprites[_pokeballOamBySlot[slot]];
+  const ic = rt.gSprites[_iconOamBySlot[slot]];
+  const st = rt.gSprites[_statusOamBySlot[slot]];
+  const it = rt.gSprites[_itemOamBySlot[slot]];
   if (pk) pk.x2 += offset * 8;
   if (ic) ic.x2 += offset * 8;
   if (st) st.x2 += offset * 8;   // 1:1 :2912 statusSpriteId.x2 += offset*8

@@ -1617,7 +1617,7 @@ export function StartPokemonLogoShine(mode: number): void {
   // chaque frame → shine sprites rendaient en NORMAL (= grosse barre blanche
   // visible) au lieu d'OBJ_WINDOW (= mask invisible pour winObj BG brightness).
   function setObjWindow(spriteId: number): void {
-    const sprite = r.gSprites.get(spriteId);
+    const sprite = r.gSprites[spriteId];
     if (sprite) {
       sprite.objMode = ST_OAM_OBJ_WINDOW as 0 | 1 | 2;
       r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
@@ -1627,13 +1627,13 @@ export function StartPokemonLogoShine(mode: number): void {
   if (mode === SHINE_MODE_SINGLE_NO_BG_COLOR || mode === SHINE_MODE_SINGLE) {
     const spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
     setObjWindow(spriteId);
-    const sprite = r.gSprites.get(spriteId);
+    const sprite = r.gSprites[spriteId];
     if (sprite) sprite.data[0] = mode;  // sMode alias
   } else if (mode === SHINE_MODE_DOUBLE) {
     // Invisible sprite that updates BG color via SpriteCB_PokemonLogoShine
     let spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
     setObjWindow(spriteId);
-    let sprite = r.gSprites.get(spriteId);
+    let sprite = r.gSprites[spriteId];
     if (sprite) {
       sprite.data[0] = mode;
       sprite.invisible = true;
@@ -1643,11 +1643,11 @@ export function StartPokemonLogoShine(mode: number): void {
       ?? r.spriteCallbacks.get('SpriteCB_PokemonLogoShine_Fast');
     spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
     setObjWindow(spriteId);
-    sprite = r.gSprites.get(spriteId);
+    sprite = r.gSprites[spriteId];
     if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
     spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', -80, 68);
     setObjWindow(spriteId);
-    sprite = r.gSprites.get(spriteId);
+    sprite = r.gSprites[spriteId];
     if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
   }
 }
@@ -2011,7 +2011,7 @@ const _SUB_W: ReadonlyArray<ReadonlyArray<number>> = [
 
 export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArray<NamingSubsprite>): void {
   const r = rt();
-  const sprite = r.gSprites.get(spriteId);
+  const sprite = r.gSprites[spriteId];
   if (!sprite) return;
   // Free any previous child OAM entries for this sprite.
   const prev = _spriteSubsprites.get(spriteId);
@@ -2025,7 +2025,7 @@ export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArr
   // Allocate OAM slots for each subsprite (skip slots used by sprites in use).
   const taken = new Set<number>();
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = r.gSprites.get(i);
+    const s = r.gSprites[i];
     if (s !== undefined && s.inUse) taken.add(s.oamIndex);
   }
   for (const subs of _spriteSubsprites.values()) {
@@ -2074,7 +2074,7 @@ export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArr
 export function syncSubspriteOam(): void {
   const r = rt();
   for (const [spriteId, info] of _spriteSubsprites) {
-    const sprite = r.gSprites.get(spriteId);
+    const sprite = r.gSprites[spriteId];
     if (!sprite || !sprite.inUse) continue;
     const primaryOam = r.gba.oam[sprite.oamIndex];
     // 1:1 décomp `AddSubspritesToOamBuffer` (sprite.c:1712-1735) : hFlip lu sur le
@@ -2165,7 +2165,7 @@ export function clearSubspriteTable(spriteId: number): void {
     if (oam) oam.visible = false;
   }
   _spriteSubsprites.delete(spriteId);
-  const sprite = r.gSprites.get(spriteId);
+  const sprite = r.gSprites[spriteId];
   if (sprite) sprite.subspriteMode = 'off';
 }
 
@@ -2595,7 +2595,7 @@ export function CreatePokeballSpriteToReleaseMon(
   //   gSprites[monSpriteId].invisible = TRUE;
   // The sFinalMonX/Y are later used by SpriteCB_ReleasedMonFlyOut to
   // interpolate the mon back to its final target position via a sin arc.
-  const monSprite = r.gSprites.get(monSpriteId);
+  const monSprite = r.gSprites[monSpriteId];
   let finalMonX = x, finalMonY = y;
   if (monSprite) {
     finalMonX = monSprite.x;
@@ -2623,7 +2623,7 @@ export function CreatePokeballSpriteToReleaseMon(
     const mainTask = r.gTasks.get(mainTaskId);
     if (mainTask) {
       const birchSpriteId = mainTask.data[8];
-      const birchSprite = r.gSprites.get(birchSpriteId);
+      const birchSprite = r.gSprites[birchSpriteId];
       if (birchSprite) {
         birchOamIdx = birchSprite.oamIndex;
         birchPrioritySaved = r.gba.oam[birchOamIdx]?.priority ?? 0;
@@ -2662,7 +2662,7 @@ export function CreatePokeballSpriteToReleaseMon(
   //
   // No cry for non-battle (= 1:1 décomp pokeball.c:761 `if (gMain.inBattle)`).
   const TILES_PER_FRAME = 4;
-  const ballSprite = r.gSprites.get(ballSpriteId);
+  const ballSprite = r.gSprites[ballSpriteId];
   if (!ballSprite) return ballSpriteId;
   ballSprite.data[0] = delay;
   ballSprite.data[7] = finalMonX;
@@ -2682,7 +2682,7 @@ export function CreatePokeballSpriteToReleaseMon(
   ballSprite.callback = (sprite, runtime) => {
     if (sprite.data[0] > 0) { sprite.data[0]--; return; }
     const ball = sprite;
-    const m = runtime.gSprites.get(monSpriteId);
+    const m = runtime.gSprites[monSpriteId];
     // Ball "open" anim frame (= StartSpriteAnim 1, ball.png frame index 2 = 8 tiles).
     const ballOam = runtime.gba.oam[ball.oamIndex];
     if (ballOam) ballOam.tileId = tileBase + TILES_PER_FRAME * 2;
@@ -2741,7 +2741,7 @@ function SpriteCB_ReleasedMonFlyOut_Birch(sprite: DecompSprite, runtime: DecompR
   // for explicit decomp-style indexing.
   const monSpriteId = (ball as DecompSprite & { _monSpriteId?: number })._monSpriteId ?? -1;
   if (monSpriteId < 0) return;
-  const m = runtime.gSprites.get(monSpriteId);
+  const m = runtime.gSprites[monSpriteId];
   if (!m) return;
   const finalMonX = ball.data[7];
   const finalMonY = ball.data[8];

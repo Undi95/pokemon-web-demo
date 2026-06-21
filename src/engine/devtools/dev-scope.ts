@@ -874,12 +874,12 @@ function _sprites(filter?: 'visible' | 'invisible' | 'all'): Array<Record<string
     matrixNum?: number;
     callback?: { name?: string } | null;
   };
-  const dev = _g<{ _rt?: { gSprites?: Map<number, SpriteShape> } }>('dev');
+  const dev = _g<{ _rt?: { gSprites?: Array<SpriteShape | undefined> } }>('dev');
   const sprites = dev?._rt?.gSprites;
   if (!sprites) return [];
   const out: Array<Record<string, unknown>> = [];
   sprites.forEach((s, id) => {
-    if (!s.inUse) return;
+    if (!s || !s.inUse) return;
     const isInvisible = !!s.invisible;
     if (mode === 'visible' && isInvisible) return;
     if (mode === 'invisible' && !isInvisible) return;

@@ -73,8 +73,8 @@ function _vItf(): {
 /** 1:1 `AnimVibrateBattlerBack_Step` (.c:1324-1338) — secoue le sprite CIBLE
  *  (x2 ±data[1] alterné) puis remet x2=0 et se détruit. */
 function AnimVibrateBattlerBack_Step(sprite: _VSprite): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
-  const tgtSp = rt?.gSprites?.get(sprite.data[2]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number } | undefined> } | undefined;
+  const tgtSp = rt?.gSprites?.[sprite.data[2]];
   if (tgtSp) tgtSp.x2 += sprite.data[1];
   sprite.data[1] = -sprite.data[1];
   if (sprite.data[0] === 0) {
@@ -1312,8 +1312,8 @@ function AnimTask_Splash(task: _SpTask): void {
   AnimTask_Splash_Step(task);
 }
 function AnimTask_Splash_Step(task: _SpTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites: Map<number, { y2: number }> } | undefined;
-  const sprite = rt?.gSprites?.get(task.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites: Array<{ y2: number } | undefined> } | undefined;
+  const sprite = rt?.gSprites?.[task.data[0]];
   if (!sprite) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   switch (task.data[1]) {
     case 0:
@@ -1360,8 +1360,8 @@ function AnimTask_GrowAndShrink_Step(task: _SpTask): void {
  *  le mon s'étire vers le haut (table affine) en tremblant x2 ±4. */
 function _StretchUp(task: _SpTask, animBattler: number): void {
   const spriteId = _spBattlerSpriteId(animBattler);
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[spriteId];
   if (!sp || spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   if (++task.data[0] === 1) {
     _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnims_StretchBattlerUp']);
@@ -1405,8 +1405,8 @@ function AnimTask_ThrashMoveMonHorizontal_Step(task: _SpTask): void {
  *  bob y ±2 toutes les 3 frames. ATTENTION : modifie x/y ABSOLUS du mon (1:1). */
 function AnimTask_ThrashMoveMonVertical(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0);
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x: number; y: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[spriteId];
   if (!sp || spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   task.data[0] = spriteId;
   task.data[1] = 0;
@@ -1423,8 +1423,8 @@ function AnimTask_ThrashMoveMonVertical(task: _SpTask): void {
   task.func = AnimTask_ThrashMoveMonVertical_Step;
 }
 function AnimTask_ThrashMoveMonVertical_Step(task: _SpTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x: number; y: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[0]];
   if (!sp) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   if (++task.data[7] > 2) {
     task.data[7] = 0;
@@ -1467,8 +1467,8 @@ function AnimTask_Withdraw(task: _SpTask): void {
 function AnimTask_Withdraw_Step(task: _SpTask): void {
   const itf = _spItf2() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const spriteId = task.data[15];
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ y2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[spriteId];
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void; ResetSpriteRotScale?: (id: number) => void } | undefined;
   const side = ((itf.getAttacker?.() ?? 0) & 1) === 0;
@@ -1565,8 +1565,8 @@ function AnimTask_ExtremeSpeedImpact(task: _SpTask): void {
 }
 function AnimTask_ExtremeSpeedImpact_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[15]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[15]];
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   switch (task.data[0]) {
     case 0:
@@ -1610,8 +1610,8 @@ function AnimTask_ExtremeSpeedMonReappear(task: _SpTask): void {
 }
 function AnimTask_ExtremeSpeedMonReappear_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[15]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[15]];
   if (!sp) { console.warn('[ExSpeedReappear] sprite', task.data[15], 'ABSENT → destroy précoce (mon reste invisible !)'); itf.DestroyAnimVisualTask?.(task.taskId); return; }
   if (task.data[0] === 0 && ++task.data[1] > task.data[4]) {
     task.data[1] = 0;
@@ -1638,8 +1638,8 @@ function AnimTask_AttackerStretchAndDisappear(task: _SpTask): void {
 }
 function AnimTask_AttackerStretchAndDisappear_Step(task: _SpTask): void {
   if (!_spRun(task)) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; invisible?: boolean }> } | undefined;
-    const sp = rt?.gSprites?.get(task.data[0]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ y2: number; invisible?: boolean } | undefined> } | undefined;
+    const sp = rt?.gSprites?.[task.data[0]];
     if (sp) { sp.y2 = 0; sp.invisible = true; }
     _spItf2().DestroyAnimVisualTask?.(task.taskId);
   }
@@ -1666,8 +1666,10 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
   // chaque dust vit ~40f (l'anim ROM 5×8f), purge par âge global.
   task.data[9]++;
   if (task.data[9] > 40 && task.data[13] > 0) {
-    const rtp = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { callback?: unknown }>; DestroySprite?: (i: number) => void } | undefined;
-    for (const [sid, sp2] of rtp?.gSprites ?? new Map()) {
+    const rtp = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ callback?: unknown } | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp2 = rtp?.gSprites?.[sid];
+      if (sp2 === undefined) continue;
       if ((sp2 as { callback?: unknown }).callback === _AnimSpeedDust) {
         rtp?.DestroySprite?.(sid);
         if (--task.data[13] <= 0) break;
@@ -1698,14 +1700,14 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
     case 0:
       if (++task.data[1] > 4) {
         task.data[1] = 0;
-        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
         const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gSpeedDustSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
         if (sid >= 0) {
-          const sp = rt?.gSprites?.get(sid);
+          const sp = rt?.gSprites?.[sid];
           const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
           if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
           if (sp) {
@@ -1734,12 +1736,14 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
   }
 }
 function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded?: boolean }): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
   const t = rt?.gTasks?.get(sprite.data[0]);
   sprite.invisible = !!(t?.data[5]);
   if (sprite.animEnded || (sprite.data[7] = (sprite.data[7] ?? 0) + 1) > 40) {
     if (t) t.data[sprite.data[1]]--;
-    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt?.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
     }
   }
@@ -2019,11 +2023,11 @@ function _ggSpriteId(): number {
  *  restore = no-op net : le snapshot du Launch restaure en fin de move). */
 function _ggGrayscale(spriteId: number): void {
   const rt = (globalThis as Record<string, unknown>).__rt as {
-    gSprites?: Map<number, { oamIndex: number }>;
+    gSprites?: Array<{ oamIndex: number } | undefined>;
     gba?: { oam: Array<{ paletteBank: number }> };
     gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
   } | undefined;
-  const sp = rt?.gSprites?.get(spriteId);
+  const sp = rt?.gSprites?.[spriteId];
   const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
   const pf = rt?.gPlttBufferFaded;
   if (pal < 0 || !pf?.get || !pf.set) return;
@@ -2153,8 +2157,8 @@ function AnimTask_Minimize_Step(task: _MzTask): void {
       break;
     case 5: {
       mons.ResetSpriteRotScale?.(task.data[0]);
-      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number }> } | undefined;
-      const sp = rt?.gSprites?.get(task.data[15] || task.data[0]);
+      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ y2: number } | undefined> } | undefined;
+      const sp = rt?.gSprites?.[task.data[15] || task.data[0]];
       if (sp) sp.y2 = 0;
       _spItf2().DestroyAnimVisualTask?.(task.taskId);
       break;
@@ -2170,12 +2174,12 @@ function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
   const spriteId = clone ? clone(0) : -1;
   if (spriteId < 0) return;
   const rt = (globalThis as Record<string, unknown>).__rt as {
-    gSprites?: Map<number, { data: number[]; subpriority?: number; affineAnimPaused?: boolean; oamIndex: number; callback: unknown; matrixNum?: number; affineMode?: number; centerToCornerVecX?: number; centerToCornerVecY?: number }>;
+    gSprites?: Array<{ data: number[]; subpriority?: number; affineAnimPaused?: boolean; oamIndex: number; callback: unknown; matrixNum?: number; affineMode?: number; centerToCornerVecX?: number; centerToCornerVecY?: number } | undefined>;
     gba?: { oam: Array<{ objMode: number; affineMode: number; matrixNum: number; shape: number; size: number }> };
   } | undefined;
   const alloc = (_mzMons() as { AllocOamMatrix?: () => number }).AllocOamMatrix;
   const matrixNum = alloc ? alloc() : -1;
-  const sp = rt?.gSprites?.get(spriteId);
+  const sp = rt?.gSprites?.[spriteId];
   if (!sp) return;
   if (matrixNum < 0 || matrixNum === 0xFF) {
     (_mzMons() as { DestroySpriteWithActiveSheet?: (id: number) => void }).DestroySpriteWithActiveSheet?.(spriteId);
@@ -2232,7 +2236,7 @@ function _acItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTa
 }
 type _AcSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
 function _acRt(): {
-  gSprites?: Map<number, _AcSprite>;
+  gSprites?: Array<_AcSprite | undefined>;
   gTasks?: Map<number, { data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -2299,7 +2303,7 @@ function _AirCutterProjectileStep1(task: _AcTask): void {
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
     const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
     if (sid >= 0) {
-      const sp = rt.gSprites?.get(sid);
+      const sp = rt.gSprites?.[sid];
       const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart;
@@ -2383,7 +2387,9 @@ function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
     const rt = _acRt();
     const t = rt.gTasks?.get(sprite.data[7]);
     if (t) t.data[1]--;
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }
@@ -2400,6 +2406,7 @@ import {
   LoadAnimBgPalette as _hbLoadPal,
   ClearBattleAnimBg as _hbClearBg,
 } from '../engine/battle/battle-anim-interpreter';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 type _HbTask = { taskId: number; data: number[]; func?: unknown };
 function _hbItf(): { DestroyAnimVisualTask?: (id: number) => void } {

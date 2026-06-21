@@ -58,7 +58,7 @@ type AnimSprite = {
   spriteId?: number; oamIndex?: number;
 };
 
-function _rt(): { gSprites?: Map<number, AnimSprite>; DestroySprite?: (id: number) => void } | undefined {
+function _rt(): { gSprites?: Array<AnimSprite | undefined>; DestroySprite?: (id: number) => void } | undefined {
   return (globalThis as Record<string, unknown>).__rt as never;
 }
 function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
@@ -69,7 +69,7 @@ function _battlerSprite(battler: number): AnimSprite | undefined {
     getBattlerMonSpriteId?: (b: number) => number;
   } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? _rt()?.gSprites?.get(id) : undefined;
+  return id !== undefined && id >= 0 ? _rt()?.gSprites?.[id] : undefined;
 }
 
 // 1:1 sAffineAnims_HitSplat (battle_anim_normal.c:134-167) — LES VRAIES
@@ -345,7 +345,7 @@ function AnimHitSplatRandom(sprite: AnimSprite): void {
 function AnimHitSplatOnMonEdge(sprite: AnimSprite): void {
   const args = _itf().getArgs?.() ?? [1, 0, 0, 0];
   sprite.data[0] = _GetAnimBattlerSpriteId(args[0]);
-  const mon = sprite.data[0] >= 0 ? _rt()?.gSprites?.get(sprite.data[0]) : undefined;
+  const mon = sprite.data[0] >= 0 ? _rt()?.gSprites?.[sprite.data[0]] : undefined;
   if (mon) {
     sprite.x = mon.x + (mon.x2 ?? 0);
     sprite.y = mon.y + (mon.y2 ?? 0);
@@ -623,9 +623,9 @@ function _nPf(): { get?: (i: number) => number; set?: (i: number, v: number) => 
 }
 function _nBattlerPalSlot(b: number): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(b);
-  const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
   return sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : 0;
 }
 function AnimTask_InvertScreenColor(task: { taskId: number }): void {

@@ -49,7 +49,7 @@ function _ficItf(): { getArgs?: () => number[]; getTarget?: () => number; Destro
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _ficRt(): {
-  gSprites?: Map<number, { invisible?: boolean; oamIndex: number }>;
+  gSprites?: Array<{ invisible?: boolean; oamIndex: number } | undefined>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   SetGpuReg?: (o: number, v: number) => void;
@@ -77,7 +77,7 @@ function AnimTask_FrozenIceCube(task: _FicTask): void {
   // (la sheet ICE_CUBE est chargee par le loadspritegfx du script — 1:1)
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 3, priority: 2, objMode: 1 }, images: [] } as never, x + 32, y + 32, 4) ?? -1;
   if (sid >= 0) {
-    const sp = rt.gSprites?.get(sid);
+    const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;

@@ -370,7 +370,7 @@ async function CB2_ChooseStarter(): Promise<void> {
   _savedVisibleSpriteIds = [];
   // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[id]).
   for (let id = 0; id < MAX_SPRITES; id++) {
-    const s = rt.gSprites.get(id);
+    const s = rt.gSprites[id];
     if (s && !s.invisible) {
       _savedVisibleSpriteIds.push(id);
       s.invisible = true;
@@ -470,7 +470,7 @@ async function CB2_ChooseStarter(): Promise<void> {
   // Create hand sprite : spriteId = CreateSprite(&sSpriteTemplate_Hand, 120, 56, 2);
   const handSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Hand', 120, 56, 2);
   // gSprites[spriteId].data[0] = taskId;
-  const handSprite = rt.gSprites.get(handSpriteId);
+  const handSprite = rt.gSprites[handSpriteId];
   if (handSprite) {
     handSprite.data ||= new Array(8).fill(0);
     handSprite.data[0] = taskId;
@@ -488,7 +488,7 @@ async function CB2_ChooseStarter(): Promise<void> {
       sPokeballCoords[i][0], sPokeballCoords[i][1], 2,
     );
     // gSprites[spriteId].sTaskId = taskId; sBallId = i;
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) {
       sprite.data ||= new Array(8).fill(0);
       sprite.data[S_TASK_ID] = taskId;
@@ -571,7 +571,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
     // 1:1 décomp src/sprite.c:InitSpriteAffineAnim — quand sprite a affineMode
     // affine ON ET affineAnims, allouer un matrixNum unique (= AllocOamMatrix).
     // Sans ça, tous les sprites affine partagent matrix 0 (= identity = no anim).
-    const circleSprite = rt.gSprites.get(circleId);
+    const circleSprite = rt.gSprites[circleId];
     if (circleSprite && circleSprite.affineMode !== 0) {
       const mNum = rt.AllocOamMatrix();
       if (mNum >= 0) {
@@ -589,7 +589,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
     // 1:1 décomp C:500-501 :
     //   gSprites[spriteId].affineAnims = &sAffineAnims_StarterPokemon;
     //   gSprites[spriteId].callback = SpriteCB_StarterPokemon;
-    const pkmnSprite = rt.gSprites.get(pkmnId);
+    const pkmnSprite = rt.gSprites[pkmnId];
     if (pkmnSprite) {
       pkmnSprite.affineAnimsTableName = 'sAffineAnims_StarterPokemon';
       // Alloc dedicated matrix slot pour cette affine anim (= 1:1 strict).
@@ -620,7 +620,7 @@ function Task_WaitForStarterSprite(taskId: number): void {
   const task = getTask(taskId);
   const rt = getRuntime();
   if (!rt) return;
-  const circleSprite = rt.gSprites.get(task.data[T_CIRCLE_SPRITE_ID]);
+  const circleSprite = rt.gSprites[task.data[T_CIRCLE_SPRITE_ID]];
   if (!circleSprite) {
     // Dette R3 : sans circle sprite (= asset load failed), skip wait → confirm directly.
     task.func = Task_AskConfirmStarter;
@@ -892,7 +892,7 @@ function CreatePokemonFrontSprite(species: string, x: number, y: number): number
     subpriority: 0,
   });
   // Décomp : gSprites[spriteId].oam.priority = 0 (override après return CreatePokemonFrontSprite).
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (sprite) ((sprite as unknown) as { priority?: number }).priority = 0;
   return result.spriteId;
 }
@@ -999,7 +999,7 @@ function cleanupScene(): void {
   } catch (e) { void e; }
   // Restore pre-existing sprite visibility (= reverse de CB2_ChooseStarter mass-hide).
   for (const id of _savedVisibleSpriteIds) {
-    const s = rt.gSprites.get(id);
+    const s = rt.gSprites[id];
     if (s) s.invisible = false;
   }
   _savedVisibleSpriteIds = [];

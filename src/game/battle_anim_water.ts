@@ -102,7 +102,7 @@ function _wItf(): {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _wRt(): {
-  gSprites?: Map<number, _WSprite>;
+  gSprites?: Array<_WSprite | undefined>;
   gba?: {
     oam?: Array<{ tileId?: number }>;
     affineParams?: Array<{ pa?: number; pb?: number; pc?: number; pd?: number }>;
@@ -399,7 +399,7 @@ function CreateWaterPulseRingBubbles(sprite: _WSprite, xDiff: number, yDiff: num
       { ...tpl, oam: { ...(tpl.oam ?? { shape: 0, size: 0 }), affineMode: 1 } } as never,
       combinedX, combinedY + y, 130);
     if (spriteId < 0) return;
-    const sp = rt.gSprites?.get(spriteId);
+    const sp = rt.gSprites?.[spriteId];
     if (!sp) return;
     sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
     sp.spriteId = spriteId;
@@ -479,7 +479,7 @@ function AnimDiveBall(sprite: _WSprite): void {
   sprite.data[0] = args[2] | 0;
   sprite.data[1] = args[3] | 0;
   sprite.callback = AnimDiveBall_Step1;
-  const monSp = _wRt().gSprites?.get(_getAnimBattlerSpriteId(0 /* ANIM_ATTACKER */));
+  const monSp = _wRt().gSprites?.[_getAnimBattlerSpriteId(0 /* ANIM_ATTACKER */)];
   if (monSp) monSp.invisible = true; // gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE
 }
 /** 1:1 `AnimDiveBall_Step1` (battle_anim_flying.c:1019). */
@@ -664,11 +664,11 @@ function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): voi
     // créer la goutte via le bridge (template generated avec son AnimCmd splash)
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; oam: { shape: number; size: number }; callback: unknown; anims?: unknown } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gRainDropSpriteTemplate');
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
     const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
     if (sid >= 0) {
-      const sp = rt?.gSprites?.get(sid);
+      const sp = rt?.gSprites?.[sid];
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
       const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
@@ -692,8 +692,10 @@ function AnimRainDrop_Step(sprite: { data: number[]; x2: number; y2: number; ani
     sprite.y2 += 4;
   }
   if (sprite.animEnded || sprite.data[0] > 40) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
-    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt?.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
     }
   }
@@ -717,7 +719,7 @@ function _wsRand(): number {
 type _WsTask = { taskId: number; data: number[]; func?: unknown };
 function _wsSpawnOrb(x: number, y: number, subprio: number): number {
   const rt = (globalThis as Record<string, unknown>).__rt as {
-    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+    gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
@@ -727,7 +729,7 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid >= 0) {
-    const sp = rt?.gSprites?.get(sid);
+    const sp = rt?.gSprites?.[sid];
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
@@ -812,8 +814,8 @@ function _CreateWaterSportDroplet(task: _WsTask): void {
     task.data[2] = 0;
     const sid = _wsSpawnOrb(task.data[3], task.data[4], 10);
     if (sid >= 0) {
-      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown }> } | undefined;
-      const sp = rt?.gSprites?.get(sid);
+      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown } | undefined> } | undefined;
+      const sp = rt?.gSprites?.[sid];
       if (sp) {
         sp.data[0] = 16;
         sp.data[2] = task.data[5];
@@ -846,14 +848,16 @@ function _AnimWaterSportDroplet(sprite: { x: number; y: number; x2: number; y2: 
  *  (scan par func, 1:1 — data[6] est la phase d'arc, pas un id). */
 function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
   if (_wsArcRun(sprite as never)) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[]; func?: unknown }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[]; func?: unknown }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
     for (const t of rt?.gTasks?.values() ?? []) {
       if (t.func === AnimTask_WaterSport_Step) {
         t.data[10] = 1;
         t.data[8]--;
       }
     }
-    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt?.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
     }
   }
@@ -875,7 +879,7 @@ import { gEnemyParty as _spEnemyParty, gPlayerParty as _spPlayerParty, GetMonDat
 
 type _SpTask = { taskId: number; data: number[]; func?: unknown };
 function _spRt2(): {
-  gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean }>;
+  gSprites?: Array<{ x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean } | undefined>;
   gTasks?: Map<number, { data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   CreateTask?: (f: unknown, prio: number) => number;
@@ -912,7 +916,7 @@ function _GetWaterSpoutPowerForAnim(): number {
 function AnimTask_WaterSpoutLaunch(task: _SpTask): void {
   task.data[15] = _spAtkSpriteId2();
   if (task.data[15] === 0xFF) { _wItf().DestroyAnimVisualTask?.(task.taskId); return; }
-  const sp = _spRt2().gSprites?.get(task.data[15]);
+  const sp = _spRt2().gSprites?.[task.data[15]];
   task.data[5] = sp ? sp.y : 0;
   task.data[1] = _GetWaterSpoutPowerForAnim();
   _spMons2().PrepareBattlerSpriteForRotScale?.(task.data[15], 0);
@@ -954,7 +958,7 @@ function _WaterSpoutLaunch_Case5(task: _SpTask, sp: _SpOrbSprite): void {
 }
 function AnimTask_WaterSpoutLaunch_Step(task: _SpTask): void {
   const rt = _spRt2();
-  const sp = rt.gSprites?.get(task.data[15]);
+  const sp = rt.gSprites?.[task.data[15]];
   switch (task.data[0]) {
     case 0:
       _spPrepErupt(task as never, task.data[15], 0x100, 0x100, 0xE0, 0x200, 32);
@@ -1016,7 +1020,7 @@ function _CreateWaterSpoutLaunchDroplets(task: _SpTask, taskId: number): void {
   for (let i = 0; i < 20; i += increment) {
     const sid = _spSpawnOrb2(ax, ay, subprio);
     if (sid >= 0) {
-      const sp = _spRt2().gSprites?.get(sid);
+      const sp = _spRt2().gSprites?.[sid];
       if (sp) {
         sp.data[1] = i;
         sp.data[2] = ax * 16;
@@ -1050,7 +1054,9 @@ function _AnimSmallWaterOrb(sprite: { x: number; y: number; data: number[] }): v
         const rt = _spRt2();
         const t = rt.gTasks?.get(sprite.data[6]);
         if (t) t.data[sprite.data[7]]--;
-        for (const [sid, sp] of rt.gSprites ?? new Map()) {
+        for (let sid = 0; sid < MAX_SPRITES; sid++) {
+          const sp = rt.gSprites?.[sid];
+          if (sp === undefined) continue;
           if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
         }
       }
@@ -1114,7 +1120,7 @@ function _CreateWaterSpoutRainDroplet(task: _SpTask, taskId: number): void {
   const yPosArg = (((_spSine[task.data[8]] ?? 0) + 3) >> 4) + task.data[6];
   const sid = _spSpawnOrb2(task.data[7], 0, 0);
   if (sid >= 0) {
-    const sp = _spRt2().gSprites?.get(sid);
+    const sp = _spRt2().gSprites?.[sid];
     if (sp) {
       sp.callback = _AnimWaterSpoutRain as never;
       sp.data[0] = 0;
@@ -1140,7 +1146,7 @@ function _AnimWaterSpoutRain(sprite: { x: number; y: number; data: number[]; cal
       if (t) t.data[10] = 1;
       const hitId = _wsSpawnOrb(sprite.x, sprite.y, 1); // gWaterHitSplatSpriteTemplate (meme tag eau)
       if (hitId >= 0) {
-        const hit = rt.gSprites?.get(hitId);
+        const hit = rt.gSprites?.[hitId];
         if (hit) {
           hit.data[1] = 0;
           hit.data[2] = 0;
@@ -1149,7 +1155,9 @@ function _AnimWaterSpoutRain(sprite: { x: number; y: number; data: number[]; cal
           hit.callback = _AnimWaterSpoutRainHit as never;
         }
       }
-      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const sp = rt.gSprites?.[sid];
+        if (sp === undefined) continue;
         if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
       }
     }
@@ -1164,7 +1172,9 @@ function _AnimWaterSpoutRainHit(sprite: { data: number[]; invisible?: boolean })
       const rt = _spRt2();
       const t = rt.gTasks?.get(sprite.data[6]);
       if (t) t.data[sprite.data[7]]--;
-      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const sp = rt.gSprites?.[sid];
+        if (sp === undefined) continue;
         if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
       }
     }
@@ -1221,6 +1231,7 @@ import {
   LoadAnimBgPalette as _swLoadPal,
   ClearBattleAnimBg as _swClearBg,
 } from '../engine/battle/battle-anim-interpreter';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 type _SfwTask = { taskId: number; data: number[]; func?: unknown; priority?: number };
 function _sfwRt(): {

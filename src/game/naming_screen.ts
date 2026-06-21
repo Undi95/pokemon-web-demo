@@ -1010,7 +1010,7 @@ function SetSpritesVisible(): void {
   const rt = getRuntime();
   if (!rt) return;
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const sprite = rt.gSprites.get(i);
+    const sprite = rt.gSprites[i];
     if (sprite !== undefined && sprite.inUse) sprite.invisible = false;
   }
   SetCursorInvisibility(false);
@@ -1219,7 +1219,7 @@ function CreateCursorSprite(): void {
   });
   sNamingScreen.cursorSpriteId = spriteId;
   if (spriteId >= 0) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) {
       // tileBase needed by our local cursor anim FSM (= used to compute
       // oam.tileId = tileBase + tileOffset for anim frame switching).
@@ -1245,7 +1245,7 @@ function SetCursorPos(x: number, y: number): void {
   if (!sNamingScreen) return;
   const rt = getRuntime();
   if (!rt) return;
-  const sprite = rt.gSprites.get(sNamingScreen.cursorSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.cursorSpriteId];
   if (!sprite) return;
   const kbId = sPageToKeyboardId[sNamingScreen.currentPage];
   if (x < sPageColumnCounts[kbId]) {
@@ -1288,7 +1288,7 @@ function SetCursorInvisibility(invisible: boolean): void {
   if (!sNamingScreen) return;
   const rt = getRuntime();
   if (!rt) return;
-  const sprite = rt.gSprites.get(sNamingScreen.cursorSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.cursorSpriteId];
   if (!sprite) return;
   // 1:1 décomp : data[4] is bit-packed (low byte = invisible, high byte = flashing)
   sprite.data[4] = (sprite.data[4] & 0xFF00) | (invisible ? 1 : 0);
@@ -1301,7 +1301,7 @@ function SetCursorFlashing(flashing: boolean): void {
   if (!sNamingScreen) return;
   const rt = getRuntime();
   if (!rt) return;
-  const sprite = rt.gSprites.get(sNamingScreen.cursorSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.cursorSpriteId];
   if (!sprite) return;
   sprite.data[4] = (sprite.data[4] & 0xFF) | ((flashing ? 1 : 0) << 8);
 }
@@ -1310,7 +1310,7 @@ function IsCursorAnimFinished(): boolean {
   if (!sNamingScreen) return true;
   const rt = getRuntime();
   if (!rt) return true;
-  const sprite = rt.gSprites.get(sNamingScreen.cursorSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.cursorSpriteId];
   if (!sprite) return true;
   return sprite.animEnded;
 }
@@ -1388,7 +1388,7 @@ function SquishCursor(): void {
   if (!rt) return;
   // 1:1 décomp:1173-1176 : StartSpriteAnim(cursor, 1) → sAnim_CursorSquish.
   // Direct FSM kick (= bypass rt.StartSpriteAnim, which is no-op here).
-  const sprite = rt.gSprites.get(sNamingScreen.cursorSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.cursorSpriteId];
   if (sprite) _startCursorAnim(sprite, rt, 1);
 }
 
@@ -1464,7 +1464,7 @@ function CreatePageSwapButtonSprites(): void {
       x: 204, y: 88, shape: 0, size: 0, priority: 0,
     });
     if (spriteId >= 0) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (sprite) {
         sprite.tileBase = tileBaseFrame;
         sprite.callback = SpriteCB_PageSwap;
@@ -1481,14 +1481,14 @@ function CreatePageSwapButtonSprites(): void {
       x: 204, y: 84, shape: 0, size: 0, priority: 1,
     });
     if (spriteId >= 0) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (sprite) {
         sprite.tileBase = tileBaseUpper;
       }
       sNamingScreen.pageSwapTextSpriteId = spriteId;
       SetSubspriteTables(spriteId, sSubsprites_PageSwapText);
       // 1:1 décomp:1235 : frameSprite.data[6] = textSpriteId
-      const frameSprite = rt.gSprites.get(sNamingScreen.swapBtnFrameSpriteId);
+      const frameSprite = rt.gSprites[sNamingScreen.swapBtnFrameSpriteId];
       if (frameSprite) frameSprite.data[6] = spriteId;
     }
   }
@@ -1503,7 +1503,7 @@ function CreatePageSwapButtonSprites(): void {
     if (spriteId >= 0) {
       sNamingScreen.pageSwapButtonSpriteId = spriteId;
       // 1:1 décomp:1241 : frameSprite.data[7] = buttonSpriteId
-      const frameSprite = rt.gSprites.get(sNamingScreen.swapBtnFrameSpriteId);
+      const frameSprite = rt.gSprites[sNamingScreen.swapBtnFrameSpriteId];
       if (frameSprite) frameSprite.data[7] = spriteId;
     }
   }
@@ -1513,7 +1513,7 @@ function StartPageSwapButtonAnim(): void {
   if (!sNamingScreen) return;
   const rt = getRuntime();
   if (!rt) return;
-  const sprite = rt.gSprites.get(sNamingScreen.swapBtnFrameSpriteId);
+  const sprite = rt.gSprites[sNamingScreen.swapBtnFrameSpriteId];
   if (!sprite) return;
   // 1:1 décomp:1247-1250
   sprite.data[0] = 2;  // sState → SlideOff
@@ -1541,8 +1541,8 @@ function PageSwapSprite_Init(sprite: DecompSprite): boolean {
   if (!sNamingScreen) return false;
   const rt = getRuntime();
   if (!rt) return false;
-  const text = rt.gSprites.get(sprite.data[6]);
-  const button = rt.gSprites.get(sprite.data[7]);
+  const text = rt.gSprites[sprite.data[6]];
+  const button = rt.gSprites[sprite.data[7]];
   if (text && button) {
     SetPageSwapButtonGfx(sPageToNextGfxId[sNamingScreen.currentPage], text, button);
   }
@@ -1558,8 +1558,8 @@ function PageSwapSprite_SlideOff(sprite: DecompSprite): boolean {
   if (!sNamingScreen) return false;
   const rt = getRuntime();
   if (!rt) return false;
-  const text = rt.gSprites.get(sprite.data[6]);
-  const button = rt.gSprites.get(sprite.data[7]);
+  const text = rt.gSprites[sprite.data[6]];
+  const button = rt.gSprites[sprite.data[7]];
   if (!text || !button) return false;
   text.y2++;
   if (text.y2 > 7) {
@@ -1575,7 +1575,7 @@ function PageSwapSprite_SlideOn(sprite: DecompSprite): boolean {
   if (!sNamingScreen) return false;
   const rt = getRuntime();
   if (!rt) return false;
-  const text = rt.gSprites.get(sprite.data[6]);
+  const text = rt.gSprites[sprite.data[6]];
   if (!text) return false;
   text.invisible = false;
   text.y2++;
@@ -1619,7 +1619,7 @@ function CreateBackOkSprites(): void {
       x: 204, y: 116, shape: 0, size: 0, priority: 0,
     });
     if (spriteId >= 0) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (sprite) sprite.tileBase = tileBack;
       sNamingScreen.backButtonSpriteId = spriteId;
       SetSubspriteTables(spriteId, sSubsprites_Button);
@@ -1632,7 +1632,7 @@ function CreateBackOkSprites(): void {
       x: 204, y: 140, shape: 0, size: 0, priority: 0,
     });
     if (spriteId >= 0) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (sprite) sprite.tileBase = tileOK;
       sNamingScreen.okButtonSpriteId = spriteId;
       SetSubspriteTables(spriteId, sSubsprites_Button);
@@ -1658,7 +1658,7 @@ function CreateTextEntrySprites(): void {
       x: xPos, y: 56, shape: 0, size: 0, priority: 3,
     });
     if (spriteId >= 0) {
-      const sprite = rt.gSprites.get(spriteId);
+      const sprite = rt.gSprites[spriteId];
       if (sprite) {
         sprite.tileBase = tileArrow;
         sprite.callback = SpriteCB_InputArrow;
@@ -1677,7 +1677,7 @@ function CreateTextEntrySprites(): void {
         x: xPos + 3, y: 60, shape: 0, size: 0, priority: 3,
       });
       if (spriteId >= 0) {
-        const sprite = rt.gSprites.get(spriteId);
+        const sprite = rt.gSprites[spriteId];
         if (sprite) {
           sprite.tileBase = tileUnderscore;
           sprite.data[0] = i;  // sId
@@ -1795,7 +1795,7 @@ function NamingScreen_CreatePCIcon(): void {
     x: 56, y: 41, shape: 0, size: 0, priority: 3,
   });
   if (spriteId >= 0) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) sprite.tileBase = tileBase;
     SetSubspriteTables(spriteId, sSubsprites_PCIcon);
   }

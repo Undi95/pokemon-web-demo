@@ -916,6 +916,7 @@ import { gBattlerPartyIndexes as _hlPartyIdx } from '../engine/battle/state';
 import { gEnemyParty as _hlEnemyParty, gPlayerParty as _hlPlayerParty, GetMonData as _hlGetMon, MON_DATA_SPECIES as _hlSpeciesK } from '../engine/battle/party-storage';
 import { reverseDecompConstant as _hlRevConst } from '../engine/system/decomp-constants';
 import { getMonFrontPicCoords as _hlFrontCoords, getMonBackPicCoords as _hlBackCoords } from './data/mon_pic_coords';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 const _HAIL_COORDS: ReadonlyArray<{ x: number; y: number; pos: number; type: number }> = [
   { x: 100, y: 120, pos: 0, type: 2 }, { x: 85, y: 120, pos: 0, type: 0 },
@@ -931,7 +932,7 @@ function _hlItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: nu
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _hlRt(): {
-  gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown; oamIndex: number; subpriority?: number; inUse?: boolean; invisible?: boolean }>;
+  gSprites?: Array<{ x: number; y: number; data: number[]; callback: unknown; oamIndex: number; subpriority?: number; inUse?: boolean; invisible?: boolean } | undefined>;
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -947,7 +948,7 @@ function _hlVisible(battler: number): boolean {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(battler);
   if (sid === undefined || sid === 0xFF) return false;
-  const sp = _hlRt().gSprites?.get(sid);
+  const sp = _hlRt().gSprites?.[sid];
   return !!sp && sp.inUse !== false && !sp.invisible;
 }
 function _hlPicDim(battler: number, which: 'w' | 'h'): number {
@@ -1032,7 +1033,7 @@ function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, task
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, spriteX, -8, 18) ?? -1;
   if (sid < 0) return false;
-  const sp = rt.gSprites?.get(sid);
+  const sp = rt.gSprites?.[sid];
   const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
   if (oam && tileStart !== 0xFFFF) {
     oam.tileId = tileStart;
@@ -1063,7 +1064,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
     const hitId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sprite.data[3], sprite.data[4], sprite.subpriority ?? 18) ?? -1;
     if (hitId >= 0) {
-      const hit = rt.gSprites?.get(hitId);
+      const hit = rt.gSprites?.[hitId];
       const hitOam = hit ? rt.gba?.oam[hit.oamIndex] : undefined;
       if (hitOam && tileStart !== 0xFFFF) {
         hitOam.tileId = tileStart;
@@ -1081,14 +1082,18 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
       const t = rt.gTasks?.get(sprite.data[6]);
       if (t) t.data[sprite.data[7]]--;
     }
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
     // si l'impact a spawne, LE compte est transfere (pas de decrement ici, 1:1)
   } else {
     const t = rt.gTasks?.get(sprite.data[6]);
     if (t) t.data[sprite.data[7]]--;
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }
@@ -1099,7 +1104,9 @@ function _AnimHailContinue(sprite: { data: number[] }): void {
     const rt = _hlRt();
     const t = rt.gTasks?.get(sprite.data[6]);
     if (t) t.data[sprite.data[7]]--;
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }

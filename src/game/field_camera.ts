@@ -251,7 +251,7 @@ export function MoveCameraAndRedrawMap(deltaX: number, deltaY: number): void {
  *  driver le scroll. sCamera_MoveX = data[2], sCamera_MoveY = data[3]. */
 function CameraUpdateCallback(cam: FieldCameraObject): void {
   if (cam.spriteId !== 0) {
-    const s = getRuntime().gSprites.get(cam.spriteId);
+    const s = getRuntime().gSprites[cam.spriteId];
     if (s) {
       cam.movementSpeedX = s.data[2];
       cam.movementSpeedY = s.data[3];
@@ -265,7 +265,7 @@ function CameraUpdateCallback(cam: FieldCameraObject): void {
  *  appelé via field-globals (anti-cycle object-events↔field-camera). */
 export function InitCameraUpdateCallback(trackedSpriteId: number): number {
   if (gFieldCamera.spriteId !== 0) {
-    const old = getRuntime().gSprites.get(gFieldCamera.spriteId);
+    const old = getRuntime().gSprites[gFieldCamera.spriteId];
     if (old) DestroySprite(old);
   }
   gFieldCamera.spriteId = callAddCameraObject(trackedSpriteId);
@@ -289,7 +289,7 @@ export function InitCameraUpdateCallback(trackedSpriteId: number): number {
  *  ici (= pourquoi le décomp s'appuie sur le reset sprite externe). */
 export function ResetCameraUpdateInfo(): void {
   if (gFieldCamera.spriteId !== 0) {
-    const cam = getRuntime().gSprites.get(gFieldCamera.spriteId);
+    const cam = getRuntime().gSprites[gFieldCamera.spriteId];
     // Garde : ne détruit que si c'est bien le sprite CameraObject (slot non réutilisé).
     if (cam && cam.callback && cam.callback.name === 'SpriteCB_CameraObject') {
       DestroySprite(cam);

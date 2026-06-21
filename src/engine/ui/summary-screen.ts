@@ -1890,7 +1890,7 @@ function _setTypeSpritePosAndPal(typeId: number, x: number, y: number, arrIdx: n
   const rt = getRuntime();
   const id = _typeSpriteIds[arrIdx];
   if (!rt || id === undefined || id < 0) return;
-  const spr = rt.gSprites.get(id);
+  const spr = rt.gSprites[id];
   if (!spr) return;
   const oam = rt.gba.oam[spr.oamIndex];
   if (oam) {
@@ -1983,7 +1983,7 @@ function _createMonSprite(): void {
   _monPicSpriteId = spr.spriteId;
   // 1:1 CreateMonSprite (:3986) : hFlip = !IsMonSpriteNotFlipped (= !noFlip).
   const noFlip = getSpeciesInfo(mon.species)?.noFlip ?? false;
-  const o = rt.gSprites.get(spr.spriteId);
+  const o = rt.gSprites[spr.spriteId];
   if (o) {
     o.hFlip = !noFlip;
     // 1:1 SpriteCB_Pokemon (:4000) : sprite->data[1] = IsMonSpriteNotFlipped
@@ -2094,7 +2094,7 @@ function _playMonCryOnce(): void {
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).
   const rt = getRuntime();
-  const monSpr = rt && _monPicSpriteId >= 0 ? rt.gSprites.get(_monPicSpriteId) : null;
+  const monSpr = rt && _monPicSpriteId >= 0 ? rt.gSprites[_monPicSpriteId] : null;
   if (monSpr) {
     const speciesEnum = isEgg ? 'SPECIES_EGG' : (reverseDecompConstant(sMon.summary.species, 'SPECIES_') ?? 'SPECIES_NONE');
     try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg, MON_PIC_TILE_BASE, MON_PIC_FRAME_TILES); }
@@ -2275,7 +2275,7 @@ function _changeSummaryPokemon(delta: number): void {
     _positionStatusSlidingWindow(0, 2);   // 1:1 :1619 (slide-out, speed +2)
   }
   if (_monPicSpriteId >= 0) {
-    const oldMon = rt?.gSprites.get(_monPicSpriteId);
+    const oldMon = rt?.gSprites[_monPicSpriteId];
     if (oldMon) { try { StopPokemonAnimations(oldMon); } catch { /* */ } }
     try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1;
   }
@@ -2302,7 +2302,7 @@ function _changeSummaryPokemon(delta: number): void {
     _createMonSprite();
     // 1:1 Task_ChangeSummaryMon case 8 :1668 : gSprites[MON].data[2]=1 —
     // SUPPRIME le trigger cry/anim de SpriteCB_Pokemon pendant le redraw.
-    { const ms = r.gSprites.get(_monPicSpriteId); if (ms) ms.data[2] = 1; }
+    { const ms = r.gSprites[_monPicSpriteId]; if (ms) ms.data[2] = 1; }
     _tryDrawExperienceProgressBar();   // 1:1 Task_ChangeSummaryMon case 8 :1669
     _createMonMarkingsSprite();
     _createCaughtBallSprite();
@@ -2315,7 +2315,7 @@ function _changeSummaryPokemon(delta: number): void {
     // 1:1 Task_ChangeSummaryMon case 12 :1683 : gSprites[MON].data[2]=0 —
     // RELÂCHE le gate ; SpriteCB_Pokemon déclenchera cry+anim 1 fois dès
     // !gPaletteFade.active (plus d'appel manuel _playMonCryOnce).
-    { const ms = r.gSprites.get(_monPicSpriteId); if (ms) ms.data[2] = 0; }
+    { const ms = r.gSprites[_monPicSpriteId]; if (ms) ms.data[2] = 0; }
     // 1:1 décomp Task_ChangeSummaryMon default case :1685-1690 : retour à
     // Task_HandleInput UNIQUEMENT quand `!FuncIsActiveTask(Task_Slide
     // StatusWindow)` — c'est un POLL CHAQUE FRAME, pas un one-shot. Couvre
@@ -2580,7 +2580,7 @@ function _moveSelectorAnimToTile(anim: number): { tile: number; hFlip: boolean }
 function _applyMoveSelectorAnim(spriteId: number, anim: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const spr = rt.gSprites.get(spriteId);
+  const spr = rt.gSprites[spriteId];
   if (!spr) return;
   const { tile, hFlip } = _moveSelectorAnimToTile(anim);
   rt.gba.oam[spr.oamIndex].tileId = MOVE_SELECTOR_TILE_BASE + tile;
@@ -2618,7 +2618,7 @@ function _createMoveSelectorSprites(idArrayStart: number): void {
     if (s.spriteId < 0) continue;
     const anim = (i === 0) ? 4 : (i === 9) ? 5 : 6; // left / right / middle
     _applyMoveSelectorAnim(s.spriteId, anim);
-    const spr = rt.gSprites.get(s.spriteId);
+    const spr = rt.gSprites[s.spriteId];
     if (spr) {
       spr.callback = (sp) => _spriteCBMoveSelector(sp);
       spr.data[0] = idArrayStart;
@@ -2652,7 +2652,7 @@ function _keepMoveSelectorVisible(firstSpriteId: number): void {
   const rt = getRuntime();
   const ids = (firstSpriteId === SEL1) ? _moveSel1Ids : _moveSel2Ids;
   for (const id of ids) {
-    const spr = rt?.gSprites.get(id);
+    const spr = rt?.gSprites[id];
     if (spr) { spr.data[1] = 0; spr.invisible = false; }
   }
 }
@@ -3140,7 +3140,7 @@ function _beginCloseSummaryScreen(): void {
   // 1:1 Task_HandleInput (:1558/:1571) : StopPokemonAnimations avant la
   // fermeture (fige le sprite + restaure la palette OBJ du glow).
   if (_monPicSpriteId >= 0) {
-    const ms = rt.gSprites.get(_monPicSpriteId);
+    const ms = rt.gSprites[_monPicSpriteId];
     if (ms) { try { StopPokemonAnimations(ms); } catch { /* */ } }
   }
   if (_inputTaskId >= 0) { rt.DestroyTask(_inputTaskId); _inputTaskId = -1; }

@@ -17,7 +17,7 @@ type _SmSprite = {
   invisible?: boolean; animEnded?: boolean; hFlip?: boolean; vFlip?: boolean;
 };
 function _smRt(): {
-  gSprites?: Map<number, _SmSprite>;
+  gSprites?: Array<_SmSprite | undefined>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number; hFlip?: boolean; vFlip?: boolean }> };
@@ -82,7 +82,7 @@ export function SmokescreenImpact(x: number, y: number, persist: boolean): numbe
 
   // sprite principal invisible (compteur data[0], persist data[1])
   const mainId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, 0, 0, 0) ?? -1;
-  const main = mainId >= 0 ? rt.gSprites?.get(mainId) : undefined;
+  const main = mainId >= 0 ? rt.gSprites?.[mainId] : undefined;
   if (main) {
     main.invisible = true;
     main.data[0] = 0;                    // sActiveSprites
@@ -92,7 +92,7 @@ export function SmokescreenImpact(x: number, y: number, persist: boolean): numbe
   const spawn = (sx: number, sy: number, animNum: number): void => {
     const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sx, sy, 2) ?? -1;
     if (sid < 0) return;
-    const sp = rt.gSprites?.get(sid);
+    const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart + _SM_FRAMES[0];
@@ -125,9 +125,11 @@ function _SmokescreenImpactCloud(sprite: _SmSprite): void {
     const rt = _smRt();
     if (sprite.data[1] >= _SM_FRAMES.length) {
       // animEnded 1:1
-      const main = rt.gSprites?.get(sprite.data[0]);
+      const main = rt.gSprites?.[sprite.data[0]];
       if (main) main.data[0]--;
-      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const sp = rt.gSprites?.[sid];
+        if (sp === undefined) continue;
         if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
       }
       return;
@@ -144,7 +146,9 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
     api.FreeSpritePaletteByTag?.(TAG_SMOKESCREEN);
     if (!sprite.data[1]) {
       const rt = _smRt();
-      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const sp = rt.gSprites?.[sid];
+        if (sp === undefined) continue;
         if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
       }
     } else {
@@ -156,6 +160,7 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
 // ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
 import { registerAnimTasks } from '../engine/battle/battle-anim-registry';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 /** 1:1 `AnimTask_SmokescreenImpact` (battle_anim_effects_3.c.c) : impact +8/+8 sur la cible. */
 function AnimTask_SmokescreenImpact(task: { taskId: number }): void {

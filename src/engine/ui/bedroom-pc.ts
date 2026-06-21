@@ -1000,10 +1000,10 @@ function _itemStorageDrawItemIcon(itemKey: string): void {
   // sprite reste à priority 1 (= default gItemIconSpriteTemplate) → caché par
   // BG0 priority 0 (= window pixel buffer après B1).
   const rt = getRuntime() as unknown as {
-    gSprites?: Map<number, { x2: number; y2: number; oamIndex: number }>;
+    gSprites?: Array<{ x2: number; y2: number; oamIndex: number } | undefined>;
     gba?: { oam?: Array<{ priority: number }> };
   } | null;
-  const spr = rt?.gSprites?.get(spriteId);
+  const spr = rt?.gSprites?.[spriteId];
   if (spr) {
     spr.x2 = 24;
     spr.y2 = 80;

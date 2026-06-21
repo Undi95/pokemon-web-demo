@@ -1163,7 +1163,7 @@ function _spawnPocketArrows(assets: BagAssets): void {
   });
   _arrowRightOamId = right.spriteId;
   _arrowRightOamIndex = right.oamIndex;
-  const rs = rt.gSprites.get(_arrowRightOamId);
+  const rs = rt.gSprites[_arrowRightOamId];
   if (rs) rs.hFlip = true;
   _arrowSinePosLeft = 0;
   _arrowSinePosRight = 0;
@@ -1174,13 +1174,13 @@ function _despawnPocketArrows(): void {
   if (!rt) return;
   for (const id of [_arrowLeftOamId, _arrowRightOamId]) {
     if (id < 0) continue;
-    const spr = rt.gSprites.get(id);
+    const spr = rt.gSprites[id];
     if (spr) {
       spr.inUse = false;
       const oam = rt.gba.oam[spr.oamIndex];
       if (oam) oam.visible = false;
     }
-    rt.gSprites.delete(id);
+    rt.gSprites[id] = undefined;
   }
   _arrowLeftOamId = -1;
   _arrowLeftOamIndex = -1;
@@ -1199,13 +1199,13 @@ function _despawnPocketArrows(): void {
 function _tickPocketArrows(): void {
   const rt = getRuntime();
   if (!rt) return;
-  const sLeft = _arrowLeftOamId >= 0 ? rt.gSprites.get(_arrowLeftOamId) : null;
+  const sLeft = _arrowLeftOamId >= 0 ? rt.gSprites[_arrowLeftOamId] : null;
   if (sLeft) {
     // 1:1 décomp gSineTable[idx & 0xFF] (= G_SINE_TABLE depuis decomp-data/sine-table.ts).
     sLeft.x2 = (gSineTable(_arrowSinePosLeft) * 2) >> 8;
     _arrowSinePosLeft = (_arrowSinePosLeft + 8) & 0xFF;
   }
-  const sRight = _arrowRightOamId >= 0 ? rt.gSprites.get(_arrowRightOamId) : null;
+  const sRight = _arrowRightOamId >= 0 ? rt.gSprites[_arrowRightOamId] : null;
   if (sRight) {
     sRight.x2 = (gSineTable(_arrowSinePosRight) * 2) >> 8;
     // 1:1 décomp tFrequency = -8 → tSinePos -= 8 (u8 wrap → +248).
@@ -1246,7 +1246,7 @@ function _spawnListScrollArrows(): void {
   });
   _arrowDownOamId = down.spriteId;
   _arrowDownOamIndex = down.oamIndex;
-  const ds = rt.gSprites.get(_arrowDownOamId);
+  const ds = rt.gSprites[_arrowDownOamId];
   if (ds) ds.vFlip = true;
   _arrowSinePosUp = 0;
   _arrowSinePosDown = 0;
@@ -1257,13 +1257,13 @@ function _despawnListScrollArrows(): void {
   if (!rt) return;
   for (const id of [_arrowUpOamId, _arrowDownOamId]) {
     if (id < 0) continue;
-    const spr = rt.gSprites.get(id);
+    const spr = rt.gSprites[id];
     if (spr) {
       spr.inUse = false;
       const oam = rt.gba.oam[spr.oamIndex];
       if (oam) oam.visible = false;
     }
-    rt.gSprites.delete(id);
+    rt.gSprites[id] = undefined;
   }
   _arrowUpOamId = -1;
   _arrowUpOamIndex = -1;
@@ -1281,13 +1281,13 @@ function _tickListScrollArrows(): void {
   const items = _currentPocketItems();
   const maxOffset = Math.max(0, items.length - VISIBLE_ROWS);
 
-  const sUp = _arrowUpOamId >= 0 ? rt.gSprites.get(_arrowUpOamId) : null;
+  const sUp = _arrowUpOamId >= 0 ? rt.gSprites[_arrowUpOamId] : null;
   if (sUp) {
     sUp.invisible = (_scrollOffset === 0);
     sUp.y2 = (gSineTable(_arrowSinePosUp) * 2) >> 8;
     _arrowSinePosUp = (_arrowSinePosUp + 8) & 0xFF;
   }
-  const sDown = _arrowDownOamId >= 0 ? rt.gSprites.get(_arrowDownOamId) : null;
+  const sDown = _arrowDownOamId >= 0 ? rt.gSprites[_arrowDownOamId] : null;
   if (sDown) {
     sDown.invisible = (_scrollOffset >= maxOffset);
     sDown.y2 = (gSineTable(_arrowSinePosDown) * 2) >> 8;
@@ -1366,13 +1366,13 @@ function _despawnRotatingBall(): void {
     _ballMatrixNum = -1;
   }
   if (_ballOamId >= 0) {
-    const spr = rt.gSprites.get(_ballOamId);
+    const spr = rt.gSprites[_ballOamId];
     if (spr) {
       spr.inUse = false;
       const oam = rt.gba.oam[spr.oamIndex];
       if (oam) oam.visible = false;
     }
-    rt.gSprites.delete(_ballOamId);
+    rt.gSprites[_ballOamId] = undefined;
   }
   _ballOamId = -1;
   _ballOamIndex = -1;
@@ -1392,7 +1392,7 @@ function _despawnRotatingBall(): void {
  *  Effet : ctcv alterne -8/-9 chaque frame → wobble 1px du sprite. */
 function _updateBallCoords(): void {
   const rt = getRuntime();
-  const spr = rt?.gSprites.get(_ballOamId);
+  const spr = rt?.gSprites[_ballOamId];
   if (!spr) return;
   const adjusted = _ballData1 - (((_ballData3 + 1) & 1));
   spr.centerToCornerVecX = adjusted;
@@ -1439,7 +1439,7 @@ function _ballApplyMatrix(): void {
 function _ballInitCallback(): void {
   const rt = getRuntime();
   if (!rt || _ballOamId < 0) return;
-  const spr = rt.gSprites.get(_ballOamId);
+  const spr = rt.gSprites[_ballOamId];
   if (!spr) return;
   // sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL.
   const oam = rt.gba.oam[_ballOamIndex];
@@ -2163,7 +2163,7 @@ function _cancelItemSwap(): void {
 function _updateBagSpriteOam(): void {
   const rt = getRuntime();
   if (!rt || _bagSpriteOamId < 0) return;
-  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  const sprite = rt.gSprites[_bagSpriteOamId];
   if (!sprite) return;
   const baseTileNum = _bagSpriteTileStart;
   const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
@@ -2182,7 +2182,7 @@ function _updateBagSpriteOam(): void {
 function _tickBagSpriteJumpAnim(): void {
   const rt = getRuntime();
   if (!rt || _bagSpriteOamId < 0) return;
-  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  const sprite = rt.gSprites[_bagSpriteOamId];
   if (!sprite) return;
   if (sprite.y2 < 0) sprite.y2++;
 }
@@ -2208,7 +2208,7 @@ function _triggerBagShake(): void {
   if (_bagShakeFrame > 0 && _bagShakeFrame < BAG_SHAKE_FRAMES) return; // already shaking
   const rt = getRuntime();
   if (!rt || _bagSpriteOamId < 0) return;
-  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  const sprite = rt.gSprites[_bagSpriteOamId];
   const oam = rt.gba.oam[_bagSpriteOamIndex];
   if (!sprite || !oam) return;
   // 1:1 décomp StartSpriteAffineAnim : switch sprite to AFFINE_NORMAL +
@@ -2264,7 +2264,7 @@ function _tickBagSpriteShake(): void {
     // que le bag continue à rendre correctement.
     const rt = getRuntime();
     if (!rt || _bagSpriteOamId < 0) return;
-    const sprite = rt.gSprites.get(_bagSpriteOamId);
+    const sprite = rt.gSprites[_bagSpriteOamId];
     const oam = rt.gba.oam[_bagSpriteOamIndex];
     if (sprite && oam) {
       oam.affineMode = 0;     // ST_OAM_AFFINE_OFF
@@ -3036,9 +3036,9 @@ function _freeBagMenu(): void {
   const rt = getRuntime();
   // Destroy bag sprite OAM (= 1:1 décomp ResetSpriteData clear all OAM).
   if (_bagSpriteOamId >= 0 && rt) {
-    const spr = rt.gSprites.get(_bagSpriteOamId);
+    const spr = rt.gSprites[_bagSpriteOamId];
     if (spr) spr.inUse = false;
-    rt.gSprites.delete(_bagSpriteOamId);
+    rt.gSprites[_bagSpriteOamId] = undefined;
     const oam = rt.gba.oam[spr?.oamIndex ?? -1];
     if (oam) oam.visible = false;
   }

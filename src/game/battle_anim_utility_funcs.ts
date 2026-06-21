@@ -138,11 +138,11 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
   const itf2 = _itf();
   const atk = (itf2.getAttacker?.() ?? 0) as number;
   const tgt = (itf2.getTarget?.() ?? 1) as number;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   for (const b of [atk, tgt]) {
     const sid = co?.getBattlerMonSpriteId?.(b);
-    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
     const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteBank : undefined;
     if (pal !== undefined) selected &= ~(1 << (16 + pal));
   }
@@ -198,14 +198,14 @@ function AnimTask_TraceMonBlended(task: AnimTask): void {
   task.func = AnimTask_TraceMonBlended_Step;
 }
 function AnimTask_TraceMonBlended_Step(task: AnimTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; gba?: { oam: Array<{ priority: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>; gba?: { oam: Array<{ priority: number }> } } | undefined;
   if (task.data[4]) {
     if (task.data[1]) {
       task.data[1]--;
     } else {
       const cloneId = _ufClone(task.data[0]);
       if (cloneId >= 0) {
-        const c = rt?.gSprites?.get(cloneId);
+        const c = rt?.gSprites?.[cloneId];
         const oam = c ? rt?.gba?.oam[c.oamIndex] : undefined;
         if (oam) oam.priority = task.data[0] ? 1 : 2;
         if (c) {
@@ -316,8 +316,8 @@ function AnimTask_SetAttackerInvisibleWaitForSignal(task: { taskId: number; data
   const attacker = itf.getAttacker?.() ?? 0;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(attacker) ?? 0xFF;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
-  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean } | undefined> } | undefined;
+  const sp = sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
   if (!sp) { (_ufItf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId); return; }
   // 1:1 .c:1087 : data[0] = battlerData[attacker].invisible — le FLAG LOGIQUE
   // (PAS sprite->invisible !). Bug Rayquaza-disparaît-après-ExtremeSpeed
@@ -344,14 +344,14 @@ function AnimTask_SetAttackerInvisibleWaitForSignal(task: { taskId: number; data
 function AnimTask_WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): void {
   const args = _ufItf().getArgs?.() ?? [];
   if (args[7] === 0x1000) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }>; DestroyTask?: (id: number) => void } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean } | undefined>; DestroyTask?: (id: number) => void } | undefined;
     const sd = (globalThis as Record<string, unknown>).__battleSpritesData as {
       setBattlerDataInvisible?: (b: number, v: boolean) => void;
     } | undefined;
     const restored = (task.data[0] & 1) === 1;
     // 1:1 .c:1098 : battlerData.invisible = data[0] & 1 (+ miroir sprite).
     sd?.setBattlerDataInvisible?.(task.data[14], restored);
-    const sp = rt?.gSprites?.get(task.data[15]);
+    const sp = rt?.gSprites?.[task.data[15]];
     if (sp) sp.invisible = restored;
     rt?.DestroyTask?.(task.taskId);
   }
@@ -515,12 +515,12 @@ function AnimTask_SetAllNonAttackersInvisiblity(task: AnimTask): void {
   const attacker = itf.getAttacker?.() ?? 0;
   const args = itf.getArgs?.() ?? [0];
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean; inUse?: boolean }> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean; inUse?: boolean } | undefined> } | undefined;
   for (let battler = 0; battler < 4; battler++) {
     if (battler === attacker) continue;
     const sid = co?.getBattlerMonSpriteId?.(battler);
     if (sid === undefined || sid === 0xFF) continue;
-    const sp = rt?.gSprites?.get(sid);
+    const sp = rt?.gSprites?.[sid];
     if (sp && sp.inUse !== false) sp.invisible = !!args[0];
   }
   itf.DestroyAnimVisualTask?.(task.taskId);
@@ -770,12 +770,12 @@ function AnimTask_BlendColorCycleExclude(task: AnimTask): void {
   const atk = itf2.getAttacker?.() ?? 0;
   const tgt = itf2.getTarget?.() ?? 1;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   let selected = 0;
   for (let b = 0; b < 4; b++) {
     if (b === atk || b === tgt) continue;
     const sid = co?.getBattlerMonSpriteId?.(b);
-    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
     const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteBank : undefined;
     if (pal !== undefined) selected |= 1 << (16 + pal);
   }
@@ -1068,7 +1068,7 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker(task: AnimTask): void {
   const pf = (rt as { gPlttBufferUnfaded?: { set?: (i: number, v: number) => void }; gPlttBufferFaded?: { set?: (i: number, v: number) => void } });
   pf.gPlttBufferUnfaded?.set?.(bgData.paletteId * 16 + 1, 0x7FFF);
   pf.gPlttBufferFaded?.set?.(bgData.paletteId * 16 + 1, 0x7FFF);
-  const sp = (rt as { gSprites?: Map<number, { x: number; y: number }> }).gSprites?.get(monSpriteId);
+  const sp = (rt as { gSprites?: Array<{ x: number; y: number } | undefined> }).gSprites?.[monSpriteId];
   g.gBattle_BG1_X = (-(sp?.x ?? 120) + 32) & 0xFFFF;
   g.gBattle_BG1_Y = (-(sp?.y ?? 80) + 32) & 0xFFFF;
   task.data[0] = newSpriteId;
@@ -1099,8 +1099,8 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker_Step(task: AnimTask): void {
       rt.SetGpuReg?.(0x50, 0);
       rt.SetGpuReg?.(0x52, 0);
       const sid = task.data[0];
-      const rt2 = rt as { DestroySprite?: (i: number) => void; gSprites?: Map<number, unknown> };
-      if (sid >= 0) { rt2.DestroySprite?.(sid); rt2.gSprites?.delete?.(sid); }
+      const rt2 = rt as { DestroySprite?: (i: number) => void; gSprites?: Array<unknown | undefined> };
+      if (sid >= 0) { rt2.DestroySprite?.(sid); if (rt2.gSprites) rt2.gSprites[sid] = undefined; }
       const bgData = _scBgData();
       _scClearAnimBg(bgData.bgId);
       g.gBattle_BG1_Y = 0;

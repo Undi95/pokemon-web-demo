@@ -1189,7 +1189,7 @@ export function resetObjectEventAllocations(): void {
  *  proprement chaque sprite avant le reset.
  *
  *  À appeler AVANT resetObjectEventAllocations + SpawnObjectEventsOnMap. */
-export function destroyAllNpcSprites(rt: { gSprites: { get(slot: number): { oamIndex: number; inUse: boolean } | undefined }; gba: { oam: Array<{ visible: boolean }> } }): void {
+export function destroyAllNpcSprites(rt: { gSprites: ({ oamIndex: number; inUse: boolean } | undefined)[]; gba: { oam: Array<{ visible: boolean }> } }): void {
   for (const npc of gObjectEvents) {
     // [M3] Ne PAS détruire le sprite du joueur : son slot le POSSÈDE désormais
     // (slot.spriteId = gPlayerAvatar.spriteId, unifié), mais le sprite est (re)créé
@@ -1199,7 +1199,7 @@ export function destroyAllNpcSprites(rt: { gSprites: { get(slot: number): { oamI
     // décomp : ResetObjectEvents reset les NPCs, le player object event est géré à part.
     if (npc.isPlayer) continue;
     if (npc.active && npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite) {
         rt.gba.oam[sprite.oamIndex].visible = false;
         sprite.inUse = false;
@@ -1859,7 +1859,7 @@ export function FreezeObjectEvent(npc: ObjectEvent): boolean {
   npc.frozen = true;
   const rt = getRuntime();
   if (rt && npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       npc.spriteAnimPausedBackup = sprite.animPaused;
       npc.spriteAffineAnimPausedBackup = sprite.affineAnimPaused;
@@ -1882,7 +1882,7 @@ export function UnfreezeObjectEvent(npc: ObjectEvent): void {
   npc.frozen = false;
   const rt = getRuntime();
   if (rt && npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.animPaused = npc.spriteAnimPausedBackup;
       sprite.affineAnimPaused = npc.spriteAffineAnimPausedBackup;
@@ -1935,7 +1935,7 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   // face down ; Vigoroth_FacingAway toujours face up). 1:1 décomp sAnim_Go*
   // approx : walkFramesLeft >= 8 → walk1/walk2 (selon walkAnimAlt) ; sinon face.
   if (npc.is32x32) {
-    const sprite32 = rt.gSprites.get(npc.spriteId);
+    const sprite32 = rt.gSprites[npc.spriteId];
     if (!sprite32) return;
     const oam32 = rt.gba.oam[sprite32.oamIndex];
     let frame32 = 0;
@@ -1992,7 +1992,7 @@ _registerNpcHelpers(
 
 function _npcSetStepAnim(rt: DecompRuntime, npc: ObjectEvent, animNum: number): void {
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite || !sprite.anims) return;
   if (npc.inanimate) return;
   sprite.animNum = animNum;
@@ -2009,7 +2009,7 @@ function _npcSetStepAnim(rt: DecompRuntime, npc: ObjectEvent, animNum: number): 
  *  `_InitMoveInPlace` (walk-in-place fast/faster). */
 function _npcStartStepAnimWithNum(rt: DecompRuntime, npc: ObjectEvent, animNum: number): void {
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite || !sprite.anims) return;
   if (npc.inanimate) return;
   sprite.animPaused = false;
@@ -2022,7 +2022,7 @@ function _npcStartWalkAnim(rt: DecompRuntime, npc: ObjectEvent, dir: number): vo
 
 function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite || !sprite.anims) return;
   // 1:1 STRICT décomp `UpdateMovementNormal` (event_object_movement.c:5116) fin de pas :
   //   sprite->animPaused = TRUE;  ← SEULEMENT, ne touche PAS animNum/animCmdIndex.
@@ -2037,7 +2037,7 @@ function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
 
 function _npcSetFaceAnim(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite || !sprite.anims) return;
   if (npc.inanimate) return;
   StartSpriteAnim(sprite as never, GetFaceDirectionAnimNum(npc.facingDirection));
@@ -2512,7 +2512,7 @@ function berryTreeNormal(rt: DecompRuntime, npc: ObjectEvent): boolean {
   npc.invisible = true;
   const berryStage = GetStageByBerryTreeId(npc.trainerRange_berryTreeId);
   if (berryStage === BERRY_STAGE_NO_BERRY) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite && !(npc.berryTreeFlags & BERRY_FLAG_JUST_PICKED) && sprite.animNum === BERRY_STAGE_FLOWERING) {
       // 1:1 décomp (event_object_movement.c:3102-3110) : flowering → plot vide sans
       // cueillette → étoile scintille + animNum = berryStage.
@@ -2523,7 +2523,7 @@ function berryTreeNormal(rt: DecompRuntime, npc: ObjectEvent): boolean {
   }
   npc.invisible = false;
   const berryStageMinusOne = berryStage - 1;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (sprite && sprite.animNum !== berryStageMinusOne) {
     // Stage changed → sparkle anim.
     npc.movementStep = BERRYTREEFUNC_SPARKLE_START;
@@ -2548,7 +2548,7 @@ function berryTreeMove(rt: DecompRuntime, npc: ObjectEvent): boolean {
   // ⚠️ Sans cette attente (ancien port qui retournait NORMAL immédiatement),
   // setBerryTreeGraphics était rappelé CHAQUE frame → reset animCmdIndex=0 →
   // sprite figé sur la 1re frame (bug "berry tree pas animé").
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (sprite && sprite.anims && !sprite.animEnded) return false;  // anim en cours → rester en MOVE
   npc.movementStep = BERRYTREEFUNC_NORMAL;
   return true;
@@ -2559,7 +2559,7 @@ function berryTreeMove(rt: DecompRuntime, npc: ObjectEvent): boolean {
  *  (INTERNAL), [2] = subpriority-1, [3] = oam.priority. Chemin 1:1 (dispatcher → FldEff
  *  migré dans game/field_effect_helpers.ts) ; FieldEffectStart déjà importé pour le spine. */
 function _startBerryTreeGrowthSparkle(rt: DecompRuntime, npc: ObjectEvent): void {
-  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
   const priority = sprite && sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].priority ?? 2) : 2;
   const subpriority = sprite ? sprite.subpriority : 0;
   gFieldEffectArguments[0] = npc.currentCoordsX;
@@ -2584,7 +2584,7 @@ function berryTreeSparkleStart(rt: DecompRuntime, npc: ObjectEvent): boolean {
 function berryTreeSparkle(rt: DecompRuntime, npc: ObjectEvent): boolean {
   npc.berryTreeTimer++;
   npc.invisible = ((npc.berryTreeTimer & 2) >> 1) === 1;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (sprite) sprite.animPaused = true;
   if (npc.berryTreeTimer > 64) {
     setBerryTreeGraphics(rt, npc);
@@ -2599,7 +2599,7 @@ function berryTreeSparkle(rt: DecompRuntime, npc: ObjectEvent): boolean {
 function berryTreeSparkleEnd(rt: DecompRuntime, npc: ObjectEvent): boolean {
   npc.berryTreeTimer++;
   npc.invisible = ((npc.berryTreeTimer & 2) >> 1) === 1;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (sprite) sprite.animPaused = true;
   if (npc.berryTreeTimer > 64) {
     npc.movementStep = BERRYTREEFUNC_NORMAL;
@@ -2792,7 +2792,7 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     if (!npc.disguiseStarted) {
       npc.fixedPriority = true;
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite) {
           // 1:1 décomp `sprite->oam.priority = 3` (= behind tiles) via oamIndex.
           rt.gba.oam[sprite.oamIndex].priority = 3;
@@ -3990,8 +3990,8 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
     // Le player a son sprite visuel sur gPlayerAvatar.spriteId (le slot a spriteId=-1) ;
     // les NPCs sur npc.spriteId. ObjectEventUpdateSubpriority (1:1) tourne pour TOUS.
     const sprite = npc.isPlayer
-      ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites.get(gPlayerAvatar.spriteId) : undefined)
-      : (npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined);
+      ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites[gPlayerAvatar.spriteId] : undefined)
+      : (npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : undefined);
     DoGroundEffects_OnSpawn(rt, npc, sprite);
 
     if (ObjectEventIsHeldMovementActive(npc)) {
@@ -4366,7 +4366,7 @@ function _InitNpcForWalkSlow(rt: DecompRuntime, npc: ObjectEvent, direction: num
   ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
   _SetWalkSlowSpriteData(npc, direction);
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.animPaused = false;
   }
   // H4.3 fix : 1:1 strict décomp InitNpcForWalkSlow set triggerGroundEffectsOnMove=TRUE.
@@ -4463,14 +4463,14 @@ function _makeWalkDownAffineActionStrict(affineAnimId: number): MovementActionFu
       // H3.5 1:1 strict : sprite.affineAnimPaused = FALSE +
       // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite) sprite.affineAnimPaused = false;
       }
       _ChangeSpriteAffineAnimIfDifferent(rt, npc, affineAnimId);
       if (_UpdateWalkSlow(rt, npc)) {
         // H3.5 1:1 strict : affineAnimPaused = TRUE quand done.
         if (npc.spriteId >= 0) {
-          const sprite = rt.gSprites.get(npc.spriteId);
+          const sprite = rt.gSprites[npc.spriteId];
           if (sprite) sprite.affineAnimPaused = true;
         }
         npc.actionStep = 2;
@@ -4481,7 +4481,7 @@ function _makeWalkDownAffineActionStrict(affineAnimId: number): MovementActionFu
     if (_UpdateWalkSlow(rt, npc)) {
       // H3.5 1:1 strict : affineAnimPaused = TRUE quand done.
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite) sprite.affineAnimPaused = true;
       }
       npc.actionStep = 2;
@@ -4585,7 +4585,7 @@ function _MovementAction_WalkInPlace_Step1(rt: DecompRuntime, npc: ObjectEvent):
  *  ⚠️ check `& 1` AVANT le décrément (le décrément est dans _MovementAction_WalkInPlace_Step1). */
 function _MovementAction_WalkInPlaceSlow_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.actionTimer & 1) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.animDelayCounter++;
   }
   return _MovementAction_WalkInPlace_Step1(rt, npc);
@@ -4793,7 +4793,7 @@ void ANIM_BUNNY_HOP_BACK_WHEEL;
 //   Step1 : MovementAction_WaitSpriteAnim (à animEnded → actionStep=2).
 //   Step2 : MovementAction_PauseSpriteAnim (animPaused=TRUE) → DONE.
 function _MovementAction_NurseJoyBowDown(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
   if (npc.actionStep === 0) {
     // 1:1 décomp StartSpriteAnimInDirection(obj, sprite, DIR_SOUTH, ANIM_NURSE_BOW) (+ sActionFuncId=1).
     SetObjectEventDirection(npc, DIR_SOUTH);
@@ -4817,7 +4817,7 @@ function _MovementAction_NurseJoyBowDown(rt: DecompRuntime, npc: ObjectEvent): b
 // dispatcher multi-step (Step0 start anim → Step1 WaitSpriteAnim + SetMovementDelay(32) → Step2 flicker
 // invisible + WaitForMovementDelay → invisible + DONE).
 function _MovementAction_RockSmashBreak(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
   if (npc.actionStep === 0) {
     if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE); sprite.animPaused = false; }
     npc.actionStep = 1;
@@ -4847,7 +4847,7 @@ function _MovementAction_RockSmashBreak(rt: DecompRuntime, npc: ObjectEvent): bo
 //           à animEnded : SetMovementDelay(32) (= sprite.data[3]) ; actionStep=2.
 //   Step2 : invisible ^= TRUE (clignote) ; WaitForMovementDelay (--data[3]==0) → invisible=TRUE + DONE.
 function _MovementAction_CutTree(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
   if (npc.actionStep === 0) {
     if (sprite && sprite.anims) { StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE); sprite.animPaused = false; }
     npc.actionStep = 1;
@@ -4955,7 +4955,7 @@ function _DoJumpSpriteMovement(rt: DecompRuntime, npc: ObjectEvent): number {
   const shift = distanceToShift[dist] ?? 0;
   const yIdx = Math.min(15, npc.actionTimer >> shift);
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.y2 = _sJumpYTable[type][yIdx] ?? 0;
   }
   npc.actionTimer++;
@@ -4963,7 +4963,7 @@ function _DoJumpSpriteMovement(rt: DecompRuntime, npc: ObjectEvent): number {
   if (npc.actionTimer === halfTime) return JUMP_HALFWAY;
   if (npc.actionTimer >= (distanceToTime[dist] ?? 16)) {
     if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite) sprite.y2 = 0;
     }
     return JUMP_FINISHED;
@@ -5036,7 +5036,7 @@ function _DoJumpSpecialSpriteMovement(rt: DecompRuntime, npc: ObjectEvent): numb
   const shift = distanceToShift[dist] ?? 1;
   const yIdx = Math.min(15, npc.actionTimer >> shift);
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.y2 = _sJumpYTable[type][yIdx] ?? 0;
   }
   npc.actionTimer++;
@@ -5044,7 +5044,7 @@ function _DoJumpSpecialSpriteMovement(rt: DecompRuntime, npc: ObjectEvent): numb
   if (npc.actionTimer === halfTime) return JUMP_HALFWAY;
   if (npc.actionTimer >= (distanceToTime[dist] ?? 32)) {
     if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite) sprite.y2 = 0;
     }
     return JUMP_FINISHED;
@@ -5138,7 +5138,7 @@ function _makeAcroWheelieFaceAction(dir: number): MovementActionFunc {
     SetObjectEventDirection(npc, dir);
     ShiftStillObjectEventCoords(npc);
     if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite && sprite.anims) {
         StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
         sprite.animPaused = true;
@@ -5158,7 +5158,7 @@ function _makeAcroWheelieFaceAction(dir: number): MovementActionFunc {
  *  Sans ça : action jamais finie → held bloqué → TryInterrupt gèle l'input wheelie (bfc reste 0). */
 function _makeAcroPopWheelieAction(dir: number): MovementActionFunc {
   return (rt, npc) => {
-    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+    const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
     if (npc.actionStep === 0) {
       SetObjectEventDirection(npc, dir);
       // 1:1 décomp StartSpriteAnimInDirection→SetAndStartSpriteAnim : clear animPaused (sinon l'anim
@@ -5185,7 +5185,7 @@ function _makeAcroPopWheelieAction(dir: number): MovementActionFunc {
  *  Idem pop wheelie : anim one-shot end-wheelie avancée ici (notre port ne tick pas le joueur ailleurs). */
 function _makeAcroEndWheelieFaceAction(dir: number): MovementActionFunc {
   return (rt, npc) => {
-    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+    const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
     if (npc.actionStep === 0) {
       SetObjectEventDirection(npc, dir);
       // 1:1 SetAndStartSpriteAnim : clear animPaused (l'idle wheelie a posé animPaused=TRUE).
@@ -5220,7 +5220,7 @@ function _makeAcroWheelieJumpAction(dir: number, distance: number, type: number)
       _InitJump(rt, npc, dir, distance, type);
       // 1:1 décomp : StartSpriteAnim wheelie au lieu de walk anim.
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite && sprite.anims) {
           StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
         }
@@ -5247,7 +5247,7 @@ function _makeAcroWheelieInPlaceAction(dir: number): MovementActionFunc {
       // InitMoveInPlace avec wheelie pedal anim au lieu de walk anim.
       SetObjectEventDirection(npc, dir);
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite && sprite.anims) {
           StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
         }
@@ -5268,7 +5268,7 @@ function _makeAcroPopWheelieMoveAction(dir: number): MovementActionFunc {
     if (npc.actionStep === 0) {
       _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite && sprite.anims) {
           // 1:1 décomp : StartSpriteAnim(wheelie back wheel) + SeekSpriteAnim(0).
           StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
@@ -5287,7 +5287,7 @@ function _makeAcroWheelieMoveAction(dir: number): MovementActionFunc {
     if (npc.actionStep === 0) {
       _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite && sprite.anims) {
           // 1:1 décomp : SetStepAnim(moving wheelie pedal).
           StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
@@ -5311,7 +5311,7 @@ void ST_OAM_AFFINE_NORMAL;
  *  Notre TS : set affineAnimNum + reset cmd index. */
 function _ChangeSpriteAffineAnimIfDifferent(rt: DecompRuntime, npc: ObjectEvent, affineAnimNum: number): void {
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite) return;
   if (sprite.affineAnimNum !== affineAnimNum) {
     sprite.affineAnimNum = affineAnimNum;
@@ -5333,7 +5333,7 @@ function _ChangeSpriteAffineAnimIfDifferent(rt: DecompRuntime, npc: ObjectEvent,
  *  GBA OAM), pas critique pour le state machine. */
 function _MovementAction_InitAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.affineMode = ST_OAM_AFFINE_DOUBLE;
       sprite.affineAnimPaused = true;
@@ -5354,7 +5354,7 @@ function _MovementAction_InitAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEven
  *  + CalcCenterToCornerVec cascade. */
 function _MovementAction_ClearAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.affineMode = ST_OAM_AFFINE_OFF;
       // DETTE R3 : FreeOamMatrix(matrixNum) + CalcCenterToCornerVec.
@@ -5417,7 +5417,7 @@ function _ApplyLevitateMovement(rt: DecompRuntime, state: _LevitateTaskState): v
   const npc = gObjectEvents[state.objEventId];
   if (!npc || !npc.active) return;
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite) return;
 
   if ((state.timer & 3) === 0) sprite.y2 += state.direction;
@@ -5455,7 +5455,7 @@ function _MovementAction_Levitate_Step0(_rt: DecompRuntime, npc: ObjectEvent): b
 function _MovementAction_StopLevitate_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   _DestroyLevitateMovementTask(npc.warpArrowSpriteId);
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.y2 = 0;
   }
   npc.actionStep = 1;
@@ -5470,7 +5470,7 @@ function _MovementAction_StopLevitate_Step0(rt: DecompRuntime, npc: ObjectEvent)
  *    return FALSE; */
 function _MovementAction_StopLevitateAtTop_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite && sprite.y2 === 0) {
       _DestroyLevitateMovementTask(npc.warpArrowSpriteId);
       npc.actionStep = 1;
@@ -5528,7 +5528,7 @@ function _InitSpriteForFigure8Anim(npc: ObjectEvent): void {
 function _InitFigure8Anim(rt: DecompRuntime, npc: ObjectEvent): void {
   _InitSpriteForFigure8Anim(npc);
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.animPaused = false;
   }
 }
@@ -5544,7 +5544,7 @@ function _InitFigure8Anim(rt: DecompRuntime, npc: ObjectEvent): void {
  *    if (data[7] == 4) { y2=0; x2=0; finished=TRUE; } */
 function _AnimateSpriteInFigure8(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId < 0) return true;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite) return true;
 
   // x2 field — notre DecompSprite a x2 (cf. decomp-runtime.ts).
@@ -5591,7 +5591,7 @@ function _DoFigure8Anim(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (_AnimateSpriteInFigure8(rt, npc)) {
     ShiftStillObjectEventCoords(npc);
     if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite) sprite.animPaused = true;
     }
     return true;
@@ -5647,7 +5647,7 @@ function _makeWalkAffineAction(dir: number, affineAnimId: number): MovementActio
       // H3.5 1:1 strict : sprite.affineAnimPaused = FALSE +
       // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite) sprite.affineAnimPaused = false;
       }
       _ChangeSpriteAffineAnimIfDifferent(rt, npc, affineAnimId);
@@ -5663,7 +5663,7 @@ const DISPLAY_HEIGHT = 160;
  *    sprite->y2 = 0; sprite->sActionFuncId++; return FALSE; */
 function _MovementAction_FlyUp_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.y2 = 0;
   }
   npc.actionStep = 1;
@@ -5676,7 +5676,7 @@ function _MovementAction_FlyUp_Step0(rt: DecompRuntime, npc: ObjectEvent): boole
  *    return FALSE; */
 function _MovementAction_FlyUp_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.y2 -= 8;
       if (sprite.y2 === -DISPLAY_HEIGHT) {
@@ -5691,7 +5691,7 @@ function _MovementAction_FlyUp_Step1(rt: DecompRuntime, npc: ObjectEvent): boole
  *    sprite->y2 = -DISPLAY_HEIGHT; sActionFuncId++; return FALSE; */
 function _MovementAction_FlyDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.y2 = -DISPLAY_HEIGHT;
   }
   npc.actionStep = 1;
@@ -5702,7 +5702,7 @@ function _MovementAction_FlyDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boo
  *    sprite->y2 += 8; if (!sprite->y2) sActionFuncId++; return FALSE; */
 function _MovementAction_FlyDown_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.y2 += 8;
       if (sprite.y2 === 0) {
@@ -5775,7 +5775,7 @@ function _makeAcroEndWheelieMoveAction(dir: number): MovementActionFunc {
     if (npc.actionStep === 0) {
       _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
       if (npc.spriteId >= 0) {
-        const sprite = rt.gSprites.get(npc.spriteId);
+        const sprite = rt.gSprites[npc.spriteId];
         if (sprite && sprite.anims) {
           // 1:1 décomp : StartSpriteAnim(standing wheelie back wheel anim) + SeekSpriteAnim(0).
           StartSpriteAnim(sprite as never, sAcroEndWheelieDirectionAnimNums[dir] ?? 0);
@@ -5799,7 +5799,7 @@ function _MovementAction_StartAnimInDirection_Step0(rt: DecompRuntime, npc: Obje
   // Notre table aplatit les sActionFuncId dans `npc.actionStep`. AVANT (DETTE H1) : seul Step0 →
   // le held ne finissait JAMAIS (heldMovementFinished restait FALSE) → bloquait p.ex. la pose
   // field-move de la montée de surf (SurfFieldEffect_ShowMon attend ObjectEventCheckHeldMovementStatus).
-  const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
   if (npc.actionStep === 0) {
     // 1:1 `StartSpriteAnimInDirection` (event_object_movement.c:6084) : SetAndStartSpriteAnim(animNum, 0)
     // (re-démarre l'anim courante depuis frame 0) + SetObjectEventDirection + sActionFuncId = 1.
@@ -6546,7 +6546,7 @@ function _applyBerryTreeStageGraphicsLive(rt: DecompRuntime, npc: ObjectEvent): 
   // 1:1 décomp : objectEvent->invisible = sprite->invisible = TRUE ; remis FALSE si stade.
   npc.invisible = true;
   if (npc.spriteId < 0) return;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (!sprite) return;
   sprite.invisible = true;
   const g = _resolveBerryTreeStageGfx(npc);
@@ -6664,7 +6664,7 @@ function _setupBerryTreeSpriteGraphics(npc: ObjectEvent, rt: DecompRuntime): boo
     affineMode: 0,
   });
   npc.spriteId = result.spriteId;
-  const sprite = rt.gSprites.get(npc.spriteId);
+  const sprite = rt.gSprites[npc.spriteId];
   if (sprite) {
     sprite.tileBase = objTileBase;
     sprite.images = picTable;
@@ -7158,7 +7158,7 @@ function _spawnSingleNpcFromTemplate(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.tileBase = objTileBase;
       // 1:1 STRICT décomp sprite.c:CreateSpriteAt — branch tileTag==TAG_NONE :
@@ -7260,7 +7260,7 @@ function _spawnSingleNpcFromTemplate(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.tileBase = objTileBase;
     rt.gba.oam[result.oamIndex].flipH = false;
     // 1:1 décomp `SetSubspriteTables(sprite, sOamTables_48x48)` : alloue 12
@@ -7300,7 +7300,7 @@ function _spawnSingleNpcFromTemplate(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.tileBase = objTileBase;
       // Fix B3 : pour les NPCs 16x16 (= kids NINJA_BOY etc.), shift Y de +8
@@ -7341,7 +7341,7 @@ function _spawnSingleNpcFromTemplate(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.tileBase = objTileBase;
     rt.gba.oam[result.oamIndex].flipH = false;
   } else {
@@ -7361,7 +7361,7 @@ function _spawnSingleNpcFromTemplate(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.hFlip = cfg.hFlip;
     rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
   }
@@ -7533,7 +7533,7 @@ async function _respawnNpcSpriteForReturnToField(
       affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.tileBase = objTileBase;
       // Wire 1:1 strict décomp sprite.c:CreateSpriteAt + event_object_movement.c:1461-1471.
@@ -7609,7 +7609,7 @@ async function _respawnNpcSpriteForReturnToField(
       priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.tileBase = objTileBase;
     SetSubspriteTables(npc.spriteId, sOamTable_48x48);
     npc.useSubsprites = true;
@@ -7629,7 +7629,7 @@ async function _respawnNpcSpriteForReturnToField(
       priority: elevPriority, paletteMode: 0, affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.tileBase = objTileBase;
     if (subspriteNum === 2) SetSubspriteTables(npc.spriteId, sOamTable_16x16_2);
   } else if (is32x32) {
@@ -7640,7 +7640,7 @@ async function _respawnNpcSpriteForReturnToField(
       priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.tileBase = objTileBase;
   } else {
     const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
@@ -7652,7 +7652,7 @@ async function _respawnNpcSpriteForReturnToField(
       priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
     });
     npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) sprite.hFlip = cfg.hFlip;
     rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
   }
@@ -7776,7 +7776,7 @@ function _restorePlayerNormalGfx(objectEvent: ObjectEvent, sprite: DecompSprite,
 export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: string): void {
   const rt = getRuntime();
   if (objectEvent.spriteId < 0) return;
-  const sprite = rt.gSprites.get(objectEvent.spriteId);
+  const sprite = rt.gSprites[objectEvent.spriteId];
   if (!sprite) return;
   const oam = rt.gba.oam[sprite.oamIndex];
 
@@ -8174,7 +8174,7 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (!sprite) continue;
 
     // Post R3 refactor : npc.currentCoords stockés INTERNAL → use direct.
@@ -8262,7 +8262,7 @@ export function DestroyAllObjectEvents(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
     if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
+      const sprite = rt.gSprites[npc.spriteId];
       if (sprite) {
         sprite.inUse = false;
         rt.gba.oam[sprite.oamIndex].visible = false;
@@ -8366,7 +8366,7 @@ function SpriteCB_CameraObject(sprite: DecompSprite): void {
 /** 1:1 décomp `CameraObject_Init(struct Sprite *sprite)` (event_object_movement.c:2244). */
 function CameraObject_Init(sprite: DecompSprite): void {
   const rt = getRuntime();
-  const follow = rt.gSprites.get(sprite.data[0]);
+  const follow = rt.gSprites[sprite.data[0]];
   if (!follow) return; // garde plateforme : sprite suivi pas encore créé.
   sprite.x = follow.x;
   sprite.y = follow.y;
@@ -8378,7 +8378,7 @@ function CameraObject_Init(sprite: DecompSprite): void {
 /** 1:1 décomp `CameraObject_UpdateMove(struct Sprite *sprite)` (event_object_movement.c:2253). */
 function CameraObject_UpdateMove(sprite: DecompSprite): void {
   const rt = getRuntime();
-  const follow = rt.gSprites.get(sprite.data[0]);
+  const follow = rt.gSprites[sprite.data[0]];
   if (!follow) return;
   const x = follow.x;
   const y = follow.y;
@@ -8392,7 +8392,7 @@ function CameraObject_UpdateMove(sprite: DecompSprite): void {
  *  Continue à suivre le parent mais ne produit AUCUN mouvement caméra. */
 function CameraObject_UpdateFrozen(sprite: DecompSprite): void {
   const rt = getRuntime();
-  const follow = rt.gSprites.get(sprite.data[0]);
+  const follow = rt.gSprites[sprite.data[0]];
   if (!follow) return;
   sprite.x = follow.x;
   sprite.y = follow.y;
@@ -8417,7 +8417,7 @@ export function AddCameraObject(followSpriteId: number): number {
     subpriority: 4,
   });
   if (spriteId === MAX_SPRITES) return MAX_SPRITES;
-  const sprite = rt.gSprites.get(spriteId)!;
+  const sprite = rt.gSprites[spriteId]!;
   sprite.invisible = true;
   sprite.callback = SpriteCB_CameraObject;
   sprite.data[0] = followSpriteId; // sCamera_FollowSpriteId
@@ -8429,7 +8429,7 @@ function FindCameraSprite(): DecompSprite | null {
   const rt = getRuntime();
   // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[i]).
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s !== undefined && s.inUse && s.callback === SpriteCB_CameraObject) return s;
   }
   return null;
@@ -8523,7 +8523,7 @@ export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
       && npc.initialCoordsY >= top && npc.initialCoordsY <= bottom;
     if (inViewCurrent || inViewInitial) continue;
     // NPC outside view+buffer → remove.
-    const sprite = rt.gSprites.get(npc.spriteId);
+    const sprite = rt.gSprites[npc.spriteId];
     if (sprite) {
       sprite.inUse = false;
       rt.gba.oam[sprite.oamIndex].visible = false;

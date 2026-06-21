@@ -121,8 +121,8 @@ function _battlerSpriteId(battler: number): number {
   return (id === undefined || id === null || id < 0) ? 0xFF : id;
 }
 function _spriteById(id: number): _VSprite | undefined {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, _VSprite> } | undefined;
-  return rt?.gSprites?.get(id);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<_VSprite | undefined> } | undefined;
+  return rt?.gSprites?.[id];
 }
 // OamEntry hardware du sprite (pattern battle_interface/pokeball : rt.gba.oam[oamIndex]).
 // syncSpritesToOam ne ré-écrit PAS priority → la mutation persiste (1:1 sprite->oam.priority).

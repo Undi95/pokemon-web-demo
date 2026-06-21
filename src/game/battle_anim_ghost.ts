@@ -500,7 +500,7 @@ function _f36Itf(): { getArgs?: () => number[]; getAttacker?: () => number; getT
 }
 type _F36Sprite = { data: number[]; x2: number; invisible?: boolean; callback: unknown; oamIndex: number };
 function _f36Rt(): {
-  gSprites?: Map<number, _F36Sprite>;
+  gSprites?: Array<_F36Sprite | undefined>;
   SetGpuReg?: (off: number, v: number) => void;
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
@@ -523,7 +523,7 @@ function AnimTask_NightShadeClone(task: _F36Task): void {
   if (spriteId === 0xFF) { _f36Itf().DestroyAnimVisualTask?.(task.taskId); return; }
   _f36Prep(spriteId, 1 /* ST_OAM_OBJ_BLEND */);
   _f36SetRS(spriteId, 128, 128, 0);
-  const sp = rt.gSprites?.get(spriteId);
+  const sp = rt.gSprites?.[spriteId];
   if (sp) sp.invisible = false;
   task.data[0] = 128;
   task.data[1] = (_f36Itf().getArgs?.() ?? [0])[0] | 0;  // *gBattleAnimArgs
@@ -576,7 +576,7 @@ function AnimTask_NightmareClone(task: _F36Task): void {
   const rt = _f36Rt();
   rt.SetGpuReg?.(_F36_BLDCNT, 0x3F40);
   rt.SetGpuReg?.(_F36_BLDALPHA, _f36Blend(task.data[2], task.data[3]));
-  const clone = rt.gSprites?.get(task.data[0]);
+  const clone = rt.gSprites?.[task.data[0]];
   if (clone) {
     clone.data[0] = 80;
     const targetSide = (itf.getTarget?.() ?? 1) & 1;
@@ -643,7 +643,7 @@ function _gfItf2(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: n
 }
 type _GfSprite = { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
 function _gfRt(): {
-  gSprites?: Map<number, _GfSprite>;
+  gSprites?: Array<_GfSprite | undefined>;
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -704,7 +704,7 @@ function AnimTask_GrudgeFlames_Step(task: _GfTask): void {
       for (let i = 0; i < 6; i++) {
         const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[6]) ?? -1;
         if (sid >= 0) {
-          const sp = rt.gSprites?.get(sid);
+          const sp = rt.gSprites?.[sid];
           const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
           if (oam && tileStart !== 0xFFFF) {
             oam.tileId = tileStart;
@@ -782,7 +782,9 @@ function _AnimGrudgeFlame(sprite: _GfSprite): void {
   sprite.y2 = _gfSin(sprite.data[6], 7);
   if (t.data[8]) {
     t.data[7]--;
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }
@@ -810,7 +812,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
   const itf = _dbItf();
   const args = itf.getArgs?.() ?? [40, 48];
   const rt = _gfRt() as unknown as {
-    gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown; oamIndex: number }>;
+    gSprites?: Array<{ x: number; y: number; data: number[]; callback: unknown; oamIndex: number } | undefined>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     DestroySprite?: (i: number) => void;
     SetGpuReg?: (o: number, v: number) => void;
@@ -835,7 +837,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 2, priority: 2, objMode: 1 }, images: [] } as never, baseX, baseY, 55) ?? -1;
   if (sid >= 0) {
-    const sp = rt.gSprites?.get(sid);
+    const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
@@ -934,7 +936,7 @@ function _spwItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: num
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _spwRt(): {
-  gSprites?: Map<number, { y: number; y2: number; invisible?: boolean; oamIndex: number; data: number[]; callback: unknown }>;
+  gSprites?: Array<{ y: number; y2: number; invisible?: boolean; oamIndex: number; data: number[]; callback: unknown } | undefined>;
   SetGpuReg?: (o: number, v: number) => void;
   DestroyTask?: (id: number) => void;
   gba?: { oam: Array<{ paletteBank: number; objMode: number; priority: number }>; bg: (i: number) => { config: { visible: boolean } } };
@@ -976,7 +978,7 @@ function AnimTask_SpiteTargetShadow_Step1(task: _SpwTask): void {
         itf.DestroyAnimVisualTask?.(task.taskId);
         break;
       }
-      const clone = rt.gSprites?.get(task.data[0]);
+      const clone = rt.gSprites?.[task.data[0]];
       const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
       if (cloneOam) {
         cloneOam.paletteBank = task.data[14];
@@ -998,7 +1000,7 @@ function AnimTask_SpiteTargetShadow_Step1(task: _SpwTask): void {
       task.data[2] = 0;
       task.data[3] = 16;
       task.data[13] = _spwTgtSpriteId();
-      const tgtSp = rt.gSprites?.get(task.data[13]);
+      const tgtSp = rt.gSprites?.[task.data[13]];
       const tgtOam = tgtSp ? rt.gba?.oam[tgtSp.oamIndex] : undefined;
       task.data[4] = 256 + (tgtOam?.paletteBank ?? 0) * 16; // OBJ_PLTT_ID2
       const cfg = rt.gba?.bg(position === 1 ? 1 : 2)?.config;
@@ -1018,7 +1020,7 @@ function AnimTask_SpiteTargetShadow_Step1(task: _SpwTask): void {
       break;
     }
     case 2: {
-      const tgtSp = rt.gSprites?.get(task.data[13]);
+      const tgtSp = rt.gSprites?.[task.data[13]];
       let startLine = (tgtSp ? tgtSp.y + tgtSp.y2 : 56) - 32;
       if (startLine < 0) startLine = 0;
       task.data[10] = _spwInitWave(startLine, startLine + 64, 2, 6, 0, position === 1 ? _spwRegBg1H : _spwRegBg2H, true);
@@ -1071,7 +1073,7 @@ function AnimTask_SpiteTargetShadow_Step3(task: _SpwTask): void {
       _spwBlend(task.data[4], 16, 0, _SPW_VIOLET);
       break;
     case 2: {
-      const tgtSp = rt.gSprites?.get(task.data[14]);
+      const tgtSp = rt.gSprites?.[task.data[14]];
       if (tgtSp) tgtSp.invisible = true;
       const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { DestroySpriteWithActiveSheet?: (id: number) => void } | undefined;
       mons?.DestroySpriteWithActiveSheet?.(task.data[0]);
@@ -1096,6 +1098,7 @@ _f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
 // BLDY 16) noircit le décor ; à 16 pas, fade des palettes BG vers noir puis
 // teardown complet quand gPaletteFade.active retombe.
 import { BeginNormalPaletteFade as _csBeginFade } from '../engine/system/decomp-bridge';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 const _CS_REG_WININ = 0x48;
 const _CS_REG_WINOUT = 0x4A;
@@ -1201,15 +1204,15 @@ function AnimMonMoveCircular(sprite: _McSprite): void {
   sprite.data[2] = args[0] | 0;
   sprite.data[3] = args[1] | 0;
   sprite.callback = AnimMonMoveCircular_Step;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y: number }> } | undefined;
-  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.get(sprite.data[5]) : undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ y: number } | undefined> } | undefined;
+  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.[sprite.data[5]] : undefined;
   if (mon) mon.y += 8;
 }
 
 /** 1:1 `AnimMonMoveCircular_Step` (battle_anim_ghost.c:1322). */
 function AnimMonMoveCircular_Step(sprite: _McSprite): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; y: number }> } | undefined;
-  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.get(sprite.data[5]) : undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number; y: number } | undefined> } | undefined;
+  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.[sprite.data[5]] : undefined;
   if (sprite.data[3]) {
     sprite.data[3]--;
     if (mon) {

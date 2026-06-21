@@ -103,7 +103,7 @@ const BATTLER_AFFINE_TABLE_NAMES: Record<BattlerAffineSide, string> = {
  *  Idempotent : repeated calls reuse the same matrix slot.
  *  Returns the allocated matrixNum, or -1 on failure. */
 export function SetUpForReleaseAffineAnim(rt: DecompRuntime, monSpriteId: number, side: BattlerAffineSide = 'player'): number {
-  const sprite = rt.gSprites.get(monSpriteId);
+  const sprite = rt.gSprites[monSpriteId];
   if (!sprite) return -1;
 
   // Allocate a matrix slot if the sprite doesn't already own one (= matrixNum > 0).
@@ -132,7 +132,7 @@ export function SetUpForReleaseAffineAnim(rt: DecompRuntime, monSpriteId: number
  *  1:1 décomp pattern : `gSprites[id].oam.affineMode = ST_OAM_AFFINE_OFF` +
  *  `FreeOamMatrix(matrixNum)` (cf. main_menu.c:Task_NewGameBirchSpeechSub_WaitForLotad). */
 export function TearDownReleaseAffineAnim(rt: DecompRuntime, monSpriteId: number): void {
-  const sprite = rt.gSprites.get(monSpriteId);
+  const sprite = rt.gSprites[monSpriteId];
   if (!sprite) return;
 
   if (sprite.matrixNum > 0) {
@@ -444,7 +444,7 @@ function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number,
     shape: 0, size: 0, priority,
   });
   if (spriteId < 0) return;
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (!sprite) return;
 
   sprite.data[0] = angleIdx;

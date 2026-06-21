@@ -1887,7 +1887,7 @@ function _taskAnimateAfterDelay(task: { taskId: number; data: number[] }): void 
   const rt = getRuntime(); if (!rt) return;
   if (--task.data[3] === 0) {
     const sprId = (task.data[0] | (task.data[1] << 16)) >>> 0;
-    const spr = rt.gSprites.get(sprId);
+    const spr = rt.gSprites[sprId];
     if (spr) StartMonSummaryAnimation(spr, task.data[2]);
     _animDelayTaskId = -1;
     rt.DestroyTask(task.taskId);
@@ -1924,7 +1924,7 @@ let _frameAnimTaskId = -1;
 
 function _applyFrame(st: FrameAnimState): void {
   const rt = getRuntime(); if (!rt) return;
-  const spr = rt.gSprites.get(st.spriteId); if (!spr) return;
+  const spr = rt.gSprites[st.spriteId]; if (!spr) return;
   const img = st.cmds[st.idx]?.[0] ?? 0;
   rt.gba.oam[spr.oamIndex].tileId = st.base + img * st.frameTiles;
 }
@@ -1955,7 +1955,7 @@ function _stopMonFrameAnim(): void {
   const rt = getRuntime();
   if (_frameAnimTaskId >= 0) { try { rt?.DestroyTask(_frameAnimTaskId); } catch { /* */ } _frameAnimTaskId = -1; }
   if (_frameAnim && rt) {                          // remet frame 0 (= GeneralFrame0)
-    const spr = rt.gSprites.get(_frameAnim.spriteId);
+    const spr = rt.gSprites[_frameAnim.spriteId];
     if (spr) rt.gba.oam[spr.oamIndex].tileId = _frameAnim.base;
   }
   _frameAnim = null;

@@ -171,7 +171,7 @@ export class DebugOverlayScene extends Phaser.Scene {
       const noclip = (globalThis as unknown as { __devNoclip?: boolean }).__devNoclip
         ? ' [NOCLIP]' : '';
       this.statusText.setText(
-        `frame:${rt.gIntroFrameCounter} tasks:${rt.gTasks.size} sprites:${rt.gSprites.size} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}`,
+        `frame:${rt.gIntroFrameCounter} tasks:${rt.gTasks.size} sprites:${rt.gSprites.filter(Boolean).length} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}`,
       );
     } catch {
       this.statusText.setText(`fps:${Math.round(this.game.loop.actualFps)}`);

@@ -274,7 +274,7 @@ export function CreateWarpArrowSprite(rt: DecompRuntime): number {
     subpriority: 82 & 0xFF,
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return MAX_SPRITES;
   // 1:1 : .anims = sAnimTable_Arrow, callback = SpriteCallbackDummy (pas de callback custom :
   // le moteur tique l'anim). oam.priority=1, coordOffsetEnabled=TRUE, invisible=TRUE.
@@ -287,14 +287,14 @@ export function CreateWarpArrowSprite(rt: DecompRuntime): number {
 
 /** 1:1 décomp `SetSpriteInvisible` (field_effect_helpers.c:188). */
 export function SetSpriteInvisible(rt: DecompRuntime, spriteId: number): void {
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) sprite.invisible = true;
 }
 
 /** 1:1 décomp `ShowWarpArrowSprite` (field_effect_helpers.c:193). mapX/mapY = INTERNAL.
  *  Re-positionne + montre + (re)lance l'anim de direction si la cible/visibilité a changé. */
 export function ShowWarpArrowSprite(rt: DecompRuntime, spriteId: number, direction: number, x: number, y: number): void {
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (!sprite) return;
   // 1:1 : if (invisible || sPrevX != x || sPrevY != y).
   if (sprite.invisible || sprite.data[0] !== x || sprite.data[1] !== y) {
@@ -372,7 +372,7 @@ export function FldEff_TallGrass(rt: DecompRuntime): number {
     subpriority: 0,     // 1:1 CreateSpriteAtEnd(..., 0)
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateTallGrassFieldEffect;
   setFieldEffectAnims(sprite, sAnims_TallGrass, _tallGrassTileStart);
@@ -427,7 +427,7 @@ export function UpdateTallGrassFieldEffect(sprite: DecompSprite, rt: DecompRunti
  *  pour le sprite tall grass à (x,y,localId,mapNum,mapGroup). Retourne le spriteId ou MAX_SPRITES. */
 export function FindTallGrassFieldEffectSpriteId(rt: DecompRuntime, localId: number, mapNum: number, mapGroup: number, x: number, y: number): number {
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s === undefined || !s.inUse) continue;
     if (s.callback === UpdateTallGrassFieldEffect
         && x === s.data[1] && y === s.data[2]
@@ -540,7 +540,7 @@ export function FldEff_LongGrass(rt: DecompRuntime): number {
     subpriority: 0,     // 1:1 CreateSpriteAtEnd(..., 0)
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateLongGrassFieldEffect;
   setFieldEffectAnims(sprite, sAnims_LongGrass, _longGrassTileStart);
@@ -651,7 +651,7 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul short grass par owner (le callback despawn quand !inShortGrass).
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s !== undefined && s.inUse && s.callback === UpdateShortGrassFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
@@ -659,7 +659,7 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
   if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
   const objectEvent = gObjectEvents[objectEventId];
   const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
-  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites[parentSpriteId] : undefined;
   if (!parentSprite) return 64;
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
@@ -672,7 +672,7 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
     priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
     paletteMode: 0, affineMode: 0,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateShortGrassFieldEffect;
   setFieldEffectAnims(sprite, sAnims_ShortGrass, _shortGrassTileStart);
@@ -695,7 +695,7 @@ export function UpdateShortGrassFieldEffect(sprite: DecompSprite, rt: DecompRunt
   }
   const objEvent: ObjectEvent = gObjectEvents[objectEventId];
   const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   const parentX = linked.x, parentY = linked.y;
   // 1:1 : si le parent a bougé, relance le sway depuis frame 0 (si fini). Moteur d'anim → animEnded.
@@ -839,7 +839,7 @@ function spawnJumpImpactEffect(rt: DecompRuntime, fldeff: number): number {
     priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
     paletteMode: 0, affineMode: 0,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateJumpImpactEffect;
   setFieldEffectAnims(sprite, _jumpAnims[fldeff], tileStart);
@@ -972,7 +972,7 @@ function spawnFootprintsEffect(rt: DecompRuntime, fldeff: number): number {
     subpriority: gFieldEffectArguments[2] & 0xFF, // 1:1 CreateSpriteAtEnd(..., args[2])
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateFootprintsTireTracksFieldEffect;
   setFieldEffectAnims(sprite, _footprintAnims[fldeff], tileStart);
@@ -1092,7 +1092,7 @@ export function FldEff_SurfBlob(rt: DecompRuntime): number {
     subpriority: 150 & 0xFF, // 1:1 CreateSpriteAtEnd(..., 150)
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateSurfBlobFieldEffect;
   setFieldEffectAnims(sprite, sAnims_SurfBlob, _surfBlobTileStart);
@@ -1111,13 +1111,13 @@ export function FldEff_SurfBlob(rt: DecompRuntime): number {
 
 // ── Setters 1:1 décomp : manipulent le bitfield data[0] / sPlayerOffset data[1] sur gSprites[spriteId]. ──
 export function SetSurfBlob_BobState(rt: DecompRuntime, spriteId: number, state: number): void {
-  const s = rt.gSprites.get(spriteId); if (s) s.data[0] = (s.data[0] & ~0xF) | (state & 0xF);
+  const s = rt.gSprites[spriteId]; if (s) s.data[0] = (s.data[0] & ~0xF) | (state & 0xF);
 }
 export function SetSurfBlob_DontSyncAnim(rt: DecompRuntime, spriteId: number, dontSync: boolean): void {
-  const s = rt.gSprites.get(spriteId); if (s) s.data[0] = (s.data[0] & ~0xF0) | (((dontSync ? 1 : 0) & 0xF) << 4);
+  const s = rt.gSprites[spriteId]; if (s) s.data[0] = (s.data[0] & ~0xF0) | (((dontSync ? 1 : 0) & 0xF) << 4);
 }
 export function SetSurfBlob_PlayerOffset(rt: DecompRuntime, spriteId: number, hasOffset: boolean, offset: number): void {
-  const s = rt.gSprites.get(spriteId); if (!s) return;
+  const s = rt.gSprites[spriteId]; if (!s) return;
   s.data[0] = (s.data[0] & ~0xF00) | (((hasOffset ? 1 : 0) & 0xF) << 8);
   s.data[1] = offset; // sPlayerOffset
 }
@@ -1567,7 +1567,7 @@ function CreateMonSprite_FieldMove(species: number, otId: number, personality: n
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: 0, paletteBank: 0, x, y, shape: 0, size: 3, priority: 0, subpriority,
   });
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) sprite.invisible = true;
   void _loadFieldMoveMonPic(rt, spriteId, species, otId, personality);
   return spriteId;
@@ -1590,7 +1590,7 @@ async function _loadFieldMoveMonPic(rt: DecompRuntime, spriteId: number, species
     const tileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: TAG_FIELD_MOVE_MON_GFX });
     FreeSpritePaletteByTag(TAG_FIELD_MOVE_MON_PAL);
     const palSlot = LoadSpritePalette({ data: pal.subarray(0, 16), tag: TAG_FIELD_MOVE_MON_PAL });
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (!sprite || !sprite.inUse) return;  // effet déjà terminé pendant le load
     const oam = rt.gba.oam[sprite.oamIndex];
     oam.tileId = tileStart;
@@ -1600,7 +1600,7 @@ async function _loadFieldMoveMonPic(rt: DecompRuntime, spriteId: number, species
     sprite.data[8] = 1;  // picLoaded → débloque CreateBanner
   } catch (e) {
     console.error('[show_mon] front pic load failed:', e);
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) sprite.data[8] = 1;  // débloque la task même en échec (anti-freeze)
   }
 }
@@ -1619,7 +1619,7 @@ function InitFieldMoveMonSprite(species: number, otId: number, personality: numb
   species &= ~SHOW_MON_CRY_NO_DUCKING;
   const monSprite = CreateMonSprite_FieldMove(species, otId, personality, 320, 80, 0);
   const rt = getRuntime();
-  const sprite = rt?.gSprites.get(monSprite);
+  const sprite = rt?.gSprites[monSprite];
   if (rt && sprite) {
     sprite.callback = FMSM_SpriteCallbackDummy;
     rt.gba.oam[sprite.oamIndex].priority = 0;
@@ -1759,7 +1759,7 @@ function FieldMoveShowMonOutdoorsEffect_CreateBanner(task: DecompTask): void {
   if (vertLo > FMSM_DISPLAY_WIDTH / 2) vertLo = FMSM_DISPLAY_WIDTH / 2;          // 120
   task.data[1] = ((horiz << 8) | (task.data[1] & 0xFF)) & 0xFFFF;
   task.data[2] = ((vertHi << 8) | vertLo) & 0xFFFF;
-  const monSprite = rt.gSprites.get(task.data[15]);
+  const monSprite = rt.gSprites[task.data[15]];
   if (horiz === 0 && vertHi === FMSM_DISPLAY_HEIGHT / 4 && vertLo === FMSM_DISPLAY_WIDTH / 2
       && monSprite && monSprite.data[8] /* picLoaded : déviation async (cf. en-tête) */) {
     monSprite.callback = SpriteCB_FieldMoveMonSlideOnscreen;
@@ -1772,7 +1772,7 @@ function FieldMoveShowMonOutdoorsEffect_WaitForMon(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   task.data[5] -= 16;  // tBgHoriz
-  const monSprite = rt.gSprites.get(task.data[15]);
+  const monSprite = rt.gSprites[task.data[15]];
   if (monSprite && monSprite.data[7] /* sSlidOffscreen */)
     task.data[0]++;
 }
@@ -1899,7 +1899,7 @@ function FieldMoveShowMonIndoorsEffect_SlideBannerOn(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (SlideIndoorBannerOnscreen(task)) {
-    const monSprite = rt.gSprites.get(task.data[15]);
+    const monSprite = rt.gSprites[task.data[15]];
     if (monSprite && monSprite.data[8] /* picLoaded : déviation async (cf. en-tête outdoors) */) {
       rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0, FMSM_DISPLAY_WIDTH));
       rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(FMSM_DISPLAY_HEIGHT / 4, FMSM_DISPLAY_HEIGHT - FMSM_DISPLAY_HEIGHT / 4));
@@ -1915,7 +1915,7 @@ function FieldMoveShowMonIndoorsEffect_WaitForMon(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   AnimateIndoorShowMonBg(task);
-  const monSprite = rt.gSprites.get(task.data[15]);
+  const monSprite = rt.gSprites[task.data[15]];
   if (monSprite && monSprite.data[7] /* sSlidOffscreen */)
     task.data[0]++;
 }
@@ -2120,7 +2120,7 @@ function CreateInvisibleSprite(rt: DecompRuntime, callback: (sprite: DecompSprit
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: 0, paletteBank: 0, x: 0, y: 0, shape: 0, size: 0, priority: 0, subpriority: 31, fromEnd: true,
   });
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) { sprite.invisible = true; sprite.callback = callback; }
   return spriteId;
 }
@@ -2163,9 +2163,9 @@ function PokecenterHealEffect_Init(task: DecompTask): void {
 /** 1:1 décomp `PokecenterHealEffect_WaitForBallPlacement` (field_effect.c:1039). */
 function PokecenterHealEffect_WaitForBallPlacement(task: DecompTask): void {
   const rt = getRuntime();
-  const ball = rt.gSprites.get(task.data[6]);
+  const ball = rt.gSprites[task.data[6]];
   if (ball && ball.data[0] > 1) { // sState > 1
-    const monitor = rt.gSprites.get(task.data[7]);
+    const monitor = rt.gSprites[task.data[7]];
     if (monitor) monitor.data[0]++; // déclenche le moniteur
     task.data[0]++; // tState
   }
@@ -2174,14 +2174,14 @@ function PokecenterHealEffect_WaitForBallPlacement(task: DecompTask): void {
 /** 1:1 décomp `PokecenterHealEffect_WaitForBallFlashing` (field_effect.c:1048). */
 function PokecenterHealEffect_WaitForBallFlashing(task: DecompTask): void {
   const rt = getRuntime();
-  const ball = rt.gSprites.get(task.data[6]);
+  const ball = rt.gSprites[task.data[6]];
   if (ball && ball.data[0] > 4) task.data[0]++; // sState > 4 → tState
 }
 
 /** 1:1 décomp `PokecenterHealEffect_WaitForSoundAndEnd` (field_effect.c:1056). */
 function PokecenterHealEffect_WaitForSoundAndEnd(task: DecompTask): void {
   const rt = getRuntime();
-  const ball = rt.gSprites.get(task.data[6]);
+  const ball = rt.gSprites[task.data[6]];
   if (ball && ball.data[0] > 6) { // sState > 6 (Idle)
     rt.DestroySprite(task.data[6]);
     FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);
@@ -2201,7 +2201,7 @@ const sPokecenterHealEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
 function CreateGlowingPokeballsEffect(numMons: number, x: number, y: number, playHealSe: boolean): number {
   const rt = getRuntime();
   const spriteId = CreateInvisibleSprite(rt, SpriteCB_PokeballGlowEffect);
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) {
     sprite.x2 = x;
     sprite.y2 = y;
@@ -2229,7 +2229,7 @@ function PokeballGlowEffect_PlaceBalls(sprite: DecompSprite): void {
       x: off.x + sprite.x2, y: off.y + sprite.y2,
       shape: 0, size: 0, priority: 2, subpriority: 0, fromEnd: true,
     });
-    const ball = rt.gSprites.get(spriteId);
+    const ball = rt.gSprites[spriteId];
     if (ball) {
       ball.callback = SpriteCB_PokeballGlow;
       ball.data[0] = sprite.data[7]; // sEffectSpriteId = sSpriteId (contrôleur)
@@ -2337,7 +2337,7 @@ const sPokeballGlowEffectFuncs: ReadonlyArray<(sprite: DecompSprite) => void> = 
 /** 1:1 décomp `SpriteCB_PokeballGlow` (field_effect.c:1255). */
 function SpriteCB_PokeballGlow(sprite: DecompSprite): void {
   const rt = getRuntime();
-  const effect = rt.gSprites.get(sprite.data[0]); // sEffectSpriteId
+  const effect = rt.gSprites[sprite.data[0]]; // sEffectSpriteId
   if (effect && effect.data[0] > 4) { // contrôleur sState > 4
     FieldEffectFreeGraphicsResources(rt, sprite);
   }
@@ -2351,7 +2351,7 @@ function CreatePokecenterMonitorSprite(x: number, y: number): number {
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_0_PAL),
     x, y, shape: 0, size: 1, priority: 2, subpriority: 0, fromEnd: true,
   });
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) {
     sprite.invisible = true;
     sprite.tileBase = _monitorTileStart;
@@ -2446,7 +2446,7 @@ function Task_DoFieldMove_WaitForMon(task: DecompTask): void {
     if (gFieldEffectArguments[1] === DIR_EAST) gFieldEffectArguments[2] = 3;
     const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
     ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByCurrentState());
-    const sprite = getRuntime().gSprites.get(gPlayerAvatar.spriteId);
+    const sprite = getRuntime().gSprites[gPlayerAvatar.spriteId];
     if (sprite) StartSpriteAnim(sprite, gFieldEffectArguments[2]);
     FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
     task.func = Task_DoFieldMove_RunFunc;
@@ -2483,7 +2483,7 @@ export function UpdateSurfBlobFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   const playerObj = gObjectEvents[sprite.data[2]]; // sPlayerObjId
   if (!playerObj) return;
   const playerSpriteId = GetObjectEventMainSpriteId(playerObj);
-  const playerSprite = playerSpriteId >= 0 ? rt.gSprites.get(playerSpriteId) : undefined;
+  const playerSprite = playerSpriteId >= 0 ? rt.gSprites[playerSpriteId] : undefined;
   if (!playerSprite) return;
   SynchronizeSurfAnim(playerObj, sprite, rt);
   SynchronizeSurfPosition(playerObj, sprite);
@@ -2545,7 +2545,7 @@ export function StartUnderwaterSurfBlobBobbing(rt: DecompRuntime, blobSpriteId: 
     tileId: 0, paletteBank: 0, x: 0, y: 0, shape: 0, size: 0,
     priority: 1, paletteMode: 0, affineMode: 0, fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return result.spriteId;
   sprite.callback = SpriteCB_UnderwaterSurfBlob;
   sprite.invisible = true;
@@ -2556,7 +2556,7 @@ export function StartUnderwaterSurfBlobBobbing(rt: DecompRuntime, blobSpriteId: 
 
 /** 1:1 décomp `SpriteCB_UnderwaterSurfBlob` (1170). Callback per-frame du sprite dummy. */
 export function SpriteCB_UnderwaterSurfBlob(sprite: DecompSprite, rt: DecompRuntime): void {
-  const blob = rt.gSprites.get(sprite.data[0]); // sSpriteId
+  const blob = rt.gSprites[sprite.data[0]]; // sSpriteId
   if (!blob) return;
   if (((sprite.data[2]++) & 3) === 0) blob.y2 += sprite.data[1]; // ++sTimer & 3, += sBobY
   if ((sprite.data[2] & 15) === 0) sprite.data[1] = -sprite.data[1]; // reverse sBobY
@@ -2624,7 +2624,7 @@ function createSplashSprite(rt: DecompRuntime, localId: number, mapNum: number, 
   if (objectEventId >= OBJECT_EVENTS_COUNT) return null;
   const objectEvent = gObjectEvents[objectEventId];
   const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
-  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites[parentSpriteId] : undefined;
   if (!parentSprite) return null;
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
@@ -2635,7 +2635,7 @@ function createSplashSprite(rt: DecompRuntime, localId: number, mapNum: number, 
     priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
     paletteMode: 0, affineMode: 0,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return null;
   setFieldEffectAnims(sprite, sAnims_Splash, _splashTileStart);
   sprite.x = parentSprite.x; sprite.y = parentSprite.y;
@@ -2666,7 +2666,7 @@ export function UpdateSplashFieldEffect(sprite: DecompSprite, rt: DecompRuntime)
     return;
   }
   const linkedSpriteId = GetObjectEventMainSpriteId(gObjectEvents[objectEventId]);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   sprite.x = linked.x; sprite.y = linked.y;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
@@ -2698,7 +2698,7 @@ export function UpdateFeetInFlowingWaterFieldEffect(sprite: DecompSprite, rt: De
   }
   const objectEvent: ObjectEvent = gObjectEvents[objectEventId];
   const linkedSpriteId = GetObjectEventMainSpriteId(objectEvent);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   sprite.x = linked.x; sprite.y = linked.y;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
@@ -2800,7 +2800,7 @@ export function FldEff_Ripple(rt: DecompRuntime): number {
     paletteMode: 0, affineMode: 0,
     subpriority: subpriority & 0xFF,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   // 1:1 : template.callback = WaitFieldEffectSpriteAnim ; .anims = sAnims_Ripple.
   sprite.callback = WaitFieldEffectSpriteAnim;
@@ -2862,7 +2862,7 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul hot springs par owner (le callback despawn quand !inHotSprings).
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s !== undefined && s.inUse && s.callback === UpdateHotSpringsWaterFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
@@ -2870,7 +2870,7 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
   const objectEvent = gObjectEvents[objectEventId];
   const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
-  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites[parentSpriteId] : undefined;
   if (!parentSprite) return 64;
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
@@ -2883,7 +2883,7 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
     priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
     paletteMode: 0, affineMode: 0,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateHotSpringsWaterFieldEffect;
   // 1:1 : template.anims = sAnims_HotSpringsWater → moteur d'anim (frame 0 statique).
@@ -2906,7 +2906,7 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: Decom
   }
   const objEvent: ObjectEvent = gObjectEvents[objectEventId];
   const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   // 1:1 : x = linkedSprite->x ; y = (height>>1) + linkedSprite->y - 8 (couvre le bas du corps) ;
   // subpriority = linkedSprite->subpriority - 1 (DEVANT le joueur).
@@ -2990,7 +2990,7 @@ export function FldEff_Ash(rt: DecompRuntime): number {
     paletteMode: 0, affineMode: 0,
     subpriority: gFieldEffectArguments[2] & 0xFF,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateAshFieldEffect;
   setFieldEffectAnims(sprite, sAnims_Ash, _ashTileStart);
@@ -3143,7 +3143,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul sand pile par owner (le callback despawn quand !inSandPile → pas de doublon).
   for (let i = 0; i < MAX_SPRITES; i++) {
-    const s = rt.gSprites.get(i);
+    const s = rt.gSprites[i];
     if (s !== undefined && s.inUse && s.callback === UpdateSandPileFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
@@ -3151,7 +3151,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
   const objectEvent = gObjectEvents[objectEventId];
   const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
-  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites[parentSpriteId] : undefined;
   if (!parentSprite) return 64;
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   // 1:1 décomp `CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SAND_PILE], 0,0,0)`.
@@ -3165,7 +3165,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
     priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
     paletteMode: 0, affineMode: 0,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateSandPileFieldEffect;
   // 1:1 : template.anims = sAnims_SandPile → moteur d'anim pilote les frames.
@@ -3193,7 +3193,7 @@ export function UpdateSandPileFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   }
   const objEvent: ObjectEvent = gObjectEvents[objectEventId];
   const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   const parentX = linked.x, parentY = linked.y;
   // 1:1 décomp : si le parent a bougé, relance l'anim depuis la frame 0 (si elle est finie).
@@ -3292,7 +3292,7 @@ export function FldEff_Bubbles(rt: DecompRuntime): number {
     paletteMode: 0, affineMode: 0,
     subpriority: 82,    // 1:1 : CreateSpriteAtEnd(..., 82).
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateBubblesFieldEffect;
   setFieldEffectAnims(sprite, sAnims_Bubbles, _bubblesTileStart);
@@ -3448,7 +3448,7 @@ export function FldEff_BerryTreeGrowthSparkle(rt: DecompRuntime): number {
     subpriority: gFieldEffectArguments[2] & 0xFF,
     fromEnd: true,      // 1:1 CreateSpriteAtEnd
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 0;
   // 1:1 : template.callback = WaitFieldEffectSpriteAnim ; .anims = sAnimTable_Sparkle.
   sprite.callback = WaitFieldEffectSpriteAnim;
@@ -3480,7 +3480,7 @@ export function FldEff_Sparkle(rt: DecompRuntime): number {
     subpriority: 82 & 0xFF,  // 1:1 CreateSpriteAtEnd(..., 82)
     fromEnd: true,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 0;
   // 1:1 : template.callback = UpdateSparkleFieldEffect ; .anims = sAnimTable_SmallSparkle.
   sprite.callback = UpdateSparkleFieldEffect;
@@ -3623,7 +3623,7 @@ function ShowDisguiseFieldEffect(rt: DecompRuntime, fldEff: number): number {
     priority: 2, paletteMode: 0, affineMode: 0,
     fromEnd: true,      // 1:1 CreateSpriteAtEnd
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return MAX_SPRITES;
   // 1:1 : template.callback = UpdateDisguiseFieldEffect ; .anims = sAnimTable_*Disguise.
   sprite.callback = UpdateDisguiseFieldEffect;
@@ -3662,7 +3662,7 @@ export function UpdateDisguiseFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   if (notFound) { FieldEffectStop(rt, sprite, sprite.data[1]); return; }
   const objEvent: ObjectEvent = gObjectEvents[objectEventId];
   const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
-  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  const linked = linkedSpriteId >= 0 ? rt.gSprites[linkedSpriteId] : undefined;
   if (!linked) return;
   // 1:1 : suit le sprite parent.
   sprite.invisible = linked.invisible;
@@ -3683,7 +3683,7 @@ export function UpdateDisguiseFieldEffect(sprite: DecompSprite, rt: DecompRuntim
  *  (dette H3 — port futur) : lance la révélation quand le joueur quitte le déguisement. */
 export function StartRevealDisguise(rt: DecompRuntime, objectEvent: ObjectEvent): void {
   if (objectEvent.directionSeqIdx === 1) {
-    const sprite = rt.gSprites.get(objectEvent.fieldEffectSpriteId);
+    const sprite = rt.gSprites[objectEvent.fieldEffectSpriteId];
     if (sprite) sprite.data[0] += 1; // sState++
   }
 }
@@ -3693,7 +3693,7 @@ export function StartRevealDisguise(rt: DecompRuntime, objectEvent: ObjectEvent)
 export function UpdateRevealDisguise(rt: DecompRuntime, objectEvent: ObjectEvent): boolean {
   if (objectEvent.directionSeqIdx === 2) return true;
   if (objectEvent.directionSeqIdx === 0) return true;
-  const sprite = rt.gSprites.get(objectEvent.fieldEffectSpriteId);
+  const sprite = rt.gSprites[objectEvent.fieldEffectSpriteId];
   if (sprite && sprite.data[7]) {
     objectEvent.directionSeqIdx = 2;
     sprite.data[0] += 1; // sState++
@@ -3733,7 +3733,7 @@ export function UpdateGrassFieldEffectSubpriority(rt: DecompRuntime, sprite: Dec
   for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
     const objEvent = gObjectEvents[i];
     if (!objEvent.active) continue;
-    const linked = objEvent.spriteId >= 0 ? rt.gSprites.get(objEvent.spriteId) : undefined;
+    const linked = objEvent.spriteId >= 0 ? rt.gSprites[objEvent.spriteId] : undefined;
     if (!linked) continue;
     const lX = linked.x + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
     const lY = linked.y + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
@@ -3888,7 +3888,7 @@ function _spawnUnusedFieldEffect(rt: DecompRuntime, fldEff: number): number {
     paletteMode: 0, affineMode: 0,
     subpriority: gFieldEffectArguments[2] & 0xFF,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = WaitFieldEffectSpriteAnim;
   setFieldEffectAnims(sprite, anims, tileStart);
@@ -3978,7 +3978,7 @@ export function FldEff_Shadow(rt: DecompRuntime): number {
     x: 0, y: 0, shape: cfg.shape, size: cfg.size,
     priority: 2, paletteMode: 0, affineMode: 0, subpriority: 148,
   });
-  const sprite = rt.gSprites.get(result.spriteId);
+  const sprite = rt.gSprites[result.spriteId];
   if (!sprite) return 64;
   sprite.callback = UpdateShadowFieldEffect;
   setFieldEffectAnims(sprite, sAnims_Shadow, tileStart);
@@ -4001,7 +4001,7 @@ export function UpdateShadowFieldEffect(sprite: DecompSprite, rt: DecompRuntime)
   // 1:1 : linkedSprite = gSprites[objectEvent->spriteId]. Joueur (slot spriteId=-1) → visuel
   // sur gPlayerAvatar.spriteId.
   const linkedId = npc.isPlayer ? gPlayerAvatar.spriteId : npc.spriteId;
-  const linked = linkedId >= 0 ? rt.gSprites.get(linkedId) : undefined;
+  const linked = linkedId >= 0 ? rt.gSprites[linkedId] : undefined;
   if (!linked) { FieldEffectStop(rt, sprite, FLDEFF_SHADOW); return; }
   const loam = rt.gba.oam[linked.oamIndex];
   const soam = rt.gba.oam[sprite.oamIndex];
@@ -4090,14 +4090,14 @@ function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): vo
   // 1:1 décomp : mainSprite = &gSprites[objectEvent->spriteId]. Chez nous le slot player
   // (spriteId=-1) porte son sprite visuel sur gPlayerAvatar.spriteId → résoudre via lui.
   const mainSpriteId = npc && npc.isPlayer ? gPlayerAvatar.spriteId : (npc ? npc.spriteId : -1);
-  const main = mainSpriteId >= 0 ? rt.gSprites.get(mainSpriteId) : undefined;
+  const main = mainSpriteId >= 0 ? rt.gSprites[mainSpriteId] : undefined;
   if (!npc || !npc.active || !npc.hasReflection || npc.localId !== refl.data[1] || !main) {
     // 1:1 décomp `reflectionSprite->inUse = FALSE` → DestroySprite. Cleanup explicite
     // (notre runtime ne GC pas inUse=false → masquer l'OAM, comme les autres effets).
     refl.inUse = false;
     const o = rt.gba.oam[refl.oamIndex];
     if (o) { o.visible = false; o.tileId = 0; o.flipV = false; }
-    rt.gSprites.delete(refl.spriteId);
+    rt.gSprites[refl.spriteId] = undefined;
     return;
   }
   const moam = rt.gba.oam[main.oamIndex];
@@ -4148,7 +4148,7 @@ export function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: Dec
   if (!sprite) return;
   const reflId = rt.createCopySpriteAt(sprite, sprite.x, sprite.y, 152);
   if (reflId === MAX_SPRITES) return;
-  const refl = rt.gSprites.get(reflId);
+  const refl = rt.gSprites[reflId];
   if (!refl) return;
   refl.callback = UpdateObjectReflectionSprite;
   const roam = rt.gba.oam[refl.oamIndex];

@@ -51,7 +51,7 @@ function _vItf(): {
 }
 type _RtOam = { tileId?: number; priority?: number; paletteBank?: number; affineMode?: number };
 type _Rt = {
-  gSprites?: Map<number, _VSprite>;
+  gSprites?: Array<_VSprite | undefined>;
   gba?: { oam?: _RtOam[] };
   AllocOamMatrix?: () => number;
   GetGpuReg?: (off: number) => number;
@@ -311,7 +311,7 @@ function AnimFlyBallUp(sprite: _VSprite): void {
   sprite.callback = _AnimFlyBallUp_Step;
   // gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
   const monId = _getBattlerMonSpriteId(atk);
-  const mon = monId >= 0 ? _rt()?.gSprites?.get(monId) : undefined;
+  const mon = monId >= 0 ? _rt()?.gSprites?.[monId] : undefined;
   if (mon) mon.invisible = true;
 }
 
@@ -371,7 +371,7 @@ function _AnimFlyBallAttack_Step(sprite: _VSprite): void {
     || sprite.y + sprite.y2 > DISPLAY_HEIGHT) {
     // gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;
     const monId = _getBattlerMonSpriteId(_vItf().getAttacker?.() ?? 0);
-    const mon = monId >= 0 ? _rt()?.gSprites?.get(monId) : undefined;
+    const mon = monId >= 0 ? _rt()?.gSprites?.[monId] : undefined;
     if (mon) mon.invisible = false;
     _vItf().DestroyAnimSprite?.(sprite);
   }
@@ -775,7 +775,7 @@ function AnimBounceBallShrink(sprite: _VSprite): void {
       sprite.invisible = false;
       // gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
       const monId = _getBattlerMonSpriteId(atk);
-      const mon = monId >= 0 ? _rt()?.gSprites?.get(monId) : undefined;
+      const mon = monId >= 0 ? _rt()?.gSprites?.[monId] : undefined;
       if (mon) mon.invisible = true;
       ++sprite.data[0];
       break;
@@ -890,7 +890,7 @@ function AnimTask_DrillPeckHitSplats(task: { taskId: number; data: number[] }): 
       args[3] = 3;
     }
     const rt = (globalThis as Record<string, unknown>).__rt as {
-      gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+      gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>;
       CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
       gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
     } | undefined;
@@ -903,7 +903,7 @@ function AnimTask_DrillPeckHitSplats(task: { taskId: number; data: number[] }): 
     const y = GetBattlerSpriteCoord(tgt, 3);
     const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 3) ?? -1;
     if (sid >= 0) {
-      const sp = rt?.gSprites?.get(sid);
+      const sp = rt?.gSprites?.[sid];
       const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart;

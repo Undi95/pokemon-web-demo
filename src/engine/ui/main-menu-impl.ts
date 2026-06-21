@@ -809,12 +809,12 @@ function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
   // Without this, sprite.tileBase stayed at 0 (= initialized default), causing
   // the breath anim to point at the WRONG tile region.
   if (spriteId >= 0) {
-    const sprite = rt.gSprites.get(spriteId);
+    const sprite = rt.gSprites[spriteId];
     if (sprite) sprite.tileBase = tileBase;
     const matrixNum = rt.AllocOamMatrix();
     if (matrixNum > 0) {
       if (sprite) sprite.matrixNum = matrixNum;
-      const oam = rt.gba.oam[rt.gSprites.get(spriteId)!.oamIndex];
+      const oam = rt.gba.oam[rt.gSprites[spriteId]!.oamIndex];
       if (oam) oam.affineParamIndex = matrixNum;
     }
   }
@@ -834,18 +834,18 @@ export function AddBirchSpeechObjects(taskId: number): void {
   // Birch (= 0x88, 0x3C = 136, 60).
   const birchSpriteId = AddNewGameBirchObject(0x88, 0x3C, 1);
   if (birchSpriteId !== -1) {
-    const s = rt.gSprites.get(birchSpriteId);
+    const s = rt.gSprites[birchSpriteId];
     if (s) { s.callback = null; s.invisible = true; }
-    rt.gba.oam[rt.gSprites.get(birchSpriteId)!.oamIndex].priority = 0;
+    rt.gba.oam[rt.gSprites[birchSpriteId]!.oamIndex].priority = 0;
   }
   task.data[8] = birchSpriteId;  // tBirchSpriteId
 
   // Lotad (= 100, 0x4B = 100, 75).
   const lotadSpriteId = NewGameBirchSpeech_CreateLotadSprite(100, 0x4B);
   if (lotadSpriteId !== -1) {
-    const s = rt.gSprites.get(lotadSpriteId);
+    const s = rt.gSprites[lotadSpriteId];
     if (s) { s.callback = null; s.invisible = true; }
-    rt.gba.oam[rt.gSprites.get(lotadSpriteId)!.oamIndex].priority = 0;
+    rt.gba.oam[rt.gSprites[lotadSpriteId]!.oamIndex].priority = 0;
   }
   task.data[9] = lotadSpriteId;  // tLotadSpriteId
 
@@ -853,18 +853,18 @@ export function AddBirchSpeechObjects(taskId: number): void {
   // index dans gTrainerFrontPicTable. Notre version utilise les symbols directs.
   const brendanSpriteId = CreateTrainerSprite('gTrainerFrontPic_Brendan', 'gTrainerPalette_Brendan', TAG_BRENDAN_FRONT, 0x1010, 120, 60, 0);
   if (brendanSpriteId !== -1) {
-    const s = rt.gSprites.get(brendanSpriteId);
+    const s = rt.gSprites[brendanSpriteId];
     if (s) { s.callback = null; s.invisible = true; }
-    rt.gba.oam[rt.gSprites.get(brendanSpriteId)!.oamIndex].priority = 0;
+    rt.gba.oam[rt.gSprites[brendanSpriteId]!.oamIndex].priority = 0;
   }
   task.data[10] = brendanSpriteId;  // tBrendanSpriteId
 
   // May (= 120, 60).
   const maySpriteId = CreateTrainerSprite('gTrainerFrontPic_May', 'gTrainerPalette_May', TAG_MAY_FRONT, 0x1011, 120, 60, 0);
   if (maySpriteId !== -1) {
-    const s = rt.gSprites.get(maySpriteId);
+    const s = rt.gSprites[maySpriteId];
     if (s) { s.callback = null; s.invisible = true; }
-    rt.gba.oam[rt.gSprites.get(maySpriteId)!.oamIndex].priority = 0;
+    rt.gba.oam[rt.gSprites[maySpriteId]!.oamIndex].priority = 0;
   }
   task.data[11] = maySpriteId;  // tMaySpriteId
 }
@@ -1041,7 +1041,7 @@ export function DoNamingScreen(
 export function FreeAndDestroyMonPicSprite(spriteId: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) {
     // 1:1 décomp src/sprite.c FreeSpriteOamMatrix : if affine, free matrix.
     if (sprite.matrixNum > 0) {

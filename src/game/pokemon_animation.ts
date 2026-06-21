@@ -41,7 +41,7 @@ function _sid(sprite: MonSprite): number {
   const rt = getRuntime();
   if (!rt?.gSprites) return -1;
   for (let id = 0; id < MAX_SPRITES; id++) {
-    const sp = rt.gSprites.get(id);
+    const sp = rt.gSprites[id];
     if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) return id;
   }
@@ -1340,7 +1340,7 @@ export function LaunchAnimationTaskForFrontSprite(spriteId: number, animName: st
     return;
   }
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as unknown as MonSprite | undefined;
+  const sprite = rt?.gSprites?.[spriteId] as unknown as MonSprite | undefined;
   if (!sprite) return;
   // 1:1 Task_HandleMonAnimation state 0.
   sprite.data[14] = sprite.data[0];   // tBattlerId sauvé

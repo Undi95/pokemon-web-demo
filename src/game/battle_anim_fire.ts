@@ -538,8 +538,8 @@ function AnimTask_ShakeTargetInPattern(task: { taskId: number; data: number[] })
   task.data[0]++;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(itf.getTarget?.() ?? 1) ?? 0xFF;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
-  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number } | undefined> } | undefined;
+  const sp = sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   const dir = task.data[4] === 0 ? _sShakeDirsPattern0[task.data[0] % 10] : _sShakeDirsPattern1[task.data[0] % 10];
   if (task.data[3] === 1) sp.y2 = Math.abs(task.data[2] * dir);
@@ -568,7 +568,7 @@ function _erItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: nu
 }
 type _ErSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean; centerToCornerVecY?: number };
 function _erRt(): {
-  gSprites?: Map<number, _ErSprite>;
+  gSprites?: Array<_ErSprite | undefined>;
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -593,7 +593,7 @@ const _sEruptRockSpeeds: ReadonlyArray<readonly [number, number]> = [
 function AnimTask_EruptionLaunchRocks(task: _ErTask): void {
   task.data[15] = _erAtkSpriteId();
   if (task.data[15] === 0xFF) { _erItf().DestroyAnimVisualTask?.(task.taskId); return; }
-  const sp = _erRt().gSprites?.get(task.data[15]);
+  const sp = _erRt().gSprites?.[task.data[15]];
   task.data[0] = 0;
   task.data[1] = 0;
   task.data[2] = 0;
@@ -625,7 +625,7 @@ function _EruptionLaunchRocks_Case1(task: _ErTask, sp: _ErSprite | undefined): v
   }
 }
 function _EruptionLaunchRocks_Step(task: _ErTask): void {
-  const sp = _erRt().gSprites?.get(task.data[15]);
+  const sp = _erRt().gSprites?.[task.data[15]];
   switch (task.data[0]) {
     case 0:
       _erPrep(task as never, task.data[15], 0x100, 0x100, 0xE0, 0x200, 32);
@@ -683,7 +683,7 @@ function _EruptionLaunchRocks_Step(task: _ErTask): void {
 /** 1:1 CreateEruptionLaunchRocks (battle_anim_fire.c.c:924). */
 function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpritesIdx: number): void {
   const rt = _erRt();
-  const atkSp = rt.gSprites?.get(spriteId);
+  const atkSp = rt.gSprites?.[spriteId];
   if (!atkSp) return;
   const y = _GetEruptionLaunchRockInitialYPos(atkSp);
   let x = atkSp.x;
@@ -702,7 +702,7 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
   for (let i = 0, j = 0; i <= 6; i++) {
     const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 2) ?? -1;
     if (sid >= 0) {
-      const rock = rt.gSprites?.get(sid);
+      const rock = rt.gSprites?.[sid];
       const oam = rock ? rt.gba?.oam[rock.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart + j * 4 + 0x40;
@@ -755,7 +755,9 @@ function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
     const rt = _erRt();
     const t = rt.gTasks?.get(sprite.data[6]);
     if (t) t.data[sprite.data[7]]--;
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }
@@ -790,10 +792,10 @@ function AnimTask_MoveHeatWaveTargets(task: _HwTask): void {
   task.func = _MoveHeatWaveTargets_Step;
 }
 function _MoveHeatWaveTargets_Step(task: _HwTask): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number } | undefined> } | undefined;
   const applyX2 = (): void => {
     for (task.data[3] = 0; task.data[3] < task.data[13]; task.data[3]++) {
-      const sp = rt?.gSprites?.get(task.data[task.data[3] + 14]);
+      const sp = rt?.gSprites?.[task.data[task.data[3] + 14]];
       if (sp) sp.x2 = task.data[10] + task.data[11];
     }
   };
@@ -835,7 +837,7 @@ function _MoveHeatWaveTargets_Step(task: _HwTask): void {
       break;
     case 3:
       for (task.data[3] = 0; task.data[3] < task.data[13]; task.data[3]++) {
-        const sp = rt?.gSprites?.get(task.data[task.data[3] + 14]);
+        const sp = rt?.gSprites?.[task.data[task.data[3] + 14]];
         if (sp) sp.x2 = 0;
       }
       _hwItf().DestroyAnimVisualTask?.(task.taskId);
@@ -852,6 +854,7 @@ function AnimTask_BlendBackground(task: _HwTask): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { BlendPalette as _fBlendPal } from '../engine/system/decomp-globals';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 _fRegT({
   AnimTask_MoveHeatWaveTargets: AnimTask_MoveHeatWaveTargets as never,
   AnimTask_BlendBackground: AnimTask_BlendBackground as never,

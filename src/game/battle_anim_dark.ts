@@ -45,9 +45,9 @@ function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarg
 }
 function _monSprite(battler: number): AnimSprite | undefined {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, AnimSprite> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<AnimSprite | undefined> } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? rt?.gSprites?.get(id) : undefined;
+  return id !== undefined && id >= 0 ? rt?.gSprites?.[id] : undefined;
 }
 
 /** 1:1 `AnimBite` (battle_anim_dark.c) : args [x, y, animation, xVel, yVel,
@@ -156,9 +156,9 @@ function AnimTask_SetGrayscaleOrOriginalPal(task: { taskId: number }): void {
   const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : a[0] === 1 ? (itf.getTarget?.() ?? 1) : -1;
   if (b >= 0) {
     const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
     const sid = co?.getBattlerMonSpriteId?.(b);
-    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
     const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
     // 1:1 battle_anim_dark.c.c:1005 : SetGrayscaleOrOriginalPalette(paletteNum + 16, mode).
     if (pal >= 0) _dSetGrayPal(pal + 16, a[1] !== 0);
@@ -177,14 +177,14 @@ function GetIsDoomDesireHitTurn(task: { taskId: number }): void {
 import { registerAnimTasks as _dRegT } from '../engine/battle/battle-anim-registry';
 /** 1:1 les 3 fades attacker (battle_anim_dark.c.c:191-274) : BLDALPHA progressif sur le BG
  *  monbg (TGT1_BG1) — Feinte & co. args (stepDelay). */
-function _dkRt(): { SetGpuReg?: (r: number, v: number) => void; gSprites?: Map<number, { invisible?: boolean }> } {
+function _dkRt(): { SetGpuReg?: (r: number, v: number) => void; gSprites?: Array<{ invisible?: boolean } | undefined> } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 function _dkAtkSprite(): { invisible?: boolean } | undefined {
   const itf = _dItf3();
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
-  return sid !== 0xFF ? _dkRt().gSprites?.get(sid) : undefined;
+  return sid !== 0xFF ? _dkRt().gSprites?.[sid] : undefined;
 }
 function AnimTask_AttackerFadeToInvisible(task: { taskId: number; data: number[]; func?: unknown }): void {
   const a = _dItf3().getArgs?.() ?? [];
@@ -274,7 +274,7 @@ function _mshItf(): { getArgs?: () => number[]; getAttacker?: () => number; Dest
 function _mshRt(): {
   SetGpuReg?: (o: number, v: number) => void;
   DestroySprite?: (i: number) => void;
-  gSprites?: Map<number, { x: number; y: number; oamIndex: number }>;
+  gSprites?: Array<{ x: number; y: number; oamIndex: number } | undefined>;
   gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } }; windows?: { winObjEnabled: boolean }; oam: Array<{ paletteBank: number }> };
   gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
 } {
@@ -288,7 +288,7 @@ function _mshAtkSpriteId(): number {
 /** Slot OBJ du sprite de l'attacker (paletteBank OAM), -1 si introuvable. */
 function _mshAtkPalSlot(): number {
   const spriteId = _mshAtkSpriteId();
-  const sp = spriteId !== 0xFF ? _mshRt().gSprites?.get(spriteId) : undefined;
+  const sp = spriteId !== 0xFF ? _mshRt().gSprites?.[spriteId] : undefined;
   if (!sp) return -1;
   const oam = _mshRt().gba?.oam[sp.oamIndex] as { paletteBank?: number } | undefined;
   return oam?.paletteBank ?? -1;
@@ -321,7 +321,7 @@ function AnimTask_MetallicShine(task: _MshTask): void {
   _mshLoadMap(animBg.bgId, 'gMetalShineTilemap');
   _mshLoadGfx(animBg.bgId, 'gMetalShineGfx', animBg.tilesOffset);
   _mshLoadPal('gMetalShinePalette', animBg.paletteId);
-  const sp = rt.gSprites?.get(spriteId);
+  const sp = rt.gSprites?.[spriteId];
   g.gBattle_BG1_X = (-(sp?.x ?? 0) + 96) & 0xFFFF;
   g.gBattle_BG1_Y = (-(sp?.y ?? 0) + 32) & 0xFFFF;
   const monPalSlot = sp ? (rt.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : 0;
@@ -411,7 +411,7 @@ const _DK_REG_BLDALPHA = 0x52;
 type _DkTask = { taskId: number; data: number[]; func?: unknown };
 function _dkRtFull(): {
   SetGpuReg?: (o: number, v: number) => void;
-  gSprites?: Map<number, { oamIndex: number; invisible?: boolean }>;
+  gSprites?: Array<{ oamIndex: number; invisible?: boolean } | undefined>;
   gba?: { oam: Array<{ priority: number }> };
   gPlttBufferUnfaded?: { set?: (i: number, v: number) => void };
   gPlttBufferFaded?: { set?: (i: number, v: number) => void };
@@ -451,7 +451,7 @@ function _dkSetAllBattlersSpritePriority(priority: number): void {
   for (let i = 0; i < 4; i++) {
     const sid = _dkMonSpriteId(i);
     if (sid === 0xFF) continue;
-    const sp = rt.gSprites?.get(sid);
+    const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
     if (oam) oam.priority = priority;
   }
@@ -497,12 +497,12 @@ function AnimTask_InitMementoShadow(task: _DkTask): void {
   const toBG2 = (_dkBgRank(atk) ^ 1) !== 0 ? 1 : 0;
   _dkMoveToBG(atk, !!toBG2, true);
   const rt = _dkRtFull();
-  const atkSp = rt.gSprites?.get(_dkMonSpriteId(atk));
+  const atkSp = rt.gSprites?.[_dkMonSpriteId(atk)];
   if (atkSp) atkSp.invisible = false;
   const partner = atk ^ 2;
   if (_dkIsVisible(partner)) {
     _dkMoveToBG(partner, !(toBG2 !== 0), true);
-    const pSp = rt.gSprites?.get(_dkMonSpriteId(partner));
+    const pSp = rt.gSprites?.[_dkMonSpriteId(partner)];
     if (pSp) pSp.invisible = false;
   }
   itf.DestroyAnimVisualTask?.(task.taskId);

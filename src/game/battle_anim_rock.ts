@@ -477,13 +477,14 @@ _stRegT({ AnimTask_LoadSandstormBackground: AnimTask_LoadSandstormBackground as 
 // particules boue/roche en arc (tileOffset par compteur Rollout 1..5),
 // vie des particules par la translation + decrement via scan-par-func.
 import { InitAnimArcTranslation as _roArcInit, TranslateAnimHorizontalArc as _roArcRun } from './battle_anim_mons';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 type _RoTask = { taskId: number; data: number[]; func?: unknown };
 function _roItf(): { getAttacker?: () => number; getTarget?: () => number; getDisableStruct?: () => { rolloutTimerStartValue?: number; rolloutTimer?: number } | null; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _roRt(): {
-  gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number }>;
+  gSprites?: Array<{ x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number } | undefined>;
   gTasks?: Map<number, { data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -531,7 +532,7 @@ function AnimTask_Rollout(task: _RoTask): void {
 }
 function _Rollout_Step(task: _RoTask): void {
   const rt = _roRt();
-  const sp = rt.gSprites?.get(task.data[15]);
+  const sp = rt.gSprites?.[task.data[15]];
   switch (task.data[0]) {
     case 0:
       task.data[6] -= task.data[4];
@@ -600,7 +601,7 @@ function _CreateRolloutDirtSprite(task: _RoTask): void {
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
   if (sid >= 0) {
-    const dirt = rt.gSprites?.get(sid);
+    const dirt = rt.gSprites?.[sid];
     const oam = dirt ? rt.gba?.oam[dirt.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart + tileOffset;
@@ -626,7 +627,9 @@ function _AnimRolloutParticle(sprite: { data: number[] }): void {
     for (const t of rt.gTasks?.values() ?? []) {
       if (t.func === _Rollout_Step) t.data[11]--;
     }
-    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+    for (let sid = 0; sid < MAX_SPRITES; sid++) {
+      const sp = rt.gSprites?.[sid];
+      if (sp === undefined) continue;
       if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
     }
   }

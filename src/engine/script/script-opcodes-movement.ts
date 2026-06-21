@@ -313,7 +313,7 @@ registerOpcode('setobjectsubpriority', (_ctx, args) => {
     const rt = getRuntime();
     const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
     if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites.get(spriteId);
+      const spr = rt.gSprites[spriteId];
       if (spr) spr.subpriority = effective;
     }
   }
@@ -334,7 +334,7 @@ registerOpcode('resetobjectsubpriority', (_ctx, args) => {
     const rt = getRuntime();
     const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
     if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites.get(spriteId);
+      const spr = rt.gSprites[spriteId];
       if (spr) spr.subpriority = 0xFF;
     }
   }

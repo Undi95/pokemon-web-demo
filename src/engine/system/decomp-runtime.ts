@@ -525,53 +525,6 @@ export interface DecompTask {
 export const MAX_SPRITES = 64;
 
 /**
- * SpriteArray — stockage 1:1 de `struct Sprite gSprites[MAX_SPRITES]` (sprite.c).
- *
- * Backé par un ARRAY FIXE indexé par SLOT 0-63 (= le vrai modèle décomp : CreateSprite
- * scanne le 1er slot `inUse==FALSE` et réutilise les détruits). Implémente l'API
- * `Map<number, DecompSprite>` à titre **TRANSITIONNEL** pour rester un drop-in des
- * call-sites actuels (`.get`/`.set`/`.delete`/`.values`/itération) pendant la
- * réconciliation E1 du moteur → on migrera ensuite vers l'accès indexé `gSprites[i]`
- * (1:1) puis on retirera la façade Map. Clé Map = slot = `sprite.spriteId`.
- * Voir docs/ENGINE-1TO1-RECONCILIATION-PLAN.md (Phase E1, keystone).
- */
-export class SpriteArray {
-  /** Tableau fixe 64 slots (1:1 `gSprites[MAX_SPRITES]`). `undefined` = slot libre. */
-  private readonly a: (DecompSprite | undefined)[] = new Array(MAX_SPRITES);
-
-  get(slot: number): DecompSprite | undefined { return this.a[slot]; }
-  set(slot: number, sprite: DecompSprite): this { this.a[slot] = sprite; return this; }
-  has(slot: number): boolean { return this.a[slot] !== undefined; }
-  delete(slot: number): boolean {
-    if (this.a[slot] !== undefined) { this.a[slot] = undefined; return true; }
-    return false;
-  }
-  clear(): void { for (let i = 0; i < MAX_SPRITES; i++) this.a[i] = undefined; }
-  get size(): number {
-    let n = 0;
-    for (let i = 0; i < MAX_SPRITES; i++) if (this.a[i] !== undefined) n++;
-    return n;
-  }
-  forEach(cb: (sprite: DecompSprite, slot: number, map: SpriteArray) => void, thisArg?: unknown): void {
-    for (let i = 0; i < MAX_SPRITES; i++) {
-      const s = this.a[i];
-      if (s !== undefined) cb.call(thisArg, s, i, this);
-    }
-  }
-  *entries() {
-    for (let i = 0; i < MAX_SPRITES; i++) { const s = this.a[i]; if (s !== undefined) yield [i, s] as [number, DecompSprite]; }
-  }
-  *keys() {
-    for (let i = 0; i < MAX_SPRITES; i++) if (this.a[i] !== undefined) yield i;
-  }
-  *values() {
-    for (let i = 0; i < MAX_SPRITES; i++) { const s = this.a[i]; if (s !== undefined) yield s; }
-  }
-  [Symbol.iterator]() { return this.entries(); }
-  readonly [Symbol.toStringTag] = 'Map';
-}
-
-/**
  * Runtime décomp principal. Wrap l'engine GBA + helpers C.
  *
  * Usage typique dans une scène :
@@ -598,9 +551,11 @@ export class DecompRuntime {
   gPaletteFade = new PaletteFade();
   /** 1:1 décomp `gTasks[]` array. Notre version : Map keyed by taskId. */
   gTasks = new Map<number, DecompTask>();
-  /** 1:1 décomp `struct Sprite gSprites[MAX_SPRITES]` — tableau fixe 64 slots
-   *  (façade Map transitionnelle pendant la réconciliation E1, cf. SpriteArray). */
-  gSprites = new SpriteArray();
+  /** 1:1 décomp `struct Sprite gSprites[MAX_SPRITES]` — tableau fixe 64 slots,
+   *  indexé par SLOT 0-63 (`undefined` = slot libre, vs dummy sprite côté décomp).
+   *  Accès `gSprites[i]` (1:1). CreateSprite scanne le 1er slot libre, DestroySprite
+   *  remet `undefined`. Façade Map transitionnelle retirée (Lot 3b keystone E1). */
+  gSprites: (DecompSprite | undefined)[] = new Array(MAX_SPRITES);
   /** 1:1 décomp `gSpriteCoordOffsetX/Y` (EWRAM, sprite.c:289-290). Offset caméra
    *  ajouté par `UpdateOamCoords` aux sprites `coordOffsetEnabled` (= overworld).
    *  Écrit chaque frame par `UpdateCameraPanning` (field-camera.ts), lu par
@@ -724,7 +679,7 @@ export class DecompRuntime {
       tileBase,
     });
     // Apply frame 0 immediately to OAM (= 1:1 décomp StartSpriteAnim semantic).
-    const sprite = this.gSprites.get(spriteId);
+    const sprite = this.gSprites[spriteId];
     if (sprite) {
       const tileNum = _resolveTileNum(anim.frames[0].tileNum);
       this.gba.oam[sprite.oamIndex].tileId = tileBase + tileNum;
@@ -1484,7 +1439,7 @@ export class DecompRuntime {
     // qui n'apparaît pas dans cet ensemble.
     const takenSlots = new Set<number>();
     for (let i = 0; i < MAX_SPRITES; i++) {
-      const s = this.gSprites.get(i);
+      const s = this.gSprites[i];
       if (s !== undefined && s.inUse) takenSlots.add(s.oamIndex);
     }
     // Session 94 fix : subsprite child OAM slots are ALSO taken — a sprite
@@ -1568,12 +1523,12 @@ export class DecompRuntime {
     // CreateSpriteAtEnd scan 63→0. Same `fromEnd` flag basule.
     if (cfg.fromEnd) {
       for (let i = 63; i >= 0; i--) {
-        const ex = this.gSprites.get(i);
+        const ex = this.gSprites[i];
         if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
       }
     } else {
       for (let i = 0; i < 64; i++) {
-        const ex = this.gSprites.get(i);
+        const ex = this.gSprites[i];
         if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
       }
     }
@@ -1614,7 +1569,7 @@ export class DecompRuntime {
       usingSheet: false, sheetTileStart: 0,
       subspriteMode: 'off',
     };
-    this.gSprites.set(spriteId, sprite);
+    this.gSprites[spriteId] = sprite;
     return { spriteId, oamIndex };
   }
 
@@ -1641,7 +1596,7 @@ export class DecompRuntime {
       fromEnd: true,
     });
     if (spriteId === 64) return 64;
-    const copy = this.gSprites.get(spriteId)!;
+    const copy = this.gSprites[spriteId]!;
     const dstOam = this.gba.oam[oamIndex];
     // Copie de l'état du sprite source (= `gSprites[i] = *sprite`), sauf identité
     // (oamIndex/spriteId/data déjà neufs).
@@ -1715,7 +1670,7 @@ export class DecompRuntime {
       subpriority,
     });
     if (spriteId >= 0 && spriteId < 64) {
-      const s = this.gSprites.get(spriteId);
+      const s = this.gSprites[spriteId];
       if (s) {
         s.callback = tpl.callback ?? null;
         s.images = tpl.images;
@@ -1729,7 +1684,7 @@ export class DecompRuntime {
 
   /** Récupère un sprite par son ID. */
   getSprite(spriteId: number): DecompSprite | undefined {
-    return this.gSprites.get(spriteId);
+    return this.gSprites[spriteId];
   }
 
   /** Tracks affine matrix slots in use (= gba.affineParams[0..31] = 32 slots).
@@ -1788,7 +1743,7 @@ export class DecompRuntime {
 
   /** Set sprite visibility — set sprite.invisible, syncSpritesToOam propage à oam. */
   setSpriteInvisible(spriteId: number, invisible: boolean): void {
-    const s = this.gSprites.get(spriteId);
+    const s = this.gSprites[spriteId];
     if (!s) return;
     s.invisible = invisible;
     this.gba.oam[s.oamIndex].visible = !invisible;  // immédiat aussi (avant prochain sync)
@@ -1796,7 +1751,7 @@ export class DecompRuntime {
 
   /** Attache une callback à un sprite (1:1 décomp `sprite->callback = SpriteCB_X`). */
   setSpriteCallback(spriteId: number, cb: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null): void {
-    const s = this.gSprites.get(spriteId);
+    const s = this.gSprites[spriteId];
     if (s) s.callback = cb;
   }
 
@@ -1830,7 +1785,7 @@ export class DecompRuntime {
 
   /** 1:1 décomp StartSpriteAffineAnim(sprite, animNum) — délégué à sprite-engine-impl. */
   StartSpriteAffineAnim(spriteId: number, animNum: number): void {
-    const sprite = this.gSprites.get(spriteId);
+    const sprite = this.gSprites[spriteId];
     if (!sprite) return;
     _StartSpriteAffineAnim(sprite, animNum);
   }
@@ -1994,7 +1949,7 @@ export class DecompRuntime {
     (globalThis as Record<string, unknown>).gMain = this.gMain;
     this.gPaletteFade = new PaletteFade();
     this.gTasks.clear();
-    this.gSprites.clear();
+    this.gSprites.fill(undefined);
     this.nextOamSlot = 0;
     this.nextTaskId = 0;
     this.nextSpriteId = 0;
@@ -2028,7 +1983,7 @@ export class DecompRuntime {
       }
     }
     for (let i = 0; i < 128; i++) this.gba.oam[i].visible = false;
-    this.gSprites.clear();
+    this.gSprites.fill(undefined);
     this.spriteAnimStates.clear();
     this.nextOamSlot = 0;
     this.nextSpriteId = 0;
@@ -2273,7 +2228,7 @@ export class DecompRuntime {
       });
     }
     // Store tileBase + objMode + centerToCornerVec + affineMode + affineAnims dans le sprite
-    const sprite = this.gSprites.get(result.spriteId);
+    const sprite = this.gSprites[result.spriteId];
     if (sprite) {
       sprite.tileBase = tileBase;
       sprite.objMode = DecompRuntime.parseObjMode(oam.objMode);
@@ -2318,7 +2273,7 @@ export class DecompRuntime {
     // ci-dessous car absents de spriteAnimStates) → l'ouverture de la Poké Ball
     // (SpriteCB_Ball_Arc → StartSpriteAnim(sprite, 1)) ne démarrait JAMAIS : la ball
     // restait sur la frame fermée (anim 0) tout le long de la capture (bug #1).
-    const inlineSprite = this.gSprites.get(spriteId);
+    const inlineSprite = this.gSprites[spriteId];
     if (inlineSprite && inlineSprite.anims) {
       // Délègue à la fonction 1:1 STRICT `StartSpriteAnim` (sprite-animation.ts:363 =
       // sprite.c:1346 : animNum + animBeginning=true + animEnded=false, SANS reset de
@@ -2344,7 +2299,7 @@ export class DecompRuntime {
     state.animIdx = animIdx;
     state.frameIdx = 0;
     state.framesRemaining = anim.frames[0].duration;
-    const sprite = this.gSprites.get(spriteId);
+    const sprite = this.gSprites[spriteId];
     const tileNum = _resolveTileNum(anim.frames[0].tileNum);
     if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
   }
@@ -2355,7 +2310,7 @@ export class DecompRuntime {
    *  `unknown[][]`) est encapsulé ici, comme `StartSpriteAnim`/`tickSpriteAnims`. Pour les drivers
    *  manuels (ex. `AlignFishingAnimationFrames` qui anime le sprite joueur pendant la pêche). */
   AnimateSprite(spriteId: number): void {
-    const sprite = this.gSprites.get(spriteId);
+    const sprite = this.gSprites[spriteId];
     if (sprite && sprite.anims)
       _AnimateSprite_1to1(this, sprite as never);
   }
@@ -2366,7 +2321,7 @@ export class DecompRuntime {
    *  Symétrique de StartSpriteAnim : délègue à la fonction 1:1 STRICT (sprite-animation.ts)
    *  pour les sprites à table `.anims` (field effects, ball, anims combat). */
   SeekSpriteAnim(spriteId: number, animCmdIndex: number): void {
-    const inlineSprite = this.gSprites.get(spriteId);
+    const inlineSprite = this.gSprites[spriteId];
     if (inlineSprite && inlineSprite.anims) {
       _SeekSpriteAnimInline(this, inlineSprite as never, animCmdIndex);
     }
@@ -2415,7 +2370,7 @@ export class DecompRuntime {
     // early-return interne) et restent driven par le path SPRITE_ANIMS plus
     // bas (= legacy state machine via spriteAnimStates).
     for (let i = 0; i < MAX_SPRITES; i++) {
-      const sprite = this.gSprites.get(i);
+      const sprite = this.gSprites[i];
       if (sprite === undefined || !sprite.inUse) continue;
       if (sprite.anims === null) continue;  // skip legacy path
       _AnimateSprite_1to1(this, sprite as never);
@@ -2445,7 +2400,7 @@ export class DecompRuntime {
           // sentinel pour les callbacks). Tile reste sur la dernière frame.
           state.frameIdx = anim.frames.length - 1;
           state.framesRemaining = 1;  // attente perpétuelle
-          const sprite = this.gSprites.get(spriteId);
+          const sprite = this.gSprites[spriteId];
           if (sprite) sprite.animEnded = true;
           continue;
         }
@@ -2453,7 +2408,7 @@ export class DecompRuntime {
       const frame = anim.frames[state.frameIdx];
       state.framesRemaining = frame.duration;
       const tileNum = _resolveTileNum(frame.tileNum);
-      const sprite = this.gSprites.get(spriteId);
+      const sprite = this.gSprites[spriteId];
       if (sprite) {
         this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
         // Per-frame hFlip/vFlip (= OAM hardware mirror, e.g. EAST anim utilise
@@ -2664,11 +2619,11 @@ export class DecompRuntime {
     // strictement inchangé vs l'ancien Array.from(.values()), mais via accès indexé.
     const snapshot: DecompSprite[] = [];
     for (let i = 0; i < MAX_SPRITES; i++) {
-      const s = this.gSprites.get(i);
+      const s = this.gSprites[i];
       if (s !== undefined) snapshot.push(s);
     }
     for (const sprite of snapshot) {
-      if (this.gSprites.has(sprite.spriteId) && sprite.inUse && sprite.callback) {
+      if (this.gSprites[sprite.spriteId] !== undefined && sprite.inUse && sprite.callback) {
         sprite.callback(sprite, this);
       }
     }
@@ -2695,9 +2650,9 @@ export class DecompRuntime {
    *  patterns, on prend le OR : si l'un des deux est non-zero, on prend ça. */
   private syncSpritesToOam(): void {
     // 1:1 décomp : itère les MAX_SPRITES slots fixes (boucle indexée = pas de générateur,
-    // hot-path per-frame). `gSprites.get(i)` = accès array direct via la façade SpriteArray.
+    // hot-path per-frame). `gSprites[i]` = accès array direct (tableau nu, 1:1 `gSprites[i]`).
     for (let i = 0; i < MAX_SPRITES; i++) {
-      const sprite = this.gSprites.get(i);
+      const sprite = this.gSprites[i];
       if (sprite === undefined || !sprite.inUse) continue;
       const oam = this.gba.oam[sprite.oamIndex];
       // Keep signed coordinates (no & mask) so sprites with negative oam.y / oam.x
@@ -2746,7 +2701,7 @@ export class DecompRuntime {
 
   /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. */
   DestroySprite(spriteId: number): void {
-    const sprite = this.gSprites.get(spriteId);
+    const sprite = this.gSprites[spriteId];
     if (!sprite) return;
     this.gba.oam[sprite.oamIndex].visible = false;
     sprite.invisible = true;
@@ -2758,7 +2713,7 @@ export class DecompRuntime {
     if (sprite.matrixNum > 0 && this._matrixUsed?.has?.(sprite.matrixNum)) {
       this.FreeOamMatrix(sprite.matrixNum);
     }
-    // NOTE: ne PAS this.gSprites.delete(spriteId) — les sprites enfants
+    // NOTE: ne PAS this.gSprites[spriteId] = undefined — les sprites enfants
     // (e.g. water drop halves) lisent encore gSprites[parentId].data[7].
     // Le vrai décomp garde le slot jusqu'à réallocation.
     this.spriteAnimStates.delete(spriteId);

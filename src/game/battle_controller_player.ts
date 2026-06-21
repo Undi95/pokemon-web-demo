@@ -999,7 +999,7 @@ function PlayerHandleReturnMonToBall(): void {
 function _freeMonSpriteAndHideHealthbox(battler: number): void {
   const rt = getRuntime();
   const spriteId = getBattlerMonSpriteId(battler);
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   if (sprite && rt) {
     sprite.inUse = false;
     sprite.callback = null;
@@ -1083,7 +1083,7 @@ function PlayerHandleDrawTrainerPic(): void {
   // showTrainerBackSprite (async) charge brendan/may.png + crée le sprite à x2=DISPLAY_WIDTH (yPos=80,
   // 1:1 (8-size)*4+80 pour un back-pic 64×64). 1:1 ll. 2345-2347 : sSpeedX=-2, callback=SpriteCB_TrainerSlideIn.
   void showTrainerBackSprite(gender, 80, 80).then((tid) => {
-    const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+    const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
     if (tr) {
       tr.data[0] = -2;                        // sSpeedX
       tr.callback = SpriteCB_TrainerSlideIn;  // slide-in 1:1 (x2 DISPLAY_WIDTH → 0, gaté gIntroSlideFlags)
@@ -1100,7 +1100,7 @@ function _CompleteOnTrainerSlideIn(): void {
   if (!_trainerSlideStarted) return;
   const rt = getRuntime();
   const tid = getTrainerSpriteId();
-  const tr = rt && tid >= 0 ? rt.gSprites.get(tid) : null;
+  const tr = rt && tid >= 0 ? rt.gSprites[tid] : null;
   if (!tr || tr.callback === SpriteCallbackDummy) PlayerBufferExecCompleted();
 }
 
@@ -1158,7 +1158,7 @@ function PlayerHandleFaintAnimation(): void {
 /** 1:1 décomp `SwitchIn_CleanShinyAnimShowSubstitute()` (:1065-1086). */
 export function SwitchIn_CleanShinyAnimShowSubstitute(): void {
   const monId = getBattlerMonSpriteId(gActiveBattler);
-  const spr = getRuntime()?.gSprites?.get(monId);
+  const spr = getRuntime()?.gSprites?.[monId];
   const cbName = (spr?.callback as { name?: string } | null)?.name ?? 'null';
   const shiny = (globalThis as Record<string, unknown>).__battleAnimThrowShiny as {
     isShinyAnimFinished?: (b: number) => boolean; resetShinyAnimFlags?: (b: number) => void;
@@ -1265,7 +1265,7 @@ function _PlaySE12WithPanning(seId: number, _pan: number): void {
  *  Wire vers __battleFaintAnim si exposé (= K13 cascade). */
 function _triggerFaintSlideAnim(battler: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(battler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(battler)];
   if (!sprite) return;
   const fa = (globalThis as { __battleFaintAnim?: { TriggerFaintSlide?: (s: unknown, x: number, y: number) => void } }).__battleFaintAnim;
   // 1:1 décomp (battle_controller_player.c:2421-2423) : sSpeedX=0, sSpeedY=5,
@@ -1279,12 +1279,12 @@ function _triggerFaintSlideAnim(battler: number): void {
 function _FreeMonSpriteAfterFaintAnim(): void {
   const rt = getRuntime();
   const spriteId = getBattlerMonSpriteId(gActiveBattler);
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   if (!sprite || ((sprite.y ?? 0) + (sprite.y2 ?? 0) > 160 /* DISPLAY_HEIGHT */)) {
     // 1:1 DestroySprite : cacher l'OAM AVANT de retirer de la Map (même bug fantôme
     // que le faint adverse, cf. DestroySprite de battle_main section C1) — sinon
     // l'image du back-sprite resterait affichée (slot orphelin, plus aucun sync).
-    if (sprite && rt?.gSprites) { rt.DestroySprite(spriteId); rt.gSprites.delete(spriteId); }
+    if (sprite && rt?.gSprites) { rt.DestroySprite(spriteId); rt.gSprites[spriteId] = undefined; }
     const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
     hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
     PlayerBufferExecCompleted();
@@ -2264,7 +2264,7 @@ function PlayerHandleToggleUnkFlag(): void {
  *  mon est visible → data[1]=0 + installe DoHitAnimBlinkSpriteEffect (= clignote). Sinon ExecComplete. */
 function PlayerHandleHitAnimation(): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite || sprite.invisible === true) { PlayerBufferExecCompleted(); return; }
   _gDoingBattleAnim = true;
   sprite.data[1] = 0;
@@ -2277,7 +2277,7 @@ function PlayerHandleHitAnimation(): void {
  *  frames (= 4 clignotements) puis restore visible + ExecCompleted. Tické par le controller tick. */
 function _DoHitAnimBlinkSpriteEffect(): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite) { _gDoingBattleAnim = false; PlayerBufferExecCompleted(); return; }
   if (sprite.data[1] === 32) {
     sprite.data[1] = 0;
@@ -2396,7 +2396,7 @@ function PlayerHandleIntroTrainerBallThrow(): void {
   // 1:1 ll. 2951-2960 : le back-sprite dresseur slide-off gauche (destX=-40, 50f) ; à la fin de la
   // translation, SpriteCB_FreePlayerSpriteLoadMonSprite (stocké en data6) le libère.
   const trainerId = getTrainerSpriteId();
-  const tr = rt && trainerId >= 0 ? rt.gSprites.get(trainerId) : null;
+  const tr = rt && trainerId >= 0 ? rt.gSprites[trainerId] : null;
   if (tr) {
     SetSpritePrimaryCoordsFromSecondaryCoords(tr);   // fold x2/y2 → x/y (fige la pose slid-in)
     tr.data[0] = 50;        // nbFrames
@@ -2472,7 +2472,7 @@ function _PlayerIntroSendOutWait(): void {
       _sendOutHbFrames++;
       const hb = (globalThis as Record<string, unknown>).__battleHealthbox as { gHealthboxSpriteIds?: number[] } | undefined;
       const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
-      const hbSpr = hbId >= 0 ? rt?.gSprites?.get(hbId) : null;
+      const hbSpr = hbId >= 0 ? rt?.gSprites?.[hbId] : null;
       const cbName = (hbSpr?.callback as { name?: string } | null | undefined)?.name;
       const slideDone = !hbSpr || cbName !== 'SpriteCB_HealthboxSlideIn';
       if (slideDone || _sendOutHbFrames > 40) {
@@ -2561,7 +2561,7 @@ function PlayerHandleSpriteInvisibility(): void {
     __battleGfxSfxUtil?: { CopyBattleSpriteInvisibility?: (b: number) => void };
   };
   const monId = g.__battleControllerPlayer?.getBattlerMonSpriteId?.(gActiveBattler) ?? -1;
-  const spr = monId >= 0 ? getRuntime()?.gSprites.get(monId) : undefined;
+  const spr = monId >= 0 ? getRuntime()?.gSprites[monId] : undefined;
   if (spr && (spr as { inUse?: boolean }).inUse) {   // ≈ IsBattlerSpritePresent (single)
     (spr as { invisible: boolean }).invisible = gBattleBufferA[gActiveBattler][1] !== 0;
     g.__battleGfxSfxUtil?.CopyBattleSpriteInvisibility?.(gActiveBattler);

@@ -511,11 +511,11 @@ function _setOamVisibility(visible: boolean): void {
   const rt = getRuntime();
   if (!rt) return;
   if (_trainerPicOamId >= 0) {
-    const spr = rt.gSprites.get(_trainerPicOamId);
+    const spr = rt.gSprites[_trainerPicOamId];
     if (spr) spr.invisible = !visible;
   }
   for (const id of _badgeOamIds) {
-    const spr = rt.gSprites.get(id);
+    const spr = rt.gSprites[id];
     if (spr) spr.invisible = !visible;
   }
 }
@@ -584,16 +584,16 @@ function _freeTrainerCard(): void {
     rt.gba.bg(2).config.vofs = 0;
   }
   if (_trainerPicOamId >= 0 && rt) {
-    const spr = rt.gSprites.get(_trainerPicOamId);
+    const spr = rt.gSprites[_trainerPicOamId];
     if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
-    rt.gSprites.delete(_trainerPicOamId);
+    rt.gSprites[_trainerPicOamId] = undefined;
   }
   _trainerPicOamId = -1;
   for (const id of _badgeOamIds) {
     if (rt) {
-      const spr = rt.gSprites.get(id);
+      const spr = rt.gSprites[id];
       if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
-      rt.gSprites.delete(id);
+      rt.gSprites[id] = undefined;
     }
   }
   _badgeOamIds = [];

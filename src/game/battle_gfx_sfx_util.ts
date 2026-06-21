@@ -303,12 +303,12 @@ export async function HandleSpeciesGfxDataChange(battlerAtk: number, battlerDef:
   // le sprite gardait ses vieilles tuiles (Transform ne « prenait » pas).
   {
     const rt = getRuntime() as unknown as {
-      gSprites?: Map<number, { oamIndex: number }>;
+      gSprites?: Array<{ oamIndex: number } | undefined>;
       gba?: { oam: Array<{ tileId: number }>; objVram: Uint8Array };
     } | null;
     const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
     const sid = co?.getBattlerMonSpriteId?.(battlerAtk);
-    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
     const src = gMonSpritesGfxPtr.sprites.ptr[position];
     if (oam && src && rt?.gba) {
@@ -341,12 +341,12 @@ export async function BattleLoadSubstituteOrMonSpriteGfx(battler: number, loadMo
     LoadPalette(new Uint16Array(palBuf), OBJ_PLTT_ID(battler), 32);
     {
       const rt = getRuntime() as unknown as {
-        gSprites?: Map<number, { oamIndex: number }>;
+        gSprites?: Array<{ oamIndex: number } | undefined>;
         gba?: { oam: Array<{ tileId: number }>; objVram: Uint8Array };
       } | null;
       const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
       const sid = co?.getBattlerMonSpriteId?.(battler);
-      const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+      const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
       const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
       if (oam && rt?.gba) rt.gba.objVram.set(tiles.subarray(0, 0x800), oam.tileId * 32);
     }
@@ -455,7 +455,7 @@ interface Spr {
   callback: ((s: Spr) => void) | null;
 }
 function _spr(id: number): Spr | undefined {
-  return getRuntime()?.gSprites.get(id) as unknown as Spr | undefined;
+  return getRuntime()?.gSprites[id] as unknown as Spr | undefined;
 }
 /** 1:1 `gBattlerSpriteIds[battler]` — via le pont controllers (modèle du port). */
 function _battlerSpriteId(battler: number): number {

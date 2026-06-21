@@ -42,9 +42,9 @@ function _battlerSprite(battler: number): AnimSprite | undefined {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
     getBattlerMonSpriteId?: (b: number) => number;
   } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, AnimSprite> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<AnimSprite | undefined> } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? rt?.gSprites?.get(id) : undefined;
+  return id !== undefined && id >= 0 ? rt?.gSprites?.[id] : undefined;
 }
 
 /** 1:1 `AnimAbsorptionOrb` (battle_anim_effects_1.c) : orbe qui part de la
@@ -314,7 +314,7 @@ export function AnimTask_CreateSmallSolarBeamOrbs(task: { taskId: number; data: 
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
     const rt = (globalThis as Record<string, unknown>).__rt as {
       CreateSpriteAtOam?: (cfg: Record<string, unknown>) => { spriteId: number };
-      gSprites?: Map<number, _PSprite>;
+      gSprites?: Array<_PSprite | undefined>;
     } | undefined;
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
     const palSlot = tpl ? (dg?.IndexOfSpritePaletteTag?.(tpl.paletteTag) ?? 0xFF) : 0xFF;
@@ -327,7 +327,7 @@ export function AnimTask_CreateSmallSolarBeamOrbs(task: { taskId: number; data: 
       subpriority: GetBattlerSpriteSubpriority(tgt) + 1,
     });
     const sid = created?.spriteId ?? -1;
-    const sp = sid >= 0 && sid < 64 ? rt?.gSprites?.get(sid) : undefined;
+    const sp = sid >= 0 && sid < 64 ? rt?.gSprites?.[sid] : undefined;
     if (sp) {
       (sp as { objMode?: number }).objMode = (tpl?.oam?.objMode ?? 0) as 0 | 1 | 2;
       (sp as { usingSheet?: boolean }).usingSheet = true;
@@ -1800,7 +1800,7 @@ const ANIM_TAG_PROTECT = 10280;
 /** Runtime lazy du bloc (GPU regs + gSprites + palettes) — pattern repo. */
 function _p1Rt(): {
   SetGpuReg?: (off: number, v: number) => void;
-  gSprites?: Map<number, { x2: number; y2: number }>;
+  gSprites?: Array<{ x2: number; y2: number } | undefined>;
   gba?: { oam?: Array<{ priority?: number }> };
   gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void };
 } | undefined {
@@ -1847,7 +1847,7 @@ function _p1GetBattlerSpriteBGPriority(battler: number): number {
 function _p1TranslateSpriteLinearById(sprite: _ESprite): void {
   if (sprite.data[0] > 0) {
     sprite.data[0]--;
-    const target = _p1Rt()?.gSprites?.get(sprite.data[3]);
+    const target = _p1Rt()?.gSprites?.[sprite.data[3]];
     if (target) {
       target.x2 += sprite.data[1];
       target.y2 += sprite.data[2];
@@ -2203,8 +2203,8 @@ function AnimTask_SkullBashPosition(task: { taskId: number; data: number[]; func
 }
 function AnimTask_SkullBashPositionSet(task: { taskId: number; data: number[] }): void {
   const itf = _sbItf();
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
-  const sp = rt?.gSprites?.get(task.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[task.data[0]];
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   switch (task.data[2]) {
     case 0:
@@ -2398,12 +2398,12 @@ function AnimTask_DoubleTeam(task: _DtTask): void {
   const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
   task.data[1] = spApi?.AllocSpritePalette?.(10097 /* ANIM_TAG_BENT_SPOON */) ?? 0xFF;
   const rt = (globalThis as Record<string, unknown>).__rt as {
-    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; x2: number }>;
+    gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number; x2: number } | undefined>;
     gba?: { oam: Array<{ paletteBank: number }> };
     gPlttBufferUnfaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
     gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
   } | undefined;
-  const atkSp = rt?.gSprites?.get(task.data[0]);
+  const atkSp = rt?.gSprites?.[task.data[0]];
   const monPal = atkSp ? (rt?.gba?.oam[atkSp.oamIndex]?.paletteBank ?? 0) : 0;
   if (task.data[1] !== 0xFF && rt?.gPlttBufferUnfaded?.get && rt.gPlttBufferUnfaded.set) {
     const r3 = 256 + task.data[1] * 16;
@@ -2415,7 +2415,7 @@ function AnimTask_DoubleTeam(task: _DtTask): void {
   for (let i = 0; i < 2; i++) {
     const obj = mons.CloneBattlerSpriteWithBlend?.(0) ?? -1;
     if (obj < 0) break;
-    const clone = rt?.gSprites?.get(obj);
+    const clone = rt?.gSprites?.[obj];
     const cloneOam = clone ? rt?.gba?.oam[clone.oamIndex] : undefined;
     if (cloneOam && task.data[1] !== 0xFF) cloneOam.paletteBank = task.data[1];
     if (clone) {
@@ -2477,7 +2477,7 @@ function _stcMons(): {
   return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
 }
 function _stcRt(): {
-  gSprites?: Map<number, { x2: number; y2: number; invisible?: boolean; oamIndex: number }>;
+  gSprites?: Array<{ x2: number; y2: number; invisible?: boolean; oamIndex: number } | undefined>;
   gba?: { oam: Array<{ priority: number }>; bg: (i: number) => { config: { priority: number } } };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
@@ -2500,7 +2500,7 @@ function AnimTask_ShrinkTargetCopy(task: _StcTask): void {
   const args = itf.getArgs?.() ?? [128, 24];
   const spriteId = _stcTargetSpriteId();
   const rt = _stcRt();
-  const sp = spriteId !== 0xFF ? rt.gSprites?.get(spriteId) : undefined;
+  const sp = spriteId !== 0xFF ? rt.gSprites?.[spriteId] : undefined;
   if (!sp || sp.invisible) {
     itf.DestroyAnimVisualTask?.(task.taskId);
     return;
@@ -2520,7 +2520,7 @@ function AnimTask_ShrinkTargetCopy(task: _StcTask): void {
 function AnimTask_DuplicateAndShrinkToPos_Step1(task: _StcTask): void {
   const itf = _stcItf();
   const spriteId = _stcTargetSpriteId();
-  const sp = spriteId !== 0xFF ? _stcRt().gSprites?.get(spriteId) : undefined;
+  const sp = spriteId !== 0xFF ? _stcRt().gSprites?.[spriteId] : undefined;
   task.data[10] += task.data[0];
   if (sp) {
     sp.x2 = task.data[10] >> 8;
@@ -2541,7 +2541,7 @@ function AnimTask_DuplicateAndShrinkToPos_Step2(task: _StcTask): void {
     if (task.data[13] === 0) {
       const spriteId = _stcTargetSpriteId();
       const rt = _stcRt();
-      const sp = spriteId !== 0xFF ? rt.gSprites?.get(spriteId) : undefined;
+      const sp = spriteId !== 0xFF ? rt.gSprites?.[spriteId] : undefined;
       _stcMons().ResetSpriteRotScale?.(spriteId);
       if (sp) {
         sp.x2 = 0;
@@ -2629,7 +2629,7 @@ function _mlMasks(): {
 function _mlRt(): {
   gPaletteFade?: { active?: boolean };
   gPlttBufferFaded?: { set?: (i: number, v: number) => void };
-  gSprites?: Map<number, { data: number[]; oamIndex: number; inUse?: boolean }>;
+  gSprites?: Array<{ data: number[]; oamIndex: number; inUse?: boolean } | undefined>;
   gba?: { oam: Array<{ tileId: number }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
@@ -2647,7 +2647,9 @@ function _mlSignalMoonSprites(): void {
     const start = dg?.GetSpriteTileStartByTag?.(tag) ?? 0xFFFF;
     if (start !== 0xFFFF) ranges.push([start, start + 96]);
   }
-  for (const sp of rt.gSprites?.values() ?? []) {
+  for (let _si = 0; _si < MAX_SPRITES; _si++) {
+    const sp = rt.gSprites?.[_si];
+    if (sp === undefined) continue;
     if (sp.inUse === false) continue;
     const t0 = rt.gba?.oam[sp.oamIndex]?.tileId ?? -1;
     for (const [a, b] of ranges) {
@@ -2755,6 +2757,7 @@ import { gBattlerPartyIndexes as _lbPartyIdx } from '../engine/battle/state';
 import { gEnemyParty as _lbEnemyParty, gPlayerParty as _lbPlayerParty, GetMonData as _lbGetMon, MON_DATA_SPECIES as _lbSpeciesK } from '../engine/battle/party-storage';
 import { reverseDecompConstant as _lbRevConst } from '../engine/system/decomp-constants';
 import { getMonFrontPicCoords as _lbFrontCoords, getMonBackPicCoords as _lbBackCoords } from './data/mon_pic_coords';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 
 type _LbTask = { taskId: number; data: number[]; func?: unknown };
 type _LbSprite = {
@@ -2764,7 +2767,7 @@ type _LbSprite = {
   animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean;
 };
 function _lbRt(): {
-  gSprites?: Map<number, _LbSprite>;
+  gSprites?: Array<_LbSprite | undefined>;
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
@@ -2792,7 +2795,7 @@ function _lbSpawnLeaf(x: number, y: number, subprio: number): number {
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid < 0) return -1;
-  const sp = rt.gSprites?.get(sid);
+  const sp = rt.gSprites?.[sid];
   const oam = sp && sp.oamIndex !== undefined ? rt.gba?.oam[sp.oamIndex] : undefined;
   if (oam && tileStart !== 0xFFFF) {
     oam.tileId = tileStart;
@@ -2847,7 +2850,7 @@ function AnimTask_LeafBlade(task: _LbTask): void {
   task.data[8] = task.data[7] - task.data[9] + task.data[6];
   task.data[2] = _lbSpawnLeaf(task.data[8], task.data[9], task.data[4]);
   if (task.data[2] < 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  const sp = _lbRt().gSprites?.get(task.data[2]);
+  const sp = _lbRt().gSprites?.[task.data[2]];
   if (sp) {
     sp.data[0] = 10;
     sp.data[1] = task.data[8];
@@ -2862,14 +2865,16 @@ function AnimTask_LeafBlade(task: _LbTask): void {
 /** 1:1 AnimTask_LeafBlade_Step (machine 0..13 + 0xFF pause). */
 function _LeafBlade_Step(task: _LbTask): void {
   const rt = _lbRt();
-  const sp = rt.gSprites?.get(task.data[2]);
+  const sp = rt.gSprites?.[task.data[2]];
   if (!sp && task.data[0] !== 13) { _lbItf().DestroyAnimVisualTask?.(task.taskId); return; }
   switch (task.data[0]) {
     case 0: case 2: case 4: case 6: case 8: case 10: case 12:
       _LeafBlade_Trail(task);
       if (sp && TranslateAnimHorizontalArc(sp as never)) {
         if (task.data[0] === 12) {
-          for (const [sid, s2] of rt.gSprites ?? new Map()) {
+          for (let sid = 0; sid < MAX_SPRITES; sid++) {
+            const s2 = rt.gSprites?.[sid];
+            if (s2 === undefined) continue;
             if (s2 === sp) { rt.DestroySprite?.(sid); break; }
           }
           task.data[0] = 13;
@@ -2914,11 +2919,11 @@ function _LeafBlade_Trail(task: _LbTask): void {
   if (task.data[14] > 0) {
     task.data[14] = 0;
     const rt = _lbRt();
-    const main = rt.gSprites?.get(task.data[2]);
+    const main = rt.gSprites?.[task.data[2]];
     if (!main) return;
     const sid = _lbSpawnLeaf(main.x + main.x2, main.y + main.y2, task.data[4]);
     if (sid < 0) return;
-    const sp = rt.gSprites?.get(sid);
+    const sp = rt.gSprites?.[sid];
     if (sp) {
       sp.data[6] = task.taskId;
       sp.data[7] = 12;
@@ -2942,7 +2947,9 @@ function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
       const rt = _lbRt();
       const task = rt.gTasks?.get(sprite.data[6]);
       if (task) task.data[sprite.data[7]]--;
-      for (const [sid, s2] of rt.gSprites ?? new Map()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const s2 = rt.gSprites?.[sid];
+        if (s2 === undefined) continue;
         if (s2 === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
       }
     }

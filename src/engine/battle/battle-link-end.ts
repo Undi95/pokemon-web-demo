@@ -208,7 +208,7 @@ function _LoadBattleMenuWindowGfx(): void {
 /** 1:1 décomp `ResetSpriteData()` + `ResetTasks()`. */
 function _ResetSpriteData(): void {
   const r = getRuntime();
-  r?.gSprites?.clear();
+  r?.gSprites?.fill(undefined);
 }
 function _ResetTasks(): void {
   const r = getRuntime();

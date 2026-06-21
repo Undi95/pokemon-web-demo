@@ -140,7 +140,7 @@ export function StopMonFrontSpriteAnimation(rt: DecompRuntime, spriteId: number)
   const ctrl = _activeMonAnims.get(spriteId);
   if (ctrl) ctrl.active = false;
   _activeMonAnims.delete(spriteId);
-  const sprite = rt.gSprites.get(spriteId);
+  const sprite = rt.gSprites[spriteId];
   if (sprite) sprite.callback = SpriteCallbackDummy;
 }
 

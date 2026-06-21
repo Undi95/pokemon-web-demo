@@ -398,7 +398,7 @@ function CreateCloudSprites(): void {
       fromEnd: false,
     });
     if (spriteId !== MAX_SPRITES) {
-      const sprite = rt.gSprites.get(spriteId)!;
+      const sprite = rt.gSprites[spriteId]!;
       // 1:1 : oam.objMode = ST_OAM_OBJ_BLEND.
       sprite.objMode = 1;
       sprite.callback = UpdateCloudSprite;
@@ -593,7 +593,7 @@ function CreateFogHorizontalSprites(): void {
         fromEnd: true,               // CreateSpriteAtEnd
       });
       if (spriteId !== MAX_SPRITES) {
-        const sprite = rt.gSprites.get(spriteId)!;
+        const sprite = rt.gSprites[spriteId]!;
         // 1:1 : oam.objMode = ST_OAM_OBJ_BLEND.
         sprite.objMode = 1;
         sprite.callback = FogHorizontalSpriteCallback;
@@ -849,7 +849,7 @@ function CreateAshSprites(): void {
         fromEnd: true,               // CreateSpriteAtEnd
       });
       if (spriteId !== MAX_SPRITES) {
-        const sprite = rt.gSprites.get(spriteId)!;
+        const sprite = rt.gSprites[spriteId]!;
         // 1:1 : oam.objMode = ST_OAM_OBJ_BLEND (semi-transparent → blend BLDALPHA sur la map).
         sprite.objMode = 1;
         sprite.callback = UpdateAshSprite;

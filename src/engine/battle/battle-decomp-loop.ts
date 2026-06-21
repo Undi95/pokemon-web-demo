@@ -349,7 +349,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     } | undefined;
     if (!itf?.DoMoveAnim) return { ok: false, err: 'interpreter absent (boot un combat d abord)' };
     const rt = (globalThis as Record<string, unknown>).__rt as {
-      gSprites?: Map<number, { callback?: { name?: string } | null }>;
+      gSprites?: Array<{ callback?: { name?: string } | null } | undefined>;
       gba?: { oam?: Array<{ visible?: boolean; tileId?: number; x?: number; y?: number }> };
     } | undefined;
     // SNAPSHOT OAM avant (regle user « rien ne doit rester affiche » : le
@@ -363,7 +363,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     const monAvant: Array<{ id: number; x: number; y: number; x2: number; y2: number; hFlip: boolean }> = [];
     for (let b = 0; b < 2; b++) {
       const id = co2?.getBattlerMonSpriteId?.(b);
-      const sp = id !== undefined && id >= 0 ? rt?.gSprites?.get(id) as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined : undefined;
+      const sp = id !== undefined && id >= 0 ? rt?.gSprites?.[id] as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined : undefined;
       if (sp) monAvant.push({ id: id as number, x: sp.x ?? 0, y: sp.y ?? 0, x2: sp.x2 ?? 0, y2: sp.y2 ?? 0, hFlip: !!sp.hFlip });
     }
     itf.DoMoveAnim(moveId);
@@ -406,7 +406,9 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // laisser 30 frames de jeu (les sprites a vie propre finissent)
     await new Promise(r => setTimeout(r, 600));
     const residuels: string[] = [];
-    for (const [, sp] of rt?.gSprites?.entries() ?? []) {
+    for (let _si = 0; _si < MAX_SPRITES; _si++) {
+      const sp = rt?.gSprites?.[_si];
+      if (sp === undefined) continue;
       const n = sp.callback?.name ?? '';
       if (/Anim|Splat|Scratch|Noise|Ember|Orb|Translate|Shiny|Dirt|Leer/i.test(n)) residuels.push('cb:' + n);
     }
@@ -422,7 +424,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     const ds = (rt as { DestroySprite?: (id: number) => void } | undefined)?.DestroySprite;
     if (ds && rt?.gSprites) {
       for (let id = 0; id < MAX_SPRITES; id++) {
-        const sp = rt.gSprites.get(id);
+        const sp = rt.gSprites[id];
         if (sp === undefined) continue;
         const oamIdx = (sp as { oamIndex?: number }).oamIndex;
         const o = oamIdx !== undefined ? rt.gba?.oam?.[oamIdx] : undefined;
@@ -433,7 +435,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     }
     const monDeplace: string[] = [];
     for (const m of monAvant) {
-      const sp = rt?.gSprites?.get(m.id) as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined;
+      const sp = rt?.gSprites?.[m.id] as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined;
       if (!sp) { monDeplace.push(`mon${m.id} DETRUIT`); continue; }
       if ((sp.x ?? 0) !== m.x || (sp.y ?? 0) !== m.y || (sp.x2 ?? 0) !== m.x2 || (sp.y2 ?? 0) !== m.y2 || !!sp.hFlip !== m.hFlip) {
         monDeplace.push(`mon${m.id} x:${m.x}->${sp.x} y:${m.y}->${sp.y} x2:${m.x2}->${sp.x2} y2:${m.y2}->${sp.y2} flip:${m.hFlip}->${!!sp.hFlip}`);

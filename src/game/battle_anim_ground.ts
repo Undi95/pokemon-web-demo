@@ -39,9 +39,9 @@ function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarg
 }
 function _monSprite(battler: number): DecompSprite | undefined {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, DecompSprite> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<DecompSprite | undefined> } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? rt?.gSprites?.get(id) : undefined;
+  return id !== undefined && id >= 0 ? rt?.gSprites?.[id] : undefined;
 }
 let _dirtSeed = 0x1234;
 function _rand2(): number { _dirtSeed = (_dirtSeed * 1103515245 + 24691) & 0xFFFF; return _dirtSeed; }
@@ -288,7 +288,7 @@ type _HsTask = { taskId: number; data: number[]; func?: unknown };
 function _hsItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-function _hsRt(): { gSprites?: Map<number, { x2: number; invisible?: boolean }> } {
+function _hsRt(): { gSprites?: Array<{ x2: number; invisible?: boolean } | undefined> } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 function _hsSpriteId(animBattler: number): number {
@@ -305,7 +305,7 @@ function _hsBattlerSpriteIdVisible(battler: number): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(battler);
   if (sid === undefined || sid === 0xFF || sid < 0) return 0xFF;
-  const sp = _hsRt().gSprites?.get(sid) as { invisible?: boolean; inUse?: boolean } | undefined;
+  const sp = _hsRt().gSprites?.[sid] as { invisible?: boolean; inUse?: boolean } | undefined;
   return sp && sp.inUse !== false && !sp.invisible ? sid : 0xFF;
 }
 function AnimTask_HorizontalShake(task: _HsTask): void {
@@ -370,7 +370,7 @@ function SetBattlersXOffsetForShake(task: _HsTask): void {
     ? Math.trunc(task.data[14] / 2) + (task.data[14] & 1)
     : -Math.trunc(task.data[14] / 2);
   for (let i = 0; i < task.data[13]; i++) {
-    const sp = _hsRt().gSprites?.get(task.data[9 + i]);
+    const sp = _hsRt().gSprites?.[task.data[9 + i]];
     if (sp) sp.x2 = xOff;
   }
 }
@@ -396,7 +396,7 @@ function AnimTask_ShakeBattlers(task: _HsTask): void {
       break;
     case 2:
       for (let i = 0; i < task.data[13]; i++) {
-        const sp = _hsRt().gSprites?.get(task.data[9 + i]);
+        const sp = _hsRt().gSprites?.[task.data[9 + i]];
         if (sp) sp.x2 = 0;
       }
       _hsItf().DestroyAnimVisualTask?.(task.taskId);
@@ -430,7 +430,7 @@ function _dgItf(): { getArgs?: () => number[]; getAttacker?: () => number; Destr
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 type _DgSprite = { x: number; y: number; x2: number; y2: number; invisible?: boolean };
-function _dgRt(): { gSprites?: Map<number, _DgSprite> } {
+function _dgRt(): { gSprites?: Array<_DgSprite | undefined> } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 function _dgAttackerSpriteId(): number {
@@ -494,7 +494,7 @@ function AnimTask_DigBounceMovement(task: _DgTask): void {
       task.data[14] = y - 32;
       task.data[15] = y + 32;
       if (task.data[14] < 0) task.data[14] = 0;
-      const sp = _dgRt().gSprites?.get(task.data[10]);
+      const sp = _dgRt().gSprites?.[task.data[10]];
       if (sp) sp.invisible = true;
       task.data[0]++;
       break;
@@ -514,7 +514,7 @@ function AnimTask_DigBounceMovement(task: _DgTask): void {
       if (task.data[5] > 63) {
         task.data[5] = 120 - task.data[14];
         _dgSetBgY(task.data[11], task.data[13] - task.data[5]);
-        const sp = _dgRt().gSprites?.get(task.data[10]);
+        const sp = _dgRt().gSprites?.[task.data[10]];
         if (sp) sp.x2 = _DG_DISPLAY_WIDTH + 32 - sp.x;
         task.data[0]++;
       }
@@ -526,7 +526,7 @@ function AnimTask_DigBounceMovement(task: _DgTask): void {
       break;
     case 4: {
       _dgItf().DestroyAnimVisualTask?.(task.taskId);
-      const sp = _dgRt().gSprites?.get(task.data[10]);
+      const sp = _dgRt().gSprites?.[task.data[10]];
       if (sp) sp.invisible = true;
       break;
     }
@@ -536,7 +536,7 @@ function AnimTask_DigBounceMovement(task: _DgTask): void {
 /** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (battle_anim_ground.c:371). */
 function AnimTask_DigEndBounceMovementSetInvisible(task: _DgTask): void {
   const spriteId = _dgAttackerSpriteId();
-  const sp = _dgRt().gSprites?.get(spriteId);
+  const sp = _dgRt().gSprites?.[spriteId];
   if (sp) {
     sp.invisible = true;
     sp.x2 = 0;
@@ -560,7 +560,7 @@ function AnimTask_DigSetVisibleUnderground(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
       task.data[10] = _dgAttackerSpriteId();
-      const sp = _dgRt().gSprites?.get(task.data[10]);
+      const sp = _dgRt().gSprites?.[task.data[10]];
       if (sp) {
         sp.invisible = false;
         sp.x2 = 0;
@@ -593,13 +593,13 @@ function AnimTask_DigRiseUpFromHole(task: _DgTask): void {
       task.data[0]++;
       break;
     case 2: {
-      const sp = _dgRt().gSprites?.get(task.data[10]);
+      const sp = _dgRt().gSprites?.[task.data[10]];
       if (sp) sp.y2 = 96;
       task.data[0]++;
       break;
     }
     case 3: {
-      const sp = _dgRt().gSprites?.get(task.data[10]);
+      const sp = _dgRt().gSprites?.[task.data[10]];
       if (sp) {
         sp.y2 -= 8;
         if (sp.y2 === 0) {

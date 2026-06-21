@@ -184,7 +184,7 @@ function renderLive(): void {
     .__phaserGame?.loop?.actualFps;
   const tags = `${r.paused ? ' ⏸PAUSE' : ''}${g().__devNoclip ? ' NOCLIP' : ''}`;
   live.textContent =
-    `f:${r.gIntroFrameCounter} tasks:${r.gTasks.size} spr:${r.gSprites.size}`
+    `f:${r.gIntroFrameCounter} tasks:${r.gTasks.size} spr:${r.gSprites.filter(Boolean).length}`
     + ` fps:${fps != null ? Math.round(fps) : '?'}${tags}`;
   // bouton pause reflète l'état
   const pb = document.querySelector('[data-fc="pause"]');
@@ -232,10 +232,10 @@ function renderSprites(): void {
 
   const rows: string[] = [];
   const ids: number[] = [];
-  for (let i = 0; i < MAX_SPRITES; i++) if (r.gSprites.get(i) !== undefined) ids.push(i);
+  for (let i = 0; i < MAX_SPRITES; i++) if (r.gSprites[i] !== undefined) ids.push(i);
   let shown = 0;
   for (const id of ids) {
-    const s = r.gSprites.get(id);
+    const s = r.gSprites[id];
     if (!s) continue;
     const oam = r.gba.oam[s.oamIndex];
     const renderedVisible = !!oam && oam.visible && !s.invisible && s.inUse;
@@ -277,7 +277,7 @@ function updateHighlight(): void {
   if (!hl) return;
   if (_selectedSpriteId == null || !_visible) { hl.style.display = 'none'; return; }
   const r = rt();
-  const s = r?.gSprites.get(_selectedSpriteId);
+  const s = r?.gSprites[_selectedSpriteId];
   const canvas = gameCanvas();
   if (!r || !s || !canvas) { hl.style.display = 'none'; return; }
   const oam = r.gba.oam[s.oamIndex];

@@ -1047,17 +1047,17 @@ function DestroySprite(sprite: FaintSprite): void {
   const r = getRuntime();
   if (!r || !r.gSprites) return;
   for (let id = 0; id < MAX_SPRITES; id++) {
-    const s = r.gSprites.get(id);
+    const s = r.gSprites[id];
     if (s === undefined) continue;
     if (s === sprite) {
       // ⚠️ BUG FANTÔME (user 2026-06-10, « le mon KO reste derrière les PV ») :
-      // l'ancienne version faisait gSprites.delete() SANS cacher l'OAM → le sprite
+      // l'ancienne version faisait gSprites[] = undefined SANS cacher l'OAM → le sprite
       // sortait de la Map (plus aucun sync oam.visible) et l'IMAGE restait affichée
       // À JAMAIS. 1:1 DestroySpriteAndFreeResources : le runtime cache l'OAM
       // (oam.visible=false + invisible + inUse=false + callback=null), PUIS on
       // retire le slot de la Map (le mon faint n'a pas d'enfants-data).
       r.DestroySprite(id);
-      r.gSprites.delete(id);
+      r.gSprites[id] = undefined;
       return;
     }
   }
@@ -3009,7 +3009,7 @@ function _CreateInvisibleSpriteWithCallback(cb: (sprite: BattleSprite) => void):
   });
   const id = created.spriteId;
   if (id < 0 || id >= 64) return -1;
-  const s = rt.gSprites.get(id);
+  const s = rt.gSprites[id];
   if (s) {
     s.invisible = true;
     (s as { callback: unknown }).callback = cb;
@@ -3217,7 +3217,7 @@ export function DoBounceEffect(battler: number, which: number, delta: number, am
 
   // Reset bouncer sprite offset.
   const rt = getRuntime();
-  const bouncer = rt?.gSprites?.get(bouncerSpriteId);
+  const bouncer = rt?.gSprites?.[bouncerSpriteId];
   if (bouncer) {
     bouncer.x2 = 0;
     bouncer.y2 = 0;
@@ -3226,7 +3226,7 @@ export function DoBounceEffect(battler: number, which: number, delta: number, am
 
 function _setBounceData(spriteId: number, field: number, value: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId);
+  const sprite = rt?.gSprites?.[spriteId];
   if (sprite) sprite.data[field] = value;
 }
 
@@ -3240,19 +3240,19 @@ export function EndBounceEffect(battler: number, which: number): void {
 
   if (which === BOUNCE_HEALTHBOX) {
     if (!hbData.healthboxIsBouncing) return;
-    const invisibleSprite = rt?.gSprites?.get(hbData.healthboxBounceSpriteId);
+    const invisibleSprite = rt?.gSprites?.[hbData.healthboxBounceSpriteId];
     bouncerSpriteId = (invisibleSprite?.data[SPRITE_DATA_BOUNCER_SPRITE_ID] ?? 0);
     if (invisibleSprite) _DestroySprite(invisibleSprite as never);
     hbData.healthboxIsBouncing = 0;
   } else {
     if (!hbData.battlerIsBouncing) return;
-    const invisibleSprite = rt?.gSprites?.get(hbData.battlerBounceSpriteId);
+    const invisibleSprite = rt?.gSprites?.[hbData.battlerBounceSpriteId];
     bouncerSpriteId = (invisibleSprite?.data[SPRITE_DATA_BOUNCER_SPRITE_ID] ?? 0);
     if (invisibleSprite) _DestroySprite(invisibleSprite as never);
     hbData.battlerIsBouncing = 0;
   }
 
-  const bouncer = rt?.gSprites?.get(bouncerSpriteId);
+  const bouncer = rt?.gSprites?.[bouncerSpriteId];
   if (bouncer) {
     bouncer.x2 = 0;
     bouncer.y2 = 0;
@@ -3266,7 +3266,7 @@ export function SpriteCB_BounceEffect(sprite: BattleSprite): void {
   const amplitude = sprite.data[SPRITE_DATA_AMPLITUDE];
 
   const rt = getRuntime();
-  const bouncer = rt?.gSprites?.get(bouncerSpriteId);
+  const bouncer = rt?.gSprites?.[bouncerSpriteId];
   if (bouncer) {
     bouncer.y2 = _Sin(index, amplitude) + amplitude;
     // Le healthbox = 3 sprites (MAIN + OTHER + BAR). OTHER/BAR mirrorent MAIN.y2 via
@@ -3279,8 +3279,8 @@ export function SpriteCB_BounceEffect(sprite: BattleSprite): void {
     // (Fix 1:1-PUR = aligner l'ordre de creation des sprites pour que le ticker tombe sur un slot
     // < healthbox comme dans la decomp -> structurel, a faire a la migration src/game/.)
     if (sprite.data[SPRITE_DATA_WHICH] === BOUNCE_HEALTHBOX && bouncer.data) {
-      const other = rt?.gSprites?.get(bouncer.data[7] | 0);
-      const bar = rt?.gSprites?.get(bouncer.data[5] | 0);
+      const other = rt?.gSprites?.[bouncer.data[7] | 0];
+      const bar = rt?.gSprites?.[bouncer.data[5] | 0];
       if (other) other.y2 = bouncer.y2;
       if (bar) bar.y2 = bouncer.y2;
     }
@@ -3562,14 +3562,14 @@ function ResetSpriteData(): void {
   // 1:1 décomp `ResetSpriteData()` (sprite.c:294) = ResetOamRange(0,128) +
   // ResetAllSprites + ClearSpriteCopyRequests + ResetAffineAnimData +
   // FreeSpriteTileRanges. Le runtime l'implémente (rt.ResetSpriteData, = ce
-  // qu'appelle decomp-bridge.ResetSpriteData). AVANT : stub `gSprites.clear()`
+  // qu'appelle decomp-bridge.ResetSpriteData). AVANT : stub `gSprites.fill(undefined)`
   // vidait la Map mais PAS l'OAM ni les tiles → les sprites de combat (mon +
   // healthbox) gardaient leurs entrées OAM et RENDAIENT ENCORE dans l'OW après le
   // retour (user-flag : sprites + palette combat qui leakent). Fix = déléguer au
   // VRAI reset (clear OAM + tiles + sprites). Le re-spawn OW
   // (_restoreOverworldFromMenu) re-crée ensuite les sprites OW = 1:1.
   (r as { ResetSpriteData?: () => void }).ResetSpriteData?.();
-  if (r.gSprites) r.gSprites.clear();
+  if (r.gSprites) r.gSprites.fill(undefined);
 }
 
 /** 1:1 décomp `FreeAllWindowBuffers()` (window.c). Phase port : libère les

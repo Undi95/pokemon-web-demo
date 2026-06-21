@@ -3,7 +3,7 @@
 import type { DecompRuntime } from '../../system/decomp-runtime';
 import type { DecompSprite, DecompTask } from '../../system/decomp-runtime';
 // Local helpers (mirroring those in callbacks-auto modules)
-function _gs(rt: DecompRuntime, id: number): DecompSprite { return (rt.gSprites.get(id) as unknown as DecompSprite) ?? ({ spriteId: -1, invisible: true, data: [] } as unknown as DecompSprite); }
+function _gs(rt: DecompRuntime, id: number): DecompSprite { return (rt.gSprites[id] as unknown as DecompSprite) ?? ({ spriteId: -1, invisible: true, data: [] } as unknown as DecompSprite); }
 function _gt(rt: DecompRuntime, id: number): DecompTask { return (rt.gTasks.get(id) as unknown as DecompTask) ?? ({ taskId: -1, data: [] } as unknown as DecompTask); }
 
 // ─── #define constants ───

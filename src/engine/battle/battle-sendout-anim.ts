@@ -182,7 +182,7 @@ export async function startSendOut(opts: {
   _status = 'active';   // SYNC : la state machine voit 'active' immédiatement.
   await _ensureBallAsset();
   const rt = getRuntime();
-  const mon = rt?.gSprites.get(opts.monSpriteId);
+  const mon = rt?.gSprites[opts.monSpriteId];
 
   // Fallback : si l'asset n'a pas chargé, on révèle le mon directement (pas d'anim)
   // pour ne JAMAIS laisser le mon invisible.
@@ -221,7 +221,7 @@ export async function startSendOut(opts: {
   // se lance à l'apex de l'arc (tickSendOut, 1:1 pokeball.c:939) puis reset à 0 en fin d'arc
   // (pokeball.c:975). La rotation tourne via le système affine anim partagé (= comme le mon
   // qui scale) : tickAllAffineAnims accumule +25/frame (sAffineAnim_BallRotate_4, duration=1).
-  const ballSprite = rt.gSprites.get(ball.spriteId);
+  const ballSprite = rt.gSprites[ball.spriteId];
   if (ballSprite) {
     const _m = rt.AllocOamMatrix();
     if (_m >= 0) {
@@ -279,8 +279,8 @@ export function tickSendOut(): void {
   if (fc === _lastFrameCounter) return;
   _lastFrameCounter = fc;
 
-  const ball = rt.gSprites.get(_so.ballSpriteId);
-  const mon = rt.gSprites.get(_so.monSpriteId);
+  const ball = rt.gSprites[_so.ballSpriteId];
+  const mon = rt.gSprites[_so.monSpriteId];
   if (!mon) { _cleanup(rt); return; }
 
   _so.frame++;
@@ -403,7 +403,7 @@ export function tickSendOut(): void {
 
 function _cleanup(rt: DecompRuntime): void {
   if (_so) {
-    const ball = rt.gSprites.get(_so.ballSpriteId);
+    const ball = rt.gSprites[_so.ballSpriteId];
     if (ball) {
       // Libère la matrice OAM du spin (sinon fuite d'un slot affine par combat).
       if ((ball.matrixNum ?? 0) > 0) { rt.FreeOamMatrix(ball.matrixNum); ball.matrixNum = 0; }
@@ -432,7 +432,7 @@ export async function startReturnToBall(opts: {
   _rtbStatus = 'active';   // SYNC : la state machine voit 'active' immédiatement.
   await _ensureBallAsset();
   const rt = getRuntime();
-  const mon = rt?.gSprites.get(opts.monSpriteId);
+  const mon = rt?.gSprites[opts.monSpriteId];
   // Fallback : si l'asset n'a pas chargé, on cache le mon directement (le recall
   // a quand même lieu côté logique) pour ne jamais bloquer.
   if (!rt || !_ballAssetLoaded || _ballPaletteSlot < 0 || !mon) {
@@ -456,8 +456,8 @@ export function tickReturnToBall(): void {
   const fc = rt.gIntroFrameCounter;   // 1:1 frame logique 60Hz (cf. tickSendOut)
   if (fc === _rtbLastFc) return;
   _rtbLastFc = fc;
-  const mon = rt.gSprites.get(_rtb.monSpriteId);
-  const ball = rt.gSprites.get(_rtb.ballSpriteId);
+  const mon = rt.gSprites[_rtb.monSpriteId];
+  const ball = rt.gSprites[_rtb.ballSpriteId];
   _rtb.frame++;
   // Le mon est aspiré dans la ball (~frame 4).
   if (_rtb.frame >= 4 && mon) mon.invisible = true;
@@ -547,7 +547,7 @@ export async function showTrainerBackSprite(gender: number, x: number, y: number
   _trainerSpriteId = t.spriteId;
   // 1:1 PlayerHandleDrawTrainerPic : démarre off-screen DROITE (x2 = +DISPLAY_WIDTH),
   // le scroll (tickIntroSlideIn) le glisse vers x2=0 (-2/frame, SpriteCB_TrainerSlideIn).
-  const _ts = rt.gSprites.get(_trainerSpriteId);
+  const _ts = rt.gSprites[_trainerSpriteId];
   if (_ts) {
     _ts.x2 = DISPLAY_WIDTH;
     // 1:1 SetMultiuseSpriteTemplateToTrainerBack : attache la table d'anims back-pic. usingSheet +
@@ -658,7 +658,7 @@ export async function showOpponentTrainerSprite(picEnum: string, x: number, y: n
   _oppTrainerSpriteId = t.spriteId;
   // 1:1 OpponentHandleDrawTrainerPic : démarre off-screen GAUCHE (x2=-DISPLAY_WIDTH),
   // sSpeedX=2 → tickIntroSlideIn le glisse vers x2=0.
-  const _ts = rt.gSprites.get(_oppTrainerSpriteId);
+  const _ts = rt.gSprites[_oppTrainerSpriteId];
   if (_ts) _ts.x2 = -DISPLAY_WIDTH;
   _oppTrainerPending = false;
   return _oppTrainerSpriteId;
@@ -696,7 +696,7 @@ export function resetIntroSlideInStatus(): void { _slideInStatus = 'idle'; }
 export function startIntroSlideIn(oppSpriteId?: number): void {
   if (oppSpriteId !== undefined) {
     const rt = getRuntime();
-    const opp = rt?.gSprites.get(oppSpriteId);
+    const opp = rt?.gSprites[oppSpriteId];
     if (opp) opp.x2 = -DISPLAY_WIDTH;   // 1:1 OpponentHandleLoadMonSprite : x2 = -DISPLAY_WIDTH
     _slideInOppId = oppSpriteId;
   } else {
@@ -718,17 +718,17 @@ export function tickIntroSlideIn(): void {
 
   let oppDone = true, trDone = true, oppTrDone = true;
   // Côté adverse SAUVAGE : le mon slide depuis la gauche (+2).
-  const opp = _slideInOppId >= 0 ? rt.gSprites.get(_slideInOppId) : null;
+  const opp = _slideInOppId >= 0 ? rt.gSprites[_slideInOppId] : null;
   if (opp && (opp.x2 ?? 0) < 0) { opp.x2 = Math.min(0, (opp.x2 ?? 0) + SLIDE_IN_SPEED); }
   oppDone = !opp || (opp.x2 ?? 0) >= 0;
   // Côté adverse DRESSEUR : le sprite front slide depuis la gauche (1:1 sSpeedX=2).
   // `_oppTrainerPending` = l'asset est en cours de chargement (async) → la slide
   // reste 'active' jusqu'à ce qu'il apparaisse (sinon done prématuré = sprite figé off-screen).
-  const oppTr = _oppTrainerSpriteId >= 0 ? rt.gSprites.get(_oppTrainerSpriteId) : null;
+  const oppTr = _oppTrainerSpriteId >= 0 ? rt.gSprites[_oppTrainerSpriteId] : null;
   if (oppTr && (oppTr.x2 ?? 0) < 0) { oppTr.x2 = Math.min(0, (oppTr.x2 ?? 0) + SLIDE_IN_SPEED); }
   oppTrDone = !_oppTrainerPending && (!oppTr || (oppTr.x2 ?? 0) >= 0);
   // Dresseur JOUEUR (dos) : slide depuis la droite (-2).
-  const tr = _trainerSpriteId >= 0 ? rt.gSprites.get(_trainerSpriteId) : null;
+  const tr = _trainerSpriteId >= 0 ? rt.gSprites[_trainerSpriteId] : null;
   if (tr && (tr.x2 ?? 0) > 0) { tr.x2 = Math.max(0, (tr.x2 ?? 0) - SLIDE_IN_SPEED); }
   trDone = !tr || (tr.x2 ?? 0) <= 0;
   if (oppDone && trDone && oppTrDone) { _slideInStatus = 'done'; _slideInLastFc = -1; }
@@ -795,7 +795,7 @@ export function resetTrainerThrowStatus(): void { _ttStatus = 'idle'; }
 export function startTrainerThrow(opts: BallSendOpts): void {
   _ttStatus = 'active';
   const rt = getRuntime();
-  const t = rt?.gSprites.get(_trainerSpriteId);
+  const t = rt?.gSprites[_trainerSpriteId];
   _tt = { frame: 0, slideStartX: t ? t.x : 0, ballOpts: opts, ballStarted: false };
   // GFX ball 1:1 (DECOMP-TS-BRIDGE §4 + pokeball.c:1313) : gBallGfx_Poke/gBallPal_Poke doivent
   // etre dans assetCache AVANT le getAsset SYNC de LoadBallGfx (chain #22). Sinon
@@ -818,7 +818,7 @@ export function tickTrainerThrow(): void {
   _ttLastFc = fc;
 
   _tt.frame++;
-  const t = rt.gSprites.get(_trainerSpriteId);
+  const t = rt.gSprites[_trainerSpriteId];
   if (t) {
     // Anim : tileId = tileBase + frameIndex × 64 (1:1 sAnimCmd_Brendan_1 timing).
     const fi = _trainerThrowFrameAt(_tt.frame);
@@ -886,7 +886,7 @@ export function resetOpponentTrainerThrowStatus(): void { _ottStatus = 'idle'; }
 export function startOpponentTrainerThrow(opts: BallSendOpts): void {
   _ottStatus = 'active';
   const rt = getRuntime();
-  const t = _oppTrainerSpriteId >= 0 ? rt?.gSprites.get(_oppTrainerSpriteId) : null;
+  const t = _oppTrainerSpriteId >= 0 ? rt?.gSprites[_oppTrainerSpriteId] : null;
   // 1:1 SetSpritePrimaryCoordsFromSecondaryCoords : intègre x2 dans x (fige la position).
   if (t) { t.x += (t.x2 ?? 0); t.x2 = 0; }
   _ott = { frame: 0, slideStartX: t ? t.x : 0 };
@@ -904,7 +904,7 @@ export function tickOpponentTrainerThrow(): void {
   _ottLastFc = fc;
 
   _ott.frame++;
-  const t = _oppTrainerSpriteId >= 0 ? rt.gSprites.get(_oppTrainerSpriteId) : null;
+  const t = _oppTrainerSpriteId >= 0 ? rt.gSprites[_oppTrainerSpriteId] : null;
   if (t) {
     // Slide linéaire startX → destX=280 (hors écran droite) sur 35 frames (AnimTranslateLinear).
     const p = Math.min(1, _ott.frame / OPP_TRAINER_SLIDE_FRAMES);
