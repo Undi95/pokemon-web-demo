@@ -426,8 +426,9 @@ export function UpdateTallGrassFieldEffect(sprite: DecompSprite, rt: DecompRunti
 /** 1:1 décomp `FindTallGrassFieldEffectSpriteId` (field_effect_helpers.c:376). Scanne gSprites
  *  pour le sprite tall grass à (x,y,localId,mapNum,mapGroup). Retourne le spriteId ou MAX_SPRITES. */
 export function FindTallGrassFieldEffectSpriteId(rt: DecompRuntime, localId: number, mapNum: number, mapGroup: number, x: number, y: number): number {
-  for (const s of rt.gSprites.values()) {
-    if (!s.inUse) continue;
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s === undefined || !s.inUse) continue;
     if (s.callback === UpdateTallGrassFieldEffect
         && x === s.data[1] && y === s.data[2]
         && localId === ((s.data[3] >> 8) & 0xFF)
@@ -649,8 +650,9 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
   if (!_shortGrassInit) return 64;
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul short grass par owner (le callback despawn quand !inShortGrass).
-  for (const s of rt.gSprites.values()) {
-    if (s.inUse && s.callback === UpdateShortGrassFieldEffect &&
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s !== undefined && s.inUse && s.callback === UpdateShortGrassFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
   const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
@@ -2859,8 +2861,9 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   if (!_hotSpringsInit) return 64;
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul hot springs par owner (le callback despawn quand !inHotSprings).
-  for (const s of rt.gSprites.values()) {
-    if (s.inUse && s.callback === UpdateHotSpringsWaterFieldEffect &&
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s !== undefined && s.inUse && s.callback === UpdateHotSpringsWaterFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
   const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
@@ -3139,8 +3142,9 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   if (!_sandPileInit) return 64; // MAX_SPRITES — assets pas prêts
   const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
   // 1:1 : un seul sand pile par owner (le callback despawn quand !inSandPile → pas de doublon).
-  for (const s of rt.gSprites.values()) {
-    if (s.inUse && s.callback === UpdateSandPileFieldEffect &&
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s !== undefined && s.inUse && s.callback === UpdateSandPileFieldEffect &&
         s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
   }
   const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);

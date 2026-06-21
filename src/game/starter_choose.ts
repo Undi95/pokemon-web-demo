@@ -51,7 +51,7 @@ import {
 } from '../engine/ui/gba-text-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../engine/system/decomp-globals';
-import { BG_PLTT_ID } from '../engine/system/decomp-runtime';
+import { BG_PLTT_ID, MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../engine/system/decomp-bridge';
 import { CreateMon } from '../engine/pokemon/pokemon';
 import { GiveMonToPlayer } from '../engine/battle/party-storage';
@@ -368,12 +368,14 @@ async function CB2_ChooseStarter(): Promise<void> {
   // → OW disparaît. Notre TS doit hide ALL pre-existing sprites pour émuler.
   // (Le player avatar utilise 2+ OAM slots : body + reflection/shadow.)
   _savedVisibleSpriteIds = [];
-  rt.gSprites.forEach((s, id) => {
+  // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[id]).
+  for (let id = 0; id < MAX_SPRITES; id++) {
+    const s = rt.gSprites.get(id);
     if (s && !s.invisible) {
       _savedVisibleSpriteIds.push(id);
       s.invisible = true;
     }
-  });
+  }
   setObjectEventsSuspended(true);
   pauseTilesetAnimations();
   setFieldCameraSuspended(true);

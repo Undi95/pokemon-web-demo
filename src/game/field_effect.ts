@@ -34,6 +34,7 @@
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { FieldEffectActiveListRemove, FieldEffectActiveListAdd } from '../engine/field/field-effect-active-list';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE } from '../engine/system/sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
@@ -142,8 +143,10 @@ export function FieldEffectFreePaletteIfUnused(rt: DecompRuntime, paletteNum: nu
   const tag = GetSpritePaletteTagByPaletteNum(paletteNum);
   if (tag === TAG_NONE) return;
   // 1:1 décomp : si un autre sprite in-use porte ce paletteNum → ne pas libérer.
-  for (const s of rt.gSprites.values()) {
-    if (!s.inUse) continue;
+  // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[i]).
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s === undefined || !s.inUse) continue;
     const oam = rt.gba.oam[s.oamIndex];
     if (oam && oam.paletteBank === paletteNum) return;
   }

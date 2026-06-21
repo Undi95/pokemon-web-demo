@@ -8427,8 +8427,10 @@ export function AddCameraObject(followSpriteId: number): number {
 /** 1:1 décomp `FindCameraSprite(void)` (event_object_movement.c:2274). */
 function FindCameraSprite(): DecompSprite | null {
   const rt = getRuntime();
-  for (const s of rt.gSprites.values()) {
-    if (s.inUse && s.callback === SpriteCB_CameraObject) return s;
+  // 1:1 décomp : boucle indexée sur les MAX_SPRITES slots fixes (gSprites[i]).
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s !== undefined && s.inUse && s.callback === SpriteCB_CameraObject) return s;
   }
   return null;
 }

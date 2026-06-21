@@ -19,7 +19,7 @@
  * État global : `sNamingScreen` exposé sur `globalThis` pour que les
  * auto-callbacks y accèdent.
  */
-import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
+import { OBJ_PLTT_ID, MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../engine/system/sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
@@ -1009,8 +1009,9 @@ function SetSpritesVisible(): void {
   if (!sNamingScreen) return;
   const rt = getRuntime();
   if (!rt) return;
-  for (const sprite of rt.gSprites.values()) {
-    if (sprite.inUse) sprite.invisible = false;
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const sprite = rt.gSprites.get(i);
+    if (sprite !== undefined && sprite.inUse) sprite.invisible = false;
   }
   SetCursorInvisibility(false);
 }
