@@ -84,10 +84,19 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
       `struct SpriteTemplate`). **Le vrai 1:1 `CreateSprite(template)→CreateSpriteAt`** = chantier SÉPARÉ : notre
       `CreateSprite` (decomp-bridge) est un dispatcher 3-voies (images inline / tileTag / nom) → l'unifier exige de
       fusionner les 3 modèles de chargement gfx. Gros, pas un lot mécanique.
-    - ⏳ **E2.3e+** : `AnimateSprites`, `BuildOamBuffer` (extraction méthodes restantes) ; migrer les call-sites
-      `rt.{DestroySprite,ResetSpriteData,CreateSpriteAtOam,AllocOamMatrix,…}` → free fns + retirer les délégués ;
-      puis le chantier `CreateSprite` 1:1 (fusion gfx-loading). ⚠️ chaque extraction érode l'encapsulation
-      DecompRuntime (champs→public) = direction décomp (état en globals) ; le vrai 1:1 final = globals module-level.
+    - ✅ **E2.3e** (`f38c691d`) : `AnimateSprites`/`BuildOamBuffer` (sprite.c:308/325) relocalisés decomp-globals →
+      game/sprite.ts (decomp-globals re-exporte). Wrappers FINS (délèguent aux méthodes per-frame runtime) → relocation
+      byte-identique. Dup locale M3 dans `ui/mail.ts` (animateAllSprites/buildOamBuffer) NON touchée.
+    - 🏁 **CONSTAT (fin de la série « extract method »)** : les extractions SUBSTANTIELLES du cœur sprite sont FAITES
+      (DestroySprite, ResetSpriteData, allocateur matrix + bug, CreateSpriteAtOam). `game/sprite.ts` est le home
+      consolidé du système sprite. Ce qui reste est d'une AUTRE nature, à faire en chantiers DÉDIÉS :
+      - **(A) hot-path** : extraire `runSpriteCallbacks`/`syncSpritesToOam`/`tickSpriteAnims` (les méthodes per-frame
+        = vraie logique d'AnimateSprites/BuildOamBuffer) → couplées à la boucle `tick()` du runtime, surcoût/frame.
+      - **(B) `CreateSprite` 1:1** : unifier le dispatcher 3-voies (images inline / tileTag / nom) en
+        `CreateSprite(template)→CreateSpriteAt` lisant `struct SpriteTemplate` = fusion des modèles gfx-loading. GROS.
+      - **(C) cleanup délégués** : migrer les call-sites `rt.{DestroySprite=102,ResetSpriteData=13,CreateSpriteAtOam=112,…}`
+        → free fns + retirer les méthodes-déléguées du harness. Mécanique mais large (receveurs variés, optional-chaining).
+      - **(D) dédup mail.ts** (animateAllSprites/buildOamBuffer locaux).
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
 directs 1:1 (`gSprites[i]`, `gBattle_BG1_X`…) dans les battle-anims + field effects. A/B par famille (anim par anim).
