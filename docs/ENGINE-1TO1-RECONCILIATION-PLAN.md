@@ -48,6 +48,17 @@ rend) après CHAQUE lot. NE PAS big-bang. Aucune petite brique isolable (type/st
 **Phase E2 — EXTRAIRE sprite.c → `game/sprite.ts`** : sortir CreateSprite/CreateSpriteAtEnd/DestroySprite/
 AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le home 1:1, noms/structure décomp,
 écrivant dans `Gba.oam`. Rewire imports.
+  - ✅ **E2.1** (`37d38cff`) : `git mv engine/system/sprite.ts → game/sprite.ts` (ce fichier ÉTAIT déjà notre
+    sprite.c : AllocSpriteTiles/CalcCenterToCornerVec/LoadSpriteSheet/SetOamMatrix/AllocOamMatrix/allocateurs).
+    Relocation pure, 43 specifiers réécrits (37 fichiers), zéro nouvel arc ESM. tsc=0, A/B OW+combat 59fps.
+  - ⏳ **E2.2** : folder `sprite-animation.ts` (BeginAnim/ContinueAnim/AnimateSprite/StartSpriteAnim/SeekSpriteAnim/
+    ProcessSpriteCopyRequests/RequestSpriteFrameImageCopy/ANIMCMD_*) DANS game/sprite.ts. ⚠️ crée un cycle VALEUR
+    `game/sprite ↔ decomp-runtime` (sprite importe `OBJ_PLTT_ID`, decomp-runtime importe `AnimateSprite`) — sûr SI
+    aucun usage top-level (fonctions = lazy), mais vérifier TDZ au boot.
+  - ⏳ **E2.3** : extraire les MÉTHODES `DecompRuntime` → free functions dans game/sprite.ts, pattern délégation
+    transitionnel (comme façade E1) : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct
+    SpriteTemplate`), `DestroySprite` (102 call-sites `rt.DestroySprite`), `ResetSpriteData` (13), `AnimateSprites`,
+    `BuildOamBuffer`. Garder `rt.X` comme délégué pendant la migration des call-sites, retirer ensuite.
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
 directs 1:1 (`gSprites[i]`, `gBattle_BG1_X`…) dans les battle-anims + field effects. A/B par famille (anim par anim).
