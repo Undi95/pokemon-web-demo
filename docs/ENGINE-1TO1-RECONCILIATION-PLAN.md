@@ -70,15 +70,13 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
       même module, 1:1) au lieu du hack `globalThis.__sprite` (identité vérifiée) + `setReservedSpriteTileCount(0)`.
       Champs `nextOamSlot`/`nextSpriteId` → accessibles. A/B : boot OW + OW→combat (ResetSpriteData ×2), combat
       rendu propre sans sprite OW résiduel, 59.4fps.
-    - 🐛 **E2.3c — BUG LATENT À CORRIGER (trouvé E2.3b, 2026-06-21) : DOUBLE allocateur OAM matrix avec état SÉPARÉ.**
-      (a) méthode `DecompRuntime.AllocOamMatrix`/`FreeOamMatrix` → `this._matrixUsed` (Set), scanne slots **1..31**,
-      **25 call-sites** `rt.AllocOamMatrix` (sac, send-out, bridge…). (b) free `AllocOamMatrix`/`FreeOamMatrix`
-      (game/sprite.ts:505/533) → `globalThis.gOamMatrixAllocBitmap` (bitmap, = vrai 1:1 décomp), scanne **0..31**,
-      utilisé par `battle_anim_mons.ts:440` + `battle_anim_psychic.ts`. **Les 2 ignorent l'état l'un de l'autre** →
-      si actifs simultanément (anim affine mon combat + autre alloc), collision sur `gba.affineParams[i]` → matrice
-      corrompue. FIX = consolider sur UN état canonique (le bitmap 1:1 décomp `gOamMatrixAllocBitmap`), faire que la
-      méthode délègue à la free fn, réconcilier le scan 0-vs-1. ⚠️ sensible au RENDU affine → A/B CIBLÉ : rotation
-      d'intro des mons en combat + anims de statut + shake du sac. Lot DÉDIÉ, pas à la va-vite.
+    - ✅🐛 **E2.3c — BUG LATENT CORRIGÉ** (`7eabf32d`) : DOUBLE allocateur OAM matrix à état séparé (Set `_matrixUsed`
+      VS bitmap `gOamMatrixAllocBitmap`) → consolidé sur l'état UNIQUE = le bitmap 1:1 décomp. Free fns `Alloc/
+      FreeOamMatrix` (game/sprite.ts) = allocateur canonique, méthode runtime y délègue, `_matrixUsed` SUPPRIMÉ,
+      DestroySprite/ResetSpriteData/reset() basculés sur le bitmap. Scan dès i=1 (slot 0 réservé M3) + sentinel 0xFF
+      (1:1, aucun call-site ne teste le retour). BONUS 1:1 : `FreeOamMatrix` rajoute le reset identité au release
+      (sprite.c:1460) qui manquait. A/B affine : send-out (chemin méthode) + lunge battle_anim_mons (chemin free fn)
+      rendus corrects, `slot0free=true`, 57.3fps.
     - ⏳ **E2.3d+** : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct SpriteTemplate`, le PLUS
       gros + pas 1:1 actuellement), `AnimateSprites`, `BuildOamBuffer` ; puis migrer les call-sites `rt.DestroySprite`
       (102) / `rt.ResetSpriteData` (13) et retirer les délégués. ⚠️ chaque extraction érode l'encapsulation
