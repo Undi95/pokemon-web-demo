@@ -6,13 +6,16 @@
  */
 
 import { registerOpcode } from './script-runtime';
-import { VarSet } from './script-vars';
-import { parseValue } from './script-opcodes-helpers';
+import { VarSet, VarGet } from './script-vars';
+import { Random } from '../../game/random';
 
-// 1:1 décomp `ScrCmd_random` — RNG result into VAR_RESULT. Range = args[0].
+// 1:1 décomp `ScrCmd_random` (scrcmd.c:479-485) :
+//   u16 max = VarGet(ScriptReadHalfword(ctx));
+//   gSpecialVar_Result = Random() % max;
+// `Random()` = LCG décomp (gRngValue, déterministe/reproductible) — PAS Math.random()
+// (qui cassait le 1:1 RNG : audit opcodes pilote 2026-06-21).
 registerOpcode('random', (_ctx, args) => {
-  const range = parseValue(args[0]);
-  const r = Math.floor(Math.random() * Math.max(1, range));
-  VarSet('VAR_RESULT', r);
+  const max = VarGet(args[0] ?? '0');
+  VarSet('VAR_RESULT', Random() % max);
   return false;
 });
