@@ -1606,3 +1606,22 @@ export function CreateSpriteAtOam(rt: DecompRuntime, cfg: {
   rt.gSprites[spriteId] = sprite;
   return { spriteId, oamIndex };
 }
+
+/** 1:1 décomp `void AnimateSprites(void)` (sprite.c:308) — pour chaque slot inUse :
+ *  exécute son callback puis (si toujours inUse) AnimateSprite. Appelée par les CB2
+ *  non-MainCB2 (CB2_MainMenu, NewGame…) qui ne passent pas par la boucle tick (où
+ *  runOneFrame gate les anims via `isMainCB2`). Sans ça : player-shrink stuck.
+ *  Relocalisée du harness vers son home sprite (E2.3e) ; la boucle hot-path reste dans
+ *  DecompRuntime (méthodes per-frame), ce wrapper la déclenche pour ces callbacks. */
+export function AnimateSprites(): void {
+  const r = _rt();
+  r.runSpriteCallbacksPublic();   // sprite.callback(sprite) chaque frame
+  r.tickSpriteAnimsPublic();      // anims de frame (StartSpriteAnim + duration)
+  r.tickAllAffineAnimsPublic();   // affine anims (scale/rotation deltas)
+}
+
+/** 1:1 décomp `void BuildOamBuffer(void)` (sprite.c:325) — sync sprite state → OAM
+ *  buffer (position/visibilité/matrice affine) = AddSpritesToOamBuffer + co. */
+export function BuildOamBuffer(): void {
+  _rt().syncSpritesToOamPublic();
+}
