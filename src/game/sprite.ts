@@ -1607,6 +1607,59 @@ export function CreateSpriteAtOam(rt: DecompRuntime, cfg: {
   return { spriteId, oamIndex };
 }
 
+/** 1:1 décomp `static void RunSpriteCallbacks(void)` (sprite.c) — pour chaque slot
+ *  inUse, exécute son `callback(sprite)`. Snapshot des sprites présents au début (un
+ *  callback peut en créer/détruire pendant la boucle) → comportement identique via
+ *  accès indexé. Relocalisée du harness (chantier A1) ; la méthode runtime délègue. */
+export function runSpriteCallbacks(rt: DecompRuntime): void {
+  const snapshot: DecompSprite[] = [];
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites[i];
+    if (s !== undefined) snapshot.push(s);
+  }
+  for (const sprite of snapshot) {
+    if (rt.gSprites[sprite.spriteId] !== undefined && sprite.inUse && sprite.callback) {
+      sprite.callback(sprite, rt);
+    }
+  }
+}
+
+/** Sync les fields sprite → gba.oam. 1:1 décomp `BuildOamBuffer` + `UpdateOamCoords`
+ *  (sprite.c:339-359) :
+ *    oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX (+ gSpriteCoordOffsetX
+ *            si coordOffsetEnabled → suit la caméra)
+ *  centerToCornerVec = -w/2,-h/2 (×2 si AFFINE_DOUBLE) → (sprite.x,y) = centre affiché.
+ *  subspriteMode==on → skip primary OAM (les child OAMs rendent à sa place).
+ *  affineMode : merge sprite.affineMode | oam.affineMode (les auto-callbacks écrivent
+ *  sur oam.affineMode, les autres sur sprite.affineMode) ; OFF explicite (affineMode==0
+ *  + matrixNum==0 = teardown via FreeOamMatrix) → propage OFF. Relocalisée (chantier A1). */
+export function syncSpritesToOam(rt: DecompRuntime): void {
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const sprite = rt.gSprites[i];
+    if (sprite === undefined || !sprite.inUse) continue;
+    const oam = rt.gba.oam[sprite.oamIndex];
+    if (sprite.coordOffsetEnabled) {
+      oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX + rt.gSpriteCoordOffsetX;
+      oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY + rt.gSpriteCoordOffsetY;
+    } else {
+      oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
+      oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
+    }
+    oam.visible = !sprite.invisible && sprite.subspriteMode !== 'on';
+    oam.flipH = sprite.hFlip;
+    oam.flipV = sprite.vFlip;
+    oam.affineParamIndex = sprite.matrixNum;
+    oam.objMode = sprite.objMode as 0 | 1 | 2;
+    oam.subpriority = sprite.subpriority;
+    const merged = (sprite.affineMode | (oam.affineMode ?? 0)) as 0 | 1 | 2 | 3;
+    if (sprite.affineMode === 0 && sprite.matrixNum === 0) {
+      oam.affineMode = 0;
+    } else {
+      oam.affineMode = merged;
+    }
+  }
+}
+
 /** 1:1 décomp `void AnimateSprites(void)` (sprite.c:308) — pour chaque slot inUse :
  *  exécute son callback puis (si toujours inUse) AnimateSprite. Appelée par les CB2
  *  non-MainCB2 (CB2_MainMenu, NewGame…) qui ne passent pas par la boucle tick (où

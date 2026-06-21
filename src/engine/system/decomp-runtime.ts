@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2386,90 +2386,16 @@ export class DecompRuntime {
   }
 
   /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
+  /** Délègue à la fonction sprite.c 1:1 relocalisée vers game/sprite.ts (chantier A1).
+   *  Méthode conservée (appelée par runOneFrame + runSpriteCallbacksPublic). */
   private runSpriteCallbacks(): void {
-    // 1:1 décomp : itère les MAX_SPRITES slots. Snapshot des sprites présents au
-    // début (un callback peut en créer/détruire pendant la boucle) → comportement
-    // strictement inchangé vs l'ancien Array.from(.values()), mais via accès indexé.
-    const snapshot: DecompSprite[] = [];
-    for (let i = 0; i < MAX_SPRITES; i++) {
-      const s = this.gSprites[i];
-      if (s !== undefined) snapshot.push(s);
-    }
-    for (const sprite of snapshot) {
-      if (this.gSprites[sprite.spriteId] !== undefined && sprite.inUse && sprite.callback) {
-        sprite.callback(sprite, this);
-      }
-    }
+    _runSpriteCallbacks_1to1(this);
   }
 
-  /** Sync les fields sprite → gba.oam. 1:1 décomp src/sprite.c:BuildOamBuffer
-   *  + UpdateOamCoords (lines 339-359) :
-   *    oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX
-   *    oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY
-   *  centerToCornerVec = -w/2, -h/2 (×2 si AFFINE_DOUBLE) → décale top-left
-   *  pour que (sprite.x, sprite.y) soit le centre du sprite affiché.
-   *  Sans ce décalage, les sprites apparaissent décalés à droite + bas.
-   *
-   *  Session 90 audit V2 fix : ALSO sync sprite.affineMode → oam.affineMode.
-   *  Avant : seul oam.affineParamIndex était synced. Si une callback (e.g.
-   *  SetUpForReleaseAffineAnim) modifie sprite.affineMode mais pas oam.affineMode,
-   *  ou inversement, on a deux sources de vérité divergentes. Le décomp utilise
-   *  oam.* comme source unique (= gSprites[i].oam.affineMode). Notre split
-   *  sprite.affineMode / oam.affineMode → propage sprite → oam ICI.
-   *
-   *  Nuance importante : les auto-callbacks transcrits écrivent à
-   *  `gSprites[id].oam.affineMode = X` (= directement sur l'OAM). Notre runtime
-   *  les conserve sur `oam.affineMode` côté gba. Pour respecter LES DEUX call
-   *  patterns, on prend le OR : si l'un des deux est non-zero, on prend ça. */
+  /** Délègue à la fonction sprite.c 1:1 relocalisée vers game/sprite.ts (chantier A1).
+   *  Méthode conservée (appelée par runOneFrame + syncSpritesToOamPublic). */
   private syncSpritesToOam(): void {
-    // 1:1 décomp : itère les MAX_SPRITES slots fixes (boucle indexée = pas de générateur,
-    // hot-path per-frame). `gSprites[i]` = accès array direct (tableau nu, 1:1 `gSprites[i]`).
-    for (let i = 0; i < MAX_SPRITES; i++) {
-      const sprite = this.gSprites[i];
-      if (sprite === undefined || !sprite.inUse) continue;
-      const oam = this.gba.oam[sprite.oamIndex];
-      // Keep signed coordinates (no & mask) so sprites with negative oam.y / oam.x
-      // are correctly handled by the renderer (e.g. water drops starting at y=-14
-      // with centerToCornerVecY=-32 => oam.y=-46, which the GBA renders partially
-      // on scanlines 0-17). The real GBA stores oam.x/y as signed 9-bit / 8-bit.
-      // 1:1 décomp `UpdateOamCoords` (sprite.c:347-356) : si coordOffsetEnabled,
-      // ajoute gSpriteCoordOffsetX/Y (= la caméra, écrit par UpdateCameraPanning)
-      // → le sprite suit la caméra automatiquement. Sinon (cas par défaut, tous
-      // les sprites screen-positionnés actuels) : inchangé.
-      if (sprite.coordOffsetEnabled) {
-        oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX + this.gSpriteCoordOffsetX;
-        oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY + this.gSpriteCoordOffsetY;
-      } else {
-        oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
-        oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
-      }
-      // 1:1 décomp `BuildOamBuffer` (sprite.c:1671) : si subspriteMode == ON,
-      // skip primary OAM (= les child OAMs subsprites rendent à sa place).
-      // Sans ce check : truck primary OAM 32×32 visible par-dessus les 12
-      // subsprites → "bout bleu en haut-gauche" qui dépasse (= user G14 bug
-      // post-G2).
-      oam.visible = !sprite.invisible && sprite.subspriteMode !== 'on';
-      oam.flipH = sprite.hFlip;
-      oam.flipV = sprite.vFlip;
-      oam.affineParamIndex = sprite.matrixNum;
-      oam.objMode = sprite.objMode as 0 | 1 | 2;
-      // 1:1 décomp BuildSpritePriorities (sprite.c:361) — sync subpriority.
-      oam.subpriority = sprite.subpriority;
-      // Audit V2 : merge sprite.affineMode + oam.affineMode (= last writer wins
-      // pour OFF-state explicit reset, but if either is set NORMAL/DOUBLE, we
-      // keep the affine mode active — matches decomp behavior where ANY write
-      // to gSprites[i].oam.affineMode is the new state).
-      const merged = (sprite.affineMode | (oam.affineMode ?? 0)) as 0 | 1 | 2 | 3;
-      // Détection : si sprite.affineMode a été explicitement set OFF (=0) après
-      // avoir été NORMAL, on doit propager OFF. Heuristique : si sprite.affineMode==0
-      // ET oam.affineMode!=0 ET sprite.matrixNum==0 (= explicit teardown via
-      // FreeOamMatrix → matrixNum=0), alors propager OFF.
-      if (sprite.affineMode === 0 && sprite.matrixNum === 0) {
-        oam.affineMode = 0;
-      } else {
-        oam.affineMode = merged;
-      }
-    }
+    _syncSpritesToOam_1to1(this);
   }
 
   /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. */
