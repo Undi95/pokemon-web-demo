@@ -391,20 +391,39 @@ registerOpcode('callstd', (ctx, args) => {
   return _runStdScript(ctx, stdIndex, true);
 });
 
+// 1:1 décomp `sScriptConditionTable[6][3]` (scrcmd.c:76-85). Lignes = condition byte
+// {0:'<', 1:'=', 2:'>', 3:'<=', 4:'>=', 5:'!='} ; colonnes = ctx.comparisonResult
+// {0:LESS, 1:EQUAL, 2:GREATER, cf. Compare/COMPARE_LT/EQ/GT}. Vaut 1 si la branche est prise.
+const sScriptConditionTable: ReadonlyArray<readonly number[]> = [
+  [1, 0, 0], // <
+  [0, 1, 0], // =
+  [0, 0, 1], // >
+  [1, 1, 0], // <=
+  [0, 1, 1], // >=
+  [1, 0, 1], // !=
+];
+
 registerOpcode('gotostd_if', (ctx, args) => {
-  // 1:1 décomp ScrCmd_gotostd_if (scrcmd.c:255). Condition vs comparisonResult.
-  const _condition = parseValue(args[0] ?? '0');
+  // 1:1 décomp `ScrCmd_gotostd_if` (scrcmd.c:255-267) : ne JUMP vers le std-script QUE si
+  // sScriptConditionTable[condition][comparisonResult] == 1 (sinon no-op). Le `compare`
+  // précédent a posé ctx.comparisonResult.
+  const condition = parseValue(args[0] ?? '0');
   const stdIndex = parseValue(args[1] ?? '0');
-  void _condition;
-  return _runStdScript(ctx, stdIndex, false);
+  if (sScriptConditionTable[condition]?.[ctx.comparisonResult] === 1) {
+    return _runStdScript(ctx, stdIndex, false);
+  }
+  return false;
 });
 
 registerOpcode('callstd_if', (ctx, args) => {
-  // 1:1 décomp ScrCmd_callstd_if (scrcmd.c:269).
-  const _condition = parseValue(args[0] ?? '0');
+  // 1:1 décomp `ScrCmd_callstd_if` (scrcmd.c:269-281) : ne CALL le std-script QUE si
+  // sScriptConditionTable[condition][comparisonResult] == 1 (sinon no-op).
+  const condition = parseValue(args[0] ?? '0');
   const stdIndex = parseValue(args[1] ?? '0');
-  void _condition;
-  return _runStdScript(ctx, stdIndex, true);
+  if (sScriptConditionTable[condition]?.[ctx.comparisonResult] === 1) {
+    return _runStdScript(ctx, stdIndex, true);
+  }
+  return false;
 });
 
 // ─── Virtual address scripts (Mystery Event) ─────────────────────────────────
