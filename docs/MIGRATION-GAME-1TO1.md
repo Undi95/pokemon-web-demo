@@ -39,6 +39,15 @@ fldeff_cut/rocksmash/sweetscent/flash/teleport/dig,
 **field_special_scene** (`05e5e6ba`, ex-truck-cinematic — field_special_scene.c:22-279 séquence camion intro, PAS #100%),
 **field_effect** (`8c3ab7c3`, ex-field-effect — field_effect.c dispatcher FieldEffectStart ; sActiveList reste en leaf anti-cycle, PAS #100%).
 
+**Lot consolidation 2026-06-21** (audit `scripts/audit-game-mirror.cjs` → candidats purs) :
+- `00bbf1af` (6) : decoration_inventory, play_time, mail_data, list_menu, starter_choose, dynamic_placeholder_text_util.
+- `63d7bc37` (5) : naming_screen (ex-naming-screen-impl), item_menu_icons (ex-bag-menu-icons), money, coins, pokemon_size_record.
+  (déplacements purs — git mv + reroute imports, tsc=0 + boot propre ; PAS #100%.)
+
+## ⛔ Faux-noms (fichiers game/ SANS .c décomp homonyme — détectés par audit-game-mirror)
+- ~~`fldeff_fly.ts`~~ → ✅ **RÉSOLU `209bf4b3`** : pas de `fldeff_fly.c` (glu maison amalgamant region_map.c + field_effect.c, warp simplifié) → sorti en `engine/field/fly-field-move.ts`.
+- `battle_anim_effects_1b.ts` → 🟡 **MERGE DIFFÉRÉ** : pas de `battle_anim_effects_1b.c` ; c'est un 2e lot de `battle_anim_effects_1.c` (contenu 1:1) MAIS il **re-porte + re-registre** `AnimPresent`/`AnimItemSteal` déjà dans `_1.ts` (double-registration, dernier chargé gagne ; les 2 sont 1:1-équivalents → pas de bug, juste code mort). Fusionner dans `battle_anim_effects_1.ts` = dédup 13 symboles (dont 2 fns décomp) + **A/B combat réel** (Cadeau/Larcin) → consolidation anim-combat dédiée, pas un fix de nommage. À faire avec le chantier battle.
+
 ## ⚠️ Blocage forbidden-files (PIN) — vaut pour object-events + map-loader
 Les 2 fichiers INTERDITS de commit (`field_weather_effect.ts`, `dev-fieldfx-tools.ts`)
 importent **player-avatar (fait), object-events ET map-loader** → migrer ces gros
