@@ -51,10 +51,14 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
   - ✅ **E2.1** (`37d38cff`) : `git mv engine/system/sprite.ts → game/sprite.ts` (ce fichier ÉTAIT déjà notre
     sprite.c : AllocSpriteTiles/CalcCenterToCornerVec/LoadSpriteSheet/SetOamMatrix/AllocOamMatrix/allocateurs).
     Relocation pure, 43 specifiers réécrits (37 fichiers), zéro nouvel arc ESM. tsc=0, A/B OW+combat 59fps.
-  - ⏳ **E2.2** : folder `sprite-animation.ts` (BeginAnim/ContinueAnim/AnimateSprite/StartSpriteAnim/SeekSpriteAnim/
-    ProcessSpriteCopyRequests/RequestSpriteFrameImageCopy/ANIMCMD_*) DANS game/sprite.ts. ⚠️ crée un cycle VALEUR
-    `game/sprite ↔ decomp-runtime` (sprite importe `OBJ_PLTT_ID`, decomp-runtime importe `AnimateSprite`) — sûr SI
-    aucun usage top-level (fonctions = lazy), mais vérifier TDZ au boot.
+  - ✅ **E2.2a** (`d0e5fd39`) : macros `PLTT_ID`/`BG_PLTT_ID`/`OBJ_PLTT_ID`/offsets → `palette.ts` (home 1:1
+    palette.h, qui a déjà PALETTES_BG/OBJECTS/ALL). **Casse à la racine** l'arc valeur `game/sprite → decomp-runtime`
+    (game/sprite importe OBJ_PLTT_ID depuis palette.ts) → plus de cycle possible au fold. decomp-runtime re-exporte
+    (importeurs historiques inchangés). tsc=0, A/B OW palettes OK.
+  - ✅ **E2.2b** (`6c16bac4`) : fold `sprite-animation.ts` (BeginAnim/ContinueAnim/AnimCmd_*/AnimateSprite/
+    StartSpriteAnim/SeekSpriteAnim/Request+ProcessSpriteCopyRequests/ANIMCMD_*) DANS game/sprite.ts, 13 importeurs
+    recâblés, fichier supprimé. Zéro cycle (grâce à E2.2a). tsc=0, A/B OW marche-anim + combat 59.3fps.
+    ⚠️ payé : `*/` dans le commentaire d'en-tête (AnimCmd_*/X) a cassé esbuild — [[pitfall-comment-star-slash-tsc]].
   - ⏳ **E2.3** : extraire les MÉTHODES `DecompRuntime` → free functions dans game/sprite.ts, pattern délégation
     transitionnel (comme façade E1) : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct
     SpriteTemplate`), `DestroySprite` (102 call-sites `rt.DestroySprite`), `ResetSpriteData` (13), `AnimateSprites`,
