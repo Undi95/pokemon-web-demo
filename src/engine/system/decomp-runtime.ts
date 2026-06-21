@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -1694,60 +1694,21 @@ export class DecompRuntime {
     return this.gSprites[spriteId];
   }
 
-  /** Tracks affine matrix slots in use (= gba.affineParams[0..31] = 32 slots).
-   *  1:1 décomp: src/sprite.c uses `sOamMatrixAllocBitmap` to track which of
-   *  the 32 OAM matrix slots are claimed. Slot 0 is reserved for the "identity"
-   *  default and must NOT be allocated (= screen wide identity, used by every
-   *  affineMode=OFF sprite). */
-  // Accessible (non-private) : lu par `DestroySprite` (game/sprite.ts) pour libérer
-  // la matrice affine allouée. (Suivi M3 de l'alloc OAM matrix, ≈ gOamMatrixAllocBitmap.)
-  _matrixUsed = new Set<number>();
+  // Allocation des matrices OAM : état UNIQUE = `gOamMatrixAllocBitmap` (1:1 décomp),
+  // géré par Alloc/FreeOamMatrix dans game/sprite.ts. Ex-`_matrixUsed` Set retiré (E2.3c :
+  // 2e allocateur à état séparé = collision possible). Slot 0 réservé = matrice identité
+  // des sprites affineMode=OFF, jamais alloué (scan dès 1).
 
-  /** 1:1 décomp src/sprite.c:AllocOamMatrix (l.1427-1446) — find a free slot in
-   *  `gba.affineParams[1..31]`, mark it used, return its index.
-   *  Returns -1 (= 0xFF in decomp) if all slots are exhausted.
-   *
-   *  ⚠️ Session 90 audit V2 fix : the decomp impl does NOT reset matrix values
-   *  upon alloc (= the slot retains stale values). HOWEVER, in the decomp,
-   *  every alloc is IMMEDIATELY followed by `AffineAnimStateReset` (cf.
-   *  InitSpriteAffineAnim line 1463-1473) + `AnimateSprite` which writes the
-   *  matrix to its first valid frame value (BeginAffineAnim line 1067-1082).
-   *
-   *  In our pipeline, there is a window between AllocOamMatrix and
-   *  _BeginAffineAnim where the compositor could read stale values from
-   *  `gba.affineParams[matrixNum]` — but only if syncSpritesToOam runs AND
-   *  the compositor renders before _BeginAffineAnim writes. In normal flow
-   *  this doesn't happen (alloc → BeginAffineAnim are in the same callback),
-   *  but if someone calls AllocOamMatrix and forgets to BeginAffineAnim, the
-   *  next frame would render with stale values.
-   *
-   *  Defense-in-depth : initialize slot to identity on alloc. Matches what
-   *  `FreeOamMatrix` does (line 1460 : `SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100)`),
-   *  so we also reset on alloc to guarantee a clean slot. Cost: 4 fixed-size
-   *  writes, irrelevant for perf. */
+  /** Délègue à `AllocOamMatrix` (game/sprite.ts, 1:1 décomp sprite.c:1427) — état
+   *  unique `gOamMatrixAllocBitmap` (E2.3c). Méthode conservée transitionnellement. */
   AllocOamMatrix(): number {
-    for (let i = 1; i < 32; i++) {
-      if (!this._matrixUsed.has(i)) {
-        this._matrixUsed.add(i);
-        // Defense-in-depth (audit V2) : reset slot to identity matrix.
-        // 1:1 with FreeOamMatrix's reset on release (sprite.c:1460).
-        const m = this.gba.affineParams[i];
-        if (m) { m.pa = 0x100; m.pb = 0; m.pc = 0; m.pd = 0x100; }
-        return i;
-      }
-    }
-    if (RT_DEBUG) console.warn('[runtime] AllocOamMatrix: all 32 slots in use');
-    return -1;
+    return _AllocOamMatrix_1to1();
   }
 
-  /** 1:1 décomp src/sprite.c:FreeOamMatrix (l.1448-1461) — release a
-   *  previously-allocated matrix slot AND reset it to identity.
-   *  Decomp : `SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100)`. */
+  /** Délègue à `FreeOamMatrix` (game/sprite.ts, 1:1 décomp sprite.c:1448 — clear bit
+   *  + reset le slot à l'identité). */
   FreeOamMatrix(matrixNum: number): void {
-    this._matrixUsed.delete(matrixNum);
-    // 1:1 décomp sprite.c:1460 — reset slot to identity on release.
-    const m = this.gba.affineParams[matrixNum];
-    if (m) { m.pa = 0x100; m.pb = 0; m.pc = 0; m.pd = 0x100; }
+    _FreeOamMatrix_1to1(matrixNum);
   }
 
   /** Set sprite visibility — set sprite.invisible, syncSpritesToOam propage à oam. */
@@ -1962,7 +1923,8 @@ export class DecompRuntime {
     this.nextOamSlot = 0;
     this.nextTaskId = 0;
     this.nextSpriteId = 0;
-    this._matrixUsed.clear();
+    // Reset l'alloc des matrices OAM (état unique = bitmap, ex-`_matrixUsed.clear()`, E2.3c).
+    (globalThis as Record<string, unknown>).gOamMatrixAllocBitmap = 0;
   }
 
   /** ResetSpriteData : 1:1 décomp src/sprite.c:294 — ResetOamRange + ResetAllSprites
