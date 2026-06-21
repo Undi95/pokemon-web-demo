@@ -300,6 +300,12 @@ export function GiveMailToMon(mon: Pokemon, mail: Mail): number {
  *        SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);
  *    }
  */
+/** 1:1 décomp `DummyMailFunc` (mail_data.c:132-135).
+ *  `static UNUSED` — dead-code non référencé ; porté pour le miroir intégral. */
+function DummyMailFunc(): boolean {
+  return false;
+}
+
 export function TakeMailFromMon(mon: Pokemon): void {
   if (MonHasMail(mon)) {
     const mailId = GetMonData(mon, MON_DATA_MAIL) as number;

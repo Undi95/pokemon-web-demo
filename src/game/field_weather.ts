@@ -300,6 +300,15 @@ gWeatherPalStateFuncs[WEATHER_PAL_STATE_SCREEN_FADING_IN] = FadeInScreenWithWeat
 gWeatherPalStateFuncs[WEATHER_PAL_STATE_SCREEN_FADING_OUT] = DoNothing;
 gWeatherPalStateFuncs[WEATHER_PAL_STATE_IDLE] = DoNothing;
 
+/** 1:1 décomp `IsFirstFrameOfWeatherFadeIn` (field_weather.c:853-859).
+ *  `static UNUSED` — dead-code non référencé ; porté pour le miroir intégral. */
+function IsFirstFrameOfWeatherFadeIn(): boolean {
+  if (gWeatherPtr.palProcessingState === WEATHER_PAL_STATE_SCREEN_FADING_IN)
+    return gWeatherPtr.fadeInFirstFrame !== 0;
+  else
+    return false;
+}
+
 /** 1:1 décomp `sBasePaletteColorMapTypes[32]` (field_weather.c:114) — quel color map
  *  appliquer à chaque palette BG (0-15) et OBJ (16-31). */
 const sBasePaletteColorMapTypes: ReadonlyArray<number> = [
