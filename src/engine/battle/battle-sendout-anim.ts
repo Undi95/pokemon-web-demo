@@ -36,7 +36,7 @@ import {
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
-import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../game/sprite';
 import { setActiveBattler } from './state';
 import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../game/pokeball';
 // Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance

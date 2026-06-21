@@ -108,7 +108,7 @@ import {
   showOpponentTrainerSprite, getOpponentTrainerSpriteId, destroyOpponentTrainerSprite,
 } from '../engine/battle/battle-sendout-anim';
 import { getTrainerPicEnum } from '../engine/battle/battle-trainer-data-bridge';
-import { StartSpriteAnim } from '../engine/system/sprite-animation';
+import { StartSpriteAnim } from './sprite';
 import './battle_main';  // section faint-anim consolidee : pose globalThis.__battleFaintAnim (Trigger/SpriteCB faint).
 import './battle_transition';  // miroir PokeballsTrail : pose __battleTransitionMirror (consommé lazy par battle-decomp-loop).
 

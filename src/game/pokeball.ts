@@ -36,7 +36,7 @@ import { GetBattlerPosition, GetBattlerAtPosition } from '../engine/battle/util'
 import { gBattlerPartyIndexes, gActiveBattler, gBattlerTarget, gBattleTypeFlags, setBattlerTarget, setGDoingBattleAnim } from '../engine/battle/state';
 import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BATTLE_TYPE_DOUBLE } from '../engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPECIES } from '../engine/battle/party-storage';
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../engine/system/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';

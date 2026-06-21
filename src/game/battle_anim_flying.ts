@@ -25,7 +25,7 @@ import {
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
 import { SetOamMatrix } from './sprite';
-import { SeekSpriteAnim } from '../engine/system/sprite-animation';
+import { SeekSpriteAnim } from './sprite';
 import {
   getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
 } from '../engine/system/decomp-globals';

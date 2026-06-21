@@ -134,7 +134,7 @@ import {
   SetSpritePrimaryCoordsFromSecondaryCoords,
 } from './battle_anim_mons';
 import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from './pokeball';
-import { StartSpriteAnim } from '../engine/system/sprite-animation';
+import { StartSpriteAnim } from './sprite';
 import type { DecompTask, DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { isBallAnimActive } from '../engine/battle/battle-sprites-data';
 import { reverseDecompConstant as _reverseDecompConstantPlayer } from '../engine/system/decomp-constants';

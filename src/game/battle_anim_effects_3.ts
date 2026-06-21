@@ -19,7 +19,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates, registerAnimTasks, lookupAnimTemplate } from '../engine/battle/battle-anim-registry';
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, SeekSpriteAnim } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, SeekSpriteAnim } from './sprite';
 // ─── Imports vague « callbacks 1:1 » (section en fin de fichier) ────────────
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import {

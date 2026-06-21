@@ -40,7 +40,7 @@ import { GetBaseOamForDimensions } from '../engine/field/object-event-base-oam';
 // G6 — 1:1 STRICT décomp anim helpers pour MovementType callbacks
 // (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
 // pour alterner walk1/walk2 entre 2 steps consécutifs.
-import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from '../engine/system/sprite-animation';
+import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from './sprite';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority

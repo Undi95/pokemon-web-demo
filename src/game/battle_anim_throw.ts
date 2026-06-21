@@ -64,7 +64,7 @@ import {
   FreeSpriteTilesByTag,
 } from '../engine/system/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from './sprite';
 import { getNumBallParticles, setNumBallParticles } from '../engine/battle/battle-sprites-data';
 import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';
 import { setGDoingBattleAnim } from '../engine/battle/state';
