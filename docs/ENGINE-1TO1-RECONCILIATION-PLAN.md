@@ -63,12 +63,18 @@ palette (LoadPalette, BlendPalette, TransferPlttBuffer 1:1), DMA. Beaucoup déj�
   (syncSpritesToOam + tickSpriteAnims) en boucles indexées. A/B user OK, FPS 49→60.
 - ✅ **Lot 2** (`7b542f0e`) : 8 boucles `gSprites.values()`/`.forEach` du GAMEPLAY → indexées `for i<MAX_SPRITES`
   + `.get(i)`. Générateurs gSprites retirés du gameplay. A/B user « tout OK », 59.8 FPS.
-- ⏳ **RESTE (Lot 3, COSMÉTIQUE 1:1, mécanique, ~large)** : (a) qq itérateurs `[k,v]` NON-gameplay (engine-devtools
-  ×2, wallclock ×2) ; (b) migrer les **239 `.get(id)` → `[id]`** + `.has/.delete/.clear` → ops array ; (c) basculer
-  `SpriteArray` → tableau nu `(DecompSprite|undefined)[]` et SUPPRIMER la façade. ⚠️ pour `[i]` il faut que le type
-  supporte l'index → soit `SpriteArray extends Array` (friction itérateurs MapIterator déjà rencontrée), soit
-  big-bang tsc-guidé vers le tableau nu (git couvre). **Zéro changement comportement/perf** (`.get(i)` marche déjà
-  + est rapide) → fidélité pure, faisable en passe mécanique dédiée (script de transform `.get(X)`→`[X]` paren-aware).
+- ✅ **Lot 3a** (`e92953de`) : 19 itérateurs `gSprites.values()/.entries()/.keys()` + `for...of` par défaut
+  → boucles indexées `for (i<MAX_SPRITES)` (incl. hot-paths `runSpriteCallbacks`/`tickAllAffineAnims`). A/B OK.
+- ✅✅ **Lot 3b** (`cd6ac05d`) — **KEYSTONE E1 SOLDÉ** : `gSprites` Map/façade → **TABLEAU NU**
+  `(DecompSprite|undefined)[] = new Array(MAX_SPRITES)`, accès `gSprites[i]` (1:1 décomp), classe `SpriteArray`
+  SUPPRIMÉE. Big-bang tsc-guidé via 3 transforms paren/bracket-aware (non-trackés `scripts/migrate-gsprites-*.cjs`) :
+  637 `.get(X)`→`[X]`/`?.[X]` · 131 annotations locales `Map<number,X>`→`Array<X|undefined>` · 31 `for...of`
+  (`?? new Map()`/`.entries()`/`.values()`) → indexé · 48 méthodes (`.delete`→`[X]=undefined`, `.clear`→`.fill(undefined)`,
+  `.set`→`[X]=Y`, `.has`→`[X]!==undefined`, `.size`→`.filter(Boolean).length`). Mains : 2 boucles gTasks sur-converties
+  revert, type retour `_sprites()`, param `destroyAllNpcSprites`, gardes. **Zéro changement comportement/perf**
+  (fidélité syntaxe pure). A/B COMPLET : OW (marche+warp, 59.7fps) + combat sauvage end-to-end (transition→send-out
+  →ÉCRAS'FACE→K.O.+destruction sprite SANS fantôme, 59.5fps, 0 erreur). `gSprites` runtime = `Array(64)` confirmé.
+  ➡️ **PROCHAIN : Phase E2** (extraire sprite.c → `game/sprite.ts`).
 
 ## Cadence / sécurité
 Boot doit rester vert (59.5 FPS) entre chaque commit. tsc=0 + sonde déterministe + **A/B pour tout rendu**
