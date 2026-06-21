@@ -72,7 +72,7 @@
  *   au lieu d'importer getRuntime depuis decomp-globals.ts. decomp-globals.ts
  *   appelle le setter au boot via setGlobalRuntime. Évite TDZ cycle.
  */
-import type { DecompRuntime } from '../engine/system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { OBJ_PLTT_ID } from '../engine/system/palette';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
@@ -1436,4 +1436,173 @@ export function ResetSpriteData(rt: DecompRuntime): void {
   // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release toutes les matrix OAM
   // (reset du bitmap d'alloc ; ex-`_matrixUsed.clear()`, consolidé sur l'état unique E2.3c).
   (globalThis as Record<string, unknown>).gOamMatrixAllocBitmap = 0;
+}
+
+/** 1:1-net : crée un sprite à partir de champs OAM résolus (cfg). Primitive M3
+ *  bas-niveau (le décomp passe un `struct SpriteTemplate` ; ici les tileId/paletteBank/
+ *  shape/size sont déjà résolus par l'appelant ou le dispatcher CreateSprite). Extraite
+ *  du harness vers son home sprite (E2.3d) ; `DecompRuntime.CreateSpriteAtOam` y délègue
+ *  (112 call-sites). Scanne le 1er slot OAM + gSprites libre (CreateSpriteAtEnd si fromEnd),
+ *  applique CalcCenterToCornerVec, écrit dans rt.gba.oam[] + rt.gSprites[]. */
+export function CreateSpriteAtOam(rt: DecompRuntime, cfg: {
+  tileId: number, paletteBank: number, x: number, y: number,
+  shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3, priority: number,
+  paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
+  /** 1:1 décomp `CreateSprite` 4th arg. Default 0xFF (= sentinel "behind"). */
+  subpriority?: number,
+  /** 1:1 décomp `CreateSpriteAtEnd` (sprite.c:513-522) : itère gSprites
+   *  + OAM de MAX_SPRITES-1 vers 0 au lieu de 0 vers MAX_SPRITES-1.
+   *  Utilisé par les sprites field-effect (emote !/?/♥, etc.) qui doivent
+   *  occuper les HAUTS slots → évite la collision avec les NPCs qui prennent
+   *  les BAS slots via `CreateSprite` (= CreateSpriteAtOam par défaut).
+   *  Sans ce flag, l'emote pouvait écraser le slot 1 (= NPC MOM) → sprite
+   *  MOM rendu avec shape/size de l'emote (16x16) = "moitié de maman" bug. */
+  fromEnd?: boolean,
+}): { spriteId: number, oamIndex: number } {
+  // Recherche un slot OAM libre.
+  // Bug session 89 fix : avant on testait `!oam.visible` pour décider si un
+  // slot était libre. MAIS un sprite alive avec sprite.invisible=true a son
+  // oam.visible=false (synced) — le slot est OWNED par ce sprite, PAS libre.
+  // Si on réalloue le slot, on a 2 sprites pointant le même oamIndex →
+  // syncSpritesToOam écrase les data du sprite plus ancien à chaque frame
+  // (last write wins).
+  //
+  // 1:1 décomp src/sprite.c CreateSprite : alloue le premier slot dont
+  // sprite.inUse == false (= slot vraiment libre, sprite owner détruit).
+  // On track les slots taken par les sprites alive et on alloue un slot
+  // qui n'apparaît pas dans cet ensemble.
+  const takenSlots = new Set<number>();
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites[i];
+    if (s !== undefined && s.inUse) takenSlots.add(s.oamIndex);
+  }
+  // Session 94 fix : subsprite child OAM slots are ALSO taken — a sprite
+  // with a SetSubspriteTables installed allocates N child OAM indices that
+  // primary `gSprites.inUse` tracking does NOT cover. Without this, the next
+  // CreateSpriteAtOam picks a slot that's shared with a button/frame child
+  // OAM → the button child gets stomped (= "RKBO" garbled BACK button,
+  // fragmented MAJ button, underscores rendering at wrong y with wrong
+  // tile data — naming screen Session 94 root cause).
+  //
+  // Foundation : reusable by every scene that mixes SetSubspriteTables +
+  // plain CreateSpriteAtOam (= party menu cursor, summary screen markings,
+  // status condition icons, future PC system, etc.).
+  const getChildOams = (globalThis as Record<string, unknown>)._getSubspriteChildOamIndices as (() => Set<number>) | undefined;
+  if (getChildOams) {
+    for (const idx of getChildOams()) takenSlots.add(idx);
+  }
+  let oamIndex = -1;
+  // 1:1 STRICT décomp sprite.c:502-522 :
+  //   - CreateSprite       : itère 0 → MAX_SPRITES-1 (= 1er slot libre du bas)
+  //   - CreateSpriteAtEnd  : itère MAX_SPRITES-1 → 0 (= 1er slot libre du haut)
+  // Ces deux fns wrap CreateSpriteAt(index, ...). Notre `fromEnd` flag bascule
+  // l'ordre de scan pour le seul cas où le décomp utilise CreateSpriteAtEnd
+  // (= sprites field-effect emote/etc. qui doivent prendre slots hauts).
+  if (cfg.fromEnd) {
+    for (let i = 127; i >= 0; i--) {
+      if (!takenSlots.has(i)) {
+        oamIndex = i;
+        break;
+      }
+    }
+  } else {
+    for (let i = 0; i < 128; i++) {
+      if (!takenSlots.has(i)) {
+        oamIndex = i;
+        break;
+      }
+    }
+  }
+  if (oamIndex === -1) {
+    if (!rt._oamExhaustedWarned) {
+      console.warn('[DecompRuntime] OAM slots exhausted (further warnings suppressed)');
+      rt._oamExhaustedWarned = true;
+    }
+    return { spriteId: -1, oamIndex: -1 };
+  }
+  const oam = rt.gba.oam[oamIndex];
+  oam.visible = true;
+  oam.tileId = cfg.tileId;
+  oam.paletteBank = cfg.paletteBank;
+  oam.x = cfg.x;
+  oam.y = cfg.y;
+  oam.shape = cfg.shape;
+  oam.size = cfg.size;
+  oam.priority = cfg.priority;
+  oam.paletteMode = cfg.paletteMode ?? 0;
+  oam.affineMode = (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3;
+  oam.affineParamIndex = cfg.affineParamIndex ?? 0;
+  oam.flipH = false;
+  oam.flipV = false;
+
+  // 1:1 décomp src/sprite.c:CreateSpriteAt — CalcCenterToCornerVec
+  // appliqué SYSTÉMATIQUEMENT à la création (pas seulement pour affine
+  // sprites). oam.x = sprite.x + sprite.x2 + centerToCornerVecX (ligne 354).
+  // Sans ça, les sprites non-affines sont rendus avec leur top-left à
+  // (sprite.x, sprite.y) au lieu de leur CENTRE.
+  // Cf. ground truth VBA-M Birch dump : sprite.x=136 (= 0x88) → oam.x=104,
+  // diff = -32 = centerToCornerVecX pour shape=square size=64x64.
+  const ctcv = CalcCenterToCornerVec(cfg.shape, cfg.size, (cfg.affineMode ?? 0));
+
+  // 1:1 décomp src/sprite.c CreateSprite : gSprites = tableau fixe
+  // MAX_SPRITES(64) ; alloue le 1er slot inUse==FALSE (réutilise les
+  // sprites détruits), retourne MAX_SPRITES si les 64 sont pris.
+  // AVANT : nextSpriteId++ MONOTONE → id≥64 (1) collisionne le sentinel
+  // d'échec MAX_SPRITES=64 chez les appelants `!= MAX_SPRITES` (icône
+  // sac orpheline à oam(-16,-16), x2/y2 jamais posés, jamais détruite)
+  // (2) fuite gSprites non bornée. = 4e instance du pattern allocateur-
+  // monotone-sans-reuse (cf. palette/tuiles/OAM déjà corrigés).
+  let spriteId = -1;
+  // 1:1 STRICT décomp sprite.c:502-522 : CreateSprite scan 0→63,
+  // CreateSpriteAtEnd scan 63→0. Same `fromEnd` flag basule.
+  if (cfg.fromEnd) {
+    for (let i = 63; i >= 0; i--) {
+      const ex = rt.gSprites[i];
+      if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+    }
+  } else {
+    for (let i = 0; i < 64; i++) {
+      const ex = rt.gSprites[i];
+      if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+    }
+  }
+  if (spriteId === -1) {
+    // 64 slots inUse → échec 1:1 (return MAX_SPRITES). Libère l'OAM réservé.
+    rt.gba.oam[oamIndex].visible = false;
+    if (!rt._oamExhaustedWarned) {
+      console.warn('[DecompRuntime] gSprites (64) saturé — CreateSprite=MAX_SPRITES');
+      rt._oamExhaustedWarned = true;
+    }
+    return { spriteId: 64 /* MAX_SPRITES */, oamIndex: -1 };
+  }
+  if (spriteId >= rt.nextSpriteId) rt.nextSpriteId = spriteId + 1;
+  const sprite: DecompSprite = {
+    oamIndex, data: new Int16Array(16) as unknown as number[], invisible: false,
+    inUse: true,
+    x: cfg.x, y: cfg.y, x2: 0, y2: 0,
+    hFlip: false, vFlip: false,
+    matrixNum: cfg.affineParamIndex ?? 0,
+    centerToCornerVecX: ctcv.centerToCornerVecX,
+    centerToCornerVecY: ctcv.centerToCornerVecY,
+    animEnded: false, affineAnimEnded: false,
+    callback: null,
+    spriteId, tileBase: 0,
+    objMode: 0,
+    affineAnimsTableName: null,
+    affineAnimNum: 0, affineAnimCmdIndex: 0, affineAnimDelayCounter: 0,
+    xScale: 0x100, yScale: 0x100, rotation: 0,
+    affineAnimBeginning: false, affineAnimPaused: false,
+    shape: cfg.shape, size: cfg.size,
+    affineMode: (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3,
+    subpriority: cfg.subpriority ?? 0xFF,
+    // C1.1 — 1:1 STRICT défauts sprite anim fields (sprite.h:209-236).
+    animNum: 0, animCmdIndex: 0, animDelayCounter: 0, animLoopCounter: 0,
+    animBeginning: true,    // 1:1 décomp : nouveau sprite démarre par BeginAnim
+    animPaused: false,
+    images: null, anims: null,
+    usingSheet: false, sheetTileStart: 0,
+    subspriteMode: 'off',
+  };
+  rt.gSprites[spriteId] = sprite;
+  return { spriteId, oamIndex };
 }
