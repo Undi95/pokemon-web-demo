@@ -62,7 +62,7 @@ import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../game/map_name_popup';
-import { SetCameraPanning, SetCameraPanningCallback } from '../../game/field_camera';
+import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../game/field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { getGObjectEvents } from '../field/field-globals';
 import { AddBagItem } from '../bag/bag';
@@ -648,10 +648,13 @@ registerSpecial('ChooseStarter', () => {
   // of starter-choose-flow.ts). This stub is just a fallback for audit.
 });
 
-/** 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98).
- *  Refresh full tilemap. Notre setmetatile sont sync donc no-op suffit
- *  (= tilemap est déjà à jour). 156x usage globalement. */
-registerSpecial('DrawWholeMapView', () => { /* no-op : tilemap sync */ });
+/** 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) : redessine TOUT le tilemap visible
+ *  depuis la grille courante. ⚠️ PAS un no-op : `MapGridSetMetatileIdAt` (fieldmap.ts:1789)
+ *  n'écrit QUE la donnée de grille (pas de repeint VRAM, 1:1 décomp) → sans ce repeint, les
+ *  changements de métatile scriptés (gym switches, portes cachées, TV on/off, décors) restent
+ *  INVISIBLES jusqu'au prochain scroll caméra. 78 usages — câblé sur le `DrawWholeMapView()`
+ *  réel (field_camera.ts:520). [audit specials pilote 2026-06-21]. */
+registerSpecial('DrawWholeMapView', () => { DrawWholeMapView(); });
 
 /** 1:1 décomp `IsTrainerRegistered` (match_call.c) — checks if trainer is
  *  registered for matchcall. 5x usage (= rival rematch logic). */
