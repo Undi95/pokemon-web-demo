@@ -607,7 +607,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
-    const flowMod = await import('../battle/starter-choose-flow');
+    const flowMod = await import('../../game/starter_choose');
     const scriptMod = await import('../script/script-runtime');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);

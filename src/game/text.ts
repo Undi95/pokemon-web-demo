@@ -44,7 +44,7 @@ import {
 import { GetPlayerTextSpeed } from './menu';
 import { getWindowById } from '../engine/ui/gba-window-system';
 import { gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from './include/string_util';
-import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from '../engine/system/dynamic-placeholder-text-util';
+import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placeholder_text_util';
 // 1:1 décomp : TextPrinterWait*/RENDER_STATE_WAIT_SE appellent PlaySE(SE_SELECT) /
 // IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
 // fonctions, jamais au top-level). SE_SELECT = constants/songs.h.

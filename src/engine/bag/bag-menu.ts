@@ -45,7 +45,7 @@ import {
   gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
-} from '../ui/list-menu';
+} from '../../game/list_menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../system/data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
@@ -105,7 +105,7 @@ import {
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
-} from '../ui/list-menu';
+} from '../../game/list_menu';
 import { GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
@@ -139,7 +139,7 @@ import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
   SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
-} from '../ui/list-menu';
+} from '../../game/list_menu';
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
 } from '../decomp-data/src/item_menu-data';

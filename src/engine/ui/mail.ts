@@ -104,7 +104,7 @@ import {
   FIRST_MAIL_INDEX, ITEM_TO_MAIL,
   SPECIES_NONE, NUM_SPECIES,
   MailSpeciesToSpecies,
-} from './mail-data';
+} from '../../game/mail_data';
 
 // ─── Type aliases 1:1 décomp ─────────────────────────────────────────────────
 

@@ -48,7 +48,7 @@ import {
   DynamicPlaceholderTextUtil_Reset,
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
-} from '../system/dynamic-placeholder-text-util';
+} from '../../game/dynamic_placeholder_text_util';
 import { GetMapNameHandleAquaHideout } from '../system/decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,

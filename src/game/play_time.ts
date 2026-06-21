@@ -1,5 +1,5 @@
 /**
- * play-time-counter.ts — 1:1 décomp `src/play_time.c`.
+ * play_time.ts — 1:1 décomp `src/play_time.c`.
  *
  * Le décomp tracke le temps de jeu via 4 fields dans gSaveBlock2 :
  *   - playTimeHours / playTimeMinutes / playTimeSeconds / playTimeVBlanks
@@ -18,7 +18,7 @@
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/play_time.c`.
  */
 
-import { GetSaveBlock2 } from '../save/save-system';
+import { GetSaveBlock2 } from '../engine/save/save-system';
 
 const STOPPED = 0;
 const RUNNING = 1;

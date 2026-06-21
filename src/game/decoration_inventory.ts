@@ -1,5 +1,5 @@
 /**
- * decoration-inventory.ts — Port 1:1 STRICT du décomp `src/decoration_inventory.c` (159 lignes).
+ * decoration_inventory.ts — Port 1:1 STRICT du décomp `src/decoration_inventory.c` (159 lignes).
  *
  * Source de vérité (= 1:1 EXACT) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/decoration_inventory.c` (159l)
@@ -38,14 +38,14 @@
  *     asset loader). Voir `decoration-data.ts` pour les détails.
  */
 
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { DECOR_NONE } from '../decomp-data/include/constants/decorations-data';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { DECOR_NONE } from '../engine/decomp-data/include/constants/decorations-data';
 import {
   ENUM_DecorationCategory,
-} from '../decomp-data/include/decoration-data';
-import { gDecorations } from './decoration-data';
+} from '../engine/decomp-data/include/decoration-data';
+import { gDecorations } from '../engine/ui/decoration-data';
 export { gDecorations };
-export type { Decoration } from './decoration-data';
+export type { Decoration } from '../engine/ui/decoration-data';
 
 // ─── 1:1 décomp enum DecorationCategory (= decoration.h) ─────────────────────
 

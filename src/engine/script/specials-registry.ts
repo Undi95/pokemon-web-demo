@@ -74,8 +74,8 @@ import {
   PlantBerryTree, ItemIdToBerryType,
 } from '../../game/berry';
 import { gDecorations } from '../ui/decoration-data';
-import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
-import { DecorationAdd, DecorationRemove } from '../ui/decoration-inventory';
+import { GetFirstEmptyDecorSlot } from '../../game/decoration_inventory';
+import { DecorationAdd, DecorationRemove } from '../../game/decoration_inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 

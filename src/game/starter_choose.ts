@@ -1,5 +1,5 @@
 /**
- * starter-choose-flow.ts — Port 1:1 STRICT décomp `src/starter_choose.c` (669l).
+ * starter_choose.ts — Port 1:1 STRICT décomp `src/starter_choose.c` (669l).
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/starter_choose.c`.
  *
@@ -38,40 +38,40 @@
  *     les func enregistrées.
  */
 
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from '../ui/gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from '../engine/ui/gba-menu-system';
 import {
   AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer,
   PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate,
   InitWindows, DrawStdFrameWithCustomTileAndPalette, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from '../ui/gba-window-system';
+} from '../engine/ui/gba-window-system';
 import {
   AddTextPrinterParameterized, AddTextPrinterParameterized3,
   GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW,
-} from '../ui/gba-text-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
-import { getRuntime, LoadPalette } from '../system/decomp-globals';
-import { BG_PLTT_ID } from '../system/decomp-runtime';
-import { GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
-import { CreateMon } from '../pokemon/pokemon';
-import { GiveMonToPlayer } from './party-storage';
-import { VarSet } from '../script/script-vars';
-import { Sin } from '../system/decomp-helpers';
-import { CopyMapTilesetsToVram, gMapHeader } from '../../game/fieldmap';
-import { pauseTilesetAnimations, resumeTilesetAnimations } from '../../game/tileset_anims';
-import { setFieldCameraSuspended, flushOverworldTilemaps } from '../../game/field_camera';
-import { setObjectEventsSuspended } from '../../game/event_object_movement';
-import { getString, initStringsFromDecomp } from '../ui/gba-strings';
-import { getSpeciesNameFr, loadTextTables, type TextTables } from '../system/data-tables';
+} from '../engine/ui/gba-text-system';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
+import { getRuntime, LoadPalette } from '../engine/system/decomp-globals';
+import { BG_PLTT_ID } from '../engine/system/decomp-runtime';
+import { GetOverworldTextboxPalettePtr } from '../engine/system/decomp-bridge';
+import { CreateMon } from '../engine/pokemon/pokemon';
+import { GiveMonToPlayer } from '../engine/battle/party-storage';
+import { VarSet } from '../engine/script/script-vars';
+import { Sin } from '../engine/system/decomp-helpers';
+import { CopyMapTilesetsToVram, gMapHeader } from './fieldmap';
+import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset_anims';
+import { setFieldCameraSuspended, flushOverworldTilemaps } from './field_camera';
+import { setObjectEventsSuspended } from './event_object_movement';
+import { getString, initStringsFromDecomp } from '../engine/ui/gba-strings';
+import { getSpeciesNameFr, loadTextTables, type TextTables } from '../engine/system/data-tables';
 /** Type local (ex-voie V, supprimee) : l'ancien flow Birch ne retourne plus rien. */
 type BattleFlow = { tick(): boolean };
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
-import { StartFirstBattle } from './battle-setup-helpers';
-import { registerAffineAnim, registerAffineAnimTable } from '../decomp-impls/sprite-affine-extras';
-import { StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
+import { StartFirstBattle } from '../engine/battle/battle-setup-helpers';
+import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
+import { StartSpriteAffineAnim } from '../engine/decomp-impls/sprite-engine-impl';
 import {
   A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT,
-} from '../decomp-data/include/gba/io_reg-data';
+} from '../engine/decomp-data/include/gba/io_reg-data';
 
 // ─── DEFINES (= starter_choose.c:27-34) ───────────────────────────────────
 const STARTER_MON_COUNT = 3;
@@ -282,7 +282,7 @@ async function preloadAssets(): Promise<void> {
     fetch(BIRCH_GRASS_TILEMAP_URL),
     fetch('/decomp/em/text_window/message_box.gbapal'),
   ]);
-  const { loadIndexedPngStrict, loadGbaPal } = await import('../gba/png-loader');
+  const { loadIndexedPngStrict, loadGbaPal } = await import('../engine/gba/png-loader');
   // tiles.4bpp.bin : raw tile data
   const tilesData = new Uint8Array(await tilesBinResp.arrayBuffer());
   // tiles.gbapal : 64 bytes = 32 u16 colors (= 2 sub-palettes 4bpp).
@@ -643,7 +643,7 @@ function Task_AskConfirmStarter(taskId: number): void {
   // playCry attend le species name lowercase sans préfixe SPECIES_ (= cries/torchic.wav).
   void (async () => {
     try {
-      const { playCry } = await import('../system/music');
+      const { playCry } = await import('../engine/system/music');
       const speciesEnum = GetStarterPokemon(task.data[T_STARTER_SELECTION]);
       const speciesName = speciesEnum.replace(/^SPECIES_/, '');
       playCry(speciesName);
@@ -723,7 +723,7 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     //   gTasks[taskId].func = Task_DeclineStarter;
     void (async () => {
       try {
-        const { PlaySE } = await import('../system/decomp-globals');
+        const { PlaySE } = await import('../engine/system/decomp-globals');
         PlaySE(5);  // SE_SELECT = 5 (= 1:1 décomp constants/songs.h:11)
       } catch (e) { void e; }
     })();

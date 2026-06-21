@@ -1,5 +1,5 @@
 /**
- * list-menu.ts — port 1:1 décomp `src/list_menu.c` (1447 l, sous-système
+ * list_menu.ts — port 1:1 décomp `src/list_menu.c` (1447 l, sous-système
  * PARTAGÉ : sac, PC, shop, mystery gift, naming…).
  *
  * Source de vérité (= ne JAMAIS diverger) :
@@ -49,20 +49,20 @@ import {
   CopyWindowToVram, PutWindowTilemap, GetWindowAttribute, ScrollWindow,
   WINDOW_WIDTH, WINDOW_HEIGHT,
   AddWindow, RemoveWindow, ClearWindowTilemap, ClearStdWindowAndFrame,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from '../../game/text_window';
+} from '../engine/ui/gba-window-system';
+import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
 import {
   AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,
   FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW,
-} from './gba-text-system';
+} from '../engine/ui/gba-text-system';
 import {
   getRuntime, PlaySE, JOY_NEW, JOY_REPEAT,
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
-} from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from '../system/sprite';
-import { gSineTable } from '../system/decomp-helpers';
-import { SE_SELECT as _SE_SELECT } from '../decomp-data/include/constants/songs-data';
+} from '../engine/system/decomp-globals';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from '../engine/system/sprite';
+import { gSineTable } from '../engine/system/decomp-helpers';
+import { SE_SELECT as _SE_SELECT } from '../engine/decomp-data/include/constants/songs-data';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
 
@@ -1038,7 +1038,7 @@ export function ListMenuSetUpRedOutlineCursorSpriteOamTable(rowWidth: number, ro
 
 /** 1:1 décomp `include/gba/defines.h #define DISPLAY_HEIGHT 160`. Import
  *  depuis decomp-data (= A8 audit). */
-import { DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
+import { DISPLAY_HEIGHT } from '../engine/decomp-data/include/gba/defines-data';
 
 /** 1:1 décomp `include/constants/...`/sprite : `#define TAG_NONE 0xFFFF`. */
 const TAG_NONE = 0xFFFF;
@@ -1049,7 +1049,7 @@ function OBJ_PLTT_ID(n: number): number { return 256 + n * 16; }
 
 /** 1:1 décomp `include/palette.h PLTT_SIZE_4BPP = 16 * sizeof(u16) = 32`
  *  (= decomp-bridge.ts:375 parité). Migré vers import direct (cleanup B7). */
-import { PLTT_SIZE_4BPP } from '../system/decomp-bridge';
+import { PLTT_SIZE_4BPP } from '../engine/system/decomp-bridge';
 
 /** 1:1 décomp symboles assets (list_menu.c:289-292) — `INCGFX` graphics/
  *  interface/{red.pal,outline_cursor.png,arrow_cursor.png}. Passés tels quels

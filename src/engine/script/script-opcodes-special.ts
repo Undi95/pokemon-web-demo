@@ -130,7 +130,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'ChooseStarter') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('../battle/starter-choose-flow').then((mod) => {
+    void import('../../game/starter_choose').then((mod) => {
       flow = mod.startChooseStarterFlow();
       flowReady = true;
     });

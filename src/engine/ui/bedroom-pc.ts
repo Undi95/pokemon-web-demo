@@ -55,7 +55,7 @@ import { ScriptContext_SetupScript } from '../script/script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
 import { ReadMail } from './mail';
-import { ITEM_NONE, ClearMail } from './mail-data';
+import { ITEM_NONE, ClearMail } from '../../game/mail_data';
 import { FEMALE } from '../system/decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from '../system/string-buffers';
@@ -69,7 +69,7 @@ import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
-} from './list-menu';
+} from '../../game/list_menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { getItemNameFr } from '../system/data-tables';

@@ -1,5 +1,5 @@
 /**
- * dynamic-placeholder-text-util.ts — port 1:1 STRICT de
+ * dynamic_placeholder_text_util.ts — port 1:1 STRICT de
  * `decomps/pokeemeraude/src/dynamic_placeholder_text_util.c`.
  *
  * Le décomp opère sur des bytes : `CHAR_DYNAMIC (0xF7)` suivi d'un byte index

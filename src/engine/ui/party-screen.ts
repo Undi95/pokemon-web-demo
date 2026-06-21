@@ -50,7 +50,7 @@ import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../game/menu_spec
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
-import { ItemIsMail } from './mail-data';
+import { ItemIsMail } from '../../game/mail_data';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { gMoveNames } from '../data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../system/sprite';

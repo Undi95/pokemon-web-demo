@@ -320,7 +320,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
     // → DUREE JEU "0:00" toujours. À call AU BOOT overworld pour que le tick
     // dans decomp-runtime.tickFixed soit actif.
-    void import('../engine/pokemon/play-time-counter').then(({ PlayTimeCounter_Start }) => {
+    void import('../game/play_time').then(({ PlayTimeCounter_Start }) => {
       PlayTimeCounter_Start();
       console.log('[TestOverworld] PlayTimeCounter_Start invoked');
     });
