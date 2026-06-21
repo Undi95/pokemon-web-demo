@@ -42,7 +42,7 @@ import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,

@@ -78,7 +78,7 @@ import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
 import { FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { FreeSpritePaletteByTag } from '../system/sprite';
+import { FreeSpritePaletteByTag } from '../../game/sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).

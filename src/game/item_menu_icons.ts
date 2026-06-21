@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from '../engine/ui/item-icon';
 import { gBagMenu } from '../engine/bag/bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../engine/system/sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from './sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,

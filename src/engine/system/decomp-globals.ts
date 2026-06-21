@@ -75,7 +75,7 @@ import {
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
-} from './sprite';
+} from '../../game/sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
   IndexOfSpriteTileTag, GetSpriteTileTagByTileStart,
@@ -85,7 +85,7 @@ export {
   ResetOamRange,
   // Sprite geometry (sprite.c:687-700)
   CalcCenterToCornerVec,
-} from './sprite';
+} from '../../game/sprite';
 // LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
 import { _setPaletteRuntimeGetter } from './palette';
 export {
@@ -499,7 +499,7 @@ export function LoadIntroPart2Graphics(scenery: number): void {
 
 /** 1:1 décomp src/sprite.c:1581-1587 — délégué à `src/engine/sprite.ts`
  *  (= source de vérité 1:1 strict du palette tag system). */
-export { FreeAllSpritePalettes } from './sprite';
+export { FreeAllSpritePalettes } from '../../game/sprite';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)

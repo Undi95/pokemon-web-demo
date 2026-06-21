@@ -56,7 +56,7 @@ import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './
 import { getString } from './gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
 import { FlagSet, VarGet } from '../script/script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';

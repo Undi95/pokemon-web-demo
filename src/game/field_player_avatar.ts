@@ -201,7 +201,7 @@ import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
-} from '../engine/system/sprite';
+} from './sprite';
 import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../engine/decomp-data/include/constants/songs-data';
 import {
   getWarpKindFor,

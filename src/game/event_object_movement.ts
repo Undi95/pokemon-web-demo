@@ -24,7 +24,7 @@ import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtim
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import type { LoadedPng } from '../engine/gba/png-loader';
 import type { OamEntry } from '../engine/gba/types';
-import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from '../engine/system/sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from './sprite';
 import { LoadPalette } from '../engine/system/decomp-globals';
 import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
 // 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter

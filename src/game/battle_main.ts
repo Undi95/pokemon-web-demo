@@ -67,7 +67,7 @@ import {
 } from '../engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
-import { FreeAllSpritePalettes } from '../engine/system/sprite';
+import { FreeAllSpritePalettes } from './sprite';
 import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   SCANLINE_EFFECT_DMACNT_16BIT,

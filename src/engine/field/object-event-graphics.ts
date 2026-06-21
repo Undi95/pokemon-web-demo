@@ -48,7 +48,7 @@ import {
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
-} from '../system/sprite';
+} from '../../game/sprite';
 import { loadGbaPal, loadTileBin } from '../gba/png-loader';
 import { PALSLOT_NPC_SPECIAL } from './object-event-graphics-info';
 

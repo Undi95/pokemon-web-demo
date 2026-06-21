@@ -48,7 +48,7 @@
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import { MAX_SPRITES } from '../system/decomp-runtime';
-import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap } from '../system/sprite';
+import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap } from '../../game/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
 import {

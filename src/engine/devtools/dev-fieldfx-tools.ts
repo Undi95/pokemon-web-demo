@@ -43,7 +43,7 @@ import {
 } from '../../game/field_weather';
 import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../game/field_weather_effect';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../system/sprite';
+import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../../game/sprite';
 import { MAX_SPRITES } from '../system/decomp-runtime';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

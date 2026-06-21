@@ -24,7 +24,7 @@ import {
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { SetOamMatrix } from '../engine/system/sprite';
+import { SetOamMatrix } from './sprite';
 import { SeekSpriteAnim } from '../engine/system/sprite-animation';
 import {
   getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,

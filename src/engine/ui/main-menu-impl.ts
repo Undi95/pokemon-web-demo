@@ -25,7 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../system/sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../../game/sprite';
 import { GetWindowFrameTilesPal } from '../../game/text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {

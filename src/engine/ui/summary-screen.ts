@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag } from '../system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag } from '../../game/sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
   getExperienceForLevel,

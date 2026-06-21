@@ -157,7 +157,7 @@ import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../game/field_weather_effect';
-import { setReservedSpritePaletteCount } from '../engine/system/sprite';
+import { setReservedSpritePaletteCount } from '../game/sprite';
 import { SetDefaultFlashLevel } from '../game/overworld';
 import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).

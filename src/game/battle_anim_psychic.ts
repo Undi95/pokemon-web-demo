@@ -575,7 +575,7 @@ import {
   SetBattlerSpriteYOffsetFromOtherYScale as _exYFromOther,
   GetBattlerElevation as _exElev,
 } from './battle_anim_mons';
-import { AllocOamMatrix as _exAllocMat, FreeOamMatrix as _exFreeMat, CalcCenterToCornerVec as _exC2C } from '../engine/system/sprite';
+import { AllocOamMatrix as _exAllocMat, FreeOamMatrix as _exFreeMat, CalcCenterToCornerVec as _exC2C } from './sprite';
 import { gBattlerPartyIndexes as _exPartyIdx } from '../engine/battle/state';
 import { gEnemyParty as _exEnemyParty, GetMonData as _exGetMon, MON_DATA_SPECIES as _exSpeciesK } from '../engine/battle/party-storage';
 

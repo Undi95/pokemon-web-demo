@@ -28,7 +28,7 @@
 
 import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag } from '../system/sprite';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag } from '../../game/sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,

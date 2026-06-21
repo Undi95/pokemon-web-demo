@@ -40,9 +40,9 @@
  */
 
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
-// (branche sheet taggee). Re-export `export {X} from './sprite'` ne cree PAS de
+// (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag } from './sprite';
+import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag } from '../../game/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 

@@ -16,7 +16,7 @@ import {
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { SetOamMatrix } from '../engine/system/sprite';
+import { SetOamMatrix } from './sprite';
 
 type _VSprite = {
   data: number[]; x: number; y: number; x2: number; y2: number;

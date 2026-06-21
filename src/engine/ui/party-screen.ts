@@ -53,7 +53,7 @@ import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Poke
 import { ItemIsMail } from '../../game/mail_data';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { gMoveNames } from '../data/game-data';
-import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../system/sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../../game/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,

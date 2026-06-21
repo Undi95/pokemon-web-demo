@@ -403,7 +403,7 @@ export function GetSubstituteSpriteDefault_Y(battler: number): number {
 
 import { ObjAffineSet } from '../engine/system/decomp-bridge';
 import { getRuntime } from '../engine/system/decomp-globals';
-import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec } from '../engine/system/sprite';
+import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec } from './sprite';
 
 type RotScaleSprite = {
   oamIndex: number; matrixNum?: number; affineMode?: number;

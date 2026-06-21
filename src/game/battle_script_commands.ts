@@ -10477,7 +10477,7 @@ import {
   LoadSpriteSheet as _LoadSpriteSheetBSC, LoadSpritePalette as _LoadSpritePaletteBSC,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTagBSC,
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
-} from '../engine/system/sprite';
+} from './sprite';
 import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC } from '../engine/system/decomp-globals';
 import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from '../engine/decomp-data/src/battle_bg-data';
 import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from './menu_specialized';

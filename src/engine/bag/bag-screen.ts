@@ -35,7 +35,7 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap

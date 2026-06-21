@@ -55,7 +55,7 @@ import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtim
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag } from './sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../engine/gba/png-loader';
 import {

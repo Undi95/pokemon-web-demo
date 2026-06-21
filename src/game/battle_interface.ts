@@ -410,7 +410,7 @@ export function GetHPBarLevel(hp: number, maxhp: number): number {
  */
 
 import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByTag, type NamingSubsprite } from '../engine/system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from '../engine/system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from './sprite';
 import { loadIndexedPngStrict, extractPngPlte } from '../engine/gba/png-loader';
 import { gBattleTypeFlags } from '../engine/battle/state';
 import { GET_BATTLER_SIDE, B_SIDE_PLAYER, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS } from '../engine/battle/constants';
@@ -1394,7 +1394,7 @@ setMoveBattleBarGraphicallyHook(MoveBattleBarGraphically);
 //  NamingSubsprite / loadIndexedPngStrict / extractPngPlte / LoadSpritePalette :
 //  déjà importés par les sections précédentes du miroir.)
 import { loadIndexedPng, loadIndexedPngRawIndices } from '../engine/gba/png-loader';
-import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag } from '../engine/system/sprite';
+import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag } from './sprite';
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle_interface → ui/*).
 import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from '../engine/ui/gba-window-system';

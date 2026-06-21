@@ -44,7 +44,7 @@ import {
 import { CreateTask, SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2 } from '../engine/system/decomp-bridge';
 import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../engine/system/decomp-runtime';
 import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from '../engine/system/decomp-helpers';
-import { AllocSpritePalette, sSpritePaletteTags } from '../engine/system/sprite';
+import { AllocSpritePalette, sSpritePaletteTags } from './sprite';
 import { gSineTable } from './trig';
 import { loadGbaPal } from '../engine/gba/png-loader';
 

@@ -39,7 +39,7 @@ import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPEC
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from '../engine/system/sprite-animation';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../engine/system/decomp-globals';
-import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
+import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';

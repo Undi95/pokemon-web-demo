@@ -28,7 +28,7 @@ import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../system/decomp-helper
 import {
   MarkObjTilesAllocated, MarkObjPaletteAllocated,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
-} from './sprite';
+} from '../../game/sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
 export const BALL_POKE = 0;
