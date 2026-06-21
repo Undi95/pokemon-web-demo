@@ -1,14 +1,16 @@
+// #100% done
 /**
  * metatile_behavior.ts — miroir 1:1 de `decomp/src/metatile_behavior.c`.
  *
  * Prédicats `MetatileBehavior_Is*` qui classifient un metatile behavior byte.
- * **Complet** : les 140 prédicats RÉFÉRENCÉS de metatile_behavior.c (vérifié par
+ * **Complet 1:1 INTÉGRAL** : les 144 fonctions de metatile_behavior.c (vérifié par
  * diff de noms). Source unique du miroir : `field/metatile-behavior.ts` +
  * `field/metatile-behavior-helpers.ts` (25 dups) ré-exportent désormais ce fichier.
  *
- * Omis 1:1-justifié : les 4 `Unref_MetatileBehavior_*` (`UNUSED`, dead-code NON
- * référencé dans le décomp lui-même : IsArrowWarp, IsUnused04/05, IsUnusedSootopolisWater)
- * — jamais appelés. À ajouter tels quels (`Unref_…`) si on veut le dead-code aussi.
+ * Inclut les 4 `Unref_MetatileBehavior_*` (`UNUSED`, dead-code NON référencé dans le
+ * décomp lui-même : IsUnused04, IsArrowWarp, IsUnused05, IsUnusedSootopolisWater),
+ * portés tels quels (marqués `UNUSED`) pour le miroir intégral — voir leur définition
+ * adjacente à leur voisine décomp respective.
  *
  * Pattern décomp pour chaque fonction :
  * ```c
@@ -206,6 +208,12 @@ export function MetatileBehavior_IsLadder(metatileBehavior: number): boolean {
   return metatileBehavior === MB_LADDER;
 }
 
+/** 1:1 décomp `Unref_MetatileBehavior_IsUnused04` (metatile_behavior.c:246-252).
+ *  `UNUSED` — dead-code non référencé dans le décomp ; porté pour le miroir intégral. */
+export function Unref_MetatileBehavior_IsUnused04(metatileBehavior: number): boolean {
+  return metatileBehavior === MBC.MB_UNUSED_04;
+}
+
 /** 1:1 décomp `MetatileBehavior_IsEscalator` (metatile_behavior.c:237-244).
  *  Inclut UP + DOWN escalator. Used par `IsWarpMetatileBehavior`. */
 export function MetatileBehavior_IsEscalator(metatileBehavior: number): boolean {
@@ -240,6 +248,20 @@ export function MetatileBehavior_IsSouthArrowWarp(metatileBehavior: number): boo
   return metatileBehavior === MB_SOUTH_ARROW_WARP
       || metatileBehavior === MB_WATER_SOUTH_ARROW_WARP
       || metatileBehavior === MB_SHOAL_CAVE_ENTRANCE;
+}
+
+/** 1:1 décomp `Unref_MetatileBehavior_IsArrowWarp` (metatile_behavior.c:323-336).
+ *  `UNUSED` — dead-code non référencé ; porté pour le miroir intégral. Vrai si l'un des
+ *  4 arrow warps directionnels. */
+export function Unref_MetatileBehavior_IsArrowWarp(metatileBehavior: number): boolean {
+  let isArrowWarp = false;
+  if (MetatileBehavior_IsEastArrowWarp(metatileBehavior)
+      || MetatileBehavior_IsWestArrowWarp(metatileBehavior)
+      || MetatileBehavior_IsNorthArrowWarp(metatileBehavior)
+      || MetatileBehavior_IsSouthArrowWarp(metatileBehavior)) {
+    isArrowWarp = true;
+  }
+  return isArrowWarp;
 }
 
 // ─── Forced movement warps (= warps qui run un script ou anim spéciale) ────
@@ -611,6 +633,12 @@ export function MetatileBehavior_IsDeepOrOceanWater(mb: number): boolean {
       || mb === MB_OCEAN_WATER
       || mb === MB_INTERIOR_DEEP_WATER;
 }
+/** 1:1 décomp `Unref_MetatileBehavior_IsUnusedSootopolisWater` (metatile_behavior.c:915-923).
+ *  `UNUSED` — dead-code non référencé ; porté pour le miroir intégral. */
+export function Unref_MetatileBehavior_IsUnusedSootopolisWater(mb: number): boolean {
+  return mb === MBC.MB_UNUSED_SOOTOPOLIS_DEEP_WATER
+      || mb === MBC.MB_UNUSED_SOOTOPOLIS_DEEP_WATER_2;
+}
 export function MetatileBehavior_IsSurfableAndNotWaterfall(mb: number): boolean {
   return MetatileBehavior_IsSurfableWaterOrUnderwater(mb) && mb !== MB_WATERFALL;
 }
@@ -628,6 +656,12 @@ export function MetatileBehavior_IsUnableToEmerge(mb: number): boolean {
 }
 export function MetatileBehavior_IsSeaweed(mb: number): boolean {
   return mb === MB_SEAWEED || mb === MB_SEAWEED_NO_SURFACING;
+}
+
+/** 1:1 décomp `Unref_MetatileBehavior_IsUnused05` (metatile_behavior.c:369-375).
+ *  `UNUSED` — dead-code non référencé ; porté pour le miroir intégral. */
+export function Unref_MetatileBehavior_IsUnused05(mb: number): boolean {
+  return mb === MBC.MB_UNUSED_05;
 }
 
 // Forced movement / slide tiles.
