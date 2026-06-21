@@ -116,6 +116,11 @@ export interface PokemonInstance {
   /** 1:1 décomp `MON_DATA_FRIENDSHIP` — pour œuf = compteur d'éclosion
    *  (frais = élevé → "mettre du temps"). Optional (résumé non-œuf l'ignore). */
   friendship?: number;
+  /** 1:1 décomp `MON_DATA_BEAUTY` — stat beauté CONCOURS (0..255), montée par les
+   *  Pokéblocs. Utilisée par EVO_BEAUTY (Feebas→Milobellus : param <= beauty). Optional :
+   *  défaut 0 = la VRAIE valeur tant que Pokéblocs/concours ne sont pas implémentés (Feebas
+   *  n'évolue donc pas par cette voie — 1:1 correct pour un mon jamais nourri). */
+  beauty?: number;
   /** 1:1 décomp `MON_DATA_OT_NAME` (pokemon.h) — nom du trainer original (=
    *  joueur pour starter / NPC giver pour cadeau / wild capture = joueur).
    *  Set par GiveMonToPlayer / CreateBoxMon (pokemon.c:2228-2253). */
@@ -299,11 +304,12 @@ export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp
  *      (cycle-break ESM : import statique rtc.ts deadlocke le boot — exposé par rtc.ts).
  *    - EVO_LEVEL_SILCOON / _CASCOON (Wurmple : (upperPersonality % 10) <=4 / >4)
  *    - EVO_LEVEL_NINJASK (Nincada → Ninjask, level >= param)
- *  Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque tout (1:1 pokemon.c:5503-5510).
- *
- *  Déférés (Dette R3, données non triviales — à compléter pour full 1:1) :
- *    - EVO_LEVEL_ATK_GT/EQ/LT_DEF (Tyrogue→Kicklee/Kapoera/Tygnon) : besoin atk/def calculés.
- *    - EVO_BEAUTY (Feebas→Milobellus) : stat beauté (contest) non trackée sur l'instance. */
+ *    - EVO_LEVEL_ATK_GT/EQ/LT_DEF (Tyrogue→Kicklee/Tygnon/Kapoera : level>=param ET
+ *      atk >/==/< def). atk/def = stats calculées 1:1 par CalculateMonStats (via la
+ *      conversion `pokemonInstanceToPokemon`, dérivée à la demande = zéro dup de formule).
+ *    - EVO_BEAUTY (Feebas→Milobellus : param <= beauté). Beauté lue sur `mon.beauty`
+ *      (défaut 0 = jamais nourri aux Pokéblocs → pas d'évo par cette voie, 1:1 correct).
+ *  Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque tout (1:1 pokemon.c:5503-5510). */
 export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | null {
   const heldItem = mon.heldItem;
   // 1:1 décomp pokemon.c:5503-5510 : Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque.
@@ -324,6 +330,18 @@ export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | nul
   const friendship = mon.friendship ?? 0;
   const FRIENDSHIP_EVO_THRESHOLD = 220;                          // 1:1 décomp pokemon.c:58
   const upperPersonality = ((mon.personality ?? 0) >>> 16) & 0xFFFF;  // 1:1 HIHALF(personality)
+  const beauty = mon.beauty ?? 0;                                // 1:1 GetMonData(MON_DATA_BEAUTY)
+  // 1:1 GetMonData(MON_DATA_ATK/DEF) = la stat calculée par CalculateMonStats. On la dérive
+  // à la demande via la conversion en struct Pokemon (qui appelle CalculateMonStats 1:1) —
+  // calcul LAZY (uniquement si une méthode ATK/DEF est rencontrée) + caché (une seule conversion).
+  let _atkDef: { atk: number; def: number } | null = null;
+  const atkDef = (): { atk: number; def: number } => {
+    if (_atkDef === null) {
+      const p = pokemonInstanceToPokemon(mon);
+      _atkDef = { atk: p.attack, def: p.defense };
+    }
+    return _atkDef;
+  };
   // 1:1 décomp : itère toutes les entrées, garde la dernière qui matche.
   let target: string | null = null;
   for (const e of evos) {
@@ -366,7 +384,28 @@ export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | nul
       case 'EVO_LEVEL_NINJASK':
         if (level >= e.param) target = e.target;
         break;
-      // (EVO_LEVEL_ATK_*_DEF, EVO_BEAUTY = déférés, cf. JSDoc.)
+      case 'EVO_LEVEL_ATK_GT_DEF': {
+        // 1:1 décomp pokemon.c:5540-5543 : param<=level ET ATK > DEF (Tyrogue→Kicklee).
+        const ad = atkDef();
+        if (e.param <= level && ad.atk > ad.def) target = e.target;
+        break;
+      }
+      case 'EVO_LEVEL_ATK_EQ_DEF': {
+        // 1:1 décomp pokemon.c:5545-5548 : param<=level ET ATK == DEF (Tyrogue→Kapoera).
+        const ad = atkDef();
+        if (e.param <= level && ad.atk === ad.def) target = e.target;
+        break;
+      }
+      case 'EVO_LEVEL_ATK_LT_DEF': {
+        // 1:1 décomp pokemon.c:5550-5553 : param<=level ET ATK < DEF (Tyrogue→Tygnon).
+        const ad = atkDef();
+        if (e.param <= level && ad.atk < ad.def) target = e.target;
+        break;
+      }
+      case 'EVO_BEAUTY':
+        // 1:1 décomp pokemon.c:5567-5570 : param <= beauté (Feebas→Milobellus).
+        if (e.param <= beauty) target = e.target;
+        break;
     }
   }
   return target;
