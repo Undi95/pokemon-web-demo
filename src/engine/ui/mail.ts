@@ -70,7 +70,7 @@ import {
   ResetSpriteData,
   GetOverworldTextboxPalettePtr,
 } from '../system/decomp-bridge';
-import { JOY_NEW } from '../system/decomp-globals';
+import { JOY_NEW, AnimateSprites, BuildOamBuffer } from '../system/decomp-globals';
 import {
   InitWindows,
   PutWindowTilemap,
@@ -1103,19 +1103,11 @@ function TransferPlttBuffer(): void {
   // automatiquement à chaque VBlank tick. No-op ici.
 }
 
-function AnimateSprites(): void {
-  const rt = getRuntime();
-  if (rt && typeof (rt as any).animateAllSprites === 'function') {
-    (rt as any).animateAllSprites();
-  }
-}
-
-function BuildOamBuffer(): void {
-  const rt = getRuntime();
-  if (rt && typeof (rt as any).buildOamBuffer === 'function') {
-    (rt as any).buildOamBuffer();
-  }
-}
+// AnimateSprites / BuildOamBuffer : 1:1 décomp helpers globaux (sprite.c).
+// Importés depuis decomp-globals (re-export de game/sprite.ts), comme
+// CB2_MainMenu / overworld-welcome — plus de copie locale (chantier D dédup).
+// Note : l'ancienne copie locale appelait `animateAllSprites` (méthode inexistante
+// → no-op) ; la globale tique réellement l'icône mon (bead/dream) = 1:1 correct.
 
 // ─── Pokemon icon stubs (= pokemon_icon.c non porté 1:1) ─────────────────────
 
