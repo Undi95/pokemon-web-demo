@@ -65,14 +65,25 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
     - ✅ **E2.3a** (`c874a5e9`) : `DestroySprite` (sprite.c:618) → `DestroySprite(rt, spriteId)` dans game/sprite.ts ;
       méthode `rt.DestroySprite` = délégué (102 call-sites + bridge intacts) ; 2 champs M3 rendus accessibles
       (`spriteAnimStates`, `_matrixUsed`). A/B combat K.O. sprite détruit sans fantôme, 57.8fps.
-    - ⏳ **E2.3b** : `ResetSpriteData` (sprite.c:294, 13 call-sites) — extractible avec BONUS cleanup (ses arrays
-      `sSpriteTileRangeTags/Ranges/AllocBitmap` sont DÉJÀ exportés par game/sprite.ts → remplacer le hack
-      `globalThis.__sprite` par accès direct). Coût : rendre `nextOamSlot/nextSpriteId/freedSpriteTileRanges`
-      accessibles + porter le hook M3 `__spriteResetCallbacks`. A/B = cycle OW↔combat (transitions de scène).
-    - ⏳ **E2.3c+** : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct SpriteTemplate`, le PLUS
+    - ✅ **E2.3b** (`65a8e7dd`) : `ResetSpriteData` (sprite.c:294, 13 call-sites) → `ResetSpriteData(rt)` dans
+      game/sprite.ts ; méthode = délégué. BONUS réalisé : arrays `sSpriteTile*` accédés EN DIRECT (statics du
+      même module, 1:1) au lieu du hack `globalThis.__sprite` (identité vérifiée) + `setReservedSpriteTileCount(0)`.
+      Champs `nextOamSlot`/`nextSpriteId` → accessibles. A/B : boot OW + OW→combat (ResetSpriteData ×2), combat
+      rendu propre sans sprite OW résiduel, 59.4fps.
+    - 🐛 **E2.3c — BUG LATENT À CORRIGER (trouvé E2.3b, 2026-06-21) : DOUBLE allocateur OAM matrix avec état SÉPARÉ.**
+      (a) méthode `DecompRuntime.AllocOamMatrix`/`FreeOamMatrix` → `this._matrixUsed` (Set), scanne slots **1..31**,
+      **25 call-sites** `rt.AllocOamMatrix` (sac, send-out, bridge…). (b) free `AllocOamMatrix`/`FreeOamMatrix`
+      (game/sprite.ts:505/533) → `globalThis.gOamMatrixAllocBitmap` (bitmap, = vrai 1:1 décomp), scanne **0..31**,
+      utilisé par `battle_anim_mons.ts:440` + `battle_anim_psychic.ts`. **Les 2 ignorent l'état l'un de l'autre** →
+      si actifs simultanément (anim affine mon combat + autre alloc), collision sur `gba.affineParams[i]` → matrice
+      corrompue. FIX = consolider sur UN état canonique (le bitmap 1:1 décomp `gOamMatrixAllocBitmap`), faire que la
+      méthode délègue à la free fn, réconcilier le scan 0-vs-1. ⚠️ sensible au RENDU affine → A/B CIBLÉ : rotation
+      d'intro des mons en combat + anims de statut + shake du sac. Lot DÉDIÉ, pas à la va-vite.
+    - ⏳ **E2.3d+** : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct SpriteTemplate`, le PLUS
       gros + pas 1:1 actuellement), `AnimateSprites`, `BuildOamBuffer` ; puis migrer les call-sites `rt.DestroySprite`
-      (102) et retirer les délégués. ⚠️ chaque extraction érode l'encapsulation DecompRuntime (champs→public) — c'est
-      la direction décomp (état en globals), mais le vrai 1:1 final = globals module-level (gros refactor séparé).
+      (102) / `rt.ResetSpriteData` (13) et retirer les délégués. ⚠️ chaque extraction érode l'encapsulation
+      DecompRuntime (champs→public) — c'est la direction décomp (état en globals), mais le vrai 1:1 final = globals
+      module-level (gros refactor séparé).
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
 directs 1:1 (`gSprites[i]`, `gBattle_BG1_X`…) dans les battle-anims + field effects. A/B par famille (anim par anim).
