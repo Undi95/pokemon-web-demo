@@ -57,6 +57,19 @@ palette (LoadPalette, BlendPalette, TransferPlttBuffer 1:1), DMA. Beaucoup déj�
 
 **Phase E5 — main loop / CB2 / VBlank** : aligner AgbMain/SetMainCallback2/VBlankIntr 1:1 sur le tick existant.
 
+## Avancement E1 (keystone) — 2026-06-21
+- ✅ **Lot 1** (`e7a39e63`) : `gSprites` Map → `class SpriteArray` (tableau fixe 64 slots, façade Map
+  transitionnelle). Modèle slot 0-63 déjà en place (CreateSprite scanne le 1er libre). Hot-path per-frame
+  (syncSpritesToOam + tickSpriteAnims) en boucles indexées. A/B user OK, FPS 49→60.
+- ✅ **Lot 2** (`7b542f0e`) : 8 boucles `gSprites.values()`/`.forEach` du GAMEPLAY → indexées `for i<MAX_SPRITES`
+  + `.get(i)`. Générateurs gSprites retirés du gameplay. A/B user « tout OK », 59.8 FPS.
+- ⏳ **RESTE (Lot 3, COSMÉTIQUE 1:1, mécanique, ~large)** : (a) qq itérateurs `[k,v]` NON-gameplay (engine-devtools
+  ×2, wallclock ×2) ; (b) migrer les **239 `.get(id)` → `[id]`** + `.has/.delete/.clear` → ops array ; (c) basculer
+  `SpriteArray` → tableau nu `(DecompSprite|undefined)[]` et SUPPRIMER la façade. ⚠️ pour `[i]` il faut que le type
+  supporte l'index → soit `SpriteArray extends Array` (friction itérateurs MapIterator déjà rencontrée), soit
+  big-bang tsc-guidé vers le tableau nu (git couvre). **Zéro changement comportement/perf** (`.get(i)` marche déjà
+  + est rapide) → fidélité pure, faisable en passe mécanique dédiée (script de transform `.get(X)`→`[X]` paren-aware).
+
 ## Cadence / sécurité
 Boot doit rester vert (59.5 FPS) entre chaque commit. tsc=0 + sonde déterministe + **A/B pour tout rendu**
 (le user valide les visuels). 1 lot vérifié = 1 commit. Jamais de big-bang sur les 87 sites. Le harness
