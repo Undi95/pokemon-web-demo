@@ -1448,6 +1448,13 @@ function AIStackPushVar(varOffset: number): void {
   gAI_ScriptsStack.ptr[gAI_ScriptsStack.size++] = varOffset;
 }
 
+/** 1:1 décomp `AIStackPushVar_cursor` (battle_ai_script_commands.c:2279-2282).
+ *  `static UNUSED` — dead-code non référencé ; porté pour le miroir intégral. Pousse
+ *  le curseur courant `gAIScriptPtr` (et non un offset d'arg) sur la pile AI. */
+function AIStackPushVar_cursor(): void {
+  gAI_ScriptsStack.ptr[gAI_ScriptsStack.size++] = gAIScriptPtr;
+}
+
 function AIStackPop(): boolean {
   if (gAI_ScriptsStack.size !== 0) {
     --gAI_ScriptsStack.size;
