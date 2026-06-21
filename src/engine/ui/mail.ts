@@ -82,6 +82,7 @@ import {
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
 import { loadTileBin, loadGbaPal, loadTilemapBin } from '../gba/png-loader';
 import { ConvertEasyChatWordsToString, CopyEasyChatWord } from '../../game/easy_chat';
+import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from '../../game/pokemon_icon';
 import {
   AddTextPrinterParameterized3,
   RunTextPrinters,
@@ -633,14 +634,19 @@ function MailReadBuildGraphics(): boolean {
       break;
     case 8: {
       // M3 : les assets sont chargés async (ROM→réseau). Kick-off au 1er hit +
-      // GATE (return false → reste au même state) le temps du fetch. Une fois
-      // _mailGfxLoaded, on enchaîne 1:1 (cases 8/10/12 consomment les assets).
-      if (!_mailGfxLoaded[sMailRead.mailType]) {
-        _mailLoadGraphics(sMailRead.mailType);
+      // GATE (return false → reste au même state) le temps du fetch. On attend
+      // le design ET (pour BEAD/DREAM) l'icône mon → cases 8/10/12 = design,
+      // case 17 = icône, tous synchrones une fois chargés.
+      const mt = sMailRead.mailType;
+      const needIcon = sMailRead.iconType !== ICON_TYPE_NONE && sMailRead.mail !== null;
+      const iconSpecies = needIcon ? GetIconSpeciesNoPersonality(sMailRead.mail!.species) : -1;
+      if (!_mailGfxLoaded[mt] || (needIcon && !IsMonIconLoaded(iconSpecies))) {
+        _mailLoadGraphics(mt);
+        if (needIcon) PreloadMonIcon(iconSpecies);
         _mailGfxWaiting = true; // → CB2_InitMailRead yield la frame
         return false;
       }
-      const tiles = sMailGraphics[sMailRead.mailType].tiles;
+      const tiles = sMailGraphics[mt].tiles;
       // 1:1 décomp : DecompressAndCopyTileDataToVram(1, gMailGraphics[t].tiles, 0, 0, 0).
       // Si tiles == null (échec réseau), on no-op (= mail wireframe).
       if (tiles) DecompressAndCopyTileDataToVram(1, tiles, 0, 0, 0);
@@ -877,6 +883,9 @@ function VBlankCB_MailRead(): void {
 function CB2_MailRead(): void {
   if (!sMailRead) return;
   if (sMailRead.iconType !== ICON_TYPE_NONE) {
+    // M3 : avance le bob de l'icône mon (le décomp le fait via le système d'anim
+    // sprite dans AnimateSprites ; notre sprite CreateSpriteAtOam n'a pas d'anim).
+    UpdateMailMonIcon();
     AnimateSprites();
     BuildOamBuffer();
   }
@@ -1110,42 +1119,10 @@ function TransferPlttBuffer(): void {
 // Note : l'ancienne copie locale appelait `animateAllSprites` (méthode inexistante
 // → no-op) ; la globale tique réellement l'icône mon (bead/dream) = 1:1 correct.
 
-// ─── Pokemon icon stubs (= pokemon_icon.c non porté 1:1) ─────────────────────
-
-let _warnedPokemonIcon = false;
-function _warnPokemonIcon(): void {
-  if (_warnedPokemonIcon) return;
-  _warnedPokemonIcon = true;
-  // eslint-disable-next-line no-console
-  console.warn('[mail] BEAD/DREAM mail icon stubbed — pokemon_icon.c non porté 1:1 (= mail readable sans l\'icône Pokémon).');
-}
-
-/** 1:1 TODO : `pokemon_icon.c GetIconSpeciesNoPersonality(species)`.
- *  Pour BEAD/DREAM mail, retourne le species qui sera affiché en icône
- *  (avec mapping unown letter → unown-A...unown-Z). */
-function GetIconSpeciesNoPersonality(species: number): number {
-  _warnPokemonIcon();
-  return species; // 1:1 approximé — sans le map unown_letter→species_unown_letter.
-}
-
-function LoadMonIconPalette(_species: number): void {
-  _warnPokemonIcon();
-}
-
-function CreateMonIconNoPersonality(
-  _species: number, _callback: any, _x: number, _y: number, _subpriority: number, _handleDeoxys: boolean,
-): number {
-  _warnPokemonIcon();
-  return 0xFF; // invalid sprite id sentinel
-}
-
-function FreeMonIconPalette(_species: number): void {
-  _warnPokemonIcon();
-}
-
-function FreeAndDestroyMonIconSprite(_spriteId: number): void {
-  _warnPokemonIcon();
-}
+// ─── Pokemon icon : importé de game/pokemon_icon.ts (1:1 pokemon_icon.c) ──────
+// GetIconSpeciesNoPersonality / LoadMonIconPalette / CreateMonIconNoPersonality /
+// FreeMonIconPalette / FreeAndDestroyMonIconSprite + PreloadMonIcon/IsMonIconLoaded
+// (chargement async des assets icône, gaté par le case 8 comme les graphismes).
 
 function SpriteCallbackDummy(_sprite: any): void {
   // 1:1 décomp : no-op callback.
