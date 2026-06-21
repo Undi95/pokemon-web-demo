@@ -36,7 +36,7 @@
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { FieldEffectActiveListRemove, FieldEffectActiveListAdd } from '../engine/field/field-effect-active-list';
-import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE } from './sprite';
+import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE, DestroySprite } from './sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
@@ -162,7 +162,7 @@ export function FieldEffectFreePaletteIfUnused(rt: DecompRuntime, paletteNum: nu
 export function FieldEffectFreeGraphicsResources(rt: DecompRuntime, sprite: DecompSprite): void {
   const oam = rt.gba.oam[sprite.oamIndex];
   const paletteNum = oam ? oam.paletteBank : 0xFF;
-  rt.DestroySprite(sprite.spriteId);
+  DestroySprite(rt, sprite.spriteId);
   FieldEffectFreePaletteIfUnused(rt, paletteNum);
 }
 

@@ -30,6 +30,7 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
+import { DestroySprite } from '../../game/sprite';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../../game/event_object_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -247,7 +248,7 @@ registerOpcode('removeobject', (_ctx, args) => {
     if (npc.spriteId >= 0) {
       try {
         const rt = getRuntime();
-        rt.DestroySprite(npc.spriteId);
+        DestroySprite(rt, npc.spriteId);
       } catch (e) {
         console.warn(`[opcode removeobject] DestroySprite ${npc.spriteId} threw:`, e);
       }

@@ -10,6 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import { DestroySprite } from '../../../game/sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -52,7 +53,7 @@ export const SpriteCB_MovingScenery: SpriteCallback = (sprite, rt) => {
           switch (state)
           {
           default:  
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
               break;
           case INTROCRED_SCENERY_NORMAL:
               x = ((sprite.x << 16) | sprite.data[2]) + sprite.data[1];

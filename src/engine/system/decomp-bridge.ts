@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData } from '../../game/sprite';
+import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite } from '../../game/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -3048,7 +3048,7 @@ export function CreateSpriteAtEnd(template: any, x: number, y: number, subpriori
 export function DestroySprite(sprite: any): void {
   const rt = _getRT();
   const id = typeof sprite === 'number' ? sprite : sprite?.spriteId ?? sprite?.id;
-  if (id != null) rt.DestroySprite(id);
+  if (id != null) _DestroySprite(rt, id);
 }
 
 /** 1:1 décomp `src/task.c CreateTask(func, priority)` — alloue un task slot. */

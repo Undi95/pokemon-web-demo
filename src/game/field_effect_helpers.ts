@@ -55,7 +55,7 @@ import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtim
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../engine/gba/png-loader';
 import {
@@ -1610,7 +1610,7 @@ async function _loadFieldMoveMonPic(rt: DecompRuntime, spriteId: number, species
 function _freeFieldMoveMonSprite(rt: DecompRuntime, spriteId: number): void {
   FreeSpriteTilesByTag(TAG_FIELD_MOVE_MON_GFX);
   FreeSpritePaletteByTag(TAG_FIELD_MOVE_MON_PAL);
-  rt.DestroySprite(spriteId);
+  DestroySprite(rt, spriteId);
 }
 
 /** 1:1 STRICT décomp `InitFieldMoveMonSprite` (field_effect.c:2930). */
@@ -2183,7 +2183,7 @@ function PokecenterHealEffect_WaitForSoundAndEnd(task: DecompTask): void {
   const rt = getRuntime();
   const ball = rt.gSprites[task.data[6]];
   if (ball && ball.data[0] > 6) { // sState > 6 (Idle)
-    rt.DestroySprite(task.data[6]);
+    DestroySprite(rt, task.data[6]);
     FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);
     DestroyTask(FindTaskIdByFunc(Task_PokecenterHeal));
   }

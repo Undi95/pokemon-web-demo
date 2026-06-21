@@ -12,7 +12,7 @@
 import * as _dg from './decomp-globals';
 import * as _cb from '../boot/copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
-import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry, ResetSpriteData as _bridgeResetSpriteData } from './decomp-bridge';
+import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry, ResetSpriteData as _bridgeResetSpriteData, DestroySprite as _bridgeDestroySprite } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
 } from '../../game/play_time';
@@ -160,7 +160,7 @@ const symbolsToExpose: Record<string, unknown> = {
   CreateSpriteFromTemplate: (name: string, x: number, y: number) => dg.getRuntime().CreateSpriteFromTemplate(name, x, y),
   setSpriteInvisible: (id: number, inv: boolean) => dg.getRuntime().setSpriteInvisible(id, inv),
   setSpriteCallback: (id: number, cb: unknown) => dg.getRuntime().setSpriteCallback(id, cb as any),
-  DestroySprite: (id: number) => dg.getRuntime().DestroySprite(id),
+  DestroySprite: (id: number) => _bridgeDestroySprite(id),
   LoadCompressedSpriteSheet: dg.LoadCompressedSpriteSheet,
   LoadSpritePalettes: dg.LoadSpritePalettes,
 

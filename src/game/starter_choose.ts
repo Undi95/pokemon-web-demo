@@ -51,6 +51,7 @@ import {
 } from '../engine/ui/gba-text-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../engine/system/decomp-globals';
+import { DestroySprite } from './sprite';
 import { BG_PLTT_ID, MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../engine/system/decomp-bridge';
 import { CreateMon } from '../engine/pokemon/pokemon';
@@ -695,10 +696,10 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { rt.DestroySprite(pkmnId); } catch (e) { void e; }
+      try { DestroySprite(rt, pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
-      try { rt.DestroySprite(circleId); } catch (e) { void e; }
+      try { DestroySprite(rt, circleId); } catch (e) { void e; }
     }
 
     // Cleanup task — we don't return to ROM callback ; the next CB2 tick will
@@ -732,10 +733,10 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { rt.DestroySprite(pkmnId); } catch (e) { void e; }
+      try { DestroySprite(rt, pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
-      try { rt.DestroySprite(circleId); } catch (e) { void e; }
+      try { DestroySprite(rt, circleId); } catch (e) { void e; }
     }
     task.func = Task_DeclineStarter;
   }
@@ -967,10 +968,10 @@ function cleanupScene(): void {
   if (!rt) return;
   // Destroy all our spawned sprites.
   for (const id of _starterPokeballSpriteIds) {
-    if (id >= 0) { try { rt.DestroySprite(id); } catch (e) { void e; } }
+    if (id >= 0) { try { DestroySprite(rt, id); } catch (e) { void e; } }
   }
   if (_starterHandSpriteId >= 0) {
-    try { rt.DestroySprite(_starterHandSpriteId); } catch (e) { void e; }
+    try { DestroySprite(rt, _starterHandSpriteId); } catch (e) { void e; }
   }
   _starterPokeballSpriteIds = [];
   _starterHandSpriteId = -1;

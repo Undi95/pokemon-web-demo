@@ -25,7 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData } from '../../game/sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite } from '../../game/sprite';
 import { GetWindowFrameTilesPal } from '../../game/text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {
@@ -1053,7 +1053,7 @@ export function FreeAndDestroyMonPicSprite(spriteId: number): void {
     const stop = (globalThis as Record<string, unknown>).__StopMonFrontSpriteAnimation;
     if (typeof stop === 'function') (stop as (rt: unknown, id: number) => void)(rt, spriteId);
   }
-  rt.DestroySprite(spriteId);
+  DestroySprite(rt, spriteId);
 }
 
 export function ResetAllPicSprites(): void {

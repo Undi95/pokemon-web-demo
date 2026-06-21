@@ -21,7 +21,7 @@ import {
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../../system/decomp-helpers';
-import { ResetSpriteData } from '../../../game/sprite';
+import { ResetSpriteData, DestroySprite } from '../../../game/sprite';
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
@@ -125,7 +125,7 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 /** Source: intro.c → SpriteCB_Sparkle */
 export const SpriteCB_Sparkle: SpriteCallback = (sprite, rt) => {
   if (++sprite.data[7] == 12)
-          rt.DestroySprite(sprite.spriteId);
+          DestroySprite(rt, sprite.spriteId);
 };
 
 /** Source: intro.c → SpriteCB_Volbeat */
@@ -204,7 +204,7 @@ export const SpriteCB_Volbeat: SpriteCallback = (sprite, rt) => {
           sprite.y2 = Sin(sprite.data[5], 0x14);
           sprite.data[5] += 4;
           if (sprite.x < -16)
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
           break;
       case VOLBEAT_WAIT_STATE:
            
@@ -315,7 +315,7 @@ export const SpriteCB_Manectric: SpriteCallback = (sprite, rt) => {
           if (sprite.x + sprite.x2 <= -32)
           {
                
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
           }
           else
           {
@@ -389,7 +389,7 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
               sprite.data[2] += 48;
               sprite.y2 = -(sprite.data[2] >> 8);
               if (sprite.animEnded)
-                  rt.DestroySprite(sprite.spriteId);
+                  DestroySprite(rt, sprite.spriteId);
           }
           else if (--sprite.data[6] == 0)
           {
@@ -416,7 +416,7 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
               sprite.y += 3;
 
           if ((sprite.y - 20) > DISPLAY_HEIGHT - 20)
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
           break;
       }
 };
@@ -446,7 +446,7 @@ export const SpriteCB_Lightning: SpriteCallback = (sprite, rt) => {
               rt.CpuCopy16(INTRO3_RAW_PTR(sprite.data[1]), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
               sprite.data[1] -= 2;
               if (sprite.data[1] == 0x1C0)
-                  rt.DestroySprite(sprite.spriteId);
+                  DestroySprite(rt, sprite.spriteId);
           }
           break;
       }
@@ -473,7 +473,7 @@ export const SpriteCB_WaterDrop_Ripple: SpriteCallback = (sprite, rt) => {
       }
       else
       {
-          rt.DestroySprite(sprite.spriteId);
+          DestroySprite(rt, sprite.spriteId);
       }
 };
 
@@ -810,7 +810,7 @@ export const SpriteCB_LogoLetter: SpriteCallback = (sprite, rt) => {
               sprite.x2 = -temp;
           }
           if (sprite.affineAnimEnded)
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
           break;
       }
 };
@@ -836,7 +836,7 @@ export const SpriteCB_GameFreakLogo: SpriteCallback = (sprite, rt) => {
           break;
       case 2:
           if (sprite.affineAnimEnded)
-              rt.DestroySprite(sprite.spriteId);
+              DestroySprite(rt, sprite.spriteId);
           break;
       }
 };

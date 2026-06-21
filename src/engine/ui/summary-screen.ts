@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite } from '../../game/sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
   getExperienceForLevel,
@@ -1869,7 +1869,7 @@ function _createMoveTypeIcons(): void {
  *  `_freeSummary`). PAS pendant la navigation (sprites persistants 1:1). */
 function _destroyTypeSprites(): void {
   const rt = getRuntime();
-  for (const sid of _typeSpriteIds) { try { rt?.DestroySprite(sid); } catch { /* déjà */ } }
+  for (const sid of _typeSpriteIds) { try { DestroySprite(rt, sid); } catch { /* déjà */ } }
   _typeSpriteIds = [];
 }
 
@@ -2022,7 +2022,7 @@ function _createSetStatusSprite(): void {
   if (!rt) return;
   const ailment = sMon.summary.ailment;
   if (ailment === 0) {                       // SetSpriteInvisibility(TRUE)
-    if (_statusSpriteId >= 0) { try { rt.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+    if (_statusSpriteId >= 0) { try { DestroySprite(rt, _statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
     return;
   }
   const spr = rt.CreateSpriteAtOam({
@@ -2277,11 +2277,11 @@ function _changeSummaryPokemon(delta: number): void {
   if (_monPicSpriteId >= 0) {
     const oldMon = rt?.gSprites[_monPicSpriteId];
     if (oldMon) { try { StopPokemonAnimations(oldMon); } catch { /* */ } }
-    try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1;
+    try { DestroySprite(rt, _monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1;
   }
-  if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
-  if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
-  if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
+  if (_statusSpriteId >= 0) { try { DestroySprite(rt, _statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+  if (_markingsSpriteId >= 0) { try { DestroySprite(rt, _markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
+  if (_ballSpriteId >= 0) { try { DestroySprite(rt, _ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
   _extractMonData(next);
   _graphicsReady = false; _graphicsLoading = false;
   // Recharge front-pic du nouveau mon puis re-render.
@@ -2633,7 +2633,7 @@ function _createMoveSelectorSprites(idArrayStart: number): void {
 function _destroyMoveSelectorSprites(firstArrayId: number): void {
   const rt = getRuntime();
   const ids = (firstArrayId === SEL1) ? _moveSel1Ids : _moveSel2Ids;
-  for (const id of ids) { try { rt?.DestroySprite(id); } catch { /* déjà */ } }
+  for (const id of ids) { try { DestroySprite(rt, id); } catch { /* déjà */ } }
   if (firstArrayId === SEL1) _moveSel1Ids = []; else _moveSel2Ids = [];
 }
 
@@ -3182,10 +3182,10 @@ function _freeSummary(): void {
   for (let i = 0; i < sMon.windowIds.length; i++) sMon.windowIds[i] = WINDOW_NONE;
   const rt = getRuntime();
   _destroyTypeSprites();
-  if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
-  if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
-  if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
-  if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
+  if (_monPicSpriteId >= 0) { try { DestroySprite(rt, _monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
+  if (_statusSpriteId >= 0) { try { DestroySprite(rt, _statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+  if (_markingsSpriteId >= 0) { try { DestroySprite(rt, _markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
+  if (_ballSpriteId >= 0) { try { DestroySprite(rt, _ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
   // Move-select : sprites curseur + tâches sliding EFFET (si fermeture en
   // cours de sélection — évite tâches orphelines lisant un buffer libéré).
   _destroyMoveSelectorSprites(SEL1);

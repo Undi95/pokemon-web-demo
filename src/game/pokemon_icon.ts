@@ -10,7 +10,7 @@
 
 import { getRuntime } from '../engine/system/decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
-import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag, _freeSpriteTileRangeByTag } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, DestroySprite } from './sprite';
 import { reverseDecompConstant } from '../engine/system/decomp-constants';
 import { MON_ICON_PALETTE_INDICES } from '../engine/pokemon/pokemon-icon-palettes';
 import { MailSpeciesToSpecies, NUM_SPECIES, SPECIES_UNOWN } from './mail_data';
@@ -154,7 +154,7 @@ export function FreeAndDestroyMonIconSprite(spriteId: number): void {
   const rt = getRuntime();
   if (!rt || spriteId === 0xFF) return;
   _freeSpriteTileRangeByTag(ICON_SHEET_TAG);
-  rt.DestroySprite(spriteId);
+  DestroySprite(rt, spriteId);
   if (spriteId === _mailIconSpriteId) _mailIconSpriteId = 0xFF; // stoppe le bob
 
 }

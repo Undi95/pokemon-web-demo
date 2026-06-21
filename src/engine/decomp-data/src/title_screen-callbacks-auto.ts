@@ -10,7 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
-import { ResetSpriteData } from '../../../game/sprite';
+import { ResetSpriteData, DestroySprite } from '../../../game/sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -163,7 +163,7 @@ export const SpriteCB_PokemonLogoShine: SpriteCallback = (sprite, rt) => {
       {
            
           rt.gPlttBufferFaded.set(0, RGB_BLACK);
-          rt.DestroySprite(sprite.spriteId);
+          DestroySprite(rt, sprite.spriteId);
       }
 };
 
@@ -172,7 +172,7 @@ export const SpriteCB_PokemonLogoShine_Fast: SpriteCallback = (sprite, rt) => {
   if (sprite.x < DISPLAY_WIDTH + 32)
           sprite.x += SHINE_SPEED * 2;
       else
-          rt.DestroySprite(sprite.spriteId);
+          DestroySprite(rt, sprite.spriteId);
 };
 
 /** Source: title_screen.c → Task_TitleScreenPhase1 */

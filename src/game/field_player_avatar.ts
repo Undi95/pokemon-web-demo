@@ -201,6 +201,7 @@ import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
+  DestroySprite,
 } from './sprite';
 import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../engine/decomp-data/include/constants/songs-data';
 import {
@@ -1064,7 +1065,7 @@ function Task_WaitStopSurfing(task: DecompTask): void {
     ObjectEventSetHeldMovement(playerObjEvent, GetFaceDirectionMovementAction(playerObjEvent.facingDirection));
     gPlayerAvatar.preventStep = false;
     UnlockPlayerFieldControls();
-    getRuntime().DestroySprite(playerObjEvent.fieldEffectSpriteId);
+    DestroySprite(getRuntime(), playerObjEvent.fieldEffectSpriteId);
     // #ifdef BUGFIX : sans ça, en marchant dans l'herbe depuis le surf, le joueur apparaît AU-DESSUS
     // de l'herbe au lieu de DEDANS → on ré-arme triggerGroundEffectsOnMove.
     playerObjEvent.triggerGroundEffectsOnMove = true;

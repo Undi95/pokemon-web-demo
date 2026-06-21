@@ -2315,9 +2315,10 @@ export class DecompRuntime {
     _syncSpritesToOam_1to1(this);
   }
 
-  /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. */
-  /** Délègue à la fonction sprite.c 1:1 extraite vers game/sprite.ts (E2.3a).
-   *  Méthode conservée transitionnellement (102 call-sites `rt.DestroySprite`). */
+  /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. Méthode
+   *  conservée transitionnellement : reste des call-sites en forme optional-call
+   *  `rt.DestroySprite?.(id)` (cluster battle_anim, list_menu…) à migrer (lot 2c)
+   *  avant le retrait. Délègue à la free-fn 1:1 de game/sprite.ts. */
   DestroySprite(spriteId: number): void {
     _DestroySprite_1to1(this, spriteId);
   }
