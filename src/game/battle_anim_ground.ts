@@ -472,13 +472,13 @@ function _SetDigScanlineEffect(useBG1: number, y: number, endY: number): void {
 /** 1:1 `AnimTask_DigDownMovement` (battle_anim_ground.c.c:288) — dispatcher + appel immédiat. */
 function AnimTask_DigDownMovement(task: _DgTask): void {
   const args = _dgItf().getArgs?.() ?? [0];
-  if (args[0] === 0) task.func = _DigBounceMovement;
-  else task.func = _DigEndBounceMovementSetInvisible;
+  if (args[0] === 0) task.func = AnimTask_DigBounceMovement;
+  else task.func = AnimTask_DigEndBounceMovementSetInvisible;
   (task.func as (t: _DgTask) => void)(task);
 }
 
-/** 1:1 `AnimTask_DigBounceMovement` (battle_anim_ground.c.c:301). */
-function _DigBounceMovement(task: _DgTask): void {
+/** 1:1 `AnimTask_DigBounceMovement` (battle_anim_ground.c:301). */
+function AnimTask_DigBounceMovement(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
       task.data[10] = _dgAttackerSpriteId();
@@ -533,8 +533,8 @@ function _DigBounceMovement(task: _DgTask): void {
   }
 }
 
-/** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (battle_anim_ground.c.c:371). */
-function _DigEndBounceMovementSetInvisible(task: _DgTask): void {
+/** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (battle_anim_ground.c:371). */
+function AnimTask_DigEndBounceMovementSetInvisible(task: _DgTask): void {
   const spriteId = _dgAttackerSpriteId();
   const sp = _dgRt().gSprites?.get(spriteId);
   if (sp) {
@@ -550,13 +550,13 @@ function _DigEndBounceMovementSetInvisible(task: _DgTask): void {
 /** 1:1 `AnimTask_DigUpMovement` (battle_anim_ground.c.c:386) — dispatcher + appel immédiat. */
 function AnimTask_DigUpMovement(task: _DgTask): void {
   const args = _dgItf().getArgs?.() ?? [0];
-  if (args[0] === 0) task.func = _DigSetVisibleUnderground;
-  else task.func = _DigRiseUpFromHole;
+  if (args[0] === 0) task.func = AnimTask_DigSetVisibleUnderground;
+  else task.func = AnimTask_DigRiseUpFromHole;
   (task.func as (t: _DgTask) => void)(task);
 }
 
-/** 1:1 `AnimTask_DigSetVisibleUnderground` (battle_anim_ground.c.c:398). */
-function _DigSetVisibleUnderground(task: _DgTask): void {
+/** 1:1 `AnimTask_DigSetVisibleUnderground` (battle_anim_ground.c:398). */
+function AnimTask_DigSetVisibleUnderground(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
       task.data[10] = _dgAttackerSpriteId();
@@ -574,8 +574,8 @@ function _DigSetVisibleUnderground(task: _DgTask): void {
   }
 }
 
-/** 1:1 `AnimTask_DigRiseUpFromHole` (battle_anim_ground.c.c:417). */
-function _DigRiseUpFromHole(task: _DgTask): void {
+/** 1:1 `AnimTask_DigRiseUpFromHole` (battle_anim_ground.c:417). */
+function AnimTask_DigRiseUpFromHole(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
       task.data[10] = _dgAttackerSpriteId();
