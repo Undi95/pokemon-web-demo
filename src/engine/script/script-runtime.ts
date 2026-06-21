@@ -829,4 +829,7 @@ export function setDoCoordEventWeatherHook(fn: (coordEventWeather: string | numb
   restore: ScriptContext_Restore,
   init: ScriptContext_Init,
   enable: ScriptContext_Enable,
+  // Audit opcodes (campagne 1:1) : invoquer un handler en isolation pour vérif
+  // déterministe d'un opcode (ex. gotostd_if condition, random RNG).
+  getOpcodeHandler,
 };
