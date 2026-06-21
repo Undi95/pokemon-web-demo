@@ -12,7 +12,7 @@
 import * as _dg from './decomp-globals';
 import * as _cb from '../boot/copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
-import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
+import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry, ResetSpriteData as _bridgeResetSpriteData } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
 } from '../../game/play_time';
@@ -148,7 +148,7 @@ const symbolsToExpose: Record<string, unknown> = {
   UpdatePaletteFade: dg.UpdatePaletteFade,
   ResetPaletteFade: dg.ResetPaletteFade,
   ResetTasks: dg.ResetTasks,
-  ResetSpriteData: () => dg.getRuntime().ResetSpriteData(),
+  ResetSpriteData: _bridgeResetSpriteData,
   FreeAllSpritePalettes: dg.FreeAllSpritePalettes,
   ScanlineEffect_Stop: dg.ScanlineEffect_Stop,
   EnableInterrupts: dg.EnableInterrupts,

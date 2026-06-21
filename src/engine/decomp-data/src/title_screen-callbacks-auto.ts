@@ -10,6 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import { ResetSpriteData } from '../../../game/sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -380,7 +381,7 @@ export const CB2_InitTitleScreen: CB2Callback = (rt) => {
           LZ77UnCompVram(gTitleScreenCloudsTilemap, (BG_SCREEN_ADDR(27)));
           ScanlineEffect_Stop();
           ResetTasks();
-          rt.ResetSpriteData();
+          ResetSpriteData(rt);
           FreeAllSpritePalettes();
           (globalThis as any).gReservedSpritePaletteCount = 9;
           LoadCompressedSpriteSheet(sSpriteSheet_EmeraldVersion);

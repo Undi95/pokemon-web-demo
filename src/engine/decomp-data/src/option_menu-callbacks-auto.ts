@@ -10,6 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import { ResetSpriteData } from '../../../game/sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -262,7 +263,7 @@ export const CB2_InitOptionMenu: CB2Callback = (rt) => {
           ResetPaletteFade();
           ScanlineEffect_Stop();
           ResetTasks();
-          rt.ResetSpriteData();
+          ResetSpriteData(rt);
           gMain.state++;
           break;
       case 3:

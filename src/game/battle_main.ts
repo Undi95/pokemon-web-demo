@@ -67,7 +67,7 @@ import {
 } from '../engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
-import { FreeAllSpritePalettes } from './sprite';
+import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl } from './sprite';
 import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   SCANLINE_EFFECT_DMACNT_16BIT,
@@ -691,7 +691,7 @@ function _LoadBattleTextboxAndBackground(env: number): void {
   void loadBattleTextboxAndBackground1to1(env);
 }
 /** 1:1 décomp `ResetSpriteData()` (sprite.c:294). */
-function _ResetSpriteData(): void { getRuntime()?.ResetSpriteData(); }
+function _ResetSpriteData(): void { _ResetSpriteDataImpl(getRuntime()); }
 /** 1:1 décomp `ResetTasks()`. */
 function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
 /** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c). */
@@ -3558,18 +3558,15 @@ import { IsShinyOtIdPersonality } from './include/pokemon';
  *  sprite tracking. Notre runtime gère via runtime.gSprites Map ; ici on
  *  notify le reset. */
 function ResetSpriteData(): void {
-  const r = getRuntime();
   // 1:1 décomp `ResetSpriteData()` (sprite.c:294) = ResetOamRange(0,128) +
   // ResetAllSprites + ClearSpriteCopyRequests + ResetAffineAnimData +
-  // FreeSpriteTileRanges. Le runtime l'implémente (rt.ResetSpriteData, = ce
-  // qu'appelle decomp-bridge.ResetSpriteData). AVANT : stub `gSprites.fill(undefined)`
-  // vidait la Map mais PAS l'OAM ni les tiles → les sprites de combat (mon +
-  // healthbox) gardaient leurs entrées OAM et RENDAIENT ENCORE dans l'OW après le
-  // retour (user-flag : sprites + palette combat qui leakent). Fix = déléguer au
-  // VRAI reset (clear OAM + tiles + sprites). Le re-spawn OW
-  // (_restoreOverworldFromMenu) re-crée ensuite les sprites OW = 1:1.
-  (r as { ResetSpriteData?: () => void }).ResetSpriteData?.();
-  if (r.gSprites) r.gSprites.fill(undefined);
+  // FreeSpriteTileRanges. L'impl 1:1 vit dans game/sprite.ts (= ce qu'appelle
+  // aussi decomp-bridge.ResetSpriteData). Essentiel au retour de combat : clear
+  // OAM + tiles + sprites, sinon les sprites de combat (mon + healthbox) gardent
+  // leurs entrées OAM et RENDENT ENCORE dans l'OW (user-flag : sprites + palette
+  // combat qui leakent). Le re-spawn OW (_restoreOverworldFromMenu) re-crée
+  // ensuite les sprites OW = 1:1.
+  _ResetSpriteDataImpl(getRuntime());
 }
 
 /** 1:1 décomp `FreeAllWindowBuffers()` (window.c). Phase port : libère les

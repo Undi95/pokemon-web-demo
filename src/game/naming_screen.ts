@@ -20,7 +20,7 @@
  * auto-callbacks y accèdent.
  */
 import { OBJ_PLTT_ID, MAX_SPRITES } from '../engine/system/decomp-runtime';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from './sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData } from './sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
@@ -784,7 +784,7 @@ function CB2_LoadNamingScreen(): void {
     case 3:
       // 1:1 STRICT décomp ResetSpriteData + FreeAllSpritePalettes au boot
       // d'écran (= clear arrays primary + bitmap). Source UNIQUE.
-      rt.ResetSpriteData();
+      ResetSpriteData(rt);
       FreeAllSpritePalettes();
       _assetsLoaded = false;  // force reload (= fresh slot/tile assignments)
       clearAllSubspriteTables();

@@ -25,7 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../../game/sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData } from '../../game/sprite';
 import { GetWindowFrameTilesPal } from '../../game/text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {
@@ -1120,7 +1120,7 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   LoadPalette('sMainMenuTextPal', BG_PLTT_ID(15), PLTT_SIZE_4BPP);
   ScanlineEffect_Stop();
   ResetTasks();
-  rt.ResetSpriteData();
+  ResetSpriteData(rt);
   FreeAllSpritePalettes();
   // 1:1 décomp main_menu.c:585-587 — fade IN (startY=0x10 → endY=0).
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0x10, 0,

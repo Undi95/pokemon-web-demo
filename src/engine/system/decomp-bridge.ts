@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag } from '../../game/sprite';
+import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData } from '../../game/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -3109,9 +3109,10 @@ export function AllocOamMatrix(): number {
   return _getRT().AllocOamMatrix();
 }
 
-/** 1:1 décomp `src/sprite.c ResetSpriteData()`. */
+/** 1:1 décomp `src/sprite.c ResetSpriteData()`. Appelle directement l'impl free-fn
+ *  de game/sprite.ts (chantier C : la méthode harness `rt.ResetSpriteData` est retirée). */
 export function ResetSpriteData(): void {
-  _getRT().ResetSpriteData();
+  _ResetSpriteData(_getRT());
 }
 
 /** 1:1 décomp `src/main.c BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */

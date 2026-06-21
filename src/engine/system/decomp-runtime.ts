@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, ResetSpriteData as _ResetSpriteData_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, DestroySprite as _DestroySprite_1to1, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -1759,19 +1759,6 @@ export class DecompRuntime {
     this.nextSpriteId = 0;
     // Reset l'alloc des matrices OAM (état unique = bitmap, ex-`_matrixUsed.clear()`, E2.3c).
     (globalThis as Record<string, unknown>).gOamMatrixAllocBitmap = 0;
-  }
-
-  /** ResetSpriteData : 1:1 décomp src/sprite.c:294 — ResetOamRange + ResetAllSprites
-   *  + ClearSpriteCopyRequests + ResetAffineAnimData + **FreeSpriteTileRanges**.
-   *  Le free des tile ranges est CRITIQUE entre 2 scènes pour que les tiles
-   *  Scene 1 (DROPS_LOGO/SPARKLE/FLYGON_SILHOUETTE) soient libérées avant le
-   *  load Scene 2 (BRENDAN/MAY/BICYCLE/FLYGON_LATIAS/VOLBEAT/TORCHIC/MANECTRIC).
-   *  Sans ça : 1024+ tiles d'OBJ VRAM overflow → Manectric tile_id 1056 hors
-   *  range → frame 4 transparent → clignotement. */
-  /** Délègue à la fonction sprite.c 1:1 extraite vers game/sprite.ts (E2.3b).
-   *  Méthode conservée transitionnellement (13 call-sites `rt.ResetSpriteData`). */
-  ResetSpriteData(): void {
-    _ResetSpriteData_1to1(this);
   }
 
   /** IntroResetGpuRegs : reset DISPCNT et BG/blend regs (mimique décomp intro.c). */

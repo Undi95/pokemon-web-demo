@@ -24,6 +24,7 @@ import {
   INTR_FLAG_VBLANK,
 } from '../system/decomp-globals';
 import { MainCB2_EndIntro, Task_Scene1_Load } from '../decomp-data/src/intro-callbacks-auto';
+import { ResetSpriteData } from '../../game/sprite';
 import type { CB2Callback } from '../system/decomp-runtime';
 
 const RGB_WHITE = 0x7FFF;
@@ -77,7 +78,7 @@ export function SetUpCopyrightScreen(): number {
       LoadCopyrightGraphics(0, 0x3800, 0);
       ScanlineEffect_Stop();
       ResetTasks();
-      runtime.ResetSpriteData();
+      ResetSpriteData(runtime);
       FreeAllSpritePalettes();
       runtime.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_WHITEALPHA');
       runtime.SetGpuReg(REG_OFFSET_BG0CNT,
