@@ -77,11 +77,17 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
       (1:1, aucun call-site ne teste le retour). BONUS 1:1 : `FreeOamMatrix` rajoute le reset identité au release
       (sprite.c:1460) qui manquait. A/B affine : send-out (chemin méthode) + lunge battle_anim_mons (chemin free fn)
       rendus corrects, `slot0free=true`, 57.3fps.
-    - ⏳ **E2.3d+** : `CreateSpriteAtOam`→`CreateSprite`/`CreateSpriteAt` 1:1 (lit `struct SpriteTemplate`, le PLUS
-      gros + pas 1:1 actuellement), `AnimateSprites`, `BuildOamBuffer` ; puis migrer les call-sites `rt.DestroySprite`
-      (102) / `rt.ResetSpriteData` (13) et retirer les délégués. ⚠️ chaque extraction érode l'encapsulation
-      DecompRuntime (champs→public) — c'est la direction décomp (état en globals), mais le vrai 1:1 final = globals
-      module-level (gros refactor séparé).
+    - ✅ **E2.3d** (`eb182de2`) : `CreateSpriteAtOam` (cœur de création, 160 l, 112 call-sites — crée TOUS les
+      sprites) extrait du harness → `CreateSpriteAtOam(rt, cfg)` dans game/sprite.ts ; méthode = délégué (signature
+      via `Parameters<typeof …>`). Relocation pure (corps inchangé), `CalcCenterToCornerVec` local vérifié identique,
+      `_oamExhaustedWarned`→accessible. A/B large OW+combat+UI, 58.5fps. ⚠️ NB : reste une primitive M3 (cfg, pas
+      `struct SpriteTemplate`). **Le vrai 1:1 `CreateSprite(template)→CreateSpriteAt`** = chantier SÉPARÉ : notre
+      `CreateSprite` (decomp-bridge) est un dispatcher 3-voies (images inline / tileTag / nom) → l'unifier exige de
+      fusionner les 3 modèles de chargement gfx. Gros, pas un lot mécanique.
+    - ⏳ **E2.3e+** : `AnimateSprites`, `BuildOamBuffer` (extraction méthodes restantes) ; migrer les call-sites
+      `rt.{DestroySprite,ResetSpriteData,CreateSpriteAtOam,AllocOamMatrix,…}` → free fns + retirer les délégués ;
+      puis le chantier `CreateSprite` 1:1 (fusion gfx-loading). ⚠️ chaque extraction érode l'encapsulation
+      DecompRuntime (champs→public) = direction décomp (état en globals) ; le vrai 1:1 final = globals module-level.
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
 directs 1:1 (`gSprites[i]`, `gBattle_BG1_X`…) dans les battle-anims + field effects. A/B par famille (anim par anim).
