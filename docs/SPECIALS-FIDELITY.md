@@ -34,7 +34,7 @@
 ## 🔴 TOP LEVIER — stubs/divergences de CŒUR (backlog priorisé par usage)
 | # | special | usages | verdict | impact |
 |---|---|---|---|---|
-| 1 | **`DrawWholeMapView`** | **78** | 🔴 **STUB = BUG confirmé** | voir encadré ↓ — **fix trivial à fort impact** |
+| 1 | **`DrawWholeMapView`** | **78** | ✅ **CORRIGÉ `c6fea625`** | était no-op → câblé sur le vrai `DrawWholeMapView()` ; A/B réel OK |
 | 2 | `PlayerFaceTrainerAfterBattle` | 60 | STUB | joueur ne pivote pas vers le dresseur post-combat (cosmétique, 60 scripts) |
 | 3 | `ShakeCamera`+`SpawnCameraObject`+`RemoveCameraObject` | 24+15+10 | STUB | trio caméra cinématique muet (séismes, légendaires, cinématiques) — chantier caméra |
 | 4 | `ChoosePartyMon` | 10 | STUB (`return 0`) | choix de mon → toujours slot 0 (mauvais Pokémon possible) |
@@ -43,7 +43,7 @@
 | 7 | `PlayTrainerEncounterMusic` | 6 | STUB | pas de jingle de rencontre dresseur (cosmétique audio) |
 | 8 | `MauvilleGymPressSwitch` | 5 | STUB | puzzle d'interrupteurs gym Mauville ne change pas les métatiles (couplé à #1) |
 
-> ### 🐛 `DrawWholeMapView` (78 usages, #1) — BUG CONFIRMÉ + fix trivial
+> ### ✅ `DrawWholeMapView` (78 usages, #1) — CORRIGÉ (`c6fea625`)
 > - Le special (`specials-registry.ts:654`) est un **no-op**, justifié par un commentaire FAUX
 >   (« notre setmetatile est sync »).
 > - **Vérifié** : `MapGridSetMetatileIdAt` (`fieldmap.ts:1789`) écrit **UNIQUEMENT la donnée de grille**
@@ -51,10 +51,10 @@
 >   `DrawWholeMapView` pour repeindre).
 > - **Conséquence** : tout script `setmetatile … ; special DrawWholeMapView` (gym switches, portes
 >   cachées, TV on/off, décors) → **changement INVISIBLE jusqu'au prochain scroll caméra**.
-> - **Fix 1:1** : câbler le special sur le **`DrawWholeMapView()` qui EXISTE DÉJÀ** (`game/field_camera.ts:520`,
->   `DrawWholeMapViewInternal` + `copyBGToVRAM=true`) au lieu du no-op. + corriger le commentaire mensonger.
-> - **A/B requis** (rendu) : `setmetatile` un tile visible → `special DrawWholeMapView` → le tile apparaît
->   (avant : invisible jusqu'au scroll). À faire avant de clore.
+> - **Fix appliqué (`c6fea625`)** : câblé sur le **`DrawWholeMapView()` qui existait déjà** (`game/field_camera.ts:520`,
+>   `DrawWholeMapViewInternal` + `copyBGToVRAM=true`) + commentaire mensonger corrigé.
+> - **A/B réel FAIT** (Mossdeep) : bloc 8×7 de métatiles changé via `setmetatile` → écran INCHANGÉ (bug
+>   reproduit) → `special DrawWholeMapView` → le bloc apparaît. ✅ Fix confirmé visuellement.
 
 ## ✅ Cœur VÉRIFIÉ fidèle
 `HealPlayerParty`, `GetBattleOutcome`, `CalculatePlayerPartyCount`, `ShouldTryRematchBattle`,
