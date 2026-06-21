@@ -63,6 +63,7 @@ import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { SetOamMatrix } from '../system/decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
 import type { DecompTask, DecompSprite, DecompRuntime } from '../system/decomp-runtime';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 
 // ─── Constants 1:1 décomp (= wallclock.c:54-72, wallclock-data.ts) ─────────
 
@@ -942,7 +943,9 @@ function _freeWallClock(): void {
   // overwrite les NPCs OAM → ItemBall + Rival invisible visuellement post-close.
   const preOpenSet = new Set(_state.preOpenSpriteIds);
   const toDestroy: number[] = [];
-  for (const [k, s] of rt.gSprites) {
+  for (let k = 0; k < MAX_SPRITES; k++) {
+    const s = rt.gSprites.get(k);
+    if (s === undefined) continue;
     if (!s.inUse) continue;
     if (preOpenSet.has(k)) continue;  // était actif avant → préserver
     toDestroy.push(k);
@@ -1018,8 +1021,9 @@ export function OpenWallClock(mode: Mode): void {
   // C5 fix : snapshot des sprites actifs AVANT WallClock open. Au close,
   // tous sprites créés depuis sont destroyed (= cleanup leak OAM zombies).
   _state.preOpenSpriteIds = [];
-  for (const [k, s] of rt.gSprites) {
-    if (s.inUse) _state.preOpenSpriteIds.push(k);
+  for (let k = 0; k < MAX_SPRITES; k++) {
+    const s = rt.gSprites.get(k);
+    if (s !== undefined && s.inUse) _state.preOpenSpriteIds.push(k);
   }
   // 1:1 décomp `SetMainCallback2(CB2_StartWallClock)` pattern : savedCallback
   // pointe vers le return-to-field handler qui ré-init les BG/palettes/sprites

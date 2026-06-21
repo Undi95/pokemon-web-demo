@@ -85,6 +85,7 @@
  * via la référence passée à installEngineDevtools(rt, opts).
  */
 import type { DecompRuntime } from '../system/decomp-runtime';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 
 interface SaveState {
   vram: Uint8Array;
@@ -180,7 +181,14 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       bgConfigs: [0, 1, 2, 3].map(i => ({ ...rt.gba.bg(i as 0 | 1 | 2 | 3).config })),
       blend: { ...rt.gba.blend },
       windows: JSON.parse(JSON.stringify(rt.gba.windows)),
-      gSprites: Array.from(rt.gSprites.entries()).map(([id, s]) => [id, { ...s, data: Array.from(s.data || []) }]),
+      gSprites: ((): [number, Record<string, unknown>][] => {
+        const o: [number, Record<string, unknown>][] = [];
+        for (let i = 0; i < MAX_SPRITES; i++) {
+          const s = rt.gSprites.get(i);
+          if (s !== undefined) o.push([i, { ...s, data: Array.from(s.data || []) }]);
+        }
+        return o;
+      })(),
       gTasks: Array.from(rt.gTasks.entries()).map(([id, t]) => [id, { taskId: t.taskId, data: Array.from(t.data || []), func: t.func }]),
       gPaletteFade: { ...rt.gPaletteFade },
       gMain: { callback2: rt.gMain.callback2, state: rt.gMain.state, heldKeys: rt.gMain.heldKeys, newKeys: rt.gMain.newKeys },
@@ -410,7 +418,9 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   dev.sprites = (): unknown => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out: any[] = [];
-    for (const [id, s] of rt.gSprites.entries()) {
+    for (let id = 0; id < MAX_SPRITES; id++) {
+      const s = rt.gSprites.get(id);
+      if (s === undefined) continue;
       const oam = rt.gba.oam[s.oamIndex];
       out.push({
         id, x: s.x, y: s.y, x2: s.x2, y2: s.y2, invisible: s.invisible,
@@ -442,7 +452,9 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   dev.find = (sub = ''): unknown => {
     const ql = sub.toLowerCase();
     const out: unknown[] = [];
-    for (const [id, s] of rt.gSprites.entries()) {
+    for (let id = 0; id < MAX_SPRITES; id++) {
+      const s = rt.gSprites.get(id);
+      if (s === undefined) continue;
       if (ql && !(s.callback?.name || '').toLowerCase().includes(ql)) continue;
       out.push(_spriteRow(id, s));
     }
@@ -472,7 +484,9 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       // attend que la boucle Phaser ait consommé le step (= 1 frame logique avancée)
       while (rt.stepBudget > 0 && guard++ < 250) await new Promise(r => setTimeout(r, 4));
       const rows: unknown[] = [];
-      for (const [id, s] of rt.gSprites.entries()) {
+      for (let id = 0; id < MAX_SPRITES; id++) {
+        const s = rt.gSprites.get(id);
+        if (s === undefined) continue;
         if (pick(id, s)) rows.push(_spriteRow(id, s));
       }
       timeline.push({ f: rt.gIntroFrameCounter, sprites: rows });
@@ -499,7 +513,11 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     frame: rt.gIntroFrameCounter,
     cb2: rt.gMain.callback2?.name || 'anon',
     taskCount: rt.gTasks.size,
-    spriteCount: Array.from(rt.gSprites.values()).filter(s => !s.invisible).length,
+    spriteCount: ((): number => {
+      let n = 0;
+      for (let i = 0; i < MAX_SPRITES; i++) { const s = rt.gSprites.get(i); if (s !== undefined && !s.invisible) n++; }
+      return n;
+    })(),
     bg2: rt.gba.bg(2).config,
     blend: { mode: rt.gba.blend.mode, br: rt.gba.blend.brightness },
     paletteFade: { active: rt.gPaletteFade.active, current: rt.gPaletteFade.currentFrame, total: rt.gPaletteFade.totalFrames },

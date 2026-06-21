@@ -44,6 +44,7 @@ import {
 import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../game/field_weather_effect';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../system/sprite';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -185,7 +186,9 @@ const fx = {
     const r = rt(); if (!r) return [];
     const owned = objectEventSpriteIds();
     const out: any[] = [];
-    for (const s of r.gSprites.values()) {
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const s = r.gSprites.get(i);
+      if (s === undefined) continue;
       if (owned.has(s.spriteId)) continue;
       const oam = r.gba.oam[s.oamIndex];
       out.push({

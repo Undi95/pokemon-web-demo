@@ -51,6 +51,7 @@ import {
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
 } from '../engine/system/decomp-globals';
 import { Random } from '../engine/system/random';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 // Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
 import * as _saveBlockNs from '../engine/save/save-block-state';
 import {
@@ -1045,7 +1046,9 @@ function DestroySprite(sprite: FaintSprite): void {
   // Wire vers runtime : trouve l'id du sprite et détruit PROPREMENT.
   const r = getRuntime();
   if (!r || !r.gSprites) return;
-  for (const [id, s] of r.gSprites.entries()) {
+  for (let id = 0; id < MAX_SPRITES; id++) {
+    const s = r.gSprites.get(id);
+    if (s === undefined) continue;
     if (s === sprite) {
       // ⚠️ BUG FANTÔME (user 2026-06-10, « le mon KO reste derrière les PV ») :
       // l'ancienne version faisait gSprites.delete() SANS cacher l'OAM → le sprite

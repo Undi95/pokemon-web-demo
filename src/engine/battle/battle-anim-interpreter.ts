@@ -47,6 +47,7 @@
 
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap } from '../system/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
@@ -526,7 +527,9 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
     const direct = (spriteOrId as { spriteId?: number }).spriteId;
     if (direct !== undefined && direct >= 0) spriteId = direct;
     else {
-      for (const [sid, sp] of rt.gSprites.entries()) {
+      for (let sid = 0; sid < MAX_SPRITES; sid++) {
+        const sp = rt.gSprites.get(sid);
+        if (sp === undefined) continue;
         if ((sp as unknown) === spriteOrId) { spriteId = sid; break; }
       }
     }
@@ -1079,7 +1082,9 @@ function _markLiveSpriteTiles(): void {
   const rt = getRuntime();
   const bmp = sSpriteTileAllocBitmap;
   if (!rt || !bmp) return;
-  for (const s of rt.gSprites.values()) {
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites.get(i);
+    if (s === undefined) continue;
     if (!s.inUse) continue;
     const oam = rt.gba.oam[s.oamIndex];
     if (!oam) continue;
@@ -2382,7 +2387,9 @@ export function tickAnimScript(): void {
       } | null;
       _restoreAnimPalettes(); // snapshot du Launch (Unfaded = alias Faded ici)
       if (rt?.gSprites) {
-        for (const sp of rt.gSprites.values()) {
+        for (let i = 0; i < MAX_SPRITES; i++) {
+          const sp = rt.gSprites.get(i);
+          if (sp === undefined) continue;
           const n = sp.callback?.name ?? '';
           if (sp.inUse && /HealthBox|MonFromBall|CallbackDummy/i.test(n)) sp.x2 = 0;
         }

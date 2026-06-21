@@ -44,6 +44,7 @@
  */
 
 import { getRuntime } from '../engine/system/decomp-globals';
+import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { Sin, Cos } from './trig';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
@@ -660,7 +661,9 @@ function _spriteIdOf(sprite: BallSprite): number {
   if (sprite.spriteId !== undefined) return sprite.spriteId;
   const rt = getRuntime();
   if (!rt?.gSprites) return -1;
-  for (const [id, sp] of rt.gSprites.entries()) {
+  for (let id = 0; id < MAX_SPRITES; id++) {
+    const sp = rt.gSprites.get(id);
+    if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) return id;
   }
   return -1;

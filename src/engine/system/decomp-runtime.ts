@@ -2659,7 +2659,14 @@ export class DecompRuntime {
 
   /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
   private runSpriteCallbacks(): void {
-    const snapshot = Array.from(this.gSprites.values());
+    // 1:1 décomp : itère les MAX_SPRITES slots. Snapshot des sprites présents au
+    // début (un callback peut en créer/détruire pendant la boucle) → comportement
+    // strictement inchangé vs l'ancien Array.from(.values()), mais via accès indexé.
+    const snapshot: DecompSprite[] = [];
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const s = this.gSprites.get(i);
+      if (s !== undefined) snapshot.push(s);
+    }
     for (const sprite of snapshot) {
       if (this.gSprites.has(sprite.spriteId) && sprite.inUse && sprite.callback) {
         sprite.callback(sprite, this);

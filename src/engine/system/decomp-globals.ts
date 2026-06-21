@@ -31,6 +31,7 @@ import {
   BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
   DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
   DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_ON,
+  MAX_SPRITES,
 } from './decomp-runtime';
 import { G_SINE_TABLE } from '../decomp-data/src/sine-table';
 import { SONG_ID_TO_NAME, getSongConfig } from '../decomp-data/src/song-table';
@@ -2023,8 +2024,9 @@ export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArr
   const childOamIndices: number[] = [];
   // Allocate OAM slots for each subsprite (skip slots used by sprites in use).
   const taken = new Set<number>();
-  for (const s of r.gSprites.values()) {
-    if (s.inUse) taken.add(s.oamIndex);
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = r.gSprites.get(i);
+    if (s !== undefined && s.inUse) taken.add(s.oamIndex);
   }
   for (const subs of _spriteSubsprites.values()) {
     for (const idx of subs.childOamIndices) taken.add(idx);

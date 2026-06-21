@@ -19,7 +19,7 @@
  *   - Type cmd : décomp utilise s16 type avec valeurs spéciales 32765 (LOOP), 32766 (JUMP),
  *     32767 (END). Notre extracteur a normalisé : terminator string 'END'/'LOOP'/'JUMP'.
  */
-import { DecompRuntime, type DecompSprite } from '../system/decomp-runtime';
+import { DecompRuntime, MAX_SPRITES, type DecompSprite } from '../system/decomp-runtime';
 import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../system/decomp-helpers';
 import {
   SPRITE_AFFINE_ANIM_TABLES, SPRITE_AFFINE_ANIMS,
@@ -354,7 +354,9 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
  *  couvrir les deux call patterns (= callbacks transcrits qui set oam
  *  uniquement, ET impl manuels qui set sprite.affineMode). */
 export function tickAllAffineAnims(rt: DecompRuntime): void {
-  for (const sprite of rt.gSprites.values()) {
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const sprite = rt.gSprites.get(i);
+    if (sprite === undefined) continue;
     if (!sprite.affineAnimsTableName) continue;
     const oam = rt.gba.oam[sprite.oamIndex];
     const effectiveAffineMode = (oam?.affineMode ?? 0) | sprite.affineMode;

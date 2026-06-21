@@ -27,6 +27,7 @@
  *   8. Scénarios        — refresh, combat sauvage / rival (refresh PUIS autoboot), move-anim.
  */
 import type { DecompRuntime } from '../system/decomp-runtime';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 import { getCurrentSongId, getRuntime } from '../system/decomp-globals';
 
 // ─── Accès runtime (live, jamais via import dynamique) ────────────────────────
@@ -230,7 +231,8 @@ function renderSprites(): void {
   if (!r) { host.innerHTML = '<div class="dvt-na">runtime indisponible</div>'; return; }
 
   const rows: string[] = [];
-  const ids = [...r.gSprites.keys()].sort((a, b) => a - b);
+  const ids: number[] = [];
+  for (let i = 0; i < MAX_SPRITES; i++) if (r.gSprites.get(i) !== undefined) ids.push(i);
   let shown = 0;
   for (const id of ids) {
     const s = r.gSprites.get(id);

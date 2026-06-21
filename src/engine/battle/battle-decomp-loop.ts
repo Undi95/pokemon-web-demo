@@ -22,6 +22,7 @@
  */
 
 import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../system/decomp-globals';
+import { MAX_SPRITES } from '../system/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
@@ -420,7 +421,9 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // >= reserve 0x140) qui n'etait pas visible avant — le test reste fiable.
     const ds = (rt as { DestroySprite?: (id: number) => void } | undefined)?.DestroySprite;
     if (ds && rt?.gSprites) {
-      for (const [id, sp] of rt.gSprites.entries()) {
+      for (let id = 0; id < MAX_SPRITES; id++) {
+        const sp = rt.gSprites.get(id);
+        if (sp === undefined) continue;
         const oamIdx = (sp as { oamIndex?: number }).oamIndex;
         const o = oamIdx !== undefined ? rt.gba?.oam?.[oamIdx] : undefined;
         if (o?.visible && !visAvant.has(oamIdx as number) && (o.tileId ?? 0) >= 0x140) {
