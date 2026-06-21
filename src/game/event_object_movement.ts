@@ -1189,7 +1189,7 @@ export function resetObjectEventAllocations(): void {
  *  proprement chaque sprite avant le reset.
  *
  *  À appeler AVANT resetObjectEventAllocations + SpawnObjectEventsOnMap. */
-export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: number; inUse: boolean }>; gba: { oam: Array<{ visible: boolean }> } }): void {
+export function destroyAllNpcSprites(rt: { gSprites: { get(slot: number): { oamIndex: number; inUse: boolean } | undefined }; gba: { oam: Array<{ visible: boolean }> } }): void {
   for (const npc of gObjectEvents) {
     // [M3] Ne PAS détruire le sprite du joueur : son slot le POSSÈDE désormais
     // (slot.spriteId = gPlayerAvatar.spriteId, unifié), mais le sprite est (re)créé

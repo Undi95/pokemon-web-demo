@@ -521,6 +521,56 @@ export interface DecompTask {
   followupFunc: ((task: DecompTask) => void) | null;
 }
 
+/** 1:1 décomp `MAX_SPRITES` (sprite.h) — `gSprites` est un tableau FIXE de 64. */
+export const MAX_SPRITES = 64;
+
+/**
+ * SpriteArray — stockage 1:1 de `struct Sprite gSprites[MAX_SPRITES]` (sprite.c).
+ *
+ * Backé par un ARRAY FIXE indexé par SLOT 0-63 (= le vrai modèle décomp : CreateSprite
+ * scanne le 1er slot `inUse==FALSE` et réutilise les détruits). Implémente l'API
+ * `Map<number, DecompSprite>` à titre **TRANSITIONNEL** pour rester un drop-in des
+ * call-sites actuels (`.get`/`.set`/`.delete`/`.values`/itération) pendant la
+ * réconciliation E1 du moteur → on migrera ensuite vers l'accès indexé `gSprites[i]`
+ * (1:1) puis on retirera la façade Map. Clé Map = slot = `sprite.spriteId`.
+ * Voir docs/ENGINE-1TO1-RECONCILIATION-PLAN.md (Phase E1, keystone).
+ */
+export class SpriteArray {
+  /** Tableau fixe 64 slots (1:1 `gSprites[MAX_SPRITES]`). `undefined` = slot libre. */
+  private readonly a: (DecompSprite | undefined)[] = new Array(MAX_SPRITES);
+
+  get(slot: number): DecompSprite | undefined { return this.a[slot]; }
+  set(slot: number, sprite: DecompSprite): this { this.a[slot] = sprite; return this; }
+  has(slot: number): boolean { return this.a[slot] !== undefined; }
+  delete(slot: number): boolean {
+    if (this.a[slot] !== undefined) { this.a[slot] = undefined; return true; }
+    return false;
+  }
+  clear(): void { for (let i = 0; i < MAX_SPRITES; i++) this.a[i] = undefined; }
+  get size(): number {
+    let n = 0;
+    for (let i = 0; i < MAX_SPRITES; i++) if (this.a[i] !== undefined) n++;
+    return n;
+  }
+  forEach(cb: (sprite: DecompSprite, slot: number, map: SpriteArray) => void, thisArg?: unknown): void {
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const s = this.a[i];
+      if (s !== undefined) cb.call(thisArg, s, i, this);
+    }
+  }
+  *entries() {
+    for (let i = 0; i < MAX_SPRITES; i++) { const s = this.a[i]; if (s !== undefined) yield [i, s] as [number, DecompSprite]; }
+  }
+  *keys() {
+    for (let i = 0; i < MAX_SPRITES; i++) if (this.a[i] !== undefined) yield i;
+  }
+  *values() {
+    for (let i = 0; i < MAX_SPRITES; i++) { const s = this.a[i]; if (s !== undefined) yield s; }
+  }
+  [Symbol.iterator]() { return this.entries(); }
+  readonly [Symbol.toStringTag] = 'Map';
+}
+
 /**
  * Runtime décomp principal. Wrap l'engine GBA + helpers C.
  *
@@ -548,8 +598,9 @@ export class DecompRuntime {
   gPaletteFade = new PaletteFade();
   /** 1:1 décomp `gTasks[]` array. Notre version : Map keyed by taskId. */
   gTasks = new Map<number, DecompTask>();
-  /** 1:1 décomp `gSprites[]` array. */
-  gSprites = new Map<number, DecompSprite>();
+  /** 1:1 décomp `struct Sprite gSprites[MAX_SPRITES]` — tableau fixe 64 slots
+   *  (façade Map transitionnelle pendant la réconciliation E1, cf. SpriteArray). */
+  gSprites = new SpriteArray();
   /** 1:1 décomp `gSpriteCoordOffsetX/Y` (EWRAM, sprite.c:289-290). Offset caméra
    *  ajouté par `UpdateOamCoords` aux sprites `coordOffsetEnabled` (= overworld).
    *  Écrit chaque frame par `UpdateCameraPanning` (field-camera.ts), lu par
@@ -1432,8 +1483,9 @@ export class DecompRuntime {
     // On track les slots taken par les sprites alive et on alloue un slot
     // qui n'apparaît pas dans cet ensemble.
     const takenSlots = new Set<number>();
-    for (const s of this.gSprites.values()) {
-      if (s.inUse) takenSlots.add(s.oamIndex);
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const s = this.gSprites.get(i);
+      if (s !== undefined && s.inUse) takenSlots.add(s.oamIndex);
     }
     // Session 94 fix : subsprite child OAM slots are ALSO taken — a sprite
     // with a SetSubspriteTables installed allocates N child OAM indices that
@@ -2362,8 +2414,9 @@ export class DecompRuntime {
     // Les sprites legacy (= anims === null) sont skip par AnimateSprite (=
     // early-return interne) et restent driven par le path SPRITE_ANIMS plus
     // bas (= legacy state machine via spriteAnimStates).
-    for (const sprite of this.gSprites.values()) {
-      if (!sprite.inUse) continue;
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const sprite = this.gSprites.get(i);
+      if (sprite === undefined || !sprite.inUse) continue;
       if (sprite.anims === null) continue;  // skip legacy path
       _AnimateSprite_1to1(this, sprite as never);
     }
@@ -2634,8 +2687,11 @@ export class DecompRuntime {
    *  les conserve sur `oam.affineMode` côté gba. Pour respecter LES DEUX call
    *  patterns, on prend le OR : si l'un des deux est non-zero, on prend ça. */
   private syncSpritesToOam(): void {
-    for (const sprite of this.gSprites.values()) {
-      if (!sprite.inUse) continue;
+    // 1:1 décomp : itère les MAX_SPRITES slots fixes (boucle indexée = pas de générateur,
+    // hot-path per-frame). `gSprites.get(i)` = accès array direct via la façade SpriteArray.
+    for (let i = 0; i < MAX_SPRITES; i++) {
+      const sprite = this.gSprites.get(i);
+      if (sprite === undefined || !sprite.inUse) continue;
       const oam = this.gba.oam[sprite.oamIndex];
       // Keep signed coordinates (no & mask) so sprites with negative oam.y / oam.x
       // are correctly handled by the renderer (e.g. water drops starting at y=-14
