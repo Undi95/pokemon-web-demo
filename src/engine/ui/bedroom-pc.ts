@@ -1879,10 +1879,8 @@ function _mailboxOpenList(): void {
   DrawStdFrameWithCustomTileAndPalette(
     sPCTitleWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
   );
-  sPCMessageWindowId = AddWindow(WIN_PC_MESSAGE);
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
+  // Boîte message ("Pas de LETTRE ici.") créée plus bas, UNIQUEMENT si vide
+  // (1:1 décomp : avec du courrier = titre + liste seuls, aucune boîte message).
   sPCListWindowId = AddWindow(WIN_PC_LIST);
   DrawStdFrameWithCustomTileAndPalette(
     sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
@@ -1920,14 +1918,21 @@ function _mailboxOpenList(): void {
     fontId: 7, cursorKind: 0,
   };
   sPCListTaskId = ListMenuInit(template, 0, 0);
-  // Description = "Aucun MAIL." (= décomp gText_NoMailHere) ou neutre.
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
-  AddTextPrinterParameterized3(
-    sPCMessageWindowId, FONT_NORMAL, 0, 1,
-    [1, 2, 3], TEXT_SKIP_DRAW, getString('gText_NoMailHere'),
-  );
+  // 1:1 décomp `PlayerPC_Mailbox` (player_pc.c:683-700) : "Pas de LETTRE ici."
+  // UNIQUEMENT si la boîte est vide (count == 0). Avec du courrier, le décomp
+  // affiche le menu mailbox (titre + liste) SANS boîte message → l'ancien code
+  // l'imprimait inconditionnellement = texte faux ("pas de lettre" alors qu'il
+  // y en a une). On ne crée la boîte que dans le cas vide.
+  if (GetMailboxMailCount() === 0) {
+    sPCMessageWindowId = AddWindow(WIN_PC_MESSAGE);
+    DrawStdFrameWithCustomTileAndPalette(
+      sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+    );
+    AddTextPrinterParameterized3(
+      sPCMessageWindowId, FONT_NORMAL, 0, 1,
+      [1, 2, 3], TEXT_SKIP_DRAW, getString('gText_NoMailHere'),
+    );
+  }
 }
 
 /** Index du mail sélectionné dans gSaveBlock1Ptr.mail (PARTY_SIZE..MAIL_COUNT).
@@ -1949,11 +1954,20 @@ function _tickMailboxList(_newKeys: number): void {
   //   → DisplayItemMessageOnField + Mailbox_PrintMailOptions (= sub-menu 4 opts)
   PlaySE(Songs.SE_SELECT);
   sMailboxSelectedIdx = sel;
-  // Cleanup list cursor (= 1:1 DestroyListMenuTask).
+  // 1:1 décomp Mailbox_ProcessInput default branch (player_pc.c:726-729) :
+  //   MailboxMenu_RemoveWindow(MAILBOXWIN_TITLE) + RemoveWindow(MAILBOXWIN_LIST)
+  //   + DestroyListMenuTask. SANS le retrait des fenêtres de liste, le menu
+  //   d'options se dessine PAR-DESSUS la liste → texte superposé (redraw sale).
+  //   `_removePCWindows` efface title/message/list (les 3 fenêtres de la vue
+  //   liste ; icon/quantity/yesno sont -1) et flush le tilemap (ClearStdWindowAndFrame
+  //   true). Le dialogue « Que faire… » (sDialogueWindowId) et les options
+  //   (sSubWindowId) sont des fenêtres séparées, non touchées. `_mailboxCancel`
+  //   re-crée la liste via `_mailboxOpenList` → symétrique.
   if (sPCListTaskId >= 0) {
     DestroyListMenuTask(sPCListTaskId);
     sPCListTaskId = -1;
   }
+  _removePCWindows();
   // 1:1 Mailbox_PrintWhatToDoWithPlayerMailText : sticky msg "Que faire avec
   // le MAIL de <playerName>?" puis options menu.
   const playerName = gSaveBlock1Ptr.mail[sel].playerName || 'MAIL';
