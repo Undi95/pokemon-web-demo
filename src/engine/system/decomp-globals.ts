@@ -591,12 +591,49 @@ export const gAncientPowerRockSpriteTemplate = {
   callback: null,
 };
 
+// ─── PHASE E2.B — SpriteTemplate intro_credits_graphics 1:1 (player/bike/flygon) ──
+// OAM + anims (intro_credits_graphics.c:443-577) des 5 templates utilisés DANS L'INTRO
+// (scène 2 vélo : Brendan/May + leurs vélos + Flygon, cf. intro.c:1400-1408). Les templates
+// (avec callback) sont construits dans les CreateIntro*Sprite ci-dessous, callback résolu via
+// spriteCallbacks (anti-cycle ESM — même pattern que StartPokemonLogoShine). tags STRING =
+// clés catalogue. (sSpriteTemplate_MovingScenery = crédits-only, jamais créé dans l'intro
+// — cf. intro.c qui ne fige que gIntroCredits_MovingSceneryState — donc non converti ici.)
+
+// intro_credits_graphics.c:443 — sOamData_Player (64x64, 4bpp, priority 1) ; Brendan & May partagent
+const sOamData_Player = { shape: 0, size: 3, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 } as const;
+const sAnim_Player = [ ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(64, 8), ANIMCMD_FRAME(128, 8), ANIMCMD_FRAME(192, 8), ANIMCMD_JUMP(0) ];
+const sAnims_Player = [ sAnim_Player ];
+
+// intro_credits_graphics.c:487 — sOamData_Bicycle (64x32, 4bpp, priority 1)
+const sOamData_Bicycle = { shape: 1, size: 3, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 } as const;
+const sAnim_Bicycle = [ ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(32, 8), ANIMCMD_FRAME(64, 8), ANIMCMD_FRAME(96, 8), ANIMCMD_JUMP(0) ];
+const sAnims_Bicycle = [ sAnim_Bicycle ];
+
+// intro_credits_graphics.c:531 — sOamData_Flygon (64x64, 4bpp, priority 1) ; 2 anims (left/right half)
+const sOamData_Flygon = { shape: 0, size: 3, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 } as const;
+const sAnim_FlygonLeft = [ ANIMCMD_FRAME(0, 16), ANIMCMD_END ];
+const sAnim_FlygonRight = [ ANIMCMD_FRAME(64, 16), ANIMCMD_END ];
+const sAnims_Flygon = [ sAnim_FlygonLeft, sAnim_FlygonRight ];
+
 /** 1:1 décomp src/intro_credits_graphics.c:1118 — crée Brendan + bicycle sprites,
- *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position. */
+ *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position.
+ *  Phase E2.B : VRAIS SpriteTemplate (Brendan/BrendanBicycle) → CreateSprite game-form. */
 export function CreateIntroBrendanSprite(x: number, y: number): number {
   const r = rt();
-  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_Brendan', x, y, 2);
-  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_BrendanBicycle', x, y + 8, 3);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playerCb = ((globalThis as any).SpriteCB_Player ?? r.spriteCallbacks.get('SpriteCB_Player') ?? null) as ((sprite: unknown, rt: unknown) => void) | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bicycleCb = ((globalThis as any).SpriteCB_Bicycle ?? r.spriteCallbacks.get('SpriteCB_Bicycle') ?? null) as ((sprite: unknown, rt: unknown) => void) | null;
+  const sSpriteTemplate_Brendan = {
+    tileTag: 'TAG_BRENDAN', paletteTag: 'TAG_BRENDAN',
+    oam: sOamData_Player, anims: sAnims_Player, images: null, affineAnims: null, callback: playerCb,
+  };
+  const sSpriteTemplate_BrendanBicycle = {
+    tileTag: 'TAG_BICYCLE', paletteTag: 'TAG_BRENDAN',
+    oam: sOamData_Bicycle, anims: sAnims_Bicycle, images: null, affineAnims: null, callback: bicycleCb,
+  };
+  const playerSpriteId = _CreateSprite_game(r, sSpriteTemplate_Brendan, x, y, 2);
+  const bicycleSpriteId = _CreateSprite_game(r, sSpriteTemplate_BrendanBicycle, x, y + 8, 3);
   // 1:1 décomp : `gSprites[bicycleSpriteId].sPlayerSpriteId = playerSpriteId;`
   // `sPlayerSpriteId = data[0]` (alias bicycle data field)
   const bicycle = r.getSprite(bicycleSpriteId);
@@ -604,11 +641,24 @@ export function CreateIntroBrendanSprite(x: number, y: number): number {
   return playerSpriteId;
 }
 
-/** 1:1 décomp src/intro_credits_graphics.c:1126 — crée May + bicycle sprites. */
+/** 1:1 décomp src/intro_credits_graphics.c:1126 — crée May + bicycle sprites.
+ *  Phase E2.B : VRAIS SpriteTemplate (May/MayBicycle) → CreateSprite game-form. */
 export function CreateIntroMaySprite(x: number, y: number): number {
   const r = rt();
-  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_May', x, y, 2);
-  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_MayBicycle', x, y + 8, 3);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playerCb = ((globalThis as any).SpriteCB_Player ?? r.spriteCallbacks.get('SpriteCB_Player') ?? null) as ((sprite: unknown, rt: unknown) => void) | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bicycleCb = ((globalThis as any).SpriteCB_Bicycle ?? r.spriteCallbacks.get('SpriteCB_Bicycle') ?? null) as ((sprite: unknown, rt: unknown) => void) | null;
+  const sSpriteTemplate_May = {
+    tileTag: 'TAG_MAY', paletteTag: 'TAG_MAY',
+    oam: sOamData_Player, anims: sAnims_Player, images: null, affineAnims: null, callback: playerCb,
+  };
+  const sSpriteTemplate_MayBicycle = {
+    tileTag: 'TAG_BICYCLE', paletteTag: 'TAG_MAY',
+    oam: sOamData_Bicycle, anims: sAnims_Bicycle, images: null, affineAnims: null, callback: bicycleCb,
+  };
+  const playerSpriteId = _CreateSprite_game(r, sSpriteTemplate_May, x, y, 2);
+  const bicycleSpriteId = _CreateSprite_game(r, sSpriteTemplate_MayBicycle, x, y + 8, 3);
   const bicycle = r.getSprite(bicycleSpriteId);
   if (bicycle) bicycle.data[0] = playerSpriteId;
   return playerSpriteId;
@@ -619,8 +669,14 @@ export function CreateIntroMaySprite(x: number, y: number): number {
  *  utilise StartSpriteAnim 1 + SpriteCB_FlygonRightHalf pour sync avec left. */
 export function CreateIntroFlygonSprite(x: number, y: number): number {
   const r = rt();
-  const leftSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x - 32, y, 5);
-  const rightSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x + 32, y, 6);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const leftCb = ((globalThis as any).SpriteCB_FlygonLeftHalf ?? r.spriteCallbacks.get('SpriteCB_FlygonLeftHalf') ?? null) as ((sprite: unknown, rt: unknown) => void) | null;
+  const sSpriteTemplate_FlygonLatias = {
+    tileTag: 'TAG_FLYGON_LATIAS', paletteTag: 'TAG_FLYGON_LATIAS',
+    oam: sOamData_Flygon, anims: sAnims_Flygon, images: null, affineAnims: null, callback: leftCb,
+  };
+  const leftSpriteId = _CreateSprite_game(r, sSpriteTemplate_FlygonLatias, x - 32, y, 5);
+  const rightSpriteId = _CreateSprite_game(r, sSpriteTemplate_FlygonLatias, x + 32, y, 6);
   const right = r.getSprite(rightSpriteId);
   if (right) right.data[0] = leftSpriteId;  // sLeftSpriteId = data[0]
   r.StartSpriteAnim(rightSpriteId, 1);
