@@ -1607,14 +1607,16 @@ export function CreateSpriteAtOam(rt: DecompRuntime, cfg: {
   return { spriteId, oamIndex };
 }
 
-/** 1:1 décomp `struct SpriteTemplate` (include/sprite.h:96) — modèle UNIFIÉ consommé
- *  par `CreateSprite`. Champs déjà décodés M3 : `oam` = OamData (shape/size numériques),
- *  `images` présent ⟺ voie décomp `tileTag == TAG_NONE` (tiles inline → AllocSpriteTiles),
- *  sinon sheet chargée par `tileTag` (résolu via GetSpriteTileStartByTag). `affineAnims` =
- *  NOM de table M3 (sprite-affine-extras.ts), `paletteTag` résolu via IndexOfSpritePaletteTag. */
+/** 1:1 décomp `struct SpriteTemplate` (include/sprite.h:96) consommé par `CreateSprite`.
+ *  `tileTag`/`paletteTag` = TAGS (u16 décomp ; chez nous string pour les sheets chargées par
+ *  nom de tag — ex `'TAG_VERSION'` — ou number pour les tags runtime — ex ball). `oam` = OamData
+ *  décodée (shape/size numériques). `images` présent ⟺ voie `tileTag == TAG_NONE` (tiles inline).
+ *  `anims` = table AnimCmd[][] (1:1 `const union AnimCmd *const *`). `affineAnims` = NOM de table
+ *  M3 (sprite-affine-extras.ts). `callback` = la fonction. PHASE E2.B : c'est l'objet 1:1 décomp
+ *  vers lequel on converge les templates string-catalogue (cf. plan, solde la dette). */
 export interface SpriteTemplate {
-  tileTag?: number;
-  paletteTag?: number;
+  tileTag?: string | number;
+  paletteTag?: string | number;
   oam: {
     shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3;
     priority?: number; paletteNum?: number;
@@ -1680,16 +1682,18 @@ export function CreateSprite(rt: DecompRuntime, template: SpriteTemplate, x: num
   //    IndexOfSpritePaletteTag (sprite.c:577-586). = ex-bloc manuel voie tileTag du bridge. ──
   const oam = template.oam;
   const tileTag = template.tileTag;
-  if (typeof tileTag !== 'number') {
-    console.warn('[CreateSprite] template sans `images` ni `tileTag` numérique — voie par-nom (= CreateSpriteFromTemplate, non gérée ici)');
+  if (tileTag === undefined) {
+    console.warn('[CreateSprite] template sans `images` ni `tileTag` — voie inconnue');
     return -1;
   }
   const affineMode = oam.affineMode ?? 0;
+  // GetSpriteTileStartByTag/IndexOfSpritePaletteTag acceptent string|number (PHASE E2.B :
+  // les vrais SpriteTemplate ont des tags STRING ex 'TAG_VERSION' ; le combat garde des tags number).
   const tileStart = GetSpriteTileStartByTag(tileTag);
   if (tileStart === 0xFFFF) {
     console.warn(`[CreateSprite] sheet tag ${tileTag} non chargée (GetSpriteTileStartByTag=0xFFFF) — LoadXxxGfx requis avant CreateSprite`);
   }
-  const palSlot = (typeof template.paletteTag === 'number') ? IndexOfSpritePaletteTag(template.paletteTag) : 0xFF;
+  const palSlot = (template.paletteTag !== undefined) ? IndexOfSpritePaletteTag(template.paletteTag) : 0xFF;
   // Affine : alloue la matrice OAM AVANT la création pour que CalcCenterToCornerVec
   // (dans CreateSpriteAtOam) centre correctement le sprite en AFFINE_DOUBLE/NORMAL.
   let matrixNum = 0;

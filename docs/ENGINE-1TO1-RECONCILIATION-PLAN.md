@@ -161,11 +161,26 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
         - ⏳ **B3-template (CreateSpriteFromTemplate)** : NON un pass-through (corps réel = résolveur nom→catalogue
           `SPRITE_TEMPLATES`/`OAM_DATAS` + anim + callback + affine). **CONSTAT** : c'est le résolveur nom→template (=
           l'équivalent runtime du pointeur de template C ; le décomp passe `&sSpriteTemplate_X`, nous passons le NOM). =
-          **frontière harness LÉGITIME, comme `CreateSpriteAtOam`** (M3 nécessaire, pas un shim à supprimer). Les ~45
-          call-sites directs `rt.CreateSpriteFromTemplate(name)` sont surtout AUTO-GÉNÉRÉS (intro/title `-callbacks-auto.ts`)
-          → les router via `CreateSprite(name)` exigerait une MAJ du GÉNÉRATEUR (+ ~12 sites manuels decomp-globals/starter).
-          Valeur modeste (le bridge `CreateSprite` reste l'entrée 1:1 ; la voie 3 = résolution de nom). DÉCISION : garder
-          CreateSpriteFromTemplate = frontière documentée ; routage des call-sites = optionnel (chantier générateur séparé).
+          un résolveur nom→catalogue. J'avais proposé de le garder comme « frontière légitime » — **USER A TRANCHÉ
+          (2026-06-22) : NON, c'est une DETTE structurelle, on solde le vrai 1:1 strict** (« 1cm de dérive au lancement =
+          des km dans l'espace »). Raison : `CreateSpriteFromTemplate` N'EST PAS une fonction du décomp ; il existe SEULEMENT
+          parce qu'on a stocké les templates en CATALOGUES STRING (`SPRITE_TEMPLATES`/`OAM_DATAS`) au lieu de vrais objets.
+          C'est défaisable (≠ `CreateSpriteAtOam` qui absorbe le scan = vraie primitive M3).
+        - 🎯 **TRAJECTOIRE 1:1 (PHASE E2.B — vrais SpriteTemplate)** — point de levier identifié (2026-06-22) :
+          - **Cible** = chaque template défini en OBJET réel 1:1 décomp dans son fichier-home, ex `title_screen.c` :
+            `sVersionBannerLeftSpriteTemplate = { tileTag:'TAG_VERSION', paletteTag:'TAG_VERSION', oam:sVersionBannerLeftOamData,
+            anims:sVersionBannerLeftAnimTable, images:null, affineAnims:'gDummySpriteAffineAnimTable', callback:SpriteCB_VersionBannerLeft }`,
+            appelé `CreateSprite(sVersionBannerLeftSpriteTemplate, x, y, prio)`.
+          - **DÉVIATION injectée par le GÉNÉRATEUR** `scripts/transpile-callbacks.mjs` (règles 13/13b L619-624) : il réécrit
+            `CreateSprite(&sX, x,y,prio)` → `rt.CreateSpriteFromTemplate('sX', x,y)` (perd même le 4e arg prio !). = LE point
+            unique à corriger pour les ~45 call-sites auto-gen.
+          - **PLAN incrémental** (A/B par feature, JAMAIS big-bang) : (1) game `CreateSprite` consomme le SpriteTemplate réel
+            COMPLET (tileTag string|number, oam objet, anims AnimCmd[][], affineAnims, callback fn) = vrai `CreateSpriteAt` ;
+            bridge voie 2 accepte tileTag string. (2) Définir les vrais objets template+oam+anims par feature (depuis le
+            décomp), migrer les call-sites HAND-WRITTEN (decomp-globals/starter) → `CreateSprite(obj)`. (3) Générateur :
+            règles 13/13b → `CreateSprite(sX, x,y,prio)` + import des objets, AVEC whitelist (objets définis) sinon fallback
+            résolveur → incrémental ; regénérer + A/B intro/title. (4) Quand tous les templates = objets → RETRAIT du résolveur
+            `CreateSpriteFromTemplate` + effondrement du dispatcher 3-voies en `CreateSprite`+`CreateSpriteAt` 1:1.
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).

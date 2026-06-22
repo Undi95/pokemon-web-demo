@@ -2965,13 +2965,14 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
   if (template && typeof template === 'object' && Array.isArray(template.images)) {
     return _CreateSprite_game(rt, template, x, y, subpriority);
   }
-  // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont
-  // deja ete chargees par TAG (ex `LoadBallGfx` → gBallSpriteSheets/Palettes). Voie
-  // sheet-par-tag : delegue a l'impl UNIQUE `game/sprite.ts CreateSprite` (B1 — corps
-  // relocalise mot-pour-mot : GetSpriteTileStartByTag + AllocOamMatrix affine + patch
-  // callback/anims/objMode/affineAnimsTableName/usingSheet/tileBase/sheetTileStart).
+  // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont deja ete
+  // chargees par TAG. Voie sheet-par-tag : delegue a l'impl UNIQUE `game/sprite.ts CreateSprite`.
+  // tileTag number (ball, runtime) OU string (PHASE E2.B : vrais SpriteTemplate ex 'TAG_VERSION').
+  // Un OBJET avec `tileTag` (string/number) + `oam` = vrai template ; les strings/{name} par-nom
+  // n'ont ni .tileTag ni .oam → tombent en voie 3 (CreateSpriteFromTemplate).
   if (template && typeof template === 'object'
-      && typeof template.tileTag === 'number' && template.oam && typeof template.oam === 'object') {
+      && (typeof template.tileTag === 'number' || typeof template.tileTag === 'string')
+      && template.oam && typeof template.oam === 'object') {
     return _CreateSprite_game(rt, template, x, y, subpriority);
   }
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
