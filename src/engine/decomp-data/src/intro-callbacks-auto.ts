@@ -637,12 +637,12 @@ export const SpriteCB_PlayerOnBicycle: SpriteCallback = (sprite, rt) => {
       {
       case 0:
            
-          rt.StartSpriteAnim(sprite.spriteId, 0);
+          if (sprite.animNum !== 0) rt.StartSpriteAnim(sprite.spriteId, 0);  // 1:1 StartSpriteAnimIfDifferent (sinon reset frame 0 chaque frame = pédalage gelé)
           sprite.x--;
           break;
       case 1:
            
-          rt.StartSpriteAnim(sprite.spriteId, 0);
+          if (sprite.animNum !== 0) rt.StartSpriteAnim(sprite.spriteId, 0);  // 1:1 StartSpriteAnimIfDifferent
           if (rt.gIntroFrameCounter & 7)
               return;
           sprite.x++;
