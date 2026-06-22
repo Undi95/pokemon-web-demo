@@ -10,20 +10,20 @@
 
 | statut | nb fichiers |
 |---|---|
-| ✅ miroir | 37 |
+| ✅ miroir | 38 |
 | 🟡 partiel | 50 |
-| 🟠 dispersé | 14 |
+| 🟠 dispersé | 13 |
 | 🟡 amorce | 38 |
 | 🔴 manquant | 159 |
 | ⚪ vide/data | 12 |
 
 **Complétude pondérée par lignes de C** (effort réel) :
-- **STRICT** (fn présente dans NOTRE fichier homonyme propre) : **~28 %** ← la vraie jauge miroir.
+- **STRICT** (fn présente dans NOTRE fichier homonyme propre) : **~27 %** ← la vraie jauge miroir.
 - LARGE (fn implémentée n'importe où, même dispersée/mal nommée) : ~34 %.
 - L'écart STRICT↔LARGE = le travail de **consolidation** (logique présente mais pas encore dans le bon fichier 1:1).
 
 **Autres axes** :
-- Axe B — `include` (.h types/constantes) : 96/329 avec un miroir homonyme chez nous (233 manquants).
+- Axe B — `include` (.h types/constantes) : 100/329 avec un miroir homonyme chez nous (229 manquants).
 - Axe C — `data/` : maps 988 · scripts 57 · layouts 884 fichiers (couverture détaillée à part).
 - Axe D — `graphics/` : 3850 png (5748 fichiers) côté décomp · 4392 png sous `public/decomp/` chez nous (structures différentes → proxy, pas une couverture 1:1) → **import systématique en masse (Phase 2)**.
 - Axe E — `sound/` : 1303 fichiers décomp → **moteur m4a maison (harness, hors 1:1)**.
@@ -33,7 +33,7 @@
 | catégorie | fichiers | ✅ | 🟡/🟠 | 🔴 | lignes C |
 |---|---|---|---|---|---|
 | Overworld/Field | 84 | 10 | 29 | 44 | 117446 |
-| Combat | 75 | 15 | 35 | 24 | 147341 |
+| Combat | 75 | 16 | 34 | 24 | 147341 |
 | Pokémon/Party | 32 | 0 | 3 | 29 | 61271 |
 | UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
 | Item/Bag | 10 | 1 | 6 | 3 | 8806 |
@@ -99,7 +99,7 @@
 | `fldeff_flash.c` | 369 | 20 | `game/fldeff_flash.ts` | 2/20 (10%) | 3/20 (15%) | 🟡 amorce |
 | `roamer.c` | 247 | 13 | `game/battle_main.ts` _(nom≠)_ | 2/13 (15%) | 2/13 (15%) | 🟡 amorce |
 | `script_pokemon_util.c` | 229 | 13 | — **manquant** | 0/13 (0%) | 2/13 (15%) | 🟡 amorce |
-| `overworld.c` | 3227 | 227 | `game/overworld.ts` | 11/227 (5%) | 54/227 (24%) | 🟡 amorce |
+| `overworld.c` | 3227 | 227 | `game/overworld.ts` | 14/227 (6%) | 57/227 (25%) | 🟡 amorce |
 | `event_object_movement.c` | 8984 | 733 | `game/event_object_movement.ts` | 180/733 (25%) | 199/733 (27%) | 🟡 amorce |
 | `fldeff_cut.c` | 648 | 17 | `game/fldeff_cut.ts` | 2/17 (12%) | 5/17 (29%) | 🟡 amorce |
 | `heal_location.c` | 38 | 3 | `game/heal_location.ts` | 0/3 (0%) | 1/3 (33%) | 🟡 amorce |
@@ -108,7 +108,7 @@
 | `player_pc.c` | 1511 | 85 | `engine/ui/bedroom-pc.ts` _(nom≠)_ | 39/85 (46%) | 40/85 (47%) | 🟡 amorce |
 | `field_message_box.c` | 162 | 17 | `game/field_message_box.ts` | 7/17 (41%) | 8/17 (47%) | 🟡 partiel |
 | `wild_encounter.c` | 968 | 34 | `game/wild_encounter.ts` | 17/34 (50%) | 17/34 (50%) | 🟡 partiel |
-| `easy_chat.c` | 5876 | 248 | `engine/ui/easy-chat-render.ts` _(nom≠)_ | 127/248 (51%) | 130/248 (52%) | 🟡 amorce |
+| `easy_chat.c` | 5876 | 248 | `game/easy_chat.ts` | 4/248 (2%) | 132/248 (53%) | 🟡 amorce |
 | `script_movement.c` | 232 | 19 | `game/script_movement.ts` | 11/19 (58%) | 11/19 (58%) | 🟡 partiel |
 | `tileset_anims.c` | 1189 | 84 | `game/tileset_anims.ts` | 50/84 (60%) | 50/84 (60%) | 🟡 partiel |
 | `field_door.c` | 573 | 23 | `game/field_door.ts` | 13/23 (57%) | 14/23 (61%) | 🟡 partiel |
@@ -189,7 +189,6 @@
 | `battle_util.c` | 4016 | 52 | `game/battle_util.ts` | 36/52 (69%) | 42/52 (81%) | 🟡 partiel |
 | `battle_anim_water.c` | 1600 | 48 | `game/battle_anim_water.ts` | 40/48 (83%) | 40/48 (83%) | 🟡 partiel |
 | `battle_anim_flying.c` | 1237 | 31 | `game/battle_anim_flying.ts` | 20/31 (65%) | 26/31 (84%) | 🟡 partiel |
-| `battle_anim_ground.c` | 775 | 25 | `game/battle_anim_ground.ts` | 21/25 (84%) | 21/25 (84%) | 🟡 partiel |
 | `battle_controller_player.c` | 3148 | 124 | `game/battle_controller_player.ts` | 103/124 (83%) | 105/124 (85%) | 🟡 partiel |
 | `battle_anim_throw.c` | 2508 | 78 | `game/battle_anim_throw.ts` | 66/78 (85%) | 67/78 (86%) | ✅ miroir |
 | `battle_anim_rock.c` | 888 | 22 | `game/battle_anim_rock.ts` | 17/22 (77%) | 19/22 (86%) | 🟡 partiel |
@@ -212,6 +211,7 @@
 | `battle_ai_script_commands.c` | 2297 | 115 | `game/battle_ai_script_commands.ts` | 115/115 (100%) | 115/115 (100%) | ✅ miroir |
 | `battle_anim_mon_movement.c` | 1053 | 34 | `game/battle_anim_mon_movement.ts` | 34/34 (100%) | 34/34 (100%) | ✅ miroir |
 | `battle_ai_switch_items.c` | 945 | 13 | `game/battle_ai_switch_items.ts` | 13/13 (100%) | 13/13 (100%) | ✅ miroir |
+| `battle_anim_ground.c` | 775 | 25 | `game/battle_anim_ground.ts` | 25/25 (100%) | 25/25 (100%) | ✅ miroir |
 | `battle_anim_bug.c` | 488 | 13 | `game/battle_anim_bug.ts` | 13/13 (100%) | 13/13 (100%) | ✅ miroir |
 | `anim_mon_front_pics.c` | 425 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
 | `battle_anim_sound_tasks.c` | 408 | 15 | `game/battle_anim_sound_tasks.ts` | 15/15 (100%) | 15/15 (100%) | ✅ miroir |
@@ -251,7 +251,7 @@
 | `mon_markings.c` | 617 | 15 | — **manquant** | 0/15 (0%) | 2/15 (13%) | 🔴 manquant |
 | `pokenav.c` | 591 | 28 | `engine/system/decomp-bridge.ts` _(nom≠)_ | 3/28 (11%) | 4/28 (14%) | 🔴 manquant |
 | `pokemon.c` | 7157 | 160 | `game/pokemon.ts` | 6/160 (4%) | 49/160 (31%) | 🟡 amorce |
-| `pokemon_icon.c` | 1308 | 23 | `engine/ui/mail.ts` _(nom≠)_ | 6/23 (26%) | 10/23 (43%) | 🟡 amorce |
+| `pokemon_icon.c` | 1308 | 23 | `game/pokemon_icon.ts` | 7/23 (30%) | 11/23 (48%) | 🟡 amorce |
 | `pokemon_size_record.c` | 189 | 12 | `game/pokemon_size_record.ts` | 6/12 (50%) | 6/12 (50%) | 🟡 partiel |
 
 ### UI/Menu/Gfx (34)
@@ -275,9 +275,9 @@
 | `gpu_regs.c` | 196 | 12 | `engine/system/decomp-helpers.ts` _(nom≠)_ | 5/12 (42%) | 6/12 (50%) | 🟡 amorce |
 | `text.c` | 1905 | 53 | `game/text.ts` | 26/53 (49%) | 27/53 (51%) | 🟡 partiel |
 | `menu_helpers.c` | 454 | 25 | `game/menu_helpers.ts` | 10/25 (40%) | 15/25 (60%) | 🟡 partiel |
-| `sprite.c` | 1760 | 102 | `engine/system/sprite.ts` | 25/102 (25%) | 62/102 (61%) | 🟠 dispersé |
+| `sprite.c` | 1760 | 102 | `game/sprite.ts` | 47/102 (46%) | 62/102 (61%) | 🟡 partiel |
 | `palette.c` | 1043 | 40 | `engine/system/palette.ts` | 17/40 (43%) | 25/40 (63%) | 🟡 partiel |
-| `menu.c` | 2148 | 123 | `game/menu.ts` | 72/123 (59%) | 81/123 (66%) | 🟡 partiel |
+| `menu.c` | 2148 | 123 | `game/menu.ts` | 72/123 (59%) | 82/123 (67%) | 🟡 partiel |
 | `naming_screen.c` | 2595 | 117 | `game/naming_screen.ts` | 85/117 (73%) | 85/117 (73%) | 🟡 partiel |
 | `main_menu.c` | 2308 | 82 | `engine/decomp-data/src/main_menu-callbacks-auto.ts` _(nom≠)_ | 53/82 (65%) | 77/82 (94%) | 🟠 dispersé |
 | `list_menu.c` | 1448 | 48 | `game/list_menu.ts` | 45/48 (94%) | 45/48 (94%) | ✅ miroir |

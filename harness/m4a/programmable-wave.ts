@@ -8,7 +8,7 @@
  *
  * Cache par symbole pour éviter de recalculer la DFT à chaque note.
  */
-import { PROGRAMMABLE_WAVES } from '../decomp-data/src/programmable-waves';
+import { PROGRAMMABLE_WAVES } from '../../src/engine/decomp-data/src/programmable-waves';
 import { getAudioContext } from './audio-context';
 
 const _periodicWaveCache = new Map<string, PeriodicWave>();

@@ -417,7 +417,7 @@ function _ResetPaletteFadeControl(): void {
 function _m4aMPlayStop(playerInfo: unknown): void {
   // 1:1 décomp : stop le music player (= BGM ou SE1/SE2 selon ptr passé).
   void playerInfo;
-  void import('../engine/m4a/player').then(({ stopSong }) => {
+  void import('../../harness/m4a/player').then(({ stopSong }) => {
     stopSong('se1' as never);
     stopSong('se2' as never);
   });
@@ -426,7 +426,7 @@ function _m4aMPlayStop(playerInfo: unknown): void {
 /** 1:1 décomp `m4aSongNumStop(songId)`. Wire vers m4a/player stopSong. */
 function _m4aSongNumStop(_songId: number): void {
   // 1:1 décomp : stop song par songId. SE_LOW_HEALTH = 287.
-  void import('../engine/m4a/player').then(({ stopSong }) => {
+  void import('../../harness/m4a/player').then(({ stopSong }) => {
     stopSong('se1' as never);
     stopSong('se2' as never);
   });
@@ -3618,7 +3618,7 @@ function m4aSongNumStop(songId: number): void {
   // 1:1 décomp : songId 287 = SE_LOW_HEALTH (= loop SE). Stop SE1/SE2.
   // Pour BGM (songId variant), stop 'bgm' slot.
   void songId;
-  void import('../engine/m4a/player').then(({ stopSong }) => {
+  void import('../../harness/m4a/player').then(({ stopSong }) => {
     stopSong('se1' as never);
     stopSong('se2' as never);
   });

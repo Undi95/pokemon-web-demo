@@ -59,7 +59,7 @@
  */
 import type { DecompRuntime, DecompTask } from '../engine/system/decomp-runtime';
 import { PlaySE, FuncIsActiveTask } from '../engine/system/decomp-globals';
-import { stopPrerenderedSE, preloadPrerenderedSEs } from '../engine/m4a/se-noise-prerendered';
+import { stopPrerenderedSE, preloadPrerenderedSEs } from '../../harness/m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,

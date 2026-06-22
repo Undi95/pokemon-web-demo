@@ -61,7 +61,7 @@ let _AI_LABELS: Record<string, number> = {};
 export async function loadAiScriptBytecode(): Promise<void> {
   if (_AI_BYTECODE) return;
   const mod = await import(
-    './../../decomp-data/auto-asm-bytecode/data/battle_ai_scripts-bytecode'
+    '../../decomp-data/auto-asm-bytecode/data/battle_ai_scripts-bytecode'
   );
   _AI_BYTECODE = new Uint8Array(mod.BYTECODE as readonly number[]);
   _AI_LABELS = { ...(mod.LABELS as Record<string, number>) };

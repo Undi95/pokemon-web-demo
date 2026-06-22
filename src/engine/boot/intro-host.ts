@@ -107,7 +107,7 @@ export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
 
   // Préchargement MIDIs intro/title + cris légendaires (élimine le gap silence aux
   // transitions m4aSongNumStart). 1:1 ROM-équivalent : tous les sons « déjà là ».
-  const { loadMidi } = await import('../m4a/player');
+  const { loadMidi } = await import('../../../harness/m4a/player');
   void Promise.all([
     loadMidi('/decomp/em/music/mus_intro.mid').catch(() => {}),
     loadMidi('/decomp/em/music/mus_intro_battle.mid').catch(() => {}),

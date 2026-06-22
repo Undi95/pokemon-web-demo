@@ -14,7 +14,7 @@
  * contient que `DoTimeBasedEvents` (= clock.c) qui l'appelle.
  */
 
-import { RtcGetMinuteCount } from '../system/rtc';
+import { RtcGetMinuteCount } from './rtc';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { BerryTreeTimeUpdate } from '../../game/berry';
 

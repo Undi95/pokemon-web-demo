@@ -112,8 +112,8 @@ let _scripts2Shift = 0;
 /** Load le battle script bytecode au boot. */
 export async function loadBattleScriptBytecode(): Promise<void> {
   if (_BYTECODE) return;
-  const mod1 = await import('./../decomp-data/auto-asm-bytecode/data/battle_scripts_1-bytecode');
-  const mod2 = await import('./../decomp-data/auto-asm-bytecode/data/battle_scripts_2-bytecode');
+  const mod1 = await import('../decomp-data/auto-asm-bytecode/data/battle_scripts_1-bytecode');
+  const mod2 = await import('../decomp-data/auto-asm-bytecode/data/battle_scripts_2-bytecode');
   // Concatenate the two bytecode files. battle_scripts_2 offset shifts by len(scripts_1).
   const bytes1 = new Uint8Array(mod1.BYTECODE);
   const bytes2 = new Uint8Array(mod2.BYTECODE);

@@ -25,23 +25,30 @@ PlaySE/PlayCry/PlayBGM OK, NE PAS toucher le moteur SE/BGM. Décomp = `D:/Projet
 User VISION RÉDUITE → sondes déterministes + décrire les visuels (et mode « stop avant commit + explique
 quoi vérifier » pour le visuel). Zéro cast/approximation pour faire taire un type.
 
-## Cible d'arborescence (à affiner au Phase 0)
+## Cible d'arborescence — VERROUILLÉE (décision user 2026-06-22)
+**Option 1 = miroir À LA RACINE du repo, arbre COMPLET (zéro aplatissement — la décomp n'est pas plate).**
+Chaque `decomp/<chemin>/X.c` → `port/<chemin>/X.ts` au MÊME chemin. Arbre décomp relevé :
+`decomp/src/` = 310 `.c` à plat + `src/data/` (13 sous-dossiers : bard_music, battle_frontier, decoration,
+easy_chat, field_effects, graphics, object_events, pokemon, pokemon_graphics, region_map, text, tilesets,
+trainer_graphics) ; `include/` + `include/constants/` + `include/gba/` ; root `data/ graphics/ sound/ constants/`.
 ```
-src/
-  src/            ← miroir PLAT des decomp/src/*.c → *.ts (même nom, mêmes fonctions)  [fusionne l'actuel game/]
-  src/data/       ← decomp src/data/*.h (tables species/moves/items/trainers…) → data 1:1
-  include/        ← decomp include/*.h → types/constantes 1:1
-    constants/    ← include/constants/*.h
-    gba/          ← include/gba/*.h
-  data/           ← decomp data/ (maps/, scripts/, layouts/, tilesets/, *.inc, *.s)
-  gfx/            ← decomp gfx/ (TOUS les png/tilesets, organisés comme la décomp)
-  sound/          ← decomp sound/ (refs, pas le moteur)
-  _harness/       ← MAISON, hors décomp : scenes Phaser, devtools, decomp-runtime/globals,
-                    gba/ (émulation), m4a/ (synth), boot glu Vite. (= ex-engine/ non-mirroir)
+<repo>/
+  src/            ← decomp/src/*.c → *.ts (310, à plat comme la décomp) + src/data/<13 sous-dossiers>/*.ts
+  include/        ← decomp/include/*.h → *.ts   (+ include/constants/, include/gba/)
+  data/           ← decomp/data/ (maps/scripts/layouts/.inc) — DÉJÀ servi depuis public/decomp/em/ au runtime
+  graphics/       ← decomp/graphics/ (assets) — DÉJÀ sous public/decomp/em/
+  sound/          ← decomp/sound/ (refs ; moteur m4a = harness)
+  harness/        ← MAISON, hors décomp : scenes Phaser, gba/ (émulation+compositor+bridge), devtools,
+                    m4a/ (synth), decomp-runtime/globals/bridge, glu Vite, main.ts, index entry.
 ```
-> ⚠️ Beaucoup de l'actuel `src/engine/` est du HARNESS (→ `_harness/`) ; le reste (subsystems décomp-nommés
-> éclatés dans engine/field, engine/script, engine/battle, engine/ui, engine/pokemon, engine/bag…) doit
-> rejoindre `src/src/` (plat, nom décomp) ou `include/`/`data/` selon sa nature décomp.
+> ⚠️ `src/engine/` actuel = MIX : (a) HARNESS pur (gba/, m4a/, system/decomp-runtime|globals|bridge, devtools,
+> boot glu) → `harness/` ; (b) sous-systèmes décomp éclatés (engine/field, engine/script, engine/battle,
+> engine/ui, engine/pokemon, engine/bag, engine/save, engine/decomp-data) → consolider vers `src/<nom décomp>.ts`
+> (plat) ou `include/`/`src/data/` selon leur nature. L'actuel `src/game/*.ts` (105, déjà nommés décomp) → `src/*.ts`.
+> Assets (data/graphics) déjà en `public/decomp/em/` (chargés au runtime) — le miroir de chemin source porte surtout sur `src/`+`include/`.
+
+> ⚠️ RÉGRESSION DÉFÉRÉE (user 2026-06-22) : warp porte/autre → le perso spawn au mauvais endroit, puis est
+> recalé après le fade (visible 1-2 frames). À traiter pendant la revue de `field_screen_effect.c` (SetUpWarpExitTask).
 
 ## Phases (ordre recommandé — grind incrémental, commits vérifiés)
 **Phase 0 — CARTOGRAPHIE complète (la « vérif tout fichier »).**

@@ -36,13 +36,13 @@ import {
 import { G_SINE_TABLE } from '../decomp-data/src/sine-table';
 import { SONG_ID_TO_NAME, getSongConfig } from '../decomp-data/src/song-table';
 import { MUS_NONE as _MUS_NONE } from '../decomp-data/include/constants/songs-data';
-import { setReverb as _staticSetReverb } from '../m4a/audio-context';
+import { setReverb as _staticSetReverb } from '../../../harness/m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, stopAllSongs as _staticStopAllSongs, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
-import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
-import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
+import { stopSong as _staticStopSong, stopAllSongs as _staticStopAllSongs, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../../../harness/m4a/player';
+import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../../../harness/m4a/se-noise-prerendered';
+import { stopAllActiveNotes as _staticStopAllNotes } from '../../../harness/m4a/synth';
 // Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
 // in the affine extras registry consumed by sprite-engine-impl. Required for
 // EVERY mon release/return/emerge across battles, Birch, eggs, evolutions.
@@ -803,9 +803,9 @@ let _songVoicegroups: Record<string, string> | null = null;
  *  que les premiers PlaySE n'aient PAS de latence cold-init (~1-2s SF2 load). */
 async function m4aPrime(): Promise<void> {
   if (_m4aPrimed) return;
-  const { getAudioContext } = await import('../m4a/audio-context');
-  const { preloadAllSlots } = await import('../m4a/player');
-  const { lookupVoicegroup } = await import('../m4a/voicegroups-data/_all-voicegroups-index');
+  const { getAudioContext } = await import('../../../harness/m4a/audio-context');
+  const { preloadAllSlots } = await import('../../../harness/m4a/player');
+  const { lookupVoicegroup } = await import('../../../harness/m4a/voicegroups-data/_all-voicegroups-index');
   // Init AudioContext (requires user gesture — déjà eu via click TestGba→GameScene)
   getAudioContext();
   // Load song → voicegroup mapping (gardé pour les warnings PlaySE qui filtrent
@@ -819,7 +819,7 @@ async function m4aPrime(): Promise<void> {
   // Pre-load the list of pre-rendered SE so first PlaySE() is correctly routed
   await preloadPrerenderedList();
   // Warm-up AudioContext + DAC pour éviter "PTCH" sur le 1er SE après page load.
-  const { primeAudioContext } = await import('../m4a/audio-context');
+  const { primeAudioContext } = await import('../../../harness/m4a/audio-context');
   await primeAudioContext();
   _m4aPrimed = true;
   console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
@@ -1103,7 +1103,7 @@ export function PlaySE(seId: number): void {
         _staticStopSong(slot);  // = sécurité, stop any spessasynth song
         // 1:1 décomp : track end time pour IsSEPlaying (= waitse opcode).
         // Durée connue via getPrerenderedSEDuration si déjà cached (sinon ~600ms default).
-        const { getPrerenderedSEDuration } = await import('../m4a/se-noise-prerendered');
+        const { getPrerenderedSEDuration } = await import('../../../harness/m4a/se-noise-prerendered');
         const durSec = getPrerenderedSEDuration(name);
         _markAudioSlotActive(slot, (durSec ?? 0.6) * 1000);
         await playPrerenderedSE(name, slot, seSongVol);
@@ -2525,12 +2525,12 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
  *  via setMasterParameter('masterGain') en N steps, puis stopSong à la fin
  *  pour libérer le slot. */
 export function FadeOutBGM(speed: number): void {
-  void import('../m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
+  void import('../../../harness/m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
 }
 
 /** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
 export function FadeInBGM(speed: number): void {
-  void import('../m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
+  void import('../../../harness/m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
 }
 /** 1:1 STRICT décomp `CanResetRTC()` (event_data.c:156-162) :
  *    if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
