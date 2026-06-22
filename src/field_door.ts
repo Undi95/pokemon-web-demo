@@ -88,58 +88,61 @@ import {
   METATILE_TrainerHill_Door_Elevator_Lobby,
   METATILE_TrainerHill_Door_Elevator_Roof,
 } from '../include/constants/metatile_labels';
-import {
-  sDoorAnimPalettes_General,
-  sDoorAnimPalettes_PokeCenter,
-  sDoorAnimPalettes_Gym,
-  sDoorAnimPalettes_PokeMart,
-  sDoorAnimPalettes_Littleroot,
-  sDoorAnimPalettes_BirchsLab,
-  sDoorAnimPalettes_RustboroTan,
-  sDoorAnimPalettes_RustboroGray,
-  sDoorAnimPalettes_FallarborLightRoof,
-  sDoorAnimPalettes_FallarborDarkRoof,
-  sDoorAnimPalettes_Oldale,
-  sDoorAnimPalettes_Mauville,
-  sDoorAnimPalettes_Verdanturf,
-  sDoorAnimPalettes_Slateport,
-  sDoorAnimPalettes_Dewford,
-  sDoorAnimPalettes_Contest,
-  sDoorAnimPalettes_Lilycove,
-  sDoorAnimPalettes_LilycoveWooden,
-  sDoorAnimPalettes_LilycoveDeptStore,
-  sDoorAnimPalettes_LilycoveDeptStoreElevator,
-  sDoorAnimPalettes_SafariZone,
-  sDoorAnimPalettes_Mossdeep,
-  sDoorAnimPalettes_MossdeepSpaceCenter,
-  sDoorAnimPalettes_Sootopolis,
-  sDoorAnimPalettes_SootopolisPeakedRoof,
-  sDoorAnimPalettes_PokemonLeague,
-  sDoorAnimPalettes_Pacifidlog,
-  sDoorAnimPalettes_PetalburgGym,
-  sDoorAnimPalettes_CyclingRoad,
-  sDoorAnimPalettes_CableClub,
-  sDoorAnimPalettes_AbandonedShip,
-  sDoorAnimPalettes_AbandonedShipRoom,
-  sDoorAnimPalettes_BattleTowerOld,
-  sDoorAnimPalettes_BattleTowerElevator,
-  sDoorAnimPalettes_UnusedBattleFrontier,
-  sDoorAnimPalettes_BattleDome,
-  sDoorAnimPalettes_BattleFactory,
-  sDoorAnimPalettes_BattleTower,
-  sDoorAnimPalettes_BattleArena,
-  sDoorAnimPalettes_BattleArenaLobby,
-  sDoorAnimPalettes_BattleDomeLobby,
-  sDoorAnimPalettes_BattlePalaceLobby,
-  sDoorAnimPalettes_BattleTent,
-  sDoorAnimPalettes_BattleDomeCorridor,
-  sDoorAnimPalettes_BattleTowerMultiCorridor,
-  sDoorAnimPalettes_BattleFrontier,
-  sDoorAnimPalettes_BattleDomePreBattleRoom,
-  sDoorAnimPalettes_BattleTentInterior,
-  sDoorAnimPalettes_TrainerHillLobbyElevator,
-  sDoorAnimPalettes_TrainerHillRoofElevator,
-} from './engine/decomp-data/src/field_door-data';
+// 1:1 décomp field_door.c — sDoorAnimPalettes_* (tables d'index palette par type
+// de porte). Étaient extraits dans decomp-data/src/field_door-data.ts (scaffold
+// auto-gen supprimé : EXPR/FUNCTIONS/INCLUDES/GFX-paths/DOOR_SOUND = métadonnées
+// d'extraction, non importées, non-1:1).
+const sDoorAnimPalettes_General: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_PokeCenter: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_Gym: readonly number[] = [5,5,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_PokeMart: readonly number[] = [0,0,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_Littleroot: readonly number[] = [10,10,6,6,6,6,6,6] as const;
+const sDoorAnimPalettes_BirchsLab: readonly number[] = [8,8,8,8,8,8,8,8] as const;
+const sDoorAnimPalettes_RustboroTan: readonly number[] = [11,11,11,11,11,11,11,11] as const;
+const sDoorAnimPalettes_RustboroGray: readonly number[] = [10,10,10,10,10,10,10,10] as const;
+const sDoorAnimPalettes_FallarborLightRoof: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_Lilycove: readonly number[] = [8,8,8,8,8,8,8,8] as const;
+const sDoorAnimPalettes_Oldale: readonly number[] = [10,10,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_Mossdeep: readonly number[] = [9,9,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_PokemonLeague: readonly number[] = [8,8,8,8,8,8,8,8] as const;
+const sDoorAnimPalettes_Pacifidlog: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_SootopolisPeakedRoof: readonly number[] = [6,6,6,6,6,6,6,6] as const;
+const sDoorAnimPalettes_Sootopolis: readonly number[] = [6,6,6,6,6,6,6,6] as const;
+const sDoorAnimPalettes_Dewford: readonly number[] = [0,0,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_Slateport: readonly number[] = [6,6,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_Mauville: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_Verdanturf: readonly number[] = [6,6,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_LilycoveWooden: readonly number[] = [5,5,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_Contest: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_PetalburgGym: readonly number[] = [6,6,6,6,6,6,6,6] as const;
+const sDoorAnimPalettes_CyclingRoad: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_LilycoveDeptStore: readonly number[] = [5,5,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_SafariZone: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_MossdeepSpaceCenter: readonly number[] = [8,8,8,8,8,8,8,8] as const;
+const sDoorAnimPalettes_CableClub: readonly number[] = [6,6,6,6,6,6,6,6] as const;
+const sDoorAnimPalettes_AbandonedShip: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_FallarborDarkRoof: readonly number[] = [11,11,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_AbandonedShipRoom: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_LilycoveDeptStoreElevator: readonly number[] = [6,6,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattleTowerOld: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_BattleTowerElevator: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_UnusedBattleFrontier: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_BattleDome: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_BattleFactory: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_BattleTower: readonly number[] = [0,0,0,0,0,0,0,0] as const;
+const sDoorAnimPalettes_BattleArena: readonly number[] = [5,5,5,5,5,5,5,5] as const;
+const sDoorAnimPalettes_BattleArenaLobby: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattleDomeLobby: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattlePalaceLobby: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattleTent: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_BattleDomeCorridor: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattleTowerMultiCorridor: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_Unused: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_BattleFrontier: readonly number[] = [1,1,1,1,1,1,1,1] as const;
+const sDoorAnimPalettes_BattleDomePreBattleRoom: readonly number[] = [9,9,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_BattleTentInterior: readonly number[] = [9,9,9,9,9,9,9,9] as const;
+const sDoorAnimPalettes_TrainerHillLobbyElevator: readonly number[] = [7,7,7,7,7,7,7,7] as const;
+const sDoorAnimPalettes_TrainerHillRoofElevator: readonly number[] = [9,9,7,7,7,7,7,7] as const;
 
 // ─── Sound types 1:1 décomp ─────────────────────────────────────────────────
 
