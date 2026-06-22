@@ -16,7 +16,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
+import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY } from '../engine/system/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../engine/system/decomp-globals';
 import { ResetSpriteData } from '../game/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
@@ -421,9 +421,33 @@ export class TestOverworldScene extends Phaser.Scene {
     // résiduels de l'intro/Birch. En scene.start c'était implicite (runtime neuf) ;
     // en runtime partagé il faut le faire explicitement avant que bootOverworld re-init.
     ResetSpriteData(this.rt);
+    // resetObjAllocations() = LE reset clé qu'un runtime NEUF fait dans create() mais que
+    // le runtime partagé n'avait pas : réinitialise l'allocation OAM matrices + sprite
+    // tiles + sprite palettes. Sans ça l'état d'allocation accumulé par l'intro fragmente
+    // les loads palette en OW (NPC invisible / fenêtre dialogue noire / FPS drop au step-off).
+    resetObjAllocations();
+    resetObjectEventAllocations();
     ResetTasks();
     ResetPaletteFade();
     FreeAllSpritePalettes();
+    // 1:1 décomp `ResetScreenForMapLoad` (overworld.c:2077) + état runtime NEUF : clear les
+    // registres screen-effect (MOSAIC/WINDOW/BLEND) que l'intro/Birch laissent actifs (logo
+    // shine = OBJ_WINDOW ; fades = BLDY assombrissement). Le port loadAndInitMap ne fait qu'un
+    // DISPCNT save/restore (partiel) — il loupe ces registres que `InitOverworldGraphicsRegisters`
+    // (overworld.c:2096) normalement gère. Sans ça : ombre (BLDY) + passes compositor WINDOW/
+    // MOSAIC en plus chaque frame = chute FPS (44-48 vs 63). Un runtime neuf les a à 0, l'OW
+    // (reflets/flash) les re-set au besoin → exactement le chemin ?nointro. Confirmé : ?unified
+    // truck = BLDY mode3/bright7 vs ?nointro neuf = mode0/bright0/63 FPS.
+    this.rt.SetGpuReg(REG_OFFSET_MOSAIC, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WININ, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WIN1H, 0);
+    this.rt.SetGpuReg(REG_OFFSET_WIN1V, 0);
+    this.rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+    this.rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+    this.rt.SetGpuReg(REG_OFFSET_BLDY, 0);
     // Entre l'OW dans CE runtime (= 1:1 SetMainCallback2(CB2_Overworld)). bootOverworld
     // re-run decideBootMode (post-Birch → newgame/truck ; ou resume/saved map).
     await this.bootOverworld();
