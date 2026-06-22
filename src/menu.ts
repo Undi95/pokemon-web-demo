@@ -38,7 +38,7 @@ import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
 import { getString } from './engine/ui/gba-strings';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 import { MENU_NOTHING_CHOSEN, MENU_B_PRESSED, MENU_CURSOR_DELTA_NONE } from './engine/decomp-data/include/menu-data';
 import { SE_SELECT } from '../include/constants/songs';
 import { MENU_L_PRESSED, MENU_R_PRESSED } from './engine/decomp-data/include/menu_helpers-data';

@@ -21,7 +21,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../harness/runtime/decomp-bridge';
 import { getItemKeyById } from '../harness/runtime/data-tables';
-import { ENUM_ITEMMENUSPRITE_2 } from './engine/decomp-data/include/item_menu-data';
+import { ENUM_ITEMMENUSPRITE_2 } from '../include/item_menu';
 import { ITEM_LIST_END } from '../include/constants/items';
 import { ENUM_TAG_0 as ENUM_BAG_TAG } from './engine/decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac

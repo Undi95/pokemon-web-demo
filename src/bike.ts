@@ -68,7 +68,7 @@ import { MUS_CYCLING } from '../include/constants/songs';
 import { SE_BIKE_HOP } from '../include/constants/songs';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from './engine/field/direction-coords';
-import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';
+import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from '../include/gba/io_reg';
 import {
   PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,
   PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER, PLAYER_AVATAR_FLAG_DASH,
@@ -77,7 +77,7 @@ import {
 import type { ObjectEvent } from './event_object_movement';
 
 // ─── bike.h enums ────────────────────────────────────────────────────────────
-import { ENUM_PLAYER_0, ENUM_MACH_1, ENUM_ACRO_2, ENUM_ACRO_3 } from './engine/decomp-data/include/bike-data';
+import { ENUM_PLAYER_0, ENUM_MACH_1, ENUM_ACRO_2, ENUM_ACRO_3 } from '../include/bike';
 const { PLAYER_SPEED_STANDING, PLAYER_SPEED_NORMAL, PLAYER_SPEED_FAST, PLAYER_SPEED_FASTER, PLAYER_SPEED_FASTEST } = ENUM_PLAYER_0;
 const { MACH_TRANS_FACE_DIRECTION, MACH_TRANS_TURN_DIRECTION, MACH_TRANS_KEEP_MOVING, MACH_TRANS_START_MOVING } = ENUM_MACH_1;
 const { ACRO_STATE_NORMAL, ACRO_STATE_TURNING, ACRO_STATE_WHEELIE_STANDING, ACRO_STATE_BUNNY_HOP, ACRO_STATE_WHEELIE_MOVING, ACRO_STATE_SIDE_JUMP, ACRO_STATE_TURN_JUMP } = ENUM_ACRO_2;

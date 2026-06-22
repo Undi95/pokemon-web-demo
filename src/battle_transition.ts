@@ -38,7 +38,7 @@ import {
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
 } from '../harness/runtime/decomp-runtime';
-import { DISPLAY_HEIGHT } from './engine/decomp-data/include/gba/defines-data';
+import { DISPLAY_HEIGHT } from '../include/gba/defines';
 
 /** SetSpriteRotScale via la surface __battleAnimMons (anti-cycle ESM : un import
  *  statique de battle_anim_mons depuis ce module → TDZ BG_SCREEN_SIZE au boot). */

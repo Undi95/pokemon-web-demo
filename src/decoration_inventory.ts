@@ -42,7 +42,7 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { DECOR_NONE } from '../include/constants/decorations';
 import {
   ENUM_DecorationCategory,
-} from './engine/decomp-data/include/decoration-data';
+} from '../include/decoration';
 import { gDecorations } from './engine/ui/decoration-data';
 export { gDecorations };
 export type { Decoration } from './engine/ui/decoration-data';

@@ -83,7 +83,7 @@ import { FreeSpritePaletteByTag } from './sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).
-import { A_BUTTON, B_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';
+import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 // TEXT_SKIP_DRAW import depuis decomp-data.
 import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
 
@@ -1321,7 +1321,7 @@ function _tickPCQuantityRolling(newKeys: number): void {
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, SELECT_BUTTON,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 
 /** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444) :
  *    CopyItemName(itemId, gStringVar1);

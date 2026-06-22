@@ -1549,7 +1549,7 @@ const getInputDirection = _getInputDirection;
  */
 /** GBA A button mask. 1:1 décomp `A_BUTTON` (gba/io_reg.h). Import depuis
  *  decomp-data (= A8 audit). */
-import { A_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';
+import { A_BUTTON } from '../include/gba/io_reg';
 
 // ─── 1:1 décomp `field_player_avatar.c` — fonctions feuilles d'action ────────
 // [chantier INPUT joueur, étape 1a] Ces wrappers SONT le call-graph décomp pour

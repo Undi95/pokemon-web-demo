@@ -1039,7 +1039,7 @@ export function ListMenuSetUpRedOutlineCursorSpriteOamTable(rowWidth: number, ro
 
 /** 1:1 décomp `include/gba/defines.h #define DISPLAY_HEIGHT 160`. Import
  *  depuis decomp-data (= A8 audit). */
-import { DISPLAY_HEIGHT } from './engine/decomp-data/include/gba/defines-data';
+import { DISPLAY_HEIGHT } from '../include/gba/defines';
 
 /** 1:1 décomp `include/constants/...`/sprite : `#define TAG_NONE 0xFFFF`. */
 const TAG_NONE = 0xFFFF;

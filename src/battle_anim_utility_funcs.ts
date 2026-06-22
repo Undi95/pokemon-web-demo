@@ -815,7 +815,7 @@ import {
   LoadAnimBgPalette as _scLoadPal,
   ResetBattleAnimBg as _scResetBg,
 } from './engine/battle/battle-anim-interpreter';
-import { ENUM_STAT_3 as _SC_PAL } from './engine/decomp-data/include/battle_anim-data';
+import { ENUM_STAT_3 as _SC_PAL } from '../include/battle_anim';
 import { resolveDecompConstant as _scSE } from '../harness/runtime/decomp-constants';
 import { gBattlerPartyIndexes as _scPartyIdx } from './engine/battle/state';
 import {

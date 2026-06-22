@@ -72,7 +72,7 @@ import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-imp
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import {
   A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 
 // ─── DEFINES (= starter_choose.c:27-34) ───────────────────────────────────
 const STARTER_MON_COUNT = 3;

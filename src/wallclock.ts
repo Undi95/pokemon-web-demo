@@ -80,7 +80,7 @@ const WIN_BUTTON_LABEL = 1;
 /** Joy keys (= 1:1 gba/io_reg.h). Import depuis decomp-data (= A8 audit). */
 import {
   A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 /** Font / text colors. */
 const FONT_NORMAL = 1;
 const STD_FRAME_TILE = 0x250;

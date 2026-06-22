@@ -26,7 +26,7 @@ import { SetGpuReg } from '../harness/runtime/decomp-bridge';
 import {
   DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
   DISPCNT_OBJ_1D_MAP, DISPCNT_HBLANK_INTERVAL,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 import {
   ShowBg, ChangeBgX, ChangeBgY, ScheduleBgCopyTilemapToVram,
   ClearScheduledBgCopiesToVram, ResetTempTileDataBuffers,

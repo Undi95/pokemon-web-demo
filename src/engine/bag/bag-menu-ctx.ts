@@ -83,10 +83,10 @@ void import('../../overworld').then((m) => { _overworldMod = m; });
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
 import { PIXEL_FILL } from '../../../harness/runtime/decomp-globals';
-import { ENUM_ITEMWIN_1 } from '../decomp-data/include/item_menu-data';
+import { ENUM_ITEMWIN_1 } from '../../../include/item_menu';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
-} from '../decomp-data/include/gba/io_reg-data';
+} from '../../../include/gba/io_reg';
 import { SE_SELECT } from '../../../include/constants/songs';
 import { PlaySE } from '../../../harness/runtime/decomp-globals';
 

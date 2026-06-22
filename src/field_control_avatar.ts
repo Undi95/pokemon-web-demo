@@ -164,8 +164,8 @@ export function FieldClearPlayerInput(input: FieldInput): void {
 import {
   START_BUTTON, SELECT_BUTTON, A_BUTTON, B_BUTTON,
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
-} from './engine/decomp-data/include/gba/io_reg-data';
-import { ENUM_PLAYER_0 } from './engine/decomp-data/include/bike-data';
+} from '../include/gba/io_reg';
+import { ENUM_PLAYER_0 } from '../include/bike';
 import { GetPlayerSpeed } from './bike';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).

@@ -85,12 +85,12 @@ import { MALE } from '../../../harness/runtime/decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
-} from '../decomp-data/include/item_menu-data';
+} from '../../../include/item_menu';
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET,
   KEYITEMS_POCKET, POCKETS_COUNT,
 } from '../../../include/constants/item';
-import { BG_SCREEN_SIZE } from '../decomp-data/include/gba/defines-data';
+import { BG_SCREEN_SIZE } from '../../../include/gba/defines';
 import {
   ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01,
   ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
@@ -113,7 +113,7 @@ import {
 import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
 } from '../decomp-data/include/menu-data';
-import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
+import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../../../include/gba/io_reg';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../ui/option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.

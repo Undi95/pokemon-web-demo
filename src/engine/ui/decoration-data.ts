@@ -168,7 +168,7 @@ import {
   ENUM_DecorationPermission,
   ENUM_DecorationShape,
   ENUM_DecorationCategory,
-} from '../decomp-data/include/decoration-data';
+} from '../../../include/decoration';
 
 // ─── 1:1 décomp `enum DecorationPermission` (decoration.h:4-14) ──────────────
 const DECORPERM_SOLID_FLOOR  = ENUM_DecorationPermission.DECORPERM_SOLID_FLOOR;  // 0

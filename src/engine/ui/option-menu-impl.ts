@@ -46,7 +46,7 @@ export function setSArrowPressed(v: boolean): void { sArrowPressed = v; }
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
-} from '../decomp-data/include/gba/io_reg-data';
+} from '../../../include/gba/io_reg';
 const WIN_HEADER = 0;
 const WIN_OPTIONS = 1;
 

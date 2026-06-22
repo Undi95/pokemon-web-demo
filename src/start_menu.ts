@@ -139,7 +139,7 @@ let sPendingScreenAction: (() => void) | null = null;
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   A_BUTTON, B_BUTTON, START_BUTTON, DPAD_UP, DPAD_DOWN,
-} from './engine/decomp-data/include/gba/io_reg-data';
+} from '../include/gba/io_reg';
 
 // 1:1 décomp menu.c:25-27 :
 //   #define STD_WINDOW_PALETTE_NUM 14   ← border palette (cadre du menu)

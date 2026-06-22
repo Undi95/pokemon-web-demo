@@ -169,7 +169,7 @@ import {
   STAT_ANIM_MULTIPLE_PLUS1, STAT_ANIM_MULTIPLE_PLUS2,
   STAT_ANIM_MULTIPLE_MINUS1, STAT_ANIM_MULTIPLE_MINUS2,
   ENUM_STAT_3 as _SC_PAL,
-} from './engine/decomp-data/include/battle_anim-data';
+} from '../include/battle_anim';
 import {
   STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF, STAT_ACC, STAT_EVASION,
 } from '../include/constants/pokemon';

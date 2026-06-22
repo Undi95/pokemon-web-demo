@@ -54,7 +54,7 @@ import { StringExpandPlaceholders } from '../../string_util';
 import { getText } from '../../script';
 // Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
 import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
-import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
+import { ENUM_B_1 as B_TRANSITION } from '../../../include/battle_transition';
 // SPECIES_ZIGZAGOON (= 288) depuis le leaf auto-extrait (règle [[feedback-no-hardcoded-decomp-values]]).
 import { SPECIES_ZIGZAGOON } from '../../../include/constants/species';
 

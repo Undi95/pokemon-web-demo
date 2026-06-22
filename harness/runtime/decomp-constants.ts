@@ -47,7 +47,7 @@ import * as battle from '../../include/constants/battle';
 // échouait → move.target=0 pour TOUS les moves non-SELECTED (Surf/Séisme/
 // Blizzard spread `/2` jamais appliqué en 2v2 + ciblage cassé). Mergé
 // SI-ABSENT (jamais d'override = zéro régression) + dans _exprNamespaces.
-import * as battleInclude from '../../src/engine/decomp-data/include/battle-data';
+import * as battleInclude from '../../include/battle';
 import * as global from '../../include/constants/global';
 import * as fieldEffects from '../../include/constants/field_effects';
 import * as opponents from '../../include/constants/opponents';

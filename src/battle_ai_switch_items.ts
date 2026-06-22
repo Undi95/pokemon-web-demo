@@ -153,7 +153,7 @@ import { B_FLANK_LEFT } from '../include/constants/battle';
 /** 1:1 décomp `enum` battle_ai_switch_items.h:4-32 — AI_ITEM_* / AI_HEAL_* / AI_X_*. */
 import {
   ENUM_AI_0, ENUM_AI_1, ENUM_AI_2,
-} from './engine/decomp-data/include/battle_ai_switch_items-data';
+} from '../include/battle_ai_switch_items';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
 function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
