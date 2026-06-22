@@ -36,8 +36,8 @@ import { mountDevtoolsPanel } from '../harness/devtools/devtools-panel';
 // import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 // import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
 import { TestOverworldScene } from './scenes/TestOverworldScene';
-import { createAudioDevtool } from './util/audio-devtool';
-import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
+import { createAudioDevtool } from '../harness/util/audio-devtool';
+import '../harness/util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
 import '../harness/devtools/dev-cheat';
 import { setMasterVolume } from '../harness/m4a/audio-context';

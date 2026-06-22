@@ -49,7 +49,7 @@ import {
 } from '../../src/game/field_camera';
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/engine/script/script-runtime';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
-import { GBA_BUTTON_MASKS, type GbaButton } from '../../src/util/key-bindings';
+import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
 import { setHeldKeysOverride, clearHeldKeysOverride } from '../../src/engine/system/input-handler';
 import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
 import * as decompBridge from '../../src/engine/system/decomp-bridge';

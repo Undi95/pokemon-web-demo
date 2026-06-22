@@ -26,7 +26,7 @@
  * 8×8 px. On ajuste si besoin via `bpp === 8`.
  */
 import Phaser from 'phaser';
-import oamSpritesJson from '../decomp/em/oam-sprites.json' with { type: 'json' };
+import oamSpritesJson from '../../src/decomp/em/oam-sprites.json' with { type: 'json' };
 
 interface OamSpriteDef {
   shape: [number, number];

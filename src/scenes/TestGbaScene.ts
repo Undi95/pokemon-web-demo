@@ -25,7 +25,7 @@ import { loadIndexedPng, loadTilemapBin } from '../../harness/gba/png-loader';
 import { rotScaleAffineMatrix } from '../../harness/gba/types';
 // M4A audio test
 import { loadMidi, playSong, stopSong, isPlaying } from '../../harness/m4a/player';
-import { keyToGbaMask } from '../util/key-bindings';
+import { keyToGbaMask } from '../../harness/util/key-bindings';
 import { loadSampleManifest } from '../../harness/m4a/sample-loader';
 import { getAudioContext } from '../../harness/m4a/audio-context';
 import type { VoiceGroup } from '../../harness/m4a/voice-types';
