@@ -21,4 +21,4 @@ export {
   BufferPartyVsScreenHealth_AtStart,
   BufferPartyVsScreenHealth_AtEnd,
   battleVBlankState,
-} from '../../game/battle_main';
+} from '../../battle_main';

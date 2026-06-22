@@ -20,7 +20,7 @@ import {
 } from './script-vars';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox,
-} from '../../game/field_message_box';
+} from '../../field_message_box';
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from '../field/movement-system';
@@ -28,12 +28,12 @@ import { PlaySE } from '../system/decomp-globals';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
-} from '../../game/event_object_movement';
-import type { ObjectEventTemplate } from '../../game/fieldmap';
+} from '../../event_object_movement';
+import type { ObjectEventTemplate } from '../../fieldmap';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../field/warp-system';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
-import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../game/fieldmap';
+import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../fieldmap';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag/bag';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
@@ -48,7 +48,7 @@ import { InitMenuInUpperLeftCornerNormal } from '../ui/gba-menu-system';
 import { getMultichoiceList } from '../system/multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
-} from '../../game/field_player_avatar';
+} from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { getRuntime } from '../system/decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';

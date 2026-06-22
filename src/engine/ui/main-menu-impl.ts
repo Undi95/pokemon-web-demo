@@ -25,8 +25,8 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
-import { GetWindowFrameTilesPal } from '../../game/text_window';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
+import { GetWindowFrameTilesPal } from '../../text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {
   ResetBgsAndClearDma3BusyFlags,
@@ -1022,7 +1022,7 @@ export function DoNamingScreen(
 ): void {
   // Lazy import pour éviter circular dep : naming-screen-impl importe depuis decomp-globals
   // qui peut éventuellement importer main-menu-impl (= chain d'import).
-  void import('../../game/naming_screen').then((mod) => {
+  void import('../../naming_screen').then((mod) => {
     mod.DoNamingScreen(
       type, dest as number[], monSpecies, monGender, monPersonality, callback as any,
     );

@@ -39,7 +39,7 @@ import {
   MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsIndoorEncounter,
   MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsDeepOrOceanWater, MetatileBehavior_IsMountain,
-} from '../../game/metatile_behavior';
+} from '../../metatile_behavior';
 // Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
 // Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
 import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
@@ -50,7 +50,7 @@ import { createPokemonInstance } from '../pokemon/pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
 import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
-import { StringExpandPlaceholders } from '../../game/string_util';
+import { StringExpandPlaceholders } from '../../string_util';
 import { getText } from '../script/script-runtime';
 // Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
 import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';

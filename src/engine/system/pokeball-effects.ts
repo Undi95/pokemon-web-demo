@@ -29,7 +29,7 @@ import {
   MarkObjTilesAllocated, MarkObjPaletteAllocated,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
   DestroySprite, AllocOamMatrix, FreeOamMatrix,
-} from '../../game/sprite';
+} from '../../sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
 export const BALL_POKE = 0;

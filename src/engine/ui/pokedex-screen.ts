@@ -14,7 +14,7 @@ import {
   CopyWindowToVram,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { PlaySE } from '../system/decomp-globals';

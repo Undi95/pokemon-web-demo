@@ -44,16 +44,16 @@ import {
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './gba-menu-system';
-import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../game/menu_specialized';
+import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../menu_specialized';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
-import { ItemIsMail } from '../../game/mail_data';
+import { ItemIsMail } from '../../mail_data';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { gMoveNames } from '../data/game-data';
-import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../../game/sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../../sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,

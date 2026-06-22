@@ -35,11 +35,11 @@ import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from '../battle
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
-} from '../../game/event_object_movement';
-import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
+} from '../../event_object_movement';
+import { GetPlayerFacingDirection } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { GetCameraTopLeftCoords } from '../../game/field_camera';
-import { SaveMapView, MAP_OFFSET } from '../../game/fieldmap';
+import { GetCameraTopLeftCoords } from '../../field_camera';
+import { SaveMapView, MAP_OFFSET } from '../../fieldmap';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 

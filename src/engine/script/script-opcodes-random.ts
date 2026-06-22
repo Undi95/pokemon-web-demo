@@ -7,7 +7,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarSet, VarGet } from './script-vars';
-import { Random } from '../../game/random';
+import { Random } from '../../random';
 
 // 1:1 décomp `ScrCmd_random` (scrcmd.c:479-485) :
 //   u16 max = VarGet(ScriptReadHalfword(ctx));

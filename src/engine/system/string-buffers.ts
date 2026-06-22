@@ -14,8 +14,8 @@
  * pour substituer `{STR_VAR_N}` (bytes 0xFD + id).
  */
 
-import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy } from '../../game/include/string_util';
-import { encodeOwText, decodeOwBytes } from '../../game/include/text';
+import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy } from '../../../include/string_util';
+import { encodeOwText, decodeOwBytes } from '../../../include/text';
 import { EOS } from '../decomp-data/include/constants/characters-data';
 
 /** Le buffer byte `gStringVarN` (réf. stable, contenu mutable). */

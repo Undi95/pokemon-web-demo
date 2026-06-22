@@ -38,14 +38,14 @@ import {
 } from './bag-pockets';
 import {
   SetCursorWithinListBounds, SetCursorScrollWithinListBounds, MenuHelpers_IsLinkActive, type ListPos,
-} from '../../game/menu_helpers';
+} from '../../menu_helpers';
 import {
   gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
   CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND,
   gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
-} from '../../game/list_menu';
+} from '../../list_menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../system/data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
@@ -58,7 +58,7 @@ import {
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar } from '../system/string-buffers';
 import { gStringVar4 } from '../ui/gba-text-system';
-import { encodeOwText } from '../../game/include/text';
+import { encodeOwText } from '../../../include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
@@ -67,7 +67,7 @@ import {
   ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
 import {
   DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
   FONT_NORMAL, AddTextPrinterParameterized4, GetMenuCursorDimensionByFont,
@@ -105,7 +105,7 @@ import {
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
-} from '../../game/list_menu';
+} from '../../list_menu';
 import { GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
@@ -127,7 +127,7 @@ import {
   AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite,
   AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
   AddSwitchPocketRotatingBallSprite,
-} from '../../game/item_menu_icons';
+} from '../../item_menu_icons';
 // Swap line — barre grise ▶ rouge affichée pendant SELECT swap (1:1 menu_helpers.c).
 import {
   preloadSwapLineAssets, LoadListMenuSwapLineGfx,
@@ -139,7 +139,7 @@ import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
   SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
-} from '../../game/list_menu';
+} from '../../list_menu';
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
 } from '../decomp-data/src/item_menu-data';

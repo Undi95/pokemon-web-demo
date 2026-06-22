@@ -15,7 +15,7 @@ import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-va
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry, ResetSpriteData as _bridgeResetSpriteData, DestroySprite as _bridgeDestroySprite } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
-} from '../../game/play_time';
+} from '../../play_time';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
@@ -23,7 +23,7 @@ import {
   MapGridGetMetatileIdAt,
   GetMapBorderIdAt,
   GetMetatileAttributesById,
-} from '../../game/fieldmap';
+} from '../../fieldmap';
 const dg = _dg as any;
 const cb = _cb as any;
 

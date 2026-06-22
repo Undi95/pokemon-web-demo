@@ -36,7 +36,7 @@
  * Fallback message en attendant le port.
  */
 
-import { DestroySprite } from '../../game/sprite';
+import { DestroySprite } from '../../sprite';
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
@@ -44,7 +44,7 @@ import {
   FillBgTilemapBufferRect,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
@@ -56,12 +56,12 @@ import { ScriptContext_SetupScript } from '../script/script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
 import { ReadMail } from './mail';
-import { ITEM_NONE, ClearMail } from '../../game/mail_data';
+import { ITEM_NONE, ClearMail } from '../../mail_data';
 import { FEMALE } from '../system/decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from './gba-text-system';
-import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
+import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
@@ -70,7 +70,7 @@ import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
-} from '../../game/list_menu';
+} from '../../list_menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { getItemNameFr } from '../system/data-tables';
@@ -79,7 +79,7 @@ import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
 import { FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { FreeSpritePaletteByTag } from '../../game/sprite';
+import { FreeSpritePaletteByTag } from '../../sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).

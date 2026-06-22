@@ -36,13 +36,13 @@ import {
   CopyWindowToVram, ShowBg, HideBg,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,

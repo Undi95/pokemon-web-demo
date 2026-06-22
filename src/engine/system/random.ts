@@ -12,8 +12,8 @@
  * À terme : basculer tous les importeurs vers `@game/...` puis SUPPRIMER ce fichier.
  */
 
-import { Random, Random2, SeedRng, SeedRng2, _rngDebug, _rngReset } from '../../game/random';
-import { Random32 } from '../../game/include/random';
+import { Random, Random2, SeedRng, SeedRng2, _rngDebug, _rngReset } from '../../random';
+import { Random32 } from '../../../include/random';
 
 export { Random, Random2, Random32, SeedRng, SeedRng2 };
 

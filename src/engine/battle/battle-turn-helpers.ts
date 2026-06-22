@@ -8,4 +8,4 @@
 export {
   SwitchPartyOrder, AllAtActionConfirmed, UpdateBattlerPartyOrdersOnSwitch,
   SwapTurnOrder, SetActionsAndBattlersTurnOrder,
-} from '../../game/battle_main';
+} from '../../battle_main';

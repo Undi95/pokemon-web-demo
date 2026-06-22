@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite } from '../../sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
   getExperienceForLevel,
@@ -48,7 +48,7 @@ import {
   DynamicPlaceholderTextUtil_Reset,
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
-} from '../../game/dynamic_placeholder_text_util';
+} from '../../dynamic_placeholder_text_util';
 import { GetMapNameHandleAquaHideout } from '../system/decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
@@ -60,7 +60,7 @@ import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from '../battle/party-storage';
-import { IsShinyOtIdPersonality } from '../../game/pokemon';
+import { IsShinyOtIdPersonality } from '../../pokemon';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
 

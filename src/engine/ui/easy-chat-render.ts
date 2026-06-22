@@ -166,7 +166,7 @@ import {
 import {
   LoadUserWindowBorderGfx,
   DrawTextBorderOuter,
-} from '../../game/text_window';
+} from '../../text_window';
 
 import {
   CreateYesNoMenu,
@@ -834,7 +834,7 @@ function StringLength(str: Uint8Array | string): number {
 // (string_util.c:602) — CONSOLIDÉ vers le miroir `src/game/string_util.ts` (0 dup).
 // NB : le miroir écrit le `EOS` final que cette impl locale OMETTAIT (vraie divergence
 // 1:1 corrigée) ; les callers ré-écrivent aussitôt cette position (CHAR_HYPHEN / StringAppend).
-import { WriteColorChangeControlCode } from '../../game/include/string_util';
+import { WriteColorChangeControlCode } from '../../../include/string_util';
 
 // â”€â”€â”€ Memory allocation 1:1 (Alloc / TRY_FREE_AND_SET_NULL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

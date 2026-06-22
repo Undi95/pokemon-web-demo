@@ -24,7 +24,7 @@
  */
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 // Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
-import { CanResetRTC as _MirrorCanResetRTC } from '../../game/include/event_data';
+import { CanResetRTC as _MirrorCanResetRTC } from '../../../include/event_data';
 import {
   BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
   REG_OFFSET_DISPCNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
@@ -77,7 +77,7 @@ import {
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
   CreateSprite as _CreateSprite_game,
   ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP,
-} from '../../game/sprite';
+} from '../../sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
   IndexOfSpriteTileTag, GetSpriteTileTagByTileStart,
@@ -87,7 +87,7 @@ export {
   ResetOamRange,
   // Sprite geometry (sprite.c:687-700)
   CalcCenterToCornerVec,
-} from '../../game/sprite';
+} from '../../sprite';
 // LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
 import { _setPaletteRuntimeGetter } from './palette';
 export {
@@ -501,7 +501,7 @@ export function LoadIntroPart2Graphics(scenery: number): void {
 
 /** 1:1 décomp src/sprite.c:1581-1587 — délégué à `src/engine/sprite.ts`
  *  (= source de vérité 1:1 strict du palette tag system). */
-export { FreeAllSpritePalettes } from '../../game/sprite';
+export { FreeAllSpritePalettes } from '../../sprite';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)
@@ -1481,7 +1481,7 @@ export {
   gScanlineEffectRegBuffers, gScanlineEffect,
   ScanlineEffect_Clear, ScanlineEffect_Stop, ScanlineEffect_SetParams,
   ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave,
-} from '../../game/scanline_effect';
+} from '../../scanline_effect';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TITLE SCREEN STUBS (Phase 3 minimum viable)
@@ -2488,7 +2488,7 @@ export function RunTasks(): void {
 // 1:1 décomp `AnimateSprites()` (sprite.c:308) + `BuildOamBuffer()` (sprite.c:325) :
 // DÉFINIS dans game/sprite.ts (home miroir de sprite.c), re-export transitionnel pour
 // les importeurs historiques (main_menu, mail, OW welcome). Relocalisés E2.3e.
-export { AnimateSprites, BuildOamBuffer } from '../../game/sprite';
+export { AnimateSprites, BuildOamBuffer } from '../../sprite';
 
 // ─── Title screen / audio stubs ──────────────────────────────────────────────
 /** 1:1 décomp title_screen.c:859 — color cycling sur BG palette 14 entry 15
@@ -2580,7 +2580,7 @@ export * from '../ui/gba-window-system';
 // text_window.c (miroir 1:1) — LoadMessageBoxGfx / GetWindowFrameTilesPal /
 // GetTextWindowPalette / GetOverworldTextboxPalettePtr / DrawTextBorder* / etc.
 // Relocalisé hors de gba-window-system → réexposé ici pour le global-scope.
-export * from '../../game/text_window';
+export * from '../../text_window';
 export * from '../ui/gba-text-system';
 export * from '../ui/gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans

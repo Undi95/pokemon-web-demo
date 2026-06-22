@@ -46,7 +46,7 @@ import {
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from '../system/decomp-globals';
 import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
 import { loadIndexedPngStrict } from '../../../harness/gba/png-loader';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
@@ -56,7 +56,7 @@ import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './
 import { getString } from './gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
 import { FlagSet, VarGet } from '../script/script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
@@ -172,7 +172,7 @@ const sClockHandCoords: ReadonlyArray<readonly [number, number]> = [
 // L'ancien code local utilisait `Math.round(Math.sin/cos)` = NON-1:1 (la table
 // gSineDegreeTable de la décomp TRONQUE, diverge à 4 angles ; et Cos2 = Sin2(+90)).
 // Consolidé sur le miroir (dup Sin2/Cos2 flaggé par check-duplicate-helpers).
-import { Sin2, Cos2 } from '../../game/include/trig';
+import { Sin2, Cos2 } from '../../../include/trig';
 
 // ─── State module-level (= encapsulates gTasks[taskId].data fields) ─────────
 

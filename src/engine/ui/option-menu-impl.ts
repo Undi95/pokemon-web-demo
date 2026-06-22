@@ -26,7 +26,7 @@ import {
 } from '../system/decomp-globals';
 import { FillWindowPixelRect } from './gba-window-system';
 import { GetStringRightAlignXOffset } from './gba-text-system';
-import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../../game/text_window';
+import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../../text_window';
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../system/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
 import { JOY_NEW } from '../system/decomp-globals';

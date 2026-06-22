@@ -616,12 +616,12 @@ export {
   Menu_LoadStdPalAt,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
-} from '../../game/menu';
+} from '../../menu';
 
 // LoadMessageBoxGfx — RELOCALISÉ dans le miroir `src/game/text_window.ts`
 // (1:1 décomp text_window.c:93). Importer depuis `gba-text-window` (hub
 // transitoire) ou `../../game/text_window`. Exposé au global-scope via le
-// `export * from '../../game/text_window'` de decomp-globals.
+// `export * from '../../text_window'` de decomp-globals.
 
 // ClearDialogWindowAndFrame / ClearStdWindowAndFrame — RELOCALISÉS dans
 // `src/game/menu.ts` (menu.c:234/243), ré-exportés par le hub ci-dessus.

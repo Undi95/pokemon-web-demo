@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';

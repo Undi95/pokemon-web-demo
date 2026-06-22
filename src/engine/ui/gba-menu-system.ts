@@ -18,7 +18,7 @@
 import { m4aSongNumStart, LoadPalette } from '../system/decomp-globals';
 import { PLTT_SIZE_4BPP } from '../system/decomp-bridge';
 // Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
-import { IsMysteryGiftEnabled as _MirrorIsMysteryGiftEnabled, CanResetRTC as _MirrorCanResetRTC } from '../../game/include/event_data';
+import { IsMysteryGiftEnabled as _MirrorIsMysteryGiftEnabled, CanResetRTC as _MirrorCanResetRTC } from '../../../include/event_data';
 // ─── Hub : système Menu (curseur) + YesNo RELOCALISÉS dans le miroir `src/game/menu.ts`
 //     (menu.c). Ré-exportés ici pour les importeurs existants (starter-choose,
 //     script-opcodes*, start-menu…). La version simplifiée `menuCursorPos`/`menuNumItems`
@@ -30,7 +30,7 @@ export {
   ProcessMenuInput_other, Menu_ProcessInputNoWrapAround_other,
   CreateYesNoMenu, DisplayYesNoMenuDefaultYes, DisplayYesNoMenuWithDefault,
   EraseYesNoWindow, GetYesNoWindowId,
-} from '../../game/menu';
+} from '../../menu';
 
 /** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfo
  *  Elements{1,2,3}_Pal → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP).
@@ -202,7 +202,7 @@ export const OPTIONS_BUTTON_MODE_L_EQUALS_A = 2;
 // GetPlayerTextSpeed / GetPlayerTextSpeedDelay : RELOCALISÉS dans le miroir
 // `src/game/menu.ts` (1:1 menu.c:474/481, foyer décomp unique). Import = binding
 // local (pour l'expose global ci-dessous) + re-export pour les consommateurs.
-import { GetPlayerTextSpeed, GetPlayerTextSpeedDelay } from '../../game/menu';
+import { GetPlayerTextSpeed, GetPlayerTextSpeedDelay } from '../../menu';
 export { GetPlayerTextSpeed, GetPlayerTextSpeedDelay };
 
 /** Audio pan adjustment — applied par M4A engine quand `optionsSound` lu.

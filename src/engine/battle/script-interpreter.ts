@@ -478,7 +478,7 @@ function _initCommandsTable(): void {
 
   // Install tous les handlers via l'index centralisé `battle-script-commands.ts`.
   // Le file documente le mapping cmd-niveau-X → opcodes décomp battle_script_commands.c.
-  void import('../../game/battle_script_commands').then(({ installAllBattleScriptCommands }) => {
+  void import('../../battle_script_commands').then(({ installAllBattleScriptCommands }) => {
     void installAllBattleScriptCommands(_commands);
   });
 }

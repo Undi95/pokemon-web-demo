@@ -30,11 +30,11 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
-import { DestroySprite } from '../../game/sprite';
+import { DestroySprite } from '../../sprite';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
-import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../../game/event_object_movement';
+import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../../event_object_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gMapHeader, MAP_OFFSET } from '../../game/fieldmap';
+import { gMapHeader, MAP_OFFSET } from '../../fieldmap';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../system/decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';

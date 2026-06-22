@@ -40,7 +40,7 @@ import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from '../b
 import {
   ScrCmd_trainerbattle, ScrCmd_dotrainerbattle,
   ScrCmd_gotopostbattlescript, ScrCmd_gotobeatenscript,
-} from '../../game/battle_setup';
+} from '../../battle_setup';
 
 // ─── Trainerbattle variants — flux 1:1 BattleSetup_ConfigureTrainerBattle ────
 // (port miroir game/battle_setup.ts, remplace l'ancien net-effect _runTrainerBattle.)

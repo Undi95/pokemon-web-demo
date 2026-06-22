@@ -28,7 +28,7 @@
 
 import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
@@ -36,9 +36,9 @@ import {
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
-import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../game/sprite';
+import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../sprite';
 import { setActiveBattler } from './state';
-import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../game/pokeball';
+import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../pokeball';
 // Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance
 // partage, decomp-globals.ts:153) AVANT le getAsset SYNC de LoadBallGfx, sinon BLOC NOIR.
 import { assetCache } from '../system/decomp-globals';

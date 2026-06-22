@@ -31,14 +31,14 @@
  * 100% du routage passe désormais par le chemin décomp ScriptMovement.
  */
 
-import { gObjectEvents } from '../../game/event_object_movement';
-import type { ObjectEvent } from '../../game/event_object_movement';
-import { gPlayerAvatar } from '../../game/field_player_avatar';
+import { gObjectEvents } from '../../event_object_movement';
+import type { ObjectEvent } from '../../event_object_movement';
+import { gPlayerAvatar } from '../../field_player_avatar';
 import {
   ConvertMovementActionsToIds,
   ScriptMovement_StartObjectMovementScript,
   ScriptMovement_IsObjectMovementFinished,
-} from '../../game/script_movement';
+} from '../../script_movement';
 import { VarGet } from '../script/script-vars';
 
 // ─── Movement label resolver ─────────────────────────────────────────────────

@@ -117,4 +117,4 @@ export function getSpeciesGenderRatio(species: number): number {
 // 1:1 décomp `GetGenderFromSpeciesAndPersonality` → consolidé sur le miroir
 // `src/game/pokemon.ts` (source unique ; il importe `getSpeciesGenderRatio` ci-dessus
 // = `gSpeciesInfo[species].genderRatio`). Re-export pour les callers de ce module.
-export { GetGenderFromSpeciesAndPersonality } from '../../../game/include/pokemon';
+export { GetGenderFromSpeciesAndPersonality } from '../../../../include/pokemon';

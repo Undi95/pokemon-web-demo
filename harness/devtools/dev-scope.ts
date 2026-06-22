@@ -37,7 +37,7 @@ import {
   GetCurrentFieldMessageText,
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
-} from '../../src/game/field_message_box';
+} from '../../src/field_message_box';
 import {
   gCamera as _gCamera,
   gFieldCamera as _gFieldCamera,
@@ -46,7 +46,7 @@ import {
   GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
-} from '../../src/game/field_camera';
+} from '../../src/field_camera';
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/engine/script/script-runtime';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';

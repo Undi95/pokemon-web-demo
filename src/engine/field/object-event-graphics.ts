@@ -49,7 +49,7 @@ import {
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
   setSpriteAnims as _setSpriteAnims_1to1,
-} from '../../game/sprite';
+} from '../../sprite';
 import { loadGbaPal, loadTileBin } from '../../../harness/gba/png-loader';
 import { PALSLOT_NPC_SPECIAL } from './object-event-graphics-info';
 

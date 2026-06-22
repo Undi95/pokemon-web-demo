@@ -81,8 +81,8 @@ import {
 } from './gba-window-system';
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
 import { loadTileBin, loadGbaPal, loadTilemapBin } from '../../../harness/gba/png-loader';
-import { ConvertEasyChatWordsToString, CopyEasyChatWord } from '../../game/easy_chat';
-import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from '../../game/pokemon_icon';
+import { ConvertEasyChatWordsToString, CopyEasyChatWord } from '../../easy_chat';
+import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from '../../pokemon_icon';
 import {
   AddTextPrinterParameterized3,
   RunTextPrinters,
@@ -107,7 +107,7 @@ import {
   FIRST_MAIL_INDEX, ITEM_TO_MAIL,
   SPECIES_NONE, NUM_SPECIES,
   MailSpeciesToSpecies,
-} from '../../game/mail_data';
+} from '../../mail_data';
 
 // ─── Type aliases 1:1 décomp ─────────────────────────────────────────────────
 
@@ -1152,7 +1152,7 @@ function Overworld_IsRecvQueueAtMax(): boolean {
 
 // MenuHelpers_IsLinkActive : RELOCALISÉ dans le miroir `src/game/menu_helpers.ts`
 // (1:1 menu_helpers.c:298, single-player → false). Import hoisté.
-import { MenuHelpers_IsLinkActive } from '../../game/menu_helpers';
+import { MenuHelpers_IsLinkActive } from '../../menu_helpers';
 
 // ─── Texte FR : gText_FromSpace = "" (1:1 décomp strings.c:1587) ─────────────
 

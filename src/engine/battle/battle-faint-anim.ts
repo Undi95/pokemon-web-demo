@@ -10,4 +10,4 @@ export {
   setFaintSlideFlags, getFaintSlideFlags,
   SpriteCB_FaintOpponentMon, SpriteCB_AnimFaintOpponent, SpriteCB_FaintSlideAnim,
   TriggerFaintSlide, TriggerFaintOpponent,
-} from '../../game/battle_main';
+} from '../../battle_main';

@@ -13,7 +13,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
-import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../game/fieldmap';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../fieldmap';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp scrcmd.c:ScrCmd_setmetatile (lignes 2034-2048).
@@ -58,7 +58,7 @@ registerOpcode('setmaplayoutindex', (_ctx, args) => {
 registerOpcode('setstepcallback', (_ctx, args) => {
   const raw = args[0] ?? '0';
   void (async () => {
-    const ft = await import('../../game/field_tasks');
+    const ft = await import('../../field_tasks');
     // 1:1 : l'arg est une constante STEP_CB_* (ex. "STEP_CB_ASH") OU une valeur numérique.
     // parseValue ne connaît PAS les STEP_CB_* (constants/field_tasks.h) → on les résout via
     // les exports de field_tasks (STEP_CB_DUMMY..STEP_CB_CRACKED_FLOOR). Sans ça la cendre

@@ -1,0 +1,1026 @@
+/**
+ * text.ts — miroir 1:1 (PARTIEL, en cours) de `decomp/src/text.c` (+ include/text.h).
+ *
+ * Le RENDERER byte-level de text.c (RenderText / RunTextPrinters / AddTextPrinter /
+ * DecompressGlyph_* / CopyGlyphToWindow) est DÉJÀ porté côté `engine/ui` :
+ *   - `gba-text-printer.ts` : `runTextPrinter` (= RenderText, text.c:934), les
+ *     `RENDER_STATE_*`, `addTextPrinter` (= AddTextPrinter), `encodeStringForFont`,
+ *     les glyphes (couche HW : window/blit/DMA).
+ *   - `gba-text-system.ts` : `AddTextPrinterParameterized` / `AddTextPrinterForMessage`.
+ * Ce module miroir absorbera ce code à terme (relocalisation 1:1). Pour l'instant il
+ * porte UNIQUEMENT ce qui débloque la migration TEXTE 1:1 (cf.
+ * docs/TEXT-DATA-1TO1-MIGRATION-PLAN.md) :
+ *   - le flag de bascule `__USE_DECOMP_TEXT__` (style `__USE_DECOMP_BATTLE_LOOP__`) ;
+ *   - `encodeOwTextSource` = cœur du STAGE 1 (encodeur source→bytes charmap 1:1),
+ *     dérisqué par vérif d'ÉQUIVALENCE avec la voie ASCII (cf. plan).
+ */
+import {
+  PLACEHOLDER_BEGIN, EOS,
+  PLACEHOLDER_ID_STRING_VAR_1, PLACEHOLDER_ID_STRING_VAR_2, PLACEHOLDER_ID_STRING_VAR_3,
+  PLACEHOLDER_ID_PLAYER, PLACEHOLDER_ID_RIVAL, PLACEHOLDER_ID_KUN,
+  CHAR_NEWLINE, CHAR_DYNAMIC, CHAR_KEYPAD_ICON, CHAR_EXTRA_SYMBOL,
+  CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
+  EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_COLOR, EXT_CTRL_CODE_HIGHLIGHT, EXT_CTRL_CODE_SHADOW,
+  EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW, EXT_CTRL_CODE_PALETTE, EXT_CTRL_CODE_FONT,
+  EXT_CTRL_CODE_PAUSE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_SHIFT_RIGHT, EXT_CTRL_CODE_SHIFT_DOWN,
+  EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_PLAY_SE, EXT_CTRL_CODE_WAIT_SE, EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP,
+  EXT_CTRL_CODE_CLEAR_TO, EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_JPN, EXT_CTRL_CODE_ENG,
+} from './engine/decomp-data/include/constants/characters-data';
+import {
+  encodeStringForFont, blitGlyphToWindow, gTextFlags, _getTextInputState, LINE_HEIGHT,
+  scrollWindow, fillWindowPixelBuffer, fillWindowPixelRect, textPrinterDrawDownArrow,
+  RENDER_FINISH, RENDER_REPEAT, RENDER_PRINT, RENDER_UPDATE,
+  RENDER_STATE_FINISH, RENDER_STATE_HANDLE_CHAR, RENDER_STATE_WAIT, RENDER_STATE_CLEAR,
+  RENDER_STATE_SCROLL_START, RENDER_STATE_SCROLL, RENDER_STATE_WAIT_SE, RENDER_STATE_PAUSE,
+  addTextPrinter,
+  type TextPrinter, type AddTextPrinterOpts,
+} from './engine/ui/gba-text-printer';
+import {
+  getOwCharmap, getFontGlyphData, getFontGlyphWidths,
+  getDownArrowPixels, getDarkDownArrowPixels,
+} from './engine/ui/gba-text-system';
+// 1:1 décomp : GetPlayerTextSpeed (menu.c:474) utilisé par RenderText SCROLL. Foyer =
+// miroir `menu.ts`. Cycle text↔menu runtime-safe (text.c appelle GetPlayerTextSpeed).
+import { GetPlayerTextSpeed } from './menu';
+import { getWindowById } from './engine/ui/gba-window-system';
+import { gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../include/string_util';
+import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placeholder_text_util';
+// 1:1 décomp : TextPrinterWait*/RENDER_STATE_WAIT_SE appellent PlaySE(SE_SELECT) /
+// IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
+// fonctions, jamais au top-level). SE_SELECT = constants/songs.h.
+import { PlaySE, IsSEPlaying } from './engine/system/decomp-globals';
+import { SE_SELECT } from './engine/decomp-data/_common-constants';
+
+// NB : migration TEXTE en FLIP DIRECT (décision user 2026-06-06, pas de flag/2-voies).
+// Tout le système texte OW bascule en byte-level 1:1 ; pas de `__USE_DECOMP_TEXT__`.
+
+// ════════════════════════════════════════════════════════════════════════════
+//  STAGE 1 (cœur) — encodeur source→bytes charmap 1:1 (= équivalent runtime du
+//  préprocesseur `_("…")` + charmap.txt du décomp, pour le format token de NOTRE
+//  extraction `auto-asm/data/**`). BRIDGE TRANSITOIRE : quand l'extraction
+//  régénèrera la data en bytes natifs (Stage 1 complet), cet encodage build-time
+//  remplacera ce runtime-encode. NON-BREAKING : rien de live ne l'appelle.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Tokens placeholder de NOTRE format OW → `PLACEHOLDER_ID_*` (1:1 décomp).
+ *  `{STR_VAR_N}`/`{PLAYER}`/`{RIVAL}`/`{KUN}` = ceux résolus par
+ *  `StringExpandPlaceholders` (string_util.ts). Les autres tokens (`{COLOR}`,
+ *  `{LV_2}`…) NE sont PAS des placeholders → restent dans les segments littéraux
+ *  (gérés par `encodeStringForFont` : ext-ctrl-codes / EXTRA_SYMBOL / glyphes). */
+const OW_PLACEHOLDER_TOKENS: Readonly<Record<string, number>> = {
+  STR_VAR_1: PLACEHOLDER_ID_STRING_VAR_1,
+  STR_VAR_2: PLACEHOLDER_ID_STRING_VAR_2,
+  STR_VAR_3: PLACEHOLDER_ID_STRING_VAR_3,
+  PLAYER: PLACEHOLDER_ID_PLAYER,
+  RIVAL: PLACEHOLDER_ID_RIVAL,
+  KUN: PLACEHOLDER_ID_KUN,
+};
+
+/**
+ * Encode une source texte OW (notre format : JS-string + tokens `{…}` + `\n`/`\l`/`\p`)
+ * en bytes charmap, 1:1 comme le template byte du décomp :
+ *   - `{STR_VAR_1}` → `[PLACEHOLDER_BEGIN(0xFD), PLACEHOLDER_ID_STRING_VAR_1]`, etc.
+ *   - tout le reste (glyphes, `\n`→0xFE, `\l`/`\p`, `{COLOR}`/`{LV_2}`/… ext-ctrl)
+ *     → délégué à `encodeStringForFont` (= encodeur charmap canonique, 0 dup).
+ * Termine par EOS (0xFF). Le résultat passé à `StringExpandPlaceholders` (string_util.ts)
+ * produit les MÊMES bytes que la voie ASCII (vérifié par équivalence — cf. plan §Stage 1).
+ *
+ * Calqué sur `encodeTemplate` (battle-message.ts) : on scanne les tokens placeholder
+ * et on flush les segments littéraux à `encodeStringForFont` (en strippant son EOS).
+ */
+export function encodeOwTextSource(src: string, charmap: Record<string, number>): Uint8Array {
+  const out: number[] = [];
+  let segStart = 0;
+
+  const flushSeg = (end: number): void => {
+    if (end <= segStart) return;
+    const segBytes = encodeStringForFont(src.slice(segStart, end), charmap);
+    for (let k = 0; k < segBytes.length; k++) {
+      if (segBytes[k] === EOS) break; // encodeStringForFont append un EOS → on le strip
+      out.push(segBytes[k]);
+    }
+  };
+
+  let i = 0;
+  while (i < src.length) {
+    if (src[i] === '{') {
+      const close = src.indexOf('}', i + 1);
+      if (close > i) {
+        const token = src.slice(i + 1, close).trim();
+        const id = OW_PLACEHOLDER_TOKENS[token];
+        if (id !== undefined) {
+          flushSeg(i);                       // encode le littéral avant le placeholder
+          out.push(PLACEHOLDER_BEGIN, id);   // [0xFD, PLACEHOLDER_ID_*]
+          i = close + 1;
+          segStart = i;
+          continue;
+        }
+        // Token non-placeholder ({COLOR}/{LV_2}/…) : reste dans le segment → géré
+        // par encodeStringForFont au prochain flush.
+      }
+    }
+    i++;
+  }
+  flushSeg(src.length);
+  out.push(EOS);
+  return new Uint8Array(out);
+}
+
+/**
+ * Wrapper de `encodeOwTextSource` qui résout la charmap OW (getOwCharmap, chargée
+ * au boot) — = notre « préproc » au point d'usage (getText). Strippe le `$`
+ * terminal (EOS du format décomp ; l'EOS est ré-ajouté par l'encodeur). Si la
+ * charmap n'est pas encore chargée, encode best-effort (charmap vide → espaces) ;
+ * l'appelant (getText) ne met PAS en cache dans ce cas → ré-encodage propre ensuite.
+ */
+export function encodeOwText(src: string): Uint8Array {
+  const cm = getOwCharmap();
+  return encodeOwTextSource(src.replace(/\$$/, ''), cm ?? {});
+}
+
+/** True si la charmap OW est chargée (= encodeOwText produit des bytes valides). */
+export function isOwCharmapReady(): boolean {
+  return getOwCharmap() !== null;
+}
+
+let _reverseCharmap: Map<number, string> | null = null;
+
+/**
+ * Décode des bytes charmap → JS-string LISIBLE (best-effort, pour devtools / debug).
+ * Saute les séquences de contrôle (0xFC ext-ctrl + args via GetExtCtrlCodeLength,
+ * 0xFD placeholder + id). PAS un chemin 1:1 décomp — outil d'inspection seulement.
+ */
+export function decodeOwBytes(bytes: Uint8Array): string {
+  const cm = getOwCharmap();
+  if (!cm) return '';
+  if (!_reverseCharmap) {
+    _reverseCharmap = new Map();
+    for (const ch of Object.keys(cm)) _reverseCharmap.set(cm[ch], ch);
+  }
+  let out = '';
+  let i = 0;
+  while (i < bytes.length && bytes[i] !== EOS) {
+    const b = bytes[i];
+    if (b === 0xFC) { i += 2; continue; }          // ext-ctrl (code + ≥1 arg) — best-effort skip
+    if (b === PLACEHOLDER_BEGIN) { i += 2; continue; } // placeholder (déjà résolu en principe)
+    out += _reverseCharmap.get(b) ?? '';
+    i++;
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RENDERER (relocalisation engine→miroir, VAGUE 2 — 1:1 text.c / text.h).
+//  La couche glyphe/blit (DecompressGlyph/CopyGlyphToWindow/glyph gfx) reste
+//  fournie par engine/ui ; ICI = la LOGIQUE (attributs de font, structs,
+//  mesures, state machine). Sous-vague 2b-1 : attributs de font (data-driven).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `include/text.h:10-21` enum FontIds. */
+export const FONT_SMALL = 0;
+export const FONT_NORMAL = 1;
+export const FONT_SHORT = 2;
+export const FONT_SHORT_COPY_1 = 3;
+export const FONT_SHORT_COPY_2 = 4;
+export const FONT_SHORT_COPY_3 = 5;
+export const FONT_BRAILLE = 6;
+export const FONT_NARROW = 7;
+export const FONT_SMALL_NARROW = 8;
+export const FONT_BOLD = 9;
+
+/** 1:1 décomp `#define TEXT_SKIP_DRAW 0xFF` (text.h:8). Sentinel `speed` =
+ *  « charger tout le texte d'un coup mais ne pas copier en VRAM ». */
+export const TEXT_SKIP_DRAW = 0xFF;
+
+/** 1:1 décomp `include/text.h:42-51` enum (attributeId de GetFontAttribute). */
+export const FONTATTR_MAX_LETTER_WIDTH = 0;
+export const FONTATTR_MAX_LETTER_HEIGHT = 1;
+export const FONTATTR_LETTER_SPACING = 2;
+export const FONTATTR_LINE_SPACING = 3;
+export const FONTATTR_UNKNOWN = 4;
+export const FONTATTR_COLOR_FOREGROUND = 5;
+export const FONTATTR_COLOR_BACKGROUND = 6;
+export const FONTATTR_COLOR_SHADOW = 7;
+
+/** 1:1 décomp `include/text.h:97-108 struct FontInfo` (sans `fontFunction`,
+ *  ajouté en sous-vague 2c avec RenderFont/FontFunc_*). */
+export interface FontInfo {
+  maxLetterWidth: number;
+  maxLetterHeight: number;
+  letterSpacing: number;
+  lineSpacing: number;
+  unk: number;
+  fgColor: number;
+  bgColor: number;
+  shadowColor: number;
+}
+
+/** 1:1 décomp `src/text.c:119-221 sFontInfos[]`. Indexé par FONT_* ; `.unk`
+ *  non initialisé en décomp (= 0) ; `.fontFunction` omis (rendu = moteur engine
+ *  jusqu'à la sous-vague 2c). Valeurs reportées EXACTEMENT du décomp. */
+const sFontInfos: ReadonlyArray<FontInfo> = [
+  /* [FONT_SMALL]        */ { maxLetterWidth: 5, maxLetterHeight: 12, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_NORMAL]       */ { maxLetterWidth: 6, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT]        */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_1] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_2] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_3] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_BRAILLE]      */ { maxLetterWidth: 8, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 8, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_NARROW]       */ { maxLetterWidth: 5, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SMALL_NARROW] */ { maxLetterWidth: 5, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_BOLD]         */ { maxLetterWidth: 8, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 1, bgColor: 2, shadowColor: 15 },
+];
+
+/** 1:1 décomp `src/text.c:1645 GetFontAttribute(u8 fontId, u8 attributeId)`.
+ *  Switch pur → `sFontInfos[fontId].<field>`. attributeId hors enum → 0. */
+export function GetFontAttribute(fontId: number, attributeId: number): number {
+  let result = 0;
+  const f = sFontInfos[fontId];
+  if (!f) return 0;
+  switch (attributeId) {
+    case FONTATTR_MAX_LETTER_WIDTH: result = f.maxLetterWidth; break;
+    case FONTATTR_MAX_LETTER_HEIGHT: result = f.maxLetterHeight; break;
+    case FONTATTR_LETTER_SPACING: result = f.letterSpacing; break;
+    case FONTATTR_LINE_SPACING: result = f.lineSpacing; break;
+    case FONTATTR_UNKNOWN: result = f.unk; break;
+    case FONTATTR_COLOR_FOREGROUND: result = f.fgColor; break;
+    case FONTATTR_COLOR_BACKGROUND: result = f.bgColor; break;
+    case FONTATTR_COLOR_SHADOW: result = f.shadowColor; break;
+  }
+  return result;
+}
+
+/** 1:1 décomp `src/text.c:223-235 sMenuCursorDimensions[][2]` ([w, h] par fontId).
+ *  FONT_BOLD non initialisé en décomp (= {0, 0}). */
+const sMenuCursorDimensions: ReadonlyArray<readonly [number, number]> = [
+  /* [FONT_SMALL]        */ [8, 12],
+  /* [FONT_NORMAL]       */ [8, 15],
+  /* [FONT_SHORT]        */ [8, 14],
+  /* [FONT_SHORT_COPY_1] */ [8, 14],
+  /* [FONT_SHORT_COPY_2] */ [8, 14],
+  /* [FONT_SHORT_COPY_3] */ [8, 14],
+  /* [FONT_BRAILLE]      */ [8, 16],
+  /* [FONT_NARROW]       */ [8, 15],
+  /* [FONT_SMALL_NARROW] */ [8, 8],
+  /* [FONT_BOLD]         */ [0, 0],
+];
+
+/** 1:1 décomp `src/text.c:1678 GetMenuCursorDimensionByFont(u8 fontId,
+ *  u8 whichDimension)` = `sMenuCursorDimensions[fontId][whichDimension]`. */
+export function GetMenuCursorDimensionByFont(fontId: number, whichDimension: number): number {
+  return sMenuCursorDimensions[fontId]?.[whichDimension] ?? 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Mesure de largeur (GetStringWidth, 1:1 text.c) — sous-vague 2b-2.
+//  La LOGIQUE vit ici ; les WIDTH-TABLES par glyphe (HW data) sont fournies par
+//  engine via `getFontGlyphWidths(fontId)` (= `gFontXLatinGlyphWidths` décomp).
+// ════════════════════════════════════════════════════════════════════════════
+
+type GlyphWidthFunc = (glyphId: number, isJapanese: boolean) => number;
+
+// 1:1 décomp `GetGlyphWidth_*` (text.c:1717-1894). FR (isJapanese=0) : table[glyphId].
+// JP : 8 (Small/Normal/Narrow/SmallNarrow). isJapanese reste 0 en FR/OW sauf
+// EXT_CTRL_CODE_JPN (jamais dans nos data FR).
+function GetGlyphWidth_Small(glyphId: number, isJapanese: boolean): number {
+  return isJapanese ? 8 : (getFontGlyphWidths(FONT_SMALL)[glyphId] ?? 0);
+}
+function GetGlyphWidth_Normal(glyphId: number, isJapanese: boolean): number {
+  return isJapanese ? 8 : (getFontGlyphWidths(FONT_NORMAL)[glyphId] ?? 0);
+}
+function GetGlyphWidth_Short(_glyphId: number, _isJapanese: boolean): number {
+  // décomp : JP → gFontShortJapaneseGlyphWidths ; pas de table JP côté engine →
+  // table latin pour les deux (inactif en FR, isJapanese=0).
+  return getFontGlyphWidths(FONT_SHORT)[_glyphId] ?? 0;
+}
+function GetGlyphWidth_Narrow(glyphId: number, isJapanese: boolean): number {
+  return isJapanese ? 8 : (getFontGlyphWidths(FONT_NARROW)[glyphId] ?? 0);
+}
+function GetGlyphWidth_SmallNarrow(glyphId: number, isJapanese: boolean): number {
+  return isJapanese ? 8 : (getFontGlyphWidths(FONT_SMALL_NARROW)[glyphId] ?? 0);
+}
+
+/** 1:1 décomp `src/text.c:82 sGlyphWidthFuncs[]`. FONT_BRAILLE OMIS
+ *  (GetGlyphWidth_Braille = braille.c non porté ; FONT_BRAILLE jamais mesuré OW
+ *  → GetFontWidthFunc null → largeur 0, comme le décomp si func == NULL). */
+const sGlyphWidthFuncs: ReadonlyArray<{ fontId: number; func: GlyphWidthFunc }> = [
+  { fontId: FONT_SMALL, func: GetGlyphWidth_Small },
+  { fontId: FONT_NORMAL, func: GetGlyphWidth_Normal },
+  { fontId: FONT_SHORT, func: GetGlyphWidth_Short },
+  { fontId: FONT_SHORT_COPY_1, func: GetGlyphWidth_Short },
+  { fontId: FONT_SHORT_COPY_2, func: GetGlyphWidth_Short },
+  { fontId: FONT_SHORT_COPY_3, func: GetGlyphWidth_Short },
+  { fontId: FONT_NARROW, func: GetGlyphWidth_Narrow },
+  { fontId: FONT_SMALL_NARROW, func: GetGlyphWidth_SmallNarrow },
+];
+
+/** 1:1 décomp `src/text.c:1315 GetFontWidthFunc(u8 fontId)`. */
+function GetFontWidthFunc(fontId: number): GlyphWidthFunc | null {
+  for (const e of sGlyphWidthFuncs) if (fontId === e.fontId) return e.func;
+  return null;
+}
+
+/** 1:1 décomp `src/text.c:1630 GetKeypadIconWidth` = `sKeypadIcons[id].width`
+ *  (text.c:100-115). Table de largeurs (8/16/24 px) indexée par CHAR_*_BUTTON. */
+const sKeypadIconWidths: Readonly<Record<number, number>> = {
+  0x50: 8, 0x51: 8, 0x52: 16, 0x53: 16, 0x54: 24, 0x55: 24,  // A/B/L/R/START/SELECT
+  0x56: 8, 0x57: 8, 0x58: 8, 0x59: 8,                          // DPAD up/down/left/right
+  0x5A: 8, 0x5B: 8, 0x5C: 8,                                   // DPAD updown/leftright/none
+};
+function GetKeypadIconWidth(keypadIconId: number): number {
+  return sKeypadIconWidths[keypadIconId] ?? 0;
+}
+
+/**
+ * 1:1 décomp `src/text.c:1328 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)`.
+ * Mesure la largeur pixel de `str` (multi-ligne = MAX des lignes, 1:1). Gère les
+ * placeholders (gStringVar1-3 + CHAR_DYNAMIC), EXTRA_SYMBOL (0x100|sym), KEYPAD_ICON,
+ * et tous les EXT_CTRL_CODE (skip d'args correct par code).
+ *
+ * ⚠️ SIGNATURE : ordre `(str, fontId, letterSpacing)` (≠ décomp `(fontId, str, …)`)
+ * pour rester compatible avec les ~31 call-sites engine. La LOGIQUE est 1:1.
+ * `str` accepte une source-string (encodée via charmap) OU des bytes charmap.
+ * Le fallthrough du switch décomp (noFallthroughCasesInSwitch) est rendu par un
+ * skip explicite d'args par code (COLOR_HIGHLIGHT_SHADOW=3, PLAY_BGM/SE=2, autres=1).
+ */
+export function GetStringWidth(str: string | Uint8Array, fontId: number = FONT_NORMAL, letterSpacing = 0): number {
+  const s = str instanceof Uint8Array ? str : encodeStringForFont(str, getOwCharmap() ?? {});
+
+  let func = GetFontWidthFunc(fontId);
+  if (func === null) return 0;
+
+  let isJapanese = false;
+  let minGlyphWidth = 0;
+  let localLetterSpacing = letterSpacing === -1 ? GetFontAttribute(fontId, FONTATTR_LETTER_SPACING) : letterSpacing;
+  let width = 0;
+  let lineWidth = 0;
+  let i = 0;
+
+  // 1:1 décomp : ajoute un glyphe à lineWidth (minGlyphWidth clamp OU letterSpacing
+  // japonais). `hasNext` = `str[1] != EOS` du décomp (inactif en FR, isJapanese=0).
+  const addGlyph = (gw: number, hasNext: boolean): void => {
+    if (minGlyphWidth > 0) {
+      lineWidth += gw < minGlyphWidth ? minGlyphWidth : gw;
+    } else {
+      lineWidth += gw;
+      if (isJapanese && hasNext) lineWidth += localLetterSpacing;
+    }
+  };
+
+  // 1:1 décomp : walk d'un buffer placeholder (gStringVarN / dynamic ptr).
+  const walkBuffer = (buf: Uint8Array): void => {
+    let bp = 0;
+    while (bp < buf.length && buf[bp] !== EOS) {
+      const gw = func!(buf[bp], isJapanese);
+      bp++;
+      addGlyph(gw, isJapanese ? (s[i + 1] !== undefined && s[i + 1] !== EOS) : false);
+    }
+  };
+
+  while (i < s.length && s[i] !== EOS) {
+    const c = s[i];
+    if (c === CHAR_NEWLINE) {
+      if (lineWidth > width) width = lineWidth;
+      lineWidth = 0;
+    } else if (c === PLACEHOLDER_BEGIN || c === CHAR_DYNAMIC) {
+      let buffer: Uint8Array | null = null;
+      if (c === PLACEHOLDER_BEGIN) {
+        const id = s[++i];
+        if (id === PLACEHOLDER_ID_STRING_VAR_1) buffer = gStringVar1;
+        else if (id === PLACEHOLDER_ID_STRING_VAR_2) buffer = gStringVar2;
+        else if (id === PLACEHOLDER_ID_STRING_VAR_3) buffer = gStringVar3;
+        else return 0;
+        // décomp : pas de break → fallthrough vers CHAR_DYNAMIC (buffer déjà set).
+      }
+      if (buffer === null) {
+        // CHAR_DYNAMIC : ptr via DynamicPlaceholderTextUtil (string → bytes).
+        const ptrStr = DynamicPlaceholderTextUtil_GetPlaceholderPtr(s[++i]);
+        buffer = ptrStr ? encodeStringForFont(ptrStr, getOwCharmap() ?? {}) : new Uint8Array([EOS]);
+      }
+      walkBuffer(buffer);
+    } else if (c === EXT_CTRL_CODE_BEGIN) {
+      const code = s[++i];
+      switch (code) {
+        case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW: i += 3; break;  // 3 args
+        case EXT_CTRL_CODE_PLAY_BGM:
+        case EXT_CTRL_CODE_PLAY_SE: i += 2; break;                 // 2 args
+        case EXT_CTRL_CODE_COLOR:
+        case EXT_CTRL_CODE_HIGHLIGHT:
+        case EXT_CTRL_CODE_SHADOW:
+        case EXT_CTRL_CODE_PALETTE:
+        case EXT_CTRL_CODE_PAUSE:
+        case EXT_CTRL_CODE_ESCAPE:
+        case EXT_CTRL_CODE_SHIFT_RIGHT:
+        case EXT_CTRL_CODE_SHIFT_DOWN: i += 1; break;              // 1 arg
+        case EXT_CTRL_CODE_FONT: {
+          const fid = s[++i];
+          func = GetFontWidthFunc(fid);
+          if (func === null) return 0;
+          if (letterSpacing === -1) localLetterSpacing = GetFontAttribute(fid, FONTATTR_LETTER_SPACING);
+          break;
+        }
+        case EXT_CTRL_CODE_CLEAR: lineWidth += s[++i]; break;
+        case EXT_CTRL_CODE_SKIP: lineWidth = s[++i]; break;
+        case EXT_CTRL_CODE_CLEAR_TO: { const t = s[++i]; if (t > lineWidth) lineWidth = t; break; }
+        case EXT_CTRL_CODE_MIN_LETTER_SPACING: minGlyphWidth = s[++i]; break;
+        case EXT_CTRL_CODE_JPN: isJapanese = true; break;
+        case EXT_CTRL_CODE_ENG: isJapanese = false; break;
+        default: break;  // RESET_FONT/PAUSE_UNTIL_PRESS/WAIT_SE/FILL_WINDOW/… = 0 arg
+      }
+    } else if (c === CHAR_KEYPAD_ICON) {
+      const gw = GetKeypadIconWidth(s[++i]);
+      addGlyph(gw, false);
+    } else if (c === CHAR_EXTRA_SYMBOL) {
+      const gw = func(s[++i] | 0x100, isJapanese);
+      addGlyph(gw, isJapanese ? (s[i + 1] !== undefined && s[i + 1] !== EOS) : false);
+    } else if (c === CHAR_PROMPT_SCROLL || c === CHAR_PROMPT_CLEAR) {
+      // 0 width (waits for button press).
+    } else {
+      const gw = func(c, isJapanese);
+      addGlyph(gw, isJapanese ? (s[i + 1] !== undefined && s[i + 1] !== EOS) : false);
+    }
+    i++;
+  }
+
+  return lineWidth > width ? lineWidth : width;
+}
+
+/** 1:1 décomp `GetStringRightAlignXOffset(fontId, str, rightX)` (= rightX - width). */
+export function GetStringRightAlignXOffset(str: string | Uint8Array, rightX: number, fontId: number = FONT_NORMAL): number {
+  return rightX - GetStringWidth(str, fontId);
+}
+
+/** 1:1 décomp `GetStringCenterAlignXOffset(fontId, str, totalWidth)`. Integer
+ *  division (floor) comme le C — un offset fractionnaire empêcherait le rendu. */
+export function GetStringCenterAlignXOffset(str: string | Uint8Array, totalWidth: number, fontId: number = FONT_NORMAL): number {
+  return Math.floor((totalWidth - GetStringWidth(str, fontId)) / 2);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RenderText (state machine, 1:1 text.c:934) — sous-vague 2c + raffinement 1.
+//  RELOCALISÉ depuis engine `runTextPrinter` : structure `switch(state)` 1:1
+//  décomp. Le per-char (HANDLE_CHAR) garde le comportement A/B-validé (glyph via
+//  `blitGlyphToWindow` HW engine, pacing delayCounter/textSpeed). VAGUE 2
+//  raffinement 1 : les états WAIT/CLEAR/SCROLL_START/SCROLL/WAIT_SE + le
+//  down-arrow + l'input A/B (PlaySE) sont désormais PILOTÉS ICI (1:1 text.c, plus
+//  via RunTextPrinters). Le HW pur (blit glyphe, scroll, fill, down-arrow draw)
+//  reste fourni par engine/ui (importé : scrollWindow/fillWindow*/textPrinterDrawDownArrow).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `src/text.c:76 sWindowVerticalScrollSpeeds[]` — pixels scrollés par
+ *  frame en RENDER_STATE_SCROLL, indexé par OPTIONS_TEXT_SPEED (SLOW/MID/FAST). */
+const sWindowVerticalScrollSpeeds = [1, 2, 4] as const; // [SLOW, MID, FAST]
+
+/** 1:1 décomp `src/text.c:850 TextPrinterWaitAutoMode` : en auto-scroll, avance
+ *  seul après 49 frames (sinon incrémente le compteur). */
+function TextPrinterWaitAutoMode(printer: TextPrinter): boolean {
+  if (printer.subStruct.autoScrollDelay === 49) return true;
+  printer.subStruct.autoScrollDelay++;
+  return false;
+}
+
+/** 1:1 décomp `src/text.c:865 TextPrinterWaitWithDownArrow` : dessine la ▼
+ *  (bobbing) puis attend A/B (PlaySE SE_SELECT) ; en auto-scroll délègue à
+ *  TextPrinterWaitAutoMode. */
+function TextPrinterWaitWithDownArrow(printer: TextPrinter): boolean {
+  let result = false;
+  if (gTextFlags.autoScroll) {
+    result = TextPrinterWaitAutoMode(printer);
+  } else {
+    textPrinterDrawDownArrow(printer);
+    if (_getTextInputState().newAB) {
+      result = true;
+      PlaySE(SE_SELECT);
+    }
+  }
+  return result;
+}
+
+/** 1:1 décomp `src/text.c:884 TextPrinterWait` : attend A/B (PlaySE SE_SELECT)
+ *  SANS ▼ ; en auto-scroll délègue à TextPrinterWaitAutoMode. */
+function TextPrinterWait(printer: TextPrinter): boolean {
+  let result = false;
+  if (gTextFlags.autoScroll) {
+    result = TextPrinterWaitAutoMode(printer);
+  } else {
+    if (_getTextInputState().newAB) {
+      result = true;
+      PlaySE(SE_SELECT);
+    }
+  }
+  return result;
+}
+
+/** 1:1 décomp `src/text.c:838 TextPrinterClearDownArrow` : efface la ▼ (rect 8×16
+ *  bgColor) avant le scroll. CopyWindowToVram = `needsFlush` (posé par fillWindowPixelRect). */
+function TextPrinterClearDownArrow(printer: TextPrinter): void {
+  fillWindowPixelRect(
+    printer.window,
+    (printer.printerTemplate.bgColor << 4) | printer.printerTemplate.bgColor,
+    printer.printerTemplate.currentX,
+    printer.printerTemplate.currentY,
+    8,
+    16,
+  );
+}
+
+// ─── Modèle glyphe (gCurGlyph / DecompressGlyph_* / CopyGlyphToWindow) ───────
+//  1:1 STRUCTUREL décomp (raffinement 2). Le décomp décompresse les tiles 2bpp de
+//  `gFontXLatinGlyphs` dans `gCurGlyph` puis `CopyGlyphToWindow` les blit (packing
+//  4bpp via sFontHalfRowLookupTable). FRONTIÈRE HW : notre latfont.json est
+//  PRÉ-DÉCODÉ (pixels idx 0/1/2/3 par glyphe) → `DecompressGlyph_<font>` SÉLECTIONNE
+//  la glyph data globale du font (getFontGlyphData, pas de cache par-printer) et
+//  `CopyGlyphToWindow` blit via le HW engine (blitGlyphToWindow). Le dispatch par
+//  fontId + le flux RenderText→DecompressGlyph→CopyGlyphToWindow sont 1:1.
+
+/** 1:1 décomp `struct TextGlyph` (text.h:125). `gfxBuffer` = pixels pré-décodés
+ *  (gfxBufferTop/Bottom du décomp fusionnés ; le split tile 4bpp = détail HW émulé). */
+interface TextGlyph { gfxBuffer: number[] | null; width: number; height: number; }
+
+/** 1:1 décomp `COMMON_DATA struct TextGlyph gCurGlyph` (text.c:48). */
+const gCurGlyph: TextGlyph = { gfxBuffer: null, width: 0, height: 16 };
+
+/** Remplit gCurGlyph depuis la glyph data globale d'un font (= cœur commun des
+ *  `DecompressGlyph_<font>` : la "décompression" tile→pixels est émulée par le
+ *  latfont pré-décodé, donc on SÉLECTIONNE le glyphe + sa largeur + sa hauteur). */
+function _fillCurGlyph(fontId: number, glyphId: number): void {
+  gCurGlyph.gfxBuffer = getFontGlyphData(fontId)[glyphId] ?? null;
+  gCurGlyph.width = getFontGlyphWidths(fontId)[glyphId] || 3;
+  gCurGlyph.height = sFontInfos[fontId]?.maxLetterHeight ?? 16;
+}
+
+// 1:1 décomp `DecompressGlyph_Small/Normal/Short/Narrow/SmallNarrow` (text.c:1683+).
+// Le path JP (isJapanese) n'est pas porté (FR/OW only, japanese toujours false) → latin.
+function DecompressGlyph_Small(glyphId: number, _isJapanese: boolean): void { _fillCurGlyph(FONT_SMALL, glyphId); }
+function DecompressGlyph_Normal(glyphId: number, _isJapanese: boolean): void { _fillCurGlyph(FONT_NORMAL, glyphId); }
+function DecompressGlyph_Short(glyphId: number, _isJapanese: boolean): void { _fillCurGlyph(FONT_SHORT, glyphId); }
+function DecompressGlyph_Narrow(glyphId: number, _isJapanese: boolean): void { _fillCurGlyph(FONT_NARROW, glyphId); }
+function DecompressGlyph_SmallNarrow(glyphId: number, _isJapanese: boolean): void { _fillCurGlyph(FONT_SMALL_NARROW, glyphId); }
+
+/** 1:1 décomp `src/text.c:596 CopyGlyphToWindow` : blit gCurGlyph dans la window à
+ *  (currentX, currentY). HW = `blitGlyphToWindow` engine (remap idx 0/1/2/3 sur le
+ *  pixelBuffer ; le GLYPH_COPY/packing 4bpp du décomp = couche HW émulée). */
+function CopyGlyphToWindow(printer: TextPrinter): void {
+  if (!gCurGlyph.gfxBuffer) return;
+  blitGlyphToWindow(
+    printer.window, gCurGlyph.gfxBuffer,
+    printer.printerTemplate.currentX, printer.printerTemplate.currentY, gCurGlyph.width,
+    printer.printerTemplate.fgColor, printer.printerTemplate.bgColor, printer.printerTemplate.shadowColor,
+  );
+}
+
+/** 1:1 décomp `src/text.c:649 ClearTextSpan` : si bg non transparent, remplit un
+ *  rect (currentX, currentY, width, gCurGlyph.height) en bgColor (padding du
+ *  MIN_LETTER_SPACING). HW = fillWindowPixelRect. */
+function ClearTextSpan(printer: TextPrinter, width: number): void {
+  if (printer.printerTemplate.bgColor !== 0) {
+    fillWindowPixelRect(printer.window, printer.printerTemplate.bgColor, printer.printerTemplate.currentX, printer.printerTemplate.currentY, width, gCurGlyph.height);
+  }
+}
+
+/** 1:1 décomp `src/text.c:934 RenderText(struct TextPrinter *)`. Traite l'état
+ *  du printer ; en HANDLE_CHAR, consomme des chars (glyphes + ext-ctrl) et rend
+ *  via le HW engine. Retourne RENDER_PRINT/UPDATE/REPEAT/FINISH. */
+export function RenderText(printer: TextPrinter): number {
+  switch (printer.state) {
+    case RENDER_STATE_FINISH:
+      return RENDER_FINISH;
+
+    // 1:1 décomp text.c:1167-1170 — {PAUSE_UNTIL_PRESS} : attend A/B (SANS ▼) puis
+    // reprend le rendu dans la MÊME fenêtre (ni clear ni scroll).
+    case RENDER_STATE_WAIT:
+      if (TextPrinterWait(printer)) printer.state = RENDER_STATE_HANDLE_CHAR;
+      return RENDER_UPDATE;
+
+    // 1:1 décomp text.c:1171-1179 — \p (CHAR_PROMPT_CLEAR) : ▼ + attente A/B, puis
+    // FillWindowPixelBuffer(bg) + reset curseur (x, y) → nouvelle page propre.
+    case RENDER_STATE_CLEAR:
+      if (TextPrinterWaitWithDownArrow(printer)) {
+        fillWindowPixelBuffer(printer.window, (printer.printerTemplate.bgColor << 4) | printer.printerTemplate.bgColor);
+        printer.printerTemplate.currentX = printer.printerTemplate.x;
+        printer.printerTemplate.currentY = printer.printerTemplate.y;
+        printer.state = RENDER_STATE_HANDLE_CHAR;
+      }
+      return RENDER_UPDATE;
+
+    // 1:1 décomp text.c:1180-1188 — \l (CHAR_PROMPT_SCROLL) : ▼ + attente A/B, puis
+    // TextPrinterClearDownArrow + arme scrollDistance (maxLetterHeight + lineSpacing)
+    // + reset currentX (currentY reste — c'est ce qui distingue de CLEAR).
+    case RENDER_STATE_SCROLL_START:
+      if (TextPrinterWaitWithDownArrow(printer)) {
+        TextPrinterClearDownArrow(printer);
+        printer.scrollDistance = LINE_HEIGHT + printer.printerTemplate.lineSpacing;
+        printer.printerTemplate.currentX = printer.printerTemplate.x;
+        printer.state = RENDER_STATE_SCROLL;
+      }
+      return RENDER_UPDATE;
+
+    // 1:1 décomp text.c:1189-1210 — scroll progressif (sWindowVerticalScrollSpeeds
+    // [GetPlayerTextSpeed()] px/frame) jusqu'à scrollDistance=0, puis HANDLE_CHAR.
+    case RENDER_STATE_SCROLL:
+      if (printer.scrollDistance > 0) {
+        const speed = sWindowVerticalScrollSpeeds[GetPlayerTextSpeed()] ?? 2;
+        if (printer.scrollDistance < speed) {
+          scrollWindow(printer.window, printer.scrollDistance, printer.printerTemplate.bgColor);
+          printer.scrollDistance = 0;
+        } else {
+          scrollWindow(printer.window, speed, printer.printerTemplate.bgColor);
+          printer.scrollDistance -= speed;
+        }
+        // CopyWindowToVram = needsFlush (posé par scrollWindow).
+      } else {
+        printer.state = RENDER_STATE_HANDLE_CHAR;
+      }
+      return RENDER_UPDATE;
+
+    // 1:1 décomp text.c:1211-1214 — attend la fin du SE en cours puis reprend.
+    case RENDER_STATE_WAIT_SE:
+      if (!IsSEPlaying()) printer.state = RENDER_STATE_HANDLE_CHAR;
+      return RENDER_UPDATE;
+
+    // 1:1 décomp text.c:1215-1220 EXT_CTRL_CODE_PAUSE — décrémente delay puis
+    // reprend (retourne TOUJOURS RENDER_UPDATE, comme le décomp : la reprise du
+    // char se fait à la frame SUIVANTE, pas via un REPEAT same-frame).
+    case RENDER_STATE_PAUSE:
+      if (printer.pauseCounter > 0) printer.pauseCounter--;
+      else printer.state = RENDER_STATE_HANDLE_CHAR;
+      return RENDER_UPDATE;
+
+    case RENDER_STATE_HANDLE_CHAR:
+    default:
+      return renderHandleChar(printer);
+  }
+}
+
+/** 1:1 décomp text.c:943-1166 (case RENDER_STATE_HANDLE_CHAR) : pacing
+ *  (delayCounter/textSpeed/JOY A|B) + boucle de consommation des chars. */
+function renderHandleChar(printer: TextPrinter): number {
+  // 1:1 décomp text.c:944-945 — JOY_HELD(A|B) + hasPrintBeenSpedUp → delay 0.
+  const { newAB, heldAB } = _getTextInputState();
+  if (heldAB && printer.subStruct.hasPrintBeenSpedUp) {
+    printer.delayCounter = 0;
+  }
+
+  // 1:1 décomp text.c:947-956 — delay machine-à-écrire entre chars.
+  if (printer.delayCounter > 0 && printer.textSpeed > 0) {
+    printer.delayCounter--;
+    if (gTextFlags.canABSpeedUpPrint && newAB) {
+      printer.subStruct.hasPrintBeenSpedUp = true;
+      printer.delayCounter = 0;
+    }
+    return RENDER_UPDATE;
+  }
+
+  // Consomme les chars (ext-ctrl/newline = enchaînés ; glyphe = 1 par frame en
+  // typewriter via RENDER_PRINT, tous d'un coup si instantPath).
+  do {
+    const byte = printer.encodedString[printer.printerTemplate.currentChar];
+    if (byte === undefined || byte === EOS) {
+      printer.state = RENDER_STATE_FINISH;
+      if (printer.onCharRendered) printer.onCharRendered(printer, EOS);
+      return RENDER_FINISH;
+    }
+
+    if (byte === CHAR_NEWLINE) {
+      printer.printerTemplate.currentChar++;
+      printer.printerTemplate.currentX = printer.printerTemplate.x;
+      printer.printerTemplate.currentY += LINE_HEIGHT;
+      continue;
+    }
+
+    // 1:1 décomp text.c:1102-1109 — \p → CLEAR (page break), \l → SCROLL_START.
+    if (byte === CHAR_PROMPT_CLEAR) {
+      printer.printerTemplate.currentChar++;
+      printer.state = RENDER_STATE_CLEAR;
+      printer.subStruct.downArrowDelay = 0;
+      printer.subStruct.downArrowYPosIdx = 0;
+      if (printer.onCharRendered) printer.onCharRendered(printer, byte);
+      return RENDER_UPDATE;
+    }
+    if (byte === CHAR_PROMPT_SCROLL) {
+      printer.printerTemplate.currentChar++;
+      printer.state = RENDER_STATE_SCROLL_START;
+      printer.subStruct.downArrowDelay = 0;
+      printer.subStruct.downArrowYPosIdx = 0;
+      if (printer.onCharRendered) printer.onCharRendered(printer, byte);
+      return RENDER_UPDATE;
+    }
+
+    if (byte === EXT_CTRL_CODE_BEGIN) {
+      const subCode = printer.encodedString[printer.printerTemplate.currentChar + 1];
+      // PAUSE : BEGIN + PAUSE + frames (3 bytes). text.c:1013.
+      if (subCode === EXT_CTRL_CODE_PAUSE) {
+        const frames = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        printer.printerTemplate.currentChar += 3;
+        printer.pauseCounter = frames;
+        printer.state = RENDER_STATE_PAUSE;
+        if (printer.onCharRendered) printer.onCharRendered(printer, EXT_CTRL_CODE_PAUSE);
+        return RENDER_UPDATE;
+      }
+      // PAUSE_UNTIL_PRESS : BEGIN + sub (2 bytes). text.c:1018 — state = WAIT (1:1 :
+      // attente A/B SANS ▼ ni clear, reprise dans la même fenêtre). En auto-scroll,
+      // reset autoScrollDelay (text.c:1020-1021).
+      if (subCode === EXT_CTRL_CODE_PAUSE_UNTIL_PRESS) {
+        printer.printerTemplate.currentChar += 2;
+        printer.state = RENDER_STATE_WAIT;
+        if (gTextFlags.autoScroll) printer.subStruct.autoScrollDelay = 0;
+        if (printer.onCharRendered) printer.onCharRendered(printer, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
+        return RENDER_UPDATE;
+      }
+      // WAIT_SE : BEGIN + sub (2 bytes). 1:1 text.c:1023-1025 : state WAIT_SE
+      // (attend !IsSEPlaying). Plateforme : SE async (WebAudio, pas de registre
+      // busy) -> consommer et continuer (equivalent net, le SE joue deja).
+      if (subCode === EXT_CTRL_CODE_WAIT_SE) {
+        printer.printerTemplate.currentChar += 2;
+        return RENDER_REPEAT;
+      }
+      // PLAY_BGM : BEGIN + sub + u16 LE (4 bytes). 1:1 text.c:1026-1032 :
+      // PlayBGM(id) — ex. {PLAY_BGM}{MUS_CAUGHT} du texte de capture (le « A »
+      // parasite affiche etait le byte haut 0x01 de 0x160 non consomme).
+      if (subCode === EXT_CTRL_CODE_PLAY_BGM) {
+        const id = (printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0)
+                 | ((printer.encodedString[printer.printerTemplate.currentChar + 3] ?? 0) << 8);
+        printer.printerTemplate.currentChar += 4;
+        const g = globalThis as { __m4aSongNumStart?: (n: number, loop?: boolean) => void };
+        g.__m4aSongNumStart?.(id, false);
+        return RENDER_REPEAT;
+      }
+      // PLAY_SE : BEGIN + sub + u16 LE (4 bytes). 1:1 text.c (case suivante) : PlaySE(id).
+      if (subCode === EXT_CTRL_CODE_PLAY_SE) {
+        const id = (printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0)
+                 | ((printer.encodedString[printer.printerTemplate.currentChar + 3] ?? 0) << 8);
+        printer.printerTemplate.currentChar += 4;
+        (globalThis as { __PlaySE?: (n: number) => void }).__PlaySE?.(id);
+        return RENDER_REPEAT;
+      }
+      // COLOR/HIGHLIGHT/SHADOW : set couleur courante (lue au blit). text.c:980-993.
+      if (subCode === EXT_CTRL_CODE_COLOR) {
+        printer.printerTemplate.fgColor = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? printer.printerTemplate.fgColor;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      if (subCode === EXT_CTRL_CODE_HIGHLIGHT) {
+        printer.printerTemplate.bgColor = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? printer.printerTemplate.bgColor;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      if (subCode === EXT_CTRL_CODE_SHADOW) {
+        printer.printerTemplate.shadowColor = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? printer.printerTemplate.shadowColor;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // CLEAR : avance currentX de N px. text.c:1063-1072.
+      if (subCode === EXT_CTRL_CODE_CLEAR) {
+        const n = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        printer.printerTemplate.currentX += n;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // SKIP : currentX = x + N. text.c:1073-1076.
+      if (subCode === EXT_CTRL_CODE_SKIP) {
+        const n = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        printer.printerTemplate.currentX = printer.printerTemplate.x + n;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // CLEAR_TO : pad jusqu'à x + N. text.c:1077-1090.
+      if (subCode === EXT_CTRL_CODE_CLEAR_TO) {
+        const n = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        const target = printer.printerTemplate.x + n;
+        if (printer.printerTemplate.currentX < target) printer.printerTemplate.currentX = target;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // MIN_LETTER_SPACING. text.c:1091-1092 (= minLetterSpacing, PAS letterSpacing).
+      if (subCode === EXT_CTRL_CODE_MIN_LETTER_SPACING) {
+        printer.minLetterSpacing = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // FONT : switch du font courant mid-string. text.c:1007-1010 (subStruct->fontId).
+      // Le rendu lit ensuite la glyph data globale getFontGlyphData(printer.subStruct.fontId).
+      if (subCode === EXT_CTRL_CODE_FONT) {
+        printer.subStruct.fontId = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 1;
+        printer.printerTemplate.currentChar += 3;
+        continue;
+      }
+      // Défaut : skip BEGIN + sub + 1 param.
+      printer.printerTemplate.currentChar += 3;
+      continue;
+    }
+
+    // 1:1 décomp text.c:1110-1166 — glyphe (char normal OU CHAR_EXTRA_SYMBOL).
+    // EXTRA_SYMBOL = glyphId `0x100 | sym` (text.c:1110-1112) puis MÊME chemin de
+    // rendu (DecompressGlyph_<font> → CopyGlyphToWindow → avance), pas un cas à part.
+    let glyphId: number;
+    let renderedByte: number;
+    if (byte === CHAR_EXTRA_SYMBOL) {
+      glyphId = 0x100 | (printer.encodedString[printer.printerTemplate.currentChar + 1] ?? 0);
+      printer.printerTemplate.currentChar += 2;
+      renderedByte = CHAR_EXTRA_SYMBOL;
+    } else {
+      glyphId = byte;
+      printer.printerTemplate.currentChar++;
+      renderedByte = byte;
+    }
+
+    // 1:1 décomp text.c:1123-1145 — dispatch DecompressGlyph_<font> sur fontId
+    // (remplit gCurGlyph depuis la glyph data globale du font).
+    switch (printer.subStruct.fontId) {
+      case FONT_SMALL: DecompressGlyph_Small(glyphId, printer.japanese); break;
+      case FONT_NORMAL: DecompressGlyph_Normal(glyphId, printer.japanese); break;
+      case FONT_SHORT:
+      case FONT_SHORT_COPY_1:
+      case FONT_SHORT_COPY_2:
+      case FONT_SHORT_COPY_3: DecompressGlyph_Short(glyphId, printer.japanese); break;
+      case FONT_NARROW: DecompressGlyph_Narrow(glyphId, printer.japanese); break;
+      case FONT_SMALL_NARROW: DecompressGlyph_SmallNarrow(glyphId, printer.japanese); break;
+      case FONT_BRAILLE: gCurGlyph.gfxBuffer = null; gCurGlyph.width = 0; break; // décomp : break (pas de glyphe)
+      default: DecompressGlyph_Normal(glyphId, printer.japanese); break;
+    }
+
+    // 1:1 décomp text.c:1147 CopyGlyphToWindow. Garde engine : skip si renderedByte 0
+    // (espace) — divergence whitespace documentée (évite "mots collés" ; le décomp
+    // blit le glyphe d'espace blanc, ici on préserve le buffer rempli).
+    if (renderedByte !== 0) CopyGlyphToWindow(printer);
+
+    // 1:1 décomp text.c:1149-1165 — avance curseur (minLetterSpacing / japanese / latin).
+    // ⚠️ latin (FR/OW) : avance = gCurGlyph.width SEUL (PAS + letterSpacing : la
+    // largeur des glyphes latins inclut déjà l'espacement ; letterSpacing latin
+    // ne sert qu'à GetStringWidth/japanese — 1:1 décomp).
+    if (printer.minLetterSpacing) {
+      printer.printerTemplate.currentX += gCurGlyph.width;
+      const pad = printer.minLetterSpacing - gCurGlyph.width;
+      if (pad > 0) { ClearTextSpan(printer, pad); printer.printerTemplate.currentX += pad; }
+    } else if (printer.japanese) {
+      printer.printerTemplate.currentX += gCurGlyph.width + printer.printerTemplate.letterSpacing;
+    } else {
+      printer.printerTemplate.currentX += gCurGlyph.width;
+    }
+
+    if (printer.onCharRendered) printer.onCharRendered(printer, renderedByte);
+
+    // 1:1 décomp text.c:961 — delayCounter = textSpeed après render char (typewriter).
+    if (!printer.instantPath) {
+      printer.delayCounter = printer.textSpeed;
+      return RENDER_PRINT;
+    }
+    continue;
+  } while (true);
+}
+
+/** 1:1 décomp `src/text.c:352 RenderFont(struct TextPrinter *)` : appelle la
+ *  font function (= RenderText) en boucle tant qu'elle retourne RENDER_REPEAT. */
+export function RenderFont(printer: TextPrinter): number {
+  let guard = 0;
+  while (true) {
+    const ret = RenderText(printer);
+    if (ret !== RENDER_REPEAT) return ret;
+    if (++guard > 0x400) return RENDER_FINISH;  // garde anti-boucle (= AddTextPrinter 0x400)
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Gestion des printers (AddTextPrinter* — 1:1 text.c:251-317 + menu.c:1917-1959)
+//  — sous-vague 2e. Registre + orchestration relocalisés depuis gba-text-system.
+//  Le HW (font data, blit, addTextPrinter struct setup) reste engine, importé.
+//  `RunTextPrinters` (driving scroll/down-arrow/input) reste en engine pour
+//  l'instant (sera centralisé dans RenderText à l'étape A/B suivante) ; il
+//  importe `gTextPrinters` d'ici.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `#define WINDOWS_MAX 32` (window.h) — taille du pool de fenêtres GBA. */
+export const WINDOWS_MAX = 32;
+
+/** 1:1 décomp `static struct TextPrinter sTextPrinters[WINDOWS_MAX]` (text.c:39) :
+ *  un printer par windowId, drapeau `.active` PORTÉ SUR LE STRUCT (plus de wrapper
+ *  ActivePrinter). ⚠️ tableau CREUX (pas capé à WINDOWS_MAX) : notre window-system
+ *  (engine) alloue des windowId MONOTONES (nextWindowId++, jamais réutilisés) ≠ le
+ *  pool de slots bornés du décomp (= couche HW hors-scope) → on indexe par windowId
+ *  via un array sparse auto-extensible (sémantiquement 1:1 : sTextPrinters[id]).
+ *  `const` muté in-place (partagé via import par RunTextPrinters). */
+export const sTextPrinters: (TextPrinter | undefined)[] = [];
+
+/** Argument de `AddTextPrinter` = `struct TextPrinterTemplate` décomp (text.h:64).
+ *  ⚠️ `str` = décomp `currentChar` (le pointeur string) ; chez nous le buffer + l'index
+ *  sont séparés (printer.encodedString + printer.printerTemplate.currentChar). */
+export interface AddTextPrinterTemplate {
+  str: string | Uint8Array;
+  windowId: number;
+  fontId: number;
+  x: number;
+  y: number;
+  letterSpacing: number;
+  lineSpacing: number;
+  fgColor: number;
+  bgColor: number;
+  shadowColor: number;
+}
+
+/** 1:1 décomp `src/text.c:271 AddTextPrinter(struct TextPrinterTemplate *, u8 speed,
+ *  callback)`. Cœur PARTAGÉ (appelé par `AddTextPrinterParameterized` de text.c + par
+ *  `AddTextPrinterParameterized2/3/4`/`ForMessage*` de menu.c) : crée le printer, pose
+ *  le slot `sTextPrinters[windowId]`, rend instantanément si speed 0/TEXT_SKIP_DRAW.
+ *  La glyph data est globale par fontId (pas de cache). `callback` = onCharRendered
+ *  (notre per-char ; sync Birch). Retourne TRUE (bool16 décomp). */
+export function AddTextPrinter(
+  template: AddTextPrinterTemplate, speed: number,
+  callback?: ((printer: TextPrinter, lastByte: number) => void) | null,
+): boolean {
+  const win = getWindowById(template.windowId);
+  if (!win) {
+    console.warn('[text] AddTextPrinter: window', template.windowId, 'not found');
+    return false;
+  }
+  // Byte-entry : bytes charmap pré-encodés passés directement ; sinon encode.
+  const encoded = (template.str instanceof Uint8Array) ? template.str : encodeStringForFont(template.str, getOwCharmap() ?? {});
+  const opts: AddTextPrinterOpts = {
+    window: win,
+    encodedString: encoded,
+    windowId: template.windowId,
+    fontId: template.fontId,  // glyph data globale par fontId (subStruct.fontId)
+    x: template.x,
+    y: template.y,
+    bgColor: template.bgColor,
+    fgColor: template.fgColor,
+    shadowColor: template.shadowColor,
+    letterSpacing: template.letterSpacing,
+    lineSpacing: template.lineSpacing,
+    textSpeed: speed,  // concret (callers résolvent l'option) ; addTextPrinter mappe 255/0
+    downArrowPixels: getDownArrowPixels() ?? undefined,
+    darkDownArrowPixels: getDarkDownArrowPixels() ?? undefined,
+    onCharRendered: callback ?? undefined,
+  };
+  const printer = addTextPrinter(opts);
+  // 1:1 décomp AddTextPrinter (text.c:294-313) : speed 0/TEXT_SKIP_DRAW = render
+  // synchrone instantané (boucle bornée 0x400) ; sinon animé par RunTextPrinters.
+  let finished = false;
+  if (speed === 255 || speed === 0) {
+    for (let j = 0; j < 0x400; j++) {
+      if (RenderFont(printer) === RENDER_FINISH) break;
+      // Rendu instantané : pas d'input pour lever un état d'attente (\p/\l/WAIT_SE)
+      // → ne pas spinner 0x400 fois.
+      if (printer.state === RENDER_STATE_WAIT
+        || printer.state === RENDER_STATE_CLEAR
+        || printer.state === RENDER_STATE_SCROLL_START
+        || printer.state === RENDER_STATE_WAIT_SE) break;
+    }
+    finished = true;
+  }
+  // 1:1 décomp AddTextPrinter (text.c:297/313) : slot sTextPrinters[windowId] + active.
+  printer.active = !finished;
+  sTextPrinters[template.windowId] = printer;
+  return true;
+}
+
+/** 1:1 décomp `src/text.c:251 AddTextPrinterParameterized` : remplit le template
+ *  avec les attributs par défaut du font (GetFontAttribute) puis `AddTextPrinter`. */
+export function AddTextPrinterParameterized(
+  windowId: number, fontId: number, str: string | Uint8Array,
+  x: number, y: number, speed: number,
+  callback: ((printer: TextPrinter, lastByte: number) => void) | null = null,
+): boolean {
+  return AddTextPrinter({
+    str, windowId, fontId, x, y,
+    letterSpacing: GetFontAttribute(fontId, FONTATTR_LETTER_SPACING),
+    lineSpacing: GetFontAttribute(fontId, FONTATTR_LINE_SPACING),
+    fgColor: GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND),
+    bgColor: GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND),
+    shadowColor: GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW),
+  }, speed, callback);
+}
+
+// AddTextPrinterParameterized2/3/4 + AddTextPrinterForMessage(_2 / WithCustomSpeed) +
+// AddTextPrinterWithCallbackForMessage : RELOCALISÉS dans le miroir `src/game/menu.ts`
+// (1:1 menu.c:169/191/1917/1938 — ils remplissent un TextPrinterTemplate + appellent
+// `AddTextPrinter` ci-dessus, leur foyer décomp).
+
+/** 1:1 décomp `src/text.c:347 IsTextPrinterActive(u8 id)` = `sTextPrinters[id].active`. */
+export function IsTextPrinterActive(windowId: number): boolean {
+  return sTextPrinters[windowId]?.active ?? false;
+}
+
+/** DEBUG only — snapshot lisible des printers (devtools window.dev.printers). */
+export function _debugGetTextPrinters(): Array<{ windowId: number; active: boolean; printer: TextPrinter }> {
+  const out: Array<{ windowId: number; active: boolean; printer: TextPrinter }> = [];
+  for (let i = 0; i < sTextPrinters.length; i++) {
+    const p = sTextPrinters[i];
+    if (p) out.push({ windowId: i, active: p.active, printer: p });
+  }
+  return out;
+}
+
+/** Efface tous les printers (changement de scène ; pas une fonction décomp). */
+export function ClearTextPrinters(): void {
+  sTextPrinters.length = 0;
+}
+
+/** 1:1 décomp `src/text.c:244 DeactivateAllTextPrinters` : `active = FALSE` pour
+ *  TOUS les slots (le décomp ne vide pas le tableau, il désactive). */
+export function DeactivateAllTextPrinters(): void {
+  for (const p of sTextPrinters) { if (p) p.active = false; }
+}
+
+// Expose pour debug overworld dialog + gate combat (bundle module instance).
+(globalThis as Record<string, unknown>).__debugGetTextPrinters = _debugGetTextPrinters;
+(globalThis as Record<string, unknown>).__gbaIsTextPrinterActive = IsTextPrinterActive;

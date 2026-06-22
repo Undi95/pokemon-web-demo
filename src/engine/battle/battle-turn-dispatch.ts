@@ -8,4 +8,4 @@
 export {
   CheckFocusPunch_ClearVarsBeforeTurnStarts, RunTurnActionsFunctions,
   TryCorrectShedinjaLanguage, GetBattleWindowTemplatePixelWidth,
-} from '../../game/battle_main';
+} from '../../battle_main';

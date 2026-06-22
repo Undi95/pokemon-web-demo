@@ -27,7 +27,7 @@
 import { VarGet } from './script-vars';
 // Migration TEXTE byte-level 1:1 (flip direct) : getText retourne des bytes charmap
 // (data source lisible → encodée au 1er accès via encodeOwText = notre préproc, cache).
-import { encodeOwText, isOwCharmapReady } from '../../game/include/text';
+import { encodeOwText, isOwCharmapReady } from '../../../include/text';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -789,7 +789,7 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
-import { setOnLoadMapScriptHook, gMapHeader } from '../../game/fieldmap';
+import { setOnLoadMapScriptHook, gMapHeader } from '../../fieldmap';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
 
 // Hook DoCoordEventWeather (game/coord_event_weather) — posé par ce module au boot via

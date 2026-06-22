@@ -22,7 +22,7 @@
  *   - Découplage maintenu (= pas de circular import)
  */
 
-import type { ObjectEvent } from '../../game/event_object_movement';
+import type { ObjectEvent } from '../../event_object_movement';
 
 // ─── Internal registry ─────────────────────────────────────────────────────
 

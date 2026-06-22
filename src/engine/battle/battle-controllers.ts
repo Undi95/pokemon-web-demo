@@ -144,7 +144,7 @@ void resolveDecompConstant;
 // ─── gBitTable[] (util.c:7) → consolidé sur le miroir `src/game/util.ts` ──────
 // (source unique ; les `_gBitTable` privés de battle-action-selection/battle-main-
 //  functions restent à migrer — cf. ledger.) import+export = binding local + ré-export.
-import { gBitTable } from '../../game/include/util';
+import { gBitTable } from '../../../include/util';
 export { gBitTable };
 
 // ─── Controller exec flags helpers ──────────────────────────────────────────

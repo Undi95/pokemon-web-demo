@@ -18,7 +18,7 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarSet } from './script-vars';
-import { gMapHeader } from '../../game/fieldmap';
+import { gMapHeader } from '../../fieldmap';
 import { getPendingWarp } from '../field/warp-system';
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
 import { StartFirstBattle } from '../battle/battle-setup-helpers';
@@ -130,7 +130,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'ChooseStarter') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('../../game/starter_choose').then((mod) => {
+    void import('../../starter_choose').then((mod) => {
       flow = mod.startChooseStarterFlow();
       flowReady = true;
     });

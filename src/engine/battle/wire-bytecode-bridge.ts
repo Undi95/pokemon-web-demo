@@ -57,7 +57,7 @@ import { Random } from '../system/random';
 import {
   BattleAI_SetupAIData,
   BattleAI_ChooseMoveOrAction,
-} from '../../game/battle_ai_script_commands';
+} from '../../battle_ai_script_commands';
 import {
   loadAiScriptBytecode,
   aiBytecodeLoaded,
@@ -65,7 +65,7 @@ import {
 import {
   AI_CHOICE_FLEE,
   AI_CHOICE_WATCH,
-} from '../../game/battle_ai_script_commands';
+} from '../../battle_ai_script_commands';
 import {
   ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE,
   BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,
@@ -75,7 +75,7 @@ import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
 import { MAX_BATTLERS_COUNT } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
-import { resetAtkCancelerTracker } from '../../game/battle_util';
+import { resetAtkCancelerTracker } from '../../battle_util';
 import { TurnValuesCleanUp } from './util';
 // AUDIT FIX : import statique de end-turn-effects (= éviter ESM dual-instance via
 // dynamic import async). Pas de circular dep car end-turn-effects → state ; bridge → state.
@@ -86,7 +86,7 @@ import {
   DoFieldEndTurnEffects,
   DoBattlerEndTurnEffects,
   HandleWishPerishSongOnTurnEnd,
-} from '../../game/battle_util';
+} from '../../battle_util';
 // AUDIT FIX : static imports pour HandleFaintedMonActions (= éviter dual-instance).
 import {
   AbilityBattleEffects as AbilityBattleEffects_static,
@@ -96,14 +96,14 @@ import {
   ABILITYEFFECT_ON_SWITCHIN,
   ABILITYEFFECT_SWITCH_IN_WEATHER,
   consumeAbilityWantedScript as consumeAbilityWantedScript_static,
-} from '../../game/battle_util';
+} from '../../battle_util';
 import {
   ItemBattleEffects as ItemBattleEffects_static,
   ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,
   ITEMEFFECT_ON_SWITCH_IN as ITEMEFFECT_ON_SWITCH_IN_static,
   consumeItemWantedScript as consumeItemWantedScript_static,
-} from '../../game/battle_util';
-import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from '../../game/battle_ai_script_commands';
+} from '../../battle_util';
+import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from '../../battle_ai_script_commands';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { getMove } from '../data/game-data';
 import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';

@@ -25,7 +25,7 @@ import {
 } from '../pokemon/pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
-import { GetNatureFromPersonality, ModifyStatByNature } from '../../game/include/pokemon';
+import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../system/random';

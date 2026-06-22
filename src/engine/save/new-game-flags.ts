@@ -21,8 +21,8 @@
 import { FlagSet } from '../script/script-vars';
 import { Random, GetGeneratedTrainerIdLower } from '../system/random';
 import { gSaveBlock2Ptr } from './save-block-state';
-import { SetMoney } from '../../game/money';
-import { ClearBerryTrees } from '../../game/berry';
+import { SetMoney } from '../../money';
+import { ClearBerryTrees } from '../../berry';
 import { ResetAllBerries } from './reset-all-berries';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).

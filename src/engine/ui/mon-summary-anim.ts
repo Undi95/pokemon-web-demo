@@ -18,7 +18,7 @@
  */
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { getRuntime } from '../system/decomp-globals';
-import { AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
+import { AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { SpriteCallbackDummy, BlendPalette } from '../system/decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from '../system/decomp-helpers';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';

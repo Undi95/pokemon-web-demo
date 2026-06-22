@@ -17,11 +17,11 @@
  * -1 si WEST, +1 si EAST.
  */
 
-import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../../game/fieldmap';
-import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../../fieldmap';
+import { GetPlayerFacingDirection } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
-import { DrawWholeMapView } from '../../game/field_camera';
+import { DrawWholeMapView } from '../../field_camera';
 import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
   METATILE_BrendansMaysHouse_BrendanPC_On, METATILE_BrendansMaysHouse_BrendanPC_Off,

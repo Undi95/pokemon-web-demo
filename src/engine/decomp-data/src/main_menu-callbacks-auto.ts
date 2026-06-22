@@ -10,7 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
-import { ResetSpriteData } from '../../../game/sprite';
+import { ResetSpriteData } from '../../../sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,

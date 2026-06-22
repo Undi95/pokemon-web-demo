@@ -16,7 +16,7 @@
 
 import { RtcGetMinuteCount } from './rtc';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { BerryTreeTimeUpdate } from '../../game/berry';
+import { BerryTreeTimeUpdate } from '../../berry';
 
 /** 1:1 décomp `DoTimeBasedEvents` (clock.c:26) :
  *    - Read gSaveBlock1Ptr->lastBerryTreeUpdate

@@ -14,11 +14,11 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../../game/event_object_movement';
-import { ScriptMovement_UnfreezeObjectEvents } from '../../game/script_movement';
-import { HideFieldMessageBox } from '../../game/field_message_box';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../../event_object_movement';
+import { ScriptMovement_UnfreezeObjectEvents } from '../../script_movement';
+import { HideFieldMessageBox } from '../../field_message_box';
 import { gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../../game/field_player_avatar';
+import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../../field_player_avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { getRuntime } from '../system/decomp-globals';
 import {

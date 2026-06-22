@@ -29,9 +29,9 @@
  *   - Au load de la dest map, executeExitTask selon metatile à player pos
  */
 
-import type { WarpEvent, MapHeader } from '../../game/fieldmap';
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../game/fieldmap';
-import { GetMapConnection } from '../../game/overworld';
+import type { WarpEvent, MapHeader } from '../../fieldmap';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../fieldmap';
+import { GetMapConnection } from '../../overworld';
 import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../decomp-data/include/constants/global-data';
 import type { WarpData } from '../save/save-blocks';
 import {
@@ -39,7 +39,7 @@ import {
   MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
 } from '../decomp-data/include/constants/map_types-data';
 import { Overworld_GetMapHeaderByGroupAndId } from '../system/decomp-bridge';
-import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../../game/field_player_avatar';
+import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   MB_ANIMATED_DOOR,
@@ -81,7 +81,7 @@ import {
   MetatileBehavior_IsOpenSecretBaseDoor,
   IsWarpMetatileBehavior as _IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior as _IsArrowWarpMetatileBehavior,
-} from '../../game/metatile_behavior';
+} from '../../metatile_behavior';
 
 // ─── Warp kind classification ───────────────────────────────────────────────
 

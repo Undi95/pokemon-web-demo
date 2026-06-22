@@ -16,4 +16,4 @@ export {
   CB2_QuitRecordedBattle,
   SpriteCB_UnusedBattleInit,
   SpriteCB_UnusedBattleInit_Main,
-} from '../../game/battle_main';
+} from '../../battle_main';

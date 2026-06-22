@@ -16,7 +16,7 @@ import {
 import { Random, Random32 } from '../system/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
-import { IsShinyOtIdPersonality } from '../../game/include/pokemon';
+import { IsShinyOtIdPersonality } from '../../../include/pokemon';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 // 1:1 décomp `GetItemHoldEffect` (item.c) — pour le blocage d'évolution par
@@ -36,7 +36,7 @@ import type { Pokemon } from '../battle/party-storage';
 import { pokemonInstanceToPokemon } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
-import { gMapHeader } from '../../game/fieldmap';
+import { gMapHeader } from '../../fieldmap';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {

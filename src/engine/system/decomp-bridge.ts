@@ -40,9 +40,9 @@
  */
 
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
-// (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
+// (branche sheet taggee). Re-export `export {X} from '../../sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../game/sprite';
+import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -521,8 +521,8 @@ export function IS_TYPE_SPECIAL(moveType: number): boolean {
 // `HIHALF`/`LOHALF` (global.h:106-109) + `GET_SHINY_VALUE`/`GET_UNOWN_LETTER`
 // (pokemon.h) = consolidés sur le miroir (src/game/include/global.ts +
 // src/game/include/pokemon.ts). Re-exports = source unique.
-export { HIHALF, LOHALF } from '../../game/include/global';
-export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../game/include/pokemon';
+export { HIHALF, LOHALF } from '../../../include/global';
+export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../../include/pokemon';
 
 /** 1:1 décomp `src/battle_anim_mons.c:19` :
  *    #define IS_DOUBLE_BATTLE() ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
@@ -913,7 +913,7 @@ export {
   LoadMessageBoxGfx,
   GetTextWindowPalette,
   GetOverworldTextboxPalettePtr,
-} from '../../game/text_window';
+} from '../../text_window';
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //
@@ -2156,7 +2156,7 @@ export function Contest_CopyStringWithColor(..._args: any[]): any {
 
 /** 1:1 décomp `src/string_util.c WriteColorChangeControlCode(...)` — ex-stub no-op,
  *  CONSOLIDÉ : délègue au miroir `src/game/string_util.ts` (0 dup). */
-export { WriteColorChangeControlCode } from '../../game/include/string_util';
+export { WriteColorChangeControlCode } from '../../../include/string_util';
 
 /** 1:1 décomp `src/easy_chat.c GetQuestionnaireWordsPtr()`. */
 export function GetQuestionnaireWordsPtr(): any { return null; }
@@ -3082,7 +3082,7 @@ export {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
-} from '../../game/fieldmap';
+} from '../../fieldmap';
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 
@@ -3130,7 +3130,7 @@ export {
   MetatileBehavior_IsJumpSouth,
   MetatileBehavior_IsPacifidlogLog,
   MetatileBehavior_IsRunningDisallowed,
-} from '../../game/metatile_behavior';
+} from '../../metatile_behavior';
 
 // Other metatile predicates (= 1:1 décomp `metatile_behavior.c`), re-exportés
 // depuis le miroir `game/metatile_behavior.ts` (source unique).
@@ -3148,7 +3148,7 @@ export {
   MetatileBehavior_IsFootprints,
   MetatileBehavior_HasRipples,
   MetatileBehavior_IsDeepSand,
-} from '../../game/metatile_behavior';
+} from '../../metatile_behavior';
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 

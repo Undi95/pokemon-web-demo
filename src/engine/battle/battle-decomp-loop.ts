@@ -22,7 +22,7 @@
  */
 
 import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../system/decomp-globals';
-import { DestroySprite } from '../../game/sprite';
+import { DestroySprite } from '../../sprite';
 import { MAX_SPRITES } from '../system/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
@@ -452,31 +452,31 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // l'allocateur scanne a partir de 0x140 -> zone fixe intouchable.
   (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
   void Promise.all([
-    import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
-    import('../../game/battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)
-    import('../../game/battle_anim_effects_3'),     // registry scratch + noise lines (T4)
-    import('../../game/battle_anim_sound_tasks'),   // registry sound tasks Growl (T4)
-    import('../../game/battle_anim_fire'),           // registry Ember + projectile generique (T4)
-    import('../../game/battle_anim_water'),          // registry Bubble (T4)
-    import('../../game/battle_anim_effects_1'),      // registry Absorb orbs (T4)
-    import('../../game/battle_anim_ground'),          // registry Sand-Attack (C1b)
-    import('../../game/battle_anim_dark'),             // registry Bite crocs (micro-vague)
+    import('../../battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
+    import('../../battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)
+    import('../../battle_anim_effects_3'),     // registry scratch + noise lines (T4)
+    import('../../battle_anim_sound_tasks'),   // registry sound tasks Growl (T4)
+    import('../../battle_anim_fire'),           // registry Ember + projectile generique (T4)
+    import('../../battle_anim_water'),          // registry Bubble (T4)
+    import('../../battle_anim_effects_1'),      // registry Absorb orbs (T4)
+    import('../../battle_anim_ground'),          // registry Sand-Attack (C1b)
+    import('../../battle_anim_dark'),             // registry Bite crocs (micro-vague)
     import('./battle-anim-generated-bridge'),           // PHASE 1a : donnees generees (387 tpl)
-    import('../../game/battle_anim_rock'),               // vague 2c : vortex
-    import('../../game/battle_anim_utility_funcs'),       // vague 2e : BlendBattleAnimPal (89 usages)
-    import('../../game/battle_anim_fight'),                // vague 3h : poings/pieds
-    import('../../game/battle_anim_electric'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_ice'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_poison'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_bug'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_psychic'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_ghost'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_dragon'),                 // port massif 2026-06-11
-    import('../../game/battle_anim_effects_1b'),             // port massif (musique/fingers)
-    import('../../game/battle_anim_flying'),                  // port massif (vols)
-    import('../../game/battle_anim_effects_2'),               // port massif (38 callbacks)
-    import('../../game/battle_anim_smokescreen'),             // F50 (SmokescreenImpact)
-    import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
+    import('../../battle_anim_rock'),               // vague 2c : vortex
+    import('../../battle_anim_utility_funcs'),       // vague 2e : BlendBattleAnimPal (89 usages)
+    import('../../battle_anim_fight'),                // vague 3h : poings/pieds
+    import('../../battle_anim_electric'),                 // port massif 2026-06-11
+    import('../../battle_anim_ice'),                 // port massif 2026-06-11
+    import('../../battle_anim_poison'),                 // port massif 2026-06-11
+    import('../../battle_anim_bug'),                 // port massif 2026-06-11
+    import('../../battle_anim_psychic'),                 // port massif 2026-06-11
+    import('../../battle_anim_ghost'),                 // port massif 2026-06-11
+    import('../../battle_anim_dragon'),                 // port massif 2026-06-11
+    import('../../battle_anim_effects_1b'),             // port massif (musique/fingers)
+    import('../../battle_anim_flying'),                  // port massif (vols)
+    import('../../battle_anim_effects_2'),               // port massif (38 callbacks)
+    import('../../battle_anim_smokescreen'),             // F50 (SmokescreenImpact)
+    import('../../battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
   const cb = _CB2_InitBattle();
@@ -561,10 +561,10 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
             // suivant (= même mécanisme que Téléport). Sans ça : perdre → soigné mais reste sur place.
             if (isWhiteout) {
               void Promise.all([
-                import('../../game/heal_location'),
+                import('../../heal_location'),
                 import('../field/warp-system'),
                 import('../save/save-block-state'),
-                import('../../game/overworld'),
+                import('../../overworld'),
               ]).then(([hl, ws, sb, ow]) => {
                 // 1:1 décomp `Overworld_ResetStateAfterWhiteOut()` (DoWhiteOut, AVANT le warp) :
                 // remet l'avatar à pied + coupe surf/strength/flash/vélo (sinon respawn en surfant).
@@ -898,8 +898,8 @@ export async function harnessExecuteTurnL(opts?: {
   const st = await import('./state');
   const td = await import('./battle-turn-dispatch');
   const bmf = await import('./battle-main-functions');
-  const cp = await import('../../game/battle_controller_player');
-  const co = await import('../../game/battle_controller_opponent');
+  const cp = await import('../../battle_controller_player');
+  const co = await import('../../battle_controller_opponent');
   const C = await import('./constants');
 
   // 1. Combat ad-hoc + peuplement gBattleMons[0],[1].

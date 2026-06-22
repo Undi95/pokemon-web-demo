@@ -20,7 +20,7 @@ import { getRuntime } from './decomp-globals';
 // Sin/Cos/gSineTable → miroir 1:1 `src/game/trig.ts` (= trig.c). L'ancien `& 0xFF`
 // d'ici était ÉQUIVALENT (table périodique mod 256), pas un bug ; on consolide sur
 // la forme décomp (sans masque). Re-export = source unique, zéro duplication.
-import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../../game/trig';
+import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../../trig';
 
 // ─── Sine/Cosine via gSineTable (Q.8 fixed) — re-export du miroir trig ───────
 export const Sin = _trigSin;

@@ -30,7 +30,7 @@ import {
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
 import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag/bag';
-import { SetDecorationInventoriesPointers } from '../../game/decoration_inventory';
+import { SetDecorationInventoriesPointers } from '../../decoration_inventory';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,
   __flashClear, type BlockKey,
@@ -171,7 +171,7 @@ export async function SaveGame(): Promise<boolean> {
   // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
     const lsMod = await import('./load_save');
-    const mapMod = await import('../../game/fieldmap');
+    const mapMod = await import('../../fieldmap');
     // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
     // SyncPlayerPositionToBlock = notre helper port (le décomp update
     // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save

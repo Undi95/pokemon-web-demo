@@ -11,4 +11,4 @@ export {
   STATE_WAIT_ACTION_CONFIRMED, STATE_SELECTION_SCRIPT, STATE_WAIT_SET_BEFORE_ACTION,
   STATE_SELECTION_SCRIPT_MAY_RUN,
   HandleTurnActionSelectionState,
-} from '../../game/battle_main';
+} from '../../battle_main';

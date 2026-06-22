@@ -31,16 +31,16 @@
  */
 
 import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../../src/engine/save/save-system';
-import { GetPlayerFacingDirection } from '../../src/game/field_player_avatar';
+import { GetPlayerFacingDirection } from '../../src/field_player_avatar';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { assetCache, getRuntime } from '../../src/engine/system/decomp-globals';
-import { gMapHeader } from '../../src/game/fieldmap';
+import { gMapHeader } from '../../src/fieldmap';
 import { bagContents } from '../../src/engine/bag/bag';
 // Migration miroir : flags/vars sont id-indexés (number[]) → on énumère via les
 // tables résolues nom→id + le bridge FlagGet/VarGet.
 import { FlagGet, VarGet } from '../../src/engine/script/script-vars';
-import * as FLAGS from '../../src/game/include/constants/flags';
-import * as VARS from '../../src/game/include/constants/vars';
+import * as FLAGS from '../../include/constants/flags';
+import * as VARS from '../../include/constants/vars';
 
 interface DevAudit {
   help: () => string;

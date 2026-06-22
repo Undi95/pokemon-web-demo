@@ -42,7 +42,7 @@ import {
   DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
@@ -55,10 +55,10 @@ import {
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
   FIELD_MESSAGE_BOX_HIDDEN,
-} from '../../game/field_message_box';
+} from '../../field_message_box';
 // Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
-import { encodeOwText } from '../../game/include/text';
+import { encodeOwText } from '../../../include/text';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './gba-menu-system';
@@ -66,9 +66,9 @@ import { PlaySE, getRuntime, gMain } from '../system/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
 import { HasValidSave } from '../save/save-system';
 import { bagContents } from '../bag/bag';
-import { HideMapNamePopUpWindow } from '../../game/map_name_popup';
+import { HideMapNamePopUpWindow } from '../../map_name_popup';
 import { GetStringRightAlignXOffset } from './gba-text-system';
-import { gMapHeader } from '../../game/fieldmap';
+import { gMapHeader } from '../../fieldmap';
 import { getMapNameFr } from '../../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -635,7 +635,7 @@ export function OpenStartMenu(): void {
   // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
   // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
   // menu ET ses sous-menus, même mid-step."
-  void import('../../game/event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
+  void import('../../event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
   // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
   // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même
@@ -669,7 +669,7 @@ export function CloseStartMenu(): void {
   // 1:1 inverse de FreezeObjectEvents au open : tous les NPCs reprennent leur
   // mouvement normal au close du menu. Le player a déjà UnlockPlayerFieldControls
   // donc reprend ses inputs.
-  void import('../../game/event_object_movement').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
+  void import('../../event_object_movement').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
   sIsOpen = false;
   sSubState = 'menu';
   console.log('[start-menu] closed');

@@ -38,7 +38,7 @@ import {
 // VAGUE 2c : `runTextPrinter` délègue à `RenderText` (miroir). Cycle
 // gba-text-printer↔text.ts runtime-safe (RenderText n'utilise les exports de
 // ce module que dans des fonctions, jamais au top-level).
-import { RenderText } from '../../game/text';
+import { RenderText } from '../../text';
 
 // ─── Constantes 1:1 décomp ───────────────────────────────────────────────────
 

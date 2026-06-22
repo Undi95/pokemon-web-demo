@@ -24,7 +24,7 @@
  */
 
 import { setPendingWarp } from './warp-system';
-import { GetHealLocationByName } from '../../game/heal_location';
+import { GetHealLocationByName } from '../../heal_location';
 import { FadeScreen, FADE_TO_BLACK } from '../system/fade-screen';
 import { FlagGet } from '../script/script-vars';
 

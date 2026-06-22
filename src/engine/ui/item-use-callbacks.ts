@@ -70,7 +70,7 @@ import {
   RefreshPartySlot,
   PartyMenuAnimateHP,
 } from './party-screen';
-import { GetMonLevelUpWindowStats } from '../../game/menu_specialized';
+import { GetMonLevelUpWindowStats } from '../../menu_specialized';
 import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../system/decomp-globals';

@@ -30,7 +30,7 @@ import {
 import {
   DrawLevelUpWindowPg1, DrawLevelUpWindowPg2, GetMonLevelUpWindowStats,
   type LevelUpStatMon,
-} from '../../game/menu_specialized';
+} from '../../menu_specialized';
 import { HandleBattleWindow, WINDOW_BG1, WINDOW_CLEAR } from './battle-window-frame';
 import { B_WIN_LEVEL_UP_BOX } from './battle-windows';
 import { sStandardBattleWindowTemplates } from '../decomp-data/src/battle_bg-data';

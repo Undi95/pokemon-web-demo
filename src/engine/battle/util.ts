@@ -50,7 +50,7 @@ import {
   B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
   B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
   gBattlerPositions, GetBattlerAtPosition, GetBattlerPosition,
-} from '../../game/battle_anim_mons';
+} from '../../battle_anim_mons';
 export {
   B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
   B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
@@ -75,14 +75,14 @@ export {
  */
 // ─── FaintClearSetData — DÉPLACÉ dans le miroir src/game/battle_main.ts
 //     (battle_main.c:3270-3355, consolidation C2 2026-06-10). Re-export compat. ──
-export { FaintClearSetData } from '../../game/battle_main';
+export { FaintClearSetData } from '../../battle_main';
 
 // ─── CancelMultiTurnMoves : DÉPLACÉ dans le miroir game/battle_util.ts
 //     (battle_util.c:864, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
 // ─── GetScaledHPFraction — DÉPLACÉ dans le miroir src/game/battle_interface.ts
 //     (battle_interface.c:2517, consolidation C4 2026-06-09). Re-export compat. ──
-export { GetScaledHPFraction } from '../../game/battle_interface';
+export { GetScaledHPFraction } from '../../battle_interface';
 
 // ─── ClearFuryCutterDestinyBondGrudge : DÉPLACÉ dans le miroir game/battle_util.ts
 //     (battle_util.c:3798-3803, éclatement du grab-bag util stage 2, 2026-06-13). ──
@@ -103,4 +103,4 @@ export { GetScaledHPFraction } from '../../game/battle_interface';
 
 // ─── TurnValuesCleanUp — DÉPLACÉ dans le miroir src/game/battle_main.ts
 //     (battle_main.c:4857-4892, consolidation C2 2026-06-10). Re-export compat. ──
-export { TurnValuesCleanUp } from '../../game/battle_main';
+export { TurnValuesCleanUp } from '../../battle_main';

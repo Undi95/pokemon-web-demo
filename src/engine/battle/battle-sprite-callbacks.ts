@@ -14,4 +14,4 @@ export {
   SpriteCB_Idle, SpriteCB_PlayerMonFromBall, SpriteCB_TrainerThrowObject_Main,
   SpriteCB_TrainerThrowObject, DoBounceEffect, EndBounceEffect,
   SpriteCB_BounceEffect,
-} from '../../game/battle_main';
+} from '../../battle_main';

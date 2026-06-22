@@ -23,4 +23,4 @@ export {
   HandleEndTurn_RanFromBattle, HandleEndTurn_MonFled, HandleEndTurn_FinishBattle,
   FreeResetData_ReturnToOvOrDoEvolutions, TryEvolvePokemon,
   WaitForEvoSceneToFinish, ReturnFromBattleToOverworld,
-} from '../../game/battle_main';
+} from '../../battle_main';

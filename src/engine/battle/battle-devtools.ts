@@ -69,7 +69,7 @@ import {
   resetBattleState as _resetBattleState,
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
-import { CalculateBaseDamage as _cbd } from '../../game/pokemon';
+import { CalculateBaseDamage as _cbd } from '../../pokemon';
 import { getBattleMove as _gbm } from './data/battle-moves';
 import * as _MOVES_ENUM from '../decomp-data/include/constants/moves-data';
 import {
@@ -97,13 +97,13 @@ import {
   ALL_MOVES_MASK as _ALL_MOVES_MASK,
   BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER,
 } from './constants';
-import { _GetMoveTarget } from '../../game/battle_script_commands';
-import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from '../../game/battle_ai_script_commands';
-import { resetAtkCancelerTracker } from '../../game/battle_util';
+import { _GetMoveTarget } from '../../battle_script_commands';
+import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from '../../battle_ai_script_commands';
+import { resetAtkCancelerTracker } from '../../battle_util';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
-import { gAiThinkingStruct, gBattleHistory, setBattlerAI } from '../../game/battle_ai_script_commands';
-import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from '../../game/battle_ai_switch_items';
+import { gAiThinkingStruct, gBattleHistory, setBattlerAI } from '../../battle_ai_script_commands';
+import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from '../../battle_ai_switch_items';
 import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
 import { gTypeEffectiveness as _gTypeEff, TYPE_FORESIGHT as _TYPE_FORESIGHT, TYPE_ENDTABLE as _TYPE_ENDTABLE } from './data/type-effectiveness';
 import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../system/random';

@@ -21,7 +21,7 @@ import {
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../../system/decomp-helpers';
-import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../../../game/sprite';
+import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../../../sprite';
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,

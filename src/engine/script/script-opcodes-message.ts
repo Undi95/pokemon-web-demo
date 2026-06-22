@@ -22,14 +22,14 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
-import { encodeOwText } from '../../game/include/text';  // préproc : littéral → bytes (ShowFieldMessage byte)
+import { encodeOwText } from '../../../include/text';  // préproc : littéral → bytes (ShowFieldMessage byte)
 import { gSpecialVar } from './script-vars';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../game/field_message_box';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../field_message_box';
 import {
   gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfFinished,
-} from '../../game/event_object_movement';
-import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from '../../game/field_player_avatar';
+} from '../../event_object_movement';
+import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from '../../field_player_avatar';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
   MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,

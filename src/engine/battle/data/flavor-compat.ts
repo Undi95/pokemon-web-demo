@@ -12,7 +12,7 @@
  */
 
 // 1:1 décomp `GetNatureFromPersonality` → miroir `src/game/pokemon.ts` (source unique).
-import { GetNatureFromPersonality } from '../../../game/include/pokemon';
+import { GetNatureFromPersonality } from '../../../../include/pokemon';
 
 const FLAVOR_COUNT = 5;
 

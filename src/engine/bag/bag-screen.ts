@@ -30,15 +30,15 @@ import {
   InitWindows,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { LoadUserWindowBorderGfx } from '../../game/text_window';
+import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
-import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
+import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
 import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-data';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../system/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';

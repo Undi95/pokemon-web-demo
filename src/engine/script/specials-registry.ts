@@ -27,9 +27,9 @@
  */
 
 import { registerSpecial } from './script-opcodes';
-import { gBikeCycling } from '../../game/field_specials';
+import { gBikeCycling } from '../../field_specials';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
-import { gMapHeader } from '../../game/fieldmap';
+import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../system/decomp-globals';
 import { GetCurrentMap } from '../save/load_save';
@@ -44,7 +44,7 @@ import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/con
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from '../system/rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
-import { ShowFieldMessage } from '../../game/field_message_box';
+import { ShowFieldMessage } from '../../field_message_box';
 import { gStringVar4 } from '../ui/gba-text-system';
 import { Random } from '../system/random';
 import { reverseDecompConstant } from '../system/decomp-constants';
@@ -61,8 +61,8 @@ import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
-import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../game/map_name_popup';
-import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../game/field_camera';
+import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup';
+import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { getGObjectEvents } from '../field/field-globals';
 import { AddBagItem } from '../bag/bag';
@@ -72,10 +72,10 @@ import {
   GetBerryInfo, GetBerryTreeInfo, GetBerryNameByBerryType, BERRY_STAGE_SPARKLING,
   BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED, BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
   PlantBerryTree, ItemIdToBerryType,
-} from '../../game/berry';
+} from '../../berry';
 import { gDecorations } from '../ui/decoration-data';
-import { GetFirstEmptyDecorSlot } from '../../game/decoration_inventory';
-import { DecorationAdd, DecorationRemove } from '../../game/decoration_inventory';
+import { GetFirstEmptyDecorSlot } from '../../decoration_inventory';
+import { DecorationAdd, DecorationRemove } from '../../decoration_inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 

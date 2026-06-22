@@ -47,7 +47,7 @@ import {
 } from '../ui/item-use-callbacks';
 import { getString } from '../ui/gba-strings';
 import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
-import { gMapHeader } from '../../game/fieldmap';
+import { gMapHeader } from '../../fieldmap';
 import {
   GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP,
@@ -72,13 +72,13 @@ import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, Get
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
 // (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où
 // on utilise une canne → le dynamic import résout instantané (cache), sans cycle d'éval.
-let _playerAvatarMod: typeof import('../../game/field_player_avatar') | null = null;
-void import('../../game/field_player_avatar').then((m) => { _playerAvatarMod = m; });
+let _playerAvatarMod: typeof import('../../field_player_avatar') | null = null;
+void import('../../field_player_avatar').then((m) => { _playerAvatarMod = m; });
 // Lazy import bike.ts (anti-cycle/TDZ : il tire tout le graphe field via player-avatar).
-let _bikeMod: typeof import('../../game/bike') | null = null;
-void import('../../game/bike').then((m) => { _bikeMod = m; });
-let _overworldMod: typeof import('../../game/overworld') | null = null;
-void import('../../game/overworld').then((m) => { _overworldMod = m; });
+let _bikeMod: typeof import('../../bike') | null = null;
+void import('../../bike').then((m) => { _bikeMod = m; });
+let _overworldMod: typeof import('../../overworld') | null = null;
+void import('../../overworld').then((m) => { _overworldMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.

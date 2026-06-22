@@ -23,7 +23,7 @@ import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   gStringVar1, gStringVar2, gStringVar3, gStringVar4,
   StringExpandPlaceholders, StringCopy, StringLength,
-} from '../../game/include/string_util';
+} from '../../../include/string_util';
 // text.h — FontIds + attributs de font, RELOCALISÉS dans le miroir
 // `src/game/text.ts` (1:1 text.c/text.h, VAGUE 2b). Importés ici pour usage
 // interne (default params fontId, GetFontAttribute dans AddTextPrinterParameterized).
@@ -36,19 +36,19 @@ import {
   FONTATTR_LINE_SPACING, FONTATTR_UNKNOWN, FONTATTR_COLOR_FOREGROUND,
   FONTATTR_COLOR_BACKGROUND, FONTATTR_COLOR_SHADOW,
   GetFontAttribute, GetMenuCursorDimensionByFont,
-} from '../../game/include/text';
+} from '../../../include/text';
 // Migration TEXTE byte : init la charmap du miroir strings.ts (= encode les
 // gText_ExpandedPlaceholder_* FR + active EncodePlayerNameFR pour {PLAYER}/{RIVAL}).
-import { InitTextData } from '../../game/include/strings';
+import { InitTextData } from '../../../include/strings';
 // Couche de gestion des printers RELOCALISÉE dans le miroir `src/game/text.ts`.
 // `RunTextPrinters` (ci-dessous) = boucle 1:1 décomp (le driving scroll/down-arrow/
 // input vit dans RenderText, raffinement 1) ; il lit le registre `sTextPrinters`
 // (indexé par windowId, `.active` sur le struct, raffinement 3) + RenderFont.
-import { sTextPrinters, IsTextPrinterActive, RenderFont } from '../../game/text';
+import { sTextPrinters, IsTextPrinterActive, RenderFont } from '../../text';
 export {
   AddTextPrinterParameterized,
   IsTextPrinterActive, _debugGetTextPrinters, ClearTextPrinters, DeactivateAllTextPrinters,
-} from '../../game/text';
+} from '../../text';
 // menu.c (VAGUE 1 text-speed/run + VAGUE 2 chaîne AddTextPrinter) : relocalisés
 // dans le miroir `src/game/menu.ts`, ré-exportés pour les consommateurs de gba-text-system.
 export {
@@ -56,7 +56,7 @@ export {
   AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
   AddTextPrinterForMessage, AddTextPrinterForMessage_2, AddTextPrinterWithCustomSpeedForMessage,
   AddTextPrinterWithCallbackForMessage,
-} from '../../game/menu';
+} from '../../menu';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
 
@@ -165,7 +165,7 @@ export function preloadFontData(): Promise<void> {
 // state-machine byte-level complète — multi-ligne MAX, EXT_CTRL skip par code,
 // placeholders gStringVar1-3/dynamic, EXTRA_SYMBOL, KEYPAD_ICON). Les WIDTH-TABLES
 // HW restent ici (getFontGlyphWidths). Ré-exportés pour les ~31 consommateurs.
-export { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../../game/text';
+export { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../../text';
 
 /** 1:1 décomp `CHAR_SPACER` (= byte 0x77 dans charmap, charmap.txt:280).
  *  Caractère spacer demi-largeur utilisé par `ConvertIntToDecimalStringN`

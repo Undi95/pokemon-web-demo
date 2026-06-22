@@ -44,7 +44,7 @@ import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '..
 import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
 import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadBirchSpeechAssets } from '../boot/intro-asset-loader';
-import { preloadTextWindowFrames } from '../../src/game/text_window';
+import { preloadTextWindowFrames } from '../../src/text_window';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -139,7 +139,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
       //    CB2_LoadNamingScreen + naming screen helpers sur globalThis. Sans ce
       //    import, Task_NewGameBirchSpeech_StartNamingScreen → DoNamingScreen
       //    serait undefined (cf. globalThis dispatch).
-      await import('../../src/game/naming_screen');
+      await import('../../src/naming_screen');
 
       // 3. Side-effect import : main-menu-impl pose AddBirchSpeechObjects,
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.

@@ -24,7 +24,7 @@ import {
   INTR_FLAG_VBLANK,
 } from '../../src/engine/system/decomp-globals';
 import { MainCB2_EndIntro, Task_Scene1_Load } from '../../src/engine/decomp-data/src/intro-callbacks-auto';
-import { ResetSpriteData } from '../../src/game/sprite';
+import { ResetSpriteData } from '../../src/sprite';
 import type { CB2Callback } from '../../src/engine/system/decomp-runtime';
 
 const RGB_WHITE = 0x7FFF;

@@ -11,9 +11,9 @@
  * on garde un stockage name-keyed séparé → zéro régression.
  */
 
-import * as ED from '../../game/include/event_data';
-import * as FLAGS from '../../game/include/constants/flags';
-import * as VARS from '../../game/include/constants/vars';
+import * as ED from '../../../include/event_data';
+import * as FLAGS from '../../../include/constants/flags';
+import * as VARS from '../../../include/constants/vars';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { ResetSaveBlocks } from '../save/save-system';
 
