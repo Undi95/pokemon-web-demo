@@ -16,21 +16,21 @@
  * Phase 4.10 démo : indispensable pour tester rapidement le post-intro state
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
-import { SetSaveLocked } from '../save/save-system';
-import { FlagSet, VarSet } from '../script/script-vars';
-import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from '../save/save-system';
-import { SetDynamicWarp } from '../field/warp-system';
-import { GetCurrentMap } from '../save/load_save';
-import { SetObjEventTemplateCoords } from '../save/load_save';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE, FEMALE } from '../system/decomp-globals';
-import { NewGameInit } from '../save/new-game-flags';
-import { AddBagItem, DEBUG_ExpandBagToFit } from '../bag/bag';
-import { DIR_SOUTH } from '../field/direction-coords';
-import { loadItemsTable, getAllItemKeys, type ItemDef } from '../system/data-tables';
-import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../pokemon/pokemon';
-import { CalculatePlayerPartyCount } from '../battle/party-storage';
-import { loadGameData } from '../data/game-data';
+import { SetSaveLocked } from '../../src/engine/save/save-system';
+import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
+import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from '../../src/engine/save/save-system';
+import { SetDynamicWarp } from '../../src/engine/field/warp-system';
+import { GetCurrentMap } from '../../src/engine/save/load_save';
+import { SetObjEventTemplateCoords } from '../../src/engine/save/load_save';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
+import { MALE, FEMALE } from '../../src/engine/system/decomp-globals';
+import { NewGameInit } from '../../src/engine/save/new-game-flags';
+import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
+import { DIR_SOUTH } from '../../src/engine/field/direction-coords';
+import { loadItemsTable, getAllItemKeys, type ItemDef } from '../../src/engine/system/data-tables';
+import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../../src/engine/pokemon/pokemon';
+import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
+import { loadGameData } from '../../src/engine/data/game-data';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -63,7 +63,7 @@ export async function preloadBootData(): Promise<void> {
   // Même exposition que battle-flow.ts (CB2_InitBattleInternal).
   try {
     await loadGameData();
-    const gameData = await import('../data/game-data');
+    const gameData = await import('../../src/engine/data/game-data');
     (globalThis as { __game_data?: unknown }).__game_data = gameData;
   } catch (e) {
     console.warn('[boot-mode] preloadBootData: game-data load failed', e);

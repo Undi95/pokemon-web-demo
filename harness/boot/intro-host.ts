@@ -14,9 +14,9 @@
  *    CB2_InitCopyrightScreenAfterBootup) = lance la chaîne CB2 décomp (Copyright→Intro→
  *    Title→MainMenu→Birch).
  */
-import type { DecompRuntime } from '../system/decomp-runtime';
-import { assetCache } from '../system/decomp-globals';
-import { preloadFontData } from '../ui/gba-text-system';
+import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
+import { assetCache } from '../../src/engine/system/decomp-globals';
+import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import {
   preloadScene1Assets, preloadScene2Assets, preloadScene3Assets,
   preloadTitleAssets, preloadBirchSpeechAssets,
@@ -30,15 +30,15 @@ import {
   SpriteCB_WaterDrop_DangleFromLeaf, SpriteCB_WaterDrop_Fall, SpriteCB_WaterDropShort,
   SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
   SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
-} from '../decomp-data/src/intro-callbacks-auto';
+} from '../../src/engine/decomp-data/src/intro-callbacks-auto';
 import {
   SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
   SpriteCB_PressStartCopyrightBanner,
   SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
-} from '../decomp-data/src/title_screen-callbacks-auto';
+} from '../../src/engine/decomp-data/src/title_screen-callbacks-auto';
 import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
-} from '../decomp-data/src/intro_credits_graphics-callbacks-auto';
+} from '../../src/engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup } from './copyright-boot';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -87,11 +87,11 @@ export function registerIntroSpriteCallbacks(rt: DecompRuntime): void {
  *  CB2 décomp. Idempotent côté assets (les preload sont cachés). */
 export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   // Strings FR 1:1 décomp AVANT toute Task qui référence gText_* (main menu, Birch…).
-  const { initStringsFromDecomp } = await import('../ui/gba-strings');
+  const { initStringsFromDecomp } = await import('../../src/engine/ui/gba-strings');
   await initStringsFromDecomp();
 
   // Side-effect : option_menu helpers sur globalThis (requis avant CB2_InitOptionMenu).
-  const { preloadOptionMenuAssets } = await import('../ui/option-menu-impl');
+  const { preloadOptionMenuAssets } = await import('../../src/engine/ui/option-menu-impl');
 
   await preloadScene1Assets();
   await preloadScene2Assets();
@@ -102,12 +102,12 @@ export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   await preloadBirchSpeechAssets();
 
   // species ID → cri filename (PlayCryInternal pour tous les species).
-  const { loadSpeciesNamesAsync } = await import('../system/decomp-globals');
+  const { loadSpeciesNamesAsync } = await import('../../src/engine/system/decomp-globals');
   await loadSpeciesNamesAsync();
 
   // Préchargement MIDIs intro/title + cris légendaires (élimine le gap silence aux
   // transitions m4aSongNumStart). 1:1 ROM-équivalent : tous les sons « déjà là ».
-  const { loadMidi } = await import('../../../harness/m4a/player');
+  const { loadMidi } = await import('../m4a/player');
   void Promise.all([
     loadMidi('/decomp/em/music/mus_intro.mid').catch(() => {}),
     loadMidi('/decomp/em/music/mus_intro_battle.mid').catch(() => {}),

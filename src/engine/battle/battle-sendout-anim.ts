@@ -802,7 +802,7 @@ export function startTrainerThrow(opts: BallSendOpts): void {
   // GetSpriteTileStartByTag=0xFFFF -> tileId 0 + palette noire = BLOC NOIR (cause racine PROUVEE
   // runtime __ballDiag : matrice ball saine, tileId=0, palette bank noire). (Re)garantit le
   // preload (async, idempotent). Le gate de tickTrainerThrow attend qu'il soit pret.
-  void import('../boot/intro-asset-loader').then((m) => m.ensureBallGfxLoaded()).catch(() => {});
+  void import('../../../harness/boot/intro-asset-loader').then((m) => m.ensureBallGfxLoaded()).catch(() => {});
   // Fallback : pas de sprite dresseur (asset échoué) → lance la ball directement.
   // Fallback (asset dresseur echoue) : lance la ball directement via le chain (#22).
   if (!t) { setActiveBattler(opts.monPalNum); DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT); _tt.ballStarted = true; }

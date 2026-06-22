@@ -36,15 +36,15 @@
  * la texture canvas. Si l'utilisateur revient au menu, la scène est recréée.
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../../harness/gba/gba';
-import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
-import { DecompRuntime, InitKeys } from '../engine/system/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../engine/system/decomp-globals';
-import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
-import { preloadFontData } from '../engine/ui/gba-text-system';
-import { preloadBirchSpeechAssets } from '../engine/boot/intro-asset-loader';
-import { preloadTextWindowFrames } from '../game/text_window';
+import { GAME_W, GAME_H } from '../../src/main';
+import { Gba } from '../gba/gba';
+import { GbaPhaserBridge } from '../gba/phaser-bridge';
+import { DecompRuntime, InitKeys } from '../../src/engine/system/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../../src/engine/system/decomp-globals';
+import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
+import { preloadFontData } from '../../src/engine/ui/gba-text-system';
+import { preloadBirchSpeechAssets } from '../boot/intro-asset-loader';
+import { preloadTextWindowFrames } from '../../src/game/text_window';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -52,21 +52,21 @@ import {
   ResetTasks,
   FreeAllSpritePalettes,
   ScanlineEffect_Stop,
-} from '../engine/system/decomp-globals';
-import { sMainMenuBgTemplates } from '../engine/decomp-data/src/main_menu-data';
+} from '../../src/engine/system/decomp-globals';
+import { sMainMenuBgTemplates } from '../../src/engine/decomp-data/src/main_menu-data';
 import {
   Task_NewGameBirchSpeech_Init,
   SpriteCB_MovePlayerDownWhileShrinking,
   SpriteCB_Null,
   CB2_MainMenu,
-} from '../engine/decomp-data/src/main_menu-callbacks-auto';
-import { CB2_NewGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
+} from '../../src/engine/decomp-data/src/main_menu-callbacks-auto';
+import { CB2_NewGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../engine/system/decomp-runtime';
-import { installEngineDevtools } from '../../harness/devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
+} from '../../src/engine/system/decomp-runtime';
+import { installEngineDevtools } from '../devtools/engine-devtools';
+import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
 
 export class BirchRuntimeScene extends Phaser.Scene {
   private gba!: Gba;
@@ -132,22 +132,22 @@ export class BirchRuntimeScene extends Phaser.Scene {
   private async bootBirch(): Promise<void> {
     try {
       // 1. Strings FR (= gText_Birch_Welcome, gText_ThisIsAPokemon, etc.)
-      const { initStringsFromDecomp } = await import('../engine/ui/gba-strings');
+      const { initStringsFromDecomp } = await import('../../src/engine/ui/gba-strings');
       await initStringsFromDecomp();
 
       // 2. Side-effect import : naming-screen-impl pose DoNamingScreen +
       //    CB2_LoadNamingScreen + naming screen helpers sur globalThis. Sans ce
       //    import, Task_NewGameBirchSpeech_StartNamingScreen → DoNamingScreen
       //    serait undefined (cf. globalThis dispatch).
-      await import('../game/naming_screen');
+      await import('../../src/game/naming_screen');
 
       // 3. Side-effect import : main-menu-impl pose AddBirchSpeechObjects,
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.
-      await import('../engine/ui/main-menu-impl');
+      await import('../../src/engine/ui/main-menu-impl');
 
       // 4. Side-effect import : pokeball-effects pose LaunchBallFadeMonTask +
       //    SetUpForReleaseAffineAnim (= release Lotad sequence).
-      await import('../engine/system/pokeball-effects');
+      await import('../../src/engine/system/pokeball-effects');
 
       // 5. Assets : Birch sprite, Lotad anim_front 2-frame, pokeball, particles,
       //    BG tilemap shadow, palettes bg0/bg1/bg2 gradient, trainer pics.
@@ -251,14 +251,14 @@ export class BirchRuntimeScene extends Phaser.Scene {
     // NamingScreen + Birch dialog "Garçon ou Fille?" via les auto modules.
     // Plus de sync vers `gameState.*` (= éliminé : gameState lit direct
     // gSaveBlock2Ptr maintenant).
-    const { gSaveBlock2Ptr } = await import('../engine/save/save-block-state');
+    const { gSaveBlock2Ptr } = await import('../../src/engine/save/save-block-state');
     console.log(`[BirchRuntime] post-NamingScreen : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'}`);
 
     // Clear current map pour forcer le truck cinematic flow (= 1:1 décomp
     // WarpToTruck post-Birch). Sans ce clear, si une save précédente a un
     // `location` field set, decideBootMode triggers le resume mode qui spawn
     // à la saved position au lieu du truck.
-    const { SetCurrentMap } = await import('../engine/save/load_save');
+    const { SetCurrentMap } = await import('../../src/engine/save/load_save');
     SetCurrentMap(undefined);
     // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
     // SRAM persiste tant que user n'appuie pas explicitement sur SAUVEGARDER

@@ -46,7 +46,7 @@ function _transitionMirror(): _TransitionMirror {
   return ((globalThis as Record<string, unknown>).__battleTransitionMirror as _TransitionMirror) ?? {};
 }
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
-import { ensureBallGfxLoaded, ensureBallParticlesLoaded } from '../boot/intro-asset-loader';
+import { ensureBallGfxLoaded, ensureBallParticlesLoaded } from '../../../harness/boot/intro-asset-loader';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
 

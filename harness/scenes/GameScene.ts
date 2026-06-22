@@ -26,18 +26,18 @@
  * CreateTask(Task_Scene1_Load).
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../../harness/gba/gba';
-import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
-import { DecompRuntime, InitKeys } from '../engine/system/decomp-runtime';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
-import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/system/decomp-globals';
-import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
-import { installEngineDevtools } from '../../harness/devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
+import { GAME_W, GAME_H } from '../../src/main';
+import { Gba } from '../gba/gba';
+import { GbaPhaserBridge } from '../gba/phaser-bridge';
+import { DecompRuntime, InitKeys } from '../../src/engine/system/decomp-runtime';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
+import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../../src/engine/system/decomp-globals';
+import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
+import { installEngineDevtools } from '../devtools/engine-devtools';
+import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
 // Chantier « c » Step 2.1 : boot intro extrait → intro-host.ts (callbacks + preload +
 // SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)), réutilisable par la scène unique.
-import { registerIntroSpriteCallbacks, bootIntroSequence } from '../engine/boot/intro-host';
+import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -327,15 +327,15 @@ export class GameScene extends Phaser.Scene {
   private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
     console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
-    const { gSaveBlock2Ptr } = await import('../engine/save/save-block-state');
+    const { gSaveBlock2Ptr } = await import('../../src/engine/save/save-block-state');
     if (mode === 'continue') {
       // ⚠️ CRITICAL : LOAD la save AVANT de toucher gameState. Sinon
       // gameState est en état initial vide (= block1.flags={}, vars={}, etc.)
       // et tout `gameState.save()` plus loin OVERWRITERAIT la save existante
       // avec ce vide. Bug réel observé 2026-05-10 : counter passait de 23 à 1
       // au CONTINUE → resume cinematique replay parce que vars/flags perdus.
-      const { LoadGameSave, SAVE_STATUS_OK } = await import('../engine/save/save-system');
-      const lsMod = await import('../engine/save/load_save');
+      const { LoadGameSave, SAVE_STATUS_OK } = await import('../../src/engine/save/save-system');
+      const lsMod = await import('../../src/engine/save/load_save');
       const ok = LoadGameSave() === SAVE_STATUS_OK;
       console.log(`[GameScene continue] LoadGameSave() → ${ok}, map=${JSON.stringify(lsMod.GetCurrentMap())}`);
     } else {
@@ -343,7 +343,7 @@ export class GameScene extends Phaser.Scene {
       // via auto code. gameState.playerName/gender lisent direct
       // gSaveBlock2Ptr → plus de sync nécessaire (= 1:1 strict).
       // Force truck cinematic via decideBootMode default path.
-      const { SetCurrentMap } = await import('../engine/save/load_save');
+      const { SetCurrentMap } = await import('../../src/engine/save/load_save');
       SetCurrentMap(undefined);
       // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
       // SRAM persiste tant que user n'a pas explicitement choisi SAUVEGARDER
@@ -353,7 +353,7 @@ export class GameScene extends Phaser.Scene {
       // Recharger la save montre qu'elle est wipe"). Si user F5 mid-Birch =
       // 1:1 ROM power off : la save SRAM précédente est préservée.
     }
-    const _lsMod = await import('../engine/save/load_save');
+    const _lsMod = await import('../../src/engine/save/load_save');
     console.log(`[GameScene] start : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'} map=${JSON.stringify(_lsMod.GetCurrentMap())}`);
 
     // 1:1 décomp Cleanup : attend la fin de la fade en cours puis assure que
@@ -383,7 +383,7 @@ export class GameScene extends Phaser.Scene {
     }
     // Force Faded full black (= 1:1 décomp FillPalBufferBlack pattern) pour
     // garantir aucun pixel non-noir avant scene swap. Idempotent si déjà black.
-    const { FillPalBufferBlack } = await import('../engine/system/decomp-globals');
+    const { FillPalBufferBlack } = await import('../../src/engine/system/decomp-globals');
     FillPalBufferBlack();
     const waitFrames = 0;
     console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);

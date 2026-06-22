@@ -25,17 +25,17 @@ if (!import.meta.env.PROD) {
   };
 }
 
-import { TestGbaScene } from './scenes/TestGbaScene';
-import { GameScene } from './scenes/GameScene';
-import { DebugOverlayScene } from './scenes/DebugOverlayScene';
+import { TestGbaScene } from '../harness/scenes/TestGbaScene';
+import { GameScene } from '../harness/scenes/GameScene';
+import { DebugOverlayScene } from '../harness/scenes/DebugOverlayScene';
 import { mountDevtoolsPanel } from '../harness/devtools/devtools-panel';
 // Chantier « c » Step 0 (2026-06-22) : BirchRuntimeScene = host MORT (jamais
 // `scene.start`'d ; le flow Birch tourne dans GameScene via la chaîne CB2 main menu,
 // cf. docs/RUNTIME-MERGE-PLAN.md). Dé-enregistré du scene array. Fichier conservé
 // jusqu'au nettoyage final (Step 5).
-// import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
-// import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
-import { TestOverworldScene } from './scenes/TestOverworldScene';
+// import { BirchRuntimeScene } from '../harness/scenes/BirchRuntimeScene';
+// import { OverworldScene } from '../harness/scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
+import { TestOverworldScene } from '../harness/scenes/TestOverworldScene';
 import { createAudioDevtool } from '../harness/util/audio-devtool';
 import '../harness/util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).

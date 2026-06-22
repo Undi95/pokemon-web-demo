@@ -18,17 +18,17 @@
  * Press SPACE/CLICK : retour BootScene (pour rebooter normalement).
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../../harness/gba/gba';
-import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
-import { loadIndexedPng, loadTilemapBin } from '../../harness/gba/png-loader';
-import { rotScaleAffineMatrix } from '../../harness/gba/types';
+import { GAME_W, GAME_H } from '../../src/main';
+import { Gba } from '../gba/gba';
+import { GbaPhaserBridge } from '../gba/phaser-bridge';
+import { loadIndexedPng, loadTilemapBin } from '../gba/png-loader';
+import { rotScaleAffineMatrix } from '../gba/types';
 // M4A audio test
-import { loadMidi, playSong, stopSong, isPlaying } from '../../harness/m4a/player';
-import { keyToGbaMask } from '../../harness/util/key-bindings';
-import { loadSampleManifest } from '../../harness/m4a/sample-loader';
-import { getAudioContext } from '../../harness/m4a/audio-context';
-import type { VoiceGroup } from '../../harness/m4a/voice-types';
+import { loadMidi, playSong, stopSong, isPlaying } from '../m4a/player';
+import { keyToGbaMask } from '../util/key-bindings';
+import { loadSampleManifest } from '../m4a/sample-loader';
+import { getAudioContext } from '../m4a/audio-context';
+import type { VoiceGroup } from '../m4a/voice-types';
 
 export class TestGbaScene extends Phaser.Scene {
   private gba!: Gba;
@@ -189,7 +189,7 @@ export class TestGbaScene extends Phaser.Scene {
       this.statusText?.setText('Loading MIDI...').setColor('#FFCC00');
 
       // Load voicegroup intro (utilisé par mus_intro.mid)
-      const vgModule = await import('../../harness/m4a/voicegroups-data/intro');
+      const vgModule = await import('../m4a/voicegroups-data/intro');
       const introVg = vgModule.VOICEGROUP as VoiceGroup;
 
       // Load song MIDI (intro music)
@@ -199,7 +199,7 @@ export class TestGbaScene extends Phaser.Scene {
       // Voicegroup lookup : utilise le master VOICEGROUPS_BY_NAME map généré
       // par extract-voicegroups-m4a.mjs (195 voicegroups + 5 keysplit tables).
       // Résout les keysplit_all (drumsets entiers) + keysplit (piano keysplit etc.).
-      const { lookupVoicegroup } = await import('../../harness/m4a/voicegroups-data/_all-voicegroups-index');
+      const { lookupVoicegroup } = await import('../m4a/voicegroups-data/_all-voicegroups-index');
       const vgLookup = (name: string): VoiceGroup | null => lookupVoicegroup(name);
 
       this.statusText?.setText('Playing mus_intro.mid (P=replay, S=stop)').setColor('#00FF88');

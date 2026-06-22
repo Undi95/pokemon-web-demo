@@ -13,16 +13,16 @@
  * Activation : ajouter dans main.ts scene array, ou `scene.start('TestOverworldScene')`.
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../../harness/gba/gba';
-import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
-import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../engine/system/decomp-globals';
-import { ResetSpriteData } from '../game/sprite';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
+import { GAME_W, GAME_H } from '../../src/main';
+import { Gba } from '../gba/gba';
+import { GbaPhaserBridge } from '../gba/phaser-bridge';
+import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../../src/engine/system/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../../src/engine/system/decomp-globals';
+import { ResetSpriteData } from '../../src/game/sprite';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
 // Chantier « c » Step 2.2 : boot intro réutilisable (host unifié intro+OW, gated ?unified).
-import { registerIntroSpriteCallbacks, bootIntroSequence } from '../engine/boot/intro-host';
-import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
+import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
+import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
 import {
   loadMapByName,
   InitMap,
@@ -37,8 +37,8 @@ import {
   CONNECTION_WEST,
   CONNECTION_EAST,
   gMapHeader,
-} from '../game/fieldmap';
-import type { MapHeader, WarpEvent } from '../game/fieldmap';
+} from '../../src/game/fieldmap';
+import type { MapHeader, WarpEvent } from '../../src/game/fieldmap';
 import {
   DrawWholeMapView,
   flushOverworldTilemaps,
@@ -59,8 +59,8 @@ import {
   getPendingConnection,
   clearPendingConnection,
   gCamera,
-} from '../game/field_camera';
-import type { PendingConnection } from '../game/field_camera';
+} from '../../src/game/field_camera';
+import type { PendingConnection } from '../../src/game/field_camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
@@ -76,10 +76,10 @@ import {
   NOT_MOVING,
   T_NOT_MOVING,
   gPlayerAvatar,
-} from '../game/field_player_avatar';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
-import { SetObjectEventDirection, gObjectEvents } from '../game/event_object_movement';
-import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/save/load_save';
+} from '../../src/game/field_player_avatar';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
+import { SetObjectEventDirection, gObjectEvents } from '../../src/game/event_object_movement';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../../src/engine/save/load_save';
 import {
   SpawnObjectEventsOnMap,
   SpawnObjectEventsOnReturnToField,
@@ -96,13 +96,13 @@ import {
   ResetLevitateMovementTasks,
   InitReflectionDistortion,
   UpdateReflectionDistortionMatrices,
-} from '../game/event_object_movement';
-import { applyMovement, isMovementDone } from '../engine/field/movement-system';
-import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script_movement';
-import { SetFieldEffectRuntime } from '../game/field_effect';
-import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
-import { installEngineDevtools } from '../../harness/devtools/engine-devtools';
+} from '../../src/game/event_object_movement';
+import { applyMovement, isMovementDone } from '../../src/engine/field/movement-system';
+import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../../src/game/script_movement';
+import { SetFieldEffectRuntime } from '../../src/game/field_effect';
+import { decideBootMode, preloadBootData } from '../boot/boot-mode';
+import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
+import { installEngineDevtools } from '../devtools/engine-devtools';
 import {
   loadMapScripts,
   ScriptContext_RunScript,
@@ -116,7 +116,7 @@ import {
   RunOnResumeMapScript,
   TryRunOnFrameMapScript,
   TryRunOnWarpIntoMapScript,
-} from '../engine/script/script-runtime';
+} from '../../src/engine/script/script-runtime';
 // 1:1 décomp `DoCB1_Overworld` (overworld.c:1438) : la couche INPUT joueur passe par
 // FieldClearPlayerInput → FieldGetPlayerInput → ProcessPlayerFieldInput → PlayerStep.
 import {
@@ -124,7 +124,7 @@ import {
   FieldGetPlayerInput,
   ProcessPlayerFieldInput,
   type FieldInput,
-} from '../game/field_control_avatar';
+} from '../../src/game/field_control_avatar';
 import {
   getPendingWarp,
   setPendingWarp,
@@ -133,106 +133,106 @@ import {
   getPlayerCoordsFromWarp,
   GetAdjustedInitialDirection,
   GetDynamicWarp,
-} from '../engine/field/warp-system';
-import type { WarpKind } from '../engine/field/warp-system';
+} from '../../src/engine/field/warp-system';
+import type { WarpKind } from '../../src/engine/field/warp-system';
 import {
   GetDoorSoundEffect,
   FieldAnimateDoorOpen,
   FieldAnimateDoorClose,
   FieldSetDoorOpened,
   preloadDoorTiles,
-} from '../game/field_door';
+} from '../../src/game/field_door';
 import {
   CreateWarpArrowSprite,
   DestroyWarpArrowSprite,
   HideShowWarpArrow,
-} from '../game/field_player_avatar';
-import { preloadEmoteIcons } from '../game/trainer_see';
-import { UpdateTVScreensOnMap } from '../engine/ui/tv-screen';
+} from '../../src/game/field_player_avatar';
+import { preloadEmoteIcons } from '../../src/game/trainer_see';
+import { UpdateTVScreensOnMap } from '../../src/engine/ui/tv-screen';
 import {
   preloadTallGrassEffect,
   TrySpawnTallGrassOnReturnToField,
-} from '../game/field_effect_helpers';
-import { preloadSparkleEffect } from '../game/field_effect_helpers';
+} from '../../src/game/field_effect_helpers';
+import { preloadSparkleEffect } from '../../src/game/field_effect_helpers';
 // Réserve GENERAL_0/GENERAL_1 dans [12,16) AVANT les autres field effects (sinon famine
 // de slots → poussière/splash/feet-in-water rendus noirs, palBank=255). Cf. field_effect_helpers.ts.
-import { preloadGeneralFieldEffectPalettes } from '../game/field_effect_helpers';
-import { DoTimeBasedEvents } from '../engine/system/time-based-events';
-import { SetUpFieldTasks } from '../game/field_tasks';
-import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
-import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../game/field_weather_effect';
-import { setReservedSpritePaletteCount } from '../game/sprite';
-import { SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters } from '../game/overworld';
-import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
+import { preloadGeneralFieldEffectPalettes } from '../../src/game/field_effect_helpers';
+import { DoTimeBasedEvents } from '../../src/engine/system/time-based-events';
+import { SetUpFieldTasks } from '../../src/game/field_tasks';
+import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../../src/game/field_weather';
+import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/game/field_weather_effect';
+import { setReservedSpritePaletteCount } from '../../src/game/sprite';
+import { SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters } from '../../src/game/overworld';
+import { OBJ_PALSLOT_COUNT } from '../../src/engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
-import '../game/coord_event_weather';
+import '../../src/game/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (jump-impact config-driven, préchargé via preloadJumpImpactEffects, tické par le callback global).
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
 // WaitFieldEffectSpriteAnim — tické + auto-despawn par le callback global).
-import { preloadRippleEffect } from '../game/field_effect_helpers';
+import { preloadRippleEffect } from '../../src/game/field_effect_helpers';
 // Long grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback,
 // tické + auto-despawn par le callback global runSpriteCallbacks).
-import { preloadLongGrassEffect } from '../game/field_effect_helpers';
+import { preloadLongGrassEffect } from '../../src/game/field_effect_helpers';
 // Short grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback).
-import { preloadShortGrassEffect } from '../game/field_effect_helpers';
+import { preloadShortGrassEffect } from '../../src/game/field_effect_helpers';
 // Jump impact (jump tall/long grass + small/big splash) : migrés dans le miroir 1:1.
-import { preloadJumpImpactEffects } from '../game/field_effect_helpers';
+import { preloadJumpImpactEffects } from '../../src/game/field_effect_helpers';
 // Splash + feet-in-flowing-water : migrés dans le miroir 1:1 game/field_effect_helpers.ts.
-import { preloadSplashEffect } from '../game/field_effect_helpers';
+import { preloadSplashEffect } from '../../src/game/field_effect_helpers';
 // Footprints / tire tracks : migrés dans le miroir 1:1 game/field_effect_helpers.ts
 // (sprite.callback UpdateFootprintsTireTracksFieldEffect, tické par le callback global).
-import { preloadFootprintsEffects } from '../game/field_effect_helpers';
+import { preloadFootprintsEffects } from '../../src/game/field_effect_helpers';
 // Sand pile : migré dans le miroir 1:1 game/field_effect_helpers.ts (modèle sprite.callback,
 // plus de pool ni d'Update manuel — le callback global runSpriteCallbacks le tique).
 // Sand pile + hot springs : migrés dans le miroir 1:1 game/field_effect_helpers.ts
 // (modèle sprite.callback — le callback global runSpriteCallbacks les tique).
-import { preloadSandPileEffect, preloadHotSpringsEffect } from '../game/field_effect_helpers';
+import { preloadSandPileEffect, preloadHotSpringsEffect } from '../../src/game/field_effect_helpers';
 // Bubbles : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot sprite.callback).
-import { preloadBubblesEffect } from '../game/field_effect_helpers';
+import { preloadBubblesEffect } from '../../src/game/field_effect_helpers';
 // Ash : migré dans le miroir 1:1 game/field_effect_helpers.ts (machine 3 états, sprite.callback).
-import { preloadAshEffect } from '../game/field_effect_helpers';
+import { preloadAshEffect } from '../../src/game/field_effect_helpers';
 // Surf blob (monture de surf) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (sprite.callback UpdateSurfBlobFieldEffect + SpriteCB_UnderwaterSurfBlob, tickés par le callback global).
-import { preloadSurfBlobEffect } from '../game/field_effect_helpers';
-import { preloadDisguiseEffects } from '../game/field_effect_helpers';
-import { preloadShadowEffect } from '../game/field_effect_helpers';
-import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../game/field_effect_helpers';
-import { PlaySE } from '../engine/system/decomp-globals';
+import { preloadSurfBlobEffect } from '../../src/game/field_effect_helpers';
+import { preloadDisguiseEffects } from '../../src/game/field_effect_helpers';
+import { preloadShadowEffect } from '../../src/game/field_effect_helpers';
+import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../../src/game/field_effect_helpers';
+import { PlaySE } from '../../src/engine/system/decomp-globals';
 import {
   SE_EXIT,
   SE_WARP_IN,
-} from '../engine/decomp-data/include/constants/songs-data';
+} from '../../src/engine/decomp-data/include/constants/songs-data';
 import {
   InitFieldMessageBox,
   TickFieldMessageBox,
   preloadStandardMenuPalette,
-} from '../game/field_message_box';
-import { TickStartMenu } from '../engine/ui/start-menu';
-import { TickBedroomPC } from '../engine/ui/bedroom-pc';
-import { TickPCAnim } from '../engine/pokemon/pc-anim';
-import { TickRegionMap } from '../engine/field/region-map';
-import { syncSubspriteOam } from '../game/event_object_movement';
-import { preloadFontData } from '../engine/ui/gba-text-system';
-import { preloadTextWindowFrames } from '../game/text_window';
-import { PlayBGM, FillPalBufferBlack } from '../engine/system/decomp-globals';
-import { FadeScreen, FADE_FROM_BLACK } from '../engine/system/fade-screen';
-import * as Songs from '../engine/decomp-data/include/constants/songs-data';
+} from '../../src/game/field_message_box';
+import { TickStartMenu } from '../../src/engine/ui/start-menu';
+import { TickBedroomPC } from '../../src/engine/ui/bedroom-pc';
+import { TickPCAnim } from '../../src/engine/pokemon/pc-anim';
+import { TickRegionMap } from '../../src/engine/field/region-map';
+import { syncSubspriteOam } from '../../src/game/event_object_movement';
+import { preloadFontData } from '../../src/engine/ui/gba-text-system';
+import { preloadTextWindowFrames } from '../../src/game/text_window';
+import { PlayBGM, FillPalBufferBlack } from '../../src/engine/system/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from '../../src/engine/system/fade-screen';
+import * as Songs from '../../src/engine/decomp-data/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
-import '../engine/script/script-opcodes';
+import '../../src/engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
-import '../engine/script/specials-registry';
+import '../../src/engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
-import '../game/pokemon_size_record';
+import '../../src/game/pokemon_size_record';
 // Side-effect import : registers secret_base specials (cur base helpers).
-import '../engine/pokemon/secret-base';
-import { ShowMapNamePopup, preloadMapNames } from '../game/map_name_popup';
-import { loadGameData, installDexDevtools } from '../engine/data/game-data';
+import '../../src/engine/pokemon/secret-base';
+import { ShowMapNamePopup, preloadMapNames } from '../../src/game/map_name_popup';
+import { loadGameData, installDexDevtools } from '../../src/engine/data/game-data';
 import {
   InitTilesetAnimations,
   UpdateTilesetAnimations,
   TransferTilesetAnimsBuffer,
-} from '../game/tileset_anims';
+} from '../../src/game/tileset_anims';
 
 /** 1:1 décomp `GetWalkNormalMovementAction` (event_object_movement.c:4959,
  *  via `dirn_to_anim` macro). Map direction → walk_normal movement action
@@ -314,7 +314,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // PlayerStep step-end via CheckStandardWildEncounter (= 4-step immunity
     // counter + prevBehavior track 1:1 field_control_avatar.c:668-686).
     void (async () => {
-      const { InitWildEncountersFromJson, ResetWildEncounterImmunity } = await import('../game/wild_encounter');
+      const { InitWildEncountersFromJson, ResetWildEncounterImmunity } = await import('../../src/game/wild_encounter');
       try {
         const res = await fetch('/decomp/em/wild-encounters.json');
         const data = await res.json();
@@ -330,7 +330,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
     // → DUREE JEU "0:00" toujours. À call AU BOOT overworld pour que le tick
     // dans decomp-runtime.tickFixed soit actif.
-    void import('../game/play_time').then(({ PlayTimeCounter_Start }) => {
+    void import('../../src/game/play_time').then(({ PlayTimeCounter_Start }) => {
       PlayTimeCounter_Start();
       console.log('[TestOverworld] PlayTimeCounter_Start invoked');
     });
@@ -400,7 +400,7 @@ export class TestOverworldScene extends Phaser.Scene {
     if (mode === 'continue') {
       // 1:1 GameScene : LOAD la save AVANT de toucher l'état (sinon un save() plus
       // loin écraserait la save avec du vide). decideBootMode lira ensuite la map sauvée.
-      const { LoadGameSave } = await import('../engine/save/save-system');
+      const { LoadGameSave } = await import('../../src/engine/save/save-system');
       LoadGameSave();
     } else {
       // newgame : Birch a posé name/gender dans gSaveBlock2Ptr. Clear la map pour
@@ -530,7 +530,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // + camera wobble + door tile open). Lock player controls le temps que
       // le task soit terminé. Cf. truck-cinematic.ts pour les détails 1:1.
       if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
-        const { ExecuteTruckSequence } = await import('../game/field_special_scene');
+        const { ExecuteTruckSequence } = await import('../../src/game/field_special_scene');
         ExecuteTruckSequence(this.rt);
       } else if (boot.mode === 'resume') {
         // 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1750) :
@@ -1085,7 +1085,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // `RotatingGate_InitPuzzleAndGraphics` (= overworld.c LoadMap step). Init
     // puzzle config + reset gate orientations à VAR_TEMP_0. No-op si current
     // map n'a pas de rotating gate puzzle (= démo maps).
-    void import('../game/rotating_gate').then(m => m.RotatingGate_InitPuzzle());
+    void import('../../src/game/rotating_gate').then(m => m.RotatingGate_InitPuzzle());
 
     // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
     // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
