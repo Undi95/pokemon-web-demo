@@ -82,10 +82,19 @@ changer de scène.
 > Rappel A/B intro : URL `/` (défaut) + presser A pour passer l'écran de test **tant qu'il
 > existe** ; une fois Step 5 fait, boot direct. Cf. [[reference-scene-architecture]].
 
-- **Step 0 — Filet** : retirer `BirchRuntimeScene` + `OverworldScene` du scene array de
-  `main.ts` (hosts morts) ; garder les fichiers. A/B : new game (Birch joue dans GameScene)
-  + continue + ?nointro inchangés. *(Risque ~nul, pur nettoyage du registre de scènes.)*
-- **Step 1 — Extraire `enterOverworld(rt)`** : sortir tout le corps de
+- ✅ **Step 0 — Filet (FAIT `cc273d2e`)** : `BirchRuntimeScene` dé-enregistré de `main.ts`
+  (OverworldScene l'était déjà). A/B : boot + chaîne TestGba→GameScene intacte.
+- ✅ **Step 2.1 — Extraire `intro-host.ts` (FAIT `0cd0591c`)** : boot intro (registerIntro
+  SpriteCallbacks + bootIntroSequence) extrait de GameScene en module réutilisable. Pur
+  refactor, A/B intro identique.
+- ✅ **Step 2.2 — Host unifié gated ?unified (FAIT `0c99b552`)** : TestOverworldScene boote
+  l'intro dans SON runtime puis enchaîne l'OW via CB2_NewGame/Continue → transitionToOverworld
+  (resets 1:1 + bootOverworld) dans le MÊME runtime, sans scene.start. Gated ?unified (défaut
+  GameScene intact). A/B : ?unified intro boote+rend dans TestOverworldScene ; ?nointro intact.
+  ⏳ RESTE à valider : la transition intro→OW en playthrough complet (New Game→Birch→OW).
+- ⏭️ **Step 2.3 — Valider transition + flipper le défaut** : confirmer le playthrough ?unified
+  (New Game→Birch→naming→OW dans 1 scène), puis main.ts défaut → host unifié + retrait GameScene.
+- **Step 1 (ancien) — Extraire `enterOverworld(rt)`** : sortir tout le corps de
   `TestOverworldScene.bootOverworld` (+ les wires create() OW : SetFieldEffectRuntime,
   globals __phaserOverworldScene/gPlayerAvatar/gTotalCamera, wild_encounter, play_time) en
   une fonction pure réutilisable prenant le runtime + la scène hôte. `TestOverworldScene`
