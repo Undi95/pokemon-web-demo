@@ -668,7 +668,7 @@ function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): voi
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gRainDropSpriteTemplate');
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
-    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
+    const sid = _CreateSpriteFromTemplate({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
     if (sid >= 0) {
       const sp = rt?.gSprites?.[sid];
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -729,7 +729,7 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gSmallWaterOrbSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
+  const sid = _CreateSpriteFromTemplate({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid >= 0) {
     const sp = rt?.gSprites?.[sid];
     const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;

@@ -2957,11 +2957,12 @@ export function ALIGNED<T>(arg: T): T {
  *  drawn ON TOP (= GBATEK : OAM[lower index] = displayed in front). */
 export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
   const rt = _getRT();
-  // 1:1 décomp : template INLINE (tileTag=TAG_NONE + `images`, ex sprites de combat
-  // mons/dresseur) → chemin fidèle CreateSpriteInline (tiles depuis images[0].data).
-  // Sinon (string nom / objet sans images) → chemin par-NOM existant (overworld,
-  // INCHANGÉ = zéro régression OW). Branche additive.
-  if (template && typeof template === 'object' && Array.isArray(template.images) && template.images.length > 0) {
+  // 1:1 décomp : template INLINE (tileTag=TAG_NONE + `images`) → game CreateSprite voie inline
+  // (tiles depuis images[0].data, ou placeholder `images:[]` = OAM seul + tiles via anim sheet).
+  // Sinon (string nom / objet sans `images`) → voie par-NOM (overworld/intro). `Array.isArray`
+  // suffit (les templates par-nom sont des strings/{name} SANS `.images`) : on accepte aussi
+  // `images:[]` (B3 — les ex-`rt.CreateSpriteInline?.()` des battle-anims y routent désormais).
+  if (template && typeof template === 'object' && Array.isArray(template.images)) {
     return _CreateSprite_game(rt, template, x, y, subpriority);
   }
   // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont

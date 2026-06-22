@@ -7,6 +7,7 @@
  * AnimRockTomb(+Step :767/:780), AnimRockBlastRock (:800),
  * AnimRockScatter(+Step :808/:823) — Rock Slide/Blast/Tomb/Smash.
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -601,7 +602,7 @@ function _CreateRolloutDirtSprite(task: _RoTask): void {
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.(tplName);
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
+  const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
   if (sid >= 0) {
     const dirt = rt.gSprites?.[sid];
     const oam = dirt ? rt.gba?.oam[dirt.oamIndex] : undefined;

@@ -5,6 +5,7 @@
  * 1:1 AnimAbsorptionOrb = projectile INVERSE (cible → attaquant, le drain).
  * GFX : orbs.png 16x48 byte-exact.
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
 import {
@@ -2795,7 +2796,7 @@ function _lbSpawnLeaf(x: number, y: number, subprio: number): number {
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gLeafBladeSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
+  const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid < 0) return -1;
   const sp = rt.gSprites?.[sid];
   const oam = sp && sp.oamIndex !== undefined ? rt.gba?.oam[sp.oamIndex] : undefined;

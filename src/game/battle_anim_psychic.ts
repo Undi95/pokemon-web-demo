@@ -16,6 +16,7 @@
  * (anti-cycle ESM) — accès lazy par `globalThis.__battleAnimInterpreter` ;
  * helpers décomp importés de ./battle_anim_mons.
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -820,7 +821,7 @@ function _SkillSwap_Step(task: _SsTask): void {
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gSkillSwapOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], 0) ?? -1;
+        const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], 0) ?? -1;
         if (sid >= 0) {
           const sp = rt?.gSprites?.[sid];
           const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
@@ -905,7 +906,7 @@ function AnimTask_ImprisonOrbs_Step(task: _SsTask): void {
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gImprisonOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2, objMode: 1 }, images: [] } as never, task.data[13], task.data[14], 0) ?? -1;
+        const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2, objMode: 1 }, images: [] } as never, task.data[13], task.data[14], 0) ?? -1;
         task.data[task.data[2] + 8] = sid;
         if (sid >= 0) {
           const sp = rt?.gSprites?.[sid];

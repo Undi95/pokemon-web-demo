@@ -19,6 +19,7 @@
  * Dettes : AnimUnusedSmallEmber, AnimSunlight, AnimEmberFlare/AnimBurnFlame,
  * AnimTask_EruptionLaunchRocks(+rocks), AnimTask_MoveHeatWaveTargets.
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
 import {
@@ -702,7 +703,7 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gEruptionLaunchRockSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   for (let i = 0, j = 0; i <= 6; i++) {
-    const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 2) ?? -1;
+    const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 2) ?? -1;
     if (sid >= 0) {
       const rock = rt.gSprites?.[sid];
       const oam = rock ? rt.gba?.oam[rock.oamIndex] : undefined;

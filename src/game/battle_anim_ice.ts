@@ -30,6 +30,7 @@
  *     (précédent : battle_anim_effects_3.ts).
  *   - IsContest() = false (pas de concours dans ce runtime).
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -1033,7 +1034,7 @@ function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, task
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gHailParticleSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, spriteX, -8, 18) ?? -1;
+  const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, spriteX, -8, 18) ?? -1;
   if (sid < 0) return false;
   const sp = rt.gSprites?.[sid];
   const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
@@ -1064,7 +1065,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gIceCrystalHitLargeSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-    const hitId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sprite.data[3], sprite.data[4], sprite.subpriority ?? 18) ?? -1;
+    const hitId = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sprite.data[3], sprite.data[4], sprite.subpriority ?? 18) ?? -1;
     if (hitId >= 0) {
       const hit = rt.gSprites?.[hitId];
       const hitOam = hit ? rt.gba?.oam[hit.oamIndex] : undefined;

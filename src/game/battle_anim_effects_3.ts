@@ -2820,7 +2820,7 @@ function CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: bo
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gFacadeSweatDropSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   for (let i = 0; i < 4; i++) {
-    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, xs[i], ys[i & 1], 20) ?? -1;
+    const sid = _CreateSpriteFromTemplate({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, xs[i], ys[i & 1], 20) ?? -1;
     if (sid >= 0) {
       const sp = rt?.gSprites?.[sid];
       const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
@@ -2943,7 +2943,7 @@ function AnimTask_GlareEyeDots_Step(task: { taskId: number; data: number[] }): v
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gGlareEyeDotSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         for (let i = 0; i < 2; i++) {
-          const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
+          const sid = _CreateSpriteFromTemplate({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
           if (sid >= 0) {
             const sp = rt?.gSprites?.[sid];
             const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
@@ -3411,7 +3411,7 @@ function TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
       const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
       const tpl = bridge?.lookupGeneratedTemplateTags?.('gThoughtBubbleSpriteTemplate');
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-      const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 6 - task.data[1]) ?? -1;
+      const sid = _CreateSpriteFromTemplate({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 6 - task.data[1]) ?? -1;
       (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(46 /* SE_M_METRONOME */);
       if (sid >= 0) {
         const sp = rt?.gSprites?.[sid];
@@ -3534,7 +3534,7 @@ function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unk
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gBarrageBallSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], _bbSubprio(tgt) - 5) ?? -1;
+  const sid = _CreateSpriteFromTemplate({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], _bbSubprio(tgt) - 5) ?? -1;
   task.data[15] = sid;
   if (sid >= 0) {
     const sp = rt.gSprites?.[sid];

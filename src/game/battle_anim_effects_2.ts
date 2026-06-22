@@ -37,6 +37,7 @@
  *     _GetBattlerSpriteSubpriority(b) = la valeur de création du sprite mon
  *     (battle_anim_mons.c:2035) — identique tant que rien ne la réécrit.
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -1707,7 +1708,7 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gSpeedDustSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
+        const sid = CreateSprite({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
         if (sid >= 0) {
           const sp = rt?.gSprites?.[sid];
           const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
@@ -2303,7 +2304,7 @@ function _AirCutterProjectileStep1(task: _AcTask): void {
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gAirWaveProjectileSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-    const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
+    const sid = CreateSprite({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
     if (sid >= 0) {
       const sp = rt.gSprites?.[sid];
       const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;

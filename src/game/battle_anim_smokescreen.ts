@@ -81,7 +81,7 @@ export function SmokescreenImpact(x: number, y: number, persist: boolean): numbe
   const palSlot = _smSpriteApi().IndexOfSpritePaletteTag?.(TAG_SMOKESCREEN) ?? 0xFF;
 
   // sprite principal invisible (compteur data[0], persist data[1])
-  const mainId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, 0, 0, 0) ?? -1;
+  const mainId = CreateSprite({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, 0, 0, 0) ?? -1;
   const main = mainId >= 0 ? rt.gSprites?.[mainId] : undefined;
   if (main) {
     main.invisible = true;
@@ -90,7 +90,7 @@ export function SmokescreenImpact(x: number, y: number, persist: boolean): numbe
     main.callback = _SmokescreenImpactMain as never;
   }
   const spawn = (sx: number, sy: number, animNum: number): void => {
-    const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sx, sy, 2) ?? -1;
+    const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sx, sy, 2) ?? -1;
     if (sid < 0) return;
     const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
@@ -158,6 +158,7 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
 }
 
 // ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';

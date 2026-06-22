@@ -24,6 +24,7 @@
  * de la rotation (±4/frame) à valider à l'œil (A/B user).
  */
 
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
@@ -212,7 +213,7 @@ function _fldEffPokeballTrail(x: number, y: number, side: number, delay: number)
   if (pal === 0xFF || pal === undefined) pal = _ballPalSlot;
   _ballPalSlot = pal;
   const matrix = AllocOamMatrix() ?? 0;
-  const spriteId = r.CreateSpriteInline?.({
+  const spriteId = CreateSprite({
     name: 'FldEffPokeballTrail',
     images: [{ data: _ballTiles, size: _ballTiles.length }],
     oam: { shape: 0, size: 2 /* 32x32 */, priority: 0, paletteNum: pal, affineMode: 1, affineParamIndex: matrix },

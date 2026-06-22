@@ -1284,7 +1284,7 @@ function Cmd_createsprite(): void {
         spriteId = _CreateSpriteByTemplate(sysTpl as never, x, y, subpriority);
       } else {
         // Sprite CONTROLEUR invisible (tileTag 0 — lunge & co).
-        spriteId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 1 }, images: [] } as never, x, y, subpriority) ?? -1;
+        spriteId = _CreateSpriteByTemplate({ oam: { shape: 0, size: 1, priority: 1 }, images: [] } as never, x, y, subpriority) ?? -1;
       }
       _vtrace({ op: 'sprite', name: tplName, resolved: true, spriteId, tileTag: tpl.tileTag, cb: (tpl.callback as { name?: string } | undefined)?.name ?? 'none' });
       if (spriteId >= 0) {

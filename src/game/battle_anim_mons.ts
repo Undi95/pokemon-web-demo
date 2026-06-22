@@ -30,6 +30,7 @@
  *     Les valeurs restent identiques bit-a-bit a la decomp.
  */
 
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import type { DecompSprite } from '../engine/system/decomp-runtime';
 import { Sin } from './trig';
 
@@ -571,7 +572,7 @@ export function CloneBattlerSpriteWithBlend(animBattler: number): number {
   const mon = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
   if (!mon || !rt) return -1;
   const monOam = rt.gba?.oam[mon.oamIndex];
-  const cloneId = rt.CreateSpriteInline?.({ oam: { shape: monOam?.shape ?? 0, size: monOam?.size ?? 3, priority: monOam?.priority ?? 2 }, images: [] } as never, mon.x + mon.x2, mon.y + mon.y2, mon.subpriority ?? 3) ?? -1;
+  const cloneId = CreateSprite({ oam: { shape: monOam?.shape ?? 0, size: monOam?.size ?? 3, priority: monOam?.priority ?? 2 }, images: [] } as never, mon.x + mon.x2, mon.y + mon.y2, mon.subpriority ?? 3) ?? -1;
   if (cloneId < 0) return -1;
   const clone = rt.gSprites?.[cloneId];
   const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
@@ -1333,10 +1334,10 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
   if (!rt || !src) return -1;
   const gba = (rt as unknown as { gba: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number; hFlip?: boolean; vFlip?: boolean }> } }).gba;
   const srcOam = gba.oam[src.oamIndex];
-  const newId = (rt as unknown as { CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number }).CreateSpriteInline?.(
+  const newId = CreateSprite(
     { oam: { shape: srcOam?.shape ?? 0, size: srcOam?.size ?? 3, priority: 0 }, images: [] } as never,
     src.x, src.y, src.subpriority ?? 3,
-  ) ?? -1;
+  );
   if (newId < 0) return -1;
   const clone = rt.gSprites?.[newId] as { x2: number; y2: number; oamIndex: number; callback: unknown; objMode?: number } | undefined;
   const cloneOam = clone ? gba.oam[clone.oamIndex] : undefined;
@@ -1452,7 +1453,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
   // pic coords : y += y_offset (front/back) — 1:1 battle_anim_mons.c.c:2135-2138.
   const enumName = _hl2RevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
   const coords = isBackpic ? getMonBackPicCoords(enumName) : getMonFrontPicCoords(enumName);
-  const spriteId = rt?.CreateSpriteInline?.({
+  const spriteId = CreateSprite({
     oam: { shape: 0, size: 3, priority: 2, paletteNum: palSlot },
     images: [{ data: tiles.subarray(0, 0x800), size: 0x800 }],
     callback: null,

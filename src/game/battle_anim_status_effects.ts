@@ -12,6 +12,7 @@
  *   - Le reste du fichier .c (sprites templates des effets, AnimTask_* locales)
  *     = avec le chantier anims de move (T4+, registry createsprite).
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -77,7 +78,7 @@ function AnimTask_FrozenIceCube(task: _FicTask): void {
   const api = _ficSpriteApi();
   const tileStart = api.GetSpriteTileStartByTag?.(_FIC_TAG_ICE_CUBE) ?? 0xFFFF;
   // (la sheet ICE_CUBE est chargee par le loadspritegfx du script — 1:1)
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 3, priority: 2, objMode: 1 }, images: [] } as never, x + 32, y + 32, 4) ?? -1;
+  const sid = CreateSprite({ oam: { shape: 0, size: 3, priority: 2, objMode: 1 }, images: [] } as never, x + 32, y + 32, 4) ?? -1;
   if (sid >= 0) {
     const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;

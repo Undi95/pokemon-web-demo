@@ -614,12 +614,12 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
  *  contrôleur invisible qui fait osciller la HEALTHBOX (+1/-1 alterné, 21
  *  frames) quand le mon est touché. Goal T5 2026-06-10. */
 export function DoHitAnimHealthboxEffect(battler: number): void {
-  const rt = (globalThis as { __rt?: { CreateSpriteInline?: (t: never, x: number, y: number, s?: number) => number; gSprites?: Array<{ data: number[]; invisible?: boolean; callback?: unknown } | undefined> } }).__rt;
-  if (!rt?.CreateSpriteInline || !rt.gSprites) return;
+  const rt = (globalThis as { __rt?: { gSprites?: Array<{ data: number[]; invisible?: boolean; callback?: unknown } | undefined> } }).__rt;
+  if (!rt || !rt.gSprites) return;
   const hb = (globalThis as { __battleHealthbox?: { gHealthboxSpriteIds?: number[] } }).__battleHealthbox;
   const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
   if (hbId < 0) return;
-  const spriteId = rt.CreateSpriteInline({ oam: { shape: 0, size: 0 }, images: [] } as never, 0, 0, 0xFF);
+  const spriteId = CreateSprite({ oam: { shape: 0, size: 0 }, images: [] } as never, 0, 0, 0xFF);
   const sp = rt.gSprites[spriteId];
   if (!sp) return;
   sp.invisible = true;

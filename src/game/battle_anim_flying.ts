@@ -16,6 +16,7 @@
  *  - AnimFlyingSandCrescent — src/battle_anim_rock.c:513 (Sandstorm strip
  *    64x16 via SetSubspriteTables).
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
@@ -901,7 +902,7 @@ function AnimTask_DrillPeckHitSplats(task: { taskId: number; data: number[] }): 
     const tgt = itf.getTarget?.() ?? 1;
     const x = GetBattlerSpriteCoord(tgt, 2);
     const y = GetBattlerSpriteCoord(tgt, 3);
-    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 3) ?? -1;
+    const sid = CreateSprite({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 3) ?? -1;
     if (sid >= 0) {
       const sp = rt?.gSprites?.[sid];
       const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;

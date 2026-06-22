@@ -17,6 +17,7 @@
  * statique de l'interpréteur — cycle ESM), helpers communs importés de
  * battle_anim_mons.ts, GBA regs via __rt.SetGpuReg (pattern battle_anim_throw).
  */
+import { CreateSprite } from '../engine/system/decomp-bridge';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
@@ -704,7 +705,7 @@ function AnimTask_GrudgeFlames_Step(task: _GfTask): void {
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
       const atkSide = ((_gfItf2().getAttacker?.() ?? 0) & 1) === 0 ? 1 : 0;
       for (let i = 0; i < 6; i++) {
-        const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[6]) ?? -1;
+        const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[6]) ?? -1;
         if (sid >= 0) {
           const sp = rt.gSprites?.[sid];
           const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
@@ -837,7 +838,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gDestinyBondWhiteShadowSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
-  const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 2, priority: 2, objMode: 1 }, images: [] } as never, baseX, baseY, 55) ?? -1;
+  const sid = CreateSprite({ oam: { shape: 1, size: 2, priority: 2, objMode: 1 }, images: [] } as never, baseX, baseY, 55) ?? -1;
   if (sid >= 0) {
     const sp = rt.gSprites?.[sid];
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;

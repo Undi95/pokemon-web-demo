@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, CreateSprite as _CreateSprite_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -1420,27 +1420,9 @@ export class DecompRuntime {
     return spriteId;
   }
 
-  /** 1:1 décomp `CreateSprite(template, x, y, subpriority)` (src/sprite.c:502) pour
-   *  les templates INLINE (tileTag == TAG_NONE + `images`) = sprites de combat
-   *  (mons/dresseur) qui n'ont pas de sheet taggée : leurs tiles viennent du buffer
-   *  `images[0].data` (décompressé par BattleLoad{Player,Opponent}MonSpriteGfx).
-   *  Alloue des tiles OBJ VRAM (AllocSpriteTiles 1:1 = le sprite n'utilise pas de
-   *  sheet), y copie la frame 0, spawn via CreateSpriteAtOam, puis attache
-   *  callback/images/anims + usingSheet=false. Le chemin par-NOM
-   *  (CreateSpriteFromTemplate, overworld) reste INCHANGÉ. */
-  CreateSpriteInline(tpl: {
-    oam: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3; priority?: number; paletteNum?: number; affineMode?: 0 | 1 | 2 | 3; paletteMode?: 0 | 1 };
-    images: ReadonlyArray<{ data: Uint8Array; size: number }>;
-    callback?: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
-    anims?: ReadonlyArray<ReadonlyArray<unknown>> | null;
-  }, x: number, y: number, subpriority = 0xFF): number {
-    // B1 : impl UNIQUE = `game/sprite.ts CreateSprite` (voie décomp `tileTag == TAG_NONE`).
-    // Cette méthode reste le point d'entrée des call-sites directs `rt.CreateSpriteInline?.(...)`
-    // (battle anims, placeholders `images: []`) → elle y délègue le temps de leur migration vers
-    // la free-fn (B3). Le template inline (`{oam, images, callback?, anims?}`) est un sous-type de
-    // `SpriteTemplate` ; `CreateSprite` re-branche sur `Array.isArray(images)` (toujours vrai ici).
-    return _CreateSprite_1to1(this, tpl, x, y, subpriority);
-  }
+  // (CreateSpriteInline supprimé — B3 2026-06-22 : les call-sites (battle anims placeholders
+  //  `images:[]`, clones, pokeball healthbox) appellent désormais la free-fn bridge `CreateSprite`
+  //  qui route la voie inline vers game/sprite.ts CreateSprite. Plus de méthode pass-through.)
 
   /** Récupère un sprite par son ID. */
   getSprite(spriteId: number): DecompSprite | undefined {
