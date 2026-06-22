@@ -52,11 +52,23 @@ import { Sin } from './trig';
 import { isBallAnimActive, setBallAnimActive, setWaitForCry, isIntroAnimActive } from './engine/battle/battle-sprites-data';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { BeginAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
-import {
-  GFX_TAG_POKE_BALL, GFX_TAG_GREAT_BALL, GFX_TAG_SAFARI_BALL, GFX_TAG_ULTRA_BALL,
-  GFX_TAG_MASTER_BALL, GFX_TAG_NET_BALL, GFX_TAG_DIVE_BALL, GFX_TAG_NEST_BALL,
-  GFX_TAG_REPEAT_BALL, GFX_TAG_TIMER_BALL, GFX_TAG_LUXURY_BALL, GFX_TAG_PREMIER_BALL,
-} from './engine/decomp-data/src/pokeball-data';
+// 1:1 décomp pokeball.c — #define GFX_TAG_* (tags gfx/palette des Poké Balls).
+// Étaient extraits dans decomp-data/src/pokeball-data.ts (scaffolding auto-gen
+// supprimé : ses autres exports — FUNCTIONS/INCLUDES/*_EXPR/sBallOamData/
+// gBallSpriteTemplates placeholders — = métadonnées d'extraction, importées par
+// personne, non-1:1).
+const GFX_TAG_POKE_BALL = 55000;
+const GFX_TAG_GREAT_BALL = 55001;
+const GFX_TAG_SAFARI_BALL = 55002;
+const GFX_TAG_ULTRA_BALL = 55003;
+const GFX_TAG_MASTER_BALL = 55004;
+const GFX_TAG_NET_BALL = 55005;
+const GFX_TAG_DIVE_BALL = 55006;
+const GFX_TAG_NEST_BALL = 55007;
+const GFX_TAG_REPEAT_BALL = 55008;
+const GFX_TAG_TIMER_BALL = 55009;
+const GFX_TAG_LUXURY_BALL = 55010;
+const GFX_TAG_PREMIER_BALL = 55011;
 
 // 1:1 decomp include/pokeball.h:33-34 — `kindOfThrow` de DoPokeballSendOutAnimation.
 // (Les autres valeurs 1..4 = nombre de secousses du throw de capture.)
