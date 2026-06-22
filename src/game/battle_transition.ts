@@ -30,7 +30,7 @@ import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
 } from '../engine/system/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
-import { loadIndexedPng } from '../engine/gba/png-loader';
+import { loadIndexedPng } from '../../harness/gba/png-loader';
 import { Random } from '../engine/system/random';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 import {

@@ -57,7 +57,7 @@ import {
 import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from '../battle/party-storage';
 import { IsShinyOtIdPersonality } from '../../game/pokemon';

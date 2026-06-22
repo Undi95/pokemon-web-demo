@@ -30,17 +30,17 @@
  * je perdais 5+ tool calls juste pour lire 3 fichiers et grep une valeur.
  */
 
-import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../save/save-system';
-import { GetPlayerFacingDirection } from '../../game/field_player_avatar';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { assetCache, getRuntime } from '../system/decomp-globals';
-import { gMapHeader } from '../../game/fieldmap';
-import { bagContents } from '../bag/bag';
+import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../../src/engine/save/save-system';
+import { GetPlayerFacingDirection } from '../../src/game/field_player_avatar';
+import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
+import { assetCache, getRuntime } from '../../src/engine/system/decomp-globals';
+import { gMapHeader } from '../../src/game/fieldmap';
+import { bagContents } from '../../src/engine/bag/bag';
 // Migration miroir : flags/vars sont id-indexés (number[]) → on énumère via les
 // tables résolues nom→id + le bridge FlagGet/VarGet.
-import { FlagGet, VarGet } from '../script/script-vars';
-import * as FLAGS from '../../game/include/constants/flags';
-import * as VARS from '../../game/include/constants/vars';
+import { FlagGet, VarGet } from '../../src/engine/script/script-vars';
+import * as FLAGS from '../../src/game/include/constants/flags';
+import * as VARS from '../../src/game/include/constants/vars';
 
 interface DevAudit {
   help: () => string;

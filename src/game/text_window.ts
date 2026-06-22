@@ -33,7 +33,7 @@
  */
 
 import { assetCache, getAsset, getRuntime, LoadBgTiles } from '../engine/system/decomp-globals';
-import { loadIndexedPngStrict } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict } from '../../harness/gba/png-loader';
 import { gSaveBlock2Ptr } from '../engine/save/save-block-state';
 import {
   FillBgTilemapBufferRect, GetWindowAttribute,

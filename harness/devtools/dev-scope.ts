@@ -37,7 +37,7 @@ import {
   GetCurrentFieldMessageText,
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
-} from '../../game/field_message_box';
+} from '../../src/game/field_message_box';
 import {
   gCamera as _gCamera,
   gFieldCamera as _gFieldCamera,
@@ -46,17 +46,17 @@ import {
   GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
-} from '../../game/field_camera';
-import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../script/script-runtime';
-import { buildBattleDevtools } from '../battle/battle-devtools';
-import { GBA_BUTTON_MASKS, type GbaButton } from '../../util/key-bindings';
-import { setHeldKeysOverride, clearHeldKeysOverride } from '../system/input-handler';
-import type { DecompRuntime } from '../system/decomp-runtime';
-import * as decompBridge from '../system/decomp-bridge';
+} from '../../src/game/field_camera';
+import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/engine/script/script-runtime';
+import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
+import { GBA_BUTTON_MASKS, type GbaButton } from '../../src/util/key-bindings';
+import { setHeldKeysOverride, clearHeldKeysOverride } from '../../src/engine/system/input-handler';
+import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
+import * as decompBridge from '../../src/engine/system/decomp-bridge';
 // Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
 // gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
-import { gSaveBlock1Ptr as _sb1 } from '../save/save-block-state';
-import { MAP_OFFSET } from '../decomp-data/include/fieldmap-data';
+import { gSaveBlock1Ptr as _sb1 } from '../../src/engine/save/save-block-state';
+import { MAP_OFFSET } from '../../src/engine/decomp-data/include/fieldmap-data';
 
 // 1:1 décomp `MAP_OFFSET = 7` (include/fieldmap.h:9).
 // Migré vers import decomp-data fieldmap-data.ts (cleanup B7).

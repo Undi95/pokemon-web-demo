@@ -35,7 +35,7 @@ import {
 } from '../system/pokeball-effects';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
-import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../game/sprite';
 import { setActiveBattler } from './state';
 import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../game/pokeball';

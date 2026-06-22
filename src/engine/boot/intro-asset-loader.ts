@@ -13,7 +13,7 @@
  */
 import { assetCache } from '../system/decomp-globals';
 import { GFX_SOURCES } from '../decomp-data/src/intro-data';
-import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from '../gba/png-loader';
+import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from '../../../harness/gba/png-loader';
 
 /** Charge un .4bpp.bin ou .8bpp.bin pré-extrait via scripts/extract-png-indexed-tiles.mjs.
  *  Ces fichiers parsent l'IDAT PNG directement → préservent les indices palette
@@ -478,7 +478,7 @@ export async function preloadTitleAssets(): Promise<void> {
         // Si symbol _Pal absent, extrait via PNG canvas pour la palette
         const palSymbol = symbol.replace(/Gfx$/, 'Pal');
         if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
-          const { loadIndexedPngStrict } = await import('../gba/png-loader');
+          const { loadIndexedPngStrict } = await import('../../../harness/gba/png-loader');
           const png = await loadIndexedPngStrict(url, 4);
           assetCache.set(palSymbol, png.palette);
         }
@@ -488,7 +488,7 @@ export async function preloadTitleAssets(): Promise<void> {
         assetCache.set(symbol, charData);
         const palSymbol = symbol.replace(/Gfx$/, 'Pal');
         if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
-          const { loadIndexedPngStrict } = await import('../gba/png-loader');
+          const { loadIndexedPngStrict } = await import('../../../harness/gba/png-loader');
           const png = await loadIndexedPngStrict(url, 8);
           assetCache.set(palSymbol, png.palette);
         }
@@ -564,7 +564,7 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
         assetCache.set(symbol, charData);
         const palSymbol = symbol.replace(/Gfx$/, 'Pal');
         if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
-          const { loadIndexedPngStrict } = await import('../gba/png-loader');
+          const { loadIndexedPngStrict } = await import('../../../harness/gba/png-loader');
           const png = await loadIndexedPngStrict(url, 4);
           assetCache.set(palSymbol, png.palette);
         }

@@ -26,9 +26,9 @@
  */
 
 import { getRuntime, LoadPalette, LoadBgTiles } from '../system/decomp-globals';
-import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
+import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../../../harness/gba/png-loader';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
-import { rgba8ToRgb15 } from '../gba/types';
+import { rgba8ToRgb15 } from '../../../harness/gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,

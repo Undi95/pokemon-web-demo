@@ -84,8 +84,8 @@
  * Aucune dépendance circulaire avec decomp-globals/runtime — accède à `rt`
  * via la référence passée à installEngineDevtools(rt, opts).
  */
-import type { DecompRuntime } from '../system/decomp-runtime';
-import { MAX_SPRITES } from '../system/decomp-runtime';
+import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../../src/engine/system/decomp-runtime';
 
 interface SaveState {
   vram: Uint8Array;
@@ -407,7 +407,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     startY: rt.gPaletteFade.startY,
   });
   dev.printers = async (): Promise<unknown> => {
-    const m = await import('../ui/gba-text-system');
+    const m = await import('../../src/engine/ui/gba-text-system');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return m._debugGetTextPrinters().map((e: any) => ({
       windowId: e.windowId, active: e.active,
@@ -585,10 +585,10 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
     // VOIE L (depose voie V) : StartFirstBattle = 1:1 CB2_StartFirstBattle.
-    const helpers = await import('../battle/battle-setup-helpers');
-    const sbsMod = await import('../save/save-block-state');
+    const helpers = await import('../../src/engine/battle/battle-setup-helpers');
+    const sbsMod = await import('../../src/engine/save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('../pokemon/pokemon');
+      const pokeMod = await import('../../src/engine/pokemon/pokemon');
       const starter = pokeMod.CreateMon('SPECIES_TREECKO', 5);
       pokeMod.GiveMonToPlayer(starter);
     }
@@ -600,7 +600,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     // `CreateScriptedWildMon` attend un SPECIES numérique (reverseDecompConstant → nom).
     // On accepte ici un nom ("SPECIES_PIKACHU"/"PIKACHU") OU un numéro, et on résout en
     // numéro. Défaut Pikachu Lv1 (mon valide au lieu de SPECIES_NONE = "????").
-    const constMod = await import('../system/decomp-constants');
+    const constMod = await import('../../src/engine/system/decomp-constants');
     const lvl = level ?? 1;
     let speciesId: number;
     if (typeof species === 'number') {
@@ -612,10 +612,10 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     } else {
       speciesId = constMod.resolveDecompConstant('SPECIES_PIKACHU') ?? 0;
     }
-    const helpers = await import('../battle/battle-setup-helpers');
-    const sbsMod2 = await import('../save/save-block-state');
+    const helpers = await import('../../src/engine/battle/battle-setup-helpers');
+    const sbsMod2 = await import('../../src/engine/save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('../pokemon/pokemon');
+      const pokeMod = await import('../../src/engine/pokemon/pokemon');
       const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, lvl - 1));
       pokeMod.GiveMonToPlayer(starter);
     }
@@ -641,8 +641,8 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
-    const flowMod = await import('../../game/starter_choose');
-    const scriptMod = await import('../script/script-runtime');
+    const flowMod = await import('../../src/game/starter_choose');
+    const scriptMod = await import('../../src/engine/script/script-runtime');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'starter choose UI triggered — Birch BG should appear after async loads';

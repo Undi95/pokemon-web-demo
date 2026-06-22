@@ -57,7 +57,7 @@ import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../../harness/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,

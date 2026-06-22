@@ -29,22 +29,22 @@
  *   dev.fx.selftest()                   — santé de l'outil (refs live résolues ?)
  */
 
-import { FieldEffectStart, gFieldEffectArguments } from '../../game/field_effect';
-import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../../game/event_object_movement';
-import { gPlayerAvatar } from '../../game/field_player_avatar';
-import { MapGridGetMetatileIdAt } from '../../game/fieldmap';
-import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
-import { StartRevealDisguise } from '../../game/field_effect_helpers';
-import * as FE from '../decomp-data/include/constants/field_effects-data';
+import { FieldEffectStart, gFieldEffectArguments } from '../../src/game/field_effect';
+import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../../src/game/event_object_movement';
+import { gPlayerAvatar } from '../../src/game/field_player_avatar';
+import { MapGridGetMetatileIdAt } from '../../src/game/fieldmap';
+import { SetSurfBlob_BobState } from '../../src/game/field_effect_helpers';
+import { StartRevealDisguise } from '../../src/game/field_effect_helpers';
+import * as FE from '../../src/engine/decomp-data/include/constants/field_effects-data';
 // ── Météo (game/field_weather + field_weather_effect) — vraies instances live (bundlé).
 //    L'import de field_weather_effect déclenche _registerWeatherFuncs(ASH) sur la vraie table.
 import {
   gWeatherPtr, StartWeather, FadeScreen, ApplyWeatherColorMapIfIdle, preloadWeatherFogPalette,
-} from '../../game/field_weather';
-import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../game/field_weather_effect';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../../game/sprite';
-import { MAX_SPRITES } from '../system/decomp-runtime';
+} from '../../src/game/field_weather';
+import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/game/field_weather_effect';
+import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
+import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../../src/game/sprite';
+import { MAX_SPRITES } from '../../src/engine/system/decomp-runtime';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

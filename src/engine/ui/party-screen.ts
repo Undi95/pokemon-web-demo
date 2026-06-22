@@ -65,7 +65,7 @@ import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
 import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN, GetMapNameGeneric } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';
 import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';

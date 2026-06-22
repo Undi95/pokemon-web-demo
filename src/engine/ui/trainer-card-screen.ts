@@ -50,7 +50,7 @@ import {
 import { ResetSpriteData } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
 

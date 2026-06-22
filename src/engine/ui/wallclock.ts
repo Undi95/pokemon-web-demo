@@ -47,7 +47,7 @@ import {
 } from '../system/decomp-globals';
 import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
-import { loadIndexedPngStrict } from '../gba/png-loader';
+import { loadIndexedPngStrict } from '../../../harness/gba/png-loader';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
@@ -59,7 +59,7 @@ import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
 import { FlagSet, VarGet } from '../script/script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { SetOamMatrix } from '../system/decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
 import type { DecompTask, DecompSprite, DecompRuntime } from '../system/decomp-runtime';

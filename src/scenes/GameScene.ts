@@ -27,13 +27,13 @@
  */
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../engine/gba/gba';
-import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
+import { Gba } from '../../harness/gba/gba';
+import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../engine/system/decomp-runtime';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/system/decomp-globals';
 import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
-import { installEngineDevtools } from '../engine/devtools/engine-devtools';
+import { installEngineDevtools } from '../../harness/devtools/engine-devtools';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 // Chantier « c » Step 2.1 : boot intro extrait → intro-host.ts (callbacks + preload +
 // SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)), réutilisable par la scène unique.

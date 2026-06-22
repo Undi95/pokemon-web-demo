@@ -28,7 +28,7 @@
  */
 import { assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette } from '../system/decomp-globals';
 import { CpuCopy16 } from '../system/decomp-bridge';
-import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../../game/sprite';
 
 // 1:1 décomp `#define MAX_SPRITES 64` (sprite.h) — retour échec AddItemIcon.

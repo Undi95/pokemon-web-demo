@@ -211,7 +211,7 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
   if (_animGfxPreloaded) return;
   try {
     const { assetCache } = await import('../system/decomp-globals');
-    const { loadGbaPal } = await import('../gba/png-loader');
+    const { loadGbaPal } = await import('../../../harness/gba/png-loader');
     const loadBin = async (key: string, url: string) => {
       if (assetCache.has(key)) return;
       const resp = await fetch(url);
@@ -254,7 +254,7 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
       // convertisseurs aux conventions divergentes : hit CYAN, mist ROSE).
       const [{ G_BATTLE_ANIM_PIC_TABLE }, pl] = await Promise.all([
         import('../decomp-data/src/battle_anim_pic_table-data'),
-        import('../gba/png-loader'),
+        import('../../../harness/gba/png-loader'),
       ]);
       const SRC = '/decomp/em/battle_anims/sprites-src/';
       await Promise.all(Object.entries(G_BATTLE_ANIM_PIC_TABLE).map(async ([tagValue, e]) => {

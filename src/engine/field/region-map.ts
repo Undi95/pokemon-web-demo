@@ -868,7 +868,7 @@ function _loadAssetsIfNeeded(scene: Phaser.Scene, onReady: () => void): void {
 async function _composeCursorTextures(scene: Phaser.Scene): Promise<void> {
   if (scene.textures.exists('region_map_cursor_0')
    && scene.textures.exists('region_map_cursor_1')) return;
-  const { loadIndexedPngStrict } = await import('../gba/png-loader');
+  const { loadIndexedPngStrict } = await import('../../../harness/gba/png-loader');
   const png = await loadIndexedPngStrict('/decomp/em/region_map/cursor_small.png', 4);
   // PNG 16×32 = 2 cols × 4 rows tiles = 8 tiles total. Chaque frame 16×16 =
   // 2×2 tiles. Frame 0 = tiles 0..3, frame 1 = tiles 4..7.
@@ -928,8 +928,8 @@ async function _composeRegionMapTexture(scene: Phaser.Scene): Promise<void> {
   if (scene.textures.exists('region_map_bg')) return;
   // Lazy import pour éviter coût au module load (= seulement quand on ouvre la map).
   const { loadIndexedPngStrict, loadAffineTilemapBin } =
-    await import('../gba/png-loader');
-  const { rgb15ToRgba8 } = await import('../gba/types');
+    await import('../../../harness/gba/png-loader');
+  const { rgb15ToRgba8 } = await import('../../../harness/gba/types');
   // Charge en parallèle. NB : on utilise la PLTE embeddée dans map.png (= 256
   // entries dont les 32 vraies couleurs HOENN à partir de l'index 113, =
   // alignement palette bank 7 du décomp `LoadPalette(sRegionMapBg_Pal,

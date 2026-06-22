@@ -482,7 +482,7 @@ void Menu_GetStdPalColor;
  *  au boot OW. Idempotent. */
 export async function preloadStdMenuPalette(): Promise<void> {
   if (getAsset('gStandardMenuPalette')) return;
-  const { loadGbaPal } = await import('../engine/gba/png-loader');
+  const { loadGbaPal } = await import('../../harness/gba/png-loader');
   const { assetCache } = await import('../engine/system/decomp-globals');
   try {
     const pal = await loadGbaPal('/decomp/em/interface/std_menu.pal');

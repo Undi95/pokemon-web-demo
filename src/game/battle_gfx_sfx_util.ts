@@ -53,7 +53,7 @@ import { getRuntime, syncSubspriteOam, LoadPalette } from '../engine/system/deco
 import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';
 import { reverseDecompConstant } from '../engine/system/decomp-constants';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from './sprite';
-import { loadIndexedPngStrict, extractPngPlte, loadTileBin, loadGbaPal } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict, extractPngPlte, loadTileBin, loadGbaPal } from '../../harness/gba/png-loader';
 import { GetBattlerSpriteCoord, GetBattlerElevation } from './battle_anim_mons';
 import { GET_BATTLER_SIDE, B_SIDE_PLAYER } from '../engine/battle/constants';
 import { GetBattlerPosition } from '../engine/battle/util';

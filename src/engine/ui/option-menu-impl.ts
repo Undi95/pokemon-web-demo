@@ -31,7 +31,7 @@ import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../system/decomp
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
 import { JOY_NEW } from '../system/decomp-globals';
 import { gSaveBlock2Ptr, SetPokemonCryStereo } from './gba-menu-system';
-import { loadGbaPal } from '../gba/png-loader';
+import { loadGbaPal } from '../../../harness/gba/png-loader';
 
 // ─── State globals ───────────────────────────────────────────────────────────
 

@@ -25,7 +25,7 @@
  * gfx), cycle de vie sprite (DestroyPlayerAvatar / SetPlayerVisibility).
  */
 import type { DecompRuntime, DecompTask } from '../engine/system/decomp-runtime';
-import { loadIndexedPngStrict, extractPngPlte } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict, extractPngPlte } from '../../harness/gba/png-loader';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,

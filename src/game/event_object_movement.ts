@@ -21,9 +21,9 @@
  *   - truck 48×48 (`useSubsprites`, camion de l'intro) → syncSubspriteOam
  */
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
-import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
-import type { LoadedPng } from '../engine/gba/png-loader';
-import type { OamEntry } from '../engine/gba/types';
+import { loadIndexedPngStrict, loadGbaPal } from '../../harness/gba/png-loader';
+import type { LoadedPng } from '../../harness/gba/png-loader';
+import type { OamEntry } from '../../harness/gba/types';
 import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from './sprite';
 import { LoadPalette } from '../engine/system/decomp-globals';
 import { OBJ_PLTT_ID } from '../engine/system/decomp-runtime';

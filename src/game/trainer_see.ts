@@ -33,7 +33,7 @@
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
-import { loadIndexedPngStrict } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict } from '../../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from './sprite';
 import { gObjectEvents, TryGetObjectEventIdByLocalIdAndMap } from './event_object_movement';
 import { gPlayerAvatar } from './field_player_avatar';

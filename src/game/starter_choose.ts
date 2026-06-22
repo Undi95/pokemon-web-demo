@@ -283,7 +283,7 @@ async function preloadAssets(): Promise<void> {
     fetch(BIRCH_GRASS_TILEMAP_URL),
     fetch('/decomp/em/text_window/message_box.gbapal'),
   ]);
-  const { loadIndexedPngStrict, loadGbaPal } = await import('../engine/gba/png-loader');
+  const { loadIndexedPngStrict, loadGbaPal } = await import('../../harness/gba/png-loader');
   // tiles.4bpp.bin : raw tile data
   const tilesData = new Uint8Array(await tilesBinResp.arrayBuffer());
   // tiles.gbapal : 64 bytes = 32 u16 colors (= 2 sub-palettes 4bpp).

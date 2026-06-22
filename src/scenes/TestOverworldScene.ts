@@ -14,8 +14,8 @@
  */
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../engine/gba/gba';
-import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
+import { Gba } from '../../harness/gba/gba';
+import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
 import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../engine/system/decomp-globals';
 import { ResetSpriteData } from '../game/sprite';
@@ -102,7 +102,7 @@ import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../game/script
 import { SetFieldEffectRuntime } from '../game/field_effect';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
-import { installEngineDevtools } from '../engine/devtools/engine-devtools';
+import { installEngineDevtools } from '../../harness/devtools/engine-devtools';
 import {
   loadMapScripts,
   ScriptContext_RunScript,

@@ -19,10 +19,10 @@
  */
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
-import { Gba } from '../engine/gba/gba';
-import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { loadIndexedPng, loadTilemapBin } from '../engine/gba/png-loader';
-import { rotScaleAffineMatrix } from '../engine/gba/types';
+import { Gba } from '../../harness/gba/gba';
+import { GbaPhaserBridge } from '../../harness/gba/phaser-bridge';
+import { loadIndexedPng, loadTilemapBin } from '../../harness/gba/png-loader';
+import { rotScaleAffineMatrix } from '../../harness/gba/types';
 // M4A audio test
 import { loadMidi, playSong, stopSong, isPlaying } from '../../harness/m4a/player';
 import { keyToGbaMask } from '../util/key-bindings';

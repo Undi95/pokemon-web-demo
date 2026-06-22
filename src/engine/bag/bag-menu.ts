@@ -79,7 +79,7 @@ import {
   TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5,
 } from '../decomp-data/include/constants/characters-data';
 import { BG_PLTT_ID } from '../system/decomp-runtime';
-import { loadTileBin, loadTilemapBin, loadGbaPal } from '../gba/png-loader';
+import { loadTileBin, loadTilemapBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE } from '../system/decomp-globals';
 import {

@@ -52,7 +52,7 @@
  *   InitTilesetAnimations();
  */
 
-import { loadTileBin } from '../engine/gba/png-loader';
+import { loadTileBin } from '../../harness/gba/png-loader';
 import type { DecompRuntime } from '../engine/system/decomp-runtime';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────

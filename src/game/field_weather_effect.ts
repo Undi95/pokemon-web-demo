@@ -32,7 +32,7 @@ import {
 import { CreateTask, DestroyTask, SetGpuReg, DestroySprite } from '../engine/system/decomp-bridge';
 import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../engine/system/decomp-runtime';
 import { LoadSpriteSheet } from './sprite';
-import { loadIndexedPngStrict } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict } from '../../harness/gba/png-loader';
 import { setFieldEffectAnims } from './field_effect_helpers';
 import { ANIMCMD_FRAME, ANIMCMD_JUMP, ANIMCMD_END, type AnimCmd } from './sprite';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';

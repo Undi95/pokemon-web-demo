@@ -28,7 +28,7 @@ if (!import.meta.env.PROD) {
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
-import { mountDevtoolsPanel } from './engine/devtools/devtools-panel';
+import { mountDevtoolsPanel } from '../harness/devtools/devtools-panel';
 // Chantier « c » Step 0 (2026-06-22) : BirchRuntimeScene = host MORT (jamais
 // `scene.start`'d ; le flow Birch tourne dans GameScene via la chaîne CB2 main menu,
 // cf. docs/RUNTIME-MERGE-PLAN.md). Dé-enregistré du scene array. Fichier conservé
@@ -39,7 +39,7 @@ import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
-import './engine/devtools/dev-cheat';
+import '../harness/devtools/dev-cheat';
 import { setMasterVolume } from '../harness/m4a/audio-context';
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
@@ -61,17 +61,17 @@ import { SetSaveFileStatus } from './engine/ui/gba-menu-system';
 import { SeedRngAndSetTrainerId } from './engine/system/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
-import './engine/devtools/dev-audit-tools';
+import '../harness/devtools/dev-audit-tools';
 // Side-effect import : pose window.dev.breakpoint.* helpers (= pause-on-event
 // pour debugging frame-precise : fade-out/fade-in/map-change/palette-leak/etc.).
-import './engine/devtools/dev-breakpoint-tools';
+import '../harness/devtools/dev-breakpoint-tools';
 // Side-effect import : pose window.dev.bridge.* helpers (= coverage du
 // decomp-bridge.ts + tracking helpers manquants par module auto-généré).
-import './engine/devtools/dev-bridge-audit-tools';
+import '../harness/devtools/dev-bridge-audit-tools';
 // Side-effect import : pose window.dev.fx.* helpers (= overworld / field effects :
 // tp, player, force-spawn FLDEFF_* via le chemin live, list sprites d'effet). Cf.
 // dev-fieldfx-tools.ts. Sert à vérifier les ports field_effect_helpers.c en jeu.
-import './engine/devtools/dev-fieldfx-tools';
+import '../harness/devtools/dev-fieldfx-tools';
 // Side-effect import : pose window.dev.battle.startTrainer (= trainer battle
 // flow registered au boot pour debug). Sans ça, le devtool n'est registered
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.
@@ -104,7 +104,7 @@ void loadMultichoiceLists();
 
 // Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit
 // avancé via console JS uniquement. window.scope.help() pour usage.
-import { installScopeDevtools } from './engine/devtools/dev-scope';
+import { installScopeDevtools } from '../harness/devtools/dev-scope';
 installScopeDevtools();
 
 // Session 127 : preload bag screen graphics (sprite sac + dots + button).

@@ -59,7 +59,7 @@ import { BYTECODE as ANIM_BYTECODE, LABELS as ANIM_LABELS } from '../decomp-data
 // Pipeline anims DECOMP-DIRECT (2026-06-13) : table 1:1 gBattleAnimPicTable +
 // décodeurs runtime éprouvés (la même chaîne couleur que mons/balls).
 import { G_BATTLE_ANIM_PIC_TABLE } from '../decomp-data/src/battle_anim_pic_table-data';
-import { loadTileBin, loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
+import { loadTileBin, loadIndexedPngStrict, loadGbaPal } from '../../../harness/gba/png-loader';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS (= include/constants/battle_anim.h + battle_anim.c #defines)
@@ -1145,7 +1145,7 @@ function _loadAnimSheetByTag(tag: number): void {
     // Import DYNAMIQUE de png-loader : les imports statiques de ce module
     // pendaient dans l'instance du graphe (double-instance Vite, cf. piège T4)
     // — le dynamique résout la même instance que les évals/decomp-loop.
-    void import('../gba/png-loader').then((pl) => Promise.all([
+    void import('../../../harness/gba/png-loader').then((pl) => Promise.all([
       Promise.all(pic.gfx.map((f) => pl.loadTileBin(SRC + f, 4))),
       pic.pal
         ? (pic.pal.endsWith('.pal')

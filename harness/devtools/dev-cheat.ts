@@ -8,10 +8,10 @@
  * SaveGame, ResetSaveBlocks, gSaveBlock1Ptr.playerParty).
  */
 
-import { FlagSet, VarSet } from '../script/script-vars';
-import { SaveGame, ResetSaveBlocks } from '../save/save-system';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import type { PokemonInstance } from '../pokemon/pokemon';
+import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
+import { SaveGame, ResetSaveBlocks } from '../../src/engine/save/save-system';
+import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
+import type { PokemonInstance } from '../../src/engine/pokemon/pokemon';
 
 // ─── Cheat helpers (= dev convenience) ───────────────────────────────────────
 

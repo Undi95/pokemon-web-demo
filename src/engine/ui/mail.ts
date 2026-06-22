@@ -80,7 +80,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
-import { loadTileBin, loadGbaPal, loadTilemapBin } from '../gba/png-loader';
+import { loadTileBin, loadGbaPal, loadTilemapBin } from '../../../harness/gba/png-loader';
 import { ConvertEasyChatWordsToString, CopyEasyChatWord } from '../../game/easy_chat';
 import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from '../../game/pokemon_icon';
 import {

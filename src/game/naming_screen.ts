@@ -42,7 +42,7 @@ import {
   type NamingSubsprite,
 } from '../engine/system/decomp-globals';
 import { gSaveBlock2Ptr } from '../engine/ui/gba-menu-system';
-import { loadGbaPal, loadTileBin, loadTilemapBin } from '../engine/gba/png-loader';
+import { loadGbaPal, loadTileBin, loadTilemapBin } from '../../harness/gba/png-loader';
 import type { DecompSprite, DecompTask } from '../engine/system/decomp-runtime';
 import { gKeyRepeat } from '../engine/system/decomp-runtime';
 import {

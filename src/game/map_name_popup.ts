@@ -39,7 +39,7 @@ import {
 import { AddTextPrinterParameterized3 } from '../engine/ui/gba-text-system';
 import { LoadBgTiles } from '../engine/system/decomp-globals';
 import { LoadPalette } from '../engine/system/decomp-globals';
-import { loadIndexedPngStrict } from '../engine/gba/png-loader';
+import { loadIndexedPngStrict } from '../../harness/gba/png-loader';
 
 // ─── 1:1 décomp constants (map_name_popup.c:212-229, menu.c:521-526) ────────
 

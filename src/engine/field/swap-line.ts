@@ -24,7 +24,7 @@ import {
   assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette,
 } from '../system/decomp-globals';
 import { DestroySprite, StartSpriteAnim } from '../system/decomp-bridge';
-import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, setSpriteAnims } from '../../game/sprite';
 
 // 1:1 décomp menu_helpers.c:20 — TAG_SWAP_LINE 109.

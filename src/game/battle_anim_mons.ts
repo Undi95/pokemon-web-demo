@@ -1403,7 +1403,7 @@ export function SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOrigina
 // dédiée + palette species dans un slot alloué par tag. Divergence plateforme
 // documentée : ASYNC (PNG pré-extrait vs LZ77 RAM synchrone) → les AnimTasks
 // clientes attendent la résolution en machine à états (1-3 frames).
-import { loadTileBin as _camLoadTiles, loadGbaPal as _camLoadPal } from '../engine/gba/png-loader';
+import { loadTileBin as _camLoadTiles, loadGbaPal as _camLoadPal } from '../../harness/gba/png-loader';
 
 // 1:1 sSpriteTemplates_MoveEffectMons tags (battle_anim_mons.c.c:2056-2086) : 2 slots dédiés.
 const _CAM_TAGS: ReadonlyArray<number> = [55125, 55126]; // ANIM_TAG(s) MoveEffectMons

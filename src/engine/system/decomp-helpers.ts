@@ -14,8 +14,8 @@
  *   - CpuCopy16 : libgcnmultiboot equivalent (= memcpy en pratique)
  *   - gPlttBufferFaded/Unfaded : 256+256 entries u16 (BG + OBJ palette buffers)
  */
-import { Gba } from '../gba/gba';
-import { rgba8ToRgb15 } from '../gba/types';
+import { Gba } from '../../../harness/gba/gba';
+import { rgba8ToRgb15 } from '../../../harness/gba/types';
 import { getRuntime } from './decomp-globals';
 // Sin/Cos/gSineTable → miroir 1:1 `src/game/trig.ts` (= trig.c). L'ancien `& 0xFF`
 // d'ici était ÉQUIVALENT (table périodique mod 256), pas un bug ; on consolide sur

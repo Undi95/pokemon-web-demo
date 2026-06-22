@@ -46,7 +46,7 @@ import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../
 import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from '../engine/system/decomp-helpers';
 import { AllocSpritePalette, sSpritePaletteTags } from './sprite';
 import { gSineTable } from './trig';
-import { loadGbaPal } from '../engine/gba/png-loader';
+import { loadGbaPal } from '../../harness/gba/png-loader';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Constantes (include/field_weather.h + include/constants/field_weather.h)
