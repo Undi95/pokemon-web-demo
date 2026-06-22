@@ -2758,7 +2758,7 @@ export const MAP_UNDEFINED = 0xFFFF;
 // dédié SANS dépendance) pour casser le cycle ESM HMR observé via
 // `metatile-behavior.ts` → `decomp-bridge` → modules de field/ → métatile-behavior.
 // 1:1 strict : valeurs identiques à `include/constants/metatile_behaviors.h`.
-export * from '../../src/engine/system/metatile-behavior-constants';
+export * from '../../include/constants/metatile_behaviors';
 
 // ─── TRUE / FALSE / NULL ──────────────────────────────────────────────────────
 

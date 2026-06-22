@@ -30,7 +30,7 @@ import {
   MB_IMPASSABLE_NORTHWEST,
   MB_IMPASSABLE_WEST_AND_EAST,
   MB_SLIDE_SOUTH,
-} from './engine/system/metatile-behavior-constants';
+} from '../include/constants/metatile_behaviors';
 import { PopSecretBaseBalloon, ShatterSecretBaseBreakableDoor } from './fldeff_misc';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
 import {

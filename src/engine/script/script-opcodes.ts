@@ -52,7 +52,7 @@ import {
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../../rtc';
 import { setStringVar } from '../system/string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,

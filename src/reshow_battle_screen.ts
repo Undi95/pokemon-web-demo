@@ -36,7 +36,7 @@ import {
 } from './battle_interface';
 import { BattleMainCB2 } from './battle_main';
 import { VBlankCB_Battle } from './engine/battle/battle-vblank-helpers';
-import { BeginHardwarePaletteFade } from './engine/system/palette';
+import { BeginHardwarePaletteFade } from './palette';
 import { ActionSelectionCreateCursorAt } from './battle_controller_player';
 import { GET_BATTLER_SIDE, B_SIDE_PLAYER } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty } from './engine/battle/party-storage';

@@ -35,7 +35,7 @@
  *   buffers EWRAM du décomp). TransferPlttBuffer DMA-copy Faded→PLTT register
  *   au VBlank (= compositor read).
  */
-import type { DecompRuntime } from '../../../harness/runtime/decomp-runtime';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 
 // ─── Constantes 1:1 décomp include/palette.h ────────────────────────────────
 
@@ -622,7 +622,7 @@ export function BlendPalettesGradually(
     }
     return;
   }
-  const taskId = rt.CreateTask(_taskBlendPalettesGradually as unknown as (task: import('../../../harness/runtime/decomp-runtime').DecompTask) => void, priority);
+  const taskId = rt.CreateTask(_taskBlendPalettesGradually as unknown as (task: import('../harness/runtime/decomp-runtime').DecompTask) => void, priority);
   const task = rt.gTasks.get(taskId);
   if (!task) return;
   task.data[0] = coeff;          // tCoeff

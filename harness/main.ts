@@ -77,7 +77,7 @@ import './devtools/dev-fieldfx-tools';
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.
 // Side-effect import : init RTC core (= PC time as source) + register
 // `globalThis.__rtcModule` pour save sync. Cf. session 124 fix Bug 4.
-import { exposeRtcDevApi } from '../src/engine/system/rtc';
+import { exposeRtcDevApi } from '../src/rtc';
 exposeRtcDevApi();
 
 // Audit session 126 fix Bug #3 : expose les bridge fns (gMain, FlagSet,

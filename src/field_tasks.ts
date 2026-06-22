@@ -44,7 +44,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
 import { ArePlayerFieldControlsLocked } from './engine/script/script-runtime';
-import { DoTimeBasedEvents } from './engine/system/time-based-events';
+import { DoTimeBasedEvents } from './clock';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from './fieldmap';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from './field_camera';

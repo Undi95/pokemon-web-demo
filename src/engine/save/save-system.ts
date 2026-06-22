@@ -140,7 +140,7 @@ export function LoadGameSave(): number {
     console.log('[save-system] loaded (sector engine, counter max slot)');
     // 1:1 RTC : offset dans gSaveBlock2.localTimeOffset (struct Time),
     // déjà restauré ci-dessus. Rafraîchir gLocalTime (rtc.c RtcCalcLocalTime).
-    void import('../system/rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
+    void import('../../rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
     return SAVE_STATUS_OK;
   }
   // EMPTY/CORRUPT : pas de save valide → blocs par défaut (le boot 1:1

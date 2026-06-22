@@ -42,7 +42,7 @@ import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../decomp-data/inclu
 import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../decomp-data/include/constants/battle_frontier-data';
 import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/constants/flags-data';
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
-import { gLocalTime, RtcCalcLocalTime } from '../system/rtc';
+import { gLocalTime, RtcCalcLocalTime } from '../../rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
 import { ShowFieldMessage } from '../../field_message_box';
 import { gStringVar4 } from '../ui/gba-text-system';

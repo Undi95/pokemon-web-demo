@@ -155,7 +155,7 @@ import {
   MB_CLOSED_SOOTOPOLIS_DOOR,
   MB_SKY_PILLAR_CLOSED_DOOR,
   MB_TRICK_HOUSE_PUZZLE_DOOR,
-} from './engine/system/metatile-behavior-constants';
+} from '../include/constants/metatile_behaviors';
 
 // Secret base spot constants — re-exported depuis decomp-bridge si présentes.
 // 1:1 décomp `MetatileBehavior_IsOpenSecretBaseDoor` (metatile_behavior.c:507).

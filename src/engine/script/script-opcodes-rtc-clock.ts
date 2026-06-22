@@ -15,7 +15,7 @@
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../../rtc';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp `ScrCmd_delay` (scrcmd.c:674-679) :
@@ -81,7 +81,7 @@ registerOpcode('initclock', (_ctx, args) => {
 registerOpcode('dotimebasedevents', (_ctx, _args) => {
   void (async () => {
     try {
-      const { DoTimeBasedEvents } = await import('../system/time-based-events');
+      const { DoTimeBasedEvents } = await import('../../clock');
       DoTimeBasedEvents();
     } catch (e) {
       console.warn('[opcode dotimebasedevents] failed:', e);

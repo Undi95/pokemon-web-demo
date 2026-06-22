@@ -89,7 +89,7 @@ export {
   CalcCenterToCornerVec,
 } from '../../src/sprite';
 // LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
-import { _setPaletteRuntimeGetter } from '../../src/engine/system/palette';
+import { _setPaletteRuntimeGetter } from '../../src/palette';
 export {
   LoadCompressedPalette, FillPalette,
   InvertPlttBuffer, TintPlttBuffer, UnfadePlttBuffer,
@@ -98,7 +98,7 @@ export {
   IsSoftwarePaletteFadeFinishing,
   TintPalette_GrayScale, TintPalette_GrayScale2, TintPalette_SepiaTone, TintPalette_CustomTone,
   BlendPalettesGradually,
-} from '../../src/engine/system/palette';
+} from '../../src/palette';
 
 let _rt: DecompRuntime | null = null;
 

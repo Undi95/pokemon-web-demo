@@ -157,7 +157,7 @@ import { preloadSparkleEffect } from '../../src/field_effect_helpers';
 // Réserve GENERAL_0/GENERAL_1 dans [12,16) AVANT les autres field effects (sinon famine
 // de slots → poussière/splash/feet-in-water rendus noirs, palBank=255). Cf. field_effect_helpers.ts.
 import { preloadGeneralFieldEffectPalettes } from '../../src/field_effect_helpers';
-import { DoTimeBasedEvents } from '../../src/engine/system/time-based-events';
+import { DoTimeBasedEvents } from '../../src/clock';
 import { SetUpFieldTasks } from '../../src/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../../src/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/field_weather_effect';

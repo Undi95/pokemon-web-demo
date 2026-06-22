@@ -73,7 +73,7 @@
  *   appelle le setter au boot via setGlobalRuntime. Évite TDZ cycle.
  */
 import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
-import { OBJ_PLTT_ID } from './engine/system/palette';
+import { OBJ_PLTT_ID } from './palette';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { SPRITE_ANIM_TABLES, SPRITE_ANIMS } from './engine/decomp-data/src/sprite-system';
 

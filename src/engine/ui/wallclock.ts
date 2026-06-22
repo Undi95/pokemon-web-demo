@@ -58,7 +58,7 @@ import { getString } from './gba-strings';
 import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
 import { FlagSet, VarGet } from '../script/script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../../rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { SetOamMatrix } from '../../../harness/runtime/decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
