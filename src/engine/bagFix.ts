@@ -43,7 +43,7 @@
 import './pokemon/pokemon';
 import './bag/bag';
 import './save/save-system';
-import './save/load_save';
+import '../load_save';
 import './save/save-block-state';
 import './script/script-vars';
 import './field/warp-system';

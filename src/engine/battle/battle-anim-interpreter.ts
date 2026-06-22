@@ -897,7 +897,7 @@ function LoadDefaultBg(): void {
     ?? (g.__forceBattleEnvironment as number | undefined) ?? 0);
   const bb = g.__battleBg as { loadBattleTerrain?: (e: number) => Promise<void> } | undefined;
   if (bb?.loadBattleTerrain) { void bb.loadBattleTerrain(env); return; }
-  void import('./battle-bg').then((m) => (m as { loadBattleTerrain?: (e: number) => Promise<void> }).loadBattleTerrain?.(env)).catch(() => {});
+  void import('../../battle_bg').then((m) => (m as { loadBattleTerrain?: (e: number) => Promise<void> }).loadBattleTerrain?.(env)).catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

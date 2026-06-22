@@ -24,7 +24,7 @@
 
 import { getRuntime, FreeAllSpritePalettes, ResetPaletteFade, setReservedSpritePaletteCount } from '../harness/runtime/decomp-globals';
 import { gBattlersCount, gBattleEnvironment, gBattlerPartyIndexes } from './engine/battle/state';
-import { loadBattleTextboxAndBackground, BattleInitBgsAndWindows } from './engine/battle/battle-bg';
+import { loadBattleTextboxAndBackground, BattleInitBgsAndWindows } from './battle_bg';
 import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
 import { _loadAndCreateBattlerMonSprite } from './battle_controller_opponent';
 // Healthbox : DIRECT depuis le miroir battle_interface (même dossier) — bénéfice de la

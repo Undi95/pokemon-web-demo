@@ -74,7 +74,7 @@ import {
 } from './scanline_effect';
 import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1, drawBattleEntryBackground,
-} from './engine/battle/battle-bg';
+} from './battle_bg';
 
 // ─── BG/WIN scroll state 1:1 décomp (battle_main.c:124-135) ─────────────────
 
@@ -5207,7 +5207,7 @@ import { setBattleTypeFlags } from './engine/battle/state';
 import { InitBattleControllers as _InitBattleControllersImpl } from './engine/battle/battle-controllers-init';
 import { ShowBg } from './engine/ui/gba-window-system';
 import { FillAroundBattleWindows } from './battle_gfx_sfx_util';
-import { IsDma3ManagerBusyWithBgCopy } from './engine/battle/battle-bg';
+import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 

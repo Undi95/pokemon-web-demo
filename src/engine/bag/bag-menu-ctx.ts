@@ -44,7 +44,7 @@ import {
   ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp,
   ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
-} from '../ui/item-use-callbacks';
+} from '../../item_use';
 import { getString } from '../ui/gba-strings';
 import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
 import { gMapHeader } from '../../fieldmap';

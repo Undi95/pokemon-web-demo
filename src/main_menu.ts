@@ -24,10 +24,10 @@
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
-import { getRuntime, assetCache } from '../../../harness/runtime/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
-import { GetWindowFrameTilesPal } from '../../text_window';
-import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
+import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
+import { GetWindowFrameTilesPal } from './text_window';
+import { EXT_CTRL_CODE_PAUSE } from './engine/decomp-data/include/constants/characters-data';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -49,11 +49,11 @@ import {
   VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
   LoadSpritePalette,
   LoadCompressedSpriteSheet,
-} from '../../../harness/runtime/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
-} from './gba-window-system';
+} from './engine/ui/gba-window-system';
 import {
   BG_PLTT_ID,
   REG_OFFSET_DISPCNT,
@@ -64,9 +64,9 @@ import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../../../harness/runtime/decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from '../../../harness/runtime/decomp-helpers';
-import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from '../decomp-data/main-menu-data';
+} from '../harness/runtime/decomp-runtime';
+import { PLTT_SIZE_4BPP, WIN_RANGE } from '../harness/runtime/decomp-helpers';
+import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './engine/decomp-data/main-menu-data';
 import {
   Task_MainMenuCheckSaveFile,
   CB2_MainMenu,
@@ -77,7 +77,7 @@ import {
   Task_NewGameBirchSpeech_FadePlatformIn,
   Task_NewGameBirchSpeech_FadePlatformOut,
   Task_NewGameBirchSpeechSub_InitPokeBall,
-} from '../decomp-data/src/main_menu-callbacks-auto';
+} from './engine/decomp-data/src/main_menu-callbacks-auto';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
   IsWirelessAdapterConnected,
@@ -86,12 +86,12 @@ import {
   Menu_ProcessInputNoWrap,
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
-} from './gba-menu-system';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './gba-text-system';
-import { getString } from './gba-strings';
-import { FlagGet } from '../script/script-vars';
-import { SE_SELECT as _SE_SELECT } from '../decomp-data/include/constants/songs-data';
+} from './engine/ui/gba-menu-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './engine/ui/gba-window-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './engine/ui/gba-text-system';
+import { getString } from './engine/ui/gba-strings';
+import { FlagGet } from './engine/script/script-vars';
+import { SE_SELECT as _SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
 // Migré vers import decomp-data songs-data.ts (cleanup B7).
@@ -649,7 +649,7 @@ export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
   if (!Number.isInteger(validIdx) || validIdx < 0 || validIdx >= NUM_PRESET_NAMES) {
     // Fallback : Random() % 20 (= 1:1 décomp main_menu.c:1604).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    void import('../system/random').then(({ Random }) => {
+    void import('./engine/system/random').then(({ Random }) => {
       validIdx = Random() % NUM_PRESET_NAMES;
       _applyPresetName(validIdx);
     });
@@ -1022,7 +1022,7 @@ export function DoNamingScreen(
 ): void {
   // Lazy import pour éviter circular dep : naming-screen-impl importe depuis decomp-globals
   // qui peut éventuellement importer main-menu-impl (= chain d'import).
-  void import('../../naming_screen').then((mod) => {
+  void import('./naming_screen').then((mod) => {
     mod.DoNamingScreen(
       type, dest as number[], monSpecies, monGender, monPersonality, callback as any,
     );

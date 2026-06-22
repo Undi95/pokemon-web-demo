@@ -25,19 +25,19 @@
  *   - Default → sBattleEnvironmentTable[gBattleEnvironment]
  */
 
-import { getRuntime, LoadPalette, LoadBgTiles } from '../../../harness/runtime/decomp-globals';
-import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../../../harness/gba/png-loader';
-import { gSaveBlock2Ptr } from '../save/save-block-state';
-import { rgba8ToRgb15 } from '../../../harness/gba/types';
+import { getRuntime, LoadPalette, LoadBgTiles } from '../harness/runtime/decomp-globals';
+import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { rgba8ToRgb15 } from '../harness/gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
-} from '../ui/gba-window-system';
-import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
-import { DeactivateAllTextPrinters } from '../ui/gba-text-system';
+} from './engine/ui/gba-window-system';
+import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './engine/battle/battle-windows';
+import { DeactivateAllTextPrinters } from './engine/ui/gba-text-system';
 // gBattleBgTemplates auto-extrait du décomp (battle_bg.c:123-161) — JAMAIS
 // retapé main (règle feedback-no-hardcoded-decomp-values).
-import { gBattleBgTemplates as _autoBattleBgTemplates } from '../decomp-data/src/battle_bg-data';
+import { gBattleBgTemplates as _autoBattleBgTemplates } from './engine/decomp-data/src/battle_bg-data';
 
 /** 1:1 décomp `gPPTextPalette` (graphics/battle_interface/text_pp.pal, 16 u16).
  *  Const ROM dans le décomp ; ici chargé une fois pendant le setup BG combat

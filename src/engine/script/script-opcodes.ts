@@ -31,7 +31,7 @@ import {
 } from '../../event_object_movement';
 import type { ObjectEventTemplate } from '../../fieldmap';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../field/warp-system';
-import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
+import { GetCurrentMap, SetObjEventTemplateCoords } from '../../load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../../fieldmap';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag/bag';

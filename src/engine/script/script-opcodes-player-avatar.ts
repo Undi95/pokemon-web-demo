@@ -20,7 +20,7 @@ import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants
 import { gObjectEvents } from '../../event_object_movement';
 import { gPlayerAvatar } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { GetCurrentMap } from '../save/load_save';
+import { GetCurrentMap } from '../../load_save';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { MALE_GENDER, FEMALE_GENDER } from './script-opcodes-helpers';
 

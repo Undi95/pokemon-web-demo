@@ -36,56 +36,56 @@
  * Fallback message en attendant le port.
  */
 
-import { DestroySprite } from '../../sprite';
+import { DestroySprite } from './sprite';
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
   DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillBgTilemapBufferRect,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './gba-text-system';
+} from './engine/ui/gba-window-system';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './gba-menu-system';
-import { getRuntime, PlaySE } from '../../../harness/runtime/decomp-globals';
-import { SignalWaitState } from '../script/script-opcodes';
-import { ScriptContext_SetupScript } from '../script/script-runtime';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
+} from './engine/ui/gba-menu-system';
+import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
+import { SignalWaitState } from './engine/script/script-opcodes';
+import { ScriptContext_SetupScript } from './engine/script/script-runtime';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';
-import { ITEM_NONE, ClearMail } from '../../mail_data';
-import { FEMALE } from '../../../harness/runtime/decomp-globals';
-import { getString } from './gba-strings';
-import { setStringVar } from '../system/string-buffers';
-import { StringExpandPlaceholders, gStringVar4 } from './gba-text-system';
-import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
-import * as Songs from '../decomp-data/include/constants/songs-data';
+import { ITEM_NONE, ClearMail } from './mail_data';
+import { FEMALE } from '../harness/runtime/decomp-globals';
+import { getString } from './engine/ui/gba-strings';
+import { setStringVar } from './engine/system/string-buffers';
+import { StringExpandPlaceholders, gStringVar4 } from './engine/ui/gba-text-system';
+import { encodeOwText } from '../include/text';  // préproc : source FR → bytes charmap
+import * as Songs from './engine/decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
-} from '../pokemon/pc-items';
+} from './engine/pokemon/pc-items';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
-} from '../../list_menu';
-import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
-import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { getItemNameFr } from '../../../harness/runtime/data-tables';
-import { GetItemDescription } from '../../../harness/runtime/decomp-bridge';
+} from './list_menu';
+import { AddBagItem, gBagPockets, ITEMS_POCKET } from './engine/bag/bag';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { getItemNameFr } from '../harness/runtime/data-tables';
+import { GetItemDescription } from '../harness/runtime/decomp-bridge';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
-} from './item-icon';
-import { FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
-import { FreeSpritePaletteByTag } from '../../sprite';
+} from './item_icon';
+import { FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';
+import { FreeSpritePaletteByTag } from './sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).
-import { A_BUTTON, B_BUTTON } from '../decomp-data/include/gba/io_reg-data';
+import { A_BUTTON, B_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';
 // TEXT_SKIP_DRAW import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data, hardcode 1:1 justifié).
 const FONT_NORMAL = 1;
@@ -619,11 +619,11 @@ function _itemStorageDeposit(): void {
   // `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`).
   // Le exitCallback = re-open PC menu après close du bag (= 1:1 décomp
   // `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu`).
-  void import('../bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
+  void import('./engine/bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
     OpenBagScreen(undefined, BAG_LOCATION_ITEMPC, () => {
       // Re-open le PC menu — switch directement vers RETIRER (= user-flag
       // "dès qu'on depose on est switch vers le retrait").
-      void import('./bedroom-pc').then(({ OpenBedroomPC }) => {
+      void import('./player_pc').then(({ OpenBedroomPC }) => {
         // isBedroom=true → re-ouvre le PC dans la bedroom (= chambre joueur).
         // 1:1 décomp `ItemStorage_ReshowAfterBagMenu` reload le state PlayerPC
         // tel qu'il était à l'open (= bedroom). PC de Centre Pokémon = isBedroom=false.
@@ -1321,7 +1321,7 @@ function _tickPCQuantityRolling(newKeys: number): void {
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, SELECT_BUTTON,
-} from '../decomp-data/include/gba/io_reg-data';
+} from './engine/decomp-data/include/gba/io_reg-data';
 
 /** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444) :
  *    CopyItemName(itemId, gStringVar1);

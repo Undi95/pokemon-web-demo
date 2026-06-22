@@ -141,7 +141,7 @@ import { isBallAnimActive } from './engine/battle/battle-sprites-data';
 import { reverseDecompConstant as _reverseDecompConstantPlayer } from '../harness/runtime/decomp-constants';
 import { getMoveName as _getMoveNameFrFromData } from './engine/data/game-data';
 import { getBattleMove } from './engine/battle/data/battle-moves';
-import { getPPTextPalette } from './engine/battle/battle-bg';
+import { getPPTextPalette } from './battle_bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
 import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from './engine/ui/gba-window-system';

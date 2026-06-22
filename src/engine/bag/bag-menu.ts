@@ -134,7 +134,7 @@ import {
   CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
   SWAP_LINE_HAS_MARGIN,
 } from '../field/swap-line';
-import { preloadItemIconAssets } from '../ui/item-icon';
+import { preloadItemIconAssets } from '../../item_icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,

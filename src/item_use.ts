@@ -40,7 +40,7 @@
  *  Module leaf : importé par bag-menu-ctx (Medicine handler), pas l'inverse.
  */
 
-import { gSpecialVar } from '../script/script-vars';
+import { gSpecialVar } from './engine/script/script-vars';
 import {
   ApplyMedicineEffect, PokemonUseItemEffects, GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_HEAL_PP,
@@ -52,15 +52,15 @@ import {
   ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS,
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
-} from '../bag/bag-item-effects';
-import { getItem as _getItem, getItemKeyById } from '../../../harness/runtime/data-tables';
-import { GetItemType } from '../../../harness/runtime/decomp-bridge';
+} from './engine/bag/bag-item-effects';
+import { getItem as _getItem, getItemKeyById } from '../harness/runtime/data-tables';
+import { GetItemType } from '../harness/runtime/decomp-bridge';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
   GoToBagMenu,
   ITEMMENULOCATION_LAST,
-} from '../bag/bag-menu';
+} from './engine/bag/bag-menu';
 import {
   OpenPartyScreenForItemUse,
   GetPartyScreenSlotId,
@@ -69,19 +69,19 @@ import {
   ShowLevelUpStatsBox,
   RefreshPartySlot,
   PartyMenuAnimateHP,
-} from './party-screen';
-import { GetMonLevelUpWindowStats } from '../../menu_specialized';
-import { getString } from './gba-strings';
-import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
-import { getRuntime, PlaySE, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
-import { CB2_ReturnToField_Manual } from './option-menu-return';
-import { gPlayerParty } from '../battle/party-storage';
-import { gMoveNames } from '../data/game-data';
-import { RemoveBagItem } from '../bag/bag';
-import { SE_USE_ITEM, SE_SELECT } from '../decomp-data/include/constants/songs-data';
+} from './engine/ui/party-screen';
+import { GetMonLevelUpWindowStats } from './menu_specialized';
+import { getString } from './engine/ui/gba-strings';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
+import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
+import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
+import { gPlayerParty } from './engine/battle/party-storage';
+import { gMoveNames } from './engine/data/game-data';
+import { RemoveBagItem } from './engine/bag/bag';
+import { SE_USE_ITEM, SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
-import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`

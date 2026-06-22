@@ -174,7 +174,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'BedroomPC' || name === 'PlayerPC') {
     const isBedroom = (name === 'BedroomPC');
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('../ui/bedroom-pc');
+      const mod = await import('../../player_pc');
       mod.OpenBedroomPC(isBedroom);
       return { isOpen: mod.IsBedroomPCOpen };
     });

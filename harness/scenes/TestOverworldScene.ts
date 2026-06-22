@@ -79,7 +79,7 @@ import {
 } from '../../src/field_player_avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../../src/event_object_movement';
-import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../../src/engine/save/load_save';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../../src/load_save';
 import {
   SpawnObjectEventsOnMap,
   SpawnObjectEventsOnReturnToField,
@@ -209,7 +209,7 @@ import {
   preloadStandardMenuPalette,
 } from '../../src/field_message_box';
 import { TickStartMenu } from '../../src/engine/ui/start-menu';
-import { TickBedroomPC } from '../../src/engine/ui/bedroom-pc';
+import { TickBedroomPC } from '../../src/player_pc';
 import { TickPCAnim } from '../../src/engine/pokemon/pc-anim';
 import { TickRegionMap } from '../../src/engine/field/region-map';
 import { syncSubspriteOam } from '../../src/event_object_movement';

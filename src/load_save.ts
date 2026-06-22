@@ -29,17 +29,17 @@
 import {
   type SaveBlock1, type ObjectEventSnapshot, type Coords16,
   emptySaveBlock1,
-} from './save-blocks';
-import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
-import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from '../battle/party-storage';
+} from './engine/save/save-blocks';
+import { GetSaveBlock1, GetSaveBlock2 } from './engine/save/save-system';
+import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from './engine/battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
-} from '../../event_object_movement';
-import { GetPlayerFacingDirection } from '../../field_player_avatar';
-import { gSaveBlock1Ptr } from './save-block-state';
-import { GetCameraTopLeftCoords } from '../../field_camera';
-import { SaveMapView, MAP_OFFSET } from '../../fieldmap';
+} from './event_object_movement';
+import { GetPlayerFacingDirection } from './field_player_avatar';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { GetCameraTopLeftCoords } from './field_camera';
+import { SaveMapView, MAP_OFFSET } from './fieldmap';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 

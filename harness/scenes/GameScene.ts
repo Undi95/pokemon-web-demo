@@ -335,7 +335,7 @@ export class GameScene extends Phaser.Scene {
       // avec ce vide. Bug réel observé 2026-05-10 : counter passait de 23 à 1
       // au CONTINUE → resume cinematique replay parce que vars/flags perdus.
       const { LoadGameSave, SAVE_STATUS_OK } = await import('../../src/engine/save/save-system');
-      const lsMod = await import('../../src/engine/save/load_save');
+      const lsMod = await import('../../src/load_save');
       const ok = LoadGameSave() === SAVE_STATUS_OK;
       console.log(`[GameScene continue] LoadGameSave() → ${ok}, map=${JSON.stringify(lsMod.GetCurrentMap())}`);
     } else {
@@ -343,7 +343,7 @@ export class GameScene extends Phaser.Scene {
       // via auto code. gameState.playerName/gender lisent direct
       // gSaveBlock2Ptr → plus de sync nécessaire (= 1:1 strict).
       // Force truck cinematic via decideBootMode default path.
-      const { SetCurrentMap } = await import('../../src/engine/save/load_save');
+      const { SetCurrentMap } = await import('../../src/load_save');
       SetCurrentMap(undefined);
       // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
       // SRAM persiste tant que user n'a pas explicitement choisi SAUVEGARDER
@@ -353,7 +353,7 @@ export class GameScene extends Phaser.Scene {
       // Recharger la save montre qu'elle est wipe"). Si user F5 mid-Birch =
       // 1:1 ROM power off : la save SRAM précédente est préservée.
     }
-    const _lsMod = await import('../../src/engine/save/load_save');
+    const _lsMod = await import('../../src/load_save');
     console.log(`[GameScene] start : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'} map=${JSON.stringify(_lsMod.GetCurrentMap())}`);
 
     // 1:1 décomp Cleanup : attend la fin de la fade en cours puis assure que

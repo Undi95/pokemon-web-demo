@@ -43,7 +43,7 @@ import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-d
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';
 import { PokemonUseItemEffects } from './bag-item-effects';
-import { ItemUseCB_Medicine, ItemUseCB_PPRecovery, setItemUseCB } from '../ui/item-use-callbacks';
+import { ItemUseCB_Medicine, ItemUseCB_PPRecovery, setItemUseCB } from '../../item_use';
 import { gSpecialVar } from '../script/script-vars';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,

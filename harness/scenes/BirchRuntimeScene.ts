@@ -143,7 +143,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
 
       // 3. Side-effect import : main-menu-impl pose AddBirchSpeechObjects,
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.
-      await import('../../src/engine/ui/main-menu-impl');
+      await import('../../src/main_menu');
 
       // 4. Side-effect import : pokeball-effects pose LaunchBallFadeMonTask +
       //    SetUpForReleaseAffineAnim (= release Lotad sequence).
@@ -258,7 +258,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
     // WarpToTruck post-Birch). Sans ce clear, si une save précédente a un
     // `location` field set, decideBootMode triggers le resume mode qui spawn
     // à la saved position au lieu du truck.
-    const { SetCurrentMap } = await import('../../src/engine/save/load_save');
+    const { SetCurrentMap } = await import('../../src/load_save');
     SetCurrentMap(undefined);
     // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
     // SRAM persiste tant que user n'appuie pas explicitement sur SAUVEGARDER

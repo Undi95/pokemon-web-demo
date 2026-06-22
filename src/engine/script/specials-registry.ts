@@ -32,7 +32,7 @@ import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
-import { GetCurrentMap } from '../save/load_save';
+import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
 import { setStringVar } from '../system/string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';

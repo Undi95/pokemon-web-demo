@@ -35,7 +35,7 @@ import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../../event_object_movement';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader, MAP_OFFSET } from '../../fieldmap';
-import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
+import { GetCurrentMap, SetObjEventTemplateCoords } from '../../load_save';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';
 import {
