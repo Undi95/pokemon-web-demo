@@ -75,6 +75,8 @@ import {
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
+  CreateSprite as _CreateSprite_game,
+  ANIMCMD_FRAME, ANIMCMD_END,
 } from '../../game/sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
@@ -1601,12 +1603,32 @@ export const JOY_REPT = JOY_REPEAT;
 
 // ScanlineEffect_InitWave → MIROIR 1:1 src/game/scanline_effect.ts (ré-exporté ci-dessus).
 
+// ─── PHASE E2.B — SpriteTemplate logo shine 1:1 (title_screen.c:316-353) ─────
+// OAM 64x64 4bpp (paletteMode 0) + anim 1 frame. Le template (avec callback) est
+// construit au runtime dans StartPokemonLogoShine car SpriteCB_PokemonLogoShine vit
+// dans le fichier title généré (qui importe decomp-globals) → résolution par string
+// (= ce que faisait CreateSpriteFromTemplate) évite un cycle ESM.
+const sPokemonLogoShineOamData = {
+  shape: 0, size: 3, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0,
+} as const;  // SPRITE_SHAPE/SIZE(64x64), ST_OAM_4BPP, ST_OAM_OBJ_NORMAL (→ OBJ_WINDOW posé après création)
+const sPokemonLogoShineAnimSequence = [ ANIMCMD_FRAME(0, 4), ANIMCMD_END ];
+const sPokemonLogoShineAnimTable = [ sPokemonLogoShineAnimSequence ];
+
 /** 1:1 décomp `StartPokemonLogoShine(mode)` — title_screen.c:527.
  *  Crée le(s) sprite(s) shine sweep avec OAM_OBJ_WINDOW + SpriteCB_PokemonLogoShine.
  *  - SHINE_MODE_SINGLE_NO_BG_COLOR (0) / SHINE_MODE_SINGLE (2) : 1 sprite normal
  *  - SHINE_MODE_DOUBLE (1) : 1 sprite invisible BG color + 2 sprites Fast */
 export function StartPokemonLogoShine(mode: number): void {
   const r = rt();
+  // Template 1:1 (Phase E2.B) — remplace r.CreateSpriteFromTemplate('sPokemonLogoShine…').
+  const baseCb = (globalThis as any).SpriteCB_PokemonLogoShine
+    ?? r.spriteCallbacks.get('SpriteCB_PokemonLogoShine') ?? null;
+  const sPokemonLogoShineSpriteTemplate = {
+    tileTag: 'TAG_LOGO_SHINE', paletteTag: 'TAG_PRESS_START_COPYRIGHT',
+    oam: sPokemonLogoShineOamData, anims: sPokemonLogoShineAnimTable,
+    images: null, affineAnims: null,
+    callback: baseCb as ((sprite: unknown, rt: unknown) => void) | null,
+  };
   const SHINE_MODE_SINGLE_NO_BG_COLOR = 0;
   const SHINE_MODE_DOUBLE = 1;
   const SHINE_MODE_SINGLE = 2;
@@ -1625,13 +1647,13 @@ export function StartPokemonLogoShine(mode: number): void {
   }
 
   if (mode === SHINE_MODE_SINGLE_NO_BG_COLOR || mode === SHINE_MODE_SINGLE) {
-    const spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    const spriteId = _CreateSprite_game(r, sPokemonLogoShineSpriteTemplate, 0, 68, 0);
     setObjWindow(spriteId);
     const sprite = r.gSprites[spriteId];
     if (sprite) sprite.data[0] = mode;  // sMode alias
   } else if (mode === SHINE_MODE_DOUBLE) {
     // Invisible sprite that updates BG color via SpriteCB_PokemonLogoShine
-    let spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    let spriteId = _CreateSprite_game(r, sPokemonLogoShineSpriteTemplate, 0, 68, 0);
     setObjWindow(spriteId);
     let sprite = r.gSprites[spriteId];
     if (sprite) {
@@ -1641,11 +1663,11 @@ export function StartPokemonLogoShine(mode: number): void {
     // Two faster shine sprites — callback override via direct mutation
     const fastCb = (globalThis as any).SpriteCB_PokemonLogoShine_Fast
       ?? r.spriteCallbacks.get('SpriteCB_PokemonLogoShine_Fast');
-    spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    spriteId = _CreateSprite_game(r, sPokemonLogoShineSpriteTemplate, 0, 68, 0);
     setObjWindow(spriteId);
     sprite = r.gSprites[spriteId];
     if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
-    spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', -80, 68);
+    spriteId = _CreateSprite_game(r, sPokemonLogoShineSpriteTemplate, -80, 68, 0);
     setObjWindow(spriteId);
     sprite = r.gSprites[spriteId];
     if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
