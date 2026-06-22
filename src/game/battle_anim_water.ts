@@ -6,7 +6,7 @@
  * sinusoïdale AnimWaterBubbleProjectile = dette douce).
  * GFX : bubble.png 16x48 (3 frames) byte-exact.
  */
-import { DestroySprite } from './sprite';
+import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
@@ -347,7 +347,7 @@ function AnimWaterPulseRingBubble(sprite: _WSprite): void {
   if (--sprite.data[0] === 0) {
     const rt = _wRt();
     if (sprite.matrixNum !== undefined && sprite.matrixNum >= 0)
-      rt.FreeOamMatrix?.(sprite.matrixNum);
+      FreeOamMatrix(sprite.matrixNum);
     if (sprite.spriteId !== undefined)
       DestroySprite(getRuntime(), sprite.spriteId);
   }

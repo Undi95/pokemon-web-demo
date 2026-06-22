@@ -25,7 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite } from '../../game/sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
 import { GetWindowFrameTilesPal } from '../../game/text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {
@@ -811,7 +811,7 @@ function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
   if (spriteId >= 0) {
     const sprite = rt.gSprites[spriteId];
     if (sprite) sprite.tileBase = tileBase;
-    const matrixNum = rt.AllocOamMatrix();
+    const matrixNum = AllocOamMatrix();
     if (matrixNum > 0) {
       if (sprite) sprite.matrixNum = matrixNum;
       const oam = rt.gba.oam[rt.gSprites[spriteId]!.oamIndex];
@@ -1045,7 +1045,7 @@ export function FreeAndDestroyMonPicSprite(spriteId: number): void {
   if (sprite) {
     // 1:1 décomp src/sprite.c FreeSpriteOamMatrix : if affine, free matrix.
     if (sprite.matrixNum > 0) {
-      rt.FreeOamMatrix(sprite.matrixNum);
+      FreeOamMatrix(sprite.matrixNum);
       sprite.matrixNum = 0;
     }
     // Stop idle animation if active (= clean up controller).

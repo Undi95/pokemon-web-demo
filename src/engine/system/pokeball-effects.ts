@@ -28,7 +28,7 @@ import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../system/decomp-helper
 import {
   MarkObjTilesAllocated, MarkObjPaletteAllocated,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
-  DestroySprite,
+  DestroySprite, AllocOamMatrix, FreeOamMatrix,
 } from '../../game/sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
@@ -110,7 +110,7 @@ export function SetUpForReleaseAffineAnim(rt: DecompRuntime, monSpriteId: number
   // Allocate a matrix slot if the sprite doesn't already own one (= matrixNum > 0).
   // matrixNum == 0 means "not yet allocated" (slot 0 is the default identity).
   if (sprite.matrixNum <= 0) {
-    const slot = rt.AllocOamMatrix();
+    const slot = AllocOamMatrix();
     if (slot < 0) return -1;
     sprite.matrixNum = slot;
   }
@@ -137,7 +137,7 @@ export function TearDownReleaseAffineAnim(rt: DecompRuntime, monSpriteId: number
   if (!sprite) return;
 
   if (sprite.matrixNum > 0) {
-    rt.FreeOamMatrix(sprite.matrixNum);
+    FreeOamMatrix(sprite.matrixNum);
     sprite.matrixNum = 0;
   }
   sprite.affineMode = ST_OAM_AFFINE_OFF as 0 | 1 | 2 | 3;

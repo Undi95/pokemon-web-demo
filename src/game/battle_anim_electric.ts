@@ -18,7 +18,7 @@ import {
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { SetOamMatrix } from './sprite';
+import { SetOamMatrix, AllocOamMatrix } from './sprite';
 
 type _VSprite = {
   data: number[]; x: number; y: number; x2: number; y2: number;
@@ -101,7 +101,7 @@ function _oamTileNumAdd(sprite: _VSprite, n: number): void {
 function _ensureOwnMatrix(sprite: _VSprite): number {
   let m = sprite.matrixNum ?? 0;
   if (m <= 0) {
-    m = _rt()?.AllocOamMatrix?.() ?? 0;
+    m = AllocOamMatrix() ?? 0;
     if (m > 0) {
       sprite.matrixNum = m;
       sprite.affineMode = 1; // ST_OAM_AFFINE_NORMAL (gOamData_AffineNormal_*)

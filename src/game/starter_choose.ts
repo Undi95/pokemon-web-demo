@@ -51,7 +51,7 @@ import {
 } from '../engine/ui/gba-text-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../engine/system/decomp-globals';
-import { DestroySprite } from './sprite';
+import { DestroySprite, AllocOamMatrix } from './sprite';
 import { BG_PLTT_ID, MAX_SPRITES } from '../engine/system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../engine/system/decomp-bridge';
 import { CreateMon } from '../engine/pokemon/pokemon';
@@ -574,7 +574,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
     // Sans ça, tous les sprites affine partagent matrix 0 (= identity = no anim).
     const circleSprite = rt.gSprites[circleId];
     if (circleSprite && circleSprite.affineMode !== 0) {
-      const mNum = rt.AllocOamMatrix();
+      const mNum = AllocOamMatrix();
       if (mNum >= 0) {
         circleSprite.matrixNum = mNum;
         const oam = rt.gba.oam[circleSprite.oamIndex];
@@ -594,7 +594,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
     if (pkmnSprite) {
       pkmnSprite.affineAnimsTableName = 'sAffineAnims_StarterPokemon';
       // Alloc dedicated matrix slot pour cette affine anim (= 1:1 strict).
-      const mNum = rt.AllocOamMatrix();
+      const mNum = AllocOamMatrix();
       if (mNum >= 0) {
         pkmnSprite.matrixNum = mNum;
         const oam = rt.gba.oam[pkmnSprite.oamIndex];

@@ -18,6 +18,7 @@
  */
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { getRuntime } from '../system/decomp-globals';
+import { AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
 import { SpriteCallbackDummy, BlendPalette } from '../system/decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from '../system/decomp-helpers';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
@@ -141,7 +142,7 @@ function HandleStartAffineAnim(s: S): void {
   const oam = rt.gba.oam[s.oamIndex];
   s.affineMode = 3; if (oam) oam.affineMode = 3;             // ST_OAM_AFFINE_DOUBLE
   if (s.matrixNum <= 0) {
-    const m = rt.AllocOamMatrix();
+    const m = AllocOamMatrix();
     s.matrixNum = m < 0 ? 0 : m;
   }
   if (oam) oam.affineParamIndex = s.matrixNum;
@@ -164,7 +165,7 @@ function ResetSpriteAfterAnim(s: S): void {
   const rt = getRuntime(); if (!rt) return;
   const oam = rt.gba.oam[s.oamIndex];
   s.hFlip = !sDontFlip(s);                                    // !sDontFlip → hFlip=TRUE
-  if (s.matrixNum > 0) rt.FreeOamMatrix(s.matrixNum);
+  if (s.matrixNum > 0) FreeOamMatrix(s.matrixNum);
   s.matrixNum = 0;
   s.affineMode = 0; if (oam) { oam.affineMode = 0; oam.affineParamIndex = 0; } // AFFINE_OFF
   const c = CalcCenterToCornerVec(s.shape, s.size, 0);

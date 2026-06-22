@@ -48,7 +48,7 @@
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import { MAX_SPRITES } from '../system/decomp-runtime';
-import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite } from '../../game/sprite';
+import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
 import {
@@ -537,7 +537,7 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
   if (spriteId < 0) return;
   const sprite = rt.gSprites[spriteId];
   if (sprite && sprite.matrixNum !== 0) {
-    rt.FreeOamMatrix(sprite.matrixNum);
+    FreeOamMatrix(sprite.matrixNum);
   }
   try { DestroySprite(rt, spriteId); } catch (e) { void e; }
   // PAS de gSprites.delete : le runtime garde le slot jusqu'a reallocation
@@ -1375,7 +1375,7 @@ function Cmd_createsprite(): void {
             // ecrasait la matrice du Wailord = mon deplace/deforme (retour
             // user x2 2026-06-11).
             const rtm = (globalThis as Record<string, unknown>).__rt as { AllocOamMatrix?: () => number } | undefined;
-            const m = rtm?.AllocOamMatrix?.();
+            const m = AllocOamMatrix();
             if (m !== undefined && m >= 0) spF.matrixNum = m;
             spF.affineAnimNum = 0;
             spF.affineAnimBeginning = true;

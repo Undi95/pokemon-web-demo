@@ -39,7 +39,7 @@ import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPEC
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../engine/system/decomp-globals';
-import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
+import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix } from './sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
@@ -523,7 +523,7 @@ function HandleBallAnimEnd(sprite: DecompSprite, rt: DecompRuntime): void {
     if (mon) mon.y2 = 0;
     setGDoingBattleAnim(false);
     setBallAnimActive(battler, false);
-    rt.FreeOamMatrix(sprite.matrixNum);
+    FreeOamMatrix(sprite.matrixNum);
     DestroySprite(rt, sprite.spriteId);
 
     let doneBattlers = 0;

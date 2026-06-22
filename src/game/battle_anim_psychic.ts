@@ -17,7 +17,7 @@
  * helpers décomp importés de ./battle_anim_mons.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
-import { DestroySprite } from './sprite';
+import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
 import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 import {
@@ -369,7 +369,7 @@ function AnimQuestionMark_Step1(sprite: _VSprite): void {
   spF.affineAnimsTableName = 'sAffineAnims_QuestionMark';
   sprite.data[0] = 0;
   // InitSpriteAffineAnim (sprite.c) : alloue la matrice + démarre l'anim 0.
-  const m = _qmRt()?.AllocOamMatrix?.();
+  const m = AllocOamMatrix();
   if (m !== undefined && m >= 0) spF.matrixNum = m;
   spF.affineAnimNum = 0;
   spF.affineAnimBeginning = true;
@@ -386,7 +386,7 @@ function AnimQuestionMark_Step2(sprite: _VSprite): void {
       const spF = sprite as { oamIndex?: number; matrixNum?: number; affineMode?: number };
       if ((sprite as { affineAnimEnded?: boolean }).affineAnimEnded) {
         if (spF.matrixNum !== undefined && spF.matrixNum > 0) // slot 0 = identité partagée, jamais libéré
-          _qmRt()?.FreeOamMatrix?.(spF.matrixNum);
+          FreeOamMatrix(spF.matrixNum);
         spF.affineMode = 0; // ST_OAM_AFFINE_OFF
         const oam = _qmRt()?.gba?.oam?.[spF.oamIndex ?? -1];
         if (oam) oam.affineMode = 0;

@@ -28,7 +28,7 @@ import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
 } from '../engine/system/decomp-globals';
-import { DestroySprite } from './sprite';
+import { DestroySprite, AllocOamMatrix } from './sprite';
 import { loadIndexedPng } from '../engine/gba/png-loader';
 import { Random } from '../engine/system/random';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
@@ -211,7 +211,7 @@ function _fldEffPokeballTrail(x: number, y: number, side: number, delay: number)
   }
   if (pal === 0xFF || pal === undefined) pal = _ballPalSlot;
   _ballPalSlot = pal;
-  const matrix = r.AllocOamMatrix?.() ?? 0;
+  const matrix = AllocOamMatrix() ?? 0;
   const spriteId = r.CreateSpriteInline?.({
     name: 'FldEffPokeballTrail',
     images: [{ data: _ballTiles, size: _ballTiles.length }],

@@ -35,7 +35,7 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../../game/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
@@ -1362,7 +1362,7 @@ function _despawnRotatingBall(): void {
   // → on libère le matrix slot via FreeOamMatrix (= 1:1 décomp DestroySprite si
   //   sprite has affineMode != OFF, sinon no-op).
   if (_ballMatrixNum >= 0) {
-    rt.FreeOamMatrix(_ballMatrixNum);
+    FreeOamMatrix(_ballMatrixNum);
     _ballMatrixNum = -1;
   }
   if (_ballOamId >= 0) {
@@ -1446,7 +1446,7 @@ function _ballInitCallback(): void {
   if (oam) oam.affineMode = 1;  // ST_OAM_AFFINE_NORMAL
   spr.affineMode = 1;
   // InitSpriteAffineAnim équiv : alloc matrix slot.
-  _ballMatrixNum = rt.AllocOamMatrix();
+  _ballMatrixNum = AllocOamMatrix();
   spr.matrixNum = _ballMatrixNum;
   if (oam) oam.affineParamIndex = _ballMatrixNum;
   // 1:1 décomp ctcv 16×16 square = -8 (cf. sCenterToCornerVecTable[0][1] =
@@ -2215,7 +2215,7 @@ function _triggerBagShake(): void {
   // alloc matrix slot. InitSpriteAffineAnim équivalent.
   oam.affineMode = 1;       // ST_OAM_AFFINE_NORMAL
   sprite.affineMode = 1;
-  _bagShakeMatrixNum = rt.AllocOamMatrix();
+  _bagShakeMatrixNum = AllocOamMatrix();
   sprite.matrixNum = _bagShakeMatrixNum;
   oam.affineParamIndex = _bagShakeMatrixNum;
   _bagShakeRotation = 0;
@@ -2271,7 +2271,7 @@ function _tickBagSpriteShake(): void {
       sprite.affineMode = 0;
     }
     if (_bagShakeMatrixNum >= 0) {
-      rt.FreeOamMatrix(_bagShakeMatrixNum);
+      FreeOamMatrix(_bagShakeMatrixNum);
       _bagShakeMatrixNum = -1;
     }
     _bagShakeRotation = 0;

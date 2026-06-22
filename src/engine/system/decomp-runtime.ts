@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, AllocOamMatrix as _AllocOamMatrix_1to1, FreeOamMatrix as _FreeOamMatrix_1to1, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -1532,18 +1532,6 @@ export class DecompRuntime {
   // géré par Alloc/FreeOamMatrix dans game/sprite.ts. Ex-`_matrixUsed` Set retiré (E2.3c :
   // 2e allocateur à état séparé = collision possible). Slot 0 réservé = matrice identité
   // des sprites affineMode=OFF, jamais alloué (scan dès 1).
-
-  /** Délègue à `AllocOamMatrix` (game/sprite.ts, 1:1 décomp sprite.c:1427) — état
-   *  unique `gOamMatrixAllocBitmap` (E2.3c). Méthode conservée transitionnellement. */
-  AllocOamMatrix(): number {
-    return _AllocOamMatrix_1to1();
-  }
-
-  /** Délègue à `FreeOamMatrix` (game/sprite.ts, 1:1 décomp sprite.c:1448 — clear bit
-   *  + reset le slot à l'identité). */
-  FreeOamMatrix(matrixNum: number): void {
-    _FreeOamMatrix_1to1(matrixNum);
-  }
 
   /** Set sprite visibility — set sprite.invisible, syncSpritesToOam propage à oam. */
   setSpriteInvisible(spriteId: number, invisible: boolean): void {

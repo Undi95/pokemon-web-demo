@@ -38,7 +38,7 @@
  *     (battle_anim_mons.c:2035) — identique tant que rien ne la réécrit.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
-import { DestroySprite } from './sprite';
+import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../engine/system/decomp-globals';
 import {
   GetBattlerSpriteCoord,
@@ -301,7 +301,7 @@ function _oamTileNumAdd(sprite: _VSprite, n: number): void {
 function _FreeSpriteOamMatrix(sprite: _VSprite): void {
   const m = sprite.matrixNum ?? 0;
   if (m > 0) {
-    _rt()?.FreeOamMatrix?.(m);
+    FreeOamMatrix(m);
     sprite.matrixNum = 0;
   }
 }
@@ -2221,7 +2221,7 @@ function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }):
     const task = rt?.gTasks?.get(sprite.data[1]);
     if (task) task.data[sprite.data[2]]--;
     const m = rt?.gba?.oam[sprite.oamIndex]?.matrixNum;
-    if (m !== undefined) rt?.FreeOamMatrix?.(m);
+    if (m !== undefined) FreeOamMatrix(m);
     (_mzMons() as { DestroySpriteWithActiveSheet?: (s: unknown) => void }).DestroySpriteWithActiveSheet?.(sprite);
   }
 }

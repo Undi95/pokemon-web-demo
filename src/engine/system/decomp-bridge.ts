@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite } from '../../game/sprite';
+import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../game/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -2985,7 +2985,7 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
     // (dans CreateSpriteAtOam) centre correctement le sprite en AFFINE_DOUBLE/NORMAL.
     let matrixNum = 0;
     if (affineMode !== 0) {
-      const m = rt.AllocOamMatrix();
+      const m = _AllocOamMatrix();
       if (m > 0) matrixNum = m;
     }
     const created = rt.CreateSpriteAtOam({
@@ -3099,14 +3099,15 @@ export function StartSpriteAffineAnim(sprite: any, animNum: number): void {
   if (id != null) rt.StartSpriteAffineAnim(id, animNum);
 }
 
-/** 1:1 décomp `src/sprite.c FreeOamMatrix(matrixNum)`. */
+/** 1:1 décomp `src/sprite.c FreeOamMatrix(matrixNum)`. Route vers l'impl free-fn
+ *  game/sprite.ts (chantier C : méthodes harness Alloc/FreeOamMatrix retirées). */
 export function FreeOamMatrix(matrixNum: number): void {
-  _getRT().FreeOamMatrix(matrixNum);
+  _FreeOamMatrix(matrixNum);
 }
 
-/** 1:1 décomp `src/sprite.c AllocOamMatrix()`. */
+/** 1:1 décomp `src/sprite.c AllocOamMatrix()`. Route vers l'impl free-fn game/sprite.ts. */
 export function AllocOamMatrix(): number {
-  return _getRT().AllocOamMatrix();
+  return _AllocOamMatrix();
 }
 
 /** 1:1 décomp `src/sprite.c ResetSpriteData()`. Appelle directement l'impl free-fn

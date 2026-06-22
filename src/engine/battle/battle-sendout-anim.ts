@@ -28,7 +28,7 @@
 
 import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite } from '../../game/sprite';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../game/sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
@@ -223,7 +223,7 @@ export async function startSendOut(opts: {
   // qui scale) : tickAllAffineAnims accumule +25/frame (sAffineAnim_BallRotate_4, duration=1).
   const ballSprite = rt.gSprites[ball.spriteId];
   if (ballSprite) {
-    const _m = rt.AllocOamMatrix();
+    const _m = AllocOamMatrix();
     if (_m >= 0) {
       ballSprite.matrixNum = _m;
       ballSprite.affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
@@ -406,7 +406,7 @@ function _cleanup(rt: DecompRuntime): void {
     const ball = rt.gSprites[_so.ballSpriteId];
     if (ball) {
       // Libère la matrice OAM du spin (sinon fuite d'un slot affine par combat).
-      if ((ball.matrixNum ?? 0) > 0) { rt.FreeOamMatrix(ball.matrixNum); ball.matrixNum = 0; }
+      if ((ball.matrixNum ?? 0) > 0) { FreeOamMatrix(ball.matrixNum); ball.matrixNum = 0; }
       DestroySprite(rt, _so.ballSpriteId);
     }
   }

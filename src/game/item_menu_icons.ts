@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from '../engine/ui/item-icon';
 import { gBagMenu } from '../engine/bag/bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from './sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
@@ -81,7 +81,7 @@ export function RemoveBagSprite(id: number): void {
     // 1:1 :431 FreeSpriteOamMatrix(&gSprites[*spriteId]) — libère la matrix
     // OAM si le sprite était affine (= ITEMMENUSPRITE_BAG, ITEMMENUSPRITE_BALL).
     const spr = rt?.gSprites?.[spriteId];
-    if (spr && spr.affineMode && rt?.FreeOamMatrix) rt.FreeOamMatrix(spr.matrixNum);
+    if (spr && spr.affineMode) FreeOamMatrix(spr.matrixNum);
     DestroySprite(spriteId);
     bm.spriteIds[id] = SPRITE_NONE;
   }
@@ -231,7 +231,7 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   const palBankBag = IndexOfSpritePaletteTag(TAG_BAG_GFX);
   const palBank = palBankBag === 0xFF ? 0 : palBankBag;
   // AFFINE_NORMAL exige une matrix OAM (= sAffineAnimStates[matrixNum]).
-  const matrixNum = rt.AllocOamMatrix();
+  const matrixNum = AllocOamMatrix();
   if (matrixNum < 0) return; // 32 slots saturés → impossible (cf. décomp MAX_SPRITES).
   // sBagOamData (item_menu_icons.c:41) : shape=0(square), size=3(64x64),
   // bpp=4, prio=1, AFFINE_NORMAL=1, matrixNum (alloué dynamiquement).
@@ -243,7 +243,7 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   if (spriteId === MAX_SPRITES) {
     // Échec sprite alloc → libère la matrix qu'on vient d'allouer.
     const rt2 = getRuntime() as unknown as { FreeOamMatrix?: (n: number) => void } | null;
-    rt2?.FreeOamMatrix?.(matrixNum);
+    FreeOamMatrix(matrixNum);
     return;
   }
   bm.spriteIds[ITEMMENUSPRITE_BAG] = spriteId;
@@ -380,7 +380,7 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
   const palBank = palBankRot === 0xFF ? 0 : palBankRot;
   // sRotatingBallOamData (item_menu_icons.c:156-171) : shape=0(sq), size=1(16x16),
   // bpp=4, prio=2, AFFINE_OFF init (SpriteCB_Init le passe à NORMAL :514).
-  const matrixNum = rt.AllocOamMatrix();
+  const matrixNum = AllocOamMatrix();
   if (matrixNum < 0) return;
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileStart, paletteBank: palBank,
@@ -389,7 +389,7 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
     affineParamIndex: matrixNum,
   });
   if (spriteId === MAX_SPRITES) {
-    rt.FreeOamMatrix?.(matrixNum);
+    FreeOamMatrix(matrixNum);
     return;
   }
   bm.spriteIds[ITEMMENUSPRITE_BALL] = spriteId;

@@ -27,7 +27,7 @@
  * __battleControllerOpponent + import './battle-faint-anim').
  */
 
-import { DestroySprite } from './sprite';
+import { DestroySprite, AllocOamMatrix } from './sprite';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -372,7 +372,7 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     const elevation = isOpponent ? GetBattlerElevation(battler, sp) : 0;
     const y = (c ? (isOpponent ? c.front.yOffset : c.back.yOffset) : 0) + baseY - elevation;
     // Matrice affine ALLOUÉE pour ce mon (cf. commentaire oam ci-dessous).
-    const _monMatrixNum = (getRuntime() as unknown as { AllocOamMatrix?: () => number } | null)?.AllocOamMatrix?.() ?? (16 + battler);
+    const _monMatrixNum = AllocOamMatrix();
     // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
     // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
     const spriteId = CreateSprite({
