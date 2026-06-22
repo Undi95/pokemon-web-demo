@@ -25,7 +25,7 @@ import {
 } from '../system/decomp-globals';
 import { DestroySprite, StartSpriteAnim } from '../system/decomp-bridge';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../../game/sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, setSpriteAnims } from '../../game/sprite';
 
 // 1:1 décomp menu_helpers.c:20 — TAG_SWAP_LINE 109.
 const TAG_SWAP_LINE = 109;
@@ -119,7 +119,8 @@ export function CreateSwapLineSprites(spriteIds: number[], baseIdx: number, coun
     if (r.spriteId === MAX_SPRITES) continue;
     // 1:1 :406-407 — i != 0 → StartSpriteAnim(.., 1) = anim Line.
     // i == 0 → reste sur anim 0 (RightArrow = ▶).
-    rt.spriteAnimStatesRegister(spriteIds[baseIdx + i], ANIM_TABLE_NAME, i === 0 ? ANIM_RIGHT_ARROW : ANIM_LINE, tileStart);
+    // CONVERGENCE 1:1 : sprite.anims (inline) au lieu de spriteAnimStates (legacy), modèle sheet.
+    setSpriteAnims(getRuntime(), spriteIds[baseIdx + i], ANIM_TABLE_NAME, i === 0 ? ANIM_RIGHT_ARROW : ANIM_LINE, tileStart);
     if (i !== 0) StartSpriteAnim(spriteIds[baseIdx + i], ANIM_LINE);
     // 1:1 :409 — invisible à la création.
     rt.setSpriteInvisible(spriteIds[baseIdx + i], true);
