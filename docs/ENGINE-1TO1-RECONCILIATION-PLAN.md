@@ -97,8 +97,14 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
         per-frame est 100% dans game/sprite.ts.**
       - **(B) `CreateSprite` 1:1** : unifier le dispatcher 3-voies (images inline / tileTag / nom) en
         `CreateSprite(template)→CreateSpriteAt` lisant `struct SpriteTemplate` = fusion des modèles gfx-loading. GROS.
-      - **(C) cleanup délégués** : migrer les call-sites `rt.{DestroySprite=102,ResetSpriteData=13,CreateSpriteAtOam=112,…}`
-        → free fns + retirer les méthodes-déléguées du harness. Mécanique mais large (receveurs variés, optional-chaining).
+      - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
+        - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
+          forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
+        - ✅ **DestroySprite** (`ace8d2c1` combat + `8c37eedf` field/UI/intro + `0e77524f` cluster battle_anim) : méthode
+          RETIRÉE. ~76 sites migrés (dont ~51 en forme optional-call `rt.DestroySprite?.(id)` — piège silencieux, cf.
+          [[pitfall-remove-delegate-method-optional-call]]). Receveurs lâches → `getRuntime()`, zéro cast.
+        - ⏳ RESTE : `AllocOamMatrix`/`FreeOamMatrix` (petit) + `CreateSpriteAtOam` (112 sites, REPORTÉ à B car chevauche
+          l'unification du dispatcher). Mécanique mais large (receveurs variés, optional-chaining).
       - ✅ **(D) dédup mail.ts FAIT** (`cdd32bd7` : animateAllSprites/buildOamBuffer locaux → globales).
 
 **Phase E3 — DÉ-SHIM les corps vidéo** : remplacer `_dgItf()`/`_dgRt().gSprites.get()`/`_dgBgX()` par accès
