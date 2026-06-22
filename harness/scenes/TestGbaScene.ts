@@ -18,7 +18,7 @@
  * Press SPACE/CLICK : retour BootScene (pour rebooter normalement).
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../../src/main';
+import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { loadIndexedPng, loadTilemapBin } from '../gba/png-loader';

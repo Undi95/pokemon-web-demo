@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../../main';
+import { GAME_W, GAME_H } from '../../../harness/main';
 
 export interface TilesetPairInfo {
   primaryTileset: string;

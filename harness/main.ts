@@ -25,22 +25,22 @@ if (!import.meta.env.PROD) {
   };
 }
 
-import { TestGbaScene } from '../harness/scenes/TestGbaScene';
-import { GameScene } from '../harness/scenes/GameScene';
-import { DebugOverlayScene } from '../harness/scenes/DebugOverlayScene';
-import { mountDevtoolsPanel } from '../harness/devtools/devtools-panel';
+import { TestGbaScene } from './scenes/TestGbaScene';
+import { GameScene } from './scenes/GameScene';
+import { DebugOverlayScene } from './scenes/DebugOverlayScene';
+import { mountDevtoolsPanel } from './devtools/devtools-panel';
 // Chantier « c » Step 0 (2026-06-22) : BirchRuntimeScene = host MORT (jamais
 // `scene.start`'d ; le flow Birch tourne dans GameScene via la chaîne CB2 main menu,
 // cf. docs/RUNTIME-MERGE-PLAN.md). Dé-enregistré du scene array. Fichier conservé
 // jusqu'au nettoyage final (Step 5).
-// import { BirchRuntimeScene } from '../harness/scenes/BirchRuntimeScene';
-// import { OverworldScene } from '../harness/scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
-import { TestOverworldScene } from '../harness/scenes/TestOverworldScene';
-import { createAudioDevtool } from '../harness/util/audio-devtool';
-import '../harness/util/remap-modal'; // exposes window.openRemapModal for the topbar button
+// import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
+// import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
+import { TestOverworldScene } from './scenes/TestOverworldScene';
+import { createAudioDevtool } from './util/audio-devtool';
+import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
-import '../harness/devtools/dev-cheat';
-import { setMasterVolume } from '../harness/m4a/audio-context';
+import './devtools/dev-cheat';
+import { setMasterVolume } from './m4a/audio-context';
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
 // localStorage.setItem('audioDevtool', 'off').
@@ -55,29 +55,29 @@ if (typeof window !== 'undefined') {
 // 1:1 décomp main.c `LoadGameSave` au boot AVANT que MainMenu se launch.
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
 // HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
-import { LoadGameSave } from './engine/save/save-system';
-import { SetSaveFileStatus } from './engine/ui/gba-menu-system';
+import { LoadGameSave } from '../src/engine/save/save-system';
+import { SetSaveFileStatus } from '../src/engine/ui/gba-menu-system';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
-import { SeedRngAndSetTrainerId } from './engine/system/random';
+import { SeedRngAndSetTrainerId } from '../src/engine/system/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
-import '../harness/devtools/dev-audit-tools';
+import './devtools/dev-audit-tools';
 // Side-effect import : pose window.dev.breakpoint.* helpers (= pause-on-event
 // pour debugging frame-precise : fade-out/fade-in/map-change/palette-leak/etc.).
-import '../harness/devtools/dev-breakpoint-tools';
+import './devtools/dev-breakpoint-tools';
 // Side-effect import : pose window.dev.bridge.* helpers (= coverage du
 // decomp-bridge.ts + tracking helpers manquants par module auto-généré).
-import '../harness/devtools/dev-bridge-audit-tools';
+import './devtools/dev-bridge-audit-tools';
 // Side-effect import : pose window.dev.fx.* helpers (= overworld / field effects :
 // tp, player, force-spawn FLDEFF_* via le chemin live, list sprites d'effet). Cf.
 // dev-fieldfx-tools.ts. Sert à vérifier les ports field_effect_helpers.c en jeu.
-import '../harness/devtools/dev-fieldfx-tools';
+import './devtools/dev-fieldfx-tools';
 // Side-effect import : pose window.dev.battle.startTrainer (= trainer battle
 // flow registered au boot pour debug). Sans ça, le devtool n'est registered
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.
 // Side-effect import : init RTC core (= PC time as source) + register
 // `globalThis.__rtcModule` pour save sync. Cf. session 124 fix Bug 4.
-import { exposeRtcDevApi } from './engine/system/rtc';
+import { exposeRtcDevApi } from '../src/engine/system/rtc';
 exposeRtcDevApi();
 
 // Audit session 126 fix Bug #3 : expose les bridge fns (gMain, FlagSet,
@@ -90,7 +90,7 @@ exposeRtcDevApi();
 // → ReferenceError → boot crash. L'expose au boot main.ts garantit dispo sur globalThis
 // avant tout tick. Idempotent : ré-appel par les scenes ne fait que re-set les mêmes
 // valeurs (pas de side-effect négatif).
-import { exposeGbaGlobals } from '../harness/runtime/gba-global-scope';
+import { exposeGbaGlobals } from './runtime/gba-global-scope';
 exposeGbaGlobals();
 
 // Audit session 126 LOT D2 : preload multichoice lists data depuis
@@ -99,17 +99,17 @@ exposeGbaGlobals();
 // Async, idempotent. Sans ça : `multichoice` opcode fallback "VAR_RESULT=0" =
 // 1st option auto, dialogues à choix cassés (Latias TV broadcast, contests,
 // PC menus, etc.).
-import { loadMultichoiceLists } from './engine/system/multichoice-data';
+import { loadMultichoiceLists } from '../src/engine/system/multichoice-data';
 void loadMultichoiceLists();
 
 // Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit
 // avancé via console JS uniquement. window.scope.help() pour usage.
-import { installScopeDevtools } from '../harness/devtools/dev-scope';
+import { installScopeDevtools } from './devtools/dev-scope';
 installScopeDevtools();
 
 // Session 127 : preload bag screen graphics (sprite sac + dots + button).
 // Async, idempotent. Au 1er Open du bag, les assets sont déjà cached.
-import { preloadBagAssets, initItemIconMap } from './engine/bag/bag-screen';
+import { preloadBagAssets, initItemIconMap } from '../src/engine/bag/bag-screen';
 preloadBagAssets();
 void initItemIconMap();
 
@@ -117,7 +117,7 @@ void initItemIconMap();
 // FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen
 // affiché AVANT starter-choose (= ?nointro avec save advanced) tombe sur des
 // descriptions vides. Maintenant les tables sont disponibles dès boot.
-import { loadTextTables, type TextTables } from '../harness/runtime/data-tables';
+import { loadTextTables, type TextTables } from './runtime/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/text-tables.json');
@@ -137,7 +137,7 @@ void (async () => {
 // getItemId/getSpeciesId/getMoveId = 0 partout dans la boucle réelle (bug
 // systémique exposé par le sac : liste vide). Aligné sur les autres tables
 // préchargées ici. Idempotent (OverworldScene legacy re-set = même data).
-import { loadConstantsTable, type ConstantsTable } from '../harness/runtime/data-tables';
+import { loadConstantsTable, type ConstantsTable } from './runtime/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/constants.json');
@@ -153,7 +153,7 @@ void (async () => {
 // Session 127 : preload strings.json AU BOOT (= gText_* du décomp).
 // Sans ça, les screens qui appellent getString() voient "[MISSING:gText_...]".
 // Pattern 1:1 ABSOLU ZÉRO HARDCODE : tous les textes FR viennent du décomp.
-import { initStringsFromDecomp } from './engine/ui/gba-strings';
+import { initStringsFromDecomp } from '../src/engine/ui/gba-strings';
 void initStringsFromDecomp();
 
 // Session 136 audit fix : preload battle moves data + battle script bytecode
@@ -162,12 +162,12 @@ void initStringsFromDecomp();
 // trouvait pas ses labels (= scriptPtr=-1 partout). Toutes les opcodes battle
 // qui appellent `getBattleMove(...).flags & FLAG_MAKES_CONTACT` fail silent
 // (= secondary effects/ability triggers/etc. ne marchent jamais).
-import { loadBattleMoves } from './engine/battle/data/battle-moves';
-import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
-import { loadAiScriptBytecode } from './engine/battle/ai/ai-state';
-import { loadItemHoldEffects } from './engine/battle/data/item-hold-effects';
-import { loadItemEffects } from './engine/battle/data/item-effects';
-import { loadGameData } from './engine/data/game-data';
+import { loadBattleMoves } from '../src/engine/battle/data/battle-moves';
+import { loadBattleScriptBytecode } from '../src/engine/battle/script-interpreter';
+import { loadAiScriptBytecode } from '../src/engine/battle/ai/ai-state';
+import { loadItemHoldEffects } from '../src/engine/battle/data/item-hold-effects';
+import { loadItemEffects } from '../src/engine/battle/data/item-effects';
+import { loadGameData } from '../src/engine/data/game-data';
 void loadBattleMoves();
 void loadBattleScriptBytecode();
 // 1:1 décomp : bytecode AI (gBattleAI_ScriptsTable + scripts) chargé au boot,
@@ -182,7 +182,7 @@ void loadItemEffects();
 // fallback [tackle, growl] partout). Aussi : ability-battle-effects /
 // item-battle-effects lookup gSpeciesInfo via __game_data.
 void loadGameData().then(async () => {
-  const gd = await import('./engine/data/game-data');
+  const gd = await import('../src/engine/data/game-data');
   (globalThis as { __game_data?: unknown }).__game_data = gd;
 });
 

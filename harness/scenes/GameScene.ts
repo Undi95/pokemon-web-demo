@@ -26,7 +26,7 @@
  * CreateTask(Task_Scene1_Load).
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../../src/main';
+import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';

@@ -36,7 +36,7 @@
  * la texture canvas. Si l'utilisateur revient au menu, la scène est recréée.
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../../src/main';
+import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
