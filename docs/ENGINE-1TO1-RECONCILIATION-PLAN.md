@@ -95,8 +95,23 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
         cycle ESM géré : sprite-system/decomp-constants = leaves, edge runtime one-way decomp-runtime→game/sprite).
         A/B hot-path OW (`.anims` cyclent) + combat (legacy spriteAnimStates+_resolveTileNum) OK. **Le cœur sprite.c
         per-frame est 100% dans game/sprite.ts.**
-      - **(B) `CreateSprite` 1:1** : unifier le dispatcher 3-voies (images inline / tileTag / nom) en
-        `CreateSprite(template)→CreateSpriteAt` lisant `struct SpriteTemplate` = fusion des modèles gfx-loading. GROS.
+      - **(B) `CreateSprite` 1:1** : unifier le dispatcher 3-voies en `CreateSprite(template)→CreateSpriteAt`. GROS.
+        - **CARTOGRAPHIE (investiguée 2026-06-22)** : les 3 voies du bridge `CreateSprite` convergent toutes vers la
+          primitive `CreateSpriteAtOam(rt, cfg)` mais résolvent les champs autrement :
+          (1) **inline** `rt.CreateSpriteInline` (template.images → AllocSpriteTiles + _writeToObjVram) = voie décomp
+          `tileTag==TAG_NONE` ; (2) **tileTag** : bloc manuel (GetSpriteTileStartByTag + patch champs) = voie décomp
+          `tileTag!=TAG_NONE` ; (3) **par-nom** `rt.CreateSpriteFromTemplate(name)` : résout `SPRITE_TEMPLATES[name]`
+          → catalogues string `OAM_DATAS`/`SPRITE_ANIM_TABLES`/`SPRITE_ANIMS` (= format d'EXTRACTION M3, ABSENT du décomp ;
+          c'est LA voie overworld) + pose l'anim legacy `spriteAnimStates`.
+        - **OBSTACLE = ampleur** : `CreateSpriteAtOam` a **~110 appels DIRECTS** (30 fichiers UI/combat/field) — primitive
+          M3 que le décomp n'a pas (lui : `CreateSprite(template)→CreateSpriteAt` direct sur `gSprites[index]`). `ResetSprite`
+          pas porté. Le 1:1 INTÉGRAL (convertir les 110 sites en `struct SpriteTemplate`) = énorme, hors-budget.
+        - **PLAN PRAGMATIQUE (incrémental, à valider user)** : garder `CreateSpriteAtOam` = primitive interne (frontière
+          harness documentée, comme composeFrame). B1 : porter `CreateSpriteAt(index, template, x,y,subpri)` +
+          `CreateSprite`/`CreateSpriteAtEnd`/`CreateInvisibleSprite` 1:1 dans game/sprite.ts (2 voies gfx décomp), routant
+          via la primitive ; bridge voies inline+tileTag délèguent. B2 : résolveur `name→SpriteTemplate` (lit les catalogues)
+          → voie 3 normalisée puis CreateSpriteAt unique. B3 : retrait `CreateSpriteInline`/`CreateSpriteFromTemplate` du
+          harness. A/B par voie (combat send-out = inline+tileTag ; OW = par-nom). NE PAS big-banger (hottest path).
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
