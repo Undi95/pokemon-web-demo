@@ -561,6 +561,36 @@ export const sAnims_PlayerBicycle: ReadonlyArray<ReadonlyArray<unknown>> = [
   sAnim_PlayerBicycle_Fast, sAnim_PlayerBicycle_Slow, sAnim_PlayerBicycle_LookBack, sAnim_PlayerBicycle_LookForward,
 ];
 
+// 1:1 décomp battle_anim_rock.c:191 — gAncientPowerRockSpriteTemplate, EMPRUNTÉ par l'intro
+// (scène 3 Groudon → CreateGroudonRockSprites). Le côté combat le crée via l'interpréteur d'anims
+// (table de symboles), donc le VRAI objet n'existait nulle part de committé → l'intro ne pouvait
+// PAS le résoudre (CreateSpriteFromTemplate → -1 → zéro rocher). Re-matérialisé ici en objet 1:1
+// (hub léger déjà importé par l'intro ; évite de tirer le graphe battle-anim dans le boot intro).
+// OAM = data/battle_anim.h:30 gOamData_AffineOff_ObjNormal_32x32 (32x32, 4bpp). 6 anims = tailles
+// de rocher (offset 0/16/32/48/64/80). tileTag/paletteTag ANIM_TAG_ROCKS (gfx chargé par l'intro
+// via gBattleAnimPicTable). callback décomp = AnimRaiseSprite mais l'intro l'override (SpriteCB_GroudonRocks).
+const gOamData_AffineOff_ObjNormal_32x32 = {
+  shape: 0, size: 2, priority: 2, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0,
+} as const;
+const sAnim_Rock_Biggest  = [ ANIMCMD_FRAME(0,  1), ANIMCMD_END ];
+const sAnim_Rock_Bigger   = [ ANIMCMD_FRAME(16, 1), ANIMCMD_END ];
+const sAnim_Rock_Big      = [ ANIMCMD_FRAME(32, 1), ANIMCMD_END ];
+const sAnim_Rock_Small    = [ ANIMCMD_FRAME(48, 1), ANIMCMD_END ];
+const sAnim_Rock_Smaller  = [ ANIMCMD_FRAME(64, 1), ANIMCMD_END ];
+const sAnim_Rock_Smallest = [ ANIMCMD_FRAME(80, 1), ANIMCMD_END ];
+const sAnims_BasicRock = [ sAnim_Rock_Biggest, sAnim_Rock_Bigger, sAnim_Rock_Big, sAnim_Rock_Small, sAnim_Rock_Smaller, sAnim_Rock_Smallest ];
+export const gAncientPowerRockSpriteTemplate = {
+  // substrat M3 : le gfx/pal des rochers s'enregistre sous la clé STRING 'ANIM_TAG_ROCKS'
+  // (gBattleAnimPicTable[58].tag, decomp-globals:1361) → _tagToU16 mappe en u16 synthétique.
+  // Passer le numérique 10058 ne matcherait PAS (cf. piège 'TAG_VERSION'/version banner).
+  tileTag: 'ANIM_TAG_ROCKS', paletteTag: 'ANIM_TAG_ROCKS',
+  oam: gOamData_AffineOff_ObjNormal_32x32,
+  anims: sAnims_BasicRock,
+  images: null,
+  affineAnims: null,
+  callback: null,
+};
+
 /** 1:1 décomp src/intro_credits_graphics.c:1118 — crée Brendan + bicycle sprites,
  *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position. */
 export function CreateIntroBrendanSprite(x: number, y: number): number {
