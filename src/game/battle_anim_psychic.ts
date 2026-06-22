@@ -17,6 +17,8 @@
  * helpers décomp importés de ./battle_anim_mons.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 import {
   GetBattlerSpriteCoord,
@@ -851,7 +853,7 @@ function _AnimSkillSwapOrb(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }
@@ -931,7 +933,7 @@ function AnimTask_ImprisonOrbs_Step(task: _SsTask): void {
       rt?.SetGpuReg?.(0x52, (task.data[3] & 0xFF) | ((task.data[4] & 0xFF) << 8));
       if (++task.data[1] === 32) {
         for (let i = 8; i < 13; i++) {
-          if (task.data[i] >= 0) rt?.DestroySprite?.(task.data[i]);
+          if (task.data[i] >= 0) DestroySprite(getRuntime(), task.data[i]);
         }
         task.data[0]++;
       }

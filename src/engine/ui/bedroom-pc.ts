@@ -36,6 +36,7 @@
  * Fallback message en attendant le port.
  */
 
+import { DestroySprite } from '../../game/sprite';
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
@@ -1022,7 +1023,7 @@ function _itemStorageEraseItemIcon(): void {
   const rt = getRuntime() as unknown as {
     DestroySprite?: (spriteId: number) => void;
   } | null;
-  rt?.DestroySprite?.(sPCIconSpriteId);
+  DestroySprite(getRuntime(), sPCIconSpriteId);
   sPCIconSpriteId = -1;
 }
 

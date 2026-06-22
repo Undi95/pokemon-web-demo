@@ -13,6 +13,8 @@
  *     = avec le chantier anims de move (T4+, registry createsprite).
  */
 import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   LaunchBattleAnimation, isAnimScriptActive, tickAnimScript,
   setBattleAnimAttackerTarget,
@@ -145,7 +147,7 @@ function AnimTask_FrozenIceCube_Step4(task: _FicTask): void {
   task.data[1]++;
   const rt = _ficRt();
   if (task.data[1] === 37) {
-    rt.DestroySprite?.(task.data[15]);
+    DestroySprite(getRuntime(), task.data[15]);
   } else if (task.data[1] === 39) {
     rt.SetGpuReg?.(0x50, 0);
     rt.SetGpuReg?.(0x52, 0);

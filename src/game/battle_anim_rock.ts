@@ -8,6 +8,8 @@
  * AnimRockScatter(+Step :808/:823) — Rock Slide/Blast/Tomb/Smash.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   GetBattlerSpriteCoord, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
@@ -630,7 +632,7 @@ function _AnimRolloutParticle(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }

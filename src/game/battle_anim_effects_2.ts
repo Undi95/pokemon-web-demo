@@ -38,6 +38,8 @@
  *     (battle_anim_mons.c:2035) — identique tant que rien ne la réécrit.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   GetBattlerSpriteCoord,
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
@@ -1671,7 +1673,7 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
       const sp2 = rtp?.gSprites?.[sid];
       if (sp2 === undefined) continue;
       if ((sp2 as { callback?: unknown }).callback === _AnimSpeedDust) {
-        rtp?.DestroySprite?.(sid);
+        DestroySprite(getRuntime(), sid);
         if (--task.data[13] <= 0) break;
       }
     }
@@ -1744,7 +1746,7 @@ function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }
@@ -2390,7 +2392,7 @@ function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }

@@ -9,6 +9,8 @@
  * généré (battle-anim-sprites.ts) via le bridge — seul le callback est manuel.
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   InitAnimLinearTranslation, AnimTranslateLinear,
@@ -336,7 +338,7 @@ function _AnimThunderWave_Step_Second(sprite: _VSprite): void {
   }
   if (++sprite.data[1] === 51) {
     const id = sprite.spriteId ?? -1;
-    if (id >= 0) _rt()?.DestroySprite?.(id);
+    if (id >= 0) DestroySprite(getRuntime(), id);
   }
 }
 
@@ -580,7 +582,7 @@ function AnimElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): 
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }
@@ -671,7 +673,7 @@ function AnimVoltTackleBolt(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }
@@ -716,7 +718,7 @@ function _swDestroySelf(sprite: unknown): void {
   for (let sid = 0; sid < MAX_SPRITES; sid++) {
     const sp = rt?.gSprites?.[sid];
     if (sp === undefined) continue;
-    if (sp === sprite) { rt?.DestroySprite?.(sid); break; }
+    if (sp === sprite) { DestroySprite(getRuntime(), sid); break; }
   }
 }
 

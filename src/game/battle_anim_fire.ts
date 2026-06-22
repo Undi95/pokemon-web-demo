@@ -19,6 +19,8 @@
  * Dettes : AnimUnusedSmallEmber, AnimSunlight, AnimEmberFlare/AnimBurnFlame,
  * AnimTask_EruptionLaunchRocks(+rocks), AnimTask_MoveHeatWaveTargets.
  */
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
@@ -758,7 +760,7 @@ function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }

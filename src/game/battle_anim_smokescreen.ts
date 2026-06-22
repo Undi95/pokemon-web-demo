@@ -130,7 +130,7 @@ function _SmokescreenImpactCloud(sprite: _SmSprite): void {
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const sp = rt.gSprites?.[sid];
         if (sp === undefined) continue;
-        if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+        if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
       }
       return;
     }
@@ -149,7 +149,7 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const sp = rt.gSprites?.[sid];
         if (sp === undefined) continue;
-        if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+        if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
       }
     } else {
       sprite.callback = (() => { /* SpriteCallbackDummy */ }) as never;
@@ -159,6 +159,8 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
 
 // ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import { registerAnimTasks } from '../engine/battle/battle-anim-registry';
 import { MAX_SPRITES } from '../engine/system/decomp-runtime';
 

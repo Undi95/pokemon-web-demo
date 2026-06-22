@@ -7,6 +7,8 @@
  * = net-effect vFlip pour la mâchoire basse (animation>=4).
  * GFX : sharp_teeth.png 64x64 byte-exact.
  */
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
@@ -357,7 +359,7 @@ function _MetallicShine_Step(task: _MshTask): void {
         const slot = _mshAtkPalSlot();
         if (slot >= 0) _dSetGrayPal(16 + slot, true);
       }
-      if (task.data[0] >= 0) rt.DestroySprite?.(task.data[0]);
+      if (task.data[0] >= 0) DestroySprite(getRuntime(), task.data[0]);
       const animBg = _mshBgData();
       _mshClearBg(animBg.bgId);
     } else if (task.data[11] === 3) {

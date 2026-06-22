@@ -1916,7 +1916,7 @@ function _shinyStarDone(sprite: _ShinySprite): void {
     const sp = rt.gSprites?.[id];
     if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) {
-      rt.DestroySprite?.(id);
+      DestroySprite(getRuntime(), id);
       // pas de gSprites.delete (slot garde jusqu'a reallocation, 1:1)
       break;
     }

@@ -31,6 +31,8 @@
  *   - IsContest() = false (pas de concours dans ce runtime).
  */
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { DestroySprite } from './sprite';
+import { getRuntime } from '../engine/system/decomp-globals';
 import {
   GetBattlerSpriteCoord,
   InitSpritePosToAnimAttacker,
@@ -1085,7 +1087,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
     // si l'impact a spawne, LE compte est transfere (pas de decrement ici, 1:1)
   } else {
@@ -1094,7 +1096,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }
@@ -1107,7 +1109,7 @@ function _AnimHailContinue(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
     }
   }
 }

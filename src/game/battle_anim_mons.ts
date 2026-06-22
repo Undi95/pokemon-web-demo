@@ -403,7 +403,7 @@ export function GetSubstituteSpriteDefault_Y(battler: number): number {
 
 import { ObjAffineSet } from '../engine/system/decomp-bridge';
 import { getRuntime } from '../engine/system/decomp-globals';
-import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec } from './sprite';
+import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, DestroySprite } from './sprite';
 
 type RotScaleSprite = {
   oamIndex: number; matrixNum?: number; affineMode?: number;
@@ -598,7 +598,7 @@ export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void 
       if ((sp as unknown) === spriteOrId) { id = sid as number; break; }
     }
   }
-  if (id >= 0) (rt as unknown as { DestroySprite?: (i: number) => void }).DestroySprite?.(id);
+  if (id >= 0) DestroySprite(rt, id);
 }
 
 // ─── VAGUE F1 : AnimTask_BlendMonInAndOut (battle_anim_mons.c.c, 14 usages) ───────────────
