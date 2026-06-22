@@ -67,7 +67,7 @@ import {
 } from '../engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
-import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl } from './sprite';
+import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl, setSpriteAnims } from './sprite';
 import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   SCANLINE_EFFECT_DMACNT_16BIT,
@@ -2857,7 +2857,11 @@ function _StartSpriteAnim(sprite: BattleSprite, animNum: number): void {
   const rt = getRuntime();
   const s = sprite as unknown as { spriteId?: number; tileBase?: number; monFrontAnimTable?: string };
   if (rt && s.monFrontAnimTable && s.spriteId !== undefined) {
-    rt.spriteAnimStatesRegister(s.spriteId, s.monFrontAnimTable, animNum, s.tileBase ?? 0);
+    // CONVERGENCE 1:1 : sprite.anims (inline) au lieu de spriteAnimStates (legacy). Modèle sheet :
+    // le front-pic 2-frames est chargé contigu à tileBase (cf. battle_controller_opponent twoFrames)
+    // → oam.tileId = tileBase + f*64, identique au legacy. (Déviation pré-existante : usingSheet sur
+    // un sprite CreateSpriteInline ; le vrai 1:1 décomp = frame-images dynamiques, rework gfx à part.)
+    setSpriteAnims(rt, s.spriteId, s.monFrontAnimTable, animNum, s.tileBase ?? 0);
   }
 }
 
@@ -2905,7 +2909,8 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
   // 1:1 :6798-6799 : HasTwoFramesAnimation → StartSpriteAnim(sprite, 1).
   const s = sprite as unknown as { spriteId?: number; tileBase?: number; monFrontAnimTable?: string; callback: unknown };
   if (!noCry && _HasTwoFramesAnimation(species) && s.monFrontAnimTable && s.spriteId !== undefined) {
-    rt.spriteAnimStatesRegister(s.spriteId, s.monFrontAnimTable, 1, s.tileBase ?? 0);
+    // CONVERGENCE 1:1 : sprite.anims (inline) — cf. _StartSpriteAnim. anim 1 = séquence 2-frames.
+    setSpriteAnims(rt, s.spriteId, s.monFrontAnimTable, 1, s.tileBase ?? 0);
   }
   // 1:1 :6809-6821 : l'anim de MOUVEMENT (sMonFrontAnimIdsTable + delay table
   // -> Task_AnimateAfterDelay -> LaunchAnimationTaskForFrontSprite). Data =
