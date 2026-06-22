@@ -229,7 +229,10 @@ import {
   OBJ_EVENT_GFX_MAY_NORMAL, OBJ_EVENT_GFX_MAY_MACH_BIKE, OBJ_EVENT_GFX_MAY_ACRO_BIKE,
   OBJ_EVENT_GFX_MAY_SURFING, OBJ_EVENT_GFX_MAY_UNDERWATER,
 } from '../include/constants/event_objects';
-import { NUM_ACRO_BIKE_COLLISIONS } from './engine/decomp-data/src/field_player_avatar-data';
+// 1:1 décomp field_player_avatar.c — #define NUM_ACRO_BIKE_COLLISIONS. (Le reste
+// de decomp-data/src/field_player_avatar-data.ts = scaffold auto-gen importé par
+// personne — supprimé.)
+const NUM_ACRO_BIKE_COLLISIONS = 5;
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
