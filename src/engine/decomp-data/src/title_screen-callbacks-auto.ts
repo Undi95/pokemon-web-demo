@@ -152,6 +152,37 @@ export const SpriteCB_PressStartCopyrightBanner: SpriteCallback = (sprite, rt) =
       }
 };
 
+// ─── PHASE E2.B — SpriteTemplate press-start/copyright 1:1 (title_screen.c:199-295) ──
+// 5 segments 32x8 chacun pour « PRESS START » (frames 0-4) + 5 pour le copyright (5-9) ;
+// chaque segment = un sprite avec ce template, son frame choisi par StartSpriteAnim(id, n).
+// 4bpp (paletteMode 0) ; palette enregistrée par tag (LoadSpritePalette) → paletteTag résout
+// le vrai slot. shape 1/size 1 = SPRITE_SHAPE/SIZE(32x8).
+const sOamData_CopyrightBanner = {
+  shape: 1, size: 1, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0,
+};
+const sAnim_PressStart_0 = [ ANIMCMD_FRAME(1, 4), ANIMCMD_END ];
+const sAnim_PressStart_1 = [ ANIMCMD_FRAME(5, 4), ANIMCMD_END ];
+const sAnim_PressStart_2 = [ ANIMCMD_FRAME(9, 4), ANIMCMD_END ];
+const sAnim_PressStart_3 = [ ANIMCMD_FRAME(13, 4), ANIMCMD_END ];
+const sAnim_PressStart_4 = [ ANIMCMD_FRAME(17, 4), ANIMCMD_END ];
+const sAnim_Copyright_0 = [ ANIMCMD_FRAME(21, 4), ANIMCMD_END ];
+const sAnim_Copyright_1 = [ ANIMCMD_FRAME(25, 4), ANIMCMD_END ];
+const sAnim_Copyright_2 = [ ANIMCMD_FRAME(29, 4), ANIMCMD_END ];
+const sAnim_Copyright_3 = [ ANIMCMD_FRAME(33, 4), ANIMCMD_END ];
+const sAnim_Copyright_4 = [ ANIMCMD_FRAME(37, 4), ANIMCMD_END ];
+const sStartCopyrightBannerAnimTable = [
+  sAnim_PressStart_0, sAnim_PressStart_1, sAnim_PressStart_2, sAnim_PressStart_3, sAnim_PressStart_4,
+  sAnim_Copyright_0, sAnim_Copyright_1, sAnim_Copyright_2, sAnim_Copyright_3, sAnim_Copyright_4,
+];
+const sStartCopyrightBannerSpriteTemplate = {
+  tileTag: 'TAG_PRESS_START_COPYRIGHT', paletteTag: 'TAG_PRESS_START_COPYRIGHT',
+  oam: sOamData_CopyrightBanner,
+  anims: sStartCopyrightBannerAnimTable,
+  images: null,
+  affineAnims: null,
+  callback: SpriteCB_PressStartCopyrightBanner,
+};
+
 /** Source: title_screen.c → SpriteCB_PokemonLogoShine */
 export const SpriteCB_PokemonLogoShine: SpriteCallback = (sprite, rt) => {
   if (sprite.x < DISPLAY_WIDTH + 32)
@@ -525,7 +556,7 @@ export function CreatePressStartBanner(rt: DecompRuntime, x: number, y: number):
       x -= 64;
       for (i = 0; i < NUM_PRESS_START_FRAMES; i++, x += 32)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sStartCopyrightBannerSpriteTemplate',  x, y, 0);
+          spriteId = CreateSprite(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
           rt.StartSpriteAnim(spriteId, i);
           _gs(rt, spriteId).data[0] = true;
       }
@@ -542,7 +573,7 @@ export function CreateCopyrightBanner(rt: DecompRuntime, x: number, y: number): 
       x -= 64;
       for (i = 0; i < NUM_COPYRIGHT_FRAMES; i++, x += 32)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sStartCopyrightBannerSpriteTemplate',  x, y, 0);
+          spriteId = CreateSprite(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
           rt.StartSpriteAnim(spriteId, i + NUM_PRESS_START_FRAMES);
       }
   return -1;

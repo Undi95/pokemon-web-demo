@@ -184,6 +184,7 @@ function substituteBalanced(s, prefix, replacer) {
 const CONVERTED_TEMPLATES = new Set([
   'sVersionBannerLeftSpriteTemplate',
   'sVersionBannerRightSpriteTemplate',
+  'sStartCopyrightBannerSpriteTemplate',
 ]);
 
 /**
