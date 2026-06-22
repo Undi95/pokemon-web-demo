@@ -46,6 +46,7 @@ import {
   GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
+  GetCameraOffsetWithPan as _GetCameraOffsetWithPan,
 } from '../../src/field_camera';
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/script';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
@@ -1485,6 +1486,119 @@ function _cam(): Record<string, unknown> {
   };
 }
 
+// ─── Warp coord-offset tracer (ring buffer par-frame) ───────────────────────
+// Capte le transitoire "spawn 4-5 cases trop haut puis recalé" au warp.
+// Échantillonne CHAQUE frame logique (hook __warpFrameRecorder appelé par
+// runOneFrame) : gSpriteCoordOffset, top-left caméra, et la position ÉCRAN du
+// sprite joueur (= x + x2 + coordOffset si coordOffsetEnabled). Always-on,
+// coût négligeable (push d'objet plat + trim). Dump via scope.coordTrace().
+//
+// Rappel 1:1 (field_camera.c:462) : en régime stable gSpriteCoordOffset.y = -40
+// (= 0 - sVerticalCameraPan(32) - 8) → NORMAL, pas un bug. Le glitch = un SAUT
+// transitoire de la position écran joueur (pSY) au moment du warp.
+
+interface CoordSample {
+  f: number;            // gIntroFrameCounter
+  map: string;
+  offX: number; offY: number;       // gSpriteCoordOffset (live module global)
+  camX: number; camY: number;       // top-left LOGIQUE
+  bgH: number; bgV: number;         // BG scroll réel (REG_BGxHOFS/VOFS = GetCameraOffsetWithPan)
+  pSX: number | null; pSY: number | null;  // player sprite screen pos (corner OAM)
+  pWX: number | null; pWY: number | null;  // player sprite world (s.x/s.y)
+  plx: number | null; ply: number | null;  // player LOGIQUE (gSaveBlock1Ptr.pos)
+  fade: boolean;
+}
+const _coordTrace: CoordSample[] = [];
+const _COORD_TRACE_MAX = 300;
+
+interface _SpriteCoord {
+  x?: number; y?: number; x2?: number; y2?: number; coordOffsetEnabled?: boolean;
+}
+
+/** Posé sur globalThis.__warpFrameRecorder, appelé 1×/frame logique par
+ *  runOneFrame (decomp-runtime.ts). Cheap no-op tant que l'OW n'est pas booté. */
+function _recordCoordFrame(): void {
+  try {
+    const rt = _rtSafe();
+    if (!rt) return;
+    const pa = _g<{ spriteId?: number }>('gPlayerAvatar');
+    const sid = pa?.spriteId ?? -1;
+    const sprites = (rt as unknown as { gSprites?: Array<_SpriteCoord | undefined> }).gSprites;
+    const s = (sprites && sid >= 0) ? sprites[sid] : undefined;
+    const tl = _GetCameraTopLeftCoords();
+    let pSX: number | null = null, pSY: number | null = null;
+    let pWX: number | null = null, pWY: number | null = null;
+    if (s && typeof s.x === 'number' && typeof s.y === 'number') {
+      const co = s.coordOffsetEnabled ? 1 : 0;
+      pWX = s.x; pWY = s.y;
+      pSX = s.x + (s.x2 ?? 0) + co * _gSpriteCoordOffset.x;
+      pSY = s.y + (s.y2 ?? 0) + co * _gSpriteCoordOffset.y;
+    }
+    const pos = (_sb1 as { pos?: { x?: number; y?: number } }).pos;
+    const pf = _g<{ active?: boolean }>('gPaletteFade')
+      ?? (rt as unknown as { gPaletteFade?: { active?: boolean } }).gPaletteFade;
+    const bg = _GetCameraOffsetWithPan();  // = BG scroll réel (HOFS/VOFS écrit chaque frame)
+    const sample: CoordSample = {
+      f: (rt as unknown as { gIntroFrameCounter?: number }).gIntroFrameCounter ?? 0,
+      map: _g<{ id?: string }>('gMapHeader')?.id ?? '?',
+      offX: _gSpriteCoordOffset.x, offY: _gSpriteCoordOffset.y,
+      camX: tl.x, camY: tl.y, bgH: bg.x, bgV: bg.y, pSX, pSY, pWX, pWY,
+      plx: pos?.x ?? null, ply: pos?.y ?? null, fade: !!pf?.active,
+    };
+    // Détecte un SAUT/GLISSE entre 2 frames consécutives (même map) → latch HUD.
+    // Deux signaux : (1) position écran joueur (pSY/pSX > 24px) ; (2) scroll BG
+    // (bgV/bgH > 4px) = le vrai symptôme "warp trop haut puis recalé" (le BG
+    // glisse alors que le sprite/caméra-logique restent constants).
+    const prev = _coordTrace[_coordTrace.length - 1];
+    if (prev && prev.map === sample.map) {
+      const dPY = (prev.pSY != null && pSY != null) ? pSY - prev.pSY : 0;
+      const dPX = (prev.pSX != null && pSX != null) ? pSX - prev.pSX : 0;
+      const dBV = sample.bgV - prev.bgV;
+      const dBH = sample.bgH - prev.bgH;
+      if (Math.abs(dPY) > 24 || Math.abs(dPX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4) {
+        (globalThis as Record<string, unknown>).__warpGlitch = {
+          f: sample.f, dPY, dPX, dBV, dBH, bgV: sample.bgV, offY: sample.offY,
+        };
+      }
+    }
+    _coordTrace.push(sample);
+    if (_coordTrace.length > _COORD_TRACE_MAX) _coordTrace.shift();
+  } catch { /* lecture best-effort, jamais throw dans le tick */ }
+}
+
+/** scope.coordTrace(n) — dump des n dernières frames + liste des SAUTS détectés
+ *  (Δ position écran joueur > 24px = le transitoire warp).
+ *  scope.coordTrace.clear() — vide le ring + le latch __warpGlitch. */
+function _coordTrace_dump(n = 80): Record<string, unknown> {
+  const tail = _coordTrace.slice(-Math.max(1, n));
+  const jumps: Array<Record<string, unknown>> = [];
+  for (let i = 1; i < tail.length; i++) {
+    const a = tail[i - 1], b = tail[i];
+    const dY = (a.pSY != null && b.pSY != null) ? b.pSY - a.pSY : 0;
+    const dX = (a.pSX != null && b.pSX != null) ? b.pSX - a.pSX : 0;
+    const dBV = b.bgV - a.bgV;
+    const dBH = b.bgH - a.bgH;
+    if (Math.abs(dY) > 24 || Math.abs(dX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4 || a.map !== b.map) {
+      jumps.push({
+        f: b.f, dX, dY, dBV, dBH, map: a.map === b.map ? b.map : `${a.map}→${b.map}`,
+        bgV: b.bgV, offY: b.offY, camY: b.camY, plY: b.ply, pSY: b.pSY, fade: b.fade,
+      });
+    }
+  }
+  return {
+    count: _coordTrace.length,
+    latch: (globalThis as Record<string, unknown>).__warpGlitch ?? null,
+    jumps,
+    tail,
+  };
+}
+const _coordTrace_clear = (): { cleared: number } => {
+  const k = _coordTrace.length;
+  _coordTrace.length = 0;
+  delete (globalThis as Record<string, unknown>).__warpGlitch;
+  return { cleared: k };
+};
+
 // ─── Action : exec opcode isolé sans setup script complet ────────────────────
 // Ex : scope.action('msgbox', 'PlayersHouse_2F_EventScript_PC')
 //   → setup un script bytecode avec 1 seul opcode `msgbox PlayersHouse_2F_EventScript_PC`
@@ -1930,6 +2044,8 @@ function _buildScopeApi(): Record<string, unknown> {
     action: _action,
     // Camera
     cam: _cam,
+    // Warp coord-offset tracer (capte le transitoire "spawn trop haut au warp")
+    coordTrace: Object.assign(_coordTrace_dump, { clear: _coordTrace_clear }),
     // Recorder
     recorder: _recorder,
     // Diff
@@ -1957,6 +2073,8 @@ export function installScopeDevtools(): void {
   // Initialise le ring buffer opcodes (= scope.scriptHistory) si pas déjà fait.
   const g = globalThis as Record<string, unknown>;
   if (!g.__scriptOpcodeLog) g.__scriptOpcodeLog = [];
+  // Hook per-frame du tracer warp coord-offset (appelé par runOneFrame).
+  g.__warpFrameRecorder = _recordCoordFrame;
   (window as unknown as { scope: Record<string, unknown> }).scope = _buildScopeApi();
   console.log('[scope] devtools installed — type `scope.help()` for usage, `scope.helpAll()` for the full surface');
 }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getRuntime } from '../runtime/decomp-globals';
+import { gSpriteCoordOffset, GetCameraTopLeftCoords, GetCameraOffsetWithPan } from '../../src/field_camera';
 
 /**
  * Overlay debug affiché sur TOUTES les scènes.
@@ -170,8 +171,29 @@ export class DebugOverlayScene extends Phaser.Scene {
       const frozen = rt.paused ? ' [FROZEN]' : '';
       const noclip = (globalThis as unknown as { __devNoclip?: boolean }).__devNoclip
         ? ' [NOCLIP]' : '';
+      // ── Bloc warp/caméra : offset sprite + top-left caméra + position écran Y
+      //    du sprite joueur + latch glitch (cf. scope.coordTrace).
+      //    Rappel 1:1 : off.y = -40 est NORMAL en régime stable (sVerticalCameraPan
+      //    = 32). Le glitch warp = un SAUT transitoire de pY.
+      let camLine = '';
+      try {
+        const off = gSpriteCoordOffset;
+        const tl = GetCameraTopLeftCoords();
+        const pa = (globalThis as unknown as { gPlayerAvatar?: { spriteId?: number } }).gPlayerAvatar;
+        const s = (pa && typeof pa.spriteId === 'number') ? rt.gSprites[pa.spriteId] : undefined;
+        const ss = s as unknown as { y?: number; y2?: number; coordOffsetEnabled?: boolean } | undefined;
+        const pY = (ss && typeof ss.y === 'number')
+          ? ss.y + (ss.y2 ?? 0) + (ss.coordOffsetEnabled ? off.y : 0)
+          : null;
+        const bg = GetCameraOffsetWithPan();
+        camLine = `\noff:(${off.x},${off.y}) cam:(${tl.x},${tl.y}) bgV:${bg.y} pY:${pY ?? '?'}`;
+      } catch { /* OW pas booté */ }
+      const glitch = (globalThis as unknown as { __warpGlitch?: { f: number; dBV?: number; dPY?: number } }).__warpGlitch;
+      const glitchLine = glitch
+        ? ` !GLITCH@F${glitch.f} dBV${(glitch.dBV ?? 0) >= 0 ? '+' : ''}${glitch.dBV ?? 0} dPY${(glitch.dPY ?? 0) >= 0 ? '+' : ''}${glitch.dPY ?? 0}`
+        : '';
       this.statusText.setText(
-        `frame:${rt.gIntroFrameCounter} tasks:${rt.gTasks.size} sprites:${rt.gSprites.filter(Boolean).length} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}`,
+        `frame:${rt.gIntroFrameCounter} tasks:${rt.gTasks.size} sprites:${rt.gSprites.filter(Boolean).length} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}${camLine}${glitchLine}`,
       );
     } catch {
       this.statusText.setText(`fps:${Math.round(this.game.loop.actualFps)}`);

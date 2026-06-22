@@ -2168,6 +2168,12 @@ export class DecompRuntime {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const enginePauseCb = (globalThis as any).__enginePauseCondition;
     if (typeof enginePauseCb === 'function') enginePauseCb();
+    // Devtools : tracer warp coord-offset (= scope.coordTrace). Échantillonne
+    // gSpriteCoordOffset + position écran joueur chaque frame logique pour
+    // capter le transitoire "spawn trop haut au warp". Cheap no-op si non-armé.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const warpRec = (globalThis as any).__warpFrameRecorder;
+    if (typeof warpRec === 'function') warpRec();
   }
 
   /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
