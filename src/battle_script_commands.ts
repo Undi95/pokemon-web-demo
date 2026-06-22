@@ -135,7 +135,7 @@ import {
 } from './engine/save/save-block-state';
 import {
   Random,
-} from './engine/system/random';
+} from './random';
 import {
   AddMoney as _AddMoneyFull,
 } from './money';

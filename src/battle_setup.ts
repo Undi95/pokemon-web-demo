@@ -644,7 +644,7 @@ function RunScriptImmediatelyCompat(label: string): void {
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { MAX_REMATCH_ENTRIES } from './engine/save/save-blocks';
-import { Random } from './engine/system/random';
+import { Random } from './random';
 import { ENUM_REMATCH_0 } from './engine/decomp-data/include/constants/rematches-data';
 import { TRAINER_REGISTERED_FLAGS_START } from './engine/decomp-data/include/constants/flags-data';
 import { MAP_CONSTANTS, MAP_GROUP, MAP_NUM } from './engine/decomp-data/include/constants/map_groups-data';

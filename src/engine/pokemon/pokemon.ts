@@ -13,7 +13,8 @@
 import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
 } from '../../../harness/runtime/data-tables';
-import { Random, Random32 } from '../system/random';
+import { Random } from '../../random';
+import { Random32 } from '../../../include/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
 import { IsShinyOtIdPersonality } from '../../../include/pokemon';

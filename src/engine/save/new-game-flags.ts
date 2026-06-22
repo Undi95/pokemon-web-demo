@@ -19,7 +19,8 @@
  */
 
 import { FlagSet } from '../script/script-vars';
-import { Random, GetGeneratedTrainerIdLower } from '../system/random';
+import { Random } from '../../random';
+import { GetGeneratedTrainerIdLower } from '../../main';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { SetMoney } from '../../money';
 import { ClearBerryTrees } from '../../berry';

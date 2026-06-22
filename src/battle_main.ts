@@ -50,7 +50,7 @@ import {
   AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
 } from '../harness/runtime/decomp-globals';
-import { Random } from './engine/system/random';
+import { Random } from './random';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 // Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
 import * as _saveBlockNs from './engine/save/save-block-state';

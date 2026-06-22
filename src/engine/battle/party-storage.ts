@@ -28,7 +28,7 @@ import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/r
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
-import { Random } from '../system/random';
+import { Random } from '../../random';
 import { getSpeciesInfo, gBattleMoves } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).

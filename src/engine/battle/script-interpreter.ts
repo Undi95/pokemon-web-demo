@@ -47,7 +47,7 @@
  *     était PÉRIMÉ et trompeur — corrigé.
  */
 
-import { Random } from '../system/random';
+import { Random } from '../../random';
 import { tickBattleControllers } from './battle-controllers';
 import {
   setCurrentActionFuncId, setMoveResultFlags, setActiveBattler,

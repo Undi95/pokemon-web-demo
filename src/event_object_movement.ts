@@ -88,7 +88,7 @@ import {
 } from './engine/field/direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from './engine/field/field-globals';
 import { FlagGet, VarGet } from './engine/script/script-vars';
-import { Random } from './engine/system/random';
+import { Random } from './random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
 import { reverseDecompConstant as _reverseDecompConstant } from '../harness/runtime/decomp-constants';
 // 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`

@@ -215,7 +215,7 @@ import {
   stepBattleScriptCommand, gBattleScriptContext,
 } from './engine/battle/script-interpreter';
 import type { BattleScriptContext } from './engine/battle/script-interpreter';
-import { Random } from './engine/system/random';
+import { Random } from './random';
 // Imports pour CheckMoveLimitations/AreAllMovesUnusable (battle_util.c:1069,
 // ex-engine/battle/move-limitations.ts, absorbé au miroir 2026-06-13).
 import { gLastMoves } from './engine/battle/state';

@@ -292,7 +292,7 @@ import { CHAR_SPACER_STR } from '../../src/engine/ui/gba-text-system';
 // sont utilisés localement avec des alias `_xxx` pour éviter la collision avec
 // les re-exports `export { Xxx } from '../../src/engine/xxx'` situés plus bas dans ce fichier.
 
-import { Random as _Random } from '../../src/engine/system/random';
+import { Random as _Random } from '../../src/random';
 import { getObjectEventGraphicsInfo as _getOEGI } from '../../src/engine/field/object-event-graphics';
 import {
   getItemNameFr as _getItemNameFr,
@@ -883,7 +883,9 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 }
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
-export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from '../../src/engine/system/random';
+export { Random, SeedRng } from '../../src/random';
+export { SeedRngAndSetTrainerId } from '../../src/main';
+export { Random32 } from '../../include/random';
 // Note : `_Random` alias local hoisted en tête de fichier (section "Local-use imports").
 
 // ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────

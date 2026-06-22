@@ -58,7 +58,8 @@ if (typeof window !== 'undefined') {
 import { LoadGameSave } from '../src/engine/save/save-system';
 import { SetSaveFileStatus } from '../src/engine/ui/gba-menu-system';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
-import { SeedRngAndSetTrainerId } from '../src/engine/system/random';
+import { SeedRngAndSetTrainerId } from '../src/main';
+import './devtools/rng-debug'; // enregistre window.rng au boot
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
 import './devtools/dev-audit-tools';

@@ -106,7 +106,8 @@ import { gAiThinkingStruct, gBattleHistory, setBattlerAI } from '../../battle_ai
 import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from '../../battle_ai_switch_items';
 import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
 import { gTypeEffectiveness as _gTypeEff, TYPE_FORESIGHT as _TYPE_FORESIGHT, TYPE_ENDTABLE as _TYPE_ENDTABLE } from './data/type-effectiveness';
-import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../system/random';
+import { SeedRng } from '../../random';
+import { _debugResetRng, _debugGetRngValue, _debugGetRandCount } from '../../../harness/devtools/rng-debug';
 import { getSpeciesInfo as _gdGetSpeciesInfo } from '../data/game-data';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 

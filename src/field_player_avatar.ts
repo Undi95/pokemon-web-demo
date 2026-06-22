@@ -151,7 +151,7 @@ import {
   AddTextPrinterParameterized, AddTextPrinterParameterized2, RunTextPrinters, IsTextPrinterActive,
 } from './engine/ui/gba-text-system';
 import { getString } from './engine/ui/gba-strings';
-import { Random as _RandomFishing } from './engine/system/random';
+import { Random as _RandomFishing } from './random';
 import {
   FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
 } from './engine/battle/battle-windows';

@@ -46,7 +46,7 @@ import { gLocalTime, RtcCalcLocalTime } from '../../rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
 import { ShowFieldMessage } from '../../field_message_box';
 import { gStringVar4 } from '../ui/gba-text-system';
-import { Random } from '../system/random';
+import { Random } from '../../random';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import {
   CheckPartyPokerus, gPlayerParty, CalculatePlayerPartyCount, CalculatePPWithBonus,

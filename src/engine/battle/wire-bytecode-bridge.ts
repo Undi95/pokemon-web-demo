@@ -53,7 +53,7 @@ import {
   setBattleTypeFlags,
   setTrainerBattleOpponentA,
 } from './state';
-import { Random } from '../system/random';
+import { Random } from '../../random';
 import {
   BattleAI_SetupAIData,
   BattleAI_ChooseMoveOrAction,

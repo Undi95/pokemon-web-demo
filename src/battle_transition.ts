@@ -31,7 +31,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
 import { loadIndexedPng } from '../harness/gba/png-loader';
-import { Random } from './engine/system/random';
+import { Random } from './random';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,

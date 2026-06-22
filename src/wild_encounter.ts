@@ -43,7 +43,7 @@
  *   - LayoutId checks LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS etc.
  */
 
-import { Random } from './engine/system/random';
+import { Random } from './random';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V

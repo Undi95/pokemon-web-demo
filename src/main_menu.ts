@@ -649,7 +649,7 @@ export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
   if (!Number.isInteger(validIdx) || validIdx < 0 || validIdx >= NUM_PRESET_NAMES) {
     // Fallback : Random() % 20 (= 1:1 décomp main_menu.c:1604).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    void import('./engine/system/random').then(({ Random }) => {
+    void import('./random').then(({ Random }) => {
       validIdx = Random() % NUM_PRESET_NAMES;
       _applyPresetName(validIdx);
     });
