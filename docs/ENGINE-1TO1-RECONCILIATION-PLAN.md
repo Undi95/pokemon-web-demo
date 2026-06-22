@@ -153,6 +153,19 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
             sheet valide → `oam.tileId = tileBase + f*64` identique au legacy. A/B startWild : front-sprite rendu + anim
             2-frames ACTIVE (animCmdIndex cycle). Déviation pré-existante (usingSheet sur sprite CreateSpriteInline ; le vrai
             1:1 décomp = frame-images dynamiques `RequestSpriteFrameImageCopy`) = rework gfx NOTÉ pour plus tard, hors-shim.
+        - ✅ **B3-inline (`c4c6471a`) : méthode `CreateSpriteInline` RETIRÉE.** Pur pass-through (M3) → les ~31 call-sites
+          directs `rt.CreateSpriteInline?.()` (battle anims `images:[]`, clone mon, pokeball healthbox) appellent la free-fn
+          bridge `CreateSprite()` (voie inline). Garde `images.length>0` du bridge retiré (Array.isArray suffit). Piège
+          optional-call payé (garde pokeball `!rt?.CreateSpriteInline` → `!rt`). Script `migrate-createspriteinline.cjs`
+          (alias bridge par fichier). A/B : méthode `undefined`, send-out + OW rendus, tsc=0.
+        - ⏳ **B3-template (CreateSpriteFromTemplate)** : NON un pass-through (corps réel = résolveur nom→catalogue
+          `SPRITE_TEMPLATES`/`OAM_DATAS` + anim + callback + affine). **CONSTAT** : c'est le résolveur nom→template (=
+          l'équivalent runtime du pointeur de template C ; le décomp passe `&sSpriteTemplate_X`, nous passons le NOM). =
+          **frontière harness LÉGITIME, comme `CreateSpriteAtOam`** (M3 nécessaire, pas un shim à supprimer). Les ~45
+          call-sites directs `rt.CreateSpriteFromTemplate(name)` sont surtout AUTO-GÉNÉRÉS (intro/title `-callbacks-auto.ts`)
+          → les router via `CreateSprite(name)` exigerait une MAJ du GÉNÉRATEUR (+ ~12 sites manuels decomp-globals/starter).
+          Valeur modeste (le bridge `CreateSprite` reste l'entrée 1:1 ; la voie 3 = résolution de nom). DÉCISION : garder
+          CreateSpriteFromTemplate = frontière documentée ; routage des call-sites = optionnel (chantier générateur séparé).
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
