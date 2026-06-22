@@ -1803,6 +1803,62 @@ export function _resolveTileNum(raw: number | string | undefined): number {
   return typeof resolved === 'number' ? resolved : 0;
 }
 
+/** Convertit une table d'anim du catalogue M3 (`SPRITE_ANIM_TABLES`/`SPRITE_ANIMS` +
+ *  registres runtime `_extraAnimTables`/`_extraAnims`) en `AnimCmd[][]` (= le format inline
+ *  décomp `const union AnimCmd *const *anims`). MÊME donnée que la décomp (frames =
+ *  ANIMCMD_FRAME(imageValue, duration[, flips]), terminateur END/JUMP), re-matérialisée dans
+ *  la structure que consomment AnimateSprite/BeginAnim/ContinueAnim. Outil de CONVERGENCE :
+ *  migre les consommateurs `spriteAnimStates` (legacy state-machine) vers `sprite.anims` (1:1).
+ *  Le `imageValue` = offset tile (modèle sheet `oam.tileId = sheetTileStart + imageValue`,
+ *  identique au legacy `tileBase + tileNum`). Retourne null si la table est introuvable. */
+export function resolveAnimTableToAnimCmds(rt: DecompRuntime, animTableName: string): ReadonlyArray<ReadonlyArray<AnimCmd>> | null {
+  const animTable = rt._extraAnimTables.get(animTableName)
+    ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[animTableName];
+  if (!animTable) return null;
+  const out: AnimCmd[][] = [];
+  for (const animName of animTable.anims) {
+    const anim = rt._extraAnims.get(animName)
+      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
+    const cmds: AnimCmd[] = [];
+    if (anim) {
+      for (const f of anim.frames) {
+        cmds.push(ANIMCMD_FRAME(_resolveTileNum(f.tileNum), f.duration, { hFlip: f.hFlip, vFlip: f.vFlip }));
+      }
+      // Terminateur 1:1 : JUMP(jumpTo) reboucle (loop de marche), END tient la dernière frame.
+      if (anim.terminator === 'JUMP') cmds.push(ANIMCMD_JUMP(anim.jumpTo ?? 0));
+      else cmds.push(ANIMCMD_END);
+    } else {
+      cmds.push(ANIMCMD_END);  // anim absente → séquence vide terminée (skip safe, = legacy delete).
+    }
+    out.push(cmds);
+  }
+  return out;
+}
+
+/** 1:1 décomp `sprite->anims = template->anims` + `StartSpriteAnim` (sprite.c:544 + :1346).
+ *  CONVERGENCE : attache la table AnimCmd résolue sur le sprite + usingSheet/sheetTileStart
+ *  (modèle sheet) et démarre l'anim `animIdx`. Remplace `spriteAnimStatesRegister` (legacy) →
+ *  le sprite est désormais tické par `AnimateSprite` (chemin inline décomp = ce que fait déjà le
+ *  live overworld), plus par la state-machine `spriteAnimStates`. Retourne false si la table est
+ *  introuvable (le caller garde alors son chemin legacy). */
+export function setSpriteAnims(rt: DecompRuntime, spriteId: number, animTableName: string, animIdx: number, tileBase: number): boolean {
+  const anims = resolveAnimTableToAnimCmds(rt, animTableName);
+  if (!anims) return false;
+  const s = rt.gSprites[spriteId];
+  if (!s) return false;
+  s.anims = anims;
+  s.usingSheet = true;
+  s.sheetTileStart = tileBase;
+  // 1:1 StartSpriteAnim : animNum + animBeginning=true + animEnded=false (BeginAnim applique
+  // la frame 0 au prochain AnimateSprite). animCmdIndex/animDelayCounter remis à 0 (création).
+  s.animNum = animIdx;
+  s.animBeginning = true;
+  s.animEnded = false;
+  s.animCmdIndex = 0;
+  s.animDelayCounter = 0;
+  return true;
+}
+
 /** 1:1 décomp tick anims de `AnimateSprites` (sprite.c) : (1) sprites avec `.anims`
  *  configurées → AnimateSprite + drain ProcessSpriteCopyRequests ; (2) legacy
  *  SPRITE_ANIMS state machine (spriteAnimStates), gardée pour migration. Consulte

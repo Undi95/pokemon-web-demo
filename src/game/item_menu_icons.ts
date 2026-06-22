@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from '../engine/ui/item-icon';
 import { gBagMenu } from '../engine/bag/bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag, AllocOamMatrix, FreeOamMatrix } from './sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag, AllocOamMatrix, FreeOamMatrix, setSpriteAnims } from './sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
@@ -248,7 +248,10 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   }
   bm.spriteIds[ITEMMENUSPRITE_BAG] = spriteId;
   // Bind anim table (= sBagSpriteAnimTable) + affine anim table sur le sprite.
-  rt.spriteAnimStatesRegister(spriteId, BAG_ANIM_TABLE_NAME, 0, tileStart);
+  // CONVERGENCE 1:1 : `sprite->anims = sBagSpriteAnimTable` (chemin inline décomp via
+  // setSpriteAnims/AnimateSprite) au lieu de la state-machine legacy `spriteAnimStates`.
+  // Les StartSpriteAnim(spriteId, pocket+1) de la FSM de switch routent inline (sprite.anims posé).
+  setSpriteAnims(getRuntime(), spriteId, BAG_ANIM_TABLE_NAME, 0, tileStart);
   const spr = rt.gSprites?.[spriteId];
   if (spr) spr.affineAnimsTableName = BAG_AFFINE_TABLE_NAME;
   // Init affine = NORMAL (scale 1.0, no rotation).
