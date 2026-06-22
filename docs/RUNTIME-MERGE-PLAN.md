@@ -92,8 +92,18 @@ changer de scène.
   (resets 1:1 + bootOverworld) dans le MÊME runtime, sans scene.start. Gated ?unified (défaut
   GameScene intact). A/B : ?unified intro boote+rend dans TestOverworldScene ; ?nointro intact.
   ⏳ RESTE à valider : la transition intro→OW en playthrough complet (New Game→Birch→OW).
-- ⏭️ **Step 2.3 — Valider transition + flipper le défaut** : confirmer le playthrough ?unified
-  (New Game→Birch→naming→OW dans 1 scène), puis main.ts défaut → host unifié + retrait GameScene.
+- 🟡 **Step 2.3 — Transition validée en playthrough (gated)** : le joueur a fait New Game→Birch→
+  May→UNDI→camion→save→load dans UNE scène unifiée ✅ (mécanisme PROUVÉ). Bugs trouvés+corrigés :
+  - `resetObjAllocations`/`resetObjectEventAllocations` (NPC invisible/fenêtre corrompue au step-off, `cc…`→`f03435df`).
+  - clear MOSAIC/WIN/BLD registres (« ombre » BLDY sur le dialogue = blend résiduel intro, `f03435df`).
+  - **FPS : AUCUNE régression** — `game.loop.actualFps` (overlay) = ~45-47 PARTOUT (défaut+unifié,
+    intro+OW) ; logique = 60 Hz (frame counter ?nointro 62.9). Le ~47 = baseline rendu engine/preview.
+- ⏭️ **Step 2.4 — PORT overworld.c → overworld.ts 1:1 (option 2 user, GROS chantier)** : le cœur
+  du boot OW est éparpillé ad-hoc dans TestOverworldScene (MainCB2_Overworld = closure ;
+  ResetScreenForMapLoad/InitOverworldGraphicsRegisters = partiels dans loadAndInitMap = juste
+  DISPCNT save/restore → d'où les trous WIN/BLD/MOSAIC). Porter ces fns dans src/game/overworld.ts
+  en miroir 1:1 de la décomp → le boot unifié passe par la chaîne EXACTE, les clears ad-hoc de
+  `f03435df` deviennent superflus. PUIS flipper le défaut → host unifié + retrait GameScene/TestGba.
 - **Step 1 (ancien) — Extraire `enterOverworld(rt)`** : sortir tout le corps de
   `TestOverworldScene.bootOverworld` (+ les wires create() OW : SetFieldEffectRuntime,
   globals __phaserOverworldScene/gPlayerAvatar/gTotalCamera, wild_encounter, play_time) en
