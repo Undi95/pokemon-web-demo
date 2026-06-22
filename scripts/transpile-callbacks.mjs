@@ -171,6 +171,21 @@ function substituteBalanced(s, prefix, replacer) {
   return result;
 }
 
+// ─── PHASE E2.B : templates convertis en vrais SpriteTemplate objets 1:1 ─────
+// Registre (whitelist) des `struct SpriteTemplate` décomp déjà re-matérialisés en
+// VRAIS objets TS (OAM + AnimCmd[][] + template) dans le fichier reconcilié, et
+// consommés directement par `CreateSprite(rt, objet, …)` (= 1:1 décomp `CreateSprite`).
+// Pour CES noms, on N'ÉMET PLUS le resolver string-catalogue `rt.CreateSpriteFromTemplate`
+// (l'indirection M3, défaisable) → on émet l'appel objet. Les templates HORS whitelist
+// gardent le resolver (fallback) jusqu'à leur conversion, feature par feature (cf. plan
+// docs/ENGINE-1TO1-RECONCILIATION-PLAN.md, Phase E2.B). ⚠ Un template ici DOIT avoir ses
+// defs d'objet (sX­OamData/sX­AnimTable/sX­SpriteTemplate) + les imports `CreateSprite`/
+// `ANIMCMD_FRAME`/`ANIMCMD_END` présents dans le fichier reconcilié (cf. title_screen-callbacks-auto.ts).
+const CONVERTED_TEMPLATES = new Set([
+  'sVersionBannerLeftSpriteTemplate',
+  'sVersionBannerRightSpriteTemplate',
+]);
+
 /**
  * Apply substitution rules to a bodyC string.
  *
@@ -622,6 +637,15 @@ function transpileBody(bodyC, ctx) {
   // 13b. CreateSprite without "&" — only if name looks like template
   s = s.replace(/\bCreateSprite\s*\(\s*([sg][A-Z][A-Za-z0-9_]*)\s*,/g,
     `rt.CreateSpriteFromTemplate('$1', `);
+  // 13c. PHASE E2.B — pour les templates convertis (CONVERTED_TEMPLATES), réécrit le
+  //      resolver string-catalogue produit par 13/13b vers l'appel objet 1:1
+  //      `CreateSprite(rt, sX, …)` (= décomp `CreateSprite`, voie sheet-par-tag de
+  //      game/sprite.ts). Les args (x, y[, prio]) sont préservés tels quels.
+  for (const tplName of CONVERTED_TEMPLATES) {
+    s = s.replace(
+      new RegExp(`\\brt\\.CreateSpriteFromTemplate\\(\\s*'${tplName}'\\s*,`, 'g'),
+      `CreateSprite(rt, ${tplName},`);
+  }
 
   // 14. CreateTask(Task_X, prio) → rt.CreateTask((t) => Task_X(t, rt), prio)
   s = s.replace(/\bCreateTask\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,\s*([^)]+)\)/g,
