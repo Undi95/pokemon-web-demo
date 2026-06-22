@@ -185,6 +185,18 @@ const CONVERTED_TEMPLATES = new Set([
   'sVersionBannerLeftSpriteTemplate',
   'sVersionBannerRightSpriteTemplate',
   'sStartCopyrightBannerSpriteTemplate',
+  // intro.c (Phase E2.B) — 11 templates intro re-matérialisés dans intro-callbacks-auto.ts
+  'sSpriteTemplate_Sparkle',
+  'sSpriteTemplate_Volbeat',
+  'sSpriteTemplate_Torchic',
+  'sSpriteTemplate_Manectric',
+  'sSpriteTemplate_Lightning',
+  'sSpriteTemplate_Bubbles',
+  'sSpriteTemplate_WaterDrop',
+  'sSpriteTemplate_GameFreakLetter',
+  'sSpriteTemplate_GameFreakLogo',
+  'sSpriteTemplate_FlygonSilhouette',
+  'sSpriteTemplate_RayquazaOrb',
 ]);
 
 /**

@@ -21,7 +21,7 @@ import {
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../../system/decomp-helpers';
-import { ResetSpriteData, DestroySprite, CreateSprite } from '../../../game/sprite';
+import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../../../game/sprite';
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
@@ -1034,7 +1034,7 @@ export const Task_CreateSparkles: TaskCallback = (task, rt) => {
       {
       case 0:
           const _sparkleIdx = data[4] % sSparkleCoords.length;
-          rt.CreateSpriteFromTemplate('sSpriteTemplate_Sparkle',  sSparkleCoords[_sparkleIdx][0], sSparkleCoords[_sparkleIdx][1] + data[3], 0);
+          CreateSprite(rt, sSpriteTemplate_Sparkle,  sSparkleCoords[_sparkleIdx][0], sSparkleCoords[_sparkleIdx][1] + data[3], 0);
           data[0]++;
           data[6] = 12;
           data[4]++;
@@ -1080,7 +1080,7 @@ export const Task_Scene1_PanUp: TaskCallback = (task, rt) => {
           if (rt.gIntroFrameCounter == TIMER_FLYGON_SILHOUETTE_APPEAR)
           {
                
-              let spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_FlygonSilhouette',  120, DISPLAY_HEIGHT, 10);
+              let spriteId = CreateSprite(rt, sSpriteTemplate_FlygonSilhouette,  120, DISPLAY_HEIGHT, 10);
               _gs(rt, spriteId).invisible = true;
           }
       }
@@ -1138,8 +1138,8 @@ export const Task_Scene2_CreateSprites: TaskCallback = (task, rt) => {
       LoadSpritePalettes(sSpritePalettes_RunningPokemon);
 
        
-      rt.CreateSpriteFromTemplate('sSpriteTemplate_Manectric',  DISPLAY_WIDTH + 32, 128, 0);
-      rt.CreateSpriteFromTemplate('sSpriteTemplate_Torchic',  DISPLAY_WIDTH + 48, 110, 1);
+      CreateSprite(rt, sSpriteTemplate_Manectric,  DISPLAY_WIDTH + 32, 128, 0);
+      CreateSprite(rt, sSpriteTemplate_Torchic,  DISPLAY_WIDTH + 48, 110, 1);
 
       if ((globalThis as any).sIntroCharacterGender == MALE)
           spriteId = CreateIntroBrendanSprite(DISPLAY_WIDTH + 32, 100);
@@ -1149,7 +1149,7 @@ export const Task_Scene2_CreateSprites: TaskCallback = (task, rt) => {
       rt.setSpriteCallback(spriteId, SpriteCB_PlayerOnBicycle);
       _gs(rt, spriteId).anims = sAnims_PlayerBicycle;
       task.data[1] = spriteId;
-      rt.CreateSpriteFromTemplate('sSpriteTemplate_Volbeat',  DISPLAY_WIDTH + 32, 80, 4);
+      CreateSprite(rt, sSpriteTemplate_Volbeat,  DISPLAY_WIDTH + 32, 80, 4);
       spriteId = CreateIntroFlygonSprite(-64, 60);
       rt.setSpriteCallback(spriteId, SpriteCB_Flygon);
       task.data[2] = spriteId;
@@ -1754,10 +1754,10 @@ export const Task_Scene3_Lightning: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
                
-              rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  200, 48, 0);
-              spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  200, 80, 1);
+              CreateSprite(rt, sSpriteTemplate_Lightning,  200, 48, 0);
+              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  200, 80, 1);
               rt.StartSpriteAnim(spriteId, 1);
-              spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  200, 112, 2);
+              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  200, 112, 2);
               rt.StartSpriteAnim(spriteId, 2);
               data[0]++;
               data[6] = 72;
@@ -1767,10 +1767,10 @@ export const Task_Scene3_Lightning: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
                
-              rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  40, 48, 0);
-              spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  40, 80, 1);
+              CreateSprite(rt, sSpriteTemplate_Lightning,  40, 48, 0);
+              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  40, 80, 1);
               rt.StartSpriteAnim(spriteId, 1);
-              spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Lightning',  40, 112, 2);
+              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  40, 112, 2);
               rt.StartSpriteAnim(spriteId, 2);
               data[0]++;
               data[6] = 48;
@@ -1918,7 +1918,7 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
               }
               if (data[1] == 6)
               {
-                  spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_RayquazaOrb',  120, 88, 15);
+                  spriteId = CreateSprite(rt, sSpriteTemplate_RayquazaOrb,  120, 88, 15);
                   // MANUAL FIX session 71 : décomp = PlaySE(SE_INTRO_BLAST), pas m4aSongNumStart.
                   PlaySE(SE_INTRO_BLAST);
                   _gs(rt, spriteId).invisible = true;
@@ -2105,7 +2105,7 @@ export function CreateKyogreBubbleSprites_Body(taskId: number): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles',
+          spriteId = CreateSprite(rt, sSpriteTemplate_Bubbles,
                                   sKyogreBubbleData[i][0],
                                   sKyogreBubbleData[i][1],
                                   i);
@@ -2130,7 +2130,7 @@ export function CreateKyogreBubbleSprites_Fins(): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles',
+          spriteId = CreateSprite(rt, sSpriteTemplate_Bubbles,
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][0],
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][1],
                                   i);
@@ -2150,7 +2150,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       let oldSpriteId = 0;
 
        
-      spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_WaterDrop',  x, y, 1);
+      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[0] = 0;
       _gs(rt, spriteId).data[7] = 0;
       _gs(rt, spriteId).data[1] = d;
@@ -2170,7 +2170,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
 
        
        
-      spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_WaterDrop',  x, y, 1);
+      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 1;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
@@ -2179,7 +2179,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);
 
        
-      spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_WaterDrop',  x, y, 1);
+      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 2;
       rt.StartSpriteAnim(spriteId, DROP_ANIM_LOWER_HALF);
@@ -2207,7 +2207,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
        
       for (i = 0; i < NUM_GF_LETTERS; i++)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_GameFreakLetter',  sGameFreakLetterData[i][1] + x, y - 4, 0);
+          spriteId = CreateSprite(rt, sSpriteTemplate_GameFreakLetter,  sGameFreakLetterData[i][1] + x, y - 4, 0);
           _gs(rt, spriteId).data[0] = 0;
           _gs(rt, spriteId).data[7] = sGameFreakLetterStartDelays[i];
           _gs(rt, spriteId).data[2] = i;
@@ -2218,7 +2218,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
       }
 
        
-      spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_GameFreakLogo',  120, y - 6, 0);
+      spriteId = CreateSprite(rt, sSpriteTemplate_GameFreakLogo,  120, y - 6, 0);
       _gs(rt, spriteId).data[0] = 0;
       _gs(rt, spriteId).invisible = true;
       _gs(rt, spriteId).matrixNum = i + 12;
@@ -2232,3 +2232,132 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
  *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
  *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
 const VBlankCB: () => void = () => { /* no-op */ };
+
+// ─── PHASE E2.B — SpriteTemplate intro 1:1 (src/intro.c) ─────────────────────
+// Vrais objets SpriteTemplate consommés par CreateSprite(rt, &template, …) game-form,
+// en remplacement de la résolution string-catalogue (rt.CreateSpriteFromTemplate('sX')).
+// = mirroir strict du décomp `CreateSprite(&sSpriteTemplate_X, …)`.
+//  • tileTag/paletteTag = STRINGS = clés sous lesquelles les sheets/palettes intro sont
+//    enregistrées (cf. SPRITE_TEMPLATES catalogue ; un nombre ne matcherait pas — cf. piège rochers).
+//  • oam : shape/size depuis SPRITE_SHAPE/SPRITE_SIZE, 4bpp→paletteMode 0,
+//    affineMode ST_OAM_AFFINE_{OFF=0,DOUBLE=3}, objMode ST_OAM_OBJ_{NORMAL=0,BLEND=1}.
+//  • affineAnims : NOM de table M3 ('sAffineAnims_GameFreak') ou null (=gDummySpriteAffineAnimTable).
+// Définis en fin de module = tous les SpriteCB_* et constantes déjà en scope (zéro TDZ) ;
+// les call sites (corps de tâches/callbacks) résolvent au runtime.
+
+// intro.c:220 — sOamData_Sparkle (16x16, 4bpp, priority 1)
+const sOamData_Sparkle = { shape: 0, size: 1, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Sparkle = [ ANIMCMD_FRAME(0, 2), ANIMCMD_FRAME(4, 2), ANIMCMD_FRAME(8, 2), ANIMCMD_FRAME(12, 2), ANIMCMD_FRAME(16, 2), ANIMCMD_JUMP(0) ];
+const sAnims_Sparkle = [ sAnim_Sparkle ];
+const sSpriteTemplate_Sparkle = {
+  tileTag: 'TAG_SPARKLE', paletteTag: 'TAG_SPARKLE',
+  oam: sOamData_Sparkle, anims: sAnims_Sparkle, images: null, affineAnims: null, callback: SpriteCB_Sparkle,
+};
+
+// intro.c:288 — sOamData_Volbeat (32x32, 4bpp, priority 1)
+const sOamData_Volbeat = { shape: 0, size: 2, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Volbeat = [ ANIMCMD_FRAME(0, 2), ANIMCMD_FRAME(16, 2), ANIMCMD_JUMP(0) ];
+const sAnims_Volbeat = [ sAnim_Volbeat ];
+const sSpriteTemplate_Volbeat = {
+  tileTag: 'TAG_VOLBEAT', paletteTag: 'TAG_VOLBEAT',
+  oam: sOamData_Volbeat, anims: sAnims_Volbeat, images: null, affineAnims: null, callback: SpriteCB_Volbeat,
+};
+
+// intro.c:324 — sOamData_Torchic (32x32, 4bpp, priority 1)
+const sOamData_Torchic = { shape: 0, size: 2, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Torchic_Walk = [ ANIMCMD_FRAME(0, 5), ANIMCMD_FRAME(16, 5), ANIMCMD_FRAME(32, 5), ANIMCMD_FRAME(16, 5), ANIMCMD_JUMP(0) ];
+const sAnim_Torchic_Run = [ ANIMCMD_FRAME(0, 3), ANIMCMD_FRAME(16, 3), ANIMCMD_FRAME(32, 3), ANIMCMD_FRAME(16, 3), ANIMCMD_JUMP(0) ];
+const sAnim_Torchic_Trip = [ ANIMCMD_FRAME(48, 4), ANIMCMD_FRAME(64, 6), ANIMCMD_FRAME(80, 0), ANIMCMD_END ];
+const sAnims_Torchic = [ sAnim_Torchic_Walk, sAnim_Torchic_Run, sAnim_Torchic_Trip ];
+const sSpriteTemplate_Torchic = {
+  tileTag: 'TAG_TORCHIC', paletteTag: 'TAG_TORCHIC',
+  oam: sOamData_Torchic, anims: sAnims_Torchic, images: null, affineAnims: null, callback: SpriteCB_Torchic,
+};
+
+// intro.c:384 — sOamData_Manectric (64x64, 4bpp, priority 1)
+const sOamData_Manectric = { shape: 0, size: 3, priority: 1, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Manectric = [ ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(128, 4), ANIMCMD_FRAME(192, 4), ANIMCMD_JUMP(0) ];
+const sAnims_Manectric = [ sAnim_Manectric ];
+const sSpriteTemplate_Manectric = {
+  tileTag: 'TAG_MANECTRIC', paletteTag: 'TAG_MANECTRIC',
+  oam: sOamData_Manectric, anims: sAnims_Manectric, images: null, affineAnims: null, callback: SpriteCB_Manectric,
+};
+
+// intro.c:432 — sOamData_Lightning (32x32, 4bpp, priority 0)
+const sOamData_Lightning = { shape: 0, size: 2, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Lightning_Top = [ ANIMCMD_FRAME(0, 2), ANIMCMD_FRAME(48, 2), ANIMCMD_END ];
+const sAnim_Lightning_Middle = [ ANIMCMD_FRAME(16, 2), ANIMCMD_FRAME(64, 2), ANIMCMD_END ];
+const sAnim_Lightning_Bottom = [ ANIMCMD_FRAME(32, 2), ANIMCMD_FRAME(80, 2), ANIMCMD_END ];
+const sAnims_Lightning = [ sAnim_Lightning_Top, sAnim_Lightning_Middle, sAnim_Lightning_Bottom ];
+const sSpriteTemplate_Lightning = {
+  tileTag: 'TAG_LIGHTNING', paletteTag: 'TAG_LIGHTNING',
+  oam: sOamData_Lightning, anims: sAnims_Lightning, images: null, affineAnims: null, callback: SpriteCB_Lightning,
+};
+
+// intro.c:523 — sOamData_Bubbles (16x32, 4bpp, priority 0)
+const sOamData_Bubbles = { shape: 2, size: 2, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_Bubbles = [ ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(8, 4), ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(24, 4), ANIMCMD_FRAME(32, 4), ANIMCMD_END ];
+const sAnims_Bubbles = [ sAnim_Bubbles ];
+const sSpriteTemplate_Bubbles = {
+  tileTag: 'TAG_BUBBLES', paletteTag: 'TAG_BUBBLES',
+  oam: sOamData_Bubbles, anims: sAnims_Bubbles, images: null, affineAnims: null, callback: SpriteCB_KyogreBubbles,
+};
+
+// intro.c:562 — sOamData_WaterDrop (32x32, 4bpp, priority 0) ; 4 anims (upper/lower/reflection/ripple)
+const sOamData_WaterDrop = { shape: 0, size: 2, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_WaterDrop_UpperHalf = [ ANIMCMD_FRAME(16, 8), ANIMCMD_END ];
+const sAnim_WaterDrop_LowerHalf = [ ANIMCMD_FRAME(24, 8), ANIMCMD_END ];
+const sAnim_WaterDrop_Reflection = [ ANIMCMD_FRAME(0, 8), ANIMCMD_END ];
+const sAnim_WaterDrop_Ripple = [ ANIMCMD_FRAME(48, 8), ANIMCMD_END ];
+const sAnims_WaterDrop = [ sAnim_WaterDrop_UpperHalf, sAnim_WaterDrop_LowerHalf, sAnim_WaterDrop_Reflection, sAnim_WaterDrop_Ripple ];
+const sSpriteTemplate_WaterDrop = {
+  tileTag: 'GFXTAG_DROPS_LOGO', paletteTag: 'PALTAG_DROPS',
+  oam: sOamData_WaterDrop, anims: sAnims_WaterDrop, images: null, affineAnims: null, callback: SpriteCB_WaterDrop,
+};
+
+// intro.c:664 — sOamData_GameFreakLetter (16x16, 4bpp, AFFINE_DOUBLE, priority 0) ; 7 anims G/A/M/E/F/R/K
+const sOamData_GameFreakLetter = { shape: 0, size: 1, priority: 0, paletteNum: 0, affineMode: 3, paletteMode: 0, objMode: 0 };
+const sAnim_GameFreakLetter_G = [ ANIMCMD_FRAME(80, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_A = [ ANIMCMD_FRAME(84, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_M = [ ANIMCMD_FRAME(88, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_E = [ ANIMCMD_FRAME(92, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_F = [ ANIMCMD_FRAME(96, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_R = [ ANIMCMD_FRAME(100, 8), ANIMCMD_END ];
+const sAnim_GameFreakLetter_K = [ ANIMCMD_FRAME(104, 8), ANIMCMD_END ];
+const sAnims_GameFreakLetter = [
+  sAnim_GameFreakLetter_G, sAnim_GameFreakLetter_A, sAnim_GameFreakLetter_M, sAnim_GameFreakLetter_E,
+  sAnim_GameFreakLetter_F, sAnim_GameFreakLetter_R, sAnim_GameFreakLetter_K,
+];
+const sSpriteTemplate_GameFreakLetter = {
+  tileTag: 'GFXTAG_DROPS_LOGO', paletteTag: 'PALTAG_LOGO',
+  oam: sOamData_GameFreakLetter, anims: sAnims_GameFreakLetter, images: null,
+  affineAnims: 'sAffineAnims_GameFreak', callback: SpriteCB_LogoLetter,
+};
+
+// intro.c:696 — sOamData_GameFreakLogo (32x64, 4bpp, AFFINE_DOUBLE, OBJ_BLEND, priority 0)
+const sOamData_GameFreakLogo = { shape: 2, size: 3, priority: 0, paletteNum: 0, affineMode: 3, paletteMode: 0, objMode: 1 };
+const sAnim_GameFreakLogo = [ ANIMCMD_FRAME(128, 8), ANIMCMD_END ];
+const sAnims_GameFreakLogo = [ sAnim_GameFreakLogo ];
+const sSpriteTemplate_GameFreakLogo = {
+  tileTag: 'GFXTAG_DROPS_LOGO', paletteTag: 'PALTAG_LOGO',
+  oam: sOamData_GameFreakLogo, anims: sAnims_GameFreakLogo, images: null,
+  affineAnims: 'sAffineAnims_GameFreak', callback: SpriteCB_GameFreakLogo,
+};
+
+// intro.c:935 — sOamData_FlygonSilhouette (64x32, 4bpp, priority 0)
+const sOamData_FlygonSilhouette = { shape: 1, size: 3, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_FlygonSilhouette = [ ANIMCMD_FRAME(0, 10), ANIMCMD_JUMP(0) ];
+const sAnims_FlygonSilhouette = [ sAnim_FlygonSilhouette ];
+const sSpriteTemplate_FlygonSilhouette = {
+  tileTag: 'TAG_FLYGON_SILHOUETTE', paletteTag: 'TAG_FLYGON_SILHOUETTE',
+  oam: sOamData_FlygonSilhouette, anims: sAnims_FlygonSilhouette, images: null, affineAnims: null, callback: SpriteCB_FlygonSilhouette,
+};
+
+// intro.c:987 — sOamData_RayquazaOrb (64x64, 4bpp, priority 0)
+const sOamData_RayquazaOrb = { shape: 0, size: 3, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 0, objMode: 0 };
+const sAnim_RayquazaOrb = [ ANIMCMD_FRAME(16, 8), ANIMCMD_END ];
+const sAnims_RayquazaOrb = [ sAnim_RayquazaOrb ];
+const sSpriteTemplate_RayquazaOrb = {
+  tileTag: 'TAG_RAYQUAZA_ORB', paletteTag: 'TAG_RAYQUAZA_ORB',
+  oam: sOamData_RayquazaOrb, anims: sAnims_RayquazaOrb, images: null, affineAnims: null, callback: SpriteCB_RayquazaOrb,
+};
