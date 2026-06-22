@@ -128,6 +128,28 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
           chantier COMPORTEMENTAL, big-bang INTERDIT par le contrat). B3 = migrer ~45 sites `CreateSpriteFromTemplate`
           (surtout auto-gen intro/title) + ~31 `CreateSpriteInline?.()` (piège optional-call). → **DÉCISION USER requise**
           sur la direction (demi-mesure dédup vs convergence anim OW vs s'arrêter à B1).
+        - ✅ **DÉCISION USER (2026-06-22) : CONVERGENCE ANIM OW (le vrai 1:1)** — « le but c'est le 1:1 miroir vrai, pas
+          juste ça marche ». On migre TOUS les consommateurs `spriteAnimStates` (state-machine legacy, ABSENTE du décomp)
+          vers `sprite.anims` (table AnimCmd inline = le système du décomp). Quand le legacy n'a plus AUCUN peupleur →
+          suppression du shim + B2/B3 deviennent triviaux (voie 3 route via game `CreateSprite`).
+          - **Outil** (`29832cae`) : `resolveAnimTableToAnimCmds` (catalogue M3 → AnimCmd[][]) + `setSpriteAnims`
+            (attache anims + usingSheet/sheetTileStart, remplace `spriteAnimStatesRegister`). Sémantique END/JUMP/multi-frame
+            vérifiée identique au legacy frame-par-frame.
+          - **CONSTAT clé** : le **live overworld est DÉJÀ convergé** (`event_object_movement.ts:7169` pose
+            `sprite.anims = graphicsInfo.anims` ; sonde runtime en OW = `spriteAnimStates.size === 0`). Le chemin inline
+            JUMP/walk est donc PROUVÉ en prod. Les consommateurs legacy restants sont PÉRIPHÉRIQUES.
+          - **Familles `spriteAnimStates` (modèle sheet `tileBase + tileNum`)** :
+            - ✅ **F-sac** (`29832cae`) : `item_menu_icons.AddBagVisualSprite` → setSpriteAnims. A/B menu→SAC : sprite rendu,
+              switch poche OBJETS→POKé BALLS (FSM bounce + StartSpriteAnim inline), sonde `oam.tileId=192` = exact offset.
+            - ⏳ **F-swap-line** (`swap-line.ts:122`), **F-CreateObjectGraphicsSprite** (`object-event-graphics.ts:481`,
+              naming/starter/intro-credits — walk JUMP loop), **F-CreateSpriteFromTemplate** (decomp-runtime:1927, intro/title)
+              : même pattern, modèle sheet propre → setSpriteAnims. A/B par scène atteignable (ou sonde déterministe).
+          - ⚠️ **F-mon-front (CAS SPÉCIAL, à part)** : `battle_main.ts:2860/2908`. Le sprite mon-front est créé en modèle
+            **IMAGES** (`CreateSpriteInline`, `usingSheet=false`, possède des tiles inline) mais son anim est en OFFSETS-tile
+            (hybride : le legacy fait `oam.tileId=tileBase+f*64` en IGNORANT usingSheet). `setSpriteAnims` (usingSheet=true)
+            mélangerait les modèles (1:1 incorrect + DestroySprite décomp ne free-rait plus ses tiles). → convergence
+            mon-front = rework gfx-loading (charger en vraie sheet OU ré-exprimer l'anim en index de frame images[]).
+            À traiter SÉPARÉMENT, en DERNIER, avant la suppression du legacy.
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
