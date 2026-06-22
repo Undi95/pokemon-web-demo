@@ -181,6 +181,16 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
             règles 13/13b → `CreateSprite(sX, x,y,prio)` + import des objets, AVEC whitelist (objets définis) sinon fallback
             résolveur → incrémental ; regénérer + A/B intro/title. (4) Quand tous les templates = objets → RETRAIT du résolveur
             `CreateSpriteFromTemplate` + effondrement du dispatcher 3-voies en `CreateSprite`+`CreateSpriteAt` 1:1.
+          - **AVANCEMENT** :
+            - ✅ (1) FONDATION (`f152a5a7`) : game `CreateSprite` + bridge voie 2 consomment un SpriteTemplate réel (tileTag string|number).
+            - ✅ (3) MÉCANISME whitelist (`89e5cfd9`) : générateur règle **13c** + Set `CONVERTED_TEMPLATES` → pour les noms
+              convertis, `rt.CreateSpriteFromTemplate('sX', …)` → `CreateSprite(rt, sX, …)` ; hors-liste = fallback résolveur.
+              ⚠ Le fichier reconcilié (`*-callbacks-auto.ts`) DOIT porter les defs objet + imports `CreateSprite`/`ANIMCMD_*`.
+            - ✅ **Feature #1 — version banner** (`3b431162`) : `sVersionBannerLeft/Right` (OAM + AnimTable + SpriteTemplate) en
+              vrais objets dans `title_screen-callbacks-auto.ts`, appelés `CreateSprite(rt, objet, …)`. A/B title : « VERSION
+              ÉMERAUDE » identique. tileTag = string `'TAG_VERSION'` (substrat M3, cf. `_tagToU16`). + ajouté au Set `CONVERTED_TEMPLATES`.
+            - ⏭️ **Features suivantes** (chacune : defs objet dans le fichier-home + ajout au Set + A/B) : `sStartCopyrightBanner`
+              + `sPokemonLogoShine` (title), puis intro (Flygon/Torchic…), starter, credits — jusqu'au RETRAIT du résolveur (4).
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
