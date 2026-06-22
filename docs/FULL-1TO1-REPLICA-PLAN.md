@@ -73,6 +73,45 @@ mêmes noms/imports, ligne-à-ligne), tsc=0 + A/B réel, marquer `// #100%`, coc
 Prioriser le cœur jouable d'abord (overworld → combat → menus), différer les sous-systèmes hors-scope
 SEULEMENT s'ils sont explicitement déférés (mais l'objectif est INTÉGRAL → à terme tout y passe).
 
+## AVANCEMENT Phase 1 — RESTRUCTURE (mis à jour 2026-06-22)
+**Harness 100 % extrait** vers `harness/` : m4a, gba, devtools, util, scenes, boot (lots 1-4),
+**runtime** (lot 6 : decomp-runtime/globals/bridge/helpers, gba-global-scope, gba-io-regs,
+window-renderer, input-handler, decomp-constants, data-tables, static-data-tables → `harness/runtime/`),
+**main.ts** (lot 7 : bootstrap Phaser/Vite → `harness/main.ts` + `index.html`, libère le nom `src/main.ts`
+pour le futur `main.c`).
+
+**`game/ → src/` racine** (lot 5, centerpiece) : 105 miroirs .c à plat + `include/` racine + `src/data/`.
+
+**Relocalisations 1:1 propres** (mono-fichier = miroir de facto d'un seul .c, cible libre) :
+- lot 8 : `palette.ts`(palette.c), `rtc.ts`(rtc.c), `clock.ts`(clock.c←time-based-events), `include/constants/metatile_behaviors.ts`.
+- lot 9 : `mail.ts`, `item_icon.ts`, `player_pc.ts`(←bedroom-pc), `load_save.ts`, `battle_bg.ts`, `item_use.ts`(←item-use-callbacks), `main_menu.ts`(←main-menu-impl).
+
+**Outil** : `scripts/move-tree.cjs` (réécriture path.relative des specifiers ; **fix** : normalise les
+extensions → gère les moves de FICHIER, pas que de dossier). Process/lot : dry → rewrite → preview_stop
+(verrou Windows) → git mv → tsc=0 → boot A/B (?nointro, sortie camion droite → warp Littleroot + event maman) → stage explicite → commit.
+
+### RESTE de `src/engine/` (~260 fichiers) = surtout des FUSIONS N:1 (Phase 3, travail de contenu)
+La décompo maison a éclaté chaque `.c` en plusieurs fichiers → mirror = MERGER les splits dans UN `.ts`/`.c` :
+- **`script/script-opcodes-*.ts` (37)** → `src/scrcmd.ts` (handlers d'opcodes ; les `-berry/-contest/-decoration/...`
+  ne sont PAS les miroirs de berry.c/contest.c mais les branches scrcmd → tout va dans scrcmd.ts).
+- **`battle/*.ts` (50)** → `src/battle_*.ts` existants (battle_main/controllers/anim/script_commands/util/...).
+  Ex `battle-controllers*.ts`(5)→battle_controllers.c ; `battle-anim-interpreter/-registry/-generated-bridge`→battle_anim.c.
+- **`bag/*.ts` (7)** → `item_menu.c` + `item.c`. **`save/*.ts`** → `save.c`(system+sectors) + `event_data.c` + ...
+- **`pokemon/*.ts` (10)** → `pokemon.c`/`pokemon_animation.c`/`secret_base.c`/`pokemon_icon.c`/`item.c`(pc-items) existants.
+- **`ui/*.ts` (25)** → `menu.c`/`text.c`/`window.c`/`text_window.c`/`menu_helpers.c`/`option_menu.c`(impl+return)/
+  `pokedex.c`(screen+flags)/`pokemon_summary_screen.c`(summary+anim)/`tv.c`/`wallclock.c`/`start_menu.c`/...
+- **`field/*.ts` (21)** → `event_object_movement.c`/`fieldmap.c`/`field_effect.c`/`field_region_map.c`/...
+- **`system/` reste 7** : `random.ts`(shim→src/random.ts, déduper+sortir SeedRng→main/new_game),
+  `music.ts`(bridge M4A→classer harness vs sound.c), `fade-screen.ts`(→merge field_weather.c),
+  `flash-mask.ts`(→fldeff_flash.c+field_screen_effect.c), `pokeball-effects.ts`(→battle_anim_throw.c+pokeball.c),
+  `multichoice-data.ts`(loader→src/data/script_menu), `string-buffers.ts`(glue→merge string_util.ts).
+- **`decomp-data/` (97)** = data extraite + headers → `src/data/` + `include/`(+constants/+gba/) ; relocalisation
+  en masse mais suffixe `-data.ts` ≠ décomp → étape dédiée (préserver le câblage des loaders harness).
+- **`decomp-impls/` (2)** → `sprite.c` (merge dans `src/sprite.ts`).
+
+Ces fusions = vrai travail ligne-par-ligne (lire le .c décomp, réconcilier, A/B comportemental), 1 sous-système/lot,
+PAS des `git mv` mécaniques. Prochain : attaquer un sous-système borné de bout en bout (candidat : `scrcmd` ou `save`).
+
 ## État au lancement
 - HEAD `7a59a425` (branche mirroir, rien poussé). Couverture réelle ~37 % cœur cité 1:1 (cf. coverage).
 - Outils : `audit-game-mirror.cjs`, `coverage:1to1`, `migrate-game.cjs` (non-trackés). `audit:scrcmd`/
