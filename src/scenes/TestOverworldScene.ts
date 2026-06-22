@@ -16,7 +16,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY } from '../engine/system/decomp-runtime';
+import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../engine/system/decomp-globals';
 import { ResetSpriteData } from '../game/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
@@ -162,7 +162,7 @@ import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../game/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../game/sprite';
-import { SetDefaultFlashLevel } from '../game/overworld';
+import { SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters } from '../game/overworld';
 import { OBJ_PALSLOT_COUNT } from '../engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../game/coord_event_weather';
@@ -430,24 +430,12 @@ export class TestOverworldScene extends Phaser.Scene {
     ResetTasks();
     ResetPaletteFade();
     FreeAllSpritePalettes();
-    // 1:1 décomp `ResetScreenForMapLoad` (overworld.c:2077) + état runtime NEUF : clear les
-    // registres screen-effect (MOSAIC/WINDOW/BLEND) que l'intro/Birch laissent actifs (logo
-    // shine = OBJ_WINDOW ; fades = BLDY assombrissement). Le port loadAndInitMap ne fait qu'un
-    // DISPCNT save/restore (partiel) — il loupe ces registres que `InitOverworldGraphicsRegisters`
-    // (overworld.c:2096) normalement gère. Sans ça : ombre (BLDY) + passes compositor WINDOW/
-    // MOSAIC en plus chaque frame = chute FPS (44-48 vs 63). Un runtime neuf les a à 0, l'OW
-    // (reflets/flash) les re-set au besoin → exactement le chemin ?nointro. Confirmé : ?unified
-    // truck = BLDY mode3/bright7 vs ?nointro neuf = mode0/bright0/63 FPS.
-    this.rt.SetGpuReg(REG_OFFSET_MOSAIC, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WININ, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WIN1H, 0);
-    this.rt.SetGpuReg(REG_OFFSET_WIN1V, 0);
-    this.rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
-    this.rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
-    this.rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+    // NB : les registres screen-effect (MOSAIC/WININ/WINOUT/WIN0-1/BLDCNT/BLDALPHA/BLDY)
+    // que l'intro/Birch laissent actifs (logo shine = OBJ_WINDOW ; fades = BLDY) sont
+    // désormais remis aux valeurs OW par `InitOverworldGraphicsRegisters` (overworld.c:2096),
+    // appelé à la fin de loadAndInitMap (via bootOverworld ci-dessous). Plus besoin des
+    // clears ad-hoc ici : le chemin de map load pose lui-même l'état GPU correct (1:1 décomp),
+    // ce qui écrase l'ombre résiduelle (mode-3/BLDY) au passage intro→OW.
     // Entre l'OW dans CE runtime (= 1:1 SetMainCallback2(CB2_Overworld)). bootOverworld
     // re-run decideBootMode (post-Birch → newgame/truck ; ou resume/saved map).
     await this.bootOverworld();
@@ -954,16 +942,14 @@ export class TestOverworldScene extends Phaser.Scene {
     const header = await loadMapByName(mapId);
     console.log(`[TestOverworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
 
-    // 1:1 décomp `ResetScreenForMapLoad` (overworld.c:2077-2086) — DISPCNT=0
-    // pour disable BG layers + OBJ pendant le load. Sans ça, pendant les frames
-    // entre LoadMapTilesetPalettes (= NEW palettes) et clearOverworldTilemaps
-    // + DrawWholeMapView (= NEW BG buffer), le compositor render OLD BG buffer
-    // tilemap avec NEW palettes + NEW VRAM tiles → garbage pixels (= flash rose
-    // / gris observed pendant warps). Décomp réactive DISPCNT au state 4 via
-    // InitOverworldGraphicsRegisters (overworld.c:2096-2129) qui set le DISPCNT
-    // standard. On fait pareil en restaurant le DISPCNT à la fin du load.
-    const dispcntSaved = this.rt.GetGpuReg(REG_OFFSET_DISPCNT);
-    this.rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+    // 1:1 décomp `ResetScreenForMapLoad` (overworld.c:2077, state 1 de
+    // LoadMapInStepsLocal) — éteint l'affichage (DISPCNT=0) + reset OAM le temps
+    // du map load. Sans DISPCNT=0, pendant les frames entre LoadMapTilesetPalettes
+    // (= NEW palettes) et DrawWholeMapView (= NEW BG buffer), le compositor render
+    // OLD BG buffer avec NEW palettes/tiles → garbage (flash rose/gris). L'affichage
+    // est rallumé à la fin du load par InitOverworldGraphicsRegisters (overworld.c:
+    // 2096), qui pose AUSSI les registres MOSAIC/WIN/BLD corrects (cf. fin de fonction).
+    ResetScreenForMapLoad();
 
     // 1:1 décomp `InitMap` (fieldmap.c) — copy map.bin + border to gBackupMapLayout.
     // Étape 5 SAVE-SYSTEM-1TO1 : au RESUME d'une save (boot.mode === 'resume'),
@@ -1376,12 +1362,16 @@ export class TestOverworldScene extends Phaser.Scene {
       console.log(`[TestOverworld] BGM ${header.music} déjà playing, skip restart`);
     }
 
-    // Restore DISPCNT (= re-enable BG/OBJ layers) maintenant que le BG buffer
-    // est ré-écrit (= DrawWholeMapView), les NPCs sont spawnés + sync (=
-    // UpdateObjectEvents au-dessus), et la palette est prête (= LoadMapTileset
-    // Palettes a écrit les NEW colors, color[0] = black via LoadTilesetPalette
-    // black-fill). 1:1 décomp `InitOverworldGraphicsRegisters` (overworld.c:2096).
-    this.rt.SetGpuReg(REG_OFFSET_DISPCNT, dispcntSaved);
+    // 1:1 décomp `InitOverworldGraphicsRegisters` (overworld.c:2096, state 4 de
+    // LoadMapInStepsLocal) — rallume l'affichage (DISPCNT OW : OBJ + WIN0/1 +
+    // OBJ_1D_MAP + HBLANK_INTERVAL) maintenant que le BG buffer est ré-écrit
+    // (DrawWholeMapView), les NPCs spawnés + sync (UpdateObjectEvents) et la palette
+    // prête (LoadMapTilesetPalettes). POSE AUSSI tous les registres GPU OW (MOSAIC=0,
+    // fenêtres plein-écran, blend OW 2e-cible no-op) + (ré)active les 4 BG (ShowBg)
+    // + config BG (InitOverworldBgs). C'est ce qui ÉCRASE l'état WIN/BLD/MOSAIC laissé
+    // par l'écran précédent (intro/titre) → plus besoin des clears ad-hoc en
+    // transitionToOverworld (l'ombre de la fenêtre de dialogue disparaît proprement).
+    InitOverworldGraphicsRegisters();
 
     // 1:1 décomp `ShowMapNamePopup()` (overworld.c:1947 LoadMapInStepsLocal case 11).
     // Boot + warp : afficher le nom de la map.
