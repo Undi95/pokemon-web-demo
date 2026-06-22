@@ -41,7 +41,7 @@ function StartCutTreeFieldEffect(): void {
   PlaySE(SE_M_CUT);
   FieldEffectActiveListRemove(FLDEFF_USE_CUT_ON_TREE);
   ScriptContext_Enable();
-  void import('./engine/script/script-opcodes-special').then(m => m.SignalWaitState());
+  void import('./scrcmd').then(m => m.SignalWaitState());
 }
 
 /** 1:1 STRICT décomp `FldEff_UseCutOnTree` (fldeff_cut.c:300) :

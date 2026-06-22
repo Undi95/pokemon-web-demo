@@ -35,7 +35,7 @@ function FieldMove_RockSmash(): void {
   PlaySE(SE_M_ROCK_THROW);
   FieldEffectActiveListRemove(FLDEFF_USE_ROCK_SMASH);
   ScriptContext_Enable();
-  void import('./engine/script/script-opcodes-special').then(m => m.SignalWaitState());
+  void import('./scrcmd').then(m => m.SignalWaitState());
 }
 
 /** 1:1 STRICT décomp `FldEff_UseRockSmash` (fldeff_rocksmash.c:150) :

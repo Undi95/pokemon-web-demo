@@ -64,11 +64,11 @@ import {
   findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,
   isPlayerStepFinished,
 } from './script-opcodes-helpers';
-import { invokeSpecial as _invokeSpecial } from './script-opcodes-special';
-import { spawnYesNoMenu } from './script-opcodes-menu';
+import { invokeSpecial as _invokeSpecial } from '../../scrcmd';
+import { spawnYesNoMenu } from '../../scrcmd';
 // Re-export pour préserver les imports externes (= bedroom-pc.ts, wallclock-flow.ts,
 // region-map.ts, specials-registry.ts).
-export { SignalWaitState, registerSpecial } from './script-opcodes-special';
+export { SignalWaitState, registerSpecial } from '../../scrcmd';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 // Helpers partagés exportés depuis `script-opcodes/helpers.ts` (= 1:1 décomp).
@@ -1130,40 +1130,9 @@ function _handlersHas(name: string): boolean {
 // Order : APRÈS les opcodes définis dans ce fichier → real impls overwrites
 // any earlier stub of same name défini ici.
 
-import './script-opcodes-random';
-import './script-opcodes-berry';
-import './script-opcodes-tv';
-import './script-opcodes-match-call';
-import './script-opcodes-weather';
-import './script-opcodes-fieldeffect';
-import './script-opcodes-shop';
-import './script-opcodes-mystery-event';
-import './script-opcodes-rotating-tile-puzzle';
-import './script-opcodes-slot-machine';
-import './script-opcodes-contest';
-import './script-opcodes-pc-storage';
-import './script-opcodes-lilycove';
-import './script-opcodes-door';
-import './script-opcodes-fieldmap';
-import './script-opcodes-warp';
-import './script-opcodes-sound';
-import './script-opcodes-decoration';
-import './script-opcodes-money-coins';
-import './script-opcodes-item';
-import './script-opcodes-rtc-clock';
-import './script-opcodes-player-avatar';
-import './script-opcodes-string';
-import './script-opcodes-party';
-import './script-opcodes-flag-var';
-import './script-opcodes-screen-fx';
-import './script-opcodes-lock';
-import './script-opcodes-battle';
-import './script-opcodes-special';
-import './script-opcodes-frontier';
-import './script-opcodes-menu';
-import './script-opcodes-message';
-import './script-opcodes-movement';
-import './script-opcodes-control-flow';
+// Fusionnés en UN miroir scrcmd.c (= src/scrcmd.ts). Ce side-effect import charge
+// les 360 registerOpcode dans l'ordre des sections (= ordre d'import historique).
+import '../../scrcmd';
 
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 

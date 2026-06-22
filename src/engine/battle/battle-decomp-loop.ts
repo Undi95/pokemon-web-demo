@@ -538,7 +538,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
           // appel `__specials.HealPlayerParty()` était un NO-OP (__specials jamais exposé sur
           // globalThis) → l'équipe N'ÉTAIT PAS soignée au whiteout. invokeSpecial dispatch le
           // handler 1:1 enregistré (le MÊME que `special HealPlayerParty` de la nurse).
-          void import('../script/script-opcodes-special').then((m) => {
+          void import('../../scrcmd').then((m) => {
             try { m.invokeSpecial('HealPlayerParty'); } catch (e) { console.warn('[whiteout] heal KO', e); }
           });
           void import('../script/script-runtime').then((m) => {
