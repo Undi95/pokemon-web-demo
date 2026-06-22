@@ -10,7 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
-import { ResetSpriteData, DestroySprite } from '../../../game/sprite';
+import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END } from '../../../game/sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -29,6 +29,7 @@ import {
   START_BANNER_X,
   VERSION_BANNER_LEFT_X,
   VERSION_BANNER_RIGHT_X,
+  VERSION_BANNER_RIGHT_TILEOFFSET,
   VERSION_BANNER_Y,
   VERSION_BANNER_Y_GOAL,
 } from '../title-screen-data';
@@ -99,6 +100,40 @@ export const SpriteCB_VersionBannerRight: SpriteCallback = (sprite, rt) => {
           if (sprite.y != VERSION_BANNER_Y_GOAL)
               sprite.y++;
       }
+};
+
+// ─── PHASE E2.B — vrais SpriteTemplate 1:1 décomp (title_screen.c:111-187) ──────
+// Convergence : ces objets remplacent l'indirection string-catalogue +
+// `rt.CreateSpriteFromTemplate('sVersionBanner…')`. CreateSprite (game/sprite.ts =
+// 1:1 décomp `CreateSprite`) consomme directement le SpriteTemplate. tileTag/paletteTag =
+// string 'TAG_VERSION' (substrat M3 : la sheet EmeraldVersion est enregistrée sous cette
+// clé, cf. _tagToU16/GetSpriteTileStartByTag). affineAnims=null = gDummySpriteAffineAnimTable.
+// shape 1/size 3 = SPRITE_SHAPE/SPRITE_SIZE(64x32) ; paletteMode 1 = ST_OAM_8BPP.
+const sVersionBannerLeftOamData = {
+  shape: 1, size: 3, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 1, objMode: 0,
+};
+const sVersionBannerRightOamData = {
+  shape: 1, size: 3, priority: 0, paletteNum: 0, affineMode: 0, paletteMode: 1, objMode: 0,
+};
+const sVersionBannerLeftAnimSequence = [ ANIMCMD_FRAME(0, 30), ANIMCMD_END ];
+const sVersionBannerRightAnimSequence = [ ANIMCMD_FRAME(VERSION_BANNER_RIGHT_TILEOFFSET, 30), ANIMCMD_END ];
+const sVersionBannerLeftAnimTable = [ sVersionBannerLeftAnimSequence ];
+const sVersionBannerRightAnimTable = [ sVersionBannerRightAnimSequence ];
+const sVersionBannerLeftSpriteTemplate = {
+  tileTag: 'TAG_VERSION', paletteTag: 'TAG_VERSION',
+  oam: sVersionBannerLeftOamData,
+  anims: sVersionBannerLeftAnimTable,
+  images: null,
+  affineAnims: null,
+  callback: SpriteCB_VersionBannerLeft,
+};
+const sVersionBannerRightSpriteTemplate = {
+  tileTag: 'TAG_VERSION', paletteTag: 'TAG_VERSION',
+  oam: sVersionBannerRightOamData,
+  anims: sVersionBannerRightAnimTable,
+  images: null,
+  affineAnims: null,
+  callback: SpriteCB_VersionBannerRight,
 };
 
 /** Source: title_screen.c → SpriteCB_PressStartCopyrightBanner */
@@ -210,12 +245,12 @@ export const Task_TitleScreenPhase1: TaskCallback = (task, rt) => {
           rt.SetGpuReg(REG_OFFSET_BLDY, 0);
 
            
-          spriteId = rt.CreateSpriteFromTemplate('sVersionBannerLeftSpriteTemplate',  VERSION_BANNER_LEFT_X, VERSION_BANNER_Y, 0);
+          spriteId = CreateSprite(rt, sVersionBannerLeftSpriteTemplate, VERSION_BANNER_LEFT_X, VERSION_BANNER_Y, 0);
           _gs(rt, spriteId).data[0] = ((gTitleScreenAlphaBlend)?.length ?? 0);
           _gs(rt, spriteId).data[1] = taskId;
 
            
-          spriteId = rt.CreateSpriteFromTemplate('sVersionBannerRightSpriteTemplate',  VERSION_BANNER_RIGHT_X, VERSION_BANNER_Y, 0);
+          spriteId = CreateSprite(rt, sVersionBannerRightSpriteTemplate, VERSION_BANNER_RIGHT_X, VERSION_BANNER_Y, 0);
           _gs(rt, spriteId).data[1] = taskId;
 
           task.data[0] = 144;
