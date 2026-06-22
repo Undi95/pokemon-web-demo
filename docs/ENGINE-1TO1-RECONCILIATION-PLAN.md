@@ -112,6 +112,22 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
           via la primitive ; bridge voies inline+tileTag délèguent. B2 : résolveur `name→SpriteTemplate` (lit les catalogues)
           → voie 3 normalisée puis CreateSpriteAt unique. B3 : retrait `CreateSpriteInline`/`CreateSpriteFromTemplate` du
           harness. A/B par voie (combat send-out = inline+tileTag ; OW = par-nom). NE PAS big-banger (hottest path).
+        - ✅ **B1 FAIT** (`b3f87d61`) : `CreateSprite(rt, template, x,y,subpri)` + interface `SpriteTemplate` portés dans
+          game/sprite.ts (2 voies gfx décomp : `tileTag==TAG_NONE` inline / sheet par tag, branche sprite.c:562). Bridge
+          voies 1+2 + `DecompRuntime.CreateSpriteInline` y délèguent (impl UNIQUE ; corps relocalisé mot-pour-mot, fixes
+          F77/objMode/sheetTileStart conservés). `CreateSpriteAtEnd`/`CreateInvisibleSprite` via gfx voies NON portés
+          (aucun appelant = pas de code mort ; `CreateInvisibleSprite` existe déjà local dans field_effect_helpers.ts).
+          `_writeToObjVram` passé public. A/B combat (inline pic mon + tileTag ball) + sonde placeholder `images:[]` +
+          OW (par-nom inchangée). tsc=0.
+        - ⚠️ **B2/B3 — MUR découvert (2026-06-22)** : la voie 3 (par-nom) ne se réduit PAS à un résolveur mécanique. Elle
+          porte (a) le système d'anim LEGACY `spriteAnimStates` (Map ≠ `sprite.anims` inline) que tickSpriteAnims fait
+          vivre pour l'OW, (b) des `tileTag` **STRING** (game `CreateSprite` exige `typeof tileTag === 'number'`), (c) la
+          résolution callback string→fn (spriteCallbacks/globalThis). Router voie 3 via game `CreateSprite` ⇒ desserrer son
+          contrat (tileTag string) + garder un post-step OW anim+callback = DEMI-MESURE (gain = dédup field-patch ;
+          risque hot-path réel : tout NPC/intro/title). Le 1:1 INTÉGRAL = converger l'anim OW sur `sprite.anims` (gros
+          chantier COMPORTEMENTAL, big-bang INTERDIT par le contrat). B3 = migrer ~45 sites `CreateSpriteFromTemplate`
+          (surtout auto-gen intro/title) + ~31 `CreateSpriteInline?.()` (piège optional-call). → **DÉCISION USER requise**
+          sur la direction (demi-mesure dédup vs convergence anim OW vs s'arrêter à B1).
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
