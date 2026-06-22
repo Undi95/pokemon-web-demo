@@ -242,6 +242,11 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: (() => {
     if (typeof window === 'undefined') return [TestGbaScene];
     const params = new URLSearchParams(window.location.search);
+    // Chantier « c » Step 2.2 (gated) : ?unified = teste le HOST UNIFIÉ. TestOverworldScene
+    // boote l'intro dans SON runtime (Copyright→Title→MainMenu→Birch) puis enchaîne l'OW via
+    // SetMainCallback2 dans le MÊME runtime (sans scene.start = 1:1 AgbMain). Le défaut +
+    // ?nointro restent sur le chemin GameScene (sûr) tant que le merge n'est pas validé/par défaut.
+    if (params.has('unified')) return [TestOverworldScene];
     // ?nointro → skip title screen + resume save existante.
     // ?debug → preset complet (tous items, all flags) + spawn Bourg.
     // Les 2 skip le title screen (cf. boot-mode.ts decideBootMode).

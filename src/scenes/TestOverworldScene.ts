@@ -17,7 +17,11 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations } from '../engine/system/decomp-globals';
+import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../engine/system/decomp-globals';
+import { ResetSpriteData } from '../game/sprite';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
+// Chantier « c » Step 2.2 : boot intro réutilisable (host unifié intro+OW, gated ?unified).
+import { registerIntroSpriteCallbacks, bootIntroSequence } from '../engine/boot/intro-host';
 import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
 import {
   loadMapByName,
@@ -270,6 +274,12 @@ export class TestOverworldScene extends Phaser.Scene {
    *  PlayerStep + ScriptContext_RunScript continueraient à tourner pendant
    *  le load → corruption state (= old map data + new player coords). */
   private warpInProgress = false;
+  /** Chantier « c » Step 2.2 (gated ?unified) : mode hôte unifié. true = boote l'intro
+   *  dans CE runtime (Copyright→Title→MainMenu→Birch) puis entre l'OW via CB2_NewGame/
+   *  Continue dans le MÊME runtime (1:1 SetMainCallback2, sans scene.start). */
+  private introMode = false;
+  /** Set true au 1er tick où CB2_NewGame/Continue fire (post-Birch) — anti double-fire. */
+  private overworldTransitionStarted = false;
 
   constructor() { super({ key: 'TestOverworldScene' }); }
 
@@ -367,7 +377,56 @@ export class TestOverworldScene extends Phaser.Scene {
       this.scene.start('TestGbaScene');
     });
 
-    void this.bootOverworld();
+    // Chantier « c » Step 2.2 (gated ?unified) : mode hôte unifié.
+    //  - ?unified : boote l'INTRO dans ce runtime (Copyright→Title→MainMenu→Birch),
+    //    puis update() détecte CB2_NewGame/Continue → enterOverworld dans CE runtime.
+    //  - sinon : boot OW direct (?nointro/?debug/?truck, ou via scene.start GameScene).
+    this.introMode = new URLSearchParams(window.location.search).has('unified');
+    if (this.introMode) {
+      registerIntroSpriteCallbacks(this.rt);
+      void bootIntroSequence(this.rt);
+    } else {
+      void this.bootOverworld();
+    }
+  }
+
+  /** Chantier « c » Step 2.2 : transition intro→OW dans le MÊME runtime (1:1 décomp
+   *  CB2_NewGame/CB2_ContinueSavedGame → SetMainCallback2(CB2_Overworld), sans scene.start).
+   *  Porté de GameScene.transitionToOverworld + resets (sprites/tasks/palettes intro/Birch)
+   *  qui étaient implicites quand on jetait le runtime au scene.start. */
+  private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
+    this.overworldTransitionStarted = true;
+    console.log(`[TestOverworld unified] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} → enterOverworld (${mode})`);
+    if (mode === 'continue') {
+      // 1:1 GameScene : LOAD la save AVANT de toucher l'état (sinon un save() plus
+      // loin écraserait la save avec du vide). decideBootMode lira ensuite la map sauvée.
+      const { LoadGameSave } = await import('../engine/save/save-system');
+      LoadGameSave();
+    } else {
+      // newgame : Birch a posé name/gender dans gSaveBlock2Ptr. Clear la map pour
+      // forcer le truck cinematic (1:1 WarpToTruck post-Birch).
+      SetCurrentMap(undefined);
+    }
+    // 1:1 GameScene : attendre la fin de la fade Birch en cours puis forcer Faded noir
+    // (évite le flash) avant l'entrée OW.
+    if (this.rt.gPaletteFade.active) {
+      let wf = 0;
+      while (this.rt.gPaletteFade.active && wf < 60) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 16));
+        wf++;
+      }
+    }
+    FillPalBufferBlack();
+    // RESETS (1:1 décomp CB2_NewGame/field-init) : nettoie les sprites/tasks/palettes
+    // résiduels de l'intro/Birch. En scene.start c'était implicite (runtime neuf) ;
+    // en runtime partagé il faut le faire explicitement avant que bootOverworld re-init.
+    ResetSpriteData(this.rt);
+    ResetTasks();
+    ResetPaletteFade();
+    FreeAllSpritePalettes();
+    // Entre l'OW dans CE runtime (= 1:1 SetMainCallback2(CB2_Overworld)). bootOverworld
+    // re-run decideBootMode (post-Birch → newgame/truck ; ou resume/saved map).
+    await this.bootOverworld();
   }
 
   /** Async boot : load map + init BG + draw + go. */
@@ -795,7 +854,27 @@ export class TestOverworldScene extends Phaser.Scene {
   }
 
   update(_: number, deltaMs: number): void {
-    if (!this.rt || !this.booted) return;
+    if (!this.rt) return;
+    // Chantier « c » Step 2.2 (mode unifié) : détecte la transition post-Birch vers l'OW
+    // et l'enchaîne dans CE runtime (1:1 SetMainCallback2, sans scene.start). 1:1 GameScene :
+    // null-out callback2 IMMÉDIATEMENT pour empêcher tickFixed de l'exécuter pendant l'await.
+    if (this.introMode && !this.overworldTransitionStarted) {
+      const cb2 = this.rt.gMain.callback2;
+      if (cb2 === CB2_NewGame) {
+        this.rt.gMain.callback2 = null;
+        void this.transitionToOverworld('newgame');
+        return;
+      } else if (cb2 === CB2_ContinueSavedGame) {
+        this.rt.gMain.callback2 = null;
+        void this.transitionToOverworld('continue');
+        return;
+      }
+    }
+    // Skip le tick pendant que la transition async tourne (évite tout leftover callback2).
+    if (this.overworldTransitionStarted && !this.booted) return;
+    // En mode OW-direct, attendre que bootOverworld ait fini (booted). En mode intro,
+    // ticker dès le départ (l'intro a déjà posé son CB2 via bootIntroSequence).
+    if (!this.introMode && !this.booted) return;
     // PlayerStep + CameraUpdate driven par gMain.callback2 dans tickFixed.
     // Optim : tickFixed retourne le nb de frames LOGIQUES exécutées. Si
     // 0 (= update appelé > 60Hz, accumulator pas plein), pas besoin de
