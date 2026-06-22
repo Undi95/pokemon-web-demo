@@ -89,7 +89,7 @@ import {
   BERRY_TREE_ROUTE_123_SITRUS,
   BERRY_TREE_ROUTE_123_RAWST,
   BERRY_TREE_ROUTE_130_LIECHI,
-} from '../decomp-data/include/constants/berry-data';
+} from '../../../include/constants/berry';
 
 /** Table 1:1 EventScript_ResetAllBerries : [berryTreeId, berryType, stade].
  *  berryType = ITEM_TO_BERRY(item) résolu à la génération (item en commentaire). */

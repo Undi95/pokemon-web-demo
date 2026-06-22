@@ -81,7 +81,7 @@ import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED,
-} from '../decomp-data/include/constants/party_menu-data';
+} from '../../../include/constants/party_menu';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;

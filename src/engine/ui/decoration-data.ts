@@ -163,7 +163,7 @@ import {
   DECOR_REGIROCK_DOLL,
   DECOR_REGICE_DOLL,
   DECOR_REGISTEEL_DOLL,
-} from '../decomp-data/include/constants/decorations-data';
+} from '../../../include/constants/decorations';
 import {
   ENUM_DecorationPermission,
   ENUM_DecorationShape,

@@ -43,7 +43,7 @@ import { DrawWholeMapView } from './field_camera';
 import {
   METATILE_Building_TV_On,
   METATILE_Building_TV_Off,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 import { ENUM_MB_0 as MB } from './engine/decomp-data/include/constants/metatile_behaviors-data';
 
 // 1:1 décomp `include/constants/tv.h:79-81` :

@@ -57,7 +57,7 @@ import {
   METATILE_SecretBase_BlueBalloon,
   METATILE_SecretBase_YellowBalloon,
   METATILE_SecretBase_MudBall,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 import {
   VAR_CURRENT_SECRET_BASE,
   VAR_SECRET_BASE_STEP_COUNTER,

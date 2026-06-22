@@ -35,7 +35,7 @@ import { gPlayerAvatar } from '../../src/field_player_avatar';
 import { MapGridGetMetatileIdAt } from '../../src/fieldmap';
 import { SetSurfBlob_BobState } from '../../src/field_effect_helpers';
 import { StartRevealDisguise } from '../../src/field_effect_helpers';
-import * as FE from '../../src/engine/decomp-data/include/constants/field_effects-data';
+import * as FE from '../../include/constants/field_effects';
 // ── Météo (game/field_weather + field_weather_effect) — vraies instances live (bundlé).
 //    L'import de field_weather_effect déclenche _registerWeatherFuncs(ASH) sur la vraie table.
 import {

@@ -87,7 +87,7 @@ import { ENUM_ITEMWIN_1 } from '../decomp-data/include/item_menu-data';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
 } from '../decomp-data/include/gba/io_reg-data';
-import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
+import { SE_SELECT } from '../../../include/constants/songs';
 import { PlaySE } from '../../../harness/runtime/decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────
@@ -119,7 +119,7 @@ const ACTION_DUMMY = 14;
 // 1:1 décomp constants/item.h — pockets. Import depuis decomp-data (= A8 audit).
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
-} from '../decomp-data/include/constants/item-data';
+} from '../../../include/constants/item';
 
 // 1:1 décomp item_menu.h — ITEMMENULOCATION_* (pas extrait decomp-data, hardcode 1:1 justifié).
 const ITEMMENULOCATION_FIELD = 0;

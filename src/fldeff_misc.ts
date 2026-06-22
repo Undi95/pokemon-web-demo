@@ -23,7 +23,7 @@ import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH } from './field_player_a
 import {
   METATILE_SecretBase_BreakableDoor_BottomOpen,
   METATILE_SecretBase_BreakableDoor_TopOpen,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 
 /** 1:1 STRICT décomp `EWRAM_DATA struct MapPosition gPlayerFacingPosition = {0}` (fldeff_misc.c:27).
  *  Posée par `CreateFieldMoveTask` (GetXYCoordsOneStepInFrontOfPlayer) ; lue par les field moves qui

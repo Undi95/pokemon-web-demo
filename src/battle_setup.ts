@@ -645,9 +645,9 @@ function RunScriptImmediatelyCompat(label: string): void {
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { MAX_REMATCH_ENTRIES } from './engine/save/save-blocks';
 import { Random } from './random';
-import { ENUM_REMATCH_0 } from './engine/decomp-data/include/constants/rematches-data';
+import { ENUM_REMATCH_0 } from '../include/constants/rematches';
 import { TRAINER_REGISTERED_FLAGS_START } from './engine/decomp-data/include/constants/flags-data';
-import { MAP_CONSTANTS, MAP_GROUP, MAP_NUM } from './engine/decomp-data/include/constants/map_groups-data';
+import { MAP_CONSTANTS, MAP_GROUP, MAP_NUM } from '../include/constants/map_groups';
 
 /** 1:1 `REMATCHES_COUNT` (include/battle_setup.h:6). */
 const REMATCHES_COUNT = 5;

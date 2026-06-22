@@ -71,8 +71,8 @@ import {
   BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,
   BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_SAFARI, BATTLE_TYPE_ROAMER,
 } from './constants';
-import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
-import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
+import { MOVE_NONE } from '../../../include/constants/moves';
+import { PARTY_SIZE } from '../../../include/constants/global';
 import { MAX_BATTLERS_COUNT } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from '../../battle_util';

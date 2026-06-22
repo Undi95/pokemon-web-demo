@@ -25,7 +25,7 @@
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
 import {
   STRINGID_STATSHARPLY, STRINGID_STATHARSHLY,
-} from '../decomp-data/include/constants/battle_string_ids-data';
+} from '../../../include/constants/battle_string_ids';
 import { getString } from '../ui/gba-strings';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
@@ -76,7 +76,7 @@ async function _buildTrainerIdCache(): Promise<void> {
   if (_trainerIdToKey) return;
   _trainerIdToKey = new Map();
   try {
-    const mod = await import('../decomp-data/include/constants/opponents-data');
+    const mod = await import('../../../include/constants/opponents');
     for (const [key, val] of Object.entries(mod)) {
       if (key.startsWith('TRAINER_') && typeof val === 'number') {
         if (!_trainerIdToKey.has(val)) _trainerIdToKey.set(val, key);

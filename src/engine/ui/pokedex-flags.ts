@@ -25,11 +25,11 @@ import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
 import {
   ENUM_NATIONAL_0, ENUM_HOENN_1,
   NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,
-} from '../decomp-data/include/constants/pokedex-data';
+} from '../../../include/constants/pokedex';
 import {
   sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
 } from '../decomp-data/pokedex-order-tables';
-import { SPECIES_UNOWN, SPECIES_SPINDA } from '../decomp-data/include/constants/species-data';
+import { SPECIES_UNOWN, SPECIES_SPINDA } from '../../../include/constants/species';
 import { gPokedexEntries } from '../decomp-data/pokedex-entries-table';
 export type { PokedexEntryData } from '../decomp-data/pokedex-entries-table';
 export { gPokedexEntries } from '../decomp-data/pokedex-entries-table';

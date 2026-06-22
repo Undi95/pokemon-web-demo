@@ -27,7 +27,7 @@
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { GetWindowFrameTilesPal } from './text_window';
-import { EXT_CTRL_CODE_PAUSE } from './engine/decomp-data/include/constants/characters-data';
+import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -91,7 +91,7 @@ import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWi
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './engine/ui/gba-text-system';
 import { getString } from './engine/ui/gba-strings';
 import { FlagGet } from './engine/script/script-vars';
-import { SE_SELECT as _SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
+import { SE_SELECT as _SE_SELECT } from '../include/constants/songs';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
 // Migré vers import decomp-data songs-data.ts (cleanup B7).

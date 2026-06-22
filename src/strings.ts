@@ -13,7 +13,7 @@
  * une fois (boot — Stage 3 ; ou le test headless STAGE 0). Quand Stage 1 ré-encodera
  * la data au build, ce runtime-encode disparaîtra (data byte natif).
  */
-import { EOS } from './engine/decomp-data/include/constants/characters-data';
+import { EOS } from '../include/constants/characters';
 
 // ─── Charmap transitoire (deviendra la charmap canonique de text.ts au Stage 2) ─
 let _textCharmap: Record<string, number> | null = null;

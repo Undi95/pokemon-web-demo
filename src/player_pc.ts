@@ -62,7 +62,7 @@ import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from './engine/ui/gba-text-system';
 import { encodeOwText } from '../include/text';  // préproc : source FR → bytes charmap
-import * as Songs from './engine/decomp-data/include/constants/songs-data';
+import * as Songs from '../include/constants/songs';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
 } from './engine/pokemon/pc-items';

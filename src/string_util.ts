@@ -32,8 +32,8 @@ import {
   PLACEHOLDER_ID_RIVAL, PLACEHOLDER_ID_VERSION, PLACEHOLDER_ID_AQUA,
   PLACEHOLDER_ID_MAGMA, PLACEHOLDER_ID_ARCHIE, PLACEHOLDER_ID_MAXIE,
   PLACEHOLDER_ID_KYOGRE, PLACEHOLDER_ID_GROUDON,
-} from './engine/decomp-data/include/constants/characters-data';
-import { POKEMON_NAME_LENGTH, PLAYER_NAME_LENGTH, LANGUAGE_JAPANESE, MALE } from './engine/decomp-data/include/constants/global-data';
+} from '../include/constants/characters';
+import { POKEMON_NAME_LENGTH, PLAYER_NAME_LENGTH, LANGUAGE_JAPANESE, MALE } from '../include/constants/global';
 import { ENUM_FONT_0 } from './engine/decomp-data/include/text-data';
 import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../include/string_util';
 // 1:1 décomp string_util.c `#include "strings.h"` : gText_ExpandedPlaceholder_*

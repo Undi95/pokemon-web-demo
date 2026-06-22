@@ -74,7 +74,7 @@ import {
   TEXT_COLOR_LIGHT_GRAY,
   TEXT_COLOR_RED,
   TEXT_COLOR_LIGHT_RED,
-} from '../decomp-data/include/constants/characters-data';
+} from '../../../include/constants/characters';
 
 /** 1:1 décomp option_menu.c FONT_NORMAL default :
  *  [bgColor, fgColor, shadowColor] = [WHITE, DARK_GRAY, LIGHT_GRAY] = [1, 2, 3]

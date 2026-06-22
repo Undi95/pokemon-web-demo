@@ -63,7 +63,7 @@ import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './engine/ui/gba-menu-system';
 import { PlaySE, getRuntime, gMain } from '../harness/runtime/decomp-globals';
-import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from './engine/decomp-data/include/constants/songs-data';
+import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../include/constants/songs';
 import { HasValidSave } from './engine/save/save-system';
 import { bagContents } from './engine/bag/bag';
 import { HideMapNamePopUpWindow } from './map_name_popup';

@@ -50,7 +50,7 @@ import {
   COLLISION_IMPASSABLE, GetJumpMovementAction,
 } from './event_object_movement';
 import { MoveCoords, GetOppositeDirection } from './engine/field/direction-coords';
-import { MAP_TYPE_INDOOR } from './engine/decomp-data/include/constants/map_types-data';
+import { MAP_TYPE_INDOOR } from '../include/constants/map_types';
 import { gMapHeader, MapGridGetMetatileBehaviorAt } from './fieldmap';
 import {
   MetatileBehavior_IsBumpySlope, MetatileBehavior_IsVerticalRail,
@@ -64,8 +64,8 @@ import {
   Overworld_SetSavedMusic, Overworld_ChangeMusicTo,
 } from './overworld';
 import { gBikeCycling } from './field_specials';
-import { MUS_CYCLING } from './engine/decomp-data/include/constants/songs-data';
-import { SE_BIKE_HOP } from './engine/decomp-data/include/constants/songs-data';
+import { MUS_CYCLING } from '../include/constants/songs';
+import { SE_BIKE_HOP } from '../include/constants/songs';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from './engine/field/direction-coords';
 import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';

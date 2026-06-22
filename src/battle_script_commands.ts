@@ -39,7 +39,7 @@ import { CalculateBaseDamage } from './pokemon';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
-import * as _AbilityConsts from './engine/decomp-data/include/constants/abilities-data';
+import * as _AbilityConsts from '../include/constants/abilities';
 import {
   PokemonUseItemEffects,
 } from './engine/bag/bag-item-effects';
@@ -51,7 +51,7 @@ import {
 import {
   ABILITY_PICKUP,
   ABILITY_SERENE_GRACE,
-} from './engine/decomp-data/include/constants/abilities-data';
+} from '../include/constants/abilities';
 import {
   MOVE_EFFECT_BURN,
   MOVE_EFFECT_CHARGING,
@@ -68,12 +68,12 @@ import {
   MOVE_EFFECT_TOXIC,
   MOVE_EFFECT_UPROAR,
   MOVE_EFFECT_WRAP,
-} from './engine/decomp-data/include/constants/battle-data';
+} from '../include/constants/battle';
 import {
   B_ANIM_SNATCH_MOVE,
   B_ANIM_STATS_CHANGE,
   B_ANIM_SUBSTITUTE_FADE,
-} from './engine/decomp-data/include/constants/battle_anim-data';
+} from '../include/constants/battle_anim';
 import {
   EFFECT_ALWAYS_HIT,
   EFFECT_BIDE,
@@ -88,19 +88,19 @@ import {
   EFFECT_SOLAR_BEAM,
   EFFECT_SOLAR_BEAM as _EFFECT_SOLAR_BEAM,
   EFFECT_VITAL_THROW,
-} from './engine/decomp-data/include/constants/battle_move_effects-data';
+} from '../include/constants/battle_move_effects';
 import {
   BS_FAINTED_LINK_MULTIPLE_1,
   BS_FAINTED_LINK_MULTIPLE_2,
   PARTY_SCREEN_OPTIONAL,
-} from './engine/decomp-data/include/constants/battle_script_commands-data';
+} from '../include/constants/battle_script_commands';
 import {
   HOLD_EFFECT_CAN_ALWAYS_RUN,
   HOLD_EFFECT_EVASION_UP as HOLD_EFFECT_EVASION_UP_AC,
   HOLD_EFFECT_EXP_SHARE,
   HOLD_EFFECT_LUCKY_EGG,
   HOLD_EFFECT_MACHO_BRACE,
-} from './engine/decomp-data/include/constants/hold_effects-data';
+} from '../include/constants/hold_effects';
 import {
   MOVE_ASSIST,
   MOVE_CURSE as MOVE_CURSE_ATKCANCELER,
@@ -110,19 +110,19 @@ import {
   MOVE_PAIN_SPLIT,
   MOVE_SLEEP_TALK,
   MOVE_SNATCH as MOVE_SNATCH_ATKCANCELER,
-} from './engine/decomp-data/include/constants/moves-data';
+} from '../include/constants/moves';
 import {
   FLAG_PROTECT_AFFECTED,
   FRIENDSHIP_EVENT_GROW_LEVEL as FRIENDSHIP_EVENT_GROW_LEVEL_N34,
   MAX_PER_STAT_EVS,
   MAX_TOTAL_EVS,
-} from './engine/decomp-data/include/constants/pokemon-data';
+} from '../include/constants/pokemon';
 import {
   MUS_VICTORY_TRAINER as _MUS_VICTORY_TRAINER,
-} from './engine/decomp-data/include/constants/songs-data';
+} from '../include/constants/songs';
 import {
   TRAINER_SECRET_BASE,
-} from './engine/decomp-data/include/constants/trainers-data';
+} from '../include/constants/trainers';
 import {
   gMapHeader,
 } from './fieldmap';
@@ -753,7 +753,7 @@ import {
 } from './engine/battle/script-interpreter';
 import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
-import { ITEM_ENIGMA_BERRY } from './engine/decomp-data/include/constants/items-data';
+import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
 import { fillBattleMonFromParty } from './engine/battle/party-storage';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import type {
@@ -7769,7 +7769,7 @@ const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
 let _trainerIdKeyCache: Map<number, string> | null = null;
 void (async () => {
   try {
-    const mod = await import('./engine/decomp-data/include/constants/opponents-data');
+    const mod = await import('../include/constants/opponents');
     const m = new Map<number, string>();
     for (const [k, v] of Object.entries(mod)) {
       if (k.startsWith('TRAINER_') && typeof v === 'number' && !m.has(v)) m.set(v, k);

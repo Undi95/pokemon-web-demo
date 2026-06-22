@@ -4117,7 +4117,7 @@ import {
   MOVEMENT_ACTION_LOCK_ANIM, MOVEMENT_ACTION_UNLOCK_ANIM,
   MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP,
   MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT, MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT,
-} from './engine/decomp-data/include/constants/event_object_movement-data';
+} from '../include/constants/event_object_movement';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
  *    SetObjectEventDirection(objectEvent, direction);

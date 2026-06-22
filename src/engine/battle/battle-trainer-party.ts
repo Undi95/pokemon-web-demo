@@ -38,8 +38,8 @@ import {
   BATTLE_TYPE_TRAINER, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_EREADER_TRAINER,
   BATTLE_TYPE_TRAINER_HILL, BATTLE_TYPE_TWO_OPPONENTS,
 } from './constants';
-import { MAX_PER_STAT_IVS } from '../decomp-data/include/constants/pokemon-data';
-import { TRAINER_SECRET_BASE } from '../decomp-data/include/constants/trainers-data';
+import { MAX_PER_STAT_IVS } from '../../../include/constants/pokemon';
+import { TRAINER_SECRET_BASE } from '../../../include/constants/trainers';
 // Voie L : mon dresseur BATTLE-READY (= CreateMon plein) ecrit dans gEnemyParty (party-storage,
 // array LU par la voie L). Remplace le _CreateMon stub (sans stats, mauvais array). T2 du port trainer.
 import { createPokemonInstance, type PokemonInstance, type StatSpread } from '../pokemon/pokemon';

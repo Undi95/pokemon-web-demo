@@ -112,7 +112,7 @@ import {
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from './engine/decomp-data/include/constants/species-data';
+} from '../include/constants/species';
 import { gBitTable } from './engine/battle/battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from './engine/battle/util';
 import {
@@ -127,7 +127,7 @@ import {
   ITEM_NONE,
   ITEM_FULL_RESTORE,
   ITEM_ENIGMA_BERRY,
-} from './engine/decomp-data/include/constants/items-data';
+} from '../include/constants/items';
 import {
   ITEM0_X_ATTACK,
   ITEM0_DIRE_HIT,
@@ -143,13 +143,13 @@ import {
   ITEM3_SLEEP,
   ITEM3_GUARD_SPEC,
   ITEM4_HEAL_HP,
-} from './engine/decomp-data/include/constants/item_effects-data';
+} from '../include/constants/item_effects';
 
 // ─── Constantes locales 1:1 ────────────────────────────────────────────────
 
 /** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). Import
  *  depuis decomp-data au lieu de hardcode (= A8 audit). */
-import { B_FLANK_LEFT } from './engine/decomp-data/include/constants/battle-data';
+import { B_FLANK_LEFT } from '../include/constants/battle';
 /** 1:1 décomp `enum` battle_ai_switch_items.h:4-32 — AI_ITEM_* / AI_HEAL_* / AI_X_*. */
 import {
   ENUM_AI_0, ENUM_AI_1, ENUM_AI_2,

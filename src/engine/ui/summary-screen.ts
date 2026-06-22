@@ -77,8 +77,8 @@ import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimati
 import type { DecompTask, DecompSprite } from '../../../harness/runtime/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
 import { sTMHMMoves } from '../pokemon/tmhm-moves';
-import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
-import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../decomp-data/include/constants/songs-data';
+import { MAX_MON_MOVES } from '../../../include/constants/global';
+import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../../../include/constants/songs';
 
 /* ============================================================================
  * Constantes 1:1 décomp

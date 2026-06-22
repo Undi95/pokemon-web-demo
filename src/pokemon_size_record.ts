@@ -33,7 +33,7 @@ import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEF
 import { setStringVar } from './engine/system/string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
-} from './engine/decomp-data/include/constants/species-data';
+} from '../include/constants/species';
 import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from './engine/decomp-data/include/constants/vars-data';
 
 // 1:1 décomp pokemon_size_record.c:12 — `#define DEFAULT_MAX_SIZE 0x8000`.

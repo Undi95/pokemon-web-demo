@@ -71,7 +71,7 @@ import {
   MOVE_POWER_OTHER as _MOVE_POWER_OTHER,
   MOVE_NOT_MOST_POWERFUL as _MOVE_NOT_MOST_POWERFUL,
   MOVE_MOST_POWERFUL as _MOVE_MOST_POWERFUL,
-} from './engine/decomp-data/include/constants/battle_ai-data';
+} from '../include/constants/battle_ai';
 import {
   gAIScriptPtr,
   setAiScriptPtr,
@@ -89,7 +89,7 @@ import { GetItemHoldEffect, GetItemHoldEffectParam } from './engine/battle/data/
 import {
   HOLD_EFFECT_MACHO_BRACE,
   HOLD_EFFECT_QUICK_CLAW,
-} from './engine/decomp-data/include/constants/hold_effects-data';
+} from '../include/constants/hold_effects';
 import {
   gPlayerParty,
   gEnemyParty,
@@ -104,7 +104,7 @@ import {
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from './engine/decomp-data/include/constants/species-data';
+} from '../include/constants/species';
 import {
   EFFECT_EXPLOSION,
   EFFECT_DREAM_EATER,
@@ -118,7 +118,7 @@ import {
   EFFECT_SUPERPOWER,
   EFFECT_ERUPTION,
   EFFECT_OVERHEAT,
-} from './engine/decomp-data/include/constants/battle_move_effects-data';
+} from '../include/constants/battle_move_effects';
 import { gBitTable } from './engine/battle/battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { FlagGet } from './engine/script/script-vars';
@@ -173,7 +173,7 @@ import { getTrainer, type TrainerData } from './engine/data/game-data';
 // Static import (= module constants leaf, aucun risque circulaire) : évite
 // la race + fragilité de chemin du dynamic import async (bug Commit 4 :
 // _trainerIdToKey restait vide → aiFlags 0 sur tous les dresseurs).
-import * as OPPONENTS_DATA from './engine/decomp-data/include/constants/opponents-data';
+import * as OPPONENTS_DATA from '../include/constants/opponents';
 
 // ═══ Constantes AI (battle_ai_script_commands.c / battle_ai.h) — SPLIT depuis
 //     ai-state.ts (2026-06-13) : ai-state.ts devient runtime bytecode PUR. ═══

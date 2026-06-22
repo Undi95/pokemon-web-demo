@@ -39,7 +39,7 @@
  */
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { DECOR_NONE } from './engine/decomp-data/include/constants/decorations-data';
+import { DECOR_NONE } from '../include/constants/decorations';
 import {
   ENUM_DecorationCategory,
 } from './engine/decomp-data/include/decoration-data';

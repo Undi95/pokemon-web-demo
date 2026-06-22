@@ -18,7 +18,7 @@ import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { ScriptContext_Enable } from './script';
 import { PlaySE } from '../harness/runtime/decomp-globals';
-import { SE_M_ROCK_THROW } from './engine/decomp-data/include/constants/songs-data';
+import { SE_M_ROCK_THROW } from '../include/constants/songs';
 
 /** 1:1 décomp `FLDEFF_USE_ROCK_SMASH = 37` (include/constants/field_effects.h). */
 const FLDEFF_USE_ROCK_SMASH = 37;

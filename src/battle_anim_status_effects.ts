@@ -172,7 +172,7 @@ import {
 } from './engine/decomp-data/include/battle_anim-data';
 import {
   STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF, STAT_ACC, STAT_EVASION,
-} from './engine/decomp-data/include/constants/pokemon-data';
+} from '../include/constants/pokemon';
 import { InitStatsChangeAnimation } from './battle_anim_utility_funcs';
 
 /** 1:1 `AnimTask_StatsChange` (battle_anim_status_effects.c:482). */

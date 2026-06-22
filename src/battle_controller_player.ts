@@ -117,7 +117,7 @@ import {
   getPartyStatusDelayTimer as _getPartyStatusDelayTimer,
   setPartyStatusDelayTimer as _setPartyStatusDelayTimer,
 } from './engine/battle/battle-sprites-data';
-import { B_ANIM_SWITCH_OUT_PLAYER_MON } from './engine/decomp-data/include/constants/battle_anim-data';
+import { B_ANIM_SWITCH_OUT_PLAYER_MON } from '../include/constants/battle_anim';
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from './engine/battle/constants';
 import { getExpForLevel } from './engine/battle/data/experience-tables';
 import { getSpeciesGrowthRate } from './engine/battle/data/species-runtime';

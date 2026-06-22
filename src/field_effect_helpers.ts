@@ -103,7 +103,7 @@ import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
 import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo } from './overworld';
-import { MUS_SURF, SE_BALL, MUS_HEAL } from './engine/decomp-data/include/constants/songs-data';
+import { MUS_SURF, SE_BALL, MUS_HEAL } from '../include/constants/songs';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart, FieldEffectFreeGraphicsResources,
 } from './field_effect';

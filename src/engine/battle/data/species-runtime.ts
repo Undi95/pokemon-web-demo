@@ -11,7 +11,7 @@
  */
 
 import { getSpeciesInfo } from '../../data/game-data';
-import * as SpeciesConsts from '../../decomp-data/include/constants/species-data';
+import * as SpeciesConsts from '../../../../include/constants/species';
 import { GROWTH_MEDIUM_FAST } from './experience-tables';
 
 /** 1:1 décomp constants/pokemon_types.h — TYPE_* enum. */

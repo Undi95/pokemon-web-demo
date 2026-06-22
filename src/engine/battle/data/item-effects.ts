@@ -17,12 +17,12 @@
 import {
   ITEM_POTION,
   ITEM_ENIGMA_BERRY,
-} from '../../decomp-data/include/constants/items-data';
+} from '../../../../include/constants/items';
 import {
   ITEM_EFFECT_ARG_START,
   ITEM4_PP_UP,
   ITEM4_REVIVE,
-} from '../../decomp-data/include/constants/item_effects-data';
+} from '../../../../include/constants/item_effects';
 
 interface RawItemEffects {
   _meta?: { itemPotion?: number; count?: number; nullEntries?: number };

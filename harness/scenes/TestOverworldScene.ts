@@ -202,7 +202,7 @@ import { PlaySE } from '../runtime/decomp-globals';
 import {
   SE_EXIT,
   SE_WARP_IN,
-} from '../../src/engine/decomp-data/include/constants/songs-data';
+} from '../../include/constants/songs';
 import {
   InitFieldMessageBox,
   TickFieldMessageBox,
@@ -217,7 +217,7 @@ import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadTextWindowFrames } from '../../src/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from '../../src/engine/system/fade-screen';
-import * as Songs from '../../src/engine/decomp-data/include/constants/songs-data';
+import * as Songs from '../../include/constants/songs';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../../src/engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).

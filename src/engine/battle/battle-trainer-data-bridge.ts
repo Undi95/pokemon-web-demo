@@ -26,7 +26,7 @@
 
 import { getSpeciesId } from '../../../harness/runtime/data-tables';
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
-import * as _opponents from '../decomp-data/include/constants/opponents-data';
+import * as _opponents from '../../../include/constants/opponents';
 
 // 1:1 decomp `partyFlags` (include/data.h:67-70) — re-derive depuis la macro string `partyType`.
 const PARTY_FLAGS_BY_TYPE: Record<string, number> = {

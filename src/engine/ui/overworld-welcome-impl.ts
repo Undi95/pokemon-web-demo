@@ -44,7 +44,7 @@ import {
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, AddWindow, DrawStdFrameWithCustomTileAndPalette } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { MUS_LITTLEROOT as _MUS_LITTLEROOT } from '../decomp-data/include/constants/songs-data';
+import { MUS_LITTLEROOT as _MUS_LITTLEROOT } from '../../../include/constants/songs';
 
 // 1:1 décomp include/constants/songs.h:336 — MUS_LITTLEROOT (Littleroot Town BGM).
 // Migré vers import decomp-data songs-data.ts (cleanup B7).

@@ -65,7 +65,7 @@ import {
   SE_TRUCK_STOP,
   SE_TRUCK_UNLOAD,
   SE_TRUCK_DOOR,
-} from './engine/decomp-data/include/constants/songs-data';
+} from '../include/constants/songs';
 import {
   METATILE_InsideOfTruck_DoorClosedFloor_Top,
   METATILE_InsideOfTruck_DoorClosedFloor_Mid,
@@ -73,7 +73,7 @@ import {
   METATILE_InsideOfTruck_ExitLight_Top,
   METATILE_InsideOfTruck_ExitLight_Mid,
   METATILE_InsideOfTruck_ExitLight_Bottom,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 import { MAP_OFFSET, MapGridSetMetatileIdAt } from './fieldmap';
 import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';

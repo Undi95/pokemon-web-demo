@@ -39,7 +39,7 @@ import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } fro
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
-import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-data';
+import { EOS, CHAR_NEWLINE } from '../../../include/constants/characters';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';
 import { PokemonUseItemEffects } from './bag-item-effects';

@@ -123,7 +123,7 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN, MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT,
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
   ANIM_FIELD_MOVE,
-} from './engine/decomp-data/include/constants/event_object_movement-data';
+} from '../include/constants/event_object_movement';
 import {
   GetFaceDirectionMovementAction,
   CreateTask, DestroyTask,
@@ -139,7 +139,7 @@ import {
   SetSpriteInvisible as _SetSpriteInvisible,
 } from './field_effect_helpers';
 import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
-import { MOVE_SURF } from './engine/decomp-data/include/constants/moves-data';
+import { MOVE_SURF } from '../include/constants/moves';
 // ─── Pêche (Task_Fishing) : combat + texte/fenêtre + anim ───
 import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from './wild_encounter';
 import {
@@ -203,7 +203,7 @@ import {
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
   DestroySprite,
 } from './sprite';
-import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from './engine/decomp-data/include/constants/songs-data';
+import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../include/constants/songs';
 import {
   getWarpKindFor,
   isArrowWarpMetatileBehavior,
@@ -221,14 +221,14 @@ import {
   getInputDirection as _getInputDirection,
 } from './engine/field/direction-coords';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
-import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from './engine/decomp-data/include/constants/game_stat-data';
+import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../include/constants/game_stat';
 import {
   OBJ_EVENT_GFX_PUSHABLE_BOULDER,
   OBJ_EVENT_GFX_BRENDAN_NORMAL, OBJ_EVENT_GFX_BRENDAN_MACH_BIKE, OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,
   OBJ_EVENT_GFX_BRENDAN_SURFING, OBJ_EVENT_GFX_BRENDAN_UNDERWATER,
   OBJ_EVENT_GFX_MAY_NORMAL, OBJ_EVENT_GFX_MAY_MACH_BIKE, OBJ_EVENT_GFX_MAY_ACRO_BIKE,
   OBJ_EVENT_GFX_MAY_SURFING, OBJ_EVENT_GFX_MAY_UNDERWATER,
-} from './engine/decomp-data/include/constants/event_objects-data';
+} from '../include/constants/event_objects';
 import { NUM_ACRO_BIKE_COLLISIONS } from './engine/decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct

@@ -81,7 +81,7 @@ import {
   MOVEMENT_ACTION_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
   MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
   MOVEMENT_ACTION_STEP_END,
-} from './engine/decomp-data/include/constants/event_object_movement-data';
+} from '../include/constants/event_object_movement';
 
 /** 1:1 décomp `asm/macros/movement.inc:create_movement_action` table.
  *  Maps action name string (snake_case) → numeric MOVEMENT_ACTION_X (u8).

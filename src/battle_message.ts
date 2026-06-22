@@ -58,7 +58,7 @@ import {
   _resolveReturnmonStringName, _resolveSwitchinmonStringName,
 } from './engine/battle/battle-string-decoder';
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES, BATTLESTRINGS_TABLE_START } from './engine/decomp-data/battle-strings-table';
-import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from './engine/decomp-data/include/constants/battle_string_ids-data';
+import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../include/constants/battle_string_ids';
 import { getString } from './engine/ui/gba-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)

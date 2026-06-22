@@ -77,7 +77,7 @@ import {
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
   TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5,
-} from '../decomp-data/include/constants/characters-data';
+} from '../../../include/constants/characters';
 import { BG_PLTT_ID } from '../../../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -89,13 +89,13 @@ import {
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET,
   KEYITEMS_POCKET, POCKETS_COUNT,
-} from '../decomp-data/include/constants/item-data';
+} from '../../../include/constants/item';
 import { BG_SCREEN_SIZE } from '../decomp-data/include/gba/defines-data';
 import {
   ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01,
   ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
-} from '../decomp-data/include/constants/items-data';
-import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
+} from '../../../include/constants/items';
+import { SE_SELECT } from '../../../include/constants/songs';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../../../harness/runtime/decomp-globals';
 import {

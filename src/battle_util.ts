@@ -125,12 +125,12 @@ import {
   B_BUFF_EOS,
 } from './engine/battle/text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from './engine/battle/state';
-import { SPECIES_CASTFORM } from './engine/decomp-data/include/constants/species-data';
+import { SPECIES_CASTFORM } from '../include/constants/species';
 import { RecordAbilityBattle as _recordAbilityBattleFullABE } from './battle_ai_script_commands';
 import {
   WEATHER_NONE, WEATHER_RAIN, WEATHER_RAIN_THUNDERSTORM,
   WEATHER_SANDSTORM, WEATHER_DROUGHT, WEATHER_DOWNPOUR,
-} from './engine/decomp-data/include/constants/weather-data';
+} from '../include/constants/weather';
 // ─── DoFieldEndTurnEffects/DoBattlerEndTurnEffects (battle_util.c:1168-2200) —
 //     absorbé au miroir 2026-06-13, ex-engine/battle/end-turn-effects.ts. Imports
 //     nouveaux (le reste réutilise les blocs précédents ; dédup piloté par tsc). ───
@@ -155,7 +155,7 @@ import {
 import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from './engine/battle/text-buffers';
 import {
   MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST, MOVE_FUTURE_SIGHT,
-} from './engine/decomp-data/include/constants/moves-data';
+} from '../include/constants/moves';
 // ─── Helpers battle_util.c absorbés depuis util.ts (grab-bag, stage 2) ───
 import {
   BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
@@ -199,7 +199,7 @@ import {
   HOLD_EFFECT_RESTORE_STATS,
   HOLD_EFFECT_FLINCH, HOLD_EFFECT_DOUBLE_PRIZE,
   HOLD_EFFECT_LEFTOVERS, HOLD_EFFECT_SHELL_BELL,
-} from './engine/decomp-data/include/constants/hold_effects-data';
+} from '../include/constants/hold_effects';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_IBE,
   gBattleTextBuff2 as _gBattleTextBuff2_IBE,
@@ -238,7 +238,7 @@ import {
   HITMARKER_DISOBEDIENT_MOVE, HITMARKER_UNABLE_TO_USE_MOVE,
   ABILITY_VITAL_SPIRIT, ABILITY_INSOMNIA,
 } from './engine/battle/constants';
-import { SPECIES_MEW, SPECIES_DEOXYS } from './engine/decomp-data/include/constants/species-data';
+import { SPECIES_MEW, SPECIES_DEOXYS } from '../include/constants/species';
 import { CalculateBaseDamage } from './pokemon';
 import { gPlayerParty, GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -1163,7 +1163,7 @@ import {
   STATUS3_ROOTED,
   TYPE_FLYING, TYPE_STEEL,
 } from './engine/battle/constants';
-import { HOLD_EFFECT_CAN_ALWAYS_RUN } from './engine/decomp-data/include/constants/hold_effects-data';
+import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../include/constants/hold_effects';
 import { GetItemHoldEffect } from './engine/battle/data/item-hold-effects';
 // ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER : défini localement (corps AbilityBattleEffects absorbé).
 

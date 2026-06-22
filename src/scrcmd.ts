@@ -10,8 +10,8 @@
  * `engine/script/{script-runtime,script-vars,script-opcodes-helpers}.ts`
  * (= script.c / event_data.c / helpers ; merges séparés du marathon).
  */
-import * as WeatherConstants from './engine/decomp-data/include/constants/weather-data';
-import * as Songs from './engine/decomp-data/include/constants/songs-data';
+import * as WeatherConstants from '../include/constants/weather';
+import * as Songs from '../include/constants/songs';
 import { getItem, getItemNameFr, getMoveNameFr, getSpeciesNameFr, getTrainer, getTrainerClassNameFr, getTrainerNameFr } from '../harness/runtime/data-tables';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
@@ -22,8 +22,8 @@ import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
 import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon, StartFirstBattle } from './engine/battle/battle-setup-helpers';
 import { CalculatePPWithBonus, GetMonData, MON_DATA_IS_EGG, MON_DATA_MET_LOCATION, MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_SPECIES, MonKnowsMove, SetMonData, gPlayerParty } from './engine/battle/party-storage';
-import { MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT, MOVEMENT_ACTION_FACE_UP } from './engine/decomp-data/include/constants/event_object_movement-data';
-import { MAX_MON_MOVES, PARTY_SIZE } from './engine/decomp-data/include/constants/global-data';
+import { MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT, MOVEMENT_ACTION_FACE_UP } from '../include/constants/event_object_movement';
+import { MAX_MON_MOVES, PARTY_SIZE } from '../include/constants/global';
 import { applyMovement, isAllMovementsDone, isMovementDone } from './engine/field/movement-system';
 import { SetDynamicWarp, getPendingWarp, setPendingWarp } from './engine/field/warp-system';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';

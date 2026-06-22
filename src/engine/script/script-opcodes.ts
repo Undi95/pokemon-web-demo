@@ -25,7 +25,7 @@ import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from '../field/movement-system';
 import { PlaySE } from '../../../harness/runtime/decomp-globals';
-import * as Songs from '../decomp-data/include/constants/songs-data';
+import * as Songs from '../../../include/constants/songs';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
 } from '../../event_object_movement';

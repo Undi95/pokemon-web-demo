@@ -29,7 +29,7 @@ import {
   TYPE_NORMAL, TYPE_FIGHTING, TYPE_FLYING, TYPE_POISON, TYPE_GROUND,
   TYPE_ROCK, TYPE_BUG, TYPE_GHOST, TYPE_STEEL, TYPE_FIRE, TYPE_WATER,
   TYPE_GRASS, TYPE_ELECTRIC, TYPE_PSYCHIC, TYPE_ICE, TYPE_DRAGON, TYPE_DARK,
-} from '../../decomp-data/include/constants/pokemon-data';
+} from '../../../../include/constants/pokemon';
 
 /** 1:1 décomp `gTypeEffectiveness[336]` (battle_main.c:335-449). */
 export const gTypeEffectiveness: ReadonlyArray<number> = [

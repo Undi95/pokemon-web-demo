@@ -66,10 +66,10 @@ import { GetSaveBlock1 } from './engine/save/save-system';
 // args (= élimine désync historique cam.x ≠ player.x).
 import { gSaveBlock1Ptr } from './engine/ui/gba-menu-system';
 import { DIR_TO_DX, DIR_TO_DY } from './engine/field/direction-coords';
-import { BERRY_TREE_ID_BY_NAME } from './engine/decomp-data/include/constants/berry-data';
+import { BERRY_TREE_ID_BY_NAME } from '../include/constants/berry';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,
-} from './engine/decomp-data/include/constants/global-data';
+} from '../include/constants/global';
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
@@ -88,7 +88,7 @@ import {
   METATILE_SecretBase_SandOrnament_Base1,
   METATILE_SecretBase_BreakableDoor_TopClosed,
   METATILE_SecretBase_BreakableDoor_BottomClosed,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 
 // ─── Hook registry RunOnLoadMapScript (HOISTÉ — anti-TDZ) ───────────────────
 //

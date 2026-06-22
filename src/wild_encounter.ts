@@ -59,7 +59,7 @@ import {
 } from './metatile_behavior';
 import { IncrementGameStat, PlayerGetDestCoords } from './field_player_avatar';
 import { MapGridGetMetatileBehaviorAt } from './fieldmap';
-import { GAME_STAT_FISHING_ENCOUNTERS } from './engine/decomp-data/include/constants/game_stat-data';
+import { GAME_STAT_FISHING_ENCOUNTERS } from '../include/constants/game_stat';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;

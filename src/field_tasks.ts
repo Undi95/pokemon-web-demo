@@ -96,7 +96,7 @@ import {
   METATILE_General_MuddySlope_Frame1,
   METATILE_General_MuddySlope_Frame2,
   METATILE_General_MuddySlope_Frame3,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 import {
   VAR_ASH_GATHER_COUNT,
   VAR_ICE_STEP_COUNT,

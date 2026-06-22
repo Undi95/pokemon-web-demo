@@ -35,7 +35,7 @@ import {
 } from './decomp-runtime';
 import { G_SINE_TABLE } from '../../src/engine/decomp-data/src/sine-table';
 import { SONG_ID_TO_NAME, getSongConfig } from '../../src/engine/decomp-data/src/song-table';
-import { MUS_NONE as _MUS_NONE } from '../../src/engine/decomp-data/include/constants/songs-data';
+import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
 import { setReverb as _staticSetReverb } from '../m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
@@ -1175,7 +1175,7 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
       // species-data.ts exporte tous les `SPECIES_X = N`. Module import = sync
       // après bundling, mais on dynamic-import pour rester async-safe.
       const [speciesData, criesResp] = await Promise.all([
-        import('../../src/engine/decomp-data/include/constants/species-data'),
+        import('../../include/constants/species'),
         fetch('/decomp/em/cries.json'),
       ]);
       const cries = await criesResp.json() as Record<string, string>;

@@ -37,9 +37,9 @@ import { setFieldEffectAnims } from './field_effect_helpers';
 import { ANIMCMD_FRAME, ANIMCMD_JUMP, ANIMCMD_END, type AnimCmd } from './sprite';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader } from './fieldmap';
-import * as WeatherConstants from './engine/decomp-data/include/constants/weather-data';
+import * as WeatherConstants from '../include/constants/weather';
 import { IncrementGameStat } from './field_player_avatar';
-import { GAME_STAT_GOT_RAINED_ON } from './engine/decomp-data/include/constants/game_stat-data';
+import { GAME_STAT_GOT_RAINED_ON } from '../include/constants/game_stat';
 import {
   gWeatherPtr,
   GFXTAG_ASH,

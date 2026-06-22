@@ -14,7 +14,7 @@
 
 import { SetWeather } from './field_weather_effect';
 import { setDoCoordEventWeatherHook } from './script';
-import * as WeatherConstants from './engine/decomp-data/include/constants/weather-data';
+import * as WeatherConstants from '../include/constants/weather';
 import {
   WEATHER_SUNNY_CLOUDS, WEATHER_SUNNY, WEATHER_RAIN, WEATHER_SNOW, WEATHER_RAIN_THUNDERSTORM,
   WEATHER_FOG_HORIZONTAL, WEATHER_FOG_DIAGONAL, WEATHER_VOLCANIC_ASH, WEATHER_SANDSTORM,
@@ -24,7 +24,7 @@ import {
   COORD_EVENT_WEATHER_FOG_DIAGONAL, COORD_EVENT_WEATHER_VOLCANIC_ASH, COORD_EVENT_WEATHER_SANDSTORM,
   COORD_EVENT_WEATHER_SHADE, COORD_EVENT_WEATHER_DROUGHT, COORD_EVENT_WEATHER_ROUTE119_CYCLE,
   COORD_EVENT_WEATHER_ROUTE123_CYCLE,
-} from './engine/decomp-data/include/constants/weather-data';
+} from '../include/constants/weather';
 
 interface CoordEventWeather {
   coordEventWeather: number;

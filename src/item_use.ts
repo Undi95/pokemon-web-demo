@@ -79,7 +79,7 @@ import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
 import { gPlayerParty } from './engine/battle/party-storage';
 import { gMoveNames } from './engine/data/game-data';
 import { RemoveBagItem } from './engine/bag/bag';
-import { SE_USE_ITEM, SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
+import { SE_USE_ITEM, SE_SELECT } from '../include/constants/songs';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 

@@ -30,7 +30,7 @@ import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
 // (Le miroir src/game/battle_transition.ts est chargé par la scène — import ici
 //  = cycle ESM TDZ au boot froid, BG_SCREEN_SIZE before initialization.)
-import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
+import { MUS_VS_WILD, MUS_VS_TRAINER } from '../../../include/constants/songs';
 // Transitions (flash/Slice/WhiteBars/PokeballsTrail) : MIROIR src/game/
 // battle_transition.ts, consommé via la surface __battleTransitionMirror
 // (déplacement condition C — l'import statique du miroir = cycle TDZ).

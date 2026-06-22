@@ -30,7 +30,7 @@ import {
   ITEM4_PP_UP, ITEM4_REVIVE, ITEM4_EVO_STONE,
   ITEM5_EV_DEF, ITEM5_EV_SPEED, ITEM5_EV_SPDEF, ITEM5_EV_SPATK, ITEM5_PP_MAX,
   ITEM5_FRIENDSHIP_LOW, ITEM5_FRIENDSHIP_MID, ITEM5_FRIENDSHIP_HIGH,
-} from '../decomp-data/include/constants/item_effects-data';
+} from '../../../include/constants/item_effects';
 // 1:1 décomp battle state (pour branches usedByAI=TRUE / gMain.inBattle=TRUE).
 // Notre flag `gMain.inBattle` : on utilise gBattleTypeFlags !== 0 + battler != MAX.
 import {
@@ -60,8 +60,8 @@ const ITEM3_STATUS_ALL =
 
 // 1:1 décomp constants/pokemon.h — utilise les imports decomp-data au lieu de
 // hardcode (= 1:1 strict pattern A8 audit).
-import { MAX_LEVEL, MAX_TOTAL_EVS, EV_ITEM_RAISE_LIMIT } from '../decomp-data/include/constants/pokemon-data';
-import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
+import { MAX_LEVEL, MAX_TOTAL_EVS, EV_ITEM_RAISE_LIMIT } from '../../../include/constants/pokemon';
+import { MAX_MON_MOVES } from '../../../include/constants/global';
 const _MAX_PP_BONUS = 3;  // 1:1 décomp pokemon.c: PP Up max = 3 (= +60% PP). Pas de constante extraite.
 
 // 1:1 décomp `sGetMonDataEVConstants` (pokemon.c). Ordre des accès EV dans

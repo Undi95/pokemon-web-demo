@@ -21,7 +21,7 @@ import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 // OPTIONS_BUTTON_MODE_LR = 1:1 `include/constants/global.h` (constante) — importée
 // de sa source décomp-data, PAS de gba-menu-system (évite le cycle menu→menu_helpers
 // →gba-menu-system→menu qui cassait l'init quand menu.ts est devenu foundational).
-import { OPTIONS_BUTTON_MODE_LR } from './engine/decomp-data/include/constants/global-data';
+import { OPTIONS_BUTTON_MODE_LR } from '../include/constants/global';
 import { ItemIsMail } from './mail_data';
 
 // ─── Constantes 1:1 ──────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ import {
 import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';
-import { MUS_DUMMY } from './engine/decomp-data/include/constants/songs-data';
+import { MUS_DUMMY } from '../include/constants/songs';
 import { FlagGet, FlagClear, VarGet, VarSet } from './engine/script/script-vars';
 
 /** 1:1 décomp `enum { BG_COORD_SET, BG_COORD_ADD }` (bg.h:26) → BG_COORD_SET = 0.

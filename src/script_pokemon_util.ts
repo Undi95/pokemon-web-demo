@@ -13,8 +13,8 @@
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { GetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
-import { PARTY_SIZE } from './engine/decomp-data/include/constants/global-data';
-import { SPECIES_NONE, SPECIES_EGG } from './engine/decomp-data/include/constants/species-data';
+import { PARTY_SIZE } from '../include/constants/global';
+import { SPECIES_NONE, SPECIES_EGG } from '../include/constants/species';
 
 /** 1:1 décomp `CheckPartyMonHasHeldItem(item)` (script_pokemon_util.c:115-126).
  *  ```c

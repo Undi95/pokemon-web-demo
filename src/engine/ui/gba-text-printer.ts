@@ -34,7 +34,7 @@ import {
   EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_PLAY_SE,
   EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP, EXT_CTRL_CODE_CLEAR_TO,
   EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_FONT,
-} from '../decomp-data/include/constants/characters-data';
+} from '../../../include/constants/characters';
 // VAGUE 2c : `runTextPrinter` délègue à `RenderText` (miroir). Cycle
 // gba-text-printer↔text.ts runtime-safe (RenderText n'utilise les exports de
 // ce module que dans des fonctions, jamais au top-level).

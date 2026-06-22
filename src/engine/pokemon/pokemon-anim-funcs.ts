@@ -106,7 +106,7 @@ async function _hydrateFromGeneratedData(): Promise<void> {
   try {
     const [tablesMod, speciesMod] = await Promise.all([
       import('../decomp-data/src/mon-anim-tables-data'),
-      import('../decomp-data/include/constants/species-data'),
+      import('../../../include/constants/species'),
     ]);
     const speciesNameToId = speciesMod as unknown as Record<string, number>;
     // Front anim ids

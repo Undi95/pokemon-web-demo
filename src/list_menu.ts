@@ -63,7 +63,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from './sprite';
 import { gSineTable } from '../harness/runtime/decomp-helpers';
-import { SE_SELECT as _SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
+import { SE_SELECT as _SE_SELECT } from '../include/constants/songs';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
 

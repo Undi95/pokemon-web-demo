@@ -30,7 +30,7 @@
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { loadTileBin } from '../harness/gba/png-loader';
-import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from './engine/decomp-data/include/constants/songs-data';
+import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from '../include/constants/songs';
 import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './fieldmap';
 import { MB_ANIMATED_DOOR } from './engine/field/tilemap-loader';
 import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from './field_camera';
@@ -87,7 +87,7 @@ import {
   METATILE_BattleTent_Door,
   METATILE_TrainerHill_Door_Elevator_Lobby,
   METATILE_TrainerHill_Door_Elevator_Roof,
-} from './engine/decomp-data/include/constants/metatile_labels-data';
+} from '../include/constants/metatile_labels';
 import {
   sDoorAnimPalettes_General,
   sDoorAnimPalettes_PokeCenter,

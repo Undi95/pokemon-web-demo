@@ -25,7 +25,7 @@ import {
   EXT_CTRL_CODE_PAUSE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_SHIFT_RIGHT, EXT_CTRL_CODE_SHIFT_DOWN,
   EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_PLAY_SE, EXT_CTRL_CODE_WAIT_SE, EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP,
   EXT_CTRL_CODE_CLEAR_TO, EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_JPN, EXT_CTRL_CODE_ENG,
-} from './engine/decomp-data/include/constants/characters-data';
+} from '../include/constants/characters';
 import {
   encodeStringForFont, blitGlyphToWindow, gTextFlags, _getTextInputState, LINE_HEIGHT,
   scrollWindow, fillWindowPixelBuffer, fillWindowPixelRect, textPrinterDrawDownArrow,
