@@ -199,6 +199,25 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
             - ⏭️ **Prochain lot** (chacune : defs objet dans le fichier-home + ajout au Set si auto-gen + A/B) : **intro**
               (`intro-callbacks-auto.ts`, ~20 appels : Flygon/Torchic/Marshtomp…), **credits** (`intro_credits_graphics`, 7),
               puis **battle anims** (`battle_anim_*`) — jusqu'au RETRAIT du résolveur `CreateSpriteFromTemplate` + dispatcher (4).
+            - ✅ **Feature #4 — gAncientPowerRockSpriteTemplate** (`f6d48908`, = glitch 5 Groudon) : 1er template intro converti
+              (decomp-globals, tileTag STRING 'ANIM_TAG_ROCKS'). ⚠ LEÇON : les sheets intro/battle-anim s'enregistrent sous des
+              tags STRING → tout template intro doit utiliser le tag string du catalogue (vérifier par template, cf. piège rochers).
+            - 🎯 **CHANTIER « a » (intro templates) — TODO, à faire à tête reposée** : convertir les **17** templates intro encore
+              via resolver en vrais objets (pattern title). **11 dans `intro-callbacks-auto.ts`** : sSpriteTemplate_Lightning(×6),
+              WaterDrop(×3), Bubbles(×2), Volbeat, Torchic, Sparkle, RayquazaOrb, Manectric, GameFreakLogo, GameFreakLetter,
+              FlygonSilhouette. **6 dans `intro_credits_graphics`** (via CreateIntro*Sprite de decomp-globals) : Brendan, BrendanBicycle,
+              May, MayBicycle, FlygonLatias, MovingScenery. Defs depuis le catalogue (SPRITE_TEMPLATES/OAM_DATAS/anims, déjà en
+              tags STRING) ; callbacks dans le fichier généré (defs APRÈS les SpriteCB). WaterDrop = 4 anims multi-sprite (complexe).
+
+## 🧹 BALAYAGE CASTS (« b ») — FAIT (bug systémique transpileur)
+- **RACINE** : `scripts/transpile-callbacks.mjs` §8c (L532-537) **STRIPPE** tous les casts entiers (`(u8)x` → `x`). Cause des
+  glitches 1/2/3 + tout effet à index sine accumulé. Un fix transpileur complet = capture d'opérande + précédence (chantier séparé).
+- **MITIGATION GLOBALE** : `gSineTable`/`Sin`/`Cos` masquent l'index `& 0xFF` en interne (= le (u8) systématique du décomp) →
+  neutralise la classe sine/cos **partout** (intro + combat), robuste aux casts strippés, strict improvement. Commits `13529717`
+  (gSineTable), `418d2e93` (Sin/Cos).
+- **Casts d'expression** (u16/s16) : rares ; balayés à la main quand ils comptent (bulles (u16) `e6d46ff5` ; offset BG pan déjà OK).
+- ✅ **5 glitches intro corrigés** : water drop (`13529717`), Manectric (`ff1e2ad0`), bulles Kyogre (`e6d46ff5`), pédalage stub
+  (`ccdacec3`), rochers Groudon (`f6d48908`). Tous confirmés A/B côté joueur.
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
