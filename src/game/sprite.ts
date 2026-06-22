@@ -1609,6 +1609,135 @@ export function CreateSpriteAtOam(rt: DecompRuntime, cfg: {
   return { spriteId, oamIndex };
 }
 
+/** 1:1 décomp `struct SpriteTemplate` (include/sprite.h:96) — modèle UNIFIÉ consommé
+ *  par `CreateSprite`. Champs déjà décodés M3 : `oam` = OamData (shape/size numériques),
+ *  `images` présent ⟺ voie décomp `tileTag == TAG_NONE` (tiles inline → AllocSpriteTiles),
+ *  sinon sheet chargée par `tileTag` (résolu via GetSpriteTileStartByTag). `affineAnims` =
+ *  NOM de table M3 (sprite-affine-extras.ts), `paletteTag` résolu via IndexOfSpritePaletteTag. */
+export interface SpriteTemplate {
+  tileTag?: number;
+  paletteTag?: number;
+  oam: {
+    shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3;
+    priority?: number; paletteNum?: number;
+    affineMode?: 0 | 1 | 2 | 3; paletteMode?: 0 | 1; objMode?: 0 | 1 | 2;
+  };
+  images?: ReadonlyArray<{ data: Uint8Array; size: number }> | null;
+  anims?: ReadonlyArray<ReadonlyArray<unknown>> | null;
+  affineAnims?: string | null;
+  callback?: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
+}
+
+/** 1:1 décomp `u8 CreateSprite(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)`
+ *  (sprite.c:502) FUSIONNÉ avec le corps de `CreateSpriteAt` (sprite.c:540) — la séparation
+ *  décomp `CreateSprite → CreateSpriteAt(index)` (scan du 1er slot `!inUse`) est absorbée par
+ *  la primitive `CreateSpriteAtOam` (frontière harness documentée, comme composeFrame). Branche
+ *  sur `tileTag` (sprite.c:562) :
+ *    • `tileTag == TAG_NONE` (template avec `images`) → tiles inline (AllocSpriteTiles + write OBJ VRAM).
+ *    • sinon → sheet déjà chargée par tag (GetSpriteTileStartByTag + sheetTileStart).
+ *  HOME consolidé du dispatcher 3-voies du bridge (chantier B1) : les voies inline + tileTag y
+ *  délèguent (`decomp-bridge.CreateSprite` + `DecompRuntime.CreateSpriteInline`) ; la voie par-nom
+ *  overworld reste `CreateSpriteFromTemplate` jusqu'à B2. Retourne le spriteId (MAX_SPRITES=échec). */
+export function CreateSprite(rt: DecompRuntime, template: SpriteTemplate, x: number, y: number, subpriority: number = 0xFF): number {
+  // ── voie décomp `tileTag == TAG_NONE` : un sprite sans sheet alloue ses propres tiles
+  //    OBJ VRAM via AllocSpriteTiles (sprite.c:562-575). = ex-`DecompRuntime.CreateSpriteInline`. ──
+  if (Array.isArray(template.images)) {
+    const img0 = template.images[0];
+    const byteSize = img0?.size ?? img0?.data.length ?? 0;
+    const tileCount = byteSize >> 5;  // 32 bytes / tile (4bpp)
+    // F77 C0-racine : marquer d'abord les occupants RÉELS (mons/healthbox créés par OAM direct
+    // ne marquent pas le bitmap) — sinon une alloc inline ≥64 tiles (pic Role Play/Transform)
+    // part en first-fit 0 = écrase la zone healthbox. Hook posé par battle-anim-interpreter.
+    ((globalThis as Record<string, unknown>).__markLiveSpriteTiles as (() => void) | undefined)?.();
+    const tileStart = AllocSpriteTiles(tileCount);
+    if (tileStart < 0) {
+      console.warn('[CreateSprite] inline (tileTag==TAG_NONE) : AllocSpriteTiles échoué (OBJ VRAM saturé)');
+      return MAX_SPRITES;  // = échec 1:1 décomp (return MAX_SPRITES)
+    }
+    if (img0) rt._writeToObjVram(img0.data, tileStart * TILE_SIZE_4BPP);
+    const { spriteId } = CreateSpriteAtOam(rt, {
+      tileId: tileStart,
+      paletteBank: template.oam.paletteNum ?? 0,
+      x, y,
+      shape: template.oam.shape, size: template.oam.size,
+      priority: template.oam.priority ?? 1,
+      paletteMode: template.oam.paletteMode ?? 0,
+      affineMode: template.oam.affineMode ?? 0,
+      subpriority,
+    });
+    if (spriteId >= 0 && spriteId < MAX_SPRITES) {
+      const s = rt.gSprites[spriteId];
+      if (s) {
+        s.callback = template.callback ?? null;
+        s.images = template.images;
+        s.anims = template.anims ?? null;
+        s.usingSheet = false;
+        s.tileBase = tileStart;
+      }
+    }
+    return spriteId;
+  }
+  // ── voie décomp `tileTag != TAG_NONE` : sheet + palette déjà chargées par TAG (ex `LoadBallGfx`
+  //    → gBallSpriteSheets/Palettes). Résout tileNum via GetSpriteTileStartByTag + paletteNum via
+  //    IndexOfSpritePaletteTag (sprite.c:577-586). = ex-bloc manuel voie tileTag du bridge. ──
+  const oam = template.oam;
+  const tileTag = template.tileTag;
+  if (typeof tileTag !== 'number') {
+    console.warn('[CreateSprite] template sans `images` ni `tileTag` numérique — voie par-nom (= CreateSpriteFromTemplate, non gérée ici)');
+    return -1;
+  }
+  const affineMode = oam.affineMode ?? 0;
+  const tileStart = GetSpriteTileStartByTag(tileTag);
+  if (tileStart === 0xFFFF) {
+    console.warn(`[CreateSprite] sheet tag ${tileTag} non chargée (GetSpriteTileStartByTag=0xFFFF) — LoadXxxGfx requis avant CreateSprite`);
+  }
+  const palSlot = (typeof template.paletteTag === 'number') ? IndexOfSpritePaletteTag(template.paletteTag) : 0xFF;
+  // Affine : alloue la matrice OAM AVANT la création pour que CalcCenterToCornerVec
+  // (dans CreateSpriteAtOam) centre correctement le sprite en AFFINE_DOUBLE/NORMAL.
+  let matrixNum = 0;
+  if (affineMode !== 0) {
+    const m = AllocOamMatrix();
+    if (m > 0) matrixNum = m;
+  }
+  const created = CreateSpriteAtOam(rt, {
+    tileId: tileStart === 0xFFFF ? 0 : tileStart,
+    paletteBank: palSlot === 0xFF ? 0 : palSlot,
+    x, y,
+    shape: oam.shape, size: oam.size,
+    priority: oam.priority ?? 1,
+    paletteMode: oam.paletteMode ?? 0,
+    affineMode,
+    affineParamIndex: matrixNum,
+    subpriority,
+  });
+  const spriteId = created.spriteId;
+  if (spriteId >= 0 && spriteId < MAX_SPRITES) {
+    const s = rt.gSprites[spriteId];
+    if (s) {
+      s.callback = template.callback ?? null;
+      s.anims = template.anims ?? null;
+      // 1:1 oam.objMode du template (gOamData_*_ObjBlend/ObjWindow) posé côté SPRITE :
+      // syncSpritesToOam ré-écrit oam.objMode depuis ce champ CHAQUE frame (AUDIT OBJMODE
+      // 2026-06-12 — sinon toutes les anims à templates Blend rendaient opaques).
+      s.objMode = oam.objMode ?? 0;
+      // En miroir, `template.affineAnims` = le NOM de la table enregistrée (sprite-affine-extras.ts).
+      s.affineAnimsTableName = (typeof template.affineAnims === 'string') ? template.affineAnims : null;
+      s.usingSheet = true;
+      s.tileBase = tileStart === 0xFFFF ? 0 : tileStart;
+      // 1:1 décomp `sprite->sheetTileStart = GetSpriteTileStartByTag(tileTag)` : le système d'anim
+      // recalcule chaque frame `oam.tileNum = sheetTileStart + frame.imageValue` (sinon ball cubique).
+      s.sheetTileStart = tileStart === 0xFFFF ? 0 : tileStart;
+      if (affineMode !== 0 && matrixNum > 0) {
+        s.matrixNum = matrixNum;
+        // Démarre l'affine anim à l'index 0 (statique) ; l'appelant bascule plus tard
+        // (StartSpriteAffineAnim(ball, 4) = le SPIN du send-out). AllocOamMatrix a posé l'identité.
+        if (s.affineAnimsTableName) rt.StartSpriteAffineAnim(spriteId, 0);
+      }
+    }
+  }
+  return spriteId;
+}
+
 /** 1:1 décomp `static void RunSpriteCallbacks(void)` (sprite.c) — pour chaque slot
  *  inUse, exécute son `callback(sprite)`. Snapshot des sprites présents au début (un
  *  callback peut en créer/détruire pendant la boucle) → comportement identique via

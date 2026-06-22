@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, CreateSprite as _CreateSprite_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -983,8 +983,9 @@ export class DecompRuntime {
     dst.set(tilemap.subarray(0, dst.length));
   }
 
-  /** Helper : copie char data dans objVram avec clamp safety. */
-  private _writeToObjVram(charData: Uint8Array, byteOffset: number): void {
+  /** Helper : copie char data dans objVram avec clamp safety. Public (B1) : la voie
+   *  inline de `game/sprite.ts CreateSprite` (tileTag==TAG_NONE) écrit les tiles ici. */
+  _writeToObjVram(charData: Uint8Array, byteOffset: number): void {
     const remainingSpace = this.gba.objVram.length - byteOffset;
     const copySize = Math.min(charData.length, remainingSpace);
     if (copySize > 0) this.gba.objVram.set(charData.subarray(0, copySize), byteOffset);
@@ -1481,46 +1482,12 @@ export class DecompRuntime {
     callback?: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
     anims?: ReadonlyArray<ReadonlyArray<unknown>> | null;
   }, x: number, y: number, subpriority = 0xFF): number {
-    const img0 = tpl.images?.[0];
-    const byteSize = img0?.size ?? img0?.data.length ?? 0;
-    const tileCount = byteSize >> 5;  // 32 bytes / tile (4bpp)
-    // 1:1 décomp src/sprite.c : un sprite sans sheet (tileTag TAG_NONE) alloue ses
-    // propres tiles OBJ VRAM via AllocSpriteTiles (marque sSpriteTileAllocBitmap).
-    // F77 C0-racine : marquer d'abord les occupants RÉELS (mons/healthbox créés
-    // par OAM direct ne marquent pas le bitmap eux-mêmes) — sinon une alloc
-    // inline ≥64 tiles (pic de mon Role Play/Transform) part en first-fit 0
-    // = écrase la zone healthbox. Hook posé par battle-anim-interpreter.
-    ((globalThis as Record<string, unknown>).__markLiveSpriteTiles as (() => void) | undefined)?.();
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      AllocSpriteTiles?: (n: number) => number;
-    } | undefined;
-    const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
-    if (tileStart < 0) {
-      console.warn('[DecompRuntime] CreateSpriteInline: AllocSpriteTiles échoué (OBJ VRAM saturé)');
-      return 64; // MAX_SPRITES (= échec 1:1)
-    }
-    if (img0) this._writeToObjVram(img0.data, tileStart * 32);
-    const { spriteId } = this.CreateSpriteAtOam({
-      tileId: tileStart,
-      paletteBank: tpl.oam.paletteNum ?? 0,
-      x, y,
-      shape: tpl.oam.shape, size: tpl.oam.size,
-      priority: tpl.oam.priority ?? 1,
-      paletteMode: tpl.oam.paletteMode ?? 0,
-      affineMode: tpl.oam.affineMode ?? 0,
-      subpriority,
-    });
-    if (spriteId >= 0 && spriteId < 64) {
-      const s = this.gSprites[spriteId];
-      if (s) {
-        s.callback = tpl.callback ?? null;
-        s.images = tpl.images;
-        s.anims = tpl.anims ?? null;
-        s.usingSheet = false;
-        s.tileBase = tileStart;
-      }
-    }
-    return spriteId;
+    // B1 : impl UNIQUE = `game/sprite.ts CreateSprite` (voie décomp `tileTag == TAG_NONE`).
+    // Cette méthode reste le point d'entrée des call-sites directs `rt.CreateSpriteInline?.(...)`
+    // (battle anims, placeholders `images: []`) → elle y délègue le temps de leur migration vers
+    // la free-fn (B3). Le template inline (`{oam, images, callback?, anims?}`) est un sous-type de
+    // `SpriteTemplate` ; `CreateSprite` re-branche sur `Array.isArray(images)` (toujours vrai ici).
+    return _CreateSprite_1to1(this, tpl, x, y, subpriority);
   }
 
   /** Récupère un sprite par son ID. */

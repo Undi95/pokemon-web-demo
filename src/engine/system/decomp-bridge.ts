@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `export {X} from '../../game/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag, ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../game/sprite';
+import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../game/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -2962,75 +2962,16 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
   // Sinon (string nom / objet sans images) → chemin par-NOM existant (overworld,
   // INCHANGÉ = zéro régression OW). Branche additive.
   if (template && typeof template === 'object' && Array.isArray(template.images) && template.images.length > 0) {
-    return rt.CreateSpriteInline(template, x, y, subpriority);
+    return _CreateSprite_game(rt, template, x, y, subpriority);
   }
   // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont
-  // deja ete chargees par TAG (ex `LoadBallGfx` → gBallSpriteSheets/Palettes). On
-  // resout tileNum via GetSpriteTileStartByTag + paletteNum via IndexOfSpritePaletteTag,
-  // cree le sprite, attache callback/anims/affineAnims. HW-emu : la decomp fait ca dans
-  // InitSprite/InitSpriteAffineAnim ; ici via CreateSpriteAtOam (qui calcule deja
-  // CalcCenterToCornerVec selon affineMode) + AllocOamMatrix pour l'affine. Branche
-  // ADDITIVE : les sprites OW restent par-NOM ; seuls les templates {tileTag numerique,
-  // oam, SANS images} l'empruntent (= gBallSpriteTemplates etc., aujourd'hui DORMANT).
+  // deja ete chargees par TAG (ex `LoadBallGfx` → gBallSpriteSheets/Palettes). Voie
+  // sheet-par-tag : delegue a l'impl UNIQUE `game/sprite.ts CreateSprite` (B1 — corps
+  // relocalise mot-pour-mot : GetSpriteTileStartByTag + AllocOamMatrix affine + patch
+  // callback/anims/objMode/affineAnimsTableName/usingSheet/tileBase/sheetTileStart).
   if (template && typeof template === 'object'
       && typeof template.tileTag === 'number' && template.oam && typeof template.oam === 'object') {
-    const oam = template.oam;
-    const affineMode = (oam.affineMode ?? 0) as 0 | 1 | 2 | 3;
-    const tileStart = _GetSpriteTileStartByTag(template.tileTag);
-    if (tileStart === 0xFFFF) {
-      console.warn(`[CreateSprite] sheet tag ${template.tileTag} non chargee (GetSpriteTileStartByTag=0xFFFF) — LoadXxxGfx requis avant CreateSprite`);
-    }
-    const palSlot = (typeof template.paletteTag === 'number') ? _IndexOfSpritePaletteTag(template.paletteTag) : 0xFF;
-    // Affine : alloue la matrice OAM AVANT la creation pour que CalcCenterToCornerVec
-    // (dans CreateSpriteAtOam) centre correctement le sprite en AFFINE_DOUBLE/NORMAL.
-    let matrixNum = 0;
-    if (affineMode !== 0) {
-      const m = _AllocOamMatrix();
-      if (m > 0) matrixNum = m;
-    }
-    const created = rt.CreateSpriteAtOam({
-      tileId: tileStart === 0xFFFF ? 0 : tileStart,
-      paletteBank: palSlot === 0xFF ? 0 : palSlot,
-      x, y,
-      shape: oam.shape, size: oam.size,
-      priority: oam.priority ?? 1,
-      paletteMode: oam.paletteMode ?? 0,
-      affineMode,
-      affineParamIndex: matrixNum,
-      subpriority,
-    });
-    const spriteId = created.spriteId;
-    if (spriteId >= 0 && spriteId < 64) {
-      const s = rt.gSprites[spriteId];
-      if (s) {
-        s.callback = template.callback ?? null;
-        s.anims = template.anims ?? null;
-        // 1:1 oam.objMode du template (gOamData_*_ObjBlend/ObjWindow) — posé
-        // côté SPRITE : syncSpritesToOam ré-écrit oam.objMode depuis ce champ
-        // CHAQUE frame (AUDIT OBJMODE 2026-06-12 — il était perdu ici, toutes
-        // les anims à templates Blend rendaient opaques).
-        s.objMode = (oam.objMode ?? 0) as 0 | 1 | 2;
-        // En miroir, `template.affineAnims` = le NOM de la table enregistree
-        // (sprite-affine-extras.ts), ex 'sAffineAnim_BallRotate'.
-        s.affineAnimsTableName = (typeof template.affineAnims === 'string') ? template.affineAnims : null;
-        s.usingSheet = true;
-        s.tileBase = tileStart === 0xFFFF ? 0 : tileStart;
-        // 1:1 decomp `sprite->sheetTileStart = GetSpriteTileStartByTag(tileTag)` (sprite.c CreateSpriteAt) :
-        // le systeme d'anim (sprite-animation.ts AnimateSprite) recalcule chaque frame
-        // `oam.tileNum = sheetTileStart + frame.imageValue`. Sans ce set, sheetTileStart restait 0
-        // -> des que l'anim de la ball tickait, oam.tileId = 0 + 0 = 0 -> rendu de la tile 0 (garbage)
-        // en rotation = ball "cubique" (root cause prouvee runtime : tileBase=657 OK mais sheetTileStart=0).
-        s.sheetTileStart = tileStart === 0xFFFF ? 0 : tileStart;
-        if (affineMode !== 0 && matrixNum > 0) {
-          s.matrixNum = matrixNum;
-          // Demarre l'affine anim a l'index 0 (statique par defaut) ; l'appelant
-          // bascule vers un autre index plus tard (ex StartSpriteAffineAnim(ball, 4)
-          // = le SPIN du send-out). AllocOamMatrix a deja pose la matrice a l'identite.
-          if (s.affineAnimsTableName) rt.StartSpriteAffineAnim(spriteId, 0);
-        }
-      }
-    }
-    return spriteId;
+    return _CreateSprite_game(rt, template, x, y, subpriority);
   }
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
   return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
