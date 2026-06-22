@@ -133,3 +133,25 @@ changer de scène.
 Step 0 (filet) → **Step 1 (extraction, pur refactor = couture sûre)** → **Step 2 (le merge,
 valeur max)** → Step 3 → Step 4 → Step 5. Chaque step = 1 commit + A/B réel. Les gros risques
 sont concentrés en Step 2 ; Steps 0/1 sont quasi sans risque et préparent le terrain.
+
+## 8. ⚠️ Constat de couplage (relecture code 2026-06-22) — recalibrage Step 1/2
+`TestOverworldScene` n'est PAS un host fin : ~1865 lignes de **logique OW comme méthodes de
+classe**, couplées à `this` :
+- `bootOverworld` (374-796) définit `MainCB2_Overworld` comme une **closure capturant `self`**
+  (la scène) ; elle appelle `self.warpInProgress`, `self.executeWarp(...)`, `self.loadAndInitMap`.
+- `loadAndInitMap` (~480 l), `executeWarp` (~325 l), `handleConnectionTransition`, les
+  `waitFor*` = méthodes d'instance pilotant le per-frame OW (warps/connexions/mouvement).
+
+**Conséquence** : « extraire `enterOverworld` en fonction libre » (Step 1 initial) sous-estime
+le couplage. Le merge réel = **consolider TestOverworldScene + GameScene en UNE classe host**
+(qui possède à la fois le boot intro ET les méthodes OW + le runtime/gba/bridge partagés) ;
+`enterOverworld` devient alors une **méthode** de ce host, et la transition = `SetMainCallback2`
+au lieu de `scene.start`. C'est un refactor mécanique mais conséquent (déplacer ~1500 l de
+méthodes, gérer `this`, la closure `self`). À faire de façon **délibérée**, pas à la va-vite —
+Step 1/2 fusionnent de fait en « consolider les 2 classes ».
+
+**Cible 1:1 idéale vs pragmatique** : le 1:1 strict relocaliserait la logique OW dans la couche
+runtime/CB2 (comme la décomp, où l'OW = CB2/Task, pas des méthodes de scène) — énorme. La cible
+pragmatique (1 host scene unique tenant le runtime + les méthodes OW) supprime DÉJÀ la frontière
+de scène (= le gain structurel clé) ; relocaliser ensuite la logique OW vers des fns runtime =
+raffinement ultérieur. À trancher avec le user au Step 2.

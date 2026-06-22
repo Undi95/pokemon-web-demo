@@ -29,7 +29,11 @@ import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 import { mountDevtoolsPanel } from './engine/devtools/devtools-panel';
-import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
+// Chantier « c » Step 0 (2026-06-22) : BirchRuntimeScene = host MORT (jamais
+// `scene.start`'d ; le flow Birch tourne dans GameScene via la chaîne CB2 main menu,
+// cf. docs/RUNTIME-MERGE-PLAN.md). Dé-enregistré du scene array. Fichier conservé
+// jusqu'au nettoyage final (Step 5).
+// import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 // import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
 import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
@@ -215,8 +219,7 @@ const DEFAULT_ZOOM = 4;
 //   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
 //             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule
 //             (Copyright → Intro → Title → Main Menu native).
-//   BirchRuntimeScene : host alternatif pour le flow Birch sur runtime décomp natif.
-//   OverworldScene : scène legacy conservée (= ré-utilisable post Phase 4 overworld native).
+//   (BirchRuntimeScene + OverworldScene = hosts MORTS dé-enregistrés, cf. chantier « c ».)
 //   DebugOverlayScene : overlay global (fps / frame / tasks / sprites) sur toutes les scènes.
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -261,8 +264,8 @@ const config: Phaser.Types.Core.GameConfig = {
     } catch { /* localStorage may be disabled — fallback to title */ }
     const skipTitle = noIntro || truckTest || hasResumableSave;
     return skipTitle
-      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene]
-      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene];
+      ? [TestOverworldScene, TestGbaScene, GameScene]
+      : [TestGbaScene, GameScene, TestOverworldScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
