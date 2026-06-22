@@ -646,7 +646,7 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { MAX_REMATCH_ENTRIES } from './engine/save/save-blocks';
 import { Random } from './random';
 import { ENUM_REMATCH_0 } from '../include/constants/rematches';
-import { TRAINER_REGISTERED_FLAGS_START } from './engine/decomp-data/include/constants/flags-data';
+import { TRAINER_REGISTERED_FLAGS_START } from '../include/constants/flags';
 import { MAP_CONSTANTS, MAP_GROUP, MAP_NUM } from '../include/constants/map_groups';
 
 /** 1:1 `REMATCHES_COUNT` (include/battle_setup.h:6). */

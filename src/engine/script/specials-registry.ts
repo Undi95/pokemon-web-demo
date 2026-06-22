@@ -40,7 +40,7 @@ import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../incl
 import { OBJ_EVENT_GFX_BARD } from '../../../include/constants/event_objects';
 import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../../../include/constants/global';
 import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../../../include/constants/battle_frontier';
-import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/constants/flags-data';
+import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../../../include/constants/flags';
 import { MOVE_NONE } from '../../../include/constants/moves';
 import { gLocalTime, RtcCalcLocalTime } from '../../rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';

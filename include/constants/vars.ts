@@ -294,3 +294,33 @@ export const VAR_TEMP_PLAYING_PYRAMID_MUSIC = 16398;
 export const VAR_TEMP_FRONTIER_TUTOR_SELECTION = 16397;
 export const VAR_TEMP_FRONTIER_TUTOR_ID = 16398;
 export const VAR_TEMP_TRANSFERRED_SPECIES = 16385;
+
+// ─── Union 1:1 : 27 constantes de vars-data (decomp-data) absentes ici ───
+// (réconciliation doublon, 0 conflit ; scaffold extracteur exclu ; fichier decomp-data supprimé).
+export const VAR_TEMP_0_EXPR = "(TEMP_VARS_START + 0x0)";
+export const VAR_TEMP_1_EXPR = "(TEMP_VARS_START + 0x1)";
+export const VAR_TEMP_2_EXPR = "(TEMP_VARS_START + 0x2)";
+export const VAR_TEMP_3_EXPR = "(TEMP_VARS_START + 0x3)";
+export const VAR_TEMP_4_EXPR = "(TEMP_VARS_START + 0x4)";
+export const VAR_TEMP_5_EXPR = "(TEMP_VARS_START + 0x5)";
+export const VAR_TEMP_6_EXPR = "(TEMP_VARS_START + 0x6)";
+export const VAR_TEMP_7_EXPR = "(TEMP_VARS_START + 0x7)";
+export const VAR_TEMP_8_EXPR = "(TEMP_VARS_START + 0x8)";
+export const VAR_TEMP_9_EXPR = "(TEMP_VARS_START + 0x9)";
+export const VAR_TEMP_A_EXPR = "(TEMP_VARS_START + 0xA)";
+export const VAR_TEMP_B_EXPR = "(TEMP_VARS_START + 0xB)";
+export const VAR_TEMP_C_EXPR = "(TEMP_VARS_START + 0xC)";
+export const VAR_TEMP_D_EXPR = "(TEMP_VARS_START + 0xD)";
+export const VAR_TEMP_E_EXPR = "(TEMP_VARS_START + 0xE)";
+export const VAR_TEMP_F_EXPR = "(TEMP_VARS_START + 0xF)";
+export const TEMP_VARS_END_EXPR = "VAR_TEMP_F";
+export const NUM_TEMP_VARS_EXPR = "(TEMP_VARS_END - TEMP_VARS_START + 1)";
+export const VARS_COUNT_EXPR = "(VARS_END - VARS_START + 1)";
+export const TRIGGER_RUN_IMMEDIATELY = 0;
+export const VAR_TEMP_CHALLENGE_STATUS_EXPR = "VAR_TEMP_0";
+export const VAR_TEMP_MIXED_RECORDS_EXPR = "VAR_TEMP_0";
+export const VAR_TEMP_RECORD_MIX_GIFT_ITEM_EXPR = "VAR_TEMP_1";
+export const VAR_TEMP_PLAYING_PYRAMID_MUSIC_EXPR = "VAR_TEMP_E";
+export const VAR_TEMP_FRONTIER_TUTOR_SELECTION_EXPR = "VAR_TEMP_D";
+export const VAR_TEMP_FRONTIER_TUTOR_ID_EXPR = "VAR_TEMP_E";
+export const VAR_TEMP_TRANSFERRED_SPECIES_EXPR = "VAR_TEMP_1";

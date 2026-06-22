@@ -35,7 +35,7 @@
  */
 
 import * as eventObjects from '../../include/constants/event_objects';
-import * as flags from '../../src/engine/decomp-data/include/constants/flags-data';
+import * as flags from '../../include/constants/flags';
 import * as items from '../../include/constants/items';
 import * as moves from '../../include/constants/moves';
 import * as songs from '../../include/constants/songs';
@@ -55,7 +55,7 @@ import * as pokemon from '../../include/constants/pokemon';
 import * as abilities from '../../include/constants/abilities';
 import * as battleMoveEffects from '../../include/constants/battle_move_effects';
 import * as holdEffects from '../../include/constants/hold_effects';
-import * as vars from '../../src/engine/decomp-data/include/constants/vars-data';
+import * as vars from '../../include/constants/vars';
 // BERRY_STAGE_* + BERRY_TREES_COUNT + BERRY_TREE_ROUTE_* (include/constants/berry.h).
 // Manquait → BerryTreeScript `switch VAR_0x8004` + `case BERRY_STAGE_BERRIES` ne
 // résolvait pas la constante (parseValue→0) → aucun case ne matchait → le script
