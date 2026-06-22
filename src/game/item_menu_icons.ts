@@ -220,7 +220,6 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
     AllocOamMatrix: () => number;
-    spriteAnimStatesRegister: (id: number, name: string, idx: number, base: number) => void;
     gSprites?: Array<DecompSprite | undefined>;
     StartSpriteAffineAnim: (id: number, num: number) => void;
   } | null;

@@ -64,19 +64,8 @@ function oamShapeSizeFromWH(w: number, h: number): { shape: 0 | 1 | 2, size: 0 |
   }
 }
 
-/** Sprite anim state attaché à chaque sprite avec une anim active. */
-interface SpriteAnimState {
-  /** Nom du sprite anim TABLE (e.g. 'sAnims_FlygonSilhouette') */
-  animTableName: string;
-  /** Index de l'anim active dans le table (sAnims[N]) */
-  animIdx: number;
-  /** Index de la frame courante dans l'anim */
-  frameIdx: number;
-  /** Frames restantes avant de passer à la frame suivante */
-  framesRemaining: number;
-  /** Tile base = tileNum start de cette sprite dans objVram (= spriteSheetTagToTileStart[tileTag]) */
-  tileBase: number;
-}
+// (SpriteAnimState supprimé — convergence anim 2026-06-22 : la state-machine legacy
+//  spriteAnimStates est remplacée par `sprite.anims` 1:1 (setSpriteAnims/AnimateSprite).)
 
 // ─── REG_OFFSET_* (1:1 décomp include/gba/io_reg.h) ──────────────────────────
 export const REG_OFFSET_DISPCNT  = 0x000;
@@ -630,11 +619,6 @@ export class DecompRuntime {
   //  - AllocSpriteTiles (sprite.c:702-753) scan first-free dans bitmap
   //  - AllocSpritePalette (sprite.c:1623-1635) scan first-free sSpritePaletteTags
   // Source UNIQUE = arrays primary + bitmap, pas de cursor.
-  /** State des sprite anims actives : spriteId → state.
-   *  Accessible (non-private) : lu par les fonctions sprite.c extraites vers
-   *  game/sprite.ts (ex. `DestroySprite`) — la décomp expose son état en globals. */
-  spriteAnimStates = new Map<number, SpriteAnimState>();
-
   /** Runtime registry for dynamically-defined sprite anims (= 1:1 décomp pattern
    *  d'enregistrement par module sans toucher le static auto-generated registry).
    *  Consulté par tickSpriteAnims/StartSpriteAnim en fallback après SPRITE_ANIMS.
@@ -654,43 +638,11 @@ export class DecompRuntime {
     this._extraAnimTables.set(name, table);
   }
 
-  /** Public bridge for animations system : register a sprite's anim state directly.
-   *  Used by CreateObjectGraphicsSprite (= bypass static template-based path of
-   *  CreateSpriteFromTemplate, since the trainer/NPC templates are dynamic). */
-  spriteAnimStatesRegister(spriteId: number, animTableName: string, animIdx: number, tileBase: number): void {
-    const table = this._extraAnimTables.get(animTableName)
-      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[animTableName];
-    if (!table) {
-      console.warn(`[runtime] spriteAnimStatesRegister: anim table '${animTableName}' not found`);
-      return;
-    }
-    const animName = table.anims[animIdx];
-    if (!animName) return;
-    const anim = this._extraAnims.get(animName)
-      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
-    if (!anim || anim.frames.length === 0) return;
-    this.spriteAnimStates.set(spriteId, {
-      animTableName,
-      animIdx,
-      frameIdx: 0,
-      framesRemaining: anim.frames[0].duration,
-      tileBase,
-    });
-    // Apply frame 0 immediately to OAM (= 1:1 décomp StartSpriteAnim semantic).
-    const sprite = this.gSprites[spriteId];
-    if (sprite) {
-      const tileNum = _resolveTileNum(anim.frames[0].tileNum);
-      this.gba.oam[sprite.oamIndex].tileId = tileBase + tileNum;
-      // hFlip/vFlip per-frame (= OAM hardware mirror, used by EAST direction
-      // which reuses WEST tiles flipped).
-      if ('hFlip' in anim.frames[0]) {
-        this.gba.oam[sprite.oamIndex].flipH = !!(anim.frames[0] as { hFlip?: boolean }).hFlip;
-      }
-      if ('vFlip' in anim.frames[0]) {
-        this.gba.oam[sprite.oamIndex].flipV = !!(anim.frames[0] as { vFlip?: boolean }).vFlip;
-      }
-    }
-  }
+  // (spriteAnimStatesRegister supprimé — convergence anim 2026-06-22 : les consommateurs
+  //  (CreateObjectGraphicsSprite, sac, swap-line, mon-front, CreateSpriteFromTemplate) posent
+  //  désormais `sprite.anims` via game/sprite.ts setSpriteAnims. _extraAnims/_extraAnimTables
+  //  restent (la table d'anims est lue par resolveAnimTableToAnimCmds).)
+
   /** Accumulator pour timing 60Hz fixed (Phaser update peut être > 60Hz). */
   private accumulatorMs = 0;
   /** Frame target = 60Hz GBA. */
@@ -1984,27 +1936,8 @@ export class DecompRuntime {
       _StartSpriteAnimInline(inlineSprite as never, animIdx);
       return;
     }
-    // ─── Système legacy nommé (spriteAnimStates : overworld / sac) ──────────────────
-    const state = this.spriteAnimStates.get(spriteId);
-    if (!state) return;
-    // Consulte d'abord le runtime registry (_extraAnimTables = tables
-    // enregistrées dynamiquement, e.g. sBagSpriteAnimTable du sac) puis fallback
-    // sur SPRITE_ANIM_TABLES auto-generated. Symétrique avec tickSpriteAnims
-    // (ligne 1896-1897). Sans ça, StartSpriteAnim sur un sprite à anim table
-    // dynamique = early-return silencieux (= sac reste sur frame 0/Closed).
-    const animTable = this._extraAnimTables.get(state.animTableName)
-      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
-    if (!animTable || animIdx >= animTable.anims.length) return;
-    const animName = animTable.anims[animIdx];
-    const anim = this._extraAnims.get(animName)
-      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
-    if (!anim || anim.frames.length === 0) return;
-    state.animIdx = animIdx;
-    state.frameIdx = 0;
-    state.framesRemaining = anim.frames[0].duration;
-    const sprite = this.gSprites[spriteId];
-    const tileNum = _resolveTileNum(anim.frames[0].tileNum);
-    if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+    // sprite sans `.anims` → no-op (la state-machine legacy spriteAnimStates est SUPPRIMÉE ;
+    // convergence 2026-06-22, toutes les familles posent `sprite.anims` via setSpriteAnims).
   }
 
   /** 1:1 décomp `src/sprite.c AnimateSprite(&gSprites[id])` — avance d'UN cran l'anim frame du sprite
@@ -2284,7 +2217,6 @@ export class DecompRuntime {
     if (sp?.sSpritePaletteTags) sp.sSpritePaletteTags.fill(0xFFFF);
     if (sp?.sSpriteTileAllocBitmap) sp.sSpriteTileAllocBitmap.fill(0);
     this.freedSpriteTileRanges.length = 0;
-    this.spriteAnimStates.clear();
     this.accumulatorMs = 0;
   }
 }

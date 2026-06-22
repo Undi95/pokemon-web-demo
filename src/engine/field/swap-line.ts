@@ -101,7 +101,6 @@ export function CreateSwapLineSprites(spriteIds: number[], baseIdx: number, coun
   _registerSwapLineAnimsIfNeeded();
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteAnimStatesRegister: (id: number, name: string, idx: number, base: number) => void;
     setSpriteInvisible: (id: number, invisible: boolean) => void;
   } | null;
   if (!rt) return;

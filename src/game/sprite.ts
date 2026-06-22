@@ -1400,7 +1400,6 @@ export function DestroySprite(rt: DecompRuntime, spriteId: number): void {
   if (sprite.matrixNum > 0 && _isOamMatrixAllocated(sprite.matrixNum)) {
     FreeOamMatrix(sprite.matrixNum);
   }
-  rt.spriteAnimStates.delete(spriteId);
 }
 
 /** 1:1 décomp `void ResetSpriteData(void)` (sprite.c:294-306) : ResetOamRange +
@@ -1424,7 +1423,6 @@ export function ResetSpriteData(rt: DecompRuntime): void {
   }
   for (let i = 0; i < 128; i++) rt.gba.oam[i].visible = false;
   rt.gSprites.fill(undefined);
-  rt.spriteAnimStates.clear();
   rt.nextOamSlot = 0;
   rt.nextSpriteId = 0;
   // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM).
@@ -1859,63 +1857,19 @@ export function setSpriteAnims(rt: DecompRuntime, spriteId: number, animTableNam
   return true;
 }
 
-/** 1:1 décomp tick anims de `AnimateSprites` (sprite.c) : (1) sprites avec `.anims`
- *  configurées → AnimateSprite + drain ProcessSpriteCopyRequests ; (2) legacy
- *  SPRITE_ANIMS state machine (spriteAnimStates), gardée pour migration. Consulte
- *  d'abord le registry runtime (_extraAnimTables/_extraAnims) puis les tables
- *  auto-générées. Relocalisé du harness (chantier A2) ; la méthode runtime délègue. */
+/** 1:1 décomp tick anims de `AnimateSprites` (sprite.c) : pour chaque sprite inUse avec une
+ *  table `.anims`, AnimateSprite (BeginAnim/ContinueAnim + drain ProcessSpriteCopyRequests).
+ *  Relocalisé du harness (chantier A2). La state-machine legacy `spriteAnimStates` (Map ≠
+ *  décomp) a été SUPPRIMÉE (convergence 2026-06-22 : sac/intro/title/OW-graphics/swap-line/
+ *  mon-front utilisent tous `sprite.anims` 1:1 via setSpriteAnims → plus aucun consommateur). */
 export function tickSpriteAnims(rt: DecompRuntime): void {
   for (let i = 0; i < MAX_SPRITES; i++) {
     const sprite = rt.gSprites[i];
     if (sprite === undefined || !sprite.inUse) continue;
-    if (sprite.anims === null) continue;  // skip legacy path
+    if (sprite.anims === null) continue;
     AnimateSprite(rt, sprite as never);
   }
   ProcessSpriteCopyRequests(rt);
-  // ─── Legacy SPRITE_ANIMS state machine (gardé pour migration progressive) ──
-  for (const [spriteId, state] of rt.spriteAnimStates) {
-    if (state.framesRemaining > 1) {
-      state.framesRemaining--;
-      continue;
-    }
-    const animTable = rt._extraAnimTables.get(state.animTableName)
-      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
-    if (!animTable) { rt.spriteAnimStates.delete(spriteId); continue; }
-    const animName = animTable.anims[state.animIdx];
-    const anim = rt._extraAnims.get(animName)
-      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
-    if (!anim) { rt.spriteAnimStates.delete(spriteId); continue; }
-
-    state.frameIdx++;
-    if (state.frameIdx >= anim.frames.length) {
-      if (anim.terminator === 'JUMP') {
-        state.frameIdx = anim.jumpTo ?? 0;
-      } else {
-        // END terminator : marque l'anim terminée mais GARDE le state (permet
-        // re-entrée via StartSpriteAnim + sentinel sprite.animEnded). Tile reste
-        // sur la dernière frame.
-        state.frameIdx = anim.frames.length - 1;
-        state.framesRemaining = 1;
-        const sprite = rt.gSprites[spriteId];
-        if (sprite) sprite.animEnded = true;
-        continue;
-      }
-    }
-    const frame = anim.frames[state.frameIdx];
-    state.framesRemaining = frame.duration;
-    const tileNum = _resolveTileNum(frame.tileNum);
-    const sprite = rt.gSprites[spriteId];
-    if (sprite) {
-      rt.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
-      // Per-frame hFlip/vFlip (= OAM hardware mirror, 1:1 ANIMCMD_FRAME flags).
-      if (typeof (frame as { hFlip?: boolean }).hFlip === 'boolean') {
-        rt.gba.oam[sprite.oamIndex].flipH = (frame as { hFlip?: boolean }).hFlip!;
-      }
-      if (typeof (frame as { vFlip?: boolean }).vFlip === 'boolean') {
-        rt.gba.oam[sprite.oamIndex].flipV = (frame as { vFlip?: boolean }).vFlip!;
-      }
-    }
-  }
 }
 
 /** 1:1 décomp `void AnimateSprites(void)` (sprite.c:308) — pour chaque slot inUse :
