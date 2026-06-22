@@ -25,9 +25,14 @@ import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../
 // ─── Sine/Cosine via gSineTable (Q.8 fixed) — re-export du miroir trig ───────
 export const Sin = _trigSin;
 export const Cos = _trigCos;
-/** Lookup direct gSineTable (forme fonction, compat appelants ; SANS masque, 1:1). */
+/** Lookup gSineTable (forme fonction, appelants auto-gen). 1:1 décomp : le décomp accède
+ *  TOUJOURS `gSineTable[(u8)idx]` (table de 256 entrées) — le transpileur a parfois DROPPÉ le
+ *  cast (u8), produisant des index hors-bornes (négatifs / >255) → `_gSineTable[idx]` = undefined
+ *  → NaN qui se propage (ex. water drop intro scène 1 « presque invisible » : sine recalculé
+ *  chaque frame avec un index qui dépasse 255 → matrices affines garbage). On restaure
+ *  l'indexation u8 ici = équivalent au (u8) systématique du décomp (la table EST u8-indexée). */
 export function gSineTable(idx: number): number {
-  return _gSineTable[idx];
+  return _gSineTable[idx & 0xFF];
 }
 
 // ─── Q.8.8 fixed-point ────────────────────────────────────────────────────────
