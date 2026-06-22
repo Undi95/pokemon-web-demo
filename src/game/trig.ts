@@ -5,11 +5,12 @@
  * gSineTable[index+64] soit valide jusqu'à index 255). Sin2/Cos2 en degrés
  * via gSineDegreeTable (Q4.12, 180 entrées 0°..179°).
  *
- * 1:1 STRICT : `gSineTable[index]` / `gSineTable[index + 64]` SANS masque (forme
- * décomp exacte). L'ancien `decomp-helpers.Sin/Cos` masquait `& 0xFF` : c'était un
- * ÉQUIVALENT (pas un bug) — la table est périodique mod 256 (entrées 256..319 =
- * répétition exacte de 0..63, car sin(x·π/128) a une période de 256), donc
- * `gSineTable[(index+64) & 0xFF] == gSineTable[index+64]`. Consolidé sur cette forme.
+ * INDEXATION u8 : le décomp accède `gSineTable[(u8)index]` (les appelants castent (u8)).
+ * Le transpileur STRIPPE ces casts (transpile-callbacks.mjs §8c) → index hors-bornes possible
+ * (sine accumulé > 255, ou négatif) → `gSineTable[idx]` = undefined → NaN qui se propage
+ * (glitches intro : Manectric/Élecsprint, Flygon, etc.). On applique le `& 0xFF` DANS Sin/Cos
+ * = équivalent au (u8) systématique du décomp, mais robuste aux casts strippés. Identité pour
+ * index 0..255 ; fixe AUSSI Cos(index≥256) qui débordait la table (index+64 > 319 = undefined).
  *
  * Données :
  *  - gSineTable = `G_SINE_TABLE` (déjà extrait 1:1 de trig.c → decomp-data/src/sine-table.ts,
@@ -50,12 +51,12 @@ export const gSineDegreeTable: ReadonlyArray<number> = [
 
 // 1:1 décomp trig.c:515 — s16 Sin(s16 index, s16 amplitude) : amplitude * sin(index*π/128).
 export function Sin(index: number, amplitude: number): number {
-  return (amplitude * gSineTable[index]) >> 8;
+  return (amplitude * gSineTable[index & 0xFF]) >> 8;
 }
 
 // 1:1 décomp trig.c:521 — s16 Cos(s16 index, s16 amplitude) : amplitude * cos(index*π/128).
 export function Cos(index: number, amplitude: number): number {
-  return (amplitude * gSineTable[index + 64]) >> 8;
+  return (amplitude * gSineTable[(index & 0xFF) + 64]) >> 8;
 }
 
 // 1:1 décomp trig.c:527 — s16 Sin2(u16 angle) : angle en degrés.
