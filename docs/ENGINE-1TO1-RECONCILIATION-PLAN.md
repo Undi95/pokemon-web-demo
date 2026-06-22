@@ -189,8 +189,16 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
             - ✅ **Feature #1 — version banner** (`3b431162`) : `sVersionBannerLeft/Right` (OAM + AnimTable + SpriteTemplate) en
               vrais objets dans `title_screen-callbacks-auto.ts`, appelés `CreateSprite(rt, objet, …)`. A/B title : « VERSION
               ÉMERAUDE » identique. tileTag = string `'TAG_VERSION'` (substrat M3, cf. `_tagToU16`). + ajouté au Set `CONVERTED_TEMPLATES`.
-            - ⏭️ **Features suivantes** (chacune : defs objet dans le fichier-home + ajout au Set + A/B) : `sStartCopyrightBanner`
-              + `sPokemonLogoShine` (title), puis intro (Flygon/Torchic…), starter, credits — jusqu'au RETRAIT du résolveur (4).
+            - ✅ **Feature #2 — press-start/copyright banner** (`f49e366e`) : `sStartCopyrightBanner` (OAM 32x8 4bpp + 10 anims
+              press-start/copyright + template) dans `title_screen-callbacks-auto.ts`, via `CreateSprite(rt, objet, …)` +
+              `StartSpriteAnim(id, n)`. A/B : « APPUYEZ SUR START » + « © 2005 GAMEFREAK inc. » (10 segments) identiques.
+            - ✅ **Feature #3 — logo shine** (`f65ccdb6`) : `sPokemonLogoShine` (OAM 64x64 4bpp + anim 1 frame) dans
+              `decomp-globals.ts` (hand-written, hors générateur) ; callback résolu par string (anti-cycle ESM) ; subpriority 0
+              (1:1, fix déviation). A/B déterministe : sprite créé tileBase 176/objMode OBJ_WINDOW/anims 1×2/oamTile 176.
+            - 🏁 **TITLE SCREEN 100% CONVERTI** (3/3 templates) — plus aucun `CreateSpriteFromTemplate` pour ses sprites.
+            - ⏭️ **Prochain lot** (chacune : defs objet dans le fichier-home + ajout au Set si auto-gen + A/B) : **intro**
+              (`intro-callbacks-auto.ts`, ~20 appels : Flygon/Torchic/Marshtomp…), **credits** (`intro_credits_graphics`, 7),
+              puis **battle anims** (`battle_anim_*`) — jusqu'au RETRAIT du résolveur `CreateSpriteFromTemplate` + dispatcher (4).
       - **(C) cleanup délégués** : migrer les call-sites `rt.X(...)` → free fns + retirer les méthodes-déléguées du harness.
         - ✅ **ResetSpriteData** (`58c37787`) : méthode RETIRÉE. Bridge `ResetSpriteData()` route vers l'impl ; 12 sites
           forme-méthode migrés. + fix devtool `startWild` résout le nom d'espèce (`383e7f8b`, Pikachu Lv1 au lieu de ????).
