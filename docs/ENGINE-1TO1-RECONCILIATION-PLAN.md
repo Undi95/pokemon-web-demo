@@ -202,12 +202,19 @@ AnimateSprites/BuildOamBuffer/AnimateSprite/ResetSprite/etc. du harness vers le 
             - ✅ **Feature #4 — gAncientPowerRockSpriteTemplate** (`f6d48908`, = glitch 5 Groudon) : 1er template intro converti
               (decomp-globals, tileTag STRING 'ANIM_TAG_ROCKS'). ⚠ LEÇON : les sheets intro/battle-anim s'enregistrent sous des
               tags STRING → tout template intro doit utiliser le tag string du catalogue (vérifier par template, cf. piège rochers).
-            - 🎯 **CHANTIER « a » (intro templates) — TODO, à faire à tête reposée** : convertir les **17** templates intro encore
-              via resolver en vrais objets (pattern title). **11 dans `intro-callbacks-auto.ts`** : sSpriteTemplate_Lightning(×6),
-              WaterDrop(×3), Bubbles(×2), Volbeat, Torchic, Sparkle, RayquazaOrb, Manectric, GameFreakLogo, GameFreakLetter,
-              FlygonSilhouette. **6 dans `intro_credits_graphics`** (via CreateIntro*Sprite de decomp-globals) : Brendan, BrendanBicycle,
-              May, MayBicycle, FlygonLatias, MovingScenery. Defs depuis le catalogue (SPRITE_TEMPLATES/OAM_DATAS/anims, déjà en
-              tags STRING) ; callbacks dans le fichier généré (defs APRÈS les SpriteCB). WaterDrop = 4 anims multi-sprite (complexe).
+            - 🏁 **CHANTIER « a » (intro templates) — FAIT (2026-06-22)** : 16 templates rendus dans l'intro convertis en VRAIS objets.
+              - ✅ **11 dans `intro-callbacks-auto.ts`** (`05555efe`) : Sparkle, Volbeat, Torchic, Manectric, Lightning, Bubbles,
+                WaterDrop (4 anims), GameFreakLetter (7 anims, affine_double), GameFreakLogo (affine_double/blend), FlygonSilhouette,
+                RayquazaOrb. Defs en fin de module (tous SpriteCB_* en scope, zéro TDZ) ; 19 call sites → `CreateSprite(rt, sX, …)` ;
+                générateur `CONVERTED_TEMPLATES` mis à jour. tags STRING transcrits du catalogue, anims/OAM 1:1 d'intro.c.
+              - ✅ **5 dans `decomp-globals.ts`** (`05752c5e`, helpers CreateIntroBrendan/May/FlygonSprite) : Brendan, BrendanBicycle,
+                May, MayBicycle, FlygonLatias. OAM/anims module-level ; templates construits in-function, callback résolu via
+                spriteCallbacks (anti-cycle, pattern logo-shine). NO MAJ générateur (call sites hand-written).
+              - ⏭️ **sSpriteTemplate_MovingScenery NON converti** : créé uniquement dans les crédits de fin (CreateMovingScenerySprites),
+                JAMAIS dans l'intro (intro.c ne fait que figer gIntroCredits_MovingSceneryState) → hors-scope « intro 1:1 » (= chantier crédits).
+              - **A/B intro RÉEL validé** (URL `/` + press A pour passer TestGbaScene, cf. [[reference-scene-architecture]]) : écran
+                GAME FREAK (lettres+logo affine OK), scène 2 vélo (May+vélo+Flygon 2-halves+Manectric/Volbeat/Torchic) rendent ;
+                zéro warning [CreateSprite] de tag. Warnings résiduels = pré-existants (copyright gfx, legend_bg PNG non-indexé), pas mes sprites.
 
 ## 🧹 BALAYAGE CASTS (« b ») — FAIT (bug systémique transpileur)
 - **RACINE** : `scripts/transpile-callbacks.mjs` §8c (L532-537) **STRIPPE** tous les casts entiers (`(u8)x` → `x`). Cause des
