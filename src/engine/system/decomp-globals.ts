@@ -76,7 +76,7 @@ import {
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
   CreateSprite as _CreateSprite_game,
-  ANIMCMD_FRAME, ANIMCMD_END,
+  ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP,
 } from '../../game/sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
@@ -549,7 +549,17 @@ export const sSpritePalettes_RunningPokemon: ReadonlyArray<{ data: string, tag: 
   { data: 'gIntroManectric_Pal', tag: 'TAG_MANECTRIC' },
 ];
 
-export const sAnims_PlayerBicycle: ReadonlyArray<unknown> = [];
+// 1:1 décomp intro.c:621-663 — table d'anims du joueur à vélo (le PÉDALAGE). Était un stub
+// vide `[]` → `.anims = []` posé sur le sprite joueur (intro scène 2) → BeginAnim ne trouve
+// aucune frame → joueur figé, pas de pédalage (Brendan ET May). Fast/Slow bouclent (JUMP 0) ;
+// frames à offsets 0/64/128/192 = les 4 frames de pédalage dans la feuille joueur.
+const sAnim_PlayerBicycle_Fast = [ ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(128, 4), ANIMCMD_FRAME(192, 4), ANIMCMD_JUMP(0) ];
+const sAnim_PlayerBicycle_Slow = [ ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(64, 8), ANIMCMD_FRAME(128, 8), ANIMCMD_FRAME(192, 8), ANIMCMD_JUMP(0) ];
+const sAnim_PlayerBicycle_LookBack = [ ANIMCMD_FRAME(256, 4), ANIMCMD_FRAME(320, 4), ANIMCMD_FRAME(384, 4), ANIMCMD_END ];
+const sAnim_PlayerBicycle_LookForward = [ ANIMCMD_FRAME(384, 16), ANIMCMD_FRAME(320, 16), ANIMCMD_FRAME(256, 16), ANIMCMD_END ];
+export const sAnims_PlayerBicycle: ReadonlyArray<ReadonlyArray<unknown>> = [
+  sAnim_PlayerBicycle_Fast, sAnim_PlayerBicycle_Slow, sAnim_PlayerBicycle_LookBack, sAnim_PlayerBicycle_LookForward,
+];
 
 /** 1:1 décomp src/intro_credits_graphics.c:1118 — crée Brendan + bicycle sprites,
  *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position. */
