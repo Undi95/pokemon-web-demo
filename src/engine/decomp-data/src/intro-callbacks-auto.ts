@@ -415,7 +415,7 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
           else
               sprite.y += 3;
 
-          if ((sprite.y - 20) > DISPLAY_HEIGHT - 20)
+          if (((sprite.y - 20) & 0xFFFF) > DISPLAY_HEIGHT - 20)  // 1:1 décomp intro.c:2317 : (u16)(y-20). Cast droppé → les bulles qui montent (y<20→négatif) n'étaient JAMAIS détruites → persistaient sur la scène éclairs.
               DestroySprite(rt, sprite.spriteId);
           break;
       }
