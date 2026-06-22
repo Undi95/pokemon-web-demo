@@ -48,6 +48,7 @@ import {
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
+  setSpriteAnims as _setSpriteAnims_1to1,
 } from '../../game/sprite';
 import { loadGbaPal, loadTileBin } from '../gba/png-loader';
 import { PALSLOT_NPC_SPECIAL } from './object-event-graphics-info';
@@ -476,9 +477,12 @@ export function CreateObjectGraphicsSprite(
     sprite.tileBase = tileBase;
     if (callback) sprite.callback = callback;
   }
-  // Register in spriteAnimStates → tickSpriteAnims will cycle frames per
-  // sAnim_Standard_GoSouth/etc. cmd table (= 4-step cycle 0/1/0/2 dur 8 each).
-  rt.spriteAnimStatesRegister(spriteId, info.animsTableName, initialAnimIdx, tileBase);
+  // CONVERGENCE 1:1 : `sprite->anims = template->anims` (chemin inline décomp via
+  // setSpriteAnims/AnimateSprite) au lieu de la state-machine legacy `spriteAnimStates`.
+  // Modèle sheet (sheet chargée par tag à tileBase, pas de tiles inline) → usingSheet=true ;
+  // cycle de marche 4-step 0/1/0/2 + JUMP géré par ContinueAnim/AnimCmd_jump (= ce que fait
+  // déjà le live overworld). Consommateurs : naming_screen, starter_choose, intro_credits.
+  _setSpriteAnims_1to1(rt, spriteId, info.animsTableName, initialAnimIdx, tileBase);
   return spriteId;
 }
 
