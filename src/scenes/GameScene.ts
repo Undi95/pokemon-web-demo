@@ -29,35 +29,15 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, type CB2Callback } from '../engine/system/decomp-runtime';
+import { DecompRuntime, InitKeys } from '../engine/system/decomp-runtime';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/system/decomp-globals';
-import { preloadFontData } from '../engine/ui/gba-text-system';
 import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
-import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets, preloadBirchSpeechAssets } from '../engine/boot/intro-asset-loader';
-import {
-  Task_Scene1_Load, MainCB2_EndIntro,
-  SpriteCB_Sparkle, SpriteCB_Volbeat, SpriteCB_Torchic, SpriteCB_Manectric,
-  SpriteCB_GroudonRocks, SpriteCB_KyogreBubbles, SpriteCB_Lightning,
-  SpriteCB_WaterDrop_Ripple, SpriteCB_WaterDropHalf, SpriteCB_WaterDrop,
-  SpriteCB_WaterDrop_Slide, SpriteCB_WaterDrop_ReachLeafEnd,
-  SpriteCB_WaterDrop_DangleFromLeaf, SpriteCB_WaterDrop_Fall, SpriteCB_WaterDropShort,
-  SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
-  SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
-} from '../engine/decomp-data/src/intro-callbacks-auto';
-import {
-  CB2_InitTitleScreen,
-  SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
-  SpriteCB_PressStartCopyrightBanner,
-  SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
-} from '../engine/decomp-data/src/title_screen-callbacks-auto';
-import {
-  SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
-} from '../engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
-import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/boot/copyright-boot';
-import { InitKeys } from '../engine/system/decomp-runtime';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
+// Chantier « c » Step 2.1 : boot intro extrait → intro-host.ts (callbacks + preload +
+// SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)), réutilisable par la scène unique.
+import { registerIntroSpriteCallbacks, bootIntroSequence } from '../engine/boot/intro-host';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -65,7 +45,6 @@ export class GameScene extends Phaser.Scene {
   private bridge!: GbaPhaserBridge;
   private statusText?: Phaser.GameObjects.Text;
   private booted = false;
-  private mainCb2Intro: CB2Callback | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() { super({ key: 'GameScene' }); }
@@ -93,43 +72,9 @@ export class GameScene extends Phaser.Scene {
     // restore à valeur arbitraire.
     InitKeys(this.rt);
 
-    // Enregistre les sprite callbacks de l'intro pour que CreateSpriteFromTemplate
-    // puisse les résoudre depuis les templates (les fonctions ESM ne sont pas sur globalThis).
-    this.rt.spriteCallbacks.set('SpriteCB_Sparkle', SpriteCB_Sparkle);
-    this.rt.spriteCallbacks.set('SpriteCB_Volbeat', SpriteCB_Volbeat);
-    this.rt.spriteCallbacks.set('SpriteCB_Torchic', SpriteCB_Torchic);
-    this.rt.spriteCallbacks.set('SpriteCB_Manectric', SpriteCB_Manectric);
-    this.rt.spriteCallbacks.set('SpriteCB_GroudonRocks', SpriteCB_GroudonRocks);
-    this.rt.spriteCallbacks.set('SpriteCB_KyogreBubbles', SpriteCB_KyogreBubbles);
-    this.rt.spriteCallbacks.set('SpriteCB_Lightning', SpriteCB_Lightning);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Ripple', SpriteCB_WaterDrop_Ripple);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDropHalf', SpriteCB_WaterDropHalf);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop', SpriteCB_WaterDrop);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Slide', SpriteCB_WaterDrop_Slide);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_ReachLeafEnd', SpriteCB_WaterDrop_ReachLeafEnd);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_DangleFromLeaf', SpriteCB_WaterDrop_DangleFromLeaf);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Fall', SpriteCB_WaterDrop_Fall);
-    this.rt.spriteCallbacks.set('SpriteCB_WaterDropShort', SpriteCB_WaterDropShort);
-    this.rt.spriteCallbacks.set('SpriteCB_PlayerOnBicycle', SpriteCB_PlayerOnBicycle);
-    this.rt.spriteCallbacks.set('SpriteCB_Flygon', SpriteCB_Flygon);
-    this.rt.spriteCallbacks.set('SpriteCB_LogoLetter', SpriteCB_LogoLetter);
-    this.rt.spriteCallbacks.set('SpriteCB_GameFreakLogo', SpriteCB_GameFreakLogo);
-    this.rt.spriteCallbacks.set('SpriteCB_FlygonSilhouette', SpriteCB_FlygonSilhouette);
-    this.rt.spriteCallbacks.set('SpriteCB_RayquazaOrb', SpriteCB_RayquazaOrb);
-    // Title screen sprite callbacks (Version banner slide + alpha fade, Press Start
-    // blink, Pokemon logo shine sweep). Sans ces enregistrements, les sprites
-    // restent statiques (sprite.callback = null) → version banner stuck à y=4.
-    this.rt.spriteCallbacks.set('SpriteCB_VersionBannerLeft', SpriteCB_VersionBannerLeft as any);
-    this.rt.spriteCallbacks.set('SpriteCB_VersionBannerRight', SpriteCB_VersionBannerRight as any);
-    this.rt.spriteCallbacks.set('SpriteCB_PressStartCopyrightBanner', SpriteCB_PressStartCopyrightBanner as any);
-    this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine', SpriteCB_PokemonLogoShine as any);
-    this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine_Fast', SpriteCB_PokemonLogoShine_Fast as any);
-    // Scene 2 sub-sprite callbacks (bicycle suit player, Flygon right half suit left half)
-    this.rt.spriteCallbacks.set('SpriteCB_Bicycle', SpriteCB_Bicycle);
-    this.rt.spriteCallbacks.set('SpriteCB_FlygonRightHalf', SpriteCB_FlygonRightHalf);
-    // Scene 2 BG scroll task (parallax bike ride). Stocké dans le même Map
-    // (typage permissif via `as any`) pour récupération depuis CreateBicycleBgAnimationTask.
-    this.rt.spriteCallbacks.set('Task_BicycleBgAnimation', Task_BicycleBgAnimation as any);
+    // Enregistre les sprite callbacks intro/title/credits (extrait → intro-host.ts,
+    // chantier « c » Step 2.1 : réutilisable par la scène hôte unique).
+    registerIntroSpriteCallbacks(this.rt);
 
     // Expose debug pour inspecter dans la console : window.debug.rt, debug.gba etc.
     (window as unknown as { debug: unknown }).debug = {
@@ -306,65 +251,13 @@ export class GameScene extends Phaser.Scene {
 
   private async bootIntro(): Promise<void> {
     try {
-      // Charge les strings FR 1:1 décomp AVANT toute Task qui pourrait référencer
-      // gText_* (= main menu, Birch speech, default names, etc.).
-      const { initStringsFromDecomp } = await import('../engine/ui/gba-strings');
-      await initStringsFromDecomp();
-
-      // Side-effect import : populate globalThis avec les helpers option_menu
-      // (DrawHeaderText, HighlightOptionMenuItem, *_DrawChoices, *_ProcessInput,
-      //  GetWindowFrameTilesPal, sArrowPressed). Nécessaire AVANT que l'auto file
-      // CB2_InitOptionMenu s'exécute (= il les résout via globalThis scope).
-      const { preloadOptionMenuAssets } = await import('../engine/ui/option-menu-impl');
-
-      await preloadScene1Assets();
-      await preloadScene2Assets();
-      await preloadScene3Assets();
-      await preloadTitleAssets();
-      await preloadFontData();
-      await preloadOptionMenuAssets();
-      await preloadBirchSpeechAssets();
-
-      // 1:1 décomp species.h + cries.json : map species ID → cri filename.
-      // Au boot pour que PlayCryInternal(SPECIES_X) fonctionne pour TOUS les
-      // species (Lotad release Birch, evolutions, battles, etc.), pas juste
-      // les 3 hardcodés (Kyogre/Groudon/Rayquaza intro).
-      const { loadSpeciesNamesAsync } = await import('../engine/system/decomp-globals');
-      await loadSpeciesNamesAsync();
-
-      // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
-      // gap silence aux transitions m4aSongNumStart (sinon ~50-150ms de
-      // fetch+parse par switch intro→intro_battle→title).
-      // 1:1 ROM-équivalent : tous les sons sont "déjà là" comme dans la décomp.
-      const { loadMidi } = await import('../engine/m4a/player');
-      void Promise.all([
-        loadMidi('/decomp/em/music/mus_intro.mid').catch(() => {}),
-        loadMidi('/decomp/em/music/mus_intro_battle.mid').catch(() => {}),
-        loadMidi('/decomp/em/music/mus_title.mid').catch(() => {}),
-        loadMidi('/decomp/em/music/se_intro_blast.mid').catch(() => {}),
-      ]);
-      // Pré-charge cris Groudon/Kyogre via fetch warm (decodeAudioData est rapide).
-      void Promise.all([
-        fetch('/decomp/em/cries/groudon.wav').catch(() => {}),
-        fetch('/decomp/em/cries/kyogre.wav').catch(() => {}),
-      ]);
-
-      // Transfère les palettes additionnelles préchargées dans le runtime
-      // pour que CpuCopy16 puisse les utiliser (e.g. text.pal pour color cycle).
-      const textPal = assetCache.get('gIntroGameFreakTextFade_Pal') as Uint16Array | undefined;
-      if (textPal) this.rt.setExtraPalette('gIntroGameFreakTextFade_Pal', textPal);
-
-      // MainCB2_Intro = skip intro on any key press (décomp 1:1)
-      this.mainCb2Intro = MainCB2_Intro;
-
-      // Boot 1:1 décomp : CB2_InitCopyrightScreenAfterBootup → SetUpCopyrightScreen
-      // state machine → fade in → hold → fade out → MainCB2_Intro + Task_Scene1_Load
-      this.rt.SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);
-      console.log('[GameScene] CB2_InitCopyrightScreenAfterBootup set');
-
+      // Boot intro 1:1 décomp extrait → intro-host.ts (chantier « c » Step 2.1) :
+      // preload assets intro/title/birch + strings + cris/MIDIs, puis
+      // SetMainCallback2(CB2_InitCopyrightScreenAfterBootup) = lance la chaîne CB2.
+      await bootIntroSequence(this.rt);
+      console.log('[GameScene] intro booted (CB2_InitCopyrightScreenAfterBootup set)');
       this.booted = true;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
       console.error('[GameScene] bootIntro failed:', e);
     }
   }
