@@ -11,7 +11,7 @@
  * 1:1 décomp src/intro.c — `static const u32 sIntro1Bg_Gfx[] = INCGFX_U32(...)`
  * = data en ROM décompressable au runtime via LZ77UnCompVram.
  */
-import { assetCache } from '../../src/engine/system/decomp-globals';
+import { assetCache } from '../runtime/decomp-globals';
 import { GFX_SOURCES } from '../../src/engine/decomp-data/src/intro-data';
 import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from '../gba/png-loader';
 
@@ -344,7 +344,7 @@ export async function preloadScene3Assets(): Promise<void> {
   try {
     const pal = await loadGbaPal('/decomp/em/intro/scene_3/bg.pal');
     assetCache.set('gIntro3Bg_Pal', pal);
-    const { getRuntime } = await import('../../src/engine/system/decomp-globals');
+    const { getRuntime } = await import('../runtime/decomp-globals');
     try {
       getRuntime().extraPalettes.set('gIntro3Bg_Pal', pal);
     } catch { /* runtime not yet set, will fallback to assetCache */ }

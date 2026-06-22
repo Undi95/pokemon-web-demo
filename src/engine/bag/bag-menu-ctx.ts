@@ -31,12 +31,12 @@
  * Task_BagMenu_HandleInput. À implémenter type-d'item-par-type-d'item dans
  * un follow-up.
  */
-import type { DecompTask } from '../system/decomp-runtime';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { reverseDecompConstant } from '../system/decomp-constants';
-import { getItem as _getItem, getItemKeyById } from '../system/data-tables';
+import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { getItem as _getItem, getItemKeyById } from '../../../harness/runtime/data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   setItemUseCB, SetUpItemUseCallback,
@@ -63,11 +63,11 @@ import {
   FillBgTilemapBufferRect_Palette0, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { JOY_NEW, PALETTES_ALL, getRuntime } from '../system/decomp-globals';
+import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from '../ui/gba-text-system';
-import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../system/decomp-bridge';
+import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../../../harness/runtime/decomp-bridge';
 // ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
 // (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où
@@ -82,13 +82,13 @@ void import('../../overworld').then((m) => { _overworldMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
-import { PIXEL_FILL } from '../system/decomp-globals';
+import { PIXEL_FILL } from '../../../harness/runtime/decomp-globals';
 import { ENUM_ITEMWIN_1 } from '../decomp-data/include/item_menu-data';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
 } from '../decomp-data/include/gba/io_reg-data';
 import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
-import { PlaySE } from '../system/decomp-globals';
+import { PlaySE } from '../../../harness/runtime/decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────
 

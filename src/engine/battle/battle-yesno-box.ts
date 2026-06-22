@@ -35,7 +35,7 @@ import {
   WINDOW_CLEAR,
   YESNOBOX_X_Y,
 } from './battle-window-frame';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN } from './battle-controllers';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────

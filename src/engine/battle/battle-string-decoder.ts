@@ -29,8 +29,8 @@ import {
 import { getString } from '../ui/gba-strings';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
-import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../system/data-tables';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../../../harness/runtime/data-tables';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import type { BattleMsgData } from './battle-event-queue';
 import {
   B_BUFF_PLACEHOLDER_BEGIN,

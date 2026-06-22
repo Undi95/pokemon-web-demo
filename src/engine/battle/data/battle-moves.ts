@@ -11,7 +11,7 @@
  * default empty entry (= power 0, type 0, accuracy 0).
  */
 
-import { resolveDecompConstant } from '../../system/decomp-constants';
+import { resolveDecompConstant } from '../../../../harness/runtime/decomp-constants';
 
 /** 1:1 décomp `struct BattleMove` (include/pokemon.h). */
 export interface BattleMove {

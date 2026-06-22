@@ -7,11 +7,11 @@
  * GFX : bubble.png 16x48 (3 frames) byte-exact.
  */
 import { DestroySprite, FreeOamMatrix } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates, lookupAnimTemplate } from './engine/battle/battle-anim-registry';
 import {
   TranslateAnimSpriteToTargetMonLocation, InitSpritePosToAnimAttacker,
@@ -19,7 +19,7 @@ import {
   InitSpritePosToAnimTarget, StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine, PrepareBattlerSpriteForRotScale,
 } from './battle_anim_mons';
-import { CreateSprite as _CreateSpriteFromTemplate } from './engine/system/decomp-bridge';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { Sin } from './trig';
 
@@ -1233,7 +1233,7 @@ import {
   LoadAnimBgPalette as _swLoadPal,
   ClearBattleAnimBg as _swClearBg,
 } from './engine/battle/battle-anim-interpreter';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _SfwTask = { taskId: number; data: number[]; func?: unknown; priority?: number };
 function _sfwRt(): {

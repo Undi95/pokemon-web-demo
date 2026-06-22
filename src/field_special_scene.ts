@@ -57,8 +57,8 @@
  * IMPORTANT : task.data est un Int16Array dans notre runtime (= s16 1:1 décomp).
  * `++tTimer == 30000` wrap correctement parce que 30000 fits dans s16.
  */
-import type { DecompRuntime, DecompTask } from './engine/system/decomp-runtime';
-import { PlaySE, FuncIsActiveTask } from './engine/system/decomp-globals';
+import type { DecompRuntime, DecompTask } from '../harness/runtime/decomp-runtime';
+import { PlaySE, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
 import { stopPrerenderedSE, preloadPrerenderedSEs } from '../harness/m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,

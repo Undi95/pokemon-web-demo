@@ -27,8 +27,8 @@
  * DOOR_SOUND_ARENA → SE_REPEL.
  */
 
-import type { DecompRuntime } from './engine/system/decomp-runtime';
-import { getRuntime } from './engine/system/decomp-globals';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { loadTileBin } from '../harness/gba/png-loader';
 import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from './engine/decomp-data/include/constants/songs-data';
 import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './fieldmap';

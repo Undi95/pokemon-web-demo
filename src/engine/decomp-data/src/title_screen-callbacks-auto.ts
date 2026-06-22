@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
 import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END } from '../../../sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
@@ -21,7 +21,7 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../system/decomp-helpers';
+} from '../../../../harness/runtime/decomp-helpers';
 import {
   NUM_COPYRIGHT_FRAMES,
   NUM_PRESS_START_FRAMES,
@@ -33,7 +33,7 @@ import {
   VERSION_BANNER_Y,
   VERSION_BANNER_Y_GOAL,
 } from '../title-screen-data';
-import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, FreeAllSpritePalettes, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sPokemonLogoShineSpriteSheet, sSpritePalette_PressStart, sSpriteSheet_EmeraldVersion, sSpriteSheet_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../../system/decomp-globals';
+import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, FreeAllSpritePalettes, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sPokemonLogoShineSpriteSheet, sSpritePalette_PressStart, sSpriteSheet_EmeraldVersion, sSpriteSheet_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../../../../harness/runtime/decomp-globals';
 import { CB2_InitMainMenu } from './main_menu-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterTitleScreen } from '../../../../harness/boot/copyright-boot';
 // Constants resolved from decomp #defines / enums / TS data modules :

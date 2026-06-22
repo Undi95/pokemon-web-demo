@@ -85,11 +85,11 @@ import {
   ELEVATION_TRANSITION,
 } from './event_object_movement';
 import { MapGridGetElevationAt } from './fieldmap';
-import { LOCALID_PLAYER } from './engine/system/decomp-bridge';
+import { LOCALID_PLAYER } from '../harness/runtime/decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript, TryRunCoordEventScript } from './engine/script/script-runtime';
 import { DIR_TO_DX, DIR_TO_DY } from './engine/field/direction-coords';
-import { LOCALID_NONE } from './engine/system/decomp-bridge';
+import { LOCALID_NONE } from '../harness/runtime/decomp-bridge';
 // ProcessPlayerFieldInput : dispatch warp/rencontre via les helpers PROUVÉS (warp-system +
 // wild-encounter). Ces modules N'IMPORTENT PAS field-control-avatar → pas de nouveau cycle ESM.
 import {

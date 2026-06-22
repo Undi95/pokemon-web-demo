@@ -83,10 +83,10 @@ import {
   isStatusAnimActive, setStatusAnimActive,
 } from './engine/battle/battle-sprites-data';
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from './engine/battle/constants';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
-import { CreateSprite } from './engine/system/decomp-bridge';
-import type { DecompTask, DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
-import { getRuntime, SpriteCallbackDummy } from './engine/system/decomp-globals';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
+import type { DecompTask, DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
+import { getRuntime, SpriteCallbackDummy } from '../harness/runtime/decomp-globals';
 import { SpriteCB_WildMon } from './engine/battle/battle-sprite-callbacks';
 import { isBallAnimActive, setBallAnimActive } from './engine/battle/battle-sprites-data';
 // 1:1 : l'alloc fraîche du struct sprites vit dans le miroir battle_gfx_sfx_util.
@@ -1521,7 +1521,7 @@ function OpponentHandleCantSwitch(): void { OpponentBufferExecCompleted(); }
 
 function OpponentHandlePlaySE(): void {
   const seId = gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8);
-  void import('./engine/system/decomp-globals').then(({ PlaySE }) => PlaySE(seId));
+  void import('../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(seId));
   OpponentBufferExecCompleted();
 }
 

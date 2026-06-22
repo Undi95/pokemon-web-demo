@@ -43,14 +43,14 @@
  *   - battle-healthbox.ts : healthbox sprite handle
  */
 
-import { getRuntime } from './engine/system/decomp-globals';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { getRuntime } from '../harness/runtime/decomp-globals';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { Sin, Cos } from './trig';
 import { DestroySprite } from './sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
-import { CreateSprite as _CreateSpriteFromTemplate } from './engine/system/decomp-bridge';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
-import { CreateTask, DestroyTask } from './engine/system/decomp-bridge';
+import { CreateTask, DestroyTask } from '../harness/runtime/decomp-bridge';
 import {
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
@@ -63,11 +63,11 @@ import {
   BlendPalettes, SpriteCallbackDummy,
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   FreeSpriteTilesByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from './sprite';
 import { getNumBallParticles, setNumBallParticles } from './engine/battle/battle-sprites-data';
-import { BeginNormalPaletteFade } from './engine/system/decomp-bridge';
+import { BeginNormalPaletteFade } from '../harness/runtime/decomp-bridge';
 import { setGDoingBattleAnim } from './engine/battle/state';
 import {
   gLastUsedItem, gBattleStruct,

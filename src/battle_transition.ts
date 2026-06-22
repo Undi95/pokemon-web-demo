@@ -24,20 +24,20 @@
  * de la rotation (±4/frame) à valider à l'œil (A/B user).
  */
 
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
 import { loadIndexedPng } from '../harness/gba/png-loader';
 import { Random } from './engine/system/random';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
-} from './engine/system/decomp-runtime';
+} from '../harness/runtime/decomp-runtime';
 import { DISPLAY_HEIGHT } from './engine/decomp-data/include/gba/defines-data';
 
 /** SetSpriteRotScale via la surface __battleAnimMons (anti-cycle ESM : un import

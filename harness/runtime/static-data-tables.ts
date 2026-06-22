@@ -41,7 +41,7 @@ export const ANIM_STD_GO_FASTEST_EAST  = 15;
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
-} from '../decomp-data/include/constants/global-data';
+} from '../../src/engine/decomp-data/include/constants/global-data';
 
 // ─── sMoveDirectionAnimNums (= event_object_movement.c) ─────────────────────
 /** 1:1 décomp `event_object_movement.c sMoveDirectionAnimNums[]`.

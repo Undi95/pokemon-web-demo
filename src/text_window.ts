@@ -32,7 +32,7 @@
  *     l'écriture dans gPlttBuffer (faded+unfaded), comme le faisait l'engine.
  */
 
-import { assetCache, getAsset, getRuntime, LoadBgTiles } from './engine/system/decomp-globals';
+import { assetCache, getAsset, getRuntime, LoadBgTiles } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {

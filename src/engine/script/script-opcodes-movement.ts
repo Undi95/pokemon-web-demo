@@ -36,7 +36,7 @@ import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords 
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader, MAP_OFFSET } from '../../fieldmap';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';
 import {
   parseValue, findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,

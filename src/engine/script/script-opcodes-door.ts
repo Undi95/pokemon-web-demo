@@ -13,7 +13,7 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
-import { PlaySE } from '../system/decomp-globals';
+import { PlaySE } from '../../../harness/runtime/decomp-globals';
 import { parseValue } from './script-opcodes-helpers';
 
 /** 1:1 décomp `sDoorAnimActive` (field_door.c interne, exposé via

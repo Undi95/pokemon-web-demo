@@ -39,9 +39,9 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../../src/main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
-import { DecompRuntime, InitKeys } from '../../src/engine/system/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../../src/engine/system/decomp-globals';
-import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
+import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../runtime/decomp-globals';
+import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadBirchSpeechAssets } from '../boot/intro-asset-loader';
 import { preloadTextWindowFrames } from '../../src/text_window';
@@ -52,7 +52,7 @@ import {
   ResetTasks,
   FreeAllSpritePalettes,
   ScanlineEffect_Stop,
-} from '../../src/engine/system/decomp-globals';
+} from '../runtime/decomp-globals';
 import { sMainMenuBgTemplates } from '../../src/engine/decomp-data/src/main_menu-data';
 import {
   Task_NewGameBirchSpeech_Init,
@@ -64,9 +64,9 @@ import { CB2_NewGame } from '../../src/engine/decomp-data/src/overworld-callback
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../../src/engine/system/decomp-runtime';
+} from '../runtime/decomp-runtime';
 import { installEngineDevtools } from '../devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
+import { installInputHandlers, setHeldKeysOverride } from '../runtime/input-handler';
 
 export class BirchRuntimeScene extends Phaser.Scene {
   private gba!: Gba;

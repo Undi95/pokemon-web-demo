@@ -37,10 +37,10 @@
  *     _GetBattlerSpriteSubpriority(b) = la valeur de création du sprite mon
  *     (battle_anim_mons.c:2035) — identique tant que rien ne la réécrit.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, FreeOamMatrix } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord,
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
@@ -56,7 +56,7 @@ import { Random2 } from './random';
 import { gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { GetBattlerPosition } from './engine/battle/util';
-import { IndexOfSpritePaletteTag, OBJ_PLTT_ID, BlendPalette } from './engine/system/decomp-globals';
+import { IndexOfSpritePaletteTag, OBJ_PLTT_ID, BlendPalette } from '../harness/runtime/decomp-globals';
 
 type _VSprite = {
   data: number[]; x: number; y: number; x2: number; y2: number;
@@ -1854,7 +1854,7 @@ import {
 import { GetBattlerSpriteBGPriorityRank as _skBgRank, GetBattlerElevation as _skElev } from './battle_anim_mons';
 import { gBattlerPartyIndexes as _skPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _skEnemyParty, gPlayerParty as _skPlayerParty, GetMonData as _skGetMon, MON_DATA_SPECIES as _skSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _skRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _skRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _skFrontCoords, getMonBackPicCoords as _skBackCoords } from './data/mon_pic_coords';
 
 type _SkTask = { taskId: number; data: number[]; func?: unknown };
@@ -2409,7 +2409,7 @@ import {
   LoadAnimBgPalette as _hbLoadPal,
   ClearBattleAnimBg as _hbClearBg,
 } from './engine/battle/battle-anim-interpreter';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _HbTask = { taskId: number; data: number[]; func?: unknown };
 function _hbItf(): { DestroyAnimVisualTask?: (id: number) => void } {

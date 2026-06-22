@@ -45,9 +45,9 @@
  *     iteration via `T2_READ_32` qui devient `read32(offset)`.
  */
 
-import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
-import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { MAX_SPRITES } from '../system/decomp-runtime';
+import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../../../harness/runtime/decomp-bridge';
+import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
+import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
@@ -615,7 +615,7 @@ export function CalculatePanIncrement(sourcePan: number, targetPan: number, incr
 /** 1:1 décomp `PlaySE12WithPanning(songId, pan)`. Wraps notre PlaySE. */
 function PlaySE12WithPanning(songId: number, _pan: number): void {
   // Panning effect deferred (= notre PlaySE n'a pas stereo panning wired).
-  void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(songId));
+  void import('../../../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(songId));
 }
 
 /** 1:1 décomp `SE12PanpotControl(pan)`. Adjust panning of active SE channel. */
@@ -1573,7 +1573,7 @@ function Cmd_end(): void {
 function Cmd_playse(): void {
   _pc++;
   const songId = read16(_pc);
-  void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(songId));
+  void import('../../../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(songId));
   _pc += 2;
 }
 

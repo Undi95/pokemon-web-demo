@@ -49,9 +49,9 @@ import {
   getRuntime, BlendPalettes, PALETTES_ALL, setReservedSpritePaletteCount,
   AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { Random } from './engine/system/random';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 // Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
 import * as _saveBlockNs from './engine/save/save-block-state';
 import {
@@ -2749,7 +2749,7 @@ export function HandleTurnActionSelectionState(): void {
 //  BATTLE_TYPE_RECORDED_LINK [C5] : déjà importés. ⚠️ SPRITE_DATA_BATTLER/SPECIES
 //  de CETTE section = slots 0/2 (≠ section C1 faint : 5/7) → suffixe _CB6.)
 
-import { gSineTable } from './engine/system/decomp-helpers';
+import { gSineTable } from '../harness/runtime/decomp-helpers';
 import { HITMARKER_NO_ANIMATIONS } from './engine/battle/constants';
 
 // ─── Sprite type minimal compat décomp ─────────────────────────────────────
@@ -3409,7 +3409,7 @@ import {
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './battle_util';
 import { runBattleTurnPassedViaBytecode } from './engine/battle/wire-bytecode-bridge';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
-import { FreeMonSpritesGfx, BeginFastPaletteFade } from './engine/system/decomp-globals';
+import { FreeMonSpritesGfx, BeginFastPaletteFade } from '../harness/runtime/decomp-globals';
 import {
   stepBattleScriptCommand, gBattleScriptContext, getBattleScriptOffset,
 } from './engine/battle/script-interpreter';
@@ -3421,13 +3421,13 @@ import {
 import { getSpeciesInfo } from './engine/data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from './engine/ui/pokedex-flags';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
-import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from './engine/system/decomp-globals';
+import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
 import {
   GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty,
   GetAbilityBySpecies, restoreOwPartyAfterTest,
   MON_DATA_SPECIES, MON_DATA_SPECIES_OR_EGG, MON_DATA_HP, MON_DATA_STATUS, MON_DATA_NICKNAME,
 } from './engine/battle/party-storage';
-import { resolveDecompConstant, reverseDecompConstant } from './engine/system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // Inline constants 1:1 décomp (= éviter export-clutter sur ces specifics) :
 /** 1:1 décomp `ITEM_NONE` (constants/items.h) = 0. */

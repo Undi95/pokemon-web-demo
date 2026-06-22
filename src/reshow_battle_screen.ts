@@ -22,10 +22,10 @@
  *    web → omis avec note (le reload BG/sprites + le fade couvrent l'effet visible).
  */
 
-import { getRuntime, FreeAllSpritePalettes, ResetPaletteFade, setReservedSpritePaletteCount } from './engine/system/decomp-globals';
+import { getRuntime, FreeAllSpritePalettes, ResetPaletteFade, setReservedSpritePaletteCount } from '../harness/runtime/decomp-globals';
 import { gBattlersCount, gBattleEnvironment, gBattlerPartyIndexes } from './engine/battle/state';
 import { loadBattleTextboxAndBackground, BattleInitBgsAndWindows } from './engine/battle/battle-bg';
-import { ResetSpriteData } from './engine/system/decomp-bridge';
+import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
 import { _loadAndCreateBattlerMonSprite } from './battle_controller_opponent';
 // Healthbox : DIRECT depuis le miroir battle_interface (même dossier) — bénéfice de la
 // consolidation : reshow_battle_screen.c inclut battle_interface.h, idem ici.

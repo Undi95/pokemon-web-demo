@@ -33,7 +33,7 @@
 import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../../src/engine/save/save-system';
 import { GetPlayerFacingDirection } from '../../src/field_player_avatar';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
-import { assetCache, getRuntime } from '../../src/engine/system/decomp-globals';
+import { assetCache, getRuntime } from '../runtime/decomp-globals';
 import { gMapHeader } from '../../src/fieldmap';
 import { bagContents } from '../../src/engine/bag/bag';
 // Migration miroir : flags/vars sont id-indexés (number[]) → on énumère via les

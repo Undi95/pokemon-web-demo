@@ -17,7 +17,7 @@ import { Sin } from './trig';
 import {
   GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
 } from './engine/battle/util';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 
 type _FSprite = { data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean; callback: unknown };
 function _fItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {

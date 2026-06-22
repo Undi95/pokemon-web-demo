@@ -20,7 +20,7 @@ import { HideFieldMessageBox } from '../../field_message_box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../../field_player_avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
   MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,

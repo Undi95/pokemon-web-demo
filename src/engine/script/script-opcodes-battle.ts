@@ -28,7 +28,7 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript, ScriptJump, ScriptCall, getScript } from './script-runtime';
 import { FlagSet, FlagClear, FlagGet, VarSet, gSpecialVar } from './script-vars';
-import { reverseDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
 // Voie L (suppression voie V) : entrees scripted-wild 1:1 (battle_setup.c). Import
 // statique SYNC (setwildbattle doit peupler gEnemyParty AVANT que dowildbattle boote).

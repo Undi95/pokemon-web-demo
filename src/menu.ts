@@ -32,8 +32,8 @@ import {
   AddWindow, RemoveWindow, InitWindows, FreeAllWindowBuffers, ChangeBgX, ChangeBgY,
   COPYWIN_FULL, COPYWIN_GFX, type WindowTemplate,
 } from './engine/ui/gba-window-system';
-import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from './engine/system/decomp-globals';
-import { BG_PLTT_ID } from './engine/system/decomp-runtime';
+import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from '../harness/runtime/decomp-globals';
+import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
 import { getString } from './engine/ui/gba-strings';
 import {
@@ -483,7 +483,7 @@ void Menu_GetStdPalColor;
 export async function preloadStdMenuPalette(): Promise<void> {
   if (getAsset('gStandardMenuPalette')) return;
   const { loadGbaPal } = await import('../harness/gba/png-loader');
-  const { assetCache } = await import('./engine/system/decomp-globals');
+  const { assetCache } = await import('../harness/runtime/decomp-globals');
   try {
     const pal = await loadGbaPal('/decomp/em/interface/std_menu.pal');
     assetCache.set('gStandardMenuPalette', pal);

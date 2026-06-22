@@ -20,7 +20,7 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { parseValue } from './script-opcodes-helpers';
 
 const FADE_MODE_FROM_BLACK = 0;

@@ -24,8 +24,8 @@
  *   - modes REMATCH/PYRAMID/HILL (gTrainerBattleOpponent_A reecrit) = hors scope.
  */
 
-import { getSpeciesId } from '../system/data-tables';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { getSpeciesId } from '../../../harness/runtime/data-tables';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import * as _opponents from '../decomp-data/include/constants/opponents-data';
 
 // 1:1 decomp `partyFlags` (include/data.h:67-70) — re-derive depuis la macro string `partyType`.

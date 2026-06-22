@@ -20,17 +20,17 @@
  *   - Vigoroth 32×32 (`is32x32`, déménageurs de l'intro de Bourg-en-Vol)
  *   - truck 48×48 (`useSubsprites`, camion de l'intro) → syncSubspriteOam
  */
-import type { DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
 import type { LoadedPng } from '../harness/gba/png-loader';
 import type { OamEntry } from '../harness/gba/types';
 import { AllocSpriteTiles, MarkObjTilesFree, getReservedSpriteTileCount, LoadSpritePalette, FreeAllSpritePalettes, setReservedSpritePaletteCount, sSpritePaletteTags } from './sprite';
-import { LoadPalette } from './engine/system/decomp-globals';
-import { OBJ_PLTT_ID } from './engine/system/decomp-runtime';
+import { LoadPalette } from '../harness/runtime/decomp-globals';
+import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
 // 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter
 // les matrices OAM 0/1 animées par CreateReflectionEffectSprites (= ondulation des reflets eau).
-import { ObjAffineSet } from './engine/system/decomp-bridge';
-import { SetOamMatrix } from './engine/system/decomp-helpers';
+import { ObjAffineSet } from '../harness/runtime/decomp-bridge';
+import { SetOamMatrix } from '../harness/runtime/decomp-helpers';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
 // 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port
@@ -90,7 +90,7 @@ import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEvent
 import { FlagGet, VarGet } from './engine/script/script-vars';
 import { Random } from './engine/system/random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
-import { reverseDecompConstant as _reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstant } from '../harness/runtime/decomp-constants';
 // 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`
 // (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
 // cycle ESM (= avant on passait par gameState.getVar qui créait
@@ -1338,8 +1338,8 @@ const TILES_PER_FRAME_16x32 = 8;
 //   - size : 0..3 selon dimensions (cf. oamShapeSizeFromWH)
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
-import type { NamingSubsprite } from './engine/system/decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from './engine/system/decomp-globals';
+import type { NamingSubsprite } from '../harness/runtime/decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../harness/runtime/decomp-globals';
 
 /**
  * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour

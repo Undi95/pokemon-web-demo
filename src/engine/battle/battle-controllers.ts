@@ -87,7 +87,7 @@ import {
   buildBattleMsgDataSnapshot,
   type BattleMsgData,
 } from './battle-event-queue';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import type { BattleScriptContext } from './script-interpreter';
 import {
   PrepareBufferDataTransfer, sBattleBuffersTransferData, B_COMM_TO_CONTROLLER,

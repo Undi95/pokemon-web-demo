@@ -15,7 +15,7 @@ import {
   RENDER_FINISH,
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 // Migration TEXTE byte-level 1:1 (flip direct, 2026-06-06) : gStringVar1-4 +
 // StringExpandPlaceholders = le miroir `src/game/string_util.ts` (Uint8Array

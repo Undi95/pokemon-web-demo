@@ -28,8 +28,8 @@ import {
   TrySetSpriteRotScale, DestroySpriteAndMatrix,
 } from './battle_anim_mons';
 import { Sin } from './trig';
-import { ArcTan2 } from './engine/system/decomp-bridge';
-import { getRuntime } from './engine/system/decomp-globals';
+import { ArcTan2 } from '../harness/runtime/decomp-bridge';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT } from './engine/battle/util';
 import { gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';

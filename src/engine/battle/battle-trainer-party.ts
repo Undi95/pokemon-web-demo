@@ -44,7 +44,7 @@ import { TRAINER_SECRET_BASE } from '../decomp-data/include/constants/trainers-d
 // array LU par la voie L). Remplace le _CreateMon stub (sans stats, mauvais array). T2 du port trainer.
 import { createPokemonInstance, type PokemonInstance, type StatSpread } from '../pokemon/pokemon';
 import { setupEnemyPartyForBattle } from './party-storage';
-import { reverseDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 

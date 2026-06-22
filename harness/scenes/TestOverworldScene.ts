@@ -16,13 +16,13 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../../src/main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
-import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../../src/engine/system/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../../src/engine/system/decomp-globals';
+import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../runtime/decomp-globals';
 import { ResetSpriteData } from '../../src/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
 // Chantier « c » Step 2.2 : boot intro réutilisable (host unifié intro+OW, gated ?unified).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
-import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
+import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import {
   loadMapByName,
   InitMap,
@@ -101,7 +101,7 @@ import { applyMovement, isMovementDone } from '../../src/engine/field/movement-s
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../../src/script_movement';
 import { SetFieldEffectRuntime } from '../../src/field_effect';
 import { decideBootMode, preloadBootData } from '../boot/boot-mode';
-import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
+import { installInputHandlers, setHeldKeysOverride } from '../runtime/input-handler';
 import { installEngineDevtools } from '../devtools/engine-devtools';
 import {
   loadMapScripts,
@@ -198,7 +198,7 @@ import { preloadSurfBlobEffect } from '../../src/field_effect_helpers';
 import { preloadDisguiseEffects } from '../../src/field_effect_helpers';
 import { preloadShadowEffect } from '../../src/field_effect_helpers';
 import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../../src/field_effect_helpers';
-import { PlaySE } from '../../src/engine/system/decomp-globals';
+import { PlaySE } from '../runtime/decomp-globals';
 import {
   SE_EXIT,
   SE_WARP_IN,
@@ -215,7 +215,7 @@ import { TickRegionMap } from '../../src/engine/field/region-map';
 import { syncSubspriteOam } from '../../src/event_object_movement';
 import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadTextWindowFrames } from '../../src/text_window';
-import { PlayBGM, FillPalBufferBlack } from '../../src/engine/system/decomp-globals';
+import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from '../../src/engine/system/fade-screen';
 import * as Songs from '../../src/engine/decomp-data/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.

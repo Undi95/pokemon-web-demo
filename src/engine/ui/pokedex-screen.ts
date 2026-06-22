@@ -17,7 +17,7 @@ import {
 import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { PlaySE } from '../system/decomp-globals';
+import { PlaySE } from '../../../harness/runtime/decomp-globals';
 
 // FONT_NORMAL = text.h enum local (= pas extrait, hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;

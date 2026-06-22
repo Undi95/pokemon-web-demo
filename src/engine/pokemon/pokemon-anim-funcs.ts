@@ -26,8 +26,8 @@
  * trade, Pokedex, battle, egg hatch) uses these anims.
  */
 
-import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { Sin } from '../system/decomp-helpers';
+import type { DecompRuntime, DecompSprite } from '../../../harness/runtime/decomp-runtime';
+import { Sin } from '../../../harness/runtime/decomp-helpers';
 
 // ─── ANIM_* constants (1:1 décomp include/pokemon_animation.h) ──────────────
 export const ANIM_V_SQUISH_AND_BOUNCE = 0;

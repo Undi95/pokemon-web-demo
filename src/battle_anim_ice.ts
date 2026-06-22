@@ -30,10 +30,10 @@
  *     (précédent : battle_anim_effects_3.ts).
  *   - IsContest() = false (pas de concours dans ce runtime).
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord,
   InitSpritePosToAnimAttacker,
@@ -917,9 +917,9 @@ _iceRegT({
 import { GetBattlerAtPosition as _hlAtPos } from './engine/battle/util';
 import { gBattlerPartyIndexes as _hlPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _hlEnemyParty, gPlayerParty as _hlPlayerParty, GetMonData as _hlGetMon, MON_DATA_SPECIES as _hlSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _hlRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _hlRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _hlFrontCoords, getMonBackPicCoords as _hlBackCoords } from './data/mon_pic_coords';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 const _HAIL_COORDS: ReadonlyArray<{ x: number; y: number; pos: number; type: number }> = [
   { x: 100, y: 120, pos: 0, type: 2 }, { x: 85, y: 120, pos: 0, type: 0 },

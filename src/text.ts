@@ -48,7 +48,7 @@ import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placehol
 // 1:1 décomp : TextPrinterWait*/RENDER_STATE_WAIT_SE appellent PlaySE(SE_SELECT) /
 // IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
 // fonctions, jamais au top-level). SE_SELECT = constants/songs.h.
-import { PlaySE, IsSEPlaying } from './engine/system/decomp-globals';
+import { PlaySE, IsSEPlaying } from '../harness/runtime/decomp-globals';
 import { SE_SELECT } from './engine/decomp-data/_common-constants';
 
 // NB : migration TEXTE en FLIP DIRECT (décision user 2026-06-06, pas de flag/2-voies).

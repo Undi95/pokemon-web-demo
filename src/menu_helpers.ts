@@ -15,7 +15,7 @@
  *  - link/union (link.c/union_room.c) = single-player FR post-camion → inactif
  *    (conditions toujours fausses). Maps Trade Center / Union Room injoignables.
  */
-import { getRuntime, PlaySE } from './engine/system/decomp-globals';
+import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_SELECT } from './engine/decomp-data/_common-constants';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 // OPTIONS_BUTTON_MODE_LR = 1:1 `include/constants/global.h` (constante) — importée

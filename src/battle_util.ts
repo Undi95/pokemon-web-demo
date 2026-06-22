@@ -115,7 +115,7 @@ import {
   BIT_SIDE, BIT_FLANK,
 } from './engine/battle/constants';
 import { GetGenderFromSpeciesAndPersonality } from './engine/pokemon/pokemon';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_ABE,
   gBattleTextBuff2 as _gBattleTextBuff2_ABE,

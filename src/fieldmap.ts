@@ -54,7 +54,7 @@
  *   - Banks 6-12 : secondary tileset palettes[6..12]
  *   - Banks 13-15 : réservé (text windows, sprites overflow, etc.)
  */
-import { LoadBgTiles, LoadPalette } from './engine/system/decomp-globals';
+import { LoadBgTiles, LoadPalette } from '../harness/runtime/decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset_anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]

@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
 import { ResetSpriteData } from '../../../sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
@@ -21,7 +21,7 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../system/decomp-helpers';
+} from '../../../../harness/runtime/decomp-helpers';
 import {
   ChangeBgX,
   ChangeBgY,
@@ -46,7 +46,7 @@ import {
   WINOUT_WIN01_CLR,
   gMain,
   gSaveBlock2Ptr,
-} from '../../system/decomp-globals';
+} from '../../../../harness/runtime/decomp-globals';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_BUTTON = 1;
 const B_BUTTON = 2;

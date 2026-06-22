@@ -18,16 +18,16 @@ import {
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
-} from './engine/system/decomp-globals';
-import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from './engine/system/decomp-bridge';
-import { getItemKeyById } from './engine/system/data-tables';
+} from '../harness/runtime/decomp-globals';
+import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../harness/runtime/decomp-bridge';
+import { getItemKeyById } from '../harness/runtime/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from './engine/decomp-data/include/item_menu-data';
 import { ITEM_LIST_END } from './engine/decomp-data/include/constants/items-data';
 import { ENUM_TAG_0 as ENUM_BAG_TAG } from './engine/decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
 const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
-import type { DecompSprite, DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
 
 // 1:1 décomp `SPRITE_NONE` (sprite.h:6 TAIL_SENTINEL 0xFF).
 const SPRITE_NONE = 0xFF;

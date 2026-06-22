@@ -50,14 +50,14 @@ import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
 } from './gba-menu-system';
-import { getRuntime, PlaySE } from '../system/decomp-globals';
+import { getRuntime, PlaySE } from '../../../harness/runtime/decomp-globals';
 import { SignalWaitState } from '../script/script-opcodes';
 import { ScriptContext_SetupScript } from '../script/script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
 import { ReadMail } from './mail';
 import { ITEM_NONE, ClearMail } from '../../mail_data';
-import { FEMALE } from '../system/decomp-globals';
+import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from './gba-text-system';
@@ -72,13 +72,13 @@ import {
   type ListMenuTemplate, type ListMenuItem,
 } from '../../list_menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
-import { reverseDecompConstant } from '../system/decomp-constants';
-import { getItemNameFr } from '../system/data-tables';
-import { GetItemDescription } from '../system/decomp-bridge';
+import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { getItemNameFr } from '../../../harness/runtime/data-tables';
+import { GetItemDescription } from '../../../harness/runtime/decomp-bridge';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
-import { FreeSpriteTilesByTag } from '../system/decomp-globals';
+import { FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
 import { FreeSpritePaletteByTag } from '../../sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────

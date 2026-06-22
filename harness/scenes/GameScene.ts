@@ -29,12 +29,12 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../../src/main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
-import { DecompRuntime, InitKeys } from '../../src/engine/system/decomp-runtime';
+import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
-import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../../src/engine/system/decomp-globals';
-import { exposeGbaGlobals } from '../../src/engine/system/gba-global-scope';
+import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../runtime/decomp-globals';
+import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import { installEngineDevtools } from '../devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../../src/engine/system/input-handler';
+import { installInputHandlers, setHeldKeysOverride } from '../runtime/input-handler';
 // Chantier « c » Step 2.1 : boot intro extrait → intro-host.ts (callbacks + preload +
 // SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)), réutilisable par la scène unique.
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
@@ -383,7 +383,7 @@ export class GameScene extends Phaser.Scene {
     }
     // Force Faded full black (= 1:1 décomp FillPalBufferBlack pattern) pour
     // garantir aucun pixel non-noir avant scene swap. Idempotent si déjà black.
-    const { FillPalBufferBlack } = await import('../../src/engine/system/decomp-globals');
+    const { FillPalBufferBlack } = await import('../runtime/decomp-globals');
     FillPalBufferBlack();
     const waitFrames = 0;
     console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);

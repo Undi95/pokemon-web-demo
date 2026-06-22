@@ -38,7 +38,7 @@ export const FADE_TO_BLACK = 1;
 export const FADE_FROM_WHITE = 2;
 export const FADE_TO_WHITE = 3;
 
-import { getRuntime } from './decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 
 /** 1:1 décomp `FadeScreen(u8 mode, s8 delay)` — kick off un fade IN ou OUT
  *  depuis/vers BLACK ou WHITE. À call quand on swap scène ou trigger un

@@ -12,7 +12,7 @@ import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import * as WeatherConstants from '../decomp-data/include/constants/weather-data';
 
 /** Résout un argument météo : valeur numérique, constante `WEATHER_*`/`COORD_EVENT_WEATHER_*`

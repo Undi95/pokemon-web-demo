@@ -19,13 +19,13 @@
  * Dettes : AnimUnusedSmallEmber, AnimSunlight, AnimEmberFlare/AnimBurnFlame,
  * AnimTask_EruptionLaunchRocks(+rocks), AnimTask_MoveHeatWaveTargets.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 
 export const ANIM_TAG_SMALL_EMBER = 10029; // ANIM_SPRITES_START + 29
@@ -856,8 +856,8 @@ function AnimTask_BlendBackground(task: _HwTask): void {
   _fBlendPal(8 * 16, 16, args[0] | 0, args[1] | 0); // BG_PLTT_ID(animBg.paletteId=8)
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-import { BlendPalette as _fBlendPal } from './engine/system/decomp-globals';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { BlendPalette as _fBlendPal } from '../harness/runtime/decomp-globals';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 _fRegT({
   AnimTask_MoveHeatWaveTargets: AnimTask_MoveHeatWaveTargets as never,
   AnimTask_BlendBackground: AnimTask_BlendBackground as never,

@@ -158,12 +158,12 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
 }
 
 // ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { registerAnimTasks } from './engine/battle/battle-anim-registry';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 /** 1:1 `AnimTask_SmokescreenImpact` (battle_anim_effects_3.c.c) : impact +8/+8 sur la cible. */
 function AnimTask_SmokescreenImpact(task: { taskId: number }): void {

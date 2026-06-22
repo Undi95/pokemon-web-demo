@@ -50,9 +50,9 @@ import {
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/engine/script/script-runtime';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
-import { setHeldKeysOverride, clearHeldKeysOverride } from '../../src/engine/system/input-handler';
-import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
-import * as decompBridge from '../../src/engine/system/decomp-bridge';
+import { setHeldKeysOverride, clearHeldKeysOverride } from '../runtime/input-handler';
+import type { DecompRuntime } from '../runtime/decomp-runtime';
+import * as decompBridge from '../runtime/decomp-bridge';
 // Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
 // gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
 import { gSaveBlock1Ptr as _sb1 } from '../../src/engine/save/save-block-state';

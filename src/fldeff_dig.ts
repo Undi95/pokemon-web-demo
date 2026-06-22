@@ -13,7 +13,7 @@
  * (gPostMenuFieldCallback) est exposé ci-dessous (__FieldCallback_Dig, anti-cycle).
  */
 
-import type { DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { Overworld_ResetStateAfterDigEscRope } from './overworld';
 import { setPendingWarp } from './engine/field/warp-system';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';

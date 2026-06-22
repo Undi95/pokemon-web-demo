@@ -21,9 +21,9 @@
  * Donc « activer » = poser callback2 = CB2_InitBattle ; le runtime déroule tout.
  */
 
-import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../system/decomp-globals';
+import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
-import { MAX_SPRITES } from '../system/decomp-runtime';
+import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
@@ -210,7 +210,7 @@ let _animGfxPreloaded = false;
 async function _ensureAnimSpriteGfx(): Promise<void> {
   if (_animGfxPreloaded) return;
   try {
-    const { assetCache } = await import('../system/decomp-globals');
+    const { assetCache } = await import('../../../harness/runtime/decomp-globals');
     const { loadGbaPal } = await import('../../../harness/gba/png-loader');
     const loadBin = async (key: string, url: string) => {
       if (assetCache.has(key)) return;

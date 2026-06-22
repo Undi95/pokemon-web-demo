@@ -5,14 +5,14 @@
  * 1:1 AnimAbsorptionOrb = projectile INVERSE (cible → attaquant, le drain).
  * GFX : orbs.png 16x48 byte-exact.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
   BlendPalettes, LoadPalette, IndexOfSpritePaletteTag, OBJ_PLTT_ID, gPlttBufferUnfaded,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
@@ -2370,7 +2370,7 @@ _sbRegT({
 // --- VAGUE F52 : AnimTask_DoubleTeam (battle_anim_effects_1.c.c:5173-5245) ----------------
 // 2 clones assombris (palette BENT_SPOON blend noir 11/16) qui oscillent en
 // Sin dephases de 128, pendant que le BG du mon est COUPE (DISPCNT).
-import { BlendPalette as _dtBlend } from './engine/system/decomp-globals';
+import { BlendPalette as _dtBlend } from '../harness/runtime/decomp-globals';
 import { gSineTable as _dtSine } from './trig';
 
 type _DtTask = { taskId: number; data: number[]; func?: unknown };
@@ -2616,7 +2616,7 @@ _sbRegT({ AnimTask_CycleMagicalLeafPal: AnimTask_CycleMagicalLeafPal as never })
 // Fondu blanc-lune RGB(27,29,31) : fade hardware (mask 32-bit BG+OBJ via
 // BeginNormalPaletteFade) + montee progressive 13/14/15>>3 ecrite DIRECTEMENT
 // dans les banks BG du mask, signal aux sprites Moon/Sparkle, re-fade inverse.
-import { BeginNormalPaletteFade as _mlBeginFade } from './engine/system/decomp-bridge';
+import { BeginNormalPaletteFade as _mlBeginFade } from '../harness/runtime/decomp-bridge';
 
 const _ML_WHITE_MOON = 27 | (29 << 5) | (31 << 10); // RGB(27,29,31)
 type _MlTask = { taskId: number; data: number[]; func?: unknown };
@@ -2758,9 +2758,9 @@ _sbRegT({ AnimTask_SporeDoubleBattle: AnimTask_SporeDoubleBattle as never });
 // décrémentant data[12]) ; fin quand toutes les traînes sont mortes.
 import { gBattlerPartyIndexes as _lbPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _lbEnemyParty, gPlayerParty as _lbPlayerParty, GetMonData as _lbGetMon, MON_DATA_SPECIES as _lbSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _lbRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _lbRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _lbFrontCoords, getMonBackPicCoords as _lbBackCoords } from './data/mon_pic_coords';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _LbTask = { taskId: number; data: number[]; func?: unknown };
 type _LbSprite = {

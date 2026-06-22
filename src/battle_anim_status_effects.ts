@@ -12,10 +12,10 @@
  *   - Le reste du fichier .c (sprites templates des effets, AnimTask_* locales)
  *     = avec le chantier anims de move (T4+, registry createsprite).
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
-import { CreateTask, DestroyTask } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
+import { CreateTask, DestroyTask } from '../harness/runtime/decomp-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LaunchBattleAnimation, isAnimScriptActive, tickAnimScript,
   setBattleAnimAttackerTarget,

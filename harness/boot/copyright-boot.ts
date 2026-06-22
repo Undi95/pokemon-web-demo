@@ -22,10 +22,10 @@ import {
   DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_BG0_ON,
   BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_16COLOR, BGCNT_TXT256x256,
   INTR_FLAG_VBLANK,
-} from '../../src/engine/system/decomp-globals';
+} from '../runtime/decomp-globals';
 import { MainCB2_EndIntro, Task_Scene1_Load } from '../../src/engine/decomp-data/src/intro-callbacks-auto';
 import { ResetSpriteData } from '../../src/sprite';
-import type { CB2Callback } from '../../src/engine/system/decomp-runtime';
+import type { CB2Callback } from '../runtime/decomp-runtime';
 
 const RGB_WHITE = 0x7FFF;
 const COPYRIGHT_INITIALIZE = 0;

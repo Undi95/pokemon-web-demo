@@ -121,8 +121,8 @@ import { B_ANIM_SWITCH_OUT_PLAYER_MON } from './engine/decomp-data/include/const
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from './engine/battle/constants';
 import { getExpForLevel } from './engine/battle/data/experience-tables';
 import { getSpeciesGrowthRate } from './engine/battle/data/species-runtime';
-import { LoadPalette, BG_PLTT_ID, getRuntime, SpriteCallbackDummy, PlayFanfare } from './engine/system/decomp-globals';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { LoadPalette, BG_PLTT_ID, getRuntime, SpriteCallbackDummy, PlayFanfare } from '../harness/runtime/decomp-globals';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 // Helper partagé de création de sprite de battler (gère back=joueur / front=ennemi).
 // opponent.ts n'importe PAS player.ts → pas de cycle ESM.
 import { _loadAndCreateBattlerMonSprite, setBattlerDeferReveal, getBattlerMonSpriteId } from './battle_controller_opponent';
@@ -136,9 +136,9 @@ import {
 } from './battle_anim_mons';
 import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from './pokeball';
 import { StartSpriteAnim } from './sprite';
-import type { DecompTask, DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
+import type { DecompTask, DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { isBallAnimActive } from './engine/battle/battle-sprites-data';
-import { reverseDecompConstant as _reverseDecompConstantPlayer } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstantPlayer } from '../harness/runtime/decomp-constants';
 import { getMoveName as _getMoveNameFrFromData } from './engine/data/game-data';
 import { getBattleMove } from './engine/battle/data/battle-moves';
 import { getPPTextPalette } from './engine/battle/battle-bg';

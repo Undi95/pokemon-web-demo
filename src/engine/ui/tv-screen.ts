@@ -37,7 +37,7 @@
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from '../../fieldmap';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE, FEMALE } from '../system/decomp-globals';
+import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from '../script/script-vars';
 import { DrawWholeMapView } from '../../field_camera';
 import {

@@ -28,8 +28,8 @@ import {
   getRuntime, ResetPaletteFade, ResetTasks,
   FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
   assetCache, PlaySE,
-} from '../system/decomp-globals';
-import { ResetSpriteData, PLTT_SIZE_4BPP } from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-globals';
+import { ResetSpriteData, PLTT_SIZE_4BPP } from '../../../harness/runtime/decomp-bridge';
 import { ListMenuLoadStdPalAt } from '../ui/gba-menu-system';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
@@ -46,14 +46,14 @@ import {
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
 } from '../../list_menu';
-import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../system/data-tables';
+import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../../../harness/runtime/data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
 import {
   GetItemName, GetItemDescription, GetItemImportance,
   StringCopy, ConvertIntToDecimalStringN,
   STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
-} from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-bridge';
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar } from '../system/string-buffers';
@@ -78,10 +78,10 @@ import {
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
   TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5,
 } from '../decomp-data/include/constants/characters-data';
-import { BG_PLTT_ID } from '../system/decomp-runtime';
+import { BG_PLTT_ID } from '../../../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE } from '../system/decomp-globals';
+import { MALE } from '../../../harness/runtime/decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
@@ -97,11 +97,11 @@ import {
 } from '../decomp-data/include/constants/items-data';
 import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
-import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../system/decomp-globals';
+import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../../../harness/runtime/decomp-globals';
 import {
   CreateTask, DestroyTask, BeginNormalPaletteFade,
   SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc,
-} from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-bridge';
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
@@ -114,7 +114,7 @@ import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
 } from '../decomp-data/include/menu-data';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
-import type { DecompTask } from '../system/decomp-runtime';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../ui/option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';

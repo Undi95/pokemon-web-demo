@@ -26,9 +26,9 @@
  *   7. Audio            — BGM courant + SE-playing/cry + journal SE (best-effort, observe-only).
  *   8. Scénarios        — refresh, combat sauvage / rival (refresh PUIS autoboot), move-anim.
  */
-import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
-import { MAX_SPRITES } from '../../src/engine/system/decomp-runtime';
-import { getCurrentSongId, getRuntime } from '../../src/engine/system/decomp-globals';
+import type { DecompRuntime } from '../runtime/decomp-runtime';
+import { MAX_SPRITES } from '../runtime/decomp-runtime';
+import { getCurrentSongId, getRuntime } from '../runtime/decomp-globals';
 
 // ─── Accès runtime (live, jamais via import dynamique) ────────────────────────
 

@@ -9,8 +9,8 @@
  */
 import { registerAnimTasks } from './engine/battle/battle-anim-registry';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
-import { BlendPalette } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
+import { BlendPalette } from '../harness/runtime/decomp-globals';
 
 type AnimTask = { taskId: number; data: number[]; func?: (t: AnimTask) => void };
 function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -816,7 +816,7 @@ import {
   ResetBattleAnimBg as _scResetBg,
 } from './engine/battle/battle-anim-interpreter';
 import { ENUM_STAT_3 as _SC_PAL } from './engine/decomp-data/include/battle_anim-data';
-import { resolveDecompConstant as _scSE } from './engine/system/decomp-constants';
+import { resolveDecompConstant as _scSE } from '../harness/runtime/decomp-constants';
 import { gBattlerPartyIndexes as _scPartyIdx } from './engine/battle/state';
 import {
   gPlayerParty as _scPlayerParty, gEnemyParty as _scEnemyParty,

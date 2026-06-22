@@ -410,7 +410,7 @@ export function GetHPBarLevel(hp: number, maxhp: number): number {
  * LoadSpriteSheet/LoadSpritePalette synchrones 1:1) ; SE via __PlaySE (pas de pan).
  */
 
-import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByTag, type NamingSubsprite } from './engine/system/decomp-globals';
+import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByTag, type NamingSubsprite } from '../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from './sprite';
 import { loadIndexedPngStrict, extractPngPlte } from '../harness/gba/png-loader';
 import { gBattleTypeFlags } from './engine/battle/state';
@@ -881,7 +881,7 @@ export { _ensurePartySummaryAssets as ensurePartySummaryAssets };
 // (getRuntime / gBattleTypeFlags / GET_BATTLER_SIDE / B_SIDE_PLAYER : déjà importés
 //  par les sections précédentes. SetBattleBarStruct / MoveBattleBar / battleBars /
 //  HEALTH_BAR / EXP_BAR / setMoveBattleBarGraphicallyHook : LOCAUX, section barres.)
-import { syncSubspriteOam } from './engine/system/decomp-globals';
+import { syncSubspriteOam } from '../harness/runtime/decomp-globals';
 // (createBattlerHealthboxSprites / setHealthboxVisible / updateHealthbox* /
 //  drawBallCaughtIndicator / HealthboxHandle : LOCAUX depuis la phase C3 —
 //  la section primitives/assets ci-dessous, ex battle-healthbox.ts.)

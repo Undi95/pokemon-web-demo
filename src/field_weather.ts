@@ -32,7 +32,7 @@
  *   ⏳ C3+ : autres météos. C-final : câblage StartWeather/doweather global.
  */
 
-import type { DecompTask } from './engine/system/decomp-runtime';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import {
   getRuntime,
   FuncIsActiveTask,
@@ -40,10 +40,10 @@ import {
   BLDALPHA_BLEND,
   PALETTES_ALL,
   PLTT_SIZE,
-} from './engine/system/decomp-globals';
-import { CreateTask, SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2 } from './engine/system/decomp-bridge';
-import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from './engine/system/decomp-runtime';
-import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from './engine/system/decomp-helpers';
+} from '../harness/runtime/decomp-globals';
+import { CreateTask, SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2 } from '../harness/runtime/decomp-bridge';
+import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
+import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from '../harness/runtime/decomp-helpers';
 import { AllocSpritePalette, sSpritePaletteTags } from './sprite';
 import { gSineTable } from './trig';
 import { loadGbaPal } from '../harness/gba/png-loader';

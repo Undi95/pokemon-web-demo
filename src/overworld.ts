@@ -14,15 +14,15 @@ import {
   PlayBGM, getRuntime, LoadOam,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
   WINOUT_WIN01_BG0, WINOUT_WINOBJ_BG0, BLDALPHA_BLEND,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import {
   REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA,
   BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
   BLDCNT_TGT2_OBJ, BLDCNT_EFFECT_BLEND,
-} from './engine/system/decomp-runtime';
-import { SetGpuReg } from './engine/system/decomp-bridge';
+} from '../harness/runtime/decomp-runtime';
+import { SetGpuReg } from '../harness/runtime/decomp-bridge';
 import {
   DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
   DISPCNT_OBJ_1D_MAP, DISPCNT_HBLANK_INTERVAL,

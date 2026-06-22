@@ -24,7 +24,7 @@
  * chargement VRAM async (InitPlayerAvatar + pngTo1dObjLayout + snapshot/restore
  * gfx), cycle de vie sprite (DestroyPlayerAvatar / SetPlayerVisibility).
  */
-import type { DecompRuntime, DecompTask } from './engine/system/decomp-runtime';
+import type { DecompRuntime, DecompTask } from '../harness/runtime/decomp-runtime';
 import { loadIndexedPngStrict, extractPngPlte } from '../harness/gba/png-loader';
 import {
   MapGridGetCollisionAt,
@@ -128,8 +128,8 @@ import {
   GetFaceDirectionMovementAction,
   CreateTask, DestroyTask,
   GetWalkSlowMovementAction,
-} from './engine/system/decomp-bridge';
-import { FindTaskIdByFunc, GetTask, getRuntime, FuncIsActiveTask } from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-bridge';
+import { FindTaskIdByFunc, GetTask, getRuntime, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
 import {
   SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
@@ -196,7 +196,7 @@ import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
 } from './rotating_gate';
-import { PlaySE } from './engine/system/decomp-globals';
+import { PlaySE } from '../harness/runtime/decomp-globals';
 import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,

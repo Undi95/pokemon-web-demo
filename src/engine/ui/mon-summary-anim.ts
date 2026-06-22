@@ -16,12 +16,12 @@
  * (2e frame du front-pic combat) — nos front.png résumé sont 1-frame →
  * no-op (même statut que les sprites combat). L'anim AFFINE joue 1:1.
  */
-import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { getRuntime } from '../system/decomp-globals';
+import type { DecompRuntime, DecompSprite } from '../../../harness/runtime/decomp-runtime';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { AllocOamMatrix, FreeOamMatrix } from '../../sprite';
-import { SpriteCallbackDummy, BlendPalette } from '../system/decomp-globals';
-import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from '../system/decomp-helpers';
-import { OBJ_PLTT_ID } from '../system/decomp-runtime';
+import { SpriteCallbackDummy, BlendPalette } from '../../../harness/runtime/decomp-globals';
+import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from '../../../harness/runtime/decomp-helpers';
+import { OBJ_PLTT_ID } from '../../../harness/runtime/decomp-runtime';
 import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from '../decomp-data/src/mon-anim-tables-data';
 import { ENUM_BattlerId } from '../decomp-data/include/constants/battle-data';
 

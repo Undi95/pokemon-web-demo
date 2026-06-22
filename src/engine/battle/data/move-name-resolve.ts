@@ -12,7 +12,7 @@
  * La conversion naïve `'MOVE_'+id.toUpperCase()` échoue sur les noms composés.
  */
 
-import { resolveDecompConstant } from '../../system/decomp-constants';
+import { resolveDecompConstant } from '../../../../harness/runtime/decomp-constants';
 import * as MOVES_DATA from '../../decomp-data/include/constants/moves-data';
 
 /** Map normalisée : nom sans séparateur minuscule ("defensecurl") → enum

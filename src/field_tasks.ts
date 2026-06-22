@@ -33,15 +33,15 @@
  *   => field_tasks.c = MIROIR COMPLET (seul l'audio UpdateAmbientCry est omis, comme PlaySE).
  */
 
-import type { DecompTask } from './engine/system/decomp-runtime';
-import { CreateTask } from './engine/system/decomp-bridge';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
+import { CreateTask } from '../harness/runtime/decomp-bridge';
 import {
   FindTaskIdByFunc,
   FuncIsActiveTask,
   GetTaskData,
   TASK_NONE,
   gMain,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
 import { ArePlayerFieldControlsLocked } from './engine/script/script-runtime';
 import { DoTimeBasedEvents } from './engine/system/time-based-events';

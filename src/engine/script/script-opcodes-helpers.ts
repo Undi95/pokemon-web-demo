@@ -16,8 +16,8 @@ import { GetCurrentMap } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { VarGet, gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, T_TILE_TRANSITION } from '../../field_player_avatar';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
-import { getRuntime } from '../system/decomp-globals';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 
 void MAP_OFFSET;
 void GetCurrentMap;

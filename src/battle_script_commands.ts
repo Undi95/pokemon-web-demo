@@ -37,7 +37,7 @@ import {
 } from './battle_ai_script_commands';
 import { CalculateBaseDamage } from './pokemon';
 import { getSpeciesInfo } from './engine/data/game-data';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 import * as _AbilityConsts from './engine/decomp-data/include/constants/abilities-data';
 import {
@@ -755,7 +755,7 @@ import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
 import { ITEM_ENIGMA_BERRY } from './engine/decomp-data/include/constants/items-data';
 import { fillBattleMonFromParty } from './engine/battle/party-storage';
-import { resolveDecompConstant } from './engine/system/decomp-constants';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import type {
   BattleOpcodeHandler,
   BattleScriptContext,
@@ -10479,7 +10479,7 @@ import {
   GetSpriteTileStartByTag as _GetSpriteTileStartByTagBSC,
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
 } from './sprite';
-import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from './engine/system/decomp-globals';
+import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from '../harness/runtime/decomp-globals';
 import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from './engine/decomp-data/src/battle_bg-data';
 import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from './menu_specialized';
 import {
@@ -10487,7 +10487,7 @@ import {
   lvlUpBoxClose as _lvlUpBoxCloseBSC,
 } from './engine/battle/battle-levelup-box';
 import { MON_ICON_PALETTE_INDICES as _MON_ICON_PALETTE_INDICES_BSC } from './engine/pokemon/pokemon-icon-palettes';
-import { reverseDecompConstant as _reverseDecompConstantBSC } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstantBSC } from '../harness/runtime/decomp-constants';
 
 /** PlaySE via le hook global (même mécanisme que les anims — pas d'import BGM/SE). */
 function _PlaySE_BSC(se: number): void {

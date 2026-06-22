@@ -16,7 +16,7 @@
  *  - AnimFlyingSandCrescent — src/battle_anim_rock.c:513 (Sandstorm strip
  *    64x16 via SetSubspriteTables).
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
@@ -29,7 +29,7 @@ import { SetOamMatrix, AllocOamMatrix } from './sprite';
 import { SeekSpriteAnim } from './sprite';
 import {
   getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_RIGHT } from './engine/battle/util';
 import { gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
@@ -831,7 +831,7 @@ _flRegT({ AnimTask_AnimateGustTornadoPalette: AnimTask_AnimateGustTornadoPalette
 // (ArcTan2Neg − 90°), vitesse fixe : la traversée dure 12 frames jusqu'à la
 // cible puis continue jusqu'à sortir de l'écran (destroy + libère la matrice).
 import { TrySetSpriteRotScale as _skTryRotScale, DestroySpriteAndMatrix as _skDestroyMatrix } from './battle_anim_mons';
-import { ArcTan2 as _skArcTan2 } from './engine/system/decomp-bridge';
+import { ArcTan2 as _skArcTan2 } from '../harness/runtime/decomp-bridge';
 
 /** 1:1 `ArcTan2Neg(x, y)` (battle_anim_mons.c:1368), copie locale pattern repo. */
 function _ArcTan2Neg(x: number, y: number): number {

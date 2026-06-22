@@ -10,7 +10,7 @@
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag, getRuntime,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import {
@@ -21,7 +21,7 @@ import {
 } from './battle_anim_mons';
 import { gBattlerPartyIndexes } from './engine/battle/state';
 import { gEnemyParty, GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import type { DecompSprite } from './engine/system/decomp-runtime';
+import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 
 export const ANIM_TAG_MUD_SAND = 10074; // ANIM_SPRITES_START + 74
 

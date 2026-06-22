@@ -47,7 +47,7 @@ import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBa
 // Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
 // n'importe pas ce module en retour, il passe par un wire globalThis).
 import { createPokemonInstance } from '../pokemon/pokemon';
-import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
 import { StringExpandPlaceholders } from '../../string_util';

@@ -21,16 +21,16 @@
  * ⚠️ AUDIO SKIP (exception projet) : aucun PlaySE.
  */
 
-import type { DecompTask, DecompSprite, DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompTask, DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
 import {
   getRuntime,
   FuncIsActiveTask,
   FindTaskIdByFunc,
   BLDALPHA_BLEND,
   FreeSpriteTilesByTag,
-} from './engine/system/decomp-globals';
-import { CreateTask, DestroyTask, SetGpuReg, DestroySprite } from './engine/system/decomp-bridge';
-import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from './engine/system/decomp-runtime';
+} from '../harness/runtime/decomp-globals';
+import { CreateTask, DestroyTask, SetGpuReg, DestroySprite } from '../harness/runtime/decomp-bridge';
+import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet } from './sprite';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { setFieldEffectAnims } from './field_effect_helpers';

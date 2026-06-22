@@ -53,8 +53,8 @@ import {
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from '../bag/bag-item-effects';
-import { getItem as _getItem, getItemKeyById } from '../system/data-tables';
-import { GetItemType } from '../system/decomp-bridge';
+import { getItem as _getItem, getItemKeyById } from '../../../harness/runtime/data-tables';
+import { GetItemType } from '../../../harness/runtime/decomp-bridge';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
@@ -72,8 +72,8 @@ import {
 } from './party-screen';
 import { GetMonLevelUpWindowStats } from '../../menu_specialized';
 import { getString } from './gba-strings';
-import type { DecompTask } from '../system/decomp-runtime';
-import { getRuntime, PlaySE, FillPalBufferBlack } from '../system/decomp-globals';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
+import { getRuntime, PlaySE, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { CB2_ReturnToField_Manual } from './option-menu-return';
 import { gPlayerParty } from '../battle/party-storage';

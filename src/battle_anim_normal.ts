@@ -23,10 +23,10 @@
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag, BlendPalettes,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
-import { BeginNormalPaletteFade } from './engine/system/decomp-bridge';
+import { BeginNormalPaletteFade } from '../harness/runtime/decomp-bridge';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import {
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale,

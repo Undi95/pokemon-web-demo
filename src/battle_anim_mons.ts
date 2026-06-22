@@ -30,8 +30,8 @@
  *     Les valeurs restent identiques bit-a-bit a la decomp.
  */
 
-import { CreateSprite } from './engine/system/decomp-bridge';
-import type { DecompSprite } from './engine/system/decomp-runtime';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
+import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import { Sin } from './trig';
 
 // ─── gBattlerPositions + GetBattlerAtPosition/GetBattlerPosition (battle_anim_mons.c:858-859)
@@ -64,7 +64,7 @@ export function GetBattlerPosition(battler: number): number {
 import { gBattleTypeFlags, gBattlerPartyIndexes } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE, B_SIDE_PLAYER, B_SIDE_OPPONENT } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
 /** Reinterprete les 16 bits bas de `v` en s16 signe (= cast (s16) decomp). */
@@ -402,8 +402,8 @@ export function GetSubstituteSpriteDefault_Y(battler: number): number {
 // champ .oam (l'OAM reel = rt.gba.oam[sprite.oamIndex] ; affineMode/matrixNum
 // = champs PLATS) -> no-op silencieux. Reecrit sur le modele reel.
 
-import { ObjAffineSet } from './engine/system/decomp-bridge';
-import { getRuntime } from './engine/system/decomp-globals';
+import { ObjAffineSet } from '../harness/runtime/decomp-bridge';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, DestroySprite } from './sprite';
 
 type RotScaleSprite = {
@@ -604,7 +604,7 @@ export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void 
 
 // ─── VAGUE F1 : AnimTask_BlendMonInAndOut (battle_anim_mons.c.c, 14 usages) ───────────────
 // Le mon pulse vers une couleur (BlendPalette aller-retour x N).
-import { BlendPalette as _f1Blend } from './engine/system/decomp-globals';
+import { BlendPalette as _f1Blend } from '../harness/runtime/decomp-globals';
 type _F1Task = { taskId: number; data: number[]; func?: unknown };
 function _f1Itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
@@ -1478,7 +1478,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
 // Leurs maisons C : battle_anim_mons.c.c:468 / :593 / :551 / :1155. fire.ts (et tout autre
 // fichier d'effets) consomme par import — zero transcription locale residuelle.
 import { Sin as _tgSin, Cos as _tgCos } from './trig';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 /** 1:1 TranslateSpriteInGrowingCircle (battle_anim_mons.c.c:468). */
 export function TranslateSpriteInGrowingCircle(sprite: DecompSprite): void {
   const sp = sprite as unknown as { data: number[]; x2: number; y2: number };

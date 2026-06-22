@@ -22,8 +22,8 @@
  */
 import {
   assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette,
-} from '../system/decomp-globals';
-import { DestroySprite, StartSpriteAnim } from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-globals';
+import { DestroySprite, StartSpriteAnim } from '../../../harness/runtime/decomp-bridge';
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, setSpriteAnims } from '../../sprite';
 

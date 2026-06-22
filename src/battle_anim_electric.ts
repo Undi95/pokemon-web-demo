@@ -8,10 +8,10 @@
  * AnimVoltTackleOrbSlide. Les templates (gXxxSpriteTemplate) viennent du
  * généré (battle-anim-sprites.ts) via le bridge — seul le callback est manuel.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   InitAnimLinearTranslation, AnimTranslateLinear,
@@ -876,7 +876,7 @@ _ebRegT({
 // --- VAGUE F45b : ElectricChargingParticles (battle_anim_electric.c.c:805-893) ------------
 // Particules aspirées vers le mon (16 offsets cycliques, vitesse croissante).
 import { InitAnimLinearTranslation as _ecInitLin, AnimTranslateLinear as _ecRunLin } from './battle_anim_mons';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 const _sElecChargeOffsets: ReadonlyArray<readonly [number, number]> = [
   [58, -60], [-56, -36], [8, -56], [-16, 56], [58, -10], [-58, 10], [48, -18], [-8, 56],

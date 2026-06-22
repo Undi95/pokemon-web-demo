@@ -14,7 +14,7 @@
  */
 
 import { getText } from '../script/script-runtime';  // bytes charmap (migration texte)
-import { reverseDecompConstant } from './decomp-constants';
+import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { getString } from '../ui/gba-strings';
 
 interface RawMultichoiceData {

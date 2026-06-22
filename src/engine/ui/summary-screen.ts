@@ -35,7 +35,7 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { FEMALE } from '../system/decomp-globals';
+import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite } from '../../sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
@@ -49,20 +49,20 @@ import {
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
 } from '../../dynamic_placeholder_text_util';
-import { GetMapNameHandleAquaHideout } from '../system/decomp-bridge';
+import { GetMapNameHandleAquaHideout } from '../../../harness/runtime/decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
-} from '../system/decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../../../harness/runtime/decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
+import { OBJ_PLTT_ID, BG_PLTT_ID } from '../../../harness/runtime/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from '../battle/party-storage';
 import { IsShinyOtIdPersonality } from '../../pokemon';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
-import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 
 // Accès id-keyés locaux 1:1 décomp = indexation DIRECTE des tables id-strictes
 // (`gSpeciesInfo[species]` / `gBattleMoves[move]` / `gMoveNames[move]` / …).
@@ -74,7 +74,7 @@ const getMoveName = (move: number): string => gMoveNames[move] ?? '';
 const getMoveDescription = (move: number): string => gMoveDescriptions[move] ?? '';
 const getContestMove = (move: number): ContestMove | undefined => gContestMoves[move];
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
-import type { DecompTask, DecompSprite } from '../system/decomp-runtime';
+import type { DecompTask, DecompSprite } from '../../../harness/runtime/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
 import { sTMHMMoves } from '../pokemon/tmhm-moves';
 import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';

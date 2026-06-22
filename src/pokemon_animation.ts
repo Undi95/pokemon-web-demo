@@ -23,9 +23,9 @@
  */
 
 import { Sin, Cos } from './trig';
-import { BlendPalette } from './engine/system/decomp-globals';
-import { getRuntime } from './engine/system/decomp-globals';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { BlendPalette } from '../harness/runtime/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import {
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
 } from './battle_anim_mons';

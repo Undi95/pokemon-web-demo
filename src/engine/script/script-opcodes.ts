@@ -24,7 +24,7 @@ import {
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from '../field/movement-system';
-import { PlaySE } from '../system/decomp-globals';
+import { PlaySE } from '../../../harness/runtime/decomp-globals';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
@@ -50,14 +50,14 @@ import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { getRuntime } from '../system/decomp-globals';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { setStringVar } from '../system/string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
   getTrainerClassNameFr, getTrainer,
-} from '../system/data-tables';
+} from '../../../harness/runtime/data-tables';
 import {
   OPPOSITE_DIR, MALE_GENDER, FEMALE_GENDER,
   getSelectedNpc, isAOrBNewlyPressed, parseValue, resolveCount,

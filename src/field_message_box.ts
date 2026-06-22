@@ -24,7 +24,7 @@ import {
   DLG_WINDOW_PALETTE_NUM,
 } from './engine/ui/gba-window-system';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
-import { BG_PLTT_ID } from './engine/system/decomp-runtime';
+import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import {
   AddTextPrinterParameterized3,
   IsTextPrinterActive,
@@ -33,7 +33,7 @@ import {
 } from './engine/ui/gba-text-system';
 import { decodeOwBytes } from '../include/text';
 import { gTextFlags } from './engine/ui/gba-text-printer';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

@@ -25,7 +25,7 @@ import {
   REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
   BLDCNT_TGT1_BG1, BLDCNT_EFFECT_BLEND, BLDCNT_TGT2_BG3, BLDCNT_TGT2_OBJ,
-} from './engine/system/decomp-runtime';
+} from '../harness/runtime/decomp-runtime';
 /** 1:1 io_reg.h `DISPCNT_OBJWIN_ON` (bit 15). Pas exporté par decomp-runtime. */
 const DISPCNT_OBJWIN_ON = 0x8000;
 

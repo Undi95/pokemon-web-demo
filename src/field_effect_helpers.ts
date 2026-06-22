@@ -51,10 +51,10 @@
  *      jump dust, + effets morts.
  */
 
-import type { DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from './engine/system/decomp-runtime';
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
 import { UpdateSpritePaletteWithWeather } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
@@ -80,15 +80,15 @@ import {
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './engine/script/script-runtime';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
-import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from './engine/system/decomp-bridge';
+import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../harness/runtime/decomp-bridge';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
-  LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from './engine/system/decomp-globals';
+  LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';
 import { CalculatePlayerPartyCount, gPlayerParty, GetMonData,
   MON_DATA_SPECIES, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { InitTextBoxGfxAndPrinters } from './menu';
-import type { DecompTask } from './engine/system/decomp-runtime';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from './sprite';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from './field_camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET, gMapHeader } from './fieldmap';

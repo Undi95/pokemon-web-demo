@@ -41,18 +41,18 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { FEMALE } from '../system/decomp-globals';
+import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from '../system/decomp-globals';
-import { ResetSpriteData } from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-globals';
+import { ResetSpriteData } from '../../../harness/runtime/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { getString } from './gba-strings';
-import type { DecompTask } from '../system/decomp-runtime';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).
 const FONT_NORMAL = 1;

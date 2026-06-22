@@ -15,11 +15,11 @@
  * vagues avec les moves consommateurs.
  */
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates, registerAnimTasks, lookupAnimTemplate } from './engine/battle/battle-anim-registry';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, SeekSpriteAnim } from './sprite';
 // ─── Imports vague « callbacks 1:1 » (section en fin de fichier) ────────────
@@ -35,11 +35,11 @@ import {
   SetAnimSpriteInitialXOffset, RunStoredCallbackWhenAnimEnds,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { CreateSprite as _CreateSpriteFromTemplate } from './engine/system/decomp-bridge';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
 import { gBattlerPartyIndexes, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES, MON_DATA_PERSONALITY, MON_DATA_OT_ID } from './engine/battle/party-storage';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
@@ -2733,7 +2733,7 @@ function AnimTask_FacadeColorBlend_Step(task: { taskId: number; data: number[] }
     itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
-import { BlendPalette as _e3Blend } from './engine/system/decomp-globals';
+import { BlendPalette as _e3Blend } from '../harness/runtime/decomp-globals';
 /** 1:1 `AnimTask_SmellingSaltsSquish` (battle_anim_effects_3.c.c:4307) : squish affine ×N
  *  avec tremblement x2 ±2. */
 function AnimTask_SmellingSaltsSquish(task: { taskId: number; data: number[]; func?: unknown }): void {
@@ -4002,7 +4002,7 @@ _e3RegTasks({
 // DOLL (gfx swappé par BattleLoadSubstituteOrMonSpriteGfx FALSE — async jeton)
 // tombe du haut (y2 -200, gravité 112 Q8.8) avec 2 rebonds. SE via __PlaySE.
 import { LoadBattleMonGfxAndAnimate as _stLoadGfx } from './battle_gfx_sfx_util';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 let _stToken = 0;
 const _stDone = new Set<number>();

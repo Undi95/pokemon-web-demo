@@ -90,7 +90,7 @@ exposeRtcDevApi();
 // → ReferenceError → boot crash. L'expose au boot main.ts garantit dispo sur globalThis
 // avant tout tick. Idempotent : ré-appel par les scenes ne fait que re-set les mêmes
 // valeurs (pas de side-effect négatif).
-import { exposeGbaGlobals } from './engine/system/gba-global-scope';
+import { exposeGbaGlobals } from '../harness/runtime/gba-global-scope';
 exposeGbaGlobals();
 
 // Audit session 126 LOT D2 : preload multichoice lists data depuis
@@ -117,7 +117,7 @@ void initItemIconMap();
 // FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen
 // affiché AVANT starter-choose (= ?nointro avec save advanced) tombe sur des
 // descriptions vides. Maintenant les tables sont disponibles dès boot.
-import { loadTextTables, type TextTables } from './engine/system/data-tables';
+import { loadTextTables, type TextTables } from '../harness/runtime/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/text-tables.json');
@@ -137,7 +137,7 @@ void (async () => {
 // getItemId/getSpeciesId/getMoveId = 0 partout dans la boucle réelle (bug
 // systémique exposé par le sac : liste vide). Aligné sur les autres tables
 // préchargées ici. Idempotent (OverworldScene legacy re-set = même data).
-import { loadConstantsTable, type ConstantsTable } from './engine/system/data-tables';
+import { loadConstantsTable, type ConstantsTable } from '../harness/runtime/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/constants.json');

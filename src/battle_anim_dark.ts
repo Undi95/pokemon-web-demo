@@ -8,11 +8,11 @@
  * GFX : sharp_teeth.png 64x64 byte-exact.
  */
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
@@ -267,7 +267,7 @@ import {
   LoadAnimBgPalette as _mshLoadPal,
   ClearBattleAnimBg as _mshClearBg,
 } from './engine/battle/battle-anim-interpreter';
-import { BlendPalette as _mshBlend } from './engine/system/decomp-globals';
+import { BlendPalette as _mshBlend } from '../harness/runtime/decomp-globals';
 
 type _MshTask = { taskId: number; data: number[]; func?: unknown };
 function _mshItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -401,7 +401,7 @@ import {
 import { getMonBackPicCoords as _dkBackCoords, getMonFrontPicCoords as _dkFrontCoords } from './data/mon_pic_coords';
 import { gBattlerPartyIndexes as _dkPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _dkEnemyParty, gPlayerParty as _dkPlayerParty, GetMonData as _dkGetMon, MON_DATA_SPECIES as _dkSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _dkRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _dkRevConst } from '../harness/runtime/decomp-constants';
 
 const _DK_REG_BG1VOFS = 0x16;
 const _DK_REG_BG2VOFS = 0x1A;

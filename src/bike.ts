@@ -66,7 +66,7 @@ import {
 import { gBikeCycling } from './field_specials';
 import { MUS_CYCLING } from './engine/decomp-data/include/constants/songs-data';
 import { SE_BIKE_HOP } from './engine/decomp-data/include/constants/songs-data';
-import { PlaySE } from './engine/system/decomp-globals';
+import { PlaySE } from '../harness/runtime/decomp-globals';
 import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from './engine/field/direction-coords';
 import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from './engine/decomp-data/include/gba/io_reg-data';
 import {

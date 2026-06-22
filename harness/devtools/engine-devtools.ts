@@ -84,8 +84,8 @@
  * Aucune dépendance circulaire avec decomp-globals/runtime — accède à `rt`
  * via la référence passée à installEngineDevtools(rt, opts).
  */
-import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
-import { MAX_SPRITES } from '../../src/engine/system/decomp-runtime';
+import type { DecompRuntime } from '../runtime/decomp-runtime';
+import { MAX_SPRITES } from '../runtime/decomp-runtime';
 
 interface SaveState {
   vram: Uint8Array;
@@ -600,7 +600,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     // `CreateScriptedWildMon` attend un SPECIES numérique (reverseDecompConstant → nom).
     // On accepte ici un nom ("SPECIES_PIKACHU"/"PIKACHU") OU un numéro, et on résout en
     // numéro. Défaut Pikachu Lv1 (mon valide au lieu de SPECIES_NONE = "????").
-    const constMod = await import('../../src/engine/system/decomp-constants');
+    const constMod = await import('../runtime/decomp-constants');
     const lvl = level ?? 1;
     let speciesId: number;
     if (typeof species === 'number') {

@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
 import { DestroySprite } from '../../../sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
@@ -21,12 +21,12 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../system/decomp-helpers';
+} from '../../../../harness/runtime/decomp-helpers';
 import {
   gIntroCredits_MovingSceneryState,
   gIntroCredits_MovingSceneryVBase,
   gIntroCredits_MovingSceneryVOffset,
-} from '../../system/decomp-globals';
+} from '../../../../harness/runtime/decomp-globals';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const INTROCRED_SCENERY_FROZEN = 2;
 const INTROCRED_SCENERY_NORMAL = 0;

@@ -24,7 +24,7 @@
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
-import { getRuntime, assetCache } from '../system/decomp-globals';
+import { getRuntime, assetCache } from '../../../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { GetWindowFrameTilesPal } from '../../text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
@@ -49,7 +49,7 @@ import {
   VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
   LoadSpritePalette,
   LoadCompressedSpriteSheet,
-} from '../system/decomp-globals';
+} from '../../../harness/runtime/decomp-globals';
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
@@ -64,8 +64,8 @@ import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../system/decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
+} from '../../../harness/runtime/decomp-runtime';
+import { PLTT_SIZE_4BPP, WIN_RANGE } from '../../../harness/runtime/decomp-helpers';
 import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from '../decomp-data/main-menu-data';
 import {
   Task_MainMenuCheckSaveFile,

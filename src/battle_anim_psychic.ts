@@ -16,10 +16,10 @@
  * (anti-cycle ESM) — accès lazy par `globalThis.__battleAnimInterpreter` ;
  * helpers décomp importés de ./battle_anim_mons.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import {
   GetBattlerSpriteCoord,
@@ -36,7 +36,7 @@ import {
 } from './battle_anim_mons';
 import { gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
-import { REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, BLDCNT_EFFECT_BLEND } from './engine/system/decomp-runtime';
+import { REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, BLDCNT_EFFECT_BLEND } from '../harness/runtime/decomp-runtime';
 
 type _VSprite = { data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean; callback: unknown };
 
@@ -298,7 +298,7 @@ import {
   gPlayerParty as _qmPlayerParty, gEnemyParty as _qmEnemyParty,
   GetMonData as _qmGetMonData, MON_DATA_SPECIES as _QM_MON_DATA_SPECIES,
 } from './engine/battle/party-storage';
-import { reverseDecompConstant as _qmRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _qmRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _qmFrontCoords, getMonBackPicCoords as _qmBackCoords } from './data/mon_pic_coords';
 
 /** Runtime étendu du bloc (OAM brute + matrices affine) — pattern interpreter
@@ -759,9 +759,9 @@ import {
 } from './battle_anim_mons';
 import { gBattlerPartyIndexes as _ssPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _ssEnemyParty, gPlayerParty as _ssPlayerParty, GetMonData as _ssGetMon, MON_DATA_SPECIES as _ssSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _ssRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _ssRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _ssFrontCoords, getMonBackPicCoords as _ssBackCoords } from './data/mon_pic_coords';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 void _ssElev;
 /** GetBattlerSpriteCoordAttr LEFT/RIGHT/TOP/BOTTOM (transcrit local, pattern 1b). */

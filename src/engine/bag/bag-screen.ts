@@ -33,14 +33,14 @@ import {
 import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { resolveDecompConstant } from '../system/decomp-constants';
-import { FEMALE } from '../system/decomp-globals';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
 import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-data';
-import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../system/data-tables';
+import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';
 import { PokemonUseItemEffects } from './bag-item-effects';
 import { ItemUseCB_Medicine, ItemUseCB_PPRecovery, setItemUseCB } from '../ui/item-use-callbacks';
@@ -48,14 +48,14 @@ import { gSpecialVar } from '../script/script-vars';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from '../system/decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes } from '../system/decomp-bridge';
+} from '../../../harness/runtime/decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes } from '../../../harness/runtime/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { getString } from '../ui/gba-strings';
-import { gSineTable, SetOamMatrix } from '../system/decomp-helpers';
-import type { DecompTask } from '../system/decomp-runtime';
+import { gSineTable, SetOamMatrix } from '../../../harness/runtime/decomp-helpers';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

@@ -60,9 +60,9 @@ import {
   getRuntime, PlaySE, JOY_NEW, JOY_REPEAT,
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from './sprite';
-import { gSineTable } from './engine/system/decomp-helpers';
+import { gSineTable } from '../harness/runtime/decomp-helpers';
 import { SE_SELECT as _SE_SELECT } from './engine/decomp-data/include/constants/songs-data';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
@@ -1050,7 +1050,7 @@ function OBJ_PLTT_ID(n: number): number { return 256 + n * 16; }
 
 /** 1:1 décomp `include/palette.h PLTT_SIZE_4BPP = 16 * sizeof(u16) = 32`
  *  (= decomp-bridge.ts:375 parité). Migré vers import direct (cleanup B7). */
-import { PLTT_SIZE_4BPP } from './engine/system/decomp-bridge';
+import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
 
 /** 1:1 décomp symboles assets (list_menu.c:289-292) — `INCGFX` graphics/
  *  interface/{red.pal,outline_cursor.png,arrow_cursor.png}. Passés tels quels

@@ -51,7 +51,7 @@ import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
 import { ItemIsMail } from '../../mail_data';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { gMoveNames } from '../data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../../sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
@@ -59,17 +59,17 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
-} from '../system/decomp-globals';
+} from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN, GetMapNameGeneric } from '../system/decomp-bridge';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN, GetMapNameGeneric } from '../../../harness/runtime/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';
 import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
-import type { DecompTask } from '../system/decomp-runtime';
+import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).

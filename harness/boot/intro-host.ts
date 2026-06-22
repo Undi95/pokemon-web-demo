@@ -14,8 +14,8 @@
  *    CB2_InitCopyrightScreenAfterBootup) = lance la chaîne CB2 décomp (Copyright→Intro→
  *    Title→MainMenu→Birch).
  */
-import type { DecompRuntime } from '../../src/engine/system/decomp-runtime';
-import { assetCache } from '../../src/engine/system/decomp-globals';
+import type { DecompRuntime } from '../runtime/decomp-runtime';
+import { assetCache } from '../runtime/decomp-globals';
 import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import {
   preloadScene1Assets, preloadScene2Assets, preloadScene3Assets,
@@ -102,7 +102,7 @@ export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   await preloadBirchSpeechAssets();
 
   // species ID → cri filename (PlayCryInternal pour tous les species).
-  const { loadSpeciesNamesAsync } = await import('../../src/engine/system/decomp-globals');
+  const { loadSpeciesNamesAsync } = await import('../runtime/decomp-globals');
   await loadSpeciesNamesAsync();
 
   // Préchargement MIDIs intro/title + cris légendaires (élimine le gap silence aux

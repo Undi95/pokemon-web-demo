@@ -33,8 +33,8 @@
  * args[0..2] = localId/mapNum/mapGroup typiquement.
  */
 
-import type { DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { FieldEffectActiveListRemove, FieldEffectActiveListAdd } from './engine/field/field-effect-active-list';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE, DestroySprite } from './sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';

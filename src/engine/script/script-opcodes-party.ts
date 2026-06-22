@@ -14,7 +14,7 @@
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
 import {
   gPlayerParty, SetMonData, CalculatePPWithBonus,

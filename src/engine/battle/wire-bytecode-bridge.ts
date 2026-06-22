@@ -104,7 +104,7 @@ import {
   consumeItemWantedScript as consumeItemWantedScript_static,
 } from '../../battle_util';
 import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from '../../battle_ai_script_commands';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { getMove } from '../data/game-data';
 import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';
 import {

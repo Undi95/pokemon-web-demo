@@ -13,11 +13,11 @@
  * mais ce qui est porté est 100% propre — règle migration game/).
  */
 
-import type { DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { ScriptContext_Enable } from './engine/script/script-runtime';
-import { PlaySE } from './engine/system/decomp-globals';
+import { PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_M_CUT } from './engine/decomp-data/include/constants/songs-data';
 
 /** 1:1 décomp `FLDEFF_USE_CUT_ON_TREE = 2` (include/constants/field_effects.h). */

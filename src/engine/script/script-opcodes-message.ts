@@ -185,7 +185,7 @@ registerOpcode('msgbox', (ctx, args) => {
         // qui PlaySE(SE_SELECT) sur A/B press → match comportement ROM.
         if (isAOrBNewlyPressed()) {
           // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
-          void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(5));
+          void import('../../../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(5));
           HideFieldMessageBox();
           // 1:1 STRICT décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
           //   HideFieldMessageBox()

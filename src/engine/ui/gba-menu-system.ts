@@ -15,8 +15,8 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { m4aSongNumStart, LoadPalette } from '../system/decomp-globals';
-import { PLTT_SIZE_4BPP } from '../system/decomp-bridge';
+import { m4aSongNumStart, LoadPalette } from '../../../harness/runtime/decomp-globals';
+import { PLTT_SIZE_4BPP } from '../../../harness/runtime/decomp-bridge';
 // Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
 import { IsMysteryGiftEnabled as _MirrorIsMysteryGiftEnabled, CanResetRTC as _MirrorCanResetRTC } from '../../../include/event_data';
 // ─── Hub : système Menu (curseur) + YesNo RELOCALISÉS dans le miroir `src/game/menu.ts`

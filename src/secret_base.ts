@@ -13,7 +13,7 @@
  * (fldeff_misc.ts).
  */
 
-import type { DecompTask } from './engine/system/decomp-runtime';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { VarGet, VarSet } from './event_data';
 import { PlayerGetDestCoords } from './field_player_avatar';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt } from './fieldmap';

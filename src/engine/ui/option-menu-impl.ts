@@ -19,17 +19,17 @@
  *   - `gSaveBlock2Ptr` augmenté avec optionsTextSpeed/Sound/etc.
  *   - Helpers exposés sur globalThis pour l'auto file (= ts-nocheck eval scope).
  */
-import { getRuntime as _getRt, getAsset, assetCache } from '../system/decomp-globals';
+import { getRuntime as _getRt, getAsset, assetCache } from '../../../harness/runtime/decomp-globals';
 import {
   LoadBgTiles, LoadPalette, FillBgTilemapBufferRect, CopyWindowToVram, PutWindowTilemap,
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
-} from '../system/decomp-globals';
+} from '../../../harness/runtime/decomp-globals';
 import { FillWindowPixelRect } from './gba-window-system';
 import { GetStringRightAlignXOffset } from './gba-text-system';
 import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../../text_window';
-import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../system/decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
-import { JOY_NEW } from '../system/decomp-globals';
+import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../../../harness/runtime/decomp-runtime';
+import { PLTT_SIZE_4BPP, WIN_RANGE } from '../../../harness/runtime/decomp-helpers';
+import { JOY_NEW } from '../../../harness/runtime/decomp-globals';
 import { gSaveBlock2Ptr, SetPokemonCryStereo } from './gba-menu-system';
 import { loadGbaPal } from '../../../harness/gba/png-loader';
 
@@ -492,7 +492,7 @@ export function getOptionMenuTextPal(): Uint16Array {
 // Phase D-cleanup audit session 83 : retiré les stubs no-op locaux qui
 // dupliquaient (en cassant la sémantique) les vrais DmaClearLarge16/DmaClear32
 // de decomp-globals.ts. Ces helpers font le bon dispatch sur VRAM/OAM/PLTT.
-import { DmaClearLarge16, DmaClear32 } from '../system/decomp-globals';
+import { DmaClearLarge16, DmaClear32 } from '../../../harness/runtime/decomp-globals';
 
 // Import templates depuis option_menu-data.ts (auto-générés)
 import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from '../decomp-data/src/option_menu-data';
@@ -518,7 +518,7 @@ import {
   TransferPlttBuffer, ProcessSpriteCopyRequests, LoadOam,
   CopyBgTilemapBufferToVram,
   GetStringWidth,
-} from '../system/decomp-globals';
+} from '../../../harness/runtime/decomp-globals';
 // SetPokemonCryStereo : importé depuis ./gba-menu-system (ligne 33).
 
 /** AddTextPrinterParameterized — wrapper signature 1:1 décomp text.c :

@@ -44,7 +44,7 @@ import {
 import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/field_weather_effect';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../../src/sprite';
-import { MAX_SPRITES } from '../../src/engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../runtime/decomp-runtime';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

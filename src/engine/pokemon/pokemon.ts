@@ -12,7 +12,7 @@
  */
 import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
-} from '../system/data-tables';
+} from '../../../harness/runtime/data-tables';
 import { Random, Random32 } from '../system/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
@@ -23,7 +23,7 @@ import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 // Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE). Leaf data (battle/data) déjà
 // dépendance de ce module (cf. move-name-resolve) → pas de cycle.
 import { GetItemHoldEffect } from '../battle/data/item-hold-effects';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 // Migration modèle Pokémon (Phase 1) : adaptateur INVERSE `Pokemon → PokemonInstance`.
 // Import TYPE-ONLY (zéro edge runtime → zéro risque de cycle ; party-storage
 // type-importe déjà PokemonInstance de ce module). On lit les champs `mon.*`

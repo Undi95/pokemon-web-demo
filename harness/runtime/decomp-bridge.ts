@@ -23,9 +23,9 @@
  * USAGE :
  *   Dans un module auto-généré :
  *   ```ts
- *   import * as bridge from '../../../decomp-bridge';
+ *   import * as bridge from '../../decomp-bridge';
  *   // Ou (préféré, après résolution des imports par le transpiler) :
- *   import { LoadPalette, FaceDirection, ARRAY_COUNT } from '../../../decomp-bridge';
+ *   import { LoadPalette, FaceDirection, ARRAY_COUNT } from '../../decomp-bridge';
  *   ```
  *
  * MAINTENANCE :
@@ -40,9 +40,9 @@
  */
 
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
-// (branche sheet taggee). Re-export `export {X} from '../../sprite'` ne cree PAS de
+// (branche sheet taggee). Re-export `export {X} from '../../src/sprite'` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../sprite';
+import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../src/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -254,7 +254,7 @@ export {
   COMPARE_LT,
   COMPARE_EQ,
   COMPARE_GT,
-} from '../script/script-vars';
+} from '../../src/engine/script/script-vars';
 
 // ─── Re-exports : script runtime (script-runtime.ts) ──────────────────────────
 
@@ -263,7 +263,7 @@ export {
   InitScriptContext,
   SetupBytecodeScript,
   ScriptJump,
-} from '../script/script-runtime';
+} from '../../src/engine/script/script-runtime';
 
 // ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
 
@@ -280,8 +280,8 @@ export {
   DeactivateAllTextPrinters,
   RunTextPrintersAndIsPrinter0Active,
   CHAR_SPACER_STR,
-} from '../ui/gba-text-system';
-import { CHAR_SPACER_STR } from '../ui/gba-text-system';
+} from '../../src/engine/ui/gba-text-system';
+import { CHAR_SPACER_STR } from '../../src/engine/ui/gba-text-system';
 
 // ─── Local-use imports (hoisted from scattered scope) ────────────────────────
 //
@@ -290,20 +290,20 @@ import { CHAR_SPACER_STR } from '../ui/gba-text-system';
 // quand l'eager-init chain change (= ex. save-system → bag → game-state →
 // load_save → object-events → metatile-behavior → decomp-bridge). Ces imports
 // sont utilisés localement avec des alias `_xxx` pour éviter la collision avec
-// les re-exports `export { Xxx } from '../xxx'` situés plus bas dans ce fichier.
+// les re-exports `export { Xxx } from '../../src/engine/xxx'` situés plus bas dans ce fichier.
 
-import { Random as _Random } from './random';
-import { getObjectEventGraphicsInfo as _getOEGI } from '../field/object-event-graphics';
+import { Random as _Random } from '../../src/engine/system/random';
+import { getObjectEventGraphicsInfo as _getOEGI } from '../../src/engine/field/object-event-graphics';
 import {
   getItemNameFr as _getItemNameFr,
   getItem as _getItem,
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
 } from './data-tables';
-import { sTMHMMoves as _sTMHMMoves } from '../pokemon/tmhm-moves';
-import { getMapNameFr } from '../../data/map-names-fr';
+import { sTMHMMoves as _sTMHMMoves } from '../../src/engine/pokemon/tmhm-moves';
+import { getMapNameFr } from '../../src/data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
-import { gBattleMons as _gBattleMonsBridge } from '../battle/state';
+import { gBattleMons as _gBattleMonsBridge } from '../../src/engine/battle/state';
 
 // ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
 
@@ -521,8 +521,8 @@ export function IS_TYPE_SPECIAL(moveType: number): boolean {
 // `HIHALF`/`LOHALF` (global.h:106-109) + `GET_SHINY_VALUE`/`GET_UNOWN_LETTER`
 // (pokemon.h) = consolidés sur le miroir (src/game/include/global.ts +
 // src/game/include/pokemon.ts). Re-exports = source unique.
-export { HIHALF, LOHALF } from '../../../include/global';
-export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../../include/pokemon';
+export { HIHALF, LOHALF } from '../../include/global';
+export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../include/pokemon';
 
 /** 1:1 décomp `src/battle_anim_mons.c:19` :
  *    #define IS_DOUBLE_BATTLE() ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
@@ -883,7 +883,7 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 }
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
-export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from './random';
+export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from '../../src/engine/system/random';
 // Note : `_Random` alias local hoisted en tête de fichier (section "Local-use imports").
 
 // ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
@@ -913,7 +913,7 @@ export {
   LoadMessageBoxGfx,
   GetTextWindowPalette,
   GetOverworldTextboxPalettePtr,
-} from '../../text_window';
+} from '../../src/text_window';
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //
@@ -2156,7 +2156,7 @@ export function Contest_CopyStringWithColor(..._args: any[]): any {
 
 /** 1:1 décomp `src/string_util.c WriteColorChangeControlCode(...)` — ex-stub no-op,
  *  CONSOLIDÉ : délègue au miroir `src/game/string_util.ts` (0 dup). */
-export { WriteColorChangeControlCode } from '../../../include/string_util';
+export { WriteColorChangeControlCode } from '../../include/string_util';
 
 /** 1:1 décomp `src/easy_chat.c GetQuestionnaireWordsPtr()`. */
 export function GetQuestionnaireWordsPtr(): any { return null; }
@@ -2758,7 +2758,7 @@ export const MAP_UNDEFINED = 0xFFFF;
 // dédié SANS dépendance) pour casser le cycle ESM HMR observé via
 // `metatile-behavior.ts` → `decomp-bridge` → modules de field/ → métatile-behavior.
 // 1:1 strict : valeurs identiques à `include/constants/metatile_behaviors.h`.
-export * from './metatile-behavior-constants';
+export * from '../../src/engine/system/metatile-behavior-constants';
 
 // ─── TRUE / FALSE / NULL ──────────────────────────────────────────────────────
 
@@ -3082,7 +3082,7 @@ export {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
-} from '../../fieldmap';
+} from '../../src/fieldmap';
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 
@@ -3130,7 +3130,7 @@ export {
   MetatileBehavior_IsJumpSouth,
   MetatileBehavior_IsPacifidlogLog,
   MetatileBehavior_IsRunningDisallowed,
-} from '../../metatile_behavior';
+} from '../../src/metatile_behavior';
 
 // Other metatile predicates (= 1:1 décomp `metatile_behavior.c`), re-exportés
 // depuis le miroir `game/metatile_behavior.ts` (source unique).
@@ -3148,7 +3148,7 @@ export {
   MetatileBehavior_IsFootprints,
   MetatileBehavior_HasRipples,
   MetatileBehavior_IsDeepSand,
-} from '../../metatile_behavior';
+} from '../../src/metatile_behavior';
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 

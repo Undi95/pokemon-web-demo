@@ -26,19 +26,19 @@
  *  inside window). Window stays plain white. Frame border + palette = fonctionnel.
  */
 
-import { getRuntime } from './engine/system/decomp-globals';
-import { REG_OFFSET_BG0VOFS } from './engine/system/decomp-runtime';
+import { getRuntime } from '../harness/runtime/decomp-globals';
+import { REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
 import { FlagGet } from './engine/script/script-vars';
 import { gMapHeader } from './fieldmap';
-import type { DecompTask } from './engine/system/decomp-runtime';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
 } from './engine/ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
-import { LoadBgTiles } from './engine/system/decomp-globals';
-import { LoadPalette } from './engine/system/decomp-globals';
+import { LoadBgTiles } from '../harness/runtime/decomp-globals';
+import { LoadPalette } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 
 // ─── 1:1 décomp constants (map_name_popup.c:212-229, menu.c:521-526) ────────

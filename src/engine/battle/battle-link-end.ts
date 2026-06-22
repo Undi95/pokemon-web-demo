@@ -39,7 +39,7 @@ import {
 } from './constants';
 import {
   getRuntime, FreeMonSpritesGfx, PALETTES_ALL,
-} from '../system/decomp-globals';
+} from '../../../harness/runtime/decomp-globals';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 

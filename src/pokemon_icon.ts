@@ -8,10 +8,10 @@
 // icon_palettes/icon_palette_<idx>.pal. Index palette = MON_ICON_PALETTE_INDICES
 // (table partagée pokemon-icon-palettes.ts, 1:1 gMonIconPaletteIndices).
 
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, DestroySprite } from './sprite';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { MON_ICON_PALETTE_INDICES } from './engine/pokemon/pokemon-icon-palettes';
 import { MailSpeciesToSpecies, NUM_SPECIES, SPECIES_UNOWN } from './mail_data';
 

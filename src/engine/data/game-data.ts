@@ -302,7 +302,7 @@ export function loadGameData(): Promise<void> {
     // ─── F3 — tables id-indexées items (1:1 décomp gItems[] / ItemId_GetName).
     //     Ids items via resolveDecompConstant (pas de module items-data). ADDITIF.
     {
-      const { resolveDecompConstant } = await import('../system/decomp-constants');
+      const { resolveDecompConstant } = await import('../../../harness/runtime/decomp-constants');
       gItems.length = 0;
       for (const [enumKey, data] of Object.entries(itemsData)) {
         const id = resolveDecompConstant(enumKey);

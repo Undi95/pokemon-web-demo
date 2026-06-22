@@ -23,7 +23,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
 } from '../pokemon/pokemon';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING

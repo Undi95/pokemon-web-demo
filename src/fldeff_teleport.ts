@@ -17,7 +17,7 @@
  * ci-dessous (__FieldCallback_Teleport, anti-cycle ESM).
  */
 
-import type { DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { Overworld_ResetStateAfterTeleport } from './overworld';
 import { setPendingWarp } from './engine/field/warp-system';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';

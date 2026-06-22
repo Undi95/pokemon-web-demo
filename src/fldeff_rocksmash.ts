@@ -13,11 +13,11 @@
  * ici). On l'importe de là. Le Cut sur party-menu (`SetUpFieldMove_RockSmash`) = chantier séparé.
  */
 
-import type { DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { ScriptContext_Enable } from './engine/script/script-runtime';
-import { PlaySE } from './engine/system/decomp-globals';
+import { PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_M_ROCK_THROW } from './engine/decomp-data/include/constants/songs-data';
 
 /** 1:1 décomp `FLDEFF_USE_ROCK_SMASH = 37` (include/constants/field_effects.h). */

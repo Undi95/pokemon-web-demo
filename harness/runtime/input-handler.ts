@@ -21,7 +21,7 @@
  */
 import Phaser from 'phaser';
 import type { DecompRuntime } from './decomp-runtime';
-import { keyToGbaMask } from '../../../harness/util/key-bindings';
+import { keyToGbaMask } from '../util/key-bindings';
 
 /** Override flag stocké par rt (= permet d'avoir plusieurs runtimes en
  *  parallèle, théorique). En pratique 1 runtime à la fois. */

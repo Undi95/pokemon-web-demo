@@ -31,16 +31,16 @@
  * Le cablage reel + retrait ad-hoc = #22 (A/B user requis).
  */
 
-import type { DecompSprite, DecompTask, DecompRuntime } from './engine/system/decomp-runtime';
+import type { DecompSprite, DecompTask, DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { gBattlerPartyIndexes, gActiveBattler, gBattlerTarget, gBattleTypeFlags, setBattlerTarget, setGDoingBattleAnim } from './engine/battle/state';
 import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPECIES } from './engine/battle/party-storage';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
-import { ST_OAM_AFFINE_DOUBLE } from './engine/system/decomp-helpers';
-import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from './engine/system/decomp-globals';
+import { ST_OAM_AFFINE_DOUBLE } from '../harness/runtime/decomp-helpers';
+import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix } from './sprite';
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from './engine/system/pokeball-effects';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
 import { getBattlerMonSpriteId } from './battle_controller_opponent';
@@ -50,7 +50,7 @@ import {
 } from './battle_anim_mons';
 import { Sin } from './trig';
 import { isBallAnimActive, setBallAnimActive, setWaitForCry, isIntroAnimActive } from './engine/battle/battle-sprites-data';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { BeginAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import {
   GFX_TAG_POKE_BALL, GFX_TAG_GREAT_BALL, GFX_TAG_SAFARI_BALL, GFX_TAG_ULTRA_BALL,

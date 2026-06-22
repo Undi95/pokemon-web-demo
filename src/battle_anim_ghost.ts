@@ -17,10 +17,10 @@
  * statique de l'interpréteur — cycle ESM), helpers communs importés de
  * battle_anim_mons.ts, GBA regs via __rt.SetGpuReg (pattern battle_anim_throw).
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   InitAnimLinearTranslation, AnimTranslateLinear, StoreSpriteCallbackInData6,
@@ -636,7 +636,7 @@ _f36RegT({
 import { GetBattlerElevation as _gfElev, GetBattlerSpriteSubpriority as _gfSubprio } from './battle_anim_mons';
 import { gBattlerPartyIndexes as _gfPartyIdx } from './engine/battle/state';
 import { gEnemyParty as _gfEnemyParty, gPlayerParty as _gfPlayerParty, GetMonData as _gfGetMon, MON_DATA_SPECIES as _gfSpeciesK } from './engine/battle/party-storage';
-import { reverseDecompConstant as _gfRevConst } from './engine/system/decomp-constants';
+import { reverseDecompConstant as _gfRevConst } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords as _gfFrontCoords, getMonBackPicCoords as _gfBackCoords } from './data/mon_pic_coords';
 import { Sin as _gfSin } from './trig';
 
@@ -932,7 +932,7 @@ _f36RegT({ AnimTask_DestinyBondWhiteShadow: AnimTask_DestinyBondWhiteShadow as n
 import { ScanlineEffect_InitWave as _spwInitWave, gScanlineEffect as _spwScan, SCANLINE_EFFECT_REG_BG1HOFS as _spwRegBg1H, SCANLINE_EFFECT_REG_BG2HOFS as _spwRegBg2H } from './scanline_effect';
 import { GetBattlerSpriteBGPriorityRank as _spwBgRank } from './battle_anim_mons';
 import { gSineTable as _spwSine } from './trig';
-import { BlendPalette as _spwBlend } from './engine/system/decomp-globals';
+import { BlendPalette as _spwBlend } from '../harness/runtime/decomp-globals';
 
 type _SpwTask = { taskId: number; data: number[]; func?: unknown };
 function _spwItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -1100,8 +1100,8 @@ _f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
 // en 16 pas jusqu'à 240x112 ; DANS la fenêtre le DARKEN (BLDCNT TGT1_BG3 +
 // BLDY 16) noircit le décor ; à 16 pas, fade des palettes BG vers noir puis
 // teardown complet quand gPaletteFade.active retombe.
-import { BeginNormalPaletteFade as _csBeginFade } from './engine/system/decomp-bridge';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { BeginNormalPaletteFade as _csBeginFade } from '../harness/runtime/decomp-bridge';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 const _CS_REG_WININ = 0x48;
 const _CS_REG_WINOUT = 0x4A;

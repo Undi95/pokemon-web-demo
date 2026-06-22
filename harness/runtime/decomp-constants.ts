@@ -34,54 +34,54 @@
  * une string non-MALE/FEMALE/numeric (= aide à détecter manquant).
  */
 
-import * as eventObjects from '../decomp-data/include/constants/event_objects-data';
-import * as flags from '../decomp-data/include/constants/flags-data';
-import * as items from '../decomp-data/include/constants/items-data';
-import * as moves from '../decomp-data/include/constants/moves-data';
-import * as songs from '../decomp-data/include/constants/songs-data';
-import * as species from '../decomp-data/include/constants/species-data';
-import * as trainers from '../decomp-data/include/constants/trainers-data';
-import * as battle from '../decomp-data/include/constants/battle-data';
+import * as eventObjects from '../../src/engine/decomp-data/include/constants/event_objects-data';
+import * as flags from '../../src/engine/decomp-data/include/constants/flags-data';
+import * as items from '../../src/engine/decomp-data/include/constants/items-data';
+import * as moves from '../../src/engine/decomp-data/include/constants/moves-data';
+import * as songs from '../../src/engine/decomp-data/include/constants/songs-data';
+import * as species from '../../src/engine/decomp-data/include/constants/species-data';
+import * as trainers from '../../src/engine/decomp-data/include/constants/trainers-data';
+import * as battle from '../../src/engine/decomp-data/include/constants/battle-data';
 // include/battle.h (≠ constants/battle.h) : MOVE_TARGET_* + B_ACTION_*.
 // Orphelin (importé nulle part) → resolveDecompConstant('MOVE_TARGET_BOTH')
 // échouait → move.target=0 pour TOUS les moves non-SELECTED (Surf/Séisme/
 // Blizzard spread `/2` jamais appliqué en 2v2 + ciblage cassé). Mergé
 // SI-ABSENT (jamais d'override = zéro régression) + dans _exprNamespaces.
-import * as battleInclude from '../decomp-data/include/battle-data';
-import * as global from '../decomp-data/include/constants/global-data';
-import * as fieldEffects from '../decomp-data/include/constants/field_effects-data';
-import * as opponents from '../decomp-data/include/constants/opponents-data';
-import * as pokemon from '../decomp-data/include/constants/pokemon-data';
-import * as abilities from '../decomp-data/include/constants/abilities-data';
-import * as battleMoveEffects from '../decomp-data/include/constants/battle_move_effects-data';
-import * as holdEffects from '../decomp-data/include/constants/hold_effects-data';
-import * as vars from '../decomp-data/include/constants/vars-data';
+import * as battleInclude from '../../src/engine/decomp-data/include/battle-data';
+import * as global from '../../src/engine/decomp-data/include/constants/global-data';
+import * as fieldEffects from '../../src/engine/decomp-data/include/constants/field_effects-data';
+import * as opponents from '../../src/engine/decomp-data/include/constants/opponents-data';
+import * as pokemon from '../../src/engine/decomp-data/include/constants/pokemon-data';
+import * as abilities from '../../src/engine/decomp-data/include/constants/abilities-data';
+import * as battleMoveEffects from '../../src/engine/decomp-data/include/constants/battle_move_effects-data';
+import * as holdEffects from '../../src/engine/decomp-data/include/constants/hold_effects-data';
+import * as vars from '../../src/engine/decomp-data/include/constants/vars-data';
 // BERRY_STAGE_* + BERRY_TREES_COUNT + BERRY_TREE_ROUTE_* (include/constants/berry.h).
 // Manquait → BerryTreeScript `switch VAR_0x8004` + `case BERRY_STAGE_BERRIES` ne
 // résolvait pas la constante (parseValue→0) → aucun case ne matchait → le script
 // d'interaction berry chutait vers `end` (récolte/arrosage/plantation muets).
-import * as berryConstants from '../decomp-data/include/constants/berry-data';
+import * as berryConstants from '../../src/engine/decomp-data/include/constants/berry-data';
 // Audit session 125 : METATILE_*, MB_*, MAP_SCRIPT_ON_* manquaient → setmetatile
 // resolved les NAMES à 0 → corruption tile (= bug exit truck après option menu).
 // 1:1 décomp = ces constants sont resolved au compile-time (assembleur GBA), pas
 // runtime ; donc on les charge dans la table pour que parseValue/VarGet fallback
 // les resolve correctement quand un script les référence.
-import * as metatileLabels from '../decomp-data/include/constants/metatile_labels-data';
-import * as metatileBehaviors from '../decomp-data/include/constants/metatile_behaviors-data';
-import * as mapScripts from '../decomp-data/include/constants/map_scripts-data';
+import * as metatileLabels from '../../src/engine/decomp-data/include/constants/metatile_labels-data';
+import * as metatileBehaviors from '../../src/engine/decomp-data/include/constants/metatile_behaviors-data';
+import * as mapScripts from '../../src/engine/decomp-data/include/constants/map_scripts-data';
 // Audit session 126 LOT D2 : MULTI_* enum (= multichoice IDs script_menu.h).
 // Used par opcode multichoice/multichoicedefault/multichoicegrid pour resolve
 // les literals MULTI_TV_LATI / MULTI_BRINEY_ON_DEWFORD / etc en numeric ID.
-import * as scriptMenu from '../decomp-data/include/constants/script_menu-data';
+import * as scriptMenu from '../../src/engine/decomp-data/include/constants/script_menu-data';
 // GAME_STAT_* enum (= incrementgamestat opcode resolves names).
-import * as gameStats from '../decomp-data/include/constants/game_stat-data';
+import * as gameStats from '../../src/engine/decomp-data/include/constants/game_stat-data';
 // PLAYERS_HOUSE_TV_NONE/LATI/MOVIE — used by EventScript_TV path dispatch.
-import * as tv from '../decomp-data/include/constants/tv-data';
+import * as tv from '../../src/engine/decomp-data/include/constants/tv-data';
 // Misc per-screen constants (= title screen tile offsets, etc.) extraits
 // dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
 // "VERSION_BANNER_RIGHT_TILEOFFSET" au runtime sprite anim.
-import * as titleScreen from '../decomp-data/title-screen-data';
+import * as titleScreen from '../../src/engine/decomp-data/title-screen-data';
 // HEAL_LOCATION_* sont définis comme enum dans heal_locations.h mais pas
 // extraits dans nos auto-data — pour setrespawn opcode, on accepte la string
 // raw (= var stocke le hash, lookup ailleurs).

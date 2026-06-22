@@ -49,9 +49,9 @@
  * à re-homer dans battle-sprites-data avec le champ struct, dette mineure).
  */
 
-import { getRuntime, syncSubspriteOam, LoadPalette } from './engine/system/decomp-globals';
-import { OBJ_PLTT_ID } from './engine/system/decomp-runtime';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { getRuntime, syncSubspriteOam, LoadPalette } from '../harness/runtime/decomp-globals';
+import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from './sprite';
 import { loadIndexedPngStrict, extractPngPlte, loadTileBin, loadGbaPal } from '../harness/gba/png-loader';
 import { GetBattlerSpriteCoord, GetBattlerElevation } from './battle_anim_mons';
@@ -757,7 +757,7 @@ import {
   isBehindSubstitute as _behindSub,
   setSpecialAnimActive as _setSpecialAnimActive,
 } from './engine/battle/battle-sprites-data';
-import { CreateTask as _CreateTask, DestroyTask as _DestroyTask } from './engine/system/decomp-bridge';
+import { CreateTask as _CreateTask, DestroyTask as _DestroyTask } from '../harness/runtime/decomp-bridge';
 import {
   STATUS1_FREEZE as _S1_FRZ, STATUS1_POISON as _S1_PSN, STATUS1_TOXIC_POISON as _S1_TOX,
   STATUS1_BURN as _S1_BRN, STATUS1_SLEEP as _S1_SLP, STATUS1_PARALYSIS as _S1_PRZ,

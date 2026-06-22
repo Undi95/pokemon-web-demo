@@ -16,12 +16,12 @@
 import { registerOpcode } from './script-runtime';
 import { VarSet, gSpecialVar } from './script-vars';
 import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_IS_EGG } from '../battle/party-storage';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { gObjectEvents } from '../../event_object_movement';
 import { gPlayerAvatar } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetCurrentMap } from '../save/load_save';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { MALE_GENDER, FEMALE_GENDER } from './script-opcodes-helpers';
 
 // 1:1 décomp `ScrCmd_checkplayergender` (scrcmd.c:2013-2017) :

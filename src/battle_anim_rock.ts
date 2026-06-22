@@ -7,10 +7,10 @@
  * AnimRockTomb(+Step :767/:780), AnimRockBlastRock (:800),
  * AnimRockScatter(+Step :808/:823) — Rock Slide/Blast/Tomb/Smash.
  */
-import { CreateSprite } from './engine/system/decomp-bridge';
+import { CreateSprite } from '../harness/runtime/decomp-bridge';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
-import { getRuntime } from './engine/system/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   GetBattlerSpriteCoord, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
@@ -480,7 +480,7 @@ _stRegT({ AnimTask_LoadSandstormBackground: AnimTask_LoadSandstormBackground as 
 // particules boue/roche en arc (tileOffset par compteur Rollout 1..5),
 // vie des particules par la translation + decrement via scan-par-func.
 import { InitAnimArcTranslation as _roArcInit, TranslateAnimHorizontalArc as _roArcRun } from './battle_anim_mons';
-import { MAX_SPRITES } from './engine/system/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _RoTask = { taskId: number; data: number[]; func?: unknown };
 function _roItf(): { getAttacker?: () => number; getTarget?: () => number; getDisableStruct?: () => { rolloutTimerStartValue?: number; rolloutTimer?: number } | null; DestroyAnimVisualTask?: (id: number) => void } {

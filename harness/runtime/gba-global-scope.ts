@@ -10,12 +10,12 @@
  * auto-générés pour éviter les cycles de dépendance.
  */
 import * as _dg from './decomp-globals';
-import * as _cb from '../../../harness/boot/copyright-boot';
-import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
+import * as _cb from '../boot/copyright-boot';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../../src/engine/script/script-vars';
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry, ResetSpriteData as _bridgeResetSpriteData, DestroySprite as _bridgeDestroySprite } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
-} from '../../play_time';
+} from '../../src/play_time';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
@@ -23,7 +23,7 @@ import {
   MapGridGetMetatileIdAt,
   GetMapBorderIdAt,
   GetMetatileAttributesById,
-} from '../../fieldmap';
+} from '../../src/fieldmap';
 const dg = _dg as any;
 const cb = _cb as any;
 

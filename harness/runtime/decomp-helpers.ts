@@ -14,13 +14,13 @@
  *   - CpuCopy16 : libgcnmultiboot equivalent (= memcpy en pratique)
  *   - gPlttBufferFaded/Unfaded : 256+256 entries u16 (BG + OBJ palette buffers)
  */
-import { Gba } from '../../../harness/gba/gba';
-import { rgba8ToRgb15 } from '../../../harness/gba/types';
+import { Gba } from '../gba/gba';
+import { rgba8ToRgb15 } from '../gba/types';
 import { getRuntime } from './decomp-globals';
 // Sin/Cos/gSineTable → miroir 1:1 `src/game/trig.ts` (= trig.c). L'ancien `& 0xFF`
 // d'ici était ÉQUIVALENT (table périodique mod 256), pas un bug ; on consolide sur
 // la forme décomp (sans masque). Re-export = source unique, zéro duplication.
-import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../../trig';
+import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../../src/trig';
 
 // ─── Sine/Cosine via gSineTable (Q.8 fixed) — re-export du miroir trig ───────
 export const Sin = _trigSin;

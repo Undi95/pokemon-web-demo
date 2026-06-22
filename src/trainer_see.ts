@@ -31,7 +31,7 @@
  *     via gPlayerAvatar (comme les reflets).
  */
 
-import type { DecompRuntime, DecompSprite } from './engine/system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from './sprite';

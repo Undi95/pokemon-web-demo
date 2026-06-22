@@ -26,22 +26,22 @@
  * est poll par la state machine.
  */
 
-import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
-import type { DecompRuntime } from '../system/decomp-runtime';
+import { getRuntime, FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
+import type { DecompRuntime } from '../../../harness/runtime/decomp-runtime';
 import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
 } from '../system/pokeball-effects';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
-import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
+import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../../../harness/runtime/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../sprite';
 import { setActiveBattler } from './state';
 import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../pokeball';
 // Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance
 // partage, decomp-globals.ts:153) AVANT le getAsset SYNC de LoadBallGfx, sinon BLOC NOIR.
-import { assetCache } from '../system/decomp-globals';
+import { assetCache } from '../../../harness/runtime/decomp-globals';
 
 // Asset Poke Ball 16x16. VRAM via l'ALLOCATEUR 1:1 décomp (`AllocSpriteTiles`) — PLUS
 // d'offset en dur (l'ancien 0x4000 écrasait les tiles du mon joueur ; 0x5800 était un

@@ -38,10 +38,10 @@ import {
   DestroySpriteAndMatrix, TrySetSpriteRotScale,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { IndexOfSpritePaletteTag } from './engine/system/decomp-globals';
+import { IndexOfSpritePaletteTag } from '../harness/runtime/decomp-globals';
 import { gBattlerPartyIndexes } from './engine/battle/state';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import { reverseDecompConstant } from './engine/system/decomp-constants';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
 // ─── Surface sprite + interpréteur (lazy, anti-cycle ESM) ────────────────────

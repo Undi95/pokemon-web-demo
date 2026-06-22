@@ -27,7 +27,7 @@
  */
 
 import { CreateObjectGraphicsSprite, loadObjectEventGraphicsInfo } from './object-event-graphics';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
 import { gFieldCamera } from '../../field_camera';
 

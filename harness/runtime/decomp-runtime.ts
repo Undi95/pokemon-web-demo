@@ -18,27 +18,27 @@
  *   - decomp pokeemerald include/gba/io_reg.h pour REG_OFFSET_*
  *   - decomp engine/palette_fade.c pour BeginNormalPaletteFade
  */
-import { Gba } from '../../../harness/gba/gba';
+import { Gba } from '../gba/gba';
 
 /** Debug flag — true uniquement si `localStorage.rtDebug = '1'`. Sans ça, tous
  *  les console.log spam (CreateSprite, palette, sheet) sont silenced. */
 const RT_DEBUG = typeof window !== 'undefined' && window.localStorage?.getItem('rtDebug') === '1';
-import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../../../harness/gba/types';
+import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../gba/types';
 import {
   loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
   loadIndexedPngStrict, extractPngPlte,
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
-} from '../../../harness/gba/png-loader';
+} from '../gba/png-loader';
 import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
   SPRITE_PALETTES, SPRITE_SHEETS,
-} from '../decomp-data/src/sprite-system';
+} from '../../src/engine/decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
-import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../sprite';
-import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
+import { BG_PLTT_ID, OBJ_PLTT_ID } from '../../src/engine/system/palette';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../src/sprite';
+import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../../src/engine/decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
-import { gSaveBlock2Ptr } from '../save/save-block-state';
+import { gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 
 // _resolveTileNum : relocalisé vers game/sprite.ts (chantier A2), importé ci-dessus
 // (_resolveTileNum) — utilisé par les 3 sites SPRITE_ANIMS du harness + tickSpriteAnims.

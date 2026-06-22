@@ -19,7 +19,7 @@
  * État global : `sNamingScreen` exposé sur `globalThis` pour que les
  * auto-callbacks y accèdent.
  */
-import { OBJ_PLTT_ID, MAX_SPRITES } from './engine/system/decomp-runtime';
+import { OBJ_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData } from './sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
@@ -40,11 +40,11 @@ import {
   CpuFill32, CpuFill16,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
-} from './engine/system/decomp-globals';
+} from '../harness/runtime/decomp-globals';
 import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
 import { loadGbaPal, loadTileBin, loadTilemapBin } from '../harness/gba/png-loader';
-import type { DecompSprite, DecompTask } from './engine/system/decomp-runtime';
-import { gKeyRepeat } from './engine/system/decomp-runtime';
+import type { DecompSprite, DecompTask } from '../harness/runtime/decomp-runtime';
+import { gKeyRepeat } from '../harness/runtime/decomp-runtime';
 import {
   OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
   ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,

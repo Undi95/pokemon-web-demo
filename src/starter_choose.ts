@@ -50,20 +50,20 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW,
 } from './engine/ui/gba-text-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
-import { getRuntime, LoadPalette } from './engine/system/decomp-globals';
+import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
-import { BG_PLTT_ID, MAX_SPRITES } from './engine/system/decomp-runtime';
-import { GetOverworldTextboxPalettePtr } from './engine/system/decomp-bridge';
+import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
+import { GetOverworldTextboxPalettePtr } from '../harness/runtime/decomp-bridge';
 import { CreateMon } from './engine/pokemon/pokemon';
 import { GiveMonToPlayer } from './engine/battle/party-storage';
 import { VarSet } from './engine/script/script-vars';
-import { Sin } from './engine/system/decomp-helpers';
+import { Sin } from '../harness/runtime/decomp-helpers';
 import { CopyMapTilesetsToVram, gMapHeader } from './fieldmap';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset_anims';
 import { setFieldCameraSuspended, flushOverworldTilemaps } from './field_camera';
 import { setObjectEventsSuspended } from './event_object_movement';
 import { getString, initStringsFromDecomp } from './engine/ui/gba-strings';
-import { getSpeciesNameFr, loadTextTables, type TextTables } from './engine/system/data-tables';
+import { getSpeciesNameFr, loadTextTables, type TextTables } from '../harness/runtime/data-tables';
 /** Type local (ex-voie V, supprimee) : l'ancien flow Birch ne retourne plus rien. */
 type BattleFlow = { tick(): boolean };
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
@@ -726,7 +726,7 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     //   gTasks[taskId].func = Task_DeclineStarter;
     void (async () => {
       try {
-        const { PlaySE } = await import('./engine/system/decomp-globals');
+        const { PlaySE } = await import('../harness/runtime/decomp-globals');
         PlaySE(5);  // SE_SELECT = 5 (= 1:1 décomp constants/songs.h:11)
       } catch (e) { void e; }
     })();

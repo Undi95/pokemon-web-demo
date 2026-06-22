@@ -25,7 +25,7 @@
  *   - Default → sBattleEnvironmentTable[gBattleEnvironment]
  */
 
-import { getRuntime, LoadPalette, LoadBgTiles } from '../system/decomp-globals';
+import { getRuntime, LoadPalette, LoadBgTiles } from '../../../harness/runtime/decomp-globals';
 import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../../../harness/gba/png-loader';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { rgba8ToRgb15 } from '../../../harness/gba/types';
