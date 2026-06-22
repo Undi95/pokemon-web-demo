@@ -322,16 +322,16 @@ export const SpriteCB_Manectric: SpriteCallback = (sprite, rt) => {
                
               if ((sprite.data[1] & 0xFF) < 64)
               {
-                  sprite.x2 = Sin(sprite.data[1], 16);
+                  sprite.x2 = Sin(sprite.data[1] & 0xFF, 16);  // 1:1 décomp intro.c:1698 Sin((u8)sSinIdx,16) — cast (u8) droppé
               }
               else
               {
                   if ((sprite.data[1] & 0xFF) == 64)
                       sprite.x -= 48;
-                  sprite.x2 = Sin(sprite.data[1], 64);
+                  sprite.x2 = Sin(sprite.data[1] & 0xFF, 64);  // 1:1 décomp intro.c:1704
               }
               sprite.data[1]++;
-              sprite.y2 = Cos(sprite.data[2], 12);
+              sprite.y2 = Cos(sprite.data[2] & 0xFF, 12);  // 1:1 décomp intro.c:1707 Cos((u8)sCosIdx,12)
               sprite.data[2]++;
           }
           break;
