@@ -7926,12 +7926,27 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
  *  ScrCmd_addobject après ClearFlag. Ne fait pas de bounds check (= le script
  *  est responsable de spawn dans des positions logiques). */
 export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): boolean {
-  if (!gMapHeader) return false;
-  const templates = gMapHeader.events?.objectEvents ?? [];
-  const tpl = templates.find(t => t.localIdRaw === localIdRaw);
-  if (!tpl) return false;
+  const mh = gMapHeader;
+  if (!mh) return false;
   if (!_graphicsCatalog) return false;
-  return _spawnSingleNpcFromTemplate(tpl, gMapHeader.id, rt, _graphicsCatalog);
+  // 1:1 STRICT décomp `GetObjectEventTemplateByLocalIdAndMap` (event_object_movement.c:1647) :
+  // pour la MAP COURANTE, le template vient de `gSaveBlock1Ptr->objectEventTemplates`
+  // (copie SAVEBLOCK mutée par setobjectxyperm), PAS de la ROM (gMapHeader.events). Sans
+  // ça, `addobject` (ScrCmd_addobject) ignore les repositions de genre — ex.
+  // `LittlerootTown_EventScript_MoveMomToMaysDoor` (OnTransition, state 2/♀) →
+  // `setobjectxyperm LOCALID_LITTLEROOT_MOM, 14, 8` — et spawne la mère aux coords ROM
+  // (5,8 = côté Brendan/♂), d'où la mère hors-écran à la sortie du camion côté May.
+  //   Le port scinde ObjectEventTemplate en 2 types (fieldmap=ROM avec localIdRaw ;
+  // save-blocks avec mapId, sans localIdRaw). Plutôt qu'un cast, on lit le template ROM
+  // (type correct + localIdRaw) puis on OVERLAYE les coords persistées du saveblock
+  // (x, y = ce qu'écrit setobjectxy[perm]) → équivalent net au template saveblock du décomp.
+  const romTpl = (mh.events?.objectEvents ?? []).find(t => t.localIdRaw === localIdRaw);
+  if (!romTpl) return false;
+  const sav = GetSaveBlock1().objectEventTemplates.find(
+    t => t.mapId === mh.id && t.localId === romTpl.localId,
+  );
+  const tpl = sav ? { ...romTpl, x: sav.x, y: sav.y } : romTpl;
+  return _spawnSingleNpcFromTemplate(tpl, mh.id, rt, _graphicsCatalog);
 }
 
 /** 1:1 STRICT décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`
