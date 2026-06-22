@@ -1783,8 +1783,10 @@ export const WININ_WIN0_OBJ = 0x10;
 export const WININ_WIN1_BG_ALL = 0xF00;
 export const WININ_WIN1_OBJ = 0x1000;
 export const WINOUT_WIN01_BG_ALL = 0xF;
+export const WINOUT_WIN01_BG0 = 1 << 0;   // 1:1 io_reg.h:567
 export const WINOUT_WIN01_OBJ = 0x10;
 export const WINOUT_WIN01_CLR = 0x20;
+export const WINOUT_WINOBJ_BG0 = 1 << 8;  // 1:1 io_reg.h:575
 // 1:1 décomp io_reg.h:582 = WINOUT_WINOBJ_BG_ALL(0xF00) | WINOUT_WINOBJ_OBJ(0x1000) |
 // WINOUT_WINOBJ_CLR(0x2000) = 0x3F00. Avant : 0x1F00 manquait le CLR bit → blend
 // special-effect pas activé dans WINOBJ region.

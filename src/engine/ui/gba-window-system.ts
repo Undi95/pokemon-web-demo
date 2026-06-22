@@ -810,6 +810,25 @@ export function ScheduleBgCopyTilemapToVram(_bg: number): void {
   /* no-op : compositor reads tilemap each frame */
 }
 
+/** 1:1 décomp `ClearScheduledBgCopiesToVram(void)` (menu.c:1718) :
+ *    memset(sScheduledBgCopiesToVram, 0, sizeof(sScheduledBgCopiesToVram));
+ *  Vide le registre des copies tilemap→VRAM planifiées. Notre compositor lit le
+ *  tilemap chaque frame (cf. ScheduleBgCopyTilemapToVram = no-op) → aucun registre
+ *  à vider = no-op net 1:1. */
+export function ClearScheduledBgCopiesToVram(): void {
+  /* no-op : pas de registre de copies planifiées (compositor lit tilemap chaque frame) */
+}
+
+/** 1:1 décomp `ResetTempTileDataBuffers(void)` (menu.c:1752) :
+ *    for (i...) sTempTileDataBuffer[i] = NULL;
+ *  Réinitialise les pointeurs des buffers de tiles temporaires (DecompressAndCopy
+ *  TileDataToVram / FreeTempTileDataBuffersIfPossible). Notre port charge les
+ *  tilesets en async direct (CopyMapTilesetsToVram) sans pool de buffers temp →
+ *  no-op net 1:1. */
+export function ResetTempTileDataBuffers(): void {
+  /* no-op : chargement tileset async direct, pas de pool de buffers temp */
+}
+
 // ─── Accesseur interne ───────────────────────────────────────────────────────
 
 export function getWindowById(windowId: number): Window | null {
