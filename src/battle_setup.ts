@@ -35,7 +35,7 @@
 import {
   getScript, getText, ScriptJump, SetupNativeScript, StopScript,
   type ScriptContext, type Opcode,
-} from './engine/script/script-runtime';
+} from './script';
 import { registerSpecial } from './engine/script/script-opcodes';
 import { FlagSet, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
 import { parseValue } from './engine/script/script-opcodes-helpers';
@@ -1083,7 +1083,7 @@ registerSpecial('ShouldTryGetTrainerScript', () => { ShouldTryGetTrainerScript()
 
 // Devtools/debug. (__runEventScript = lancer un script de map par label, pour
 // les A/B du flux dresseur sans marcher jusqu'au NPC.)
-import { RunScriptImmediately as _RunScriptImmediately } from './engine/script/script-runtime';
+import { RunScriptImmediately as _RunScriptImmediately } from './script';
 (globalThis as Record<string, unknown>).__runEventScript = (label: string): void => _RunScriptImmediately(label);
 (globalThis as Record<string, unknown>).__battleSetup = {
   BattleSetup_ConfigureTrainerBattle, GetTrainerBattleMode, HasTrainerBeenFought,

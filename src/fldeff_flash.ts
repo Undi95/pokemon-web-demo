@@ -17,7 +17,7 @@
 
 import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FlagSet } from './engine/script/script-vars';
-import { ScriptContext_SetupScript } from './engine/script/script-runtime';
+import { ScriptContext_SetupScript } from './script';
 
 /** 1:1 décomp `FLAG_SYS_USE_FLASH` (= SYSTEM_FLAGS + 0x28 = 2184). */
 const FLAG_SYS_USE_FLASH = 2184;

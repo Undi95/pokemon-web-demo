@@ -47,7 +47,7 @@ import {
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
 } from '../../src/field_camera';
-import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/engine/script/script-runtime';
+import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/script';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
 import { setHeldKeysOverride, clearHeldKeysOverride } from '../runtime/input-handler';

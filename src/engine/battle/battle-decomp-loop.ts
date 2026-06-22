@@ -541,7 +541,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
           void import('../../scrcmd').then((m) => {
             try { m.invokeSpecial('HealPlayerParty'); } catch (e) { console.warn('[whiteout] heal KO', e); }
           });
-          void import('../script/script-runtime').then((m) => {
+          void import('../../script').then((m) => {
             // EventScript_WhiteOut (event_scripts.s:584) = reset Elite Four + Mr Briney
             // (PAS le warp ; le warp est fait en C par DoWhiteOut, porté ci-dessous).
             try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[whiteout] script reset KO', e); }

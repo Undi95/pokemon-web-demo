@@ -28,8 +28,8 @@ import { applyMovement, isAllMovementsDone, isMovementDone } from './engine/fiel
 import { SetDynamicWarp, getPendingWarp, setPendingWarp } from './engine/field/warp-system';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { FEMALE_GENDER, MALE_GENDER, OPPOSITE_DIR, findNpcByLocalId, findTemplateByLocalId, getSelectedNpc, isAOrBNewlyPressed, isPlayerStepFinished, parseValue, resolveCount, resolveObjectLocalIdRaw } from './engine/script/script-opcodes-helpers';
-import { ScriptCall, ScriptJump, ScriptReturn, SetupNativeScript, StopScript, getOpcodeHandler, getScript, getText, registerOpcode } from './engine/script/script-runtime';
-import type { ScriptContext } from './engine/script/script-runtime';
+import { ScriptCall, ScriptJump, ScriptReturn, SetupNativeScript, StopScript, getOpcodeHandler, getScript, getText, registerOpcode } from './script';
+import type { ScriptContext } from './script';
 import { Compare, FlagClear, FlagGet, FlagSet, VarGet, VarSet, gSelectedObjectEvent, gSpecialVar } from './engine/script/script-vars';
 import { getMultichoiceList } from './engine/system/multichoice-data';
 import { setStringVar } from './engine/system/string-buffers';

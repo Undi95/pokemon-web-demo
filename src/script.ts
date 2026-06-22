@@ -24,10 +24,10 @@
  *   - loadMapScripts(mapName) : fetch + parse JSON scripts d'une map
  */
 
-import { VarGet } from './script-vars';
+import { VarGet } from './engine/script/script-vars';
 // Migration TEXTE byte-level 1:1 (flip direct) : getText retourne des bytes charmap
 // (data source lisible → encodée au 1er accès via encodeOwText = notre préproc, cache).
-import { encodeOwText, isOwCharmapReady } from '../../../include/text';
+import { encodeOwText, isOwCharmapReady } from '../include/text';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ export function getMovement(label: string): string[] | undefined {
 // Phase 4.10 : register movement label resolver vers movement-system.
 // Hook au chargement de ce module (= side-effect import side dans
 // TestOverworldScene → script-opcodes → movement-system).
-import { setMovementLabelResolver } from '../field/movement-system';
+import { setMovementLabelResolver } from './engine/field/movement-system';
 setMovementLabelResolver((label: string) => _movementsByLabel.get(label) ?? null);
 
 // ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
@@ -789,7 +789,7 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
-import { setOnLoadMapScriptHook, gMapHeader } from '../../fieldmap';
+import { setOnLoadMapScriptHook, gMapHeader } from './fieldmap';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
 
 // Hook DoCoordEventWeather (game/coord_event_weather) — posé par ce module au boot via

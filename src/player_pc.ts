@@ -52,7 +52,7 @@ import {
 } from './engine/ui/gba-menu-system';
 import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
 import { SignalWaitState } from './engine/script/script-opcodes';
-import { ScriptContext_SetupScript } from './engine/script/script-runtime';
+import { ScriptContext_SetupScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';

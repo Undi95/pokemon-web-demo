@@ -99,7 +99,7 @@ import {
   ArePlayerFieldControlsLocked,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
-} from './engine/script/script-runtime';
+} from './script';
 // Musique surf (stop) : on PILOTE la lecture existante, on ne modifie pas l'engine son.
 import { Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic } from './overworld';
 import { FlagGet } from './engine/script/script-vars';

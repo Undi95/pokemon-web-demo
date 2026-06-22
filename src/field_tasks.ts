@@ -43,7 +43,7 @@ import {
   gMain,
 } from '../harness/runtime/decomp-globals';
 import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
-import { ArePlayerFieldControlsLocked } from './engine/script/script-runtime';
+import { ArePlayerFieldControlsLocked } from './script';
 import { DoTimeBasedEvents } from './clock';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from './fieldmap';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';

@@ -13,7 +13,7 @@
  */
 
 import { SetWeather } from './field_weather_effect';
-import { setDoCoordEventWeatherHook } from './engine/script/script-runtime';
+import { setDoCoordEventWeatherHook } from './script';
 import * as WeatherConstants from './engine/decomp-data/include/constants/weather-data';
 import {
   WEATHER_SUNNY_CLOUDS, WEATHER_SUNNY, WEATHER_RAIN, WEATHER_SNOW, WEATHER_RAIN_THUNDERSTORM,

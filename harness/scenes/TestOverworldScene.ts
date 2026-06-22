@@ -116,7 +116,7 @@ import {
   RunOnResumeMapScript,
   TryRunOnFrameMapScript,
   TryRunOnWarpIntoMapScript,
-} from '../../src/engine/script/script-runtime';
+} from '../../src/script';
 // 1:1 décomp `DoCB1_Overworld` (overworld.c:1438) : la couche INPUT joueur passe par
 // FieldClearPlayerInput → FieldGetPlayerInput → ProcessPlayerFieldInput → PlayerStep.
 import {

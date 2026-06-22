@@ -12,7 +12,7 @@ import {
   registerOpcode, type ScriptContext,
   ScriptJump, ScriptCall, ScriptReturn, StopScript,
   SetupNativeScript, getScript, getText, getOpcodeHandler,
-} from './script-runtime';
+} from '../../script';
 import {
   FlagSet, FlagClear, FlagGet, VarSet, VarGet, Compare,
   gSpecialVar, gSelectedObjectEvent,

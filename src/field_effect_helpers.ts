@@ -78,7 +78,7 @@ import {
   GetPlayerAvatarGraphicsIdByCurrentState, GetXYCoordsOneStepInFrontOfPlayer, GetPlayerFacingDirection,
 } from './field_player_avatar';
 import { gPlayerFacingPosition } from './fldeff_misc';
-import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './engine/script/script-runtime';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
 import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../harness/runtime/decomp-bridge';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,

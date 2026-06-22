@@ -13,7 +13,7 @@
  * avec le msgbox fix de session 126).
  */
 
-import { getText } from '../script/script-runtime';  // bytes charmap (migration texte)
+import { getText } from '../../script';  // bytes charmap (migration texte)
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { getString } from '../ui/gba-strings';
 

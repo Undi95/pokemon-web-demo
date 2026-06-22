@@ -642,7 +642,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
     const flowMod = await import('../../src/starter_choose');
-    const scriptMod = await import('../../src/engine/script/script-runtime');
+    const scriptMod = await import('../../src/script');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'starter choose UI triggered — Birch BG should appear after async loads';

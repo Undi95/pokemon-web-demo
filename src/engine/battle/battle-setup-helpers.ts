@@ -51,7 +51,7 @@ import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/r
 import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
 import { StringExpandPlaceholders } from '../../string_util';
-import { getText } from '../script/script-runtime';
+import { getText } from '../../script';
 // Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
 import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';

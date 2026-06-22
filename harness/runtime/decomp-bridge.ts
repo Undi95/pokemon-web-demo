@@ -263,7 +263,7 @@ export {
   InitScriptContext,
   SetupBytecodeScript,
   ScriptJump,
-} from '../../src/engine/script/script-runtime';
+} from '../../src/script';
 
 // ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
 

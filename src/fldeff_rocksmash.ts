@@ -16,7 +16,7 @@
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
-import { ScriptContext_Enable } from './engine/script/script-runtime';
+import { ScriptContext_Enable } from './script';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_M_ROCK_THROW } from './engine/decomp-data/include/constants/songs-data';
 

@@ -76,7 +76,7 @@ import {
 } from './engine/decomp-data/include/constants/metatile_labels-data';
 import { MAP_OFFSET, MapGridSetMetatileIdAt } from './fieldmap';
 import { DrawWholeMapView, SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
-import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './engine/script/script-runtime';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import { SetObjectEventSpritePosByLocalIdAndMap } from './event_object_movement';
 
 // ─── 1:1 décomp box offsets (field_special_scene.c:27-34) ───────────────────
