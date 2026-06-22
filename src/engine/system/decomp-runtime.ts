@@ -35,7 +35,7 @@ import {
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, CreateSprite as _CreateSprite_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, CreateSprite as _CreateSprite_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../game/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -1924,13 +1924,11 @@ export class DecompRuntime {
     });
 
     if (animTable && firstAnim && firstAnim.frames.length > 0) {
-      this.spriteAnimStates.set(result.spriteId, {
-        animTableName: tpl.anims,
-        animIdx: 0,
-        frameIdx: 0,
-        framesRemaining: firstAnim.frames[0].duration,
-        tileBase,
-      });
+      // CONVERGENCE 1:1 : `sprite->anims = template->anims` (chemin inline décomp via
+      // setSpriteAnims/AnimateSprite) au lieu de la state-machine legacy `spriteAnimStates`.
+      // Modèle sheet (sprite référence une sheet chargée par tag, pas de tiles inline) →
+      // usingSheet=true. Couvre intro/title/starter/credits (tous CreateSpriteFromTemplate).
+      _setSpriteAnims_1to1(this, result.spriteId, tpl.anims, 0, tileBase);
     }
     // Store tileBase + objMode + centerToCornerVec + affineMode + affineAnims dans le sprite
     const sprite = this.gSprites[result.spriteId];
