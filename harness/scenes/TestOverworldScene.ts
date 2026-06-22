@@ -148,7 +148,7 @@ import {
   HideShowWarpArrow,
 } from '../../src/field_player_avatar';
 import { preloadEmoteIcons } from '../../src/trainer_see';
-import { UpdateTVScreensOnMap } from '../../src/engine/ui/tv-screen';
+import { UpdateTVScreensOnMap } from '../../src/tv';
 import {
   preloadTallGrassEffect,
   TrySpawnTallGrassOnReturnToField,
@@ -208,7 +208,7 @@ import {
   TickFieldMessageBox,
   preloadStandardMenuPalette,
 } from '../../src/field_message_box';
-import { TickStartMenu } from '../../src/engine/ui/start-menu';
+import { TickStartMenu } from '../../src/start_menu';
 import { TickBedroomPC } from '../../src/player_pc';
 import { TickPCAnim } from '../../src/engine/pokemon/pc-anim';
 import { TickRegionMap } from '../../src/engine/field/region-map';

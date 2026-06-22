@@ -35,29 +35,29 @@ import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx } from '../../text_window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { FlagGet } from '../script/script-vars';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gSaveBlock2Ptr } from './gba-menu-system';
-import { FEMALE } from '../../../harness/runtime/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
+} from './engine/ui/gba-window-system';
+import { LoadUserWindowBorderGfx } from './text_window';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './engine/ui/gba-text-system';
+import { FlagGet } from './engine/script/script-vars';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
+import { FEMALE } from '../harness/runtime/decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData } from '../../../harness/runtime/decomp-bridge';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { getString } from './gba-strings';
-import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
+} from '../harness/runtime/decomp-globals';
+import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
+import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
+import { getString } from './engine/ui/gba-strings';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).
 const FONT_NORMAL = 1;
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 

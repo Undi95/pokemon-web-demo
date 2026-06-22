@@ -35,16 +35,16 @@
  *   - specials-registry : TurnOnTVScreen / TurnOffTVScreen wirés.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from '../../fieldmap';
-import { gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
-import { FlagSet, FlagClear, FlagGet } from '../script/script-vars';
-import { DrawWholeMapView } from '../../field_camera';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './fieldmap';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { MALE, FEMALE } from '../harness/runtime/decomp-globals';
+import { FlagSet, FlagClear, FlagGet } from './engine/script/script-vars';
+import { DrawWholeMapView } from './field_camera';
 import {
   METATILE_Building_TV_On,
   METATILE_Building_TV_Off,
-} from '../decomp-data/include/constants/metatile_labels-data';
-import { ENUM_MB_0 as MB } from '../decomp-data/include/constants/metatile_behaviors-data';
+} from './engine/decomp-data/include/constants/metatile_labels-data';
+import { ENUM_MB_0 as MB } from './engine/decomp-data/include/constants/metatile_behaviors-data';
 
 // 1:1 décomp `include/constants/tv.h:79-81` :
 //   #define PLAYERS_HOUSE_TV_NONE  0

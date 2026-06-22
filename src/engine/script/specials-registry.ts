@@ -33,7 +33,7 @@ import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
-import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
+import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
 import { setStringVar } from '../system/string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';
@@ -59,7 +59,7 @@ import {
 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
-import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
+import { CheckPartyMonHasHeldItem } from '../../script_pokemon_util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup';
 import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
@@ -409,7 +409,7 @@ registerSpecial('DoPCTurnOffEffect', () => {
  *  → Set TOUS les MB_TELEVISION metatiles à TV_On + refresh BG → TV cycle
  *  via TilesetAnim_Building (tile 496..499). */
 registerSpecial('TurnOnTVScreen', () => {
-  void import('../ui/tv-screen').then(({ TurnOnTVScreen }) => {
+  void import('../../tv').then(({ TurnOnTVScreen }) => {
     TurnOnTVScreen();
   });
 });
@@ -417,7 +417,7 @@ registerSpecial('TurnOnTVScreen', () => {
 /** 1:1 décomp `TurnOffTVScreen` (tv.c:869-873). Identique à TurnOnTVScreen
  *  mais avec METATILE_Building_TV_Off (= TV statique noir). */
 registerSpecial('TurnOffTVScreen', () => {
-  void import('../ui/tv-screen').then(({ TurnOffTVScreen }) => {
+  void import('../../tv').then(({ TurnOffTVScreen }) => {
     TurnOffTVScreen();
   });
 });

@@ -40,30 +40,30 @@ import {
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
-} from './gba-window-system';
+} from './engine/ui/gba-window-system';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
-} from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../../../harness/runtime/decomp-bridge';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
-import { loadIndexedPngStrict } from '../../../harness/gba/png-loader';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+} from '../harness/runtime/decomp-globals';
+import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../harness/runtime/decomp-bridge';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
+import { loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './gba-menu-system';
-import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
-import { getString } from './gba-strings';
+} from './engine/ui/gba-menu-system';
+import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './engine/ui/gba-window-system';
+import { getString } from './engine/ui/gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
-import { FEMALE } from '../../../harness/runtime/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from '../../sprite';
-import { FlagSet, VarGet } from '../script/script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../../rtc';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { SetOamMatrix } from '../../../harness/runtime/decomp-helpers';
-import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
-import type { DecompTask, DecompSprite, DecompRuntime } from '../../../harness/runtime/decomp-runtime';
-import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
+import { FEMALE } from '../harness/runtime/decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
+import { FlagSet, VarGet } from './engine/script/script-vars';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
+import { SetOamMatrix } from '../harness/runtime/decomp-helpers';
+import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';
+import type { DecompTask, DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
+import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 // ─── Constants 1:1 décomp (= wallclock.c:54-72, wallclock-data.ts) ─────────
 
@@ -80,7 +80,7 @@ const WIN_BUTTON_LABEL = 1;
 /** Joy keys (= 1:1 gba/io_reg.h). Import depuis decomp-data (= A8 audit). */
 import {
   A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
-} from '../decomp-data/include/gba/io_reg-data';
+} from './engine/decomp-data/include/gba/io_reg-data';
 /** Font / text colors. */
 const FONT_NORMAL = 1;
 const STD_FRAME_TILE = 0x250;
@@ -172,7 +172,7 @@ const sClockHandCoords: ReadonlyArray<readonly [number, number]> = [
 // L'ancien code local utilisait `Math.round(Math.sin/cos)` = NON-1:1 (la table
 // gSineDegreeTable de la décomp TRONQUE, diverge à 4 angles ; et Cos2 = Sin2(+90)).
 // Consolidé sur le miroir (dup Sin2/Cos2 flaggé par check-duplicate-helpers).
-import { Sin2, Cos2 } from '../../../include/trig';
+import { Sin2, Cos2 } from '../include/trig';
 
 // ─── State module-level (= encapsulates gTasks[taskId].data fields) ─────────
 

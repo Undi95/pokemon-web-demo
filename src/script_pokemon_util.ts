@@ -10,11 +10,11 @@
  * battle/party-storage.ts) ; on ne re-porte que ce qui manque, sans dup.
  */
 
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { GetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG } from '../battle/party-storage';
-import type { Pokemon } from '../battle/party-storage';
-import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
-import { SPECIES_NONE, SPECIES_EGG } from '../decomp-data/include/constants/species-data';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { GetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG } from './engine/battle/party-storage';
+import type { Pokemon } from './engine/battle/party-storage';
+import { PARTY_SIZE } from './engine/decomp-data/include/constants/global-data';
+import { SPECIES_NONE, SPECIES_EGG } from './engine/decomp-data/include/constants/species-data';
 
 /** 1:1 décomp `CheckPartyMonHasHeldItem(item)` (script_pokemon_util.c:115-126).
  *  ```c

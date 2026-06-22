@@ -41,58 +41,58 @@ import {
   ClearStdWindowAndFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
+} from './engine/ui/gba-window-system';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
+import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
-import { IsNationalPokedexEnabled } from '../save/event-data';
+import { IsNationalPokedexEnabled } from './engine/save/event-data';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
   getText,
-} from '../../script';
+} from './script';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
   FIELD_MESSAGE_BOX_HIDDEN,
-} from '../../field_message_box';
+} from './field_message_box';
 // Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
-import { encodeOwText } from '../../../include/text';
+import { encodeOwText } from '../include/text';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from './gba-menu-system';
-import { PlaySE, getRuntime, gMain } from '../../../harness/runtime/decomp-globals';
-import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
-import { HasValidSave } from '../save/save-system';
-import { bagContents } from '../bag/bag';
-import { HideMapNamePopUpWindow } from '../../map_name_popup';
-import { GetStringRightAlignXOffset } from './gba-text-system';
-import { gMapHeader } from '../../fieldmap';
-import { getMapNameFr } from '../../data/map-names-fr';
-import { gSaveBlock2Ptr } from './gba-menu-system';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { FlagGet } from '../script/script-vars';
+} from './engine/ui/gba-menu-system';
+import { PlaySE, getRuntime, gMain } from '../harness/runtime/decomp-globals';
+import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from './engine/decomp-data/include/constants/songs-data';
+import { HasValidSave } from './engine/save/save-system';
+import { bagContents } from './engine/bag/bag';
+import { HideMapNamePopUpWindow } from './map_name_popup';
+import { GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
+import { gMapHeader } from './fieldmap';
+import { getMapNameFr } from './data/map-names-fr';
+import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { FlagGet } from './engine/script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
-import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from '../decomp-data/src/option_menu-callbacks-auto';
+import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './engine/decomp-data/src/option_menu-callbacks-auto';
 // Le callback signature est (rt) => void, on adapte vers () => void pour
 // SetMainCallback2 (= notre runtime utilise no-arg callbacks).
 const CB2_InitOptionMenu = (): void => { const rt = (globalThis as Record<string, unknown>).__rt as Parameters<typeof _CB2_InitOptionMenu_callback>[0]; _CB2_InitOptionMenu_callback(rt); };
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
-import { preloadOptionMenuAssets } from './option-menu-impl';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
+import { preloadOptionMenuAssets } from './engine/ui/option-menu-impl';
 // SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
-import { OpenBagScreen } from '../bag/bag-menu';
-import { OpenPartyScreen, TickPartyScreen } from './party-screen';
-import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
-import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
-import { getString } from './gba-strings';
-import { FadeScreen, FADE_TO_BLACK } from '../system/fade-screen';
+import { OpenBagScreen } from './engine/bag/bag-menu';
+import { OpenPartyScreen, TickPartyScreen } from './engine/ui/party-screen';
+import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
+import { OpenPokedexScreen, TickPokedexScreen } from './engine/ui/pokedex-screen';
+import { getString } from './engine/ui/gba-strings';
+import { FadeScreen, FADE_TO_BLACK } from './engine/system/fade-screen';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
 // pour éviter le globalThis lookup qui pourrait résoudre vers la version
 // auto-transpilée broken (= sound-all-auto.ts:561, gMPlayInfo_SE1 undefined).
-import { IsSEPlaying as _isSEPlaying } from '../../../harness/runtime/decomp-globals';
+import { IsSEPlaying as _isSEPlaying } from '../harness/runtime/decomp-globals';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ let sPendingScreenAction: (() => void) | null = null;
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   A_BUTTON, B_BUTTON, START_BUTTON, DPAD_UP, DPAD_DOWN,
-} from '../decomp-data/include/gba/io_reg-data';
+} from './engine/decomp-data/include/gba/io_reg-data';
 
 // 1:1 décomp menu.c:25-27 :
 //   #define STD_WINDOW_PALETTE_NUM 14   ← border palette (cadre du menu)
@@ -635,7 +635,7 @@ export function OpenStartMenu(): void {
   // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
   // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
   // menu ET ses sous-menus, même mid-step."
-  void import('../../event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
+  void import('./event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
   // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
   // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même
@@ -669,7 +669,7 @@ export function CloseStartMenu(): void {
   // 1:1 inverse de FreezeObjectEvents au open : tous les NPCs reprennent leur
   // mouvement normal au close du menu. Le player a déjà UnlockPlayerFieldControls
   // donc reprend ses inputs.
-  void import('../../event_object_movement').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
+  void import('./event_object_movement').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
   sIsOpen = false;
   sSubState = 'menu';
   console.log('[start-menu] closed');
@@ -967,7 +967,7 @@ function _tickSaveSavingMsg(): void {
   // Gate 1:1 RunSaveCallback : wait printer done.
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // TrySavingData (= notre persist).
-  void (async () => { const { SaveGame } = await import('../save/save-system'); await SaveGame(); })();
+  void (async () => { const { SaveGame } = await import('./engine/save/save-system'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
   const text = getText('gText_PlayerSavedGame') ?? encodeOwText('{PLAYER} a sauvegardé la partie.');
   ShowFieldMessage(text);
@@ -985,7 +985,7 @@ function _tickSaveDone(newKeys: number): void {
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // Étape 1 : `SaveSuccessCallback` — PlaySE(SE_SAVE) une fois quand printer done.
   if (!_saveDoneSeStarted) {
-    void import('../../../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
+    void import('../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
     _saveDoneSeStarted = true;
     return;  // décomp switche le callback à SaveReturnSuccessCallback ; on attend next frame.
   }
