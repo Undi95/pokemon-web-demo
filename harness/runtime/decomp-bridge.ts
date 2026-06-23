@@ -367,11 +367,8 @@ export function ArcTan2(x: number, y: number): number {
 
 // ─── Tile/BG buffer access (bg.c) ─────────────────────────────────────────────
 
-/** 1:1 décomp `src/bg.c GetBgTilemapBuffer(bg)` — pointer to BG tilemap buffer.
- *  Need full BG manager port. */
-export function GetBgTilemapBuffer(_bg: number): Uint16Array {
-  throw new Error('[bridge] GetBgTilemapBuffer not yet 1:1 ported. See bg.c:GetBgTilemapBuffer.');
-}
+// GetBgTilemapBuffer décyclé → src/engine/ui/gba-window-system.ts (foyer bg.c du
+// port ; délègue à getRuntime().gba.bg(bg).tilemap, comme CopyToBgTilemapBuffer).
 
 // GetFaceDirectionMovementAction décyclé → src/event_object_movement.ts (foyer 1:1,
 // table gFaceDirectionMovementActions indexée par direction — dirn_to_anim).
@@ -590,10 +587,5 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
 /** Liste des helpers qui throw NotImplemented (= TODO list, à porter en priorité).
  *  Si un module auto a un callsTo qui matche cette liste, son activation va fail. */
 export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
-  'GetBgTilemapBuffer',
-  // — porté 1:1 décomp battle.h:471 (batch B19).
-  // Phase B.5 added : these throw NotImpl but are counted in __bridgedHelpers__
-  // so we still track them. Bridge resolver will fail-fast on these when called.
-  // Phase B.6 added
-  // Phase B.7 added
+  // (vide : tous les anciens stubs NotImpl ont été portés à leur foyer 1:1.)
 ]);

@@ -115,7 +115,7 @@
 
 // â”€â”€â”€ Imports infrastructure (helpers TS existants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-import {CpuFastFill, GetBgTilemapBuffer, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
+import {CpuFastFill, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
 import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
 import { CreateSprite } from '../../sprite';
@@ -138,6 +138,7 @@ import {
   FillBgTilemapBufferRect_Palette0,
   CopyBgTilemapBufferToVram,
   CopyToBgTilemapBuffer,
+  GetBgTilemapBuffer,
   type WindowTemplate,
   type BgTemplate,
 } from './gba-window-system';

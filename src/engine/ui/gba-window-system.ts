@@ -698,6 +698,14 @@ export function CopyToBgTilemapBuffer(
   }
 }
 
+/** 1:1 décomp `bg.c GetBgTilemapBuffer(bg)` :
+ *    return sGpuBgConfigs2[bg].tilemap;
+ *  Route vers le buffer tilemap par-BG du gestionnaire BG du port (= même accès
+ *  que CopyToBgTilemapBuffer ci-dessus). */
+export function GetBgTilemapBuffer(bg: number): Uint16Array {
+  return getRuntime().gba.bg(bg as 0 | 1 | 2 | 3).tilemap;
+}
+
 /** 1:1 décomp `bg.c CopyRectToBgTilemapBuffer(bg, src, srcW, srcH, srcX, srcY, destX, destY, rectW, rectH, palette, baseTile, mode)`.
  *  Simplifié : on copie un rect rectW×rectH depuis src (srcW×srcH) à destX/destY dans la BG tilemap. */
 export function CopyRectToBgTilemapBuffer(
