@@ -62,7 +62,8 @@ import {
 } from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import { ResetSpriteData, ConvertIntToDecimalStringN, GetMapNameGeneric } from '../../../harness/runtime/decomp-bridge';
+import { ResetSpriteData, ConvertIntToDecimalStringN } from '../../../harness/runtime/decomp-bridge';
+import { GetMapNameGeneric } from '../../region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';

@@ -49,7 +49,7 @@ import {
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
 } from '../../dynamic_placeholder_text_util';
-import { GetMapNameHandleAquaHideout } from '../../../harness/runtime/decomp-bridge';
+import { GetMapNameHandleAquaHideout } from '../../region_map';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
