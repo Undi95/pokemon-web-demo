@@ -39,10 +39,12 @@ const SPRITE_NONE = 0xFF;
 const ITEMMENUSPRITE_BAG  = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BAG;   // 0
 const ITEMMENUSPRITE_BALL = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BALL;  // 1
 const ITEMMENUSPRITE_ITEM = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_ITEM;  // 2 (base, double-buffer id^1)
-// 1:1 décomp `#define TAG_ITEM_ICON 5557` (item_menu_icons.c) — GFXTAG/
-// PALTAG de base ; les 2 slots = TAG_ITEM_ICON + id (id ∈ {0,1}). Valeur
-// = clé unique de spriteSheetTagToTileStart/paletteTagToSlot (substrat).
-const TAG_ITEM_ICON = 5557;
+// 1:1 décomp item_menu_icons.c:17 — TAG_ITEM_ICON = 102 (enum file-local, suite de
+// TAG_BAG_GFX=100/TAG_ROTATING_BALL_GFX=101). GFXTAG/PALTAG de base ; les 2 slots =
+// TAG_ITEM_ICON + id (id ∈ {0,1}) → 102, 103 (= TAG_ITEM_ICON_ALT). Tags libres dans
+// l'espace du sac (100,101,110,111 = scroll arrows). [fix divergence : valait 5557,
+// commentaire « #define 5557 » fabriqué — aucun #define tel dans item_menu_icons.c.]
+const TAG_ITEM_ICON = 102;
 
 // 1:1 décomp `enum Pocket` (constants/items.h) — index dans sBagSpriteAnimTable
 // (anims[POCKET_NONE..POCKET_KEY_ITEMS] = frame par poche).
