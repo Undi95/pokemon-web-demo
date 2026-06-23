@@ -2510,9 +2510,8 @@ export const sDirection    = 3;
 
 /** OBJECT_EVENTS_COUNT — 1:1 décomp `include/constants/event_object_movement.h:11`.  */
 export const OBJECT_EVENTS_COUNT = 16;
-/** LOCALID_PLAYER — 1:1 décomp `include/constants/event_object_movement.h:6`. */
-export const LOCALID_PLAYER = 0xFF;
-export const LOCALID_NONE   = 0;
+// LOCALID_PLAYER / LOCALID_NONE — décyclés vers le foyer canonique
+// `include/constants/event_objects.ts` (= constants/event_objects.h). Voir SPINE-DECYCLE-PLAN §0b G5.
 export const OBJ_EVENT_ID_PLAYER = 0;
 
 /** MAP_UNDEFINED + helpers. 1:1 décomp `include/constants/maps.h`. */
@@ -3133,7 +3132,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'JUMP_DISTANCE_IN_PLACE', 'JUMP_DISTANCE_NORMAL', 'JUMP_DISTANCE_FAR',
   'JUMP_TYPE_HIGH', 'JUMP_TYPE_LOW', 'JUMP_TYPE_NORMAL',
   'sObjEventId', 'sTypeFuncId', 'sActionFuncId', 'sDirection',
-  'OBJECT_EVENTS_COUNT', 'LOCALID_PLAYER', 'LOCALID_NONE', 'OBJ_EVENT_ID_PLAYER',
+  'OBJECT_EVENTS_COUNT', 'OBJ_EVENT_ID_PLAYER',
   'MAP_UNDEFINED',
 ]);
 
