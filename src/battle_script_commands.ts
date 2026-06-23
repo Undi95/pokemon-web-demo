@@ -10480,7 +10480,7 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
 } from './sprite';
 import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from '../harness/runtime/decomp-globals';
-import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from './engine/decomp-data/src/battle_bg-data';
+import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from './engine/battle/battle-windows';
 import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from './menu_specialized';
 import {
   lvlUpBoxOpenPage1 as _lvlUpBoxOpenPage1BSC, lvlUpBoxDrawPage2 as _lvlUpBoxDrawPage2BSC,

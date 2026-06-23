@@ -32,18 +32,46 @@
  *   - B_WIN_MSG : fillValue=PIXEL_FILL(0xF)=0xFF, bgColor=TEXT_DYNAMIC_COLOR_6=15
  *     → fond box = palette idx 15 = rouge ; fgColor=TEXT_COLOR_WHITE=1 = texte blanc.
  *
- * ⚠️ DONNÉES = AUTO-EXTRAITES, PAS RETAPÉES À LA MAIN.
- * `sStandardBattleWindowTemplates` + `gBattleBgTemplates` sont importés depuis
- * `decomp-data/src/battle_bg-data.ts` (généré 1:1 par l'extracteur du
- * décomp). Ne JAMAIS re-hardcoder ces tables ici (règle projet
- * feedback-no-hardcoded-decomp-values). `sTextOnWindowsInfo_Normal` reste
- * porté main car l'extraction ne le sort qu'en C brut (PIXEL_FILL(0xF)…),
- * non consommable — mais cross-validé contre static-tables/battle_message.json.
+ * ⚠️ DONNÉES = TRANSCRITES 1:1 DE LA DÉCOMP (battle_bg.c), PAS APPROXIMÉES.
+ * `sStandardBattleWindowTemplates` est défini ci-dessous (anciennement le scaffold
+ * auto-extrait `decomp-data/src/battle_bg-data.ts`, désormais inliné ici = port de
+ * la section windowing de battle_bg.c). `gBattleBgTemplates` vit dans son miroir
+ * `src/battle_bg.ts`. `sTextOnWindowsInfo_Normal` reste porté main car l'extraction
+ * ne le sort qu'en C brut (PIXEL_FILL(0xF)…), non consommable — mais cross-validé
+ * contre static-tables/battle_message.json.
  */
 
-import {
-  sStandardBattleWindowTemplates as _autoStdBattleWinTemplates,
-} from '../decomp-data/src/battle_bg-data';
+// 1:1 décomp `static const struct WindowTemplate sStandardBattleWindowTemplates[]`
+// (battle_bg.c:163-382). Index array == B_WIN_* (l'ordre source décomp = l'ordre
+// B_WIN_*). Hébergé ici (= port de la section windowing de battle_bg.c) en attendant
+// la fusion battle-windows → battle_bg.ts ; le Record dérivé (ci-dessous) est ce que
+// consomment les autres modules. baseBlock en décimal (144=0x90, 448=0x1C0, …).
+const _autoStdBattleWinTemplates = [
+  { bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 27, height: 4, paletteNum: 0, baseBlock: 144 },
+  { bg: 0, tilemapLeft: 1, tilemapTop: 35, width: 14, height: 4, paletteNum: 0, baseBlock: 448 },
+  { bg: 0, tilemapLeft: 17, tilemapTop: 35, width: 12, height: 4, paletteNum: 5, baseBlock: 400 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 768 },
+  { bg: 0, tilemapLeft: 11, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 784 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 800 },
+  { bg: 0, tilemapLeft: 11, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 816 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 656 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 0, height: 0, paletteNum: 5, baseBlock: 664 },
+  { bg: 0, tilemapLeft: 25, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 664 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 672 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 8, height: 4, paletteNum: 5, baseBlock: 688 },
+  { bg: 0, tilemapLeft: 25, tilemapTop: 9, width: 4, height: 4, paletteNum: 5, baseBlock: 256 },
+  { bg: 1, tilemapLeft: 19, tilemapTop: 8, width: 10, height: 11, paletteNum: 5, baseBlock: 256 },
+  { bg: 2, tilemapLeft: 18, tilemapTop: 0, width: 12, height: 3, paletteNum: 6, baseBlock: 366 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 3, width: 6, height: 2, paletteNum: 5, baseBlock: 32 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 3, width: 6, height: 2, paletteNum: 5, baseBlock: 64 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 2, width: 6, height: 2, paletteNum: 5, baseBlock: 32 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 2, width: 6, height: 2, paletteNum: 5, baseBlock: 64 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 6, width: 6, height: 2, paletteNum: 5, baseBlock: 96 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 6, width: 6, height: 2, paletteNum: 5, baseBlock: 128 },
+  { bg: 0, tilemapLeft: 12, tilemapTop: 2, width: 6, height: 2, paletteNum: 0, baseBlock: 160 },
+  { bg: 0, tilemapLeft: 4, tilemapTop: 2, width: 7, height: 2, paletteNum: 0, baseBlock: 160 },
+  { bg: 0, tilemapLeft: 19, tilemapTop: 2, width: 7, height: 2, paletteNum: 0, baseBlock: 176 },
+] as const;
 
 // ─── B_WIN_TYPE (battle.h:341-342) ──────────────────────────────────────────
 export const B_WIN_TYPE_NORMAL = 0;
@@ -127,11 +155,10 @@ export const DUMMY_WIN_TEMPLATE: BattleWindowTemplate = {
   bg: 0xFF, tilemapLeft: 0, tilemapTop: 0, width: 0, height: 0, paletteNum: 0, baseBlock: 0,
 };
 
-/** 1:1 décomp `sStandardBattleWindowTemplates` (battle_bg.c:163-382).
- *  DÉRIVÉ de l'array auto-extrait `decomp-data/src/battle_bg-data.ts`
- *  (index array == B_WIN_* car ordre source décomp = ordre B_WIN_*).
- *  ZÉRO valeur retapée à la main → garanti 1:1 (l'extracteur sort les valeurs
- *  exactes de la décomp, baseBlock en décimal : 144=0x90, 448=0x1C0, …). */
+/** Record dérivé de `_autoStdBattleWinTemplates` (ci-dessus, 1:1 battle_bg.c:163-382)
+ *  — index == B_WIN_* (ordre source décomp = ordre B_WIN_*). C'est CETTE forme que
+ *  consomment battle-levelup-box / battle_script_commands / battle-yesno-box (lecture
+ *  indexée → valeurs identiques au raw array). */
 export const sStandardBattleWindowTemplates: Record<number, BattleWindowTemplate> =
   Object.fromEntries(
     _autoStdBattleWinTemplates.map((t, i) => [i, {

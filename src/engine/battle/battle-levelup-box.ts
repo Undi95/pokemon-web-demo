@@ -32,8 +32,7 @@ import {
   type LevelUpStatMon,
 } from '../../menu_specialized';
 import { HandleBattleWindow, WINDOW_BG1, WINDOW_CLEAR } from './battle-window-frame';
-import { B_WIN_LEVEL_UP_BOX } from './battle-windows';
-import { sStandardBattleWindowTemplates } from '../decomp-data/src/battle_bg-data';
+import { B_WIN_LEVEL_UP_BOX, sStandardBattleWindowTemplates } from './battle-windows';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS } from '../../../harness/runtime/decomp-runtime';
 
