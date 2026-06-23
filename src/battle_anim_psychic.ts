@@ -16,7 +16,8 @@
  * (anti-cycle ESM) — accès lazy par `globalThis.__battleAnimInterpreter` ;
  * helpers décomp importés de ./battle_anim_mons.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

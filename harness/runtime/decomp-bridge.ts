@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `// (ré-exports morts retirés depuis '../../src/sprite' — sweep)` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../src/sprite';
+import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -475,38 +475,7 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
 // à la méthode correspondante. 1:1 décomp signatures préservées.
 // Note : `_getRT` alias local hoisted en tête de fichier.
 
-/** 1:1 décomp `src/sprite.c CreateSprite(template, x, y, subpriority)` :
- *  Crée un sprite depuis un SpriteTemplate. Retourne le spriteId.
- *  Notre runtime expose ça via CreateSpriteFromTemplate (= prend templateName).
- *  HOTFIX 2026-05-09 : on passe maintenant `subpriority` au runtime — était
- *  ignoré → bug intro Manectric/Brendan Z-order (= Brendan apparaissait devant
- *  Manectric pendant circular run). Décomp sprite.c:540-588 store subpriority
- *  sur sprite, BuildSpritePriorities (line 361-369) compose `subpriority |
- *  (oam.priority << 8)`, SortSprites (line 372-450) sort ASC. Lower subpri =
- *  drawn ON TOP (= GBATEK : OAM[lower index] = displayed in front). */
-export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
-  const rt = _getRT();
-  // 1:1 décomp : template INLINE (tileTag=TAG_NONE + `images`) → game CreateSprite voie inline
-  // (tiles depuis images[0].data, ou placeholder `images:[]` = OAM seul + tiles via anim sheet).
-  // Sinon (string nom / objet sans `images`) → voie par-NOM (overworld/intro). `Array.isArray`
-  // suffit (les templates par-nom sont des strings/{name} SANS `.images`) : on accepte aussi
-  // `images:[]` (B3 — les ex-`rt.CreateSpriteInline?.()` des battle-anims y routent désormais).
-  if (template && typeof template === 'object' && Array.isArray(template.images)) {
-    return _CreateSprite_game(rt, template, x, y, subpriority);
-  }
-  // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont deja ete
-  // chargees par TAG. Voie sheet-par-tag : delegue a l'impl UNIQUE `game/sprite.ts CreateSprite`.
-  // tileTag number (ball, runtime) OU string (PHASE E2.B : vrais SpriteTemplate ex 'TAG_VERSION').
-  // Un OBJET avec `tileTag` (string/number) + `oam` = vrai template ; les strings/{name} par-nom
-  // n'ont ni .tileTag ni .oam → tombent en voie 3 (CreateSpriteFromTemplate).
-  if (template && typeof template === 'object'
-      && (typeof template.tileTag === 'number' || typeof template.tileTag === 'string')
-      && template.oam && typeof template.oam === 'object') {
-    return _CreateSprite_game(rt, template, x, y, subpriority);
-  }
-  const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
-  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
-}
+// CreateSprite (routeur 3-voies no-rt) décyclé → src/sprite.ts (foyer 1:1 sprite.c).
 
 /** 1:1 décomp `src/sprite.c DestroySprite(sprite)` — kill un sprite par id. */
 export function DestroySprite(sprite: any): void {
@@ -692,7 +661,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
-  'CreateSprite',  'DestroySprite',
+  'DestroySprite',
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
   'ResetSpriteData',

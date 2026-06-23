@@ -30,7 +30,7 @@
  *     Les valeurs restent identiques bit-a-bit a la decomp.
  */
 
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import { Sin } from './trig';
 
@@ -402,7 +402,8 @@ export function GetSubstituteSpriteDefault_Y(battler: number): number {
 // champ .oam (l'OAM reel = rt.gba.oam[sprite.oamIndex] ; affineMode/matrixNum
 // = champs PLATS) -> no-op silencieux. Reecrit sur le modele reel.
 
-import { ObjAffineSet } from '../harness/runtime/decomp-bridge';
+import {ObjAffineSet} from "../harness/runtime/decomp-bridge";
+import { CreateSprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, DestroySprite } from './sprite';
 

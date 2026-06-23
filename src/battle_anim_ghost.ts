@@ -17,7 +17,8 @@
  * statique de l'interpréteur — cycle ESM), helpers communs importés de
  * battle_anim_mons.ts, GBA regs via __rt.SetGpuReg (pattern battle_anim_throw).
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { BeginNormalPaletteFade as _csBeginFade } from './palette';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';

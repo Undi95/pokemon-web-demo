@@ -8,7 +8,8 @@
  * AnimVoltTackleOrbSlide. Les templates (gXxxSpriteTemplate) viennent du
  * généré (battle-anim-sprites.ts) via le bridge — seul le callback est manuel.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

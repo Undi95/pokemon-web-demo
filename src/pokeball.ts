@@ -31,6 +31,7 @@
  * Le cablage reel + retrait ad-hoc = #22 (A/B user requis).
  */
 
+import { CreateSprite } from './sprite';
 import type { DecompSprite, DecompTask, DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { gBattlerPartyIndexes, gActiveBattler, gBattlerTarget, gBattleTypeFlags, setBattlerTarget, setGDoingBattleAnim } from './engine/battle/state';
@@ -40,7 +41,7 @@ import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd }
 import { ST_OAM_AFFINE_DOUBLE } from '../harness/runtime/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix } from './sprite';
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from './engine/system/pokeball-effects';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
 import { getBattlerMonSpriteId } from './battle_controller_opponent';

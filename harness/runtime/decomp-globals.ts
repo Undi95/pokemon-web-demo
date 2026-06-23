@@ -78,7 +78,7 @@ import {
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
-  CreateSprite as _CreateSprite_game,
+  _CreateSpriteAtTemplate as _CreateSprite_game,
   ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP,
 } from '../../src/sprite';
 export {

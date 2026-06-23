@@ -43,12 +43,13 @@
  *   - battle-healthbox.ts : healthbox sprite handle
  */
 
+import { CreateSprite as _CreateSpriteFromTemplate } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { Sin, Cos } from './trig';
 import { DestroySprite } from './sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
-import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
+
 import { BeginNormalPaletteFade } from './palette';
 import { CreateTask, DestroyTask } from './task';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';

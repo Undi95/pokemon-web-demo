@@ -27,6 +27,7 @@
  * __battleControllerOpponent + import './battle-faint-anim').
  */
 
+import { CreateSprite } from './sprite';
 import { DestroySprite, AllocOamMatrix } from './sprite';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
@@ -84,7 +85,7 @@ import {
 } from './engine/battle/battle-sprites-data';
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from './engine/battle/constants';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
 import type { DecompTask, DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { getRuntime, SpriteCallbackDummy } from '../harness/runtime/decomp-globals';
 import { SpriteCB_WildMon } from './engine/battle/battle-sprite-callbacks';

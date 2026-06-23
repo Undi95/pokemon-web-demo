@@ -19,7 +19,8 @@
  * Dettes : AnimUnusedSmallEmber, AnimSunlight, AnimEmberFlare/AnimBurnFlame,
  * AnimTask_EruptionLaunchRocks(+rocks), AnimTask_MoveHeatWaveTargets.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {

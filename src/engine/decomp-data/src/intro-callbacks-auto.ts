@@ -21,7 +21,7 @@ import {
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../../../../harness/runtime/decomp-helpers';
-import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../../../sprite';
+import { ResetSpriteData, DestroySprite, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../../../sprite';
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
@@ -1034,7 +1034,7 @@ export const Task_CreateSparkles: TaskCallback = (task, rt) => {
       {
       case 0:
           const _sparkleIdx = data[4] % sSparkleCoords.length;
-          CreateSprite(rt, sSpriteTemplate_Sparkle,  sSparkleCoords[_sparkleIdx][0], sSparkleCoords[_sparkleIdx][1] + data[3], 0);
+          _CreateSpriteAtTemplate(rt, sSpriteTemplate_Sparkle,  sSparkleCoords[_sparkleIdx][0], sSparkleCoords[_sparkleIdx][1] + data[3], 0);
           data[0]++;
           data[6] = 12;
           data[4]++;
@@ -1080,7 +1080,7 @@ export const Task_Scene1_PanUp: TaskCallback = (task, rt) => {
           if (rt.gIntroFrameCounter == TIMER_FLYGON_SILHOUETTE_APPEAR)
           {
                
-              let spriteId = CreateSprite(rt, sSpriteTemplate_FlygonSilhouette,  120, DISPLAY_HEIGHT, 10);
+              let spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_FlygonSilhouette,  120, DISPLAY_HEIGHT, 10);
               _gs(rt, spriteId).invisible = true;
           }
       }
@@ -1138,8 +1138,8 @@ export const Task_Scene2_CreateSprites: TaskCallback = (task, rt) => {
       LoadSpritePalettes(sSpritePalettes_RunningPokemon);
 
        
-      CreateSprite(rt, sSpriteTemplate_Manectric,  DISPLAY_WIDTH + 32, 128, 0);
-      CreateSprite(rt, sSpriteTemplate_Torchic,  DISPLAY_WIDTH + 48, 110, 1);
+      _CreateSpriteAtTemplate(rt, sSpriteTemplate_Manectric,  DISPLAY_WIDTH + 32, 128, 0);
+      _CreateSpriteAtTemplate(rt, sSpriteTemplate_Torchic,  DISPLAY_WIDTH + 48, 110, 1);
 
       if ((globalThis as any).sIntroCharacterGender == MALE)
           spriteId = CreateIntroBrendanSprite(DISPLAY_WIDTH + 32, 100);
@@ -1149,7 +1149,7 @@ export const Task_Scene2_CreateSprites: TaskCallback = (task, rt) => {
       rt.setSpriteCallback(spriteId, SpriteCB_PlayerOnBicycle);
       _gs(rt, spriteId).anims = sAnims_PlayerBicycle;
       task.data[1] = spriteId;
-      CreateSprite(rt, sSpriteTemplate_Volbeat,  DISPLAY_WIDTH + 32, 80, 4);
+      _CreateSpriteAtTemplate(rt, sSpriteTemplate_Volbeat,  DISPLAY_WIDTH + 32, 80, 4);
       spriteId = CreateIntroFlygonSprite(-64, 60);
       rt.setSpriteCallback(spriteId, SpriteCB_Flygon);
       task.data[2] = spriteId;
@@ -1754,10 +1754,10 @@ export const Task_Scene3_Lightning: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
                
-              CreateSprite(rt, sSpriteTemplate_Lightning,  200, 48, 0);
-              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  200, 80, 1);
+              _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  200, 48, 0);
+              spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  200, 80, 1);
               rt.StartSpriteAnim(spriteId, 1);
-              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  200, 112, 2);
+              spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  200, 112, 2);
               rt.StartSpriteAnim(spriteId, 2);
               data[0]++;
               data[6] = 72;
@@ -1767,10 +1767,10 @@ export const Task_Scene3_Lightning: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
                
-              CreateSprite(rt, sSpriteTemplate_Lightning,  40, 48, 0);
-              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  40, 80, 1);
+              _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  40, 48, 0);
+              spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  40, 80, 1);
               rt.StartSpriteAnim(spriteId, 1);
-              spriteId = CreateSprite(rt, sSpriteTemplate_Lightning,  40, 112, 2);
+              spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Lightning,  40, 112, 2);
               rt.StartSpriteAnim(spriteId, 2);
               data[0]++;
               data[6] = 48;
@@ -1918,7 +1918,7 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
               }
               if (data[1] == 6)
               {
-                  spriteId = CreateSprite(rt, sSpriteTemplate_RayquazaOrb,  120, 88, 15);
+                  spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_RayquazaOrb,  120, 88, 15);
                   // MANUAL FIX session 71 : décomp = PlaySE(SE_INTRO_BLAST), pas m4aSongNumStart.
                   PlaySE(SE_INTRO_BLAST);
                   _gs(rt, spriteId).invisible = true;
@@ -2084,7 +2084,7 @@ export function CreateGroudonRockSprites(taskId: number): number {
 
       for (i = 0; i < ((sGroudonRockData)?.length ?? 0); i++)
       {
-          spriteId = CreateSprite(rt, gAncientPowerRockSpriteTemplate, sGroudonRockData[i][0], DISPLAY_HEIGHT, i);
+          spriteId = _CreateSpriteAtTemplate(rt, gAncientPowerRockSpriteTemplate, sGroudonRockData[i][0], DISPLAY_HEIGHT, i);
           rt.setSpriteCallback(spriteId, SpriteCB_GroudonRocks);
           rt.gba.oam[_gs(rt, spriteId).oamIndex].priority = 0;
           _gs(rt, spriteId).data[1] = i;
@@ -2105,7 +2105,7 @@ export function CreateKyogreBubbleSprites_Body(taskId: number): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = CreateSprite(rt, sSpriteTemplate_Bubbles,
+          spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Bubbles,
                                   sKyogreBubbleData[i][0],
                                   sKyogreBubbleData[i][1],
                                   i);
@@ -2130,7 +2130,7 @@ export function CreateKyogreBubbleSprites_Fins(): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = CreateSprite(rt, sSpriteTemplate_Bubbles,
+          spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Bubbles,
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][0],
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][1],
                                   i);
@@ -2150,7 +2150,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       let oldSpriteId = 0;
 
        
-      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
+      spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[0] = 0;
       _gs(rt, spriteId).data[7] = 0;
       _gs(rt, spriteId).data[1] = d;
@@ -2170,7 +2170,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
 
        
        
-      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
+      spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 1;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
@@ -2179,7 +2179,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);
 
        
-      spriteId = CreateSprite(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
+      spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_WaterDrop,  x, y, 1);
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 2;
       rt.StartSpriteAnim(spriteId, DROP_ANIM_LOWER_HALF);
@@ -2207,7 +2207,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
        
       for (i = 0; i < NUM_GF_LETTERS; i++)
       {
-          spriteId = CreateSprite(rt, sSpriteTemplate_GameFreakLetter,  sGameFreakLetterData[i][1] + x, y - 4, 0);
+          spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_GameFreakLetter,  sGameFreakLetterData[i][1] + x, y - 4, 0);
           _gs(rt, spriteId).data[0] = 0;
           _gs(rt, spriteId).data[7] = sGameFreakLetterStartDelays[i];
           _gs(rt, spriteId).data[2] = i;
@@ -2218,7 +2218,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
       }
 
        
-      spriteId = CreateSprite(rt, sSpriteTemplate_GameFreakLogo,  120, y - 6, 0);
+      spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_GameFreakLogo,  120, y - 6, 0);
       _gs(rt, spriteId).data[0] = 0;
       _gs(rt, spriteId).invisible = true;
       _gs(rt, spriteId).matrixNum = i + 12;
@@ -2234,7 +2234,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
 const VBlankCB: () => void = () => { /* no-op */ };
 
 // ─── PHASE E2.B — SpriteTemplate intro 1:1 (src/intro.c) ─────────────────────
-// Vrais objets SpriteTemplate consommés par CreateSprite(rt, &template, …) game-form,
+// Vrais objets SpriteTemplate consommés par _CreateSpriteAtTemplate(rt, &template, …) game-form,
 // en remplacement de la résolution string-catalogue (rt.CreateSpriteFromTemplate('sX')).
 // = mirroir strict du décomp `CreateSprite(&sSpriteTemplate_X, …)`.
 //  • tileTag/paletteTag = STRINGS = clés sous lesquelles les sheets/palettes intro sont

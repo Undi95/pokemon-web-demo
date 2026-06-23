@@ -5,7 +5,8 @@
  * 1:1 AnimAbsorptionOrb = projectile INVERSE (cible → attaquant, le drain).
  * GFX : orbs.png 16x48 byte-exact.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { BeginNormalPaletteFade as _mlBeginFade } from './palette';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

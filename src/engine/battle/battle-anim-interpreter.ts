@@ -45,7 +45,8 @@
  *     iteration via `T2_READ_32` qui devient `read32(offset)`.
  */
 
-import {CreateSprite as _CreateSpriteByTemplate} from "../../../harness/runtime/decomp-bridge";
+
+import { CreateSprite as _CreateSpriteByTemplate } from '../../sprite';
 import { CreateTask, DestroyTask as _DestroyTaskRaw } from '../../task';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
 import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';

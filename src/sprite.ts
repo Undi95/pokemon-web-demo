@@ -1629,16 +1629,31 @@ export interface SpriteTemplate {
 }
 
 /** 1:1 décomp `u8 CreateSprite(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)`
- *  (sprite.c:502) FUSIONNÉ avec le corps de `CreateSpriteAt` (sprite.c:540) — la séparation
- *  décomp `CreateSprite → CreateSpriteAt(index)` (scan du 1er slot `!inUse`) est absorbée par
- *  la primitive `CreateSpriteAtOam` (frontière harness documentée, comme composeFrame). Branche
- *  sur `tileTag` (sprite.c:562) :
+ *  (sprite.c:502) — API PUBLIQUE no-rt (décyclée du bridge, Phase G). Routeur 3-voies :
+ *    • template INLINE (`images` array) ou par-TAG (`tileTag` + `oam`) → `_CreateSpriteAtTemplate`.
+ *    • sinon (string nom / {name}) → voie par-nom overworld `rt.CreateSpriteFromTemplate`.
+ *  Injecte le runtime via `_rt()` (getter injecté, anti-cycle). */
+export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
+  const rt = _rt();
+  if (template && typeof template === 'object' && Array.isArray(template.images)) {
+    return _CreateSpriteAtTemplate(rt, template, x, y, subpriority);
+  }
+  if (template && typeof template === 'object'
+      && (typeof template.tileTag === 'number' || typeof template.tileTag === 'string')
+      && template.oam && typeof template.oam === 'object') {
+    return _CreateSpriteAtTemplate(rt, template, x, y, subpriority);
+  }
+  const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
+  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
+}
+
+/** 1:1 décomp `CreateSprite` inline/by-tag creator (sprite.c:502+540 fusionnés via
+ *  `CreateSpriteAtOam`). Branche sur `tileTag` :
  *    • `tileTag == TAG_NONE` (template avec `images`) → tiles inline (AllocSpriteTiles + write OBJ VRAM).
  *    • sinon → sheet déjà chargée par tag (GetSpriteTileStartByTag + sheetTileStart).
- *  HOME consolidé du dispatcher 3-voies du bridge (chantier B1) : les voies inline + tileTag y
- *  délèguent (`decomp-bridge.CreateSprite` + `DecompRuntime.CreateSpriteInline`) ; la voie par-nom
- *  overworld reste `CreateSpriteFromTemplate` jusqu'à B2. Retourne le spriteId (MAX_SPRITES=échec). */
-export function CreateSprite(rt: DecompRuntime, template: SpriteTemplate, x: number, y: number, subpriority: number = 0xFF): number {
+ *  Appelé par le routeur `CreateSprite` ci-dessus + les auto-callbacks intro/title (rt explicite).
+ *  Retourne le spriteId (MAX_SPRITES=échec). */
+export function _CreateSpriteAtTemplate(rt: DecompRuntime, template: SpriteTemplate, x: number, y: number, subpriority: number = 0xFF): number {
   // ── voie décomp `tileTag == TAG_NONE` : un sprite sans sheet alloue ses propres tiles
   //    OBJ VRAM via AllocSpriteTiles (sprite.c:562-575). = ex-`DecompRuntime.CreateSpriteInline`. ──
   if (Array.isArray(template.images)) {

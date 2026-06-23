@@ -14,6 +14,7 @@
  * Dettes : le reste du fichier .c (BlackSmoke/OdorSleuth/TeeterDance…) par
  * vagues avec les moves consommateurs.
  */
+import { CreateSprite as _CreateSpriteFromTemplate } from './sprite';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -35,7 +36,7 @@ import {
   SetAnimSpriteInitialXOffset, RunStoredCallbackWhenAnimEnds,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
-import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
+
 import { gBattlerPartyIndexes, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES, MON_DATA_PERSONALITY, MON_DATA_OT_ID } from './engine/battle/party-storage';

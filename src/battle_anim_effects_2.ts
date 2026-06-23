@@ -37,7 +37,8 @@
  *     _GetBattlerSpriteSubpriority(b) = la valeur de création du sprite mon
  *     (battle_anim_mons.c:2035) — identique tant que rien ne la réécrit.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

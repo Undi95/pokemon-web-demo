@@ -6,6 +6,7 @@
  * sinusoïdale AnimWaterBubbleProjectile = dette douce).
  * GFX : bubble.png 16x48 (3 frames) byte-exact.
  */
+import { CreateSprite as _CreateSpriteFromTemplate } from './sprite';
 import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -19,7 +20,7 @@ import {
   InitSpritePosToAnimTarget, StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine, PrepareBattlerSpriteForRotScale,
 } from './battle_anim_mons';
-import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
+
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { Sin } from './trig';
 

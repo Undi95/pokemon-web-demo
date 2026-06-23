@@ -10,7 +10,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
-import { ResetSpriteData, DestroySprite, CreateSprite, ANIMCMD_FRAME, ANIMCMD_END } from '../../../sprite';
+import { ResetSpriteData, DestroySprite, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END } from '../../../sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -276,12 +276,12 @@ export const Task_TitleScreenPhase1: TaskCallback = (task, rt) => {
           rt.SetGpuReg(REG_OFFSET_BLDY, 0);
 
            
-          spriteId = CreateSprite(rt, sVersionBannerLeftSpriteTemplate, VERSION_BANNER_LEFT_X, VERSION_BANNER_Y, 0);
+          spriteId = _CreateSpriteAtTemplate(rt, sVersionBannerLeftSpriteTemplate, VERSION_BANNER_LEFT_X, VERSION_BANNER_Y, 0);
           _gs(rt, spriteId).data[0] = ((gTitleScreenAlphaBlend)?.length ?? 0);
           _gs(rt, spriteId).data[1] = taskId;
 
            
-          spriteId = CreateSprite(rt, sVersionBannerRightSpriteTemplate, VERSION_BANNER_RIGHT_X, VERSION_BANNER_Y, 0);
+          spriteId = _CreateSpriteAtTemplate(rt, sVersionBannerRightSpriteTemplate, VERSION_BANNER_RIGHT_X, VERSION_BANNER_Y, 0);
           _gs(rt, spriteId).data[1] = taskId;
 
           task.data[0] = 144;
@@ -556,7 +556,7 @@ export function CreatePressStartBanner(rt: DecompRuntime, x: number, y: number):
       x -= 64;
       for (i = 0; i < NUM_PRESS_START_FRAMES; i++, x += 32)
       {
-          spriteId = CreateSprite(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
+          spriteId = _CreateSpriteAtTemplate(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
           rt.StartSpriteAnim(spriteId, i);
           _gs(rt, spriteId).data[0] = true;
       }
@@ -573,7 +573,7 @@ export function CreateCopyrightBanner(rt: DecompRuntime, x: number, y: number): 
       x -= 64;
       for (i = 0; i < NUM_COPYRIGHT_FRAMES; i++, x += 32)
       {
-          spriteId = CreateSprite(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
+          spriteId = _CreateSpriteAtTemplate(rt, sStartCopyrightBannerSpriteTemplate, x, y, 0);
           rt.StartSpriteAnim(spriteId, i + NUM_PRESS_START_FRAMES);
       }
   return -1;

@@ -7,7 +7,8 @@
  * AnimRockTomb(+Step :767/:780), AnimRockBlastRock (:800),
  * AnimRockScatter(+Step :808/:823) — Rock Slide/Blast/Tomb/Smash.
  */
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

@@ -158,7 +158,8 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
 }
 
 // ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';

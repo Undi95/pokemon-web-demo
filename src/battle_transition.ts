@@ -24,7 +24,8 @@
  * de la rotation (±4/frame) à valider à l'œil (A/B user).
  */
 
-import { CreateSprite } from '../harness/runtime/decomp-bridge';
+
+import { CreateSprite } from './sprite';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
