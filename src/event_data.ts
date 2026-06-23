@@ -14,7 +14,7 @@
  * via `include/constants/flags.ts`/`vars.ts` puis appelle ces fonctions par id).
  */
 
-import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   TEMP_FLAGS_START, NUM_TEMP_FLAGS, DAILY_FLAGS_START, NUM_DAILY_FLAGS,
   FLAG_SYS_ENC_UP_ITEM, FLAG_SYS_ENC_DOWN_ITEM, FLAG_SYS_USE_STRENGTH,
@@ -25,14 +25,14 @@ import {
   FLAG_MYSTERY_GIFT_5, FLAG_MYSTERY_GIFT_6, FLAG_MYSTERY_GIFT_7, FLAG_MYSTERY_GIFT_8,
   FLAG_MYSTERY_GIFT_9, FLAG_MYSTERY_GIFT_10, FLAG_MYSTERY_GIFT_11, FLAG_MYSTERY_GIFT_12,
   FLAG_MYSTERY_GIFT_13, FLAG_MYSTERY_GIFT_14, FLAG_MYSTERY_GIFT_15,
-  FLAG_SYS_RESET_RTC_ENABLE,
+  FLAG_SYS_RESET_RTC_ENABLE, FLAG_SYS_NATIONAL_DEX,
 } from '../include/constants/flags';
 import {
   TEMP_VARS_START, NUM_TEMP_VARS,
   VAR_GIFT_PICHU_SLOT,
   VAR_GIFT_UNUSED_1, VAR_GIFT_UNUSED_2, VAR_GIFT_UNUSED_3, VAR_GIFT_UNUSED_4,
   VAR_GIFT_UNUSED_5, VAR_GIFT_UNUSED_6, VAR_GIFT_UNUSED_7,
-  VAR_RESET_RTC_ENABLE,
+  VAR_RESET_RTC_ENABLE, VAR_NATIONAL_DEX,
 } from '../include/constants/vars';
 
 // ─── Constantes 1:1 décomp (flags.h / vars.h) ───────────────────────────────
@@ -211,12 +211,21 @@ export function CanResetRTC(): boolean {
   return false;
 }
 
-// ─── À PORTER avec le module pokedex (event_data.c:55-80) ────────────────────
-//   Enable/Disable/IsNationalPokedex : couplés `gSaveBlock2Ptr.pokedex`
+/** 1:1 décomp `bool32 IsNationalPokedexEnabled(void)` (event_data.c:74-80).
+ *  Trois conditions toutes vraies → TRUE. (Fusionné depuis l'ex-`engine/save/event-data.ts`,
+ *  converti au système FlagGet/VarGet NUMÉRIQUE 1:1 de ce fichier.) */
+export function IsNationalPokedexEnabled(): boolean {
+  if (gSaveBlock2Ptr.pokedex.nationalMagic === 0xDA
+    && VarGet(VAR_NATIONAL_DEX) === 0x302
+    && FlagGet(FLAG_SYS_NATIONAL_DEX))
+    return true;
+  return false;
+}
+
+// ─── À PORTER avec le module pokedex (event_data.c:55-72) ────────────────────
+//   EnableNationalPokedex / DisableNationalPokedex : couplés `gSaveBlock2Ptr.pokedex`
 //   (nationalMagic/mode/order) + DEX_MODE_NATIONAL + ResetPokedexScrollPositions
-//   (pokedex.c, non porté). Différés ; legacy `engine/save/event-data.ts`
-//   (IsNationalPokedexEnabled) + `specials-registry.ts` (Enable/Disable) couvrent
-//   l'API actuelle via le bridge nom→id.
+//   (pokedex.c, non porté). Différés ; `specials-registry.ts` couvre l'API Enable/Disable.
 
 // Surface lazy (consommee par battle-script-commands _flagGet_GC — flags 1:1).
 (globalThis as Record<string, unknown>).__eventData = { FlagGet, FlagSet, VarGet, VarSet };

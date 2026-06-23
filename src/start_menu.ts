@@ -46,7 +46,7 @@ import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
-import { IsNationalPokedexEnabled } from './engine/save/event-data';
+import { IsNationalPokedexEnabled } from './event_data';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
