@@ -15,6 +15,24 @@
 
 ---
 
+## 0b. ÉTAT POST-SWEEP + carte des 49 cibles restantes (2026-06-23)
+
+Bridge 3462 → **3163 lignes**. Faits : lots 1/3/5/6/7/12 + **sweep 252 ré-exports morts** (`8b7a5800`). Surface de ré-exports réduite à 5 vivants. **Tous les re-routes faciles (duplicate identique) sont soldés** — les 49 vivants restants demandent du PORTAGE ou du soin. Carte pour la reprise (session fraîche conseillée) :
+
+**Groupe 1 — Créer le foyer `src/` (porter le `.c`)** : `src/task.ts` (CreateTask 10, DestroyTask 9, ResetTasks, RunTasks, FindTaskIdByFunc, TASK_NONE, SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc) · `src/gpu_regs.ts` (SetGpuReg 5, GetGpuReg) · `src/item.ts` (GetItemName/Description/Type 2 ch., Importance/FieldFunc/SecondaryId 1 ch.) · `src/bg.ts` (GetBgTilemapBuffer) · `src/decompress.ts` (LoadCompressedSpriteSheet — re-export vivant).
+
+**Groupe 2 — Migration de SIGNATURE `string`→`Uint8Array`** (⚠ comportemental, adapter les call-sites) : `src/string_util.ts` (ConvertIntToDecimalStringN 4, StringCopy 3, StringAppend 1, StringLength 1).
+
+**Groupe 3 — CENTRAL cycle-prone (EN DERNIER, soin maximal)** : `src/sprite.ts` (CreateSprite 20, ResetSpriteData 10, DestroySprite 6, StartSpriteAnim 4, StartSpriteAffineAnim 1) · `src/palette.ts` (BeginNormalPaletteFade 9, UpdatePaletteFade 1, LoadPalette/ResetPaletteFade re-exports — ⚠ palette.ts re-délègue à decomp-globals = cycle EXISTANT, déplacer le CORPS).
+
+**Groupe 4 — Dual-source DANGEREUX** (vérifier valeur canonique, [[gotcha-movement-action-getter-dual-source]]) : event_object_movement.ts (GetFaceDirectionMovementAction 2, GetWalkSlowMovementAction 1).
+
+**Groupe 5 — Périphériques 1-2 importeurs** : overworld/region-map (Overworld_GetMapHeaderByGroupAndId 2, defineMapHeaderEntry, GetMapNameGeneric, GetMapNameHandleAquaHideout, GetOverworldTextboxPalettePtr 3) · include/constants/event_objects (LOCALID_PLAYER, LOCALID_NONE).
+
+**RESTE substrat (GARDER)** : ObjAffineSet, ArcTan2, CpuCopy16, CpuFastFill, AllocZeroed, SetVBlankCallback, PLTT_SIZE_4BPP, PLTT_ID, WIN_RANGE, RGB2, MOVE_IS_PERMANENT + tooling (__bridgedHelpers__, __notImplementedHelpers__). + **352 dead own-defs** : PAS de blind-sweep (vérifier usage interne bridge↔bridge + statut substrat/stub par symbole ; enrichir l'audit pour détecter l'usage interne avant tout retrait). + nettoyer le manifeste `__bridgedHelpers__` des 252 symboles balayés (inerte).
+
+---
+
 ## 1. Résumé
 
 Répartition par classification (616 lignes ; quelques symboles comptés 2× dans le JSON brut — voir §4/§7) :
