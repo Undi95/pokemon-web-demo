@@ -19,7 +19,6 @@ import {
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
 } from '../harness/runtime/decomp-globals';
-import {StartSpriteAnim, StartSpriteAffineAnim} from "../harness/runtime/decomp-bridge";
 import { DestroySprite } from './sprite';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from '../include/item_menu';
@@ -282,9 +281,9 @@ export function SetBagVisualPocketId(bagPocketId: number, isSwitchingPockets: bo
     spr.y2 = -5;
     spr.callback = SpriteCB_BagVisualSwitchingPockets;
     spr.data[0] = bagPocketId + 1;
-    StartSpriteAnim(spriteId, POCKET_NONE);
+    getRuntime().StartSpriteAnim(spriteId, POCKET_NONE);
   } else {
-    StartSpriteAnim(spriteId, bagPocketId + 1);
+    getRuntime().StartSpriteAnim(spriteId, bagPocketId + 1);
   }
 }
 
@@ -296,7 +295,7 @@ function SpriteCB_BagVisualSwitchingPockets(sprite: DecompSprite, _rt: DecompRun
   if (sprite.y2 !== 0) {
     sprite.y2++;
   } else {
-    StartSpriteAnim(sprite.spriteId, sprite.data[0]);
+    getRuntime().StartSpriteAnim(sprite.spriteId, sprite.data[0]);
     sprite.callback = null; // SpriteCallbackDummy (1:1 :471).
   }
 }
@@ -314,7 +313,7 @@ export function ShakeBagSprite(): void {
   const spr = rt.gSprites[spriteId];
   if (!spr) return;
   if (spr.affineAnimEnded) {
-    StartSpriteAffineAnim(spriteId, ANIM_BAG_SHAKE);
+    getRuntime().StartSpriteAffineAnim(spriteId, ANIM_BAG_SHAKE);
     spr.callback = SpriteCB_ShakeBagSprite;
   }
 }
@@ -323,7 +322,7 @@ export function ShakeBagSprite(): void {
  *  Attend la fin du shake (affineAnimEnded) puis restore NORMAL + dummy cb. */
 function SpriteCB_ShakeBagSprite(sprite: DecompSprite, _rt: DecompRuntime): void {
   if (sprite.affineAnimEnded) {
-    StartSpriteAffineAnim(sprite.spriteId, ANIM_BAG_NORMAL);
+    getRuntime().StartSpriteAffineAnim(sprite.spriteId, ANIM_BAG_NORMAL);
     sprite.callback = null; // SpriteCallbackDummy.
   }
 }

@@ -80,7 +80,7 @@ import {
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
-import {GetFaceDirectionMovementAction, StartSpriteAnim} from "../harness/runtime/decomp-bridge";
+import {GetFaceDirectionMovementAction} from "../harness/runtime/decomp-bridge";
 import { DestroyTask } from './task';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
@@ -2448,7 +2448,7 @@ function Task_DoFieldMove_WaitForMon(task: DecompTask): void {
     const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
     ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByCurrentState());
     const sprite = getRuntime().gSprites[gPlayerAvatar.spriteId];
-    if (sprite) StartSpriteAnim(sprite, gFieldEffectArguments[2]);
+    if (sprite) getRuntime().StartSpriteAnim(sprite.spriteId, gFieldEffectArguments[2]);
     FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
     task.func = Task_DoFieldMove_RunFunc;
   }

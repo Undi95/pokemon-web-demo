@@ -484,19 +484,8 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
 
 // SetGpuReg / GetGpuReg décyclés → src/gpu_regs.ts (foyer 1:1 gpu_regs.c).
 
-/** 1:1 décomp `src/sprite.c StartSpriteAnim(sprite, animIdx)`. */
-export function StartSpriteAnim(sprite: any, animIdx: number): void {
-  const rt = _getRT();
-  const id = typeof sprite === 'number' ? sprite : sprite?.spriteId ?? sprite?.id;
-  if (id != null) rt.StartSpriteAnim(id, animIdx);
-}
-
-/** 1:1 décomp `src/sprite.c StartSpriteAffineAnim(sprite, animNum)`. */
-export function StartSpriteAffineAnim(sprite: any, animNum: number): void {
-  const rt = _getRT();
-  const id = typeof sprite === 'number' ? sprite : sprite?.spriteId ?? sprite?.id;
-  if (id != null) rt.StartSpriteAffineAnim(id, animNum);
-}
+// StartSpriteAnim / StartSpriteAffineAnim décyclés : les appelants utilisent
+// directement getRuntime().StartSprite*(id, …) (méthode runtime = impl riche inline).
 
 /** 1:1 décomp `src/sprite.c FreeOamMatrix(matrixNum)`. Route vers l'impl free-fn
  *  game/sprite.ts (chantier C : méthodes harness Alloc/FreeOamMatrix retirées). */
@@ -652,7 +641,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
-  'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
   'SetVBlankCallback',
   // Map grid + metatile behaviors

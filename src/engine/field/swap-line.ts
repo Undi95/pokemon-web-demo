@@ -23,7 +23,6 @@
 import {
   assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette,
 } from '../../../harness/runtime/decomp-globals';
-import {StartSpriteAnim} from "../../../harness/runtime/decomp-bridge";
 import { DestroySprite } from '../../sprite';
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, setSpriteAnims } from '../../sprite';
@@ -121,7 +120,7 @@ export function CreateSwapLineSprites(spriteIds: number[], baseIdx: number, coun
     // i == 0 → reste sur anim 0 (RightArrow = ▶).
     // CONVERGENCE 1:1 : sprite.anims (inline) au lieu de spriteAnimStates (legacy), modèle sheet.
     setSpriteAnims(getRuntime(), spriteIds[baseIdx + i], ANIM_TABLE_NAME, i === 0 ? ANIM_RIGHT_ARROW : ANIM_LINE, tileStart);
-    if (i !== 0) StartSpriteAnim(spriteIds[baseIdx + i], ANIM_LINE);
+    if (i !== 0) getRuntime().StartSpriteAnim(spriteIds[baseIdx + i], ANIM_LINE);
     // 1:1 :409 — invisible à la création.
     rt.setSpriteInvisible(spriteIds[baseIdx + i], true);
   }

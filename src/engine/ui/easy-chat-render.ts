@@ -115,7 +115,7 @@
 
 // â”€â”€â”€ Imports infrastructure (helpers TS existants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-import {LoadPalette, ResetPaletteFade, CpuFastFill, StartSpriteAnim, LoadCompressedSpriteSheet, GetBgTilemapBuffer, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
+import {LoadPalette, ResetPaletteFade, CpuFastFill, LoadCompressedSpriteSheet, GetBgTilemapBuffer, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
 import { DestroySprite } from '../../sprite';
 import { CreateSprite } from '../../sprite';
 import { SetGpuReg } from '../../gpu_regs';
