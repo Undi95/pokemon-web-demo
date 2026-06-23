@@ -39,11 +39,6 @@
  *   - `decomps/pokeemeraude/src/*.c` pour chaque helper.
  */
 
-// Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
-// (branche sheet taggee). Re-export `// (ré-exports morts retirés depuis '../../src/sprite' — sweep)` ne cree PAS de
-// binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
-
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
 // LoadPalette / ResetPaletteFade / FreeAllSpritePalettes / LoadCompressedSpriteSheet
@@ -172,16 +167,7 @@ const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
 // Overworld_GetMapHeaderByGroupAndId / defineMapHeaderEntry décyclés →
 // src/overworld.ts (foyer 1:1 overworld.c:579).
 
-// ─── Berry (1:1 décomp `src/berry.c:980 GetBerryInfo`) ────────────────────────
-
-/** 1:1 décomp `src/berry.c:980 GetBerryInfo(berry)` — returns const Berry*.
- *  Wire vers berry.ts port complet (= gBerries[43] + EnigmaBerry handling). */
-export function GetBerryInfo(berry: number): unknown {
-  // Lazy import pour éviter cycle decomp-bridge ↔ berry.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require('./berry') as { GetBerryInfo?: (b: number) => unknown };
-  return mod.GetBerryInfo ? mod.GetBerryInfo(berry) : null;
-}
+// GetBerryInfo : wrapper bridge mort (0 importeur) retiré — foyer 1:1 = src/berry.ts.
 
 /** 1:1 décomp `src/malloc.c` AllocZeroed(size) — heap alloc + memset 0.
  *  En JS, retourne `{}` (= same as Alloc since defaults sont implicit). */
@@ -369,16 +355,8 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
 // StartSpriteAnim / StartSpriteAffineAnim décyclés : les appelants utilisent
 // directement getRuntime().StartSprite*(id, …) (méthode runtime = impl riche inline).
 
-/** 1:1 décomp `src/sprite.c FreeOamMatrix(matrixNum)`. Route vers l'impl free-fn
- *  game/sprite.ts (chantier C : méthodes harness Alloc/FreeOamMatrix retirées). */
-export function FreeOamMatrix(matrixNum: number): void {
-  _FreeOamMatrix(matrixNum);
-}
-
-/** 1:1 décomp `src/sprite.c AllocOamMatrix()`. Route vers l'impl free-fn game/sprite.ts. */
-export function AllocOamMatrix(): number {
-  return _AllocOamMatrix();
-}
+// FreeOamMatrix / AllocOamMatrix : wrappers bridge morts (0 importeur) retirés —
+// foyer 1:1 = src/sprite.ts (Alloc/FreeOamMatrix free-fns).
 
 // ResetSpriteData décyclé → src/sprite.ts (foyer 1:1 sprite.c, signature no-rt).
 
@@ -500,7 +478,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'Random32',
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
-  'GetBerryInfo',
   'GetTextWindowPalette',
   // Battle macros
     'HIHALF', 'LOHALF',
@@ -521,7 +498,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
-  'FreeOamMatrix', 'AllocOamMatrix',
   'SetVBlankCallback',
   // Map grid + metatile behaviors
   'MapGridGetCollisionAt', 'MapGridGetMetatileBehaviorAt', 'MapGridGetElevationAt',
