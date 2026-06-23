@@ -368,16 +368,8 @@ export function T2_READ_32(ptr: ArrayLike<number>, offset = 0): number {
   return T1_READ_32(ptr, offset);
 }
 
-/** 1:1 décomp `include/constants/maps.h` :
- *    #define MAP_GROUP(map) ((map) >> 8)
- *    #define MAP_NUM(map)   ((map) & 0xFF)
- *  Dans le décomp, les map IDs sont packed en u16 (= group << 8 | num). */
-export function MAP_GROUP(map: number): number {
-  return (map >> 8) & 0xFF;
-}
-export function MAP_NUM(map: number): number {
-  return map & 0xFF;
-}
+// MAP_GROUP / MAP_NUM → foyer canonique `include/constants/map_groups.ts:1054-1055`
+// (1:1 décomp include/constants/maps.h, valeurs identiques) — décyclage lot 6.
 
 /** 1:1 décomp `include/macro.h` :
  *    #define FREE_AND_SET_NULL(ptr) do { Free(ptr); (ptr) = NULL; } while (0)
@@ -718,24 +710,9 @@ export function PREPARE_TYPE_BUFFER(textVar: any, typeId: number): void {
   textVar[3] = B_BUFF_EOS;
 }
 
-// ─── Random / number macros (1:1 décomp `include/random.h`) ───────────────────
-
-/** 1:1 décomp `include/random.h:16` :
- *    #define ISO_RANDOMIZE1(val) (1103515245 * (val) + 24691)
- *  Linear congruential generator step (= one of two used in Pokemon RNG). */
-export function ISO_RANDOMIZE1(val: number): number {
-  return (Math.imul(1103515245, val) + 24691) | 0;
-}
-
-// ─── Battle anim sprite index macro (1:1 décomp `constants/battle_anim.h`) ────
-
-/** 1:1 décomp `include/constants/battle_anim.h:5` :
- *    #define GET_TRUE_SPRITE_INDEX(i) ((i - ANIM_SPRITES_START))
- *  ANIM_SPRITES_START = 10000 (= ANIM_TAG_BONE first val). */
-export const ANIM_SPRITES_START = 10000;
-export function GET_TRUE_SPRITE_INDEX(i: number): number {
-  return i - ANIM_SPRITES_START;
-}
+// ISO_RANDOMIZE1 → foyer canonique `include/random.ts:19`. ANIM_SPRITES_START → déjà
+// dans `include/constants/battle_anim.ts:8` (auto-gen). GET_TRUE_SPRITE_INDEX (macro
+// fonction, 0 importeur, non émise par l'extracteur) retirée = code mort. Lots 3 + 7.
 
 // ─── BG tile flip macros (1:1 décomp `include/gba/defines.h`) ────────────────
 
@@ -1458,14 +1435,8 @@ export function LT_SET_STATE(newState: number): number {
   return newState + 5;
 }
 
-// ─── ISO_RANDOMIZE2 / extra random helper (1:1 décomp `include/random.h`) ─────
-
-/** 1:1 décomp `include/random.h ISO_RANDOMIZE2(val)` — alternate LCG variant.
- *  Pokemon Emerald uses two different random sequences. */
-export function ISO_RANDOMIZE2(val: number): number {
-  // Same constants as ISO_RANDOMIZE1 in this game (cf. random.h).
-  return (Math.imul(1103515245, val) + 24691) | 0;
-}
+// ISO_RANDOMIZE2 → foyer canonique `include/random.ts:24`. Le bridge le calculait à
+// +24691 (BUG) au lieu de +12345 (décomp random.h:17) — le re-routage corrige ça. Lot 3.
 
 // ─── PLTT_OFFSET_4BPP / OBJ_PLTT_ID2 (1:1 décomp `include/gba/types.h`) ───────
 
@@ -3221,7 +3192,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'ARRAY_COUNT', 'SWAP',
   'T1_READ_8', 'T1_READ_16', 'T1_READ_32', 'T1_READ_PTR',
   'T2_READ_8', 'T2_READ_16', 'T2_READ_32', 'T2_READ_PTR',
-  'MAP_GROUP', 'MAP_NUM',
   'FREE_AND_SET_NULL', 'PLTT_SIZEOF',
   'TILE_OFFSET_4BPP', 'TILE_OFFSET_8BPP',
   'WIN_RANGE',
@@ -3282,7 +3252,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'PREPARE_STRING_BUFFER', 'PREPARE_MOVE_BUFFER', 'PREPARE_ITEM_BUFFER',
   'PREPARE_SPECIES_BUFFER', 'PREPARE_MON_NICK_BUFFER', 'PREPARE_MON_NICK_WITH_PREFIX_BUFFER',
   'PREPARE_TYPE_BUFFER',
-  'ISO_RANDOMIZE1', 'GET_TRUE_SPRITE_INDEX', 'ANIM_SPRITES_START',
   'BG_TILE_H_FLIP', 'BG_TILE_V_FLIP',
   'EC_GROUP', 'EC_INDEX', 'EC_WORD',
   'ITEM_TO_BERRY', 'FIRST_BERRY_INDEX',
@@ -3295,7 +3264,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'StringFillWithTerminator', 'StringCopy_PlayerName',
   'StringCompareN', 'IsStringLengthAtLeast',
   'ConvertEasyChatWordsToString', 'OtherConvertEasyChatWordsToString',
-  'LT_SET_STATE', 'ISO_RANDOMIZE2',
+  'LT_SET_STATE',
   'PLTT_OFFSET_4BPP', 'OBJ_PLTT_ID2',
   // Pokemon storage / sprite pal / icon (= NotImpl stubs but counted as bridged
   // since the bridge file resolves them — they throw clearly at runtime, which
