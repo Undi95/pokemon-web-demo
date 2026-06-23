@@ -52,8 +52,8 @@ import { getMoveName, getMove } from '../data/game-data';
 import {
   GetItemName, GetItemDescription, GetItemImportance,
   StringCopy, ConvertIntToDecimalStringN,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
 } from '../../../harness/runtime/decomp-bridge';
+import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar } from '../system/string-buffers';

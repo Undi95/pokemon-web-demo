@@ -150,6 +150,9 @@ export {
   PaletteBuffer,
 } from './decomp-helpers';
 import { gSineTable as _gSineTable } from './decomp-helpers';
+// STR_CONV_MODE_* : foyer canonique include/string_util.ts (feuille pure, cycle-safe).
+// Importés ici pour l'usage interne de ConvertIntToDecimalStringN (décyclage lot 5).
+import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../../include/string_util';
 
 // ─── Re-exports : GPU register / BG constants (decomp-runtime.ts) ─────────────
 
@@ -1283,9 +1286,9 @@ export function StringAppend(dest: string | any, src: string): string {
  *  L'ancienne impl ignorait silencieusement `mode` et ne paddait JAMAIS
  *  (= bug latent qui produisait "CT 1 ROULA-LAME" au lieu de "CT 01"
  *  dans le sac, "  5/ 20" dégradé en "5/20" partout, etc.). */
-export const STR_CONV_MODE_LEFT_ALIGN = 0;
-export const STR_CONV_MODE_RIGHT_ALIGN = 1;
-export const STR_CONV_MODE_LEADING_ZEROS = 2;
+// STR_CONV_MODE_LEFT_ALIGN/RIGHT_ALIGN/LEADING_ZEROS → include/string_util.ts:13-15
+// (1:1 décomp string_util.h). Export retiré (décyclage lot 5) ; RIGHT_ALIGN +
+// LEADING_ZEROS importés en haut pour l'usage interne ci-dessous.
 export function ConvertIntToDecimalStringN(
   _dest: any, value: number, mode: number, n: number,
 ): string {
@@ -3390,7 +3393,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Constants
   'DIR_NONE', 'DIR_SOUTH', 'DIR_NORTH', 'DIR_WEST', 'DIR_EAST',
   'NULL',
-  'STR_CONV_MODE_LEFT_ALIGN', 'STR_CONV_MODE_RIGHT_ALIGN', 'STR_CONV_MODE_LEADING_ZEROS',
   'PLTT_SIZE_4BPP', 'PLTT_SIZE_8BPP',
   'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
   // Movement enums

@@ -54,7 +54,8 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../../../harness/runtime/decomp-bridge';
+import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN } from '../../../harness/runtime/decomp-bridge';
+import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
