@@ -334,7 +334,7 @@ export class GameScene extends Phaser.Scene {
       // et tout `gameState.save()` plus loin OVERWRITERAIT la save existante
       // avec ce vide. Bug réel observé 2026-05-10 : counter passait de 23 à 1
       // au CONTINUE → resume cinematique replay parce que vars/flags perdus.
-      const { LoadGameSave, SAVE_STATUS_OK } = await import('../../src/engine/save/save-system');
+      const { LoadGameSave, SAVE_STATUS_OK } = await import('../../src/save');
       const lsMod = await import('../../src/load_save');
       const ok = LoadGameSave() === SAVE_STATUS_OK;
       console.log(`[GameScene continue] LoadGameSave() → ${ok}, map=${JSON.stringify(lsMod.GetCurrentMap())}`);

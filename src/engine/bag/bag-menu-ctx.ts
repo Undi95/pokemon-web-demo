@@ -46,7 +46,7 @@ import {
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
 } from '../../item_use';
 import { getString } from '../ui/gba-strings';
-import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
+import { GetSaveBlock1, GetSaveBlock2 } from '../../save';
 import { gMapHeader } from '../../fieldmap';
 import {
   GetItemEffectType,

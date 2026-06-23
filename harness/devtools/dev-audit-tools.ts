@@ -30,7 +30,7 @@
  * je perdais 5+ tool calls juste pour lire 3 fichiers et grep une valeur.
  */
 
-import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../../src/engine/save/save-system';
+import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../../src/save';
 import { GetPlayerFacingDirection } from '../../src/field_player_avatar';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { assetCache, getRuntime } from '../runtime/decomp-globals';

@@ -96,7 +96,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../harness/runt
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { GetSaveBlock1 } from './engine/save/save-system';
+import { GetSaveBlock1 } from './save';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from './berry';
 // Reflets relocalisés au miroir 1:1 (field_effect_helpers.c) — appelé par le spine
 // GroundEffect_Water/IceReflection (corps de fonction → cycle ESM sûr).

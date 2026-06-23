@@ -30,7 +30,7 @@ import {
   type SaveBlock1, type ObjectEventSnapshot, type Coords16,
   emptySaveBlock1,
 } from './engine/save/save-blocks';
-import { GetSaveBlock1, GetSaveBlock2 } from './engine/save/save-system';
+import { GetSaveBlock1, GetSaveBlock2 } from './save';
 import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from './engine/battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,

@@ -64,7 +64,7 @@ import {
 } from './engine/ui/gba-menu-system';
 import { PlaySE, getRuntime, gMain } from '../harness/runtime/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../include/constants/songs';
-import { HasValidSave } from './engine/save/save-system';
+import { HasValidSave } from './save';
 import { bagContents } from './engine/bag/bag';
 import { HideMapNamePopUpWindow } from './map_name_popup';
 import { GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
@@ -967,7 +967,7 @@ function _tickSaveSavingMsg(): void {
   // Gate 1:1 RunSaveCallback : wait printer done.
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // TrySavingData (= notre persist).
-  void (async () => { const { SaveGame } = await import('./engine/save/save-system'); await SaveGame(); })();
+  void (async () => { const { SaveGame } = await import('./save'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
   const text = getText('gText_PlayerSavedGame') ?? encodeOwText('{PLAYER} a sauvegardé la partie.');
   ShowFieldMessage(text);

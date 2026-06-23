@@ -18,7 +18,7 @@
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/play_time.c`.
  */
 
-import { GetSaveBlock2 } from './engine/save/save-system';
+import { GetSaveBlock2 } from './save';
 
 const STOPPED = 0;
 const RUNNING = 1;

@@ -3770,7 +3770,7 @@ registerSpecial('DoBattlePyramidMonsHaveHeldItem', () => {
 registerSpecial('CableClubSaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('../save/save-system');
+      const mod = await import('../../save');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special CableClubSaveGame] async wrap failed', e);
@@ -4005,7 +4005,7 @@ registerSpecial('SetLilycoveLadyGfx', () => {
 registerSpecial('SaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('../save/save-system');
+      const mod = await import('../../save');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special SaveGame] async wrap failed', e);

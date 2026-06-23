@@ -59,7 +59,7 @@ import { extractPngPlte, loadIndexedPngStrict } from '../harness/gba/png-loader'
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset_anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
-import { GetSaveBlock1 } from './engine/save/save-system';
+import { GetSaveBlock1 } from './save';
 // Chantier OW 1:1 — `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) source unique
 // pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
 // Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des

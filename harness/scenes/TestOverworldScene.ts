@@ -412,7 +412,7 @@ export class TestOverworldScene extends Phaser.Scene {
     if (mode === 'continue') {
       // 1:1 GameScene : LOAD la save AVANT de toucher l'état (sinon un save() plus
       // loin écraserait la save avec du vide). decideBootMode lira ensuite la map sauvée.
-      const { LoadGameSave } = await import('../../src/engine/save/save-system');
+      const { LoadGameSave } = await import('../../src/save');
       LoadGameSave();
     } else {
       // newgame : Birch a posé name/gender dans gSaveBlock2Ptr. Clear la map pour

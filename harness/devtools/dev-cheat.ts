@@ -9,7 +9,7 @@
  */
 
 import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
-import { SaveGame, ResetSaveBlocks } from '../../src/engine/save/save-system';
+import { SaveGame, ResetSaveBlocks } from '../../src/save';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import type { PokemonInstance } from '../../src/engine/pokemon/pokemon';
 

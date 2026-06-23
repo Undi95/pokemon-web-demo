@@ -1,5 +1,5 @@
 /**
- * save-system.ts — Save system 1:1 décomp `src/save.c` + `src/load_save.c`.
+ * save.ts — Save system 1:1 décomp `src/save.c` + `src/load_save.c`.
  *
  * Ce fichier réunit MAINTENANT le moteur de secteurs (anciennement
  * `save-sectors.ts`, fusionné — la décomp n'a qu'UN fichier `save.c`) et
@@ -40,9 +40,9 @@ import {
   emptySaveBlock2,
   emptyPokemonStorage,
   TOTAL_BOXES_COUNT,
-} from './save-blocks';
-import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag/bag';
-import { SetDecorationInventoriesPointers } from '../../decoration_inventory';
+} from './engine/save/save-blocks';
+import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from './engine/bag/bag';
+import { SetDecorationInventoriesPointers } from './decoration_inventory';
 // Storage authoritatif des SaveBlock1/2 déplacé dans le module Foundation
 // `save-block-state.ts` (= permet l'import direct depuis n'importe quel
 // module sans cycle ESM). save-system continue à orchestrer load/save mais
@@ -54,7 +54,7 @@ import {
   SetSaveBlock2,
   gSaveBlock1Ptr as _gSaveBlock1PtrFoundation,
   gSaveBlock2Ptr as _gSaveBlock2PtrFoundation,
-} from './save-block-state';
+} from './engine/save/save-block-state';
 
 // ═════════════════════════════════════════════════════════════════════════
 // MOTEUR DE SECTEURS 1:1 décomp `src/save.c` (anciennement save-sectors.ts).
@@ -583,7 +583,7 @@ export function LoadGameSave(): number {
     console.log('[save-system] loaded (sector engine, counter max slot)');
     // 1:1 RTC : offset dans gSaveBlock2.localTimeOffset (struct Time),
     // déjà restauré ci-dessus. Rafraîchir gLocalTime (rtc.c RtcCalcLocalTime).
-    void import('../../rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
+    void import('./rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
     return SAVE_STATUS_OK;
   }
   // EMPTY/CORRUPT : pas de save valide → blocs par défaut (le boot 1:1
@@ -613,8 +613,8 @@ export async function SaveGame(): Promise<boolean> {
   }
   // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
-    const lsMod = await import('../../load_save');
-    const mapMod = await import('../../fieldmap');
+    const lsMod = await import('./load_save');
+    const mapMod = await import('./fieldmap');
     // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
     // SyncPlayerPositionToBlock = notre helper port (le décomp update
     // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save

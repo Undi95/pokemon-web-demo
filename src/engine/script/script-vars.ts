@@ -15,7 +15,7 @@ import * as ED from '../../../include/event_data';
 import * as FLAGS from '../../../include/constants/flags';
 import * as VARS from '../../../include/constants/vars';
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { ResetSaveBlocks } from '../save/save-system';
+import { ResetSaveBlocks } from '../../save';
 
 const _FLAGS = FLAGS as unknown as Record<string, number>;
 const _VARS = VARS as unknown as Record<string, number>;

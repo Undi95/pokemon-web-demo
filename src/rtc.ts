@@ -33,7 +33,7 @@
  */
 
 import type { Time } from './engine/save/save-blocks';
-import { GetSaveBlock2 } from './engine/save/save-system';
+import { GetSaveBlock2 } from './save';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
