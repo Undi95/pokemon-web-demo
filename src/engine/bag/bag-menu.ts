@@ -50,8 +50,7 @@ import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../../../
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
 import { GetItemName, GetItemDescription, GetItemImportance } from '../../item';
-import {StringCopy, ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
-import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
+import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../../../include/string_util';
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar } from '../system/string-buffers';
@@ -972,7 +971,10 @@ function PrintItemDescription(itemIndex: number): void {
  *    BagMenu_Print(windowId, FONT_NARROW, gStringVar4, offset, y, 0,0,
  *      TEXT_SKIP_DRAW, COLORID_NORMAL). STR_CONV_MODE_RIGHT_ALIGN importé. */
 function _bagPrintQuantity(windowId: number, itemQuantity: number, y: number, numDigits: number): void {
-  setStringVar(1, ConvertIntToDecimalStringN('', itemQuantity, STR_CONV_MODE_RIGHT_ALIGN, numDigits));
+  // 1:1 décomp item_menu.c : ConvertIntToDecimalStringN(gStringVar1, qty, RIGHT_ALIGN, numDigits)
+  // écrit les bytes charmap DIRECTEMENT dans gStringVar1 (foyer string_util.ts), plus le
+  // round-trip JS-string du bridge ; StringExpandPlaceholders lit gStringVar1 pour {STR_VAR_1}.
+  ConvertIntToDecimalStringN(gStringVar1, itemQuantity, STR_CONV_MODE_RIGHT_ALIGN, numDigits);
   StringExpandPlaceholders(gStringVar4, encodeOwText(gText_xVar1));
   const s4 = gStringVar4;
   const offset = GetStringRightAlignXOffset(s4, 119);
@@ -1012,15 +1014,15 @@ function GetItemNameFromPocket(itemId: number): string | Uint8Array {
       setStringVar(2, getMoveName(ItemIdToBattleMoveId(itemId)));
       if (itemId >= ITEM_HM01) {
         // Get HM number
-        setStringVar(1, ConvertIntToDecimalStringN('', itemId - ITEM_HM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 1));
+        ConvertIntToDecimalStringN(gStringVar1, itemId - ITEM_HM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 1);
         return _expandItemNameLine(gText_NumberItem_HM);
       } else {
         // Get TM number
-        setStringVar(1, ConvertIntToDecimalStringN('', itemId - ITEM_TM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 2));
+        ConvertIntToDecimalStringN(gStringVar1, itemId - ITEM_TM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
         return _expandItemNameLine(gText_NumberItem_TMBerry);
       }
     case BERRIES_POCKET:
-      setStringVar(1, ConvertIntToDecimalStringN('', itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2));
+      ConvertIntToDecimalStringN(gStringVar1, itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
       setStringVar(2, CopyItemName(itemId));
       return _expandItemNameLine(gText_NumberItem_TMBerry);
     default:
@@ -1427,18 +1429,25 @@ function PrintTMHMMoveData(itemId: number): void {
   // 1:1 :2577 — type icon (= gBattleMoves[move].type + 1).
   const typeIdx = move ? (_TYPE_NAME_TO_ICON_IDX[move.type] ?? 0) : 0;
   if (typeIdx > 0) BlitMenuInfoIcon(wid, typeIdx, 0, 0);
-  // 1:1 :2579-2589 power.
+  // 1:1 :2579-2589 power. Décomp : ConvertIntToDecimalStringN(gStringVar1, pw, RIGHT_ALIGN, 3)
+  // (ou gText_ThreeDashes si pw<=1) puis BagMenu_Print(gStringVar1). TEXT_SKIP_DRAW = rendu
+  // synchrone → réutilisation de gStringVar1 entre power/acc/pp sûre. "---" en littéral
+  // (BagMenu_Print l'encode = byte-identique à gText_ThreeDashes).
   const pw = move?.power ?? 0;
-  const pwText = pw <= 1 ? '---' : ConvertIntToDecimalStringN('', pw, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  let pwText: string | Uint8Array;
+  if (pw <= 1) { pwText = '---'; }
+  else { ConvertIntToDecimalStringN(gStringVar1, pw, STR_CONV_MODE_RIGHT_ALIGN, 3); pwText = gStringVar1; }
   BagMenu_Print(wid, FONT_NORMAL, pwText, 7, 12, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
   // 1:1 :2591-2601 accuracy.
   const acc = move?.accuracy ?? 0;
-  const accText = acc === 0 ? '---' : ConvertIntToDecimalStringN('', acc, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  let accText: string | Uint8Array;
+  if (acc === 0) { accText = '---'; }
+  else { ConvertIntToDecimalStringN(gStringVar1, acc, STR_CONV_MODE_RIGHT_ALIGN, 3); accText = gStringVar1; }
   BagMenu_Print(wid, FONT_NORMAL, accText, 7, 24, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
   // 1:1 :2603-2605 pp.
   const pp = move?.pp ?? 0;
-  const ppText = ConvertIntToDecimalStringN('', pp, STR_CONV_MODE_RIGHT_ALIGN, 3);
-  BagMenu_Print(wid, FONT_NORMAL, ppText, 7, 36, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
+  ConvertIntToDecimalStringN(gStringVar1, pp, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  BagMenu_Print(wid, FONT_NORMAL, gStringVar1, 7, 36, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
   CopyWindowToVram(wid, 2);
 }
 
