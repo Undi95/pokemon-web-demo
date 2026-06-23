@@ -70,6 +70,24 @@ function ResetSpriteAfterAnim(sprite: MonSprite): void {
 function WaitAnimEnd(sprite: MonSprite): void {
   sprite.data[0] = sprite.data[14];   // restore battler (sauvé par Launch)
   sprite.data[2] = sprite.data[15];   // restore species
+  // Fix « session 96 » (porté de l'ancien engine/pokemon/pokemon-animation) :
+  // DoMonFrontSpriteAnimation fait StartSpriteAnim(sprite,1) (switch 2-frame)
+  // au début ; sans reset, le mon reste FIGÉ sur la frame alt en fin d'anim.
+  // Le décomp laisse anim 1 (la ROM affiche frame 0 via le cycling du sprite
+  // system) → on remet explicitement la frame BASE (0) pour matcher l'observable.
+  // Gardé par le flag posé par DoMonFront → NO-OP en combat (Launch direct, pas
+  // de switch 2-frame → pas de flag) : zéro risque sur le tileBase combat.
+  const s = sprite as MonSprite & { _monFrontBaseFrameReset?: boolean; oamIndex?: number; tileBase?: number };
+  if (s._monFrontBaseFrameReset) {
+    s._monFrontBaseFrameReset = false;
+    const id = _sid(sprite);
+    const rt = getRuntime();
+    if (id >= 0 && rt) {
+      rt.StartSpriteAnim(id, 0);
+      const oam = rt.gba?.oam?.[s.oamIndex ?? -1];
+      if (oam) oam.tileId = s.tileBase ?? 0;
+    }
+  }
   sprite.callback = null;
 }
 
@@ -1502,6 +1520,10 @@ export function DoMonFrontSpriteAnimation(
       const tilesPerFrame = _tilesPerMonPicFrame(sprite.shape, sprite.size);
       const oam = rt.gba.oam[sprite.oamIndex];
       if (oam) oam.tileId = (sprite.tileBase || 0) + tilesPerFrame;
+      // Marque le sprite pour le retour frame BASE en fin d'anim (cf. WaitAnimEnd,
+      // fix session 96). Le flag distingue le chemin DoMonFront (Birch/non-combat,
+      // switch 2-frame fait) du chemin Launch direct (combat, pas de switch).
+      (sprite as DecompSprite & { _monFrontBaseFrameReset?: boolean })._monFrontBaseFrameReset = true;
     }
   }
 
