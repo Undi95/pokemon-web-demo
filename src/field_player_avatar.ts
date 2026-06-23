@@ -124,11 +124,8 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN, MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT,
   ANIM_FIELD_MOVE,
 } from '../include/constants/event_object_movement';
-import {
-  GetFaceDirectionMovementAction,
-  CreateTask, DestroyTask,
-  GetWalkSlowMovementAction,
-} from '../harness/runtime/decomp-bridge';
+import {GetFaceDirectionMovementAction, GetWalkSlowMovementAction} from "../harness/runtime/decomp-bridge";
+import { CreateTask, DestroyTask } from './task';
 import { FindTaskIdByFunc, GetTask, getRuntime, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
 import {

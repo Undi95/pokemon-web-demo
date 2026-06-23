@@ -515,29 +515,8 @@ export function DestroySprite(sprite: any): void {
   if (id != null) _DestroySprite(rt, id);
 }
 
-/** 1:1 décomp `src/task.c CreateTask(func, priority)` — alloue un task slot. */
-export function CreateTask(func: any, priority: number): number {
-  return _getRT().CreateTask(func, priority);
-}
-
-/** 1:1 décomp `src/task.c DestroyTask(taskId)` — free un task slot. */
-export function DestroyTask(taskId: number): void {
-  _getRT().DestroyTask(taskId);
-}
-
-/** 1:1 décomp `src/task.c:139 SetTaskFuncWithFollowupFunc`.
- *  Reroute la task vers `func`, en mémorisant `followupFunc` pour un
- *  futur `SwitchTaskToFollowupFunc(taskId)`. Voir DecompTask.followupFunc
- *  (impl. dédiée 1:1 sémantique : pas de cast pointer→s16 cassé). */
-export function SetTaskFuncWithFollowupFunc(taskId: number, func: any, followupFunc: any): void {
-  _getRT().SetTaskFuncWithFollowupFunc(taskId, func, followupFunc);
-}
-
-/** 1:1 décomp `src/task.c:148 SwitchTaskToFollowupFunc`.
- *  Restaure la task vers le `followupFunc` mémorisé. */
-export function SwitchTaskToFollowupFunc(taskId: number): void {
-  _getRT().SwitchTaskToFollowupFunc(taskId);
-}
+// CreateTask / DestroyTask / SetTaskFuncWithFollowupFunc / SwitchTaskToFollowupFunc
+// décyclés → src/task.ts (foyer 1:1 task.c ; délèguent au substrat runtime).
 
 /** 1:1 décomp `src/sprite.c SetGpuReg(reg, value)` — write to GPU register. */
 export function SetGpuReg(reg: number, value: number): void {
@@ -732,7 +711,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
   'CreateSprite',  'DestroySprite',
-  'CreateTask', 'DestroyTask',
   'SetGpuReg', 'GetGpuReg',
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',

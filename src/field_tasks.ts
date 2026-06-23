@@ -33,8 +33,9 @@
  *   => field_tasks.c = MIROIR COMPLET (seul l'audio UpdateAmbientCry est omis, comme PlaySE).
  */
 
+import { CreateTask } from './task';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
-import { CreateTask } from '../harness/runtime/decomp-bridge';
+
 import {
   FindTaskIdByFunc,
   FuncIsActiveTask,

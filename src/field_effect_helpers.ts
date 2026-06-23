@@ -80,7 +80,8 @@ import {
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
-import { GetFaceDirectionMovementAction, DestroyTask, StartSpriteAnim } from '../harness/runtime/decomp-bridge';
+import {GetFaceDirectionMovementAction, StartSpriteAnim} from "../harness/runtime/decomp-bridge";
+import { DestroyTask } from './task';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
   LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';

@@ -13,7 +13,8 @@
  *     = avec le chantier anims de move (T4+, registry createsprite).
  */
 import { CreateSprite } from '../harness/runtime/decomp-bridge';
-import { CreateTask, DestroyTask } from '../harness/runtime/decomp-bridge';
+import { CreateTask, DestroyTask } from './task';
+
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {

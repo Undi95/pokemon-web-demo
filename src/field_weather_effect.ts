@@ -29,7 +29,8 @@ import {
   BLDALPHA_BLEND,
   FreeSpriteTilesByTag,
 } from '../harness/runtime/decomp-globals';
-import { CreateTask, DestroyTask, SetGpuReg, DestroySprite } from '../harness/runtime/decomp-bridge';
+import {SetGpuReg, DestroySprite} from "../harness/runtime/decomp-bridge";
+import { CreateTask, DestroyTask } from './task';
 import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet } from './sprite';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';

@@ -41,7 +41,8 @@ import {
   PALETTES_ALL,
   PLTT_SIZE,
 } from '../harness/runtime/decomp-globals';
-import { CreateTask, SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2 } from '../harness/runtime/decomp-bridge';
+import {SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2} from "../harness/runtime/decomp-bridge";
+import { CreateTask } from './task';
 import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
 import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from '../harness/runtime/decomp-helpers';
 import { AllocSpritePalette, sSpritePaletteTags } from './sprite';

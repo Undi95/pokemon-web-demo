@@ -14,8 +14,9 @@
  * 1:1. Seul l'audio (DoBalloonSoundEffect / PlaySE) est SKIP (hors périmètre).
  */
 
+import { CreateTask, DestroyTask } from './task';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
-import { CreateTask, DestroyTask } from '../harness/runtime/decomp-bridge';
+
 import { GetTaskData } from '../harness/runtime/decomp-globals';
 import { MapGridSetMetatileIdAt } from './fieldmap';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from './field_camera';
