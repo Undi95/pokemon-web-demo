@@ -784,7 +784,7 @@ function CB2_LoadNamingScreen(): void {
     case 3:
       // 1:1 STRICT décomp ResetSpriteData + FreeAllSpritePalettes au boot
       // d'écran (= clear arrays primary + bitmap). Source UNIQUE.
-      ResetSpriteData(rt);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       _assetsLoaded = false;  // force reload (= fresh slot/tile assignments)
       clearAllSubspriteTables();

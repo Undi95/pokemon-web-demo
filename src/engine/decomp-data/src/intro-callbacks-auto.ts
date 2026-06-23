@@ -1107,7 +1107,7 @@ export const Task_Scene2_Load: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.IntroResetGpuRegs();
       rt.SetVBlankCallback(VBlankCB);
-      ResetSpriteData(rt);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       (globalThis as any).gIntroCredits_MovingSceneryVBase = 0;
       (globalThis as any).gIntroCredits_MovingSceneryVOffset = 0;
@@ -1225,7 +1225,7 @@ export const Task_Scene3_Load: TaskCallback = (task, rt) => {
       task.data[2] = 0;
       task.data[3] = 0;
       PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0, 0);
-      ResetSpriteData(rt);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_WHITEALPHA");
       rt.SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(8) | BGCNT_256COLOR | BGCNT_AFF256x256);
@@ -1269,7 +1269,7 @@ export const Task_Scene3_LoadGroudon: TaskCallback = (task, rt) => {
   if (!rt.gPaletteFade.active)
       {
           rt.IntroResetGpuRegs();
-          ResetSpriteData(rt);
+          ResetSpriteData();
           FreeAllSpritePalettes();
           (globalThis as any).gReservedSpritePaletteCount = 8;
           LZDecompressVram(gIntroGroudon_Gfx, VRAM);
@@ -1461,7 +1461,7 @@ export const Task_Scene3_Groudon: TaskCallback = (task, rt) => {
 /** Source: intro.c → Task_Scene3_LoadKyogre */
 export const Task_Scene3_LoadKyogre: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
-  ResetSpriteData(rt);
+  ResetSpriteData();
       LZDecompressVram(gIntroKyogre_Gfx, VRAM);
       LZDecompressVram(gIntroKyogre_Tilemap, (BG_CHAR_ADDR(3)));
       LZDecompressVram(gIntroKyogreBg_Tilemap, (BG_SCREEN_ADDR(28)));

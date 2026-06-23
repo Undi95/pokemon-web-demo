@@ -35,6 +35,7 @@
  *   - `Task_*_Exit` restore `gMain.savedCallback` → retour OW.
  */
 
+import { ResetSpriteData } from './sprite';
 import {
   ShowBg, HideBg,
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
@@ -45,7 +46,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
+
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';

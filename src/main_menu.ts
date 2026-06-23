@@ -1159,7 +1159,7 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   LoadPalette('sMainMenuTextPal', BG_PLTT_ID(15), PLTT_SIZE_4BPP);
   ScanlineEffect_Stop();
   ResetTasks();
-  ResetSpriteData(rt);
+  ResetSpriteData();
   FreeAllSpritePalettes();
   // 1:1 décomp main_menu.c:585-587 — fade IN (startY=0x10 → endY=0).
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0x10, 0,

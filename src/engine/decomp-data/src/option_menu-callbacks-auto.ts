@@ -263,7 +263,7 @@ export const CB2_InitOptionMenu: CB2Callback = (rt) => {
           ResetPaletteFade();
           ScanlineEffect_Stop();
           ResetTasks();
-          ResetSpriteData(rt);
+          ResetSpriteData();
           gMain.state++;
           break;
       case 3:

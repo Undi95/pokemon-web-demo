@@ -432,7 +432,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // RESETS (1:1 décomp CB2_NewGame/field-init) : nettoie les sprites/tasks/palettes
     // résiduels de l'intro/Birch. En scene.start c'était implicite (runtime neuf) ;
     // en runtime partagé il faut le faire explicitement avant que bootOverworld re-init.
-    ResetSpriteData(this.rt);
+    ResetSpriteData();
     // resetObjAllocations() = LE reset clé qu'un runtime NEUF fait dans create() mais que
     // le runtime partagé n'avait pas : réinitialise l'allocation OAM matrices + sprite
     // tiles + sprite palettes. Sans ça l'état d'allocation accumulé par l'intro fragmente

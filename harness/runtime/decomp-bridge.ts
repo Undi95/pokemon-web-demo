@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `// (ré-exports morts retirés depuis '../../src/sprite' — sweep)` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { ResetSpriteData as _ResetSpriteData, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
+import { AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -509,11 +509,7 @@ export function AllocOamMatrix(): number {
   return _AllocOamMatrix();
 }
 
-/** 1:1 décomp `src/sprite.c ResetSpriteData()`. Appelle directement l'impl free-fn
- *  de game/sprite.ts (chantier C : la méthode harness `rt.ResetSpriteData` est retirée). */
-export function ResetSpriteData(): void {
-  _ResetSpriteData(_getRT());
-}
+// ResetSpriteData décyclé → src/sprite.ts (foyer 1:1 sprite.c, signature no-rt).
 
 // BeginNormalPaletteFade / UpdatePaletteFade décyclés → src/palette.ts (foyer 1:1 palette.c).
 
@@ -658,7 +654,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Runtime method wrappers (= delegate to getRuntime().X)
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
-  'ResetSpriteData',
   'SetVBlankCallback',
   // Map grid + metatile behaviors
   'MapGridGetCollisionAt', 'MapGridGetMetatileBehaviorAt', 'MapGridGetElevationAt',

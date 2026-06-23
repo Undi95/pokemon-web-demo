@@ -78,7 +78,7 @@ export function SetUpCopyrightScreen(): number {
       LoadCopyrightGraphics(0, 0x3800, 0);
       ScanlineEffect_Stop();
       ResetTasks();
-      ResetSpriteData(runtime);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       runtime.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_WHITEALPHA');
       runtime.SetGpuReg(REG_OFFSET_BG0CNT,

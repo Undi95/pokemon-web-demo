@@ -35,7 +35,7 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { FEMALE } from '../../../harness/runtime/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
+import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix, ResetSpriteData } from '../../sprite';
 import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
@@ -49,7 +49,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes } from '../../../harness/runtime/decomp-bridge';
+import {FreeAllSpritePalettes} from "../../../harness/runtime/decomp-bridge";
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';

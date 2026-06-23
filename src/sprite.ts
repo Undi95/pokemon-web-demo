@@ -1410,7 +1410,8 @@ export function DestroySprite(spriteId: number): void {
  *  le harness `DecompRuntime.ResetSpriteData` y délègue (13 call-sites).
  *  E2.3b : accède aux arrays `sSpriteTile*` EN DIRECT (statics du MÊME module = 1:1
  *  décomp) au lieu du hack `globalThis.__sprite`, et `setReservedSpriteTileCount(0)`. */
-export function ResetSpriteData(rt: DecompRuntime): void {
+export function ResetSpriteData(): void {
+  const rt = _rt();
   // ⚠️ Fix 2026-05-24 : avant de clear gSprites + OAMs, notifier les modules qui
   // maintiennent leur propre pool de spriteIds (= field-effect-emotes `_activeEmotes`)
   // — sinon leur state pointe vers des slots ré-attribués → tickXxxSprites overwrite

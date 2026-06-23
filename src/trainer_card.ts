@@ -42,12 +42,12 @@ import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
 import { FEMALE } from '../harness/runtime/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, ResetSpriteData } from './sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes } from '../harness/runtime/decomp-bridge';
+import {FreeAllSpritePalettes} from "../harness/runtime/decomp-bridge";
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';

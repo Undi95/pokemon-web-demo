@@ -691,7 +691,7 @@ function _LoadBattleTextboxAndBackground(env: number): void {
   void loadBattleTextboxAndBackground1to1(env);
 }
 /** 1:1 décomp `ResetSpriteData()` (sprite.c:294). */
-function _ResetSpriteData(): void { _ResetSpriteDataImpl(getRuntime()); }
+function _ResetSpriteData(): void { _ResetSpriteDataImpl(); }
 /** 1:1 décomp `ResetTasks()`. */
 function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
 /** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c). */
@@ -3571,7 +3571,7 @@ function ResetSpriteData(): void {
   // leurs entrées OAM et RENDENT ENCORE dans l'OW (user-flag : sprites + palette
   // combat qui leakent). Le re-spawn OW (_restoreOverworldFromMenu) re-crée
   // ensuite les sprites OW = 1:1.
-  _ResetSpriteDataImpl(getRuntime());
+  _ResetSpriteDataImpl();
 }
 
 /** 1:1 décomp `FreeAllWindowBuffers()` (window.c). Phase port : libère les

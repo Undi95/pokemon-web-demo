@@ -53,7 +53,7 @@ import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Poke
 import { ItemIsMail } from '../../mail_data';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { gMoveNames } from '../data/game-data';
-import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes } from '../../sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from '../../sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -62,7 +62,7 @@ import {
 } from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import { ResetSpriteData, ConvertIntToDecimalStringN } from '../../../harness/runtime/decomp-bridge';
+import {ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
 import { GetMapNameGeneric } from '../../region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';

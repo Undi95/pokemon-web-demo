@@ -626,7 +626,7 @@ export const Task_NewGameBirchSpeech_Init: TaskCallback = (task, rt) => {
       LoadPalette(sBirchSpeechBgPals, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
       LoadPalette(sBirchSpeechPlatformBlackPal, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(8));
       ScanlineEffect_Stop();
-      ResetSpriteData(rt);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       ResetAllPicSprites();
       AddBirchSpeechObjects(taskId);
@@ -1316,7 +1316,7 @@ export const CB2_NewGameBirchSpeech_ReturnFromNamingScreen: CB2Callback = (rt) =
       task.data[7] = 5;
       task.data[4] = -60;
       ScanlineEffect_Stop();
-      ResetSpriteData(rt);
+      ResetSpriteData();
       FreeAllSpritePalettes();
       ResetAllPicSprites();
       AddBirchSpeechObjects(taskId);

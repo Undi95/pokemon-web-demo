@@ -29,7 +29,7 @@ import {
   FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
   assetCache, PlaySE,
 } from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData, PLTT_SIZE_4BPP } from '../../../harness/runtime/decomp-bridge';
+import {PLTT_SIZE_4BPP} from "../../../harness/runtime/decomp-bridge";
 import { ListMenuLoadStdPalAt } from '../ui/gba-menu-system';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
@@ -50,9 +50,7 @@ import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../../../
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
 import { GetItemName, GetItemDescription, GetItemImportance } from '../../item';
-import {
-  StringCopy, ConvertIntToDecimalStringN,
-} from '../../../harness/runtime/decomp-bridge';
+import {StringCopy, ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
 import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
@@ -101,6 +99,7 @@ import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSp
 
 import { SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from '../../task';
 import { BeginNormalPaletteFade } from '../../palette';
+import { ResetSpriteData } from '../../sprite';
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,

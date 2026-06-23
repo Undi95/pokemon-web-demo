@@ -35,8 +35,9 @@
  *   - src/field_screen_effect.c:440 FieldCB_ReturnToFieldOpenStartMenu
  */
 
+import { ResetSpriteData } from '../../sprite';
 import { getRuntime, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
-import { ResetSpriteData } from '../../../harness/runtime/decomp-bridge';
+
 import { InitFieldMessageBox } from '../../field_message_box';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 

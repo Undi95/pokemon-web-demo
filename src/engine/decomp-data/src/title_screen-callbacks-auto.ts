@@ -447,7 +447,7 @@ export const CB2_InitTitleScreen: CB2Callback = (rt) => {
           LZ77UnCompVram(gTitleScreenCloudsTilemap, (BG_SCREEN_ADDR(27)));
           ScanlineEffect_Stop();
           ResetTasks();
-          ResetSpriteData(rt);
+          ResetSpriteData();
           FreeAllSpritePalettes();
           (globalThis as any).gReservedSpritePaletteCount = 9;
           LoadCompressedSpriteSheet(sSpriteSheet_EmeraldVersion);
