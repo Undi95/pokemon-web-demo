@@ -154,7 +154,7 @@ export function FreeAndDestroyMonIconSprite(spriteId: number): void {
   const rt = getRuntime();
   if (!rt || spriteId === 0xFF) return;
   _freeSpriteTileRangeByTag(ICON_SHEET_TAG);
-  DestroySprite(rt, spriteId);
+  DestroySprite(spriteId);
   if (spriteId === _mailIconSpriteId) _mailIconSpriteId = 0xFF; // stoppe le bob
 
 }

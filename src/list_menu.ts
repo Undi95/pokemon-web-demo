@@ -1197,7 +1197,7 @@ function ListMenuRemoveRedOutlineCursorObject(taskId: number): void {
   if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1362-1363
   if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1364-1365
   const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
-  DestroySprite(getRuntime(), data.spriteId);   // 1:1 :1367 DestroySprite(&gSprites[id])
+  DestroySprite(data.spriteId);   // 1:1 :1367 DestroySprite(&gSprites[id])
   _destroyTask(taskId);                  // 1:1 :1368 DestroyTask(taskId)
   sCursorObjData.delete(taskId);         // = slot gTasks[].data réclamé
 }
@@ -1268,7 +1268,7 @@ function ListMenuRemoveRedArrowCursorObject(taskId: number): void {
   if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1440-1441
   if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1442-1443
   const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
-  DestroySprite(getRuntime(), data.spriteId);   // 1:1 :1445 DestroySprite(&gSprites[id])
+  DestroySprite(data.spriteId);   // 1:1 :1445 DestroySprite(&gSprites[id])
   _destroyTask(taskId);                  // 1:1 :1446 DestroyTask(taskId)
   sCursorObjData.delete(taskId);
 }
@@ -1611,8 +1611,8 @@ export function RemoveScrollIndicatorArrowPair(taskId: number): void {
   if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1167-1168
   if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1169-1170
   const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
-  DestroySprite(getRuntime(), data.topSpriteId);     // 1:1 :1172 DestroySprite(&gSprites[topSpriteId])
-  DestroySprite(getRuntime(), data.bottomSpriteId);  // 1:1 :1173 DestroySprite(&gSprites[bottomSpriteId])
+  DestroySprite(data.topSpriteId);     // 1:1 :1172 DestroySprite(&gSprites[topSpriteId])
+  DestroySprite(data.bottomSpriteId);  // 1:1 :1173 DestroySprite(&gSprites[bottomSpriteId])
   _destroyTask(taskId);                       // 1:1 :1175 DestroyTask(taskId)
   sScrollIndicatorData.delete(taskId);
 }

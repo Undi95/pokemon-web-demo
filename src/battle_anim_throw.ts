@@ -685,7 +685,7 @@ function _startAffine(sprite: BallSprite, n: number): void {
 function _destroyBall(sprite: BallSprite): void {
   const id = _spriteIdOf(sprite);
   const rt = getRuntime();
-  if (rt && id >= 0) { DestroySprite(rt, id); rt.gSprites[id] = undefined; }
+  if (rt && id >= 0) { DestroySprite(id); rt.gSprites[id] = undefined; }
 }
 function _updateOamPriorityInAllHealthboxes(priority: number): void {
   const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
@@ -1009,7 +1009,7 @@ function SpriteCB_Ball_Capture_Step(sprite: BallSprite): void {
   } else if (sprite.data[4] === 315) {
     const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
     const rt = getRuntime();
-    if (rt && monSpriteId >= 0) { DestroySprite(rt, monSpriteId); rt.gSprites[monSpriteId] = undefined; }
+    if (rt && monSpriteId >= 0) { DestroySprite(monSpriteId); rt.gSprites[monSpriteId] = undefined; }
     sprite.data[0] = 0;
     sprite.callback = SpriteCB_Ball_FadeOut;
   }
@@ -1919,7 +1919,7 @@ function _shinyStarDone(sprite: _ShinySprite): void {
     const sp = rt.gSprites?.[id];
     if (sp === undefined) continue;
     if ((sp as unknown) === (sprite as unknown)) {
-      DestroySprite(getRuntime(), id);
+      DestroySprite(id);
       // pas de gSprites.delete (slot garde jusqu'a reallocation, 1:1)
       break;
     }

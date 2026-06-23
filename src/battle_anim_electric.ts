@@ -340,7 +340,7 @@ function _AnimThunderWave_Step_Second(sprite: _VSprite): void {
   }
   if (++sprite.data[1] === 51) {
     const id = sprite.spriteId ?? -1;
-    if (id >= 0) DestroySprite(getRuntime(), id);
+    if (id >= 0) DestroySprite(id);
   }
 }
 
@@ -584,7 +584,7 @@ function AnimElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): 
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -675,7 +675,7 @@ function AnimVoltTackleBolt(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -720,7 +720,7 @@ function _swDestroySelf(sprite: unknown): void {
   for (let sid = 0; sid < MAX_SPRITES; sid++) {
     const sp = rt?.gSprites?.[sid];
     if (sp === undefined) continue;
-    if (sp === sprite) { DestroySprite(getRuntime(), sid); break; }
+    if (sp === sprite) { DestroySprite(sid); break; }
   }
 }
 

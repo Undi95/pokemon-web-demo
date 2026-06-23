@@ -537,7 +537,7 @@ function HandleBallAnimEnd(sprite: DecompSprite, rt: DecompRuntime): void {
     setGDoingBattleAnim(false);
     setBallAnimActive(battler, false);
     FreeOamMatrix(sprite.matrixNum);
-    DestroySprite(rt, sprite.spriteId);
+    DestroySprite(sprite.spriteId);
 
     let doneBattlers = 0;
     for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
@@ -655,7 +655,7 @@ function SpriteCB_HitAnimHealthoxEffect(sprite: { data: number[] }): void {
     if (hb) { hb.x2 = 0; hb.y2 = 0; }
     const self = sprite as { spriteId?: number };
     if (rt && self.spriteId !== undefined) {
-      DestroySprite(getRuntime(), self.spriteId);
+      DestroySprite(self.spriteId);
       // pas de gSprites.delete (slot garde, 1:1)
     } else {
       // fallback : neutraliser le callback

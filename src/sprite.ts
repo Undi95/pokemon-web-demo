@@ -1387,7 +1387,8 @@ export function SeekSpriteAnim(rt: DecompRuntime, sprite: AnimDispatchSprite, an
  *  l'OAM, marque le slot libre (inUse=false), retire le callback. NE remet PAS
  *  `gSprites[id] = undefined` — 1:1 décomp, le slot reste jusqu'à réallocation
  *  (les sprites enfants lisent encore `gSprites[parentId].data`). */
-export function DestroySprite(rt: DecompRuntime, spriteId: number): void {
+export function DestroySprite(spriteId: number): void {
+  const rt = _rt();
   const sprite = rt.gSprites[spriteId];
   if (!sprite) return;
   rt.gba.oam[sprite.oamIndex].visible = false;

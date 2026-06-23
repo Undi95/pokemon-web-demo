@@ -229,7 +229,7 @@ export const SpriteCB_PokemonLogoShine: SpriteCallback = (sprite, rt) => {
       {
            
           rt.gPlttBufferFaded.set(0, RGB_BLACK);
-          DestroySprite(rt, sprite.spriteId);
+          DestroySprite(sprite.spriteId);
       }
 };
 
@@ -238,7 +238,7 @@ export const SpriteCB_PokemonLogoShine_Fast: SpriteCallback = (sprite, rt) => {
   if (sprite.x < DISPLAY_WIDTH + 32)
           sprite.x += SHINE_SPEED * 2;
       else
-          DestroySprite(rt, sprite.spriteId);
+          DestroySprite(sprite.spriteId);
 };
 
 /** Source: title_screen.c → Task_TitleScreenPhase1 */

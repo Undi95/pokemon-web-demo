@@ -19,7 +19,8 @@ import {
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
 } from '../harness/runtime/decomp-globals';
-import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../harness/runtime/decomp-bridge';
+import {StartSpriteAnim, StartSpriteAffineAnim} from "../harness/runtime/decomp-bridge";
+import { DestroySprite } from './sprite';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from '../include/item_menu';
 import { ITEM_LIST_END } from '../include/constants/items';

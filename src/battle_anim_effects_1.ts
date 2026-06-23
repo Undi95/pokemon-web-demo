@@ -2880,7 +2880,7 @@ function _LeafBlade_Step(task: _LbTask): void {
           for (let sid = 0; sid < MAX_SPRITES; sid++) {
             const s2 = rt.gSprites?.[sid];
             if (s2 === undefined) continue;
-            if (s2 === sp) { DestroySprite(getRuntime(), sid); break; }
+            if (s2 === sp) { DestroySprite(sid); break; }
           }
           task.data[0] = 13;
         } else {
@@ -2955,7 +2955,7 @@ function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const s2 = rt.gSprites?.[sid];
         if (s2 === undefined) continue;
-        if (s2 === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+        if (s2 === (sprite as unknown)) { DestroySprite(sid); break; }
       }
     }
   }

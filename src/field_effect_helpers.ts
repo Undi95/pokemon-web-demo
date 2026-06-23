@@ -1611,7 +1611,7 @@ async function _loadFieldMoveMonPic(rt: DecompRuntime, spriteId: number, species
 function _freeFieldMoveMonSprite(rt: DecompRuntime, spriteId: number): void {
   FreeSpriteTilesByTag(TAG_FIELD_MOVE_MON_GFX);
   FreeSpritePaletteByTag(TAG_FIELD_MOVE_MON_PAL);
-  DestroySprite(rt, spriteId);
+  DestroySprite(spriteId);
 }
 
 /** 1:1 STRICT décomp `InitFieldMoveMonSprite` (field_effect.c:2930). */
@@ -2184,7 +2184,7 @@ function PokecenterHealEffect_WaitForSoundAndEnd(task: DecompTask): void {
   const rt = getRuntime();
   const ball = rt.gSprites[task.data[6]];
   if (ball && ball.data[0] > 6) { // sState > 6 (Idle)
-    DestroySprite(rt, task.data[6]);
+    DestroySprite(task.data[6]);
     FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);
     DestroyTask(FindTaskIdByFunc(Task_PokecenterHeal));
   }

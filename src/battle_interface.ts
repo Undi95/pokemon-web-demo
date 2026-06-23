@@ -786,10 +786,10 @@ function _destroySummarySprites(task: Tsk, freeResources: boolean): void {
     FreeSpritePaletteByTag(TAG_STATUS_SUMMARY_BAR_PAL);
     FreeSpritePaletteByTag(TAG_STATUS_SUMMARY_BALLS_PAL);
   }
-  DestroySprite(rt, barId);
+  DestroySprite(barId);
   for (let i = 0; i < PARTY_SIZE; i++) {
     const id = task.data[3 + i];
-    if (id >= 0) DestroySprite(rt, id);
+    if (id >= 0) DestroySprite(id);
   }
 }
 
@@ -2155,7 +2155,7 @@ export function destroyHealthboxSprite(handle: HealthboxHandle): void {
   // 1:1 : libère d'abord les child OAM des sous-sprites de la barre (sinon ils
   // fuient = OAM visibles orphelins au combat suivant).
   clearSubspriteTable(handle.healthbarSpriteId);
-  for (const spriteId of _allSpriteIds(handle)) DestroySprite(rt, spriteId);
+  for (const spriteId of _allSpriteIds(handle)) DestroySprite(spriteId);
 }
 
 /** 1:1 décomp `UpdateOamPriorityInAllHealthboxes` (ll. 1056-1070) : update

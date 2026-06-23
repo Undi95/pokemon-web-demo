@@ -600,7 +600,7 @@ export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void 
       if ((sp as unknown) === spriteOrId) { id = sid as number; break; }
     }
   }
-  if (id >= 0) DestroySprite(rt, id);
+  if (id >= 0) DestroySprite(id);
 }
 
 // ─── VAGUE F1 : AnimTask_BlendMonInAndOut (battle_anim_mons.c.c, 14 usages) ───────────────

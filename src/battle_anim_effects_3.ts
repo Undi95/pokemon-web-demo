@@ -979,7 +979,7 @@ function AnimMiniTwinklingStar_Step(sprite: _VSprite): void {
     sprite.data[1]++;
   }
   if (sprite.data[0] > 60) {
-    if (sprite.spriteId !== undefined) DestroySprite(getRuntime(), sprite.spriteId);
+    if (sprite.spriteId !== undefined) DestroySprite(sprite.spriteId);
     else { sprite.invisible = true; sprite.callback = null; } // fail-safe sans id
   }
 }
@@ -2123,8 +2123,8 @@ function _AnimGreenStar_Step2(sprite: _VSprite): void {
   const done1 = !s1 || s1.callback === _SpriteCallbackDummy;
   const done2 = !s2 || s2.callback === _SpriteCallbackDummy;
   if (done1 && done2) {
-    if (s1) DestroySprite(getRuntime(), sprite.data[6]);
-    if (s2) DestroySprite(getRuntime(), sprite.data[7]);
+    if (s1) DestroySprite(sprite.data[6]);
+    if (s2) DestroySprite(sprite.data[7]);
     _DestroyAnimSprite(sprite);
   }
 }
@@ -2849,7 +2849,7 @@ function AnimFacadeSweatDrop(sprite: { data: number[]; x: number; y: number }): 
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -2987,7 +2987,7 @@ function AnimGlareEyeDot(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -3490,7 +3490,7 @@ function _TormentBubble_Pop(sprite: { data: number[]; animEnded?: boolean }): vo
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -3585,7 +3585,7 @@ function AnimTask_BarrageBall_Step(task: { taskId: number; data: number[]; func?
         task.data[2]++;
         if (sp) sp.invisible = !!(task.data[2] & 1);
         if (task.data[2] === 16) {
-          DestroySprite(getRuntime(), task.data[15]);
+          DestroySprite(task.data[15]);
           task.data[0]++;
         }
       }
@@ -3795,7 +3795,7 @@ function AnimTask_RolePlaySilhouette(task: _E3Task): void {
         for (const [, t0] of rt0.gTasks ?? []) {
           if (t0.func === AnimTask_RolePlaySilhouette && ((t0.data?.[14] ?? 0) | 0) === token) { alive = true; break; }
         }
-        if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(getRuntime(), sid); return; }
+        if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(sid); return; }
         _rpsLoaded.set(token, sid ?? -1);
       });
     return;
@@ -3862,7 +3862,7 @@ function AnimTask_RolePlaySilhouette_Step2(task: _E3Task): void {
     const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
     const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
     if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
-    DestroySprite(getRuntime(), spriteId);
+    DestroySprite(spriteId);
     task.func = _RolePlay_DestroyTaskAndDisableBlend;
   }
 }
@@ -4322,7 +4322,7 @@ function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; 
             for (const [, t0] of rt0.gTasks ?? []) {
               if (t0.func === AnimTask_SnatchOpposingMonMove && ((t0.data?.[13] ?? 0) | 0) === token) { alive = true; break; }
             }
-            if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(getRuntime(), sid); return; }
+            if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(sid); return; }
             _somLoaded.set(token, sid ?? -1);
           });
         return;
@@ -4373,7 +4373,7 @@ function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; 
       const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
       const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
       if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
-      DestroySprite(getRuntime(), task.data[15]);
+      DestroySprite(task.data[15]);
       const sp = rt.gSprites?.[_GetAnimBattlerSpriteId(0)];
       if (sp) {
         if (atkIsPlayer) sp.x2 = -sp.x - 32;

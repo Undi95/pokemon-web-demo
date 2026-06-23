@@ -21,6 +21,7 @@
  * ⚠️ AUDIO SKIP (exception projet) : aucun PlaySE.
  */
 
+import { DestroySprite } from './sprite';
 import type { DecompTask, DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
 import {
   getRuntime,
@@ -29,7 +30,7 @@ import {
   BLDALPHA_BLEND,
   FreeSpriteTilesByTag,
 } from '../harness/runtime/decomp-globals';
-import {DestroySprite} from "../harness/runtime/decomp-bridge";
+
 import { SetGpuReg } from './gpu_regs';
 import { CreateTask, DestroyTask } from './task';
 import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
@@ -426,7 +427,7 @@ function DestroyCloudSprites(): void {
 
   for (let i = 0; i < NUM_CLOUD_SPRITES; i++) {
     const s = gWeatherPtr.sprites.s1.cloudSprites[i] as DecompSprite | null;
-    if (s !== null) DestroySprite(s);
+    if (s !== null) DestroySprite(s.spriteId);
   }
 
   FreeSpriteTilesByTag(GFXTAG_CLOUD);
@@ -618,7 +619,7 @@ function DestroyFogHorizontalSprites(): void {
   if (gWeatherPtr.fogHSpritesCreated) {
     for (let i = 0; i < NUM_FOG_HORIZONTAL_SPRITES; i++) {
       const s = gWeatherPtr.sprites.s2.fogHSprites[i] as DecompSprite | null;
-      if (s !== null) DestroySprite(s);
+      if (s !== null) DestroySprite(s.spriteId);
     }
 
     FreeSpriteTilesByTag(GFXTAG_FOG_H);
@@ -875,7 +876,7 @@ function DestroyAshSprites(): void {
   if (gWeatherPtr.ashSpritesCreated) {
     for (let i = 0; i < NUM_ASH_SPRITES; i++) {
       const s = gWeatherPtr.sprites.s2.ashSprites[i] as DecompSprite | null;
-      if (s !== null) DestroySprite(s);
+      if (s !== null) DestroySprite(s.spriteId);
     }
 
     FreeSpriteTilesByTag(GFXTAG_ASH);

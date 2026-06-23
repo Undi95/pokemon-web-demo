@@ -132,7 +132,7 @@ export function RemoveVirtualObject(virtualObjId: number): void {
   if (!vobj) return;
   const rt = getRuntime();
   if (rt && vobj.spriteId >= 0) {
-    DestroySprite(rt, vobj.spriteId);
+    DestroySprite(vobj.spriteId);
   }
   _gVirtualObjects.delete(virtualObjId);
 }

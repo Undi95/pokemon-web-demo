@@ -3815,7 +3815,7 @@ registerOpcode('removeobject', (_ctx, args) => {
     if (npc.spriteId >= 0) {
       try {
         const rt = getRuntime();
-        DestroySprite(rt, npc.spriteId);
+        DestroySprite(npc.spriteId);
       } catch (e) {
         console.warn(`[opcode removeobject] DestroySprite ${npc.spriteId} threw:`, e);
       }

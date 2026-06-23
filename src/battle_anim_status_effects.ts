@@ -150,7 +150,7 @@ function AnimTask_FrozenIceCube_Step4(task: _FicTask): void {
   task.data[1]++;
   const rt = _ficRt();
   if (task.data[1] === 37) {
-    DestroySprite(getRuntime(), task.data[15]);
+    DestroySprite(task.data[15]);
   } else if (task.data[1] === 39) {
     rt.SetGpuReg?.(0x50, 0);
     rt.SetGpuReg?.(0x52, 0);

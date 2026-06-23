@@ -263,7 +263,7 @@ export function SpriteCB_FldEffPokeballTrail(sprite: TrailSprite): void {
       // 1:1 FieldEffectStop : destroy + retire de l'active list.
       const rt = getRuntime();
       const id = _findSpriteId(sprite);
-      if (rt && id >= 0) DestroySprite(rt, id);
+      if (rt && id >= 0) DestroySprite(id);
       sprite.inUse = false;
       sprite.callback = null;
       _activeTrailBalls--;

@@ -696,10 +696,10 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { DestroySprite(rt, pkmnId); } catch (e) { void e; }
+      try { DestroySprite(pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
-      try { DestroySprite(rt, circleId); } catch (e) { void e; }
+      try { DestroySprite(circleId); } catch (e) { void e; }
     }
 
     // Cleanup task — we don't return to ROM callback ; the next CB2 tick will
@@ -733,10 +733,10 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { DestroySprite(rt, pkmnId); } catch (e) { void e; }
+      try { DestroySprite(pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
-      try { DestroySprite(rt, circleId); } catch (e) { void e; }
+      try { DestroySprite(circleId); } catch (e) { void e; }
     }
     task.func = Task_DeclineStarter;
   }
@@ -968,10 +968,10 @@ function cleanupScene(): void {
   if (!rt) return;
   // Destroy all our spawned sprites.
   for (const id of _starterPokeballSpriteIds) {
-    if (id >= 0) { try { DestroySprite(rt, id); } catch (e) { void e; } }
+    if (id >= 0) { try { DestroySprite(id); } catch (e) { void e; } }
   }
   if (_starterHandSpriteId >= 0) {
-    try { DestroySprite(rt, _starterHandSpriteId); } catch (e) { void e; }
+    try { DestroySprite(_starterHandSpriteId); } catch (e) { void e; }
   }
   _starterPokeballSpriteIds = [];
   _starterHandSpriteId = -1;

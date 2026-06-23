@@ -53,7 +53,7 @@ export const SpriteCB_MovingScenery: SpriteCallback = (sprite, rt) => {
           switch (state)
           {
           default:  
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
               break;
           case INTROCRED_SCENERY_NORMAL:
               x = ((sprite.x << 16) | sprite.data[2]) + sprite.data[1];

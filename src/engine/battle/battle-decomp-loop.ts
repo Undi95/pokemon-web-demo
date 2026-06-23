@@ -429,7 +429,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         const oamIdx = (sp as { oamIndex?: number }).oamIndex;
         const o = oamIdx !== undefined ? rt.gba?.oam?.[oamIdx] : undefined;
         if (o?.visible && !visAvant.has(oamIdx as number) && (o.tileId ?? 0) >= 0x140) {
-          try { DestroySprite(getRuntime(), id); } catch { /* deja mort */ }
+          try { DestroySprite(id); } catch { /* deja mort */ }
         }
       }
     }

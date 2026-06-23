@@ -43,6 +43,7 @@
  *   - "tile" = BG tile (= 8x8 px)
  *   - 1 metatile = 2x2 BG tiles
  */
+import { DestroySprite } from './sprite';
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import {
   type MapLayout,
@@ -72,7 +73,7 @@ import {
 } from '../harness/runtime/decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from './engine/field/field-globals';
 import { getRuntime } from '../harness/runtime/decomp-globals';
-import { DestroySprite } from '../harness/runtime/decomp-bridge';
+
 import { gSaveBlock1Ptr } from './engine/ui/gba-menu-system';
 import { CONNECTION_NONE, CONNECTION_INVALID } from '../include/constants/global';
 
@@ -266,7 +267,7 @@ function CameraUpdateCallback(cam: FieldCameraObject): void {
 export function InitCameraUpdateCallback(trackedSpriteId: number): number {
   if (gFieldCamera.spriteId !== 0) {
     const old = getRuntime().gSprites[gFieldCamera.spriteId];
-    if (old) DestroySprite(old);
+    if (old) DestroySprite(old.spriteId);
   }
   gFieldCamera.spriteId = callAddCameraObject(trackedSpriteId);
   gFieldCamera.callback = CameraUpdateCallback;
@@ -292,7 +293,7 @@ export function ResetCameraUpdateInfo(): void {
     const cam = getRuntime().gSprites[gFieldCamera.spriteId];
     // Garde : ne détruit que si c'est bien le sprite CameraObject (slot non réutilisé).
     if (cam && cam.callback && cam.callback.name === 'SpriteCB_CameraObject') {
-      DestroySprite(cam);
+      DestroySprite(cam.spriteId);
     }
   }
   gFieldCamera.movementSpeedX = 0;

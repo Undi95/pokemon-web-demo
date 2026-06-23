@@ -470,7 +470,7 @@ function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number,
     }
     if (s.data[1] >= 50) {
       // 1:1 décomp DestroyBallOpenAnimationParticle : free the sprite.
-      DestroySprite(rt, s.spriteId);
+      DestroySprite(s.spriteId);
     }
   };
 }

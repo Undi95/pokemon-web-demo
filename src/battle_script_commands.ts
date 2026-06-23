@@ -10644,7 +10644,7 @@ function SpriteCB_MonIconOnLvlUpBanner(sprite: { data: number[]; x2: number; spr
     sprite.data[0] = 1;  // sDestroy
   } else if (sprite.data[0]) {
     const rt = _rtBSC();
-    if (rt && typeof sprite.spriteId === 'number') DestroySprite(_getRuntimeBSC(), sprite.spriteId);
+    if (rt && typeof sprite.spriteId === 'number') DestroySprite(sprite.spriteId);
     _FreeSpriteTilesByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
     _FreeSpritePaletteByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
   }

@@ -1092,7 +1092,7 @@ export function FreeAndDestroyMonPicSprite(spriteId: number): void {
     const stop = (globalThis as Record<string, unknown>).__StopMonFrontSpriteAnimation;
     if (typeof stop === 'function') (stop as (rt: unknown, id: number) => void)(rt, spriteId);
   }
-  DestroySprite(rt, spriteId);
+  DestroySprite(spriteId);
 }
 
 export function ResetAllPicSprites(): void {

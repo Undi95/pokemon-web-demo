@@ -1023,7 +1023,7 @@ function _itemStorageEraseItemIcon(): void {
   const rt = getRuntime() as unknown as {
     DestroySprite?: (spriteId: number) => void;
   } | null;
-  DestroySprite(getRuntime(), sPCIconSpriteId);
+  DestroySprite(sPCIconSpriteId);
   sPCIconSpriteId = -1;
 }
 

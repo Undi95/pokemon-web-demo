@@ -359,7 +359,7 @@ function _purgeScriptSprites(): void {
       // (healthbox re-render pendant l'anim) — detruire par id nu detruisait
       // la healthbox (paye 2026-06-11). On ne purge que NOTRE objet.
       if (sp && (sp as unknown) === e.ref && (sp as { inUse?: boolean }).inUse !== false) {
-        try { DestroySprite(rt, e.id); } catch { /* deja mort */ }
+        try { DestroySprite(e.id); } catch { /* deja mort */ }
       }
     }
   }
@@ -541,7 +541,7 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
   if (sprite && sprite.matrixNum !== 0) {
     FreeOamMatrix(sprite.matrixNum);
   }
-  try { DestroySprite(rt, spriteId); } catch (e) { void e; }
+  try { DestroySprite(spriteId); } catch (e) { void e; }
   // PAS de gSprites.delete : le runtime garde le slot jusqu'a reallocation
   // (1:1 decomp — le delete cassait la healthbox composee, fix user 2026-06-11).
   if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--;

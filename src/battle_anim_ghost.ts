@@ -790,7 +790,7 @@ function _AnimGrudgeFlame(sprite: _GfSprite): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -900,7 +900,7 @@ function AnimTask_DestinyBondWhiteShadow_Step(task: _DbTask): void {
         }
         rt.SetGpuReg?.(0x52, (task.data[8] & 0xFF) | ((task.data[9] & 0xFF) << 8));
         if (task.data[8] === 0 && task.data[9] === 16) {
-          for (let i = 0; i < task.data[12]; i++) DestroySprite(getRuntime(), task.data[i + 13]);
+          for (let i = 0; i < task.data[12]; i++) DestroySprite(task.data[i + 13]);
           task.data[0]++;
         }
       }

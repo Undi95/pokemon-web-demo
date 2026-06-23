@@ -716,7 +716,7 @@ function _UpdateMonScrollingBgMask(task: _SmskTask): void {
           if (rt.gba?.windows) rt.gba.windows.winObjEnabled = false; // DISPCNT ^= OBJWIN
           rt.SetGpuReg?.(0x50, 0);
           rt.SetGpuReg?.(0x52, 0);
-          if (task.data[0] >= 0) DestroySprite(getRuntime(), task.data[0]);
+          if (task.data[0] >= 0) DestroySprite(task.data[0]);
           _smskItf().DestroyAnimVisualTask?.(task.taskId);
         }
       }
@@ -978,8 +978,8 @@ function StatsChangeAnimation_Step3(task: AnimTask): void {
       rt.SetGpuReg?.(0x00, (rt.GetGpuReg?.(0x00) ?? 0) ^ 0x8000 /* DISPCNT ^ OBJWIN_ON */);
       rt.SetGpuReg?.(0x50, 0);
       rt.SetGpuReg?.(0x52, 0);
-      if (task.data[0] >= 0) DestroySprite(getRuntime(), task.data[0]);
-      if (task.data[2] && task.data[3] >= 0) DestroySprite(getRuntime(), task.data[3]);
+      if (task.data[0] >= 0) DestroySprite(task.data[0]);
+      if (task.data[2] && task.data[3] >= 0) DestroySprite(task.data[3]);
       // :622-623 restaure la priorité du battler2 — hors-scope single (tHidBattler2=0).
       sAnimStatsChangeData = null; // FREE_AND_SET_NULL
       _itf().DestroyAnimVisualTask?.(task.taskId);
@@ -1102,7 +1102,7 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker_Step(task: AnimTask): void {
       rt.SetGpuReg?.(0x52, 0);
       const sid = task.data[0];
       const rt2 = rt as { DestroySprite?: (i: number) => void; gSprites?: Array<unknown | undefined> };
-      if (sid >= 0) { DestroySprite(getRuntime(), sid); if (rt2.gSprites) rt2.gSprites[sid] = undefined; }
+      if (sid >= 0) { DestroySprite(sid); if (rt2.gSprites) rt2.gSprites[sid] = undefined; }
       const bgData = _scBgData();
       _scClearAnimBg(bgData.bgId);
       g.gBattle_BG1_Y = 0;

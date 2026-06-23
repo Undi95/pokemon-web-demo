@@ -634,7 +634,7 @@ function _AnimRolloutParticle(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }

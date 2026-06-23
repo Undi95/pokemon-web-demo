@@ -42,7 +42,7 @@
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
 // (branche sheet taggee). Re-export `// (ré-exports morts retirés depuis '../../src/sprite' — sweep)` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
-import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
+import { ResetSpriteData as _ResetSpriteData, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } from '../../src/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
@@ -477,12 +477,7 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
 
 // CreateSprite (routeur 3-voies no-rt) décyclé → src/sprite.ts (foyer 1:1 sprite.c).
 
-/** 1:1 décomp `src/sprite.c DestroySprite(sprite)` — kill un sprite par id. */
-export function DestroySprite(sprite: any): void {
-  const rt = _getRT();
-  const id = typeof sprite === 'number' ? sprite : sprite?.spriteId ?? sprite?.id;
-  if (id != null) _DestroySprite(rt, id);
-}
+// DestroySprite décyclé → src/sprite.ts (foyer 1:1 sprite.c, signature no-rt).
 
 // CreateTask / DestroyTask / SetTaskFuncWithFollowupFunc / SwitchTaskToFollowupFunc
 // décyclés → src/task.ts (foyer 1:1 task.c ; délèguent au substrat runtime).
@@ -661,7 +656,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
-  'DestroySprite',
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
   'ResetSpriteData',

@@ -162,7 +162,7 @@ export function FieldEffectFreePaletteIfUnused(rt: DecompRuntime, paletteNum: nu
 export function FieldEffectFreeGraphicsResources(rt: DecompRuntime, sprite: DecompSprite): void {
   const oam = rt.gba.oam[sprite.oamIndex];
   const paletteNum = oam ? oam.paletteBank : 0xFF;
-  DestroySprite(rt, sprite.spriteId);
+  DestroySprite(sprite.spriteId);
   FieldEffectFreePaletteIfUnused(rt, paletteNum);
 }
 

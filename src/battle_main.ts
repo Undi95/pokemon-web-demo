@@ -1056,7 +1056,7 @@ function DestroySprite(sprite: FaintSprite): void {
       // À JAMAIS. 1:1 DestroySpriteAndFreeResources : le runtime cache l'OAM
       // (oam.visible=false + invisible + inUse=false + callback=null), PUIS on
       // retire le slot de la Map (le mon faint n'a pas d'enfants-data).
-      _DestroySpriteImpl(r, id);
+      _DestroySpriteImpl(id);
       r.gSprites[id] = undefined;
       return;
     }
@@ -3026,7 +3026,7 @@ function _CreateInvisibleSpriteWithCallback(cb: (sprite: BattleSprite) => void):
 function _DestroySprite(sprite: BattleSprite): void {
   const rt = getRuntime();
   const id = (sprite as { spriteId?: number }).spriteId;
-  if (rt && typeof id === 'number') _DestroySpriteImpl(rt, id);
+  if (rt && typeof id === 'number') _DestroySpriteImpl(id);
   else sprite.callback = null;
 }
 

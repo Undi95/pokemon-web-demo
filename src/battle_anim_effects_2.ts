@@ -1675,7 +1675,7 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
       const sp2 = rtp?.gSprites?.[sid];
       if (sp2 === undefined) continue;
       if ((sp2 as { callback?: unknown }).callback === _AnimSpeedDust) {
-        DestroySprite(getRuntime(), sid);
+        DestroySprite(sid);
         if (--task.data[13] <= 0) break;
       }
     }
@@ -1748,7 +1748,7 @@ function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -2394,7 +2394,7 @@ function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }

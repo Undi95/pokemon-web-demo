@@ -125,7 +125,7 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 /** Source: intro.c → SpriteCB_Sparkle */
 export const SpriteCB_Sparkle: SpriteCallback = (sprite, rt) => {
   if (++sprite.data[7] == 12)
-          DestroySprite(rt, sprite.spriteId);
+          DestroySprite(sprite.spriteId);
 };
 
 /** Source: intro.c → SpriteCB_Volbeat */
@@ -204,7 +204,7 @@ export const SpriteCB_Volbeat: SpriteCallback = (sprite, rt) => {
           sprite.y2 = Sin(sprite.data[5], 0x14);
           sprite.data[5] += 4;
           if (sprite.x < -16)
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
           break;
       case VOLBEAT_WAIT_STATE:
            
@@ -315,7 +315,7 @@ export const SpriteCB_Manectric: SpriteCallback = (sprite, rt) => {
           if (sprite.x + sprite.x2 <= -32)
           {
                
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
           }
           else
           {
@@ -389,7 +389,7 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
               sprite.data[2] += 48;
               sprite.y2 = -(sprite.data[2] >> 8);
               if (sprite.animEnded)
-                  DestroySprite(rt, sprite.spriteId);
+                  DestroySprite(sprite.spriteId);
           }
           else if (--sprite.data[6] == 0)
           {
@@ -416,7 +416,7 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
               sprite.y += 3;
 
           if (((sprite.y - 20) & 0xFFFF) > DISPLAY_HEIGHT - 20)  // 1:1 décomp intro.c:2317 : (u16)(y-20). Cast droppé → les bulles qui montent (y<20→négatif) n'étaient JAMAIS détruites → persistaient sur la scène éclairs.
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
           break;
       }
 };
@@ -446,7 +446,7 @@ export const SpriteCB_Lightning: SpriteCallback = (sprite, rt) => {
               rt.CpuCopy16(INTRO3_RAW_PTR(sprite.data[1]), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
               sprite.data[1] -= 2;
               if (sprite.data[1] == 0x1C0)
-                  DestroySprite(rt, sprite.spriteId);
+                  DestroySprite(sprite.spriteId);
           }
           break;
       }
@@ -473,7 +473,7 @@ export const SpriteCB_WaterDrop_Ripple: SpriteCallback = (sprite, rt) => {
       }
       else
       {
-          DestroySprite(rt, sprite.spriteId);
+          DestroySprite(sprite.spriteId);
       }
 };
 
@@ -810,7 +810,7 @@ export const SpriteCB_LogoLetter: SpriteCallback = (sprite, rt) => {
               sprite.x2 = -temp;
           }
           if (sprite.affineAnimEnded)
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
           break;
       }
 };
@@ -836,7 +836,7 @@ export const SpriteCB_GameFreakLogo: SpriteCallback = (sprite, rt) => {
           break;
       case 2:
           if (sprite.affineAnimEnded)
-              DestroySprite(rt, sprite.spriteId);
+              DestroySprite(sprite.spriteId);
           break;
       }
 };

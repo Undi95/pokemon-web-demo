@@ -350,7 +350,7 @@ function AnimWaterPulseRingBubble(sprite: _WSprite): void {
     if (sprite.matrixNum !== undefined && sprite.matrixNum >= 0)
       FreeOamMatrix(sprite.matrixNum);
     if (sprite.spriteId !== undefined)
-      DestroySprite(getRuntime(), sprite.spriteId);
+      DestroySprite(sprite.spriteId);
   }
 }
 
@@ -699,7 +699,7 @@ function AnimRainDrop_Step(sprite: { data: number[]; x2: number; y2: number; ani
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -861,7 +861,7 @@ function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
       if (sp === undefined) continue;
-      if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+      if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
     }
   }
 }
@@ -1060,7 +1060,7 @@ function _AnimSmallWaterOrb(sprite: { x: number; y: number; data: number[] }): v
         for (let sid = 0; sid < MAX_SPRITES; sid++) {
           const sp = rt.gSprites?.[sid];
           if (sp === undefined) continue;
-          if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+          if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
         }
       }
     }
@@ -1161,7 +1161,7 @@ function _AnimWaterSpoutRain(sprite: { x: number; y: number; data: number[]; cal
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const sp = rt.gSprites?.[sid];
         if (sp === undefined) continue;
-        if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+        if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
       }
     }
   }
@@ -1178,7 +1178,7 @@ function _AnimWaterSpoutRainHit(sprite: { data: number[]; invisible?: boolean })
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const sp = rt.gSprites?.[sid];
         if (sp === undefined) continue;
-        if (sp === (sprite as unknown)) { DestroySprite(getRuntime(), sid); break; }
+        if (sp === (sprite as unknown)) { DestroySprite(sid); break; }
       }
     }
   }

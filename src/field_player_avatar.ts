@@ -1065,7 +1065,7 @@ function Task_WaitStopSurfing(task: DecompTask): void {
     ObjectEventSetHeldMovement(playerObjEvent, GetFaceDirectionMovementAction(playerObjEvent.facingDirection));
     gPlayerAvatar.preventStep = false;
     UnlockPlayerFieldControls();
-    DestroySprite(getRuntime(), playerObjEvent.fieldEffectSpriteId);
+    DestroySprite(playerObjEvent.fieldEffectSpriteId);
     // #ifdef BUGFIX : sans ça, en marchant dans l'herbe depuis le surf, le joueur apparaît AU-DESSUS
     // de l'herbe au lieu de DEDANS → on ré-arme triggerGroundEffectsOnMove.
     playerObjEvent.triggerGroundEffectsOnMove = true;
