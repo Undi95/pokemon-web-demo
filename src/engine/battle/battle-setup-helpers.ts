@@ -52,8 +52,6 @@ import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
 import { StringExpandPlaceholders } from '../../string_util';
 import { getText } from '../../script';
-// Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
-import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
 import { ENUM_B_1 as B_TRANSITION } from '../../../include/battle_transition';
 // SPECIES_ZIGZAGOON (= 288) depuis le leaf auto-extrait (règle [[feedback-no-hardcoded-decomp-values]]).
 import { SPECIES_ZIGZAGOON } from '../../../include/constants/species';
@@ -397,7 +395,12 @@ const MON_DATA_LEVEL = 56;
 const SPECIES_NONE = 0;
 const SPECIES_EGG = 412;
 
-const { TRANSITION_TYPE_NORMAL, TRANSITION_TYPE_CAVE, TRANSITION_TYPE_FLASH, TRANSITION_TYPE_WATER } = ENUM_TRANSITION_0;
+// 1:1 décomp battle_setup.c:51-56 — enum anonyme file-local (type de transition
+// → index dans sBattleTransitionTable_*).
+const TRANSITION_TYPE_NORMAL = 0;
+const TRANSITION_TYPE_CAVE = 1;
+const TRANSITION_TYPE_FLASH = 2;
+const TRANSITION_TYPE_WATER = 3;
 
 /** 1:1 décomp `sBattleTransitionTable_Wild[][2]` (battle_setup.c:114-120). La 1re
  *  transition est utilisée si l'ennemi est de niveau INFÉRIEUR au joueur, sinon la 2e.
