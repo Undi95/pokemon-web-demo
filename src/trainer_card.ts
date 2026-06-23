@@ -47,7 +47,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
+import { ResetSpriteData, FreeAllSpritePalettes } from '../harness/runtime/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
@@ -300,8 +300,15 @@ function _loadCardGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
       tag: TAG_TRAINER_PIC_GFX,
     });
     _trainerPicPalSlot = LoadSpritePalette({ data: assets.trainerPicPal, tag: TAG_TRAINER_PIC_PAL });
+    // badges.png = 128×16 = 8 badges de 16×16 (2×2 tiles) en ordre RASTER gbagfx
+    // (badge i = tiles top[2i,2i+1] sur la row 0 + bot[16+2i,16+2i+1] sur la row 1
+    // → ENTRELACÉS entre badges). Le décomp les dessine en BG tilemap (l'ordre
+    // raster lui va) ; le port les rend en sprites OAM 16×16 qui lisent 4 tiles
+    // CONTIGUËS (TL,TR,BL,BR) → on désentrelace en 8 blocs de 4 tiles pour que
+    // badge i = baseTile + i*4 (sinon tiles mélangées = garbage / "coupé à gauche").
+    const badgesDeint = _deinterleaveBadges(assets.badgesGfx);
     _badgesTileStart = LoadSpriteSheet({
-      data: assets.badgesGfx, size: assets.badgesGfx.length, tag: TAG_BADGES_GFX,
+      data: badgesDeint, size: badgesDeint.length, tag: TAG_BADGES_GFX,
     });
     _badgesPalSlot = LoadSpritePalette({ data: assets.badgesPal, tag: TAG_BADGES_PAL });
     _graphicsReady = true;
@@ -548,24 +555,43 @@ function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   _trainerPicOamId = trainerSpr.spriteId;
 }
 
-/** Spawn 8 badge OAM 32×32 à la rangée du bas. Visible only si badge flag set. */
+/** Désentrelace badges.png (128×16, 8 badges 16×16 en ordre raster gbagfx) en
+ *  8 blocs CONTIGUS de 4 tiles (TL,TR,BL,BR) pour le rendu en sprites OAM 16×16.
+ *  badge i : top-left=2i, top-right=2i+1 (row 0) ; bot-left=16+2i, bot-right=16+2i+1
+ *  (row 1) → dest tiles [i*4 .. i*4+3]. */
+function _deinterleaveBadges(strip: Uint8Array): Uint8Array {
+  const TILE = 32;                 // 8×8 4bpp = 32 octets/tile
+  const NUM_BADGES = 8;
+  const out = new Uint8Array(NUM_BADGES * 4 * TILE);
+  for (let i = 0; i < NUM_BADGES; i++) {
+    const src = [2 * i, 2 * i + 1, 16 + 2 * i, 16 + 2 * i + 1]; // TL,TR,BL,BR
+    for (let t = 0; t < 4; t++) {
+      const so = src[t] * TILE;
+      out.set(strip.subarray(so, so + TILE), (i * 4 + t) * TILE);
+    }
+  }
+  return out;
+}
+
+/** Spawn 8 badge OAM 16×16 à la rangée du bas. Visible only si badge flag set. */
 function _spawnBadgesOam(assets: TrainerCardAssets): void {
   const rt = getRuntime();
   if (!rt) return;
   void assets;
   const d = _bufferCardData();
   _badgeOamIds = [];
-  // Badge tiles : 8 badges × 4 tiles each (32×32 = 4 tiles 8×8 in 4bpp).
-  // Layout from badges.png : 8 badges in a row, 32×32 each.
-  // Tile base dynamiquement alloué par LoadSpriteSheet (= 1:1 STRICT décomp).
+  // badges.png = 8 badges de 16×16 = 4 tiles 8×8/badge (cf. décomp badgeTiles
+  // [0x80 * NUM_BADGES] = 128 octets = 4 tiles). Désentrelacés par
+  // _deinterleaveBadges → badge i = baseTile + i*4 contigu.
   const baseTile = _badgesTileStart;
-  const TILES_PER_BADGE = 16;  // 32×32 = 16 tiles 8×8 in 4bpp (= 4 wide × 4 tall)
-  // Position : 8 slots horizontaux y=132, x espacé 32px from x=8.
+  const TILES_PER_BADGE = 4;   // 16×16 = 4 tiles 8×8 4bpp (2 wide × 2 tall)
   for (let i = 0; i < 8; i++) {
     if (i >= d.badges) continue;  // only show earned badges
+    // 1:1 décomp DrawStarsAndBadgesOnCard (:1511) : badge i au tile (4 + i*3, 15),
+    // bloc 2×2 → pixel top-left ((4+3i)*8, 120) → centre OAM (40 + 24*i, 128).
     const badgeSpr = rt.CreateSpriteAtOam({
-      x: 24 + i * 28, y: 132,
-      shape: 0, size: 2,         // 32×32
+      x: 40 + i * 24, y: 128,
+      shape: 0, size: 1,         // 16×16
       tileId: baseTile + i * TILES_PER_BADGE,
       paletteBank: _badgesPalSlot,
       priority: 0,
@@ -866,6 +892,7 @@ export function CB2_InitTrainerCard(): void {
       break;
     case 4:
       ResetSpriteData();
+      FreeAllSpritePalettes();   // 1:1 trainer_card.c:608 (manquait → sprite dresseur/badges noirs si slots OBJ réservés par l'écran précédent)
       rt.gMain.state++;
       break;
     case 5: rt.gMain.state++; break;
