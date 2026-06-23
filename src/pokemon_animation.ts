@@ -26,6 +26,7 @@ import { Sin, Cos } from './trig';
 import { BlendPalette } from '../harness/runtime/decomp-globals';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import {
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
 } from './battle_anim_mons';
@@ -1353,3 +1354,179 @@ export function LaunchAnimationTaskForFrontSprite(spriteId: number, animName: st
 (globalThis as Record<string, unknown>).__pokemonAnimation = {
   LaunchAnimationTaskForFrontSprite,
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORCHESTRATION DoMonFrontSpriteAnimation + table espèce→anim + Stop/Reset
+// (anciennement src/engine/pokemon/pokemon-animation.ts, fusionné ici — la
+// décomp n'a qu'UN fichier pokemon_animation.c). DoMonFrontSpriteAnimation est
+// en réalité dans pokemon.c:6779 mais c'est l'entrée consommateur de l'anim de
+// front, donc on la garde avec le moteur. Le moteur d'anim utilisé = celui de
+// CE fichier (chemin OAM réel battle_anim_mons), pas un 2e chemin affine.
+//
+// Consommateurs (via decomp-globals re-export) : Birch/intro (pokeball arc end),
+// évo/Pokédex, main_menu (Stop/Reset cleanup). battle_main passe par
+// __pokemonAnimation.LaunchAnimationTaskForFrontSprite (inchangé).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── ANIM_* numeric constants (1:1 include/pokemon_animation.h) ──────────────
+// Utilisés pour le pont id-numérique → nom ANIM_* (override DoMonFront) vers le
+// registre string-keyed _animsByName ci-dessus.
+export const ANIM_V_SQUISH_AND_BOUNCE = 0;
+export const ANIM_CIRCULAR_STRETCH_TWICE = 1;
+export const ANIM_H_VIBRATE = 2;
+export const ANIM_H_SLIDE = 3;
+export const ANIM_V_SLIDE = 4;
+export const ANIM_BOUNCE_ROTATE_TO_SIDES = 5;
+export const ANIM_V_JUMPS_H_JUMPS = 6;
+export const ANIM_GROW_VIBRATE = 9;
+export const ANIM_H_SHAKE = 15;
+export const ANIM_V_SHAKE = 16;
+export const ANIM_TWIST = 18;
+export const ANIM_SHRINK_GROW = 19;
+export const ANIM_H_STRETCH = 22;
+export const ANIM_V_STRETCH = 23;
+export const ANIM_V_SHAKE_TWICE = 25;
+export const ANIM_V_JUMPS_BIG = 30;
+export const ANIM_V_SQUISH_AND_BOUNCE_SLOW = 69;
+export const ANIM_H_SLIDE_SLOW = 70;
+export const ANIM_V_SLIDE_SLOW = 71;
+export const ANIM_V_JUMPS_SMALL = 82;
+
+const ANIM_NAME_TO_ID: Readonly<Record<string, number>> = {
+  ANIM_V_SQUISH_AND_BOUNCE, ANIM_CIRCULAR_STRETCH_TWICE, ANIM_H_VIBRATE,
+  ANIM_H_SLIDE, ANIM_V_SLIDE, ANIM_BOUNCE_ROTATE_TO_SIDES, ANIM_V_JUMPS_H_JUMPS,
+  ANIM_GROW_VIBRATE, ANIM_H_SHAKE, ANIM_V_SHAKE, ANIM_TWIST, ANIM_SHRINK_GROW,
+  ANIM_H_STRETCH, ANIM_V_STRETCH, ANIM_V_SHAKE_TWICE, ANIM_V_JUMPS_BIG,
+  ANIM_V_SQUISH_AND_BOUNCE_SLOW, ANIM_H_SLIDE_SLOW, ANIM_V_SLIDE_SLOW,
+  ANIM_V_JUMPS_SMALL,
+};
+/** Inverse id→nom (pour l'override numérique de DoMonFront). */
+const ANIM_ID_TO_NAME: Readonly<Record<number, string>> = Object.fromEntries(
+  Object.entries(ANIM_NAME_TO_ID).map(([name, id]) => [id, name]),
+);
+
+// ─── Table espèce → nom ANIM_* (1:1 décomp sMonFrontAnimIdsTable, pokemon.c) ──
+// Hydratée depuis le fichier extrait (387 espèces). On stocke directement le
+// NOM ANIM_* (pas l'id) pour router vers le registre string `_animsByName` de ce
+// fichier → Birch/Pokédex bénéficient de TOUS les anims portés (pas juste 2).
+const _sMonFrontAnimNames = new Map<number, string>([
+  [295 /* SPECIES_LOTAD */, 'ANIM_V_SQUISH_AND_BOUNCE'],
+  [296 /* SPECIES_LOMBRE */, 'ANIM_V_SQUISH_AND_BOUNCE'],
+  [297 /* SPECIES_LUDICOLO */, 'ANIM_V_SQUISH_AND_BOUNCE'],
+]);
+
+/** Bridge du fichier extrait (SPECIES_X / ANIM_Y string) → Map espèce→nom.
+ *  Fire-and-forget au module load (1ère utilisation arrive après le boot). */
+async function _hydrateMonFrontAnimNames(): Promise<void> {
+  try {
+    const [tablesMod, speciesMod] = await Promise.all([
+      import('./engine/decomp-data/src/mon-anim-tables-data'),
+      import('../include/constants/species'),
+    ]);
+    const speciesNameToId = speciesMod as unknown as Record<string, number>;
+    for (const [speciesName, animName] of tablesMod.RAW_MON_FRONT_ANIM_IDS) {
+      const speciesId = speciesNameToId[speciesName];
+      if (typeof speciesId === 'number' && typeof animName === 'string') {
+        _sMonFrontAnimNames.set(speciesId, animName);
+      }
+    }
+    if (tablesMod.RAW_MON_FRONT_ANIM_IDS.length > 0) {
+      console.log(`[pokemon_animation] hydrated ${tablesMod.RAW_MON_FRONT_ANIM_IDS.length} species → front anim names`);
+    }
+  } catch {
+    // Fichier extrait absent/malformé → fallback Map minimale (triplet Lotad).
+  }
+}
+void _hydrateMonFrontAnimNames();
+
+/** Nom ANIM_* pour une espèce (défaut ANIM_V_SQUISH_AND_BOUNCE). */
+function getMonFrontAnimName(species: number): string {
+  return _sMonFrontAnimNames.get(species) ?? 'ANIM_V_SQUISH_AND_BOUNCE';
+}
+
+// ─── Sentinelles callback (1:1 décomp src/sprite.c) ─────────────────────────
+export function SpriteCallbackDummy(_sprite: DecompSprite, _rt: DecompRuntime): void { /* no-op */ }
+export function SpriteCallbackDummy_2(_sprite: DecompSprite, _rt: DecompRuntime): void { /* no-op */ }
+
+/** 1:1 décomp src/pokemon.c HasTwoFramesAnimation (sMonHasTwoFramesAnimationTable).
+ *  Stub : la plupart des Gen 3 ont 2 frames → défaut TRUE (1:1 fallback sûr). */
+export function HasTwoFramesAnimation(_species: number): boolean {
+  return true;
+}
+
+const SKIP_FRONT_ANIM = 0x80;
+
+/** Tiles par frame d'anim front pic, dérivé de l'OAM shape/size (mon = 64×64). */
+function _tilesPerMonPicFrame(shape: number, size: number): number {
+  const SQUARE: ReadonlyArray<[number, number]> = [[8, 8], [16, 16], [32, 32], [64, 64]];
+  const H_RECT: ReadonlyArray<[number, number]> = [[16, 8], [32, 8], [32, 16], [64, 32]];
+  const V_RECT: ReadonlyArray<[number, number]> = [[8, 16], [8, 32], [16, 32], [32, 64]];
+  const table = shape === 0 ? SQUARE : shape === 1 ? H_RECT : V_RECT;
+  const [w, h] = table[size & 3] ?? [8, 8];
+  return (w / 8) * (h / 8);
+}
+
+/** 1:1 décomp `DoMonFrontSpriteAnimation` (pokemon.c:6779) : cry + pan,
+ *  StartSpriteAnim(sprite,1) si 2-frame, puis lance l'idle anim (= le mon
+ *  « respire » à l'apparition). panMode 0=-25, 1=+25, 2+=0 ; bit 7 (SKIP) skippe
+ *  l'anim. Câblé Birch (decomp-globals), évo, Pokédex.
+ *
+ *  Le launch interne route vers le registre string `_animsByName` (moteur OAM
+ *  réel battle_anim_mons de CE fichier) via le nom ANIM_* de l'espèce. */
+export function DoMonFrontSpriteAnimation(
+  rt: DecompRuntime,
+  sprite: DecompSprite,
+  species: number,
+  noCry: boolean,
+  panModeAnimFlag: number,
+  playCryFn: (species: number, pan: number) => void,
+  /** Override numérique (sentinelle -1 = lookup par espèce). */
+  frontAnimIdOverride: number = -1,
+): void {
+  const skipAnim = !!(panModeAnimFlag & SKIP_FRONT_ANIM);
+  const panMode = panModeAnimFlag & ~SKIP_FRONT_ANIM;
+  const pan = panMode === 0 ? -25 : panMode === 1 ? 25 : 0;
+
+  if (skipAnim) {
+    if (!noCry) playCryFn(species, pan);
+    sprite.callback = SpriteCallbackDummy;
+    return;
+  }
+
+  if (!noCry) {
+    playCryFn(species, pan);
+    if (HasTwoFramesAnimation(species)) {
+      // 1:1 StartSpriteAnim(sprite, 1) + write oam.tileId direct (sprites créés
+      // via CreateSpriteAtOam où StartSpriteAnim no-op).
+      rt.StartSpriteAnim(sprite.spriteId, 1);
+      const tilesPerFrame = _tilesPerMonPicFrame(sprite.shape, sprite.size);
+      const oam = rt.gba.oam[sprite.oamIndex];
+      if (oam) oam.tileId = (sprite.tileBase || 0) + tilesPerFrame;
+    }
+  }
+
+  // 1:1 pokemon.c:6820 — frontAnimId via sMonFrontAnimIdsTable[species-1].
+  // Override numérique → nom via ANIM_ID_TO_NAME ; sinon nom direct par espèce.
+  const animName = frontAnimIdOverride >= 0
+    ? (ANIM_ID_TO_NAME[frontAnimIdOverride] ?? 'ANIM_V_SQUISH_AND_BOUNCE')
+    : getMonFrontAnimName(species);
+
+  // Route vers le moteur de CE fichier (LaunchAnimationTaskForFrontSprite ci-dessus,
+  // signature spriteId+nom). Le décomp pose ensuite callback=SpriteCallbackDummy_2 ;
+  // notre Launch pose directement le callback de l'anim (= != SpriteCallbackDummy,
+  // les waiters passent toujours).
+  LaunchAnimationTaskForFrontSprite(sprite.spriteId, animName);
+}
+
+/** Stoppe l'idle anim d'un sprite (= DESTROY/sortie de scène). 1:1 pattern :
+ *  sprite.callback = SpriteCallbackDummy. */
+export function StopMonFrontSpriteAnimation(rt: DecompRuntime, spriteId: number): void {
+  const sprite = rt.gSprites[spriteId];
+  if (sprite) sprite.callback = SpriteCallbackDummy;
+}
+
+/** Reset toutes les anims mon (= transitions de scène). #1 ne tient pas de Map
+ *  d'anims actives (l'état vit dans sprite.data + sprite.callback) → no-op. */
+export function ResetAllMonAnimations(): void {
+  /* no-op : pas de registre runtime d'anims en cours dans cette impl. */
+}
