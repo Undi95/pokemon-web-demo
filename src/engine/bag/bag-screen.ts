@@ -1201,7 +1201,7 @@ function _tickPocketArrows(): void {
   if (!rt) return;
   const sLeft = _arrowLeftOamId >= 0 ? rt.gSprites[_arrowLeftOamId] : null;
   if (sLeft) {
-    // 1:1 décomp gSineTable[idx & 0xFF] (= G_SINE_TABLE depuis decomp-data/sine-table.ts).
+    // 1:1 décomp gSineTable[idx & 0xFF] (forme fonction via decomp-helpers, backed par src/trig.ts).
     sLeft.x2 = (gSineTable(_arrowSinePosLeft) * 2) >> 8;
     _arrowSinePosLeft = (_arrowSinePosLeft + 8) & 0xFF;
   }

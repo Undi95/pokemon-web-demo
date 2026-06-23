@@ -33,7 +33,10 @@ import {
   DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_ON,
   MAX_SPRITES,
 } from './decomp-runtime';
-import { G_SINE_TABLE } from '../../src/engine/decomp-data/src/sine-table';
+// gSineTable vit dans son miroir 1:1 src/trig.ts (= decomp/src/trig.c). Aliasé
+// G_SINE_TABLE pour garder les usages bridge (BgAffineSet, globalThis pour
+// pokeball-effects/sprite) inchangés. Le scaffold decomp-data/src/sine-table a été retiré.
+import { gSineTable as G_SINE_TABLE } from '../../src/trig';
 import { SONG_ID_TO_NAME, getSongConfig } from '../../src/engine/decomp-data/src/song-table';
 import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
 import { setReverb as _staticSetReverb } from '../m4a/audio-context';

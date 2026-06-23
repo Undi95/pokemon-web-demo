@@ -6,7 +6,7 @@
  * littéralement les bodyC C en TS sans réinventer.
  *
  * Sources :
- *   - gSineTable : `decomps/pokeemeraude/src/trig.c` → src/engine/decomp-data/src/sine-table.ts
+ *   - gSineTable : `decomps/pokeemeraude/src/trig.c` → src/trig.ts (miroir 1:1)
  *   - Q_8_8 / SPRITE_SHAPE / SPRITE_SIZE constants : include/gba/types.h
  *   - SetOamMatrix : src/sprite.c
  *   - CalcCenterToCornerVec : src/sprite.c (ajuste position pour affine bbox)
