@@ -518,15 +518,7 @@ export function DestroySprite(sprite: any): void {
 // CreateTask / DestroyTask / SetTaskFuncWithFollowupFunc / SwitchTaskToFollowupFunc
 // décyclés → src/task.ts (foyer 1:1 task.c ; délèguent au substrat runtime).
 
-/** 1:1 décomp `src/sprite.c SetGpuReg(reg, value)` — write to GPU register. */
-export function SetGpuReg(reg: number, value: number): void {
-  _getRT().SetGpuReg(reg, value);
-}
-
-/** 1:1 décomp `src/sprite.c GetGpuReg(reg)` — read from GPU register. */
-export function GetGpuReg(reg: number): number {
-  return _getRT().GetGpuReg(reg);
-}
+// SetGpuReg / GetGpuReg décyclés → src/gpu_regs.ts (foyer 1:1 gpu_regs.c).
 
 /** 1:1 décomp `src/sprite.c StartSpriteAnim(sprite, animIdx)`. */
 export function StartSpriteAnim(sprite: any, animIdx: number): void {
@@ -711,7 +703,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
   'CreateSprite',  'DestroySprite',
-  'SetGpuReg', 'GetGpuReg',
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
   'ResetSpriteData',

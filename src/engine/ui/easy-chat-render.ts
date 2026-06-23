@@ -115,18 +115,8 @@
 
 // â”€â”€â”€ Imports infrastructure (helpers TS existants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-import {
-  LoadPalette,
-  ResetPaletteFade,
-  CpuFastFill,
-  CreateSprite,
-  DestroySprite,
-  StartSpriteAnim,
-  LoadCompressedSpriteSheet,
-  SetGpuReg,
-  GetBgTilemapBuffer,
-  WIN_RANGE,
-} from '../../../harness/runtime/decomp-bridge';
+import {LoadPalette, ResetPaletteFade, CpuFastFill, CreateSprite, DestroySprite, StartSpriteAnim, LoadCompressedSpriteSheet, GetBgTilemapBuffer, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
+import { SetGpuReg } from '../../gpu_regs';
 
 import {
   InitWindows,
@@ -216,9 +206,7 @@ import {
   DISPCNT_MODE_0,
 } from '../../../harness/runtime/decomp-runtime';
 
-import {
-  PLTT_SIZE_4BPP,
-} from '../../../harness/runtime/decomp-bridge';
+import {PLTT_SIZE_4BPP} from "../../../harness/runtime/decomp-bridge";
 
 import {
   BG_SCREEN_SIZE,

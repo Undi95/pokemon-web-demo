@@ -29,7 +29,8 @@ import {
   BLDALPHA_BLEND,
   FreeSpriteTilesByTag,
 } from '../harness/runtime/decomp-globals';
-import {SetGpuReg, DestroySprite} from "../harness/runtime/decomp-bridge";
+import {DestroySprite} from "../harness/runtime/decomp-bridge";
+import { SetGpuReg } from './gpu_regs';
 import { CreateTask, DestroyTask } from './task';
 import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet } from './sprite';

@@ -8,6 +8,7 @@
 // (= le moteur son, qu'on ne touche pas — no-op silencieux dans notre moteur). Le contrat :
 // on porte la logique musique, on ne remplace PAS le moteur son.
 
+import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader, type MapConnection } from './fieldmap';
 import {
@@ -22,7 +23,7 @@ import {
   BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
   BLDCNT_TGT2_OBJ, BLDCNT_EFFECT_BLEND,
 } from '../harness/runtime/decomp-runtime';
-import { SetGpuReg } from '../harness/runtime/decomp-bridge';
+
 import {
   DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
   DISPCNT_OBJ_1D_MAP, DISPCNT_HBLANK_INTERVAL,

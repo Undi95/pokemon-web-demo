@@ -61,14 +61,8 @@ import {
   MALE, FEMALE,
   CpuFill16, OAM_SIZE, OAM,
 } from '../harness/runtime/decomp-globals';
-import {
-  AllocZeroed,
-  BeginNormalPaletteFade,
-  UpdatePaletteFade,
-  SetVBlankCallback,
-  SetGpuReg,
-  ResetSpriteData,
-} from '../harness/runtime/decomp-bridge';
+import {AllocZeroed, BeginNormalPaletteFade, UpdatePaletteFade, SetVBlankCallback, ResetSpriteData} from "../harness/runtime/decomp-bridge";
+import { SetGpuReg } from './gpu_regs';
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { JOY_NEW, AnimateSprites, BuildOamBuffer } from '../harness/runtime/decomp-globals';
 import {
@@ -90,7 +84,7 @@ import {
   FONT_NORMAL,
   GetStringCenterAlignXOffset,
 } from './engine/ui/gba-text-system';
-import { StringCopy, StringLength } from '../harness/runtime/decomp-bridge';
+import {StringCopy, StringLength} from "../harness/runtime/decomp-bridge";
 import { RGB, RGB_BLACK, RGB_WHITE, PLTT_SIZE_4BPP } from '../harness/runtime/decomp-helpers';
 import { BG_PLTT_ID, REG_OFFSET_DISPCNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP } from '../harness/runtime/decomp-runtime';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
