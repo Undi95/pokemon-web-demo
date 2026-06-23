@@ -112,6 +112,32 @@ La décompo maison a éclaté chaque `.c` en plusieurs fichiers → mirror = MER
 Ces fusions = vrai travail ligne-par-ligne (lire le .c décomp, réconcilier, A/B comportemental), 1 sous-système/lot,
 PAS des `git mv` mécaniques. Prochain : attaquer un sous-système borné de bout en bout (candidat : `scrcmd` ou `save`).
 
+### Avancement decomp-data/src/ — scaffolds inlinés (2026-06-23, lots 20-25)
+Méthode validée (= scaffold importé par peu de fichiers → inliner les symboles RÉELLEMENT
+importés dans le .c-mirror 1:1, droper les métadonnées scaffold mortes, supprimer le fichier,
+tsc=0 + A/B en jeu). ⚠️ Vérifier les importeurs avec `./X` intra-dossier (piège grep) + cycles ESM.
+- ✅ `sine-table.ts` → `gSineTable` littéral Q_8_8 inline dans `src/trig.ts` (`7e32a765`).
+- ✅ `battle_bg-data.ts` → `gBattleBgTemplates` dans `battle_bg.ts` + `sStandardBattleWindowTemplates`
+  raw dans `battle-windows.ts` (cycle battle_bg↔battle-windows évité) (`2cd05165`).
+- ✅ `option_menu-data.ts` → `sOptionMenu{Bg,Win}Templates` dans `option-menu-impl.ts` (`28c9a4fa`).
+- ✅ `item_menu_icons-data.ts` → `TAG_BAG_GFX`/`TAG_ROTATING_BALL_GFX` export dans `item_menu_icons.ts`
+  (`34d4cbda`) + **fix divergence `TAG_ITEM_ICON` 5557→102** (valeur enum décomp, `b5186018`).
+- ✅ `item_menu-data.ts` → `TAG_POCKET/BAG_SCROLL_ARROW` dans `bag-menu.ts` (`c992ddd9`).
+- ✅ `battle_setup-data.ts` → `TRANSITION_TYPE_*` dans `battle-setup-helpers.ts` (`6d938bde`).
+
+RESTE decomp-data/src/ (= plus involved, chantiers dédiés) :
+- **Cluster intro LIVE** (`intro-callbacks-auto`, `intro-c-data-auto`, `intro-data`, `_data-tables-flat`,
+  `sprite-system`(+flat), `intro_credits_graphics-*`) = web auto-gen interdépendant, imports relatifs
+  `./X` → piège ; chantier intro `src/intro.c`/`intro_credits_graphics.c` dédié.
+- **`-callbacks-auto` LIVE** (`main_menu-`, `option_menu-`, `overworld-`, `title_screen-`) = grosses
+  state-machines auto-gen ; consolidation par .c.
+- **main_menu** : 2 scaffolds (`decomp-data/src/main_menu-data` ↔ BirchRuntimeScene harness ;
+  `decomp-data/main-menu-data` ↔ `src/main_menu.ts`) avec `sMainMenuBgTemplates` DUPLIQUÉ + casts
+  `as any` → lot de consolidation vers `src/main_menu.ts` (+ retirer les casts).
+- **Grosses tables port-adaptées** : `battle_anim_pic_table-data` (~290 entrées, struct `AnimPicEntry`
+  ≠ C, png-loader runtime), `mon-anim-tables-data` (465 l, import dyn) → consolidation battle_anim/pokemon.
+- **Audio (NE PAS toucher le moteur)** : `programmable-waves`, `song-table` → différés.
+
 ## État au lancement
 - HEAD `7a59a425` (branche mirroir, rien poussé). Couverture réelle ~37 % cœur cité 1:1 (cf. coverage).
 - Outils : `audit-game-mirror.cjs`, `coverage:1to1`, `migrate-game.cjs` (non-trackés). `audit:scrcmd`/
