@@ -168,11 +168,7 @@ const EC_MASK_BITS = 9;
 const EC_MASK_GROUP_M = (1 << (16 - EC_MASK_BITS)) - 1; // 0x7F
 const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
 
-// ─── Re-exports : window frame tiles + palettes (miroir src/game/text_window.ts) ──
-
-export {
-  GetOverworldTextboxPalettePtr,
-} from '../../src/text_window';
+// GetOverworldTextboxPalettePtr décyclé → importé directement depuis src/text_window.ts.
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //
@@ -714,7 +710,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
   'Overworld_GetMapHeaderByGroupAndId', 'defineMapHeaderEntry',
   'GetBerryInfo', 
-  'GetTextWindowPalette', 'GetOverworldTextboxPalettePtr',
+  'GetTextWindowPalette',
   // Battle macros
     'HIHALF', 'LOHALF',
   'GET_SHINY_VALUE', 'GET_UNOWN_LETTER', 

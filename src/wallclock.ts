@@ -45,7 +45,8 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../harness/runtime/decomp-bridge';
+import { ResetSpriteData } from '../harness/runtime/decomp-bridge';
+import { GetOverworldTextboxPalettePtr } from './text_window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';

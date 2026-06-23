@@ -68,8 +68,8 @@ import {
   SetVBlankCallback,
   SetGpuReg,
   ResetSpriteData,
-  GetOverworldTextboxPalettePtr,
 } from '../harness/runtime/decomp-bridge';
+import { GetOverworldTextboxPalettePtr } from './text_window';
 import { JOY_NEW, AnimateSprites, BuildOamBuffer } from '../harness/runtime/decomp-globals';
 import {
   InitWindows,

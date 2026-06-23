@@ -53,7 +53,7 @@ import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window'
 import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
-import { GetOverworldTextboxPalettePtr } from '../harness/runtime/decomp-bridge';
+import { GetOverworldTextboxPalettePtr } from './text_window';
 import { CreateMon } from './engine/pokemon/pokemon';
 import { GiveMonToPlayer } from './engine/battle/party-storage';
 import { VarSet } from './engine/script/script-vars';
