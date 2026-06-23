@@ -195,28 +195,11 @@ export function CpuCopy16(src: any, dst: any, sizeBytes: number): void {
 }
 
 // ─── String helpers (string_util.c) ───────────────────────────────────────────
-
-/** 1:1 décomp `src/string_util.c:24 StringCopy(dest, src)` — copies src to dest
- *  (incl. EOS terminator), returns ptr to EOS. En TS, on travaille avec des
- *  string objects via setter ; pour les usages auto-transpilés, on retourne
- *  juste src (= same effect : bytes finiront copiés au flushPlaceholder). */
-export function StringCopy(_dest: any, src: string): string {
-  // Most callers use `StringCopy(buf, source)` where buf is then fed to text printer.
-  // For transcribed code, we approximate by returning src + treating dest as opaque.
-  return src;
-}
-
-// StringAppend décyclé → foyer src/string_util.ts (version buffer Uint8Array 1:1).
-// Plus aucun importeur du bridge (G2 migration texte : size-record migré).
-
-// ConvertIntToDecimalStringN décyclé → foyer src/string_util.ts (version buffer
-// Uint8Array 1:1, écrit les bytes charmap direct). Plus aucun importeur du bridge
-// (G2 migration texte : party/bag/summary/size-record migrés).
-
-/** 1:1 décomp `src/string_util.c StringLength` — count chars before EOS. */
-export function StringLength(s: string): number {
-  return s.length;
-}
+// Toute la surface string_util.c (StringCopy/StringAppend/StringLength/
+// ConvertIntToDecimalStringN) DÉCYCLÉE → foyer src/string_util.ts (versions buffer
+// Uint8Array 1:1). Plus aucun importeur du bridge (G2 migration texte : party/bag/
+// summary/size-record/mail migrés). Reste hors-bridge : mail.playerName encode encore
+// via encodeOwText jusqu'au Stage 4 (save playerName→u8[]), mais sans passer par le bridge.
 
 // ─── Sprite affine matrix (1:1 décomp `include/gba/syscall.h`) ────────────────
 
@@ -454,9 +437,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Inline macros
   'WIN_RANGE',
   'Random', 'SeedRng', 'SeedRngAndSetTrainerId',
-   'AllocZeroed', 
-  'StringCopy',
-  'StringLength', 
+   'AllocZeroed',
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 
   // Static data tables (= ports manuels depuis sX[] décomp)
