@@ -29,8 +29,8 @@ import {
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
 import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
-import { ConvertIntToDecimalStringN, StringAppend, StringCopy } from '../harness/runtime/decomp-bridge';
-import { STR_CONV_MODE_LEFT_ALIGN } from '../include/string_util';
+import { STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, StringAppend, gStringVar1, gStringVar2, gStringVar3 } from '../include/string_util';
+import { encodeOwText } from '../include/text';
 import { setStringVar } from './engine/system/string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
@@ -124,12 +124,15 @@ function GetMonSize(species: number, b: number): number {
 /** 1:1 décomp `FormatMonSizeRecord(string, size)` (pokemon_size_record.c:90-100).
  *  Pas d'UNITS_IMPERIAL FR. */
 function FormatMonSizeRecord(stringVarSlot: 1 | 2 | 3, size: number): void {
-  // 1:1 décomp `ConvertIntToDecimalStringN(string, size / 10, ...)` puis
-  // `StringAppend(string, ".")` puis `ConvertIntToDecimalStringN(string, size % 10, ..., 1)`.
-  const intPart = ConvertIntToDecimalStringN('', Math.trunc(size / 10), STR_CONV_MODE_LEFT_ALIGN, 8);
-  const decPart = ConvertIntToDecimalStringN('', size % 10, STR_CONV_MODE_LEFT_ALIGN, 1);
-  const combined = StringAppend(intPart + gText_DecimalPoint, decPart);
-  setStringVar(stringVarSlot, combined);
+  // 1:1 décomp pointer-chaining sur `string` = gStringVar[slot] (buffer byte du
+  // foyer string_util.ts, plus le round-trip JS-string du bridge) :
+  //   string = ConvertIntToDecimalStringN(string, size / 10, LEFT_ALIGN, 8);
+  //   string = StringAppend(string, gText_DecimalPoint);
+  //   ConvertIntToDecimalStringN(string, size % 10, LEFT_ALIGN, 1);
+  const buf = stringVarSlot === 1 ? gStringVar1 : stringVarSlot === 2 ? gStringVar2 : gStringVar3;
+  let p = ConvertIntToDecimalStringN(buf, Math.trunc(size / 10), STR_CONV_MODE_LEFT_ALIGN, 8);
+  p = StringAppend(p, encodeOwText(gText_DecimalPoint));
+  ConvertIntToDecimalStringN(p, size % 10, STR_CONV_MODE_LEFT_ALIGN, 1);
 }
 
 /** 1:1 décomp `CompareMonSize(species, sizeRecord)` (pokemon_size_record.c:102-137).
@@ -168,7 +171,9 @@ function GetMonSizeRecordInfo(species: number, varName: string): void {
   // SizeRecordInfo specials (= dialogue NPC, pas gameplay logic).
   setStringVar(1, `SPECIES_${species}`);  // Placeholder cleartext jusqu'à port gSpeciesNames table.
   if (sizeRecord === DEFAULT_MAX_SIZE) {
-    StringCopy('', gText_Marco);
+    // 1:1 décomp `StringCopy(gStringVar2, gText_Marco)` réalisé par setStringVar
+    // (encode + écrit gStringVar2). L'ancien `StringCopy('', gText_Marco)` (résultat
+    // jeté = no-op du modèle JS-string bridge) retiré.
     setStringVar(2, gText_Marco);
   } else {
     setStringVar(2, gSaveBlock2Ptr.playerName);
