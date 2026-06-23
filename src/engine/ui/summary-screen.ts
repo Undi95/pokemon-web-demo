@@ -3229,7 +3229,7 @@ export function CB2_InitSummaryScreen(): void {
       rt.gPaletteFade.bufferTransferDisabled = true;
       rt.gMain.state++; break;
     case 3: ResetSpriteData(); rt.gMain.state++; break;
-    case 4: rt.gMain.state++; break;
+    case 4: FreeAllSpritePalettes(); rt.gMain.state++; break;   // 1:1 :1199 (manquait → mon/ball/markings noirs : slots OBJ réservés par l'écran précédent jamais libérés)
     case 5:
       _initBGs(rt);
       sMon.switchCounter = 0;
