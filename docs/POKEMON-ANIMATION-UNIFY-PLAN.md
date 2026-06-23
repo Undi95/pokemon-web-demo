@@ -44,10 +44,18 @@ le cycle `decomp-globals ↔ canonique` en TDZ.
 
 - **Étape 1 (FAIT)** — durcir C en interne, **neutre résumé** : fix `pb` BIOS ; `sIsSummaryAnim`
   → `let` ; `ResetSpriteAfterAnim` branché (branche résumé = exact actuel, branche combat dormante).
-- **Étape 2** — greffer sur C les **wrappers combat/Birch DORMANTS** (signatures = A) :
-  `LaunchAnimationTaskForFrontSprite(spriteId, animName)` (pose sIsSummaryAnim=FALSE + data[1]=1 +
-  map nom→animId), `DoMonFrontSpriteAnimation`, `WaitAnimEnd`+flag frame-base, `Stop`/`Reset`.
-  Rien câblé encore.
+- **Étape 2 (FAIT, `4532adf2`)** — greffé sur C les **wrappers combat/Birch DORMANTS** :
+  `LaunchAnimationTaskForFrontSprite(spriteId, frontAnimId:number)` (flatten Task_HandleMonAnimation
+  state 0 : sIsSummaryAnim=FALSE + sDontFlip data[1]=1 + clear data + callback anim numérique),
+  `DoMonFrontSpriteAnimation` (cry+pan+StartSpriteAnim 2-frame+idle, override id numérique),
+  `StopMonFrontSpriteAnimation`, `ResetAllMonAnimations` ; `WaitAnimEnd` branché sur sIsSummaryAnim
+  (restore data[0]/[2]/[1] + frame-base SOUS garde !sIsSummaryAnim → résumé inchangé) ;
+  `StartMonSummaryAnimation` pose sIsSummaryAnim=TRUE (1:1 :952) ; table espèce(number)→id
+  (`_frontAnimById`), `_tilesPerMonPicFrame`, `_hasTwoFramesAnimationNum`. **C ne pose PAS
+  `__pokemonAnimation` ni ne rewire decomp-globals** → strictement dormant (combat=A, Birch=A).
+  Vérif : tsc=0, eval 10 exports, jeu boote, `__pokemonAnimation` reste de A. **Note :** la
+  signature de Launch est NUMÉRIQUE (1:1 décomp) ; l'Étape 5 devra adapter le call-site
+  battle_main (qui passe aujourd'hui un nom string vers A).
 - **Étape 3** — basculer le **résumé** sur le canonique (juste l'emplacement) → A/B résumé.
 - **Étape 4** — basculer **Birch** (`decomp-globals.ts:2915` + re-exports) → A/B squish Lotad.
 - **Étape 5** — basculer **combat** (`__pokemonAnimation` / `battle_main`) → A/B send-out adverse
