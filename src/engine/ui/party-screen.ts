@@ -62,9 +62,9 @@ import {
 } from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import {ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
 import { GetMapNameGeneric } from '../../region_map';
-import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../../../include/string_util';
+import { CHAR_SLASH, EOS } from '../../../include/constants/characters';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
@@ -613,23 +613,34 @@ function _drawSlotFrame(slotIdx: number): void {
   }
 }
 
-/** 1:1 décomp `ConvertIntToDecimalStringN(buf, n, STR_CONV_MODE_RIGHT_ALIGN, 3)`
- *  (string_util.c:163-217) : entier justifié à DROITE dans un champ de
- *  EXACTEMENT 3 caractères. Le padding GAUCHE est **CHAR_SPACER** (0x77,
- *  string_util.c:209) — PAS CHAR_SPACE (0x00). CHAR_SPACER a une largeur
- *  FONT_SMALL de 5 px (= largeur d'un chiffre ; gFontSmallLatinGlyphWidths
- *  [0x77]=5, fonts.c:48), alors que CHAR_SPACE = 3 px. Donc le nombre est
- *  rendu en mono-chasse 5px → le "/" final de DisplayPartyPokemonHP tombe
- *  TOUJOURS à x = HPx + 15 (= x du "/" de MaxHP) quel que soit le nombre de
- *  chiffres → les 2 "/" coïncident → 1 SEUL slash visible, 1:1 ROM (le hack
- *  précédent paddait avec CHAR_SPACE 3px → "/" 2px trop à gauche pour ≤2
- *  chiffres → double-slash visible "20// 20" ≠ ROM "20/ 20").
- *  CHAR_SPACER ↔ JS 'ラ' (U+30E9) dans notre charmap (1:1 charmap.txt:280). */
-// Helper local _rightAlign3 retiré : `ConvertIntToDecimalStringN(value,
-// RIGHT_ALIGN, 3)` (decomp-bridge) fait l exact même travail 1:1 — substrat
-// partagé avec summary-screen + 14 autres callers (factoring dedup 2026-05-20).
-const _rightAlign3 = (n: number) =>
-  ConvertIntToDecimalStringN('', n, STR_CONV_MODE_RIGHT_ALIGN, 3);
+/** 1:1 décomp `DisplayPartyPokemonHP(hp, …)` (party_menu.c:2367) :
+ *    strOut = ConvertIntToDecimalStringN(gStringVar1, hp, STR_CONV_MODE_RIGHT_ALIGN, 3);
+ *    strOut[0] = CHAR_SLASH; strOut[1] = EOS;  →  rend "{hp}/".
+ *  Le padding GAUCHE de RIGHT_ALIGN est CHAR_SPACER (0x77, largeur FONT_SMALL 5px
+ *  = largeur d'un chiffre, gFontSmallLatinGlyphWidths fonts.c:48) → le nombre est
+ *  rendu mono-chasse 5px, donc le "/" final tombe TOUJOURS à x = HPx + 15 (= x du
+ *  "/" de MaxHP) quel que soit le nb de chiffres → les 2 "/" coïncident → 1 SEUL
+ *  slash visible, 1:1 ROM. ConvertIntToDecimalStringN écrit DIRECTEMENT les bytes
+ *  charmap dans gStringVar1 (foyer 1:1 string_util.ts, plus le bridge JS-string).
+ *  TEXT_SKIP_DRAW = rendu synchrone instantané (text.ts:955) → réutilisation de
+ *  gStringVar1 entre HP et MaxHP sûre (pas d'aliasing différé). */
+function _displayPartyPokemonHP(wid: number, x: number, y: number, hp: number): void {
+  const strOut = ConvertIntToDecimalStringN(gStringVar1, hp, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  strOut[0] = CHAR_SLASH;
+  strOut[1] = EOS;
+  AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_HP, TEXT_SKIP_DRAW, gStringVar1);
+}
+
+/** 1:1 décomp `DisplayPartyPokemonMaxHP(maxhp, …)` (party_menu.c:2388) :
+ *    ConvertIntToDecimalStringN(gStringVar2, maxhp, RIGHT_ALIGN, 3);
+ *    StringCopy(gStringVar1, gText_Slash); StringAppend(gStringVar1, gStringVar2);  →  "/{maxhp}".
+ *  `gText_Slash` ("/") pas encore porté → on écrit CHAR_SLASH puis ConvertInt dans
+ *  gStringVar1.subarray(1) : byte-pour-byte identique à "/{maxhp}". */
+function _displayPartyPokemonMaxHP(wid: number, x: number, y: number, maxhp: number): void {
+  gStringVar1[0] = CHAR_SLASH;
+  ConvertIntToDecimalStringN(gStringVar1.subarray(1), maxhp, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_HP, TEXT_SKIP_DRAW, gStringVar1);
+}
 
 /** Render text for slot N. Positions 1:1 décomp `sPartyBoxInfoRects`
  *  (party_menu.h:32) — Nickname/Level/HP/MaxHP fixed coords per box layout. */
@@ -702,8 +713,8 @@ function _drawSlot(slotIdx: number): void {
     // L'overlap des 2 "/" (FONT_SMALL widths = ROM exacts : sp 3, digit 5,
     // '/' 5 — vérifiés vs gFontSmallLatinGlyphWidths fonts.c:40) produit le
     // visuel ROM 1:1. PLUS de hack 1-string / espaces hardcodés.
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.hp)}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 53, 37, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHP)}`);
+    _displayPartyPokemonHP(wid, 38, 37, mon.hp);
+    _displayPartyPokemonMaxHP(wid, 53, 37, mon.maxHP);
   } else {
     // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
     //   Nickname (22, 3) — width=40
@@ -717,8 +728,8 @@ function _drawSlot(slotIdx: number): void {
     }
     // 1:1 décomp DisplayPartyPokemonHP/MaxHP — 2 strings FONT_SMALL séparés
     // aux coords sPartyBoxInfoRects[PARTY_BOX_RIGHT_COLUMN] (party_menu.h:56-57).
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.hp)}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHP)}`);
+    _displayPartyPokemonHP(wid, 102, 12, mon.hp);
+    _displayPartyPokemonMaxHP(wid, 117, 12, mon.maxHP);
   }
   void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
