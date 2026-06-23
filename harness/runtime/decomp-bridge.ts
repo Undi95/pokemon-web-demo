@@ -103,25 +103,6 @@ import { getMapNameFr } from '../../src/data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
 import { gBattleMons as _gBattleMonsBridge } from '../../src/engine/battle/state';
 
-// ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
-
-/** 1:1 décomp `include/macro.h` :
- *    #define ARRAY_COUNT(arr) (size_t)(sizeof(arr) / sizeof((arr)[0]))
- *  En TS : la longueur d'un Array. */
-export function ARRAY_COUNT<T>(arr: ArrayLike<T>): number {
-  return arr.length;
-}
-
-/** 1:1 décomp `include/macro.h` :
- *    #define SWAP(a, b, temp) ({ temp = a; a = b; b = temp; })
- *  Hérité du C ; en TS on retourne un tuple [b, a] ou modifie via setter externe.
- *  Les usages typiques sont des macros locales — soit on les laisse dans le code
- *  transpilé (où elles plantent), soit on inline. Ici on fournit un helper
- *  fonctionnel pour les cas où le résultat est utilisé. */
-export function SWAP<T>(a: T, b: T): [T, T] {
-  return [b, a];
-}
-
 /** 1:1 décomp `include/macro.h` :
  *    #define T1_READ_8(ptr)   ((ptr)[0])
  *    #define T1_READ_16(ptr)  ((ptr)[0] | ((ptr)[1] << 8))
@@ -142,58 +123,7 @@ export function T1_READ_32(ptr: ArrayLike<number>, offset = 0): number {
     ((ptr[offset + 3] & 0xFF) << 24)
   );
 }
-/** Pour ROM data : retourne le pointer / asset symbol.
- *  Dans notre runtime, les "pointers" sont des asset string keys. */
-export function T1_READ_PTR(ptr: any): any {
-  return ptr;
-}
-/** Same as T1_READ_PTR, alternate alignment (= odd-aligned reads in C). */
-export function T2_READ_PTR(ptr: any): any {
-  return ptr;
-}
-/** 1:1 décomp `include/macro.h` :
- *    #define T2_READ_8(ptr)   ((ptr)[0])
- *    #define T2_READ_16(ptr)  ((ptr)[0] | ((ptr)[1] << 8))
- *    #define T2_READ_32(ptr)  ((ptr)[0] | ((ptr)[1] << 8) | ((ptr)[2] << 16) | ((ptr)[3] << 24))
- */
-export function T2_READ_8(ptr: ArrayLike<number>, offset = 0): number {
-  return T1_READ_8(ptr, offset);
-}
-export function T2_READ_16(ptr: ArrayLike<number>, offset = 0): number {
-  return T1_READ_16(ptr, offset);
-}
-export function T2_READ_32(ptr: ArrayLike<number>, offset = 0): number {
-  return T1_READ_32(ptr, offset);
-}
-
-// MAP_GROUP / MAP_NUM → foyer canonique `include/constants/map_groups.ts:1054-1055`
-// (1:1 décomp include/constants/maps.h, valeurs identiques) — décyclage lot 6.
-
-/** 1:1 décomp `include/macro.h` :
- *    #define FREE_AND_SET_NULL(ptr) do { Free(ptr); (ptr) = NULL; } while (0)
- *  En TS : Free + null-out. Comme nos pointeurs sont des refs JS, on retourne
- *  juste null pour que l'appelant fasse `x = FREE_AND_SET_NULL(x)`. */
-export function FREE_AND_SET_NULL<T>(_ptr: T): null {
-  // Free is a no-op (= no manual heap in JS). Callers should do `x = FREE_AND_SET_NULL(x)`.
-  return null;
-}
-/** 1:1 décomp variant `include/malloc.h` :
- *    #define TRY_FREE_AND_SET_NULL(ptr) if (ptr) FREE_AND_SET_NULL(ptr)
- *  Same as FREE_AND_SET_NULL but null-safe. */
-export function TRY_FREE_AND_SET_NULL<T>(_ptr: T): null {
-  return null;
-}
-
-/** 1:1 décomp `include/gba/types.h` :
- *    #define PLTT_SIZEOF(numColors)  ((numColors) * sizeof(u16))
- *    #define PLTT_SIZE_4BPP          PLTT_SIZEOF(16)
- *    #define PLTT_SIZE_8BPP          PLTT_SIZEOF(256)
- */
-export function PLTT_SIZEOF(numColors: number): number {
-  return numColors * 2;
-}
 export const PLTT_SIZE_4BPP = 32;
-export const PLTT_SIZE_8BPP = 512;
 
 /** 1:1 décomp `include/gba/types.h` :
  *    #define TILE_SIZE_4BPP 32
@@ -203,8 +133,6 @@ export const PLTT_SIZE_8BPP = 512;
  */
 export const TILE_SIZE_4BPP = 32;
 export const TILE_SIZE_8BPP = 64;
-export function TILE_OFFSET_4BPP(n: number): number { return n * TILE_SIZE_4BPP; }
-export function TILE_OFFSET_8BPP(n: number): number { return n * TILE_SIZE_8BPP; }
 
 /** 1:1 décomp `include/gba/types.h` :
  *    #define WIN_RANGE(a, b)  (((a) << 8) | (b))
@@ -213,25 +141,6 @@ export function WIN_RANGE(a: number, b: number): number {
   return ((a & 0xFF) << 8) | (b & 0xFF);
 }
 
-/** 1:1 décomp `include/battle.h` :
- *    #define BATTLE_PARTNER(battler) ((battler) ^ BIT_FLANK)  // BIT_FLANK = 2
- *    #define BATTLE_OPPOSITE(battler) ((battler) ^ BIT_SIDE)  // BIT_SIDE = 1
- *  En double battle, BATTLE_PARTNER = ton co-équipier, BATTLE_OPPOSITE = battler du
- *  côté opposé. Single battle : BATTLE_PARTNER de 0 = 2 (= invalid), de 1 = 3 (= invalid).
- */
-export function BATTLE_PARTNER(battler: number): number { return battler ^ 2; }
-export function BATTLE_OPPOSITE(battler: number): number { return battler ^ 1; }
-/** 1:1 décomp `include/battle.h` :
- *    #define GET_BATTLER_SIDE(battler) ((battler) & BIT_SIDE)  // bit 0
- */
-export function GET_BATTLER_SIDE(battler: number): number { return battler & 1; }
-/** 1:1 décomp `include/battle.h` :
- *    #define GET_BATTLER_SIDE2(battler) ((battler) & BIT_SIDE) ; alternate alias. */
-export function GET_BATTLER_SIDE2(battler: number): number { return battler & 1; }
-/** 1:1 décomp `include/battle.h` :
- *    #define GET_BATTLER_POSITION(battler) ((battler) & 3)  // both BIT_SIDE + BIT_FLANK */
-export function GET_BATTLER_POSITION(battler: number): number { return battler & 3; }
-
 /** 1:1 décomp `include/gba/types.h` RGB2 macro :
  *    #define RGB2(r, g, b) ((r) | ((g) << 5) | ((b) << 10))
  *  Same as RGB but no & 0x1F (= rare alt name). */
@@ -239,122 +148,10 @@ export function RGB2(r: number, g: number, b: number): number {
   return (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
 }
 
-/** 1:1 décomp `include/gba/types.h` :
- *    #define SPRITE_SHAPE(shape) ST_OAM_##shape
- *    #define SPRITE_SIZE(size)   ST_OAM_##size
- *  En C, ces macros résolvent un identifiant compose. En TS, on accepte un
- *  identifiant string ou number et on retourne tel quel (= naive but valid pour
- *  les bodies auto qui appellent SPRITE_SHAPE(SQUARE) etc). */
-export function SPRITE_SHAPE(arg: any): any { return arg; }
-export function SPRITE_SIZE(arg: any): any { return arg; }
-
-/** 1:1 décomp `include/gba/types.h` RGB component extraction macros :
- *    #define GET_R(c) ((c) & 0x1F)
- *    #define GET_G(c) (((c) >> 5) & 0x1F)
- *    #define GET_B(c) (((c) >> 10) & 0x1F)
- *    #define IS_ALPHA(c) (((c) >> 15) & 1)
- */
-export function GET_R(c: number): number { return c & 0x1F; }
-export function GET_G(c: number): number { return (c >> 5) & 0x1F; }
-export function GET_B(c: number): number { return (c >> 10) & 0x1F; }
-export function IS_ALPHA(c: number): number { return (c >> 15) & 1; }
-
 /** 1:1 décomp `include/gba/types.h` palette ID generic helper :
  *    #define PLTT_ID(n) ((n) * 16)
  *  Combined BG/OBJ palette ID. */
 export function PLTT_ID(n: number): number { return n * 16; }
-
-/** 1:1 décomp `include/gba/types.h` Q_8_8 fixed-point conversion :
- *    #define Q_8_8(n) ((s16)((n) * 256))
- */
-export function Q_8_8(n: number): number {
-  return (n * 256) | 0;
-}
-
-/** 1:1 décomp DMA copy macros :
- *    #define DmaCopy16(channel, src, dst, size) DmaSet(channel, src, dst, ...)
- *  En TS, comme DMA hardware = no-op → fallback CpuCopy16. */
-export function DmaCopy16(_channel: number, src: any, dst: any, sizeBytes: number): void {
-  CpuCopy16(src, dst, sizeBytes);
-}
-export function DmaCopy32(_channel: number, src: any, dst: any, sizeBytes: number): void {
-  CpuCopy32(src, dst, sizeBytes);
-}
-
-/** 1:1 décomp `include/battle.h:471 IS_BATTLER_OF_TYPE(battler, type)` :
- *  ```c
- *  #define IS_BATTLER_OF_TYPE(battler, type) \
- *      ((gBattleMons[battler].types[0] == type || gBattleMons[battler].types[1] == type))
- *  ```
- *  Notre port : gBattleMons[battler].type1/type2 (= alias 1:1 décomp types[2]). */
-export function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
-  const mon = _gBattleMonsBridge[battler];
-  if (!mon) return false;
-  return mon.type1 === type || mon.type2 === type;
-}
-
-// ─── Battle macros (1:1 décomp `include/battle.h` + `battle_message.h`) ───────
-
-/** 1:1 décomp `include/battle.h:466` :
- *    #define IS_TYPE_PHYSICAL(moveType) (moveType < TYPE_MYSTERY)
- *  TYPE_MYSTERY = 9 (= include/constants/pokemon.h). */
-export function IS_TYPE_PHYSICAL(moveType: number): boolean {
-  return moveType < 9;
-}
-
-/** 1:1 décomp `include/battle.h:467` :
- *    #define IS_TYPE_SPECIAL(moveType) (moveType > TYPE_MYSTERY) */
-export function IS_TYPE_SPECIAL(moveType: number): boolean {
-  return moveType > 9;
-}
-
-// `HIHALF`/`LOHALF` (global.h:106-109) + `GET_SHINY_VALUE`/`GET_UNOWN_LETTER`
-// (pokemon.h) = consolidés sur le miroir (src/game/include/global.ts +
-// src/game/include/pokemon.ts). Re-exports = source unique.
-// (ré-exports morts retirés depuis '../../include/global' — sweep)
-// (ré-exports morts retirés depuis '../../include/pokemon' — sweep)
-
-/** 1:1 décomp `src/battle_anim_mons.c:19` :
- *    #define IS_DOUBLE_BATTLE() ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
- *  BATTLE_TYPE_DOUBLE = 1 << 0 = 1. Reads gBattleTypeFlags from runtime. */
-export function IS_DOUBLE_BATTLE(): number {
-  // Best-effort : runtime exposes gBattleTypeFlags ; fall back to 0 (= single).
-  const rt: any = _getRT();
-  const flags = rt?.gBattleTypeFlags ?? 0;
-  return flags & 1;
-}
-
-/** 1:1 décomp `include/battle_main.h:26-28` :
- *    #define TYPE_EFFECT_ATK_TYPE(i)  (gTypeEffectiveness[i + 0])
- *    #define TYPE_EFFECT_DEF_TYPE(i)  (gTypeEffectiveness[i + 1])
- *    #define TYPE_EFFECT_MULTIPLIER(i)(gTypeEffectiveness[i + 2])
- *  Needs gTypeEffectiveness data. Use runtime accessor or NotImpl placeholder. */
-export function TYPE_EFFECT_ATK_TYPE(_i: number): number {
-  // Runtime should expose gTypeEffectiveness ; until then, return 0 (= safe default).
-  const rt: any = _getRT();
-  return rt?.gTypeEffectiveness?.[_i + 0] ?? 0;
-}
-export function TYPE_EFFECT_DEF_TYPE(_i: number): number {
-  const rt: any = _getRT();
-  return rt?.gTypeEffectiveness?.[_i + 1] ?? 0;
-}
-export function TYPE_EFFECT_MULTIPLIER(_i: number): number {
-  const rt: any = _getRT();
-  return rt?.gTypeEffectiveness?.[_i + 2] ?? 0;
-}
-
-/** 1:1 décomp `include/constants/battle.h:205` :
- *    #define HITMARKER_FAINTED(battler) (gBitTable[battler] << 28)
- *  gBitTable[i] = 1 << i. */
-export function HITMARKER_FAINTED(battler: number): number {
-  return (1 << battler) << 28;
-}
-
-/** 1:1 décomp `include/constants/battle.h:143` :
- *    #define STATUS2_INFATUATED_WITH(battler) (gBitTable[battler] << 16) */
-export function STATUS2_INFATUATED_WITH(battler: number): number {
-  return (1 << battler) << 16;
-}
 
 /** 1:1 décomp `include/battle.h:21` :
  *    #define MOVE_IS_PERMANENT(battler, moveSlot)                            \
@@ -402,139 +199,12 @@ const B_BUFF_PLACEHOLDER_BEGIN = 0xFD;
 const B_BUFF_EOS = 0xFF;
 void _B_BUFF_STAT; void _B_BUFF_NEGATIVE_FLAVOR; void _B_BUFF_ABILITY;
 
-/** 1:1 décomp `include/battle_message.h:114-122` PREPARE_BYTE_NUMBER_BUFFER. */
-export function PREPARE_BYTE_NUMBER_BUFFER(textVar: any, maxDigits: number, number: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_NUMBER;
-  textVar[2] = 1;
-  textVar[3] = maxDigits;
-  textVar[4] = number & 0xFF;
-  textVar[5] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:124-133` PREPARE_HWORD_NUMBER_BUFFER. */
-export function PREPARE_HWORD_NUMBER_BUFFER(textVar: any, maxDigits: number, number: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_NUMBER;
-  textVar[2] = 2;
-  textVar[3] = maxDigits;
-  textVar[4] = number & 0xFF;
-  textVar[5] = (number >> 8) & 0xFF;
-  textVar[6] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:135-146` PREPARE_WORD_NUMBER_BUFFER. */
-export function PREPARE_WORD_NUMBER_BUFFER(textVar: any, maxDigits: number, number: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_NUMBER;
-  textVar[2] = 4;
-  textVar[3] = maxDigits;
-  textVar[4] = number & 0xFF;
-  textVar[5] = (number >>> 8) & 0xFF;
-  textVar[6] = (number >>> 16) & 0xFF;
-  textVar[7] = (number >>> 24) & 0xFF;
-  textVar[8] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:148-155` PREPARE_STRING_BUFFER. */
-export function PREPARE_STRING_BUFFER(textVar: any, stringId: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_STRING;
-  textVar[2] = stringId & 0xFF;
-  textVar[3] = (stringId >> 8) & 0xFF;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:157-164` PREPARE_MOVE_BUFFER. */
-export function PREPARE_MOVE_BUFFER(textVar: any, move: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_MOVE;
-  textVar[2] = move & 0xFF;
-  textVar[3] = (move >> 8) & 0xFF;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:166-173` PREPARE_ITEM_BUFFER. */
-export function PREPARE_ITEM_BUFFER(textVar: any, item: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_ITEM;
-  textVar[2] = item & 0xFF;
-  textVar[3] = (item >> 8) & 0xFF;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:175-182` PREPARE_SPECIES_BUFFER. */
-export function PREPARE_SPECIES_BUFFER(textVar: any, species: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_SPECIES;
-  textVar[2] = species & 0xFF;
-  textVar[3] = (species >> 8) & 0xFF;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:184-191` PREPARE_MON_NICK_WITH_PREFIX_BUFFER. */
-export function PREPARE_MON_NICK_WITH_PREFIX_BUFFER(textVar: any, battler: number, partyId: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_MON_NICK_WITH_PREFIX;
-  textVar[2] = battler;
-  textVar[3] = partyId;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h:193-200` PREPARE_MON_NICK_BUFFER. */
-export function PREPARE_MON_NICK_BUFFER(textVar: any, battler: number, partyId: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_MON_NICK;
-  textVar[2] = battler;
-  textVar[3] = partyId;
-  textVar[4] = B_BUFF_EOS;
-}
-
-/** 1:1 décomp `include/battle_message.h PREPARE_TYPE_BUFFER`. */
-export function PREPARE_TYPE_BUFFER(textVar: any, typeId: number): void {
-  if (!textVar) return;
-  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
-  textVar[1] = B_BUFF_TYPE;
-  textVar[2] = typeId;
-  textVar[3] = B_BUFF_EOS;
-}
-
-// ISO_RANDOMIZE1 → foyer canonique `include/random.ts:19`. ANIM_SPRITES_START → déjà
-// dans `include/constants/battle_anim.ts:8` (auto-gen). GET_TRUE_SPRITE_INDEX (macro
-// fonction, 0 importeur, non émise par l'extracteur) retirée = code mort. Lots 3 + 7.
-
-// ─── BG tile flip macros (1:1 décomp `include/gba/defines.h`) ────────────────
-
-/** 1:1 décomp `include/gba/defines.h:48-49` :
- *    #define BG_TILE_H_FLIP(n) (0x400 + (n))
- *    #define BG_TILE_V_FLIP(n) (0x800 + (n)) */
-export function BG_TILE_H_FLIP(n: number): number { return 0x400 + n; }
-export function BG_TILE_V_FLIP(n: number): number { return 0x800 + n; }
-
 // ─── Easy chat word macros (1:1 décomp `constants/easy_chat.h:1116-1127`) ─────
 
 /** EC_MASK_BITS = 9, EC_MASK_GROUP = 0x7F, EC_MASK_INDEX = 0x1FF. */
 const EC_MASK_BITS = 9;
 const EC_MASK_GROUP_M = (1 << (16 - EC_MASK_BITS)) - 1; // 0x7F
-const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1; // 0x1FF
-
-/** 1:1 décomp `EC_GROUP(word) = (word) >> EC_MASK_BITS`. */
-export function EC_GROUP(word: number): number { return word >> EC_MASK_BITS; }
-/** 1:1 décomp `EC_INDEX(word) = (word) & EC_MASK_INDEX`. */
-export function EC_INDEX(word: number): number { return word & EC_MASK_INDEX_M; }
-/** 1:1 décomp `EC_WORD(group, index) = ((group & MASK) << BITS) | (index & MASK)`. */
-export function EC_WORD(group: number, index: number): number {
-  return ((group & EC_MASK_GROUP_M) << EC_MASK_BITS) | (index & EC_MASK_INDEX_M);
-}
+const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
 
 // ─── Item / berry macros ──────────────────────────────────────────────────────
 
@@ -542,143 +212,11 @@ export function EC_WORD(group: number, index: number): number {
  *    #define ITEM_TO_BERRY(itemId) (((itemId) - FIRST_BERRY_INDEX) + 1)
  *  FIRST_BERRY_INDEX = 0x85 (= ITEM_CHERI_BERRY in Emerald, see items.h). */
 export const FIRST_BERRY_INDEX = 0x85;
-export function ITEM_TO_BERRY(itemId: number): number {
-  return (itemId - FIRST_BERRY_INDEX) + 1;
-}
-
-// ─── Apprentice species ID (1:1 décomp `src/apprentice.c:323`) ────────────────
-
-/** 1:1 décomp `apprentice.c APPRENTICE_SPECIES_ID(monId)` macro :
- *    APPRENTICE_SPECIES_ID(monId) = id from gApprenticeSpeciesMatchups[monId][0]
- *  Need full apprentice.c port for actual lookup ; placeholder returns monId. */
-export function APPRENTICE_SPECIES_ID(monId: number): number {
-  // TODO 1:1 : need gApprenticeSpeciesMatchups[][] (= lookup table from apprentice.c).
-  return monId;
-}
-
-// ─── Link helpers (1:1 décomp `include/link.h:41`) ────────────────────────────
-
-/** 1:1 décomp `include/link.h:41` EXTRACT_PLAYER_COUNT(status) macro.
- *  Extracts player count from RFU link status word. */
-export function EXTRACT_PLAYER_COUNT(status: number): number {
-  // include/link.h:41 : #define EXTRACT_PLAYER_COUNT(status) (((status) & 0x70) >> 4)
-  return (status & 0x70) >> 4;
-}
-
-// ─── Misc macros (battle, contest, fan club, etc.) ────────────────────────────
-
-/** 1:1 décomp `src/contest_util.c:61` GET_CONTEST_WINNER_ID(i) macro :
- *    Macro that walks gContestFinalStandings[] until non-zero entry. Stores
- *    the index in `i`. C macros that mutate by-ref → in TS we return the index.
- *
- *  Auto-bodies do `GET_CONTEST_WINNER_ID(i);` → we return the value, but they
- *  use it only for side-effect on `i`. Best-effort : delegate to runtime. */
-export function GET_CONTEST_WINNER_ID(_i?: any): number {
-  const rt: any = _getRT();
-  const standings = rt?.gContestFinalStandings;
-  if (!Array.isArray(standings)) return 0;
-  for (let j = 0; j < standings.length; j++) {
-    if (standings[j] !== 0) return j;
-  }
-  return 0;
-}
-
-/** 1:1 décomp `src/field_specials.c:3970` :
- *    #define GET_TRAINER_FAN_CLUB_FLAG(flag) (FANCLUB_BITFIELD >> (flag) & 1)
- *  FANCLUB_BITFIELD reads from gSaveBlock1Ptr.trainerFanClub.flags. */
-export function GET_TRAINER_FAN_CLUB_FLAG(flag: number): number {
-  const rt: any = _getRT();
-  const bits = rt?.gSaveBlock1Ptr?.trainerFanClub?.flags ?? 0;
-  return (bits >> flag) & 1;
-}
 
 /** 1:1 décomp `src/union_room_player_avatar.c:17` :
  *    #define UR_PLAYER_SPRITE_ID(leaderId, memberId) (MAX_RFU_PLAYERS * leaderId + memberId)
  *  MAX_RFU_PLAYERS = 5 (= include/constants/rfu.h). */
 export const MAX_RFU_PLAYERS = 5;
-export function UR_PLAYER_SPRITE_ID(leaderId: number, memberId: number): number {
-  return MAX_RFU_PLAYERS * leaderId + memberId;
-}
-
-/** 1:1 décomp `src/intro.c:1870` :
- *    #define INTRO3_RAW_PTR(palId) (((void *)&gIntro3Bg_Pal) + palId)
- *  Returns a pointer-with-offset into gIntro3Bg_Pal. En TS, return symbol+offset. */
-export function INTRO3_RAW_PTR(palId: number): any {
-  return { symbol: 'gIntro3Bg_Pal', offset: palId };
-}
-
-/** 1:1 décomp `src/battle_transition.c:49` SET_TILE(ptr, posY, posX, tile) macro :
- *    *(ptr + (posY)*32 + (posX)) = (tile)
- *  Write a tile into a 32-wide tilemap at (x, y). */
-export function SET_TILE(ptr: any, posY: number, posX: number, tile: number): void {
-  if (!ptr) return;
-  const idx = posY * 32 + posX;
-  if (ptr instanceof Uint16Array || Array.isArray(ptr)) {
-    ptr[idx] = tile;
-  }
-}
-
-/** 1:1 décomp `src/pokemon_jump.c:112` macro `VINE_STATE_TIMER(vineState)` :
- *      #define VINE_STATE_TIMER(vineState) (((vineState) << 8) | 0xFF)
- *  (Note : ancien commentaire mentionnait intro.c — c'est pokemon_jump.c.
- *  Bridge mémorisé ici pour callers décomp du minigame ; le subsystem complet
- *  Pokemon Jump est U-tier. Le macro est portable triviallement.) */
-export function VINE_STATE_TIMER(vineState: number): number {
-  return ((vineState << 8) | 0xFF) >>> 0;
-}
-
-// ─── CRC / multiboot (1:1 décomp `include/multiboot.h`) ───────────────────────
-
-/** 1:1 décomp `multiboot.h CALC_CRC` — multiboot CRC computation. Stubbed to 0
- *  (= multiboot is wireless link feature not used in single-player play). */
-export function CALC_CRC(_data: any, _len: number): number {
-  return 0;
-}
-
-/** 1:1 décomp `string_util.c StringCopy_Nickname` — variant of StringCopy
- *  with NICKNAME_LENGTH = 10 cap. */
-export function StringCopy_Nickname(_dest: any, src: string): string {
-  return src.slice(0, 10);
-}
-export function StringGet_Nickname(_dest: any, src: string): string {
-  return src.slice(0, 10);
-}
-
-/** 1:1 décomp `easy_chat.c CopyEasyChatWord(dest, wordId)` — needs full easy_chat
- *  data tables. */
-export function CopyEasyChatWord(_dest: any, _wordId: number): void {
-  throw new Error('[bridge] CopyEasyChatWord not yet 1:1 ported. See easy_chat.c.');
-}
-
-/** 1:1 décomp `dynamic_placeholder_text_util.c DynamicPlaceholderTextUtil_ExpandPlaceholders`. */
-export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: string): string {
-  // Approximate : delegate to the standard placeholder expander.
-  // Full impl would consult sDynamicPlaceholderStrings + scan for [DYNAMIC_X].
-  return src;
-}
-
-/** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
-// (ré-exports morts retirés depuis '../../src/random' — sweep)
-// (ré-exports morts retirés depuis '../../src/main' — sweep)
-// (ré-exports morts retirés depuis '../../include/random' — sweep)
-// Note : `_Random` alias local hoisted en tête de fichier (section "Local-use imports").
-
-// ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
-
-/** 1:1 décomp `event_object_movement.c:1914 GetObjectEventGraphicsInfo(graphicsId)`.
- *  Re-export with a normalized signature : the décomp returns
- *  `const struct ObjectEventGraphicsInfo *`, our impl returns either the info
- *  or undefined for unregistered gfxIds. The auto bodies typically dereference
- *  fields like `.size`, `.height`, `.tracks`, `.inanimate`, etc. ; if the gfxId
- *  isn't registered, calls will get undefined → the auto body crashes
- *  (= fail-fast, surface the bug).
- *  Note 1:1 : in the real décomp, this function also handles OBJ_EVENT_GFX_VARS
- *  (= dynamic gfxId lookups via VarGet) + OBJ_EVENT_GFX_BARD (= old man variants).
- *  Notre impl simple ne gère pas ces cas spéciaux ; on les ajoutera si besoin.
- *  Note : `_getOEGI` alias local hoisted en tête de fichier. */
-export function GetObjectEventGraphicsInfo(graphicsId: number): any {
-  return _getOEGI(graphicsId);
-}
 
 // ─── Re-exports : window frame tiles + palettes (miroir src/game/text_window.ts) ──
 
@@ -871,29 +409,6 @@ export function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: num
   };
 }
 
-// ─── Battle macros that mutate gBattleMons / gBattleStruct ───────────────────
-
-/** 1:1 décomp `include/battle.h:458` GET_MOVE_TYPE(move, typeArg) — sets typeArg
- *  to dynamic type if set, else gBattleMoves[move].type. C macro mutates by-ref ;
- *  in TS we return the type value so callers can do `let typeArg = GET_MOVE_TYPE(move)`. */
-export function GET_MOVE_TYPE(move: number, _typeArg?: any): number {
-  const rt: any = _getRT();
-  const dynamicType = rt?.gBattleStruct?.dynamicMoveType ?? 0;
-  if (dynamicType) return dynamicType & 0x3F;
-  return rt?.gBattleMoves?.[move]?.type ?? 0;
-}
-
-/** 1:1 décomp `include/battle.h:472` SET_BATTLER_TYPE(battler, type) — set both
- *  types[0] and types[1] of gBattleMons[battler]. */
-export function SET_BATTLER_TYPE(battler: number, type: number): void {
-  const rt: any = _getRT();
-  const battleMons = rt?.gBattleMons;
-  if (!battleMons || !battleMons[battler]) return;
-  battleMons[battler].types = battleMons[battler].types ?? [0, 0];
-  battleMons[battler].types[0] = type;
-  battleMons[battler].types[1] = type;
-}
-
 // ─── Berry (1:1 décomp `src/berry.c:980 GetBerryInfo`) ────────────────────────
 
 /** 1:1 décomp `src/berry.c:980 GetBerryInfo(berry)` — returns const Berry*.
@@ -905,101 +420,10 @@ export function GetBerryInfo(berry: number): unknown {
   return mod.GetBerryInfo ? mod.GetBerryInfo(berry) : null;
 }
 
-/** 1:1 décomp `src/berry.c:992 GetBerryTreeInfo(id)` — read save block berry trees. */
-export function GetBerryTreeInfo(_id: number): any {
-  const rt: any = _getRT();
-  return rt?.gSaveBlock1Ptr?.berryTrees?.[_id] ?? null;
-}
-
-// ─── Text window palettes — RELOCALISÉES dans le miroir `src/game/text_window.ts`
-//     (GetTextWindowPalette / GetOverworldTextboxPalettePtr, 1:1 text_window.c).
-//     Réexportées plus haut (bloc « window frame tiles + palettes »). ────────────
-
-/** 1:1 décomp `include/battle_anim.h` :
- *    #define CMD_ARGS(...) ARGS args; ARGS
- *  C macro qui accède au gBattleAnimArgs[]. En TS, on retourne le passé tel quel
- *  pour que les bodies transpilés fonctionnent (= ils utilisent CMD_ARGS pour
- *  binder un struct local au gBattleAnimArgs).  */
-export function CMD_ARGS<T = any>(_typeOrFn?: any): T {
-  // Used as : `CMD_ARGS(struct Args)` to declare a local args struct binding.
-  // In TS, the auto-files use it as a function call returning a generic struct.
-  // Return an empty object — the body then accesses .field which TS pass-throughs.
-  return {} as T;
-}
-
-// ─── Memory allocation (no-op in JS) ──────────────────────────────────────────
-
-/** 1:1 décomp `src/malloc.c` Alloc(size) — heap alloc. En JS, retourne `{}`.
- *  Les bodies transpilés font `let p = Alloc(...)` puis `p.field = X`. */
-export function Alloc<T = any>(_sizeBytes: number): T {
-  return {} as T;
-}
-
 /** 1:1 décomp `src/malloc.c` AllocZeroed(size) — heap alloc + memset 0.
  *  En JS, retourne `{}` (= same as Alloc since defaults sont implicit). */
 export function AllocZeroed<T = any>(_sizeBytes: number): T {
   return {} as T;
-}
-
-/** 1:1 décomp `src/malloc.c` Free(ptr) — heap free. No-op in JS. */
-export function Free(_ptr: any): void {
-  /* no-op : JS GC handles this */
-}
-
-/** 1:1 décomp `src/save.c` AllocSubstruct — allocate within save block context.
- *  Stub : need real save block management. */
-export function AllocSubstruct<T = any>(_idx: number, _sizeBytes: number): T {
-  throw new Error('[bridge] AllocSubstruct not yet 1:1 ported. See save.c:AllocSubstruct.');
-}
-
-/** 1:1 décomp `src/save.c` GetSubstructPtr — get pointer to save sub-struct. */
-export function GetSubstructPtr<T = any>(_idx: number): T {
-  throw new Error('[bridge] GetSubstructPtr not yet 1:1 ported. See save.c:GetSubstructPtr.');
-}
-
-// ─── libc-like memory primitives ──────────────────────────────────────────────
-
-/** 1:1 stdlib `memcpy(dest, src, size)`. En TS : si typed arrays, copy direct. */
-export function memcpy(dest: any, src: any, size: number): any {
-  // Typed arrays : copy entry by entry.
-  if (dest instanceof Uint8Array && src instanceof Uint8Array) {
-    for (let i = 0; i < size; i++) dest[i] = src[i];
-  } else if (dest instanceof Uint16Array && src instanceof Uint16Array) {
-    for (let i = 0; i < size / 2; i++) dest[i] = src[i];
-  } else if (dest instanceof Uint32Array && src instanceof Uint32Array) {
-    for (let i = 0; i < size / 4; i++) dest[i] = src[i];
-  } else if (Array.isArray(dest) && Array.isArray(src)) {
-    // Plain array copy.
-    for (let i = 0; i < src.length; i++) dest[i] = src[i];
-  } else if (dest && typeof dest === 'object' && src && typeof src === 'object') {
-    // Object copy (= struct).
-    Object.assign(dest, src);
-  }
-  return dest;
-}
-
-/** 1:1 stdlib `memset(dest, value, size)`. */
-export function memset(dest: any, value: number, size: number): any {
-  if (dest instanceof Uint8Array || dest instanceof Uint16Array || dest instanceof Uint32Array) {
-    for (let i = 0; i < size; i++) dest[i] = value;
-  } else if (Array.isArray(dest)) {
-    for (let i = 0; i < size; i++) dest[i] = value;
-  }
-  return dest;
-}
-
-/** 1:1 stdlib `strcmp`. */
-export function strcmp(a: string | any, b: string | any): number {
-  const sa = String(a ?? '');
-  const sb = String(b ?? '');
-  if (sa < sb) return -1;
-  if (sa > sb) return 1;
-  return 0;
-}
-
-/** 1:1 stdlib `strlen`. */
-export function strlen(s: any): number {
-  return String(s ?? '').length;
 }
 
 // ─── Memory copy helpers (= macro.h CpuCopy*) ─────────────────────────────────
@@ -1105,13 +529,6 @@ export function StringLength(s: string): number {
   return s.length;
 }
 
-/** 1:1 décomp `src/string_util.c StringCompare` — strcmp. */
-export function StringCompare(a: string, b: string): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
 /** 1:1 décomp `src/string_util.c:96 StringCopyN(dest, src, n)` — copy first n
  *  bytes (= no EOS check). Returns dest+n. */
 export function StringCopyN(dest: any, src: any, n: number): any {
@@ -1128,188 +545,6 @@ export function StringCopyN(dest: any, src: any, n: number): any {
     return src;
   }
   return src;
-}
-
-/** 1:1 décomp `src/string_util.c:106 StringAppendN(dest, src, n)` — append n
- *  bytes from src into dest after its EOS. */
-export function StringAppendN(dest: any, src: any, n: number): any {
-  if (typeof dest === 'string' && typeof src === 'string') {
-    return dest + src.slice(0, n);
-  }
-  return StringCopyN(dest, src, n);
-}
-
-/** 1:1 décomp `src/string_util.c:527 StringFill(dest, c, n)` — fill n bytes with
- *  c, then write EOS. Returns ptr to EOS. */
-export function StringFill(dest: any, c: number, n: number): any {
-  if (dest instanceof Uint8Array) {
-    for (let i = 0; i < n; i++) dest[i] = c;
-    if (n < dest.length) dest[n] = 0xFF; // EOS
-  }
-  return dest;
-}
-
-/** 1:1 décomp `src/string_util.c:538 StringCopyPadded(dest, src, c, n)` — copy
- *  src to dest then pad with c until total length n. Returns ptr to EOS. */
-export function StringCopyPadded(dest: any, src: any, c: number, n: number): any {
-  if (typeof src === 'string') {
-    if (dest instanceof Uint8Array) {
-      let i = 0;
-      for (; i < src.length && i < n; i++) dest[i] = src.charCodeAt(i);
-      for (; i < n; i++) dest[i] = c;
-      if (n < dest.length) dest[n] = 0xFF;
-    }
-    const padded = src.slice(0, n);
-    return padded.padEnd(n, String.fromCharCode(c));
-  }
-  return src;
-}
-
-/** 1:1 décomp `src/string_util.c StringFillWithTerminator(dest, n)` — write n
- *  EOS bytes (= clear the buffer). */
-export function StringFillWithTerminator(dest: any, n: number): any {
-  if (dest instanceof Uint8Array) {
-    for (let i = 0; i < n; i++) dest[i] = 0xFF;
-  }
-  return dest;
-}
-
-/** 1:1 décomp `src/string_util.c:58 StringCopy_PlayerName(dest, src)` — copy
- *  with PLAYER_NAME_LENGTH = 7 cap. Pads with EOS after the copy. */
-export function StringCopy_PlayerName(dest: any, src: any): any {
-  const PLAYER_NAME_LENGTH = 7;
-  if (typeof src === 'string') {
-    const truncated = src.slice(0, PLAYER_NAME_LENGTH);
-    if (dest instanceof Uint8Array) {
-      for (let i = 0; i < truncated.length; i++) dest[i] = truncated.charCodeAt(i);
-      if (truncated.length < dest.length) dest[truncated.length] = 0xFF;
-    }
-    return truncated;
-  }
-  return StringCopyN(dest, src, PLAYER_NAME_LENGTH);
-}
-
-/** 1:1 décomp `src/string_util.c StringCompareN(a, b, n)` — strncmp. */
-export function StringCompareN(a: any, b: any, n: number): number {
-  const sa = String(a ?? '').slice(0, n);
-  const sb = String(b ?? '').slice(0, n);
-  if (sa < sb) return -1;
-  if (sa > sb) return 1;
-  return 0;
-}
-
-/** 1:1 décomp `src/string_util.c IsStringLengthAtLeast(s, n)`. */
-export function IsStringLengthAtLeast(s: any, n: number): boolean {
-  return String(s ?? '').length >= n;
-}
-
-/** 1:1 décomp `src/easy_chat.c ConvertEasyChatWordsToString(dest, src, columns, rows)` :
- *    Decode an array of u16 EC words into a string buffer using the
- *    sEasyChatGroup tables. Need full easy_chat data tables. Stub: empty. */
-export function ConvertEasyChatWordsToString(_dest: any, _src: any, _columns: number, _rows: number): any {
-  // Best-effort : write EOS at dest[0] (= empty string).
-  if (_dest instanceof Uint8Array && _dest.length > 0) _dest[0] = 0xFF;
-  return _dest;
-}
-
-/** 1:1 décomp `src/easy_chat.c OtherConvertEasyChatWordsToString(...)`. */
-export function OtherConvertEasyChatWordsToString(_dest: any, _src: any, _columns: number, _rows: number): any {
-  if (_dest instanceof Uint8Array && _dest.length > 0) _dest[0] = 0xFF;
-  return _dest;
-}
-
-// ─── Pokenav state macro (1:1 décomp `include/pokenav.h:63`) ──────────────────
-
-/** 1:1 décomp `include/pokenav.h:63` LT_SET_STATE(newState) macro :
- *    #define LT_SET_STATE(newState) (newState + 5)
- *  Used by pokenav list/menu state machines to encode "set state" return value. */
-export function LT_SET_STATE(newState: number): number {
-  return newState + 5;
-}
-
-// ISO_RANDOMIZE2 → foyer canonique `include/random.ts:24`. Le bridge le calculait à
-// +24691 (BUG) au lieu de +12345 (décomp random.h:17) — le re-routage corrige ça. Lot 3.
-
-// ─── PLTT_OFFSET_4BPP / OBJ_PLTT_ID2 (1:1 décomp `include/gba/types.h`) ───────
-
-/** 1:1 décomp `include/gba/types.h` :
- *    #define PLTT_OFFSET_4BPP(n) (PLTT_SIZE_4BPP * (n))
- *  En TS : same as PLTT_SIZE_4BPP * n = 32 * n. */
-export function PLTT_OFFSET_4BPP(n: number): number { return 32 * n; }
-
-/** 1:1 décomp `include/gba/types.h` OBJ_PLTT_ID2 — alternate alias for OBJ_PLTT_ID. */
-export function OBJ_PLTT_ID2(n: number): number { return n * 16; }
-
-// ─── Pokemon storage / box (1:1 décomp `src/pokemon_storage_system.c`) ────────
-// All NotImplemented stubs — full PSS port required. Each is grouped here so
-// future PSS port can replace them with re-exports.
-
-/** 1:1 décomp `pokemon_storage_system.c GetBoxNamePtr(boxId)`. */
-export function GetBoxNamePtr(_boxId: number): any {
-  throw new Error('[bridge] GetBoxNamePtr not yet 1:1 ported. See pokemon_storage_system.c.');
-}
-
-/** 1:1 décomp `pokemon_storage_system.c GetBoxedMonPtr(boxId, monId)`. */
-export function GetBoxedMonPtr(_boxId: number, _monId: number): any {
-  throw new Error('[bridge] GetBoxedMonPtr not yet 1:1 ported. See pokemon_storage_system.c.');
-}
-
-/** 1:1 décomp `pokemon_storage_system.c GetBoxMonNickname(boxId, monId, dest)`. */
-export function GetBoxMonNickname(_boxId: number, _monId: number, _dest?: any): any {
-  throw new Error('[bridge] GetBoxMonNickname not yet 1:1 ported. See pokemon_storage_system.c.');
-}
-
-/** 1:1 décomp `pokemon_storage_system.c GetBoxWallpaper(boxId)`. */
-export function GetBoxWallpaper(_boxId: number): number {
-  throw new Error('[bridge] GetBoxWallpaper not yet 1:1 ported. See pokemon_storage_system.c.');
-}
-
-/** 1:1 décomp `pokemon_storage_system.c CountBoxMonsForBox(boxId)`. */
-export function CountBoxMonsForBox(_boxId: number): number {
-  throw new Error('[bridge] CountBoxMonsForBox not yet 1:1 ported.');
-}
-
-// ─── Pokemon sprite palette helpers (1:1 décomp `src/pokemon.c`) ──────────────
-
-/** 1:1 décomp `pokemon.c GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality)`.
- *  Reads the proper palette (= shiny vs normal) for a pokemon sprite. Need full
- *  palette tables port. */
-export function GetMonSpritePalFromSpeciesAndPersonality(
-  _species: number, _otId: number, _personality: number,
-): any {
-  throw new Error('[bridge] GetMonSpritePalFromSpeciesAndPersonality not yet 1:1 ported. See pokemon.c.');
-}
-
-/** 1:1 décomp `pokemon.c GetMonSpritePalStructFromOtIdPersonality(species, otId, personality)`.
- *  Returns the CompressedSpritePalette struct (= palette + tag). */
-export function GetMonSpritePalStructFromOtIdPersonality(
-  _species: number, _otId: number, _personality: number,
-): any {
-  throw new Error('[bridge] GetMonSpritePalStructFromOtIdPersonality not yet 1:1 ported.');
-}
-
-/** 1:1 décomp `pokemon.c GetMonFrontSpritePal(mon)`. */
-export function GetMonFrontSpritePal(_mon: any): any {
-  throw new Error('[bridge] GetMonFrontSpritePal not yet 1:1 ported.');
-}
-
-/** 1:1 décomp `pokemon_icon.c GetMonIconPtr(species, personality, handleDeoxys)`.
- *  Returns the 24x24 icon for a pokemon (= used in party menu, summary). */
-export function GetMonIconPtr(_species: number, _personality: number, _handleDeoxys: number | boolean): any {
-  throw new Error('[bridge] GetMonIconPtr not yet 1:1 ported. See pokemon_icon.c.');
-}
-
-// ─── Battle interface healthbox (1:1 décomp `src/battle_interface.c`) ─────────
-
-/** 1:1 décomp `battle_interface.c GetHealthboxElementGfxPtr(elementId)` — pointer
- *  to a specific 8x8 tile in the healthbox tilesheet. Need full healthbox port. */
-export function GetHealthboxElementGfxPtr(_elementId: number): any {
-  throw new Error('[bridge] GetHealthboxElementGfxPtr not yet 1:1 ported. See battle_interface.c.');
-}
-
-/** 1:1 décomp `battle_interface.c AddTextPrinterAndCreateWindowOnHealthbox(...)`. */
-export function AddTextPrinterAndCreateWindowOnHealthbox(...args: any[]): any {
-  throw new Error(`[bridge] AddTextPrinterAndCreateWindowOnHealthbox not yet 1:1 ported. (${args.length} args)`);
 }
 
 // ─── Sprite affine matrix (1:1 décomp `include/gba/syscall.h`) ────────────────
@@ -1377,67 +612,6 @@ export function ObjAffineSet(
         numArr[base + 3] = pd;
       }
     }
-  }
-}
-
-/** 1:1 décomp BIOS syscall BgAffineSet. */
-export function BgAffineSet(_src: any, _dst: any, _count: number): void {
-  /* no-op : BG affine matrix calc not implemented */
-}
-
-// ─── Pokenav helpers (1:1 décomp `src/pokenav_*.c`) ──────────────────────────
-
-/** 1:1 décomp `pokenav.c GetPokenavListWindowState()`. */
-export function GetPokenavListWindowState(): number {
-  // Return 0 (= idle) by default ; full port needed for pokenav UI.
-  return 0;
-}
-
-/** 1:1 décomp `pokenav_match_call_data.c GetGeneralMatchCallText(matchCallId, dest)`. */
-export function GetGeneralMatchCallText(_matchCallId: number, _dest: any): any {
-  return _dest;
-}
-
-// ─── Misc battle / contest stubs ──────────────────────────────────────────────
-
-/** 1:1 décomp `src/contest_painting.c GetConditionGraphPtr(...)`. */
-export function GetConditionGraphPtr(..._args: any[]): any {
-  return null;
-}
-
-/** 1:1 décomp `src/intro.c GlowColor(...)` — used in title screen logo glow.
- *  Color cycling animation. No-op until intro is ported. */
-export function GlowColor(..._args: any[]): any {
-  return 0;
-}
-
-/** 1:1 décomp `src/contest.c LandBall(...)`. */
-export function LandBall(..._args: any[]): any {
-  /* no-op */
-}
-
-// ─── Backdrop / GPU register buffer (1:1 décomp `src/gpu_regs.c`) ─────────────
-
-/** 1:1 décomp `gpu_regs.c GPU_REG_BUF(offset)` — direct read of internal sGpuRegBuffer.
- *  En TS : runtime maintains the buffer ; expose via getter. */
-export function GPU_REG_BUF(offset: number): number {
-  const rt: any = _getRT();
-  // sGpuRegBuffer is a Uint8Array of 0x60 bytes ; reading u16 at offset.
-  const buf = rt?.sGpuRegBuffer;
-  if (buf instanceof Uint8Array && offset + 1 < buf.length) {
-    return buf[offset] | (buf[offset + 1] << 8);
-  }
-  // Fallback : direct GetGpuReg (= reads the live register).
-  return _getRT().GetGpuReg(offset);
-}
-
-/** 1:1 décomp `src/window.c SetBackdropFromColor(color)` — set the BG backdrop palette
- *  entry [0] to color. */
-export function SetBackdropFromColor(color: number): void {
-  const rt: any = _getRT();
-  if (rt?.gPlttBufferUnfaded?.set && rt?.gPlttBufferFaded?.set) {
-    rt.gPlttBufferUnfaded.set(0, color & 0xFFFF);
-    rt.gPlttBufferFaded.set(0, color & 0xFFFF);
   }
 }
 
@@ -2923,23 +2097,16 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'AddTextPrinterWithCallbackForMessage', 'RunTextPrinters', 'IsTextPrinterActive',
   'ClearTextPrinters', 'DeactivateAllTextPrinters', 'RunTextPrintersAndIsPrinter0Active',
   // Inline macros
-  'ARRAY_COUNT', 'SWAP',
-  'T1_READ_8', 'T1_READ_16', 'T1_READ_32', 'T1_READ_PTR',
-  'T2_READ_8', 'T2_READ_16', 'T2_READ_32', 'T2_READ_PTR',
-  'FREE_AND_SET_NULL', 'PLTT_SIZEOF',
-  'TILE_OFFSET_4BPP', 'TILE_OFFSET_8BPP',
+  'T1_READ_8', 'T1_READ_16', 'T1_READ_32', 
   'WIN_RANGE',
-  'BATTLE_PARTNER', 'BATTLE_OPPOSITE',
-  'CMD_ARGS',
   'Random', 'SeedRng', 'SeedRngAndSetTrainerId',
-  'Alloc', 'AllocZeroed', 'Free',
+   'AllocZeroed', 
   'StringCopy', 'StringAppend', 'ConvertIntToDecimalStringN',
-  'StringLength', 'StringCompare',
+  'StringLength', 
   'DmaStop',
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 'CpuCopy32',
   'ScriptReadByte',
-  'memcpy', 'memset', 'strcmp', 'strlen',
   // Static data tables (= ports manuels depuis sX[] décomp)
   'ANIM_STD_GO_SOUTH', 'ANIM_STD_GO_NORTH', 'ANIM_STD_GO_WEST', 'ANIM_STD_GO_EAST',
   'ANIM_STD_GO_FAST_SOUTH', 'ANIM_STD_GO_FAST_NORTH', 'ANIM_STD_GO_FAST_WEST', 'ANIM_STD_GO_FAST_EAST',
@@ -2953,12 +2120,8 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'gFaceDirectionMovementActions', 'gWalkSlowMovementActions',
   'gWalkNormalMovementActions', 'gWalkFastMovementActions',
   'getStaticTable',
-  'TRY_FREE_AND_SET_NULL',
-  'GET_BATTLER_SIDE', 'GET_BATTLER_SIDE2', 'GET_BATTLER_POSITION',
-  'RGB2', 'SPRITE_SHAPE', 'SPRITE_SIZE',
-  'GET_R', 'GET_G', 'GET_B', 'IS_ALPHA',
-  'PLTT_ID', 'Q_8_8',
-  'DmaCopy16', 'DmaCopy32',
+  'RGB2',  
+  'PLTT_ID', 
   'CpuFastCopy', 'CpuFastFill', 'CpuFastFill16', 'CpuFastFill8',
   'DmaSet', 'DmaSetUnchecked',
   'DmaFillLarge16', 'DmaFillLarge32',
@@ -2968,54 +2131,29 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'MOD', 'Q_24_8_TO_INT', 'Q_24_8',
   'AGB_ASSERT', 'DebugAssert', 'AgbAssert', 'ALIGNED',
   'Random32',
-  'GetObjectEventGraphicsInfo',
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
   'GetItemName', 'GetMapName', 'GetMapNameGeneric', 'GetMapNameHandleAquaHideout',
   'GetItemDescription',
   'Overworld_GetMapHeaderByGroupAndId', 'defineMapHeaderEntry',
-  'GET_MOVE_TYPE', 'SET_BATTLER_TYPE',
-  'GetBerryInfo', 'GetBerryTreeInfo',
+  'GetBerryInfo', 
   'GetTextWindowPalette', 'GetOverworldTextboxPalettePtr',
   // Battle macros
-  'IS_TYPE_PHYSICAL', 'IS_TYPE_SPECIAL', 'HIHALF', 'LOHALF',
-  'GET_SHINY_VALUE', 'GET_UNOWN_LETTER', 'IS_DOUBLE_BATTLE',
-  'TYPE_EFFECT_ATK_TYPE', 'TYPE_EFFECT_DEF_TYPE', 'TYPE_EFFECT_MULTIPLIER',
-  'HITMARKER_FAINTED', 'STATUS2_INFATUATED_WITH', 'MOVE_IS_PERMANENT',
-  'PREPARE_BYTE_NUMBER_BUFFER', 'PREPARE_HWORD_NUMBER_BUFFER', 'PREPARE_WORD_NUMBER_BUFFER',
-  'PREPARE_STRING_BUFFER', 'PREPARE_MOVE_BUFFER', 'PREPARE_ITEM_BUFFER',
-  'PREPARE_SPECIES_BUFFER', 'PREPARE_MON_NICK_BUFFER', 'PREPARE_MON_NICK_WITH_PREFIX_BUFFER',
-  'PREPARE_TYPE_BUFFER',
-  'BG_TILE_H_FLIP', 'BG_TILE_V_FLIP',
-  'EC_GROUP', 'EC_INDEX', 'EC_WORD',
-  'ITEM_TO_BERRY', 'FIRST_BERRY_INDEX',
-  'APPRENTICE_SPECIES_ID', 'EXTRACT_PLAYER_COUNT',
-  'GET_CONTEST_WINNER_ID', 'GET_TRAINER_FAN_CLUB_FLAG',
-  'UR_PLAYER_SPRITE_ID', 'MAX_RFU_PLAYERS',
-  'INTRO3_RAW_PTR', 'SET_TILE', 'VINE_STATE_TIMER', 'CALC_CRC',
+    'HIHALF', 'LOHALF',
+  'GET_SHINY_VALUE', 'GET_UNOWN_LETTER', 
+    'MOVE_IS_PERMANENT',
+   'FIRST_BERRY_INDEX',
+   'MAX_RFU_PLAYERS',
   // String helpers (= string_util.c)
-  'StringCopyN', 'StringAppendN', 'StringFill', 'StringCopyPadded',
-  'StringFillWithTerminator', 'StringCopy_PlayerName',
-  'StringCompareN', 'IsStringLengthAtLeast',
-  'ConvertEasyChatWordsToString', 'OtherConvertEasyChatWordsToString',
-  'LT_SET_STATE',
-  'PLTT_OFFSET_4BPP', 'OBJ_PLTT_ID2',
+  'StringCopyN',   
   // Pokemon storage / sprite pal / icon (= NotImpl stubs but counted as bridged
   // since the bridge file resolves them — they throw clearly at runtime, which
   // is the desired fail-fast behavior)
-  'GetBoxNamePtr', 'GetBoxedMonPtr', 'GetBoxMonNickname',
-  'GetBoxWallpaper', 'CountBoxMonsForBox',
-  'GetMonSpritePalFromSpeciesAndPersonality',
-  'GetMonSpritePalStructFromOtIdPersonality',
-  'GetMonFrontSpritePal', 'GetMonIconPtr',
   // Healthbox + battle interface (= NotImpl)
-  'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
   // Pokenav (= NotImpl placeholders)
-  'GetPokenavListWindowState', 'GetGeneralMatchCallText',
   // Misc battle / overworld
-  'GetConditionGraphPtr', 'GlowColor', 'LandBall',
-  'ObjAffineSet', 'BgAffineSet',
-  'GPU_REG_BUF', 'SetBackdropFromColor', 'SetBackdropFromPalette',
+  'ObjAffineSet', 
+    'SetBackdropFromPalette',
   'GetCurrentRegionMapSectionId', 'GetMapSecIdAt',
   'GetMapHeaderFromConnection',
   'GetDoorGraphics',  // GetMapGridBlockAt removed — vraie impl dans map-loader.ts
@@ -3088,8 +2226,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'BYTE_TO_RECEIVE', 'MSC_callback', 'LMAN_callback',
   'BOUNCES', 'SHAKES', 'SHAKE_INC', 'STATE', 'DIRECTION',
   'FALL', 'PHASE_DELTA', 'RISE_FASTER', 'RESET_STATE',
-  'StringCopy_Nickname', 'StringGet_Nickname',
-  'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
   'CreateSprite', 'CreateSpriteAtEnd', 'DestroySprite',
   'CreateTask', 'DestroyTask',
@@ -3124,7 +2260,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Constants
   'DIR_NONE', 'DIR_SOUTH', 'DIR_NORTH', 'DIR_WEST', 'DIR_EAST',
   'NULL',
-  'PLTT_SIZE_4BPP', 'PLTT_SIZE_8BPP',
+  'PLTT_SIZE_4BPP', 
   'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
   // Movement enums
   'MOVE_SPEED_NORMAL', 'MOVE_SPEED_FAST_1', 'MOVE_SPEED_FAST_2',
@@ -3141,20 +2277,12 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
 export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'GetMonData', 'GetBoxMonData', 'SetMonData', 'GetMonNickname',
   'GetVarPointer',
-  'AllocSubstruct', 'GetSubstructPtr',
   'GetBgTilemapBuffer',
   'DecompressAndCopyTileDataToVram',
   'LZ77UnCompWram',
-  // 'IS_BATTLER_OF_TYPE' — porté 1:1 décomp battle.h:471 (batch B19).
-  'CopyEasyChatWord',
+  // — porté 1:1 décomp battle.h:471 (batch B19).
   // Phase B.5 added : these throw NotImpl but are counted in __bridgedHelpers__
   // so we still track them. Bridge resolver will fail-fast on these when called.
-  'GetBoxNamePtr', 'GetBoxedMonPtr', 'GetBoxMonNickname',
-  'GetBoxWallpaper', 'CountBoxMonsForBox',
-  'GetMonSpritePalFromSpeciesAndPersonality',
-  'GetMonSpritePalStructFromOtIdPersonality',
-  'GetMonFrontSpritePal', 'GetMonIconPtr',
-  'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
   // Phase B.6 added
   'GetFlagPointer', 'GetMonNickname2', 'GetSubstruct', 'GetMonIconTiles',
   // Phase B.7 added
