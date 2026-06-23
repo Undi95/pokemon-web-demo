@@ -141,9 +141,10 @@ import {
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
   SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
 } from '../../list_menu';
-import {
-  TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
-} from '../decomp-data/src/item_menu-data';
+// 1:1 décomp item_menu.c:54-55 — #define TAG_POCKET_SCROLL_ARROW 110 /
+// TAG_BAG_SCROLL_ARROW 111 (tags des flèches d'indicateur de défilement).
+const TAG_POCKET_SCROLL_ARROW = 110;
+const TAG_BAG_SCROLL_ARROW = 111;
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
