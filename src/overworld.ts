@@ -46,6 +46,45 @@ const BG_COORD_SET = 0;
  *  locale (import statique de script-opcodes-screen-fx ferme un cycle ESM → TDZ). */
 const gMaxFlashLevel = 8;
 
+// ─── Map header lookup (1:1 décomp `src/overworld.c:579`) ─────────────────────
+//
+// Décyclé du bridge (foyer 1:1 = overworld.c). Notre map data est async (fetch
+// JSON) alors que la fn décomp est sync (`return gMapGroups[mapGroup][mapNum];`).
+// Stopgap port : on lit un registre peuplé par `defineMapHeaderEntry`, sinon on
+// retourne un header structurellement vide pour éviter le crash. NOTE : à ce jour
+// `defineMapHeaderEntry` n'a aucun appelant → le getter retourne toujours le
+// fallback (les consommateurs de mapType routent sur `gMapHeader.mapType`).
+const _mapHeaderRegistry = new Map<string, any>();
+export function defineMapHeaderEntry(key: string, header: any): void {
+  _mapHeaderRegistry.set(key, header);
+}
+/** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :
+ *    return gMapGroups[mapGroup][mapNum]; */
+export function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: number): any {
+  const key = `${mapGroup}.${mapNum}`;
+  const header = _mapHeaderRegistry.get(key);
+  if (header) return header;
+  // Fallback : header structurellement vide (champs .music/.mapType/.battleType = 0/undef).
+  return {
+    mapLayoutId: 0,
+    events: { objectEventCount: 0, warpCount: 0, coordEventCount: 0, bgEventCount: 0,
+              objectEvents: [], warps: [], coordEvents: [], bgEvents: [] },
+    mapScripts: [],
+    connections: { count: 0, connections: [] },
+    music: 0,
+    mapLayoutId16: 0,
+    regionMapSectionId: 0,
+    cave: 0,
+    weather: 0,
+    mapType: 0,
+    bikingAllowed: 0,
+    allowEscaping: 0,
+    allowRunning: 0,
+    showMapName: 0,
+    battleType: 0,
+  };
+}
+
 /** 1:1 STRICT décomp `Overworld_MapTypeAllowsTeleportAndFly(u8 mapType)` (overworld.c:1366) :
  *    return (mapType == ROUTE || TOWN || OCEAN_ROUTE || CITY).
  *  `mapType` = STRING dans le port (= json.map_type, ex. "MAP_TYPE_TOWN"). */

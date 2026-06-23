@@ -31,14 +31,13 @@
 
 import type { WarpEvent, MapHeader } from '../../fieldmap';
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../fieldmap';
-import { GetMapConnection } from '../../overworld';
+import { GetMapConnection, Overworld_GetMapHeaderByGroupAndId } from '../../overworld';
 import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../../../include/constants/global';
 import type { WarpData } from '../save/save-blocks';
 import {
   MAP_TYPE_TOWN, MAP_TYPE_CITY, MAP_TYPE_ROUTE,
   MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
 } from '../../../include/constants/map_types';
-import { Overworld_GetMapHeaderByGroupAndId } from '../../../harness/runtime/decomp-bridge';
 import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {

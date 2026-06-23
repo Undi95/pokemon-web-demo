@@ -177,43 +177,8 @@ const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
 // GetMapName / GetMapNameGeneric / GetMapNameHandleAquaHideout (+ helper) décyclés
 // → src/region_map.ts (foyer 1:1 region_map.c).
 
-// ─── Overworld map header (1:1 décomp `src/overworld.c`) ──────────────────────
-
-/** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :
- *    return gMapGroups[mapGroup][mapNum];
- *
- *  Notre map data est async (= fetch JSON), mais cette fn est sync dans le décomp.
- *  Solution : on regarde dans un cache populated par le map loader. Si pas en
- *  cache, on retourne un placeholder header pour éviter le crash et on warn. */
-const _mapHeaderRegistry = new Map<string, any>();
-export function defineMapHeaderEntry(key: string, header: any): void {
-  _mapHeaderRegistry.set(key, header);
-}
-export function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: number): any {
-  const key = `${mapGroup}.${mapNum}`;
-  const header = _mapHeaderRegistry.get(key);
-  if (header) return header;
-  // Fallback : returns a structurally-empty header so auto-bodies can read fields
-  // without crashing. The .music, .mapType, .battleType fields will be 0/undef.
-  return {
-    mapLayoutId: 0,
-    events: { objectEventCount: 0, warpCount: 0, coordEventCount: 0, bgEventCount: 0,
-              objectEvents: [], warps: [], coordEvents: [], bgEvents: [] },
-    mapScripts: [],
-    connections: { count: 0, connections: [] },
-    music: 0,
-    mapLayoutId16: 0,
-    regionMapSectionId: 0,
-    cave: 0,
-    weather: 0,
-    mapType: 0,
-    bikingAllowed: 0,
-    allowEscaping: 0,
-    allowRunning: 0,
-    showMapName: 0,
-    battleType: 0,
-  };
-}
+// Overworld_GetMapHeaderByGroupAndId / defineMapHeaderEntry décyclés →
+// src/overworld.ts (foyer 1:1 overworld.c:579).
 
 // ─── Berry (1:1 décomp `src/berry.c:980 GetBerryInfo`) ────────────────────────
 
@@ -580,8 +545,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'Random32',
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
-  'Overworld_GetMapHeaderByGroupAndId', 'defineMapHeaderEntry',
-  'GetBerryInfo', 
+  'GetBerryInfo',
   'GetTextWindowPalette',
   // Battle macros
     'HIHALF', 'LOHALF',

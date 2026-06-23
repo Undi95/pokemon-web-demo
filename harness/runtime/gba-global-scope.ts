@@ -12,7 +12,7 @@
 import * as _dg from './decomp-globals';
 import * as _cb from '../boot/copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../../src/engine/script/script-vars';
-import {Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry} from "./decomp-bridge";
+import {Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry} from "../../src/overworld";
 import { DestroySprite as _bridgeDestroySprite, ResetSpriteData as _bridgeResetSpriteData } from '../../src/sprite';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
