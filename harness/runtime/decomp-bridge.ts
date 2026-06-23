@@ -40,91 +40,17 @@
  */
 
 // Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
-// (branche sheet taggee). Re-export `export {X} from '../../src/sprite'` ne cree PAS de
+// (branche sheet taggee). Re-export `// (ré-exports morts retirés depuis '../../src/sprite' — sweep)` ne cree PAS de
 // binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
 import { ResetSpriteData as _ResetSpriteData, DestroySprite as _DestroySprite, AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix, CreateSprite as _CreateSprite_game } from '../../src/sprite';
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
 export {
-  // Palette helpers (palette.c)
   LoadPalette,
-  FillPalBufferBlack,
-  FillPalBufferWhite,
-  BlendPalette,
-  BlendPalettes,
-  BlendPalettesUnfaded,
   ResetPaletteFade,
-  // CPU mem helpers (main.c + macro.h)
-  CpuFill16,
-  CpuFill32,
-  CpuSet,
-  CpuFastSet,
-  DmaClear16,
-  DmaClear32,
-  DmaFill16,
-  DmaFill32,
-  // Joypad helpers (main.c + macro.h)
-  JOY_NEW,
-  JOY_HELD,
-  JOY_REPEAT,
-  // Decompression (decompress.c)
-  LZ77UnCompVram,
-  LZDecompressVram,
-  // Sprite palette helpers
   FreeAllSpritePalettes,
-  IndexOfSpritePaletteTag,
-  GetSpriteTileStartByTag,
   LoadCompressedSpriteSheet,
-  LoadCompressedSpriteSheetUsingHeap,
-  LoadCompressedSpritePaletteUsingHeap,
-  LoadSpritePalettes,
-  // BG ops
-  LoadBgTiles,
-  // Macros déjà exportés depuis decomp-globals
-  PIXEL_FILL,
-  BLDALPHA_BLEND,
-  // Audio
-  PlaySE,
-  PlayBGM,
-  PlayFanfare,
-  StopFanfare,
-  IsFanfareTaskInactive,
-  WaitFanfare,
-  m4aSongNumStart,
-  m4aMPlayAllStop,
-  pauseBgm,
-  resumeBgm,
-  isBgmPaused,
-  FadeOutBGM,
-  FadeInBGM,
-  // Tasks (high-level)
-  ResetTasks,
-  RunTasks,
-  AnimateSprites,
-  BuildOamBuffer,
-  FindTaskIdByFunc,
-  TASK_NONE,
-  // Misc helpers
-  SpriteCallbackDummy,
-  SAFE_DIV,
-  MultiplyInvertedPaletteRGBComponents,
-  PALETTES_ALL,
-  PALETTES_BG,
-  PALETTES_OBJ,
-  PLTT_SIZE,
-  BG_SCREEN_SIZE,
-  VRAM_SIZE,
-  // Save block / runtime context
-  setGlobalRuntime,
-  getRuntime,
-  getAsset,
-  // Sprite affine (used heavily)
-  InitSpriteAffineAnim,
-  // Subsprites
-  SetSubspriteTables,
-  // Cry
-  PlayCryInternal,
 } from './decomp-globals';
 
 // ─── Re-exports : sprite/affine helpers (decomp-helpers.ts) ───────────────────
@@ -132,23 +58,7 @@ export {
 // Sin / Cos → foyer canonique `src/trig.ts` (1:1 décomp trig.c) ; gSineTable (forme
 // FONCTION, fix cast u8) → `harness/runtime/decomp-helpers.ts`. Ré-exports bridge
 // retirés (0 importeur depuis le bridge) — décyclage lot 12.
-export {
-  Q_8_8_TO_INT,
-  SetOamMatrix,
-  CalcCenterToCornerVec,
-  ST_OAM_AFFINE_OFF,
-  ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_ERASE,
-  ST_OAM_AFFINE_DOUBLE,
-  ST_OAM_AFFINE_ON_MASK,
-  ST_OAM_AFFINE_DOUBLE_MASK,
-  ST_OAM_OBJ_NORMAL,
-  ST_OAM_OBJ_BLEND,
-  ST_OAM_OBJ_WINDOW,
-  ST_OAM_4BPP,
-  ST_OAM_8BPP,
-  PaletteBuffer,
-} from './decomp-helpers';
+// (ré-exports morts retirés depuis './decomp-helpers' — sweep)
 import { gSineTable as _gSineTable } from './decomp-helpers';
 // STR_CONV_MODE_* : foyer canonique include/string_util.ts (feuille pure, cycle-safe).
 // Importés ici pour l'usage interne de ConvertIntToDecimalStringN (décyclage lot 5).
@@ -156,134 +66,19 @@ import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../../in
 
 // ─── Re-exports : GPU register / BG constants (decomp-runtime.ts) ─────────────
 
-export {
-  // BGCNT macros (= already function-style)
-  BGCNT_PRIORITY,
-  BGCNT_CHARBASE,
-  BGCNT_SCREENBASE,
-  BGCNT_16COLOR,
-  BGCNT_256COLOR,
-  BGCNT_TXT256x256,
-  BGCNT_TXT512x256,
-  BGCNT_TXT256x512,
-  BGCNT_TXT512x512,
-  BGCNT_AFF128x128,
-  BGCNT_AFF256x256,
-  BGCNT_AFF512x512,
-  BGCNT_AFF1024x1024,
-  BGCNT_WRAP,
-  // DISPCNT
-  DISPCNT_MODE_0,
-  DISPCNT_MODE_1,
-  DISPCNT_MODE_2,
-  DISPCNT_OBJ_1D_MAP,
-  DISPCNT_BG0_ON,
-  DISPCNT_BG1_ON,
-  DISPCNT_BG2_ON,
-  DISPCNT_BG3_ON,
-  DISPCNT_OBJ_ON,
-  DISPCNT_WIN1_ON,
-  DISPCNT_WINOBJ_ON,
-  DISPCNT_WIN0_ON,
-  DISPCNT_BG_ALL_ON,
-  DISPCNT_FORCED_BLANK,
-  DISPCNT_HBLANK_INTERVAL_FREE,
-  // BLDCNT
-  BLDCNT_TGT1_BG0,
-  BLDCNT_TGT1_BG1,
-  BLDCNT_TGT1_BG2,
-  BLDCNT_TGT1_BG3,
-  BLDCNT_TGT1_OBJ,
-  BLDCNT_TGT1_BD,
-  BLDCNT_EFFECT_NONE,
-  BLDCNT_EFFECT_BLEND,
-  BLDCNT_EFFECT_LIGHTEN,
-  BLDCNT_EFFECT_DARKEN,
-  BLDCNT_TGT2_BG0,
-  BLDCNT_TGT2_BG1,
-  BLDCNT_TGT2_BG2,
-  BLDCNT_TGT2_BG3,
-  BLDCNT_TGT2_OBJ,
-  BLDCNT_TGT2_BD,
-  // PLTT (palette ID helpers)
-  BG_PLTT_ID,
-  OBJ_PLTT_ID,
-  // VRAM addresses
-  BG_VRAM,
-  BG_CHAR_ADDR,
-  BG_SCREEN_ADDR,
-  // Display
-  DISPLAY_WIDTH,
-  DISPLAY_HEIGHT,
-  // Fade modes
-  NORMAL_FADE,
-  FAST_FADE,
-  HARDWARE_FADE,
-  // Register offsets (= for SetGpuReg/GetGpuReg)
-  REG_OFFSET_DISPCNT,
-  REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG2CNT,
-  REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS,
-  REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS,
-  REG_OFFSET_BG3VOFS,
-  REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1V,
-  REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT,
-  REG_OFFSET_MOSAIC,
-  REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDY,
-} from './decomp-runtime';
+// (ré-exports morts retirés depuis './decomp-runtime' — sweep)
 
 // ─── Re-exports : event_data (script-vars.ts) ─────────────────────────────────
 
-export {
-  FlagSet,
-  FlagClear,
-  FlagGet,
-  VarSet,
-  VarGet,
-  Compare,
-  COMPARE_LT,
-  COMPARE_EQ,
-  COMPARE_GT,
-} from '../../src/engine/script/script-vars';
+// (ré-exports morts retirés depuis '../../src/engine/script/script-vars' — sweep)
 
 // ─── Re-exports : script runtime (script-runtime.ts) ──────────────────────────
 
-export {
-  LockPlayerFieldControls,
-  InitScriptContext,
-  SetupBytecodeScript,
-  ScriptJump,
-} from '../../src/script';
+// (ré-exports morts retirés depuis '../../src/script' — sweep)
 
 // ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
 
-export {
-  StringExpandPlaceholders,
-  GetStringWidth,
-  GetStringRightAlignXOffset,
-  AddTextPrinterParameterized3,
-  AddTextPrinterForMessage,
-  AddTextPrinterWithCallbackForMessage,
-  RunTextPrinters,
-  IsTextPrinterActive,
-  ClearTextPrinters,
-  DeactivateAllTextPrinters,
-  RunTextPrintersAndIsPrinter0Active,
-  CHAR_SPACER_STR,
-} from '../../src/engine/ui/gba-text-system';
+// (ré-exports morts retirés depuis '../../src/engine/ui/gba-text-system' — sweep)
 import { CHAR_SPACER_STR } from '../../src/engine/ui/gba-text-system';
 
 // ─── Local-use imports (hoisted from scattered scope) ────────────────────────
@@ -293,7 +88,7 @@ import { CHAR_SPACER_STR } from '../../src/engine/ui/gba-text-system';
 // quand l'eager-init chain change (= ex. save-system → bag → game-state →
 // load_save → object-events → metatile-behavior → decomp-bridge). Ces imports
 // sont utilisés localement avec des alias `_xxx` pour éviter la collision avec
-// les re-exports `export { Xxx } from '../../src/engine/xxx'` situés plus bas dans ce fichier.
+// les re-exports `// (ré-exports morts retirés depuis '../../src/engine/xxx' — sweep)` situés plus bas dans ce fichier.
 
 import { Random as _Random } from '../../src/random';
 import { getObjectEventGraphicsInfo as _getOEGI } from '../../src/engine/field/object-event-graphics';
@@ -516,8 +311,8 @@ export function IS_TYPE_SPECIAL(moveType: number): boolean {
 // `HIHALF`/`LOHALF` (global.h:106-109) + `GET_SHINY_VALUE`/`GET_UNOWN_LETTER`
 // (pokemon.h) = consolidés sur le miroir (src/game/include/global.ts +
 // src/game/include/pokemon.ts). Re-exports = source unique.
-export { HIHALF, LOHALF } from '../../include/global';
-export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../include/pokemon';
+// (ré-exports morts retirés depuis '../../include/global' — sweep)
+// (ré-exports morts retirés depuis '../../include/pokemon' — sweep)
 
 /** 1:1 décomp `src/battle_anim_mons.c:19` :
  *    #define IS_DOUBLE_BATTLE() ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
@@ -863,9 +658,9 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 }
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
-export { Random, SeedRng } from '../../src/random';
-export { SeedRngAndSetTrainerId } from '../../src/main';
-export { Random32 } from '../../include/random';
+// (ré-exports morts retirés depuis '../../src/random' — sweep)
+// (ré-exports morts retirés depuis '../../src/main' — sweep)
+// (ré-exports morts retirés depuis '../../include/random' — sweep)
 // Note : `_Random` alias local hoisted en tête de fichier (section "Local-use imports").
 
 // ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
@@ -888,12 +683,6 @@ export function GetObjectEventGraphicsInfo(graphicsId: number): any {
 // ─── Re-exports : window frame tiles + palettes (miroir src/game/text_window.ts) ──
 
 export {
-  GetWindowFrameTilesPal,
-  LoadWindowGfx,
-  LoadUserWindowBorderGfx,
-  LoadUserWindowBorderGfx_,
-  LoadMessageBoxGfx,
-  GetTextWindowPalette,
   GetOverworldTextboxPalettePtr,
 } from '../../src/text_window';
 
@@ -2132,7 +1921,7 @@ export function Contest_CopyStringWithColor(..._args: any[]): any {
 
 /** 1:1 décomp `src/string_util.c WriteColorChangeControlCode(...)` — ex-stub no-op,
  *  CONSOLIDÉ : délègue au miroir `src/game/string_util.ts` (0 dup). */
-export { WriteColorChangeControlCode } from '../../include/string_util';
+// (ré-exports morts retirés depuis '../../include/string_util' — sweep)
 
 /** 1:1 décomp `src/easy_chat.c GetQuestionnaireWordsPtr()`. */
 export function GetQuestionnaireWordsPtr(): any { return null; }
@@ -3052,77 +2841,20 @@ export function SetVBlankCallback(cb: (() => void) | null): void {
 
 // ─── Re-exports : map grid + metatile behavior ────────────────────────────────
 
-export {
-  MapGridGetCollisionAt,
-  MapGridGetMetatileBehaviorAt,
-  MapGridGetElevationAt,
-} from '../../src/fieldmap';
+// (ré-exports morts retirés depuis '../../src/fieldmap' — sweep)
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 
-export {
-  // ANIM_STD_GO_X constants
-  ANIM_STD_GO_SOUTH, ANIM_STD_GO_NORTH, ANIM_STD_GO_WEST, ANIM_STD_GO_EAST,
-  ANIM_STD_GO_FAST_SOUTH, ANIM_STD_GO_FAST_NORTH, ANIM_STD_GO_FAST_WEST, ANIM_STD_GO_FAST_EAST,
-  ANIM_STD_GO_FASTER_SOUTH, ANIM_STD_GO_FASTER_NORTH, ANIM_STD_GO_FASTER_WEST, ANIM_STD_GO_FASTER_EAST,
-  ANIM_STD_GO_FASTEST_SOUTH, ANIM_STD_GO_FASTEST_NORTH, ANIM_STD_GO_FASTEST_WEST, ANIM_STD_GO_FASTEST_EAST,
-  // Movement direction anim tables
-  sMoveDirectionAnimNums,
-  sMoveDirectionFastAnimNums,
-  sMoveDirectionFasterAnimNums,
-  sMoveDirectionFastestAnimNums,
-  // Direction lookup
-  sOppositeDirections,
-  gStandardDirections,
-  // Jump tables
-  sJumpInitDisplacements,
-  sJumpDisplacements,
-  // Step times by speed
-  sStepTimes,
-  // Direction to coordinate vectors
-  sDirectionToVectors,
-  // Movement action lookup tables
-  gFaceDirectionMovementActions,
-  gWalkSlowMovementActions,
-  gWalkNormalMovementActions,
-  gWalkFastMovementActions,
-  // Lazy table fetcher
-  getStaticTable,
-} from './static-data-tables';
+// (ré-exports morts retirés depuis './static-data-tables' — sweep)
 
 // ─── Re-exports : metatile behavior predicates ────────────────────────────────
 
 // Block/Jump predicates (= déjà implémentés à la main).
-export {
-  MetatileBehavior_IsEastBlocked,
-  MetatileBehavior_IsWestBlocked,
-  MetatileBehavior_IsNorthBlocked,
-  MetatileBehavior_IsSouthBlocked,
-  MetatileBehavior_IsJumpEast,
-  MetatileBehavior_IsJumpWest,
-  MetatileBehavior_IsJumpNorth,
-  MetatileBehavior_IsJumpSouth,
-  MetatileBehavior_IsPacifidlogLog,
-  MetatileBehavior_IsRunningDisallowed,
-} from '../../src/metatile_behavior';
+// (ré-exports morts retirés depuis '../../src/metatile_behavior' — sweep)
 
 // Other metatile predicates (= 1:1 décomp `metatile_behavior.c`), re-exportés
 // depuis le miroir `game/metatile_behavior.ts` (source unique).
-export {
-  MetatileBehavior_IsTallGrass,
-  MetatileBehavior_IsLongGrass,
-  MetatileBehavior_IsShortGrass,
-  MetatileBehavior_IsHotSprings,
-  MetatileBehavior_IsIce,
-  MetatileBehavior_IsPuddle,
-  MetatileBehavior_IsShallowFlowingWater,
-  MetatileBehavior_IsSandOrDeepSand,
-  MetatileBehavior_IsSeaweed,
-  MetatileBehavior_IsReflective,
-  MetatileBehavior_IsFootprints,
-  MetatileBehavior_HasRipples,
-  MetatileBehavior_IsDeepSand,
-} from '../../src/metatile_behavior';
+// (ré-exports morts retirés depuis '../../src/metatile_behavior' — sweep)
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 
