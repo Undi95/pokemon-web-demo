@@ -86,7 +86,8 @@ import {
   FONT_NORMAL,
   GetStringCenterAlignXOffset,
 } from './engine/ui/gba-text-system';
-import {StringCopy, StringLength} from "../harness/runtime/decomp-bridge";
+import { StringCopy, StringAppend, StringLength } from '../include/string_util';
+import { encodeOwText } from '../include/text';
 import { RGB, RGB_BLACK, RGB_WHITE, PLTT_SIZE_4BPP } from '../harness/runtime/decomp-helpers';
 import { BG_PLTT_ID, REG_OFFSET_DISPCNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP } from '../harness/runtime/decomp-runtime';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -174,7 +175,7 @@ interface MailGraphics {
 /** 1:1 décomp `mail.c:57-76` `struct MailRead`. EWRAM runtime state. */
 interface MailRead {
   /*0x0000*/ message: Uint8Array[];      // [8][64] — buffer text per line
-  /*0x0200*/ playerName: string;          // [12] décomp ; TS : string
+  /*0x0200*/ playerName: Uint8Array;       // u8[12] décomp ; TS : Uint8Array (byte-level, G2)
   /*0x020C*/ exitCallback: MainCallback;
   /*0x0210*/ callback: (() => void) | null;
   /*0x0214*/ mail: Mail | null;
@@ -798,10 +799,12 @@ function BufferMailText(): void {
   }
 
   // 1:1 décomp : ptr = StringCopy(sMailRead->playerName, sMailRead->mail->playerName);
-  sMailRead.playerName = StringCopy(null, sMailRead.mail.playerName);
+  // playerName = buffer byte (foyer string_util.ts) ; mail.playerName = données JS-string
+  // (encodées via encodeOwText jusqu'au Stage 4 save). Plus le no-op StringCopy(null,…) du bridge.
+  StringCopy(sMailRead.playerName, encodeOwText(sMailRead.mail.playerName));
   if (!sMailRead.international) {
     // 1:1 décomp Never reached. JP-only. Conservé pour fidélité totale.
-    sMailRead.playerName = StringCopy(null, sMailRead.playerName + GetText_FromSpace());
+    StringAppend(sMailRead.playerName, encodeOwText(GetText_FromSpace()));
     sMailRead.signatureWidth = sMailRead.layout.signatureWidth - (StringLength(sMailRead.playerName) * 8 - 96);
   } else {
     ConvertInternationalPlayerName(sMailRead.playerName);
@@ -848,7 +851,11 @@ function PrintMailText(): void {
   //   box_x = GetStringCenterAlignXOffset(FONT_NORMAL, signature, sMailRead->signatureWidth) + 104;
   //   box_y = sMailRead->layout->signatureYPos + 88;
   //   AddTextPrinterParameterized3(0, FONT_NORMAL, box_x, box_y, sTextColors, 0, signature);
-  const signature = GetText_FromSpace() + sMailRead.playerName;
+  // 1:1 décomp buffer byte : bufptr = StringCopy(signature, gText_FromSpace) (="" EN/FR) ;
+  // StringCopy(bufptr, sMailRead->playerName). signature = buffer du foyer string_util.ts.
+  const signature = new Uint8Array(32);
+  const bufptr = StringCopy(signature, encodeOwText(GetText_FromSpace()));
+  StringCopy(bufptr, sMailRead.playerName);
   // 1:1 décomp signature : `GetStringCenterAlignXOffset(FONT_NORMAL, signature,
   //   sMailRead->signatureWidth)`. Notre TS port omet `fontId` (= FONT_NORMAL
   //   implicite) — équivalent fonctionnel 1:1, cf. gba-text-system.ts:146.
@@ -944,7 +951,7 @@ function _initMailReadStruct(s: MailRead): void {
   _gMailState = 0;
   s.message = new Array(8);
   for (let i = 0; i < 8; i++) s.message[i] = new Uint8Array(64);
-  s.playerName = '';
+  s.playerName = new Uint8Array(12);  // 1:1 décomp u8 playerName[12]
   s.exitCallback = null;
   s.callback = null;
   s.mail = null;
@@ -1131,7 +1138,7 @@ function SpriteCallbackDummy(_sprite: any): void {
 let _warnedConvertIntlName = false;
 /** 1:1 TODO : `international_string_util.c ConvertInternationalPlayerName`.
  *  Pour notre port FR : player name déjà en UTF-8, no-op acceptable. */
-function ConvertInternationalPlayerName(_name: string): void {
+function ConvertInternationalPlayerName(_name: Uint8Array): void {
   if (_warnedConvertIntlName) return;
   _warnedConvertIntlName = true;
   // eslint-disable-next-line no-console
