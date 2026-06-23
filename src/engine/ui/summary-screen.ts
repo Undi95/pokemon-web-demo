@@ -54,8 +54,8 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../../../harness/runtime/decomp-globals';
-import {ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
-import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN } from '../../../include/string_util';
+import { decodeOwBytes } from '../../../include/text';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
@@ -1269,13 +1269,19 @@ let _leftColStats = '';
  *  string_util.c:209/265/325) — PAS CHAR_SPACE (0x00). CHAR_SPACER a la
  *  largeur d'un chiffre (5 px FONT_NORMAL) vs CHAR_SPACE 3 px → les colonnes
  *  de nombres s'alignent vraiment à droite (sinon rendu ~centré ≠ ROM).
- *  CHAR_SPACER ↔ JS 'ラ' (U+30E9 → byte 0x77, charmap.txt:280), MÊME
- *  approche 1:1 que party-screen.ts:504 `_rightAlign3` (validée A/B). */
-// Helper local _rightAlignSpacer retiré : `ConvertIntToDecimalStringN(value,
-// RIGHT_ALIGN, n)` (decomp-bridge) fait l exact même travail 1:1 — substrat
-// partagé avec party-screen + 14 autres callers (factoring dedup 2026-05-20).
-const _rightAlignSpacer = (value: number, n: number) =>
-  ConvertIntToDecimalStringN('', value, STR_CONV_MODE_RIGHT_ALIGN, n);
+ *  CHAR_SPACER ↔ JS 'ラ' (U+30E9 → byte 0x77, charmap.txt:280).
+ *
+ *  Migration texte G2 (TRANSITIONAL) : la version buffer Uint8Array du foyer 1:1
+ *  `src/string_util.ts` écrit dans un buffer dédié (1:1 décomp Alloc(8) — chaque
+ *  placeholder son propre buffer, pas d'aliasing) ; on `decodeOwBytes` → JS-string
+ *  car `DynamicPlaceholderTextUtil` reste JS-string dans le port (byte-level complet
+ *  quand ce sous-système sera migré, Stage 3). decodeOwBytes(ConvertInt_buffer) ===
+ *  l'ancienne string du bridge (vérifié déterministe 7/7, incl. CHAR_SPACER→'ラ'). */
+const _rightAlignSpacer = (value: number, n: number): string => {
+  const buf = new Uint8Array(8);
+  ConvertIntToDecimalStringN(buf, value, STR_CONV_MODE_RIGHT_ALIGN, n);
+  return decodeOwBytes(buf);
+};
 function _bufferLeftColumnStats(): void {
   const s = sMon.summary;
   const cur = _rightAlignSpacer(s.currentHP, 3);
