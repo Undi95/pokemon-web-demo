@@ -274,6 +274,18 @@ export class TestOverworldScene extends Phaser.Scene {
    *  PlayerStep + ScriptContext_RunScript continueraient à tourner pendant
    *  le load → corruption state (= old map data + new player coords). */
   private warpInProgress = false;
+  /** 1:1 décomp `VBlankCB_Field` (overworld.c:1784-1792) — posé par
+   *  `SetFieldVBlankCallback` dans TOUS les chemins d'entrée field : boot ET
+   *  retour de menu/combat (CB2_ReturnToFieldLocal). Écrit les registres de
+   *  scroll BG (`FieldUpdateBgTilemapScroll`) + flush tileset anims à CHAQUE
+   *  VBlank — le runtime l'appelle chaque frame (decomp-runtime.ts:2154), fade
+   *  compris → le scroll BG reste correct pendant les transitions (warp + sortie
+   *  de menu). UNE seule fonction partagée = 1:1 (la décomp n'a qu'un
+   *  VBlankCB_Field) + évite d'éditer un chemin sans l'autre. */
+  private readonly _fieldVBlankCB = (): void => {
+    FieldUpdateBgTilemapScroll(this.rt);
+    TransferTilesetAnimsBuffer(this.rt);
+  };
   /** Chantier « c » Step 2.2 (gated ?unified) : mode hôte unifié. true = boote l'intro
    *  dans CE runtime (Copyright→Title→MainMenu→Birch) puis entre l'OW via CB2_NewGame/
    *  Continue dans le MÊME runtime (1:1 SetMainCallback2, sans scene.start). */
@@ -528,11 +540,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // InitOverworldGraphicsRegisters) pendant tout le fade → map rendue 40px
       // (~2.5 métatuiles) trop haut, puis « snap » au 1er frame post-fade quand le
       // corps re-tourne. (Bug user « warp : spawn trop haut puis recalé ».)
-      const _VBlankCB_Overworld: () => void = () => {
-        FieldUpdateBgTilemapScroll(this.rt);
-        TransferTilesetAnimsBuffer(this.rt);
-      };
-      this.rt.SetVBlankCallback(_VBlankCB_Overworld);
+      this.rt.SetVBlankCallback(this._fieldVBlankCB);
       // SKIP OnTransition / OnFrame map_scripts pour l'instant (= éviterait la
       // cinématique Maman si VAR_LITTLEROOT_INTRO_STATE pas init à 3). User
       // warning : Phase 4.5+ pour wirer ces triggers proprement avec un état
@@ -839,11 +847,13 @@ export class TestOverworldScene extends Phaser.Scene {
         const bg0MapStart = bg0Cfg.mapBaseIndex * 2048;
         const vram = self.rt.gba.vram;
         for (let i = 0; i < 2048; i++) vram[bg0MapStart + i] = 0;
-        // Re-set VBlankCallback (= option menu CB2_InitOptionMenu set NULL).
-        // 1:1 décomp `SetFieldVBlankCallback` appelé par `CB2_ReturnToFieldLocal`
-        // après que ReturnToFieldLocal returns TRUE.
-        const _VBlankCB_Overworld_Restored: () => void = () => { /* marker */ };
-        self.rt.SetVBlankCallback(_VBlankCB_Overworld_Restored);
+        // Re-set VBlankCallback (= option menu / bag / battle ont posé un autre
+        // VBlank, voire NULL). 1:1 décomp `SetFieldVBlankCallback` appelé par
+        // `CB2_ReturnToFieldLocal`. ⚠️ DOIT être le MÊME `_fieldVBlankCB` que le
+        // boot, sinon `FieldUpdateBgTilemapScroll` ne tourne pas au retour de menu
+        // → registres BG VOFS=0 → map rendue ~3 cases trop haut (bug reproduit en
+        // ouvrant le sac/pokémon puis en ressortant).
+        self.rt.SetVBlankCallback(self._fieldVBlankCB);
         // 1:1 décomp `CB2_ReturnToField` finit par `SetMainCallback2(CB2_Overworld)` :
         // rendre la main à la boucle OW. SANS ça, callback2 reste = le savedCallback
         // one-shot du retour combat (ReturnFromBattleToOverworld) → l'OW est rendu UNE
