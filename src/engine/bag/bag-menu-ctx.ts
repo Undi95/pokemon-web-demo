@@ -67,7 +67,8 @@ import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/deco
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from '../ui/gba-text-system';
-import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../../../harness/runtime/decomp-bridge';
+import { BeginNormalPaletteFade } from '../../../harness/runtime/decomp-bridge';
+import { GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../../item';
 // ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
 // (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où

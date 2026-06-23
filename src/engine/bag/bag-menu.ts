@@ -49,8 +49,8 @@ import {
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../../../harness/runtime/data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
+import { GetItemName, GetItemDescription, GetItemImportance } from '../../item';
 import {
-  GetItemName, GetItemDescription, GetItemImportance,
   StringCopy, ConvertIntToDecimalStringN,
 } from '../../../harness/runtime/decomp-bridge';
 import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';

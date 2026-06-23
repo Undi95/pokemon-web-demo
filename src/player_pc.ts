@@ -74,7 +74,7 @@ import {
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from './engine/bag/bag';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getItemNameFr } from '../harness/runtime/data-tables';
-import { GetItemDescription } from '../harness/runtime/decomp-bridge';
+import { GetItemDescription } from './item';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item_icon';

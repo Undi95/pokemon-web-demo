@@ -54,7 +54,7 @@ import {
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from './engine/bag/bag-item-effects';
 import { getItem as _getItem, getItemKeyById } from '../harness/runtime/data-tables';
-import { GetItemType } from '../harness/runtime/decomp-bridge';
+import { GetItemType } from './item';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
