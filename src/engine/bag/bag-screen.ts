@@ -23,6 +23,7 @@
  * propre tick pour savoir quand ré-afficher le main menu.
  */
 
+import { FreeAllSpritePalettes } from '../../../harness/runtime/decomp-globals';
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, FillWindowPixelBuffer, PutWindowTilemap,
@@ -49,7 +50,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../../../harness/runtime/decomp-globals';
-import {FreeAllSpritePalettes} from "../../../harness/runtime/decomp-bridge";
+
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';

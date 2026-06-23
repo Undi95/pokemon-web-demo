@@ -35,7 +35,7 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { FEMALE } from '../../../harness/runtime/decomp-globals';
+import { FEMALE, FreeAllSpritePalettes } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite, ResetSpriteData } from '../../sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
@@ -54,7 +54,7 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../../../harness/runtime/decomp-globals';
-import {FreeAllSpritePalettes, ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
+import {ConvertIntToDecimalStringN} from "../../../harness/runtime/decomp-bridge";
 import { STR_CONV_MODE_RIGHT_ALIGN } from '../../../include/string_util';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';

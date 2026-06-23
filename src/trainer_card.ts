@@ -31,6 +31,7 @@
  *   - `strings.json` (FR locale)
  */
 
+import { FreeAllSpritePalettes } from '../harness/runtime/decomp-globals';
 import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg,
@@ -47,7 +48,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../harness/runtime/decomp-globals';
-import {FreeAllSpritePalettes} from "../harness/runtime/decomp-bridge";
+
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';

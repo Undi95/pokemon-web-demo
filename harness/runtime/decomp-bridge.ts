@@ -46,12 +46,8 @@ import { AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } fr
 
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
-export {
-  LoadPalette,
-  ResetPaletteFade,
-  FreeAllSpritePalettes,
-  LoadCompressedSpriteSheet,
-} from './decomp-globals';
+// LoadPalette / ResetPaletteFade / FreeAllSpritePalettes / LoadCompressedSpriteSheet
+// décyclés : importés directement depuis decomp-globals (substrat) / src/sprite.ts.
 
 // ─── Re-exports : sprite/affine helpers (decomp-helpers.ts) ───────────────────
 
@@ -530,13 +526,13 @@ export function SetVBlankCallback(cb: (() => void) | null): void {
  *  Comparé à `__callsTo__` d'un module auto, donne le coverage. */
 export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Re-exports décomp-globals
-  'LoadPalette', 'FillPalBufferBlack', 'FillPalBufferWhite',
-  'BlendPalette', 'BlendPalettes', 'BlendPalettesUnfaded', 'ResetPaletteFade',
+  'FillPalBufferBlack', 'FillPalBufferWhite',
+  'BlendPalette', 'BlendPalettes', 'BlendPalettesUnfaded',
   'CpuFill16', 'CpuFill32', 'CpuSet', 'CpuFastSet',
   'DmaClear16', 'DmaClear32', 'DmaFill16', 'DmaFill32',
   'LZ77UnCompVram', 'LZDecompressVram',
-  'FreeAllSpritePalettes', 'IndexOfSpritePaletteTag', 'GetSpriteTileStartByTag',
-  'LoadCompressedSpriteSheet', 'LoadCompressedSpriteSheetUsingHeap',
+  'IndexOfSpritePaletteTag', 'GetSpriteTileStartByTag',
+  'LoadCompressedSpriteSheetUsingHeap',
   'LoadCompressedSpritePaletteUsingHeap', 'LoadSpritePalettes',
   'LoadBgTiles',
   'PIXEL_FILL', 'BLDALPHA_BLEND',
