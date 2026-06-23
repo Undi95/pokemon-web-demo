@@ -267,6 +267,24 @@ export function UnfadePlttBuffer(selectedPalettes: number): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// NORMAL PALETTE FADE (palette.c:158-202) — décyclé du bridge (Phase G)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `src/palette.c BeginNormalPaletteFade(selectedPalettes, delay, startY, endY, color)`.
+ *  L'impl (champs gPaletteFade) vit sur le substrat runtime ; ici l'API 1:1-nommée
+ *  publique qui délègue via le getter de runtime injecté (`_rt()`). */
+export function BeginNormalPaletteFade(
+  palettes: number | string, delay: number, startY: number, endY: number, color: number | string,
+): void {
+  _rt().BeginNormalPaletteFade(palettes, delay, startY, endY, color);
+}
+
+/** 1:1 décomp `src/palette.c UpdatePaletteFade()` — true tant que le fade est actif. */
+export function UpdatePaletteFade(): boolean {
+  return _rt().UpdatePaletteFade();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // FAST PALETTE FADE (palette.c:550-728)
 // ═══════════════════════════════════════════════════════════════════════════════
 

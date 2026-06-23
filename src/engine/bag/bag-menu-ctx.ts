@@ -31,6 +31,7 @@
  * Task_BagMenu_HandleInput. À implémenter type-d'item-par-type-d'item dans
  * un follow-up.
  */
+import { BeginNormalPaletteFade } from '../../palette';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
@@ -67,7 +68,7 @@ import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/deco
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from '../ui/gba-text-system';
-import { BeginNormalPaletteFade } from '../../../harness/runtime/decomp-bridge';
+
 import { GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../../item';
 // ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ

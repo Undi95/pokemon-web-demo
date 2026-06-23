@@ -18,6 +18,7 @@
  * battle_anim_mons.ts, GBA regs via __rt.SetGpuReg (pattern battle_anim_throw).
  */
 import { CreateSprite } from '../harness/runtime/decomp-bridge';
+import { BeginNormalPaletteFade as _csBeginFade } from './palette';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
@@ -1100,7 +1101,7 @@ _f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
 // en 16 pas jusqu'à 240x112 ; DANS la fenêtre le DARKEN (BLDCNT TGT1_BG3 +
 // BLDY 16) noircit le décor ; à 16 pas, fade des palettes BG vers noir puis
 // teardown complet quand gPaletteFade.active retombe.
-import { BeginNormalPaletteFade as _csBeginFade } from '../harness/runtime/decomp-bridge';
+
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 const _CS_REG_WININ = 0x48;

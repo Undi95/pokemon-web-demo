@@ -98,8 +98,9 @@ import {
 import { SE_SELECT } from '../../../include/constants/songs';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../../../harness/runtime/decomp-globals';
-import {BeginNormalPaletteFade} from "../../../harness/runtime/decomp-bridge";
+
 import { SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from '../../task';
+import { BeginNormalPaletteFade } from '../../palette';
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,

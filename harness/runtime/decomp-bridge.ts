@@ -551,17 +551,7 @@ export function ResetSpriteData(): void {
   _ResetSpriteData(_getRT());
 }
 
-/** 1:1 décomp `src/main.c BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */
-export function BeginNormalPaletteFade(
-  palettes: number | string, delay: number, startY: number, endY: number, color: number | string,
-): void {
-  _getRT().BeginNormalPaletteFade(palettes, delay, startY, endY, color);
-}
-
-/** 1:1 décomp `src/main.c UpdatePaletteFade()` — returns true if still fading. */
-export function UpdatePaletteFade(): boolean {
-  return _getRT().UpdatePaletteFade();
-}
+// BeginNormalPaletteFade / UpdatePaletteFade décyclés → src/palette.ts (foyer 1:1 palette.c).
 
 /** 1:1 décomp `src/main.c SetVBlankCallback(cb)` — register VBlank cb. */
 export function SetVBlankCallback(cb: (() => void) | null): void {
@@ -706,7 +696,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'StartSpriteAnim', 'StartSpriteAffineAnim',
   'FreeOamMatrix', 'AllocOamMatrix',
   'ResetSpriteData',
-  'BeginNormalPaletteFade', 'UpdatePaletteFade', 'SetVBlankCallback',
+  'SetVBlankCallback',
   // Map grid + metatile behaviors
   'MapGridGetCollisionAt', 'MapGridGetMetatileBehaviorAt', 'MapGridGetElevationAt',
   'MetatileBehavior_IsEastBlocked', 'MetatileBehavior_IsWestBlocked',

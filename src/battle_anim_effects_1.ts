@@ -6,6 +6,7 @@
  * GFX : orbs.png 16x48 byte-exact.
  */
 import { CreateSprite } from '../harness/runtime/decomp-bridge';
+import { BeginNormalPaletteFade as _mlBeginFade } from './palette';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -2616,7 +2617,7 @@ _sbRegT({ AnimTask_CycleMagicalLeafPal: AnimTask_CycleMagicalLeafPal as never })
 // Fondu blanc-lune RGB(27,29,31) : fade hardware (mask 32-bit BG+OBJ via
 // BeginNormalPaletteFade) + montee progressive 13/14/15>>3 ecrite DIRECTEMENT
 // dans les banks BG du mask, signal aux sprites Moon/Sparkle, re-fade inverse.
-import { BeginNormalPaletteFade as _mlBeginFade } from '../harness/runtime/decomp-bridge';
+
 
 const _ML_WHITE_MOON = 27 | (29 << 5) | (31 << 10); // RGB(27,29,31)
 type _MlTask = { taskId: number; data: number[]; func?: unknown };

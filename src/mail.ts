@@ -61,7 +61,8 @@ import {
   MALE, FEMALE,
   CpuFill16, OAM_SIZE, OAM,
 } from '../harness/runtime/decomp-globals';
-import {AllocZeroed, BeginNormalPaletteFade, UpdatePaletteFade, SetVBlankCallback, ResetSpriteData} from "../harness/runtime/decomp-bridge";
+import {AllocZeroed, SetVBlankCallback, ResetSpriteData} from "../harness/runtime/decomp-bridge";
+import { BeginNormalPaletteFade, UpdatePaletteFade } from './palette';
 import { SetGpuReg } from './gpu_regs';
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { JOY_NEW, AnimateSprites, BuildOamBuffer } from '../harness/runtime/decomp-globals';

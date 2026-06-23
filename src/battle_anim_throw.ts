@@ -49,6 +49,7 @@ import { Sin, Cos } from './trig';
 import { DestroySprite } from './sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../harness/runtime/decomp-bridge';
+import { BeginNormalPaletteFade } from './palette';
 import { CreateTask, DestroyTask } from './task';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
 
@@ -68,7 +69,7 @@ import {
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from './sprite';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from './sprite';
 import { getNumBallParticles, setNumBallParticles } from './engine/battle/battle-sprites-data';
-import {BeginNormalPaletteFade} from "../harness/runtime/decomp-bridge";
+
 import { setGDoingBattleAnim } from './engine/battle/state';
 import {
   gLastUsedItem, gBattleStruct,

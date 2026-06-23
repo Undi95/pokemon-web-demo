@@ -13,6 +13,7 @@
  * et postent `FieldEffectStart(FLDEFF_SWEET_SCENT)` → dispatch vers FldEff_SweetScent ci-dessous.
  */
 
+import { BeginNormalPaletteFade } from './palette';
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
@@ -22,7 +23,7 @@ import { SweetScentWildEncounter } from './wild_encounter';
 import { GetPlayerAvatarSpriteId } from './field_player_avatar';
 import { ScriptContext_SetupScript } from './script';
 import { getRuntime, gPaletteDecompressionBuffer, BlendPalettes } from '../harness/runtime/decomp-globals';
-import { BeginNormalPaletteFade } from '../harness/runtime/decomp-bridge';
+
 
 /** 1:1 décomp `FLDEFF_SWEET_SCENT = 51` (include/constants/field_effects.h). */
 const FLDEFF_SWEET_SCENT = 51;

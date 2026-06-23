@@ -20,13 +20,14 @@
  * OnMonEdge/CrossImpact/Flashing...) + ConfusionDuck + BlendColorCycle — par
  * vagues avec les moves consommateurs.
  */
+import { BeginNormalPaletteFade } from './palette';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag, BlendPalettes,
 } from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
-import { BeginNormalPaletteFade } from '../harness/runtime/decomp-bridge';
+
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import {
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale,
