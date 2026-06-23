@@ -2578,7 +2578,8 @@ for (const [k, d] of Object.entries(_mutableGlobals)) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // UI SYSTEM EXPORTS (window.c + text.c + menu.c adapters)
 // ═══════════════════════════════════════════════════════════════════════════════
-export * from '../../src/engine/decomp-data/main-menu-data';
+// (scaffold main-menu-data retiré : ses 5 symboles consommés vivent dans src/main_menu.ts,
+//  réexposés par `export * from '../../src/main_menu'` plus bas.)
 export * from '../../src/engine/ui/gba-window-system';
 // text_window.c (miroir 1:1) — LoadMessageBoxGfx / GetWindowFrameTilesPal /
 // GetTextWindowPalette / GetOverworldTextboxPalettePtr / DrawTextBorder* / etc.

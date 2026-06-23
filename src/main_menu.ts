@@ -22,7 +22,7 @@
  *   - LoadMainMenuWindowFrameTiles (= partagé avec option_menu via gba-text-window)
  *   - DrawMainMenuWindowBorder / ClearMainMenuWindowTilemap (= 1:1 décomp tilemap helpers)
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
- *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
+ *   - sBirch* templates (= placeholders Birch, à porter 1:1 Phase D)
  */
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
@@ -67,7 +67,36 @@ import {
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../harness/runtime/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../harness/runtime/decomp-helpers';
-import { sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './engine/decomp-data/main-menu-data';
+// ─── Données 1:1 main_menu.c (déplacées depuis le scaffold main-menu-data, retiré) ───
+// enum type de menu principal selon l'état save (main_menu.c:512). Local (seul main_menu.ts l'utilise).
+const ENUM_HAS_0 = {
+  HAS_NO_SAVED_GAME: 0,
+  HAS_SAVED_GAME: 1,
+  HAS_MYSTERY_GIFT: 2,
+  HAS_MYSTERY_EVENTS: 3,
+} as const;
+// #define main_menu.c:530-531 (exportés : utilisés par main_menu-callbacks-auto via decomp-globals).
+export const MAIN_MENU_BORDER_TILE = 0x1D5;   // 469
+export const BIRCH_DLG_BASE_TILE_NUM = 0xFC;  // 252
+// 1:1 décomp `static const struct WindowTemplate sWindowTemplates_MainMenu[]` (main_menu.c:288)
+// — 8 fenêtres du menu principal (CONTINUE/NEW GAME/OPTION + variantes Mystery Gift/Events).
+export const sWindowTemplates_MainMenu = [
+  { bg: 0, tilemapLeft: 2, tilemapTop: 1, width: 26, height: 2, paletteNum: 15, baseBlock: 1 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 5, width: 26, height: 2, paletteNum: 15, baseBlock: 53 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 1, width: 26, height: 6, paletteNum: 15, baseBlock: 1 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 9, width: 26, height: 2, paletteNum: 15, baseBlock: 157 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 13, width: 26, height: 2, paletteNum: 15, baseBlock: 209 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 17, width: 26, height: 2, paletteNum: 15, baseBlock: 261 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 21, width: 26, height: 2, paletteNum: 15, baseBlock: 313 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 26, height: 4, paletteNum: 15, baseBlock: 365 },
+] as const;
+// 1:1 décomp `static const struct WindowTemplate sNewGameBirchSpeechTextWindows[]` (main_menu.c:375)
+// — 3 fenêtres de l'intro Birch (dialogue + genre + nom).
+export const sNewGameBirchSpeechTextWindows = [
+  { bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 27, height: 4, paletteNum: 15, baseBlock: 1 },
+  { bg: 0, tilemapLeft: 3, tilemapTop: 5, width: 6, height: 4, paletteNum: 15, baseBlock: 109 },
+  { bg: 0, tilemapLeft: 3, tilemapTop: 2, width: 9, height: 10, paletteNum: 15, baseBlock: 133 },
+] as const;
 import {
   Task_MainMenuCheckSaveFile,
   CB2_MainMenu,
