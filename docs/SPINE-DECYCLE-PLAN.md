@@ -5,6 +5,16 @@
 
 ---
 
+## 0. ADDENDUM post-audit déterministe (2026-06-23, `scripts/audit-bridge-importers.cjs`)
+
+⚠ **Les `importerCount` du plan comptent TOUTES les sources, pas le bridge-spécifique.** Audit déterministe des imports **depuis le bridge** :
+- **656 exports** ; **50 VIVANTS** (≥1 importeur statique du bridge) ; **606 statiquement MORTS** (0 importeur du bridge).
+- Top vivants (vrai re-route) : `CreateSprite`(20), `CreateTask`(10), `ResetSpriteData`(10), `DestroyTask`(9), `BeginNormalPaletteFade`(9), `DestroySprite`(6), `SetGpuReg`(5), `ConvertIntToDecimalStringN`(4), `StartSpriteAnim`(4), `StringCopy`(3)…
+- **Surfaces dynamiques** : `__game_bridge` (globalThis) = **JAMAIS assigné → INERTE** (lectures optionnelles à fallback dans specials-registry) ; `__bridgedHelpers__` = lu en **read-only** par `dev-bridge-audit-tools.ts` (coverage) ; `dev-scope.ts` itère le namespace (expo devtools). **Aucun résolveur dynamique ne consomme le bridge** → l'audit statique est fiable.
+- **Conséquence** : beaucoup de « lots gros » du plan sont en fait des **ré-exports 0-importeur** (suppression sèche, ex. lot 12 trig). Le **vrai travail de re-route** = ~50 symboles. Le reste des 606 morts = cleanup progressif (⚠ exclure le **substrat** ~225 + vérifier l'**usage interne bridge↔bridge** avant chaque retrait, ce que l'audit statique ne voit pas).
+
+---
+
 ## 1. Résumé
 
 Répartition par classification (616 lignes ; quelques symboles comptés 2× dans le JSON brut — voir §4/§7) :
