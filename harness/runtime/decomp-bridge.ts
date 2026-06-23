@@ -391,17 +391,8 @@ function _callAbilityBattleEffects(caseId: number, battler: number, abilityId: n
 const B_BUFF_STAT = 7;
 const B_BUFF_ABILITY = 8;
 
-/** 1:1 décomp `event_object_movement.c GetWalkSlowMovementAction(direction)`. */
-export function GetWalkSlowMovementAction(direction: number): number {
-  // MOVEMENT_ACTION_WALK_SLOW_DOWN = 0x04, etc.
-  switch (direction) {
-    case 1: return 0x04;
-    case 2: return 0x05;
-    case 3: return 0x06;
-    case 4: return 0x07;
-    default: return 0x04;
-  }
-}
+// GetWalkSlowMovementAction décyclé → src/event_object_movement.ts (foyer 1:1,
+// table gWalkSlowMovementActions indexée par direction — dirn_to_anim).
 
 /** 1:1 décomp BIOS syscall ArcTan2(x, y) — return the 0-65535 angle. Approximate. */
 export function ArcTan2(x: number, y: number): number {
@@ -417,33 +408,8 @@ export function GetBgTilemapBuffer(_bg: number): Uint16Array {
   throw new Error('[bridge] GetBgTilemapBuffer not yet 1:1 ported. See bg.c:GetBgTilemapBuffer.');
 }
 
-// ─── Movement actions getter (event_object_movement.c) ────────────────────────
-//
-// Ces helpers map dir → MOVEMENT_ACTION_X enum value. Les valeurs viennent
-// de `decomps/pokeemeraude/include/constants/event_object_movement.h`.
-//
-// Note 1:1 décomp : les fonctions GetXMovementAction(direction) sont 1:1 avec
-// `event_object_movement.c:5022-5108 sFaceDirectionMovementActions[]` et
-// les autres tables similaires.
-
-/** 1:1 décomp `event_object_movement.c:5034 sFaceDirectionMovementActions[5]`. */
-export function GetFaceDirectionMovementAction(direction: number): number {
-  // MOVEMENT_ACTION_FACE_DOWN..LEFT = 0..3 (the direction enum + 0)
-  // MOVEMENT_ACTION_FACE_DOWN = 0x0, FACE_UP = 0x1, FACE_LEFT = 0x2, FACE_RIGHT = 0x3
-  // Mapping from include/constants/event_object_movement.h.
-  // 1:1 décomp `gFaceDirectionMovementActions[]` (event_object_movement.c) :
-  //   [DIR_SOUTH]=FACE_DOWN, [DIR_NORTH]=FACE_UP, [DIR_WEST]=FACE_LEFT, [DIR_EAST]=FACE_RIGHT.
-  // FIX : NORD/SUD étaient INVERSÉS (SOUTH→0x01/UP, NORTH→0x00/DOWN) — bug dormant jamais
-  // détecté car cette fonction n'était utilisée que par des NPCs jusqu'au câblage idle-FACE
-  // joueur (PlayerNotOnBikeNotMoving) → twitch haut/bas au repos.
-  switch (direction) {
-    case 1: return 0x00; // DIR_SOUTH → FACE_DOWN
-    case 2: return 0x01; // DIR_NORTH → FACE_UP
-    case 3: return 0x02; // DIR_WEST → FACE_LEFT
-    case 4: return 0x03; // DIR_EAST → FACE_RIGHT
-    default: return 0x00;
-  }
-}
+// GetFaceDirectionMovementAction décyclé → src/event_object_movement.ts (foyer 1:1,
+// table gFaceDirectionMovementActions indexée par direction — dirn_to_anim).
 
 // ─── Metatile behavior constants (= include/constants/metatile_behaviors.h) ───
 // 137 constantes MB_* extraites dans `metatile-behavior-constants.ts` (= module
@@ -632,8 +598,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
     // GetMapGridBlockAt removed — vraie impl dans map-loader.ts
   // Status / battle util macros
   // Misc helpers (= mostly stubs to allow compilation)
-   'GetWalkSlowMovementAction',
-  'WriteColorChangeControlCode', 
+  'WriteColorChangeControlCode',
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
@@ -653,9 +618,8 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'MetatileBehavior_IsSeaweed', 'MetatileBehavior_IsReflective',
   'MetatileBehavior_IsFootprints', 'MetatileBehavior_HasRipples',
   'MetatileBehavior_IsDeepSand',
-  'GetFaceDirectionMovementAction', 
   // Constants
-  'PLTT_SIZE_4BPP', 
+  'PLTT_SIZE_4BPP',
   // Movement enums
 ]);
 

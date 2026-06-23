@@ -70,6 +70,7 @@ import {
   ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
   GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
+  GetFaceDirectionMovementAction,
 } from './event_object_movement';
 import { MoveCoords, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from './engine/field/direction-coords';
 import {
@@ -80,7 +81,6 @@ import {
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
-import {GetFaceDirectionMovementAction} from "../harness/runtime/decomp-bridge";
 import { DestroyTask } from './task';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
