@@ -123,10 +123,9 @@ export const sNewGameBirchSpeechTextWindows = [
 ] as const;
 
 // ─── BgTemplates ─────────────────────────────────────────────────────────────
-export const sMainMenuBgTemplates = [
-  { bg: 0, charBaseIndex: 2, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
-  { bg: 1, charBaseIndex: 0, mapBaseIndex: 7, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
-] as const;
+// sMainMenuBgTemplates dédupliqué → vit dans son miroir 1:1 src/main_menu.ts
+// (main_menu.c:413). Retiré d'ici pour lever la collision `export *` de decomp-globals
+// (qui re-exporte ET ce scaffold ET src/main_menu).
 
 // ─── GFX/PAL source paths (INCGFX references) ───────────────────────────────
 // Use these paths at runtime to load assets from the decomp graphics directory.

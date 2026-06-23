@@ -53,7 +53,8 @@ import {
   FreeAllSpritePalettes,
   ScanlineEffect_Stop,
 } from '../runtime/decomp-globals';
-import { sMainMenuBgTemplates } from '../../src/engine/decomp-data/src/main_menu-data';
+// sMainMenuBgTemplates vit dans son miroir 1:1 src/main_menu.ts (= main_menu.c:413).
+import { sMainMenuBgTemplates } from '../../src/main_menu';
 import {
   Task_NewGameBirchSpeech_Init,
   SpriteCB_MovePlayerDownWhileShrinking,
@@ -177,7 +178,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
       ResetBgsAndClearDma3BusyFlags(0);
       this.rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
       this.rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
-      InitBgsFromTemplates(0, sMainMenuBgTemplates as any, sMainMenuBgTemplates.length);
+      InitBgsFromTemplates(0, sMainMenuBgTemplates, sMainMenuBgTemplates.length);
       ScanlineEffect_Stop();
       ResetTasks();
       ResetPaletteFade();

@@ -53,6 +53,7 @@ import {
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
+  type BgTemplate,
 } from './engine/ui/gba-window-system';
 import {
   BG_PLTT_ID,
@@ -66,7 +67,7 @@ import {
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../harness/runtime/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../harness/runtime/decomp-helpers';
-import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './engine/decomp-data/main-menu-data';
+import { sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './engine/decomp-data/main-menu-data';
 import {
   Task_MainMenuCheckSaveFile,
   CB2_MainMenu,
@@ -130,8 +131,8 @@ export let sStartedPokeBallTask = false;
 //   - sBirchSpeechBgMap (= LZ77 compressed BG tilemap, à charger via LZ77UnCompVram)
 //   - sSpriteAffineAnimTable_PlayerShrink (= affine anim table, player shrink fx)
 //
-// TODO Phase D : étendre `scripts/extract-main-menu-data.mjs` (à créer) pour
-// parser ces structs depuis le décomp + générer dans `decomp-data/src/main_menu-data.ts`.
+// TODO Phase D : porter ces structs Birch 1:1 dans ce fichier (= main_menu.c) depuis
+// le décomp (LZ77 gfx/tilemap/palette + affine anim table player-shrink).
 //
 // Pour l'instant : valeurs string-symbol (= matchent le getAsset() pattern) ou
 // zero-init structs. Le code Birch ne sera jamais déclenché tant qu'on n'a
@@ -150,6 +151,15 @@ export const sScrollArrowsTemplate_MainMenu = {
  *  yScale=-2, rotation=0, duration=48 → player shrink sur 48 frames). */
 export const sSpriteAffineAnimTable_PlayerShrink = 'sSpriteAffineAnimTable_PlayerShrink';
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
+
+// 1:1 décomp main_menu.c:413-432 `static const struct BgTemplate sMainMenuBgTemplates[]`.
+// BG0 = dialog box (charBase=2, mapBase=30, priority=0, front) ; BG1 = forest scene
+// (charBase=0, mapBase=7, priority=3, back). Typé BgTemplate[] (≠ `as const`) → passable
+// direct à InitBgsFromTemplates(readonly BgTemplate[]) sans cast.
+export const sMainMenuBgTemplates: BgTemplate[] = [
+  { bg: 0, charBaseIndex: 2, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 1, charBaseIndex: 0, mapBaseIndex: 7, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
+];
 
 // 1:1 décomp main_menu.c:434 sBirchBgTemplate.
 //
@@ -1126,7 +1136,7 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0x10, 0,
     returningFromOptionsMenu ? 'RGB_BLACK' : 'RGB_WHITEALPHA');
   ResetBgsAndClearDma3BusyFlags(0);
-  InitBgsFromTemplates(0, sMainMenuBgTemplates as any, sMainMenuBgTemplates.length);
+  InitBgsFromTemplates(0, sMainMenuBgTemplates, sMainMenuBgTemplates.length);
   ChangeBgX(0, 0, 0);
   ChangeBgY(0, 0, 0);
   ChangeBgX(1, 0, 0);
