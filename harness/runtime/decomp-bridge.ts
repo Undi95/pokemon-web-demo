@@ -228,11 +228,8 @@ export function StringCopy(_dest: any, src: string): string {
   return src;
 }
 
-/** 1:1 décomp `src/string_util.c:38 StringAppend(dest, src)` — concat src to dest. */
-export function StringAppend(dest: string | any, src: string): string {
-  if (typeof dest === 'string') return dest + src;
-  return src;
-}
+// StringAppend décyclé → foyer src/string_util.ts (version buffer Uint8Array 1:1).
+// Plus aucun importeur du bridge (G2 migration texte : size-record migré).
 
 /** 1:1 décomp `src/string_util.c:285 ConvertIntToDecimalStringN` :
  *    - LEFT_ALIGN (mode 0)    : print digits sans padding (le seul cas où
@@ -519,7 +516,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'WIN_RANGE',
   'Random', 'SeedRng', 'SeedRngAndSetTrainerId',
    'AllocZeroed', 
-  'StringCopy', 'StringAppend', 'ConvertIntToDecimalStringN',
+  'StringCopy', 'ConvertIntToDecimalStringN',
   'StringLength', 
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 
