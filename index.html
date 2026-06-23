@@ -25,45 +25,81 @@
       image-rendering: crisp-edges;
     }
     .topbar {
-      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 12px;
       font-size: 12px;
-      color: #888;
+      color: #b8b8c0;
+      background: linear-gradient(#26262b, #1d1d21);
+      border-bottom: 1px solid #34343c;
       display: flex;
-      gap: 12px;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+      user-select: none;
     }
-    .topbar a { color: #88f; }
-    .topbar button {
-      background: #333; color: #eee; border: 1px solid #555;
-      font-family: monospace; font-size: 12px; padding: 2px 8px; cursor: pointer;
+    .tb-help { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+    .tb-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-left: auto; }
+    .tb-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .tb-sub { display: inline-flex; align-items: center; gap: 5px; color: #8a8a93; white-space: nowrap; }
+    .tb-sub kbd { background: #2c2c33; border-color: #44444e; }
+    .tb-sep { width: 1px; height: 14px; background: #3a3a44; }
+    .tb-tag {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+      color: #ddca84; background: #2e2a1b; border: 1px solid #4c441f;
+      padding: 1px 7px; border-radius: 999px;
     }
-    .topbar button:hover { background: #444; }
+    kbd {
+      font-family: ui-monospace, "Cascadia Code", monospace; font-size: 11px; font-weight: 600;
+      line-height: 1; color: #eaeaf0; background: #36363f; border: 1px solid #50505c;
+      border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; min-width: 9px;
+      text-align: center; display: inline-block;
+    }
+    .tb-label { color: #8a8a93; }
+    .topbar a { color: #7a9cff; }
+    .tb-seg { display: inline-flex; border: 1px solid #50505c; border-radius: 6px; overflow: hidden; }
+    .tb-seg button {
+      background: #2a2a30; color: #cfcfd6; border: none; border-right: 1px solid #41414a;
+      font-family: monospace; font-size: 12px; padding: 3px 9px; cursor: pointer; transition: background .12s, color .12s;
+    }
+    .tb-seg button:last-child { border-right: none; }
+    .tb-seg button:hover { background: #3a3a46; color: #fff; }
+    .tb-seg button.active { background: #4a6cff; color: #fff; font-weight: 600; }
+    .tb-btn {
+      background: #2a2a30; color: #e8e8ee; border: 1px solid #50505c; border-radius: 6px;
+      font-family: monospace; font-size: 12px; padding: 4px 10px; cursor: pointer; transition: background .12s;
+    }
+    .tb-btn:hover { background: #3a3a46; }
+    .tb-vol { display: inline-flex; align-items: center; gap: 6px; }
     .topbar input[type="range"] {
-      accent-color: #88f;
-      cursor: pointer;
-      width: 100px;
-      vertical-align: middle;
+      accent-color: #4a6cff; cursor: pointer; width: 90px; vertical-align: middle;
     }
-    .topbar .vol-value {
-      display: inline-block;
-      min-width: 32px;
-      text-align: right;
-      color: #ccc;
-    }
+    .vol-value { display: inline-block; min-width: 34px; text-align: right; color: #cfcfd6; }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <span>Z/Q/S/D ou flèches : déplacer &nbsp;|&nbsp; W : parler &nbsp;|&nbsp; B : menu</span>
-    <span>Zoom :</span>
-    <button onclick="setGameZoom(1)" title="1:1 résolution native GBA (240×160)">×1</button>
-    <button onclick="setGameZoom(2)">×2</button>
-    <button onclick="setGameZoom(3)">×3</button>
-    <button onclick="setGameZoom(4)">×4</button>
-    <button onclick="setGameZoom(5)">×5</button>
-    <button onclick="setGameZoom(6)">×6</button>
-    <button onclick="openRemapModal()" title="Personnaliser les touches">🎮 Remap</button>
-    <span title="Volume master (BGM + SE)">🔊 <input type="range" id="game-volume" min="0" max="100" value="100" oninput="setGameVolume(this.value)"><span id="game-volume-value" class="vol-value">100%</span></span>
+    <div class="tb-help">
+      <span class="tb-item"><kbd>&amp;</kbd> Debug&nbsp;Overlay</span>
+      <span class="tb-sep"></span>
+      <span class="tb-item"><kbd>(</kbd> Combat&nbsp;rival</span>
+      <span class="tb-sep"></span>
+      <span class="tb-sub"><span class="tb-tag">overlay&nbsp;ouvert</span> <kbd>é</kbd> freeze <kbd>"</kbd> noclip <kbd>'</kbd> combat&nbsp;test</span>
+    </div>
+    <div class="tb-controls">
+      <span class="tb-label">Zoom</span>
+      <div class="tb-seg">
+        <button class="tb-zoom-btn" data-zoom="1" onclick="setGameZoom(1)" title="1× natif (240×160)">×1</button>
+        <button class="tb-zoom-btn" data-zoom="2" onclick="setGameZoom(2)">×2</button>
+        <button class="tb-zoom-btn" data-zoom="3" onclick="setGameZoom(3)">×3</button>
+        <button class="tb-zoom-btn" data-zoom="4" onclick="setGameZoom(4)">×4</button>
+        <button class="tb-zoom-btn" data-zoom="5" onclick="setGameZoom(5)">×5</button>
+        <button class="tb-zoom-btn" data-zoom="6" onclick="setGameZoom(6)">×6</button>
+      </div>
+      <button class="tb-btn" onclick="openRemapModal()" title="Personnaliser les touches">🎮 Remap</button>
+      <span class="tb-vol" title="Volume master (BGM + SE)">🔊 <input type="range" id="game-volume" min="0" max="100" value="100" oninput="setGameVolume(this.value)"><span id="game-volume-value" class="vol-value">100%</span></span>
+    </div>
   </div>
   <div id="game"></div>
   <script type="module" src="/harness/main.ts"></script>

@@ -314,10 +314,36 @@ mountDevtoolsPanel();
 // laisse tourner game + musique. Si le MIDI loop boucle pendant que tab masqué,
 // no big deal (acceptable comportement web).
 
-// Expose contrôle zoom à window pour les boutons HTML.
-(window as unknown as { setGameZoom: (z: number) => void }).setGameZoom = (z: number) => {
-  game.scale.setZoom(Math.max(1, Math.min(8, z)));
-};
+// ─── Zoom pixel-perfect DPR-aware ──────────────────────────────────────────
+// Le canvas RENDU reste à la résolution NATIVE GBA (240×160). On ne touche QUE
+// la taille CSS pour que les PIXELS PHYSIQUES = 240×z (multiple ENTIER) →
+// `image-rendering: pixelated` (cf. index.html) fait un upscale N× exact =
+// pixel-perfect à CHAQUE zoom.
+//
+// Avant : on laissait Phaser poser CSS = 240×z. Mais avec un devicePixelRatio
+// ≠ 1 (ex. Windows à 125 % → dpr 1.25), les pixels physiques = CSS×dpr tombaient
+// sur un facteur NON entier (240×1×1.25=300=2.5×, 240×3×1.25=900=3.75×, …) sauf
+// x4 par hasard (240×4×1.25=1200=5× pile) → flou en x1/x2/x3/x5/x6, net qu'en x4.
+// On divise la CSS par dpr → physique = 240×z entier → net partout.
+let _currentZoom = DEFAULT_ZOOM;
+function applyPixelPerfectZoom(z: number): void {
+  _currentZoom = Math.max(1, Math.min(8, Math.round(z)));
+  const canvas = game.canvas;
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = `${(GAME_W * _currentZoom) / dpr}px`;
+  canvas.style.height = `${(GAME_H * _currentZoom) / dpr}px`;
+  // Surligne le bouton zoom actif dans la topbar.
+  document.querySelectorAll<HTMLElement>('.tb-zoom-btn').forEach((b) => {
+    b.classList.toggle('active', Number(b.dataset.zoom) === _currentZoom);
+  });
+}
+(window as unknown as { setGameZoom: (z: number) => void }).setGameZoom = applyPixelPerfectZoom;
+// Applique le zoom par défaut (override la CSS posée par config.zoom) une fois le
+// canvas créé, puis re-applique si le dpr change (browser zoom Ctrl+±, ou fenêtre
+// déplacée vers un écran de scaling différent — les deux émettent 'resize').
+game.events.once(Phaser.Core.Events.READY, () => applyPixelPerfectZoom(DEFAULT_ZOOM));
+window.addEventListener('resize', () => applyPixelPerfectZoom(_currentZoom));
 
 // ─── Volume master (= slider topbar, visible user-facing) ─────────────────
 // Le devtool audio a un slider miroir (synchro via storage event + custom event).

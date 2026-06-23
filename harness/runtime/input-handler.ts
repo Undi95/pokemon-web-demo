@@ -82,8 +82,21 @@ export function installInputHandlers(scene: Phaser.Scene, rt: DecompRuntime): vo
   window.addEventListener('keydown', keydownHandler);
   window.addEventListener('keyup', keyupHandler);
 
+  // Re-lock le focus clavier sur le canvas dès qu'on clique dessus. Sans ça, le
+  // canvas n'est focusé QU'UNE fois au boot (focus() ci-dessus) ; cliquer un
+  // élément DOM hors-canvas (slider volume, bouton topbar) lui vole le focus et
+  // il ne le reprend JAMAIS → les flèches partent dans le slider / scrollent la
+  // page (preventDefault gated sur activeElement===canvas) au lieu d'aller au jeu.
+  // Phaser preventDefault le pointerdown (windowEvents:false) → le focus natif au
+  // clic ne se fait pas tout seul, on le force ici.
+  const refocusHandler = (): void => { canvas.focus(); };
+  canvas.addEventListener('mousedown', refocusHandler);
+  canvas.addEventListener('touchstart', refocusHandler, { passive: true });
+
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     window.removeEventListener('keydown', keydownHandler);
     window.removeEventListener('keyup', keyupHandler);
+    canvas.removeEventListener('mousedown', refocusHandler);
+    canvas.removeEventListener('touchstart', refocusHandler);
   });
 }
