@@ -190,9 +190,34 @@ function ResetSpriteAfterAnim(s: S): void {
     s.centerToCornerVecY = c.centerToCornerVecY;
   }
 }
-/* WaitAnimEnd (:5540) : nos front-pic résumé = 1-frame (animEnded immédiat) →
- * callback dummy (ResetSpriteAfterAnim a déjà rétabli le sprite statique). */
-function WaitAnimEnd(s: S): void { s.callback = SpriteCallbackDummy as unknown as S['callback']; }
+/* WaitAnimEnd (:5540) — décomp : `if (animEnded) callback=Dummy`. Nos front-pic
+ * RÉSUMÉ = 1-frame (animEnded immédiat) → callback dummy direct.
+ * Le restore data[0]/[2]/[1] vit dans Task_HandleMonAnimation (:931, COMBAT only,
+ * via task) ; le port n'ayant pas de task on l'aplatit ici sous garde
+ * `!sIsSummaryAnim` + le fix frame-base (session 96 : retour frame 0). En RÉSUMÉ
+ * la garde est fausse → comportement INCHANGÉ (callback=Dummy seul). DORMANT tant
+ * que les wrappers combat/Birch ne posent pas sIsSummaryAnim=FALSE (Étape 2+). */
+function WaitAnimEnd(s: S): void {
+  if (!sIsSummaryAnim) {
+    s.data[0] = s.data[14];   // tBattlerId sauvé par le launch (1:1 :933)
+    s.data[2] = s.data[15];   // tSpeciesId sauvé par le launch (1:1 :934)
+    s.data[1] = 0;            // sDontFlip cleared (1:1 :935)
+    // DoMonFront fait StartSpriteAnim(.,1) (switch 2-frame) au début ; sans reset
+    // le mon reste figé sur la frame alt → on remet la frame BASE (flag posé par
+    // DoMonFrontSpriteAnimation ; no-op via Launch combat direct = pas de flag).
+    const sx = s as S & { _monFrontBaseFrameReset?: boolean; tileBase?: number };
+    if (sx._monFrontBaseFrameReset) {
+      sx._monFrontBaseFrameReset = false;
+      const rt = getRuntime();
+      if (rt) {
+        rt.StartSpriteAnim(s.spriteId, 0);
+        const oam = rt.gba?.oam?.[s.oamIndex];
+        if (oam) oam.tileId = sx.tileBase ?? 0;
+      }
+    }
+  }
+  s.callback = SpriteCallbackDummy as unknown as S['callback'];
+}
 function MonAnimDummySpriteCallback(_s: S): void { /* no-op (délai) */ }
 /* SetPosForRotation (:868). */
 function SetPosForRotation(s: S, index: number, amplitudeX: number, amplitudeY: number): void {
@@ -1897,6 +1922,8 @@ let _animDelayTaskId = -1;
 
 /** 1:1 décomp `StartMonSummaryAnimation` (pokemon_animation.c:949). */
 export function StartMonSummaryAnimation(s: DecompSprite, frontAnimId: number): void {
+  sIsSummaryAnim = true;   // 1:1 :952 (sDontFlip resté FALSE, non clearé) — remet
+                           // le contexte résumé après un éventuel passage combat.
   const fn = sMonAnimFunctions[frontAnimId];
   if (fn) setCb(s, fn);
 }
@@ -2027,3 +2054,112 @@ export function StopPokemonAnimations(s: DecompSprite): void {
     rt.gPlttBufferUnfaded.set(id, rt.gPlttBufferFaded.get(id));
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * WRAPPERS FRONT-SPRITE COMBAT / BIRCH — 1:1 décomp pokemon_animation.c
+ *   Task_HandleMonAnimation:911 · LaunchAnimationTaskForFrontSprite:941
+ *   + pokemon.c DoMonFrontSpriteAnimation:6779 / StopMonFrontSpriteAnimation.
+ *
+ * DORMANTS (unification 3-voies, Étape 2). Le combat passe encore par
+ * src/pokemon_animation.ts (`globalThis.__pokemonAnimation`) et Birch par
+ * decomp-globals → src/pokemon_animation.ts. Ces wrappers seront câblés aux
+ * Étapes 4 (Birch) et 5 (combat) ; alors seulement on posera __pokemonAnimation
+ * ICI et on rewirera decomp-globals. Tant qu'ils ne sont pas appelés,
+ * sIsSummaryAnim reste TRUE → WaitAnimEnd/ResetSpriteAfterAnim gardent la branche
+ * résumé (zéro changement de rendu). Pas de collision d'export : ces noms ne sont
+ * importés que depuis src/pokemon_animation.ts aujourd'hui (modules distincts).
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+// Espèce(number) → frontAnimId(number) — 1:1 sMonFrontAnimIdsTable (pokemon.c),
+// hydraté depuis le fichier extrait + les constantes SPECIES_X. (Le résumé route
+// par enum string via _frontAnimByEnum ; le combat/Birch reçoit un id numérique.)
+const _frontAnimById = new Map<number, number>();
+async function _hydrateFrontAnimById(): Promise<void> {
+  try {
+    const speciesMod = await import('../../../include/constants/species');
+    const nameToId = speciesMod as unknown as Record<string, number>;
+    for (const [sp, anim] of RAW_MON_FRONT_ANIM_IDS) {
+      const id = nameToId[sp]; const a = ANIM[anim];
+      if (typeof id === 'number' && a !== undefined) _frontAnimById.set(id, a);
+    }
+  } catch { /* fichier extrait absent → fallback ANIM_V_SQUISH_AND_BOUNCE */ }
+}
+void _hydrateFrontAnimById();
+
+/** 1:1 `HasTwoFramesAnimation` côté NUMÉRIQUE (sMonHasTwoFramesAnimationTable,
+ *  pokemon.c) — stub : la plupart des Gen 3 ont 2 frames → TRUE. La version
+ *  string exportée (résumé) reste séparée ; l'Étape 6 unifiera la double sig. */
+function _hasTwoFramesAnimationNum(_species: number): boolean { return true; }
+
+const SKIP_FRONT_ANIM = 0x80;
+/** Tiles par frame du front-pic (dérivé OAM shape/size ; mon = 64×64). */
+function _tilesPerMonPicFrame(shape: number, size: number): number {
+  const SQUARE: ReadonlyArray<[number, number]> = [[8, 8], [16, 16], [32, 32], [64, 64]];
+  const H_RECT: ReadonlyArray<[number, number]> = [[16, 8], [32, 8], [32, 16], [64, 32]];
+  const V_RECT: ReadonlyArray<[number, number]> = [[8, 16], [8, 32], [16, 32], [32, 64]];
+  const table = shape === 0 ? SQUARE : shape === 1 ? H_RECT : V_RECT;
+  const [w, h] = table[size & 3] ?? [8, 8];
+  return (w / 8) * (h / 8);
+}
+
+/** 1:1 `LaunchAnimationTaskForFrontSprite` + `Task_HandleMonAnimation` state 0
+ *  (:916, version plate sans task) : sauve battler/species (data[14]/[15],
+ *  restaurés par WaitAnimEnd), pose sDontFlip(data[1])=1 + sIsSummaryAnim=FALSE,
+ *  clear data, installe le callback de l'anim numérique. */
+export function LaunchAnimationTaskForFrontSprite(spriteId: number, frontAnimId: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.[spriteId] as S | undefined;
+  if (!sprite) return;
+  const fn = sMonAnimFunctions[frontAnimId];
+  if (!fn) return;
+  sprite.data[14] = sprite.data[0];   // tBattlerId
+  sprite.data[15] = sprite.data[2];   // tSpeciesId
+  sprite.data[1] = 1;                 // sDontFlip = TRUE
+  sprite.data[0] = 0;
+  for (let i = 2; i <= 7; i++) sprite.data[i] = 0;
+  sIsSummaryAnim = false;
+  setCb(sprite, fn);
+}
+
+/** 1:1 `DoMonFrontSpriteAnimation` (pokemon.c:6779) : cry + pan, StartSpriteAnim
+ *  (.,1) si 2-frame, puis idle anim (le mon « respire » à l'apparition). panMode
+ *  0=-25 / 1=+25 / 2+=0 ; bit7 SKIP. Câblé Birch/évo/Pokédex à l'Étape 4. */
+export function DoMonFrontSpriteAnimation(
+  rt: DecompRuntime, sprite: DecompSprite, species: number, noCry: boolean,
+  panModeAnimFlag: number, playCryFn: (species: number, pan: number) => void,
+  /** Override numérique (sentinelle -1 = lookup par espèce). */
+  frontAnimIdOverride = -1,
+): void {
+  const skipAnim = !!(panModeAnimFlag & SKIP_FRONT_ANIM);
+  const panMode = panModeAnimFlag & ~SKIP_FRONT_ANIM;
+  const pan = panMode === 0 ? -25 : panMode === 1 ? 25 : 0;
+  if (skipAnim) {
+    if (!noCry) playCryFn(species, pan);
+    sprite.callback = SpriteCallbackDummy as unknown as DecompSprite['callback'];
+    return;
+  }
+  if (!noCry) {
+    playCryFn(species, pan);
+    if (_hasTwoFramesAnimationNum(species)) {
+      rt.StartSpriteAnim(sprite.spriteId, 1);
+      const tilesPerFrame = _tilesPerMonPicFrame(sprite.shape, sprite.size);
+      const oam = rt.gba.oam[sprite.oamIndex];
+      if (oam) oam.tileId = (sprite.tileBase || 0) + tilesPerFrame;
+      (sprite as DecompSprite & { _monFrontBaseFrameReset?: boolean })._monFrontBaseFrameReset = true;
+    }
+  }
+  const animId = frontAnimIdOverride >= 0
+    ? frontAnimIdOverride
+    : (_frontAnimById.get(species) ?? ANIM.ANIM_V_SQUISH_AND_BOUNCE);
+  LaunchAnimationTaskForFrontSprite(sprite.spriteId, animId);
+}
+
+/** 1:1 `StopMonFrontSpriteAnimation` : callback → Dummy (sortie de scène). */
+export function StopMonFrontSpriteAnimation(rt: DecompRuntime, spriteId: number): void {
+  const sprite = rt.gSprites[spriteId];
+  if (sprite) sprite.callback = SpriteCallbackDummy as unknown as DecompSprite['callback'];
+}
+
+/** Reset toutes les anims mon (transitions de scène). L'état vit dans
+ *  sprite.data + sprite.callback → no-op (pas de registre runtime). */
+export function ResetAllMonAnimations(): void { /* no-op */ }
