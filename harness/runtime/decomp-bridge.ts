@@ -56,9 +56,6 @@ import { AllocOamMatrix as _AllocOamMatrix, FreeOamMatrix as _FreeOamMatrix } fr
 // retirés (0 importeur depuis le bridge) — décyclage lot 12.
 // (ré-exports morts retirés depuis './decomp-helpers' — sweep)
 import { gSineTable as _gSineTable } from './decomp-helpers';
-// STR_CONV_MODE_* : foyer canonique include/string_util.ts (feuille pure, cycle-safe).
-// Importés ici pour l'usage interne de ConvertIntToDecimalStringN (décyclage lot 5).
-import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../../include/string_util';
 
 // ─── Re-exports : GPU register / BG constants (decomp-runtime.ts) ─────────────
 
@@ -71,11 +68,6 @@ import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../../in
 // ─── Re-exports : script runtime (script-runtime.ts) ──────────────────────────
 
 // (ré-exports morts retirés depuis '../../src/script' — sweep)
-
-// ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
-
-// (ré-exports morts retirés depuis '../../src/engine/ui/gba-text-system' — sweep)
-import { CHAR_SPACER_STR } from '../../src/engine/ui/gba-text-system';
 
 // ─── Local-use imports (hoisted from scattered scope) ────────────────────────
 //
@@ -231,40 +223,9 @@ export function StringCopy(_dest: any, src: string): string {
 // StringAppend décyclé → foyer src/string_util.ts (version buffer Uint8Array 1:1).
 // Plus aucun importeur du bridge (G2 migration texte : size-record migré).
 
-/** 1:1 décomp `src/string_util.c:285 ConvertIntToDecimalStringN` :
- *    - LEFT_ALIGN (mode 0)    : print digits sans padding (le seul cas où
- *      length > n produit une troncation = peu réaliste en pratique).
- *    - RIGHT_ALIGN (mode 1)   : pad LEFT avec CHAR_SPACER pour width = n.
- *      Cas typique : niveaux Pokémon "  5" / " 12" / "100" alignés à droite.
- *    - LEADING_ZEROS (mode 2) : pad LEFT avec '0' pour width = n.
- *      Cas typique : CT/HM "CT 01..50", HM "CS 1..8", BAIES "BAIE 01..43".
- *  L'ancienne impl ignorait silencieusement `mode` et ne paddait JAMAIS
- *  (= bug latent qui produisait "CT 1 ROULA-LAME" au lieu de "CT 01"
- *  dans le sac, "  5/ 20" dégradé en "5/20" partout, etc.). */
-// STR_CONV_MODE_LEFT_ALIGN/RIGHT_ALIGN/LEADING_ZEROS → include/string_util.ts:13-15
-// (1:1 décomp string_util.h). Export retiré (décyclage lot 5) ; RIGHT_ALIGN +
-// LEADING_ZEROS importés en haut pour l'usage interne ci-dessous.
-export function ConvertIntToDecimalStringN(
-  _dest: any, value: number, mode: number, n: number,
-): string {
-  let s = String(value);
-  if (s.length >= n) {
-    // Le décomp tronque à droite si plus long que n ; on conserve la sémantique
-    // (bien que ce cas soit improbable pour des valeurs réelles).
-    if (s.length > n) s = s.slice(s.length - n);
-    return s;
-  }
-  // value.length < n : padding LEFT selon le mode.
-  const pad = n - s.length;
-  if (mode === STR_CONV_MODE_RIGHT_ALIGN) {
-    return CHAR_SPACER_STR.repeat(pad) + s;
-  }
-  if (mode === STR_CONV_MODE_LEADING_ZEROS) {
-    return '0'.repeat(pad) + s;
-  }
-  // LEFT_ALIGN : pas de padding (mode décomp par défaut).
-  return s;
-}
+// ConvertIntToDecimalStringN décyclé → foyer src/string_util.ts (version buffer
+// Uint8Array 1:1, écrit les bytes charmap direct). Plus aucun importeur du bridge
+// (G2 migration texte : party/bag/summary/size-record migrés).
 
 /** 1:1 décomp `src/string_util.c StringLength` — count chars before EOS. */
 export function StringLength(s: string): number {
@@ -516,7 +477,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'WIN_RANGE',
   'Random', 'SeedRng', 'SeedRngAndSetTrainerId',
    'AllocZeroed', 
-  'StringCopy', 'ConvertIntToDecimalStringN',
+  'StringCopy',
   'StringLength', 
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 
