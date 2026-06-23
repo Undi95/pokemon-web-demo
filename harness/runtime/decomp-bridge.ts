@@ -102,37 +102,7 @@ import { sTMHMMoves as _sTMHMMoves } from '../../src/engine/pokemon/tmhm-moves';
 import { getMapNameFr } from '../../src/data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
 import { gBattleMons as _gBattleMonsBridge } from '../../src/engine/battle/state';
-
-/** 1:1 décomp `include/macro.h` :
- *    #define T1_READ_8(ptr)   ((ptr)[0])
- *    #define T1_READ_16(ptr)  ((ptr)[0] | ((ptr)[1] << 8))
- *    #define T1_READ_32(ptr)  ((ptr)[0] | ((ptr)[1] << 8) | ((ptr)[2] << 16) | ((ptr)[3] << 24))
- *    #define T1_READ_PTR(ptr) ((const u8 *)T1_READ_32(ptr))
- *  En TS, on travaille avec offsets dans Uint8Array. */
-export function T1_READ_8(ptr: ArrayLike<number>, offset = 0): number {
-  return ptr[offset] & 0xFF;
-}
-export function T1_READ_16(ptr: ArrayLike<number>, offset = 0): number {
-  return (ptr[offset] & 0xFF) | ((ptr[offset + 1] & 0xFF) << 8);
-}
-export function T1_READ_32(ptr: ArrayLike<number>, offset = 0): number {
-  return (
-    (ptr[offset] & 0xFF) |
-    ((ptr[offset + 1] & 0xFF) << 8) |
-    ((ptr[offset + 2] & 0xFF) << 16) |
-    ((ptr[offset + 3] & 0xFF) << 24)
-  );
-}
 export const PLTT_SIZE_4BPP = 32;
-
-/** 1:1 décomp `include/gba/types.h` :
- *    #define TILE_SIZE_4BPP 32
- *    #define TILE_SIZE_8BPP 64
- *    #define TILE_OFFSET_4BPP(n) ((n) * TILE_SIZE_4BPP)
- *    #define TILE_OFFSET_8BPP(n) ((n) * TILE_SIZE_8BPP)
- */
-export const TILE_SIZE_4BPP = 32;
-export const TILE_SIZE_8BPP = 64;
 
 /** 1:1 décomp `include/gba/types.h` :
  *    #define WIN_RANGE(a, b)  (((a) << 8) | (b))
@@ -205,18 +175,6 @@ void _B_BUFF_STAT; void _B_BUFF_NEGATIVE_FLAVOR; void _B_BUFF_ABILITY;
 const EC_MASK_BITS = 9;
 const EC_MASK_GROUP_M = (1 << (16 - EC_MASK_BITS)) - 1; // 0x7F
 const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
-
-// ─── Item / berry macros ──────────────────────────────────────────────────────
-
-/** 1:1 décomp `include/constants/items.h:445` :
- *    #define ITEM_TO_BERRY(itemId) (((itemId) - FIRST_BERRY_INDEX) + 1)
- *  FIRST_BERRY_INDEX = 0x85 (= ITEM_CHERI_BERRY in Emerald, see items.h). */
-export const FIRST_BERRY_INDEX = 0x85;
-
-/** 1:1 décomp `src/union_room_player_avatar.c:17` :
- *    #define UR_PLAYER_SPRITE_ID(leaderId, memberId) (MAX_RFU_PLAYERS * leaderId + memberId)
- *  MAX_RFU_PLAYERS = 5 (= include/constants/rfu.h). */
-export const MAX_RFU_PLAYERS = 5;
 
 // ─── Re-exports : window frame tiles + palettes (miroir src/game/text_window.ts) ──
 
@@ -444,32 +402,6 @@ export function CpuCopy16(src: any, dst: any, sizeBytes: number): void {
   }
   /* sinon : no-op (les pointeurs JS abstraits ne sont pas copiables) */
 }
-export function CpuCopy32(src: any, dst: any, sizeBytes: number): void {
-  if (src instanceof Uint32Array && dst instanceof Uint32Array) {
-    const numEntries = sizeBytes / 4 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = src[i];
-  } else if (src instanceof Uint8Array && dst instanceof Uint8Array) {
-    for (let i = 0; i < sizeBytes; i++) dst[i] = src[i];
-  }
-}
-
-// ─── Script context byte reads (script.c) ─────────────────────────────────────
-//
-// Ces helpers lisent un byte/halfword/word depuis le script context.
-// Notre script-runtime utilise un index incrémenté ; les bodies auto qui call
-// ces helpers attendent à ctx d'être un opaque pointer. On délègue.
-
-/** 1:1 décomp `src/script.c:ScriptReadByte(ctx)` — read u8 + advance scriptPtr. */
-export function ScriptReadByte(ctx: any): number {
-  if (ctx && typeof ctx.readByte === 'function') return ctx.readByte() & 0xFF;
-  if (ctx && Array.isArray(ctx.scriptPtr)) {
-    const b = ctx.scriptPtr[ctx.pc ?? 0] & 0xFF;
-    ctx.pc = (ctx.pc ?? 0) + 1;
-    return b;
-  }
-  // Fallback : si pas de script context structuré, return 0 (= bug catch).
-  return 0;
-}
 
 // ─── String helpers (string_util.c) ───────────────────────────────────────────
 
@@ -527,24 +459,6 @@ export function ConvertIntToDecimalStringN(
 /** 1:1 décomp `src/string_util.c StringLength` — count chars before EOS. */
 export function StringLength(s: string): number {
   return s.length;
-}
-
-/** 1:1 décomp `src/string_util.c:96 StringCopyN(dest, src, n)` — copy first n
- *  bytes (= no EOS check). Returns dest+n. */
-export function StringCopyN(dest: any, src: any, n: number): any {
-  if (typeof src === 'string') {
-    if (dest instanceof Uint8Array) {
-      for (let i = 0; i < n && i < src.length; i++) dest[i] = src.charCodeAt(i);
-    }
-    return src.slice(0, n);
-  }
-  if (src && typeof src === 'object' && src.length != null) {
-    if (dest && dest.length != null) {
-      for (let i = 0; i < n; i++) dest[i] = src[i];
-    }
-    return src;
-  }
-  return src;
 }
 
 // ─── Sprite affine matrix (1:1 décomp `include/gba/syscall.h`) ────────────────
@@ -648,23 +562,6 @@ export function GetWalkSlowMovementAction(direction: number): number {
   }
 }
 
-/** 1:1 décomp `src/pokemon.c:6738` READ_PTR_FROM_TASK(taskId, dataId).
- *  Read 32-bit ptr stored in task data[dataId]+data[dataId+1]. */
-export function READ_PTR_FROM_TASK(taskId: number, dataId: number): any {
-  const rt: any = _getRT();
-  const task = rt?.gTasks?.[taskId];
-  if (!task) return null;
-  const lo = task.data?.[dataId] ?? 0;
-  const hi = task.data?.[dataId + 1] ?? 0;
-  return (lo | (hi << 16)) >>> 0;
-}
-
-/** 1:1 décomp `src/siirtc.c` RTC buffer accessors. */
-export function INFO_BUF(info: any, index: number): number {
-  if (info instanceof Uint8Array) return info[index] ?? 0;
-  return info?.[index] ?? 0;
-}
-
 /** 1:1 décomp BIOS syscall ArcTan2(x, y) — return the 0-65535 angle. Approximate. */
 export function ArcTan2(x: number, y: number): number {
   const a = Math.atan2(y, x);
@@ -707,30 +604,6 @@ export function GetFaceDirectionMovementAction(direction: number): number {
   }
 }
 
-/** 1:1 décomp `event_object_movement.c GetMoveDirectionAnimNum(direction)`.
- *  Walk anim : SOUTH→4, NORTH→5, WEST→6, EAST→7 (= 4..7 walk frames). */
-export function GetMoveDirectionAnimNum(direction: number): number {
-  switch (direction) {
-    case 1: return 4;
-    case 2: return 5;
-    case 3: return 6;
-    case 4: return 7;
-    default: return 4;
-  }
-}
-
-/** 1:1 décomp `event_object_movement.c GetMoveDirectionFasterAnimNum(direction)`.
- *  Faster (= run) : SOUTH→9, NORTH→10, WEST→11, EAST→12. */
-export function GetMoveDirectionFasterAnimNum(direction: number): number {
-  switch (direction) {
-    case 1: return 9;
-    case 2: return 10;
-    case 3: return 11;
-    case 4: return 12;
-    default: return 9;
-  }
-}
-
 /** MAP_UNDEFINED + helpers. 1:1 décomp `include/constants/maps.h`. */
 export const MAP_UNDEFINED = 0xFFFF;
 
@@ -757,16 +630,6 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
     for (let i = 0; i < sizeBytes; i++) dst[i] = value;
   }
   /* sinon : no-op (les pointeurs JS abstraits ne sont pas remplissables) */
-}
-
-// ─── Math macros (= 1:1 décomp include/global.h + util macros) ────────────────
-
-/** 1:1 décomp `include/global.h:103` :
- *    #define MOD(a, n) (((n) & ((n)-1)) ? ((a) % (n)) : ((a) & ((n)-1)))
- *  Optimized modulo : if n is a power of 2, use bitwise AND ; else use %.
- *  En TS : équivalent direct. */
-export function MOD(a: number, n: number): number {
-  return ((n & (n - 1)) ? (a % n) : (a & (n - 1)));
 }
 
 // ─── Runtime method wrappers (= helpers que notre `decomp-runtime.ts` expose
@@ -991,15 +854,13 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'AddTextPrinterWithCallbackForMessage', 'RunTextPrinters', 'IsTextPrinterActive',
   'ClearTextPrinters', 'DeactivateAllTextPrinters', 'RunTextPrintersAndIsPrinter0Active',
   // Inline macros
-  'T1_READ_8', 'T1_READ_16', 'T1_READ_32', 
   'WIN_RANGE',
   'Random', 'SeedRng', 'SeedRngAndSetTrainerId',
    'AllocZeroed', 
   'StringCopy', 'StringAppend', 'ConvertIntToDecimalStringN',
   'StringLength', 
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
-  'CpuCopy16', 'CpuCopy32',
-  'ScriptReadByte',
+  'CpuCopy16', 
   // Static data tables (= ports manuels depuis sX[] décomp)
   'ANIM_STD_GO_SOUTH', 'ANIM_STD_GO_NORTH', 'ANIM_STD_GO_WEST', 'ANIM_STD_GO_EAST',
   'ANIM_STD_GO_FAST_SOUTH', 'ANIM_STD_GO_FAST_NORTH', 'ANIM_STD_GO_FAST_WEST', 'ANIM_STD_GO_FAST_EAST',
@@ -1016,7 +877,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'RGB2',  
   'PLTT_ID', 
    'CpuFastFill',  
-  'MOD',  
   'Random32',
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
@@ -1029,10 +889,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
     'HIHALF', 'LOHALF',
   'GET_SHINY_VALUE', 'GET_UNOWN_LETTER', 
     'MOVE_IS_PERMANENT',
-   'FIRST_BERRY_INDEX',
-   'MAX_RFU_PLAYERS',
   // String helpers (= string_util.c)
-  'StringCopyN',   
   // Pokemon storage / sprite pal / icon (= NotImpl stubs but counted as bridged
   // since the bridge file resolves them — they throw clearly at runtime, which
   // is the desired fail-fast behavior)
@@ -1047,8 +904,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
    'GetWalkSlowMovementAction',
   'WriteColorChangeControlCode', 
   // Phase B.7 final cleanup
-  'READ_PTR_FROM_TASK', 
-  'INFO_BUF',  
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
   'CreateSprite', 'CreateSpriteAtEnd', 'DestroySprite',
@@ -1073,12 +928,9 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'MetatileBehavior_IsFootprints', 'MetatileBehavior_HasRipples',
   'MetatileBehavior_IsDeepSand',
   'GetFaceDirectionMovementAction', 
-   'GetMoveDirectionAnimNum',
-   'GetMoveDirectionFasterAnimNum',
   // Constants
   'NULL',
   'PLTT_SIZE_4BPP', 
-  'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
   // Movement enums
   'MAP_UNDEFINED',
 ]);
