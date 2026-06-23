@@ -512,12 +512,26 @@ export class TestOverworldScene extends Phaser.Scene {
         boot.mapId, boot.x, boot.y, boot.facing, boot.mode === 'resume',
       );
 
-      // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
-      // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
-      // `gPlttBufferFaded.flushTo()` (= TransferPlttBuffer simulé). Sans ça,
-      // les nouvelles palettes (= dialog frame, fades) ne sont JAMAIS poussées
-      // au compositor → frame border noir + fades figés.
-      const _VBlankCB_Overworld: () => void = () => { /* no-op marker pour activer transfer */ };
+      // 1:1 décomp `VBlankCB_Field` (overworld.c:1784-1792) :
+      //   LoadOam(); ProcessSpriteCopyRequests(); ScanlineEffect_InitHBlankDmaTransfer();
+      //   FieldUpdateBgTilemapScroll(); TransferPlttBuffer(); TransferTilesetAnimsBuffer();
+      // Le VBlank callback écrit les registres de scroll BG (FieldUpdateBgTilemapScroll)
+      // + flush tileset anims, EN PLUS de déclencher le transfer palette
+      // (TransferPlttBuffer = `gPlttBufferFaded.flushTo()` côté runtime, déclenché par
+      // le simple fait d'avoir un vblankCallback set — sinon palettes/fades figés).
+      // ⚠️ CRITIQUE : le runtime appelle `vblankCallback` CHAQUE frame
+      // (decomp-runtime.ts:2154), y compris pendant le fade de warp où le corps de
+      // MainCB2_Overworld early-return (warpInProgress). La décomp n'appelle
+      // FieldUpdateBgTilemapScroll QUE depuis VBlankCB_Field (overworld.c:1789, jamais
+      // dans le main body) — donc il DOIT vivre ici, pas dans le corps. Sinon les
+      // registres BG1/2/3 VOFS restent à 0 (posés par ChangeBgY dans
+      // InitOverworldGraphicsRegisters) pendant tout le fade → map rendue 40px
+      // (~2.5 métatuiles) trop haut, puis « snap » au 1er frame post-fade quand le
+      // corps re-tourne. (Bug user « warp : spawn trop haut puis recalé ».)
+      const _VBlankCB_Overworld: () => void = () => {
+        FieldUpdateBgTilemapScroll(this.rt);
+        TransferTilesetAnimsBuffer(this.rt);
+      };
       this.rt.SetVBlankCallback(_VBlankCB_Overworld);
       // SKIP OnTransition / OnFrame map_scripts pour l'instant (= éviterait la
       // cinématique Maman si VAR_LITTLEROOT_INTRO_STATE pas init à 3). User
@@ -739,10 +753,12 @@ export class TestOverworldScene extends Phaser.Scene {
           flushOverworldTilemaps(rt);
           ClearBgRedrawPending();
         }
-        // ── VBlankCB_Field (overworld.c:1784) : registres de scroll BG depuis
-        //    sFieldCameraOffset (posé par CameraUpdate) + flush tileset anims VRAM. ──
-        FieldUpdateBgTilemapScroll(rt);
-        TransferTilesetAnimsBuffer(rt);
+        // ── VBlankCB_Field (overworld.c:1789-1791) : FieldUpdateBgTilemapScroll +
+        //    TransferTilesetAnimsBuffer vivent dans le VBlank callback
+        //    (_VBlankCB_Overworld ci-dessus), PAS ici. La décomp ne les appelle QUE
+        //    depuis VBlankCB_Field → ils tournent chaque frame même quand ce corps
+        //    early-return (warpInProgress) → fix du scroll BG figé pendant le fade
+        //    (BG1/2/3 VOFS=0 → map 40px trop haut, "snap" post-fade). ──
       };
       this.rt.gMain.callback2 = MainCB2_Overworld;
       // Expose pour le retour depuis option menu / sub-CB2 1:1 décomp :
