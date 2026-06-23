@@ -23,9 +23,13 @@ import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../harnes
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from '../include/item_menu';
 import { ITEM_LIST_END } from '../include/constants/items';
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from './engine/decomp-data/src/item_menu_icons-data';
-const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
-const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
+// 1:1 décomp item_menu_icons.c:14-19 — enum anonyme file-local (TAG_BAG_GFX=100,
+// TAG_ROTATING_BALL_GFX=101, TAG_ITEM_ICON=102, TAG_ITEM_ICON_ALT=103). TAG_BAG_GFX
+// exporté car bag-menu.ts (item_menu.c port) charge la sprite sheet du sac dessus
+// (usage en fonction → live binding ESM, cycle-safe). TAG_ITEM_ICON / _ALT sont
+// définis plus bas (valeur du port, cf. note divergence).
+export const TAG_BAG_GFX = 100;            // sprite sheet sac
+export const TAG_ROTATING_BALL_GFX = 101;  // ball rotative pocket-switch
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import type { DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
 

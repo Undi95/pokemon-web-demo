@@ -127,6 +127,7 @@ import {
   AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite,
   AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
   AddSwitchPocketRotatingBallSprite,
+  TAG_BAG_GFX,
 } from '../../item_menu_icons';
 // Swap line — barre grise ▶ rouge affichée pendant SELECT swap (1:1 menu_helpers.c).
 import {
@@ -143,9 +144,6 @@ import {
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
 } from '../decomp-data/src/item_menu-data';
-// 1:1 décomp item_menu_icons.c:15 — TAG_BAG_GFX=100 (sprite sheet du sac).
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../decomp-data/src/item_menu_icons-data';
-const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
