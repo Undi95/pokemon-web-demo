@@ -129,9 +129,10 @@ export {
 
 // ─── Re-exports : sprite/affine helpers (decomp-helpers.ts) ───────────────────
 
+// Sin / Cos → foyer canonique `src/trig.ts` (1:1 décomp trig.c) ; gSineTable (forme
+// FONCTION, fix cast u8) → `harness/runtime/decomp-helpers.ts`. Ré-exports bridge
+// retirés (0 importeur depuis le bridge) — décyclage lot 12.
 export {
-  Sin,
-  Cos,
   Q_8_8_TO_INT,
   SetOamMatrix,
   CalcCenterToCornerVec,
@@ -146,7 +147,6 @@ export {
   ST_OAM_OBJ_WINDOW,
   ST_OAM_4BPP,
   ST_OAM_8BPP,
-  gSineTable,
   PaletteBuffer,
 } from './decomp-helpers';
 import { gSineTable as _gSineTable } from './decomp-helpers';
@@ -3147,8 +3147,8 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'PLTT_SIZE', 'BG_SCREEN_SIZE', 'VRAM_SIZE',
   'setGlobalRuntime', 'getRuntime', 'getAsset',
   // decomp-helpers
-  'Sin', 'Cos', 'Q_8_8_TO_INT', 'SetOamMatrix', 'CalcCenterToCornerVec',
-  'gSineTable', 'PaletteBuffer',
+  'Q_8_8_TO_INT', 'SetOamMatrix', 'CalcCenterToCornerVec',
+  'PaletteBuffer',
   'ST_OAM_AFFINE_OFF', 'ST_OAM_AFFINE_NORMAL', 'ST_OAM_AFFINE_ERASE',
   'ST_OAM_AFFINE_DOUBLE', 'ST_OAM_AFFINE_ON_MASK', 'ST_OAM_AFFINE_DOUBLE_MASK',
   'ST_OAM_OBJ_NORMAL', 'ST_OAM_OBJ_BLEND', 'ST_OAM_OBJ_WINDOW',
