@@ -665,162 +665,10 @@ export function INFO_BUF(info: any, index: number): number {
   return info?.[index] ?? 0;
 }
 
-/** 1:1 décomp `src/event_object_movement.c GetJumpSpecialMovementAction(direction)`. */
-export function GetJumpSpecialMovementAction(direction: number): number {
-  // Variant of GetJumpMovementAction. Same direction → MOVEMENT_ACTION_X mapping.
-  switch (direction) {
-    case 1: return 0x60;
-    case 2: return 0x61;
-    case 3: return 0x62;
-    case 4: return 0x63;
-    default: return 0x60;
-  }
-}
-
-/** 1:1 décomp `src/overworld.c GetDestinationWarpMapHeader()`. */
-export function GetDestinationWarpMapHeader(): any {
-  return Overworld_GetMapHeaderByGroupAndId(0, 0);
-}
-
-/** 1:1 décomp `src/item_icon.c GetItemIconPicOrPalette/Pic/Palette`. */
-export function GetItemIconPicOrPalette(..._args: any[]): any { return null; }
-export function GetItemIconPic(..._args: any[]): any { return null; }
-export function GetItemIconPalette(..._args: any[]): any { return null; }
-
-/** 1:1 décomp `src/contest.c GetStoryActionByStat(...)`. */
-export function GetStoryActionByStat(..._args: any[]): number { return 0; }
-
-/** 1:1 décomp `include/gba/io_reg.h REG_SIOMULTI` — link multiplayer regs. */
-export const REG_SIOMULTI: any = { 0: 0, 1: 0, 2: 0, 3: 0 };
-
-/** 1:1 décomp `src/save.c GetSavedRamScriptIfValid()`. */
-export function GetSavedRamScriptIfValid(): any { return null; }
-
-/** 1:1 décomp `src/party_menu.c GetPartyMenuPalBufferPtr(palIdx)`. */
-export function GetPartyMenuPalBufferPtr(_palIdx: number): any { return null; }
-
-/** 1:1 décomp `src/region_map.c GetRegionMapSectionId(x, y)` — same as GetMapSecIdAt. */
-export function GetRegionMapSectionId(_x: number, _y: number): number { return 0; }
-
-/** 1:1 décomp `src/mon_markings.c CreateMonMarkingAllCombosSprite(...)`. */
-export function CreateMonMarkingAllCombosSprite(..._args: any[]): number { return -1; }
-
-/** 1:1 décomp `src/match_call.c GetMatchCallMapSec(matchCallId)` and similar. */
-export function GetMatchCallMapSec(_matchCallId: number): number { return 0; }
-export function GetMatchTableMapSectionId(_matchCallId: number): number { return 0; }
-
-/** 1:1 décomp `src/main_menu.c GetMainMenuInputHandler()`. */
-export function GetMainMenuInputHandler(): any { return null; }
-
-/** 1:1 décomp `src/pokemon.c LoadPtrFromTaskData(taskId, dataIdx)`. */
-export function LoadPtrFromTaskData(taskId: number, dataIdx: number): any {
-  return READ_PTR_FROM_TASK(taskId, dataIdx);
-}
-
-/** 1:1 décomp `src/secret_base.c GetSecretBaseName(...)`. */
-export function GetSecretBaseName(..._args: any[]): string { return ''; }
-
-/** 1:1 décomp `src/text.c GetMessageEntryBuffer()`. */
-export function GetMessageEntryBuffer(): any { return null; }
-
-/** 1:1 décomp `src/event_data.c MapHeaderCheckScriptTable(table)`. */
-export function MapHeaderCheckScriptTable(_table: any): any { return null; }
-
-/** 1:1 décomp `src/agb_flash.c DELAY()`. */
-export function DELAY(): void { /* no-op : timer is browser RAF-driven */ }
-
-/** 1:1 décomp `src/agb_flash.c PollFlashStatus()`. */
-export function PollFlashStatus(): number { return 0; }
-
-/** 1:1 décomp `src/apprentice.c APPRENTICE_SPECIES_ID_NO_COND(monId, count)` macro. */
-export function APPRENTICE_SPECIES_ID_NO_COND(monId: number, _count: number): number {
-  return monId;
-}
-
 /** 1:1 décomp BIOS syscall ArcTan2(x, y) — return the 0-65535 angle. Approximate. */
 export function ArcTan2(x: number, y: number): number {
   const a = Math.atan2(y, x);
   return ((a / (2 * Math.PI)) * 65536) | 0;
-}
-
-/** 1:1 décomp BIOS syscall Sqrt(n) — integer square root. */
-export function Sqrt(n: number): number {
-  return Math.sqrt(n) | 0;
-}
-
-/** 1:1 décomp `src/menu.c TryGetStatusString(...)`. */
-export function TryGetStatusString(..._args: any[]): any { return null; }
-
-/** 1:1 décomp `src/pokemon_icon.c GetValidMonIconPalettePtr(species)`. */
-export function GetValidMonIconPalettePtr(_species: number): any { return null; }
-
-/** 1:1 décomp `src/battle_setup.c GetTrainerALoseText/BLoseText/IntroSpeechOf/CantBattleSpeech`. */
-export function GetTrainerALoseText(_trainerId: number): string { return ''; }
-export function GetTrainerBLoseText(_trainerId: number): string { return ''; }
-export function GetIntroSpeechOfApproachingTrainer(_trainerId: number): string { return ''; }
-export function GetTrainerCantBattleSpeech(): string { return ''; }
-
-/** 1:1 décomp battle_controllers.c IS_BATTLE_CONTROLLER_*. */
-export function IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL(..._args: any[]): boolean { return false; }
-export function MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER(..._args: any[]): void { /* no-op */ }
-export function IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(..._args: any[]): boolean { return false; }
-
-/** 1:1 décomp `src/link.c BYTE_TO_RECEIVE`. */
-export function BYTE_TO_RECEIVE(_idx: number): number { return 0; }
-
-/** 1:1 décomp `src/link_rfu_*.c MSC_callback / LMAN_callback`. */
-export function MSC_callback(..._args: any[]): void { /* no-op : multi-boot */ }
-export function LMAN_callback(..._args: any[]): void { /* no-op : link manager */ }
-
-/** 1:1 décomp `src/intro.c BOUNCES/SHAKES/STATE/DIRECTION/etc.` —
- *  Task data accessor macros for intro task data slots. Each is identity-ish
- *  for now (= bodies use these as `data->BOUNCES` etc., which is just a slot lookup). */
-export function BOUNCES(_data: any): number { return 0; }
-export function SHAKES(_data: any): number { return 0; }
-export function SHAKE_INC(_data: any): number { return 0; }
-export function STATE(_data: any): number { return 0; }
-export function DIRECTION(_data: any): number { return 0; }
-export function FALL(_data: any): number { return 0; }
-export function PHASE_DELTA(_data: any): number { return 0; }
-export function RISE_FASTER(_data: any): number { return 0; }
-export function RESET_STATE(_data: any): number { return 0; }
-
-// ─── Pokemon data — throw NI ──────────────────────────────────────────────────
-
-/** 1:1 décomp `src/pokemon.c GetMonData(mon, field, ...)` — read pokemon data.
- *  Need full pokemon struct port. */
-export function GetMonData(_mon: any, _field: number, _data?: any): any {
-  throw new Error('[bridge] GetMonData not yet 1:1 ported. See pokemon.c:GetMonData (line ~3500).');
-}
-
-/** Same, for box-stored mons. */
-export function GetBoxMonData(_boxMon: any, _field: number, _data?: any): any {
-  throw new Error('[bridge] GetBoxMonData not yet 1:1 ported. See pokemon.c:GetBoxMonData.');
-}
-
-export function SetMonData(_mon: any, _field: number, _data?: any): void {
-  throw new Error('[bridge] SetMonData not yet 1:1 ported. See pokemon.c:SetMonData.');
-}
-
-export function GetMonNickname(_mon: any, _dest?: any): string {
-  throw new Error('[bridge] GetMonNickname not yet 1:1 ported. See pokemon.c:GetMonNickname.');
-}
-
-// ─── Var pointer (event_data.c) — throw NI ────────────────────────────────────
-
-/** 1:1 décomp `src/event_data.c:GetVarPointer(varId)` — returns u16* into save block.
- *  Notre VarGet/VarSet abstrait ce détail ; les bodies auto-transpilés qui
- *  utilisent GetVarPointer pour write u16 directement need refactor. */
-export function GetVarPointer(_varId: number): { value: number } {
-  throw new Error('[bridge] GetVarPointer not yet 1:1 ported. Use VarGet/VarSet instead. See event_data.c:GetVarPointer.');
-}
-
-// ─── DMA control — throw NI ───────────────────────────────────────────────────
-
-/** 1:1 décomp `include/gba/macro.h DmaStop(channel)` — disable a DMA channel.
- *  Hardware-only ; no-op in JS. */
-export function DmaStop(_channel: number): void {
-  /* no-op : pas de DMA hardware en JS */
 }
 
 // ─── Tile/BG buffer access (bg.c) ─────────────────────────────────────────────
@@ -829,19 +677,6 @@ export function DmaStop(_channel: number): void {
  *  Need full BG manager port. */
 export function GetBgTilemapBuffer(_bg: number): Uint16Array {
   throw new Error('[bridge] GetBgTilemapBuffer not yet 1:1 ported. See bg.c:GetBgTilemapBuffer.');
-}
-
-/** 1:1 décomp `src/decompress.c DecompressAndCopyTileDataToVram` — uncompress + copy.
- *  Need wired to our asset cache. */
-export function DecompressAndCopyTileDataToVram(
-  _bgId: number, _src: any, _size: number, _offset: number, _mode: number,
-): void {
-  throw new Error('[bridge] DecompressAndCopyTileDataToVram not yet 1:1 ported. See decompress.c.');
-}
-
-/** 1:1 décomp `src/decompress.c LZ77UnCompWram` — LZ77 decompress to WRAM (= asset cache). */
-export function LZ77UnCompWram(_srcSymbol: string, _destBuf: any): void {
-  throw new Error('[bridge] LZ77UnCompWram not yet 1:1 ported. Use LZ77UnCompVram for VRAM dest, or implement WRAM-targeted variant.');
 }
 
 // ─── Movement actions getter (event_object_movement.c) ────────────────────────
@@ -872,85 +707,6 @@ export function GetFaceDirectionMovementAction(direction: number): number {
   }
 }
 
-/** 1:1 décomp `event_object_movement.c GetWalkNormalMovementAction`. */
-export function GetWalkNormalMovementAction(direction: number): number {
-  // MOVEMENT_ACTION_WALK_NORMAL_DOWN = 0x08, UP = 0x09, LEFT = 0x0A, RIGHT = 0x0B
-  switch (direction) {
-    case 1: return 0x08;
-    case 2: return 0x09;
-    case 3: return 0x0A;
-    case 4: return 0x0B;
-    default: return 0x08;
-  }
-}
-
-/** 1:1 décomp `event_object_movement.c GetWalkFastMovementAction`. */
-export function GetWalkFastMovementAction(direction: number): number {
-  switch (direction) {
-    case 1: return 0x0C;
-    case 2: return 0x0D;
-    case 3: return 0x0E;
-    case 4: return 0x0F;
-    default: return 0x0C;
-  }
-}
-
-/** 1:1 décomp `event_object_movement.c GetWalkFasterMovementAction`. */
-export function GetWalkFasterMovementAction(direction: number): number {
-  switch (direction) {
-    case 1: return 0x40;
-    case 2: return 0x41;
-    case 3: return 0x42;
-    case 4: return 0x43;
-    default: return 0x40;
-  }
-}
-
-/** Walk in place actions (1:1 décomp constants). */
-export function GetWalkInPlaceNormalMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x44; case 2: return 0x45; case 3: return 0x46; case 4: return 0x47; default: return 0x44; }
-}
-export function GetWalkInPlaceFastMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x48; case 2: return 0x49; case 3: return 0x4A; case 4: return 0x4B; default: return 0x48; }
-}
-export function GetWalkInPlaceFasterMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x4C; case 2: return 0x4D; case 3: return 0x4E; case 4: return 0x4F; default: return 0x4C; }
-}
-export function GetWalkInPlaceSlowMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x50; case 2: return 0x51; case 3: return 0x52; case 4: return 0x53; default: return 0x50; }
-}
-
-/** Slide actions. */
-export function GetSlideMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x64; case 2: return 0x65; case 3: return 0x66; case 4: return 0x67; default: return 0x64; }
-}
-
-/** Jump in place actions. */
-export function GetJumpInPlaceMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x54; case 2: return 0x55; case 3: return 0x56; case 4: return 0x57; default: return 0x54; }
-}
-export function GetJumpMovementAction(direction: number): number {
-  switch (direction) { case 1: return 0x4C; case 2: return 0x4D; case 3: return 0x4E; case 4: return 0x4F; default: return 0x4C; }
-}
-export function GetJump2MovementAction(direction: number): number {
-  // Jump distance 2.
-  switch (direction) { case 1: return 0x58; case 2: return 0x59; case 3: return 0x5A; case 4: return 0x5B; default: return 0x58; }
-}
-
-// ─── Dir/Move/Anim conversion helpers (face anim numbers) ─────────────────────
-
-/** 1:1 décomp `event_object_movement.c GetFaceDirectionAnimNum(direction)`.
- *  Maps DIR_SOUTH→0, DIR_NORTH→1, DIR_WEST→2, DIR_EAST→3 (= sprite anim idx). */
-export function GetFaceDirectionAnimNum(direction: number): number {
-  switch (direction) {
-    case 1: return 0; // DIR_SOUTH
-    case 2: return 1; // DIR_NORTH
-    case 3: return 2; // DIR_WEST
-    case 4: return 3; // DIR_EAST
-    default: return 0;
-  }
-}
-
 /** 1:1 décomp `event_object_movement.c GetMoveDirectionAnimNum(direction)`.
  *  Walk anim : SOUTH→4, NORTH→5, WEST→6, EAST→7 (= 4..7 walk frames). */
 export function GetMoveDirectionAnimNum(direction: number): number {
@@ -961,11 +717,6 @@ export function GetMoveDirectionAnimNum(direction: number): number {
     case 4: return 7;
     default: return 4;
   }
-}
-
-/** 1:1 décomp `event_object_movement.c GetMoveDirectionFastAnimNum(direction)`. */
-export function GetMoveDirectionFastAnimNum(direction: number): number {
-  return GetMoveDirectionAnimNum(direction);  // Even fast walk uses anim 4..7.
 }
 
 /** 1:1 décomp `event_object_movement.c GetMoveDirectionFasterAnimNum(direction)`.
@@ -979,64 +730,6 @@ export function GetMoveDirectionFasterAnimNum(direction: number): number {
     default: return 9;
   }
 }
-
-/** 1:1 décomp `event_object_movement.c GetRunningDirectionAnimNum`. */
-export function GetRunningDirectionAnimNum(direction: number): number {
-  return GetMoveDirectionFasterAnimNum(direction);
-}
-
-/** 1:1 décomp `event_object_movement.c GetOppositeDirection`. */
-export function GetOppositeDirection(direction: number): number {
-  // DIR_SOUTH (1) ↔ DIR_NORTH (2) ; DIR_WEST (3) ↔ DIR_EAST (4) ; DIR_NONE (0) → 0.
-  switch (direction) {
-    case 1: return 2;
-    case 2: return 1;
-    case 3: return 4;
-    case 4: return 3;
-    default: return 0;
-  }
-}
-
-// ─── Direction constants (1:1 décomp) ─────────────────────────────────────────
-
-/** 1:1 décomp `include/constants/global.h`. */
-export const DIR_NONE = 0;
-export const DIR_SOUTH = 1;
-export const DIR_NORTH = 2;
-export const DIR_WEST = 3;
-export const DIR_EAST = 4;
-
-// ─── Movement enums (= 1:1 décomp event_object_movement.c:46-58) ──────────────
-
-/** Move speeds (= sprite step duration multiplier). 1:1 décomp `event_object_movement.c:46`. */
-export const MOVE_SPEED_NORMAL  = 0;  // walking
-export const MOVE_SPEED_FAST_1  = 1;  // running / surfing / sliding (ice)
-export const MOVE_SPEED_FAST_2  = 2;  // water current / acro bike
-export const MOVE_SPEED_FASTER  = 3;  // mach bike's max speed
-export const MOVE_SPEED_FASTEST = 4;
-
-/** Jump distances. 1:1 décomp `event_object_movement.c:54`. */
-export const JUMP_DISTANCE_IN_PLACE = 0;
-export const JUMP_DISTANCE_NORMAL   = 1;
-export const JUMP_DISTANCE_FAR      = 2;
-
-/** Jump types. 1:1 décomp `event_object_movement.c:5421`. */
-export const JUMP_TYPE_HIGH   = 0;
-export const JUMP_TYPE_LOW    = 1;
-export const JUMP_TYPE_NORMAL = 2;
-
-/** Sprite data aliases. 1:1 décomp `event_object_movement.c:60-64`.
- *  Ces constants représentent les indices dans `sprite.data[]`. */
-export const sObjEventId   = 0;
-export const sTypeFuncId   = 1;
-export const sActionFuncId = 2;
-export const sDirection    = 3;
-
-/** OBJECT_EVENTS_COUNT — 1:1 décomp `include/constants/event_object_movement.h:11`.  */
-export const OBJECT_EVENTS_COUNT = 16;
-// LOCALID_PLAYER / LOCALID_NONE — décyclés vers le foyer canonique
-// `include/constants/event_objects.ts` (= constants/event_objects.h). Voir SPINE-DECYCLE-PLAN §0b G5.
-export const OBJ_EVENT_ID_PLAYER = 0;
 
 /** MAP_UNDEFINED + helpers. 1:1 décomp `include/constants/maps.h`. */
 export const MAP_UNDEFINED = 0xFFFF;
@@ -1054,28 +747,6 @@ export * from '../../include/constants/metatile_behaviors';
 // décomp `include/types.h`) — décyclage du bridge, lot 1. Les importer de là.
 export const NULL: any = null;
 
-// ─── NotImplemented helper for proxy stubs ────────────────────────────────────
-
-/** Helper to throw NotImplementedError with a consistent message. */
-export function notImplemented(funcName: string, sourceFile?: string): never {
-  const ref = sourceFile ? ` See ${sourceFile}.` : '';
-  throw new Error(`[bridge] ${funcName} not yet 1:1 ported.${ref}`);
-}
-
-// ─── GBA macros (1:1 décomp `include/gba/macro.h`) — extra fast variants ──────
-//
-// These are the "Fast" cousins of CpuCopy/CpuFill that use 32-bit DMA-style
-// transfers in hardware. In JS, we don't have DMA so they collapse to the
-// regular CpuCopy/CpuFill (which themselves are no-ops for non-typed-array
-// pointers). 1:1 with `include/gba/macro.h:43-55`.
-
-/** 1:1 décomp `include/gba/macro.h:55` :
- *    #define CpuFastCopy(src, dest, size)  CpuFastSet(src, dest, ((size)/(32/8) & 0x1FFFFF))
- *  En TS : same as CpuCopy32 (= 32-bit DMA transfer). */
-export function CpuFastCopy(src: any, dst: any, sizeBytes: number): void {
-  CpuCopy32(src, dst, sizeBytes);
-}
-
 /** 1:1 décomp `include/gba/macro.h:43-49` :
  *    #define CpuFastFill(value, dest, size) ... CpuFastSet(&tmp, dest, CPU_FAST_SET_SRC_FIXED | size>>2)
  *  En TS : memset bytewise. */
@@ -1088,86 +759,6 @@ export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
   /* sinon : no-op (les pointeurs JS abstraits ne sont pas remplissables) */
 }
 
-/** 1:1 décomp `include/gba/macro.h:51` :
- *    #define CpuFastFill16(value, dest, size) CpuFastFill(((value) << 16) | (value), (dest), (size))
- *  En TS : same effect as CpuFastFill since we operate per-element. */
-export function CpuFastFill16(value: number, dst: any, sizeBytes: number): void {
-  if (dst instanceof Uint16Array) {
-    const numEntries = sizeBytes / 2 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = value & 0xFFFF;
-  } else {
-    CpuFastFill(value & 0xFFFF, dst, sizeBytes);
-  }
-}
-
-/** 1:1 décomp `include/gba/macro.h:53` :
- *    #define CpuFastFill8(value, dest, size) CpuFastFill(...)
- *  En TS : memset bytewise. */
-export function CpuFastFill8(value: number, dst: any, sizeBytes: number): void {
-  CpuFastFill(value & 0xFF, dst, sizeBytes);
-}
-
-/** 1:1 décomp `include/gba/macro.h:68-78 DmaSet(dmaNum, src, dest, control)`.
- *  Hardware-only ; no-op in JS. Used for raw DMA reg writes. */
-export function DmaSet(_dmaNum: number, _src: any, _dst: any, _control: number): void {
-  /* no-op : DMA registers don't exist in JS runtime */
-}
-
-/** 1:1 décomp `include/gba/macro.h:147-160 DmaSetUnchecked(dmaNum, src, dest, control)`.
- *  Same as DmaSet without static-assert. No-op. */
-export function DmaSetUnchecked(_dmaNum: number, _src: any, _dst: any, _control: number): void {
-  /* no-op */
-}
-
-/** 1:1 décomp `include/gba/macro.h:192 DmaFillLarge16(dmaNum, value, dest, size, block)`.
- *  Hardware DMA fill in chunks. En TS : delegates to DmaFill16 (= no-op underlying). */
-export function DmaFillLarge16(_dmaNum: number, value: number, dst: any, sizeBytes: number, _block?: number): void {
-  if (dst instanceof Uint16Array) {
-    const numEntries = sizeBytes / 2 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = value & 0xFFFF;
-  }
-}
-
-/** 1:1 décomp `include/gba/macro.h DmaFillLarge32`. */
-export function DmaFillLarge32(_dmaNum: number, value: number, dst: any, sizeBytes: number, _block?: number): void {
-  if (dst instanceof Uint32Array) {
-    const numEntries = sizeBytes / 4 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = value >>> 0;
-  }
-}
-
-/** 1:1 décomp `include/gba/macro.h DmaCopyLarge16/32`. */
-export function DmaCopyLarge16(_dmaNum: number, src: any, dst: any, sizeBytes: number, _block?: number): void {
-  CpuCopy16(src, dst, sizeBytes);
-}
-export function DmaCopyLarge32(_dmaNum: number, src: any, dst: any, sizeBytes: number, _block?: number): void {
-  CpuCopy32(src, dst, sizeBytes);
-}
-
-/** 1:1 décomp `include/gba/macro.h DmaClearLarge16/32`. */
-export function DmaClearLarge16(_dmaNum: number, dst: any, sizeBytes: number, _block?: number): void {
-  if (dst instanceof Uint16Array) {
-    const numEntries = sizeBytes / 2 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = 0;
-  }
-}
-export function DmaClearLarge32(_dmaNum: number, dst: any, sizeBytes: number, _block?: number): void {
-  if (dst instanceof Uint32Array) {
-    const numEntries = sizeBytes / 4 | 0;
-    for (let i = 0; i < numEntries; i++) dst[i] = 0;
-  }
-}
-
-/** 1:1 décomp `include/gba/macro.h DmaCopy16Defvars / DmaCopy32Defvars`.
- *  Same as DmaCopy16/32 with a void-cast variant for typed strict mode.
- *  Used in MODERN builds. */
-export function DmaCopy16Defvars(_dmaNum: number, src: any, dst: any, sizeBytes: number): void {
-  CpuCopy16(src, dst, sizeBytes);
-}
-export function DmaCopy32Defvars(_dmaNum: number, src: any, dst: any, sizeBytes: number): void {
-  CpuCopy32(src, dst, sizeBytes);
-}
-
 // ─── Math macros (= 1:1 décomp include/global.h + util macros) ────────────────
 
 /** 1:1 décomp `include/global.h:103` :
@@ -1176,53 +767,6 @@ export function DmaCopy32Defvars(_dmaNum: number, src: any, dst: any, sizeBytes:
  *  En TS : équivalent direct. */
 export function MOD(a: number, n: number): number {
   return ((n & (n - 1)) ? (a % n) : (a & (n - 1)));
-}
-
-/** 1:1 décomp `include/gba/types.h Q_24_8_TO_INT(n)` — fixed-point conversion. */
-export function Q_24_8_TO_INT(n: number): number {
-  return n >> 8;
-}
-/** 1:1 décomp `include/gba/types.h Q_8_8_TO_INT(n)` — already in helpers but
- *  re-export from here for convenience. */
-// already re-exported via decomp-helpers above
-
-/** 1:1 décomp `include/gba/types.h Q_24_8(n) (= Q_8_8 with 24-frac)` — used in
- *  rare contexts. */
-export function Q_24_8(n: number): number {
-  return (n * 256) | 0;
-}
-
-// ─── Debug / diagnostic macros (1:1 décomp `include/gba/isagbprint.h`) ────────
-
-/** 1:1 décomp `include/gba/isagbprint.h:54` :
- *    #define AGB_ASSERT(exp)  // empty in non-debug builds
- *    Or in DEBUG builds : (exp) ? 0 : DebugAssert(...);
- *  En TS : runtime assert with throw to catch bugs. */
-export function AGB_ASSERT(exp: any): void {
-  if (!exp) {
-    // Non-fatal : log + continue. Throwing would break too much auto-code.
-    // eslint-disable-next-line no-console
-    console.warn('[bridge] AGB_ASSERT failed');
-  }
-}
-
-/** 1:1 décomp `include/gba/isagbprint.h DebugAssert(file, line, expr, hadCondition)`.
- *  Used by AGB_ASSERT internal. No-op in our runtime. */
-export function DebugAssert(_file: string, _line: number, _expr: string, _hadCondition: boolean): void {
-  /* no-op */
-}
-
-/** 1:1 décomp `include/gba/isagbprint.h:AgbAssert(file, line, expr, hadCondition)`.
- *  Same as DebugAssert (= MODERN spelling). */
-export function AgbAssert(_file: string, _line: number, _expr: string, _hadCondition: boolean): void {
-  /* no-op */
-}
-
-/** 1:1 décomp `include/gba/macro.h ALIGNED(n)` — alignment attribute, no runtime
- *  effect. Used as `ALIGNED(4) static const u8 sFoo[]` ; in C it's a compiler hint.
- *  Some auto-bodies invoke it as a function-style call (rare) ; we make it identity. */
-export function ALIGNED<T>(arg: T): T {
-  return arg;
 }
 
 // ─── Runtime method wrappers (= helpers que notre `decomp-runtime.ts` expose
@@ -1453,7 +997,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
    'AllocZeroed', 
   'StringCopy', 'StringAppend', 'ConvertIntToDecimalStringN',
   'StringLength', 
-  'DmaStop',
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 'CpuCopy32',
   'ScriptReadByte',
@@ -1472,14 +1015,8 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'getStaticTable',
   'RGB2',  
   'PLTT_ID', 
-  'CpuFastCopy', 'CpuFastFill', 'CpuFastFill16', 'CpuFastFill8',
-  'DmaSet', 'DmaSetUnchecked',
-  'DmaFillLarge16', 'DmaFillLarge32',
-  'DmaCopyLarge16', 'DmaCopyLarge32',
-  'DmaClearLarge16', 'DmaClearLarge32',
-  'DmaCopy16Defvars', 'DmaCopy32Defvars',
-  'MOD', 'Q_24_8_TO_INT', 'Q_24_8',
-  'AGB_ASSERT', 'DebugAssert', 'AgbAssert', 'ALIGNED',
+   'CpuFastFill',  
+  'MOD',  
   'Random32',
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
@@ -1512,26 +1049,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'READ_PTR_FROM_TASK', 
   'INFO_BUF',  
-  'GetJumpSpecialMovementAction', 'GetDestinationWarpMapHeader',
-  'GetItemIconPicOrPalette', 'GetItemIconPic', 'GetItemIconPalette',
-  'GetStoryActionByStat', 'REG_SIOMULTI',
-  'GetSavedRamScriptIfValid', 'GetPartyMenuPalBufferPtr',
-  'GetRegionMapSectionId', 'CreateMonMarkingAllCombosSprite',
-  'GetMatchCallMapSec', 'GetMatchTableMapSectionId',
-  'GetMainMenuInputHandler', 'LoadPtrFromTaskData',
-  'GetSecretBaseName', 'GetMessageEntryBuffer',
-  'MapHeaderCheckScriptTable',
-  'DELAY', 'PollFlashStatus', 'APPRENTICE_SPECIES_ID_NO_COND',
-  'ArcTan2', 'Sqrt',
-  'TryGetStatusString', 'GetValidMonIconPalettePtr',
-  'GetTrainerALoseText', 'GetTrainerBLoseText',
-  'GetIntroSpeechOfApproachingTrainer', 'GetTrainerCantBattleSpeech',
-  'IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL',
-  'MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER',
-  'IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE',
-  'BYTE_TO_RECEIVE', 'MSC_callback', 'LMAN_callback',
-  'BOUNCES', 'SHAKES', 'SHAKE_INC', 'STATE', 'DIRECTION',
-  'FALL', 'PHASE_DELTA', 'RISE_FASTER', 'RESET_STATE',
+  'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
   'CreateSprite', 'CreateSpriteAtEnd', 'DestroySprite',
   'CreateTask', 'DestroyTask',
@@ -1554,38 +1072,21 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'MetatileBehavior_IsSeaweed', 'MetatileBehavior_IsReflective',
   'MetatileBehavior_IsFootprints', 'MetatileBehavior_HasRipples',
   'MetatileBehavior_IsDeepSand',
-  'GetFaceDirectionMovementAction', 'GetWalkNormalMovementAction',
-  'GetWalkFastMovementAction', 'GetWalkFasterMovementAction',
-  'GetWalkInPlaceNormalMovementAction', 'GetWalkInPlaceFastMovementAction',
-  'GetWalkInPlaceFasterMovementAction', 'GetWalkInPlaceSlowMovementAction',
-  'GetSlideMovementAction', 'GetJumpInPlaceMovementAction',
-  'GetJumpMovementAction', 'GetJump2MovementAction',
-  'GetFaceDirectionAnimNum', 'GetMoveDirectionAnimNum',
-  'GetMoveDirectionFastAnimNum', 'GetMoveDirectionFasterAnimNum',
-  'GetRunningDirectionAnimNum', 'GetOppositeDirection',
+  'GetFaceDirectionMovementAction', 
+   'GetMoveDirectionAnimNum',
+   'GetMoveDirectionFasterAnimNum',
   // Constants
-  'DIR_NONE', 'DIR_SOUTH', 'DIR_NORTH', 'DIR_WEST', 'DIR_EAST',
   'NULL',
   'PLTT_SIZE_4BPP', 
   'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
   // Movement enums
-  'MOVE_SPEED_NORMAL', 'MOVE_SPEED_FAST_1', 'MOVE_SPEED_FAST_2',
-  'MOVE_SPEED_FASTER', 'MOVE_SPEED_FASTEST',
-  'JUMP_DISTANCE_IN_PLACE', 'JUMP_DISTANCE_NORMAL', 'JUMP_DISTANCE_FAR',
-  'JUMP_TYPE_HIGH', 'JUMP_TYPE_LOW', 'JUMP_TYPE_NORMAL',
-  'sObjEventId', 'sTypeFuncId', 'sActionFuncId', 'sDirection',
-  'OBJECT_EVENTS_COUNT', 'OBJ_EVENT_ID_PLAYER',
   'MAP_UNDEFINED',
 ]);
 
 /** Liste des helpers qui throw NotImplemented (= TODO list, à porter en priorité).
  *  Si un module auto a un callsTo qui matche cette liste, son activation va fail. */
 export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
-  'GetMonData', 'GetBoxMonData', 'SetMonData', 'GetMonNickname',
-  'GetVarPointer',
   'GetBgTilemapBuffer',
-  'DecompressAndCopyTileDataToVram',
-  'LZ77UnCompWram',
   // — porté 1:1 décomp battle.h:471 (batch B19).
   // Phase B.5 added : these throw NotImpl but are counted in __bridgedHelpers__
   // so we still track them. Bridge resolver will fail-fast on these when called.
