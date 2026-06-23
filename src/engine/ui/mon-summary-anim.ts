@@ -102,7 +102,11 @@ const MAX_BATTLERS_COUNT = ENUM_BattlerId.MAX_BATTLERS_COUNT;
 const sAnims: PokemonAnimData[] = Array.from({ length: MAX_BATTLERS_COUNT },
   () => ({ delay: 0, speed: 0, runs: 1, rotation: 0, data: 0 }));
 let sAnimIdx = 0;
-const sIsSummaryAnim = true;                 // toujours (contexte résumé)
+// Contexte 1:1 décomp (pokemon_animation.c:927/952) : FALSE en combat/Birch
+// (Task_HandleMonAnimation), TRUE en résumé (StartMonSummaryAnimation). Gate la
+// branche flip/FreeOamMatrix/OFF de ResetSpriteAfterAnim (sinon bug Wailord en combat).
+// Défaut TRUE (= seul contexte câblé pour l'instant ; les wrappers combat le poseront FALSE).
+let sIsSummaryAnim = true;
 
 function InitAnimData(id: number): boolean {
   if (id >= MAX_BATTLERS_COUNT) return false;
@@ -129,7 +133,10 @@ function objAffineSet(xScale: number, yScale: number, rotation: number): [number
   const i = (rotation >> 8) & 0xFF;          // BIOS : 0x10000 = tour complet → idx = rot>>8
   const sin = gSineTable(i);
   const cos = gSineTable((i + 64) & 0xFF);
-  return [(xScale * cos) >> 8, -((xScale * sin) >> 8), (yScale * sin) >> 8, (yScale * cos) >> 8];
+  // pb = négation AVANT le shift arithmétique (= vrai BIOS ObjAffineSet, identique à
+  // decomp-bridge.ts:1593). `(-(x*sin))>>8` ≠ `-((x*sin)>>8)` d'1 LSB quand pb<0 (floor
+  // vers -∞). On prend la forme BIOS pour la fidélité 1:1 (unification 3-voies).
+  return [(xScale * cos) >> 8, (-(xScale * sin)) >> 8, (yScale * sin) >> 8, (yScale * cos) >> 8];
 }
 function SetAffineData(s: S, xScale: number, yScale: number, rotation: number): void {
   const rt = getRuntime(); if (!rt) return;
@@ -160,17 +167,28 @@ function HandleSetAffineData(s: S, xScale: number, yScale: number, rotation: num
 }
 /* TryFlipX (:1031). */
 function TryFlipX(s: S): void { if (!sDontFlip(s)) s.x2 *= -1; }
-/* ResetSpriteAfterAnim (:1061) — branche sIsSummaryAnim. */
+/* ResetSpriteAfterAnim (:1061) — branche sur sIsSummaryAnim (1:1 décomp). */
 function ResetSpriteAfterAnim(s: S): void {
   const rt = getRuntime(); if (!rt) return;
   const oam = rt.gba.oam[s.oamIndex];
-  s.hFlip = !sDontFlip(s);                                    // !sDontFlip → hFlip=TRUE
-  if (s.matrixNum > 0) FreeOamMatrix(s.matrixNum);
-  s.matrixNum = 0;
-  s.affineMode = 0; if (oam) { oam.affineMode = 0; oam.affineParamIndex = 0; } // AFFINE_OFF
-  const c = CalcCenterToCornerVec(s.shape, s.size, 0);
-  s.centerToCornerVecX = c.centerToCornerVecX;
-  s.centerToCornerVecY = c.centerToCornerVecY;
+  if (sIsSummaryAnim) {
+    // === RÉSUMÉ (sIsSummaryAnim TRUE) = comportement validé actuel, INCHANGÉ. ===
+    s.hFlip = !sDontFlip(s);                                  // !sDontFlip → hFlip=TRUE
+    if (s.matrixNum > 0) FreeOamMatrix(s.matrixNum);
+    s.matrixNum = 0;
+    s.affineMode = 0; if (oam) { oam.affineMode = 0; oam.affineParamIndex = 0; } // AFFINE_OFF
+    const c = CalcCenterToCornerVec(s.shape, s.size, 0);
+    s.centerToCornerVecX = c.centerToCornerVecX;
+    s.centerToCornerVecY = c.centerToCornerVecY;
+  } else {
+    // === COMBAT/Birch (BUGFIX else, pokemon_animation.c:1077) : affineMode=NORMAL,
+    // PAS de FreeOamMatrix, PAS de flip → évite le bug Wailord (sprite coupé/décalé).
+    // Branche DORMANTE tant que les wrappers combat ne sont pas câblés (Étape 2+). ===
+    s.affineMode = 1; if (oam) oam.affineMode = 1;            // ST_OAM_AFFINE_NORMAL
+    const c = CalcCenterToCornerVec(s.shape, s.size, 1);
+    s.centerToCornerVecX = c.centerToCornerVecX;
+    s.centerToCornerVecY = c.centerToCornerVecY;
+  }
 }
 /* WaitAnimEnd (:5540) : nos front-pic résumé = 1-frame (animEnded immédiat) →
  * callback dummy (ResetSpriteAfterAnim a déjà rétabli le sprite statique). */
