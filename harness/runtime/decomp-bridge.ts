@@ -528,13 +528,6 @@ export function ObjAffineSet(
     }
   }
 }
-
-/** 1:1 décomp `src/overworld.c GetMapHeaderFromConnection(connection)` — read
- *  the connected map's header. Need connection.mapGroup/mapNum struct. */
-export function GetMapHeaderFromConnection(connection: any): any {
-  if (!connection) return Overworld_GetMapHeaderByGroupAndId(0, 0);
-  return Overworld_GetMapHeaderByGroupAndId(connection.mapGroup ?? 0, connection.mapNum ?? 0);
-}
 /** Wrapper qui dispatch lazy vers AbilityBattleEffects pour éviter cycle import.
  *  Le module battle/ability-battle-effects.ts expose `__abilityBattleEffectsCheck`
  *  via globalThis au module load. */
@@ -604,21 +597,12 @@ export function GetFaceDirectionMovementAction(direction: number): number {
   }
 }
 
-/** MAP_UNDEFINED + helpers. 1:1 décomp `include/constants/maps.h`. */
-export const MAP_UNDEFINED = 0xFFFF;
-
 // ─── Metatile behavior constants (= include/constants/metatile_behaviors.h) ───
 // 137 constantes MB_* extraites dans `metatile-behavior-constants.ts` (= module
 // dédié SANS dépendance) pour casser le cycle ESM HMR observé via
 // `metatile-behavior.ts` → `decomp-bridge` → modules de field/ → métatile-behavior.
 // 1:1 strict : valeurs identiques à `include/constants/metatile_behaviors.h`.
 export * from '../../include/constants/metatile_behaviors';
-
-// ─── NULL ─────────────────────────────────────────────────────────────────────
-
-// TRUE / FALSE rapatriés vers leur foyer canonique `include/gba/defines.ts` (1:1
-// décomp `include/types.h`) — décyclage du bridge, lot 1. Les importer de là.
-export const NULL: any = null;
 
 /** 1:1 décomp `include/gba/macro.h:43-49` :
  *    #define CpuFastFill(value, dest, size) ... CpuFastSet(&tmp, dest, CPU_FAST_SET_SRC_FIXED | size>>2)
@@ -668,14 +652,6 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
       && template.oam && typeof template.oam === 'object') {
     return _CreateSprite_game(rt, template, x, y, subpriority);
   }
-  const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
-  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
-}
-
-/** 1:1 décomp `src/sprite.c CreateSpriteAtEnd(template, x, y, subpriority)` :
- *  Comme CreateSprite mais alloue le DERNIER slot OAM dispo (= sprites bg vs npc). */
-export function CreateSpriteAtEnd(template: any, x: number, y: number, subpriority: number = 0xFF): number {
-  const rt = _getRT();
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
   return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
 }
@@ -897,7 +873,6 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Pokenav (= NotImpl placeholders)
   // Misc battle / overworld
   'ObjAffineSet', 
-  'GetMapHeaderFromConnection',
     // GetMapGridBlockAt removed — vraie impl dans map-loader.ts
   // Status / battle util macros
   // Misc helpers (= mostly stubs to allow compilation)
@@ -906,7 +881,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   // Phase B.7 final cleanup
   'ArcTan2', 
   // Runtime method wrappers (= delegate to getRuntime().X)
-  'CreateSprite', 'CreateSpriteAtEnd', 'DestroySprite',
+  'CreateSprite',  'DestroySprite',
   'CreateTask', 'DestroyTask',
   'SetGpuReg', 'GetGpuReg',
   'StartSpriteAnim', 'StartSpriteAffineAnim',
@@ -929,10 +904,8 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'MetatileBehavior_IsDeepSand',
   'GetFaceDirectionMovementAction', 
   // Constants
-  'NULL',
   'PLTT_SIZE_4BPP', 
   // Movement enums
-  'MAP_UNDEFINED',
 ]);
 
 /** Liste des helpers qui throw NotImplemented (= TODO list, à porter en priorité).
