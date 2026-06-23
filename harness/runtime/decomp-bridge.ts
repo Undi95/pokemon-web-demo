@@ -2762,12 +2762,10 @@ export const MAP_UNDEFINED = 0xFFFF;
 // 1:1 strict : valeurs identiques à `include/constants/metatile_behaviors.h`.
 export * from '../../include/constants/metatile_behaviors';
 
-// ─── TRUE / FALSE / NULL ──────────────────────────────────────────────────────
+// ─── NULL ─────────────────────────────────────────────────────────────────────
 
-/** 1:1 décomp `include/types.h` TRUE / FALSE — these are used heavily in transpiled
- *  bodies. Without these consts, comparisons like `if (x == TRUE)` would fail. */
-export const TRUE = 1;
-export const FALSE = 0;
+// TRUE / FALSE rapatriés vers leur foyer canonique `include/gba/defines.ts` (1:1
+// décomp `include/types.h`) — décyclage du bridge, lot 1. Les importer de là.
 export const NULL: any = null;
 
 // ─── NotImplemented helper for proxy stubs ────────────────────────────────────
@@ -3422,7 +3420,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'GetRunningDirectionAnimNum', 'GetOppositeDirection',
   // Constants
   'DIR_NONE', 'DIR_SOUTH', 'DIR_NORTH', 'DIR_WEST', 'DIR_EAST',
-  'TRUE', 'FALSE', 'NULL',
+  'NULL',
   'STR_CONV_MODE_LEFT_ALIGN', 'STR_CONV_MODE_RIGHT_ALIGN', 'STR_CONV_MODE_LEADING_ZEROS',
   'PLTT_SIZE_4BPP', 'PLTT_SIZE_8BPP',
   'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
