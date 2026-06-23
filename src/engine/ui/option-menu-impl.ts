@@ -494,8 +494,18 @@ export function getOptionMenuTextPal(): Uint16Array {
 // de decomp-globals.ts. Ces helpers font le bon dispatch sur VRAM/OAM/PLTT.
 import { DmaClearLarge16, DmaClear32 } from '../../../harness/runtime/decomp-globals';
 
-// Import templates depuis option_menu-data.ts (auto-générés)
-import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from '../decomp-data/src/option_menu-data';
+/** 1:1 décomp `static const struct WindowTemplate sOptionMenuWinTemplates[]`
+ *  (option_menu.c) : WIN_HEADER (bg1) + WIN_OPTIONS (bg0). */
+const sOptionMenuWinTemplates = [
+  { bg: 1, tilemapLeft: 2, tilemapTop: 1, width: 26, height: 2, paletteNum: 1, baseBlock: 2 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 5, width: 26, height: 14, paletteNum: 1, baseBlock: 54 },
+] as const;
+
+/** 1:1 décomp `static const struct BgTemplate sOptionMenuBgTemplates[]` (option_menu.c). */
+const sOptionMenuBgTemplates = [
+  { bg: 1, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 0, charBaseIndex: 1, mapBaseIndex: 31, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 },
+] as const;
 
 // Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
 // fichier). On les expose sur globalThis pour matcher le scope C où ces
@@ -603,8 +613,8 @@ const _globals: Record<string, unknown> = {
   YPOS_SOUND: 3 * 16,
   YPOS_BUTTONMODE: 4 * 16,
   YPOS_FRAMETYPE: 5 * 16,
-  // Frame border tile indices (= already exported from option_menu-data,
-  // but re-expose as bare globals for the auto file scope).
+  // Frame border tile indices (1:1 option_menu.c #defines TILE_*) exposés en
+  // bare globals pour le scope du fichier auto-callbacks.
   TILE_TOP_CORNER_L: 418,
   TILE_TOP_EDGE: 419,
   TILE_TOP_CORNER_R: 420,
