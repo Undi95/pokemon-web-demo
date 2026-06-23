@@ -691,6 +691,29 @@ export function GetCameraTopLeftCoords(): { x: number; y: number } {
   return { x: _camPos.x, y: _camPos.y };
 }
 
+/** DEVTOOLS (read-only, zéro effet) : snapshot de l'état caméra interne pour
+ *  diagnostiquer le glitch "BG décalé au warp". Expose `sFieldCameraOffset`
+ *  (tile/pixel offset du buffer BG) + `_camPos` (focus monde peint par
+ *  DrawWholeMapView) + les pans. Quand le BG glisse alors que `_camPos`/bgV
+ *  sont constants, c'est `tileOffset` qui désync. Même esprit que
+ *  `getMovementTrace` ci-dessus. */
+export function __getFieldCameraDebug(): {
+  camX: number; camY: number;
+  xTileOffset: number; yTileOffset: number;
+  xPixelOffset: number; yPixelOffset: number;
+  vPan: number; hPan: number; copyBGToVRAM: boolean;
+} {
+  return {
+    camX: _camPos.x, camY: _camPos.y,
+    xTileOffset: sFieldCameraOffset.xTileOffset,
+    yTileOffset: sFieldCameraOffset.yTileOffset,
+    xPixelOffset: sFieldCameraOffset.xPixelOffset,
+    yPixelOffset: sFieldCameraOffset.yPixelOffset,
+    vPan: sVerticalCameraPan, hPan: sHorizontalCameraPan,
+    copyBGToVRAM: sFieldCameraOffset.copyBGToVRAM,
+  };
+}
+
 /** 1:1 décomp `SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY)`
  *  (event_object_movement.c:4801-4818). Convertit des coords MAP (INTERNAL) en
  *  coords MONDE pour un sprite `coordOffsetEnabled` : le sprite, posé en (destX,

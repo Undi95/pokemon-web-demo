@@ -47,6 +47,7 @@ import {
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
   GetCameraOffsetWithPan as _GetCameraOffsetWithPan,
+  __getFieldCameraDebug as _getFieldCameraDebug,
 } from '../../src/field_camera';
 import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../../src/script';
 import { buildBattleDevtools } from '../../src/engine/battle/battle-devtools';
@@ -1501,8 +1502,9 @@ interface CoordSample {
   f: number;            // gIntroFrameCounter
   map: string;
   offX: number; offY: number;       // gSpriteCoordOffset (live module global)
-  camX: number; camY: number;       // top-left LOGIQUE
+  camX: number; camY: number;       // top-left LOGIQUE (= _camPos, focus monde de DrawWholeMapView)
   bgH: number; bgV: number;         // BG scroll réel (REG_BGxHOFS/VOFS = GetCameraOffsetWithPan)
+  xTile: number; yTile: number;     // sFieldCameraOffset tile offset (position dans le buffer BG)
   pSX: number | null; pSY: number | null;  // player sprite screen pos (corner OAM)
   pWX: number | null; pWY: number | null;  // player sprite world (s.x/s.y)
   plx: number | null; ply: number | null;  // player LOGIQUE (gSaveBlock1Ptr.pos)
@@ -1538,11 +1540,13 @@ function _recordCoordFrame(): void {
     const pf = _g<{ active?: boolean }>('gPaletteFade')
       ?? (rt as unknown as { gPaletteFade?: { active?: boolean } }).gPaletteFade;
     const bg = _GetCameraOffsetWithPan();  // = BG scroll réel (HOFS/VOFS écrit chaque frame)
+    const fcd = _getFieldCameraDebug();     // = sFieldCameraOffset tile/pixel + _camPos
     const sample: CoordSample = {
       f: (rt as unknown as { gIntroFrameCounter?: number }).gIntroFrameCounter ?? 0,
       map: _g<{ id?: string }>('gMapHeader')?.id ?? '?',
       offX: _gSpriteCoordOffset.x, offY: _gSpriteCoordOffset.y,
-      camX: tl.x, camY: tl.y, bgH: bg.x, bgV: bg.y, pSX, pSY, pWX, pWY,
+      camX: tl.x, camY: tl.y, bgH: bg.x, bgV: bg.y,
+      xTile: fcd.xTileOffset, yTile: fcd.yTileOffset, pSX, pSY, pWX, pWY,
       plx: pos?.x ?? null, ply: pos?.y ?? null, fade: !!pf?.active,
     };
     // Détecte un SAUT/GLISSE entre 2 frames consécutives (même map) → latch HUD.
@@ -1555,9 +1559,13 @@ function _recordCoordFrame(): void {
       const dPX = (prev.pSX != null && pSX != null) ? pSX - prev.pSX : 0;
       const dBV = sample.bgV - prev.bgV;
       const dBH = sample.bgH - prev.bgH;
-      if (Math.abs(dPY) > 24 || Math.abs(dPX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4) {
+      // dYT = saut du tile-offset buffer BG SANS que _camPos (camY) bouge =
+      // la signature exacte du glitch "BG repaint décalé au warp".
+      const dYT = (sample.yTile - prev.yTile) && (sample.camY === prev.camY) ? sample.yTile - prev.yTile : 0;
+      const dXT = (sample.xTile - prev.xTile) && (sample.camX === prev.camX) ? sample.xTile - prev.xTile : 0;
+      if (Math.abs(dPY) > 24 || Math.abs(dPX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4 || dYT !== 0 || dXT !== 0) {
         (globalThis as Record<string, unknown>).__warpGlitch = {
-          f: sample.f, dPY, dPX, dBV, dBH, bgV: sample.bgV, offY: sample.offY,
+          f: sample.f, dPY, dPX, dBV, dBH, dYT, dXT, bgV: sample.bgV, offY: sample.offY,
         };
       }
     }
@@ -1578,10 +1586,13 @@ function _coordTrace_dump(n = 80): Record<string, unknown> {
     const dX = (a.pSX != null && b.pSX != null) ? b.pSX - a.pSX : 0;
     const dBV = b.bgV - a.bgV;
     const dBH = b.bgH - a.bgH;
-    if (Math.abs(dY) > 24 || Math.abs(dX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4 || a.map !== b.map) {
+    const dYT = (a.camY === b.camY) ? b.yTile - a.yTile : 0;
+    const dXT = (a.camX === b.camX) ? b.xTile - a.xTile : 0;
+    if (Math.abs(dY) > 24 || Math.abs(dX) > 24 || Math.abs(dBV) > 4 || Math.abs(dBH) > 4
+        || dYT !== 0 || dXT !== 0 || a.map !== b.map) {
       jumps.push({
-        f: b.f, dX, dY, dBV, dBH, map: a.map === b.map ? b.map : `${a.map}→${b.map}`,
-        bgV: b.bgV, offY: b.offY, camY: b.camY, plY: b.ply, pSY: b.pSY, fade: b.fade,
+        f: b.f, dX, dY, dBV, dBH, dYT, dXT, map: a.map === b.map ? b.map : `${a.map}→${b.map}`,
+        bgV: b.bgV, yTile: b.yTile, camY: b.camY, plY: b.ply, pSY: b.pSY, fade: b.fade,
       });
     }
   }
