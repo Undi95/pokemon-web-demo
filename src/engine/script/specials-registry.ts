@@ -2586,11 +2586,15 @@ registerSpecial('DoWateringBerryTreeAnim', () => { /* dette player-avatar : cf s
 
 // ─── Session A2 batch 1 — ports 1:1 strict ─────────────────────────────────
 
-/** 1:1 décomp `CheckPlayerHasSecretBase` (secret_base.c:258-265).
- *  Sets gSpecialVar_Result = TRUE si le joueur a une secret base (= slot 0
- *  non-zero), sinon FALSE. Player's secret base est toujours en slot 0. */
+/** 1:1 décomp `CheckPlayerHasSecretBase` (secret_base.c:258-265) (VOID) :
+ *  gSpecialVar_Result = TRUE si le joueur a une secret base (= slot 0 non-zero),
+ *  sinon FALSE. Player's secret base est toujours en slot 0. Appelé via `special`
+ *  (Mossdeep House4 = enregistrement de Base Secrète) → VarSet explicite (l'opcode
+ *  `special` ignore le retour). [[gotcha-special-vs-specialvar-varresult]] */
 registerSpecial('CheckPlayerHasSecretBase', () => {
-  return gSaveBlock1Ptr.secretBases[0].secretBaseId ? 1 : 0;
+  const result = gSaveBlock1Ptr.secretBases[0].secretBaseId ? 1 : 0;
+  VarSet('VAR_RESULT', result);
+  return result;
 });
 
 /** 1:1 décomp `CheckRelicanthWailord` (braille_puzzles.c:92-104).
