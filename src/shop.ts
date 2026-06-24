@@ -36,6 +36,12 @@ import {
 } from './engine/ui/gba-window-system';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import {
+  MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt,
+  NUM_METATILES_IN_PRIMARY, NUM_METATILES_TOTAL, NUM_TILES_PER_METATILE,
+  METATILE_LAYER_TYPE_NORMAL, METATILE_LAYER_TYPE_COVERED, METATILE_LAYER_TYPE_SPLIT,
+  gMapHeader,
+} from './fieldmap';
+import {
   AddTextPrinterParameterized3, GetStringRightAlignXOffset,
   StringExpandPlaceholders, gStringVar4,
 } from './engine/ui/gba-text-system';
@@ -59,7 +65,7 @@ import { AddBagItem, GetBagItemQuantity } from './engine/bag/bag';
 import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
 import { DrawMoneyBox, HideMoneyBox, ChangeAmountInMoneyBox } from './engine/ui/money-box-ui';
 import { AdjustQuantityAccordingToDPadInput, type IntRef } from './menu_helpers';
-import { IncrementGameStat } from './field_player_avatar';
+import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './engine/system/fade-screen';
@@ -204,6 +210,14 @@ let sStdMenuPal: Uint16Array | null = null;
 // BG2/BG3 = map redessinée (increment 2, noir pour l'instant).
 const BUY_BG0_CHAR = 2, BUY_BG0_MAP = 31;
 const BUY_BG1_CHAR = 0, BUY_BG1_MAP = 30;
+// 1:1 décomp sShopBuyMenuBgTemplates : BG2 char0 map29, BG3 char0 map28. Les trois
+// BG (1/2/3) partagent charBase 0 = tuiles du tileset de TERRAIN (primary 0..511,
+// secondary 512..1023), réutilisées par BuyMenuDrawMapBg pour dessiner la carte.
+const BUY_BG2_CHAR = 0, BUY_BG2_MAP = 29;
+const BUY_BG3_CHAR = 0, BUY_BG3_MAP = 28;
+// 1:1 décomp : gShopMenu_Gfx décompressé au tile 0x3E3 (au-dessus des tuiles tileset),
+// et BuyMenuCopyMenuBgToBg1TilemapBuffer ajoute 0x3E3 aux entrées du tilemap du cadre.
+const SHOP_MENU_BASE_TILE = 0x3E3;
 
 // ─── Helpers fenêtres ────────────────────────────────────────────────────────
 function _addStdWindow(tmpl: WindowTemplate): number {
@@ -445,31 +459,45 @@ function VBlankCB_BuyMenu(): void { /* transferts auto */ }
  *  bag-screen _initBagBgs : manip directe rt.gba). */
 function _initBuyMenuBgs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  // ResetVramOamAndBgCntRegs : DISPCNT/BGxCNT=0, clear VRAM/OAM/PLTT.
+  // 1:1 décomp BuyMenuInitBgs : ResetBgsAndClearDma3 + InitBgsFromTemplates.
+  // ⚠️ La décomp NE clear PAS la VRAM ni les palettes BG : le tileset de TERRAIN
+  // (char base 0, tiles 0..1023) et ses palettes (banks 0..12) PERSISTENT de
+  // l'overworld → BuyMenuDrawMapBg réutilise ces tuiles+couleurs pour dessiner la
+  // carte derrière le menu. On préserve donc 0x0000..0x7FFF (tuiles) + les palettes,
+  // et on ne clear que ce que le menu redessine (tilemaps des 4 BG + char base 2).
   rt.SetGpuReg(0x00, 0);
   rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
+  // OAM reset (1:1 CpuFastFill(0, OAM) — ResetSpriteData déjà fait dans CB2 case 0).
   for (let i = 0; i < rt.gba.oam.length; i++) {
     const oam = rt.gba.oam[i];
     oam.visible = false; oam.x = 0; oam.y = 0; oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
   }
-  for (let i = 0; i < 512; i++) { rt.gPlttBufferUnfaded.set(i, 0); rt.gPlttBufferFaded.set(i, 0); }
-  for (let i = 0; i < 256; i++) { rt.gba.palette.loadBgRange(i, [0]); rt.gba.palette.loadObjRange(i, [0]); }
-  // InitBgsFromTemplates(0, sShopBuyMenuBgTemplates, 4).
-  const bg0c = rt.gba.bg(0).config;
-  bg0c.charBaseIndex = BUY_BG0_CHAR; bg0c.mapBaseIndex = BUY_BG0_MAP; bg0c.screenSize = 0;
-  bg0c.paletteMode = 0; bg0c.priority = 0; bg0c.visible = true; bg0c.hofs = 0; bg0c.vofs = 0;
-  const bg1c = rt.gba.bg(1).config;
-  bg1c.charBaseIndex = BUY_BG1_CHAR; bg1c.mapBaseIndex = BUY_BG1_MAP; bg1c.screenSize = 0;
-  bg1c.paletteMode = 0; bg1c.priority = 1; bg1c.visible = true; bg1c.hofs = 0; bg1c.vofs = 0;
-  const bg2c = rt.gba.bg(2).config; bg2c.visible = false;
-  const bg3c = rt.gba.bg(3).config; bg3c.visible = false;
+  // InitBgsFromTemplates(0, sShopBuyMenuBgTemplates, 4) : les 4 BG.
+  const cfg = (i: 0 | 1 | 2 | 3, char: number, map: number, pri: number) => {
+    const c = rt.gba.bg(i).config;
+    c.charBaseIndex = char; c.mapBaseIndex = map; c.screenSize = 0;
+    c.paletteMode = 0; c.priority = pri; c.visible = true; c.hofs = 0; c.vofs = 0;
+  };
+  cfg(0, BUY_BG0_CHAR, BUY_BG0_MAP, 0);
+  cfg(1, BUY_BG1_CHAR, BUY_BG1_MAP, 1);
+  cfg(2, BUY_BG2_CHAR, BUY_BG2_MAP, 2);
+  cfg(3, BUY_BG3_CHAR, BUY_BG3_MAP, 3);
+  // 1:1 FillBgTilemapBufferRect_Palette0(0..3) : clear les 4 tilemaps (mapBase),
+  // PAS les tuiles. + char base 2 (tuiles BG0 = fenêtres/texte, redessinées).
+  const clearRegion = (off: number, len: number) => { for (let k = 0; k < len; k++) rt.gba.vram[off + k] = 0; };
+  clearRegion(BUY_BG0_MAP * 0x800, 0x800);
+  clearRegion(BUY_BG1_MAP * 0x800, 0x800);
+  clearRegion(BUY_BG2_MAP * 0x800, 0x800);
+  clearRegion(BUY_BG3_MAP * 0x800, 0x800);
+  clearRegion(2 * 0x4000, 0x4000);  // char base 2 (BG0 tuiles)
   rt.SetGpuReg(0x10, 0); rt.SetGpuReg(0x12, 0);
   rt.SetGpuReg(0x14, 0); rt.SetGpuReg(0x16, 0);
-  // DISPCNT : OBJ_ON | OBJ_1D_MAP | BG0_ON | BG1_ON.
-  rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x200);
+  rt.SetGpuReg(0x18, 0); rt.SetGpuReg(0x1A, 0);
+  rt.SetGpuReg(0x1C, 0); rt.SetGpuReg(0x1E, 0);
+  // DISPCNT : OBJ_ON | OBJ_1D_MAP | BG0..3_ON.
+  rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x200 | 0x400 | 0x800);
   rt.SetGpuReg(0x50, 0);
-  ShowBg(0); ShowBg(1); HideBg(2); HideBg(3);
+  ShowBg(0); ShowBg(1); ShowBg(2); ShowBg(3);
 }
 
 /** 1:1 décomp `BuyMenuDecompressBgGraphics` + `BuyMenuCopyMenuBgToBg1Tilemap
@@ -477,24 +505,102 @@ function _initBuyMenuBgs(rt: ReturnType<typeof getRuntime>): void {
  *  BG1 avec palette SHOP_MENU_PAL, + palette du cadre en slot 12. */
 function _loadShopFrameToVram(rt: ReturnType<typeof getRuntime>): void {
   if (!rt || !sAssets) return;
-  // Tiles du cadre → BG1 char block (offset 0 ; tile 0 reste transparent car
-  // les entrées tilemap de valeur 0 ne sont pas écrites — cf. décomp `if(src!=0)`).
-  const charOff = BUY_BG1_CHAR * 0x4000;
-  rt.gba.vram.set(sAssets.frameTiles, charOff);
-  // Tilemap → BG1 map block. 1:1 BuyMenuCopyMenuBgToBg1TilemapBuffer : on ajoute
-  // la palette SHOP_MENU_PAL (<<12) aux entrées non nulles (les bits de flip
-  // H/V 0x400/0x800 sont déjà dans les entrées menu.bin).
-  const mapOff = BUY_BG1_MAP * 0x800;
-  const tm = sAssets.frameTilemap;
-  for (let i = 0; i < tm.length && i < 1024; i++) {
-    let entry = tm[i];
-    if ((entry & 0x3FF) !== 0) entry = (entry | (SHOP_MENU_PAL << 12)) & 0xFFFF;
-    else entry = 0;
-    rt.gba.vram[mapOff + i * 2] = entry & 0xFF;
-    rt.gba.vram[mapOff + i * 2 + 1] = (entry >> 8) & 0xFF;
-  }
-  // Palette du cadre → BG slot 12.
+  // 1:1 BuyMenuDecompressBgGraphics (shop.c:740) : DecompressAndCopyTileDataToVram(1,
+  // gShopMenu_Gfx, 0x3A0, 0x3E3, 0) → tuiles du cadre au tile 0x3E3, JUSTE au-dessus
+  // des tuiles du tileset de terrain (0..0x3E2) qu'on préserve pour la carte de fond.
+  // Le tilemap du cadre est superposé plus tard par _buyMenuCopyMenuBgToBg1 (après la
+  // carte), exactement comme la décomp (BuyMenuDrawGraphics : map d'abord, cadre ensuite).
+  const charOff = SHOP_MENU_BASE_TILE * 32;
+  const maxBytes = Math.max(0, 0x8000 - charOff);
+  rt.gba.vram.set(sAssets.frameTiles.subarray(0, Math.min(sAssets.frameTiles.length, maxBytes)), charOff);
+  // Palette du cadre → BG slot 12 (1:1 LoadCompressedPalette(gShopMenu_Pal, BG_PLTT_ID(12))).
   LoadPalette(sAssets.framePal, SHOP_MENU_PAL * 16, sAssets.framePal.length * 2);
+}
+
+// ─── 1:1 décomp BuyMenuDrawMapGraphics (shop.c:781-848) ─────────────────────
+// La carte autour du joueur (15×10 metatiles) est dessinée derrière le menu en
+// réutilisant les tuiles du tileset de terrain (char base 0, persistées de
+// l'overworld). Mapping buffers décomp → nos BG (SetBgTilemapBuffer 717-723) :
+// buf[1]=BG1, buf[3]=BG2, buf[2]=BG3. Le routage des couches est identique à
+// field_camera DrawMetatile (NORMAL: bas→BG2/haut→BG1 ; COVERED: bas→BG3/haut→BG2 ;
+// SPLIT: bas→BG3/haut→BG1).
+
+/** 1:1 décomp `BuyMenuDrawMapMetatileLayer` (shop.c:841) : écrit un metatile 2×2
+ *  (4 tiles) dans la tilemap d'un BG à la position `off` (top-left, grille 32 large). */
+function _drawMapMetatileLayer(bgIdx: 0 | 1 | 2 | 3, off: number, src: Uint16Array, srcOff: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const tm = rt.gba.bg(bgIdx).tilemap;
+  tm[off] = src[srcOff] | 0;
+  tm[off + 1] = src[srcOff + 1] | 0;
+  tm[off + 32] = src[srcOff + 2] | 0;
+  tm[off + 33] = src[srcOff + 3] | 0;
+}
+
+/** 1:1 décomp `BuyMenuDrawMapMetatile` (shop.c:819). */
+function _drawMapMetatile(x: number, y: number, src: Uint16Array, srcOff: number, layerType: number): void {
+  const off = x * 2 + y * 64;
+  switch (layerType) {
+    case METATILE_LAYER_TYPE_NORMAL:
+      _drawMapMetatileLayer(2, off, src, srcOff);      // bottom → BG2 (buf[3])
+      _drawMapMetatileLayer(1, off, src, srcOff + 4);  // top → BG1 (buf[1])
+      break;
+    case METATILE_LAYER_TYPE_COVERED:
+      _drawMapMetatileLayer(3, off, src, srcOff);      // bottom → BG3 (buf[2])
+      _drawMapMetatileLayer(2, off, src, srcOff + 4);  // top → BG2 (buf[3])
+      break;
+    case METATILE_LAYER_TYPE_SPLIT:
+      _drawMapMetatileLayer(3, off, src, srcOff);      // bottom → BG3 (buf[2])
+      _drawMapMetatileLayer(1, off, src, srcOff + 4);  // top → BG1 (buf[1])
+      break;
+  }
+}
+
+/** 1:1 décomp `BuyMenuCheckForOverlapWithMenuBg` (shop.c:949) : true si la tuile
+ *  metatile (x,y) du cadre gShopMenu est VIDE → on dessine le vrai layerType ;
+ *  sinon (sous le cadre) on force COVERED (carte poussée dans les BG arrière). */
+function _checkOverlapWithMenuBg(x: number, y: number): boolean {
+  if (!sAssets) return true;
+  const tm = sAssets.frameTilemap;
+  const o = x * 2 + y * 64;
+  return tm[o] === 0 && tm[o + 32] === 0 && tm[o + 1] === 0 && tm[o + 33] === 0;
+}
+
+/** 1:1 décomp `BuyMenuDrawMapBg` (shop.c:788) : dessine la carte 15×10 metatiles
+ *  centrée sur (joueur+1 pas devant)-4 dans les tilemaps BG1/2/3. */
+function _buyMenuDrawMapBg(): void {
+  const mapLayout = gMapHeader?.mapLayout;
+  if (!mapLayout) return;
+  const f = GetXYCoordsOneStepInFrontOfPlayer();
+  const x0 = f.x - 4, y0 = f.y - 4;
+  for (let j = 0; j < 10; j++) {
+    for (let i = 0; i < 15; i++) {
+      let metatile = MapGridGetMetatileIdAt(x0 + i, y0 + j);
+      if (metatile >= NUM_METATILES_TOTAL) metatile = 0;
+      const layerType = _checkOverlapWithMenuBg(i, j)
+        ? MapGridGetMetatileLayerTypeAt(x0 + i, y0 + j)
+        : METATILE_LAYER_TYPE_COVERED;
+      let src: Uint16Array, srcOff: number;
+      if (metatile < NUM_METATILES_IN_PRIMARY) {
+        src = mapLayout.primaryTileset.metatiles;
+        srcOff = metatile * NUM_TILES_PER_METATILE;
+      } else {
+        src = mapLayout.secondaryTileset.metatiles;
+        srcOff = (metatile - NUM_METATILES_IN_PRIMARY) * NUM_TILES_PER_METATILE;
+      }
+      _drawMapMetatile(i, j, src, srcOff, layerType);
+    }
+  }
+}
+
+/** 1:1 décomp `BuyMenuCopyMenuBgToBg1TilemapBuffer` (shop.c:936) : superpose le cadre
+ *  gShopMenu sur BG1, palette SHOP_MENU_PAL + base tile 0x3E3 (entrées 0 = carte visible). */
+function _buyMenuCopyMenuBgToBg1(): void {
+  const rt = getRuntime(); if (!rt || !sAssets) return;
+  const tm = rt.gba.bg(1).tilemap;
+  const src = sAssets.frameTilemap;
+  for (let i = 0; i < src.length && i < tm.length; i++) {
+    if (src[i] !== 0) tm[i] = (src[i] + ((SHOP_MENU_PAL << 12) | SHOP_MENU_BASE_TILE)) & 0xFFFF;
+  }
 }
 
 /** 1:1 décomp `BuyMenuInitWindows` (shop.c:747). InitWindows + borders/msgbox
@@ -513,10 +619,14 @@ function _buyMenuInitWindows(): void {
 /** 1:1 décomp `BuyMenuDrawGraphics` (shop.c:769) : money box + label ARGENT +
  *  schedule copies. (BuyMenuDrawMapGraphics = increment 2.) */
 function _buyMenuDrawGraphics(): void {
+  _buyMenuDrawMapBg();          // 1:1 BuyMenuDrawMapGraphics : la carte derrière le menu
+  _buyMenuCopyMenuBgToBg1();    // 1:1 BuyMenuCopyMenuBgToBg1TilemapBuffer : cadre par-dessus
   DrawMoneyBox(GetMoney(), 0, 0);
   _addMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11)
   ScheduleBgCopyTilemapToVram(0);
   ScheduleBgCopyTilemapToVram(1);
+  ScheduleBgCopyTilemapToVram(2);
+  ScheduleBgCopyTilemapToVram(3);
 }
 
 /** 1:1 décomp `AddMoneyLabelObject(x, y)` (money.c) : sprite du label ARGENT
