@@ -45,9 +45,10 @@ import {
 } from './engine/ui/gba-menu-system';
 import {
   getRuntime, PlaySE, LoadPalette, BlendPalettes,
-  FreeAllSpritePalettes, ResetPaletteFade, ResetTasks,
+  FreeAllSpritePalettes, ResetPaletteFade, ResetTasks, FreeSpriteTilesByTag,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData } from './sprite';
+import { ResetSpriteData, FreeSpritePaletteByTag, DestroySprite } from './sprite';
+import { AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets } from './item_icon';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   type ListMenuTemplate, type ListMenuItem,
@@ -122,6 +123,8 @@ const MAX_BAG_ITEM_CAPACITY = 99;
 
 // 1:1 décomp shop.c enum MART_TYPE_*.
 const MART_TYPE_NORMAL = 0;
+// 1:1 décomp shop.c:43 `#define TAG_ITEM_ICON_BASE 2110`.
+const TAG_ITEM_ICON = 2110;
 
 // ─── Window templates ────────────────────────────────────────────────────────
 // Menu Acheter/Vendre/Quitter (overlay) — 1:1 sShopMenuWindowTemplates, width 8.
@@ -171,6 +174,7 @@ let sPriceQtyWindowId = -1;
 let sMessageWindowId = -1;
 let sListTaskId = -1;
 let sBuyTaskId = -1;                    // gTasks task du buy menu
+let sIconSpriteId = -1;                 // sprite icône d'objet (slot unique)
 
 let sSelectedIndex = -1;
 let sSelectedKey = '';
@@ -248,7 +252,8 @@ export function IsShopMenuOpen(): boolean {
 export function OpenPokemart(itemList: string[]): void {
   if (sShopOpen) return;
   sShopOpen = true;
-  void _loadShopAssets(); // précharge le cadre (prêt au moment du Buy)
+  void _loadShopAssets();        // précharge le cadre (prêt au moment du Buy)
+  void preloadItemIconAssets();  // précharge les icônes d'objets (sprite synchrone après)
   _setShopItemsForSale(itemList);
   _createShopMenu(MART_TYPE_NORMAL);
   console.log(`[shop] Pokémart ouvert (${sItemCount} objets)`);
@@ -381,6 +386,11 @@ function CB2_InitBuyMenu(): void {
   if (!rt) return;
   switch (rt.gMain.state) {
     case 0:
+      // 1:1 décomp CB2_InitBuyMenu case 1 (FreeTempTileDataBuffersIfPossible) :
+      // on ATTEND que le cadre gShopMenu soit chargé (fetch async) avant
+      // d'initialiser les BG — sinon _loadShopFrameToVram tourne sur sAssets=null
+      // → cadre noir. (Notre pipeline d'assets = fetch, pas DMA ROM.)
+      if (!sAssets) { void _loadShopAssets(); return; }
       // 1:1 décomp : SetVBlankHBlankCallbacksToNull + reset OAM/scanline/palette/
       // sprites/tasks + alloc sShopData + BuyMenuBuildListMenuTemplate.
       rt.SetVBlankCallback(null);
@@ -527,11 +537,43 @@ function _buildBuyListTemplate(): ListMenuTemplate {
 // ─── BuyMenuPrintItemDescriptionAndShowItemIcon (1:1 shop.c:591) ────────────
 function _buyMenuMoveCursor(index: number, onInit: boolean, _list: unknown): void {
   if (!onInit) PlaySE(Songs.SE_SELECT);
+  // 1:1 décomp BuyMenuAddItemIcon : icône de l'objet sélectionné (ITEM_LIST_END
+  // pour ANNULER → icône « retour »). Slot unique (vs 2-slots décomp ; pattern
+  // player_pc prouvé).
+  _drawBuyMenuItemIcon(index === LIST_CANCEL ? 'ITEM_LIST_END' : sItemList[index]);
   const description = index === LIST_CANCEL
     ? (getString('gText_QuitShopping') ?? '')
     : GetItemDescription(sItemList[index]);
   FillWindowPixelBuffer(sDescWindowId, 0x00);
   AddTextPrinterParameterized3(sDescWindowId, FONT_NORMAL, 3, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, description);
+}
+
+/** 1:1 décomp `BuyMenuAddItemIcon` (shop.c:680) : sprite icône à x2=24, y2=88,
+ *  priority 0. Slot unique (free + re-add à chaque déplacement du curseur). */
+function _drawBuyMenuItemIcon(itemKey: string): void {
+  _removeBuyMenuItemIcon();
+  const spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemKey);
+  if (spriteId === MAX_SPRITES) return;
+  sIconSpriteId = spriteId;
+  const rt = getRuntime() as unknown as {
+    gSprites?: Array<{ x2: number; y2: number; oamIndex: number } | undefined>;
+    gba?: { oam?: Array<{ priority: number }> };
+  } | null;
+  const spr = rt?.gSprites?.[spriteId];
+  if (spr) {
+    spr.x2 = 24; spr.y2 = 88;  // 1:1 décomp shop.c:693-694
+    const o = rt?.gba?.oam?.[spr.oamIndex];
+    if (o) o.priority = 0;     // au-dessus des BG (cadre/fenêtres)
+  }
+}
+
+/** 1:1 décomp `BuyMenuRemoveItemIcon` (shop.c:705). */
+function _removeBuyMenuItemIcon(): void {
+  if (sIconSpriteId < 0) return;
+  FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  FreeSpritePaletteByTag(TAG_ITEM_ICON);
+  DestroySprite(sIconSpriteId);
+  sIconSpriteId = -1;
 }
 
 // ─── BuyMenuPrintPriceInList (1:1 shop.c:620) ───────────────────────────────
@@ -700,8 +742,9 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (rt.gPaletteFade.active) return;
-  // Cleanup buy menu windows + list.
+  // Cleanup buy menu windows + list + icône.
   if (sListTaskId >= 0) { DestroyListMenuTask(sListTaskId); sListTaskId = -1; }
+  _removeBuyMenuItemIcon();
   HideMoneyBox();
   _removeWindow(() => sListWindowId, v => (sListWindowId = v));
   _removeWindow(() => sDescWindowId, v => (sDescWindowId = v));
