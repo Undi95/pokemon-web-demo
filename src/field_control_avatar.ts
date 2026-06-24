@@ -929,7 +929,17 @@ export function UpdateFriendshipStepCounter(): void {
  *  UpdateFriendshipStepCounter + IncrementRematchStepCounter) n'est PAS porté →
  *  le poison de terrain ne retire AUCUN PV en LIVE. Câbler = cluster #13
  *  (TryFieldPoisonWhiteOut, actuellement stub) + #15 (GetHealLocation pour le
- *  téléport white-out). Le décrément ici est 1:1 mais inerte tant que non câblé. */
+ *  téléport white-out). Le décrément ici est 1:1 mais inerte tant que non câblé.
+ *
+ *  ⚠️⚠️ BLOQUEUR MODÈLE (vérifié runtime 2026-06-24) : même câblé, ce corps NE
+ *  FONCTIONNE PAS. Il lit `mon.species` / `mon.status >>> 0` / `mon.hp` (modèle
+ *  décomp `struct Pokemon` numérique), mais `gSaveBlock1Ptr.playerParty` contient
+ *  des `PokemonInstance` (`speciesId`, `status` = STRING 'PSN'/'BRN'/'OK', PV via
+ *  getter pas `hp` brut). Donc `mon.species===0` est toujours faux et
+ *  `"BRN">>>0 === 0` → le check poison ne matche JAMAIS. Câbler le poison de
+ *  terrain exige d'abord de réécrire ce corps via GetMonData/SetMonData +
+ *  un mapping status string↔STATUS1 (= divergence PokemonInstance↔Pokémon décomp,
+ *  chantier modèle, PAS un simple wiring). Wiring tenté + reverté ce jour. */
 export function UpdatePoisonStepCounter(): boolean {
   // 1:1 décomp : skip pour Secret Base.
   const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.
