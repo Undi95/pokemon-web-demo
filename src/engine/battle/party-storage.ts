@@ -31,6 +31,7 @@ import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/p
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../../random';
 import { getSpeciesInfo, gBattleMoves } from '../data/game-data';
+import { GetItemHoldEffect } from './data/item-hold-effects';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).
 import { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
@@ -707,8 +708,17 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. Deferred
   // pour notre wire (= pas de trainer class match dispo dans bridge).
 
-  const mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
+  // 1:1 décomp pokemon.c:5952-5965 : Soothe Bell (HOLD_EFFECT_FRIENDSHIP_UP) → mod
+  // +50% (arrondi bas) ; puis si mod > 0, Luxury Ball → friendship +1. (Bonus
+  // met-location +1 différé : mon.metLocation u8 numérique vs gMapHeader.region
+  // MapSectionId string = réconciliation modèle séparée.)
+  const _HOLD_EFFECT_FRIENDSHIP_UP = 27;  // 1:1 décomp include/constants/hold_effects.h:31.
+  const _ITEM_LUXURY_BALL = 11;           // 1:1 décomp include/constants/items.h:17.
+  const holdEffect = GetItemHoldEffect(mon.heldItem);
+  let mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
+  if (mod > 0 && holdEffect === _HOLD_EFFECT_FRIENDSHIP_UP) mod = Math.floor((150 * mod) / 100);
   let friendship = mon.friendship + mod;
+  if (mod > 0 && mon.pokeball === _ITEM_LUXURY_BALL) friendship++;
   if (friendship < 0) friendship = 0;
   if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
   mon.friendship = friendship;
