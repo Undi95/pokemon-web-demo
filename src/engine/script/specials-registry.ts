@@ -96,13 +96,6 @@ registerSpecial('GetPlayerBigGuyGirlString', () => {
   setStringVar(1, stringVar);
 });
 
-/** 1:1 décomp `BufferBigGuyOrBigGirlString` (string_util.c). Same que
- *  `GetPlayerBigGuyGirlString` mais pour expand dans un autre context. */
-registerSpecial('BufferBigGuyOrBigGirlString', () => {
-  const stringVar = gSaveBlock2Ptr.playerGender === MALE ? 'GRAND' : 'GRANDE';
-  setStringVar(1, stringVar);
-});
-
 /** 1:1 décomp `HealPlayerParty` (script_pokemon_util.c:30) :
  *  ```c
  *  void HealPlayerParty(void) {
@@ -294,11 +287,6 @@ registerSpecial('Special_ShowDiploma', () => {
   console.log('[special Special_ShowDiploma] dette R3 (cascade CB2_ShowDiploma diploma UI U-tier)');
 });
 
-/** 1:1 décomp `BufferStreaksAndRecords` (battle_factory.c). Stub. */
-registerSpecial('BufferStreaksAndRecords', () => {
-  // No battle frontier.
-});
-
 /** 1:1 décomp `bool8 IsBadEggInParty(void)` (field_specials.c:1649) :
  *  ```c
  *  u8 partyCount = CalculatePlayerPartyCount();
@@ -317,11 +305,6 @@ registerSpecial('IsBadEggInParty', () => {
     if ((_GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG) as number) === 1 /* TRUE */) return 1;
   }
   return 0;
-});
-
-/** 1:1 décomp `RemoveAllWeatherPokemonItemEffect` (battle_util.c). Stub. */
-registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
-  // No weather effects in early game.
 });
 
 /** 1:1 décomp `IsLeadMonNicknamedOrNotEnglish` (tv.c:3024-3027) →
@@ -345,16 +328,6 @@ function _GetLeadMonIndex(): number {
   }
   return 0;
 }
-
-registerSpecial('IsLeadMonNicknamed', () => {
-  // 1:1 décomp IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex()) (tv.c) :
-  // compare nickname vs gSpeciesNames[species] (= GAME_LANGUAGE FR assumé).
-  const mon = gPlayerParty[_GetLeadMonIndex()];
-  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 0;
-  const nickname = _GetMonData(mon, MON_DATA_NICKNAME) as string;
-  const speciesName = gSpeciesNames[_GetMonData(mon, MON_DATA_SPECIES) as number] ?? '';
-  return nickname === speciesName ? 0 : 1;
-});
 
 /** 1:1 décomp `CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}` (field_specials.c:1190-1228) :
  *    if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_X) < 200) return FALSE;
@@ -578,23 +551,11 @@ registerSpecial('PlayerFaceTrainerAfterBattle', () => { /* no-op */ });
 
 // ─── Additional commonly-used early-game specials ───────────────────────────
 
-/** 1:1 décomp `ScrSpecial_HealPlayerParty` (= alias of HealPlayerParty). */
-registerSpecial('ScrSpecial_HealPlayerParty', _healPlayerParty);
-
 // `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390) — porté ci-bas avec
 // real body (= sum 6 EVs >= MAX_TOTAL_EVS=510). Stub supprimé.
 
-/** 1:1 décomp `IsBigMonAndPlayerCantPushDoor` (= door push check). Returns 0. */
-registerSpecial('IsBigMonAndPlayerCantPushDoor', () => 0);
-
 /** 1:1 décomp `LoadBattlePyramidObjectEventTemplates` (battle_pyramid.c). Stub. */
 registerSpecial('LoadBattlePyramidObjectEventTemplates', () => { /* no-op */ });
-
-/** 1:1 décomp `Special_StartLegendaryBattle` (battle_setup.c). Stub return WIN. */
-registerSpecial('Special_StartLegendaryBattle', () => {
-  VarSet('VAR_RESULT', 1);
-  return 1;
-});
 
 /** 1:1 décomp `IsLastMonThatKnows*` (party_menu.c:6407-6429 IsLastMonThatKnowsSurf
  *  + 8 dérivées). HM forget guards : check si le mon var0x8004 a le HM-move,
@@ -645,10 +606,6 @@ registerSpecial('IsLastMonThatKnowsFly', _regLastMonKnows('fly'));
 registerSpecial('IsLastMonThatKnowsWaterfall', _regLastMonKnows('waterfall'));
 registerSpecial('IsLastMonThatKnowsStrength', _regLastMonKnows('strength'));
 registerSpecial('IsLastMonThatKnowsFlash', _regLastMonKnows('flash'));
-
-/** 1:1 décomp `Special_ViewLottery` etc. — lottery / casino. Stubs. */
-registerSpecial('Special_ViewLottery', () => { /* no-op */ });
-registerSpecial('Special_BeginRouletteGame', () => { /* no-op */ });
 
 /** 1:1 décomp `BufferEReaderTrainerName`. Stub. */
 registerSpecial('BufferEReaderTrainerName', () => { /* no-op */ });
