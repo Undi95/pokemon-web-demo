@@ -87,3 +87,22 @@ export function GetItemSecondaryId(itemId: number | string): string | null {
   const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
   return _getItem(itemKey)?.secondaryId ?? null;
 }
+
+/** 1:1 décomp `src/item.c GetItemPrice(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].price;
+ *  Prix d'achat de base (le Pokémart le shift `>> IsPokeNewsActive(SLATEPORT)`).
+ *  La donnée vient de items.json (`price`), miroir de `gItems[].price`. */
+export function GetItemPrice(itemId: number | string): number {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.price ?? 0;
+}
+
+/** 1:1 décomp `src/item.c GetItemPocket(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].pocket;
+ *  La décomp renvoie un u8 (enum POCKET_*) ; notre data table stocke le NOM
+ *  ("POCKET_ITEMS", "POCKET_TM_HM"…) → on renvoie la string (le shop compare
+ *  `=== 'POCKET_TM_HM'` pour afficher le nom du capacité de la CT/CS). */
+export function GetItemPocket(itemId: number | string): string {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.pocket ?? '';
+}

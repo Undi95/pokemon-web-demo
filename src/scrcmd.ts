@@ -46,6 +46,8 @@ import { Random } from './random';
 import { RtcCalcLocalTime, RtcInitLocalTimeOffset, gLocalTime } from './rtc';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
+// side-effect : charge la table des listes mart + expose CreatePokemartMenu (shop.c).
+import './shop';
 
 // ─── helpers canoniques (étaient dupliqués à l'identique dans plusieurs sections) ───
 function _vget(arg: string | undefined): number {
