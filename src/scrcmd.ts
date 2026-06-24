@@ -46,8 +46,9 @@ import { Random } from './random';
 import { RtcCalcLocalTime, RtcInitLocalTimeOffset, gLocalTime } from './rtc';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
-// side-effect : charge la table des listes mart + expose CreatePokemartMenu (shop.c).
-import './shop';
+// shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
+// mart-lists.json au boot).
+import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
 
 // ─── helpers canoniques (étaient dupliqués à l'identique dans plusieurs sections) ───
 function _vget(arg: string | undefined): number {
@@ -302,45 +303,35 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
  *    CreatePokemartMenu(products);
  *    ScriptContext_Stop();
  *
- *  Audit session 126 LOT D3 : le shop UI complet est ~3000 lignes décomp
- *  (= shop.c). Notre dispatch via globalThis.CreatePokemartMenu sera câblé
- *  quand le shop UI sera porté en TS.
- *
- *  Note : `args[0]` est typiquement un POINTER LABEL (= "DewfordTown_Mart_
- *  Pokemart") qui est résolu au compile time vers une array de u16 itemIds.
- *  Notre runtime a probably la liste dans le scripts JSON sous ce label. */
-registerOpcode('pokemart', (_ctx, args) => {
-  const productsLabel = args[0] ?? '';
-  const createPokemartMenu = (globalThis as Record<string, unknown>).CreatePokemartMenu as
-    ((items: unknown) => void) | undefined;
-  if (typeof createPokemartMenu === 'function') {
-    try {
-      // Pour l'instant on passe le label string ; le auto-file expects un u16*.
-      // À wire proprement : resolve label → array via map scripts data.
-      createPokemartMenu(productsLabel);
-      console.log(`[opcode pokemart] CreatePokemartMenu('${productsLabel}') dispatched`);
-    } catch (e) {
-      console.warn(`[opcode pokemart] CreatePokemartMenu threw:`, e);
-    }
-  } else {
-    console.warn(`[opcode pokemart] '${productsLabel}' — CreatePokemartMenu not exposed (= shop UI ~3000 lignes décomp à wire)`);
+ *  `args[0]` = un LABEL (= "OldaleTown_Mart_Pokemart_Basic") résolu au link
+ *  vers le tableau d'items. On le résout via `GetMartItemList` (mart-lists.json,
+ *  récupéré de la décomp — l'extracteur de scripts avait jeté les `.2byte`),
+ *  puis on ouvre le menu d'achat en OVERLAY (`OpenPokemart`). `_runUIOverlay`
+ *  bloque le script jusqu'à la fermeture du shop (= net-effect de
+ *  CreatePokemartMenu + ScriptContext_Stop). */
+registerOpcode('pokemart', (ctx, args) => {
+  const productsLabel = (args[0] as string) ?? '';
+  const itemList = GetMartItemList(productsLabel);
+  if (itemList.length === 0) {
+    console.warn(`[opcode pokemart] '${productsLabel}' — liste d'objets vide (label inconnu ?)`);
   }
+  return _runUIOverlay(ctx, async () => {
+    OpenPokemart(itemList);
+    return { isOpen: IsShopMenuOpen };
+  });
+});
+
+/** 1:1 décomp `ScrCmd_pokemartdecoration` / `pokemartdecoration2` (scrcmd.c) :
+ *    CreateDecorationShop1Menu(products) / CreateDecorationShop2Menu(products).
+ *  Boutiques de DÉCORATIONS (items DECOR_*, système decoration.c séparé) — non
+ *  porté. No-op honnête (le script continue ; rien ne s'ouvre). */
+registerOpcode('pokemartdecoration', (_ctx, args) => {
+  console.warn(`[opcode pokemartdecoration] '${args[0]}' — boutique déco non portée (decoration.c)`);
   return false;
 });
-
-/** 1:1 décomp `ScrCmd_pokemartdecoration` (scrcmd.c) :
- *    products = (const u16 *)ScriptReadWord(ctx);
- *    CreateDecorationShop1Menu(products).
- *  Shop décoration mode 1. Notre port : delegate au pokemart standard
- *  (= CreateDecorationShop1Menu non encore exposé). */
-registerOpcode('pokemartdecoration', (ctx, args) => {
-  return getOpcodeHandler('pokemart')?.(ctx, args) ?? false;
-});
-
-/** 1:1 décomp `ScrCmd_pokemartdecoration2` (scrcmd.c) :
- *    CreateDecorationShop2Menu(products). */
-registerOpcode('pokemartdecoration2', (ctx, args) => {
-  return getOpcodeHandler('pokemart')?.(ctx, args) ?? false;
+registerOpcode('pokemartdecoration2', (_ctx, args) => {
+  console.warn(`[opcode pokemartdecoration2] '${args[0]}' — boutique déco non portée (decoration.c)`);
+  return false;
 });
 
 /** 1:1 décomp `event.inc:1158` `pokemartlistend` macro — c'est un MARQUEUR

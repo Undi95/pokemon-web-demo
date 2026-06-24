@@ -210,6 +210,7 @@ import {
 } from '../../src/field_message_box';
 import { TickStartMenu } from '../../src/start_menu';
 import { TickBedroomPC } from '../../src/player_pc';
+import { TickShop } from '../../src/shop';
 import { TickPCAnim } from '../../src/engine/pokemon/pc-anim';
 import { TickRegionMap } from '../../src/engine/field/region-map';
 import { syncSubspriteOam } from '../../src/event_object_movement';
@@ -648,6 +649,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp field_region_map.c: tick worldmap overlay (= MoveRegionMapCursor_Full
         // input + cursor pos update). A/B = close + SignalWaitState.
         TickRegionMap();
+        // 1:1 décomp shop.c : tick le menu d'achat Pokémart (overlay). Si ouvert :
+        // drive l'input (Acheter/Vendre/Quitter → liste → quantité → confirm).
+        // Quand fermé : _runUIOverlay (opcode pokemart) reprend le script bloqué.
+        TickShop();
         // ════════════════════════════════════════════════════════════════════
         //  [M3-C3] 1:1 décomp `OverworldBasic` (overworld.c:1465-1476) +
         //  `VBlankCB_Field` (overworld.c:1784-1792). MainCB2_Overworld POSSÈDE
