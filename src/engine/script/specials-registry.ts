@@ -1511,10 +1511,14 @@ registerSpecial('ShowMapNamePopup', () => {
 /** 1:1 décomp `IsSelectedMonEgg` :
  *    return GetMonData(party[VAR_0x8004], MON_DATA_IS_EGG); */
 registerSpecial('IsSelectedMonEgg', () => {
-  // 1:1 décomp : return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_IS_EGG).
+  // 1:1 décomp party_menu.c:6399 (VOID) : gSpecialVar_Result = GetMonData(
+  // &gPlayerParty[VAR_0x8004], MON_DATA_IS_EGG). Appelé via `special` (Maison du
+  // Maître/Effaceur de Capacités) → VarSet explicite. [[gotcha-special-vs-specialvar-varresult]]
   const slot = VarGet('VAR_0x8004') ?? 0;
   const mon = gPlayerParty[slot];
-  return mon && (_GetMonData(mon, MON_DATA_IS_EGG) as number) ? 1 : 0;
+  const result = mon && (_GetMonData(mon, MON_DATA_IS_EGG) as number) ? 1 : 0;
+  VarSet('VAR_RESULT', result);
+  return result;
 });
 
 /** 1:1 décomp `StorePlayerCoordsInVars` (event_object_movement.c) :
@@ -2750,9 +2754,13 @@ registerSpecial('HasBardSongBeenChanged', () => {
 /** 1:1 décomp `HasHipsterTaughtWord` (mauville_old_man.c:241-244).
  *  Set gSpecialVar_Result = oldMan.hipster.taughtWord (= 0/1). */
 registerSpecial('HasHipsterTaughtWord', () => {
+  // 1:1 décomp mauville_old_man.c (VOID) : gSpecialVar_Result =
+  // gSaveBlock1Ptr->oldMan.hipster.taughtWord. Appelé via `special`
+  // (mauville_man.inc) → VarSet explicite. [[gotcha-special-vs-specialvar-varresult]]
   const om = gSaveBlock1Ptr.oldMan;
-  if (om && om.kind === 'hipster') return om.taughtWord;
-  return 0;
+  const result = (om && om.kind === 'hipster') ? om.taughtWord : 0;
+  VarSet('VAR_RESULT', result);
+  return result;
 });
 
 /** 1:1 décomp `IsContestDebugActive` (contest_util.c:2571-2574).
@@ -2867,15 +2875,19 @@ registerSpecial('MonOTNameNotPlayer', () => {
 registerSpecial('IsGrassTypeInParty', () => {
   // 1:1 décomp :1240-1241 : check gSpeciesInfo[species].types[0/1] == TYPE_GRASS
   // pour chaque mon non-egg non-empty de gPlayerParty.
+  let result = 0;
   for (let i = 0; i < PARTY_SIZE; i++) {
     const mon = gPlayerParty[i];
     const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
     if (species === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
     // Notre `gSpeciesInfo[].types` = enum-strings ('TYPE_GRASS'…) ≠ ids num décomp.
     const types = gSpeciesInfo[species]?.types ?? [];
-    if (types[0] === 'TYPE_GRASS' || types[1] === 'TYPE_GRASS') return 1;
+    if (types[0] === 'TYPE_GRASS' || types[1] === 'TYPE_GRASS') { result = 1; break; }
   }
-  return 0;
+  // FIX : décomp VOID pose gSpecialVar_Result, appelé via `special` (Route123) →
+  // l'opcode `special` ignore le retour → VarSet explicite. [[gotcha-special-vs-specialvar-varresult]]
+  VarSet('VAR_RESULT', result);
+  return result;
 });
 
 // ─── Session A2.24 batch — 5 specials triviaux 1:1 strict ──────────────────
