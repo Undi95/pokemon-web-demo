@@ -30,7 +30,7 @@ import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
-import { CheckFreePokemonStorageSpace } from '../../pokemon_storage_system';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from '../../pokemon_storage_system';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
@@ -2338,7 +2338,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
   // 'ShouldContestLadyShowGoOnAir' — porté 1:1 décomp lilycove_lady.c:747 ci-bas (batch B31).
   'ShouldDoBrailleRegirockEffectOld', 'ShouldHideFanClubInterviewer',
-  'ShouldReadyContestArtist', 'ShouldShowBoxWasFullMessage',
+  'ShouldReadyContestArtist',
+  // 'ShouldShowBoxWasFullMessage' — porté 1:1 field_specials.c:3415 ci-bas.
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
   'ShowContestEntryMonPic', 'ShowContestPainting', 'ShowDaycareLevelMenu',
   'ShowDeptStoreElevatorFloorSelect', 'ShowDodrioBerryPickingRecords',
@@ -2437,6 +2438,30 @@ registerSpecial('IsPokemonJumpSpeciesInParty', () => {
 registerSpecial('ScriptCheckFreePokemonStorageSpace', () => {
   return CheckFreePokemonStorageSpace() ? 1 : 0;
 });
+
+/** 1:1 décomp `bool8 ShouldShowBoxWasFullMessage(void)` (field_specials.c:3415-3426) :
+ *    if (!FlagGet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE))
+ *        if (StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON)) {
+ *            FlagSet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE); return TRUE; }
+ *    return FALSE;
+ *
+ *  Renvoie TRUE (une seule fois, flag-gated) quand le Pokémon capturé atterrit
+ *  dans une AUTRE boîte que celle pointée par le curseur PC (= la boîte courante
+ *  était pleine) → message « La Boîte était pleine ! <mon> a été transféré dans
+ *  la Boîte X ». Appelé par Cmd_givecaughtmon (battle_script_commands.c:10062) ;
+ *  exposé sur globalThis pour ce caller (cycle-safe). Le déclenchement réel
+ *  dépend du dépôt PC posant VAR_PC_BOX_TO_SEND_MON (dépendance d'étape). */
+function _shouldShowBoxWasFullMessage(): boolean {
+  if (!FlagGet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE')) {
+    if (StorageGetCurrentBox() !== VarGet('VAR_PC_BOX_TO_SEND_MON')) {
+      FlagSet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
+      return true;
+    }
+  }
+  return false;
+}
+registerSpecial('ShouldShowBoxWasFullMessage', () => _shouldShowBoxWasFullMessage() ? 1 : 0);
+(globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage = _shouldShowBoxWasFullMessage;
 
 // ─── Berry tree field interaction — récolte (1:1 décomp berry.c:1252-1313) ───
 // Specials retirés de _SESSION_131_DECOMP_SPECIALS (étaient no-op) → handlers

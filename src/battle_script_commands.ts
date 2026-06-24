@@ -9719,9 +9719,12 @@ function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
 /** 1:1 décomp `ShouldShowBoxWasFullMessage()` (field_specials.c:3415-3426).
  *  Retourne TRUE si FLAG_SHOWN_BOX_WAS_FULL_MESSAGE n'a pas été set ET
  *  StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON). Side-effect : set
- *  le flag à TRUE. Pour Phase 1 sans PC storage : retourne FALSE (= simple). */
+ *  le flag à TRUE. L'impl réelle vit dans specials-registry.ts (qui importe
+ *  StorageGetCurrentBox + FlagGet/VarGet) ; appelée via hook globalThis car
+ *  un import statique specials-registry ↔ battle_script_commands = risque cycle ESM. */
 function _shouldShowBoxWasFullMessage_GC(): boolean {
-  return false;
+  const fn = (globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage as (() => boolean) | undefined;
+  return fn ? fn() : false;
 }
 
 /** 1:1 décomp `FlagGet(flag)` — `gSaveBlock1Ptr->flags[byteIdx] & (1<<bitIdx)`. */

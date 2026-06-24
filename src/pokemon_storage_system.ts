@@ -30,5 +30,12 @@ export function CheckFreePokemonStorageSpace(): boolean {
   return false;
 }
 
+/** 1:1 décomp `u8 StorageGetCurrentBox(void)` (pokemon_storage_system.c:9404) :
+ *  `return gPokemonStoragePtr->currentBox;` — la boîte PC actuellement pointée
+ *  par le curseur. Utilisé par ShouldShowBoxWasFullMessage (field_specials.c). */
+export function StorageGetCurrentBox(): number {
+  return GetPokemonStorage().currentBox;
+}
+
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
