@@ -64,6 +64,20 @@ export function UpdateMirageRnd(days: number): void {
   SetMirageRnd(rnd);
 }
 
+const VAR_BIRCH_STATE = 'VAR_BIRCH_STATE';  // 1:1 décomp vars.h:93 (0x4049).
+
+/** 1:1 décomp `UpdateBirchState(days)` (time_events.c:113) :
+ *    u16 *state = GetVarPointer(VAR_BIRCH_STATE);
+ *    *state += days; *state %= 7;
+ *  Avance l'état Birch de `days` (mod 7). Lu par `prof_birch.inc` → détermine où le
+ *  Prof. Birch se trouve ce jour (labo / Route 101 / Route 103). Appelée par
+ *  UpdatePerDay (clock.c). `*state += days` est en u16 (wrap) → masque `& 0xFFFF`
+ *  avant le mod pour la fidélité. (`InitBirchState` = special déjà porté ailleurs.) */
+export function UpdateBirchState(days: number): void {
+  const state = ((VarGet(VAR_BIRCH_STATE) + days) & 0xFFFF) % 7;
+  VarSet(VAR_BIRCH_STATE, state);
+}
+
 // Exposition dev (= test runtime / sonde déterministe), sans effet sur le jeu.
 // Calqué sur field_message_box ("Expose pour debugging / scripts").
 {
@@ -71,4 +85,5 @@ export function UpdateMirageRnd(days: number): void {
   _g.UpdateMirageRnd = UpdateMirageRnd;
   _g.__GetMirageRnd = GetMirageRnd;
   _g.__SetMirageRnd = SetMirageRnd;
+  _g.UpdateBirchState = UpdateBirchState;
 }
