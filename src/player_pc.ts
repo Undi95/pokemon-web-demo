@@ -56,6 +56,7 @@ import { ScriptContext_SetupScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';
+import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
 import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from './engine/ui/gba-strings';
@@ -2034,8 +2035,16 @@ function _mailboxDoMailRead(): void {
   ReadMail(
     gSaveBlock1Ptr.mail[mailIdx],
     () => {
-      // 1:1 décomp Mailbox_ReshowAfterMail : re-open PC bedroom.
-      OpenBedroomPC(sIsBedroomMode);
+      // 1:1 décomp `Mailbox_ReturnToFieldFromReadMail` (player_pc.c:803) :
+      //   gFieldCallback = Mailbox_ReshowAfterMail;
+      //   SetMainCallback2(CB2_ReturnToField);
+      // CB2_ReturnToField re-init l'overworld (torn-down par ReadMail/Cleanup), PUIS
+      // RunFieldCallback appelle gFieldCallback (= reshow PC) → le PC overlay se rouvre
+      // sur le field restauré, avec callback2 = MainCB2_Overworld qui tick TickBedroomPC.
+      // BUG corrigé : l'ancien code posait `OpenBedroomPC` DIRECTEMENT comme callback2
+      // (pas un CB2 + saute le retour-field) → l'overworld ne tournait plus → écran noir.
+      (globalThis as Record<string, unknown>).gFieldCallback = () => OpenBedroomPC(sIsBedroomMode);
+      CB2_ReturnToField_Manual();
     },
     true,
   );
