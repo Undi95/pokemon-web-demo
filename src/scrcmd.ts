@@ -1846,13 +1846,13 @@ registerOpcode('givemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { CreateMon, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./engine/pokemon/pokemon');
-      const mon = CreateMon(speciesName, level, heldItem ? { heldItem } : undefined);
-      const result = GiveMonToPlayer(mon);
-      const ok = result === MON_GIVEN_TO_PARTY;
-      // 1:1 ScriptGiveMon : 0=MON_GIVEN_TO_PARTY, 1=MON_GIVEN_TO_PC.
-      VarSet('VAR_RESULT', ok ? 0 : 1);
-      console.log(`[opcode givemon] ${speciesName} Lv${level}${heldItem ? ' @' + heldItem : ''} → ${ok ? 'PARTY(0)' : 'PC(1)'}`);
+      // 1:1 décomp ScrCmd_givemon : gSpecialVar_Result = ScriptGiveMon(species,
+      // level, item, ...). Import dynamique = anti-cycle ESM (script_pokemon_util
+      // → pokemon.ts depuis scrcmd au boot = risque TDZ).
+      const { ScriptGiveMon } = await import('./script_pokemon_util');
+      const result = ScriptGiveMon(speciesName, level, heldItem);
+      VarSet('VAR_RESULT', result);
+      console.log(`[opcode givemon] ${speciesName} Lv${level}${heldItem ? ' @' + heldItem : ''} → result=${result} (0=PARTY,1=PC,2=CANT)`);
     } catch (e) {
       console.warn('[opcode givemon] failed:', e);
       VarSet('VAR_RESULT', 2);  // MON_CANT_GIVE
@@ -1872,12 +1872,12 @@ registerOpcode('givepokemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { CreateMon, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./engine/pokemon/pokemon');
-      const mon = CreateMon(speciesName, level);
-      const result = GiveMonToPlayer(mon);
-      const ok = result === MON_GIVEN_TO_PARTY;
-      VarSet('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail
-      console.log(`[opcode givepokemon] ${speciesName} Lv${level} → ${ok ? 'added' : 'party full'}`);
+      // `givepokemon` = alias de `givemon` (macro user-level) → même chemin 1:1
+      // ScriptGiveMon (inscrit le mon au Pokédex SEEN+CAUGHT).
+      const { ScriptGiveMon } = await import('./script_pokemon_util');
+      const result = ScriptGiveMon(speciesName, level);
+      VarSet('VAR_RESULT', result);  // 0=PARTY, 1=PC, 2=CANT_GIVE
+      console.log(`[opcode givepokemon] ${speciesName} Lv${level} → result=${result}`);
     } catch (e) {
       console.warn('[opcode givepokemon] failed:', e);
       VarSet('VAR_RESULT', 2);
