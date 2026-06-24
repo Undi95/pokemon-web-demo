@@ -28,6 +28,7 @@
 
 import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
+import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2234,7 +2235,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
   // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
-  'IsPokemonJumpSpeciesInParty',
+  // 'IsPokemonJumpSpeciesInParty' — porté 1:1 décomp pokemon_jump.c:2350 (src/pokemon_jump.ts), handler ci-bas.
   // 'IsPokerusInParty' — porté 1:1 décomp field_specials.c:1455 ci-bas (batch B6).
   'IsQuizAnswerCorrect',
   // 'IsQuizLadyWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:468 ci-bas.
@@ -2397,6 +2398,14 @@ registerSpecial('TryFieldPoisonWhiteOut', () => {
 registerSpecial('BufferTrendyPhraseString', () => {
   const fn = (globalThis as Record<string, unknown>).__BufferTrendyPhraseString as (() => void) | undefined;
   if (fn) fn();
+  return 0;
+});
+
+// 1:1 décomp `IsPokemonJumpSpeciesInParty` (pokemon_jump.c:2350) — pose VAR_RESULT
+// selon la présence d'une espèce éligible au Pokémon Jump dans le party. Import
+// direct (pokemon_jump.ts est une feuille ; party-storage est déjà importé ici).
+registerSpecial('IsPokemonJumpSpeciesInParty', () => {
+  IsPokemonJumpSpeciesInParty();
   return 0;
 });
 
