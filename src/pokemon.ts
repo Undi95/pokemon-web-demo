@@ -14,6 +14,10 @@
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS } from '../include/constants/pokemon';
+import {
+  MOVE_CUT, MOVE_FLY, MOVE_SURF, MOVE_STRENGTH, MOVE_FLASH,
+  MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE,
+} from '../include/constants/moves';
 // `gSpeciesInfo[species].genderRatio` via le pont data number→info (en attendant le
 // port de `data.c`/species_info.h ; dans le décomp gSpeciesInfo est inclus DANS pokemon.c).
 import { getSpeciesGenderRatio } from './engine/battle/data/species-runtime';
@@ -654,3 +658,29 @@ export function GetDefaultMoveTarget(battler: number): number {
   }
   return GetBattlerAtPosition(opposing);
 }
+
+/** 1:1 décomp `static const u16 sHMMoves[]` (pokemon.c:2109-2113) — les 8 CS
+ *  (HM01-HM08 : Coupe, Vol, Surf, Force, Flash, Éclate-Roc, Cascade, Plongée).
+ *  Le décomp termine par `HM_MOVES_END` (sentinelle) ; en TS la longueur du
+ *  tableau joue ce rôle. */
+const sHMMoves: readonly number[] = [
+  MOVE_CUT, MOVE_FLY, MOVE_SURF, MOVE_STRENGTH, MOVE_FLASH,
+  MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE,
+];
+
+/** 1:1 décomp `bool32 IsHMMove2(u16 move)` (pokemon.c:6542-6551) :
+ *  ```c
+ *  while (sHMMoves[i] != HM_MOVES_END)
+ *      if (sHMMoves[i++] == move) return TRUE;
+ *  return FALSE;
+ *  ```
+ *  TRUE si `move` est une CS. Primitif partagé : apprentissage de move qui ne
+ *  peut écraser une CS (battle_script_commands.c:5471 Cmd_yesnoboxlearnmove,
+ *  evolution_scene.c:977/1359). Distinct de `IsMoveHm` (party_menu.c, via
+ *  sTMHMMoves) utilisé par l'écran de résumé. */
+export function IsHMMove2(move: number): boolean {
+  return sHMMoves.includes(move);
+}
+
+// Exposition dev (sonde déterministe IsHMMove2), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__IsHMMove2 = IsHMMove2;
