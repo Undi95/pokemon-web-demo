@@ -47,8 +47,9 @@ import {
   getRuntime, PlaySE, LoadPalette, BlendPalettes,
   FreeAllSpritePalettes, ResetPaletteFade, ResetTasks, FreeSpriteTilesByTag,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData, FreeSpritePaletteByTag, DestroySprite } from './sprite';
+import { ResetSpriteData, FreeSpritePaletteByTag, DestroySprite, IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
 import { AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets } from './item_icon';
+import { assetCache, LoadCompressedSpriteSheet, LoadSpritePalette } from '../harness/runtime/decomp-globals';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   type ListMenuTemplate, type ListMenuItem,
@@ -125,6 +126,8 @@ const MAX_BAG_ITEM_CAPACITY = 99;
 const MART_TYPE_NORMAL = 0;
 // 1:1 décomp shop.c:43 `#define TAG_ITEM_ICON_BASE 2110`.
 const TAG_ITEM_ICON = 2110;
+// Tag du label ARGENT (money.png) — distinct de l'icône d'objet.
+const TAG_MONEY_LABEL = 2120;
 
 // ─── Window templates ────────────────────────────────────────────────────────
 // Menu Acheter/Vendre/Quitter (overlay) — 1:1 sShopMenuWindowTemplates, width 8.
@@ -184,9 +187,13 @@ let sMaxQuantity = 0;
 let sPendingMsgCont: (() => void) | null = null;
 
 // Assets cadre gShopMenu (chargés une fois).
-interface ShopAssets { frameTiles: Uint8Array; frameTilemap: Uint16Array; framePal: Uint16Array; }
+interface ShopAssets {
+  frameTiles: Uint8Array; frameTilemap: Uint16Array; framePal: Uint16Array;
+  moneyTiles: Uint8Array; moneyPal: Uint16Array;  // label « ARGENT » (money.png)
+}
 let sAssets: ShopAssets | null = null;
 let sAssetsLoading = false;
+let sMoneyLabelSpriteId = -1;           // 1:1 décomp money.c sMoneyLabelSpriteId
 // Palette std menu (slot 15) — vidée par le BG-takeover du buy menu puis non
 // rechargée par le reload OW ; on la recharge dans _createShopMenu (sinon texte
 // + intérieur de cadre noir sur noir = invisibles au re-affichage).
@@ -363,13 +370,18 @@ async function _loadShopAssets(): Promise<void> {
   if (sAssets || sAssetsLoading) return;
   sAssetsLoading = true;
   try {
-    const [frameTiles, frameTilemap, framePal, stdMenuPal] = await Promise.all([
+    const [frameTiles, frameTilemap, framePal, stdMenuPal, moneyTiles, moneyPal] = await Promise.all([
       loadTileBin('/decomp/em/shop/menu.png', 4),
       loadTilemapBin('/decomp/em/shop/menu.bin'),
       extractPngPlte('/decomp/em/shop/menu.png'),
       loadGbaPal('/decomp/em/interface/std_menu.pal'),
+      loadTileBin('/decomp/em/shop/money.png', 4),
+      extractPngPlte('/decomp/em/shop/money.png'),
     ]);
-    sAssets = { frameTiles, frameTilemap, framePal: framePal ?? new Uint16Array(16) };
+    sAssets = {
+      frameTiles, frameTilemap, framePal: framePal ?? new Uint16Array(16),
+      moneyTiles, moneyPal: moneyPal ?? new Uint16Array(16),
+    };
     sStdMenuPal = stdMenuPal;
     console.log(`[shop] cadre gShopMenu chargé (${frameTiles.length}o tiles, ${frameTilemap.length} entrées)`);
   } catch (e) {
@@ -498,12 +510,53 @@ function _buyMenuInitWindows(): void {
   FillWindowPixelBuffer(sDescWindowId, 0x00); PutWindowTilemap(sDescWindowId);
 }
 
-/** 1:1 décomp `BuyMenuDrawGraphics` (shop.c:769) : money box + schedule copies.
- *  (BuyMenuDrawMapGraphics = increment 2.) */
+/** 1:1 décomp `BuyMenuDrawGraphics` (shop.c:769) : money box + label ARGENT +
+ *  schedule copies. (BuyMenuDrawMapGraphics = increment 2.) */
 function _buyMenuDrawGraphics(): void {
   DrawMoneyBox(GetMoney(), 0, 0);
+  _addMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11)
   ScheduleBgCopyTilemapToVram(0);
   ScheduleBgCopyTilemapToVram(1);
+}
+
+/** 1:1 décomp `AddMoneyLabelObject(x, y)` (money.c) : sprite du label ARGENT
+ *  (money.png 32×16, shape WIDE size 2) à (x, y), priority 0. Charge le sheet +
+ *  palette via le substrat sprite dynamique (= AddItemIconSprite). */
+function _addMoneyLabelObject(x: number, y: number): void {
+  _removeMoneyLabelObject();
+  if (!sAssets) return;
+  const tilesKey = `__shopMoneyTiles_${TAG_MONEY_LABEL}`;
+  const palKey = `__shopMoneyPal_${TAG_MONEY_LABEL}`;
+  assetCache.set(tilesKey, sAssets.moneyTiles);
+  assetCache.set(palKey, sAssets.moneyPal);
+  LoadCompressedSpriteSheet({ data: tilesKey, size: sAssets.moneyTiles.length, tag: TAG_MONEY_LABEL });
+  LoadSpritePalette({ data: palKey, tag: TAG_MONEY_LABEL });
+  const tileStartRaw = GetSpriteTileStartByTag(TAG_MONEY_LABEL);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
+  const palBankRaw = IndexOfSpritePaletteTag(TAG_MONEY_LABEL);
+  const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    gSprites?: Array<{ oamIndex: number } | undefined>;
+    gba?: { oam?: Array<{ priority: number }> };
+  } | null;
+  if (!rt) return;
+  // sOamData_MoneyLabel : shape H_RECTANGLE(1) size 2 = 32×16, 4bpp.
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: palBank, x, y, shape: 1, size: 2, priority: 0, subpriority: 0,
+  });
+  sMoneyLabelSpriteId = spriteId;
+  const spr = rt.gSprites?.[spriteId];
+  if (spr) { const o = rt.gba?.oam?.[spr.oamIndex]; if (o) o.priority = 0; }
+}
+
+/** 1:1 décomp `RemoveMoneyLabelObject` (money.c). */
+function _removeMoneyLabelObject(): void {
+  if (sMoneyLabelSpriteId < 0) return;
+  FreeSpriteTilesByTag(TAG_MONEY_LABEL);
+  FreeSpritePaletteByTag(TAG_MONEY_LABEL);
+  DestroySprite(sMoneyLabelSpriteId);
+  sMoneyLabelSpriteId = -1;
 }
 
 // ─── BuyMenuBuildListMenuTemplate (1:1 shop.c:556) ──────────────────────────
@@ -742,9 +795,10 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (rt.gPaletteFade.active) return;
-  // Cleanup buy menu windows + list + icône.
+  // Cleanup buy menu windows + list + icône + label ARGENT.
   if (sListTaskId >= 0) { DestroyListMenuTask(sListTaskId); sListTaskId = -1; }
   _removeBuyMenuItemIcon();
+  _removeMoneyLabelObject();
   HideMoneyBox();
   _removeWindow(() => sListWindowId, v => (sListWindowId = v));
   _removeWindow(() => sDescWindowId, v => (sDescWindowId = v));
