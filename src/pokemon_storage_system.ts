@@ -10,6 +10,8 @@
 
 import { GetPokemonStorage } from './save';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
+import { moveEnumToDexId } from './engine/pokemon/pokemon';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -37,5 +39,33 @@ export function StorageGetCurrentBox(): number {
   return GetPokemonStorage().currentBox;
 }
 
+/** 1:1 décomp `bool8 AnyStorageMonWithMove(u16 move)` (pokemon_storage_system.c:9636) :
+ *  ```c
+ *  for (i < TOTAL_BOXES_COUNT) for (j < IN_BOX_COUNT)
+ *      if (HAS_SPECIES && !IS_EGG && GetBoxMonData(KNOWN_MOVES, {move, MOVES_COUNT}))
+ *          return TRUE;
+ *  return FALSE;
+ *  ```
+ *  TRUE si AU MOINS un Pokémon (non-œuf) du PC connaît `move`. Utilisé par
+ *  IsLastMonThatKnowsSurf (anti-softlock : on ne bloque l'oubli que si AUCUN mon
+ *  party NI PC ne connaît le move). Adaptation modèle : `move` = id décomp →
+ *  converti en dexId string (les box mons = PokemonInstance, moves[].id = dexId). */
+export function AnyStorageMonWithMove(move: number): boolean {
+  const moveEnum = reverseDecompConstant(move, 'MOVE_') ?? '';
+  const moveDexId = moveEnumToDexId(moveEnum);
+  const boxes = GetPokemonStorage().boxes;
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
+    for (let j = 0; j < IN_BOX_COUNT; j++) {
+      const mon = boxes[i]?.[j];
+      if (mon && mon.speciesId && !mon.isEgg && mon.moves.some(m => m.id === moveDexId)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
+(globalThis as Record<string, unknown>).__AnyStorageMonWithMove = AnyStorageMonWithMove;
+(globalThis as Record<string, unknown>).__getPokemonStorage = GetPokemonStorage;

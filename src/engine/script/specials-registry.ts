@@ -30,7 +30,7 @@ import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
-import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from '../../pokemon_storage_system';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove } from '../../pokemon_storage_system';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
@@ -611,8 +611,10 @@ function _isLastMonThatKnowsMove(moveIdString: string): number {
       if ((_GetMonData(m, _MON_DATA_MOVE1 + j) as number) === moveId) return 0;
     }
   }
-  // Dette R3 : check storage PC (AnyStorageMonWithMove) pas porté → return TRUE.
-  return 1;
+  // 1:1 décomp : `if (AnyStorageMonWithMove(move) != TRUE) gSpecialVar_Result = TRUE`.
+  // Si un mon du PC connaît le move → ce n'est PAS le dernier → return FALSE
+  // (l'oubli est autorisé). Sinon → TRUE (dernier détenteur). [dette R3 soldée]
+  return AnyStorageMonWithMove(moveId) ? 0 : 1;
 }
 /** FIX : décomp `IsLastMonThatKnowsSurf` (party_menu.c:6407) est VOID et pose
  *  gSpecialVar_Result, appelé via `special` (Move Deleter, anti-softlock Surf) →
