@@ -895,6 +895,18 @@ function _getNatureFromPersonality(personality: number): number {
   return GetNatureFromPersonality(personality >>> 0);
 }
 
+/** 1:1 décomp `u8 GetNature(struct Pokemon *mon)` (pokemon.c:5480) :
+ *  `return GetMonData(mon, MON_DATA_PERSONALITY) % NUM_NATURES;`. Délègue au
+ *  miroir GetNatureFromPersonality (DRY). Primitif partagé (8 appelants décomp :
+ *  pokemon_summary_screen, field_specials [Nature Girl, GetPokeblockNameByMonNature],
+ *  pokeblock/contest/animation…). Renvoie l'index de nature 0..24. */
+export function GetNature(mon: Pokemon): number {
+  return GetNatureFromPersonality((GetMonData(mon, MON_DATA_PERSONALITY) as number) >>> 0);
+}
+
+// Exposition dev (sonde déterministe GetNature), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetNature = GetNature;
+
 /** Adaptateur 0-based → miroir `ModifyStatByNature` (1-based décomp : STAT_ATK=1…
  *  STAT_SPDEF=5). Ce fichier passe un statIndex 0-based (0=ATK…4=SPDEF, hérité de
  *  CalculateMonStats/CALC_STAT) → +1 pour la signature 1:1 du miroir. Résultat
