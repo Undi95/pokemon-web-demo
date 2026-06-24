@@ -167,7 +167,21 @@ export function decodeOwBytes(bytes: Uint8Array): string {
   if (!cm) return '';
   if (!_reverseCharmap) {
     _reverseCharmap = new Map();
-    for (const ch of Object.keys(cm)) _reverseCharmap.set(cm[ch], ch);
+    // Le charmap FR réutilise des slots de bytes kana pour des glyphes latins
+    // accentués (ex. byte 6 = 'É' ET 'か'). Un reverse-map last-wins naïf rendait
+    // 'É' → 'か' (RÉMI → RかMI). Comme un kana n'apparaît JAMAIS dans un texte FR,
+    // on PROTÈGE un glyphe latin (codepoint < 0x3000) déjà mappé contre l'écrasement
+    // par un kana ; tout le reste garde le comportement last-wins d'origine.
+    for (const ch of Object.keys(cm)) {
+      const b = cm[ch];
+      const existing = _reverseCharmap.get(b);
+      if (existing !== undefined) {
+        const oldIsLatin = (existing.codePointAt(0) ?? 0) < 0x3000;
+        const newIsLatin = (ch.codePointAt(0) ?? 0) < 0x3000;
+        if (oldIsLatin && !newIsLatin) continue;  // ne pas laisser un kana écraser un latin
+      }
+      _reverseCharmap.set(b, ch);
+    }
   }
   let out = '';
   let i = 0;
