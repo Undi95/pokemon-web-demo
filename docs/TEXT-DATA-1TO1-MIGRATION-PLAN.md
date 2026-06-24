@@ -45,8 +45,12 @@ Recommandé : **flag `__USE_DECOMP_TEXT__`** (comme `__USE_DECOMP_BATTLE_LOOP__`
   encore JS-string migrés vers `GetPlayerNameString` (décode accent-correct). **Pré-requis fix
   `decodeOwBytes`** (`72dce8b3`) : le charmap FR a des collisions byte latin↔kana (byte 6 = 'É'
   ET 'か') → le reverse-map naïf rendait 'É'→'か' (RÉMI→RかMI) ; fix = protéger le glyphe latin.
-  A/B en jeu : nom "RÉMI" → menu Start « RÉMI » (É correct). **RESTE (Stage 4b, séparé)** :
-  `mail.playerName` (champ struct Mail) encore string — décode transitoire dans BufferMailText.
+  A/B en jeu : nom "RÉMI" → menu Start « RÉMI » (É correct).
+- **Stage 4b — mail.playerName** : ✅ **FAIT (2026-06-24, `34203075`).** `struct Mail.playerName`
+  → `number[]` bytes. `BufferMailText` copie DIRECT (plus d'encodeOwText). Port 1:1 **`PadNameString`**
+  (NOUVEAU `src/international_string_util.ts`, byte-level, remplace le stub string de mail_data).
+  Affichage mailbox (player_pc ×3) → `decodeOwBytes` + `trimEnd` (strip padding CHAR_SPACE). Vérif
+  déterministe : "ANDRÉ" → give+pad → `[A,N,D,R,É,SPACE,EOS]` → decode+trimEnd → "ANDRÉ".
 - **Stage 5 — flip défaut + retrait flag + retrait voie ASCII** : quand A/B complet OK.
 
 ## 📌 POINTERS (recherche faite 2026-06-05)
