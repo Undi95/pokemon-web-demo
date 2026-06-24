@@ -52,7 +52,9 @@ import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
 import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { getSpeciesInfo } from './engine/data/game-data';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
@@ -310,19 +312,49 @@ function CreateWildMon(species: string, level: number): void {
   bootDecompBattleLoop(true);
 }
 
+/** 1:1 décomp `TryGetRandomWildMonIndexByType` (wild_encounter.c:915-934) : parmi
+ *  les `numMon` slots, sélectionne au hasard un index dont l'espèce est du type
+ *  `type` (types[0] ou [1]). Retourne -1 si aucun OU si tous le sont (= pas de
+ *  biais utile). Nos `types` sont des strings → résolus en numérique. */
+function TryGetRandomWildMonIndexByType(wildMon: WildPokemon[], type: number, numMon: number): number {
+  const validIndexes: number[] = [];
+  for (let i = 0; i < numMon; i++) {
+    const t = getSpeciesInfo(wildMon[i].species)?.types;
+    if (t && (resolveDecompConstant(t[0]) === type || resolveDecompConstant(t[1]) === type))
+      validIndexes.push(i);
+  }
+  if (validIndexes.length === 0 || validIndexes.length === numMon) return -1;
+  return validIndexes[Random() % validIndexes.length];
+}
+
+/** 1:1 décomp `TryGetAbilityInfluencedWildMonIndex` (wild_encounter.c:936-952) :
+ *  si le lead mon (non-œuf) a `ability`, 50% → biais vers une espèce de type
+ *  `type`. Retourne l'index choisi ou -1. */
+function TryGetAbilityInfluencedWildMonIndex(wildMon: WildPokemon[], type: number, ability: number, numMon: number): number {
+  if (GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)) return -1;
+  if (GetMonAbility(gPlayerParty[0]) !== ability) return -1;
+  if (Random() % 2 !== 0) return -1;
+  return TryGetRandomWildMonIndexByType(wildMon, type, numMon);
+}
+
 /** 1:1 décomp `TryGenerateWildMon` (wild_encounter.c:422-456) minimal.
  *  Returns TRUE si encounter setup (= CreateWildMon appelé). */
 function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, _flags: number): boolean {
   let wildMonIndex = 0;
   switch (area) {
-    case WILD_AREA_LAND:
-      // Dette R3 : TryGetAbilityInfluencedWildMonIndex (= Magnet Pull/Static).
-      wildMonIndex = ChooseWildMonIndex_Land();
+    case WILD_AREA_LAND: {
+      // 1:1 décomp : Magnet Pull → Acier, puis Static → Électrik (50% chacun).
+      let idx = TryGetAbilityInfluencedWildMonIndex(wildMonInfo.wildPokemon, TYPE_STEEL, ABILITY_MAGNET_PULL, LAND_WILD_COUNT);
+      if (idx < 0) idx = TryGetAbilityInfluencedWildMonIndex(wildMonInfo.wildPokemon, TYPE_ELECTRIC, ABILITY_STATIC, LAND_WILD_COUNT);
+      wildMonIndex = idx >= 0 ? idx : ChooseWildMonIndex_Land();
       break;
-    case WILD_AREA_WATER:
-      // Dette R3 : TryGetAbilityInfluencedWildMonIndex (= Static).
-      wildMonIndex = ChooseWildMonIndex_WaterRock();
+    }
+    case WILD_AREA_WATER: {
+      // 1:1 décomp : Static → Électrik (50%).
+      const idx = TryGetAbilityInfluencedWildMonIndex(wildMonInfo.wildPokemon, TYPE_ELECTRIC, ABILITY_STATIC, WATER_WILD_COUNT);
+      wildMonIndex = idx >= 0 ? idx : ChooseWildMonIndex_WaterRock();
       break;
+    }
     case WILD_AREA_ROCKS:
       wildMonIndex = ChooseWildMonIndex_WaterRock();
       break;
