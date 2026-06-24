@@ -787,8 +787,25 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
     if (Random() & 1) return;
   }
-  // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. Deferred
-  // pour notre wire (= pas de trainer class match dispo dans bridge).
+  // 1:1 décomp pokemon.c:5941-5950 : LEAGUE_BATTLE — le gain n'est appliqué qu'en
+  // combat DRESSEUR (BATTLE_TYPE_TRAINER) contre une classe Champion d'Arène / Conseil 4
+  // / Maître. Globals battle lus via globalThis (cycle-safe : party-storage ne doit pas
+  // importer l'état de combat ; pattern de GetTrainerBattleTransition). Constantes de
+  // classe via resolveDecompConstant (pas de hardcode).
+  if (event === 3 /* FRIENDSHIP_EVENT_LEAGUE_BATTLE */) {
+    const _g = globalThis as {
+      __battleState?: { gBattleTypeFlags?: number };
+      __battleSetup?: { opponentA?: number };
+      __gTrainers?: Record<number, { trainerClass?: number }>;
+    };
+    const _BATTLE_TYPE_TRAINER = 1 << 3;  // 1:1 décomp include/constants/battle.h.
+    if (!((_g.__battleState?.gBattleTypeFlags ?? 0) & _BATTLE_TYPE_TRAINER)) return;
+    const _cls = _g.__gTrainers?.[_g.__battleSetup?.opponentA ?? 0]?.trainerClass ?? -1;
+    const _C = (n: string): number => (resolveDecompConstant(n) as number | undefined) ?? -2;
+    if (_cls !== _C('TRAINER_CLASS_LEADER') && _cls !== _C('TRAINER_CLASS_ELITE_FOUR') && _cls !== _C('TRAINER_CLASS_CHAMPION')) {
+      return;
+    }
+  }
 
   // 1:1 décomp pokemon.c:5952-5965 : Soothe Bell (HOLD_EFFECT_FRIENDSHIP_UP) → mod
   // +50% (arrondi bas) ; puis si mod > 0 : Luxury Ball → +1 ET met-location → +1.
@@ -1543,4 +1560,6 @@ export function SetBattleMonDataFromBuffer(monId: number, bufferA: ArrayLike<num
 (globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
 // Sonde déterministe : GiveMonToPlayer (party plein → CopyMonToPC). Sans effet jeu.
 (globalThis as Record<string, unknown>).__GiveMonToPlayer = GiveMonToPlayer;
+// Sonde déterministe : AdjustFriendship (gate LEAGUE_BATTLE). Sans effet jeu.
+(globalThis as Record<string, unknown>).__AdjustFriendship = AdjustFriendship;
 

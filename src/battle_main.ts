@@ -630,8 +630,10 @@ const MULTIUSE_STATE = 0;
 const BATTLE_ENVIRONMENT_BUILDING = 8;
 /** 1:1 décomp `TRAINER_STEVEN_PARTNER` ID. */
 const TRAINER_STEVEN_PARTNER = 768;
-/** 1:1 décomp `FRIENDSHIP_EVENT_LEAGUE_BATTLE` = 6. */
-const FRIENDSHIP_EVENT_LEAGUE_BATTLE = 6;
+/** 1:1 décomp `FRIENDSHIP_EVENT_LEAGUE_BATTLE` = 3 (include/constants/pokemon.h:177 ;
+ *  l'ancienne valeur 6 = FRIENDSHIP_EVENT_FAINT_SMALL, masquée tant que _AdjustFriendship
+ *  était un stub no-op). */
+const FRIENDSHIP_EVENT_LEAGUE_BATTLE = 3;
 /** 1:1 décomp `DISPLAY_WIDTH` = 240, `DISPLAY_HEIGHT` = 160. */
 const DISPLAY_WIDTH = 240;
 const DISPLAY_HEIGHT = 160;
@@ -698,8 +700,6 @@ function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
 function _FreeAllSpritePalettes(): void { FreeAllSpritePalettes(); }
 /** 1:1 décomp `SetWildMonHeldItem()` (pokemon.c). */
 function _SetWildMonHeldItem(): void { /* Dette R3. */ }
-/** 1:1 décomp `AdjustFriendship(mon, eventType)`. */
-function _AdjustFriendship(_mon: unknown, _eventType: number): void { /* Dette R3. */ }
 
 /** Wire vers BattleSetup_GetEnvironmentId (battle_setup.c). */
 function _BattleSetup_GetEnvironmentId(): number {
@@ -892,10 +892,12 @@ export function CB2_InitBattleInternal(): void {
   const sb2 = (globalThis as { gSaveBlock2Ptr?: { frontier?: { disableRecordBattle?: boolean } } }).gSaveBlock2Ptr;
   if (sb2?.frontier) sb2.frontier.disableRecordBattle = false;
 
-  // 1:1 décomp ll. 706-707 : AdjustFriendship per player mon.
-  const playerParty = ((globalThis as { gSaveBlock1Ptr?: { playerParty?: unknown[] } }).gSaveBlock1Ptr?.playerParty) ?? [];
+  // 1:1 décomp ll. 706-707 : AdjustFriendship(&gPlayerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE)
+  // per player mon. Route vers le canonique AdjustFriendship (party-storage) sur le STRUCT
+  // gPlayerParty (pas la vue saveblock) ; le gate interne n'applique le gain qu'en combat
+  // Champion d'Arène / Conseil 4 / Maître. (Ex-stub _AdjustFriendship no-op = dette soldée.)
   for (let i = 0; i < PARTY_SIZE; i++) {
-    _AdjustFriendship(playerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE);
+    AdjustFriendship(_gPlayerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE);
   }
 
   gBattleCommunication[MULTIUSE_STATE] = 0;
@@ -3423,7 +3425,7 @@ import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetP
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
 import {
-  GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty,
+  GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty, AdjustFriendship,
   GetAbilityBySpecies, restoreOwPartyAfterTest,
   MON_DATA_SPECIES, MON_DATA_SPECIES_OR_EGG, MON_DATA_HP, MON_DATA_STATUS, MON_DATA_NICKNAME,
 } from './engine/battle/party-storage';
