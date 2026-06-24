@@ -755,7 +755,7 @@ import {
 import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
 import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
-import { fillBattleMonFromParty, IsTradedMon } from './engine/battle/party-storage';
+import { fillBattleMonFromParty, IsTradedMon, GiveMonToPlayer } from './engine/battle/party-storage';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import type {
   BattleOpcodeHandler,
@@ -9685,7 +9685,10 @@ function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
 
   // 1:1 décomp ll.10060-10079 : GiveMonToPlayer. Retourne MON_GIVEN_TO_PARTY (0)
   // ou MON_GIVEN_TO_PC (1) ou MON_CANT_GIVE (2 = box full).
-  const result = _GiveMonToPlayerGC(caughtMon);
+  // 1:1 décomp : GiveMonToPlayer canonique (party-storage). Party pleine → CopyMonToPC
+  // (le mon capturé est RANGÉ au PC au lieu d'être perdu) — l'ancien _GiveMonToPlayerGC
+  // local SIMULAIT l'envoi PC (return 1 sans stocker), dette soldée par CopyMonToPC.
+  const result = GiveMonToPlayer(caughtMon);
   if (result !== 0 /* MON_GIVEN_TO_PARTY */) {
     // 1:1 décomp battle_script_commands.c:10062-10078 : message PC box select.
     // ShouldShowBoxWasFullMessage check + FLAG_SYS_PC_LANETTE (= unlock Lanette).
@@ -9741,51 +9744,10 @@ function _flagGet_GC(flag: number): boolean {
 }
 
 
-// 1:1 décomp `GiveMonToPlayer` (pokemon.c:4412-4432). Notre port :
-// SetMonData OT name/gender/id depuis gSaveBlock2Ptr, puis scan gPlayerParty
-// pour 1er slot vide. Sinon → CopyMonToPC (= PC storage deferred Phase 1.4).
-
-function _GiveMonToPlayerGC(mon: unknown): number {
-  // 1:1 décomp pokemon.c GiveMonToPlayer (1:1 strict).
-  // SetMonData OT depuis gSaveBlock2Ptr (= player info).
-  const sb2 = gSaveBlock2Ptr as {
-    playerName?: string;
-    playerGender?: number;
-    playerTrainerId?: number[] | { 0: number };
-  };
-  if (mon) {
-    if (sb2.playerName !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_NAME_GC, GetPlayerNameString());
-    if (sb2.playerGender !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_GENDER_GC, sb2.playerGender);
-    // 1:1 décomp : playerTrainerId est u8[4] ; pack en u32 little-endian.
-    const tid = sb2.playerTrainerId as number[] | { 0: number; 1: number; 2: number; 3: number } | undefined;
-    if (tid) {
-      const t0 = (tid as { 0?: number })[0] ?? 0;
-      const t1 = (tid as { 1?: number })[1] ?? 0;
-      const t2 = (tid as { 2?: number })[2] ?? 0;
-      const t3 = (tid as { 3?: number })[3] ?? 0;
-      const otId = ((t3 << 24) | (t2 << 16) | (t1 << 8) | t0) >>> 0;
-      _SetMonDataGC(mon as never, _MON_DATA_OT_ID_GC, otId);
-    }
-  }
-  // 1:1 décomp : scan gPlayerParty pour 1er slot species==0.
-  for (let i = 0; i < 6; i++) {
-    const slotMon = _gPlayerPartyGC[i];
-    // FIX user 2026-06-10 (« OUI envoie au PC alors qu'on avait de la place ») :
-    // les slots VIDES de party-storage ont species UNDEFINED (pas 0) -> l'ancien
-    // test === 0 ne matchait jamais -> tout mon capture partait au PC.
-    if (!slotMon || !slotMon.species) {
-      // 1:1 décomp : CopyMon(&gPlayerParty[i], mon, sizeof(*mon)).
-      // Notre port : shallow copy (= mon est aussi Pokemon struct).
-      if (slotMon && mon) {
-        Object.assign(slotMon, mon);
-      }
-      // gPlayerPartyCount = i + 1 — non porté (= compteur dérivable).
-      return 0; // MON_GIVEN_TO_PARTY
-    }
-  }
-  // Party full → CopyMonToPC. Deferred Phase 1.4 (= PC storage pas wired).
-  return 1; // MON_GIVEN_TO_PC (= simulate sent to PC).
-}
+// _GiveMonToPlayerGC retiré (dette zéro-dup) : duplicata Phase-1 de GiveMonToPlayer
+// (party-storage) dont la branche party-pleine SIMULAIT l'envoi PC (return 1 sans
+// stocker → mon capturé perdu). Cmd_givecaughtmon route désormais vers le canonique
+// GiveMonToPlayer, dont CopyMonToPC range réellement le mon au PC.
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────
 

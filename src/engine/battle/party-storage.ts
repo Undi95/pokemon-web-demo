@@ -1541,4 +1541,6 @@ export function SetBattleMonDataFromBuffer(monId: number, bufferA: ArrayLike<num
 (globalThis as { __gPlayerParty?: typeof gPlayerParty; __gEnemyParty?: typeof gEnemyParty })
   .__gPlayerParty = gPlayerParty;
 (globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
+// Sonde déterministe : GiveMonToPlayer (party plein → CopyMonToPC). Sans effet jeu.
+(globalThis as Record<string, unknown>).__GiveMonToPlayer = GiveMonToPlayer;
 
