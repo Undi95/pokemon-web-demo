@@ -3601,9 +3601,32 @@ function RandomlyGivePartyPokerus(_party: unknown): void {
   // Pour now : noop. Documenté dans pokerus.c (~30l).
 }
 
-/** 1:1 décomp `PartySpreadPokerus(party)` (pokerus.c). */
-function PartySpreadPokerus(_party: unknown): void {
-  // Dette R3 : spread infection adjacent slots party.
+/** 1:1 décomp `PartySpreadPokerus(party)` (pokemon.c:6181). 1/3 de chance après
+ *  combat : chaque mon infecté (souche = low nibble 0xF set) propage son octet
+ *  Pokérus complet aux mons adjacents JAMAIS infectés (high nibble 0xF0 == 0).
+ *  `party` = gPlayerParty (Pokemon struct numérique) → champs `species`/`pokerus`
+ *  lus/écrits direct (équivalent GetMonData/SetMonData(MON_DATA_POKERUS)). */
+function PartySpreadPokerus(party: unknown): void {
+  const p = party as Array<{ species: number; pokerus: number }>;
+  if ((Random() % 3) === 0) {
+    for (let i = 0; i < PARTY_SIZE; i++) {
+      const mon = p[i];
+      if (mon && mon.species) {
+        const pokerus = mon.pokerus;
+        const curPokerus = pokerus;
+        if (pokerus) {
+          if (pokerus & 0xF) {
+            if (i !== 0 && !(p[i - 1].pokerus & 0xF0))
+              p[i - 1].pokerus = curPokerus;
+            if (i !== (PARTY_SIZE - 1) && !(p[i + 1].pokerus & 0xF0)) {
+              p[i + 1].pokerus = curPokerus;
+              i++;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 /** 1:1 décomp `FadeOutMapMusic(speed)` (sound.c). Wire vers FadeOutBGM existing.
