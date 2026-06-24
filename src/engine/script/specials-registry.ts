@@ -30,7 +30,7 @@ import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
-import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove } from '../../pokemon_storage_system';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons } from '../../pokemon_storage_system';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
@@ -2665,12 +2665,15 @@ registerSpecial('CountPartyNonEggMons', () => {
   return count;
 });
 
-/** 1:1 décomp `CountPartyAliveNonEggMons` (pokemon_storage_system.c:1440-1456)
- *  qui appelle CountPartyAliveNonEggMonsExcept(PARTY_SIZE) (= ignore aucun slot,
- *  donc count tous les vivants). Non-empty + non-egg + HP != 0. */
+/** 1:1 décomp `CountPartyAliveNonEggMons` (egg_hatch.c:941-947) :
+ *    count = CountStorageNonEggMons();                       // mons du PC
+ *    count += CountPartyAliveNonEggMonsExcept(PARTY_SIZE);   // party vivants non-œuf
+ *    return count;
+ *  FIX : on n'incluait PAS `CountStorageNonEggMons()` (invisible tant que les boîtes
+ *  PC étaient vides ; désormais peuplables via CopyMonToPC → undercount sinon). */
 registerSpecial('CountPartyAliveNonEggMons', () => {
-  // 1:1 décomp : count gPlayerParty[i] non-empty, non-egg, HP != 0.
-  let count = 0;
+  let count = CountStorageNonEggMons();  // 1:1 : + mons (non-œuf) du PC
+  // 1:1 CountPartyAliveNonEggMonsExcept(PARTY_SIZE) : party non-empty, non-egg, HP != 0.
   for (let i = 0; i < PARTY_SIZE; i++) {
     const mon = gPlayerParty[i];
     if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) count++;

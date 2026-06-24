@@ -65,9 +65,29 @@ export function AnyStorageMonWithMove(move: number): boolean {
   return false;
 }
 
+/** 1:1 décomp `u32 CountStorageNonEggMons(void)` (pokemon_storage_system.c:9600) :
+ *  ```c
+ *  for (i < TOTAL_BOXES_COUNT) for (j < IN_BOX_COUNT)
+ *      if (HAS_SPECIES && !IS_EGG) count++;
+ *  ```
+ *  Compte les Pokémon (non-œuf) rangés dans les boîtes PC. Utilisé par
+ *  CountPartyAliveNonEggMons (= PC + party), consommé par les scripts de pension. */
+export function CountStorageNonEggMons(): number {
+  const boxes = GetPokemonStorage().boxes;
+  let count = 0;
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
+    for (let j = 0; j < IN_BOX_COUNT; j++) {
+      const mon = boxes[i]?.[j];
+      if (mon && mon.speciesId && !mon.isEgg) count++;
+    }
+  }
+  return count;
+}
+
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
 (globalThis as Record<string, unknown>).__AnyStorageMonWithMove = AnyStorageMonWithMove;
+(globalThis as Record<string, unknown>).__CountStorageNonEggMons = CountStorageNonEggMons;
 // __getPokemonStorage : accès au storage PC sans importer save.ts (cycle-break).
 // Utilisé par la sonde déterministe ET par CopyMonToPC (party-storage.ts).
 (globalThis as Record<string, unknown>).__getPokemonStorage = GetPokemonStorage;
