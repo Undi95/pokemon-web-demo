@@ -24,6 +24,10 @@
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { Random } from './random';
+import { VarGet } from './engine/script/script-vars';
+import { ConvertEasyChatWordsToString } from './easy_chat';
+import { gStringVar1, StringCopy } from './string_util';
+import { encodeOwText } from './text';
 import type { DewfordTrend } from './engine/save/save-blocks';
 
 const SAVED_TRENDS_COUNT = 5;  // 1:1 décomp constants/global.h:65.
@@ -124,7 +128,23 @@ export function UpdateDewfordTrendPerDay(days: number): void {
   }
 }
 
-// Exposition dev (sonde déterministe), sans effet sur le jeu.
+/** 1:1 décomp `BufferTrendyPhraseString(void)` (dewford_trend.c:290) :
+ *    struct DewfordTrend *trend = &dewfordTrends[gSpecialVar_0x8004];
+ *    ConvertEasyChatWordsToString(gStringVar1, trend->words, 2, 1);
+ *  Convertit les 2 mots easy-chat de la tendance (slot VAR_0x8004) en string FR dans
+ *  gStringVar1, pour affichage par le NPC du Hall de Poivressel. Le port de
+ *  ConvertEasyChatWordsToString renvoie la string → on l'encode dans gStringVar1. */
+export function BufferTrendyPhraseString(): void {
+  const trend = gSaveBlock1Ptr.dewfordTrends[VarGet('VAR_0x8004')];
+  const str = ConvertEasyChatWordsToString(null, trend.words, 2, 1);
+  StringCopy(gStringVar1, encodeOwText(str));
+}
+
+// Hook globalThis (cycle-safe) consommé par specials-registry pour le special
+// BufferTrendyPhraseString (le registry a déféré l'import easy_chat). Exposition dev
+// (sonde déterministe) pour UpdateDewfordTrendPerDay.
 {
-  (globalThis as Record<string, unknown>).UpdateDewfordTrendPerDay = UpdateDewfordTrendPerDay;
+  const _g = globalThis as Record<string, unknown>;
+  _g.UpdateDewfordTrendPerDay = UpdateDewfordTrendPerDay;
+  _g.__BufferTrendyPhraseString = BufferTrendyPhraseString;
 }

@@ -2106,7 +2106,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'BufferQuizAuthorNameAndCheckIfLady',
   'BufferQuizCorrectAnswer',
   // 'BufferTMHMMoveName' — porté 1:1 décomp field_specials.c:1638 ci-bas.
-  'BufferTrendyPhraseString',
+  // 'BufferTrendyPhraseString' — porté 1:1 décomp dewford_trend.c:290 (src/dewford_trend.ts), handler ci-bas.
   'BufferUnionRoomPlayerName',
   // 'BufferVarsForIVRater' — porté 1:1 décomp field_specials.c:1969 ci-bas (batch B44).
   // 'CableClubSaveGame' — porté 1:1 décomp cable_club.c:806 ci-bas (batch B47).
@@ -2386,6 +2386,16 @@ registerSpecial('RockSmashWildEncounter', () => {
 // safe : specials-registry est lourd, import statique de field_poison → risque cycle).
 registerSpecial('TryFieldPoisonWhiteOut', () => {
   const fn = (globalThis as Record<string, unknown>).__TryFieldPoisonWhiteOut as (() => void) | undefined;
+  if (fn) fn();
+  return 0;
+});
+
+// 1:1 décomp `BufferTrendyPhraseString` (dewford_trend.c:290) — convertit les 2 mots
+// easy-chat de la tendance VAR_0x8004 en string dans gStringVar1 (NPC Hall Poivressel).
+// L'impl vit dans src/dewford_trend.ts ; appelée via hook globalThis (le registry a
+// déféré l'import easy_chat — cycle-safe : dewford_trend.ts est une feuille).
+registerSpecial('BufferTrendyPhraseString', () => {
+  const fn = (globalThis as Record<string, unknown>).__BufferTrendyPhraseString as (() => void) | undefined;
   if (fn) fn();
   return 0;
 });
