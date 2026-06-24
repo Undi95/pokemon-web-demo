@@ -21,6 +21,7 @@ import { VarGet, VarSet, FlagGet } from './engine/script/script-vars';
 import { UpdatePartyPokerusTime } from './engine/battle/party-storage';
 import { ClearDailyFlags } from './event_data';
 import { UpdateWeatherPerDay } from './field_weather_effect';
+import { UpdateMirageRnd } from './time_events';
 
 /** 1:1 décomp `DoTimeBasedEvents` (clock.c:26) :
  *    - Read gSaveBlock1Ptr->lastBerryTreeUpdate
@@ -51,11 +52,12 @@ export function DoTimeBasedEvents(): void {
     if (days !== gLocalTime.days && days <= gLocalTime.days) {
       const daysSince = gLocalTime.days - days;
       // 1:1 décomp UpdatePerDay (ordre) : ClearDailyFlags, [Dewford/TV non portés],
-      // UpdateWeatherPerDay, UpdatePartyPokerusTime, [Mirage/Birch/Frontier/Shoal/
-      // lottery non portés].
+      // UpdateWeatherPerDay, UpdatePartyPokerusTime, UpdateMirageRnd, [Birch/Frontier/
+      // Shoal/lottery non portés].
       ClearDailyFlags();
       UpdateWeatherPerDay(daysSince);
       UpdatePartyPokerusTime(daysSince);
+      UpdateMirageRnd(daysSince);
       VarSet('VAR_DAYS', gLocalTime.days);
     }
   }
