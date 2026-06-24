@@ -50,12 +50,12 @@ import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
-import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { createPokemonInstance, GetGenderFromSpeciesAndPersonality, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
-import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { VarGet, VarSet, FlagGet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript } from './script';
@@ -359,9 +359,25 @@ function CreateWildMon(species: string, level: number): void {
   // CalculateMonStats (party-storage) dérivent la nature du PERSONALITY, pas du champ
   // `nature` → forcer via personality garde le champ nature ET les stats cohérents
   // (sinon Synchronize poserait une nature d'affichage ≠ stats).
+  // 1:1 décomp : Cute Charm → si l'espèce wild a un genderRatio VARIABLE et que le
+  // lead (non-œuf) a Cute Charm, 2/3 (Random%3 != 0) → genre wild = opposé du lead.
+  let targetGender = -1;  // -1 = pas de contrainte de genre
+  const grStr = getSpeciesInfo(species)?.genderRatio;
+  const fixedGender = grStr === 'MON_MALE' || grStr === 'MON_FEMALE' || grStr === 'MON_GENDERLESS';
+  if (!fixedGender && !GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
+      && GetMonAbility(gPlayerParty[0]) === ABILITY_CUTE_CHARM && Random() % 3 !== 0) {
+    const leadSpecies = GetMonData(gPlayerParty[0], MON_DATA_SPECIES) as number;
+    const leadPersonality = GetMonData(gPlayerParty[0], MON_DATA_PERSONALITY) as number;
+    const leadEnum = reverseDecompConstant(leadSpecies, 'SPECIES_') ?? '';
+    const leadGender = GetGenderFromSpeciesAndPersonality(leadEnum, leadPersonality);
+    targetGender = (leadGender === MON_FEMALE) ? MON_MALE : MON_FEMALE;  // 1:1 : opposé
+  }
   const natureIdx = PickWildMonNature();
   let personality = Random32() >>> 0;
-  while ((personality % 25) !== natureIdx) personality = Random32() >>> 0;
+  while ((personality % 25) !== natureIdx
+         || (targetGender >= 0 && GetGenderFromSpeciesAndPersonality(species, personality) !== targetGender)) {
+    personality = Random32() >>> 0;
+  }
   setupEnemyPartyForBattle([createPokemonInstance(species, level, { personality })]);
   // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:408) : `gBattleTypeFlags = 0` (OVERWRITE).
   // ⚠️ FIX régression : l'ancien `& ~BATTLE_TYPE_TRAINER` PRÉSERVAIT BATTLE_TYPE_FIRST_BATTLE posé
