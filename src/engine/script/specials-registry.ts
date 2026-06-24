@@ -54,7 +54,7 @@ import { Random } from '../../random';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import {
   CheckPartyPokerus, gPlayerParty, CalculatePlayerPartyCount, CalculatePPWithBonus,
-  GetMonsStateToDoubles,
+  GetMonsStateToDoubles, GetMonEVCount,
   GetMonData as _GetMonData, SetMonData,
   MON_DATA_MOVE1 as _MON_DATA_MOVE1,
   MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS,
@@ -2742,12 +2742,11 @@ registerSpecial('HasAtLeastOneBerry', () => {
  *  Return TRUE si EVs total du lead mon >= MAX_TOTAL_EVS (= 510). */
 registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
   // 1:1 décomp Special_AreLeadMonEVsMaxedOut (field_specials.c:1390) :
-  // GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS (510).
+  // return GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS (510).
+  // Appelé via `specialvar VAR_RESULT` (Slateport) → le retour est capturé.
   const mon = gPlayerParty[_GetLeadMonIndex()];
   if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) return 0;
-  // 1:1 décomp pokemon.c:1845 GetMonEVCount = somme des 6 EVs (champs natifs Pokemon).
-  const evCount = mon.hpEV + mon.attackEV + mon.defenseEV + mon.speedEV + mon.spAttackEV + mon.spDefenseEV;
-  return evCount >= 510 ? 1 : 0;  // MAX_TOTAL_EVS = 510
+  return GetMonEVCount(mon) >= 510 ? 1 : 0;  // MAX_TOTAL_EVS = 510, primitif nommé 1:1
 });
 
 /** 1:1 décomp `RetrieveLotteryNumber` (lottery_corner.c:42-46).

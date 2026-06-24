@@ -911,6 +911,22 @@ export function GetNature(mon: Pokemon): number {
 // Exposition dev (sonde déterministe GetNature), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__GetNature = GetNature;
 
+/** 1:1 décomp `u16 GetMonEVCount(struct Pokemon *mon)` (pokemon.c:6054-6062) :
+ *  `for (i = 0; i < NUM_STATS; i++) count += GetMonData(mon, MON_DATA_HP_EV + i);`.
+ *  Somme des 6 EVs (HP/ATK/DEF/SPEED/SPATK/SPDEF — constantes contiguës 26..31).
+ *  Utilisé par Special_AreLeadMonEVsMaxedOut (Dame du Ruban Effort à Yoda, EVs
+ *  totaux >= MAX_TOTAL_EVS=510). */
+export function GetMonEVCount(mon: Pokemon): number {
+  let count = 0;
+  for (let i = 0; i < 6 /* NUM_STATS */; i++) {
+    count += GetMonData(mon, MON_DATA_HP_EV + i) as number;
+  }
+  return count;
+}
+
+// Exposition dev (sonde déterministe GetMonEVCount), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetMonEVCount = GetMonEVCount;
+
 /** Adaptateur 0-based → miroir `ModifyStatByNature` (1-based décomp : STAT_ATK=1…
  *  STAT_SPDEF=5). Ce fichier passe un statIndex 0-based (0=ATK…4=SPDEF, hérité de
  *  CalculateMonStats/CALC_STAT) → +1 pour la signature 1:1 du miroir. Résultat
