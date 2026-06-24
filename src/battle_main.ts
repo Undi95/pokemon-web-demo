@@ -698,8 +698,7 @@ function _ResetSpriteData(): void { _ResetSpriteDataImpl(); }
 function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
 /** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c). */
 function _FreeAllSpritePalettes(): void { FreeAllSpritePalettes(); }
-/** 1:1 décomp `SetWildMonHeldItem()` (pokemon.c). */
-function _SetWildMonHeldItem(): void { /* Dette R3. */ }
+// SetWildMonHeldItem : porté 1:1 dans party-storage (pokemon.c equiv) ; ex-stub no-op retiré.
 
 /** Wire vers BattleSetup_GetEnvironmentId (battle_setup.c). */
 function _BattleSetup_GetEnvironmentId(): number {
@@ -875,7 +874,7 @@ export function CB2_InitBattleInternal(): void {
     if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
       _CreateNPCTrainerParty(null /* gEnemyParty[PARTY_SIZE/2] */, gTrainerBattleOpponent_B, false);
     }
-    _SetWildMonHeldItem();
+    SetWildMonHeldItem();
   }
 
   // 1:1 décomp ll. 703-704 : gMain.inBattle = TRUE + frontier disableRecordBattle.
@@ -3425,7 +3424,7 @@ import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetP
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
 import {
-  GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty, AdjustFriendship,
+  GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty, AdjustFriendship, SetWildMonHeldItem,
   GetAbilityBySpecies, restoreOwPartyAfterTest,
   MON_DATA_SPECIES, MON_DATA_SPECIES_OR_EGG, MON_DATA_HP, MON_DATA_STATUS, MON_DATA_NICKNAME,
 } from './engine/battle/party-storage';

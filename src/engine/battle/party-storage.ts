@@ -39,7 +39,7 @@ import {
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../../random';
-import { getSpeciesInfo, gBattleMoves } from '../data/game-data';
+import { getSpeciesInfo, gBattleMoves, gSpeciesInfo } from '../data/game-data';
 import { GetItemHoldEffect } from './data/item-hold-effects';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).
@@ -826,6 +826,52 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
   mon.friendship = friendship;
 }
+
+/** 1:1 décomp `void SetWildMonHeldItem(void)` (pokemon.c) : donne (ou non) un objet
+ *  tenu au Pokémon sauvage (gEnemyParty[0]) selon les chances itemCommon/itemRare de
+ *  son espèce. Sauté en combat légendaire / dresseur / Frontier Pyramid/Pike.
+ *  ```c
+ *  rnd = Random() % 100 ; species = gEnemyParty[0].species ;
+ *  chanceNoItem = 45, chanceNotRare = 95 ; lead non-œuf + Compound Eyes → 20/80 ;
+ *  if (itemCommon == itemRare && itemCommon != NONE)  → 100 % itemCommon
+ *  else  rnd<noItem → rien ; rnd<notRare → itemCommon ; sinon → itemRare.
+ *  ```
+ *  Altering Cave (LAYOUT_ALTERING_CAVE) DÉFÉRÉ : la cave est inactive dans le jeu de
+ *  base (VAR_ALTERING_CAVE_WILD_SET jamais posé → table normale), cf. wild_encounter.ts:265 ;
+ *  on applique donc le chemin normal (1:1 du sous-cas « cave inactive »). Adaptations
+ *  modèle : `gSpeciesInfo[species]` id-indexé (1:1) ; itemCommon/itemRare = string `ITEM_X`
+ *  → number via resolveDecompConstant ; gBattleTypeFlags + bit-flags via globalThis/literaux
+ *  (cycle-safe, pattern AdjustFriendship). */
+export function SetWildMonHeldItem(): void {
+  const _BATTLE_TYPE_TRAINER = 1 << 3;     // 1:1 décomp include/constants/battle.h
+  const _BATTLE_TYPE_LEGENDARY = 1 << 13;
+  const _BATTLE_TYPE_PIKE = 1 << 20;
+  const _BATTLE_TYPE_PYRAMID = 1 << 21;
+  const gBattleTypeFlags = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0;
+  if (gBattleTypeFlags & (_BATTLE_TYPE_LEGENDARY | _BATTLE_TYPE_TRAINER | _BATTLE_TYPE_PYRAMID | _BATTLE_TYPE_PIKE)) return;
+  const rnd = Random() % 100;
+  const species = GetMonData(gEnemyParty[0], MON_DATA_SPECIES) as number;
+  let chanceNoItem = 45;
+  let chanceNotRare = 95;
+  if (!(GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG) as number)
+      && GetMonAbility(gPlayerParty[0]) === 14 /* ABILITY_COMPOUND_EYES (constants.ts:250) */) {
+    chanceNoItem = 20;
+    chanceNotRare = 80;
+  }
+  const info = gSpeciesInfo[species];
+  const itemCommon = info ? ((resolveDecompConstant(info.itemCommon) as number | undefined) ?? 0) : 0;
+  const itemRare = info ? ((resolveDecompConstant(info.itemRare) as number | undefined) ?? 0) : 0;
+  if (itemCommon === itemRare && itemCommon !== 0 /* ITEM_NONE */) {
+    // 1:1 décomp : les deux objets identiques (≠ NONE) → 100 % de chance.
+    SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemCommon);
+  } else {
+    if (rnd < chanceNoItem) return;
+    if (rnd < chanceNotRare) SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemCommon);
+    else SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemRare);
+  }
+}
+// Sonde déterministe : SetWildMonHeldItem. Sans effet jeu.
+(globalThis as Record<string, unknown>).__SetWildMonHeldItem = SetWildMonHeldItem;
 
 /** 1:1 décomp `UpdatePartyPokerusTime(days)` (pokemon.c:6157) : pour chaque mon
  *  encore infecté (compteur de jours = low nibble 0xF non nul), décrémente les jours
