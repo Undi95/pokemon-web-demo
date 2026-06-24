@@ -467,6 +467,8 @@ function IsWildLevelAllowedByRepel(wildLevel: number): boolean {
   }
   return false;
 }
+// Sonde déterministe (sans effet jeu) : confirme la suppression Repel des rencontres.
+(globalThis as Record<string, unknown>).__IsWildLevelAllowedByRepel = IsWildLevelAllowedByRepel;
 
 /** 1:1 décomp `UpdateRepelCounter` (wild_encounter.c:850) : décrémente
  *  VAR_REPEL_STEP_COUNT à chaque pas ; à 0 → EventScript_RepelWoreOff (message).
@@ -610,7 +612,9 @@ export function FishingWildEncounter(rod: number): void {
  *    } else Result = FALSE;
  *  Le combat (BattleSetup_StartWildBattle) est déclenché via `_onBattleStartCallback`, comme
  *  StandardWildEncounter. Returns TRUE si un combat démarre (le special handler le pose dans VAR_RESULT).
- *  WILD_CHECK_REPEL/KEEN_EYE = dette R3 (flags ignorés par notre TryGenerateWildMon → param 0). */
+ *  WILD_CHECK_REPEL|WILD_CHECK_KEEN_EYE sont HONORÉS par TryGenerateWildMon (l.526/529 :
+ *  IsWildLevelAllowedByRepel + IsAbilityAllowingEncounter, tous deux 1:1) — l'ancienne note
+ *  « dette R3 / flags ignorés » était périmée (Repel + Keen Eye câblés et vérifiés). */
 export function RockSmashWildEncounter(): boolean {
   const header = GetCurrentMapWildMonHeader();
   if (!header || header.rockSmashMonsInfo === null) return false;
