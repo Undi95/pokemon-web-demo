@@ -44,15 +44,16 @@
  */
 
 import { Random } from './random';
+import { Random32 } from '../include/random';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
@@ -327,6 +328,20 @@ function AreLegendariesInSootopolisPreventingEncounters(): boolean {
   return false;
 }
 
+/** 1:1 décomp `PickWildMonNature` (wild_encounter.c) : si le lead mon (non-œuf) a
+ *  Synchronize, 50% → la nature du wild = celle du lead (`personality % NUM_NATURES`) ;
+ *  sinon nature aléatoire. (Biais Pokéblock Safari Zone non porté → skip.) Retourne
+ *  un index de nature 0..24. */
+function PickWildMonNature(): number {
+  const NUM_NATURES = 25;  // 1:1 décomp include/constants/pokemon.h.
+  if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
+      && GetMonAbility(gPlayerParty[0]) === ABILITY_SYNCHRONIZE
+      && Random() % 2 === 0) {
+    return ((GetMonData(gPlayerParty[0], MON_DATA_PERSONALITY) as number) >>> 0) % NUM_NATURES;
+  }
+  return Random() % NUM_NATURES;
+}
+
 /** 1:1 décomp `CreateWildMon` (wild_encounter.c:379-415) + boot du combat.
  *  Le combat SAUVAGE passe par la VRAIE boucle décomp (voie L) — la voie V
  *  (battle-flow.ts) a été retirée du chemin wild (destruction voie V, étape 1). */
@@ -337,8 +352,17 @@ function CreateWildMon(species: string, level: number): void {
   //    `bootDecompBattleLoop(true)` = CreateBattleStartTask(GetWildBattleTransition) (transition
   //    d'entrée) + PlayBattleBGM + swap CB2_InitBattle + savedCallback de retour OW
   //    (CB2_EndWildBattle). Dette R3 : Cute Charm gender bias (wild_encounter.c:394-412),
-  //    PickWildMonNature — déférés (étaient déjà gérés ad-hoc par l'ex-voie V).
-  setupEnemyPartyForBattle([createPokemonInstance(species, level)]);
+  //    PickWildMonNature : nature via Synchronize ci-dessous (Cute Charm gender bias
+  //    déféré = génération du gender via PID).
+  // 1:1 décomp CreateMonWithNature : on re-roll le personality jusqu'à ce que sa
+  // nature (personality % 25) corresponde à PickWildMonNature. INDISPENSABLE : nos
+  // CalculateMonStats (party-storage) dérivent la nature du PERSONALITY, pas du champ
+  // `nature` → forcer via personality garde le champ nature ET les stats cohérents
+  // (sinon Synchronize poserait une nature d'affichage ≠ stats).
+  const natureIdx = PickWildMonNature();
+  let personality = Random32() >>> 0;
+  while ((personality % 25) !== natureIdx) personality = Random32() >>> 0;
+  setupEnemyPartyForBattle([createPokemonInstance(species, level, { personality })]);
   // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:408) : `gBattleTypeFlags = 0` (OVERWRITE).
   // ⚠️ FIX régression : l'ancien `& ~BATTLE_TYPE_TRAINER` PRÉSERVAIT BATTLE_TYPE_FIRST_BATTLE posé
   // par le tuto Birch (StartFirstBattle) → chaque combat sauvage APRÈS le tuto restait un Zigzagoon
