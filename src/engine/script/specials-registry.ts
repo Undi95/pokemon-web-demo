@@ -29,7 +29,7 @@
 import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
-import { ISO_RANDOMIZE2 } from '../../../include/random';
+import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2683,12 +2683,9 @@ registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
  *  Set gSpecialVar_Result = GetLotteryNumber() (= (lowNum << 16) | highNum).
  *  GetLotteryNumber décomp ligne 156-161 utilise VAR_POKELOT_RND1/2. */
 registerSpecial('RetrieveLotteryNumber', () => {
-  const highNum = VarGet('VAR_POKELOT_RND1');
-  const lowNum = VarGet('VAR_POKELOT_RND2');
-  // Note 1:1 strict : décomp retourne u32 (lowNum << 16) | highNum, mais
-  // gSpecialVar_Result est u16 → l'high 16 bits seront truncated. Notre retour
-  // se fait via VAR_RESULT u16 donc on retourne juste les low 16 bits.
-  return ((lowNum << 16) | highNum) & 0xFFFF;
+  // GetLotteryNumber() importé de game/lottery_corner.ts (dédup). Note 1:1 strict :
+  // décomp retourne u32, mais gSpecialVar_Result est u16 → on tronque aux 16 bits bas.
+  return GetLotteryNumber() & 0xFFFF;
 });
 
 /** 1:1 décomp `HasBardSongBeenChanged` (mauville_old_man.c:151-154).
@@ -3485,49 +3482,21 @@ function _getMatchingDigits(winNumber: number, otId: number): number {
   return matching;
 }
 
-/** 1:1 décomp `SetLotteryNumber(u32 lotteryNum)` (lottery_corner.c:147-154) :
- *  split en 2 halfwords stockés dans VAR_POKELOT_RND1/2. */
-function _setLotteryNumber(lotteryNum: number): void {
-  const lowNum = (lotteryNum >>> 16) & 0xFFFF;
-  const highNum = lotteryNum & 0xFFFF;
-  VarSet('VAR_POKELOT_RND1', highNum);
-  VarSet('VAR_POKELOT_RND2', lowNum);
-}
-
 /** 1:1 décomp `ResetLotteryCorner(void)` (lottery_corner.c:24-30) :
  *      u16 rand = Random();
  *      SetLotteryNumber((Random() << 16) | rand);
  *      VarSet(VAR_POKELOT_PRIZE_ITEM, 0);
- */
+ *  (SetLotteryNumber importé de game/lottery_corner.ts — dédup.) */
 registerSpecial('ResetLotteryCorner', () => {
   const rand = Random() & 0xFFFF;
-  _setLotteryNumber(((Random() & 0xFFFF) << 16) | rand);
+  SetLotteryNumber(((Random() & 0xFFFF) << 16) | rand);
   VarSet('VAR_POKELOT_PRIZE_ITEM', 0);
 });
 
-/** 1:1 décomp `SetRandomLotteryNumber(u16 i)` (lottery_corner.c:32-40) :
- *      var = Random();
- *      while (--i != 0xFFFF)
- *          var = ISO_RANDOMIZE2(var);
- *      SetLotteryNumber(var);
- *
- *  ⚠️ DETTE NOTÉE : la décomp N'expose PAS ceci comme special (pas dans specials.inc) ;
- *  c'est une fonction appelée par UpdatePerDay(daysSince) (clock.c:54). Le wrapper-
- *  special lisant VAR_0x8004 est donc spurious + non câblé dans UpdatePerDay (dette à
- *  porter proprement : foyer lottery_corner.ts + wire clock.ts). On corrige ici au moins
- *  le BUG de RNG : l'inline utilisait `1103515245*v+24691` (= ISO_RANDOMIZE1, FAUX) en
- *  multiplication JS non-Math.imul (overflow). → canonique ISO_RANDOMIZE2 (=+12345). */
-registerSpecial('SetRandomLotteryNumber', () => {
-  let i = VarGet('VAR_0x8004') & 0xFFFF;
-  let v = Random() >>> 0;
-  // 1:1 décomp while (--i != 0xFFFF) — décrémente jusqu'à underflow u16.
-  while (true) {
-    i = (i - 1) & 0xFFFF;
-    if (i === 0xFFFF) break;
-    v = ISO_RANDOMIZE2(v);
-  }
-  _setLotteryNumber(v);
-});
+// `SetRandomLotteryNumber` n'est PAS un special (absent de specials.inc) : c'est une
+// fonction appelée par UpdatePerDay(daysSince). Portée 1:1 dans src/lottery_corner.ts
+// + câblée dans clock.ts:UpdatePerDay. L'ancien wrapper-special spurious (lisant
+// VAR_0x8004, RNG buggé) est SUPPRIMÉ ici.
 
 /** 1:1 décomp `PickLotteryCornerTicket(void)` (lottery_corner.c:48-120).
  *

@@ -54,3 +54,6 @@ export function _rngDebug(): { gRngValue: number; gRng2Value: number; sRandCount
 export function _rngReset(): void {
   gRngValue = 0; gRng2Value = 0; sUnknown = 0; sRandCount = 0;
 }
+
+// Exposition dev (lecture seule de l'état RNG pour console/sondes déterministes).
+(globalThis as Record<string, unknown>).__rngDebug = _rngDebug;
