@@ -49,21 +49,21 @@ import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
-import { VarGet, VarSet } from './engine/script/script-vars';
+import { VarGet, VarSet, FlagGet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript } from './script';
 import { PARTY_SIZE } from './engine/save/save-blocks';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
 } from './metatile_behavior';
-import { IncrementGameStat, PlayerGetDestCoords } from './field_player_avatar';
+import { IncrementGameStat, PlayerGetDestCoords, TestPlayerAvatarFlags, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE } from './field_player_avatar';
 import { MapGridGetMetatileBehaviorAt } from './fieldmap';
 import { GAME_STAT_FISHING_ENCOUNTERS } from '../include/constants/game_stat';
 
@@ -270,12 +270,34 @@ function EncounterOddsCheck(encounterRate: number): boolean {
   return (Random() % MAX_ENCOUNTER_RATE) < encounterRate;
 }
 
-/** 1:1 décomp `WildEncounterCheck` (wild_encounter.c:502-529) minimal.
+/** 1:1 décomp `include/constants/items.h` `#define ITEM_CLEANSE_TAG 190`. */
+const ITEM_CLEANSE_TAG = 190;
+
+/** 1:1 décomp `ApplyFluteEncounterRateMod` (wild_encounter.c:955) : Flûte Blanche
+ *  (FLAG_SYS_ENC_UP_ITEM) → +50% du taux ; Flûte Noire (FLAG_SYS_ENC_DOWN_ITEM) → −50%. */
+function ApplyFluteEncounterRateMod(encRate: number): number {
+  if (FlagGet('FLAG_SYS_ENC_UP_ITEM')) return encRate + Math.floor(encRate / 2);
+  if (FlagGet('FLAG_SYS_ENC_DOWN_ITEM')) return Math.floor(encRate / 2);
+  return encRate;
+}
+
+/** 1:1 décomp `ApplyCleanseTagEncounterRateMod` (wild_encounter.c:962) : Rune Protect
+ *  (Cleanse Tag) tenu par le lead → taux ×2/3. */
+function ApplyCleanseTagEncounterRateMod(encRate: number): number {
+  if (GetMonData(gPlayerParty[0], MON_DATA_HELD_ITEM) === ITEM_CLEANSE_TAG)
+    return Math.floor(encRate * 2 / 3);
+  return encRate;
+}
+
+/** 1:1 décomp `WildEncounterCheck` (wild_encounter.c:502-529).
  *  Returns true si l'encounter doit trigger. */
 function WildEncounterCheck(encounterRate: number, ignoreAbility: boolean): boolean {
   let er = encounterRate * 16;
-  // Dette R3 : Bike (PLAYER_AVATAR_FLAG_MACH_BIKE/ACRO_BIKE) → er *= 0.8.
-  // Dette R3 : ApplyFluteEncounterRateMod + ApplyCleanseTagEncounterRateMod.
+  // 1:1 décomp : vélo (Mach/Acro Bike) → taux ×80%.
+  if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+    er = Math.floor(er * 80 / 100);
+  er = ApplyFluteEncounterRateMod(er);
+  er = ApplyCleanseTagEncounterRateMod(er);
   // 1:1 décomp : mods d'ability du lead (non-œuf) sur le taux de rencontre.
   // (Cas STENCH ×3/4 Battle Pyramid omis : Frontier non porté.)
   if (!ignoreAbility && !GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)) {
