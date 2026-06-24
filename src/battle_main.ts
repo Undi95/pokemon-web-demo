@@ -3594,11 +3594,51 @@ function FreeBattleSpritesData(): void {
   // Dette R3 : reset sprite tracking tables battle. Notre port : noop.
 }
 
-/** 1:1 décomp `RandomlyGivePartyPokerus(party)` (pokerus.c). Phase port :
- *  RNG roll pour donner Pokerus à un mon de la party post-combat. */
-function RandomlyGivePartyPokerus(_party: unknown): void {
-  // Dette R3 : Pokerus system (pokerus.c). Roll RNG + assign byte au mon.
-  // Pour now : noop. Documenté dans pokerus.c (~30l).
+/** 1:1 décomp `u8 CheckPartyHasHadPokerus(party, selection)` (pokemon.c:6129) : pour
+ *  les slots sélectionnés (bitmask), set le bit retVal si le mon a un octet Pokérus
+ *  != 0 (l'a / l'a eu). selection==0 → check slot 0. */
+function CheckPartyHasHadPokerus(party: Array<{ pokerus: number }>, selection: number): number {
+  let retVal = 0;
+  let partyIndex = 0;
+  let curBit = 1;
+  if (selection) {
+    do {
+      if ((selection & 1) && party[partyIndex].pokerus) retVal |= curBit;
+      partyIndex++;
+      curBit <<= 1;
+      selection >>= 1;
+    } while (selection);
+  } else if (party[0].pokerus) {
+    retVal = 1;
+  }
+  return retVal;
+}
+
+/** 1:1 décomp `void RandomlyGivePartyPokerus(party)` (pokemon.c:6072) : ~3/65536 par
+ *  combat (Random ∈ {0x4000,0x8000,0xC000}) → tire un slot non-œuf au hasard ; s'il
+ *  n'a jamais eu le Pokérus, lui assigne un octet souche (low 3 bits non nuls,
+ *  dupliqué high nibble, masqué 0xF3, +1). `party` = gPlayerParty (Pokemon numérique). */
+function RandomlyGivePartyPokerus(party: unknown): void {
+  const p = party as Array<{ species: number; isEgg: number; pokerus: number }>;
+  const rnd = Random();
+  if (rnd === 0x4000 || rnd === 0x8000 || rnd === 0xC000) {
+    let slot: number;
+    do {
+      slot = Random() % PARTY_SIZE;
+    } while (!p[slot].species || p[slot].isEgg);
+    // 1:1 : gBitTable[slot] === (1 << slot).
+    if (!CheckPartyHasHadPokerus(p, 1 << slot)) {
+      let rnd2: number;
+      do {
+        rnd2 = Random() & 0xFF;
+      } while ((rnd2 & 0x7) === 0);
+      if (rnd2 & 0xF0) rnd2 &= 0x7;
+      rnd2 |= (rnd2 << 4);
+      rnd2 &= 0xF3;
+      rnd2++;
+      p[slot].pokerus = rnd2 & 0xFF;
+    }
+  }
 }
 
 /** 1:1 décomp `PartySpreadPokerus(party)` (pokemon.c:6181). 1/3 de chance après
