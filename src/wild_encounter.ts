@@ -52,7 +52,7 @@ import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
 import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { VarGet, VarSet } from './engine/script/script-vars';
@@ -371,6 +371,20 @@ export function UpdateRepelCounter(): boolean {
   return false;
 }
 
+/** 1:1 décomp `IsAbilityAllowingEncounter` (wild_encounter.c:836) : si le lead mon
+ *  (non-œuf) a Keen Eye ou Intimidate et que le niveau sauvage est <= (niveau du
+ *  lead − 5), 50% → empêche la rencontre. */
+function IsAbilityAllowingEncounter(level: number): boolean {
+  if (GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)) return true;
+  const ability = GetMonAbility(gPlayerParty[0]);
+  if (ability === ABILITY_KEEN_EYE || ability === ABILITY_INTIMIDATE) {
+    const playerMonLevel = GetMonData(gPlayerParty[0], MON_DATA_LEVEL) as number;
+    if (playerMonLevel > 5 && level <= playerMonLevel - 5 && !(Random() % 2))
+      return false;
+  }
+  return true;
+}
+
 /** 1:1 décomp `TryGenerateWildMon` (wild_encounter.c:422-456) minimal.
  *  Returns TRUE si encounter setup (= CreateWildMon appelé). */
 function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, flags: number): boolean {
@@ -396,7 +410,9 @@ function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, flags: n
   const level = ChooseWildMonLevel(wildMonInfo.wildPokemon[wildMonIndex]);
   // 1:1 décomp : WILD_CHECK_REPEL → bloque si un Repel actif interdit ce niveau.
   if ((flags & WILD_CHECK_REPEL) && !IsWildLevelAllowedByRepel(level)) return false;
-  // Dette R3 : WILD_CHECK_KEEN_EYE → IsAbilityAllowingEncounter(level).
+  // 1:1 décomp : WILD_CHECK_KEEN_EYE → Keen Eye/Intimidate peut empêcher une
+  // rencontre de bas niveau (check Pike Room Frontier omis, non porté).
+  if ((flags & WILD_CHECK_KEEN_EYE) && !IsAbilityAllowingEncounter(level)) return false;
   CreateWildMon(wildMonInfo.wildPokemon[wildMonIndex].species, level);
   return true;
 }
