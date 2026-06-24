@@ -190,14 +190,15 @@ registerSpecial('BedroomPC', () => { /* see script-opcodes.ts dispatcher */ });
  *  Stub ici pour audit-coverage ; vrai dispatch dans script-opcodes.ts. */
 registerSpecial('PlayerPC', () => { /* see script-opcodes.ts dispatcher */ });
 
-/** 1:1 décomp `GetBattleOutcome` (battle_util.c).
- *  Returns gBattleOutcome (= win/lose/run/draw). Phase 5.6 : on lit le résultat
- *  stash par battle-flow.ts via globalThis.__gBattleOutcome (= notre proxy de
- *  gBattleOutcome EWRAM_DATA). Si pas de battle eu lieu encore, return WIN par
- *  défaut (= fait progresser scripts post-battle sans crash). */
+/** 1:1 décomp `u8 GetBattleOutcome(void)` (field_specials.c:922) :
+ *    `return gBattleOutcome;` (win/lose/run/draw/caught…). Appelé via
+ *  `specialvar VAR_RESULT, GetBattleOutcome` (AncientTomb, AquaHideout, BirthIsland…
+ *  = légendaires, post-battle). FIX : on lit le VRAI `gBattleOutcome` (state.ts)
+ *  via le getter live `__getBattleOutcome` — avant, on lisait `__gBattleOutcome`
+ *  qui n'était JAMAIS écrit → renvoyait toujours WIN (1) quel que soit le résultat. */
 registerSpecial('GetBattleOutcome', () => {
-  const out = (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome;
-  return typeof out === 'number' ? out : 1;  // BATTLE_OUTCOME_WIN default
+  const fn = (globalThis as { __getBattleOutcome?: () => number }).__getBattleOutcome;
+  return fn ? fn() : 0;  // 1:1 : gBattleOutcome (0 = aucun combat encore)
 });
 
 /** 1:1 décomp `CalculatePlayerPartyCount` (pokemon.c) :

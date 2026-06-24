@@ -874,6 +874,11 @@ export function setMultiHitCounter(v: number) { gMultiHitCounter = v; }
 export function setMoveResultFlags(v: number) { gMoveResultFlags = v; }
 export function setHitMarker(v: number) { gHitMarker = v; }
 export function setBattleOutcome(v: number) { gBattleOutcome = v; }
+// Getter live du résultat de combat, pour le special GetBattleOutcome (field_specials.c:922)
+// qui vit dans specials-registry (cycle-unsafe à importer battle/state). La closure
+// capture le binding `let` → reflète toujours la valeur courante. Avant : le special
+// lisait `__gBattleOutcome` (JAMAIS écrit) → renvoyait toujours WIN. [[gotcha-special-vs-specialvar-varresult]]
+(globalThis as Record<string, unknown>).__getBattleOutcome = () => gBattleOutcome;
 export function setBattleTypeFlags(v: number) { gBattleTypeFlags = v; }
 export function setBattleWeather(v: number) { gBattleWeather = v; }
 export function setSideStatus(sideIdx: number, v: number) { gSideStatuses[sideIdx] = v; }
