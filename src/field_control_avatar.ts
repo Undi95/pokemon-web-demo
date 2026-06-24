@@ -35,7 +35,9 @@ import {
   PartyHasMonWithSurf,
   IsPlayerFacingSurfableFishableWater,
   IsPlayerSurfingNorth,
+  PLAYER_AVATAR_FLAG_FORCED_MOVE,
 } from './field_player_avatar';
+import { IncrementRematchStepCounter } from './battle_setup';
 import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerParty } from './engine/battle/party-storage';
@@ -280,8 +282,9 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
         return true;
       }
     }
-    // 1:1 décomp `TryStartStepBasedScript` : dernier maillon = UpdateRepelCounter
-    // (décrément du Repel ; EventScript_RepelWoreOff quand il atteint 0).
+    // 1:1 décomp `TryStartStepBasedScript` : TryStartStepCountScript (compteurs de
+    // pas rematch/amitié/poison) puis UpdateRepelCounter (dernier maillon).
+    if (TryStartStepCountScript(metatileBehavior)) return true;
     if (UpdateRepelCounter()) return true;
   }
 
@@ -924,22 +927,12 @@ export function UpdateFriendshipStepCounter(): void {
  *  party mons poisoned ; return FLDPSN_FNT si tous fainted, FLDPSN_PSN si
  *  encore en vie, FLDPSN_NONE si aucun poisoned.
  *
- *  ⚠️ DORMANTE (audit 2026-06-05) : AUCUN caller. Le dispatch décomp
- *  `TryStartStepCountScript` (field_control_avatar.c:537, appelle ce compteur +
- *  UpdateFriendshipStepCounter + IncrementRematchStepCounter) n'est PAS porté →
- *  le poison de terrain ne retire AUCUN PV en LIVE. Câbler = cluster #13
- *  (TryFieldPoisonWhiteOut, actuellement stub) + #15 (GetHealLocation pour le
- *  téléport white-out). Le décrément ici est 1:1 mais inerte tant que non câblé.
- *
- *  ⚠️⚠️ BLOQUEUR MODÈLE (vérifié runtime 2026-06-24) : même câblé, ce corps NE
- *  FONCTIONNE PAS. Il lit `mon.species` / `mon.status >>> 0` / `mon.hp` (modèle
- *  décomp `struct Pokemon` numérique), mais `gSaveBlock1Ptr.playerParty` contient
- *  des `PokemonInstance` (`speciesId`, `status` = STRING 'PSN'/'BRN'/'OK', PV via
- *  getter pas `hp` brut). Donc `mon.species===0` est toujours faux et
- *  `"BRN">>>0 === 0` → le check poison ne matche JAMAIS. Câbler le poison de
- *  terrain exige d'abord de réécrire ce corps via GetMonData/SetMonData +
- *  un mapping status string↔STATUS1 (= divergence PokemonInstance↔Pokémon décomp,
- *  chantier modèle, PAS un simple wiring). Wiring tenté + reverté ce jour. */
+ *  ✅ CÂBLÉ + CORRIGÉ (2026-06-24) : appelé via TryStartStepCountScript (wiré dans
+ *  le bloc tookStep = field_control_avatar.c:537). Le bug modèle est résolu : on
+ *  itère `gPlayerParty` (la SOURCE Pokemon numérique : species/status/hp), PAS
+ *  `gSaveBlock1Ptr.playerParty` (= VUES PokemonInstance, status STRING, sur
+ *  lesquelles le raw-field check échouait : `"BRN">>>0===0`). Décrément HP LIVE.
+ *  RESTE : TryFieldPoisonWhiteOut (message + white-out quand tous KO) = stub. */
 export function UpdatePoisonStepCounter(): boolean {
   // 1:1 décomp : skip pour Secret Base.
   const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.
@@ -952,7 +945,9 @@ export function UpdatePoisonStepCounter(): boolean {
   // 1:1 décomp DoPoisonFieldEffect (field_poison.c:120-154) :
   //   iter party, decrement HP des poisoned mons, return FNT si tous KO.
   const FLDPSN_FNT = 2;  // 1:1 décomp include/constants/pokemon.h.
-  const party = gSaveBlock1Ptr.playerParty;
+  // ⚠️ gPlayerParty (SOURCE Pokemon numérique : species/status/hp), PAS
+  // gSaveBlock1Ptr.playerParty (= VUES PokemonInstance, status STRING → check KO).
+  const party = gPlayerParty;
   let numFainted = 0;
   let numPoisoned = 0;
   for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
@@ -972,6 +967,24 @@ export function UpdatePoisonStepCounter(): boolean {
     // 1:1 décomp : return FLDPSN_FNT === 2 → caller wraps en boolean.
     void FLDPSN_FNT;
     return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `TryStartStepCountScript` (field_control_avatar.c:565-630), version
+ *  portée : compteurs de pas Rematch + Amitié + Poison. (InUnionRoom,
+ *  UpdateFarawayIslandStepCounter, ShouldEggHatch, AbnormalWeather, appels Match
+ *  Call Wally/Scott/Roxanne/Rayquaza, Safari, SS Tidal = sous-systèmes non portés,
+ *  omis.) Retourne TRUE si un script de pas a démarré (poison white-out). */
+function TryStartStepCountScript(metatileBehavior: number): boolean {
+  IncrementRematchStepCounter();
+  UpdateFriendshipStepCounter();
+  if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE)
+      && !MetatileBehavior_IsForcedMovementTile(metatileBehavior)) {
+    if (UpdatePoisonStepCounter()) {
+      ScriptContext_SetupScript('EventScript_FieldPoison');
+      return true;
+    }
   }
   return false;
 }

@@ -973,7 +973,7 @@ export const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
 export const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
 export const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
 const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
-const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
+export const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
 export const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
 
 /** 1:1 décomp `enum` (bike.h:21-24). `PLAYER_SPEED_FASTEST = 4` (STANDING=0, NORMAL=1,
