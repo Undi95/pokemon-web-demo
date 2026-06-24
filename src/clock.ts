@@ -14,9 +14,11 @@
  * contient que `DoTimeBasedEvents` (= clock.c) qui l'appelle.
  */
 
-import { RtcGetMinuteCount } from './rtc';
+import { RtcGetMinuteCount, gLocalTime } from './rtc';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { BerryTreeTimeUpdate } from './berry';
+import { VarGet, VarSet, FlagGet } from './engine/script/script-vars';
+import { UpdatePartyPokerusTime } from './engine/battle/party-storage';
 
 /** 1:1 décomp `DoTimeBasedEvents` (clock.c:26) :
  *    - Read gSaveBlock1Ptr->lastBerryTreeUpdate
@@ -38,9 +40,16 @@ export function DoTimeBasedEvents(): void {
     BerryTreeTimeUpdate(diff);
   }
 
-  // Future :
-  // - ClearDailyFlagsAfterChallenge if day changed
-  // - Rotate Mass Outbreaks
-  // - Weather rotation (Route 119/123)
-  // - Mirage Island calc
+  // 1:1 décomp `UpdatePerDay` (clock.c:36) : bloc changement-de-jour. Gated sur
+  // FLAG_SYS_CLOCK_SET (InPokemonCenter omis : non porté). `VAR_DAYS` = dernier jour
+  // traité, `gLocalTime.days` = jour courant. Forward-only (days <= localTime.days).
+  // RESTE future : ClearDailyFlags, Dewford/TV/Weather/Mirage/lottery per-day.
+  if (FlagGet('FLAG_SYS_CLOCK_SET')) {
+    const days = VarGet('VAR_DAYS');
+    if (days !== gLocalTime.days && days <= gLocalTime.days) {
+      const daysSince = gLocalTime.days - days;
+      UpdatePartyPokerusTime(daysSince);
+      VarSet('VAR_DAYS', gLocalTime.days);
+    }
+  }
 }

@@ -724,6 +724,29 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   mon.friendship = friendship;
 }
 
+/** 1:1 décomp `UpdatePartyPokerusTime(days)` (pokemon.c:6157) : pour chaque mon
+ *  encore infecté (compteur de jours = low nibble 0xF non nul), décrémente les jours
+ *  de `days` ; si jours restants < days OU days > 4 → guérison (`&= 0xF0` : la souche
+ *  high nibble reste, jours = 0) ; si l'octet tombe à 0 → 0x10 (marqueur conservé).
+ *  Opère sur gPlayerParty (Pokemon struct numérique). */
+export function UpdatePartyPokerusTime(days: number): void {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if (mon && mon.species) {
+      let pokerus = mon.pokerus;
+      if (pokerus & 0xF) {
+        if ((pokerus & 0xF) < days || days > 4)
+          pokerus &= 0xF0;
+        else
+          pokerus -= days;
+        if (pokerus === 0)
+          pokerus = 0x10;
+        mon.pokerus = pokerus;
+      }
+    }
+  }
+}
+
 // ─── MonGainEVs (= 1:1 décomp pokemon.c:5975-6052) ───────────────────────
 
 const _MAX_TOTAL_EVS = 510;
