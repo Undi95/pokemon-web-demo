@@ -31,6 +31,7 @@ import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
 import { CheckFreePokemonStorageSpace } from '../../pokemon_storage_system';
+import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -3523,7 +3524,7 @@ registerSpecial('ResetLotteryCorner', () => {
  *    0x8005 = sLotteryPrizes[idx] (= itemId du prize)
  *    0x8006 = 0 (party) | 1 (PC)
  *    StringVar1 = nickname du mon gagnant */
-registerSpecial('PickLotteryCornerTicket', () => {
+function _pickLotteryCornerTicket(): void {
   // 1:1 :44 : lotto number = GetLotteryNumber() & 0xFFFF (= u16).
   const highNum = VarGet('VAR_POKELOT_RND1');
   const lowNum = VarGet('VAR_POKELOT_RND2');
@@ -3532,9 +3533,10 @@ registerSpecial('PickLotteryCornerTicket', () => {
   let bestMatching = 0;
   let bestSlot = 0;
   let bestBox = 0;  // 0 = party, TOTAL_BOXES_COUNT = party marker dans décomp
+  const TOTAL_BOXES_COUNT = 14;
+  const IN_BOX_COUNT = 30;
 
   // 1:1 :58-82 : loop party.
-  const TOTAL_BOXES_COUNT = 14;
   for (let i = 0; i < PARTY_SIZE; i++) {
     const mon = gPlayerParty[i];
     if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) break;
@@ -3549,8 +3551,25 @@ registerSpecial('PickLotteryCornerTicket', () => {
     }
   }
 
-  // Dette R3 :84-102 : PC boxes loop pas porté (= gPokemonStoragePtr U-tier).
-  // Skip cette section. Le matching reste limité aux party mons.
+  // 1:1 :84-102 : loop PC boxes. Slots = `PokemonInstance | null` (speciesId 0 =
+  // SPECIES_NONE, isEgg flag). Partage `bestMatching` avec la party (= gSpecialVar
+  // _0x8004 dans la décomp ; comparaison `matching > bestMatching` où bestMatching
+  // tient déjà `prevMatching - 1` → ties vont au mon plus tardif, 1:1 strict).
+  const boxes = GetPokemonStorage().boxes;
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
+    for (let j = 0; j < IN_BOX_COUNT; j++) {
+      const slot = boxes[i]?.[j];
+      if (slot && slot.speciesId && !slot.isEgg) {
+        const otId = (slot.otId ?? 0) >>> 0;
+        const matching = _getMatchingDigits(lottoNumber, otId & 0xFFFF);
+        if (matching > bestMatching && matching > 1) {
+          bestMatching = matching - 1;
+          bestBox = i;  // index de boîte (0..13, != TOTAL_BOXES_COUNT)
+          bestSlot = j;
+        }
+      }
+    }
+  }
 
   gSpecialVar.Result = lottoNumber;
   VarSet('VAR_0x8004', bestMatching);
@@ -3566,10 +3585,16 @@ registerSpecial('PickLotteryCornerTicket', () => {
       setStringVar(1, (_GetMonData(winner, MON_DATA_NICKNAME) as string)
         || (gSpeciesNames[_GetMonData(winner, MON_DATA_SPECIES) as number] ?? ''));
     } else {
-      VarSet('VAR_0x8006', 1);  // PC (= jamais atteint actuellement)
+      VarSet('VAR_0x8006', 1);  // PC
+      const winner = boxes[bestBox]?.[bestSlot];
+      setStringVar(1, (winner?.nickname)
+        || (gSpeciesNames[(winner?.speciesId ?? 0)] ?? ''));
     }
   }
-});
+}
+registerSpecial('PickLotteryCornerTicket', () => { _pickLotteryCornerTicket(); return 0; });
+// Exposition dev (sonde déterministe) : le special n'est pas appelable depuis eval.
+(globalThis as Record<string, unknown>).__pickLotteryCornerTicket = _pickLotteryCornerTicket;
 
 // ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
 
