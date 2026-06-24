@@ -23,8 +23,12 @@ import { GetPlayerNameString } from '../system/string-buffers';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
-  GetGenderFromSpeciesAndPersonality,
+  GetGenderFromSpeciesAndPersonality, pokemonToPokemonInstance,
 } from '../pokemon/pokemon';
+import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
+import type { PokemonStorage } from '../save/save-blocks';
+import { VarGet, VarSet, FlagClear } from '../script/script-vars';
+import { SetPCBoxToSendMon, GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { gMapHeader } from '../../fieldmap';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
@@ -1141,12 +1145,47 @@ export function GiveMonToPlayer(mon: Pokemon): number {
   return MON_GIVEN_TO_PARTY;
 }
 
-/** 1:1 décomp `static u8 CopyMonToPC(struct Pokemon *mon)` (pokemon.c:4434) : range
- *  le mon dans la 1ère box PC libre. PC box storage non porté (Phase 5) → renvoie
- *  MON_CANT_GIVE (dette R3 : party pleine → CANT_GIVE au lieu de MON_GIVEN_TO_PC). */
-function CopyMonToPC(_mon: Pokemon): number {
-  console.warn('[GiveMonToPlayer] party pleine → CopyMonToPC pas porté (Phase 5)');
-  return MON_CANT_GIVE;
+/** 1:1 décomp `static u8 CopyMonToPC(struct Pokemon *mon)` (pokemon.c:4434-4465) :
+ *  ```c
+ *  SetPCBoxToSendMon(VarGet(VAR_PC_BOX_TO_SEND_MON));
+ *  boxNo = StorageGetCurrentBox();
+ *  do { for (boxPos…) if (boxes[boxNo][boxPos].species == NONE) {
+ *      MonRestorePP(mon); CopyMon(checkingMon, &mon->box, …);
+ *      gSpecialVar_MonBoxId/Pos = …;
+ *      if (GetPCBoxToSendMon() != boxNo) FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);
+ *      VarSet(VAR_PC_BOX_TO_SEND_MON, boxNo); return MON_GIVEN_TO_PC; }
+ *    boxNo = (boxNo+1) % TOTAL_BOXES_COUNT; } while (boxNo != StorageGetCurrentBox());
+ *  return MON_CANT_GIVE;
+ *  ```
+ *  Range le mon dans le 1er slot PC libre (depuis la box courante, en bouclant).
+ *  Dette R3 SOLDÉE : party pleine → mon au PC (au lieu d'être perdu). Adaptations
+ *  modèle : box slot = PokemonInstance → conversion via pokemonToPokemonInstance ;
+ *  storage via le hook `__getPokemonStorage` (cycle-safe : éviter d'importer save.ts
+ *  lourd dans party-storage). MonRestorePP (PP au max) + gSpecialVar_MonBoxId/Pos
+ *  (numéro pour le message « envoyé à la Boîte X ») = refinements différés. */
+function CopyMonToPC(mon: Pokemon): number {
+  const getStorage = (globalThis as { __getPokemonStorage?: () => PokemonStorage }).__getPokemonStorage;
+  const storage = getStorage?.();
+  if (!storage) {
+    console.warn('[CopyMonToPC] storage PC pas prêt → CANT_GIVE');
+    return MON_CANT_GIVE;
+  }
+  SetPCBoxToSendMon(VarGet('VAR_PC_BOX_TO_SEND_MON'));
+  const startBox = storage.currentBox;  // 1:1 StorageGetCurrentBox()
+  let boxNo = startBox;
+  do {
+    for (let boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++) {
+      const slot = storage.boxes[boxNo]?.[boxPos];
+      if (!slot || !slot.speciesId) {  // 1:1 : GetBoxMonData(SPECIES) == SPECIES_NONE
+        storage.boxes[boxNo][boxPos] = pokemonToPokemonInstance(mon);  // 1:1 CopyMon
+        if (GetPCBoxToSendMon() !== boxNo) FlagClear('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
+        VarSet('VAR_PC_BOX_TO_SEND_MON', boxNo);
+        return MON_GIVEN_TO_PC;
+      }
+    }
+    boxNo = (boxNo + 1) % TOTAL_BOXES_COUNT;
+  } while (boxNo !== startBox);
+  return MON_CANT_GIVE;  // toutes les boîtes pleines
 }
 
 /** 1:1 décomp `bool8 IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c:6579-6595) :

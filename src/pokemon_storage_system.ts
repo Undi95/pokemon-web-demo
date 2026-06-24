@@ -68,4 +68,6 @@ export function AnyStorageMonWithMove(move: number): boolean {
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
 (globalThis as Record<string, unknown>).__AnyStorageMonWithMove = AnyStorageMonWithMove;
+// __getPokemonStorage : accès au storage PC sans importer save.ts (cycle-break).
+// Utilisé par la sonde déterministe ET par CopyMonToPC (party-storage.ts).
 (globalThis as Record<string, unknown>).__getPokemonStorage = GetPokemonStorage;
