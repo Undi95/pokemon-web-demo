@@ -49,10 +49,10 @@ import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE } from './engine/battle/constants';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
@@ -222,8 +222,8 @@ function ChooseWildMonIndex_WaterRock(): number {
 }
 
 /** 1:1 décomp `ChooseWildMonLevel` (wild_encounter.c:268-303).
- *  Min/max swap si inversés + Random range. Dette R3 : check ability
- *  HUSTLE/VITAL_SPIRIT/PRESSURE (= max level boost) non porté. */
+ *  Min/max swap si inversés + Random range. Si le lead mon (non-œuf) a
+ *  HUSTLE/VITAL_SPIRIT/PRESSURE → 50% niveau max, sinon décale `rand` d'un cran. */
 function ChooseWildMonLevel(wildPokemon: WildPokemon): number {
   let min: number, max: number;
   if (wildPokemon.maxLevel >= wildPokemon.minLevel) {
@@ -234,10 +234,17 @@ function ChooseWildMonLevel(wildPokemon: WildPokemon): number {
     max = wildPokemon.minLevel;
   }
   const range = max - min + 1;
-  const rand = Random() % range;
-  // Dette R3 : ability check (HUSTLE/VITAL_SPIRIT/PRESSURE) max level boost
-  // non portée. Le check requiert GetMonAbility(gPlayerParty[0]) + MON_DATA_*
-  // cascade. Cf. wild_encounter.c:289-301.
+  let rand = Random() % range;
+  // 1:1 décomp wild_encounter.c:289-301 : check ability pour max level mon.
+  if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)) {
+    const ability = GetMonAbility(gPlayerParty[0]);
+    if (ability === ABILITY_HUSTLE || ability === ABILITY_VITAL_SPIRIT || ability === ABILITY_PRESSURE) {
+      if (Random() % 2 === 0)
+        return max;
+      if (rand !== 0)
+        rand--;
+    }
+  }
   return min + rand;
 }
 
