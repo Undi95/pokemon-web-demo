@@ -60,6 +60,7 @@ import {
   MON_DATA_PP1, MON_DATA_PP_BONUSES,
   MON_DATA_FRIENDSHIP, MON_DATA_NICKNAME, MON_DATA_IS_EGG, MON_DATA_OT_NAME, MON_DATA_OT_ID,
   MON_DATA_HELD_ITEM,
+  MON_DATA_COOL, MON_DATA_BEAUTY, MON_DATA_CUTE, MON_DATA_SMART, MON_DATA_TOUGH,
 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
@@ -340,6 +341,23 @@ registerSpecial('IsLeadMonNicknamed', () => {
   const speciesName = gSpeciesNames[_GetMonData(mon, MON_DATA_SPECIES) as number] ?? '';
   return nickname === speciesName ? 0 : 1;
 });
+
+/** 1:1 décomp `CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}` (field_specials.c:1190-1228) :
+ *    if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_X) < 200) return FALSE;
+ *    return TRUE;
+ *
+ *  Renvoie TRUE (= gSpecialVar_Result=1) ssi la condition concours du Pokémon de
+ *  tête atteint le seuil 200. Utilisé par les PNJ « montre-moi un POKéMON <stat> »
+ *  (fans de concours). Les conditions montent via Pokéblocs (non portés) → renvoie
+ *  FALSE tant qu'aucun mon n'est nourri (1:1 correct, dépendance d'étape). */
+function _checkLeadMonCondition(field: number): number {
+  return (_GetMonData(gPlayerParty[_GetLeadMonIndex()], field) as number) < 200 ? 0 : 1;
+}
+registerSpecial('CheckLeadMonCool', () => _checkLeadMonCondition(MON_DATA_COOL));
+registerSpecial('CheckLeadMonBeauty', () => _checkLeadMonCondition(MON_DATA_BEAUTY));
+registerSpecial('CheckLeadMonCute', () => _checkLeadMonCondition(MON_DATA_CUTE));
+registerSpecial('CheckLeadMonSmart', () => _checkLeadMonCondition(MON_DATA_SMART));
+registerSpecial('CheckLeadMonTough', () => _checkLeadMonCondition(MON_DATA_TOUGH));
 
 /** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
  *  Le décomp ouvre le naming screen UI. Notre runtime n'a pas encore wired le
@@ -2127,8 +2145,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CheckInteractedWithFriendsDollDecor' — porté 1:1 décomp secret_base.c:1834 ci-bas.
   'CheckInteractedWithFriendsFurnitureBottom', 'CheckInteractedWithFriendsFurnitureMiddle',
   'CheckInteractedWithFriendsFurnitureTop', 'CheckInteractedWithFriendsPosterDecor',
-  'CheckInteractedWithFriendsSandOrnament', 'CheckLeadMonBeauty',
-  'CheckLeadMonCool', 'CheckLeadMonCute', 'CheckLeadMonSmart', 'CheckLeadMonTough',
+  'CheckInteractedWithFriendsSandOrnament',
+  // 'CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}' — portés 1:1 field_specials.c:1190 ci-haut.
   // 'CheckPlayerHasSecretBase' — porté 1:1 décomp secret_base.c:258 ci-bas.
   // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
   'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',

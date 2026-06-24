@@ -174,6 +174,16 @@ export interface Pokemon {
   // Substruct2 — EVs (post-battle gain) + condition stats
   hpEV: number; attackEV: number; defenseEV: number;
   speedEV: number; spAttackEV: number; spDefenseEV: number;
+  // Conditions concours (1:1 décomp pokemon.h:123-128 struct PokemonSubstruct2)
+  // — u8 0..255, montées par les Pokéblocs. Optionnelles (= 0 par défaut via
+  // `?? 0`) pour ne casser aucun constructeur. Avant : GetMonData(MON_DATA_COOL..
+  // SHEEN) tombait en `default` → 0 silencieux (= trou 1:1, ex. CheckLeadMon*).
+  cool?: number;
+  beauty?: number;
+  cute?: number;
+  smart?: number;
+  tough?: number;
+  sheen?: number;
   // Substruct3
   pokerus: number;       // u8
   metLocation: number;   // u8
@@ -231,6 +241,7 @@ export function createEmptyPokemon(): Pokemon {
     moves: [0, 0, 0, 0], pp: [0, 0, 0, 0],
     hpEV: 0, attackEV: 0, defenseEV: 0,
     speedEV: 0, spAttackEV: 0, spDefenseEV: 0,
+    cool: 0, beauty: 0, cute: 0, smart: 0, tough: 0, sheen: 0,
     pokerus: 0, metLocation: 0, metLevel: 0, metGame: 0,
     pokeball: 0, otGender: 0,
     hpIV: 0, attackIV: 0, defenseIV: 0,
@@ -334,6 +345,13 @@ export function GetMonData(mon: Pokemon, field: number): number | string {
             | ((mon.speedIV & 0x1F) << 15)
             | ((mon.spAttackIV & 0x1F) << 20)
             | ((mon.spDefenseIV & 0x1F) << 25)) >>> 0;
+    // 1:1 décomp pokemon.c GetBoxMonData:3869-3886 : conditions concours (substruct2->X).
+    case MON_DATA_COOL: return mon.cool ?? 0;
+    case MON_DATA_BEAUTY: return mon.beauty ?? 0;
+    case MON_DATA_CUTE: return mon.cute ?? 0;
+    case MON_DATA_SMART: return mon.smart ?? 0;
+    case MON_DATA_TOUGH: return mon.tough ?? 0;
+    case MON_DATA_SHEEN: return mon.sheen ?? 0;
     // 1:1 décomp pokemon.c GetBoxMonData : rubans (champ direct). Concours = rang.
     case MON_DATA_COOL_RIBBON: return mon.coolRibbon ?? 0;
     case MON_DATA_BEAUTY_RIBBON: return mon.beautyRibbon ?? 0;
@@ -463,6 +481,13 @@ export function SetMonData(mon: Pokemon, field: number, value: number | string):
     case MON_DATA_SPDEF: mon.spDefense = v & 0xFFFF; return;
     case MON_DATA_MAIL: mon.mail = v & 0xFF; return;
     case MON_DATA_MODERN_FATEFUL_ENCOUNTER: mon.modernFatefulEncounter = v ? 1 : 0; return;
+    // 1:1 décomp pokemon.c SetBoxMonData:4258-4275 : conditions concours (SET8 = u8).
+    case MON_DATA_COOL: mon.cool = v & 0xFF; return;
+    case MON_DATA_BEAUTY: mon.beauty = v & 0xFF; return;
+    case MON_DATA_CUTE: mon.cute = v & 0xFF; return;
+    case MON_DATA_SMART: mon.smart = v & 0xFF; return;
+    case MON_DATA_TOUGH: mon.tough = v & 0xFF; return;
+    case MON_DATA_SHEEN: mon.sheen = v & 0xFF; return;
     // 1:1 décomp pokemon.c SetBoxMonData : rubans (concours 3 bits, award 1 bit,
     // unusedRibbons 4 bits). Avant : tombaient en `default` → écriture silencieusement
     // ignorée (= vrai trou 1:1, ex. GiveGiftRibbonToParty / Champion Ribbon no-op).
