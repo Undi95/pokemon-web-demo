@@ -136,7 +136,8 @@ import {
   ShowWarpArrowSprite as _ShowWarpArrowSprite,
   SetSpriteInvisible as _SetSpriteInvisible,
 } from './field_effect_helpers';
-import { gPlayerParty, GetMonData, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
+import { gPlayerParty, GetMonData, GetMonAbility, MonKnowsMove, MON_DATA_SPECIES, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
+import { ABILITY_SUCTION_CUPS, ABILITY_STICKY_HOLD } from './engine/battle/constants';
 import { MOVE_SURF } from '../include/constants/moves';
 // ─── Pêche (Task_Fishing) : combat + texte/fenêtre + anim ───
 import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from './wild_encounter';
@@ -2140,8 +2141,15 @@ function Fishing_CheckForBite(task: DecompTask): boolean {
   if (!DoesCurrentMapHaveFishingMons()) {
     task.data[T_FISH_STEP] = FISHING_NO_BITE;
   } else {
-    // 1:1 : bonus de morsure Suction Cups / Sticky Hold (GetMonAbility) — dette R3 (GetMonAbility non
-    // porté, comme dans wild_encounter). Le chemin de morsure normal (50%) s'applique.
+    // 1:1 décomp : si le lead mon (non-œuf) a Suction Cups / Sticky Hold,
+    // Random()%100 > 14 (≈85%) force la morsure (skip le 50/50 normal).
+    if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)) {
+      const ability = GetMonAbility(gPlayerParty[0]);
+      if (ability === ABILITY_SUCTION_CUPS || ability === ABILITY_STICKY_HOLD) {
+        if (_RandomFishing() % 100 > 14)
+          bite = true;
+      }
+    }
     if (!bite) {
       if (_RandomFishing() & 1)
         task.data[T_FISH_STEP] = FISHING_NO_BITE;

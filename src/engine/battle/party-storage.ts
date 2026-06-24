@@ -1167,6 +1167,14 @@ export function GetAbilityBySpecies(species: number, abilityNum: number): number
   return typeof id === 'number' ? id : 0;
 }
 
+/** 1:1 décomp pokemon.c `u8 GetMonAbility(struct Pokemon *mon)` :
+ *  GetAbilityBySpecies(MON_DATA_SPECIES, MON_DATA_ABILITY_NUM) du mon. */
+export function GetMonAbility(mon: Pokemon): number {
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM) as number;
+  return GetAbilityBySpecies(species, abilityNum);
+}
+
 // Silence unused warnings for helpers exposed for future reverse-conversion.
 void speciesEnumToDexId; void moveEnumToDexId;
 
