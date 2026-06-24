@@ -755,7 +755,7 @@ import {
 import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
 import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
-import { fillBattleMonFromParty } from './engine/battle/party-storage';
+import { fillBattleMonFromParty, IsTradedMon } from './engine/battle/party-storage';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import type {
   BattleOpcodeHandler,
@@ -11711,12 +11711,10 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
               dmg = Math.floor((dmg * 150) / 100);
             }
-            // 1:1 décomp : si traded mon (= otId != playerTrainerId OR otName
-            // != playerName), XP × 1.5. IsTradedMon impl inline (= compare
-            // direct gSaveBlock2Ptr.playerTrainerId, 1:1 décomp).
-            const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-            const monOtId = gPlayerParty[monId]?.otId ?? 0;
-            if (monOtId !== playerTID) {
+            // 1:1 décomp battle_script_commands.c:3381 : si IsTradedMon (otId OU
+            // nom OT != joueur), XP × 1.5. Avant : check otId-only inline (ratait
+            // le cas même-TID/nom-différent que IsOtherTrainer gère, pokemon.c:6579).
+            if (IsTradedMon(gPlayerParty[monId])) {
               dmg = Math.floor((dmg * 150) / 100);
             }
             setBattleMoveDamage(dmg);
@@ -11739,7 +11737,9 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             // - B_BUFF1 = nickname avec préfixe (= "POKéMON ami" / "ennemi")
             // - B_BUFF2 = " un bonus de" (ABOOSTED) ou vide (EMPTYSTRING4) selon traded
             // - B_BUFF3 = number xp
-            const stringIdBoost = (monOtId !== playerTID) ? 330 /* STRINGID_ABOOSTED */ : 329 /* STRINGID_EMPTYSTRING4 */;
+            // 1:1 décomp : message « un bonus de » (ABOOSTED) ssi IsTradedMon (même
+            // condition que le boost ×1.5 ci-dessus), sinon vide (EMPTYSTRING4).
+            const stringIdBoost = IsTradedMon(gPlayerParty[monId]) ? 330 /* STRINGID_ABOOSTED */ : 329 /* STRINGID_EMPTYSTRING4 */;
             PREPARE_MON_NICK_WITH_PREFIX_BUFFER_N34(_gBattleTextBuff1_N34, gBattleStruct.expGetterBattlerId, monId);
             PREPARE_STRING_BUFFER_N34(_gBattleTextBuff2_N34, stringIdBoost);
             PREPARE_WORD_NUMBER_BUFFER_N34(_gBattleTextBuff3_N34, 5, dmg);
