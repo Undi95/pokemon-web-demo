@@ -54,8 +54,8 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../../../harness/runtime/decomp-globals';
-import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN } from '../../../include/string_util';
-import { decodeOwBytes } from '../../../include/text';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../../../include/string_util';
+import { encodeOwText } from '../../../include/text';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
@@ -912,7 +912,7 @@ function _resetWindows(): void {
  *  AddTextPrinterParameterized4(wid, FONT_NORMAL, x, y, 0, ls, sTextColors
  *  [colorId], 0, str). Notre primitive validée = Param3 (line-spacing par
  *  défaut, suffisant : validé A/B sur le mémo multi-ligne). */
-function _printTextOnWindow(windowId: number, str: string, x: number, y: number, _ls: number, colorId: number): void {
+function _printTextOnWindow(windowId: number, str: string | Uint8Array, x: number, y: number, _ls: number, colorId: number): void {
   if (windowId === WINDOW_NONE) return;
   AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, y, sTextColors[colorId] ?? sTextColors[0], TEXT_SKIP_DRAW, str);
 }
@@ -1153,28 +1153,30 @@ function _printMonAbilityDescription(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), _resolveAbility().description, 0, 17, 0, 0);
 }
 
-let _trainerMemoStr = '';
+const _trainerMemoStr = new Uint8Array(160);
 /** 1:1 décomp `BufferMonTrainerMemo` (:3116). Branche DoesMonOTMatchOwner ==
- *  TRUE : tous nos mons capturés/offerts en solo (OT = joueur). */
+ *  TRUE : tous nos mons capturés/offerts en solo (OT = joueur).
+ *  BYTE-LEVEL (Stage 3) : chaque placeholder JS-string (couleur/nature/niveau/lieu)
+ *  encodé via encodeOwText → buffer ; ExpandPlaceholders substitue dans le layout encodé. */
 function _bufferMonTrainerMemo(): void {
   const sum = sMon.summary;
   DynamicPlaceholderTextUtil_Reset();
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, S_MEMO_NATURE_TEXT_COLOR);
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, S_MEMO_MISC_TEXT_COLOR);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, encodeOwText(S_MEMO_NATURE_TEXT_COLOR));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, encodeOwText(S_MEMO_MISC_TEXT_COLOR));
   // BufferNatureString : ph2 = gNatureNamePointers[nature], ph5 = "".
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, getNatureNameByIndex(sum.nature));
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(5, '');
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, encodeOwText(getNatureNameByIndex(sum.nature)));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(5, encodeOwText(''));
   // GetMetLevelString : level = metLevel ; if 0 → EGG_HATCH_LEVEL(5).
   let dispLevel = sum.metLevel ?? 0;
   if (dispLevel === 0) dispLevel = 5;
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, String(dispLevel));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, encodeOwText(String(dispLevel)));
   const loc = sum.metLocation;
   const locReal = loc !== 0;  // MAPSEC_NONE = 0 (dette : id→MAPSEC non résoluble, cf. ledger)
-  if (locReal) DynamicPlaceholderTextUtil_SetPlaceholderPtr(4, GetMapNameHandleAquaHideout(null, reverseDecompConstant(loc, 'MAPSEC_') ?? ''));
+  if (locReal) DynamicPlaceholderTextUtil_SetPlaceholderPtr(4, encodeOwText(GetMapNameHandleAquaHideout(null, reverseDecompConstant(loc, 'MAPSEC_') ?? '')));
   let text: string;
   if (sum.metLevel === 0) text = locReal ? GTEXT_X_NATURE_HATCHED_AT_YZ : GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT;
   else text = locReal ? GTEXT_X_NATURE_MET_AT_YZ : GTEXT_X_NATURE_MET_SOMEWHERE_AT;
-  _trainerMemoStr = DynamicPlaceholderTextUtil_ExpandPlaceholders(text);
+  DynamicPlaceholderTextUtil_ExpandPlaceholders(_trainerMemoStr, encodeOwText(text));
 }
 function _printMonTrainerMemo(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), _trainerMemoStr, 0, 1, 0, 0);
@@ -1262,50 +1264,55 @@ function _printRibbonCount(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_RIBBON_COUNT), text, x, 1, 0, 0);
 }
 
-let _leftColStats = '';
-/** 1:1 décomp `ConvertIntToDecimalStringN(buf, value, STR_CONV_MODE_RIGHT_ALIGN, n)`
- *  (string_util.c:163-325) : entier justifié à DROITE dans un champ de
- *  EXACTEMENT n caractères. Le padding GAUCHE est **CHAR_SPACER** (0x77,
- *  string_util.c:209/265/325) — PAS CHAR_SPACE (0x00). CHAR_SPACER a la
- *  largeur d'un chiffre (5 px FONT_NORMAL) vs CHAR_SPACE 3 px → les colonnes
- *  de nombres s'alignent vraiment à droite (sinon rendu ~centré ≠ ROM).
- *  CHAR_SPACER ↔ JS 'ラ' (U+30E9 → byte 0x77, charmap.txt:280).
- *
- *  Migration texte G2 (TRANSITIONAL) : la version buffer Uint8Array du foyer 1:1
- *  `src/string_util.ts` écrit dans un buffer dédié (1:1 décomp Alloc(8) — chaque
- *  placeholder son propre buffer, pas d'aliasing) ; on `decodeOwBytes` → JS-string
- *  car `DynamicPlaceholderTextUtil` reste JS-string dans le port (byte-level complet
- *  quand ce sous-système sera migré, Stage 3). decodeOwBytes(ConvertInt_buffer) ===
- *  l'ancienne string du bridge (vérifié déterministe 7/7, incl. CHAR_SPACER→'ラ'). */
-const _rightAlignSpacer = (value: number, n: number): string => {
-  const buf = new Uint8Array(8);
-  ConvertIntToDecimalStringN(buf, value, STR_CONV_MODE_RIGHT_ALIGN, n);
-  return decodeOwBytes(buf);
-};
+/** 1:1 décomp `BufferLeftColumnStats` / `BufferRightColumnStats`
+ *  (pokemon_summary_screen.c) — BYTE-LEVEL (Stage 3) :
+ *    ConvertIntToDecimalStringN écrit dans des buffers Uint8Array, SetPlaceholderPtr
+ *    stocke ces buffers, ExpandPlaceholders substitue `[CHAR_DYNAMIC, n]` dans le
+ *    layout encodé (encodeOwText émet CHAR_DYNAMIC pour les tokens `{DYNAMIC n}`).
+ *  RIGHT_ALIGN pad GAUCHE = CHAR_SPACER (0x77, largeur d'un chiffre FONT_NORMAL) →
+ *  colonnes de nombres alignées à droite 1:1 ROM (≠ CHAR_SPACE 3 px = ~centré).
+ *  `_left/_rightColStats` = buffers dédiés (au lieu du gStringVar4 partagé du décomp,
+ *  car left/right sont bufferisés séparément avant impression). */
+const _leftColStats: Uint8Array = new Uint8Array(64);
+const _rightColStats: Uint8Array = new Uint8Array(64);
+let _statsLeftLayoutBytes: Uint8Array | null = null;
+let _statsRightLayoutBytes: Uint8Array | null = null;
+let _movesPpLayoutBytes: Uint8Array | null = null;
+
 function _bufferLeftColumnStats(): void {
   const s = sMon.summary;
-  const cur = _rightAlignSpacer(s.currentHP, 3);
-  const max = _rightAlignSpacer(s.maxHP, 3);
-  const atk = _rightAlignSpacer(s.atk, 7);
-  const def = _rightAlignSpacer(s.def, 7);
+  // 1:1 décomp : 4 buffers Alloc(8) (HP/maxHP width 3, atk/def width 7).
+  const currentHPString = new Uint8Array(8);
+  const maxHPString = new Uint8Array(8);
+  const attackString = new Uint8Array(8);
+  const defenseString = new Uint8Array(8);
+  ConvertIntToDecimalStringN(currentHPString, s.currentHP, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  ConvertIntToDecimalStringN(maxHPString, s.maxHP, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  ConvertIntToDecimalStringN(attackString, s.atk, STR_CONV_MODE_RIGHT_ALIGN, 7);
+  ConvertIntToDecimalStringN(defenseString, s.def, STR_CONV_MODE_RIGHT_ALIGN, 7);
   DynamicPlaceholderTextUtil_Reset();
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, cur);
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, max);
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, atk);
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, def);
-  _leftColStats = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_STATS_LEFT_COLUMN_LAYOUT);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, currentHPString);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, maxHPString);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, attackString);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, defenseString);
+  if (_statsLeftLayoutBytes === null) _statsLeftLayoutBytes = encodeOwText(S_STATS_LEFT_COLUMN_LAYOUT);
+  DynamicPlaceholderTextUtil_ExpandPlaceholders(_leftColStats, _statsLeftLayoutBytes);
 }
 function _printLeftColumnStats(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_STATS_LEFT), _leftColStats, 4, 1, 0, 0);
 }
-let _rightColStats = '';
 function _bufferRightColumnStats(): void {
   const s = sMon.summary;
+  // 1:1 décomp : gStringVar1/2/3 directement comme buffers placeholder.
+  ConvertIntToDecimalStringN(gStringVar1, s.spatk, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  ConvertIntToDecimalStringN(gStringVar2, s.spdef, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  ConvertIntToDecimalStringN(gStringVar3, s.speed, STR_CONV_MODE_RIGHT_ALIGN, 3);
   DynamicPlaceholderTextUtil_Reset();
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, _rightAlignSpacer(s.spatk, 3));
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, _rightAlignSpacer(s.spdef, 3));
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, _rightAlignSpacer(s.speed, 3));
-  _rightColStats = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_STATS_RIGHT_COLUMN_LAYOUT);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, gStringVar3);
+  if (_statsRightLayoutBytes === null) _statsRightLayoutBytes = encodeOwText(S_STATS_RIGHT_COLUMN_LAYOUT);
+  DynamicPlaceholderTextUtil_ExpandPlaceholders(_rightColStats, _statsRightLayoutBytes);
 }
 function _printRightColumnStats(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_STATS_RIGHT), _rightColStats, 2, 1, 0, 0);
@@ -1408,17 +1415,22 @@ function _printMoveNameAndPP(moveIndex: number): void {
   const moveNameWid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
   const ppValueWid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
   const move = sum.moves[moveIndex];
-  let text: string, ppState: number, x: number;
+  let text: string | Uint8Array, ppState: number, x: number;
   if (move) {
     const md = getMove(move);
     const ppMax = sum.ppMax[moveIndex] || md?.pp || 0;
     _printTextOnWindow(moveNameWid, getMoveName(move), 0, moveIndex * 16 + 1, 0, 1);
-    const cur = String(sum.pp[moveIndex]).padStart(2, ' ');
-    const max = String(ppMax).padStart(2, ' ');
+    // 1:1 décomp BYTE-LEVEL : ConvertIntToDecimalStringN(gStringVar1/2, pp, RIGHT_ALIGN, 2)
+    // (CHAR_SPACER, plus le padStart space), SetPlaceholderPtr(gStringVarN),
+    // ExpandPlaceholders(gStringVar4, sMovesPPLayout) où {PP}=EXTRA_SYMBOL + {DYNAMIC n}.
+    ConvertIntToDecimalStringN(gStringVar1, sum.pp[moveIndex], STR_CONV_MODE_RIGHT_ALIGN, 2);
+    ConvertIntToDecimalStringN(gStringVar2, ppMax, STR_CONV_MODE_RIGHT_ALIGN, 2);
     DynamicPlaceholderTextUtil_Reset();
-    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, cur);
-    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, max);
-    text = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_MOVES_PP_LAYOUT);
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
+    if (_movesPpLayoutBytes === null) _movesPpLayoutBytes = encodeOwText(S_MOVES_PP_LAYOUT);
+    DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, _movesPpLayoutBytes);
+    text = gStringVar4;
     ppState = _getCurrentPpToMaxPpState(sum.pp[moveIndex], ppMax) + 9;
     x = GetStringRightAlignXOffset(text, 44);
   } else {
@@ -2702,12 +2714,15 @@ function _printNewMoveDetailsOrCancelText(): void {
     else
       _printTextOnWindow(wid1, getMoveName(move), 0, 65, 0, 5);
     const md = getMove(move);
-    const cur = String(md?.pp ?? 0).padStart(2, ' ');
+    // 1:1 décomp BYTE-LEVEL : ConvertInt(gStringVar1, move.pp, RIGHT_ALIGN, 2) ; les 2
+    // placeholders = gStringVar1 (cur=max=pp du nouveau move) ; ExpandPlaceholders(gStringVar4).
+    ConvertIntToDecimalStringN(gStringVar1, md?.pp ?? 0, STR_CONV_MODE_RIGHT_ALIGN, 2);
     DynamicPlaceholderTextUtil_Reset();
-    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, cur);
-    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, cur);
-    const text = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_MOVES_PP_LAYOUT);
-    _printTextOnWindow(wid2, text, GetStringRightAlignXOffset(text, 44), 65, 0, 12);
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar1);
+    if (_movesPpLayoutBytes === null) _movesPpLayoutBytes = encodeOwText(S_MOVES_PP_LAYOUT);
+    DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, _movesPpLayoutBytes);
+    _printTextOnWindow(wid2, gStringVar4, GetStringRightAlignXOffset(gStringVar4, 44), 65, 0, 12);
   }
 }
 

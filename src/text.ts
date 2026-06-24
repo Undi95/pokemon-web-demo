@@ -115,6 +115,18 @@ export function encodeOwTextSource(src: string, charmap: Record<string, number>)
           segStart = i;
           continue;
         }
+        // {DYNAMIC <n>} → [CHAR_DYNAMIC(0xF7), n] : placeholder DYNAMIQUE 1:1
+        // (dynamic_placeholder_text_util.c). Index variable (≠ STR_VAR fixe). Le
+        // renderer / DynamicPlaceholderTextUtil_ExpandPlaceholders substitue le
+        // buffer sStringPointers[n]. N'apparaît que dans les layouts stats du résumé.
+        const dyn = /^DYNAMIC\s+(\d+)$/.exec(token);
+        if (dyn) {
+          flushSeg(i);
+          out.push(CHAR_DYNAMIC, parseInt(dyn[1], 10) & 0xFF);
+          i = close + 1;
+          segStart = i;
+          continue;
+        }
         // Token non-placeholder ({COLOR}/{LV_2}/…) : reste dans le segment → géré
         // par encodeStringForFont au prochain flush.
       }
@@ -393,9 +405,9 @@ export function GetStringWidth(str: string | Uint8Array, fontId: number = FONT_N
         // décomp : pas de break → fallthrough vers CHAR_DYNAMIC (buffer déjà set).
       }
       if (buffer === null) {
-        // CHAR_DYNAMIC : ptr via DynamicPlaceholderTextUtil (string → bytes).
-        const ptrStr = DynamicPlaceholderTextUtil_GetPlaceholderPtr(s[++i]);
-        buffer = ptrStr ? encodeStringForFont(ptrStr, getOwCharmap() ?? {}) : new Uint8Array([EOS]);
+        // CHAR_DYNAMIC : ptr (Uint8Array byte-level) via DynamicPlaceholderTextUtil.
+        const ptr = DynamicPlaceholderTextUtil_GetPlaceholderPtr(s[++i]);
+        buffer = ptr ?? new Uint8Array([EOS]);
       }
       walkBuffer(buffer);
     } else if (c === EXT_CTRL_CODE_BEGIN) {
