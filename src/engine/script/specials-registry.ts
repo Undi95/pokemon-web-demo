@@ -57,7 +57,7 @@ import {
   GetMonsStateToDoubles, GetMonEVCount,
   GetMonData as _GetMonData, SetMonData,
   MON_DATA_MOVE1 as _MON_DATA_MOVE1,
-  MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS,
+  MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS, MON_DATA_SANITY_IS_BAD_EGG,
   MON_DATA_PP1, MON_DATA_PP_BONUSES,
   MON_DATA_FRIENDSHIP, MON_DATA_NICKNAME, MON_DATA_IS_EGG, MON_DATA_OT_NAME, MON_DATA_OT_ID,
   MON_DATA_HELD_ITEM,
@@ -299,13 +299,25 @@ registerSpecial('BufferStreaksAndRecords', () => {
   // No battle frontier.
 });
 
-/** 1:1 décomp `IsBadEggInParty` (field_specials.c:1649-1661).
- *  Notre port retourne 0 = no bad eggs car notre projet ne génère JAMAIS de bad
- *  eggs (= MON_DATA_SANITY_IS_BAD_EGG = mécanisme anti-cheat ROM Gen 3 inutile
- *  ici puisque notre projet ne charge pas de mons depuis ROM tampered). C'est
- *  un 1:1 strict JUSTIFIÉ — la boucle parcourt party puis return FALSE puisque
- *  aucun mon ne peut être bad-egg dans notre runtime. */
-registerSpecial('IsBadEggInParty', () => 0);
+/** 1:1 décomp `bool8 IsBadEggInParty(void)` (field_specials.c:1649) :
+ *  ```c
+ *  u8 partyCount = CalculatePlayerPartyCount();
+ *  for (i = 0; i < partyCount; i++)
+ *      if (GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG) == TRUE)
+ *          return TRUE;
+ *  return FALSE;
+ *  ```
+ *  Structurel 1:1 (= remplace l'ancien raccourci comportemental `() => 0` « jamais
+ *  de bad egg ») : `isBadEgg` EST posable via SetMonData → la vraie boucle est
+ *  robuste ET identique en jeu normal (aucun mon bad-egg → FALSE). Appelé en
+ *  `specialvar VAR_RESULT` (cable_club.inc:828 = garde anti-save-corrompue au link). */
+registerSpecial('IsBadEggInParty', () => {
+  const partyCount = CalculatePlayerPartyCount();
+  for (let i = 0; i < partyCount; i++) {
+    if ((_GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG) as number) === 1 /* TRUE */) return 1;
+  }
+  return 0;
+});
 
 /** 1:1 décomp `RemoveAllWeatherPokemonItemEffect` (battle_util.c). Stub. */
 registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
