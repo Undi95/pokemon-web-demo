@@ -19,16 +19,13 @@
 
 import { VarGet, VarSet } from './engine/script/script-vars';
 import { Random } from './random';
+import { ISO_RANDOMIZE2 } from '../include/random';
 
 const VAR_MIRAGE_RND_H = 'VAR_MIRAGE_RND_H';  // 1:1 décomp vars.h:54 (0x4024).
 const VAR_MIRAGE_RND_L = 'VAR_MIRAGE_RND_L';  // 1:1 décomp vars.h:55 (0x4025).
 
-/** 1:1 décomp `ISO_RANDOMIZE2(val)` (random.h:17) = `1103515245 * val + 12345`,
- *  arithmétique 32-bit avec wraparound. `Math.imul` reproduit le produit 32-bit
- *  exact ; `>>> 0` ramène en u32. */
-function ISO_RANDOMIZE2(val: number): number {
-  return (Math.imul(1103515245, val) + 12345) >>> 0;
-}
+// ISO_RANDOMIZE2 (random.h:17 = `1103515245 * val + 12345`) importé du foyer canonique
+// `include/random.ts` (dédup : la copie locale était un doublon de cette macro).
 
 /** 1:1 décomp `GetMirageRnd(void)` (time_events.c:12) :
  *    return (VarGet(VAR_MIRAGE_RND_H) << 16) | VarGet(VAR_MIRAGE_RND_L). */

@@ -29,6 +29,7 @@
 import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
+import { ISO_RANDOMIZE2 } from '../../../include/random';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -3510,17 +3511,20 @@ registerSpecial('ResetLotteryCorner', () => {
  *          var = ISO_RANDOMIZE2(var);
  *      SetLotteryNumber(var);
  *
- *  ISO_RANDOMIZE2 = `1103515245 * var + 24691` (= LCG canonical iso_random_2).
- *  Caller passe i via gSpecialVar_0x8004. */
+ *  ⚠️ DETTE NOTÉE : la décomp N'expose PAS ceci comme special (pas dans specials.inc) ;
+ *  c'est une fonction appelée par UpdatePerDay(daysSince) (clock.c:54). Le wrapper-
+ *  special lisant VAR_0x8004 est donc spurious + non câblé dans UpdatePerDay (dette à
+ *  porter proprement : foyer lottery_corner.ts + wire clock.ts). On corrige ici au moins
+ *  le BUG de RNG : l'inline utilisait `1103515245*v+24691` (= ISO_RANDOMIZE1, FAUX) en
+ *  multiplication JS non-Math.imul (overflow). → canonique ISO_RANDOMIZE2 (=+12345). */
 registerSpecial('SetRandomLotteryNumber', () => {
   let i = VarGet('VAR_0x8004') & 0xFFFF;
   let v = Random() >>> 0;
   // 1:1 décomp while (--i != 0xFFFF) — décrémente jusqu'à underflow u16.
-  // En JS i est number → on simule u16 underflow via & 0xFFFF check.
   while (true) {
     i = (i - 1) & 0xFFFF;
     if (i === 0xFFFF) break;
-    v = ((1103515245 * v + 24691) >>> 0) & 0xFFFFFFFF;
+    v = ISO_RANDOMIZE2(v);
   }
   _setLotteryNumber(v);
 });
