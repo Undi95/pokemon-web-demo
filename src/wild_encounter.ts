@@ -49,12 +49,15 @@ import { gMapHeader } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG } from './engine/battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
+import { VarGet, VarSet } from './engine/script/script-vars';
+import { ScriptContext_SetupScript } from './script';
+import { PARTY_SIZE } from './engine/save/save-blocks';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
@@ -80,8 +83,8 @@ const WILD_AREA_ROCKS  = 2;
 // const WILD_AREA_FISHING = 3;  // Dette R3 : Fishing system
 
 /** 1:1 décomp `WILD_CHECK_*` (wild_encounter.c:45). */
-// const WILD_CHECK_REPEL    = 1 << 0;  // Dette R3 : Repel system
-// const WILD_CHECK_KEEN_EYE = 1 << 1;  // Dette R3 : KeenEye ability
+const WILD_CHECK_REPEL    = 1 << 0;
+const WILD_CHECK_KEEN_EYE = 1 << 1;  // (honoré par IsAbilityAllowingEncounter — Keen Eye, dette R3 séparée)
 
 /** 1:1 décomp constants ENCOUNTER_CHANCE_LAND_MONS_SLOT_X (= cumulative).
  *  Dérivé du template `src/data/wild_encounters.json.txt` :
@@ -337,9 +340,40 @@ function TryGetAbilityInfluencedWildMonIndex(wildMon: WildPokemon[], type: numbe
   return TryGetRandomWildMonIndexByType(wildMon, type, numMon);
 }
 
+/** 1:1 décomp `IsWildLevelAllowedByRepel` (wild_encounter.c:874) : si un Repel est
+ *  actif (VAR_REPEL_STEP_COUNT != 0), autorise la rencontre seulement si son niveau
+ *  est >= celui du premier mon non-KO et non-œuf de l'équipe. */
+function IsWildLevelAllowedByRepel(wildLevel: number): boolean {
+  if (!VarGet('VAR_REPEL_STEP_COUNT')) return true;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (GetMonData(gPlayerParty[i], MON_DATA_HP) && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG)) {
+      const ourLevel = GetMonData(gPlayerParty[i], MON_DATA_LEVEL) as number;
+      return wildLevel >= ourLevel;
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `UpdateRepelCounter` (wild_encounter.c:850) : décrémente
+ *  VAR_REPEL_STEP_COUNT à chaque pas ; à 0 → EventScript_RepelWoreOff (message).
+ *  Retourne TRUE si le Repel vient d'expirer (= un script a démarré).
+ *  (Guards InBattlePike/Pyramid/UnionRoom omis : Frontier/link non portés = toujours false.) */
+export function UpdateRepelCounter(): boolean {
+  let steps = VarGet('VAR_REPEL_STEP_COUNT');
+  if (steps !== 0) {
+    steps--;
+    VarSet('VAR_REPEL_STEP_COUNT', steps);
+    if (steps === 0) {
+      ScriptContext_SetupScript('EventScript_RepelWoreOff');
+      return true;
+    }
+  }
+  return false;
+}
+
 /** 1:1 décomp `TryGenerateWildMon` (wild_encounter.c:422-456) minimal.
  *  Returns TRUE si encounter setup (= CreateWildMon appelé). */
-function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, _flags: number): boolean {
+function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, flags: number): boolean {
   let wildMonIndex = 0;
   switch (area) {
     case WILD_AREA_LAND: {
@@ -360,7 +394,8 @@ function TryGenerateWildMon(wildMonInfo: WildPokemonInfo, area: number, _flags: 
       break;
   }
   const level = ChooseWildMonLevel(wildMonInfo.wildPokemon[wildMonIndex]);
-  // Dette R3 : WILD_CHECK_REPEL → IsWildLevelAllowedByRepel(level).
+  // 1:1 décomp : WILD_CHECK_REPEL → bloque si un Repel actif interdit ce niveau.
+  if ((flags & WILD_CHECK_REPEL) && !IsWildLevelAllowedByRepel(level)) return false;
   // Dette R3 : WILD_CHECK_KEEN_EYE → IsAbilityAllowingEncounter(level).
   CreateWildMon(wildMonInfo.wildPokemon[wildMonIndex].species, level);
   return true;
@@ -450,7 +485,7 @@ export function RockSmashWildEncounter(): boolean {
   const header = GetCurrentMapWildMonHeader();
   if (!header || header.rockSmashMonsInfo === null) return false;
   const info = header.rockSmashMonsInfo;
-  if (WildEncounterCheck(info.encounterRate, true) && TryGenerateWildMon(info, WILD_AREA_ROCKS, 0)) {
+  if (WildEncounterCheck(info.encounterRate, true) && TryGenerateWildMon(info, WILD_AREA_ROCKS, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE)) {
     _onBattleStartCallback?.();
     return true;
   }
@@ -583,7 +618,7 @@ export function StandardWildEncounter(curMetatileBehavior: number, prevMetatileB
     if (prevMetatileBehavior !== curMetatileBehavior && !AllowWildCheckOnNewMetatile()) return false;
     if (!WildEncounterCheck(header.landMonsInfo.encounterRate, false)) return false;
     // Dette R3 : TryStartRoamerEncounter + DoMassOutbreakEncounterTest.
-    if (TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, 0)) {
+    if (TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE)) {
       _onBattleStartCallback?.();
       return true;
     }
@@ -596,7 +631,7 @@ export function StandardWildEncounter(curMetatileBehavior: number, prevMetatileB
     if (prevMetatileBehavior !== curMetatileBehavior && !AllowWildCheckOnNewMetatile()) return false;
     if (!WildEncounterCheck(header.waterMonsInfo.encounterRate, false)) return false;
     // Dette R3 : TryStartRoamerEncounter.
-    if (TryGenerateWildMon(header.waterMonsInfo, WILD_AREA_WATER, 0)) {
+    if (TryGenerateWildMon(header.waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE)) {
       _onBattleStartCallback?.();
       return true;
     }

@@ -100,7 +100,7 @@ import {
   SetDiveWarpEmerge,
   DoDiveWarp,
 } from './engine/field/warp-system';
-import { CheckStandardWildEncounter } from './wild_encounter';
+import { CheckStandardWildEncounter, UpdateRepelCounter } from './wild_encounter';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
@@ -280,6 +280,9 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
         return true;
       }
     }
+    // 1:1 décomp `TryStartStepBasedScript` : dernier maillon = UpdateRepelCounter
+    // (décrément du Repel ; EventScript_RepelWoreOff quand il atteint 0).
+    if (UpdateRepelCounter()) return true;
   }
 
   // input->checkStandardWildEncounter : 1:1 décomp `CheckStandardWildEncounter`.
