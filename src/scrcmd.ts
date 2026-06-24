@@ -16,7 +16,7 @@ import { getItem, getItemNameFr, getMoveNameFr, getSpeciesNameFr, getTrainer, ge
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { encodeOwText } from '../include/text';
-import { ScrCmd_dotrainerbattle, ScrCmd_gotobeatenscript, ScrCmd_gotopostbattlescript, ScrCmd_trainerbattle } from './battle_setup';
+import { ScrCmd_dotrainerbattle, ScrCmd_gotobeatenscript, ScrCmd_gotopostbattlescript, ScrCmd_trainerbattle, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
 import { PlantBerryTree } from './berry';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
@@ -2453,18 +2453,15 @@ registerOpcode('trainerbattle_no_intro', (ctx, args) => {
 // directement avec TRAINER_FLAGS_START + parseValue(trainerName).
 // constants/flags.h : TRAINER_FLAGS_START = 1280.
 registerOpcode('settrainerflag', (_ctx, args) => {
-  const trainer = args[0] ?? '';
-  const trainerId = parseValue(trainer);
-  FlagSet(1280 + trainerId);
+  // 1:1 décomp ScrCmd_settrainerflag : SetTrainerFlag(ScriptReadHalfword(ctx)).
+  SetTrainerFlag(parseValue(args[0] ?? ''));
   return false;
 });
 
 // 1:1 décomp `ScrCmd_cleartrainerflag` (scrcmd.c:1861-1867) :
-//   FlagClear(TRAINER_FLAGS_START + ScriptReadHalfword(ctx)).
+//   ClearTrainerFlag(ScriptReadHalfword(ctx)).
 registerOpcode('cleartrainerflag', (_ctx, args) => {
-  const trainer = args[0] ?? '';
-  const trainerId = parseValue(trainer);
-  FlagClear(1280 + trainerId);
+  ClearTrainerFlag(parseValue(args[0] ?? ''));
   return false;
 });
 

@@ -37,7 +37,7 @@ import {
   type ScriptContext, type Opcode,
 } from './script';
 import { registerSpecial } from './engine/script/script-opcodes';
-import { FlagSet, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
+import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
 import { parseValue } from './engine/script/script-opcodes-helpers';
 import { ShowFieldMessage } from './field_message_box';
 import { BattleSetup_StartTrainerBattle } from './engine/battle/battle-setup-helpers';
@@ -416,10 +416,13 @@ export function HasTrainerBeenFought(trainerId: number): boolean {
 export function SetTrainerFlag(trainerId: number): void {
   FlagSet(TRAINER_FLAGS_START + trainerId);
 }
-/** 1:1 décomp `ClearTrainerFlag(trainerId)` (battle_setup.c:1267). */
+/** 1:1 décomp `ClearTrainerFlag(trainerId)` (battle_setup.c:1267) :
+ *    `FlagClear(TRAINER_FLAGS_START + trainerId);`
+ *  FIX : utilisait un hook `__FlagClear` JAMAIS câblé → `if (fc)` no-op silencieux
+ *  (le flag dresseur n'était jamais effacé, ≠ SetTrainerFlag qui marche via FlagSet).
+ *  Maintenant FlagClear importé (même module que FlagSet), cohérent + 1:1. */
 export function ClearTrainerFlag(trainerId: number): void {
-  const fc = (globalThis as Record<string, unknown>).__FlagClear as ((f: number) => void) | undefined;
-  if (fc) fc(TRAINER_FLAGS_START + trainerId);
+  FlagClear(TRAINER_FLAGS_START + trainerId);
 }
 
 /** 1:1 décomp `DoTrainerBattle()` (battle_setup.c:459-465) :
