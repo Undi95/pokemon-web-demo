@@ -21,6 +21,7 @@
 
 import type { PokemonInstance } from '../pokemon/pokemon';
 import type { ItemSlot, Bag } from '../bag/bag';
+import { EOS } from '../../../include/constants/characters';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 // Cf. include/constants/global.h, vars.h, flags.h, berry.h, tv.h, etc.
@@ -975,8 +976,11 @@ export interface TrainerNameRecord {
 // ─── SaveBlock2 (1:1 décomp global.h:514) ───────────────────────────────────
 
 export interface SaveBlock2 {
-  /** 7 chars + null terminator. Stored as string en TS. */
-  playerName: string;
+  /** 1:1 décomp `u8 playerName[PLAYER_NAME_LENGTH + 1]` (charmap, EOS-terminé).
+   *  Stage 4 : `number[]` de bytes charmap (round-trip JSON.stringify, comme
+   *  SaveBlock1->flags ; un Uint8Array ne round-trip pas). Accès via
+   *  GetPlayerName / GetPlayerNameString / SetPlayerName (string-buffers.ts). */
+  playerName: number[];
   /** 0 = MALE, 1 = FEMALE. */
   playerGender: number;
   /** Bit flags : SPECIAL_SAVE_WARP_FLAG_*. */
@@ -1458,7 +1462,7 @@ function emptyLilycoveLady(): LilycoveLady {
 /** 1:1 décomp `Sav2_ClearSetDefault` (load_save.c). */
 export function emptySaveBlock2(): SaveBlock2 {
   return {
-    playerName: '', playerGender: 0, specialSaveWarpFlags: 0, playerTrainerId: 0,
+    playerName: [EOS], playerGender: 0, specialSaveWarpFlags: 0, playerTrainerId: 0,
     playTimeHours: 0, playTimeMinutes: 0, playTimeSeconds: 0, playTimeVBlanks: 0,
     optionsButtonMode: 0, optionsTextSpeed: 1, optionsWindowFrameType: 0,
     optionsSound: 0, optionsBattleStyle: 0, optionsBattleSceneOff: 0, regionMapZoom: 0,

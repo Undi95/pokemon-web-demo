@@ -32,6 +32,7 @@
  * un follow-up.
  */
 import { BeginNormalPaletteFade } from '../../palette';
+import { GetPlayerNameString } from '../system/string-buffers';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
@@ -453,7 +454,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   switch (fieldUseFunc) {
     case 'ItemUseOutOfBattle_CannotUse':
       // 1:1 décomp item_use.c — gText_DadsAdvice (strings.json FR officielle).
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Medicine': {
       // 1:1 décomp item_use.c:753-757 ItemUseOutOfBattle_Medicine :
@@ -588,12 +589,12 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         SetUpItemUseOnFieldCallback(task);
         return;
       }
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     }
     case 'ItemUseOutOfBattle_EscapeRope':
       // Escape Rope : warp out (SetEscapeWarp + DoEscapeRopeFieldEffect) non porté → DadsAdvice 1:1.
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
@@ -609,7 +610,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         VarSet('VAR_REPEL_STEP_COUNT', steps);
         _CtxRemoveUsedItem(itemId);
         // 1:1 :870 gText_PlayerUsedVar2 (= player utilise X) + suffix repelled.
-        const player = gSaveBlock2Ptr.playerName || 'JOUEUR';
+        const player = GetPlayerNameString() || 'JOUEUR';
         _showItemMessageThenRebuild(task,
           `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`);
       }
@@ -618,7 +619,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_BlackWhiteFlute': {
       // 1:1 décomp item_use.c:888-902 — set encounter flag selon White/Black.
       // ITEM_WHITE_FLUTE = 43, ITEM_BLACK_FLUTE = 42.
-      const player = gSaveBlock2Ptr.playerName || 'JOUEUR';
+      const player = GetPlayerNameString() || 'JOUEUR';
       if (itemId === 43 /* ITEM_WHITE_FLUTE */) {
         FlagSet('FLAG_SYS_ENC_UP_ITEM');
         FlagClear('FLAG_SYS_ENC_DOWN_ITEM');
@@ -708,7 +709,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
           SetUpItemUseCallback(task);
           return;
         default:
-          msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+          msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
           break;
       }
       break;
@@ -765,7 +766,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         SetUpItemUseOnFieldCallback(task);
         return;
       }
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     }
     case 'ItemUseOutOfBattle_Mail':
@@ -775,11 +776,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou un sous-système overworld
       // (wailmer berry / plant berry) pas encore portés → DadsAdvice 1:1 (condition prerequisite jamais
       // remplie). À étendre quand mail/pokeblock/berry-water seront portés (chantiers indépendants).
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     default:
       // Handler inconnu → DadsAdvice 1:1 FR pour ne pas exposer le nom interne.
-      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
   }
   _showItemMessage(task, msg);
 }

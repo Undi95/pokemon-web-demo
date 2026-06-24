@@ -14,6 +14,7 @@ import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
 } from '../../../harness/runtime/data-tables';
 import { Random } from '../../random';
+import { GetPlayerNameString } from '../system/string-buffers';
 import { Random32 } from '../../../include/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
@@ -561,7 +562,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     // 1:1 décomp CreateBoxMon (pokemon.c:2246/2254/2264) : OT id/name/gender posés
     // À LA SOURCE (l'ancien chemin les patchait dans GiveMonToPlayer → manque 1:1).
     otId,
-    otName: gSaveBlock2Ptr.playerName,
+    otName: GetPlayerNameString(),
     otGender: gSaveBlock2Ptr.playerGender,
     isEgg: false,
   };

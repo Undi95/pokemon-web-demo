@@ -26,6 +26,7 @@
  */
 
 import { GET_UNOWN_LETTER } from '../include/pokemon';
+import { GetPlayerNameString } from './engine/system/string-buffers';
 import type { Mail } from './engine/save/save-blocks';
 import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './engine/save/save-blocks';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -180,7 +181,7 @@ export function GiveMailToMonByItemId(mon: Pokemon, itemId: number): number {
       // En TS string : direct copy + PadNameString (1:1 string_util.c qui pad
       // avec CHAR_SPACE jusqu'à PLAYER_NAME_LENGTH).
       slot.playerName = PadNameString(
-        String((gSaveBlock2Ptr as any).playerName ?? '').slice(0, PLAYER_NAME_LENGTH),
+        GetPlayerNameString().slice(0, PLAYER_NAME_LENGTH),
         CHAR_SPACE,
       );
 

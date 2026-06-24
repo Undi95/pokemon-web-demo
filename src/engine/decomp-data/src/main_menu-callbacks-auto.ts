@@ -11,6 +11,7 @@
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
 import { ResetSpriteData } from '../../../sprite';
+import { GetPlayerNameString } from '../../system/string-buffers';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -964,7 +965,7 @@ export const Task_NewGameBirchSpeech_StartNamingScreen: TaskCallback = (task, rt
           FreeAndDestroyMonPicSprite(task.data[9]);
           NewGameBirchSpeech_SetDefaultPlayerName(Math.floor(Math.random() * 0x10000) % NUM_PRESET_NAMES);
           rt.DestroyTask(taskId);
-          DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr.playerName, gSaveBlock2Ptr.playerGender, 0, 0, CB2_NewGameBirchSpeech_ReturnFromNamingScreen);
+          DoNamingScreen(NAMING_SCREEN_PLAYER, GetPlayerNameString(), gSaveBlock2Ptr.playerGender, 0, 0, CB2_NewGameBirchSpeech_ReturnFromNamingScreen);
       }
 };
 

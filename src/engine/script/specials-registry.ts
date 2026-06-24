@@ -34,7 +34,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
-import { setStringVar } from '../system/string-buffers';
+import { setStringVar, GetPlayerNameString } from '../system/string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../../../include/constants/species';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../include/constants/items';
 import { OBJ_EVENT_GFX_BARD } from '../../../include/constants/event_objects';
@@ -2776,7 +2776,7 @@ registerSpecial('MonOTNameNotPlayer', () => {
   // 1:1 décomp :1574 MON_DATA_LANGUAGE != GAME_LANGUAGE → FR only, skip.
   // 1:1 :1577-1582 compare playerName vs GetMonData(MON_DATA_OT_NAME).
   const otName = (_GetMonData(mon, MON_DATA_OT_NAME) as string) ?? '';
-  const playerName = gSaveBlock2Ptr.playerName;
+  const playerName = GetPlayerNameString();
   if (!otName) return 1;  // pas d'OT → considère étranger
   return otName === playerName ? 0 : 1;
 });
@@ -3820,7 +3820,7 @@ registerSpecial('QuizLadyRecordCustomQuizData', () => {
   for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
     lady.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
   }
-  lady.playerName = gSaveBlock2Ptr.playerName ?? '';
+  lady.playerName = GetPlayerNameString();
   lady.language = 3;  // LANGUAGE_FRENCH
 });
 
@@ -4099,7 +4099,7 @@ registerSpecial('TakeBerryPowder', () => {
 registerSpecial('SaveBardSongLyrics', () => {
   const oldMan = gSaveBlock1Ptr.oldMan;
   if (!oldMan || oldMan.kind !== 'bard') return;
-  oldMan.playerName = gSaveBlock2Ptr.playerName ?? '';
+  oldMan.playerName = GetPlayerNameString();
   if (!oldMan.playerTrainerId) oldMan.playerTrainerId = [0, 0, 0, 0];
   for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
     oldMan.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
@@ -4473,7 +4473,7 @@ registerSpecial('TraderDoDecorationTrade', () => {
   DecorationAdd(decorToReceive);
   // 1:1 :205 : StringCopy(trader->playerNames[slot], gSaveBlock2Ptr->playerName).
   if (slotIdx >= 0 && slotIdx < oldMan.playerNames.length) {
-    oldMan.playerNames[slotIdx] = gSaveBlock2Ptr.playerName ?? '';
+    oldMan.playerNames[slotIdx] = GetPlayerNameString();
   }
   if (slotIdx >= 0 && slotIdx < oldMan.decorations.length) {
     oldMan.decorations[slotIdx] = decorToGive;

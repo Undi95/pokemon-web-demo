@@ -31,7 +31,7 @@ import type { Pokemon } from './engine/battle/party-storage';
 import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
 import { STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, StringAppend, gStringVar1, gStringVar2, gStringVar3 } from '../include/string_util';
 import { encodeOwText } from '../include/text';
-import { setStringVar } from './engine/system/string-buffers';
+import { setStringVar, GetPlayerNameString } from './engine/system/string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
 } from '../include/constants/species';
@@ -176,7 +176,7 @@ function GetMonSizeRecordInfo(species: number, varName: string): void {
     // jeté = no-op du modèle JS-string bridge) retiré.
     setStringVar(2, gText_Marco);
   } else {
-    setStringVar(2, gSaveBlock2Ptr.playerName);
+    setStringVar(2, GetPlayerNameString());
   }
 }
 

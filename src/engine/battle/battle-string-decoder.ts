@@ -23,6 +23,7 @@
  */
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
+import { GetPlayerNameString } from '../system/string-buffers';
 import {
   STRINGID_STATSHARPLY, STRINGID_STATHARSHLY,
 } from '../../../include/constants/battle_string_ids';
@@ -532,7 +533,7 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         return _abilityName(msgData.abilities[gEffectBattler] ?? 0);
       case 'PLAYER_NAME': {
         // 1:1 décomp `gSaveBlock2Ptr->playerName`.
-        return (gSaveBlock2Ptr.playerName as string | undefined) ?? 'Joueur';
+        return GetPlayerNameString() || 'Joueur';
       }
       case 'TRAINER1_CLASS':
         return _resolveTrainerClassNameFr(gTrainerBattleOpponent_A);
@@ -574,7 +575,7 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'LINK_OPPONENT2_NAME':
       case 'LINK_SCR_TRAINER_NAME':
         // Link Phase 1 deferred — fallback player.
-        return (gSaveBlock2Ptr.playerName as string | undefined) ?? 'Joueur';
+        return GetPlayerNameString() || 'Joueur';
       case 'PC_CREATOR_NAME':
         return 'BILL';
       // Prefix placeholders 1:1 décomp battle_message.c:2704-2728 :

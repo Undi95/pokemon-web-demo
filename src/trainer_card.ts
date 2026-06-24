@@ -32,6 +32,7 @@
  */
 
 import { FreeAllSpritePalettes } from '../harness/runtime/decomp-globals';
+import { GetPlayerNameString } from './engine/system/string-buffers';
 import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg,
@@ -347,7 +348,7 @@ function _bufferCardData(): {
     playerTrainerId?: number | number[]; playerName?: string;
     playerGender?: number;
   };
-  const name = sb2.playerName || (gSaveBlock2Ptr.playerName ?? 'UNDI') || 'PLAYER';
+  const name = GetPlayerNameString() || 'UNDI';
   // 1:1 décomp `trainer_card.c:722` :
   //   trainerCard->trainerId = (playerTrainerId[1] << 8) | playerTrainerId[0];
   // = les 16 bits BAS de l'ID 32-bit (ID dresseur PUBLIC, u16 0-65535).

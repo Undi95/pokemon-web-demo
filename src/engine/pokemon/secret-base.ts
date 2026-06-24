@@ -11,6 +11,7 @@
  */
 
 import { registerSpecial } from '../script/script-opcodes';
+import { GetPlayerNameString } from '../system/string-buffers';
 import { VarGet, VarSet, gSpecialVar } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SECRET_BASES_COUNT, TRAINER_ID_LENGTH, LANGUAGE_FRENCH } from '../../../include/constants/global';
@@ -218,7 +219,7 @@ registerSpecial('SetPlayerSecretBase', () => {
   }
   VarSet('VAR_CURRENT_SECRET_BASE', 0);
   // 1:1 décomp StringCopyN + GetNameLength (= EOS=0xFF search).
-  const playerName = gSaveBlock2Ptr.playerName ?? '';
+  const playerName = GetPlayerNameString();
   base.trainerName = playerName;
   base.gender = gSaveBlock2Ptr.playerGender ?? 0;
   base.language = LANGUAGE_FRENCH;  // 1:1 décomp GAME_LANGUAGE = LANGUAGE_FRENCH=3 (FR).

@@ -33,6 +33,7 @@ import {
   EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
   encodeStringForFont,
 } from './engine/ui/gba-text-printer';
+import { GetPlayerNameString } from './engine/system/string-buffers';
 import {
   B_TXT_BUFF1, B_TXT_BUFF2, B_TXT_BUFF3, B_TXT_COPY_VAR_1, B_TXT_COPY_VAR_2, B_TXT_COPY_VAR_3,
   B_TXT_PLAYER_MON1_NAME, B_TXT_OPPONENT_MON1_NAME, B_TXT_PLAYER_MON2_NAME, B_TXT_OPPONENT_MON2_NAME,
@@ -359,7 +360,7 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     case B_TXT_DEF_ABILITY:  return encodeChars(_abilityName(_ABILITY_OF(msgData, md.battlerTarget)));
     case B_TXT_SCR_ACTIVE_ABILITY: return encodeChars(_abilityName(_ABILITY_OF(msgData, md.scrActive)));
     case B_TXT_EFF_ABILITY:  return encodeChars(_abilityName(_ABILITY_OF(msgData, gEffectBattler)));
-    case B_TXT_PLAYER_NAME:  return encodeChars((gSaveBlock2Ptr.playerName as string | undefined) ?? 'Joueur');
+    case B_TXT_PLAYER_NAME:  return encodeChars(GetPlayerNameString() || 'Joueur');
     case B_TXT_TRAINER1_CLASS: return encodeChars(_resolveTrainerClassNameFr(gTrainerBattleOpponent_A));
     case B_TXT_TRAINER1_NAME:  return encodeChars(_resolveTrainerNameFr(gTrainerBattleOpponent_A));
     case B_TXT_PC_CREATOR_NAME: return encodeChars('BILL');

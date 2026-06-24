@@ -696,9 +696,17 @@ function ExpandPlaceholder_UnknownStringVar(): Uint8Array {
 function ExpandPlaceholder_PlayerName(): Uint8Array {
   const pn = (gSaveBlock2Ptr as { playerName?: unknown }).playerName;
   if (pn instanceof Uint8Array) return pn;
-  const enc = EncodePlayerNameFR(typeof pn === 'string' ? pn : '');
   _sPlayerNameBytes.fill(EOS);
-  _sPlayerNameBytes.set(enc.subarray(0, Math.min(enc.length, _sPlayerNameBytes.length)));
+  if (Array.isArray(pn)) {
+    // Stage 4 : playerName = number[] bytes charmap natif → copie directe (1:1
+    // `return gSaveBlock2Ptr->playerName`, plus de round-trip d'encodage).
+    const n = Math.min(pn.length, _sPlayerNameBytes.length);
+    for (let i = 0; i < n; i++) _sPlayerNameBytes[i] = (pn as number[])[i];
+  } else {
+    // legacy : ancienne save JS-string → encode FR transitoire.
+    const enc = EncodePlayerNameFR(typeof pn === 'string' ? pn : '');
+    _sPlayerNameBytes.set(enc.subarray(0, Math.min(enc.length, _sPlayerNameBytes.length)));
+  }
   return _sPlayerNameBytes;
 }
 

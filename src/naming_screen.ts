@@ -21,6 +21,7 @@
  */
 import { OBJ_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData } from './sprite';
+import { SetPlayerName } from './engine/system/string-buffers';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
@@ -2243,7 +2244,7 @@ function SaveInputText(): void {
   const name = sNamingScreen.textBuffer.join('').slice(0, sNamingScreen.template.maxChars);
   if (!name) return;
   if (sNamingScreen.templateNum === NAMING_SCREEN_PLAYER) {
-    gSaveBlock2Ptr.playerName = name;
+    SetPlayerName(name);
   } else if (Array.isArray(sNamingScreen.destBuffer)) {
     // Array<number> = char codes
     const buf = sNamingScreen.destBuffer as number[];

@@ -43,6 +43,7 @@ import {
   type WindowTemplate,
 } from './engine/ui/gba-window-system';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
+import { GetPlayerNameString } from './engine/system/string-buffers';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
@@ -343,7 +344,7 @@ function _showSaveInfoWindow(): void {
   DrawStdFrameWithCustomTileAndPalette(sSaveInfoWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
 
   const sb2 = gSaveBlock2Ptr as Record<string, unknown>;
-  const playerName = String(sb2.playerName ?? 'PLAYER');
+  const playerName = GetPlayerNameString() || 'PLAYER';
   const isFemale = (sb2.playerGender ?? 0) === 1;
   // 1:1 décomp : RED si Female, BLUE si Male.
   const TEXT_COLOR_RED = 4;
@@ -558,7 +559,7 @@ function buildItems(): MenuItem[] {
     items.push({ label: getString('gText_MenuOptionPokenav'), onSelect: pokenavAction });
   }
   // {PLAYER} entry : décomp expand placeholder, nous on resolve direct.
-  items.push({ label: (gSaveBlock2Ptr.playerName ?? 'UNDI'), onSelect: playerCardAction });
+  items.push({ label: GetPlayerNameString() || 'UNDI', onSelect: playerCardAction });
   items.push({ label: getString('gText_MenuSave'), onSelect: saveAction });
   items.push({ label: getString('gText_MenuOption'), onSelect: optionsAction });
   items.push({ label: getString('gText_MenuExit'), onSelect: () => true });

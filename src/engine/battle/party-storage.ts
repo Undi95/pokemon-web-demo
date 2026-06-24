@@ -19,6 +19,7 @@
  */
 
 import type { PokemonInstance } from '../pokemon/pokemon';
+import { GetPlayerNameString } from '../system/string-buffers';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
@@ -985,7 +986,7 @@ export const MON_CANT_GIVE = 2;
 export function GiveMonToPlayer(mon: Pokemon): number {
   // 1:1 décomp pokemon.c:4416-4418 : le mon donné/capturé prend l'OT du joueur
   // (fallbacks `??` = robustesse boot avant init playerName, comportement inchangé).
-  SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr.playerName ?? 'UNDI');
+  SetMonData(mon, MON_DATA_OT_NAME, GetPlayerNameString() || 'UNDI');
   SetMonData(mon, MON_DATA_OT_GENDER, gSaveBlock2Ptr.playerGender ?? 0);
   SetMonData(mon, MON_DATA_OT_ID, (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0);
   // 1:1 décomp : premier slot SPECIES_NONE de gPlayerParty.

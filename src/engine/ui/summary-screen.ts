@@ -30,6 +30,7 @@ import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
 } from './gba-window-system';
+import { GetPlayerNameString } from '../system/string-buffers';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
@@ -870,7 +871,7 @@ function _extractMonData(mon: Pokemon): void {
   s.currentHP = mon.hp; s.maxHP = mon.maxHP;        // MON_DATA_HP / MAX_HP
   s.atk = mon.attack; s.def = mon.defense;          // stats 1:1 CalculateMonStats (champs natifs)
   s.spatk = mon.spAttack; s.spdef = mon.spDefense; s.speed = mon.speed;
-  s.OTName = mon.otName || (gSaveBlock2Ptr.playerName ?? '');  // MON_DATA_OT_NAME
+  s.OTName = mon.otName || GetPlayerNameString();  // MON_DATA_OT_NAME
   s.OTID = mon.otId >>> 0;                          // MON_DATA_OT_ID
   s.OTGender = mon.otGender;                        // MON_DATA_OT_GENDER
   s.metLocation = mon.metLocation;                  // MON_DATA_MET_LOCATION (dette MAPSEC)

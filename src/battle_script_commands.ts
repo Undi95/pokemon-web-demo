@@ -5,6 +5,7 @@ import {
   setLastUsedItem as setLastUsedItemSME,
 } from './engine/battle/state';
 import { DestroySprite } from './sprite';
+import { GetPlayerNameString } from './engine/system/string-buffers';
 import {
   HITMARKER_CHARGING,
   HITMARKER_STATUS_ABILITY_EFFECT,
@@ -9750,7 +9751,7 @@ function _GiveMonToPlayerGC(mon: unknown): number {
     playerTrainerId?: number[] | { 0: number };
   };
   if (mon) {
-    if (sb2.playerName !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_NAME_GC, sb2.playerName);
+    if (sb2.playerName !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_NAME_GC, GetPlayerNameString());
     if (sb2.playerGender !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_GENDER_GC, sb2.playerGender);
     // 1:1 décomp : playerTrainerId est u8[4] ; pack en u32 little-endian.
     const tid = sb2.playerTrainerId as number[] | { 0: number; 1: number; 2: number; 3: number } | undefined;

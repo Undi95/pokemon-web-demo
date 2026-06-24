@@ -26,6 +26,7 @@
  */
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
+import { SetPlayerName, GetPlayerNameString } from './engine/system/string-buffers';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {
@@ -421,7 +422,7 @@ export function MainMenu_FormatSavegameText(): void {
   // FlagGet (= script-vars), GetStringRightAlignXOffset (= gba-text-system).
   // Tous imports ESM statiques (pas de require() — bug session 122 fix).
   const sb2 = gSaveBlock2Ptr as Record<string, unknown>;
-  const playerName = String(sb2.playerName ?? '???');
+  const playerName = GetPlayerNameString() || '???';
   const playTimeHours = Number(sb2.playTimeHours ?? 0);
   const playTimeMinutes = Number(sb2.playTimeMinutes ?? 0);
 
@@ -707,7 +708,7 @@ function _applyPresetName(nameId: number): void {
   if (!presetSymbol) return;
   const name = getString(presetSymbol);
   if (name.startsWith('[MISSING:')) return;  // safety, ne jamais set un missing
-  gSaveBlock2Ptr.playerName = name;
+  SetPlayerName(name);
 }
 
 export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {

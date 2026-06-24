@@ -44,6 +44,7 @@ import {
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, AddWindow, DrawStdFrameWithCustomTileAndPalette } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gSaveBlock2Ptr } from './gba-menu-system';
+import { GetPlayerNameString } from '../system/string-buffers';
 import { MUS_LITTLEROOT as _MUS_LITTLEROOT } from '../../../include/constants/songs';
 
 // 1:1 décomp include/constants/songs.h:336 — MUS_LITTLEROOT (Littleroot Town BGM).
@@ -105,7 +106,7 @@ export function CB2_OverworldWelcomePlaceholder(): void {
       const winId = AddWindow({ bg: 0, tilemapLeft: 2, tilemapTop: 14, width: 26, height: 4, paletteNum: 15, baseBlock: 1 });
       DrawStdFrameWithCustomTileAndPalette(winId, true, 1, 13);
       // Texte centré dans window.
-      const playerName = (gSaveBlock2Ptr.playerName as string) || 'CHAMPION';
+      const playerName = GetPlayerNameString() || 'CHAMPION';
       AddTextPrinterParameterized3(
         winId, 1, 4, 1, [1, 2, 3], 255,
         `BIENVENUE EN HOENN, ${playerName} !\nOverworld bientôt 1:1 décomp.`,
