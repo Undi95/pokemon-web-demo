@@ -614,14 +614,23 @@ function _isLastMonThatKnowsMove(moveIdString: string): number {
   // Dette R3 : check storage PC (AnyStorageMonWithMove) pas porté → return TRUE.
   return 1;
 }
-registerSpecial('IsLastMonThatKnowsSurf', () => _isLastMonThatKnowsMove('surf'));
-registerSpecial('IsLastMonThatKnowsCut', () => _isLastMonThatKnowsMove('cut'));
-registerSpecial('IsLastMonThatKnowsDive', () => _isLastMonThatKnowsMove('dive'));
-registerSpecial('IsLastMonThatKnowsRockSmash', () => _isLastMonThatKnowsMove('rocksmash'));
-registerSpecial('IsLastMonThatKnowsFly', () => _isLastMonThatKnowsMove('fly'));
-registerSpecial('IsLastMonThatKnowsWaterfall', () => _isLastMonThatKnowsMove('waterfall'));
-registerSpecial('IsLastMonThatKnowsStrength', () => _isLastMonThatKnowsMove('strength'));
-registerSpecial('IsLastMonThatKnowsFlash', () => _isLastMonThatKnowsMove('flash'));
+/** FIX : décomp `IsLastMonThatKnowsSurf` (party_menu.c:6407) est VOID et pose
+ *  gSpecialVar_Result, appelé via `special` (Move Deleter, anti-softlock Surf) →
+ *  l'opcode `special` ignore le retour → VarSet explicite. [[gotcha-special-vs-specialvar-varresult]]
+ *  (Seul `Surf` existe dans la décomp ; les 7 autres sont nos extras, idem corrigés.) */
+const _regLastMonKnows = (move: string) => () => {
+  const result = _isLastMonThatKnowsMove(move);
+  VarSet('VAR_RESULT', result);
+  return result;
+};
+registerSpecial('IsLastMonThatKnowsSurf', _regLastMonKnows('surf'));
+registerSpecial('IsLastMonThatKnowsCut', _regLastMonKnows('cut'));
+registerSpecial('IsLastMonThatKnowsDive', _regLastMonKnows('dive'));
+registerSpecial('IsLastMonThatKnowsRockSmash', _regLastMonKnows('rocksmash'));
+registerSpecial('IsLastMonThatKnowsFly', _regLastMonKnows('fly'));
+registerSpecial('IsLastMonThatKnowsWaterfall', _regLastMonKnows('waterfall'));
+registerSpecial('IsLastMonThatKnowsStrength', _regLastMonKnows('strength'));
+registerSpecial('IsLastMonThatKnowsFlash', _regLastMonKnows('flash'));
 
 /** 1:1 décomp `Special_ViewLottery` etc. — lottery / casino. Stubs. */
 registerSpecial('Special_ViewLottery', () => { /* no-op */ });
