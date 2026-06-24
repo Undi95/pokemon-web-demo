@@ -266,6 +266,48 @@ function GetCurrentMapWildMonHeader(): WildPokemonHeader | null {
   // (= 9 tables alternative, hors-démo).
 }
 
+/** 1:1 décomp `u16 GetLocalWildMon(bool8 *isWaterMon)` (wild_encounter.c:1041) :
+ *  espèce d'un mon sauvage local — terre seule / eau seule / 80%-terre·20%-eau si
+ *  les deux. Utilisé pour le cri ambiant de l'overworld (overworld.c:1330).
+ *  Adaptations modèle : species = string ('SPECIES_X', WildPokemon.species) ;
+ *  out-param `isWaterMon` = objet `{ value }` (≈ pointeur bool8 *). */
+export function GetLocalWildMon(isWaterMon: { value: boolean }): string {
+  isWaterMon.value = false;
+  const header = GetCurrentMapWildMonHeader();
+  if (!header) return 'SPECIES_NONE';  // 1:1 : headerId == HEADER_NONE
+  const landMonsInfo = header.landMonsInfo;
+  const waterMonsInfo = header.waterMonsInfo;
+  if (!landMonsInfo && !waterMonsInfo) return 'SPECIES_NONE';
+  if (landMonsInfo && !waterMonsInfo) {
+    return landMonsInfo.wildPokemon[ChooseWildMonIndex_Land()].species;
+  }
+  if (!landMonsInfo && waterMonsInfo) {
+    isWaterMon.value = true;
+    return waterMonsInfo.wildPokemon[ChooseWildMonIndex_WaterRock()].species;
+  }
+  // 1:1 : les deux → 80% terre, 20% eau.
+  if ((Random() % 100) < 80) {
+    return landMonsInfo!.wildPokemon[ChooseWildMonIndex_Land()].species;
+  }
+  isWaterMon.value = true;
+  return waterMonsInfo!.wildPokemon[ChooseWildMonIndex_WaterRock()].species;
+}
+
+/** 1:1 décomp `u16 GetLocalWaterMon(void)` (wild_encounter.c:1075) : espèce d'un mon
+ *  d'eau local (ou SPECIES_NONE). Cri ambiant si l'Île Mirage est absente
+ *  (overworld.c:1326). */
+export function GetLocalWaterMon(): string {
+  const header = GetCurrentMapWildMonHeader();
+  if (header && header.waterMonsInfo) {
+    return header.waterMonsInfo.wildPokemon[ChooseWildMonIndex_WaterRock()].species;
+  }
+  return 'SPECIES_NONE';
+}
+
+// Exposition dev (sonde déterministe), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetLocalWildMon = GetLocalWildMon;
+(globalThis as Record<string, unknown>).__GetLocalWaterMon = GetLocalWaterMon;
+
 /** 1:1 décomp `EncounterOddsCheck` (wild_encounter.c:493-499). */
 function EncounterOddsCheck(encounterRate: number): boolean {
   return (Random() % MAX_ENCOUNTER_RATE) < encounterRate;
