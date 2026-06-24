@@ -14,6 +14,7 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import {
   GetMonData, SetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG, MON_DATA_IS_EGG,
   GiveMonToPlayer, MON_GIVEN_TO_PARTY, MON_GIVEN_TO_PC,
+  SetMonMoveSlot, gPlayerParty, CalculatePlayerPartyCount,
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
 import { CreateMon } from './engine/pokemon/pokemon';
@@ -99,4 +100,20 @@ export function ScriptGiveEgg(speciesEnum: string): number {
   // 1:1 décomp : re-set IS_EGG (redondant — CreateEgg l'a déjà fait).
   SetMonData(mon, MON_DATA_IS_EGG, 1);
   return GiveMonToPlayer(mon);
+}
+
+/** 1:1 décomp `ScriptSetMonMoveSlot(u8 monIndex, u16 move, u8 slot)`
+ *  (script_pokemon_util.c:151-162) :
+ *  ```c
+ *  if (monIndex > PARTY_SIZE)            // ROM expédiée (non-BUGFIX)
+ *      monIndex = gPlayerPartyCount - 1;
+ *  SetMonMoveSlot(&gPlayerParty[monIndex], move, slot);
+ *  ```
+ *  Le clamp out-of-bounds n'arrive jamais en vanilla (les scripts passent un
+ *  monIndex 0-5). Utilisé par l'opcode `setmonmove`. */
+export function ScriptSetMonMoveSlot(monIndex: number, move: number, slot: number): void {
+  if (monIndex > PARTY_SIZE) {
+    monIndex = CalculatePlayerPartyCount() - 1;
+  }
+  SetMonMoveSlot(gPlayerParty[monIndex], move, slot);
 }

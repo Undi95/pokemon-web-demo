@@ -21,7 +21,7 @@ import { PlantBerryTree } from './berry';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
 import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon, StartFirstBattle } from './engine/battle/battle-setup-helpers';
-import { CalculatePPWithBonus, GetMonData, MON_DATA_IS_EGG, MON_DATA_MET_LOCATION, MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_SPECIES, MonKnowsMove, SetMonData, gPlayerParty } from './engine/battle/party-storage';
+import { GetMonData, MON_DATA_IS_EGG, MON_DATA_MET_LOCATION, MON_DATA_SPECIES, MonKnowsMove, SetMonData, SetMonMoveSlot, gPlayerParty } from './engine/battle/party-storage';
 import { MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT, MOVEMENT_ACTION_FACE_UP } from '../include/constants/event_object_movement';
 import { MAX_MON_MOVES, PARTY_SIZE } from '../include/constants/global';
 import { applyMovement, isAllMovementsDone, isMovementDone } from './engine/field/movement-system';
@@ -1916,13 +1916,13 @@ registerOpcode('setmonmove', (_ctx, args) => {
   const partyIndex = parseValue(args[0] ?? '0');
   const slot = parseValue(args[1] ?? '0');
   const moveId = resolveDecompConstant(args[2] ?? 'MOVE_NONE') ?? 0;
+  // 1:1 décomp ScrCmd_setmonmove → ScriptSetMonMoveSlot → SetMonMoveSlot
+  // (pokemon.c:6600 : pose move + PP de BASE gBattleMoves[move].pp). Import
+  // statique (party-storage, déjà importé) = sync + cycle-safe. Notre bornage
+  // `< PARTY_SIZE` est plus strict que le clamp `> PARTY_SIZE` du décomp (= évite
+  // l'OOB read de la ROM non-BUGFIX) ; le clamp ne se déclenche jamais en vanilla.
   if (partyIndex >= 0 && partyIndex < PARTY_SIZE && slot >= 0 && slot < MAX_MON_MOVES) {
-    const mon = gPlayerParty[partyIndex];
-    // 1:1 décomp `ScriptSetMonMoveSlot`→`SetMonMoveSlot` (pokemon.c) : SetMonData
-    // du move + PP plein (CalculatePPWithBonus, ppBonuses=0). Opère sur le NATIF
-    // gPlayerParty (l'ancien `mon.moves[slot]=…` mutait une VUE nested = non propagé).
-    SetMonData(mon, MON_DATA_MOVE1 + slot, moveId);
-    SetMonData(mon, MON_DATA_PP1 + slot, CalculatePPWithBonus(moveId, 0, slot));
+    SetMonMoveSlot(gPlayerParty[partyIndex], moveId, slot);
   }
   return false;
 });

@@ -917,6 +917,20 @@ export function CalculatePPWithBonus(move: number, ppBonuses: number, moveIndex:
   return (basePP + Math.floor((basePP * 20 * ppUps) / 100)) & 0xff;
 }
 
+/** 1:1 décomp `void SetMonMoveSlot(struct Pokemon *mon, u16 move, u8 slot)` (pokemon.c:6600-6604) :
+ *  ```c
+ *  SetMonData(mon, MON_DATA_MOVE1 + slot, &move);
+ *  SetMonData(mon, MON_DATA_PP1 + slot, &gBattleMoves[move].pp);
+ *  ```
+ *  Pose le move dans le slot + son PP de BASE (= sans PP Up). Primitif partagé
+ *  par 10 fichiers décomp (Mimic, frontier, move_relearner, party_menu,
+ *  evolution_scene…). NB : le décomp prend le PP brut `gBattleMoves[move].pp`,
+ *  PAS `CalculatePPWithBonus` (ppBonuses ignorés à la pose d'un slot). */
+export function SetMonMoveSlot(mon: Pokemon, move: number, slot: number): void {
+  SetMonData(mon, MON_DATA_MOVE1 + slot, move);
+  SetMonData(mon, MON_DATA_PP1 + slot, gBattleMoves[move]?.pp ?? 0);
+}
+
 /** Bridge inverse `Pokemon` → mise à jour de `PokemonInstance` (= persist
  *  HP/status/exp post-combat). */
 export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void {
