@@ -1887,11 +1887,26 @@ registerOpcode('givepokemon', (_ctx, args) => {
 });
 
 /** 1:1 décomp `ScrCmd_giveegg` (scrcmd.c:1694-1700) :
- *    ScriptGiveEgg(VarGet(species)). Donne un Pokemon egg à la party.
- *  Notre port : log + skip (= ScriptGiveEgg à porter 1:1 strict en session dédiée).
- *  Dette : implémenter ScriptGiveEgg via script_pokemon_util.c port. */
+ *    gSpecialVar_Result = ScriptGiveEgg(VarGet(species)). Donne un œuf à la party. */
 registerOpcode('giveegg', (_ctx, args) => {
-  console.log(`[opcode giveegg] species=${args[0]} — TODO ScriptGiveEgg port`);
+  const speciesArg = args[0] ?? '';
+  let speciesName = speciesArg;
+  if (!speciesName.startsWith('SPECIES_')) {
+    const num = VarGet(speciesArg);
+    speciesName = reverseDecompConstant(num, 'SPECIES_') ?? `SPECIES_${num}`;
+  }
+  void (async () => {
+    try {
+      // Import dynamique = anti-cycle ESM (script_pokemon_util → daycare → pokemon.ts).
+      const { ScriptGiveEgg } = await import('./script_pokemon_util');
+      const result = ScriptGiveEgg(speciesName);
+      VarSet('VAR_RESULT', result);  // 0=PARTY, 1=PC, 2=CANT_GIVE
+      console.log(`[opcode giveegg] ${speciesName} → result=${result}`);
+    } catch (e) {
+      console.warn('[opcode giveegg] failed:', e);
+      VarSet('VAR_RESULT', 2);
+    }
+  })();
   return false;
 });
 

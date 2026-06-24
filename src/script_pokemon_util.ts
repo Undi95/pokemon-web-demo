@@ -12,11 +12,12 @@
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import {
-  GetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG,
+  GetMonData, SetMonData, MON_DATA_HELD_ITEM, MON_DATA_SPECIES_OR_EGG, MON_DATA_IS_EGG,
   GiveMonToPlayer, MON_GIVEN_TO_PARTY, MON_GIVEN_TO_PC,
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
 import { CreateMon } from './engine/pokemon/pokemon';
+import { CreateEgg } from './daycare';
 import {
   SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT,
 } from './engine/ui/pokedex-flags';
@@ -80,4 +81,22 @@ export function ScriptGiveMon(speciesEnum: string, level: number, heldItem?: str
       break;
   }
   return sentToPc;
+}
+
+/** 1:1 décomp `ScriptGiveEgg(species)` (script_pokemon_util.c:87-97) :
+ *  ```c
+ *  struct Pokemon mon; u8 isEgg;
+ *  CreateEgg(&mon, species, TRUE);
+ *  isEgg = TRUE;
+ *  SetMonData(&mon, MON_DATA_IS_EGG, &isEgg);  // redondant : CreateEgg l'a déjà posé
+ *  return GiveMonToPlayer(&mon);
+ *  ```
+ *  Donne un œuf (lvl 5, isEgg, compteur d'éclosion = eggCycles de l'espèce) à la
+ *  party — utilisé par l'opcode `giveegg` (œuf de la pension, œuf Mystère, œuf
+ *  Wynaut de Lavandia…). Renvoie sentToPc (0=PARTY, 1=PC, 2=CANT_GIVE). */
+export function ScriptGiveEgg(speciesEnum: string): number {
+  const mon = CreateEgg(speciesEnum, true);
+  // 1:1 décomp : re-set IS_EGG (redondant — CreateEgg l'a déjà fait).
+  SetMonData(mon, MON_DATA_IS_EGG, 1);
+  return GiveMonToPlayer(mon);
 }
