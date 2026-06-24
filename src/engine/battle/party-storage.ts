@@ -28,6 +28,9 @@ import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/r
 import { gMapHeader } from '../../fieldmap';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
+import {
+  PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
+} from '../../../include/constants/pokemon';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../../random';
@@ -641,6 +644,32 @@ export function CalculatePlayerPartyCount(): number {
     if (gPlayerParty[i]?.species && gPlayerParty[i].species !== 0) count++;
   }
   return count;
+}
+
+/** 1:1 décomp `u8 GetMonsStateToDoubles(void)` (pokemon.c:4494-4512) :
+ *  ```c
+ *  CalculatePlayerPartyCount();
+ *  if (gPlayerPartyCount == 1) return gPlayerPartyCount; // PLAYER_HAS_ONE_MON
+ *  for (i = 0; i < gPlayerPartyCount; i++)
+ *      if (GetMonData(SPECIES_OR_EGG) != SPECIES_EGG && GetMonData(HP) != 0
+ *          && GetMonData(SPECIES_OR_EGG) != SPECIES_NONE) aliveCount++;
+ *  return (aliveCount > 1) ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
+ *  ```
+ *  Éligibilité au combat double : ≥2 mons vivants non-œuf → TWO_USABLE. Adaptation
+ *  modèle : notre `MON_DATA_SPECIES_OR_EGG` renvoie 0 (NONE) pour un œuf (pas
+ *  SPECIES_EGG) → on teste `species != 0 && !IS_EGG` (équivalent strict). */
+export function GetMonsStateToDoubles(): number {
+  const partyCount = CalculatePlayerPartyCount();
+  if (partyCount === 1) return PLAYER_HAS_ONE_MON; // 1:1 : return gPlayerPartyCount (== 1)
+  let aliveCount = 0;
+  for (let i = 0; i < partyCount; i++) {
+    const mon = gPlayerParty[i];
+    if (mon.species !== 0 && !(GetMonData(mon, MON_DATA_IS_EGG) as number)
+        && (GetMonData(mon, MON_DATA_HP) as number) !== 0) {
+      aliveCount++;
+    }
+  }
+  return aliveCount > 1 ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
 }
 
 /** 1:1 décomp `CalculateEnemyPartyCount()` (pokemon.c). Idem pour gEnemyParty. */

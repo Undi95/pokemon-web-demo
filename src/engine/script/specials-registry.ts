@@ -54,6 +54,7 @@ import { Random } from '../../random';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import {
   CheckPartyPokerus, gPlayerParty, CalculatePlayerPartyCount, CalculatePPWithBonus,
+  GetMonsStateToDoubles,
   GetMonData as _GetMonData, SetMonData,
   MON_DATA_MOVE1 as _MON_DATA_MOVE1,
   MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS,
@@ -1063,25 +1064,22 @@ registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
 registerSpecial('ChoosePartyForBattleFrontier', () => 0);
 registerSpecial('ChooseHalfPartyForBattle', () => 0);
 
-/** 1:1 décomp `HasEnoughMonsForDoubleBattle` (script_pokemon_util.c:99-113).
- *  Switch sur GetMonsStateToDoubles() : retourne 0=TWO_USABLE, 1=ONE_MON,
- *  2=ONE_USABLE (via gSpecialVar_Result). 1:1 décomp pokemon.c:4494-4512 :
- *    aliveCount = count partyMons non-egg non-empty avec HP != 0.
- *    Si gPlayerPartyCount == 1 → PLAYER_HAS_ONE_MON.
- *    Sinon aliveCount > 1 → PLAYER_HAS_TWO_USABLE_MONS, else PLAYER_HAS_ONE_USABLE_MON. */
+/** 1:1 décomp `HasEnoughMonsForDoubleBattle` (script_pokemon_util.c:99-113) :
+ *    switch (GetMonsStateToDoubles()) { case X: gSpecialVar_Result = X; ... }
+ *  Le switch du décomp est une identité sur {TWO_USABLE=0, ONE_MON=1,
+ *  ONE_USABLE=2} → `gSpecialVar_Result = GetMonsStateToDoubles()`. La logique
+ *  (count mons vivants non-œuf) vit désormais dans le primitif nommé 1:1
+ *  `GetMonsStateToDoubles` (pokemon.c:4494, party-storage).
+ *
+ *  FIX : le décomp l'appelle via `special` (trainer_battle.inc:29/71 = détection
+ *  combat double, cable_club.inc) → la fonction pose gSpecialVar_Result. Notre
+ *  ancien handler ne faisait que `return` → l'opcode `special` générique ignore
+ *  le retour → VAR_RESULT JAMAIS posé → branchement single/double cassé. On pose
+ *  donc VAR_RESULT explicitement (+ on retourne aussi, pour un appel specialvar). */
 registerSpecial('HasEnoughMonsForDoubleBattle', () => {
-  // 1:1 décomp pokemon.c:4494 GetMonsStateToDoubles.
-  const partyCount = CalculatePlayerPartyCount();  // :4498
-  if (partyCount === 1) return 1;  // PLAYER_HAS_ONE_MON
-  // 1:1 :4503-4509 aliveCount = non-egg + HP != 0.
-  let aliveCount = 0;
-  for (let i = 0; i < partyCount; i++) {
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) {
-      aliveCount++;
-    }
-  }
-  return aliveCount > 1 ? 0 : 2;  // 0 = TWO_USABLE, 2 = ONE_USABLE
+  const state = GetMonsStateToDoubles();
+  VarSet('VAR_RESULT', state);
+  return state;
 });
 
 /** Casino. */
