@@ -30,6 +30,7 @@ import { registerSpecial } from './script-opcodes';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
+import { CheckFreePokemonStorageSpace } from '../../pokemon_storage_system';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2277,7 +2278,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'RockSmashWildEncounter' — porté 1:1 décomp wild_encounter.c (game/wild_encounter.ts) → registré ci-bas.
   // 'SaveBardSongLyrics' — porté 1:1 décomp mauville_old_man.c:156 ci-bas (batch B37).
   // 'SaveGame' — porté 1:1 décomp start_menu.c:896 ci-bas (batch B40).
-  'ScriptCheckFreePokemonStorageSpace',
+  // 'ScriptCheckFreePokemonStorageSpace' — porté 1:1 décomp pokemon_storage_system.c:9572 (handler ci-bas).
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
   'ScriptHatchMon',
   'ScriptMenu_CreatePCMultichoice',
@@ -2408,6 +2409,14 @@ registerSpecial('BufferTrendyPhraseString', () => {
 registerSpecial('IsPokemonJumpSpeciesInParty', () => {
   IsPokemonJumpSpeciesInParty();
   return 0;
+});
+
+// 1:1 décomp `ScriptCheckFreePokemonStorageSpace` (field_specials.c:1450) :
+//   `return CheckFreePokemonStorageSpace();` → gSpecialVar_Result = TRUE s'il reste
+// un slot de boîte PC libre. Import direct (pokemon_storage_system.ts est une feuille ;
+// save.ts ne réimporte pas specials-registry → cycle-safe).
+registerSpecial('ScriptCheckFreePokemonStorageSpace', () => {
+  return CheckFreePokemonStorageSpace() ? 1 : 0;
 });
 
 // ─── Berry tree field interaction — récolte (1:1 décomp berry.c:1252-1313) ───
