@@ -42,6 +42,9 @@ import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerParty } from './engine/battle/party-storage';
 import { STATUS1_POISON, STATUS1_TOXIC_POISON } from './engine/battle/constants';
+// Side-effect : pose globalThis.__TryFieldPoisonWhiteOut (consommé par le special
+// TryFieldPoisonWhiteOut, lancé depuis EventScript_FieldPoison après un faint poison).
+import './field_poison';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,

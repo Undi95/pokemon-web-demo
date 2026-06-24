@@ -2344,7 +2344,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'TraderDoDecorationTrade' — porté 1:1 décomp trader.c:199 ci-bas (batch D5).
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
   'TryBecomeLinkLeader', 'TryBerryBlenderLinkup', 'TryContestEModeLinkup',
-  'TryContestGModeLinkup', 'TryEnterContestMon', 'TryFieldPoisonWhiteOut',
+  // 'TryFieldPoisonWhiteOut' — porté 1:1 décomp field_poison.c:115 (game/field_poison.ts), handler ci-bas.
+  'TryContestGModeLinkup', 'TryEnterContestMon',
   'TryHideBattleTowerReporter', 'TryInitBattleTowerAwardManObjectEvent',
   'TryJoinLinkGroup', 'TryLoseFansFromPlayTime',
   'TryLoseFansFromPlayTimeAfterLinkBattle',
@@ -2375,6 +2376,17 @@ for (const name of _SESSION_131_DECOMP_SPECIALS) {
 registerSpecial('RockSmashWildEncounter', () => {
   const fn = (globalThis as Record<string, unknown>).__RockSmashWildEncounter as (() => boolean) | undefined;
   VarSet('VAR_RESULT', fn && fn() ? 1 : 0);
+  return 0;
+});
+
+// 1:1 décomp `TryFieldPoisonWhiteOut` (field_poison.c:115) — lance Task_TryField
+// PoisonWhiteOut (AdjustFriendship FAINT_FIELD_PSN + clear status + message « <mon>
+// est K.O… » + pose VAR_RESULT pour le branchement white-out de EventScript_Field
+// Poison). L'impl vit dans src/field_poison.ts ; appelée via hook globalThis (cycle-
+// safe : specials-registry est lourd, import statique de field_poison → risque cycle).
+registerSpecial('TryFieldPoisonWhiteOut', () => {
+  const fn = (globalThis as Record<string, unknown>).__TryFieldPoisonWhiteOut as (() => void) | undefined;
+  if (fn) fn();
   return 0;
 });
 
