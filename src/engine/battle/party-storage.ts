@@ -25,6 +25,7 @@ import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
 } from '../pokemon/pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { gMapHeader } from '../../fieldmap';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
@@ -709,16 +710,20 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   // pour notre wire (= pas de trainer class match dispo dans bridge).
 
   // 1:1 décomp pokemon.c:5952-5965 : Soothe Bell (HOLD_EFFECT_FRIENDSHIP_UP) → mod
-  // +50% (arrondi bas) ; puis si mod > 0, Luxury Ball → friendship +1. (Bonus
-  // met-location +1 différé : mon.metLocation u8 numérique vs gMapHeader.region
-  // MapSectionId string = réconciliation modèle séparée.)
+  // +50% (arrondi bas) ; puis si mod > 0 : Luxury Ball → +1 ET met-location → +1.
   const _HOLD_EFFECT_FRIENDSHIP_UP = 27;  // 1:1 décomp include/constants/hold_effects.h:31.
   const _ITEM_LUXURY_BALL = 11;           // 1:1 décomp include/constants/items.h:17.
   const holdEffect = GetItemHoldEffect(mon.heldItem);
   let mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
   if (mod > 0 && holdEffect === _HOLD_EFFECT_FRIENDSHIP_UP) mod = Math.floor((150 * mod) / 100);
   let friendship = mon.friendship + mod;
-  if (mod > 0 && mon.pokeball === _ITEM_LUXURY_BALL) friendship++;
+  if (mod > 0) {
+    if (mon.pokeball === _ITEM_LUXURY_BALL) friendship++;
+    // met-location : mon.metLocation = MAPSEC numérique (pokemonInstanceToPokemon:551
+    // convertit le string MAPSEC) ; GetCurrentRegionMapSectionId() = gMapHeader.region
+    // MapSectionId (string → numérique via resolveDecompConstant).
+    if (mon.metLocation === resolveDecompConstant(gMapHeader?.regionMapSectionId ?? '')) friendship++;
+  }
   if (friendship < 0) friendship = 0;
   if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
   mon.friendship = friendship;
