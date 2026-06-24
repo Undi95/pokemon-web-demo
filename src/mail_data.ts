@@ -26,10 +26,12 @@
  */
 
 import { GET_UNOWN_LETTER } from '../include/pokemon';
-import { GetPlayerNameString } from './engine/system/string-buffers';
+import { GetPlayerName } from './engine/system/string-buffers';
 import type { Mail } from './engine/save/save-blocks';
 import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './engine/save/save-blocks';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { StringLength } from './string_util';
+import { PadNameString } from './international_string_util';
 import {
   GetMonData, SetMonData,
   MON_DATA_HELD_ITEM, MON_DATA_MAIL, MON_DATA_SPECIES, MON_DATA_PERSONALITY,
@@ -126,8 +128,8 @@ export function ClearMail(mail: Mail): void {
   for (let i = 0; i < MAIL_WORDS_COUNT; i++) {
     mail.words[i] = EC_EMPTY_WORD;
   }
-  // 1:1 décomp : fill playerName buffer EOS. En TS string : reset.
-  mail.playerName = '';
+  // 1:1 décomp : for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++) mail->playerName[i] = EOS.
+  mail.playerName = new Array(PLAYER_NAME_LENGTH + 1).fill(EOS);
   for (let i = 0; i < TRAINER_ID_LENGTH; i++) {
     mail.trainerId[i] = 0;
   }
@@ -178,12 +180,15 @@ export function GiveMailToMonByItemId(mon: Pokemon, itemId: number): number {
       //       gSaveBlock1Ptr->mail[id].playerName[i] = gSaveBlock2Ptr->playerName[i];
       //   gSaveBlock1Ptr->mail[id].playerName[i] = EOS;
       //   PadNameString(gSaveBlock1Ptr->mail[id].playerName, CHAR_SPACE);
-      // En TS string : direct copy + PadNameString (1:1 string_util.c qui pad
-      // avec CHAR_SPACE jusqu'à PLAYER_NAME_LENGTH).
-      slot.playerName = PadNameString(
-        GetPlayerNameString().slice(0, PLAYER_NAME_LENGTH),
-        CHAR_SPACE,
-      );
+      // Stage 4b byte charmap : GetPlayerName() = bytes EOS-terminés ; copie le nom
+      // dans un buffer u8[PLAYER_NAME_LENGTH+1], pad CHAR_SPACE, stocke en number[].
+      const pn = GetPlayerName();
+      const nameBuf = new Uint8Array(PLAYER_NAME_LENGTH + 1).fill(EOS);
+      for (let k = 0; k < PLAYER_NAME_LENGTH && pn[k] !== undefined && pn[k] !== EOS; k++) {
+        nameBuf[k] = pn[k];
+      }
+      PadNameString(nameBuf, CHAR_SPACE);
+      slot.playerName = Array.from(nameBuf.subarray(0, StringLength(nameBuf) + 1));
 
       const playerTrainerId = (gSaveBlock2Ptr as any).playerTrainerId as number[] | undefined;
       for (let i = 0; i < TRAINER_ID_LENGTH; i++) {
@@ -279,7 +284,7 @@ export function GiveMailToMon(mon: Pokemon, mail: Mail): number {
   // En TS : copy field-by-field pour préserver le slot.
   const slot = gSaveBlock1Ptr.mail[mailId] as Mail;
   for (let i = 0; i < MAIL_WORDS_COUNT; i++) slot.words[i] = mail.words[i];
-  slot.playerName = mail.playerName;
+  slot.playerName = mail.playerName.slice();
   for (let i = 0; i < TRAINER_ID_LENGTH; i++) slot.trainerId[i] = mail.trainerId[i];
   slot.species = mail.species;
   slot.itemId = mail.itemId;
@@ -346,7 +351,7 @@ export function TakeMailFromMonAndSave(mon: Pokemon): number {
       const src = gSaveBlock1Ptr.mail[monMailId] as Mail;
       // 1:1 décomp memcpy(struct Mail).
       for (let j = 0; j < MAIL_WORDS_COUNT; j++) dest.words[j] = src.words[j];
-      dest.playerName = src.playerName;
+      dest.playerName = src.playerName.slice();
       for (let j = 0; j < TRAINER_ID_LENGTH; j++) dest.trainerId[j] = src.trainerId[j];
       dest.species = src.species;
       dest.itemId = src.itemId;
@@ -385,28 +390,8 @@ export function ItemIsMail(itemId: number): boolean {
   }
 }
 
-// ─── Helpers stubbés ─────────────────────────────────────────────────────────
-
-/** 1:1 TODO : `string_util.c PadNameString(name, charPadding)` — pad string
- *  jusqu'à PLAYER_NAME_LENGTH avec `charPadding` puis termine par EOS.
- *
- *  Stub honnête : pad jusqu'à PLAYER_NAME_LENGTH avec espace (CHAR_SPACE).
- *  Quand string_util.c sera porté 1:1, remplacer par l'import direct. */
-function PadNameString(name: string, charPadding: number): string {
-  // Pour CHAR_SPACE on utilise simplement ' ' ; pour autre code char, on
-  // sait le rendre via la charmap mais ici l'usage canonique est CHAR_SPACE.
-  const pad = charPadding === CHAR_SPACE ? ' ' : String.fromCharCode(charPadding);
-  const padded = name.length >= PLAYER_NAME_LENGTH
-    ? name.slice(0, PLAYER_NAME_LENGTH)
-    : name + pad.repeat(PLAYER_NAME_LENGTH - name.length);
-  // 1:1 TODO : import PadNameString from './engine/string-util' when ported.
-  // eslint-disable-next-line no-console
-  if (typeof console !== 'undefined' && (globalThis as any).__MAIL_DATA_WARN_PAD_NAME__ !== true) {
-    (globalThis as any).__MAIL_DATA_WARN_PAD_NAME__ = true;
-    console.warn('[mail-data] PadNameString : stub local (string_util.c non porté). 1:1 attendu.');
-  }
-  return padded;
-}
+// Stage 4b : le stub local `PadNameString(string)` est retiré — remplacé par le
+// port 1:1 byte `PadNameString(Uint8Array)` (src/international_string_util.ts).
 
 /** 1:1 décomp `GetUnownLetterByPersonality` (pokemon_icon.c) = `return GET_UNOWN_LETTER(personality)`.
  *  Délègue à la macro `GET_UNOWN_LETTER` du miroir `src/game/include/pokemon.ts`

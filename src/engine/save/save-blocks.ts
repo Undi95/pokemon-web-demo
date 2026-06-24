@@ -565,7 +565,10 @@ export interface DewfordTrend {
 /** 1:1 décomp `struct Mail` (global.h:770). */
 export interface Mail {
   words: number[];
-  playerName: string;
+  /** 1:1 décomp `u8 playerName[PLAYER_NAME_LENGTH + 1]` (charmap, EOS-terminé,
+   *  padé CHAR_SPACE par PadNameString). `number[]` de bytes (round-trip JSON,
+   *  cf. Stage 4b). Accès byte direct ; décodé à l'affichage (decodeOwBytes). */
+  playerName: number[];
   trainerId: number[];
   species: number;
   itemId: number;
@@ -1360,7 +1363,7 @@ function emptyApprentice(): Apprentice {
 function emptyMail(): Mail {
   return {
     words: zeros(MAIL_WORDS_COUNT),
-    playerName: '',
+    playerName: [EOS],
     trainerId: zeros(TRAINER_ID_LENGTH),
     species: 0, itemId: 0,
   };

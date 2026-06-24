@@ -62,7 +62,7 @@ import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
 import { StringExpandPlaceholders, gStringVar4 } from './engine/ui/gba-text-system';
-import { encodeOwText } from '../include/text';  // préproc : source FR → bytes charmap
+import { encodeOwText, decodeOwBytes } from '../include/text';  // préproc : source FR → bytes charmap (+ décode pour affichage)
 import * as Songs from '../include/constants/songs';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
@@ -1625,7 +1625,7 @@ function _mailboxCancelMoveToBag(): void {
  *      StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithVar1sMail);
  *      DisplayItemMessageOnField(taskId, gStringVar4, Mailbox_PrintMailOptions); */
 function Mailbox_PrintWhatToDoWithPlayerMailText(mailIdx: number): void {
-  const playerName = gSaveBlock1Ptr.mail[mailIdx].playerName || 'MAIL';
+  const playerName = decodeOwBytes(Uint8Array.from(gSaveBlock1Ptr.mail[mailIdx].playerName)).trimEnd() || 'MAIL';
   setStringVar(1, playerName);
   const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
   StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
@@ -1902,7 +1902,7 @@ function _mailboxOpenList(): void {
     const m = gSaveBlock1Ptr.mail[i];
     if (m.itemId !== ITEM_NONE) {
       // 1:1 décomp : `playerName` du sender utilisé comme label dans la list.
-      sMailboxListItems.push({ name: m.playerName || 'MAIL', id: i });
+      sMailboxListItems.push({ name: decodeOwBytes(Uint8Array.from(m.playerName)).trimEnd() || 'MAIL', id: i });
     }
   }
   sMailboxListItems.push({ name: getString('gText_Cancel2'), id: -2 });
@@ -1972,7 +1972,7 @@ function _tickMailboxList(_newKeys: number): void {
   _removePCWindows();
   // 1:1 Mailbox_PrintWhatToDoWithPlayerMailText : sticky msg "Que faire avec
   // le MAIL de <playerName>?" puis options menu.
-  const playerName = gSaveBlock1Ptr.mail[sel].playerName || 'MAIL';
+  const playerName = decodeOwBytes(Uint8Array.from(gSaveBlock1Ptr.mail[sel].playerName)).trimEnd() || 'MAIL';
   setStringVar(1, playerName);
   const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
   StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));

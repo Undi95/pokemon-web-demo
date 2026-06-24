@@ -798,10 +798,10 @@ function BufferMailText(): void {
     numWords += sMailRead.layout.lines[i].numEasyChatWords;
   }
 
-  // 1:1 décomp : ptr = StringCopy(sMailRead->playerName, sMailRead->mail->playerName);
-  // playerName = buffer byte (foyer string_util.ts) ; mail.playerName = données JS-string
-  // (encodées via encodeOwText jusqu'au Stage 4 save). Plus le no-op StringCopy(null,…) du bridge.
-  StringCopy(sMailRead.playerName, encodeOwText(sMailRead.mail.playerName));
+  // 1:1 décomp : ptr = StringCopy(sMailRead->playerName, sMailRead->mail->playerName).
+  // Stage 4b : mail.playerName = bytes charmap natif → copie DIRECTE (plus de
+  // round-trip d'encodage). playerName = buffer byte (mail.ts:954, Uint8Array).
+  StringCopy(sMailRead.playerName, Uint8Array.from(sMailRead.mail.playerName));
   if (!sMailRead.international) {
     // 1:1 décomp Never reached. JP-only. Conservé pour fidélité totale.
     StringAppend(sMailRead.playerName, encodeOwText(GetText_FromSpace()));
