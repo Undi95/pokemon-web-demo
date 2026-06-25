@@ -413,6 +413,8 @@ export function __flashClear(): void { try { localStorage.removeItem(FLASH_KEY);
 /** Vérif round-trip déterministe : bloc → secteurs → bloc == original,
  *  + checksum stable + détection corruption. Appelé via devtools. */
 export function __selfTestSectors(): Record<string, unknown> {
+  /* @strings-ignore-start: fixture de SELF-TEST déterministe (appelé via devtools),
+     pas joué au joueur — valeurs gibberish pour tester la sérialisation accentuée. */
   const sample = {
     playerName: 'UNDI', playerGender: 1,
     optionsTextSpeed: 2, optionsSound: 1, optionsBattleStyle: 1,
@@ -420,6 +422,7 @@ export function __selfTestSectors(): Record<string, unknown> {
     localTimeOffset: { days: 9630, hours: 13, minutes: 7, seconds: 20 },
     nested: { a: [1, 2, 3], s: 'héllo/àccénts€', big: 123456789 },
   };
+  /* @strings-ignore-end (fixture self-test, cf. start) */
   // SaveBlock1 = 4 secteurs (grosse struct simulée)
   const big = { arr: Array.from({ length: 500 }, (_, i) => ({ i, v: i * i, n: `mon${i}` })) };
 

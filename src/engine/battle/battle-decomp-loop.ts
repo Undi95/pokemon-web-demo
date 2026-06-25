@@ -908,7 +908,9 @@ export async function harnessExecuteTurnL(opts?: {
   ps.setupPartyForBattle([playerMon as never], [enemyMon as never]);
   ps.fillActiveBattleMonsForBattleStart();
 
+  /* @strings-ignore-start: diagnostic dev interne (fail() = builder de résultat d'erreur), pas joué */
   if (!st.gBattleMons[0] || !st.gBattleMons[1]) return fail('gBattleMons non peuplé');
+  /* @strings-ignore-end */
 
   // Override optionnel : ID NUMÉRIQUE direct du move au slot 0 (post-fill = pas
   // de résolution de format string). Sinon, le mon utilise ses moves naturels.
