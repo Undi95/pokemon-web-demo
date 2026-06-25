@@ -36,6 +36,7 @@ const ORACLES = [
   'audit-battle-stat-tables.cjs',
   // — Textes FR (gameplay-visible) —
   'audit-fr-names.cjs', 'audit-fr-descriptions.cjs', 'audit-item-descriptions-fr.cjs',
+  'audit-strings-fresh.cjs',
 ];
 
 const results = [];
