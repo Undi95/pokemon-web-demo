@@ -26,8 +26,15 @@ import { ItemIsMail } from './mail_data';
 // Yes/No à callbacks (menu_helpers.c:150-177). CreateYesNoMenu + Menu_ProcessInputNoWrapClearOnChoose
 // vivent dans le miroir `menu.ts` (foundational). menu.ts importe `menu_helpers-data` (data),
 // PAS ce fichier → pas de cycle. Usage runtime (dans les fns) → pas de TDZ.
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
+import {
+  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
+  DrawDialogFrameWithCustomTileAndPalette, AddTextPrinterParameterized2,
+} from './menu';
 import { MENU_B_PRESSED } from './engine/decomp-data/include/menu-data';
+import {
+  RunTextPrinters, IsTextPrinterActive, StringExpandPlaceholders, gStringVar4,
+} from './engine/ui/gba-text-system';
+import { gTextFlags, TEXT_COLOR } from './engine/ui/gba-text-printer';
 import type { WindowTemplate } from './engine/ui/gba-window-system';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
@@ -270,4 +277,46 @@ export function CreateYesNoMenuWithCallbacks(
   sYesNo = yesNo;
   const rt = getRuntime();
   if (rt) rt.gTasks[taskId].func = Task_CallYesOrNoCallback;
+}
+
+// ─── Message à continuation (1:1 menu_helpers.c:124-148) ─────────────────────
+// LA primitive partagée « message animé + enchaîne une task quand le printer a fini ».
+// Repointe le témoin `gTasks[taskId].func` vers Task_ContinueTaskAfterMessagePrints qui,
+// chaque frame, tick le printer ; quand fini, appelle taskFunc (qui repointe le témoin
+// vers la suite). Avant : chaque écran recodait ce wait-printer-then-continue à la main.
+
+/** 1:1 décomp `static u8 sMessageWindowId` / `static TaskFunc sMessageNextTask`. */
+let sMessageWindowId = 0;
+let sMessageNextTask: (task: DecompTask) => void = () => { /* noop */ };
+
+/** 1:1 décomp `RunTextPrintersRetIsActive(textPrinterId)` (menu_helpers.c:138). */
+export function RunTextPrintersRetIsActive(textPrinterId: number): boolean {
+  RunTextPrinters();
+  return IsTextPrinterActive(textPrinterId);
+}
+
+/** 1:1 décomp `Task_ContinueTaskAfterMessagePrints(taskId)` (menu_helpers.c:144). */
+function Task_ContinueTaskAfterMessagePrints(task: DecompTask): void {
+  if (!RunTextPrintersRetIsActive(sMessageWindowId))
+    sMessageNextTask(task);
+}
+
+/** 1:1 décomp `DisplayMessageAndContinueTask(taskId, windowId, tileNum, paletteNum,
+ *  fontId, textSpeed, string, taskFunc)` (menu_helpers.c:124) : cadre dialogue + message
+ *  ANIMÉ (canABSpeedUpPrint) + repointe le témoin vers Task_ContinueTaskAfterMessagePrints. */
+export function DisplayMessageAndContinueTask(
+  taskId: number, windowId: number, tileNum: number, paletteNum: number,
+  fontId: number, textSpeed: number, str: string | Uint8Array,
+  taskFunc: (task: DecompTask) => void,
+): void {
+  sMessageWindowId = windowId;
+  DrawDialogFrameWithCustomTileAndPalette(windowId, true, tileNum, paletteNum);
+  // 1:1 : `if (string != gStringVar4) StringExpandPlaceholders(gStringVar4, string)`.
+  if (str !== gStringVar4) StringExpandPlaceholders(gStringVar4, str);
+  gTextFlags.canABSpeedUpPrint = true;
+  AddTextPrinterParameterized2(windowId, fontId, gStringVar4, textSpeed, null,
+    TEXT_COLOR.DARK_GRAY, TEXT_COLOR.WHITE, TEXT_COLOR.LIGHT_GRAY);
+  sMessageNextTask = taskFunc;
+  const rt = getRuntime();
+  if (rt) rt.gTasks[taskId].func = Task_ContinueTaskAfterMessagePrints;
 }
