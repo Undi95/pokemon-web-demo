@@ -878,7 +878,7 @@ function _tickSaveYesNo(): void {
       HideFieldMessageBox();
       // 1:1 décomp gText_AlreadySavedFile (= save.inc:5-7).
       const text = getText('gText_AlreadySavedFile')
-        ?? encodeOwText('Il y a déjà une partie sauvegardée.\nVoulez-vous la remplacer?');
+        ?? encodeOwText(getString('gText_AlreadySavedFile'));
       ShowFieldMessage(text);
       sSubState = 'save_overwrite_msg';
     } else {
@@ -929,7 +929,7 @@ function _doSave(): void {
   HideFieldMessageBox();
   // 1:1 décomp gText_SavingDontTurnOff (= save.inc).
   const text = getText('gText_SavingDontTurnOff')
-    ?? encodeOwText("SAUVEGARDE EN COURS…\nN'ETEIGNEZ PAS LA CONSOLE.");
+    ?? encodeOwText(getString('gText_SavingDontTurnOff'));
   ShowFieldMessage(text);
   sSubState = 'save_saving_msg';
 }
@@ -970,7 +970,7 @@ function _tickSaveSavingMsg(): void {
   // TrySavingData (= notre persist).
   void (async () => { const { SaveGame } = await import('./save'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
-  const text = getText('gText_PlayerSavedGame') ?? encodeOwText('{PLAYER} a sauvegardé la partie.');
+  const text = getText('gText_PlayerSavedGame') ?? encodeOwText(getString('gText_PlayerSavedGame'));
   ShowFieldMessage(text);
   // SaveStartTimer : sSaveDialogTimer = 60.
   _saveTimer = 60;
