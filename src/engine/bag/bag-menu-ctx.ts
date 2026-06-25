@@ -469,7 +469,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   const itemType = GetItemType(itemId);
   if (itemType === 'ITEM_USE_PARTY_MENU' && gSaveBlock1Ptr.playerParty.length === 0) {
     // 1:1 :1801 PrintThereIsNoPokemon.
-    _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+    _showItemMessage(task, _itemMsg('gText_NoPokemon'));
     return;
   }
   // 1:1 :1804-1806 — fill desc + dispatch.
@@ -479,7 +479,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   switch (fieldUseFunc) {
     case 'ItemUseOutOfBattle_CannotUse':
       // 1:1 décomp item_use.c — gText_DadsAdvice (strings.json FR officielle).
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
       break;
     case 'ItemUseOutOfBattle_Medicine': {
       // 1:1 décomp item_use.c:753-757 ItemUseOutOfBattle_Medicine :
@@ -498,7 +498,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       void itemName;
       void ApplyMedicineEffect;  // (utilisé par ItemUseCB_Medicine, exposé pour DCE)
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_Medicine);
@@ -516,7 +516,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // (= polish), enchaîne direct setItemUseCB + SetUpItemUseCallback.
       // L'utilisateur verra le party-screen "Apprendre à quel POKéMON ?".
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_TMHM);
@@ -528,7 +528,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       //     gItemUseCB = ItemUseCB_PPRecovery;
       //     SetUpItemUseCallback(taskId);
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_PPRecovery);
@@ -538,7 +538,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_PPUp': {
       // 1:1 décomp item_use.c:776-781 ItemUseOutOfBattle_PPUp.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_PPUp);
@@ -548,7 +548,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_RareCandy': {
       // 1:1 décomp item_use.c:782-787 ItemUseOutOfBattle_RareCandy.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_RareCandy);
@@ -558,7 +558,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_ReduceEV': {
       // 1:1 décomp item_use.c:758-763 ItemUseOutOfBattle_ReduceEV (= baies).
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_ReduceEV);
@@ -568,7 +568,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_SacredAsh': {
       // 1:1 décomp item_use.c:764-769 ItemUseOutOfBattle_SacredAsh.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_SacredAsh);
@@ -578,7 +578,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_EvolutionStone': {
       // 1:1 décomp item_use.c:942-948 ItemUseOutOfBattle_EvolutionStone.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       setItemUseCB(ItemUseCB_EvolutionStone);
@@ -614,19 +614,19 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         SetUpItemUseOnFieldCallback(task);
         return;
       }
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
       break;
     }
     case 'ItemUseOutOfBattle_EscapeRope':
       // Escape Rope : warp out (SetEscapeWarp + DoEscapeRopeFieldEffect) non porté → DadsAdvice 1:1.
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
       break;
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
       const repelActive = VarGet('VAR_REPEL_STEP_COUNT');
       if (repelActive > 0) {
-        // 1:1 :845 — un autre repel est encore actif.
-        _showItemMessage(task, "Mais le REPOUSSE précédent\nest toujours actif.");
+        // 1:1 :845 — un autre repel est encore actif (gText_RepelEffectsLingered).
+        _showItemMessage(task, _itemMsg('gText_RepelEffectsLingered'));
       } else {
         // 1:1 :867-868 — set step count = holdEffectParam de l'item + RemoveUsedItem.
         const itemKey = _itemKeyFromBag(itemId);
@@ -634,25 +634,22 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const steps = item?.holdEffectParam ?? 100;
         VarSet('VAR_REPEL_STEP_COUNT', steps);
         _CtxRemoveUsedItem(itemId);
-        // 1:1 :870 gText_PlayerUsedVar2 (= player utilise X) + suffix repelled.
-        const player = GetPlayerNameString() || 'JOUEUR';
-        _showItemMessageThenRebuild(task,
-          `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`);
+        // 1:1 Task_UseRepel — gText_UsedVar2WildRepelled ({PLAYER} utilise {STR_VAR_2}…).
+        _showItemMessageThenRebuild(task, _itemMsg('gText_UsedVar2WildRepelled', { v2: itemName }));
       }
       return;
     }
     case 'ItemUseOutOfBattle_BlackWhiteFlute': {
       // 1:1 décomp item_use.c:888-902 — set encounter flag selon White/Black.
       // ITEM_WHITE_FLUTE = 43, ITEM_BLACK_FLUTE = 42.
-      const player = GetPlayerNameString() || 'JOUEUR';
       if (itemId === 43 /* ITEM_WHITE_FLUTE */) {
         FlagSet('FLAG_SYS_ENC_UP_ITEM');
         FlagClear('FLAG_SYS_ENC_DOWN_ITEM');
-        msg = `${player} utilise\n${itemName}.\nÇa va attirer les\nPOKéMON sauvages.`;
+        msg = _itemMsg('gText_UsedVar2WildLured', { v2: itemName });
       } else {
         FlagSet('FLAG_SYS_ENC_DOWN_ITEM');
         FlagClear('FLAG_SYS_ENC_UP_ITEM');
-        msg = `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`;
+        msg = _itemMsg('gText_UsedVar2WildRepelled', { v2: itemName });
       }
       // Note 1:1 : flute reusable = pas de RemoveBagItem.
       break;
@@ -700,7 +697,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // pour cette ROM-port l'enigma berry est vierge → fallback CannotUse 1:1.
       const ef = GetItemEffectType(itemId);
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
       switch (ef) {
@@ -734,7 +731,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
           SetUpItemUseCallback(task);
           return;
         default:
-          msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+          msg = _itemMsg('gText_DadsAdvice');
           break;
       }
       break;
@@ -759,9 +756,9 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const tmpl = getString('gText_ItemFinderNothing');
         msg = tmpl.replace('{PAUSE_UNTIL_PRESS}', '').replace(/\\n/g, '\n').replace(/\\p/g, '\n');
       } else {
-        // 1:1 décomp : si trouvé, lance Task_UseItemfinder (spin anim). Polish.
-        // En attendant, message "L'objet semble proche !" honnête.
-        msg = "Le CHERCH'OBJET réagit !\nUn objet est près d'ici.";
+        // 1:1 décomp : si trouvé, lance Task_UseItemfinder (spin anim) → gText_ItemFinderNearby.
+        // (Le spin-anim reste un polish ; le texte est désormais celui extrait.)
+        msg = _itemMsg('gText_ItemFinderNearby');
       }
       break;
     }
@@ -791,7 +788,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         SetUpItemUseOnFieldCallback(task);
         return;
       }
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
       break;
     }
     case 'ItemUseOutOfBattle_Mail':
@@ -801,13 +798,25 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou un sous-système overworld
       // (wailmer berry / plant berry) pas encore portés → DadsAdvice 1:1 (condition prerequisite jamais
       // remplie). À étendre quand mail/pokeblock/berry-water seront portés (chantiers indépendants).
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
       break;
     default:
       // Handler inconnu → DadsAdvice 1:1 FR pour ne pas exposer le nom interne.
-      msg = `Conseil de PAPA…\n${GetPlayerNameString() || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = _itemMsg('gText_DadsAdvice');
   }
   _showItemMessage(task, msg);
+}
+
+/** Construit un message à partir d'un gText EXTRAIT (strings.json), avec expansion
+ *  des placeholders {PLAYER}/{STR_VAR_1}/{STR_VAR_2}/{PAUSE_UNTIL_PRESS}/escapes —
+ *  ZÉRO texte FR inline (cf. sonde `scripts/audit-hardcoded-strings.cjs`). */
+function _itemMsg(gTextKey: string, opts?: { v1?: string; v2?: string }): string {
+  return getString(gTextKey)
+    .replace('{PLAYER}', GetPlayerNameString())
+    .replace('{STR_VAR_1}', opts?.v1 ?? '')
+    .replace('{STR_VAR_2}', opts?.v2 ?? '')
+    .replace('{PAUSE_UNTIL_PRESS}', '')
+    .replace(/\\n/g, '\n').replace(/\\p/g, '\n');
 }
 
 /** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION puis bascule la
@@ -850,16 +859,6 @@ function _itemKeyFromBag(itemId: number): string {
   return getItemKeyById(itemId);
 }
 
-/** Helper : message toss = template FR avec {STR_VAR_1}=nom item, {STR_VAR_2}=count. */
-function _tossMsg(key: string, fallback: string, itemId: number, count: number): string {
-  const name = GetItemName(itemId);
-  return (getString(key) ?? fallback)
-    .replace('{STR_VAR_1}', name)
-    .replace('{STR_VAR_2}', String(count))
-    .replace('{PAUSE_UNTIL_PRESS}', '')
-    .replace(/\\n/g, '\n').replace(/\\p/g, '\n');
-}
-
 /** 1:1 décomp `ItemMenu_Toss(u8 taskId)` (item_menu.c:1817) : qty==1 → AskTossItems
  *  direct ; sinon → fenêtre quantité (Task_ChooseHowManyToToss). Le yes/no de
  *  confirmation passe par la primitive PARTAGÉE `CreateYesNoMenuWithCallbacks`
@@ -871,7 +870,7 @@ function ItemMenu_Toss(task: DecompTask): void {
     AskTossItems(task);
   } else {
     // 1:1 :1828-1834 : "Combien à jeter ?" + AddItemQuantityWindow(ITEMWIN_QUANTITY).
-    _CtxPrintItemMessage(_tossMsg('gText_TossHowManyVar1s', 'Combien de {STR_VAR_1}\nà jeter?', gSpecialVar.ItemId, 0));
+    _CtxPrintItemMessage(_itemMsg('gText_TossHowManyVar1s'));
     const qWid = BagMenu_AddWindow(ITEMWIN_QUANTITY);
     _CtxPrintQuantityInWindow(qWid, 1);
     task.func = Task_ChooseHowManyToToss;
@@ -899,7 +898,7 @@ function Task_ChooseHowManyToToss(task: DecompTask): void {
 /** 1:1 décomp `AskTossItems` (item_menu.c:1838) : "{item}: en jeter {N}?" +
  *  BagMenu_YesNo(taskId, ITEMWIN_YESNO_LOW, &sYesNoTossFunctions). */
 function AskTossItems(task: DecompTask): void {
-  _CtxPrintItemMessage(_tossMsg('gText_ConfirmTossItems', '{STR_VAR_1}:\nen jeter {STR_VAR_2}?', gSpecialVar.ItemId, task.data[T_ITEM_COUNT]));
+  _CtxPrintItemMessage(_itemMsg('gText_ConfirmTossItems', { v1: GetItemName(gSpecialVar.ItemId), v2: String(task.data[T_ITEM_COUNT]) }));
   _tossTaskId = task.taskId;
   // 1:1 décomp BagMenu_YesNo = CreateYesNoMenuWithCallbacks(taskId, template, 1, 0, 2, 1, 14, funcs).
   CreateYesNoMenuWithCallbacks(task.taskId, sContextMenuWindowTemplates[ITEMWIN_YESNO_LOW], 1, 0, 2, 1, 14, sYesNoTossFunctions);
@@ -911,7 +910,7 @@ function ConfirmToss(): void {
   const rt = getRuntime();
   const task = rt?.gTasks[_tossTaskId];
   if (!task) return;
-  _CtxPrintItemMessage(_tossMsg('gText_ThrewAwayVar2Var1s', '{STR_VAR_1}:\njeté {STR_VAR_2}.', gSpecialVar.ItemId, task.data[T_ITEM_COUNT]));
+  _CtxPrintItemMessage(_itemMsg('gText_ThrewAwayVar2Var1s', { v1: GetItemName(gSpecialVar.ItemId), v2: String(task.data[T_ITEM_COUNT]) }));
   task.func = Task_RemoveItemFromBag;
 }
 
