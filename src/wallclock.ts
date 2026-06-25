@@ -399,7 +399,11 @@ async function _loadAssets(): Promise<WallClockAssets> {
  *    - LoadCompressedSpriteSheet(sSpriteSheet_ClockHand) → OBJ VRAM
  *    - LoadSpritePalettes(sSpritePalettes_Clock) → OBJ palette */
 function _loadWallClockGraphics(rt: DecompRuntime): void {
-  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  // ⚠️ DÉVIATION pré-existante (band-aid), PAS strict 1:1 : wall_clock.c
+  // (:645-657) fait `DmaClear OAM + DmaClear PLTT + ResetBgsAndClearDma3 +
+  // InitBgsFromTemplates`, SANS clear VRAM. Notre port ajoute un clear complet
+  // (DISPCNT/BGCNT + VRAM) ; on réutilise la fn partagée pour le dédup. Dette
+  // fidélité tracée (le clear VRAM en trop est l'écart à examiner).
   ResetVramOamAndBgCntRegs();
 
   if (!_assetsCache) {

@@ -204,7 +204,11 @@ async function _loadAssets(): Promise<TrainerCardAssets> {
  *  Setup BG2/BG1/BG0 templates + clear VRAM/OAM/PLTT. */
 function _initCardBgs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  // ⚠️ DÉVIATION pré-existante (band-aid), PAS strict 1:1 : trainer_card.c
+  // (:892-893) fait `ResetBgsAndClearDma3BusyFlags + InitBgsFromTemplates`, SANS
+  // clear VRAM/OAM/PLTT complet. Notre port ajoute ce clear (anti-leak palette
+  // inter-écran) ; on réutilise la fn partagée pour le dédup. Dette fidélité
+  // tracée (voir si retirable une fois la sortie d'écran amont 1:1).
   ResetVramOamAndBgCntRegs();
   // 1:1 décomp `sTrainerCardBgTemplates` (trainer_card.c:193) :
   //   BG0 charBase=0 mapBase=27 priority=2 screenSize=2 (= front.bin)
