@@ -42,7 +42,7 @@ import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
 import { EOS, CHAR_NEWLINE } from '../../../include/constants/characters';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
-import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';
+import { RemoveBagItem, UpdatePocketItemList, gBagPockets, CountTotalItemQuantityInBag } from './bag';
 import { PokemonUseItemEffects } from './bag-item-effects';
 import { ItemUseCB_Medicine, ItemUseCB_PPRecovery, setItemUseCB } from '../../item_use';
 import { gSpecialVar } from '../script/script-vars';
@@ -1827,7 +1827,7 @@ function _executeAction(action: ItemAction): void {
         // ferme VERS LE PARTY MENU (ChooseMonForInBattleItem). Retour party ->
         // reshow combat + emission selon CONSOMMATION reelle (qty avant/apres).
         setItemUseCB(useFunc === 'ItemUseInBattle_Medicine' ? ItemUseCB_Medicine : ItemUseCB_PPRecovery);
-        const qtyBefore = GetBagItemQuantity(itemKeyBU);
+        const qtyBefore = CountTotalItemQuantityInBag(itemKeyBU);
         const reshow = _battleReshowCb;
         let opened = false;
         _battleReturnCb = null;
@@ -1838,7 +1838,7 @@ function _executeAction(action: ItemAction): void {
             opened = true;
             void import('../ui/party-screen').then((party) => {
               party.OpenPartyScreenForItemUse(function BattleItemPartyReturnCB2(): void {
-                const used = GetBagItemQuantity(itemKeyBU) < qtyBefore;
+                const used = CountTotalItemQuantityInBag(itemKeyBU) < qtyBefore;
                 (globalThis as Record<string, unknown>).__battleBagResultItemId = used ? itemIdBU : 0;
                 reshow?.();
               });

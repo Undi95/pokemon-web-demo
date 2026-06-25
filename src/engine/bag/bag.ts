@@ -167,35 +167,44 @@ const MAX_BAG_ITEM_CAPACITY = 99;
 /** 1:1 décomp `MAX_BERRY_CAPACITY` (= 999). */
 const MAX_BERRY_CAPACITY = 999;
 
-/** 1:1 décomp `GetBagItemQuantity` (item.c:26-33) :
- *    static u16 GetBagItemQuantity(u16 *quantity)
- *      { return *quantity ^ gSaveBlock2Ptr->encryptionKey; }
- *  Notre port stocke quantity EN CLAIR (= simplification déjà actée).
- *  Slot capacity max : 999 pour berries, 99 autres (= 1:1 items.h). */
+/** Capacité max d'un slot : MAX_BERRY_CAPACITY (999) pour les baies,
+ *  MAX_BAG_ITEM_CAPACITY (99) sinon (= 1:1 items.h, cf. AddBagItem Pass 2). */
 function _slotCapacity(pocketId: number): number {
   return pocketId === BERRIES_POCKET ? MAX_BERRY_CAPACITY : MAX_BAG_ITEM_CAPACITY;
 }
 
 // ─── 1:1 décomp API ──────────────────────────────────────────────────────────
 
-/** 1:1 décomp `u16 CountTotalItemQuantityInBag(u16 itemId)` (item.c:120-132) :
- *    Itère le pocket de l'item, accumule les quantités du même itemId.
- *  Notre signature simplifiée : prend itemKey + retourne total directement. */
-export function GetBagItemQuantity(itemKey: string): number {
+/** 1:1 décomp `u16 CountTotalItemQuantityInBag(u16 itemId)` (item.c:676-689) :
+ *      struct BagPocket *bagPocket = &gBagPockets[GetItemPocket(itemId) - 1];
+ *      for (i = 0; i < bagPocket->capacity; i++)
+ *          if (bagPocket->itemSlots[i].itemId == itemId)
+ *              ownedCount += GetBagItemQuantity(&bagPocket->itemSlots[i].quantity);
+ *      return ownedCount;
+ *  Somme les quantités de TOUS les slots du même item dans sa poche (un même
+ *  item peut occuper plusieurs slots, cf. AddBagItem Pass 2 — d'où le total et
+ *  non une lecture mono-slot). L'accesseur mono-slot décomp
+ *  `static u16 GetBagItemQuantity(u16 *quantity)` (déchiffrement XOR, item.c:26)
+ *  se réduit chez nous à une lecture directe de `slot.quantity` (quantité en
+ *  clair, encryptionKey = 0 — déviation déjà actée ; cf. BagGetQuantityByPocketPosition). */
+export function CountTotalItemQuantityInBag(itemKey: string): number {
   const pocketId = _getPocketIdForItem(itemKey);
   if (pocketId < 0) return 0;
-  const pocket = gBagPockets[pocketId];
-  let total = 0;
-  for (let i = 0; i < pocket.capacity; i++) {
-    const slot = pocket.itemSlots[i];
-    if (slot && slot.itemKey === itemKey) total += slot.quantity;
+  const bagPocket = gBagPockets[pocketId];
+  let ownedCount = 0;
+  for (let i = 0; i < bagPocket.capacity; i++) {
+    const slot = bagPocket.itemSlots[i];
+    if (slot && slot.itemKey === itemKey)
+      ownedCount += slot.quantity;
   }
-  return total;
+  return ownedCount;
 }
 
-/** 1:1 décomp `bool8 CheckBagHasItem(u16 itemId, u16 count)` (item.c:134-155). */
+/** 1:1 décomp `bool8 CheckBagHasItem(u16 itemId, u16 count)` (item.c:134-160) :
+ *  la décomp accumule slot par slot avec early-return ; le résultat booléen
+ *  est équivalent à « total des slots >= count » → on délègue au compteur 1:1. */
 export function CheckBagHasItem(itemKey: string, count: number): boolean {
-  return GetBagItemQuantity(itemKey) >= count;
+  return CountTotalItemQuantityInBag(itemKey) >= count;
 }
 
 /** 1:1 décomp `bool8 AddBagItem(u16 itemId, u16 count)` (item.c:243-348).
@@ -447,7 +456,7 @@ if (typeof window !== 'undefined') {
     add: AddBagItem,
     remove: RemoveBagItem,
     has: CheckBagHasItem,
-    qty: GetBagItemQuantity,
+    qty: CountTotalItemQuantityInBag,
     list: bagContents,
     clear: ClearBag,
   };

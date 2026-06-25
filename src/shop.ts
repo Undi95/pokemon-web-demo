@@ -63,7 +63,7 @@ import {
   type ListMenuTemplate, type ListMenuItem,
 } from './list_menu';
 import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './item';
-import { AddBagItem, GetBagItemQuantity } from './engine/bag/bag';
+import { AddBagItem, CountTotalItemQuantityInBag } from './engine/bag/bag';
 import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
 import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './engine/ui/money-box-ui';
 import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
@@ -845,7 +845,8 @@ function _tickBuyMenu(): void {
 
 // ─── Task_BuyHowManyDialogueInit (1:1 shop.c:1030) — continuation du message ─
 function _buyHowManyDialogueInit(): void {
-  const quantityInBag = GetBagItemQuantity(sSelectedKey);
+  // 1:1 shop.c:1034 : u16 quantityInBag = CountTotalItemQuantityInBag(tItemId);
+  const quantityInBag = CountTotalItemQuantityInBag(sSelectedKey);
   // 1:1 shop.c:1037 : DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_IN_BAG, FALSE, 1, 13).
   sBagQtyWindowId = _addBuyStdWindow(WIN_QUANTITY_IN_BAG);
   // 1:1 décomp shop.c:1038 : ConvertIntToDecimalStringN(STR_CONV_MODE_RIGHT_ALIGN,
