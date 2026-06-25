@@ -29,6 +29,7 @@
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
+  ResetVramOamAndBgCntRegs,
 } from './gba-window-system';
 import { GetPlayerNameString } from '../system/string-buffers';
 import {
@@ -693,18 +694,9 @@ function _setBgTilemapPalette(bg: number, x: number, y: number, w: number, h: nu
 
 function _initBGs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  // ResetVramOamAndBgCntRegs équivalent.
-  rt.SetGpuReg(0x00, 0);
-  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0;
-    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) { rt.gPlttBufferUnfaded.set(i, 0); rt.gPlttBufferFaded.set(i, 0); }
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fonction
+  // PARTAGÉE (gba-window-system) au lieu du bloc recopié inline.
+  ResetVramOamAndBgCntRegs();
 
   // 1:1 sBgTemplates (:319). BG0 charBase0 mapBase31 prio0 ; BG1 charBase2
   // mapBase27 screenSize1 prio1 ; BG2 charBase2 mapBase25 ss1 prio2 ; BG3

@@ -567,6 +567,34 @@ export function ResetBgsAndClearDma3BusyFlags(_mode: number): void {
   }
 }
 
+/** 1:1 décomp `ResetVramOamAndBgCntRegs(void)` (menu_helpers.c:94) :
+ *    SetGpuReg(DISPCNT, 0); SetGpuReg(BG3/2/1/0CNT, 0);
+ *    CpuFill16(0, VRAM, VRAM_SIZE); CpuFill32(0, OAM, OAM_SIZE);
+ *    CpuFill16(0, PLTT, PLTT_SIZE);
+ *
+ *  Bloc d'init d'écran PARTAGÉ (décomp : ~10 écrans l'appellent). Avant cette
+ *  fonction, chaque écran le ré-implémentait INLINE — dont `bag-menu` de façon
+ *  INCOMPLÈTE (il manquait le clear PLTT RAM réel → résidu couleurs overworld,
+ *  bug session 129). Ici 1:1 net-effect : le clear PLTT = buffers staging
+ *  (gPlttBufferUnfaded/Faded) ET la PLTT RAM hardware (gba.palette.loadBg/Obj
+ *  Range, = bypass `bufferTransferDisabled`), soit l'équivalent de
+ *  `CpuFill16(0, PLTT, PLTT_SIZE)`. */
+export function ResetVramOamAndBgCntRegs(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x00, 0); // DISPCNT
+  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0); // BG0-3CNT
+  rt.gba.vram.fill(0);
+  for (let i = 0; i < rt.gba.oam.length; i++) {
+    const oam = rt.gba.oam[i];
+    oam.visible = false; oam.x = 0; oam.y = 0;
+    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
+  }
+  for (let i = 0; i < 512; i++) { rt.gPlttBufferUnfaded.set(i, 0); rt.gPlttBufferFaded.set(i, 0); }
+  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
+  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+}
+
 // ─── Window helpers ──────────────────────────────────────────────────────────
 
 /** 1:1 décomp `bg.c CreateWindowTemplate(bg, left, top, width, height, paletteNum, baseBlock)`.
