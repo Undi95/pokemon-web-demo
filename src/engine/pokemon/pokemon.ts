@@ -540,12 +540,13 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     currentExp,
     growthRate,
     // 1:1 décomp CreateBoxMon : SetBoxMonData(MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].friendship).
-    // species_info.h : 326× STANDARD_FRIENDSHIP (70), 43× 35 (RALTS, bébés…), 5× 140, 3× 100,
-    // 2× 90, 8× 0 (placeholders jamais créés). species-info.json extrait les LITTÉRAUX (35/140/…)
-    // mais STANDARD apparaît comme 0 (macro non résolue ; corrigé côté extract-pokemon-data.mjs).
-    // `|| 70` : STANDARD(0)→70 ✓, littéraux passent tels quels (RALTS=35 ✓), placeholders(0)→70
-    // (jamais créés). = 1:1 pour toute espèce réelle. (Régén JSON depuis checkout principal = data pure.)
-    friendship: (sInfo as { friendship?: number } | undefined)?.friendship || 70,
+    // species-info.json porte désormais la valeur EXACTE (extract-pokemon-data.mjs résout
+    // STANDARD_FRIENDSHIP→70) : 326× 70, 43× 35 (bébés/RALTS), 5× 140, 3× 100, 2× 90, et
+    // 7× 0 pour les légendaires de boîte RÉELLEMENT capturables (Mewtwo, Lugia, Ho-Oh,
+    // Kyogre, Groudon, Rayquaza, Deoxys). `?? 70` passe le 0 tel quel (Frustration max à la
+    // capture = 1:1) et ne défaute qu'à 70 si l'espèce n'est pas modélisée. (Un `|| 70`
+    // corromprait ces 7 légendaires en 0→70.)
+    friendship: (sInfo as { friendship?: number } | undefined)?.friendship ?? 70,
     personality,
     isShiny,
     monGender,
