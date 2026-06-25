@@ -419,11 +419,11 @@ function _decodeTextBuff(buf: Uint8Array): string {
         break;
       }
       case B_BUFF_NEGATIVE_FLAVOR: {
-        // 1:1 décomp battle_message.c:432-438 :
-        // 0 = "ne change plus" 1 = "vraiment" 2 = "fortement" 3 = "encore plus"
+        // 1:1 décomp battle_message.c:2924 : gPokeblockWasTooXStringTable[flavorId] = saveur
+        // POKéBLOCK (FLAVOR_SPICY=0..SOUR=4), extraits sText_PokeblockWasTooX. (Avant : faux.)
+        const POKEBLOCK_FLAVOR = ['sText_PokeblockWasTooSpicy', 'sText_PokeblockWasTooDry', 'sText_PokeblockWasTooSweet', 'sText_PokeblockWasTooBitter', 'sText_PokeblockWasTooSour'];
         const flavor = buf[i++];
-        const FLAVOR_FR = ['', ' un peu', ' beaucoup', ' énormément'];
-        out += FLAVOR_FR[flavor] ?? '';
+        out += getString(POKEBLOCK_FLAVOR[flavor] ?? 'sText_PokeblockWasTooSpicy');
         break;
       }
       case B_BUFF_ABILITY: {
