@@ -94,6 +94,10 @@ function buildGetStringKeySet(src) {
 const findings = [];
 function scanFile(file) {
   const src = fs.readFileSync(file, 'utf8');
+  // Opt-out FICHIER entier : code AUTO-GÉNÉRÉ (dérivé de la décomp, pas hand-hardcodé),
+  // ou table de DONNÉES décomp vérifiée marquée explicitement (@strings-ignore-file + raison).
+  // Justifié + tracé, pas un silence.
+  if (/AUTO-GÉNÉR|@generated|@strings-ignore-file/.test(src.slice(0, 800))) return;
   const srcLines = src.split(/\r?\n/);
   const getStringKeys = buildGetStringKeySet(src);
   // Régions explicitement exclues : DONNÉES décomp fidèles (transcrites 1:1 d'un .c/.h
@@ -121,11 +125,14 @@ function scanFile(file) {
   }
 }
 
+// Fichiers DEV/TEST exclus : leur contenu n'est jamais joué au joueur (help devtools,
+// asserts, traces). Justifié par le nom de fichier.
+const DEV_FILE = /devtools|\.test\.|\.spec\.|__tests__/;
 function walk(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
     if (ent.isDirectory()) { if (!/node_modules|decomp-data|\.git/.test(p)) walk(p); }
-    else if (/\.ts$/.test(ent.name)) scanFile(p);
+    else if (/\.ts$/.test(ent.name) && !DEV_FILE.test(p)) scanFile(p);
   }
 }
 if (fs.statSync(target).isDirectory()) walk(target); else scanFile(target);

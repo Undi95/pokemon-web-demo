@@ -1,4 +1,8 @@
 /**
+ * @strings-ignore-file: table de DONNÉES gDecorations[] (noms/descriptions de
+ *   décorations) transcrite 1:1 de src/data/decoration/header.h — c'est de la DATA
+ *   décomp (gDecorations[].name), PAS des gText. Inline fidèle, comme la décomp.
+ *
  * decoration-data.ts — Port 1:1 STRICT de la table `gDecorations[]` (= 121 entrées
  * dans `src/data/decoration/header.h` du décomp).
  *
