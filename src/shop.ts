@@ -811,7 +811,9 @@ function _buyHowManyDialogueInit(): void {
 
 function _buyMenuPrintItemQuantityAndPrice(): void {
   FillWindowPixelBuffer(sPriceQtyWindowId, 0x11);
-  setStringVar(1, String(sQuantity.value));
+  // 1:1 décomp shop.c:1188 : ConvertIntToDecimalStringN(STR_CONV_MODE_LEADING_ZEROS,
+  // BAG_ITEM_CAPACITY_DIGITS=2) → « 01 » (pas « 1 »).
+  setStringVar(1, String(sQuantity.value).padStart(2, '0'));
   StringExpandPlaceholders(gStringVar4, getString('gText_xVar1') ?? '×{STR_VAR_1}');
   AddTextPrinterParameterized3(sPriceQtyWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, gStringVar4);
   setStringVar(1, String(sTotalCost));
@@ -890,7 +892,14 @@ function _afterItemPurchase(): void {
 
 // ─── BuyMenuReturnToItemList (1:1 shop.c:1169) ──────────────────────────────
 function _buyReturnToItemList(): void {
+  // 1:1 décomp BuyMenuReturnToItemList (shop.c:1169) : ré-affiche la liste ET la
+  // DESCRIPTION, couvertes par le message / l'écran d'achat (« SAC: »). Sans le
+  // PutWindowTilemap(WIN_ITEM_DESCRIPTION), la description disparaissait après un
+  // aller-retour (bug user : « il manque les infos sur l'objet »).
   _clearMessage();
+  if (sListWindowId >= 0) PutWindowTilemap(sListWindowId);
+  if (sDescWindowId >= 0) PutWindowTilemap(sDescWindowId);
+  ScheduleBgCopyTilemapToVram(0);
   sSubState = 'buy_list';
 }
 
