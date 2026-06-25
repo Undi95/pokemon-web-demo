@@ -28,7 +28,7 @@
 | `DisplayItemMessageOnField` (item_menu.c) | ⬜ | dialogue de terrain + continuation |
 | `menu.c` (CreateYesNoMenu/frames/Print*) — ratio 0.49, à compléter | ⬜ | confronter les fns manquantes |
 | `text.c` (ratio 0.55) | ⬜ | RunTextPrinters / AddTextPrinter* complétude |
-| `menu_helpers.c` (ratio 0.47) | 🔍 | yes/no fait ; reste à confronter |
+| `menu_helpers.c` (ratio 0.47) | 🔍 | **CONFRONTÉ** : parties pures 1:1 ✅ (témoin yes/no+message, input DPad/LR, bornes liste `SetCursor*`). **Gap = 3 helpers init VRAM** (`ResetVramOamAndBgCntRegs`/`ResetAllBgsCoordinates`/`SetVBlankHBlankCallbacksToNull`, menu_helpers.c:94-122) **ré-implémentés inline ×7 écrans** (summary-screen, trainer_card, wallclock, shop, bag-screen, bag-menu, option-menu-return) = anti-pattern dup → **cible dédup** (rendering transverse, A/B par écran requis → PAS solo-safe). Swap-line sprites = relocalisés `engine/field/swap-line.ts` (présents, hors chemin 1:1). |
 
 ## C. ÉCRANS (à convertir en task-témoin, supprimer les machines maison)
 | Écran | Statut | Note |
@@ -81,3 +81,4 @@
 - 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message (`773e5eb6`) · câblage messages shop + dédup, vérifié multi-contextes shop/start-menu/Littleroot/combat (`2cd0f8b5`) · dédup gCamera (bucket G), 1 seul store, vérifié Littleroot/Route101/warp.
 - 2026-06-25 (suite) — dédup `gTrainerBattleOpponent_B` (bucket G, `1e2f1538`) : 2 `let` → store unique state.ts, battle_setup propage (schéma _A) + getter live `__battleState`. **Vrai bug corrigé** : le moteur combat lisait toujours 0 (state.ts jamais écrit) → 2e équipe / argent / AI flags / nom dresseur B cassés en double 2-adversaires. Vérif déterministe en jeu (opcode `trainerbattle` SET_TRAINER_A/B, Maxie=734 / Tabitha=514, propagation indépendante, zéro contamination) ; tsc=0 ; cold boot 0 erreur.
 - 2026-06-25 (suite) — audit `gSaveBlock1Ptr`/`gSaveBlock2Ptr` (bucket G) : **faux positif** (le « 3 fichiers » du census = 1 Proxy stateless + 2 re-exports). Désync impossible par construction → flag résolu, aucun code touché. Census mis à jour. Annexe : scaffolding DI mort dans `easy-chat-render` flaggé en chip.
+- 2026-06-25 (suite) — confrontation `menu_helpers.c` (bucket B) : parties pures 1:1 ✅ ; identifié le gap = 3 helpers init VRAM dupliqués inline ×7 écrans (cible dédup, rendering transverse → différée car A/B par écran requis, pas solo-safe) ; swap-line sprites relocalisés. Audit only (pas de code touché).
