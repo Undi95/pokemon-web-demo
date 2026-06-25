@@ -15,6 +15,7 @@
     "audit:opcodes": "node scripts/audit-fullgame-opcodes.mjs",
     "audit:specials": "node scripts/audit-fullgame-specials.mjs",
     "audit:all": "node scripts/audit-registry-dupes.mjs && node scripts/audit-fullgame-opcodes.mjs && node scripts/audit-fullgame-specials.mjs",
+    "audit:data-1to1": "node scripts/audit-data-1to1.cjs",
     "extract:em": "node scripts/extract-decomp.mjs ../decomps/pokeemeraude em",
     "extract:fr": "node scripts/extract-decomp.mjs ../decomps/pokerougefeu fr",
     "extract:trainer-parties": "node scripts/extract-trainer-parties.mjs",
