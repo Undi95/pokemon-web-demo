@@ -730,7 +730,11 @@ function _drawBuyMenuItemIcon(itemKey: string): void {
   if (spr) {
     spr.x2 = 24; spr.y2 = 88;  // 1:1 décomp shop.c:693-694
     const o = rt?.gba?.oam?.[spr.oamIndex];
-    if (o) o.priority = 0;     // au-dessus des BG (cadre/fenêtres)
+    // 1:1 : la décomp ne force PAS la priorité (laisse l'icône SOUS les fenêtres BG0).
+    // Priorité 1 = au-dessus de la carte (BG1/2/3) mais SOUS le BG0 → la fenêtre
+    // « SAC: » (WIN_QUANTITY_IN_BAG, top=11 = pile sous l'icône) couvre l'icône. (était 0
+    // = icône DEVANT les fenêtres = chevauchait la box SAC, bug user.)
+    if (o) o.priority = 1;
   }
 }
 
