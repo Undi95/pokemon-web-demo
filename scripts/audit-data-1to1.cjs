@@ -35,7 +35,7 @@ const ORACLES = [
   // — Tables TS hand-codées —
   'audit-battle-stat-tables.cjs',
   // — Textes FR (gameplay-visible) —
-  'audit-fr-names.cjs',
+  'audit-fr-names.cjs', 'audit-fr-descriptions.cjs',
 ];
 
 const results = [];
