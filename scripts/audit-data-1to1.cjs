@@ -22,7 +22,7 @@ const ORACLES = [
   // — Pokémon / espèces —
   'audit-species-data.cjs', 'audit-evolution-data.cjs', 'audit-learnset-data.cjs',
   'audit-tmhm-learnsets.cjs', 'audit-tutor-learnsets.cjs', 'audit-egg-moves.cjs',
-  'audit-experience-tables.cjs', 'audit-pokedex-orders.cjs',
+  'audit-experience-tables.cjs', 'audit-pokedex-orders.cjs', 'audit-pokedex-entries.cjs',
   // — Combat —
   'audit-move-data.cjs', 'audit-type-chart.cjs', 'audit-item-data.cjs',
   'audit-item-effects-bytes.cjs', 'audit-contest-moves.cjs',
