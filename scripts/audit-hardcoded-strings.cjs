@@ -117,10 +117,12 @@ function scanFile(file) {
     if (lit.text.startsWith('gText_') || lit.text.startsWith('gMenuText_')) continue;
     if (getStringKeys.has(lit.text)) continue;      // c'est une clé passée à getString → OK
     if (inIgnore(lit.line)) continue;               // région data décomp justifiée
-    // exclut les strings de dev (console.*, throw new Error) : pas joués au joueur
-    const srcLine = srcLines[lit.line - 1] || '';
-    if (/console\s*\.\s*(log|warn|error|info|debug)/.test(srcLine)) continue;
-    if (/\bthrow\b|new\s+Error\s*\(/.test(srcLine)) continue;
+    // exclut les strings de dev (console.*, throw new Error) : pas joués au joueur.
+    // Lookback 1 ligne : un console.log(/throw peut ouvrir sur la ligne précédente
+    // et la string suivre (multi-ligne).
+    const ctx = (srcLines[lit.line - 1] || '') + ' ⏎ ' + (srcLines[lit.line - 2] || '');
+    if (/console\s*\.\s*(log|warn|error|info|debug)/.test(ctx)) continue;
+    if (/\bthrow\b|new\s+Error\s*\(/.test(ctx)) continue;
     findings.push({ file: path.relative(ROOT, file), line: lit.line, text: lit.text.replace(/\n/g, '\\n') });
   }
 }
