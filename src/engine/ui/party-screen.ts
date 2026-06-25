@@ -37,7 +37,7 @@ import {
   PutWindowTilemap, CopyWindowToVram, ClearWindowTilemap,
   BlitBitmapToWindow,
   DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame,
-  RemoveWindow, ShowBg, HideBg, ResetVramOamAndBgCntRegs,
+  RemoveWindow, ShowBg, HideBg, ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
   GetWindowAttribute, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP,
   WINDOW_WIDTH, WINDOW_HEIGHT,
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
@@ -466,9 +466,8 @@ function _initPartyBgs(rt: ReturnType<typeof getRuntime>): void {
   bg2c.screenSize = 0; bg2c.paletteMode = 0; bg2c.priority = 0; bg2c.visible = true;
   bg2c.hofs = 0; bg2c.vofs = 0;
   rt.gba.bg(3).config.visible = false;
-  rt.SetGpuReg(0x10, 0); rt.SetGpuReg(0x12, 0);
-  rt.SetGpuReg(0x14, 0); rt.SetGpuReg(0x16, 0);
-  rt.SetGpuReg(0x18, 0); rt.SetGpuReg(0x1A, 0);
+  // 1:1 décomp `ResetAllBgsCoordinates()` (menu_helpers.c:106) — fn PARTAGÉE.
+  ResetAllBgsCoordinates();
   rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x200 | 0x400);
   rt.SetGpuReg(0x50, 0);
   ShowBg(0); ShowBg(1); ShowBg(2); HideBg(3);

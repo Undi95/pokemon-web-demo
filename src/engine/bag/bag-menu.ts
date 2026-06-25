@@ -58,7 +58,7 @@ import { gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
-  ResetVramOamAndBgCntRegs,
+  ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
   ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
   FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
@@ -434,7 +434,8 @@ function BagMenu_InitBGs(): void {
   b2.paletteMode = 0; b2.priority = 2; b2.hofs = 0; b2.vofs = 0;
   // SetBgTilemapBuffer(2, gBagMenu->tilemapBuffer) : le buffer EST
   // gBagMenu.tilemapBuffer (rien à enregistrer) ; ResetAllBgsCoordinates.
-  for (let i = 0; i < 4; i++) { const c = cfg(i as 0 | 1 | 2 | 3); c.hofs = 0; c.vofs = 0; }
+  // 1:1 décomp `ResetAllBgsCoordinates()` (menu_helpers.c:106) — fn PARTAGÉE.
+  ResetAllBgsCoordinates();
   _bagScheduleBgCopy(2);
   // SetGpuReg(DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP) (1:1 :798).
   rt.SetGpuReg(0x00, 0x1000 | 0x40);

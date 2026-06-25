@@ -595,6 +595,18 @@ export function ResetVramOamAndBgCntRegs(): void {
   for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
 }
 
+/** 1:1 décomp `ResetAllBgsCoordinates(void)` (menu_helpers.c:106) :
+ *  ChangeBgX/Y(0..3, 0, BG_COORD_SET) — remet hofs/vofs des 4 BG à 0.
+ *  (Sûr : `SetGpuReg(BGxHOFS/VOFS, 0)` écrit le MÊME `cfg.hofs/vofs` que
+ *  ChangeBgX/Y, cf. decomp-runtime.SetGpuReg.) Appelée dans leur InitBGs par
+ *  bag (item_menu.c), party (party_menu.c), summary (pokemon_summary_screen.c). */
+export function ResetAllBgsCoordinates(): void {
+  ChangeBgX(0, 0, 0); ChangeBgY(0, 0, 0);  // BG_COORD_SET = mode 0
+  ChangeBgX(1, 0, 0); ChangeBgY(1, 0, 0);
+  ChangeBgX(2, 0, 0); ChangeBgY(2, 0, 0);
+  ChangeBgX(3, 0, 0); ChangeBgY(3, 0, 0);
+}
+
 // ─── Window helpers ──────────────────────────────────────────────────────────
 
 /** 1:1 décomp `bg.c CreateWindowTemplate(bg, left, top, width, height, paletteNum, baseBlock)`.

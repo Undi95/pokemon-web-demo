@@ -29,7 +29,7 @@
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
-  ResetVramOamAndBgCntRegs,
+  ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
 } from './gba-window-system';
 import { GetPlayerNameString } from '../system/string-buffers';
 import {
@@ -721,9 +721,8 @@ function _initBGs(rt: ReturnType<typeof getRuntime>): void {
   _setBgTilemapBuffer(1, PSS_PAGE_BATTLE_MOVES);
   _setBgTilemapBuffer(2, PSS_PAGE_SKILLS);
   _setBgTilemapBuffer(3, PSS_PAGE_INFO);
-  rt.SetGpuReg(0x10, 0); rt.SetGpuReg(0x12, 0);
-  rt.SetGpuReg(0x14, 0); rt.SetGpuReg(0x16, 0);
-  rt.SetGpuReg(0x18, 0); rt.SetGpuReg(0x1A, 0);
+  // 1:1 décomp `ResetAllBgsCoordinates()` (menu_helpers.c:106) — fn PARTAGÉE.
+  ResetAllBgsCoordinates();
   // DISPCNT : BG0-3 ON + OBJ ON + OBJ 1D map.
   rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x200 | 0x400 | 0x800);
   rt.SetGpuReg(0x50, 0); // BLDCNT = 0
