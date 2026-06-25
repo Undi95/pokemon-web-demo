@@ -162,7 +162,9 @@ function _speciesName(speciesId: number): string {
     if (fr && fr !== enumName) return fr;
     return enumName.replace(/^SPECIES_/, '');
   }
-  return `Espèce#${speciesId}`;
+  // 1:1 décomp : un id hors table indexe gSpeciesNames[SPECIES_NONE] = "??????????"
+  // (species_names.h:2). On route par la table de noms (pas un littéral FR inventé).
+  return _getSpeciesNameFr('SPECIES_NONE') || '??????????';
 }
 
 /** Cache numeric → "MOVE_X" enum name (= populated lazy au first lookup).
