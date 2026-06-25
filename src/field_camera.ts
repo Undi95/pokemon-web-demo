@@ -56,6 +56,7 @@ import {
   METATILE_LAYER_TYPE_COVERED,
   METATILE_LAYER_TYPE_SPLIT,
   gMapHeader,
+  gCamera,
   GetMapBorderIdAt,
   GetIncomingConnection,
   SaveMapView,
@@ -125,8 +126,14 @@ export const gTotalCamera = { pixelOffsetX: 0, pixelOffsetY: 0 };
  *
  *  Phase 4.8 audit : ce flag manquait → on appelait UpdateObjectEventCoordsFor
  *  CameraUpdate manuellement dans handleConnectionTransition sans control flag,
- *  ce qui était fonctionnel mais pas 1:1 décomp. */
-export const gCamera = { active: false, x: 0, y: 0 };
+ *  ce qui était fonctionnel mais pas 1:1 décomp.
+ *
+ *  ⚠️ DÉDUP (2026-06-25) : `gCamera` était défini ICI **ET** dans fieldmap.ts = DEUX objets
+ *  séparés → désync (field_camera écrivait le sien, lu par event_object_movement ; mais
+ *  field_tasks.ts lisait celui de fieldmap, JAMAIS écrit → sa branche cross-border était morte).
+ *  La décomp n'a qu'UN `gCamera` (fieldmap.c:30). On l'importe de fieldmap.ts (foyer 1:1) et on
+ *  le re-exporte pour les importeurs de field_camera (event_object_movement…). UN seul store. */
+export { gCamera };
 
 /** 1:1 décomp `struct CameraObject gFieldCamera` (field_camera.c:42).
  *  Tracks player sprite for camera follow. Phase 4.2 : version simplifiée
