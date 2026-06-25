@@ -63,7 +63,7 @@
 ## G. DÉDUP TRANSVERSE (globals + sous-systèmes dupliqués)
 | Item | Statut | Note |
 |---|---|---|
-| `gCamera` (fieldmap.ts:325 **vs** field_camera.ts:129 = 2 objets) | ⬜ | unifier sur 1 store (field_camera = foyer décomp) |
+| `gCamera` (fieldmap.ts **vs** field_camera.ts = 2 objets) | ✅ | `field_camera` importe+ré-exporte celui de fieldmap (foyer décomp fieldmap.c:30) = 1 store ; corrige désync field_tasks. Vérifié multi-cartes. |
 | `gTrainerBattleOpponent_B` (battle_setup.ts:92 **vs** engine/battle/state.ts:743) | ⬜ | unifier |
 | 2 sous-systèmes sprites object-event (overworld INLINE vs menu) | ⬜ | chantier archi (cf. graphics-1to1-verifier) |
 
@@ -77,4 +77,4 @@
 ---
 
 ## Journal (paliers vérifiés)
-- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message (`773e5eb6`) · câblage messages shop + dédup, vérifié multi-contextes shop/start-menu/Littleroot/combat (`2cd0f8b5`).
+- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message (`773e5eb6`) · câblage messages shop + dédup, vérifié multi-contextes shop/start-menu/Littleroot/combat (`2cd0f8b5`) · dédup gCamera (bucket G), 1 seul store, vérifié Littleroot/Route101/warp.
