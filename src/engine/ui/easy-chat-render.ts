@@ -3,6 +3,16 @@
  *                       cleanup + word data) du decomp `src/easy_chat.c`
  *                       lignes ~3000-5875 (= partie "fin" du fichier).
  *
+ * ⚠️ STATUT (audit 2026-06-25) : MODULE NON-CÂBLÉ — 0 importeur dans tout le
+ *   codebase (= l'écran Easy Chat de SAISIE de phrases, pas encore relié au
+ *   jeu). ~moitié des fonctions sont des STUBs « section 4 » + gros échafaudage
+ *   DI (`_set*`, ex. `_setGSaveBlock1Ptr`) JAMAIS injecté. C'est un PORT WIP
+ *   INCOMPLET tracé dans `DETTES-1TO1-STRICT.md` (et `SPINE-DECYCLE-PLAN.md`
+ *   lot 14), PAS du code mort accidentel — décision user 2026-06-25 : LE
+ *   LAISSER (à porter 1:1 plus tard, ne pas supprimer ni charcuter au coup par
+ *   coup). NB : le chemin Easy Chat VIVANT (mail / dewford trends =
+ *   `ConvertEasyChatWordsToString`) vit dans `src/easy_chat.ts`, pas ici.
+ *
  * Source de vÃ©ritÃ© (= 1:1 EXACT, ne JAMAIS diverger) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/easy_chat.c` lignes 3000-5875
  *   - `D:/Projet 1/decomps/pokeemeraude/include/easy_chat.h`
