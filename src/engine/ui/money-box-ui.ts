@@ -93,15 +93,39 @@ export function ChangeAmountInMoneyBox(amount: number): void {
  *  ConvertIntToDecimalStringN(LEFT_ALIGN, 6) → pad `CHAR_SPACER` à gauche (champ 6
  *  large = alignement à droite) → StringExpandPlaceholders(gText_PokedollarVar1 =
  *  "{STR_VAR_1}¥"). Le symbole monnaie est **¥** (charmap décomp, = même glyphe que
- *  shop.ts/trainer_card), PAS `₽` (Unicode non mappé par notre font → signe invisible). */
-function _printAmountInMoneyBox(amount: number): void {
-  if (_moneyBoxWindowId < 0) return;
+ *  shop.ts/trainer_card), PAS `₽` (Unicode non mappé par notre font → signe invisible).
+ *
+ *  Opère sur un `windowId` DONNÉ (= 1:1 décomp). Le shop (buy-menu) l'appelle sur sa
+ *  propre fenêtre WIN_MONEY ; la money box overworld passe `_moneyBoxWindowId`. */
+export function PrintMoneyAmount(windowId: number, x: number, y: number, amount: number, speed: number): void {
+  if (windowId < 0) return;
   const numStr = String(amount >>> 0);
   const pad = Math.max(0, 6 - numStr.length);
   const text = CHAR_SPACER_STR.repeat(pad) + numStr + '¥';
-  AddTextPrinterParameterized3(
-    _moneyBoxWindowId, FONT_NORMAL, 38, 1, COLOR_BG_FG_SHADOW, 0, text,
-  );
+  AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, y, COLOR_BG_FG_SHADOW, speed, text);
+}
+
+/** 1:1 décomp `PrintMoneyAmountInMoneyBox(windowId, amount, speed)` (money.c:133) :
+ *    PrintMoneyAmount(windowId, 38, 1, amount, speed); */
+export function PrintMoneyAmountInMoneyBox(windowId: number, amount: number, speed: number): void {
+  PrintMoneyAmount(windowId, 38, 1, amount, speed);
+}
+
+/** 1:1 décomp `PrintMoneyAmountInMoneyBoxWithBorder(windowId, tileStart, pallete, amount)`
+ *  (money.c:155) :
+ *    DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, tileStart, pallete);
+ *    PrintMoneyAmountInMoneyBox(windowId, amount, 0);
+ *  C'est CETTE fonction (tile/palette PARAMÉTRÉS) que le buy-menu appelle avec (1, 13) —
+ *  sa propre fenêtre WIN_MONEY, déliée du `DrawMoneyBox` générique overworld (tile 0x214,
+ *  palette 14, baseBlock 0x8). */
+export function PrintMoneyAmountInMoneyBoxWithBorder(windowId: number, tileStart: number, pallete: number, amount: number): void {
+  DrawStdFrameWithCustomTileAndPalette(windowId, false, tileStart, pallete);
+  PrintMoneyAmountInMoneyBox(windowId, amount, 0);
+}
+
+/** Money box overworld (= _moneyBoxWindowId) — applique `PrintMoneyAmountInMoneyBox`. */
+function _printAmountInMoneyBox(amount: number): void {
+  PrintMoneyAmountInMoneyBox(_moneyBoxWindowId, amount, 0);
 }
 
 // ─── Coins box state ────────────────────────────────────────────────────────

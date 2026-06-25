@@ -28,8 +28,9 @@
 
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
+  DrawDialogFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
-  DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
+  ClearWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitWindows, ShowBg, HideBg, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
@@ -44,7 +45,12 @@ import {
 import {
   AddTextPrinterParameterized3, GetStringRightAlignXOffset,
   StringExpandPlaceholders, gStringVar4, CHAR_SPACER_STR,
+  IsTextPrinterActive, RunTextPrinters,
 } from './engine/ui/gba-text-system';
+import { gTextFlags } from './engine/ui/gba-text-printer';
+import { GetPlayerTextSpeedDelay } from './menu';
+import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
+import { encodeOwText } from './text';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
@@ -63,13 +69,13 @@ import {
 import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './item';
 import { AddBagItem, GetBagItemQuantity } from './engine/bag/bag';
 import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
-import { DrawMoneyBox, HideMoneyBox, ChangeAmountInMoneyBox } from './engine/ui/money-box-ui';
+import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './engine/ui/money-box-ui';
 import { AdjustQuantityAccordingToDPadInput, type IntRef } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './engine/system/fade-screen';
-import { loadTileBin, loadTilemapBin, extractPngPlte, loadGbaPal } from '../harness/gba/png-loader';
+import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';
 import { CreateTask, DestroyTask } from './task';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
@@ -111,12 +117,29 @@ export function GetMartItemList(label: string): string[] {
 // ─── Constantes 1:1 décomp ───────────────────────────────────────────────────
 const FONT_NORMAL = 1;
 const FONT_NARROW = 7;
+
+// ── Cadres : DEUX contextes distincts (les confondre = LA cause des cadres noirs) ──
+// 1. Menu OVERLAY Acheter/Vendre/Quitter (dans l'OVERWORLD) : 1:1 décomp CreateShopMenu →
+//    SetStandardWindowBorderStyle = la bordure std DÉJÀ chargée par le terrain (tile 0x214,
+//    palette 14, menu.c:25-27). On NE recharge rien → on réutilise la bordure OW. (Marche déjà.)
 const STD_FRAME_TILE = 0x214;
-const STD_FRAME_PAL = 14;     // palette des TILES de bordure de cadre std.
-const SHOP_WIN_PAL = 15;      // palette du CONTENU des fenêtres (gStandardMenuPalette).
+const STD_FRAME_PAL = 14;
+// 2. BUY-MENU plein écran : 1:1 décomp BuyMenuInitWindows (shop.c:751-752) charge DEUX gfx :
+//    LoadUserWindowBorderGfx(WIN_MONEY, 1,   BG_PLTT_ID(13)) → cadre std (money/quantité/yes-no)
+//      = tile 1,   palette 13.
+//    LoadMessageBoxGfx     (WIN_MONEY, 0xA, BG_PLTT_ID(14)) → cadre dialogue (WIN_MESSAGE)
+//      = tile 0xA, palette 14.
+//    Layout SANS collision : cadre std 1..9, cadre dialogue 0xA..0x17, contenu WIN_MONEY à
+//    0x1E (30). L'ancien bug « money box teal » = DrawMoneyBox générique (baseBlock 0x8 =
+//    tiles 8..27) qui chevauchait le gfx du cadre dialogue (0xA..0x17). WIN_MONEY (0x1E) règle ça.
+const BUY_FRAME_TILE = 1;
+const BUY_FRAME_PAL = 13;
+const DLG_FRAME_TILE = 0xA;
+const MSG_FRAME_PAL = 14;
+const SHOP_WIN_PAL = 15;      // palette du CONTENU des fenêtres (= textbox/dialogue OW persistée).
 const SHOP_MENU_PAL = 12;     // 1:1 décomp SHOP_MENU_PALETTE_ID : palette du cadre gShopMenu.
 // 1:1 décomp `sShopBuyMenuTextColors[][3]` (shop.c:333) : triplets [fond, texte, ombre].
-// TEXT_COLOR_SET = COLORID_NORMAL (descriptions/quantité). COLORID_ITEM_LIST a fond=0
+// TEXT_COLOR_SET = COLORID_NORMAL (descriptions/quantité/message). COLORID_ITEM_LIST a fond=0
 // (transparent → laisse voir le panneau jaune) : fond=1 sur les prix = le bug « fond blanc ».
 const TEXT_COLOR_SET: [number, number, number] = [1, 2, 3];   // COLORID_NORMAL
 const COLORID_ITEM_LIST: [number, number, number] = [0, 2, 3];
@@ -145,6 +168,12 @@ const WIN_SHOP_MENU: WindowTemplate = {
   bg: 0, tilemapLeft: 2, tilemapTop: 1, width: 8, height: 6, paletteNum: SHOP_WIN_PAL, baseBlock: 0x8,
 };
 // Buy screen (1:1 sShopBuyMenuWindowTemplates).
+// WIN_MONEY = sa PROPRE fenêtre (baseBlock 0x1E), déliée du DrawMoneyBox overworld
+// (baseBlock 0x8). C'est l'intuition « tout délier de la textbox » : chaque fenêtre du
+// buy-menu a son baseBlock dédié, aucune ne marche sur le gfx d'une autre.
+const WIN_MONEY: WindowTemplate = {
+  bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 10, height: 2, paletteNum: SHOP_WIN_PAL, baseBlock: 0x1E,
+};
 const WIN_ITEM_LIST: WindowTemplate = {
   bg: 0, tilemapLeft: 14, tilemapTop: 2, width: 15, height: 16, paletteNum: SHOP_WIN_PAL, baseBlock: 0x32,
 };
@@ -166,12 +195,14 @@ const WIN_YESNO: WindowTemplate = {
 
 // ─── État (= sMartInfo + sShopData + substate machine) ──────────────────────
 type ShopSubState =
-  | 'shop_menu'      // Task_ShopMenu (overlay)
-  | 'buy_goto'       // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
-  | 'buy_list'       // Task_BuyMenu (gTasks, plein écran)
-  | 'buy_qty'        // Task_BuyHowManyDialogueHandleInput
-  | 'buy_confirm'    // BuyMenuConfirmPurchase (Yes/No)
-  | 'buy_msg';       // BuyMenuDisplayMessage (attend A/B → continuation)
+  | 'shop_menu'          // Task_ShopMenu (overlay)
+  | 'buy_goto'           // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
+  | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
+  | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
+  | 'buy_confirm'        // BuyMenuConfirmPurchase (Yes/No)
+  | 'buy_msg'            // BuyMenuDisplayMessage → Task_ContinueTaskAfterMessagePrints
+  | 'buy_after_purchase' // Task_ReturnToItemListAfterItemPurchase (attend A/B)
+  | 'reopen_msg';        // Task_ReturnToShopMenu (DisplayItemMessageOnField → re-ouvre le menu)
 
 let sShopOpen = false;
 let sSubState: ShopSubState = 'shop_menu';
@@ -180,11 +211,13 @@ let sItemList: string[] = [];          // 1:1 sMartInfo.itemList (constantes d'o
 let sItemCount = 0;                    // 1:1 sMartInfo.itemCount
 
 let sShopMenuWindowId = -1;
+let sMoneyWindowId = -1;               // 1:1 WIN_MONEY (buy-menu, baseBlock 0x1E)
 let sListWindowId = -1;
 let sDescWindowId = -1;
 let sBagQtyWindowId = -1;
 let sPriceQtyWindowId = -1;
 let sMessageWindowId = -1;
+let sReopenMsgShown = false;           // 1:1 garde de Task_ReturnToShopMenu (1 seul Show)
 let sListTaskId = -1;
 let sBuyTaskId = -1;                    // gTasks task du buy menu
 let sIconSpriteId = -1;                 // sprite icône d'objet (slot unique)
@@ -204,10 +237,6 @@ interface ShopAssets {
 let sAssets: ShopAssets | null = null;
 let sAssetsLoading = false;
 let sMoneyLabelSpriteId = -1;           // 1:1 décomp money.c sMoneyLabelSpriteId
-// Palette std menu (slot 15) — vidée par le BG-takeover du buy menu puis non
-// rechargée par le reload OW ; on la recharge dans _createShopMenu (sinon texte
-// + intérieur de cadre noir sur noir = invisibles au re-affichage).
-let sStdMenuPal: Uint16Array | null = null;
 
 // ─── BG layout du buy screen (1:1 sShopBuyMenuBgTemplates) ──────────────────
 // BG0 char2 map31 prio0 (fenêtres) ; BG1 char0 map30 prio1 (cadre gShopMenu) ;
@@ -224,10 +253,21 @@ const BUY_BG3_CHAR = 0, BUY_BG3_MAP = 28;
 const SHOP_MENU_BASE_TILE = 0x3E3;
 
 // ─── Helpers fenêtres ────────────────────────────────────────────────────────
+/** Cadre std du menu OVERLAY (overworld) — 1:1 SetStandardWindowBorderStyle : tile 0x214,
+ *  palette 14, la bordure DÉJÀ chargée par le terrain. RÉSERVÉ à WIN_SHOP_MENU. */
 function _addStdWindow(tmpl: WindowTemplate): number {
   const wid = AddWindow(tmpl);
   LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
   DrawStdFrameWithCustomTileAndPalette(wid, true, STD_FRAME_TILE, STD_FRAME_PAL);
+  return wid;
+}
+
+/** Cadre std d'une fenêtre du BUY-MENU — 1:1 décomp DrawStdFrameWithCustomTileAndPalette(wid,
+ *  …, 1, 13) (quantité). Le gfx (tile 1, palette 13) est préchargé une fois par
+ *  `_buyMenuInitWindows` (≠ 0x214/14 du menu overlay overworld). */
+function _addBuyStdWindow(tmpl: WindowTemplate): number {
+  const wid = AddWindow(tmpl);
+  DrawStdFrameWithCustomTileAndPalette(wid, true, BUY_FRAME_TILE, BUY_FRAME_PAL);
   return wid;
 }
 
@@ -240,23 +280,25 @@ function _removeWindow(idRef: () => number, set: (v: number) => void): void {
   }
 }
 
-/** 1:1 décomp `BuyMenuDisplayMessage` : message dialogue en bas + continuation
- *  appelée sur A/B. */
-function _displayMessage(text: string, cont: (() => void) | null): void {
+/** 1:1 décomp `BuyMenuDisplayMessage` (shop.c:763) :
+ *    DisplayMessageAndContinueTask(taskId, WIN_MESSAGE, 0xA, 14, FONT_NORMAL,
+ *                                  GetPlayerTextSpeedDelay(), text, callback);
+ *    ScheduleBgCopyTilemapToVram(0);
+ *  Le message s'ANIME (vitesse joueur, accélérable A/B = canABSpeedUpPrint). Quand le
+ *  printer a fini, `_tickBuyMessage` (= Task_ContinueTaskAfterMessagePrints) appelle la
+ *  continuation. Cadre dialogue = tile 0xA, palette 14 (DISTINCT du cadre std 1/13). */
+function _displayMessage(text: string | Uint8Array, cont: (() => void) | null): void {
   if (sMessageWindowId < 0) sMessageWindowId = AddWindow(WIN_MESSAGE);
-  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
-  DrawDialogueFrame(sMessageWindowId, true);
-  AddTextPrinterParameterized3(sMessageWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, text);
+  LoadMessageBoxGfx(sMessageWindowId, DLG_FRAME_TILE, MSG_FRAME_PAL * 16);
+  DrawDialogFrameWithCustomTileAndPalette(sMessageWindowId, true, DLG_FRAME_TILE, MSG_FRAME_PAL);
+  // 1:1 DisplayMessageAndContinueTask : canABSpeedUpPrint = TRUE + speed = option joueur.
+  gTextFlags.canABSpeedUpPrint = true;
+  AddTextPrinterParameterized3(sMessageWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, GetPlayerTextSpeedDelay(), text);
+  // 1:1 décomp shop.c:766 : flush le cadre (FillBgTilemapBufferRect → BUFFER tilemap BG0)
+  // vers la VRAM. Sans ça (CB2 buy-menu, pas de copie tilemap par frame) = cadre invisible.
+  ScheduleBgCopyTilemapToVram(0);
   sPendingMsgCont = cont;
   sSubState = 'buy_msg';
-}
-
-/** Message affiché sans attendre A/B (= reste pendant la sélection qty). */
-function _displayMessageSticky(text: string | Uint8Array): void {
-  if (sMessageWindowId < 0) sMessageWindowId = AddWindow(WIN_MESSAGE);
-  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
-  DrawDialogueFrame(sMessageWindowId, true);
-  AddTextPrinterParameterized3(sMessageWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, text);
 }
 
 function _clearMessage(): void {
@@ -293,8 +335,9 @@ export function TickShop(): void {
   const rt = getRuntime();
   if (!rt) return;
   switch (sSubState) {
-    case 'shop_menu': _tickShopMenu(); break;
-    case 'buy_goto':  _tickGoToBuyMenu(); break;
+    case 'shop_menu':  _tickShopMenu(); break;
+    case 'buy_goto':   _tickGoToBuyMenu(); break;
+    case 'reopen_msg': _tickReopenShopMenu(); break;
   }
 }
 
@@ -307,8 +350,11 @@ function _setShopItemsForSale(items: string[]): void {
 // ─── CreateShopMenu (1:1 shop.c:340) — overlay ──────────────────────────────
 function _createShopMenu(martType: number): void {
   sMartType = martType;
-  // Recharge la palette std menu (15) — vidée par le buy menu / reload OW.
-  if (sStdMenuPal) LoadPalette(sStdMenuPal, SHOP_WIN_PAL * 16, 32);
+  // 1:1 décomp : CreateShopMenu NE recharge AUCUNE palette. La palette 15 (= contenu
+  // des fenêtres) est celle du dialogue/textbox OW déjà en place (chargée par la field
+  // message box). L'ancien `LoadPalette(sStdMenuPal, 15)` ÉCRASAIT cette palette 15 →
+  // le cadre du dialogue de terrain (« En quoi puis-je vous aider ? », palette 15) virait
+  // au noir = le bug 1. On s'appuie sur la palette 15 OW, exactement comme la décomp.
   sShopMenuWindowId = _addStdWindow(WIN_SHOP_MENU);
   const labels = [getString('gText_ShopBuy'), getString('gText_ShopSell'), getString('gText_ShopQuit')];
   for (let i = 0; i < labels.length; i++) {
@@ -388,11 +434,10 @@ async function _loadShopAssets(): Promise<void> {
   if (sAssets || sAssetsLoading) return;
   sAssetsLoading = true;
   try {
-    const [frameTiles, frameTilemap, framePal, stdMenuPal, moneyTiles, moneyPal] = await Promise.all([
+    const [frameTiles, frameTilemap, framePal, moneyTiles, moneyPal] = await Promise.all([
       loadTileBin('/decomp/em/shop/menu.png', 4),
       loadTilemapBin('/decomp/em/shop/menu.bin'),
       extractPngPlte('/decomp/em/shop/menu.png'),
-      loadGbaPal('/decomp/em/interface/std_menu.pal'),
       loadTileBin('/decomp/em/shop/money.png', 4),
       extractPngPlte('/decomp/em/shop/money.png'),
     ]);
@@ -400,7 +445,6 @@ async function _loadShopAssets(): Promise<void> {
       frameTiles, frameTilemap, framePal: framePal ?? new Uint16Array(16),
       moneyTiles, moneyPal: moneyPal ?? new Uint16Array(16),
     };
-    sStdMenuPal = stdMenuPal;
     console.log(`[shop] cadre gShopMenu chargé (${frameTiles.length}o tiles, ${frameTilemap.length} entrées)`);
   } catch (e) {
     console.error('[shop] échec chargement cadre gShopMenu:', e);
@@ -607,26 +651,38 @@ function _buyMenuCopyMenuBgToBg1(): void {
   }
 }
 
-/** 1:1 décomp `BuyMenuInitWindows` (shop.c:747). InitWindows + borders/msgbox
- *  + std menu palette (15). Fenêtres list/desc SANS DrawStdFrame (le cadre
- *  gShopMenu fournit les boîtes ; les fenêtres sont transparentes par-dessus). */
+/** 1:1 décomp `BuyMenuInitWindows` (shop.c:747) :
+ *    InitWindows(sShopBuyMenuWindowTemplates);
+ *    DeactivateAllTextPrinters();
+ *    LoadUserWindowBorderGfx(WIN_MONEY, 1,   BG_PLTT_ID(13));   → cadre std  tile 1,   pal 13
+ *    LoadMessageBoxGfx     (WIN_MONEY, 0xA, BG_PLTT_ID(14));    → cadre dialogue 0xA,  pal 14
+ *    PutWindowTilemap(WIN_MONEY); PutWindowTilemap(WIN_ITEM_LIST); PutWindowTilemap(WIN_ITEM_DESCRIPTION);
+ *  On inclut WIN_MONEY dans InitWindows (baseBlock 0x1E = SA fenêtre, déliée) ; les
+ *  fenêtres quantité/message/yes-no sont AddWindow à la demande (mêmes baseBlocks décomp). */
 function _buyMenuInitWindows(): void {
-  const ids = InitWindows([WIN_ITEM_LIST, WIN_ITEM_DESCRIPTION]);
-  sListWindowId = ids[0];
-  sDescWindowId = ids[1];
-  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
-  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
+  const ids = InitWindows([WIN_MONEY, WIN_ITEM_LIST, WIN_ITEM_DESCRIPTION]);
+  sMoneyWindowId = ids[0];
+  sListWindowId = ids[1];
+  sDescWindowId = ids[2];
+  // 1:1 : le gfx du cadre std (tile 1, pal 13) ET du cadre dialogue (tile 0xA, pal 14)
+  // chargés UNE fois ici. Toutes les fenêtres du buy-menu les réutilisent — zéro collision.
+  LoadUserWindowBorderGfx(sMoneyWindowId, BUY_FRAME_TILE, BUY_FRAME_PAL * 16);
+  LoadMessageBoxGfx(sMoneyWindowId, DLG_FRAME_TILE, MSG_FRAME_PAL * 16);
+  PutWindowTilemap(sMoneyWindowId);
   FillWindowPixelBuffer(sListWindowId, 0x00); PutWindowTilemap(sListWindowId);
   FillWindowPixelBuffer(sDescWindowId, 0x00); PutWindowTilemap(sDescWindowId);
 }
 
-/** 1:1 décomp `BuyMenuDrawGraphics` (shop.c:769) : money box + label ARGENT +
- *  schedule copies. (BuyMenuDrawMapGraphics = increment 2.) */
+/** 1:1 décomp `BuyMenuDrawGraphics` (shop.c:769) : carte + cadre + label ARGENT + money box
+ *  (sur SA fenêtre WIN_MONEY, tile 1/pal 13) + schedule copies. */
 function _buyMenuDrawGraphics(): void {
   _buyMenuDrawMapBg();          // 1:1 BuyMenuDrawMapGraphics : la carte derrière le menu
   _buyMenuCopyMenuBgToBg1();    // 1:1 BuyMenuCopyMenuBgToBg1TilemapBuffer : cadre par-dessus
-  DrawMoneyBox(GetMoney(), 0, 0);
-  _addMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11)
+  _addMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11) (French diff)
+  // 1:1 shop.c:774 : PrintMoneyAmountInMoneyBoxWithBorder(WIN_MONEY, 1, 13, GetMoney(...)).
+  FillWindowPixelBuffer(sMoneyWindowId, 0x00);
+  PrintMoneyAmountInMoneyBoxWithBorder(sMoneyWindowId, BUY_FRAME_TILE, BUY_FRAME_PAL, GetMoney());
+  CopyWindowToVram(sMoneyWindowId, 3 /* COPYWIN_FULL */);
   ScheduleBgCopyTilemapToVram(0);
   ScheduleBgCopyTilemapToVram(1);
   ScheduleBgCopyTilemapToVram(2);
@@ -766,10 +822,11 @@ function Task_BuyMenu(_task: DecompTask): void {
   if (rt.gPaletteFade.active) return;
   const newKeys = rt.gMain.newKeys as number;
   switch (sSubState) {
-    case 'buy_list':    _tickBuyMenu(); break;
-    case 'buy_qty':     _tickBuyQuantity(newKeys); break;
-    case 'buy_confirm': _tickBuyConfirm(); break;
-    case 'buy_msg':     _tickBuyMessage(newKeys); break;
+    case 'buy_list':           _tickBuyMenu(); break;
+    case 'buy_qty':            _tickBuyQuantity(newKeys); break;
+    case 'buy_confirm':        _tickBuyConfirm(); break;
+    case 'buy_msg':            _tickBuyMessage(); break;
+    case 'buy_after_purchase': _tickAfterItemPurchase(newKeys); break;
   }
 }
 
@@ -784,35 +841,43 @@ function _tickBuyMenu(): void {
   PlaySE(Songs.SE_SELECT);
   sSelectedIndex = sel;
   sSelectedKey = sItemList[sel];
+  // 1:1 shop.c:984 : ClearWindowTilemap(WIN_ITEM_DESCRIPTION) — cache la description (le
+  // message va occuper le bas). Restaurée par _buyReturnToItemList. (Scroll arrows + cursor
+  // gris = non portés, hors des 5 bugs.)
+  if (sDescWindowId >= 0) ClearWindowTilemap(sDescWindowId);
   sTotalCost = GetItemPrice(sSelectedKey);
   if (!IsEnoughMoney(sTotalCost)) {
-    _displayMessage(getString('gText_YouDontHaveMoney') ?? '', _buyReturnToItemList);
+    _displayMessage(getString('gText_YouDontHaveMoney'), _buyReturnToItemList);
     return;
   }
   setStringVar(1, GetItemName(sSelectedKey));
   const tpl = (GetItemPocket(sSelectedKey) === 'POCKET_TM_HM')
-    ? getString('gText_Var1CertainlyHowMany2') ?? '{STR_VAR_1}?'
-    : getString('gText_Var1CertainlyHowMany') ?? '{STR_VAR_1}?';
+    ? getString('gText_Var1CertainlyHowMany2')
+    : getString('gText_Var1CertainlyHowMany');
   StringExpandPlaceholders(gStringVar4, tpl);
-  _displayMessageSticky(gStringVar4);
-  _buyHowManyDialogueInit();
+  // 1:1 shop.c:1009 : BuyMenuDisplayMessage(gText_Var1CertainlyHowMany, Task_BuyHowManyDialogueInit).
+  // Le message s'ANIME ; quand il a fini, la continuation dessine les fenêtres quantité (le
+  // message RESTE = c'est ça la « stickiness », pas un cas spécial).
+  _displayMessage(gStringVar4, _buyHowManyDialogueInit);
 }
 
-// ─── Task_BuyHowManyDialogueInit (1:1 shop.c:1030) ──────────────────────────
+// ─── Task_BuyHowManyDialogueInit (1:1 shop.c:1030) — continuation du message ─
 function _buyHowManyDialogueInit(): void {
   const quantityInBag = GetBagItemQuantity(sSelectedKey);
-  sBagQtyWindowId = _addStdWindow(WIN_QUANTITY_IN_BAG);
+  // 1:1 shop.c:1037 : DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_IN_BAG, FALSE, 1, 13).
+  sBagQtyWindowId = _addBuyStdWindow(WIN_QUANTITY_IN_BAG);
   // 1:1 décomp shop.c:1038 : ConvertIntToDecimalStringN(STR_CONV_MODE_RIGHT_ALIGN,
-  // MAX_ITEM_DIGITS+1=4) → nombre aligné à DROITE avec padding CHAR_SPACER. « SAC:    4 »
-  // (et non « SAC: 2 » collé).
+  // MAX_ITEM_DIGITS+1=4) → nombre aligné à DROITE avec padding CHAR_SPACER. « SAC:    4 ».
   setStringVar(1, String(quantityInBag).padStart(4, CHAR_SPACER_STR));
-  StringExpandPlaceholders(gStringVar4, getString('gText_InBagVar1') ?? 'SAC: {STR_VAR_1}');
+  StringExpandPlaceholders(gStringVar4, getString('gText_InBagVar1'));
   AddTextPrinterParameterized3(sBagQtyWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, gStringVar4);
   sQuantity.value = 1;
-  sPriceQtyWindowId = _addStdWindow(WIN_QUANTITY_PRICE);
+  // 1:1 shop.c:1042 : DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_PRICE, FALSE, 1, 13).
+  sPriceQtyWindowId = _addBuyStdWindow(WIN_QUANTITY_PRICE);
   const unitPrice = GetItemPrice(sSelectedKey);
   sMaxQuantity = Math.min(Math.floor(GetMoney() / unitPrice), MAX_BAG_ITEM_CAPACITY);
   _buyMenuPrintItemQuantityAndPrice();
+  ScheduleBgCopyTilemapToVram(0);  // 1:1 shop.c:1044 : flush les cadres quantité.
   sSubState = 'buy_qty';
 }
 
@@ -840,11 +905,13 @@ function _tickBuyQuantity(newKeys: number): void {
     PlaySE(Songs.SE_SELECT);
     _removeWindow(() => sPriceQtyWindowId, v => (sPriceQtyWindowId = v));
     _removeWindow(() => sBagQtyWindowId, v => (sBagQtyWindowId = v));
+    if (sListWindowId >= 0) PutWindowTilemap(sListWindowId);  // 1:1 shop.c:1074
     setStringVar(1, GetItemName(sSelectedKey));
     setStringVar(2, String(sQuantity.value));
     setStringVar(3, String(sTotalCost));
-    StringExpandPlaceholders(gStringVar4, getString('gText_Var1AndYouWantedVar2') ?? '{STR_VAR_1}? {STR_VAR_2}? {STR_VAR_3}¥');
-    _buyMenuConfirmPurchase(gStringVar4);
+    StringExpandPlaceholders(gStringVar4, getString('gText_Var1AndYouWantedVar2'));
+    // 1:1 shop.c:1078 : BuyMenuDisplayMessage(gText_Var1AndYouWantedVar2, BuyMenuConfirmPurchase).
+    _displayMessage(gStringVar4, _buyMenuConfirmPurchase);
     return;
   }
   if (newKeys & B_BUTTON) {
@@ -855,10 +922,11 @@ function _tickBuyQuantity(newKeys: number): void {
   }
 }
 
-// ─── BuyMenuConfirmPurchase (1:1 shop.c:1092) ───────────────────────────────
-function _buyMenuConfirmPurchase(text: string | Uint8Array): void {
-  _displayMessageSticky(text);
-  CreateYesNoMenu(WIN_YESNO, STD_FRAME_TILE, STD_FRAME_PAL, 0);
+// ─── BuyMenuConfirmPurchase (1:1 shop.c:1092) — continuation du message confirm ─
+function _buyMenuConfirmPurchase(): void {
+  // 1:1 : CreateYesNoMenuWithCallbacks(taskId, &template, 1, 0, 0, 1, 13, funcs) → cadre
+  // yes/no = tile 1, palette 13 (BUY_FRAME). Le message de confirmation reste affiché dessous.
+  CreateYesNoMenu(WIN_YESNO, BUY_FRAME_TILE, BUY_FRAME_PAL, 0);
   sSubState = 'buy_confirm';
 }
 
@@ -870,28 +938,41 @@ function _tickBuyConfirm(): void {
   else _buyReturnToItemList();
 }
 
-// ─── BuyMenuTryMakePurchase (1:1 shop.c:1097) ───────────────────────────────
+// ─── BuyMenuTryMakePurchase (1:1 shop.c:1097) — callback YES du yes/no ───────
 function _buyMenuTryMakePurchase(): void {
+  if (sListWindowId >= 0) PutWindowTilemap(sListWindowId);  // 1:1 shop.c:1101
   if (AddBagItem(sSelectedKey, sQuantity.value)) {
-    _buyMenuSubtractMoney();
-    _displayMessage(getString('gText_HereYouGoThankYou') ?? 'Merci!', _afterItemPurchase);
+    // 1:1 : BuyMenuDisplayMessage(gText_HereYouGoThankYou, BuyMenuSubtractMoney). L'argent est
+    // retiré APRÈS l'impression du « Tenez! Merci infiniment. » (= continuation = SE_SHOP cha-ching).
+    _displayMessage(getString('gText_HereYouGoThankYou'), _buyMenuSubtractMoney);
   } else {
-    _displayMessage(getString('gText_NoMoreRoomForThis') ?? '', _buyReturnToItemList);
+    _displayMessage(getString('gText_NoMoreRoomForThis'), _buyReturnToItemList);
   }
 }
 
-// ─── BuyMenuSubtractMoney (1:1 shop.c:1131) ─────────────────────────────────
+// ─── BuyMenuSubtractMoney (1:1 shop.c:1131) — continuation du « Tenez! » ─────
 function _buyMenuSubtractMoney(): void {
   IncrementGameStat(GAME_STAT_SHOPPED);
   RemoveMoney(sTotalCost);
   PlaySE(Songs.SE_SHOP);
-  ChangeAmountInMoneyBox(GetMoney());
+  // 1:1 shop.c:1136 : PrintMoneyAmountInMoneyBox(WIN_MONEY, GetMoney(...), 0) — SANS
+  // FillWindowPixelBuffer (la décomp n'en met pas). Le champ argent est large fixe (6+¥) et
+  // le text-printer repeint SON fond ; le reste de l'intérieur (blanc, posé par le cadre au
+  // draw initial) reste intact. Un FillWindowPixelBuffer(0) ici rendait transparent (invisible)
+  // le côté de la box non couvert par les chiffres (régression repérée à la MaJ de l'argent).
+  PrintMoneyAmountInMoneyBox(sMoneyWindowId, GetMoney(), 0);
+  CopyWindowToVram(sMoneyWindowId, 2 /* COPYWIN_GFX */);
+  // 1:1 : gTasks[taskId].func = Task_ReturnToItemListAfterItemPurchase (attend A/B).
+  sSubState = 'buy_after_purchase';
 }
 
 // ─── Task_ReturnToItemListAfterItemPurchase (1:1 shop.c:1144) ───────────────
-function _afterItemPurchase(): void {
+function _tickAfterItemPurchase(newKeys: number): void {
+  if (!(newKeys & (A_BUTTON | B_BUTTON))) return;
+  PlaySE(Songs.SE_SELECT);
+  // 1:1 : acheter 10+ Poké Balls → Premier Ball offerte.
   if (sSelectedKey === 'ITEM_POKE_BALL' && sQuantity.value >= 10 && AddBagItem('ITEM_PREMIER_BALL', 1)) {
-    _displayMessage(getString('gText_ThrowInPremierBall') ?? '', _buyReturnToItemList);
+    _displayMessage(getString('gText_ThrowInPremierBall'), _buyReturnToItemList);
   } else {
     _buyReturnToItemList();
   }
@@ -927,11 +1008,11 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (rt.gPaletteFade.active) return;
-  // Cleanup buy menu windows + list + icône + label ARGENT.
+  // Cleanup buy menu windows + list + icône + label ARGENT + money box (WIN_MONEY).
   if (sListTaskId >= 0) { DestroyListMenuTask(sListTaskId); sListTaskId = -1; }
   _removeBuyMenuItemIcon();
   _removeMoneyLabelObject();
-  HideMoneyBox();
+  _removeWindow(() => sMoneyWindowId, v => (sMoneyWindowId = v));
   _removeWindow(() => sListWindowId, v => (sListWindowId = v));
   _removeWindow(() => sDescWindowId, v => (sDescWindowId = v));
   _removeWindow(() => sBagQtyWindowId, v => (sBagQtyWindowId = v));
@@ -939,23 +1020,47 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   _clearMessage();
   if (sBuyTaskId >= 0) { DestroyTask(sBuyTaskId); sBuyTaskId = -1; }
   // 1:1 décomp : gFieldCallback = MapPostLoadHook_ReturnToShopMenu ;
-  // SetMainCallback2(CB2_ReturnToField). Reconstruit l'OW puis re-montre le
-  // menu shop (overlay). sShopOpen reste true → le script reste bloqué.
+  // SetMainCallback2(CB2_ReturnToField). Reconstruit l'OW puis (via 'reopen_msg')
+  // affiche « Je peux faire quelque chose d'autre ? » AVANT de re-montrer le menu shop.
+  // sShopOpen reste true → le script reste bloqué.
   (globalThis as Record<string, unknown>).gFieldCallback = () => {
-    _createShopMenu(sMartType);
+    sReopenMsgShown = false;
+    sSubState = 'reopen_msg';
   };
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
 
-// ─── BuyMenuDisplayMessage tick (attend A/B → continuation) ─────────────────
-function _tickBuyMessage(newKeys: number): void {
-  if (newKeys & (A_BUTTON | B_BUTTON)) {
-    PlaySE(Songs.SE_SELECT);
-    const cont = sPendingMsgCont;
-    sPendingMsgCont = null;
-    if (cont) cont();
+// ─── Task_ReturnToShopMenu (1:1 shop.c:468) — après retour au terrain ───────
+// 1:1 : DisplayItemMessageOnField(gText_AnythingElseICanHelp, ShowShopMenuAfterExitingBuyOrSellMenu).
+// Le « bug 5 » (dialogue de sortie manquant) = ce message qui était sauté ; on l'affiche
+// via la field message box (= fenêtre 0, le vrai DisplayItemMessageOnField), PUIS on re-crée
+// le menu Acheter/Vendre/Quitter quand le texte a fini de s'imprimer (il reste visible).
+function _tickReopenShopMenu(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (rt.gPaletteFade.active) return;  // ≈ IsWeatherNotFadingIn (attend le fade-in OW)
+  if (!sReopenMsgShown) {
+    if (ShowFieldMessage(encodeOwText(getString('gText_AnythingElseICanHelp')))) {
+      sReopenMsgShown = true;
+    }
+    return;
   }
+  if (!IsFieldMessageBoxHidden()) return;  // attend la fin de l'impression
+  sReopenMsgShown = false;
+  _createShopMenu(sMartType);
+}
+
+// ─── BuyMenuDisplayMessage tick (1:1 Task_ContinueTaskAfterMessagePrints) ────
+function _tickBuyMessage(): void {
+  // 1:1 menu.c : RunTextPrinters chaque frame ; quand le printer du WIN_MESSAGE a fini,
+  // la continuation est appelée (PAS d'attente A/B — l'accélération A/B est gérée DANS
+  // RunTextPrinters via canABSpeedUpPrint). C'est ça qui ANIME le texte (≠ instantané).
+  RunTextPrinters();
+  if (IsTextPrinterActive(sMessageWindowId)) return;
+  const cont = sPendingMsgCont;
+  sPendingMsgCont = null;
+  if (cont) cont();
 }
 
 // ─── Exposition dev (sonde déterministe) ─────────────────────────────────────
