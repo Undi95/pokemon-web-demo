@@ -369,10 +369,9 @@ function _initSummaryStrings(): void {
   gText_EggNickname = getString('gText_EggNickname');
   gText_FiveMarks = getString('gText_FiveMarks');
   gText_EggWillTakeALongTime = getString('gText_EggWillTakeALongTime');
-  // 1:1 décomp strings.c:517 (gText_HMMovesCantBeForgotten2). Fallback = texte FR
-  // décomp littéral si l'extracteur ne fournit pas le label.
-  gText_HMMovesCantBeForgotten2 = getString('gText_HMMovesCantBeForgotten2')
-    || "Impossible d'oublier les\ncapacités CS maintenant.";
+  // 1:1 décomp strings.c:517. gText_HMMovesCantBeForgotten2 est dans strings.json
+  // (texte identique) → getString direct, plus de fallback FR inline.
+  gText_HMMovesCantBeForgotten2 = getString('gText_HMMovesCantBeForgotten2');
   gText_EggWillTakeSomeTime = getString('gText_EggWillTakeSomeTime');
   gText_EggWillHatchSoon = getString('gText_EggWillHatchSoon');
   gText_EggAboutToHatch = getString('gText_EggAboutToHatch');
