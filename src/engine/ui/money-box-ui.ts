@@ -11,7 +11,7 @@
  *   Affiche une fenêtre money/coins en haut de l'écran pendant les transactions
  *   shop / casino. Fenêtre 10x2 tiles, palette 12 (= std menu), frame border.
  *
- *   Money box : "ARGENT 123456" avec label ₽ (= sprite) + frame border.
+ *   Money box : "ARGENT 123456¥" avec label (= sprite) + frame border.
  *   Coins box : "PIÈCES 1234" sans sprite label.
  *
  *   Notre port : utilise AddWindow + DrawStdFrameWithCustomTileAndPalette +
@@ -23,7 +23,7 @@ import {
   CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
 } from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { AddTextPrinterParameterized3, CHAR_SPACER_STR } from './gba-text-system';
 // 1:1 décomp `gSaveBlock1Ptr->money/coins` (= struct SaveBlock1 fields). Foundation
 // `save-block-state` permet l'import direct (= élimine pattern globalThis non-1:1).
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -85,14 +85,16 @@ export function ChangeAmountInMoneyBox(amount: number): void {
   CopyWindowToVram(_moneyBoxWindowId, 2 /* COPYWIN_GFX */);
 }
 
-/** 1:1 décomp `PrintMoneyAmount(windowId, x, y, amount, speed)` (money.c:88).
- *  Format "<amount>₽" right-aligned. */
+/** 1:1 décomp `PrintMoneyAmount(windowId, x, y, amount, speed)` (money.c:138) :
+ *  ConvertIntToDecimalStringN(LEFT_ALIGN, 6) → pad `CHAR_SPACER` à gauche (champ 6
+ *  large = alignement à droite) → StringExpandPlaceholders(gText_PokedollarVar1 =
+ *  "{STR_VAR_1}¥"). Le symbole monnaie est **¥** (charmap décomp, = même glyphe que
+ *  shop.ts/trainer_card), PAS `₽` (Unicode non mappé par notre font → signe invisible). */
 function _printAmountInMoneyBox(amount: number): void {
   if (_moneyBoxWindowId < 0) return;
-  // Décomp utilise ConvertIntToDecimalStringN(STR_CONV_MODE_LEFT_ALIGN, 6) +
-  // StringExpandPlaceholders(text, gText_PokedollarVar1).
-  // Notre version : direct format avec ₽ caractère.
-  const text = `${amount}₽`;
+  const numStr = String(amount >>> 0);
+  const pad = Math.max(0, 6 - numStr.length);
+  const text = CHAR_SPACER_STR.repeat(pad) + numStr + '¥';
   AddTextPrinterParameterized3(
     _moneyBoxWindowId, FONT_NORMAL, 38, 1, COLOR_BG_FG_SHADOW, 0, text,
   );
