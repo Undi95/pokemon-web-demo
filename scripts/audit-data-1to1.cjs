@@ -25,7 +25,7 @@ const ORACLES = [
   'audit-experience-tables.cjs', 'audit-pokedex-orders.cjs', 'audit-pokedex-entries.cjs',
   'audit-pokedex-text.cjs',
   // — Combat —
-  'audit-move-data.cjs', 'audit-type-chart.cjs', 'audit-item-data.cjs',
+  'audit-move-data.cjs', 'audit-type-chart.cjs', 'audit-item-data.cjs', 'audit-move-effect-scripts.cjs',
   'audit-item-effects-bytes.cjs', 'audit-contest-moves.cjs',
   // — Dresseurs —
   'audit-trainer-parties.cjs', 'audit-trainer-meta.cjs',
