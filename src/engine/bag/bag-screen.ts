@@ -2571,7 +2571,7 @@ function _itemContextDeposit(itemKey: string): void {
   // "× 01" mais pas le prompt + qty ne s'affichait pas correctement.
   const itemName = getItemNameFr(itemKey);
   setStringVar(1, itemName);
-  const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
+  const tpl = getString('gText_DepositHowManyVar1');
   StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
   _printDescription(gStringVar4);
   // Open qty window (= 1:1 AddItemQuantityWindow).
@@ -2710,7 +2710,7 @@ async function _tryDepositItem(): Promise<void> {
     const itemName = getItemNameFr(_depositItemKey);
     setStringVar(1, itemName);
     setStringVar(2, String(_depositQtySelected));
-    const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
+    const tpl = getString('gText_DepositedVar2Var1s');
     StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
     _printDescription(gStringVar4);
     _phase = 'itempc_deposit_msg';
