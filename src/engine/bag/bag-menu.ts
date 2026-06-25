@@ -55,6 +55,7 @@ import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDec
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar } from '../system/string-buffers';
 import { gStringVar4 } from '../ui/gba-text-system';
+import { getString } from '../ui/gba-strings';
 import { encodeOwText } from '../../../include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
@@ -780,13 +781,10 @@ const gBagMenu_ReturnToStrings: Record<number, string> = {
 //  construit 1:1 ; le rendu pixel fin = concern BagMenu_Print (porté plus tard).
 const gText_CloseBag = 'FERMER LE SAC';
 const gText_NumberItem_HM = '{CLEAR_TO 17}{STR_VAR_1}{CLEAR 5}{STR_VAR_2}';
-// 1:1 strings.json :gText_Var1IsSelected → affiché dans WIN_DESCRIPTION pendant
-// le ctx menu (= remplace la description normale tant que le menu UTILIS./
-// DONNER/JETER/RETOUR est ouvert) ; item_menu.c:1664.
-const gText_Var1IsSelected = '{STR_VAR_1} est\nsélectionné.';
-// 1:1 strings.json :gText_MoveVar1Where → affiché dans WIN_DESCRIPTION pendant
-// le mode swap SELECT (= "Où voulez-vous placer X ?") ; item_menu.c:1449.
-const gText_MoveVar1Where = 'Où voulez-vous\nplacer\n{STR_VAR_1}?';
+// gText_Var1IsSelected (ctx menu, item_menu.c:1664) + gText_MoveVar1Where (swap
+// SELECT, item_menu.c:1449) : tirés de getString() AU POINT D'USAGE — la map
+// `strings` est peuplée async au boot (initStringsFromDecomp), donc un const inline
+// au module-load serait soit vide soit une copie hardcodée (cf. sonde). Pas de const.
 const gText_NumberItem_TMBerry = '{NO}{STR_VAR_1}{CLEAR 7}{STR_VAR_2}';
 const gText_xVar1 = '×{STR_VAR_1}';
 
@@ -1555,7 +1553,7 @@ function StartItemSwap(task: DecompTask): void {
   // 1:1 :1448-1451 message "Où voulez-vous placer X ?"
   const itemId = BagGetItemIdByPocketPosition(pocket + 1, pos);
   setStringVar(1, GetItemName(itemId));
-  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_MoveVar1Where));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_MoveVar1Where')));
   const msg = gStringVar4;
   const wid = _win(WIN_DESCRIPTION);
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
@@ -1867,7 +1865,7 @@ function Task_CloseBagMenu(task: DecompTask): void {
  *  pour bag-menu-ctx (évite cycle d'import). */
 export function _CtxPrintItemSelected(itemId: number): void {
   setStringVar(1, GetItemName(itemId));
-  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_Var1IsSelected));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_Var1IsSelected')));
   const msg = gStringVar4;
   const wid = _win(WIN_DESCRIPTION);
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
