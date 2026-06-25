@@ -40,10 +40,17 @@ for (const field of mainGroup.fields) {
   out.encounter_rates[field.type] = field.encounter_rates;
 }
 
-// Index par mapId
+// Index par mapId. 1:1 décomp GetCurrentMapWildMonHeaderId (wild_encounter.c:305) :
+// le lookup renvoie le PREMIER header matchant la map (+ offset VAR_ALTERING_CAVE_WILD_SET,
+// défaut 0). Seule MAP_ALTERING_CAVE a plusieurs entrées (9 tables e-Reader) ; le défaut
+// = la 1re (gAlteringCave1 = Zubat). On garde donc la PREMIÈRE entrée par map (PAS la
+// dernière — l'ancien code écrasait → Smeargle au lieu de Zubat).
+const seenMaps = new Set();
 for (const enc of mainGroup.encounters) {
   const mapId = enc.map;
-  if (!out.byMap[mapId]) out.byMap[mapId] = {};
+  if (seenMaps.has(mapId)) continue;
+  seenMaps.add(mapId);
+  out.byMap[mapId] = {};
   for (const fieldType of ['land_mons', 'water_mons', 'rock_smash_mons', 'fishing_mons']) {
     if (!enc[fieldType]) continue;
     const key = fieldType.replace('_mons', '');
