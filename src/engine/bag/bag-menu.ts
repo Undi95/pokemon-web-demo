@@ -115,7 +115,7 @@ import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../../../include/gb
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../ui/option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
-import { Task_ItemContext_Normal } from './bag-menu-ctx';
+import { Task_ItemContext_Normal, Task_ItemContext_Sell } from './bag-menu-ctx';
 import { gSpecialVar } from '../script/script-vars';
 import { RemoveBagItem } from './bag';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
@@ -537,6 +537,17 @@ export function CB2_ChooseBerry(): void {
 /** 1:1 décomp `ChooseBerryForMachine` (item_menu.c:583). */
 export function ChooseBerryForMachine(exitCallback: MainCallback): void {
   GoToBagMenu(ITEMMENULOCATION_BERRY_BLENDER_CRUSH, BERRIES_POCKET, exitCallback);
+}
+
+// SHOP (vente) : l'exitCallback décomp `CB2_ExitSellMenu` vit dans shop.c → le
+// shop l'enregistre ici (idiome "exitCallbacks externes" ci-dessous), ce qui
+// évite le cycle ESM statique shop↔bag (sinon TDZ).
+let _cb2ExitSellMenu: MainCallback = null;
+export function _setSellMenuExitCallback(cb: MainCallback): void { _cb2ExitSellMenu = cb; }
+/** 1:1 décomp `CB2_GoToSellMenu` (item_menu.c:588) :
+ *    GoToBagMenu(ITEMMENULOCATION_SHOP, POCKETS_COUNT, CB2_ExitSellMenu). */
+export function CB2_GoToSellMenu(): void {
+  GoToBagMenu(ITEMMENULOCATION_SHOP, POCKETS_COUNT, _cb2ExitSellMenu);
 }
 
 // exitCallbacks externes — résolus au câblage étape 9 (placeholders honnêtes
@@ -1911,6 +1922,29 @@ export function _CtxReturnToListWithRebuild(taskId: number): void {
   _CtxReturnToList(taskId);
 }
 
+/** Rebuild de la liste affichée APRÈS une vente, SANS restaurer la description
+ *  (≠ `_CtxReturnToListWithRebuild`) : le message "Cédé X contre Y" doit rester
+ *  visible jusqu'au A/B de WaitAfterItemSell. 1:1 décomp `SellItem` (item_menu.c:2174)
+ *  corps liste : DestroyListMenuTask + UpdatePocketItemList + UpdatePocketListPosition
+ *  + LoadBagItemListBuffers + ListMenuInit + BagMenu_PrintCursor(GRAY). */
+export function _CtxRebuildListKeepMessage(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const task = rt.gTasks[taskId];
+  if (!task) return;
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  UpdatePocketItemList(gBagPosition.pocket);
+  UpdatePocketListPosition(gBagPosition.pocket);
+  LoadBagItemListBuffers(gBagPosition.pocket);
+  task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
+    gBagPosition.scrollPosition[gBagPosition.pocket],
+    gBagPosition.cursorPosition[gBagPosition.pocket],
+  );
+  BagMenu_PrintCursor(task.data[T_LIST_TASK_ID], COLORID_GRAY_CURSOR);
+}
+
 /** 1:1 décomp `ReturnToItemList` (item_menu.c:1284) + restore section de
  *  `ItemMenu_Cancel` (:1985-1994). Appelé par bag-menu-ctx après un
  *  cancel/use pour remettre le sac dans l'état "navigation liste" :
@@ -2005,6 +2039,10 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
       // pour le retour cancel vers la liste).
       if (gBagPosition.location === ITEMMENULOCATION_BERRY_TREE) {
         task.func = Task_FadeAndCloseBagMenu;
+      } else if (gBagPosition.location === ITEMMENULOCATION_SHOP) {
+        // 1:1 sContextMenuFuncs[ITEMMENULOCATION_SHOP] = Task_ItemContext_Sell
+        // (item_menu.c:348) — A sur un item en mode vente VEND (pas de menu Use/Give/Toss).
+        SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Sell, Task_BagMenu_HandleInput);
       } else {
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
       }

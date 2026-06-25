@@ -32,11 +32,16 @@
  * un follow-up.
  */
 import { BeginNormalPaletteFade } from '../../palette';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString, setStringVar } from '../system/string-buffers';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage, _CtxPrintQuantityInWindow } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRebuildListKeepMessage, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage, _CtxPrintQuantityInWindow } from './bag-menu';
+import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmount, PrintMoneyAmountInMoneyBox } from '../ui/money-box-ui';
+import { AddMoney, GetMoney, AddMoneyLabelObject, RemoveMoneyLabelObject } from '../../money';
 import { RemoveBagItem, UpdatePocketItemList } from './bag';
-import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput } from '../../menu_helpers';
+import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput, DisplayMessageAndContinueTask } from '../../menu_helpers';
+import { GetPlayerTextSpeedDelay, ClearDialogWindowAndFrameToTransparent } from '../../menu';
+import { StringExpandPlaceholders } from '../../string_util';
+import { encodeOwText } from '../../../include/text';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
@@ -69,10 +74,10 @@ import {
 } from '../ui/gba-window-system';
 import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/decomp-globals';
 import {
-  AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
+  AddTextPrinterParameterized4, AddTextPrinterParameterized, FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW, gStringVar4,
 } from '../ui/gba-text-system';
 
-import { GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId } from '../../item';
+import { GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId, GetItemPrice } from '../../item';
 // ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe
 // fishing (text/window/wild_encounter…) dans la chaîne d'éval de bag-menu-ctx → cycle ESM + TDZ
 // (BG_SCREEN_SIZE dans gba-global-scope). player-avatar est déjà chargé par l'overworld au moment où
@@ -92,7 +97,7 @@ import { ENUM_ITEMWIN_1 } from '../../../include/item_menu';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
 } from '../../../include/gba/io_reg';
-import { SE_SELECT } from '../../../include/constants/songs';
+import { SE_SELECT, SE_SHOP } from '../../../include/constants/songs';
 import { PlaySE } from '../../../harness/runtime/decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────
@@ -102,11 +107,14 @@ const ITEMWIN_1x1: number = ENUM_ITEMWIN_1.ITEMWIN_1x1;       // 0
 const ITEMWIN_1x2: number = ENUM_ITEMWIN_1.ITEMWIN_1x2;       // 1
 const ITEMWIN_2x2: number = ENUM_ITEMWIN_1.ITEMWIN_2x2;       // 2
 const ITEMWIN_2x3: number = ENUM_ITEMWIN_1.ITEMWIN_2x3;       // 3
-const ITEMWIN_YESNO_LOW: number = ENUM_ITEMWIN_1.ITEMWIN_YESNO_LOW;  // 5 (toss confirm)
-const ITEMWIN_QUANTITY: number = ENUM_ITEMWIN_1.ITEMWIN_QUANTITY;    // 7 (toss/deposit count)
+const ITEMWIN_MESSAGE: number = ENUM_ITEMWIN_1.ITEMWIN_MESSAGE;       // 4 (vraie message box encadrée)
+const ITEMWIN_YESNO_LOW: number = ENUM_ITEMWIN_1.ITEMWIN_YESNO_LOW;   // 5 (toss confirm)
+const ITEMWIN_YESNO_HIGH: number = ENUM_ITEMWIN_1.ITEMWIN_YESNO_HIGH; // 6 (sell confirm, au-dessus du message)
+const ITEMWIN_QUANTITY: number = ENUM_ITEMWIN_1.ITEMWIN_QUANTITY;     // 7 (toss/deposit count)
+const ITEMWIN_QUANTITY_WIDE: number = ENUM_ITEMWIN_1.ITEMWIN_QUANTITY_WIDE; // 8 (sell : count + prix)
+const ITEMWIN_MONEY: number = ENUM_ITEMWIN_1.ITEMWIN_MONEY;          // 9 (sell : argent courant)
 // task.data 1:1 décomp item_menu.c:662-666 (tQuantity=data[2], tItemCount=data[8]).
 const T_QUANTITY = 2, T_ITEM_COUNT = 8;
-const BAG_ITEM_CAPACITY_DIGITS = 3;
 // taskId courant du flow toss : les yes/no funcs (zéro-arg, comme shop) le réutilisent.
 let _tossTaskId = -1;
 const WINDOW_NONE = 0xFF;
@@ -132,6 +140,9 @@ const ACTION_DUMMY = 14;
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
 } from '../../../include/constants/item';
+// 1:1 décomp include/constants/items.h : digits du compteur d'objets (99 max = 2,
+// baies 999 = 3). Canonique partagé — PAS un const local (l'ancien `= 3` était faux).
+import { BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../../../include/constants/items';
 
 // 1:1 décomp item_menu.h — ITEMMENULOCATION_* (pas extrait decomp-data, hardcode 1:1 justifié).
 const ITEMMENULOCATION_FIELD = 0;
@@ -183,6 +194,8 @@ const sContextMenuWindowTemplates: WindowTemplate[] = [
   /* ITEMWIN_YESNO_LOW  (5) */ { bg: 1, tilemapLeft: 24, tilemapTop: 15, width: 5, height: 4, paletteNum: 15, baseBlock: 0x21D },
   /* ITEMWIN_YESNO_HIGH (6) */ { bg: 1, tilemapLeft: 21, tilemapTop:  9, width: 5, height: 4, paletteNum: 15, baseBlock: 0x21D },
   /* ITEMWIN_QUANTITY   (7) */ { bg: 1, tilemapLeft: 24, tilemapTop: 17, width: 5, height: 2, paletteNum: 15, baseBlock: 0x21D },
+  /* ITEMWIN_QUANTITY_WIDE (8) — sell : count + prix */ { bg: 1, tilemapLeft: 18, tilemapTop: 11, width: 10, height: 2, paletteNum: 15, baseBlock: 0x245 },
+  /* ITEMWIN_MONEY     (9) — sell : argent courant */ { bg: 1, tilemapLeft: 1, tilemapTop: 1, width: 10, height: 2, paletteNum: 15, baseBlock: 0x231 },
 ];
 
 // ─── Helpers BagMenu_AddWindow / BagMenu_RemoveWindow (1:1 item_menu.c:2486) ──
@@ -935,6 +948,194 @@ function CancelTossYesNo(): void {
 
 /** 1:1 décomp `sYesNoTossFunctions` (item_menu.c:359) = {ConfirmToss, CancelToss}. */
 const sYesNoTossFunctions = { yesFunc: ConfirmToss, noFunc: CancelTossYesNo };
+
+// ─── Vraie message box du sac (item_menu.c) — ITEMWIN_MESSAGE encadrée ────────
+
+/** 1:1 décomp `AddItemMessageWindow(windowType)` (item_menu.c:2511) : ajoute
+ *  (idempotent) la fenêtre ; le cadre dialogue est tracé par DisplayMessageAndContinueTask. */
+function AddItemMessageWindow(windowType: number): number {
+  if (!gBagMenu) return 0;
+  if (gBagMenu.windowIds[windowType] === WINDOW_NONE)
+    gBagMenu.windowIds[windowType] = AddWindow(sContextMenuWindowTemplates[windowType]);
+  return gBagMenu.windowIds[windowType];
+}
+
+/** 1:1 décomp `RemoveItemMessageWindow(windowType)` (item_menu.c:2519). */
+function RemoveItemMessageWindow(windowType: number): void {
+  if (!gBagMenu) return;
+  const wid = gBagMenu.windowIds[windowType];
+  if (wid === WINDOW_NONE) return;
+  ClearDialogWindowAndFrameToTransparent(wid, false);
+  ClearWindowTilemap(wid);
+  RemoveWindow(wid);
+  ScheduleBgCopyTilemapToVram(1);
+  gBagMenu.windowIds[windowType] = WINDOW_NONE;
+}
+
+/** 1:1 décomp `DisplayItemMessage(taskId, fontId, str, callback)` (item_menu.c:1165) :
+ *  vraie fenêtre message ENCADRÉE (ITEMWIN_MESSAGE) + message ANIMÉ + callback à la
+ *  fin d'impression (DisplayMessageAndContinueTask, tile=10 pal=13). */
+function DisplayItemMessage(taskId: number, fontId: number, str: string | Uint8Array, callback: (task: DecompTask) => void): void {
+  const wid = AddItemMessageWindow(ITEMWIN_MESSAGE);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(1));
+  DisplayMessageAndContinueTask(taskId, wid, 10, 13, fontId, GetPlayerTextSpeedDelay(), str, callback);
+  ScheduleBgCopyTilemapToVram(1);
+}
+
+/** 1:1 décomp `CloseItemMessage(taskId)` (item_menu.c:1175) : retire la fenêtre
+ *  message + reconstruit la liste + retour navigation. */
+function CloseItemMessage(task: DecompTask): void {
+  RemoveItemMessageWindow(ITEMWIN_MESSAGE);
+  _CtxReturnToListWithRebuild(task.taskId);
+}
+
+/** Affiche un gText EXTRAIT (strings.json) dans la message box, après expansion 1:1
+ *  des placeholders {STR_VAR_n} (posés via setStringVar) — le `¥` vient du string. */
+function _displaySellText(taskId: number, gTextKey: string, callback: (task: DecompTask) => void): void {
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString(gTextKey)));
+  DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, callback);
+}
+
+// ─── Flux VENTE (item_menu.c:2078-2201) — chaîne baton + money window ─────────
+let _sellTaskId = -1;
+
+/** 1:1 décomp `DisplayCurrentMoneyWindow` (item_menu.c) :
+ *    BagMenu_AddWindow(ITEMWIN_MONEY) ; PrintMoneyAmountInMoneyBoxWithBorder(win, 1, 14, money) ;
+ *    AddMoneyLabelObject(24, 11) //!< French Difference (label "ARGENT", money.c:187). */
+function DisplayCurrentMoneyWindow(): void {
+  const wid = BagMenu_AddWindow(ITEMWIN_MONEY);
+  PrintMoneyAmountInMoneyBoxWithBorder(wid, 1, 14, GetMoney());
+  AddMoneyLabelObject(24, 11);
+}
+
+/** 1:1 décomp `RemoveMoneyWindow` (item_menu.c) : BagMenu_RemoveWindow(ITEMWIN_MONEY)
+ *  + RemoveMoneyLabelObject. */
+function RemoveMoneyWindow(): void {
+  BagMenu_RemoveWindow(ITEMWIN_MONEY);
+  RemoveMoneyLabelObject();
+}
+
+/** 1:1 décomp `PrintItemSoldAmount` (item_menu.c) : "×N" (LEADING_ZEROS) à gauche +
+ *  montant gagné à droite (PrintMoneyAmount à x=38). */
+function PrintItemSoldAmount(windowId: number, numSold: number, moneyEarned: number): void {
+  const numDigits = gBagPosition.pocket === BERRIES_POCKET ? BERRY_CAPACITY_DIGITS : BAG_ITEM_CAPACITY_DIGITS;
+  FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+  AddTextPrinterParameterized(windowId, FONT_NORMAL, '×' + String(numSold).padStart(numDigits, '0'), 0, 1, TEXT_SKIP_DRAW, null);
+  PrintMoneyAmount(windowId, 38, 1, moneyEarned, 0);
+  CopyWindowToVram(windowId, 2 /* COPYWIN_GFX */);
+}
+
+/** Prix de revente = GetItemPrice(item) / 2 × count (1:1 décomp, division entière). */
+function _sellValue(itemId: number, count: number): number {
+  return Math.floor(GetItemPrice(itemId) / 2) * count;
+}
+
+/** 1:1 décomp `Task_ItemContext_Sell` (item_menu.c:2078). */
+export function Task_ItemContext_Sell(task: DecompTask): void {
+  const itemId = gSpecialVar.ItemId;
+  if (GetItemPrice(itemId) === 0) {
+    // 1:1 :2082 — prix 0 = objet rare/clé invendable : gText_CantBuyKeyItem.
+    setStringVar(2, GetItemName(itemId));
+    _displaySellText(task.taskId, 'gText_CantBuyKeyItem', CloseItemMessage);
+    return;
+  }
+  task.data[T_ITEM_COUNT] = 1;
+  if (task.data[T_QUANTITY] === 1) {
+    // 1:1 :2093-2094.
+    DisplayCurrentMoneyWindow();
+    DisplaySellItemPriceAndConfirm(task);
+  } else {
+    // 1:1 :2098-2100 : gText_HowManyToSell → callback InitSellHowManyInput.
+    setStringVar(2, GetItemName(itemId));
+    _displaySellText(task.taskId, 'gText_HowManyToSell', InitSellHowManyInput);
+  }
+}
+
+/** 1:1 décomp `InitSellHowManyInput` (item_menu.c:2129). */
+function InitSellHowManyInput(task: DecompTask): void {
+  const wid = BagMenu_AddWindow(ITEMWIN_QUANTITY_WIDE);
+  PrintItemSoldAmount(wid, 1, _sellValue(gSpecialVar.ItemId, task.data[T_ITEM_COUNT]));
+  DisplayCurrentMoneyWindow();
+  task.func = Task_ChooseHowManyToSell;
+}
+
+/** 1:1 décomp `Task_ChooseHowManyToSell` (item_menu.c:2139). */
+function Task_ChooseHowManyToSell(task: DecompTask): void {
+  const ref = { value: task.data[T_ITEM_COUNT] };
+  if (AdjustQuantityAccordingToDPadInput(ref, task.data[T_QUANTITY])) {
+    task.data[T_ITEM_COUNT] = ref.value;
+    PrintItemSoldAmount(gBagMenu!.windowIds[ITEMWIN_QUANTITY_WIDE], ref.value, _sellValue(gSpecialVar.ItemId, ref.value));
+  } else if (JOY_NEW(A_BUTTON)) {
+    PlaySE(SE_SELECT);
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY_WIDE);
+    DisplaySellItemPriceAndConfirm(task);
+  } else if (JOY_NEW(B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    RemoveMoneyWindow();
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY_WIDE);
+    RemoveItemMessageWindow(ITEMWIN_MESSAGE);
+    _CtxReturnToList(task.taskId);
+  }
+}
+
+/** 1:1 décomp `DisplaySellItemPriceAndConfirm` (item_menu.c:2105) :
+ *  gText_ICanPayVar1 = "Je peux vous en donner {STR_VAR_1}¥.\nÇa vous va?". */
+function DisplaySellItemPriceAndConfirm(task: DecompTask): void {
+  setStringVar(1, String(_sellValue(gSpecialVar.ItemId, task.data[T_ITEM_COUNT])));
+  _displaySellText(task.taskId, 'gText_ICanPayVar1', AskSellItems);
+}
+
+/** 1:1 décomp `AskSellItems` (item_menu.c:2114) : BagMenu_YesNo(ITEMWIN_YESNO_HIGH). */
+function AskSellItems(task: DecompTask): void {
+  _sellTaskId = task.taskId;
+  CreateYesNoMenuWithCallbacks(task.taskId, sContextMenuWindowTemplates[ITEMWIN_YESNO_HIGH], 1, 0, 2, 1, 14, sYesNoSellItemFunctions);
+}
+
+/** 1:1 décomp `ConfirmSell` (item_menu.c:2164) : gText_TurnedOverVar1ForVar2 =
+ *  "Obtenu {STR_VAR_1}¥\npour cette vente." → callback SellItem (fin du message). */
+function ConfirmSell(): void {
+  const rt = getRuntime();
+  const task = rt?.gTasks[_sellTaskId];
+  if (!task) return;
+  setStringVar(1, String(_sellValue(gSpecialVar.ItemId, task.data[T_ITEM_COUNT])));
+  _displaySellText(task.taskId, 'gText_TurnedOverVar1ForVar2', SellItem);
+}
+
+/** 1:1 décomp `CancelSell` (item_menu.c:2119) : RemoveMoneyWindow + retire la
+ *  message box + retour liste. */
+function CancelSell(): void {
+  const rt = getRuntime();
+  const task = rt?.gTasks[_sellTaskId];
+  if (!task) return;
+  RemoveMoneyWindow();
+  RemoveItemMessageWindow(ITEMWIN_MESSAGE);
+  _CtxReturnToList(task.taskId);
+}
+
+/** 1:1 décomp `sYesNoSellItemFunctions` (item_menu.c:361) = {ConfirmSell, CancelSell}. */
+const sYesNoSellItemFunctions = { yesFunc: ConfirmSell, noFunc: CancelSell };
+
+/** 1:1 décomp `SellItem` (item_menu.c:2174) : SE_SHOP + RemoveBagItem + AddMoney +
+ *  rebuild liste + maj money box, puis WaitAfterItemSell. Le message "Obtenu X¥"
+ *  reste dans ITEMWIN_MESSAGE (fenêtre encadrée séparée), non touché par le rebuild. */
+function SellItem(task: DecompTask): void {
+  PlaySE(SE_SHOP);
+  const value = _sellValue(gSpecialVar.ItemId, task.data[T_ITEM_COUNT]);
+  RemoveBagItem(getItemKeyById(gSpecialVar.ItemId), task.data[T_ITEM_COUNT]);
+  AddMoney(value);
+  _CtxRebuildListKeepMessage(task.taskId);
+  PrintMoneyAmountInMoneyBox(gBagMenu!.windowIds[ITEMWIN_MONEY], GetMoney(), 0);
+  task.func = WaitAfterItemSell;
+}
+
+/** 1:1 décomp `WaitAfterItemSell` (item_menu.c:2193) : A/B → RemoveMoneyWindow + CloseItemMessage. */
+function WaitAfterItemSell(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON | B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    RemoveMoneyWindow();
+    CloseItemMessage(task);
+  }
+}
 
 /** 1:1 décomp `ItemMenu_Register(u8 taskId)` (item_menu.c:1916-1931) :
  *      if (gSaveBlock1Ptr->registeredItem == gSpecialVar_ItemId)

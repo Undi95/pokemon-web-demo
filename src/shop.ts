@@ -64,7 +64,8 @@ import {
 } from './list_menu';
 import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './item';
 import { AddBagItem, CountTotalItemQuantityInBag } from './engine/bag/bag';
-import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
+import { CB2_GoToSellMenu, _setSellMenuExitCallback } from './engine/bag/bag-menu';
+import { GetMoney, IsEnoughMoney, RemoveMoney, AddMoneyLabelObject, RemoveMoneyLabelObject, PreloadMoneyLabelAsset } from './money';
 import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './engine/ui/money-box-ui';
 import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
@@ -155,8 +156,6 @@ const MAX_BAG_ITEM_CAPACITY = 99;
 const MART_TYPE_NORMAL = 0;
 // 1:1 décomp shop.c:43 `#define TAG_ITEM_ICON_BASE 2110`.
 const TAG_ITEM_ICON = 2110;
-// Tag du label ARGENT (money.png) — distinct de l'icône d'objet.
-const TAG_MONEY_LABEL = 2120;
 
 // ─── Window templates ────────────────────────────────────────────────────────
 // Menu Acheter/Vendre/Quitter (overlay) — 1:1 sShopMenuWindowTemplates, width 8.
@@ -193,6 +192,7 @@ const WIN_YESNO: WindowTemplate = {
 type ShopSubState =
   | 'shop_menu'          // Task_ShopMenu (overlay)
   | 'buy_goto'           // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
+  | 'sell_goto'          // Task_GoToBuyOrSellMenu côté vente (fade → CB2_GoToSellMenu)
   | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
   | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
   | 'buy_after_purchase' // Task_ReturnToItemListAfterItemPurchase (attend A/B)
@@ -225,11 +225,9 @@ let sMaxQuantity = 0;
 // Assets cadre gShopMenu (chargés une fois).
 interface ShopAssets {
   frameTiles: Uint8Array; frameTilemap: Uint16Array; framePal: Uint16Array;
-  moneyTiles: Uint8Array; moneyPal: Uint16Array;  // label « ARGENT » (money.png)
 }
 let sAssets: ShopAssets | null = null;
 let sAssetsLoading = false;
-let sMoneyLabelSpriteId = -1;           // 1:1 décomp money.c sMoneyLabelSpriteId
 
 // ─── BG layout du buy screen (1:1 sShopBuyMenuBgTemplates) ──────────────────
 // BG0 char2 map31 prio0 (fenêtres) ; BG1 char0 map30 prio1 (cadre gShopMenu) ;
@@ -324,6 +322,7 @@ export function TickShop(): void {
   switch (sSubState) {
     case 'shop_menu':  _tickShopMenu(); break;
     case 'buy_goto':   _tickGoToBuyMenu(); break;
+    case 'sell_goto':  _tickGoToSellMenu(); break;
     case 'reopen_msg': _tickReopenShopMenu(); break;
   }
 }
@@ -387,15 +386,43 @@ function _tickGoToBuyMenu(): void {
   rt.SetMainCallback2(CB2_InitBuyMenu);
 }
 
-// ─── Task_HandleShopMenuSell (1:1 shop.c:425) → déféré ──────────────────────
+// ─── Task_HandleShopMenuSell (1:1 shop.c:425) → fade puis CB2 swap vers le sac ─
 function _handleShopMenuSell(): void {
-  // CB2_GoToSellMenu (item_menu.c) non porté. Report honnête : on réutilise le flux overlay
-  // 'reopen_msg' (= DisplayItemMessageOnField(gText_AnythingElseICanHelp) + re-création du
-  // menu Acheter/Vendre/Quitter) — le mécanisme de message overlay correct (≠ témoin buy-menu).
   _removeWindow(() => sShopMenuWindowId, v => (sShopMenuWindowId = v));
-  sReopenMsgShown = false;
-  sSubState = 'reopen_msg';
+  // 1:1 décomp : tCallbackHi/Lo = CB2_GoToSellMenu ; func = Task_GoToBuyOrSellMenu ;
+  // FadeScreen(FADE_TO_BLACK, 0).
+  FadeScreen(FADE_TO_BLACK, 0);
+  sSubState = 'sell_goto';
 }
+
+// ─── Task_GoToBuyOrSellMenu côté vente (1:1 shop.c:452) ─────────────────────
+function _tickGoToSellMenu(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (rt.gPaletteFade.active) return;
+  // 1:1 décomp : SetMainCallback2(CB2_GoToSellMenu) → GoToBagMenu(ITEMMENULOCATION_SHOP,
+  // POCKETS_COUNT, CB2_ExitSellMenu). Le sac prend l'écran en mode vente.
+  rt.gMain.state = 0;
+  rt.SetMainCallback2(CB2_GoToSellMenu);
+}
+
+// ─── CB2_ExitSellMenu (1:1 shop.c:434) — retour OW + re-montre le menu shop ──
+/** 1:1 décomp `CB2_ExitSellMenu` :
+ *    gFieldCallback = MapPostLoadHook_ReturnToShopMenu ; SetMainCallback2(CB2_ReturnToField).
+ *  Identique au tail de `Task_ExitBuyMenu` : reconstruit l'OW puis 'reopen_msg' affiche
+ *  « Autre chose ? » avant de re-montrer le menu Acheter/Vendre/Quitter. */
+export function CB2_ExitSellMenu(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  (globalThis as Record<string, unknown>).gFieldCallback = () => {
+    sReopenMsgShown = false;
+    sSubState = 'reopen_msg';
+  };
+  rt.gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
+}
+// Enregistre l'exitCallback côté bag (le sac ne peut pas importer shop = cycle ESM).
+_setSellMenuExitCallback(CB2_ExitSellMenu);
 
 // ─── Task_HandleShopMenuQuit (1:1 shop.c:440) ───────────────────────────────
 function _handleShopMenuQuit(): void {
@@ -418,17 +445,15 @@ async function _loadShopAssets(): Promise<void> {
   if (sAssets || sAssetsLoading) return;
   sAssetsLoading = true;
   try {
-    const [frameTiles, frameTilemap, framePal, moneyTiles, moneyPal] = await Promise.all([
+    const [frameTiles, frameTilemap, framePal] = await Promise.all([
       loadTileBin('/decomp/em/shop/menu.png', 4),
       loadTilemapBin('/decomp/em/shop/menu.bin'),
       extractPngPlte('/decomp/em/shop/menu.png'),
-      loadTileBin('/decomp/em/shop/money.png', 4),
-      extractPngPlte('/decomp/em/shop/money.png'),
     ]);
     sAssets = {
       frameTiles, frameTilemap, framePal: framePal ?? new Uint16Array(16),
-      moneyTiles, moneyPal: moneyPal ?? new Uint16Array(16),
     };
+    void PreloadMoneyLabelAsset(); // label ARGENT (money.ts) — précharge money.png pour shop+sac
     console.log(`[shop] cadre gShopMenu chargé (${frameTiles.length}o tiles, ${frameTilemap.length} entrées)`);
   } catch (e) {
     console.error('[shop] échec chargement cadre gShopMenu:', e);
@@ -662,7 +687,7 @@ function _buyMenuInitWindows(): void {
 function _buyMenuDrawGraphics(): void {
   _buyMenuDrawMapBg();          // 1:1 BuyMenuDrawMapGraphics : la carte derrière le menu
   _buyMenuCopyMenuBgToBg1();    // 1:1 BuyMenuCopyMenuBgToBg1TilemapBuffer : cadre par-dessus
-  _addMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11) (French diff)
+  AddMoneyLabelObject(24, 11);  // 1:1 shop.c:773 AddMoneyLabelObject(24, 11) (French diff) — money.ts
   // 1:1 shop.c:774 : PrintMoneyAmountInMoneyBoxWithBorder(WIN_MONEY, 1, 13, GetMoney(...)).
   FillWindowPixelBuffer(sMoneyWindowId, 0x00);
   PrintMoneyAmountInMoneyBoxWithBorder(sMoneyWindowId, BUY_FRAME_TILE, BUY_FRAME_PAL, GetMoney());
@@ -673,45 +698,7 @@ function _buyMenuDrawGraphics(): void {
   ScheduleBgCopyTilemapToVram(3);
 }
 
-/** 1:1 décomp `AddMoneyLabelObject(x, y)` (money.c) : sprite du label ARGENT
- *  (money.png 32×16, shape WIDE size 2) à (x, y), priority 0. Charge le sheet +
- *  palette via le substrat sprite dynamique (= AddItemIconSprite). */
-function _addMoneyLabelObject(x: number, y: number): void {
-  _removeMoneyLabelObject();
-  if (!sAssets) return;
-  const tilesKey = `__shopMoneyTiles_${TAG_MONEY_LABEL}`;
-  const palKey = `__shopMoneyPal_${TAG_MONEY_LABEL}`;
-  assetCache.set(tilesKey, sAssets.moneyTiles);
-  assetCache.set(palKey, sAssets.moneyPal);
-  LoadCompressedSpriteSheet({ data: tilesKey, size: sAssets.moneyTiles.length, tag: TAG_MONEY_LABEL });
-  LoadSpritePalette({ data: palKey, tag: TAG_MONEY_LABEL });
-  const tileStartRaw = GetSpriteTileStartByTag(TAG_MONEY_LABEL);
-  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
-  const palBankRaw = IndexOfSpritePaletteTag(TAG_MONEY_LABEL);
-  const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
-  const rt = getRuntime() as unknown as {
-    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    gSprites?: Array<{ oamIndex: number } | undefined>;
-    gba?: { oam?: Array<{ priority: number }> };
-  } | null;
-  if (!rt) return;
-  // sOamData_MoneyLabel : shape H_RECTANGLE(1) size 2 = 32×16, 4bpp.
-  const { spriteId } = rt.CreateSpriteAtOam({
-    tileId: tileStart, paletteBank: palBank, x, y, shape: 1, size: 2, priority: 0, subpriority: 0,
-  });
-  sMoneyLabelSpriteId = spriteId;
-  const spr = rt.gSprites?.[spriteId];
-  if (spr) { const o = rt.gba?.oam?.[spr.oamIndex]; if (o) o.priority = 0; }
-}
-
-/** 1:1 décomp `RemoveMoneyLabelObject` (money.c). */
-function _removeMoneyLabelObject(): void {
-  if (sMoneyLabelSpriteId < 0) return;
-  FreeSpriteTilesByTag(TAG_MONEY_LABEL);
-  FreeSpritePaletteByTag(TAG_MONEY_LABEL);
-  DestroySprite(sMoneyLabelSpriteId);
-  sMoneyLabelSpriteId = -1;
-}
+// AddMoneyLabelObject / RemoveMoneyLabelObject = portés 1:1 dans money.ts (= money.c).
 
 // ─── BuyMenuBuildListMenuTemplate (1:1 shop.c:556) ──────────────────────────
 function _buildBuyList(): void {
@@ -999,7 +986,7 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   // Cleanup buy menu windows + list + icône + label ARGENT + money box (WIN_MONEY).
   if (sListTaskId >= 0) { DestroyListMenuTask(sListTaskId); sListTaskId = -1; }
   _removeBuyMenuItemIcon();
-  _removeMoneyLabelObject();
+  RemoveMoneyLabelObject();
   _removeWindow(() => sMoneyWindowId, v => (sMoneyWindowId = v));
   _removeWindow(() => sListWindowId, v => (sListWindowId = v));
   _removeWindow(() => sDescWindowId, v => (sDescWindowId = v));
@@ -1046,6 +1033,7 @@ function _tickReopenShopMenu(): void {
   _g.__GetMartItemList = GetMartItemList;
   _g.__InitMartLists = InitMartLists;
   _g.__shopState = () => ({ open: sShopOpen, sub: sSubState, count: sItemCount, sel: sSelectedKey, qty: sQuantity.value, cost: sTotalCost });
+  _g.__OpenPokemart = OpenPokemart; // hook debug (= __shopState) : ouvrir un Mart au runtime pour tester achat/vente
 }
 
 // 1:1 net-effect : précharge la table dès l'import (= boot via scrcmd.ts).
