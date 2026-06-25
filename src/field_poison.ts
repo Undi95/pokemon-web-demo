@@ -43,6 +43,7 @@ import { ScriptContext_Stop, ScriptContext_Enable } from './script';
 import { VarSet } from './engine/script/script-vars';
 import { gStringVar1, StringCopy } from './string_util';
 import { encodeOwText } from './text';
+import { getString } from './engine/ui/gba-strings';
 
 // ─── Constantes 1:1 décomp ───────────────────────────────────────────────────
 
@@ -53,10 +54,8 @@ const FRIENDSHIP_EVENT_FAINT_FIELD_PSN = 7;
 const FLDPSN_NO_WHITEOUT = 0;
 const FLDPSN_WHITEOUT = 1;
 
-/** 1:1 décomp `gText_PkmnFainted_FldPsn` (strings.c:1190, build FR) :
- *  `"{STR_VAR_1} est K.O…\p\n"`. Le `\p`/`\n` sont gérés par l'encodeur charmap
- *  (encodeStringForFont via encodeOwText) ; `{STR_VAR_1}` → placeholder surnom. */
-const gText_PkmnFainted_FldPsn = '{STR_VAR_1} est K.O…\\p\\n';
+// gText_PkmnFainted_FldPsn (strings.c:1190) « {STR_VAR_1} est K.O…\p\n » : tiré de
+// getString() au point d'usage (anti-hardcode ; la map strings est peuplée async au boot).
 
 // ─── Helpers 1:1 décomp ──────────────────────────────────────────────────────
 
@@ -115,7 +114,7 @@ function Task_TryFieldPoisonWhiteOut(task: DecompTask): void {
       for (; data[1] /* tPartyIdx */ < PARTY_SIZE; data[1]++) {
         if (MonFaintedFromPoison(data[1])) {
           FaintFromFieldPoison(data[1]);
-          ShowFieldMessage(encodeOwText(gText_PkmnFainted_FldPsn));
+          ShowFieldMessage(encodeOwText(getString('gText_PkmnFainted_FldPsn')));
           data[0]++;
           return;
         }
