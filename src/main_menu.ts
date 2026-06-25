@@ -461,7 +461,7 @@ export function MainMenu_FormatSavegameText(): void {
   if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
     const dexCount = _countCaughtPokedexFlags(FlagGet);
     const dexStr = String(dexCount);
-    AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'POKéDEX');
+    AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, getString('gText_ContinueMenuPokedex'));
     AddTextPrinterParameterized3(
       WIN_CONTINUE, FONT_NORMAL,
       GetStringRightAlignXOffset(dexStr, 100), 33,

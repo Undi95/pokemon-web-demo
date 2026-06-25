@@ -407,7 +407,7 @@ function _drawCardFront(): void {
   AddTextPrinterParameterized3(_wid, FONT_NORMAL, moneyX, 57, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, moneyStr);
   // POKéDEX + count à (16, 73), value right-align x=128 (si dex enabled).
   if (d.hasDex) {
-    const dexLabel = getString('gText_TrainerCardPokedex') || 'POKéDEX';
+    const dexLabel = getString('gText_TrainerCardPokedex');
     AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 73, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, dexLabel);
     const dexStr = String(d.caughtMonsCount);
     const dexX = GetStringRightAlignXOffset(dexStr, 128);
