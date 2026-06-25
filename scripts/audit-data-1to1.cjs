@@ -31,6 +31,8 @@ const ORACLES = [
   // — Monde —
   'audit-wild-encounters.cjs', 'audit-mart-lists.cjs', 'audit-item-balls.cjs',
   'audit-heal-locations.cjs',
+  // — Tables TS hand-codées —
+  'audit-battle-stat-tables.cjs',
 ];
 
 const results = [];
