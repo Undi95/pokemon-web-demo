@@ -654,7 +654,7 @@ function SetupBagMenu(): boolean {
       rt.gMain.state++; break;
     case 13:
       // 1:1 décomp :823-825 : setup initial = un seul nom rendu (= name1).
-      PrintPocketNames(gPocketNamesStringsTable[gBagPosition.pocket] ?? '', null);
+      PrintPocketNames(_pocketName(gBagPosition.pocket), null);
       CopyPocketNameToWindow(0);
       DrawPocketIndicatorSquare(gBagPosition.pocket, true);
       rt.gMain.state++; break;
@@ -751,25 +751,22 @@ const sFontColorTable: readonly (readonly [number, number, number])[] = [
 // 1:1 décomp strings.c:252-256 (FR) + table gBagMenu_ReturnToStrings
 // (strings.c:258-272) indexée par ITEMMENULOCATION_* + gText_ReturnToVar1
 // (strings.c:282) — branche CANCEL de PrintItemDescription.
-const gText_TheField = 'au jeu';
-const gText_TheBattle = 'au combat';
-const gText_ThePokemonList = 'à la LISTE POKéMON';
-const gText_TheShop = 'au magasin';
-const gText_ThePC = 'au PC';
-const gText_ReturnToVar1 = 'Retourner\n{STR_VAR_1}.';
-const gBagMenu_ReturnToStrings: Record<number, string> = {
-  [ITEMMENULOCATION_FIELD]: gText_TheField,
-  [ITEMMENULOCATION_BATTLE]: gText_TheBattle,
-  [ITEMMENULOCATION_PARTY]: gText_ThePokemonList,
-  [ITEMMENULOCATION_SHOP]: gText_TheShop,
-  [ITEMMENULOCATION_BERRY_TREE]: gText_TheField,
-  [ITEMMENULOCATION_BERRY_BLENDER_CRUSH]: gText_TheField,
-  [ITEMMENULOCATION_ITEMPC]: gText_ThePC,
-  [ITEMMENULOCATION_FAVOR_LADY]: gText_TheField,
-  [ITEMMENULOCATION_QUIZ_LADY]: gText_TheField,
-  [ITEMMENULOCATION_APPRENTICE]: gText_TheField,
-  [ITEMMENULOCATION_WALLY]: gText_TheBattle,
-  [ITEMMENULOCATION_PCBOX]: gText_ThePC,
+// Valeurs = CLÉS gText (pas le texte FR) → getString() au point d'usage (la map
+// `strings` est peuplée async au boot). Mapping 1:1 décomp gBagMenu_ReturnToStrings
+// (strings.c:258-272). gText_ReturnToVar1 (strings.c:282) idem au runtime.
+const gBagMenu_ReturnToStringKeys: Record<number, string> = {
+  [ITEMMENULOCATION_FIELD]: 'gText_TheField',
+  [ITEMMENULOCATION_BATTLE]: 'gText_TheBattle',
+  [ITEMMENULOCATION_PARTY]: 'gText_ThePokemonList',
+  [ITEMMENULOCATION_SHOP]: 'gText_TheShop',
+  [ITEMMENULOCATION_BERRY_TREE]: 'gText_TheField',
+  [ITEMMENULOCATION_BERRY_BLENDER_CRUSH]: 'gText_TheField',
+  [ITEMMENULOCATION_ITEMPC]: 'gText_ThePC',
+  [ITEMMENULOCATION_FAVOR_LADY]: 'gText_TheField',
+  [ITEMMENULOCATION_QUIZ_LADY]: 'gText_TheField',
+  [ITEMMENULOCATION_APPRENTICE]: 'gText_TheField',
+  [ITEMMENULOCATION_WALLY]: 'gText_TheBattle',
+  [ITEMMENULOCATION_PCBOX]: 'gText_ThePC',
 };
 
 // 1:1 décomp strings FR `src/strings.c` (valeurs byte-identiques) :
@@ -961,8 +958,8 @@ function PrintItemDescription(itemIndex: number): void {
     str = GetItemDescription(BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex));
   } else {
     // Print 'Cancel' description
-    setStringVar(1, gBagMenu_ReturnToStrings[gBagPosition.location]);
-    StringExpandPlaceholders(gStringVar4, encodeOwText(gText_ReturnToVar1));
+    setStringVar(1, getString(gBagMenu_ReturnToStringKeys[gBagPosition.location] ?? 'gText_TheField'));
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_ReturnToVar1')));
     str = gStringVar4;
   }
   FillWindowPixelBuffer(_win(WIN_DESCRIPTION), PIXEL_FILL(0));
@@ -1156,13 +1153,19 @@ function LoadBagItemListBuffers(pocketId: number): void {
 // poche (valeurs byte-identiques au décomp FR). Table de texte 1:1 (même
 // pattern que gText_CloseBag/gBagMenu_ReturnToStrings ci-dessus : strings-data
 // auto n'expose que les NOMS de symboles, pas le texte FR → port 1:1 cité).
-const gPocketNamesStringsTable: readonly string[] = [
-  'OBJETS',      // [ITEMS_POCKET]    strings.c:283 gText_ItemsPocket
-  'POKé BALLS',  // [BALLS_POCKET]    strings.c:284 gText_PokeBallsPocket
-  'CT & CS',     // [TMHM_POCKET]     strings.c:285 gText_TMHMPocket
-  'BAIES',       // [BERRIES_POCKET]  strings.c:286 gText_BerriesPocket
-  'OBJ. RARES',  // [KEYITEMS_POCKET] strings.c:287 gText_KeyItemsPocket
+// Valeurs = CLÉS gText → getString() au runtime (cf. _pocketName, anti-hardcode).
+// Ordre indexé par pocket (1:1 décomp gPocketNamesStringsTable, strings.c:283-287).
+const gPocketNamesStringKeys: readonly string[] = [
+  'gText_ItemsPocket',     // [ITEMS_POCKET]
+  'gText_PokeBallsPocket', // [BALLS_POCKET]
+  'gText_TMHMPocket',      // [TMHM_POCKET]
+  'gText_BerriesPocket',   // [BERRIES_POCKET]
+  'gText_KeyItemsPocket',  // [KEYITEMS_POCKET]
 ];
+/** Nom FR de la poche, tiré de strings.json au runtime (anti-hardcode). */
+function _pocketName(pocket: number): string {
+  return getString(gPocketNamesStringKeys[pocket] ?? 'gText_ItemsPocket');
+}
 
 // 1:1 décomp `RGB_BLACK` (include/constants/rgb.h) = 0.
 const RGB_BLACK = 0;
@@ -1736,14 +1739,14 @@ function SwitchBagPocket(taskId: number, deltaBagPocketId: number, skipEraseList
   // :1343-1352 deux noms côte-à-côte + slide initial selon direction.
   if (deltaBagPocketId === MENU_CURSOR_DELTA_RIGHT) {
     PrintPocketNames(
-      gPocketNamesStringsTable[gBagPosition.pocket] ?? '',
-      gPocketNamesStringsTable[newPocket] ?? '',
+      _pocketName(gBagPosition.pocket),
+      _pocketName(newPocket),
     );
     CopyPocketNameToWindow(0); // commence à gauche, slide vers droite
   } else {
     PrintPocketNames(
-      gPocketNamesStringsTable[newPocket] ?? '',
-      gPocketNamesStringsTable[gBagPosition.pocket] ?? '',
+      _pocketName(newPocket),
+      _pocketName(gBagPosition.pocket),
     );
     CopyPocketNameToWindow(8); // commence à droite, slide vers gauche
   }
