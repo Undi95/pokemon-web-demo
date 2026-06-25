@@ -37,7 +37,7 @@ import {
   PutWindowTilemap, CopyWindowToVram, ClearWindowTilemap,
   BlitBitmapToWindow,
   DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame,
-  RemoveWindow, ShowBg, HideBg,
+  RemoveWindow, ShowBg, HideBg, ResetVramOamAndBgCntRegs,
   GetWindowAttribute, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP,
   WINDOW_WIDTH, WINDOW_HEIGHT,
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
@@ -450,21 +450,8 @@ async function _loadAssets(): Promise<PartyAssets> {
 /** 1:1 décomp `InitBgs` party_menu.c:715. */
 function _initPartyBgs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  rt.SetGpuReg(0x00, 0);  // DISPCNT
-  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0;
-    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) {
-    rt.gPlttBufferUnfaded.set(i, 0);
-    rt.gPlttBufferFaded.set(i, 0);
-  }
-  // Direct PLTT clear (bypass bufferTransferDisabled).
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  ResetVramOamAndBgCntRegs();
   // 1:1 décomp BG templates (= party_menu.h:1).
   const bg0c = rt.gba.bg(0).config;
   bg0c.charBaseIndex = PARTY_TILES_CHAR_BASE; bg0c.mapBaseIndex = PARTY_WIN_MAP_BASE;
