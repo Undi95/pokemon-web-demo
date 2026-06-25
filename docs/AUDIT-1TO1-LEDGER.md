@@ -64,7 +64,7 @@
 | Item | Statut | Note |
 |---|---|---|
 | `gCamera` (fieldmap.ts **vs** field_camera.ts = 2 objets) | ✅ | `field_camera` importe+ré-exporte celui de fieldmap (foyer décomp fieldmap.c:30) = 1 store ; corrige désync field_tasks. Vérifié multi-cartes. |
-| `gTrainerBattleOpponent_B` (battle_setup.ts:92 **vs** engine/battle/state.ts:743) | ⬜ | unifier |
+| `gTrainerBattleOpponent_B` (battle_setup.ts:92 **vs** engine/battle/state.ts:743) | ✅ | `1e2f1538` — store unique state.ts ; battle_setup propage via `setTrainerBattleOpponentB` (= schéma _A) + getter live `__battleState`. Corrige désync : moteur lisait 0 (2e équipe/argent/AI/nom dresseur B en double 2-adv.). Vérifié déterministe Maxie/Tabitha (A=734, B=514, indép.). |
 | 2 sous-systèmes sprites object-event (overworld INLINE vs menu) | ⬜ | chantier archi (cf. graphics-1to1-verifier) |
 
 ## H. HORS-SCOPE (explicite — PAS de la dette à corriger)
@@ -78,3 +78,4 @@
 
 ## Journal (paliers vérifiés)
 - 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message (`773e5eb6`) · câblage messages shop + dédup, vérifié multi-contextes shop/start-menu/Littleroot/combat (`2cd0f8b5`) · dédup gCamera (bucket G), 1 seul store, vérifié Littleroot/Route101/warp.
+- 2026-06-25 (suite) — dédup `gTrainerBattleOpponent_B` (bucket G, `1e2f1538`) : 2 `let` → store unique state.ts, battle_setup propage (schéma _A) + getter live `__battleState`. **Vrai bug corrigé** : le moteur combat lisait toujours 0 (state.ts jamais écrit) → 2e équipe / argent / AI flags / nom dresseur B cassés en double 2-adversaires. Vérif déterministe en jeu (opcode `trainerbattle` SET_TRAINER_A/B, Maxie=734 / Tabitha=514, propagation indépendante, zéro contamination) ; tsc=0 ; cold boot 0 erreur.
