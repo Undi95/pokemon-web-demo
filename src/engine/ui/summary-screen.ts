@@ -2416,10 +2416,10 @@ function _positionStatusSlidingWindow(visibleColumns: number, speed: number): vo
   } else {
     const rt = getRuntime();
     if (!rt) return;
-    if (_slideStatusTaskId < 0 || !rt.gTasks.get(_slideStatusTaskId)) {
+    if (_slideStatusTaskId < 0 || !rt.gTasks[_slideStatusTaskId]?.isActive) {
       _slideStatusTaskId = rt.CreateTask(_taskSlideStatusWindow, 8);
     }
-    const t = rt.gTasks.get(_slideStatusTaskId);
+    const t = rt.gTasks[_slideStatusTaskId];
     if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }  // tScrollingSpeed / tVisibleColumns
   }
 }
@@ -2492,10 +2492,10 @@ function _positionPowerAccSlidingWindow(visibleColumns: number, speed: number): 
   } else {
     const rt = getRuntime();
     if (!rt) return;
-    if (_slidePowerAccTaskId < 0 || !rt.gTasks.get(_slidePowerAccTaskId)) {
+    if (_slidePowerAccTaskId < 0 || !rt.gTasks[_slidePowerAccTaskId]?.isActive) {
       _slidePowerAccTaskId = rt.CreateTask(_taskSlidePowerAccWindow, 8);
     }
-    const t = rt.gTasks.get(_slidePowerAccTaskId);
+    const t = rt.gTasks[_slidePowerAccTaskId];
     if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }
   }
 }
@@ -2535,10 +2535,10 @@ function _positionAppealJamSlidingWindow(visibleColumns: number, speed: number, 
   } else {
     const rt = getRuntime();
     if (!rt) return;
-    if (_slideAppealJamTaskId < 0 || !rt.gTasks.get(_slideAppealJamTaskId)) {
+    if (_slideAppealJamTaskId < 0 || !rt.gTasks[_slideAppealJamTaskId]?.isActive) {
       _slideAppealJamTaskId = rt.CreateTask(_taskSlideAppealJamWindow, 8);
     }
-    const t = rt.gTasks.get(_slideAppealJamTaskId);
+    const t = rt.gTasks[_slideAppealJamTaskId];
     // décomp tMove = data[2] : move (id u16) ; on garde le move courant côté
     // module pour le redraw des cœurs au terme du slide.
     if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }

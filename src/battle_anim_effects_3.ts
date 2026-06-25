@@ -2535,8 +2535,8 @@ function MoveOdorSleuthClone(sprite: { data: number[]; x2: number; invisible?: b
         sprite.data[2] = 0;
         sprite.data[5] -= 2;
         if (sprite.data[5] < 0) {
-          const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-          const t = rt?.gTasks?.get(sprite.data[6]);
+          const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+          const t = rt?.gTasks?.[sprite.data[6]];
           if (t) t.data[sprite.data[7]]--;
           _osDestroy(sprite);
         }
@@ -2843,8 +2843,8 @@ function AnimFacadeSweatDrop(sprite: { data: number[]; x: number; y: number }): 
   sprite.x += sprite.data[1];
   sprite.y += sprite.data[2];
   if (++sprite.data[0] > 6) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[3]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[]; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.[sprite.data[3]];
     if (t) t.data[sprite.data[4]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
@@ -2981,8 +2981,8 @@ function GetGlareEyeDotCoords(sx: number, sy: number, ex: number, ey: number, pa
 }
 function AnimGlareEyeDot(sprite: { data: number[] }): void {
   if (++sprite.data[0] > 36) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[3]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[]; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.[sprite.data[3]];
     if (t) t.data[sprite.data[4]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
@@ -3484,8 +3484,8 @@ function TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
 /** 1:1 TormentAttacker_Callback : destroy à la fin du pop (vie 24f ≈ anim 2). */
 function _TormentBubble_Pop(sprite: { data: number[]; animEnded?: boolean }): void {
   if (sprite.animEnded || ++sprite.data[7] > 24) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[0]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[]; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.[sprite.data[0]];
     if (t) t.data[sprite.data[1]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
@@ -3790,9 +3790,9 @@ function AnimTask_RolePlaySilhouette(task: _E3Task): void {
     void mons?.CreateAdditionalMonSpriteForMoveAnim?.(species, isBackPic, 0, coord1 + xOffset, coord2, 5, 0, 0, tgt)
       .then((sid) => {
         // anti-orphelin : la task porteuse du jeton vit-elle encore ?
-        const rt0 = _grt() as unknown as { gTasks?: Map<number, { func?: unknown; data?: number[] }>; DestroySprite?: (i: number) => void };
+        const rt0 = _grt() as unknown as { gTasks?: { func?: unknown; data?: number[] }[]; DestroySprite?: (i: number) => void };
         let alive = false;
-        for (const [, t0] of rt0.gTasks ?? []) {
+        for (const t0 of rt0.gTasks ?? []) {
           if (t0.func === AnimTask_RolePlaySilhouette && ((t0.data?.[14] ?? 0) | 0) === token) { alive = true; break; }
         }
         if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(sid); return; }
@@ -4104,7 +4104,7 @@ _e3RegTasks({ AnimTask_MonToSubstitute: AnimTask_MonToSubstitute as never });
 function _fbItf(): { getArgs?: () => number[]; getAttacker?: () => number } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-function _fbRt(): { gSprites?: Array<{ x2: number; y2: number } | undefined>; gTasks?: Map<number, unknown>; DestroyTask?: (i: number) => void } {
+function _fbRt(): { gSprites?: Array<{ x2: number; y2: number } | undefined>; gTasks?: unknown[]; DestroyTask?: (i: number) => void } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 
@@ -4317,9 +4317,9 @@ function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; 
         void mons?.CreateAdditionalMonSpriteForMoveAnim?.(species, isBackPic, 0, startX, _e3Coord(itf.getTarget?.() ?? 0, 1 /* BATTLER_COORD_Y */), subpriority, personality, otId, atk)
           .then((sid) => {
             // anti-orphelin (pattern F77) : la task porteuse du jeton vit-elle encore ?
-            const rt0 = _fbRt() as unknown as { gTasks?: Map<number, { func?: unknown; data?: number[] }>; DestroySprite?: (i: number) => void };
+            const rt0 = _fbRt() as unknown as { gTasks?: { func?: unknown; data?: number[] }[]; DestroySprite?: (i: number) => void };
             let alive = false;
-            for (const [, t0] of rt0.gTasks ?? []) {
+            for (const t0 of rt0.gTasks ?? []) {
               if (t0.func === AnimTask_SnatchOpposingMonMove && ((t0.data?.[13] ?? 0) | 0) === token) { alive = true; break; }
             }
             if (!alive) { if ((sid ?? -1) >= 0) DestroySprite(sid); return; }

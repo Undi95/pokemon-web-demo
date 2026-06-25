@@ -212,7 +212,7 @@ function _ResetSpriteData(): void {
 }
 function _ResetTasks(): void {
   const r = getRuntime();
-  r?.gTasks?.clear();
+  r?.ResetTasks();
 }
 
 /** 1:1 décomp `DrawBattleEntryBackground()`. */

@@ -257,7 +257,7 @@ function Task_HandleTruckSequence(task: DecompTask): void {
     case 3:
       // 1:1 décomp : `if (!gTasks[tTaskId2].isActive)` = task destroyed (Task_Truck3
       // self-destroyed en fin de table).
-      if (!rt.gTasks.has(data[3])) {
+      if (!rt.gTasks[data[3]].isActive) {
         InstallCameraPanAheadCallback();
         data[1] = 0;
         data[0] = 4;

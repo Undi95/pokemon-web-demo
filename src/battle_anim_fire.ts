@@ -573,7 +573,7 @@ function _erItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: nu
 type _ErSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean; centerToCornerVecY?: number };
 function _erRt(): {
   gSprites?: Array<_ErSprite | undefined>;
-  gTasks?: Map<number, { data: number[] }>;
+  gTasks?: { data: number[] }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
@@ -719,7 +719,7 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
         rock.data[6] = taskId;          // sTaskId
         rock.data[7] = activeSpritesIdx; // sActiveSpritesIdx
         rock.callback = _AnimEruptionLaunchRock as never;
-        const t = rt.gTasks?.get(taskId);
+        const t = rt.gTasks?.[taskId];
         if (t) t.data[activeSpritesIdx]++;
       }
     }
@@ -757,7 +757,7 @@ function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
   }
   if (sprite.invisible) {
     const rt = _erRt();
-    const t = rt.gTasks?.get(sprite.data[6]);
+    const t = rt.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];

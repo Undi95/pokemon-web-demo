@@ -650,9 +650,9 @@ function AnimTask_PositionFissureBgOnBattler(task: { taskId: number }): void {
   const itf = _pfItf();
   const args = itf.getArgs?.() ?? [1, 1, -1];
   const battler = (args[0] & 1) ? (itf.getTarget?.() ?? 1) : (itf.getAttacker?.() ?? 0);
-  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (f: unknown, p: number) => number; gTasks?: Map<number, { data: number[] }> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (f: unknown, p: number) => number; gTasks?: { data: number[] }[] } | undefined;
   const newId = rt?.CreateTask?.((tk: { taskId: number; data: number[] }) => _WaitForFissureCompletion(tk), args[1] | 0) ?? -1;
-  const newTask = newId >= 0 ? rt?.gTasks?.get(newId) : undefined;
+  const newTask = newId >= 0 ? rt?.gTasks?.[newId] : undefined;
   if (newTask) {
     newTask.data[1] = (32 - GetBattlerSpriteCoord(battler, 2)) & 0x1FF;
     newTask.data[2] = (64 - GetBattlerSpriteCoord(battler, 3)) & 0xFF;

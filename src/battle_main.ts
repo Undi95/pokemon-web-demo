@@ -695,7 +695,7 @@ function _LoadBattleTextboxAndBackground(env: number): void {
 /** 1:1 décomp `ResetSpriteData()` (sprite.c:294). */
 function _ResetSpriteData(): void { _ResetSpriteDataImpl(); }
 /** 1:1 décomp `ResetTasks()`. */
-function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
+function _ResetTasks(): void { getRuntime()?.ResetTasks(); }
 /** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c). */
 function _FreeAllSpritePalettes(): void { FreeAllSpritePalettes(); }
 // SetWildMonHeldItem : porté 1:1 dans party-storage (pokemon.c equiv) ; ex-stub no-op retiré.

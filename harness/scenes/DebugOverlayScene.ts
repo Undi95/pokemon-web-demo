@@ -193,7 +193,7 @@ export class DebugOverlayScene extends Phaser.Scene {
         ? ` !GLITCH@F${glitch.f} dBV${(glitch.dBV ?? 0) >= 0 ? '+' : ''}${glitch.dBV ?? 0} dPY${(glitch.dPY ?? 0) >= 0 ? '+' : ''}${glitch.dPY ?? 0}`
         : '';
       this.statusText.setText(
-        `frame:${rt.gIntroFrameCounter} tasks:${rt.gTasks.size} sprites:${rt.gSprites.filter(Boolean).length} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}${camLine}${glitchLine}`,
+        `frame:${rt.gIntroFrameCounter} tasks:${rt.GetTaskCount()} sprites:${rt.gSprites.filter(Boolean).length} fps:${Math.round(this.game.loop.actualFps)}${frozen}${noclip}${camLine}${glitchLine}`,
       );
     } catch {
       this.statusText.setText(`fps:${Math.round(this.game.loop.actualFps)}`);

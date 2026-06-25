@@ -184,7 +184,7 @@ function renderLive(): void {
     .__phaserGame?.loop?.actualFps;
   const tags = `${r.paused ? ' ⏸PAUSE' : ''}${g().__devNoclip ? ' NOCLIP' : ''}`;
   live.textContent =
-    `f:${r.gIntroFrameCounter} tasks:${r.gTasks.size} spr:${r.gSprites.filter(Boolean).length}`
+    `f:${r.gIntroFrameCounter} tasks:${r.GetTaskCount()} spr:${r.gSprites.filter(Boolean).length}`
     + ` fps:${fps != null ? Math.round(fps) : '?'}${tags}`;
   // bouton pause reflète l'état
   const pb = document.querySelector('[data-fc="pause"]');

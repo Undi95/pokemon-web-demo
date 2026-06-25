@@ -1811,7 +1811,7 @@ function StartPageSwapAnim(): void {
   const taskId = rt.CreateTask((t) => Task_HandlePageSwapAnim(t), 0);
   sNamingScreen.pageSwapTaskId = taskId;
   // 1:1 décomp:818 : Task_HandlePageSwapAnim(taskId) called immediately
-  const t = rt.gTasks.get(taskId);
+  const t = rt.gTasks[taskId];
   if (t) Task_HandlePageSwapAnim(t);
 }
 
@@ -1902,7 +1902,7 @@ function CreateButtonFlashTask(): void {
   if (!rt) return;
   const taskId = rt.CreateTask((t) => Task_UpdateButtonFlash(t), 3);
   sNamingScreen.buttonFlashTaskId = taskId;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) task.data[0] = BUTTON_COUNT;  // tButtonId = sentinel
 }
 
@@ -1912,7 +1912,7 @@ function TryStartButtonFlash(button: number, keepFlashing: boolean, interruptCur
   if (!rt) return;
   const taskId = sNamingScreen.buttonFlashTaskId;
   if (taskId < 0) return;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return;
 
   if (button === task.data[0] && !interruptCurFlash) {
@@ -2105,7 +2105,7 @@ function GetInputEvent(): number {
   const rt = getRuntime();
   if (!rt) return INPUT_NONE;
   if (sNamingScreen.inputTaskId < 0) return INPUT_NONE;
-  const task = rt.gTasks.get(sNamingScreen.inputTaskId);
+  const task = rt.gTasks[sNamingScreen.inputTaskId];
   return task ? task.data[1] : INPUT_NONE;
 }
 
@@ -2114,7 +2114,7 @@ function SetInputState(state: number): void {
   const rt = getRuntime();
   if (!rt) return;
   if (sNamingScreen.inputTaskId < 0) return;
-  const task = rt.gTasks.get(sNamingScreen.inputTaskId);
+  const task = rt.gTasks[sNamingScreen.inputTaskId];
   if (task) task.data[0] = state;
 }
 

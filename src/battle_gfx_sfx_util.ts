@@ -852,7 +852,7 @@ export function TryHandleLaunchBattleTableAnimation(
   (globalThis as Record<string, unknown>).__battleAnimArg = argument;
   _LaunchBattleAnim('gBattleAnims_General', tableId, false);
   const taskId = _CreateTask(Task_ClearBitWhenBattleTableAnimDone, 10);
-  const t = (globalThis as { __rt?: { gTasks?: Map<number, { data: number[] }> } }).__rt?.gTasks?.get(taskId);
+  const t = (globalThis as { __rt?: { gTasks?: { data: number[] }[] } }).__rt?.gTasks?.[taskId];
   if (t) t.data[0] = activeBattler;
   _animFromTableActive[activeBattler] = true;
   return false;
@@ -879,7 +879,7 @@ export function InitAndLaunchSpecialAnimation(activeBattler: number, atkBattler:
   _setAnimAtkTgt(atkBattler, defBattler);
   _LaunchBattleAnim('gBattleAnims_Special', tableId, false);
   const taskId = _CreateTask(Task_ClearBitWhenSpecialAnimDone, 10);
-  const t = (globalThis as { __rt?: { gTasks?: Map<number, { data: number[] }> } }).__rt?.gTasks?.get(taskId);
+  const t = (globalThis as { __rt?: { gTasks?: { data: number[] }[] } }).__rt?.gTasks?.[taskId];
   if (t) t.data[0] = activeBattler;
   _setSpecialAnimActive(activeBattler, true);
 }

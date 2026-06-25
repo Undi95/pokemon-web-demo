@@ -1599,7 +1599,7 @@ function OpponentHandleIntroTrainerBallThrow(): void {
   // 1:1 ll.1880-1881 : CreateTask(Task_StartSendOutAnim, 5) ; gTasks[taskId].data[0] = gActiveBattler.
   if (rt) {
     const taskId = rt.CreateTask((t) => Task_StartSendOutAnim(t, rt), 5);
-    const task = rt.gTasks.get(taskId);
+    const task = rt.gTasks[taskId];
     if (task) task.data[0] = battler;   // data[0] = battler (1:1 l.1881)
   }
   _oppSendOutPhase = -1;

@@ -851,7 +851,7 @@ function _AnimWaterSportDroplet(sprite: { x: number; y: number; x2: number; y2: 
  *  (scan par func, 1:1 — data[6] est la phase d'arc, pas un id). */
 function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
   if (_wsArcRun(sprite as never)) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[]; func?: unknown }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Array<{ data: number[]; func?: unknown }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
     for (const t of rt?.gTasks?.values() ?? []) {
       if (t.func === AnimTask_WaterSport_Step) {
         t.data[10] = 1;
@@ -883,7 +883,7 @@ import { gEnemyParty as _spEnemyParty, gPlayerParty as _spPlayerParty, GetMonDat
 type _SpTask = { taskId: number; data: number[]; func?: unknown };
 function _spRt2(): {
   gSprites?: Array<{ x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean } | undefined>;
-  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  gTasks?: Array<{ data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   CreateTask?: (f: unknown, prio: number) => number;
   DestroySprite?: (i: number) => void;
@@ -1055,7 +1055,7 @@ function _AnimSmallWaterOrb(sprite: { x: number; y: number; data: number[] }): v
       sprite.y = sprite.data[3] >> 4;
       if (sprite.x < -8 || sprite.x > 248 || sprite.y < -8 || sprite.y > 120) {
         const rt = _spRt2();
-        const t = rt.gTasks?.get(sprite.data[6]);
+        const t = rt.gTasks?.[sprite.data[6]];
         if (t) t.data[sprite.data[7]]--;
         for (let sid = 0; sid < MAX_SPRITES; sid++) {
           const sp = rt.gSprites?.[sid];
@@ -1103,7 +1103,7 @@ function AnimTask_WaterSpoutRain_Step(task: _SpTask): void {
           args[1] = 0;
           args[2] = 12;
           const t2 = rt.CreateTask((tk: unknown) => { /* func reposee par shakeFn */ void tk; }, 80);
-          const tobj = rt.gTasks.get(t2);
+          const tobj = rt.gTasks[t2];
           if (tobj) {
             shakeFn(tobj); // pose tobj.func et lit args (appel immediat 1:1)
             ((globalThis as Record<string, unknown>).__battleAnimInterpreter as { incVisualTaskCount?: () => void } | undefined)?.incVisualTaskCount?.();
@@ -1145,7 +1145,7 @@ function _AnimWaterSpoutRain(sprite: { x: number; y: number; data: number[]; cal
     sprite.y += 8;
     if (sprite.y >= sprite.data[5]) {
       const rt = _spRt2();
-      const t = rt.gTasks?.get(sprite.data[6]);
+      const t = rt.gTasks?.[sprite.data[6]];
       if (t) t.data[10] = 1;
       const hitId = _wsSpawnOrb(sprite.x, sprite.y, 1); // gWaterHitSplatSpriteTemplate (meme tag eau)
       if (hitId >= 0) {
@@ -1173,7 +1173,7 @@ function _AnimWaterSpoutRainHit(sprite: { data: number[]; invisible?: boolean })
     sprite.invisible = !sprite.invisible;
     if (++sprite.data[2] === 12) {
       const rt = _spRt2();
-      const t = rt.gTasks?.get(sprite.data[6]);
+      const t = rt.gTasks?.[sprite.data[6]];
       if (t) t.data[sprite.data[7]]--;
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const sp = rt.gSprites?.[sid];
@@ -1241,7 +1241,7 @@ function _sfwRt(): {
   SetGpuReg?: (o: number, v: number) => void;
   CreateTask?: (fn: (t: _SfwTask) => void, prio: number) => number;
   DestroyTask?: (id: number) => void;
-  gTasks?: Map<number, _SfwTask>;
+  gTasks?: _SfwTask[];
   gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number; visible: boolean } } };
   gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void };
 } {
@@ -1280,7 +1280,7 @@ function AnimTask_CreateSurfWave(task: _SfwTask): void {
   else _swLoadPal('gBattleAnimBackgroundImageMuddyWater_Pal', animBg.paletteId);
   const taskId2 = rt.CreateTask?.((t) => _SurfWaveScanlineEffect(t), 2) ?? -1;
   task.data[15] = taskId2;
-  const t2 = taskId2 >= 0 ? rt.gTasks?.get(taskId2) : undefined;
+  const t2 = taskId2 >= 0 ? rt.gTasks?.[taskId2] : undefined;
   if (t2) {
     t2.data[0] = 0;
     t2.data[1] = 0x1000;
@@ -1324,7 +1324,7 @@ function _CreateSurfWave_Step1(task: _SfwTask): void {
     pf.set(base + 1, rgbBuffer);
     task.data[5] = 0;
   }
-  const t2 = rt.gTasks?.get(task.data[15]);
+  const t2 = rt.gTasks?.[task.data[15]];
   if (++task.data[6] > 1) {
     task.data[6] = 0;
     if (++task.data[3] <= 13) {
@@ -1355,7 +1355,7 @@ function _CreateSurfWave_Step2(task: _SfwTask): void {
     _sfwSetG('gBattle_BG1_Y', 0);
     rt.SetGpuReg?.(0x50, 0);
     rt.SetGpuReg?.(0x52, 0);
-    const t2 = rt.gTasks?.get(task.data[15]);
+    const t2 = rt.gTasks?.[task.data[15]];
     if (t2) t2.data[15] = -1;
     _sfwItf().DestroyAnimVisualTask?.(task.taskId);
   }

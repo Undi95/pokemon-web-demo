@@ -721,29 +721,11 @@ Object.defineProperty(globalThis, 'gPaletteFade', {
   get: () => _getRt().gPaletteFade,
   configurable: true, enumerable: true,
 });
-// gTasks : runtime stocke `Map<number, DecompTask>`. Le décomp accède via
-// `gTasks[taskId].tField = X`. On expose un Proxy qui matche les 2 styles
-// (= numeric indexing + Map.get) en route les `[id]` au `.get(id)` interne. */
+// gTasks : le runtime stocke désormais un `DecompTask[16]` (tableau fixe 1:1 task.c).
+// L'indexation `gTasks[taskId].tField = X` est donc NATIVE — plus besoin du Proxy
+// qui traduisait `[id]`→`.get(id)` sur l'ancienne Map. On expose le tableau direct.
 Object.defineProperty(globalThis, 'gTasks', {
-  get: () => {
-    const map = _getRt().gTasks as Map<number, unknown>;
-    return new Proxy(map, {
-      get(target, prop) {
-        // Map methods (.get, .set, .has, etc.) — passthrough.
-        if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-          const id = Number(prop);
-          let t = target.get(id) as Record<string, unknown> | undefined;
-          if (!t) {
-            t = { data: new Array(16).fill(0) } as Record<string, unknown>;
-            target.set(id, t as unknown as Parameters<typeof target.set>[1]);
-          }
-          return t;
-        }
-        const v = (target as unknown as Record<string | symbol, unknown>)[prop];
-        return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(target) : v;
-      },
-    });
-  },
+  get: () => _getRt().gTasks,
   configurable: true, enumerable: true,
 });
 
@@ -774,19 +756,17 @@ function installAutoTaskHooks(): void {
     (globalThis as Record<string, unknown>).CreateTask = wrapped;
   }
 
-  // 2) gTasks Proxy : intercepte `gTasks[id].func = Task_X` pour trampoline.
+  // 2) gTasks Proxy : intercepte `gTasks[id].func = Task_X` pour trampoline la
+  //    signature auto-décomp `Task_X(taskId)` → notre `func(taskObj)`. Porté sur le
+  //    tableau `DecompTask[16]` (accès `target[id]`, plus de Map.get/auto-create).
   Object.defineProperty(globalThis, 'gTasks', {
     get: () => {
-      const map = _getRt().gTasks as Map<number, unknown>;
-      return new Proxy(map, {
+      const arr = _getRt().gTasks;
+      return new Proxy(arr as unknown as Record<string | symbol, unknown>, {
         get(target, prop) {
           if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-            const id = Number(prop);
-            let t = target.get(id) as Record<string, unknown> | undefined;
-            if (!t) {
-              t = { taskId: id, data: new Array(16).fill(0), func: null } as Record<string, unknown>;
-              target.set(id, t as unknown as Parameters<typeof target.set>[1]);
-            }
+            const t = (target as unknown as Record<number, Record<string, unknown>>)[Number(prop)];
+            if (!t) return t;
             return new Proxy(t, {
               set(taskTarget, taskProp, value) {
                 if (taskProp === 'func' && typeof value === 'function'
@@ -800,7 +780,7 @@ function installAutoTaskHooks(): void {
               },
             });
           }
-          const v = (target as unknown as Record<string | symbol, unknown>)[prop];
+          const v = target[prop];
           return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(target) : v;
         },
       });

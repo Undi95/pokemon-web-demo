@@ -1238,7 +1238,7 @@ const T_POCKET_SWITCH_DIR = 11, T_POCKET_SWITCH_TIMER = 12, T_POCKET_SWITCH_STAT
 // decomp-data, dérivé 1:1 local comme COLORID_*/MAX_ITEMS_SHOWN).
 const SWITCH_POCKET_NONE = 0, SWITCH_POCKET_LEFT = 1, SWITCH_POCKET_RIGHT = 2;
 function _task(taskId: number): DecompTask | undefined {
-  return getRuntime()?.gTasks?.get(taskId);
+  return getRuntime()?.gTasks?.[taskId];
 }
 
 /** 1:1 décomp `CreateBagInputHandlerTask` (item_menu.c:847). Branche WALLY =
@@ -1886,7 +1886,7 @@ export function _CtxRemoveUsedItem(itemId: number): void {
 export function _CtxReturnToListWithRebuild(taskId: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return;
   // Rebuild la liste via DestroyListMenuTask + LoadBagItemListBuffers +
   // ListMenuInit (= 1:1 décomp DoItemSwap restore pattern).
@@ -1913,7 +1913,7 @@ export function _CtxReturnToListWithRebuild(taskId: number): void {
 export function _CtxReturnToList(taskId: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return;
   // 1:1 :1288-1290 ReturnToItemList : cache panneau TMHM + restore description.
   ClearWindowTilemap(_win(WIN_TMHM_INFO_ICONS));

@@ -392,7 +392,7 @@ export function tickSendOut(): void {
       // (LaunchBallFadeMonTask : fade blanc→couleur ~32f) joue → sinon le menu/healthbox
       // apparaît pendant que le mon est encore blanc (retour user "menu avant fin anim").
       _so.frame++;
-      const flashRunning = (_so.fadeTaskId >= 0 && rt.gTasks.has(_so.fadeTaskId)) || rt.gPaletteFade.active;
+      const flashRunning = (_so.fadeTaskId >= 0 && rt.gTasks[_so.fadeTaskId]?.isActive === true) || rt.gPaletteFade.active;
       if (!flashRunning || _so.frame > 64) {   // cap 64f = filet de sécurité
         _cleanup(rt);
       }

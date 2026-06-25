@@ -1740,8 +1740,8 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
   }
 }
 function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded?: boolean }): void {
-  const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
-  const t = rt?.gTasks?.get(sprite.data[0]);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[]; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+  const t = rt?.gTasks?.[sprite.data[0]];
   sprite.invisible = !!(t?.data[5]);
   if (sprite.animEnded || (sprite.data[7] = (sprite.data[7] ?? 0) + 1) > 40) {
     if (t) t.data[sprite.data[1]]--;
@@ -2216,11 +2216,11 @@ function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
 function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }): void {
   if (--sprite.data[0] === 0) {
     const rt = (globalThis as Record<string, unknown>).__rt as {
-      gTasks?: Map<number, { data: number[] }>;
+      gTasks?: { data: number[] }[];
       gba?: { oam: Array<{ matrixNum: number }> };
       FreeOamMatrix?: (m: number) => void;
     } | undefined;
-    const task = rt?.gTasks?.get(sprite.data[1]);
+    const task = rt?.gTasks?.[sprite.data[1]];
     if (task) task.data[sprite.data[2]]--;
     const m = rt?.gba?.oam[sprite.oamIndex]?.matrixNum;
     if (m !== undefined) FreeOamMatrix(m);
@@ -2241,7 +2241,7 @@ function _acItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTa
 type _AcSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
 function _acRt(): {
   gSprites?: Array<_AcSprite | undefined>;
-  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  gTasks?: { data: number[]; func?: unknown }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number; hFlip?: boolean; vFlip?: boolean }> };
@@ -2340,7 +2340,7 @@ function _AirCutterProjectileStep2(task: _AcTask): void {
 }
 /** 1:1 AnimAirWaveProjectile : phase lineaire -> virage vers la cible. */
 function _AnimAirWaveProjectile(sprite: _AcSprite): void {
-  const task = _acRt().gTasks?.get(sprite.data[7]);
+  const task = _acRt().gTasks?.[sprite.data[7]];
   if (!task) return;
   sprite.data[1] += (-2 & task.data[7]);
   sprite.data[2] += (-2 & task.data[8]);
@@ -2367,7 +2367,7 @@ function _AnimAirWaveProjectile(sprite: _AcSprite): void {
 }
 /** 1:1 AnimAirWaveProjectile_Step1 : acceleration vers/depuis la cible. */
 function _AnimAirWaveProjectile_Step1(sprite: _AcSprite): void {
-  const task = _acRt().gTasks?.get(sprite.data[7]);
+  const task = _acRt().gTasks?.[sprite.data[7]];
   if (!task) return;
   if (sprite.data[0] > task.data[5]) {
     sprite.data[5] += sprite.data[3];
@@ -2389,7 +2389,7 @@ function _AnimAirWaveProjectile_Step1(sprite: _AcSprite): void {
 function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
   if (sprite.data[0]-- <= 0) {
     const rt = _acRt();
-    const t = rt.gTasks?.get(sprite.data[7]);
+    const t = rt.gTasks?.[sprite.data[7]];
     if (t) t.data[1]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];

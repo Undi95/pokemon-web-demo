@@ -696,7 +696,7 @@ export function CreatePartyStatusSummarySprites(
   // (tBattler=data[0], tSummaryBarSpriteId=data[1], tBallIconSpriteId(i)=data[3+i],
   //  tIsBattleStart=data[10]).
   const taskId = rt.CreateTask(() => { /* 1:1 TaskDummy */ }, 5);
-  const task = rt.gTasks.get(taskId) as unknown as Tsk | undefined;
+  const task = rt.gTasks[taskId] as unknown as Tsk | undefined;
   if (task) {
     task.data[0] = battler;
     task.data[1] = bar.spriteId;
@@ -830,7 +830,7 @@ function Task_HidePartyStatusSummary_DuringBattle(task: Tsk): void {
  *  (PlayerHandleHidePartyStatusSummary :3060 / Opponent :1971) — inline statement décomp,
  *  exposé en helper car gTasks vit sur le runtime. */
 export function SetTaskFuncToHidePartyStatusSummary(taskId: number): void {
-  const task = _rt()?.gTasks.get(taskId) as unknown as Tsk | undefined;
+  const task = _rt()?.gTasks[taskId] as unknown as Tsk | undefined;
   if (task) task.func = Task_HidePartyStatusSummary as unknown as Tsk['func'];
 }
 

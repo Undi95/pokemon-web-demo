@@ -649,7 +649,7 @@ function _gfItf2(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: n
 type _GfSprite = { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
 function _gfRt(): {
   gSprites?: Array<_GfSprite | undefined>;
-  gTasks?: Map<number, { data: number[] }>;
+  gTasks?: { data: number[] }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   SetGpuReg?: (o: number, v: number) => void;
@@ -773,7 +773,7 @@ function AnimTask_GrudgeFlames_Step(task: _GfTask): void {
 /** 1:1 AnimGrudgeFlame : orbite Sin + priorite alternee + bob vertical. */
 function _AnimGrudgeFlame(sprite: _GfSprite): void {
   const rt = _gfRt();
-  const t = rt.gTasks?.get(sprite.data[0]);
+  const t = rt.gTasks?.[sprite.data[0]];
   if (!t) return;
   if (sprite.data[1] === 0) sprite.data[2] += 2;
   else sprite.data[2] -= 2;

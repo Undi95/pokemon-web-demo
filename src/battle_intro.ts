@@ -102,7 +102,7 @@ function setIntroSlideFlagsClearBit0(): void { G.gIntroSlideFlags = (G.gIntroSli
 
 // ─── Task helpers (HW-emu via rt.gTasks / rt.CreateTask) ────────────────────
 // tState = data[0], tEnvironment = data[1] (1:1 #define battle_intro.c:102-103).
-function tData(taskId: number): number[] { return rt().gTasks.get(taskId).data as number[]; }  // HW-emu : rt.gTasks = Map
+function tData(taskId: number): number[] { return rt().gTasks[taskId].data as number[]; }  // HW-emu : rt.gTasks = Map
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SetAnimBgAttribute / GetAnimBgAttribute (battle_intro.c:39-100)
@@ -138,7 +138,7 @@ export function HandleIntroSlide(environment: number): void {
   const flags = gBattleTypeFlags();
   // HW-emu : notre runtime appelle la task func avec l'OBJET DecompTask, pas le taskId
   // (décomp = func(taskId)). On wrappe pour passer `task.taskId` aux BattleIntroSlideN
-  // (qui gardent la signature 1:1 `(taskId)` + tData(taskId)=gTasks.get(taskId)).
+  // (qui gardent la signature 1:1 `(taskId)` + tData(taskId)=gTasks[taskId]).
   const _ct = (fn: (taskId: number) => void): number =>
     r.CreateTask((tk: { taskId: number }) => fn(tk.taskId), 0);
 

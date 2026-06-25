@@ -130,7 +130,7 @@ interface AnimTask {
 function _gTasks(taskId: number): AnimTask {
   const rt = getRuntime();
   if (!rt || !rt.gTasks) return _DUMMY_TASK;
-  return ((rt.gTasks.get(taskId) ?? _DUMMY_TASK) as unknown) as AnimTask;
+  return ((rt.gTasks[taskId] ?? _DUMMY_TASK) as unknown) as AnimTask;
 }
 const _DUMMY_TASK: AnimTask = { data: new Int16Array(16), func: null };
 
@@ -475,7 +475,7 @@ export function AnimTask_SwitchOutBallEffect(taskId: number): void {
       break;
     }
     case 1:
-      if (!rt.gTasks?.has(task.data[10]) && !rt.gTasks?.has(task.data[11])) {
+      if (!rt.gTasks?.[task.data[10]]?.isActive && !rt.gTasks?.[task.data[11]]?.isActive) {
         DestroyAnimVisualTask(taskId);
       }
       break;
@@ -1352,8 +1352,8 @@ function IncrBallParticleCount(): void {
 function FuncIsActiveTask(func: ParticleTaskFn): boolean {
   const rt = getRuntime();
   if (!rt?.gTasks) return false;
-  for (const t of rt.gTasks.values()) {
-    if ((t as { func?: unknown }).func === func) return true;
+  for (const t of rt.gTasks) {
+    if (t.isActive && (t as { func?: unknown }).func === func) return true;
   }
   return false;
 }
@@ -1776,7 +1776,7 @@ type _ShinySprite = {
 
 function _shinyRt(): {
   gSprites?: Array<_ShinySprite | undefined>;
-  gTasks?: Map<number, { data: number[]; taskId: number; func?: unknown }>;
+  gTasks?: { data: number[]; taskId: number; func?: unknown }[];
   CreateTask?: (fn: unknown, prio: number) => number;
   DestroyTask?: (id: number) => void;
   DestroySprite?: (id: number) => void;
@@ -1803,7 +1803,7 @@ export function TryShinyAnimation(battler: number, mon: { otId?: number; persona
     const rt = _shinyRt();
     const t1 = rt.CreateTask?.(Task_ShinyStars as never, 10) ?? -1;
     const t2 = rt.CreateTask?.(Task_ShinyStars as never, 10) ?? -1;
-    const task1 = rt.gTasks?.get(t1); const task2 = rt.gTasks?.get(t2);
+    const task1 = rt.gTasks?.[t1]; const task2 = rt.gTasks?.[t2];
     if (task1) { task1.data[0] = battler; task1.data[1] = 0; /* ENCIRCLE */ }
     if (task2) { task2.data[0] = battler; task2.data[1] = 1; /* DIAGONAL */ }
     return true;
@@ -1912,7 +1912,7 @@ function Task_ShinyStars_Wait(task: { data: number[]; taskId: number }): void {
 }
 function _shinyStarDone(sprite: _ShinySprite): void {
   const rt = _shinyRt();
-  const task = rt.gTasks?.get(sprite.data[6]);
+  const task = rt.gTasks?.[sprite.data[6]];
   if (task) task.data[5]--;
   // destroy
   for (let id = 0; id < MAX_SPRITES; id++) {

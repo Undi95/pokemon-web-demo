@@ -124,7 +124,7 @@ function _gTasks(taskId: number | { taskId?: number; data?: unknown }): { data: 
   }
   const rt = getRuntime();
   if (!rt) return _DUMMY_TASK;
-  const t = rt.gTasks?.get(_taskIdOf(taskId));
+  const t = rt.gTasks?.[_taskIdOf(taskId)];
   return (t ?? _DUMMY_TASK) as unknown as { data: Int16Array | number[]; func: ((id: number) => void) | null };
 }
 function DestroyTask(taskId: number | { taskId?: number }): void {
@@ -1441,7 +1441,7 @@ function Cmd_createvisualtask(): void {
       // puis ++ =0 net). Notre compteur clampe a 0 -> l'ordre C laissait un
       // fantome a 1 -> TOUT move suivant partait au garde-fou (BodySlam 1357f).
       gAnimVisualTaskCount++;
-      const tobj = rt.gTasks?.get(tid);
+      const tobj = rt.gTasks?.[tid];
       if (tobj) (taskFn as (t: unknown) => void)(tobj);
       _vtrace({ op: 'task', name: taskName, resolved: true });
     }
@@ -1945,7 +1945,7 @@ function Cmd_createsoundtask(): void {
       const tid = rt.CreateTask(fn as never, 1);
       // 1:1 : appel IMMEDIAT (args frais — cf. Cmd_createvisualtask).
       gAnimSoundTaskCount++; // ++ AVANT l'appel (cf. visualtask : wrap u8 du C)
-      const tobj = rt.gTasks?.get(tid);
+      const tobj = rt.gTasks?.[tid];
       if (tobj) (fn as (t: unknown) => void)(tobj);
     }
     return;

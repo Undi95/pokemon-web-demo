@@ -1089,7 +1089,7 @@ function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
 function _AnimBattlerTrace(sprite: { data: number[] }): void {
   if (--sprite.data[0] === 0) {
     const rt = getRuntime();
-    const task = (rt as unknown as { gTasks?: Map<number, _PwTask> }).gTasks?.get(sprite.data[1]);
+    const task = (rt as unknown as { gTasks?: _PwTask[] }).gTasks?.[sprite.data[1]];
     if (task) task.data[5]--;         // tNumTracesActive
     DestroySpriteWithActiveSheet(sprite.data[2]);
   }

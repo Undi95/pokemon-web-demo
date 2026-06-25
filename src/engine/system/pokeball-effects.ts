@@ -255,7 +255,7 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
     }
   }, 5);
 
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     if (!unfadeLater) {
       // 1:1 décomp battle_anim_throw.c:2046 : tCoeff=1, tdCoeff=1, state=ToBallColor
@@ -376,7 +376,7 @@ export function AnimateBallOpenParticles(rt: DecompRuntime, x: number, y: number
     task.data[0]++;
   }, 5);
 
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[0] = 0;
     task.data[1] = x;

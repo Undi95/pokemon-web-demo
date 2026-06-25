@@ -119,7 +119,7 @@ function StartSweetScentFieldEffect(): void {
   _copyFadedToUnfaded(rt);
   BeginNormalPaletteFade(_fadeMaskExcludingPlayer(rt), 4, 0, 8, RGB_RED);
   const taskId = rt.CreateTask(TrySweetScentEncounter, 0);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) task.data[0] = 0;
   FieldEffectActiveListRemove(FLDEFF_SWEET_SCENT);
 }

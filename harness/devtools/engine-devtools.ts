@@ -99,7 +99,7 @@ interface SaveState {
   windows: unknown;
   gSprites: Array<[number, Record<string, unknown>]>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  gTasks: Array<[number, { data: number[]; func: ((task: any) => void) | null; taskId: number }]>;
+  gTasks: Array<[number, { taskId: number; data: number[]; func: ((task: any) => void) | null; isActive: boolean; prev: number; next: number; priority: number; followupFunc: ((task: any) => void) | null }]>;
   gPaletteFade: Record<string, unknown>;
   gMain: { callback2: ((rt: DecompRuntime) => void) | null; state: number; heldKeys: number; newKeys: number };
   // 1:1 STRICT arrays primary snapshot (Phase A3 cleanup : Maps secondaires
@@ -189,7 +189,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
         }
         return o;
       })(),
-      gTasks: Array.from(rt.gTasks.entries()).map(([id, t]) => [id, { taskId: t.taskId, data: Array.from(t.data || []), func: t.func }]),
+      gTasks: Array.from(rt.gTasks.entries()).map(([id, t]) => [id, { taskId: t.taskId, data: Array.from(t.data || []), func: t.func, isActive: t.isActive, prev: t.prev, next: t.next, priority: t.priority, followupFunc: t.followupFunc }]),
       gPaletteFade: { ...rt.gPaletteFade },
       gMain: { callback2: rt.gMain.callback2, state: rt.gMain.state, heldKeys: rt.gMain.heldKeys, newKeys: rt.gMain.newKeys },
       // 1:1 STRICT arrays primary snapshot via globalThis.__sprite.
@@ -242,9 +242,17 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     rt.gSprites.fill(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const [id, s] of ss.gSprites) rt.gSprites[id] = s as any;
-    rt.gTasks.clear();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const [id, t] of ss.gTasks) rt.gTasks.set(id, t as any);
+    rt.ResetTasks();
+    // 1:1 tableau gTasks[16] : on copie les champs sauvegardés DANS le slot existant
+    // (préserve l'objet du slot + son data Int16Array). gTasks[16] fixe → id ∈ 0..15.
+    for (const [id, t] of ss.gTasks) {
+      const slot = rt.gTasks[id];
+      if (!slot) continue;
+      slot.taskId = t.taskId; slot.func = t.func; slot.isActive = t.isActive;
+      slot.prev = t.prev; slot.next = t.next; slot.priority = t.priority;
+      slot.followupFunc = t.followupFunc ?? null;
+      for (let k = 0; k < t.data.length && k < slot.data.length; k++) slot.data[k] = t.data[k];
+    }
     Object.assign(rt.gPaletteFade, ss.gPaletteFade);
     rt.gMain.callback2 = ss.gMain.callback2;
     rt.gMain.state = ss.gMain.state;
@@ -512,7 +520,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   dev.info = (): unknown => ({
     frame: rt.gIntroFrameCounter,
     cb2: rt.gMain.callback2?.name || 'anon',
-    taskCount: rt.gTasks.size,
+    taskCount: rt.GetTaskCount(),
     spriteCount: ((): number => {
       let n = 0;
       for (let i = 0; i < MAX_SPRITES; i++) { const s = rt.gSprites[i]; if (s !== undefined && !s.invisible) n++; }

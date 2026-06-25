@@ -669,8 +669,8 @@ function CreateVoltTackleBolt(task: { taskId: number; data: number[] }): boolean
 }
 function AnimVoltTackleBolt(sprite: { data: number[] }): void {
   if (++sprite.data[0] > 12) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[6]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[]; gSprites?: Array<unknown | undefined>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt?.gSprites?.[sid];
@@ -810,8 +810,8 @@ function _CreateShockWaveBoltSprite(task: _SwTask, taskId: number): boolean {
 /** 1:1 AnimShockWaveProgressingBolt : vie 12f. */
 function _AnimShockWaveProgressingBolt(sprite: { data: number[] }): void {
   if (++sprite.data[0] > 12) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[6]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+    const t = rt?.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     _swDestroySelf(sprite);
   }
@@ -863,8 +863,8 @@ function _CreateShockWaveLightningSprite(task: _SwTask, taskId: number): boolean
 /** 1:1 AnimShockWaveLightning : animEnded / vie 15f en inline. */
 function _AnimShockWaveLightning(sprite: { data: number[]; animEnded?: boolean }): void {
   if (sprite.animEnded || ++sprite.data[0] > 15) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[6]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+    const t = rt?.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     _swDestroySelf(sprite);
   }
@@ -945,8 +945,8 @@ function AnimElectricChargingParticles(sprite: { data: number[]; callback: unkno
  *  translation puis decrement task.data[7] + destroy. */
 function AnimElectricChargingParticles_Step(sprite: { data: number[] }): void {
   if (_ecRunLin(sprite as never)) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[5]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+    const t = rt?.gTasks?.[sprite.data[5]];
     if (t) t.data[7]--;
     _swDestroySelf(sprite);
   }

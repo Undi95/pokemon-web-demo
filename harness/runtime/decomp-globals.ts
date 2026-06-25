@@ -707,7 +707,7 @@ export function CreateBicycleBgAnimationTask(mode: number, bg1Speed: number, bg2
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const taskId = r.CreateTask((t: any) => taskFn(t, r), 0);
-  const task = r.gTasks.get(taskId);
+  const task = r.gTasks[taskId];
   if (task) {
     task.data[0] = mode;
     task.data[1] = bg1Speed;
@@ -1620,9 +1620,9 @@ export function ResetPaletteFade(): void {
 }
 export function ResetTasks(): void {
   const r = rt();
-  r.gTasks.clear();
+  r.ResetTasks();
   r.nextTaskId = 0;
-  console.log('[ResetTasks] gTasks cleared, nextTaskId reset, size=', r.gTasks.size);
+  console.log('[ResetTasks] gTasks cleared, nextTaskId reset, size=', r.GetTaskCount());
 }
 /** 1:1 décomp src/palette.c:103 `TransferPlttBuffer()` — copy gPlttBufferFaded
  *  → PLTT register (= compositor-visible palette). Gated par
@@ -2069,13 +2069,13 @@ export const TASK_NONE = 0xFF;
 
 export function FindTaskIdByFunc(funcRef: ((task: any) => void) | ((task: any, rt: any) => void)): number {
   const r = rt();
-  for (const task of r.gTasks.values()) {
-    if (task.func === funcRef) return task.taskId;
+  for (const task of r.gTasks) {
+    if (task.isActive && task.func === funcRef) return task.taskId;
   }
   // Tolerant fallback : sometimes auto-callbacks wrap the original task fn in
   // a closure; we tag via task.funcName at create time for those callers.
-  for (const task of r.gTasks.values()) {
-    if ((task as { funcRef?: unknown }).funcRef === funcRef) return task.taskId;
+  for (const task of r.gTasks) {
+    if (task.isActive && (task as { funcRef?: unknown }).funcRef === funcRef) return task.taskId;
   }
   return TASK_NONE;
 }
@@ -2090,7 +2090,7 @@ export function FuncIsActiveTask(funcRef: ((task: any) => void) | ((task: any, r
  *  vue `number[]`) d'une task par id, ou `null` si absente. Pour les ports qui font
  *  `s16 *data = gTasks[taskId].data` après `FindTaskIdByFunc` (= field_tasks.c). */
 export function GetTaskData(taskId: number): number[] | null {
-  const task = rt().gTasks.get(taskId);
+  const task = rt().gTasks[taskId];
   return task ? task.data : null;
 }
 
@@ -2098,7 +2098,7 @@ export function GetTaskData(taskId: number): number[] | null {
  *  ou `null` si absent. Pour les ports qui appellent immédiatement leur task func après
  *  `CreateTask` (= pattern `Func(CreateTask(Func, prio))`, ex. StartStrengthAnim). */
 export function GetTask(taskId: number): import('./decomp-runtime').DecompTask | null {
-  return rt().gTasks.get(taskId) ?? null;
+  return rt().gTasks[taskId] ?? null;
 }
 
 /** 1:1 décomp src/sprite.c:SetSubspriteTables — installs a subsprite layout
@@ -2725,7 +2725,7 @@ export function CreatePokeballSpriteToReleaseMon(
   let birchOamIdx = -1;
   let birchPrioritySaved = 0;
   if (mainTaskId !== undefined) {
-    const mainTask = r.gTasks.get(mainTaskId);
+    const mainTask = r.gTasks[mainTaskId];
     if (mainTask) {
       const birchSpriteId = mainTask.data[8];
       const birchSprite = r.gSprites[birchSpriteId];

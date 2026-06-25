@@ -30,7 +30,7 @@ export function LaunchStatusAnimation(battler: number, statusAnimId: number): vo
   setBattleAnimAttackerTarget(battler, battler);
   LaunchBattleAnimation('gBattleAnims_StatusConditions', statusAnimId, false);
   const taskId = CreateTask(Task_DoStatusAnimation, 10);
-  const t = (globalThis as { __rt?: { gTasks?: Map<number, { data: number[] }> } }).__rt?.gTasks?.get(taskId);
+  const t = (globalThis as { __rt?: { gTasks?: { data: number[] }[] } }).__rt?.gTasks?.[taskId];
   if (t) t.data[0] = battler;
 }
 

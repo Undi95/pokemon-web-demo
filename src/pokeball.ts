@@ -272,7 +272,7 @@ export function DoPokeballSendOutAnimation(pan: number, kindOfThrow: number): nu
   setBallAnimActive(gActiveBattler, true);
 
   const taskId = rt.CreateTask((t) => Task_DoPokeballSendOutAnim(t, rt), 5);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[1] = pan;            // tPan
     task.data[2] = kindOfThrow;    // tThrowId
@@ -481,7 +481,7 @@ function SpriteCB_ReleaseMonFromBall(sprite: DecompSprite, rt: DecompRuntime): v
     setWaitForCry(battler, true);
 
     const taskId = rt.CreateTask((t) => Task_PlayCryWhenReleasedFromBall(t, rt), 3);
-    const cryTask = rt.gTasks.get(taskId);
+    const cryTask = rt.gTasks[taskId];
     if (cryTask) {
       cryTask.data[0] = species;                          // tCryTaskSpecies
       cryTask.data[1] = pan;                              // tCryTaskPan

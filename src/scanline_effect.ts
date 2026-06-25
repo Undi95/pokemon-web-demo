@@ -303,7 +303,7 @@ export function ScanlineEffect_InitWave(
   const r = rt();
   // HW-emu : la task func reçoit l'objet DecompTask → wrap pour passer task.taskId.
   const taskId: number = r.CreateTask((tk: { taskId: number }) => TaskFunc_UpdateWavePerFrame(tk.taskId), 0);
-  const data: number[] = r.gTasks.get(taskId).data;  // HW-emu : rt.gTasks = Map
+  const data: number[] = r.gTasks[taskId].data;  // HW-emu : rt.gTasks = Map
 
   data[T_START_LINE] = startLine;
   data[T_END_LINE] = endLine;

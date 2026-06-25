@@ -860,7 +860,7 @@ async function StartDoorAnimationTask(
 
   return new Promise((resolve) => {
     const taskId = rt.CreateTask(Task_AnimateDoor, 0x50);
-    const task = rt.gTasks.get(taskId);
+    const task = rt.gTasks[taskId];
     if (!task) {
       console.warn('[StartDoorAnimationTask] CreateTask failed');
       resolve();

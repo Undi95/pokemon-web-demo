@@ -937,7 +937,7 @@ function _hlItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: nu
 }
 function _hlRt(): {
   gSprites?: Array<{ x: number; y: number; data: number[]; callback: unknown; oamIndex: number; subpriority?: number; inUse?: boolean; invisible?: boolean } | undefined>;
-  gTasks?: Map<number, { data: number[] }>;
+  gTasks?: { data: number[] }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
@@ -1083,7 +1083,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
       }
     } else {
       // pas d'impact : decremente directement (1:1 net du chemin else)
-      const t = rt.gTasks?.get(sprite.data[6]);
+      const t = rt.gTasks?.[sprite.data[6]];
       if (t) t.data[sprite.data[7]]--;
     }
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
@@ -1093,7 +1093,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
     }
     // si l'impact a spawne, LE compte est transfere (pas de decrement ici, 1:1)
   } else {
-    const t = rt.gTasks?.get(sprite.data[6]);
+    const t = rt.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];
@@ -1106,7 +1106,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
 function _AnimHailContinue(sprite: { data: number[] }): void {
   if (++sprite.data[0] === 20) {
     const rt = _hlRt();
-    const t = rt.gTasks?.get(sprite.data[6]);
+    const t = rt.gTasks?.[sprite.data[6]];
     if (t) t.data[sprite.data[7]]--;
     for (let sid = 0; sid < MAX_SPRITES; sid++) {
       const sp = rt.gSprites?.[sid];

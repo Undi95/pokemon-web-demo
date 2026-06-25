@@ -88,7 +88,7 @@ export type CB2Callback = (rt: DecompRuntime) => void;
 const _emptySprite: any = { data: new Array(16).fill(0), invisible: false, x: 0, y: 0, x2: 0, y2: 0, oamIndex: 0, spriteId: -1 };
 const _emptyTask: any = { data: new Array(16).fill(0), func: null, taskId: -1 };
 function _gs(rt: DecompRuntime, id: number): DecompSprite { return (rt.gSprites[id] as DecompSprite) ?? _emptySprite; }
-function _gt(rt: DecompRuntime, id: number): DecompTask { return (rt.gTasks.get(id) as DecompTask) ?? _emptyTask; }
+function _gt(rt: DecompRuntime, id: number): DecompTask { return (rt.gTasks[id] as DecompTask) ?? _emptyTask; }
 function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
   return new Proxy({ length: 512 }, { get(t, k) { if (k === 'length') return 512; const i = Number(k); return Number.isFinite(i) ? buf.get(base + i) : undefined; } }) as ArrayLike<number>;
 }

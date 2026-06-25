@@ -248,7 +248,7 @@ export function ShowMapNamePopup(): void {
 
   const rt = getRuntime();
   const tasks = rt.gTasks;
-  const existingTask = _sPopupTaskId >= 0 ? tasks.get(_sPopupTaskId) : null;
+  const existingTask = _sPopupTaskId >= 0 ? tasks[_sPopupTaskId] : null;
   if (existingTask && existingTask.func === Task_MapNamePopUpWindow) {
     if (existingTask.data[T_STATE] !== STATE_SLIDE_OUT) {
       existingTask.data[T_STATE] = STATE_SLIDE_OUT;
@@ -259,7 +259,7 @@ export function ShowMapNamePopup(): void {
 
   _sPopupTaskId = rt.CreateTask(Task_MapNamePopUpWindow, 90);
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, POPUP_OFFSCREEN_Y);
-  const task = tasks.get(_sPopupTaskId);
+  const task = tasks[_sPopupTaskId];
   if (!task) return;
   task.data[T_STATE] = STATE_PRINT;
   task.data[T_Y_OFFSET] = POPUP_OFFSCREEN_Y;
@@ -401,7 +401,7 @@ export function HideMapNamePopUpWindow(): void {
     _popupWindowId = -1;
   }
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
-  rt.gTasks.delete(_sPopupTaskId);
+  rt.DestroyTask(_sPopupTaskId);
   _sPopupTaskId = -1;
 }
 

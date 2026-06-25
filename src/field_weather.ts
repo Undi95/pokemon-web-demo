@@ -429,7 +429,7 @@ function Task_WeatherInit(task: DecompTask): void {
   // When the screen fades in, this is set to TRUE.
   if (gWeatherPtr.readyForInit) {
     sWeatherFuncs[gWeatherPtr.currWeather]?.initAll();
-    _rt().gTasks.get(task.taskId)!.func = Task_WeatherMain;
+    _rt().gTasks[task.taskId]!.func = Task_WeatherMain;
   }
 }
 

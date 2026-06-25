@@ -2453,8 +2453,8 @@ function _AnimDoubleTeam(sprite: { data: number[]; x2: number }): void {
     sprite.data[0]++;
   }
   if (sprite.data[0] > 64) {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[2]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+    const t = rt?.gTasks?.[sprite.data[2]];
     if (t) t.data[3]--;
     _dtMons().DestroySpriteWithActiveSheet?.(sprite);
   } else {
@@ -2773,7 +2773,7 @@ type _LbSprite = {
 };
 function _lbRt(): {
   gSprites?: Array<_LbSprite | undefined>;
-  gTasks?: Map<number, { data: number[] }>;
+  gTasks?: { data: number[] }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
@@ -2950,7 +2950,7 @@ function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
     sprite.data[1]++;
     if (sprite.data[1] > 8) {
       const rt = _lbRt();
-      const task = rt.gTasks?.get(sprite.data[6]);
+      const task = rt.gTasks?.[sprite.data[6]];
       if (task) task.data[sprite.data[7]]--;
       for (let sid = 0; sid < MAX_SPRITES; sid++) {
         const s2 = rt.gSprites?.[sid];

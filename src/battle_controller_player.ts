@@ -2415,7 +2415,7 @@ function PlayerHandleIntroTrainerBallThrow(): void {
   // 1:1 ll. 2966-2967 : CreateTask(Task_StartSendOutAnim, 5) ; tBattlerId = gActiveBattler.
   if (rt) {
     const taskId = rt.CreateTask((t) => Task_StartSendOutAnim(t, rt), 5);
-    const task = rt.gTasks.get(taskId);
+    const task = rt.gTasks[taskId];
     if (task) task.data[0] = battler;   // tBattlerId
   }
   _sendOutPhase = -1;

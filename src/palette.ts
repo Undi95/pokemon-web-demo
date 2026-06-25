@@ -641,7 +641,7 @@ export function BlendPalettesGradually(
     return;
   }
   const taskId = rt.CreateTask(_taskBlendPalettesGradually as unknown as (task: import('../harness/runtime/decomp-runtime').DecompTask) => void, priority);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return;
   task.data[0] = coeff;          // tCoeff
   task.data[1] = coeffTarget;    // tCoeffTarget
@@ -687,13 +687,9 @@ function _taskBlendPalettesGradually(task: { data: number[] }): void {
     // 1:1 :1022-1041 : check fin / advance tCoeff.
     const target = task.data[1];  // tCoeffTarget
     if (task.data[0] === target) {
-      // 1:1 :1025 : DestroyTask(taskId).
-      const rtAny = rt as { gTasks?: Map<number, unknown> };
-      if (rtAny.gTasks) {
-        for (const [taskId, t] of rtAny.gTasks) {
-          if (t === task) { rtAny.gTasks.delete(taskId); break; }
-        }
-      }
+      // 1:1 :1025 : DestroyTask(taskId). `task` reçu = l'OBJET DecompTask (runtime passe
+      // l'objet) → son `.taskId` = l'index du slot. Cast car le param est typé { data }.
+      rt.DestroyTask((task as unknown as { taskId: number }).taskId);
     } else {
       task.data[0] += task.data[2];  // tCoeff += tCoeffDelta
       // 1:1 :1030-1039 : check overshoot.

@@ -489,7 +489,7 @@ function _roItf(): { getAttacker?: () => number; getTarget?: () => number; getDi
 }
 function _roRt(): {
   gSprites?: Array<{ x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number } | undefined>;
-  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  gTasks?: { data: number[]; func?: unknown }[];
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };

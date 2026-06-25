@@ -1247,7 +1247,7 @@ function Task_SurfFieldEffect(task: DecompTask): void {
  *  Musique = on PILOTE la lecture existante (PlayBGM), on ne touche pas l'engine son. */
 export function FldEff_UseSurf(rt: DecompRuntime): number {
   const taskId = rt.CreateTask(Task_SurfFieldEffect, 0xFF);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) task.data[15] = gFieldEffectArguments[0];  // tMonId
   // 1:1 décomp : joue la musique de surf (MUS_SURF). PlayBGM = m4aSongNumStart (engine son
   // bricolé, fonctionnel) — on l'appelle, on ne le modifie pas.
@@ -1345,7 +1345,7 @@ function Task_UseWaterfall(task: DecompTask): void {
  *  (Appelle Task_UseWaterfall une fois immédiatement, comme le décomp.) */
 export function FldEff_UseWaterfall(rt: DecompRuntime): number {
   const taskId = rt.CreateTask(Task_UseWaterfall, 0xFF);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[1] = gFieldEffectArguments[0];  // tMonId
     Task_UseWaterfall(task);
@@ -1423,7 +1423,7 @@ function Task_UseDive(task: DecompTask): void {
  *    Task_UseDive(taskId); return FALSE; */
 export function FldEff_UseDive(rt: DecompRuntime): number {
   const taskId = rt.CreateTask(Task_UseDive, 0xFF);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[15] = gFieldEffectArguments[0];
     task.data[14] = gFieldEffectArguments[1];
@@ -1689,7 +1689,7 @@ export function FldEff_FieldMoveShowMon(rt: DecompRuntime): number {
   const taskId = isOutdoors
     ? rt.CreateTask(Task_FieldMoveShowMonOutdoors, 0xFF)
     : rt.CreateTask(Task_FieldMoveShowMonIndoors, 0xFF);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[15] = InitFieldMoveMonSprite(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);  // tMonSpriteId
   }
@@ -2138,7 +2138,7 @@ function CreateInvisibleSprite(rt: DecompRuntime, callback: (sprite: DecompSprit
 export function FldEff_PokecenterHeal(rt: DecompRuntime): number {
   const nPokemon = CalculatePlayerPartyCount();
   const taskId = rt.CreateTask(Task_PokecenterHeal, 0xFF);
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (task) {
     task.data[1] = nPokemon; // tNumMons
     task.data[2] = 93;       // tFirstBallX

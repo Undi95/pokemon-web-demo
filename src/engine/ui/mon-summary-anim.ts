@@ -2025,7 +2025,7 @@ export function PokemonSummaryDoMonAnimation(
   if (delay !== 0) {
     const sprId = s.spriteId >>> 0;
     const tid = rt.CreateTask(_taskAnimateAfterDelay as unknown as (t: { taskId: number; data: number[] }) => void, 0);
-    const t = rt.gTasks.get(tid);
+    const t = rt.gTasks[tid];
     if (t) { t.data[0] = sprId & 0xFFFF; t.data[1] = (sprId >> 16) & 0xFFFF; t.data[2] = animId; t.data[3] = delay; }
     _animDelayTaskId = tid;
     s.callback = MonAnimDummySpriteCallback as unknown as DecompSprite['callback'];

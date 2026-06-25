@@ -356,7 +356,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // SNAPSHOT OAM avant (regle user « rien ne doit rester affiche » : le
     // critere = AUCUN NOUVEAU OAM visible apres l'anim vs avant).
     const visAvant = new Set<number>();
-    const tasksAvant = new Set<number>((rt as { gTasks?: Map<number, unknown> } | undefined)?.gTasks?.keys() ?? []);
+    const tasksAvant = new Set<number>((rt as { gTasks?: unknown[] } | undefined)?.gTasks?.keys() ?? []);
     rt?.gba?.oam?.forEach((o, i) => { if (o.visible) visAvant.add(i); });
     // snapshot des BATTLERS (retour user : des moves deplacent le mon) :
     // position/flips identiques apres l'anim, sinon monDeplace signale.
@@ -389,7 +389,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     {
       try {
         if (frames >= 590) (itf as { forceFinishAnim?: () => void }).forceFinishAnim?.();
-        const gT = (rt as { gTasks?: Map<number, { func?: { name?: string } }> } | undefined)?.gTasks;
+        const gT = (rt as { gTasks?: { func?: { name?: string } }[] } | undefined)?.gTasks;
         const dT = (rt as { DestroyTask?: (id: number) => void } | undefined)?.DestroyTask;
         if (gT && dT) {
           for (const [tid, t] of gT.entries()) {

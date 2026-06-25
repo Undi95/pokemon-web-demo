@@ -298,7 +298,7 @@ export function HandleMainMenuInput(taskId: number): boolean {
   const rt = getRuntime();
   if (!rt) return false;
   const newKeys = rt.gMain.newKeys ?? 0;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return false;
   const data = task.data;
   if (newKeys & A_BUTTON) {
@@ -323,7 +323,7 @@ export function HandleMainMenuInput(taskId: number): boolean {
       // Ancien littéral `1` était BG_COORD_ADD (= scroll dans le mauvais sens).
       ChangeBgY(0, 0x2000, BG_COORD_SUB);
       ChangeBgY(1, 0x2000, BG_COORD_SUB);
-      const arrowTask = rt.gTasks.get(data[13]);
+      const arrowTask = rt.gTasks[data[13]];
       if (arrowTask) arrowTask.data[15] = 0;
       data[14] = 0;
     }
@@ -338,7 +338,7 @@ export function HandleMainMenuInput(taskId: number): boolean {
       // pas un add). Cf. bg.h:24-28.
       ChangeBgY(0, 0x2000, BG_COORD_ADD);
       ChangeBgY(1, 0x2000, BG_COORD_ADD);
-      const arrowTask = rt.gTasks.get(data[13]);
+      const arrowTask = rt.gTasks[data[13]];
       if (arrowTask) arrowTask.data[15] = 1;
       data[14] = 1;
     }
@@ -868,7 +868,7 @@ function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
 export function AddBirchSpeechObjects(taskId: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  const task = rt.gTasks.get(taskId);
+  const task = rt.gTasks[taskId];
   if (!task) return;
 
   // Birch (= 0x88, 0x3C = 136, 60).
@@ -934,10 +934,10 @@ export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId: number, 
   // BLDALPHA_BLEND(0, 16) = eva=0 + evb=16 (= start full target2 blend).
   rt.SetGpuReg(0x052, (0 << 0) | (16 << 8));
   rt.SetGpuReg(0x054, 0);
-  const mainTask = rt.gTasks.get(taskId);
+  const mainTask = rt.gTasks[taskId];
   if (mainTask) mainTask.data[5] = 0;  // tIsDoneFadingSprites = 0 (animation en cours).
   const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadeInTarget1OutTarget2(t, rt), 0);
-  const subTask = rt.gTasks.get(subTaskId);
+  const subTask = rt.gTasks[subTaskId];
   if (subTask) {
     subTask.data[0] = taskId;     // tMainTask
     subTask.data[1] = 0;           // tAlphaCoeff1 (eva)
@@ -955,10 +955,10 @@ export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId: number, 
   rt.SetGpuReg(0x050, 0x0250);  // Same BLDCNT
   rt.SetGpuReg(0x052, (16 << 0) | (0 << 8));  // BLDALPHA_BLEND(16, 0) = eva=16, evb=0 (= start full target1).
   rt.SetGpuReg(0x054, 0);
-  const mainTask = rt.gTasks.get(taskId);
+  const mainTask = rt.gTasks[taskId];
   if (mainTask) mainTask.data[5] = 0;
   const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadeOutTarget1InTarget2(t, rt), 0);
-  const subTask = rt.gTasks.get(subTaskId);
+  const subTask = rt.gTasks[subTaskId];
   if (subTask) {
     subTask.data[0] = taskId;
     subTask.data[1] = 16;          // tAlphaCoeff1 (eva start)
@@ -975,7 +975,7 @@ export function NewGameBirchSpeech_StartFadePlatformIn(taskId: number, delay: nu
   const rt = getRuntime();
   if (!rt) return;
   const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadePlatformIn(t, rt), 0);
-  const subTask = rt.gTasks.get(subTaskId);
+  const subTask = rt.gTasks[subTaskId];
   if (subTask) {
     subTask.data[0] = taskId;
     subTask.data[1] = 0;            // tPalIndex (= 1:1 décomp main_menu.c:2046)
@@ -992,7 +992,7 @@ export function NewGameBirchSpeech_StartFadePlatformOut(taskId: number, delay: n
   const rt = getRuntime();
   if (!rt) return;
   const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadePlatformOut(t, rt), 0);
-  const subTask = rt.gTasks.get(subTaskId);
+  const subTask = rt.gTasks[subTaskId];
   if (subTask) {
     subTask.data[0] = taskId;
     subTask.data[1] = 8;            // tPalIndex (= start at 8, descend vers 0)

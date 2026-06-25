@@ -130,7 +130,7 @@ function Task_DoAbnormalWeather(task: DecompTask): void {
 /** 1:1 décomp `CreateAbnormalWeatherTask(void)` (field_weather_effect.c:2475). */
 function CreateAbnormalWeatherTask(): void {
   const taskId = CreateTask(Task_DoAbnormalWeather, 0);
-  const data = _rt().gTasks.get(taskId)!.data;
+  const data = _rt().gTasks[taskId]!.data;
 
   data[15] = 600;
   if (sCurrentAbnormalWeather === WEATHER_DOWNPOUR) {

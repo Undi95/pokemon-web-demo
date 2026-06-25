@@ -157,11 +157,11 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
  *  (le wrap 256 suffit à notre compositor — dette douce si visuel 512). */
 function AnimTask_StartSlidingBg(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [];
-  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (fn: unknown, p: number) => number; gTasks?: Map<number, { data: number[] }> } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (fn: unknown, p: number) => number; gTasks?: { data: number[] }[] } | undefined;
   const newTaskId = rt?.CreateTask?.(AnimTask_UpdateSlidingBg, 5) ?? -1;
   const atk = (_itf().getAttacker?.() ?? 0) as number;
   if (args[2] && (atk & 1) !== 0) { args[0] = -args[0]; args[1] = -args[1]; }
-  const nt = newTaskId >= 0 ? rt?.gTasks?.get(newTaskId) : undefined;
+  const nt = newTaskId >= 0 ? rt?.gTasks?.[newTaskId] : undefined;
   if (nt) {
     nt.data[1] = args[0];
     nt.data[2] = args[1];
@@ -230,8 +230,8 @@ function AnimMonTrace(sprite: { data: number[] }): void {
   if (sprite.data[0]) {
     sprite.data[0]--;
   } else {
-    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
-    const t = rt?.gTasks?.get(sprite.data[1]);
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: { data: number[] }[] } | undefined;
+    const t = rt?.gTasks?.[sprite.data[1]];
     if (t) t.data[sprite.data[2]]--;
     _ufDestroyActive(sprite);
   }

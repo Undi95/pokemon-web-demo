@@ -487,20 +487,53 @@ export interface DecompSprite {
   subspriteTableNum?: number;
 }
 
-// ─── Task mock minimal ───────────────────────────────────────────────────────
+// ─── Task system 1:1 décomp `src/task.c` + `include/task.h` ──────────────────
+/** 1:1 `task.h`. */
+export const NUM_TASKS = 16;
+const NUM_TASK_DATA = 16;
+const HEAD_SENTINEL = 0xFE;
+const TAIL_SENTINEL = 0xFF;
+/** 1:1 `task.h:6` `#define TASK_NONE TAIL_SENTINEL`. */
+export const TASK_NONE = 0xFF;
+
+/** 1:1 décomp `struct Task` (task.h:13). `taskId` = index du slot (ajout TS pratique ;
+ *  la décomp utilise l'index directement). */
 export interface DecompTask {
   taskId: number;
-  /** Pointer vers la function task (1:1 gTasks[taskId].func) */
+  /** 1:1 `Task.func` (TaskFunc). `TaskDummy` quand le slot est inactif. Reçoit l'OBJET
+   *  task (convention TS) là où la décomp passe le `u8 taskId`. */
   func: ((task: DecompTask) => void) | null;
-  /** data[0..15] arbitraire (1:1 gTasks[taskId].data) */
+  /** 1:1 `Task.isActive`. */
+  isActive: boolean;
+  /** 1:1 `Task.prev` (index du précédent dans la liste chaînée, ou HEAD_SENTINEL). */
+  prev: number;
+  /** 1:1 `Task.next` (index du suivant, ou TAIL_SENTINEL). */
+  next: number;
+  /** 1:1 `Task.priority` (u8 ; -1 = slot réinitialisé). Détermine l'ordre d'exécution. */
+  priority: number;
+  /** 1:1 `Task.data[NUM_TASK_DATA]` (s16 ×16). Int16Array → wrap s16 natif. */
   data: number[];
-  /** 1:1 sémantique décomp `SetTaskFuncWithFollowupFunc` :
-   *  src/task.c:139-153 pack le pointer 32-bit dans data[NUM_TASK_DATA-2]
-   *  + data[NUM_TASK_DATA-1] (deux halfwords s16). En TS on n'a pas de cast
-   *  fonction→s16 fidèle (le `>>16` produit NaN), donc on stocke la fonction
-   *  dans un champ dédié — sémantique 1:1 préservée, layout JS-correct.
-   *  Lu par `SwitchTaskToFollowupFunc`. */
+  /** Adaptation TS de `SetTaskFuncWithFollowupFunc` (task.c:139) : la décomp pack le
+   *  pointer 32-bit dans data[14..15] (2 halfwords s16) ; en TS on stocke la fonction
+   *  dans ce champ dédié (le `>>16` d'un pointer JS produit NaN). Sémantique 1:1. */
   followupFunc: ((task: DecompTask) => void) | null;
+}
+
+/** 1:1 décomp `task.c:135 TaskDummy`. */
+function TaskDummy(_task: DecompTask): void { /* no-op */ }
+
+/** Crée les 16 slots dans l'état post-`ResetTasks` (task.c:9). */
+function _makeEmptyTasks(): DecompTask[] {
+  const arr: DecompTask[] = [];
+  for (let i = 0; i < NUM_TASKS; i++) {
+    arr.push({
+      taskId: i, func: TaskDummy, isActive: false, prev: i, next: i + 1,
+      priority: -1, data: new Int16Array(NUM_TASK_DATA) as unknown as number[], followupFunc: null,
+    });
+  }
+  arr[0].prev = HEAD_SENTINEL;
+  arr[NUM_TASKS - 1].next = TAIL_SENTINEL;
+  return arr;
 }
 
 /** 1:1 décomp `MAX_SPRITES` (sprite.h) — `gSprites` est un tableau FIXE de 64. */
@@ -531,8 +564,11 @@ export class DecompRuntime {
   gMain = new MainStruct();
   /** 1:1 décomp `gPaletteFade` global. */
   gPaletteFade = new PaletteFade();
-  /** 1:1 décomp `gTasks[]` array. Notre version : Map keyed by taskId. */
-  gTasks = new Map<number, DecompTask>();
+  /** 1:1 décomp `struct Task gTasks[NUM_TASKS]` (task.c:4) — tableau FIXE de 16 slots,
+   *  TOUS présents (slot libre = `isActive:false`, `func:TaskDummy`). Ordonnancement par
+   *  liste chaînée priorité (`prev`/`next` + HEAD/TAIL_SENTINEL), 1:1 `task.c`. Accès par
+   *  index `gTasks[taskId]` (jamais `.get`). */
+  gTasks: DecompTask[] = _makeEmptyTasks();
   /** 1:1 décomp `struct Sprite gSprites[MAX_SPRITES]` — tableau fixe 64 slots,
    *  indexé par SLOT 0-63 (`undefined` = slot libre, vs dummy sprite côté décomp).
    *  Accès `gSprites[i]` (1:1). CreateSprite scanne le 1er slot libre, DestroySprite
@@ -1531,19 +1567,132 @@ export class DecompRuntime {
   // CreateTask + DestroyTask (1:1 décomp task system)
   // ============================================================================
 
-  CreateTask(func: (task: DecompTask) => void, _priority: number): number {
-    const taskId = this.nextTaskId++;
-    // data = Int16Array (= s16 décomp `s16 *data`). Wrap natif overflow à
-    // -32768/32767. Critical pour Tasks comme Task_Scene3_Groudon qui font
-    // `data[N] += K; if (data[N] == constant)` qui suppose s16 wrap.
-    const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[], followupFunc: null };
-    this.gTasks.set(taskId, task);
-    if (RT_DEBUG) console.log('[CreateTask] taskId=', taskId, 'gTasks.size=', this.gTasks.size);
+  /** 1:1 décomp `task.c:27 CreateTask(func, priority)` : 1er slot inactif (0..15),
+   *  pose func/priority, InsertTask (ordre priorité), memset data, isActive=TRUE.
+   *  Retourne 0 si aucun slot libre (quirk décomp : 0 est un taskId valide). */
+  CreateTask(func: (task: DecompTask) => void, priority: number): number {
+    for (let i = 0; i < NUM_TASKS; i++) {
+      if (!this.gTasks[i].isActive) {
+        this.gTasks[i].func = func;
+        this.gTasks[i].priority = priority & 0xFF;
+        this.InsertTask(i);
+        // memset data (s16 wrap natif via Int16Array — critique pour `data[N]+=K`).
+        const d = this.gTasks[i].data;
+        for (let k = 0; k < NUM_TASK_DATA; k++) d[k] = 0;
+        this.gTasks[i].followupFunc = null;
+        this.gTasks[i].isActive = true;
+        if (RT_DEBUG) console.log('[CreateTask] taskId=', i, 'prio=', priority, 'count=', this.GetTaskCount());
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  /** 1:1 décomp `task.c:47 InsertTask` — insère `newTaskId` dans la liste chaînée
+   *  selon sa priorité (avant le 1er task de priorité STRICTEMENT supérieure ; sinon
+   *  en queue → priorités égales appendées à la fin). */
+  private InsertTask(newTaskId: number): void {
+    let taskId = this.FindFirstActiveTask();
+    if (taskId === NUM_TASKS) {
+      this.gTasks[newTaskId].prev = HEAD_SENTINEL;
+      this.gTasks[newTaskId].next = TAIL_SENTINEL;
+      return;
+    }
+    for (;;) {
+      if (this.gTasks[newTaskId].priority < this.gTasks[taskId].priority) {
+        this.gTasks[newTaskId].prev = this.gTasks[taskId].prev;
+        this.gTasks[newTaskId].next = taskId;
+        if (this.gTasks[taskId].prev !== HEAD_SENTINEL)
+          this.gTasks[this.gTasks[taskId].prev].next = newTaskId;
+        this.gTasks[taskId].prev = newTaskId;
+        return;
+      }
+      if (this.gTasks[taskId].next === TAIL_SENTINEL) {
+        this.gTasks[newTaskId].prev = taskId;
+        this.gTasks[newTaskId].next = this.gTasks[taskId].next;
+        this.gTasks[taskId].next = newTaskId;
+        return;
+      }
+      taskId = this.gTasks[taskId].next;
+    }
+  }
+
+  /** 1:1 décomp `task.c:124 FindFirstActiveTask` : 1er slot actif dont prev==HEAD_SENTINEL
+   *  (= la tête de la liste chaînée). Retourne NUM_TASKS si aucune task active. */
+  private FindFirstActiveTask(): number {
+    let taskId: number;
+    for (taskId = 0; taskId < NUM_TASKS; taskId++)
+      if (this.gTasks[taskId].isActive === true && this.gTasks[taskId].prev === HEAD_SENTINEL)
+        break;
     return taskId;
   }
 
+  /** 1:1 décomp `task.c:84 DestroyTask` : isActive=FALSE + retire de la liste chaînée. */
   DestroyTask(taskId: number): void {
-    this.gTasks.delete(taskId);
+    const t = this.gTasks[taskId];
+    if (!t || !t.isActive) return;
+    t.isActive = false;
+    if (t.prev === HEAD_SENTINEL) {
+      if (t.next !== TAIL_SENTINEL)
+        this.gTasks[t.next].prev = HEAD_SENTINEL;
+    } else if (t.next === TAIL_SENTINEL) {
+      this.gTasks[t.prev].next = TAIL_SENTINEL;
+    } else {
+      this.gTasks[t.prev].next = t.next;
+      this.gTasks[t.next].prev = t.prev;
+    }
+  }
+
+  /** 1:1 décomp `task.c:9 ResetTasks` — réinitialise les 16 slots + relie la liste. */
+  ResetTasks(): void {
+    for (let i = 0; i < NUM_TASKS; i++) {
+      const t = this.gTasks[i];
+      t.isActive = false;
+      t.func = TaskDummy;
+      t.prev = i;
+      t.next = i + 1;
+      t.priority = -1;
+      t.followupFunc = null;
+      for (let k = 0; k < NUM_TASK_DATA; k++) t.data[k] = 0;
+    }
+    this.gTasks[0].prev = HEAD_SENTINEL;
+    this.gTasks[NUM_TASKS - 1].next = TAIL_SENTINEL;
+  }
+
+  /** 1:1 décomp `task.c:155 FuncIsActiveTask`. */
+  FuncIsActiveTask(func: (task: DecompTask) => void): boolean {
+    for (let i = 0; i < NUM_TASKS; i++)
+      if (this.gTasks[i].isActive === true && this.gTasks[i].func === func) return true;
+    return false;
+  }
+
+  /** 1:1 décomp `task.c:166 FindTaskIdByFunc` — TASK_NONE si absent. */
+  FindTaskIdByFunc(func: (task: DecompTask) => void): number {
+    for (let i = 0; i < NUM_TASKS; i++)
+      if (this.gTasks[i].isActive === true && this.gTasks[i].func === func) return i;
+    return TASK_NONE;
+  }
+
+  /** 1:1 décomp `task.c:177 GetTaskCount`. */
+  GetTaskCount(): number {
+    let count = 0;
+    for (let i = 0; i < NUM_TASKS; i++) if (this.gTasks[i].isActive === true) count++;
+    return count;
+  }
+
+  /** 1:1 décomp `task.c:189 SetWordTaskArg` — pack u32 dans 2 halfwords s16. */
+  SetWordTaskArg(taskId: number, dataElem: number, value: number): void {
+    if (dataElem < NUM_TASK_DATA - 1) {
+      this.gTasks[taskId].data[dataElem] = value;          // Int16Array tronque (= s16)
+      this.gTasks[taskId].data[dataElem + 1] = value >>> 16;
+    }
+  }
+
+  /** 1:1 décomp `task.c:198 GetWordTaskArg` — recompose le u32. */
+  GetWordTaskArg(taskId: number, dataElem: number): number {
+    if (dataElem < NUM_TASK_DATA - 1)
+      return ((this.gTasks[taskId].data[dataElem] & 0xFFFF) | (this.gTasks[taskId].data[dataElem + 1] << 16)) >>> 0;
+    return 0;
   }
 
   /** 1:1 décomp src/task.c:139 `SetTaskFuncWithFollowupFunc`.
@@ -1555,7 +1704,7 @@ export class DecompRuntime {
     func: (task: DecompTask) => void,
     followupFunc: (task: DecompTask) => void,
   ): void {
-    const task = this.gTasks.get(taskId);
+    const task = this.gTasks[taskId];
     if (!task) return;
     task.followupFunc = followupFunc;
     task.func = func;
@@ -1566,58 +1715,32 @@ export class DecompRuntime {
    *  La décomp ne clear PAS data[14]/data[15] après le swap (= permet
    *  re-switch). On préserve la sémantique : `followupFunc` reste set. */
   SwitchTaskToFollowupFunc(taskId: number): void {
-    const task = this.gTasks.get(taskId);
+    const task = this.gTasks[taskId];
     if (!task) return;
     if (task.followupFunc) task.func = task.followupFunc;
   }
 
-  /** Run all tasks once (= 1 frame). À call chaque frame depuis update().
+  /** 1:1 décomp `task.c:110 RunTasks` — exécute les tasks dans l'ORDRE DE PRIORITÉ.
+   *  FindFirstActiveTask (tête de liste) puis suit la chaîne `.next` jusqu'à
+   *  TAIL_SENTINEL. Une task qui se crée/détruit pendant l'itération est gérée 1:1
+   *  (on relit `gTasks[taskId].next` APRÈS l'appel de func — DestroyTask ne touche pas
+   *  le `.next` du slot courant, donc l'itération continue vers son ancien suivant).
    *
-   *  1:1 décomp src/task.c:RunTasks (lines 110-122) : itère via linked list
-   *  `.next` à partir de FindFirstActiveTask. Si une Task crée une NOUVELLE
-   *  Task pendant l'iteration (ex: Task_Scene1_WaterDrops → Task_BlendLogoIn
-   *  frame 128), InsertTask insère selon priorité — pour des priorités égales
-   *  (= 0 par défaut), la nouvelle Task est appendée à la FIN de la liste.
-   *  L'iteration via `.next` la rencontre avant la fin → elle tourne MÊME
-   *  FRAME que sa création.
-   *
-   *  Notre ancienne version utilisait un snapshot Array.from(...) avant
-   *  l'iteration → les nouvelles Tasks ne tournaient PAS la frame de création
-   *  → 1-frame race où Task_BlendLogoIn (BLDCNT setup pour alpha blend du
-   *  logo Game Freak) ne s'exécutait que frame 129, alors que SpriteCB
-   *  rendait le logo dès frame 128 → flicker solid → blended.
-   *
-   *  Fix : iteration dynamique. On utilise un Set pour tracker les Tasks DÉJÀ
-   *  visitées cette frame (évite double-exec si une task se re-crée par
-   *  réutilisation du même slot id). */
+   *  Garde idempotence (skip 2e appel/frame) : les MainCB2_* auto-décomp appellent
+   *  `RunTasks()` dans leur body (option_menu.c:138) ET le runtime ré-appelle en backup
+   *  pour les MainCB2_* manuels TS — sans le flag, tasks run 2× (double DPAD). Reset
+   *  en fin de runOneFrame. Garde anti-boucle (liste corrompue) = NUM_TASKS*4. */
   runTasks(): void {
-    // 1:1 décomp idempotency : skip 2nd call dans la même frame. Les MainCB2_*
-    // auto-décomp font `RunTasks()` dans leur body (option_menu.c:138 etc).
-    // Notre runtime ré-appelle `runTasks()` en backup pour les MainCB2_*
-    // manuels TS (= MainCB2_Overworld). Sans guard → tasks run 2× → bug
-    // double DPAD_DOWN dans option menu field. Reset flag en fin runOneFrame.
     if (this._runTasksCalledThisFrame) return;
     this._runTasksCalledThisFrame = true;
-    const visited = new Set<number>();
-    let processed = 0;
-    const maxIters = 256;  // safety guard contre boucle infinie
-    while (processed < maxIters) {
-      let found: DecompTask | null = null;
-      for (const task of this.gTasks.values()) {
-        if (visited.has(task.taskId)) continue;
-        if (!task.func) continue;
-        found = task;
-        break;
-      }
-      if (!found) break;
-      visited.add(found.taskId);
-      const fn = found.func;  // narrow : on a déjà vérifié !task.func ci-dessus
-      if (fn) {
-        try { fn(found); } catch (e) {
-          console.error('[runTasks] task threw:', e);
-        }
-      }
-      processed++;
+    let taskId = this.FindFirstActiveTask();
+    if (taskId !== NUM_TASKS) {
+      let guard = 0;
+      do {
+        const t = this.gTasks[taskId];
+        try { t.func?.(t); } catch (e) { console.error('[runTasks] task threw:', e); }
+        taskId = this.gTasks[taskId].next;
+      } while (taskId !== TAIL_SENTINEL && ++guard < NUM_TASKS * 4);
     }
   }
 
@@ -1641,10 +1764,9 @@ export class DecompRuntime {
     // car gMain est recréé à chaque reset().
     (globalThis as Record<string, unknown>).gMain = this.gMain;
     this.gPaletteFade = new PaletteFade();
-    this.gTasks.clear();
+    this.ResetTasks();  // 1:1 task.c:9 — réinitialise les 16 slots (≠ Map.clear).
     this.gSprites.fill(undefined);
     this.nextOamSlot = 0;
-    this.nextTaskId = 0;
     this.nextSpriteId = 0;
     // Reset l'alloc des matrices OAM (état unique = bitmap, ex-`_matrixUsed.clear()`, E2.3c).
     (globalThis as Record<string, unknown>).gOamMatrixAllocBitmap = 0;

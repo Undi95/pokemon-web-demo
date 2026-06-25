@@ -191,7 +191,7 @@ export class GameScene extends Phaser.Scene {
           version: 1,
           callback2: rt.gMain.callback2?.name ?? 'anon',
           frameCounter: rt.gIntroFrameCounter ?? 0,
-          taskCount: rt.gTasks.size,
+          taskCount: rt.GetTaskCount(),
           vram: vram,
           pltt: plttB64,
           oam: oamB64,
@@ -240,7 +240,7 @@ export class GameScene extends Phaser.Scene {
       this.scene.start('TestGbaScene');
     });
     this.input.on('pointerdown', () => {
-      console.log('[GameScene] click | tasks:', this.rt.gTasks.size,
+      console.log('[GameScene] click | tasks:', this.rt.GetTaskCount(),
                   '| sprites:', this.rt.gSprites.filter(Boolean).length,
                   '| frame:', this.rt.gIntroFrameCounter);
     });
