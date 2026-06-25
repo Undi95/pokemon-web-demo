@@ -23,8 +23,8 @@
 ## B. PRIMITIVES PARTAGÉES (menu_helpers / menu / text / window / sprite)
 | Item | Statut | Commit / note |
 |---|---|---|
-| `CreateYesNoMenuWithCallbacks` + `Task_CallYesOrNoCallback` + `DoYesNoFuncWithChoice` | ✅ | `9a2e483d` (menu_helpers.ts) |
-| `DisplayMessageAndContinueTask` + `Task_ContinueTaskAfterMessagePrints` (menu.c) | 🔍 | message animé = un appel partout |
+| `CreateYesNoMenuWithCallbacks` + `Task_CallYesOrNoCallback` + `DoYesNoFuncWithChoice` | ✅ | `9a2e483d` — porté + câblé shop (vérifié en jeu) |
+| `DisplayMessageAndContinueTask` + `Task_ContinueTaskAfterMessagePrints` + `RunTextPrintersRetIsActive` | ✅ | `773e5eb6` — porté (menu_helpers.c, pas menu.c) ; câblage écrans = à suivre |
 | `DisplayItemMessageOnField` (item_menu.c) | ⬜ | dialogue de terrain + continuation |
 | `menu.c` (CreateYesNoMenu/frames/Print*) — ratio 0.49, à compléter | ⬜ | confronter les fns manquantes |
 | `text.c` (ratio 0.55) | ⬜ | RunTextPrinters / AddTextPrinter* complétude |
@@ -77,4 +77,4 @@
 ---
 
 ## Journal (paliers vérifiés)
-- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · primitive yes/no + shop (`9a2e483d`) · recensement (`30be0305`).
+- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop vérifié en jeu (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message DisplayMessageAndContinueTask (`773e5eb6`).
