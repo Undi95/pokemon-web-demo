@@ -1090,6 +1090,10 @@ if (!(globalThis as Record<string, unknown>).__battleState) {
   get gBattleTypeFlags() { return gBattleTypeFlags; },
   get gAbsentBattlerFlags() { return gAbsentBattlerFlags; },
   get gBattlersCount() { return gBattlersCount; },
+  // Trainer B (= 2-opponent doubles) : lu par battle-string-decoder
+  // (_getTrainerOpponentB → B_TXT_TRAINER2 name/class). Store canonique unique
+  // (battle_setup propage via setTrainerBattleOpponentB).
+  get gTrainerBattleOpponent_B() { return gTrainerBattleOpponent_B; },
   // Pour _GetImprisonedMovesCount lookup (move-limitations.ts).
   gStatuses3,
   // Pour memory-map.ts accessors (cMULTISTRING_CHOOSER, cMISS_TYPE, etc.).

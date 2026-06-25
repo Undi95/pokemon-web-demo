@@ -43,7 +43,7 @@ import { ShowFieldMessage } from './field_message_box';
 import { BattleSetup_StartTrainerBattle } from './engine/battle/battle-setup-helpers';
 import { resolveTrainerNumId, ensureGTrainersLoaded } from './engine/battle/battle-trainer-data-bridge';
 import {
-  setTrainerBattleOpponentA, setBattleOutcome, gBattleOutcome,
+  setTrainerBattleOpponentA, setTrainerBattleOpponentB, setBattleOutcome, gBattleOutcome,
 } from './engine/battle/state';
 
 // ─── Modes 1:1 décomp `include/battle_setup.h` (TRAINER_BATTLE_*) ───────────
@@ -88,8 +88,6 @@ type TrainerVarKey =
   | 'sTrainerBattleEndScript';
 
 let sTrainerBattleMode = 0;
-/** 1:1 décomp `gTrainerBattleOpponent_B` (battle_setup.c:96). (_A vit dans state.ts.) */
-export let gTrainerBattleOpponent_B = 0;
 /** 1:1 décomp `gPartnerTrainerId` (battle_setup.c:97) — multi/partner, dette. */
 export let gPartnerTrainerId = 0;
 let sTrainerObjectEventLocalId = 0;
@@ -115,6 +113,11 @@ const gNoOfApproachingTrainers = 0;
  *  setTrainerBattleOpponentA — GetTrainerFlag de specials-registry la lit par
  *  __battleStateMutators). On garde une copie lisible ici pour GetTrainerAFlag. */
 let _trainerBattleOpponentA = 0;
+/** Miroir local de gTrainerBattleOpponent_B (canonique = state.ts, écrite via
+ *  setTrainerBattleOpponentB). Copie lisible ici pour GetTrainerBFlag /
+ *  SetBattledTrainersFlags — même schéma que _A (1:1 : ces 2 globals vivent
+ *  ensemble dans battle_setup.c ; le moteur combat lit state.ts). */
+let _trainerBattleOpponentB = 0;
 
 // ─── SetU8/SetU16/SetU32/SetPtr 1:1 décomp :1039-1057 (varPtr → varKey) ─────
 function SetU8(key: TrainerVarKey, value: number): void { _setVar(key, value & 0xFF); }
@@ -129,7 +132,10 @@ function _setVar(key: TrainerVarKey, value: number | string | ScriptPos | null):
       _trainerBattleOpponentA = value as number;
       setTrainerBattleOpponentA(value as number);
       break;
-    case 'gTrainerBattleOpponent_B': gTrainerBattleOpponent_B = value as number; break;
+    case 'gTrainerBattleOpponent_B':
+      _trainerBattleOpponentB = value as number;
+      setTrainerBattleOpponentB(value as number);
+      break;
     case 'sTrainerObjectEventLocalId': sTrainerObjectEventLocalId = value as number; break;
     case 'sTrainerAIntroSpeech': sTrainerAIntroSpeech = value as string | null; break;
     case 'sTrainerBIntroSpeech': sTrainerBIntroSpeech = value as string | null; break;
@@ -286,7 +292,7 @@ function TrainerBattleLoadArgs(specs: TrainerBattleParameter[], args: string[], 
 /** 1:1 décomp `GetTrainerAFlag()` (battle_setup.c:984). */
 function GetTrainerAFlag(): number { return TRAINER_FLAGS_START + _trainerBattleOpponentA; }
 /** 1:1 décomp `GetTrainerBFlag()` (battle_setup.c:989). */
-export function GetTrainerBFlag(): number { return TRAINER_FLAGS_START + gTrainerBattleOpponent_B; }
+export function GetTrainerBFlag(): number { return TRAINER_FLAGS_START + _trainerBattleOpponentB; }
 
 /** 1:1 décomp `IsPlayerDefeated(battleOutcome)` (battle_setup.c:994-1010). */
 export function IsPlayerDefeated(battleOutcome: number): boolean {
@@ -402,7 +408,7 @@ export function GetTrainerBattleMode(): number { return sTrainerBattleMode; }
 
 /** 1:1 décomp `SetBattledTrainersFlags()` (battle_setup.c:1245-1250). */
 export function SetBattledTrainersFlags(): void {
-  if (gTrainerBattleOpponent_B !== 0) FlagSet(GetTrainerBFlag());
+  if (_trainerBattleOpponentB !== 0) FlagSet(GetTrainerBFlag());
   FlagSet(GetTrainerAFlag());
 }
 // NON PORTÉ (volontaire) : `SetBattledTrainerFlag` (battle_setup.c:1252) est
