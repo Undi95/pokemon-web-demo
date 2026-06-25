@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * audit-fr-names.cjs — ORACLE de fidélité des NOMS FR (capacités / talents / natures).
+ * audit-fr-names.cjs — ORACLE de fidélité des NOMS FR (capacités / talents / classes-dresseurs / natures).
  *
  * Confronte nos tables de noms FR extraites (`public/decomp/em/*-names-fr.json`) au
  * décomp `src/data/text/*.h` (format `[CONST_X] = _("NOM")`). Texte FR gameplay-visible
@@ -18,6 +18,7 @@ const DECOMP = 'D:/Projet 1/decomps/pokeemeraude';
 const TABLES = [
   { label: 'capacités', json: 'move-names-fr.json', h: 'src/data/text/move_names.h', prefix: 'MOVE_' },
   { label: 'talents', json: 'ability-names-fr.json', h: 'src/data/text/abilities.h', prefix: 'ABILITY_' },
+  { label: 'classes-dr.', json: 'trainer-class-names-fr.json', h: 'src/data/text/trainer_class_names.h', prefix: 'TRAINER_CLASS_' },
   // natures : `s<Nom>NatureName[] = _("FR")` → clé NATURE_<NOM>
   { label: 'natures', json: 'nature-names-fr.json', h: 'src/data/text/nature_names.h', natureMode: true },
 ];
@@ -50,7 +51,7 @@ for (const t of TABLES) {
 }
 
 console.log(`Noms FR comparés : ${checkedTotal}`);
-if (findings.length === 0) { console.log('✅ noms FR (capacités/talents/natures) FIDÈLES au décomp.'); process.exit(0); }
+if (findings.length === 0) { console.log('✅ noms FR (capacités/talents/classes-dresseurs/natures) FIDÈLES au décomp.'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) de nom FR :\n`);
 for (const f of findings.slice(0, 40)) console.log('  ' + f);
 process.exit(1);
