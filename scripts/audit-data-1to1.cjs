@@ -34,6 +34,8 @@ const ORACLES = [
   'audit-heal-locations.cjs',
   // — Tables TS hand-codées —
   'audit-battle-stat-tables.cjs',
+  // — Textes FR (gameplay-visible) —
+  'audit-fr-names.cjs',
 ];
 
 const results = [];
