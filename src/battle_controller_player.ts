@@ -145,6 +145,7 @@ import { getPPTextPalette } from './battle_bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
 import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from './engine/ui/gba-window-system';
+import { getString } from './engine/ui/gba-strings';
 // ANTI-CYCLE ESM (regression T3 : l'import statique de battle_gfx_sfx_util
 // bloquait l'INTRO — meme TDZ que pokeball/ST_OAM_AFFINE_DOUBLE) : lazy.
 function _InitAndLaunchChosenStatusAnimation(isStatus2: boolean, status: number): void {
@@ -287,8 +288,9 @@ const OPTIONS_BUTTON_MODE_L_EQUALS_A = 2;
  *  include/constants/items.h : ITEM_PREMIER_BALL = 12 dans Emerald. */
 const LAST_BALL = 12;
 
-/** 1:1 décomp `gText_BattleMenu` (battle_message.c:1276) = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE". */
-const gText_BattleMenu = 'ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE';
+// gText_BattleMenu (battle_message.c:1276) « ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON... » :
+// tiré de getString() au point d'usage (anti-hardcode ; .replace \n littéral → saut de
+// ligne pour un input byte-identique à l'ancien const).
 
 /** 1:1 décomp `gText_WhatWillPkmnDo` (battle_message.c:1272) = "Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?". */
 const gText_WhatWillPkmnDo = 'Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?';
@@ -1546,7 +1548,7 @@ function PlayerHandleChooseAction(): void {
   let i: number;
   gBattlerControllerFuncs[gActiveBattler] = HandleChooseActionAfterDma3;
   _BattleTv_ClearExplosionFaintCause();
-  BattlePutTextOnWindow(gText_BattleMenu, B_WIN_ACTION_MENU);
+  BattlePutTextOnWindow(getString('gText_BattleMenu').replace(/\\n/g, '\n'), B_WIN_ACTION_MENU);
 
   for (i = 0; i < 4; i++) {
     ActionSelectionDestroyCursorAt(i);
