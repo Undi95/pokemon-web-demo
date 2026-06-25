@@ -35,7 +35,7 @@ import { FreeAllSpritePalettes } from '../harness/runtime/decomp-globals';
 import { GetPlayerNameString } from './engine/system/string-buffers';
 import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
-  CopyWindowToVram, ShowBg, HideBg,
+  CopyWindowToVram, ShowBg, HideBg, ResetVramOamAndBgCntRegs,
   type WindowTemplate,
 } from './engine/ui/gba-window-system';
 import { LoadUserWindowBorderGfx } from './text_window';
@@ -204,22 +204,8 @@ async function _loadAssets(): Promise<TrainerCardAssets> {
  *  Setup BG2/BG1/BG0 templates + clear VRAM/OAM/PLTT. */
 function _initCardBgs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  // ResetVramOamAndBgCntRegs (menu_helpers.c:94).
-  rt.SetGpuReg(0x00, 0); // DISPCNT
-  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0;
-    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) {
-    rt.gPlttBufferUnfaded.set(i, 0);
-    rt.gPlttBufferFaded.set(i, 0);
-  }
-  // Direct PLTT RAM clear (= bypass bufferTransferDisabled, sinon OW palettes leak).
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  ResetVramOamAndBgCntRegs();
   // 1:1 décomp `sTrainerCardBgTemplates` (trainer_card.c:193) :
   //   BG0 charBase=0 mapBase=27 priority=2 screenSize=2 (= front.bin)
   //   BG1 charBase=2 mapBase=29 priority=0 (= text windows)

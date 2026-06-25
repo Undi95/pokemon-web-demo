@@ -28,7 +28,7 @@ import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg,
-  InitWindows,
+  InitWindows, ResetVramOamAndBgCntRegs,
   type WindowTemplate,
 } from '../ui/gba-window-system';
 import { LoadUserWindowBorderGfx } from '../../text_window';
@@ -2874,35 +2874,9 @@ function Task_BagMenu_HandleInput_BagScreen(_task: DecompTask): void {
  *    BG2 char=3 map=29 prio=2 (= fond rayé menu.bin) */
 function _initBagBgs(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
-  // 1:1 décomp ResetVramOamAndBgCntRegs (menu_helpers.c:94) :
-  //   SetGpuReg(DISPCNT/BG0/1/2/3CNT, 0);
-  //   CpuFill16(0, VRAM, VRAM_SIZE);
-  //   CpuFill32(0, OAM, OAM_SIZE);
-  //   CpuFill16(0, PLTT, PLTT_SIZE);
-  rt.SetGpuReg(0x00 /* DISPCNT */, 0);
-  rt.SetGpuReg(0x08 /* BG0CNT */, 0);
-  rt.SetGpuReg(0x0A /* BG1CNT */, 0);
-  rt.SetGpuReg(0x0C /* BG2CNT */, 0);
-  rt.SetGpuReg(0x0E /* BG3CNT */, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0;
-    oam.tileId = 0; oam.paletteBank = 0;
-    oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) {
-    rt.gPlttBufferUnfaded.set(i, 0);
-    rt.gPlttBufferFaded.set(i, 0);
-  }
-  // 1:1 décomp `CpuFill16(0, PLTT, PLTT_SIZE)` (= ResetVramOamAndBgCntRegs
-  // menu_helpers.c:97). Direct PLTT RAM clear, sans passer par gPlttBufferFaded
-  // → bypass `bufferTransferDisabled=true` set au state 3.
-  // Sans ce clear : PLTT RAM garde palettes OW pendant state 7-19 →
-  // bag tilemap rend avec couleurs OW (= "frame cheloue" bleu/orange user
-  // session 129).
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE
+  // (inclut le clear PLTT RAM hardware, cf. bug couleurs OW session 129).
+  ResetVramOamAndBgCntRegs();
   // InitBgsFromTemplates(0, sBgTemplates_ItemMenu, 3).
   const bg0c = rt.gba.bg(0).config;
   bg0c.charBaseIndex = 0; bg0c.mapBaseIndex = 31; bg0c.screenSize = 0;

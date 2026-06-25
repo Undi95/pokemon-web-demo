@@ -37,7 +37,7 @@
 
 import { ResetSpriteData } from './sprite';
 import {
-  ShowBg, HideBg,
+  ShowBg, HideBg, ResetVramOamAndBgCntRegs,
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
@@ -399,21 +399,8 @@ async function _loadAssets(): Promise<WallClockAssets> {
  *    - LoadCompressedSpriteSheet(sSpriteSheet_ClockHand) → OBJ VRAM
  *    - LoadSpritePalettes(sSpritePalettes_Clock) → OBJ palette */
 function _loadWallClockGraphics(rt: DecompRuntime): void {
-  // ResetVramOamAndBgCntRegs equivalent
-  rt.SetGpuReg(0x00, 0);  // DISPCNT = 0
-  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0; oam.tileId = 0;
-    oam.paletteBank = 0; oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) {
-    rt.gPlttBufferUnfaded.set(i, 0);
-    rt.gPlttBufferFaded.set(i, 0);
-  }
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
-  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  ResetVramOamAndBgCntRegs();
 
   if (!_assetsCache) {
     console.warn('[wallclock] _loadWallClockGraphics: assets not loaded');
