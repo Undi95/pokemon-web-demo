@@ -28,8 +28,12 @@ import { AddTextPrinterParameterized3, CHAR_SPACER_STR } from './gba-text-system
 // `save-block-state` permet l'import direct (= élimine pattern globalThis non-1:1).
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 
-const FONT_NORMAL = 0;
-const FONT_SMALL = 1;
+// 1:1 décomp `text.h` enum FontIds : FONT_SMALL=0, FONT_NORMAL=1.
+// BUG racine du « font de l'argent » : FONT_NORMAL valait 0 (= FONT_SMALL) → la money box
+// imprimait le montant en petit font, et le CHAR_SPACER demi-largeur du petit font ratait
+// l'alignement à droite. `PrintMoneyAmount` (money.c:138) utilise FONT_NORMAL (=1).
+const FONT_NORMAL = 1;
+const FONT_SMALL = 1;  // (casino coins, hors-scope mart — séparé)
 const COLOR_BG_FG_SHADOW: [number, number, number] = [1, 2, 3];
 
 // ─── Money box state ────────────────────────────────────────────────────────
