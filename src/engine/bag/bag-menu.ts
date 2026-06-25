@@ -58,6 +58,7 @@ import { gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../../include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
+  ResetVramOamAndBgCntRegs,
   ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
   FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
@@ -414,16 +415,10 @@ function _bagScheduleBgCopy(bg: number): void {
 function BagMenu_InitBGs(): void {
   const rt = getRuntime();
   if (!rt || !gBagMenu) return;
-  // ResetVramOamAndBgCntRegs() : DISPCNT/BGxCNT=0, VRAM/OAM/PLTT clear.
-  rt.SetGpuReg(0x00, 0);
-  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
-  rt.gba.vram.fill(0);
-  for (let i = 0; i < rt.gba.oam.length; i++) {
-    const oam = rt.gba.oam[i];
-    oam.visible = false; oam.x = 0; oam.y = 0;
-    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
-  }
-  for (let i = 0; i < 512; i++) { rt.gPlttBufferUnfaded.set(i, 0); rt.gPlttBufferFaded.set(i, 0); }
+  // 1:1 décomp `ResetVramOamAndBgCntRegs()` (menu_helpers.c:94) — fn PARTAGÉE.
+  // (Avant : bloc inline INCOMPLET — il manquait le clear PLTT RAM hardware ;
+  //  la fn partagée le rétablit = vrai 1:1, évite tout résidu palette OW.)
+  ResetVramOamAndBgCntRegs();
   // memset(gBagMenu->tilemapBuffer, 0, sizeof) — déjà zéro à l'alloc, 1:1.
   gBagMenu.tilemapBuffer.fill(0);
   // ResetBgsAndClearDma3BusyFlags(0) + InitBgsFromTemplates(sBgTemplates_ItemMenu).
