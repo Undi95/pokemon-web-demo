@@ -115,7 +115,11 @@ const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;     // palette des TILES de bordure de cadre std.
 const SHOP_WIN_PAL = 15;      // palette du CONTENU des fenêtres (gStandardMenuPalette).
 const SHOP_MENU_PAL = 12;     // 1:1 décomp SHOP_MENU_PALETTE_ID : palette du cadre gShopMenu.
-const TEXT_COLOR_SET: [number, number, number] = [1, 2, 3];
+// 1:1 décomp `sShopBuyMenuTextColors[][3]` (shop.c:333) : triplets [fond, texte, ombre].
+// TEXT_COLOR_SET = COLORID_NORMAL (descriptions/quantité). COLORID_ITEM_LIST a fond=0
+// (transparent → laisse voir le panneau jaune) : fond=1 sur les prix = le bug « fond blanc ».
+const TEXT_COLOR_SET: [number, number, number] = [1, 2, 3];   // COLORID_NORMAL
+const COLORID_ITEM_LIST: [number, number, number] = [0, 2, 3];
 
 // menu.h : MENU_NOTHING_CHOSEN = -2, MENU_B_PRESSED = -1.
 const MENU_NOTHING_CHOSEN = -2;
@@ -746,7 +750,9 @@ function _buyMenuPrintPriceInList(windowId: number, index: number, y: number): v
   setStringVar(1, String(price));
   StringExpandPlaceholders(gStringVar4, getString('gText_PokedollarVar1') ?? '{STR_VAR_1}¥');
   const x = GetStringRightAlignXOffset(gStringVar4, 120, FONT_NARROW);
-  AddTextPrinterParameterized3(windowId, FONT_NARROW, x, y, TEXT_COLOR_SET, TEXT_SKIP_DRAW, gStringVar4);
+  // 1:1 décomp shop.c:645 : sShopBuyMenuTextColors[COLORID_ITEM_LIST] (fond 0 transparent),
+  // PAS COLORID_NORMAL (fond 1 = le bug « prix sur fond blanc »).
+  AddTextPrinterParameterized3(windowId, FONT_NARROW, x, y, COLORID_ITEM_LIST, TEXT_SKIP_DRAW, gStringVar4);
 }
 
 // ─── Task_BuyMenu (1:1 shop.c:964) — gTasks task, dispatch des substates ────
