@@ -23,6 +23,13 @@ import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 // →gba-menu-system→menu qui cassait l'init quand menu.ts est devenu foundational).
 import { OPTIONS_BUTTON_MODE_LR } from '../include/constants/global';
 import { ItemIsMail } from './mail_data';
+// Yes/No à callbacks (menu_helpers.c:150-177). CreateYesNoMenu + Menu_ProcessInputNoWrapClearOnChoose
+// vivent dans le miroir `menu.ts` (foundational). menu.ts importe `menu_helpers-data` (data),
+// PAS ce fichier → pas de cycle. Usage runtime (dans les fns) → pas de TDZ.
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
+import { MENU_B_PRESSED } from './engine/decomp-data/include/menu-data';
+import type { WindowTemplate } from './engine/ui/gba-window-system';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 // ─── Constantes 1:1 ──────────────────────────────────────────────────────────
 
@@ -209,4 +216,58 @@ export function SetCursorScrollWithinListBounds(
       }
     }
   }
+}
+
+// ─── Yes/No à callbacks (1:1 menu_helpers.c:150-177) ─────────────────────────
+// LA primitive partagée OUI/NON : ~10 écrans décomp l'appellent (shop, player_pc,
+// item_menu, secret_base, decoration…). On donne une fenêtre + 2 callbacks → la task
+// appelante est reroutée (témoin `gTasks[taskId].func`) vers Task_CallYesOrNoCallback,
+// qui lit le choix et appelle yesFunc/noFunc (qui repointent le témoin vers la suite).
+// Avant : non porté → chaque écran re-câblait un dispatch yes/no à la main.
+
+/** 1:1 décomp `struct YesNoFuncTable` (menu.h) : `{ TaskFunc yesFunc; TaskFunc noFunc }`.
+ *  Nos TaskFunc reçoivent l'OBJET task (convention runtime), pas le `u8 taskId`. */
+export interface YesNoFuncTable {
+  yesFunc: (task: DecompTask) => void;
+  noFunc: (task: DecompTask) => void;
+}
+
+/** 1:1 décomp `static struct YesNoFuncTable sYesNo` (menu_helpers.c:25). */
+let sYesNo: YesNoFuncTable = { yesFunc: () => { /* noop */ }, noFunc: () => { /* noop */ } };
+
+/** 1:1 décomp `Task_CallYesOrNoCallback(taskId)` (menu_helpers.c:163) : lit le choix
+ *  (0=OUI, 1/MENU_B_PRESSED=NON) et appelle le callback correspondant. */
+function Task_CallYesOrNoCallback(task: DecompTask): void {
+  switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+    case 0:
+      PlaySE(SE_SELECT);
+      sYesNo.yesFunc(task);
+      break;
+    case 1:
+    case MENU_B_PRESSED:
+      PlaySE(SE_SELECT);
+      sYesNo.noFunc(task);
+      break;
+  }
+}
+
+/** 1:1 décomp `DoYesNoFuncWithChoice(taskId, data)` (menu_helpers.c:150) : pose les
+ *  callbacks + reroute la task (la boîte OUI/NON est DÉJÀ affichée). */
+export function DoYesNoFuncWithChoice(taskId: number, data: YesNoFuncTable): void {
+  sYesNo = data;
+  const rt = getRuntime();
+  if (rt) rt.gTasks[taskId].func = Task_CallYesOrNoCallback;
+}
+
+/** 1:1 décomp `CreateYesNoMenuWithCallbacks(taskId, template, unused1, unused2, unused3,
+ *  tileStart, palette, yesNo)` (menu_helpers.c:156) : crée la boîte OUI/NON + pose les
+ *  callbacks + reroute la task vers Task_CallYesOrNoCallback. */
+export function CreateYesNoMenuWithCallbacks(
+  taskId: number, template: WindowTemplate, _unused1: number, _unused2: number,
+  _unused3: number, tileStart: number, palette: number, yesNo: YesNoFuncTable,
+): void {
+  CreateYesNoMenu(template, tileStart, palette, 0);
+  sYesNo = yesNo;
+  const rt = getRuntime();
+  if (rt) rt.gTasks[taskId].func = Task_CallYesOrNoCallback;
 }

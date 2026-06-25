@@ -53,7 +53,6 @@ import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
 import { encodeOwText } from './text';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
-  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
 } from './engine/ui/gba-menu-system';
 import {
   getRuntime, PlaySE, LoadPalette, BlendPalettes,
@@ -70,7 +69,7 @@ import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './
 import { AddBagItem, GetBagItemQuantity } from './engine/bag/bag';
 import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
 import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './engine/ui/money-box-ui';
-import { AdjustQuantityAccordingToDPadInput, type IntRef } from './menu_helpers';
+import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
@@ -199,7 +198,6 @@ type ShopSubState =
   | 'buy_goto'           // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
   | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
   | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
-  | 'buy_confirm'        // BuyMenuConfirmPurchase (Yes/No)
   | 'buy_msg'            // BuyMenuDisplayMessage → Task_ContinueTaskAfterMessagePrints
   | 'buy_after_purchase' // Task_ReturnToItemListAfterItemPurchase (attend A/B)
   | 'reopen_msg';        // Task_ReturnToShopMenu (DisplayItemMessageOnField → re-ouvre le menu)
@@ -824,7 +822,6 @@ function Task_BuyMenu(_task: DecompTask): void {
   switch (sSubState) {
     case 'buy_list':           _tickBuyMenu(); break;
     case 'buy_qty':            _tickBuyQuantity(newKeys); break;
-    case 'buy_confirm':        _tickBuyConfirm(); break;
     case 'buy_msg':            _tickBuyMessage(); break;
     case 'buy_after_purchase': _tickAfterItemPurchase(newKeys); break;
   }
@@ -922,20 +919,26 @@ function _tickBuyQuantity(newKeys: number): void {
   }
 }
 
-// ─── BuyMenuConfirmPurchase (1:1 shop.c:1092) — continuation du message confirm ─
-function _buyMenuConfirmPurchase(): void {
-  // 1:1 : CreateYesNoMenuWithCallbacks(taskId, &template, 1, 0, 0, 1, 13, funcs) → cadre
-  // yes/no = tile 1, palette 13 (BUY_FRAME). Le message de confirmation reste affiché dessous.
-  CreateYesNoMenu(WIN_YESNO, BUY_FRAME_TILE, BUY_FRAME_PAL, 0);
-  sSubState = 'buy_confirm';
+// ─── BuyMenuConfirmPurchase (1:1 shop.c:1092) — via la primitive partagée ────
+// 1:1 décomp `sShopPurchaseYesNoFuncs = { BuyMenuTryMakePurchase, BuyMenuReturnToItemList }`.
+// Nos callbacks RESTAURENT d'abord le témoin `gTasks[sBuyTaskId].func = Task_BuyMenu` (que
+// CreateYesNoMenuWithCallbacks avait repointé vers Task_CallYesOrNoCallback), puis enchaînent
+// (la suite pose le substate). C'est le passage de témoin 1:1 — plus de dispatch yes/no maison.
+const sShopPurchaseYesNoFuncs: YesNoFuncTable = {
+  yesFunc: () => { _restoreBuyTaskFunc(); _buyMenuTryMakePurchase(); },
+  noFunc:  () => { _restoreBuyTaskFunc(); _buyReturnToItemList(); },
+};
+
+function _restoreBuyTaskFunc(): void {
+  const rt = getRuntime();
+  if (rt && sBuyTaskId >= 0) rt.gTasks[sBuyTaskId].func = Task_BuyMenu;
 }
 
-function _tickBuyConfirm(): void {
-  const res = Menu_ProcessInputNoWrapClearOnChoose();
-  if (res === -2) return;
-  PlaySE(Songs.SE_SELECT);
-  if (res === 0) _buyMenuTryMakePurchase();
-  else _buyReturnToItemList();
+function _buyMenuConfirmPurchase(): void {
+  // 1:1 shop.c:1092 : CreateYesNoMenuWithCallbacks(taskId, &template, 1,0,0, 1, 13, funcs).
+  // La primitive crée la boîte OUI/NON + repointe gTasks[sBuyTaskId].func vers
+  // Task_CallYesOrNoCallback (= le yes/no se gère seul, plus de substate 'buy_confirm').
+  CreateYesNoMenuWithCallbacks(sBuyTaskId, WIN_YESNO, 1, 0, 0, BUY_FRAME_TILE, BUY_FRAME_PAL, sShopPurchaseYesNoFuncs);
 }
 
 // ─── BuyMenuTryMakePurchase (1:1 shop.c:1097) — callback YES du yes/no ───────
