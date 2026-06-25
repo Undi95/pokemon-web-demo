@@ -33,7 +33,7 @@
 ## C. ÉCRANS (à convertir en task-témoin, supprimer les machines maison)
 | Écran | Statut | Note |
 |---|---|---|
-| `shop.c` | 🔧 | yes/no → primitive ✅ ; reste substates `ShopSubState` → baton |
+| `shop.c` | 🔧 | yes/no ✅ + messages ✅ via primitives partagées (témoin) ; `ShopSubState` réduit 8→5 ; reste qty/list/exit → baton complet |
 | `player_pc.c` (40 `sSubState` + yes/no recodé) | ⬜ | câbler sur la primitive + baton |
 | `start_menu.c` (24 `sSubState`) | ⬜ | baton |
 | `item_menu.c`→bag (item_menu.c absent homonyme, porté bag-screen/bag-menu) | ⬜ | yes/no recodé → primitive |
@@ -77,4 +77,4 @@
 ---
 
 ## Journal (paliers vérifiés)
-- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop vérifié en jeu (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message DisplayMessageAndContinueTask (`773e5eb6`).
+- 2026-06-25 — Tronc task 1:1 (`eed1850b`) · recensement (`30be0305`) · primitive yes/no + câblage shop (`9a2e483d`) · ledger (`2a2eb4bf`) · primitive message (`773e5eb6`) · câblage messages shop + dédup, vérifié multi-contextes shop/start-menu/Littleroot/combat (`2cd0f8b5`).
