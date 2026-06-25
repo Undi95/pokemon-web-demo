@@ -977,6 +977,19 @@ function _bagPrintQuantity(windowId: number, itemQuantity: number, y: number, nu
   BagMenu_Print(windowId, FONT_NARROW, s4, offset, y, 0, 0, TEXT_SKIP_DRAW, COLORID_NORMAL);
 }
 
+/** 1:1 décomp `PrintItemQuantity(windowId, quantity, speed)` (item_menu.c:2526) :
+ *  fenêtre ITEMWIN_QUANTITY du sélecteur Toss/Deposit — `×{count}`, leading zeros,
+ *  centré. Exporté pour bag-menu-ctx (flow toss). */
+export function _CtxPrintQuantityInWindow(windowId: number, count: number): void {
+  FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+  ConvertIntToDecimalStringN(gStringVar1, count, STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS);
+  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_xVar1));
+  // Décomp : GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28) ; fenêtre
+  // largeur 5 (40px) → offset centré ~4px (ajustable A/B).
+  BagMenu_Print(windowId, FONT_NORMAL, gStringVar4, 4, 2, 0, 0, TEXT_SKIP_DRAW, COLORID_NORMAL);
+  CopyWindowToVram(windowId, 3 /* COPYWIN_FULL */);
+}
+
 /** 1:1 décomp `CopyItemName` (item.c:79) : `StringCopy(dst, GetItemName
  *  (itemId))`. `GetItemName` décomp = `gItems[SanitizeItemId(itemId)].name`
  *  (indexé numérique) ; notre table items est clé itemKey-string →

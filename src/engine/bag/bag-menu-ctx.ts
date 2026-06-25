@@ -34,7 +34,9 @@
 import { BeginNormalPaletteFade } from '../../palette';
 import { GetPlayerNameString } from '../system/string-buffers';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage, _CtxPrintQuantityInWindow } from './bag-menu';
+import { RemoveBagItem, UpdatePocketItemList } from './bag';
+import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput } from '../../menu_helpers';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
@@ -100,6 +102,13 @@ const ITEMWIN_1x1: number = ENUM_ITEMWIN_1.ITEMWIN_1x1;       // 0
 const ITEMWIN_1x2: number = ENUM_ITEMWIN_1.ITEMWIN_1x2;       // 1
 const ITEMWIN_2x2: number = ENUM_ITEMWIN_1.ITEMWIN_2x2;       // 2
 const ITEMWIN_2x3: number = ENUM_ITEMWIN_1.ITEMWIN_2x3;       // 3
+const ITEMWIN_YESNO_LOW: number = ENUM_ITEMWIN_1.ITEMWIN_YESNO_LOW;  // 5 (toss confirm)
+const ITEMWIN_QUANTITY: number = ENUM_ITEMWIN_1.ITEMWIN_QUANTITY;    // 7 (toss/deposit count)
+// task.data 1:1 décomp item_menu.c:662-666 (tQuantity=data[2], tItemCount=data[8]).
+const T_QUANTITY = 2, T_ITEM_COUNT = 8;
+const BAG_ITEM_CAPACITY_DIGITS = 3;
+// taskId courant du flow toss : les yes/no funcs (zéro-arg, comme shop) le réutilisent.
+let _tossTaskId = -1;
 const WINDOW_NONE = 0xFF;
 
 // 1:1 décomp item_menu.c — enum Action.
@@ -171,6 +180,9 @@ const sContextMenuWindowTemplates: WindowTemplate[] = [
   /* ITEMWIN_2x2 */ { bg: 1, tilemapLeft: 15, tilemapTop: 15, width: 14, height: 4, paletteNum: 15, baseBlock: 0x21D },
   /* ITEMWIN_2x3 */ { bg: 1, tilemapLeft: 15, tilemapTop: 13, width: 14, height: 6, paletteNum: 15, baseBlock: 0x21D },
   /* ITEMWIN_MESSAGE */ { bg: 1, tilemapLeft: 2, tilemapTop: 15, width: 27, height: 4, paletteNum: 15, baseBlock: 0x1B1 },
+  /* ITEMWIN_YESNO_LOW  (5) */ { bg: 1, tilemapLeft: 24, tilemapTop: 15, width: 5, height: 4, paletteNum: 15, baseBlock: 0x21D },
+  /* ITEMWIN_YESNO_HIGH (6) */ { bg: 1, tilemapLeft: 21, tilemapTop:  9, width: 5, height: 4, paletteNum: 15, baseBlock: 0x21D },
+  /* ITEMWIN_QUANTITY   (7) */ { bg: 1, tilemapLeft: 24, tilemapTop: 17, width: 5, height: 2, paletteNum: 15, baseBlock: 0x21D },
 ];
 
 // ─── Helpers BagMenu_AddWindow / BagMenu_RemoveWindow (1:1 item_menu.c:2486) ──
@@ -825,15 +837,104 @@ function _itemKeyFromBag(itemId: number): string {
   return getItemKeyById(itemId);
 }
 
-/** 1:1 décomp `ItemMenu_Toss(u8 taskId)` (item_menu.c:1817) — dette R3 doc :
- *  cascade AskTossItems → quantity selector → confirm yes/no → RemoveBagItem.
- *  Flow demande quantity window + YesNo task + ASK_TOSS_ITEMS yes/no functions
- *  (bag-screen.ts a déjà un _startToss séparé). Wire bag-menu-ctx vers même
- *  flow demande refactor cross-module (= U-tier). */
+/** Helper : message toss = template FR avec {STR_VAR_1}=nom item, {STR_VAR_2}=count. */
+function _tossMsg(key: string, fallback: string, itemId: number, count: number): string {
+  const name = GetItemName(itemId);
+  return (getString(key) ?? fallback)
+    .replace('{STR_VAR_1}', name)
+    .replace('{STR_VAR_2}', String(count))
+    .replace('{PAUSE_UNTIL_PRESS}', '')
+    .replace(/\\n/g, '\n').replace(/\\p/g, '\n');
+}
+
+/** 1:1 décomp `ItemMenu_Toss(u8 taskId)` (item_menu.c:1817) : qty==1 → AskTossItems
+ *  direct ; sinon → fenêtre quantité (Task_ChooseHowManyToToss). Le yes/no de
+ *  confirmation passe par la primitive PARTAGÉE `CreateYesNoMenuWithCallbacks`
+ *  (témoin `.func`) au lieu d'un sous-état maison. */
 function ItemMenu_Toss(task: DecompTask): void {
   RemoveContextWindow();
-  _returnToList(task);
+  task.data[T_ITEM_COUNT] = 1;
+  if (task.data[T_QUANTITY] === 1) {
+    AskTossItems(task);
+  } else {
+    // 1:1 :1828-1834 : "Combien à jeter ?" + AddItemQuantityWindow(ITEMWIN_QUANTITY).
+    _CtxPrintItemMessage(_tossMsg('gText_TossHowManyVar1s', 'Combien de {STR_VAR_1}\nà jeter?', gSpecialVar.ItemId, 0));
+    const qWid = BagMenu_AddWindow(ITEMWIN_QUANTITY);
+    _CtxPrintQuantityInWindow(qWid, 1);
+    task.func = Task_ChooseHowManyToToss;
+  }
 }
+
+/** 1:1 décomp `Task_ChooseHowManyToToss` (item_menu.c:1859) : DPad ajuste le
+ *  compte, A confirme (→ AskTossItems), B annule (→ CancelToss). */
+function Task_ChooseHowManyToToss(task: DecompTask): void {
+  const ref = { value: task.data[T_ITEM_COUNT] };
+  if (AdjustQuantityAccordingToDPadInput(ref, task.data[T_QUANTITY])) {
+    task.data[T_ITEM_COUNT] = ref.value;
+    _CtxPrintQuantityInWindow(gBagMenu!.windowIds[ITEMWIN_QUANTITY], ref.value);
+  } else if (JOY_NEW(A_BUTTON)) {
+    PlaySE(SE_SELECT);
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
+    AskTossItems(task);
+  } else if (JOY_NEW(B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
+    CancelToss(task);
+  }
+}
+
+/** 1:1 décomp `AskTossItems` (item_menu.c:1838) : "{item}: en jeter {N}?" +
+ *  BagMenu_YesNo(taskId, ITEMWIN_YESNO_LOW, &sYesNoTossFunctions). */
+function AskTossItems(task: DecompTask): void {
+  _CtxPrintItemMessage(_tossMsg('gText_ConfirmTossItems', '{STR_VAR_1}:\nen jeter {STR_VAR_2}?', gSpecialVar.ItemId, task.data[T_ITEM_COUNT]));
+  _tossTaskId = task.taskId;
+  // 1:1 décomp BagMenu_YesNo = CreateYesNoMenuWithCallbacks(taskId, template, 1, 0, 2, 1, 14, funcs).
+  CreateYesNoMenuWithCallbacks(task.taskId, sContextMenuWindowTemplates[ITEMWIN_YESNO_LOW], 1, 0, 2, 1, 14, sYesNoTossFunctions);
+}
+
+/** 1:1 décomp `ConfirmToss` (item_menu.c:1882) : "{item}: jeté {N}." puis
+ *  repointe vers Task_RemoveItemFromBag. (Func yes/no zéro-arg → _tossTaskId.) */
+function ConfirmToss(): void {
+  const rt = getRuntime();
+  const task = rt?.gTasks[_tossTaskId];
+  if (!task) return;
+  _CtxPrintItemMessage(_tossMsg('gText_ThrewAwayVar2Var1s', '{STR_VAR_1}:\njeté {STR_VAR_2}.', gSpecialVar.ItemId, task.data[T_ITEM_COUNT]));
+  task.func = Task_RemoveItemFromBag;
+}
+
+/** Mapping pocketId (gBagPosition.pocket) → clé pocket de UpdatePocketItemList. */
+function _pocketKeyForId(pocketId: number): 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems' {
+  return (['items', 'pokeBalls', 'tmHm', 'berries', 'keyItems'] as const)[pocketId] ?? 'items';
+}
+
+/** 1:1 décomp `Task_RemoveItemFromBag` (item_menu.c:1898) : attend A/B → RemoveBagItem
+ *  + **UpdatePocketItemList (compaction)** + UpdatePocketListPosition + rebuild liste.
+ *  La compaction (= virer le slot vidé) est l'étape décomp que j'avais sautée en
+ *  prenant le raccourci `_CtxReturnToListWithRebuild` → d'où le phantom "??? ×0". */
+function Task_RemoveItemFromBag(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON | B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    RemoveBagItem(getItemKeyById(gSpecialVar.ItemId), task.data[T_ITEM_COUNT]);
+    // 1:1 décomp :1908 : UpdatePocketItemList(pocket) compacte AVANT de reconstruire
+    // la liste affichée (sinon le slot vidé reste dans le buffer = "???????? ×0").
+    UpdatePocketItemList(_pocketKeyForId(gBagPosition.pocket));
+    _CtxReturnToListWithRebuild(task.taskId);
+  }
+}
+
+/** 1:1 décomp `CancelToss` (item_menu.c:1850) : re-print desc + cursor + retour liste. */
+function CancelToss(task: DecompTask): void {
+  _CtxReturnToList(task.taskId);
+}
+/** Variante zéro-arg pour le yes/no (NON callback) → _tossTaskId. */
+function CancelTossYesNo(): void {
+  const rt = getRuntime();
+  const task = rt?.gTasks[_tossTaskId];
+  if (task) CancelToss(task);
+}
+
+/** 1:1 décomp `sYesNoTossFunctions` (item_menu.c:359) = {ConfirmToss, CancelToss}. */
+const sYesNoTossFunctions = { yesFunc: ConfirmToss, noFunc: CancelTossYesNo };
 
 /** 1:1 décomp `ItemMenu_Register(u8 taskId)` (item_menu.c:1916-1931) :
  *      if (gSaveBlock1Ptr->registeredItem == gSpecialVar_ItemId)
