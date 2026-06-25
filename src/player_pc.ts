@@ -781,7 +781,7 @@ function _tickDepositList(_newKeys: number): void {
   // 1:1 décomp : "Déposer combien?" via gText_DepositHowManyVar1.
   const itemName = getItemNameFr(slot.itemKey);
   setStringVar(1, itemName);
-  const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
+  const tpl = getString('gText_DepositHowManyVar1');
   ItemStorage_PrintMessage(tpl);
   _itemStorageShowQuantityWindow();
   // Réutilise pc_qty_rolling via flag sPCInDepositQtyMode (= variant deposit).
@@ -800,10 +800,10 @@ function _depositDoDeposit(bagIdx: number, qty: number): void {
   if (AddPCItem(slot.itemKey, qty)) {
     slot.quantity -= qty;
     if (slot.quantity === 0) slot.itemKey = '';
-    // 1:1 décomp `gText_DepositedVar2Var1s` = "{STR_VAR_2} {STR_VAR_1} déposé(s)."
+    // 1:1 décomp `gText_DepositedVar2Var1s` = "{STR_VAR_1}:\ndéposé {STR_VAR_2}."
     setStringVar(1, itemName);
     setStringVar(2, String(qty));
-    const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
+    const tpl = getString('gText_DepositedVar2Var1s');
     ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sPCDepositJustDone = true;  // = switch vers RETIRER au prochain A press
@@ -1108,7 +1108,8 @@ function _tickPCList(newKeys: number): void {
 function _itemStorageStartItemSwap(pos: number): void {
   sPCSwapFromPos = pos;
   const itemName = getItemNameFr(gSaveBlock1Ptr.pcItems[pos].itemKey);
-  _itemStoragePrintWindowMessage(`Déplacer ${itemName} où ?`);
+  // 1:1 décomp gText_MoveVar1Where (« Où voulez-vous placer {STR_VAR_1}? ») — extrait, pas inline.
+  _itemStoragePrintWindowMessage(getString('gText_MoveVar1Where').replace('{STR_VAR_1}', itemName).replace(/\\n/g, '\n'));
   sSubState = 'pc_swap';
 }
 
@@ -1336,7 +1337,7 @@ function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
     const itemName = getItemNameFr(slot.itemKey);
     setStringVar(1, itemName);
     setStringVar(2, String(qty));
-    const tpl = getString('gText_WithdrawXItems') ?? '{STR_VAR_1}:\nretiré {STR_VAR_2}.';
+    const tpl = getString('gText_WithdrawXItems');
     ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
@@ -1392,7 +1393,7 @@ function _tickPCTossConfirm(_newKeys: number): void {
     const itemName = getItemNameFr(slot.itemKey);
     setStringVar(1, itemName);
     setStringVar(2, String(sPCLastActionQty));
-    const tpl = getString('gText_ThrewAwayVar2Var1s') ?? '{STR_VAR_1}:\njeté {STR_VAR_2}.';
+    const tpl = getString('gText_ThrewAwayVar2Var1s');
     ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
@@ -1607,7 +1608,7 @@ function _mailboxDoMailMoveToBag(): void {
   ClearMail(mail);
   Mailbox_CompactMailList();
   // Affiche message + return to list.
-  _showSticky(getString('gText_MailToBagMessageErased') ?? 'Message effacé,\nMAIL au SAC.');
+  _showSticky(getString('gText_MailToBagMessageErased'));
   sSubState = 'msg_wait';
   sMsgReturnState = 'mailbox_list';
 }
@@ -1639,7 +1640,7 @@ function Mailbox_ReturnToPlayerPC(): void {
 
 /** 1:1 décomp `Mailbox_NoPokemonForMail(taskId)` (player_pc.c:931-934). */
 function Mailbox_NoPokemonForMail(): void {
-  _showSticky(getString('gText_NoPokemon') ?? "Vous n'avez pas de POKéMON.");
+  _showSticky(getString('gText_NoPokemon'));
   sSubState = 'msg_wait';
   sMsgReturnState = 'mailbox_list';
 }
