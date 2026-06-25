@@ -180,6 +180,8 @@ const GFXTAG_PC_ICON_OFF      = 'GFXTAG_PC_ICON_OFF';
 // 1:1 décomp src/naming_screen.c:281-300 — sKeyboardChars[KBPAGE_COUNT][KBROW_COUNT][KBCOL_COUNT].
 // Ordre = [KEYBOARD_LETTERS_LOWER, KEYBOARD_LETTERS_UPPER, KEYBOARD_SYMBOLS].
 // Indexé par KEYBOARD_* (= sPageToKeyboardId[currentPage]).
+/* @strings-ignore-start: grille de caractères du clavier = DATA 1:1 décomp
+   naming_screen.c (sNamingScreenKeyboardText source), PAS des gText. Chars inline fidèles. */
 const sKeyboardChars: readonly string[][][] = [
   // KEYBOARD_LETTERS_LOWER
   [
@@ -203,6 +205,7 @@ const sKeyboardChars: readonly string[][][] = [
     ['…', '“', '”', '‘', "'", ' ', ' ', ' ', ' '],
   ],
 ] as const;
+/* @strings-ignore-end (grille clavier = data, cf. start ci-dessus) */
 
 // 1:1 décomp src/naming_screen.c:302-306
 const sPageColumnCounts: readonly number[] = [
@@ -2337,6 +2340,8 @@ function PrintKeyboardKeysOnDeck(): void {
 // ~14px → cursor visible 1 col à droite du char ciblé. Avec ces strings,
 // le text printer avance currentX par les CLEAR codes et chaque glyph est
 // dessiné à la bonne position absolue pour matcher le cursor.
+/* @strings-ignore-start: lignes texte du clavier = DATA 1:1 décomp
+   text_input_strings.c:9-21 (sNamingScreenKeyboardText), codes {CLEAR n} + chars. */
 const sNamingScreenKeyboardText: readonly string[][] = [
   // KEYBOARD_LETTERS_LOWER (1:1 décomp:10-13)
   [
@@ -2360,6 +2365,7 @@ const sNamingScreenKeyboardText: readonly string[][] = [
     "{CLEAR 11}…{CLEAR 16}“{CLEAR 16}”{CLEAR 18}‘{CLEAR 18}'{CLEAR 18} ",
   ],
 ];
+/* @strings-ignore-end (lignes texte clavier = data, cf. start ci-dessus) */
 
 // 1:1 décomp src/naming_screen.c:1942-1947 sFillValues[KBPAGE_COUNT].
 // PIXEL_FILL(idx) = (idx<<4)|idx (= 2 nibbles palette idx packés dans un byte).
