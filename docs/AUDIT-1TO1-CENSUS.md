@@ -27,7 +27,7 @@ Sondes (manuelles, lecture seule, sans agent) :
 ## 🚨 Tête de liste — sans ambiguïté, dicte la stratégie
 - **`task.ts` = 31 l. / `task.c` = 204 ⇒ ~15 % porté.** LE TRONC (`gTasks`/`RunTasks`/`CreateTask`/témoin `.func`). Tout le contrôle en dépend. **C'est ici qu'on attaque, quoi que dise le reste.**
 - **4 primitives partagées NON portées** (recopiées à la main, 0 `export function`) : `CreateYesNoMenuWithCallbacks` (menu_helpers.c:156, 15 l., ~10 appelants décomp), `Task_CallYesOrNoCallback`, `DisplayMessageAndContinueTask`, `DisplayItemMessageOnField`.
-- **Globals dupliqués** : `gSaveBlock1Ptr` & `gSaveBlock2Ptr` définis dans **3 fichiers** chacun ; `gCamera`, `gTrainerBattleOpponent_B` dans 2. (Risque désync, déjà payé — cf. mémoire `pitfall-devrt-vs-window-globals`.) → à confirmer : re-export vs définitions séparées.
+- **Globals dupliqués** : `gSaveBlock1Ptr` & `gSaveBlock2Ptr` définis dans **3 fichiers** chacun ; `gCamera`, `gTrainerBattleOpponent_B` dans 2. (Risque désync, déjà payé — cf. mémoire `pitfall-devrt-vs-window-globals`.) → **CONFIRMÉ** : `gSaveBlock*Ptr` = 1 **Proxy SANS état** (save-block-state.ts:72/89, délègue à `GetSaveBlock1/2()` foundation unique) + 2 re-exports propres (save.ts, gba-menu-system.ts) → **désync impossible par construction**, faux positif. `gCamera` & `gTrainerBattleOpponent_B` = vrais doublons **CORRIGÉS** (`df99076c`, `1e2f1538`).
 
 ## Synthèse affinée (passe 2 — confirmations §F1/F4/F5)
 **Le constat dominant : la dette est surtout de la STRUCTURE MIROIR, pas de la logique manquante.**
@@ -40,7 +40,7 @@ la logique existe, ailleurs, sous d'autres noms :
 
 Donc les **vrais trous** (à attaquer) se réduisent à 4 classes nettes :
 1. 🚨 **Tronc de contrôle** : `task.ts` 15 %, 4 primitives partagées non portées, témoin `.func` sous-utilisé.
-2. 🔴 **Globals réellement dupliqués (désync)** : `gCamera` (fieldmap.ts:325 **vs** field_camera.ts:129, 2 objets séparés) ; `gTrainerBattleOpponent_B` (battle_setup.ts:92 **vs** engine/battle/state.ts:743). *(gSaveBlock*Ptr = re-exports propres d'1 seul store → PAS un doublon.)*
+2. ✅ **Globals réellement dupliqués (désync) — RÉSOLUS** : `gCamera` (fieldmap.ts vs field_camera.ts, 2 objets) → 1 store (`df99076c`) ; `gTrainerBattleOpponent_B` (battle_setup.ts vs state.ts) → 1 store state.ts + propagation (`1e2f1538`). *(gSaveBlock*Ptr = Proxy stateless + re-exports propres → JAMAIS un doublon, désync impossible.)*
 3. **Bloat code RÉEL (confirmé §F2 — lignes de code hors commentaires)** : seulement `field_effect_helpers` (code 1.91) & `script_movement` (1.91) = ~2× le code décomp (glue/dup réelle) ; modéré `field_door` 1.44, `scrcmd` 1.43, `fieldmap` 1.36, `field_camera` 1.25. ⚠️ **Le reste du « bloat »-taille = JSDoc, PAS du code** : `field_player_avatar` code **1:1 exact** (1898 vs 1894), `mail` 1.03, `player_pc` 1.09. → **la dup-code n'est PAS « partout »**, elle est concentrée sur ~2-5 fichiers.
 4. **Features réellement stub/partielles** : `field_specials` (9 l.), `pokemon_storage_system` (PC box), `easy_chat`, `tv`, `daycare`, `secret_base`, `menu_specialized`, fldeff_*, etc.
 
