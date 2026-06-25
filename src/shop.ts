@@ -28,7 +28,6 @@
 
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
-  DrawDialogFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
   ClearWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
@@ -45,9 +44,7 @@ import {
 import {
   AddTextPrinterParameterized3, GetStringRightAlignXOffset,
   StringExpandPlaceholders, gStringVar4, CHAR_SPACER_STR,
-  IsTextPrinterActive, RunTextPrinters,
 } from './engine/ui/gba-text-system';
-import { gTextFlags } from './engine/ui/gba-text-printer';
 import { GetPlayerTextSpeedDelay } from './menu';
 import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
 import { encodeOwText } from './text';
@@ -69,7 +66,7 @@ import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './
 import { AddBagItem, GetBagItemQuantity } from './engine/bag/bag';
 import { GetMoney, IsEnoughMoney, RemoveMoney } from './money';
 import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './engine/ui/money-box-ui';
-import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, type IntRef, type YesNoFuncTable } from './menu_helpers';
+import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
@@ -198,7 +195,6 @@ type ShopSubState =
   | 'buy_goto'           // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
   | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
   | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
-  | 'buy_msg'            // BuyMenuDisplayMessage → Task_ContinueTaskAfterMessagePrints
   | 'buy_after_purchase' // Task_ReturnToItemListAfterItemPurchase (attend A/B)
   | 'reopen_msg';        // Task_ReturnToShopMenu (DisplayItemMessageOnField → re-ouvre le menu)
 
@@ -225,7 +221,6 @@ let sSelectedKey = '';
 const sQuantity: IntRef = { value: 1 };
 let sTotalCost = 0;
 let sMaxQuantity = 0;
-let sPendingMsgCont: (() => void) | null = null;
 
 // Assets cadre gShopMenu (chargés une fois).
 interface ShopAssets {
@@ -279,24 +274,18 @@ function _removeWindow(idRef: () => number, set: (v: number) => void): void {
 }
 
 /** 1:1 décomp `BuyMenuDisplayMessage` (shop.c:763) :
- *    DisplayMessageAndContinueTask(taskId, WIN_MESSAGE, 0xA, 14, FONT_NORMAL,
- *                                  GetPlayerTextSpeedDelay(), text, callback);
- *    ScheduleBgCopyTilemapToVram(0);
- *  Le message s'ANIME (vitesse joueur, accélérable A/B = canABSpeedUpPrint). Quand le
- *  printer a fini, `_tickBuyMessage` (= Task_ContinueTaskAfterMessagePrints) appelle la
- *  continuation. Cadre dialogue = tile 0xA, palette 14 (DISTINCT du cadre std 1/13). */
+ *  1:1 BuyMenuDisplayMessage (shop.c:763) via la PRIMITIVE PARTAGÉE
+ *  DisplayMessageAndContinueTask (menu_helpers.ts) : dessine le cadre dialogue (tile 0xA,
+ *  pal 14), imprime ANIMÉ, et repointe le témoin gTasks[sBuyTaskId].func vers
+ *  Task_ContinueTaskAfterMessagePrints. Quand le printer a fini, la continuation est appelée :
+ *  elle RESTAURE Task_BuyMenu (le dispatcher) puis enchaîne. Plus de _tickBuyMessage maison. */
 function _displayMessage(text: string | Uint8Array, cont: (() => void) | null): void {
   if (sMessageWindowId < 0) sMessageWindowId = AddWindow(WIN_MESSAGE);
   LoadMessageBoxGfx(sMessageWindowId, DLG_FRAME_TILE, MSG_FRAME_PAL * 16);
-  DrawDialogFrameWithCustomTileAndPalette(sMessageWindowId, true, DLG_FRAME_TILE, MSG_FRAME_PAL);
-  // 1:1 DisplayMessageAndContinueTask : canABSpeedUpPrint = TRUE + speed = option joueur.
-  gTextFlags.canABSpeedUpPrint = true;
-  AddTextPrinterParameterized3(sMessageWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, GetPlayerTextSpeedDelay(), text);
-  // 1:1 décomp shop.c:766 : flush le cadre (FillBgTilemapBufferRect → BUFFER tilemap BG0)
-  // vers la VRAM. Sans ça (CB2 buy-menu, pas de copie tilemap par frame) = cadre invisible.
+  DisplayMessageAndContinueTask(sBuyTaskId, sMessageWindowId, DLG_FRAME_TILE, MSG_FRAME_PAL,
+    FONT_NORMAL, GetPlayerTextSpeedDelay(), text, () => { _restoreBuyTaskFunc(); cont?.(); });
+  // 1:1 décomp shop.c:766 : flush le cadre (BUFFER tilemap BG0 → VRAM).
   ScheduleBgCopyTilemapToVram(0);
-  sPendingMsgCont = cont;
-  sSubState = 'buy_msg';
 }
 
 function _clearMessage(): void {
@@ -400,15 +389,12 @@ function _tickGoToBuyMenu(): void {
 
 // ─── Task_HandleShopMenuSell (1:1 shop.c:425) → déféré ──────────────────────
 function _handleShopMenuSell(): void {
-  // CB2_GoToSellMenu (item_menu.c) — non porté. Report honnête : reste au menu.
-  _displayMessageOnShopMenu(getString('gText_AnythingElseICanHelp') ?? '…');
-}
-
-/** Affiche un message bref puis re-montre le menu Acheter/Vendre/Quitter
- *  (overlay). Utilisé pour le VENDRE non porté. */
-function _displayMessageOnShopMenu(text: string): void {
+  // CB2_GoToSellMenu (item_menu.c) non porté. Report honnête : on réutilise le flux overlay
+  // 'reopen_msg' (= DisplayItemMessageOnField(gText_AnythingElseICanHelp) + re-création du
+  // menu Acheter/Vendre/Quitter) — le mécanisme de message overlay correct (≠ témoin buy-menu).
   _removeWindow(() => sShopMenuWindowId, v => (sShopMenuWindowId = v));
-  _displayMessage(text, () => { _clearMessage(); _createShopMenu(sMartType); });
+  sReopenMsgShown = false;
+  sSubState = 'reopen_msg';
 }
 
 // ─── Task_HandleShopMenuQuit (1:1 shop.c:440) ───────────────────────────────
@@ -822,7 +808,6 @@ function Task_BuyMenu(_task: DecompTask): void {
   switch (sSubState) {
     case 'buy_list':           _tickBuyMenu(); break;
     case 'buy_qty':            _tickBuyQuantity(newKeys); break;
-    case 'buy_msg':            _tickBuyMessage(); break;
     case 'buy_after_purchase': _tickAfterItemPurchase(newKeys); break;
   }
 }
@@ -997,9 +982,8 @@ function _buyReturnToItemList(): void {
 // ─── ExitBuyMenu (1:1 shop.c:1193) → fade + retour OW + re-montre shop menu ─
 function _exitBuyMenu(): void {
   FadeScreen(FADE_TO_BLACK, 0);
-  // Task_ExitBuyMenu : attend le fade puis cleanup + retour OW.
-  sSubState = 'buy_msg'; // park (Task_BuyMenu skip pendant gPaletteFade.active)
-  sPendingMsgCont = null;
+  // Task_ExitBuyMenu attend le fade puis cleanup + retour OW. Task_BuyMenu est détruit
+  // ci-dessous → le substate devient inerte jusqu'au reopen (pas besoin de park).
   const rt = getRuntime();
   if (!rt) return;
   // Remplace Task_BuyMenu par un task d'attente de fade.
@@ -1054,17 +1038,6 @@ function _tickReopenShopMenu(): void {
   _createShopMenu(sMartType);
 }
 
-// ─── BuyMenuDisplayMessage tick (1:1 Task_ContinueTaskAfterMessagePrints) ────
-function _tickBuyMessage(): void {
-  // 1:1 menu.c : RunTextPrinters chaque frame ; quand le printer du WIN_MESSAGE a fini,
-  // la continuation est appelée (PAS d'attente A/B — l'accélération A/B est gérée DANS
-  // RunTextPrinters via canABSpeedUpPrint). C'est ça qui ANIME le texte (≠ instantané).
-  RunTextPrinters();
-  if (IsTextPrinterActive(sMessageWindowId)) return;
-  const cont = sPendingMsgCont;
-  sPendingMsgCont = null;
-  if (cont) cont();
-}
 
 // ─── Exposition dev (sonde déterministe) ─────────────────────────────────────
 {
