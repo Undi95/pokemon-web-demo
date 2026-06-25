@@ -43,7 +43,7 @@ import {
 } from './fieldmap';
 import {
   AddTextPrinterParameterized3, GetStringRightAlignXOffset,
-  StringExpandPlaceholders, gStringVar4,
+  StringExpandPlaceholders, gStringVar4, CHAR_SPACER_STR,
 } from './engine/ui/gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
@@ -798,7 +798,10 @@ function _tickBuyMenu(): void {
 function _buyHowManyDialogueInit(): void {
   const quantityInBag = GetBagItemQuantity(sSelectedKey);
   sBagQtyWindowId = _addStdWindow(WIN_QUANTITY_IN_BAG);
-  setStringVar(1, String(quantityInBag));
+  // 1:1 décomp shop.c:1038 : ConvertIntToDecimalStringN(STR_CONV_MODE_RIGHT_ALIGN,
+  // MAX_ITEM_DIGITS+1=4) → nombre aligné à DROITE avec padding CHAR_SPACER. « SAC:    4 »
+  // (et non « SAC: 2 » collé).
+  setStringVar(1, String(quantityInBag).padStart(4, CHAR_SPACER_STR));
   StringExpandPlaceholders(gStringVar4, getString('gText_InBagVar1') ?? 'SAC: {STR_VAR_1}');
   AddTextPrinterParameterized3(sBagQtyWindowId, FONT_NORMAL, 0, 1, TEXT_COLOR_SET, TEXT_SKIP_DRAW, gStringVar4);
   sQuantity.value = 1;
