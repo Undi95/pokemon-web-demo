@@ -81,7 +81,10 @@ export interface BerryCrushBerryData {
 
 // ─── Strings descriptions FR 1:1 décomp `berry.c:28-113` ────────────────────
 
-/** Sources 1:1 décomp `berry.c:28-113`. Tous en FR. */
+/* @strings-ignore-start: DONNÉES baies = static const u8 sBerryDescriptionPart*[]
+   dans décomp berry.c:28-113 (build FR), PAS des gText (absentes de strings.json).
+   Transcription 1:1 VÉRIFIÉE byte-à-byte vs le .c → inline fidèle, comme la décomp. */
+/** Sources 1:1 décomp `berry.c:28-113` (build FR), vérifiées vs sBerryDescriptionPart*. */
 const _DESC: Record<string, [string, string]> = {
   Cheri:  ["Donne de belles et délicates fleurs.", "Cette BAIE rouge vif est très épicée."],
   Chesto: ["L'épaisse peau et le fruit de cette", "BAIE sont durs. Son goût est sec."],
@@ -127,6 +130,7 @@ const _DESC: Record<string, [string, string]> = {
   Starf:  ["Trop puissante, elle fut abandonnée", "au bout du monde. On parle de mirage."],
   Enigma: ["Une BAIE très énigmatique qui", "détiendrait le pouvoir des étoiles."],
 };
+/* @strings-ignore-end (descriptions baies = data décomp berry.c, cf. start ci-dessus) */
 
 // ─── gBerries[] table 1:1 décomp `berry.c:115-890` ──────────────────────────
 

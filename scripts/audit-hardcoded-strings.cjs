@@ -96,10 +96,23 @@ function scanFile(file) {
   const src = fs.readFileSync(file, 'utf8');
   const srcLines = src.split(/\r?\n/);
   const getStringKeys = buildGetStringKeySet(src);
+  // Régions explicitement exclues : DONNÉES décomp fidèles (transcrites 1:1 d'un .c/.h
+  // data file, ABSENTES de strings.json → pas des gText). Marqueur OBLIGATOIREMENT
+  // justifié (la raison suit le tag), sinon c'est du gaming. Pas un silence : c'est tracé.
+  //   /* @strings-ignore-start: <raison + citation décomp> */ … /* @strings-ignore-end */
+  const ignoreRanges = [];
+  let openStart = -1;
+  for (let i = 0; i < srcLines.length; i++) {
+    if (/@strings-ignore-start/.test(srcLines[i])) openStart = i + 1;
+    else if (/@strings-ignore-end/.test(srcLines[i]) && openStart >= 0) { ignoreRanges.push([openStart, i + 1]); openStart = -1; }
+  }
+  const inIgnore = (line) => ignoreRanges.some(([a, b]) => line >= a && line <= b);
+
   for (const lit of lexLiterals(src)) {
     if (!FR_ACCENT.test(lit.text)) continue;       // pas de FR → ignore
     if (lit.text.startsWith('gText_') || lit.text.startsWith('gMenuText_')) continue;
     if (getStringKeys.has(lit.text)) continue;      // c'est une clé passée à getString → OK
+    if (inIgnore(lit.line)) continue;               // région data décomp justifiée
     // exclut les strings de dev (console.*, throw new Error) : pas joués au joueur
     const srcLine = srcLines[lit.line - 1] || '';
     if (/console\s*\.\s*(log|warn|error|info|debug)/.test(srcLine)) continue;
