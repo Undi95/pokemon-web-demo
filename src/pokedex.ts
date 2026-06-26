@@ -210,6 +210,14 @@ function CreatePokedexList(_dexMode: number, _order: number): void {
     v.pokedexList[i].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
     if (v.pokedexList[i].seen) v.pokemonListCount = i + 1;
   }
+  // 1:1 décomp pokedex.c:2328-2333 : efface (dexNum=0xFFFF) toutes les entrées AU-DELÀ du
+  // plus haut Nº vu → la liste s'arrête à pokemonListCount (= se fixe au plus gros vu ; les
+  // non-vus EN-DESSOUS restent « ---------- », ceux au-dessus disparaissent).
+  for (let i = v.pokemonListCount; i < NATIONAL_DEX_COUNT; i++) {
+    v.pokedexList[i].dexNum = 0xffff;
+    v.pokedexList[i].seen = false;
+    v.pokedexList[i].owned = false;
+  }
 }
 
 // 1:1 décomp `PrintMonDexNumAndName` (pokedex.c) : couleurs [TRANSPARENT, DYNAMIC_6, LIGHT_GRAY].
