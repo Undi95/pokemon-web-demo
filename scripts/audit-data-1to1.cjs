@@ -30,7 +30,7 @@ const ORACLES = [
   'audit-pokeblock-flavor.cjs', 'audit-pickup-items.cjs', 'audit-sound-moves.cjs', 'audit-move-power-tables.cjs', 'audit-safari-factors.cjs', 'audit-ai-ignored-effects.cjs', 'audit-move-effect-status-flags.cjs', 'audit-trapping-moves.cjs', 'audit-wild-held-item.cjs', 'audit-magnitude.cjs', 'audit-hidden-power.cjs', 'audit-present.cjs', 'audit-misc-damage-formulas.cjs',
   // — Dresseurs —
   'audit-trainer-parties.cjs', 'audit-trainer-meta.cjs', 'audit-trainer-sprites.cjs',
-  'audit-trainer-money-table.cjs',
+  'audit-trainer-money-table.cjs', 'audit-trainer-class-lookups.cjs',
   // — Monde / progression —
   'audit-wild-encounters.cjs', 'audit-encounter-rates.cjs', 'audit-mart-lists.cjs', 'audit-multichoice-lists.cjs', 'audit-item-balls.cjs', 'audit-berry-data.cjs',
   'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs', 'audit-movement-action-funcs.cjs', 'audit-movement-action-ids.cjs',
