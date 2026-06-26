@@ -31,8 +31,8 @@ import type { DecompRuntime } from '../../../harness/runtime/decomp-runtime';
 import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
-  LaunchBallFadeMonTask, AnimateBallOpenParticles,
-} from '../system/pokeball-effects';
+  LaunchBallFadeMonTask, AnimateBallOpenParticlesForPokeball,
+} from '../../battle_anim_throw';
 import { BALL_POKE } from '../../../include/pokeball';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../../../harness/runtime/decomp-helpers';
@@ -344,7 +344,7 @@ export function tickSendOut(): void {
       // celle de la ball (fin d'arc = position du mon).
       const _bx = ball ? Math.round(ball.x) : _so.endX;
       const _by = (ball ? Math.round(ball.y) : _so.endY) - 5;
-      AnimateBallOpenParticles(rt, _bx, _by, 1, 28, BALL_POKE);
+      AnimateBallOpenParticlesForPokeball(rt, _bx, _by, 1, 28, BALL_POKE);
       // 1:1 pokeball.c:758 `LaunchBallFadeMonTask(TRUE, sprite->sBattler, 14, ballId)`.
       // DEUX effets distincts (cf. battle_anim_throw.c:2033) :
       //  (a) le MON blanchit (BlendPalette sur sa palette OBJ = `spritePalNum`, puis fade

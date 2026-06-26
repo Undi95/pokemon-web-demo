@@ -48,7 +48,8 @@
 
 import { CreateSprite as _CreateSpriteByTemplate } from '../../sprite';
 import { CreateTask, DestroyTask as _DestroyTaskRaw } from '../../task';
-import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
+import { getRuntime, FreeSpriteTilesByTag } from '../../../harness/runtime/decomp-globals';
+import { TASK_NONE } from '../../../include/task';
 import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';

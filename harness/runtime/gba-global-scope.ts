@@ -14,6 +14,7 @@ import * as _cb from '../boot/copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../../src/engine/script/script-vars';
 import {Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry} from "../../src/overworld";
 import { DestroySprite as _bridgeDestroySprite, ResetSpriteData as _bridgeResetSpriteData } from '../../src/sprite';
+import { BG_SCREEN_SIZE } from '../../include/gba/defines';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
 } from '../../src/play_time';
@@ -166,7 +167,7 @@ const symbolsToExpose: Record<string, unknown> = {
   LoadSpritePalettes: dg.LoadSpritePalettes,
 
   // Constants / tables
-  BG_SCREEN_SIZE: dg.BG_SCREEN_SIZE,
+  BG_SCREEN_SIZE,
   PALETTES_ALL: dg.PALETTES_ALL,
   PALETTES_OBJECTS: dg.PALETTES_OBJECTS,
   BG_PLTT_ID: dg.BG_PLTT_ID,

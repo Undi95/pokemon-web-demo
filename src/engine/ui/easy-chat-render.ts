@@ -125,6 +125,7 @@
 
 // â”€â”€â”€ Imports infrastructure (helpers TS existants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+import { BG_SCREEN_SIZE } from '../../../include/gba/defines';
 import {CpuFastFill, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
 import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
@@ -223,7 +224,6 @@ import {
 import {PLTT_SIZE_4BPP} from "../../../harness/runtime/decomp-bridge";
 
 import {
-  BG_SCREEN_SIZE,
   OAM,
   OAM_SIZE,
 } from '../../../harness/runtime/decomp-globals';

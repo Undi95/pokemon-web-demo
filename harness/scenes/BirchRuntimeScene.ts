@@ -146,9 +146,9 @@ export class BirchRuntimeScene extends Phaser.Scene {
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.
       await import('../../src/main_menu');
 
-      // 4. Side-effect import : pokeball-effects pose LaunchBallFadeMonTask +
-      //    SetUpForReleaseAffineAnim (= release Lotad sequence).
-      await import('../../src/engine/system/pokeball-effects');
+      // 4. (pokeball-effects.ts supprimé lot1e-2 → fonctions ball (LaunchBallFadeMonTask,
+      //    SetUpForReleaseAffineAnim, AnimateBallOpenParticlesForPokeball…) relocalisées dans
+      //    battle_anim_throw.ts, chargées via leurs importeurs. Plus de side-effect import.)
 
       // 5. Assets : Birch sprite, Lotad anim_front 2-frame, pokeball, particles,
       //    BG tilemap shadow, palettes bg0/bg1/bg2 gradient, trainer pics.

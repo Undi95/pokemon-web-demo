@@ -95,7 +95,7 @@ import {
   AllocateBattleSpritesData, AllocateMonSpritesGfx, gMonSpritesGfxPtr,
   BattleLoadOpponentMonSpriteGfx, BattleLoadPlayerMonSpriteGfx,
 } from './battle_gfx_sfx_util';
-import { SetUpForReleaseAffineAnim } from './engine/system/pokeball-effects';
+import { SetUpForReleaseAffineAnim } from './battle_anim_throw';
 // Send-out dresseur adverse 1:1 (mirror du player, battle_controller_opponent.c:1240/1867/1890/1897) :
 //   - helpers sprite-anim (game/battle_anim_mons) : slide-off lineaire + callback differe.
 //   - chain ball #22 (game/pokeball) : POKEBALL_OPPONENT_SENDOUT cree+ouvre la ball, emerge le mon.

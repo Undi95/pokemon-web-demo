@@ -10,6 +10,12 @@ export const MAX_SPRITES = 64;
 export const SPRITE_NONE = 255;
 export const TAG_NONE = 65535;
 export const NO_ANCHOR = 2048;
+// ST_OAM_AFFINE (sprite.h enum) — affineMode OAM. Ajouté ici (feuille) car l'extracteur
+// ne prend que les #define ; sourcer ces consts ici évite le TDZ via decomp-helpers (cyclique).
+export const ST_OAM_AFFINE_OFF = 0;
+export const ST_OAM_AFFINE_NORMAL = 1;
+export const ST_OAM_AFFINE_ERASE = 2;
+export const ST_OAM_AFFINE_DOUBLE = 3;
 /** Raw expr: `\` */
 export const ANIMCMD_END_EXPR = "\\";
 export const AFFINEANIMCMDTYPE_LOOP = 32765;
