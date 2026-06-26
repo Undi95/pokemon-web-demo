@@ -36,7 +36,7 @@ const ORACLES = [
   'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs', 'audit-movement-action-funcs.cjs', 'audit-movement-action-ids.cjs',
   'audit-metatile-behaviors.cjs', 'audit-layouts.cjs', 'audit-tilesets.cjs', 'audit-object-event-graphics.cjs', 'audit-pokemon-sprites.cjs',
   // — Tables TS hand-codées —
-  'audit-battle-stat-tables.cjs', 'audit-pokemon-constants.cjs', 'audit-battle-status-bits.cjs', 'audit-battle-flags.cjs', 'audit-effect-hold-constants.cjs', 'audit-ability-type-constants.cjs', 'audit-id-constants.cjs', 'audit-inline-battle-constants.cjs', 'audit-commented-constants.cjs', 'audit-battle-opcode-table.cjs',
+  'audit-battle-stat-tables.cjs', 'audit-pokemon-constants.cjs', 'audit-battle-status-bits.cjs', 'audit-battle-flags.cjs', 'audit-effect-hold-constants.cjs', 'audit-ability-type-constants.cjs', 'audit-id-constants.cjs', 'audit-inline-battle-constants.cjs', 'audit-commented-constants.cjs', 'audit-battle-opcode-table.cjs', 'audit-battle-ai-cmd-table.cjs',
   // — Textes FR (gameplay-visible) —
   'audit-fr-names.cjs', 'audit-fr-descriptions.cjs', 'audit-item-descriptions-fr.cjs',
   'audit-map-names-fr.cjs', 'audit-strings-fresh.cjs',
