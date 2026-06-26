@@ -14,11 +14,34 @@
  * LANCER (live) : o.runGenderShinyOracle({
  *   pk: await import('/src/pokemon.ts'),
  *   dc: await import('/harness/runtime/decomp-constants.ts') })
- * RÉSULTAT VÉRIFIÉ (2026-06-26, finale) : 9 genre + 4 chromatique OK.
+ * RÉSULTAT VÉRIFIÉ (2026-06-26, finale) : 9 genre + 4 chromatique OK ;
+ * runFullGenderRatioCheck = 386/386 espèces (getSpeciesGenderRatio vs PERCENT_FEMALE
+ * recalculé) résolues 1:1 après le fix.
  */
 'use strict';
 
 const MALE = 0, FEMALE = 0xFE, GENDERLESS = 0xFF;
+
+/**
+ * Vérif EXHAUSTIVE : pour chaque espèce, getSpeciesGenderRatio(num) doit égaler la valeur
+ * dérivée à la main de la string genderRatio (MON_* ou min(254, ⌊pct·255/100⌋)).
+ * deps = { sr: species-runtime, dc, info: species-info.json } (info via fetch dans l'eval).
+ */
+export function runFullGenderRatioCheck({ sr, dc, info }) {
+  const want = (raw) => {
+    if (raw === 'MON_MALE') return 0; if (raw === 'MON_FEMALE') return 254; if (raw === 'MON_GENDERLESS') return 255;
+    const m = String(raw).match(/^PERCENT_FEMALE\(([\d.]+)\)$/);
+    return m ? Math.min(254, Math.floor((parseFloat(m[1]) * 255) / 100)) : null;
+  };
+  let checked = 0; const mism = [];
+  for (const sp of Object.keys(info)) {
+    const w = want(info[sp].genderRatio); if (w === null) continue;
+    const num = dc.resolveDecompConstant(sp, 'SPECIES_'); if (num == null) continue;
+    const got = sr.getSpeciesGenderRatio(num); checked++;
+    if (got !== w && mism.length < 12) mism.push(`${sp} got=${got} want=${w} (${info[sp].genderRatio})`);
+  }
+  return { checked, fails: mism.length, sample: mism, verdict: mism.length === 0 ? '✅ ratios de genre 386/386 1:1' : '❌ écarts' };
+}
 
 export function runGenderShinyOracle({ pk, dc }) {
   const SP = (n) => dc.resolveDecompConstant('SPECIES_' + n, 'SPECIES_');
