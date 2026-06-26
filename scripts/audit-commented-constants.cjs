@@ -164,6 +164,7 @@ const VERIFIED_NAMES = new Set([
   'CURSOR_POSITION',   // index gBattleCommunication (=1, battle_script_commands.h:288)
   'STAT_ANIM_PLUS2',   // arg anim de stat (=38, battle_anim.h:196)
   'WINDOW_CLEAR',      // flag HandleBattleWindow (=1<<0, battle_script_commands.h:7)
+  'B_ANIM_CASTFORM_CHANGE', // tableId TryHandleLaunchBattleTableAnimation (=0, battle_anim.h:357)
 ]);
 const inAllow = (n) =>
   ALLOW.some((p) => n.startsWith(p)) ||

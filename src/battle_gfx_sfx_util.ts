@@ -836,7 +836,7 @@ export function TryHandleLaunchBattleTableAnimation(
   tableId: number, argument: number,
 ): boolean {
   // 1:1 : Castform behind substitute → set form, skip (CASTFORM_SUBSTITUTE = 0x80).
-  if (tableId === 25 /* B_ANIM_CASTFORM_CHANGE */ && (argument & 0x80)) {
+  if (tableId === 0 /* B_ANIM_CASTFORM_CHANGE */ && (argument & 0x80)) {
     // gBattleMonForms[activeBattler] = argument & ~0x80 — formes = dette Castform.
     return true;
   }
