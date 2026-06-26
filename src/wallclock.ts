@@ -604,21 +604,15 @@ function _tickHourHand(rt: DecompRuntime): void {
   sprite.y2 = coord[1];
 }
 
-/** 1:1 décomp `SpriteCB_PMIndicator` (wallclock.c:1063-1081).
- *  Animates AM/PM indicator between 2 positions based on period.
- *
- *  User-flag 2026-05-20 : hide indicator inutilisé (= en mode AM, le PM
- *  indicator devient invisible ; en mode PM, l'AM indicator). Non-1:1
- *  décomp (qui affiche les 2 indicators à des positions différentes), mais
- *  user-requested pour clarté visuelle. */
+/** 1:1 STRICT décomp `SpriteCB_PMIndicator` (wallclock.c:1063-1081).
+ *  Les DEUX indicateurs AM/PM restent TOUJOURS visibles et glissent vers des
+ *  angles cibles selon la période (l'actif mis en avant). (Déviation « cacher
+ *  l'inutilisé » retirée 2026-06-27 — user : « à l'époque on voyait les deux ».) */
 function _tickPMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.pm;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
   if (!sprite) return;
-  // Hide PM indicator if period is AM (= unused).
-  sprite.invisible = _state.period === PERIOD_AM;
-  if (sprite.invisible) return;  // skip anim si caché
   if (_state.period !== PERIOD_AM) {
     if (_state.pmAngle >= 60 && _state.pmAngle < 90) _state.pmAngle += 5;
     if (_state.pmAngle < 60) _state.pmAngle++;
@@ -630,16 +624,13 @@ function _tickPMIndicator(rt: DecompRuntime): void {
   sprite.y2 = Math.trunc(Sin2(_state.pmAngle) * 30 / 0x1000);
 }
 
-/** 1:1 décomp `SpriteCB_AMIndicator` (wallclock.c:1083-1101).
- *  Hide indicator inutilisé selon période (= user-requested polish). */
+/** 1:1 STRICT décomp `SpriteCB_AMIndicator` (wallclock.c:1083-1101).
+ *  Toujours visible (déviation « cacher l'inutilisé » retirée 2026-06-27). */
 function _tickAMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.am;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
   if (!sprite) return;
-  // Hide AM indicator if period is PM (= unused).
-  sprite.invisible = _state.period !== PERIOD_AM;
-  if (sprite.invisible) return;  // skip anim si caché
   if (_state.period !== PERIOD_AM) {
     if (_state.amAngle >= 105 && _state.amAngle < 135) _state.amAngle += 5;
     if (_state.amAngle < 105) _state.amAngle++;
