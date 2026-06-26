@@ -5,6 +5,24 @@
 > comprise. Marathon assumé (« ultra long, je m'en fou »). Supersede `MIGRATION-GAME-1TO1.md` (migration
 > game/ incrémentale) et lève le « plat verrouillé » sur l'axe structure (le src/ reste plat car décomp src/ plat).
 
+## ⭐ MANDAT USER — 5 ÉTAPES (2026-06-26, fait foi — « réussi stp »)
+> Diagnostic user accepté : j'ai bâti des écrans à partir d'AUTRES écrans (ex. Pokédex sur le CB2 du sac)
+> au lieu d'**importer** le fichier décomp dédié à sa place. C'est de l'**IMPORT, pas de la retranscription**.
+> Le jeu tient sur 16 Mo par recyclage : recycler pareil, aux mêmes endroits, → ça s'affiche tout seul.
+> « La précision est la clé, la facilité nous mène droit dans le mur. » **Solo. Jamais push.**
+>
+> 1. **Worktree miroir** : reproduire l'arbre décomp à l'identique (chaque `.c`→`.ts` à SON chemin/nom).
+> 2. **Renommer fichiers + imports + includes 1:1 décomp**, et c'est tout. Si je dois arracher des bouts de
+>    code éclatés pour les remettre au bon endroit (fusions N:1), c'est MA faute à réparer — j'assume.
+> 3. **Unification RÉELLE** : un `.ts` central (= `main.c`/`AgbMain`) qui démarre le VRAI jeu : crédits sur
+>    fond noir → intro → écran-titre → menu → partie. Garder `TestOverworldScene`&co pour le testing seulement.
+> 4. **Refaire les devtools** sur la nouvelle structure (sonder correctement après que tout a bougé).
+> 5. **Nettoyage final** : virer tout le bordel — fichiers morts, scripts/workflows abandonnés, mémoire
+>    obsolète. Repartir sur une base propre. (Étape FINALE, « quand tu auras fini ».)
+>
+> Backlog vivant = [FULL-1TO1-CHECKLIST.md](FULL-1TO1-CHECKLIST.md) (re-généré par `scripts/cartograph-1to1.cjs`).
+> Cadence = lots committés boot-vert, jamais big-bang. Étapes 1-2 = la restructure ci-dessous (Phase 1+3).
+
 ## Décisions verrouillées
 - **STRUCTURE = réplique 1:1 intégrale de l'arbre décomp.** On recrée l'arbre complet :
   `src/` (miroir PLAT des `.c`), `include/` (+ `constants/`, `gba/`), `data/` (tables/maps/scripts/.inc),
