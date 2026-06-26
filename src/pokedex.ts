@@ -341,13 +341,14 @@ function CreateInterfaceSprites(page: number): void {
   const anim = (id: number, n: number) => rt.StartSpriteAnim(id, n);
   const hide = (id: number) => { const s = rt.gSprites[id]; if (s) s.invisible = true; };
 
-  // 2 Pokéballs rotatives affines (matrixNum 30/31, déphasées de 128 = 180°).
-  let id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
-  let spr = rt.gSprites[id];
-  if (spr) { spr.affineMode = ST_OAM_AFFINE_NORMAL; spr.matrixNum = 30; spr.data[0] = 30; spr.data[1] = 0; }
-  id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
-  spr = rt.gSprites[id];
-  if (spr) { spr.affineMode = ST_OAM_AFFINE_NORMAL; spr.matrixNum = 31; spr.data[0] = 31; spr.data[1] = 128; }
+  let id = 0;
+  // 🚧 DÉSACTIVÉ TEMPORAIREMENT — Pokéball rotative (2 masques OBJ-window affines, matrixNum 30/31).
+  // Le code (sRotatingPokeBallSpriteTemplate + SpriteCB_RotatingPokeBall, transcription 1:1 décomp)
+  // est conservé, mais l'effet de masque tournant n'est pas encore rendu pixel-correct dans le
+  // compositor du port (orbite/forme des barres). On laisse la Pokéball STATIQUE de BG1 (déjà
+  // correcte, validée A/B en cachant les masques) → écran propre. À reprendre avec l'œil de l'auteur.
+  // if (page === PAGE_MAIN || isSearchResults) { /* CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT/2, 2) ×2, matrixNum 30/31, data[1]=0/128 */ }
+  void sRotatingPokeBallSpriteTemplate;
 
   if (page === PAGE_MAIN) {
     // Hoenn (!IsNationalPokedexEnabled). National = jalon 4.
