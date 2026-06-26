@@ -56,7 +56,15 @@ cmp('sCriticalHitChance',
   ints(body(BSC_C, 'sCriticalHitChance[]', '{', '}')),
   5);
 
-if (findings.length === 0) { console.log('✅ gNatureStatTable (125) + gStatStageRatios (26) + sCriticalHitChance (5) FIDÈLES au décomp.'); process.exit(0); }
+// sAccuracyStageRatios : 13 paliers précision/esquive × 2 (dividende, diviseur) = 26 entiers.
+// Le type TS `ReadonlyArray<readonly [number, number]>` contient un `[` → on cherche `= [`.
+const accA = BSC_TS.indexOf('= [', BSC_TS.indexOf('const sAccuracyStageRatios'));
+cmp('sAccuracyStageRatios',
+  ints(BSC_TS.slice(accA + 3, BSC_TS.indexOf('\n];', accA)).replace(/\/\/[^\n]*/g, '')),
+  ints(body(BSC_C, 'sAccuracyStageRatios[]', '{', '\n};')),
+  26);
+
+if (findings.length === 0) { console.log('✅ gNatureStatTable (125) + gStatStageRatios (26) + sCriticalHitChance (5) + sAccuracyStageRatios (26) FIDÈLES au décomp.'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) de table de stats :\n`);
 for (const f of findings.slice(0, 40)) console.log('  ' + f);
 process.exit(1);
