@@ -1,5 +1,7 @@
 /**
- * multichoice-data.ts — loader pour `public/decomp/em/multichoice-lists.json`.
+ * script_menu.ts — AMORCE miroir 1:1 `src/script_menu.c` (partie multichoice ; le reste,
+ * dont `ScriptMenu_Multichoice`/`ScriptMenu_MultichoiceWithDefault`, = TODO complétion 1:1).
+ * Loader pour `public/decomp/em/multichoice-lists.json`.
  *
  * Source : 1:1 décomp `src/data/script_menu.h` (= 102 lists + 114 index).
  * Extraction : `scripts/extract-multichoice-lists.mjs`.
@@ -13,9 +15,9 @@
  * avec le msgbox fix de session 126).
  */
 
-import { getText } from '../../script';  // bytes charmap (migration texte)
-import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { getString } from '../ui/gba-strings';
+import { getText } from './script';  // bytes charmap (migration texte)
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { getString } from './engine/ui/gba-strings';
 
 interface RawMultichoiceData {
   lists: Record<string, string[]>;     // MultichoiceList_X → [gText_A, gText_B, ...]

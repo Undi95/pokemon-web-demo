@@ -45,7 +45,7 @@ import {
 } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { InitMenuInUpperLeftCornerNormal } from '../ui/gba-menu-system';
-import { getMultichoiceList } from '../system/multichoice-data';
+import { getMultichoiceList } from '../../script_menu';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from '../../field_player_avatar';

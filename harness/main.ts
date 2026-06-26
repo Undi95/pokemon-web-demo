@@ -100,7 +100,7 @@ exposeGbaGlobals();
 // Async, idempotent. Sans ça : `multichoice` opcode fallback "VAR_RESULT=0" =
 // 1st option auto, dialogues à choix cassés (Latias TV broadcast, contests,
 // PC menus, etc.).
-import { loadMultichoiceLists } from '../src/engine/system/multichoice-data';
+import { loadMultichoiceLists } from '../src/script_menu';
 void loadMultichoiceLists();
 
 // Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit

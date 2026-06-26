@@ -31,7 +31,7 @@ import { FEMALE_GENDER, MALE_GENDER, OPPOSITE_DIR, findNpcByLocalId, findTemplat
 import { ScriptCall, ScriptJump, ScriptReturn, SetupNativeScript, StopScript, getOpcodeHandler, getScript, getText, registerOpcode } from './script';
 import type { ScriptContext } from './script';
 import { Compare, FlagClear, FlagGet, FlagSet, VarGet, VarSet, gSelectedObjectEvent, gSpecialVar } from './engine/script/script-vars';
-import { getMultichoiceList } from './engine/system/multichoice-data';
+import { getMultichoiceList } from './script_menu';
 import { setStringVar } from './engine/system/string-buffers';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
