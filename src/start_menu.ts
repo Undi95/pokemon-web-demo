@@ -87,7 +87,7 @@ import { preloadOptionMenuAssets } from './engine/ui/option-menu-impl';
 import { OpenBagScreen } from './engine/bag/bag-menu';
 import { OpenPartyScreen, TickPartyScreen } from './engine/ui/party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
-import { OpenPokedexScreen, TickPokedexScreen } from './engine/ui/pokedex-screen';
+import { OpenPokedexFromStartMenu } from './pokedex';
 import { getString } from './engine/ui/gba-strings';
 import { FadeScreen, FADE_TO_BLACK } from './engine/system/fade-screen';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
@@ -228,22 +228,17 @@ function pokedexAction(): boolean {
   // interne. L'option POKéDEX n'est ajoutée au menu que sous FlagGet(FLAG_SYS_POKEDEX_GET)
   // (buildItems l.551) → `!FlagGet(FLAG_SYS_POKEDEX_GET)` ici est toujours faux. L'ancien
   // garde « pas encore disponible » était une improvisation morte (retiré).
+  // 1:1 décomp `StartMenuPokedexCallback` (start_menu.c:639) : CB2 swap plein écran
+  // (SetMainCallback2(CB2_OpenPokedex), retour via gMain.savedCallback). Pattern fade
+  // + sPendingScreenAction IDENTIQUE à pokemonAction/party (CB2 swap prouvé).
   if (sWindowId >= 0) {
     ClearStdWindowAndFrame(sWindowId, true);
     RemoveWindow(sWindowId);
     sWindowId = -1;
   }
-  sSubState = 'pokedex_screen';
-  try {
-    OpenPokedexScreen(() => {
-      sSubState = 'menu';
-      _spawnMenuWindow();
-    });
-  } catch (e) {
-    console.error('[start-menu] OpenPokedexScreen failed', e);
-    sSubState = 'menu';
-    _spawnMenuWindow();
-  }
+  FadeScreen(FADE_TO_BLACK, 0);
+  sPendingScreenAction = () => OpenPokedexFromStartMenu();
+  sSubState = 'fading_to_screen';
   return false;
 }
 
@@ -767,9 +762,6 @@ export function TickStartMenu(): void {
       break;
     case 'trainer_card_screen':
       TickTrainerCardScreen(newKeys);
-      break;
-    case 'pokedex_screen':
-      TickPokedexScreen(newKeys);
       break;
     case 'fading_to_screen':
       _tickFadingToScreen();
