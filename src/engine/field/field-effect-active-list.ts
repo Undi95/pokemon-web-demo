@@ -112,17 +112,3 @@ export function FieldEffectActiveListContains(id: number): boolean {
   return false;
 }
 
-// ─── Legacy alias (= TS naming convention for clear) ─────────────────────────
-
-/** Alias rétrocompat : `ClearFieldEffectActiveList` = `FieldEffectActiveListClear`. */
-export const ClearFieldEffectActiveList = FieldEffectActiveListClear;
-
-// ─── Bridge global pour script-opcodes (= avoid import cycle) ───────────────
-
-(globalThis as { __fieldEffectActiveList?: Record<string, unknown> }).__fieldEffectActiveList = {
-  FieldEffectActiveListAdd,
-  FieldEffectActiveListRemove,
-  FieldEffectActiveListContains,
-  FieldEffectActiveListClear,
-  ClearFieldEffectActiveList,
-};

@@ -1303,9 +1303,6 @@ export function IsFanfareTaskInactive(): boolean {
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
 // flash-mask.ts (harness) auto-register __applyFlashMask pour phaser-bridge post-process.
 import '../gba/flash-mask';
-// field-effect-active-list.ts auto-register __fieldEffectActiveList pour
-// dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
-import '../../src/engine/field/field-effect-active-list';
 // money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
 import '../../src/engine/ui/money-box-ui';
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.

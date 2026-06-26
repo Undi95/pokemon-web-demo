@@ -36,6 +36,9 @@ import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Men
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './engine/ui/gba-window-system';
 import type { WindowTemplate } from './engine/ui/gba-window-system';
+// field_effect.c (sActiveList) — leaf zéro-import → import direct sûr (pas de cycle),
+// remplace l'ancien bridge globalThis.__fieldEffectActiveList (retiré).
+import { FieldEffectActiveListContains, FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { FreezeObjectEvent, ObjectEventClearHeldMovementIfFinished, ObjectEventSetHeldMovement, SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, UnfreezeObjectEvent, gObjectEvents } from './event_object_movement';
 import { HideFieldMessageBox, IsFieldMessageBoxHidden, ShowFieldMessage } from './field_message_box';
 import { DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, GetPlayerFacingDirection, gPlayerAvatar } from './field_player_avatar';
@@ -258,10 +261,7 @@ registerOpcode('setfieldeffectargument', (_ctx, args) => {
  *  Session 132 : real tracking via field-effect-active-list.ts. */
 registerOpcode('waitfieldeffect', (ctx, args) => {
   _sFieldEffectScriptId = _vget(args[0]);
-  const poll = (): boolean => {
-    const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListContains?: (id: number) => boolean } }).__fieldEffectActiveList;
-    return !(fa?.FieldEffectActiveListContains?.(_sFieldEffectScriptId) ?? false);
-  };
+  const poll = (): boolean => !FieldEffectActiveListContains(_sFieldEffectScriptId);
   SetupNativeScript(ctx, poll);
   return true;
 });
@@ -280,16 +280,11 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
   // FLDEFF_SPARKLE = 54 (1:1 field_effect.h). AUDIT FIX : était 36 (mauvais field effect).
   const FLDEFF_SPARKLE = 54;
-  const fa = (globalThis as {
-    __fieldEffectActiveList?: {
-      FieldEffectActiveListRemove?: (id: number) => void;
-    };
-  }).__fieldEffectActiveList;
   // L'add est fait par dofieldeffect→FieldEffectStart ci-dessous (PAS ici = évite le double-add).
   // Dette R3 : sprite callback `FldEff_Sparkle` (= field_effect_helpers.c) pas encore porté → le
   // décomp wire l'auto-remove via FieldEffectStop à fin d'anim ; en attendant, scheduler local
   // setTimeout 500ms (~30 frames) pour matcher la durée visuelle attendue.
-  setTimeout(() => fa?.FieldEffectActiveListRemove?.(FLDEFF_SPARKLE), 500);
+  setTimeout(() => FieldEffectActiveListRemove(FLDEFF_SPARKLE), 500);
   return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;
 });
 
