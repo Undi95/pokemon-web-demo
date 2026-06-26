@@ -2620,12 +2620,12 @@ export function _castformDataTypeChange(battler: number): number {
   const isWaterType = IS_BATTLER_OF_TYPE(battler, TYPE_WATER);
   const isIceType = IS_BATTLER_OF_TYPE(battler, TYPE_ICE);
 
-  if (!_WEATHER_HAS_EFFECT && !isNormalType) {
+  if (!WEATHER_HAS_EFFECT() && !isNormalType) {
     gBattleMons[battler].type1 = TYPE_NORMAL;
     gBattleMons[battler].type2 = 0;
     return CASTFORM_NORMAL + 1;
   }
-  if (!_WEATHER_HAS_EFFECT) return 0;
+  if (!WEATHER_HAS_EFFECT()) return 0;
 
   if (!(gBattleWeather & (B_WEATHER_RAIN | B_WEATHER_SUN | B_WEATHER_HAIL)) && !isNormalType) {
     gBattleMons[battler].type1 = 0; gBattleMons[battler].type2 = 0;
@@ -2679,10 +2679,6 @@ function _getMoveType(move: number): number {
 function _recordAbilityBattle(battler: number, ability: number): void {
   _recordAbilityBattleFullABE(battler, ability);
 }
-
-/** 1:1 stub `WEATHER_HAS_EFFECT` macro (= !CloudNine && !AirLock active).
- *  Wired via WEATHER_HAS_EFFECT util.ts (= Cloud Nine / Air Lock check). */
-const _WEATHER_HAS_EFFECT = true;
 
 // ─── Overworld WEATHER_* (constants/weather.h) — 1:1 décomp ─────────────────
 // 1:1 strict A8 audit : import depuis decomp-data au lieu de hardcode.
@@ -2857,7 +2853,7 @@ export function AbilityBattleEffects(
         setBattlerAttacker(battler);
         switch (gLastUsedAbility) {
           case ABILITY_RAIN_DISH:
-            if (_WEATHER_HAS_EFFECT && (gBattleWeather & B_WEATHER_RAIN)
+            if (WEATHER_HAS_EFFECT() && (gBattleWeather & B_WEATHER_RAIN)
                 && gBattleMons[battler].maxHP > gBattleMons[battler].hp) {
               _lastWantedScriptLabel_ABE = 'BattleScript_RainDishActivates';
               let dmg = Math.floor(gBattleMons[battler].maxHP / 16);
@@ -4367,8 +4363,10 @@ void gBattlerAttacker;
 // 2026-06-13, stage 2). getBattlerForBattleScript / CancelMultiTurnMoves (public) /
 // ClearFuryCutterDestinyBondGrudge / WEATHER_HAS_EFFECT (réel).
 // NB : battle_util a déjà _CancelMultiTurnMoves (atk privé) + _CancelMultiTurnMovesETT
-//      (end-turn) + _WEATHER_HAS_EFFECT=true STUB (ability) ; consolidation vers ces
-//      versions publiques = TODO (vérifier bit-values avant de rebrancher).
+//      (end-turn) ; consolidation vers ces versions publiques = TODO (vérifier
+//      bit-values avant de rebrancher). Le stub `_WEATHER_HAS_EFFECT=true` a été
+//      retiré : tous les sites (Castform, Rain Dish, gel-soleil) appellent désormais
+//      le vrai `WEATHER_HAS_EFFECT()` (= !CloudNine && !AirLock on field).
 // ════════════════════════════════════════════════════════════════════════════
 
 /** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` (battle_util.c). */

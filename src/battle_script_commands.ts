@@ -12975,10 +12975,6 @@ function _getBattlerTurnOrderNum(battler: number): number {
 /** Décomp `gCurrentTurnActionNumber`. Notre port : 0. */
 const _gCurrentTurnActionNumber = 0;
 
-/** 1:1 décomp `WEATHER_HAS_EFFECT` macro — `(!CloudNine && !AirLock)`.
- *  Notre port : true. */
-const _WEATHER_HAS_EFFECT = true;
-
 /** Décomp `BATTLE_TYPE_TRAINER_HILL` — utilisé pour `MOVE_EFFECT_STEAL_ITEM`
  *  block. Notre const peut être 0 si on n'a pas le flag. */
 const _BATTLE_TYPE_TRAINER_HILL_FLAG = BATTLE_TYPE_TRAINER_HILL ?? 0;
@@ -13191,7 +13187,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       }
     } else if (statusFlag === STATUS1_FREEZE) {
       // 1:1 décomp Freeze case.
-      if (_WEATHER_HAS_EFFECT && (gBattleWeather & B_WEATHER_SUN)) {
+      if (_weatherHasEffect() && (gBattleWeather & B_WEATHER_SUN)) {
         noSunCanFreeze = false;
       }
       if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_ICE)) {
