@@ -2683,14 +2683,16 @@ function _recordAbilityBattle(battler: number, ability: number): void {
 // ─── Overworld WEATHER_* (constants/weather.h) — 1:1 décomp ─────────────────
 // 1:1 strict A8 audit : import depuis decomp-data au lieu de hardcode.
 
-/** 1:1 stub `GetCurrentWeather(void)` (field_weather.c:1032).
- *  Retourne `gWeatherPtr->currWeather`. Pas wired battle-side dans notre
- *  port — bridge overworld weather quand le système overworld weather
- *  est branché. Notre port : retourne WEATHER_NONE (= no overworld weather effect
- *  on battle setup). */
+import { GetCurrentWeather as _GetCurrentWeatherOW } from './field_weather';
+
+/** 1:1 décomp `GetCurrentWeather(void)` (field_weather.c:1032) = `gWeatherPtr->currWeather`.
+ *  AUDIT FIX : l'ancien stub renvoyait WEATHER_NONE → les combats n'héritaient JAMAIS de
+ *  la météo overworld (désert Route 111 = tempête de sable, Route 119/120/123 = pluie
+ *  permanente). Le système météo overworld pilote bien `currWeather` (field_weather.ts:413/
+ *  420/445), donc on bridge vers la vraie fonction. Pas de cycle : field_weather n'importe
+ *  rien de battle_util/battle_main. */
 function _getCurrentWeather(): number {
-  // Deferred : bridge gameState.weather ou gWeatherPtr.currWeather.
-  return WEATHER_NONE;
+  return _GetCurrentWeatherOW();
 }
 
 /** 1:1 décomp `RESOURCE_FLAG_FLASH_FIRE` (battle.h:68). */
