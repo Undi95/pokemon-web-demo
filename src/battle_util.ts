@@ -2655,7 +2655,7 @@ export function _castformDataTypeChange(battler: number): number {
  *  Soundproof. Terminé par SOUND_MOVES_END (= 0xFFFF). */
 const SOUND_MOVES_END = 0xFFFF;
 const sSoundMovesTable: number[] = [
-  44  /* MOVE_GROWL */,
+  45  /* MOVE_GROWL */,   // AUDIT BUG FIX (finale) : était 44 (= MOVE_BITE !) → 45 (MOVE_GROWL).
   46  /* MOVE_ROAR */,
   47  /* MOVE_SING */,
   48  /* MOVE_SUPERSONIC */,
