@@ -12966,14 +12966,17 @@ function _recordAbilityBattle(battler: number, ability: number): void {
   _recordAbilityBattleFullSME(battler, ability);
 }
 
-/** 1:1 stub `GetBattlerTurnOrderNum(battler)` (battle_util.c). Renvoie
- *  l'index dans gBattlerByTurnOrder[]. Notre port : retourne battler. */
+/** 1:1 décomp `GetBattlerTurnOrderNum(battler)` (battle_util.c) : index i tel que
+ *  `gBattlerByTurnOrder[i] === battler`. AUDIT FIX : l'ancien stub `return battler`
+ *  était FAUX dès que l'ordre de tour ≠ identité (adversaire plus rapide) — cassait
+ *  la garde de flinch (le joueur ne pouvait jamais flincher). Réplique 1:1 de
+ *  `_GetBattlerTurnOrderNum` (battle_util.ts), gBattlerByTurnOrder/gBattlersCount importés. */
 function _getBattlerTurnOrderNum(battler: number): number {
-  return battler;
+  for (let i = 0; i < gBattlersCount; i++) {
+    if (gBattlerByTurnOrder[i] === battler) return i;
+  }
+  return 0;
 }
-
-/** Décomp `gCurrentTurnActionNumber`. Notre port : 0. */
-const _gCurrentTurnActionNumber = 0;
 
 /** Décomp `BATTLE_TYPE_TRAINER_HILL` — utilisé pour `MOVE_EFFECT_STEAL_ITEM`
  *  block. Notre const peut être 0 si on n'a pas le flag. */
@@ -13329,7 +13332,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
           }
         } else {
-          if (_getBattlerTurnOrderNum(gEffectBattler) > _gCurrentTurnActionNumber) {
+          if (_getBattlerTurnOrderNum(gEffectBattler) > gCurrentTurnActionNumber) {
             gBattleMons[gEffectBattler].status2 |= sStatusFlagsForMoveEffects[eff];
           }
           // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
