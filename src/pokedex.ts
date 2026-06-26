@@ -37,9 +37,9 @@ import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import { BeginNormalPaletteFade } from './palette';
 import { DeactivateAllTextPrinters } from './text';
 import {
-  ShowBg, InitWindows, InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
-  CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, PutWindowTilemap,
-  CopyWindowToVram, FreeAllWindowBuffers, FillWindowPixelRect, BlitBitmapToWindow,
+  ShowBg, HideBg, InitWindows, InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
+  CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, GetBgTilemapBuffer, PutWindowTilemap,
+  CopyWindowToVram, FreeAllWindowBuffers, FillWindowPixelRect, FillWindowPixelBuffer, BlitBitmapToWindow,
   ResetVramOamAndBgCntRegs,
   type WindowTemplate, type BgTemplate,
 } from './engine/ui/gba-window-system';
@@ -54,18 +54,45 @@ import {
   HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
 } from './engine/ui/pokedex-flags';
 import { gSpeciesNames } from './engine/data/game-data';
-import { SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE } from '../include/constants/songs';
+import { SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE, SE_PIN } from '../include/constants/songs';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // ─── Constantes 1:1 (pokedex.h / pokedex.c) ──────────────────────────────────
 const PAGE_MAIN = 0;
 // const PAGE_SEARCH_RESULTS = 1;            // jalon 4
+const PAGE_INFO = 2;                          // 1:1 enum pokedex.c:35
 const DEX_MODE_HOENN = 0;
 // const DEX_MODE_NATIONAL = 1;              // national : jalon 4
 const ORDER_NUMERICAL = 0;
-const AREA_SCREEN = 1;                        // selectedScreen défaut (pokedex.c:1637)
+// 1:1 enum écrans (pokedex.c:44) — AREA en PREMIER = 0 (selectedScreen défaut, pokedex.c:1637).
+const AREA_SCREEN = 0;
+const CRY_SCREEN = 1;
+const SIZE_SCREEN = 2;
+const CANCEL_SCREEN = 3;
+const SCREEN_COUNT = 4;
 const FLAG_GET_SEEN = 0;
 const FLAG_GET_CAUGHT = 1;
+
+// Fiche info (JALON 2). MON_PAGE = position cible du mon sur la fiche (pokedex.c:115).
+const MON_PAGE_X = 48;
+const MON_PAGE_Y = 56;
+// Index des fenêtres de la fiche (1:1 enum WIN_INFO/WIN_FOOTPRINT/WIN_CRY_WAVE/WIN_VU_METER).
+const WIN_INFO = 0;
+const WIN_FOOTPRINT = 1;
+const WIN_CRY_WAVE = 2;
+const WIN_VU_METER = 3;
+// REG offsets HOFS/VOFS (io_reg.h) — pour ResetOtherVideoRegisters.
+const REG_OFFSET_BG0HOFS = 0x10;
+const REG_OFFSET_BG0VOFS = 0x12;
+const REG_OFFSET_BG1HOFS = 0x14;
+const REG_OFFSET_BG1VOFS = 0x16;
+const REG_OFFSET_BG2HOFS = 0x18;
+const REG_OFFSET_BG3HOFS = 0x1c;
+const REG_OFFSET_BG3VOFS = 0x1e;
+// DISPCNT fiche info (pokedex.c:3324) : OBJ_1D_MAP(0x40) | OBJ_ON(0x1000) (pas d'OBJWIN).
+const DISPCNT_INFO = 0x40 | 0x1000;
+// Bits DISPCNT BGx_ON / OBJ_ON pour ResetOtherVideoRegisters (regBits).
+const DISPCNT_BG0_ON = 0x100, DISPCNT_BG1_ON = 0x200, DISPCNT_BG2_ON = 0x400, DISPCNT_BG3_ON = 0x800, DISPCNT_OBJ_ON = 0x1000;
 
 // REG offsets GBA (io_reg.h) — hex pour SetGpuReg (modèle bag).
 const REG_OFFSET_DISPCNT = 0x00;
@@ -101,6 +128,24 @@ const sPokedex_BgTemplate: BgTemplate[] = [
 // ─── 1:1 décomp `sPokemonList_WindowTemplate` (pokedex.c) ─────────────────────
 const sPokemonList_WindowTemplate: WindowTemplate[] = [
   { bg: 2, tilemapLeft: 0, tilemapTop: 0, width: 32, height: 32, paletteNum: 0, baseBlock: 1 },
+];
+
+// ─── 1:1 décomp `sInfoScreen_BgTemplate` (pokedex.c:871) ──────────────────────
+// BG0 = WIN_CRY_WAVE (cri, jalon 3) ; BG1 = barre de sélection ; BG2 = WIN_INFO/FOOTPRINT ;
+// BG3 = cadre de la fiche (info_screen.bin sur les tiles menu, charBase 0).
+const sInfoScreen_BgTemplate: BgTemplate[] = [
+  { bg: 0, charBaseIndex: 2, mapBaseIndex: 12, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
+  { bg: 1, charBaseIndex: 0, mapBaseIndex: 13, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 2, charBaseIndex: 2, mapBaseIndex: 14, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 },
+  { bg: 3, charBaseIndex: 0, mapBaseIndex: 15, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 },
+];
+
+// ─── 1:1 décomp `sInfoScreen_WindowTemplates` (pokedex.c:911) ─────────────────
+const sInfoScreen_WindowTemplates: WindowTemplate[] = [
+  /* WIN_INFO     */ { bg: 2, tilemapLeft: 0,  tilemapTop: 0,  width: 32, height: 20, paletteNum: 0,  baseBlock: 1 },
+  /* WIN_FOOTPRINT*/ { bg: 2, tilemapLeft: 25, tilemapTop: 8,  width: 2,  height: 2,  paletteNum: 15, baseBlock: 641 },
+  /* WIN_CRY_WAVE */ { bg: 0, tilemapLeft: 0,  tilemapTop: 12, width: 32, height: 7,  paletteNum: 8,  baseBlock: 645 },
+  /* WIN_VU_METER */ { bg: 2, tilemapLeft: 18, tilemapTop: 3,  width: 10, height: 8,  paletteNum: 9,  baseBlock: 869 },
 ];
 
 // ─── struct PokedexView (champs nécessaires aux jalons 1a-1d ; mirror pokedex.h) ──
@@ -184,6 +229,8 @@ interface PokedexAssets {
   bgHoennPal: Uint16Array;        // gPokedexBgHoenn_Pal (bg_hoenn.pal)
   caughtBall: Uint8Array;         // sCaughtBall_Gfx (caught_ball.4bpp.bin, 8×16 icône ball capturée)
   interfaceTiles: Uint8Array;     // gPokedexInterface_Gfx (interface.4bpp.bin, sprites d'interface)
+  infoScreenTilemap: Uint16Array;        // gPokedexInfoScreen_Tilemap (info_screen.bin → BG3, fiche)
+  screenSelectBarMainTilemap: Uint16Array; // gPokedexScreenSelectBarMain_Tilemap (screen_select_bar_main.bin → BG1)
 }
 let _assets: PokedexAssets | null = null;
 let _assetsLoading: Promise<PokedexAssets> | null = null;
@@ -191,7 +238,7 @@ function _loadAssets(): Promise<PokedexAssets> {
   if (_assets) return Promise.resolve(_assets);
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles] = await Promise.all([
+    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap] = await Promise.all([
       loadTileBin(`${ASSET}/menu.png`, 4),          // sibling menu.4bpp.bin (indices bruts)
       loadTilemapBin(`${ASSET}/list.bin`),
       loadTilemapBin(`${ASSET}/list_underlay.bin`),
@@ -199,8 +246,10 @@ function _loadAssets(): Promise<PokedexAssets> {
       loadGbaPal(`${ASSET}/bg_hoenn.pal`),
       loadTileBin(`${ASSET}/caught_ball.png`, 4),    // sibling caught_ball.4bpp.bin
       loadTileBin(`${ASSET}/interface.png`, 4),      // sibling interface.4bpp.bin (sprites)
+      loadTilemapBin(`${ASSET}/info_screen.bin`),    // gPokedexInfoScreen_Tilemap (cadre fiche)
+      loadTilemapBin(`${ASSET}/screen_select_bar_main.bin`), // barre de sélection bas de fiche
     ]);
-    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles };
+    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap };
     // assetCache keyed pour LoadCompressedSpriteSheet/LoadSpritePalettes (sprites d'interface, TAG 4096).
     assetCache.set('gPokedexInterface_Gfx', interfaceTiles);
     assetCache.set('gPokedexBgHoenn_Pal', bgHoennPal);
@@ -976,15 +1025,26 @@ function Task_OpenPokedexMainPage(task: DecompTask): void {
 function Task_HandlePokedexInput(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || !sPokedexView) return;
-  rt.SetGpuReg(0x14 /* BG0VOFS */, sPokedexView.menuY);
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, sPokedexView.menuY);   // 1:1 décomp pokedex.c:1680 (BG0, start-menu slide)
   if (sPokedexView.menuY) {
     sPokedexView.menuY -= 8;
     return;
   }
-  const B_BUTTON = 0x0002;
-  // JALON 2/4 : A (info screen, gaté sur .seen), START (menu list-top/bottom/close),
-  // SELECT (recherche). Pour l'instant non gérés → tombent dans la branche D-pad (no-op).
-  if (rt.gMain.newKeys & B_BUTTON) {
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+  // JALON 2 : A → fiche info (gaté sur .seen). START (menu list-top/bottom/close) + SELECT
+  // (recherche) = jalon 4 (non gérés → tombent dans la branche D-pad).
+  if ((rt.gMain.newKeys & A_BUTTON) && sPokedexView.pokedexList[sPokedexView.selectedPokemon].seen) {
+    // 1:1 décomp pokedex.c:1688-1696.
+    UpdateSelectedMonSpriteId();
+    const monSprite = rt.gSprites[sPokedexView.selectedMonSpriteId];
+    // oam.paletteNum du mon = son slot OBJ = data[1] (monId) dans le port (cf. CreatePokedexMonSprite).
+    const palSlot = monSprite ? monSprite.data[1] : 0;
+    BeginNormalPaletteFade((~(1 << (palSlot + 16))) >>> 0, 0, 0, 0x10, RGB_BLACK);
+    if (monSprite) monSprite.callback = SpriteCB_MoveMonForInfoScreen as unknown as typeof monSprite.callback;
+    task.func = Task_OpenInfoScreenAfterMonMovement;
+    PlaySE(SE_PIN);
+    FreeWindowAndBgBuffers();
+  } else if (rt.gMain.newKeys & B_BUTTON) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
     task.func = Task_ClosePokedex;
     PlaySE(SE_PC_OFF);
@@ -1007,6 +1067,288 @@ function Task_ClosePokedex(task: DecompTask): void {
   rt.DestroyTask(task.taskId);
   sPokedexView = null;
   _isOpen = false;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FICHE INFO (JALON 2a) — ouverture : transition du mon → cadre + barre + cri.
+// (PrintMonInfo texte + footprint = JALON 2b ; sous-écrans AREA/CRY/SIZE = JALON 3.)
+// ════════════════════════════════════════════════════════════════════════════
+let sPokedexListItem: PokedexListItem | null = null;
+
+// 1:1 décomp `SpriteCB_MoveMonForInfoScreen` (pokedex.c:3030) : coupe l'affine, glisse le
+// mon 1px/frame vers MON_PAGE, puis passe la main à EndMove.
+function SpriteCB_MoveMonForInfoScreen(sprite: DecompSprite, rt: NonNullable<ReturnType<typeof getRuntime>>): void {
+  rt.gba.oam[sprite.oamIndex].priority = 0;   // 1:1 oam.priority = 0
+  sprite.affineMode = 0;                        // ST_OAM_AFFINE_OFF
+  sprite.x2 = 0;
+  sprite.y2 = 0;
+  if (sprite.x !== MON_PAGE_X || sprite.y !== MON_PAGE_Y) {
+    if (sprite.x > MON_PAGE_X) sprite.x--;
+    if (sprite.x < MON_PAGE_X) sprite.x++;
+    if (sprite.y > MON_PAGE_Y) sprite.y--;
+    if (sprite.y < MON_PAGE_Y) sprite.y++;
+  } else {
+    sprite.callback = SpriteCB_EndMoveMonForInfoScreen as unknown as typeof sprite.callback;
+  }
+}
+
+// 1:1 décomp `SpriteCB_EndMoveMonForInfoScreen` (pokedex.c:3019) : rien à faire (mon arrivé).
+function SpriteCB_EndMoveMonForInfoScreen(_sprite: DecompSprite): void { /* mon en place */ }
+
+// 1:1 décomp `Task_OpenInfoScreenAfterMonMovement` (pokedex.c:1803) : attend l'arrivée du mon
+// à MON_PAGE, puis charge la fiche. (currentPageBackup = restauration recherche = jalon 4.)
+function Task_OpenInfoScreenAfterMonMovement(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  const s = rt.gSprites[sPokedexView.selectedMonSpriteId];
+  if (s && s.x === MON_PAGE_X && s.y === MON_PAGE_Y) {
+    task.data[0] = LoadInfoScreen(sPokedexView.pokedexList[sPokedexView.selectedPokemon], sPokedexView.selectedMonSpriteId);
+    task.func = Task_WaitForExitInfoScreen;
+  }
+}
+
+// 1:1 décomp `Task_WaitForExitInfoScreen` (pokedex.c:1813) : tant que la fiche est active, ne
+// rien faire (scroll DANS la fiche = jalon 2b/3) ; à sa fin → retour à la liste.
+function Task_WaitForExitInfoScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (rt.gTasks[task.data[0]].isActive) {
+    // JALON 2b/3 : IsInfoScreenScrolling/TryDoInfoScreenScroll/StartInfoScreenScroll.
+  } else {
+    sLastSelectedPokemon = sPokedexView.selectedPokemon;
+    sPokeBallRotation = sPokedexView.pokeBallRotation;
+    _dexInitSpritesDone = false;   // re-créer liste + mon-pics au retour (gate async du port)
+    task.func = Task_OpenPokedexMainPage;
+  }
+}
+
+// 1:1 décomp `LoadInfoScreen` (pokedex.c:3206) : crée Task_LoadInfoScreen + init BG/fenêtres.
+function LoadInfoScreen(item: PokedexListItem, monSpriteId: number): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  sPokedexListItem = item;
+  const taskId = rt.CreateTask(Task_LoadInfoScreen, 0);
+  const t = rt.gTasks[taskId];
+  t.data[0] = 0;            // tScrolling = FALSE
+  t.data[1] = 1;            // tMonSpriteDone = TRUE (le sprite vient de la liste)
+  t.data[2] = 0;            // tBgLoaded = FALSE
+  t.data[3] = 0;            // tSkipCry = FALSE
+  t.data[4] = monSpriteId;  // tMonSpriteId
+  t.data[5] = 0xffff;       // tTrainerSpriteId = SPRITE_NONE
+  ResetBgsAndClearDma3BusyFlags(0);
+  InitBgsFromTemplates(0, sInfoScreen_BgTemplate, sInfoScreen_BgTemplate.length);
+  // SetBgTilemapBuffer(n) : buffers intrinsèques au runtime → no-op (cf. LoadPokedexListPage).
+  InitWindows(sInfoScreen_WindowTemplates);
+  DeactivateAllTextPrinters();
+  // gMain.state vaut 0 ici (LoadPokedexListPage case 6 l'a remis à 0 ; rien ne l'a touché
+  // depuis) — Task_LoadInfoScreen démarre donc bien sur case 0 (1:1 invariant décomp).
+  return taskId;
+}
+
+// 1:1 décomp `Task_LoadInfoScreen` (pokedex.c:3248) — state-machine 0..10. JALON 2a : tout
+// SAUF PrintMonInfo (texte) + DrawFootprint (= 2b). Le mon = sprite réutilisé de la liste.
+function Task_LoadInfoScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView || !sPokedexListItem || !_assets) return;
+  switch (rt.gMain.state) {
+    case 0:
+    default:
+      if (!rt.gPaletteFade.active) {
+        sPokedexView.currentPage = PAGE_INFO;
+        rt.SetVBlankCallback(null);    // 1:1 save+null ; on restaure VBlankCB_Pokedex en case 6
+        let r2 = 0;
+        if (task.data[1]) r2 += DISPCNT_OBJ_ON;   // garder l'OBJ = le sprite du mon survit
+        if (task.data[2]) r2 |= DISPCNT_BG1_ON;
+        ResetOtherVideoRegisters(r2);
+        rt.gMain.state = 1;
+      }
+      break;
+    case 1:
+      // 1:1 DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx) → tiles menu @ charBase 0.
+      rt.gba.vram.set(_assets.menuTiles, 0);
+      CopyToBgTilemapBuffer(3, _assets.infoScreenTilemap, 0, 0);
+      FillWindowPixelBuffer(WIN_INFO, 0);
+      PutWindowTilemap(WIN_INFO);
+      PutWindowTilemap(WIN_FOOTPRINT);
+      // JALON 2b : DrawFootprint(WIN_FOOTPRINT, dexNum) (besoin de gMonFootprintTable). En 2a
+      // la fenêtre footprint reste vide (cadre visible, empreinte ajoutée en 2b).
+      FillWindowPixelBuffer(WIN_FOOTPRINT, 0);
+      CopyWindowToVram(WIN_FOOTPRINT, 2 /* COPYWIN_GFX */);
+      rt.gMain.state++;
+      break;
+    case 2:
+      LoadScreenSelectBarMain(0xd);
+      HighlightScreenSelectBarItem(sPokedexView.selectedScreen, 0xd);
+      LoadPokedexBgPalette(sPokedexView.isSearchResults);
+      rt.gMain.state++;
+      break;
+    case 3:
+      rt.gMain.state++;
+      break;
+    case 4:
+      // JALON 2b : PrintMonInfo(dexNum, …) = Nº/nom/catégorie FR/taille/poids/description.
+      // Sans texte WIN_INFO reste vide ; le cadre + la barre s'affichent.
+      CopyWindowToVram(WIN_INFO, 3 /* COPYWIN_FULL */);
+      CopyBgTilemapBufferToVram(1);
+      CopyBgTilemapBufferToVram(2);
+      CopyBgTilemapBufferToVram(3);
+      rt.gMain.state++;
+      break;
+    case 5:
+      // tMonSpriteDone TRUE → réutilise le sprite de la liste (déjà chargé) : rien à créer.
+      // (Le chemin !tMonSpriteDone = scroll/saut DANS la fiche = jalon 2b/3.)
+      rt.gMain.state++;
+      break;
+    case 6: {
+      let preservedPalettes = 0;
+      if (task.data[2]) preservedPalettes = 0x14;
+      if (task.data[1]) {
+        const ms = rt.gSprites[task.data[4]];
+        if (ms) preservedPalettes |= (1 << (ms.data[1] + 16));   // ms.data[1] = slot OBJ = oam.paletteNum
+      }
+      BeginNormalPaletteFade((~preservedPalettes) >>> 0, 0, 16, 0, RGB_BLACK);   // fade IN
+      rt.SetVBlankCallback(VBlankCB_Pokedex);
+      rt.gMain.state++;
+      break;
+    }
+    case 7:
+      rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_INFO);
+      HideBg(0);
+      ShowBg(1);
+      ShowBg(2);
+      ShowBg(3);
+      rt.gMain.state++;
+      break;
+    case 8:
+      if (!rt.gPaletteFade.active) {
+        rt.gMain.state++;
+        if (!task.data[3]) {
+          // 1:1 StopCryAndClearCrySongs + PlayCry_NormalNoDucking(species). Cri = WAV pré-extrait.
+          const sp = reverseDecompConstant(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), 'SPECIES_') ?? 'SPECIES_NONE';
+          void import('./engine/system/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
+        } else {
+          rt.gMain.state++;
+        }
+      }
+      break;
+    case 9:
+      // 1:1 IsCryPlayingOrClearCrySongs : le cri du port est async/fire-and-forget → on avance.
+      rt.gMain.state++;
+      break;
+    case 10:
+      task.data[0] = 0;   // tScrolling = FALSE
+      task.data[1] = 0;   // tMonSpriteDone = FALSE (recharger au prochain passage)
+      task.data[2] = 1;   // tBgLoaded = TRUE
+      task.data[3] = 1;   // tSkipCry = TRUE
+      task.func = Task_HandleInfoScreenInput;
+      rt.gMain.state = 0;
+      break;
+  }
+}
+
+// 1:1 décomp `ResetOtherVideoRegisters` (pokedex.c:4384), adapté au substrat du port : la
+// config BG (charBase/mapBase/priority) vit dans `gba.bg(n).config` (posé par
+// InitBgsFromTemplates dans LoadInfoScreen), PAS dans le registre BGxCNT brut (que
+// `applyBgCnt` PARSE → un SetGpuReg(BGxCNT,0) écraserait la config). On reproduit donc
+// l'EFFET NET (offsets remis à 0 + couche masquée + OBJ réinit) sans toucher BGxCNT. OBJ
+// préservé si DISPCNT_OBJ_ON ∈ regBits (= le sprite du mon survit).
+function ResetOtherVideoRegisters(regBits: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!(regBits & DISPCNT_BG0_ON)) { HideBg(0); rt.SetGpuReg(REG_OFFSET_BG0HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0); }
+  if (!(regBits & DISPCNT_BG1_ON)) { HideBg(1); rt.SetGpuReg(REG_OFFSET_BG1HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG1VOFS, 0); }
+  if (!(regBits & DISPCNT_BG2_ON)) { HideBg(2); rt.SetGpuReg(REG_OFFSET_BG2HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG2VOFS, 0); }
+  if (!(regBits & DISPCNT_BG3_ON)) { HideBg(3); rt.SetGpuReg(REG_OFFSET_BG3HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG3VOFS, 0); }
+  if (!(regBits & DISPCNT_OBJ_ON)) { ResetSpriteData(); FreeAllSpritePalettes(); setReservedSpritePaletteCount(8); }
+}
+
+// 1:1 décomp `LoadScreenSelectBarMain` (pokedex.c:3887) : barre de sélection sur BG1.
+function LoadScreenSelectBarMain(_unused: number): void {
+  if (!_assets) return;
+  CopyToBgTilemapBuffer(1, _assets.screenSelectBarMainTilemap, 0, 0);
+}
+
+// 1:1 décomp `HighlightScreenSelectBarItem` (pokedex.c:3897) : surligne l'item sélectionné
+// (palette 0x2000) vs les autres (0x4000) en patchant les bits palette des tiles BG1.
+function HighlightScreenSelectBarItem(selectedScreen: number, _unused: number): void {
+  const ptr = GetBgTilemapBuffer(1);
+  for (let i = 0; i < SCREEN_COUNT; i++) {
+    const row = i * 7 + 1;
+    const newPalette = (i === selectedScreen) ? 0x2000 : 0x4000;
+    for (let j = 0; j < 7; j++) {
+      ptr[row + j] = (ptr[row + j] % 0x1000) | newPalette;
+      ptr[row + j + 0x20] = (ptr[row + j + 0x20] % 0x1000) | newPalette;
+    }
+  }
+  CopyBgTilemapBufferToVram(1);
+}
+
+// 1:1 décomp `Task_HandleInfoScreenInput` (pokedex.c:3380). JALON 2a : B (sortie), D-pad G/D
+// (navigation barre), A sur CANCEL (sortie). A sur AREA/CRY/SIZE → JALON 3 (sous-écrans).
+function Task_HandleInfoScreenInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+  if (task.data[0]) return;   // tScrolling (scroll dans la fiche) = jalon 2b/3
+  if (rt.gMain.newKeys & B_BUTTON) {
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+    task.func = Task_ExitInfoScreen;
+    PlaySE(SE_PC_OFF);
+    return;
+  }
+  if (rt.gMain.newKeys & A_BUTTON) {
+    switch (sPokedexView.selectedScreen) {
+      case CANCEL_SCREEN:
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+        task.func = Task_ExitInfoScreen;
+        PlaySE(SE_PC_OFF);
+        break;
+      default:
+        // JALON 3 : AREA_SCREEN/CRY_SCREEN/SIZE_SCREEN → Task_LoadAreaScreen/Cry/Size.
+        break;
+    }
+    return;
+  }
+  // (L/R-button via optionsButtonMode = jalon 3 ; D-pad gauche/droite suffit en 2a.)
+  if ((rt.gMain.newKeys & DPAD_LEFT) && sPokedexView.selectedScreen > 0) {
+    sPokedexView.selectedScreen--;
+    HighlightScreenSelectBarItem(sPokedexView.selectedScreen, 0xd);
+    PlaySE(SE_DEX_PAGE);
+    return;
+  }
+  if ((rt.gMain.newKeys & DPAD_RIGHT) && sPokedexView.selectedScreen < CANCEL_SCREEN) {
+    sPokedexView.selectedScreen++;
+    HighlightScreenSelectBarItem(sPokedexView.selectedScreen, 0xd);
+    PlaySE(SE_DEX_PAGE);
+    return;
+  }
+}
+
+// 1:1 décomp `Task_ExitInfoScreen` (pokedex.c:3484) : libère le sprite mon + buffers, détruit la tâche.
+function Task_ExitInfoScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (rt.gPaletteFade.active) return;
+  _freeInfoMonSprite(task.data[4]);
+  FreeInfoScreenWindowAndBgBuffers();
+  rt.DestroyTask(task.taskId);
+}
+
+// décomp FreeAndDestroyMonPicSprite : libère le slot image-based. Port = DestroySprite (les
+// tiles/palette sont réinit au prochain ResetSpriteData de la liste).
+function _freeInfoMonSprite(spriteId: number): void {
+  if (spriteId !== 0xffff && spriteId !== undefined) {
+    try { DestroySprite(spriteId); } catch { /* déjà détruit */ }
+  }
+}
+
+// 1:1 décomp `FreeInfoScreenWindowAndBgBuffers` (pokedex.c:3361) : FreeAllWindowBuffers + free
+// des tilemap buffers BG (intrinsèques au runtime → seul FreeAllWindowBuffers nécessaire).
+function FreeInfoScreenWindowAndBgBuffers(): void {
+  FreeAllWindowBuffers();
 }
 
 // ─── LoadPokedexListPage (pokedex.c:2066) — BG render (jalon 1a) ──────────────
