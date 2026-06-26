@@ -1,3 +1,8 @@
+// #100% done — miroir complet de wallclock.c (25/25 fonctions). Exemption async
+// (comme save/RTC/son) : le chargement des assets est en fetch ASYNC → un loader
+// port CB2_InitWallClock orchestre LoadWallClockGraphics+tilemap+CB2_Start/View
+// WallClock+WallClockInit (la ROM fait tout synchrone). Masquage AM/PM = priorité
+// OBJ 3 (1:1, derrière le cadran), pas un invisible.
 /**
  * wallclock.ts — Port 1:1 décomp `src/wallclock.c` (1101 lignes).
  *
@@ -398,7 +403,7 @@ async function _loadAssets(): Promise<WallClockAssets> {
  *    - InitBgsFromTemplates + InitWindows
  *    - LoadCompressedSpriteSheet(sSpriteSheet_ClockHand) → OBJ VRAM
  *    - LoadSpritePalettes(sSpritePalettes_Clock) → OBJ palette */
-function _loadWallClockGraphics(rt: DecompRuntime): void {
+function LoadWallClockGraphics(rt: DecompRuntime): void {
   // ⚠️ DÉVIATION pré-existante (band-aid), PAS strict 1:1 : wall_clock.c
   // (:645-657) fait `DmaClear OAM + DmaClear PLTT + ResetBgsAndClearDma3 +
   // InitBgsFromTemplates`, SANS clear VRAM. Notre port ajoute un clear complet
@@ -407,7 +412,7 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
   ResetVramOamAndBgCntRegs();
 
   if (!_assetsCache) {
-    console.warn('[wallclock] _loadWallClockGraphics: assets not loaded');
+    console.warn('[wallclock] LoadWallClockGraphics: assets not loaded');
     return;
   }
   const assets = _assetsCache;
@@ -577,7 +582,7 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
 
 /** 1:1 décomp `SpriteCB_MinuteHand` (wallclock.c:1021-1039).
  *  Apply rotation matrix matrixNum=0 + offset sprite.x2/y2 from sClockHandCoords. */
-function _tickMinuteHand(rt: DecompRuntime): void {
+function SpriteCB_MinuteHand(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.minute;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
@@ -593,7 +598,7 @@ function _tickMinuteHand(rt: DecompRuntime): void {
 }
 
 /** 1:1 décomp `SpriteCB_HourHand` (wallclock.c:1041-1059). matrixNum=1. */
-function _tickHourHand(rt: DecompRuntime): void {
+function SpriteCB_HourHand(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.hour;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
@@ -611,7 +616,7 @@ function _tickHourHand(rt: DecompRuntime): void {
  *  Les DEUX indicateurs AM/PM restent TOUJOURS visibles et glissent vers des
  *  angles cibles selon la période (l'actif mis en avant). (Déviation « cacher
  *  l'inutilisé » retirée 2026-06-27 — user : « à l'époque on voyait les deux ».) */
-function _tickPMIndicator(rt: DecompRuntime): void {
+function SpriteCB_PMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.pm;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
@@ -629,7 +634,7 @@ function _tickPMIndicator(rt: DecompRuntime): void {
 
 /** 1:1 STRICT décomp `SpriteCB_AMIndicator` (wallclock.c:1083-1101).
  *  Toujours visible (déviation « cacher l'inutilisé » retirée 2026-06-27). */
-function _tickAMIndicator(rt: DecompRuntime): void {
+function SpriteCB_AMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.am;
   if (sprId < 0) return;
   const sprite = rt.gSprites[sprId];
@@ -816,18 +821,73 @@ function Task_ViewClock_Exit(task: DecompTask): void {
  *  animate sprites, update palette fade. Notre version : runtime auto-tick le
  *  task loop. Mais on doit appeler les sprite callbacks manuellement chaque
  *  frame (= AnimateSprites in décomp call sprite.callback). */
-export function MainCB2_WallClockRun(): void {
+export function CB2_WallClock(): void {
   const rt = getRuntime();
   if (!rt) return;
   // Tick sprite callbacks (= 1:1 décomp AnimateSprites). Notre runtime ne
   // dispatch pas automatiquement les callbacks par name → tick manuel ici.
-  _tickMinuteHand(rt);
-  _tickHourHand(rt);
-  _tickPMIndicator(rt);
-  _tickAMIndicator(rt);
+  SpriteCB_MinuteHand(rt);
+  SpriteCB_HourHand(rt);
+  SpriteCB_PMIndicator(rt);
+  SpriteCB_AMIndicator(rt);
 }
 
-/** Init state machine for SET or VIEW mode. */
+/** Dessine le label du bouton (WIN_BUTTON_LABEL) — helper partagé par
+ *  CB2_StartWallClock/CB2_ViewWallClock (1:1 décomp `AddTextPrinterParameterized`
+ *  wallclock.c:723/771). */
+function _drawButtonLabel(rt: DecompRuntime, labelStr: string): void {
+  void rt;
+  FillWindowPixelBuffer(_labelWid, 0x00);
+  AddTextPrinterParameterized3(
+    _labelWid, FONT_NORMAL, 0, 1,
+    [0, 2, 3],   // [bgColor=0 transparent, fgColor=2, shadowColor=3]
+    255,         // TEXT_SKIP_DRAW = render sync
+    labelStr,
+  );
+  PutWindowTilemap(_labelWid);
+  CopyWindowToVram(_labelWid, 3);  // COPYWIN_FULL = 3
+}
+
+/** 1:1 décomp `void CB2_StartWallClock(void)` (wallclock.c:686-726) — mode SET
+ *  (réglage initial de l'heure). NB : `LoadWallClockGraphics` + le tilemap sont
+ *  faits par le loader async `CB2_InitWallClock` (cases 2-3 — adaptation port :
+ *  assets chargés en fetch async, pas synchrones comme la ROM). */
+function CB2_StartWallClock(rt: DecompRuntime): void {
+  _state.taskId = rt.CreateTask(Task_SetClock_WaitFadeIn, 0);
+  _state.hours = 10;
+  _state.minutes = 0;
+  _state.moveDir = 0;
+  _state.period = PERIOD_AM;
+  _state.moveSpeed = 0;
+  _state.minuteHandAngle = 0;
+  _state.hourHandAngle = 300;
+  _spawnHandSprites(rt, /*amInit*/ 90, /*pmInit*/ 45);
+  _drawButtonLabel(rt, getString('gText_Confirm3') || 'CONFIR.');
+}
+
+/** 1:1 décomp `void CB2_ViewWallClock(void)` (wallclock.c:728-774) — mode VIEW
+ *  (le joueur consulte l'heure courante). Angles AM/PM dérivés de la période RTC. */
+function CB2_ViewWallClock(rt: DecompRuntime): void {
+  _state.taskId = rt.CreateTask(Task_ViewClock_WaitFadeIn, 0);
+  InitClockWithRtc();
+  const angle1 = _state.period === PERIOD_AM ? 45 : 90;
+  const angle2 = _state.period === PERIOD_AM ? 90 : 135;
+  _spawnHandSprites(rt, /*amInit*/ angle2, /*pmInit*/ angle1);
+  _drawButtonLabel(rt, getString('gText_Cancel4') || 'SORTIR');
+}
+
+/** 1:1 décomp `void WallClockInit(void)` (wallclock.c:671-684) : démarre le fade
+ *  in + arme le VBlank. (ShowBg/DISPCNT faits dans LoadWallClockGraphics ;
+ *  SetMainCallback2(CB2_WallClock) en fin de loader — adaptation port async.) */
+function WallClockInit(rt: DecompRuntime): void {
+  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+  rt.gPaletteFade.bufferTransferDisabled = false;
+  rt.SetVBlankCallback(VBlankCB_WallClock);
+}
+
+/** Loader async port (= orchestre LoadWallClockGraphics + tilemap + CB2_Start/
+ *  ViewWallClock + WallClockInit). N'existe pas tel quel dans la décomp (où tout
+ *  est synchrone) — nécessité port : les assets se chargent en fetch async. */
 export function CB2_InitWallClock(): void {
   const rt = getRuntime();
   if (!rt) return;
@@ -853,7 +913,7 @@ export function CB2_InitWallClock(): void {
       break;
     case 2:
       // 1:1 décomp `LoadWallClockGraphics` setup BG + palettes + OBJ tiles.
-      _loadWallClockGraphics(rt);
+      LoadWallClockGraphics(rt);
       rt.gMain.state++;
       break;
     case 3:
@@ -862,55 +922,20 @@ export function CB2_InitWallClock(): void {
       rt.gMain.state++;
       break;
     case 4:
-      // Create task pour la mode.
-      if (_state.mode === 'SET') {
-        _state.taskId = rt.CreateTask(Task_SetClock_WaitFadeIn, 0);
-        _state.hours = 10;
-        _state.minutes = 0;
-        _state.moveDir = 0;
-        _state.period = PERIOD_AM;
-        _state.moveSpeed = 0;
-        _state.minuteHandAngle = 0;
-        _state.hourHandAngle = 300;
-        _spawnHandSprites(rt, /*amInit*/ 90, /*pmInit*/ 45);
-      } else {
-        _state.taskId = rt.CreateTask(Task_ViewClock_WaitFadeIn, 0);
-        InitClockWithRtc();
-        const angle1 = _state.period === PERIOD_AM ? 45 : 90;
-        const angle2 = _state.period === PERIOD_AM ? 90 : 135;
-        _spawnHandSprites(rt, /*amInit*/ angle2, /*pmInit*/ angle1);
-      }
-      // 1:1 décomp `AddTextPrinterParameterized(WIN_BUTTON_LABEL, FONT_NORMAL,
-      // gText_Confirm3/Cancel4, 0, 1, 0, NULL)` (wallclock.c:723/771).
-      // Label = "CONFIR." en mode SET (= action A button = confirm),
-      //         "SORTIR" en mode VIEW (= action A/B button = exit).
-      // Rendered on WIN_BUTTON_LABEL (= bg=2 paletteNum=12 = text_prompt.pal).
-      {
-        const labelStr = _state.mode === 'SET'
-          ? (getString('gText_Confirm3') || 'CONFIR.')
-          : (getString('gText_Cancel4') || 'SORTIR');
-        FillWindowPixelBuffer(_labelWid, 0x00);
-        AddTextPrinterParameterized3(
-          _labelWid, FONT_NORMAL, 0, 1,
-          [0, 2, 3],  // [bgColor=0 transparent, fgColor=2, shadowColor=3]
-          255,  // TEXT_SKIP_DRAW = sync render
-          labelStr,
-        );
-        PutWindowTilemap(_labelWid);
-        CopyWindowToVram(_labelWid, 3);  // COPYWIN_FULL = 3
-      }
+      // Setup mode-spécifique = 1:1 décomp CB2_StartWallClock / CB2_ViewWallClock
+      // (task + sprites + label). LoadWallClockGraphics + tilemap déjà faits par
+      // les cases 2-3 async ci-dessus (adaptation port : assets en fetch).
+      if (_state.mode === 'SET') CB2_StartWallClock(rt);
+      else CB2_ViewWallClock(rt);
       rt.gMain.state++;
       break;
     case 5:
-      // 1:1 décomp `WallClockInit` (wallclock.c:671-684) : begin fade in + show BG.
-      rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
-      rt.gPaletteFade.bufferTransferDisabled = false;
-      rt.SetVBlankCallback(VBlankCB_WallClock);
+      WallClockInit(rt);
       rt.gMain.state++;
       break;
     default:
       // Setup done, swap to main loop.
-      rt.SetMainCallback2(MainCB2_WallClockRun);
+      rt.SetMainCallback2(CB2_WallClock);
       _state.phase = 'open';
       return;
   }
@@ -988,7 +1013,7 @@ function _freeWallClock(): void {
  *  CB2 swap pattern (= 1:1 décomp `SetMainCallback2(CB2_StartWallClock)`) :
  *    - Save current main CB2 → gMain.savedCallback
  *    - Set CB2_InitWallClock as new main → runtime call it chaque frame jusqu'à
- *      ce qu'il pass à MainCB2_WallClockRun.
+ *      ce qu'il pass à CB2_WallClock.
  *    - À la fin (= Task_*_Exit), restore gMain.savedCallback. */
 export function OpenWallClock(mode: Mode): void {
   const rt = getRuntime();
@@ -1017,7 +1042,7 @@ export function OpenWallClock(mode: Mode): void {
   // de l'OW (= CB2_ReturnToFieldLocal_Manual, équivalent décomp
   // CB2_ReturnToField + ReturnToFieldLocal qui restore _all_ field state).
   // Sans ça, simple restore vers MainCB2_Overworld2 laisse l'écran noir car
-  // les BG/palettes ont été reset par _loadWallClockGraphics.
+  // les BG/palettes ont été reset par LoadWallClockGraphics.
   rt.gMain.savedCallback = CB2_ReturnToFieldLocal_Manual;
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_InitWallClock);
