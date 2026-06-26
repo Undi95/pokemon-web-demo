@@ -2489,7 +2489,7 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
                 gBattleMons[bId].status2,
               );
               gBattleMons[bId].status2 &= ~STATUS2_INFATUATION;
-              gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = 7 /* B_MSG_CURED_PROBLEM */;
+              gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = 0 /* B_MSG_CURED_PROBLEM */;
               _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusRet';
               effect = ITEM_EFFECT_OTHER;
             }
@@ -2505,7 +2505,7 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
               );
               gBattleMons[bId].status1 = 0;
               gBattleMons[bId].status2 &= ~(STATUS2_CONFUSION | STATUS2_NIGHTMARE);
-              gBattleCommunication[5] = 7 /* B_MSG_CURED_PROBLEM */;
+              gBattleCommunication[5] = 0 /* B_MSG_CURED_PROBLEM */;
               _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusRet';
               effect = ITEM_STATUS_CHANGE;
             }

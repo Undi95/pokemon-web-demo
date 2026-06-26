@@ -153,8 +153,16 @@ const ALLOW = [
 // MOVE_ (coups, audit-id-constants) MAIS pas les sous-enums non-confirmés (MOVE_EFFECT_,
 // MOVE_TARGET_ est déjà listé, MOVE_RESULT_ déjà listé).
 const MOVE_SUB = ['MOVE_EFFECT_', 'MOVE_TARGET_', 'MOVE_RESULT_'];
+// B_MSG_* : indices DANS une table printfromtable spécifique — value-1:1 SEULEMENT si la table
+// du port est ordonnée comme le décomp (pas garanti pour toute la famille). On ne garde que les
+// noms dont la table a été CONFRONTÉE 1:1 (gItemSwapStringIds=[358,359,360], gBerryEffectStringIds
+// =[297,342]) — bugs corrigés au commit B_MSG.
+const VERIFIED_NAMES = new Set([
+  'B_MSG_ITEM_SWAP_TAKEN', 'B_MSG_ITEM_SWAP_GIVEN', 'B_MSG_ITEM_SWAP_BOTH', 'B_MSG_CURED_PROBLEM',
+]);
 const inAllow = (n) =>
   ALLOW.some((p) => n.startsWith(p)) ||
+  VERIFIED_NAMES.has(n) ||
   (n.startsWith('MOVE_') && !MOVE_SUB.some((p) => n.startsWith(p)));
 
 // Ordre des alternatives : `(1<<N)` puis `1<<N` (sans parenthèses — sinon \d+ capte le N nu,

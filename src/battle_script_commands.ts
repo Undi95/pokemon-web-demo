@@ -9318,11 +9318,11 @@ function Cmd_tryswapitems(ctx: BattleScriptContext): boolean {
   PREPARE_ITEM_BUFFER(gBattleTextBuff1, gBattleStruct.changedItems[atk]);  // *newItemAtk
   PREPARE_ITEM_BUFFER(gBattleTextBuff2, oldItemAtk);
   if (oldItemAtk !== 0 && gBattleStruct.changedItems[atk] !== 0) {
-    gBattleCommunication[MULTISTRING_CHOOSER] = 0 /* B_MSG_ITEM_SWAP_BOTH */;
+    gBattleCommunication[MULTISTRING_CHOOSER] = 2 /* B_MSG_ITEM_SWAP_BOTH */;
   } else if (oldItemAtk === 0 && gBattleStruct.changedItems[atk] !== 0) {
-    gBattleCommunication[MULTISTRING_CHOOSER] = 1 /* B_MSG_ITEM_SWAP_TAKEN */;
+    gBattleCommunication[MULTISTRING_CHOOSER] = 0 /* B_MSG_ITEM_SWAP_TAKEN */;
   } else {
-    gBattleCommunication[MULTISTRING_CHOOSER] = 2 /* B_MSG_ITEM_SWAP_GIVEN */;
+    gBattleCommunication[MULTISTRING_CHOOSER] = 1 /* B_MSG_ITEM_SWAP_GIVEN */;
   }
   return false;
 }
