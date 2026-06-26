@@ -39,6 +39,9 @@
 | Gain d'EXP de combat | `Cmd_getexp` | battle_script_commands.c:3340+ | **AUDIT 1:1** (`expYield×level/7` ; split exp-share via identité `floor(floor(a/2)/b)=floor(a/2b)` ; chaîne +share → ×Œuf Chance → ×dresseur → ×échangé ; `IsTradedMon` corrigé) |
 | Courbe d'EXP (niveau→exp) | `gExperienceTables` | pokemon.c | **ORACLE** `probe-experience-runtime` (6 courbes L100 canoniques) |
 | Genre / chromatique | `GetGenderFromSpecies…` | pokemon.c | **ORACLE** `probe-gender-shiny` 13/13 (`57402d75` — 🐛 bug `PERCENT_FEMALE` décimal corrigé) |
+| Gain d'argent dresseur | `GetTrainerMoneyToGive` | battle_script_commands.c:5581 | **AUDIT 1:1** (`4×lastMonLevel×moneyMultiplier×value` ; ×2 si DOUBLE pas TWO_OPPONENTS ; base secrète `20×levels[0]×mult` ; value via `gTrainerMoneyTable` audité) |
+| Split physique/spécial | `IS_TYPE_PHYSICAL` (par TYPE) | battle.h:466 | **ORACLE** `probe-type-physical-split` 18/18 (`418a65f7` : type<9 physique, >9 spécial, MYSTERY=9 aucun) |
+| PP max + PP-Plus | `CalculatePPWithBonus` | pokemon.c:4637 | **ORACLE** `probe-ppbonus` 80/80 (`95195a2d` : basePP+basePP×20×ppUps/100, masque `3<<(2i)`) |
 
 ## Sondé/audité depuis (mise à jour session finale)
 
