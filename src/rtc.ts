@@ -51,12 +51,15 @@ const sNumDaysInMonths: readonly number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30,
 // 1:1 décomp siirtc.h flags + rtc.c RTC_ERR_* (rtc.h).
 const SIIRTCINFO_24HOUR = 0x40;
 const SIIRTCINFO_POWER  = 0x80;
-const RTC_ERR_12HOUR_CLOCK = 1 << 4;
-const RTC_ERR_POWER_FAILURE = 1 << 6;
-const RTC_ERR_INVALID_YEAR  = 1 << 0;
-const RTC_ERR_INVALID_MONTH = 1 << 1;
-const RTC_ERR_INVALID_DAY   = 1 << 2;
-const RTC_ERR_FLAG_MASK = 0xFF;
+// AUDIT FIX (audit-inline-battle-constants) : layout de bits FAUX → RtcGetErrorStatus()
+// posait année/mois/jour aux bits 0-2, HORS du masque 0x0FF0 que lit main_menu
+// (RTC_ERR_FLAG_MASK=4080) → ces erreurs n'étaient jamais détectées. Valeurs 1:1 rtc.h.
+const RTC_ERR_12HOUR_CLOCK  = 0x0010;
+const RTC_ERR_POWER_FAILURE = 0x0020;
+const RTC_ERR_INVALID_YEAR  = 0x0040;
+const RTC_ERR_INVALID_MONTH = 0x0080;
+const RTC_ERR_INVALID_DAY   = 0x0100;
+const RTC_ERR_FLAG_MASK     = 0x0FF0;
 
 /** struct SiiRtcInfo (siirtc.h:33) — la "pile". Champs BCD. */
 interface SiiRtcInfo {

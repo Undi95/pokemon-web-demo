@@ -22,16 +22,30 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DECOMP = 'D:/Projet 1/decomps/pokeemeraude';
 
-// Fichiers combat à scanner (cœur du moteur — là où les caseID/anim/msg sont hardcodés).
-const TS_FILES = [
-  'src/battle_script_commands.ts', 'src/battle_util.ts', 'src/battle_main.ts',
-  'src/battle_ai_script_commands.ts', 'src/battle_ai_switch_items.ts',
-  'src/battle_controller_player.ts', 'src/pokemon.ts',
-];
+// Scan RÉCURSIF de src/ (tout le port hand-written). On exclut les fichiers AUTO-transpilés
+// (`*-auto.ts`, sortie de la chaîne decomp→TS, vérifiés séparément) et les déclarations `.d.ts`.
+function listTsFiles(dir, acc) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) { if (ent.name !== 'node_modules') listTsFiles(p, acc); }
+    else if (ent.name.endsWith('.ts') && !ent.name.endsWith('-auto.ts') && !ent.name.endsWith('.d.ts')) {
+      acc.push(path.relative(ROOT, p).replace(/\\/g, '/'));
+    }
+  }
+  return acc;
+}
+const TS_FILES = listTsFiles(path.join(ROOT, 'src'), []);
 
 // Exclusions : noms dont le sens local diverge légitimement du décomp (triage confirmé).
 const EXCLUDE = new Set([
-  // (rempli au fur et à mesure du triage si un faux positif est confirmé non-1:1-pertinent)
+  // Sons météo : sous-système son, directive user « ne JAMAIS toucher BGM/SE » (hors scope).
+  // (notre songs.ts canonique a les bonnes valeurs ; les locaux field_weather sont des shadows
+  //  mais on ne touche pas au son.)
+  'SE_RAIN', 'SE_THUNDERSTORM', 'SE_DOWNPOUR',
+  // Réutilisation de nom : `LOCALID_NONE=255` dans script_movement est une sentinelle port
+  // (0xFF = slot vide) ≠ la constante décomp `LOCALID_NONE=0` (le décomp marque le slot vide
+  //  avec OBJECT_EVENTS_COUNT, pas LOCALID_NONE) → pas le même symbole.
+  'LOCALID_NONE',
 ]);
 
 // ── 1. Map des #define décomp ────────────────────────────────────────────────
@@ -92,15 +106,19 @@ for (const rel of TS_FILES) {
     let val;
     try { val = evalExpr(m[2], decomp); } catch { continue; } // valeur non-numérique simple → skip
     checked++;
-    if (val !== decomp[name]) {
+    const d = decomp[name];
+    // Le décomp écrit souvent `((u8) -1)` (= 255 en u8) ; evalExpr strip le cast → -1.
+    // On accepte donc l'égalité après cast unsigned u8/u16/u32 (même motif binaire).
+    const match = val === d || val === (d & 0xFF) || val === (d & 0xFFFF) || (val >>> 0) === (d >>> 0);
+    if (!match) {
       const lineNo = txt.slice(0, m.index).split('\n').length;
-      findings.push(`${rel}:${lineNo}  ${name} = ${val}  (décomp #define = ${decomp[name]})`);
+      findings.push(`${rel}:${lineNo}  ${name} = ${val}  (décomp #define = ${d})`);
     }
   }
 }
 
-console.log(`Constantes inline combat confrontées au décomp : ${checked} (noms #define connus : ${Object.keys(decomp).length}).`);
-if (findings.length === 0) { console.log(`✅ Toutes les constantes inline combat connues du décomp sont FIDÈLES.`); process.exit(0); }
+console.log(`Constantes inline confrontées au décomp : ${checked} (noms #define connus : ${Object.keys(decomp).length} ; scan récursif src/, hors *-auto.ts).`);
+if (findings.length === 0) { console.log(`✅ Toutes les constantes inline connues du décomp sont FIDÈLES.`); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) :\n`);
 for (const f of findings) console.log('  ' + f);
 process.exit(1);

@@ -279,8 +279,8 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   _gFieldEffectArguments[1] = y;
   _gFieldEffectArguments[2] = priority;
   (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
-  // FLDEFF_SPARKLE = 36 (= 1:1 décomp include/constants/field_effects.h).
-  const FLDEFF_SPARKLE = 36;
+  // FLDEFF_SPARKLE = 54 (1:1 field_effect.h). AUDIT FIX : était 36 (mauvais field effect).
+  const FLDEFF_SPARKLE = 54;
   const fa = (globalThis as {
     __fieldEffectActiveList?: {
       FieldEffectActiveListRemove?: (id: number) => void;

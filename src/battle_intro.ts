@@ -74,11 +74,14 @@ const BATTLE_ENVIRONMENT_PLAIN = 9;
 // BATTLE_TYPE_* (constants/battle.h) — masks utilisés ici.
 const BATTLE_TYPE_LINK = 0x00000002;
 const BATTLE_TYPE_RECORDED_LINK = 0x02000000;
-const BATTLE_TYPE_INGAME_PARTNER = 0x01000000;
-const BATTLE_TYPE_FRONTIER = 0x00000400;
-const BATTLE_TYPE_KYOGRE_GROUDON = 0x00040000;
-const TRAINER_STEVEN_PARTNER = 0x300;  // approx — chemin partner non exercé en wild
-const VERSION_RUBY = 1;
+// AUDIT FIX (audit-inline-battle-constants) : valeurs 1:1 battle.h/trainers.h/global.h
+// (étaient fausses : INGAME_PARTNER 1<<24, FRONTIER 1<<10, KYOGRE_GROUDON 1<<18,
+// STEVEN_PARTNER 0x300 « approx », VERSION_RUBY 1).
+const BATTLE_TYPE_INGAME_PARTNER = 0x00400000;  // bit 22
+const BATTLE_TYPE_FRONTIER = 0x003F0100;         // TOWER|DOME|PALACE|ARENA|FACTORY|PIKE|PYRAMID
+const BATTLE_TYPE_KYOGRE_GROUDON = 0x00001000;   // bit 12
+const TRAINER_STEVEN_PARTNER = 3075;             // trainers.h:17
+const VERSION_RUBY = 2;                           // global.h
 
 // ─── helpers GPU/CPU (HW-emu via rt) ────────────────────────────────────────
 function SetGpuReg(off: number, v: number): void { rt()?.SetGpuReg?.(off, v & 0xFFFF); }

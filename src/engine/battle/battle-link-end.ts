@@ -43,8 +43,8 @@ import {
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
-/** 1:1 décomp `BATTLE_TYPE_LINK_IN_BATTLE` (= bit set pendant link battle). */
-const BATTLE_TYPE_LINK_IN_BATTLE = 1 << 18;
+/** 1:1 décomp `BATTLE_TYPE_LINK_IN_BATTLE` (battle.h:60) = bit 5. AUDIT FIX : était bit 18. */
+const BATTLE_TYPE_LINK_IN_BATTLE = 1 << 5;
 
 /** 1:1 décomp `MULTIUSE_STATE` = 0 dans gBattleCommunication. */
 const MULTIUSE_STATE = 0;
@@ -52,8 +52,8 @@ const MULTIUSE_STATE = 0;
 /** 1:1 décomp `RGB_BLACK` = 0. */
 const RGB_BLACK = 0;
 
-/** 1:1 décomp `VERSION_EMERALD` = 5 (= include/global.h). */
-const VERSION_EMERALD = 5;
+/** 1:1 décomp `VERSION_EMERALD` = 3 (global.h:10). AUDIT FIX : était 5 (= VERSION_LEAFGREEN). */
+const VERSION_EMERALD = 3;
 
 /** 1:1 décomp `FLAG_SYS_FRONTIER_PASS`. */
 const FLAG_SYS_FRONTIER_PASS = 0x864;

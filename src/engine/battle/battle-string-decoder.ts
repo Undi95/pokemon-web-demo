@@ -61,8 +61,8 @@ import {
 
 // 1:1 décomp `TRAINER_UNION_ROOM` (include/constants/trainers.h).
 const TRAINER_UNION_ROOM = 3072;
-// 1:1 décomp `TRAINER_LINK_OPPONENT` (include/constants/trainers.h).
-const TRAINER_LINK_OPPONENT = 0x400;
+// 1:1 décomp `TRAINER_LINK_OPPONENT` (trainers.h) = 2048. AUDIT FIX : était 0x400 (1024).
+const TRAINER_LINK_OPPONENT = 2048;
 
 // 1:1 décomp `B_SIDE_PLAYER` / `B_SIDE_OPPONENT` : (battler & 1) → 0 = PLAYER, 1 = OPPONENT.
 function _getBattlerSide(battler: number): number { return battler & 1; }

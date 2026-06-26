@@ -32,10 +32,9 @@ import {
 } from '../../../include/constants/field_specials';
 import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/direction-coords';
 
-/** 1:1 décomp `include/fieldmap.h:24` :
- *    #define MAPGRID_IMPASSABLE 0x800
- *  Set le bit `impassable` sur le tile (= collision activé). */
-const MAPGRID_IMPASSABLE = 0x800;
+/** 1:1 décomp `fieldmap.h` : `MAPGRID_IMPASSABLE = MAPGRID_COLLISION_MASK = 0x0C00` (bits 10-11).
+ *  AUDIT FIX : était 0x800 (bit 11 seul) → collision=2 au lieu de 3 (impassable complet). */
+const MAPGRID_IMPASSABLE = 0x0C00;
 
 interface PCAnimState {
   active: boolean;

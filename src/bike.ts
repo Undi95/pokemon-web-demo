@@ -89,7 +89,7 @@ const {
   ACRO_TRANS_WHEELIE_RISING_MOVING, ACRO_TRANS_WHEELIE_LOWERING_MOVING,
 } = ENUM_ACRO_3;
 
-const COPY_MOVE_WALK = 1;  // 1:1 décomp constants/event_objects.h
+const COPY_MOVE_WALK = 2;  // 1:1 décomp event_object_movement.h (AUDIT FIX : était 1)
 
 // ─── const rom data ──────────────────────────────────────────────────────────
 
