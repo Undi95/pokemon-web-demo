@@ -1655,16 +1655,12 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERWATER);
 
   // 1:1 décomp : Thunder en Rain = hit (no acc check) si WEATHER_HAS_EFFECT.
-  // WEATHER_HAS_EFFECT = !ABILITY_ON_FIELD(CloudNine/AirLock).
-  // Lazy lookup via globalThis pour éviter circular dep.
-  const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
-  let weatherActive = true;
-  if (checkFn) {
-    // 1:1 décomp abilities.h:17,81. AUDIT BUG FIX : AIR_LOCK était 76 (= TRACE!) → 77.
-    const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 77;
-    weatherActive = !checkFn(CHECK_ON_FIELD, 0, CLOUD_NINE, 0, 0)
-                 && !checkFn(CHECK_ON_FIELD, 0, AIR_LOCK, 0, 0);
-  }
+  // WEATHER_HAS_EFFECT = !ABILITY_ON_FIELD(CloudNine/AirLock) = TOUS les battlers (hp>0).
+  // AUDIT FIX : l'ancien code appelait __abilityBattleEffectsCheck(12 = CHECK_OTHER_SIDE)
+  // sous le nom trompeur « CHECK_ON_FIELD » (le vrai = 19) → ne vérifiait que le camp
+  // ADVERSE, ratant Cloud Nine/Air Lock côté joueur. On utilise la vraie WEATHER_HAS_EFFECT()
+  // (battle_util, importée _weatherHasEffect ; itère gBattlersCount).
+  const weatherActive = _weatherHasEffect();
 
   const moveEff = getBattleMove(move).effect;
   // 1:1 décomp battle_script_commands.c:1089 : `gBattleWeather & B_WEATHER_RAIN`
@@ -1736,18 +1732,10 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   if (buff > MAX_STAT_STAGE) buff = MAX_STAT_STAGE;
 
   // 1:1 décomp ll.1146/1154 : les modulateurs météo (Thunder-en-soleil, Sand Veil) sont gatés
-  // par WEATHER_HAS_EFFECT = `!ABILITY_ON_FIELD(CloudNine/AirLock)`. Même pattern lazy-global que
-  // _AccuracyCalcHelper ci-dessus (évite la dépendance circulaire). AUDIT FIX : la gate manquait,
-  // → Cloud Nine/Air Lock n'annulaient pas Thunder-50 / Sand Veil (non-1:1).
-  let weatherActive = true;
-  {
-    const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
-    if (checkFn) {
-      const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 77;
-      weatherActive = !checkFn(CHECK_ON_FIELD, 0, CLOUD_NINE, 0, 0)
-                   && !checkFn(CHECK_ON_FIELD, 0, AIR_LOCK, 0, 0);
-    }
-  }
+  // par WEATHER_HAS_EFFECT = `!ABILITY_ON_FIELD(CloudNine/AirLock)` = TOUS les battlers (hp>0).
+  // (vraie WEATHER_HAS_EFFECT() battle_util ; remplace l'ancien __abilityBattleEffectsCheck(12)
+  // qui ne testait que le camp adverse — cf. _AccuracyCalcHelper.)
+  const weatherActive = _weatherHasEffect();
 
   // Thunder en sun = 50% accuracy.
   if (weatherActive && (gBattleWeather & B_WEATHER_SUN) && md.effect === EFFECT_THUNDER) {
