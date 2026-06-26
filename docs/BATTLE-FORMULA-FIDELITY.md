@@ -21,8 +21,11 @@
 | — écrans (Reflect/Light Screen) | `sideStatus` | pokemon.c | **ORACLE** `probe-damage-screens` 64/64 (`d8edd3d2`) |
 | Crit | `Cmd_critcalc` + `sCriticalHitChance{16,8,4,3,2}` | battle_script_commands.c:606,1253 | **AUDIT 1:1** (formule critChance : Focus Energy ×2, HIGH_CRITICAL/SKY_ATTACK/BLAZE_KICK/POISON_TAIL, Scope Lens, Lucky Punch+Chansey/Stick+Farfetch'd ×2 ; gate De Morgan) |
 | Crit ×2 appliqué | `Cmd_damagecalc` (`damage × gCritMultiplier`) | battle_script_commands.c:1290 | couvert (statstages prouve `gCritMultiplier=1` hors crit) |
-| STAB + efficacité de type | `Cmd_typecalc` | battle_script_commands.c | logique : **ORACLE** `probe-type-effectiveness` AI_TypeCalc 9/9 (`6fa3eba8`) ; table `gTypeEffectiveness` : **ORACLE** `audit-type-chart` 336/336. Application sur `gBattleMoveDamage` (globals) = à sonder |
-| Aléa 85-100 % | `ApplyRandomDmgMultiplier` | battle_script_commands.c:1639 | RNG (non déterministe) |
+| STAB + efficacité de type | `Cmd_typecalc` / `TypecalcImpl` | battle_script_commands.c | **ORACLE** `probe-typecalc` (`5cbd976b` : STAB ×1.5 + efficacité type1/type2 sur `gBattleMoveDamage` LIVE) + `probe-type-effectiveness` AI_TypeCalc 9/9 + table `audit-type-chart` 336/336 |
+| Finalisation (crit/dmgMult/Charge/Helping Hand) | `Cmd_damagecalc` | battle_script_commands.c:1290 | **AUDIT 1:1** (×gCritMultiplier×dmgMultiplier ; Charge électrique ×2 ; Helping Hand ×15/10) |
+| Aléa 85-100 % + leave-at-1-HP | `Cmd_adjustnormaldamage` / `ApplyRandomDmgMultiplier` | battle_script_commands.c:1639/1658 | **AUDIT 1:1** (`randPercent = 100 - Random()%16`, `dmg*=%/100`, min 1 ; Focus Band/Endure/False Swipe leave-at-1-HP, skip Substitute) |
+| Effet secondaire (chance) | `Cmd_seteffectwithchance` | battle_script_commands.c:2908 | **AUDIT 1:1** (Serene Grace ×2 ; branche CERTAIN ; `Random()%100 < percentChance` → SetMoveEffect, CERTAIN si ≥100) |
+| Manipulation dégâts | `Cmd_manipulatedamage` | battle_script_commands.c:6743 | **AUDIT 1:1** (DMG_CHANGE_SIGN ×-1 ; DMG_RECOIL_FROM_MISS ÷2 min 1 cap maxHP/2 ; DMG_DOUBLED ×2) |
 
 ## Autres formules
 
@@ -35,13 +38,21 @@
 | Courbe d'EXP (niveau→exp) | `gExperienceTables` | pokemon.c | **ORACLE** `probe-experience-runtime` (6 courbes L100 canoniques) |
 | Genre / chromatique | `GetGenderFromSpecies…` | pokemon.c | **ORACLE** `probe-gender-shiny` 13/13 (`57402d75` — 🐛 bug `PERCENT_FEMALE` décimal corrigé) |
 
-## Reste à sonder (besoin de setup combat / globals)
+## Sondé/audité depuis (mise à jour session finale)
 
-- **Badges** (`ShouldGetStatBadgeBoost` ×110/100) : impl 1:1 (AUDIT FIX flags 0x867/0x86B/0x86D) mais
-  non prouvée — besoin de poser les flags badge + un battler côté joueur (side 0).
-- **`Cmd_typecalc`** : l'application STAB ×1.5 + multiplicateur d'efficacité sur `gBattleMoveDamage`
-  (la LOGIQUE est prouvée via AI_TypeCalc, mais pas cette voie-là, qui opère sur les globals).
-- **Précision/esquive** (`Cmd_accuracycheck`), **field sports**, **Plus/Minus** (partenaire), **double**.
+- **Badges** (`ShouldGetStatBadgeBoost` ×110/100) : **ORACLE** `probe-damage-badges` (`6988e1e7`, 64 cas,
+  FlagSet/Clear save-restore).
+- **`Cmd_typecalc`** : **ORACLE** `probe-typecalc` (`5cbd976b`) — STAB + efficacité sur les globals LIVE.
+- **Précision/esquive** (`Cmd_accuracycheck`) : **AUDIT 1:1** ligne-à-ligne ; 🐛 fix `WEATHER_HAS_EFFECT`
+  manquant (Thunder-soleil/Sand Veil, `45b97218`) + caseID `CHECK_OTHER_SIDE` vs `CHECK_ON_FIELD`
+  (`5973e127`).
+- **Finalisation/aléa/effet-secondaire** (`Cmd_damagecalc`, `Cmd_adjustnormaldamage`,
+  `Cmd_seteffectwithchance`, `Cmd_manipulatedamage`) : **AUDIT 1:1** (voir tableau pipeline).
+
+## Reste
+
+- **field sports** (Mud/Water Sport ×⅓ sur Feu/Électrik), **Plus/Minus** (partenaire double),
+  **double battle** (ciblage/spread). Hors single-player principal pour la plupart.
 
 > Constat de la session finale : tout ce qui est audité/sondé ici est **1:1**. Les seuls vrais bugs
 > trouvés dans la couche combat étaient des improvisations isolées (parse genre décimal, BGM victoire,
