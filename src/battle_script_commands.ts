@@ -1735,8 +1735,22 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   if (buff < MIN_STAT_STAGE) buff = MIN_STAT_STAGE;
   if (buff > MAX_STAT_STAGE) buff = MAX_STAT_STAGE;
 
+  // 1:1 décomp ll.1146/1154 : les modulateurs météo (Thunder-en-soleil, Sand Veil) sont gatés
+  // par WEATHER_HAS_EFFECT = `!ABILITY_ON_FIELD(CloudNine/AirLock)`. Même pattern lazy-global que
+  // _AccuracyCalcHelper ci-dessus (évite la dépendance circulaire). AUDIT FIX : la gate manquait,
+  // → Cloud Nine/Air Lock n'annulaient pas Thunder-50 / Sand Veil (non-1:1).
+  let weatherActive = true;
+  {
+    const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
+    if (checkFn) {
+      const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 77;
+      weatherActive = !checkFn(CHECK_ON_FIELD, 0, CLOUD_NINE, 0, 0)
+                   && !checkFn(CHECK_ON_FIELD, 0, AIR_LOCK, 0, 0);
+    }
+  }
+
   // Thunder en sun = 50% accuracy.
-  if ((gBattleWeather & B_WEATHER_SUN) && md.effect === EFFECT_THUNDER) {
+  if (weatherActive && (gBattleWeather & B_WEATHER_SUN) && md.effect === EFFECT_THUNDER) {
     moveAcc = 50;
   }
 
@@ -1744,7 +1758,7 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   let calc = Math.floor(ratio[0] * moveAcc / ratio[1]);
 
   if (attackerMon.ability === ABILITY_COMPOUND_EYES) calc = Math.floor((calc * 130) / 100);
-  if ((gBattleWeather & B_WEATHER_SANDSTORM) && targetMon.ability === ABILITY_SAND_VEIL) {
+  if (weatherActive && (gBattleWeather & B_WEATHER_SANDSTORM) && targetMon.ability === ABILITY_SAND_VEIL) {
     calc = Math.floor((calc * 80) / 100);
   }
   if (attackerMon.ability === ABILITY_HUSTLE && IS_TYPE_PHYSICAL(type)) {
