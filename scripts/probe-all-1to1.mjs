@@ -59,6 +59,7 @@ export async function runAll() {
     ['probe-ppreduce-1to1', 'runPpReduceOracle', { dc }],   // idem self-import
     ['probe-statbuffs-1to1', 'runStatBuffsOracle', { dc }],   // idem self-import
     ['probe-randdmg-1to1', 'runRandDmgOracle', { dc }],   // idem self-import
+    ['probe-multihit-1to1', 'runMultiHitOracle', { dc }],   // idem self-import
     ['probe-gender-shiny-1to1', 'runGenderShinyOracle', { pk, dc }],
     ['probe-species-runtime-1to1', 'runSpeciesRuntimeOracle', { sr, dc, info }],
     ['probe-experience-runtime-1to1', 'runExpRuntimeOracle', { et, sr, dc, speciesInfo: info }],

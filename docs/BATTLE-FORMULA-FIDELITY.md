@@ -25,7 +25,7 @@
 | Finalisation (crit/dmgMult/Charge/Helping Hand) | `Cmd_damagecalc` | battle_script_commands.c:1290 | **AUDIT 1:1** (×gCritMultiplier×dmgMultiplier ; Charge électrique ×2 ; Helping Hand ×15/10) |
 | Aléa 85-100 % (`ApplyRandomDmgMultiplier`) | `Cmd_adjustnormaldamage` | battle_script_commands.c:1639 | **ORACLE** `probe-randdmg-1to1` 96/96 (`bc1f181e` : RNG-peek, `randPercent=100-Random()%16`, `dmg*%/100` floor, min-1, no-op) |
 | leave-at-1-HP (Focus Band/Endure/False Swipe) | `Cmd_adjustnormaldamage` | battle_script_commands.c:1658 | **AUDIT 1:1** (skip Substitute) |
-| Coups multiples 2-5 | `Cmd_setmultihitcounter` | battle_script_commands.c:7142 | **AUDIT 1:1** (`Random()&3` ; si >1 `(Random()&3)+2` ; sinon `+2` → 3/8·3/8·1/8·1/8) |
+| Coups multiples 2-5 | `Cmd_setmultihitcounter` | battle_script_commands.c:7142 | **ORACLE** `probe-multihit-1to1` 20/20 (RNG-peek ; `Random()&3` ; si >1 `(Random()&3)+2` ; sinon `+2` → 3/8·3/8·1/8·1/8) |
 | Effet secondaire (chance) | `Cmd_seteffectwithchance` | battle_script_commands.c:2908 | **AUDIT 1:1** (Serene Grace ×2 ; branche CERTAIN ; `Random()%100 < percentChance` → SetMoveEffect, CERTAIN si ≥100) |
 | Manipulation dégâts | `Cmd_manipulatedamage` | battle_script_commands.c:6743 | **AUDIT 1:1** (DMG_CHANGE_SIGN ×-1 ; DMG_RECOIL_FROM_MISS ÷2 min 1 cap maxHP/2 ; DMG_DOUBLED ×2) |
 

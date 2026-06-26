@@ -4536,7 +4536,7 @@ function Cmd_negativedamage(_ctx: BattleScriptContext): boolean {
 // ─── 0x8D setmultihitcounter ───────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_setmultihitcounter. 2 bytes. */
-function Cmd_setmultihitcounter(ctx: BattleScriptContext): boolean {
+export function Cmd_setmultihitcounter(ctx: BattleScriptContext): boolean {
   const arg = readByte(ctx);
   if (arg) {
     setMultiHitCounter(arg);
