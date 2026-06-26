@@ -800,7 +800,7 @@ function AnimTask_AnimateGustTornadoPalette(task: { taskId: number; data: number
   task.data[0] = a[1]; // durée
   task.data[1] = a[0]; // intervalle
   const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
-  task.data[2] = sp?.IndexOfSpritePaletteTag?.(10008 /* ANIM_TAG_GUST */) ?? 0xFF;
+  task.data[2] = sp?.IndexOfSpritePaletteTag?.(10009 /* ANIM_TAG_GUST */) ?? 0xFF;
   task.data[10] = 0;
   task.data[11] = 0;
   task.func = AnimTask_AnimateGustTornadoPalette_Step;
