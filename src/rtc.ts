@@ -1,3 +1,7 @@
+// #100% done — miroir complet de rtc.c (26/26 fonctions). EXEMPTION hardware
+// (user) : la "pile" RTC = horloge PC (new Date()), SiiRtc*/REG_IME no-op/adaptés,
+// pas de gel 366e jour. Tout le RESTE (algo dates/BCD/borrow) est 1:1. + helper
+// port ConvertBinaryToBcd (encode new Date()→BCD, hors décomp).
 /**
  * rtc.ts — Real-Time Clock 1:1 décomp `src/rtc.c` (346 l), la "pile" GBA
  * remplacée par la DATE DU PC (= seule substitution ; tout le reste 1:1).
@@ -34,6 +38,10 @@
 
 import type { Time } from './engine/save/save-blocks';
 import { GetSaveBlock2 } from './save';
+// Format* (rtc.c:218-261, UNUSED) : conversion BCD→string charmap.
+import { ConvertIntToDecimalStringN, ConvertIntToHexStringN } from './string_util';
+import { STR_CONV_MODE_LEADING_ZEROS } from '../include/string_util';
+import { CHAR_COLON, CHAR_HYPHEN, EOS } from '../include/constants/characters';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -201,6 +209,63 @@ export function RtcReset(): void {
   RtcDisableInterrupts();
   /* SiiRtcReset() — pas d'équivalent web (l'horloge PC n'est pas réinitialisable). */
   RtcRestoreInterrupts();
+}
+
+/** 1:1 décomp `u16 RtcGetErrorStatus(void)` (rtc.c:121) : renvoie le status
+ *  d'erreur calculé par RtcInit/RtcCheckInfo (= 0 pour une horloge PC valide).
+ *  Lu par main_menu (RTC_ERR_FLAG_MASK). Foyer 1:1 ICI (était un stub `return 0`
+ *  dans gba-menu-system, qui ré-exporte désormais cette fonction). */
+export function RtcGetErrorStatus(): number {
+  return sErrorStatus;
+}
+
+// ─── Format* (rtc.c:218-261) : toutes `static UNUSED` dans la décomp (jamais
+//     appelées) — portées pour la fidélité intégrale. Sémantique pointeur `u8*`
+//     = vue Uint8Array (subarray), comme string_util. ────────────────────────
+
+/** 1:1 décomp `static UNUSED FormatDecimalTime(u8 *dest, hour, minute, second)` (rtc.c:218). */
+function FormatDecimalTime(dest: Uint8Array, hour: number, minute: number, second: number): void {
+  dest = ConvertIntToDecimalStringN(dest, hour, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_COLON; dest = dest.subarray(1);
+  dest = ConvertIntToDecimalStringN(dest, minute, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_COLON; dest = dest.subarray(1);
+  dest = ConvertIntToDecimalStringN(dest, second, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = EOS;
+}
+
+/** 1:1 décomp `static UNUSED FormatHexTime(u8 *dest, hour, minute, second)` (rtc.c:228). */
+function FormatHexTime(dest: Uint8Array, hour: number, minute: number, second: number): void {
+  dest = ConvertIntToHexStringN(dest, hour, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_COLON; dest = dest.subarray(1);
+  dest = ConvertIntToHexStringN(dest, minute, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_COLON; dest = dest.subarray(1);
+  dest = ConvertIntToHexStringN(dest, second, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = EOS;
+}
+
+/** 1:1 décomp `static UNUSED FormatHexRtcTime(u8 *dest)` (rtc.c:238). */
+function FormatHexRtcTime(dest: Uint8Array): void {
+  FormatHexTime(dest, sRtc.hour, sRtc.minute, sRtc.second);
+}
+
+/** 1:1 décomp `static UNUSED FormatDecimalDate(u8 *dest, year, month, day)` (rtc.c:243). */
+function FormatDecimalDate(dest: Uint8Array, year: number, month: number, day: number): void {
+  dest = ConvertIntToDecimalStringN(dest, year, STR_CONV_MODE_LEADING_ZEROS, 4);
+  dest[0] = CHAR_HYPHEN; dest = dest.subarray(1);
+  dest = ConvertIntToDecimalStringN(dest, month, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_HYPHEN; dest = dest.subarray(1);
+  dest = ConvertIntToDecimalStringN(dest, day, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = EOS;
+}
+
+/** 1:1 décomp `static UNUSED FormatHexDate(u8 *dest, year, month, day)` (rtc.c:253). */
+function FormatHexDate(dest: Uint8Array, year: number, month: number, day: number): void {
+  dest = ConvertIntToHexStringN(dest, year, STR_CONV_MODE_LEADING_ZEROS, 4);
+  dest[0] = CHAR_HYPHEN; dest = dest.subarray(1);
+  dest = ConvertIntToHexStringN(dest, month, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = CHAR_HYPHEN; dest = dest.subarray(1);
+  dest = ConvertIntToHexStringN(dest, day, STR_CONV_MODE_LEADING_ZEROS, 2);
+  dest[0] = EOS;
 }
 
 // ─── Jour/temps (1:1 décomp) ───────────────────────────────────────────────

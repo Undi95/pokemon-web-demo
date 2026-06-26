@@ -10,8 +10,8 @@
 
 | statut | nb fichiers |
 |---|---|
-| ✅ miroir | 41 |
-| 🟡 partiel | 53 |
+| ✅ miroir | 42 |
+| 🟡 partiel | 52 |
 | 🟠 dispersé | 12 |
 | 🟡 amorce | 35 |
 | 🔴 manquant | 157 |
@@ -37,7 +37,7 @@
 | Pokémon/Party | 32 | 0 | 4 | 28 | 61271 |
 | UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
 | Item/Bag | 10 | 1 | 6 | 3 | 8806 |
-| Save/RTC | 17 | 2 | 5 | 9 | 5676 |
+| Save/RTC | 17 | 3 | 4 | 9 | 5676 |
 | Système/GBA | 17 | 3 | 6 | 7 | 8645 |
 | Son (harness) | 5 | 0 | 1 | 3 | 3551 |
 | Link/IO (N-A) | 29 | 0 | 2 | 25 | 30115 |
@@ -324,8 +324,8 @@
 | `clock.c` | 87 | 6 | `clock.ts` | 1/6 (17%) | 1/6 (17%) | 🟡 amorce |
 | `save.c` | 1053 | 35 | `save.ts` | 7/35 (20%) | 7/35 (20%) | 🟡 amorce |
 | `load_save.c` | 294 | 21 | `load_save.ts` | 9/21 (43%) | 10/21 (48%) | 🟡 partiel |
-| `rtc.c` | 347 | 26 | `rtc.ts` | 14/26 (54%) | 15/26 (58%) | 🟡 partiel |
 | `wallclock.c` | 1102 | 25 | `wallclock.ts` | 16/25 (64%) | 16/25 (64%) | 🟡 partiel |
+| `rtc.c` | 347 | 26 | `rtc.ts` | 26/26 (100%) | 26/26 (100%) | ✅ miroir |
 | `time_events.c` | 119 | 10 | `time_events.ts` | 10/10 (100%) | 10/10 (100%) | ✅ miroir |
 | `play_time.c` | 74 | 5 | `play_time.ts` | 5/5 (100%) | 5/5 (100%) | ✅ miroir |
 | `agb_flash_le.c` | 32 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |

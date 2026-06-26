@@ -85,9 +85,11 @@ export function CanResetRTC(): boolean {
   return _MirrorCanResetRTC();
 }
 
-export function RtcGetErrorStatus(): number {
-  return 0;
-}
+// RtcGetErrorStatus : foyer 1:1 = rtc.ts (rtc.c:121, `return sErrorStatus`).
+// Était un stub `return 0` ici → ré-exporté depuis rtc.ts (les importeurs via
+// decomp-globals `export *` reçoivent la vraie implémentation). gba-menu-system
+// ne dépend pas de rtc par ailleurs → pas de cycle.
+export { RtcGetErrorStatus } from '../../rtc';
 
 /** 1:1 décomp `sound.c PlayBGM(songNum)` — bridge vers m4aSongNumStart avec loop=true.
  *  Utilisé par Birch (MUS_ROUTE122) et autres scenes. Skip si MUS_NONE (= 0xFFFF)
