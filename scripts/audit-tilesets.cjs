@@ -2,13 +2,13 @@
 /**
  * audit-tilesets.cjs — ORACLE de fidélité des TILESETS (structure + attributs + couleurs).
  *
- * Confronte les binaires de copie directe de chaque tileset
- * (`public/decomp/em/tilesets/<.../>{metatiles.bin, metatile_attributes.bin,
- * palettes/*.gbapal}`) au décomp `data/tilesets/`. metatiles.bin = quelles tuiles
- * composent chaque métatuile ; metatile_attributes.bin = comportement (MB_*) + couche
- * de chaque métatuile (= ce qui fait qu'une case est « herbe haute » vs « mur ») ;
- * .gbapal = palettes. Byte-exact. (Les tuiles graphiques anim/*.4bpp sont CONVERTIES,
- * hors scope = domaine gfx-verifier.) Tout écart = tileset au mauvais rendu/comportement.
+ * Confronte les fichiers de copie directe de chaque tileset (metatiles.bin,
+ * metatile_attributes.bin, tiles.png, palettes/*.pal) au décomp data/tilesets.
+ * metatiles.bin = quelles tuiles composent chaque métatuile ; metatile_attributes.bin =
+ * comportement (MB_*) + couche (= ce qui fait qu'une case est « herbe haute » vs « mur ») ;
+ * tiles.png = les pixels ; *.pal = les couleurs. Byte-exact. (Les frames d'anim
+ * anim/*.4bpp sont CONVERTIES, absentes du décomp → ignorées = domaine gfx-verifier.)
+ * Tout écart = tileset au mauvais rendu/comportement.
  *
  *   node scripts/audit-tilesets.cjs   ·   exit 0 fidèle / exit 1 écarts
  */
@@ -23,7 +23,11 @@ const DEC = 'D:/Projet 1/decomps/pokeemeraude/data/tilesets';
 const findings = [];
 let checked = 0, tilesets = 0;
 
-const isDirectCopy = (rel) => /(metatiles|metatile_attributes)\.bin$/.test(rel) || /palettes[\\/][^\\/]+\.gbapal$/.test(rel);
+// Fichiers de copie directe : structure (.bin) + pixels (tiles.png) + couleurs (palettes/*.pal).
+// (anim/*.4bpp = converti, absent du décomp → ignoré ; domaine gfx-verifier.)
+const isDirectCopy = (rel) => /(metatiles|metatile_attributes)\.bin$/.test(rel)
+  || /(^|[\\/])tiles\.png$/.test(rel)
+  || /palettes[\\/][^\\/]+\.pal$/.test(rel);
 
 const walk = (rel) => {
   const ourDir = path.join(OUR, rel);
@@ -45,8 +49,8 @@ for (const sub of ['primary', 'secondary']) {
   }
 }
 
-console.log(`Tilesets : ${tilesets} · fichiers structurels comparés (metatiles/attributs/palettes) : ${checked}`);
-if (findings.length === 0) { console.log('✅ tilesets FIDÈLES au décomp (metatiles.bin + metatile_attributes.bin byte-exact (palettes stockées hors-tileset)).'); process.exit(0); }
+console.log(`Tilesets : ${tilesets} · fichiers comparés (structure+pixels+couleurs) : ${checked}`);
+if (findings.length === 0) { console.log('✅ tilesets FIDÈLES au décomp (metatiles.bin + attributs + tiles.png + palettes byte-exact).'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) de tileset :\n`);
 for (const f of findings.slice(0, 40)) console.log('  ' + f);
 process.exit(1);
