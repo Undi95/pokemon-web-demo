@@ -1025,7 +1025,7 @@ function _getHoldEffectParam(itemId: number): number { return _GetItemHoldEffect
  *
  *  Random 85-100% multiplier (= rand % 16, donc range [0..15], inversé → [85..100]).
  *  Si damage == 0 → no-op. Si damage > 0 et result == 0 → set to 1 (min damage). */
-function ApplyRandomDmgMultiplier(): void {
+export function ApplyRandomDmgMultiplier(): void {
   const rand = Random();
   const randPercent = 100 - (rand % 16);
 
