@@ -251,7 +251,7 @@ const config: Phaser.Types.Core.GameConfig = {
     // ?nointro → skip title screen + resume save existante.
     // ?debug → preset complet (tous items, all flags) + spawn Bourg.
     // Les 2 skip le title screen (cf. boot-mode.ts decideBootMode).
-    const noIntro = params.has('nointro') || params.has('debug');
+    const noIntro = params.has('nointro') || params.has('debug') || params.has('clock');
     // ?truck → dev shortcut pour tester la cinematic intro (= reset save + truck) — DEV ONLY.
     const truckTest = params.has('truck');
     // Phase 4.10 user request session 121 : NE PLUS auto-skip title sur save

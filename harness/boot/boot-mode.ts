@@ -26,7 +26,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block
 import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
-import { DIR_SOUTH } from '../../src/engine/field/direction-coords';
+import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
 import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../../src/engine/pokemon/pokemon';
 import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
@@ -114,6 +114,17 @@ export function hasTruckParam(): boolean {
   try {
     const url = new URL(window.location.href);
     return url.searchParams.has('truck');
+  } catch { return false; }
+}
+
+/** Lit `?clock` depuis l'URL courante (= dev shortcut : preset complet + spawn
+ *  DEVANT l'horloge murale (maison joueur 2F) face NORD, pour tester
+ *  CB2_ViewWallClock en pressant A. SRAM bloquée comme les autres modes test). */
+export function hasClockParam(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.has('clock');
   } catch { return false; }
 }
 
@@ -441,8 +452,20 @@ export function decideBootMode(): BootSpawn {
   // SAUVER, wallclock confirm, SavePlayerParty special, cheats console)
   // devient un no-op tant que le latch est ON. La SRAM existante est donc
   // intacte. Reload sans param test → `SetSaveLocked(false)` re-déverrouille.
-  const isTestMode = hasDebugParam() || hasNoIntroParam() || hasTruckParam();
+  const isTestMode = hasDebugParam() || hasNoIntroParam() || hasTruckParam() || hasClockParam();
   SetSaveLocked(isTestMode);
+
+  if (hasClockParam()) {
+    // `?clock` = preset complet (comme ?debug) + spawn DEVANT l'horloge murale
+    // de la maison du joueur (2F), face NORD → presser A déclenche
+    // CB2_ViewWallClock. Gender-routé (Brendan/May). Pour itérer sur wallclock.c.
+    applyNoIntroPreset();
+    const houseMap = gSaveBlock2Ptr.playerGender === FEMALE
+      ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_2F'
+      : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F';
+    console.log(`[boot-mode] ?clock → preset complet, spawn ${houseMap} (5, 2) face NORD devant l'horloge (SRAM bloquée)`);
+    return { mapId: houseMap, x: 5, y: 2, facing: DIR_NORTH, mode: 'nointro' };
+  }
 
   if (hasDebugParam()) {
     // `?debug` = preset complet testing : tous les items, all flags.
