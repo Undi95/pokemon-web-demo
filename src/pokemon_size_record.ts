@@ -30,8 +30,7 @@ import {
 import type { Pokemon } from './engine/battle/party-storage';
 import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
 import { STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, StringAppend, gStringVar1, gStringVar2, gStringVar3 } from '../include/string_util';
-import { encodeOwText } from '../include/text';
-import { setStringVar, GetPlayerNameString } from './engine/system/string-buffers';
+import { encodeOwText, setStringVar, GetPlayerNameString } from '../include/text';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
 } from '../include/constants/species';

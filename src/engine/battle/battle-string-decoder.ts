@@ -23,7 +23,7 @@
  */
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString } from '../../../include/text';
 import {
   STRINGID_STATSHARPLY, STRINGID_STATHARSHLY,
 } from '../../../include/constants/battle_string_ids';

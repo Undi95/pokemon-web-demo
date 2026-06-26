@@ -70,7 +70,7 @@ import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from
 import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
-import { setStringVar } from './engine/system/string-buffers';
+import { setStringVar } from '../include/text';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './field_weather';
 import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';

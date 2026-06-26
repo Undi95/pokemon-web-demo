@@ -982,7 +982,7 @@ export interface SaveBlock2 {
   /** 1:1 décomp `u8 playerName[PLAYER_NAME_LENGTH + 1]` (charmap, EOS-terminé).
    *  Stage 4 : `number[]` de bytes charmap (round-trip JSON.stringify, comme
    *  SaveBlock1->flags ; un Uint8Array ne round-trip pas). Accès via
-   *  GetPlayerName / GetPlayerNameString / SetPlayerName (string-buffers.ts). */
+   *  GetPlayerName / GetPlayerNameString / SetPlayerName (src/text.ts). */
   playerName: number[];
   /** 0 = MALE, 1 = FEMALE. */
   playerGender: number;

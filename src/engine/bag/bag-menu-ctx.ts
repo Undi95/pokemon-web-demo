@@ -32,7 +32,7 @@
  * un follow-up.
  */
 import { BeginNormalPaletteFade } from '../../palette';
-import { GetPlayerNameString, setStringVar } from '../system/string-buffers';
+import { GetPlayerNameString, setStringVar, encodeOwText } from '../../../include/text';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRebuildListKeepMessage, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage, _CtxPrintQuantityInWindow } from './bag-menu';
 import { PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmount, PrintMoneyAmountInMoneyBox } from '../ui/money-box-ui';
@@ -41,7 +41,6 @@ import { RemoveBagItem, UpdatePocketItemList } from './bag';
 import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput, DisplayMessageAndContinueTask } from '../../menu_helpers';
 import { GetPlayerTextSpeedDelay, ClearDialogWindowAndFrameToTransparent } from '../../menu';
 import { StringExpandPlaceholders } from '../../string_util';
-import { encodeOwText } from '../../../include/text';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';

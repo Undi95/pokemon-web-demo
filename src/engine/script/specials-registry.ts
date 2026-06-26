@@ -38,7 +38,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
-import { setStringVar, GetPlayerNameString } from '../system/string-buffers';
+import { setStringVar, GetPlayerNameString } from '../../../include/text';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../../../include/constants/species';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../include/constants/items';
 import { OBJ_EVENT_GFX_BARD } from '../../../include/constants/event_objects';

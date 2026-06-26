@@ -19,7 +19,7 @@
  */
 
 import type { PokemonInstance } from '../pokemon/pokemon';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString } from '../../../include/text';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,

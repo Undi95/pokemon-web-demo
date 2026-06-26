@@ -15,7 +15,7 @@ import * as Songs from '../include/constants/songs';
 import { getItem, getItemNameFr, getMoveNameFr, getSpeciesNameFr, getTrainer, getTrainerClassNameFr, getTrainerNameFr } from '../harness/runtime/data-tables';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
-import { encodeOwText } from '../include/text';
+import { encodeOwText, setStringVar } from '../include/text';
 import { ScrCmd_dotrainerbattle, ScrCmd_gotobeatenscript, ScrCmd_gotopostbattlescript, ScrCmd_trainerbattle, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
 import { PlantBerryTree } from './berry';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
@@ -32,7 +32,6 @@ import { ScriptCall, ScriptJump, ScriptReturn, SetupNativeScript, StopScript, ge
 import type { ScriptContext } from './script';
 import { Compare, FlagClear, FlagGet, FlagSet, VarGet, VarSet, gSelectedObjectEvent, gSpecialVar } from './engine/script/script-vars';
 import { getMultichoiceList } from './script_menu';
-import { setStringVar } from './engine/system/string-buffers';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './engine/ui/gba-window-system';

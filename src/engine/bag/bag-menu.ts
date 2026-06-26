@@ -53,10 +53,9 @@ import { GetItemName, GetItemDescription, GetItemImportance } from '../../item';
 import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../../../include/string_util';
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
-import { setStringVar } from '../system/string-buffers';
+import { setStringVar, encodeOwText } from '../../../include/text';
 import { gStringVar4 } from '../ui/gba-text-system';
 import { getString } from '../ui/gba-strings';
-import { encodeOwText } from '../../../include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,

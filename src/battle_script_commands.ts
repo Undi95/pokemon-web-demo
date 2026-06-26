@@ -5,7 +5,7 @@ import {
   setLastUsedItem as setLastUsedItemSME,
 } from './engine/battle/state';
 import { DestroySprite } from './sprite';
-import { GetPlayerNameString } from './engine/system/string-buffers';
+import { GetPlayerNameString } from '../include/text';
 import {
   HITMARKER_CHARGING,
   HITMARKER_STATUS_ABILITY_EFFECT,

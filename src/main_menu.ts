@@ -26,7 +26,7 @@
  */
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
-import { SetPlayerName, GetPlayerNameString } from './engine/system/string-buffers';
+import { SetPlayerName, GetPlayerNameString } from '../include/text';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {

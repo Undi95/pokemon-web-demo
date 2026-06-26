@@ -43,7 +43,9 @@ import {
 // miroir `menu.ts`. Cycle text↔menu runtime-safe (text.c appelle GetPlayerTextSpeed).
 import { GetPlayerTextSpeed } from './menu';
 import { getWindowById } from './engine/ui/gba-window-system';
-import { gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../include/string_util';
+import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy } from '../include/string_util';
+import { PLAYER_NAME_LENGTH } from '../include/constants/global';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placeholder_text_util';
 // 1:1 décomp : TextPrinterWait*/RENDER_STATE_WAIT_SE appellent PlaySE(SE_SELECT) /
 // IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
@@ -193,6 +195,84 @@ export function decodeOwBytes(bytes: Uint8Array): string {
     i++;
   }
   return out;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Bridge gStringVar / playerName — relocalisé depuis engine/system/string-buffers
+//  (2026-06-26, dissolution du dernier fichier engine/system/). PORT-GLUE : ces
+//  accesseurs encodent une SOURCE FR lisible (nom de mon/objet, nombre, nom du
+//  joueur) en bytes charmap via encodeOwText (= notre préproc runtime), puis
+//  écrivent les buffers EWRAM gStringVarN / gSaveBlock2Ptr->playerName. Le décomp
+//  fait cet encodage au COMPILE-TIME (`_("…")`) → pas de vrai foyer 1:1 ; le foyer
+//  cycle-safe est ICI (encode/decode locaux, gStringVarN déjà importés).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Le buffer byte `gStringVarN` (réf. stable, contenu mutable). */
+function _buf(n: number): Uint8Array | undefined {
+  switch (n) {
+    case 1: return gStringVar1;
+    case 2: return gStringVar2;
+    case 3: return gStringVar3;
+    case 4: return gStringVar4;
+    default: return undefined;
+  }
+}
+
+/** Remplit `gStringVarN` : encode la source FR `value` en bytes charmap (préproc)
+ *  puis StringCopy dans le buffer byte. */
+export function setStringVar(n: number, value: string): void {
+  const buf = _buf(n);
+  if (buf) StringCopy(buf, encodeOwText(value));
+}
+
+/** Lit `gStringVarN` décodé → JS-string lisible (best-effort, devtools / callers
+ *  string non encore migrés). */
+export function getStringVar(n: number): string {
+  const buf = _buf(n);
+  return buf ? decodeOwBytes(buf) : '';
+}
+
+/** Vide les 4 buffers (pose EOS en tête). */
+export function clearStringVars(): void {
+  for (let n = 1; n <= 4; n++) {
+    const b = _buf(n);
+    if (b) b[0] = EOS;
+  }
+}
+
+// ─── Accesseurs gSaveBlock2Ptr->playerName (stockage bytes charmap) ──────────
+// 1:1 décomp : `u8 playerName[PLAYER_NAME_LENGTH + 1]` (charmap). Notre save =
+// JSON.stringify → on stocke `number[]` (round-trip JSON, comme gSaveBlock1->flags ;
+// un Uint8Array ne round-trip pas). Robustes au format LEGACY (ancienne save =
+// string) : décodent/encodent au vol.
+
+/** Bytes charmap du nom du joueur (vue `u8*`, 1:1 `gSaveBlock2Ptr->playerName`). */
+export function GetPlayerName(): Uint8Array {
+  const pn = (gSaveBlock2Ptr as { playerName?: unknown }).playerName;
+  if (pn instanceof Uint8Array) return pn;
+  if (Array.isArray(pn)) return Uint8Array.from(pn as number[]);
+  if (typeof pn === 'string') return encodeOwText(pn);   // legacy save (string)
+  return new Uint8Array([EOS]);
+}
+
+/** Nom du joueur décodé en JS-string (transitoire — callers pas encore byte-natifs).
+ *  Le décodage est accent-correct (cf. fix decodeOwBytes glyphe latin vs kana). */
+export function GetPlayerNameString(): string {
+  const pn = (gSaveBlock2Ptr as { playerName?: unknown }).playerName;
+  if (typeof pn === 'string') return pn;                 // legacy save (string)
+  return decodeOwBytes(GetPlayerName());
+}
+
+/** Écrit `gSaveBlock2Ptr->playerName` : encode `name` (FR lisible) en bytes charmap,
+ *  tronqué à PLAYER_NAME_LENGTH + EOS terminateur (1:1 `StringCopy(playerName, src)`). */
+export function SetPlayerName(name: string | Uint8Array): void {
+  const bytes = typeof name === 'string' ? encodeOwText(name) : name;
+  const out: number[] = [];
+  for (let i = 0; i < PLAYER_NAME_LENGTH && i < bytes.length && bytes[i] !== EOS; i++) {
+    out.push(bytes[i]);
+  }
+  out.push(EOS);
+  (gSaveBlock2Ptr as { playerName?: number[] }).playerName = out;
 }
 
 // ════════════════════════════════════════════════════════════════════════════

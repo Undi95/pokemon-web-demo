@@ -14,7 +14,7 @@ import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
 } from '../../../harness/runtime/data-tables';
 import { Random } from '../../random';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString } from '../../../include/text';
 import { Random32 } from '../../../include/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';

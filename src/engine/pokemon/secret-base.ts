@@ -11,7 +11,7 @@
  */
 
 import { registerSpecial } from '../script/script-opcodes';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString } from '../../../include/text';
 import { VarGet, VarSet, gSpecialVar } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SECRET_BASES_COUNT, TRAINER_ID_LENGTH, LANGUAGE_FRENCH } from '../../../include/constants/global';

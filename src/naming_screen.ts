@@ -21,7 +21,7 @@
  */
 import { OBJ_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData } from './sprite';
-import { SetPlayerName } from './engine/system/string-buffers';
+import { SetPlayerName } from '../include/text';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,

@@ -43,7 +43,7 @@ import {
   type WindowTemplate,
 } from './engine/ui/gba-window-system';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
-import { GetPlayerNameString } from './engine/system/string-buffers';
+import { GetPlayerNameString, encodeOwText } from '../include/text';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT, FLAG_GET_SEEN } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
@@ -59,7 +59,6 @@ import {
 } from './field_message_box';
 // Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
-import { encodeOwText } from '../include/text';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './engine/ui/gba-menu-system';

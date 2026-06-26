@@ -60,9 +60,8 @@ import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
 import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from './engine/ui/gba-strings';
-import { setStringVar } from './engine/system/string-buffers';
+import { setStringVar, encodeOwText, decodeOwBytes } from '../include/text';
 import { StringExpandPlaceholders, gStringVar4 } from './engine/ui/gba-text-system';
-import { encodeOwText, decodeOwBytes } from '../include/text';  // préproc : source FR → bytes charmap (+ décode pour affichage)
 import * as Songs from '../include/constants/songs';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,

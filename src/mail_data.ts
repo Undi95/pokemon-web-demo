@@ -26,7 +26,7 @@
  */
 
 import { GET_UNOWN_LETTER } from '../include/pokemon';
-import { GetPlayerName } from './engine/system/string-buffers';
+import { GetPlayerName } from '../include/text';
 import type { Mail } from './engine/save/save-blocks';
 import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './engine/save/save-blocks';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';

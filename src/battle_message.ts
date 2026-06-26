@@ -33,7 +33,7 @@ import {
   EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
   encodeStringForFont,
 } from './engine/ui/gba-text-printer';
-import { GetPlayerNameString } from './engine/system/string-buffers';
+import { GetPlayerNameString } from '../include/text';
 import {
   B_TXT_BUFF1, B_TXT_BUFF2, B_TXT_BUFF3, B_TXT_COPY_VAR_1, B_TXT_COPY_VAR_2, B_TXT_COPY_VAR_3,
   B_TXT_PLAYER_MON1_NAME, B_TXT_OPPONENT_MON1_NAME, B_TXT_PLAYER_MON2_NAME, B_TXT_OPPONENT_MON2_NAME,

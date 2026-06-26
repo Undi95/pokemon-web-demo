@@ -12,7 +12,7 @@
 import { CreatePokeballSpriteToReleaseMon } from '../../../pokeball';
 import type { DecompRuntime, DecompSprite, DecompTask } from '../../../../harness/runtime/decomp-runtime';
 import { ResetSpriteData } from '../../../sprite';
-import { GetPlayerNameString } from '../../system/string-buffers';
+import { GetPlayerNameString } from '../../../../include/text';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,

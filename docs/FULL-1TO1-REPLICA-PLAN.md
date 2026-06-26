@@ -119,10 +119,11 @@ La décompo maison a éclaté chaque `.c` en plusieurs fichiers → mirror = MER
 - **`ui/*.ts` (25)** → `menu.c`/`text.c`/`window.c`/`text_window.c`/`menu_helpers.c`/`option_menu.c`(impl+return)/
   `pokedex.c`(screen+flags)/`pokemon_summary_screen.c`(summary+anim)/`tv.c`/`wallclock.c`/`start_menu.c`/...
 - **`field/*.ts` (21)** → `event_object_movement.c`/`fieldmap.c`/`field_effect.c`/`field_region_map.c`/...
-- **`system/` reste 7** : `random.ts`(shim→src/random.ts, déduper+sortir SeedRng→main/new_game),
-  `music.ts`(bridge M4A→classer harness vs sound.c), `fade-screen.ts`(→merge field_weather.c),
-  `flash-mask.ts`(→fldeff_flash.c+field_screen_effect.c), `pokeball-effects.ts`(→battle_anim_throw.c+pokeball.c),
-  `multichoice-data.ts`(loader→src/data/script_menu), `string-buffers.ts`(glue→merge string_util.ts).
+- **`system/` = DISSOUS ✅ (2026-06-26)** — dossier `src/engine/system/` vide. Trajets :
+  `random.ts`→`src/random.ts` ; `music.ts`→`harness/m4a/music.ts` ; `fade-screen.ts`→`field_weather`/`palette` ;
+  `flash-mask.ts`→`harness/gba/flash-mask.ts`+`field_screen_effect.ts` ; `pokeball-effects.ts`→`battle_anim_throw.ts`+`pokeball.ts` ;
+  `multichoice-data.ts`→`src/script_menu.ts` ; `string-buffers.ts`→`src/text.ts` (bridge gStringVar/playerName ;
+  foyer cycle-safe = encode/decode + gStringVarN y sont locaux, vs string_util qui aurait forcé du lazy).
 - **`decomp-data/` (97)** = data extraite + headers → `src/data/` + `include/`(+constants/+gba/) ; relocalisation
   en masse mais suffixe `-data.ts` ≠ décomp → étape dédiée (préserver le câblage des loaders harness).
 - **`decomp-impls/` (2)** → `sprite.c` (merge dans `src/sprite.ts`).

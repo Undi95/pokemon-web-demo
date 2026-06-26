@@ -9,6 +9,12 @@
  */
 export { encodeOwTextSource, encodeOwText, isOwCharmapReady, decodeOwBytes } from '../src/text';
 
+// Bridge gStringVar / playerName (relocalisé depuis engine/system/string-buffers).
+export {
+  setStringVar, getStringVar, clearStringVars,
+  GetPlayerName, GetPlayerNameString, SetPlayerName,
+} from '../src/text';
+
 // text.h — FontIds + attributs de font (relocalisés depuis engine/ui, 1:1 text.c).
 export {
   FONT_SMALL, FONT_NORMAL, FONT_SHORT,

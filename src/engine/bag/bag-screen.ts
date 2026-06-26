@@ -37,9 +37,8 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix, ResetSpriteData } from '../../sprite';
-import { setStringVar } from '../system/string-buffers';
+import { setStringVar, encodeOwText } from '../../../include/text';
 import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
-import { encodeOwText } from '../../../include/text';  // préproc : source FR → bytes charmap
 import { EOS, CHAR_NEWLINE } from '../../../include/constants/characters';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, CountTotalItemQuantityInBag } from './bag';

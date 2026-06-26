@@ -31,7 +31,7 @@ import {
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
   ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
 } from './gba-window-system';
-import { GetPlayerNameString } from '../system/string-buffers';
+import { GetPlayerNameString, encodeOwText } from '../../../include/text';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
@@ -57,7 +57,6 @@ import {
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../../../harness/runtime/decomp-globals';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../../../include/string_util';
-import { encodeOwText } from '../../../include/text';
 import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';

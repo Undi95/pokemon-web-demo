@@ -32,7 +32,7 @@
  */
 
 import { FreeAllSpritePalettes } from '../harness/runtime/decomp-globals';
-import { GetPlayerNameString } from './engine/system/string-buffers';
+import { GetPlayerNameString } from '../include/text';
 import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg, ResetVramOamAndBgCntRegs,
