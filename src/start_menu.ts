@@ -252,9 +252,10 @@ function pokedexAction(): boolean {
  *  (start_menu.c:759) : FadeScreen(FADE_TO_BLACK, 0) + queue OpenPartyScreen.
  *  Pattern identique au sac/trainer-card (= CB2 swap). */
 function pokemonAction(): boolean {
-  if (gSaveBlock1Ptr.playerParty.length === 0) {
-    return showMessageThenReturn('Vous n\'avez pas\nencore de POKéMON.');
-  }
+  // 1:1 décomp `StartMenuPokemonCallback` (start_menu.c:759) : AUCUN garde équipe-vide.
+  // L'option POKéMON n'est ajoutée au menu que sous `FlagGet(FLAG_SYS_POKEMON_GET)` (cf.
+  // buildItems), et le jeu interdit de déposer son dernier Pokémon → équipe jamais vide
+  // ici. L'ancien garde « pas encore de POKéMON » était une improvisation morte (retiré).
   FadeScreen(FADE_TO_BLACK, 0);
   sPendingScreenAction = () => OpenPartyScreen();
   sSubState = 'fading_to_screen';
