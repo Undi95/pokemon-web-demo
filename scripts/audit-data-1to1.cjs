@@ -21,7 +21,7 @@ const DIR = __dirname;
 const ORACLES = [
   // — Pokémon / espèces —
   'audit-species-data.cjs', 'audit-evolution-data.cjs', 'audit-learnset-data.cjs',
-  'audit-tmhm-learnsets.cjs', 'audit-tutor-learnsets.cjs', 'audit-egg-moves.cjs',
+  'audit-tmhm-learnsets.cjs', 'audit-tmhm-move-map.cjs', 'audit-tutor-learnsets.cjs', 'audit-egg-moves.cjs',
   'audit-experience-tables.cjs', 'audit-friendship-modifiers.cjs', 'audit-pokedex-orders.cjs', 'audit-pokedex-entries.cjs', 'audit-species-dex-numbers.cjs',
   'audit-pokedex-text.cjs',
   // — Combat —
