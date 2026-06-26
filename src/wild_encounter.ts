@@ -309,7 +309,7 @@ export function GetLocalWaterMon(): string {
 (globalThis as Record<string, unknown>).__GetLocalWaterMon = GetLocalWaterMon;
 
 /** 1:1 décomp `EncounterOddsCheck` (wild_encounter.c:493-499). */
-function EncounterOddsCheck(encounterRate: number): boolean {
+export function EncounterOddsCheck(encounterRate: number): boolean {
   return (Random() % MAX_ENCOUNTER_RATE) < encounterRate;
 }
 
@@ -358,7 +358,7 @@ function WildEncounterCheck(encounterRate: number, ignoreAbility: boolean): bool
 /** 1:1 décomp `AllowWildCheckOnNewMetatile` (wild_encounter.c:533-538) :
  *    if (Random() % 100 >= 60) return FALSE; else return TRUE;
  *  → 40% skip sur tile change (= step sur tile type différent). */
-function AllowWildCheckOnNewMetatile(): boolean {
+export function AllowWildCheckOnNewMetatile(): boolean {
   return (Random() % 100) < 60;
 }
 
