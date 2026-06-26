@@ -45,7 +45,7 @@ import {
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetPlayerNameString } from './engine/system/string-buffers';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
-import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
+import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT, FLAG_GET_SEEN } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
 import { IsNationalPokedexEnabled } from './event_data';
 import {
@@ -224,10 +224,10 @@ function showMessageThenClose(text: string): boolean {
 /** POKéDEX action : ouvre vraie UI Pokédex (compteurs + stats).
  *  Session 127 : remplace le `showMessageThenReturn` par pokedex-screen. */
 function pokedexAction(): boolean {
-  // 1:1 décomp `StartMenuPokedexCallback` : ouvre directement le Pokédex, AUCUN garde
-  // interne. L'option POKéDEX n'est ajoutée au menu que sous FlagGet(FLAG_SYS_POKEDEX_GET)
-  // (buildItems l.551) → `!FlagGet(FLAG_SYS_POKEDEX_GET)` ici est toujours faux. L'ancien
-  // garde « pas encore disponible » était une improvisation morte (retiré).
+  // 1:1 décomp `StartMenuPokedexCallback` (start_menu.c:639) : AUCUN garde interne ici.
+  // Le garde « dex VIDE → ne s'ouvre pas » est dans le handler d'input (_tickMainMenu,
+  // 1:1 start_menu.c:610-613 `HandleStartMenuInput`), PAS dans le callback. L'option
+  // POKéDEX n'est ajoutée au menu que sous FlagGet(FLAG_SYS_POKEDEX_GET) (buildItems l.551).
   // 1:1 décomp `StartMenuPokedexCallback` (start_menu.c:639) : CB2 swap plein écran
   // (SetMainCallback2(CB2_OpenPokedex), retour via gMain.savedCallback). Pattern fade
   // + sPendingScreenAction IDENTIQUE à pokemonAction/party (CB2 swap prouvé).
@@ -807,6 +807,13 @@ function _tickMainMenu(newKeys: number): void {
     PlaySE(_seSelect());
     const item = sItems[sCursorPos];
     if (item) {
+      // 1:1 décomp start_menu.c:610-613 : si l'option = Pokédex et le dex est VIDE
+      // (GetNationalPokedexCount(FLAG_GET_SEEN) == 0 — ex. dex obtenu par triche sans
+      // aucune rencontre), le SE de sélection est joué mais le dex NE S'OUVRE PAS
+      // (`return FALSE` sans poser le callback ni lancer le fade).
+      if (item.onSelect === pokedexAction && GetNationalPokedexCount(FLAG_GET_SEEN) === 0) {
+        return;
+      }
       const shouldClose = item.onSelect();
       if (shouldClose) CloseStartMenu();
     }
