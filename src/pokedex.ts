@@ -25,8 +25,15 @@
 import {
   getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes,
   ScanlineEffect_Stop, LoadPalette, PlaySE,
+  LoadCompressedSpriteSheet, LoadSpritePalettes, assetCache,
 } from '../harness/runtime/decomp-globals';
-import { ResetSpriteData, setReservedSpritePaletteCount } from './sprite';
+import {
+  ResetSpriteData, setReservedSpritePaletteCount,
+  CreateSprite, DestroySprite, SetOamMatrix,
+  ANIMCMD_FRAME, ANIMCMD_END, type SpriteTemplate,
+} from './sprite';
+import { gSineTable } from './trig';
+import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import { BeginNormalPaletteFade } from './palette';
 import { DeactivateAllTextPrinters } from './text';
 import {
@@ -155,6 +162,7 @@ interface PokedexAssets {
   startMenuTilemap: Uint16Array;  // gPokedexStartMenuMain_Tilemap (start_menu_main.bin → BG0 @0x280)
   bgHoennPal: Uint16Array;        // gPokedexBgHoenn_Pal (bg_hoenn.pal)
   caughtBall: Uint8Array;         // sCaughtBall_Gfx (caught_ball.4bpp.bin, 8×16 icône ball capturée)
+  interfaceTiles: Uint8Array;     // gPokedexInterface_Gfx (interface.4bpp.bin, sprites d'interface)
 }
 let _assets: PokedexAssets | null = null;
 let _assetsLoading: Promise<PokedexAssets> | null = null;
@@ -162,15 +170,19 @@ function _loadAssets(): Promise<PokedexAssets> {
   if (_assets) return Promise.resolve(_assets);
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall] = await Promise.all([
+    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles] = await Promise.all([
       loadTileBin(`${ASSET}/menu.png`, 4),          // sibling menu.4bpp.bin (indices bruts)
       loadTilemapBin(`${ASSET}/list.bin`),
       loadTilemapBin(`${ASSET}/list_underlay.bin`),
       loadTilemapBin(`${ASSET}/start_menu_main.bin`),
       loadGbaPal(`${ASSET}/bg_hoenn.pal`),
       loadTileBin(`${ASSET}/caught_ball.png`, 4),    // sibling caught_ball.4bpp.bin
+      loadTileBin(`${ASSET}/interface.png`, 4),      // sibling interface.4bpp.bin (sprites)
     ]);
-    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall };
+    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles };
+    // assetCache keyed pour LoadCompressedSpriteSheet/LoadSpritePalettes (sprites d'interface, TAG 4096).
+    assetCache.set('gPokedexInterface_Gfx', interfaceTiles);
+    assetCache.set('gPokedexBgHoenn_Pal', bgHoennPal);
     return _assets;
   })();
   return _assetsLoading;
@@ -263,6 +275,112 @@ function CreateMonSpritesAtPos(selectedMon: number, _ignored: number): void {
   if (rt) rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
   sPokedexView.listVOffset = 0;
   sPokedexView.listMovingVOffset = 0;
+}
+
+// ─── Sprites d'interface (JALON 1c) ─────────────────────────────────────────
+const DISPLAY_HEIGHT = 160;
+const TAG_DEX_INTERFACE = 4096; // tile+pal tag de tous les sprites d'interface (pokedex.c:689)
+const ST_OAM_AFFINE_NORMAL = 1; // sprite.h ST_OAM_AFFINE_NORMAL
+
+// Templates 1:1 décomp (oam shape/size : 32x32=sh0/sz2, 64x32=sh1/sz3, 8x16=sh2/sz0).
+// 1:1 sRotatingPokeBallSpriteTemplate (pokedex.c:724) — OBJ_WINDOW, anim frame 16.
+const sRotatingPokeBallSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 0, size: 2, priority: 1, objMode: 2 /* OBJ_WINDOW */, affineMode: 0 },
+  anims: [[ANIMCMD_FRAME(16, 30), ANIMCMD_END]],
+  affineAnims: null, callback: SpriteCB_RotatingPokeBall,
+};
+// 1:1 sSeenOwnTextSpriteTemplate (pokedex.c:735) — labels VUS/PRIS, anims SeenText(64)/OwnText(96).
+const sSeenOwnTextSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 1, size: 3, priority: 0, objMode: 0, affineMode: 0 },
+  anims: [[ANIMCMD_FRAME(64, 30), ANIMCMD_END], [ANIMCMD_FRAME(96, 30), ANIMCMD_END]],
+  affineAnims: null, callback: SpriteCB_SeenOwnInfo,
+};
+// 1:1 sHoennDexSeenOwnNumberSpriteTemplate (pokedex.c:757) — chiffres 0..9 (frames 128..146, +2).
+const sHoennDexSeenOwnNumberSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 2, size: 0, priority: 0, objMode: 0, affineMode: 0 },
+  anims: Array.from({ length: 10 }, (_, d) => [ANIMCMD_FRAME(128 + d * 2, 30), ANIMCMD_END]),
+  affineAnims: null, callback: SpriteCB_SeenOwnInfo,
+};
+
+// 1:1 décomp `SpriteCB_RotatingPokeBall` (pokedex.c) : tourne la matrice affine (data[0]=30/31)
+// via gSineTable[pokeBallRotation+data[1]] + orbite x2/y2 (rayon 40). data[1]=0/128 (2 balls 180°).
+function SpriteCB_RotatingPokeBall(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== 1 /* PAGE_SEARCH_RESULTS */) {
+    DestroySprite(sprite.spriteId);
+    return;
+  }
+  let val = (sPokedexView.pokeBallRotation + sprite.data[1]) & 0xff;
+  let r3 = gSineTable[val];
+  let r0 = gSineTable[val + 64];
+  SetOamMatrix(sprite.data[0], r0, r3, -r3, r0);
+  val = (sPokedexView.pokeBallRotation + sprite.data[1] + 64) & 0xff;
+  r3 = gSineTable[val];
+  r0 = gSineTable[val + 64];
+  sprite.x2 = Math.trunc((r0 * 40) / 256);
+  sprite.y2 = Math.trunc((r3 * 40) / 256);
+}
+
+// 1:1 décomp `SpriteCB_SeenOwnInfo` (pokedex.c) : détruit le sprite si on quitte PAGE_MAIN.
+function SpriteCB_SeenOwnInfo(sprite: DecompSprite): void {
+  if (sPokedexView && sPokedexView.currentPage !== PAGE_MAIN) DestroySprite(sprite.spriteId);
+}
+
+// 1:1 décomp `CreateInterfaceSprites` (pokedex.c:2790) — JALON 1c : Pokéball affine + compteurs
+// VUS/PRIS (Hoenn). [Flèches scroll / scrollbar / labels START-MENU-SELECT-RECHERCHE / National
+// = sous-étapes suivantes ; sprite du mon = CreateMonSpritesAtPos jalon 1c-mon.]
+function CreateInterfaceSprites(page: number): void {
+  if (!sPokedexView) return;
+  const rt = getRuntime();
+  if (!rt) return;
+
+  // helpers d'accès sprite (gSprites[id] est | undefined).
+  const anim = (id: number, n: number) => rt.StartSpriteAnim(id, n);
+  const hide = (id: number) => { const s = rt.gSprites[id]; if (s) s.invisible = true; };
+
+  // 2 Pokéballs rotatives affines (matrixNum 30/31, déphasées de 128 = 180°).
+  let id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
+  let spr = rt.gSprites[id];
+  if (spr) { spr.affineMode = ST_OAM_AFFINE_NORMAL; spr.matrixNum = 30; spr.data[0] = 30; spr.data[1] = 0; }
+  id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
+  spr = rt.gSprites[id];
+  if (spr) { spr.affineMode = ST_OAM_AFFINE_NORMAL; spr.matrixNum = 31; spr.data[0] = 31; spr.data[1] = 128; }
+
+  if (page === PAGE_MAIN) {
+    // Hoenn (!IsNationalPokedexEnabled). National = jalon 4.
+    let digitNum: number;
+    let drawNextDigit: boolean;
+    // Labels VUS / PRIS
+    CreateSprite(sSeenOwnTextSpriteTemplate, 32, 40, 1);
+    anim(CreateSprite(sSeenOwnTextSpriteTemplate, 32, 72, 1), 1);
+
+    // Valeur VUS : centaines / dizaines / unités (masquage des zéros de tête).
+    drawNextDigit = false;
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 24, 48, 1);
+    digitNum = Math.floor(sPokedexView.seenCount / 100);
+    anim(id, digitNum);
+    if (digitNum !== 0) drawNextDigit = true; else hide(id);
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 32, 48, 1);
+    digitNum = Math.floor((sPokedexView.seenCount % 100) / 10);
+    if (digitNum !== 0 || drawNextDigit) anim(id, digitNum); else hide(id);
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 40, 48, 1);
+    anim(id, (sPokedexView.seenCount % 100) % 10);
+
+    // Valeur PRIS : centaines / dizaines / unités.
+    drawNextDigit = false;
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 24, 80, 1);
+    digitNum = Math.floor(sPokedexView.ownCount / 100);
+    anim(id, digitNum);
+    if (digitNum !== 0) drawNextDigit = true; else hide(id);
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 32, 80, 1);
+    digitNum = Math.floor((sPokedexView.ownCount % 100) / 10);
+    if (digitNum !== 0 || drawNextDigit) anim(id, digitNum); else hide(id);
+    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 40, 80, 1);
+    anim(id, (sPokedexView.ownCount % 100) % 10);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -369,28 +487,25 @@ function LoadPokedexListPage(page: number): boolean {
     case 0:
     default: {
       if (rt.gPaletteFade.active) return false;
+      // Assets async (BG + sheet interface) : attendre qu'ils soient prêts AVANT le rendu —
+      // sinon CreateInterfaceSprites (case 1) tournerait sans la sheet chargée. (En ROM décomp
+      // tout est synchrone ; ici on gate proprement.)
+      if (!_assets) { void _loadAssets(); return false; }
       rt.SetVBlankCallback(null);
       sPokedexView.currentPage = page;
       rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sPokedex_BgTemplate, sPokedex_BgTemplate.length);
       // SetBgTilemapBuffer(n, …) : buffer intrinsèque par-BG dans le port → no-op.
-      // Assets chargés async (idempotent) ; le rendu BG se fait quand prêts.
-      void _loadAssets().then((a) => {
-        const r = getRuntime();
-        if (!r) return;
-        // DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0)
-        // → BG3 charBase 0 (= charBaseIndex 0 × 0x4000).
-        r.gba.vram.set(a.menuTiles, 0 * 0x4000);
-        CopyToBgTilemapBuffer(1, a.listTilemap, 0, 0);
-        CopyToBgTilemapBuffer(3, a.underlayTilemap, 0, 0);
-        CopyToBgTilemapBuffer(0, a.startMenuTilemap, 0, 0x280);
-        CopyBgTilemapBufferToVram(0);
-        CopyBgTilemapBufferToVram(1);
-        CopyBgTilemapBufferToVram(2);
-        CopyBgTilemapBufferToVram(3);
-        _bgReady = true;
-      });
+      // 1:1 DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx) → BG3 charBase 0 + tilemaps.
+      rt.gba.vram.set(_assets.menuTiles, 0 * 0x4000);
+      CopyToBgTilemapBuffer(1, _assets.listTilemap, 0, 0);
+      CopyToBgTilemapBuffer(3, _assets.underlayTilemap, 0, 0);
+      CopyToBgTilemapBuffer(0, _assets.startMenuTilemap, 0, 0x280);
+      CopyBgTilemapBufferToVram(0);
+      CopyBgTilemapBufferToVram(1);
+      CopyBgTilemapBufferToVram(2);
+      CopyBgTilemapBufferToVram(3);
       ResetPaletteFade();
       sPokedexView.isSearchResults = page !== PAGE_MAIN;
       LoadPokedexBgPalette(sPokedexView.isSearchResults);
@@ -405,8 +520,10 @@ function LoadPokedexListPage(page: number): boolean {
       ResetSpriteData();
       FreeAllSpritePalettes();
       setReservedSpritePaletteCount(8);
-      // LoadCompressedSpriteSheet(sInterfaceSpriteSheet) + CreateInterfaceSprites
-      // → JALON 1c (sprites d'interface).
+      // 1:1 LoadCompressedSpriteSheet(sInterfaceSpriteSheet) + LoadSpritePalettes(sInterfaceSpritePalette).
+      LoadCompressedSpriteSheet({ data: 'gPokedexInterface_Gfx', size: 0x2000, tag: TAG_DEX_INTERFACE });
+      LoadSpritePalettes([{ data: 'gPokedexBgHoenn_Pal', tag: TAG_DEX_INTERFACE }]);
+      CreateInterfaceSprites(page);
       rt.gMain.state++;
       return false;
     case 2:
