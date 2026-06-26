@@ -51,7 +51,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
 import { getString } from './engine/ui/gba-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';

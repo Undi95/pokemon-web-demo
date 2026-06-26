@@ -39,7 +39,7 @@ import { ResetSpriteData } from '../../sprite';
 import { getRuntime, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
 
 import { InitFieldMessageBox } from '../../field_message_box';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 
 /** 1:1 décomp `bool8 FieldCB_ReturnToFieldOpenStartMenu(void)`
  *  (field_screen_effect.c:440) :

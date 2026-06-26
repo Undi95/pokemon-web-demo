@@ -25,7 +25,7 @@
 
 import { setPendingWarp } from './warp-system';
 import { GetHealLocationByName } from '../../heal_location';
-import { FadeScreen, FADE_TO_BLACK } from '../system/fade-screen';
+import { FadeScreen, FADE_TO_BLACK } from '../../field_weather';
 import { FlagGet } from '../script/script-vars';
 
 /** 1:1 décomp `sMapHealLocations[]` (region_map.c:289) — mapsec → HEAL_LOCATION_* (destination

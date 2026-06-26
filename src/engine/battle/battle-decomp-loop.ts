@@ -24,7 +24,7 @@
 import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
 import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';

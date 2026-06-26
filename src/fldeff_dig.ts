@@ -17,7 +17,7 @@ import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { Overworld_ResetStateAfterDigEscRope } from './overworld';
 import { setPendingWarp } from './engine/field/warp-system';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
-import { FadeScreen, FADE_TO_BLACK } from './engine/system/fade-screen';
+import { FadeScreen, FADE_TO_BLACK } from './field_weather';
 
 /** 1:1 décomp `FLDEFF_USE_DIG = 38` (include/constants/field_effects.h). */
 const FLDEFF_USE_DIG = 38;

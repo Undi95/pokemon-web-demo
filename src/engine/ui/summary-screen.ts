@@ -58,7 +58,7 @@ import {
 } from '../../../harness/runtime/decomp-globals';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../../../include/string_util';
 import { encodeOwText } from '../../../include/text';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../../../harness/runtime/decomp-runtime';

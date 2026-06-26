@@ -840,9 +840,8 @@ export function ApplyWeatherColorMapIfIdle_Gradual(colorMapIndex: number, target
 }
 
 /** 1:1 décomp `FadeScreen(u8 mode, s8 delay)` (field_weather.c:737).
- *  ⚠️ Le décomp a une version simplifiée historique dans engine/system/fade-screen.ts
- *  (mauvais emplacement = dette placement à consolider en C-final). Celle-ci est la
- *  vraie, weather-aware (branche useWeatherPal). */
+ *  Version 1:1 weather-aware (branche useWeatherPal). Tous les appelants importent
+ *  FadeScreen/FADE_* d'ici (doublon `engine/system/fade-screen.ts` supprimé — lot 1 restructure). */
 export function FadeScreen(mode: number, delay: number): void {
   let fadeColor: number;
   let fadeOut: boolean;

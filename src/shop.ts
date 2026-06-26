@@ -71,7 +71,7 @@ import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, Displ
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from './engine/system/string-buffers';
-import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './engine/system/fade-screen';
+import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './field_weather';
 import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';
 import { CreateTask, DestroyTask } from './task';

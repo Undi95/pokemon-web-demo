@@ -74,7 +74,7 @@ import { GetMonLevelUpWindowStats } from './menu_specialized';
 import { getString } from './engine/ui/gba-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
-import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
 import type { Pokemon } from './engine/battle/party-storage';
 import {

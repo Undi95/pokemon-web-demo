@@ -66,7 +66,7 @@ import { GetMapNameGeneric } from '../../region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../../../include/string_util';
 import { CHAR_SLASH, EOS } from '../../../include/constants/characters';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';

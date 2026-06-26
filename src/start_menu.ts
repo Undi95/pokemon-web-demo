@@ -89,7 +89,7 @@ import { OpenPartyScreen, TickPartyScreen } from './engine/ui/party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
 import { OpenPokedexFromStartMenu } from './pokedex';
 import { getString } from './engine/ui/gba-strings';
-import { FadeScreen, FADE_TO_BLACK } from './engine/system/fade-screen';
+import { FadeScreen, FADE_TO_BLACK } from './field_weather';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
 // pour éviter le globalThis lookup qui pourrait résoudre vers la version
 // auto-transpilée broken (= sound-all-auto.ts:561, gMPlayInfo_SE1 undefined).

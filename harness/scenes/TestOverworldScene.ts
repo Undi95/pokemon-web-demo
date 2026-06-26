@@ -159,7 +159,7 @@ import { preloadSparkleEffect } from '../../src/field_effect_helpers';
 import { preloadGeneralFieldEffectPalettes } from '../../src/field_effect_helpers';
 import { DoTimeBasedEvents } from '../../src/clock';
 import { SetUpFieldTasks } from '../../src/field_tasks';
-import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../../src/field_weather';
+import { StartWeather, preloadWeatherFogPalette, gWeatherPtr, FadeScreen, FADE_FROM_BLACK } from '../../src/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../../src/sprite';
 import { SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters } from '../../src/overworld';
@@ -217,7 +217,6 @@ import { syncSubspriteOam } from '../../src/event_object_movement';
 import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadTextWindowFrames } from '../../src/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
-import { FadeScreen, FADE_FROM_BLACK } from '../../src/engine/system/fade-screen';
 import * as Songs from '../../include/constants/songs';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../../src/engine/script/script-opcodes';
