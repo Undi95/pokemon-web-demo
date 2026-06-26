@@ -31,7 +31,7 @@ const ORACLES = [
   'audit-trainer-parties.cjs', 'audit-trainer-meta.cjs', 'audit-trainer-sprites.cjs',
   // — Monde / progression —
   'audit-wild-encounters.cjs', 'audit-mart-lists.cjs', 'audit-item-balls.cjs',
-  'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-maps.cjs',
+  'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs',
   'audit-metatile-behaviors.cjs', 'audit-layouts.cjs', 'audit-tilesets.cjs', 'audit-object-event-graphics.cjs', 'audit-pokemon-sprites.cjs',
   // — Tables TS hand-codées —
   'audit-battle-stat-tables.cjs',
