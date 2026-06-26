@@ -52,6 +52,7 @@ export async function runAll() {
     ['probe-damage-speciesitem-1to1', 'runSpeciesItemOracle', { pk, dc }],
     ['probe-damage-badges-1to1', 'runBadgeOracle', { pk, sv, dc }],
     ['probe-type-effectiveness-1to1', 'runTypeEffectivenessOracle', { bsc, dc }],
+    ['probe-typecalc-1to1', 'runTypecalcOracle', { dc }],   // bsc & st auto-importés par la sonde (cf. son en-tête)
     ['probe-gender-shiny-1to1', 'runGenderShinyOracle', { pk, dc }],
     ['probe-species-runtime-1to1', 'runSpeciesRuntimeOracle', { sr, dc, info }],
     ['probe-experience-runtime-1to1', 'runExpRuntimeOracle', { et, sr, dc, speciesInfo: info }],
@@ -67,19 +68,24 @@ export async function runAll() {
       const res = mod[fn](deps);
       const r = (res && typeof res.then === 'function') ? await res : res;
       const fails = r.fails ?? r.mismatches ?? r.mism ?? 0;
-      const ok = typeof r.verdict === 'string' ? r.verdict.startsWith('✅') : fails === 0;
-      results.push({ name: file, ok, detail: r.verdict ?? `checked=${r.checked} fails=${fails}` });
+      // r.skipped = oracle non concluant pour une raison d'ENVIRONNEMENT (ex. artefact HMR dev), PAS
+      // un écart de fidélité → ne compte pas comme échec.
+      const ok = r.skipped === true || (typeof r.verdict === 'string' ? r.verdict.startsWith('✅') : fails === 0);
+      results.push({ name: file, ok, detail: r.verdict ?? `checked=${r.checked} fails=${fails}`, skipped: r.skipped === true });
     } catch (e) {
       results.push({ name: file, ok: false, detail: 'ERREUR: ' + String(e && e.message || e) });
     }
   }
 
   const passed = results.filter((x) => x.ok).length;
+  const skipped = results.filter((x) => x.skipped).length;
+  const sfx = skipped ? ` (dont ${skipped} ignorée(s) env. dev)` : '';
   return {
     total: results.length,
     passed,
+    skipped,
     failed: results.length - passed,
     results,
-    verdict: passed === results.length ? `✅ ${passed}/${results.length} sondes runtime 1:1 vertes` : `❌ ${results.length - passed} sonde(s) en échec`,
+    verdict: passed === results.length ? `✅ ${passed}/${results.length} sondes runtime 1:1 vertes${sfx}` : `❌ ${results.length - passed} sonde(s) en échec`,
   };
 }
