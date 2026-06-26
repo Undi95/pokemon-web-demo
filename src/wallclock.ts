@@ -518,8 +518,8 @@ function _loadClockTilemap(rt: DecompRuntime, mode: Mode): void {
 /** Create 4 sprites at center (120, 80) :
  *   - MinuteHand 64×64 affineMode=ST_OAM_AFFINE_NORMAL matrixNum=0 priority=1
  *   - HourHand 64×64 affineMode=ST_OAM_AFFINE_NORMAL matrixNum=1 priority=0
- *   - PMIndicator 16×16 priority=2 sAngle=45 (SET) or angle1 (VIEW)
- *   - AMIndicator 16×16 priority=2 sAngle=90 (SET) or angle2 (VIEW) */
+ *   - PMIndicator 16×16 priority=3 (derrière le cadran) sAngle=45 (SET) or angle1 (VIEW)
+ *   - AMIndicator 16×16 priority=3 (derrière le cadran) sAngle=90 (SET) or angle2 (VIEW) */
 function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: number): void {
   // Minute hand (64×64 = shape 0 size 3).
   const minuteSpr = rt.CreateSpriteAtOam({
@@ -549,21 +549,24 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
     hourSprObj.affineMode = 1;
   }
 
-  // PM indicator (16×16 = shape 0 size 1).
+  // PM indicator (16×16 = shape 0 size 1). 1:1 décomp `sOam_PeriodIndicator.priority = 3`
+  // (wallclock.c:210) = OBJ DERRIÈRE les BG 0/1/2 (dont le cadran BG3 priorité 2) → l'indicateur
+  // INACTIF (sur le cadran opaque) est masqué par le compositeur ; l'ACTIF glisse vers la fenêtre
+  // transparente du bas (boîte AM/PM) → visible. C'est LE mécanisme de masquage 1:1 (pas un invisible).
   const pmSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 1,
     tileId: _wallClockHandTileStart + TILE_PM_INDICATOR_START,
-    paletteBank: _wallClockHandPalSlot, priority: 2,
+    paletteBank: _wallClockHandPalSlot, priority: 3,
     affineMode: 0,
   });
   _state.spriteIds.pm = pmSpr.spriteId;
   _state.pmAngle = pmInitAngle;
 
-  // AM indicator (16×16).
+  // AM indicator (16×16). priority 3 = idem (derrière le cadran).
   const amSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 1,
     tileId: _wallClockHandTileStart + TILE_AM_INDICATOR_START,
-    paletteBank: _wallClockHandPalSlot, priority: 2,
+    paletteBank: _wallClockHandPalSlot, priority: 3,
     affineMode: 0,
   });
   _state.spriteIds.am = amSpr.spriteId;
