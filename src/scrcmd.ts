@@ -4395,6 +4395,15 @@ registerOpcode('vgoto_if_eq', (ctx, args) => {
   return getOpcodeHandler('goto_if_eq')?.(ctx, args) ?? false;
 });
 
+// AUDIT FIX : vgoto_if_ne était le SEUL délégué v-conditionnel manquant (eq/set/unset
+// présents). Utilisé par MysteryGiftScript_AlteringCave + _BattleCard → sans handler,
+// dispatchOpcode no-op silencieux → le saut conditionnel NE ne se faisait pas (le script
+// tombait en séquence). Mirror 1:1 du pattern vgoto_if_eq → goto_if_ne (décomp ScrCmd_vgoto_if
+// = goto_if + condition ; la v-relocation n'a pas d'effet dans le port).
+registerOpcode('vgoto_if_ne', (ctx, args) => {
+  return getOpcodeHandler('goto_if_ne')?.(ctx, args) ?? false;
+});
+
 registerOpcode('vgoto_if_set', (ctx, args) => {
   return getOpcodeHandler('goto_if_set')?.(ctx, args) ?? false;
 });
