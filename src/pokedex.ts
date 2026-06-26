@@ -304,6 +304,47 @@ const sHoennDexSeenOwnNumberSpriteTemplate: SpriteTemplate = {
   anims: Array.from({ length: 10 }, (_, d) => [ANIMCMD_FRAME(128 + d * 2, 30), ANIMCMD_END]),
   affineAnims: null, callback: SpriteCB_SeenOwnInfo,
 };
+// 1:1 sScrollArrowSpriteTemplate (pokedex.c:702) — flèches défilement haut/bas (16x8, frame 1).
+// La décomp n'a qu'1 anim (frame 1) et flippe la flèche BAS via `sprite->vFlip = TRUE`
+// (pokedex.c:2800), combiné par SetSpriteOamFlipBits (sprite.c:1246 : oam = animFlip ^ sprite->vFlip).
+// Le substrat sprite du port n'implémente PAS ce XOR (SetSpriteOamFlipBits écrase sprite.vFlip
+// à chaque frame d'anim) → un vFlip manuel est perdu. En attendant ce fix de substrat (transverse,
+// A/B multi-contexte requis), on obtient le MÊME visuel via le flip porté par l'AnimCmd (anim 1),
+// qui est le chemin de flip éprouvé du port. anim 0 = flèche normale, anim 1 = vFlippée (bas).
+const sScrollArrowSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 1, size: 0, priority: 0, objMode: 0, affineMode: 0 },
+  anims: [
+    [ANIMCMD_FRAME(1, 30), ANIMCMD_END],
+    [ANIMCMD_FRAME(1, 30, { vFlip: true }), ANIMCMD_END],
+  ],
+  affineAnims: null, callback: SpriteCB_ScrollArrow,
+};
+// 1:1 sScrollBarSpriteTemplate (pokedex.c:691) — curseur de défilement (8x8, frame 3).
+const sScrollBarSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 0, size: 0, priority: 1, objMode: 0, affineMode: 0 },
+  anims: [[ANIMCMD_FRAME(3, 30), ANIMCMD_END]],
+  affineAnims: null, callback: SpriteCB_Scrollbar,
+};
+// 1:1 sInterfaceTextSpriteTemplate (pokedex.c:713) — labels d'interface (32x16).
+// anims : 0=START(48) 1=RECHERCHE(40) 2=SELECT(32) 3=MENU(56).
+// La 5e entrée (4=frame 200) transcrit la //!< French Difference : le jeu FR appelle
+// StartSpriteAnim(sprite, 4) alors que sSpriteAnimTable_InterfaceText n'a que 4 entrées →
+// lecture OOB qui retombe (layout ROM) sur sSpriteAnimTable_Unused[0] = sSpriteAnim_Unused
+// (frame 200). On la matérialise ici en 5e anim explicite (= comportement FR observable).
+const sInterfaceTextSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 1, size: 2, priority: 0, objMode: 0, affineMode: 0 },
+  anims: [
+    [ANIMCMD_FRAME(48, 30), ANIMCMD_END],  // 0 sSpriteAnim_StartButton
+    [ANIMCMD_FRAME(40, 30), ANIMCMD_END],  // 1 sSpriteAnim_SearchText
+    [ANIMCMD_FRAME(32, 30), ANIMCMD_END],  // 2 sSpriteAnim_SelectButton
+    [ANIMCMD_FRAME(56, 30), ANIMCMD_END],  // 3 sSpriteAnim_MenuText
+    [ANIMCMD_FRAME(200, 30), ANIMCMD_END], // 4 sSpriteAnim_Unused (diff FR)
+  ],
+  affineAnims: null, callback: SpriteCB_DexListInterfaceText,
+};
 
 // 1:1 décomp `SpriteCB_RotatingPokeBall` (pokedex.c) : tourne la matrice affine (data[0]=30/31)
 // via gSineTable[pokeBallRotation+data[1]] + orbite x2/y2 (rayon 40). data[1]=0/128 (2 balls 180°).
@@ -329,6 +370,47 @@ function SpriteCB_SeenOwnInfo(sprite: DecompSprite): void {
   if (sPokedexView && sPokedexView.currentPage !== PAGE_MAIN) DestroySprite(sprite.spriteId);
 }
 
+// 1:1 décomp `SpriteCB_Scrollbar` (pokedex.c:3091) : le curseur suit la position dans la liste.
+function SpriteCB_Scrollbar(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== 1 /* PAGE_SEARCH_RESULTS */) {
+    DestroySprite(sprite.spriteId);
+  } else {
+    sprite.y2 = Math.trunc((sPokedexView.selectedPokemon * 120) / (sPokedexView.pokemonListCount - 1));
+  }
+}
+
+// 1:1 décomp `SpriteCB_ScrollArrow` (pokedex.c:3099) : flèche haut/bas qui pulse (gSineTable),
+// masquée aux extrémités de liste ou quand le menu START est ouvert. sIsDownArrow = data[1].
+function SpriteCB_ScrollArrow(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== 1 /* PAGE_SEARCH_RESULTS */) {
+    DestroySprite(sprite.spriteId);
+    return;
+  }
+  let r0: number;
+  if (sprite.data[1] /* sIsDownArrow */) {
+    sprite.invisible = sPokedexView.selectedPokemon === sPokedexView.pokemonListCount - 1;
+    r0 = sprite.data[2] & 0xff;
+  } else {
+    sprite.invisible = sPokedexView.selectedPokemon === 0;
+    r0 = (sprite.data[2] - 128) & 0xff;
+  }
+  sprite.y2 = Math.trunc(gSineTable[r0] / 64);
+  sprite.data[2] = (sprite.data[2] + 8) & 0xffff;
+  if (sPokedexView.menuIsOpen === false && sPokedexView.menuY === 0 && sprite.invisible === false)
+    sprite.invisible = false;
+  else
+    sprite.invisible = true;
+}
+
+// 1:1 décomp `SpriteCB_DexListInterfaceText` (pokedex.c:3134) : détruit le label hors PAGE_MAIN/RESULTS.
+function SpriteCB_DexListInterfaceText(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== 1 /* PAGE_SEARCH_RESULTS */)
+    DestroySprite(sprite.spriteId);
+}
+
 // 1:1 décomp `CreateInterfaceSprites` (pokedex.c:2790) — JALON 1c : Pokéball affine + compteurs
 // VUS/PRIS (Hoenn). [Flèches scroll / scrollbar / labels START-MENU-SELECT-RECHERCHE / National
 // = sous-étapes suivantes ; sprite du mon = CreateMonSpritesAtPos jalon 1c-mon.]
@@ -342,6 +424,29 @@ function CreateInterfaceSprites(page: number): void {
   const hide = (id: number) => { const s = rt.gSprites[id]; if (s) s.invisible = true; };
 
   let id = 0;
+
+  // ─── Flèches de défilement haut/bas (1:1 pokedex.c:2796-2800) ───
+  id = CreateSprite(sScrollArrowSpriteTemplate, 184, 4, 0);
+  { const s = rt.gSprites[id]; if (s) s.data[1] = 0; }                       // sIsDownArrow = FALSE
+  id = CreateSprite(sScrollArrowSpriteTemplate, 184, DISPLAY_HEIGHT - 4, 0);
+  { const s = rt.gSprites[id]; if (s) s.data[1] = 1; }                       // sIsDownArrow = TRUE
+  // décomp : gSprites[id].vFlip = TRUE (pokedex.c:2800). Substrat du port ne combine pas le
+  // vFlip manuel avec l'anim → on flippe via l'anim 1 (cf. sScrollArrowSpriteTemplate).
+  anim(id, 1);
+
+  // ─── Curseur de défilement / scrollbar (1:1 pokedex.c:2802) ───
+  CreateSprite(sScrollBarSpriteTemplate, 230, 20, 0);
+
+  // ─── Labels d'interface START/MENU/SELECT/RECHERCHE (1:1 pokedex.c:2804-2818) ───
+  CreateSprite(sInterfaceTextSpriteTemplate, 16, 120, 0);                    // START (anim 0)
+  anim(CreateSprite(sInterfaceTextSpriteTemplate, 48, 120, 0), 3);          // MENU
+  id = CreateSprite(sInterfaceTextSpriteTemplate, 16, DISPLAY_HEIGHT - 16, 0); // SELECT
+  anim(id, 2);
+  { const s = rt.gSprites[id]; if (s) s.data[2] = 0x80; }
+  anim(CreateSprite(sInterfaceTextSpriteTemplate, 48, DISPLAY_HEIGHT - 16, 0), 1); // RECHERCHE
+  // //!< French Difference : 5e label (StartSpriteAnim 4 = frame 200, cf. sInterfaceTextSpriteTemplate).
+  anim(CreateSprite(sInterfaceTextSpriteTemplate, 80, DISPLAY_HEIGHT - 16, 0), 4);
+
   // 🚧 DÉSACTIVÉ TEMPORAIREMENT — Pokéball rotative (2 masques OBJ-window affines, matrixNum 30/31).
   // Le code (sRotatingPokeBallSpriteTemplate + SpriteCB_RotatingPokeBall, transcription 1:1 décomp)
   // est conservé, mais l'effet de masque tournant n'est pas encore rendu pixel-correct dans le
