@@ -27,7 +27,7 @@ const ORACLES = [
   // — Combat —
   'audit-move-data.cjs', 'audit-type-chart.cjs', 'audit-item-data.cjs', 'audit-move-effect-scripts.cjs',
   'audit-item-effects-bytes.cjs', 'audit-contest-moves.cjs', 'audit-item-icons.cjs',
-  'audit-pokeblock-flavor.cjs', 'audit-pickup-items.cjs', 'audit-sound-moves.cjs', 'audit-move-power-tables.cjs', 'audit-safari-factors.cjs', 'audit-ai-ignored-effects.cjs', 'audit-move-effect-status-flags.cjs', 'audit-trapping-moves.cjs', 'audit-wild-held-item.cjs', 'audit-magnitude.cjs', 'audit-hidden-power.cjs',
+  'audit-pokeblock-flavor.cjs', 'audit-pickup-items.cjs', 'audit-sound-moves.cjs', 'audit-move-power-tables.cjs', 'audit-safari-factors.cjs', 'audit-ai-ignored-effects.cjs', 'audit-move-effect-status-flags.cjs', 'audit-trapping-moves.cjs', 'audit-wild-held-item.cjs', 'audit-magnitude.cjs', 'audit-hidden-power.cjs', 'audit-present.cjs',
   // — Dresseurs —
   'audit-trainer-parties.cjs', 'audit-trainer-meta.cjs', 'audit-trainer-sprites.cjs',
   'audit-trainer-money-table.cjs',
