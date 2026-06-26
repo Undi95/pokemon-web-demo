@@ -1305,8 +1305,8 @@ export function IsFanfareTaskInactive(): boolean {
 };
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
-// flash-mask.ts auto-register __applyFlashMask pour phaser-bridge post-process.
-import '../../src/engine/system/flash-mask';
+// flash-mask.ts (harness) auto-register __applyFlashMask pour phaser-bridge post-process.
+import '../gba/flash-mask';
 // field-effect-active-list.ts auto-register __fieldEffectActiveList pour
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
 import '../../src/engine/field/field-effect-active-list';
