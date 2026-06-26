@@ -55,6 +55,7 @@ export async function runAll() {
     ['probe-typecalc-1to1', 'runTypecalcOracle', { dc }],   // bsc & st auto-importés par la sonde (cf. son en-tête)
     ['probe-weatherdamage-1to1', 'runWeatherDamageOracle', { dc }],   // idem self-import
     ['probe-critcalc-1to1', 'runCritcalcOracle', { dc }],   // idem self-import
+    ['probe-variablepower-1to1', 'runVariablePowerOracle', { dc }],   // idem self-import
     ['probe-gender-shiny-1to1', 'runGenderShinyOracle', { pk, dc }],
     ['probe-species-runtime-1to1', 'runSpeciesRuntimeOracle', { sr, dc, info }],
     ['probe-experience-runtime-1to1', 'runExpRuntimeOracle', { et, sr, dc, speciesInfo: info }],

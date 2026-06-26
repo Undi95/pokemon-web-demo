@@ -4946,7 +4946,7 @@ function Cmd_psywavedamageeffect(_ctx: BattleScriptContext): boolean {
 // ─── 0xB6 friendshiptodamagecalculation ────────────────────────────────────
 
 /** 1:1 décomp Cmd_friendshiptodamagecalculation. 1 byte. */
-function Cmd_friendshiptodamagecalculation(_ctx: BattleScriptContext): boolean {
+export function Cmd_friendshiptodamagecalculation(_ctx: BattleScriptContext): boolean {
   const move = getBattleMove(gCurrentMove);
   const effect = move?.effect ?? 0;
   const friendship = gBattleMons[gBattlerAttacker].friendship;
@@ -5549,7 +5549,7 @@ function Cmd_mirrorcoatdamagecalculator(ctx: BattleScriptContext): boolean {
 // ─── 0xAC remaininghptopower ──────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_remaininghptopower. 1 byte. Flail / Reversal damage. */
-function Cmd_remaininghptopower(_ctx: BattleScriptContext): boolean {
+export function Cmd_remaininghptopower(_ctx: BattleScriptContext): boolean {
   const hpFraction = GetScaledHPFraction(
     gBattleMons[gBattlerAttacker].hp,
     gBattleMons[gBattlerAttacker].maxHP,
