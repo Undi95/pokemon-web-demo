@@ -2333,7 +2333,7 @@ function PlayerHandleFaintingCry(): void {
   const mon = gPlayerParty[gBattlerPartyIndexes[gActiveBattler] ?? 0];
   const species = mon ? (GetMonData(mon as never, MON_DATA_SPECIES) as number) : 0;
   const nm = species ? reverseDecompConstant(species, 'SPECIES_') : null;
-  if (nm) void import('./engine/system/music').then(({ playCry }) => playCry(nm)).catch(() => {});
+  if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => {});
   PlayerBufferExecCompleted();
 }
 

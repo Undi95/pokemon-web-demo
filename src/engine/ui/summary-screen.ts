@@ -2099,7 +2099,7 @@ function _playMonCryOnce(): void {
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
     const sp = (reverseDecompConstant(sMon.currentMon.species, 'SPECIES_') ?? 'SPECIES_NONE').replace('SPECIES_', '');
-    void import('../system/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+    void import('../../../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).

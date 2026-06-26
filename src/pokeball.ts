@@ -574,7 +574,7 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
       // prouve = ce que l'ad-hoc jouait) pour ne pas regresser en silence ; SE/BGM restent differes.
       // Timing 1:1 : apres affineAnimEnded (case 0 -> state 1 = fin de l'emergence).
       const nm = reverseDecompConstant(task.data[0] /* tCryTaskSpecies */, 'SPECIES_');
-      if (nm) void import('./engine/system/music').then(({ playCry }) => playCry(nm)).catch(() => {});
+      if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => {});
       setWaitForCry(battler, false);
       _cryTaskMon.delete(taskId);
       rt.DestroyTask(taskId);

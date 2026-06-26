@@ -365,7 +365,7 @@ export function tickSendOut(): void {
       // Cri du mon (1:1 Task_PlayCryWhenReleasedFromBall) — via le playCry prouvé
       // (INTRO_TEXT l'utilise). SE_BALL_OPEN/THROW différés (audio fragile, consigne user).
       const sp = _so.species;
-      void import('../system/music').then(({ playCry }) => playCry(sp)).catch(() => {});
+      void import('../../../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => {});
       // La ball disparaît (1:1 HandleBallAnimEnd → ball invisible une fois ouverte).
       if (ball) ball.invisible = true;
       _so.phase = 3; _so.frame = 0;

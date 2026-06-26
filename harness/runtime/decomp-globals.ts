@@ -1223,7 +1223,7 @@ export function PlayCryInternal(
   // waitmoncry. Durée approximée à 1 sec par défaut (= moy. cri Émeraude),
   // overridée par la vraie durée du WAV via _markCryActive depuis music.playCry.
   _audioEndTimeMs.cry = performance.now() + 1000;
-  void import('../../src/engine/system/music').then(({ playCry }) => {
+  void import('../m4a/music').then(({ playCry }) => {
     console.log('[PlayCryInternal] calling playCry(', name, ')');
     playCry(name);
   }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });

@@ -2921,7 +2921,7 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
   // 1:1 :6796-6800 : PlayCry_Normal(species, pan) — le cri du mon à l'apparition.
   if (!noCry && species) {
     const nm = reverseDecompConstant(species, 'SPECIES_');
-    if (nm) void import('./engine/system/music').then(({ playCry }) => playCry(nm)).catch(() => { /* asset */ });
+    if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => { /* asset */ });
   }
   // 1:1 :6798-6799 : HasTwoFramesAnimation → StartSpriteAnim(sprite, 1).
   const s = sprite as unknown as { spriteId?: number; tileBase?: number; monFrontAnimTable?: string; callback: unknown };

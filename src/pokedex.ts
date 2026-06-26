@@ -1228,7 +1228,7 @@ function Task_LoadInfoScreen(task: DecompTask): void {
         if (!task.data[3]) {
           // 1:1 StopCryAndClearCrySongs + PlayCry_NormalNoDucking(species). Cri = WAV pré-extrait.
           const sp = reverseDecompConstant(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), 'SPECIES_') ?? 'SPECIES_NONE';
-          void import('./engine/system/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
+          void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
         } else {
           rt.gMain.state++;
         }

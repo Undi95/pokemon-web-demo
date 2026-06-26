@@ -8,9 +8,9 @@
  * API conservée 1:1 pour ne pas casser les callers (BirchSpeechScene,
  * OverworldScene, BattleScene, script-runner, etc.).
  */
-import { getAudioContext, getMasterGain, isAudioReady } from '../../../harness/m4a/audio-context';
-import { loadMidi, playSong, stopSong, isPlaying } from '../../../harness/m4a/player';
-import { lookupVoicegroup } from '../../../harness/m4a/voicegroups-data/_all-voicegroups-index';
+import { getAudioContext, getMasterGain, isAudioReady } from './audio-context';
+import { loadMidi, playSong, stopSong, isPlaying } from './player';
+import { lookupVoicegroup } from './voicegroups-data/_all-voicegroups-index';
 import type { Midi } from '@tonejs/midi';
 
 let started = false;
@@ -170,7 +170,7 @@ export function playCry(species: string): void {
       src.start();
       // 1:1 décomp : track cry end time pour IsCryPlaying. Override le 1s
       // default set par PlayCryInternal avec la vraie durée du WAV.
-      void import('../../../harness/runtime/decomp-globals').then(({ _markAudioSlotActive }) => {
+      void import('../runtime/decomp-globals').then(({ _markAudioSlotActive }) => {
         _markAudioSlotActive('cry', audioBuf.duration * 1000);
       });
     })

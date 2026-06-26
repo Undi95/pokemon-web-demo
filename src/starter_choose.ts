@@ -646,7 +646,7 @@ function Task_AskConfirmStarter(taskId: number): void {
   // playCry attend le species name lowercase sans préfixe SPECIES_ (= cries/torchic.wav).
   void (async () => {
     try {
-      const { playCry } = await import('./engine/system/music');
+      const { playCry } = await import('../harness/m4a/music');
       const speciesEnum = GetStarterPokemon(task.data[T_STARTER_SELECTION]);
       const speciesName = speciesEnum.replace(/^SPECIES_/, '');
       playCry(speciesName);
