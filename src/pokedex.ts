@@ -55,6 +55,7 @@ import {
 } from './engine/ui/pokedex-flags';
 import { gSpeciesNames } from './engine/data/game-data';
 import { SE_PC_OFF } from '../include/constants/songs';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // ─── Constantes 1:1 (pokedex.h / pokedex.c) ──────────────────────────────────
 const PAGE_MAIN = 0;
@@ -122,6 +123,8 @@ interface PokedexView {
   pokemonListCount: number;
   listVOffset: number;
   listMovingVOffset: number;
+  monSpriteIds: number[];        // 1:1 monSpriteIds[MAX_MONS_ON_SCREEN]
+  selectedMonSpriteId: number;   // 1:1 selectedMonSpriteId
 }
 let sPokedexView: PokedexView | null = null;
 let sLastSelectedPokemon = 0;
@@ -149,6 +152,8 @@ function ResetPokedexView(v: PokedexView): void {
   v.pokemonListCount = 0;
   v.listVOffset = 0;
   v.listMovingVOffset = 0;
+  v.monSpriteIds = [0xffff, 0xffff, 0xffff, 0xffff];   // MAX_MONS_ON_SCREEN = 4
+  v.selectedMonSpriteId = 0xffff;
 }
 
 // Compteurs Vus/Possédés = GetHoennPokedexCount (pokedex-flags.ts, déjà porté 1:1).
@@ -265,13 +270,194 @@ function CreateMonListEntry(position: number, b: number, _ignored: number): void
   CopyWindowToVram(0, 2 /* COPYWIN_GFX */);
 }
 
-// 1:1 décomp `CreateMonSpritesAtPos` (pokedex.c:2478) — JALON 1b = la liste texte
-// (CreateMonListEntry). Les SPRITES du mon (CreatePokedexMonSprite) = JALON 1c.
-function CreateMonSpritesAtPos(selectedMon: number, _ignored: number): void {
+// ─── Sprites du mon (JALON 1c-mon) ──────────────────────────────────────────
+const MAX_MONS_ON_SCREEN = 4;       // 1:1 pokedex.h
+// Tiles OBJ des mon-pics : la sheet interface occupe 0..255 (vérifié déterministe :
+// GetSpriteTileStartByTag(4096)=0). On place les pics au-dessus, 128 tiles/mon
+// (anim_front = 2 frames × 64). 4 slots = 256..767, < 1024 (taille OBJ VRAM).
+const DEX_MON_TILE_BASE = 256;
+const DEX_MON_TILE_STRIDE = 128;
+
+// 1:1 macro `SAFE_DIV(a, b)` (= (b)==0 ? 0 : (a)/(b)), division entière.
+function SAFE_DIV(a: number, b: number): number {
+  return b === 0 ? 0 : Math.trunc(a / b);
+}
+
+// 1:1 décomp `GetPokemonSpriteToDisplay(species)` (pokedex.c:2756). `species` = INDEX
+// dans pokedexList (pas une espèce). Renvoie 0xFFFF (invalide), le n° national (vu),
+// ou 0 (non-vu = silhouette « ? »). ⚠️ arg traité en u16 (selectedMon-1 = -1 → 0xFFFF).
+function GetPokemonSpriteToDisplay(species: number): number {
+  if (!sPokedexView) return 0xffff;
+  species = species & 0xffff;
+  if (species >= NATIONAL_DEX_COUNT || sPokedexView.pokedexList[species].dexNum === 0xffff)
+    return 0xffff;
+  if (sPokedexView.pokedexList[species].seen)
+    return sPokedexView.pokedexList[species].dexNum;
+  return 0;
+}
+
+// Le port n'a PAS de `CreateMonPicSprite_HandleDeoxys` générique (= machinerie
+// trainer_pokemon_sprites.c image-based). On suit le mécanisme mon-pic ÉPROUVÉ du port
+// (summary-screen) : `rt.LoadCompressedSpriteSheet(url, byteOffset)` charge le front pic
+// en VRAM OBJ + renvoie la palette. Comme le dex affiche 3 mons SIMULTANÉS (≠ summary qui
+// en montre 1), on précharge async (gate state-machine) dans 3 régions VRAM + 3 slots
+// palette OBJ distincts (slot = monId, 1:1 paletteSlot=i de la décomp ; reservedCount=8
+// protège 0..7). Species 0 (non-vu) → pic « ? » (question_mark/circled, = gMonFrontPic_
+// CircledQuestionMark de la décomp pour SPECIES_NONE).
+function _dexMonPicFolder(species: number): string {
+  if (species === 0) return 'question_mark/circled';
+  const enumName = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  return enumName.replace('SPECIES_', '').toLowerCase();
+}
+
+let _dexMonPicsReady = false;
+let _dexMonPicsLoading = false;
+
+async function _loadOneDexMonPic(
+  rt: NonNullable<ReturnType<typeof getRuntime>>, species: number, tileBase: number, palSlot: number,
+): Promise<void> {
+  const folder = _dexMonPicFolder(species);
+  const byteOffset = tileBase * 32;   // 32 octets / tile 8x8 4bpp
+  let pal: Uint16Array | null = null;
+  try {
+    const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/anim_front.png`, byteOffset);
+    pal = ld.palette;
+  } catch {
+    try {                              // anim_front absent → front.png (1 frame)
+      const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/front.png`, byteOffset);
+      pal = ld.palette;
+    } catch (e) { console.error('[pokedex] front pic load failed:', folder, e); }
+  }
+  // 1:1 LoadPicPaletteByTagOrSlot(TAG_NONE) : palette du mon → slot OBJ `palSlot`.
+  // gPlttBuffer flat idx OBJ = 0x100 + slot*16 (16 couleurs = 32 octets).
+  if (pal) LoadPalette(pal.subarray(0, 16), 0x100 + palSlot * 16, 32);
+}
+
+// Précharge async les pics des mons à afficher (top/mid/bottom) AVANT la création sync
+// des sprites par CreateMonSpritesAtPos. Itère dans le MÊME ordre que la décomp (les slots
+// monId 0,1,2 sont assignés au 1er-libre, donc dans l'ordre top→mid→bottom).
+async function _preloadDexMonPics(
+  rt: NonNullable<ReturnType<typeof getRuntime>>, selectedMon: number,
+): Promise<void> {
+  let monId = 0;
+  const cand = [selectedMon - 1, selectedMon, selectedMon + 1];
+  for (const idx of cand) {
+    const dexNum = GetPokemonSpriteToDisplay(idx);
+    if (dexNum === 0xffff) continue;
+    const species = NationalPokedexNumToSpecies(dexNum) & 0xffff;
+    await _loadOneDexMonPic(rt, species, DEX_MON_TILE_BASE + monId * DEX_MON_TILE_STRIDE, monId);
+    monId++;
+  }
+}
+
+// 1:1 décomp `CreatePokedexMonSprite(num, x, y)` (pokedex.c:2766) : trouve le 1er slot
+// monSpriteIds libre `i`, crée le sprite affine du mon, affineMode=NORMAL/priority=3,
+// data[0]=0/data[1]=i/data[2]=species. Le port crée via CreateSpriteAtOam pointant la pic
+// préchargée à DEX_MON_TILE_BASE + i*STRIDE (slot palette OBJ i = paletteSlot décomp).
+function CreatePokedexMonSprite(num: number, x: number, y: number): number {
+  if (!sPokedexView) return 0xffff;
+  const rt = getRuntime();
+  if (!rt) return 0xffff;
+  for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) {
+    if (sPokedexView.monSpriteIds[i] === 0xffff) {
+      const species = NationalPokedexNumToSpecies(num) & 0xffff;
+      const tileBase = DEX_MON_TILE_BASE + i * DEX_MON_TILE_STRIDE;
+      const { spriteId } = rt.CreateSpriteAtOam({
+        tileId: tileBase, paletteBank: i, x, y,
+        shape: 0, size: 3,                          // 64×64
+        priority: 3,                                // 1:1 oam.priority = 3
+        affineMode: 1, affineParamIndex: i + 1,     // ST_OAM_AFFINE_NORMAL, matrixNum = i+1
+      });
+      const s = rt.gSprites[spriteId];
+      if (s) {
+        s.affineMode = 1;
+        s.matrixNum = i + 1;
+        // matrice identité au create (la CB l'écrase frame 1 — évite tout glitch).
+        SetOamMatrix(i + 1, 0x100, 0, 0, 0x100);
+        s.data[0] = 0;
+        s.data[1] = i;
+        s.data[2] = species;
+      }
+      sPokedexView.monSpriteIds[i] = spriteId;
+      return spriteId;
+    }
+  }
+  return 0xffff;
+}
+
+// 1:1 décomp `SpriteCB_PokedexListMonSprite` (pokedex.c:3054) : aplatit le mon en
+// perspective (y2 = gSineTable[data5]·76/256, échelle verticale affine = 0x10000 /
+// gSineTable[data5+64]) ; visible si -64<data5<64 ; détruit hors PAGE_MAIN/RESULTS ou
+// sorti de l'écran.
+function SpriteCB_PokedexListMonSprite(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  const monId = sprite.data[1];
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== 1 /* PAGE_SEARCH_RESULTS */) {
+    _freeDexMonSprite(monId);
+  } else {
+    sprite.y2 = Math.trunc(gSineTable[sprite.data[5] & 0xff] * 76 / 256);
+    let varv = SAFE_DIV(0x10000, gSineTable[sprite.data[5] + 64]);
+    if (varv > 0xffff) varv = 0xffff;
+    SetOamMatrix(sprite.data[1] + 1, 0x100, 0, 0, varv);
+    sprite.matrixNum = monId + 1;
+    if (sprite.data[5] > -64 && sprite.data[5] < 64) {
+      sprite.invisible = false;
+      sprite.data[0] = 1;
+    } else {
+      sprite.invisible = true;
+    }
+    if ((sprite.data[5] <= -64 || sprite.data[5] >= 64) && sprite.data[0] !== 0) {
+      _freeDexMonSprite(monId);
+    }
+  }
+}
+
+// décomp : FreeAndDestroyMonPicSprite (libère le slot sSpritePics image-based). Le port
+// charge les pics par région VRAM (pas via sSpritePics) → DestroySprite suffit ; les
+// tiles/palettes sont réinitialisés au prochain ResetSpriteData (réouverture du dex).
+function _freeDexMonSprite(monId: number): void {
+  if (!sPokedexView) return;
+  const id = sPokedexView.monSpriteIds[monId];
+  if (id !== 0xffff && id !== undefined) {
+    DestroySprite(id);
+    sPokedexView.monSpriteIds[monId] = 0xffff;
+  }
+}
+
+// 1:1 décomp `CreateMonSpritesAtPos` (pokedex.c:2478) : top/mid/bottom mon sprites
+// (data[5]=-32/0/32) via GetPokemonSpriteToDisplay + CreatePokedexMonSprite, puis la liste
+// texte (CreateMonListEntry). Les pics sont préchargées (async) par _preloadDexMonPics.
+function CreateMonSpritesAtPos(selectedMon: number, ignored: number): void {
   if (!sPokedexView) return;
   const rt = getRuntime();
-  // JALON 1c : top/mid/bottom mon sprites (GetPokemonSpriteToDisplay + CreatePokedexMonSprite).
-  CreateMonListEntry(0, selectedMon, 0);
+  for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) sPokedexView.monSpriteIds[i] = 0xffff;
+  sPokedexView.selectedMonSpriteId = 0xffff;
+
+  let dexNum: number;
+  let spriteId: number;
+  // top (selectedMon-1)
+  dexNum = GetPokemonSpriteToDisplay(selectedMon - 1);
+  if (dexNum !== 0xffff) {
+    spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
+    const s = rt && rt.gSprites[spriteId];
+    if (s) { s.callback = SpriteCB_PokedexListMonSprite as unknown as typeof s.callback; s.data[5] = -32; }
+  }
+  // mid (selectedMon)
+  dexNum = GetPokemonSpriteToDisplay(selectedMon);
+  if (dexNum !== 0xffff) {
+    spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
+    const s = rt && rt.gSprites[spriteId];
+    if (s) { s.callback = SpriteCB_PokedexListMonSprite as unknown as typeof s.callback; s.data[5] = 0; }
+  }
+  // bottom (selectedMon+1)
+  dexNum = GetPokemonSpriteToDisplay(selectedMon + 1);
+  if (dexNum !== 0xffff) {
+    spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
+    const s = rt && rt.gSprites[spriteId];
+    if (s) { s.callback = SpriteCB_PokedexListMonSprite as unknown as typeof s.callback; s.data[5] = 32; }
+  }
+
+  CreateMonListEntry(0, selectedMon, ignored);
   if (rt) rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
   sPokedexView.listVOffset = 0;
   sPokedexView.listMovingVOffset = 0;
@@ -516,6 +702,8 @@ export function CB2_OpenPokedex(): void {
       const v: PokedexView = {} as PokedexView;
       ResetPokedexView(v);
       sPokedexView = v;
+      _dexMonPicsReady = false;       // re-précharger les mon-pics à chaque ouverture
+      _dexMonPicsLoading = false;
       rt.CreateTask(Task_OpenPokedexMainPage, 0);
       // dexMode/order depuis le saveblock — jalon 4 (national). 1a = Hoenn défaut.
       v.dexMode = DEX_MODE_HOENN;
@@ -636,7 +824,17 @@ function LoadPokedexListPage(page: number): boolean {
       rt.gMain.state++;
       return false;
     case 3:
-      if (page === PAGE_MAIN) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
+      // Précharge async les pics des mons (top/mid/bottom) AVANT la création sync des
+      // sprites — en ROM décomp tout est synchrone ; ici on gate proprement (comme case 0).
+      if (!_dexMonPicsReady) {
+        if (!_dexMonPicsLoading) {
+          _dexMonPicsLoading = true;
+          if (page === PAGE_MAIN) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
+          void _preloadDexMonPics(rt, sPokedexView.selectedPokemon)
+            .finally(() => { _dexMonPicsReady = true; _dexMonPicsLoading = false; });
+        }
+        return false;
+      }
       CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
       sPokedexView.menuIsOpen = false;
       sPokedexView.menuY = 0;
