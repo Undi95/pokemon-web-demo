@@ -93,18 +93,38 @@ collectDefines(path.join(DECOMP, 'include'), decomp);
 // ── 2+3. Scan inline consts + confrontation ──────────────────────────────────
 const findings = [];
 let checked = 0;
+// NB : on scanne les `const`/`let` NON exportés uniquement. Les `export const` sont les valeurs
+// CANONIQUES (souvent des enums internes auto-cohérents ou des sélecteurs ne traversant aucune
+// frontière de données) : les confronter au décomp produit des faux positifs (ex. BOUNCE_HEALTHBOX/
+// MON swappés mais caller+impl partagent l'export ; ANIM_STD_GO_SOUTH=0 mal nommé mais = FACE_SOUTH
+// utilisé comme anim initiale, correct). Les vrais bugs sont les SHADOWS locaux non-exportés qui
+// divergent d'un canonique utilisé ailleurs. Les gros enums (MOVE/ITEM/SPECIES/flags) ont déjà
+// leurs oracles dédiés (audit-id-constants, audit-battle-flags, …).
 const RE = /(?:^|\n)\s*(?:const|let)\s+([A-Z_][A-Z0-9_]*)\s*(?::\s*number\s*)?=\s*([^;,\n]+?)\s*[;,]/g;
 
 for (const rel of TS_FILES) {
   const file = path.join(ROOT, rel);
   if (!fs.existsSync(file)) continue;
   const txt = fs.readFileSync(file, 'utf8');
-  const lines = txt.split('\n');
-  for (const m of txt.matchAll(RE)) {
+  const matches = [...txt.matchAll(RE)];
+  // Passe 1 : scope LOCAL du fichier — résout `const FOO = BAR | BAZ` même si BAR/BAZ sont des
+  // consts locaux (pas des #define). On préfère la valeur DÉCOMP pour les références (évite les
+  // cascades : si BAR est localement faux, FOO=decomp(BAR) reste correct → seul BAR est flaggé).
+  const local = {};
+  let changed = true, pass = 0;
+  while (changed && pass++ < 8) {
+    changed = false;
+    for (const m of matches) {
+      if (m[1] in local) continue;
+      try { local[m[1]] = evalExpr(m[2], { ...local, ...decomp }); changed = true; } catch { /* retry */ }
+    }
+  }
+  // Passe 2 : confronte chaque const dont le nom est un #define décomp connu.
+  for (const m of matches) {
     const name = m[1];
     if (!(name in decomp) || EXCLUDE.has(name)) continue;
-    let val;
-    try { val = evalExpr(m[2], decomp); } catch { continue; } // valeur non-numérique simple → skip
+    if (!(name in local)) continue; // valeur non résolue (réf externe non-décomp) → skip
+    const val = local[name];
     checked++;
     const d = decomp[name];
     // Le décomp écrit souvent `((u8) -1)` (= 255 en u8) ; evalExpr strip le cast → -1.
