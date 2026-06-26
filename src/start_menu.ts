@@ -224,9 +224,10 @@ function showMessageThenClose(text: string): boolean {
 /** POKéDEX action : ouvre vraie UI Pokédex (compteurs + stats).
  *  Session 127 : remplace le `showMessageThenReturn` par pokedex-screen. */
 function pokedexAction(): boolean {
-  if (!FlagGet('FLAG_SYS_POKEDEX_GET')) {
-    return showMessageThenReturn('Le POKéDEX n\'est pas\nencore disponible.');
-  }
+  // 1:1 décomp `StartMenuPokedexCallback` : ouvre directement le Pokédex, AUCUN garde
+  // interne. L'option POKéDEX n'est ajoutée au menu que sous FlagGet(FLAG_SYS_POKEDEX_GET)
+  // (buildItems l.551) → `!FlagGet(FLAG_SYS_POKEDEX_GET)` ici est toujours faux. L'ancien
+  // garde « pas encore disponible » était une improvisation morte (retiré).
   if (sWindowId >= 0) {
     ClearStdWindowAndFrame(sWindowId, true);
     RemoveWindow(sWindowId);
