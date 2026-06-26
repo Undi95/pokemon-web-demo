@@ -105,11 +105,14 @@ export function getSpeciesGenderRatio(species: number): number {
   if (raw === 'MON_MALE') return 0x00;
   if (raw === 'MON_FEMALE') return 0xFE;
   if (raw === 'MON_GENDERLESS') return 0xFF;
-  // PERCENT_FEMALE(N) → calculer.
-  const pctMatch = raw.match(/^PERCENT_FEMALE\((\d+)\)$/);
+  // PERCENT_FEMALE(N) → 1:1 décomp `min(254, (percent * 255) / 100)`. percent peut être
+  // DÉCIMAL (PERCENT_FEMALE(12.5) = ratio 7♂:1♀ des starters & co) → accepter `\d+(\.\d+)?`
+  // + parseFloat (l'ancien `\d+`/parseInt échouait sur 12.5 → fallback MÂLE = 46 espèces
+  // 100% mâles à tort).
+  const pctMatch = raw.match(/^PERCENT_FEMALE\((\d+(?:\.\d+)?)\)$/);
   if (pctMatch) {
-    const n = parseInt(pctMatch[1], 10);
-    return Math.floor((n * 255) / 100);
+    const n = parseFloat(pctMatch[1]);
+    return Math.min(254, Math.floor((n * 255) / 100));
   }
   return 0x00;  // fallback safe
 }
