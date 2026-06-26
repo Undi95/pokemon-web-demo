@@ -1,3 +1,5 @@
+// #100% done — miroir complet de time_events.c (10/10 fonctions). Note : WaitWeather/
+// Task_WaitWeather portés pour la fidélité intégrale (pas encore d'appelant côté port).
 /**
  * time_events.ts — miroir 1:1 de `src/time_events.c` (Mirage Island RNG quotidien).
  *
@@ -12,14 +14,24 @@
  *   jamais selon le jour (bug). `IsMirageIslandPresent` (le test de présence) vit
  *   déjà dans specials-registry et lit VAR_MIRAGE_RND_H — ce module fournit l'avance.
  *
- *  Note placement : `IsMirageIslandPresent` + `UpdateShoalTideFlag` (mêmes time_
- *  events.c) sont déjà portés dans specials-registry (B4) ; non déplacés ici pour ne
- *  pas toucher de chemins qui marchent (consolidation possible plus tard).
+ *  Consolidation 1:1 INTÉGRALE (2026-06-26) : les 10 fonctions de time_events.c
+ *  vivent désormais ICI (leur foyer 1:1). `IsMirageIslandPresent` /
+ *  `UpdateShoalTideFlag` / `InitBirchState` étaient des handlers inline dans
+ *  specials-registry → sortis en exports ; la table des specials les RÉFÉRENCE
+ *  (= 1:1 décomp : gSpecials[] pointe vers la fonction time_events.c).
  */
 
-import { VarGet, VarSet } from './engine/script/script-vars';
+import { VarGet, VarSet, FlagSet, FlagClear } from './engine/script/script-vars';
 import { Random } from './random';
 import { ISO_RANDOMIZE2 } from '../include/random';
+import { PARTY_SIZE } from '../include/constants/global';
+import { gPlayerParty, GetMonData as _GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { gLocalTime, RtcCalcLocalTime } from './rtc';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
+import { IsWeatherChangeComplete } from './field_weather';
+import { ScriptContext_Enable } from './script';
+import { CreateTask, DestroyTask } from './task';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 const VAR_MIRAGE_RND_H = 'VAR_MIRAGE_RND_H';  // 1:1 décomp vars.h:54 (0x4024).
 const VAR_MIRAGE_RND_L = 'VAR_MIRAGE_RND_L';  // 1:1 décomp vars.h:55 (0x4025).
@@ -61,7 +73,50 @@ export function UpdateMirageRnd(days: number): void {
   SetMirageRnd(rnd);
 }
 
+/** 1:1 décomp `IsMirageIslandPresent(void)` (time_events.c:42-52) :
+ *  L'île Mirage apparaît si un mon de l'équipe a `(personality & 0xFFFF) == (mirageRnd >> 16)`. */
+export function IsMirageIslandPresent(): number {
+  const rnd = GetMirageRnd() >>> 16;   // u16 rnd = GetMirageRnd() >> 16
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) && (mon.personality & 0xFFFF) === rnd)
+      return 1;   // TRUE
+  }
+  return 0;       // FALSE
+}
+
+/** 1:1 décomp `UpdateShoalTideFlag(void)` (time_events.c:54-92) : marée Shoal Cave
+ *  (basse 03:00-08:00 + 15:00-20:00, sinon haute), seulement en map outdoors. */
+export function UpdateShoalTideFlag(): void {
+  // 1:1 décomp `static const u8 tide[24]`.
+  const tide: readonly number[] = [1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1];
+  if (IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    RtcCalcLocalTime();
+    if (tide[gLocalTime.hours]) FlagSet('FLAG_SYS_SHOAL_TIDE');
+    else FlagClear('FLAG_SYS_SHOAL_TIDE');
+  }
+}
+
+/** 1:1 décomp `Task_WaitWeather(u8 taskId)` (time_events.c:94-101, static). */
+function Task_WaitWeather(task: DecompTask): void {
+  if (IsWeatherChangeComplete()) {
+    ScriptContext_Enable();
+    DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 décomp `WaitWeather(void)` (time_events.c:103-106). */
+export function WaitWeather(): void {
+  CreateTask(Task_WaitWeather, 80);
+}
+
 const VAR_BIRCH_STATE = 'VAR_BIRCH_STATE';  // 1:1 décomp vars.h:93 (0x4049).
+
+/** 1:1 décomp `InitBirchState(void)` (time_events.c:108-111) :
+ *    *GetVarPointer(VAR_BIRCH_STATE) = 0; (port : VarSet équivaut au deref). */
+export function InitBirchState(): void {
+  VarSet(VAR_BIRCH_STATE, 0);
+}
 
 /** 1:1 décomp `UpdateBirchState(days)` (time_events.c:113) :
  *    u16 *state = GetVarPointer(VAR_BIRCH_STATE);

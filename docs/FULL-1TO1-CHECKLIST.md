@@ -10,10 +10,10 @@
 
 | statut | nb fichiers |
 |---|---|
-| ✅ miroir | 40 |
+| ✅ miroir | 41 |
 | 🟡 partiel | 53 |
 | 🟠 dispersé | 12 |
-| 🟡 amorce | 36 |
+| 🟡 amorce | 35 |
 | 🔴 manquant | 157 |
 | ⚪ vide/data | 12 |
 
@@ -37,7 +37,7 @@
 | Pokémon/Party | 32 | 0 | 4 | 28 | 61271 |
 | UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
 | Item/Bag | 10 | 1 | 6 | 3 | 8806 |
-| Save/RTC | 17 | 1 | 6 | 9 | 5676 |
+| Save/RTC | 17 | 2 | 5 | 9 | 5676 |
 | Système/GBA | 17 | 3 | 6 | 7 | 8645 |
 | Son (harness) | 5 | 0 | 1 | 3 | 3551 |
 | Link/IO (N-A) | 29 | 0 | 2 | 25 | 30115 |
@@ -88,7 +88,7 @@
 | `tv.c` | 6829 | 207 | `tv.ts` | 5/207 (2%) | 7/207 (3%) | 🔴 manquant |
 | `dodrio_berry_picking.c` | 5225 | 159 | `battle_main.ts` _(nom≠)_ | 2/159 (1%) | 4/159 (3%) | 🔴 manquant |
 | `berry_crush.c` | 3508 | 74 | `engine/decomp-data/src/intro-callbacks-auto.ts` _(nom≠)_ | 2/74 (3%) | 2/74 (3%) | 🔴 manquant |
-| `field_screen_effect.c` | 1267 | 77 | — **manquant** | 0/77 (0%) | 3/77 (4%) | 🔴 manquant |
+| `field_screen_effect.c` | 1267 | 77 | `field_screen_effect.ts` | 0/77 (0%) | 3/77 (4%) | 🔴 manquant |
 | `berry_tag_screen.c` | 692 | 27 | — **manquant** | 0/27 (0%) | 1/27 (4%) | 🔴 manquant |
 | `trainer_pokemon_sprites.c` | 396 | 23 | `main_menu.ts` _(nom≠)_ | 2/23 (9%) | 2/23 (9%) | 🔴 manquant |
 | `fldeff_misc.c` | 1327 | 62 | `fldeff_misc.ts` | 5/62 (8%) | 6/62 (10%) | 🔴 manquant |
@@ -173,7 +173,7 @@
 | `battle_tv.c` | 1605 | 12 | `battle_controller_player.ts` _(nom≠)_ | 2/12 (17%) | 2/12 (17%) | 🟡 amorce |
 | `recorded_battle.c` | 867 | 42 | `battle_main.ts` _(nom≠)_ | 10/42 (24%) | 13/42 (31%) | 🟡 amorce |
 | `battle_anim_smokescreen.c` | 232 | 3 | `battle_anim_smokescreen.ts` | 1/3 (33%) | 1/3 (33%) | 🟡 amorce |
-| `pokeball.c` | 1345 | 37 | `pokeball.ts` | 14/37 (38%) | 17/37 (46%) | 🟡 amorce |
+| `pokeball.c` | 1345 | 37 | `pokeball.ts` | 15/37 (41%) | 19/37 (51%) | 🟡 partiel |
 | `battle_interface.c` | 2605 | 53 | `battle_interface.ts` | 30/53 (57%) | 31/53 (58%) | 🟡 partiel |
 | `battle_bg.c` | 1418 | 12 | `battle_bg.ts` | 2/12 (17%) | 7/12 (58%) | 🟡 amorce |
 | `battle_util2.c` | 216 | 5 | `battle_main.ts` _(nom≠)_ | 3/5 (60%) | 3/5 (60%) | 🟠 dispersé |
@@ -190,7 +190,7 @@
 | `battle_anim_water.c` | 1600 | 48 | `battle_anim_water.ts` | 40/48 (83%) | 40/48 (83%) | 🟡 partiel |
 | `battle_anim_flying.c` | 1237 | 31 | `battle_anim_flying.ts` | 20/31 (65%) | 26/31 (84%) | 🟡 partiel |
 | `battle_controller_player.c` | 3148 | 124 | `battle_controller_player.ts` | 103/124 (83%) | 105/124 (85%) | 🟡 partiel |
-| `battle_anim_throw.c` | 2508 | 78 | `battle_anim_throw.ts` | 66/78 (85%) | 67/78 (86%) | ✅ miroir |
+| `battle_anim_throw.c` | 2508 | 78 | `battle_anim_throw.ts` | 67/78 (86%) | 67/78 (86%) | ✅ miroir |
 | `battle_anim_rock.c` | 888 | 22 | `battle_anim_rock.ts` | 17/22 (77%) | 19/22 (86%) | 🟡 partiel |
 | `battle_anim_psychic.c` | 1167 | 27 | `battle_anim_psychic.ts` | 22/27 (81%) | 24/27 (89%) | 🟡 partiel |
 | `battle_controller_opponent.c` | 2028 | 88 | `battle_controller_opponent.ts` | 72/88 (82%) | 79/88 (90%) | 🟡 partiel |
@@ -261,7 +261,7 @@
 | `frontier_pass.c` | 1777 | 37 | — **manquant** | 0/37 (0%) | 0/37 (0%) | 🔴 manquant |
 | `hall_of_fame.c` | 1535 | 45 | — **manquant** | 0/45 (0%) | 0/45 (0%) | 🔴 manquant |
 | `image_processing_effects.c` | 1229 | 38 | — **manquant** | 0/38 (0%) | 0/38 (0%) | 🔴 manquant |
-| `script_menu.c` | 766 | 31 | — **manquant** | 0/31 (0%) | 0/31 (0%) | 🔴 manquant |
+| `script_menu.c` | 766 | 31 | `script_menu.ts` | 0/31 (0%) | 0/31 (0%) | 🔴 manquant |
 | `palette_util.c` | 504 | 19 | — **manquant** | 0/19 (0%) | 0/19 (0%) | 🔴 manquant |
 | `blit.c` | 210 | 5 | — **manquant** | 0/5 (0%) | 0/5 (0%) | 🔴 manquant |
 | `hof_pc.c` | 41 | 4 | — **manquant** | 0/4 (0%) | 0/4 (0%) | 🔴 manquant |
@@ -324,9 +324,9 @@
 | `clock.c` | 87 | 6 | `clock.ts` | 1/6 (17%) | 1/6 (17%) | 🟡 amorce |
 | `save.c` | 1053 | 35 | `save.ts` | 7/35 (20%) | 7/35 (20%) | 🟡 amorce |
 | `load_save.c` | 294 | 21 | `load_save.ts` | 9/21 (43%) | 10/21 (48%) | 🟡 partiel |
-| `time_events.c` | 119 | 10 | `time_events.ts` | 5/10 (50%) | 5/10 (50%) | 🟡 partiel |
 | `rtc.c` | 347 | 26 | `rtc.ts` | 14/26 (54%) | 15/26 (58%) | 🟡 partiel |
 | `wallclock.c` | 1102 | 25 | `wallclock.ts` | 16/25 (64%) | 16/25 (64%) | 🟡 partiel |
+| `time_events.c` | 119 | 10 | `time_events.ts` | 10/10 (100%) | 10/10 (100%) | ✅ miroir |
 | `play_time.c` | 74 | 5 | `play_time.ts` | 5/5 (100%) | 5/5 (100%) | ✅ miroir |
 | `agb_flash_le.c` | 32 | 0 | — **manquant** | 0/0 (100%) | 0/0 (100%) | ⚪ vide/data |
 

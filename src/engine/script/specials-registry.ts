@@ -48,6 +48,8 @@ import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../../../include/constants
 import { MOVE_NONE } from '../../../include/constants/moves';
 import { gLocalTime, RtcCalcLocalTime } from '../../rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
+// time_events.c — foyer 1:1 des fonctions ci-dessous (gSpecials[] les référence).
+import { IsMirageIslandPresent, UpdateShoalTideFlag, InitBirchState } from '../../time_events';
 import { ShowFieldMessage } from '../../field_message_box';
 import { gStringVar4 } from '../ui/gba-text-system';
 import { Random } from '../../random';
@@ -710,10 +712,9 @@ registerSpecial('IsStarterInParty', () => {
  *      *GetVarPointer(VAR_BIRCH_STATE) = 0;
  *  }
  *  ```
- *  Reset VAR_BIRCH_STATE = 0 (= state machine birch lab tutorial). */
-registerSpecial('InitBirchState', () => {
-  VarSet('VAR_BIRCH_STATE', 0);
-});
+ *  Reset VAR_BIRCH_STATE = 0 (= state machine birch lab tutorial).
+ *  Foyer 1:1 = time_events.ts (gSpecials[] référence la fonction). */
+registerSpecial('InitBirchState', InitBirchState);
 
 /** 1:1 décomp `LoadWallyZigzagoon` (wally_tutorial.c) — preps Wally's catch
  *  tutorial battle setup. Dette R3 doc : Wally tutorial subsystem entier U-tier
@@ -2028,17 +2029,9 @@ registerSpecial('IsMonOTIDNotPlayers', () => {
  *  ```
  *  `GetMirageRnd` (time_events.c:12-17) = (VAR_MIRAGE_RND_H << 16) | VAR_MIRAGE_RND_L.
  *  rnd = result >> 16 = VAR_MIRAGE_RND_H (= high 16 bits).
- *  Mirage Island apparait si un mon de party a `(personality & 0xFFFF) == rnd_high`. */
-registerSpecial('IsMirageIslandPresent', () => {
-  // 1:1 décomp : un mon dont (personality & 0xFFFF) == VAR_MIRAGE_RND_H.
-  const rnd = VarGet('VAR_MIRAGE_RND_H');
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) continue;
-    if ((mon.personality & 0xFFFF) === rnd) return 1;
-  }
-  return 0;
-});
+ *  Mirage Island apparait si un mon de party a `(personality & 0xFFFF) == rnd_high`.
+ *  Foyer 1:1 = time_events.ts (gSpecials[] référence la fonction). */
+registerSpecial('IsMirageIslandPresent', IsMirageIslandPresent);
 
 /** 1:1 décomp `FoundAbandonedShipRoom1Key` (field_specials.c:1328-1337).
  *  Pattern uniforme : set gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_N_KEY
@@ -3190,16 +3183,8 @@ registerSpecial('SetRoute123Weather', () => {
  *  ```
  *  Marée Shoal Cave : low tide 03:00-08:00 + 15:00-20:00, sinon high tide.
  *  B4 refactor débloqué : helpers GetLastUsedWarpMapType + IsMapTypeOutdoors
- *  portés dans warp-system.ts. */
-registerSpecial('UpdateShoalTideFlag', () => {
-  // 1:1 décomp static const u8 tide[24].
-  const tide = [1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1];
-  if (IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
-    RtcCalcLocalTime();
-    if (tide[gLocalTime.hours]) FlagSet('FLAG_SYS_SHOAL_TIDE');
-    else FlagClear('FLAG_SYS_SHOAL_TIDE');
-  }
-});
+ *  portés dans warp-system.ts. Foyer 1:1 = time_events.ts (gSpecials[] référence). */
+registerSpecial('UpdateShoalTideFlag', UpdateShoalTideFlag);
 
 // `GenerateGiddyLine` (mauville_old_man.c:282-315) — dette R3 cascade :
 // utilise EasyChat (CopyEasyChatWord), Random, gStringVar4, sGiddyAdjectives,
