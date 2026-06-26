@@ -29,6 +29,7 @@ const ORACLES = [
   'audit-item-effects-bytes.cjs', 'audit-contest-moves.cjs', 'audit-item-icons.cjs',
   // — Dresseurs —
   'audit-trainer-parties.cjs', 'audit-trainer-meta.cjs', 'audit-trainer-sprites.cjs',
+  'audit-trainer-money-table.cjs',
   // — Monde / progression —
   'audit-wild-encounters.cjs', 'audit-mart-lists.cjs', 'audit-item-balls.cjs',
   'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs',
