@@ -201,7 +201,7 @@ export function SetWildBattleStartCallback(cb: () => void): void {
 
 /** 1:1 décomp `ChooseWildMonIndex_Land` (wild_encounter.c:182-210).
  *  12 slots cumulative thresholds. */
-function ChooseWildMonIndex_Land(): number {
+export function ChooseWildMonIndex_Land(): number {
   const rand = Random() % ENCOUNTER_CHANCE_LAND_MONS_TOTAL;
   if (rand < ENCOUNTER_CHANCE_LAND_MONS_SLOT_0) return 0;
   else if (rand >= ENCOUNTER_CHANCE_LAND_MONS_SLOT_0 && rand < ENCOUNTER_CHANCE_LAND_MONS_SLOT_1) return 1;
@@ -219,7 +219,7 @@ function ChooseWildMonIndex_Land(): number {
 
 /** 1:1 décomp `ChooseWildMonIndex_WaterRock` (wild_encounter.c:213-227).
  *  5 slots cumulative. Used pour water ET rock_smash (= mêmes rates). */
-function ChooseWildMonIndex_WaterRock(): number {
+export function ChooseWildMonIndex_WaterRock(): number {
   const rand = Random() % ENCOUNTER_CHANCE_WATER_MONS_TOTAL;
   if (rand < ENCOUNTER_CHANCE_WATER_MONS_SLOT_0) return 0;
   else if (rand >= ENCOUNTER_CHANCE_WATER_MONS_SLOT_0 && rand < ENCOUNTER_CHANCE_WATER_MONS_SLOT_1) return 1;
