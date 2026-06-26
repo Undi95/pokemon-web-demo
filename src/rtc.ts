@@ -366,7 +366,12 @@ export function exposeRtcDevApi(): void {
   };
 }
 
-// Init au load : probe le chip + calcule gLocalTime (offset défaut 0 dans
-// SaveBlock2 = in-game == PC). 1:1 ordre boot : RtcInit avant load save.
+// Init au load : probe le "chip" (= horloge PC). RtcInit ne lit PAS la save
+// (new Date() seul) → sûr au top-level du module.
 RtcInit();
-RtcCalcLocalTime();
+// ⚠️ PAS de `RtcCalcLocalTime()` ici : il lit `GetSaveBlock2().localTimeOffset`,
+// or la save n'est pas garantie initialisée au chargement de CE module (cycle
+// rtc↔save → TDZ `GetSaveBlock2 before initialization` si l'ordre d'init change).
+// REDONDANT de toute façon : chaque consommateur (pokemon évo, UpdateShoalTideFlag,
+// DoTimeBasedEvents) appelle RtcCalcLocalTime() juste avant de lire gLocalTime
+// (1:1 décomp). gLocalTime est donc toujours recalculé à la demande.
