@@ -76,8 +76,15 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from './engine/system/fade-screen';
 import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
-import { gPlayerParty } from './engine/battle/party-storage';
+import type { Pokemon } from './engine/battle/party-storage';
+import {
+  gPlayerParty, CanMonLearnTMHM, GiveMoveToMon, MonKnowsMove, AdjustFriendship,
+} from './engine/battle/party-storage';
 import { gMoveNames } from './engine/data/game-data';
+import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { MON_HAS_MAX_MOVES, FRIENDSHIP_EVENT_LEARN_TMHM } from '../include/constants/pokemon';
+import { ITEM_TM01, ITEM_HM01 } from '../include/constants/items';
 import { RemoveBagItem } from './engine/bag/bag';
 import { SE_USE_ITEM, SE_SELECT } from '../include/constants/songs';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
@@ -510,15 +517,64 @@ export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: De
   ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), { var1: mon.nickname }));
 }
 
-// ─── ItemUseCB_TMHM — 1:1-sémantique ───────────────────────────────────────
+// 1:1 décomp party_menu.c:163 — enum résultat de CanMonLearnTMTutor.
+const CAN_LEARN_MOVE = 0, CANNOT_LEARN_MOVE = 1, ALREADY_KNOWS_MOVE = 2, CANNOT_LEARN_MOVE_IS_EGG = 3;
+
+/** 1:1 STRICT décomp `static u8 CanMonLearnTMTutor(struct Pokemon *mon, u16 item, u8 tutor)`
+ *  (party_menu.c:2033). Branche CT/CS (item >= ITEM_TM01) complète ; branche move-tutor
+ *  (gTutorMoves/sTutorLearnsets) = mécanique distincte non portée, sans appelant câblé →
+ *  garde-frontière fail-fast (jamais atteinte via ItemUseCB_TMHM, toujours item >= ITEM_TM01). */
+function CanMonLearnTMTutor(mon: Pokemon, item: number, tutor: number): number {
+  if (mon.isEgg) return CANNOT_LEARN_MOVE_IS_EGG;          // GetMonData(MON_DATA_IS_EGG)
+  let move: number;
+  if (item >= ITEM_TM01) {
+    if (!CanMonLearnTMHM(mon, item - ITEM_TM01)) return CANNOT_LEARN_MOVE;
+    move = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;
+  } else {
+    void tutor;
+    throw new Error('CanMonLearnTMTutor: branche move-tutor non portée (gTutorMoves)');
+  }
+  return MonKnowsMove(mon, move) ? ALREADY_KNOWS_MOVE : CAN_LEARN_MOVE;
+}
+
+// ─── ItemUseCB_TMHM (party_menu.c:4733) — 1:1 ──────────────────────────────
 export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
+  PlaySE(SE_SELECT);                                       // 1:1 :4739
   const slotId = GetPartyScreenSlotId();
   const mon = gPlayerParty[slotId];
   if (!mon || !mon.species) return;
-  // 1:1 polish à porter : UseTMHM flow + check CanMonLearnTMHM + ReplaceMove
-  // YesNo. Pour l'instant : message honest.
-  ShowPartyMenuItemMessage(`${mon.nickname}\nne peut pas l'apprendre.`);
+  const item = gSpecialVar.ItemId;
+  const moveNum = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;  // move[0]
+  const nick = mon.nickname;                               // GetMonNickname → gStringVar1
+  const moveName = gMoveNames[moveNum] ?? '';              // gStringVar2 = gMoveNames[move[0]]
+  const vars = { var1: nick, var2: moveName };
+
+  switch (CanMonLearnTMTutor(mon, item, 0)) {              // 1:1 :4748
+    case CANNOT_LEARN_MOVE:
+    case CANNOT_LEARN_MOVE_IS_EGG:
+      // 1:1 :4751 DisplayLearnMoveMessageAndClose(gText_PkmnCantLearnMove)
+      ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnCantLearnMove'), vars));
+      return;
+    case ALREADY_KNOWS_MOVE:
+      // 1:1 :4754 DisplayLearnMoveMessageAndClose(gText_PkmnAlreadyKnows)
+      ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnAlreadyKnows'), vars));
+      return;
+  }
+  // 1:1 :4758 if (GiveMoveToMon(mon, move[0]) != MON_HAS_MAX_MOVES) → la capacité est apprise.
+  if (GiveMoveToMon(mon, moveNum) !== MON_HAS_MAX_MOVES) {
+    // 1:1 Task_LearnedMove (:4768) : friendship + consomme la CT (PAS la CS) + message.
+    AdjustFriendship(mon, FRIENDSHIP_EVENT_LEARN_TMHM);
+    if (item < ITEM_HM01) _removeOneFromBag(item);         // RemoveBagItem(item, 1) — CT à usage unique
+    RefreshPartySlot(slotId);
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnLearnedMove3'), vars));
+  } else {
+    // 1:1 :4763 DisplayLearnMoveMessage(gText_PkmnNeedsToReplaceMove) + Task_ReplaceMoveYesNo.
+    // FRONTIÈRE : le menu interactif de remplacement (Yes/No → sélection de capacité à
+    // oublier) n'est pas porté → on affiche le message 1:1 ; un mon à 4 capacités ne
+    // remplace pas encore. À compléter quand le flux ReplaceMove sera porté.
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnNeedsToReplaceMove'), vars));
+  }
 }
 
 // Expose globals (= gItemUseCB lookup par party-screen, etc.).

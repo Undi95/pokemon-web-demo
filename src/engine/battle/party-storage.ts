@@ -35,7 +35,17 @@ import { gMapHeader } from '../../fieldmap';
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 import {
   PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
+  MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
 } from '../../../include/constants/pokemon';
+import { SPECIES_EGG } from '../../../include/constants/species';
+import { MOVE_NONE } from '../../../include/constants/moves';
+// TM/HM learn-legality (CanMonLearnTMHM, pokemon.c) : data layer apprenable (game-data,
+// prouvée 1:1 par audit-tmhm-learnsets.cjs) + ordre sTMHMMoves + PP via gBattleMoves.
+// Tous DOWNSTREAM (data leaves) → aucun n'importe party-storage = acyclique.
+import { getTmhmLearnset } from '../data/game-data';
+import { speciesNumberToEnum } from './data/species-runtime';
+import { sTMHMMoves } from '../pokemon/tmhm-moves';
+import { getBattleMove } from './data/battle-moves';
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../../random';
@@ -286,6 +296,47 @@ export function MonKnowsMove(mon: Pokemon, move: number): boolean {
     if (GetMonData(mon, MON_DATA_MOVE1 + i) === move) return true;
   }
   return false;
+}
+
+// ─── Légalité d'apprentissage CT/CS (1:1 décomp pokemon.c) ──────────────────
+
+/** 1:1 STRICT décomp `u32 CanSpeciesLearnTMHM(u16 species, u8 tm)` (pokemon.c:6252) :
+ *    if (species == SPECIES_EGG) return 0;
+ *    else if (tm < 32) return gTMHMLearnsets[species].as_u32s[0] & (1 << tm);
+ *    else             return gTMHMLearnsets[species].as_u32s[1] & (1 << (tm - 32));
+ *  Le bitfield `gTMHMLearnsets[species]` est matérialisé par notre data layer comme la
+ *  LISTE des CT/CS apprenables (getTmhmLearnset, short-names) — prouvée 1:1 par
+ *  audit-tmhm-learnsets.cjs. Le bit `tm` (ordre FOREACH_TMHM = ordre sTMHMMoves) est set
+ *  ⟺ `sTMHMMoves[tm]` ∈ liste, donc l'`includes` est strictement équivalent au mask. */
+export function CanSpeciesLearnTMHM(species: number, tm: number): boolean {
+  if (species === SPECIES_EGG) return false;
+  const moveKey = sTMHMMoves[tm];               // 'MOVE_TOXIC' (tm-ième champ FOREACH_TMHM)
+  if (moveKey === undefined) return false;       // tm hors [0, 57]
+  const shortName = moveKey.slice(5);            // retire 'MOVE_' → 'TOXIC'
+  return getTmhmLearnset(speciesNumberToEnum(species)).includes(shortName);
+}
+
+/** 1:1 STRICT décomp `u32 CanMonLearnTMHM(struct Pokemon *mon, u8 tm)` (pokemon.c:6232).
+ *  `species = MON_DATA_SPECIES_OR_EGG` (= 0 pour un œuf chez nous → liste vide → false,
+ *  résultat 1:1 du guard SPECIES_EGG décomp). */
+export function CanMonLearnTMHM(mon: Pokemon, tm: number): boolean {
+  return CanSpeciesLearnTMHM(GetMonData(mon, MON_DATA_SPECIES_OR_EGG) as number, tm);
+}
+
+/** 1:1 STRICT décomp `u16 GiveMoveToMon(struct Pokemon *mon, u16 move)` → `GiveMoveToBoxMon`
+ *  (pokemon.c) : remplit le 1er slot vide (move + PP = gBattleMoves[move].pp).
+ *    return move (appris) · MON_ALREADY_KNOWS_MOVE · MON_HAS_MAX_MOVES (4 capacités). */
+export function GiveMoveToMon(mon: Pokemon, move: number): number {
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES
+    const existingMove = GetMonData(mon, MON_DATA_MOVE1 + i) as number;
+    if (existingMove === MOVE_NONE) {
+      SetMonData(mon, MON_DATA_MOVE1 + i, move);
+      SetMonData(mon, MON_DATA_PP1 + i, getBattleMove(move).pp);
+      return move;
+    }
+    if (existingMove === move) return MON_ALREADY_KNOWS_MOVE;
+  }
+  return MON_HAS_MAX_MOVES;
 }
 
 export function GetMonData(mon: Pokemon, field: number): number | string {
