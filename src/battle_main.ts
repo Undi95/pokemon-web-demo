@@ -616,10 +616,12 @@ export function SpriteCB_UnusedBattleInit_Main(sprite: UnusedSprite): void {
 // Tranche 3 — CB2_InitBattle + CB2_InitBattleInternal (battle_main.c) [ex-battle-init.ts]
 // ════════════════════════════════════════════════════════════════════════════
 
-/** 1:1 décomp `BATTLE_TYPE_INGAME_PARTNER` = bit 23. */
-const BATTLE_TYPE_INGAME_PARTNER = 1 << 23;
-/** 1:1 décomp `BATTLE_TYPE_BATTLE_TOWER` = bit 19. */
-const BATTLE_TYPE_BATTLE_TOWER = 1 << 19;
+/** 1:1 décomp `BATTLE_TYPE_INGAME_PARTNER` (battle.h:81) = bit 22.
+ *  AUDIT FIX (audit-inline-battle-constants) : était bit 23 → désalignait gBattleTypeFlags
+ *  vs le reste du port (combat duo Steven Mossdeep). */
+const BATTLE_TYPE_INGAME_PARTNER = 1 << 22;
+/** 1:1 décomp `BATTLE_TYPE_BATTLE_TOWER` (battle.h:67) = bit 8. AUDIT FIX : était bit 19. */
+const BATTLE_TYPE_BATTLE_TOWER = 1 << 8;
 /** 1:1 décomp `PARTY_SIZE` = 6. */
 const PARTY_SIZE = 6;
 /** 1:1 décomp `MAX_BATTLERS_COUNT` = 4. */
@@ -628,8 +630,9 @@ const MAX_BATTLERS_COUNT = 4;
 const MULTIUSE_STATE = 0;
 /** 1:1 décomp `BATTLE_ENVIRONMENT_BUILDING` = 8. */
 const BATTLE_ENVIRONMENT_BUILDING = 8;
-/** 1:1 décomp `TRAINER_STEVEN_PARTNER` ID. */
-const TRAINER_STEVEN_PARTNER = 768;
+/** 1:1 décomp `TRAINER_STEVEN_PARTNER` ID (trainers.h:17) = 3075. AUDIT FIX : était 768
+ *  → le combat duo de Mossdeep ne reconnaissait pas Steven comme partenaire. */
+const TRAINER_STEVEN_PARTNER = 3075;
 /** 1:1 décomp `FRIENDSHIP_EVENT_LEAGUE_BATTLE` = 3 (include/constants/pokemon.h:177 ;
  *  l'ancienne valeur 6 = FRIENDSHIP_EVENT_FAINT_SMALL, masquée tant que _AdjustFriendship
  *  était un stub no-op). */
@@ -2012,15 +2015,19 @@ const B_COMM_TO_CONTROLLER = 0;
 
 // PARTY_ACTION_* constants (= constants/party_menu.h).
 const PARTY_ACTION_CHOOSE_MON = 0;
-const PARTY_ACTION_CANT_SWITCH = 4;
-const PARTY_ACTION_ABILITY_PREVENTS = 5;
+// AUDIT FIX (audit-inline-battle-constants) : valeurs party_menu.h = 2 et 4 (étaient 4 et 5)
+// → l'écran party recevait le mauvais code d'action au refus de switch (piégeage/blocage).
+const PARTY_ACTION_CANT_SWITCH = 2;
+const PARTY_ACTION_ABILITY_PREVENTS = 4;
 
 // LINK_STANDBY_MSG_* constants.
 const LINK_STANDBY_MSG_STOP_BOUNCE = 0;
 const LINK_STANDBY_STOP_BOUNCE_ONLY = 1;
 
-// BATTLE_TYPE_FRONTIER_NO_PYRAMID (= mask).
-const BATTLE_TYPE_FRONTIER_NO_PYRAMID = 1 << 11;
+// BATTLE_TYPE_FRONTIER_NO_PYRAMID (battle.h:92) = TOWER|DOME|PALACE|ARENA|FACTORY|PIKE.
+// AUDIT FIX : était `1 << 11` (un seul bit faux) → mask Frontier incorrect. = 2031872.
+const BATTLE_TYPE_FRONTIER_NO_PYRAMID =
+  (1 << 8) | (1 << 16) | (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20);
 // (BATTLE_TYPE_INGAME_PARTNER : déjà déclaré en tête de fichier.)
 
 // CONTROLLER_* opcodes (battle_controllers.h) — pour les emits engine→controller
@@ -3482,8 +3489,9 @@ const REQUEST_ALL_BATTLE = 0;
 /** 1:1 décomp `SPRITES_INIT_STATE1` index dans gBattleCommunication. */
 const SPRITES_INIT_STATE1 = 1;
 
-/** 1:1 décomp `BATTLE_COMMUNICATION_ENTRIES_COUNT` = 16. */
-const BATTLE_COMMUNICATION_ENTRIES_COUNT = 16;
+/** 1:1 décomp `BATTLE_COMMUNICATION_ENTRIES_COUNT` (battle_script_commands.h:297) = 8.
+ *  AUDIT FIX : était 16 (les boucles de clear de gBattleCommunication tournaient 2× trop). */
+const BATTLE_COMMUNICATION_ENTRIES_COUNT = 8;
 
 /** 1:1 décomp `STRINGID_INTROMSG` = 0. */
 const STRINGID_INTROMSG = 0;
@@ -5302,8 +5310,8 @@ const BIT_SIDE = 1;
 const SPRITES_INIT_STATE2 = 2;
 /** 1:1 décomp `TRAINER_UNION_ROOM` = 3072 (trainers.h:16). AUDIT 2026-06 : était 1025. */
 const TRAINER_UNION_ROOM = 3072;
-/** 1:1 décomp `VERSION_EMERALD`. */
-const VERSION_EMERALD = 5;
+/** 1:1 décomp `VERSION_EMERALD` (global.h:10) = 3. AUDIT FIX : était 5 (= VERSION_LEAFGREEN). */
+const VERSION_EMERALD = 3;
 
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
 

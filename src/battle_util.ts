@@ -263,7 +263,7 @@ import {
 } from './engine/battle/constants';
 // (setPotentialItemEffectBattler + GetItemHoldEffect déjà importés plus bas dans ce fichier)
 
-const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
+const B_MSG_INCAPABLE_OF_POWER = 4;  // 1:1 battle_string_ids.h:542 (AUDIT FIX : était 0). Battle Palace.
 
 /** 1:1 stub `BATTLE_PARTNER(id)` — défini déjà dans constants mais we inline. */
 function _BATTLE_PARTNER(id: number): number { return id ^ 2 /* BIT_FLANK */; }
