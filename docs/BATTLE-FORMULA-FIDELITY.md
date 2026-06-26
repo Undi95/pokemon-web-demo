@@ -23,7 +23,9 @@
 | Crit ×2 appliqué | `Cmd_damagecalc` (`damage × gCritMultiplier`) | battle_script_commands.c:1290 | couvert (statstages prouve `gCritMultiplier=1` hors crit) |
 | STAB + efficacité de type | `Cmd_typecalc` / `TypecalcImpl` | battle_script_commands.c | **ORACLE** `probe-typecalc` (`5cbd976b` : STAB ×1.5 + efficacité type1/type2 sur `gBattleMoveDamage` LIVE) + `probe-type-effectiveness` AI_TypeCalc 9/9 + table `audit-type-chart` 336/336 |
 | Finalisation (crit/dmgMult/Charge/Helping Hand) | `Cmd_damagecalc` | battle_script_commands.c:1290 | **AUDIT 1:1** (×gCritMultiplier×dmgMultiplier ; Charge électrique ×2 ; Helping Hand ×15/10) |
-| Aléa 85-100 % + leave-at-1-HP | `Cmd_adjustnormaldamage` / `ApplyRandomDmgMultiplier` | battle_script_commands.c:1639/1658 | **AUDIT 1:1** (`randPercent = 100 - Random()%16`, `dmg*=%/100`, min 1 ; Focus Band/Endure/False Swipe leave-at-1-HP, skip Substitute) |
+| Aléa 85-100 % (`ApplyRandomDmgMultiplier`) | `Cmd_adjustnormaldamage` | battle_script_commands.c:1639 | **ORACLE** `probe-randdmg-1to1` 96/96 (`bc1f181e` : RNG-peek, `randPercent=100-Random()%16`, `dmg*%/100` floor, min-1, no-op) |
+| leave-at-1-HP (Focus Band/Endure/False Swipe) | `Cmd_adjustnormaldamage` | battle_script_commands.c:1658 | **AUDIT 1:1** (skip Substitute) |
+| Coups multiples 2-5 | `Cmd_setmultihitcounter` | battle_script_commands.c:7142 | **AUDIT 1:1** (`Random()&3` ; si >1 `(Random()&3)+2` ; sinon `+2` → 3/8·3/8·1/8·1/8) |
 | Effet secondaire (chance) | `Cmd_seteffectwithchance` | battle_script_commands.c:2908 | **AUDIT 1:1** (Serene Grace ×2 ; branche CERTAIN ; `Random()%100 < percentChance` → SetMoveEffect, CERTAIN si ≥100) |
 | Manipulation dégâts | `Cmd_manipulatedamage` | battle_script_commands.c:6743 | **AUDIT 1:1** (DMG_CHANGE_SIGN ×-1 ; DMG_RECOIL_FROM_MISS ÷2 min 1 cap maxHP/2 ; DMG_DOUBLED ×2) |
 
@@ -32,7 +34,7 @@
 | Mécanique | Fonction | Source | Statut |
 |---|---|---|---|
 | Efficacité de type (table) | `gTypeEffectiveness` 18×18 | battle_main.c | **ORACLE** `audit-type-chart` 336 éléments (foresight inclus) |
-| Capture Pokéball | `Cmd_handleballthrow` | battle_script_commands.c:9908 | **AUDIT 1:1** (odds, ballMultiplier par ball, status ×2/×1.5, double-`Sqrt`, shakes, `catchAttempts` ULTRA_BALL=2 ; Safari `×1275/100` ne wrap jamais u8 car facteur clampé ≤20) |
+| Capture Pokéball | `Cmd_handleballthrow` | battle_script_commands.c:9908 | **AUDIT 1:1** + lock `audit-ball-catch` (odds, ballMultiplier, status ×2/×1.5, double-`Sqrt`, shakes ; Safari ne wrap pas u8). ⚠️ l'audit-lecture avait RATÉ 2 littéraux inline faux — `FLAG_GET_CAUGHT` (Repeat Ball) `935051c8` + `BATTLE_TYPE_WALLY_TUTORIAL` `49d53399` — rattrapés par l'oracle `audit-commented-constants`. |
 | catchRate par espèce | `gSpeciesInfo[].catchRate` | — | **ORACLE** `audit-species-data` |
 | Gain d'EXP de combat | `Cmd_getexp` | battle_script_commands.c:3340+ | **AUDIT 1:1** (`expYield×level/7` ; split exp-share via identité `floor(floor(a/2)/b)=floor(a/2b)` ; chaîne +share → ×Œuf Chance → ×dresseur → ×échangé ; `IsTradedMon` corrigé) |
 | Courbe d'EXP (niveau→exp) | `gExperienceTables` | pokemon.c | **ORACLE** `probe-experience-runtime` (6 courbes L100 canoniques) |
