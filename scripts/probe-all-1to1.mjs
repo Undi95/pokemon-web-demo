@@ -14,7 +14,7 @@
 
 export async function runAll() {
   const I = (p) => import(p);
-  const [pk, dc, bc, ih, bm, et, sr, ps, tm, bsc] = await Promise.all([
+  const [pk, dc, bc, ih, bm, et, sr, ps, tm, bsc, sv] = await Promise.all([
     I('/src/pokemon.ts'),
     I('/harness/runtime/decomp-constants.ts'),
     I('/src/engine/battle/constants.ts'),
@@ -25,6 +25,7 @@ export async function runAll() {
     I('/src/engine/battle/party-storage.ts'),
     I('/src/engine/pokemon/tmhm-moves.ts'),
     I('/src/battle_script_commands.ts'),
+    I('/src/engine/script/script-vars.ts'),
   ]);
   // Charger les data dont dépendent les sondes (le moteur en overworld ne les a pas forcément
   // déclenchées ; instances ESM partagées → charge une fois pour tous, y c. pour pk/CalculateBaseDamage).
@@ -49,6 +50,7 @@ export async function runAll() {
     ['probe-damage-weather-1to1', 'runWeatherOracle', { pk, dc, bc }],
     ['probe-damage-typeitem-1to1', 'runTypeItemOracle', { pk, ih, dc }],
     ['probe-damage-speciesitem-1to1', 'runSpeciesItemOracle', { pk, dc }],
+    ['probe-damage-badges-1to1', 'runBadgeOracle', { pk, sv, dc }],
     ['probe-type-effectiveness-1to1', 'runTypeEffectivenessOracle', { bsc, dc }],
     ['probe-gender-shiny-1to1', 'runGenderShinyOracle', { pk, dc }],
     ['probe-species-runtime-1to1', 'runSpeciesRuntimeOracle', { sr, dc, info }],
