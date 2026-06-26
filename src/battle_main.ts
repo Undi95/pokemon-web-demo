@@ -1213,7 +1213,7 @@ import {
   GET_BATTLER_SIDE,
 } from './engine/battle/constants';
 import { ClearBattlerMoveHistory, ClearBattlerAbilityHistory } from './battle_ai_script_commands';
-import { CancelMultiTurnMoves } from './battle_util';
+import { CancelMultiTurnMoves, AreAllMovesUnusable } from './battle_util';
 import { getSpeciesTypes } from './engine/battle/data/species-runtime';
 
 /** 1:1 décomp `void FaintClearSetData(void)` (battle_main.c:3270-3355) : reset
@@ -2204,10 +2204,14 @@ function _IsPlayerPartyAndPokemonStorageFull(): boolean {
   return false;
 }
 
-/** 1:1 décomp `AreAllMovesUnusable()`. */
+/** Délègue au canonique 1:1 `AreAllMovesUnusable` (battle_util, qui appelle le vrai
+ *  `CheckMoveLimitations` : PP/Disable/Torment/Taunt/Imprison/Encore/Choice).
+ *  AUDIT FIX : l'ancien stub `return false` empêchait la détection « tous les moves
+ *  inutilisables » → la branche Struggle/no-moves-left de HandleTurnActionSelectionState
+ *  ne se déclenchait jamais (combats longs, tous les PP à 0). `setActiveBattler(active)`
+ *  est posé en tête de boucle → `gActiveBattler` correct au point d'appel. */
 function _AreAllMovesUnusable(): boolean {
-  // Dette R3 : check si tous les moves unusable (= struggle case).
-  return false;
+  return AreAllMovesUnusable();
 }
 
 /** 1:1 décomp `TrySetCantSelectMoveBattleScript()`. */
