@@ -105,7 +105,8 @@ import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   SetSpritePrimaryCoordsFromSecondaryCoords, GetBattlerElevation,
 } from './battle_anim_mons';
-import { DoPokeballSendOutAnimation, POKEBALL_OPPONENT_SENDOUT } from './pokeball';
+import { DoPokeballSendOutAnimation } from './pokeball';
+import { POKEBALL_OPPONENT_SENDOUT } from '../include/pokeball';
 import {
   showOpponentTrainerSprite, getOpponentTrainerSpriteId, destroyOpponentTrainerSprite,
 } from './engine/battle/battle-sendout-anim';

@@ -63,6 +63,11 @@ import { GetBattlerPokeballItemId } from './pokeball';
 import { registerAnimTasks } from './engine/battle/battle-anim-registry';
 import { LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from './engine/system/pokeball-effects';
 import {
+  BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET, BALL_DIVE,
+  BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER, POKEBALL_COUNT,
+  BALL_ROTATE_RIGHT, BALL_ROTATE_LEFT, BALL_AFFINE_ANIM_3,
+} from '../include/pokeball';
+import {
   BlendPalettes, SpriteCallbackDummy,
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   FreeSpriteTilesByTag,
@@ -78,25 +83,9 @@ import {
 
 // ─── BALL_* enum (= include/pokeball.h:4-19) ───────────────────────────────
 
-/** 1:1 décomp `enum { BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER,
- *  BALL_NET, BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER }`
- *  (include/pokeball.h).
- *  ⚠️ CORRIGE 2026-06-08 : l'ancien ordre (MASTER=0 … POKE=3) etait FAUX (faux label
- *  "1:1") → ItemIdToBallId(ITEM_POKE_BALL) renvoyait BALL_POKE=3 → gBallSpriteSheets[3]
- *  = Ultra (asset non charge) → POKEBALL NOIRE au send-out (#22). Aligne sur la vraie
- *  enum decomp = pokeball-effects.ts + gBallSpriteSheets (indexes par designators). */
-export const BALL_POKE = 0;
-export const BALL_GREAT = 1;
-export const BALL_SAFARI = 2;
-export const BALL_ULTRA = 3;
-export const BALL_MASTER = 4;
-export const BALL_NET = 5;
-export const BALL_DIVE = 6;
-export const BALL_NEST = 7;
-export const BALL_REPEAT = 8;
-export const BALL_TIMER = 9;
-export const BALL_LUXURY = 10;
-export const BALL_PREMIER = 11;
+// BALL_* (BALL_POKE..BALL_PREMIER) + POKEBALL_COUNT + affine : 1:1 enum `include/pokeball.h`,
+// importés depuis `./include/pokeball` (header NEUTRE — leur vraie maison décomp ; évite le
+// cycle ESM créé quand le port les avait mis ici). Voir l'import en tête de fichier.
 
 /** 1:1 décomp BALL_TRAINER_BLOCK enum (= ballThrowCaseId). */
 export const BALL_TRAINER_BLOCK = 5;
@@ -693,10 +682,7 @@ function _updateOamPriorityInAllHealthboxes(priority: number): void {
   } | undefined;
   hb?.UpdateOamPriorityInAllHealthboxes?.(priority);
 }
-// Constantes affine ball (pokeball.h enum) + battler (data.h enum).
-const BALL_ROTATE_RIGHT = 1;
-const BALL_ROTATE_LEFT = 2;
-const BALL_AFFINE_ANIM_3 = 3;
+// Constantes affine ball = include/pokeball.ts (importées en tête). Battler = data.h enum.
 const BATTLER_AFFINE_NORMAL = 0;
 const BATTLER_AFFINE_EMERGE = 1;
 // ballThrowCaseId enum (battle_anim.h) : 0=NO_SHAKES..4=3_SHAKES_SUCCESS, 5=TRAINER_BLOCK.
@@ -1215,8 +1201,7 @@ const _particleTags: ReadonlyArray<number> = [
   TAG_PARTICLES_DIVEBALL, TAG_PARTICLES_NESTBALL, TAG_PARTICLES_REPEATBALL,
   TAG_PARTICLES_TIMERBALL, TAG_PARTICLES_LUXURYBALL, TAG_PARTICLES_PREMIERBALL,
 ];
-// 1:1 include/pokeball.h POKEBALL_COUNT.
-const _POKEBALL_COUNT = 12;
+// POKEBALL_COUNT = include/pokeball.ts (importé en tête).
 
 // 1:1 :143-157 sBallParticleSpriteSheets[POKEBALL_COUNT] — les 12 entrées
 // partagent le MÊME gfx (gBattleAnimSpriteGfx_Particles, 0x100 = 8 tiles 8x8) ;
@@ -1584,7 +1569,7 @@ function RepeatBallOpenParticleAnimation(task: ParticleTask): void {
   const subpriority = task.data[4];
 
   let sp: BallSprite | null = null;
-  for (let i = 0; i < _POKEBALL_COUNT; i++) {
+  for (let i = 0; i < POKEBALL_COUNT; i++) {
     sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
     if (sp) {
       sp.callback = RepeatBallOpenParticleAnimation_Step1;
@@ -1689,12 +1674,12 @@ function DestroyBallOpenAnimationParticle(sprite: BallSprite): void {
   setNumBallParticles(getNumBallParticles() - 1);
   if (getNumBallParticles() === 0) {
     let i = 0;
-    for (; i < _POKEBALL_COUNT; i++) {
+    for (; i < POKEBALL_COUNT; i++) {
       if (FuncIsActiveTask(sBallParticleAnimationFuncs[i])) break;
     }
 
-    if (i === _POKEBALL_COUNT) {
-      for (let j = 0; j < _POKEBALL_COUNT; j++) {
+    if (i === POKEBALL_COUNT) {
+      for (let j = 0; j < POKEBALL_COUNT; j++) {
         FreeSpriteTilesByTag(sBallParticleSpriteSheets[j].tag);
         FreeSpritePaletteByTag(sBallParticlePalettes[j].tag);
       }

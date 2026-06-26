@@ -31,14 +31,16 @@ import type { DecompRuntime } from '../../../harness/runtime/decomp-runtime';
 import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, DestroySprite, AllocOamMatrix, FreeOamMatrix } from '../../sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
-  LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
+  LaunchBallFadeMonTask, AnimateBallOpenParticles,
 } from '../system/pokeball-effects';
+import { BALL_POKE } from '../../../include/pokeball';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../../../harness/runtime/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../sprite';
 import { setActiveBattler } from './state';
-import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../pokeball';
+import { DoPokeballSendOutAnimation } from '../../pokeball';
+import { POKEBALL_PLAYER_SENDOUT } from '../../../include/pokeball';
 // Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance
 // partage, decomp-globals.ts:153) AVANT le getAsset SYNC de LoadBallGfx, sinon BLOC NOIR.
 import { assetCache } from '../../../harness/runtime/decomp-globals';

@@ -54,8 +54,9 @@ import { BeginAffineAnim as _BeginAffineAnim } from '../../src/engine/decomp-imp
 // Foundational pokeball release effects (sparkles + flash + emerge affine setup).
 import {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
-  SetUpForReleaseAffineAnim, BALL_POKE,
+  SetUpForReleaseAffineAnim,
 } from '../../src/engine/system/pokeball-effects';
+import { BALL_POKE } from '../../include/pokeball';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -2599,10 +2600,12 @@ export {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   gBallOpenFadeColors,
+} from '../../src/engine/system/pokeball-effects';
+export {
   BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
   BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER,
   POKEBALL_COUNT,
-} from '../../src/engine/system/pokeball-effects';
+} from '../../include/pokeball';
 
 // Audit V2 (session 90) — foundational mon-front-sprite animation system.
 // 1:1 décomp src/pokemon.c:6779 DoMonFrontSpriteAnimation +

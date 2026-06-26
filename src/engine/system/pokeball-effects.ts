@@ -30,21 +30,9 @@ import {
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
   DestroySprite, AllocOamMatrix, FreeOamMatrix,
 } from '../../sprite';
+import { BALL_POKE } from '../../../include/pokeball';
 
-// ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
-export const BALL_POKE = 0;
-export const BALL_GREAT = 1;
-export const BALL_SAFARI = 2;
-export const BALL_ULTRA = 3;
-export const BALL_MASTER = 4;
-export const BALL_NET = 5;
-export const BALL_DIVE = 6;
-export const BALL_NEST = 7;
-export const BALL_REPEAT = 8;
-export const BALL_TIMER = 9;
-export const BALL_LUXURY = 10;
-export const BALL_PREMIER = 11;
-export const POKEBALL_COUNT = 12;
+// Ball IDs (BALL_*) = 1:1 enum `include/pokeball.h` → `include/pokeball.ts` (header neutre).
 
 // 1:1 décomp src/battle_anim_throw.c:371 — per-ball-type RGB15 flash blend
 // color. The mon's OBJ palette is BlendPalette()'d toward this color over 16

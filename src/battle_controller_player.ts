@@ -134,7 +134,8 @@ import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   SetSpritePrimaryCoordsFromSecondaryCoords,
 } from './battle_anim_mons';
-import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from './pokeball';
+import { DoPokeballSendOutAnimation } from './pokeball';
+import { POKEBALL_PLAYER_SENDOUT } from '../include/pokeball';
 import { StartSpriteAnim } from './sprite';
 import type { DecompTask, DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { isBallAnimActive } from './engine/battle/battle-sprites-data';

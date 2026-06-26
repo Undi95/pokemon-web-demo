@@ -42,7 +42,8 @@ import { ST_OAM_AFFINE_DOUBLE } from '../harness/runtime/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix } from './sprite';
 
-import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from './engine/system/pokeball-effects';
+import { LaunchBallFadeMonTask } from './engine/system/pokeball-effects';
+import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, POKEBALL_PLAYER_SENDOUT, POKEBALL_OPPONENT_SENDOUT } from '../include/pokeball';
 import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
 import { getBattlerMonSpriteId } from './battle_controller_opponent';
 import { SpriteCB_PlayerMonFromBall, SpriteCB_OpponentMonFromBall } from './engine/battle/battle-sprite-callbacks';
@@ -71,10 +72,8 @@ const GFX_TAG_TIMER_BALL = 55009;
 const GFX_TAG_LUXURY_BALL = 55010;
 const GFX_TAG_PREMIER_BALL = 55011;
 
-// 1:1 decomp include/pokeball.h:33-34 — `kindOfThrow` de DoPokeballSendOutAnimation.
-// (Les autres valeurs 1..4 = nombre de secousses du throw de capture.)
-export const POKEBALL_PLAYER_SENDOUT = 0xFF;
-export const POKEBALL_OPPONENT_SENDOUT = 0xFE;
+// POKEBALL_PLAYER/OPPONENT_SENDOUT (kindOfThrow) = 1:1 include/pokeball.h:33 → include/pokeball.ts
+// (importés en tête). Les valeurs 1..4 = nombre de secousses du throw de capture.
 
 /** 1:1 decomp pokeball.c:1338 `static u16 GetBattlerPokeballItemId(u8 battler)`.
  *  Renvoie l'ITEM_X_BALL avec lequel le mon du battler a ete capture (MON_DATA_POKEBALL).
