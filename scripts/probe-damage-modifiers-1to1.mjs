@@ -15,8 +15,8 @@
  *   - Marvel Scale(déf): defense ×150/100 si statut      (3216)
  *   - Pinch Overgrow   : power ×150/100 sur Plante ≤maxHP/3 (3225)
  * NON couverts (globals/espèces _LOCAL) : badges, type-items, Soul Dew/Deep Sea/Light
- * Ball/Metal Powder/Thick Club (check espèce), field sports, crit-stages, météo, écrans,
- * double, explosion. → suivi.
+ * Ball/Metal Powder/Thick Club (check espèce), field sports, crit-stages, écrans,
+ * double, explosion. → suivi. (MÉTÉO désormais couverte : probe-damage-weather-1to1.mjs.)
  *
  * Ordre des modificateurs = EXACT décomp (Huge → ChoiceBand → ThickFat → Hustle → Guts
  * → Marvel → Pinch → cœur). Globals neutralisés hors combat + battlerIds adverses (1,3).
