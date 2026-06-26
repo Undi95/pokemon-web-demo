@@ -25,6 +25,9 @@
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 // Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
 import { CanResetRTC as _MirrorCanResetRTC } from '../../include/event_data';
+// TASK_NONE : feuille include/task.ts (zéro-import → sûr). Évite la 3e définition
+// dupliquée de cette constante dans ce fourre-tout (cf. include/task.ts, decomp-runtime.ts).
+import { TASK_NONE } from '../../include/task';
 import {
   BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
   REG_OFFSET_DISPCNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
@@ -2058,8 +2061,6 @@ export function MultiplyInvertedPaletteRGBComponents(
 
 /** 1:1 décomp src/task.c:FindTaskIdByFunc — retourne le taskId du premier
  *  Task dont func == funcRef. TASK_NONE (0xFF) si aucun. */
-export const TASK_NONE = 0xFF;
-
 export function FindTaskIdByFunc(funcRef: ((task: any) => void) | ((task: any, rt: any) => void)): number {
   const r = rt();
   for (const task of r.gTasks) {

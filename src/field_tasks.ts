@@ -40,9 +40,9 @@ import {
   FindTaskIdByFunc,
   FuncIsActiveTask,
   GetTaskData,
-  TASK_NONE,
   gMain,
 } from '../harness/runtime/decomp-globals';
+import { TASK_NONE } from '../include/task';
 import { PlayerGetDestCoords, PlayerGetElevation } from './field_player_avatar';
 import { ArePlayerFieldControlsLocked } from './script';
 import { DoTimeBasedEvents } from './clock';
