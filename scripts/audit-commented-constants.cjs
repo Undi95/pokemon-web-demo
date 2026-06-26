@@ -151,9 +151,12 @@ const ALLOW = [
   'MOVE_TARGET_', 'HOLD_EFFECT_',                       // audit-battle-flags / audit-effect-hold-constants
   'STRINGID_',                                          // gBattleStringsTable 1:1 (battle-strings-table.ts)
 ];
-// MOVE_ (coups, audit-id-constants) MAIS pas les sous-enums non-confirmés (MOVE_EFFECT_,
-// MOVE_TARGET_ est déjà listé, MOVE_RESULT_ déjà listé).
-const MOVE_SUB = ['MOVE_EFFECT_', 'MOVE_TARGET_', 'MOVE_RESULT_'];
+// MOVE_ (coups, audit-id-constants). MOVE_TARGET_/MOVE_RESULT_ sont déjà dans ALLOW directement
+// (gardés en MOVE_SUB pour ne pas être DOUBLÉS par le catch-all MOVE_ — neutre). MOVE_EFFECT_
+// (effets secondaires Cmd_seteffect : FLINCH/BURN/SLEEP… = enum value-1:1, infliction de statut)
+// PROMU value-1:1 : scan exhaustif = 43/43 littéraux fidèles, 0 mismatch → on le LAISSE passer le
+// catch-all MOVE_ (retiré de MOVE_SUB) pour verrouiller ces 43 points contre la dérive.
+const MOVE_SUB = ['MOVE_TARGET_', 'MOVE_RESULT_'];
 // B_MSG_* : indices DANS une table printfromtable spécifique — value-1:1 SEULEMENT si la table
 // du port est ordonnée comme le décomp (pas garanti pour toute la famille). On ne garde que les
 // noms dont la table a été CONFRONTÉE 1:1 (gItemSwapStringIds=[358,359,360], gBerryEffectStringIds
