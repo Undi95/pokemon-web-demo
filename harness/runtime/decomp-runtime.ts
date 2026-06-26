@@ -19,6 +19,9 @@
  *   - decomp engine/palette_fade.c pour BeginNormalPaletteFade
  */
 import { Gba } from '../gba/gba';
+// TASK_NONE : feuille include/task.ts (zéro-import → sûr). Dédup du doublon local
+// (cf. include/task.ts ; decomp-globals déjà dédupé a5bf4c14).
+import { TASK_NONE } from '../../include/task';
 
 /** Debug flag — true uniquement si `localStorage.rtDebug = '1'`. Sans ça, tous
  *  les console.log spam (CreateSprite, palette, sheet) sont silenced. */
@@ -493,8 +496,7 @@ export const NUM_TASKS = 16;
 const NUM_TASK_DATA = 16;
 const HEAD_SENTINEL = 0xFE;
 const TAIL_SENTINEL = 0xFF;
-/** 1:1 `task.h:6` `#define TASK_NONE TAIL_SENTINEL`. */
-export const TASK_NONE = 0xFF;
+// TASK_NONE (1:1 task.h:6) importé depuis la feuille include/task.ts (dédup).
 
 /** 1:1 décomp `struct Task` (task.h:13). `taskId` = index du slot (ajout TS pratique ;
  *  la décomp utilise l'index directement). */
