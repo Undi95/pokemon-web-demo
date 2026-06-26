@@ -112,14 +112,36 @@ function ConvertBinaryToBcd(bin: number): number {
   return ((Math.trunc(bin / 10) << 4) | (bin % 10)) & 0xFF;
 }
 
-// ─── La pile lue depuis le PC (= SiiRtcGetDateTime/RtcGetRawInfo 1:1) ──────
+// ─── La pile lue depuis le PC (= SiiRtc* 1:1, le "chip" = horloge système) ──
+// Structure 1:1 décomp rétablie : RtcGetRawInfo → RtcGetStatus + RtcGetDateTime
+// (rtc.c:148). Les lectures chip `SiiRtc*` deviennent des lectures `new Date()`
+// (l'heure du PC fait office de "pile" cartouche : temps réel simulé pour les
+// baies, etc. — reprendre 10 h plus tard = 10 h de jeu écoulées).
 
-/** 1:1 décomp `RtcGetRawInfo`→`SiiRtcGetStatus`+`SiiRtcGetDateTime`
- *  (rtc.c:148) : remplit `rtc` depuis le chip. Web : depuis `new Date()`
- *  (heure du PC), BCD-encodée comme le chip Sii réel. */
-function RtcGetRawInfo(rtc: SiiRtcInfo): void {
+/** 1:1 décomp `void RtcDisableInterrupts(void)` (rtc.c:35) :
+ *  `sSavedIme = REG_IME; REG_IME = 0;`. REG_IME (interrupt master enable) n'a
+ *  PAS d'équivalent navigateur → no-op (structure 1:1 conservée). */
+export function RtcDisableInterrupts(): void { /* REG_IME = 0 — absent (navigateur) */ }
+
+/** 1:1 décomp `void RtcRestoreInterrupts(void)` (rtc.c:41) :
+ *  `REG_IME = sSavedIme;`. No-op web (pas de REG_IME). */
+export function RtcRestoreInterrupts(): void { /* REG_IME = sSavedIme — absent (navigateur) */ }
+
+/** 1:1 décomp `void RtcGetStatus(struct SiiRtcInfo *rtc)` (rtc.c:141) :
+ *  `SiiRtcGetStatus(rtc)` = registre status du chip. Web : mode 24 h, jamais
+ *  de power-failure (l'horloge PC est toujours valide). */
+export function RtcGetStatus(rtc: SiiRtcInfo): void {
+  RtcDisableInterrupts();
+  rtc.status = SIIRTCINFO_24HOUR;
+  RtcRestoreInterrupts();
+}
+
+/** 1:1 décomp `void RtcGetDateTime(struct SiiRtcInfo *rtc)` (rtc.c:134) :
+ *  `SiiRtcGetDateTime(rtc)` = date/heure du chip. Web : `new Date()` (heure du
+ *  PC), BCD-encodée comme le chip Sii réel. */
+export function RtcGetDateTime(rtc: SiiRtcInfo): void {
+  RtcDisableInterrupts();
   const d = new Date();
-  rtc.status = SIIRTCINFO_24HOUR; // chip en mode 24h (pas de power-fail)
   rtc.year = ConvertBinaryToBcd(d.getFullYear() - 2000); // 0-99 ; >99 → 0xFF (wrap)
   rtc.month = ConvertBinaryToBcd(d.getMonth() + 1);
   rtc.day = ConvertBinaryToBcd(d.getDate());
@@ -127,6 +149,13 @@ function RtcGetRawInfo(rtc: SiiRtcInfo): void {
   rtc.hour = ConvertBinaryToBcd(d.getHours());
   rtc.minute = ConvertBinaryToBcd(d.getMinutes());
   rtc.second = ConvertBinaryToBcd(d.getSeconds());
+  RtcRestoreInterrupts();
+}
+
+/** 1:1 décomp `void RtcGetRawInfo(struct SiiRtcInfo *rtc)` (rtc.c:148). */
+function RtcGetRawInfo(rtc: SiiRtcInfo): void {
+  RtcGetStatus(rtc);
+  RtcGetDateTime(rtc);
 }
 
 /** 1:1 décomp `u16 RtcCheckInfo(struct SiiRtcInfo *rtc)` (rtc.c:154). */
@@ -163,6 +192,15 @@ export function RtcInit(): void {
   sErrorStatus = 0;
   RtcGetRawInfo(sRtc);
   sErrorStatus = RtcCheckInfo(sRtc);
+}
+
+/** 1:1 décomp `void RtcReset(void)` (rtc.c:211) : `SiiRtcReset()` réinitialise le
+ *  chip. Web : la "pile" = horloge PC (non réinitialisable) → no-op (structure 1:1).
+ *  Appelé par NewGameInitData quand la save est vide/corrompue. */
+export function RtcReset(): void {
+  RtcDisableInterrupts();
+  /* SiiRtcReset() — pas d'équivalent web (l'horloge PC n'est pas réinitialisable). */
+  RtcRestoreInterrupts();
 }
 
 // ─── Jour/temps (1:1 décomp) ───────────────────────────────────────────────
@@ -244,6 +282,19 @@ export function RtcCalcLocalTimeOffset(days: number, hours: number, minutes: num
  *  = le joueur choisit l'heure au wall clock du début. */
 export function RtcInitLocalTimeOffset(hour: number, minute: number): void {
   RtcCalcLocalTimeOffset(0, hour, minute, 0);
+}
+
+/** 1:1 décomp `void CalcTimeDifference(struct Time *result, struct Time *t1, struct Time *t2)`
+ *  (rtc.c:311) : result = t2 − t1 (différence de deux `Time`, SANS lire le chip).
+ *  Utilisé par clock.c `UpdatePerMinute` (BerryTreeTimeUpdate). */
+export function CalcTimeDifference(result: Time, t1: Time, t2: Time): void {
+  result.seconds = t2.seconds - t1.seconds;
+  result.minutes = t2.minutes - t1.minutes;
+  result.hours = t2.hours - t1.hours;
+  result.days = t2.days - t1.days;
+  if (result.seconds < 0) { result.seconds += SECONDS_PER_MINUTE; --result.minutes; }
+  if (result.minutes < 0) { result.minutes += MINUTES_PER_HOUR; --result.hours; }
+  if (result.hours < 0) { result.hours += HOURS_PER_DAY; --result.days; }
 }
 
 /** 1:1 décomp `u32 RtcGetMinuteCount(void)` (rtc.c:337). NOTE : le décomp
