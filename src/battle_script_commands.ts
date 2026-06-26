@@ -1043,7 +1043,7 @@ function ApplyRandomDmgMultiplier(): void {
 // ─── Cmd_ppreduce (0x03) ────────────────────────────────────────────────────
 
 /** 1:1 décomp `Cmd_ppreduce` (battle_script_commands.c:1205-1251). */
-function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
+export function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
   let ppToDeduct = 1;
 
   // 1:1 décomp : `if (gBattleControllerExecFlags) return;`
