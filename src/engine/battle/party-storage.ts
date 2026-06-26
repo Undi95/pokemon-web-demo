@@ -909,6 +909,12 @@ export function SetWildMonHeldItem(): void {
     chanceNoItem = 20;
     chanceNotRare = 80;
   }
+  // ⚠️ 1:1 GAP (Dette R3, cohérent avec wild_encounter.ts:265 « ALTERING_CAVE ») : la décomp
+  // (pokemon.c SetWildMonHeldItem) branche ici sur `gMapHeader.mapLayoutId == LAYOUT_ALTERING_CAVE`
+  // → table spéciale `sAlteringCaveWildMonHeldItems` (Mareep→Ganlon Berry, etc.). NON porté : en
+  // vanilla Altering Cave est INERTE (seul Zubat y apparaît, absent de la table → branche
+  // « inactive » = objets normaux = ci-dessous), et le côté rencontre (espèces spéciales via
+  // VAR_ALTERING_CAVE_WILD_SET) est lui aussi R3 debt. La voie NORMALE ci-dessous est 1:1.
   const info = gSpeciesInfo[species];
   const itemCommon = info ? ((resolveDecompConstant(info.itemCommon) as number | undefined) ?? 0) : 0;
   const itemRare = info ? ((resolveDecompConstant(info.itemRare) as number | undefined) ?? 0) : 0;
