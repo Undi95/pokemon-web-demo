@@ -33,7 +33,7 @@ const ORACLES = [
   'audit-trainer-money-table.cjs',
   // — Monde / progression —
   'audit-wild-encounters.cjs', 'audit-encounter-rates.cjs', 'audit-mart-lists.cjs', 'audit-item-balls.cjs', 'audit-berry-data.cjs',
-  'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs',
+  'audit-heal-locations.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs', 'audit-movement-action-funcs.cjs',
   'audit-metatile-behaviors.cjs', 'audit-layouts.cjs', 'audit-tilesets.cjs', 'audit-object-event-graphics.cjs', 'audit-pokemon-sprites.cjs',
   // — Tables TS hand-codées —
   'audit-battle-stat-tables.cjs', 'audit-pokemon-constants.cjs', 'audit-battle-status-bits.cjs', 'audit-battle-flags.cjs', 'audit-effect-hold-constants.cjs', 'audit-ability-type-constants.cjs', 'audit-id-constants.cjs', 'audit-inline-battle-constants.cjs',
