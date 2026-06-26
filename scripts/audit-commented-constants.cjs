@@ -147,8 +147,15 @@ const ALLOW = [
   'FLAG_GET_', 'FLAG_SET_',                             // pokedex.h enum (vérifié)
   'ITEM_', 'SPECIES_',                                  // audit-id-constants
   'B_WEATHER_',                                         // engine/battle/constants.ts (vérifié)
+  'BATTLE_TYPE_',                                       // audit-battle-flags
+  'MOVE_TARGET_', 'HOLD_EFFECT_',                       // audit-battle-flags / audit-effect-hold-constants
 ];
-const inAllow = (n) => ALLOW.some((p) => n.startsWith(p));
+// MOVE_ (coups, audit-id-constants) MAIS pas les sous-enums non-confirmés (MOVE_EFFECT_,
+// MOVE_TARGET_ est déjà listé, MOVE_RESULT_ déjà listé).
+const MOVE_SUB = ['MOVE_EFFECT_', 'MOVE_TARGET_', 'MOVE_RESULT_'];
+const inAllow = (n) =>
+  ALLOW.some((p) => n.startsWith(p)) ||
+  (n.startsWith('MOVE_') && !MOVE_SUB.some((p) => n.startsWith(p)));
 
 // Ordre des alternatives : `(1<<N)` puis `1<<N` (sans parenthèses — sinon \d+ capte le N nu,
 // FP `1 << 5 /* PLAYER_AVATAR_FLAG_CONTROLLABLE */` lu « 5 ») puis hex puis décimal.
@@ -162,6 +169,10 @@ for (const rel of TS_FILES) {
   for (const m of txt.matchAll(RE)) {
     const name = m[2];
     if (!(name in decomp) || EXCLUDE.has(name) || !inAllow(name)) continue;
+    // Ignore les matchs DANS un commentaire de ligne `//` (ex. exemples d'usage devtool :
+    // `// __testMoveAnim(33 /* MOVE_POUND */)` — pas du code, le littéral n'est pas un fait).
+    const lineStart = txt.lastIndexOf('\n', m.index) + 1;
+    if (txt.slice(lineStart, m.index).includes('//')) continue;
     knownPts++;
     let val;
     try { val = evalExpr(m[1], {}); } catch { continue; }

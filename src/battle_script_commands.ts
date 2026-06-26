@@ -10764,7 +10764,7 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
     return false;
   }
 
-  if (_gBattleTypeFlagsHBT & 0x10000 /* BATTLE_TYPE_WALLY_TUTORIAL */) {
+  if (_gBattleTypeFlagsHBT & BATTLE_TYPE_WALLY_TUTORIAL) {
     // 1:1 décomp : EmitBallThrowAnim(BALL_3_SHAKES_SUCCESS = 4) + Mark (Wally tut).
     _BtlController_EmitBallThrowAnim_HBT(0, 4 /* BALL_3_SHAKES_SUCCESS */);
     _MarkBattlerForControllerExec_HBT(_gBattlerAttacker_HBT());
