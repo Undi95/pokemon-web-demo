@@ -25,8 +25,11 @@ import { EOS } from '../../../include/constants/characters';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 // Cf. include/constants/global.h, vars.h, flags.h, berry.h, tv.h, etc.
-
-export const PLAYER_NAME_LENGTH = 7;
+// PLAYER_NAME_LENGTH : définition UNIQUE dans la feuille include/constants/global.ts ;
+// RÉ-EXPORTÉ ici pour les importeurs historiques (dont *-auto.ts que tsc ne vérifie pas).
+// TODO dédup : POKEMON_NAME_LENGTH / TRAINER_ID_LENGTH / PARTY_SIZE sont AUSSI dans
+// include/constants/global.ts → à sourcer depuis la feuille (chantier global.h dédié).
+export { PLAYER_NAME_LENGTH } from '../../../include/constants/global';
 export const POKEMON_NAME_LENGTH = 10;
 export const TRAINER_ID_LENGTH = 4;
 export const PARTY_SIZE = 6;

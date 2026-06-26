@@ -53,11 +53,11 @@ export function SetOamMatrix(gba: Gba, matrixNum: number, a: number, b: number, 
 }
 
 // ─── CalcCenterToCornerVec (affine sprite bbox helper) ───────────────────────
-/** 1:1 décomp constants src/include/gba/types.h. */
-export const ST_OAM_AFFINE_OFF = 0;
-export const ST_OAM_AFFINE_NORMAL = 1;
-export const ST_OAM_AFFINE_ERASE = 2;
-export const ST_OAM_AFFINE_DOUBLE = 3;
+/** 1:1 décomp constants src/include/gba/types.h.
+ *  ST_OAM_AFFINE_{OFF,NORMAL,ERASE,DOUBLE} : définition UNIQUE dans la feuille
+ *  include/sprite.ts ; RÉ-EXPORTÉS ici pour les importeurs historiques (dont les
+ *  *-auto.ts que tsc ne vérifie pas). Ré-export d'une feuille zéro-import = TDZ-safe. */
+export { ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_ERASE, ST_OAM_AFFINE_DOUBLE } from '../../include/sprite';
 export const ST_OAM_AFFINE_ON_MASK = 1;        // bit 0 = affine on
 export const ST_OAM_AFFINE_DOUBLE_MASK = 2;    // bit 1 = affine double
 export const ST_OAM_OBJ_NORMAL = 0;
