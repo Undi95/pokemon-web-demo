@@ -1730,7 +1730,7 @@ function PlayerHandleYesNoInput(): void {
     bc?.BattleCreateYesNoCursorAt?.(1);
   }
   if (JOY_NEW(A_BUTTON)) {
-    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 0x80 /* WINDOW_CLEAR */);
+    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 1 /* WINDOW_CLEAR */);
     PlaySE(SE_SELECT);
     if (gMultiUsePlayerCursor !== 0) {
       BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, 14 /* B_ACTION_UNK_14 */, 0);
@@ -1739,7 +1739,7 @@ function PlayerHandleYesNoInput(): void {
     }
     PlayerBufferExecCompleted();
   } else if (JOY_NEW(B_BUTTON)) {
-    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 0x80 /* WINDOW_CLEAR */);
+    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 1 /* WINDOW_CLEAR */);
     PlaySE(SE_SELECT);
     PlayerBufferExecCompleted();
   }

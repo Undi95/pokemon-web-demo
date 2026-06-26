@@ -2418,7 +2418,7 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
                 _gBattleTextBuff2_IBE[7] = _B_BUFF_EOS_IBE;
                 setEffectBattler(battlerId);
                 gBattleScripting.statChanger = SET_STATCHANGER(i + 1, 2, false);
-                gBattleScripting.animArg1 = 21 /* STAT_ANIM_PLUS2 */ + (i + 1);
+                gBattleScripting.animArg1 = 38 /* STAT_ANIM_PLUS2 */ + (i + 1);
                 gBattleScripting.animArg2 = 0;
                 _lastWantedScriptLabel = 'BattleScript_BerryStatRaiseEnd2';
                 effect = ITEM_STATS_CHANGE;

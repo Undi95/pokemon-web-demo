@@ -149,6 +149,7 @@ const ALLOW = [
   'B_WEATHER_',                                         // engine/battle/constants.ts (vérifié)
   'BATTLE_TYPE_',                                       // audit-battle-flags
   'MOVE_TARGET_', 'HOLD_EFFECT_',                       // audit-battle-flags / audit-effect-hold-constants
+  'STRINGID_',                                          // gBattleStringsTable 1:1 (battle-strings-table.ts)
 ];
 // MOVE_ (coups, audit-id-constants) MAIS pas les sous-enums non-confirmés (MOVE_EFFECT_,
 // MOVE_TARGET_ est déjà listé, MOVE_RESULT_ déjà listé).
@@ -159,6 +160,10 @@ const MOVE_SUB = ['MOVE_EFFECT_', 'MOVE_TARGET_', 'MOVE_RESULT_'];
 // =[297,342]) — bugs corrigés au commit B_MSG.
 const VERIFIED_NAMES = new Set([
   'B_MSG_ITEM_SWAP_TAKEN', 'B_MSG_ITEM_SWAP_GIVEN', 'B_MSG_ITEM_SWAP_BOTH', 'B_MSG_CURED_PROBLEM',
+  // Constantes isolées dont la valeur canonique du port == décomp (vérifiée), corrigées au commit :
+  'CURSOR_POSITION',   // index gBattleCommunication (=1, battle_script_commands.h:288)
+  'STAT_ANIM_PLUS2',   // arg anim de stat (=38, battle_anim.h:196)
+  'WINDOW_CLEAR',      // flag HandleBattleWindow (=1<<0, battle_script_commands.h:7)
 ]);
 const inAllow = (n) =>
   ALLOW.some((p) => n.startsWith(p)) ||

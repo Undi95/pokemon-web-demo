@@ -2243,8 +2243,8 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
     if ((mon.status2 & STATUS2_SUBSTITUTE)
         && gDisableStructs[activeBattler].substituteHP > 0
         && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE)) {
-      // 1:1 décomp : PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED=199, active).
-      _PrepareStringBattle_N1(199 /* STRINGID_SUBSTITUTEDAMAGED */, activeBattler);
+      // 1:1 décomp : PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED=128, active).
+      _PrepareStringBattle_N1(128 /* STRINGID_SUBSTITUTEDAMAGED */, activeBattler);
     } else {
       // 1:1 décomp : clamp damage à 10000 (= max u16 truncation safety).
       let healthValue = gBattleMoveDamage;
@@ -10352,7 +10352,7 @@ function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
   switch (bs.gBattleScripting.learnMoveState) {
     case 0:
       // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
-      bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
+      bs.gBattleCommunication[1 /* CURSOR_POSITION */] = 0;
       bs.gBattleScripting.learnMoveState++;
       ctx.scriptPtr -= 5;
       return true;
@@ -10411,7 +10411,7 @@ function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
     case 0:
       // 1:1 décomp : HandleBattleWindow + BattlePutTextOnWindow + cursor 0.
       // UI Phase 1.4 deferred : set cursor à 0 et advance state.
-      bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
+      bs.gBattleCommunication[1 /* CURSOR_POSITION */] = 0;
       bs.gBattleScripting.learnMoveState++;
       ctx.scriptPtr -= 5;  // re-enter (= stay on opcode pour case 1)
       return true;
