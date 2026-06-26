@@ -481,11 +481,18 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
   const party = gPlayerParty;
   const itemId = gSpecialVar.ItemId;
   let anyEffect = false;
+  // Capture le PREMIER mon réellement réanimé (effet appliqué = !cannotUse, donc KO→revived)
+  // pour le message — pas un `find(hp>0)` qui pourrait désigner un mon DÉJÀ vivant.
+  let firstRevivedNick = '';
+  let firstRevivedMaxHP = 0;
   for (let i = 0; i < party.length; i++) {
     const mon = party[i];
     if (!mon || !mon.species) continue;
     const r = PokemonUseItemEffects(mon, itemId, i, 0, false);
-    if (!r.cannotUse) anyEffect = true;
+    if (!r.cannotUse) {
+      anyEffect = true;
+      if (firstRevivedNick === '') { firstRevivedNick = mon.nickname; firstRevivedMaxHP = mon.maxHP; }
+    }
   }
   if (!anyEffect) {
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
@@ -495,14 +502,13 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
   _removeOneFromBag(itemId);
   // 1:1 refresh tous les slots party (= tous mons KO ont été revived).
   for (let i = 0; i < 6; i++) RefreshPartySlot(i);
-  // 1:1 décomp Task_SacredAshDisplayHPRestored — pour chaque revive,
-  // affiche "PV de X restaurés.". Notre version simplifiée : affiche
-  // un message générique pour le 1er KO revived. Polish 1:1 = display
-  // message par mon (= loop).
-  const firstRev = party.find(m => m && m.species !== 0 && m.hp > 0);
+  // 1:1 décomp UseSacredAsh/Task_SacredAshDisplayHPRestored : affiche un message par mon
+  // réanimé. Simplification : message pour le PREMIER mon réanimé (nickname réel capturé
+  // pendant la boucle d'effet, plus de fallback fabriqué). Polish 1:1 restant = boucle de
+  // messages par mon (UseSacredAsh = Task state-machine).
   ShowPartyMenuItemMessage(_expandStr(
     getString('gText_PkmnHPRestoredByVar2'),
-    { var1: firstRev?.nickname ?? 'POKéMON', var2: String(firstRev?.maxHP ?? 0) },
+    { var1: firstRevivedNick, var2: String(firstRevivedMaxHP) },
   ));
 }
 
