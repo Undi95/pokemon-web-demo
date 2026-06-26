@@ -231,7 +231,7 @@ function ChooseWildMonIndex_WaterRock(): number {
 /** 1:1 décomp `ChooseWildMonLevel` (wild_encounter.c:268-303).
  *  Min/max swap si inversés + Random range. Si le lead mon (non-œuf) a
  *  HUSTLE/VITAL_SPIRIT/PRESSURE → 50% niveau max, sinon décale `rand` d'un cran. */
-function ChooseWildMonLevel(wildPokemon: WildPokemon): number {
+export function ChooseWildMonLevel(wildPokemon: WildPokemon): number {
   let min: number, max: number;
   if (wildPokemon.maxLevel >= wildPokemon.minLevel) {
     min = wildPokemon.minLevel;
