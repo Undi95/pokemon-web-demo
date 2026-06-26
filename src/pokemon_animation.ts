@@ -1466,10 +1466,15 @@ function getMonFrontAnimName(species: number): string {
 export function SpriteCallbackDummy(_sprite: DecompSprite, _rt: DecompRuntime): void { /* no-op */ }
 export function SpriteCallbackDummy_2(_sprite: DecompSprite, _rt: DecompRuntime): void { /* no-op */ }
 
-/** 1:1 décomp src/pokemon.c HasTwoFramesAnimation (sMonHasTwoFramesAnimationTable).
- *  Stub : la plupart des Gen 3 ont 2 frames → défaut TRUE (1:1 fallback sûr). */
-export function HasTwoFramesAnimation(_species: number): boolean {
-  return true;
+/** 1:1 décomp `HasTwoFramesAnimation(u16 species)` (pokemon.c:6959) : TRUE pour toutes les
+ *  espèces SAUF Castform/Deoxys/Spinda/Unown (1 frame / animation spéciale). AUDIT FIX : l'ancien
+ *  stub renvoyait TRUE pour TOUTES → ces 4 espèces sur-animées. Mêmes 4 exclusions que
+ *  `_HasTwoFramesAnimation` (battle_main) et `HasTwoFramesAnimation` (mon-summary-anim). */
+export function HasTwoFramesAnimation(species: number): boolean {
+  return species !== 385 /* SPECIES_CASTFORM */
+      && species !== 410 /* SPECIES_DEOXYS */
+      && species !== 308 /* SPECIES_SPINDA */
+      && species !== 201 /* SPECIES_UNOWN */;
 }
 
 const SKIP_FRONT_ANIM = 0x80;
