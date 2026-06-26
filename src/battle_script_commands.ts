@@ -1130,7 +1130,7 @@ function _stayOnOpcode__b01(ctx: BattleScriptContext): boolean {
 const sCriticalHitChance: ReadonlyArray<number> = [16, 8, 4, 3, 2];
 
 /** 1:1 décomp `Cmd_critcalc` (battle_script_commands.c:1253-1288). */
-function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
+export function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
   const attackerMon = gBattleMons[gBattlerAttacker];
   const targetMon = gBattleMons[gBattlerTarget];
   const item = attackerMon.item;
