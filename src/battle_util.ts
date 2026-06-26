@@ -4438,7 +4438,7 @@ export function WEATHER_HAS_EFFECT(): boolean {
  *  Magic Coat/Snatch via PressurePPLoseAtkCanceler.) Notre BattleMon.pp[] est write
  *  direct + persist au party via Emit batch C. */
 export function PressurePPLose(target: number, attacker: number, move: number): void {
-  if (gBattleMons[target].ability !== 49 /* ABILITY_PRESSURE */) return;
+  if (gBattleMons[target].ability !== 46 /* ABILITY_PRESSURE */) return;
 
   let moveIndex: number;
   for (moveIndex = 0; moveIndex < 4 /* MAX_MON_MOVES */; moveIndex++) {

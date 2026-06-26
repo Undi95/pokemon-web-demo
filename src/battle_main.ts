@@ -2601,7 +2601,7 @@ export function HandleTurnActionSelectionState(): void {
               gBattleCommunication[active]++;
             }
           } else if (chosen === B_ACTION_RUN) {
-            setHitMarker(gHitMarker | 1 /* HITMARKER_RUN */);
+            setHitMarker(gHitMarker | HITMARKER_RUN);
             gBattleCommunication[active]++;
           } else if (chosen === B_ACTION_SAFARI_WATCH_CAREFULLY
                      || chosen === B_ACTION_SAFARI_BALL
@@ -2616,7 +2616,7 @@ export function HandleTurnActionSelectionState(): void {
               gBattleCommunication[active] = STATE_BEFORE_ACTION_CHOSEN;
             }
           } else if (chosen === B_ACTION_SAFARI_RUN) {
-            setHitMarker(gHitMarker | 1 /* HITMARKER_RUN */);
+            setHitMarker(gHitMarker | HITMARKER_RUN);
             gBattleCommunication[active]++;
           }
         }
@@ -2670,7 +2670,7 @@ export function HandleTurnActionSelectionState(): void {
         // 1:1 décomp ll. 4508-4533.
         if (gBattleStruct.selectionScriptFinished[active]) {
           if (_getBattleBufferB(active, 1) === B_ACTION_NOTHING_FAINTED) {
-            setHitMarker(gHitMarker | 1 /* HITMARKER_RUN */);
+            setHitMarker(gHitMarker | HITMARKER_RUN);
             gChosenActionByBattler[active] = B_ACTION_RUN;
             gBattleCommunication[active] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
           } else {
@@ -4274,7 +4274,7 @@ export function BattleIntroDrawTrainersOrMonsSprites(): void {
                                    | BATTLE_TYPE_TRAINER_HILL))) {
         HandleSetPokedexFlag(
           SpeciesToNationalPokedexNum(gBattleMons[active].species),
-          1 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
+          2 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
         );
       }
     } else {
@@ -4287,7 +4287,7 @@ export function BattleIntroDrawTrainersOrMonsSprites(): void {
                                   | BATTLE_TYPE_TRAINER_HILL))) {
           HandleSetPokedexFlag(
             SpeciesToNationalPokedexNum(gBattleMons[active].species),
-            1 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
+            2 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
           );
         }
         BtlController_EmitLoadMonSprite(B_COMM_TO_CONTROLLER);
@@ -4523,7 +4523,7 @@ export function BattleIntroRecordMonsToDex(): void {
                                    | BATTLE_TYPE_TRAINER_HILL))) {
         HandleSetPokedexFlag(
           SpeciesToNationalPokedexNum(gBattleMons[active].species),
-          1 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
+          2 /* FLAG_SET_SEEN */, gBattleMons[active].personality,
         );
       }
     }

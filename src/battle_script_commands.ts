@@ -2374,7 +2374,7 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
   // 3. Lightning Rod redirect (= absorb Electric move).
   if (gSpecialStatuses[gBattlerTarget].lightningRodRedirected) {
     gSpecialStatuses[gBattlerTarget].lightningRodRedirected = 0;
-    setLastUsedAbility(78 /* ABILITY_LIGHTNING_ROD */);
+    setLastUsedAbility(ABILITY_LIGHTNING_ROD);
     ctx.scriptPtrStack.push(opcodeStartPtr);
     const off = getBattleScriptOffset('BattleScript_TookAttack');
     if (off >= 0) ctx.scriptPtr = off;
@@ -10812,7 +10812,7 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
       }
       case 9  /* ITEM_REPEAT_BALL */: {
         const dexNum = _gBattleMonsHBT[targetIdx].species;  // = SpeciesToNationalPokedexNum (Gen 3 = identity ≤ 386).
-        if (_GetSetPokedexFlagHBT(dexNum, 0 /* FLAG_GET_CAUGHT */)) ballMultiplier = 30;
+        if (_GetSetPokedexFlagHBT(dexNum, FLAG_GET_CAUGHT)) ballMultiplier = 30;
         else ballMultiplier = 10;
         break;
       }
@@ -13256,7 +13256,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           statusChanged = true;
         }
       } else {
-        setMoveResultFlags(gMoveResultFlags | 0x4 /* MOVE_RESULT_DOESNT_AFFECT_FOE */);
+        setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_DOESNT_AFFECT_FOE);
       }
     }
 
