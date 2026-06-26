@@ -48,7 +48,15 @@ cmp('gStatStageRatios',
   ints(body(C, 'gStatStageRatios[MAX_STAT_STAGE', '{', '\n};')),
   26);
 
-if (findings.length === 0) { console.log('✅ gNatureStatTable (125) + gStatStageRatios (26) FIDÈLES au décomp pokemon.c.'); process.exit(0); }
+// sCriticalHitChance : 5 paliers de crit (dénominateurs 1/16…1/2) — battle_script_commands
+const BSC_TS = fs.readFileSync(path.join(ROOT, 'src/battle_script_commands.ts'), 'utf8');
+const BSC_C = fs.readFileSync('D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c', 'utf8');
+cmp('sCriticalHitChance',
+  ints(body(BSC_TS, 'const sCriticalHitChance', '[', ']')),
+  ints(body(BSC_C, 'sCriticalHitChance[]', '{', '}')),
+  5);
+
+if (findings.length === 0) { console.log('✅ gNatureStatTable (125) + gStatStageRatios (26) + sCriticalHitChance (5) FIDÈLES au décomp.'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) de table de stats :\n`);
 for (const f of findings.slice(0, 40)) console.log('  ' + f);
 process.exit(1);
