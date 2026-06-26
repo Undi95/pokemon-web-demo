@@ -54,7 +54,7 @@ import {
   HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
 } from './engine/ui/pokedex-flags';
 import { gSpeciesNames } from './engine/data/game-data';
-import { SE_PC_OFF } from '../include/constants/songs';
+import { SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE } from '../include/constants/songs';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // ─── Constantes 1:1 (pokedex.h / pokedex.c) ──────────────────────────────────
@@ -125,10 +125,20 @@ interface PokedexView {
   listMovingVOffset: number;
   monSpriteIds: number[];        // 1:1 monSpriteIds[MAX_MONS_ON_SCREEN]
   selectedMonSpriteId: number;   // 1:1 selectedMonSpriteId
+  // 1:1 état de scroll (pokedex.h struct PokedexView).
+  scrollTimer: number;
+  maxScrollTimer: number;
+  scrollMonIncrement: number;
+  scrollDirection: number;
+  scrollSpeed: number;
+  pokeBallRotationStep: number;
 }
 let sPokedexView: PokedexView | null = null;
 let sLastSelectedPokemon = 0;
-let sPokeBallRotation = 0;
+// 1:1 décomp `ResetPokedexScrollPositions`/`ResetPokedex` (pokedex.c:1521/1543) : posent
+// sPokeBallRotation = POKEBALL_ROTATION_TOP (64) au chargement de partie (new_game.c /
+// event_data.c). Le port n'appelle pas encore cette chaîne → on initialise la valeur ici.
+let sPokeBallRotation = 64; // POKEBALL_ROTATION_TOP
 
 // 1:1 décomp `ResetPokedexView` (champs 1a ; le reste = jalons suivants).
 function ResetPokedexView(v: PokedexView): void {
@@ -154,6 +164,12 @@ function ResetPokedexView(v: PokedexView): void {
   v.listMovingVOffset = 0;
   v.monSpriteIds = [0xffff, 0xffff, 0xffff, 0xffff];   // MAX_MONS_ON_SCREEN = 4
   v.selectedMonSpriteId = 0xffff;
+  v.scrollTimer = 0;
+  v.maxScrollTimer = 0;
+  v.scrollMonIncrement = 0;
+  v.scrollDirection = 0;
+  v.scrollSpeed = 0;
+  v.pokeBallRotationStep = 0;
 }
 
 // Compteurs Vus/Possédés = GetHoennPokedexCount (pokedex-flags.ts, déjà porté 1:1).
@@ -252,27 +268,70 @@ function ClearMonListEntry(x: number, y: number): void {
   FillWindowPixelRect(0, 0, x * 8, y * 8, 0x60, 16);
 }
 
-// 1:1 décomp `CreateMonListEntry` (pokedex.c:2347) — case 0 (Initial : 11 lignes centrées sur b).
-// (cases 1/2 Up/Down = JALON 1d scroll.)
+// 1:1 décomp `CreateMonListEntry` (pokedex.c:2347) — case 0 (Initial : 11 lignes centrées sur b),
+// case 1 (Up : 1 ligne au sommet à listVOffset), case 2 (Down : 1 ligne en bas à (listVOffset+10)%16).
 function CreateMonListEntry(position: number, b: number, _ignored: number): void {
   if (!sPokedexView) return;
-  if (position === 0) {
-    let entryNum = b - 5;
-    for (let i = 0; i <= 10; i++) {
-      const item = sPokedexView.pokedexList[entryNum];
-      ClearMonListEntry(17, i * 2);
-      if (entryNum >= 0 && entryNum < NATIONAL_DEX_COUNT && item && item.dexNum !== 0xffff) {
-        if (item.seen) {
-          CreateMonDexNum(entryNum, 0x12, i * 2);
-          CreateCaughtBall(item.owned, 0x11, i * 2);
-          CreateMonName(item.dexNum, 0x16, i * 2);
+  const v = sPokedexView;
+  let entryNum: number;
+  switch (position) {
+    case 0:
+    default:
+      entryNum = b - 5;
+      for (let i = 0; i <= 10; i++) {
+        if (entryNum < 0 || entryNum >= NATIONAL_DEX_COUNT || v.pokedexList[entryNum].dexNum === 0xffff) {
+          ClearMonListEntry(17, i * 2);
         } else {
-          CreateMonDexNum(entryNum, 0x12, i * 2);
-          CreateCaughtBall(false, 0x11, i * 2);
-          CreateMonName(0, 0x16, i * 2);
+          ClearMonListEntry(17, i * 2);
+          if (v.pokedexList[entryNum].seen) {
+            CreateMonDexNum(entryNum, 0x12, i * 2);
+            CreateCaughtBall(v.pokedexList[entryNum].owned, 0x11, i * 2);
+            CreateMonName(v.pokedexList[entryNum].dexNum, 0x16, i * 2);
+          } else {
+            CreateMonDexNum(entryNum, 0x12, i * 2);
+            CreateCaughtBall(false, 0x11, i * 2);
+            CreateMonName(0, 0x16, i * 2);
+          }
+        }
+        entryNum++;
+      }
+      break;
+    case 1: // Up
+      entryNum = b - 5;
+      if (entryNum < 0 || entryNum >= NATIONAL_DEX_COUNT || v.pokedexList[entryNum].dexNum === 0xffff) {
+        ClearMonListEntry(17, v.listVOffset * 2);
+      } else {
+        ClearMonListEntry(17, v.listVOffset * 2);
+        if (v.pokedexList[entryNum].seen) {
+          CreateMonDexNum(entryNum, 18, v.listVOffset * 2);
+          CreateCaughtBall(v.pokedexList[entryNum].owned, 0x11, v.listVOffset * 2);
+          CreateMonName(v.pokedexList[entryNum].dexNum, 0x16, v.listVOffset * 2);
+        } else {
+          CreateMonDexNum(entryNum, 18, v.listVOffset * 2);
+          CreateCaughtBall(false, 17, v.listVOffset * 2);
+          CreateMonName(0, 0x16, v.listVOffset * 2);
         }
       }
-      entryNum++;
+      break;
+    case 2: { // Down
+      entryNum = b + 5;
+      let vOffset = v.listVOffset + 10;
+      if (vOffset >= LIST_SCROLL_STEP) vOffset -= LIST_SCROLL_STEP;
+      if (entryNum < 0 || entryNum >= NATIONAL_DEX_COUNT || v.pokedexList[entryNum].dexNum === 0xffff) {
+        ClearMonListEntry(17, vOffset * 2);
+      } else {
+        ClearMonListEntry(17, vOffset * 2);
+        if (v.pokedexList[entryNum].seen) {
+          CreateMonDexNum(entryNum, 18, vOffset * 2);
+          CreateCaughtBall(v.pokedexList[entryNum].owned, 0x11, vOffset * 2);
+          CreateMonName(v.pokedexList[entryNum].dexNum, 0x16, vOffset * 2);
+        } else {
+          CreateMonDexNum(entryNum, 18, vOffset * 2);
+          CreateCaughtBall(false, 0x11, vOffset * 2);
+          CreateMonName(0, 0x16, vOffset * 2);
+        }
+      }
+      break;
     }
   }
   CopyWindowToVram(0, 2 /* COPYWIN_GFX */);
@@ -280,6 +339,12 @@ function CreateMonListEntry(position: number, b: number, _ignored: number): void
 
 // ─── Sprites du mon (JALON 1c-mon) ──────────────────────────────────────────
 const MAX_MONS_ON_SCREEN = 4;       // 1:1 pokedex.h
+// 1:1 pokedex.c : scroll de la liste.
+const LIST_SCROLL_STEP = 16;                       // pokedex.c:109
+const POKEBALL_ROTATION_TOP = 64;                  // pokedex.c:111
+const POKEBALL_ROTATION_BOTTOM = POKEBALL_ROTATION_TOP - 16; // pokedex.c:112 = 48
+const sScrollMonIncrements = [4, 8, 16, 32, 32];   // pokedex.c:803
+const sScrollTimers = [8, 4, 2, 1, 1];             // pokedex.c:804
 // Tiles OBJ des mon-pics : la sheet interface occupe 0..255 (vérifié déterministe :
 // GetSpriteTileStartByTag(4096)=0). On place les pics au-dessus, 128 tiles/mon
 // (anim_front = 2 frames × 64). 4 slots = 256..767, < 1024 (taille OBJ VRAM).
@@ -318,44 +383,36 @@ function _dexMonPicFolder(species: number): string {
   return enumName.replace('SPECIES_', '').toLowerCase();
 }
 
-let _dexMonPicsReady = false;
-let _dexMonPicsLoading = false;
+// Charge async la pic d'un mon dans son slot (tiles DEX_MON_TILE_BASE+slot*STRIDE + palette
+// OBJ slot). Appelé par CreatePokedexMonSprite à CHAQUE création (init / scroll / saut de page) :
+// le sprite est créé tout de suite ; la pic arrive quelques frames plus tard (masqué par le fade
+// à l'init ; au scroll le mon entre depuis hors-écran, data5=±64, invisible jusqu'à -64<data5<64).
+// `_dexMonPicLoadsPending` laisse la state-machine d'init ATTENDRE les pics initiales avant
+// d'afficher (écran encore noir) ; au scroll on n'attend pas.
+let _dexMonPicLoadsPending = 0;
+let _dexInitSpritesDone = false;
 
-async function _loadOneDexMonPic(
-  rt: NonNullable<ReturnType<typeof getRuntime>>, species: number, tileBase: number, palSlot: number,
-): Promise<void> {
+function _loadDexMonPicIntoSlot(
+  rt: NonNullable<ReturnType<typeof getRuntime>>, slot: number, species: number,
+): void {
   const folder = _dexMonPicFolder(species);
-  const byteOffset = tileBase * 32;   // 32 octets / tile 8x8 4bpp
-  let pal: Uint16Array | null = null;
-  try {
-    const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/anim_front.png`, byteOffset);
-    pal = ld.palette;
-  } catch {
-    try {                              // anim_front absent → front.png (1 frame)
-      const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/front.png`, byteOffset);
+  const byteOffset = (DEX_MON_TILE_BASE + slot * DEX_MON_TILE_STRIDE) * 32; // 32 octets / tile
+  _dexMonPicLoadsPending++;
+  void (async () => {
+    let pal: Uint16Array | null = null;
+    try {
+      const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/anim_front.png`, byteOffset);
       pal = ld.palette;
-    } catch (e) { console.error('[pokedex] front pic load failed:', folder, e); }
-  }
-  // 1:1 LoadPicPaletteByTagOrSlot(TAG_NONE) : palette du mon → slot OBJ `palSlot`.
-  // gPlttBuffer flat idx OBJ = 0x100 + slot*16 (16 couleurs = 32 octets).
-  if (pal) LoadPalette(pal.subarray(0, 16), 0x100 + palSlot * 16, 32);
-}
-
-// Précharge async les pics des mons à afficher (top/mid/bottom) AVANT la création sync
-// des sprites par CreateMonSpritesAtPos. Itère dans le MÊME ordre que la décomp (les slots
-// monId 0,1,2 sont assignés au 1er-libre, donc dans l'ordre top→mid→bottom).
-async function _preloadDexMonPics(
-  rt: NonNullable<ReturnType<typeof getRuntime>>, selectedMon: number,
-): Promise<void> {
-  let monId = 0;
-  const cand = [selectedMon - 1, selectedMon, selectedMon + 1];
-  for (const idx of cand) {
-    const dexNum = GetPokemonSpriteToDisplay(idx);
-    if (dexNum === 0xffff) continue;
-    const species = NationalPokedexNumToSpecies(dexNum) & 0xffff;
-    await _loadOneDexMonPic(rt, species, DEX_MON_TILE_BASE + monId * DEX_MON_TILE_STRIDE, monId);
-    monId++;
-  }
+    } catch {
+      try {                              // anim_front absent → front.png (1 frame)
+        const ld = await rt.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${folder}/front.png`, byteOffset);
+        pal = ld.palette;
+      } catch (e) { console.error('[pokedex] front pic load failed:', folder, e); }
+    }
+    // 1:1 LoadPicPaletteByTagOrSlot(TAG_NONE) : palette du mon → slot OBJ. gPlttBuffer flat
+    // idx OBJ = 0x100 + slot*16 (16 couleurs = 32 octets).
+    if (pal) LoadPalette(pal.subarray(0, 16), 0x100 + slot * 16, 32);
+  })().finally(() => { _dexMonPicLoadsPending--; });
 }
 
 // 1:1 décomp `CreatePokedexMonSprite(num, x, y)` (pokedex.c:2766) : trouve le 1er slot
@@ -386,6 +443,10 @@ function CreatePokedexMonSprite(num: number, x: number, y: number): number {
         s.data[1] = i;
         s.data[2] = species;
       }
+      // Charge la pic du mon dans ce slot (async ; cf. _loadDexMonPicIntoSlot). En décomp
+      // CreateMonSpriteFromNationalDexNumber décompresse la pic de façon SYNCHRONE — le port
+      // n'a que le loader async, d'où ce chargement différé (substrat).
+      _loadDexMonPicIntoSlot(rt, i, species);
       sPokedexView.monSpriteIds[i] = spriteId;
       return spriteId;
     }
@@ -469,6 +530,169 @@ function CreateMonSpritesAtPos(selectedMon: number, ignored: number): void {
   if (rt) rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
   sPokedexView.listVOffset = 0;
   sPokedexView.listMovingVOffset = 0;
+}
+
+// ─── Scroll de la liste (JALON 1d) ──────────────────────────────────────────
+const DPAD_UP = 0x40, DPAD_DOWN = 0x80, DPAD_LEFT = 0x20, DPAD_RIGHT = 0x10;
+
+// 1:1 décomp `GetNextPosition` (pokedex.c:4568) : ±1 borné (cases 2/3 = loop, inutilisés).
+function GetNextPosition(direction: number, position: number, min: number, max: number): number {
+  switch (direction) {
+    case 1: if (position > min) position--; break;                  // Up/Left
+    case 0: if (position < max) position++; break;                  // Down/Right
+    case 3: position = position > min ? position - 1 : max; break;  // Up/Left loop (unused)
+    case 2: position = position < max ? position + 1 : min; break;  // Down/Right loop (unused)
+  }
+  return position;
+}
+
+// 1:1 décomp `ClearMonSprites` (pokedex.c:2741) : détruit tous les sprites du mon.
+function ClearMonSprites(): void {
+  if (!sPokedexView) return;
+  for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) {
+    if (sPokedexView.monSpriteIds[i] !== 0xffff) _freeDexMonSprite(i);
+  }
+}
+
+// 1:1 décomp `CreateScrollingPokemonSprite` (pokedex.c:2566) : crée le sprite mon ENTRANT
+// (haut → data5=-64, bas → data5=64) + avance le listVOffset circulaire (0..15).
+function CreateScrollingPokemonSprite(direction: number, selectedMon: number): void {
+  if (!sPokedexView) return;
+  const v = sPokedexView;
+  const rt = getRuntime();
+  v.listMovingVOffset = v.listVOffset;
+  let dexNum: number, spriteId: number;
+  switch (direction) {
+    case 1: // up
+      dexNum = GetPokemonSpriteToDisplay(selectedMon - 1);
+      if (dexNum !== 0xffff) {
+        spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
+        const s = rt && rt.gSprites[spriteId];
+        if (s) { s.callback = SpriteCB_PokedexListMonSprite as unknown as typeof s.callback; s.data[5] = -64; }
+      }
+      if (v.listVOffset > 0) v.listVOffset--;
+      else v.listVOffset = LIST_SCROLL_STEP - 1;
+      break;
+    case 2: // down
+      dexNum = GetPokemonSpriteToDisplay(selectedMon + 1);
+      if (dexNum !== 0xffff) {
+        spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
+        const s = rt && rt.gSprites[spriteId];
+        if (s) { s.callback = SpriteCB_PokedexListMonSprite as unknown as typeof s.callback; s.data[5] = 64; }
+      }
+      if (v.listVOffset < LIST_SCROLL_STEP - 1) v.listVOffset++;
+      else v.listVOffset = 0;
+      break;
+  }
+}
+
+// 1:1 décomp `UpdateDexListScroll` (pokedex.c:2526) : anime le scroll sur scrollTimer frames
+// (BG2VOFS + glissement des sprites mon via data5 + rotation Pokéball). TRUE quand terminé.
+function UpdateDexListScroll(direction: number, monMoveIncrement: number, scrollTimerMax: number): boolean {
+  if (!sPokedexView) return true;
+  const v = sPokedexView;
+  const rt = getRuntime();
+  if (!rt) return true;
+  if (v.scrollTimer) {
+    v.scrollTimer--;
+    let step: number;
+    switch (direction) {
+      case 1: // Up
+        for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) {
+          if (v.monSpriteIds[i] !== 0xffff) { const s = rt.gSprites[v.monSpriteIds[i]]; if (s) s.data[5] += monMoveIncrement; }
+        }
+        step = Math.trunc(LIST_SCROLL_STEP * (scrollTimerMax - v.scrollTimer) / scrollTimerMax);
+        rt.SetGpuReg(REG_OFFSET_BG2VOFS, v.initialVOffset + v.listMovingVOffset * LIST_SCROLL_STEP - step);
+        v.pokeBallRotation -= v.pokeBallRotationStep;
+        break;
+      case 2: // Down
+        for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) {
+          if (v.monSpriteIds[i] !== 0xffff) { const s = rt.gSprites[v.monSpriteIds[i]]; if (s) s.data[5] -= monMoveIncrement; }
+        }
+        step = Math.trunc(LIST_SCROLL_STEP * (scrollTimerMax - v.scrollTimer) / scrollTimerMax);
+        rt.SetGpuReg(REG_OFFSET_BG2VOFS, v.initialVOffset + v.listMovingVOffset * LIST_SCROLL_STEP + step);
+        v.pokeBallRotation += v.pokeBallRotationStep;
+        break;
+    }
+    return false;
+  } else {
+    rt.SetGpuReg(REG_OFFSET_BG2VOFS, v.initialVOffset + v.listVOffset * LIST_SCROLL_STEP);
+    return true;
+  }
+}
+
+// 1:1 décomp `TryDoPokedexScroll` (pokedex.c:2604) : D-pad haut/bas = scroll fluide,
+// gauche/droite = saut de 7 ; met à jour selectedPokemon + l'état de scroll.
+function TryDoPokedexScroll(selectedMon: number, ignored: number): number {
+  if (!sPokedexView) return selectedMon;
+  const v = sPokedexView;
+  const rt = getRuntime();
+  if (!rt) return selectedMon;
+  const held = rt.gMain.heldKeys;
+  const neu = rt.gMain.newKeys;
+  let scrollDir = 0;
+  let startingPos: number;
+
+  if ((held & DPAD_UP) && selectedMon > 0) {
+    scrollDir = 1;
+    selectedMon = GetNextPosition(1, selectedMon, 0, v.pokemonListCount - 1);
+    CreateScrollingPokemonSprite(1, selectedMon);
+    CreateMonListEntry(1, selectedMon, ignored);
+    PlaySE(SE_DEX_SCROLL);
+  } else if ((held & DPAD_DOWN) && selectedMon < v.pokemonListCount - 1) {
+    scrollDir = 2;
+    selectedMon = GetNextPosition(0, selectedMon, 0, v.pokemonListCount - 1);
+    CreateScrollingPokemonSprite(2, selectedMon);
+    CreateMonListEntry(2, selectedMon, ignored);
+    PlaySE(SE_DEX_SCROLL);
+  } else if ((neu & DPAD_LEFT) && selectedMon > 0) {
+    startingPos = selectedMon;
+    for (let i = 0; i < 7; i++) selectedMon = GetNextPosition(1, selectedMon, 0, v.pokemonListCount - 1);
+    v.pokeBallRotation += 16 * (selectedMon - startingPos);
+    ClearMonSprites();
+    CreateMonSpritesAtPos(selectedMon, 0xe);
+    PlaySE(SE_DEX_PAGE);
+  } else if ((neu & DPAD_RIGHT) && selectedMon < v.pokemonListCount - 1) {
+    startingPos = selectedMon;
+    for (let i = 0; i < 7; i++) selectedMon = GetNextPosition(0, selectedMon, 0, v.pokemonListCount - 1);
+    v.pokeBallRotation += 16 * (selectedMon - startingPos);
+    ClearMonSprites();
+    CreateMonSpritesAtPos(selectedMon, 0xe);
+    PlaySE(SE_DEX_PAGE);
+  }
+
+  if (scrollDir === 0) {
+    v.scrollSpeed = 0;     // left/right snap, ou aucune entrée : pas de scroll fluide
+    return selectedMon;
+  }
+  const k = Math.trunc(v.scrollSpeed / 4);
+  v.scrollMonIncrement = sScrollMonIncrements[k];
+  v.scrollTimer = sScrollTimers[k];
+  v.maxScrollTimer = sScrollTimers[k];
+  v.scrollDirection = scrollDir;
+  v.pokeBallRotationStep = Math.trunc(v.scrollMonIncrement / 2);
+  UpdateDexListScroll(v.scrollDirection, v.scrollMonIncrement, v.maxScrollTimer);
+  if (v.scrollSpeed < 12) v.scrollSpeed++;
+  return selectedMon;
+}
+
+// 1:1 décomp `Task_WaitForScroll` (pokedex.c:1735) : avance le scroll, repasse à l'input à la fin.
+function Task_WaitForScroll(task: DecompTask): void {
+  if (!sPokedexView) return;
+  if (UpdateDexListScroll(sPokedexView.scrollDirection, sPokedexView.scrollMonIncrement, sPokedexView.maxScrollTimer))
+    task.func = Task_HandlePokedexInput;
+}
+
+// 1:1 décomp `UpdateSelectedMonSpriteId` (pokedex.c:2670) : le sprite centré (x2==0 && y2==0).
+function UpdateSelectedMonSpriteId(): void {
+  if (!sPokedexView) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  for (let i = 0; i < MAX_MONS_ON_SCREEN; i++) {
+    const spriteId = sPokedexView.monSpriteIds[i];
+    const s = rt.gSprites[spriteId];
+    if (s && s.x2 === 0 && s.y2 === 0 && spriteId !== 0xffff) sPokedexView.selectedMonSpriteId = spriteId;
+  }
 }
 
 // ─── Sprites d'interface (JALON 1c) ─────────────────────────────────────────
@@ -641,13 +865,13 @@ function CreateInterfaceSprites(page: number): void {
   // //!< French Difference : 5e label (StartSpriteAnim 4 = frame 200, cf. sInterfaceTextSpriteTemplate).
   anim(CreateSprite(sInterfaceTextSpriteTemplate, 80, DISPLAY_HEIGHT - 16, 0), 4);
 
-  // 🚧 DÉSACTIVÉ TEMPORAIREMENT — Pokéball rotative (2 masques OBJ-window affines, matrixNum 30/31).
-  // Le code (sRotatingPokeBallSpriteTemplate + SpriteCB_RotatingPokeBall, transcription 1:1 décomp)
-  // est conservé, mais l'effet de masque tournant n'est pas encore rendu pixel-correct dans le
-  // compositor du port (orbite/forme des barres). On laisse la Pokéball STATIQUE de BG1 (déjà
-  // correcte, validée A/B en cachant les masques) → écran propre. À reprendre avec l'œil de l'auteur.
-  // if (page === PAGE_MAIN || isSearchResults) { /* CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT/2, 2) ×2, matrixNum 30/31, data[1]=0/128 */ }
-  void sRotatingPokeBallSpriteTemplate;
+  // 1:1 décomp pokedex.c:2820-2830 : 2 masques OBJ-window affines (Pokéball rotative). Créés pour
+  // PAGE_MAIN ET PAGE_SEARCH_RESULTS (non gatés). matrixNum 30/31 (slots fixes), data[1]=0/128
+  // (2 trous orbitant à 180°). SpriteCB_RotatingPokeBall tourne via pokeBallRotation (animé au scroll).
+  id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
+  { const s = rt.gSprites[id]; if (s) { s.affineMode = 1; s.matrixNum = 30; s.data[0] = 30; s.data[1] = 0; } }
+  id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
+  { const s = rt.gSprites[id]; if (s) { s.affineMode = 1; s.matrixNum = 31; s.data[0] = 31; s.data[1] = 128; } }
 
   if (page === PAGE_MAIN) {
     // Hoenn (!IsNationalPokedexEnabled). National = jalon 4.
@@ -710,8 +934,7 @@ export function CB2_OpenPokedex(): void {
       const v: PokedexView = {} as PokedexView;
       ResetPokedexView(v);
       sPokedexView = v;
-      _dexMonPicsReady = false;       // re-précharger les mon-pics à chaque ouverture
-      _dexMonPicsLoading = false;
+      _dexInitSpritesDone = false;    // re-créer + recharger les mon-pics à chaque ouverture
       rt.CreateTask(Task_OpenPokedexMainPage, 0);
       // dexMode/order depuis le saveblock — jalon 4 (national). 1a = Hoenn défaut.
       v.dexMode = DEX_MODE_HOENN;
@@ -759,12 +982,17 @@ function Task_HandlePokedexInput(task: DecompTask): void {
     return;
   }
   const B_BUTTON = 0x0002;
+  // JALON 2/4 : A (info screen, gaté sur .seen), START (menu list-top/bottom/close),
+  // SELECT (recherche). Pour l'instant non gérés → tombent dans la branche D-pad (no-op).
   if (rt.gMain.newKeys & B_BUTTON) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
     task.func = Task_ClosePokedex;
     PlaySE(SE_PC_OFF);
+  } else {
+    // 1:1 décomp branche D-pad (pokedex.c:1727-1730) : scroll de la liste.
+    sPokedexView.selectedPokemon = TryDoPokedexScroll(sPokedexView.selectedPokemon, 0xe);
+    if (sPokedexView.scrollTimer) task.func = Task_WaitForScroll;
   }
-  // JALON 1b-1d : A (info), START (menu), SELECT (recherche), D-pad (scroll).
 }
 
 // ─── Task_ClosePokedex (pokedex.c) ───────────────────────────────────────────
@@ -832,18 +1060,16 @@ function LoadPokedexListPage(page: number): boolean {
       rt.gMain.state++;
       return false;
     case 3:
-      // Précharge async les pics des mons (top/mid/bottom) AVANT la création sync des
-      // sprites — en ROM décomp tout est synchrone ; ici on gate proprement (comme case 0).
-      if (!_dexMonPicsReady) {
-        if (!_dexMonPicsLoading) {
-          _dexMonPicsLoading = true;
-          if (page === PAGE_MAIN) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
-          void _preloadDexMonPics(rt, sPokedexView.selectedPokemon)
-            .finally(() => { _dexMonPicsReady = true; _dexMonPicsLoading = false; });
-        }
-        return false;
+      // Crée la liste + les sprites des mons UNE fois (CreatePokedexMonSprite lance le
+      // chargement async de chaque pic), puis ATTEND que les pics initiales soient prêtes
+      // (écran encore noir) avant d'enchaîner sur le fade-in — sinon 1ers frames = pics pas
+      // chargées. En ROM décomp tout est synchrone ; ce gate remplace ce synchronisme.
+      if (!_dexInitSpritesDone) {
+        if (page === PAGE_MAIN) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
+        CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+        _dexInitSpritesDone = true;
       }
-      CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+      if (_dexMonPicLoadsPending > 0) return false;
       sPokedexView.menuIsOpen = false;
       sPokedexView.menuY = 0;
       rt.gMain.state++;
