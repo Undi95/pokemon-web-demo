@@ -32,13 +32,22 @@ import { DeactivateAllTextPrinters } from './text';
 import {
   ShowBg, InitWindows, InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
   CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, PutWindowTilemap,
-  CopyWindowToVram, FreeAllWindowBuffers,
+  CopyWindowToVram, FreeAllWindowBuffers, FillWindowPixelRect, BlitBitmapToWindow,
   ResetVramOamAndBgCntRegs,
   type WindowTemplate, type BgTemplate,
 } from './engine/ui/gba-window-system';
+import { AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW } from './engine/ui/gba-text-system';
+import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
+import {
+  GetSetPokedexFlag, GetHoennPokedexCount as DexGetHoennCount,
+  NationalToHoennOrder, HoennToNationalOrder, NationalPokedexNumToSpecies,
+  HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
+} from './engine/ui/pokedex-flags';
+import { gSpeciesNames } from './engine/data/game-data';
+import { SE_PC_OFF } from '../include/constants/songs';
 
 // ─── Constantes 1:1 (pokedex.h / pokedex.c) ──────────────────────────────────
 const PAGE_MAIN = 0;
@@ -87,6 +96,7 @@ const sPokemonList_WindowTemplate: WindowTemplate[] = [
 ];
 
 // ─── struct PokedexView (champs nécessaires aux jalons 1a-1d ; mirror pokedex.h) ──
+interface PokedexListItem { dexNum: number; seen: boolean; owned: boolean }
 interface PokedexView {
   dexMode: number;
   dexOrder: number;
@@ -101,6 +111,10 @@ interface PokedexView {
   menuY: number;
   menuIsOpen: boolean;
   menuCursorPos: number;
+  pokedexList: PokedexListItem[];
+  pokemonListCount: number;
+  listVOffset: number;
+  listMovingVOffset: number;
 }
 let sPokedexView: PokedexView | null = null;
 let sLastSelectedPokemon = 0;
@@ -121,14 +135,17 @@ function ResetPokedexView(v: PokedexView): void {
   v.menuY = 0;
   v.menuIsOpen = false;
   v.menuCursorPos = 0;
+  // 1:1 décomp ResetPokedexView : pokedexList[NATIONAL_DEX_COUNT] dexNum=0xFFFF, +1 sentinelle.
+  v.pokedexList = [];
+  for (let i = 0; i < NATIONAL_DEX_COUNT; i++) v.pokedexList[i] = { dexNum: 0xffff, seen: false, owned: false };
+  v.pokedexList[NATIONAL_DEX_COUNT] = { dexNum: 0, seen: false, owned: false };
+  v.pokemonListCount = 0;
+  v.listVOffset = 0;
+  v.listMovingVOffset = 0;
 }
 
-// ─── Compteurs Vus/Possédés — 1:1 décomp GetHoennPokedexCount (pokedex.c) ─────
-// JALON 1c : les compteurs ne sont DESSINÉS qu'au jalon 1c (sprites seen/own).
-// Pour 1a on ne les affiche pas → calcul reporté (set 0). STUB HONNÊTE documenté.
-function GetHoennPokedexCount(_caseId: number): number {
-  return 0; // JALON 1c : brancher sur le système de flags dex (FlagGet SEEN/CAUGHT).
-}
+// Compteurs Vus/Possédés = GetHoennPokedexCount (pokedex-flags.ts, déjà porté 1:1).
+// (Affichés en JALON 1c via SpriteCB_SeenOwnInfo ; calculés ici dès 1a.)
 
 // ─── Assets BG (chargés une fois, idempotent) ────────────────────────────────
 interface PokedexAssets {
@@ -137,6 +154,7 @@ interface PokedexAssets {
   underlayTilemap: Uint16Array;   // gPokedexListUnderlay_Tilemap (list_underlay.bin → BG3)
   startMenuTilemap: Uint16Array;  // gPokedexStartMenuMain_Tilemap (start_menu_main.bin → BG0 @0x280)
   bgHoennPal: Uint16Array;        // gPokedexBgHoenn_Pal (bg_hoenn.pal)
+  caughtBall: Uint8Array;         // sCaughtBall_Gfx (caught_ball.4bpp.bin, 8×16 icône ball capturée)
 }
 let _assets: PokedexAssets | null = null;
 let _assetsLoading: Promise<PokedexAssets> | null = null;
@@ -144,17 +162,107 @@ function _loadAssets(): Promise<PokedexAssets> {
   if (_assets) return Promise.resolve(_assets);
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal] = await Promise.all([
+    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall] = await Promise.all([
       loadTileBin(`${ASSET}/menu.png`, 4),          // sibling menu.4bpp.bin (indices bruts)
       loadTilemapBin(`${ASSET}/list.bin`),
       loadTilemapBin(`${ASSET}/list_underlay.bin`),
       loadTilemapBin(`${ASSET}/start_menu_main.bin`),
       loadGbaPal(`${ASSET}/bg_hoenn.pal`),
+      loadTileBin(`${ASSET}/caught_ball.png`, 4),    // sibling caught_ball.4bpp.bin
     ]);
-    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal };
+    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall };
     return _assets;
   })();
   return _assetsLoading;
+}
+
+// ─── Liste des mons (JALON 1b) ───────────────────────────────────────────────
+// const LIST_SCROLL_STEP = 16;   // JALON 1d (scroll Up/Down)
+
+// 1:1 décomp `CreatePokedexList` (pokedex.c:2190) — ORDER_NUMERICAL (Hoenn).
+// (Tris alphabétique/poids/taille + mode National = JALON 4.)
+function CreatePokedexList(_dexMode: number, _order: number): void {
+  if (!sPokedexView) return;
+  const v = sPokedexView;
+  v.pokemonListCount = 0;
+  const dexCount = HOENN_DEX_COUNT; // DEX_MODE_HOENN (National = jalon 4)
+  for (let i = 0; i < dexCount; i++) {
+    const dexNum = HoennToNationalOrder(i + 1);
+    v.pokedexList[i].dexNum = dexNum;
+    v.pokedexList[i].seen = GetSetPokedexFlag(dexNum, FLAG_GET_SEEN) !== 0;
+    v.pokedexList[i].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
+    if (v.pokedexList[i].seen) v.pokemonListCount = i + 1;
+  }
+}
+
+// 1:1 décomp `PrintMonDexNumAndName` (pokedex.c) : couleurs [TRANSPARENT, DYNAMIC_6, LIGHT_GRAY].
+function PrintMonDexNumAndName(windowId: number, fontId: number, str: string, left: number, top: number): void {
+  const color: [number, number, number] = [TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_LIGHT_GRAY];
+  AddTextPrinterParameterized4(windowId, fontId, left * 8, top * 8 + 1, 0, 0, color, TEXT_SKIP_DRAW, str);
+}
+
+// 1:1 décomp `CreateMonDexNum` (pokedex.c:2436) : "{NO}" + n° dex 3 chiffres (Hoenn).
+function CreateMonDexNum(entryNum: number, left: number, top: number): void {
+  if (!sPokedexView) return;
+  let dexNum = sPokedexView.pokedexList[entryNum].dexNum;
+  if (sPokedexView.dexMode === DEX_MODE_HOENN) dexNum = NationalToHoennOrder(dexNum);
+  PrintMonDexNumAndName(0, FONT_NARROW, '{NO}' + String(dexNum % 1000).padStart(3, '0'), left, top);
+}
+
+// 1:1 décomp `CreateCaughtBall` (pokedex.c:2451) : icône ball si possédé, sinon vide.
+function CreateCaughtBall(owned: boolean, x: number, y: number): void {
+  if (owned && _assets) BlitBitmapToWindow(0, _assets.caughtBall, x * 8, y * 8, 8, 16);
+  else FillWindowPixelRect(0, 0, x * 8, y * 8, 8, 16);
+}
+
+// 1:1 décomp `CreateMonName` (pokedex.c:2459) : nom espèce ou "----------" (non vu).
+function CreateMonName(num: number, left: number, top: number): void {
+  const species = NationalPokedexNumToSpecies(num);
+  const str = species ? (gSpeciesNames[species] ?? '----------') : '----------';
+  PrintMonDexNumAndName(0, FONT_NARROW, str, left, top);
+}
+
+// 1:1 décomp `ClearMonListEntry` (pokedex.c:2472).
+function ClearMonListEntry(x: number, y: number): void {
+  FillWindowPixelRect(0, 0, x * 8, y * 8, 0x60, 16);
+}
+
+// 1:1 décomp `CreateMonListEntry` (pokedex.c:2347) — case 0 (Initial : 11 lignes centrées sur b).
+// (cases 1/2 Up/Down = JALON 1d scroll.)
+function CreateMonListEntry(position: number, b: number, _ignored: number): void {
+  if (!sPokedexView) return;
+  if (position === 0) {
+    let entryNum = b - 5;
+    for (let i = 0; i <= 10; i++) {
+      const item = sPokedexView.pokedexList[entryNum];
+      ClearMonListEntry(17, i * 2);
+      if (entryNum >= 0 && entryNum < NATIONAL_DEX_COUNT && item && item.dexNum !== 0xffff) {
+        if (item.seen) {
+          CreateMonDexNum(entryNum, 0x12, i * 2);
+          CreateCaughtBall(item.owned, 0x11, i * 2);
+          CreateMonName(item.dexNum, 0x16, i * 2);
+        } else {
+          CreateMonDexNum(entryNum, 0x12, i * 2);
+          CreateCaughtBall(false, 0x11, i * 2);
+          CreateMonName(0, 0x16, i * 2);
+        }
+      }
+      entryNum++;
+    }
+  }
+  CopyWindowToVram(0, 2 /* COPYWIN_GFX */);
+}
+
+// 1:1 décomp `CreateMonSpritesAtPos` (pokedex.c:2478) — JALON 1b = la liste texte
+// (CreateMonListEntry). Les SPRITES du mon (CreatePokedexMonSprite) = JALON 1c.
+function CreateMonSpritesAtPos(selectedMon: number, _ignored: number): void {
+  if (!sPokedexView) return;
+  const rt = getRuntime();
+  // JALON 1c : top/mid/bottom mon sprites (GetPokemonSpriteToDisplay + CreatePokedexMonSprite).
+  CreateMonListEntry(0, selectedMon, 0);
+  if (rt) rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
+  sPokedexView.listVOffset = 0;
+  sPokedexView.listMovingVOffset = 0;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -191,8 +299,8 @@ export function CB2_OpenPokedex(): void {
       v.selectedPokemon = sLastSelectedPokemon;
       v.pokeBallRotation = sPokeBallRotation;
       v.selectedScreen = AREA_SCREEN;
-      v.seenCount = GetHoennPokedexCount(FLAG_GET_SEEN);
-      v.ownCount = GetHoennPokedexCount(FLAG_GET_CAUGHT);
+      v.seenCount = DexGetHoennCount(FLAG_GET_SEEN);
+      v.ownCount = DexGetHoennCount(FLAG_GET_CAUGHT);
       v.initialVOffset = 8;
       rt.gMain.state++;
       break;
@@ -200,7 +308,7 @@ export function CB2_OpenPokedex(): void {
     case 3:
       rt.SetVBlankCallback(VBlankCB_Pokedex);
       rt.SetMainCallback2(MainCB2_PokedexRun);
-      // CreatePokedexList(dexMode, dexOrder) — JALON 1b (liste des mons).
+      if (sPokedexView) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
       break;
   }
 }
@@ -234,7 +342,7 @@ function Task_HandlePokedexInput(task: DecompTask): void {
   if (rt.gMain.newKeys & B_BUTTON) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
     task.func = Task_ClosePokedex;
-    PlaySE(20 /* SE_PC_OFF */);
+    PlaySE(SE_PC_OFF);
   }
   // JALON 1b-1d : A (info), START (menu), SELECT (recherche), D-pad (scroll).
 }
@@ -305,7 +413,8 @@ function LoadPokedexListPage(page: number): boolean {
       rt.gMain.state++;
       return false;
     case 3:
-      // CreatePokedexList(jalon 1b) + CreateMonSpritesAtPos(jalon 1c).
+      if (page === PAGE_MAIN) CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
+      CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
       sPokedexView.menuIsOpen = false;
       sPokedexView.menuY = 0;
       rt.gMain.state++;
