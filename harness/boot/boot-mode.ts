@@ -31,6 +31,8 @@ import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-ta
 import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../../src/engine/pokemon/pokemon';
 import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
 import { loadGameData } from '../../src/engine/data/game-data';
+import { resolveDecompConstant } from '../runtime/decomp-constants';
+import { SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../src/engine/ui/pokedex-flags';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -387,6 +389,24 @@ function applyNoIntroPreset(): void {
       mon.metLevel = fm.lvl;
       GiveMonToPlayer(pokemonInstanceToPokemon(mon));
       console.log(`[boot-mode] ?debug field-mon ajouté : ${fm.species} Lv${fm.lvl} [${fm.moves.join(', ')}]`);
+    }
+
+    // ⚠️ DEBUG ONLY : enregistre les mons de l'équipe debug au Pokédex (VUS + CAPTURÉS).
+    // En jeu réel, obtenir un mon pose FLAG_SET_SEEN (rencontre) puis FLAG_SET_CAUGHT
+    // (capture, cf. battle_main/battle_script_commands) — le preset spawn DIRECT bypass le
+    // combat → on pose les flags ici pour que le dex reflète l'équipe (sinon il resterait
+    // vide → ne s'ouvrirait même pas, cf. garde « dex vide »). SET_SEEN d'abord (triple
+    // write seen/seen1/seen2 anti-triche) puis SET_CAUGHT (owned).
+    const debugDexSpecies = ['SPECIES_TREECKO', 'SPECIES_JIRACHI', 'SPECIES_CHANSEY',
+      ...fieldMons.map(fm => fm.species)];
+    for (const sp of debugDexSpecies) {
+      const speciesNum = resolveDecompConstant(sp);
+      if (speciesNum === undefined) continue;
+      const national = SpeciesToNationalPokedexNum(speciesNum);
+      if (!national) continue;
+      GetSetPokedexFlag(national, FLAG_SET_SEEN);
+      GetSetPokedexFlag(national, FLAG_SET_CAUGHT);
+      console.log(`[boot-mode] ?debug flag dex VU+PRIS : ${sp} (national ${national})`);
     }
   }
 
