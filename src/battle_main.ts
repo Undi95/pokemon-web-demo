@@ -2226,14 +2226,19 @@ function _CalculatePPWithBonus(move: number, ppBonuses: number, idx: number): nu
   return CalculatePPWithBonus(move, ppBonuses, idx);
 }
 
-/** 1:1 décomp `ABILITY_ON_OPPOSING_FIELD(battler, ability)`. */
-function _ABILITY_ON_OPPOSING_FIELD(_battler: number, _ability: number): number {
-  return 0;
+/** 1:1 décomp macro `ABILITY_ON_OPPOSING_FIELD(battler, ability)` (battle_util.h:36) =
+ *  `AbilityBattleEffects(ABILITYEFFECT_CHECK_OTHER_SIDE, battler, ability, 0, 0)`. AUDIT FIX :
+ *  l'ancien stub `return 0` désactivait les capacités de piégeage (Shadow Tag/Arena Trap) → le
+ *  joueur pouvait toujours changer/fuir. Route vers le vrai AbilityBattleEffects (case CHECK = pur). */
+function _ABILITY_ON_OPPOSING_FIELD(battler: number, ability: number): number {
+  return AbilityBattleEffects(12 /* ABILITYEFFECT_CHECK_OTHER_SIDE */, battler, ability, 0, 0);
 }
 
-/** 1:1 décomp `AbilityBattleEffects(effect, battler, ability, ...)`. */
-function _AbilityBattleEffects(_effect: number, _battler: number, _ability: number, _a: number, _b: number): number {
-  return 0;
+/** Délègue au vrai `AbilityBattleEffects` (battle_util, importé). AUDIT FIX : l'ancien stub
+ *  `return 0` cassait le check Magnet Pull (CHECK_FIELD_EXCEPT_BATTLER) du switch. Seuls usages =
+ *  cases CHECK purs (requêtes sans effet de bord). */
+function _AbilityBattleEffects(effect: number, battler: number, ability: number, special: number, moveArg: number): number {
+  return AbilityBattleEffects(effect, battler, ability, special, moveArg);
 }
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)`. */
