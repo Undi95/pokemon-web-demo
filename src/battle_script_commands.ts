@@ -12999,8 +12999,11 @@ function _resetReturn(): void {
 
 // ─── Trapping moves list (utilisé par MOVE_EFFECT_WRAP MULTISTRING) ───────
 
-/** 1:1 décomp `gTrappingMoves[]` (= moves qui wrap : BIND, WRAP, FIRE_SPIN,
- *  CLAMP, WHIRLPOOL, SAND_TOMB). */
+/** 1:1 décomp `gTrappingMoves[]` (battle_message.c:1257 ; moves qui ligotent : BIND, WRAP,
+ *  FIRE_SPIN, CLAMP, WHIRLPOOL, SAND_TOMB). ⚠️ PAS de terminateur 0xFFFF chez nous (la décomp en
+ *  a un, « Never read ») : notre `length` doit valoir NUM_TRAPPING_MOVES (=6) pour que la boucle
+ *  `idx < length - 1` réplique la décomp `idx >= NUM_TRAPPING_MOVES - 1` (=5 ; teste 0..4 +
+ *  fall-through à 5 pour SAND_TOMB). NE PAS ajouter le terminateur (casserait la boucle). */
 const _gTrappingMoves: number[] = [
   20  /* MOVE_BIND */,
   35  /* MOVE_WRAP */,
