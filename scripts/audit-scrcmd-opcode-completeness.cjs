@@ -38,11 +38,15 @@ for (const n in all.scripts) {
   }
 }
 
-// 3. opcodes ENREGISTRÉS (registerOpcode dans tout src/)
+// 3. opcodes ENREGISTRÉS + DÉLÉGATIONS (registerOpcode dans tout src/)
 const registered = new Set();
+const delegations = []; // {a, b} : registerOpcode('a', …getOpcodeHandler('b'))
 for (const f of execSync('grep -rln registerOpcode src/ --include=*.ts', { cwd: ROOT }).toString().trim().split('\n')) {
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   for (const m of s.matchAll(/registerOpcode\(\s*['"]([a-z0-9_]+)['"]/g)) registered.add(m[1]);
+  const dre = /registerOpcode\(\s*['"]([a-z0-9_]+)['"]\s*,\s*\([^)]*\)\s*=>[^;]*?getOpcodeHandler\(\s*['"]([a-z0-9_]+)['"]/g;
+  let dm;
+  while ((dm = dre.exec(s))) delegations.push({ a: dm[1], b: dm[2] });
 }
 
 const findings = [];
@@ -51,9 +55,15 @@ for (const [op, count] of [...used.entries()].sort()) {
   checked++;
   if (!registered.has(op)) findings.push(`${op} : UTILISÉ ×${count} (opcode overworld canonique) mais AUCUN registerOpcode → no-op silencieux`);
 }
+// 3b. un opcode peut être ENREGISTRÉ mais DÉLÉGUER à une cible morte (getOpcodeHandler('b')
+// où b n'est pas enregistré) → la délégation renvoie undefined → no-op silencieux. La complétude
+// seule ne le capte pas (l'opcode délégant figure dans `registered`).
+for (const { a, b } of delegations) {
+  if (!registered.has(b)) findings.push(`${a} : DÉLÈGUE à getOpcodeHandler('${b}') NON enregistré → délégation morte (no-op)`);
+}
 
-console.log(`Opcodes overworld confrontés : ${checked} distincts utilisés (sur ${canonical.size} macros canoniques) vs registerOpcode.`);
-if (findings.length === 0) { console.log('✅ Tous les opcodes overworld utilisés ont un handler enregistré.'); process.exit(0); }
+console.log(`Opcodes overworld confrontés : ${checked} distincts utilisés (sur ${canonical.size} macros canoniques) + ${delegations.length} délégations vs registerOpcode.`);
+if (findings.length === 0) { console.log('✅ Tous les opcodes overworld utilisés ont un handler enregistré + toute délégation résout vers une cible enregistrée.'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) :\n`);
 for (const f of findings.slice(0, 50)) console.log('  ' + f);
 process.exit(1);
