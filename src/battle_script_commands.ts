@@ -6424,7 +6424,7 @@ function Cmd_tryexplosion(ctx: BattleScriptContext): boolean {
 // ─── 0x96 weatherdamage ───────────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_weatherdamage. 1 byte. End-of-turn weather damage. */
-function Cmd_weatherdamage(_ctx: BattleScriptContext): boolean {
+export function Cmd_weatherdamage(_ctx: BattleScriptContext): boolean {
   const atk = gBattleMons[gBattlerAttacker];
 
   if (_weatherHasEffect()) {
