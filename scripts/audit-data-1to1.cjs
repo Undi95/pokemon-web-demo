@@ -33,7 +33,7 @@ const ORACLES = [
   'audit-trainer-money-table.cjs', 'audit-trainer-class-lookups.cjs',
   // — Monde / progression —
   'audit-wild-encounters.cjs', 'audit-encounter-rates.cjs', 'audit-mart-lists.cjs', 'audit-multichoice-lists.cjs', 'audit-item-balls.cjs', 'audit-berry-data.cjs',
-  'audit-heal-locations.cjs', 'audit-field-move-enum.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs', 'audit-map-script-references.cjs', 'audit-map-warp-references.cjs', 'audit-movement-action-funcs.cjs', 'audit-movement-action-ids.cjs', 'audit-movement-name-to-action.cjs',
+  'audit-heal-locations.cjs', 'audit-field-move-enum.cjs', 'audit-flags-vars.cjs', 'audit-doors.cjs', 'audit-maps.cjs', 'audit-map-script-references.cjs', 'audit-map-warp-references.cjs', 'audit-map-graphics-references.cjs', 'audit-movement-action-funcs.cjs', 'audit-movement-action-ids.cjs', 'audit-movement-name-to-action.cjs',
   'audit-metatile-behaviors.cjs', 'audit-layouts.cjs', 'audit-tilesets.cjs', 'audit-object-event-graphics.cjs', 'audit-pokemon-sprites.cjs',
   // — Tables TS hand-codées —
   'audit-battle-stat-tables.cjs', 'audit-pokemon-constants.cjs', 'audit-battle-status-bits.cjs', 'audit-battle-flags.cjs', 'audit-effect-hold-constants.cjs', 'audit-ability-type-constants.cjs', 'audit-id-constants.cjs', 'audit-inline-battle-constants.cjs', 'audit-commented-constants.cjs', 'audit-battle-opcode-table.cjs', 'audit-battle-ai-cmd-table.cjs', 'audit-scrcmd-opcode-completeness.cjs', 'audit-specials-registration.cjs', 'audit-script-references.cjs',
