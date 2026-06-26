@@ -75,7 +75,7 @@ import {
 import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from './engine/field/field-globals';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 
-import { gSaveBlock1Ptr } from './engine/ui/gba-menu-system';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { CONNECTION_NONE, CONNECTION_INVALID } from '../include/constants/global';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────

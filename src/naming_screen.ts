@@ -42,7 +42,7 @@ import {
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
 } from '../harness/runtime/decomp-globals';
-import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { loadGbaPal, loadTileBin, loadTilemapBin } from '../harness/gba/png-loader';
 import type { DecompSprite, DecompTask } from '../harness/runtime/decomp-runtime';
 import { gKeyRepeat } from '../harness/runtime/decomp-runtime';

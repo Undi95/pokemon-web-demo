@@ -70,8 +70,7 @@ import { HideMapNamePopUpWindow } from './map_name_popup';
 import { GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
 import { gMapHeader } from './fieldmap';
 import { getMapNameFr } from './data/map-names-fr';
-import { gSaveBlock2Ptr } from './engine/ui/gba-menu-system';
-import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet } from './engine/script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
 import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './engine/decomp-data/src/option_menu-callbacks-auto';
