@@ -693,6 +693,38 @@ export async function testLongTail2(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test WARP VARIANTS via bytecode synthétique : setwarp/setdivewarp/setholewarp/
+ *  setescapewarp posent leurs globals respectifs (gSavedWarp/gDiveWarp/gHoleWarp/
+ *  __escapeWarp) ; setdynamicwarp s'exécute sans throw. Layout = 2map,u8,u16,u16. */
+export async function testWarpVariants(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const mapSyms = getMapSymbols();
+  let mapSymId = -1, mapConst = '';
+  for (let id = 0; id < mapSyms.length; id++) { if (mapSyms[id] && mapSyms[id].startsWith('MAP_')) { mapSymId = id; mapConst = mapSyms[id]; break; } }
+  const END = cmdIdOf('ScrCmd_end');
+  const g = globalThis as Record<string, unknown>;
+  // bytecode <OP> mapSym(u16), warpId=4, x=11(u16), y=22(u16) ; end
+  const mk = (op: number) => Uint8Array.from([op, lo(mapSymId), hi(mapSymId), 4, 11, 0, 22, 0, END]);
+  type W = { destMap?: string; warpId?: number; x?: number; y?: number };
+  RunScriptImmediately({ buf: mk(cmdIdOf('ScrCmd_setwarp')), off: 0 } as ScriptPtr);
+  const saved = g.gSavedWarp as W;
+  RunScriptImmediately({ buf: mk(cmdIdOf('ScrCmd_setdivewarp')), off: 0 } as ScriptPtr);
+  const dive = g.gDiveWarp as W;
+  RunScriptImmediately({ buf: mk(cmdIdOf('ScrCmd_setholewarp')), off: 0 } as ScriptPtr);
+  const hole = g.gHoleWarp as W;
+  RunScriptImmediately({ buf: mk(cmdIdOf('ScrCmd_setescapewarp')), off: 0 } as ScriptPtr);
+  const esc = g.__escapeWarp as { mapName?: string; x?: number; y?: number };
+  let dynNoThrow = true;
+  try { RunScriptImmediately({ buf: mk(cmdIdOf('ScrCmd_setdynamicwarp')), off: 0 } as ScriptPtr); } catch { dynNoThrow = false; }
+  const okWarp = (w: W) => !!w && w.destMap === mapConst && w.warpId === 4 && w.x === 11 && w.y === 22;
+  const savedOk = okWarp(saved), diveOk = okWarp(dive), holeOk = okWarp(hole);
+  const escOk = !!esc && esc.mapName === mapConst.replace(/^MAP_/, '') && esc.x === 11 && esc.y === 22;
+  const pass = mapSymId >= 0 && savedOk && diveOk && holeOk && escOk && dynNoThrow;
+  const details = { map: mapConst, 'setwarp→gSavedWarp': savedOk, 'setdivewarp→gDiveWarp': diveOk, 'setholewarp→gHoleWarp': holeOk, 'setescapewarp→__escapeWarp': escOk, 'setdynamicwarp sans throw': dynNoThrow };
+  console.log(`[byte-vm] TEST warp variants : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -700,4 +732,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, run, VarGet, getScriptOffset };

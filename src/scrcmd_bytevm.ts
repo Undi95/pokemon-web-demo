@@ -23,7 +23,7 @@ import { VAR_0x8004 } from '../include/constants/vars';
 import { PARTY_SIZE } from '../include/constants/global';
 import { MonKnowsMove } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
-import { setPendingWarp } from './engine/field/warp-system';
+import { setPendingWarp, SetDynamicWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
 import { GetCoins, AddCoins, RemoveCoins } from './coins';
@@ -254,6 +254,13 @@ const ScrCmd_warpsilent: ScrCmdFunc = (ctx) => {
   setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
   return false;
 };
+// ─── warp variants (1:1 scrcmd.c:827-885) — posent les MÊMES globals que le parsé
+//     (gSavedWarp/gDiveWarp/gHoleWarp/__escapeWarp) ou SetDynamicWarp = source unique. ──
+const ScrCmd_setwarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, unknown>).gSavedWarp = readWarp(ctx); return false; };        // :827 SetWarpDestination
+const ScrCmd_setdivewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, unknown>).gDiveWarp = readWarp(ctx); return false; };     // :851 SetFixedDiveWarp
+const ScrCmd_setholewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, unknown>).gHoleWarp = readWarp(ctx); return false; };     // :863 SetFixedHoleWarp
+const ScrCmd_setescapewarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); (globalThis as Record<string, unknown>).__escapeWarp = { mapName: w.destMap.replace(/^MAP_/, ''), x: w.x, y: w.y }; return false; }; // :875 SetEscapeWarp
+const ScrCmd_setdynamicwarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); SetDynamicWarp(w.destMap, w.x, w.y); return false; };        // :839 SetDynamicWarpWithCoords
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -652,6 +659,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_showcoinsbox, ScrCmd_hidecoinsbox, ScrCmd_updatecoinsbox,
   ScrCmd_dotimebasedevents, ScrCmd_checkpartymove,
   ScrCmd_vgoto, ScrCmd_vcall, ScrCmd_vgoto_if, ScrCmd_vmessage, ScrCmd_setvaddress, ScrCmd_copybyte,
+  ScrCmd_setwarp, ScrCmd_setdivewarp, ScrCmd_setholewarp, ScrCmd_setescapewarp, ScrCmd_setdynamicwarp,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
