@@ -44,9 +44,9 @@
  */
 
 import { Random } from './random';
-import { Random32 } from '../include/random';
+import { Random32, ISO_RANDOMIZE2 } from '../include/random';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { gMapHeader } from './fieldmap';
+import { gMapHeader, MAP_OFFSET } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
@@ -63,10 +63,89 @@ import { PARTY_SIZE } from './engine/save/save-blocks';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
+  MetatileBehavior_IsSurfableAndNotWaterfall,
 } from './metatile_behavior';
-import { IncrementGameStat, PlayerGetDestCoords, TestPlayerAvatarFlags, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE } from './field_player_avatar';
+import { IncrementGameStat, PlayerGetDestCoords, TestPlayerAvatarFlags, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { MapGridGetMetatileBehaviorAt } from './fieldmap';
 import { GAME_STAT_FISHING_ENCOUNTERS } from '../include/constants/game_stat';
+
+// ─── Feebas (Route 119) — 1:1 décomp wild_encounter.c:29-176 ────────────────
+// Système des spots Feebas : 6 spots tirés d'un RNG seedé par dewfordTrends[0].rand
+// (fixe par save), parmi les ~447 spots de pêche valides de la Route 119.
+/** 1:1 `static const struct WildPokemon sWildFeebas` (wild_encounter.c:67). */
+const sWildFeebas = { minLevel: 20, maxLevel: 25, species: 'SPECIES_FEEBAS' } as const;
+const NUM_FEEBAS_SPOTS = 6;                                                     // c:29
+const NUM_FISHING_SPOTS_1 = 131, NUM_FISHING_SPOTS_2 = 167, NUM_FISHING_SPOTS_3 = 149; // c:33-35
+const NUM_FISHING_SPOTS = NUM_FISHING_SPOTS_1 + NUM_FISHING_SPOTS_2 + NUM_FISHING_SPOTS_3; // c:36
+/** 1:1 `sRoute119WaterTileData[]` (wild_encounter.c:69) : {yMin, yMax, numSpotsAvant} ×3. */
+const sRoute119WaterTileData: readonly number[] = [
+  0, 45, 0,
+  46, 91, NUM_FISHING_SPOTS_1,
+  92, 139, NUM_FISHING_SPOTS_1 + NUM_FISHING_SPOTS_2,
+];
+/** 1:1 `EWRAM_DATA static u32 sFeebasRngValue` (wild_encounter.c:63). */
+let sFeebasRngValue = 0;
+
+/** 1:1 décomp `static u16 FeebasRandom(void)` (wild_encounter.c:170). */
+function FeebasRandom(): number {
+  sFeebasRngValue = ISO_RANDOMIZE2(sFeebasRngValue) >>> 0;
+  return (sFeebasRngValue >>> 16) & 0xFFFF;
+}
+
+/** 1:1 décomp `static void FeebasSeedRng(u16 seed)` (wild_encounter.c:176). */
+function FeebasSeedRng(seed: number): void {
+  sFeebasRngValue = seed >>> 0;
+}
+
+/** 1:1 décomp `static u16 GetFeebasFishingSpotId(s16 targetX, s16 targetY, u8 section)`
+ *  (wild_encounter.c:90) : numérote les spots de pêche valides (surfables non-cascade)
+ *  gauche→droite, haut→bas, dans la section donnée. */
+function GetFeebasFishingSpotId(targetX: number, targetY: number, section: number): number {
+  const yMin = sRoute119WaterTileData[section * 3 + 0];
+  const yMax = sRoute119WaterTileData[section * 3 + 1];
+  let spotId = sRoute119WaterTileData[section * 3 + 2];
+  const width = gMapHeader?.mapLayout?.width ?? 0;
+  for (let y = yMin; y <= yMax; y++) {
+    for (let x = 0; x < width; x++) {
+      const behavior = MapGridGetMetatileBehaviorAt(x + MAP_OFFSET, y + MAP_OFFSET);
+      if (MetatileBehavior_IsSurfableAndNotWaterfall(behavior) === true) {
+        spotId++;
+        if (targetX === x && targetY === y) return spotId;
+      }
+    }
+  }
+  return spotId + 1;
+}
+
+/** 1:1 décomp `static bool8 CheckFeebas(void)` (wild_encounter.c:113) : sur Route 119,
+ *  50% de chance + le spot de pêche du joueur ∈ les 6 spots Feebas (RNG fixe par save).
+ *  NB port : location == ROUTE119 testée via `gMapHeader.id` (convention port). */
+function CheckFeebas(): boolean {
+  if (gMapHeader?.id !== 'MAP_ROUTE119') return false;
+  const c = GetXYCoordsOneStepInFrontOfPlayer();
+  const x = c.x - MAP_OFFSET;
+  const y = c.y - MAP_OFFSET;
+  let route119Section = 0;
+  if (y >= sRoute119WaterTileData[3 * 0 + 0] && y <= sRoute119WaterTileData[3 * 0 + 1]) route119Section = 0;
+  if (y >= sRoute119WaterTileData[3 * 1 + 0] && y <= sRoute119WaterTileData[3 * 1 + 1]) route119Section = 1;
+  if (y >= sRoute119WaterTileData[3 * 2 + 0] && y <= sRoute119WaterTileData[3 * 2 + 1]) route119Section = 2;
+  if (Random() % 100 > 49) return false;   // 50% de chance (sur un spot Feebas)
+  FeebasSeedRng(gSaveBlock1Ptr.dewfordTrends?.[0]?.rand ?? 0);
+  const feebasSpots: number[] = new Array(NUM_FEEBAS_SPOTS);
+  for (let i = 0; i !== NUM_FEEBAS_SPOTS;) {
+    feebasSpots[i] = FeebasRandom() % NUM_FISHING_SPOTS;
+    if (feebasSpots[i] === 0) feebasSpots[i] = NUM_FISHING_SPOTS;
+    // >= 4 : saute les spots 1-3 inaccessibles (haut de la map) ; < 1 jamais vrai (1:1 quirk).
+    if (feebasSpots[i] < 1 || feebasSpots[i] >= 4) i++;
+  }
+  const spotId = GetFeebasFishingSpotId(x, y, route119Section);
+  for (let i = 0; i < NUM_FEEBAS_SPOTS; i++) {
+    if (spotId === feebasSpots[i]) return true;
+  }
+  return false;
+}
+// sWildFeebas + CheckFeebas : prêts pour le câblage dans la voie pêche
+// (ChooseWildMonIndex_Fishing) — follow-up (le port ne route pas encore le Feebas spot).
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;
