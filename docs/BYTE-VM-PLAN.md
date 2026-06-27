@@ -26,9 +26,9 @@ byte↔opcode (que le user a refusé).
    linker). Voir « Phase 2 ».
 3. **Byte VM — ✅ FAIT + PROUVÉ EN JEU.** `src/script_bytevm.ts` (1:1 `script.c`).
    Voir « Phase 3 ».
-4. **Handlers `ScrCmd_*` — 🔄 EN COURS (~99 % de l'usage couvert, keystone trainerbattle FAIT).** `src/scrcmd_bytevm.ts`.
+4. **Handlers `ScrCmd_*` — ✅ 100,0 % de l'usage couvert.** `src/scrcmd_bytevm.ts`.
    Voir « Phase 4 ».
-5. **Swap + re-vérif TOUT le jeu** — à venir. Voir « Phase 5 ».
+5. **Swap + re-vérif TOUT le jeu — 🔄 FONCTIONNEL flag-gated `?bytevm`** (parsé = défaut). Voir « Phase 5 ».
 
 ⚠️ Risque max = système nerveux du jeu ; casse toute interaction pendant le
 chantier → d'où la branche sandbox. Multi-session.
@@ -40,8 +40,8 @@ chantier → d'où la branche sandbox. Multi-session.
 | 1. Cmd-table | ✅ | `public/decomp/em/script-cmd-table.json` (227 opcodes) |
 | 2. Compilateur + linker image-globale | ✅ | `compile-scripts.cjs` → `script-bytecode.json` (gitignoré) |
 | 3. VM core (1:1 `script.c`) | ✅ prouvé en jeu | `src/script_bytevm.ts` |
-| 4. Handlers (1:1 `scrcmd.c`) | 🔄 **99,2 % usage** (159/227 cmdId), keystone trainerbattle ✅ | `src/scrcmd_bytevm.ts` + `scrcmd_object/door/fieldeffect/flash.ts` |
-| 5. Swap + re-vérif | ⬜ à venir | — |
+| 4. Handlers (1:1 `scrcmd.c`) | ✅ **100,0 % usage** (52686/52686) | `src/scrcmd_bytevm.ts` + voie A `scrcmd_object/door/fieldeffect/flash/trainer`, `script_menu/shop/decoration/heal_location/special_flows` |
+| 5. Swap + re-vérif | 🔄 **fonctionnel flag-gated `?bytevm`**, cœur vérifié en jeu | `src/script.ts` (routage) + `bytevm-boot.ts` |
 
 **Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → `cbc478bf` (trainerbattle + preuve visuelle). `finale` intacte (`3b34ce7f`).
 **Tests déterministes EN JEU (26 verts, 0 erreur)** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testWarpVariants,testMoney,testItem,testMetatile,testObject,testObjectMovement,testBuffers,testPlayer,testWeather,testDoor,testFieldEffect,testVobject,testFade,testFlash,testGiveMon,testLongTail1-4,testTrainerbattleArgs}` (harness/devtools/dev-bytevm-tools.ts).
@@ -235,13 +235,32 @@ warphole/adddecoration/checkdecorspace/rotating-tile puzzle/setrespawn). ⚠️ 
 couplés à des sous-systèmes non audités (shop/slot/puzzle/concours) → si gap réel :
 STOP + flag user (pas de fake). Oracle : `scratchpad/bytevm-coverage.cjs`.
 
-## Phase 5 — swap + re-vérification — ⬜ à venir (le système nerveux)
+## Phase 5 — swap + re-vérification — 🔄 FONCTIONNEL flag-gated (le système nerveux)
 
-1. **Swap** : `script.ts` → `script_bytevm.ts`, `scrcmd.ts` → `scrcmd_bytevm.ts`.
-   Rewire des ~101 importeurs publics (mêmes noms de fns → swap mécanique). Le
-   loader byte-VM remplace `loadMapScripts` (charge l'image globale au boot + les
-   textes/mouvements par map). Risque max → c'est tout l'intérêt de la branche
-   sandbox : si ça casse, on jette `Byte-VM`, `finale` intacte.
-2. **Re-vérif** cold-boot + oracle + screenshots : intro (♂/♀), PNJ, cutscenes,
-   warps, OnLoad/OnTransition/OnFrame/OnWarp, combats (trainer/wild via battleState),
-   Frontier (post-game, tolérant) + **test user final**.
+**Approche SÛRE retenue (vs swap-fichier brutal)** : flag `?bytevm` route l'EXÉCUTION
+des scripts overworld vers le byte-VM ; le moteur **parsé reste le DÉFAUT** (zéro
+risque). Pas de rewire des importeurs : `script.ts` GARDE son API publique et route en
+interne vers `script_bytevm.ts` quand `?bytevm` est actif.
+
+1. **Routage (fait)** — `src/script.ts` : `_useByteVm` (URL `?bytevm`) ; route
+   Lock/Unlock/Are + ScriptContext_Init/IsEnabled/RunScript/SetupScript/Stop/Enable +
+   RunScriptImmediately → équivalents byte-VM. `src/bytevm-boot.ts` installe
+   image+handlers+specials (import dynamique awaité depuis `loadMapScripts`, anti-cycle
+   `script↔scrcmd_bytevm`). DONNÉES (tables map_script_2, getText/getMovement) restent
+   parsées ; les triggers OnLoad/Transition/Frame/Warp/Coord trouvent le label via
+   données parsées puis EXÉCUTENT via byte-VM (`ptrFromLabel`).
+2. **Flows `special` inline — voie A** : `src/special_flows.ts`
+   (`makeSpecialInlineFlowPoll`) partagé par les 2 moteurs → ChooseStarter / Birch /
+   FieldShowRegionMap / BedroomPC|PlayerPC / wallclock / rematch / Bag_ChooseBerry.
+3. **🩸 GOTCHA lock unifié (fix `55e8f9b1`)** : il y avait 2 flags `sLockFieldControls`
+   SÉPARÉS (script.ts + script_bytevm.ts) → désync (combat/warp/global tapent l'un OU
+   l'autre). Symptômes : freeze post-combat (lock résiduel) PUIS warp cassé (1ères
+   rustines unlock-on-SHUTDOWN/route-Enable, abandonnées). **Fix** : (a) flag UNIQUE
+   `globalThis.__sLockFieldControls` ; (b) `ScriptContext_Init` (byte-VM) DÉVERROUILLE
+   (reset = aucun script ⇒ pas de lock-script ; appelé qu'au reset, pas chaque frame).
+4. **Re-vérif cœur (faite, A/B en jeu, `?bytevm`)** : marche libre · warp PC entrée+
+   sortie · combat sauvage Magicarpe Lv1 KO→pas de freeze · wall clock · multichoice/
+   yesnobox · dialogue NPC. Diag : `window.__byteVm.diag()`.
+5. **RESTE** : intro end-to-end (briques câblées) ; promouvoir byte-VM en DÉFAUT (après
+   vérif large) + retirer le moteur parsé = « le clean ». NB : item ball / species «?» /
+   box-switch-sans-cadre = **PAS** le swap (interaction inanimé / moteur combat pré-existant).
