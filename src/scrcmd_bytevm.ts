@@ -76,6 +76,7 @@ import { ScriptMenu_Multichoice, ScriptMenu_MultichoiceWithDefault, ScriptMenu_M
 import { DecorationAdd, DecorationCheckSpace } from './decoration';
 import { sContestNames } from './contest_strings';
 import { doPokemart } from './shop';
+import { makeSpecialInlineFlowPoll } from './special_flows';
 // Voie A : logique « porte » partagée avec le moteur parsé (source unique).
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // Voie A : logique « field effect » partagée avec le moteur parsé (source unique).
@@ -137,7 +138,15 @@ const ScrCmd_gotonative: ScrCmdFunc = (ctx) => {                             // 
 const ScrCmd_waitstate: ScrCmdFunc = () => { ScriptContext_Stop(); return true; }; // :142
 
 // 1:1 scrcmd.c:118-124 : u16 index = ScriptReadHalfword ; gSpecials[index]().
-const ScrCmd_special: ScrCmdFunc = (ctx) => { callSpecial(ScriptReadHalfword(ctx)); return false; };
+// + specials à UI inline (waitstate) : flow partagé voie A (special_flows) → SetupNativeScript.
+const ScrCmd_special: ScrCmdFunc = (ctx) => {
+  const index = ScriptReadHalfword(ctx);
+  const name = _specialNames[index];
+  const poll = name ? makeSpecialInlineFlowPoll(name) : null;
+  if (poll) { SetupNativeScript(ctx, poll); return true; }
+  callSpecial(index);
+  return false;
+};
 // 1:1 scrcmd.c:126-132 : var = GetVarPointer(ScriptReadHalfword) ; *var = gSpecials[ScriptReadHalfword]().
 const ScrCmd_specialvar: ScrCmdFunc = (ctx) => {
   const ref = GetVarPointer(ScriptReadHalfword(ctx));   // lire l'id de var EN PREMIER (ordre 1:1)

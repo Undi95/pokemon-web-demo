@@ -23,7 +23,8 @@ import { DecorationAdd, DecorationRemove, DecorationCheckSpace, CheckHasDecorati
 import { sContestNames } from './contest_strings';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
-import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon, StartFirstBattle } from './engine/battle/battle-setup-helpers';
+import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon } from './engine/battle/battle-setup-helpers';
+import { makeSpecialInlineFlowPoll } from './special_flows';
 import { GetMonData, MON_DATA_IS_EGG, MON_DATA_MET_LOCATION, MON_DATA_SPECIES, MonKnowsMove, SetMonData, SetMonMoveSlot, gPlayerParty } from './engine/battle/party-storage';
 import { MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT, MOVEMENT_ACTION_FACE_UP } from '../include/constants/event_object_movement';
 import { MAX_MON_MOVES, PARTY_SIZE } from '../include/constants/global';
@@ -2452,104 +2453,10 @@ function _runUIOverlay(
  *  ``` */
 registerOpcode('special', (ctx, args) => {
   const name = args[0] as string;
-  // Phase 5.5 : ChooseStarter UI INLINE dans l'overworld via state machine
-  // utilisant nos systèmes engine (= ShowFieldMessage + CreateYesNoMenu, no scene switch).
-  // 1:1 décomp Task_StarterChoose flow + Task_AskConfirmStarter.
-  // Dynamic import : avoid circular dependency at load time.
-  if (name === 'ChooseStarter') {
-    let flowReady = false;
-    let flow: { tick: () => boolean } | null = null;
-    void import('./starter_choose').then((mod) => {
-      flow = mod.startChooseStarterFlow();
-      flowReady = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!flowReady) return false;
-      return flow!.tick();
-    });
-    return true;
-  }
-  // Phase 5.6 : Birch tutorial wild battle flow.
-  // 1:1 décomp battle_setup.c:CB2_GiveStarter chains starter give → CB2_StartFirstBattle
-  // (= BATTLE_TYPE_FIRST_BATTLE vs SPECIES_ZIGZAGOON Lv 2). Notre version :
-  // inline state machine via SetupNativeScript (= block script, no scene switch).
-  if (name === 'StartBirchTutorialBattle') {
-    // 1:1 décomp : CB2_GiveStarter -> CB2_StartFirstBattle. Voie L : boote la VRAIE boucle
-    // decomp (StartFirstBattle), remplace l'ad-hoc voie V startBirchTutorialBattle. Le swap
-    // CB2 prend la main ; au retour OW le poll reprend le script (1:1 ScriptContext block).
-    StartFirstBattle();
-    let framesWaited = 0;
-    SetupNativeScript(ctx, () => { framesWaited++; return framesWaited >= 1; });
-    return true;
-  }
-  // 1:1 décomp `FieldShowRegionMap` (field_specials.c:973) : CB2 swap vers
-  // worldmap HOENN. Notre version utilise un overlay HTML (= region-map.ts)
-  // qui se dessine au-dessus du field. Le special est `waitstate=1`
-  // dans specials.inc:279 donc on bloque le script via SetupNativeScript
-  // jusqu'à ce que la carte se ferme (= IsRegionMapOpen() false).
-  if (name === 'FieldShowRegionMap') {
-    return _runUIOverlay(ctx, async () => {
-      const mod = await import('./engine/field/region-map');
-      await mod.OpenRegionMap();
-      return { isOpen: mod.IsRegionMapOpen };
-    });
-  }
-  // 1:1 décomp player_pc.c (= BedroomPC + PlayerPC). Pattern overlay (= pas
-  // de CB2 swap car le PC dessine au-dessus de l'overworld). OpenBedroomPC()
-  // ouvre le main menu UI ; TickBedroomPC() est polled chaque frame depuis
-  // TestOverworldScene main loop pour drive l'input. Le special est `waitstate=1`
-  // dans specials.inc:277-278 donc on bloque le script via SetupNativeScript
-  // jusqu'à ce que le PC se ferme (= IsBedroomPCOpen() false).
-  if (name === 'BedroomPC' || name === 'PlayerPC') {
-    const isBedroom = (name === 'BedroomPC');
-    return _runUIOverlay(ctx, async () => {
-      const mod = await import('./player_pc');
-      mod.OpenBedroomPC(isBedroom);
-      return { isOpen: mod.IsBedroomPCOpen };
-    });
-  }
-  // 1:1 décomp port `wallclock.c` (session 2026-05-20) : CB2 swap via
-  // SetMainCallback2(CB2_InitWallClock). Aiguilles affines via SetOamMatrix +
-  // sClockHandCoords pivot offsets. Tilemap BG3 clock_start/clock_view depuis
-  // graphics/wallclock/. AM/PM indicator anime entre 2 positions selon période.
-  // `Special_ViewWallClock` = mode VIEW (RTC live + A/B = close).
-  // `StartWallClock` = mode SET (D-pad ajuste hours/minutes, A = confirm via
-  // RtcInitLocalTimeOffset, sauvegarde).
-  if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
-    const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
-    return _runUIOverlay(ctx, async () => {
-      const mod = await import('./wallclock');
-      mod.OpenWallClock(mode);
-      return { isOpen: mod.IsWallClockOpen };
-    });
-  }
-  // 1:1 décomp `BattleSetup_StartRematchBattle` (battle_setup.c:1371-1376) :
-  // DoTrainerBattle + ScriptContext_Stop — le script DOIT se suspendre pendant
-  // le combat puis reprendre (releaseall/end APRÈS, = ContinueScript vanilla).
-  // Interception avec ctx (les specials n'ont pas le ctx) ; le boot + poll de
-  // fin (CB2_EndRematchBattle) vit dans battle_setup.ts (surface anti-cycle).
-  if (name === 'BattleSetup_StartRematchBattle') {
-    const bs = (globalThis as { __battleSetup?: { _bootRematchBattleForScript?: () => () => boolean } }).__battleSetup;
-    if (bs?._bootRematchBattleForScript) {
-      SetupNativeScript(ctx, bs._bootRematchBattleForScript());
-      return true;
-    }
-  }
-  // 1:1 décomp `Bag_ChooseBerry` (item_menu.c:577) = SetMainCallback2(CB2_ChooseBerry)
-  // (ouvre le sac, poche BAIES verrouillée, sélection → gSpecialVar_ItemId).
-  // `def_special Bag_ChooseBerry, waitstate=1` (specials.inc:63) → la macro `special`
-  // émet un `waitstate` implicite. Notre script extrait (depuis le .inc SOURCE) ne
-  // l'a PAS → on park le script ICI via SetupNativeScript (1:1 comportemental du
-  // waitstate implicite). Le native tick n'est pollé QUE quand l'OW est actif (pas
-  // pendant le CB2 du sac), donc le 1er poll arrive APRÈS le retour
-  // (CB2_ReturnToFieldContinueScript) → reprise avec VAR_ITEM_ID frais (baie choisie
-  // ou 0 si annulé). Même pattern prouvé que StartBirchTutorialBattle ci-dessus.
-  if (name === 'Bag_ChooseBerry') {
-    void import('./engine/bag/bag-menu').then((m) => m.CB2_ChooseBerry());
-    let framesWaited = 0;
-    SetupNativeScript(ctx, () => { framesWaited++; return framesWaited >= 1; });
-    return true;
-  }
+  // Specials à UI inline (ChooseStarter/Birch/regionmap/PC/wallclock/rematch/berry) :
+  // logique partagée voie A (special_flows) — source UNIQUE parsé + byte-VM.
+  const poll = makeSpecialInlineFlowPoll(name);
+  if (poll) { SetupNativeScript(ctx, poll); return true; }
   invokeSpecial(name);
   return false;
 });

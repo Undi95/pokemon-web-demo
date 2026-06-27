@@ -1056,6 +1056,15 @@ export async function testPokemart(): Promise<{ pass: boolean; details: Record<s
   return { pass, details };
 }
 
+/** Lance un `special <index>` via le byte-VM (contexte global) — teste les flows special
+ *  inline (ChooseStarter/wallclock/PC/regionmap/rematch/berry) routés via special_flows. */
+export function launchSpecial(specialIndex: number): string {
+  const SP = cmdIdOf('ScrCmd_special'), END = cmdIdOf('ScrCmd_end');
+  ScriptContext_SetupScript({ buf: Uint8Array.from([SP, lo(specialIndex), hi(specialIndex), END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();
+  return `byte-VM special #${specialIndex} lancé`;
+}
+
 /** Lance un MULTICHOICE via le byte-VM (preuve visuelle) : spawn le menu vertical réel
  *  (ScriptMenu_Multichoice). Vérifier ensuite preview_screenshot (le menu doit apparaître). */
 export function launchMultichoice(multichoiceId: number): string {
@@ -1133,4 +1142,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, run, VarGet, getScriptOffset };
