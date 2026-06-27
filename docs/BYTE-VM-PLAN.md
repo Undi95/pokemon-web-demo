@@ -41,7 +41,7 @@ chantier → d'où la branche sandbox. Multi-session.
 | 2. Compilateur + linker image-globale | ✅ | `compile-scripts.cjs` → `script-bytecode.json` (gitignoré) |
 | 3. VM core (1:1 `script.c`) | ✅ prouvé en jeu | `src/script_bytevm.ts` |
 | 4. Handlers (1:1 `scrcmd.c`) | ✅ **100,0 % usage** (52686/52686) | `src/scrcmd_bytevm.ts` + voie A `scrcmd_object/door/fieldeffect/flash/trainer`, `script_menu/shop/decoration/heal_location/special_flows` |
-| 5. Swap + re-vérif | ✅ **byte-VM = DÉFAUT** (`?parsed` = filet), cœur vérifié en jeu | `src/script.ts` (routage) + `bytevm-boot.ts` |
+| 5. Swap + re-vérif + **CLEAN** | ✅ **byte-VM = SEUL moteur** (parsé retiré : scrcmd.ts 3852→55) | `src/script.ts` (routage) + `bytevm-boot.ts` |
 
 **Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → `cbc478bf` (trainerbattle + preuve visuelle). `finale` intacte (`3b34ce7f`).
 **Tests déterministes EN JEU (26 verts, 0 erreur)** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testWarpVariants,testMoney,testItem,testMetatile,testObject,testObjectMovement,testBuffers,testPlayer,testWeather,testDoor,testFieldEffect,testVobject,testFade,testFlash,testGiveMon,testLongTail1-4,testTrainerbattleArgs}` (harness/devtools/dev-bytevm-tools.ts).
@@ -261,6 +261,12 @@ et route en interne vers `script_bytevm.ts`. **Le byte-VM est le moteur par DÉF
 4. **Re-vérif cœur (faite, A/B en jeu, `?bytevm`)** : marche libre · warp PC entrée+
    sortie · combat sauvage Magicarpe Lv1 KO→pas de freeze · wall clock · multichoice/
    yesnobox · dialogue NPC. Diag : `window.__byteVm.diag()`.
-5. **RESTE** : intro end-to-end (briques câblées) ; promouvoir byte-VM en DÉFAUT (après
-   vérif large) + retirer le moteur parsé = « le clean ». NB : item ball / species «?» /
-   box-switch-sans-cadre = **PAS** le swap (interaction inanimé / moteur combat pré-existant).
+5. **byte-VM = DÉFAUT puis CLEAN (faits)** : `_useByteVm` retiré → byte-VM inconditionnel
+   (commit `6ea8ded9`) ; `scrcmd.ts` réduit 3852→55 lignes — les 361 handlers parsés + leur
+   interpréteur RETIRÉS (commit `8fc1093f`), ne reste que l'infra `special` (registerSpecial/
+   invokeSpecial) + signal waitstate (SignalWaitState/consumeWaitStateSignal). BONUS : fix
+   `ScrCmd_waitstate` byte-VM (honore SignalWaitState + warp/map-change ; avant = hang).
+6. **RESTE (mineur, « après »)** : résidu parsé entremêlé dans script.ts (primitives utilisées
+   par les tables de triggers map_script_2 + inline/snapshot devtools/intro) ; intro
+   end-to-end. NB : item ball / species «?» / box-switch = **PAS** le swap (interaction
+   inanimé / moteur combat pré-existant — chantier combat séparé).
