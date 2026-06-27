@@ -57,6 +57,8 @@ import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EG
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
 import { FadeScreen } from './field_weather';
+import { Random } from './random';
+import { PlantBerryTree } from './berry';
 // Voie A : logique « porte » partagée avec le moteur parsé (source unique).
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // Voie A : logique « field effect » partagée avec le moteur parsé (source unique).
@@ -530,6 +532,39 @@ const isPaletteNotActive = (): boolean => !getRuntime()?.gPaletteFade?.active;
 const ScrCmd_fadescreen: ScrCmdFunc = (ctx) => { FadeScreen(ScriptReadByte(ctx), 0); SetupNativeScript(ctx, isPaletteNotActive); return true; };       // :626
 const ScrCmd_fadescreenspeed: ScrCmdFunc = (ctx) => { const m = ScriptReadByte(ctx); const s = ScriptReadByte(ctx); FadeScreen(m, s); SetupNativeScript(ctx, isPaletteNotActive); return true; }; // :633
 
+// ─── long-tail simple (1:1 scrcmd.c) ────────────────────────────────────────
+// random : gSpecialVar_Result = Random() % max.
+const ScrCmd_random: ScrCmdFunc = (ctx) => { const max = VarGet(ScriptReadHalfword(ctx)); setResult(max ? Random() % max : 0); return false; };
+// setberrytree : PlantBerryTree(treeId, berry, growthStage, FALSE).
+const ScrCmd_setberrytree: ScrCmdFunc = (ctx) => { const t = ScriptReadByte(ctx); const b = ScriptReadByte(ctx); const g = ScriptReadByte(ctx); PlantBerryTree(t, b, g, false); return false; };
+// setmaplayoutindex : SetCurrentMapLayout (via globalThis.__mapLayoutSwap, anti-cycle = parsé).
+const ScrCmd_setmaplayoutindex: ScrCmdFunc = (ctx) => {
+  const idx = VarGet(ScriptReadHalfword(ctx));
+  const swap = (globalThis as { __mapLayoutSwap?: { SetCurrentMapLayout?: (i: number) => Promise<void> } }).__mapLayoutSwap;
+  if (swap?.SetCurrentMapLayout) void swap.SetCurrentMapLayout(idx);
+  return false;
+};
+// setstepcallback : ActivatePerStepCallback(byte) (dynamic import field_tasks, anti-cycle = parsé).
+const ScrCmd_setstepcallback: ScrCmdFunc = (ctx) => {
+  const cb = ScriptReadByte(ctx);
+  void import('./field_tasks').then((ft) => ft.ActivatePerStepCallback(cb));
+  return false;
+};
+// money / coins box (1:1 scrcmd.c:1758-1819) — UI via globalThis.__moneyBoxUI (anti-cycle = parsé).
+type MoneyBoxApi = {
+  DrawMoneyBox?: (amt: number, x: number, y: number) => void; HideMoneyBox?: () => void;
+  ChangeAmountInMoneyBox?: (amt: number) => void; ShowCoinsWindow?: (amt: number, x: number, y: number) => void;
+  HideCoinsWindow?: () => void; PrintCoinsString?: (amt: number) => void;
+  _getMoney?: () => number; _getCoins?: () => number;
+};
+const _moneyUI = (): MoneyBoxApi | undefined => (globalThis as { __moneyBoxUI?: MoneyBoxApi }).__moneyBoxUI;
+const ScrCmd_showmoneybox: ScrCmdFunc = (ctx) => { const x = ScriptReadByte(ctx); const y = ScriptReadByte(ctx); const ign = ScriptReadByte(ctx); if (!ign) { const ui = _moneyUI(); if (ui?.DrawMoneyBox && ui._getMoney) ui.DrawMoneyBox(ui._getMoney(), x, y); } return false; };
+const ScrCmd_hidemoneybox: ScrCmdFunc = () => { _moneyUI()?.HideMoneyBox?.(); return false; };   // 1:1 décomp : lit 0 octet (les 2 .byte 0 émis → 2 nops)
+const ScrCmd_updatemoneybox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); const ign = ScriptReadByte(ctx); if (!ign) { const ui = _moneyUI(); if (ui?.ChangeAmountInMoneyBox && ui._getMoney) ui.ChangeAmountInMoneyBox(ui._getMoney()); } return false; };
+const ScrCmd_showcoinsbox: ScrCmdFunc = (ctx) => { const x = ScriptReadByte(ctx); const y = ScriptReadByte(ctx); const ui = _moneyUI(); if (ui?.ShowCoinsWindow && ui._getCoins) ui.ShowCoinsWindow(ui._getCoins(), x, y); return false; };
+const ScrCmd_hidecoinsbox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); _moneyUI()?.HideCoinsWindow?.(); return false; };
+const ScrCmd_updatecoinsbox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); const ui = _moneyUI(); if (ui?.PrintCoinsString && ui._getCoins) ui.PrintCoinsString(ui._getCoins()); return false; };
+
 // ─── object movement ops (1:1 scrcmd.c ; logique partagée scrcmd_object — voie A) ──
 // turnobject : direction = valeur DIR_ (1=SOUTH..4=EAST) lue direct du bytecode.
 const ScrCmd_turnobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const dir = ScriptReadByte(ctx); doTurnObject(String(l), dir); return false; };
@@ -580,6 +615,9 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_createvobject, ScrCmd_turnvobject,
   ScrCmd_turnobject, ScrCmd_copyobjectxytoperm, ScrCmd_setobjectmovementtype,
   ScrCmd_fadescreen, ScrCmd_fadescreenspeed,
+  ScrCmd_random, ScrCmd_setberrytree, ScrCmd_setmaplayoutindex, ScrCmd_setstepcallback,
+  ScrCmd_showmoneybox, ScrCmd_hidemoneybox, ScrCmd_updatemoneybox,
+  ScrCmd_showcoinsbox, ScrCmd_hidecoinsbox, ScrCmd_updatecoinsbox,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

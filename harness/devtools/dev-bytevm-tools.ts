@@ -39,6 +39,7 @@ import { isDoorAnimationStopped } from '../../src/scrcmd_door';
 import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-helpers';
 import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
+import { GetBerryTypeByBerryTreeId } from '../../src/berry';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -623,6 +624,45 @@ export async function testFade(): Promise<{ pass: boolean; details: Record<strin
   return { pass, details };
 }
 
+/** Test LONG-TAIL 1 : random (déterministe) + setberrytree (état) + ALIGNEMENT du
+ *  flux d'octets sur la chaîne money/coins box (un setvar marqueur final ne tombe
+ *  juste que si chaque handler a consommé exactement ses octets). */
+export async function testLongTail1(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const RAND = cmdIdOf('ScrCmd_random'), SETBT = cmdIdOf('ScrCmd_setberrytree'),
+        SMB = cmdIdOf('ScrCmd_showmoneybox'), HMB = cmdIdOf('ScrCmd_hidemoneybox'),
+        UCB = cmdIdOf('ScrCmd_updatecoinsbox'), SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VR = num('VAR_RESULT'), VT1 = num('VAR_TEMP_1');
+  // random max=1 → VAR_RESULT toujours 0 (déterministe)
+  VarSet(VR, 5);
+  RunScriptImmediately({ buf: Uint8Array.from([RAND, lo(1), hi(1), END]), off: 0 } as ScriptPtr);
+  const rnd1 = VarGet(VR);
+  // random max=100 → [0,100)
+  RunScriptImmediately({ buf: Uint8Array.from([RAND, lo(100), hi(100), END]), off: 0 } as ScriptPtr);
+  const rnd100 = VarGet(VR);
+  // setberrytree tree=0, berry=5, stage=3 → GetBerryTypeByBerryTreeId(0)===5
+  RunScriptImmediately({ buf: Uint8Array.from([SETBT, 0, 5, 3, END]), off: 0 } as ScriptPtr);
+  const berry = GetBerryTypeByBerryTreeId(0);
+  // alignement : showmoneybox 1,2,0 ; hidemoneybox(+2 zéros=nops) ; updatecoinsbox 1,2 ;
+  //              setvar VAR_TEMP_1, 0xBEEF ; end  → VAR_TEMP_1 doit valoir 0xBEEF.
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    SMB, 1, 2, 0,
+    HMB, 0, 0,
+    UCB, 1, 2,
+    SETVAR, lo(VT1), hi(VT1), lo(0xBEEF), hi(0xBEEF),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xBEEF;
+  const pass = rnd1 === 0 && rnd100 >= 0 && rnd100 < 100 && berry === 5 && aligned;
+  const details = {
+    'random max=1 → 0': rnd1, 'random max=100 ∈ [0,100)': rnd100,
+    'setberrytree berry (attendu 5)': berry, 'alignement flux money/coins (setvar=0xBEEF)': aligned,
+  };
+  console.log(`[byte-vm] TEST long-tail 1 : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -630,4 +670,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, run, VarGet, getScriptOffset };
