@@ -40,6 +40,9 @@ import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-he
 import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
 import { GetBerryTypeByBerryTreeId } from '../../src/berry';
+import { gBattleMons, gBattleOutcome, gBattleTypeFlags, gTrainerBattleOpponent_A } from '../../src/engine/battle/state';
+import { gEnemyParty } from '../../src/engine/battle/party-storage';
+import { GetMonData as _GetMonData, MON_DATA_SPECIES as _MON_DATA_SPECIES, MON_DATA_HP as _MON_DATA_HP, MON_DATA_LEVEL as _MON_DATA_LEVEL } from '../../src/engine/battle/party-storage';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -847,6 +850,23 @@ export async function testGiveMon(): Promise<{ pass: boolean; details: Record<st
   return { pass, details };
 }
 
+/** ORACLE D'ÉTAT COMBAT (inspecteur) — lit l'état combat LIVE par code : inBattle,
+ *  flags, opponent, outcome, party ennemie (espèce/level/hp), battlers. Permet de
+ *  vérifier « ce qui DEVRAIT être » (data décomp) vs « ce qui EST » sans test manuel. */
+export function battleState(): Record<string, unknown> {
+  const rt = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt;
+  const enemyParty = gEnemyParty.slice(0, 6).map((m) => {
+    const sp = _GetMonData(m, _MON_DATA_SPECIES) as number;
+    return sp ? { species: sp, level: _GetMonData(m, _MON_DATA_LEVEL), hp: _GetMonData(m, _MON_DATA_HP) } : null;
+  }).filter(Boolean);
+  const battlers = gBattleMons.map((b) => (b && b.species ? { species: b.species, hp: b.hp, maxHP: b.maxHP, level: b.level } : null));
+  return {
+    inBattle: rt?.gMain?.inBattle ?? false,
+    gBattleTypeFlags, gTrainerBattleOpponent_A, gBattleOutcome,
+    enemyParty, battlers,
+  };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -854,4 +874,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, battleState, run, VarGet, getScriptOffset };
