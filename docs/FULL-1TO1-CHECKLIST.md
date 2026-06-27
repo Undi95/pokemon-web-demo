@@ -118,8 +118,8 @@
 | `field_control_avatar.c` | 1005 | 41 | `field_control_avatar.ts` | 26/41 (63%) | 30/41 (73%) | 🟡 partiel |
 | `fldeff_dig.c` | 64 | 4 | `fldeff_dig.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `fldeff_teleport.c` | 45 | 4 | `fldeff_teleport.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
-| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 43/55 (78%) | 44/55 (80%) | 🟡 partiel |
 | `field_player_avatar.c` | 2227 | 177 | `field_player_avatar.ts` | 148/177 (84%) | 149/177 (84%) | 🟡 partiel |
+| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 46/55 (84%) | 47/55 (85%) | 🟡 partiel |
 | `map_name_popup.c` | 427 | 7 | `map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `field_poison.c` | 155 | 7 | `field_poison.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |

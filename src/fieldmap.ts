@@ -1870,6 +1870,12 @@ function LoadTilesetPalette(tileset: Tileset | null, destOffset: number, size: n
   // ApplyGlobalTintToPaletteEntries (FRLG-only, no-op pour Emerald).
 }
 
+/** 1:1 décomp `ApplyGlobalTintToPaletteSlot(u8 slot, u8 count)` (fieldmap.c:870-873) :
+ *  fonction VIDE marquée UNUSED dans la décomp (vestige FRLG global tint). Portée 1:1 = no-op. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ApplyGlobalTintToPaletteSlot(_slot: number, _count: number): void {
+}
+
 /** Flatten N palette banks (16 colors each) en un seul Uint16Array. */
 function flattenPaletteBanks(banks: Uint16Array[], startBank: number, endBank: number): Uint16Array {
   const numBanks = endBank - startBank;
@@ -1888,30 +1894,39 @@ function flattenPaletteBanks(banks: Uint16Array[], startBank: number, endBank: n
  *  Le routing utilise tileset.name (= chemin normalisé, e.g. "general", "petalburg").
  *  InitTilesetAnimations() doit être appelé APRÈS CopyMapTilesetsToVram pour que les
  *  callbacks soient prêts. */
-export function CopyMapTilesetsToVram(mapLayout: MapLayout | null): void {
+/** 1:1 décomp `CopyPrimaryTilesetToVram(mapLayout)` (fieldmap.c:900-903).
+ *  (CopySecondaryTilesetToVram + LoadSecondaryTilesetPalette existent déjà plus haut,
+ *  helpers de TransitionToConnection.) */
+function CopyPrimaryTilesetToVram(mapLayout: MapLayout | null): void {
   if (!mapLayout) return;
   CopyTilesetToVram(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
-  CopyTilesetToVram(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+}
+
+export function CopyMapTilesetsToVram(mapLayout: MapLayout | null): void {
+  if (!mapLayout) return;
+  CopyPrimaryTilesetToVram(mapLayout);
+  CopySecondaryTilesetToVram(mapLayout);
   // Set animation init callbacks pour InitTilesetAnimations() qui sera appelé ensuite.
   // Import dynamique évite la dépendance circulaire (tileset-anims → map-loader).
   setPrimaryTilesetAnimCallback(mapLayout.primaryTileset?.name ?? '');
   setSecondaryTilesetAnimCallback(mapLayout.secondaryTileset?.name ?? '');
 }
 
+/** 1:1 décomp `LoadPrimaryTilesetPalette(mapLayout)` (fieldmap.c:915-918) :
+ *    LoadTilesetPalette(primaryTileset, BG_PLTT_ID(0), NUM_PALS_IN_PRIMARY * PLTT_SIZE_4BPP).
+ *  Notre BG_PLTT_ID(0) = 0 ; PLTT_SIZE_4BPP = 32 (16 couleurs × 2 octets). */
+function LoadPrimaryTilesetPalette(mapLayout: MapLayout | null): void {
+  if (!mapLayout) return;
+  LoadTilesetPalette(mapLayout.primaryTileset, 0, NUM_PALS_IN_PRIMARY * 32);
+}
+
 /** 1:1 décomp `LoadMapTilesetPalettes(mapLayout)` (fieldmap.c:934-941).
  *  Banks 0-5 primary + banks 6-12 secondary = 13 banks total = 13 * 16 colors
- *  = 208 entries dans gPlttBuffer (BG slots 0-207).
- *
- *  Notre BG_PLTT_ID(N) = N*16 (= flat index dans gPlttBuffer 0-255). */
+ *  = 208 entries dans gPlttBuffer (BG slots 0-207). */
 export function LoadMapTilesetPalettes(mapLayout: MapLayout | null): void {
   if (!mapLayout) return;
-  const PLTT_SIZE_4BPP = 32;  // 16 colors * 2 bytes = 32 bytes per bank
-  // BG_PLTT_ID(0) = 0
-  LoadTilesetPalette(mapLayout.primaryTileset, 0, NUM_PALS_IN_PRIMARY * PLTT_SIZE_4BPP);
-  // BG_PLTT_ID(NUM_PALS_IN_PRIMARY=6) = 96
-  LoadTilesetPalette(mapLayout.secondaryTileset,
-    NUM_PALS_IN_PRIMARY * 16,
-    (NUM_PALS_TOTAL - NUM_PALS_IN_PRIMARY) * PLTT_SIZE_4BPP);
+  LoadPrimaryTilesetPalette(mapLayout);
+  LoadSecondaryTilesetPalette(mapLayout);
 }
 
 // Note : DrawMetatile + buffers gOverworldTilemapBuffer_Bg* + flushOverworldTilemaps
