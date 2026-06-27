@@ -16,7 +16,7 @@ import {
   ScriptContext, ScrCmdFunc, gScriptCmdTable,
   ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
   ScriptJump, ScriptCall, ScriptReturn, StopScript, SetupNativeScript,
-  ScriptContext_Stop, ptrFromOffset, resolveSymbol, resolveMapSymbol, getScriptOffset,
+  ScriptContext_Stop, ptrFromOffset, resolveSymbol, resolveMapSymbol, getScriptOffset, getLabelAtOffset,
 } from './script_bytevm';
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 import { VAR_0x8004 } from '../include/constants/vars';
@@ -72,6 +72,10 @@ import { Random } from './random';
 import { PlantBerryTree } from './berry';
 import { GetHealLocation } from './heal_location';
 import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer } from './scrcmd_trainer';
+import { ScriptMenu_Multichoice, ScriptMenu_MultichoiceWithDefault, ScriptMenu_MultichoiceGrid, ScriptMenu_YesNo } from './script_menu';
+import { DecorationAdd, DecorationCheckSpace } from './decoration';
+import { sContestNames } from './contest_strings';
+import { doPokemart } from './shop';
 // Voie A : logique « porte » partagée avec le moteur parsé (source unique).
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // Voie A : logique « field effect » partagée avec le moteur parsé (source unique).
@@ -327,6 +331,74 @@ const ScrCmd_setrespawn: ScrCmdFunc = (ctx) => {                              //
   if (heal) (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation = heal.id;
   return false;
 };
+
+// ─── menus multichoice / yesno (1:1 scrcmd.c:1337-1418 ; logique partagée script_menu — voie A) ──
+// Layout décomp : octets bruts (PAS de VarGet sur multichoiceId = valeur MULTI_* littérale).
+const ScrCmd_multichoice: ScrCmdFunc = (ctx) => {                             // :1353
+  const left = ScriptReadByte(ctx), top = ScriptReadByte(ctx), id = ScriptReadByte(ctx), ignoreB = ScriptReadByte(ctx);
+  const poll = ScriptMenu_Multichoice(left, top, id, ignoreB !== 0);
+  if (!poll) return false; SetupNativeScript(ctx, poll); return true;
+};
+const ScrCmd_multichoicedefault: ScrCmdFunc = (ctx) => {                      // :1371
+  const left = ScriptReadByte(ctx), top = ScriptReadByte(ctx), id = ScriptReadByte(ctx), def = ScriptReadByte(ctx), ignoreB = ScriptReadByte(ctx);
+  const poll = ScriptMenu_MultichoiceWithDefault(left, top, id, ignoreB !== 0, def);
+  if (!poll) return false; SetupNativeScript(ctx, poll); return true;
+};
+const ScrCmd_multichoicegrid: ScrCmdFunc = (ctx) => {                         // :1401
+  const left = ScriptReadByte(ctx), top = ScriptReadByte(ctx), id = ScriptReadByte(ctx), cols = ScriptReadByte(ctx), ignoreB = ScriptReadByte(ctx);
+  const poll = ScriptMenu_MultichoiceGrid(left, top, id, ignoreB !== 0, cols);
+  if (!poll) return false; SetupNativeScript(ctx, poll); return true;
+};
+const ScrCmd_yesnobox: ScrCmdFunc = (ctx) => {                                // :1337
+  const left = ScriptReadByte(ctx), top = ScriptReadByte(ctx);
+  SetupNativeScript(ctx, ScriptMenu_YesNo(left, top)); return true;
+};
+
+// ─── mon pic (1:1 scrcmd.c:1446/1456) — stubs identiques au parsé (ScriptMenu_ShowPokemonPic non porté) ──
+const ScrCmd_showmonpic: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); ScriptReadByte(ctx); ScriptReadByte(ctx); return false; };  // :1446
+const ScrCmd_hidemonpic: ScrCmdFunc = (ctx) => { let f = 0; SetupNativeScript(ctx, () => { f++; return f >= 8; }); return true; };             // :1456
+
+// ─── décoration (1:1 scrcmd.c:549/565 ; suivi possession partagé decoration — voie A) ──
+const ScrCmd_adddecoration: ScrCmdFunc = (ctx) => { setResult(DecorationAdd(VarGet(ScriptReadHalfword(ctx)))); return false; };          // :549
+const ScrCmd_checkdecorspace: ScrCmdFunc = (ctx) => { setResult(DecorationCheckSpace(VarGet(ScriptReadHalfword(ctx)))); return false; }; // :565
+
+// ─── pokemart (1:1 scrcmd.c:1886 ; logique partagée shop.doPokemart — voie A) ──
+// ptr u32 = la liste produits est référencée par LABEL présent DANS l'image → le compilo
+// l'émet en RELOC (offset global), pas en symbole synthétique. On reverse l'offset → label
+// (getLabelAtOffset) → doPokemart → GetMartItemList (mart-lists.json).
+const ScrCmd_pokemart: ScrCmdFunc = (ctx) => {                                // :1886
+  const label = getLabelAtOffset(ScriptReadWord(ctx)) ?? '';
+  SetupNativeScript(ctx, doPokemart(label));
+  return true;
+};
+// pokemartdecoration / pokemartdecoration2 : boutiques DÉCO non portées (decoration.c) —
+// stub identique au parsé : consomme le ptr u32, no-op.
+const ScrCmd_pokemartdecoration: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };   // :1895
+const ScrCmd_pokemartdecoration2: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };  // :1905
+
+// ─── checkpcitem (1:1 scrcmd.c:540) — stub VAR_RESULT=0 (PC items non portés, comme le parsé) ──
+const ScrCmd_checkpcitem: ScrCmdFunc = (ctx) => { ScriptReadHalfword(ctx); ScriptReadHalfword(ctx); setResult(0); return false; };  // :540
+
+// ─── warpteleport (1:1 scrcmd.c:799) — DoTeleportTileWarp = warp simple (transition = dette) ──
+const ScrCmd_warpteleport: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; };  // :799
+
+// ─── buffercontestname (1:1 scrcmd.c:1635) : stringVarIndex(u8) + category(VarGet u16) ──
+const ScrCmd_buffercontestname: ScrCmdFunc = (ctx) => { const idx = ScriptReadByte(ctx); const cat = VarGet(ScriptReadHalfword(ctx)); setStringVar(idx + 1, sContestNames[cat] ?? ''); return false; };  // :1635
+
+// ─── Tier B — sous-systèmes NON portés (slot machine / rotating-tile puzzle / contest /
+//     wondercard) : STUBS identiques au moteur parsé (dette documentée, partagée), consommation
+//     d'octets 1:1 pour préserver l'alignement du curseur. ──
+const ScrCmd_playslotmachine: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); let f = 0; SetupNativeScript(ctx, () => { f++; return f >= 1; }); return true; };  // :1914
+const ScrCmd_initrotatingtilepuzzle: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); return false; };   // :2172
+const ScrCmd_moverotatingtileobjects: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); return false; };  // :2158
+const ScrCmd_turnrotatingtileobjects: ScrCmdFunc = () => false;   // :2166 (0 arg)
+const ScrCmd_freerotatingtilepuzzle: ScrCmdFunc = () => false;    // :2180 (0 arg)
+const ScrCmd_showcontestpainting: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); return false; };  // :1468 (contestWinnerId u8)
+const ScrCmd_choosecontestmon: ScrCmdFunc = () => false;          // :1944 (0 arg)
+const ScrCmd_startcontest: ScrCmdFunc = () => false;              // :1952 (0 arg)
+const ScrCmd_showcontestresults: ScrCmdFunc = () => false;        // :1959 (0 arg)
+const ScrCmd_contestlinktransfer: ScrCmdFunc = () => false;       // :1966 (0 arg)
+const ScrCmd_trywondercardscript: ScrCmdFunc = () => false;       // :2227 (0 arg ; RAM script non valide → no-op)
 
 // ─── trainer approach (1:1 scrcmd.c:2186/2192 ; logique partagée scrcmd_trainer — voie A) ──
 // selectapproachingtrainer : gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId().
@@ -882,6 +954,14 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_fadeoutbgm, ScrCmd_fadeinbgm, ScrCmd_messageinstant, ScrCmd_pokenavcall,
   ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram, ScrCmd_checkitemtype, ScrCmd_setrespawn,
   ScrCmd_selectapproachingtrainer, ScrCmd_lockfortrainer,
+  ScrCmd_multichoice, ScrCmd_multichoicedefault, ScrCmd_multichoicegrid, ScrCmd_yesnobox,
+  ScrCmd_showmonpic, ScrCmd_hidemonpic, ScrCmd_adddecoration, ScrCmd_checkdecorspace,
+  ScrCmd_checkpcitem, ScrCmd_warpteleport, ScrCmd_buffercontestname,
+  ScrCmd_playslotmachine, ScrCmd_initrotatingtilepuzzle, ScrCmd_moverotatingtileobjects,
+  ScrCmd_turnrotatingtileobjects, ScrCmd_freerotatingtilepuzzle,
+  ScrCmd_showcontestpainting, ScrCmd_choosecontestmon, ScrCmd_startcontest,
+  ScrCmd_showcontestresults, ScrCmd_contestlinktransfer, ScrCmd_trywondercardscript,
+  ScrCmd_pokemart, ScrCmd_pokemartdecoration, ScrCmd_pokemartdecoration2,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

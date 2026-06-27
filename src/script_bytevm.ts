@@ -306,6 +306,7 @@ export async function loadByteVmImage(url = '/decomp/em/script-bytecode.json'): 
   const j = await r.json();
   gScriptImage = _b64ToU8(j.image);
   _scriptOffsets = j.scriptOffsets ?? {};
+  _offsetToLabel = null;   // invalide le cache reverse (réutilisé par getLabelAtOffset)
   _symbols = j.symbols ?? [];
   _mapSymbols = j.mapSymbols ?? [];
   _mapScriptTables = j.mapScriptTables ?? {};
@@ -321,6 +322,21 @@ export function resolveMapSymbol(id: number): string | undefined { return _mapSy
 export function getMapSymbols(): string[] { return _mapSymbols; }
 export function getScriptOffset(label: string): number | undefined { return _scriptOffsets[label]; }
 export function getMapScriptTable(label: string): { name: string; args: string[] }[] | undefined { return _mapScriptTables[label]; }
+
+/** Reverse lookup offset → label (1er label à cet offset). Utilisé par les handlers dont
+ *  l'argument pointeur cible une donnée référencée par label DANS l'image (= reloc offset, pas
+ *  symbole synthétique) : ScrCmd_pokemart pointe vers une liste mart (label_Pokemart). */
+let _offsetToLabel: Map<number, string> | null = null;
+export function getLabelAtOffset(off: number): string | undefined {
+  if (!_offsetToLabel) {
+    _offsetToLabel = new Map();
+    for (const label of Object.keys(_scriptOffsets)) {
+      const o = _scriptOffsets[label];
+      if (!_offsetToLabel.has(o)) _offsetToLabel.set(o, label);
+    }
+  }
+  return _offsetToLabel.get(off);
+}
 
 /** Curseur vers un offset de l'image globale (= déréf d'un pointeur de script). */
 export function ptrFromOffset(off: number): ScriptPtr { return { buf: gScriptImage, off }; }

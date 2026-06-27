@@ -11,8 +11,9 @@
 
 import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
-  getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript,
+  getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript, getLabelAtOffset,
 } from '../../src/script_bytevm';
+import { GetMartItemList, IsShopMenuOpen } from '../../src/shop';
 import type { ScriptPtr } from '../../src/script_bytevm';
 import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
@@ -32,6 +33,7 @@ import { getSpeciesNameFr, getItemNameFr } from '../runtime/data-tables';
 import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { gSelectedObjectEvent } from '../../src/engine/script/script-vars';
+import { LoadMessageBoxAndBorderGfx } from '../../src/menu';
 import { GetSavedWeather, SetSavedWeather } from '../../src/field_weather_effect';
 import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
 import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
@@ -973,6 +975,104 @@ export async function testLongTail6(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test LONG-TAIL 7 (batch UI + Tier B) : adddecoration/checkdecorspace (voie A décoration,
+ *  VAR_RESULT + save block) ; buffercontestname (STR_VAR_1) ; checkpcitem (stub 0) ; ALIGNEMENT
+ *  octets de toute la file niche (decoration + checkpcitem + showcontestpainting + showmonpic +
+ *  rotating-tile + contest stubs + warpteleport) via marqueur final. */
+export async function testLongTail7(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const ADD = cmdIdOf('ScrCmd_adddecoration'), CDS = cmdIdOf('ScrCmd_checkdecorspace'),
+        BCN = cmdIdOf('ScrCmd_buffercontestname'), CPI = cmdIdOf('ScrCmd_checkpcitem'),
+        SCP = cmdIdOf('ScrCmd_showcontestpainting'), SMP = cmdIdOf('ScrCmd_showmonpic'),
+        IRT = cmdIdOf('ScrCmd_initrotatingtilepuzzle'), TRT = cmdIdOf('ScrCmd_turnrotatingtileobjects'),
+        CCM = cmdIdOf('ScrCmd_choosecontestmon'), WT = cmdIdOf('ScrCmd_warpteleport'),
+        SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VR = num('VAR_RESULT'), VT1 = num('VAR_TEMP_1');
+  // adddecoration decorId=77 (literal u16) → VAR_RESULT=1 + decorations contient 77
+  VarSet(VR, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([ADD, 77, 0, END]), off: 0 } as ScriptPtr);
+  const addRes = VarGet(VR);
+  const hasDecor = ((gSaveBlock1Ptr as { decorations?: number[] }).decorations ?? []).includes(77);
+  // checkdecorspace → VAR_RESULT=1 (place dispo)
+  RunScriptImmediately({ buf: Uint8Array.from([CDS, 77, 0, END]), off: 0 } as ScriptPtr);
+  const spaceRes = VarGet(VR);
+  // buffercontestname idx=0, category=0 (literal) → STR_VAR_1 = 'SANG-FROID'
+  RunScriptImmediately({ buf: Uint8Array.from([BCN, 0, 0, 0, END]), off: 0 } as ScriptPtr);
+  const contestName = getStringVar(1);
+  // checkpcitem item, qty → VAR_RESULT=0 (stub)
+  VarSet(VR, 9);
+  RunScriptImmediately({ buf: Uint8Array.from([CPI, 13, 0, 1, 0, END]), off: 0 } as ScriptPtr);
+  const pcRes = VarGet(VR);
+  // ALIGNEMENT : enchaîner toute la file niche + setvar marqueur 0xDEC0
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    ADD, 1, 0,            // adddecoration (halfword)
+    CDS, 1, 0,            // checkdecorspace (halfword)
+    CPI, 13, 0, 1, 0,     // checkpcitem (2 halfwords)
+    SCP, 0,               // showcontestpainting (byte)
+    SMP, 1, 0, 4, 4,      // showmonpic (halfword + 2 bytes)
+    IRT, 0, 0,            // initrotatingtilepuzzle (halfword)
+    TRT,                  // turnrotatingtileobjects (0 arg)
+    CCM,                  // choosecontestmon (0 arg)
+    WT, 0, 0, 0, 0, 0, 0, 0,   // warpteleport (warp layout : u16 map + u8 + u16 + u16 = 8o)
+    SETVAR, lo(VT1), hi(VT1), lo(0xDEC0), hi(0xDEC0),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xDEC0;
+  const pass = addRes === 1 && hasDecor && spaceRes === 1 && contestName === 'SANG-FROID' && pcRes === 0 && aligned;
+  const details = { 'adddecoration(77)→VAR_RESULT(1)': addRes, 'decorations contient 77': hasDecor, 'checkdecorspace→1': spaceRes, 'buffercontestname→STR_VAR_1': contestName, 'checkpcitem→0': pcRes, 'alignement file niche (setvar=0xDEC0)': aligned };
+  console.log(`[byte-vm] TEST long-tail 7 (UI+Tier B) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
+/** Test POKEMART (déterministe) : le ptr produits est un OFFSET reloc → getLabelAtOffset doit
+ *  retrouver le label exact (round-trip), et GetMartItemList(label) doit renvoyer la liste
+ *  d'items (mart-lists.json). Prouve "par code" le fix offset→label du handler byte-VM. */
+export async function testPokemart(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const label = 'OldaleTown_Mart_Pokemart_Basic';
+  const off = getScriptOffset(label);
+  const roundTrip = off !== undefined ? getLabelAtOffset(off) : undefined;
+  const items = GetMartItemList(label);
+  const pass = off !== undefined && roundTrip === label && items.length > 0;
+  const details = { 'getScriptOffset': off, 'getLabelAtOffset round-trip': roundTrip, 'GetMartItemList count': items.length, 'items[0..2]': items.slice(0, 3) };
+  console.log(`[byte-vm] TEST pokemart (offset→label) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
+/** Lance un MULTICHOICE via le byte-VM (preuve visuelle) : spawn le menu vertical réel
+ *  (ScriptMenu_Multichoice). Vérifier ensuite preview_screenshot (le menu doit apparaître). */
+export function launchMultichoice(multichoiceId: number): string {
+  LoadMessageBoxAndBorderGfx();   // précondition in-game (message/init charge la bordure std)
+  const MC = cmdIdOf('ScrCmd_multichoice'), END = cmdIdOf('ScrCmd_end');
+  // multichoice left=1 top=1 id ignoreBPress=0
+  ScriptContext_SetupScript({ buf: Uint8Array.from([MC, 1, 1, multichoiceId & 0xFF, 0, END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();
+  return `byte-VM multichoice id ${multichoiceId} lancé (screenshot pour voir le menu)`;
+}
+
+/** Lance un YESNOBOX via le byte-VM (preuve visuelle) : spawn la fenêtre OUI/NON. */
+export function launchYesNo(): string {
+  LoadMessageBoxAndBorderGfx();   // précondition in-game
+  const YN = cmdIdOf('ScrCmd_yesnobox'), END = cmdIdOf('ScrCmd_end');
+  ScriptContext_SetupScript({ buf: Uint8Array.from([YN, 20, 8, END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();
+  return 'byte-VM yesnobox lancé (screenshot pour voir OUI/NON)';
+}
+
+/** Lance un POKEMART via le byte-VM (preuve visuelle) : trouve un symbole de mart dans
+ *  l'image, exécute pokemart <ptr u32> → doPokemart ouvre le shop. */
+export function launchPokemart(martLabel = 'OldaleTown_Mart_Pokemart_Basic'): string {
+  const PM = cmdIdOf('ScrCmd_pokemart'), END = cmdIdOf('ScrCmd_end');
+  // Le ptr produits = OFFSET (reloc) du label mart dans l'image (pas un symbole synthétique).
+  const off = getScriptOffset(martLabel);
+  if (off === undefined) return `byte-VM pokemart : label '${martLabel}' absent de l'image`;
+  const w = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  ScriptContext_SetupScript({ buf: Uint8Array.from([PM, ...w(off), END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();
+  return `byte-VM pokemart '${martLabel}' (@${off}) lancé (screenshot pour voir le shop)`;
+}
+
 /** Test SETWILDBATTLE (STEP 1 déterministe) : setwildbattle species(u16) level(u8) item(u16)
  *  → CreateScriptedWildMon peuple gEnemyParty[0] (species + level corrects). NE boote PAS le
  *  combat (pas de dowildbattle, qui swappe CB2). */
@@ -1017,4 +1117,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, run, VarGet, getScriptOffset };

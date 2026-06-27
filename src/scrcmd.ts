@@ -19,6 +19,8 @@ import { encodeOwText, setStringVar } from '../include/text';
 import { ScrCmd_dotrainerbattle, ScrCmd_gotobeatenscript, ScrCmd_gotopostbattlescript, ScrCmd_trainerbattle, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
 import { PlantBerryTree } from './berry';
 import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer } from './scrcmd_trainer';
+import { DecorationAdd, DecorationRemove, DecorationCheckSpace, CheckHasDecoration } from './decoration';
+import { sContestNames } from './contest_strings';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
 import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon, StartFirstBattle } from './engine/battle/battle-setup-helpers';
@@ -32,7 +34,7 @@ import { FEMALE_GENDER, MALE_GENDER, OPPOSITE_DIR, findNpcByLocalId, findTemplat
 import { ScriptCall, ScriptJump, ScriptReturn, SetupNativeScript, StopScript, getOpcodeHandler, getScript, getText, registerOpcode } from './script';
 import type { ScriptContext } from './script';
 import { Compare, FlagClear, FlagGet, FlagSet, VarGet, VarSet, gSelectedObjectEvent, gSpecialVar } from './engine/script/script-vars';
-import { getMultichoiceList } from './script_menu';
+import { getMultichoiceList, ScriptMenu_Multichoice, ScriptMenu_MultichoiceWithDefault, ScriptMenu_MultichoiceGrid, ScriptMenu_YesNo, spawnYesNoMenu } from './script_menu';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './engine/ui/gba-window-system';
@@ -56,7 +58,7 @@ import { doFieldEffect, setFieldEffectArgument, setWaitFieldEffect } from './scr
 import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
 // mart-lists.json au boot).
-import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
+import { doPokemart } from './shop';
 
 // ─── helpers canoniques (étaient dupliqués à l'identique dans plusieurs sections) ───
 function _vget(arg: string | undefined): number {
@@ -281,15 +283,9 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
  *  bloque le script jusqu'à la fermeture du shop (= net-effect de
  *  CreatePokemartMenu + ScriptContext_Stop). */
 registerOpcode('pokemart', (ctx, args) => {
-  const productsLabel = (args[0] as string) ?? '';
-  const itemList = GetMartItemList(productsLabel);
-  if (itemList.length === 0) {
-    console.warn(`[opcode pokemart] '${productsLabel}' — liste d'objets vide (label inconnu ?)`);
-  }
-  return _runUIOverlay(ctx, async () => {
-    OpenPokemart(itemList);
-    return { isOpen: IsShopMenuOpen };
-  });
+  // 1:1 décomp ScrCmd_pokemart (scrcmd.c:1886) — logique partagée voie A (shop.doPokemart).
+  SetupNativeScript(ctx, doPokemart((args[0] as string) ?? ''));
+  return true;
 });
 
 /** 1:1 décomp `ScrCmd_pokemartdecoration` / `pokemartdecoration2` (scrcmd.c) :
@@ -481,20 +477,7 @@ registerOpcode('checkpcitem', (_ctx, _args) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // scrcmd.c — section « lilycove » (ex src/engine/script/script-opcodes-lilycove.ts)
 // ═══════════════════════════════════════════════════════════════════════════
-// 1:1 décomp `sContestNames[]` (data/lilycove_lady.h:452, indexé
-// CONTEST_CATEGORY_* global.h:86 = COOL 0/BEAUTY 1/CUTE 2/SMART 3/TOUGH 4)
-// → gText_{Coolness,Beauty,Cuteness,Smartness,Toughness}Contest, strings FR
-// décomp strings.c:616-620 (texte ROM FR cité ligne-par-ligne, PAS un enum
-// dérivable → hardcode 1:1 documenté).
-const sContestNames = [
-  'SANG-FROID',   // [CONTEST_CATEGORY_COOL]   gText_CoolnessContest  strings.c:616
-  'BEAUTE',       // [CONTEST_CATEGORY_BEAUTY] gText_BeautyContest    strings.c:617
-  'GRACE',        // [CONTEST_CATEGORY_CUTE]   gText_CutenessContest  strings.c:618
-  'INTELLIGENCE', // [CONTEST_CATEGORY_SMART]  gText_SmartnessContest strings.c:619
-  'ROBUSTESSE',   // [CONTEST_CATEGORY_TOUGH]  gText_ToughnessContest strings.c:620
-] as const;
-
-// 1:1 décomp `ScrCmd_buffercontestname` (scrcmd.c:1635-1642).
+// 1:1 décomp `ScrCmd_buffercontestname` (scrcmd.c:1635-1642). sContestNames = voie A (contest_strings).
 // Mal classé auparavant dans _otherVmStubs (= no-op) alors que c'est un field
 // scrcmd réel → {STR_VAR_N} restait vide dans les dialogs Contest.
 registerOpcode('buffercontestname', (_ctx, args) => {
@@ -1012,24 +995,10 @@ registerOpcode('waitmoncry', (ctx, _args) => {
 /** _vget = VarGet avec fallback '0'. Local au fichier (= 1:1 décomp inline read). */
 
 
-/** Decorations dans le SaveBlock1. 1:1 décomp gSaveBlock1Ptr->decorations[]. */
-function _decorationsArr(): number[] {
-  if (!gSaveBlock1Ptr) return [];
-  if (!gSaveBlock1Ptr.decorations) gSaveBlock1Ptr.decorations = [];
-  return gSaveBlock1Ptr.decorations;
-}
-
 // 1:1 décomp ScrCmd_adddecoration (scrcmd.c:549-555) :
-//   gSpecialVar_Result = DecorationAdd(decorId).
+//   gSpecialVar_Result = DecorationAdd(decorId). Voie A (decoration.ts).
 registerOpcode('adddecoration', (_ctx, args) => {
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  if (arr.length < 256) {
-    arr.push(decorId);
-    VarSet('VAR_RESULT', 1);
-  } else {
-    VarSet('VAR_RESULT', 0);
-  }
+  VarSet('VAR_RESULT', DecorationAdd(_vget(args[0])));
   return false;
 });
 
@@ -1043,15 +1012,7 @@ registerOpcode('givedecoration', (_ctx, args) => {
 // 1:1 décomp ScrCmd_removedecoration (scrcmd.c:557-563) :
 //   gSpecialVar_Result = DecorationRemove(decorId).
 registerOpcode('takedecoration', (_ctx, args) => {
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  const idx = arr.indexOf(decorId);
-  if (idx >= 0) {
-    arr.splice(idx, 1);
-    VarSet('VAR_RESULT', 1);
-  } else {
-    VarSet('VAR_RESULT', 0);
-  }
+  VarSet('VAR_RESULT', DecorationRemove(_vget(args[0])));
   return false;
 });
 
@@ -1063,19 +1024,14 @@ registerOpcode('removedecoration', (_ctx, args) => {
 // 1:1 décomp ScrCmd_checkdecor (scrcmd.c:573-579) :
 //   gSpecialVar_Result = CheckHasDecoration(decorId).
 registerOpcode('checkdecor', (_ctx, args) => {
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  VarSet('VAR_RESULT', arr.includes(decorId) ? 1 : 0);
+  VarSet('VAR_RESULT', CheckHasDecoration(_vget(args[0])));
   return false;
 });
 
 // 1:1 décomp ScrCmd_checkdecorspace (scrcmd.c:565-571) :
-//   gSpecialVar_Result = DecorationCheckSpace(decorId).
+//   gSpecialVar_Result = DecorationCheckSpace(decorId). Voie A.
 registerOpcode('checkdecorspace', (_ctx, args) => {
-  const _decorId = _vget(args[0]);
-  void _decorId;
-  const arr = _decorationsArr();
-  VarSet('VAR_RESULT', arr.length < 256 ? 1 : 0);
+  VarSet('VAR_RESULT', DecorationCheckSpace(_vget(args[0])));
   return false;
 });
 
@@ -2916,115 +2872,25 @@ registerOpcode('seteventmon', (_ctx, args) => {
 // UI window verticale + cursor + A/B input. Data depuis `multichoice-data.ts`
 // (= extraite de `src/data/script_menu.h` via `extract-multichoice-lists.mjs`).
 
-let _multichoiceWindowId = -1;
-
-function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8Array)[], cursorPos: number): void {
-  const count = items.length;
-  if (count === 0) return;
-  // Estimate width : max len of items * 0.5 tile + 2 tiles margin (= rough).
-  // 1:1 décomp utilise `DisplayTextAndGetWidth` + `ConvertPixelWidthToTileWidth`.
-  let maxChars = 4;
-  for (const t of items) {
-    const len = (t ?? '').length;
-    if (len > maxChars) maxChars = len;
-  }
-  const width = Math.max(5, Math.min(28, Math.ceil(maxChars * 0.7) + 2));
-  const tmpl: WindowTemplate = {
-    bg: 0,
-    tilemapLeft: left,
-    tilemapTop: top,
-    width,
-    height: count * 2,
-    paletteNum: 15,
-    baseBlock: 0x125,
-  };
-  _multichoiceWindowId = AddWindow(tmpl);
-  DrawStdFrameWithCustomTileAndPalette(_multichoiceWindowId, true, 0x214, 14);
-  // Print each item sur ligne i (= y = 1 + i * 16).
-  for (let i = 0; i < count; i++) {
-    AddTextPrinterParameterized3(
-      _multichoiceWindowId, 1, 8, 1 + i * 16, [1, 2, 3], 255, items[i] ?? '',
-    );
-  }
-  PutWindowTilemap(_multichoiceWindowId);
-  CopyWindowToVram(_multichoiceWindowId, 3 /* COPYWIN_FULL */);
-  // 1:1 décomp `InitMenuInUpperLeftCornerNormal(windowId, count, cursorPos)`.
-  InitMenuInUpperLeftCornerNormal(_multichoiceWindowId, count, cursorPos);
-}
-
-function _cleanupMultichoiceMenu(): void {
-  if (_multichoiceWindowId >= 0) {
-    ClearStdWindowAndFrame(_multichoiceWindowId, true);
-    RemoveWindow(_multichoiceWindowId);
-    _multichoiceWindowId = -1;
-  }
-}
-
 /** 1:1 décomp `ScrCmd_multichoice(left, top, multichoiceId, ignoreBPress)` :
  *    ScriptMenu_Multichoice(...) → spawn menu + waitstate.
  *    User picks → VAR_RESULT = cursor pos (0..N-1) ou MULTI_B_PRESSED (= 0x7F)
  *    si B pressed et !ignoreBPress, ou cursor pos final si ignoreBPress. */
 registerOpcode('multichoice', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');  // resolves MULTI_X → number
-  const ignoreBPress = parseValue(args[3] ?? '0') !== 0;
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    console.warn(`[opcode multichoice] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=0`);
-    gSpecialVar.Result = 0;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, 0);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;  // MENU_NOTHING_CHOSEN
-    if (result === -1) {
-      // B pressed
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F /* MULTI_B_PRESSED */;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
+  // 1:1 décomp ScrCmd_multichoice (scrcmd.c:1353) — logique partagée voie A (script_menu).
+  const poll = ScriptMenu_Multichoice(parseValue(args[0] ?? '0'), parseValue(args[1] ?? '0'), VarGet(args[2] ?? '0'), parseValue(args[3] ?? '0') !== 0, args[2]);
+  if (!poll) return false;
+  SetupNativeScript(ctx, poll);
   return true;
 });
 
 /** 1:1 décomp `ScrCmd_multichoicedefault` : multichoice avec cursor à
  *  defaultChoice initial. */
 registerOpcode('multichoicedefault', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');
-  const defaultChoice = parseValue(args[3] ?? '0');
-  const ignoreBPress = parseValue(args[4] ?? '0') !== 0;
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    console.warn(`[opcode multichoicedefault] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=${defaultChoice}`);
-    gSpecialVar.Result = defaultChoice;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, defaultChoice);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;
-    if (result === -1) {
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
+  // 1:1 décomp ScrCmd_multichoicedefault (scrcmd.c:1371) — logique partagée voie A.
+  const poll = ScriptMenu_MultichoiceWithDefault(parseValue(args[0] ?? '0'), parseValue(args[1] ?? '0'), VarGet(args[2] ?? '0'), parseValue(args[4] ?? '0') !== 0, parseValue(args[3] ?? '0'), args[2]);
+  if (!poll) return false;
+  SetupNativeScript(ctx, poll);
   return true;
 });
 
@@ -3035,34 +2901,11 @@ registerOpcode('multichoicedefault', (ctx, args) => {
  *  (= seulement utilisé Fortree gym puzzle + elevator menus). Notre port fallback
  *  vertical multichoice (= perRow ignoré → 1 colonne au lieu de N). */
 registerOpcode('multichoicegrid', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');
-  const perRow = parseValue(args[3] ?? '1');
-  const ignoreBPress = parseValue(args[4] ?? '0') !== 0;
-  void perRow;  // dette R3 doc grid layout (= ignored, fallback vertical)
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    console.warn(`[opcode multichoicegrid] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=0`);
-    gSpecialVar.Result = 0;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, 0);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;
-    if (result === -1) {
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
+  // 1:1 décomp ScrCmd_multichoicegrid (scrcmd.c:1401) — logique partagée voie A
+  // (numColumns ignoré → fallback vertical, dette R3 partagée).
+  const poll = ScriptMenu_MultichoiceGrid(parseValue(args[0] ?? '0'), parseValue(args[1] ?? '0'), VarGet(args[2] ?? '0'), parseValue(args[4] ?? '0') !== 0, parseValue(args[3] ?? '1'), args[2]);
+  if (!poll) return false;
+  SetupNativeScript(ctx, poll);
   return true;
 });
 
@@ -3077,46 +2920,10 @@ registerOpcode('multichoicegrid', (ctx, args) => {
 // Window template 1:1 décomp menu.c:98-107 sYesNo_WindowTemplates :
 //   { bg: 0, tilemapLeft: ?, tilemapTop: ?, width: 5, height: 4,
 //     paletteNum: 15, baseBlock: 0x125 }
-export function spawnYesNoMenu(left: number, top: number): void {
-  // 1:1 décomp menu.c:1623 CreateYesNoMenu(window, baseTileNum, paletteNum, initialCursorPos).
-  // STD_WINDOW_BASE_TILE_NUM=0x214, STD_WINDOW_PALETTE_NUM=14 (= cf. menu.c:25-27).
-  const tmpl: WindowTemplate = {
-    bg: 0,
-    tilemapLeft: left,
-    tilemapTop: top,
-    width: 5,
-    height: 4,
-    paletteNum: 15,    // DLG_WINDOW_PALETTE_NUM
-    baseBlock: 0x125,
-  };
-  CreateYesNoMenu(tmpl, 0x214, 14, 0);
-}
-
 registerOpcode('yesnobox', (ctx, args) => {
-  const left = parseValue(args[0]);
-  const top = parseValue(args[1]);
-  spawnYesNoMenu(left, top);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2 /* MENU_NOTHING_CHOSEN */) return false;
-    // 1:1 décomp `script_menu.c:Task_HandleYesNoInput` :
-    //   case 0 (OUI top) → VAR_RESULT = 1 (= YES enum, event.inc:1932)
-    //   case 1 / B_PRESSED → VAR_RESULT = 0 (= NO enum)
-    const yesNoResult = result === 0 ? 1 : 0;
-    gSpecialVar.Result = yesNoResult;
-    // Cleanup yesno window (= 1:1 décomp EraseYesNoWindow déjà fait par
-    // Menu_ProcessInputNoWrapClearOnChoose en interne).
-    const wid = GetYesNoWindowId();
-    if (wid >= 0) {
-      ClearStdWindowAndFrame(wid, true);
-      RemoveWindow(wid);
-    }
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
+  // 1:1 décomp ScrCmd_yesnobox (scrcmd.c:1337) — logique partagée voie A (script_menu).
+  const poll = ScriptMenu_YesNo(parseValue(args[0]), parseValue(args[1]));
+  SetupNativeScript(ctx, poll);
   return true;
 });
 

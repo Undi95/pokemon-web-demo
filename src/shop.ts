@@ -311,6 +311,18 @@ export function OpenPokemart(itemList: string[]): void {
   console.log(`[shop] Pokémart ouvert (${sItemCount} objets)`);
 }
 
+/** 1:1 décomp `ScrCmd_pokemart` net-effect (scrcmd.c:1886 : CreatePokemartMenu(ptr) +
+ *  ScriptContext_Stop) : ouvre le Pokémart en OVERLAY et renvoie le POLL de native script
+ *  (true = shop fermé → reprise du script). Source UNIQUE parsé + byte-VM (voie A) :
+ *  le label produits est résolu en liste d'items via GetMartItemList. */
+export function doPokemart(productsLabel: string): () => boolean {
+  const itemList = GetMartItemList(productsLabel);
+  if (itemList.length === 0) console.warn(`[pokemart] '${productsLabel}' — liste d'objets vide (label inconnu ?)`);
+  let opened = false;
+  void Promise.resolve().then(() => { OpenPokemart(itemList); opened = true; });
+  return () => { if (!opened) return false; return !IsShopMenuOpen(); };
+}
+
 /** Tick pollé chaque frame depuis TestOverworldScene (= overworld actif).
  *  Ne gère que le menu overlay (shop_menu) + la transition vers le buy menu
  *  (buy_goto attend le fade). Le buy menu plein écran est tické par Task_BuyMenu

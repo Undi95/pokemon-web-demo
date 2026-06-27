@@ -65,7 +65,7 @@ import {
   isPlayerStepFinished,
 } from './script-opcodes-helpers';
 import { invokeSpecial as _invokeSpecial } from '../../scrcmd';
-import { spawnYesNoMenu } from '../../scrcmd';
+import { spawnYesNoMenu } from '../../script_menu';
 // Re-export pour préserver les imports externes (= bedroom-pc.ts, wallclock-flow.ts,
 // region-map.ts, specials-registry.ts).
 export { SignalWaitState, registerSpecial } from '../../scrcmd';
