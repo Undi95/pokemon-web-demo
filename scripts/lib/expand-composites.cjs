@@ -216,7 +216,10 @@ function expand(name, args, depth = 0) {
 }
 
 function expandLine(line) {
-  const inv = parseInvocation(line);
+  // retire un commentaire `@ …` collé à la ligne (bruit d'extraction JSON)
+  const at = String(line).indexOf('@');
+  const clean = at === -1 ? String(line) : String(line).slice(0, at);
+  const inv = parseInvocation(clean);
   return expand(inv.name, inv.args);
 }
 

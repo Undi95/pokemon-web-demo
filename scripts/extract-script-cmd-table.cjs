@@ -319,7 +319,7 @@ function main() {
     if (macro.name === 'trainerbattle') {
       const tb = analyzeTrainerbattle(macro);
       const cmdId = resolveId(tb.op, macro.name);
-      opcodes[macro.name] = { op: tb.op, cmdId, handler: handlerOf(tb.op), args: tb.args, byType: tb.byType };
+      opcodes[macro.name] = { op: tb.op, cmdId, handler: handlerOf(tb.op), params: macro.params, args: tb.args, byType: tb.byType };
       recordEmitter(tb.op, macro.name);
       continue;
     }
@@ -336,7 +336,7 @@ function main() {
         { when: `${ifbVar}_present`, op: aFalse.op, cmdId: resolveId(aFalse.op, macro.name), handler: handlerOf(aFalse.op),
           args: aFalse.args, totalBytes: totalBytes(aFalse.args) },
       ];
-      opcodes[macro.name] = { selectedBy: ifbVar, variants };
+      opcodes[macro.name] = { selectedBy: ifbVar, params: macro.params, variants };
       recordEmitter(aTrue.op, macro.name);
       recordEmitter(aFalse.op, macro.name);
       const unk = [...aTrue.unknown, ...aFalse.unknown];
@@ -348,7 +348,7 @@ function main() {
     const a = analyzeStraightLine(macro, dirs);
     if (!a.op) { flagged.push({ macro: macro.name, error: 'aucun SCR_OP détecté' }); continue; }
     const cmdId = resolveId(a.op, macro.name);
-    const rec = { op: a.op, cmdId, handler: handlerOf(a.op), args: a.args, totalBytes: totalBytes(a.args) };
+    const rec = { op: a.op, cmdId, handler: handlerOf(a.op), params: macro.params, args: a.args, totalBytes: totalBytes(a.args) };
     if (a.appendsWaitstate) rec.appendsWaitstate = true;
     opcodes[macro.name] = rec;
     recordEmitter(a.op, macro.name);

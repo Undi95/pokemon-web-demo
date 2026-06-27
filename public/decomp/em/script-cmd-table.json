@@ -1147,6 +1147,7 @@
       "op": "SCR_OP_NOP",
       "cmdId": 0,
       "handler": "ScrCmd_nop",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1154,6 +1155,7 @@
       "op": "SCR_OP_NOP1",
       "cmdId": 1,
       "handler": "ScrCmd_nop1",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1161,6 +1163,7 @@
       "op": "SCR_OP_END",
       "cmdId": 2,
       "handler": "ScrCmd_end",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1168,6 +1171,7 @@
       "op": "SCR_OP_RETURN",
       "cmdId": 3,
       "handler": "ScrCmd_return",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1175,6 +1179,11 @@
       "op": "SCR_OP_CALL",
       "cmdId": 4,
       "handler": "ScrCmd_call",
+      "params": [
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1188,6 +1197,11 @@
       "op": "SCR_OP_GOTO",
       "cmdId": 5,
       "handler": "ScrCmd_goto",
+      "params": [
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1201,6 +1215,14 @@
       "op": "SCR_OP_GOTO_IF",
       "cmdId": 6,
       "handler": "ScrCmd_goto_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1219,6 +1241,14 @@
       "op": "SCR_OP_CALL_IF",
       "cmdId": 7,
       "handler": "ScrCmd_call_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1237,6 +1267,11 @@
       "op": "SCR_OP_GOTO_STD",
       "cmdId": 8,
       "handler": "ScrCmd_gotostd",
+      "params": [
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1250,6 +1285,11 @@
       "op": "SCR_OP_CALL_STD",
       "cmdId": 9,
       "handler": "ScrCmd_callstd",
+      "params": [
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1263,6 +1303,14 @@
       "op": "SCR_OP_GOTO_STD_IF",
       "cmdId": 10,
       "handler": "ScrCmd_gotostd_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1281,6 +1329,14 @@
       "op": "SCR_OP_CALL_STD_IF",
       "cmdId": 11,
       "handler": "ScrCmd_callstd_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1299,6 +1355,7 @@
       "op": "SCR_OP_RETURNRAM",
       "cmdId": 12,
       "handler": "ScrCmd_returnram",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1306,6 +1363,7 @@
       "op": "SCR_OP_ENDRAM",
       "cmdId": 13,
       "handler": "ScrCmd_endram",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1313,6 +1371,11 @@
       "op": "SCR_OP_SETMYSTERYEVENTSTATUS",
       "cmdId": 14,
       "handler": "ScrCmd_setmysteryeventstatus",
+      "params": [
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1326,6 +1389,14 @@
       "op": "SCR_OP_LOAD_WORD",
       "cmdId": 15,
       "handler": "ScrCmd_loadword",
+      "params": [
+        {
+          "name": "destIndex"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1344,6 +1415,14 @@
       "op": "SCR_OP_LOAD_BYTE",
       "cmdId": 16,
       "handler": "ScrCmd_loadbyte",
+      "params": [
+        {
+          "name": "destIndex"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1362,6 +1441,14 @@
       "op": "SCR_OP_SETPTR",
       "cmdId": 17,
       "handler": "ScrCmd_setptr",
+      "params": [
+        {
+          "name": "value"
+        },
+        {
+          "name": "ptr"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1380,6 +1467,14 @@
       "op": "SCR_OP_LOADBYTEFROMPTR",
       "cmdId": 18,
       "handler": "ScrCmd_loadbytefromptr",
+      "params": [
+        {
+          "name": "destIndex"
+        },
+        {
+          "name": "source"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1398,6 +1493,14 @@
       "op": "SCR_OP_SETPTRBYTE",
       "cmdId": 19,
       "handler": "ScrCmd_setptrbyte",
+      "params": [
+        {
+          "name": "srcIndex"
+        },
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1416,6 +1519,14 @@
       "op": "SCR_OP_COPYLOCAL",
       "cmdId": 20,
       "handler": "ScrCmd_copylocal",
+      "params": [
+        {
+          "name": "destIndex"
+        },
+        {
+          "name": "srcIndex"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1434,6 +1545,14 @@
       "op": "SCR_OP_COPYBYTE",
       "cmdId": 21,
       "handler": "ScrCmd_copybyte",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "source"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1452,6 +1571,18 @@
       "op": "SCR_OP_SETVAR",
       "cmdId": 22,
       "handler": "ScrCmd_setvar",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "value"
+        },
+        {
+          "name": "warn",
+          "def": "TRUE"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1470,6 +1601,14 @@
       "op": "SCR_OP_ADDVAR",
       "cmdId": 23,
       "handler": "ScrCmd_addvar",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1488,6 +1627,14 @@
       "op": "SCR_OP_SUBVAR",
       "cmdId": 24,
       "handler": "ScrCmd_subvar",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1506,6 +1653,18 @@
       "op": "SCR_OP_COPYVAR",
       "cmdId": 25,
       "handler": "ScrCmd_copyvar",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "source"
+        },
+        {
+          "name": "warn",
+          "def": "TRUE"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1524,6 +1683,14 @@
       "op": "SCR_OP_SETORCOPYVAR",
       "cmdId": 26,
       "handler": "ScrCmd_setorcopyvar",
+      "params": [
+        {
+          "name": "destination"
+        },
+        {
+          "name": "source"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1542,6 +1709,14 @@
       "op": "SCR_OP_COMPARE_LOCAL_TO_LOCAL",
       "cmdId": 27,
       "handler": "ScrCmd_compare_local_to_local",
+      "params": [
+        {
+          "name": "local1"
+        },
+        {
+          "name": "local2"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1560,6 +1735,14 @@
       "op": "SCR_OP_COMPARE_LOCAL_TO_VALUE",
       "cmdId": 28,
       "handler": "ScrCmd_compare_local_to_value",
+      "params": [
+        {
+          "name": "local"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1578,6 +1761,14 @@
       "op": "SCR_OP_COMPARE_LOCAL_TO_PTR",
       "cmdId": 29,
       "handler": "ScrCmd_compare_local_to_ptr",
+      "params": [
+        {
+          "name": "local"
+        },
+        {
+          "name": "ptr"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1596,6 +1787,14 @@
       "op": "SCR_OP_COMPARE_PTR_TO_LOCAL",
       "cmdId": 30,
       "handler": "ScrCmd_compare_ptr_to_local",
+      "params": [
+        {
+          "name": "ptr"
+        },
+        {
+          "name": "local"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1614,6 +1813,14 @@
       "op": "SCR_OP_COMPARE_PTR_TO_VALUE",
       "cmdId": 31,
       "handler": "ScrCmd_compare_ptr_to_value",
+      "params": [
+        {
+          "name": "ptr"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1632,6 +1839,14 @@
       "op": "SCR_OP_COMPARE_PTR_TO_PTR",
       "cmdId": 32,
       "handler": "ScrCmd_compare_ptr_to_ptr",
+      "params": [
+        {
+          "name": "ptr1"
+        },
+        {
+          "name": "ptr2"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1650,6 +1865,14 @@
       "op": "SCR_OP_COMPARE_VAR_TO_VALUE",
       "cmdId": 33,
       "handler": "ScrCmd_compare_var_to_value",
+      "params": [
+        {
+          "name": "var"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1668,6 +1891,14 @@
       "op": "SCR_OP_COMPARE_VAR_TO_VAR",
       "cmdId": 34,
       "handler": "ScrCmd_compare_var_to_var",
+      "params": [
+        {
+          "name": "var1"
+        },
+        {
+          "name": "var2"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1686,6 +1917,11 @@
       "op": "SCR_OP_CALLNATIVE",
       "cmdId": 35,
       "handler": "ScrCmd_callnative",
+      "params": [
+        {
+          "name": "func"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1699,6 +1935,11 @@
       "op": "SCR_OP_GOTONATIVE",
       "cmdId": 36,
       "handler": "ScrCmd_gotonative",
+      "params": [
+        {
+          "name": "func"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -1712,6 +1953,11 @@
       "op": "SCR_OP_SPECIAL",
       "cmdId": 37,
       "handler": "ScrCmd_special",
+      "params": [
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1726,6 +1972,14 @@
       "op": "SCR_OP_SPECIALVAR",
       "cmdId": 38,
       "handler": "ScrCmd_specialvar",
+      "params": [
+        {
+          "name": "output"
+        },
+        {
+          "name": "function"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1745,6 +1999,12 @@
       "op": "SCR_OP_WAITSTATE",
       "cmdId": 39,
       "handler": "ScrCmd_waitstate",
+      "params": [
+        {
+          "name": "implicit",
+          "def": "0"
+        }
+      ],
       "args": [],
       "totalBytes": 0
     },
@@ -1752,6 +2012,11 @@
       "op": "SCR_OP_DELAY",
       "cmdId": 40,
       "handler": "ScrCmd_delay",
+      "params": [
+        {
+          "name": "frames"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1765,6 +2030,11 @@
       "op": "SCR_OP_SETFLAG",
       "cmdId": 41,
       "handler": "ScrCmd_setflag",
+      "params": [
+        {
+          "name": "flag"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1778,6 +2048,11 @@
       "op": "SCR_OP_CLEARFLAG",
       "cmdId": 42,
       "handler": "ScrCmd_clearflag",
+      "params": [
+        {
+          "name": "flag"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1791,6 +2066,11 @@
       "op": "SCR_OP_CHECKFLAG",
       "cmdId": 43,
       "handler": "ScrCmd_checkflag",
+      "params": [
+        {
+          "name": "flag"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1804,6 +2084,14 @@
       "op": "SCR_OP_INITCLOCK",
       "cmdId": 44,
       "handler": "ScrCmd_initclock",
+      "params": [
+        {
+          "name": "hour"
+        },
+        {
+          "name": "minute"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1822,6 +2110,7 @@
       "op": "SCR_OP_DOTIMEBASEDEVENTS",
       "cmdId": 45,
       "handler": "ScrCmd_dotimebasedevents",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1829,6 +2118,7 @@
       "op": "SCR_OP_GETTIME",
       "cmdId": 46,
       "handler": "ScrCmd_gettime",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1836,6 +2126,11 @@
       "op": "SCR_OP_PLAYSE",
       "cmdId": 47,
       "handler": "ScrCmd_playse",
+      "params": [
+        {
+          "name": "song"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1849,6 +2144,7 @@
       "op": "SCR_OP_WAITSE",
       "cmdId": 48,
       "handler": "ScrCmd_waitse",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1856,6 +2152,11 @@
       "op": "SCR_OP_PLAYFANFARE",
       "cmdId": 49,
       "handler": "ScrCmd_playfanfare",
+      "params": [
+        {
+          "name": "song"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1869,6 +2170,7 @@
       "op": "SCR_OP_WAITFANFARE",
       "cmdId": 50,
       "handler": "ScrCmd_waitfanfare",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1876,6 +2178,14 @@
       "op": "SCR_OP_PLAYBGM",
       "cmdId": 51,
       "handler": "ScrCmd_playbgm",
+      "params": [
+        {
+          "name": "song"
+        },
+        {
+          "name": "save_song"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1894,6 +2204,11 @@
       "op": "SCR_OP_SAVEBGM",
       "cmdId": 52,
       "handler": "ScrCmd_savebgm",
+      "params": [
+        {
+          "name": "song"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1907,6 +2222,7 @@
       "op": "SCR_OP_FADEDEFAULTBGM",
       "cmdId": 53,
       "handler": "ScrCmd_fadedefaultbgm",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -1914,6 +2230,11 @@
       "op": "SCR_OP_FADENEWBGM",
       "cmdId": 54,
       "handler": "ScrCmd_fadenewbgm",
+      "params": [
+        {
+          "name": "song"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1927,6 +2248,11 @@
       "op": "SCR_OP_FADEOUTBGM",
       "cmdId": 55,
       "handler": "ScrCmd_fadeoutbgm",
+      "params": [
+        {
+          "name": "speed"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1940,6 +2266,11 @@
       "op": "SCR_OP_FADEINBGM",
       "cmdId": 56,
       "handler": "ScrCmd_fadeinbgm",
+      "params": [
+        {
+          "name": "speed"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -1953,6 +2284,20 @@
       "op": "SCR_OP_WARP",
       "cmdId": 57,
       "handler": "ScrCmd_warp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -1981,6 +2326,20 @@
       "op": "SCR_OP_WARPSILENT",
       "cmdId": 58,
       "handler": "ScrCmd_warpsilent",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2009,6 +2368,20 @@
       "op": "SCR_OP_WARPDOOR",
       "cmdId": 59,
       "handler": "ScrCmd_warpdoor",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2037,6 +2410,11 @@
       "op": "SCR_OP_WARPHOLE",
       "cmdId": 60,
       "handler": "ScrCmd_warphole",
+      "params": [
+        {
+          "name": "map"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2050,6 +2428,20 @@
       "op": "SCR_OP_WARPTELEPORT",
       "cmdId": 61,
       "handler": "ScrCmd_warpteleport",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2078,6 +2470,20 @@
       "op": "SCR_OP_SETWARP",
       "cmdId": 62,
       "handler": "ScrCmd_setwarp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2106,6 +2512,20 @@
       "op": "SCR_OP_SETDYNAMICWARP",
       "cmdId": 63,
       "handler": "ScrCmd_setdynamicwarp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2134,6 +2554,20 @@
       "op": "SCR_OP_SETDIVEWARP",
       "cmdId": 64,
       "handler": "ScrCmd_setdivewarp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2162,6 +2596,22 @@
       "op": "SCR_OP_SETHOLEWARP",
       "cmdId": 65,
       "handler": "ScrCmd_setholewarp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a",
+          "def": "0"
+        },
+        {
+          "name": "b",
+          "def": "0"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2190,6 +2640,14 @@
       "op": "SCR_OP_GETPLAYERXY",
       "cmdId": 66,
       "handler": "ScrCmd_getplayerxy",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2208,6 +2666,7 @@
       "op": "SCR_OP_GETPARTYSIZE",
       "cmdId": 67,
       "handler": "ScrCmd_getpartysize",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2215,6 +2674,15 @@
       "op": "SCR_OP_ADDITEM",
       "cmdId": 68,
       "handler": "ScrCmd_additem",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2233,6 +2701,15 @@
       "op": "SCR_OP_REMOVEITEM",
       "cmdId": 69,
       "handler": "ScrCmd_removeitem",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2251,6 +2728,15 @@
       "op": "SCR_OP_CHECKITEMSPACE",
       "cmdId": 70,
       "handler": "ScrCmd_checkitemspace",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2269,6 +2755,15 @@
       "op": "SCR_OP_CHECKITEM",
       "cmdId": 71,
       "handler": "ScrCmd_checkitem",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2287,6 +2782,11 @@
       "op": "SCR_OP_CHECKITEMTYPE",
       "cmdId": 72,
       "handler": "ScrCmd_checkitemtype",
+      "params": [
+        {
+          "name": "itemId"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2300,6 +2800,15 @@
       "op": "SCR_OP_ADDPCITEM",
       "cmdId": 73,
       "handler": "ScrCmd_addpcitem",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2318,6 +2827,15 @@
       "op": "SCR_OP_CHECKPCITEM",
       "cmdId": 74,
       "handler": "ScrCmd_checkpcitem",
+      "params": [
+        {
+          "name": "itemId"
+        },
+        {
+          "name": "quantity",
+          "def": "1"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2336,6 +2854,11 @@
       "op": "SCR_OP_ADDDECORATION",
       "cmdId": 75,
       "handler": "ScrCmd_adddecoration",
+      "params": [
+        {
+          "name": "decoration"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2349,6 +2872,11 @@
       "op": "SCR_OP_REMOVEDECORATION",
       "cmdId": 76,
       "handler": "ScrCmd_removedecoration",
+      "params": [
+        {
+          "name": "decoration"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2362,6 +2890,11 @@
       "op": "SCR_OP_CHECKDECOR",
       "cmdId": 77,
       "handler": "ScrCmd_checkdecor",
+      "params": [
+        {
+          "name": "decoration"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2375,6 +2908,11 @@
       "op": "SCR_OP_CHECKDECORSPACE",
       "cmdId": 78,
       "handler": "ScrCmd_checkdecorspace",
+      "params": [
+        {
+          "name": "decoration"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2386,6 +2924,17 @@
     },
     "applymovement": {
       "selectedBy": "map",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "movements"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "variants": [
         {
           "when": "map_absent",
@@ -2434,6 +2983,15 @@
     },
     "waitmovement": {
       "selectedBy": "map",
+      "params": [
+        {
+          "name": "localId",
+          "def": "LOCALID_NONE"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "variants": [
         {
           "when": "map_absent",
@@ -2472,6 +3030,14 @@
     },
     "removeobject": {
       "selectedBy": "map",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "variants": [
         {
           "when": "map_absent",
@@ -2510,6 +3076,14 @@
     },
     "addobject": {
       "selectedBy": "map",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "variants": [
         {
           "when": "map_absent",
@@ -2550,6 +3124,17 @@
       "op": "SCR_OP_SETOBJECTXY",
       "cmdId": 87,
       "handler": "ScrCmd_setobjectxy",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2573,6 +3158,14 @@
       "op": "SCR_OP_SHOWOBJECTAT",
       "cmdId": 88,
       "handler": "ScrCmd_showobjectat",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2591,6 +3184,7 @@
       "op": "SCR_OP_SHOWOBJECTAT",
       "cmdId": 88,
       "handler": "ScrCmd_showobjectat",
+      "params": [],
       "args": [
         {
           "width": 2,
@@ -2614,6 +3208,14 @@
       "op": "SCR_OP_HIDEOBJECTAT",
       "cmdId": 89,
       "handler": "ScrCmd_hideobjectat",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2632,6 +3234,7 @@
       "op": "SCR_OP_HIDEOBJECTAT",
       "cmdId": 89,
       "handler": "ScrCmd_hideobjectat",
+      "params": [],
       "args": [
         {
           "width": 2,
@@ -2655,6 +3258,7 @@
       "op": "SCR_OP_FACEPLAYER",
       "cmdId": 90,
       "handler": "ScrCmd_faceplayer",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2662,6 +3266,14 @@
       "op": "SCR_OP_TURNOBJECT",
       "cmdId": 91,
       "handler": "ScrCmd_turnobject",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "direction"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2680,6 +3292,29 @@
       "op": "SCR_OP_TRAINERBATTLE",
       "cmdId": 92,
       "handler": "ScrCmd_trainerbattle",
+      "params": [
+        {
+          "name": "type"
+        },
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "local_id"
+        },
+        {
+          "name": "pointer1"
+        },
+        {
+          "name": "pointer2"
+        },
+        {
+          "name": "pointer3"
+        },
+        {
+          "name": "pointer4"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -2763,6 +3398,7 @@
       "op": "SCR_OP_DOTRAINERBATTLE",
       "cmdId": 93,
       "handler": "ScrCmd_dotrainerbattle",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2770,6 +3406,7 @@
       "op": "SCR_OP_GOTOPOSTBATTLESCRIPT",
       "cmdId": 94,
       "handler": "ScrCmd_gotopostbattlescript",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2777,6 +3414,7 @@
       "op": "SCR_OP_GOTOBEATENSCRIPT",
       "cmdId": 95,
       "handler": "ScrCmd_gotobeatenscript",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2784,6 +3422,11 @@
       "op": "SCR_OP_CHECKTRAINERFLAG",
       "cmdId": 96,
       "handler": "ScrCmd_checktrainerflag",
+      "params": [
+        {
+          "name": "trainer"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2797,6 +3440,11 @@
       "op": "SCR_OP_SETTRAINERFLAG",
       "cmdId": 97,
       "handler": "ScrCmd_settrainerflag",
+      "params": [
+        {
+          "name": "trainer"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2810,6 +3458,11 @@
       "op": "SCR_OP_CLEARTRAINERFLAG",
       "cmdId": 98,
       "handler": "ScrCmd_cleartrainerflag",
+      "params": [
+        {
+          "name": "trainer"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2823,6 +3476,17 @@
       "op": "SCR_OP_SETOBJECTXYPERM",
       "cmdId": 99,
       "handler": "ScrCmd_setobjectxyperm",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2846,6 +3510,11 @@
       "op": "SCR_OP_COPYOBJECTXYTOPERM",
       "cmdId": 100,
       "handler": "ScrCmd_copyobjectxytoperm",
+      "params": [
+        {
+          "name": "localId"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2859,6 +3528,14 @@
       "op": "SCR_OP_SETOBJECTMOVEMENTTYPE",
       "cmdId": 101,
       "handler": "ScrCmd_setobjectmovementtype",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "movementType"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -2877,6 +3554,7 @@
       "op": "SCR_OP_WAITMESSAGE",
       "cmdId": 102,
       "handler": "ScrCmd_waitmessage",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2884,6 +3562,11 @@
       "op": "SCR_OP_MESSAGE",
       "cmdId": 103,
       "handler": "ScrCmd_message",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -2897,6 +3580,7 @@
       "op": "SCR_OP_CLOSEMESSAGE",
       "cmdId": 104,
       "handler": "ScrCmd_closemessage",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2904,6 +3588,7 @@
       "op": "SCR_OP_LOCKALL",
       "cmdId": 105,
       "handler": "ScrCmd_lockall",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2911,6 +3596,7 @@
       "op": "SCR_OP_LOCK",
       "cmdId": 106,
       "handler": "ScrCmd_lock",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2918,6 +3604,7 @@
       "op": "SCR_OP_RELEASEALL",
       "cmdId": 107,
       "handler": "ScrCmd_releaseall",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2925,6 +3612,7 @@
       "op": "SCR_OP_RELEASE",
       "cmdId": 108,
       "handler": "ScrCmd_release",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2932,6 +3620,7 @@
       "op": "SCR_OP_WAITBUTTONPRESS",
       "cmdId": 109,
       "handler": "ScrCmd_waitbuttonpress",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -2939,6 +3628,14 @@
       "op": "SCR_OP_YESNOBOX",
       "cmdId": 110,
       "handler": "ScrCmd_yesnobox",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -2957,6 +3654,20 @@
       "op": "SCR_OP_MULTICHOICE",
       "cmdId": 111,
       "handler": "ScrCmd_multichoice",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "multichoiceId"
+        },
+        {
+          "name": "ignoreBPress"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -2985,6 +3696,23 @@
       "op": "SCR_OP_MULTICHOICEDEFAULT",
       "cmdId": 112,
       "handler": "ScrCmd_multichoicedefault",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "multichoiceId"
+        },
+        {
+          "name": "default"
+        },
+        {
+          "name": "ignoreBPress"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3018,6 +3746,23 @@
       "op": "SCR_OP_MULTICHOICEGRID",
       "cmdId": 113,
       "handler": "ScrCmd_multichoicegrid",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "multichoiceId"
+        },
+        {
+          "name": "per_row"
+        },
+        {
+          "name": "ignoreBPress"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3051,6 +3796,7 @@
       "op": "SCR_OP_DRAWBOX",
       "cmdId": 114,
       "handler": "ScrCmd_drawbox",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3058,6 +3804,20 @@
       "op": "SCR_OP_ERASEBOX",
       "cmdId": 115,
       "handler": "ScrCmd_erasebox",
+      "params": [
+        {
+          "name": "left"
+        },
+        {
+          "name": "top"
+        },
+        {
+          "name": "right"
+        },
+        {
+          "name": "bottom"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3086,6 +3846,20 @@
       "op": "SCR_OP_DRAWBOXTEXT",
       "cmdId": 116,
       "handler": "ScrCmd_drawboxtext",
+      "params": [
+        {
+          "name": "left"
+        },
+        {
+          "name": "top"
+        },
+        {
+          "name": "multichoiceId"
+        },
+        {
+          "name": "ignoreBPress"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3114,6 +3888,17 @@
       "op": "SCR_OP_SHOWMONPIC",
       "cmdId": 117,
       "handler": "ScrCmd_showmonpic",
+      "params": [
+        {
+          "name": "species"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3137,6 +3922,7 @@
       "op": "SCR_OP_HIDEMONPIC",
       "cmdId": 118,
       "handler": "ScrCmd_hidemonpic",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3144,6 +3930,11 @@
       "op": "SCR_OP_SHOWCONTESTPAINTING",
       "cmdId": 119,
       "handler": "ScrCmd_showcontestpainting",
+      "params": [
+        {
+          "name": "winnerId"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3157,6 +3948,11 @@
       "op": "SCR_OP_BRAILLEMESSAGE",
       "cmdId": 120,
       "handler": "ScrCmd_braillemessage",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3170,6 +3966,18 @@
       "op": "SCR_OP_GIVEMON",
       "cmdId": 121,
       "handler": "ScrCmd_givemon",
+      "params": [
+        {
+          "name": "species"
+        },
+        {
+          "name": "level"
+        },
+        {
+          "name": "item",
+          "def": "ITEM_NONE"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3208,6 +4016,11 @@
       "op": "SCR_OP_GIVEEGG",
       "cmdId": 122,
       "handler": "ScrCmd_giveegg",
+      "params": [
+        {
+          "name": "species"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3221,6 +4034,17 @@
       "op": "SCR_OP_SETMONMOVE",
       "cmdId": 123,
       "handler": "ScrCmd_setmonmove",
+      "params": [
+        {
+          "name": "partyIndex"
+        },
+        {
+          "name": "slot"
+        },
+        {
+          "name": "move"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3244,6 +4068,11 @@
       "op": "SCR_OP_CHECKPARTYMOVE",
       "cmdId": 124,
       "handler": "ScrCmd_checkpartymove",
+      "params": [
+        {
+          "name": "move"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3257,6 +4086,14 @@
       "op": "SCR_OP_BUFFERSPECIESNAME",
       "cmdId": 125,
       "handler": "ScrCmd_bufferspeciesname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "species"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3275,6 +4112,11 @@
       "op": "SCR_OP_BUFFERLEADMONSPECIESNAME",
       "cmdId": 126,
       "handler": "ScrCmd_bufferleadmonspeciesname",
+      "params": [
+        {
+          "name": "stringVarId"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3288,6 +4130,14 @@
       "op": "SCR_OP_BUFFERPARTYMONNICK",
       "cmdId": 127,
       "handler": "ScrCmd_bufferpartymonnick",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "slot"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3306,6 +4156,14 @@
       "op": "SCR_OP_BUFFERITEMNAME",
       "cmdId": 128,
       "handler": "ScrCmd_bufferitemname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "item"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3324,6 +4182,14 @@
       "op": "SCR_OP_BUFFERDECORATIONNAME",
       "cmdId": 129,
       "handler": "ScrCmd_bufferdecorationname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "decoration"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3342,6 +4208,14 @@
       "op": "SCR_OP_BUFFERMOVENAME",
       "cmdId": 130,
       "handler": "ScrCmd_buffermovename",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "move"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3360,6 +4234,14 @@
       "op": "SCR_OP_BUFFERNUMBERSTRING",
       "cmdId": 131,
       "handler": "ScrCmd_buffernumberstring",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "input"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3378,6 +4260,14 @@
       "op": "SCR_OP_BUFFERSTDSTRING",
       "cmdId": 132,
       "handler": "ScrCmd_bufferstdstring",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "index"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3396,6 +4286,14 @@
       "op": "SCR_OP_BUFFERSTRING",
       "cmdId": 133,
       "handler": "ScrCmd_bufferstring",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3414,6 +4312,11 @@
       "op": "SCR_OP_POKEMART",
       "cmdId": 134,
       "handler": "ScrCmd_pokemart",
+      "params": [
+        {
+          "name": "products"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3427,6 +4330,11 @@
       "op": "SCR_OP_POKEMARTDECORATION",
       "cmdId": 135,
       "handler": "ScrCmd_pokemartdecoration",
+      "params": [
+        {
+          "name": "products"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3440,6 +4348,11 @@
       "op": "SCR_OP_POKEMARTDECORATION2",
       "cmdId": 136,
       "handler": "ScrCmd_pokemartdecoration2",
+      "params": [
+        {
+          "name": "products"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3453,6 +4366,11 @@
       "op": "SCR_OP_PLAYSLOTMACHINE",
       "cmdId": 137,
       "handler": "ScrCmd_playslotmachine",
+      "params": [
+        {
+          "name": "id"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3466,6 +4384,17 @@
       "op": "SCR_OP_SETBERRYTREE",
       "cmdId": 138,
       "handler": "ScrCmd_setberrytree",
+      "params": [
+        {
+          "name": "treeId"
+        },
+        {
+          "name": "berry"
+        },
+        {
+          "name": "growthStage"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3489,6 +4418,7 @@
       "op": "SCR_OP_CHOOSECONTESTMON",
       "cmdId": 139,
       "handler": "ScrCmd_choosecontestmon",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3496,6 +4426,7 @@
       "op": "SCR_OP_STARTCONTEST",
       "cmdId": 140,
       "handler": "ScrCmd_startcontest",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3503,6 +4434,7 @@
       "op": "SCR_OP_SHOWCONTESTRESULTS",
       "cmdId": 141,
       "handler": "ScrCmd_showcontestresults",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3510,6 +4442,7 @@
       "op": "SCR_OP_CONTESTLINKTRANSFER",
       "cmdId": 142,
       "handler": "ScrCmd_contestlinktransfer",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3517,6 +4450,11 @@
       "op": "SCR_OP_RANDOM",
       "cmdId": 143,
       "handler": "ScrCmd_random",
+      "params": [
+        {
+          "name": "limit"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3530,6 +4468,15 @@
       "op": "SCR_OP_ADDMONEY",
       "cmdId": 144,
       "handler": "ScrCmd_addmoney",
+      "params": [
+        {
+          "name": "value"
+        },
+        {
+          "name": "disable",
+          "def": "0"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3548,6 +4495,15 @@
       "op": "SCR_OP_REMOVEMONEY",
       "cmdId": 145,
       "handler": "ScrCmd_removemoney",
+      "params": [
+        {
+          "name": "value"
+        },
+        {
+          "name": "disable",
+          "def": "0"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3566,6 +4522,15 @@
       "op": "SCR_OP_CHECKMONEY",
       "cmdId": 146,
       "handler": "ScrCmd_checkmoney",
+      "params": [
+        {
+          "name": "value"
+        },
+        {
+          "name": "disable",
+          "def": "0"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3584,6 +4549,18 @@
       "op": "SCR_OP_SHOWMONEYBOX",
       "cmdId": 147,
       "handler": "ScrCmd_showmoneybox",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "disable",
+          "def": "0"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3607,6 +4584,7 @@
       "op": "SCR_OP_HIDEMONEYBOX",
       "cmdId": 148,
       "handler": "ScrCmd_hidemoneybox",
+      "params": [],
       "args": [
         {
           "width": 1,
@@ -3625,6 +4603,12 @@
       "op": "SCR_OP_UPDATEMONEYBOX",
       "cmdId": 149,
       "handler": "ScrCmd_updatemoneybox",
+      "params": [
+        {
+          "name": "disable",
+          "def": "0"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3648,6 +4632,11 @@
       "op": "SCR_OP_GETPOKENEWSACTIVE",
       "cmdId": 150,
       "handler": "ScrCmd_getpokenewsactive",
+      "params": [
+        {
+          "name": "newsKind"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3661,6 +4650,11 @@
       "op": "SCR_OP_FADESCREEN",
       "cmdId": 151,
       "handler": "ScrCmd_fadescreen",
+      "params": [
+        {
+          "name": "mode"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3674,6 +4668,14 @@
       "op": "SCR_OP_FADESCREENSPEED",
       "cmdId": 152,
       "handler": "ScrCmd_fadescreenspeed",
+      "params": [
+        {
+          "name": "mode"
+        },
+        {
+          "name": "speed"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3692,6 +4694,11 @@
       "op": "SCR_OP_SETFLASHLEVEL",
       "cmdId": 153,
       "handler": "ScrCmd_setflashlevel",
+      "params": [
+        {
+          "name": "level"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3705,6 +4712,11 @@
       "op": "SCR_OP_ANIMATEFLASH",
       "cmdId": 154,
       "handler": "ScrCmd_animateflash",
+      "params": [
+        {
+          "name": "level"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3718,6 +4730,11 @@
       "op": "SCR_OP_MESSAGEAUTOSCROLL",
       "cmdId": 155,
       "handler": "ScrCmd_messageautoscroll",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -3731,6 +4748,11 @@
       "op": "SCR_OP_DOFIELDEFFECT",
       "cmdId": 156,
       "handler": "ScrCmd_dofieldeffect",
+      "params": [
+        {
+          "name": "animation"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3744,6 +4766,14 @@
       "op": "SCR_OP_SETFIELDEFFECTARGUMENT",
       "cmdId": 157,
       "handler": "ScrCmd_setfieldeffectargument",
+      "params": [
+        {
+          "name": "argNum"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3762,6 +4792,11 @@
       "op": "SCR_OP_WAITFIELDEFFECT",
       "cmdId": 158,
       "handler": "ScrCmd_waitfieldeffect",
+      "params": [
+        {
+          "name": "animation"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3775,6 +4810,11 @@
       "op": "SCR_OP_SETRESPAWN",
       "cmdId": 159,
       "handler": "ScrCmd_setrespawn",
+      "params": [
+        {
+          "name": "heallocation"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3788,6 +4828,7 @@
       "op": "SCR_OP_CHECKPLAYERGENDER",
       "cmdId": 160,
       "handler": "ScrCmd_checkplayergender",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3795,6 +4836,14 @@
       "op": "SCR_OP_PLAYMONCRY",
       "cmdId": 161,
       "handler": "ScrCmd_playmoncry",
+      "params": [
+        {
+          "name": "species"
+        },
+        {
+          "name": "mode"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3813,6 +4862,20 @@
       "op": "SCR_OP_SETMETATILE",
       "cmdId": 162,
       "handler": "ScrCmd_setmetatile",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "metatileId"
+        },
+        {
+          "name": "impassable"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3841,6 +4904,7 @@
       "op": "SCR_OP_RESETWEATHER",
       "cmdId": 163,
       "handler": "ScrCmd_resetweather",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3848,6 +4912,11 @@
       "op": "SCR_OP_SETWEATHER",
       "cmdId": 164,
       "handler": "ScrCmd_setweather",
+      "params": [
+        {
+          "name": "type"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3861,6 +4930,7 @@
       "op": "SCR_OP_DOWEATHER",
       "cmdId": 165,
       "handler": "ScrCmd_doweather",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -3868,6 +4938,11 @@
       "op": "SCR_OP_SETSTEPCALLBACK",
       "cmdId": 166,
       "handler": "ScrCmd_setstepcallback",
+      "params": [
+        {
+          "name": "stepCbId"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3881,6 +4956,11 @@
       "op": "SCR_OP_SETMAPLAYOUTINDEX",
       "cmdId": 167,
       "handler": "ScrCmd_setmaplayoutindex",
+      "params": [
+        {
+          "name": "index"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3894,6 +4974,17 @@
       "op": "SCR_OP_SETOBJECTSUBPRIORITY",
       "cmdId": 168,
       "handler": "ScrCmd_setobjectsubpriority",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        },
+        {
+          "name": "subpriority"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3917,6 +5008,14 @@
       "op": "SCR_OP_RESETOBJECTSUBPRIORITY",
       "cmdId": 169,
       "handler": "ScrCmd_resetobjectsubpriority",
+      "params": [
+        {
+          "name": "localId"
+        },
+        {
+          "name": "map"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -3935,6 +5034,28 @@
       "op": "SCR_OP_CREATEVOBJECT",
       "cmdId": 170,
       "handler": "ScrCmd_createvobject",
+      "params": [
+        {
+          "name": "graphicsId"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "elevation",
+          "def": "3"
+        },
+        {
+          "name": "direction",
+          "def": "DIR_SOUTH"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3973,6 +5094,14 @@
       "op": "SCR_OP_TURNVOBJECT",
       "cmdId": 171,
       "handler": "ScrCmd_turnvobject",
+      "params": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "direction"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -3991,6 +5120,14 @@
       "op": "SCR_OP_OPENDOOR",
       "cmdId": 172,
       "handler": "ScrCmd_opendoor",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4009,6 +5146,14 @@
       "op": "SCR_OP_CLOSEDOOR",
       "cmdId": 173,
       "handler": "ScrCmd_closedoor",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4027,6 +5172,7 @@
       "op": "SCR_OP_WAITDOORANIM",
       "cmdId": 174,
       "handler": "ScrCmd_waitdooranim",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4034,6 +5180,14 @@
       "op": "SCR_OP_SETDOOROPEN",
       "cmdId": 175,
       "handler": "ScrCmd_setdooropen",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4052,6 +5206,14 @@
       "op": "SCR_OP_SETDOORCLOSED",
       "cmdId": 176,
       "handler": "ScrCmd_setdoorclosed",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4070,6 +5232,20 @@
       "op": "SCR_OP_ADDELEVMENUITEM",
       "cmdId": 177,
       "handler": "ScrCmd_addelevmenuitem",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        },
+        {
+          "name": "d"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4098,6 +5274,7 @@
       "op": "SCR_OP_SHOWELEVMENU",
       "cmdId": 178,
       "handler": "ScrCmd_showelevmenu",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4105,6 +5282,11 @@
       "op": "SCR_OP_CHECKCOINS",
       "cmdId": 179,
       "handler": "ScrCmd_checkcoins",
+      "params": [
+        {
+          "name": "out"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4118,6 +5300,11 @@
       "op": "SCR_OP_ADDCOINS",
       "cmdId": 180,
       "handler": "ScrCmd_addcoins",
+      "params": [
+        {
+          "name": "count"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4131,6 +5318,11 @@
       "op": "SCR_OP_REMOVECOINS",
       "cmdId": 181,
       "handler": "ScrCmd_removecoins",
+      "params": [
+        {
+          "name": "count"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4144,6 +5336,18 @@
       "op": "SCR_OP_SETWILDBATTLE",
       "cmdId": 182,
       "handler": "ScrCmd_setwildbattle",
+      "params": [
+        {
+          "name": "species"
+        },
+        {
+          "name": "level"
+        },
+        {
+          "name": "item",
+          "def": "ITEM_NONE"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4167,6 +5371,7 @@
       "op": "SCR_OP_DOWILDBATTLE",
       "cmdId": 183,
       "handler": "ScrCmd_dowildbattle",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4174,6 +5379,11 @@
       "op": "SCR_OP_SETVADDRESS",
       "cmdId": 184,
       "handler": "ScrCmd_setvaddress",
+      "params": [
+        {
+          "name": "pointer"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4187,6 +5397,11 @@
       "op": "SCR_OP_VGOTO",
       "cmdId": 185,
       "handler": "ScrCmd_vgoto",
+      "params": [
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4200,6 +5415,11 @@
       "op": "SCR_OP_VCALL",
       "cmdId": 186,
       "handler": "ScrCmd_vcall",
+      "params": [
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4213,6 +5433,14 @@
       "op": "SCR_OP_VGOTO_IF",
       "cmdId": 187,
       "handler": "ScrCmd_vgoto_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4231,6 +5459,14 @@
       "op": "SCR_OP_VCALL_IF",
       "cmdId": 188,
       "handler": "ScrCmd_vcall_if",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "destination"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4249,6 +5485,11 @@
       "op": "SCR_OP_VMESSAGE",
       "cmdId": 189,
       "handler": "ScrCmd_vmessage",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4262,6 +5503,11 @@
       "op": "SCR_OP_VBUFFERMESSAGE",
       "cmdId": 190,
       "handler": "ScrCmd_vbuffermessage",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4275,6 +5521,14 @@
       "op": "SCR_OP_VBUFFERSTRING",
       "cmdId": 191,
       "handler": "ScrCmd_vbufferstring",
+      "params": [
+        {
+          "name": "stringVarIndex"
+        },
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4293,6 +5547,14 @@
       "op": "SCR_OP_SHOWCOINSBOX",
       "cmdId": 192,
       "handler": "ScrCmd_showcoinsbox",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4311,6 +5573,14 @@
       "op": "SCR_OP_HIDECOINSBOX",
       "cmdId": 193,
       "handler": "ScrCmd_hidecoinsbox",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4329,6 +5599,14 @@
       "op": "SCR_OP_UPDATECOINSBOX",
       "cmdId": 194,
       "handler": "ScrCmd_updatecoinsbox",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4347,6 +5625,11 @@
       "op": "SCR_OP_INCREMENTGAMESTAT",
       "cmdId": 195,
       "handler": "ScrCmd_incrementgamestat",
+      "params": [
+        {
+          "name": "stat"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4360,6 +5643,20 @@
       "op": "SCR_OP_SETESCAPEWARP",
       "cmdId": 196,
       "handler": "ScrCmd_setescapewarp",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4388,6 +5685,7 @@
       "op": "SCR_OP_WAITMONCRY",
       "cmdId": 197,
       "handler": "ScrCmd_waitmoncry",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4395,6 +5693,14 @@
       "op": "SCR_OP_BUFFERBOXNAME",
       "cmdId": 198,
       "handler": "ScrCmd_bufferboxname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "box"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4413,6 +5719,11 @@
       "op": "SCR_OP_TEXTCOLOR",
       "cmdId": 199,
       "handler": "ScrCmd_nop1",
+      "params": [
+        {
+          "name": "color"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4426,6 +5737,11 @@
       "op": "SCR_OP_LOADHELP",
       "cmdId": 200,
       "handler": "ScrCmd_nop1",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4439,6 +5755,7 @@
       "op": "SCR_OP_UNLOADHELP",
       "cmdId": 201,
       "handler": "ScrCmd_nop1",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4446,6 +5763,7 @@
       "op": "SCR_OP_SIGNMSG",
       "cmdId": 202,
       "handler": "ScrCmd_nop1",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4453,6 +5771,7 @@
       "op": "SCR_OP_NORMALMSG",
       "cmdId": 203,
       "handler": "ScrCmd_nop1",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4460,6 +5779,14 @@
       "op": "SCR_OP_COMPAREHIDDENVAR",
       "cmdId": 204,
       "handler": "ScrCmd_nop1",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "value"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4478,6 +5805,11 @@
       "op": "SCR_OP_SETMODERNFATEFULENCOUNTER",
       "cmdId": 205,
       "handler": "ScrCmd_setmodernfatefulencounter",
+      "params": [
+        {
+          "name": "slot"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4491,6 +5823,11 @@
       "op": "SCR_OP_CHECKMODERNFATEFULENCOUNTER",
       "cmdId": 206,
       "handler": "ScrCmd_checkmodernfatefulencounter",
+      "params": [
+        {
+          "name": "slot"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4504,6 +5841,7 @@
       "op": "SCR_OP_TRYWONDERCARDSCRIPT",
       "cmdId": 207,
       "handler": "ScrCmd_trywondercardscript",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4511,6 +5849,11 @@
       "op": "SCR_OP_SETWORLDMAPFLAG",
       "cmdId": 208,
       "handler": "ScrCmd_nop1",
+      "params": [
+        {
+          "name": "worldmapflag"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4524,6 +5867,20 @@
       "op": "SCR_OP_WARPSPINENTER",
       "cmdId": 209,
       "handler": "ScrCmd_warpspinenter",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4552,6 +5909,14 @@
       "op": "SCR_OP_SETMONMETLOCATION",
       "cmdId": 210,
       "handler": "ScrCmd_setmonmetlocation",
+      "params": [
+        {
+          "name": "slot"
+        },
+        {
+          "name": "location"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4570,6 +5935,11 @@
       "op": "SCR_OP_MOVEROTATINGTILEOBJECTS",
       "cmdId": 211,
       "handler": "ScrCmd_moverotatingtileobjects",
+      "params": [
+        {
+          "name": "puzzleNumber"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4583,6 +5953,7 @@
       "op": "SCR_OP_TURNROTATINGTILEOBJECTS",
       "cmdId": 212,
       "handler": "ScrCmd_turnrotatingtileobjects",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4590,6 +5961,11 @@
       "op": "SCR_OP_INITROTATINGTILEPUZZLE",
       "cmdId": 213,
       "handler": "ScrCmd_initrotatingtilepuzzle",
+      "params": [
+        {
+          "name": "isTrickHouse"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4603,6 +5979,7 @@
       "op": "SCR_OP_FREEROTATINGTILEPUZZLE",
       "cmdId": 214,
       "handler": "ScrCmd_freerotatingtilepuzzle",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4610,6 +5987,20 @@
       "op": "SCR_OP_WARPMOSSDEEPGYM",
       "cmdId": 215,
       "handler": "ScrCmd_warpmossdeepgym",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4638,6 +6029,7 @@
       "op": "SCR_OP_SELECTAPPROACHINGTRAINER",
       "cmdId": 216,
       "handler": "ScrCmd_selectapproachingtrainer",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4645,6 +6037,7 @@
       "op": "SCR_OP_LOCKFORTRAINER",
       "cmdId": 217,
       "handler": "ScrCmd_lockfortrainer",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4652,6 +6045,7 @@
       "op": "SCR_OP_CLOSEBRAILLEMESSAGE",
       "cmdId": 218,
       "handler": "ScrCmd_closebraillemessage",
+      "params": [],
       "args": [],
       "totalBytes": 0
     },
@@ -4659,6 +6053,11 @@
       "op": "SCR_OP_MESSAGEINSTANT",
       "cmdId": 219,
       "handler": "ScrCmd_messageinstant",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4672,6 +6071,11 @@
       "op": "SCR_OP_FADESCREENSWAPBUFFERS",
       "cmdId": 220,
       "handler": "ScrCmd_fadescreenswapbuffers",
+      "params": [
+        {
+          "name": "mode"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4685,6 +6089,14 @@
       "op": "SCR_OP_BUFFERTRAINERCLASSNAME",
       "cmdId": 221,
       "handler": "ScrCmd_buffertrainerclassname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "trainerId"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4703,6 +6115,14 @@
       "op": "SCR_OP_BUFFERTRAINERNAME",
       "cmdId": 222,
       "handler": "ScrCmd_buffertrainername",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "trainerId"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4721,6 +6141,11 @@
       "op": "SCR_OP_POKENAVCALL",
       "cmdId": 223,
       "handler": "ScrCmd_pokenavcall",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
       "args": [
         {
           "width": 4,
@@ -4734,6 +6159,20 @@
       "op": "SCR_OP_WARPWHITEFADE",
       "cmdId": 224,
       "handler": "ScrCmd_warpwhitefade",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
       "args": [
         {
           "width": 2,
@@ -4762,6 +6201,14 @@
       "op": "SCR_OP_BUFFERCONTESTNAME",
       "cmdId": 225,
       "handler": "ScrCmd_buffercontestname",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "category"
+        }
+      ],
       "args": [
         {
           "width": 1,
@@ -4780,6 +6227,17 @@
       "op": "SCR_OP_BUFFERITEMNAMEPLURAL",
       "cmdId": 226,
       "handler": "ScrCmd_bufferitemnameplural",
+      "params": [
+        {
+          "name": "stringVarId"
+        },
+        {
+          "name": "item"
+        },
+        {
+          "name": "quantity"
+        }
+      ],
       "args": [
         {
           "width": 1,
