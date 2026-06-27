@@ -796,6 +796,26 @@ export async function testLongTail4(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test FLASH (voie A) : setflashlevel 7→globalThis.gFlashLevel=7, 0→0 ; animateflash 5
+ *  (poll auto-incrémenté → RunScriptImmediately termine en 16 itérations) → gFlashLevel=5.
+ *  Restaure à 0. */
+export async function testFlash(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SFL = cmdIdOf('ScrCmd_setflashlevel'), AF = cmdIdOf('ScrCmd_animateflash'), END = cmdIdOf('ScrCmd_end');
+  const g = globalThis as Record<string, unknown>;
+  RunScriptImmediately({ buf: Uint8Array.from([SFL, 7, 0, END]), off: 0 } as ScriptPtr);
+  const lvl7 = g.gFlashLevel;
+  RunScriptImmediately({ buf: Uint8Array.from([SFL, 0, 0, END]), off: 0 } as ScriptPtr);
+  const lvl0 = g.gFlashLevel;
+  RunScriptImmediately({ buf: Uint8Array.from([AF, 5, END]), off: 0 } as ScriptPtr);
+  const animated = g.gFlashLevel;
+  RunScriptImmediately({ buf: Uint8Array.from([SFL, 0, 0, END]), off: 0 } as ScriptPtr);   // restaure
+  const pass = lvl7 === 7 && lvl0 === 0 && animated === 5;
+  const details = { 'setflashlevel 7 → gFlashLevel': lvl7, 'setflashlevel 0 → gFlashLevel': lvl0, 'animateflash 5 → gFlashLevel': animated };
+  console.log(`[byte-vm] TEST flash : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -803,4 +823,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, run, VarGet, getScriptOffset };

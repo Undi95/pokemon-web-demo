@@ -50,6 +50,7 @@ import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } fr
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
 import { Overworld_SetSavedMusic } from './overworld';
+import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
 import * as Songs from '../include/constants/songs';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
@@ -306,6 +307,9 @@ const ScrCmd_bufferboxname: ScrCmdFunc = (ctx) => { const idx = ScriptReadByte(c
 // braille (UI braille — font non extraite → no-op = parsé). braillemessage lit le ptr (u32).
 const ScrCmd_braillemessage: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };
 const ScrCmd_closebraillemessage: ScrCmdFunc = () => false;
+// flash (voie A — scrcmd_flash) : setflashlevel(VarGet u16) ; animateflash(u8) + wait.
+const ScrCmd_setflashlevel: ScrCmdFunc = (ctx) => { SetFlashLevel(VarGet(ScriptReadHalfword(ctx)) & 0xF); return false; };  // :612
+const ScrCmd_animateflash: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, makeAnimateFlashPoll(ScriptReadByte(ctx) & 0xF)); return true; };  // :605
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -708,6 +712,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_erasebox, ScrCmd_getpokenewsactive, ScrCmd_messageautoscroll, ScrCmd_fadescreenswapbuffers,
   ScrCmd_savebgm, ScrCmd_fadedefaultbgm, ScrCmd_setobjectsubpriority, ScrCmd_resetobjectsubpriority,
   ScrCmd_setmonmove, ScrCmd_fadenewbgm, ScrCmd_bufferboxname, ScrCmd_braillemessage, ScrCmd_closebraillemessage,
+  ScrCmd_setflashlevel, ScrCmd_animateflash,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

@@ -52,6 +52,7 @@ import { DestroySprite } from './sprite';
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 import { doFieldEffect, setFieldEffectArgument, setWaitFieldEffect } from './scrcmd_fieldeffect';
+import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
 // mart-lists.json au boot).
 import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
@@ -2045,66 +2046,21 @@ registerOpcode('fadescreenswapbuffers', (ctx, args) => {
 
 // ─── Flash (1:1 décomp ScrCmd_setflashlevel/animateflash) ───────────────────
 
-/** 1:1 décomp `gFlashLevel` (overworld.c). 0 = pas d'obscurité, 7 = obscurité
- *  maximale (= ASTUCE FLASH HM). Affiche une mask noire avec un cercle
- *  transparent autour du player. Notre port stocke ici, le rendering field
- *  scene lit cette valeur pour appliquer le mask. */
-let _gFlashLevel = 0;
+// Voie A : flash (setflashlevel/animateflash) partagé avec le byte-VM (cf scrcmd_flash.ts).
 
-/** 1:1 décomp `gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1 = 8`
- *  (field_screen_effect.c:54). Niveau 8 = noir total, 7 = plus petit cercle. */
-export const gMaxFlashLevel = 8;
-
-/** 1:1 décomp `SetFlashLevel(s32 flashLevel)` (overworld.c:981) :
- *    if (flashLevel < 0 || flashLevel > gMaxFlashLevel) flashLevel = 0;
- *    gSaveBlock1Ptr->flashLevel = flashLevel;
- *  Le port utilise `globalThis.gFlashLevel` comme source du masque (flash-mask.ts)
- *  ET `_gFlashLevel` comme niveau de départ de l'anim `animateflash` → on pose les
- *  DEUX (sinon animateflash lerp depuis un niveau périmé). */
-export function SetFlashLevel(flashLevel: number): void {
-  if (flashLevel < 0 || flashLevel > gMaxFlashLevel) flashLevel = 0;
-  _gFlashLevel = flashLevel & 0xF;
-  (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-}
-// Exposé pour SetDefaultFlashLevel (game/overworld.ts) sans import statique :
-// overworld.ts → ce module fermait un cycle ESM (TDZ DIR_SOUTH au boot).
-(globalThis as Record<string, unknown>).__SetFlashLevel = SetFlashLevel;
-
-// `setflashlevel` early stub (= last-wins, real impl ci-dessous écrase).
+// `setflashlevel` / `animateflash` early stubs (= last-wins, real impl ci-dessous écrase).
 registerOpcode('setflashlevel', (_ctx, _args) => false);
-
-// `animateflash` early stub.
 registerOpcode('animateflash', (_ctx, _args) => false);
 
-// 1:1 décomp ScrCmd_setflashlevel (scrcmd.c:612-624) :
-//   SetFlashLevel(VarGet(level)).
-// Level 0 = pas d'obscurité (= salle illuminée), 7 = obscurité maximale.
+// 1:1 décomp ScrCmd_setflashlevel (scrcmd.c:612-624) : SetFlashLevel(VarGet(level)).
 registerOpcode('setflashlevel', (_ctx, args) => {
   SetFlashLevel(parseValue(args[0] ?? '0') & 0xF);
   return false;
 });
 
-// 1:1 décomp ScrCmd_animateflash (scrcmd.c:605-610) :
-//   AnimateFlash(level) ; ScriptContext_Stop ; return TRUE.
-// Fade animation entre l'ancien level et le nouveau (= radial transition).
+// 1:1 décomp ScrCmd_animateflash (scrcmd.c:605-610) : AnimateFlash(level) + Stop + wait.
 registerOpcode('animateflash', (ctx, args) => {
-  const targetLevel = parseValue(args[0] ?? '0') & 0xF;
-  const startLevel = _gFlashLevel;
-  let frame = 0;
-  const totalFrames = 16;
-  const poll = (): boolean => {
-    frame++;
-    // Lerp linéaire entre startLevel et targetLevel.
-    _gFlashLevel = Math.round(startLevel + (targetLevel - startLevel) * (frame / totalFrames));
-    (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-    if (frame >= totalFrames) {
-      _gFlashLevel = targetLevel;
-      (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-      return true;
-    }
-    return false;
-  };
-  SetupNativeScript(ctx, poll);
+  SetupNativeScript(ctx, makeAnimateFlashPoll(parseValue(args[0] ?? '0') & 0xF));
   return true;
 });
 
