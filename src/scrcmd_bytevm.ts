@@ -311,6 +311,28 @@ const ScrCmd_closebraillemessage: ScrCmdFunc = () => false;
 const ScrCmd_setflashlevel: ScrCmdFunc = (ctx) => { SetFlashLevel(VarGet(ScriptReadHalfword(ctx)) & 0xF); return false; };  // :612
 const ScrCmd_animateflash: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, makeAnimateFlashPoll(ScriptReadByte(ctx) & 0xF)); return true; };  // :605
 
+// ─── givemon / giveegg (1:1 scrcmd.c:1681-1700) — ScriptGiveMon/Egg en import dynamique
+//     (anti-cycle ESM script_pokemon_util→pokemon, = moteur parsé). VAR_RESULT async. ──
+const ScrCmd_givemon: ScrCmdFunc = (ctx) => {                                // :1681
+  const species = VarGet(ScriptReadHalfword(ctx));
+  const level = ScriptReadByte(ctx);
+  const item = VarGet(ScriptReadHalfword(ctx));
+  ScriptReadWord(ctx); ScriptReadWord(ctx); ScriptReadByte(ctx);   // args fixes 0,0,0 (alignement)
+  const speciesName = constOf(species, 'SPECIES_');
+  const heldItem = item ? constOf(item, 'ITEM_') : undefined;
+  void import('./script_pokemon_util')
+    .then(({ ScriptGiveMon }) => setResult(ScriptGiveMon(speciesName, level, heldItem)))
+    .catch((e) => { console.warn('[givemon]', e); setResult(2); });   // 2 = MON_CANT_GIVE
+  return false;
+};
+const ScrCmd_giveegg: ScrCmdFunc = (ctx) => {                                // :1694
+  const species = VarGet(ScriptReadHalfword(ctx));
+  void import('./script_pokemon_util')
+    .then(({ ScriptGiveEgg }) => setResult(ScriptGiveEgg(constOf(species, 'SPECIES_'))))
+    .catch((e) => { console.warn('[giveegg]', e); setResult(2); });
+  return false;
+};
+
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
 const ScrCmd_addmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) AddMoney(a); return false; };
@@ -713,6 +735,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_savebgm, ScrCmd_fadedefaultbgm, ScrCmd_setobjectsubpriority, ScrCmd_resetobjectsubpriority,
   ScrCmd_setmonmove, ScrCmd_fadenewbgm, ScrCmd_bufferboxname, ScrCmd_braillemessage, ScrCmd_closebraillemessage,
   ScrCmd_setflashlevel, ScrCmd_animateflash,
+  ScrCmd_givemon, ScrCmd_giveegg,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

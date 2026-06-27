@@ -816,6 +816,37 @@ export async function testFlash(): Promise<{ pass: boolean; details: Record<stri
   return { pass, details };
 }
 
+/** Test GIVEMON/GIVEEGG : alignement du flux (givemon = 14o d'args, giveegg = 2o) via
+ *  setvar marqueur, avec species=SPECIES_NONE(0) → don no-op → party count INCHANGÉ
+ *  (pas de pollution du save). VAR_RESULT posé async (mirror parsé). */
+export async function testGiveMon(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const GM = cmdIdOf('ScrCmd_givemon'), GE = cmdIdOf('ScrCmd_giveegg'),
+        SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VT1 = num('VAR_TEMP_1');
+  const w32 = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  const before = CalculatePlayerPartyCount();
+  // givemon species=0(NONE), level=5, item=0, 3 args fixes ; setvar VT1,0xF00D ; end
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    GM, lo(0), hi(0), 5, lo(0), hi(0), ...w32(0), ...w32(0), 0,
+    SETVAR, lo(VT1), hi(VT1), lo(0xF00D), hi(0xF00D), END,
+  ]), off: 0 } as ScriptPtr);
+  const gmAligned = VarGet(VT1) === 0xF00D;
+  // giveegg species=0 ; setvar VT1,0xEEEE ; end
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([GE, lo(0), hi(0), SETVAR, lo(VT1), hi(VT1), lo(0xEEEE), hi(0xEEEE), END]), off: 0 } as ScriptPtr);
+  const geAligned = VarGet(VT1) === 0xEEEE;
+  // laisse les imports dynamiques async se résoudre, puis vérifie : party count inchangé
+  await new Promise((r) => setTimeout(r, 200));
+  const after = CalculatePlayerPartyCount();
+  const noMutation = after === before;
+  const pass = gmAligned && geAligned && noMutation;
+  const details = { 'givemon alignement (setvar=0xF00D)': gmAligned, 'giveegg alignement (setvar=0xEEEE)': geAligned, 'party count inchangé (SPECIES_NONE)': `${before}→${after}` };
+  console.log(`[byte-vm] TEST givemon/giveegg : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -823,4 +854,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, run, VarGet, getScriptOffset };
