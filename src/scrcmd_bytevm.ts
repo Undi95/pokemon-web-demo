@@ -40,7 +40,7 @@ import {
 import { GetPlayerFacingDirection, gPlayerAvatar, IncrementGameStat, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
 import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
-import { PlaySE } from '../harness/runtime/decomp-globals';
+import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
@@ -56,6 +56,7 @@ import { setStringVar, decodeOwBytes } from './text';
 import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
+import { FadeScreen } from './field_weather';
 // Voie A : logique « porte » partagée avec le moteur parsé (source unique).
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // Voie A : logique « field effect » partagée avec le moteur parsé (source unique).
@@ -522,6 +523,13 @@ const ScrCmd_turnvobject: ScrCmdFunc = (ctx) => {                           // :
   return false;
 };
 
+// ─── fadescreen (1:1 scrcmd.c:626-642) — appelle la VRAIE FadeScreen (field_weather,
+//     weather-aware + delay, plus 1:1 que la réimpl inline du parsé). ─────────────
+/** 1:1 IsPaletteNotActive (scrcmd.c:618) : true quand le fade palette est terminé. */
+const isPaletteNotActive = (): boolean => !getRuntime()?.gPaletteFade?.active;
+const ScrCmd_fadescreen: ScrCmdFunc = (ctx) => { FadeScreen(ScriptReadByte(ctx), 0); SetupNativeScript(ctx, isPaletteNotActive); return true; };       // :626
+const ScrCmd_fadescreenspeed: ScrCmdFunc = (ctx) => { const m = ScriptReadByte(ctx); const s = ScriptReadByte(ctx); FadeScreen(m, s); SetupNativeScript(ctx, isPaletteNotActive); return true; }; // :633
+
 // ─── object movement ops (1:1 scrcmd.c ; logique partagée scrcmd_object — voie A) ──
 // turnobject : direction = valeur DIR_ (1=SOUTH..4=EAST) lue direct du bytecode.
 const ScrCmd_turnobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const dir = ScriptReadByte(ctx); doTurnObject(String(l), dir); return false; };
@@ -571,6 +579,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_dofieldeffect, ScrCmd_setfieldeffectargument, ScrCmd_waitfieldeffect,
   ScrCmd_createvobject, ScrCmd_turnvobject,
   ScrCmd_turnobject, ScrCmd_copyobjectxytoperm, ScrCmd_setobjectmovementtype,
+  ScrCmd_fadescreen, ScrCmd_fadescreenspeed,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

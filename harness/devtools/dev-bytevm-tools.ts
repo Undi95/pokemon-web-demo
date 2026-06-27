@@ -37,6 +37,8 @@ import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
 import { MB_ANIMATED_DOOR } from '../../src/engine/field/tilemap-loader';
 import { isDoorAnimationStopped } from '../../src/scrcmd_door';
 import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-helpers';
+import { getRuntime } from '../runtime/decomp-globals';
+import { FadeScreen } from '../../src/field_weather';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -602,6 +604,25 @@ export async function testObjectMovement(): Promise<{ pass: boolean; details: Re
   return { pass, details };
 }
 
+/** Test FADESCREEN via bytecode synthétique (ticks BORNÉS — pas RunScriptImmediately
+ *  car le poll IsPaletteNotActive bouclerait : le fade n'avance qu'aux frames OW) :
+ *  fadescreen FADE_TO_BLACK ; end → gPaletteFade.active devient true (fade démarré).
+ *  Restaure ensuite via FadeScreen(FADE_FROM_BLACK) pour ne pas laisser l'écran noir. */
+export async function testFade(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const FADE = cmdIdOf('ScrCmd_fadescreen'), END = cmdIdOf('ScrCmd_end');
+  const FADE_TO_BLACK = 1, FADE_FROM_BLACK = 0;
+  const code = Uint8Array.from([FADE, FADE_TO_BLACK, END]);
+  ScriptContext_SetupScript({ buf: code, off: 0 } as ScriptPtr);
+  for (let i = 0; i < 3; i++) ScriptContext_RunScript();
+  const active = !!getRuntime()?.gPaletteFade?.active;
+  FadeScreen(FADE_FROM_BLACK, 0);   // restaure (l'écran refade vers normal aux frames OW)
+  const pass = active;
+  const details = { 'fadescreen TO_BLACK → gPaletteFade.active': active };
+  console.log(`[byte-vm] TEST fadescreen : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -609,4 +630,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, run, VarGet, getScriptOffset };
