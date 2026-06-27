@@ -16,9 +16,12 @@ import {
   ScriptContext, ScrCmdFunc, gScriptCmdTable,
   ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
   ScriptJump, ScriptCall, ScriptReturn, StopScript, SetupNativeScript,
-  ScriptContext_Stop, ptrFromOffset, resolveSymbol, getScriptOffset,
+  ScriptContext_Stop, ptrFromOffset, resolveSymbol, resolveMapSymbol, getScriptOffset,
 } from './script_bytevm';
-import { VarGet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
+import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
+import { setPendingWarp } from './engine/field/warp-system';
+import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
+import { VAR_RESULT } from '../include/constants/vars';
 // Registre des specials (name→fn) du moteur actuel — réutilisé transitoirement
 // (les fns de special sont les mêmes fns de jeu 1:1). gSpecials[id] = invokeSpecial(name).
 import { invokeSpecial } from './scrcmd';
@@ -204,6 +207,33 @@ const ScrCmd_release: ScrCmdFunc = () => {
   return false;
 };
 
+// ─── warp (adaptation async setPendingWarp — cf fieldmap-1to1-adaptations) ───
+/** Lit le layout formatwarp (map u16 mapSymbol + warpId u8 + x u16 + y u16). */
+function readWarp(ctx: ScriptContext): { destMap: string; warpId: number; x: number; y: number } {
+  const destMap = resolveMapSymbol(ScriptReadHalfword(ctx)) ?? '';
+  const warpId = ScriptReadByte(ctx);
+  const x = VarGet(ScriptReadHalfword(ctx));
+  const y = VarGet(ScriptReadHalfword(ctx));
+  return { destMap, warpId, x, y };
+}
+// 1:1 scrcmd.c:739-751 (SetWarpDestination+DoWarp) → adapté : setPendingWarp async.
+const ScrCmd_warp: ScrCmdFunc = (ctx) => {
+  const { destMap, warpId, x, y } = readWarp(ctx);
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
+  return false;
+};
+const ScrCmd_warpsilent: ScrCmdFunc = (ctx) => {
+  const { destMap, warpId, x, y } = readWarp(ctx);
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
+  return false;
+};
+
+// ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
+const setResult = (v: number) => VarSet(VAR_RESULT, v);
+const ScrCmd_addmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) AddMoney(a); return false; };
+const ScrCmd_removemoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) RemoveMoney(a); return false; };
+const ScrCmd_checkmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) setResult(IsEnoughMoney(a) ? 1 : 0); return false; };
+
 // ─── applymovement / waitmovement (1:1 scrcmd.c:992-1045) ───────────────────
 let sMovingNpcId = 0;
 /** Résout le pointeur de mouvement (symbole) → label de séquence de mouvement. */
@@ -282,6 +312,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
   ScrCmd_faceplayer, ScrCmd_lock, ScrCmd_lockall, ScrCmd_release, ScrCmd_releaseall,
   ScrCmd_applymovement, ScrCmd_applymovementat, ScrCmd_waitmovement, ScrCmd_waitmovementat,
+  ScrCmd_warp, ScrCmd_warpsilent, ScrCmd_addmoney, ScrCmd_removemoney, ScrCmd_checkmoney,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

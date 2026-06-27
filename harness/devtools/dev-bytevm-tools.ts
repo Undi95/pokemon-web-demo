@@ -11,9 +11,11 @@
 
 import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
-  getSymbols, ScriptContext_SetupScript, ScriptContext_RunScript,
+  getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript,
 } from '../../src/script_bytevm';
 import type { ScriptPtr } from '../../src/script_bytevm';
+import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
+import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { installByteVmHandlers, setSpecialNames } from '../../src/scrcmd_bytevm';
 import { registerSpecial } from '../../src/scrcmd';
 import { getText, loadMapScripts } from '../../src/script';
@@ -250,6 +252,60 @@ export async function testMovement(): Promise<{ pass: boolean; details: Record<s
   return { pass, details };
 }
 
+/** Test WARP via bytecode synthétique : warp <mapSym>, warpId, x, y ; end →
+ *  setPendingWarp doit recevoir le bon destMap (MAP_*). */
+export async function testWarp(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const mapSyms = getMapSymbols();
+  let mapSymId = -1, mapConst = '';
+  for (let id = 0; id < mapSyms.length; id++) { if (mapSyms[id] && mapSyms[id].startsWith('MAP_')) { mapSymId = id; mapConst = mapSyms[id]; break; } }
+  let w: { destMap?: string; x?: number; y?: number; warpId?: number } | undefined;
+  if (mapSymId >= 0) {
+    const WARP = cmdIdOf('ScrCmd_warp'), END = cmdIdOf('ScrCmd_end');
+    // warp <mapSym(u16)>, warpId=3 (u8), x=11 (u16), y=22 (u16) ; end
+    const code = Uint8Array.from([WARP, lo(mapSymId), hi(mapSymId), 3, 11, 0, 22, 0, END]);
+    setPendingWarp(null);
+    RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+    // getPendingWarp() renvoie { kind, warp:{destMap,x,y,warpId,...} }
+    const pw = getPendingWarp() as { warp?: { destMap?: string; x?: number; y?: number; warpId?: number } } | null;
+    w = pw?.warp;
+    setPendingWarp(null); // nettoyage
+  }
+  const got = w;
+  const pass = mapSymId >= 0 && !!got && got.destMap === mapConst && got.x === 11 && got.y === 22 && got.warpId === 3;
+  const details = { 'mapSymbol': mapConst, 'pendingWarp': got };
+  console.log(`[byte-vm] TEST warp : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
+/** Test MONEY via bytecode synthétique : addmoney 1000,0 ; removemoney 400,0 ;
+ *  checkmoney 100,0 ; end → money +600, VAR_RESULT=1 (≥100). */
+export async function testMoney(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const ADDM = cmdIdOf('ScrCmd_addmoney'), REMM = cmdIdOf('ScrCmd_removemoney'), CHKM = cmdIdOf('ScrCmd_checkmoney'), END = cmdIdOf('ScrCmd_end');
+  const w32 = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  const before = GetMoney();
+  // addmoney 1000,0 ; removemoney 400,0 ; checkmoney 100,0 ; end
+  const code = Uint8Array.from([
+    ADDM, ...w32(1000), 0,
+    REMM, ...w32(400), 0,
+    CHKM, ...w32(100), 0,
+    END,
+  ]);
+  const VAR_RESULT = num('VAR_RESULT');
+  VarSet(VAR_RESULT, 0);
+  RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+  const after = GetMoney();
+  const result = VarGet(VAR_RESULT);
+  const delta = after - before;
+  // remet la money d'origine
+  if (delta > 0) RemoveMoney(delta); else if (delta < 0) AddMoney(-delta);
+  const pass = delta === 600 && result === 1;
+  const details = { 'money avant': before, 'money après (Δ attendu +600)': after, 'Δ': delta, 'checkmoney VAR_RESULT (attendu 1)': result };
+  console.log(`[byte-vm] TEST money : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -257,4 +313,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, run, VarGet, getScriptOffset };

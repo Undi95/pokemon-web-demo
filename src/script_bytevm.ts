@@ -318,6 +318,7 @@ export function getScriptImage(): Uint8Array { return gScriptImage; }
 export function resolveSymbol(id: number): ByteVmSymbol | undefined { return _symbols[id]; }
 export function getSymbols(): ByteVmSymbol[] { return _symbols; }
 export function resolveMapSymbol(id: number): string | undefined { return _mapSymbols[id]; }
+export function getMapSymbols(): string[] { return _mapSymbols; }
 export function getScriptOffset(label: string): number | undefined { return _scriptOffsets[label]; }
 export function getMapScriptTable(label: string): { name: string; args: string[] }[] | undefined { return _mapScriptTables[label]; }
 
