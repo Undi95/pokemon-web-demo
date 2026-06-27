@@ -867,6 +867,29 @@ export function battleState(): Record<string, unknown> {
   };
 }
 
+/** Test TRAINERBATTLE (STEP 1 déterministe) : prouve que le byte-VM lit le layout
+ *  BINAIRE byType (mode u8, opponent u16, localId u16, intro/defeat u32) → pose
+ *  gTrainerBattleOpponent_A + saute dans EventScript_TryDoNormalTrainerBattle (1er
+ *  tick = trainerbattle + lock qui attend). */
+export async function testTrainerbattleArgs(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const TB = cmdIdOf('ScrCmd_trainerbattle'), END = cmdIdOf('ScrCmd_end');
+  const tid = 42;
+  // trainerbattle TRAINER_BATTLE_SINGLE(0), opponent=tid, localId=0, intro=NULL, defeat=NULL
+  const buf = Uint8Array.from([TB, 0, lo(tid), hi(tid), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, END]);
+  let threw = false;
+  try {
+    ScriptContext_SetupScript({ buf, off: 0 } as ScriptPtr);
+    ScriptContext_RunScript();   // trainerbattle (pose opponent + jump) → lock (wait)
+  } catch (e) { threw = true; console.warn('[testTrainerbattleArgs]', e); }
+  const opp = (battleState().gTrainerBattleOpponent_A as number);
+  const jumpResolves = getScriptOffset('EventScript_TryDoNormalTrainerBattle') !== undefined;
+  const pass = !threw && opp === tid && jumpResolves;
+  const details = { 'gTrainerBattleOpponent_A (attendu 42)': opp, 'event-script résolu': jumpResolves, 'sans throw': !threw };
+  console.log(`[byte-vm] TEST trainerbattle args : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -874,4 +897,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, battleState, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, battleState, run, VarGet, getScriptOffset };

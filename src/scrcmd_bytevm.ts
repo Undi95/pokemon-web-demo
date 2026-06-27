@@ -42,7 +42,10 @@ import {
   ObjectEventSetHeldMovement, gObjectEvents,
 } from './event_object_movement';
 import { GetPlayerFacingDirection, gPlayerAvatar, IncrementGameStat, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
-import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
+import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
+  configureTrainerBattleCore, startTrainerBattleAndGetPoll,
+  BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript } from './battle_setup';
+import type { TrainerArgSource } from './battle_setup';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
@@ -332,6 +335,53 @@ const ScrCmd_giveegg: ScrCmdFunc = (ctx) => {                                // 
     .catch((e) => { console.warn('[giveegg]', e); setResult(2); });
   return false;
 };
+
+// ─── trainerbattle (1:1 scrcmd.c:1821 + battle_setup.c) — VOIE A ─────────────
+// trainerbattle lit le layout BINAIRE byType via configureTrainerBattleCore (mêmes
+// tables + switch que le parsé), bridge symbole-texte→label / ret-addr→curseur, puis
+// `ctx->scriptPtr = <event-script>` : LE BYTE-VM EXÉCUTE l'event-script décomp
+// (EventScript_TryDoNormalTrainerBattle → … → dotrainerbattle → gotobeatenscript).
+function makeByteVmTrainerArgSource(ctx: ScriptContext): TrainerArgSource {
+  return {
+    u8: () => ScriptReadByte(ctx),
+    u16: () => ScriptReadHalfword(ctx),
+    ptr32: (key) => {
+      const v = ScriptReadWord(ctx);
+      if (key === 'sTrainerABattleScriptRetAddr' || key === 'sTrainerBBattleScriptRetAddr') {
+        return v ? ptrFromOffset(v) : null;                   // continue-script : reloc → curseur image
+      }
+      return v ? (resolveSymbol(v)?.label ?? null) : null;    // speech : symbole texte → label
+    },
+    retAddr: () => { const p = ctx.scriptPtr!; return { buf: p.buf, off: p.off }; },   // reprise = curseur APRÈS args
+  };
+}
+const ScrCmd_trainerbattle: ScrCmdFunc = (ctx) => {                          // scrcmd.c:1821
+  const sp = ctx.scriptPtr; if (!sp) return false;
+  const mode = sp.buf[sp.off];   // peek mode (LoadArgs le consomme ensuite)
+  const label = configureTrainerBattleCore(mode, makeByteVmTrainerArgSource(ctx));
+  if (label) {
+    const off = getScriptOffset(label);
+    if (off !== undefined) ScriptJump(ctx, ptrFromOffset(off));
+    else { console.warn(`[trainerbattle] event-script '${label}' absent de l'image`); StopScript(ctx); }
+  } else {
+    StopScript(ctx);   // SET_TRAINER_A/B → ctx->scriptPtr = NULL (1:1)
+  }
+  return false;
+};
+const ScrCmd_dotrainerbattle: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, startTrainerBattleAndGetPoll()); return true; };  // :1827
+/** 1:1 décomp : ctx->scriptPtr = position de reprise après combat (label/curseur). */
+function resumeAfterBattle(ctx: ScriptContext, r: string | { opcodes: unknown[]; idx: number } | { buf: Uint8Array; off: number }): void {
+  if (typeof r === 'string') {
+    const off = getScriptOffset(r);
+    if (off !== undefined) ScriptJump(ctx, ptrFromOffset(off)); else StopScript(ctx);
+  } else if ('buf' in r) {
+    ScriptJump(ctx, r);                 // forme byte-VM : reprise au curseur capturé
+  } else {
+    StopScript(ctx);                    // forme parsée ({opcodes,idx}) — pas en byte-VM
+  }
+}
+const ScrCmd_gotopostbattlescript: ScrCmdFunc = (ctx) => { resumeAfterBattle(ctx, BattleSetup_GetTrainerPostBattleScript()); return false; };  // :1833
+const ScrCmd_gotobeatenscript: ScrCmdFunc = (ctx) => { resumeAfterBattle(ctx, BattleSetup_GetScriptAddrAfterBattle()); return false; };        // :1839
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -736,6 +786,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setmonmove, ScrCmd_fadenewbgm, ScrCmd_bufferboxname, ScrCmd_braillemessage, ScrCmd_closebraillemessage,
   ScrCmd_setflashlevel, ScrCmd_animateflash,
   ScrCmd_givemon, ScrCmd_giveegg,
+  ScrCmd_trainerbattle, ScrCmd_dotrainerbattle, ScrCmd_gotopostbattlescript, ScrCmd_gotobeatenscript,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

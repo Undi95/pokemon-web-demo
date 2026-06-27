@@ -78,6 +78,11 @@ const TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR = 6;
 // sTrainerBattleEndScript = position de reprise du script de map (1:1 : l'adresse
 // APRÈS les args de l'opcode trainerbattle, capturée par LOAD_SCRIPT_RET_ADDR).
 type ScriptPos = { opcodes: Opcode[]; idx: number };
+/** Pointeur de continuation côté byte-VM (curseur image globale {buf, off}).
+ *  sTrainerBattleEndScript / *BattleScriptRetAddr peuvent tenir CETTE forme (byte-VM)
+ *  OU ScriptPos (moteur parsé) OU string (label) — un seul moteur actif à la fois. */
+type BvScriptPtr = { buf: Uint8Array; off: number };
+type TrainerContinuation = string | ScriptPos | BvScriptPtr | null;
 type TrainerVarKey =
   | 'sTrainerBattleMode' | 'gTrainerBattleOpponent_A' | 'gTrainerBattleOpponent_B'
   | 'sTrainerObjectEventLocalId'
@@ -97,9 +102,9 @@ let sTrainerADefeatSpeech: string | null = null;
 let sTrainerBDefeatSpeech: string | null = null;
 let sTrainerVictorySpeech: string | null = null;
 let sTrainerCannotBattleSpeech: string | null = null;
-let sTrainerBattleEndScript: ScriptPos | null = null;
-let sTrainerABattleScriptRetAddr: string | null = null;
-let sTrainerBBattleScriptRetAddr: string | null = null;
+let sTrainerBattleEndScript: TrainerContinuation = null;
+let sTrainerABattleScriptRetAddr: TrainerContinuation = null;
+let sTrainerBBattleScriptRetAddr: TrainerContinuation = null;
 let sShouldCheckTrainerBScript = false;
 let sNoOfPossibleTrainerRetScripts = 0;
 /** 1:1 décomp `gWhichTrainerToFaceAfterBattle` (battle_setup.c). */
@@ -123,9 +128,9 @@ let _trainerBattleOpponentB = 0;
 function SetU8(key: TrainerVarKey, value: number): void { _setVar(key, value & 0xFF); }
 function SetU16(key: TrainerVarKey, value: number): void { _setVar(key, value & 0xFFFF); }
 function SetU32(key: TrainerVarKey, value: number): void { _setVar(key, value >>> 0); }
-function SetPtr(key: TrainerVarKey, value: string | ScriptPos | null): void { _setVar(key, value); }
+function SetPtr(key: TrainerVarKey, value: TrainerContinuation): void { _setVar(key, value); }
 
-function _setVar(key: TrainerVarKey, value: number | string | ScriptPos | null): void {
+function _setVar(key: TrainerVarKey, value: number | TrainerContinuation): void {
   switch (key) {
     case 'sTrainerBattleMode': sTrainerBattleMode = value as number; break;
     case 'gTrainerBattleOpponent_A':
@@ -143,9 +148,9 @@ function _setVar(key: TrainerVarKey, value: number | string | ScriptPos | null):
     case 'sTrainerBDefeatSpeech': sTrainerBDefeatSpeech = value as string | null; break;
     case 'sTrainerVictorySpeech': sTrainerVictorySpeech = value as string | null; break;
     case 'sTrainerCannotBattleSpeech': sTrainerCannotBattleSpeech = value as string | null; break;
-    case 'sTrainerABattleScriptRetAddr': sTrainerABattleScriptRetAddr = value as string | null; break;
-    case 'sTrainerBBattleScriptRetAddr': sTrainerBBattleScriptRetAddr = value as string | null; break;
-    case 'sTrainerBattleEndScript': sTrainerBattleEndScript = value as ScriptPos | null; break;
+    case 'sTrainerABattleScriptRetAddr': sTrainerABattleScriptRetAddr = value as TrainerContinuation; break;
+    case 'sTrainerBBattleScriptRetAddr': sTrainerBBattleScriptRetAddr = value as TrainerContinuation; break;
+    case 'sTrainerBattleEndScript': sTrainerBattleEndScript = value as TrainerContinuation; break;
   }
 }
 
@@ -238,53 +243,46 @@ const sTrainerBContinueScriptBattleParams: TrainerBattleParameter[] = [
 
 // ─── Args haut-niveau : valeur numérique vs label string ────────────────────
 
-/** Le trainer arrive en 'TRAINER_XXX' (label) ou nombre ; les autres champs
- *  numériques en littéral. resolveTrainerNumId gère les deux pour l'opposant. */
-function _argToU16(key: TrainerVarKey, raw: string | undefined): number {
-  if (raw === undefined) return 0;
-  if (key === 'gTrainerBattleOpponent_A' || key === 'gTrainerBattleOpponent_B') {
-    return resolveTrainerNumId(raw) & 0xFFFF;
-  }
-  return parseValue(raw) & 0xFFFF;
+/** Source d'args trainerbattle (VOIE A) : abstrait le flux d'args pour que LE MOTEUR
+ *  PARSÉ (string[]) ET LE BYTE-VM (curseur binaire) partagent les MÊMES tables byType
+ *  + le MÊME switch de modes. u8/u16 consomment une valeur ; ptr32 = speech (label) ou
+ *  ret-addr-script (continuation) selon la clé ; retAddr capture la reprise sans consommer. */
+export interface TrainerArgSource {
+  u8(): number;
+  u16(key: TrainerVarKey): number;
+  ptr32(key: TrainerVarKey): TrainerContinuation;
+  retAddr(): TrainerContinuation;
 }
 
 /** 1:1 décomp `TrainerBattleLoadArgs(specs, data)` (battle_setup.c:1059-1092).
- *  `data` (byte-stream) = l'array d'args haut-niveau ; LOAD_* consomme un arg,
- *  CLEAR_* n'en consomme pas, LOAD_SCRIPT_RET_ADDR capture la position de
- *  reprise du script appelant (= l'adresse APRÈS les args) puis RETURN. */
-function TrainerBattleLoadArgs(specs: TrainerBattleParameter[], args: string[], ctx: ScriptContext): void {
-  let i = 0;
+ *  LOAD_* consomme une valeur de la source, CLEAR_* n'en consomme pas,
+ *  LOAD_SCRIPT_RET_ADDR capture la position de reprise puis RETURN. */
+function TrainerBattleLoadArgs(specs: TrainerBattleParameter[], src: TrainerArgSource): void {
   for (const spec of specs) {
     switch (spec.ptrType) {
-      case TRAINER_PARAM_LOAD_VAL_8BIT:
-        SetU8(spec.varKey, parseValue(args[i] ?? '0') & 0xFF);
-        i += 1;
-        break;
-      case TRAINER_PARAM_LOAD_VAL_16BIT:
-        SetU16(spec.varKey, _argToU16(spec.varKey, args[i]));
-        i += 1;
-        break;
-      case TRAINER_PARAM_LOAD_VAL_32BIT:
-        // Les « u32 » sont des POINTEURS décomp = labels strings chez nous.
-        SetPtr(spec.varKey, args[i] && args[i] !== '0' && args[i] !== 'NULL' ? args[i] : null);
-        i += 1;
-        break;
-      case TRAINER_PARAM_CLEAR_VAL_8BIT:
-        SetU8(spec.varKey, 0);
-        break;
-      case TRAINER_PARAM_CLEAR_VAL_16BIT:
-        SetU16(spec.varKey, 0);
-        break;
-      case TRAINER_PARAM_CLEAR_VAL_32BIT:
-        SetPtr(spec.varKey, null);
-        break;
-      case TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR:
-        // 1:1 :1087 SetPtr(varPtr, data) = la position du script de map APRÈS
-        // l'opcode trainerbattle (scriptIdx est déjà avancé par le dispatcher).
-        SetPtr(spec.varKey, ctx.scriptOpcodes ? { opcodes: ctx.scriptOpcodes, idx: ctx.scriptIdx } : null);
-        return;
+      case TRAINER_PARAM_LOAD_VAL_8BIT:  SetU8(spec.varKey, src.u8() & 0xFF); break;
+      case TRAINER_PARAM_LOAD_VAL_16BIT: SetU16(spec.varKey, src.u16(spec.varKey)); break;
+      case TRAINER_PARAM_LOAD_VAL_32BIT: SetPtr(spec.varKey, src.ptr32(spec.varKey)); break;
+      case TRAINER_PARAM_CLEAR_VAL_8BIT:  SetU8(spec.varKey, 0); break;
+      case TRAINER_PARAM_CLEAR_VAL_16BIT: SetU16(spec.varKey, 0); break;
+      case TRAINER_PARAM_CLEAR_VAL_32BIT: SetPtr(spec.varKey, null); break;
+      case TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR: SetPtr(spec.varKey, src.retAddr()); return;
     }
   }
+}
+
+/** Source string[] (moteur parsé) — 1:1 de l'ancien comportement (resolveTrainerNumId
+ *  pour l'opposant, labels strings pour les ptr, {opcodes,idx} pour la reprise). */
+function makeStringArgSource(args: string[], ctx: ScriptContext): TrainerArgSource {
+  let i = 0;
+  return {
+    u8: () => parseValue(args[i++] ?? '0') & 0xFF,
+    u16: (key) => (key === 'gTrainerBattleOpponent_A' || key === 'gTrainerBattleOpponent_B')
+      ? resolveTrainerNumId(args[i++] ?? '0') & 0xFFFF
+      : parseValue(args[i++] ?? '0') & 0xFFFF,
+    ptr32: () => { const a = args[i++]; return a && a !== '0' && a !== 'NULL' ? a : null; },
+    retAddr: () => (ctx.scriptOpcodes ? { opcodes: ctx.scriptOpcodes, idx: ctx.scriptIdx } : null),
+  };
 }
 
 // ─── Helpers 1:1 ─────────────────────────────────────────────────────────────
@@ -342,62 +340,69 @@ function SetMapVarsToTrainer(): void {
  *  `data` = args haut-niveau (forme générique [mode, trainer, localId, ptr1…]).
  *  Retourne le LABEL du EventScript_* à exécuter (ou null pour SET_TRAINER_A/B). */
 export function BattleSetup_ConfigureTrainerBattle(args: string[], ctx: ScriptContext): string | null {
+  return configureTrainerBattleCore(parseValue(args[0] ?? '0') & 0xFF, makeStringArgSource(args, ctx));
+}
+
+/** Cœur 1:1 `BattleSetup_ConfigureTrainerBattle` (battle_setup.c:1103) — VOIE A :
+ *  prend le MODE (déjà peeké) + une TrainerArgSource (string[] parsé OU curseur byte-VM).
+ *  Renvoie le LABEL du EventScript_* à exécuter (ou null pour SET_TRAINER_A/B). */
+export function configureTrainerBattleCore(mode: number, src: TrainerArgSource): string | null {
   InitTrainerBattleVariables();
-  sTrainerBattleMode = parseValue(args[0] ?? '0') & 0xFF;
+  sTrainerBattleMode = mode;
 
   // Préchargement : gTrainers/parties (async) prêt avant dotrainerbattle.
   void ensureGTrainersLoaded().catch(() => { /* warn au boot si KO */ });
 
   switch (sTrainerBattleMode) {
     case TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT:
-      TrainerBattleLoadArgs(sOrdinaryNoIntroBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sOrdinaryNoIntroBattleParams, src);
       return 'EventScript_DoNoIntroTrainerBattle';
     case TRAINER_BATTLE_DOUBLE:
-      TrainerBattleLoadArgs(sDoubleBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sDoubleBattleParams, src);
       SetMapVarsToTrainer();
       return 'EventScript_TryDoDoubleTrainerBattle';
     case TRAINER_BATTLE_CONTINUE_SCRIPT:
       if (gApproachingTrainerId === 0) {
-        TrainerBattleLoadArgs(sContinueScriptBattleParams, args, ctx);
+        TrainerBattleLoadArgs(sContinueScriptBattleParams, src);
         SetMapVarsToTrainer();
       } else {
-        TrainerBattleLoadArgs(sTrainerBContinueScriptBattleParams, args, ctx);
+        TrainerBattleLoadArgs(sTrainerBContinueScriptBattleParams, src);
       }
       return 'EventScript_TryDoNormalTrainerBattle';
     case TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC:
-      TrainerBattleLoadArgs(sContinueScriptBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sContinueScriptBattleParams, src);
       SetMapVarsToTrainer();
       return 'EventScript_TryDoNormalTrainerBattle';
     case TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE:
     case TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE_NO_MUSIC:
-      TrainerBattleLoadArgs(sContinueScriptDoubleBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sContinueScriptDoubleBattleParams, src);
       SetMapVarsToTrainer();
       return 'EventScript_TryDoDoubleTrainerBattle';
     case TRAINER_BATTLE_REMATCH_DOUBLE:
-      TrainerBattleLoadArgs(sDoubleBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sDoubleBattleParams, src);
       SetMapVarsToTrainer();
       // 1:1 :1140 gTrainerBattleOpponent_A = GetRematchTrainerId(gTrainerBattleOpponent_A).
       _setVar('gTrainerBattleOpponent_A', GetRematchTrainerId(_trainerBattleOpponentA));
       return 'EventScript_TryDoDoubleRematchBattle';
     case TRAINER_BATTLE_REMATCH:
-      TrainerBattleLoadArgs(sOrdinaryBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sOrdinaryBattleParams, src);
       SetMapVarsToTrainer();
       // 1:1 :1145 gTrainerBattleOpponent_A = GetRematchTrainerId(gTrainerBattleOpponent_A).
       _setVar('gTrainerBattleOpponent_A', GetRematchTrainerId(_trainerBattleOpponentA));
       return 'EventScript_TryDoRematchBattle';
     case TRAINER_BATTLE_SET_TRAINER_A:
-      TrainerBattleLoadArgs(sOrdinaryBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sOrdinaryBattleParams, src);
       return null;
     case TRAINER_BATTLE_SET_TRAINER_B:
-      TrainerBattleLoadArgs(sTrainerBOrdinaryBattleParams, args, ctx);
+      TrainerBattleLoadArgs(sTrainerBOrdinaryBattleParams, src);
       return null;
     // TRAINER_BATTLE_PYRAMID / TRAINER_BATTLE_HILL : frontier, dette T-C (:1147-1178).
     default:
       if (gApproachingTrainerId === 0) {
-        TrainerBattleLoadArgs(sOrdinaryBattleParams, args, ctx);
+        TrainerBattleLoadArgs(sOrdinaryBattleParams, src);
         SetMapVarsToTrainer();
       } else {
-        TrainerBattleLoadArgs(sTrainerBOrdinaryBattleParams, args, ctx);
+        TrainerBattleLoadArgs(sTrainerBOrdinaryBattleParams, src);
       }
       return 'EventScript_TryDoNormalTrainerBattle';
   }
@@ -494,13 +499,13 @@ export function ShowTrainerCantBattleSpeech(): void {
 /** 1:1 décomp `BattleSetup_GetScriptAddrAfterBattle()` (battle_setup.c:1404-1410).
  *  Retourne la POSITION de reprise du script de map (sTrainerBattleEndScript) ;
  *  fallback EventScript_TestSignpostMsg (label). */
-export function BattleSetup_GetScriptAddrAfterBattle(): ScriptPos | string {
+export function BattleSetup_GetScriptAddrAfterBattle(): string | ScriptPos | BvScriptPtr {
   if (sTrainerBattleEndScript !== null) return sTrainerBattleEndScript;
   return 'EventScript_TestSignpostMsg';
 }
 
 /** 1:1 décomp `BattleSetup_GetTrainerPostBattleScript()` (battle_setup.c:1412-1433). */
-export function BattleSetup_GetTrainerPostBattleScript(): string {
+export function BattleSetup_GetTrainerPostBattleScript(): string | ScriptPos | BvScriptPtr {
   if (sShouldCheckTrainerBScript) {
     sShouldCheckTrainerBScript = false;
     if (sTrainerBBattleScriptRetAddr !== null) {
@@ -546,7 +551,10 @@ export function ScrCmd_trainerbattle(ctx: ScriptContext, rawArgs: string[]): boo
 /** 1:1 décomp `ScrCmd_dotrainerbattle` (scrcmd.c:1827-1831) : DoTrainerBattle()
  *  + ScriptContext_Stop. Notre stop = SetupNativeScript qui poll la fin du combat
  *  (inBattle=false + outcome posé) PUIS applique CB2_EndTrainerBattle (flags). */
-export function ScrCmd_dotrainerbattle(ctx: ScriptContext): boolean {
+/** VOIE A : lancement combat dresseur partagé (parsé + byte-VM). Lance DoTrainerBattle
+ *  (async, après ensureGTrainersLoaded) et renvoie le poll natif (true = combat fini +
+ *  CB2_EndTrainerBattle appliqué). Chaque moteur l'enveloppe dans SON SetupNativeScript. */
+export function startTrainerBattleAndGetPoll(): () => boolean {
   setBattleOutcome(0);
   _prepareTrainerBattleStart();
   let booted = false;
@@ -557,25 +565,32 @@ export function ScrCmd_dotrainerbattle(ctx: ScriptContext): boolean {
     console.warn('[battle_setup] gTrainers KO — combat dresseur annulé', e);
     booted = true;
   });
-  SetupNativeScript(ctx, () => {
+  return () => {
     if (!booted) return false;
     const inB = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt?.gMain?.inBattle ?? false;
     if (inB || gBattleOutcome === 0) return false;
     CB2_EndTrainerBattle();
     return true;  // reprend le script (EventScript_DoTrainerBattle continue)
-  });
+  };
+}
+
+export function ScrCmd_dotrainerbattle(ctx: ScriptContext): boolean {
+  SetupNativeScript(ctx, startTrainerBattleAndGetPoll());
   return true;
 }
 
 /** 1:1 décomp `ScrCmd_gotopostbattlescript` (scrcmd.c:1833-1837). */
 export function ScrCmd_gotopostbattlescript(ctx: ScriptContext): boolean {
-  const label = BattleSetup_GetTrainerPostBattleScript();
-  const sc = getScript(label);
-  if (sc) {
-    ScriptJump(ctx, sc);
+  const r = BattleSetup_GetTrainerPostBattleScript();
+  if (typeof r === 'string') {
+    const sc = getScript(r);
+    if (sc) ScriptJump(ctx, sc);
+    else StopScript(ctx);   // EventScript_TryGetTrainerScript absent (std pas transpilé) → fin propre.
+  } else if ('opcodes' in r) {
+    ctx.scriptOpcodes = r.opcodes;
+    ctx.scriptIdx = r.idx;
   } else {
-    // EventScript_TryGetTrainerScript absent (std pas transpilé) → fin propre.
-    StopScript(ctx);
+    StopScript(ctx);   // forme byte-VM ({buf,off}) côté parsé → arrêt propre
   }
   return false;
 }
@@ -588,9 +603,13 @@ export function ScrCmd_gotobeatenscript(ctx: ScriptContext): boolean {
     const sc = getScript(r);
     if (sc) ScriptJump(ctx, sc);
     else StopScript(ctx);
-  } else {
+  } else if ('opcodes' in r) {
     ctx.scriptOpcodes = r.opcodes;
     ctx.scriptIdx = r.idx;
+  } else {
+    // Forme byte-VM ({buf,off}) — le moteur parsé ne peut pas la reprendre (ne devrait
+    // pas arriver : seul le byte-VM la pose). Arrêt propre.
+    StopScript(ctx);
   }
   return false;
 }
