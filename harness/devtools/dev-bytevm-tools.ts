@@ -663,6 +663,36 @@ export async function testLongTail1(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test LONG-TAIL 2 : checkpartymove(MOVE_NONE)→PARTY_SIZE + ALIGNEMENT du flux sur
+ *  setvaddress (4o) + copybyte (8o) + dotimebasedevents (0o) via setvar marqueur final. */
+export async function testLongTail2(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const CPM = cmdIdOf('ScrCmd_checkpartymove'), SETVADDR = cmdIdOf('ScrCmd_setvaddress'),
+        COPYB = cmdIdOf('ScrCmd_copybyte'), DTBE = cmdIdOf('ScrCmd_dotimebasedevents'),
+        SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VR = num('VAR_RESULT'), VT1 = num('VAR_TEMP_1');
+  const w32 = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  // checkpartymove <move bidon 0xFFFE> → aucun mon ne le connaît → result = PARTY_SIZE(6).
+  // (NB : MOVE_NONE(0) matcherait les slots de move VIDES → 1:1 décomp, donc pas un test net.)
+  VarSet(VR, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([CPM, 0xFE, 0xFF, END]), off: 0 } as ScriptPtr);
+  const noneResult = VarGet(VR);
+  // alignement : setvaddress(4o) ; copybyte(4o+4o) ; dotimebasedevents(0o) ; setvar VT1,0xCAFE
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    SETVADDR, ...w32(0),
+    COPYB, ...w32(0), ...w32(0),
+    DTBE,
+    SETVAR, lo(VT1), hi(VT1), lo(0xCAFE), hi(0xCAFE),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xCAFE;
+  const pass = noneResult === 6 && aligned;
+  const details = { 'checkpartymove MOVE_NONE → PARTY_SIZE(6)': noneResult, 'alignement setvaddress+copybyte+dotimebasedevents (setvar=0xCAFE)': aligned };
+  console.log(`[byte-vm] TEST long-tail 2 : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -670,4 +700,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, run, VarGet, getScriptOffset };

@@ -19,6 +19,10 @@ import {
   ScriptContext_Stop, ptrFromOffset, resolveSymbol, resolveMapSymbol, getScriptOffset,
 } from './script_bytevm';
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
+import { VAR_0x8004 } from '../include/constants/vars';
+import { PARTY_SIZE } from '../include/constants/global';
+import { MonKnowsMove } from './engine/battle/party-storage';
+import { DoTimeBasedEvents } from './clock';
 import { setPendingWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
@@ -565,6 +569,34 @@ const ScrCmd_showcoinsbox: ScrCmdFunc = (ctx) => { const x = ScriptReadByte(ctx)
 const ScrCmd_hidecoinsbox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); _moneyUI()?.HideCoinsWindow?.(); return false; };
 const ScrCmd_updatecoinsbox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); const ui = _moneyUI(); if (ui?.PrintCoinsString && ui._getCoins) ui.PrintCoinsString(ui._getCoins()); return false; };
 
+// ─── long-tail simple #2 (1:1 scrcmd.c) ─────────────────────────────────────
+const ScrCmd_dotimebasedevents: ScrCmdFunc = () => { DoTimeBasedEvents(); return false; };
+// checkpartymove (1:1 scrcmd.c) : move lu BRUT (pas VarGet) ; itère la party.
+const ScrCmd_checkpartymove: ScrCmdFunc = (ctx) => {
+  const move = ScriptReadHalfword(ctx);
+  let result = PARTY_SIZE, species0x8004 = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+    if (!species) break;   // slot vide → fin de party
+    if (!(GetMonData(gPlayerParty[i], MON_DATA_IS_EGG) as number) && MonKnowsMove(gPlayerParty[i], move)) {
+      result = i; species0x8004 = species; break;
+    }
+  }
+  setResult(result);
+  VarSet(VAR_0x8004, species0x8004);
+  return false;
+};
+// v* RS-era (multi-lang via sAddressOffset = aspect ROM-address non modélisé) :
+// nos pointeurs sont déjà des offsets/symboles absolus → vgoto/vcall/vgoto_if =
+// goto/call/goto_if ; vmessage = message (sans NULL/data[0]). setvaddress/copybyte
+// = no-op mais LISENT leurs octets (alignement du flux).
+const ScrCmd_vgoto: ScrCmdFunc = ScrCmd_goto;
+const ScrCmd_vcall: ScrCmdFunc = ScrCmd_call;
+const ScrCmd_vgoto_if: ScrCmdFunc = ScrCmd_goto_if;
+const ScrCmd_vmessage: ScrCmdFunc = (ctx) => { showFieldText(ScriptReadWord(ctx)); return false; };
+const ScrCmd_setvaddress: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };           // offset moot (scripts label-based)
+const ScrCmd_copybyte: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); ScriptReadWord(ctx); return false; }; // no-op (= parsé ; ptrs RAM non modélisés)
+
 // ─── object movement ops (1:1 scrcmd.c ; logique partagée scrcmd_object — voie A) ──
 // turnobject : direction = valeur DIR_ (1=SOUTH..4=EAST) lue direct du bytecode.
 const ScrCmd_turnobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const dir = ScriptReadByte(ctx); doTurnObject(String(l), dir); return false; };
@@ -618,6 +650,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_random, ScrCmd_setberrytree, ScrCmd_setmaplayoutindex, ScrCmd_setstepcallback,
   ScrCmd_showmoneybox, ScrCmd_hidemoneybox, ScrCmd_updatemoneybox,
   ScrCmd_showcoinsbox, ScrCmd_hidecoinsbox, ScrCmd_updatecoinsbox,
+  ScrCmd_dotimebasedevents, ScrCmd_checkpartymove,
+  ScrCmd_vgoto, ScrCmd_vcall, ScrCmd_vgoto_if, ScrCmd_vmessage, ScrCmd_setvaddress, ScrCmd_copybyte,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
