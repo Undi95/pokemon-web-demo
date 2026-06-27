@@ -31,6 +31,10 @@ public/decomp/em/rom.gba
 public/decomp/**/rom.gba
 public/decomp/**/*.gba
 
+# byte-VM : bytecode compilé = artefact régénérable (node scripts/compile-scripts.cjs)
+# format encore en évolution (Phase 3) → non commité pour l'instant.
+public/decomp/em/script-bytecode.json
+
 # External reference docs (PDFs/random)
 *.pdf
 
