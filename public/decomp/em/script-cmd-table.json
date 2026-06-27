@@ -1,0 +1,7592 @@
+{
+  "meta": {
+    "note": "Généré par scripts/extract-script-cmd-table.cjs — FONDATION byte-VM (Phase 1). NE PAS éditer à la main.",
+    "cmdTableEntries": 227,
+    "realOpcodes": 225,
+    "composites": 247
+  },
+  "enum": [
+    {
+      "op": "SCR_OP_NOP",
+      "cmdId": 0,
+      "handler": "ScrCmd_nop"
+    },
+    {
+      "op": "SCR_OP_NOP1",
+      "cmdId": 1,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_END",
+      "cmdId": 2,
+      "handler": "ScrCmd_end"
+    },
+    {
+      "op": "SCR_OP_RETURN",
+      "cmdId": 3,
+      "handler": "ScrCmd_return"
+    },
+    {
+      "op": "SCR_OP_CALL",
+      "cmdId": 4,
+      "handler": "ScrCmd_call"
+    },
+    {
+      "op": "SCR_OP_GOTO",
+      "cmdId": 5,
+      "handler": "ScrCmd_goto"
+    },
+    {
+      "op": "SCR_OP_GOTO_IF",
+      "cmdId": 6,
+      "handler": "ScrCmd_goto_if"
+    },
+    {
+      "op": "SCR_OP_CALL_IF",
+      "cmdId": 7,
+      "handler": "ScrCmd_call_if"
+    },
+    {
+      "op": "SCR_OP_GOTO_STD",
+      "cmdId": 8,
+      "handler": "ScrCmd_gotostd"
+    },
+    {
+      "op": "SCR_OP_CALL_STD",
+      "cmdId": 9,
+      "handler": "ScrCmd_callstd"
+    },
+    {
+      "op": "SCR_OP_GOTO_STD_IF",
+      "cmdId": 10,
+      "handler": "ScrCmd_gotostd_if"
+    },
+    {
+      "op": "SCR_OP_CALL_STD_IF",
+      "cmdId": 11,
+      "handler": "ScrCmd_callstd_if"
+    },
+    {
+      "op": "SCR_OP_RETURNRAM",
+      "cmdId": 12,
+      "handler": "ScrCmd_returnram"
+    },
+    {
+      "op": "SCR_OP_ENDRAM",
+      "cmdId": 13,
+      "handler": "ScrCmd_endram"
+    },
+    {
+      "op": "SCR_OP_SETMYSTERYEVENTSTATUS",
+      "cmdId": 14,
+      "handler": "ScrCmd_setmysteryeventstatus"
+    },
+    {
+      "op": "SCR_OP_LOAD_WORD",
+      "cmdId": 15,
+      "handler": "ScrCmd_loadword"
+    },
+    {
+      "op": "SCR_OP_LOAD_BYTE",
+      "cmdId": 16,
+      "handler": "ScrCmd_loadbyte"
+    },
+    {
+      "op": "SCR_OP_SETPTR",
+      "cmdId": 17,
+      "handler": "ScrCmd_setptr"
+    },
+    {
+      "op": "SCR_OP_LOADBYTEFROMPTR",
+      "cmdId": 18,
+      "handler": "ScrCmd_loadbytefromptr"
+    },
+    {
+      "op": "SCR_OP_SETPTRBYTE",
+      "cmdId": 19,
+      "handler": "ScrCmd_setptrbyte"
+    },
+    {
+      "op": "SCR_OP_COPYLOCAL",
+      "cmdId": 20,
+      "handler": "ScrCmd_copylocal"
+    },
+    {
+      "op": "SCR_OP_COPYBYTE",
+      "cmdId": 21,
+      "handler": "ScrCmd_copybyte"
+    },
+    {
+      "op": "SCR_OP_SETVAR",
+      "cmdId": 22,
+      "handler": "ScrCmd_setvar"
+    },
+    {
+      "op": "SCR_OP_ADDVAR",
+      "cmdId": 23,
+      "handler": "ScrCmd_addvar"
+    },
+    {
+      "op": "SCR_OP_SUBVAR",
+      "cmdId": 24,
+      "handler": "ScrCmd_subvar"
+    },
+    {
+      "op": "SCR_OP_COPYVAR",
+      "cmdId": 25,
+      "handler": "ScrCmd_copyvar"
+    },
+    {
+      "op": "SCR_OP_SETORCOPYVAR",
+      "cmdId": 26,
+      "handler": "ScrCmd_setorcopyvar"
+    },
+    {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_LOCAL",
+      "cmdId": 27,
+      "handler": "ScrCmd_compare_local_to_local"
+    },
+    {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_VALUE",
+      "cmdId": 28,
+      "handler": "ScrCmd_compare_local_to_value"
+    },
+    {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_PTR",
+      "cmdId": 29,
+      "handler": "ScrCmd_compare_local_to_ptr"
+    },
+    {
+      "op": "SCR_OP_COMPARE_PTR_TO_LOCAL",
+      "cmdId": 30,
+      "handler": "ScrCmd_compare_ptr_to_local"
+    },
+    {
+      "op": "SCR_OP_COMPARE_PTR_TO_VALUE",
+      "cmdId": 31,
+      "handler": "ScrCmd_compare_ptr_to_value"
+    },
+    {
+      "op": "SCR_OP_COMPARE_PTR_TO_PTR",
+      "cmdId": 32,
+      "handler": "ScrCmd_compare_ptr_to_ptr"
+    },
+    {
+      "op": "SCR_OP_COMPARE_VAR_TO_VALUE",
+      "cmdId": 33,
+      "handler": "ScrCmd_compare_var_to_value"
+    },
+    {
+      "op": "SCR_OP_COMPARE_VAR_TO_VAR",
+      "cmdId": 34,
+      "handler": "ScrCmd_compare_var_to_var"
+    },
+    {
+      "op": "SCR_OP_CALLNATIVE",
+      "cmdId": 35,
+      "handler": "ScrCmd_callnative"
+    },
+    {
+      "op": "SCR_OP_GOTONATIVE",
+      "cmdId": 36,
+      "handler": "ScrCmd_gotonative"
+    },
+    {
+      "op": "SCR_OP_SPECIAL",
+      "cmdId": 37,
+      "handler": "ScrCmd_special"
+    },
+    {
+      "op": "SCR_OP_SPECIALVAR",
+      "cmdId": 38,
+      "handler": "ScrCmd_specialvar"
+    },
+    {
+      "op": "SCR_OP_WAITSTATE",
+      "cmdId": 39,
+      "handler": "ScrCmd_waitstate"
+    },
+    {
+      "op": "SCR_OP_DELAY",
+      "cmdId": 40,
+      "handler": "ScrCmd_delay"
+    },
+    {
+      "op": "SCR_OP_SETFLAG",
+      "cmdId": 41,
+      "handler": "ScrCmd_setflag"
+    },
+    {
+      "op": "SCR_OP_CLEARFLAG",
+      "cmdId": 42,
+      "handler": "ScrCmd_clearflag"
+    },
+    {
+      "op": "SCR_OP_CHECKFLAG",
+      "cmdId": 43,
+      "handler": "ScrCmd_checkflag"
+    },
+    {
+      "op": "SCR_OP_INITCLOCK",
+      "cmdId": 44,
+      "handler": "ScrCmd_initclock"
+    },
+    {
+      "op": "SCR_OP_DOTIMEBASEDEVENTS",
+      "cmdId": 45,
+      "handler": "ScrCmd_dotimebasedevents"
+    },
+    {
+      "op": "SCR_OP_GETTIME",
+      "cmdId": 46,
+      "handler": "ScrCmd_gettime"
+    },
+    {
+      "op": "SCR_OP_PLAYSE",
+      "cmdId": 47,
+      "handler": "ScrCmd_playse"
+    },
+    {
+      "op": "SCR_OP_WAITSE",
+      "cmdId": 48,
+      "handler": "ScrCmd_waitse"
+    },
+    {
+      "op": "SCR_OP_PLAYFANFARE",
+      "cmdId": 49,
+      "handler": "ScrCmd_playfanfare"
+    },
+    {
+      "op": "SCR_OP_WAITFANFARE",
+      "cmdId": 50,
+      "handler": "ScrCmd_waitfanfare"
+    },
+    {
+      "op": "SCR_OP_PLAYBGM",
+      "cmdId": 51,
+      "handler": "ScrCmd_playbgm"
+    },
+    {
+      "op": "SCR_OP_SAVEBGM",
+      "cmdId": 52,
+      "handler": "ScrCmd_savebgm"
+    },
+    {
+      "op": "SCR_OP_FADEDEFAULTBGM",
+      "cmdId": 53,
+      "handler": "ScrCmd_fadedefaultbgm"
+    },
+    {
+      "op": "SCR_OP_FADENEWBGM",
+      "cmdId": 54,
+      "handler": "ScrCmd_fadenewbgm"
+    },
+    {
+      "op": "SCR_OP_FADEOUTBGM",
+      "cmdId": 55,
+      "handler": "ScrCmd_fadeoutbgm"
+    },
+    {
+      "op": "SCR_OP_FADEINBGM",
+      "cmdId": 56,
+      "handler": "ScrCmd_fadeinbgm"
+    },
+    {
+      "op": "SCR_OP_WARP",
+      "cmdId": 57,
+      "handler": "ScrCmd_warp"
+    },
+    {
+      "op": "SCR_OP_WARPSILENT",
+      "cmdId": 58,
+      "handler": "ScrCmd_warpsilent"
+    },
+    {
+      "op": "SCR_OP_WARPDOOR",
+      "cmdId": 59,
+      "handler": "ScrCmd_warpdoor"
+    },
+    {
+      "op": "SCR_OP_WARPHOLE",
+      "cmdId": 60,
+      "handler": "ScrCmd_warphole"
+    },
+    {
+      "op": "SCR_OP_WARPTELEPORT",
+      "cmdId": 61,
+      "handler": "ScrCmd_warpteleport"
+    },
+    {
+      "op": "SCR_OP_SETWARP",
+      "cmdId": 62,
+      "handler": "ScrCmd_setwarp"
+    },
+    {
+      "op": "SCR_OP_SETDYNAMICWARP",
+      "cmdId": 63,
+      "handler": "ScrCmd_setdynamicwarp"
+    },
+    {
+      "op": "SCR_OP_SETDIVEWARP",
+      "cmdId": 64,
+      "handler": "ScrCmd_setdivewarp"
+    },
+    {
+      "op": "SCR_OP_SETHOLEWARP",
+      "cmdId": 65,
+      "handler": "ScrCmd_setholewarp"
+    },
+    {
+      "op": "SCR_OP_GETPLAYERXY",
+      "cmdId": 66,
+      "handler": "ScrCmd_getplayerxy"
+    },
+    {
+      "op": "SCR_OP_GETPARTYSIZE",
+      "cmdId": 67,
+      "handler": "ScrCmd_getpartysize"
+    },
+    {
+      "op": "SCR_OP_ADDITEM",
+      "cmdId": 68,
+      "handler": "ScrCmd_additem"
+    },
+    {
+      "op": "SCR_OP_REMOVEITEM",
+      "cmdId": 69,
+      "handler": "ScrCmd_removeitem"
+    },
+    {
+      "op": "SCR_OP_CHECKITEMSPACE",
+      "cmdId": 70,
+      "handler": "ScrCmd_checkitemspace"
+    },
+    {
+      "op": "SCR_OP_CHECKITEM",
+      "cmdId": 71,
+      "handler": "ScrCmd_checkitem"
+    },
+    {
+      "op": "SCR_OP_CHECKITEMTYPE",
+      "cmdId": 72,
+      "handler": "ScrCmd_checkitemtype"
+    },
+    {
+      "op": "SCR_OP_ADDPCITEM",
+      "cmdId": 73,
+      "handler": "ScrCmd_addpcitem"
+    },
+    {
+      "op": "SCR_OP_CHECKPCITEM",
+      "cmdId": 74,
+      "handler": "ScrCmd_checkpcitem"
+    },
+    {
+      "op": "SCR_OP_ADDDECORATION",
+      "cmdId": 75,
+      "handler": "ScrCmd_adddecoration"
+    },
+    {
+      "op": "SCR_OP_REMOVEDECORATION",
+      "cmdId": 76,
+      "handler": "ScrCmd_removedecoration"
+    },
+    {
+      "op": "SCR_OP_CHECKDECOR",
+      "cmdId": 77,
+      "handler": "ScrCmd_checkdecor"
+    },
+    {
+      "op": "SCR_OP_CHECKDECORSPACE",
+      "cmdId": 78,
+      "handler": "ScrCmd_checkdecorspace"
+    },
+    {
+      "op": "SCR_OP_APPLYMOVEMENT",
+      "cmdId": 79,
+      "handler": "ScrCmd_applymovement"
+    },
+    {
+      "op": "SCR_OP_APPLYMOVEMENTAT",
+      "cmdId": 80,
+      "handler": "ScrCmd_applymovementat"
+    },
+    {
+      "op": "SCR_OP_WAITMOVEMENT",
+      "cmdId": 81,
+      "handler": "ScrCmd_waitmovement"
+    },
+    {
+      "op": "SCR_OP_WAITMOVEMENTAT",
+      "cmdId": 82,
+      "handler": "ScrCmd_waitmovementat"
+    },
+    {
+      "op": "SCR_OP_REMOVEOBJECT",
+      "cmdId": 83,
+      "handler": "ScrCmd_removeobject"
+    },
+    {
+      "op": "SCR_OP_REMOVEOBJECTAT",
+      "cmdId": 84,
+      "handler": "ScrCmd_removeobjectat"
+    },
+    {
+      "op": "SCR_OP_ADDOBJECT",
+      "cmdId": 85,
+      "handler": "ScrCmd_addobject"
+    },
+    {
+      "op": "SCR_OP_ADDOBJECTAT",
+      "cmdId": 86,
+      "handler": "ScrCmd_addobjectat"
+    },
+    {
+      "op": "SCR_OP_SETOBJECTXY",
+      "cmdId": 87,
+      "handler": "ScrCmd_setobjectxy"
+    },
+    {
+      "op": "SCR_OP_SHOWOBJECTAT",
+      "cmdId": 88,
+      "handler": "ScrCmd_showobjectat"
+    },
+    {
+      "op": "SCR_OP_HIDEOBJECTAT",
+      "cmdId": 89,
+      "handler": "ScrCmd_hideobjectat"
+    },
+    {
+      "op": "SCR_OP_FACEPLAYER",
+      "cmdId": 90,
+      "handler": "ScrCmd_faceplayer"
+    },
+    {
+      "op": "SCR_OP_TURNOBJECT",
+      "cmdId": 91,
+      "handler": "ScrCmd_turnobject"
+    },
+    {
+      "op": "SCR_OP_TRAINERBATTLE",
+      "cmdId": 92,
+      "handler": "ScrCmd_trainerbattle"
+    },
+    {
+      "op": "SCR_OP_DOTRAINERBATTLE",
+      "cmdId": 93,
+      "handler": "ScrCmd_dotrainerbattle"
+    },
+    {
+      "op": "SCR_OP_GOTOPOSTBATTLESCRIPT",
+      "cmdId": 94,
+      "handler": "ScrCmd_gotopostbattlescript"
+    },
+    {
+      "op": "SCR_OP_GOTOBEATENSCRIPT",
+      "cmdId": 95,
+      "handler": "ScrCmd_gotobeatenscript"
+    },
+    {
+      "op": "SCR_OP_CHECKTRAINERFLAG",
+      "cmdId": 96,
+      "handler": "ScrCmd_checktrainerflag"
+    },
+    {
+      "op": "SCR_OP_SETTRAINERFLAG",
+      "cmdId": 97,
+      "handler": "ScrCmd_settrainerflag"
+    },
+    {
+      "op": "SCR_OP_CLEARTRAINERFLAG",
+      "cmdId": 98,
+      "handler": "ScrCmd_cleartrainerflag"
+    },
+    {
+      "op": "SCR_OP_SETOBJECTXYPERM",
+      "cmdId": 99,
+      "handler": "ScrCmd_setobjectxyperm"
+    },
+    {
+      "op": "SCR_OP_COPYOBJECTXYTOPERM",
+      "cmdId": 100,
+      "handler": "ScrCmd_copyobjectxytoperm"
+    },
+    {
+      "op": "SCR_OP_SETOBJECTMOVEMENTTYPE",
+      "cmdId": 101,
+      "handler": "ScrCmd_setobjectmovementtype"
+    },
+    {
+      "op": "SCR_OP_WAITMESSAGE",
+      "cmdId": 102,
+      "handler": "ScrCmd_waitmessage"
+    },
+    {
+      "op": "SCR_OP_MESSAGE",
+      "cmdId": 103,
+      "handler": "ScrCmd_message"
+    },
+    {
+      "op": "SCR_OP_CLOSEMESSAGE",
+      "cmdId": 104,
+      "handler": "ScrCmd_closemessage"
+    },
+    {
+      "op": "SCR_OP_LOCKALL",
+      "cmdId": 105,
+      "handler": "ScrCmd_lockall"
+    },
+    {
+      "op": "SCR_OP_LOCK",
+      "cmdId": 106,
+      "handler": "ScrCmd_lock"
+    },
+    {
+      "op": "SCR_OP_RELEASEALL",
+      "cmdId": 107,
+      "handler": "ScrCmd_releaseall"
+    },
+    {
+      "op": "SCR_OP_RELEASE",
+      "cmdId": 108,
+      "handler": "ScrCmd_release"
+    },
+    {
+      "op": "SCR_OP_WAITBUTTONPRESS",
+      "cmdId": 109,
+      "handler": "ScrCmd_waitbuttonpress"
+    },
+    {
+      "op": "SCR_OP_YESNOBOX",
+      "cmdId": 110,
+      "handler": "ScrCmd_yesnobox"
+    },
+    {
+      "op": "SCR_OP_MULTICHOICE",
+      "cmdId": 111,
+      "handler": "ScrCmd_multichoice"
+    },
+    {
+      "op": "SCR_OP_MULTICHOICEDEFAULT",
+      "cmdId": 112,
+      "handler": "ScrCmd_multichoicedefault"
+    },
+    {
+      "op": "SCR_OP_MULTICHOICEGRID",
+      "cmdId": 113,
+      "handler": "ScrCmd_multichoicegrid"
+    },
+    {
+      "op": "SCR_OP_DRAWBOX",
+      "cmdId": 114,
+      "handler": "ScrCmd_drawbox"
+    },
+    {
+      "op": "SCR_OP_ERASEBOX",
+      "cmdId": 115,
+      "handler": "ScrCmd_erasebox"
+    },
+    {
+      "op": "SCR_OP_DRAWBOXTEXT",
+      "cmdId": 116,
+      "handler": "ScrCmd_drawboxtext"
+    },
+    {
+      "op": "SCR_OP_SHOWMONPIC",
+      "cmdId": 117,
+      "handler": "ScrCmd_showmonpic"
+    },
+    {
+      "op": "SCR_OP_HIDEMONPIC",
+      "cmdId": 118,
+      "handler": "ScrCmd_hidemonpic"
+    },
+    {
+      "op": "SCR_OP_SHOWCONTESTPAINTING",
+      "cmdId": 119,
+      "handler": "ScrCmd_showcontestpainting"
+    },
+    {
+      "op": "SCR_OP_BRAILLEMESSAGE",
+      "cmdId": 120,
+      "handler": "ScrCmd_braillemessage"
+    },
+    {
+      "op": "SCR_OP_GIVEMON",
+      "cmdId": 121,
+      "handler": "ScrCmd_givemon"
+    },
+    {
+      "op": "SCR_OP_GIVEEGG",
+      "cmdId": 122,
+      "handler": "ScrCmd_giveegg"
+    },
+    {
+      "op": "SCR_OP_SETMONMOVE",
+      "cmdId": 123,
+      "handler": "ScrCmd_setmonmove"
+    },
+    {
+      "op": "SCR_OP_CHECKPARTYMOVE",
+      "cmdId": 124,
+      "handler": "ScrCmd_checkpartymove"
+    },
+    {
+      "op": "SCR_OP_BUFFERSPECIESNAME",
+      "cmdId": 125,
+      "handler": "ScrCmd_bufferspeciesname"
+    },
+    {
+      "op": "SCR_OP_BUFFERLEADMONSPECIESNAME",
+      "cmdId": 126,
+      "handler": "ScrCmd_bufferleadmonspeciesname"
+    },
+    {
+      "op": "SCR_OP_BUFFERPARTYMONNICK",
+      "cmdId": 127,
+      "handler": "ScrCmd_bufferpartymonnick"
+    },
+    {
+      "op": "SCR_OP_BUFFERITEMNAME",
+      "cmdId": 128,
+      "handler": "ScrCmd_bufferitemname"
+    },
+    {
+      "op": "SCR_OP_BUFFERDECORATIONNAME",
+      "cmdId": 129,
+      "handler": "ScrCmd_bufferdecorationname"
+    },
+    {
+      "op": "SCR_OP_BUFFERMOVENAME",
+      "cmdId": 130,
+      "handler": "ScrCmd_buffermovename"
+    },
+    {
+      "op": "SCR_OP_BUFFERNUMBERSTRING",
+      "cmdId": 131,
+      "handler": "ScrCmd_buffernumberstring"
+    },
+    {
+      "op": "SCR_OP_BUFFERSTDSTRING",
+      "cmdId": 132,
+      "handler": "ScrCmd_bufferstdstring"
+    },
+    {
+      "op": "SCR_OP_BUFFERSTRING",
+      "cmdId": 133,
+      "handler": "ScrCmd_bufferstring"
+    },
+    {
+      "op": "SCR_OP_POKEMART",
+      "cmdId": 134,
+      "handler": "ScrCmd_pokemart"
+    },
+    {
+      "op": "SCR_OP_POKEMARTDECORATION",
+      "cmdId": 135,
+      "handler": "ScrCmd_pokemartdecoration"
+    },
+    {
+      "op": "SCR_OP_POKEMARTDECORATION2",
+      "cmdId": 136,
+      "handler": "ScrCmd_pokemartdecoration2"
+    },
+    {
+      "op": "SCR_OP_PLAYSLOTMACHINE",
+      "cmdId": 137,
+      "handler": "ScrCmd_playslotmachine"
+    },
+    {
+      "op": "SCR_OP_SETBERRYTREE",
+      "cmdId": 138,
+      "handler": "ScrCmd_setberrytree"
+    },
+    {
+      "op": "SCR_OP_CHOOSECONTESTMON",
+      "cmdId": 139,
+      "handler": "ScrCmd_choosecontestmon"
+    },
+    {
+      "op": "SCR_OP_STARTCONTEST",
+      "cmdId": 140,
+      "handler": "ScrCmd_startcontest"
+    },
+    {
+      "op": "SCR_OP_SHOWCONTESTRESULTS",
+      "cmdId": 141,
+      "handler": "ScrCmd_showcontestresults"
+    },
+    {
+      "op": "SCR_OP_CONTESTLINKTRANSFER",
+      "cmdId": 142,
+      "handler": "ScrCmd_contestlinktransfer"
+    },
+    {
+      "op": "SCR_OP_RANDOM",
+      "cmdId": 143,
+      "handler": "ScrCmd_random"
+    },
+    {
+      "op": "SCR_OP_ADDMONEY",
+      "cmdId": 144,
+      "handler": "ScrCmd_addmoney"
+    },
+    {
+      "op": "SCR_OP_REMOVEMONEY",
+      "cmdId": 145,
+      "handler": "ScrCmd_removemoney"
+    },
+    {
+      "op": "SCR_OP_CHECKMONEY",
+      "cmdId": 146,
+      "handler": "ScrCmd_checkmoney"
+    },
+    {
+      "op": "SCR_OP_SHOWMONEYBOX",
+      "cmdId": 147,
+      "handler": "ScrCmd_showmoneybox"
+    },
+    {
+      "op": "SCR_OP_HIDEMONEYBOX",
+      "cmdId": 148,
+      "handler": "ScrCmd_hidemoneybox"
+    },
+    {
+      "op": "SCR_OP_UPDATEMONEYBOX",
+      "cmdId": 149,
+      "handler": "ScrCmd_updatemoneybox"
+    },
+    {
+      "op": "SCR_OP_GETPOKENEWSACTIVE",
+      "cmdId": 150,
+      "handler": "ScrCmd_getpokenewsactive"
+    },
+    {
+      "op": "SCR_OP_FADESCREEN",
+      "cmdId": 151,
+      "handler": "ScrCmd_fadescreen"
+    },
+    {
+      "op": "SCR_OP_FADESCREENSPEED",
+      "cmdId": 152,
+      "handler": "ScrCmd_fadescreenspeed"
+    },
+    {
+      "op": "SCR_OP_SETFLASHLEVEL",
+      "cmdId": 153,
+      "handler": "ScrCmd_setflashlevel"
+    },
+    {
+      "op": "SCR_OP_ANIMATEFLASH",
+      "cmdId": 154,
+      "handler": "ScrCmd_animateflash"
+    },
+    {
+      "op": "SCR_OP_MESSAGEAUTOSCROLL",
+      "cmdId": 155,
+      "handler": "ScrCmd_messageautoscroll"
+    },
+    {
+      "op": "SCR_OP_DOFIELDEFFECT",
+      "cmdId": 156,
+      "handler": "ScrCmd_dofieldeffect"
+    },
+    {
+      "op": "SCR_OP_SETFIELDEFFECTARGUMENT",
+      "cmdId": 157,
+      "handler": "ScrCmd_setfieldeffectargument"
+    },
+    {
+      "op": "SCR_OP_WAITFIELDEFFECT",
+      "cmdId": 158,
+      "handler": "ScrCmd_waitfieldeffect"
+    },
+    {
+      "op": "SCR_OP_SETRESPAWN",
+      "cmdId": 159,
+      "handler": "ScrCmd_setrespawn"
+    },
+    {
+      "op": "SCR_OP_CHECKPLAYERGENDER",
+      "cmdId": 160,
+      "handler": "ScrCmd_checkplayergender"
+    },
+    {
+      "op": "SCR_OP_PLAYMONCRY",
+      "cmdId": 161,
+      "handler": "ScrCmd_playmoncry"
+    },
+    {
+      "op": "SCR_OP_SETMETATILE",
+      "cmdId": 162,
+      "handler": "ScrCmd_setmetatile"
+    },
+    {
+      "op": "SCR_OP_RESETWEATHER",
+      "cmdId": 163,
+      "handler": "ScrCmd_resetweather"
+    },
+    {
+      "op": "SCR_OP_SETWEATHER",
+      "cmdId": 164,
+      "handler": "ScrCmd_setweather"
+    },
+    {
+      "op": "SCR_OP_DOWEATHER",
+      "cmdId": 165,
+      "handler": "ScrCmd_doweather"
+    },
+    {
+      "op": "SCR_OP_SETSTEPCALLBACK",
+      "cmdId": 166,
+      "handler": "ScrCmd_setstepcallback"
+    },
+    {
+      "op": "SCR_OP_SETMAPLAYOUTINDEX",
+      "cmdId": 167,
+      "handler": "ScrCmd_setmaplayoutindex"
+    },
+    {
+      "op": "SCR_OP_SETOBJECTSUBPRIORITY",
+      "cmdId": 168,
+      "handler": "ScrCmd_setobjectsubpriority"
+    },
+    {
+      "op": "SCR_OP_RESETOBJECTSUBPRIORITY",
+      "cmdId": 169,
+      "handler": "ScrCmd_resetobjectsubpriority"
+    },
+    {
+      "op": "SCR_OP_CREATEVOBJECT",
+      "cmdId": 170,
+      "handler": "ScrCmd_createvobject"
+    },
+    {
+      "op": "SCR_OP_TURNVOBJECT",
+      "cmdId": 171,
+      "handler": "ScrCmd_turnvobject"
+    },
+    {
+      "op": "SCR_OP_OPENDOOR",
+      "cmdId": 172,
+      "handler": "ScrCmd_opendoor"
+    },
+    {
+      "op": "SCR_OP_CLOSEDOOR",
+      "cmdId": 173,
+      "handler": "ScrCmd_closedoor"
+    },
+    {
+      "op": "SCR_OP_WAITDOORANIM",
+      "cmdId": 174,
+      "handler": "ScrCmd_waitdooranim"
+    },
+    {
+      "op": "SCR_OP_SETDOOROPEN",
+      "cmdId": 175,
+      "handler": "ScrCmd_setdooropen"
+    },
+    {
+      "op": "SCR_OP_SETDOORCLOSED",
+      "cmdId": 176,
+      "handler": "ScrCmd_setdoorclosed"
+    },
+    {
+      "op": "SCR_OP_ADDELEVMENUITEM",
+      "cmdId": 177,
+      "handler": "ScrCmd_addelevmenuitem"
+    },
+    {
+      "op": "SCR_OP_SHOWELEVMENU",
+      "cmdId": 178,
+      "handler": "ScrCmd_showelevmenu"
+    },
+    {
+      "op": "SCR_OP_CHECKCOINS",
+      "cmdId": 179,
+      "handler": "ScrCmd_checkcoins"
+    },
+    {
+      "op": "SCR_OP_ADDCOINS",
+      "cmdId": 180,
+      "handler": "ScrCmd_addcoins"
+    },
+    {
+      "op": "SCR_OP_REMOVECOINS",
+      "cmdId": 181,
+      "handler": "ScrCmd_removecoins"
+    },
+    {
+      "op": "SCR_OP_SETWILDBATTLE",
+      "cmdId": 182,
+      "handler": "ScrCmd_setwildbattle"
+    },
+    {
+      "op": "SCR_OP_DOWILDBATTLE",
+      "cmdId": 183,
+      "handler": "ScrCmd_dowildbattle"
+    },
+    {
+      "op": "SCR_OP_SETVADDRESS",
+      "cmdId": 184,
+      "handler": "ScrCmd_setvaddress"
+    },
+    {
+      "op": "SCR_OP_VGOTO",
+      "cmdId": 185,
+      "handler": "ScrCmd_vgoto"
+    },
+    {
+      "op": "SCR_OP_VCALL",
+      "cmdId": 186,
+      "handler": "ScrCmd_vcall"
+    },
+    {
+      "op": "SCR_OP_VGOTO_IF",
+      "cmdId": 187,
+      "handler": "ScrCmd_vgoto_if"
+    },
+    {
+      "op": "SCR_OP_VCALL_IF",
+      "cmdId": 188,
+      "handler": "ScrCmd_vcall_if"
+    },
+    {
+      "op": "SCR_OP_VMESSAGE",
+      "cmdId": 189,
+      "handler": "ScrCmd_vmessage"
+    },
+    {
+      "op": "SCR_OP_VBUFFERMESSAGE",
+      "cmdId": 190,
+      "handler": "ScrCmd_vbuffermessage"
+    },
+    {
+      "op": "SCR_OP_VBUFFERSTRING",
+      "cmdId": 191,
+      "handler": "ScrCmd_vbufferstring"
+    },
+    {
+      "op": "SCR_OP_SHOWCOINSBOX",
+      "cmdId": 192,
+      "handler": "ScrCmd_showcoinsbox"
+    },
+    {
+      "op": "SCR_OP_HIDECOINSBOX",
+      "cmdId": 193,
+      "handler": "ScrCmd_hidecoinsbox"
+    },
+    {
+      "op": "SCR_OP_UPDATECOINSBOX",
+      "cmdId": 194,
+      "handler": "ScrCmd_updatecoinsbox"
+    },
+    {
+      "op": "SCR_OP_INCREMENTGAMESTAT",
+      "cmdId": 195,
+      "handler": "ScrCmd_incrementgamestat"
+    },
+    {
+      "op": "SCR_OP_SETESCAPEWARP",
+      "cmdId": 196,
+      "handler": "ScrCmd_setescapewarp"
+    },
+    {
+      "op": "SCR_OP_WAITMONCRY",
+      "cmdId": 197,
+      "handler": "ScrCmd_waitmoncry"
+    },
+    {
+      "op": "SCR_OP_BUFFERBOXNAME",
+      "cmdId": 198,
+      "handler": "ScrCmd_bufferboxname"
+    },
+    {
+      "op": "SCR_OP_TEXTCOLOR",
+      "cmdId": 199,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_LOADHELP",
+      "cmdId": 200,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_UNLOADHELP",
+      "cmdId": 201,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_SIGNMSG",
+      "cmdId": 202,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_NORMALMSG",
+      "cmdId": 203,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_COMPAREHIDDENVAR",
+      "cmdId": 204,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_SETMODERNFATEFULENCOUNTER",
+      "cmdId": 205,
+      "handler": "ScrCmd_setmodernfatefulencounter"
+    },
+    {
+      "op": "SCR_OP_CHECKMODERNFATEFULENCOUNTER",
+      "cmdId": 206,
+      "handler": "ScrCmd_checkmodernfatefulencounter"
+    },
+    {
+      "op": "SCR_OP_TRYWONDERCARDSCRIPT",
+      "cmdId": 207,
+      "handler": "ScrCmd_trywondercardscript"
+    },
+    {
+      "op": "SCR_OP_SETWORLDMAPFLAG",
+      "cmdId": 208,
+      "handler": "ScrCmd_nop1"
+    },
+    {
+      "op": "SCR_OP_WARPSPINENTER",
+      "cmdId": 209,
+      "handler": "ScrCmd_warpspinenter"
+    },
+    {
+      "op": "SCR_OP_SETMONMETLOCATION",
+      "cmdId": 210,
+      "handler": "ScrCmd_setmonmetlocation"
+    },
+    {
+      "op": "SCR_OP_MOVEROTATINGTILEOBJECTS",
+      "cmdId": 211,
+      "handler": "ScrCmd_moverotatingtileobjects"
+    },
+    {
+      "op": "SCR_OP_TURNROTATINGTILEOBJECTS",
+      "cmdId": 212,
+      "handler": "ScrCmd_turnrotatingtileobjects"
+    },
+    {
+      "op": "SCR_OP_INITROTATINGTILEPUZZLE",
+      "cmdId": 213,
+      "handler": "ScrCmd_initrotatingtilepuzzle"
+    },
+    {
+      "op": "SCR_OP_FREEROTATINGTILEPUZZLE",
+      "cmdId": 214,
+      "handler": "ScrCmd_freerotatingtilepuzzle"
+    },
+    {
+      "op": "SCR_OP_WARPMOSSDEEPGYM",
+      "cmdId": 215,
+      "handler": "ScrCmd_warpmossdeepgym"
+    },
+    {
+      "op": "SCR_OP_SELECTAPPROACHINGTRAINER",
+      "cmdId": 216,
+      "handler": "ScrCmd_selectapproachingtrainer"
+    },
+    {
+      "op": "SCR_OP_LOCKFORTRAINER",
+      "cmdId": 217,
+      "handler": "ScrCmd_lockfortrainer"
+    },
+    {
+      "op": "SCR_OP_CLOSEBRAILLEMESSAGE",
+      "cmdId": 218,
+      "handler": "ScrCmd_closebraillemessage"
+    },
+    {
+      "op": "SCR_OP_MESSAGEINSTANT",
+      "cmdId": 219,
+      "handler": "ScrCmd_messageinstant"
+    },
+    {
+      "op": "SCR_OP_FADESCREENSWAPBUFFERS",
+      "cmdId": 220,
+      "handler": "ScrCmd_fadescreenswapbuffers"
+    },
+    {
+      "op": "SCR_OP_BUFFERTRAINERCLASSNAME",
+      "cmdId": 221,
+      "handler": "ScrCmd_buffertrainerclassname"
+    },
+    {
+      "op": "SCR_OP_BUFFERTRAINERNAME",
+      "cmdId": 222,
+      "handler": "ScrCmd_buffertrainername"
+    },
+    {
+      "op": "SCR_OP_POKENAVCALL",
+      "cmdId": 223,
+      "handler": "ScrCmd_pokenavcall"
+    },
+    {
+      "op": "SCR_OP_WARPWHITEFADE",
+      "cmdId": 224,
+      "handler": "ScrCmd_warpwhitefade"
+    },
+    {
+      "op": "SCR_OP_BUFFERCONTESTNAME",
+      "cmdId": 225,
+      "handler": "ScrCmd_buffercontestname"
+    },
+    {
+      "op": "SCR_OP_BUFFERITEMNAMEPLURAL",
+      "cmdId": 226,
+      "handler": "ScrCmd_bufferitemnameplural"
+    }
+  ],
+  "opcodes": {
+    "nop": {
+      "op": "SCR_OP_NOP",
+      "cmdId": 0,
+      "handler": "ScrCmd_nop",
+      "args": [],
+      "totalBytes": 0
+    },
+    "nop1": {
+      "op": "SCR_OP_NOP1",
+      "cmdId": 1,
+      "handler": "ScrCmd_nop1",
+      "args": [],
+      "totalBytes": 0
+    },
+    "end": {
+      "op": "SCR_OP_END",
+      "cmdId": 2,
+      "handler": "ScrCmd_end",
+      "args": [],
+      "totalBytes": 0
+    },
+    "return": {
+      "op": "SCR_OP_RETURN",
+      "cmdId": 3,
+      "handler": "ScrCmd_return",
+      "args": [],
+      "totalBytes": 0
+    },
+    "call": {
+      "op": "SCR_OP_CALL",
+      "cmdId": 4,
+      "handler": "ScrCmd_call",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "goto": {
+      "op": "SCR_OP_GOTO",
+      "cmdId": 5,
+      "handler": "ScrCmd_goto",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "goto_if": {
+      "op": "SCR_OP_GOTO_IF",
+      "cmdId": 6,
+      "handler": "ScrCmd_goto_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "call_if": {
+      "op": "SCR_OP_CALL_IF",
+      "cmdId": 7,
+      "handler": "ScrCmd_call_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "gotostd": {
+      "op": "SCR_OP_GOTO_STD",
+      "cmdId": 8,
+      "handler": "ScrCmd_gotostd",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "function"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "callstd": {
+      "op": "SCR_OP_CALL_STD",
+      "cmdId": 9,
+      "handler": "ScrCmd_callstd",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "function"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "gotostd_if": {
+      "op": "SCR_OP_GOTO_STD_IF",
+      "cmdId": 10,
+      "handler": "ScrCmd_gotostd_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "function"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "callstd_if": {
+      "op": "SCR_OP_CALL_STD_IF",
+      "cmdId": 11,
+      "handler": "ScrCmd_callstd_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "function"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "returnram": {
+      "op": "SCR_OP_RETURNRAM",
+      "cmdId": 12,
+      "handler": "ScrCmd_returnram",
+      "args": [],
+      "totalBytes": 0
+    },
+    "endram": {
+      "op": "SCR_OP_ENDRAM",
+      "cmdId": 13,
+      "handler": "ScrCmd_endram",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setmysteryeventstatus": {
+      "op": "SCR_OP_SETMYSTERYEVENTSTATUS",
+      "cmdId": 14,
+      "handler": "ScrCmd_setmysteryeventstatus",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "loadword": {
+      "op": "SCR_OP_LOAD_WORD",
+      "cmdId": 15,
+      "handler": "ScrCmd_loadword",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "destIndex"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "loadbyte": {
+      "op": "SCR_OP_LOAD_BYTE",
+      "cmdId": 16,
+      "handler": "ScrCmd_loadbyte",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "destIndex"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setptr": {
+      "op": "SCR_OP_SETPTR",
+      "cmdId": 17,
+      "handler": "ScrCmd_setptr",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "value"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "loadbytefromptr": {
+      "op": "SCR_OP_LOADBYTEFROMPTR",
+      "cmdId": 18,
+      "handler": "ScrCmd_loadbytefromptr",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "destIndex"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "source"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "setptrbyte": {
+      "op": "SCR_OP_SETPTRBYTE",
+      "cmdId": 19,
+      "handler": "ScrCmd_setptrbyte",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "srcIndex"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "copylocal": {
+      "op": "SCR_OP_COPYLOCAL",
+      "cmdId": 20,
+      "handler": "ScrCmd_copylocal",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "destIndex"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "srcIndex"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "copybyte": {
+      "op": "SCR_OP_COPYBYTE",
+      "cmdId": 21,
+      "handler": "ScrCmd_copybyte",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "source"
+        }
+      ],
+      "totalBytes": 8
+    },
+    "setvar": {
+      "op": "SCR_OP_SETVAR",
+      "cmdId": 22,
+      "handler": "ScrCmd_setvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "destination"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "addvar": {
+      "op": "SCR_OP_ADDVAR",
+      "cmdId": 23,
+      "handler": "ScrCmd_addvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "destination"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "subvar": {
+      "op": "SCR_OP_SUBVAR",
+      "cmdId": 24,
+      "handler": "ScrCmd_subvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "destination"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "copyvar": {
+      "op": "SCR_OP_COPYVAR",
+      "cmdId": 25,
+      "handler": "ScrCmd_copyvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "destination"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "source"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "setorcopyvar": {
+      "op": "SCR_OP_SETORCOPYVAR",
+      "cmdId": 26,
+      "handler": "ScrCmd_setorcopyvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "destination"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "source"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "compare_local_to_local": {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_LOCAL",
+      "cmdId": 27,
+      "handler": "ScrCmd_compare_local_to_local",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "local1"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "local2"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "compare_local_to_value": {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_VALUE",
+      "cmdId": 28,
+      "handler": "ScrCmd_compare_local_to_value",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "local"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "compare_local_to_ptr": {
+      "op": "SCR_OP_COMPARE_LOCAL_TO_PTR",
+      "cmdId": 29,
+      "handler": "ScrCmd_compare_local_to_ptr",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "local"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "compare_ptr_to_local": {
+      "op": "SCR_OP_COMPARE_PTR_TO_LOCAL",
+      "cmdId": 30,
+      "handler": "ScrCmd_compare_ptr_to_local",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "local"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "compare_ptr_to_value": {
+      "op": "SCR_OP_COMPARE_PTR_TO_VALUE",
+      "cmdId": 31,
+      "handler": "ScrCmd_compare_ptr_to_value",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "compare_ptr_to_ptr": {
+      "op": "SCR_OP_COMPARE_PTR_TO_PTR",
+      "cmdId": 32,
+      "handler": "ScrCmd_compare_ptr_to_ptr",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr1"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "ptr2"
+        }
+      ],
+      "totalBytes": 8
+    },
+    "compare_var_to_value": {
+      "op": "SCR_OP_COMPARE_VAR_TO_VALUE",
+      "cmdId": 33,
+      "handler": "ScrCmd_compare_var_to_value",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "var"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "compare_var_to_var": {
+      "op": "SCR_OP_COMPARE_VAR_TO_VAR",
+      "cmdId": 34,
+      "handler": "ScrCmd_compare_var_to_var",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "var1"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "var2"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "callnative": {
+      "op": "SCR_OP_CALLNATIVE",
+      "cmdId": 35,
+      "handler": "ScrCmd_callnative",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "func"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "gotonative": {
+      "op": "SCR_OP_GOTONATIVE",
+      "cmdId": 36,
+      "handler": "ScrCmd_gotonative",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "func"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "special": {
+      "op": "SCR_OP_SPECIAL",
+      "cmdId": 37,
+      "handler": "ScrCmd_special",
+      "args": [
+        {
+          "width": 2,
+          "kind": "special",
+          "fixed": "SPECIAL_\\function"
+        }
+      ],
+      "totalBytes": 2,
+      "appendsWaitstate": true
+    },
+    "specialvar": {
+      "op": "SCR_OP_SPECIALVAR",
+      "cmdId": 38,
+      "handler": "ScrCmd_specialvar",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "output"
+        },
+        {
+          "width": 2,
+          "kind": "special",
+          "fixed": "SPECIAL_\\function"
+        }
+      ],
+      "totalBytes": 4,
+      "appendsWaitstate": true
+    },
+    "waitstate": {
+      "op": "SCR_OP_WAITSTATE",
+      "cmdId": 39,
+      "handler": "ScrCmd_waitstate",
+      "args": [],
+      "totalBytes": 0
+    },
+    "delay": {
+      "op": "SCR_OP_DELAY",
+      "cmdId": 40,
+      "handler": "ScrCmd_delay",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "frames"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setflag": {
+      "op": "SCR_OP_SETFLAG",
+      "cmdId": 41,
+      "handler": "ScrCmd_setflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "flag"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "clearflag": {
+      "op": "SCR_OP_CLEARFLAG",
+      "cmdId": 42,
+      "handler": "ScrCmd_clearflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "flag"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "checkflag": {
+      "op": "SCR_OP_CHECKFLAG",
+      "cmdId": 43,
+      "handler": "ScrCmd_checkflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "flag"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "initclock": {
+      "op": "SCR_OP_INITCLOCK",
+      "cmdId": 44,
+      "handler": "ScrCmd_initclock",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "hour"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "minute"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "dotimebasedevents": {
+      "op": "SCR_OP_DOTIMEBASEDEVENTS",
+      "cmdId": 45,
+      "handler": "ScrCmd_dotimebasedevents",
+      "args": [],
+      "totalBytes": 0
+    },
+    "gettime": {
+      "op": "SCR_OP_GETTIME",
+      "cmdId": 46,
+      "handler": "ScrCmd_gettime",
+      "args": [],
+      "totalBytes": 0
+    },
+    "playse": {
+      "op": "SCR_OP_PLAYSE",
+      "cmdId": 47,
+      "handler": "ScrCmd_playse",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "song"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "waitse": {
+      "op": "SCR_OP_WAITSE",
+      "cmdId": 48,
+      "handler": "ScrCmd_waitse",
+      "args": [],
+      "totalBytes": 0
+    },
+    "playfanfare": {
+      "op": "SCR_OP_PLAYFANFARE",
+      "cmdId": 49,
+      "handler": "ScrCmd_playfanfare",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "song"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "waitfanfare": {
+      "op": "SCR_OP_WAITFANFARE",
+      "cmdId": 50,
+      "handler": "ScrCmd_waitfanfare",
+      "args": [],
+      "totalBytes": 0
+    },
+    "playbgm": {
+      "op": "SCR_OP_PLAYBGM",
+      "cmdId": 51,
+      "handler": "ScrCmd_playbgm",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "song"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "save_song"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "savebgm": {
+      "op": "SCR_OP_SAVEBGM",
+      "cmdId": 52,
+      "handler": "ScrCmd_savebgm",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "song"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "fadedefaultbgm": {
+      "op": "SCR_OP_FADEDEFAULTBGM",
+      "cmdId": 53,
+      "handler": "ScrCmd_fadedefaultbgm",
+      "args": [],
+      "totalBytes": 0
+    },
+    "fadenewbgm": {
+      "op": "SCR_OP_FADENEWBGM",
+      "cmdId": 54,
+      "handler": "ScrCmd_fadenewbgm",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "song"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "fadeoutbgm": {
+      "op": "SCR_OP_FADEOUTBGM",
+      "cmdId": 55,
+      "handler": "ScrCmd_fadeoutbgm",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "speed"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "fadeinbgm": {
+      "op": "SCR_OP_FADEINBGM",
+      "cmdId": 56,
+      "handler": "ScrCmd_fadeinbgm",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "speed"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "warp": {
+      "op": "SCR_OP_WARP",
+      "cmdId": 57,
+      "handler": "ScrCmd_warp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "warpsilent": {
+      "op": "SCR_OP_WARPSILENT",
+      "cmdId": 58,
+      "handler": "ScrCmd_warpsilent",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "warpdoor": {
+      "op": "SCR_OP_WARPDOOR",
+      "cmdId": 59,
+      "handler": "ScrCmd_warpdoor",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "warphole": {
+      "op": "SCR_OP_WARPHOLE",
+      "cmdId": 60,
+      "handler": "ScrCmd_warphole",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "warpteleport": {
+      "op": "SCR_OP_WARPTELEPORT",
+      "cmdId": 61,
+      "handler": "ScrCmd_warpteleport",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "setwarp": {
+      "op": "SCR_OP_SETWARP",
+      "cmdId": 62,
+      "handler": "ScrCmd_setwarp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "setdynamicwarp": {
+      "op": "SCR_OP_SETDYNAMICWARP",
+      "cmdId": 63,
+      "handler": "ScrCmd_setdynamicwarp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "setdivewarp": {
+      "op": "SCR_OP_SETDIVEWARP",
+      "cmdId": 64,
+      "handler": "ScrCmd_setdivewarp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "setholewarp": {
+      "op": "SCR_OP_SETHOLEWARP",
+      "cmdId": 65,
+      "handler": "ScrCmd_setholewarp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "getplayerxy": {
+      "op": "SCR_OP_GETPLAYERXY",
+      "cmdId": 66,
+      "handler": "ScrCmd_getplayerxy",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "getpartysize": {
+      "op": "SCR_OP_GETPARTYSIZE",
+      "cmdId": 67,
+      "handler": "ScrCmd_getpartysize",
+      "args": [],
+      "totalBytes": 0
+    },
+    "additem": {
+      "op": "SCR_OP_ADDITEM",
+      "cmdId": 68,
+      "handler": "ScrCmd_additem",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "removeitem": {
+      "op": "SCR_OP_REMOVEITEM",
+      "cmdId": 69,
+      "handler": "ScrCmd_removeitem",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "checkitemspace": {
+      "op": "SCR_OP_CHECKITEMSPACE",
+      "cmdId": 70,
+      "handler": "ScrCmd_checkitemspace",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "checkitem": {
+      "op": "SCR_OP_CHECKITEM",
+      "cmdId": 71,
+      "handler": "ScrCmd_checkitem",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "checkitemtype": {
+      "op": "SCR_OP_CHECKITEMTYPE",
+      "cmdId": 72,
+      "handler": "ScrCmd_checkitemtype",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "addpcitem": {
+      "op": "SCR_OP_ADDPCITEM",
+      "cmdId": 73,
+      "handler": "ScrCmd_addpcitem",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "checkpcitem": {
+      "op": "SCR_OP_CHECKPCITEM",
+      "cmdId": 74,
+      "handler": "ScrCmd_checkpcitem",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "itemId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "adddecoration": {
+      "op": "SCR_OP_ADDDECORATION",
+      "cmdId": 75,
+      "handler": "ScrCmd_adddecoration",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "decoration"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "removedecoration": {
+      "op": "SCR_OP_REMOVEDECORATION",
+      "cmdId": 76,
+      "handler": "ScrCmd_removedecoration",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "decoration"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "checkdecor": {
+      "op": "SCR_OP_CHECKDECOR",
+      "cmdId": 77,
+      "handler": "ScrCmd_checkdecor",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "decoration"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "checkdecorspace": {
+      "op": "SCR_OP_CHECKDECORSPACE",
+      "cmdId": 78,
+      "handler": "ScrCmd_checkdecorspace",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "decoration"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "applymovement": {
+      "selectedBy": "map",
+      "variants": [
+        {
+          "when": "map_absent",
+          "op": "SCR_OP_APPLYMOVEMENT",
+          "cmdId": 79,
+          "handler": "ScrCmd_applymovement",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            },
+            {
+              "width": 4,
+              "kind": "u32",
+              "name": "movements"
+            }
+          ],
+          "totalBytes": 6
+        },
+        {
+          "when": "map_present",
+          "op": "SCR_OP_APPLYMOVEMENTAT",
+          "cmdId": 80,
+          "handler": "ScrCmd_applymovementat",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            },
+            {
+              "width": 4,
+              "kind": "u32",
+              "name": "movements"
+            },
+            {
+              "width": 2,
+              "kind": "map",
+              "name": "map"
+            }
+          ],
+          "totalBytes": 8
+        }
+      ]
+    },
+    "waitmovement": {
+      "selectedBy": "map",
+      "variants": [
+        {
+          "when": "map_absent",
+          "op": "SCR_OP_WAITMOVEMENT",
+          "cmdId": 81,
+          "handler": "ScrCmd_waitmovement",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            }
+          ],
+          "totalBytes": 2
+        },
+        {
+          "when": "map_present",
+          "op": "SCR_OP_WAITMOVEMENTAT",
+          "cmdId": 82,
+          "handler": "ScrCmd_waitmovementat",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            },
+            {
+              "width": 2,
+              "kind": "map",
+              "name": "map"
+            }
+          ],
+          "totalBytes": 4
+        }
+      ]
+    },
+    "removeobject": {
+      "selectedBy": "map",
+      "variants": [
+        {
+          "when": "map_absent",
+          "op": "SCR_OP_REMOVEOBJECT",
+          "cmdId": 83,
+          "handler": "ScrCmd_removeobject",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            }
+          ],
+          "totalBytes": 2
+        },
+        {
+          "when": "map_present",
+          "op": "SCR_OP_REMOVEOBJECTAT",
+          "cmdId": 84,
+          "handler": "ScrCmd_removeobjectat",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            },
+            {
+              "width": 2,
+              "kind": "map",
+              "name": "map"
+            }
+          ],
+          "totalBytes": 4
+        }
+      ]
+    },
+    "addobject": {
+      "selectedBy": "map",
+      "variants": [
+        {
+          "when": "map_absent",
+          "op": "SCR_OP_ADDOBJECT",
+          "cmdId": 85,
+          "handler": "ScrCmd_addobject",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            }
+          ],
+          "totalBytes": 2
+        },
+        {
+          "when": "map_present",
+          "op": "SCR_OP_ADDOBJECTAT",
+          "cmdId": 86,
+          "handler": "ScrCmd_addobjectat",
+          "args": [
+            {
+              "width": 2,
+              "kind": "u16",
+              "name": "localId"
+            },
+            {
+              "width": 2,
+              "kind": "map",
+              "name": "map"
+            }
+          ],
+          "totalBytes": 4
+        }
+      ]
+    },
+    "setobjectxy": {
+      "op": "SCR_OP_SETOBJECTXY",
+      "cmdId": 87,
+      "handler": "ScrCmd_setobjectxy",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 6
+    },
+    "showobjectat": {
+      "op": "SCR_OP_SHOWOBJECTAT",
+      "cmdId": 88,
+      "handler": "ScrCmd_showobjectat",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "showplayer": {
+      "op": "SCR_OP_SHOWOBJECTAT",
+      "cmdId": 88,
+      "handler": "ScrCmd_showobjectat",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "fixed": "LOCALID_PLAYER"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "hideobjectat": {
+      "op": "SCR_OP_HIDEOBJECTAT",
+      "cmdId": 89,
+      "handler": "ScrCmd_hideobjectat",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "hideplayer": {
+      "op": "SCR_OP_HIDEOBJECTAT",
+      "cmdId": 89,
+      "handler": "ScrCmd_hideobjectat",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "fixed": "LOCALID_PLAYER"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "faceplayer": {
+      "op": "SCR_OP_FACEPLAYER",
+      "cmdId": 90,
+      "handler": "ScrCmd_faceplayer",
+      "args": [],
+      "totalBytes": 0
+    },
+    "turnobject": {
+      "op": "SCR_OP_TURNOBJECT",
+      "cmdId": 91,
+      "handler": "ScrCmd_turnobject",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "direction"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "trainerbattle": {
+      "op": "SCR_OP_TRAINERBATTLE",
+      "cmdId": 92,
+      "handler": "ScrCmd_trainerbattle",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "type"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainer"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "local_id"
+        }
+      ],
+      "byType": {
+        "TRAINER_BATTLE_SINGLE": [
+          "pointer1",
+          "pointer2"
+        ],
+        "TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC": [
+          "pointer1",
+          "pointer2",
+          "pointer3"
+        ],
+        "TRAINER_BATTLE_CONTINUE_SCRIPT": [
+          "pointer1",
+          "pointer2",
+          "pointer3"
+        ],
+        "TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT": [
+          "pointer1"
+        ],
+        "TRAINER_BATTLE_DOUBLE": [
+          "pointer1",
+          "pointer2",
+          "pointer3"
+        ],
+        "TRAINER_BATTLE_REMATCH": [
+          "pointer1",
+          "pointer2"
+        ],
+        "TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE": [
+          "pointer1",
+          "pointer2",
+          "pointer3",
+          "pointer4"
+        ],
+        "TRAINER_BATTLE_REMATCH_DOUBLE": [
+          "pointer1",
+          "pointer2",
+          "pointer3"
+        ],
+        "TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE_NO_MUSIC": [
+          "pointer1",
+          "pointer2",
+          "pointer3",
+          "pointer4"
+        ],
+        "TRAINER_BATTLE_PYRAMID": [
+          "pointer1",
+          "pointer2"
+        ],
+        "TRAINER_BATTLE_SET_TRAINER_A": [
+          "pointer1",
+          "pointer2"
+        ],
+        "TRAINER_BATTLE_SET_TRAINER_B": [
+          "pointer1",
+          "pointer2"
+        ],
+        "TRAINER_BATTLE_HILL": [
+          "pointer1",
+          "pointer2"
+        ]
+      }
+    },
+    "dotrainerbattle": {
+      "op": "SCR_OP_DOTRAINERBATTLE",
+      "cmdId": 93,
+      "handler": "ScrCmd_dotrainerbattle",
+      "args": [],
+      "totalBytes": 0
+    },
+    "gotopostbattlescript": {
+      "op": "SCR_OP_GOTOPOSTBATTLESCRIPT",
+      "cmdId": 94,
+      "handler": "ScrCmd_gotopostbattlescript",
+      "args": [],
+      "totalBytes": 0
+    },
+    "gotobeatenscript": {
+      "op": "SCR_OP_GOTOBEATENSCRIPT",
+      "cmdId": 95,
+      "handler": "ScrCmd_gotobeatenscript",
+      "args": [],
+      "totalBytes": 0
+    },
+    "checktrainerflag": {
+      "op": "SCR_OP_CHECKTRAINERFLAG",
+      "cmdId": 96,
+      "handler": "ScrCmd_checktrainerflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainer"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "settrainerflag": {
+      "op": "SCR_OP_SETTRAINERFLAG",
+      "cmdId": 97,
+      "handler": "ScrCmd_settrainerflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainer"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "cleartrainerflag": {
+      "op": "SCR_OP_CLEARTRAINERFLAG",
+      "cmdId": 98,
+      "handler": "ScrCmd_cleartrainerflag",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainer"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setobjectxyperm": {
+      "op": "SCR_OP_SETOBJECTXYPERM",
+      "cmdId": 99,
+      "handler": "ScrCmd_setobjectxyperm",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 6
+    },
+    "copyobjectxytoperm": {
+      "op": "SCR_OP_COPYOBJECTXYTOPERM",
+      "cmdId": 100,
+      "handler": "ScrCmd_copyobjectxytoperm",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setobjectmovementtype": {
+      "op": "SCR_OP_SETOBJECTMOVEMENTTYPE",
+      "cmdId": 101,
+      "handler": "ScrCmd_setobjectmovementtype",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "movementType"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "waitmessage": {
+      "op": "SCR_OP_WAITMESSAGE",
+      "cmdId": 102,
+      "handler": "ScrCmd_waitmessage",
+      "args": [],
+      "totalBytes": 0
+    },
+    "message": {
+      "op": "SCR_OP_MESSAGE",
+      "cmdId": 103,
+      "handler": "ScrCmd_message",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "closemessage": {
+      "op": "SCR_OP_CLOSEMESSAGE",
+      "cmdId": 104,
+      "handler": "ScrCmd_closemessage",
+      "args": [],
+      "totalBytes": 0
+    },
+    "lockall": {
+      "op": "SCR_OP_LOCKALL",
+      "cmdId": 105,
+      "handler": "ScrCmd_lockall",
+      "args": [],
+      "totalBytes": 0
+    },
+    "lock": {
+      "op": "SCR_OP_LOCK",
+      "cmdId": 106,
+      "handler": "ScrCmd_lock",
+      "args": [],
+      "totalBytes": 0
+    },
+    "releaseall": {
+      "op": "SCR_OP_RELEASEALL",
+      "cmdId": 107,
+      "handler": "ScrCmd_releaseall",
+      "args": [],
+      "totalBytes": 0
+    },
+    "release": {
+      "op": "SCR_OP_RELEASE",
+      "cmdId": 108,
+      "handler": "ScrCmd_release",
+      "args": [],
+      "totalBytes": 0
+    },
+    "waitbuttonpress": {
+      "op": "SCR_OP_WAITBUTTONPRESS",
+      "cmdId": 109,
+      "handler": "ScrCmd_waitbuttonpress",
+      "args": [],
+      "totalBytes": 0
+    },
+    "yesnobox": {
+      "op": "SCR_OP_YESNOBOX",
+      "cmdId": 110,
+      "handler": "ScrCmd_yesnobox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "multichoice": {
+      "op": "SCR_OP_MULTICHOICE",
+      "cmdId": 111,
+      "handler": "ScrCmd_multichoice",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "multichoiceId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "ignoreBPress"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "multichoicedefault": {
+      "op": "SCR_OP_MULTICHOICEDEFAULT",
+      "cmdId": 112,
+      "handler": "ScrCmd_multichoicedefault",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "multichoiceId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "default"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "ignoreBPress"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "multichoicegrid": {
+      "op": "SCR_OP_MULTICHOICEGRID",
+      "cmdId": 113,
+      "handler": "ScrCmd_multichoicegrid",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "multichoiceId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "per_row"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "ignoreBPress"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "drawbox": {
+      "op": "SCR_OP_DRAWBOX",
+      "cmdId": 114,
+      "handler": "ScrCmd_drawbox",
+      "args": [],
+      "totalBytes": 0
+    },
+    "erasebox": {
+      "op": "SCR_OP_ERASEBOX",
+      "cmdId": 115,
+      "handler": "ScrCmd_erasebox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "left"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "top"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "right"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "bottom"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "drawboxtext": {
+      "op": "SCR_OP_DRAWBOXTEXT",
+      "cmdId": 116,
+      "handler": "ScrCmd_drawboxtext",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "left"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "top"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "multichoiceId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "ignoreBPress"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "showmonpic": {
+      "op": "SCR_OP_SHOWMONPIC",
+      "cmdId": 117,
+      "handler": "ScrCmd_showmonpic",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "hidemonpic": {
+      "op": "SCR_OP_HIDEMONPIC",
+      "cmdId": 118,
+      "handler": "ScrCmd_hidemonpic",
+      "args": [],
+      "totalBytes": 0
+    },
+    "showcontestpainting": {
+      "op": "SCR_OP_SHOWCONTESTPAINTING",
+      "cmdId": 119,
+      "handler": "ScrCmd_showcontestpainting",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "winnerId"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "braillemessage": {
+      "op": "SCR_OP_BRAILLEMESSAGE",
+      "cmdId": 120,
+      "handler": "ScrCmd_braillemessage",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "givemon": {
+      "op": "SCR_OP_GIVEMON",
+      "cmdId": 121,
+      "handler": "ScrCmd_givemon",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "level"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "item"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "fixed": "0"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        }
+      ],
+      "totalBytes": 14
+    },
+    "giveegg": {
+      "op": "SCR_OP_GIVEEGG",
+      "cmdId": 122,
+      "handler": "ScrCmd_giveegg",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setmonmove": {
+      "op": "SCR_OP_SETMONMOVE",
+      "cmdId": 123,
+      "handler": "ScrCmd_setmonmove",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "partyIndex"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "slot"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "move"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "checkpartymove": {
+      "op": "SCR_OP_CHECKPARTYMOVE",
+      "cmdId": 124,
+      "handler": "ScrCmd_checkpartymove",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "move"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "bufferspeciesname": {
+      "op": "SCR_OP_BUFFERSPECIESNAME",
+      "cmdId": 125,
+      "handler": "ScrCmd_bufferspeciesname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferleadmonspeciesname": {
+      "op": "SCR_OP_BUFFERLEADMONSPECIESNAME",
+      "cmdId": 126,
+      "handler": "ScrCmd_bufferleadmonspeciesname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "bufferpartymonnick": {
+      "op": "SCR_OP_BUFFERPARTYMONNICK",
+      "cmdId": 127,
+      "handler": "ScrCmd_bufferpartymonnick",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "slot"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferitemname": {
+      "op": "SCR_OP_BUFFERITEMNAME",
+      "cmdId": 128,
+      "handler": "ScrCmd_bufferitemname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "item"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferdecorationname": {
+      "op": "SCR_OP_BUFFERDECORATIONNAME",
+      "cmdId": 129,
+      "handler": "ScrCmd_bufferdecorationname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "decoration"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "buffermovename": {
+      "op": "SCR_OP_BUFFERMOVENAME",
+      "cmdId": 130,
+      "handler": "ScrCmd_buffermovename",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "move"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "buffernumberstring": {
+      "op": "SCR_OP_BUFFERNUMBERSTRING",
+      "cmdId": 131,
+      "handler": "ScrCmd_buffernumberstring",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "input"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferstdstring": {
+      "op": "SCR_OP_BUFFERSTDSTRING",
+      "cmdId": 132,
+      "handler": "ScrCmd_bufferstdstring",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "index"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferstring": {
+      "op": "SCR_OP_BUFFERSTRING",
+      "cmdId": 133,
+      "handler": "ScrCmd_bufferstring",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "pokemart": {
+      "op": "SCR_OP_POKEMART",
+      "cmdId": 134,
+      "handler": "ScrCmd_pokemart",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "products"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "pokemartdecoration": {
+      "op": "SCR_OP_POKEMARTDECORATION",
+      "cmdId": 135,
+      "handler": "ScrCmd_pokemartdecoration",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "products"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "pokemartdecoration2": {
+      "op": "SCR_OP_POKEMARTDECORATION2",
+      "cmdId": 136,
+      "handler": "ScrCmd_pokemartdecoration2",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "products"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "playslotmachine": {
+      "op": "SCR_OP_PLAYSLOTMACHINE",
+      "cmdId": 137,
+      "handler": "ScrCmd_playslotmachine",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "id"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setberrytree": {
+      "op": "SCR_OP_SETBERRYTREE",
+      "cmdId": 138,
+      "handler": "ScrCmd_setberrytree",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "treeId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "berry"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "growthStage"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "choosecontestmon": {
+      "op": "SCR_OP_CHOOSECONTESTMON",
+      "cmdId": 139,
+      "handler": "ScrCmd_choosecontestmon",
+      "args": [],
+      "totalBytes": 0
+    },
+    "startcontest": {
+      "op": "SCR_OP_STARTCONTEST",
+      "cmdId": 140,
+      "handler": "ScrCmd_startcontest",
+      "args": [],
+      "totalBytes": 0
+    },
+    "showcontestresults": {
+      "op": "SCR_OP_SHOWCONTESTRESULTS",
+      "cmdId": 141,
+      "handler": "ScrCmd_showcontestresults",
+      "args": [],
+      "totalBytes": 0
+    },
+    "contestlinktransfer": {
+      "op": "SCR_OP_CONTESTLINKTRANSFER",
+      "cmdId": 142,
+      "handler": "ScrCmd_contestlinktransfer",
+      "args": [],
+      "totalBytes": 0
+    },
+    "random": {
+      "op": "SCR_OP_RANDOM",
+      "cmdId": 143,
+      "handler": "ScrCmd_random",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "limit"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "addmoney": {
+      "op": "SCR_OP_ADDMONEY",
+      "cmdId": 144,
+      "handler": "ScrCmd_addmoney",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "value"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "disable"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "removemoney": {
+      "op": "SCR_OP_REMOVEMONEY",
+      "cmdId": 145,
+      "handler": "ScrCmd_removemoney",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "value"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "disable"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "checkmoney": {
+      "op": "SCR_OP_CHECKMONEY",
+      "cmdId": 146,
+      "handler": "ScrCmd_checkmoney",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "value"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "disable"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "showmoneybox": {
+      "op": "SCR_OP_SHOWMONEYBOX",
+      "cmdId": 147,
+      "handler": "ScrCmd_showmoneybox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "disable"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "hidemoneybox": {
+      "op": "SCR_OP_HIDEMONEYBOX",
+      "cmdId": 148,
+      "handler": "ScrCmd_hidemoneybox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "updatemoneybox": {
+      "op": "SCR_OP_UPDATEMONEYBOX",
+      "cmdId": 149,
+      "handler": "ScrCmd_updatemoneybox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "fixed": "0"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "disable"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "getpokenewsactive": {
+      "op": "SCR_OP_GETPOKENEWSACTIVE",
+      "cmdId": 150,
+      "handler": "ScrCmd_getpokenewsactive",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "newsKind"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "fadescreen": {
+      "op": "SCR_OP_FADESCREEN",
+      "cmdId": 151,
+      "handler": "ScrCmd_fadescreen",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "mode"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "fadescreenspeed": {
+      "op": "SCR_OP_FADESCREENSPEED",
+      "cmdId": 152,
+      "handler": "ScrCmd_fadescreenspeed",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "mode"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "speed"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setflashlevel": {
+      "op": "SCR_OP_SETFLASHLEVEL",
+      "cmdId": 153,
+      "handler": "ScrCmd_setflashlevel",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "level"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "animateflash": {
+      "op": "SCR_OP_ANIMATEFLASH",
+      "cmdId": 154,
+      "handler": "ScrCmd_animateflash",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "level"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "messageautoscroll": {
+      "op": "SCR_OP_MESSAGEAUTOSCROLL",
+      "cmdId": 155,
+      "handler": "ScrCmd_messageautoscroll",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "dofieldeffect": {
+      "op": "SCR_OP_DOFIELDEFFECT",
+      "cmdId": 156,
+      "handler": "ScrCmd_dofieldeffect",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "animation"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setfieldeffectargument": {
+      "op": "SCR_OP_SETFIELDEFFECTARGUMENT",
+      "cmdId": 157,
+      "handler": "ScrCmd_setfieldeffectargument",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "argNum"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "waitfieldeffect": {
+      "op": "SCR_OP_WAITFIELDEFFECT",
+      "cmdId": 158,
+      "handler": "ScrCmd_waitfieldeffect",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "animation"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setrespawn": {
+      "op": "SCR_OP_SETRESPAWN",
+      "cmdId": 159,
+      "handler": "ScrCmd_setrespawn",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "heallocation"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "checkplayergender": {
+      "op": "SCR_OP_CHECKPLAYERGENDER",
+      "cmdId": 160,
+      "handler": "ScrCmd_checkplayergender",
+      "args": [],
+      "totalBytes": 0
+    },
+    "playmoncry": {
+      "op": "SCR_OP_PLAYMONCRY",
+      "cmdId": 161,
+      "handler": "ScrCmd_playmoncry",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "mode"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "setmetatile": {
+      "op": "SCR_OP_SETMETATILE",
+      "cmdId": 162,
+      "handler": "ScrCmd_setmetatile",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "metatileId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "impassable"
+        }
+      ],
+      "totalBytes": 8
+    },
+    "resetweather": {
+      "op": "SCR_OP_RESETWEATHER",
+      "cmdId": 163,
+      "handler": "ScrCmd_resetweather",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setweather": {
+      "op": "SCR_OP_SETWEATHER",
+      "cmdId": 164,
+      "handler": "ScrCmd_setweather",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "type"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "doweather": {
+      "op": "SCR_OP_DOWEATHER",
+      "cmdId": 165,
+      "handler": "ScrCmd_doweather",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setstepcallback": {
+      "op": "SCR_OP_SETSTEPCALLBACK",
+      "cmdId": 166,
+      "handler": "ScrCmd_setstepcallback",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "stepCbId"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "setmaplayoutindex": {
+      "op": "SCR_OP_SETMAPLAYOUTINDEX",
+      "cmdId": 167,
+      "handler": "ScrCmd_setmaplayoutindex",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "index"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setobjectsubpriority": {
+      "op": "SCR_OP_SETOBJECTSUBPRIORITY",
+      "cmdId": 168,
+      "handler": "ScrCmd_setobjectsubpriority",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "subpriority"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "resetobjectsubpriority": {
+      "op": "SCR_OP_RESETOBJECTSUBPRIORITY",
+      "cmdId": 169,
+      "handler": "ScrCmd_resetobjectsubpriority",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "localId"
+        },
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "createvobject": {
+      "op": "SCR_OP_CREATEVOBJECT",
+      "cmdId": 170,
+      "handler": "ScrCmd_createvobject",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "graphicsId"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "id"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "elevation"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "direction"
+        }
+      ],
+      "totalBytes": 8
+    },
+    "turnvobject": {
+      "op": "SCR_OP_TURNVOBJECT",
+      "cmdId": 171,
+      "handler": "ScrCmd_turnvobject",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "id"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "direction"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "opendoor": {
+      "op": "SCR_OP_OPENDOOR",
+      "cmdId": 172,
+      "handler": "ScrCmd_opendoor",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "closedoor": {
+      "op": "SCR_OP_CLOSEDOOR",
+      "cmdId": 173,
+      "handler": "ScrCmd_closedoor",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "waitdooranim": {
+      "op": "SCR_OP_WAITDOORANIM",
+      "cmdId": 174,
+      "handler": "ScrCmd_waitdooranim",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setdooropen": {
+      "op": "SCR_OP_SETDOOROPEN",
+      "cmdId": 175,
+      "handler": "ScrCmd_setdooropen",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "setdoorclosed": {
+      "op": "SCR_OP_SETDOORCLOSED",
+      "cmdId": 176,
+      "handler": "ScrCmd_setdoorclosed",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "addelevmenuitem": {
+      "op": "SCR_OP_ADDELEVMENUITEM",
+      "cmdId": 177,
+      "handler": "ScrCmd_addelevmenuitem",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "a"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "b"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "c"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "d"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "showelevmenu": {
+      "op": "SCR_OP_SHOWELEVMENU",
+      "cmdId": 178,
+      "handler": "ScrCmd_showelevmenu",
+      "args": [],
+      "totalBytes": 0
+    },
+    "checkcoins": {
+      "op": "SCR_OP_CHECKCOINS",
+      "cmdId": 179,
+      "handler": "ScrCmd_checkcoins",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "out"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "addcoins": {
+      "op": "SCR_OP_ADDCOINS",
+      "cmdId": 180,
+      "handler": "ScrCmd_addcoins",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "count"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "removecoins": {
+      "op": "SCR_OP_REMOVECOINS",
+      "cmdId": 181,
+      "handler": "ScrCmd_removecoins",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "count"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "setwildbattle": {
+      "op": "SCR_OP_SETWILDBATTLE",
+      "cmdId": 182,
+      "handler": "ScrCmd_setwildbattle",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "species"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "level"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "item"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "dowildbattle": {
+      "op": "SCR_OP_DOWILDBATTLE",
+      "cmdId": 183,
+      "handler": "ScrCmd_dowildbattle",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setvaddress": {
+      "op": "SCR_OP_SETVADDRESS",
+      "cmdId": 184,
+      "handler": "ScrCmd_setvaddress",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "pointer"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "vgoto": {
+      "op": "SCR_OP_VGOTO",
+      "cmdId": 185,
+      "handler": "ScrCmd_vgoto",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "vcall": {
+      "op": "SCR_OP_VCALL",
+      "cmdId": 186,
+      "handler": "ScrCmd_vcall",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "vgoto_if": {
+      "op": "SCR_OP_VGOTO_IF",
+      "cmdId": 187,
+      "handler": "ScrCmd_vgoto_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "vcall_if": {
+      "op": "SCR_OP_VCALL_IF",
+      "cmdId": 188,
+      "handler": "ScrCmd_vcall_if",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "condition"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "destination"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "vmessage": {
+      "op": "SCR_OP_VMESSAGE",
+      "cmdId": 189,
+      "handler": "ScrCmd_vmessage",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "vbuffermessage": {
+      "op": "SCR_OP_VBUFFERMESSAGE",
+      "cmdId": 190,
+      "handler": "ScrCmd_vbuffermessage",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "vbufferstring": {
+      "op": "SCR_OP_VBUFFERSTRING",
+      "cmdId": 191,
+      "handler": "ScrCmd_vbufferstring",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarIndex"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "showcoinsbox": {
+      "op": "SCR_OP_SHOWCOINSBOX",
+      "cmdId": 192,
+      "handler": "ScrCmd_showcoinsbox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "hidecoinsbox": {
+      "op": "SCR_OP_HIDECOINSBOX",
+      "cmdId": 193,
+      "handler": "ScrCmd_hidecoinsbox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "updatecoinsbox": {
+      "op": "SCR_OP_UPDATECOINSBOX",
+      "cmdId": 194,
+      "handler": "ScrCmd_updatecoinsbox",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "x"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "incrementgamestat": {
+      "op": "SCR_OP_INCREMENTGAMESTAT",
+      "cmdId": 195,
+      "handler": "ScrCmd_incrementgamestat",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "stat"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "setescapewarp": {
+      "op": "SCR_OP_SETESCAPEWARP",
+      "cmdId": 196,
+      "handler": "ScrCmd_setescapewarp",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "waitmoncry": {
+      "op": "SCR_OP_WAITMONCRY",
+      "cmdId": 197,
+      "handler": "ScrCmd_waitmoncry",
+      "args": [],
+      "totalBytes": 0
+    },
+    "bufferboxname": {
+      "op": "SCR_OP_BUFFERBOXNAME",
+      "cmdId": 198,
+      "handler": "ScrCmd_bufferboxname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "box"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "textcolor": {
+      "op": "SCR_OP_TEXTCOLOR",
+      "cmdId": 199,
+      "handler": "ScrCmd_nop1",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "color"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "loadhelp": {
+      "op": "SCR_OP_LOADHELP",
+      "cmdId": 200,
+      "handler": "ScrCmd_nop1",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "unloadhelp": {
+      "op": "SCR_OP_UNLOADHELP",
+      "cmdId": 201,
+      "handler": "ScrCmd_nop1",
+      "args": [],
+      "totalBytes": 0
+    },
+    "signmsg": {
+      "op": "SCR_OP_SIGNMSG",
+      "cmdId": 202,
+      "handler": "ScrCmd_nop1",
+      "args": [],
+      "totalBytes": 0
+    },
+    "normalmsg": {
+      "op": "SCR_OP_NORMALMSG",
+      "cmdId": 203,
+      "handler": "ScrCmd_nop1",
+      "args": [],
+      "totalBytes": 0
+    },
+    "comparehiddenvar": {
+      "op": "SCR_OP_COMPAREHIDDENVAR",
+      "cmdId": 204,
+      "handler": "ScrCmd_nop1",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "a"
+        },
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "value"
+        }
+      ],
+      "totalBytes": 5
+    },
+    "setmodernfatefulencounter": {
+      "op": "SCR_OP_SETMODERNFATEFULENCOUNTER",
+      "cmdId": 205,
+      "handler": "ScrCmd_setmodernfatefulencounter",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "slot"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "checkmodernfatefulencounter": {
+      "op": "SCR_OP_CHECKMODERNFATEFULENCOUNTER",
+      "cmdId": 206,
+      "handler": "ScrCmd_checkmodernfatefulencounter",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "slot"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "trywondercardscript": {
+      "op": "SCR_OP_TRYWONDERCARDSCRIPT",
+      "cmdId": 207,
+      "handler": "ScrCmd_trywondercardscript",
+      "args": [],
+      "totalBytes": 0
+    },
+    "setworldmapflag": {
+      "op": "SCR_OP_SETWORLDMAPFLAG",
+      "cmdId": 208,
+      "handler": "ScrCmd_nop1",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "worldmapflag"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "warpspinenter": {
+      "op": "SCR_OP_WARPSPINENTER",
+      "cmdId": 209,
+      "handler": "ScrCmd_warpspinenter",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "setmonmetlocation": {
+      "op": "SCR_OP_SETMONMETLOCATION",
+      "cmdId": 210,
+      "handler": "ScrCmd_setmonmetlocation",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "slot"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "location"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "moverotatingtileobjects": {
+      "op": "SCR_OP_MOVEROTATINGTILEOBJECTS",
+      "cmdId": 211,
+      "handler": "ScrCmd_moverotatingtileobjects",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "puzzleNumber"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "turnrotatingtileobjects": {
+      "op": "SCR_OP_TURNROTATINGTILEOBJECTS",
+      "cmdId": 212,
+      "handler": "ScrCmd_turnrotatingtileobjects",
+      "args": [],
+      "totalBytes": 0
+    },
+    "initrotatingtilepuzzle": {
+      "op": "SCR_OP_INITROTATINGTILEPUZZLE",
+      "cmdId": 213,
+      "handler": "ScrCmd_initrotatingtilepuzzle",
+      "args": [
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "isTrickHouse"
+        }
+      ],
+      "totalBytes": 2
+    },
+    "freerotatingtilepuzzle": {
+      "op": "SCR_OP_FREEROTATINGTILEPUZZLE",
+      "cmdId": 214,
+      "handler": "ScrCmd_freerotatingtilepuzzle",
+      "args": [],
+      "totalBytes": 0
+    },
+    "warpmossdeepgym": {
+      "op": "SCR_OP_WARPMOSSDEEPGYM",
+      "cmdId": 215,
+      "handler": "ScrCmd_warpmossdeepgym",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "selectapproachingtrainer": {
+      "op": "SCR_OP_SELECTAPPROACHINGTRAINER",
+      "cmdId": 216,
+      "handler": "ScrCmd_selectapproachingtrainer",
+      "args": [],
+      "totalBytes": 0
+    },
+    "lockfortrainer": {
+      "op": "SCR_OP_LOCKFORTRAINER",
+      "cmdId": 217,
+      "handler": "ScrCmd_lockfortrainer",
+      "args": [],
+      "totalBytes": 0
+    },
+    "closebraillemessage": {
+      "op": "SCR_OP_CLOSEBRAILLEMESSAGE",
+      "cmdId": 218,
+      "handler": "ScrCmd_closebraillemessage",
+      "args": [],
+      "totalBytes": 0
+    },
+    "messageinstant": {
+      "op": "SCR_OP_MESSAGEINSTANT",
+      "cmdId": 219,
+      "handler": "ScrCmd_messageinstant",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "fadescreenswapbuffers": {
+      "op": "SCR_OP_FADESCREENSWAPBUFFERS",
+      "cmdId": 220,
+      "handler": "ScrCmd_fadescreenswapbuffers",
+      "args": [
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "mode"
+        }
+      ],
+      "totalBytes": 1
+    },
+    "buffertrainerclassname": {
+      "op": "SCR_OP_BUFFERTRAINERCLASSNAME",
+      "cmdId": 221,
+      "handler": "ScrCmd_buffertrainerclassname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainerId"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "buffertrainername": {
+      "op": "SCR_OP_BUFFERTRAINERNAME",
+      "cmdId": 222,
+      "handler": "ScrCmd_buffertrainername",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "trainerId"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "pokenavcall": {
+      "op": "SCR_OP_POKENAVCALL",
+      "cmdId": 223,
+      "handler": "ScrCmd_pokenavcall",
+      "args": [
+        {
+          "width": 4,
+          "kind": "u32",
+          "name": "text"
+        }
+      ],
+      "totalBytes": 4
+    },
+    "warpwhitefade": {
+      "op": "SCR_OP_WARPWHITEFADE",
+      "cmdId": 224,
+      "handler": "ScrCmd_warpwhitefade",
+      "args": [
+        {
+          "width": 2,
+          "kind": "map",
+          "name": "map"
+        },
+        {
+          "width": 1,
+          "kind": "u8",
+          "name": "warpId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "x"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "y"
+        }
+      ],
+      "totalBytes": 7
+    },
+    "buffercontestname": {
+      "op": "SCR_OP_BUFFERCONTESTNAME",
+      "cmdId": 225,
+      "handler": "ScrCmd_buffercontestname",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "category"
+        }
+      ],
+      "totalBytes": 3
+    },
+    "bufferitemnameplural": {
+      "op": "SCR_OP_BUFFERITEMNAMEPLURAL",
+      "cmdId": 226,
+      "handler": "ScrCmd_bufferitemnameplural",
+      "args": [
+        {
+          "width": 1,
+          "kind": "stringvar",
+          "name": "stringVarId"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "item"
+        },
+        {
+          "width": 2,
+          "kind": "u16",
+          "name": "quantity"
+        }
+      ],
+      "totalBytes": 5
+    }
+  },
+  "composites": {
+    "compare": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "var"
+        },
+        {
+          "name": "arg"
+        }
+      ],
+      "body": [
+        "        .if ((\\arg >= VARS_START && \\arg <= VARS_END) || (\\arg >= SPECIAL_VARS_START && \\arg <= SPECIAL_VARS_END))",
+        "            compare_var_to_var \\var, \\arg",
+        "        .else",
+        "            compare_var_to_value \\var, \\arg",
+        "        .endif"
+      ]
+    },
+    "formatwarp": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "map"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    map \\map",
+        "    .ifb \\a @ No arguments provided, use dummy warpId and coords.",
+        "        .byte WARP_ID_NONE",
+        "        .2byte -1 @ x",
+        "        .2byte -1 @ y",
+        "    .else",
+        "    .ifb \\b @ Only one argument provided, treat it as a warpId and use dummy coords.",
+        "        .byte \\a   @ warpId",
+        "        .2byte -1  @ x",
+        "        .2byte -1  @ y",
+        "    .else",
+        "    .ifb \\c @ Only two arguments provided, treat them as a coord pair and use dummy warpId.",
+        "        .byte WARP_ID_NONE",
+        "        .2byte \\a  @ x",
+        "        .2byte \\b  @ y",
+        "    .else @ All three arguments provided. Output them and let the warp sort out which to use.",
+        "        .byte \\a  @ warpId",
+        "        .2byte \\b @ x",
+        "        .2byte \\c @ y",
+        "    .endif",
+        "    .endif",
+        "    .endif"
+      ]
+    },
+    "trainerbattle_single": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "intro_text"
+        },
+        {
+          "name": "lose_text"
+        },
+        {
+          "name": "event_script",
+          "def": "FALSE"
+        },
+        {
+          "name": "music",
+          "def": "TRUE"
+        }
+      ],
+      "body": [
+        "    .if \\event_script == FALSE",
+        "    trainerbattle TRAINER_BATTLE_SINGLE, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text",
+        "    .elseif \\music == TRUE",
+        "    trainerbattle TRAINER_BATTLE_CONTINUE_SCRIPT, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\event_script",
+        "    .else",
+        "    trainerbattle TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\event_script",
+        "    .endif"
+      ]
+    },
+    "trainerbattle_double": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "intro_text"
+        },
+        {
+          "name": "lose_text"
+        },
+        {
+          "name": "not_enough_pkmn_text"
+        },
+        {
+          "name": "event_script",
+          "def": "FALSE"
+        },
+        {
+          "name": "music",
+          "def": "TRUE"
+        }
+      ],
+      "body": [
+        "    .if \\event_script == FALSE",
+        "    trainerbattle TRAINER_BATTLE_DOUBLE, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\not_enough_pkmn_text",
+        "    .elseif \\music == TRUE",
+        "    trainerbattle TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\not_enough_pkmn_text, \\event_script",
+        "    .else",
+        "    trainerbattle TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE_NO_MUSIC, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\not_enough_pkmn_text, \\event_script",
+        "    .endif"
+      ]
+    },
+    "trainerbattle_rematch": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "intro_text"
+        },
+        {
+          "name": "lose_text"
+        }
+      ],
+      "body": [
+        "    trainerbattle TRAINER_BATTLE_REMATCH, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text"
+      ]
+    },
+    "trainerbattle_rematch_double": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "intro_text"
+        },
+        {
+          "name": "lose_text"
+        },
+        {
+          "name": "not_enough_pkmn_text"
+        }
+      ],
+      "body": [
+        "    trainerbattle TRAINER_BATTLE_REMATCH_DOUBLE, \\trainer, LOCALID_NONE, \\intro_text, \\lose_text, \\not_enough_pkmn_text"
+      ]
+    },
+    "trainerbattle_no_intro": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "lose_text"
+        }
+      ],
+      "body": [
+        "    trainerbattle TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT, \\trainer, LOCALID_NONE, \\lose_text"
+      ]
+    },
+    "brailleformat": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "winLeft"
+        },
+        {
+          "name": "winTop"
+        },
+        {
+          "name": "winRight"
+        },
+        {
+          "name": "winBottom"
+        },
+        {
+          "name": "textLeft"
+        },
+        {
+          "name": "textTop"
+        }
+      ],
+      "body": [
+        "    .byte \\winLeft",
+        "    .byte \\winTop",
+        "    .byte \\winRight",
+        "    .byte \\winBottom",
+        "    .byte \\textLeft",
+        "    .byte \\textTop"
+      ]
+    },
+    "stringvar": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "id"
+        }
+      ],
+      "body": [
+        "    .if \\id == STR_VAR_1",
+        "        .byte 0",
+        "    .elseif \\id == STR_VAR_2",
+        "        .byte 1",
+        "    .elseif \\id == STR_VAR_3",
+        "        .byte 2",
+        "    .else",
+        "        .byte \\id",
+        "    .endif"
+      ]
+    },
+    "pokemartlistend": {
+      "src": "event.inc",
+      "params": [],
+      "body": [
+        "    .2byte ITEM_NONE",
+        "    release",
+        "    end"
+      ]
+    },
+    "goto_if_unset": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    goto_if FALSE, \\dest"
+      ]
+    },
+    "goto_if_set": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    goto_if TRUE, \\dest"
+      ]
+    },
+    "trycompare": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "jump"
+        },
+        {
+          "name": "condition"
+        },
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    .ifnb \\c",
+        "        compare \\a, \\b",
+        "        \\jump \\condition, \\c",
+        "    .else",
+        "        \\jump \\condition, \\a",
+        "    .endif"
+      ]
+    },
+    "goto_if_lt": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 0, \\a, \\b, \\c"
+      ]
+    },
+    "goto_if_eq": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 1, \\a, \\b, \\c"
+      ]
+    },
+    "goto_if_gt": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 2, \\a, \\b, \\c"
+      ]
+    },
+    "goto_if_le": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 3, \\a, \\b, \\c"
+      ]
+    },
+    "goto_if_ge": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 4, \\a, \\b, \\c"
+      ]
+    },
+    "goto_if_ne": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare goto_if, 5, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_unset": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    call_if FALSE, \\dest"
+      ]
+    },
+    "call_if_set": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    call_if TRUE, \\dest"
+      ]
+    },
+    "call_if_lt": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 0, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_eq": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 1, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_gt": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 2, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_le": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 3, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_ge": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 4, \\a, \\b, \\c"
+      ]
+    },
+    "call_if_ne": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare call_if, 5, \\a, \\b, \\c"
+      ]
+    },
+    "vgoto_if_eq": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare vgoto_if, TRUE, \\a, \\b, \\c"
+      ]
+    },
+    "vgoto_if_ne": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        {
+          "name": "c"
+        }
+      ],
+      "body": [
+        "    trycompare vgoto_if, FALSE, \\a, \\b, \\c"
+      ]
+    },
+    "vgoto_if_unset": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    vgoto_if FALSE, \\dest"
+      ]
+    },
+    "vgoto_if_set": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "flag"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checkflag \\flag",
+        "    vgoto_if TRUE, \\dest"
+      ]
+    },
+    "goto_if_defeated": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checktrainerflag \\trainer",
+        "    goto_if TRUE, \\dest"
+      ]
+    },
+    "goto_if_not_defeated": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checktrainerflag \\trainer",
+        "    goto_if FALSE, \\dest"
+      ]
+    },
+    "call_if_defeated": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checktrainerflag \\trainer",
+        "    call_if TRUE, \\dest"
+      ]
+    },
+    "call_if_not_defeated": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    checktrainerflag \\trainer",
+        "    call_if FALSE, \\dest"
+      ]
+    },
+    "switch": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "var"
+        }
+      ],
+      "body": [
+        "    copyvar VAR_0x8000, \\var"
+      ]
+    },
+    "case": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "condition"
+        },
+        {
+          "name": "dest"
+        }
+      ],
+      "body": [
+        "    compare VAR_0x8000, \\condition",
+        "    goto_if_eq \\dest"
+      ]
+    },
+    "msgbox": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "text"
+        },
+        {
+          "name": "type",
+          "def": "MSGBOX_DEFAULT"
+        }
+      ],
+      "body": [
+        "    loadword 0, \\text",
+        "    callstd \\type"
+      ]
+    },
+    "giveitem": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "item"
+        },
+        {
+          "name": "amount",
+          "def": "1"
+        }
+      ],
+      "body": [
+        "    setorcopyvar VAR_0x8000, \\item",
+        "    setorcopyvar VAR_0x8001, \\amount",
+        "    callstd STD_OBTAIN_ITEM"
+      ]
+    },
+    "finditem": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "item"
+        },
+        {
+          "name": "amount",
+          "def": "1"
+        }
+      ],
+      "body": [
+        "    setorcopyvar VAR_0x8000, \\item",
+        "    setorcopyvar VAR_0x8001, \\amount",
+        "    callstd STD_FIND_ITEM"
+      ]
+    },
+    "givedecoration": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "decoration"
+        }
+      ],
+      "body": [
+        "    setorcopyvar VAR_0x8000, \\decoration",
+        "    callstd STD_OBTAIN_DECORATION"
+      ]
+    },
+    "register_matchcall": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "trainer"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, \\trainer",
+        "    special SetMatchCallRegisteredFlag",
+        "    setorcopyvar VAR_0x8000, \\trainer",
+        "    callstd STD_REGISTER_MATCH_CALL"
+      ]
+    },
+    "dofieldeffectsparkle": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        },
+        {
+          "name": "priority"
+        }
+      ],
+      "body": [
+        "    setfieldeffectargument 0, \\x",
+        "    setfieldeffectargument 1, \\y",
+        "    setfieldeffectargument 2, \\priority",
+        "    dofieldeffect FLDEFF_SPARKLE"
+      ]
+    },
+    "braillemsgbox": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "text"
+        }
+      ],
+      "body": [
+        "    braillemessage \\text",
+        "    waitbuttonpress",
+        "    closebraillemessage"
+      ]
+    },
+    "seteventmon": {
+      "src": "event.inc",
+      "params": [
+        {
+          "name": "species"
+        },
+        {
+          "name": "level"
+        },
+        {
+          "name": "item",
+          "def": "ITEM_NONE"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, \\species",
+        "    setvar VAR_0x8005, \\level",
+        "    setvar VAR_0x8006, \\item",
+        "    special CreateEnemyEventMon"
+      ]
+    },
+    "frontier_getstatus": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GET_STATUS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_get": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_set": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val",
+          "def": "0xFFFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val == 0xFFFF",
+        "    @ no value provided",
+        "    .elseif \\val >= VARS_START",
+        "    copyvar VAR_0x8006, \\val",
+        "    .else",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_setpartyorder": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "partySize"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SET_PARTY_ORDER",
+        "    setvar VAR_0x8005, \\partySize",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_reset": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SOFT_RESET",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_settrainers": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SET_TRAINERS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_saveparty": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SAVE_PARTY",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_results": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "facility"
+        },
+        {
+          "name": "mode",
+          "def": "0xFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_RESULTS_WINDOW",
+        "    setvar VAR_0x8005, \\facility",
+        "    .if \\mode != 0xFF",
+        "    setvar VAR_0x8006, \\mode",
+        "    .endif",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_checkairshow": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_CHECK_AIR_TV_SHOW",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_getbrainstatus": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GET_BRAIN_STATUS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_isbrain": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_IS_BRAIN",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_givepoints": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GIVE_BATTLE_POINTS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_getsymbols": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GET_FACILITY_SYMBOLS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_givesymbol": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_GIVE_FACILITY_SYMBOL",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_isbattletype": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "battleType"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_CHECK_BATTLE_TYPE",
+        "    setvar VAR_0x8005, \\battleType",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_checkineligible": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_CHECK_INELIGIBLE",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_checkvisittrainer": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_CHECK_VISIT_TRAINER",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_incrementstreak": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_INCREMENT_STREAK",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_restorehelditems": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_RESTORE_HELD_ITEMS",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_savebattle": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SAVE_BATTLE",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_gettrainername": {
+      "src": "frontier_util.inc",
+      "params": [
+        {
+          "name": "stringVar"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_BUFFER_TRAINER_NAME",
+        "    .if \\stringVar == STR_VAR_1",
+        "        setvar VAR_0x8005, 0",
+        "    .elseif \\stringVar == STR_VAR_2",
+        "        setvar VAR_0x8005, 1",
+        "    .else",
+        "        setvar VAR_0x8005, \\stringVar",
+        "    .endif",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_resetsketch": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_RESET_SKETCH_MOVES",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "frontier_setbrainobj": {
+      "src": "frontier_util.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FRONTIER_UTIL_FUNC_SET_BRAIN_OBJECT",
+        "    special CallFrontierUtilFunc"
+      ]
+    },
+    "apprentice_gavelvlmode": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_GAVE_LVLMODE",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_setlvlmode": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "lvlmode"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SET_LVLMODE",
+        "    setorcopyvar VAR_0x8005, \\lvlmode",
+        "    addvar VAR_0x8005, 1  @ Apprentice lvl mode is +1 from regular lvl mode value",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_answeredquestion": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_ANSWERED_QUESTION",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_menu": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "which"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_MENU",
+        "    setvar VAR_0x8005, \\which",
+        "    special CallApprenticeFunction",
+        "    waitstate"
+      ]
+    },
+    "apprentice_shufflespecies": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SHUFFLE_SPECIES",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_randomizequestions": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_RANDOMIZE_QUESTIONS",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_msg": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "waitbuttonpress"
+        },
+        {
+          "name": "which"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_PRINT_MSG",
+        "    setvar VAR_0x8005, \\waitbuttonpress",
+        "    setvar VAR_0x8006, \\which",
+        "    special CallApprenticeFunction",
+        "    waitstate"
+      ]
+    },
+    "apprentice_reset": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_RESET",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_shouldcheckgone": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_CHECK_GONE",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_getquestion": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_GET_QUESTION",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_getnumpartymons": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_GET_NUM_PARTY_MONS",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_setpartymon": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "slot"
+        }
+      ],
+      "body": [
+        "    copyvar VAR_0x8006, \\slot",
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SET_PARTY_MON",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_initquestion": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "which"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_INIT_QUESTION_DATA",
+        "    setvar VAR_0x8005, \\which",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_freequestion": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_FREE_QUESTION_DATA",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_buff": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "stringvar"
+        },
+        {
+          "name": "tobuff"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_BUFFER_STRING",
+        "    .if \\stringvar == STR_VAR_1",
+        "        setvar VAR_0x8005, 0",
+        "    .elseif \\stringvar == STR_VAR_2",
+        "        setvar VAR_0x8005, 1",
+        "    .elseif \\stringvar == STR_VAR_3",
+        "        setvar VAR_0x8005, 2",
+        "    .else",
+        "        setvar VAR_0x8005, \\stringvar",
+        "    .endif",
+        "    .if \\tobuff >= VARS_START",
+        "        copyvar VAR_0x8006, \\tobuff",
+        "    .else",
+        "        setvar VAR_0x8006, \\tobuff",
+        "    .endif",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_setmove": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SET_MOVE",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_setleadmon": {
+      "src": "apprentice.inc",
+      "params": [
+        {
+          "name": "monId"
+        }
+      ],
+      "body": [
+        "    copyvar VAR_0x8005, \\monId",
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SET_LEAD_MON",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_openbag": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_OPEN_BAG",
+        "    special CallApprenticeFunction",
+        "    waitstate"
+      ]
+    },
+    "apprentice_trysetitem": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_TRY_SET_HELD_ITEM",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_save": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SAVE",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_setgfx": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SET_GFX",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_shouldleave": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SHOULD_LEAVE",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "apprentice_shiftsaved": {
+      "src": "apprentice.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, APPRENTICE_FUNC_SHIFT_SAVED",
+        "    special CallApprenticeFunction"
+      ]
+    },
+    "arena_init": {
+      "src": "battle_arena.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_INIT",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_get": {
+      "src": "battle_arena.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_set": {
+      "src": "battle_arena.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val >= VARS_START",
+        "    copyvar VAR_0x8006, \\val",
+        "    .else",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_save": {
+      "src": "battle_arena.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_setprize": {
+      "src": "battle_arena.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_SET_PRIZE",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_giveprize": {
+      "src": "battle_arena.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_GIVE_PRIZE",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "arena_gettrainername": {
+      "src": "battle_arena.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_ARENA_FUNC_GET_TRAINER_NAME",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "dome_init": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_INIT",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_get": {
+      "src": "battle_dome.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_set": {
+      "src": "battle_dome.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val",
+          "def": "0xFFFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val != 0xFFFF",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_getroundtext": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_GET_ROUND_TEXT",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_getopponentname": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_GET_OPPONENT_NAME",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_initopponentparty": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_INIT_OPPONENT_PARTY",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_showopponentinfo": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SHOW_OPPONENT_INFO",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_showtourneytree": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SHOW_TOURNEY_TREE",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_showprevtourneytree": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SHOW_PREV_TOURNEY_TREE",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_setopponent": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SET_OPPONENT_ID",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_setopponentgfx": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SET_OPPONENT_GFX",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_showstatictourneytree": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SHOW_STATIC_TOURNEY_TREE",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_resolvewinners": {
+      "src": "battle_dome.inc",
+      "params": [
+        {
+          "name": "playerStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_RESOLVE_WINNERS",
+        "    setvar VAR_0x8005, \\playerStatus",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_save": {
+      "src": "battle_dome.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_incrementstreaks": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_INCREMENT_STREAK",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_settrainers": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_SET_TRAINERS",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_resetsketch": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_RESET_SKETCH",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_restorehelditems": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_RESTORE_HELD_ITEMS",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_reduceparty": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_REDUCE_PARTY",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_compareseeds": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_COMPARE_SEEDS",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_getwinnersname": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_GET_WINNER_NAME",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_initresultstree": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_INIT_RESULTS_TREE",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "dome_inittrainers": {
+      "src": "battle_dome.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_DOME_FUNC_INIT_TRAINERS",
+        "    special CallBattleDomeFunction"
+      ]
+    },
+    "factory_init": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_INIT",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_get": {
+      "src": "battle_factory.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_set": {
+      "src": "battle_factory.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val",
+          "def": "0xFFFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val == 0xFFFF",
+        "    @ argument not provided",
+        "    .elseif \\val >= VARS_START",
+        "    copyvar VAR_0x8006, \\val",
+        "    .else",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_save": {
+      "src": "battle_factory.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_rentmons": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SELECT_RENT_MONS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_swapmons": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SWAP_RENT_MONS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_setswapped": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SET_SWAPPED",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_setopponentmons": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SET_OPPONENT_MONS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_setparties": {
+      "src": "battle_factory.inc",
+      "params": [
+        {
+          "name": "arg"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SET_PARTIES",
+        "    setvar VAR_0x8005, \\arg",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_setopponentgfx": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_SET_OPPONENT_GFX",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_generateopponentmons": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_GENERATE_OPPONENT_MONS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_generaterentalmons": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_GENERATE_RENTAL_MONS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_getopponentmontype": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_GET_OPPONENT_MON_TYPE",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_getopponentstyle": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_GET_OPPONENT_STYLE",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "factory_resethelditems": {
+      "src": "battle_factory.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_FACTORY_FUNC_RESET_HELD_ITEMS",
+        "    special CallBattleFactoryFunction"
+      ]
+    },
+    "palace_init": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_INIT",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_get": {
+      "src": "battle_palace.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_set": {
+      "src": "battle_palace.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    setvar VAR_0x8006, \\val",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_getcomment": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_GET_COMMENT_ID",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_setopponent": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_SET_OPPONENT",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_getopponentintro": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_GET_OPPONENT_INTRO",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_incrementstreak": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_INCREMENT_STREAK",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_save": {
+      "src": "battle_palace.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattlePalaceFunction"
+      ]
+    },
+    "palace_setprize": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_SET_PRIZE",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "palace_giveprize": {
+      "src": "battle_palace.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PALACE_FUNC_GIVE_PRIZE",
+        "    special CallBattleArenaFunction"
+      ]
+    },
+    "pike_setnextroom": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_ROOM_TYPE",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_get": {
+      "src": "battle_pike.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_set": {
+      "src": "battle_pike.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val >= VARS_START",
+        "    copyvar VAR_0x8006, \\val",
+        "    .else",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_isfinalroom": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_IS_FINAL_ROOM",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_setroomobjects": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_ROOM_OBJECTS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_getroomtype": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_ROOM_TYPE",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_inwildmonroom": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_IN_WILD_MON_ROOM",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_exitwildmonroom": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_CLEAR_IN_WILD_MON_ROOM",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_save": {
+      "src": "battle_pike.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_getstatus": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_ROOM_STATUS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_getstatusmon": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_ROOM_STATUS_MON",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_healonetwomons": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_HEAL_ONE_TWO_MONS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_getnpcmsg": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_BUFFER_NPC_MSG",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_flashscreen": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_STATUS_SCREEN_FLASH",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_inchallenge": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_IS_IN",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_sethintroom": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_HINT_ROOM",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_gethintroomid": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_HINT_ROOM_ID",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_gethint": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_ROOM_TYPE_HINT",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_cleartrainerids": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_CLEAR_TRAINER_IDS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_gettrainerintro": {
+      "src": "battle_pike.inc",
+      "params": [
+        {
+          "name": "trainer"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_TRAINER_INTRO",
+        "    setvar VAR_0x8005, \\trainer",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_getbrainstatus": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_GET_QUEEN_FIGHT_TYPE",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_prequeenheal": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_HEAL_MONS_BEFORE_QUEEN",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_nohealing": {
+      "src": "battle_pike.inc",
+      "params": [
+        {
+          "name": "set"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SET_HEAL_ROOMS_DISABLED",
+        "    setvar VAR_0x8005, \\set",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_ispartyfullhealth": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_IS_PARTY_FULL_HEALTH",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_savehelditems": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_SAVE_HELD_ITEMS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_resethelditems": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_RESET_HELD_ITEMS",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pike_init": {
+      "src": "battle_pike.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PIKE_FUNC_INIT",
+        "    special CallBattlePikeFunction"
+      ]
+    },
+    "pyramid_init": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_INIT",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_get": {
+      "src": "battle_pyramid.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_set": {
+      "src": "battle_pyramid.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    setvar VAR_0x8006, \\val",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_save": {
+      "src": "battle_pyramid.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_setprize": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SET_PRIZE",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_giveprize": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_GIVE_PRIZE",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_seedfloor": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SEED_FLOOR",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_setitem": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SET_ITEM",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_hideitem": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_HIDE_ITEM",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_settrainers": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SET_TRAINERS",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_showhint": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SHOW_HINT_TEXT",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_getlocation": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_CURRENT_LOCATION",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_updatelight": {
+      "src": "battle_pyramid.inc",
+      "params": [
+        {
+          "name": "radius"
+        },
+        {
+          "name": "mode"
+        },
+        {
+          "name": "sound",
+          "def": "0xFFFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_UPDATE_LIGHT",
+        "    setvar VAR_0x8005, \\radius",
+        "    setvar VAR_0x8006, \\mode",
+        "    .if \\sound != 0xFFFF",
+        "    setvar VAR_0x8007, \\sound",
+        "    .endif",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_clearhelditems": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_CLEAR_HELD_ITEMS",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_setfloorpal": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_SET_FLOOR_PALETTE",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "pyramid_resetparty": {
+      "src": "battle_pyramid.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_PYRAMID_FUNC_RESTORE_PARTY",
+        "    special CallBattlePyramidFunction"
+      ]
+    },
+    "tower_init": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_INIT",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_get": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "data"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_GET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_set": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "val",
+          "def": "0xFFFF"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SET_DATA",
+        "    setvar VAR_0x8005, \\data",
+        "    .if \\val != 0xFFFF",
+        "    setvar VAR_0x8006, \\val",
+        "    .endif",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_setopponent": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SET_OPPONENT",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_setbattlewon": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SET_BATTLE_WON",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_giveribbons": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_GIVE_RIBBONS",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_save": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_getopponentintro": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "opponent"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_GET_OPPONENT_INTRO",
+        "    setvar VAR_0x8005, \\opponent",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_getopponentintro2": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "opponent"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_GET_OPPONENT_INTRO2",
+        "    setvar VAR_0x8005, \\opponent",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_loadpartners": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_LOAD_PARTNERS",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_dopartnermsg": {
+      "src": "battle_tower.inc",
+      "params": [
+        {
+          "name": "msgId"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_PARTNER_MSG",
+        "    setvar VAR_0x8005, \\msgId",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_loadlinkopponents": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_LOAD_LINK_OPPONENTS",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_closelink": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_TRY_CLOSE_LINK",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_setpartnergfx": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SET_PARTNER_GFX",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "tower_setinterviewdata": {
+      "src": "battle_tower.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, BATTLE_TOWER_FUNC_SET_INTERVIEW_DATA",
+        "    special CallBattleTowerFunc"
+      ]
+    },
+    "verdanturftent_init": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_INIT",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_getprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_GET_PRIZE",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_setprize": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "unusedArg"
+        },
+        {
+          "name": "itemId"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_SET_PRIZE",
+        "    setvar VAR_0x8005, \\unusedArg",
+        "    setvar VAR_0x8006, \\itemId",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_setopponentgfx": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_SET_OPPONENT_GFX",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "battletent_getopponentintro": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_GET_OPPONENT_INTRO",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_save": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_setrandomprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_SET_RANDOM_PRIZE",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "verdanturftent_giveprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, VERDANTURF_TENT_FUNC_GIVE_PRIZE",
+        "    special CallVerdanturfTentFunction"
+      ]
+    },
+    "fallarbortent_init": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_INIT",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_getprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_GET_PRIZE",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_setprize": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "unusedArg"
+        },
+        {
+          "name": "itemId"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_SET_PRIZE",
+        "    setvar VAR_0x8005, \\unusedArg",
+        "    setvar VAR_0x8006, \\itemId",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_save": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_setrandomprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_SET_RANDOM_PRIZE",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_giveprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_GIVE_PRIZE",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "fallarbortent_getopponentname": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, FALLARBOR_TENT_FUNC_GET_OPPONENT_NAME",
+        "    special CallFallarborTentFunction"
+      ]
+    },
+    "slateporttent_init": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_INIT",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_getprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_GET_PRIZE",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_setprize": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "unusedArg"
+        },
+        {
+          "name": "itemId"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_SET_PRIZE",
+        "    setvar VAR_0x8005, \\unusedArg",
+        "    setvar VAR_0x8006, \\itemId",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_save": {
+      "src": "battle_tent.inc",
+      "params": [
+        {
+          "name": "challengeStatus"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_SAVE",
+        "    setvar VAR_0x8005, \\challengeStatus",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_setrandomprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_SET_RANDOM_PRIZE",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_giveprize": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_GIVE_PRIZE",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_rentmons": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_SELECT_RENT_MONS",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_swapmons": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_SWAP_RENT_MONS",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_generateopponentmons": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_GENERATE_OPPONENT_MONS",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "slateporttent_generaterentalmons": {
+      "src": "battle_tent.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, SLATEPORT_TENT_FUNC_GENERATE_RENTAL_MONS",
+        "    special CallSlateportTentFunction"
+      ]
+    },
+    "trainerhill_start": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_START",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_getownerstate": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_OWNER_STATE",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_giveprize": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GIVE_PRIZE",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_finaltime": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_CHECK_FINAL_TIME",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_resumetimer": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_RESUME_TIMER",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_lost": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_SET_LOST",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_getstatus": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_CHALLENGE_STATUS",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_gettime": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_CHALLENGE_TIME",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_allfloorsused": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_ALL_FLOORS_USED",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_getusingereader": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_IN_EREADER_MODE",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_inchallenge": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_IN_CHALLENGE",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_postbattletext": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_POST_BATTLE_TEXT",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_settrainerflags": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_SET_ALL_TRAINER_FLAGS",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_getsaved": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_GAME_SAVED",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_setsaved": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_SET_GAME_SAVED",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_clearsaved": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_CLEAR_GAME_SAVED",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_getwon": {
+      "src": "trainer_hill.inc",
+      "params": [],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_GET_WON",
+        "    special CallTrainerHillFunction"
+      ]
+    },
+    "trainerhill_setmode": {
+      "src": "trainer_hill.inc",
+      "params": [
+        {
+          "name": "mode"
+        }
+      ],
+      "body": [
+        "    setvar VAR_0x8004, TRAINER_HILL_FUNC_SET_MODE",
+        "    copyvar VAR_0x8005, \\mode",
+        "    special CallTrainerHillFunction"
+      ]
+    }
+  }
+}
