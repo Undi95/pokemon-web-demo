@@ -42,6 +42,7 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag } from './battle
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './fieldmap';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
@@ -265,6 +266,16 @@ const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ct
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
 const ScrCmd_waitmoncry: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsCryFinished?.() ?? true); return true; };
 
+// ─── setmetatile (1:1 scrcmd.c:setmetatile) ─────────────────────────────────
+const ScrCmd_setmetatile: ScrCmdFunc = (ctx) => {
+  const x = VarGet(ScriptReadHalfword(ctx)) + MAP_OFFSET;
+  const y = VarGet(ScriptReadHalfword(ctx)) + MAP_OFFSET;
+  const metatileId = VarGet(ScriptReadHalfword(ctx));
+  const isImpassable = VarGet(ScriptReadHalfword(ctx));
+  MapGridSetMetatileIdAt(x, y, isImpassable ? (metatileId | MAPGRID_IMPASSABLE) : metatileId);
+  return false;
+};
+
 // ─── item / coins (1:1 scrcmd.c) ────────────────────────────────────────────
 // Notre Bag est à CLÉS string → pont id numérique→ITEM_X (reverseDecompConstant).
 const itemKeyOf = (id: number): string => reverseDecompConstant(id, 'ITEM_') ?? '';
@@ -361,7 +372,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_delay, ScrCmd_waitbuttonpress, ScrCmd_incrementgamestat, ScrCmd_checkplayergender,
   ScrCmd_checktrainerflag, ScrCmd_settrainerflag, ScrCmd_cleartrainerflag,
   ScrCmd_playse, ScrCmd_waitse, ScrCmd_playfanfare, ScrCmd_waitfanfare, ScrCmd_playbgm,
-  ScrCmd_playmoncry, ScrCmd_waitmoncry,
+  ScrCmd_playmoncry, ScrCmd_waitmoncry, ScrCmd_setmetatile,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

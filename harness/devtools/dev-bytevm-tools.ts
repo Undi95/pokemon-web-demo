@@ -17,6 +17,7 @@ import type { ScriptPtr } from '../../src/script_bytevm';
 import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
+import { MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET } from '../../src/fieldmap';
 import { installByteVmHandlers, setSpecialNames } from '../../src/scrcmd_bytevm';
 import { registerSpecial } from '../../src/scrcmd';
 import { getText, loadMapScripts } from '../../src/script';
@@ -327,6 +328,26 @@ export async function testItem(): Promise<{ pass: boolean; details: Record<strin
   return { pass, details };
 }
 
+/** Test SETMETATILE via bytecode synthétique : setmetatile x,y,id,0 → la tile change.
+ *  Lit l'ancienne valeur, pose une nouvelle, vérifie via MapGridGetMetatileIdAt, restaure. */
+export async function testMetatile(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const X = 5, Y = 5;
+  const gx = X + MAP_OFFSET, gy = Y + MAP_OFFSET;
+  const orig = MapGridGetMetatileIdAt(gx, gy);
+  const newId = (orig === 1 ? 2 : 1);
+  const SETMT = cmdIdOf('ScrCmd_setmetatile'), END = cmdIdOf('ScrCmd_end');
+  // setmetatile X, Y, newId, 0(impassable) ; end  (4 halfwords)
+  const code = Uint8Array.from([SETMT, lo(X), hi(X), lo(Y), hi(Y), lo(newId), hi(newId), 0, 0, END]);
+  RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+  const after = MapGridGetMetatileIdAt(gx, gy);
+  MapGridSetMetatileIdAt(gx, gy, orig);   // restaure
+  const pass = after === newId;
+  const details = { 'tile avant': orig, 'tile posée': newId, 'tile lue après': after };
+  console.log(`[byte-vm] TEST setmetatile : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -334,4 +355,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, run, VarGet, getScriptOffset };
