@@ -769,6 +769,33 @@ export async function testLongTail3(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test LONG-TAIL 4 : ALIGNEMENT du flux sur setmonmove(u8,u8,u16) + bufferboxname
+ *  (u8,u16) + braillemessage(u32) + closebraillemessage(0) + fadenewbgm(u16) via setvar
+ *  marqueur 0xBABE (setmonmove sur slot 5 vide = inoffensif). */
+export async function testLongTail4(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SETMM = cmdIdOf('ScrCmd_setmonmove'), BBN = cmdIdOf('ScrCmd_bufferboxname'),
+        BMSG = cmdIdOf('ScrCmd_braillemessage'), CBMSG = cmdIdOf('ScrCmd_closebraillemessage'),
+        FNB = cmdIdOf('ScrCmd_fadenewbgm'), SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VT1 = num('VAR_TEMP_1');
+  const w32 = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    SETMM, 5, 3, 0, 0,        // setmonmove partyIndex=5(slot vide), slot=3, move=0
+    BBN, 0, 0, 0,             // bufferboxname stringvar=0, boxId=0
+    BMSG, ...w32(0),          // braillemessage ptr=0
+    CBMSG,                    // closebraillemessage (0 octet)
+    FNB, 0, 0,                // fadenewbgm songId=0
+    SETVAR, lo(VT1), hi(VT1), lo(0xBABE), hi(0xBABE),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xBABE;
+  const pass = aligned;
+  const details = { 'alignement setmonmove+bufferboxname+braille+fadenewbgm (setvar=0xBABE)': aligned };
+  console.log(`[byte-vm] TEST long-tail 4 : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -776,4 +803,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, run, VarGet, getScriptOffset };

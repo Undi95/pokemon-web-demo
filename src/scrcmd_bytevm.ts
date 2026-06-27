@@ -20,8 +20,8 @@ import {
 } from './script_bytevm';
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 import { VAR_0x8004 } from '../include/constants/vars';
-import { PARTY_SIZE } from '../include/constants/global';
-import { MonKnowsMove } from './engine/battle/party-storage';
+import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
+import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
 import { setPendingWarp, SetDynamicWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
@@ -286,6 +286,26 @@ const ScrCmd_fadedefaultbgm: ScrCmdFunc = () => {
 // setobjectsubpriority / resetobjectsubpriority (voie A) — localId(u16 VarGet), map(u16 ignoré).
 const ScrCmd_setobjectsubpriority: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); const p = ScriptReadByte(ctx); doSetObjectSubpriority(l, p); return false; };
 const ScrCmd_resetobjectsubpriority: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doResetObjectSubpriority(l); return false; };
+
+// ─── long-tail simple #4 (1:1 scrcmd.c) ─────────────────────────────────────
+// setmonmove : partyIndex(u8), slot(u8), move(u16) → SetMonMoveSlot (ScriptSetMonMoveSlot).
+const ScrCmd_setmonmove: ScrCmdFunc = (ctx) => {
+  const pIdx = ScriptReadByte(ctx); const slot = ScriptReadByte(ctx); const move = ScriptReadHalfword(ctx);
+  if (pIdx >= 0 && pIdx < PARTY_SIZE && slot >= 0 && slot < MAX_MON_MOVES) SetMonMoveSlot(gPlayerParty[pIdx], move, slot);
+  return false;
+};
+// fadenewbgm : fade out + nouvelle BGM (hardware-exempt via __decompGlobals = parsé).
+const ScrCmd_fadenewbgm: ScrCmdFunc = (ctx) => {
+  const songId = ScriptReadHalfword(ctx);
+  const dg = _dg();
+  if (dg) { dg.FadeOutBGM?.(4); setTimeout(() => dg.m4aSongNumStart?.(songId, true), 200); }
+  return false;
+};
+// bufferboxname : nom de boîte PC — non modélisé → '' (= moteur parsé, dette data).
+const ScrCmd_bufferboxname: ScrCmdFunc = (ctx) => { const idx = ScriptReadByte(ctx); VarGet(ScriptReadHalfword(ctx)); setStringVar(idx + 1, ''); return false; };
+// braille (UI braille — font non extraite → no-op = parsé). braillemessage lit le ptr (u32).
+const ScrCmd_braillemessage: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };
+const ScrCmd_closebraillemessage: ScrCmdFunc = () => false;
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -687,6 +707,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setwarp, ScrCmd_setdivewarp, ScrCmd_setholewarp, ScrCmd_setescapewarp, ScrCmd_setdynamicwarp,
   ScrCmd_erasebox, ScrCmd_getpokenewsactive, ScrCmd_messageautoscroll, ScrCmd_fadescreenswapbuffers,
   ScrCmd_savebgm, ScrCmd_fadedefaultbgm, ScrCmd_setobjectsubpriority, ScrCmd_resetobjectsubpriority,
+  ScrCmd_setmonmove, ScrCmd_fadenewbgm, ScrCmd_bufferboxname, ScrCmd_braillemessage, ScrCmd_closebraillemessage,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
