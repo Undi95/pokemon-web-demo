@@ -49,7 +49,7 @@ import { RtcCalcLocalTime, RtcInitLocalTimeOffset, gLocalTime } from './rtc';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
 // Voie A byte-VM : logique object-event partagée (source unique, zéro divergence).
-import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType } from './scrcmd_object';
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 import { doFieldEffect, setFieldEffectArgument, setWaitFieldEffect } from './scrcmd_fieldeffect';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
@@ -3667,23 +3667,8 @@ registerOpcode('hideobjectat', (_ctx, args) => {
  *    sprite->subpriority = priority + 83;
  *    sprite->coordOffsetEnabled = TRUE;  // = fixedPriority flag */
 registerOpcode('setobjectsubpriority', (_ctx, args) => {
-  const localId = _vget(args[0]);
-  const _mapGroup = parseValue(args[1] ?? '0');
-  const _mapNum = parseValue(args[2] ?? '0');
-  const priority = parseValue(args[3] ?? '0');
-  void _mapGroup; void _mapNum;
-  const effective = (priority + 83) & 0xFF;
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) {
-    (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = effective;
-    (obj as unknown as { fixedPriority?: boolean }).fixedPriority = true;
-    const rt = getRuntime();
-    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
-    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites[spriteId];
-      if (spr) spr.subpriority = effective;
-    }
-  }
+  // Voie A : logique extraite dans scrcmd_object.doSetObjectSubpriority (partagée byte-VM).
+  doSetObjectSubpriority(_vget(args[0]), parseValue(args[3] ?? '0'));
   return false;
 });
 
@@ -3693,18 +3678,8 @@ registerOpcode('setobjectsubpriority', (_ctx, args) => {
  *    sprite->subpriority = 0;
  *    sprite->coordOffsetEnabled = FALSE. */
 registerOpcode('resetobjectsubpriority', (_ctx, args) => {
-  const localId = _vget(args[0]);
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) {
-    (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = undefined;
-    (obj as unknown as { fixedPriority?: boolean }).fixedPriority = false;
-    const rt = getRuntime();
-    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
-    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites[spriteId];
-      if (spr) spr.subpriority = 0xFF;
-    }
-  }
+  // Voie A : logique extraite dans scrcmd_object.doResetObjectSubpriority (partagée byte-VM).
+  doResetObjectSubpriority(_vget(args[0]));
   return false;
 });
 

@@ -46,9 +46,11 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag } from './battle
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
-import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './fieldmap';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
-import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType } from './scrcmd_object';
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
+import { Overworld_SetSavedMusic } from './overworld';
+import * as Songs from '../include/constants/songs';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
@@ -261,6 +263,29 @@ const ScrCmd_setdivewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, 
 const ScrCmd_setholewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, unknown>).gHoleWarp = readWarp(ctx); return false; };     // :863 SetFixedHoleWarp
 const ScrCmd_setescapewarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); (globalThis as Record<string, unknown>).__escapeWarp = { mapName: w.destMap.replace(/^MAP_/, ''), x: w.x, y: w.y }; return false; }; // :875 SetEscapeWarp
 const ScrCmd_setdynamicwarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); SetDynamicWarp(w.destMap, w.x, w.y); return false; };        // :839 SetDynamicWarpWithCoords
+
+// ─── long-tail simple #3 (1:1 scrcmd.c) ─────────────────────────────────────
+// erasebox : lit 4 octets, no-op (= décomp Menu_EraseWindowRect commenté).
+const ScrCmd_erasebox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); return false; };
+// getpokenewsactive : gSpecialVar_Result = IsPokeNewsActive(newsKind). Pas de pokenews → 0 (= parsé).
+const ScrCmd_getpokenewsactive: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); setResult(0); return false; };
+// messageautoscroll : lit le ptr texte (u32) puis no-op (dette autoscroll U-tier = parsé).
+const ScrCmd_messageautoscroll: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };
+// fadescreenswapbuffers : = fadescreen (swap-buffer = dette palette.c, comme le parsé).
+const ScrCmd_fadescreenswapbuffers: ScrCmdFunc = (ctx) => { FadeScreen(ScriptReadByte(ctx), 0); SetupNativeScript(ctx, isPaletteNotActive); return true; };
+// savebgm : Overworld_SetSavedMusic(songId) — halfword BRUT (pas VarGet) = id de SONG.
+const ScrCmd_savebgm: ScrCmdFunc = (ctx) => { Overworld_SetSavedMusic(ScriptReadHalfword(ctx)); return false; };
+// fadedefaultbgm : rejoue la musique par défaut de la map (BGM hardware-exempt via __decompGlobals).
+const ScrCmd_fadedefaultbgm: ScrCmdFunc = () => {
+  const mapMusic = gMapHeader?.music as number | string | undefined;
+  const songId = typeof mapMusic === 'number' ? mapMusic
+    : (typeof mapMusic === 'string' ? (Songs as unknown as Record<string, number>)[mapMusic] : undefined);
+  if (typeof songId === 'number' && songId > 0) _dg()?.m4aSongNumStart?.(songId, true);
+  return false;
+};
+// setobjectsubpriority / resetobjectsubpriority (voie A) — localId(u16 VarGet), map(u16 ignoré).
+const ScrCmd_setobjectsubpriority: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); const p = ScriptReadByte(ctx); doSetObjectSubpriority(l, p); return false; };
+const ScrCmd_resetobjectsubpriority: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doResetObjectSubpriority(l); return false; };
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -660,6 +685,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_dotimebasedevents, ScrCmd_checkpartymove,
   ScrCmd_vgoto, ScrCmd_vcall, ScrCmd_vgoto_if, ScrCmd_vmessage, ScrCmd_setvaddress, ScrCmd_copybyte,
   ScrCmd_setwarp, ScrCmd_setdivewarp, ScrCmd_setholewarp, ScrCmd_setescapewarp, ScrCmd_setdynamicwarp,
+  ScrCmd_erasebox, ScrCmd_getpokenewsactive, ScrCmd_messageautoscroll, ScrCmd_fadescreenswapbuffers,
+  ScrCmd_savebgm, ScrCmd_fadedefaultbgm, ScrCmd_setobjectsubpriority, ScrCmd_resetobjectsubpriority,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

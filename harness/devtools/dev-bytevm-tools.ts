@@ -725,6 +725,50 @@ export async function testWarpVariants(): Promise<{ pass: boolean; details: Reco
   return { pass, details };
 }
 
+/** Test LONG-TAIL 3 : getpokenewsactive→0, setobjectsubpriority/reset sur un vrai NPC
+ *  (obj.subpriority=priority+83 puis reset), + ALIGNEMENT erasebox+messageautoscroll+
+ *  savebgm via setvar marqueur 0xD00D. */
+export async function testLongTail3(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const GPNA = cmdIdOf('ScrCmd_getpokenewsactive'), SOSP = cmdIdOf('ScrCmd_setobjectsubpriority'),
+        ROSP = cmdIdOf('ScrCmd_resetobjectsubpriority'), ERASE = cmdIdOf('ScrCmd_erasebox'),
+        MAS = cmdIdOf('ScrCmd_messageautoscroll'), SBGM = cmdIdOf('ScrCmd_savebgm'),
+        SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VR = num('VAR_RESULT'), VT1 = num('VAR_TEMP_1');
+  const w32 = (v: number) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
+  // getpokenewsactive 1 → VAR_RESULT=0
+  VarSet(VR, 9);
+  RunScriptImmediately({ buf: Uint8Array.from([GPNA, 1, 0, END]), off: 0 } as ScriptPtr);
+  const pokenews = VarGet(VR);
+  // setobjectsubpriority sur un NPC réel : localId, map(u16 ignoré), priority=5 → subpriority=88
+  let idx = -1;
+  for (let i = 0; i < gObjectEvents.length; i++) { const o = gObjectEvents[i]; if (o && o.active && i !== gPlayerAvatar.objectEventId && typeof o.localId === 'number') { idx = i; break; } }
+  let subOk = false, resetOk = false;
+  if (idx >= 0) {
+    const o = gObjectEvents[idx] as unknown as { localId: number; subpriority?: number; fixedPriority?: boolean };
+    const origSub = o.subpriority, origFixed = o.fixedPriority;
+    RunScriptImmediately({ buf: Uint8Array.from([SOSP, lo(o.localId), hi(o.localId), 0, 0, 5, END]), off: 0 } as ScriptPtr);
+    subOk = o.subpriority === 88 && o.fixedPriority === true;
+    RunScriptImmediately({ buf: Uint8Array.from([ROSP, lo(o.localId), hi(o.localId), 0, 0, END]), off: 0 } as ScriptPtr);
+    resetOk = o.subpriority === undefined && o.fixedPriority === false;
+    o.subpriority = origSub; o.fixedPriority = origFixed;   // restaure
+  }
+  // alignement : erasebox(4o) + messageautoscroll(4o) + savebgm(2o) + setvar VT1,0xD00D
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    ERASE, 1, 2, 3, 4,
+    MAS, ...w32(0),
+    SBGM, 0, 0,
+    SETVAR, lo(VT1), hi(VT1), lo(0xD00D), hi(0xD00D),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xD00D;
+  const pass = pokenews === 0 && idx >= 0 && subOk && resetOk && aligned;
+  const details = { 'getpokenewsactive → 0': pokenews, 'setobjectsubpriority → subpriority 88+fixed': subOk, 'resetobjectsubpriority → reset': resetOk, 'alignement erase+autoscroll+savebgm (setvar=0xD00D)': aligned };
+  console.log(`[byte-vm] TEST long-tail 3 : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -732,4 +776,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, run, VarGet, getScriptOffset };

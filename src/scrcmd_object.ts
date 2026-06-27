@@ -118,6 +118,36 @@ export function doCopyObjectXYToPerm(localIdArg: string): void {
   }
 }
 
+/** 1:1 décomp `ScrCmd_setobjectsubpriority` → SetObjectSubpriority(localId, …, priority+83).
+ *  Pose obj.subpriority + fixedPriority + la subpriority du sprite. */
+export function doSetObjectSubpriority(localId: number, priority: number): void {
+  const effective = (priority + 83) & 0xFF;
+  const obj = gObjectEvents.find((o) => o.active && (o as unknown as { localId?: number }).localId === localId);
+  if (!obj) return;
+  (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = effective;
+  (obj as unknown as { fixedPriority?: boolean }).fixedPriority = true;
+  const rt = getRuntime() as unknown as { gSprites?: Array<{ subpriority?: number } | undefined> } | undefined;
+  const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
+  if (rt?.gSprites && typeof spriteId === 'number' && spriteId >= 0) {
+    const spr = rt.gSprites[spriteId];
+    if (spr) spr.subpriority = effective;
+  }
+}
+
+/** 1:1 décomp `ScrCmd_resetobjectsubpriority` → ResetObjectSubpriority : subpriority=0 (sprite 0xFF). */
+export function doResetObjectSubpriority(localId: number): void {
+  const obj = gObjectEvents.find((o) => o.active && (o as unknown as { localId?: number }).localId === localId);
+  if (!obj) return;
+  (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = undefined;
+  (obj as unknown as { fixedPriority?: boolean }).fixedPriority = false;
+  const rt = getRuntime() as unknown as { gSprites?: Array<{ subpriority?: number } | undefined> } | undefined;
+  const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
+  if (rt?.gSprites && typeof spriteId === 'number' && spriteId >= 0) {
+    const spr = rt.gSprites[spriteId];
+    if (spr) spr.subpriority = 0xFF;
+  }
+}
+
 /** 1:1 décomp `ScrCmd_setobjectmovementtype` → SetObjEventTemplateMovementType.
  *  movementTypeRaw = string "MOVEMENT_TYPE_*" (le byte-VM convertit l'id numérique).
  *  Sync facingDirection immédiat pour FACE_x / WALK_IN_PLACE_x même si le NPC est gelé. */
