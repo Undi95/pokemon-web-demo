@@ -37,7 +37,10 @@ import {
   FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventClearHeldMovementIfFinished,
   ObjectEventSetHeldMovement, gObjectEvents,
 } from './event_object_movement';
-import { GetPlayerFacingDirection, gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
+import { GetPlayerFacingDirection, gPlayerAvatar, IncrementGameStat, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
+import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
+import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
+import { PlaySE } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
@@ -237,6 +240,31 @@ const ScrCmd_addmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); co
 const ScrCmd_removemoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) RemoveMoney(a); return false; };
 const ScrCmd_checkmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) setResult(IsEnoughMoney(a) ? 1 : 0); return false; };
 
+// ─── delay / input / gamestat / gender / trainer flags (1:1 scrcmd.c) ───────
+// 1:1 scrcmd.c ScrCmd_delay : sPauseCounter=ReadHalfword ; SetupNativeScript(RunPauseTimer).
+const ScrCmd_delay: ScrCmdFunc = (ctx) => {
+  let frames = ScriptReadHalfword(ctx);
+  SetupNativeScript(ctx, () => { if (frames <= 0) return true; frames--; return false; });
+  return true;
+};
+const ScrCmd_waitbuttonpress: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => isAOrBNewlyPressed()); return true; };
+const ScrCmd_incrementgamestat: ScrCmdFunc = (ctx) => { IncrementGameStat(ScriptReadByte(ctx)); return false; };
+const ScrCmd_checkplayergender: ScrCmdFunc = () => { setResult(gPlayerAvatar.gender === 'MALE' ? MALE_GENDER : FEMALE_GENDER); return false; };
+const ScrCmd_checktrainerflag: ScrCmdFunc = (ctx) => { const i = VarGet(ScriptReadHalfword(ctx)); (ctx as ScriptContext).comparisonResult = HasTrainerBeenFought(i) ? 1 : 0; return false; };
+const ScrCmd_settrainerflag: ScrCmdFunc = (ctx) => { SetTrainerFlag(VarGet(ScriptReadHalfword(ctx))); return false; };
+const ScrCmd_cleartrainerflag: ScrCmdFunc = (ctx) => { ClearTrainerFlag(VarGet(ScriptReadHalfword(ctx))); return false; };
+
+// ─── son (hardware-exempt : PlaySE statique + __decompGlobals pour le reste) ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _dg = (): any => (globalThis as Record<string, unknown>).__decompGlobals;
+const ScrCmd_playse: ScrCmdFunc = (ctx) => { PlaySE(ScriptReadHalfword(ctx)); return false; };
+const ScrCmd_waitse: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => !(_dg()?.IsSEPlaying?.() ?? false)); return true; };
+const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { _dg()?.PlayFanfare?.(ScriptReadHalfword(ctx)); return false; };
+const ScrCmd_waitfanfare: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsFanfareTaskInactive?.() ?? true); return true; };
+const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx); _dg()?.m4aSongNumStart?.(song, true); return false; };
+const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
+const ScrCmd_waitmoncry: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsCryFinished?.() ?? true); return true; };
+
 // ─── item / coins (1:1 scrcmd.c) ────────────────────────────────────────────
 // Notre Bag est à CLÉS string → pont id numérique→ITEM_X (reverseDecompConstant).
 const itemKeyOf = (id: number): string => reverseDecompConstant(id, 'ITEM_') ?? '';
@@ -330,6 +358,10 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_warp, ScrCmd_warpsilent, ScrCmd_addmoney, ScrCmd_removemoney, ScrCmd_checkmoney,
   ScrCmd_additem, ScrCmd_removeitem, ScrCmd_checkitem, ScrCmd_checkitemspace,
   ScrCmd_checkcoins, ScrCmd_addcoins, ScrCmd_removecoins,
+  ScrCmd_delay, ScrCmd_waitbuttonpress, ScrCmd_incrementgamestat, ScrCmd_checkplayergender,
+  ScrCmd_checktrainerflag, ScrCmd_settrainerflag, ScrCmd_cleartrainerflag,
+  ScrCmd_playse, ScrCmd_waitse, ScrCmd_playfanfare, ScrCmd_waitfanfare, ScrCmd_playbgm,
+  ScrCmd_playmoncry, ScrCmd_waitmoncry,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
