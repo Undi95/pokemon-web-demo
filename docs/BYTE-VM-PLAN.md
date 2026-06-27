@@ -26,7 +26,7 @@ byte↔opcode (que le user a refusé).
    linker). Voir « Phase 2 ».
 3. **Byte VM — ✅ FAIT + PROUVÉ EN JEU.** `src/script_bytevm.ts` (1:1 `script.c`).
    Voir « Phase 3 ».
-4. **Handlers `ScrCmd_*` — 🔄 EN COURS (~95 % de l'usage couvert).** `src/scrcmd_bytevm.ts`.
+4. **Handlers `ScrCmd_*` — 🔄 EN COURS (~99 % de l'usage couvert, keystone trainerbattle FAIT).** `src/scrcmd_bytevm.ts`.
    Voir « Phase 4 ».
 5. **Swap + re-vérif TOUT le jeu** — à venir. Voir « Phase 5 ».
 
@@ -40,11 +40,22 @@ chantier → d'où la branche sandbox. Multi-session.
 | 1. Cmd-table | ✅ | `public/decomp/em/script-cmd-table.json` (227 opcodes) |
 | 2. Compilateur + linker image-globale | ✅ | `compile-scripts.cjs` → `script-bytecode.json` (gitignoré) |
 | 3. VM core (1:1 `script.c`) | ✅ prouvé en jeu | `src/script_bytevm.ts` |
-| 4. Handlers (1:1 `scrcmd.c`) | 🔄 **95,2 % usage** (83/227 cmdId) | `src/scrcmd_bytevm.ts` + `src/scrcmd_object.ts` |
+| 4. Handlers (1:1 `scrcmd.c`) | 🔄 **99,2 % usage** (159/227 cmdId), keystone trainerbattle ✅ | `src/scrcmd_bytevm.ts` + `scrcmd_object/door/fieldeffect/flash.ts` |
 | 5. Swap + re-vérif | ⬜ à venir | — |
 
-**Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → dernier object-ops voie A. `finale` intacte.
-**Tests déterministes EN JEU** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testMoney,testItem,testMetatile,testObject}` (harness/devtools/dev-bytevm-tools.ts) — tous verts, 0 erreur.
+**Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → `cbc478bf` (trainerbattle + preuve visuelle). `finale` intacte (`3b34ce7f`).
+**Tests déterministes EN JEU (26 verts, 0 erreur)** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testWarpVariants,testMoney,testItem,testMetatile,testObject,testObjectMovement,testBuffers,testPlayer,testWeather,testDoor,testFieldEffect,testVobject,testFade,testFlash,testGiveMon,testLongTail1-4,testTrainerbattleArgs}` (harness/devtools/dev-bytevm-tools.ts).
+
+### 👁️ Vérification « voir par code » (condition user 2026-06-27, PROUVÉE)
+Le gros (combats/menus) est vérifiable SANS test manuel via **2 canaux concordants** :
+1. **État live** `window.__byteVm.battleState()` — inBattle / gBattleTypeFlags /
+   gTrainerBattleOpponent_A / gBattleOutcome / party ennemie (espèce/level/hp) /
+   battlers. (Globals combat module-internes → lus via le harness.)
+2. **Pixels réels** `preview_screenshot` du canvas **240×160** (vrai framebuffer GBA).
+Démontré : `launchTB(318)` (byte-VM dotrainerbattle) → battleState {opponent 318,
+flag TRAINER, enemyParty species286 Lv5} ↔ screenshot « Un combat est lancé par
+GAMIN CALVIN! ». 🔧 déclencheurs : `dev.battle.startWild(sp,lvl)` / `__byteVm.launchTB(id)`.
+**Oracle de couverture** : `scratchpad/bytevm-coverage.cjs` (expand-composites → usage opcode réel).
 
 ---
 
@@ -172,49 +183,65 @@ API `ScriptContext_*`. Loader : `loadByteVmImage()` (base64→Uint8Array + symbo
 `ptrFromOffset/ptrFromLabel`. **Non câblé au moteur vivant** (le moteur parsé
 `script.ts`/`scrcmd.ts` reste live jusqu'au swap).
 
-## Phase 4 — handlers — 🔄 EN COURS (95,2 % de l'usage)
+## Phase 4 — handlers — 🔄 EN COURS (99,2 % de l'usage, keystone trainerbattle ✅)
 
 `src/scrcmd_bytevm.ts` = handlers 1:1 `scrcmd.c`, signature `(ctx) => bool`, lecture
 via `ScriptRead*`, installés dans `gScriptCmdTable[cmdId]` via l'enum du cmd-table.
+**159/227 cmdId, 99,2 % de l'usage opcode overworld réel.**
 
-**Familles FAITES** (chacune vérifiée déterministe en jeu) : état/flux (end/return/
-goto/call/goto_if/call_if/setvar/copyvar/setorcopyvar/addvar/subvar/compare_*/
-setflag/clearflag/checkflag/loadword/loadbyte/copylocal/nop/waitstate) · special/
-specialvar (gSpecials = id→nom→`invokeSpecial`) · dialogue (gotostd/callstd via
-`gStdScripts`→offset, message→symbole texte→`getText`→`ShowFieldMessage`, waitmessage/
-closemessage ; **symbole id 0 = NULL**) · lock/lockall/release/releaseall/faceplayer ·
-applymovement/waitmovement(+at) · warp/warpsilent (mapSymbol→`setPendingWarp`) ·
-money (addmoney/removemoney/checkmoney) · item (additem/removeitem/checkitem(space),
-**pont id num→clé ITEM_X** via reverseDecompConstant) · coins (checkcoins/addcoins/
-removecoins, résultat inversé) · delay · waitbuttonpress · incrementgamestat ·
-checkplayergender · trainer flags · son (playse/waitse/playfanfare/waitfanfare/
-playbgm/playmoncry/waitmoncry, hardware-exempt) · setmetatile · **object ops** (voie A).
+**Familles FAITES** (chacune vérifiée déterministe en jeu — état + alignement du flux) :
+- état/flux · special/specialvar · dialogue (gotostd/callstd/message/waitmessage/
+  closemessage ; symbole id 0 = NULL) · lock/release/faceplayer · applymovement/
+  waitmovement(+at) · warp/warpsilent + **warp variants** (setwarp/setdivewarp/
+  setholewarp/setescapewarp/setdynamicwarp) · money · item · coins · delay/
+  waitbuttonpress/incrementgamestat/checkplayergender/trainer-flags · son (hardware-
+  exempt) + savebgm/fadedefaultbgm/fadenewbgm · setmetatile · **object ops** (voie A) ·
+  **buffers** (buffer*name/stdstring/string/numberstring/boxname) + getplayerxy/
+  getpartysize · **weather** (setweather/resetweather/doweather → vraies fns
+  field_weather_effect) · **doors** (voie A) · **field-effects** (voie A) ·
+  createvobject/turnvobject · **object-movement** (turnobject/copyobjectxytoperm/
+  setobjectmovementtype, voie A) · **fadescreen**(+speed/swapbuffers) · random/
+  setberrytree/setmaplayoutindex/setstepcallback/money+coins box · checkpartymove/
+  dotimebasedevents/v*(vgoto/vcall/vgoto_if/vmessage)/setvaddress/copybyte ·
+  setobjectsubpriority/reset(voie A)/erasebox/getpokenewsactive/messageautoscroll ·
+  setmonmove/braillemessage/closebraillemessage · **flash** (setflashlevel/animateflash,
+  voie A) · givemon/giveegg · **trainerbattle + dotrainerbattle + gotopostbattlescript
+  + gotobeatenscript** (KEYSTONE).
 
-**VOIE A (object-ops, validée user)** : `src/scrcmd_object.ts` = logique object-event
-web-adaptée extraite en fns PARTAGÉES (`doSetObjectXY/doSetObjectXYPerm/doAddObject/
-doRemoveObject/doSetObjectInvisibility`), appelées par LES DEUX moteurs (closures
-`scrcmd.ts` recâblées + handlers byte-VM) → source unique, **zéro divergence**.
-Interface = args STRING ; le byte-VM passe `String(localId num)` (les helpers
-`findNpcByLocalId`/`resolveObjectLocalIdRaw` ont un fallback numérique). → à
-appliquer pour le reste des handlers field-coupled.
+**VOIE A (validée user) = source unique, zéro divergence.** Modules partagés appelés
+par LES DEUX moteurs (closures `scrcmd.ts` recâblées + handlers byte-VM) :
+`src/scrcmd_object.ts` (object-ops + subpriority + movement-type) ·
+`src/scrcmd_door.ts` · `src/scrcmd_fieldeffect.ts` · `src/scrcmd_flash.ts` ·
+`battle_setup.ts` (trainerbattle : abstraction `TrainerArgSource` → tables byType +
+switch partagés, source string[] parsé / curseur binaire byte-VM ;
+`startTrainerBattleAndGetPoll` partagé). Interface object = args STRING ; le byte-VM
+passe `String(localId num)` (fallback numérique des helpers + `findTemplateByLocalId`).
 
-**RESTE (par usage décroissant)** : `trainerbattle`(1291, byType dans le cmd-table) ·
-`createvobject`/`turnvobject`(286/186) · `multichoice`(default/grid)(261) ·
-`fadescreen`(speed)(172) · `setobjectmovementtype`(160)/`turnobject`(134)/
-`copyobjectxytoperm` (voie A) · doors (opendoor/closedoor/waitdooranim/setdooropen/
-setdoorclosed)(146) · field-effects (setfieldeffectargument/dofieldeffect/
-waitfieldeffect)(103) · `setberrytree`(80) · `setrespawn` · weather (set/reset/do) ·
-getplayerxy/getpartysize · buffers (buffer*name/stdstring/string/numberstring) ·
-givemon/giveegg · yesnobox · le long tail (~144 cmdId restants, dont 31 jamais utilisés).
+**KEYSTONE trainerbattle** : le byte-VM EXÉCUTE le vrai `trainer_battle.inc`
+(event-scripts présents dans l'image, ex. `EventScript_TryDoNormalTrainerBattle`=34585).
+`trainerbattle` peek mode → `configureTrainerBattleCore` → saut event-script ;
+bridge symbole-texte→label / ret-addr→curseur ; continuation `sTrainerBattleEndScript`
+élargie pour tenir `{buf,off}`. Prouvé par code : `testTrainerbattleArgs` (byType→
+opponent=42) + `launchTB(318)` (combat Calvin réel, état↔pixel).
 
-Outil de couverture (jetable) : compter les `ScrCmd_*` de `BYTEVM_HANDLERS` vs l'enum,
-croiser avec l'usage réel (expand-composites sur les 468 maps).
+**2 fixes infra** : namespace `event_object_movement` ajouté au résolveur runtime
+(`harness/runtime/decomp-constants.ts`) ; `findTemplateByLocalId` gagne un fallback
+numérique (1:1 décomp). `gMaxFlashLevel`/`SetFlashLevel` déplacés dans scrcmd_flash.
 
-## Phase 5 — swap + re-vérification — ⬜ à venir
+**RESTE (le tail, ~0,8 % usage)** : combats annexes (setwildbattle/dowildbattle/
+choosecontestmon/showcontestpainting/playslotmachine) · menus UI (multichoice×3/
+yesnobox/pokemart×3/hidemonpic/showmonpic/pokenavcall) · niche (checkitemtype/
+warphole/adddecoration/checkdecorspace/rotating-tile puzzle/setrespawn). ⚠️ 4-5 sont
+couplés à des sous-systèmes non audités (shop/slot/puzzle/concours) → si gap réel :
+STOP + flag user (pas de fake). Oracle : `scratchpad/bytevm-coverage.cjs`.
+
+## Phase 5 — swap + re-vérification — ⬜ à venir (le système nerveux)
 
 1. **Swap** : `script.ts` → `script_bytevm.ts`, `scrcmd.ts` → `scrcmd_bytevm.ts`.
    Rewire des ~101 importeurs publics (mêmes noms de fns → swap mécanique). Le
    loader byte-VM remplace `loadMapScripts` (charge l'image globale au boot + les
-   textes/mouvements par map).
-2. **Re-vérif** cold-boot + A/B : intro (♂/♀), PNJ, cutscenes, warps, OnLoad/
-   OnTransition/OnFrame/OnWarp, Frontier (post-game, tolérant) + **test user**.
+   textes/mouvements par map). Risque max → c'est tout l'intérêt de la branche
+   sandbox : si ça casse, on jette `Byte-VM`, `finale` intacte.
+2. **Re-vérif** cold-boot + oracle + screenshots : intro (♂/♀), PNJ, cutscenes,
+   warps, OnLoad/OnTransition/OnFrame/OnWarp, combats (trainer/wild via battleState),
+   Frontier (post-game, tolérant) + **test user final**.
