@@ -229,8 +229,16 @@ export function ScriptContext_Init(): void {
 }
 
 export function ScriptContext_RunScript(): boolean {
-  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN)
+  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN) {
+    // SWAP-safety (Phase 5) : SHUTDOWN = aucun script actif ⇒ le verrou de contrôles
+    // script ne doit JAMAIS rester actif. Au retour d'un CB2 (combat / buy-menu / menu),
+    // des chemins parsés/globaux non routés peuvent appeler LockPlayerFieldControls (ex.
+    // EnableBothScriptContexts) sans piloter le statut byte-VM → lock fantôme = joueur figé.
+    // On rétablit l'invariant ici (le décomp a déjà unlock à la fin du script ; ceci ne
+    // déverrouille que le lock-script résiduel, pas les locks hardware comme la marche forcée).
+    if (sLockFieldControls) UnlockPlayerFieldControls();
     return false;
+  }
   if (sGlobalScriptContextStatus === CONTEXT_WAITING)
     return false;
 

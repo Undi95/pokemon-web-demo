@@ -28,6 +28,17 @@ import { VarGet } from './engine/script/script-vars';
 // Migration TEXTE byte-level 1:1 (flip direct) : getText retourne des bytes charmap
 // (data source lisible → encodée au 1er accès via encodeOwText = notre préproc, cache).
 import { encodeOwText, isOwCharmapReady } from '../include/text';
+// ── Phase 5 byte-VM : SWAP flag-gated (`?bytevm`) ──
+// Quand actif, l'EXÉCUTION des scripts (RunScript / SetupScript / RunScriptImmediately /
+// lock) est routée vers le VRAI byte-VM (image bytecode + gScriptCmdTable). Les DONNÉES
+// (tables map_script_2, getText/getMovement) restent chargées par loadMapScripts ; le
+// byte-VM exécute depuis son image (ptrFromLabel). Le moteur parsé reste le DÉFAUT
+// (zéro risque) ; bascule via URL ?bytevm. Cf docs/BYTE-VM-PLAN.md Phase 5.
+import * as BV from './script_bytevm';
+let _useByteVm = false;
+try { if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('bytevm')) _useByteVm = true; } catch { /* SSR / no location */ }
+export function setUseByteVm(on: boolean): void { _useByteVm = on; }
+export function isUsingByteVm(): boolean { return _useByteVm; }
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -170,6 +181,10 @@ async function _loadCommonScripts(): Promise<void> {
 /** Charge les scripts d'une map depuis le JSON pré-extrait + merge _common.json
  *  (= scripts/movements partagés comme Common_Movement_FacePlayer). */
 export async function loadMapScripts(mapName: string): Promise<void> {
+  // Phase 5 byte-VM : si le flag ?bytevm est actif, s'assurer que le moteur byte-VM
+  // (image + handlers + specials) est installé AVANT de charger les données de map.
+  // Import dynamique = même instance live (pas de cycle statique script→scrcmd_bytevm).
+  if (_useByteVm) await import('./bytevm-boot').then((m) => m.loadByteVmEngine());
   await _loadCommonScripts();
   const url = `/decomp/em/scripts/${mapName}.json`;
   let json: MapScriptsJson;
@@ -242,15 +257,17 @@ setMovementLabelResolver((label: string) => _movementsByLabel.get(label) ?? null
 // ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
 
 export function LockPlayerFieldControls(): void {
+  if (_useByteVm) { BV.LockPlayerFieldControls(); return; }
   sLockFieldControls = true;
 }
 
 export function UnlockPlayerFieldControls(): void {
+  if (_useByteVm) { BV.UnlockPlayerFieldControls(); return; }
   sLockFieldControls = false;
 }
 
 export function ArePlayerFieldControlsLocked(): boolean {
-  return sLockFieldControls;
+  return _useByteVm ? BV.ArePlayerFieldControlsLocked() : sLockFieldControls;
 }
 
 // ─── Context primitives 1:1 décomp ───────────────────────────────────────────
@@ -420,15 +437,18 @@ export function RunScriptCommand(ctx: ScriptContext): boolean {
 // ─── ScriptContext_* (= primary global ctx avec wait support) ────────────────
 
 export function ScriptContext_IsEnabled(): boolean {
+  if (_useByteVm) return BV.ScriptContext_IsEnabled();
   return sGlobalScriptContextStatus === CONTEXT_RUNNING;
 }
 
 export function ScriptContext_Init(): void {
+  if (_useByteVm) { BV.ScriptContext_Init(); return; }
   InitScriptContext(sGlobalScriptContext);
   sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
 }
 
 export function ScriptContext_RunScript(): boolean {
+  if (_useByteVm) return BV.ScriptContext_RunScript();
   if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN) return false;
   if (sGlobalScriptContextStatus === CONTEXT_WAITING) return false;
   LockPlayerFieldControls();
@@ -457,6 +477,13 @@ let _currentScriptLabel: string | null = null;
 
 /** 1:1 décomp `ScriptContext_SetupScript(const u8 *ptr)`. */
 export function ScriptContext_SetupScript(label: string): boolean {
+  if (_useByteVm) {
+    const ptr = BV.ptrFromLabel(label);
+    if (!ptr) { console.warn(`[byte-vm] script '${label}' absent de l'image`); return false; }
+    BV.ScriptContext_SetupScript(ptr);
+    _currentScriptLabel = label;
+    return true;
+  }
   const opcodes = _scriptsByLabel.get(label);
   if (!opcodes) {
     console.warn(`[script-runtime] script '${label}' not found`);
@@ -472,6 +499,7 @@ export function ScriptContext_SetupScript(label: string): boolean {
 }
 
 export function ScriptContext_Stop(): void {
+  if (_useByteVm) { BV.ScriptContext_Stop(); return; }
   sGlobalScriptContextStatus = CONTEXT_WAITING;
 }
 
@@ -488,6 +516,7 @@ export function ScriptContext_SetupInlineBytecode(opcodes: Opcode[], devLabel = 
 }
 
 export function ScriptContext_Enable(): void {
+  if (_useByteVm) { BV.ScriptContext_Enable(); return; }
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
   LockPlayerFieldControls();
 }
@@ -538,6 +567,10 @@ export function ScriptContext_Restore(s: ScriptCtxSnapshot): void {
  *  Flags')` AVANT que la 1ère map soit loaded (= use case new-game-init).
  *  Le `_commonJson` est chargé au boot par `loadCommonScripts`. */
 export function RunScriptImmediately(label: string): void {
+  if (_useByteVm) {
+    if (!BV.RunScriptImmediatelyByLabel(label)) console.warn(`[byte-vm] RunScriptImmediately: '${label}' absent de l'image`);
+    return;
+  }
   let opcodes = _scriptsByLabel.get(label);
   if (!opcodes) {
     // Fallback common scripts (= avant que loadMapScripts soit call).

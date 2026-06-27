@@ -12,6 +12,7 @@
 import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
   getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript, getLabelAtOffset,
+  _getGlobalContext, _getGlobalStatus, ArePlayerFieldControlsLocked as _BVAreLocked,
 } from '../../src/script_bytevm';
 import { GetMartItemList, IsShopMenuOpen } from '../../src/shop';
 import type { ScriptPtr } from '../../src/script_bytevm';
@@ -856,6 +857,21 @@ export async function testGiveMon(): Promise<{ pass: boolean; details: Record<st
 /** ORACLE D'ÉTAT COMBAT (inspecteur) — lit l'état combat LIVE par code : inBattle,
  *  flags, opponent, outcome, party ennemie (espèce/level/hp), battlers. Permet de
  *  vérifier « ce qui DEVRAIT être » (data décomp) vs « ce qui EST » sans test manuel. */
+/** Diagnostic SWAP : état live du contexte byte-VM (status/mode/lock) — à lancer
+ *  après un freeze pour voir si le lock est resté true alors que le contexte est SHUTDOWN. */
+export function diag(): Record<string, unknown> {
+  const ctx = _getGlobalContext();
+  const STATUS = ['RUNNING', 'WAITING', 'SHUTDOWN'];
+  const MODE = ['STOPPED', 'BYTECODE', 'NATIVE'];
+  return {
+    status: STATUS[_getGlobalStatus()] ?? _getGlobalStatus(),
+    mode: MODE[ctx.mode] ?? ctx.mode,
+    lock_byteVm: _BVAreLocked(),
+    hasNativePoll: !!ctx.nativePtr,
+    scriptPtrOff: ctx.scriptPtr?.off ?? null,
+  };
+}
+
 export function battleState(): Record<string, unknown> {
   const rt = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt;
   const enemyParty = gEnemyParty.slice(0, 6).map((m) => {
@@ -1117,4 +1133,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, run, VarGet, getScriptOffset };
