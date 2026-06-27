@@ -57,6 +57,7 @@
 import { LoadBgTiles, LoadPalette } from '../harness/runtime/decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset_anims';
+import { GenerateBattlePyramidFloorLayout } from './battle_pyramid';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
 import { GetSaveBlock1 } from './save';
@@ -1667,6 +1668,16 @@ export function InitMapFromSavedGame(): void {
   if (_runOnLoadMapScriptHook) _runOnLoadMapScriptHook();
   // UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height) :
   //   subsystem TV DÉFÉRÉ (no-op 1:1 ; aucune TV sur les maps supportées).
+}
+
+/** 1:1 décomp `InitBattlePyramidMap(bool8 setPlayerPosition)` (fieldmap.c:88-92) :
+ *    CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, sizeof(sBackupMapData));
+ *    GenerateBattlePyramidFloorLayout(sBackupMapData, setPlayerPosition);
+ *  Notre `sBackupMapData` = `gBackupMapLayout.map` (même buffer). Contenu post-game (Battle
+ *  Pyramid) — la génération est fidèle ; cf. battle_pyramid.ts pour la limite data (layouts). */
+export function InitBattlePyramidMap(setPlayerPosition: boolean): void {
+  gBackupMapLayout.map.fill(MAPGRID_UNDEFINED);
+  GenerateBattlePyramidFloorLayout(gBackupMapLayout.map, setPlayerPosition);
 }
 
 /** Helper : prefetch les map headers des connexions immédiates d'une map.

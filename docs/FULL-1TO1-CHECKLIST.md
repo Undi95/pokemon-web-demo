@@ -124,9 +124,9 @@
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
 | `field_effect_helpers.c` | 1718 | 81 | `field_effect_helpers.ts` | 76/81 (94%) | 76/81 (94%) | ✅ miroir |
 | `starter_choose.c` | 670 | 18 | `starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
-| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 52/55 (95%) | 53/55 (96%) | ✅ miroir |
 | `wild_encounter.c` | 968 | 34 | `wild_encounter.ts` | 33/34 (97%) | 33/34 (97%) | ✅ miroir |
 | `field_weather.c` | 1106 | 49 | `field_weather.ts` | 48/49 (98%) | 48/49 (98%) | ✅ miroir |
+| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 53/55 (96%) | 54/55 (98%) | ✅ miroir |
 | `metatile_behavior.c` | 1403 | 144 | `metatile_behavior.ts` | 144/144 (100%) | 144/144 (100%) | ✅ miroir |
 | `bike.c` | 1063 | 56 | `bike.ts` | 56/56 (100%) | 56/56 (100%) | ✅ miroir |
 | `field_tasks.c` | 958 | 28 | `field_tasks.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
@@ -160,11 +160,11 @@
 | `battle_transition.c` | 4777 | 210 | `battle_transition.ts` | 3/210 (1%) | 3/210 (1%) | 🔴 manquant |
 | `battle_factory_screen.c` | 4316 | 119 | — **manquant** | 0/119 (0%) | 1/119 (1%) | 🔴 manquant |
 | `contest_ai.c` | 1786 | 142 | `battle_ai_script_commands.ts` _(nom≠)_ | 2/142 (1%) | 2/142 (1%) | 🔴 manquant |
-| `battle_pyramid.c` | 1985 | 52 | `battle_util.ts` _(nom≠)_ | 2/52 (4%) | 2/52 (4%) | 🔴 manquant |
 | `battle_pyramid_bag.c` | 1609 | 81 | `engine/bag/bag-menu-ctx.ts` _(nom≠)_ | 2/81 (2%) | 4/81 (5%) | 🔴 manquant |
 | `battle_controller_safari.c` | 692 | 73 | `battle_controller_player.ts` _(nom≠)_ | 5/73 (7%) | 5/73 (7%) | 🔴 manquant |
 | `battle_controller_wally.c` | 1571 | 82 | `battle_controller_player.ts` _(nom≠)_ | 8/82 (10%) | 8/82 (10%) | 🔴 manquant |
 | `battle_arena.c` | 821 | 19 | — **manquant** | 0/19 (0%) | 2/19 (11%) | 🔴 manquant |
+| `battle_pyramid.c` | 1985 | 52 | `battle_pyramid.ts` | 4/52 (8%) | 6/52 (12%) | 🔴 manquant |
 | `battle_controller_player_partner.c` | 1936 | 93 | `battle_controller_player.ts` _(nom≠)_ | 11/93 (12%) | 14/93 (15%) | 🟡 amorce |
 | `battle_controller_recorded_player.c` | 1813 | 87 | `battle_controller_player.ts` _(nom≠)_ | 10/87 (11%) | 13/87 (15%) | 🟡 amorce |
 | `battle_controller_link_partner.c` | 1698 | 86 | `battle_controller_player.ts` _(nom≠)_ | 10/86 (12%) | 13/86 (15%) | 🟡 amorce |
