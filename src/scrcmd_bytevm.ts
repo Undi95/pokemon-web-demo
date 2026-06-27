@@ -56,6 +56,8 @@ import { setStringVar, decodeOwBytes } from './text';
 import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
+// Voie A : logique « porte » partagée avec le moteur parsé (source unique).
+import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 
 // gStdScripts (1:1 event_scripts.s:95-107) — STD_*/MSGBOX_* index → label de std script.
 const gStdScripts: readonly string[] = [
@@ -484,6 +486,14 @@ const ScrCmd_setweather: ScrCmdFunc = (ctx) => { SetSavedWeather(VarGet(ScriptRe
 const ScrCmd_resetweather: ScrCmdFunc = () => { SetSavedWeatherFromCurrMapHeader(); return false; };                 // :713
 const ScrCmd_doweather: ScrCmdFunc = () => { DoCurrentWeather(); return false; };                                    // :719
 
+// ─── doors (1:1 scrcmd.c:2050-2108 ; logique partagée scrcmd_door — voie A) ──
+// coords brutes (VarGet) sans +MAP_OFFSET : field_door l'ajoute en interne.
+const ScrCmd_opendoor: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doOpenDoor(x, y); return false; };
+const ScrCmd_closedoor: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doCloseDoor(x, y); return false; };
+const ScrCmd_waitdooranim: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, isDoorAnimationStopped); return true; };
+const ScrCmd_setdooropen: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetDoorOpen(x, y); return false; };
+const ScrCmd_setdoorclosed: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetDoorClosed(x, y); return false; };
+
 /** Handlers du slice, keyed par nom ScrCmd_* (= colonne `handler` du cmd-table). */
 export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_nop, ScrCmd_nop1, ScrCmd_end, ScrCmd_gotonative, ScrCmd_waitstate,
@@ -512,6 +522,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_buffernumberstring, ScrCmd_bufferstdstring, ScrCmd_bufferdecorationname,
   ScrCmd_bufferstring, ScrCmd_buffertrainerclassname, ScrCmd_buffertrainername,
   ScrCmd_setweather, ScrCmd_resetweather, ScrCmd_doweather,
+  ScrCmd_opendoor, ScrCmd_closedoor, ScrCmd_waitdooranim, ScrCmd_setdooropen, ScrCmd_setdoorclosed,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

@@ -33,6 +33,9 @@ import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { GetSavedWeather, SetSavedWeather } from '../../src/field_weather_effect';
 import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
+import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
+import { MB_ANIMATED_DOOR } from '../../src/engine/field/tilemap-loader';
+import { isDoorAnimationStopped } from '../../src/scrcmd_door';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -463,6 +466,37 @@ export async function testWeather(): Promise<{ pass: boolean; details: Record<st
   return { pass, details };
 }
 
+/** Test DOORS via bytecode synthétique sur une VRAIE porte de la map courante :
+ *  scanne la grille live pour un tile MB_ANIMATED_DOOR, puis opendoor <x>,<y> ; end
+ *  → isDoorAnimationStopped()===false (anim démarrée). Puis setdoorclosed (no throw).
+ *  Si aucune porte sur la map → fail explicite (lancer depuis une ville). */
+export async function testDoor(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  const cx = player?.currentCoordsX ?? 20, cy = player?.currentCoordsY ?? 20;
+  let door: { gx: number; gy: number } | null = null;
+  for (let gy = cy - 30; gy <= cy + 30 && !door; gy++) {
+    for (let gx = Math.max(0, cx - 30); gx <= cx + 30; gx++) {
+      if (gy < 0) continue;
+      if (MapGridGetMetatileBehaviorAt(gx, gy) === MB_ANIMATED_DOOR) { door = { gx, gy }; break; }
+    }
+  }
+  let animStarted = false, noThrow = true;
+  if (door) {
+    const rawX = door.gx - MAP_OFFSET, rawY = door.gy - MAP_OFFSET;
+    const OPEN = cmdIdOf('ScrCmd_opendoor'), CLOSE = cmdIdOf('ScrCmd_setdoorclosed'), END = cmdIdOf('ScrCmd_end');
+    try {
+      RunScriptImmediately({ buf: Uint8Array.from([OPEN, lo(rawX), hi(rawX), lo(rawY), hi(rawY), END]), off: 0 } as ScriptPtr);
+      animStarted = !isDoorAnimationStopped();
+      RunScriptImmediately({ buf: Uint8Array.from([CLOSE, lo(rawX), hi(rawX), lo(rawY), hi(rawY), END]), off: 0 } as ScriptPtr);
+    } catch (e) { noThrow = false; console.warn('[testDoor]', e); }
+  }
+  const pass = !!door && animStarted && noThrow;
+  const details = { 'porte trouvée (grille)': door, 'opendoor → anim active': animStarted, 'setdoorclosed sans throw': noThrow };
+  console.log(`[byte-vm] TEST doors : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -470,4 +504,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, run, VarGet, getScriptOffset };

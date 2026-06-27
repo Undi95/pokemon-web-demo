@@ -50,6 +50,7 @@ import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
 // Voie A byte-VM : logique object-event partagée (source unique, zéro divergence).
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
+import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
 // mart-lists.json au boot).
 import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
@@ -533,9 +534,7 @@ registerOpcode('buffercontestname', (_ctx, args) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // scrcmd.c — section « door » (ex src/engine/script/script-opcodes-door.ts)
 // ═══════════════════════════════════════════════════════════════════════════
-/** 1:1 décomp `sDoorAnimActive` (field_door.c interne, exposé via
- *  `IsDoorAnimationStopped`). True quand FieldAnimateDoorOpen/Close en cours. */
-let _doorAnimActive = false;
+// Voie A : logique « porte » partagée avec le byte-VM (source unique, cf scrcmd_door.ts).
 
 // 1:1 décomp ScrCmd_opendoor (scrcmd.c:2050-2061) :
 //   x = VarGet(ScriptReadHalfword(ctx));
@@ -547,74 +546,35 @@ let _doorAnimActive = false;
 // `waitdooranim` ensuite halt le script jusqu'à anim fin via SetupNativeScript
 // + IsDoorAnimationStopped (= `_doorAnimActive` polled).
 registerOpcode('opendoor', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  void (async () => {
-    try {
-      const fdoor = await import('./field_door');
-      const seId = fdoor.GetDoorSoundEffect(x, y);
-      PlaySE(seId);
-      _doorAnimActive = true;
-      await fdoor.FieldAnimateDoorOpen(x, y);
-      _doorAnimActive = false;
-    } catch (e) {
-      console.warn('[opcode opendoor] failed', e);
-      _doorAnimActive = false;
-    }
-  })();
+  doOpenDoor(parseValue(args[0]), parseValue(args[1]));
   return false;
 });
 
-// 1:1 décomp ScrCmd_closedoor (scrcmd.c:2062-2080) :
-//   x = VarGet(ScriptReadHalfword(ctx));
-//   y = VarGet(ScriptReadHalfword(ctx));
-//   FieldAnimateDoorClose(x, y);
+// 1:1 décomp ScrCmd_closedoor (scrcmd.c:2062-2080) : FieldAnimateDoorClose(x, y).
 registerOpcode('closedoor', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  void (async () => {
-    try {
-      const fdoor = await import('./field_door');
-      _doorAnimActive = true;
-      await fdoor.FieldAnimateDoorClose(x, y);
-      _doorAnimActive = false;
-    } catch (e) {
-      console.warn('[opcode closedoor] failed', e);
-      _doorAnimActive = false;
-    }
-  })();
+  doCloseDoor(parseValue(args[0]), parseValue(args[1]));
   return false;
 });
 
 // 1:1 décomp ScrCmd_waitdooranim (scrcmd.c:2081-2085) :
 //   SetupNativeScript(IsDoorAnimationStopped).
-// On poll _doorAnimActive jusqu'à false (= anim terminée). Si aucune anim
-// n'a été démarrée par opendoor/closedoor (= behavior pas MB_ANIMATED_DOOR
-// donc no-op), _doorAnimActive reste false → continue immédiatement.
 registerOpcode('waitdooranim', (ctx) => {
-  const tick = (): boolean => !_doorAnimActive;
-  SetupNativeScript(ctx, tick);
+  SetupNativeScript(ctx, isDoorAnimationStopped);
   return true;
 });
 
-// 1:1 décomp ScrCmd_setdooropen (scrcmd.c:2087-2096) :
-//   FieldSetDoorOpened(x, y) = instant draw open frame, no SE.
+// 1:1 décomp ScrCmd_setdooropen (scrcmd.c:2087-2096) : FieldSetDoorOpened (instant, no SE).
 registerOpcode('setdooropen', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  void (async () => {
-    try {
-      const fdoor = await import('./field_door');
-      await fdoor.FieldSetDoorOpened(x, y);
-    } catch (e) { console.warn('[opcode setdooropen] failed', e); }
-  })();
+  doSetDoorOpen(parseValue(args[0]), parseValue(args[1]));
   return false;
 });
 
-// 1:1 décomp ScrCmd_setdoorclosed (scrcmd.c:2098-2108) :
-//   FieldSetDoorClosed(x, y) = instant draw closed frame, no SE.
-//   À porter 1:1 strict (= identique à setdooropen mais avec close frame).
-registerOpcode('setdoorclosed', (_ctx, _args) => false);
+// 1:1 décomp ScrCmd_setdoorclosed (scrcmd.c:2098-2108) : FieldSetDoorClosed (instant, no SE).
+// (était un no-op — corrigé via la voie A partagée.)
+registerOpcode('setdoorclosed', (_ctx, args) => {
+  doSetDoorClosed(parseValue(args[0]), parseValue(args[1]));
+  return false;
+});
 
 // 1:1 décomp aliases naming variants — setdoor_opened/setdoor_closed sont des
 // mêmes opcodes (= snake_case avec underscore) que setdooropen/setdoorclosed
