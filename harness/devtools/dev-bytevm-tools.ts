@@ -530,6 +530,36 @@ export async function testFieldEffect(): Promise<{ pass: boolean; details: Recor
   return { pass, details };
 }
 
+/** Test VIRTUAL OBJECTS via bytecode synthétique + spy (prouve l'ordre de lecture
+ *  des octets sans dépendre du renderer/gfx-load async) :
+ *  createvobject GFX=7, VOBJ=3, x=10, y=12, elev=1, dir=2 → spy reçoit (7,3,10,12,1,2).
+ *  turnvobject 3, 1 → spy reçoit (3,1). Restaure l'API réelle. */
+export async function testVobject(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const g = globalThis as { __virtualObjects?: Record<string, unknown> };
+  const api = g.__virtualObjects ?? (g.__virtualObjects = {});
+  const realCreate = api.CreateVirtualObject, realTurn = api.TurnVirtualObject;
+  let createArgs: number[] | null = null, turnArgs: number[] | null = null;
+  api.CreateVirtualObject = (...a: number[]) => { createArgs = a; return Promise.resolve(1); };
+  api.TurnVirtualObject = (...a: number[]) => { turnArgs = a; };
+  try {
+    const CV = cmdIdOf('ScrCmd_createvobject'), TV = cmdIdOf('ScrCmd_turnvobject'), END = cmdIdOf('ScrCmd_end');
+    // createvobject 7,3,10,12,1,2 ; end  (u8 u8 u16 u16 u8 u8)
+    RunScriptImmediately({ buf: Uint8Array.from([CV, 7, 3, lo(10), hi(10), lo(12), hi(12), 1, 2, END]), off: 0 } as ScriptPtr);
+    // turnvobject 3,1 ; end
+    RunScriptImmediately({ buf: Uint8Array.from([TV, 3, 1, END]), off: 0 } as ScriptPtr);
+  } finally {
+    api.CreateVirtualObject = realCreate; api.TurnVirtualObject = realTurn;
+  }
+  const ca = createArgs as number[] | null, ta = turnArgs as number[] | null;
+  const createOk = !!ca && ca.join(',') === '7,3,10,12,1,2';
+  const turnOk = !!ta && ta.join(',') === '3,1';
+  const pass = createOk && turnOk;
+  const details = { 'createvobject args (attendu 7,3,10,12,1,2)': ca, 'turnvobject args (attendu 3,1)': ta };
+  console.log(`[byte-vm] TEST vobject : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -537,4 +567,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, run, VarGet, getScriptOffset };

@@ -496,6 +496,32 @@ const ScrCmd_waitdooranim: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, isDoor
 const ScrCmd_setdooropen: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetDoorOpen(x, y); return false; };
 const ScrCmd_setdoorclosed: ScrCmdFunc = (ctx) => { const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetDoorClosed(x, y); return false; };
 
+// ─── virtual objects (1:1 scrcmd.c:1177-1199) — via globalThis.__virtualObjects
+//     (même pont anti-cycle que le moteur parsé → source unique). ───────────────
+interface VirtualObjectsApi {
+  CreateVirtualObject?: (g: number, id: number, x: number, y: number, e: number, d: number) => Promise<number>;
+  TurnVirtualObject?: (id: number, d: number) => void;
+}
+const _vobjApi = (): VirtualObjectsApi | undefined =>
+  (globalThis as { __virtualObjects?: VirtualObjectsApi }).__virtualObjects;
+const ScrCmd_createvobject: ScrCmdFunc = (ctx) => {                          // :1177
+  const graphicsId = ScriptReadByte(ctx);
+  const virtualObjId = ScriptReadByte(ctx);
+  const x = VarGet(ScriptReadHalfword(ctx));
+  const y = VarGet(ScriptReadHalfword(ctx));
+  const elevation = ScriptReadByte(ctx);
+  const direction = ScriptReadByte(ctx);
+  const vo = _vobjApi();
+  if (vo?.CreateVirtualObject) void vo.CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction);
+  return false;
+};
+const ScrCmd_turnvobject: ScrCmdFunc = (ctx) => {                           // :1190
+  const virtualObjId = ScriptReadByte(ctx);
+  const direction = ScriptReadByte(ctx);
+  _vobjApi()?.TurnVirtualObject?.(virtualObjId, direction);
+  return false;
+};
+
 // ─── field effects (1:1 scrcmd.c:1973-2003 ; logique partagée scrcmd_fieldeffect — voie A) ──
 const ScrCmd_dofieldeffect: ScrCmdFunc = (ctx) => { doFieldEffect(VarGet(ScriptReadHalfword(ctx))); return false; };                                  // :1973
 const ScrCmd_setfieldeffectargument: ScrCmdFunc = (ctx) => { const a = ScriptReadByte(ctx); setFieldEffectArgument(a, VarGet(ScriptReadHalfword(ctx))); return false; }; // :1982
@@ -531,6 +557,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setweather, ScrCmd_resetweather, ScrCmd_doweather,
   ScrCmd_opendoor, ScrCmd_closedoor, ScrCmd_waitdooranim, ScrCmd_setdooropen, ScrCmd_setdoorclosed,
   ScrCmd_dofieldeffect, ScrCmd_setfieldeffectargument, ScrCmd_waitfieldeffect,
+  ScrCmd_createvobject, ScrCmd_turnvobject,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
