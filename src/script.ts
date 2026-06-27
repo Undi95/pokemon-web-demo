@@ -29,18 +29,13 @@ import { VarGet } from './engine/script/script-vars';
 // (data source lisible → encodée au 1er accès via encodeOwText = notre préproc, cache).
 import { encodeOwText, isOwCharmapReady } from '../include/text';
 // ── Phase 5 byte-VM : SWAP flag-gated (`?bytevm`) ──
-// Quand actif, l'EXÉCUTION des scripts (RunScript / SetupScript / RunScriptImmediately /
-// lock) est routée vers le VRAI byte-VM (image bytecode + gScriptCmdTable). Les DONNÉES
-// (tables map_script_2, getText/getMovement) restent chargées par loadMapScripts ; le
-// byte-VM exécute depuis son image (ptrFromLabel). Cf docs/BYTE-VM-PLAN.md Phase 5.
-// SWAP FINALISÉ (2026-06-28) : le byte-VM est le moteur par DÉFAUT (cœur vérifié en jeu —
-// marche/warps/combat/menus/dialogue/specials). Filet de secours : `?parsed` rebascule sur
-// l'ancien moteur parsé (gardé temporairement, retiré au « clean » une fois 100% confirmé).
+// L'EXÉCUTION des scripts overworld passe par le VRAI byte-VM (image bytecode +
+// gScriptCmdTable) — `script.ts` GARDE son API publique et délègue l'exécution à
+// `script_bytevm.ts` (BV). Les DONNÉES (tables map_script_2, getText/getMovement) restent
+// chargées par loadMapScripts ; le byte-VM exécute depuis son image (ptrFromLabel).
+// SWAP FINALISÉ + CLEAN (2026-06-28) : le byte-VM est le SEUL moteur (le moteur parsé a été
+// retiré). Cf docs/BYTE-VM-PLAN.md Phase 5.
 import * as BV from './script_bytevm';
-let _useByteVm = true;
-try { if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('parsed')) _useByteVm = false; } catch { /* SSR / no location */ }
-export function setUseByteVm(on: boolean): void { _useByteVm = on; }
-export function isUsingByteVm(): boolean { return _useByteVm; }
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -191,7 +186,7 @@ export async function loadMapScripts(mapName: string): Promise<void> {
   // Phase 5 byte-VM : si le flag ?bytevm est actif, s'assurer que le moteur byte-VM
   // (image + handlers + specials) est installé AVANT de charger les données de map.
   // Import dynamique = même instance live (pas de cycle statique script→scrcmd_bytevm).
-  if (_useByteVm) await import('./bytevm-boot').then((m) => m.loadByteVmEngine());
+  await import('./bytevm-boot').then((m) => m.loadByteVmEngine());
   await _loadCommonScripts();
   const url = `/decomp/em/scripts/${mapName}.json`;
   let json: MapScriptsJson;
@@ -434,27 +429,15 @@ export function RunScriptCommand(ctx: ScriptContext): boolean {
 // ─── ScriptContext_* (= primary global ctx avec wait support) ────────────────
 
 export function ScriptContext_IsEnabled(): boolean {
-  if (_useByteVm) return BV.ScriptContext_IsEnabled();
-  return sGlobalScriptContextStatus === CONTEXT_RUNNING;
+  return BV.ScriptContext_IsEnabled();
 }
 
 export function ScriptContext_Init(): void {
-  if (_useByteVm) { BV.ScriptContext_Init(); return; }
-  InitScriptContext(sGlobalScriptContext);
-  sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+  BV.ScriptContext_Init();
 }
 
 export function ScriptContext_RunScript(): boolean {
-  if (_useByteVm) return BV.ScriptContext_RunScript();
-  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN) return false;
-  if (sGlobalScriptContextStatus === CONTEXT_WAITING) return false;
-  LockPlayerFieldControls();
-  if (!RunScriptCommand(sGlobalScriptContext)) {
-    sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
-    UnlockPlayerFieldControls();
-    return false;
-  }
-  return true;
+  return BV.ScriptContext_RunScript();
 }
 
 /** Run an inline native script via the global script context. The script
@@ -474,30 +457,15 @@ let _currentScriptLabel: string | null = null;
 
 /** 1:1 décomp `ScriptContext_SetupScript(const u8 *ptr)`. */
 export function ScriptContext_SetupScript(label: string): boolean {
-  if (_useByteVm) {
-    const ptr = BV.ptrFromLabel(label);
-    if (!ptr) { console.warn(`[byte-vm] script '${label}' absent de l'image`); return false; }
-    BV.ScriptContext_SetupScript(ptr);
-    _currentScriptLabel = label;
-    return true;
-  }
-  const opcodes = _scriptsByLabel.get(label);
-  if (!opcodes) {
-    console.warn(`[script-runtime] script '${label}' not found`);
-    return false;
-  }
-  InitScriptContext(sGlobalScriptContext);
-  SetupBytecodeScript(sGlobalScriptContext, opcodes);
-  LockPlayerFieldControls();
-  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  const ptr = BV.ptrFromLabel(label);
+  if (!ptr) { console.warn(`[byte-vm] script '${label}' absent de l'image`); return false; }
+  BV.ScriptContext_SetupScript(ptr);
   _currentScriptLabel = label;
-  console.log(`[script-runtime] starting script '${label}' (${opcodes.length} opcodes)`);
   return true;
 }
 
 export function ScriptContext_Stop(): void {
-  if (_useByteVm) { BV.ScriptContext_Stop(); return; }
-  sGlobalScriptContextStatus = CONTEXT_WAITING;
+  BV.ScriptContext_Stop();
 }
 
 /** Devtools-only : setup un script inline composé d'opcodes pré-construits
@@ -563,30 +531,7 @@ export function ScriptContext_Restore(s: ScriptCtxSnapshot): void {
  *  Flags')` AVANT que la 1ère map soit loaded (= use case new-game-init).
  *  Le `_commonJson` est chargé au boot par `loadCommonScripts`. */
 export function RunScriptImmediately(label: string): void {
-  if (_useByteVm) {
-    if (!BV.RunScriptImmediatelyByLabel(label)) console.warn(`[byte-vm] RunScriptImmediately: '${label}' absent de l'image`);
-    return;
-  }
-  let opcodes = _scriptsByLabel.get(label);
-  if (!opcodes) {
-    // Fallback common scripts (= avant que loadMapScripts soit call).
-    const commonLines = _commonJson?.scripts?.[label];
-    if (commonLines) {
-      opcodes = commonLines.map(parseOpcode);
-      _scriptsByLabel.set(label, opcodes);  // cache pour next call
-    }
-  }
-  if (!opcodes) {
-    console.warn(`[script-runtime] RunScriptImmediately: script '${label}' not found`);
-    return;
-  }
-  InitScriptContext(sImmediateScriptContext);
-  SetupBytecodeScript(sImmediateScriptContext, opcodes);
-  // Cap iterations pour éviter infinite loop.
-  for (let i = 0; i < 100; i++) {
-    if (!RunScriptCommand(sImmediateScriptContext)) return;
-  }
-  console.warn(`[script-runtime] RunScriptImmediately(${label}) didn't terminate after 100 ticks`);
+  if (!BV.RunScriptImmediatelyByLabel(label)) console.warn(`[byte-vm] RunScriptImmediately: '${label}' absent de l'image`);
 }
 
 /** Audit session 126 LOT C10 : ensure common scripts are loaded. Public
