@@ -58,7 +58,6 @@
 | `match_call.c` | 2113 | 56 | — **manquant** | 0/56 (0%) | 0/56 (0%) | 🔴 manquant |
 | `mauville_old_man.c` | 1483 | 59 | — **manquant** | 0/59 (0%) | 0/59 (0%) | 🔴 manquant |
 | `apprentice.c` | 1312 | 53 | — **manquant** | 0/53 (0%) | 0/53 (0%) | 🔴 manquant |
-| `trainer_hill.c` | 1091 | 60 | — **manquant** | 0/60 (0%) | 0/60 (0%) | 🔴 manquant |
 | `mirage_tower.c` | 797 | 27 | — **manquant** | 0/27 (0%) | 0/27 (0%) | 🔴 manquant |
 | `lilycove_lady.c` | 786 | 72 | — **manquant** | 0/72 (0%) | 0/72 (0%) | 🔴 manquant |
 | `faraway_island.c` | 465 | 15 | — **manquant** | 0/15 (0%) | 0/15 (0%) | 🔴 manquant |
@@ -92,6 +91,7 @@
 | `berry_tag_screen.c` | 692 | 27 | — **manquant** | 0/27 (0%) | 1/27 (4%) | 🔴 manquant |
 | `trainer_pokemon_sprites.c` | 396 | 23 | `main_menu.ts` _(nom≠)_ | 2/23 (9%) | 2/23 (9%) | 🔴 manquant |
 | `fldeff_misc.c` | 1327 | 62 | `fldeff_misc.ts` | 5/62 (8%) | 6/62 (10%) | 🔴 manquant |
+| `trainer_hill.c` | 1091 | 60 | `trainer_hill.ts` | 6/60 (10%) | 6/60 (10%) | 🔴 manquant |
 | `region_map.c` | 2028 | 60 | `region_map.ts` | 3/60 (5%) | 8/60 (13%) | 🔴 manquant |
 | `trainer_see.c` | 815 | 39 | `trainer_see.ts` | 5/39 (13%) | 5/39 (13%) | 🔴 manquant |
 | `fldeff_flash.c` | 369 | 20 | `fldeff_flash.ts` | 2/20 (10%) | 3/20 (15%) | 🟡 amorce |
@@ -126,10 +126,10 @@
 | `starter_choose.c` | 670 | 18 | `starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
 | `wild_encounter.c` | 968 | 34 | `wild_encounter.ts` | 33/34 (97%) | 33/34 (97%) | ✅ miroir |
 | `field_weather.c` | 1106 | 49 | `field_weather.ts` | 48/49 (98%) | 48/49 (98%) | ✅ miroir |
-| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 53/55 (96%) | 54/55 (98%) | ✅ miroir |
 | `metatile_behavior.c` | 1403 | 144 | `metatile_behavior.ts` | 144/144 (100%) | 144/144 (100%) | ✅ miroir |
 | `bike.c` | 1063 | 56 | `bike.ts` | 56/56 (100%) | 56/56 (100%) | ✅ miroir |
 | `field_tasks.c` | 958 | 28 | `field_tasks.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
+| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 54/55 (98%) | 55/55 (100%) | ✅ miroir |
 | `field_camera.c` | 508 | 28 | `field_camera.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
 | `event_data.c` | 234 | 25 | `event_data.ts` | 25/25 (100%) | 25/25 (100%) | ✅ miroir |
 | `decoration_inventory.c` | 160 | 11 | `decoration_inventory.ts` | 11/11 (100%) | 11/11 (100%) | ✅ miroir |

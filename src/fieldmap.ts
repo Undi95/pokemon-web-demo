@@ -58,6 +58,7 @@ import { LoadBgTiles, LoadPalette } from '../harness/runtime/decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset_anims';
 import { GenerateBattlePyramidFloorLayout } from './battle_pyramid';
+import { GenerateTrainerHillFloorLayout } from './trainer_hill';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
 import { GetSaveBlock1 } from './save';
@@ -1678,6 +1679,16 @@ export function InitMapFromSavedGame(): void {
 export function InitBattlePyramidMap(setPlayerPosition: boolean): void {
   gBackupMapLayout.map.fill(MAPGRID_UNDEFINED);
   GenerateBattlePyramidFloorLayout(gBackupMapLayout.map, setPlayerPosition);
+}
+
+/** 1:1 décomp `InitTrainerHillMap(void)` (fieldmap.c:94-98) :
+ *    CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, sizeof(sBackupMapData));
+ *    GenerateTrainerHillFloorLayout(sBackupMapData);
+ *  Notre `sBackupMapData` = `gBackupMapLayout.map`. Contenu post-game (Trainer Hill) ;
+ *  cf. trainer_hill.ts pour la limite data (layouts d'étage). */
+export function InitTrainerHillMap(): void {
+  gBackupMapLayout.map.fill(MAPGRID_UNDEFINED);
+  GenerateTrainerHillFloorLayout(gBackupMapLayout.map);
 }
 
 /** Helper : prefetch les map headers des connexions immédiates d'une map.
