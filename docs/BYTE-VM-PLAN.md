@@ -115,9 +115,14 @@ Sous-problèmes & état :
    absents des includes du décomp — incohérence), `STR_VAR_2`/`COMPARE_SIZE_*`/
    `MAP_NUM()` (edge cases).
 
-**RESTE Phase 2** : (a) préproc `#ifdef UBFIX` ; (b) ÉMISSION des assets bytecode
-(driver qui écrit les buffers + tables de symboles par map) ; (c) tail (mapping
-ITEM_TM via gTMHMMoves si besoin). PAS bloquant pour démarrer Phase 3.
+6. **Préproc `#ifdef` + émission — ✅** `scripts/compile-scripts.cjs` : compile les
+   468 maps → `public/decomp/em/script-bytecode.json` (artefact régénérable,
+   gitignoré : 6390 event scripts / 165 Ko bytecode, 269 tables map_script gardées
+   parsées, 57 tail). Préproc fidélité RETAIL (`config.h #if MODERN || BUGFIX` →
+   UBFIX/BUGFIX OFF → corps `#ifdef UBFIX|BUGFIX` skippés, `#ifndef` gardés).
+   Round-trip vérifié byte-exact (`setvar VAR_TEMP_1,1;return` → `16 01 40 01 00 03`).
+
+**PHASE 2 = DONE.** Reste tail (ITEM_TM via gTMHMMoves) = optionnel, post-game.
 
 ## Phase 3 — byte VM
 
