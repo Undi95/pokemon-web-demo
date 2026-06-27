@@ -29,6 +29,10 @@
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { MAX_SPRITES } from '../runtime/decomp-runtime';
 import { getCurrentSongId, getRuntime } from '../runtime/decomp-globals';
+import {
+  tpToRandomFeebasTile, tpToAlteringCave, cycleAlteringCaveTable,
+  getAlteringCaveTable, alteringCaveLabel, loadAlteringCaveSpecies,
+} from './dev-encounter-tools';
 
 // ─── Accès runtime (live, jamais via import dynamique) ────────────────────────
 
@@ -530,6 +534,14 @@ function buildDom(): void {
           </div>
         </div>
       </details>
+      <details><summary>🎣 Rencontres event <span class="dvt-dim">(Barpau / Altering Cave)</span></summary>
+        <div id="dvt-enc" class="dvt-scn">
+          <button data-enc="feebas" title="Route 119 + TP devant un spot Barpau (noclip pour l'eau)">🐟 TP spot Barpau</button>
+          <button data-enc="altcave" title="TP dans l'Altering Cave">🦇 TP Altering Cave</button>
+          <button data-enc="altcycle" title="Change la table de l'Altering Cave (0..8, 1:1 VAR_ALTERING_CAVE_WILD_SET)">🔄 Table: —</button>
+        </div>
+        <div id="dvt-enc-status" class="dvt-dim"></div>
+      </details>
     </div>`;
   document.body.appendChild(panel);
 
@@ -617,6 +629,37 @@ function wireControls(): void {
         break;
       }
     }
+  });
+
+  // Rencontres event (Barpau / Altering Cave)
+  const encStatus = (txt: string): void => {
+    const el = document.getElementById('dvt-enc-status');
+    if (el) el.textContent = txt;
+  };
+  document.getElementById('dvt-enc')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-enc]') as HTMLElement | null;
+    if (!btn) return;
+    switch (btn.dataset.enc) {
+      case 'feebas':
+        encStatus('Recherche d\'un spot Barpau…');
+        void tpToRandomFeebasTile().then((r) => { encStatus(r.msg); console.log('[devtools/feebas]', r.msg); });
+        break;
+      case 'altcave':
+        tpToAlteringCave();
+        encStatus('TP → Altering Cave.');
+        break;
+      case 'altcycle': {
+        const t = cycleAlteringCaveTable();
+        btn.textContent = `🔄 ${alteringCaveLabel(t)}`;
+        encStatus(`Altering Cave → table ${alteringCaveLabel(t)}.`);
+        break;
+      }
+    }
+  });
+  // Libellé initial du bouton de cycle (espèces chargées depuis le JSON de données).
+  void loadAlteringCaveSpecies().then(() => {
+    const b = document.querySelector('[data-enc="altcycle"]');
+    if (b) { try { b.textContent = `🔄 ${alteringCaveLabel(getAlteringCaveTable())}`; } catch { /* var pas prête */ } }
   });
 }
 

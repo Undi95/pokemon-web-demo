@@ -50,10 +50,10 @@ import { gMapHeader, MAP_OFFSET } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, gEnemyParty, SetMonMoveSlot, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
 import { createPokemonInstance, GetGenderFromSpeciesAndPersonality, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
-import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC } from './engine/battle/constants';
+import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC, MAX_MON_MOVES } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getSpeciesInfo } from './engine/data/game-data';
@@ -144,8 +144,9 @@ function CheckFeebas(): boolean {
   }
   return false;
 }
-// sWildFeebas + CheckFeebas : prêts pour le câblage dans la voie pêche
-// (ChooseWildMonIndex_Fishing) — follow-up (le port ne route pas encore le Feebas spot).
+// CheckFeebas est câblé dans FishingWildEncounter (voie pêche Route 119).
+// (Les outils devtool — TP case Feebas / Altering Cave — vivent dans
+//  harness/devtools/dev-encounter-tools.ts, hors de ce fichier 1:1.)
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;
@@ -222,35 +223,54 @@ interface WildPokemonHeader {
 
 let _gWildMonHeaders: Map<string, WildPokemonHeader> | null = null;
 
+/** 1:1 décomp `NUM_ALTERING_CAVE_TABLES` (include/constants/wild_encounter.h:9). */
+const NUM_ALTERING_CAVE_TABLES = 9;
+
+/** 1:1 décomp `MAP_ALTERING_CAVE` (include/constants/map_groups.h) — clé byMap. */
+const MAP_ALTERING_CAVE_ID = 'MAP_ALTERING_CAVE';
+
+/** 1:1 décomp : les 9 WildPokemonHeader consécutifs de l'Altering Cave (gAlteringCave1..9
+ *  dans gWildMonHeaders[]), sélectionnés par `VAR_ALTERING_CAVE_WILD_SET` dans
+ *  `GetCurrentMapWildMonHeaderId` (`i += alteringCaveId`). Chargés depuis wild-encounters.json.
+ *  Table 0 = Nosferapti (défaut), 1 = Wattouat, … 8 = Queulorior. */
+let _sAlteringCaveWildMonHeaders: WildPokemonHeader[] = [];
+
+type RawWildMonInfo = { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> };
+type RawWildEntry = { land?: RawWildMonInfo; water?: RawWildMonInfo; rock_smash?: RawWildMonInfo; fishing?: RawWildMonInfo };
+
+/** 1:1 décomp `struct WildPokemonInfo` (encounterRate + wildPokemon[]). */
+function _convertWildMonInfo(e: RawWildMonInfo | undefined): WildPokemonInfo | null {
+  if (!e) return null;
+  return {
+    encounterRate: e.encounter_rate,
+    wildPokemon: e.mons.map(m => ({ minLevel: m.min_level, maxLevel: m.max_level, species: m.species })),
+  };
+}
+
+/** 1:1 décomp : convertit une entrée brute en WildPokemonHeader (land/water/rock_smash/fishing). */
+function _toWildPokemonHeader(mapId: string, entry: RawWildEntry): WildPokemonHeader {
+  return {
+    mapId,
+    landMonsInfo:       _convertWildMonInfo(entry.land),
+    waterMonsInfo:      _convertWildMonInfo(entry.water),
+    rockSmashMonsInfo:  _convertWildMonInfo(entry.rock_smash),
+    fishingMonsInfo:    _convertWildMonInfo(entry.fishing),
+  };
+}
+
 /** Init data depuis fetched JSON. À call au boot AVANT premier StandardWildEncounter. */
 export function InitWildEncountersFromJson(jsonData: unknown): void {
   _gWildMonHeaders = new Map();
-  const data = jsonData as {
-    byMap?: Record<string, {
-      land?: { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> };
-      water?: { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> };
-      rock_smash?: { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> };
-      fishing?: { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> };
-    }>;
-  };
+  _sAlteringCaveWildMonHeaders = [];
+  const data = jsonData as { byMap?: Record<string, RawWildEntry>; alteringCave?: RawWildEntry[] };
+  if (data.alteringCave) {
+    _sAlteringCaveWildMonHeaders = data.alteringCave.map(t => _toWildPokemonHeader(MAP_ALTERING_CAVE_ID, t));
+  }
   if (!data.byMap) return;
   for (const [mapId, entry] of Object.entries(data.byMap)) {
-    const convertMons = (e: { encounter_rate: number; mons: Array<{ min_level: number; max_level: number; species: string }> } | undefined): WildPokemonInfo | null => {
-      if (!e) return null;
-      return {
-        encounterRate: e.encounter_rate,
-        wildPokemon: e.mons.map(m => ({ minLevel: m.min_level, maxLevel: m.max_level, species: m.species })),
-      };
-    };
-    _gWildMonHeaders.set(mapId, {
-      mapId,
-      landMonsInfo:       convertMons(entry.land),
-      waterMonsInfo:      convertMons(entry.water),
-      rockSmashMonsInfo:  convertMons(entry.rock_smash),
-      fishingMonsInfo:    convertMons(entry.fishing),
-    });
+    _gWildMonHeaders.set(mapId, _toWildPokemonHeader(mapId, entry));
   }
-  console.log(`[wild-encounter] loaded ${_gWildMonHeaders.size} map encounters`);
+  console.log(`[wild-encounter] loaded ${_gWildMonHeaders.size} map encounters, ${_sAlteringCaveWildMonHeaders.length} altering-cave tables`);
 }
 
 // ─── State ─────────────────────────────────────────────────────────────────
@@ -336,13 +356,22 @@ export function ChooseWildMonLevel(wildPokemon: WildPokemon): number {
 
 /** 1:1 décomp `GetCurrentMapWildMonHeaderId` (wild_encounter.c:305-333).
  *  Notre web port : lookup direct par mapId au lieu d'itérer un array de
- *  WildPokemonHeader avec mapGroup+mapNum. Comportement équivalent. */
+ *  WildPokemonHeader (mapGroup+mapNum) renvoyant un index ; on renvoie l'objet header.
+ *
+ *  Cas spécial Altering Cave 1:1 (wild_encounter.c:318-326) : sur MAP_ALTERING_CAVE, on
+ *  lit `VAR_ALTERING_CAVE_WILD_SET` (clampé à 0 si >= NUM_ALTERING_CAVE_TABLES) et on
+ *  sélectionne la table correspondante parmi les 9 (= `i += alteringCaveId`). La var est
+ *  pilotable via la barre de devtools (harness/devtools/dev-encounter-tools.ts). */
 function GetCurrentMapWildMonHeader(): WildPokemonHeader | null {
   if (!_gWildMonHeaders) return null;
   const mapId = gMapHeader?.id ?? '';
+  if (mapId === MAP_ALTERING_CAVE_ID && _sAlteringCaveWildMonHeaders.length > 0) {
+    let alteringCaveId = VarGet('VAR_ALTERING_CAVE_WILD_SET');
+    if (alteringCaveId >= NUM_ALTERING_CAVE_TABLES)
+      alteringCaveId = 0;
+    return _sAlteringCaveWildMonHeaders[alteringCaveId] ?? null;
+  }
   return _gWildMonHeaders.get(mapId) ?? null;
-  // Dette R3 : ALTERING_CAVE alteringCaveId += VAR_ALTERING_CAVE_WILD_SET
-  // (= 9 tables alternative, hors-démo).
 }
 
 /** 1:1 décomp `u16 GetLocalWildMon(bool8 *isWaterMon)` (wild_encounter.c:1041) :
@@ -655,6 +684,45 @@ function GenerateFishingWildMon(wildMonInfo: WildPokemonInfo, rod: number): stri
   return mon.species;
 }
 
+/** 1:1 STRICT décomp `static bool8 SetUpMassOutbreakEncounter(u8 flags)` (wild_encounter.c:467) :
+ *    if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(outbreakPokemonLevel)) return FALSE;
+ *    CreateWildMon(outbreakPokemonSpecies, outbreakPokemonLevel);
+ *    for (i = 0..MAX_MON_MOVES) SetMonMoveSlot(&gEnemyParty[0], outbreakPokemonMoves[i], i);
+ *    return TRUE;
+ *  Adaptation modèle : `outbreakPokemonSpecies` est un id numérique dans la save (1:1 u16) →
+ *  reconverti en nom 'SPECIES_X' pour notre CreateWildMon. CreateWildMon peuple `gEnemyParty[0]`
+ *  de façon SYNCHRONE (puis swap callback2 à la frame suivante) → les SetMonMoveSlot qui suivent
+ *  écrasent bien les slots avant que CB2_InitBattle ne lise la party. */
+function SetUpMassOutbreakEncounter(flags: number): boolean {
+  if ((flags & WILD_CHECK_REPEL) && !IsWildLevelAllowedByRepel(gSaveBlock1Ptr.outbreakPokemonLevel))
+    return false;
+
+  const species = reverseDecompConstant(gSaveBlock1Ptr.outbreakPokemonSpecies, 'SPECIES_') ?? 'SPECIES_NONE';
+  CreateWildMon(species, gSaveBlock1Ptr.outbreakPokemonLevel);
+  for (let i = 0; i < MAX_MON_MOVES; i++)
+    SetMonMoveSlot(gEnemyParty[0], gSaveBlock1Ptr.outbreakPokemonMoves[i], i);
+
+  return true;
+}
+
+/** 1:1 STRICT décomp `static bool8 DoMassOutbreakEncounterTest(void)` (wild_encounter.c:481) :
+ *    if (outbreakPokemonSpecies != SPECIES_NONE
+ *     && location.mapNum == outbreakLocationMapNum && location.mapGroup == outbreakLocationMapGroup)
+ *      if (Random() % 100 < outbreakPokemonProbability) return TRUE;
+ *    return FALSE;
+ *  L'outbreak (espèce/lieu/proba) est posé par la TV / Pokémon News (match_call/tv, non encore portés)
+ *  → tant que `outbreakPokemonSpecies == SPECIES_NONE (0)`, ceci renvoie toujours FALSE. Le mécanisme
+ *  reste câblé 1:1, prêt dès que la source d'event posera la save (cf. hooks custom dex/multi). */
+function DoMassOutbreakEncounterTest(): boolean {
+  if (gSaveBlock1Ptr.outbreakPokemonSpecies !== 0  // SPECIES_NONE
+      && gSaveBlock1Ptr.location.mapNum === gSaveBlock1Ptr.outbreakLocationMapNum
+      && gSaveBlock1Ptr.location.mapGroup === gSaveBlock1Ptr.outbreakLocationMapGroup) {
+    if ((Random() % 100) < gSaveBlock1Ptr.outbreakPokemonProbability)
+      return true;
+  }
+  return false;
+}
+
 /** 1:1 STRICT décomp `DoesCurrentMapHaveFishingMons` (wild_encounter.c:584) :
  *    headerId != HEADER_NONE && gWildMonHeaders[headerId].fishingMonsInfo != NULL. */
 export function DoesCurrentMapHaveFishingMons(): boolean {
@@ -662,16 +730,23 @@ export function DoesCurrentMapHaveFishingMons(): boolean {
   return !!(header && header.fishingMonsInfo);
 }
 
-/** 1:1 STRICT décomp `FishingWildEncounter(u8 rod)` (wild_encounter.c:567) :
- *    (CheckFeebas → sWildFeebas, sinon) species = GenerateFishingWildMon(fishingMonsInfo, rod);
+/** 1:1 STRICT décomp `FishingWildEncounter(u8 rod)` (wild_encounter.c:780) :
+ *    if (CheckFeebas()) { level = ChooseWildMonLevel(&sWildFeebas); species = sWildFeebas.species;
+ *                         CreateWildMon(species, level); }
+ *    else species = GenerateFishingWildMon(fishingMonsInfo, rod);
  *    IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS); SetPokemonAnglerSpecies(species);
  *    BattleSetup_StartWildBattle();
- *  CheckFeebas (spots Feebas Route 119) + SetPokemonAnglerSpecies (TV) = dette R3 (skip). Le boot du
- *  combat (`BattleSetup_StartWildBattle`) est replié dans `CreateWildMon` chez nous (voie L). */
+ *  CheckFeebas (spots Feebas Route 119) câblé. SetPokemonAnglerSpecies (TV/Pokénav) = dette R3 (skip).
+ *  Le boot du combat (`BattleSetup_StartWildBattle`) est replié dans `CreateWildMon` chez nous (voie L). */
 export function FishingWildEncounter(rod: number): void {
-  const header = GetCurrentMapWildMonHeader();
-  if (!header || !header.fishingMonsInfo) return;  // 1:1 gWildMonHeaders[id].fishingMonsInfo
-  GenerateFishingWildMon(header.fishingMonsInfo, rod);
+  if (CheckFeebas()) {
+    const level = ChooseWildMonLevel(sWildFeebas);
+    CreateWildMon(sWildFeebas.species, level);
+  } else {
+    const header = GetCurrentMapWildMonHeader();
+    if (!header || !header.fishingMonsInfo) return;  // 1:1 gWildMonHeaders[id].fishingMonsInfo
+    GenerateFishingWildMon(header.fishingMonsInfo, rod);
+  }
   IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS);
 }
 
@@ -731,8 +806,12 @@ export function SweetScentWildEncounter(): boolean {
   const behavior = MapGridGetMetatileBehaviorAt(x, y);
   if (MetatileBehavior_IsLandWildEncounter(behavior)) {
     if (header.landMonsInfo === null) return false;
-    // Dette R3 : TryStartRoamerEncounter + DoMassOutbreakEncounterTest.
-    TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, 0);
+    // Dette R3 : TryStartRoamerEncounter (roamer non porté).
+    // 1:1 décomp (wild_encounter.c:740-743) : outbreak prioritaire, sinon rencontre normale.
+    if (DoMassOutbreakEncounterTest())
+      SetUpMassOutbreakEncounter(0);
+    else
+      TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, 0);
     _onBattleStartCallback?.();
     return true;
   } else if (MetatileBehavior_IsWaterWildEncounter(behavior)) {
@@ -817,7 +896,6 @@ export function ResetWildEncounterImmunity(): void {
  *   - Sweet Scent (= forced encounter via item).
  */
 export function StandardWildEncounter(curMetatileBehavior: number, prevMetatileBehavior: number): boolean {
-  void prevMetatileBehavior; void gSaveBlock1Ptr;  // Reserved for future dettes (Sootopolis check, etc.)
   if (sWildEncountersDisabled) return false;
 
   const header = GetCurrentMapWildMonHeader();
@@ -830,7 +908,12 @@ export function StandardWildEncounter(curMetatileBehavior: number, prevMetatileB
     if (header.landMonsInfo === null) return false;
     if (prevMetatileBehavior !== curMetatileBehavior && !AllowWildCheckOnNewMetatile()) return false;
     if (!WildEncounterCheck(header.landMonsInfo.encounterRate, false)) return false;
-    // Dette R3 : TryStartRoamerEncounter + DoMassOutbreakEncounterTest.
+    // Dette R3 : TryStartRoamerEncounter (roamer non porté).
+    // 1:1 décomp (wild_encounter.c:615-626) : mass outbreak prioritaire, sinon rencontre normale.
+    if (DoMassOutbreakEncounterTest() && SetUpMassOutbreakEncounter(WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE)) {
+      _onBattleStartCallback?.();
+      return true;
+    }
     if (TryGenerateWildMon(header.landMonsInfo, WILD_AREA_LAND, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE)) {
       _onBattleStartCallback?.();
       return true;

@@ -32,7 +32,7 @@ mkdirSync(dirname(outPath), { recursive: true });
 
 const raw = JSON.parse(readFileSync(join(decompPath, 'src', 'data', 'wild_encounters.json'), 'utf8'));
 
-const out = { byMap: {}, encounter_rates: {} };
+const out = { byMap: {}, alteringCave: [], encounter_rates: {} };
 
 // Index encounter_rates par type (depuis le 1er group)
 const mainGroup = raw.wild_encounter_groups[0];
@@ -58,9 +58,26 @@ for (const enc of mainGroup.encounters) {
   }
 }
 
+// Altering Cave : les 9 tables (gAlteringCave1..9) sélectionnables via VAR_ALTERING_CAVE_WILD_SET.
+// 1:1 décomp GetCurrentMapWildMonHeaderId (wild_encounter.c:318) : si la map courante est
+// MAP_ALTERING_CAVE, l'id de header de base se voit ajouter alteringCaveId (0..8, clampé à
+// NUM_ALTERING_CAVE_TABLES=9). On émet donc les 9 entrées DANS L'ORDRE du décomp (table 0 =
+// gAlteringCave1 = Zubat, ... table 8 = gAlteringCave9 = Smeargle) pour reproduire ce décalage.
+for (const enc of mainGroup.encounters) {
+  if (enc.map !== 'MAP_ALTERING_CAVE') continue;
+  const table = {};
+  for (const fieldType of ['land_mons', 'water_mons', 'rock_smash_mons', 'fishing_mons']) {
+    if (!enc[fieldType]) continue;
+    const key = fieldType.replace('_mons', '');
+    table[key] = enc[fieldType];
+  }
+  out.alteringCave.push(table);
+}
+
 writeFileSync(outPath, JSON.stringify(out));
 console.log('[wild-encounters]', {
   maps: Object.keys(out.byMap).length,
+  alteringCaveTables: out.alteringCave.length,
   rate_tables: Object.keys(out.encounter_rates).length,
   output: outPath
 });
