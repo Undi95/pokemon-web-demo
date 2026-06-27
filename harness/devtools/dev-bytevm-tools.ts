@@ -31,6 +31,8 @@ import { getStringVar } from '../../src/text';
 import { getSpeciesNameFr, getItemNameFr } from '../runtime/data-tables';
 import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
+import { GetSavedWeather, SetSavedWeather } from '../../src/field_weather_effect';
+import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -435,6 +437,32 @@ export async function testPlayer(): Promise<{ pass: boolean; details: Record<str
   return { pass, details };
 }
 
+/** Test WEATHER via bytecode synthétique : setweather WEATHER_RAIN ; end →
+ *  GetSavedWeather()===WEATHER_RAIN ; idem WEATHER_SUNNY ; resetweather + doweather
+ *  s'exécutent sans throw. Restaure la météo d'origine. */
+export async function testWeather(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SETW = cmdIdOf('ScrCmd_setweather'), RESETW = cmdIdOf('ScrCmd_resetweather'),
+        DOW = cmdIdOf('ScrCmd_doweather'), END = cmdIdOf('ScrCmd_end');
+  const RAIN = WEATHER_RAIN, SUNNY = WEATHER_SUNNY;
+  const orig = GetSavedWeather();
+  // setweather WEATHER_RAIN ; end
+  RunScriptImmediately({ buf: Uint8Array.from([SETW, lo(RAIN), hi(RAIN), END]), off: 0 } as ScriptPtr);
+  const w1 = GetSavedWeather();
+  RunScriptImmediately({ buf: Uint8Array.from([SETW, lo(SUNNY), hi(SUNNY), END]), off: 0 } as ScriptPtr);
+  const w2 = GetSavedWeather();
+  let noThrow = true;
+  try {
+    RunScriptImmediately({ buf: Uint8Array.from([RESETW, END]), off: 0 } as ScriptPtr);
+    RunScriptImmediately({ buf: Uint8Array.from([DOW, END]), off: 0 } as ScriptPtr);
+  } catch { noThrow = false; }
+  SetSavedWeather(orig);   // restaure
+  const pass = w1 === RAIN && w2 === SUNNY && noThrow;
+  const details = { 'setweather RAIN (attendu)': `${w1}/${RAIN}`, 'setweather SUNNY (attendu)': `${w2}/${SUNNY}`, 'reset+doweather sans throw': noThrow };
+  console.log(`[byte-vm] TEST weather : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -442,4 +470,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, run, VarGet, getScriptOffset };

@@ -55,6 +55,7 @@ import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerN
 import { setStringVar, decodeOwBytes } from './text';
 import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
 
 // gStdScripts (1:1 event_scripts.s:95-107) — STD_*/MSGBOX_* index → label de std script.
 const gStdScripts: readonly string[] = [
@@ -476,6 +477,13 @@ const ScrCmd_buffertrainername: ScrCmdFunc = (ctx) => {                      // 
   return false;
 };
 
+// ─── weather (1:1 scrcmd.c:705-723) — appelle les vraies fns field_weather_effect
+//     (TranslateWeatherNum + UpdateRainCounter + DoCurrentWeather complets ; plus
+//      1:1 que l'adaptation inline du moteur parsé). ────────────────────────────
+const ScrCmd_setweather: ScrCmdFunc = (ctx) => { SetSavedWeather(VarGet(ScriptReadHalfword(ctx))); return false; };  // :705
+const ScrCmd_resetweather: ScrCmdFunc = () => { SetSavedWeatherFromCurrMapHeader(); return false; };                 // :713
+const ScrCmd_doweather: ScrCmdFunc = () => { DoCurrentWeather(); return false; };                                    // :719
+
 /** Handlers du slice, keyed par nom ScrCmd_* (= colonne `handler` du cmd-table). */
 export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_nop, ScrCmd_nop1, ScrCmd_end, ScrCmd_gotonative, ScrCmd_waitstate,
@@ -503,6 +511,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_bufferitemname, ScrCmd_bufferitemnameplural, ScrCmd_buffermovename,
   ScrCmd_buffernumberstring, ScrCmd_bufferstdstring, ScrCmd_bufferdecorationname,
   ScrCmd_bufferstring, ScrCmd_buffertrainerclassname, ScrCmd_buffertrainername,
+  ScrCmd_setweather, ScrCmd_resetweather, ScrCmd_doweather,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
