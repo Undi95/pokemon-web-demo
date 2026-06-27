@@ -41,7 +41,7 @@ chantier → d'où la branche sandbox. Multi-session.
 | 2. Compilateur + linker image-globale | ✅ | `compile-scripts.cjs` → `script-bytecode.json` (gitignoré) |
 | 3. VM core (1:1 `script.c`) | ✅ prouvé en jeu | `src/script_bytevm.ts` |
 | 4. Handlers (1:1 `scrcmd.c`) | ✅ **100,0 % usage** (52686/52686) | `src/scrcmd_bytevm.ts` + voie A `scrcmd_object/door/fieldeffect/flash/trainer`, `script_menu/shop/decoration/heal_location/special_flows` |
-| 5. Swap + re-vérif | 🔄 **fonctionnel flag-gated `?bytevm`**, cœur vérifié en jeu | `src/script.ts` (routage) + `bytevm-boot.ts` |
+| 5. Swap + re-vérif | ✅ **byte-VM = DÉFAUT** (`?parsed` = filet), cœur vérifié en jeu | `src/script.ts` (routage) + `bytevm-boot.ts` |
 
 **Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → `cbc478bf` (trainerbattle + preuve visuelle). `finale` intacte (`3b34ce7f`).
 **Tests déterministes EN JEU (26 verts, 0 erreur)** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testWarpVariants,testMoney,testItem,testMetatile,testObject,testObjectMovement,testBuffers,testPlayer,testWeather,testDoor,testFieldEffect,testVobject,testFade,testFlash,testGiveMon,testLongTail1-4,testTrainerbattleArgs}` (harness/devtools/dev-bytevm-tools.ts).
@@ -235,12 +235,12 @@ warphole/adddecoration/checkdecorspace/rotating-tile puzzle/setrespawn). ⚠️ 
 couplés à des sous-systèmes non audités (shop/slot/puzzle/concours) → si gap réel :
 STOP + flag user (pas de fake). Oracle : `scratchpad/bytevm-coverage.cjs`.
 
-## Phase 5 — swap + re-vérification — 🔄 FONCTIONNEL flag-gated (le système nerveux)
+## Phase 5 — swap + re-vérification — ✅ FINALISÉ : byte-VM = DÉFAUT (le système nerveux)
 
-**Approche SÛRE retenue (vs swap-fichier brutal)** : flag `?bytevm` route l'EXÉCUTION
-des scripts overworld vers le byte-VM ; le moteur **parsé reste le DÉFAUT** (zéro
-risque). Pas de rewire des importeurs : `script.ts` GARDE son API publique et route en
-interne vers `script_bytevm.ts` quand `?bytevm` est actif.
+**Approche SÛRE retenue (vs swap-fichier brutal)** : `script.ts` GARDE son API publique
+et route en interne vers `script_bytevm.ts`. **Le byte-VM est le moteur par DÉFAUT**
+(`_useByteVm = true`, commit `6d7a5acd`) ; `?parsed` rebascule sur l'ancien moteur parsé
+(filet de secours, retiré au « clean »).
 
 1. **Routage (fait)** — `src/script.ts` : `_useByteVm` (URL `?bytevm`) ; route
    Lock/Unlock/Are + ScriptContext_Init/IsEnabled/RunScript/SetupScript/Stop/Enable +
