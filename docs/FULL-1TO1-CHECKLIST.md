@@ -4,6 +4,16 @@
 > la décomp et on demande « où vit ce fichier chez nous + complétude 1:1 ». STRUCTUREL (noms de fn),
 > pas comportemental. Voir [FULL-1TO1-REPLICA-PLAN.md](FULL-1TO1-REPLICA-PLAN.md) pour la méthode.
 
+> ⚠️ **MISE À JOUR BYTE-VM (2026-06-27) — 3 lignes SOUS-ESTIMÉES par ce tableau.** Le flagship byte-VM
+> (branche `Byte-VM`, voir `docs/BYTE-VM-PLAN.md`) réécrit le moteur de script en 1:1 STRICT dans des
+> fichiers PARALLÈLES (pré-swap), que le matching-par-homonyme de la cartograph ne crédite pas encore :
+> - **`script.c`** (montré 67 % via `script.ts`) → en réalité 1:1 dans **`src/script_bytevm.ts`** (vraie VM bytecode, `ScriptReadByte/Halfword/Word` + `gScriptCmdTable`).
+> - **`scrcmd.c`** (montré ~2 % via `scrcmd.ts`) → en réalité **159/227 handlers `ScrCmd_*` 1:1** dans **`src/scrcmd_bytevm.ts`** (= **99,2 % de l'usage opcode overworld réel**), keystone trainerbattle inclus.
+> - **`battle_setup.c`** : trainerbattle refactoré en voie A (`TrainerArgSource` partagé) — re-run cartograph pour rafraîchir.
+> Au **swap Phase 5**, `script_bytevm.ts`→`script.ts` et `scrcmd_bytevm.ts`→`scrcmd.ts` (les homonymes) → un
+> re-run de `cartograph-1to1.cjs` créditera alors automatiquement ces lignes à ~100 %. (Voie A → modules
+> partagés `scrcmd_object/door/fieldeffect/flash.ts` appelés par les 2 moteurs, zéro divergence.)
+
 ## Résumé exécutif
 
 **Axe A — cœur logique (`src/*.c`)** : 310 fichiers décomp, 422120 lignes C.

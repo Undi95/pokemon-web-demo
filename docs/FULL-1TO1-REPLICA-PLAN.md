@@ -23,6 +23,21 @@
 > Backlog vivant = [FULL-1TO1-CHECKLIST.md](FULL-1TO1-CHECKLIST.md) (re-généré par `scripts/cartograph-1to1.cjs`).
 > Cadence = lots committés boot-vert, jamais big-bang. Étapes 1-2 = la restructure ci-dessous (Phase 1+3).
 
+## 🏗️ FLAGSHIP BYTE-VM (2026-06-27) — supersede le plan pour script.c/scrcmd.c
+> Branche dédiée `Byte-VM` (depuis `finale` `3b34ce7f`), plan complet `docs/BYTE-VM-PLAN.md`. **Change
+> l'approche pour le moteur de script** : au lieu de consolider `script/script-opcodes-*.ts (37) → scrcmd.ts`
+> (handlers dispatch-par-NOM, args parsés), on a bâti une **vraie VM bytecode 1:1** — plus fidèle à la décomp :
+> - **`src/script_bytevm.ts`** = 1:1 `script.c` (scriptPtr curseur, `ScriptRead{Byte,Halfword,Word}`, `gScriptCmdTable`).
+> - **`src/scrcmd_bytevm.ts`** = handlers `ScrCmd_*` 1:1 `scrcmd.c` (159/227 cmdId = **99,2 % usage**, keystone trainerbattle inclus).
+> - Compilateur build-time (`scripts/compile-scripts.cjs`, linker image-globale) : JSON macros → bytecode contigu (fallthrough préservé).
+> - **Voie A** (validée user) = modules partagés appelés par LES 2 moteurs (zéro divergence) : `scrcmd_object/door/fieldeffect/flash.ts` + `battle_setup.ts` (TrainerArgSource).
+>
+> **Au swap (Phase 5 byte-VM)** : `script_bytevm.ts`→`script.ts`, `scrcmd_bytevm.ts`→`scrcmd.ts` (rewire ~101
+> importeurs) → ces 2 `.c` deviennent 1:1 INTÉGRAL aux bons noms (le miroir voulu), et la cartograph les créditera.
+> ⇒ pour `script.c`/`scrcmd.c`, suivre `BYTE-VM-PLAN.md`, PAS la consolidation `script-opcodes-*` ci-dessous (obsolète).
+> Réussite byte-VM → merge `finale` ; échec → suppression branche, zéro perte. **Vérif « voir par code »
+> prouvée** : `window.__byteVm.battleState()` (état combat) + `preview_screenshot` (canvas 240×160).
+
 ## Décisions verrouillées
 - **STRUCTURE = réplique 1:1 intégrale de l'arbre décomp.** On recrée l'arbre complet :
   `src/` (miroir PLAT des `.c`), `include/` (+ `constants/`, `gba/`), `data/` (tables/maps/scripts/.inc),
