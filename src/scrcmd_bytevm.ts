@@ -46,6 +46,7 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
   configureTrainerBattleCore, startTrainerBattleAndGetPoll,
   BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript } from './battle_setup';
 import type { TrainerArgSource } from './battle_setup';
+import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './engine/battle/battle-setup-helpers';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
@@ -382,6 +383,25 @@ function resumeAfterBattle(ctx: ScriptContext, r: string | { opcodes: unknown[];
 }
 const ScrCmd_gotopostbattlescript: ScrCmdFunc = (ctx) => { resumeAfterBattle(ctx, BattleSetup_GetTrainerPostBattleScript()); return false; };  // :1833
 const ScrCmd_gotobeatenscript: ScrCmdFunc = (ctx) => { resumeAfterBattle(ctx, BattleSetup_GetScriptAddrAfterBattle()); return false; };        // :1839
+
+// ─── wild battle (1:1 scrcmd.c:1869-1884 ; logique partagée battle-setup-helpers — voie A) ──
+// setwildbattle : species(u16) level(u8) item(u16) → CreateScriptedWildMon (peuple gEnemyParty[0]).
+const ScrCmd_setwildbattle: ScrCmdFunc = (ctx) => {                          // :1869
+  const species = ScriptReadHalfword(ctx);
+  const level = ScriptReadByte(ctx);
+  const item = ScriptReadHalfword(ctx);
+  CreateScriptedWildMon(species, level, item);
+  return false;
+};
+// dowildbattle : BattleSetup_StartScriptedWildBattle + ScriptContext_Stop. Le poll 1-frame
+// = le ScriptContext_Stop décomp (scrcmd.c:1882) : la scène combat prend la main, le script
+// reprend au retour OW. Identique au handler parsé (scrcmd.ts:2408 — prouvé).
+const ScrCmd_dowildbattle: ScrCmdFunc = (ctx) => {                           // :1879
+  BattleSetup_StartScriptedWildBattle();
+  let framesWaited = 0;
+  SetupNativeScript(ctx, () => { framesWaited++; return framesWaited >= 1; });
+  return true;
+};
 
 // ─── money (1:1 scrcmd.c:1733-1761) ─────────────────────────────────────────
 const setResult = (v: number) => VarSet(VAR_RESULT, v);
@@ -787,6 +807,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setflashlevel, ScrCmd_animateflash,
   ScrCmd_givemon, ScrCmd_giveegg,
   ScrCmd_trainerbattle, ScrCmd_dotrainerbattle, ScrCmd_gotopostbattlescript, ScrCmd_gotobeatenscript,
+  ScrCmd_setwildbattle, ScrCmd_dowildbattle,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

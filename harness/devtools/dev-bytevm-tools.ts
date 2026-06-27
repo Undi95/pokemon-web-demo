@@ -890,6 +890,32 @@ export async function testTrainerbattleArgs(): Promise<{ pass: boolean; details:
   return { pass, details };
 }
 
+/** Test SETWILDBATTLE (STEP 1 déterministe) : setwildbattle species(u16) level(u8) item(u16)
+ *  → CreateScriptedWildMon peuple gEnemyParty[0] (species + level corrects). NE boote PAS le
+ *  combat (pas de dowildbattle, qui swappe CB2). */
+export async function testWildbattle(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SWB = cmdIdOf('ScrCmd_setwildbattle'), END = cmdIdOf('ScrCmd_end');
+  const species = num('SPECIES_POOCHYENA'), level = 7;
+  // setwildbattle species(u16) level(u8) item(u16=ITEM_NONE) ; end
+  RunScriptImmediately({ buf: Uint8Array.from([SWB, lo(species), hi(species), level, 0, 0, END]), off: 0 } as ScriptPtr);
+  const sp = _GetMonData(gEnemyParty[0], _MON_DATA_SPECIES) as number;
+  const lv = _GetMonData(gEnemyParty[0], _MON_DATA_LEVEL) as number;
+  const pass = sp === species && lv === level;
+  const details = { [`gEnemyParty[0].species (attendu ${species})`]: sp, 'level (attendu 7)': lv };
+  console.log(`[byte-vm] TEST wildbattle (setwildbattle) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
+/** Lance un combat SAUVAGE via le BYTE-VM (setwildbattle + dowildbattle) — preuve visuelle
+ *  STEP 2 : peuple gEnemyParty[0] puis boote la boucle combat. Vérifier battleState()+screenshot. */
+export function launchWild(species: number, level: number): string {
+  const SWB = cmdIdOf('ScrCmd_setwildbattle'), DWB = cmdIdOf('ScrCmd_dowildbattle'), END = cmdIdOf('ScrCmd_end');
+  ScriptContext_SetupScript({ buf: Uint8Array.from([SWB, lo(species), hi(species), level, 0, 0, DWB, END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();   // setwildbattle (pose gEnemyParty[0]) → dowildbattle → BattleSetup_StartScriptedWildBattle (async)
+  return `byte-VM wild battle lancé : species ${species} Lv${level}`;
+}
+
 /** Lance un combat dresseur via le BYTE-VM dotrainerbattle (preuve visuelle STEP 2) :
  *  pose l'opponent, exécute `dotrainerbattle` dans un contexte byte-VM → DoTrainerBattle
  *  (async) lance le combat via l'OW. Vérifier ensuite battleState() + screenshot. */
@@ -908,4 +934,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, battleState, launchTB, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };
