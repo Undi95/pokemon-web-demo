@@ -38,7 +38,7 @@ import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCu
 import type { WindowTemplate } from './engine/ui/gba-window-system';
 // field_effect.c (sActiveList) — leaf zéro-import → import direct sûr (pas de cycle),
 // remplace l'ancien bridge globalThis.__fieldEffectActiveList (retiré).
-import { FieldEffectActiveListContains, FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { FreezeObjectEvent, ObjectEventClearHeldMovementIfFinished, ObjectEventSetHeldMovement, SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, UnfreezeObjectEvent, gObjectEvents } from './event_object_movement';
 import { HideFieldMessageBox, IsFieldMessageBoxHidden, ShowFieldMessage } from './field_message_box';
 import { DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, GetPlayerFacingDirection, gPlayerAvatar } from './field_player_avatar';
@@ -51,6 +51,7 @@ import { DestroySprite } from './sprite';
 // Voie A byte-VM : logique object-event partagée (source unique, zéro divergence).
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
+import { doFieldEffect, setFieldEffectArgument, setWaitFieldEffect } from './scrcmd_fieldeffect';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
 // mart-lists.json au boot).
 import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
@@ -195,8 +196,8 @@ registerOpcode('doweather', (_ctx, _args) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // scrcmd.c — section « fieldeffect » (ex src/engine/script/script-opcodes-fieldeffect.ts)
 // ═══════════════════════════════════════════════════════════════════════════
-/** 1:1 décomp `sFieldEffectScriptId` (scrcmd.c:50). Set par `waitfieldeffect`. */
-let _sFieldEffectScriptId = 0;
+// Voie A : sFieldEffectScriptId + logique do/set/wait field-effect partagés avec le
+// byte-VM (source unique, cf scrcmd_fieldeffect.ts).
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c). Buffer s16 utilisé
  *  pour passer params aux field effects. Set par `setfieldeffectargument`
@@ -221,51 +222,22 @@ const _gFieldEffectArguments: number[] =
 // Rock Smash all broken. Maintenant on dispatch via FieldEffectStart depuis
 // l'auto-file (= field_effect-all-auto.ts).
 registerOpcode('dofieldeffect', (_ctx, args) => {
-  const effectId = VarGet(args[0] ?? '0');
-  // ⚠️ NE PAS ajouter à la liste active ici : `FieldEffectStart` le fait désormais lui-même (1:1
-  // décomp `FieldEffectStart` → `FieldEffectActiveListAdd`). Ajouter ici en PLUS = double-add (la
-  // liste n'est pas idempotente) → `…Remove` ne retire qu'1 occurrence → `…Contains` reste true →
-  // `waitfieldeffect` / les gates CS bloqueraient. (= 1:1 `ScrCmd_dofieldeffect` qui n'ajoute pas.)
-  const fieldEffectStart = (globalThis as Record<string, unknown>).FieldEffectStart as
-    ((id: number) => unknown) | undefined;
-  if (typeof fieldEffectStart === 'function') {
-    try {
-      fieldEffectStart(effectId);
-      console.log(`[opcode dofieldeffect] FLDEFF id=${effectId} dispatched`);
-    } catch (e) {
-      console.warn(`[opcode dofieldeffect] FLDEFF id=${effectId} threw:`, e);
-    }
-  } else {
-    console.warn(`[opcode dofieldeffect] FieldEffectStart not exposed — FLDEFF id=${effectId} skipped (Cut/Surf/Fly/etc broken until wired)`);
-  }
+  doFieldEffect(VarGet(args[0] ?? '0'));
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_setfieldeffectargument` (scrcmd.c:1982-1996) :
  *    gFieldEffectArguments[argNum] = (s16)VarGet(value). */
 registerOpcode('setfieldeffectargument', (_ctx, args) => {
-  const argNum = parseValue(args[0] ?? '0');
-  const value = _vget(args[1]);
-  if (argNum >= 0 && argNum < 8) {
-    // s16 cast (sign extension du 16-bit)
-    let v = value & 0xFFFF;
-    if (v & 0x8000) v -= 0x10000;
-    _gFieldEffectArguments[argNum] = v;
-  }
-  // Expose pour le rendering field-effect.
-  (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
+  setFieldEffectArgument(parseValue(args[0] ?? '0'), _vget(args[1]));
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_waitfieldeffect` (scrcmd.c:1998-2003) :
  *    sFieldEffectScriptId = VarGet(arg);
- *    SetupNativeScript(ctx, WaitForFieldEffectFinish) ; return TRUE.
- *  WaitForFieldEffectFinish : return !FieldEffectActiveListContains(sFieldEffectScriptId).
- *  Session 132 : real tracking via field-effect-active-list.ts. */
+ *    SetupNativeScript(ctx, WaitForFieldEffectFinish) ; return TRUE. */
 registerOpcode('waitfieldeffect', (ctx, args) => {
-  _sFieldEffectScriptId = _vget(args[0]);
-  const poll = (): boolean => !FieldEffectActiveListContains(_sFieldEffectScriptId);
-  SetupNativeScript(ctx, poll);
+  SetupNativeScript(ctx, setWaitFieldEffect(_vget(args[0])));
   return true;
 });
 

@@ -497,6 +497,39 @@ export async function testDoor(): Promise<{ pass: boolean; details: Record<strin
   return { pass, details };
 }
 
+/** Test FIELD EFFECTS via bytecode synthétique :
+ *  setfieldeffectargument 0, 1234 ; setfieldeffectargument 1, 0xFFFF ; end
+ *  → gFieldEffectArguments[0]===1234, [1]===-1 (cast s16). Puis dofieldeffect/
+ *  waitfieldeffect s'exécutent sans throw. */
+export async function testFieldEffect(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SETARG = cmdIdOf('ScrCmd_setfieldeffectargument'), DOFX = cmdIdOf('ScrCmd_dofieldeffect'),
+        WAITFX = cmdIdOf('ScrCmd_waitfieldeffect'), END = cmdIdOf('ScrCmd_end');
+  // arg[0] depuis un littéral (1234) ; arg[1] depuis une VAR=0xFFFF → cast (s16)=-1.
+  // (un immédiat ≥ VARS_START serait lu comme id de var par VarGet — donc le s16 ne
+  //  se teste qu'avec une valeur venant d'une variable.)
+  const VT1 = num('VAR_TEMP_1');
+  VarSet(VT1, 0xFFFF);
+  // setfieldeffectargument 0, 1234 ; setfieldeffectargument 1, VAR_TEMP_1 ; end
+  RunScriptImmediately({ buf: Uint8Array.from([
+    SETARG, 0, lo(1234), hi(1234),
+    SETARG, 1, lo(VT1), hi(VT1),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const args = (globalThis as Record<string, unknown>).gFieldEffectArguments as number[] | undefined;
+  const a0 = args?.[0], a1 = args?.[1];
+  // dofieldeffect <id absent de la liste active> ; waitfieldeffect <même id> ; end — no throw
+  let noThrow = true;
+  try {
+    RunScriptImmediately({ buf: Uint8Array.from([WAITFX, lo(99), hi(99), END]), off: 0 } as ScriptPtr);
+    RunScriptImmediately({ buf: Uint8Array.from([DOFX, lo(99), hi(99), END]), off: 0 } as ScriptPtr);
+  } catch (e) { noThrow = false; console.warn('[testFieldEffect]', e); }
+  const pass = a0 === 1234 && a1 === -1 && noThrow;
+  const details = { 'gFieldEffectArguments[0] (attendu 1234)': a0, 'gFieldEffectArguments[1] (s16 0xFFFF→-1)': a1, 'do/waitfieldeffect sans throw': noThrow };
+  console.log(`[byte-vm] TEST field-effect : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -504,4 +537,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, run, VarGet, getScriptOffset };
