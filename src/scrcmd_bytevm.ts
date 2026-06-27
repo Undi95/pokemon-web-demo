@@ -43,6 +43,8 @@ import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './fieldmap';
+// Voie A : logique object-event partagée avec le moteur parsé (source unique).
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
@@ -266,6 +268,16 @@ const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ct
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
 const ScrCmd_waitmoncry: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsCryFinished?.() ?? true); return true; };
 
+// ─── object events (1:1 scrcmd.c ; logique partagée scrcmd_object — voie A) ──
+const ScrCmd_setobjectxy: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetObjectXY(String(l), x, y); return false; };
+const ScrCmd_setobjectxyperm: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const x = VarGet(ScriptReadHalfword(ctx)); const y = VarGet(ScriptReadHalfword(ctx)); doSetObjectXYPerm(String(l), x, y); return false; };
+const ScrCmd_addobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); doAddObject(String(l)); return false; };
+const ScrCmd_addobjectat: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doAddObject(String(l)); return false; };  // +map ignorée
+const ScrCmd_removeobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); doRemoveObject(String(l)); return false; };
+const ScrCmd_removeobjectat: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doRemoveObject(String(l)); return false; };  // +map ignorée
+const ScrCmd_showobjectat: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doSetObjectInvisibility(String(l), false); return false; };  // +map (2o)
+const ScrCmd_hideobjectat: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); ScriptReadHalfword(ctx); doSetObjectInvisibility(String(l), true); return false; };   // +map (2o)
+
 // ─── setmetatile (1:1 scrcmd.c:setmetatile) ─────────────────────────────────
 const ScrCmd_setmetatile: ScrCmdFunc = (ctx) => {
   const x = VarGet(ScriptReadHalfword(ctx)) + MAP_OFFSET;
@@ -373,6 +385,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_checktrainerflag, ScrCmd_settrainerflag, ScrCmd_cleartrainerflag,
   ScrCmd_playse, ScrCmd_waitse, ScrCmd_playfanfare, ScrCmd_waitfanfare, ScrCmd_playbgm,
   ScrCmd_playmoncry, ScrCmd_waitmoncry, ScrCmd_setmetatile,
+  ScrCmd_setobjectxy, ScrCmd_setobjectxyperm, ScrCmd_addobject, ScrCmd_addobjectat,
+  ScrCmd_removeobject, ScrCmd_removeobjectat, ScrCmd_showobjectat, ScrCmd_hideobjectat,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

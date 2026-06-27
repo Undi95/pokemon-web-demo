@@ -348,6 +348,36 @@ export async function testMetatile(): Promise<{ pass: boolean; details: Record<s
   return { pass, details };
 }
 
+/** Test OBJECT (setobjectxy) via bytecode synthétique sur un vrai objet :
+ *  setobjectxy <localId>, x, y → l'objet bouge (currentCoordsX = x+MAP_OFFSET). Restaure. */
+export async function testObject(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  let idx = -1;
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const o = gObjectEvents[i];
+    if (o && o.active && i !== gPlayerAvatar.objectEventId && typeof o.localId === 'number') { idx = i; break; }
+  }
+  let moved = false; let localId = -1;
+  if (idx >= 0) {
+    const o = gObjectEvents[idx];
+    localId = o.localId;
+    const origCX = o.currentCoordsX, origCY = o.currentCoordsY;
+    const newX = (o.currentCoordsX - MAP_OFFSET) + 1, newY = (o.currentCoordsY - MAP_OFFSET);
+    const SX = cmdIdOf('ScrCmd_setobjectxy'), END = cmdIdOf('ScrCmd_end');
+    // setobjectxy localId, newX, newY ; end (3 halfwords)
+    const code = Uint8Array.from([SX, lo(localId), hi(localId), lo(newX), hi(newX), lo(newY), hi(newY), END]);
+    RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+    moved = gObjectEvents[idx].currentCoordsX === newX + MAP_OFFSET;
+    // restaure
+    gObjectEvents[idx].currentCoordsX = origCX; gObjectEvents[idx].currentCoordsY = origCY;
+    gObjectEvents[idx].previousCoordsX = origCX; gObjectEvents[idx].previousCoordsY = origCY;
+  }
+  const pass = idx >= 0 && moved;
+  const details = { 'objet localId': localId, 'setobjectxy → currentCoordsX déplacé': moved };
+  console.log(`[byte-vm] TEST object (setobjectxy) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -355,4 +385,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, run, VarGet, getScriptOffset };

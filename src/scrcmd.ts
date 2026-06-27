@@ -48,6 +48,8 @@ import { Random } from './random';
 import { RtcCalcLocalTime, RtcInitLocalTimeOffset, gLocalTime } from './rtc';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
+// Voie A byte-VM : logique object-event partagée (source unique, zéro divergence).
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
 // mart-lists.json au boot).
 import { GetMartItemList, OpenPokemart, IsShopMenuOpen } from './shop';
@@ -3617,77 +3619,14 @@ registerOpcode('closebraillemessage', (_ctx, _args) => false);
 // ─── setobjectxy / setobjectxyperm / copyobjectxytoperm ─────────────────────
 
 registerOpcode('setobjectxy', (_ctx, args) => {
-  const x = parseValue(args[1]);
-  const y = parseValue(args[2]);
-  const npc = findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    // 1:1 STRICT décomp `MoveObjectEventToMapCoords` (event_object_movement.c:2133) :
-    //   SetObjectEventCoords(objectEvent, x, y);    ← update coords logiques
-    //   SetSpritePosToMapCoords(...);                ← update sprite pixel pos
-    //   sprite->centerToCornerVecX/Y = -(graphicsInfo->width/height >> 1);
-    //   sprite->x += 8; sprite->y += 16 + ctcv;
-    //   ResetObjectEventFldEffData(objectEvent);
-    //
-    // Sans le 2e step (sprite pixel pos), le SPRITE reste à sa position template
-    // visuel même si les coords logiques changent → bug user "Birch spawn pas
-    // au bon endroit" (= script setobjectxy LOCALID_ROUTE101_BIRCH, 0, 15 mais
-    // sprite resta à (9, 13) = template visuel jusqu'au prochain walk).
-    npc.currentCoordsX = x + MAP_OFFSET;
-    npc.currentCoordsY = y + MAP_OFFSET;
-    npc.previousCoordsX = x + MAP_OFFSET;
-    npc.previousCoordsY = y + MAP_OFFSET;
-    SetObjectEventSpritePosToMapCoords(npc, x, y);
-    // Architecture web : gSaveBlock1Ptr.pos est la source UNIQUE de la position
-    // player (caméra + collision isPlayerAt + re-spawn return-to-field via
-    // InitPlayerAvatar). Le décomp garde pos et l'object event séparés (setobjectxy
-    // ne touche pas pos ; le return-to-field PRÉSERVE l'object event), mais on a
-    // unifié sur pos (CHANTIER-OW source unique). Donc un setobjectxy ciblant le
-    // PLAYER doit AUSSI mettre pos à jour, sinon pos reste stale → post-combat
-    // InitPlayerAvatar(pos) re-spawn le player à l'ancienne pos (bug Birch tutorial :
-    // setobjectxy LOCALID_PLAYER, 6, 13 puis combat → player re-spawn au lieu de
-    // déclenchement du sac au lieu de (6,13) devant le prof). La caméra se re-sync
-    // au prochain frame stable (MainCB2_Overworld défensif cam≠pos → DrawWholeMapView).
-    if (npc.isPlayer) {
-      gSaveBlock1Ptr.pos.x = x;
-      gSaveBlock1Ptr.pos.y = y;
-    }
-  }
+  // Voie A : logique extraite dans scrcmd_object.doSetObjectXY (partagée byte-VM).
+  doSetObjectXY(args[0] ?? '', parseValue(args[1]), parseValue(args[2]));
   return false;
 });
 
 registerOpcode('setobjectxyperm', (_ctx, args) => {
-  // 1:1 STRICT décomp `ScrCmd_setobjectxyperm` :
-  //   u16 localId = VarGet(ScriptReadHalfword(ctx));
-  //   u16 x = VarGet(ScriptReadHalfword(ctx));
-  //   u16 y = VarGet(ScriptReadHalfword(ctx));
-  //   SetObjEventTemplateCoords(localId, x, y);
-  //
-  // Et SetObjEventTemplateCoords (overworld.c:490) écrit dans
-  // `gSaveBlock1Ptr->objectEventTemplates[]` (= PERSISTENT cross-map reload).
-  const x = parseValue(args[1]);
-  const y = parseValue(args[2]);
-  const localIdRaw = args[0] ?? '';
-  const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
-  SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
-  // 1:1 STRICT décomp : NE PAS muter `gMapHeader.events.objectEvents` (= ROM
-  // read-only dans le décomp). Seul `gSaveBlock1Ptr.objectEventTemplates` est
-  // muté via SetObjEventTemplateCoords (= writable saveblock memory).
-  const npc = findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    // Post R3 refactor : initialCoords/currentCoords INTERNAL (= +MAP_OFFSET).
-    npc.initialCoordsX = x + MAP_OFFSET;
-    npc.initialCoordsY = y + MAP_OFFSET;
-    // Audit session 126 C6 : aussi sync `currentCoordsX/Y` + `previousCoordsX/Y`
-    // pour 1:1 visuel sur les changements en cours de game.
-    npc.currentCoordsX = x + MAP_OFFSET;
-    npc.currentCoordsY = y + MAP_OFFSET;
-    npc.previousCoordsX = x + MAP_OFFSET;
-    npc.previousCoordsY = y + MAP_OFFSET;
-    // 1:1 STRICT décomp `MoveObjectEventToMapCoords` (event_object_movement.c:2133) :
-    // sprite pixel pos doit être recalculé avec camera offset, PAS un simple `x * 16`
-    // qui ignore gFieldCamera/gTotalCamera/sFieldCameraOffset.
-    SetObjectEventSpritePosToMapCoords(npc, x, y);
-  }
+  // Voie A : logique extraite dans scrcmd_object.doSetObjectXYPerm (partagée byte-VM).
+  doSetObjectXYPerm(args[0] ?? '', parseValue(args[1]), parseValue(args[2]));
   return false;
 });
 
@@ -3790,39 +3729,16 @@ registerOpcode('map_script_2', () => false);
  *    directement le NPC. Sans le spawn immédiat, le NPC attendrait le
  *    prochain tile cross pour apparaitre. */
 registerOpcode('addobject', (_ctx, args) => {
-  const localIdRaw = resolveObjectLocalIdRaw(args[0] ?? '');
-  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  if (tpl?.flagId) FlagClear(tpl.flagId);
-  // Spawn immédiat (= 1:1 décomp behavior).
-  const rt = getRuntime();
-  if (rt) {
-    const ok = TrySpawnObjectEvent(localIdRaw, rt);
-    console.log(`[opcode addobject] ${args[0]} → ${localIdRaw} → ${ok ? 'spawned' : 'failed'}`);
-  }
+  // Voie A : logique extraite dans scrcmd_object.doAddObject (partagée byte-VM).
+  doAddObject(args[0] ?? '');
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_removeobject` (scrcmd.c:1047-1053) :
  *    SetFlag(flagId) + remove sprite via FreeAndDestroyObjectEventSprite. */
 registerOpcode('removeobject', (_ctx, args) => {
-  const localIdRaw = resolveObjectLocalIdRaw(args[0] ?? '');
-  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  if (tpl?.flagId) FlagSet(tpl.flagId);
-  // Find active NPC + destroy sprite + mark inactive.
-  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
-  if (npc) {
-    if (npc.spriteId >= 0) {
-      try {
-        const rt = getRuntime();
-        DestroySprite(npc.spriteId);
-      } catch (e) {
-        console.warn(`[opcode removeobject] DestroySprite ${npc.spriteId} threw:`, e);
-      }
-      npc.spriteId = -1;
-    }
-    npc.active = false;
-    npc.invisible = true;
-  }
+  // Voie A : logique extraite dans scrcmd_object.doRemoveObject (partagée byte-VM).
+  doRemoveObject(args[0] ?? '');
   return false;
 });
 
@@ -3841,8 +3757,7 @@ registerOpcode('removeobjectat', (ctx, args) => {
 /** 1:1 décomp `ScrCmd_showobjectat` (scrcmd.c:1111-1119) :
  *    SetObjectInvisibility(localId, ..., FALSE). */
 registerOpcode('showobjectat', (_ctx, args) => {
-  const npc = findNpcByLocalId(args[0] ?? '');
-  if (npc) npc.invisible = false;
+  doSetObjectInvisibility(args[0] ?? '', false);
   return false;
 });
 
@@ -3853,9 +3768,7 @@ registerOpcode('showobjectat', (_ctx, args) => {
  *      gObjectEvents[id].invisible = invisible.
  *  objet chargé → invisible=TRUE ; non chargé → NO-OP. */
 registerOpcode('hideobjectat', (_ctx, args) => {
-  const localId = _vget(args[0]);
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) obj.invisible = true;
+  doSetObjectInvisibility(args[0] ?? '', true);
   return false;
 });
 
