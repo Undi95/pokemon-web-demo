@@ -16,12 +16,27 @@ import {
   ScriptContext, ScrCmdFunc, gScriptCmdTable,
   ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
   ScriptJump, ScriptCall, ScriptReturn, StopScript, SetupNativeScript,
-  ScriptContext_Stop, ptrFromOffset,
+  ScriptContext_Stop, ptrFromOffset, resolveSymbol, getScriptOffset,
 } from './script_bytevm';
 import { VarGet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 // Registre des specials (name→fn) du moteur actuel — réutilisé transitoirement
 // (les fns de special sont les mêmes fns de jeu 1:1). gSpecials[id] = invokeSpecial(name).
 import { invokeSpecial } from './scrcmd';
+import { getText } from './script';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
+
+// gStdScripts (1:1 event_scripts.s:95-107) — STD_*/MSGBOX_* index → label de std script.
+const gStdScripts: readonly string[] = [
+  'Std_ObtainItem', 'Std_FindItem', 'Std_MsgboxNPC', 'Std_MsgboxSign', 'Std_MsgboxDefault',
+  'Std_MsgboxYesNo', 'Std_MsgboxAutoclose', 'Std_ObtainDecoration', 'Std_RegisteredInMatchCall',
+  'Std_MsgboxGetPoints', 'Std_MsgboxPokenav',
+];
+/** 1:1 scrcmd.c FetchScriptStdPointer : index → offset image du std script (ou null). */
+function fetchStdOffset(index: number): number | null {
+  if (index < 0 || index >= gStdScripts.length) return null;
+  const off = getScriptOffset(gStdScripts[index]);
+  return off === undefined ? null : off;
+}
 
 // 1:1 scrcmd.c:76-84 — [condition][comparisonResult] → 1 si la branche est prise.
 //   <  =  >
@@ -114,6 +129,27 @@ const ScrCmd_compare_local_to_value: ScrCmdFunc = (ctx) => { const a = ctx.data[
 const ScrCmd_compare_var_to_value: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = ScriptReadHalfword(ctx); ctx.comparisonResult = Compare(a, b); return false; }; // :444
 const ScrCmd_compare_var_to_var: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = varDeref(ScriptReadHalfword(ctx)); ctx.comparisonResult = Compare(a, b); return false; }; // :453
 
+// ─── std scripts (1:1 scrcmd.c:235-253) ─────────────────────────────────────
+const ScrCmd_gotostd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptJump(ctx, ptrFromOffset(off)); return false; };
+const ScrCmd_callstd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptCall(ctx, ptrFromOffset(off)); return false; };
+
+// ─── messages (1:1 scrcmd.c:1265-1320) ──────────────────────────────────────
+/** Résout un pointeur de texte (id de symbole, ou data[0] si NULL) → bytes charmap → affiche. */
+function showFieldText(symId: number): void {
+  const sym = resolveSymbol(symId);
+  if (!sym) return;
+  const bytes = getText(sym.label);
+  if (bytes) ShowFieldMessage(bytes);
+}
+const ScrCmd_message: ScrCmdFunc = (ctx) => {                               // :1265
+  let p = ScriptReadWord(ctx);
+  if (p === 0) p = ctx.data[0];   // NULL → ctx->data[0] (posé par loadword via msgbox)
+  showFieldText(p);
+  return false;
+};
+const ScrCmd_waitmessage: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => IsFieldMessageBoxHidden()); return true; }; // :1310
+const ScrCmd_closemessage: ScrCmdFunc = () => { HideFieldMessageBox(); return false; }; // :1316
+
 const ScrCmd_setflag: ScrCmdFunc = (ctx) => { FlagSet(ScriptReadHalfword(ctx)); return false; };        // :581
 const ScrCmd_clearflag: ScrCmdFunc = (ctx) => { FlagClear(ScriptReadHalfword(ctx)); return false; };    // :587
 const ScrCmd_checkflag: ScrCmdFunc = (ctx) => { ctx.comparisonResult = FlagGet(ScriptReadHalfword(ctx)) ? 1 : 0; return false; }; // :593
@@ -128,6 +164,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_compare_local_to_local, ScrCmd_compare_local_to_value,
   ScrCmd_compare_var_to_value, ScrCmd_compare_var_to_var,
   ScrCmd_setflag, ScrCmd_clearflag, ScrCmd_checkflag,
+  ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

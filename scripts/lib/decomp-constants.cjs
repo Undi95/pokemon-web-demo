@@ -72,6 +72,7 @@ for (const extra of ['include/global.h', 'include/constants/event_objects.h']) {
 // ── 3. manuel ────────────────────────────────────────────────────────────────
 table['TRUE'] = 1;
 table['FALSE'] = 0;
+table['NULL'] = 0;   // pointeur nul (ex. `message NULL` → utilise ctx->data[0])
 
 // ── Résolution itérative des expressions brutes ──────────────────────────────
 function evalExpr(expr) {

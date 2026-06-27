@@ -43,7 +43,9 @@ const u16 = (v) => [v & 0xFF, (v >> 8) & 0xFF];
 const u32 = (v) => [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF];
 
 class SymbolTable {
-  constructor() { this.byLabel = new Map(); this.list = []; }
+  // id 0 = RÉSERVÉ = NULL (comme l'adresse ROM 0) : un pointeur `.4byte 0` (ex.
+  // `message NULL`) signifie « utiliser ctx->data[0] », jamais le symbole 0.
+  constructor() { this.byLabel = new Map(); this.list = [{ id: 0, kind: 'null', label: '' }]; }
   id(label, kind) {
     if (this.byLabel.has(label)) return this.byLabel.get(label);
     const id = this.list.length;

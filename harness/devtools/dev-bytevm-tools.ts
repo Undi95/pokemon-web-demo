@@ -11,9 +11,13 @@
 
 import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
+  getSymbols, ScriptContext_SetupScript, ScriptContext_RunScript,
 } from '../../src/script_bytevm';
+import type { ScriptPtr } from '../../src/script_bytevm';
 import { installByteVmHandlers, setSpecialNames } from '../../src/scrcmd_bytevm';
 import { registerSpecial } from '../../src/scrcmd';
+import { getText, loadMapScripts } from '../../src/script';
+import { IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../src/field_message_box';
 import { VarGet, VarSet, FlagSet, FlagClear } from '../../src/event_data';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
 
@@ -120,6 +124,57 @@ export async function testSpecials(): Promise<{ pass: boolean; details: Record<s
   return { pass, details };
 }
 
+/** Test du chemin DIALOGUE via bytecode synthétique :
+ *  loadword 0, <textSym> ; callstd MSGBOX_DEFAULT ; end
+ *  → callstd saute vers Std_MsgboxDefault (offset image) → message NULL (data[0])
+ *    → ShowFieldMessage → la boîte de message s'affiche. Vérifie : offset std
+ *    résolu, texte résolu (getText non vide), et boîte non cachée après exécution. */
+export async function testDialogue(mapName = 'LittlerootTown'): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  await loadMapScripts(mapName);   // charge les textes de la map
+
+  // 1) offset du std script MSGBOX_DEFAULT
+  const stdOff = getScriptOffset('Std_MsgboxDefault');
+
+  // 2) trouve un symbole texte de cette map dont getText renvoie des octets
+  let textSymId = -1; let textLabel = ''; let textLen = 0;
+  const syms = getSymbols();
+  for (let id = 1; id < syms.length; id++) {
+    const s = syms[id];
+    if (s.kind !== 'text' || !s.label.startsWith(mapName)) continue;
+    const b = getText(s.label);
+    if (b && b.length > 0) { textSymId = id; textLabel = s.label; textLen = b.length; break; }
+  }
+
+  let boxShown = false;
+  if (textSymId >= 0 && stdOff !== undefined) {
+    const LOADWORD = cmdIdOf('ScrCmd_loadword');
+    const CALLSTD = cmdIdOf('ScrCmd_callstd');
+    const END = cmdIdOf('ScrCmd_end');
+    const MSGBOX_DEFAULT = (resolveDecompConstant('MSGBOX_DEFAULT') ?? 4);
+    // loadword 0, textSym ; callstd MSGBOX_DEFAULT ; end
+    const code = Uint8Array.from([
+      LOADWORD, 0, lo(textSymId), hi(textSymId), ((textSymId >> 16) & 0xFF), ((textSymId >>> 24) & 0xFF),
+      CALLSTD, MSGBOX_DEFAULT, END,
+    ]);
+    HideFieldMessageBox();
+    const ptr: ScriptPtr = { buf: code, off: 0 };
+    ScriptContext_SetupScript(ptr);
+    for (let i = 0; i < 6; i++) ScriptContext_RunScript();
+    boxShown = !IsFieldMessageBoxHidden();
+    HideFieldMessageBox();
+  }
+
+  const pass = stdOff !== undefined && textSymId >= 0 && boxShown;
+  const details = {
+    'offset Std_MsgboxDefault': stdOff,
+    'texte choisi': textLabel, 'octets texte': textLen,
+    'boîte de message affichée après exécution': boxShown,
+  };
+  console.log(`[byte-vm] TEST dialogue : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -127,4 +182,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, run, VarGet, getScriptOffset };
