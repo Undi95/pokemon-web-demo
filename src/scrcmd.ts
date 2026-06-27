@@ -49,7 +49,7 @@ import { RtcCalcLocalTime, RtcInitLocalTimeOffset, gLocalTime } from './rtc';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { DestroySprite } from './sprite';
 // Voie A byte-VM : logique object-event partagée (source unique, zéro divergence).
-import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType } from './scrcmd_object';
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 import { doFieldEffect, setFieldEffectArgument, setWaitFieldEffect } from './scrcmd_fieldeffect';
 // shop.c : résolution des listes mart + menu d'achat overlay (side-effect : charge
@@ -2243,36 +2243,18 @@ registerOpcode('turnobject', (_ctx, args) => {
   // Note : `ScrCmd_turnobject` utilise `ObjectEventTurn` DIRECT (= pas held
   // movement). C'est immediate. Notre port appelle SetObjectEventDirection
   // via _npcSetFaceAnim wrapped helper (= équivalent fonctionnel).
-  const localId = parseInt(args[0], 10) || 0;
-  const dirArg = args[1];
+  const dirArg = args[1] ?? '';
   let dir = DIR_SOUTH;
   if (dirArg.includes('SOUTH') || dirArg.includes('DOWN')) dir = DIR_SOUTH;
   else if (dirArg.includes('NORTH') || dirArg.includes('UP')) dir = DIR_NORTH;
   else if (dirArg.includes('WEST') || dirArg.includes('LEFT')) dir = DIR_WEST;
   else if (dirArg.includes('EAST') || dirArg.includes('RIGHT')) dir = DIR_EAST;
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localId === localId) {
-      npc.facingDirection = dir;
-      _npcTurnAnim(npc);
-      break;
-    }
-  }
+  // Voie A : logique extraite dans scrcmd_object.doTurnObject (partagée byte-VM).
+  doTurnObject(args[0] ?? '', dir);
   return false;
 });
 
-/** 1:1 décomp `ObjectEventTurn` (event_object_movement.c:1867-1875) :
- *    SetObjectEventDirection(obj, dir);   ← caller fait déjà
- *    if (!obj->inanimate) {
- *        StartSpriteAnim(sprite, GetFaceDirectionAnimNum(dir));
- *        SeekSpriteAnim(sprite, 0);
- *    }
- *  Utilise le helper __npcSetFaceAnim exposé via globalThis par object-events.ts. */
-function _npcTurnAnim(npc: { facingDirection: number; spriteId: number; inanimate: boolean }): void {
-  const setFace = (globalThis as Record<string, unknown>).__npcSetFaceAnim as
-    ((rt: unknown, npc: unknown) => void) | undefined;
-  if (!setFace) return;
-  try { setFace(getRuntime(), npc); } catch { /* rt not ready */ }
-}
+// `_npcTurnAnim` déplacé → scrcmd_object.npcTurnAnim (voie A, partagé avec le byte-VM).
 
 // ─── Trainers (1:1 décomp ScrCmd_selectapproachingtrainer + lockfortrainer) ──
 
@@ -3565,43 +3547,16 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
 /** 1:1 décomp `ScrCmd_copyobjectxytoperm` (scrcmd.c:1103-1109) :
  *    persist NPC current XY to template (= so NPC doesn't reset on map reload). */
 registerOpcode('copyobjectxytoperm', (_ctx, args) => {
-  const npc = findNpcByLocalId(args[0] ?? '');
-  const tmpl = findTemplateByLocalId(args[0] ?? '');
-  if (npc && tmpl) {
-    tmpl.x = npc.currentCoordsX - MAP_OFFSET;
-    tmpl.y = npc.currentCoordsY - MAP_OFFSET;
-  }
+  // Voie A : logique extraite dans scrcmd_object.doCopyObjectXYToPerm (partagée byte-VM).
+  doCopyObjectXYToPerm(args[0] ?? '');
   return false;
 });
 
 // ─── setobjectmovementtype ──────────────────────────────────────────────────
 
 registerOpcode('setobjectmovementtype', (_ctx, args) => {
-  const movementType = args[1];
-  // 1:1 décomp : modifie le TEMPLATE pour que le NPC respawn avec ce movement.
-  const tpl = findTemplateByLocalId(args[0] ?? '');
-  if (tpl) tpl.movementTypeRaw = movementType;
-  const npc = findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    npc.movementType = movementType;
-    npc.movementStep = 0;
-    // 1:1 décomp : update facingDirection en sync avec movement type pour que
-    // FACE_UP/DOWN/LEFT/RIGHT applique son facing IMMÉDIATEMENT, même quand
-    // le NPC est `frozen` (= lockall) et ne tick pas son movement handler.
-    if (movementType) {
-      const m = movementType.toUpperCase();
-      let newFacing = 0;
-      if (m.endsWith('_FACE_UP') || m === 'MOVEMENT_TYPE_FACE_UP') newFacing = 2;       // DIR_NORTH
-      else if (m.endsWith('_FACE_DOWN') || m === 'MOVEMENT_TYPE_FACE_DOWN') newFacing = 1; // DIR_SOUTH
-      else if (m.endsWith('_FACE_LEFT') || m === 'MOVEMENT_TYPE_FACE_LEFT') newFacing = 3; // DIR_WEST
-      else if (m.endsWith('_FACE_RIGHT') || m === 'MOVEMENT_TYPE_FACE_RIGHT') newFacing = 4; // DIR_EAST
-      else if (m.includes('WALK_IN_PLACE_DOWN')) newFacing = 1;
-      else if (m.includes('WALK_IN_PLACE_UP')) newFacing = 2;
-      else if (m.includes('WALK_IN_PLACE_LEFT')) newFacing = 3;
-      else if (m.includes('WALK_IN_PLACE_RIGHT')) newFacing = 4;
-      if (newFacing > 0) npc.facingDirection = newFacing;
-    }
-  }
+  // Voie A : logique extraite dans scrcmd_object.doSetObjectMovementType (partagée byte-VM).
+  doSetObjectMovementType(args[0] ?? '', args[1] ?? '');
   return false;
 });
 

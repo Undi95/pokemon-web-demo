@@ -82,6 +82,9 @@ import * as tv from '../../include/constants/tv';
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
 // "VERSION_BANNER_RIGHT_TILEOFFSET" au runtime sprite anim.
 import * as titleScreen from '../../src/engine/decomp-data/title-screen-data';
+// MOVEMENT_TYPE_*/MOVEMENT_ACTION_*/ANIM_* — requis par le byte-VM (setobjectmovementtype
+// convertit l'id numérique → "MOVEMENT_TYPE_*" via reverseDecompConstant). Ajout additif.
+import * as eventObjectMovement from '../../include/constants/event_object_movement';
 // HEAL_LOCATION_* sont définis comme enum dans heal_locations.h mais pas
 // extraits dans nos auto-data — pour setrespawn opcode, on accepte la string
 // raw (= var stocke le hash, lookup ailleurs).
@@ -146,6 +149,7 @@ _mergeConstants(mapScripts);
 _mergeConstants(scriptMenu);
 _mergeConstants(gameStats);
 _mergeConstants(tv);
+_mergeConstantsIfAbsent(eventObjectMovement);   // additif (MOVEMENT_TYPE_/ACTION_/ANIM_)
 // include/battle.h : MOVE_TARGET_SELECTED(=0) + B_ACTION_* — si-absent only.
 _mergeConstantsIfAbsent(battleInclude);
 

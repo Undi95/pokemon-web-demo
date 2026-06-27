@@ -158,6 +158,15 @@ export function findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
     if ((t as { mapId?: string }).mapId !== currentMapId) continue;
     if ((t as { localIdRaw?: string }).localIdRaw === arg) return t as unknown as ObjectEventTemplate;
   }
+  // Fallback numérique (= 1:1 décomp `TryOverrideObjectEventTemplateCoords` matche
+  // par `template->localId == localId`) : requis quand le byte-VM passe `String(localId)`.
+  const n = parseInt(arg, 10);
+  if (!Number.isNaN(n)) {
+    for (const t of block1.objectEventTemplates) {
+      if ((t as { mapId?: string }).mapId !== currentMapId) continue;
+      if ((t as { localId?: number }).localId === n) return t as unknown as ObjectEventTemplate;
+    }
+  }
   return null;
 }
 

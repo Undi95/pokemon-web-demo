@@ -44,7 +44,7 @@ import { PlaySE } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
-import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility } from './scrcmd_object';
+import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType } from './scrcmd_object';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
@@ -522,6 +522,18 @@ const ScrCmd_turnvobject: ScrCmdFunc = (ctx) => {                           // :
   return false;
 };
 
+// ─── object movement ops (1:1 scrcmd.c ; logique partagée scrcmd_object — voie A) ──
+// turnobject : direction = valeur DIR_ (1=SOUTH..4=EAST) lue direct du bytecode.
+const ScrCmd_turnobject: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); const dir = ScriptReadByte(ctx); doTurnObject(String(l), dir); return false; };
+const ScrCmd_copyobjectxytoperm: ScrCmdFunc = (ctx) => { const l = VarGet(ScriptReadHalfword(ctx)); doCopyObjectXYToPerm(String(l)); return false; };
+// setobjectmovementtype : id numérique → "MOVEMENT_TYPE_*" (movementTypeRaw est string dans notre port).
+const ScrCmd_setobjectmovementtype: ScrCmdFunc = (ctx) => {
+  const l = VarGet(ScriptReadHalfword(ctx));
+  const mt = ScriptReadByte(ctx);
+  doSetObjectMovementType(String(l), reverseDecompConstant(mt, 'MOVEMENT_TYPE_') ?? `MOVEMENT_TYPE_${mt}`);
+  return false;
+};
+
 // ─── field effects (1:1 scrcmd.c:1973-2003 ; logique partagée scrcmd_fieldeffect — voie A) ──
 const ScrCmd_dofieldeffect: ScrCmdFunc = (ctx) => { doFieldEffect(VarGet(ScriptReadHalfword(ctx))); return false; };                                  // :1973
 const ScrCmd_setfieldeffectargument: ScrCmdFunc = (ctx) => { const a = ScriptReadByte(ctx); setFieldEffectArgument(a, VarGet(ScriptReadHalfword(ctx))); return false; }; // :1982
@@ -558,6 +570,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_opendoor, ScrCmd_closedoor, ScrCmd_waitdooranim, ScrCmd_setdooropen, ScrCmd_setdoorclosed,
   ScrCmd_dofieldeffect, ScrCmd_setfieldeffectargument, ScrCmd_waitfieldeffect,
   ScrCmd_createvobject, ScrCmd_turnvobject,
+  ScrCmd_turnobject, ScrCmd_copyobjectxytoperm, ScrCmd_setobjectmovementtype,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

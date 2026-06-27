@@ -36,6 +36,7 @@ import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
 import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
 import { MB_ANIMATED_DOOR } from '../../src/engine/field/tilemap-loader';
 import { isDoorAnimationStopped } from '../../src/scrcmd_door';
+import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-helpers';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -560,6 +561,47 @@ export async function testVobject(): Promise<{ pass: boolean; details: Record<st
   return { pass, details };
 }
 
+/** Test OBJECT MOVEMENT (turnobject/setobjectmovementtype/copyobjectxytoperm) sur un
+ *  vrai NPC de la map : turnobject→facingDirection ; setobjectmovementtype id 7→
+ *  movementType="MOVEMENT_TYPE_FACE_UP"+facing NORTH ; copyobjectxytoperm→template XY.
+ *  Restaure l'état du NPC. */
+export async function testObjectMovement(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  let idx = -1;
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const o = gObjectEvents[i];
+    if (o && o.active && i !== gPlayerAvatar.objectEventId && typeof o.localId === 'number') { idx = i; break; }
+  }
+  if (idx < 0) { console.warn('[testObjectMovement] aucun NPC actif'); return { pass: false, details: { note: 'aucun NPC actif' } }; }
+  const o = gObjectEvents[idx];
+  const localId = o.localId as number;
+  const origFacing = o.facingDirection, origMt = o.movementType, origStep = o.movementStep;
+  const TURN = cmdIdOf('ScrCmd_turnobject'), SETMT = cmdIdOf('ScrCmd_setobjectmovementtype'),
+        COPYP = cmdIdOf('ScrCmd_copyobjectxytoperm'), END = cmdIdOf('ScrCmd_end');
+  // turnobject localId, 4(EAST) ; end
+  RunScriptImmediately({ buf: Uint8Array.from([TURN, lo(localId), hi(localId), 4, END]), off: 0 } as ScriptPtr);
+  const turnedEast = o.facingDirection === 4;
+  // setobjectmovementtype localId, 7(MOVEMENT_TYPE_FACE_UP) ; end
+  RunScriptImmediately({ buf: Uint8Array.from([SETMT, lo(localId), hi(localId), 7, END]), off: 0 } as ScriptPtr);
+  const mtSet = o.movementType === 'MOVEMENT_TYPE_FACE_UP';
+  const facedUp = o.facingDirection === 2;
+  // copyobjectxytoperm localId ; end
+  RunScriptImmediately({ buf: Uint8Array.from([COPYP, lo(localId), hi(localId), END]), off: 0 } as ScriptPtr);
+  const tmpl = findTemplateByLocalId(String(localId));
+  const permOk = !!tmpl && tmpl.x === o.currentCoordsX - MAP_OFFSET && tmpl.y === o.currentCoordsY - MAP_OFFSET;
+  // restaure
+  o.facingDirection = origFacing; o.movementType = origMt; o.movementStep = origStep;
+  const pass = turnedEast && mtSet && facedUp && permOk;
+  const details = {
+    'turnobject EAST → facing=4': turnedEast,
+    'setobjectmovementtype 7 → movementType (attendu MOVEMENT_TYPE_FACE_UP)': `${o.movementType === origMt ? '(restauré)' : ''}${mtSet}`,
+    'setobjectmovementtype → facing NORTH=2': facedUp,
+    'copyobjectxytoperm → template XY = current-MAP_OFFSET': permOk,
+  };
+  console.log(`[byte-vm] TEST object-movement : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -567,4 +609,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, run, VarGet, getScriptOffset };

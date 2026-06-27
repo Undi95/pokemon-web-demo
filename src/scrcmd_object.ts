@@ -14,7 +14,7 @@
  * addobject / showobjectat / hideobjectat.
  */
 
-import { findNpcByLocalId, resolveObjectLocalIdRaw } from './engine/script/script-opcodes-helpers';
+import { findNpcByLocalId, resolveObjectLocalIdRaw, findTemplateByLocalId } from './engine/script/script-opcodes-helpers';
 import { VarGet, FlagSet, FlagClear } from './engine/script/script-vars';
 import { MAP_OFFSET, gMapHeader } from './fieldmap';
 import { SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, gObjectEvents } from './event_object_movement';
@@ -87,5 +87,59 @@ export function doSetObjectInvisibility(localIdArg: string, invisible: boolean):
     const localId = VarGet(localIdArg);
     const obj = gObjectEvents.find((o) => o.active && (o as unknown as { localId?: number }).localId === localId);
     if (obj) obj.invisible = true;
+  }
+}
+
+/** 1:1 décomp `ObjectEventTurn` anim (event_object_movement.c:1867) : StartSpriteAnim
+ *  (GetFaceDirectionAnimNum(dir)) + SeekSpriteAnim(0) via globalThis.__npcSetFaceAnim. */
+function npcTurnAnim(npc: { facingDirection: number; spriteId: number; inanimate: boolean }): void {
+  const setFace = (globalThis as Record<string, unknown>).__npcSetFaceAnim as ((rt: unknown, npc: unknown) => void) | undefined;
+  if (!setFace) return;
+  try { setFace(getRuntime(), npc); } catch { /* rt pas prêt */ }
+}
+
+/** 1:1 décomp `ScrCmd_turnobject` → ObjectEventTurnByLocalIdAndMap → ObjectEventTurn :
+ *  pose facingDirection (= valeur DIR_, 1=SOUTH..4=EAST) + relance l'anim de face. */
+export function doTurnObject(localIdArg: string, direction: number): void {
+  const npc = findNpcByLocalId(localIdArg);
+  if (!npc) return;
+  npc.facingDirection = direction;
+  npcTurnAnim(npc as unknown as { facingDirection: number; spriteId: number; inanimate: boolean });
+}
+
+/** 1:1 décomp `ScrCmd_copyobjectxytoperm` → TryOverrideObjectEventTemplateCoords :
+ *  persiste la position courante du NPC dans son template (pas de reset au reload). */
+export function doCopyObjectXYToPerm(localIdArg: string): void {
+  const npc = findNpcByLocalId(localIdArg);
+  const tmpl = findTemplateByLocalId(localIdArg);
+  if (npc && tmpl) {
+    tmpl.x = npc.currentCoordsX - MAP_OFFSET;
+    tmpl.y = npc.currentCoordsY - MAP_OFFSET;
+  }
+}
+
+/** 1:1 décomp `ScrCmd_setobjectmovementtype` → SetObjEventTemplateMovementType.
+ *  movementTypeRaw = string "MOVEMENT_TYPE_*" (le byte-VM convertit l'id numérique).
+ *  Sync facingDirection immédiat pour FACE_x / WALK_IN_PLACE_x même si le NPC est gelé. */
+export function doSetObjectMovementType(localIdArg: string, movementTypeRaw: string): void {
+  const tpl = findTemplateByLocalId(localIdArg);
+  if (tpl) tpl.movementTypeRaw = movementTypeRaw;
+  const npc = findNpcByLocalId(localIdArg);
+  if (npc) {
+    npc.movementType = movementTypeRaw;
+    npc.movementStep = 0;
+    if (movementTypeRaw) {
+      const m = movementTypeRaw.toUpperCase();
+      let newFacing = 0;
+      if (m.endsWith('_FACE_UP') || m === 'MOVEMENT_TYPE_FACE_UP') newFacing = 2;          // DIR_NORTH
+      else if (m.endsWith('_FACE_DOWN') || m === 'MOVEMENT_TYPE_FACE_DOWN') newFacing = 1;  // DIR_SOUTH
+      else if (m.endsWith('_FACE_LEFT') || m === 'MOVEMENT_TYPE_FACE_LEFT') newFacing = 3;  // DIR_WEST
+      else if (m.endsWith('_FACE_RIGHT') || m === 'MOVEMENT_TYPE_FACE_RIGHT') newFacing = 4; // DIR_EAST
+      else if (m.includes('WALK_IN_PLACE_DOWN')) newFacing = 1;
+      else if (m.includes('WALK_IN_PLACE_UP')) newFacing = 2;
+      else if (m.includes('WALK_IN_PLACE_LEFT')) newFacing = 3;
+      else if (m.includes('WALK_IN_PLACE_RIGHT')) newFacing = 4;
+      if (newFacing > 0) npc.facingDirection = newFacing;
+    }
   }
 }
