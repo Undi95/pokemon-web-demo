@@ -21,7 +21,10 @@ import {
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 import { setPendingWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
+import { GetCoins, AddCoins, RemoveCoins } from './coins';
 import { VAR_RESULT } from '../include/constants/vars';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 // Registre des specials (name→fn) du moteur actuel — réutilisé transitoirement
 // (les fns de special sont les mêmes fns de jeu 1:1). gSpecials[id] = invokeSpecial(name).
 import { invokeSpecial } from './scrcmd';
@@ -234,6 +237,18 @@ const ScrCmd_addmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); co
 const ScrCmd_removemoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) RemoveMoney(a); return false; };
 const ScrCmd_checkmoney: ScrCmdFunc = (ctx) => { const a = ScriptReadWord(ctx); const ign = ScriptReadByte(ctx); if (!ign) setResult(IsEnoughMoney(a) ? 1 : 0); return false; };
 
+// ─── item / coins (1:1 scrcmd.c) ────────────────────────────────────────────
+// Notre Bag est à CLÉS string → pont id numérique→ITEM_X (reverseDecompConstant).
+const itemKeyOf = (id: number): string => reverseDecompConstant(id, 'ITEM_') ?? '';
+const ScrCmd_additem: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(AddBagItem(itemKeyOf(id), q) ? 1 : 0); return false; };       // :487
+const ScrCmd_removeitem: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(RemoveBagItem(itemKeyOf(id), q) ? 1 : 0); return false; };  // :496
+const ScrCmd_checkitem: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(CheckBagHasItem(itemKeyOf(id), q) ? 1 : 0); return false; };  // :514
+const ScrCmd_checkitemspace: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(CheckBagHasSpace(itemKeyOf(id), q) ? 1 : 0); return false; }; // :505
+// coins (1:1 scrcmd.c:2129-2152) — addcoins/removecoins inversent le résultat.
+const ScrCmd_checkcoins: ScrCmdFunc = (ctx) => { const ref = GetVarPointer(ScriptReadHalfword(ctx)); if (ref) ref.set(GetCoins()); return false; };
+const ScrCmd_addcoins: ScrCmdFunc = (ctx) => { const c = VarGet(ScriptReadHalfword(ctx)); setResult(AddCoins(c) ? 0 : 1); return false; };
+const ScrCmd_removecoins: ScrCmdFunc = (ctx) => { const c = VarGet(ScriptReadHalfword(ctx)); setResult(RemoveCoins(c) ? 0 : 1); return false; };
+
 // ─── applymovement / waitmovement (1:1 scrcmd.c:992-1045) ───────────────────
 let sMovingNpcId = 0;
 /** Résout le pointeur de mouvement (symbole) → label de séquence de mouvement. */
@@ -313,6 +328,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_faceplayer, ScrCmd_lock, ScrCmd_lockall, ScrCmd_release, ScrCmd_releaseall,
   ScrCmd_applymovement, ScrCmd_applymovementat, ScrCmd_waitmovement, ScrCmd_waitmovementat,
   ScrCmd_warp, ScrCmd_warpsilent, ScrCmd_addmoney, ScrCmd_removemoney, ScrCmd_checkmoney,
+  ScrCmd_additem, ScrCmd_removeitem, ScrCmd_checkitem, ScrCmd_checkitemspace,
+  ScrCmd_checkcoins, ScrCmd_addcoins, ScrCmd_removecoins,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

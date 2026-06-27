@@ -16,6 +16,7 @@ import {
 import type { ScriptPtr } from '../../src/script_bytevm';
 import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
+import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
 import { installByteVmHandlers, setSpecialNames } from '../../src/scrcmd_bytevm';
 import { registerSpecial } from '../../src/scrcmd';
 import { getText, loadMapScripts } from '../../src/script';
@@ -306,6 +307,26 @@ export async function testMoney(): Promise<{ pass: boolean; details: Record<stri
   return { pass, details };
 }
 
+/** Test ITEM via bytecode synthétique : additem ITEM_POTION, 5 ; end →
+ *  VAR_RESULT=1 (ajouté) + bag a ≥5 potions. Nettoie après (removeitem). */
+export async function testItem(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const ITEM_POTION = num('ITEM_POTION');
+  const VAR_RESULT = num('VAR_RESULT');
+  const ADDITEM = cmdIdOf('ScrCmd_additem'), END = cmdIdOf('ScrCmd_end');
+  // additem ITEM_POTION (u16), 5 (u16) ; end
+  const code = Uint8Array.from([ADDITEM, lo(ITEM_POTION), hi(ITEM_POTION), 5, 0, END]);
+  VarSet(VAR_RESULT, 0);
+  RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+  const result = VarGet(VAR_RESULT);
+  const has5 = CheckBagHasItem('ITEM_POTION', 5);
+  RemoveBagItem('ITEM_POTION', 5);   // nettoyage
+  const pass = result === 1 && has5;
+  const details = { 'additem VAR_RESULT (attendu 1)': result, 'bag a ≥5 ITEM_POTION': has5 };
+  console.log(`[byte-vm] TEST item : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -313,4 +334,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, run, VarGet, getScriptOffset };
