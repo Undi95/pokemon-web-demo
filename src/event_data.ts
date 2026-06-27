@@ -54,7 +54,7 @@ export const gSpecialVars: number[] = new Array(NUM_SPECIAL_VARS).fill(0);
 interface VarRef { get(): number; set(v: number): void; }
 
 /** 1:1 décomp `u16 *GetVarPointer(u16 id)` (event_data.c:164). */
-function GetVarPointer(id: number): VarRef | null {
+export function GetVarPointer(id: number): VarRef | null {
   if (id < VARS_START) return null;
   if (id < SPECIAL_VARS_START) {
     const i = id - VARS_START;

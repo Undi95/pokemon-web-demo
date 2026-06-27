@@ -29,6 +29,8 @@
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { MAX_SPRITES } from '../runtime/decomp-runtime';
 import { getCurrentSongId, getRuntime } from '../runtime/decomp-globals';
+// byte-VM (Phase 3) : expose window.__byteVm pour vérif déterministe (slice vertical).
+import './dev-bytevm-tools';
 import {
   tpToRandomFeebasTile, tpToAlteringCave, cycleAlteringCaveTable,
   getAlteringCaveTable, alteringCaveLabel, loadAlteringCaveSpecies,

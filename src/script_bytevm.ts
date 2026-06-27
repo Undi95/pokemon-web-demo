@@ -272,3 +272,75 @@ export function RunScriptImmediately(ptr: ScriptPtr): void {
 // Accès interne (pour le loader / les handlers Phase 4).
 export function _getGlobalContext(): ScriptContext { return sGlobalScriptContext; }
 export function _getGlobalStatus(): number { return sGlobalScriptContextStatus; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loader de l'image bytecode (cf. scripts/compile-scripts.cjs)
+// L'image globale + les tables de symboles sont chargées une fois ; les pointeurs
+// de script sont des offsets dans cette image (= adresses ROM).
+// ─────────────────────────────────────────────────────────────────────────────
+export interface ByteVmSymbol { kind: string; label: string; }
+
+let gScriptImage: Uint8Array = new Uint8Array(0);
+let _scriptOffsets: Record<string, number> = {};
+let _symbols: ByteVmSymbol[] = [];
+let _mapSymbols: string[] = [];
+let _mapScriptTables: Record<string, { name: string; args: string[] }[]> = {};
+let _loaded = false;
+
+function _b64ToU8(b64: string): Uint8Array {
+  if (typeof atob === 'function') {
+    const bin = atob(b64);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  }
+  // Node (tests) : Buffer.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return Uint8Array.from((globalThis as any).Buffer.from(b64, 'base64'));
+}
+
+export async function loadByteVmImage(url = '/decomp/em/script-bytecode.json'): Promise<void> {
+  if (_loaded) return;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`[byte-vm] image HTTP ${r.status}`);
+  const j = await r.json();
+  gScriptImage = _b64ToU8(j.image);
+  _scriptOffsets = j.scriptOffsets ?? {};
+  _symbols = j.symbols ?? [];
+  _mapSymbols = j.mapSymbols ?? [];
+  _mapScriptTables = j.mapScriptTables ?? {};
+  _loaded = true;
+  console.log(`[byte-vm] image chargée : ${gScriptImage.length} octets, ${Object.keys(_scriptOffsets).length} scripts, ${_symbols.length} symboles`);
+}
+
+export function isByteVmLoaded(): boolean { return _loaded; }
+export function getScriptImage(): Uint8Array { return gScriptImage; }
+export function resolveSymbol(id: number): ByteVmSymbol | undefined { return _symbols[id]; }
+export function resolveMapSymbol(id: number): string | undefined { return _mapSymbols[id]; }
+export function getScriptOffset(label: string): number | undefined { return _scriptOffsets[label]; }
+export function getMapScriptTable(label: string): { name: string; args: string[] }[] | undefined { return _mapScriptTables[label]; }
+
+/** Curseur vers un offset de l'image globale (= déréf d'un pointeur de script). */
+export function ptrFromOffset(off: number): ScriptPtr { return { buf: gScriptImage, off }; }
+
+/** Curseur au point d'entrée d'un script nommé (label → offset image). */
+export function ptrFromLabel(label: string): ScriptPtr | null {
+  const off = _scriptOffsets[label];
+  return off === undefined ? null : { buf: gScriptImage, off };
+}
+
+/** Helper : démarre un script (par label) dans le contexte global. */
+export function ScriptContext_SetupScriptByLabel(label: string): boolean {
+  const ptr = ptrFromLabel(label);
+  if (!ptr) { console.warn(`[byte-vm] script introuvable: ${label}`); return false; }
+  ScriptContext_SetupScript(ptr);
+  return true;
+}
+
+/** Helper : run synchrone (par label). */
+export function RunScriptImmediatelyByLabel(label: string): boolean {
+  const ptr = ptrFromLabel(label);
+  if (!ptr) { console.warn(`[byte-vm] script introuvable: ${label}`); return false; }
+  RunScriptImmediately(ptr);
+  return true;
+}
