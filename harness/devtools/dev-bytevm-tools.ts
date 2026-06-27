@@ -27,6 +27,10 @@ import { isMovementDone } from '../../src/engine/field/movement-system';
 import { gObjectEvents } from '../../src/event_object_movement';
 import { gPlayerAvatar } from '../../src/field_player_avatar';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
+import { getStringVar } from '../../src/text';
+import { getSpeciesNameFr, getItemNameFr } from '../runtime/data-tables';
+import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
+import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -378,6 +382,59 @@ export async function testObject(): Promise<{ pass: boolean; details: Record<str
   return { pass, details };
 }
 
+/** Test BUFFERS via bytecode synthétique :
+ *  bufferspeciesname STR_VAR_2, SPECIES_PIKACHU ; bufferitemname STR_VAR_1, ITEM_POTION ;
+ *  buffernumberstring STR_VAR_3, 42 ; end
+ *  → gStringVar2 = nom espèce FR, gStringVar1 = nom item FR, gStringVar3 = "42".
+ *  (les bytes stringVarId sont 0/1/2 = STR_VAR_1/2/3 ; VarGet(literal<VARS_START)=literal.) */
+export async function testBuffers(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SPECIES = num('SPECIES_PIKACHU'), ITEM = num('ITEM_POTION');
+  const BSP = cmdIdOf('ScrCmd_bufferspeciesname'), BIT = cmdIdOf('ScrCmd_bufferitemname');
+  const BNUM = cmdIdOf('ScrCmd_buffernumberstring'), END = cmdIdOf('ScrCmd_end');
+  // bufferspeciesname STR_VAR_2(=1), SPECIES ; bufferitemname STR_VAR_1(=0), ITEM ;
+  // buffernumberstring STR_VAR_3(=2), 42 ; end
+  const code = Uint8Array.from([
+    BSP, 1, lo(SPECIES), hi(SPECIES),
+    BIT, 0, lo(ITEM), hi(ITEM),
+    BNUM, 2, 42, 0,
+    END,
+  ]);
+  RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+  const sp = getStringVar(2), it = getStringVar(1), nb = getStringVar(3);
+  const expSp = getSpeciesNameFr('SPECIES_PIKACHU'), expIt = getItemNameFr('ITEM_POTION');
+  const pass = sp === expSp && expSp.length > 0 && it === expIt && expIt.length > 0 && nb === '42';
+  const details = {
+    'gStringVar2 espèce (attendu)': `${sp} / ${expSp}`,
+    'gStringVar1 item (attendu)': `${it} / ${expIt}`,
+    'gStringVar3 nombre (attendu 42)': nb,
+  };
+  console.log(`[byte-vm] TEST buffers : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
+/** Test GETPLAYERXY + GETPARTYSIZE via bytecode synthétique :
+ *  getplayerxy VAR_TEMP_1, VAR_TEMP_2 ; getpartysize ; end
+ *  → VAR_TEMP_1=pos.x, VAR_TEMP_2=pos.y, VAR_RESULT=CalculatePlayerPartyCount(). */
+export async function testPlayer(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const VT1 = num('VAR_TEMP_1'), VT2 = num('VAR_TEMP_2'), VR = num('VAR_RESULT');
+  const GXY = cmdIdOf('ScrCmd_getplayerxy'), GSZ = cmdIdOf('ScrCmd_getpartysize'), END = cmdIdOf('ScrCmd_end');
+  const code = Uint8Array.from([GXY, lo(VT1), hi(VT1), lo(VT2), hi(VT2), GSZ, END]);
+  VarSet(VT1, 0); VarSet(VT2, 0); VarSet(VR, 0);
+  RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+  const gx = VarGet(VT1), gy = VarGet(VT2), sz = VarGet(VR);
+  const expX = gSaveBlock1Ptr.pos.x & 0xFFFF, expY = gSaveBlock1Ptr.pos.y & 0xFFFF, expSz = CalculatePlayerPartyCount();
+  const pass = gx === expX && gy === expY && sz === expSz;
+  const details = {
+    'getplayerxy → x (attendu)': `${gx} / ${expX}`,
+    'getplayerxy → y (attendu)': `${gy} / ${expY}`,
+    'getpartysize → VAR_RESULT (attendu)': `${sz} / ${expSz}`,
+  };
+  console.log(`[byte-vm] TEST player : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -385,4 +442,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, run, VarGet, getScriptOffset };

@@ -49,6 +49,12 @@ import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/fiel
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
 } from '../include/constants/event_object_movement';
+// Tables de noms FR (= adaptation de gSpeciesNames/gMoveNames/gItems[].name/gTrainers[]
+// — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
+import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr } from '../harness/runtime/data-tables';
+import { setStringVar, decodeOwBytes } from './text';
+import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, gPlayerParty } from './engine/battle/party-storage';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 
 // gStdScripts (1:1 event_scripts.s:95-107) — STD_*/MSGBOX_* index → label de std script.
 const gStdScripts: readonly string[] = [
@@ -365,6 +371,111 @@ const ScrCmd_setflag: ScrCmdFunc = (ctx) => { FlagSet(ScriptReadHalfword(ctx)); 
 const ScrCmd_clearflag: ScrCmdFunc = (ctx) => { FlagClear(ScriptReadHalfword(ctx)); return false; };    // :587
 const ScrCmd_checkflag: ScrCmdFunc = (ctx) => { ctx.comparisonResult = FlagGet(ScriptReadHalfword(ctx)) ? 1 : 0; return false; }; // :593
 
+// ─── getplayerxy / getpartysize (1:1 scrcmd.c:887-901) ──────────────────────
+const ScrCmd_getplayerxy: ScrCmdFunc = (ctx) => {                            // :887
+  const pX = GetVarPointer(ScriptReadHalfword(ctx));
+  const pY = GetVarPointer(ScriptReadHalfword(ctx));
+  if (pX) pX.set(gSaveBlock1Ptr.pos.x & 0xFFFF);
+  if (pY) pY.set(gSaveBlock1Ptr.pos.y & 0xFFFF);
+  return false;
+};
+const ScrCmd_getpartysize: ScrCmdFunc = () => { setResult(CalculatePlayerPartyCount()); return false; }; // :897
+
+// ─── buffers (1:1 scrcmd.c:1549-1651, 2272-2288) ────────────────────────────
+// Le byte `stringVarId` est déjà 0/1/2 (macro `stringvar` STR_VAR_1/2/3→0/1/2,
+// = index dans sScriptStringVars[]={gStringVar1,2,3}). Notre setStringVar est
+// 1-indexé → n = idx+1. constOf(num,prefix) = id numérique → constante décomp.
+const constOf = (num: number, prefix: string): string => reverseDecompConstant(num, prefix) ?? `${prefix}${num}`;
+// 1:1 GetLeadMonIndex (field_specials.c:1531) : 1er slot non-vide non-œuf, sinon 0.
+// (transcription identique au privé `_GetLeadMonIndex` de specials-registry — à
+//  consolider après le swap ; field_specials.ts est volontairement import-light.)
+function GetLeadMonIndex(): number {
+  for (let i = 0; i < gPlayerParty.length; i++) {
+    const mon = gPlayerParty[i];
+    if ((GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(GetMonData(mon, MON_DATA_IS_EGG) as number)) return i;
+  }
+  return 0;
+}
+const ScrCmd_bufferspeciesname: ScrCmdFunc = (ctx) => {                      // :1549
+  const idx = ScriptReadByte(ctx);
+  const species = VarGet(ScriptReadHalfword(ctx));
+  setStringVar(idx + 1, getSpeciesNameFr(constOf(species, 'SPECIES_')));
+  return false;
+};
+const ScrCmd_bufferleadmonspeciesname: ScrCmdFunc = (ctx) => {               // :1558
+  const idx = ScriptReadByte(ctx);
+  const species = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES) as number;
+  setStringVar(idx + 1, getSpeciesNameFr(constOf(species, 'SPECIES_')));
+  return false;
+};
+const ScrCmd_bufferpartymonnick: ScrCmdFunc = (ctx) => {                     // :1569
+  const idx = ScriptReadByte(ctx);
+  const slot = VarGet(ScriptReadHalfword(ctx));
+  const mon = gPlayerParty[slot];
+  const nick = (GetMonData(mon, MON_DATA_NICKNAME) as string)
+    || (mon ? getSpeciesNameFr(constOf(GetMonData(mon, MON_DATA_SPECIES) as number, 'SPECIES_')) : '');
+  setStringVar(idx + 1, nick);   // StringGet_Nickname : nos nicknames sont déjà propres
+  return false;
+};
+const ScrCmd_bufferitemname: ScrCmdFunc = (ctx) => {                         // :1579
+  const idx = ScriptReadByte(ctx);
+  const itemId = VarGet(ScriptReadHalfword(ctx));
+  setStringVar(idx + 1, getItemNameFr(constOf(itemId, 'ITEM_')));
+  return false;
+};
+const ScrCmd_bufferitemnameplural: ScrCmdFunc = (ctx) => {                   // :1588
+  const idx = ScriptReadByte(ctx);
+  const itemId = VarGet(ScriptReadHalfword(ctx));
+  const quantity = VarGet(ScriptReadHalfword(ctx));
+  const name = getItemNameFr(constOf(itemId, 'ITEM_'));
+  setStringVar(idx + 1, quantity > 1 ? name + 's' : name);   // CopyItemNameHandlePlural (mirror parsé)
+  return false;
+};
+const ScrCmd_buffermovename: ScrCmdFunc = (ctx) => {                         // :1607
+  const idx = ScriptReadByte(ctx);
+  const move = VarGet(ScriptReadHalfword(ctx));
+  setStringVar(idx + 1, getMoveNameFr(constOf(move, 'MOVE_')));
+  return false;
+};
+const ScrCmd_buffernumberstring: ScrCmdFunc = (ctx) => {                     // :1616
+  const idx = ScriptReadByte(ctx);
+  const num = VarGet(ScriptReadHalfword(ctx));
+  setStringVar(idx + 1, String(num));   // ConvertIntToDecimalStringN(LEFT_ALIGN, CountDigits)
+  return false;
+};
+const ScrCmd_bufferstdstring: ScrCmdFunc = (ctx) => {                        // :1626
+  const idx = ScriptReadByte(ctx);
+  VarGet(ScriptReadHalfword(ctx));   // index — gStdStrings non extrait (= moteur parsé, dette data)
+  setStringVar(idx + 1, '');
+  return false;
+};
+const ScrCmd_bufferdecorationname: ScrCmdFunc = (ctx) => {                   // :1598
+  const idx = ScriptReadByte(ctx);
+  VarGet(ScriptReadHalfword(ctx));   // decorId — gDecorations non extrait (= moteur parsé, dette data)
+  setStringVar(idx + 1, '');
+  return false;
+};
+const ScrCmd_bufferstring: ScrCmdFunc = (ctx) => {                           // :1644
+  const idx = ScriptReadByte(ctx);
+  const sym = resolveSymbol(ScriptReadWord(ctx));
+  const bytes = sym ? getText(sym.label) : null;
+  setStringVar(idx + 1, bytes ? decodeOwBytes(bytes) : '');
+  return false;
+};
+const ScrCmd_buffertrainerclassname: ScrCmdFunc = (ctx) => {                 // :2272
+  const idx = ScriptReadByte(ctx);
+  const trainerId = VarGet(ScriptReadHalfword(ctx));
+  const t = getTrainer(constOf(trainerId, 'TRAINER_'));
+  setStringVar(idx + 1, t ? getTrainerClassNameFr(t.trainerClass) : '');
+  return false;
+};
+const ScrCmd_buffertrainername: ScrCmdFunc = (ctx) => {                      // :2281
+  const idx = ScriptReadByte(ctx);
+  const trainerId = VarGet(ScriptReadHalfword(ctx));
+  setStringVar(idx + 1, getTrainerNameFr(constOf(trainerId, 'TRAINER_')));
+  return false;
+};
+
 /** Handlers du slice, keyed par nom ScrCmd_* (= colonne `handler` du cmd-table). */
 export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_nop, ScrCmd_nop1, ScrCmd_end, ScrCmd_gotonative, ScrCmd_waitstate,
@@ -387,6 +498,11 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_playmoncry, ScrCmd_waitmoncry, ScrCmd_setmetatile,
   ScrCmd_setobjectxy, ScrCmd_setobjectxyperm, ScrCmd_addobject, ScrCmd_addobjectat,
   ScrCmd_removeobject, ScrCmd_removeobjectat, ScrCmd_showobjectat, ScrCmd_hideobjectat,
+  ScrCmd_getplayerxy, ScrCmd_getpartysize,
+  ScrCmd_bufferspeciesname, ScrCmd_bufferleadmonspeciesname, ScrCmd_bufferpartymonnick,
+  ScrCmd_bufferitemname, ScrCmd_bufferitemnameplural, ScrCmd_buffermovename,
+  ScrCmd_buffernumberstring, ScrCmd_bufferstdstring, ScrCmd_bufferdecorationname,
+  ScrCmd_bufferstring, ScrCmd_buffertrainerclassname, ScrCmd_buffertrainername,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
