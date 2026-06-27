@@ -52,3 +52,10 @@ export function GetHealLocationByName(id: string | undefined | null): HealLocati
   const full = id.startsWith('HEAL_LOCATION_') ? id : `HEAL_LOCATION_${id}`;
   return sHealLocations.find((h) => h.id === full) ?? null;
 }
+
+/** 1:1 décomp `GetHealLocation(u8 id)` (heal_location.c) : id 1-based (HEAL_LOCATION_*) →
+ *  sHealLocations[id-1]. Convention id = index+1 (= celle du compilateur byte-VM, qui résout
+ *  HEAL_LOCATION_* via heal_locations.json index+1). Source unique pour ScrCmd_setrespawn. */
+export function GetHealLocation(id: number): HealLocation | null {
+  return (id >= 1 && id <= sHealLocations.length) ? sHealLocations[id - 1] : null;
+}

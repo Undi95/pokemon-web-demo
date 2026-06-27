@@ -8,6 +8,8 @@
  * Source des JSON : `public/decomp/em/` produits par les `extract-*.mjs`.
  */
 
+import { reverseDecompConstant } from './decomp-constants';
+
 // ----- Text tables (text-tables.json) -----
 export interface TextTables {
   species: Record<string, string>;
@@ -82,6 +84,21 @@ export function loadItemsTable(t: Record<string, ItemDef>): void {
 }
 export function getItem(itemId: string): ItemDef | undefined {
   return itemsTable?.[itemId];
+}
+/** 1:1 décomp `GetPocketByItemId(u16 itemId)` (item.c) : itemId → POCKET_* enum
+ *  (1-based, item.h:5-10). POCKET_NONE=0, ITEMS=1, POKE_BALLS=2, TM_HM=3, BERRIES=4,
+ *  KEY_ITEMS=5. Source unique pour ScrCmd_checkitemtype (parsé + byte-VM). */
+export function GetPocketByItemId(itemId: number): number {
+  const itemKey = reverseDecompConstant(itemId, 'ITEM_');
+  if (!itemKey) return 0;
+  switch (getItem(itemKey)?.pocket) {
+    case 'POCKET_ITEMS': return 1;
+    case 'POCKET_POKE_BALLS': return 2;
+    case 'POCKET_TM_HM': return 3;
+    case 'POCKET_BERRIES': return 4;
+    case 'POCKET_KEY_ITEMS': return 5;
+    default: return 0;
+  }
 }
 /** Retourne tous les itemKeys connus du jeu (= clés de items.json).
  *  Skip ITEM_NONE (= placeholder décomp) et ITEM_B_USE_* (= virtual items

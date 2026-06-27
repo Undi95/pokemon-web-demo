@@ -31,6 +31,7 @@ import { getStringVar } from '../../src/text';
 import { getSpeciesNameFr, getItemNameFr } from '../runtime/data-tables';
 import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
+import { gSelectedObjectEvent } from '../../src/engine/script/script-vars';
 import { GetSavedWeather, SetSavedWeather } from '../../src/field_weather_effect';
 import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
 import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
@@ -933,6 +934,45 @@ export async function testLongTail5(): Promise<{ pass: boolean; details: Record<
   return { pass, details };
 }
 
+/** Test LONG-TAIL 6 (batch MEDIUM voie A) : checkitemtype(ITEM_POKE_BALL)→POCKET_POKE_BALLS(2)
+ *  + checkitemtype(ITEM_POTION)→POCKET_ITEMS(1) ; setrespawn(3)→respawnLocation HEAL_LOCATION_
+ *  PETALBURG_CITY ; selectapproachingtrainer→gSelectedObjectEvent.index = getter(stub 0) ;
+ *  ALIGNEMENT octets checkitemtype(2o)+setrespawn(2o)+selectapproachingtrainer(0o) via marqueur. */
+export async function testLongTail6(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const CIT = cmdIdOf('ScrCmd_checkitemtype'), SR = cmdIdOf('ScrCmd_setrespawn'),
+        SAT = cmdIdOf('ScrCmd_selectapproachingtrainer'), SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VR = num('VAR_RESULT'), VT1 = num('VAR_TEMP_1');
+  const pokeBall = num('ITEM_POKE_BALL'), potion = num('ITEM_POTION');
+  // checkitemtype ITEM_POKE_BALL (literal < VARS_START → VarGet renvoie l'id) → POCKET_POKE_BALLS=2
+  VarSet(VR, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([CIT, lo(pokeBall), hi(pokeBall), END]), off: 0 } as ScriptPtr);
+  const pocketBall = VarGet(VR);
+  RunScriptImmediately({ buf: Uint8Array.from([CIT, lo(potion), hi(potion), END]), off: 0 } as ScriptPtr);
+  const pocketPotion = VarGet(VR);
+  // setrespawn id=3 (HEAL_LOCATION_PETALBURG_CITY = index 2 +1) → respawnLocation string
+  RunScriptImmediately({ buf: Uint8Array.from([SR, 3, 0, END]), off: 0 } as ScriptPtr);
+  const respawn = (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation;
+  // selectapproachingtrainer → gSelectedObjectEvent.index = GetCurrentApproachingTrainerObjectEventId() (stub 0)
+  const sel = (globalThis as { __selBefore?: number }); void sel;
+  RunScriptImmediately({ buf: Uint8Array.from([SAT, END]), off: 0 } as ScriptPtr);
+  const selIdx = gSelectedObjectEvent.index;
+  // alignement octets : checkitemtype(2o) + setrespawn(2o) + selectapproachingtrainer(0o) + setvar 0xBA11
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    CIT, lo(potion), hi(potion),
+    SR, 3, 0,
+    SAT,
+    SETVAR, lo(VT1), hi(VT1), lo(0xBA11), hi(0xBA11),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xBA11;
+  const pass = pocketBall === 2 && pocketPotion === 1 && respawn === 'HEAL_LOCATION_PETALBURG_CITY' && selIdx === 0 && aligned;
+  const details = { 'checkitemtype POKE_BALL → POCKET_POKE_BALLS(2)': pocketBall, 'checkitemtype POTION → POCKET_ITEMS(1)': pocketPotion, 'setrespawn(3) → respawnLocation': respawn, 'selectapproachingtrainer → index(stub 0)': selIdx, 'alignement (setvar=0xBA11)': aligned };
+  console.log(`[byte-vm] TEST long-tail 6 (MEDIUM voie A) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Test SETWILDBATTLE (STEP 1 déterministe) : setwildbattle species(u16) level(u8) item(u16)
  *  → CreateScriptedWildMon peuple gEnemyParty[0] (species + level corrects). NE boote PAS le
  *  combat (pas de dowildbattle, qui swappe CB2). */
@@ -977,4 +1017,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };

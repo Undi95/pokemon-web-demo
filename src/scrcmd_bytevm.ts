@@ -62,7 +62,7 @@ import {
 } from '../include/constants/event_object_movement';
 // Tables de noms FR (= adaptation de gSpeciesNames/gMoveNames/gItems[].name/gTrainers[]
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
-import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr } from '../harness/runtime/data-tables';
+import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
 import { setStringVar, decodeOwBytes } from './text';
 import { CalculatePlayerPartyCount, GetMonData, SetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -70,6 +70,8 @@ import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } f
 import { FadeScreen } from './field_weather';
 import { Random } from './random';
 import { PlantBerryTree } from './berry';
+import { GetHealLocation } from './heal_location';
+import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer } from './scrcmd_trainer';
 // Voie A : logique « porte » partagée avec le moteur parsé (source unique).
 import { doOpenDoor, doCloseDoor, doSetDoorOpen, doSetDoorClosed, isDoorAnimationStopped } from './scrcmd_door';
 // Voie A : logique « field effect » partagée avec le moteur parsé (source unique).
@@ -313,6 +315,29 @@ const ScrCmd_setmodernfatefulencounter: ScrCmdFunc = (ctx) => {               //
 
 // ─── returnram (1:1 scrcmd.c:283) — RAM script (mystery event) ; parsé = StopScript (dette). ──
 const ScrCmd_returnram: ScrCmdFunc = (ctx) => { StopScript(ctx); return false; };  // :283
+
+// ─── checkitemtype (1:1 scrcmd.c:523) : VAR_RESULT = GetPocketByItemId(VarGet(itemId)). Voie A. ──
+const ScrCmd_checkitemtype: ScrCmdFunc = (ctx) => { setResult(GetPocketByItemId(VarGet(ScriptReadHalfword(ctx)))); return false; };  // :523
+
+// ─── setrespawn (1:1 scrcmd.c:2005) : SetLastHealLocationWarp(VarGet(healLocationId)). Le web
+//     stocke respawnLocation = HEAL_LOCATION_* STRING (dette R3, cf [[next-chantier-pokecenter-heal]]) ;
+//     GetHealLocation(id 1-based) → .id donne EXACTEMENT la string que pose le parsé (source unique). ──
+const ScrCmd_setrespawn: ScrCmdFunc = (ctx) => {                              // :2005
+  const heal = GetHealLocation(VarGet(ScriptReadHalfword(ctx)));
+  if (heal) (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation = heal.id;
+  return false;
+};
+
+// ─── trainer approach (1:1 scrcmd.c:2186/2192 ; logique partagée scrcmd_trainer — voie A) ──
+// selectapproachingtrainer : gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId().
+const ScrCmd_selectapproachingtrainer: ScrCmdFunc = () => { gSelectedObjectEvent.index = GetCurrentApproachingTrainerObjectEventId(); return false; }; // :2186
+// lockfortrainer : doLockForTrainer → null = pas de native script (return false) ; sinon poll.
+const ScrCmd_lockfortrainer: ScrCmdFunc = (ctx) => {                          // :2192
+  const poll = doLockForTrainer(gSelectedObjectEvent.index);
+  if (!poll) return false;
+  SetupNativeScript(ctx, poll);
+  return true;
+};
 
 // ─── long-tail simple #3 (1:1 scrcmd.c) ─────────────────────────────────────
 // erasebox : lit 4 octets, no-op (= décomp Menu_EraseWindowRect commenté).
@@ -855,7 +880,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setwildbattle, ScrCmd_dowildbattle,
   ScrCmd_warpdoor, ScrCmd_warpmossdeepgym, ScrCmd_warpspinenter, ScrCmd_warpwhitefade, ScrCmd_warphole,
   ScrCmd_fadeoutbgm, ScrCmd_fadeinbgm, ScrCmd_messageinstant, ScrCmd_pokenavcall,
-  ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram,
+  ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram, ScrCmd_checkitemtype, ScrCmd_setrespawn,
+  ScrCmd_selectapproachingtrainer, ScrCmd_lockfortrainer,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

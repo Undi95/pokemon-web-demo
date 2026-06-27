@@ -12,12 +12,13 @@
  */
 import * as WeatherConstants from '../include/constants/weather';
 import * as Songs from '../include/constants/songs';
-import { getItem, getItemNameFr, getMoveNameFr, getSpeciesNameFr, getTrainer, getTrainerClassNameFr, getTrainerNameFr } from '../harness/runtime/data-tables';
+import { getItem, getItemNameFr, getMoveNameFr, getSpeciesNameFr, getTrainer, getTrainerClassNameFr, getTrainerNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
 import { encodeOwText, setStringVar } from '../include/text';
 import { ScrCmd_dotrainerbattle, ScrCmd_gotobeatenscript, ScrCmd_gotopostbattlescript, ScrCmd_trainerbattle, SetTrainerFlag, ClearTrainerFlag } from './battle_setup';
 import { PlantBerryTree } from './berry';
+import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer } from './scrcmd_trainer';
 import { AddCoins, GetCoins, RemoveCoins } from './coins';
 import { AddBagItem, CheckBagHasItem, CheckBagHasSpace, RemoveBagItem } from './engine/bag/bag';
 import { BattleSetup_StartScriptedWildBattle, CreateScriptedWildMon, StartFirstBattle } from './engine/battle/battle-setup-helpers';
@@ -1341,29 +1342,10 @@ registerOpcode('checkitemspace', (_ctx, args) => {
  *    POCKET_NONE=0, POCKET_ITEMS=1, POCKET_POKE_BALLS=2, POCKET_TM_HM=3,
  *    POCKET_BERRIES=4, POCKET_KEY_ITEMS=5. */
 registerOpcode('checkitemtype', (_ctx, args) => {
+  // Resolve itemArg → itemId numérique (literal ITEM_X ou var), puis GetPocketByItemId (voie A).
   const itemArg = args[0] ?? '';
-  // Resolve itemArg : si literal ITEM_X → direct itemKey ; sinon VarGet → reverseDecompConstant.
-  let itemKey = itemArg;
-  if (!itemKey.startsWith('ITEM_')) {
-    const itemId = VarGet(itemArg);
-    itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? '';
-  }
-  let pocketResult = 0;  // POCKET_NONE par défaut
-  if (itemKey) {
-    const item = getItem(itemKey);
-    if (item && item.pocket) {
-      // 1:1 mapping items.json pocket string → POCKET_* enum 1-based (item.h:5-10).
-      switch (item.pocket) {
-        case 'POCKET_ITEMS':       pocketResult = 1; break;
-        case 'POCKET_POKE_BALLS':  pocketResult = 2; break;
-        case 'POCKET_TM_HM':       pocketResult = 3; break;
-        case 'POCKET_BERRIES':     pocketResult = 4; break;
-        case 'POCKET_KEY_ITEMS':   pocketResult = 5; break;
-        // POCKET_NONE → 0 (= default)
-      }
-    }
-  }
-  VarSet('VAR_RESULT', pocketResult);
+  const itemId = itemArg.startsWith('ITEM_') ? (resolveDecompConstant(itemArg) ?? 0) : VarGet(itemArg);
+  VarSet('VAR_RESULT', GetPocketByItemId(itemId));
   return false;
 });
 
@@ -2071,16 +2053,6 @@ registerOpcode('animateflash', (ctx, args) => {
 /** 1:1 décomp `sCurrentApproachingTrainerObjectEventId` (trainer_see.c).
  *  Set par `selectapproachingtrainer` à l'object event ID du trainer en
  *  approche, lu par `lockfortrainer`. */
-let _sCurrentApproachingTrainerObjectEventId = 0;
-void _sCurrentApproachingTrainerObjectEventId;  // exposed for cross-section consumer if needed.
-
-/** 1:1 décomp `IsOverworldLinkActive` (overworld.c) : returns TRUE si le
- *  player est dans un Union Room (= link battle). Notre port : pas de link
- *  mode → toujours FALSE. */
-function _isInTrainerLink(): boolean {
-  return false;
-}
-
 // ─── Lock / Release / FacePlayer ─────────────────────────────────────────────
 
 registerOpcode('lock', (ctx) => {
@@ -2220,41 +2192,18 @@ registerOpcode('lockfortrainer', (_ctx, _args) => false);
 
 registerOpcode('selectapproachingtrainer', (_ctx, _args) => {
   // 1:1 décomp ScrCmd_selectapproachingtrainer (scrcmd.c:2186-2189) :
-  //   gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId().
-  gSelectedObjectEvent.index = _sCurrentApproachingTrainerObjectEventId;
+  //   gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId(). Voie A.
+  gSelectedObjectEvent.index = GetCurrentApproachingTrainerObjectEventId();
   return false;
 });
 
 registerOpcode('lockfortrainer', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_lockfortrainer (scrcmd.c:2192-2208) :
-  //   if (IsOverworldLinkActive()) return FALSE ;
-  //   if (gObjectEvents[gSelectedObjectEvent].active) {
-  //     FreezeForApproachingTrainers() ;
-  //     SetupNativeScript(ctx, IsFreezeObjectAndPlayerFinished) ;
-  //   }
-  //   return TRUE
-  if (_isInTrainerLink()) return false;
-  const npc = gObjectEvents[gSelectedObjectEvent.index];
-  if (npc && npc.active) {
-    // 1:1 STRICT décomp FreezeForApproachingTrainers (trainer_see.c) : freeze
-    // tous les NPCs via FreezeObjectEvent (= pause sprite.animPaused = sinon
-    // les autres trainers continuent à wander visuellement).
-    for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
-    const poll = (): boolean => {
-      // 1:1 décomp IsFreezeObjectAndPlayerFinished (event_object_movement.c) :
-      //   return !player.runningState !== MOVING && all NPCs stepFramesLeft === 0
-      if (gPlayerAvatar.stepFramesLeft > 0) return false;
-      for (const n of gObjectEvents) {
-        if (!n.active) continue;
-        const walking = (n as unknown as { walkFramesLeft?: number }).walkFramesLeft ?? 0;
-        if (walking > 0) return false;
-      }
-      return true;
-    };
-    SetupNativeScript(ctx, poll);
-    return true;
-  }
-  return false;
+  // 1:1 décomp ScrCmd_lockfortrainer (scrcmd.c:2192-2208) — logique partagée voie A
+  // (doLockForTrainer) : IsOverworldLinkActive / freeze NPCs / poll fin de mouvement.
+  const poll = doLockForTrainer(gSelectedObjectEvent.index);
+  if (!poll) return false;
+  SetupNativeScript(ctx, poll);
+  return true;
 });
 
 
