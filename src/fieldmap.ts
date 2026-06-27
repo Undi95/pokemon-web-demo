@@ -1162,31 +1162,37 @@ export function CanCameraMoveInDirection(direction: number): boolean {
 
 // ─── Phase 4.8 : seamless cross-border transition (1:1 décomp) ───────────────
 
-/** 1:1 décomp `IsCoordInIncomingConnectingMap` (fieldmap.c:717). */
-function isCoordInIncomingConnectingMap(coord: number, srcMax: number, destMax: number, offset: number): boolean {
-  const offset2 = offset < 0 ? 0 : offset;
-  const start = offset2;
-  const end = offset + destMax;
-  // coord is in "outgoing map coord" frame. Adjusted by srcMax for some directions.
-  // 1:1 décomp logic.
-  void srcMax;
-  return coord >= start && coord < end;
+/** 1:1 STRICT décomp `IsCoordInIncomingConnectingMap(coord, srcMax, destMax, offset)`
+ *  (fieldmap.c:717-732) :
+ *    offset2 = max(offset, 0) ;
+ *    if (destMax + offset < srcMax) srcMax = destMax + offset ;   // clamp à la largeur dest
+ *    return offset2 <= coord && coord <= srcMax ;                 // borne INCLUSIVE
+ *  (L'ancienne version approximait — `void srcMax` + borne exclusive — corrigé 1:1.) */
+function IsCoordInIncomingConnectingMap(coord: number, srcMax: number, destMax: number, offset: number): boolean {
+  let offset2 = offset;
+  if (offset2 < 0)
+    offset2 = 0;
+  if (destMax + offset < srcMax)
+    srcMax = destMax + offset;
+  if (offset2 <= coord && coord <= srcMax)
+    return true;
+  return false;
 }
 
 /** 1:1 décomp `IsPosInIncomingConnectingMap` (fieldmap.c:701-715).
  *  Checks if a position (x, y) in the current map maps onto the connection's
  *  destination map (= the connection isn't an "edge" the player can cross
  *  here — only spans certain offset ranges). */
-function isPosInIncomingConnectingMap(direction: number, x: number, y: number, connection: MapConnection): boolean {
+function IsPosInIncomingConnectingMap(direction: number, x: number, y: number, connection: MapConnection): boolean {
   const cMap = GetMapHeaderFromConnection(connection);
   if (!cMap || !gMapHeader) return false;
   switch (direction) {
     case CONNECTION_SOUTH:
     case CONNECTION_NORTH:
-      return isCoordInIncomingConnectingMap(x, gMapHeader.mapLayout.width, cMap.mapLayout.width, connection.offset);
+      return IsCoordInIncomingConnectingMap(x, gMapHeader.mapLayout.width, cMap.mapLayout.width, connection.offset);
     case CONNECTION_WEST:
     case CONNECTION_EAST:
-      return isCoordInIncomingConnectingMap(y, gMapHeader.mapLayout.height, cMap.mapLayout.height, connection.offset);
+      return IsCoordInIncomingConnectingMap(y, gMapHeader.mapLayout.height, cMap.mapLayout.height, connection.offset);
   }
   return false;
 }
@@ -1197,7 +1203,7 @@ function isPosInIncomingConnectingMap(direction: number, x: number, y: number, c
 export function GetIncomingConnection(direction: number, x: number, y: number): MapConnection | null {
   if (!gMapHeader) return null;
   for (const connection of gMapHeader.connections) {
-    if (connection.direction === direction && isPosInIncomingConnectingMap(direction, x, y, connection)) {
+    if (connection.direction === direction && IsPosInIncomingConnectingMap(direction, x, y, connection)) {
       return connection;
     }
   }
@@ -1825,15 +1831,21 @@ export function MapGridSetMetatileImpassabilityAt(x: number, y: number, impassab
 
 // ─── 1:1 décomp fieldmap.c CopyMapTilesetsToVram + LoadMapTilesetPalettes ──
 
-/** 1:1 décomp `CopyTilesetToVramUsingHeap(tileset, numTiles, offset)` (fieldmap.c:853-862).
- *  Notre version : copie tileset.tiles → BG VRAM via LoadBgTiles. Pas de
- *  décompression LZ77 nécessaire (= notre PNG est déjà décompressé). */
+/** 1:1 décomp `CopyTilesetToVram(tileset, numTiles, offset)` (fieldmap.c:845-851) :
+ *  `LoadBgTiles(2, tileset->tiles, numTiles * 32, offset)` direct (DMA, pas de heap).
+ *  numTiles * 32 = octets (4bpp 8x8 = 32 octets/tile) ; offset = slot tile dans BG charBase 2.
+ *  Notre tileset PNG est déjà décompressé → pas de décompression LZ77. */
 function CopyTilesetToVram(tileset: Tileset | null, numTiles: number, offset: number): void {
   if (!tileset) return;
-  // 1:1 décomp `LoadBgTiles(2, tileset->tiles, numTiles * 32, offset);`
-  // numTiles * 32 = bytes (= 4bpp 8x8 = 32 bytes/tile). offset = tile slot
-  // dans BG charBase 2.
-  // Notre LoadBgTiles attend (bg, src, sizeBytes, destTileOffset).
+  LoadBgTiles(2, tileset.tiles, numTiles * 32, offset);
+}
+
+/** 1:1 décomp `CopyTilesetToVramUsingHeap(tileset, numTiles, offset)` (fieldmap.c:853-862) :
+ *    if (!tileset->isCompressed) LoadBgTiles(...) ; else DecompressAndLoadBgGfxUsingHeap(...).
+ *  Nos tilesets PNG sont TOUJOURS non-compressés (isCompressed=false) → branche LoadBgTiles
+ *  (= identique à CopyTilesetToVram chez nous, le distinguo heap/DMA n'a pas de sens ici). */
+function CopyTilesetToVramUsingHeap(tileset: Tileset | null, numTiles: number, offset: number): void {
+  if (!tileset) return;
   LoadBgTiles(2, tileset.tiles, numTiles * 32, offset);
 }
 
@@ -1866,6 +1878,7 @@ function LoadTilesetPalette(tileset: Tileset | null, destOffset: number, size: n
     const flatMaxEntries = Math.max(0, flat.length - 1);
     const restEntries = Math.min((size - PLTT_SIZEOF_1) / 2, flatMaxEntries);
     LoadPalette(flat.subarray(1, 1 + restEntries), destOffset + 1, restEntries * 2);
+    ApplyGlobalTintToPaletteEntries(destOffset + 1, restEntries);  // no-op Emerald (1:1 décomp)
   } else {
     // Secondary : load palettes[NUM_PALS_IN_PRIMARY=6]..jusqu'à size.
     // Décomp : `LoadPalette(tileset->palettes[NUM_PALS_IN_PRIMARY], destOffset, size);`
@@ -1876,14 +1889,21 @@ function LoadTilesetPalette(tileset: Tileset | null, destOffset: number, size: n
     // entries valides.
     const numEntries = Math.min(size / 2, flat.length);
     LoadPalette(flat.subarray(0, numEntries), destOffset, numEntries * 2);
+    ApplyGlobalTintToPaletteEntries(destOffset, numEntries);  // no-op Emerald (1:1 décomp)
   }
-  // ApplyGlobalTintToPaletteEntries (FRLG-only, no-op pour Emerald).
 }
 
 /** 1:1 décomp `ApplyGlobalTintToPaletteSlot(u8 slot, u8 count)` (fieldmap.c:870-873) :
  *  fonction VIDE marquée UNUSED dans la décomp (vestige FRLG global tint). Portée 1:1 = no-op. */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ApplyGlobalTintToPaletteSlot(_slot: number, _count: number): void {
+}
+
+/** 1:1 décomp `ApplyGlobalTintToPaletteEntries(u16 offset, u16 size)` (fieldmap.c:865-868) :
+ *  fonction VIDE pour Emerald (le global tint FRLG n'y est pas implémenté). Portée 1:1 = no-op.
+ *  Appelée par LoadTilesetPalette après chaque LoadPalette (= structure d'appel décomp). */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ApplyGlobalTintToPaletteEntries(_offset: number, _size: number): void {
 }
 
 /** Flatten N palette banks (16 colors each) en un seul Uint16Array. */
@@ -1897,27 +1917,29 @@ function flattenPaletteBanks(banks: Uint16Array[], startBank: number, endBank: n
   return out;
 }
 
-/** 1:1 décomp `CopyMapTilesetsToVram(mapLayout)` (fieldmap.c:925-932).
- *
- *  Extension : set les callbacks d'animation tileset (= 1:1 décomp tileset struct
- *  .callback field) via setPrimary/SecondaryTilesetAnimCallback depuis tileset-anims.ts.
- *  Le routing utilise tileset.name (= chemin normalisé, e.g. "general", "petalburg").
- *  InitTilesetAnimations() doit être appelé APRÈS CopyMapTilesetsToVram pour que les
- *  callbacks soient prêts. */
 /** 1:1 décomp `CopyPrimaryTilesetToVram(mapLayout)` (fieldmap.c:900-903).
  *  (CopySecondaryTilesetToVram + LoadSecondaryTilesetPalette existent déjà plus haut,
  *  helpers de TransitionToConnection.) */
-function CopyPrimaryTilesetToVram(mapLayout: MapLayout | null): void {
+export function CopyPrimaryTilesetToVram(mapLayout: MapLayout | null): void {
   if (!mapLayout) return;
   CopyTilesetToVram(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
 }
 
+/** 1:1 décomp `CopySecondaryTilesetToVramUsingHeap(mapLayout)` (fieldmap.c:910-913). */
+export function CopySecondaryTilesetToVramUsingHeap(mapLayout: MapLayout | null): void {
+  if (!mapLayout) return;
+  CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+}
+
+/** 1:1 décomp `CopyMapTilesetsToVram(mapLayout)` (fieldmap.c:925-932) : charge primary +
+ *  secondary tilesets en VRAM (variantes UsingHeap dans la décomp ; chez nous = LoadBgTiles
+ *  direct, le distinguo heap n'a pas de sens).
+ *  Extension : set les callbacks d'animation tileset via setPrimary/SecondaryTilesetAnimCallback
+ *  (tileset-anims.ts), routés par tileset.name. InitTilesetAnimations() est appelé APRÈS. */
 export function CopyMapTilesetsToVram(mapLayout: MapLayout | null): void {
   if (!mapLayout) return;
-  CopyPrimaryTilesetToVram(mapLayout);
-  CopySecondaryTilesetToVram(mapLayout);
-  // Set animation init callbacks pour InitTilesetAnimations() qui sera appelé ensuite.
-  // Import dynamique évite la dépendance circulaire (tileset-anims → map-loader).
+  CopyTilesetToVramUsingHeap(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
+  CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
   setPrimaryTilesetAnimCallback(mapLayout.primaryTileset?.name ?? '');
   setSecondaryTilesetAnimCallback(mapLayout.secondaryTileset?.name ?? '');
 }

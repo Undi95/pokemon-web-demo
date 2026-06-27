@@ -19,7 +19,7 @@
 
 **Complétude pondérée par lignes de C** (effort réel) :
 - **STRICT** (fn présente dans NOTRE fichier homonyme propre) : **~29 %** ← la vraie jauge miroir.
-- LARGE (fn implémentée n'importe où, même dispersée/mal nommée) : ~34 %.
+- LARGE (fn implémentée n'importe où, même dispersée/mal nommée) : ~35 %.
 - L'écart STRICT↔LARGE = le travail de **consolidation** (logique présente mais pas encore dans le bon fichier 1:1).
 
 **Autres axes** :
@@ -121,10 +121,10 @@
 | `field_player_avatar.c` | 2227 | 177 | `field_player_avatar.ts` | 148/177 (84%) | 149/177 (84%) | 🟡 partiel |
 | `map_name_popup.c` | 427 | 7 | `map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `field_poison.c` | 155 | 7 | `field_poison.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
-| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 47/55 (85%) | 48/55 (87%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
 | `field_effect_helpers.c` | 1718 | 81 | `field_effect_helpers.ts` | 76/81 (94%) | 76/81 (94%) | ✅ miroir |
 | `starter_choose.c` | 670 | 18 | `starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
+| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 52/55 (95%) | 53/55 (96%) | ✅ miroir |
 | `wild_encounter.c` | 968 | 34 | `wild_encounter.ts` | 33/34 (97%) | 33/34 (97%) | ✅ miroir |
 | `field_weather.c` | 1106 | 49 | `field_weather.ts` | 48/49 (98%) | 48/49 (98%) | ✅ miroir |
 | `metatile_behavior.c` | 1403 | 144 | `metatile_behavior.ts` | 144/144 (100%) | 144/144 (100%) | ✅ miroir |
