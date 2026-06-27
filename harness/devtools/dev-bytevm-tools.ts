@@ -41,8 +41,8 @@ import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
 import { GetBerryTypeByBerryTreeId } from '../../src/berry';
 import { gBattleMons, gBattleOutcome, gBattleTypeFlags, gTrainerBattleOpponent_A, setTrainerBattleOpponentA } from '../../src/engine/battle/state';
-import { gEnemyParty } from '../../src/engine/battle/party-storage';
-import { GetMonData as _GetMonData, MON_DATA_SPECIES as _MON_DATA_SPECIES, MON_DATA_HP as _MON_DATA_HP, MON_DATA_LEVEL as _MON_DATA_LEVEL } from '../../src/engine/battle/party-storage';
+import { gEnemyParty, gPlayerParty } from '../../src/engine/battle/party-storage';
+import { GetMonData as _GetMonData, MON_DATA_SPECIES as _MON_DATA_SPECIES, MON_DATA_HP as _MON_DATA_HP, MON_DATA_LEVEL as _MON_DATA_LEVEL, MON_DATA_MET_LOCATION as _MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER as _MON_DATA_MODERN } from '../../src/engine/battle/party-storage';
 
 let _installed = false;
 let _enum: { cmdId: number; handler: string; op: string }[] = [];
@@ -890,6 +890,49 @@ export async function testTrainerbattleArgs(): Promise<{ pass: boolean; details:
   return { pass, details };
 }
 
+/** Test LONG-TAIL 5 (batch niche) : setmonmetlocation/setmodernfatefulencounter posent les
+ *  champs de gPlayerParty[0] ; warphole(map) pose un pending warp ; ALIGNEMENT octets du flux
+ *  setmonmetlocation(3o)+setmodernfatefulencounter(2o)+fadeoutbgm(1o)+fadeinbgm(1o)+
+ *  pokenavcall(4o)+messageinstant(4o) via setvar marqueur final 0xF00D. */
+export async function testLongTail5(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const SMML = cmdIdOf('ScrCmd_setmonmetlocation'), SMFE = cmdIdOf('ScrCmd_setmodernfatefulencounter'),
+        FOB = cmdIdOf('ScrCmd_fadeoutbgm'), FIB = cmdIdOf('ScrCmd_fadeinbgm'),
+        PNC = cmdIdOf('ScrCmd_pokenavcall'), MI = cmdIdOf('ScrCmd_messageinstant'),
+        WH = cmdIdOf('ScrCmd_warphole'), SETVAR = cmdIdOf('ScrCmd_setvar'), END = cmdIdOf('ScrCmd_end');
+  const VT1 = num('VAR_TEMP_1');
+  // setmonmetlocation idx=0(u16 literal), location=88 → gPlayerParty[0].metLocation=88
+  RunScriptImmediately({ buf: Uint8Array.from([SMML, 0, 0, 88, END]), off: 0 } as ScriptPtr);
+  const metLoc = _GetMonData(gPlayerParty[0], _MON_DATA_MET_LOCATION) as number;
+  // setmodernfatefulencounter idx=0(u16 literal) → gPlayerParty[0].modernFatefulEncounter=1
+  RunScriptImmediately({ buf: Uint8Array.from([SMFE, 0, 0, END]), off: 0 } as ScriptPtr);
+  const modern = _GetMonData(gPlayerParty[0], _MON_DATA_MODERN) as number;
+  // warphole map(u16 = 1er MAP_ symbole) → pending warp 'fall'
+  const mapSyms = getMapSymbols();
+  let mapSymId = -1, mapConst = '';
+  for (let id = 0; id < mapSyms.length; id++) { if (mapSyms[id] && mapSyms[id].startsWith('MAP_')) { mapSymId = id; mapConst = mapSyms[id]; break; } }
+  RunScriptImmediately({ buf: Uint8Array.from([WH, lo(mapSymId), hi(mapSymId), END]), off: 0 } as ScriptPtr);
+  const pw = getPendingWarp();
+  const warpOk = !!pw && pw.warp.destMap === mapConst && pw.kind === 'fall';
+  // alignement octets : enchaîner toute la chaîne + setvar marqueur 0xF00D
+  VarSet(VT1, 0);
+  RunScriptImmediately({ buf: Uint8Array.from([
+    SMML, 0, 0, 0,
+    SMFE, 0, 0,
+    FOB, 0,
+    FIB, 0,
+    PNC, 0, 0, 0, 0,
+    MI, 0, 0, 0, 0,
+    SETVAR, lo(VT1), hi(VT1), lo(0xF00D), hi(0xF00D),
+    END,
+  ]), off: 0 } as ScriptPtr);
+  const aligned = VarGet(VT1) === 0xF00D;
+  const pass = metLoc === 88 && modern === 1 && warpOk && aligned;
+  const details = { 'setmonmetlocation → metLocation(88)': metLoc, 'setmodernfatefulencounter → modern(1)': modern, [`warphole → pending '${mapConst}'`]: warpOk, 'alignement flux niche (setvar=0xF00D)': aligned };
+  console.log(`[byte-vm] TEST long-tail 5 (niche) : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Test SETWILDBATTLE (STEP 1 déterministe) : setwildbattle species(u16) level(u8) item(u16)
  *  → CreateScriptedWildMon peuple gEnemyParty[0] (species + level corrects). NE boote PAS le
  *  combat (pas de dowildbattle, qui swappe CB2). */
@@ -934,4 +977,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, battleState, launchTB, launchWild, run, VarGet, getScriptOffset };

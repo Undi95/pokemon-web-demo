@@ -48,7 +48,7 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
 import type { TrainerArgSource } from './battle_setup';
 import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './engine/battle/battle-setup-helpers';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
-import { PlaySE, getRuntime } from '../harness/runtime/decomp-globals';
+import { PlaySE, getRuntime, FadeOutBGM, FadeInBGM } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
@@ -64,7 +64,7 @@ import {
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
 import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr } from '../harness/runtime/data-tables';
 import { setStringVar, decodeOwBytes } from './text';
-import { CalculatePlayerPartyCount, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, gPlayerParty } from './engine/battle/party-storage';
+import { CalculatePlayerPartyCount, GetMonData, SetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
 import { FadeScreen } from './field_weather';
@@ -268,6 +268,51 @@ const ScrCmd_setdivewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, 
 const ScrCmd_setholewarp: ScrCmdFunc = (ctx) => { (globalThis as Record<string, unknown>).gHoleWarp = readWarp(ctx); return false; };     // :863 SetFixedHoleWarp
 const ScrCmd_setescapewarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); (globalThis as Record<string, unknown>).__escapeWarp = { mapName: w.destMap.replace(/^MAP_/, ''), x: w.x, y: w.y }; return false; }; // :875 SetEscapeWarp
 const ScrCmd_setdynamicwarp: ScrCmdFunc = (ctx) => { const w = readWarp(ctx); SetDynamicWarp(w.destMap, w.x, w.y); return false; };        // :839 SetDynamicWarpWithCoords
+// Variantes warp à transition ANIMÉE (1:1 scrcmd.c) — la transition spécifique (door/spin/
+// white-fade/mossdeep) = dette assumée, identique au parsé : warp simple. Layout = warp
+// (u16 map, u8 warpId, u16 x, u16 y) → setPendingWarp 'step'.
+const ScrCmd_warpdoor: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; };       // :767 DoDoorWarp
+const ScrCmd_warpmossdeepgym: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }; // :813 DoMossdeepGymWarp
+const ScrCmd_warpspinenter: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; };   // :2241 DoSpinEnterWarp
+const ScrCmd_warpwhitefade: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; };   // :2295 DoWhiteFadeWarp
+// warphole :781 : map(u16) SEUL ; PlayerGetDestCoords → setPendingWarp 'fall'. MAP_UNDEFINED → gHoleWarp (set par setholewarp). Identique au parsé (scrcmd.ts:770).
+const ScrCmd_warphole: ScrCmdFunc = (ctx) => {                                // :781
+  const destMap = resolveMapSymbol(ScriptReadHalfword(ctx)) ?? 'MAP_UNDEFINED';
+  const playerX = gSaveBlock1Ptr.pos.x ?? 0;
+  const playerY = gSaveBlock1Ptr.pos.y ?? 0;
+  if (destMap === 'MAP_UNDEFINED') {
+    const holeWarp = (globalThis as Record<string, unknown>).gHoleWarp as { destMap?: string } | undefined;
+    if (holeWarp?.destMap) setPendingWarp({ destMap: holeWarp.destMap, warpId: -1, x: playerX, y: playerY, elevation: 0 }, 'fall');
+  } else {
+    setPendingWarp({ destMap, warpId: -1, x: playerX, y: playerY, elevation: 0 }, 'fall');
+  }
+  return false;
+};
+
+// ─── BGM fade (1:1 scrcmd.c:969/981 ; hardware-exempt → FadeOutBGM/FadeInBGM, identique au parsé) ──
+const ScrCmd_fadeoutbgm: ScrCmdFunc = (ctx) => { const speed = ScriptReadByte(ctx); FadeOutBGM(speed || 4); return false; };  // :969
+const ScrCmd_fadeinbgm: ScrCmdFunc = (ctx) => { const speed = ScriptReadByte(ctx); FadeInBGM(speed || 4); return false; };    // :981
+
+// ─── messageinstant (1:1 scrcmd.c:1298) — rendu instantané = dette (alias message, comme le parsé) ──
+const ScrCmd_messageinstant: ScrCmdFunc = (ctx) => { let p = ScriptReadWord(ctx); if (p === 0) p = ctx.data[0]; showFieldText(p); return false; };  // :1298
+// ─── pokenavcall (1:1 scrcmd.c:1275) — dette R3 PokeNav UI (consomme le mot, skip, comme le parsé) ──
+const ScrCmd_pokenavcall: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };  // :1275
+
+// ─── mon data party (1:1 scrcmd.c:2210/2256) ────────────────────────────────
+const ScrCmd_setmonmetlocation: ScrCmdFunc = (ctx) => {                       // :2256
+  const idx = VarGet(ScriptReadHalfword(ctx));
+  const location = ScriptReadByte(ctx);
+  if (idx < PARTY_SIZE) SetMonData(gPlayerParty[idx], MON_DATA_MET_LOCATION, location);
+  return false;
+};
+const ScrCmd_setmodernfatefulencounter: ScrCmdFunc = (ctx) => {               // :2210
+  const idx = VarGet(ScriptReadHalfword(ctx));
+  if (idx < PARTY_SIZE) SetMonData(gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER, 1);
+  return false;
+};
+
+// ─── returnram (1:1 scrcmd.c:283) — RAM script (mystery event) ; parsé = StopScript (dette). ──
+const ScrCmd_returnram: ScrCmdFunc = (ctx) => { StopScript(ctx); return false; };  // :283
 
 // ─── long-tail simple #3 (1:1 scrcmd.c) ─────────────────────────────────────
 // erasebox : lit 4 octets, no-op (= décomp Menu_EraseWindowRect commenté).
@@ -808,6 +853,9 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_givemon, ScrCmd_giveegg,
   ScrCmd_trainerbattle, ScrCmd_dotrainerbattle, ScrCmd_gotopostbattlescript, ScrCmd_gotobeatenscript,
   ScrCmd_setwildbattle, ScrCmd_dowildbattle,
+  ScrCmd_warpdoor, ScrCmd_warpmossdeepgym, ScrCmd_warpspinenter, ScrCmd_warpwhitefade, ScrCmd_warphole,
+  ScrCmd_fadeoutbgm, ScrCmd_fadeinbgm, ScrCmd_messageinstant, ScrCmd_pokenavcall,
+  ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.
