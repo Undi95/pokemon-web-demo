@@ -56,7 +56,9 @@ export const gScriptCmdTableEnd = gScriptCmdTable.length;
 let sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
 const sGlobalScriptContext: ScriptContext = createContext();
 const sImmediateScriptContext: ScriptContext = createContext();
-let sLockFieldControls = false;
+// Lock UNIFIÉ avec script.ts via globalThis (cf script.ts _lockSet) — le swap Phase 5
+// route l'exécution ici mais combat/warp/global tapent les fns de script.ts : un seul flag.
+const _GLK = globalThis as Record<string, unknown>;
 
 function createContext(): ScriptContext {
   return {
@@ -214,9 +216,9 @@ export function ScriptReadWord(ctx: ScriptContext): number {
 }
 
 // ─── Lock / Unlock (1:1 script.c:182-195) ────────────────────────────────────
-export function LockPlayerFieldControls(): void { sLockFieldControls = true; }
-export function UnlockPlayerFieldControls(): void { sLockFieldControls = false; }
-export function ArePlayerFieldControlsLocked(): boolean { return sLockFieldControls; }
+export function LockPlayerFieldControls(): void { _GLK.__sLockFieldControls = true; }
+export function UnlockPlayerFieldControls(): void { _GLK.__sLockFieldControls = false; }
+export function ArePlayerFieldControlsLocked(): boolean { return _GLK.__sLockFieldControls === true; }
 
 // ─── ScriptContext_* (contexte global) (1:1 script.c:201-260) ────────────────
 export function ScriptContext_IsEnabled(): boolean {
@@ -226,19 +228,17 @@ export function ScriptContext_IsEnabled(): boolean {
 export function ScriptContext_Init(): void {
   InitScriptContext(sGlobalScriptContext, gScriptCmdTable as ScrCmdFunc[], gScriptCmdTableEnd);
   sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+  // SWAP-safety (Phase 5) : réinit du contexte = aucun script ⇒ déverrouille le lock-script.
+  // Au retour de combat / map-load, le contexte est reset à SHUTDOWN ; sans ça un lock posé
+  // pendant le script déclencheur (dowildbattle/trainerbattle) reste fantôme → joueur figé.
+  // Init n'est appelé qu'au reset (pas chaque frame) → n'interfère ni avec la marche ni la
+  // séquence de warp (le lock d'animation de porte précède le map-load).
+  UnlockPlayerFieldControls();
 }
 
 export function ScriptContext_RunScript(): boolean {
-  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN) {
-    // SWAP-safety (Phase 5) : SHUTDOWN = aucun script actif ⇒ le verrou de contrôles
-    // script ne doit JAMAIS rester actif. Au retour d'un CB2 (combat / buy-menu / menu),
-    // des chemins parsés/globaux non routés peuvent appeler LockPlayerFieldControls (ex.
-    // EnableBothScriptContexts) sans piloter le statut byte-VM → lock fantôme = joueur figé.
-    // On rétablit l'invariant ici (le décomp a déjà unlock à la fin du script ; ceci ne
-    // déverrouille que le lock-script résiduel, pas les locks hardware comme la marche forcée).
-    if (sLockFieldControls) UnlockPlayerFieldControls();
+  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN)
     return false;
-  }
   if (sGlobalScriptContextStatus === CONTEXT_WAITING)
     return false;
 

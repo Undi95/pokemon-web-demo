@@ -96,7 +96,12 @@ function createContext(): ScriptContext {
 const sGlobalScriptContext = createContext();
 const sImmediateScriptContext = createContext();
 let sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
-let sLockFieldControls = false;
+// Lock de contrôles joueur UNIFIÉ (parsé + byte-VM) via globalThis : au swap Phase 5, les
+// chemins de combat/warp/global peuvent appeler Lock/Unlock sur l'un OU l'autre moteur ;
+// un flag partagé élimine la désync dual-flag (sinon : freeze post-combat / warp cassé).
+const _GLK = globalThis as Record<string, unknown>;
+function _lockGet(): boolean { return _GLK.__sLockFieldControls === true; }
+function _lockSet(v: boolean): void { _GLK.__sLockFieldControls = v; }
 
 // Script library : labels → array of opcodes. Loaded au map switch.
 let _scriptsByLabel: Map<string, Opcode[]> = new Map();
@@ -256,19 +261,9 @@ setMovementLabelResolver((label: string) => _movementsByLabel.get(label) ?? null
 
 // ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
 
-export function LockPlayerFieldControls(): void {
-  if (_useByteVm) { BV.LockPlayerFieldControls(); return; }
-  sLockFieldControls = true;
-}
-
-export function UnlockPlayerFieldControls(): void {
-  if (_useByteVm) { BV.UnlockPlayerFieldControls(); return; }
-  sLockFieldControls = false;
-}
-
-export function ArePlayerFieldControlsLocked(): boolean {
-  return _useByteVm ? BV.ArePlayerFieldControlsLocked() : sLockFieldControls;
-}
+export function LockPlayerFieldControls(): void { _lockSet(true); }
+export function UnlockPlayerFieldControls(): void { _lockSet(false); }
+export function ArePlayerFieldControlsLocked(): boolean { return _lockGet(); }
 
 // ─── Context primitives 1:1 décomp ───────────────────────────────────────────
 
@@ -516,7 +511,6 @@ export function ScriptContext_SetupInlineBytecode(opcodes: Opcode[], devLabel = 
 }
 
 export function ScriptContext_Enable(): void {
-  if (_useByteVm) { BV.ScriptContext_Enable(); return; }
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
   LockPlayerFieldControls();
 }
