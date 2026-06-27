@@ -101,14 +101,23 @@ Sous-problèmes & état :
    overworld des 468 maps → 42902 opcodes réels, **0 non résolu**.
 4. **Préprocesseur** `#ifdef UBFIX/#else/#endif` : ~21 lignes dans ~7 maps. À
    évaluer contre les defines décomp par défaut (le moteur actuel les drop). RESTE.
-5. **Sérialiseur + linker — RESTE (dernière pièce Phase 2)** : opcodes réels →
-   octets via les `argLayout` du cmd-table (u8/u16/u32 ; `map`=2o group/num via
-   table de noms ; `stringvar`=1o STR_VAR_*→0/1/2 ; `special`=id 2o + waitstate ;
-   variants `*AT` par présence d'arg `map` ; `trainerbattle` par type). **Linker**
-   per-map : 1 image contiguë { scripts + textes (charmap) + mouvements + mart
-   lists }, 2 passes (layout des offsets → émission + patch des pointeurs). Rôle
-   de chaque `.4byte` (codeptr/textptr/dataptr/nativeptr/value) déduit du nom
-   d'arg. Natifs (callnative/gotonative) → table de symboles synthétique.
+5. **Sérialiseur + assembleur — ✅** `scripts/lib/assemble-script.cjs` : opcodes
+   réels → octets via les `argLayout` du cmd-table. **Archi finale = buffers
+   par-script + registre de symboles synthétiques u32** (id→{kind,label} pour
+   script/text/movement/mart/native ; `map`=u16 id ; `stringvar`=1o STR_VAR_*→0/1/2 ;
+   `special`=id 2o + waitstate conditionnel). Familles à layout variable 1:1 : warp
+   (formatwarp, valeurs selon nb d'args), trainerbattle (byType), variants `*AT`
+   (choix par arg `map`), + défauts de params. Pointeur `.4byte` : si résoluble en
+   nombre → valeur ; sinon → id symbole (native si callnative/gotonative).
+   **Validé** : `validate-script-assembly.cjs` = 6659/6716 scripts (165 Ko bytecode,
+   10400 symboles), LOCALID per-map + fallback global. Gate de régression (exit 0
+   hors tail). **Tail documenté (57 scripts, non bloquant)** : `ITEM_TM_*` (TM nommés
+   absents des includes du décomp — incohérence), `STR_VAR_2`/`COMPARE_SIZE_*`/
+   `MAP_NUM()` (edge cases).
+
+**RESTE Phase 2** : (a) préproc `#ifdef UBFIX` ; (b) ÉMISSION des assets bytecode
+(driver qui écrit les buffers + tables de symboles par map) ; (c) tail (mapping
+ITEM_TM via gTMHMMoves si besoin). PAS bloquant pour démarrer Phase 3.
 
 ## Phase 3 — byte VM
 
