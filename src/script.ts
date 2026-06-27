@@ -32,11 +32,13 @@ import { encodeOwText, isOwCharmapReady } from '../include/text';
 // Quand actif, l'EXÉCUTION des scripts (RunScript / SetupScript / RunScriptImmediately /
 // lock) est routée vers le VRAI byte-VM (image bytecode + gScriptCmdTable). Les DONNÉES
 // (tables map_script_2, getText/getMovement) restent chargées par loadMapScripts ; le
-// byte-VM exécute depuis son image (ptrFromLabel). Le moteur parsé reste le DÉFAUT
-// (zéro risque) ; bascule via URL ?bytevm. Cf docs/BYTE-VM-PLAN.md Phase 5.
+// byte-VM exécute depuis son image (ptrFromLabel). Cf docs/BYTE-VM-PLAN.md Phase 5.
+// SWAP FINALISÉ (2026-06-28) : le byte-VM est le moteur par DÉFAUT (cœur vérifié en jeu —
+// marche/warps/combat/menus/dialogue/specials). Filet de secours : `?parsed` rebascule sur
+// l'ancien moteur parsé (gardé temporairement, retiré au « clean » une fois 100% confirmé).
 import * as BV from './script_bytevm';
-let _useByteVm = false;
-try { if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('bytevm')) _useByteVm = true; } catch { /* SSR / no location */ }
+let _useByteVm = true;
+try { if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('parsed')) _useByteVm = false; } catch { /* SSR / no location */ }
 export function setUseByteVm(on: boolean): void { _useByteVm = on; }
 export function isUsingByteVm(): boolean { return _useByteVm; }
 

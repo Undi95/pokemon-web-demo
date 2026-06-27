@@ -12,7 +12,7 @@
 import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
   getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript, getLabelAtOffset,
-  _getGlobalContext, _getGlobalStatus, ArePlayerFieldControlsLocked as _BVAreLocked,
+  _getGlobalContext, _getGlobalStatus, ArePlayerFieldControlsLocked as _BVAreLocked, ptrFromLabel,
 } from '../../src/script_bytevm';
 import { GetMartItemList, IsShopMenuOpen } from '../../src/shop';
 import type { ScriptPtr } from '../../src/script_bytevm';
@@ -1056,6 +1056,16 @@ export async function testPokemart(): Promise<{ pass: boolean; details: Record<s
   return { pass, details };
 }
 
+/** Lance un script par LABEL via le byte-VM (contexte global, supporte les waitstates :
+ *  dialogue/menus). Le pump OW continue le tick. Vérifier ensuite screenshot/dialog. */
+export function launchScript(label: string): string {
+  const ptr = ptrFromLabel(label);
+  if (!ptr) return `byte-VM : label '${label}' absent de l'image`;
+  ScriptContext_SetupScript(ptr);
+  ScriptContext_RunScript();
+  return `byte-VM script '${label}' lancé`;
+}
+
 /** Lance un `special <index>` via le byte-VM (contexte global) — teste les flows special
  *  inline (ChooseStarter/wallclock/PC/regionmap/rematch/berry) routés via special_flows. */
 export function launchSpecial(specialIndex: number): string {
@@ -1142,4 +1152,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, launchScript, run, VarGet, getScriptOffset };
