@@ -22,15 +22,29 @@ byte↔opcode (que le user a refusé).
 
 1. **Cmd-table (FONDATION) — ✅ FAIT.** `name → {cmdId, argLayout}` extrait des 2
    sources canoniques. Voir ci-dessous.
-2. **Compilateur (assembleur).** JSON macros → octets. Le DUR : expansion des
-   composites + résolution de **labels/pointeurs** (linker). Voir « Phase 2 ».
-3. **Byte VM.** `ScriptContext.scriptPtr` = buffer + offset ; `ScriptRead{Byte,
-   Halfword,Word}` ; `RunScriptCommand` lit l'id → dispatch par id.
-4. **Réécrire les ~225 handlers** : `(ctx, args[])` → lecture via `ScriptRead*`.
-5. **Re-vérifier TOUT le jeu** (intro, chaque PNJ, cutscenes, maps, Frontier).
+2. **Compilateur (assembleur) — ✅ FAIT.** JSON macros → octets (image globale +
+   linker). Voir « Phase 2 ».
+3. **Byte VM — ✅ FAIT + PROUVÉ EN JEU.** `src/script_bytevm.ts` (1:1 `script.c`).
+   Voir « Phase 3 ».
+4. **Handlers `ScrCmd_*` — 🔄 EN COURS (~95 % de l'usage couvert).** `src/scrcmd_bytevm.ts`.
+   Voir « Phase 4 ».
+5. **Swap + re-vérif TOUT le jeu** — à venir. Voir « Phase 5 ».
 
 ⚠️ Risque max = système nerveux du jeu ; casse toute interaction pendant le
 chantier → d'où la branche sandbox. Multi-session.
+
+## ⏱️ Statut rapide (mise à jour avant compact)
+
+| Phase | Statut | Artefact |
+|---|---|---|
+| 1. Cmd-table | ✅ | `public/decomp/em/script-cmd-table.json` (227 opcodes) |
+| 2. Compilateur + linker image-globale | ✅ | `compile-scripts.cjs` → `script-bytecode.json` (gitignoré) |
+| 3. VM core (1:1 `script.c`) | ✅ prouvé en jeu | `src/script_bytevm.ts` |
+| 4. Handlers (1:1 `scrcmd.c`) | 🔄 **95,2 % usage** (83/227 cmdId) | `src/scrcmd_bytevm.ts` + `src/scrcmd_object.ts` |
+| 5. Swap + re-vérif | ⬜ à venir | — |
+
+**Commits sur `Byte-VM`** : `c331854c` (Ph1) → … → dernier object-ops voie A. `finale` intacte.
+**Tests déterministes EN JEU** : `window.__byteVm.{test,testSpecials,testDialogue,testNpc,testMovement,testWarp,testMoney,testItem,testMetatile,testObject}` (harness/devtools/dev-bytevm-tools.ts) — tous verts, 0 erreur.
 
 ---
 
@@ -147,18 +161,60 @@ valide** (round-trip OK), expansion 0 trou, assemblage 0 régression. **Tail = 4
 edge (STR_VAR_2 ×2, COMPARE_SIZE ×2, MAP_NUM ×1 = identité-map STRING, impossible).
 ITEM_TM/HM résolus 1:1 via tm-hm.json.
 
-## Phase 3 — byte VM
+## Phase 3 — byte VM — ✅ FAIT
 
-`ScriptContext` : remplacer `{scriptOpcodes, scriptIdx}` par `{scriptPtr: {buf,
-off}}` (+ stack idem). `ScriptReadByte/Halfword/Word` (little-endian). Dispatch :
-id → handler (table `gScriptCmdTable` = tableau de 227 fonctions).
+`src/script_bytevm.ts` = transcription 1:1 de `script.c`. `ScriptContext.scriptPtr`
+= curseur `{ buf: Uint8Array, off }` (remplace `const u8*` ROM) ; stack[20] de
+curseurs (snapshot par valeur) ; `ScriptReadByte/Halfword/Word` LE ;
+`RunScriptCommand` lit `cmdCode = buf[off++]` → dispatch `gScriptCmdTable[cmdCode]`
+(stop si `>= cmdTableEnd` ou handler null) ; `ScriptPush/Pop/Jump/Call/Return` ;
+API `ScriptContext_*`. Loader : `loadByteVmImage()` (base64→Uint8Array + symboles) ;
+`ptrFromOffset/ptrFromLabel`. **Non câblé au moteur vivant** (le moteur parsé
+`script.ts`/`scrcmd.ts` reste live jusqu'au swap).
 
-## Phase 4 — handlers
+## Phase 4 — handlers — 🔄 EN COURS (95,2 % de l'usage)
 
-Réécrire les ~225 `ScrCmd_*` : signature `(ctx) => bool`, lecture via
-`ScriptRead*`, résolution des pointeurs via le registre synthétique. ÉNORME.
+`src/scrcmd_bytevm.ts` = handlers 1:1 `scrcmd.c`, signature `(ctx) => bool`, lecture
+via `ScriptRead*`, installés dans `gScriptCmdTable[cmdId]` via l'enum du cmd-table.
 
-## Phase 5 — re-vérification
+**Familles FAITES** (chacune vérifiée déterministe en jeu) : état/flux (end/return/
+goto/call/goto_if/call_if/setvar/copyvar/setorcopyvar/addvar/subvar/compare_*/
+setflag/clearflag/checkflag/loadword/loadbyte/copylocal/nop/waitstate) · special/
+specialvar (gSpecials = id→nom→`invokeSpecial`) · dialogue (gotostd/callstd via
+`gStdScripts`→offset, message→symbole texte→`getText`→`ShowFieldMessage`, waitmessage/
+closemessage ; **symbole id 0 = NULL**) · lock/lockall/release/releaseall/faceplayer ·
+applymovement/waitmovement(+at) · warp/warpsilent (mapSymbol→`setPendingWarp`) ·
+money (addmoney/removemoney/checkmoney) · item (additem/removeitem/checkitem(space),
+**pont id num→clé ITEM_X** via reverseDecompConstant) · coins (checkcoins/addcoins/
+removecoins, résultat inversé) · delay · waitbuttonpress · incrementgamestat ·
+checkplayergender · trainer flags · son (playse/waitse/playfanfare/waitfanfare/
+playbgm/playmoncry/waitmoncry, hardware-exempt) · setmetatile · **object ops** (voie A).
 
-Cold-boot + A/B : intro (♂/♀), PNJ, cutscenes, warps, OnLoad/OnTransition/OnFrame/
-OnWarp, Frontier (post-game, tolérant). `__scriptRuntime.getOpcodeHandler` etc.
+**VOIE A (object-ops, validée user)** : `src/scrcmd_object.ts` = logique object-event
+web-adaptée extraite en fns PARTAGÉES (`doSetObjectXY/doSetObjectXYPerm/doAddObject/
+doRemoveObject/doSetObjectInvisibility`), appelées par LES DEUX moteurs (closures
+`scrcmd.ts` recâblées + handlers byte-VM) → source unique, **zéro divergence**.
+Interface = args STRING ; le byte-VM passe `String(localId num)` (les helpers
+`findNpcByLocalId`/`resolveObjectLocalIdRaw` ont un fallback numérique). → à
+appliquer pour le reste des handlers field-coupled.
+
+**RESTE (par usage décroissant)** : `trainerbattle`(1291, byType dans le cmd-table) ·
+`createvobject`/`turnvobject`(286/186) · `multichoice`(default/grid)(261) ·
+`fadescreen`(speed)(172) · `setobjectmovementtype`(160)/`turnobject`(134)/
+`copyobjectxytoperm` (voie A) · doors (opendoor/closedoor/waitdooranim/setdooropen/
+setdoorclosed)(146) · field-effects (setfieldeffectargument/dofieldeffect/
+waitfieldeffect)(103) · `setberrytree`(80) · `setrespawn` · weather (set/reset/do) ·
+getplayerxy/getpartysize · buffers (buffer*name/stdstring/string/numberstring) ·
+givemon/giveegg · yesnobox · le long tail (~144 cmdId restants, dont 31 jamais utilisés).
+
+Outil de couverture (jetable) : compter les `ScrCmd_*` de `BYTEVM_HANDLERS` vs l'enum,
+croiser avec l'usage réel (expand-composites sur les 468 maps).
+
+## Phase 5 — swap + re-vérification — ⬜ à venir
+
+1. **Swap** : `script.ts` → `script_bytevm.ts`, `scrcmd.ts` → `scrcmd_bytevm.ts`.
+   Rewire des ~101 importeurs publics (mêmes noms de fns → swap mécanique). Le
+   loader byte-VM remplace `loadMapScripts` (charge l'image globale au boot + les
+   textes/mouvements par map).
+2. **Re-vérif** cold-boot + A/B : intro (♂/♀), PNJ, cutscenes, warps, OnLoad/
+   OnTransition/OnFrame/OnWarp, Frontier (post-game, tolérant) + **test user**.
