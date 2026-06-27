@@ -19,6 +19,9 @@ import {
   ScriptContext_Stop, ptrFromOffset,
 } from './script_bytevm';
 import { VarGet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
+// Registre des specials (name→fn) du moteur actuel — réutilisé transitoirement
+// (les fns de special sont les mêmes fns de jeu 1:1). gSpecials[id] = invokeSpecial(name).
+import { invokeSpecial } from './scrcmd';
 
 // 1:1 scrcmd.c:76-84 — [condition][comparisonResult] → 1 si la branche est prise.
 //   <  =  >
@@ -38,6 +41,16 @@ function varStore(id: number, v: number): void { const p = GetVarPointer(id); if
 /** 1:1 scrcmd.c:381-388 `Compare(a, b)` : 0=<, 1==, 2=>. */
 function Compare(a: number, b: number): number { return a < b ? 0 : a === b ? 1 : 2; }
 
+// gSpecials : id (specials-table.json) → nom → fn de jeu (via invokeSpecial).
+let _specialNames: string[] = [];
+export function setSpecialNames(names: string[]): void { _specialNames = names; }
+/** `gSpecials[index]()` (1:1) : résout l'id en nom puis invoque la fn de jeu. */
+function callSpecial(index: number): number {
+  const name = _specialNames[index];
+  if (name === undefined) { console.warn(`[byte-vm] special id ${index} hors table`); return 0; }
+  return invokeSpecial(name);
+}
+
 // ─── handlers (1:1 scrcmd.c) ─────────────────────────────────────────────────
 const ScrCmd_nop: ScrCmdFunc = () => false;                                  // :94
 const ScrCmd_nop1: ScrCmdFunc = () => false;                                 // :99
@@ -51,6 +64,16 @@ const ScrCmd_gotonative: ScrCmdFunc = (ctx) => {                             // 
 };
 
 const ScrCmd_waitstate: ScrCmdFunc = () => { ScriptContext_Stop(); return true; }; // :142
+
+// 1:1 scrcmd.c:118-124 : u16 index = ScriptReadHalfword ; gSpecials[index]().
+const ScrCmd_special: ScrCmdFunc = (ctx) => { callSpecial(ScriptReadHalfword(ctx)); return false; };
+// 1:1 scrcmd.c:126-132 : var = GetVarPointer(ScriptReadHalfword) ; *var = gSpecials[ScriptReadHalfword]().
+const ScrCmd_specialvar: ScrCmdFunc = (ctx) => {
+  const ref = GetVarPointer(ScriptReadHalfword(ctx));   // lire l'id de var EN PREMIER (ordre 1:1)
+  const result = callSpecial(ScriptReadHalfword(ctx));
+  if (ref) ref.set(result & 0xFFFF);
+  return false;
+};
 
 const ScrCmd_goto: ScrCmdFunc = (ctx) => {                                   // :148
   const off = ScriptReadWord(ctx);
@@ -98,6 +121,7 @@ const ScrCmd_checkflag: ScrCmdFunc = (ctx) => { ctx.comparisonResult = FlagGet(S
 /** Handlers du slice, keyed par nom ScrCmd_* (= colonne `handler` du cmd-table). */
 export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_nop, ScrCmd_nop1, ScrCmd_end, ScrCmd_gotonative, ScrCmd_waitstate,
+  ScrCmd_special, ScrCmd_specialvar,
   ScrCmd_goto, ScrCmd_return, ScrCmd_call, ScrCmd_goto_if, ScrCmd_call_if,
   ScrCmd_loadword, ScrCmd_loadbyte, ScrCmd_copylocal,
   ScrCmd_setvar, ScrCmd_copyvar, ScrCmd_setorcopyvar, ScrCmd_addvar, ScrCmd_subvar,
