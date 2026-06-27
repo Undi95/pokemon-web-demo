@@ -40,7 +40,7 @@ import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-he
 import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
 import { GetBerryTypeByBerryTreeId } from '../../src/berry';
-import { gBattleMons, gBattleOutcome, gBattleTypeFlags, gTrainerBattleOpponent_A } from '../../src/engine/battle/state';
+import { gBattleMons, gBattleOutcome, gBattleTypeFlags, gTrainerBattleOpponent_A, setTrainerBattleOpponentA } from '../../src/engine/battle/state';
 import { gEnemyParty } from '../../src/engine/battle/party-storage';
 import { GetMonData as _GetMonData, MON_DATA_SPECIES as _MON_DATA_SPECIES, MON_DATA_HP as _MON_DATA_HP, MON_DATA_LEVEL as _MON_DATA_LEVEL } from '../../src/engine/battle/party-storage';
 
@@ -890,6 +890,17 @@ export async function testTrainerbattleArgs(): Promise<{ pass: boolean; details:
   return { pass, details };
 }
 
+/** Lance un combat dresseur via le BYTE-VM dotrainerbattle (preuve visuelle STEP 2) :
+ *  pose l'opponent, exécute `dotrainerbattle` dans un contexte byte-VM → DoTrainerBattle
+ *  (async) lance le combat via l'OW. Vérifier ensuite battleState() + screenshot. */
+export function launchTB(trainerId: number): string {
+  setTrainerBattleOpponentA(trainerId);
+  const DTB = cmdIdOf('ScrCmd_dotrainerbattle'), END = cmdIdOf('ScrCmd_end');
+  ScriptContext_SetupScript({ buf: Uint8Array.from([DTB, END]), off: 0 } as ScriptPtr);
+  ScriptContext_RunScript();   // dotrainerbattle → startTrainerBattleAndGetPoll → DoTrainerBattle (async)
+  return `byte-VM dotrainerbattle lancé vs trainer ${trainerId}`;
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -897,4 +908,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, battleState, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, battleState, launchTB, run, VarGet, getScriptOffset };
