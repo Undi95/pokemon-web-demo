@@ -24,6 +24,18 @@ import { VarGet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data
 import { invokeSpecial } from './scrcmd';
 import { getText } from './script';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
+// Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
+import { getSelectedNpc, OPPOSITE_DIR, isPlayerStepFinished } from './engine/script/script-opcodes-helpers';
+import { gSelectedObjectEvent } from './engine/script/script-vars';
+import {
+  FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventClearHeldMovementIfFinished,
+  ObjectEventSetHeldMovement, gObjectEvents,
+} from './event_object_movement';
+import { GetPlayerFacingDirection, gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
+import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
+import {
+  MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
+} from '../include/constants/event_object_movement';
 
 // gStdScripts (1:1 event_scripts.s:95-107) — STD_*/MSGBOX_* index → label de std script.
 const gStdScripts: readonly string[] = [
@@ -129,6 +141,68 @@ const ScrCmd_compare_local_to_value: ScrCmdFunc = (ctx) => { const a = ctx.data[
 const ScrCmd_compare_var_to_value: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = ScriptReadHalfword(ctx); ctx.comparisonResult = Compare(a, b); return false; }; // :444
 const ScrCmd_compare_var_to_var: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = varDeref(ScriptReadHalfword(ctx)); ctx.comparisonResult = Compare(a, b); return false; }; // :453
 
+// ─── lock / release / faceplayer (1:1 scrcmd.c:1152-1263) ───────────────────
+/** 1:1 GetFaceDirectionMovementAction(dir) → MOVEMENT_ACTION_FACE_*. */
+function faceAction(dir: number): number {
+  switch (dir) {
+    case DIR_SOUTH: return MOVEMENT_ACTION_FACE_DOWN;
+    case DIR_NORTH: return MOVEMENT_ACTION_FACE_UP;
+    case DIR_WEST: return MOVEMENT_ACTION_FACE_LEFT;
+    case DIR_EAST: return MOVEMENT_ACTION_FACE_RIGHT;
+    default: return MOVEMENT_ACTION_FACE_DOWN;
+  }
+}
+
+// 1:1 scrcmd.c:1152-1156 ScrCmd_faceplayer (= ObjectEventFaceOppositeDirection).
+const ScrCmd_faceplayer: ScrCmdFunc = () => {
+  const npc = getSelectedNpc();
+  if (!npc) return false;
+  const opp = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+  ObjectEventSetHeldMovement(npc, faceAction(opp));
+  return false;
+};
+
+// 1:1 scrcmd.c:1201-1213 ScrCmd_lockall : gèle tous les objets, attend le step joueur.
+const ScrCmd_lockall: ScrCmdFunc = (ctx) => {
+  for (const npc of gObjectEvents) if (npc.active) FreezeObjectEvent(npc);
+  SetupNativeScript(ctx, () => isPlayerStepFinished());
+  return true;
+};
+
+// 1:1 scrcmd.c:1217-1237 ScrCmd_lock : gèle tous sauf player+selected ; gèle selected à la fin.
+const ScrCmd_lock: ScrCmdFunc = (ctx) => {
+  const npc = getSelectedNpc();
+  for (const n of gObjectEvents) if (n.active && n !== npc) FreezeObjectEvent(n);
+  SetupNativeScript(ctx, () => {
+    if (!isPlayerStepFinished()) return false;
+    if (npc) FreezeObjectEvent(npc);
+    return true;
+  });
+  return true;
+};
+
+// 1:1 scrcmd.c:1239-1249 ScrCmd_releaseall.
+const ScrCmd_releaseall: ScrCmdFunc = () => {
+  HideFieldMessageBox();
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (player) ObjectEventClearHeldMovementIfFinished(player);
+  ScriptMovement_UnfreezeObjectEvents();
+  for (const npc of gObjectEvents) if (npc.active) UnfreezeObjectEvent(npc);
+  return false;
+};
+
+// 1:1 scrcmd.c:1251-1263 ScrCmd_release.
+const ScrCmd_release: ScrCmdFunc = () => {
+  HideFieldMessageBox();
+  const selected = gObjectEvents[gSelectedObjectEvent.index];
+  if (selected && selected.active) ObjectEventClearHeldMovementIfFinished(selected);
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (player) ObjectEventClearHeldMovementIfFinished(player);
+  ScriptMovement_UnfreezeObjectEvents();
+  for (const npc of gObjectEvents) if (npc.active) UnfreezeObjectEvent(npc);
+  return false;
+};
+
 // ─── std scripts (1:1 scrcmd.c:235-253) ─────────────────────────────────────
 const ScrCmd_gotostd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptJump(ctx, ptrFromOffset(off)); return false; };
 const ScrCmd_callstd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptCall(ctx, ptrFromOffset(off)); return false; };
@@ -165,6 +239,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_compare_var_to_value, ScrCmd_compare_var_to_var,
   ScrCmd_setflag, ScrCmd_clearflag, ScrCmd_checkflag,
   ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
+  ScrCmd_faceplayer, ScrCmd_lock, ScrCmd_lockall, ScrCmd_release, ScrCmd_releaseall,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

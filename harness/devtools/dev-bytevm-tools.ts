@@ -175,6 +175,42 @@ export async function testDialogue(mapName = 'LittlerootTown'): Promise<{ pass: 
   return { pass, details };
 }
 
+/** Test INTERACTION PNJ complète via bytecode synthétique :
+ *  lock ; faceplayer ; loadword 0,<textSym> ; callstd MSGBOX_DEFAULT ; release ; end
+ *  → prouve que lock + faceplayer + le chemin msgbox s'exécutent en séquence
+ *    (la boîte de message s'affiche après que lock a rendu la main + faceplayer). */
+export async function testNpc(mapName = 'LittlerootTown'): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  await loadMapScripts(mapName);
+  let textSymId = -1, textLabel = '';
+  const syms = getSymbols();
+  for (let id = 1; id < syms.length; id++) {
+    const s = syms[id];
+    if (s.kind !== 'text' || !s.label.startsWith(mapName)) continue;
+    const b = getText(s.label);
+    if (b && b.length > 0) { textSymId = id; textLabel = s.label; break; }
+  }
+  const LOCK = cmdIdOf('ScrCmd_lock'), FACEPLAYER = cmdIdOf('ScrCmd_faceplayer');
+  const LOADWORD = cmdIdOf('ScrCmd_loadword'), CALLSTD = cmdIdOf('ScrCmd_callstd');
+  const RELEASE = cmdIdOf('ScrCmd_release'), END = cmdIdOf('ScrCmd_end');
+  const MSGBOX_DEFAULT = resolveDecompConstant('MSGBOX_DEFAULT') ?? 4;
+  const code = Uint8Array.from([
+    LOCK, FACEPLAYER,
+    LOADWORD, 0, lo(textSymId), hi(textSymId), (textSymId >> 16) & 0xFF, (textSymId >>> 24) & 0xFF,
+    CALLSTD, MSGBOX_DEFAULT, RELEASE, END,
+  ]);
+  HideFieldMessageBox();
+  ScriptContext_SetupScript({ buf: code, off: 0 } as ScriptPtr);
+  for (let i = 0; i < 10; i++) ScriptContext_RunScript();
+  const boxShown = !IsFieldMessageBoxHidden();
+  HideFieldMessageBox();
+
+  const pass = textSymId >= 0 && boxShown;
+  const details = { 'texte': textLabel, 'lock+faceplayer+msgbox → boîte affichée': boxShown };
+  console.log(`[byte-vm] TEST interaction PNJ : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -182,4 +218,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, run, VarGet, getScriptOffset };
