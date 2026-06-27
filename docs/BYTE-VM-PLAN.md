@@ -122,7 +122,30 @@ Sous-problèmes & état :
    UBFIX/BUGFIX OFF → corps `#ifdef UBFIX|BUGFIX` skippés, `#ifndef` gardés).
    Round-trip vérifié byte-exact (`setvar VAR_TEMP_1,1;return` → `16 01 40 01 00 03`).
 
-**PHASE 2 = DONE.** Reste tail (ITEM_TM via gTMHMMoves) = optionnel, post-game.
+**PHASE 2 = DONE.**
+
+### Architecture finale du linker (mise à niveau fidélité — commit `2aa99f32`)
+
+⚠️ **Découverte clé : le FALLTHROUGH.** ~5 % des scripts (778) n'ont **pas de
+terminateur** (`end`/`return`/`goto`) et comptent sur le fait de **tomber dans le
+script contigu suivant** (comme dans la ROM, où les scripts sont à la suite). Des
+buffers séparés par-label CASSERAIENT ces 778 → pas 1:1. ⇒ `compile-scripts.cjs`
+est un **LINKER** qui concatène tous les event scripts (common + maps, en **ordre
+source**) dans **une image globale contiguë** → fallthrough préservé.
+
+- Pointeurs **script→script** (goto/call/event-script de trainerbattle…) = **vrais
+  offsets globaux** dans l'image (relocations patchées en 2 passes) — comme des
+  adresses ROM. `scriptPtr` = curseur `{buf:image, off}` ; goto = `off = offset`.
+- Ressources **irréplicables** (texte/mouvement/mart/natif/RAM-global) = **ids de
+  symboles** (`id→{kind,label}`), résolus au runtime par le handler (getText/…).
+- Refs **map** = ids MapSymbols (identité-map STRING).
+- Les scripts d'**autres moteurs** (combat/anim/AI/field-effect) présents dans
+  `_common` sont filtrés (échec d'expansion = opcode hors event.inc → 1893 exclus).
+
+**Vérifié** : 7840 scripts compilés (204 Ko image), **1906/1906 goto/call → offset
+valide** (round-trip OK), expansion 0 trou, assemblage 0 régression. **Tail = 4 occ**
+edge (STR_VAR_2 ×2, COMPARE_SIZE ×2, MAP_NUM ×1 = identité-map STRING, impossible).
+ITEM_TM/HM résolus 1:1 via tm-hm.json.
 
 ## Phase 3 — byte VM
 
