@@ -79,31 +79,36 @@ composites). Les "inconnus" résiduels sont, par nature, hors moteur `script.c` 
 
 ---
 
-## Phase 2 — compilateur (assembleur) — le DUR
+## Phase 2 — compilateur (assembleur) — le DUR — EN COURS
 
 Objectif : `Map<label, Opcode[]>` (niveau macro, format actuel) → `Map<label,
 Uint8Array>` (bytecode) + tables de liens.
 
-Sous-problèmes :
-1. **Préprocesseur** `#ifdef/#ifndef/#else/#endif` : évaluer contre le set de
-   defines de la décomp par défaut (ex. `UBFIX`). Aujourd'hui le moteur les drop
-   en silence (warn noop) → décider du comportement 1:1.
-2. **Expansion des composites** : msgbox→`loadword 0,text`+`callstd type` ;
-   goto_if_eq→`compare`+`goto_if` ; frontier_*→`setvar`+`special` ; etc.
-   (récursif ; gérer `.if/.ifb/.elseif/.else` + args par défaut). Source = le champ
-   `composites{}` du JSON Phase 1.
-3. **Linker labels/pointeurs** : les `.4byte` pointeurs (goto/call/msgbox/
-   applymovement/pokemart…) référencent d'autres scripts/textes/data **par label**.
-   Notre identité étant **STRING** (scripts/maps/textes par label, pas adresse ROM),
-   décision d'archi à prendre : **espace d'adresses synthétique** — chaque
-   script/texte/blob compilé reçoit une adresse u32 synthétique ; un registre
-   `addr→{kind,ref}` permet à `ScriptReadWord` de rendre l'adresse et au handler de
-   résoudre la cible. Les slots `map` (2o) → index dans une table de noms de map.
-   ⇒ garde la VM byte-fidèle (`ScriptRead*` lit de vrais octets) tout en restant
-   compatible string.
-4. **Special id** : `special`/`specialvar` encodent `SPECIAL_<fn>` en 2o → besoin
-   d'une table `SPECIAL_* → id` (`data/specials.inc`) + le flag waitstate
-   (`SPECIAL_WAITSTATE_*`).
+**Décision d'archi : précompilation BUILD-TIME (CJS), comme la ROM.** Le runtime
+(Phase 3) exécutera du bytecode déjà compilé (fidèle = la ROM contient du
+bytecode). La logique d'assemblage pourra plus tard être portée en TS pour
+l'injection d'events custom au runtime (vision user). Outils dans `scripts/lib/`.
+
+Sous-problèmes & état :
+1. **Table des specials — ✅** `scripts/extract-specials-table.cjs` →
+   `specials-table.json` (527, ordre = id `gSpecials[]`, 99 waitstate, 3 doublons
+   vanilla last-wins). Pour encoder `special`/`specialvar` (id 2o + waitstate).
+2. **Résolveur de constantes — ✅** `scripts/lib/decomp-constants.cjs` : toute
+   constante décomp → nombre (source primaire = les `.h`, 13211 constantes).
+3. **Expansion des composites — ✅** `scripts/lib/expand-composites.cjs` : déplie
+   récursivement (substitution `\param`+défauts, `.if/.ifb/.ifnb/.elseif/.else`).
+   **Validé** : `scripts/validate-script-expansion.cjs` expanse les 32960 lignes
+   overworld des 468 maps → 42902 opcodes réels, **0 non résolu**.
+4. **Préprocesseur** `#ifdef UBFIX/#else/#endif` : ~21 lignes dans ~7 maps. À
+   évaluer contre les defines décomp par défaut (le moteur actuel les drop). RESTE.
+5. **Sérialiseur + linker — RESTE (dernière pièce Phase 2)** : opcodes réels →
+   octets via les `argLayout` du cmd-table (u8/u16/u32 ; `map`=2o group/num via
+   table de noms ; `stringvar`=1o STR_VAR_*→0/1/2 ; `special`=id 2o + waitstate ;
+   variants `*AT` par présence d'arg `map` ; `trainerbattle` par type). **Linker**
+   per-map : 1 image contiguë { scripts + textes (charmap) + mouvements + mart
+   lists }, 2 passes (layout des offsets → émission + patch des pointeurs). Rôle
+   de chaque `.4byte` (codeptr/textptr/dataptr/nativeptr/value) déduit du nom
+   d'arg. Natifs (callnative/gotonative) → table de symboles synthétique.
 
 ## Phase 3 — byte VM
 
