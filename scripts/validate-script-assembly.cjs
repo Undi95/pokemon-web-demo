@@ -37,10 +37,9 @@ function loadCommon() {
 // Tokens du « tail » connu et documenté (cf docs/BYTE-VM-PLAN.md). Tout token NON
 // listé ici qui échoue = RÉGRESSION (fait échouer le validateur).
 const KNOWN_TAIL = [
-  /^ITEM_TM_/,            // TM nommés référencés par src/data/items.h mais NON #define dans include (incohérence décomp)
-  /^STR_VAR_[23]$/,       // placeholders charmap utilisés comme valeur de setvar (Battle Dome)
-  /^COMPARE_SIZE_/,       // const locale non captée (Lotad/Seedot house)
-  /^MAP_NUM\(/,           // macro fonction MAP_NUM(x)
+  /^STR_VAR_[23]$/,       // placeholders charmap utilisés comme valeur de setvar (Battle Dome) — vraiment edge
+  /^COMPARE_SIZE_/,       // const locale (Lotad/Seedot house) définie hors include/.set
+  /^MAP_NUM\(/, /^MAP_GROUP\(/, // map num/group : impossible (identité-map STRING, pas de MAP_* numérique) — 1 occ (Deoxys)
 ];
 const isTail = (msg) => { const m = msg.match(/'([^']*)'/); return m && KNOWN_TAIL.some((re) => re.test(m[1])); };
 
@@ -94,7 +93,8 @@ function main() {
       (mapJson.object_events || []).forEach((o, i) => { if (o.local_id) localIds[o.local_id] = i + 1; });
     } catch { /* pas de map JSON (ex. _common déjà exclu) */ }
 
-    const env = A.makeEnv(classify, localIds);
+    const isScript = (label) => scriptLabels.has(label);
+    const env = A.makeEnv(classify, isScript, localIds);
     for (const [label, lines] of Object.entries(j.scripts || {})) {
       if (isMovement(lines)) continue;
       totalScripts++;
@@ -108,7 +108,7 @@ function main() {
             realOps.push(op);
           }
         }
-        const bytes = A.assembleScript(realOps, env);
+        const { bytes } = A.assembleScript(realOps, env);
         totalBytes += bytes.length;
         okScripts++;
       } catch (e) {

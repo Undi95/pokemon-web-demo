@@ -185,12 +185,36 @@ for (const rel of ['constants.json', 'flags-vars.json']) {
   }
 }
 
+// ── 8. items TM/HM nommés (ITEM_TM_<MOVE>/ITEM_HM_<MOVE>) ────────────────────
+// Le décomp utilise ces noms dans les scripts mais ne les #define pas dans
+// include/ (data/scripts via la liste TM/HM). Relation canonique : ITEM_TM_<MOVE>
+// = ITEM_TM01 + (numéro du TM qui enseigne MOVE − 1). Résolution fidèle (pas une
+// invention) depuis tm-hm.json.
+{
+  const tm = loadJson('tm-hm.json');
+  const base = { TM: table['ITEM_TM01'], HM: table['ITEM_HM01'] };
+  if (tm && tm.moves) {
+    for (const [key, moveConst] of Object.entries(tm.moves)) {
+      const m = key.match(/^(TM|HM)(\d+)$/);
+      if (!m || base[m[1]] === undefined || typeof moveConst !== 'string') continue;
+      const suffix = moveConst.replace(/^MOVE_/, '');
+      const itemName = `ITEM_${m[1]}_${suffix}`;
+      const v = base[m[1]] + (parseInt(m[2], 10) - 1);
+      if (table[itemName] === undefined) table[itemName] = v;
+    }
+  }
+}
+
 function resolve(name) {
   if (name == null) return undefined;
   const s = String(name).trim();
   if (/^-?\d+$/.test(s)) return parseInt(s, 10);
   if (/^0x[0-9a-fA-F]+$/.test(s)) return parseInt(s, 16);
   if (table[s] !== undefined) return table[s];
+  // macros-fonctions MAP_NUM(map)=(map&0xFF) / MAP_GROUP(map)=(map>>8) (constants/maps.h)
+  let mm;
+  if ((mm = s.match(/^MAP_NUM\s*\(\s*(.+?)\s*\)$/))) { const v = resolve(mm[1]); return v === undefined ? undefined : (v & 0xFF); }
+  if ((mm = s.match(/^MAP_GROUP\s*\(\s*(.+?)\s*\)$/))) { const v = resolve(mm[1]); return v === undefined ? undefined : (v >> 8); }
   // expression arithmétique (ex. `(NUM_X - 1)`, `(BET_5 * 2)`, `(1 << 3)`, modulo)
   if (/[()+\-*/<|%]/.test(s)) return evalExpr(s);
   return undefined;
