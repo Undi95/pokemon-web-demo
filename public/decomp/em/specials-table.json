@@ -1,0 +1,2633 @@
+{
+  "meta": {
+    "note": "Généré par scripts/extract-specials-table.cjs (byte-VM). NE PAS éditer.",
+    "count": 527
+  },
+  "specials": [
+    "HealPlayerParty",
+    "SetCableClubWarp",
+    "DoCableClubWarp",
+    "ReturnFromLinkRoom",
+    "CleanupLinkRoomState",
+    "ExitLinkRoom",
+    "SetPlayerSecretBase",
+    "CheckPlayerHasSecretBase",
+    "EnterSecretBase",
+    "ClearAndLeaveSecretBase",
+    "MoveOutOfSecretBase",
+    "IsCurSecretBaseOwnedByAnotherPlayer",
+    "GetCurSecretBaseRegistrationValidity",
+    "ToggleCurSecretBaseRegistry",
+    "ShowSecretBaseDecorationMenu",
+    "ShowSecretBaseRegistryMenu",
+    "PrepSecretBaseBattleFlags",
+    "GetSecretBaseOwnerAndState",
+    "InitSecretBaseDecorationSprites",
+    "SetDecoration",
+    "GetObjectEventLocalIdByFlag",
+    "GetSecretBaseTypeInFrontOfPlayer",
+    "SetSecretBaseOwnerGfxId",
+    "PutAwayDecorationIteration",
+    "EnterNewlyCreatedSecretBase",
+    "SetBattledOwnerFromResult",
+    "DoSecretBasePCTurnOffEffect",
+    "RecordMixingPlayerSpotTriggered",
+    "TryBattleLinkup",
+    "TryTradeLinkup",
+    "TryRecordMixLinkup",
+    "ValidateMixingGameLanguage",
+    "CloseLink",
+    "ColosseumPlayerSpotTriggered",
+    "PlayerEnteredTradeSeat",
+    "Script_StartWiredTrade",
+    "CableClubSaveGame",
+    "TryBerryBlenderLinkup",
+    "GetLinkPartnerNames",
+    "SpawnLinkPartnerObjectEvent",
+    "SavePlayerParty",
+    "LoadPlayerParty",
+    "ChooseHalfPartyForBattle",
+    "Script_ShowLinkTrainerCard",
+    "ObjectEventInteractionGetBerryTreeData",
+    "ObjectEventInteractionGetBerryName",
+    "ObjectEventInteractionGetBerryCountString",
+    "Bag_ChooseBerry",
+    "ObjectEventInteractionPlantBerryTree",
+    "ObjectEventInteractionPickBerryTree",
+    "ObjectEventInteractionRemoveBerryTree",
+    "ObjectEventInteractionWaterBerryTree",
+    "PlayerHasBerries",
+    "IsEnigmaBerryValid",
+    "GetTrainerBattleMode",
+    "ShowTrainerIntroSpeech",
+    "ShowTrainerCantBattleSpeech",
+    "GetTrainerFlag",
+    "DoTrainerApproach",
+    "PlayTrainerEncounterMusic",
+    "ShouldTryRematchBattle",
+    "IsTrainerReadyForRematch",
+    "BattleSetup_StartRematchBattle",
+    "ShowPokemonStorageSystemPC",
+    "HasEnoughMonsForDoubleBattle",
+    "TurnOffTVScreen",
+    "DoTVShow",
+    "DoPokeNews",
+    "GetRandomActiveShowIdx",
+    "GetSelectedTVShow",
+    "InterviewBefore",
+    "InterviewAfter",
+    "IsLeadMonNicknamedOrNotEnglish",
+    "SetContestCategoryStringVarForInterview",
+    "GetNextActiveShowIfMassOutbreak",
+    "IsTVShowAlreadyInQueue",
+    "CheckForPlayersHouseNews",
+    "GetMomOrDadStringForTVMessage",
+    "ResetTVShowState",
+    "GetContestWinnerId",
+    "GetContestPlayerId",
+    "GetNpcContestantLocalId",
+    "BufferContestWinnerTrainerName",
+    "BufferContestWinnerMonName",
+    "BufferContestTrainerAndMonNames",
+    "GetContestMonConditionRanking",
+    "SetContestTrainerGfxIds",
+    "TryEnterContestMon",
+    "GetContestantNamesAtRank",
+    "SetLinkContestPlayerGfx",
+    "GetContestMonCondition",
+    "HasMonWonThisContestBefore",
+    "GiveMonContestRibbon",
+    "IsContestDebugActive",
+    "GiveMonArtistRibbon",
+    "TryContestGModeLinkup",
+    "SaveGame",
+    "DoWateringBerryTreeAnim",
+    "ShowEasyChatScreen",
+    "ShowEasyChatProfile",
+    "Script_GetCurrentMauvilleMan",
+    "HasBardSongBeenChanged",
+    "SaveBardSongLyrics",
+    "HasHipsterTaughtWord",
+    "SetHipsterTaughtWord",
+    "HipsterTryTeachWord",
+    "PlayBardSong",
+    "SetMauvilleOldManObjEventGfx",
+    "GenerateGiddyLine",
+    "GiddyShouldTellAnotherTale",
+    "StorytellerGetFreeStorySlot",
+    "Script_StorytellerDisplayStory",
+    "StorytellerStoryListMenu",
+    "StorytellerUpdateStat",
+    "Script_StorytellerInitializeRandomStat",
+    "HasStorytellerAlreadyRecorded",
+    "TraderMenuGetDecoration",
+    "GetTraderTradedFlag",
+    "DoesPlayerHaveNoDecorations",
+    "IsDecorationCategoryFull",
+    "TraderShowDecorationMenu",
+    "TraderDoDecorationTrade",
+    "GetSeedotSizeRecordInfo",
+    "CompareSeedotSize",
+    "GetLotadSizeRecordInfo",
+    "CompareLotadSize",
+    "TryPutNameRaterShowOnTheAir",
+    "BufferMonNickname",
+    "IsMonOTIDNotPlayers",
+    "BufferTrendyPhraseString",
+    "IsTrendyPhraseBoring",
+    "BufferDeepLinkPhrase",
+    "GetDewfordHallPaintingNameIndex",
+    "SwapRegisteredBike",
+    "CalculatePlayerPartyCount",
+    "CountPartyNonEggMons",
+    "CountPartyAliveNonEggMons_IgnoreVar0x8004Slot",
+    "ShouldReadyContestArtist",
+    "SaveMuseumContestPainting",
+    "DoesContestCategoryHaveMuseumPainting",
+    "CountPlayerMuseumPaintings",
+    "ShowContestPainting",
+    "MauvilleGymSetDefaultBarriers",
+    "MauvilleGymPressSwitch",
+    "ShowFieldMessageStringVar4",
+    "DrawWholeMapView",
+    "StorePlayerCoordsInVars",
+    "MauvilleGymDeactivatePuzzle",
+    "PetalburgGymSlideOpenRoomDoors",
+    "PetalburgGymUnlockRoomDoors",
+    "GetPlayerTrainerIdOnesDigit",
+    "GetPlayerBigGuyGirlString",
+    "GetRivalSonDaughterString",
+    "SetHiddenItemFlag",
+    "CableCarWarp",
+    "CableCar",
+    "Overworld_PlaySpecialMapMusic",
+    "StartWallClock",
+    "Special_ViewWallClock",
+    "ChooseStarter",
+    "StartWallyTutorialBattle",
+    "ChangePokemonNickname",
+    "ChoosePartyMon",
+    "GetFirstFreePokeblockSlot",
+    "DoBerryBlending",
+    "PlayRoulette",
+    "IsFanClubMemberFanOfPlayer",
+    "GetNumFansOfPlayerInTrainerFanClub",
+    "BufferFanClubTrainerName",
+    "TryLoseFansFromPlayTimeAfterLinkBattle",
+    "TryLoseFansFromPlayTime",
+    "SetPlayerGotFirstFans",
+    "UpdateTrainerFanClubGameClear",
+    "Script_TryGainNewFanFromCounter",
+    "RockSmashWildEncounter",
+    "GabbyAndTyGetBattleNum",
+    "GabbyAndTyAfterInterview",
+    "GabbyAndTyBeforeInterview",
+    "DoTVShowInSearchOfTrainers",
+    "IsGabbyAndTyShowOnTheAir",
+    "GabbyAndTyGetLastQuote",
+    "GabbyAndTyGetLastBattleTrivia",
+    "GetGabbyAndTyLocalIds",
+    "GetBattleOutcome",
+    "GetDaycareMonNicknames",
+    "GetDaycareState",
+    "RejectEggFromDayCare",
+    "GiveEggFromDaycare",
+    "SetDaycareCompatibilityString",
+    "GetSelectedMonNicknameAndSpecies",
+    "StoreSelectedPokemonInDaycare",
+    "ChooseSendDaycareMon",
+    "ShowDaycareLevelMenu",
+    "GetNumLevelsGainedFromDaycare",
+    "GetDaycareCost",
+    "TakePokemonFromDaycare",
+    "ScriptHatchMon",
+    "EggHatch",
+    "CheckDaycareMonReceivedMail",
+    "ShowLinkBattleRecords",
+    "IsEnoughForCostInVar0x8005",
+    "SubtractMoneyFromVar0x8005",
+    "TryFieldPoisonWhiteOut",
+    "SetCB2WhiteOut",
+    "RotatingGate_InitPuzzle",
+    "RotatingGate_InitPuzzleAndGraphics",
+    "SetSSTidalFlag",
+    "ResetSSTidalFlag",
+    "EnterSafariMode",
+    "ExitSafariMode",
+    "GetPokeblockFeederInFront",
+    "OpenPokeblockCaseOnFeeder",
+    "IsMirageIslandPresent",
+    "UpdateShoalTideFlag",
+    "InitBirchState",
+    "ScriptGetPokedexInfo",
+    "ShowPokedexRatingMessage",
+    "DoPCTurnOnEffect",
+    "DoPCTurnOffEffect",
+    "SetDeptStoreFloor",
+    "DoLotteryCornerComputerEffect",
+    "EndLotteryCornerComputerEffect",
+    "ChooseMonForMoveRelearner",
+    "MoveDeleterChooseMoveToForget",
+    "MoveDeleterForgetMove",
+    "BufferMoveDeleterNicknameAndMove",
+    "GetNumMovesSelectedMonHas",
+    "TeachMoveRelearnerMove",
+    "GetRecordedCyclingRoadResults",
+    "Special_BeginCyclingRoadChallenge",
+    "GetPlayerAvatarBike",
+    "FinishCyclingRoadChallenge",
+    "UpdateCyclingRoadState",
+    "GetLeadMonFriendshipScore",
+    "CallFrontierUtilFunc",
+    "CallBattleTowerFunc",
+    "CallBattleDomeFunction",
+    "CallBattlePalaceFunction",
+    "CopyEReaderTrainerGreeting",
+    "DoSpecialTrainerBattle",
+    "CallBattleArenaFunction",
+    "CallBattleFactoryFunction",
+    "CallBattlePikeFunction",
+    "CallBattlePyramidFunction",
+    "StopMapMusic",
+    "CallVerdanturfTentFunction",
+    "CallFallarborTentFunction",
+    "CallSlateportTentFunction",
+    "ChoosePartyForBattleFrontier",
+    "ValidateEReaderTrainer",
+    "GetBattleTowerSinglesStreak",
+    "ReducePlayerPartyToSelectedMons",
+    "BedroomPC",
+    "PlayerPC",
+    "FieldShowRegionMap",
+    "GetInGameTradeSpeciesInfo",
+    "CreateInGameTradePokemon",
+    "DoInGameTradeScene",
+    "GetTradeSpecies",
+    "GetWeekCount",
+    "RetrieveLotteryNumber",
+    "PickLotteryCornerTicket",
+    "ShowBerryBlenderRecordWindow",
+    "ResetTrickHouseNuggetFlag",
+    "SetTrickHouseNuggetFlag",
+    "ScriptMenu_CreatePCMultichoice",
+    "AccessHallOfFamePC",
+    "Special_ShowDiploma",
+    "CheckLeadMonCool",
+    "CheckLeadMonBeauty",
+    "CheckLeadMonCute",
+    "CheckLeadMonSmart",
+    "CheckLeadMonTough",
+    "LookThroughPorthole",
+    "DoSoftReset",
+    "GameClear",
+    "MoveElevator",
+    "ShowGlassWorkshopMenu",
+    "SpawnCameraObject",
+    "RemoveCameraObject",
+    "GetPokeblockNameByMonNature",
+    "GetSecretBaseNearbyMapName",
+    "CheckRelicanthWailord",
+    "ShouldDoBrailleRegirockEffectOld",
+    "DoOrbEffect",
+    "FadeOutOrbEffect",
+    "WaitWeather",
+    "BufferEReaderTrainerName",
+    "GetSlotMachineId",
+    "GetPlayerFacingDirection",
+    "FoundAbandonedShipRoom1Key",
+    "FoundAbandonedShipRoom2Key",
+    "FoundAbandonedShipRoom4Key",
+    "FoundAbandonedShipRoom6Key",
+    "LeadMonHasEffortRibbon",
+    "GiveLeadMonEffortRibbon",
+    "Special_AreLeadMonEVsMaxedOut",
+    "Script_FacePlayer",
+    "Script_ClearHeldMovement",
+    "InitRoamer",
+    "TryUpdateRusturfTunnelState",
+    "IsGrassTypeInParty",
+    "DoContestHallWarp",
+    "LoadWallyZigzagoon",
+    "IsStarterInParty",
+    "CopyCurSecretBaseOwnerName_StrVar1",
+    "ScriptCheckFreePokemonStorageSpace",
+    "DoSealedChamberShakingEffect_Long",
+    "ShowDeptStoreElevatorFloorSelect",
+    "InteractWithShieldOrTVDecoration",
+    "IsPokerusInParty",
+    "SetSootopolisGymCrackedIceMetatiles",
+    "ShakeCamera",
+    "StartGroudonKyogreBattle",
+    "BattleSetup_StartLegendaryBattle",
+    "StartRegiBattle",
+    "SetTrainerFacingDirection",
+    "DoSealedChamberShakingEffect_Short",
+    "FoundBlackGlasses",
+    "StartDroughtWeatherBlend",
+    "DoDiveWarp",
+    "DoFallWarp",
+    "ShowContestEntryMonPic",
+    "HideContestEntryMonPic",
+    "SetEReaderTrainerGfxId",
+    "BattleSetup_StartLatiBattle",
+    "SetRoute119Weather",
+    "SetRoute123Weather",
+    "GetContestMultiplayerId",
+    "ScriptGetPartyMonSpecies",
+    "IsSelectedMonEgg",
+    "TryInitBattleTowerAwardManObjectEvent",
+    "MoveOutOfSecretBaseFromOutside",
+    "LoadPlayerBag",
+    "Script_FadeOutMapMusic",
+    "SetPacifidlogTMReceivedDay",
+    "GetDaysUntilPacifidlogTMAvailable",
+    "HasAllHoennMons",
+    "MonOTNameNotPlayer",
+    "BufferLottoTicketNumber",
+    "TryHideBattleTowerReporter",
+    "DoesPartyHaveEnigmaBerry",
+    "GenerateContestRand",
+    "SetChampionSaveWarp",
+    "TryPutTreasureInvestigatorsOnAir",
+    "TryPutLotteryWinnerReportOnAir",
+    "TryPutTrainerFanClubOnAir",
+    "ShouldHideFanClubInterviewer",
+    "ShowGlassWorkshopMenu",
+    "PutFanClubSpecialOnTheAir",
+    "IncrementDailyPlantedBerries",
+    "IncrementDailyPickedBerries",
+    "InitSecretBaseVars",
+    "CheckInteractedWithFriendsSandOrnament",
+    "DeclinedSecretBaseBattle",
+    "DrewSecretBaseBattle",
+    "WonSecretBaseBattle",
+    "LostSecretBaseBattle",
+    "CheckInteractedWithFriendsDollDecor",
+    "CheckInteractedWithFriendsCushionDecor",
+    "CheckInteractedWithFriendsFurnitureBottom",
+    "CheckInteractedWithFriendsFurnitureMiddle",
+    "CheckInteractedWithFriendsFurnitureTop",
+    "CheckInteractedWithFriendsPosterDecor",
+    "SetLilycoveLadyGfx",
+    "Script_GetLilycoveLadyId",
+    "GetFavorLadyState",
+    "BufferFavorLadyRequest",
+    "HasAnotherPlayerGivenFavorLadyItem",
+    "BufferFavorLadyItemName",
+    "BufferFavorLadyPlayerName",
+    "DidFavorLadyLikeItem",
+    "Script_FavorLadyOpenBagMenu",
+    "Script_DoesFavorLadyLikeItem",
+    "IsFavorLadyThresholdMet",
+    "FavorLadyGetPrize",
+    "SetFavorLadyState_Complete",
+    "GetQuizLadyState",
+    "GetQuizAuthor",
+    "IsQuizLadyWaitingForChallenger",
+    "QuizLadyShowQuizQuestion",
+    "QuizLadyGetPlayerAnswer",
+    "IsQuizAnswerCorrect",
+    "BufferQuizPrizeItem",
+    "SetQuizLadyState_Complete",
+    "BufferQuizAuthorNameAndCheckIfLady",
+    "SetQuizLadyState_GivePrize",
+    "ClearQuizLadyPlayerAnswer",
+    "Script_QuizLadyOpenBagMenu",
+    "ClearQuizLadyQuestionAndAnswer",
+    "QuizLadySetCustomQuestion",
+    "QuizLadyTakePrizeForCustomQuiz",
+    "GetMysteryGiftCardStat",
+    "QuizLadyRecordCustomQuizData",
+    "QuizLadySetWaitingForChallenger",
+    "BufferQuizCorrectAnswer",
+    "BufferQuizPrizeName",
+    "QuizLadyPickNewQuestion",
+    "ShouldContestLadyShowGoOnAir",
+    "HasPlayerGivenContestLadyPokeblock",
+    "Script_BufferContestLadyCategoryAndMonName",
+    "OpenPokeblockCaseForContestLady",
+    "SetContestLadyGivenPokeblock",
+    "GetContestLadyMonSpecies",
+    "GetContestLadyCategory",
+    "PutLilycoveContestLadyShowOnTheAir",
+    "CloseBattlePikeCurtain",
+    "CallApprenticeFunction",
+    "ShouldTryGetTrainerScript",
+    "ShowMapNamePopup",
+    "ShowMapNamePopup",
+    "DoMirageTowerCeilingCrumble",
+    "SetMirageTowerVisibility",
+    "StartPlayerDescendMirageTower",
+    "BufferTMHMMoveName",
+    "IsWirelessAdapterConnected",
+    "TryBecomeLinkLeader",
+    "TryJoinLinkGroup",
+    "RunUnionRoom",
+    "ShowWirelessCommunicationScreen",
+    "InitUnionRoom",
+    "BufferUnionRoomPlayerName",
+    "WonderNews_GetRewardInfo",
+    "ChooseMonForWirelessMinigame",
+    "Script_ResetUnionRoomTrade",
+    "IsBadEggInParty",
+    "ValidateSavedWonderCard",
+    "HasAtLeastOneBerry",
+    "IsPokemonJumpSpeciesInParty",
+    "ShowPokemonJumpRecords",
+    "IsDodrioInParty",
+    "ShowDodrioBerryPickingRecords",
+    "OffsetCameraForBattle",
+    "GetDeptStoreDefaultFloorChoice",
+    "BufferVarsForIVRater",
+    "LinkContestWaitForConnection",
+    "GetWirelessCommType",
+    "LinkContestTryShowWirelessIndicator",
+    "LinkContestTryHideWirelessIndicator",
+    "IsWirelessContest",
+    "ShowRankingHallRecordsWindow",
+    "ScrollRankingHallRecordsWindow",
+    "ShowFrontierManiacMessage",
+    "IsContestWithRSPlayer",
+    "ClearLinkContestFlags",
+    "TryContestEModeLinkup",
+    "ShowScrollableMultichoice",
+    "ScrollableMultichoice_TryReturnToList",
+    "BufferBattleTowerElevatorFloors",
+    "TryStoreHeldItemsInPyramidBag",
+    "ChooseItemsToTossFromPyramidBag",
+    "DoBattlePyramidMonsHaveHeldItem",
+    "BattlePyramidChooseMonHeldItems",
+    "SetBattleTowerLinkPlayerGfx",
+    "ShowNatureGirlMessage",
+    "ShowBattlePointsWindow",
+    "UpdateBattlePointsWindow",
+    "CloseBattlePointsWindow",
+    "GiveFrontierBattlePoints",
+    "TakeFrontierBattlePoints",
+    "GetFrontierBattlePoints",
+    "ShowFrontierExchangeCornerItemIconWindow",
+    "CloseFrontierExchangeCornerItemIconWindow",
+    "DisplayBerryPowderVendorMenu",
+    "RemoveBerryPowderVendorMenu",
+    "HasEnoughBerryPowder",
+    "TakeBerryPowder",
+    "PrintPlayerBerryPowderAmount",
+    "ShowFrontierGamblerLookingMessage",
+    "ShowFrontierGamblerGoMessage",
+    "Script_DoRayquazaScene",
+    "OpenPokenavForTutorial",
+    "ScriptMenu_CreateStartMenuForPokenavTutorial",
+    "CountPlayerTrainerStars",
+    "BufferBattleFrontierTutorMoveName",
+    "CloseBattleFrontierTutorWindow",
+    "ScrollableMultichoice_RedrawPersistentMenu",
+    "ChooseMonForMoveTutor",
+    "GetBattleFrontierTutorMoveIndex",
+    "ScrollableMultichoice_ClosePersistentMenu",
+    "DoDeoxysRockInteraction",
+    "SetDeoxysRockPalette",
+    "CreateEnemyEventMon",
+    "StartMirageTowerDisintegration",
+    "StartMirageTowerShake",
+    "StartMirageTowerFossilFallAndSink",
+    "ChangeBoxPokemonNickname",
+    "GetPCBoxToSendMon",
+    "ShouldShowBoxWasFullMessage",
+    "SetMatchCallRegisteredFlag",
+    "DoDomeConfetti",
+    "CreateAbnormalWeatherEvent",
+    "GetAbnormalWeatherMapNameAndType",
+    "GetMartEmployeeObjectEventId",
+    "SaveForBattleTowerLink",
+    "Unused_SetWeatherSunny",
+    "SetUnlockedPokedexFlags",
+    "IsTrainerRegistered",
+    "ShouldDoBrailleRegicePuzzle",
+    "EnableNationalPokedex",
+    "ScriptMenu_CreateLilycoveSSTidalMultichoice",
+    "GetLilycoveSSTidalSelection",
+    "TurnOnTVScreen",
+    "SetMewAboveGrass",
+    "ShouldDistributeEonTicket",
+    "LinkRetireStatusWithBattleTowerPartner",
+    "BattleTowerReconnectLink",
+    "CallTrainerHillFunction",
+    "Script_DoRayquazaScene",
+    "LoopWingFlapSE",
+    "DestroyMewEmergingGrassSprite",
+    "ShowBerryCrushRankings",
+    "TryBufferWaldaPhrase",
+    "DoWaldaNamingScreen",
+    "TryGetWallpaperWithWaldaPhrase",
+    "PlayerNotAtTrainerHillEntrance",
+    "GetBattlePyramidHint",
+    "LoadLinkContestPlayerPalettes",
+    "ShowTrainerHillRecords",
+    "PlayerFaceTrainerAfterBattle",
+    "ResetHealLocationFromDewford",
+    "IsLastMonThatKnowsSurf",
+    "CountPartyAliveNonEggMons",
+    "TryPrepareSecondApproachingTrainer",
+    "RemoveRecordsWindow",
+    "CloseDeptStoreElevatorWindow",
+    "TrySetBattleTowerLinkType"
+  ],
+  "byName": {
+    "HealPlayerParty": {
+      "id": 0,
+      "waitstate": false
+    },
+    "SetCableClubWarp": {
+      "id": 1,
+      "waitstate": false
+    },
+    "DoCableClubWarp": {
+      "id": 2,
+      "waitstate": true
+    },
+    "ReturnFromLinkRoom": {
+      "id": 3,
+      "waitstate": true
+    },
+    "CleanupLinkRoomState": {
+      "id": 4,
+      "waitstate": false
+    },
+    "ExitLinkRoom": {
+      "id": 5,
+      "waitstate": false
+    },
+    "SetPlayerSecretBase": {
+      "id": 6,
+      "waitstate": false
+    },
+    "CheckPlayerHasSecretBase": {
+      "id": 7,
+      "waitstate": false
+    },
+    "EnterSecretBase": {
+      "id": 8,
+      "waitstate": false
+    },
+    "ClearAndLeaveSecretBase": {
+      "id": 9,
+      "waitstate": false
+    },
+    "MoveOutOfSecretBase": {
+      "id": 10,
+      "waitstate": false
+    },
+    "IsCurSecretBaseOwnedByAnotherPlayer": {
+      "id": 11,
+      "waitstate": false
+    },
+    "GetCurSecretBaseRegistrationValidity": {
+      "id": 12,
+      "waitstate": false
+    },
+    "ToggleCurSecretBaseRegistry": {
+      "id": 13,
+      "waitstate": false
+    },
+    "ShowSecretBaseDecorationMenu": {
+      "id": 14,
+      "waitstate": false
+    },
+    "ShowSecretBaseRegistryMenu": {
+      "id": 15,
+      "waitstate": false
+    },
+    "PrepSecretBaseBattleFlags": {
+      "id": 16,
+      "waitstate": false
+    },
+    "GetSecretBaseOwnerAndState": {
+      "id": 17,
+      "waitstate": false
+    },
+    "InitSecretBaseDecorationSprites": {
+      "id": 18,
+      "waitstate": false
+    },
+    "SetDecoration": {
+      "id": 19,
+      "waitstate": false
+    },
+    "GetObjectEventLocalIdByFlag": {
+      "id": 20,
+      "waitstate": false
+    },
+    "GetSecretBaseTypeInFrontOfPlayer": {
+      "id": 21,
+      "waitstate": false
+    },
+    "SetSecretBaseOwnerGfxId": {
+      "id": 22,
+      "waitstate": false
+    },
+    "PutAwayDecorationIteration": {
+      "id": 23,
+      "waitstate": false
+    },
+    "EnterNewlyCreatedSecretBase": {
+      "id": 24,
+      "waitstate": true
+    },
+    "SetBattledOwnerFromResult": {
+      "id": 25,
+      "waitstate": false
+    },
+    "DoSecretBasePCTurnOffEffect": {
+      "id": 26,
+      "waitstate": false
+    },
+    "RecordMixingPlayerSpotTriggered": {
+      "id": 27,
+      "waitstate": true
+    },
+    "TryBattleLinkup": {
+      "id": 28,
+      "waitstate": true
+    },
+    "TryTradeLinkup": {
+      "id": 29,
+      "waitstate": true
+    },
+    "TryRecordMixLinkup": {
+      "id": 30,
+      "waitstate": true
+    },
+    "ValidateMixingGameLanguage": {
+      "id": 31,
+      "waitstate": true
+    },
+    "CloseLink": {
+      "id": 32,
+      "waitstate": false
+    },
+    "ColosseumPlayerSpotTriggered": {
+      "id": 33,
+      "waitstate": true
+    },
+    "PlayerEnteredTradeSeat": {
+      "id": 34,
+      "waitstate": true
+    },
+    "Script_StartWiredTrade": {
+      "id": 35,
+      "waitstate": false
+    },
+    "CableClubSaveGame": {
+      "id": 36,
+      "waitstate": false
+    },
+    "TryBerryBlenderLinkup": {
+      "id": 37,
+      "waitstate": true
+    },
+    "GetLinkPartnerNames": {
+      "id": 38,
+      "waitstate": false
+    },
+    "SpawnLinkPartnerObjectEvent": {
+      "id": 39,
+      "waitstate": false
+    },
+    "SavePlayerParty": {
+      "id": 40,
+      "waitstate": false
+    },
+    "LoadPlayerParty": {
+      "id": 41,
+      "waitstate": false
+    },
+    "ChooseHalfPartyForBattle": {
+      "id": 42,
+      "waitstate": true
+    },
+    "Script_ShowLinkTrainerCard": {
+      "id": 43,
+      "waitstate": true
+    },
+    "ObjectEventInteractionGetBerryTreeData": {
+      "id": 44,
+      "waitstate": false
+    },
+    "ObjectEventInteractionGetBerryName": {
+      "id": 45,
+      "waitstate": false
+    },
+    "ObjectEventInteractionGetBerryCountString": {
+      "id": 46,
+      "waitstate": false
+    },
+    "Bag_ChooseBerry": {
+      "id": 47,
+      "waitstate": true
+    },
+    "ObjectEventInteractionPlantBerryTree": {
+      "id": 48,
+      "waitstate": false
+    },
+    "ObjectEventInteractionPickBerryTree": {
+      "id": 49,
+      "waitstate": false
+    },
+    "ObjectEventInteractionRemoveBerryTree": {
+      "id": 50,
+      "waitstate": false
+    },
+    "ObjectEventInteractionWaterBerryTree": {
+      "id": 51,
+      "waitstate": false
+    },
+    "PlayerHasBerries": {
+      "id": 52,
+      "waitstate": false
+    },
+    "IsEnigmaBerryValid": {
+      "id": 53,
+      "waitstate": false
+    },
+    "GetTrainerBattleMode": {
+      "id": 54,
+      "waitstate": false
+    },
+    "ShowTrainerIntroSpeech": {
+      "id": 55,
+      "waitstate": false
+    },
+    "ShowTrainerCantBattleSpeech": {
+      "id": 56,
+      "waitstate": false
+    },
+    "GetTrainerFlag": {
+      "id": 57,
+      "waitstate": false
+    },
+    "DoTrainerApproach": {
+      "id": 58,
+      "waitstate": true
+    },
+    "PlayTrainerEncounterMusic": {
+      "id": 59,
+      "waitstate": false
+    },
+    "ShouldTryRematchBattle": {
+      "id": 60,
+      "waitstate": false
+    },
+    "IsTrainerReadyForRematch": {
+      "id": 61,
+      "waitstate": false
+    },
+    "BattleSetup_StartRematchBattle": {
+      "id": 62,
+      "waitstate": true
+    },
+    "ShowPokemonStorageSystemPC": {
+      "id": 63,
+      "waitstate": true
+    },
+    "HasEnoughMonsForDoubleBattle": {
+      "id": 64,
+      "waitstate": false
+    },
+    "TurnOffTVScreen": {
+      "id": 65,
+      "waitstate": false
+    },
+    "DoTVShow": {
+      "id": 66,
+      "waitstate": false
+    },
+    "DoPokeNews": {
+      "id": 67,
+      "waitstate": false
+    },
+    "GetRandomActiveShowIdx": {
+      "id": 68,
+      "waitstate": false
+    },
+    "GetSelectedTVShow": {
+      "id": 69,
+      "waitstate": false
+    },
+    "InterviewBefore": {
+      "id": 70,
+      "waitstate": false
+    },
+    "InterviewAfter": {
+      "id": 71,
+      "waitstate": false
+    },
+    "IsLeadMonNicknamedOrNotEnglish": {
+      "id": 72,
+      "waitstate": false
+    },
+    "SetContestCategoryStringVarForInterview": {
+      "id": 73,
+      "waitstate": false
+    },
+    "GetNextActiveShowIfMassOutbreak": {
+      "id": 74,
+      "waitstate": false
+    },
+    "IsTVShowAlreadyInQueue": {
+      "id": 75,
+      "waitstate": false
+    },
+    "CheckForPlayersHouseNews": {
+      "id": 76,
+      "waitstate": false
+    },
+    "GetMomOrDadStringForTVMessage": {
+      "id": 77,
+      "waitstate": false
+    },
+    "ResetTVShowState": {
+      "id": 78,
+      "waitstate": false
+    },
+    "GetContestWinnerId": {
+      "id": 79,
+      "waitstate": false
+    },
+    "GetContestPlayerId": {
+      "id": 80,
+      "waitstate": false
+    },
+    "GetNpcContestantLocalId": {
+      "id": 81,
+      "waitstate": false
+    },
+    "BufferContestWinnerTrainerName": {
+      "id": 82,
+      "waitstate": false
+    },
+    "BufferContestWinnerMonName": {
+      "id": 83,
+      "waitstate": false
+    },
+    "BufferContestTrainerAndMonNames": {
+      "id": 84,
+      "waitstate": false
+    },
+    "GetContestMonConditionRanking": {
+      "id": 85,
+      "waitstate": false
+    },
+    "SetContestTrainerGfxIds": {
+      "id": 86,
+      "waitstate": false
+    },
+    "TryEnterContestMon": {
+      "id": 87,
+      "waitstate": false
+    },
+    "GetContestantNamesAtRank": {
+      "id": 88,
+      "waitstate": false
+    },
+    "SetLinkContestPlayerGfx": {
+      "id": 89,
+      "waitstate": false
+    },
+    "GetContestMonCondition": {
+      "id": 90,
+      "waitstate": false
+    },
+    "HasMonWonThisContestBefore": {
+      "id": 91,
+      "waitstate": false
+    },
+    "GiveMonContestRibbon": {
+      "id": 92,
+      "waitstate": false
+    },
+    "IsContestDebugActive": {
+      "id": 93,
+      "waitstate": false
+    },
+    "GiveMonArtistRibbon": {
+      "id": 94,
+      "waitstate": false
+    },
+    "TryContestGModeLinkup": {
+      "id": 95,
+      "waitstate": true
+    },
+    "SaveGame": {
+      "id": 96,
+      "waitstate": true
+    },
+    "DoWateringBerryTreeAnim": {
+      "id": 97,
+      "waitstate": true
+    },
+    "ShowEasyChatScreen": {
+      "id": 98,
+      "waitstate": false
+    },
+    "ShowEasyChatProfile": {
+      "id": 99,
+      "waitstate": false
+    },
+    "Script_GetCurrentMauvilleMan": {
+      "id": 100,
+      "waitstate": false
+    },
+    "HasBardSongBeenChanged": {
+      "id": 101,
+      "waitstate": false
+    },
+    "SaveBardSongLyrics": {
+      "id": 102,
+      "waitstate": false
+    },
+    "HasHipsterTaughtWord": {
+      "id": 103,
+      "waitstate": false
+    },
+    "SetHipsterTaughtWord": {
+      "id": 104,
+      "waitstate": false
+    },
+    "HipsterTryTeachWord": {
+      "id": 105,
+      "waitstate": false
+    },
+    "PlayBardSong": {
+      "id": 106,
+      "waitstate": false
+    },
+    "SetMauvilleOldManObjEventGfx": {
+      "id": 107,
+      "waitstate": false
+    },
+    "GenerateGiddyLine": {
+      "id": 108,
+      "waitstate": false
+    },
+    "GiddyShouldTellAnotherTale": {
+      "id": 109,
+      "waitstate": false
+    },
+    "StorytellerGetFreeStorySlot": {
+      "id": 110,
+      "waitstate": false
+    },
+    "Script_StorytellerDisplayStory": {
+      "id": 111,
+      "waitstate": false
+    },
+    "StorytellerStoryListMenu": {
+      "id": 112,
+      "waitstate": true
+    },
+    "StorytellerUpdateStat": {
+      "id": 113,
+      "waitstate": false
+    },
+    "Script_StorytellerInitializeRandomStat": {
+      "id": 114,
+      "waitstate": false
+    },
+    "HasStorytellerAlreadyRecorded": {
+      "id": 115,
+      "waitstate": false
+    },
+    "TraderMenuGetDecoration": {
+      "id": 116,
+      "waitstate": true
+    },
+    "GetTraderTradedFlag": {
+      "id": 117,
+      "waitstate": false
+    },
+    "DoesPlayerHaveNoDecorations": {
+      "id": 118,
+      "waitstate": false
+    },
+    "IsDecorationCategoryFull": {
+      "id": 119,
+      "waitstate": false
+    },
+    "TraderShowDecorationMenu": {
+      "id": 120,
+      "waitstate": true
+    },
+    "TraderDoDecorationTrade": {
+      "id": 121,
+      "waitstate": false
+    },
+    "GetSeedotSizeRecordInfo": {
+      "id": 122,
+      "waitstate": false
+    },
+    "CompareSeedotSize": {
+      "id": 123,
+      "waitstate": false
+    },
+    "GetLotadSizeRecordInfo": {
+      "id": 124,
+      "waitstate": false
+    },
+    "CompareLotadSize": {
+      "id": 125,
+      "waitstate": false
+    },
+    "TryPutNameRaterShowOnTheAir": {
+      "id": 126,
+      "waitstate": false
+    },
+    "BufferMonNickname": {
+      "id": 127,
+      "waitstate": false
+    },
+    "IsMonOTIDNotPlayers": {
+      "id": 128,
+      "waitstate": false
+    },
+    "BufferTrendyPhraseString": {
+      "id": 129,
+      "waitstate": false
+    },
+    "IsTrendyPhraseBoring": {
+      "id": 130,
+      "waitstate": false
+    },
+    "BufferDeepLinkPhrase": {
+      "id": 131,
+      "waitstate": false
+    },
+    "GetDewfordHallPaintingNameIndex": {
+      "id": 132,
+      "waitstate": false
+    },
+    "SwapRegisteredBike": {
+      "id": 133,
+      "waitstate": false
+    },
+    "CalculatePlayerPartyCount": {
+      "id": 134,
+      "waitstate": false
+    },
+    "CountPartyNonEggMons": {
+      "id": 135,
+      "waitstate": false
+    },
+    "CountPartyAliveNonEggMons_IgnoreVar0x8004Slot": {
+      "id": 136,
+      "waitstate": false
+    },
+    "ShouldReadyContestArtist": {
+      "id": 137,
+      "waitstate": false
+    },
+    "SaveMuseumContestPainting": {
+      "id": 138,
+      "waitstate": false
+    },
+    "DoesContestCategoryHaveMuseumPainting": {
+      "id": 139,
+      "waitstate": false
+    },
+    "CountPlayerMuseumPaintings": {
+      "id": 140,
+      "waitstate": false
+    },
+    "ShowContestPainting": {
+      "id": 141,
+      "waitstate": false
+    },
+    "MauvilleGymSetDefaultBarriers": {
+      "id": 142,
+      "waitstate": false
+    },
+    "MauvilleGymPressSwitch": {
+      "id": 143,
+      "waitstate": false
+    },
+    "ShowFieldMessageStringVar4": {
+      "id": 144,
+      "waitstate": false
+    },
+    "DrawWholeMapView": {
+      "id": 145,
+      "waitstate": false
+    },
+    "StorePlayerCoordsInVars": {
+      "id": 146,
+      "waitstate": false
+    },
+    "MauvilleGymDeactivatePuzzle": {
+      "id": 147,
+      "waitstate": false
+    },
+    "PetalburgGymSlideOpenRoomDoors": {
+      "id": 148,
+      "waitstate": true
+    },
+    "PetalburgGymUnlockRoomDoors": {
+      "id": 149,
+      "waitstate": false
+    },
+    "GetPlayerTrainerIdOnesDigit": {
+      "id": 150,
+      "waitstate": false
+    },
+    "GetPlayerBigGuyGirlString": {
+      "id": 151,
+      "waitstate": false
+    },
+    "GetRivalSonDaughterString": {
+      "id": 152,
+      "waitstate": false
+    },
+    "SetHiddenItemFlag": {
+      "id": 153,
+      "waitstate": false
+    },
+    "CableCarWarp": {
+      "id": 154,
+      "waitstate": false
+    },
+    "CableCar": {
+      "id": 155,
+      "waitstate": true
+    },
+    "Overworld_PlaySpecialMapMusic": {
+      "id": 156,
+      "waitstate": false
+    },
+    "StartWallClock": {
+      "id": 157,
+      "waitstate": true
+    },
+    "Special_ViewWallClock": {
+      "id": 158,
+      "waitstate": true
+    },
+    "ChooseStarter": {
+      "id": 159,
+      "waitstate": true
+    },
+    "StartWallyTutorialBattle": {
+      "id": 160,
+      "waitstate": true
+    },
+    "ChangePokemonNickname": {
+      "id": 161,
+      "waitstate": true
+    },
+    "ChoosePartyMon": {
+      "id": 162,
+      "waitstate": true
+    },
+    "GetFirstFreePokeblockSlot": {
+      "id": 163,
+      "waitstate": false
+    },
+    "DoBerryBlending": {
+      "id": 164,
+      "waitstate": true
+    },
+    "PlayRoulette": {
+      "id": 165,
+      "waitstate": true
+    },
+    "IsFanClubMemberFanOfPlayer": {
+      "id": 166,
+      "waitstate": false
+    },
+    "GetNumFansOfPlayerInTrainerFanClub": {
+      "id": 167,
+      "waitstate": false
+    },
+    "BufferFanClubTrainerName": {
+      "id": 168,
+      "waitstate": false
+    },
+    "TryLoseFansFromPlayTimeAfterLinkBattle": {
+      "id": 169,
+      "waitstate": false
+    },
+    "TryLoseFansFromPlayTime": {
+      "id": 170,
+      "waitstate": false
+    },
+    "SetPlayerGotFirstFans": {
+      "id": 171,
+      "waitstate": false
+    },
+    "UpdateTrainerFanClubGameClear": {
+      "id": 172,
+      "waitstate": false
+    },
+    "Script_TryGainNewFanFromCounter": {
+      "id": 173,
+      "waitstate": false
+    },
+    "RockSmashWildEncounter": {
+      "id": 174,
+      "waitstate": false
+    },
+    "GabbyAndTyGetBattleNum": {
+      "id": 175,
+      "waitstate": false
+    },
+    "GabbyAndTyAfterInterview": {
+      "id": 176,
+      "waitstate": false
+    },
+    "GabbyAndTyBeforeInterview": {
+      "id": 177,
+      "waitstate": false
+    },
+    "DoTVShowInSearchOfTrainers": {
+      "id": 178,
+      "waitstate": false
+    },
+    "IsGabbyAndTyShowOnTheAir": {
+      "id": 179,
+      "waitstate": false
+    },
+    "GabbyAndTyGetLastQuote": {
+      "id": 180,
+      "waitstate": false
+    },
+    "GabbyAndTyGetLastBattleTrivia": {
+      "id": 181,
+      "waitstate": false
+    },
+    "GetGabbyAndTyLocalIds": {
+      "id": 182,
+      "waitstate": false
+    },
+    "GetBattleOutcome": {
+      "id": 183,
+      "waitstate": false
+    },
+    "GetDaycareMonNicknames": {
+      "id": 184,
+      "waitstate": false
+    },
+    "GetDaycareState": {
+      "id": 185,
+      "waitstate": false
+    },
+    "RejectEggFromDayCare": {
+      "id": 186,
+      "waitstate": false
+    },
+    "GiveEggFromDaycare": {
+      "id": 187,
+      "waitstate": false
+    },
+    "SetDaycareCompatibilityString": {
+      "id": 188,
+      "waitstate": false
+    },
+    "GetSelectedMonNicknameAndSpecies": {
+      "id": 189,
+      "waitstate": false
+    },
+    "StoreSelectedPokemonInDaycare": {
+      "id": 190,
+      "waitstate": false
+    },
+    "ChooseSendDaycareMon": {
+      "id": 191,
+      "waitstate": true
+    },
+    "ShowDaycareLevelMenu": {
+      "id": 192,
+      "waitstate": true
+    },
+    "GetNumLevelsGainedFromDaycare": {
+      "id": 193,
+      "waitstate": false
+    },
+    "GetDaycareCost": {
+      "id": 194,
+      "waitstate": false
+    },
+    "TakePokemonFromDaycare": {
+      "id": 195,
+      "waitstate": false
+    },
+    "ScriptHatchMon": {
+      "id": 196,
+      "waitstate": false
+    },
+    "EggHatch": {
+      "id": 197,
+      "waitstate": true
+    },
+    "CheckDaycareMonReceivedMail": {
+      "id": 198,
+      "waitstate": false
+    },
+    "ShowLinkBattleRecords": {
+      "id": 199,
+      "waitstate": false
+    },
+    "IsEnoughForCostInVar0x8005": {
+      "id": 200,
+      "waitstate": false
+    },
+    "SubtractMoneyFromVar0x8005": {
+      "id": 201,
+      "waitstate": false
+    },
+    "TryFieldPoisonWhiteOut": {
+      "id": 202,
+      "waitstate": true
+    },
+    "SetCB2WhiteOut": {
+      "id": 203,
+      "waitstate": true
+    },
+    "RotatingGate_InitPuzzle": {
+      "id": 204,
+      "waitstate": false
+    },
+    "RotatingGate_InitPuzzleAndGraphics": {
+      "id": 205,
+      "waitstate": false
+    },
+    "SetSSTidalFlag": {
+      "id": 206,
+      "waitstate": false
+    },
+    "ResetSSTidalFlag": {
+      "id": 207,
+      "waitstate": false
+    },
+    "EnterSafariMode": {
+      "id": 208,
+      "waitstate": false
+    },
+    "ExitSafariMode": {
+      "id": 209,
+      "waitstate": false
+    },
+    "GetPokeblockFeederInFront": {
+      "id": 210,
+      "waitstate": false
+    },
+    "OpenPokeblockCaseOnFeeder": {
+      "id": 211,
+      "waitstate": true
+    },
+    "IsMirageIslandPresent": {
+      "id": 212,
+      "waitstate": false
+    },
+    "UpdateShoalTideFlag": {
+      "id": 213,
+      "waitstate": false
+    },
+    "InitBirchState": {
+      "id": 214,
+      "waitstate": false
+    },
+    "ScriptGetPokedexInfo": {
+      "id": 215,
+      "waitstate": false
+    },
+    "ShowPokedexRatingMessage": {
+      "id": 216,
+      "waitstate": false
+    },
+    "DoPCTurnOnEffect": {
+      "id": 217,
+      "waitstate": false
+    },
+    "DoPCTurnOffEffect": {
+      "id": 218,
+      "waitstate": false
+    },
+    "SetDeptStoreFloor": {
+      "id": 219,
+      "waitstate": false
+    },
+    "DoLotteryCornerComputerEffect": {
+      "id": 220,
+      "waitstate": false
+    },
+    "EndLotteryCornerComputerEffect": {
+      "id": 221,
+      "waitstate": false
+    },
+    "ChooseMonForMoveRelearner": {
+      "id": 222,
+      "waitstate": true
+    },
+    "MoveDeleterChooseMoveToForget": {
+      "id": 223,
+      "waitstate": false
+    },
+    "MoveDeleterForgetMove": {
+      "id": 224,
+      "waitstate": false
+    },
+    "BufferMoveDeleterNicknameAndMove": {
+      "id": 225,
+      "waitstate": false
+    },
+    "GetNumMovesSelectedMonHas": {
+      "id": 226,
+      "waitstate": false
+    },
+    "TeachMoveRelearnerMove": {
+      "id": 227,
+      "waitstate": true
+    },
+    "GetRecordedCyclingRoadResults": {
+      "id": 228,
+      "waitstate": false
+    },
+    "Special_BeginCyclingRoadChallenge": {
+      "id": 229,
+      "waitstate": false
+    },
+    "GetPlayerAvatarBike": {
+      "id": 230,
+      "waitstate": false
+    },
+    "FinishCyclingRoadChallenge": {
+      "id": 231,
+      "waitstate": false
+    },
+    "UpdateCyclingRoadState": {
+      "id": 232,
+      "waitstate": false
+    },
+    "GetLeadMonFriendshipScore": {
+      "id": 233,
+      "waitstate": false
+    },
+    "CallFrontierUtilFunc": {
+      "id": 234,
+      "waitstate": false
+    },
+    "CallBattleTowerFunc": {
+      "id": 235,
+      "waitstate": false
+    },
+    "CallBattleDomeFunction": {
+      "id": 236,
+      "waitstate": false
+    },
+    "CallBattlePalaceFunction": {
+      "id": 237,
+      "waitstate": false
+    },
+    "CopyEReaderTrainerGreeting": {
+      "id": 238,
+      "waitstate": false
+    },
+    "DoSpecialTrainerBattle": {
+      "id": 239,
+      "waitstate": true
+    },
+    "CallBattleArenaFunction": {
+      "id": 240,
+      "waitstate": false
+    },
+    "CallBattleFactoryFunction": {
+      "id": 241,
+      "waitstate": false
+    },
+    "CallBattlePikeFunction": {
+      "id": 242,
+      "waitstate": false
+    },
+    "CallBattlePyramidFunction": {
+      "id": 243,
+      "waitstate": false
+    },
+    "StopMapMusic": {
+      "id": 244,
+      "waitstate": false
+    },
+    "CallVerdanturfTentFunction": {
+      "id": 245,
+      "waitstate": false
+    },
+    "CallFallarborTentFunction": {
+      "id": 246,
+      "waitstate": false
+    },
+    "CallSlateportTentFunction": {
+      "id": 247,
+      "waitstate": false
+    },
+    "ChoosePartyForBattleFrontier": {
+      "id": 248,
+      "waitstate": true
+    },
+    "ValidateEReaderTrainer": {
+      "id": 249,
+      "waitstate": false
+    },
+    "GetBattleTowerSinglesStreak": {
+      "id": 250,
+      "waitstate": false
+    },
+    "ReducePlayerPartyToSelectedMons": {
+      "id": 251,
+      "waitstate": false
+    },
+    "BedroomPC": {
+      "id": 252,
+      "waitstate": true
+    },
+    "PlayerPC": {
+      "id": 253,
+      "waitstate": true
+    },
+    "FieldShowRegionMap": {
+      "id": 254,
+      "waitstate": true
+    },
+    "GetInGameTradeSpeciesInfo": {
+      "id": 255,
+      "waitstate": false
+    },
+    "CreateInGameTradePokemon": {
+      "id": 256,
+      "waitstate": false
+    },
+    "DoInGameTradeScene": {
+      "id": 257,
+      "waitstate": true
+    },
+    "GetTradeSpecies": {
+      "id": 258,
+      "waitstate": false
+    },
+    "GetWeekCount": {
+      "id": 259,
+      "waitstate": false
+    },
+    "RetrieveLotteryNumber": {
+      "id": 260,
+      "waitstate": false
+    },
+    "PickLotteryCornerTicket": {
+      "id": 261,
+      "waitstate": false
+    },
+    "ShowBerryBlenderRecordWindow": {
+      "id": 262,
+      "waitstate": false
+    },
+    "ResetTrickHouseNuggetFlag": {
+      "id": 263,
+      "waitstate": false
+    },
+    "SetTrickHouseNuggetFlag": {
+      "id": 264,
+      "waitstate": false
+    },
+    "ScriptMenu_CreatePCMultichoice": {
+      "id": 265,
+      "waitstate": true
+    },
+    "AccessHallOfFamePC": {
+      "id": 266,
+      "waitstate": true
+    },
+    "Special_ShowDiploma": {
+      "id": 267,
+      "waitstate": true
+    },
+    "CheckLeadMonCool": {
+      "id": 268,
+      "waitstate": false
+    },
+    "CheckLeadMonBeauty": {
+      "id": 269,
+      "waitstate": false
+    },
+    "CheckLeadMonCute": {
+      "id": 270,
+      "waitstate": false
+    },
+    "CheckLeadMonSmart": {
+      "id": 271,
+      "waitstate": false
+    },
+    "CheckLeadMonTough": {
+      "id": 272,
+      "waitstate": false
+    },
+    "LookThroughPorthole": {
+      "id": 273,
+      "waitstate": true
+    },
+    "DoSoftReset": {
+      "id": 274,
+      "waitstate": false
+    },
+    "GameClear": {
+      "id": 275,
+      "waitstate": true
+    },
+    "MoveElevator": {
+      "id": 276,
+      "waitstate": true
+    },
+    "ShowGlassWorkshopMenu": {
+      "id": 348,
+      "waitstate": false
+    },
+    "SpawnCameraObject": {
+      "id": 278,
+      "waitstate": false
+    },
+    "RemoveCameraObject": {
+      "id": 279,
+      "waitstate": false
+    },
+    "GetPokeblockNameByMonNature": {
+      "id": 280,
+      "waitstate": false
+    },
+    "GetSecretBaseNearbyMapName": {
+      "id": 281,
+      "waitstate": false
+    },
+    "CheckRelicanthWailord": {
+      "id": 282,
+      "waitstate": false
+    },
+    "ShouldDoBrailleRegirockEffectOld": {
+      "id": 283,
+      "waitstate": false
+    },
+    "DoOrbEffect": {
+      "id": 284,
+      "waitstate": false
+    },
+    "FadeOutOrbEffect": {
+      "id": 285,
+      "waitstate": true
+    },
+    "WaitWeather": {
+      "id": 286,
+      "waitstate": true
+    },
+    "BufferEReaderTrainerName": {
+      "id": 287,
+      "waitstate": false
+    },
+    "GetSlotMachineId": {
+      "id": 288,
+      "waitstate": false
+    },
+    "GetPlayerFacingDirection": {
+      "id": 289,
+      "waitstate": false
+    },
+    "FoundAbandonedShipRoom1Key": {
+      "id": 290,
+      "waitstate": false
+    },
+    "FoundAbandonedShipRoom2Key": {
+      "id": 291,
+      "waitstate": false
+    },
+    "FoundAbandonedShipRoom4Key": {
+      "id": 292,
+      "waitstate": false
+    },
+    "FoundAbandonedShipRoom6Key": {
+      "id": 293,
+      "waitstate": false
+    },
+    "LeadMonHasEffortRibbon": {
+      "id": 294,
+      "waitstate": false
+    },
+    "GiveLeadMonEffortRibbon": {
+      "id": 295,
+      "waitstate": false
+    },
+    "Special_AreLeadMonEVsMaxedOut": {
+      "id": 296,
+      "waitstate": false
+    },
+    "Script_FacePlayer": {
+      "id": 297,
+      "waitstate": false
+    },
+    "Script_ClearHeldMovement": {
+      "id": 298,
+      "waitstate": false
+    },
+    "InitRoamer": {
+      "id": 299,
+      "waitstate": false
+    },
+    "TryUpdateRusturfTunnelState": {
+      "id": 300,
+      "waitstate": false
+    },
+    "IsGrassTypeInParty": {
+      "id": 301,
+      "waitstate": false
+    },
+    "DoContestHallWarp": {
+      "id": 302,
+      "waitstate": true
+    },
+    "LoadWallyZigzagoon": {
+      "id": 303,
+      "waitstate": false
+    },
+    "IsStarterInParty": {
+      "id": 304,
+      "waitstate": false
+    },
+    "CopyCurSecretBaseOwnerName_StrVar1": {
+      "id": 305,
+      "waitstate": false
+    },
+    "ScriptCheckFreePokemonStorageSpace": {
+      "id": 306,
+      "waitstate": false
+    },
+    "DoSealedChamberShakingEffect_Long": {
+      "id": 307,
+      "waitstate": true
+    },
+    "ShowDeptStoreElevatorFloorSelect": {
+      "id": 308,
+      "waitstate": false
+    },
+    "InteractWithShieldOrTVDecoration": {
+      "id": 309,
+      "waitstate": false
+    },
+    "IsPokerusInParty": {
+      "id": 310,
+      "waitstate": false
+    },
+    "SetSootopolisGymCrackedIceMetatiles": {
+      "id": 311,
+      "waitstate": false
+    },
+    "ShakeCamera": {
+      "id": 312,
+      "waitstate": false
+    },
+    "StartGroudonKyogreBattle": {
+      "id": 313,
+      "waitstate": false
+    },
+    "BattleSetup_StartLegendaryBattle": {
+      "id": 314,
+      "waitstate": true
+    },
+    "StartRegiBattle": {
+      "id": 315,
+      "waitstate": true
+    },
+    "SetTrainerFacingDirection": {
+      "id": 316,
+      "waitstate": false
+    },
+    "DoSealedChamberShakingEffect_Short": {
+      "id": 317,
+      "waitstate": true
+    },
+    "FoundBlackGlasses": {
+      "id": 318,
+      "waitstate": false
+    },
+    "StartDroughtWeatherBlend": {
+      "id": 319,
+      "waitstate": false
+    },
+    "DoDiveWarp": {
+      "id": 320,
+      "waitstate": false
+    },
+    "DoFallWarp": {
+      "id": 321,
+      "waitstate": true
+    },
+    "ShowContestEntryMonPic": {
+      "id": 322,
+      "waitstate": false
+    },
+    "HideContestEntryMonPic": {
+      "id": 323,
+      "waitstate": false
+    },
+    "SetEReaderTrainerGfxId": {
+      "id": 324,
+      "waitstate": false
+    },
+    "BattleSetup_StartLatiBattle": {
+      "id": 325,
+      "waitstate": true
+    },
+    "SetRoute119Weather": {
+      "id": 326,
+      "waitstate": false
+    },
+    "SetRoute123Weather": {
+      "id": 327,
+      "waitstate": false
+    },
+    "GetContestMultiplayerId": {
+      "id": 328,
+      "waitstate": false
+    },
+    "ScriptGetPartyMonSpecies": {
+      "id": 329,
+      "waitstate": false
+    },
+    "IsSelectedMonEgg": {
+      "id": 330,
+      "waitstate": false
+    },
+    "TryInitBattleTowerAwardManObjectEvent": {
+      "id": 331,
+      "waitstate": false
+    },
+    "MoveOutOfSecretBaseFromOutside": {
+      "id": 332,
+      "waitstate": false
+    },
+    "LoadPlayerBag": {
+      "id": 333,
+      "waitstate": false
+    },
+    "Script_FadeOutMapMusic": {
+      "id": 334,
+      "waitstate": true
+    },
+    "SetPacifidlogTMReceivedDay": {
+      "id": 335,
+      "waitstate": false
+    },
+    "GetDaysUntilPacifidlogTMAvailable": {
+      "id": 336,
+      "waitstate": false
+    },
+    "HasAllHoennMons": {
+      "id": 337,
+      "waitstate": false
+    },
+    "MonOTNameNotPlayer": {
+      "id": 338,
+      "waitstate": false
+    },
+    "BufferLottoTicketNumber": {
+      "id": 339,
+      "waitstate": false
+    },
+    "TryHideBattleTowerReporter": {
+      "id": 340,
+      "waitstate": false
+    },
+    "DoesPartyHaveEnigmaBerry": {
+      "id": 341,
+      "waitstate": false
+    },
+    "GenerateContestRand": {
+      "id": 342,
+      "waitstate": false
+    },
+    "SetChampionSaveWarp": {
+      "id": 343,
+      "waitstate": false
+    },
+    "TryPutTreasureInvestigatorsOnAir": {
+      "id": 344,
+      "waitstate": false
+    },
+    "TryPutLotteryWinnerReportOnAir": {
+      "id": 345,
+      "waitstate": false
+    },
+    "TryPutTrainerFanClubOnAir": {
+      "id": 346,
+      "waitstate": false
+    },
+    "ShouldHideFanClubInterviewer": {
+      "id": 347,
+      "waitstate": false
+    },
+    "PutFanClubSpecialOnTheAir": {
+      "id": 349,
+      "waitstate": false
+    },
+    "IncrementDailyPlantedBerries": {
+      "id": 350,
+      "waitstate": false
+    },
+    "IncrementDailyPickedBerries": {
+      "id": 351,
+      "waitstate": false
+    },
+    "InitSecretBaseVars": {
+      "id": 352,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsSandOrnament": {
+      "id": 353,
+      "waitstate": false
+    },
+    "DeclinedSecretBaseBattle": {
+      "id": 354,
+      "waitstate": false
+    },
+    "DrewSecretBaseBattle": {
+      "id": 355,
+      "waitstate": false
+    },
+    "WonSecretBaseBattle": {
+      "id": 356,
+      "waitstate": false
+    },
+    "LostSecretBaseBattle": {
+      "id": 357,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsDollDecor": {
+      "id": 358,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsCushionDecor": {
+      "id": 359,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsFurnitureBottom": {
+      "id": 360,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsFurnitureMiddle": {
+      "id": 361,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsFurnitureTop": {
+      "id": 362,
+      "waitstate": false
+    },
+    "CheckInteractedWithFriendsPosterDecor": {
+      "id": 363,
+      "waitstate": false
+    },
+    "SetLilycoveLadyGfx": {
+      "id": 364,
+      "waitstate": false
+    },
+    "Script_GetLilycoveLadyId": {
+      "id": 365,
+      "waitstate": false
+    },
+    "GetFavorLadyState": {
+      "id": 366,
+      "waitstate": false
+    },
+    "BufferFavorLadyRequest": {
+      "id": 367,
+      "waitstate": false
+    },
+    "HasAnotherPlayerGivenFavorLadyItem": {
+      "id": 368,
+      "waitstate": false
+    },
+    "BufferFavorLadyItemName": {
+      "id": 369,
+      "waitstate": false
+    },
+    "BufferFavorLadyPlayerName": {
+      "id": 370,
+      "waitstate": false
+    },
+    "DidFavorLadyLikeItem": {
+      "id": 371,
+      "waitstate": false
+    },
+    "Script_FavorLadyOpenBagMenu": {
+      "id": 372,
+      "waitstate": true
+    },
+    "Script_DoesFavorLadyLikeItem": {
+      "id": 373,
+      "waitstate": false
+    },
+    "IsFavorLadyThresholdMet": {
+      "id": 374,
+      "waitstate": false
+    },
+    "FavorLadyGetPrize": {
+      "id": 375,
+      "waitstate": false
+    },
+    "SetFavorLadyState_Complete": {
+      "id": 376,
+      "waitstate": false
+    },
+    "GetQuizLadyState": {
+      "id": 377,
+      "waitstate": false
+    },
+    "GetQuizAuthor": {
+      "id": 378,
+      "waitstate": false
+    },
+    "IsQuizLadyWaitingForChallenger": {
+      "id": 379,
+      "waitstate": false
+    },
+    "QuizLadyShowQuizQuestion": {
+      "id": 380,
+      "waitstate": true
+    },
+    "QuizLadyGetPlayerAnswer": {
+      "id": 381,
+      "waitstate": true
+    },
+    "IsQuizAnswerCorrect": {
+      "id": 382,
+      "waitstate": false
+    },
+    "BufferQuizPrizeItem": {
+      "id": 383,
+      "waitstate": false
+    },
+    "SetQuizLadyState_Complete": {
+      "id": 384,
+      "waitstate": false
+    },
+    "BufferQuizAuthorNameAndCheckIfLady": {
+      "id": 385,
+      "waitstate": false
+    },
+    "SetQuizLadyState_GivePrize": {
+      "id": 386,
+      "waitstate": false
+    },
+    "ClearQuizLadyPlayerAnswer": {
+      "id": 387,
+      "waitstate": false
+    },
+    "Script_QuizLadyOpenBagMenu": {
+      "id": 388,
+      "waitstate": true
+    },
+    "ClearQuizLadyQuestionAndAnswer": {
+      "id": 389,
+      "waitstate": false
+    },
+    "QuizLadySetCustomQuestion": {
+      "id": 390,
+      "waitstate": true
+    },
+    "QuizLadyTakePrizeForCustomQuiz": {
+      "id": 391,
+      "waitstate": false
+    },
+    "GetMysteryGiftCardStat": {
+      "id": 392,
+      "waitstate": false
+    },
+    "QuizLadyRecordCustomQuizData": {
+      "id": 393,
+      "waitstate": false
+    },
+    "QuizLadySetWaitingForChallenger": {
+      "id": 394,
+      "waitstate": false
+    },
+    "BufferQuizCorrectAnswer": {
+      "id": 395,
+      "waitstate": false
+    },
+    "BufferQuizPrizeName": {
+      "id": 396,
+      "waitstate": false
+    },
+    "QuizLadyPickNewQuestion": {
+      "id": 397,
+      "waitstate": false
+    },
+    "ShouldContestLadyShowGoOnAir": {
+      "id": 398,
+      "waitstate": false
+    },
+    "HasPlayerGivenContestLadyPokeblock": {
+      "id": 399,
+      "waitstate": false
+    },
+    "Script_BufferContestLadyCategoryAndMonName": {
+      "id": 400,
+      "waitstate": false
+    },
+    "OpenPokeblockCaseForContestLady": {
+      "id": 401,
+      "waitstate": true
+    },
+    "SetContestLadyGivenPokeblock": {
+      "id": 402,
+      "waitstate": false
+    },
+    "GetContestLadyMonSpecies": {
+      "id": 403,
+      "waitstate": false
+    },
+    "GetContestLadyCategory": {
+      "id": 404,
+      "waitstate": false
+    },
+    "PutLilycoveContestLadyShowOnTheAir": {
+      "id": 405,
+      "waitstate": false
+    },
+    "CloseBattlePikeCurtain": {
+      "id": 406,
+      "waitstate": true
+    },
+    "CallApprenticeFunction": {
+      "id": 407,
+      "waitstate": false
+    },
+    "ShouldTryGetTrainerScript": {
+      "id": 408,
+      "waitstate": false
+    },
+    "ShowMapNamePopup": {
+      "id": 410,
+      "waitstate": false
+    },
+    "DoMirageTowerCeilingCrumble": {
+      "id": 411,
+      "waitstate": true
+    },
+    "SetMirageTowerVisibility": {
+      "id": 412,
+      "waitstate": false
+    },
+    "StartPlayerDescendMirageTower": {
+      "id": 413,
+      "waitstate": true
+    },
+    "BufferTMHMMoveName": {
+      "id": 414,
+      "waitstate": false
+    },
+    "IsWirelessAdapterConnected": {
+      "id": 415,
+      "waitstate": false
+    },
+    "TryBecomeLinkLeader": {
+      "id": 416,
+      "waitstate": true
+    },
+    "TryJoinLinkGroup": {
+      "id": 417,
+      "waitstate": true
+    },
+    "RunUnionRoom": {
+      "id": 418,
+      "waitstate": false
+    },
+    "ShowWirelessCommunicationScreen": {
+      "id": 419,
+      "waitstate": true
+    },
+    "InitUnionRoom": {
+      "id": 420,
+      "waitstate": false
+    },
+    "BufferUnionRoomPlayerName": {
+      "id": 421,
+      "waitstate": false
+    },
+    "WonderNews_GetRewardInfo": {
+      "id": 422,
+      "waitstate": false
+    },
+    "ChooseMonForWirelessMinigame": {
+      "id": 423,
+      "waitstate": true
+    },
+    "Script_ResetUnionRoomTrade": {
+      "id": 424,
+      "waitstate": false
+    },
+    "IsBadEggInParty": {
+      "id": 425,
+      "waitstate": false
+    },
+    "ValidateSavedWonderCard": {
+      "id": 426,
+      "waitstate": false
+    },
+    "HasAtLeastOneBerry": {
+      "id": 427,
+      "waitstate": false
+    },
+    "IsPokemonJumpSpeciesInParty": {
+      "id": 428,
+      "waitstate": false
+    },
+    "ShowPokemonJumpRecords": {
+      "id": 429,
+      "waitstate": true
+    },
+    "IsDodrioInParty": {
+      "id": 430,
+      "waitstate": false
+    },
+    "ShowDodrioBerryPickingRecords": {
+      "id": 431,
+      "waitstate": true
+    },
+    "OffsetCameraForBattle": {
+      "id": 432,
+      "waitstate": false
+    },
+    "GetDeptStoreDefaultFloorChoice": {
+      "id": 433,
+      "waitstate": false
+    },
+    "BufferVarsForIVRater": {
+      "id": 434,
+      "waitstate": false
+    },
+    "LinkContestWaitForConnection": {
+      "id": 435,
+      "waitstate": true
+    },
+    "GetWirelessCommType": {
+      "id": 436,
+      "waitstate": false
+    },
+    "LinkContestTryShowWirelessIndicator": {
+      "id": 437,
+      "waitstate": false
+    },
+    "LinkContestTryHideWirelessIndicator": {
+      "id": 438,
+      "waitstate": false
+    },
+    "IsWirelessContest": {
+      "id": 439,
+      "waitstate": false
+    },
+    "ShowRankingHallRecordsWindow": {
+      "id": 440,
+      "waitstate": false
+    },
+    "ScrollRankingHallRecordsWindow": {
+      "id": 441,
+      "waitstate": false
+    },
+    "ShowFrontierManiacMessage": {
+      "id": 442,
+      "waitstate": false
+    },
+    "IsContestWithRSPlayer": {
+      "id": 443,
+      "waitstate": false
+    },
+    "ClearLinkContestFlags": {
+      "id": 444,
+      "waitstate": false
+    },
+    "TryContestEModeLinkup": {
+      "id": 445,
+      "waitstate": true
+    },
+    "ShowScrollableMultichoice": {
+      "id": 446,
+      "waitstate": true
+    },
+    "ScrollableMultichoice_TryReturnToList": {
+      "id": 447,
+      "waitstate": false
+    },
+    "BufferBattleTowerElevatorFloors": {
+      "id": 448,
+      "waitstate": false
+    },
+    "TryStoreHeldItemsInPyramidBag": {
+      "id": 449,
+      "waitstate": false
+    },
+    "ChooseItemsToTossFromPyramidBag": {
+      "id": 450,
+      "waitstate": true
+    },
+    "DoBattlePyramidMonsHaveHeldItem": {
+      "id": 451,
+      "waitstate": false
+    },
+    "BattlePyramidChooseMonHeldItems": {
+      "id": 452,
+      "waitstate": true
+    },
+    "SetBattleTowerLinkPlayerGfx": {
+      "id": 453,
+      "waitstate": false
+    },
+    "ShowNatureGirlMessage": {
+      "id": 454,
+      "waitstate": false
+    },
+    "ShowBattlePointsWindow": {
+      "id": 455,
+      "waitstate": false
+    },
+    "UpdateBattlePointsWindow": {
+      "id": 456,
+      "waitstate": false
+    },
+    "CloseBattlePointsWindow": {
+      "id": 457,
+      "waitstate": false
+    },
+    "GiveFrontierBattlePoints": {
+      "id": 458,
+      "waitstate": false
+    },
+    "TakeFrontierBattlePoints": {
+      "id": 459,
+      "waitstate": false
+    },
+    "GetFrontierBattlePoints": {
+      "id": 460,
+      "waitstate": false
+    },
+    "ShowFrontierExchangeCornerItemIconWindow": {
+      "id": 461,
+      "waitstate": false
+    },
+    "CloseFrontierExchangeCornerItemIconWindow": {
+      "id": 462,
+      "waitstate": false
+    },
+    "DisplayBerryPowderVendorMenu": {
+      "id": 463,
+      "waitstate": false
+    },
+    "RemoveBerryPowderVendorMenu": {
+      "id": 464,
+      "waitstate": false
+    },
+    "HasEnoughBerryPowder": {
+      "id": 465,
+      "waitstate": false
+    },
+    "TakeBerryPowder": {
+      "id": 466,
+      "waitstate": false
+    },
+    "PrintPlayerBerryPowderAmount": {
+      "id": 467,
+      "waitstate": false
+    },
+    "ShowFrontierGamblerLookingMessage": {
+      "id": 468,
+      "waitstate": false
+    },
+    "ShowFrontierGamblerGoMessage": {
+      "id": 469,
+      "waitstate": false
+    },
+    "Script_DoRayquazaScene": {
+      "id": 508,
+      "waitstate": true
+    },
+    "OpenPokenavForTutorial": {
+      "id": 471,
+      "waitstate": true
+    },
+    "ScriptMenu_CreateStartMenuForPokenavTutorial": {
+      "id": 472,
+      "waitstate": true
+    },
+    "CountPlayerTrainerStars": {
+      "id": 473,
+      "waitstate": false
+    },
+    "BufferBattleFrontierTutorMoveName": {
+      "id": 474,
+      "waitstate": false
+    },
+    "CloseBattleFrontierTutorWindow": {
+      "id": 475,
+      "waitstate": false
+    },
+    "ScrollableMultichoice_RedrawPersistentMenu": {
+      "id": 476,
+      "waitstate": false
+    },
+    "ChooseMonForMoveTutor": {
+      "id": 477,
+      "waitstate": true
+    },
+    "GetBattleFrontierTutorMoveIndex": {
+      "id": 478,
+      "waitstate": false
+    },
+    "ScrollableMultichoice_ClosePersistentMenu": {
+      "id": 479,
+      "waitstate": false
+    },
+    "DoDeoxysRockInteraction": {
+      "id": 480,
+      "waitstate": true
+    },
+    "SetDeoxysRockPalette": {
+      "id": 481,
+      "waitstate": false
+    },
+    "CreateEnemyEventMon": {
+      "id": 482,
+      "waitstate": false
+    },
+    "StartMirageTowerDisintegration": {
+      "id": 483,
+      "waitstate": true
+    },
+    "StartMirageTowerShake": {
+      "id": 484,
+      "waitstate": true
+    },
+    "StartMirageTowerFossilFallAndSink": {
+      "id": 485,
+      "waitstate": true
+    },
+    "ChangeBoxPokemonNickname": {
+      "id": 486,
+      "waitstate": true
+    },
+    "GetPCBoxToSendMon": {
+      "id": 487,
+      "waitstate": false
+    },
+    "ShouldShowBoxWasFullMessage": {
+      "id": 488,
+      "waitstate": false
+    },
+    "SetMatchCallRegisteredFlag": {
+      "id": 489,
+      "waitstate": false
+    },
+    "DoDomeConfetti": {
+      "id": 490,
+      "waitstate": false
+    },
+    "CreateAbnormalWeatherEvent": {
+      "id": 491,
+      "waitstate": false
+    },
+    "GetAbnormalWeatherMapNameAndType": {
+      "id": 492,
+      "waitstate": false
+    },
+    "GetMartEmployeeObjectEventId": {
+      "id": 493,
+      "waitstate": false
+    },
+    "SaveForBattleTowerLink": {
+      "id": 494,
+      "waitstate": true
+    },
+    "Unused_SetWeatherSunny": {
+      "id": 495,
+      "waitstate": false
+    },
+    "SetUnlockedPokedexFlags": {
+      "id": 496,
+      "waitstate": false
+    },
+    "IsTrainerRegistered": {
+      "id": 497,
+      "waitstate": false
+    },
+    "ShouldDoBrailleRegicePuzzle": {
+      "id": 498,
+      "waitstate": false
+    },
+    "EnableNationalPokedex": {
+      "id": 499,
+      "waitstate": false
+    },
+    "ScriptMenu_CreateLilycoveSSTidalMultichoice": {
+      "id": 500,
+      "waitstate": true
+    },
+    "GetLilycoveSSTidalSelection": {
+      "id": 501,
+      "waitstate": false
+    },
+    "TurnOnTVScreen": {
+      "id": 502,
+      "waitstate": false
+    },
+    "SetMewAboveGrass": {
+      "id": 503,
+      "waitstate": false
+    },
+    "ShouldDistributeEonTicket": {
+      "id": 504,
+      "waitstate": false
+    },
+    "LinkRetireStatusWithBattleTowerPartner": {
+      "id": 505,
+      "waitstate": true
+    },
+    "BattleTowerReconnectLink": {
+      "id": 506,
+      "waitstate": false
+    },
+    "CallTrainerHillFunction": {
+      "id": 507,
+      "waitstate": false
+    },
+    "LoopWingFlapSE": {
+      "id": 509,
+      "waitstate": false
+    },
+    "DestroyMewEmergingGrassSprite": {
+      "id": 510,
+      "waitstate": false
+    },
+    "ShowBerryCrushRankings": {
+      "id": 511,
+      "waitstate": true
+    },
+    "TryBufferWaldaPhrase": {
+      "id": 512,
+      "waitstate": false
+    },
+    "DoWaldaNamingScreen": {
+      "id": 513,
+      "waitstate": true
+    },
+    "TryGetWallpaperWithWaldaPhrase": {
+      "id": 514,
+      "waitstate": false
+    },
+    "PlayerNotAtTrainerHillEntrance": {
+      "id": 515,
+      "waitstate": false
+    },
+    "GetBattlePyramidHint": {
+      "id": 516,
+      "waitstate": false
+    },
+    "LoadLinkContestPlayerPalettes": {
+      "id": 517,
+      "waitstate": false
+    },
+    "ShowTrainerHillRecords": {
+      "id": 518,
+      "waitstate": true
+    },
+    "PlayerFaceTrainerAfterBattle": {
+      "id": 519,
+      "waitstate": false
+    },
+    "ResetHealLocationFromDewford": {
+      "id": 520,
+      "waitstate": false
+    },
+    "IsLastMonThatKnowsSurf": {
+      "id": 521,
+      "waitstate": false
+    },
+    "CountPartyAliveNonEggMons": {
+      "id": 522,
+      "waitstate": false
+    },
+    "TryPrepareSecondApproachingTrainer": {
+      "id": 523,
+      "waitstate": false
+    },
+    "RemoveRecordsWindow": {
+      "id": 524,
+      "waitstate": false
+    },
+    "CloseDeptStoreElevatorWindow": {
+      "id": 525,
+      "waitstate": false
+    },
+    "TrySetBattleTowerLinkType": {
+      "id": 526,
+      "waitstate": false
+    }
+  }
+}
