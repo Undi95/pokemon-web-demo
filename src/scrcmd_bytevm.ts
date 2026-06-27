@@ -23,7 +23,7 @@ import { VAR_0x8004 } from '../include/constants/vars';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
-import { setPendingWarp, SetDynamicWarp } from './engine/field/warp-system';
+import { setPendingWarp, SetDynamicWarp, getPendingWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
 import { GetCoins, AddCoins, RemoveCoins } from './coins';
@@ -31,7 +31,7 @@ import { VAR_RESULT } from '../include/constants/vars';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 // Registre des specials (name→fn) du moteur actuel — réutilisé transitoirement
 // (les fns de special sont les mêmes fns de jeu 1:1). gSpecials[id] = invokeSpecial(name).
-import { invokeSpecial } from './scrcmd';
+import { invokeSpecial, consumeWaitStateSignal } from './scrcmd';
 import { getText } from './script';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
 // Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
@@ -135,7 +135,22 @@ const ScrCmd_gotonative: ScrCmdFunc = (ctx) => {                             // 
   return true;
 };
 
-const ScrCmd_waitstate: ScrCmdFunc = () => { ScriptContext_Stop(); return true; }; // :142
+// :142 ScrCmd_waitstate : suspend le script jusqu'à un signal de reprise. 1:1 (porté de
+// l'ancien handler parsé) : reprend si SignalWaitState a été émis (flow UI fermé) OU si un
+// warp s'est consommé / la map a changé. (Avant : ScriptContext_Stop seul → figeait les
+// flows `special X(UI); waitstate`.)
+const ScrCmd_waitstate: ScrCmdFunc = (ctx) => {
+  if (consumeWaitStateSignal()) return false;   // déjà signalé en amont → continue direct
+  const startMapId = gMapHeader?.id;
+  SetupNativeScript(ctx, () => {
+    if (consumeWaitStateSignal()) return true;
+    if (getPendingWarp()) return false;          // warp en cours → attendre
+    const cur = gMapHeader?.id;
+    if (cur && cur !== startMapId) return true;  // map changée (warp fini) → reprendre
+    return false;
+  });
+  return true;
+};
 
 // 1:1 scrcmd.c:118-124 : u16 index = ScriptReadHalfword ; gSpecials[index]().
 // + specials à UI inline (waitstate) : flow partagé voie A (special_flows) → SetupNativeScript.
