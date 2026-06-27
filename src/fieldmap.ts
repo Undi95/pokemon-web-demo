@@ -844,6 +844,16 @@ export function GetMapConnectionFlags(): Readonly<typeof sMapConnectionFlags> {
   return sMapConnectionFlags;
 }
 
+/** 1:1 décomp `GetMapHeaderFromConnection(connection)` (fieldmap.c:66-69) :
+ *    return Overworld_GetMapHeaderByGroupAndId(connection->mapGroup, connection->mapNum);
+ *  Adaptation modèle : notre identité-map est un mapId string (`connection.destMap`) et nos
+ *  headers sont indexés par string dans `mapHeaderCache` (pas de table mapGroup/mapNum). Le
+ *  résultat est identique (le header de la map pointée par la connexion). Renvoie null si la
+ *  map n'est pas (encore) en cache (= prefetch manqué ; les appelants gèrent déjà le null). */
+export function GetMapHeaderFromConnection(connection: MapConnection): MapHeader | null {
+  return mapHeaderCache.get(connection.destMap) ?? null;
+}
+
 /** 1:1 décomp `InitBackupMapLayoutConnections(mapHeader)` (fieldmap.c:133-169).
  *  Pour chaque connexion (south/north/west/east), copie les metatiles de la
  *  map connectée dans la border area de gBackupMapLayout via FillX_Connection.
@@ -862,7 +872,7 @@ function InitBackupMapLayoutConnections(mapHeader: MapHeader): void {
   if (!mapHeader.connections || mapHeader.connections.length === 0) return;
 
   for (const connection of mapHeader.connections) {
-    const cMap = mapHeaderCache.get(connection.destMap);
+    const cMap = GetMapHeaderFromConnection(connection);
     if (!cMap) {
       console.warn(`[map-loader] connection ${connection.destMap} not in cache, skipping fill (= prefetch missed)`);
       continue;
@@ -1018,7 +1028,7 @@ function IsCoordInConnectingMap(coord: number, max: number): boolean {
  *  (fieldmap.c:742-756). Check si une position (x, y) dans la map source est dans
  *  la connection map's bounds adjusté par offset. */
 function IsPosInConnectingMap(connection: MapConnection, x: number, y: number): boolean {
-  const cMap = mapHeaderCache.get(connection.destMap);
+  const cMap = GetMapHeaderFromConnection(connection);
   if (!cMap) return false;
   switch (connection.direction) {
     case CONNECTION_SOUTH:
@@ -1168,7 +1178,7 @@ function isCoordInIncomingConnectingMap(coord: number, srcMax: number, destMax: 
  *  destination map (= the connection isn't an "edge" the player can cross
  *  here — only spans certain offset ranges). */
 function isPosInIncomingConnectingMap(direction: number, x: number, y: number, connection: MapConnection): boolean {
-  const cMap = mapHeaderCache.get(connection.destMap);
+  const cMap = GetMapHeaderFromConnection(connection);
   if (!cMap || !gMapHeader) return false;
   switch (direction) {
     case CONNECTION_SOUTH:
@@ -1232,7 +1242,7 @@ export function SetPositionFromConnection(
   x: number,
   y: number,
 ): void {
-  const cMap = mapHeaderCache.get(connection.destMap);
+  const cMap = GetMapHeaderFromConnection(connection);
   if (!cMap) return;
   switch (direction) {
     case CONNECTION_EAST:
@@ -1279,7 +1289,7 @@ export function SetPositionFromConnection(
  *  @returns true si le swap a réussi (= cMap was cached). false si manqué
  *  (= besoin async load, fallback to warp-style transition par caller). */
 export function TransitionToConnection(connection: MapConnection): boolean {
-  const cMap = mapHeaderCache.get(connection.destMap);
+  const cMap = GetMapHeaderFromConnection(connection);
   if (!cMap) {
     console.warn(`[map-loader] TransitionToConnection: ${connection.destMap} not cached`);
     return false;

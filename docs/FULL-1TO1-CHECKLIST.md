@@ -10,8 +10,8 @@
 
 | statut | nb fichiers |
 |---|---|
-| ✅ miroir | 44 |
-| 🟡 partiel | 50 |
+| ✅ miroir | 45 |
+| 🟡 partiel | 49 |
 | 🟠 dispersé | 12 |
 | 🟡 amorce | 35 |
 | 🔴 manquant | 157 |
@@ -32,7 +32,7 @@
 
 | catégorie | fichiers | ✅ | 🟡/🟠 | 🔴 | lignes C |
 |---|---|---|---|---|---|
-| Overworld/Field | 84 | 13 | 28 | 42 | 117446 |
+| Overworld/Field | 84 | 14 | 27 | 42 | 117446 |
 | Combat | 75 | 16 | 34 | 24 | 147341 |
 | Pokémon/Party | 32 | 0 | 4 | 28 | 61271 |
 | UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
@@ -119,9 +119,9 @@
 | `fldeff_dig.c` | 64 | 4 | `fldeff_dig.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `fldeff_teleport.c` | 45 | 4 | `fldeff_teleport.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `field_player_avatar.c` | 2227 | 177 | `field_player_avatar.ts` | 148/177 (84%) | 149/177 (84%) | 🟡 partiel |
-| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 46/55 (84%) | 47/55 (85%) | 🟡 partiel |
 | `map_name_popup.c` | 427 | 7 | `map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `field_poison.c` | 155 | 7 | `field_poison.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
+| `fieldmap.c` | 942 | 55 | `fieldmap.ts` | 47/55 (85%) | 48/55 (87%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
 | `field_effect_helpers.c` | 1718 | 81 | `field_effect_helpers.ts` | 76/81 (94%) | 76/81 (94%) | ✅ miroir |
 | `starter_choose.c` | 670 | 18 | `starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
