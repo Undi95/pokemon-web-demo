@@ -392,6 +392,16 @@ const MAX_MONS_ON_SCREEN = 4;       // 1:1 pokedex.h
 const LIST_SCROLL_STEP = 16;                       // pokedex.c:109
 const POKEBALL_ROTATION_TOP = 64;                  // pokedex.c:111
 const POKEBALL_ROTATION_BOTTOM = POKEBALL_ROTATION_TOP - 16; // pokedex.c:112 = 48
+
+/** 1:1 décomp `void ResetPokedexScrollPositions(void)` (pokedex.c:1540-1544).
+ *  Appelé par new_game.c (ResetMenuAndMonGlobals) + event_data.c
+ *  (EnableNationalPokedex). Exposé sur globalThis pour event_data (foundational)
+ *  qui ne doit PAS importer ce module lourd (= cycle/poids ; pattern __rtc). */
+export function ResetPokedexScrollPositions(): void {
+  sLastSelectedPokemon = 0;
+  sPokeBallRotation = POKEBALL_ROTATION_TOP;
+}
+(globalThis as { __resetPokedexScrollPositions?: () => void }).__resetPokedexScrollPositions = ResetPokedexScrollPositions;
 const sScrollMonIncrements = [4, 8, 16, 32, 32];   // pokedex.c:803
 const sScrollTimers = [8, 4, 2, 1, 1];             // pokedex.c:804
 // Tiles OBJ des mon-pics : la sheet interface occupe 0..255 (vérifié déterministe :

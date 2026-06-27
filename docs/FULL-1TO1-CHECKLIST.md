@@ -123,7 +123,6 @@
 | `field_player_avatar.c` | 2227 | 177 | `field_player_avatar.ts` | 148/177 (84%) | 149/177 (84%) | 🟡 partiel |
 | `map_name_popup.c` | 427 | 7 | `map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `field_poison.c` | 155 | 7 | `field_poison.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
-| `event_data.c` | 234 | 25 | `event_data.ts` | 22/25 (88%) | 22/25 (88%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
 | `field_effect_helpers.c` | 1718 | 81 | `field_effect_helpers.ts` | 76/81 (94%) | 76/81 (94%) | ✅ miroir |
 | `starter_choose.c` | 670 | 18 | `starter_choose.ts` | 17/18 (94%) | 17/18 (94%) | ✅ miroir |
@@ -132,6 +131,7 @@
 | `bike.c` | 1063 | 56 | `bike.ts` | 56/56 (100%) | 56/56 (100%) | ✅ miroir |
 | `field_tasks.c` | 958 | 28 | `field_tasks.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
 | `field_camera.c` | 508 | 28 | `field_camera.ts` | 28/28 (100%) | 28/28 (100%) | ✅ miroir |
+| `event_data.c` | 234 | 25 | `event_data.ts` | 25/25 (100%) | 25/25 (100%) | ✅ miroir |
 | `decoration_inventory.c` | 160 | 11 | `decoration_inventory.ts` | 11/11 (100%) | 11/11 (100%) | ✅ miroir |
 | `coord_event_weather.c` | 120 | 14 | `coord_event_weather.ts` | 14/14 (100%) | 14/14 (100%) | ✅ miroir |
 | `fldeff_sweetscent.c` | 100 | 6 | `fldeff_sweetscent.ts` | 4/6 (67%) | 6/6 (100%) | 🟡 partiel |
@@ -251,7 +251,7 @@
 | `party_menu.c` | 6431 | 354 | `engine/ui/party-screen.ts` _(nom≠)_ | 17/354 (5%) | 39/354 (11%) | 🔴 manquant |
 | `pokemon_icon.c` | 1308 | 23 | `pokemon_icon.ts` | 7/23 (30%) | 8/23 (35%) | 🟡 amorce |
 | `pokemon.c` | 7157 | 160 | `pokemon.ts` | 7/160 (4%) | 57/160 (36%) | 🟡 amorce |
-| `pokedex.c` | 5606 | 140 | `pokedex.ts` | 45/140 (32%) | 50/140 (36%) | 🟡 amorce |
+| `pokedex.c` | 5606 | 140 | `pokedex.ts` | 46/140 (33%) | 51/140 (36%) | 🟡 amorce |
 | `pokemon_size_record.c` | 189 | 12 | `pokemon_size_record.ts` | 6/12 (50%) | 6/12 (50%) | 🟡 partiel |
 
 ### UI/Menu/Gfx (34)

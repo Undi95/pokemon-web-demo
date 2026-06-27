@@ -86,7 +86,9 @@ export function VarGetObjectEventGraphicsId(id: number): number {
 }
 
 // ─── Flags (1:1 décomp event_data.c:196-233) ────────────────────────────────
-function _flagLoc(id: number): { arr: number[]; idx: number } | null {
+/** 1:1 décomp `u8 *GetFlagPointer(u16 id)` (event_data.c:196). Port : un `u8*`
+ *  devient une réf `{arr, idx}` (pas de pointeur JS), comme GetVarPointer. */
+function GetFlagPointer(id: number): { arr: number[]; idx: number } | null {
   if (id === 0) return null;                                          // event_data.c:198
   if (id < SPECIAL_FLAGS_START) return { arr: gSaveBlock1Ptr.flags, idx: id >> 3 };  // :200-201
   return { arr: sSpecialFlags, idx: (id - SPECIAL_FLAGS_START) >> 3 };               // :202-203
@@ -94,19 +96,19 @@ function _flagLoc(id: number): { arr: number[]; idx: number } | null {
 
 /** 1:1 décomp `u8 FlagSet(u16 id)` (event_data.c:206) : `*ptr |= 1 << (id & 7)`. */
 export function FlagSet(id: number): void {
-  const loc = _flagLoc(id);
+  const loc = GetFlagPointer(id);
   if (loc) loc.arr[loc.idx] = (loc.arr[loc.idx] ?? 0) | (1 << (id & 7));
 }
 
 /** 1:1 décomp `u8 FlagClear(u16 id)` (event_data.c:214) : `*ptr &= ~(1 << (id & 7))`. */
 export function FlagClear(id: number): void {
-  const loc = _flagLoc(id);
+  const loc = GetFlagPointer(id);
   if (loc) loc.arr[loc.idx] = (loc.arr[loc.idx] ?? 0) & ~(1 << (id & 7));
 }
 
 /** 1:1 décomp `bool8 FlagGet(u16 id)` (event_data.c:222). */
 export function FlagGet(id: number): boolean {
-  const loc = _flagLoc(id);
+  const loc = GetFlagPointer(id);
   if (!loc) return false;
   return (((loc.arr[loc.idx] ?? 0) >> (id & 7)) & 1) !== 0;
 }
@@ -222,10 +224,30 @@ export function IsNationalPokedexEnabled(): boolean {
   return false;
 }
 
-// ─── À PORTER avec le module pokedex (event_data.c:55-72) ────────────────────
-//   EnableNationalPokedex / DisableNationalPokedex : couplés `gSaveBlock2Ptr.pokedex`
-//   (nationalMagic/mode/order) + DEX_MODE_NATIONAL + ResetPokedexScrollPositions
-//   (pokedex.c, non porté). Différés ; `specials-registry.ts` couvre l'API Enable/Disable.
+// 1:1 décomp `DEX_MODE_NATIONAL` (include/pokedex.h). Const LOCALE : event_data est
+// foundational (importé partout) → ne PAS importer le module pokedex (lourd).
+const DEX_MODE_NATIONAL = 1;
+
+/** 1:1 décomp `void DisableNationalPokedex(void)` (event_data.c:55-61). */
+export function DisableNationalPokedex(): void {
+  const nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);
+  gSaveBlock2Ptr.pokedex.nationalMagic = 0;
+  if (nationalDexVar) nationalDexVar.set(0);   // *nationalDexVar = 0
+  FlagClear(FLAG_SYS_NATIONAL_DEX);
+}
+
+/** 1:1 décomp `void EnableNationalPokedex(void)` (event_data.c:63-72).
+ *  `ResetPokedexScrollPositions` (pokedex.c) appelé via globalThis : event_data
+ *  foundational ne peut pas importer le module pokedex lourd (pattern __rtc). */
+export function EnableNationalPokedex(): void {
+  const nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);
+  gSaveBlock2Ptr.pokedex.nationalMagic = 0xDA;
+  if (nationalDexVar) nationalDexVar.set(0x302);   // *nationalDexVar = 0x302
+  FlagSet(FLAG_SYS_NATIONAL_DEX);
+  gSaveBlock2Ptr.pokedex.mode = DEX_MODE_NATIONAL;
+  gSaveBlock2Ptr.pokedex.order = 0;
+  (globalThis as { __resetPokedexScrollPositions?: () => void }).__resetPokedexScrollPositions?.();
+}
 
 // Surface lazy (consommee par battle-script-commands _flagGet_GC — flags 1:1).
 (globalThis as Record<string, unknown>).__eventData = { FlagGet, FlagSet, VarGet, VarSet };
