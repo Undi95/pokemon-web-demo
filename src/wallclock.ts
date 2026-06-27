@@ -49,7 +49,7 @@ import {
 } from './engine/ui/gba-window-system';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
-  ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
+  ResetPaletteFade, ResetTasks, RunTasks, gMain, BG_PLTT_ID,
 } from '../harness/runtime/decomp-globals';
 
 import { GetOverworldTextboxPalettePtr } from './text_window';
@@ -824,6 +824,11 @@ function Task_ViewClock_Exit(task: DecompTask): void {
 export function CB2_WallClock(): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 décomp `RunTasks()` (wallclock.c:778). SANS ça la state-machine des tasks
+  // (Task_*_WaitFadeIn → HandleInput → … → Exit) ne tourne JAMAIS → on reste bloqué
+  // sur WaitFadeIn, A/B jamais lu, SORTIR impossible. (Le runtime n'auto-tick PAS les
+  // tasks ; chaque CB2 appelle RunTasks — cf. battle_main / main_menu / bag.)
+  RunTasks();
   // Tick sprite callbacks (= 1:1 décomp AnimateSprites). Notre runtime ne
   // dispatch pas automatiquement les callbacks par name → tick manuel ici.
   SpriteCB_MinuteHand(rt);
