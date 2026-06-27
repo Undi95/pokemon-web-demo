@@ -33,6 +33,7 @@ import {
 } from './event_object_movement';
 import { GetPlayerFacingDirection, gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
+import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
 } from '../include/constants/event_object_movement';
@@ -203,6 +204,46 @@ const ScrCmd_release: ScrCmdFunc = () => {
   return false;
 };
 
+// ─── applymovement / waitmovement (1:1 scrcmd.c:992-1045) ───────────────────
+let sMovingNpcId = 0;
+/** Résout le pointeur de mouvement (symbole) → label de séquence de mouvement. */
+function movementLabel(symId: number): string | null {
+  const sym = resolveSymbol(symId);
+  return sym ? sym.label : null;
+}
+// 1:1 scrcmd.c:992-1000 : localId=VarGet(half) ; movementScript=ReadWord ; StartObjectMovementScript ; sMovingNpcId=localId.
+const ScrCmd_applymovement: ScrCmdFunc = (ctx) => {
+  const localId = VarGet(ScriptReadHalfword(ctx));
+  const label = movementLabel(ScriptReadWord(ctx));
+  if (label) applyMovement(String(localId), label);
+  sMovingNpcId = localId;
+  return false;
+};
+// 1:1 scrcmd.c:1002-1012 : + map (2o) ignorée (adaptation même-map, comme le moteur parsé).
+const ScrCmd_applymovementat: ScrCmdFunc = (ctx) => {
+  const localId = VarGet(ScriptReadHalfword(ctx));
+  const label = movementLabel(ScriptReadWord(ctx));
+  ScriptReadHalfword(ctx);   // map (mapSymbol u16) — non utilisé (même map)
+  if (label) applyMovement(String(localId), label);
+  sMovingNpcId = localId;
+  return false;
+};
+// 1:1 scrcmd.c:1019-1029 : localId=VarGet(half) ; si !=LOCALID_NONE → sMovingNpcId ; wait.
+const ScrCmd_waitmovement: ScrCmdFunc = (ctx) => {
+  const localId = VarGet(ScriptReadHalfword(ctx));
+  if (localId !== 0) sMovingNpcId = localId;
+  SetupNativeScript(ctx, sMovingNpcId === 0 ? () => isAllMovementsDone() : () => isMovementDone(String(sMovingNpcId)));
+  return true;
+};
+// 1:1 scrcmd.c:1031-1045 : + map (2o) ignorée.
+const ScrCmd_waitmovementat: ScrCmdFunc = (ctx) => {
+  const localId = VarGet(ScriptReadHalfword(ctx));
+  ScriptReadHalfword(ctx);   // map (mapSymbol u16) — non utilisé
+  if (localId !== 0) sMovingNpcId = localId;
+  SetupNativeScript(ctx, sMovingNpcId === 0 ? () => isAllMovementsDone() : () => isMovementDone(String(sMovingNpcId)));
+  return true;
+};
+
 // ─── std scripts (1:1 scrcmd.c:235-253) ─────────────────────────────────────
 const ScrCmd_gotostd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptJump(ctx, ptrFromOffset(off)); return false; };
 const ScrCmd_callstd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptCall(ctx, ptrFromOffset(off)); return false; };
@@ -240,6 +281,7 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setflag, ScrCmd_clearflag, ScrCmd_checkflag,
   ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
   ScrCmd_faceplayer, ScrCmd_lock, ScrCmd_lockall, ScrCmd_release, ScrCmd_releaseall,
+  ScrCmd_applymovement, ScrCmd_applymovementat, ScrCmd_waitmovement, ScrCmd_waitmovementat,
 };
 
 /** Installe les handlers disponibles dans gScriptCmdTable, indexés par cmdId.

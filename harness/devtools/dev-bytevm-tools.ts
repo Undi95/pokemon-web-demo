@@ -19,6 +19,9 @@ import { registerSpecial } from '../../src/scrcmd';
 import { getText, loadMapScripts } from '../../src/script';
 import { IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../src/field_message_box';
 import { VarGet, VarSet, FlagSet, FlagClear } from '../../src/event_data';
+import { isMovementDone } from '../../src/engine/field/movement-system';
+import { gObjectEvents } from '../../src/event_object_movement';
+import { gPlayerAvatar } from '../../src/field_player_avatar';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
 
 let _installed = false;
@@ -211,6 +214,42 @@ export async function testNpc(mapName = 'LittlerootTown'): Promise<{ pass: boole
   return { pass, details };
 }
 
+/** Test APPLYMOVEMENT via bytecode synthétique sur un VRAI objet de la map courante :
+ *  applymovement <localId>, <movSym> ; end → après exécution, isMovementDone(localId)
+ *  doit être false (mouvement en cours). Utilise un Common_Movement (toujours chargé). */
+export async function testMovement(): Promise<{ pass: boolean; details: Record<string, unknown> }> {
+  await loadAndInstall();
+  const syms = getSymbols();
+  // symbole de mouvement résolvable (Common_Movement_* chargé via _common)
+  let movSym = -1, movLabel = '';
+  for (let id = 1; id < syms.length; id++) {
+    if (syms[id].kind === 'movement' && syms[id].label.startsWith('Common_Movement')) { movSym = id; movLabel = syms[id].label; break; }
+  }
+  // objet actif non-joueur sur la map courante
+  let objLocalId = -1;
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const o = gObjectEvents[i];
+    if (o && o.active && i !== gPlayerAvatar.objectEventId && typeof o.localId === 'number') { objLocalId = o.localId; break; }
+  }
+  let moving = false;
+  if (movSym >= 0 && objLocalId >= 0) {
+    const APPLY = cmdIdOf('ScrCmd_applymovement');
+    const END = cmdIdOf('ScrCmd_end');
+    // applymovement <localId>, <movSym> ; end
+    const code = Uint8Array.from([
+      APPLY, lo(objLocalId), hi(objLocalId),
+      lo(movSym), hi(movSym), (movSym >> 16) & 0xFF, (movSym >>> 24) & 0xFF,
+      END,
+    ]);
+    RunScriptImmediately({ buf: code, off: 0 } as ScriptPtr);
+    moving = !isMovementDone(String(objLocalId));
+  }
+  const pass = movSym >= 0 && objLocalId >= 0 && moving;
+  const details = { 'mouvement': movLabel, 'objet localId': objLocalId, 'isMovementDone=false (en cours)': moving };
+  console.log(`[byte-vm] TEST applymovement : ${pass ? '✅ PASS' : '❌ FAIL'}`, details);
+  return { pass, details };
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -218,4 +257,4 @@ export function run(label: string): boolean {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, run, VarGet, getScriptOffset };
