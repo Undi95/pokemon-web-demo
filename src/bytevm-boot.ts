@@ -9,7 +9,7 @@
  * awaité depuis `loadMapScripts`.
  */
 
-import { loadByteVmImage } from './script_bytevm';
+import { loadByteVmImage } from './script';
 import { installByteVmHandlers, setSpecialNames } from './scrcmd';
 
 let _installed = false;

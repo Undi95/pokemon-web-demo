@@ -34,7 +34,7 @@
 
 import {
   getScript, getText,
-  type ScriptContext, type Opcode,
+  type Opcode,
 } from './script';
 import { registerSpecial } from './scrcmd';
 import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
@@ -78,6 +78,10 @@ const TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR = 6;
 // sTrainerBattleEndScript = position de reprise du script de map (1:1 : l'adresse
 // APRÈS les args de l'opcode trainerbattle, capturée par LOAD_SCRIPT_RET_ADDR).
 type ScriptPos = { opcodes: Opcode[]; idx: number };
+// Contexte de script PARSÉ — scaffolding trainer_see LOCAL à ce module (résidu du moteur
+// parsé : makeStringArgSource capture la position {opcodes, idx} du script appelant). Le
+// `ScriptContext` 1:1 (forme byte-VM scriptPtr) vit dans script.ts ; celui-ci est distinct.
+type ScriptContext = { scriptOpcodes: Opcode[] | null; scriptIdx: number };
 /** Pointeur de continuation côté byte-VM (curseur image globale {buf, off}).
  *  sTrainerBattleEndScript / *BattleScriptRetAddr peuvent tenir CETTE forme (byte-VM)
  *  OU ScriptPos (moteur parsé) OU string (label) — un seul moteur actif à la fois. */

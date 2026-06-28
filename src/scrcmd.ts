@@ -19,7 +19,8 @@ import {
   ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
   ScriptJump, ScriptCall, ScriptReturn, StopScript, SetupNativeScript,
   ScriptContext_Stop, ptrFromOffset, resolveSymbol, resolveMapSymbol, getScriptOffset, getLabelAtOffset,
-} from './script_bytevm';
+  getText,
+} from './script';
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 import { VAR_0x8004 } from '../include/constants/vars';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
@@ -31,7 +32,6 @@ import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './
 import { GetCoins, AddCoins, RemoveCoins } from './coins';
 import { VAR_RESULT } from '../include/constants/vars';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
-import { getText } from './script';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
 // Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
 import { getSelectedNpc, OPPOSITE_DIR, isPlayerStepFinished } from './engine/script/script-opcodes-helpers';

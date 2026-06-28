@@ -13,9 +13,9 @@ import {
   loadByteVmImage, isByteVmLoaded, RunScriptImmediatelyByLabel, RunScriptImmediately, getScriptOffset,
   getSymbols, getMapSymbols, ScriptContext_SetupScript, ScriptContext_RunScript, getLabelAtOffset,
   _getGlobalContext, _getGlobalStatus, ArePlayerFieldControlsLocked as _BVAreLocked, ptrFromLabel,
-} from '../../src/script_bytevm';
+} from '../../src/script';
 import { GetMartItemList, IsShopMenuOpen } from '../../src/shop';
-import type { ScriptPtr } from '../../src/script_bytevm';
+import type { ScriptPtr } from '../../src/script';
 import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
