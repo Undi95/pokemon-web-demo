@@ -38,7 +38,7 @@ import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   FillBgTilemapBufferRect, GetWindowAttribute,
   WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_HEIGHT,
-} from './engine/ui/gba-window-system';
+} from './window';
 
 /** 1:1 décomp `text_window.h:4 WINDOW_FRAMES_COUNT`. */
 export const WINDOW_FRAMES_COUNT = 20;

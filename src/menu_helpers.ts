@@ -35,7 +35,7 @@ import {
   RunTextPrinters, IsTextPrinterActive, StringExpandPlaceholders, gStringVar4,
 } from './engine/ui/gba-text-system';
 import { gTextFlags, TEXT_COLOR } from './engine/ui/gba-text-printer';
-import type { WindowTemplate } from './engine/ui/gba-window-system';
+import type { WindowTemplate } from './window';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 // ─── Constantes 1:1 ──────────────────────────────────────────────────────────

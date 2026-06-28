@@ -152,7 +152,7 @@ import {
   GetBgTilemapBuffer,
   type WindowTemplate,
   type BgTemplate,
-} from './gba-window-system';
+} from '../../window';
 
 import {
   AddTextPrinterParameterized3,

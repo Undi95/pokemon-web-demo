@@ -18,7 +18,7 @@ import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 
 /** 1:1 décomp `#define MAX_COINS 9999` (constants/coins.h:4). */

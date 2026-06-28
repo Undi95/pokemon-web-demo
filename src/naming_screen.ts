@@ -27,7 +27,7 @@ import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
   FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import {
   getRuntime,

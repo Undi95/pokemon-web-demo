@@ -22,7 +22,7 @@ import {
   DrawDialogueFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import {

@@ -43,7 +43,7 @@ import {
   DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillBgTilemapBufferRect,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
 import {

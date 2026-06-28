@@ -24,7 +24,7 @@
  * exposées sous noms décomp), comme tout consommateur de fenêtres GBA.
  */
 
-import { FillWindowPixelBuffer } from './engine/ui/gba-window-system';
+import { FillWindowPixelBuffer } from './window';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────

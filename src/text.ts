@@ -42,7 +42,7 @@ import {
 // 1:1 décomp : GetPlayerTextSpeed (menu.c:474) utilisé par RenderText SCROLL. Foyer =
 // miroir `menu.ts`. Cycle text↔menu runtime-safe (text.c appelle GetPlayerTextSpeed).
 import { GetPlayerTextSpeed } from './menu';
-import { getWindowById } from './engine/ui/gba-window-system';
+import { getWindowById } from './window';
 import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy } from '../include/string_util';
 import { PLAYER_NAME_LENGTH } from '../include/constants/global';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';

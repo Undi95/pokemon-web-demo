@@ -145,7 +145,7 @@ import { getBattleMove } from './engine/battle/data/battle-moves';
 import { getPPTextPalette } from './battle_bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
-import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from './engine/ui/gba-window-system';
+import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from './window';
 import { getString } from './engine/ui/gba-strings';
 // ANTI-CYCLE ESM (regression T3 : l'import statique de battle_gfx_sfx_util
 // bloquait l'INTRO — meme TDZ que pokeball/ST_OAM_AFFINE_DOUBLE) : lazy.

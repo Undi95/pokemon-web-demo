@@ -31,7 +31,7 @@ import {
   CopyWindowToVram, FillBgTilemapBufferRect, GetWindowAttribute, WINDOW_PALETTE_NUM,
   AddWindow, RemoveWindow, InitWindows, FreeAllWindowBuffers, ChangeBgX, ChangeBgY,
   COPYWIN_FULL, COPYWIN_GFX, type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from '../harness/runtime/decomp-globals';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';

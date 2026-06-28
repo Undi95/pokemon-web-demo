@@ -41,7 +41,7 @@ import {
   ClearStdWindowAndFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetPlayerNameString, encodeOwText } from '../include/text';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';

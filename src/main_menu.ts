@@ -55,7 +55,7 @@ import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
   type BgTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import {
   BG_PLTT_ID,
   REG_OFFSET_DISPCNT,
@@ -118,7 +118,7 @@ import {
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
 } from './engine/ui/gba-menu-system';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './engine/ui/gba-window-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './engine/ui/gba-text-system';
 import { getString } from './engine/ui/gba-strings';
 import { FlagGet } from './engine/script/script-vars';

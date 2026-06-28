@@ -64,7 +64,7 @@ import {
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
   ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
-} from '../ui/gba-window-system';
+} from '../../window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
 import {
   DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,

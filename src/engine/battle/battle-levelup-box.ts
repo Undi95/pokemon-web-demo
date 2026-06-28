@@ -26,7 +26,7 @@ import {
   PutWindowTilemap,
   ClearWindowTilemap,
   RemoveWindow,
-} from '../ui/gba-window-system';
+} from '../../window';
 import {
   DrawLevelUpWindowPg1, DrawLevelUpWindowPg2, GetMonLevelUpWindowStats,
   type LevelUpStatMon,

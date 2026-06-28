@@ -43,7 +43,7 @@ import {
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from './gba-window-system';
+} from '../../window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './gba-menu-system';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../menu_specialized';

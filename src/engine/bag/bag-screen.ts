@@ -30,7 +30,7 @@ import {
   CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg,
   InitWindows, ResetVramOamAndBgCntRegs,
   type WindowTemplate,
-} from '../ui/gba-window-system';
+} from '../../window';
 import { LoadUserWindowBorderGfx } from '../../text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';

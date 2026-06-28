@@ -42,7 +42,7 @@ import {
   CopyWindowToVram, FreeAllWindowBuffers, FillWindowPixelRect, FillWindowPixelBuffer, BlitBitmapToWindow,
   ResetVramOamAndBgCntRegs,
   type WindowTemplate, type BgTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW } from './engine/ui/gba-text-system';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';

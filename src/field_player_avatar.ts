@@ -144,7 +144,7 @@ import { DoesCurrentMapHaveFishingMons, FishingWildEncounter } from './wild_enco
 import {
   AddWindow, ClearDialogWindowAndFrame, DrawDialogueFrame, FillWindowPixelBuffer,
   CopyWindowToVram, PutWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadMessageBoxGfx } from './text_window';
 import {
   AddTextPrinterParameterized, AddTextPrinterParameterized2, RunTextPrinters, IsTextPrinterActive,

@@ -14,7 +14,7 @@ import {
   gTextFlags,
   RENDER_FINISH,
 } from './gba-text-printer';
-import { getWindowById } from './gba-window-system';
+import { getWindowById } from '../../window';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 // Migration TEXTE byte-level 1:1 (flip direct, 2026-06-06) : gStringVar1-4 +

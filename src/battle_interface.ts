@@ -1398,7 +1398,7 @@ import { loadIndexedPng, loadIndexedPngRawIndices } from '../harness/gba/png-loa
 import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag } from './sprite';
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle_interface → ui/*).
-import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from './engine/ui/gba-window-system';
+import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from './window';
 import { AddTextPrinterParameterized4, FONT_SMALL, TEXT_SKIP_DRAW } from './engine/ui/gba-text-system';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de

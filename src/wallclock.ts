@@ -46,7 +46,7 @@ import {
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, RunTasks, gMain, BG_PLTT_ID,
@@ -59,7 +59,7 @@ import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
 } from './engine/ui/gba-menu-system';
-import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './engine/ui/gba-window-system';
+import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './window';
 import { getString } from './engine/ui/gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from '../harness/runtime/decomp-globals';

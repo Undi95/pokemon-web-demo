@@ -24,7 +24,7 @@ import {
   LoadBgTiles, LoadPalette, FillBgTilemapBufferRect, CopyWindowToVram, PutWindowTilemap,
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
 } from '../../../harness/runtime/decomp-globals';
-import { FillWindowPixelRect } from './gba-window-system';
+import { FillWindowPixelRect } from '../../window';
 import { GetStringRightAlignXOffset } from './gba-text-system';
 import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../../text_window';
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../../../harness/runtime/decomp-runtime';

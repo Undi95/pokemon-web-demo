@@ -20,8 +20,8 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getString } from './engine/ui/gba-strings';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
-import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './engine/ui/gba-window-system';
-import type { WindowTemplate } from './engine/ui/gba-window-system';
+import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './window';
+import type { WindowTemplate } from './window';
 import { VarSet } from './event_data';
 import { VAR_RESULT } from '../include/constants/vars';
 

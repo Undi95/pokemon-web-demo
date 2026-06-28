@@ -2575,7 +2575,7 @@ for (const [k, d] of Object.entries(_mutableGlobals)) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // (scaffold main-menu-data retiré : ses 5 symboles consommés vivent dans src/main_menu.ts,
 //  réexposés par `export * from '../../src/main_menu'` plus bas.)
-export * from '../../src/engine/ui/gba-window-system';
+export * from '../../src/window';
 // text_window.c (miroir 1:1) — LoadMessageBoxGfx / GetWindowFrameTilesPal /
 // GetTextWindowPalette / GetOverworldTextboxPalettePtr / DrawTextBorder* / etc.
 // Relocalisé hors de gba-window-system → réexposé ici pour le global-scope.

@@ -35,7 +35,7 @@ import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 import { LoadBgTiles } from '../harness/runtime/decomp-globals';
 import { LoadPalette } from '../harness/runtime/decomp-globals';

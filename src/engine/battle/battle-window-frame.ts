@@ -16,7 +16,7 @@
  * importé par battle-levelup-box, battle-yesno-box, battle-controllers.
  */
 
-import { FillBgTilemapBufferRect, CopyBgTilemapBufferToVram } from '../ui/gba-window-system';
+import { FillBgTilemapBufferRect, CopyBgTilemapBufferToVram } from '../../window';
 
 // ─── Flags 1:1 décomp (include/battle_script_commands.h:7-8) ────────────────
 /** 1:1 décomp `WINDOW_CLEAR` = 1 << 0 (efface = tuile 0). */

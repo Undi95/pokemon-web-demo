@@ -50,7 +50,7 @@ import {
   CopyWindowToVram, PutWindowTilemap, GetWindowAttribute, ScrollWindow,
   WINDOW_WIDTH, WINDOW_HEIGHT,
   AddWindow, RemoveWindow, ClearWindowTilemap, ClearStdWindowAndFrame,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
 import {
   AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,

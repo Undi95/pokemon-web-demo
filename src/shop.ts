@@ -33,7 +33,7 @@ import {
   FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitWindows, ShowBg, HideBg, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import {
   MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt,

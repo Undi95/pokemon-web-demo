@@ -69,7 +69,7 @@ import {
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
   FillBgTilemapBufferRect_Palette0, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
-} from '../ui/gba-window-system';
+} from '../../window';
 import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/decomp-globals';
 import {
   AddTextPrinterParameterized4, AddTextPrinterParameterized, FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW, gStringVar4,

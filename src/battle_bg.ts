@@ -32,7 +32,7 @@ import { rgba8ToRgb15 } from '../harness/gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './engine/battle/battle-windows';
 import { DeactivateAllTextPrinters } from './engine/ui/gba-text-system';
 

@@ -44,7 +44,7 @@ import {
   PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate,
   InitWindows, DrawStdFrameWithCustomTileAndPalette, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import {
   AddTextPrinterParameterized, AddTextPrinterParameterized3,
   GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW,

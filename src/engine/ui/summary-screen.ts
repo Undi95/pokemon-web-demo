@@ -30,7 +30,7 @@ import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
   ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
-} from './gba-window-system';
+} from '../../window';
 import { GetPlayerNameString, encodeOwText } from '../../../include/text';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,

@@ -5286,7 +5286,7 @@ void gPalaceSelectionBattleScripts;
 
 import { setBattleTypeFlags } from './engine/battle/state';
 import { InitBattleControllers as _InitBattleControllersImpl } from './engine/battle/battle-controllers-init';
-import { ShowBg } from './engine/ui/gba-window-system';
+import { ShowBg } from './window';
 import { FillAroundBattleWindows } from './battle_gfx_sfx_util';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 

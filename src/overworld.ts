@@ -31,7 +31,7 @@ import {
 import {
   ShowBg, ChangeBgX, ChangeBgY, ScheduleBgCopyTilemapToVram,
   ClearScheduledBgCopiesToVram, ResetTempTileDataBuffers,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';

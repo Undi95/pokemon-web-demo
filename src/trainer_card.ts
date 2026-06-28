@@ -37,7 +37,7 @@ import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg, ResetVramOamAndBgCntRegs,
   type WindowTemplate,
-} from './engine/ui/gba-window-system';
+} from './window';
 import { LoadUserWindowBorderGfx } from './text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './engine/ui/gba-text-system';
 import { FlagGet } from './engine/script/script-vars';

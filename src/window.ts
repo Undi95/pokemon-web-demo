@@ -6,13 +6,13 @@
  * et fournit CopyWindowToVram / PutWindowTilemap qui transfèrent vers
  * l'engine GBA hardware (VRAM + tilemap) pour rendu par le compositor.
  */
-import { getRuntime, assetCache, LoadBgTiles } from '../../../harness/runtime/decomp-globals';
+import { getRuntime, assetCache, LoadBgTiles } from '../harness/runtime/decomp-globals';
 import {
   type Window,
   createWindow,
   fillWindowPixelBuffer,
   fillWindowPixelRect,
-} from './gba-text-printer';
+} from './engine/ui/gba-text-printer';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -656,7 +656,7 @@ export {
   Menu_LoadStdPalAt,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
-} from '../../menu';
+} from './menu';
 
 // LoadMessageBoxGfx — RELOCALISÉ dans le miroir `src/game/text_window.ts`
 // (1:1 décomp text_window.c:93). Importer depuis `gba-text-window` (hub
