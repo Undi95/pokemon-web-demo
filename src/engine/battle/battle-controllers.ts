@@ -24,8 +24,6 @@
  * par de vraies fonctions qui :
  *   1. Émettent les commandes UI au framework graphique (anim, text, fade, etc.)
  *   2. Le framework appelle un callback "controller done" qui clear le bit.
- *
- * Cf. session 134 dans `D:/Projet 1/pokemon-web-demo/memory/`.
  */
 
 import {

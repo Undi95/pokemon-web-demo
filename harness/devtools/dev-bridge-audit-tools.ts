@@ -17,7 +17,7 @@
  *   dev.bridge.scanCallsTo(file)            // analyse callsTo d'un fichier auto
  *   dev.bridge.report()                     // dump complet → console.log + window.__bridgeReport
  *
- * Cf. `memory/audit-2026-05-09-total-1to1.md` + `memory/helper-bridge-manifest.md`.
+ * Cf. `memory/helper-bridge-manifest.md`.
  */
 
 import { __bridgedHelpers__, __notImplementedHelpers__ } from '../runtime/decomp-bridge';

@@ -1124,7 +1124,7 @@ function generateFile(sceneName, json) {
   lines.push(`// IMPORTANT :`);
   lines.push(`//   - Tous les imports manquants : marqués @ts-nocheck (= pas de typecheck).`);
   lines.push(`//   - Les bodies référencent des helpers (= FaceDirection, InitMovementNormal, etc.)`);
-  lines.push(`//     qui doivent être bridged vers nos TS impls. Cf. memory/audit pour la liste.`);
+  lines.push(`//     qui doivent être bridged vers nos TS impls.`);
   lines.push(`//   - Pour activer une fonction, la importer depuis runtime engine + bridge`);
   lines.push(`//     ses callsTo manquants.`);
   lines.push(``);

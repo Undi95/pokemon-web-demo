@@ -31,7 +31,6 @@
  * MAINTENANCE :
  *   - Quand un helper est porté 1:1, le déplacer de "throw" → "re-export".
  *   - Garder `helper-bridge-manifest.md` à jour (= run `node scripts/build-helper-bridge-manifest.mjs`).
- *   - Cf. `memory/audit-2026-05-09-total-1to1.md` pour la liste des modules à porter.
  *
  * Sources de vérité :
  *   - `decomps/pokeemeraude/include/macro.h` (= ARRAY_COUNT, T1_READ_PTR, SWAP, etc.)

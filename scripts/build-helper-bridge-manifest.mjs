@@ -123,8 +123,6 @@ lines.push('3. Pour chaque helper manquant :');
 lines.push('   a. Si déjà dans `decomp-globals.ts` ou similaire → `import` direct.');
 lines.push('   b. Sinon, écrire un stub minimal compatible avec le runtime.');
 lines.push('4. Importer le module dans le runtime et tester.');
-lines.push('');
-lines.push('Cf. `memory/audit-2026-05-09-total-1to1.md` pour les violations 1:1 connues.');
 
 writeFileSync(outPath, lines.join('\n'), 'utf8');
 console.log(`[helper-bridge-manifest] Output : ${outPath}`);

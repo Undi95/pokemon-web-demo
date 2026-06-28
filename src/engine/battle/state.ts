@@ -11,9 +11,6 @@
  * adjustnormaldamage/healthbarupdate/datahpupdate/tryfaintmon/moveend sont
  * définis. Les autres seront ajoutés au fur et à mesure que les opcodes
  * Batch 02+ sont portés.
- *
- * Cf. `D:/Projet 1/pokemon-web-demo/memory/SESSION-132-BACKING-SYSTEMS.md`
- * pour la roadmap complète Phase 1.
  */
 
 import type { BattleMon } from './script-interpreter';

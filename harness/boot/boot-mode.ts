@@ -297,7 +297,6 @@ function applyNoIntroPreset(): void {
   // En `?nointro` on skip state 6, donc on applique manuellement l'override.
   // Sans ça Mom spawn à la position map.json default (2, 6) FACE_RIGHT au lieu
   // de (4, 5) FACE_UP devant la TV.
-  // Audit follow-up Issue 3 : memory/audit-2026-05-09-followup.md
   const playerHouseMap = gSaveBlock2Ptr.playerGender === FEMALE
     ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F'
     : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
