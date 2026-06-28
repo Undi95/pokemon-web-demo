@@ -46,15 +46,40 @@ function parseHeaderDefines(file) {
     addRaw(m[1], expr);
   }
 }
+// Parse les `enum { A, B = 5, C, ... }` C : chaque membre devient une const.
+// Valeur exprimée comme `(<membre précédent> + 1)` (ou la valeur explicite) →
+// le résolveur itératif calcule. `override=false` : n'écrase jamais un #define
+// (donc ne peut QUE résoudre des noms inconnus, jamais casser une compile OK).
+function parseEnums(file) {
+  const txt = fs.readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')      // commentaires bloc
+    .replace(/\/\/.*$/gm, '');             // commentaires ligne
+  // corps d'enum (pas de `{}` imbriqués dans un enum C) ; tolère `enum Name`.
+  const reEnum = /\benum\b[^\{;]*\{([^}]*)\}/g;
+  let mm;
+  while ((mm = reEnum.exec(txt))) {
+    let prev = null;
+    for (const rawMember of mm[1].split(',')) {
+      const member = rawMember.trim();
+      if (!member) continue;
+      const eq = member.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+      if (eq) { addRaw(eq[1], eq[2].trim(), false); prev = eq[1]; continue; }
+      const nm = member.match(/^([A-Za-z_]\w*)$/);
+      if (!nm) { prev = null; continue; } // forme inattendue → casse l'auto-incr
+      addRaw(nm[1], prev === null ? '0' : `(${prev} + 1)`, false);
+      prev = nm[1];
+    }
+  }
+}
 function listHeaders(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter((f) => f.endsWith('.h')).map((f) => path.join(dir, f));
 }
-for (const f of listHeaders(path.join(DECOMP, 'include/constants'))) parseHeaderDefines(f);
+for (const f of listHeaders(path.join(DECOMP, 'include/constants'))) { parseHeaderDefines(f); parseEnums(f); }
 // quelques include/*.h portant des constantes utilisées en script
 for (const extra of ['include/global.h', 'include/constants/event_objects.h']) {
   const p = path.join(DECOMP, extra);
-  if (fs.existsSync(p)) parseHeaderDefines(p);
+  if (fs.existsSync(p)) { parseHeaderDefines(p); parseEnums(p); }
 }
 
 // ── 2. constantes locales event.inc (`NAME = RHS`, `.set NAME, RHS`) ──────────
@@ -69,10 +94,42 @@ for (const extra of ['include/global.h', 'include/constants/event_objects.h']) {
   }
 }
 
+// ── 2b. alias `.set NAME, EXPR` locaux des scripts data/scripts/*.inc ─────────
+// (ex. obtain_item.inc : `.set ITEMID, VAR_0x8000` / `.set AMOUNT, VAR_0x8001`,
+//  berry_blender : `.set NUM_OPPONENTS, VAR_0x8009`). Strippés à l'extraction JSON
+//  → le compilo ne les voit jamais ; on les résout depuis la source décomp.
+//  Seul `.set` (pas `NAME = RHS`, trop ambigu en corps de script).
+{
+  const scriptsDir = path.join(DECOMP, 'data/scripts');
+  const reSet = /^\s*\.set\s+([A-Z_][A-Z0-9_]*)\s*,\s*([^@]+?)\s*(?:@.*)?$/;
+  if (fs.existsSync(scriptsDir)) {
+    for (const f of fs.readdirSync(scriptsDir).filter((x) => x.endsWith('.inc'))) {
+      const txt = fs.readFileSync(path.join(scriptsDir, f), 'utf8');
+      for (const line of txt.split(/\r?\n/)) {
+        const m = line.match(reSet);
+        if (m) addRaw(m[1], m[2], false);
+      }
+    }
+  }
+}
+
 // ── 3. manuel ────────────────────────────────────────────────────────────────
 table['TRUE'] = 1;
 table['FALSE'] = 0;
 table['NULL'] = 0;   // pointeur nul (ex. `message NULL` → utilise ctx->data[0])
+// STR_VAR_1/2/3 = index buffer 0/1/2 (cf. event.inc:1070 + apprentice.inc:94).
+// L'assembleur les gère déjà pour l'arg type `stringvar` ; mais certains macros
+// (apprentice_buff, dome) tombent dans la branche `.else setvar X, \stringvar`
+// non évaluée à l'extraction → STR_VAR_1 arrive en arg setvar/copyvar. Valeur
+// identique (0/1/2) dans les deux branches → résolution globale sûre.
+table['STR_VAR_1'] = 0;
+table['STR_VAR_2'] = 1;
+table['STR_VAR_3'] = 2;
+// METLOC_* : constantes auto-générées (region_map_sections) absentes des .h du
+// snapshot ; valeurs canon depuis src/data/region_map/region_map_sections.constants.json.txt.
+table['METLOC_SPECIAL_EGG'] = 0xFD;
+table['METLOC_IN_GAME_TRADE'] = 0xFE;
+table['METLOC_FATEFUL_ENCOUNTER'] = 0xFF;
 
 // ── Résolution itérative des expressions brutes ──────────────────────────────
 function evalExpr(expr) {
@@ -206,6 +263,24 @@ for (const rel of ['constants.json', 'flags-vars.json']) {
   }
 }
 
+// ── 9. constantes MAP_* (= (groupIndex << 8) | numIndex) ─────────────────────
+// include/constants/map_groups.h est auto-généré (vide dans le snapshot). On
+// reconstruit MAP_<NAME> depuis data/maps/map_groups.json (group_order + maps
+// par groupe) + l'`id` MAP_* de chaque map.json. Permet MAP_NUM()/MAP_GROUP().
+{
+  try {
+    const mg = JSON.parse(fs.readFileSync(path.join(DECOMP, 'data/maps/map_groups.json'), 'utf8'));
+    (mg.group_order || []).forEach((groupName, g) => {
+      const maps = mg[groupName] || [];
+      maps.forEach((mapName, num) => {
+        let id;
+        try { id = JSON.parse(fs.readFileSync(path.join(DECOMP, 'data/maps', mapName, 'map.json'), 'utf8')).id; } catch { /* skip */ }
+        if (id && table[id] === undefined) table[id] = ((g << 8) | num);
+      });
+    });
+  } catch { /* map_groups absent */ }
+}
+
 function resolve(name) {
   if (name == null) return undefined;
   const s = String(name).trim();
@@ -216,6 +291,11 @@ function resolve(name) {
   let mm;
   if ((mm = s.match(/^MAP_NUM\s*\(\s*(.+?)\s*\)$/))) { const v = resolve(mm[1]); return v === undefined ? undefined : (v & 0xFF); }
   if ((mm = s.match(/^MAP_GROUP\s*\(\s*(.+?)\s*\)$/))) { const v = resolve(mm[1]); return v === undefined ? undefined : (v >> 8); }
+  // ITEM_TO_BERRY(itemId)=((itemId - FIRST_BERRY_INDEX) + 1) (constants/items.h)
+  if ((mm = s.match(/^ITEM_TO_BERRY\s*\(\s*(.+?)\s*\)$/))) {
+    const v = resolve(mm[1]); const fb = resolve('FIRST_BERRY_INDEX');
+    return (v === undefined || fb === undefined) ? undefined : ((v - fb) + 1);
+  }
   // expression arithmétique (ex. `(NUM_X - 1)`, `(BET_5 * 2)`, `(1 << 3)`, modulo)
   if (/[()+\-*/<|%]/.test(s)) return evalExpr(s);
   return undefined;

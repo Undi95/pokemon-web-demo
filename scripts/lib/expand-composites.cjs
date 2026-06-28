@@ -28,7 +28,9 @@ const COMPOSITES = TABLE.composites;
 
 /** "name a, b, c" -> {name, args:[...]}. Les args gardent leur forme brute. */
 function parseInvocation(line) {
-  const s = line.trim();
+  // strip commentaires `@ ...` (asm) et `// ...` (les .inc passent par cpp, donc
+  // `//` est un commentaire — ex. item_ball_scripts.inc `finditem ITEM_X // Unused`).
+  let s = line.replace(/\s*@.*$/, '').replace(/\s*\/\/.*$/, '').trim();
   const sp = s.search(/\s/);
   if (sp === -1) return { name: s, args: [] };
   const name = s.slice(0, sp);
@@ -36,7 +38,11 @@ function parseInvocation(line) {
   const args = splitArgs(rest);
   return { name, args };
 }
-/** split par virgules au top-level (respecte parenthèses). */
+/** split par virgules au top-level (respecte parenthèses). GAS accepte aussi
+ *  l'espace comme séparateur d'args de macro (ex. décomp battle_pike.inc:219
+ *  `frontier_set FRONTIER_DATA_CHALLENGE_STATUS CHALLENGE_STATUS_LOST`, virgule
+ *  manquante tolérée par l'assembleur) → on re-split un arg qui est plusieurs
+ *  identifiants/nombres NUS séparés par espace (jamais une expr à opérateurs/parens). */
 function splitArgs(s) {
   const out = []; let d = 0, st = 0;
   for (let i = 0; i < s.length; i++) {
@@ -46,7 +52,8 @@ function splitArgs(s) {
   }
   const last = s.slice(st).trim();
   if (last !== '' || out.length) out.push(last);
-  return out.filter((x, i) => !(x === '' && i === out.length - 1 && out.length > 1) || x !== '');
+  const commaArgs = out.filter((x, i) => !(x === '' && i === out.length - 1 && out.length > 1) || x !== '');
+  return commaArgs.flatMap((a) => /^[A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+)+$/.test(a) ? a.split(/\s+/) : [a]);
 }
 
 /** Substitue les \param d'une string par leur valeur depuis `sub`. */
