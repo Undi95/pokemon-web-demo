@@ -25,6 +25,7 @@ import { SetObjEventTemplateCoords } from '../../src/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
+import { GetPlayerNameString } from '../../src/text';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
 import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
@@ -145,7 +146,7 @@ export function hasClockParam(): boolean {
  */
 function applyNoIntroPreset(): void {
   // Preserve playerName/gender existants si une save valide existait.
-  const existingName = gSaveBlock2Ptr.playerName;
+  const existingNameStr = GetPlayerNameString();   // décodé ('' si vide) — détecte un VRAI nom
   const existingGender = gSaveBlock2Ptr.playerGender;
   // 1:1 décomp : NewGameInitData ne reset PAS les options (seul le cold boot
   // Sav2_ClearSetDefault les met aux défauts). Préserver à travers reset()
@@ -167,21 +168,20 @@ function applyNoIntroPreset(): void {
   gSaveBlock2Ptr.optionsSound = existingOptions.sound;
   gSaveBlock2Ptr.optionsButtonMode = existingOptions.buttonMode;
   gSaveBlock2Ptr.optionsWindowFrameType = existingOptions.windowFrameType;
-  if (existingName && existingName !== 'PLAYER' && existingName !== 'DEBUG') {
-    gSaveBlock2Ptr.playerName = existingName;
-    gSaveBlock2Ptr.playerGender = existingGender;
-  } else {
-    // ?debug sans vrai nom (vide ou placeholder 'PLAYER') → nom de session 'DEBUG'
-    // (= simule le naming screen). En byte-level 1:1, `ExpandPlaceholder_PlayerName`
-    // retourne `gSaveBlock2Ptr->playerName` tel quel SANS fallback (la décomp n'en
-    // a pas) → un nom vide rendrait `{PLAYER}` vide. User passe par l'intro normale
-    // pour un vrai nom (préservé ci-dessus).
-    gSaveBlock2Ptr.playerName = 'DEBUG';
-    gSaveBlock2Ptr.playerGender = MALE;
-  }
+  // Nom de session : préserve un VRAI nom existant (joueur passé par l'intro/naming),
+  // sinon nomme le perso debug 'UNDI'. ⚠️ Un nom VIDE est `[EOS]` (array truthy ≠
+  // 'PLAYER') → l'ancien check le « préservait » à tort (= nom vide → fallback 'UNDI'
+  // au START). On décode via GetPlayerNameString ('' si vide).
+  const hadRealName = existingNameStr !== '' && existingNameStr !== 'PLAYER'
+    && existingNameStr !== 'DEBUG' && existingNameStr !== 'UNDI';
+  gSaveBlock2Ptr.playerGender = hadRealName ? existingGender : MALE;
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
   NewGameInit();
+  // Nom posé APRÈS NewGameInit, en STRING directe (PAS SetPlayerName : la charmap OW
+  // n'est pas chargée au boot → encodeOwText donnerait [0,0,0,0]). GetPlayerNameString
+  // gère la branche string. ?debug → 'UNDI' ; ?nointro resume garde sa vraie save (autre chemin).
+  gSaveBlock2Ptr.playerName = (hadRealName ? existingNameStr : 'UNDI') as unknown as number[];
   // ⚠️ DEBUG ONLY : agrandit les pockets (= override les caps BAG_*_COUNT
   // 1:1 décomp) pour pouvoir afficher TOUS les items du jeu. POCKET_ITEMS
   // a 207 items mais cap 30, POCKET_KEY_ITEMS 57 mais cap 30. Sans cet

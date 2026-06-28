@@ -553,8 +553,10 @@ function buildItems(): MenuItem[] {
   if (FlagGet('FLAG_SYS_POKENAV_GET')) {
     items.push({ label: getString('gText_MenuOptionPokenav'), onSelect: pokenavAction });
   }
-  // {PLAYER} entry : décomp expand placeholder, nous on resolve direct.
-  items.push({ label: GetPlayerNameString() || 'UNDI', onSelect: playerCardAction });
+  // {PLAYER} entry : décomp expand placeholder, nous on resolve direct (= nom joueur
+  // tel quel, VIDE si pas de nom — pas de fallback 'UNDI'. ?debug nomme le perso 'UNDI'
+  // via applyNoIntroPreset → SetPlayerName).
+  items.push({ label: GetPlayerNameString(), onSelect: playerCardAction });
   items.push({ label: getString('gText_MenuSave'), onSelect: saveAction });
   items.push({ label: getString('gText_MenuOption'), onSelect: optionsAction });
   items.push({ label: getString('gText_MenuExit'), onSelect: () => true });

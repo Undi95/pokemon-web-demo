@@ -1266,8 +1266,8 @@ export const MON_CANT_GIVE = 2;
  *  `gPlayerParty` (la SOURCE de vérité) + rafraîchit la façade de vues. */
 export function GiveMonToPlayer(mon: Pokemon): number {
   // 1:1 décomp pokemon.c:4416-4418 : le mon donné/capturé prend l'OT du joueur
-  // (fallbacks `??` = robustesse boot avant init playerName, comportement inchangé).
-  SetMonData(mon, MON_DATA_OT_NAME, GetPlayerNameString() || 'UNDI');
+  // (= nom joueur tel quel, VIDE si pas de nom ; pas de fallback 'UNDI').
+  SetMonData(mon, MON_DATA_OT_NAME, GetPlayerNameString());
   SetMonData(mon, MON_DATA_OT_GENDER, gSaveBlock2Ptr.playerGender ?? 0);
   SetMonData(mon, MON_DATA_OT_ID, (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0);
   // 1:1 décomp : premier slot SPECIES_NONE de gPlayerParty.
