@@ -20,8 +20,7 @@ import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-syst
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
 import { MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET } from '../../src/fieldmap';
-import { installByteVmHandlers, setSpecialNames } from '../../src/scrcmd_bytevm';
-import { registerSpecial } from '../../src/scrcmd';
+import { installByteVmHandlers, setSpecialNames, registerSpecial } from '../../src/scrcmd';
 import { getText, loadMapScripts } from '../../src/script';
 import { IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../src/field_message_box';
 import { VarGet, VarSet, FlagSet, FlagClear } from '../../src/event_data';
