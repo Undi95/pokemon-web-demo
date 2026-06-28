@@ -64,6 +64,7 @@ import {
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
 import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
 import { setStringVar, decodeOwBytes } from './text';
+import { getString } from './engine/ui/gba-strings';
 import { CalculatePlayerPartyCount, GetMonData, SetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER, gPlayerParty } from './engine/battle/party-storage';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SetSavedWeather, SetSavedWeatherFromCurrMapHeader, DoCurrentWeather } from './field_weather_effect';
@@ -772,10 +773,22 @@ const ScrCmd_buffernumberstring: ScrCmdFunc = (ctx) => {                     // 
   setStringVar(idx + 1, String(num));   // ConvertIntToDecimalStringN(LEFT_ALIGN, CountDigits)
   return false;
 };
+// 1:1 décomp gStdStrings[] (src/data/script_menu.h:903) : STDSTRING_* index → gText_*.
+// Les textes FR viennent de strings.json (getString), déjà chargé au boot (gba-strings).
+const gStdStrings: Readonly<Record<number, string>> = {
+  0: 'gText_Cool', 1: 'gText_Beauty', 2: 'gText_Cute', 3: 'gText_Smart', 4: 'gText_Tough',
+  5: 'gText_Normal', 6: 'gText_Super', 7: 'gText_Hyper', 8: 'gText_Master',
+  9: 'gText_Cool2', 10: 'gText_Beauty2', 11: 'gText_Cute2', 12: 'gText_Smart2', 13: 'gText_Tough2',
+  14: 'gText_Items', 15: 'gText_Key_Items', 16: 'gText_Poke_Balls', 17: 'gText_TMs_Hms', 18: 'gText_Berries2',
+  19: 'gText_Single2', 20: 'gText_Double2', 21: 'gText_Multi', 22: 'gText_MultiLink',
+  23: 'gText_BattleTower2', 24: 'gText_BattleDome', 25: 'gText_BattleFactory', 26: 'gText_BattlePalace',
+  27: 'gText_BattleArena', 28: 'gText_BattlePike', 29: 'gText_BattlePyramid',
+};
 const ScrCmd_bufferstdstring: ScrCmdFunc = (ctx) => {                        // :1626
   const idx = ScriptReadByte(ctx);
-  VarGet(ScriptReadHalfword(ctx));   // index — gStdStrings non extrait (= moteur parsé, dette data)
-  setStringVar(idx + 1, '');
+  const stdIdx = VarGet(ScriptReadHalfword(ctx));
+  const gtext = gStdStrings[stdIdx];   // 1:1 StringCopy(sScriptStringVars[idx], gStdStrings[index])
+  setStringVar(idx + 1, gtext ? getString(gtext) : '');
   return false;
 };
 const ScrCmd_bufferdecorationname: ScrCmdFunc = (ctx) => {                   // :1598
