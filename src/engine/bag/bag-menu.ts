@@ -130,7 +130,7 @@ import {
   preloadSwapLineAssets, LoadListMenuSwapLineGfx,
   CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
   SWAP_LINE_HAS_MARGIN,
-} from '../field/swap-line';
+} from '../../menu_helpers';
 import { preloadItemIconAssets } from '../../item_icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
