@@ -54,7 +54,7 @@ import { ScriptContext_SetupScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';
-import { CB2_ReturnToField_Manual } from './engine/ui/option-menu-return';
+import { CB2_ReturnToField_Manual } from './overworld';
 import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from './engine/ui/gba-strings';

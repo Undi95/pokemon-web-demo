@@ -12,7 +12,7 @@ import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader, type MapConnection } from './fieldmap';
 import {
-  PlayBGM, getRuntime, LoadOam,
+  PlayBGM, getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
   WINOUT_WIN01_BG0, WINOUT_WINOBJ_BG0, BLDALPHA_BLEND,
 } from '../harness/runtime/decomp-globals';
@@ -33,8 +33,9 @@ import {
   ClearScheduledBgCopiesToVram, ResetTempTileDataBuffers,
 } from './window';
 import { ScanlineEffect_Stop } from './scanline_effect';
-import { ResetOamRange } from './sprite';
+import { ResetOamRange, ResetSpriteData } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';
+import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { MUS_DUMMY } from '../include/constants/songs';
 import { FlagGet, FlagClear, VarGet, VarSet } from './engine/script/script-vars';
 
@@ -343,4 +344,184 @@ export function InitOverworldGraphicsRegisters(): void {
   ShowBg(2);
   ShowBg(3);
   InitFieldMessageBox();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CB2_ReturnToField* — flow retour-au-field depuis un sous-menu (option/sac/party).
+//  1:1 décomp overworld.c:1638-1681 (state machine avec gMain.state mutable direct,
+//  bypass le bug pointer-arg `u8 *state` du transpiler auto-fichier). Rapatrié depuis
+//  l'ex-`engine/ui/option-menu-return.ts` (nom non-1:1) vers son vrai foyer overworld.c.
+//  Réfs : overworld.c:1638/1657/1670/1677/1961/1505 + start_menu.c:543-559 +
+//  field_screen_effect.c:150/440.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `bool8 FieldCB_ReturnToFieldOpenStartMenu(void)` (field_screen_effect.c:440).
+ *  ShowReturnToFieldStartMenu set gFieldCallback2 = FieldCB_ReturnToFieldStartMenu ;
+ *  returns FALSE → RunFieldCallback répète la frame suivante (chain pattern décomp).
+ *  ⚠️ FillPalBufferBlack ICI (1er cb2) évite le flash 1-frame (Faded=nouvelles couleurs
+ *  avant le FadeScreen du 2ème cb2). */
+function FieldCB_ReturnToFieldOpenStartMenu(): boolean {
+  FillPalBufferBlack();
+  (globalThis as Record<string, unknown>).gFieldCallback2 = FieldCB_ReturnToFieldStartMenu;
+  return false;
+}
+
+/** 1:1 décomp `bool8 FieldCB_ReturnToFieldStartMenu(void)` (start_menu.c:543) :
+ *  if (InitStartMenuStep() == FALSE) return FALSE; ReturnToFieldOpenStartMenu(); return TRUE.
+ *  Notre `sm.open()` est synchrone (≡ while InitStartMenuStep()==FALSE) ; on l'appelle
+ *  AVANT FillPalBufferBlack pour que la palette menu soit dans Unfaded → fade in menu+field
+ *  ensemble. Cursor persiste 1:1 (sStartMenuCursorPos module static). */
+function FieldCB_ReturnToFieldStartMenu(): boolean {
+  const sm = (globalThis as Record<string, unknown>).startMenu as
+    { open?: () => void } | undefined;
+  sm?.open?.();
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);
+  return true;
+}
+
+/** 1:1 décomp `bool8 RunFieldCallback(void)` (overworld.c:1505). */
+function RunFieldCallback_Manual(): boolean {
+  const cb2 = (globalThis as Record<string, unknown>).gFieldCallback2 as (() => boolean) | null | undefined;
+  if (cb2) {
+    if (!cb2()) return false;
+    (globalThis as Record<string, unknown>).gFieldCallback2 = null;
+    (globalThis as Record<string, unknown>).gFieldCallback = null;
+  } else {
+    const cb = (globalThis as Record<string, unknown>).gFieldCallback as (() => void) | null | undefined;
+    if (cb) cb();
+    (globalThis as Record<string, unknown>).gFieldCallback = null;
+  }
+  return true;
+}
+
+/** Flag interne : true entre case 1 (kick off async restore) et la résolution (state→2). */
+let _isRestoringOverworld = false;
+
+/** 1:1 décomp `bool32 ReturnToFieldLocal(u8 *state)` (overworld.c:1961) avec `gMain.state`
+ *  mutable direct (bypass bug pointer-arg du transpiler). Returns true à case 3 (= done). */
+function ReturnToFieldLocal_Manual(): boolean {
+  switch (gMain.state) {
+    case 0: {
+      // ResumeMap essentiels (ResetTasks/ResetSpriteData/ResetPaletteFade).
+      ResetTasks();
+      ResetSpriteData();
+      ResetPaletteFade();
+      // 1:1 décomp ResetVramOamAndBgCntRegs (menu_helpers.c:97) via ResetScreenForMapLoad :
+      // reset BLDCNT/BLDY/WIN regs sinon les effets du sub-menu (option menu BLDCNT_DARKEN)
+      // persistent → BG0 assombri au retour (bug "textbox noircie" session 129).
+      const rt = getRuntime();
+      rt.SetGpuReg(0x50 /* BLDCNT */, 0);
+      rt.SetGpuReg(0x52 /* BLDALPHA */, 0);
+      rt.SetGpuReg(0x54 /* BLDY */, 0);
+      rt.SetGpuReg(0x40 /* WIN0H */, 0);
+      rt.SetGpuReg(0x44 /* WIN0V */, 0);
+      rt.SetGpuReg(0x42 /* WIN1H */, 0);
+      rt.SetGpuReg(0x46 /* WIN1V */, 0);
+      rt.SetGpuReg(0x48 /* WININ */, 0);
+      rt.SetGpuReg(0x4A /* WINOUT */, 0);
+      // InitFieldMessageBox : reset sWindowId (field-message-box module-level) sinon le
+      // prochain ShowFieldMessage skip le AddWindow → dialog invisible (session 129).
+      InitFieldMessageBox();
+      gMain.state++;
+      break;
+    }
+    case 1: {
+      // 1:1 décomp case 1 InitViewGraphics. `_restoreOverworldFromMenu` (TestOverworldScene)
+      // fait BG regs + DISPCNT + ShowBg + InitFieldMessageBox + InitMapView + re-spawn NPCs.
+      // Async (fetch tilesets/palettes).
+      if (!_isRestoringOverworld) {
+        _isRestoringOverworld = true;
+        const restore = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
+        if (typeof restore === 'function') {
+          void restore().then(() => {
+            gMain.state++;
+            _isRestoringOverworld = false;
+            // _restoreOverworldFromMenu fait SetMainCallback2(MainCB2_Overworld) à sa fin →
+            // le state machine n'est plus tické → case 2 (RunFieldCallback) ne tourne pas via
+            // le tick. Le décomp run RunFieldCallback (case 2) AVANT SetMainCallback2(CB2_Overworld).
+            // Pour un field-move party-menu en attente (gPostMenuFieldCallback) ou item-use field
+            // (gFieldCallback), on run RunFieldCallback ICI (place 1:1 de case 2). On N'inclut PAS
+            // gFieldCallback2 seul (= retour WithOpenMenu = ré-ouvre start menu) pour ne pas
+            // changer le retour-sac/options standard.
+            const g = globalThis as Record<string, unknown>;
+            if (g.gPostMenuFieldCallback || g.gFieldCallback) {
+              RunFieldCallback_Manual();
+            }
+          }).catch(e => {
+            console.error('[CB2_ReturnToFieldLocal_Manual case 1] restore THREW:', e);
+            _isRestoringOverworld = false;
+          });
+        } else {
+          console.warn('[CB2_ReturnToFieldLocal_Manual case 1] no _restoreOverworldFromMenu, skip');
+          gMain.state++;
+        }
+      }
+      break;
+    }
+    case 2: {
+      // 1:1 décomp case 2 : if (RunFieldCallback()) (*state)++. 1ère frame → OpenStartMenu
+      // (set gFieldCallback2=StartMenu, FALSE) ; frame suivante → StartMenu (open + TRUE).
+      if (RunFieldCallback_Manual()) gMain.state++;
+      break;
+    }
+    case 3: {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `static void CB2_ReturnToFieldLocal(void)` (overworld.c:1638).
+ *  Notre `CB2_Overworld` = `MainCB2_Overworld` (closure TestOverworldScene via
+ *  globalThis._overworldMainCB2). */
+export function CB2_ReturnToFieldLocal_Manual(): void {
+  if (ReturnToFieldLocal_Manual()) {
+    const rt = getRuntime();
+    const cb2 = (globalThis as Record<string, unknown>)._overworldMainCB2 as (() => void) | undefined;
+    if (typeof cb2 === 'function') {
+      rt.SetMainCallback2(cb2);
+    } else {
+      console.error('[CB2_ReturnToFieldLocal_Manual] _overworldMainCB2 not exposed');
+    }
+  }
+}
+
+/** 1:1 décomp `void CB2_ReturnToFieldWithOpenMenu(void)` (overworld.c:1670). Reset gMain.state
+ *  + pose gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu (ré-ouvre le start menu). */
+export function CB2_ReturnToFieldWithOpenMenu_Manual(): void {
+  const rt = getRuntime();
+  rt.SetVBlankCallback(null);
+  (globalThis as Record<string, unknown>).gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu;
+  gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
+}
+
+/** 1:1 décomp `void CB2_ReturnToField(void)` (overworld.c:1657, branche non-link).
+ *  SANS poser gFieldCallback2 : l'appelant (SetUpFieldMove_X party menu) a DÉJÀ posé
+ *  gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu (party_menu.c:3757). */
+export function CB2_ReturnToField_Manual(): void {
+  const rt = getRuntime();
+  rt.SetVBlankCallback(null);
+  gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
+}
+
+/** 1:1 décomp `void FieldCB_ContinueScript(void)` (field_screen_effect.c:150). Notre script
+ *  bloqué reprend de lui-même au 1er tick de l'OW restauré → juste le fade FROM_BLACK
+ *  (le `fadescreen FADE_TO_BLACK` du script avait noirci avant d'ouvrir le sac). */
+function FieldCB_ContinueScript_Manual(): void {
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);
+}
+
+/** 1:1 décomp `void CB2_ReturnToFieldContinueScript(void)` (overworld.c:1677). gFieldCallback
+ *  (PAS gFieldCallback2) → RunFieldCallback branche `if (cb) cb()` (= ContinueScript). */
+export function CB2_ReturnToFieldContinueScript_Manual(): void {
+  const rt = getRuntime();
+  rt.SetVBlankCallback(null);
+  (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_ContinueScript_Manual;
+  (globalThis as Record<string, unknown>).gFieldCallback2 = null;
+  gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }

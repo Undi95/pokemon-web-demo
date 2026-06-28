@@ -111,7 +111,7 @@ import {
 } from '../decomp-data/include/menu-data';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../../../include/gba/io_reg';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../ui/option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../../overworld';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal, Task_ItemContext_Sell } from './bag-menu-ctx';
 import { gSpecialVar } from '../script/script-vars';

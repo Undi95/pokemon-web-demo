@@ -51,7 +51,7 @@ import {
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../../../harness/runtime/decomp-globals';
 
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../../overworld';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../../field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
 import { getString } from '../ui/gba-strings';

@@ -66,7 +66,7 @@ import { FlagSet, VarGet } from './engine/script/script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
 import { SetOamMatrix } from '../harness/runtime/decomp-helpers';
-import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';
+import { CB2_ReturnToFieldLocal_Manual } from './overworld';
 import type { DecompTask, DecompSprite, DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 

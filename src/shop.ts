@@ -69,7 +69,7 @@ import { getString } from './engine/ui/gba-strings';
 import { setStringVar } from '../include/text';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './field_weather';
 import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
-import { CB2_ReturnToFieldLocal_Manual } from './engine/ui/option-menu-return';
+import { CB2_ReturnToFieldLocal_Manual } from './overworld';
 import { CreateTask, DestroyTask } from './task';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import * as Songs from '../include/constants/songs';

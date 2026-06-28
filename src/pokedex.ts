@@ -48,7 +48,7 @@ import { AddTextPrinterParameterized4 } from './menu';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './engine/ui/option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 import {
   GetSetPokedexFlag, GetHoennPokedexCount as DexGetHoennCount,
   NationalToHoennOrder, HoennToNationalOrder, NationalPokedexNumToSpecies,
