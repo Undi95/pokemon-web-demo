@@ -481,8 +481,12 @@ export function ScriptContext_SetupInlineBytecode(opcodes: Opcode[], devLabel = 
 }
 
 export function ScriptContext_Enable(): void {
-  sGlobalScriptContextStatus = CONTEXT_RUNNING;
-  LockPlayerFieldControls();
+  // DÉLÈGUE au byte-VM (le SEUL moteur). Avant : posait le statut du contexte PARSÉ
+  // MORT → un script byte-VM suspendu par ScriptContext_Stop (field_poison whiteout,
+  // WaitWeather) ne reprenait JAMAIS (byte-VM restait WAITING). Même résidu de clean
+  // que le bug snapshot/restore. Les UI flows waitstate (Cut/RockSmash) signalent en
+  // plus via SignalWaitState ; pour eux ce délégué est correct (statut déjà RUNNING).
+  BV.ScriptContext_Enable();
 }
 
 /** Snapshot complet du ScriptContext global byte-VM + status. Alias du type BV :
@@ -652,8 +656,12 @@ export function MapHeaderRunScriptType(tag: string): void {
  *  VAR à zéro après trigger pour éviter re-trigger ; nos scripts font
  *  `setvar VAR_LITTLEROOT_INTRO_STATE, X+1` pour avancer le state. */
 export function TryRunOnFrameMapScript(): boolean {
-  // Skip si script déjà actif (= sinon race condition).
-  if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
+  // Skip si script déjà actif (= sinon race condition / re-trigger en boucle).
+  // ⚠️ statut du byte-VM (BV), PAS du contexte parsé mort : sinon la gate ne bloque
+  // JAMAIS → un OnFrame avec wait (movement/msgbox) avant son setvar de state se
+  // relance chaque frame (ScriptContext_SetupScript reset le script) → intro/cutscenes
+  // cassées. Même résidu de clean que le bug snapshot/restore + ScriptContext_Enable.
+  if (BV._getGlobalStatus() !== CONTEXT_SHUTDOWN) return false;
   if (!gMapHeader?.mapScripts) return false;
   const tableLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_FRAME_TABLE');
   if (!tableLabel) return false;
@@ -723,7 +731,9 @@ export function TryRunOnWarpIntoMapScript(): boolean {
  *  (field_control_avatar.c) qui iterate gMapHeader.events.coordEvents et trigger
  *  si player at (x, y) AND var_name == var_value. */
 export function TryRunCoordEventScript(playerX: number, playerY: number): boolean {
-  if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
+  // Statut byte-VM (cf TryRunOnFrameMapScript) — PAS le contexte parsé mort, sinon
+  // un coord-event peut re-trigger pendant qu'un script tourne.
+  if (BV._getGlobalStatus() !== CONTEXT_SHUTDOWN) return false;
   // 1:1 décomp `gMapHeader.events->coordEvents` (= struct MapEvents).
   const coordEvents = gMapHeader?.events?.coordEvents;
   if (!coordEvents || coordEvents.length === 0) return false;
