@@ -30,39 +30,39 @@ import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
   ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
-} from '../../window';
-import { GetPlayerNameString, encodeOwText } from '../../../include/text';
-import { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW } from '../../text';
-import { AddTextPrinterParameterized3 } from '../../menu';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { FEMALE, FreeAllSpritePalettes } from '../../../harness/runtime/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite, ResetSpriteData } from '../../sprite';
+} from './window';
+import { GetPlayerNameString, encodeOwText } from '../include/text';
+import { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { FEMALE, FreeAllSpritePalettes } from '../harness/runtime/decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite, ResetSpriteData } from './sprite';
 import {
   getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
   getExperienceForLevel,
   gSpeciesInfo, gSpeciesNames, gBattleMoves, gMoveNames, gMoveDescriptions, gContestMoves, gItems,
   SpeciesToHoennPokedexNum, ItemId_GetName,
   type SpeciesInfo, type MoveData, type ContestMove,
-} from '../data/game-data';
+} from './engine/data/game-data';
 import {
   DynamicPlaceholderTextUtil_Reset,
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
-} from '../../dynamic_placeholder_text_util';
-import { GetMapNameHandleAquaHideout } from '../../region_map';
+} from './dynamic_placeholder_text_util';
+import { GetMapNameHandleAquaHideout } from './region_map';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
-} from '../../../harness/runtime/decomp-globals';
-import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../../../include/string_util';
-import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
-import { getString } from './gba-strings';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { OBJ_PLTT_ID, BG_PLTT_ID } from '../../../harness/runtime/decomp-runtime';
-import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from '../battle/party-storage';
-import { IsShinyOtIdPersonality } from '../../pokemon';
-import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
-import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
+} from '../harness/runtime/decomp-globals';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../include/string_util';
+import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
+import { getString } from './engine/ui/gba-strings';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
+import { OBJ_PLTT_ID, BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
+import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from './engine/battle/party-storage';
+import { IsShinyOtIdPersonality } from './pokemon';
+import { GetGenderFromSpeciesAndPersonality } from './engine/pokemon/pokemon';
+import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 
 // Accès id-keyés locaux 1:1 décomp = indexation DIRECTE des tables id-strictes
 // (`gSpeciesInfo[species]` / `gBattleMoves[move]` / `gMoveNames[move]` / …).
@@ -73,12 +73,12 @@ const getMove = (move: number): MoveData | undefined => gBattleMoves[move];
 const getMoveName = (move: number): string => gMoveNames[move] ?? '';
 const getMoveDescription = (move: number): string => gMoveDescriptions[move] ?? '';
 const getContestMove = (move: number): ContestMove | undefined => gContestMoves[move];
-import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
-import type { DecompTask, DecompSprite } from '../../../harness/runtime/decomp-runtime';
-import type { PokemonInstance } from '../pokemon/pokemon';
-import { sTMHMMoves } from '../pokemon/tmhm-moves';
-import { MAX_MON_MOVES } from '../../../include/constants/global';
-import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../../../include/constants/songs';
+import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './engine/ui/mon-summary-anim';
+import type { DecompTask, DecompSprite } from '../harness/runtime/decomp-runtime';
+import type { PokemonInstance } from './engine/pokemon/pokemon';
+import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
+import { MAX_MON_MOVES } from '../include/constants/global';
+import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../include/constants/songs';
 
 /* ============================================================================
  * Constantes 1:1 décomp
@@ -2096,7 +2096,7 @@ function _playMonCryOnce(): void {
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
     const sp = (reverseDecompConstant(sMon.currentMon.species, 'SPECIES_') ?? 'SPECIES_NONE').replace('SPECIES_', '');
-    void import('../../../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+    void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).

@@ -69,7 +69,7 @@ import { CHAR_SLASH, EOS } from '../include/constants/characters';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './overworld';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
-import { OpenSummaryScreen, GetSummaryLastMonIndex } from './engine/ui/summary-screen';
+import { OpenSummaryScreen, GetSummaryLastMonIndex } from './pokemon_summary_screen';
 import { getString } from './engine/ui/gba-strings';
 import { MON_ICON_PALETTE_INDICES } from './engine/pokemon/pokemon-icon-palettes';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
