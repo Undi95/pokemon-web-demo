@@ -26,15 +26,12 @@ import {
   EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_PLAY_SE, EXT_CTRL_CODE_WAIT_SE, EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP,
   EXT_CTRL_CODE_CLEAR_TO, EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_JPN, EXT_CTRL_CODE_ENG,
 } from '../include/constants/characters';
+// Struct window.c (Window pixel-buffer + primitives) — relocalisé dans window.ts
+// (MIRROR Stage 2). Le renderer (ci-dessous) le consomme. Cycle text↔window
+// runtime-safe (usages dans des fonctions, jamais au top-level).
 import {
-  encodeStringForFont, blitGlyphToWindow, gTextFlags, _getTextInputState, LINE_HEIGHT,
-  scrollWindow, fillWindowPixelBuffer, fillWindowPixelRect, textPrinterDrawDownArrow,
-  RENDER_FINISH, RENDER_REPEAT, RENDER_PRINT, RENDER_UPDATE,
-  RENDER_STATE_FINISH, RENDER_STATE_HANDLE_CHAR, RENDER_STATE_WAIT, RENDER_STATE_CLEAR,
-  RENDER_STATE_SCROLL_START, RENDER_STATE_SCROLL, RENDER_STATE_WAIT_SE, RENDER_STATE_PAUSE,
-  addTextPrinter, _setTextInputState,
-  type TextPrinter, type AddTextPrinterOpts,
-} from './engine/ui/gba-text-printer';
+  type Window, scrollWindow, fillWindowPixelBuffer, fillWindowPixelRect,
+} from './window';
 // 1:1 décomp : GetPlayerTextSpeed (menu.c:474) utilisé par RenderText SCROLL. Foyer =
 // miroir `menu.ts`. Cycle text↔menu runtime-safe (text.c appelle GetPlayerTextSpeed).
 import { GetPlayerTextSpeed } from './menu';
@@ -1305,3 +1302,413 @@ export const sTextColor_Headers = [10, 11, 12] as const; // [bg=DYNAMIC_1, fg=DY
 // = [10, 1, 12]. fg = WHITE (pas dynamic) → texte blanc sur bg dynamique (sub-info Continue).
 export const sTextColor_MenuInfo = [10, 1, 12] as const;
 (globalThis as Record<string, unknown>).sTextColor_MenuInfo = sTextColor_MenuInfo;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Ex-`gba-text-printer.ts` — moteur de rendu texte 1:1 (text.c), RAPATRIÉ dans
+//  le miroir text.c (dissolution MIRROR Stage 2). Le struct window.c
+//  (Window/createWindow/fillWindowPixelBuffer/Rect/scrollWindow/copyWindowToCanvas)
+//  est parti dans window.ts ; les constantes characters.h (CHAR_*/EOS/EXT_CTRL_*)
+//  sont importées en tête (source unique include/constants/characters), pas redéfinies.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** sDownArrowYCoords (text.c:75) — Y offset cyclic pour bobbing arrow */
+export const DOWN_ARROW_Y_COORDS = [0, 1, 2, 1] as const;
+/** Frames entre chaque pos arrow (text.c:832 `subStruct->downArrowDelay = 8`) */
+export const DOWN_ARROW_DELAY_FRAMES = 8;
+/** Hauteur ligne pour FONT_NORMAL (text.c:134 maxLetterHeight + lineSpacing=0) */
+export const LINE_HEIGHT = 16;
+
+/** EXTRA_SYMBOL glyphs (1:1 décomp `charmap.txt:1015-1086`). Le render fait
+ *  `currChar = symByte | 0x100` (text.c:1110) → glyph index 0x100..0x1FF. */
+export const EXTRA_SYMBOL: Readonly<Record<string, number>> = Object.freeze({
+  UP_ARROW_2: 0x00, DOWN_ARROW_2: 0x01, LEFT_ARROW_2: 0x02, RIGHT_ARROW_2: 0x03,
+  PLUS: 0x04, LV_2: 0x05, PP: 0x06, ID: 0x07, NO: 0x08, UNDERSCORE: 0x09,
+  CIRCLE_1: 0x0A, CIRCLE_2: 0x0B, CIRCLE_3: 0x0C, CIRCLE_4: 0x0D, CIRCLE_5: 0x0E,
+  CIRCLE_6: 0x0F, CIRCLE_7: 0x10, CIRCLE_8: 0x11, CIRCLE_9: 0x12,
+  ROUND_LEFT_PAREN: 0x13, ROUND_RIGHT_PAREN: 0x14, CIRCLE_DOT: 0x15,
+  TRIANGLE: 0x16, BIG_MULT_X: 0x17,
+});
+
+/** sFontInfos[FONT_NORMAL] (text.c:131) — couleurs par défaut text dialog */
+export const FONT_NORMAL_FG = 2;       // dark gray (palette[2])
+export const FONT_NORMAL_BG = 1;       // white (palette[1])
+export const FONT_NORMAL_SHADOW = 3;   // cream/light (palette[3])
+
+/** TEXT_COLOR_* constants (cf. include/constants/characters.h:234-249).
+ *  Idx dans la palette runtime active. */
+export const TEXT_COLOR = Object.freeze({
+  TRANSPARENT: 0x0, WHITE: 0x1, DARK_GRAY: 0x2, LIGHT_GRAY: 0x3,
+  RED: 0x4, LIGHT_RED: 0x5, GREEN: 0x6, LIGHT_GREEN: 0x7,
+  BLUE: 0x8, LIGHT_BLUE: 0x9, DYNAMIC_COLOR_1: 0xA, DYNAMIC_COLOR_2: 0xB,
+  DYNAMIC_COLOR_3: 0xC, DYNAMIC_COLOR_4: 0xD, DYNAMIC_COLOR_5: 0xE, DYNAMIC_COLOR_6: 0xF,
+});
+
+// 1:1 STRICT décomp gTextFlags global (= include/text.h struct). Set par scenes/init
+// pour controller le rendering (A/B speed up, auto scroll, arrow shape, etc.).
+export const gTextFlags = {
+  canABSpeedUpPrint: true,
+  useAlternateDownArrow: false,  // 1:1 décomp : Pokenav use l'alternate down arrow.
+  forceMidTextSpeed: false,
+  autoScroll: false,
+};
+
+// Module-level input state mis à jour par RunTextPrinters à chaque frame.
+// Lu par RenderText (= 1:1 décomp JOY_NEW/JOY_HELD inline).
+let _newABPressed = false;
+let _heldABPressed = false;
+export function _setTextInputState(newAB: boolean, heldAB: boolean): void {
+  _newABPressed = newAB;
+  _heldABPressed = heldAB;
+}
+/** Lit l'état input texte (= JOY_NEW/JOY_HELD A|B inline du décomp). */
+export function _getTextInputState(): { newAB: boolean; heldAB: boolean } {
+  return { newAB: _newABPressed, heldAB: _heldABPressed };
+}
+
+/** Render states 1:1 décomp `include/text.h:32-39` enum. */
+export const RENDER_STATE_HANDLE_CHAR = 0;
+export const RENDER_STATE_WAIT = 1;
+export const RENDER_STATE_CLEAR = 2;
+export const RENDER_STATE_SCROLL_START = 3;
+export const RENDER_STATE_SCROLL = 4;
+export const RENDER_STATE_WAIT_SE = 5;
+export const RENDER_STATE_PAUSE = 6;
+/** Alias backwards-compat (pointe sur CLEAR = comportement `\p`). */
+export const RENDER_STATE_WAIT_WITH_DOWN_ARROW = RENDER_STATE_CLEAR;
+export const RENDER_STATE_FINISH = -1;  // sentinel value pour code legacy.
+
+/** Codes de retour runTextPrinter / RenderText. */
+export const RENDER_FINISH = 0xFF;
+export const RENDER_REPEAT = 1;
+export const RENDER_PRINT = 2;
+export const RENDER_UPDATE = 3;
+
+/** 1:1 décomp `struct TextPrinterTemplate` (text.h:64-79). currentChar = INDEX
+ *  dans `printer.encodedString` (décomp : `const u8*` pointeur dans la string). */
+export interface TextPrinterTemplate {
+  currentChar: number;
+  windowId: number;
+  fontId: number;
+  x: number;
+  y: number;
+  currentX: number;
+  currentY: number;
+  letterSpacing: number;
+  lineSpacing: number;
+  fgColor: number;
+  bgColor: number;
+  shadowColor: number;
+}
+
+/** 1:1 décomp `struct TextPrinterSubStruct` (text.h:53-62). */
+export interface TextPrinterSubStruct {
+  fontId: number;
+  hasPrintBeenSpedUp: boolean;
+  downArrowDelay: number;
+  downArrowYPosIdx: number;
+  hasFontIdBeenSet: boolean;
+  autoScrollDelay: number;
+}
+
+export interface TextPrinter {
+  // ── 1:1 décomp struct TextPrinter (text.h:81-95) ──
+  printerTemplate: TextPrinterTemplate;
+  subStruct: TextPrinterSubStruct;
+  active: boolean;
+  state: number;
+  textSpeed: number;
+  delayCounter: number;
+  scrollDistance: number;
+  minLetterSpacing: number;
+  japanese: boolean;
+  // ── Extensions (PAS dans le struct décomp) ──
+  encodedString: Uint8Array;
+  window: Window;
+  instantPath: boolean;
+  pauseCounter: number;
+  downArrowPixels?: number[][];
+  darkDownArrowPixels?: number[][];
+  onCharRendered?: (printer: TextPrinter, lastByte: number) => void;
+}
+
+/**
+ * Blit un glyph 8×16 dans le pixelBuffer en remappant idx 0/1/2/3 :
+ *   0 (BG)→bgColor ; 1 (FG)→fgColor ; 2 (SHADOW)→shadowColor ; 3 (BOX_FILL)→bgColor.
+ * Cf. décomp `DecompressGlyphTile` (text.c:526) + `GenerateFontHalfRowLookupTable`.
+ */
+export function blitGlyphToWindow(
+  w: Window,
+  glyphPixels: number[],
+  dstX: number,
+  dstY: number,
+  glyphW: number,
+  fgColor: number,
+  bgColor: number,
+  shadowColor: number,
+): void {
+  const GLYPH_W = 16; // stride 1:1 cell font 16×16
+  for (let py = 0; py < 16; py++) {
+    const rowY = dstY + py;
+    if (rowY < 0 || rowY >= w.heightPx) continue;
+    const rowStart = rowY * w.widthPx;
+    for (let px = 0; px < glyphW; px++) {
+      const colX = dstX + px;
+      if (colX < 0 || colX >= w.widthPx) continue;
+      const srcIdx = glyphPixels[py * GLYPH_W + px];
+      // 1:1 décomp `GenerateFontHalfRowLookupTable` (text.c:363) : glyph 2-bit
+      // (0/1/2/3). Mapping : 0→bgColor, 1→fgColor, 2→shadowColor, 3→bgColor
+      // (sFontHalfRowOffsets[3]==[0]). Couleur==TRANSPARENT(0) → skip (idx 0 =
+      // transparent au compositor) ; bgColor!=0 → remplit le fond (dialog rouge 1:1).
+      let mappedIdx: number;
+      switch (srcIdx) {
+        case 1:
+          if (fgColor === 0) continue;
+          mappedIdx = fgColor;
+          break;
+        case 2:
+          if (shadowColor === 0) continue;
+          mappedIdx = shadowColor;
+          break;
+        case 3:
+        default:
+          if (bgColor === 0) continue;
+          mappedIdx = bgColor;
+          break;
+      }
+      w.pixelBuffer[rowStart + colX] = mappedIdx & 0x0F;
+    }
+  }
+  w.needsFlush = true;
+}
+
+/**
+ * Encode une JS string en bytes pour le moteur, via charmap.
+ * (Pas de \p / \l ici — gérés en amont par paginate, mais escapes traités.)
+ */
+export function encodeStringForFont(str: string, charmap: Record<string, number>): Uint8Array {
+  const bytes: number[] = [];
+  let i = 0;
+  while (i < str.length) {
+    const ch = str[i];
+    if (ch === '\n') {
+      bytes.push(CHAR_NEWLINE);
+      i++;
+      continue;
+    }
+    // 1:1 décomp escapes : \p = PROMPT_CLEAR, \l = PROMPT_SCROLL, \n = newline.
+    if (ch === '\\' && i + 1 < str.length) {
+      const next = str[i + 1];
+      if (next === 'p') { bytes.push(CHAR_PROMPT_CLEAR); i += 2; continue; }
+      if (next === 'l') { bytes.push(CHAR_PROMPT_SCROLL); i += 2; continue; }
+      if (next === 'n') { bytes.push(CHAR_NEWLINE); i += 2; continue; }
+    }
+    if (ch === '{') {
+      const closeIdx = str.indexOf('}', i + 1);
+      if (closeIdx > 0) {
+        const inner = str.slice(i + 1, closeIdx).trim();
+        if (inner === 'PAUSE_UNTIL_PRESS') {
+          bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
+          i = closeIdx + 1;
+          continue;
+        }
+        // codes ext SANS param textuel (WAIT_SE 0 arg ; PLAY_BGM/PLAY_SE + arg u16 brut suivant).
+        if (inner === 'WAIT_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_WAIT_SE); i = closeIdx + 1; continue; }
+        if (inner === 'PLAY_BGM') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_BGM); i = closeIdx + 1; continue; }
+        if (inner === 'PLAY_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_SE); i = closeIdx + 1; continue; }
+        // octet littéral {0xNN} (arg brut d'un code ext, ex. song id de PLAY_BGM).
+        if (/^0x[0-9a-fA-F]{1,2}$/.test(inner)) { bytes.push(parseInt(inner, 16) & 0xFF); i = closeIdx + 1; continue; }
+        // 1:1 décomp src/text.c:1023-1043 : COLOR/SHADOW/HIGHLIGHT/PAUSE + CLEAR/SKIP/
+        // CLEAR_TO/MIN_LETTER_SPACING/FONT (kerning naming_screen.c sNamingScreenKeyboardText).
+        const m = inner.match(/^(COLOR|SHADOW|HIGHLIGHT|PAUSE|CLEAR_TO|CLEAR|SKIP|MIN_LETTER_SPACING|FONT)\s+(\S+)$/);
+        if (m) {
+          const cmd = m[1];
+          const param = m[2];
+          let subCode: number | null = null;
+          let value: number | null = null;
+          if (cmd === 'FONT') {
+            subCode = EXT_CTRL_CODE_FONT;
+            const fontMap: Record<string, number> = { SMALL: 0, NORMAL: 1, SHORT: 2, NARROW: 7, SMALL_NARROW: 8, BOLD: 9 };
+            value = fontMap[param] ?? parseInt(param, 10);
+          }
+          else if (cmd === 'COLOR') { subCode = EXT_CTRL_CODE_COLOR; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
+          else if (cmd === 'SHADOW') { subCode = EXT_CTRL_CODE_SHADOW; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
+          else if (cmd === 'HIGHLIGHT') { subCode = EXT_CTRL_CODE_HIGHLIGHT; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
+          else if (cmd === 'PAUSE') { subCode = EXT_CTRL_CODE_PAUSE; value = parseInt(param, 10); }
+          else if (cmd === 'CLEAR') { subCode = EXT_CTRL_CODE_CLEAR; value = parseInt(param, 10); }
+          else if (cmd === 'SKIP') { subCode = EXT_CTRL_CODE_SKIP; value = parseInt(param, 10); }
+          else if (cmd === 'CLEAR_TO') { subCode = EXT_CTRL_CODE_CLEAR_TO; value = parseInt(param, 10); }
+          else if (cmd === 'MIN_LETTER_SPACING') { subCode = EXT_CTRL_CODE_MIN_LETTER_SPACING; value = parseInt(param, 10); }
+          if (subCode !== null && value !== null && Number.isFinite(value)) {
+            bytes.push(EXT_CTRL_CODE_BEGIN, subCode, value);
+            i = closeIdx + 1;
+            continue;
+          }
+        }
+        // 1:1 décomp EXTRA_SYMBOL `{LV_2}` `{NO}` etc → CHAR_EXTRA_SYMBOL(0xF9) + symByte.
+        const sym = EXTRA_SYMBOL[inner as keyof typeof EXTRA_SYMBOL];
+        if (sym !== undefined) {
+          bytes.push(CHAR_EXTRA_SYMBOL, sym);
+          i = closeIdx + 1;
+          continue;
+        }
+      }
+      // Inconnu : skip (déjà processed par substitutePlaceholders ou non supporté).
+      i = closeIdx > 0 ? closeIdx + 1 : i + 1;
+      continue;
+    }
+    bytes.push(charmap[ch] ?? charmap[' '] ?? 0);
+    i++;
+  }
+  bytes.push(EOS);
+  return new Uint8Array(bytes);
+}
+
+export interface AddTextPrinterOpts {
+  window: Window;
+  encodedString: Uint8Array;
+  windowId?: number;
+  fontId?: number;
+  x?: number;
+  y?: number;
+  fgColor?: number;
+  bgColor?: number;
+  shadowColor?: number;
+  letterSpacing?: number;
+  lineSpacing?: number;
+  textSpeed?: number;
+  downArrowPixels?: number[][];
+  darkDownArrowPixels?: number[][];
+  onCharRendered?: (printer: TextPrinter, lastByte: number) => void;
+}
+
+export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
+  const x = opts.x ?? 0;
+  const y = opts.y ?? 1;
+  // 1:1 décomp `text.c:271-298 AddTextPrinter` : --textSpeed à l'init si typewriter
+  // (speed != TEXT_SKIP_DRAW && != 0), sinon 0 = instant path. sTextSpeeds = {SLOW=8,
+  // MID=4, FAST=1} → après --, FAST stored=0 → 1 char/frame = vitesse JOY_HELD(A/B).
+  const TEXT_SKIP_DRAW = 255;
+  const inputSpeed = opts.textSpeed ?? 0;
+  const isInstantPath = inputSpeed === TEXT_SKIP_DRAW || inputSpeed === 0;
+  const normalizedSpeed = isInstantPath ? 0 : (inputSpeed - 1);
+  const fontId = opts.fontId ?? 1;  // 1 = FONT_NORMAL (défaut décomp)
+  return {
+    printerTemplate: {
+      currentChar: 0,
+      windowId: opts.windowId ?? 0,
+      fontId,
+      x, y,
+      currentX: x,
+      currentY: y,
+      letterSpacing: opts.letterSpacing ?? 0,
+      lineSpacing: opts.lineSpacing ?? 0,
+      fgColor: opts.fgColor ?? FONT_NORMAL_FG,
+      bgColor: opts.bgColor ?? FONT_NORMAL_BG,
+      shadowColor: opts.shadowColor ?? FONT_NORMAL_SHADOW,
+    },
+    subStruct: {
+      fontId,
+      hasPrintBeenSpedUp: false,
+      downArrowDelay: 0,
+      downArrowYPosIdx: 0,
+      hasFontIdBeenSet: true,
+      autoScrollDelay: 0,
+    },
+    active: true,  // 1:1 décomp sTempTextPrinter.active = TRUE (text.c:279)
+    state: RENDER_STATE_HANDLE_CHAR,
+    textSpeed: normalizedSpeed,
+    delayCounter: 0,
+    scrollDistance: 0,
+    minLetterSpacing: 0,
+    japanese: false,
+    encodedString: opts.encodedString,
+    window: opts.window,
+    instantPath: isInstantPath,
+    pauseCounter: 0,
+    downArrowPixels: opts.downArrowPixels,
+    darkDownArrowPixels: opts.darkDownArrowPixels,
+    onCharRendered: opts.onCharRendered,
+  };
+}
+
+/** Wrapper legacy → délègue à `RenderText` (state-machine 1:1 text.c:934). */
+export function runTextPrinter(printer: TextPrinter): number {
+  return RenderText(printer);
+}
+
+/**
+ * Blit / refresh la down arrow à (currentX, currentY) avec animation bobbing.
+ * Cf. décomp `TextPrinterDrawDownArrow` (text.c:787-836). `useAlternateDownArrow`
+ * lu au DRAW time (combat=alt, terrain=normal).
+ */
+export function textPrinterDrawDownArrow(printer: TextPrinter): void {
+  const arrowPixels = gTextFlags.useAlternateDownArrow
+    ? (printer.darkDownArrowPixels ?? printer.downArrowPixels)
+    : printer.downArrowPixels;
+  if (!arrowPixels) return;
+
+  if (printer.subStruct.downArrowDelay !== 0) {
+    printer.subStruct.downArrowDelay--;
+    return;
+  }
+
+  // Clear l'ancienne arrow (rect 8×16 bg color)
+  fillWindowPixelRect(
+    printer.window,
+    printer.printerTemplate.bgColor,
+    printer.printerTemplate.currentX,
+    printer.printerTemplate.currentY,
+    8,
+    16,
+  );
+
+  // Blit nouvelle arrow avec offset Y selon yPosIdx
+  const srcYOffset = DOWN_ARROW_Y_COORDS[printer.subStruct.downArrowYPosIdx & 3];
+  blitArrowAt(
+    printer.window,
+    arrowPixels,
+    printer.printerTemplate.currentX,
+    printer.printerTemplate.currentY,
+    srcYOffset,
+  );
+
+  printer.subStruct.downArrowDelay = DOWN_ARROW_DELAY_FRAMES;
+  printer.subStruct.downArrowYPosIdx++;
+}
+
+/**
+ * Blit l'arrow 8×16 à (dstX, dstY) en samplant src à (0, srcY). `if (srcIdx===0)
+ * continue` = 1:1 `BlitBitmapRectToWindow` colorKey 0 transparent (window.c:411).
+ */
+function blitArrowAt(
+  w: Window,
+  arrowPixels: number[][],
+  dstX: number,
+  dstY: number,
+  srcYOffset: number,
+): void {
+  const arrowW = 8;
+  const arrowH = 16;
+  for (let py = 0; py < arrowH; py++) {
+    const srcY = py + srcYOffset;
+    if (srcY < 0 || srcY >= arrowPixels.length) continue;
+    const srcRow = arrowPixels[srcY];
+    const dstRowY = dstY + py;
+    if (dstRowY < 0 || dstRowY >= w.heightPx) continue;
+    const rowStart = dstRowY * w.widthPx;
+    for (let px = 0; px < arrowW; px++) {
+      const srcIdx = srcRow[px] ?? 0;
+      if (srcIdx === 0) continue; // colorKey 0 = transparent
+      const colX = dstX + px;
+      if (colX < 0 || colX >= w.widthPx) continue;
+      w.pixelBuffer[rowStart + colX] = srcIdx & 0x0F;
+    }
+  }
+  w.needsFlush = true;
+}
+
+/** Reset state machine arrow (à appeler quand on advance la page ou hide). */
+export function resetDownArrow(printer: TextPrinter): void {
+  printer.subStruct.downArrowDelay = 0;
+  printer.subStruct.downArrowYPosIdx = 0;
+}

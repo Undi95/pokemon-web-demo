@@ -28,11 +28,8 @@
  * jusqu'à son retrait. Ce module sert la voie L.
  */
 
-import {
-  EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE,
-  EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
-  encodeStringForFont,
-} from './engine/ui/gba-text-printer';
+import { encodeStringForFont } from './text';
+import { EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR } from '../include/constants/characters';
 import { GetPlayerNameString } from '../include/text';
 import {
   B_TXT_BUFF1, B_TXT_BUFF2, B_TXT_BUFF3, B_TXT_COPY_VAR_1, B_TXT_COPY_VAR_2, B_TXT_COPY_VAR_3,

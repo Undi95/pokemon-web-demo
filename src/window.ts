@@ -7,12 +7,108 @@
  * l'engine GBA hardware (VRAM + tilemap) pour rendu par le compositor.
  */
 import { getRuntime, assetCache, LoadBgTiles } from '../harness/runtime/decomp-globals';
-import {
-  type Window,
-  createWindow,
-  fillWindowPixelBuffer,
-  fillWindowPixelRect,
-} from './engine/ui/gba-text-printer';
+// ─── Struct window.c (Window pixel-buffer + primitives) ──────────────────────
+// Rapatrié depuis gba-text-printer (dissolution MIRROR text.c Stage 2). Le struct
+// + createWindow/scrollWindow/fillWindowPixelBuffer/Rect/copyWindowToCanvas sont
+// du window.c (le renderer texte qui les CONSOMME vit dans src/text.ts).
+
+export interface Window {
+  /** Largeur en tiles (1 tile = 8 px). */
+  widthTiles: number;
+  /** Hauteur en tiles. */
+  heightTiles: number;
+  /** Largeur en pixels (= widthTiles * 8). */
+  widthPx: number;
+  /** Hauteur en pixels (= heightTiles * 8). */
+  heightPx: number;
+  /** Pixel buffer linéaire : 1 byte par pixel = idx 0-15 dans la palette. */
+  pixelBuffer: Uint8Array;
+  /** Index palette (0-15) à appliquer au copy. */
+  paletteNum: number;
+  /** Dirty flag — true si pixelBuffer modifié depuis dernier copy. */
+  needsFlush: boolean;
+}
+
+export function createWindow(widthTiles: number, heightTiles: number, paletteNum = 15): Window {
+  const widthPx = widthTiles * 8;
+  const heightPx = heightTiles * 8;
+  return {
+    widthTiles,
+    heightTiles,
+    widthPx,
+    heightPx,
+    pixelBuffer: new Uint8Array(widthPx * heightPx),
+    paletteNum,
+    needsFlush: true,
+  };
+}
+
+/** 1:1 décomp `window.c ScrollWindow(windowId, direction=0, distance, fillValue)`.
+ *  Direction 0 = shift content UP (bottom rows filled with fillValue). Notre
+ *  pixelBuffer est 1 byte/pixel ; le décomp opère sur tileData 4bpp packed mais
+ *  sémantiquement pareil : shift up + fill bottom. */
+export function scrollWindow(w: Window, deltaY: number, fillValue: number): void {
+  const stride = w.widthPx;
+  const height = w.heightPx;
+  if (deltaY <= 0 || deltaY >= height) return;
+  // Shift up : copy lignes [deltaY..height) → [0..height-deltaY)
+  w.pixelBuffer.copyWithin(0, deltaY * stride, height * stride);
+  // Fill lignes [height-deltaY..height) avec fillValue & 0xF (= idx palette).
+  w.pixelBuffer.fill(fillValue & 0xF, (height - deltaY) * stride, height * stride);
+  w.needsFlush = true;
+}
+
+/** 1:1 décomp `window.c FillWindowPixelBuffer` (low-level). */
+export function fillWindowPixelBuffer(w: Window, idx: number): void {
+  w.pixelBuffer.fill(idx & 0x0F);
+  w.needsFlush = true;
+}
+
+/** 1:1 décomp `window.c FillWindowPixelRect`. */
+export function fillWindowPixelRect(w: Window, idx: number, x: number, y: number, width: number, height: number): void {
+  const v = idx & 0x0F;
+  for (let py = 0; py < height; py++) {
+    const rowY = y + py;
+    if (rowY < 0 || rowY >= w.heightPx) continue;
+    const rowStart = rowY * w.widthPx;
+    for (let px = 0; px < width; px++) {
+      const colX = x + px;
+      if (colX < 0 || colX >= w.widthPx) continue;
+      w.pixelBuffer[rowStart + colX] = v;
+    }
+  }
+  w.needsFlush = true;
+}
+
+/**
+ * Convertit le pixelBuffer (idx 0-15) en canvas RGBA via la palette runtime.
+ * Idx 0 = transparent (alpha 0), autres = RGB depuis palette[idx].
+ * Cf. décomp `CopyWindowToVram` (window.c:514) qui transfère tile-by-tile vers VRAM.
+ */
+export function copyWindowToCanvas(w: Window, palette: ReadonlyArray<readonly [number, number, number]>): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = w.widthPx;
+  canvas.height = w.heightPx;
+  const ctx = canvas.getContext('2d')!;
+  const imageData = ctx.createImageData(w.widthPx, w.heightPx);
+  const data = imageData.data;
+  for (let i = 0; i < w.pixelBuffer.length; i++) {
+    const idx = w.pixelBuffer[i];
+    const o = i * 4;
+    if (idx === 0) {
+      data[o + 3] = 0; // transparent
+    } else {
+      const c = palette[idx] ?? [255, 0, 255]; // magenta = palette miss visible
+      data[o] = c[0];
+      data[o + 1] = c[1];
+      data[o + 2] = c[2];
+      data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  w.needsFlush = false;
+  return canvas;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

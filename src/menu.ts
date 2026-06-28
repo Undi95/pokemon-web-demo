@@ -17,7 +17,7 @@
  */
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { RunTextPrinters } from './text';
-import { gTextFlags, TEXT_COLOR, type TextPrinter } from './engine/ui/gba-text-printer';
+import { gTextFlags, TEXT_COLOR, type TextPrinter } from './text';
 import {
   IsTextPrinterActive, AddTextPrinter, AddTextPrinterParameterized, GetFontAttribute,
   GetMenuCursorDimensionByFont, FONT_NORMAL, TEXT_SKIP_DRAW,

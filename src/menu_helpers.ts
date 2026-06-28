@@ -33,7 +33,7 @@ import {
 import { MENU_B_PRESSED } from './engine/decomp-data/include/menu-data';
 import { RunTextPrinters, IsTextPrinterActive } from './text';
 import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
-import { gTextFlags, TEXT_COLOR } from './engine/ui/gba-text-printer';
+import { gTextFlags, TEXT_COLOR } from './text';
 import type { WindowTemplate } from './window';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 

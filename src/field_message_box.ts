@@ -29,7 +29,7 @@ import { IsTextPrinterActive } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { gStringVar4, StringExpandPlaceholders } from '../include/string_util';
 import { decodeOwBytes } from '../include/text';
-import { gTextFlags } from './engine/ui/gba-text-printer';
+import { gTextFlags } from './text';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
