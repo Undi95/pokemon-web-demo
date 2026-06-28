@@ -4,15 +4,13 @@
 > la décomp et on demande « où vit ce fichier chez nous + complétude 1:1 ». STRUCTUREL (noms de fn),
 > pas comportemental. Voir [FULL-1TO1-REPLICA-PLAN.md](FULL-1TO1-REPLICA-PLAN.md) pour la méthode.
 
-> ⚠️ **MISE À JOUR BYTE-VM (2026-06-27) — 3 lignes SOUS-ESTIMÉES par ce tableau.** Le flagship byte-VM
-> (branche `Byte-VM`, voir `docs/BYTE-VM-PLAN.md`) réécrit le moteur de script en 1:1 STRICT dans des
-> fichiers PARALLÈLES (pré-swap), que le matching-par-homonyme de la cartograph ne crédite pas encore :
-> - **`script.c`** (montré 67 % via `script.ts`) → en réalité 1:1 dans **`src/script_bytevm.ts`** (vraie VM bytecode, `ScriptReadByte/Halfword/Word` + `gScriptCmdTable`).
-> - **`scrcmd.c`** (montré ~2 % via `scrcmd.ts`) → en réalité **159/227 handlers `ScrCmd_*` 1:1** dans **`src/scrcmd_bytevm.ts`** (= **99,2 % de l'usage opcode overworld réel**), keystone trainerbattle inclus.
-> - **`battle_setup.c`** : trainerbattle refactoré en voie A (`TrainerArgSource` partagé) — re-run cartograph pour rafraîchir.
-> Au **swap Phase 5**, `script_bytevm.ts`→`script.ts` et `scrcmd_bytevm.ts`→`scrcmd.ts` (les homonymes) → un
-> re-run de `cartograph-1to1.cjs` créditera alors automatiquement ces lignes à ~100 %. (Voie A → modules
-> partagés `scrcmd_object/door/fieldeffect/flash.ts` appelés par les 2 moteurs, zéro divergence.)
+> ⚠️ **BYTE-VM (flagship `Byte-VM`, voir [BYTE-VM-PLAN.md](BYTE-VM-PLAN.md)) — FAIT : byte-VM = SEUL moteur.**
+> Le moteur de script est réécrit en VM bytecode 1:1 STRICT dans des fichiers DÉDIÉS : `script.c` →
+> **`src/script_bytevm.ts`** (vraie VM : ScriptReadByte/Halfword/Word + gScriptCmdTable) ; `scrcmd.c` →
+> **`src/scrcmd_bytevm.ts`** (227 handlers `ScrCmd_*`, **100 % de l'usage opcode overworld**) + voie A
+> partagée (`scrcmd_object/door/fieldeffect/flash/trainer`, `script_menu/shop/decoration/heal_location/special_flows`).
+> `script.ts`/`scrcmd.ts` ne sont plus que routage/infra (parsé retiré : scrcmd.ts 3852→55). Ces 2 .c sont donc
+> **ALIASÉS** vers leurs fichiers byte-VM dans le tableau ci-dessous (sinon le matching-par-homonyme les sous-compterait).
 
 ## Résumé exécutif
 
@@ -20,11 +18,11 @@
 
 | statut | nb fichiers |
 |---|---|
-| ✅ miroir | 45 |
+| ✅ miroir | 46 |
 | 🟡 partiel | 49 |
 | 🟠 dispersé | 12 |
-| 🟡 amorce | 35 |
-| 🔴 manquant | 157 |
+| 🟡 amorce | 37 |
+| 🔴 manquant | 154 |
 | ⚪ vide/data | 12 |
 
 **Complétude pondérée par lignes de C** (effort réel) :
@@ -42,7 +40,7 @@
 
 | catégorie | fichiers | ✅ | 🟡/🟠 | 🔴 | lignes C |
 |---|---|---|---|---|---|
-| Overworld/Field | 84 | 14 | 27 | 42 | 117446 |
+| Overworld/Field | 84 | 15 | 29 | 39 | 117446 |
 | Combat | 75 | 16 | 34 | 24 | 147341 |
 | Pokémon/Party | 32 | 0 | 4 | 28 | 61271 |
 | UI/Menu/Gfx | 34 | 6 | 13 | 11 | 36036 |
@@ -87,12 +85,10 @@
 | `birch_pc.c` | 89 | 3 | — **manquant** | 0/3 (0%) | 0/3 (0%) | 🔴 manquant |
 | `fldeff_strength.c` | 51 | 4 | — **manquant** | 0/4 (0%) | 0/4 (0%) | 🔴 manquant |
 | `berry_fix_graphics.c` | 50 | 1 | — **manquant** | 0/1 (0%) | 0/1 (0%) | 🔴 manquant |
-| `heal_location.c` | 38 | 3 | `heal_location.ts` | 0/3 (0%) | 0/3 (0%) | 🔴 manquant |
 | `trade.c` | 5101 | 134 | `battle_main.ts` _(nom≠)_ | 2/134 (1%) | 2/134 (1%) | 🔴 manquant |
 | `roulette.c` | 4761 | 104 | — **manquant** | 0/104 (0%) | 1/104 (1%) | 🔴 manquant |
-| `decoration.c` | 2749 | 135 | — **manquant** | 0/135 (0%) | 1/135 (1%) | 🔴 manquant |
+| `decoration.c` | 2749 | 135 | `decoration.ts` | 0/135 (0%) | 1/135 (1%) | 🔴 manquant |
 | `field_specials.c` | 4281 | 191 | `field_specials.ts` | 0/191 (0%) | 4/191 (2%) | 🔴 manquant |
-| `scrcmd.c` | 2308 | 231 | `scrcmd.ts` | 0/231 (0%) | 5/231 (2%) | 🔴 manquant |
 | `secret_base.c` | 2076 | 99 | `secret_base.ts` | 1/99 (1%) | 2/99 (2%) | 🔴 manquant |
 | `tv.c` | 6829 | 207 | `tv.ts` | 5/207 (2%) | 7/207 (3%) | 🔴 manquant |
 | `dodrio_berry_picking.c` | 5225 | 159 | `battle_main.ts` _(nom≠)_ | 2/159 (1%) | 4/159 (3%) | 🔴 manquant |
@@ -103,14 +99,15 @@
 | `fldeff_misc.c` | 1327 | 62 | `fldeff_misc.ts` | 5/62 (8%) | 6/62 (10%) | 🔴 manquant |
 | `trainer_hill.c` | 1091 | 60 | `trainer_hill.ts` | 6/60 (10%) | 6/60 (10%) | 🔴 manquant |
 | `region_map.c` | 2028 | 60 | `region_map.ts` | 3/60 (5%) | 8/60 (13%) | 🔴 manquant |
-| `trainer_see.c` | 815 | 39 | `trainer_see.ts` | 5/39 (13%) | 5/39 (13%) | 🔴 manquant |
+| `trainer_see.c` | 815 | 39 | `trainer_see.ts` | 5/39 (13%) | 6/39 (15%) | 🟡 amorce |
 | `fldeff_flash.c` | 369 | 20 | `fldeff_flash.ts` | 2/20 (10%) | 3/20 (15%) | 🟡 amorce |
 | `roamer.c` | 247 | 13 | `battle_main.ts` _(nom≠)_ | 2/13 (15%) | 2/13 (15%) | 🟡 amorce |
-| `overworld.c` | 3227 | 227 | `overworld.ts` | 15/227 (7%) | 54/227 (24%) | 🟡 amorce |
+| `overworld.c` | 3227 | 227 | `overworld.ts` | 15/227 (7%) | 55/227 (24%) | 🟡 amorce |
 | `event_object_movement.c` | 8984 | 733 | `event_object_movement.ts` | 180/733 (25%) | 196/733 (27%) | 🟡 amorce |
 | `fldeff_cut.c` | 648 | 17 | `fldeff_cut.ts` | 2/17 (12%) | 5/17 (29%) | 🟡 amorce |
 | `dewford_trend.c` | 420 | 13 | `dewford_trend.ts` | 4/13 (31%) | 4/13 (31%) | 🟡 amorce |
 | `field_effect.c` | 3919 | 247 | `field_effect.ts` | 4/247 (2%) | 82/247 (33%) | 🟡 amorce |
+| `heal_location.c` | 38 | 3 | `heal_location.ts` | 1/3 (33%) | 1/3 (33%) | 🟡 amorce |
 | `script_pokemon_util.c` | 229 | 13 | `script_pokemon_util.ts` | 4/13 (31%) | 5/13 (38%) | 🟡 amorce |
 | `lottery_corner.c` | 169 | 8 | `lottery_corner.ts` | 3/8 (38%) | 3/8 (38%) | 🟡 amorce |
 | `field_weather_effect.c` | 2637 | 106 | `field_weather_effect.ts` | 43/106 (41%) | 43/106 (41%) | 🟡 partiel |
@@ -122,13 +119,14 @@
 | `tileset_anims.c` | 1189 | 84 | `tileset_anims.ts` | 50/84 (60%) | 50/84 (60%) | 🟡 partiel |
 | `field_special_scene.c` | 386 | 13 | `field_special_scene.ts` | 8/13 (62%) | 8/13 (62%) | 🟡 partiel |
 | `berry.c` | 1348 | 36 | `berry.ts` | 23/36 (64%) | 23/36 (64%) | 🟡 partiel |
-| `script.c` | 471 | 39 | `script.ts` | 26/39 (67%) | 26/39 (67%) | 🟡 partiel |
 | `rotating_gate.c` | 1033 | 22 | `rotating_gate.ts` | 15/22 (68%) | 15/22 (68%) | 🟡 partiel |
 | `fldeff_rocksmash.c` | 167 | 10 | `fldeff_rocksmash.ts` | 2/10 (20%) | 7/10 (70%) | 🟠 dispersé |
 | `field_control_avatar.c` | 1005 | 41 | `field_control_avatar.ts` | 26/41 (63%) | 30/41 (73%) | 🟡 partiel |
 | `fldeff_dig.c` | 64 | 4 | `fldeff_dig.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
 | `fldeff_teleport.c` | 45 | 4 | `fldeff_teleport.ts` | 2/4 (50%) | 3/4 (75%) | 🟡 partiel |
+| `script.c` | 471 | 39 | `script.ts` | 26/39 (67%) | 30/39 (77%) | 🟡 partiel |
 | `field_player_avatar.c` | 2227 | 177 | `field_player_avatar.ts` | 148/177 (84%) | 149/177 (84%) | 🟡 partiel |
+| `scrcmd.c` | 2308 | 231 | `scrcmd_bytevm.ts` | 196/231 (85%) | 196/231 (85%) | ✅ miroir |
 | `map_name_popup.c` | 427 | 7 | `map_name_popup.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `field_poison.c` | 155 | 7 | `field_poison.ts` | 6/7 (86%) | 6/7 (86%) | ✅ miroir |
 | `fldeff_softboiled.c` | 112 | 8 | `engine/ui/party-screen.ts` _(nom≠)_ | 7/8 (88%) | 7/8 (88%) | 🟠 dispersé |
@@ -271,7 +269,6 @@
 | `frontier_pass.c` | 1777 | 37 | — **manquant** | 0/37 (0%) | 0/37 (0%) | 🔴 manquant |
 | `hall_of_fame.c` | 1535 | 45 | — **manquant** | 0/45 (0%) | 0/45 (0%) | 🔴 manquant |
 | `image_processing_effects.c` | 1229 | 38 | — **manquant** | 0/38 (0%) | 0/38 (0%) | 🔴 manquant |
-| `script_menu.c` | 766 | 31 | `script_menu.ts` | 0/31 (0%) | 0/31 (0%) | 🔴 manquant |
 | `palette_util.c` | 504 | 19 | — **manquant** | 0/19 (0%) | 0/19 (0%) | 🔴 manquant |
 | `blit.c` | 210 | 5 | — **manquant** | 0/5 (0%) | 0/5 (0%) | 🔴 manquant |
 | `hof_pc.c` | 41 | 4 | — **manquant** | 0/4 (0%) | 0/4 (0%) | 🔴 manquant |
@@ -279,6 +276,7 @@
 | `credits.c` | 1588 | 38 | — **manquant** | 0/38 (0%) | 1/38 (3%) | 🔴 manquant |
 | `start_menu.c` | 1440 | 80 | `start_menu.ts` | 0/80 (0%) | 2/80 (3%) | 🔴 manquant |
 | `menu_specialized.c` | 1637 | 57 | `menu_specialized.ts` | 3/57 (5%) | 3/57 (5%) | 🔴 manquant |
+| `script_menu.c` | 766 | 31 | `script_menu.ts` | 4/31 (13%) | 4/31 (13%) | 🔴 manquant |
 | `gpu_regs.c` | 196 | 12 | `gpu_regs.ts` | 2/12 (17%) | 2/12 (17%) | 🟡 amorce |
 | `diploma.c` | 210 | 10 | `engine/decomp-data/src/option_menu-callbacks-auto.ts` _(nom≠)_ | 2/10 (20%) | 2/10 (20%) | 🟡 amorce |
 | `bg.c` | 1248 | 52 | `engine/ui/gba-window-system.ts` _(nom≠)_ | 14/52 (27%) | 20/52 (38%) | 🟡 amorce |
