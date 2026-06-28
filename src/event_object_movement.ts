@@ -46,7 +46,10 @@ import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyReques
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
 // depuis base_oam template authoritative). Fallback dimensions-based pour les
 // rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
-import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './engine/field/object-event-graphics-info-data';
+// GetObjectEventGraphicsInfo (event_object_movement.c:1538) est défini en bas de CE fichier (1:1 décomp).
+import { gObjectEventGraphicsInfoPointers } from './data/object_events/object_event_graphics_info_pointers';
+import { gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './data/object_events/berry_tree_graphics_tables';
+import type { ObjectEventGraphicsInfo } from './engine/field/object-event-graphics-info';
 // 1:1 décomp : constantes PALSLOT_* + OBJ_EVENT_PAL_TAG_* (event_object_movement.c:435-471
 // + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
 // reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
@@ -3091,7 +3094,8 @@ function GetReflectionTypeByMetatileBehavior(behavior: number): number {
 }
 
 // Métadonnées graphiques (width/height/tracks) SANS construire la pic-table.
-// `GetObjectEventGraphicsInfo(graphicsId, ...pics)` (object-event-graphics-info-data.ts)
+// `GetObjectEventGraphicsInfo(graphicsId, ...pics)` (défini en bas de ce fichier ;
+// factories dans data/object_events/object_event_graphics_info.ts)
 // construit eagerly les images (= subarray sur les buffers PNG) ; l'appeler sans
 // buffers crashe (`ptr.subarray` sur undefined). width/height/tracks sont des
 // littéraux indépendants des pics → on passe des buffers VIDES (subarray no-op) et
@@ -7146,8 +7150,8 @@ function _spawnSingleNpcFromTemplate(
   //   spriteTemplate.oam = graphicsInfo->oam;  ← shape/size/priority source
   // Au CreateSpriteAt : sprite->oam = *template->oam (= struct copy).
   //
-  // Lookup graphicsInfo dans le pointer table porté 1:1 (= 245 records dans
-  // object-event-graphics-info-data.ts). Si trouvé, utilise graphicsInfo.oam
+  // Lookup graphicsInfo dans le pointer table porté 1:1 (= 245 factories dans
+  // data/object_events/object_event_graphics_info.ts). Si trouvé, utilise graphicsInfo.oam
   // (= source authoritative décomp). Sinon fallback à GetBaseOamForDimensions
   // qui dérive depuis dimensions PNG (= cas OBJ_EVENT_GFX_VAR_* dynamiques).
   const graphicsInfo = _graphicsInfo_1to1;
@@ -8571,4 +8575,29 @@ export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
     npc.active = false;
     npc.spriteId = -1;
   }
+}
+
+// ─── GetObjectEventGraphicsInfo 1:1 décomp event_object_movement.c:1538-1541 ─
+/**
+ *  1:1 décomp `GetObjectEventGraphicsInfo` (event_object_movement.c:1538-1541) :
+ *    const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u16 graphicsId)
+ *    {
+ *        if (graphicsId >= OBJ_EVENT_GFX_VARS)
+ *            graphicsId = VarGetObjectEventGraphicsId(graphicsId - OBJ_EVENT_GFX_VARS);
+ *        if (graphicsId >= NUM_OBJ_EVENT_GFX)
+ *            graphicsId = OBJ_EVENT_GFX_NINJA_BOY;
+ *        return gObjectEventGraphicsInfoPointers[graphicsId];
+ *    }
+ *
+ *  Notre port prend des string enum (= graphicsId TS), pas de u16 numeric.
+ *  Les caller passe les pics via un dispatch externe (les pics sont chargés
+ *  async PNG → loadTileBin → Uint8Array).
+ */
+export function GetObjectEventGraphicsInfo(
+  graphicsId: string,
+  ...pics: Uint8Array[]
+): ObjectEventGraphicsInfo | null {
+  const factory = gObjectEventGraphicsInfoPointers[graphicsId];
+  if (!factory) return null;
+  return factory(...pics);
 }
