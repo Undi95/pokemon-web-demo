@@ -78,16 +78,6 @@ export function getGObjectEvents(): ReadonlyArray<ObjectEvent> {
   return _registry.gObjectEvents;
 }
 
-/** Force update sprite frame d'un NPC (= scripts opcodes + interact). */
-export function callUpdateNpcSpriteFrame(rt: unknown, npc: ObjectEvent): void {
-  _registry.updateNpcSpriteFrame?.(rt, npc);
-}
-
-/** Un-freeze tous les NPCs (= release/releaseall opcodes). */
-export function callUnfreezeAllNpcs(): void {
-  _registry.unfreezeAllNpcs?.();
-}
-
 /** Register UpdateObjectEventsForCameraUpdate orchestrator. À call par
  *  object-events.ts au module-level. */
 export function _registerUpdateObjectEventsForCameraUpdate(
@@ -118,7 +108,3 @@ export function callAddCameraObject(followSpriteId: number): number {
   return _registry.addCameraObject?.(followSpriteId) ?? 64;
 }
 
-/** Call `CameraObjectReset()` depuis l'overworld (spawn player). No-op si pas registered. */
-export function callCameraObjectReset(): void {
-  _registry.cameraObjectReset?.();
-}

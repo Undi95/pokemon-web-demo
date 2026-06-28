@@ -135,52 +135,6 @@ export function isPrerenderedSlotActive(slot: SlotKind): boolean {
   return (_slotActive[slot]?.length ?? 0) > 0;
 }
 
-/**
- * Play un SE pré-rendu en LOOP infini sur le slot donné. Boucles jusqu'à ce
- * que `stopPrerenderedSE(slot)` soit appelé.
- *
- * Use case (session 124 fix Bug 2) : SE_TRUCK_MOVE qui doit jouer continu
- * pendant toute la cinématique du camion (= 1:1 ROM behavior). Notre WAV
- * pre-rendered = 8s one-shot → sans loop, gap entre fin du WAV et SE_STOP.
- */
-export async function playPrerenderedSEWithLoop(
-  songName: string,
-  slot: SlotKind,
-  songVolume: number | null = null,
-): Promise<void> {
-  const ctx = getAudioContext();
-  if (ctx.state === 'suspended') {
-    try { await ctx.resume(); } catch { /* ignore */ }
-  }
-  const buf = await loadBuffer(songName);
-  stopPrerenderedSE(slot);
-
-  const source = ctx.createBufferSource();
-  source.buffer = buf;
-  source.loop = true;  // ← KEY DIFFERENCE vs playPrerenderedSE
-
-  const songVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
-  const gainNode = ctx.createGain();
-  gainNode.gain.value = songVolNorm;
-
-  source.connect(gainNode);
-  gainNode.connect(getMasterGain());
-  source.start();
-
-  if (!_slotActive[slot]) _slotActive[slot] = [];
-  _slotActive[slot]!.push(source);
-
-  source.onended = () => {
-    const list = _slotActive[slot];
-    if (list) {
-      const idx = list.indexOf(source);
-      if (idx >= 0) list.splice(idx, 1);
-    }
-    try { gainNode.disconnect(); } catch { /* ignore */ }
-  };
-  console.log(`[se-prerendered] LOOP ${songName} (${buf.duration.toFixed(2)}s) on slot ${slot}`);
-}
-
 export async function playPrerenderedSE(
   songName: string,
   slot: SlotKind,

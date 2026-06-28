@@ -130,11 +130,6 @@ export async function loadSample(symbol: string): Promise<LoadedSample | null> {
   return promise;
 }
 
-/** Pré-charge plusieurs samples en parallèle. Utile pour préparer un song. */
-export async function preloadSamples(symbols: string[]): Promise<void> {
-  await Promise.all(symbols.map(s => loadSample(s)));
-}
-
 /** Génère un AudioBuffer de white noise (durée 1s, mono) pour les voices PSG noise.
  *  Cache global pour réutilisation. */
 let _noiseBuffer: AudioBuffer | null = null;

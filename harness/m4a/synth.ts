@@ -62,16 +62,6 @@ function registerActiveNote(note: ActiveNote): void {
   }
 }
 
-/** Reset stealing counter (à appeler au début de chaque song). */
-export function resetVoiceStealingCounter(): void {
-  _stealingCount = 0;
-}
-
-/** Get total voice stealing events depuis le dernier reset. */
-export function getVoiceStealingCount(): number {
-  return _stealingCount;
-}
-
 function unregisterActiveNote(note: ActiveNote): void {
   const idx = _activeNotes.indexOf(note);
   if (idx >= 0) _activeNotes.splice(idx, 1);
