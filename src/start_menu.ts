@@ -59,9 +59,7 @@ import {
 } from './field_message_box';
 // Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
-import {
-  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from './engine/ui/gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './menu';
 import { PlaySE, getRuntime, gMain } from '../harness/runtime/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../include/constants/songs';
 import { HasValidSave } from './save';

@@ -109,15 +109,9 @@ import {
   Task_NewGameBirchSpeech_FadePlatformOut,
   Task_NewGameBirchSpeechSub_InitPokeBall,
 } from './engine/decomp-data/src/main_menu-callbacks-auto';
-import {
-  A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
-  IsWirelessAdapterConnected,
-  CreateYesNoMenu,
-  Menu_ProcessInputNoWrapClearOnChoose,
-  Menu_ProcessInputNoWrap,
-  InitMenuInUpperLeftCornerNormal,
-  gSaveBlock2Ptr,
-} from './engine/ui/gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, Menu_ProcessInputNoWrap, InitMenuInUpperLeftCornerNormal } from './menu';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, IsWirelessAdapterConnected } from './engine/ui/gba-menu-system';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './window';
 import { GetStringRightAlignXOffset, sTextColor_MenuInfo } from './text';
 import { AddTextPrinterParameterized3 } from './menu';

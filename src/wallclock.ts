@@ -56,9 +56,7 @@ import { GetOverworldTextboxPalettePtr } from './text_window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { AddTextPrinterParameterized3 } from './menu';
-import {
-  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './engine/ui/gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './window';
 import { getString } from './engine/ui/gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).

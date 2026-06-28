@@ -166,9 +166,7 @@ import {
   DrawTextBorderOuter,
 } from '../../text_window';
 
-import {
-  CreateYesNoMenu,
-} from './gba-menu-system';
+import { CreateYesNoMenu } from '../../menu';
 
 import {
   getRuntime,

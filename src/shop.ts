@@ -47,9 +47,7 @@ import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import { GetPlayerTextSpeedDelay } from './menu';
 import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
 import { encodeOwText } from './text';
-import {
-  InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
-} from './engine/ui/gba-menu-system';
+import { InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap } from './menu';
 import {
   getRuntime, PlaySE, LoadPalette, BlendPalettes,
   FreeAllSpritePalettes, ResetPaletteFade, ResetTasks, FreeSpriteTilesByTag,

@@ -38,7 +38,7 @@
  *     les func enregistrées.
  */
 
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import {
   AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer,
   PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate,

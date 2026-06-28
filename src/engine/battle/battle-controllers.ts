@@ -97,7 +97,7 @@ import {
 } from '../../window';
 import { AddTextPrinterParameterized4 } from '../../menu';
 import { gTextFlags } from '../../text';
-import { GetPlayerTextSpeedDelay } from '../ui/gba-menu-system';
+import { GetPlayerTextSpeedDelay } from '../../menu';
 import {
   getBattleTextOnWindowsInfo, B_WIN_COPYTOVRAM, B_WIN_MSG,
 } from './battle-windows';

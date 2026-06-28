@@ -47,10 +47,7 @@ import {
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
-import {
-  InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
-  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './engine/ui/gba-menu-system';
+import { InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap, CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
 import { SignalWaitState } from './scrcmd';
 import { ScriptContext_SetupScript } from './script';

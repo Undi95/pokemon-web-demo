@@ -18,7 +18,7 @@
 import { getText } from './script';  // bytes charmap (migration texte)
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getString } from './engine/ui/gba-strings';
-import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './engine/ui/gba-menu-system';
+import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { AddTextPrinterParameterized3 } from './menu';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './window';
 import type { WindowTemplate } from './window';

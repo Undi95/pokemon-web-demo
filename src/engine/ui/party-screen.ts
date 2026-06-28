@@ -45,7 +45,7 @@ import {
   type WindowTemplate,
 } from '../../window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './gba-menu-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from '../../menu';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../menu_specialized';
 import { GetStringCenterAlignXOffset } from '../../text';
 import { AddTextPrinterParameterized3 } from '../../menu';
