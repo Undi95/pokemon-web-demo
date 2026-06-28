@@ -91,7 +91,7 @@ export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   await initStringsFromDecomp();
 
   // Side-effect : option_menu helpers sur globalThis (requis avant CB2_InitOptionMenu).
-  const { preloadOptionMenuAssets } = await import('../../src/engine/ui/option-menu-impl');
+  const { preloadOptionMenuAssets } = await import('../../src/option_menu');
 
   await preloadScene1Assets();
   await preloadScene2Assets();

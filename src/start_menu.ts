@@ -76,7 +76,7 @@ import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './engine/dec
 // SetMainCallback2 (= notre runtime utilise no-arg callbacks).
 const CB2_InitOptionMenu = (): void => { const rt = (globalThis as Record<string, unknown>).__rt as Parameters<typeof _CB2_InitOptionMenu_callback>[0]; _CB2_InitOptionMenu_callback(rt); };
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
-import { preloadOptionMenuAssets } from './engine/ui/option-menu-impl';
+import { preloadOptionMenuAssets } from './option_menu';
 // SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
