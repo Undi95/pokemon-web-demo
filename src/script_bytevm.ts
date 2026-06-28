@@ -260,6 +260,17 @@ export function ScriptContext_SetupScript(ptr: ScriptPtr): void {
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
 }
 
+/** Devtools : monte un native-script inline (tickFn pollé jusqu'à TRUE) sur le
+ *  contexte byte-VM GLOBAL → tické chaque frame par ScriptContext_RunScript (mode
+ *  NATIVE). Utilisé par dev.starter.choose() etc. Avant le clean, script.ts montait
+ *  ça sur son contexte parsé mort → jamais tické (RunScript ticke le byte-VM). */
+export function ScriptContext_SetupInlineNative(tickFn: () => boolean): void {
+  InitScriptContext(sGlobalScriptContext, gScriptCmdTable as ScrCmdFunc[], gScriptCmdTableEnd);
+  SetupNativeScript(sGlobalScriptContext, tickFn);
+  LockPlayerFieldControls();
+  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+}
+
 export function ScriptContext_Stop(): void {
   sGlobalScriptContextStatus = CONTEXT_WAITING;
 }

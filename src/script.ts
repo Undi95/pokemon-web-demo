@@ -445,10 +445,10 @@ export function ScriptContext_RunScript(): boolean {
  *  triggering UI flows (= ChooseStarter, BirchTutorialBattle, …) from devtools
  *  without a label-named script. */
 export function ScriptContext_SetupInlineNative(tickFn: () => boolean): boolean {
-  InitScriptContext(sGlobalScriptContext);
-  SetupNativeScript(sGlobalScriptContext, tickFn);
-  LockPlayerFieldControls();
-  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  // DÉLÈGUE au byte-VM (le SEUL moteur tické par ScriptContext_RunScript). Avant :
+  // montait le tick sur le contexte parsé MORT → jamais pollé (dev.starter.choose
+  // ne se lançait pas). Même résidu de clean que Enable/snapshot.
+  BV.ScriptContext_SetupInlineNative(tickFn);
   return true;
 }
 
@@ -472,12 +472,14 @@ export function ScriptContext_Stop(): void {
  *  (= pas besoin d'un label dans _scriptsByLabel). Utilisé par scope.action()
  *  pour exécuter un opcode unique sans setup d'un script complet. */
 export function ScriptContext_SetupInlineBytecode(opcodes: Opcode[], devLabel = 'inline'): boolean {
-  InitScriptContext(sGlobalScriptContext);
-  SetupBytecodeScript(sGlobalScriptContext, opcodes);
-  LockPlayerFieldControls();
-  sGlobalScriptContextStatus = CONTEXT_RUNNING;
-  _currentScriptLabel = devLabel;
-  return true;
+  // NON SUPPORTÉ avec le byte-VM (le SEUL moteur) : il exécute du BYTECODE, pas des
+  // Opcode[] parsés ; assembler un opcode isolé exigerait l'assembleur build-time (CJS,
+  // absent du navigateur). Avant le clean ça montait un contexte parsé MORT → no-op
+  // silencieux. On warn explicitement plutôt (devtool scope.action). Pour exécuter un
+  // vrai script : __byteVm.launchScript(label).
+  console.warn(`[byte-vm] scope.action('${devLabel}', ${opcodes.length} op) non supporté : ` +
+    `le byte-VM n'exécute pas d'Opcode[] parsés. Utilise __byteVm.launchScript(label).`);
+  return false;
 }
 
 export function ScriptContext_Enable(): void {
@@ -778,9 +780,11 @@ export function setDoCoordEventWeatherHook(fn: (coordEventWeather: string | numb
 
 (globalThis as Record<string, unknown>).__scriptRuntime = {
   sGlobalScriptContext,
-  status: () => sGlobalScriptContextStatus,
   scripts: _scriptsByLabel,
   texts: _textsByLabel,
+  // Statut du byte-VM (le SEUL moteur) — pas le contexte parsé mort (qui resterait
+  // figé à SHUTDOWN) → scope.script().status reflète l'état réel du script en cours.
+  status: () => BV._getGlobalStatus(),
   // Session 133 add : helpers pour devtool scope.script() enrichi.
   getCurrentLabel: () => _currentScriptLabel,
   getCurrentOpcodeIdx: () => sGlobalScriptContext.scriptIdx,
