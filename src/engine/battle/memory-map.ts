@@ -434,7 +434,7 @@ export function initMemoryMap(): void {
 
 // ─── String ID tables (= data, not state) — Phase 1.4 J ─────────────────────
 
-import { BATTLE_STRING_ID_TABLES } from '../decomp-data/battle-string-id-tables';
+import { BATTLE_STRING_ID_TABLES } from '../../battle_message';
 
 /** Mapping internal id (= bytecode SYMBOL_MARKER|id) → table name pour lookup.
  *  Populated par initMemoryMap pour symbols qui matchent BATTLE_STRING_ID_TABLES. */

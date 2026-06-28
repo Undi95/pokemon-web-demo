@@ -3276,9 +3276,8 @@ function Cmd_waitmessage(ctx: BattleScriptContext): boolean {
  *
  *  Phase 1.4 J : si le ptr est un SYMBOL_MARKER pour un g*StringIds data
  *  table (= gStatDownStringIds, gStatUpStringIds, gFirstTurnOfTwoStringIds,
- *  etc., 46 tables extraites depuis battle_message.c via
- *  scripts/extract-battle-string-id-tables.mjs), résoud via
- *  resolveStringIdTable → BATTLE_STRING_ID_TABLES → u16 à idx.
+ *  etc., 46 tables 1:1 battle_message.c, désormais inline dans battle_message.ts),
+ *  résoud via resolveStringIdTable → BATTLE_STRING_ID_TABLES → u16 à idx.
  *  Sinon (= legacy inline table dans bytecode), lit au offset direct. */
 function Cmd_printfromtable(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags !== 0) {
