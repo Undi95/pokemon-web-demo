@@ -115,7 +115,7 @@ import {
   CONTROLLER_PRINTSTRINGPLAYERONLY,
   type BattleEvent,
 } from './battle-event-queue';
-import { decodeBattleString, battleStringToPrinterText } from './battle-string-decoder';
+import { decodeBattleString, battleStringToPrinterText } from '../../battle_message';
 
 // ─── Move result decoding (= 1:1 décomp battle.h MOVE_RESULT_*) ──────────
 
