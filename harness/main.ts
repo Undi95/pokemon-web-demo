@@ -56,7 +56,7 @@ if (typeof window !== 'undefined') {
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
 // HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
 import { LoadGameSave } from '../src/save';
-import { SetSaveFileStatus } from '../src/engine/ui/gba-menu-system';
+import { SetSaveFileStatus } from '../src/save';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
 import { SeedRngAndSetTrainerId } from '../src/main';
 import './devtools/rng-debug'; // enregistre window.rng au boot

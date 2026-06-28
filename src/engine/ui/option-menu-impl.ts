@@ -30,7 +30,7 @@ import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } 
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../../../harness/runtime/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../../../harness/runtime/decomp-helpers';
 import { JOY_NEW } from '../../../harness/runtime/decomp-globals';
-import { SetPokemonCryStereo } from './gba-menu-system';
+import { SetPokemonCryStereo } from '../../sound';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { loadGbaPal } from '../../../harness/gba/png-loader';
 

@@ -2593,7 +2593,16 @@ export {
 export {
   gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringExpandPlaceholders,
 } from '../../include/string_util';
-export * from '../../src/engine/ui/gba-menu-system';
+// gba-menu-system DISSOUS (MIRROR, fourre-tout) : symboles routés vers leurs vrais
+// foyers ; bundle global reconstitué ici en réexports NOMMÉS (collision-free).
+// CanResetRTC = déjà export LOCAL ci-dessus (ne PAS réexporter).
+export { Menu_GetCursorPos, Menu_ProcessInputNoWrapClearOnChoose } from '../../src/menu';
+export { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
+export { IsWirelessAdapterConnected } from '../../src/link';
+export { IsMysteryGiftEnabled } from '../../include/event_data';
+export { RtcGetErrorStatus } from '../../src/rtc';
+// PlayBGM = déjà export LOCAL decomp-globals (ne PAS réexporter ; sound.ts = foyer 1:1).
+export { gSaveFileStatus } from '../../src/save';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans
 // `main-menu-impl.ts` (= split du gba-menu-system.ts pour respecter directive
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.

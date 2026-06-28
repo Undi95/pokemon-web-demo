@@ -30,7 +30,7 @@ import {
   assetCache, PlaySE,
 } from '../../../harness/runtime/decomp-globals';
 import {PLTT_SIZE_4BPP} from "../../../harness/runtime/decomp-bridge";
-import { ListMenuLoadStdPalAt } from '../ui/gba-menu-system';
+import { ListMenuLoadStdPalAt } from '../../menu';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
   CompactItemsInBagPocket, SortBerriesOrTMHMs,

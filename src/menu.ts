@@ -33,6 +33,7 @@ import {
   COPYWIN_FULL, COPYWIN_GFX, type WindowTemplate,
 } from './window';
 import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from '../harness/runtime/decomp-globals';
+import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
 import { getString } from './engine/ui/gba-strings';
@@ -1053,3 +1054,28 @@ export function AddWindowParameterized(bg: number, left: number, top: number, wi
   const template: WindowTemplate = { bg, tilemapLeft: left, tilemapTop: top, width, height, paletteNum, baseBlock };
   return AddWindow(template);
 }
+
+/** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfoElements{1,2,3}_Pal
+ *  → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP). Fonction PARTAGÉE menu.c (bag, union
+ *  room…). Rapatriée depuis gba-menu-system (fourre-tout dissous). */
+export function ListMenuLoadStdPalAt(palOffset: number, palId: number): void {
+  let palette: string;
+  switch (palId) {
+    case 0:
+    default:
+      palette = 'gMenuInfoElements1_Pal';
+      break;
+    case 1:
+      palette = 'gMenuInfoElements2_Pal';
+      break;
+    case 2:
+      palette = 'gMenuInfoElements3_Pal';
+      break;
+  }
+  LoadPalette(palette, palOffset, PLTT_SIZE_4BPP);
+}
+
+// Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck). Rapatrié
+// depuis gba-menu-system (fourre-tout dissous). GetPlayerTextSpeed* = menu.c (foyer ici).
+(globalThis as Record<string, unknown>).GetPlayerTextSpeed = GetPlayerTextSpeed;
+(globalThis as Record<string, unknown>).GetPlayerTextSpeedDelay = GetPlayerTextSpeedDelay;

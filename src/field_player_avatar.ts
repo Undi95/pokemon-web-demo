@@ -105,7 +105,7 @@ import {
 // Musique surf (stop) : on PILOTE la lecture existante, on ne modifie pas l'engine son.
 import { Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic } from './overworld';
 import { FlagGet } from './engine/script/script-vars';
-import { B_BUTTON } from './engine/ui/gba-menu-system';
+import { B_BUTTON } from '../include/gba/io_reg';
 import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './engine/field/direction-coords';
 import {
   GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,

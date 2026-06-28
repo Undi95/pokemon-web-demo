@@ -674,6 +674,27 @@ export function GetSaveFileStatus(): number {
   return sSaveFileStatus;
 }
 
+// 1:1 décomp `gSaveFileStatus` global mutable + SetSaveFileStatus — rapatriés depuis
+// gba-menu-system (fourre-tout dissous). NB : variable distincte de `sSaveFileStatus`
+// ci-dessus (parallèle pré-existant préservé, relocalisé verbatim ; consommé par les
+// auto-callbacks main_menu/title via le bundle global + globalThis).
+export let gSaveFileStatus = 0; // SAVE_STATUS_EMPTY
+
+export function SetSaveFileStatus(status: number): void {
+  gSaveFileStatus = status;
+}
+
+// Synchronise gSaveFileStatus mutable export sur globalThis pour les callbacks
+// auto-générés (= eval scope @ts-nocheck).
+if (!('gSaveFileStatus' in globalThis)) {
+  Object.defineProperty(globalThis, 'gSaveFileStatus', {
+    get: () => gSaveFileStatus,
+    set: (v) => { gSaveFileStatus = v as number; },
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 // Re-exports depuis `save-block-state.ts` (= module Foundation qui contient
 // le storage authoritatif des SaveBlock1/2 + accesseurs + Proxy
 // `gSaveBlock1/2Ptr`). Préserve l'API publique de ce module pour les call-sites.
@@ -747,3 +768,38 @@ if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__saveSectorsSelfTest = __selfTestSectors;
   (window as unknown as Record<string, unknown>).__saveSlotEngineSelfTest = __selfTestSlotEngine;
 }
+
+// Migration legacy `pokemon-web-demo:saveBlock2` localStorage → SaveBlock2 RAM
+// (= options MainMenu legacy). Une seule fois au boot. Rapatriée depuis
+// gba-menu-system (fourre-tout dissous). Placée en fin de module (après les const
+// GetSaveBlock2 = pas de TDZ). Mute le SaveBlock2 RAM uniquement (save explicite
+// via START → SAUVER) ; supprime la clé legacy après.
+const LEGACY_SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
+function _migrateLegacySaveBlock2(): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const raw = localStorage.getItem(LEGACY_SAVEBLOCK2_LSKEY);
+    if (!raw) return;
+    const legacy = JSON.parse(raw) as Record<string, unknown>;
+    const sb2 = GetSaveBlock2() as unknown as Record<string, unknown>;
+    const fields = [
+      'optionsTextSpeed', 'optionsBattleSceneOff', 'optionsBattleStyle',
+      'optionsSound', 'optionsButtonMode', 'optionsWindowFrameType',
+      'playerName', 'playerGender',
+    ];
+    let migrated = false;
+    for (const k of fields) {
+      if (legacy[k] !== undefined && sb2[k] !== legacy[k]) {
+        sb2[k] = legacy[k];
+        migrated = true;
+      }
+    }
+    if (migrated) {
+      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2 RAM (no auto-save)');
+    }
+    localStorage.removeItem(LEGACY_SAVEBLOCK2_LSKEY);
+  } catch (e) {
+    console.warn('[gSaveBlock2Ptr] legacy migration failed:', e);
+  }
+}
+_migrateLegacySaveBlock2();

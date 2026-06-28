@@ -88,7 +88,7 @@ import { BG_PLTT_ID, REG_OFFSET_DISPCNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2 } from './engine/battle/battle-windows';
 import { PIXEL_FILL } from '../harness/runtime/decomp-globals';
-import { A_BUTTON, B_BUTTON } from './engine/ui/gba-menu-system';
+import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import type { Mail } from './engine/save/save-blocks';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_WIDTH, TILE_HEIGHT } from '../include/gba/defines';
 import { GENDER_COUNT, LANGUAGE_FRENCH } from '../include/constants/global';

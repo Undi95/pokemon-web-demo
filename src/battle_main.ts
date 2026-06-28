@@ -3426,6 +3426,9 @@ import {
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './battle_util';
 import { runBattleTurnPassedViaBytecode } from './engine/battle/wire-bytecode-bridge';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import {
+  OPTIONS_BATTLE_SCENE_ON, OPTIONS_BATTLE_SCENE_OFF, OPTIONS_BATTLE_STYLE_SHIFT,
+} from '../include/constants/global';
 import { FreeMonSpritesGfx, BeginFastPaletteFade } from '../harness/runtime/decomp-globals';
 import {
   stepBattleScriptCommand, gBattleScriptContext, getBattleScriptOffset,
@@ -5747,3 +5750,35 @@ function _delayWait(): void {
 (globalThis as Record<string, unknown>).__battleLinkStart = {
   FindLinkBattleMaster, CB2_HandleStartBattle,
 };
+
+// ─── Helpers options battle (lecture gSaveBlock2Ptr.optionsBattle*) ───────────
+// Rapatriés depuis gba-menu-system (fourre-tout dissous). 1:1 décomp : battle_main.c
+// lit ces options pour gater le comportement (HITMARKER_NO_ANIMATIONS / switch prompt).
+
+/** Returns true si battle animations doivent être SKIPPÉES.
+ *  **OVERRIDE TEMPORAIRE (user 2026-05-26)** : tant que la cascade visuelle K1
+ *  (battle_anim_*.c) n'est pas portée, force TRUE peu importe l'option user (menu
+ *  Options affiche "OUI" sans effet ; engine se comporte "NON" = skip toutes anims).
+ *  À retirer quand K1 portée + A/B validation. */
+export function IsBattleSceneOff(): boolean {
+  return true;
+  // 1:1 décomp original (= activé quand K1 cascade portée) :
+  // return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
+}
+
+/** Returns true si les ANIMATIONS DE HIT (blink + healthbox jiggle) doivent être
+ *  SKIPPÉES. VRAIE option user `optionsBattleSceneOff` (1:1 décomp : HITMARKER_NO_ANIMATIONS).
+ *  Découplé de IsBattleSceneOff (forcé TRUE pour masquer les MOVE anims K1). */
+export function IsHitAnimDisabled(): boolean {
+  return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
+}
+
+/** Returns le battle style courant : 0 = SHIFT (ask before switch), 1 = SET (no prompt). */
+export function GetBattleStyle(): number {
+  return ((gSaveBlock2Ptr.optionsBattleStyle ?? OPTIONS_BATTLE_STYLE_SHIFT) | 0) & 1;
+}
+
+// Bridge globalThis pour les auto-callbacks / battle code (= eval scope @ts-nocheck).
+(globalThis as Record<string, unknown>).IsBattleSceneOff = IsBattleSceneOff;
+(globalThis as Record<string, unknown>).IsHitAnimDisabled = IsHitAnimDisabled;
+(globalThis as Record<string, unknown>).GetBattleStyle = GetBattleStyle;
