@@ -86,7 +86,7 @@ import {
   sAnimTable_Nurse, sAnimTable_FieldMove, sAnimTable_BerryTree,
   sAnimTable_BreakableRock, sAnimTable_CuttableTree, sAnimTable_Fishing,
   sAnimTable_HoOh, sAnimTable_Rayquaza, sAnimTable_GroudonSide,
-} from './object-event-anims-data';
+} from '../../data/object_events/object_event_anims';
 import {
   sOamTables_16x16, sOamTables_16x32, sOamTables_32x32, sOamTables_48x48,
   sOamTables_64x32, sOamTables_64x64, sOamTables_96x40, sOamTables_88x32,

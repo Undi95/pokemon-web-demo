@@ -114,7 +114,7 @@ import {
 // Re-export pour le sac (bag-menu-ctx précharge la gfx vélo via _playerAvatarMod avant GetOnOffBike).
 export { PreloadObjectEventGraphics };
 import { build_sPicTable_BrendanNormal, build_sPicTable_MayNormal } from './engine/field/object-event-graphics-info-data';
-import { sAnimTable_BrendanMayNormal } from './engine/field/object-event-anims-data';
+import { sAnimTable_BrendanMayNormal } from './data/object_events/object_event_anims';
 import {
   COPY_MOVE_WALK, COPY_MOVE_FACE, COPY_MOVE_JUMP2,
   MOVEMENT_ACTION_FACE_RIGHT,
