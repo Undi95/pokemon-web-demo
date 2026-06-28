@@ -54,7 +54,7 @@ import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDec
 // Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
 // StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
 import { setStringVar, encodeOwText } from '../../../include/text';
-import { gStringVar4 } from '../ui/gba-text-system';
+import { gStringVar4 } from '../../../include/string_util';
 import { getString } from '../ui/gba-strings';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
@@ -66,11 +66,9 @@ import {
   type WindowTemplate,
 } from '../../window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../text_window';
-import {
-  DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
-  FONT_NORMAL, AddTextPrinterParameterized4, GetMenuCursorDimensionByFont,
-  GetStringRightAlignXOffset, TEXT_SKIP_DRAW,
-} from '../ui/gba-text-system';
+import { DeactivateAllTextPrinters, FONT_NARROW, FONT_NORMAL, GetMenuCursorDimensionByFont, GetStringRightAlignXOffset, TEXT_SKIP_DRAW } from '../../text';
+import { AddTextPrinterParameterized4 } from '../../menu';
+import { StringExpandPlaceholders } from '../../../include/string_util';
 import {
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
@@ -104,7 +102,7 @@ import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
 } from '../../list_menu';
-import { GetStringCenterAlignXOffset } from '../ui/gba-text-system';
+import { GetStringCenterAlignXOffset } from '../../text';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
 } from '../decomp-data/include/menu_helpers-data';

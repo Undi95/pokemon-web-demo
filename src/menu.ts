@@ -16,7 +16,7 @@
  * (DrawDialogueFrame/WindowFunc_* — HW tilemap) ; YesNo menus ; Menu_* ; start menu.
  */
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
-import { RunTextPrinters } from './engine/ui/gba-text-system';
+import { RunTextPrinters } from './text';
 import { gTextFlags, TEXT_COLOR, type TextPrinter } from './engine/ui/gba-text-printer';
 import {
   IsTextPrinterActive, AddTextPrinter, AddTextPrinterParameterized, GetFontAttribute,

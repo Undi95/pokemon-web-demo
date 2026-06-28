@@ -45,10 +45,8 @@ import {
   InitWindows, DrawStdFrameWithCustomTileAndPalette, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
 } from './window';
-import {
-  AddTextPrinterParameterized, AddTextPrinterParameterized3,
-  GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW,
-} from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized, GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';

@@ -42,7 +42,7 @@ import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../runtime/decomp-globals';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
-import { preloadFontData } from '../../src/engine/ui/gba-text-system';
+import { preloadFontData } from '../../src/text';
 import { preloadBirchSpeechAssets } from '../boot/intro-asset-loader';
 import { preloadTextWindowFrames } from '../../src/text_window';
 import {

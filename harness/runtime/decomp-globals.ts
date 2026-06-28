@@ -2580,7 +2580,19 @@ export * from '../../src/window';
 // GetTextWindowPalette / GetOverworldTextboxPalettePtr / DrawTextBorder* / etc.
 // Relocalisé hors de gba-window-system → réexposé ici pour le global-scope.
 export * from '../../src/text_window';
-export * from '../../src/engine/ui/gba-text-system';
+// gba-text-system DISSOUS (MIRROR text.c) : son contenu réel (font loader +
+// RunTextPrinters + text colors) vit dans src/text.ts ; ses réexports menu/string_util
+// pointent vers les vrais foyers. Bundle global reconstitué ici :
+export * from '../../src/text'; // 0 collision vérifiée (collision-check.cjs)
+export {
+  AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
+  AddTextPrinterForMessage, AddTextPrinterForMessage_2, AddTextPrinterWithCustomSpeedForMessage,
+  AddTextPrinterWithCallbackForMessage, GetPlayerTextSpeed, GetPlayerTextSpeedDelay,
+  RunTextPrintersAndIsPrinter0Active,
+} from '../../src/menu';
+export {
+  gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringExpandPlaceholders,
+} from '../../include/string_util';
 export * from '../../src/engine/ui/gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans
 // `main-menu-impl.ts` (= split du gba-menu-system.ts pour respecter directive

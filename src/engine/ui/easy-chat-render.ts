@@ -154,19 +154,12 @@ import {
   type BgTemplate,
 } from '../../window';
 
-import {
-  AddTextPrinterParameterized3,
-  DeactivateAllTextPrinters,
-  GetStringCenterAlignXOffset,
-  GetStringWidth,
-  TEXT_SKIP_DRAW,
-} from './gba-text-system';
+import { DeactivateAllTextPrinters, GetStringCenterAlignXOffset, GetStringWidth, TEXT_SKIP_DRAW } from '../../text';
+import { AddTextPrinterParameterized3 } from '../../menu';
 
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
-import {
-  AddTextPrinterParameterized,
-} from './gba-text-system';
+import { AddTextPrinterParameterized } from '../../text';
 
 import {
   LoadUserWindowBorderGfx,

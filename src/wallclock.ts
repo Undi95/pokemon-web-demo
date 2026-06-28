@@ -55,7 +55,7 @@ import {
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
 } from './engine/ui/gba-menu-system';

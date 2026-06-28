@@ -79,13 +79,8 @@ import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBg
 import { loadTileBin, loadGbaPal, loadTilemapBin } from '../harness/gba/png-loader';
 import { ConvertEasyChatWordsToString, CopyEasyChatWord } from './easy_chat';
 import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from './pokemon_icon';
-import {
-  AddTextPrinterParameterized3,
-  RunTextPrinters,
-  DeactivateAllTextPrinters,
-  FONT_NORMAL,
-  GetStringCenterAlignXOffset,
-} from './engine/ui/gba-text-system';
+import { RunTextPrinters, DeactivateAllTextPrinters, FONT_NORMAL, GetStringCenterAlignXOffset } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 import { StringCopy, StringAppend, StringLength } from '../include/string_util';
 import { encodeOwText } from '../include/text';
 import { RGB, RGB_BLACK, RGB_WHITE, PLTT_SIZE_4BPP } from '../harness/runtime/decomp-helpers';

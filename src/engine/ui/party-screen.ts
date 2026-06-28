@@ -47,7 +47,8 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './gba-menu-system';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../menu_specialized';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
+import { GetStringCenterAlignXOffset } from '../../text';
+import { AddTextPrinterParameterized3 } from '../../menu';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
 import { ItemIsMail } from '../../mail_data';

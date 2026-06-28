@@ -52,10 +52,8 @@ import {
   AddWindow, RemoveWindow, ClearWindowTilemap, ClearStdWindowAndFrame,
 } from './window';
 import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
-import {
-  AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,
-  FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW,
-} from './engine/ui/gba-text-system';
+import { GetFontAttribute, GetMenuCursorDimensionByFont, FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW } from './text';
+import { AddTextPrinterParameterized4 } from './menu';
 import {
   getRuntime, PlaySE, JOY_NEW, JOY_REPEAT,
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,

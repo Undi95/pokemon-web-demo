@@ -41,10 +41,9 @@ import {
   METATILE_LAYER_TYPE_NORMAL, METATILE_LAYER_TYPE_COVERED, METATILE_LAYER_TYPE_SPLIT,
   gMapHeader,
 } from './fieldmap';
-import {
-  AddTextPrinterParameterized3, GetStringRightAlignXOffset,
-  StringExpandPlaceholders, gStringVar4, CHAR_SPACER_STR,
-} from './engine/ui/gba-text-system';
+import { GetStringRightAlignXOffset, CHAR_SPACER_STR } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
+import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import { GetPlayerTextSpeedDelay } from './menu';
 import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
 import { encodeOwText } from './text';

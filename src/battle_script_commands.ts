@@ -10440,7 +10440,7 @@ import {
   PutWindowTilemap as _PutWindowTilemapBSC, ClearWindowTilemap as _ClearWindowTilemapBSC,
   CopyWindowToVram as _CopyWindowToVramBSC, CopyToWindowPixelBuffer as _CopyToWindowPixelBufferBSC,
 } from './window';
-import { AddTextPrinterParameterized3 as _AddTextPrinterParameterized3BSC } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 as _AddTextPrinterParameterized3BSC } from './menu';
 import { loadIndexedPngStrict as _loadIndexedPngStrictBSC, loadGbaPal as _loadGbaPalBSC } from '../harness/gba/png-loader';
 import {
   LoadSpriteSheet as _LoadSpriteSheetBSC, LoadSpritePalette as _LoadSpritePaletteBSC,

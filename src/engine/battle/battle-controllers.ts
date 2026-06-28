@@ -95,7 +95,7 @@ import {
 import {
   FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
 } from '../../window';
-import { AddTextPrinterParameterized4 } from '../ui/gba-text-system';
+import { AddTextPrinterParameterized4 } from '../../menu';
 import { gTextFlags } from '../ui/gba-text-printer';
 import { GetPlayerTextSpeedDelay } from '../ui/gba-menu-system';
 import {

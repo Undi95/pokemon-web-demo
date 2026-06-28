@@ -28,7 +28,7 @@ import {
   FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
 } from './window';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 import {
   getRuntime,
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,

@@ -146,9 +146,8 @@ import {
   CopyWindowToVram, PutWindowTilemap, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
 } from './window';
 import { LoadMessageBoxGfx } from './text_window';
-import {
-  AddTextPrinterParameterized, AddTextPrinterParameterized2, RunTextPrinters, IsTextPrinterActive,
-} from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized, RunTextPrinters, IsTextPrinterActive } from './text';
+import { AddTextPrinterParameterized2 } from './menu';
 import { getString } from './engine/ui/gba-strings';
 import { Random as _RandomFishing } from './random';
 import {

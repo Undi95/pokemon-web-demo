@@ -36,7 +36,7 @@ import {
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
 } from './window';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 import { LoadBgTiles } from '../harness/runtime/decomp-globals';
 import { LoadPalette } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';

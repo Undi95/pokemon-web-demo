@@ -44,7 +44,7 @@ import {
 } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetPlayerNameString, encodeOwText } from '../include/text';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT, FLAG_GET_SEEN } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
 import { IsNationalPokedexEnabled } from './event_data';
@@ -67,7 +67,7 @@ import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../include/constants/songs';
 import { HasValidSave } from './save';
 import { bagContents } from './engine/bag/bag';
 import { HideMapNamePopUpWindow } from './map_name_popup';
-import { GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
+import { GetStringRightAlignXOffset } from './text';
 import { gMapHeader } from './fieldmap';
 import { getMapNameFr } from './data/map-names-fr';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';

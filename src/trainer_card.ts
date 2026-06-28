@@ -39,7 +39,8 @@ import {
   type WindowTemplate,
 } from './window';
 import { LoadUserWindowBorderGfx } from './text_window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './engine/ui/gba-text-system';
+import { GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FEMALE } from '../harness/runtime/decomp-globals';

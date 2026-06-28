@@ -1399,7 +1399,8 @@ import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSprit
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle_interface → ui/*).
 import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from './window';
-import { AddTextPrinterParameterized4, FONT_SMALL, TEXT_SKIP_DRAW } from './engine/ui/gba-text-system';
+import { FONT_SMALL, TEXT_SKIP_DRAW } from './text';
+import { AddTextPrinterParameterized4 } from './menu';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
  *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé

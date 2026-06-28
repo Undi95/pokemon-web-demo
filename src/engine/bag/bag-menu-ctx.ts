@@ -71,9 +71,9 @@ import {
   type WindowTemplate,
 } from '../../window';
 import { JOY_NEW, PALETTES_ALL, getRuntime } from '../../../harness/runtime/decomp-globals';
-import {
-  AddTextPrinterParameterized4, AddTextPrinterParameterized, FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW, gStringVar4,
-} from '../ui/gba-text-system';
+import { AddTextPrinterParameterized, FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW } from '../../text';
+import { AddTextPrinterParameterized4 } from '../../menu';
+import { gStringVar4 } from '../../../include/string_util';
 
 import { GetItemFieldFunc, GetItemType, GetItemName, GetItemSecondaryId, GetItemPrice } from '../../item';
 // ⚠️ Import LAZY de player-avatar (CanFish/StartFishing) : un import statique tire tout le graphe

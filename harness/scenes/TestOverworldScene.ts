@@ -214,7 +214,7 @@ import { TickShop } from '../../src/shop';
 import { TickPCAnim } from '../../src/engine/pokemon/pc-anim';
 import { TickRegionMap } from '../../src/engine/field/region-map';
 import { syncSubspriteOam } from '../../src/event_object_movement';
-import { preloadFontData } from '../../src/engine/ui/gba-text-system';
+import { preloadFontData } from '../../src/text';
 import { preloadTextWindowFrames } from '../../src/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
 import * as Songs from '../../include/constants/songs';

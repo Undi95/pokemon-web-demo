@@ -45,7 +45,8 @@ import {
   type WindowTemplate,
 } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './engine/ui/gba-text-system';
+import { GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
@@ -61,7 +62,7 @@ import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from './engine/ui/gba-strings';
 import { setStringVar, encodeOwText, decodeOwBytes } from '../include/text';
-import { StringExpandPlaceholders, gStringVar4 } from './engine/ui/gba-text-system';
+import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import * as Songs from '../include/constants/songs';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,

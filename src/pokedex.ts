@@ -43,7 +43,8 @@ import {
   ResetVramOamAndBgCntRegs,
   type WindowTemplate, type BgTemplate,
 } from './window';
-import { AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW } from './engine/ui/gba-text-system';
+import { FONT_NARROW, TEXT_SKIP_DRAW } from './text';
+import { AddTextPrinterParameterized4 } from './menu';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';

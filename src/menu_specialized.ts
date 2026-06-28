@@ -25,7 +25,7 @@
  */
 
 import { FillWindowPixelBuffer } from './window';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 

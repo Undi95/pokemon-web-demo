@@ -28,7 +28,8 @@ import {
   CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
 } from './window';
-import { AddTextPrinterParameterized3, CHAR_SPACER_STR } from './engine/ui/gba-text-system';
+import { CHAR_SPACER_STR } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 
 /** 1:1 décomp `#define MAX_MONEY 999999` (money.c:13). */
 export const MAX_MONEY = 999999;

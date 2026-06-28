@@ -19,7 +19,7 @@ import {
   CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
 } from './window';
-import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
+import { AddTextPrinterParameterized3 } from './menu';
 
 /** 1:1 décomp `#define MAX_COINS 9999` (constants/coins.h:4). */
 export const MAX_COINS = 9999;

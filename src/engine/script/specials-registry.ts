@@ -51,7 +51,7 @@ import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system'
 // time_events.c — foyer 1:1 des fonctions ci-dessous (gSpecials[] les référence).
 import { IsMirageIslandPresent, UpdateShoalTideFlag, InitBirchState } from '../../time_events';
 import { ShowFieldMessage } from '../../field_message_box';
-import { gStringVar4 } from '../ui/gba-text-system';
+import { gStringVar4 } from '../../../include/string_util';
 import { Random } from '../../random';
 import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import {

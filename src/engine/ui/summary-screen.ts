@@ -32,10 +32,8 @@ import {
   ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates,
 } from '../../window';
 import { GetPlayerNameString, encodeOwText } from '../../../include/text';
-import {
-  AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
-  GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
-} from './gba-text-system';
+import { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW } from '../../text';
+import { AddTextPrinterParameterized3 } from '../../menu';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE, FreeAllSpritePalettes } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag, DestroySprite, ResetSpriteData } from '../../sprite';

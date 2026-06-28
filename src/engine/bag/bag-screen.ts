@@ -32,13 +32,14 @@ import {
   type WindowTemplate,
 } from '../../window';
 import { LoadUserWindowBorderGfx } from '../../text_window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../ui/gba-text-system';
+import { GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../../text';
+import { AddTextPrinterParameterized3 } from '../../menu';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { FEMALE } from '../../../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, AllocOamMatrix, FreeOamMatrix, ResetSpriteData } from '../../sprite';
 import { setStringVar, encodeOwText } from '../../../include/text';
-import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
+import { StringExpandPlaceholders, gStringVar4 } from '../../../include/string_util';
 import { EOS, CHAR_NEWLINE } from '../../../include/constants/characters';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../../../harness/runtime/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets, CountTotalItemQuantityInBag } from './bag';

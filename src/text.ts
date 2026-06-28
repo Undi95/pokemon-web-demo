@@ -32,13 +32,9 @@ import {
   RENDER_FINISH, RENDER_REPEAT, RENDER_PRINT, RENDER_UPDATE,
   RENDER_STATE_FINISH, RENDER_STATE_HANDLE_CHAR, RENDER_STATE_WAIT, RENDER_STATE_CLEAR,
   RENDER_STATE_SCROLL_START, RENDER_STATE_SCROLL, RENDER_STATE_WAIT_SE, RENDER_STATE_PAUSE,
-  addTextPrinter,
+  addTextPrinter, _setTextInputState,
   type TextPrinter, type AddTextPrinterOpts,
 } from './engine/ui/gba-text-printer';
-import {
-  getOwCharmap, getFontGlyphData, getFontGlyphWidths,
-  getDownArrowPixels, getDarkDownArrowPixels,
-} from './engine/ui/gba-text-system';
 // 1:1 décomp : GetPlayerTextSpeed (menu.c:474) utilisé par RenderText SCROLL. Foyer =
 // miroir `menu.ts`. Cycle text↔menu runtime-safe (text.c appelle GetPlayerTextSpeed).
 import { GetPlayerTextSpeed } from './menu';
@@ -50,8 +46,11 @@ import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placehol
 // 1:1 décomp : TextPrinterWait*/RENDER_STATE_WAIT_SE appellent PlaySE(SE_SELECT) /
 // IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
 // fonctions, jamais au top-level). SE_SELECT = constants/songs.h.
-import { PlaySE, IsSEPlaying } from '../harness/runtime/decomp-globals';
+import { PlaySE, IsSEPlaying, getRuntime } from '../harness/runtime/decomp-globals';
 import { SE_SELECT } from './engine/decomp-data/_common-constants';
+// Migration TEXTE byte : init la charmap du miroir strings.ts (gText_ExpandedPlaceholder_*
+// FR + EncodePlayerNameFR) — appelé par loadFontData une fois la charmap chargée.
+import { InitTextData } from '../include/strings';
 
 // NB : migration TEXTE en FLIP DIRECT (décision user 2026-06-06, pas de flag/2-voies).
 // Tout le système texte OW bascule en byte-level 1:1 ; pas de `__USE_DECOMP_TEXT__`.
@@ -1130,3 +1129,179 @@ export function DeactivateAllTextPrinters(): void {
 // Expose pour debug overworld dialog + gate combat (bundle module instance).
 (globalThis as Record<string, unknown>).__debugGetTextPrinters = _debugGetTextPrinters;
 (globalThis as Record<string, unknown>).__gbaIsTextPrinterActive = IsTextPrinterActive;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Ex-`gba-text-system.ts` — couche data font + RunTextPrinters + text colors,
+//  RAPATRIÉE dans le miroir 1:1 text.c (consolidation MIRROR, dissolution du
+//  fichier d'adaptation). La couche DATA (chargement font/charmap/down-arrow)
+//  reste l'adaptation web ; le driving texte vit déjà au-dessus (RenderText).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Font data (lazy loaded) ─────────────────────────────────────────────────
+
+let glyphData: number[][] | null = null;
+let glyphWidths: Uint8Array | null = null;
+let charmap: Record<string, number> | null = null;
+let downArrowPixels: number[][] | null = null;
+// 1:1 décomp text.c:72 sDarkDownArrowTiles (down_arrow_alt.png) — flèche de fin
+// de texte ALT utilisée quand gTextFlags.useAlternateDownArrow (combat/evo/Pokenav).
+let darkDownArrowPixels: number[][] | null = null;
+
+/** 1:1 décomp text.h enum FontIds : FONT_SMALL=0, FONT_NORMAL=1, FONT_SHORT=2,
+ *  FONT_SHORT_COPY_{1,2,3}=3,4,5, FONT_NARROW=7, FONT_SMALL_NARROW=8. */
+const FONT_NAMES: Record<number, string> = {
+  0: 'small',
+  1: 'normal',
+  2: 'short',
+  3: 'short', 4: 'short', 5: 'short',  // FONT_SHORT_COPY_*
+  7: 'narrow',
+  8: 'smallnarrow',
+};
+let glyphDataByFont: Record<string, number[][]> | null = null;
+let glyphWidthsByFont: Record<string, Uint8Array> | null = null;
+
+async function loadFontData(): Promise<void> {
+  if (glyphData) return;
+  const [fontRes, widthsRes, charmapRes, arrowRes, arrowAltRes] = await Promise.all([
+    fetch('/decomp/em/ui/fonts/latin.latfont.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/font-widths.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/charmap.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/fonts/down_arrow.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/fonts/down_arrow_alt.json').then((r) => r.json()),
+  ]);
+  // 1:1 décomp : load TOUS les fonts (normal, short, narrow, small, smallnarrow).
+  // sItemListMenu.fontId = FONT_NARROW (=7) → glyph data différent de FONT_NORMAL.
+  glyphDataByFont = {};
+  glyphWidthsByFont = {};
+  for (const name of ['normal', 'short', 'narrow', 'small', 'smallnarrow']) {
+    if (fontRes[name]) glyphDataByFont[name] = fontRes[name] as number[][];
+    if (widthsRes[name]) glyphWidthsByFont[name] = new Uint8Array(widthsRes[name] as number[]);
+  }
+  // Default refs vers FONT_NORMAL (= back-compat avec callers qui ne passent pas fontId).
+  glyphData = glyphDataByFont.normal;
+  glyphWidths = glyphWidthsByFont.normal;
+  charmap = charmapRes as Record<string, number>;
+  // Migration TEXTE byte : init le miroir strings.ts (gText_ExpandedPlaceholder_*
+  // FR + EncodePlayerNameFR) avec la charmap fraîchement chargée. Sans ça,
+  // `{PLAYER}`/`{RIVAL}` rendaient des espaces (charmap null → byte 0).
+  InitTextData(charmap);
+  const arrow = arrowRes as { width: number; height: number; pixels: number[][] };
+  downArrowPixels = arrow.pixels;
+  const arrowAlt = arrowAltRes as { width: number; height: number; pixels: number[][] };
+  darkDownArrowPixels = arrowAlt.pixels;
+}
+
+/** Charmap OW (char→byte), chargée au boot par loadFontData. null avant. Utilisée
+ *  par `getText` (script-runtime) pour encoder la data texte en bytes (notre préproc). */
+export function getOwCharmap(): Record<string, number> | null {
+  return charmap;
+}
+
+/** Résout glyph data + widths selon fontId. Fallback à FONT_NORMAL si inconnu. */
+function _resolveFont(fontId: number): { glyphData: number[][]; glyphWidths: Uint8Array } {
+  const name = FONT_NAMES[fontId] ?? 'normal';
+  return {
+    glyphData: glyphDataByFont?.[name] ?? glyphData!,
+    glyphWidths: glyphWidthsByFont?.[name] ?? glyphWidths!,
+  };
+}
+
+/** Accesseur HW des width-tables d'un font (= `gFontXLatinGlyphWidths` du décomp). */
+export function getFontGlyphWidths(fontId: number): Uint8Array {
+  ensureFontLoaded();
+  return _resolveFont(fontId).glyphWidths;
+}
+
+/** Accesseur HW des glyphes pré-décodés d'un font (= `gFontXLatinGlyphs` décomp). */
+export function getFontGlyphData(fontId: number): number[][] {
+  ensureFontLoaded();
+  return _resolveFont(fontId).glyphData;
+}
+
+/** Accesseur du `resolveFont` (switch glyph-set mid-string {FONT N}) pour le renderer. */
+export function resolveFontForMirror(fontId: number): { glyphData: number[][]; glyphWidths: Uint8Array } {
+  return _resolveFont(fontId);
+}
+
+/** Pixels de la down-arrow (▼ fin de message) — terrain/menus + alt combat. */
+export function getDownArrowPixels(): number[][] | null { return downArrowPixels; }
+export function getDarkDownArrowPixels(): number[][] | null { return darkDownArrowPixels; }
+
+/** Force load font data (call during scene preload). */
+export function preloadFontData(): Promise<void> {
+  return loadFontData();
+}
+
+function ensureFontLoaded(): void {
+  if (!glyphData || !glyphWidths || !charmap) {
+    throw new Error('[text] Font data not loaded. Call preloadFontData() first.');
+  }
+}
+
+/** 1:1 décomp `CHAR_SPACER` (= byte 0x77 dans charmap, charmap.txt:280).
+ *  Caractère spacer demi-largeur utilisé par `ConvertIntToDecimalStringN`
+ *  en mode RIGHT_ALIGN pour padder à gauche les nombres courts. Côté JS = 'ラ'. */
+export const CHAR_SPACER_STR = 'ラ';
+
+/** Remplit le buffer byte gStringVar4 via StringCopy (byte-level). Le décomp n'a
+ *  pas de `setStringVar4` ; helper pour les call-sites existants. */
+export function setStringVar4(value: Uint8Array): void {
+  StringCopy(gStringVar4, value);
+}
+
+// Expose les BUFFERS byte (réf. stable, contenu mutable) sur globalThis pour les
+// auto-callbacks / debug. Une seule fois (les buffers ne sont jamais réassignés).
+if (!('gStringVar4' in globalThis)) {
+  const g = globalThis as Record<string, unknown>;
+  g.gStringVar1 = gStringVar1;
+  g.gStringVar2 = gStringVar2;
+  g.gStringVar3 = gStringVar3;
+  g.gStringVar4 = gStringVar4;
+}
+
+// ─── RunTextPrinters (boucle per-frame, 1:1 décomp text.c:319) ────────────────
+
+const A_BUTTON_TEXT = 0x01;
+const B_BUTTON_TEXT = 0x02;
+const AB_MASK = A_BUTTON_TEXT | B_BUTTON_TEXT;
+
+// Guard contre double-tick par frame (runtime auto + Tasks décomp via
+// RunTextPrintersAndIsPrinter0Active). Sans ça le ▼ down arrow s'animerait 2× trop vite.
+let _lastRunTextPrintersFrame = -1;
+
+export function RunTextPrinters(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Skip si déjà tick cette frame (= 1:1 décomp behavior, 1 call par frame).
+  if (rt.gIntroFrameCounter === _lastRunTextPrintersFrame) return;
+  _lastRunTextPrintersFrame = rt.gIntroFrameCounter;
+  // 1:1 décomp text.c:944-953 — JOY_NEW/JOY_HELD(A|B) lus inline par RenderText
+  // (pacing A/B + TextPrinterWait*). On publie l'état input AVANT RenderFont ; tout
+  // le driving (WAIT/CLEAR/SCROLL/WAIT_SE + down-arrow + PlaySE) vit dans RenderText.
+  const newAB = !!(rt.gMain.newKeys & AB_MASK);
+  const heldAB = !!(rt.gMain.heldKeys & AB_MASK);
+  _setTextInputState(newAB, heldAB);
+
+  // 1:1 décomp text.c:325-343 — for (i=0; i<WINDOWS_MAX; i++) if (sTextPrinters[i].active)
+  // { renderCmd = RenderFont(&sTextPrinters[i]); case FINISH: active = FALSE; }.
+  // Tableau creux indexé par windowId (slots vides = undefined → skip).
+  for (let i = 0; i < sTextPrinters.length; i++) {
+    const p = sTextPrinters[i];
+    if (!p || !p.active) continue;
+    const renderCmd = RenderFont(p);
+    if (renderCmd === RENDER_FINISH) p.active = false;
+  }
+}
+
+// ─── Text colors helper (1:1 décomp main_menu.c:410-411) ─────────────────────
+
+// sTextColor_Headers = [TEXT_DYNAMIC_COLOR_1, _2, _3] = [10, 11, 12]. Palette indices
+// chargés dynamiquement par main_menu auto file. NE JAMAIS approximer ([1,2,3] donnait
+// un bg BLUE/PINK au lieu de WHITE) ; toujours les indices que le dynamic-load remplit.
+export const sTextColor_Headers = [10, 11, 12] as const; // [bg=DYNAMIC_1, fg=DYNAMIC_2, shadow=DYNAMIC_3]
+(globalThis as Record<string, unknown>).sTextColor_Headers = sTextColor_Headers;
+
+// sTextColor_MenuInfo = [TEXT_DYNAMIC_COLOR_1=0xA, TEXT_COLOR_WHITE=0x1, TEXT_DYNAMIC_COLOR_3=0xC]
+// = [10, 1, 12]. fg = WHITE (pas dynamic) → texte blanc sur bg dynamique (sub-info Continue).
+export const sTextColor_MenuInfo = [10, 1, 12] as const;
+(globalThis as Record<string, unknown>).sTextColor_MenuInfo = sTextColor_MenuInfo;

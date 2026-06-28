@@ -34,7 +34,7 @@ import {
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
 } from './window';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './engine/battle/battle-windows';
-import { DeactivateAllTextPrinters } from './engine/ui/gba-text-system';
+import { DeactivateAllTextPrinters } from './text';
 
 /** 1:1 décomp `gPPTextPalette` (graphics/battle_interface/text_pp.pal, 16 u16).
  *  Const ROM dans le décomp ; ici chargé une fois pendant le setup BG combat

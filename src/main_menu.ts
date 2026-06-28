@@ -119,7 +119,8 @@ import {
   gSaveBlock2Ptr,
 } from './engine/ui/gba-menu-system';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './engine/ui/gba-text-system';
+import { GetStringRightAlignXOffset, sTextColor_MenuInfo } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
 import { getString } from './engine/ui/gba-strings';
 import { FlagGet } from './engine/script/script-vars';
 import { SE_SELECT as _SE_SELECT } from '../include/constants/songs';

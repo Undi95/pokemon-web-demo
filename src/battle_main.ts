@@ -65,7 +65,7 @@ import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_RECORDED,
   BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS,
 } from './engine/battle/constants';
-import { RunTextPrinters as _RunTextPrinters_rt } from './engine/ui/gba-text-system';
+import { RunTextPrinters as _RunTextPrinters_rt } from './text';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
 import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl, setSpriteAnims } from './sprite';
 import {

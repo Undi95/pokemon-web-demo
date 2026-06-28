@@ -25,12 +25,9 @@ import {
 } from './window';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
-import {
-  AddTextPrinterParameterized3,
-  IsTextPrinterActive,
-  gStringVar4,
-  StringExpandPlaceholders,
-} from './engine/ui/gba-text-system';
+import { IsTextPrinterActive } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
+import { gStringVar4, StringExpandPlaceholders } from '../include/string_util';
 import { decodeOwBytes } from '../include/text';
 import { gTextFlags } from './engine/ui/gba-text-printer';
 import { getRuntime } from '../harness/runtime/decomp-globals';

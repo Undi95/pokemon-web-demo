@@ -16,7 +16,7 @@
  */
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { assetCache } from '../runtime/decomp-globals';
-import { preloadFontData } from '../../src/engine/ui/gba-text-system';
+import { preloadFontData } from '../../src/text';
 import {
   preloadScene1Assets, preloadScene2Assets, preloadScene3Assets,
   preloadTitleAssets, preloadBirchSpeechAssets,
