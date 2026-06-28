@@ -61,7 +61,7 @@ import {
 import { BYTECODE as ANIM_BYTECODE, LABELS as ANIM_LABELS } from '../decomp-data/auto-asm-bytecode/data/battle_anim_scripts-bytecode';
 // Pipeline anims DECOMP-DIRECT (2026-06-13) : table 1:1 gBattleAnimPicTable +
 // décodeurs runtime éprouvés (la même chaîne couleur que mons/balls).
-import { G_BATTLE_ANIM_PIC_TABLE } from '../decomp-data/src/battle_anim_pic_table-data';
+import { G_BATTLE_ANIM_PIC_TABLE } from '../../data/battle_anim';
 import { loadTileBin, loadIndexedPngStrict, loadGbaPal } from '../../../harness/gba/png-loader';
 
 // ═══════════════════════════════════════════════════════════════════════════

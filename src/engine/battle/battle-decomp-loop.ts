@@ -253,7 +253,7 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
       // Remplace le manifest .bin/.gbapal intermédiaires (2 générations de
       // convertisseurs aux conventions divergentes : hit CYAN, mist ROSE).
       const [{ G_BATTLE_ANIM_PIC_TABLE }, pl] = await Promise.all([
-        import('../decomp-data/src/battle_anim_pic_table-data'),
+        import('../../data/battle_anim'),
         import('../../../harness/gba/png-loader'),
       ]);
       const SRC = '/decomp/em/battle_anims/sprites-src/';

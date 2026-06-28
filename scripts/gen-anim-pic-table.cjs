@@ -2,7 +2,7 @@
 // palettes de la décomp — si ça pose problème, le problème c'est nous »).
 // 1. COPIE AS-IS des sources (png + .pal JASC) de graphics/battle_anims/sprites/
 //    vers public/decomp/em/battle_anims/sprites-src/ — ZÉRO conversion au build.
-// 2. GÉNÈRE src/engine/decomp-data/src/battle_anim_pic_table-data.ts 1:1 depuis
+// 2. GÉNÈRE src/data/battle_anim.ts (miroir 1:1 src/data/battle_anim.h) depuis
 //    gBattleAnimPicTable + gBattleAnimPaletteTable (src/data/battle_anim.h) :
 //    tag → { gfxFile (png à décoder runtime), size (chargement ROM), palFile
 //    (png→PLTE ou .pal JASC du PAL SYMBOL — recolors croisés résolus), concat }.
@@ -16,7 +16,8 @@ const path = require('node:path');
 const DECOMP = 'D:/Projet 1/decomps/pokeemeraude';
 const SRC_DIR = path.join(DECOMP, 'graphics', 'battle_anims', 'sprites');
 const OUT_DIR = 'D:/Projet 1/pokemon-web-demo/public/decomp/em/battle_anims/sprites-src';
-const TABLE_OUT = 'D:/Projet 1/pokemon-web-demo/src/engine/decomp-data/src/battle_anim_pic_table-data.ts';
+// Chemin miroir 1:1 décomp (src/data/battle_anim.h → src/data/battle_anim.ts).
+const TABLE_OUT = 'D:/Projet 1/pokemon-web-demo/src/data/battle_anim.ts';
 
 // ── tables décomp ────────────────────────────────────────────────────────────
 const dataH = fs.readFileSync(path.join(DECOMP, 'src', 'data', 'battle_anim.h'), 'utf8');
@@ -103,5 +104,5 @@ export interface AnimPicEntry {
 export const G_BATTLE_ANIM_PIC_TABLE: Readonly<Record<number, AnimPicEntry>> = {
 `;
 fs.writeFileSync(TABLE_OUT, header + lines.join('\n') + '\n};\n');
-console.log(`copiés/à jour: ${copied} fichiers → sprites-src/ · table: ${lines.length} entrées → battle_anim_pic_table-data.ts`);
+console.log(`copiés/à jour: ${copied} fichiers → sprites-src/ · table: ${lines.length} entrées → src/data/battle_anim.ts`);
 if (warns.length) { console.log('⚠ warnings:'); warns.forEach((w) => console.log('  ' + w)); }
