@@ -47,9 +47,6 @@ export const CONTEXT_RUNNING  = 0;
 export const CONTEXT_WAITING  = 1;
 export const CONTEXT_SHUTDOWN = 2;
 
-const STACK_DEPTH = 20;
-const CTX_DATA_SIZE = 4;
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 /** Une opcode parsed (= "msgbox X, MSGBOX_NPC" → { name: 'msgbox', args: ['X', 'MSGBOX_NPC'] }). */
@@ -75,24 +72,8 @@ export interface ScriptContext {
   comparisonResult: number;
 }
 
-function createContext(): ScriptContext {
-  return {
-    mode: SCRIPT_MODE_STOPPED,
-    scriptOpcodes: null,
-    scriptIdx: 0,
-    stack: Array.from({ length: STACK_DEPTH }, () => null),
-    stackDepth: 0,
-    data: new Array(CTX_DATA_SIZE).fill(0),
-    nativeFn: null,
-    comparisonResult: 0,
-  };
-}
-
 // ─── Module state ────────────────────────────────────────────────────────────
 
-const sGlobalScriptContext = createContext();
-const sImmediateScriptContext = createContext();
-let sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
 // Lock de contrôles joueur UNIFIÉ (parsé + byte-VM) via globalThis : au swap Phase 5, les
 // chemins de combat/warp/global peuvent appeler Lock/Unlock sur l'un OU l'autre moteur ;
 // un flag partagé élimine la désync dual-flag (sinon : freeze post-combat / warp cassé).
@@ -262,169 +243,14 @@ export function LockPlayerFieldControls(): void { _lockSet(true); }
 export function UnlockPlayerFieldControls(): void { _lockSet(false); }
 export function ArePlayerFieldControlsLocked(): boolean { return _lockGet(); }
 
-// ─── Context primitives 1:1 décomp ───────────────────────────────────────────
-
-export function InitScriptContext(ctx: ScriptContext): void {
-  ctx.mode = SCRIPT_MODE_STOPPED;
-  ctx.scriptOpcodes = null;
-  ctx.scriptIdx = 0;
-  ctx.nativeFn = null;
-  ctx.stackDepth = 0;
-  ctx.comparisonResult = 0;
-  for (let i = 0; i < CTX_DATA_SIZE; i++) ctx.data[i] = 0;
-  for (let i = 0; i < STACK_DEPTH; i++) ctx.stack[i] = null;
-}
-
-export function SetupBytecodeScript(ctx: ScriptContext, opcodes: Opcode[]): boolean {
-  ctx.scriptOpcodes = opcodes;
-  ctx.scriptIdx = 0;
-  ctx.mode = SCRIPT_MODE_BYTECODE;
-  return true;
-}
-
-export function SetupNativeScript(ctx: ScriptContext, fn: () => boolean): void {
-  ctx.mode = SCRIPT_MODE_NATIVE;
-  ctx.nativeFn = fn;
-}
-
-export function StopScript(ctx: ScriptContext): void {
-  ctx.mode = SCRIPT_MODE_STOPPED;
-  ctx.scriptOpcodes = null;
-}
-
-export function ScriptJump(ctx: ScriptContext, opcodes: Opcode[]): void {
-  ctx.scriptOpcodes = opcodes;
-  ctx.scriptIdx = 0;
-}
-
-/** 1:1 STRICT décomp `ScriptCall(ctx, ptr)` (script.c:155-159) :
- *    ScriptPush(ctx, ctx->scriptPtr);   ← push, ignore overflow result
- *    ctx->scriptPtr = ptr;              ← set new ptr REGARDLESS of overflow
- *  ScriptPush retourne TRUE si overflow (stackDepth + 1 >= STACK_DEPTH) mais
- *  ScriptCall ignore la valeur — le décomp continue à set ptr quoi qu'il arrive. */
-export function ScriptCall(ctx: ScriptContext, opcodes: Opcode[]): void {
-  // Push (= 1:1 ScriptPush) : si overflow, warn silencieux mais set ptr quand même.
-  if (ctx.stackDepth + 1 < STACK_DEPTH) {
-    ctx.stack[ctx.stackDepth] = { opcodes: ctx.scriptOpcodes ?? [], idx: ctx.scriptIdx };
-    ctx.stackDepth++;
-  } else {
-    console.warn('[script-runtime] stack overflow on call (= dropped push, set ptr anyway)');
-  }
-  ctx.scriptOpcodes = opcodes;
-  ctx.scriptIdx = 0;
-}
-
-export function ScriptReturn(ctx: ScriptContext): void {
-  if (ctx.stackDepth === 0) {
-    // 1:1 décomp : ScriptPop returns NULL → ctx->scriptPtr = NULL → mode = STOPPED.
-    ctx.scriptOpcodes = null;
-    return;
-  }
-  ctx.stackDepth--;
-  const top = ctx.stack[ctx.stackDepth];
-  if (top) {
-    ctx.scriptOpcodes = top.opcodes;
-    ctx.scriptIdx = top.idx;
-  } else {
-    ctx.scriptOpcodes = null;
-  }
-}
-
-// ─── Opcode handler registry ─────────────────────────────────────────────────
-
-/** Handler signature : returns
- *    true  → wait (= ScriptContext_Stop, defer to next frame)
- *    false → continue (= advance to next opcode)
- *  Le throw "STOP" peut être utilisé pour terminer le script. */
-export type OpcodeHandler = (ctx: ScriptContext, args: string[]) => boolean;
-
-const _handlers: Map<string, OpcodeHandler> = new Map();
-
-export function registerOpcode(name: string, handler: OpcodeHandler): void {
-  _handlers.set(name, handler);
-}
-
-/** Audit session 126 (post-test) : public accessor pour aliasing opcodes
- *  (= setdoor_opened → setdooropen). Returns undefined si pas registered. */
-export function getOpcodeHandler(name: string): OpcodeHandler | undefined {
-  return _handlers.get(name);
-}
-
-/** Lookup handler. Si pas trouvé : warn une fois, then noop. */
-const _warnedMissing = new Set<string>();
-function dispatchOpcode(ctx: ScriptContext, op: Opcode): boolean {
-  const handler = _handlers.get(op.name);
-  if (!handler) {
-    if (!_warnedMissing.has(op.name)) {
-      console.warn(`[script-runtime] opcode '${op.name}' not implemented (args: ${op.args.join(', ')}) — skipping`);
-      _warnedMissing.add(op.name);
-    }
-    return false;  // continue
-  }
-  return handler(ctx, op.args);
-}
-
-// ─── Run loop 1:1 décomp ─────────────────────────────────────────────────────
-
-/** 1:1 décomp `RunScriptCommand(ctx)`. Returns FALSE quand script done.
- *  Tick :
- *   - STOPPED : returns FALSE
- *   - NATIVE  : poll nativeFn ; si TRUE, switch en BYTECODE ; returns TRUE
- *   - BYTECODE : loop opcodes jusqu'à wait OR end. */
-export function RunScriptCommand(ctx: ScriptContext): boolean {
-  if (ctx.mode === SCRIPT_MODE_STOPPED) return false;
-  if (ctx.mode === SCRIPT_MODE_NATIVE) {
-    if (ctx.nativeFn) {
-      if (ctx.nativeFn() === true) {
-        ctx.mode = SCRIPT_MODE_BYTECODE;
-      }
-      return true;  // wait
-    }
-    ctx.mode = SCRIPT_MODE_BYTECODE;
-    // fallthrough
-  }
-  // BYTECODE : loop until wait or end
-  // Safety : cap iterations pour éviter infinite loop si bug dans script.
-  for (let iter = 0; iter < 10000; iter++) {
-    if (!ctx.scriptOpcodes) {
-      ctx.mode = SCRIPT_MODE_STOPPED;
-      return false;
-    }
-    if (ctx.scriptIdx >= ctx.scriptOpcodes.length) {
-      // Fall off the end (= no explicit end opcode). Stop.
-      ctx.mode = SCRIPT_MODE_STOPPED;
-      return false;
-    }
-    const op = ctx.scriptOpcodes[ctx.scriptIdx];
-    ctx.scriptIdx++;
-    // Devtools ring buffer pour scope.scriptHistory(). Push silently si dispo
-    // — aucun effet runtime si __scriptOpcodeLog absent. Cap à 256 entries.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const _olog = (globalThis as any).__scriptOpcodeLog as Array<{
-      frame: number; label: string; opcode: string; args: unknown[]; idx: number; ts: number;
-    }> | undefined;
-    if (_olog) {
-      if (_olog.length >= 256) _olog.shift();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const _rt = (globalThis as any).dev?._rt;
-      _olog.push({
-        frame: _rt?.gIntroFrameCounter ?? 0,
-        label: _currentScriptLabel ?? 'native',
-        opcode: op.name,
-        args: op.args,
-        idx: ctx.scriptIdx - 1,
-        ts: performance.now(),
-      });
-    }
-    const wait = dispatchOpcode(ctx, op);
-    if (wait) return true;
-    // Si dispatchOpcode a set mode = STOPPED (= via end opcode), bail.
-    if (ctx.mode === SCRIPT_MODE_STOPPED) return false;
-  }
-  console.warn('[script-runtime] iteration cap hit (10000) — runaway script?');
-  ctx.mode = SCRIPT_MODE_STOPPED;
-  return false;
-}
+// ─── (Moteur parsé RETIRÉ au clean byte-VM) ──────────────────────────────────
+// InitScriptContext / Setup{Bytecode,Native}Script / Stop/Jump/Call/Return Script /
+// registerOpcode / getOpcodeHandler / dispatchOpcode / RunScriptCommand vivaient ici
+// (interpréteur du moteur PARSÉ). Le byte-VM (`script_bytevm.ts` + `scrcmd_bytevm.ts`)
+// est le SEUL moteur. Ne restent que : `parseOpcode` + les libs `_scriptsByLabel`/
+// `_textsByLabel` (DONNÉES des tables triggers map_script_2, lues par TryRun*MapScript)
+// + le type `ScriptContext`/`Opcode` (consommés par le scaffolding trainer_see de
+// battle_setup) + l'API publique routant vers le byte-VM (ci-dessous).
 
 // ─── ScriptContext_* (= primary global ctx avec wait support) ────────────────
 
@@ -779,33 +605,19 @@ export function setDoCoordEventWeatherHook(fn: (coordEventWeather: string | numb
 // ─── Expose pour debug ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__scriptRuntime = {
-  sGlobalScriptContext,
   scripts: _scriptsByLabel,
   texts: _textsByLabel,
-  // Statut du byte-VM (le SEUL moteur) — pas le contexte parsé mort (qui resterait
-  // figé à SHUTDOWN) → scope.script().status reflète l'état réel du script en cours.
+  // Statut du byte-VM (le SEUL moteur) → scope.script().status reflète l'état réel.
   status: () => BV._getGlobalStatus(),
-  // Session 133 add : helpers pour devtool scope.script() enrichi.
   getCurrentLabel: () => _currentScriptLabel,
-  getCurrentOpcodeIdx: () => sGlobalScriptContext.scriptIdx,
-  getRemainingOpcodes: () => {
-    const ops = sGlobalScriptContext.scriptOpcodes;
-    return ops ? Math.max(0, ops.length - sGlobalScriptContext.scriptIdx) : 0;
-  },
-  getCurrentOpcode: () => {
-    const ops = sGlobalScriptContext.scriptOpcodes;
-    if (!ops || sGlobalScriptContext.scriptIdx >= ops.length) return null;
-    const op = ops[sGlobalScriptContext.scriptIdx];
-    return { name: op.name, args: op.args };
-  },
-  // Vérif DÉTERMINISTE du fix "préserve ScriptContext au retour-field" :
-  // snapshot/restore/init/enable exposés pour prouver (anti-eyeball) que
-  // ScriptContext_Init wipe le ctx ET que Restore le ramène 1:1.
+  // Curseur opcode : N/A en byte-VM (c'est du bytecode, pas un index d'Opcode[]). Le
+  // vrai curseur live = `__byteVm.diag().scriptPtrOff`. Stubs pour ne pas casser scope.script().
+  getCurrentOpcodeIdx: () => 0,
+  getRemainingOpcodes: () => 0,
+  getCurrentOpcode: () => null,
+  // snapshot/restore/init/enable du ScriptContext byte-VM (cf ScriptContext_* ci-dessus).
   snapshot: ScriptContext_Snapshot,
   restore: ScriptContext_Restore,
   init: ScriptContext_Init,
   enable: ScriptContext_Enable,
-  // Audit opcodes (campagne 1:1) : invoquer un handler en isolation pour vérif
-  // déterministe d'un opcode (ex. gotostd_if condition, random RNG).
-  getOpcodeHandler,
 };
