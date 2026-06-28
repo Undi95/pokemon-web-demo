@@ -594,7 +594,10 @@ const ScrCmd_cleartrainerflag: ScrCmdFunc = (ctx) => { ClearTrainerFlag(VarGet(S
 const _dg = (): any => (globalThis as Record<string, unknown>).__decompGlobals;
 const ScrCmd_playse: ScrCmdFunc = (ctx) => { PlaySE(ScriptReadHalfword(ctx)); return false; };
 const ScrCmd_waitse: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => !(_dg()?.IsSEPlaying?.() ?? false)); return true; };
-const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { _dg()?.PlayFanfare?.(ScriptReadHalfword(ctx)); return false; };
+// ⚠️ Lire l'arg AVANT l'appel optional-chained : `_dg()?.PlayFanfare?.(ScriptReadHalfword(ctx))`
+// court-circuite ScriptReadHalfword si PlayFanfare est absent (audio exempt) → l'arg 2o
+// n'est PAS consommé → scriptPtr désaligné (cassait le ramassage d'item : playfanfare MUS_OBTAIN_ITEM).
+const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); _dg()?.PlayFanfare?.(song); return false; };
 const ScrCmd_waitfanfare: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsFanfareTaskInactive?.() ?? true); return true; };
 const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx); _dg()?.m4aSongNumStart?.(song, true); return false; };
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
