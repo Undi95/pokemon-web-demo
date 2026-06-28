@@ -43,9 +43,9 @@ import { DECOR_NONE } from '../include/constants/decorations';
 import {
   ENUM_DecorationCategory,
 } from '../include/decoration';
-import { gDecorations } from './engine/ui/decoration-data';
+import { gDecorations } from './data/decoration/header';
 export { gDecorations };
-export type { Decoration } from './engine/ui/decoration-data';
+export type { Decoration } from './data/decoration/header';
 
 // ─── 1:1 décomp enum DecorationCategory (= decoration.h) ─────────────────────
 

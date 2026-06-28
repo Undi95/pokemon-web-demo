@@ -81,7 +81,7 @@ import {
   BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED, BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
   PlantBerryTree, ItemIdToBerryType,
 } from '../../berry';
-import { gDecorations } from '../ui/decoration-data';
+import { gDecorations } from '../../data/decoration/header';
 import { GetFirstEmptyDecorSlot } from '../../decoration_inventory';
 import { DecorationAdd, DecorationRemove } from '../../decoration_inventory';
 
