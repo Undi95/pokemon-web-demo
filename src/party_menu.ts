@@ -43,48 +43,48 @@ import {
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from '../../window';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../text_window';
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from '../../menu';
-import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../menu_specialized';
-import { GetStringCenterAlignXOffset } from '../../text';
-import { AddTextPrinterParameterized3 } from '../../menu';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
-import { ItemIsMail } from '../../mail_data';
-import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { gMoveNames } from '../data/game-data';
-import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from '../../sprite';
-import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
+} from './window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
+import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from './menu_specialized';
+import { GetStringCenterAlignXOffset } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
+import { ItemIsMail } from './mail_data';
+import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { gMoveNames } from './engine/data/game-data';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
+import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './engine/pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
-} from '../../../harness/runtime/decomp-globals';
-import { FlagGet } from '../script/script-vars';
-import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
-import { GetMapNameGeneric } from '../../region_map';
-import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../../../include/string_util';
-import { CHAR_SLASH, EOS } from '../../../include/constants/characters';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from '../../overworld';
-import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
-import { getString } from './gba-strings';
-import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
-import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
+} from '../harness/runtime/decomp-globals';
+import { FlagGet } from './engine/script/script-vars';
+import { MUS_LEVEL_UP } from './engine/decomp-data/_common-constants';
+import { GetMapNameGeneric } from './region_map';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
+import { CHAR_SLASH, EOS } from '../include/constants/characters';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './overworld';
+import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
+import { OpenSummaryScreen, GetSummaryLastMonIndex } from './engine/ui/summary-screen';
+import { getString } from './engine/ui/gba-strings';
+import { MON_ICON_PALETTE_INDICES } from './engine/pokemon/pokemon-icon-palettes';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED,
-} from '../../../include/constants/party_menu';
+} from '../include/constants/party_menu';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;

@@ -1886,7 +1886,7 @@ function _OpenPartyMenuToChooseMon(): void {
   // Imports dynamiques : évitent le cycle statique controller↔party-screen/reshow
   // (= pattern voie V battle-flow:4655) ; one-shot à l'ouverture (pas per-frame).
   void Promise.all([
-    import('./engine/ui/party-screen'),
+    import('./party_menu'),
     import('./reshow_battle_screen'),
   ]).then(([party, reshow]) => {
     party.OpenPartyScreenForBattleSwitch(reshow.CB2_SetUpReshowBattleScreenAfterMenu, {

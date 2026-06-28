@@ -1836,7 +1836,7 @@ function _executeAction(action: ItemAction): void {
           rt2.gMain.savedCallback = function BattleItemOpenPartyCB2(): void {
             if (opened) return;
             opened = true;
-            void import('../ui/party-screen').then((party) => {
+            void import('../../party_menu').then((party) => {
               party.OpenPartyScreenForItemUse(function BattleItemPartyReturnCB2(): void {
                 const used = CountTotalItemQuantityInBag(itemKeyBU) < qtyBefore;
                 (globalThis as Record<string, unknown>).__battleBagResultItemId = used ? itemIdBU : 0;

@@ -69,7 +69,7 @@ import {
   ShowLevelUpStatsBox,
   RefreshPartySlot,
   PartyMenuAnimateHP,
-} from './engine/ui/party-screen';
+} from './party_menu';
 import { GetMonLevelUpWindowStats } from './menu_specialized';
 import { getString } from './engine/ui/gba-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';

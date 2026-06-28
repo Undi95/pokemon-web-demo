@@ -81,7 +81,7 @@ import { preloadOptionMenuAssets } from './option_menu';
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
 import { OpenBagScreen } from './engine/bag/bag-menu';
-import { OpenPartyScreen, TickPartyScreen } from './engine/ui/party-screen';
+import { OpenPartyScreen, TickPartyScreen } from './party_menu';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
 import { OpenPokedexFromStartMenu } from './pokedex';
 import { getString } from './engine/ui/gba-strings';
