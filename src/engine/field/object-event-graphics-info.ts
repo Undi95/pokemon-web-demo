@@ -27,8 +27,8 @@
  * Pour MOM (16x32 = 2x4 tiles) : size = 2*4*64/2 = 256 bytes par frame.
  */
 
-import type { OamData } from './object-event-base-oam';
-import { gObjectEventBaseOam_16x32 } from './object-event-base-oam';
+import type { OamData } from '../../../include/gba/types';
+import { gObjectEventBaseOam_16x32 } from '../../data/object_events/base_oam';
 
 // ─── struct SpriteFrameImage 1:1 décomp sprite.h:26-30 ─────────────────────
 /**

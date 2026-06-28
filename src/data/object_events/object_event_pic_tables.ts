@@ -66,7 +66,7 @@ import {
   gObjectEventBaseOam_32x32,
   gObjectEventBaseOam_64x64,
   gObjectEventBaseOam_8x8,
-} from '../../engine/field/object-event-base-oam';
+} from './base_oam';
 import {
   sAnimTable_Standard, sAnimTable_Inanimate, sAnimTable_QuintyPlump,
   sAnimTable_BrendanMayNormal, sAnimTable_AcroBike, sAnimTable_Surfing,

@@ -36,7 +36,13 @@ import { SetOamMatrix } from '../harness/runtime/decomp-helpers';
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port
 // dérive le template depuis frameWidth/frameHeight catalog (= équivalent
 // fonctionnel à `graphicsInfo->oam`).
-import { GetBaseOamForDimensions } from './engine/field/object-event-base-oam';
+// GetBaseOamForDimensions (helper port non-1:1, ex-object-event-base-oam) défini en bas de ce fichier.
+import {
+  gObjectEventBaseOam_8x8, gObjectEventBaseOam_16x8, gObjectEventBaseOam_16x16,
+  gObjectEventBaseOam_32x8, gObjectEventBaseOam_64x32, gObjectEventBaseOam_16x32,
+  gObjectEventBaseOam_32x32, gObjectEventBaseOam_64x64,
+} from './data/object_events/base_oam';
+import type { OamData } from '../include/gba/types';
 // G6 — 1:1 STRICT décomp anim helpers pour MovementType callbacks
 // (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
 // pour alterner walk1/walk2 entre 2 steps consécutifs.
@@ -8600,4 +8606,26 @@ export function GetObjectEventGraphicsInfo(
   const factory = gObjectEventGraphicsInfoPointers[graphicsId];
   if (!factory) return null;
   return factory(...pics);
+}
+// ─── GetBaseOamForDimensions (helper PORT non-1:1) ──────────────────────────
+/** Mappe (frameWidth, frameHeight) → base OAM template 1:1 décomp.
+ *  Le décomp ne fait PAS ce mapping (= chaque graphicsInfo référence son
+ *  oam explicit). Notre port dérive depuis le catalog JSON qui ne contient
+ *  pas le `oam` field — on infère via dimensions. C'est une déviation
+ *  documentée mais fonctionnellement équivalente (= mêmes shape/size que
+ *  les graphicsInfo décomp pour les NPCs standard). Templates = base_oam.ts. */
+export function GetBaseOamForDimensions(frameWidth: number, frameHeight: number): Readonly<OamData> {
+  if (frameWidth === 8 && frameHeight === 8) return gObjectEventBaseOam_8x8;
+  if (frameWidth === 16 && frameHeight === 8) return gObjectEventBaseOam_16x8;
+  if (frameWidth === 16 && frameHeight === 16) return gObjectEventBaseOam_16x16;
+  if (frameWidth === 32 && frameHeight === 8) return gObjectEventBaseOam_32x8;
+  if (frameWidth === 64 && frameHeight === 32) return gObjectEventBaseOam_64x32;
+  if (frameWidth === 16 && frameHeight === 32) return gObjectEventBaseOam_16x32;
+  if (frameWidth === 32 && frameHeight === 32) return gObjectEventBaseOam_32x32;
+  if (frameWidth === 64 && frameHeight === 64) return gObjectEventBaseOam_64x64;
+  // Cas 48x48 (Truck) : utilise subspriteTables + primary sprite 16x32 hidden.
+  // Le décomp utilise gObjectEventBaseOam_16x32 pour le primary (cf.
+  // gObjectEventGraphicsInfo_Truck). Notre port fait pareil.
+  if (frameWidth === 48 && frameHeight === 48) return gObjectEventBaseOam_16x32;
+  return gObjectEventBaseOam_16x32;  // fallback
 }
