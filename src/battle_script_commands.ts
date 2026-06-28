@@ -210,7 +210,7 @@ import {
   PlaySE,
   SE_SELECT,
   gBitTable,
-} from './engine/battle/battle-controllers';
+} from './battle_controllers';
 import {
   BattleScriptPush,
   MarkBattlerForControllerExec,

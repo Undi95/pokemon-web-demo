@@ -50,7 +50,7 @@ import {
   gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE,
   PrepareBufferDataTransfer, BtlController_EmitTwoReturnValues,
   BtlController_EmitOneReturnValue, gUnusedControllerStruct,
-} from './engine/battle/battle-controllers-ipc';
+} from './battle_controllers';
 import { HandleIntroSlide } from './battle_intro';
 // ANTI-CYCLE ESM (regression T3) : lazy au lieu d'imports statiques.
 function _InitAndLaunchChosenStatusAnimationOpp(isStatus2: boolean, status: number): void {
@@ -61,7 +61,7 @@ function _isStatusAnimActiveOpp(battler: number): boolean {
   const m = (globalThis as Record<string, unknown>).__battleSpritesData as { isStatusAnimActive?: (b: number) => boolean } | undefined;
   return m?.isStatusAnimActive?.(battler) ?? false;
 }
-import { gBitTable } from './engine/battle/battle-controllers';
+import { gBitTable } from './battle_controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './engine/battle/util';

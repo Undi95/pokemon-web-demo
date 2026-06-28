@@ -48,7 +48,7 @@
  */
 
 import { Random } from '../../random';
-import { tickBattleControllers } from './battle-controllers';
+import { tickBattleControllers } from '../../battle_controllers';
 import {
   setCurrentActionFuncId, setMoveResultFlags, setActiveBattler,
   gBattleControllerExecFlags, gPauseCounterBattle, setPauseCounterBattle,

@@ -119,7 +119,7 @@ import {
   EFFECT_ERUPTION,
   EFFECT_OVERHEAT,
 } from '../include/constants/battle_move_effects';
-import { gBitTable } from './engine/battle/battle-controllers';
+import { gBitTable } from './battle_controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { FlagGet } from './engine/script/script-vars';
 import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';

@@ -113,7 +113,7 @@ import {
   SPECIES_NONE,
   SPECIES_EGG,
 } from '../include/constants/species';
-import { gBitTable } from './engine/battle/battle-controllers';
+import { gBitTable } from './battle_controllers';
 import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from './engine/battle/util';
 import {
   AbilityBattleEffects,

@@ -51,7 +51,7 @@ import {
   GET_BATTLER_SIDE,
   B_SIDE_PLAYER,
 } from '../battle/constants';
-import { gBitTable } from '../battle/battle-controllers';
+import { gBitTable } from '../../battle_controllers';
 import { MOVE_IS_PERMANENT } from '../../../harness/runtime/decomp-bridge';
 
 // 1:1 décomp ITEM3_STATUS_ALL_EXPR

@@ -57,14 +57,14 @@ import {
   PrepareBufferDataTransfer, BtlController_EmitTwoReturnValues,
   BtlController_EmitOneReturnValue,
   gUnusedControllerStruct,
-} from './engine/battle/battle-controllers-ipc';
+} from './battle_controllers';
 import {
   gBitTable, BattlePutTextOnWindow,
   JOY_NEW, JOY_REPEAT, JOY_HELD,
   A_BUTTON, B_BUTTON, START_BUTTON,
   DPAD_LEFT, DPAD_RIGHT, DPAD_UP, DPAD_DOWN, DPAD_ANY,
   SE_SELECT,
-} from './engine/battle/battle-controllers';
+} from './battle_controllers';
 import { MarkBattlerForControllerExec } from './battle_util';
 // PlaySE wired via globalThis.__PlaySE (exposé par decomp-globals ligne ~722) —
 // évite cycle ESM avec import direct.
@@ -79,7 +79,7 @@ import {
   B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU, B_WIN_MSG,
   B_WIN_MOVE_NAME_1, B_WIN_PP, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE,
 } from './engine/battle/battle-windows';
-import { SELECT_BUTTON } from './engine/battle/battle-controllers';
+import { SELECT_BUTTON } from './battle_controllers';
 import {
   GetBattlerPosition, GetBattlerAtPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,

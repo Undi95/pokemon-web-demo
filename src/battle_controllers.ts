@@ -1,4 +1,479 @@
 /**
+ * src/battle_controllers.ts — mirror 1:1 de battle_controllers.c (1585 l).
+ * CONSOLIDATION (2026-06-28) des 3 fichiers éclatés : battle-controllers-ipc.ts
+ * (IPC/buffers) + battle-controllers-init.ts (init contrôleurs) + battle-controllers.ts
+ * (dispatch). Inter-imports devenus internes. Source : src/battle_controllers.c.
+ */
+import { gActiveBattler, gBattlersCount, gBattleTypeFlags, gBattlerPartyIndexes } from './engine/battle/state';
+import { BATTLE_TYPE_LINK, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS } from './engine/battle/constants';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { setBattlersCount, setBattlerControllerFunc } from './engine/battle/state';
+import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_SAFARI, BATTLE_TYPE_WALLY_TUTORIAL } from './engine/battle/constants';
+import { gBattlerPositions, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT } from './engine/battle/util';
+import { SetControllerToPlayer } from './battle_controller_player';
+import { SetControllerToOpponent } from './battle_controller_opponent';
+import { setBattleMainFunc, BeginBattleIntro } from './engine/battle/battle-main-functions';
+import { MAX_BATTLERS_COUNT, gBattleScripting, setBattleControllerExecFlags, gBattleControllerExecFlags, setActiveBattler, gBattlerAttacker, gBattlerTarget, gCurrentMove, gChosenMove, gBattleOutcome, gBattleStruct, gBattleWeather, gBattleMons, gPotentialItemEffectBattler, gLastUsedItem, gLastUsedAbility, type DisableStruct } from './engine/battle/state';
+import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from '../include/battle_message';
+import { CONTROLLER_PRINTSTRING, CONTROLLER_PRINTSTRINGPLAYERONLY, CONTROLLER_SETMONDATA, CONTROLLER_MOVEANIMATION, CONTROLLER_HEALTHBARUPDATE, CONTROLLER_HITANIMATION, CONTROLLER_FAINTANIMATION, CONTROLLER_STATUSICONUPDATE, CONTROLLER_STATUSANIMATION, CONTROLLER_BATTLEANIMATION, CONTROLLER_PLAYSE, CONTROLLER_PLAYFANFAREORBGM, CONTROLLER_FAINTINGCRY, CONTROLLER_RETURNMONTOBALL, CONTROLLER_SPRITEINVISIBILITY, CONTROLLER_SWITCHINANIM, CONTROLLER_DRAWPARTYSTATUSSUMMARY, CONTROLLER_HIDEPARTYSTATUSSUMMARY, CONTROLLER_TRAINERSLIDE, CONTROLLER_TRAINERSLIDEBACK, CONTROLLER_BALLTHROWANIM, CONTROLLER_EXPUPDATE, CONTROLLER_CHOOSEPOKEMON, CONTROLLER_LINKSTANDBYMSG, CONTROLLER_CANTSWITCH, CONTROLLER_UNKNOWNYESNOBOX, CONTROLLER_RESETACTIONMOVESELECTION, CONTROLLER_ENDLINKBATTLE, CONTROLLER_INTROSLIDE, CONTROLLER_INTROTRAINERBALLTHROW, CONTROLLER_DRAWTRAINERPIC, CONTROLLER_LOADMONSPRITE, CONTROLLER_GETMONDATA, enqueueBattleEvent, buildBattleMsgDataSnapshot, type BattleMsgData } from './engine/battle/battle-event-queue';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import type { BattleScriptContext } from './engine/battle/script-interpreter';
+import { FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram } from './window';
+import { AddTextPrinterParameterized4 } from './menu';
+import { gTextFlags } from './text';
+import { GetPlayerTextSpeedDelay } from './menu';
+import { getBattleTextOnWindowsInfo, B_WIN_COPYTOVRAM, B_WIN_MSG } from './engine/battle/battle-windows';
+import { gBitTable } from '../include/util';
+
+// ── depuis battle-controllers-ipc.ts ──────────────────────────────────────────
+/**
+ * battle/battle-controllers-ipc.ts — Port 1:1 strict du Controller IPC core.
+ *
+ * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/battle_controllers.c`
+ *
+ * **User priority #1 (Important)** : Le système IPC core du battle.
+ *
+ * Architecture 1:1 décomp :
+ *   - `sBattleBuffersTransferData[0x100]` : buffer staging (256 bytes)
+ *   - `gBattleBufferA[MAX_BATTLERS_COUNT][0x200]` : commands engine→controller
+ *   - `gBattleBufferB[MAX_BATTLERS_COUNT][0x200]` : responses controller→engine
+ *   - `PrepareBufferDataTransfer(bufferId, data, size)` : core writer
+ *   - `SetBattlePartyIds()` : init gBattlerPartyIndexes depuis party
+ *
+ * Mécanique IPC :
+ *   - Engine veut envoyer command à controller → écrit dans
+ *     sBattleBuffersTransferData puis PrepareBufferDataTransfer(TO_CONTROLLER)
+ *     copie vers gBattleBufferA[battler][N]. MarkBattlerForControllerExec
+ *     set le bit gBattleControllerExecFlags[battler].
+ *   - Controller dispatch lit gBattleBufferA[battler][0] = opcode, execute,
+ *     écrit response → gBattleBufferB via PrepareBufferDataTransfer(TO_ENGINE).
+ *
+ * Notre port :
+ *   - Buffers A/B implémentés Uint8Array per battler.
+ *   - PrepareBufferDataTransfer 1:1 strict pour single battle.
+ *   - SetBattlePartyIds 1:1 strict.
+ *   - InitSinglePlayerBtlControllers : structure 1:1 (= controller funcs
+ *     pour Birch/wild restent dette R3 car cascade Player/Opponent controller).
+ *
+ * Dépendances :
+ *   - state.ts : gActiveBattler, gBattlersCount, gBattleTypeFlags,
+ *     gBattlerPartyIndexes
+ *   - constants.ts : BATTLE_TYPE_* flags
+ *   - save-block-state.ts : gPlayerParty
+ *   - battle-controllers.ts : MarkBattlerForControllerExec
+ */
+
+
+
+
+
+// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
+
+// MAX_BATTLERS_COUNT (battle.h:9) : importé en haut (bloc controllers), pas redéclaré.
+/** 1:1 décomp `PARTY_SIZE` = 6. */
+const PARTY_SIZE = 6;
+/** 1:1 décomp `B_COMM_TO_CONTROLLER` = 0 (= engine → controller). */
+export const B_COMM_TO_CONTROLLER = 0;
+/** 1:1 décomp `B_COMM_TO_ENGINE` = 1 (= controller → engine). */
+export const B_COMM_TO_ENGINE = 1;
+/** 1:1 décomp `B_SIDE_PLAYER` = 0 / `B_SIDE_OPPONENT` = 1. */
+const B_SIDE_PLAYER = 0;
+
+/** 1:1 décomp `MON_DATA_HP` = 6 / `MON_DATA_SPECIES_OR_EGG` = 0x4D /
+ *  `MON_DATA_IS_EGG` = 78 / `MON_DATA_SPECIES` = 11 (pokemon.h). */
+const MON_DATA_HP = 6;
+const MON_DATA_SPECIES = 11;
+const MON_DATA_SPECIES_OR_EGG = 0x4D;
+const MON_DATA_IS_EGG = 78;
+
+/** 1:1 décomp `SPECIES_NONE` = 0 / `SPECIES_EGG` = 412. */
+const SPECIES_NONE = 0;
+const SPECIES_EGG = 412;
+
+// ─── Core IPC buffers 1:1 décomp ───────────────────────────────────────────
+
+/** 1:1 décomp `sBattleBuffersTransferData[0x100]` (battle_controllers.c:21). */
+export const sBattleBuffersTransferData = new Uint8Array(0x100);
+
+/** 1:1 décomp `gBattleBufferA[MAX_BATTLERS_COUNT][0x200]` (battle.h).
+ *  Buffer commands engine → controller per battler. */
+export const gBattleBufferA: Uint8Array[] = [
+  new Uint8Array(0x200), new Uint8Array(0x200),
+  new Uint8Array(0x200), new Uint8Array(0x200),
+];
+
+/** 1:1 décomp `gBattleBufferB[MAX_BATTLERS_COUNT][0x200]` (battle.h).
+ *  Buffer responses controller → engine per battler. */
+export const gBattleBufferB: Uint8Array[] = [
+  new Uint8Array(0x200), new Uint8Array(0x200),
+  new Uint8Array(0x200), new Uint8Array(0x200),
+];
+
+// ─── Cascade helpers (= GetMonData wire vers party-storage) ────────────────
+
+/** 1:1 décomp `GetMonData(mon, field)` (pokemon.c). */
+function _GetMonData(mon: unknown, field: number): number {
+  if (!mon) return 0;
+  const m = mon as {
+    hp?: number; species?: number; isEgg?: boolean;
+    level?: number;
+  };
+  switch (field) {
+    case MON_DATA_HP: return m.hp ?? 0;
+    case MON_DATA_SPECIES: return m.species ?? 0;
+    case MON_DATA_SPECIES_OR_EGG:
+      if (m.isEgg) return SPECIES_EGG;
+      return m.species ?? 0;
+    case MON_DATA_IS_EGG: return m.isEgg ? 1 : 0;
+  }
+  return 0;
+}
+
+/** 1:1 décomp `GET_BATTLER_SIDE2(battler)` (battle.h). */
+function _GET_BATTLER_SIDE2(battler: number): number {
+  return battler & 1;
+}
+
+// ─── SetBattlePartyIds (battle_controllers.c:586-654) — 1:1 strict ─────────
+
+/** 1:1 décomp `SetBattlePartyIds()` (battle_controllers.c:586-654).
+ *  Init `gBattlerPartyIndexes[battler]` au premier mon healthy
+ *  (= !KO, !egg, !SPECIES_NONE) dans la party correspondante. */
+export function SetBattlePartyIds(): void {
+  if (gBattleTypeFlags & BATTLE_TYPE_MULTI) return;
+
+  const playerParty = gSaveBlock1Ptr.playerParty ?? [];
+  // Get gEnemyParty depuis state.
+  const enemyParty = ((globalThis as { __battleState?: { gEnemyParty?: unknown[] } }).__battleState?.gEnemyParty) ?? [];
+
+  for (let i = 0; i < gBattlersCount; i++) {
+    for (let j = 0; j < PARTY_SIZE; j++) {
+      if (i < 2) {
+        if (_GET_BATTLER_SIDE2(i) === B_SIDE_PLAYER) {
+          const mon = playerParty[j];
+          if (_GetMonData(mon, MON_DATA_HP) !== 0
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_NONE
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_EGG
+              && !_GetMonData(mon, MON_DATA_IS_EGG)) {
+            gBattlerPartyIndexes[i] = j;
+            break;
+          }
+        } else {
+          const mon = enemyParty[j];
+          if (_GetMonData(mon, MON_DATA_HP) !== 0
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_NONE
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_EGG
+              && !_GetMonData(mon, MON_DATA_IS_EGG)) {
+            gBattlerPartyIndexes[i] = j;
+            break;
+          }
+        }
+      } else {
+        if (_GET_BATTLER_SIDE2(i) === B_SIDE_PLAYER) {
+          const mon = playerParty[j];
+          // 1:1 décomp ll. 625-633 : SPECIES (pas SPECIES_OR_EGG, typo Game Freak).
+          if (_GetMonData(mon, MON_DATA_HP) !== 0
+              && _GetMonData(mon, MON_DATA_SPECIES) !== SPECIES_NONE
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_EGG
+              && !_GetMonData(mon, MON_DATA_IS_EGG)
+              && gBattlerPartyIndexes[i - 2] !== j) {
+            gBattlerPartyIndexes[i] = j;
+            break;
+          }
+        } else {
+          const mon = enemyParty[j];
+          if (_GetMonData(mon, MON_DATA_HP) !== 0
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_NONE
+              && _GetMonData(mon, MON_DATA_SPECIES_OR_EGG) !== SPECIES_EGG
+              && !_GetMonData(mon, MON_DATA_IS_EGG)
+              && gBattlerPartyIndexes[i - 2] !== j) {
+            gBattlerPartyIndexes[i] = j;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 1:1 décomp ll. 651-652 : TWO_OPPONENTS override.
+  if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+    gBattlerPartyIndexes[1] = 0;
+    gBattlerPartyIndexes[3] = 3;
+  }
+}
+
+// ─── PrepareBufferDataTransfer (battle_controllers.c:656-678) — 1:1 strict ─
+
+/** 1:1 décomp `PrepareBufferDataTransferLink(bufferId, size, data)` (734-773).
+ *  Link battle variant — pour notre port (= laissé de côté), noop documenté. */
+function _PrepareBufferDataTransferLink(_bufferId: number, _size: number, _data: Uint8Array): void {
+  // User dit "laisse de côté link", noop documenté.
+}
+
+/** 1:1 décomp `PrepareBufferDataTransfer(bufferId, data, size)`
+ *  (battle_controllers.c:656-678). Copy data → gBattleBufferA ou B selon
+ *  bufferId, ou route vers link variant si BATTLE_TYPE_LINK. */
+export function PrepareBufferDataTransfer(bufferId: number, data: Uint8Array, size: number): void {
+  if (gBattleTypeFlags & BATTLE_TYPE_LINK) {
+    _PrepareBufferDataTransferLink(bufferId, size, data);
+    return;
+  }
+
+  switch (bufferId) {
+    case B_COMM_TO_CONTROLLER:
+      // 1:1 décomp ll. 669-671 : copy size bytes data → gBattleBufferA[active].
+      for (let i = 0; i < size; i++) {
+        gBattleBufferA[gActiveBattler][i] = data[i];
+      }
+      break;
+    case B_COMM_TO_ENGINE:
+      // 1:1 décomp ll. 673-675 : copy size bytes data → gBattleBufferB[active].
+      for (let i = 0; i < size; i++) {
+        gBattleBufferB[gActiveBattler][i] = data[i];
+      }
+      break;
+  }
+}
+
+// ─── BtlController_Emit* (battle_controllers.c:1180-1500) — 1:1 strict ────
+
+/** 1:1 décomp `CONTROLLER_TWORETURNVALUES` (battle_controllers.h:35). */
+const CONTROLLER_TWORETURNVALUES = 0x21;
+
+/** 1:1 décomp `BtlController_EmitTwoReturnValues(bufferId, ret8, ret16)`
+ *  (battle_controllers.c:1372-1379). Setup CONTROLLER_TWORETURNVALUES command
+ *  + ret8 + ret16 (low/high bytes) dans transfer staging buffer puis flush
+ *  vers gBattleBufferA ou B selon bufferId. Utilisé par les input handlers
+ *  (HandleInputChooseAction/Move/Target) pour signaler engine du choix joueur. */
+export function BtlController_EmitTwoReturnValues(bufferId: number, ret8: number, ret16: number): void {
+  sBattleBuffersTransferData[0] = CONTROLLER_TWORETURNVALUES;
+  sBattleBuffersTransferData[1] = ret8 & 0xFF;
+  sBattleBuffersTransferData[2] = ret16 & 0xFF;
+  sBattleBuffersTransferData[3] = (ret16 & 0xFF00) >> 8;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+}
+
+/** 1:1 décomp `EWRAM_DATA struct UnusedControllerStruct gUnusedControllerStruct`
+ *  (battle_controllers.c) — struct jamais LUE, mais les handlers UnkVar/UnkFlag
+ *  des deux controllers y écrivent (corps 1:1). UNE instance partagée. */
+export const gUnusedControllerStruct = { unk: 0, flag: 0 };
+
+/** 1:1 décomp `CONTROLLER_ONERETURNVALUE` (battle_controllers.h, enum = 0x23). */
+const CONTROLLER_ONERETURNVALUE = 0x23;
+
+/** 1:1 décomp `void BtlController_EmitOneReturnValue(u8 bufferId, u16 ret)`
+ *  (battle_controllers.c) : réponse 16-bit seule → bufferB[1..2] LE
+ *  (ex. item choisi par l'AI en réponse à OPENBAG). */
+export function BtlController_EmitOneReturnValue(bufferId: number, ret: number): void {
+  sBattleBuffersTransferData[0] = CONTROLLER_ONERETURNVALUE;
+  sBattleBuffersTransferData[1] = ret & 0xFF;
+  sBattleBuffersTransferData[2] = (ret & 0xFF00) >> 8;
+  sBattleBuffersTransferData[3] = 0;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+}
+
+// ─── RÉCONCILIATION (2026-06-29) : InitBattleControllers / InitSinglePlayerBtlControllers /
+//     _BufferBattlePartyCurrentOrderBySide — versions CANONIQUES (réelles, câblées par
+//     battle_main.ts:5291) gardées plus bas (depuis battle-controllers-init.c). Les versions
+//     ipc (stubs : InitSinglePlayer = identité __battleUtil) sont retirées ici. ─────────────
+
+// ─── Helper export for battle-action-selection (= replace lazy globalThis) ─
+
+/** Helper public : read byte du gBattleBufferB[battler][offset]. */
+export function readBattleBufferB(battler: number, offset: number): number {
+  return gBattleBufferB[battler]?.[offset] ?? 0;
+}
+
+/** Helper public : write byte au gBattleBufferB[battler][offset]. */
+export function writeBattleBufferB(battler: number, offset: number, value: number): void {
+  if (gBattleBufferB[battler]) gBattleBufferB[battler][offset] = value & 0xFF;
+}
+
+/** Helper public : read byte du gBattleBufferA[battler][offset]. */
+export function readBattleBufferA(battler: number, offset: number): number {
+  return gBattleBufferA[battler]?.[offset] ?? 0;
+}
+
+// ─── Devtools expose ───────────────────────────────────────────────────────
+
+// Expose via __battleState aussi pour la lazy lookup (= battle-action-selection).
+const battleStateMod = (globalThis as Record<string, unknown>).__battleState as Record<string, unknown> | undefined;
+if (battleStateMod) {
+  battleStateMod.gBattleBufferA = gBattleBufferA;
+  battleStateMod.gBattleBufferB = gBattleBufferB;
+}
+
+(globalThis as Record<string, unknown>).__battleControllersIpc = {
+  sBattleBuffersTransferData,
+  gBattleBufferA, gBattleBufferB,
+  PrepareBufferDataTransfer, SetBattlePartyIds,
+  InitBattleControllers, InitSinglePlayerBtlControllers,
+  readBattleBufferA, readBattleBufferB, writeBattleBufferB,
+  BtlController_EmitTwoReturnValues,
+  B_COMM_TO_CONTROLLER, B_COMM_TO_ENGINE,
+};
+
+
+// ── depuis battle-controllers-init.ts ──────────────────────────────────────────
+/**
+ * battle/battle-controllers-init.ts — Port 1:1 strict de InitBattleControllers
+ * + InitSinglePlayerBtlControllers.
+ *
+ * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/battle_controllers.c:81-235`
+ *
+ * Rôle : APRÈS `SetUpBattleVarsAndBirchZigzagoon` (qui pose tous les
+ * `gBattlerControllerFuncs[i] = BattleControllerDummy` + `gBattleMainFunc =
+ * BeginBattleIntroDummy`), `InitBattleControllers` installe les VRAIS
+ * controllers par battler + `gBattleMainFunc = BeginBattleIntro`. C'est le
+ * point qui « arme » la state-machine combat : au tick suivant de
+ * `BattleMainCB1`, `gBattleMainFunc()` = `BeginBattleIntro` et
+ * `gBattlerControllerFuncs[0]()` = `SetControllerToPlayer` (qui s'auto-remplace
+ * par `PlayerBufferRunCommand`).
+ *
+ * Appelé par `CB2_HandleStartBattle` case 15 (battle-link-start.ts).
+ *
+ * Dépendances :
+ *   - state.ts : gBattleTypeFlags, setBattlersCount, setBattlerControllerFunc
+ *   - battle-controller-player.ts : SetControllerToPlayer
+ *   - battle-controller-opponent.ts : SetControllerToOpponent
+ *   - battle-main-functions.ts : setBattleMainFunc, BeginBattleIntro
+ *   - battle-controllers-ipc.ts : SetBattlePartyIds
+ *   - util.ts : gBattlerPositions, B_POSITION_*
+ */
+
+
+
+
+
+
+
+
+
+// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
+
+/** 1:1 décomp `B_BATTLER_0..3` (battle.h). */
+const B_BATTLER_0 = 0;
+const B_BATTLER_1 = 1;
+const B_BATTLER_2 = 2;
+const B_BATTLER_3 = 3;
+/** 1:1 décomp `B_POSITION_PLAYER_RIGHT` = 2, `B_POSITION_OPPONENT_RIGHT` = 3. */
+const B_POSITION_PLAYER_RIGHT = 2;
+const B_POSITION_OPPONENT_RIGHT = 3;
+
+// ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
+
+/** 1:1 décomp `RecordedBattle_Init(mode)` + `RecordedBattle_SaveParties()`. */
+function _RecordedBattle_Init(_mode: number): void { /* Dette R3 : recorded battle */ }
+function _RecordedBattle_SaveParties(): void { /* Dette R3 */ }
+
+/** 1:1 décomp `InitLinkBtlControllers()`. */
+function _InitLinkBtlControllers(): void { /* Dette R3 : link battle offline */ }
+
+/** 1:1 décomp `BufferBattlePartyCurrentOrderBySide(battler, side)`
+ *  (party_menu.c:5918) : init battlerPartyOrders[battler] = nibbles
+ *  [mon ACTIF, puis les autres] — la base de l'ordre d'affichage du party menu
+ *  COMBAT. Impl dans le miroir battle_main (lazy anti-cycle). */
+function _BufferBattlePartyCurrentOrderBySide(battler: number, flankId: number): void {
+  const m = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+    BufferBattlePartyCurrentOrderBySide?: (b: number, f: number) => void;
+  } | undefined;
+  m?.BufferBattlePartyCurrentOrderBySide?.(battler, flankId);
+}
+
+// ─── InitSinglePlayerBtlControllers (battle_controllers.c:113-235) ─────────
+
+/** 1:1 décomp `InitSinglePlayerBtlControllers()` (battle_controllers.c:113-235).
+ *  Pose gBattleMainFunc = BeginBattleIntro + installe les controllers par
+ *  battler selon le type (single / double).
+ *
+ *  Couvre 1:1 : single standard (player vs opponent), double (×4). Les chemins
+ *  SAFARI / WALLY_TUTORIAL / INGAME_PARTNER / RECORDED nécessitent des
+ *  controllers spécialisés non encore portés (`SetControllerToSafari/Wally/...`)
+ *  → fallback `SetControllerToPlayer` + dette R3 explicite. */
+function InitSinglePlayerBtlControllers(): void {
+  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+    // 1:1 décomp ll. 162-216 : single battle.
+    setBattleMainFunc(BeginBattleIntro);
+
+    if (gBattleTypeFlags & BATTLE_TYPE_SAFARI) {
+      // Dette R3 : SetControllerToSafari non porté → fallback player.
+      setBattlerControllerFunc(B_BATTLER_0, SetControllerToPlayer);
+    } else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL) {
+      // Dette R3 : SetControllerToWally non porté → fallback player.
+      setBattlerControllerFunc(B_BATTLER_0, SetControllerToPlayer);
+    } else {
+      setBattlerControllerFunc(B_BATTLER_0, SetControllerToPlayer);
+    }
+    gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;
+
+    setBattlerControllerFunc(B_BATTLER_1, SetControllerToOpponent);
+    gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;
+
+    setBattlersCount(2);
+    // 1:1 décomp ll. 180-215 : sous-chemins RECORDED → dette R3 (offline).
+  } else {
+    // 1:1 décomp ll. 217-235 : double battle (×4 controllers).
+    setBattleMainFunc(BeginBattleIntro);
+
+    setBattlerControllerFunc(B_BATTLER_0, SetControllerToPlayer);
+    gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;
+
+    setBattlerControllerFunc(B_BATTLER_1, SetControllerToOpponent);
+    gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;
+
+    setBattlerControllerFunc(B_BATTLER_2, SetControllerToPlayer);
+    gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;
+
+    setBattlerControllerFunc(B_BATTLER_3, SetControllerToOpponent);
+    gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;
+
+    setBattlersCount(4);
+  }
+}
+
+// ─── InitBattleControllers (battle_controllers.c:81-111) — 1:1 strict ──────
+
+/** 1:1 décomp `InitBattleControllers()` (battle_controllers.c:81-111). */
+export function InitBattleControllers(): void {
+  // 1:1 décomp ll. 85-91 : recorded battle init (R3 offline).
+  if (!(gBattleTypeFlags & BATTLE_TYPE_LINK)) {
+    _RecordedBattle_Init(0 /* B_RECORD_MODE_RECORDING */);
+  } else {
+    _RecordedBattle_Init(1 /* B_RECORD_MODE_PLAYBACK */);
+  }
+  _RecordedBattle_SaveParties();
+
+  // 1:1 décomp ll. 93-96 : link vs single.
+  if (gBattleTypeFlags & BATTLE_TYPE_LINK) {
+    _InitLinkBtlControllers();
+  } else {
+    InitSinglePlayerBtlControllers();
+  }
+
+  // 1:1 décomp l. 98 : assigne gBattlerPartyIndexes au premier mon valide.
+  SetBattlePartyIds();
+
+  // 1:1 décomp ll. 100-104 : buffer party order (noop offline).
+  if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI)) {
+    const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number } }).__battleState;
+    const count = stateMod?.gBattlersCount ?? 2;
+    for (let i = 0; i < count; i++) {
+      _BufferBattlePartyCurrentOrderBySide(i, 0);
+    }
+  }
+
+  // 1:1 décomp ll. 106-110 : zero gBattleStruct->tvMovePoints + tv (R3 TV data).
+}
+
+// ─── Devtools expose ───────────────────────────────────────────────────────
+
+(globalThis as Record<string, unknown>).__battleControllersInit = {
+  InitBattleControllers, InitSinglePlayerBtlControllers,
+};
+
+
+// ── depuis battle-controllers.ts ──────────────────────────────────────────
+/**
  * battle/battle-controllers.ts — minimal stubs pour battle controllers async.
  *
  * Source de vérité (1:1 décomp) :
@@ -26,81 +501,19 @@
  *   2. Le framework appelle un callback "controller done" qui clear le bit.
  */
 
-import {
-  MAX_BATTLERS_COUNT,
-  gBattleScripting,
-  setBattleControllerExecFlags,
-  gBattleControllerExecFlags,
-  setActiveBattler,
-  gActiveBattler,
-  gBattlerAttacker,
-  gBattlerTarget,
-  gCurrentMove,
-  gChosenMove,
-  gBattleOutcome,
-  gBattleStruct,
-  gBattleWeather,
-  gBattleMons,
-  gPotentialItemEffectBattler,
-  gLastUsedItem,
-  gLastUsedAbility,
-  type DisableStruct,
-} from './state';
-import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from '../../../include/battle_message';
-import {
-  CONTROLLER_PRINTSTRING,
-  CONTROLLER_PRINTSTRINGPLAYERONLY,
-  CONTROLLER_SETMONDATA,
-  CONTROLLER_MOVEANIMATION,
-  CONTROLLER_HEALTHBARUPDATE,
-  CONTROLLER_HITANIMATION,
-  CONTROLLER_FAINTANIMATION,
-  CONTROLLER_STATUSICONUPDATE,
-  CONTROLLER_STATUSANIMATION,
-  CONTROLLER_BATTLEANIMATION,
-  CONTROLLER_PLAYSE,
-  CONTROLLER_PLAYFANFAREORBGM,
-  CONTROLLER_FAINTINGCRY,
-  CONTROLLER_RETURNMONTOBALL,
-  CONTROLLER_SPRITEINVISIBILITY,
-  CONTROLLER_SWITCHINANIM,
-  CONTROLLER_DRAWPARTYSTATUSSUMMARY,
-  CONTROLLER_HIDEPARTYSTATUSSUMMARY,
-  CONTROLLER_TRAINERSLIDE,
-  CONTROLLER_TRAINERSLIDEBACK,
-  CONTROLLER_BALLTHROWANIM,
-  CONTROLLER_EXPUPDATE,
-  CONTROLLER_CHOOSEPOKEMON,
-  CONTROLLER_LINKSTANDBYMSG,
-  CONTROLLER_CANTSWITCH,
-  CONTROLLER_UNKNOWNYESNOBOX,
-  CONTROLLER_RESETACTIONMOVESELECTION,
-  CONTROLLER_ENDLINKBATTLE,
-  CONTROLLER_INTROSLIDE,
-  CONTROLLER_INTROTRAINERBALLTHROW,
-  CONTROLLER_DRAWTRAINERPIC,
-  CONTROLLER_LOADMONSPRITE,
-  CONTROLLER_GETMONDATA,
-  enqueueBattleEvent,
-  buildBattleMsgDataSnapshot,
-  type BattleMsgData,
-} from './battle-event-queue';
-import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
-import type { BattleScriptContext } from './script-interpreter';
-import {
-  PrepareBufferDataTransfer, sBattleBuffersTransferData, B_COMM_TO_CONTROLLER,
-} from './battle-controllers-ipc';
+
+
+
+
+
+
 // ── Rendu texte RÉEL (voie L) — primitives window/text GBA + data battle 1:1.
 //    Aucun de ces modules n'importe battle/ → import statique sûr (pas de cycle).
-import {
-  FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
-} from '../../window';
-import { AddTextPrinterParameterized4 } from '../../menu';
-import { gTextFlags } from '../../text';
-import { GetPlayerTextSpeedDelay } from '../../menu';
-import {
-  getBattleTextOnWindowsInfo, B_WIN_COPYTOVRAM, B_WIN_MSG,
-} from './battle-windows';
+
+
+
+
+
 
 // ─── Helper : snapshot BattleMsgData for PrintString events ─────────────────
 
@@ -142,7 +555,7 @@ void resolveDecompConstant;
 // ─── gBitTable[] (util.c:7) → consolidé sur le miroir `src/game/util.ts` ──────
 // (source unique ; les `_gBitTable` privés de battle-action-selection/battle-main-
 //  functions restent à migrer — cf. ledger.) import+export = binding local + ré-export.
-import { gBitTable } from '../../../include/util';
+
 export { gBitTable };
 
 // ─── Controller exec flags helpers ──────────────────────────────────────────

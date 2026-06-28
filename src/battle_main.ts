@@ -1977,7 +1977,7 @@ import {
   gLastUsedItem, gLastUsedAbility, setLastUsedItem,
   gBattleControllerExecFlags, setBattleControllerExecFlags,
 } from './engine/battle/state';
-import { PrepareBufferDataTransfer } from './engine/battle/battle-controllers-ipc';
+import { PrepareBufferDataTransfer } from './battle_controllers';
 import {
   BATTLE_TYPE_RECORDED_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_TRAINER_HILL,
   BATTLE_TYPE_ARENA, BATTLE_TYPE_EREADER_TRAINER, BATTLE_TYPE_PALACE,
@@ -3415,7 +3415,7 @@ import {
   BtlController_EmitIntroTrainerBallThrow, BtlController_EmitDrawTrainerPic,
   BtlController_EmitLoadMonSprite, BtlController_EmitDrawPartyStatusSummary,
   BattlePutTextOnWindow,
-} from './engine/battle/battle-controllers';
+} from './battle_controllers';
 import { MarkBattlerForControllerExec, PrepareStringBattle } from './battle_util';
 import {
   AbilityBattleEffects,
@@ -5288,7 +5288,7 @@ void gPalaceSelectionBattleScripts;
 //  RECORDED [tête] ; gBattleScripting [C4] ; gBattleStruct [C2] ; getRuntime [tête].)
 
 import { setBattleTypeFlags } from './engine/battle/state';
-import { InitBattleControllers as _InitBattleControllersImpl } from './engine/battle/battle-controllers-init';
+import { InitBattleControllers as _InitBattleControllersImpl } from './battle_controllers';
 import { ShowBg } from './window';
 import { FillAroundBattleWindows } from './battle_gfx_sfx_util';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';

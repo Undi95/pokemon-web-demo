@@ -65,7 +65,7 @@ import {
   MULTISTRING_CHOOSER,
   MISS_TYPE,
 } from './engine/battle/constants';
-import { gBitTable, BtlController_EmitPrintString } from './engine/battle/battle-controllers';
+import { gBitTable, BtlController_EmitPrintString } from './battle_controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
@@ -831,7 +831,7 @@ import {
   gBattleControllerExecFlags as _gBattleControllerExecFlagsSAF,
   gActionsByTurnOrder,
 } from './engine/battle/state';
-import { gBattleBufferB } from './engine/battle/battle-controllers-ipc';
+import { gBattleBufferB } from './battle_controllers';
 
 /** Helpers OR/AND sur gBattleControllerExecFlags (Mark* 1:1). */
 function _orBattleControllerExecFlags(mask: number): void {
