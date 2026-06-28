@@ -485,42 +485,30 @@ export function ScriptContext_Enable(): void {
   LockPlayerFieldControls();
 }
 
-/** Snapshot complet du ScriptContext global + status. */
-export interface ScriptCtxSnapshot {
-  mode: number; scriptOpcodes: Opcode[] | null; scriptIdx: number;
-  stack: Array<{ opcodes: Opcode[]; idx: number } | null>; stackDepth: number;
-  data: number[]; nativeFn: (() => boolean) | null; comparisonResult: number;
-  status: number;
-}
+/** Snapshot complet du ScriptContext global byte-VM + status. Alias du type BV :
+ *  le byte-VM est le SEUL moteur, donc on capture/restaure SON contexte (scriptPtr
+ *  + nativePtr), pas l'ancien contexte parsé mort. */
+export type ScriptCtxSnapshot = BV.ByteVmScriptCtxSnapshot;
 
 /** 1:1 décomp `CB2_ReturnToFieldContinueScript*` — PRÉSERVE le ScriptContext
  *  global à travers un re-init complet du field. `loadAndInitMap` appelle
  *  `ScriptContext_Init()` (reset total : approprié pour boot/new-game, mais
- *  PAS pour le retour-au-field-CONTINUE post-combat où le script suspendu
- *  — ex. tuto Birch sur `special ChooseStarter` — DOIT reprendre exactement
- *  où il était). Le décomp ne re-init pas le ScriptContext sur ce chemin :
- *  il continue le script après le retour field. Snapshot AVANT le re-init,
- *  Restore APRÈS = équivalent JS de "le ScriptContext survit au CB2 swap".
- *  Si aucun script en vol (status SHUTDOWN, ctx vide), snapshot==restore =
- *  no-op total (zéro régression pour les autres callers : option menu/sac). */
+ *  PAS pour le retour-au-field-CONTINUE post-combat / post-menu plein écran où
+ *  le script suspendu — ex. tuto Birch sur `special ChooseStarter`, ou le
+ *  `pokemart` waitstate après le buy-menu — DOIT reprendre exactement où il
+ *  était). Snapshot AVANT le re-init, Restore APRÈS = "le ScriptContext survit
+ *  au CB2 swap". Si aucun script en vol (status SHUTDOWN, ctx vide) = no-op.
+ *
+ *  ⚠️ DÉLÈGUE au byte-VM (BV) : le byte-VM est le SEUL moteur. Capturer le
+ *  contexte parsé MORT de ce module (scriptOpcodes/nativeFn) au lieu du contexte
+ *  byte-VM (scriptPtr/nativePtr) perdait le poll natif → bug shop (textbox
+ *  "anything else?" figée + plus de reprise après QUITTER). */
 export function ScriptContext_Snapshot(): ScriptCtxSnapshot {
-  const c = sGlobalScriptContext;
-  return {
-    mode: c.mode, scriptOpcodes: c.scriptOpcodes, scriptIdx: c.scriptIdx,
-    stack: c.stack.slice(), stackDepth: c.stackDepth,
-    data: c.data.slice(), nativeFn: c.nativeFn,
-    comparisonResult: c.comparisonResult, status: sGlobalScriptContextStatus,
-  };
+  return BV.ScriptContext_Snapshot();
 }
 
 export function ScriptContext_Restore(s: ScriptCtxSnapshot): void {
-  const c = sGlobalScriptContext;
-  c.mode = s.mode; c.scriptOpcodes = s.scriptOpcodes; c.scriptIdx = s.scriptIdx;
-  c.stackDepth = s.stackDepth; c.nativeFn = s.nativeFn;
-  c.comparisonResult = s.comparisonResult;
-  for (let i = 0; i < c.stack.length; i++) c.stack[i] = s.stack[i] ?? null;
-  for (let i = 0; i < c.data.length; i++) c.data[i] = s.data[i] ?? 0;
-  sGlobalScriptContextStatus = s.status;
+  BV.ScriptContext_Restore(s);
 }
 
 /** 1:1 décomp `RunScriptImmediately(const u8 *ptr)`. Run synchronous (=

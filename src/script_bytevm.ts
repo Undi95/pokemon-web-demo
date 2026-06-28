@@ -269,6 +269,54 @@ export function ScriptContext_Enable(): void {
   LockPlayerFieldControls();
 }
 
+// ─── Snapshot / Restore du ScriptContext global (byte-VM) ────────────────────
+// Préserve le contexte SUSPENDU (scriptPtr + nativePtr + pile + data + status) à
+// travers un re-init complet du field. `_restoreOverworldFromMenu` fait
+// loadAndInitMap → ScriptContext_Init (reset TOTAL) ; sans snapshot/restore, le
+// script déclencheur en attente (= `pokemart` waitstate, `special ChooseStarter`,
+// `special Bag_ChooseBerry`) serait détruit et ne reprendrait jamais.
+// ⚠️ CRITIQUE : capturer `nativePtr` (closure JS du poll natif) + `scriptPtr`
+// (curseur byte-VM). L'ancien snapshot vivait dans script.ts sur le contexte PARSÉ
+// mort (champs scriptOpcodes/nativeFn) → il ne capturait NI l'un NI l'autre → au
+// retour de buy-menu shop, le poll `doPokemart` était perdu → la textbox "anything
+// else?" restait figée et `msgbox PleaseComeAgain`/`release` ne tournaient jamais.
+export interface ByteVmScriptCtxSnapshot {
+  mode: number;
+  scriptPtr: ScriptPtr | null;
+  stack: (ScriptPtr | null)[];
+  stackDepth: number;
+  nativePtr: (() => boolean) | null;
+  comparisonResult: number;
+  data: number[];
+  status: number;
+}
+
+export function ScriptContext_Snapshot(): ByteVmScriptCtxSnapshot {
+  const c = sGlobalScriptContext;
+  return {
+    mode: c.mode,
+    scriptPtr: c.scriptPtr ? { buf: c.scriptPtr.buf, off: c.scriptPtr.off } : null,
+    stack: c.stack.map((p) => (p ? { buf: p.buf, off: p.off } : null)),
+    stackDepth: c.stackDepth,
+    nativePtr: c.nativePtr,
+    comparisonResult: c.comparisonResult,
+    data: c.data.slice(),
+    status: sGlobalScriptContextStatus,
+  };
+}
+
+export function ScriptContext_Restore(s: ByteVmScriptCtxSnapshot): void {
+  const c = sGlobalScriptContext;
+  c.mode = s.mode;
+  c.scriptPtr = s.scriptPtr ? { buf: s.scriptPtr.buf, off: s.scriptPtr.off } : null;
+  c.stackDepth = s.stackDepth;
+  c.nativePtr = s.nativePtr;
+  c.comparisonResult = s.comparisonResult;
+  for (let i = 0; i < c.stack.length; i++) c.stack[i] = s.stack[i] ?? null;
+  for (let i = 0; i < c.data.length; i++) c.data[i] = s.data[i] ?? 0;
+  sGlobalScriptContextStatus = s.status;
+}
+
 // ─── RunScriptImmediately (1:1 script.c:265-270) ─────────────────────────────
 export function RunScriptImmediately(ptr: ScriptPtr): void {
   InitScriptContext(sImmediateScriptContext, gScriptCmdTable as ScrCmdFunc[], gScriptCmdTableEnd);
