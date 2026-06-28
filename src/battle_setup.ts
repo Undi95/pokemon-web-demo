@@ -36,7 +36,7 @@ import {
   getScript, getText, ScriptJump, SetupNativeScript, StopScript,
   type ScriptContext, type Opcode,
 } from './script';
-import { registerSpecial } from './engine/script/script-opcodes';
+import { registerSpecial } from './scrcmd';
 import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
 import { parseValue } from './engine/script/script-opcodes-helpers';
 import { ShowFieldMessage } from './field_message_box';

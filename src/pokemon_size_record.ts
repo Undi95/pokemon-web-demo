@@ -18,7 +18,7 @@
  * Pas d'unit conversion impérial (= #ifdef UNITS_IMPERIAL pas activé en FR).
  */
 
-import { registerSpecial } from './engine/script/script-opcodes';
+import { registerSpecial } from './scrcmd';
 import { VarSet, VarGet, gSpecialVar } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {

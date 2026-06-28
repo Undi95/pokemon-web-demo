@@ -32,7 +32,7 @@
  */
 
 import type Phaser from 'phaser';
-import { SignalWaitState } from '../script/script-opcodes';
+import { SignalWaitState } from '../../scrcmd';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE } from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';

@@ -218,8 +218,6 @@ import { preloadFontData } from '../../src/engine/ui/gba-text-system';
 import { preloadTextWindowFrames } from '../../src/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
 import * as Songs from '../../include/constants/songs';
-// Side-effect import : registers Phase 4.5 opcode handlers.
-import '../../src/engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../../src/engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).

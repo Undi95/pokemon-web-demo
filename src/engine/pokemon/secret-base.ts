@@ -10,7 +10,7 @@
  * cascade lourde et reste U-tier.
  */
 
-import { registerSpecial } from '../script/script-opcodes';
+import { registerSpecial } from '../../scrcmd';
 import { GetPlayerNameString } from '../../../include/text';
 import { VarGet, VarSet, gSpecialVar } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';

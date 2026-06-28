@@ -26,7 +26,7 @@
  * importé une fois au boot (= TestOverworldScene ou main entry).
  */
 
-import { registerSpecial } from './script-opcodes';
+import { registerSpecial } from '../../scrcmd';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
