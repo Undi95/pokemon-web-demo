@@ -47,7 +47,7 @@ import {
   B_BUFF_STAT, B_BUFF_SPECIES, B_BUFF_MON_NICK, B_BUFF_NEGATIVE_FLAVOR, B_BUFF_ABILITY, B_BUFF_ITEM,
   B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_EOS,
   gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 
 import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../include/constants/battle_string_ids';
 import { getString } from './engine/ui/gba-strings';

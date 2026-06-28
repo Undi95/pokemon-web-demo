@@ -49,7 +49,7 @@ import {
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_HA,
   PREPARE_MON_NICK_BUFFER,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 import {
   STATUS2_MULTIPLETURNS, STATUS2_RECHARGE,
   HITMARKER_NO_PPDEDUCT,
@@ -123,7 +123,7 @@ import {
   PREPARE_ABILITY_BUFFER,
   PREPARE_TYPE_BUFFER,
   B_BUFF_EOS,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from './engine/battle/state';
 import { SPECIES_CASTFORM } from '../include/constants/species';
 import { RecordAbilityBattle as _recordAbilityBattleFullABE } from './battle_ai_script_commands';
@@ -152,7 +152,7 @@ import {
   STATUS3_ALWAYS_HITS, STATUS3_ALWAYS_HITS_TURN, STATUS3_CHARGED_UP,
   STATUS3_YAWN, STATUS3_YAWN_TURN, STATUS3_PERISH_SONG,
 } from './engine/battle/constants';
-import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from './engine/battle/text-buffers';
+import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from '../include/battle_message';
 import {
   MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST, MOVE_FUTURE_SIGHT,
 } from '../include/constants/moves';
@@ -209,7 +209,7 @@ import {
   B_BUFF_PLACEHOLDER_BEGIN as _B_BUFF_BEGIN_IBE,
   B_BUFF_STRING as _B_BUFF_STRING_IBE,
   B_BUFF_EOS as _B_BUFF_EOS_IBE,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 import {
   getMoveEffectScriptOffset, getBattleScriptOffset,
   stepBattleScriptCommand, gBattleScriptContext,

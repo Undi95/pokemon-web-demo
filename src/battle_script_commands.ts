@@ -31,7 +31,7 @@ import {
   gBattleTextBuff2 as _gBattleTextBuff2_SS,
   PREPARE_STAT_BUFFER,
   B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_STRING, B_BUFF_EOS,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 import {
   RecordAbilityBattle as _recordAbilityBattleSME,
   RecordAbilityBattle as _recordAbilityBattleFullSME,
@@ -924,7 +924,7 @@ import {
   gBattleTextBuff2 as _gBattleTextBuff2_HBT,
   gBattleTextBuff2 as _gBattleTextBuff2_N34,
   gBattleTextBuff3 as _gBattleTextBuff3_N34,
-} from './engine/battle/text-buffers';
+} from '../include/battle_message';
 import {
   TryRunFromBattle as _tryRunFromBattleFull,
 } from './battle_util';

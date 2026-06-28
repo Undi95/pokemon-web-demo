@@ -46,7 +46,7 @@ import {
   gLastUsedAbility,
   type DisableStruct,
 } from './state';
-import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from './text-buffers';
+import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from '../../../include/battle_message';
 import {
   CONTROLLER_PRINTSTRING,
   CONTROLLER_PRINTSTRINGPLAYERONLY,

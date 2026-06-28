@@ -1,9 +1,13 @@
 /**
- * battle/text-buffers.ts — gBattleTextBuff1/2/3 + PREPARE_*_BUFFER macros.
+ * include/battle_message.ts — mirror 1:1 de `include/battle_message.h`
+ * (le .h jumeau de src/battle_message.ts = battle_message.c).
+ * B_TXT_* / B_BUFF_* constants + macros PREPARE_*_BUFFER + gBattleTextBuff1/2/3.
  *
  * Sources de vérité (1:1 décomp) :
  *   - `D:/Projet 1/decomps/pokeemeraude/include/battle_message.h` (macros + constants)
- *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_main.c:137-139` (EWRAM_DATA u8 buffs)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_main.c:137-139` (EWRAM_DATA u8 buffs ;
+ *      co-localisés ici car extern-déclarés dans battle_message.h. ⚠️ WART séparé : une
+ *      2e repr. `gBattleTextBuff1` en number[] vit dans `state` — réconciliation différée.)
  *
  * Rationale : les opcodes battle utilisent ces buffers comme placeholders dans
  * les strings — les macros PREPARE_*_BUFFER écrivent un mini-format (0xFD opcode
