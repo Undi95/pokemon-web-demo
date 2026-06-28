@@ -73,7 +73,7 @@ const getMove = (move: number): MoveData | undefined => gBattleMoves[move];
 const getMoveName = (move: number): string => gMoveNames[move] ?? '';
 const getMoveDescription = (move: number): string => gMoveDescriptions[move] ?? '';
 const getContestMove = (move: number): ContestMove | undefined => gContestMoves[move];
-import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './engine/ui/mon-summary-anim';
+import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './pokemon_animation';
 import type { DecompTask, DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { PokemonInstance } from './engine/pokemon/pokemon';
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
