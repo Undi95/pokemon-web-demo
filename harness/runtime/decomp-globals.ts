@@ -1306,8 +1306,9 @@ export function IsFanfareTaskInactive(): boolean {
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
 // flash-mask.ts (harness) auto-register __applyFlashMask pour phaser-bridge post-process.
 import '../gba/flash-mask';
-// money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
-import '../../src/engine/ui/money-box-ui';
+// money box (money.ts) + coins box (coins.ts) auto-register __moneyBoxUI à leur chargement
+// (importés par scrcmd qui porte les opcodes show/hide/update money&coins) → import explicite
+// inutile ici (1:1 : money.c/coins.c portent ces fns ; lues par scrcmd via globalThis lazy).
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
 import '../../src/engine/field/virtual-objects';
 // map-layout-swap.ts auto-register __mapLayoutSwap pour setmaplayoutindex opcode.

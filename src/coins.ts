@@ -14,6 +14,12 @@
  */
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import {
+  AddWindow, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
+  CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
+  type WindowTemplate,
+} from './engine/ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from './engine/ui/gba-text-system';
 
 /** 1:1 décomp `#define MAX_COINS 9999` (constants/coins.h:4). */
 export const MAX_COINS = 9999;
@@ -79,4 +85,60 @@ export function RemoveCoins(toSub: number): boolean {
     return true;
   }
   return false;
+}
+
+// ─── Coins box UI — 1:1 décomp coins.c:22-44 ─────────────────────────────────
+// Fenêtre coins 8×2 affichée en haut pendant le casino. "PIÈCES <count>" right-aligned.
+const FONT_SMALL = 1;
+const COLOR_BG_FG_SHADOW: [number, number, number] = [1, 2, 3];
+
+let _coinsBoxWindowId = -1;
+
+/** 1:1 décomp `ShowCoinsWindow(coinAmount, x, y)` (coins.c:33). */
+export function ShowCoinsWindow(coinAmount: number, x: number, y: number): void {
+  if (_coinsBoxWindowId >= 0) {
+    PrintCoinsString(coinAmount);
+    return;
+  }
+  const tmpl: WindowTemplate = {
+    bg: 0, tilemapLeft: x + 1, tilemapTop: y + 1,
+    width: 8, height: 2, paletteNum: 15, baseBlock: 0x8,
+  };
+  _coinsBoxWindowId = AddWindow(tmpl);
+  if (_coinsBoxWindowId < 0) return;
+  DrawStdFrameWithCustomTileAndPalette(_coinsBoxWindowId, false, 0x214, 14);
+  FillWindowPixelBuffer(_coinsBoxWindowId, 0x11);
+  PutWindowTilemap(_coinsBoxWindowId);
+  PrintCoinsString(coinAmount);
+  CopyWindowToVram(_coinsBoxWindowId, 3 /* COPYWIN_FULL */);
+}
+
+/** 1:1 décomp `HideCoinsWindow` (coins.c:44). */
+export function HideCoinsWindow(): void {
+  if (_coinsBoxWindowId < 0) return;
+  ClearStdWindowAndFrame(_coinsBoxWindowId, true);
+  RemoveWindow(_coinsBoxWindowId);
+  _coinsBoxWindowId = -1;
+}
+
+/** 1:1 décomp `PrintCoinsString(coinAmount)` (coins.c:22). Format "PIÈCES <count>"
+ *  right-aligned (décomp : gText_CoinsVar1 = "PIÈCES {STR_VAR_1}"). */
+export function PrintCoinsString(coinAmount: number): void {
+  if (_coinsBoxWindowId < 0) return;
+  FillWindowPixelBuffer(_coinsBoxWindowId, 0x11);
+  const text = `PIÈCES ${coinAmount}`;
+  AddTextPrinterParameterized3(
+    _coinsBoxWindowId, FONT_SMALL, 4, 1, COLOR_BG_FG_SHADOW, 0, text,
+  );
+  CopyWindowToVram(_coinsBoxWindowId, 2 /* COPYWIN_GFX */);
+}
+
+// Enregistre les helpers coins box sur globalThis.__moneyBoxUI (lus par les opcodes
+// coins-box de scrcmd.ts, accès LAZY). `??=` + assign → coexiste avec money.ts.
+{
+  const api = ((globalThis as Record<string, unknown>).__moneyBoxUI ??= {}) as Record<string, unknown>;
+  api.ShowCoinsWindow = ShowCoinsWindow;
+  api.HideCoinsWindow = HideCoinsWindow;
+  api.PrintCoinsString = PrintCoinsString;
+  api._getCoins = GetCoins;
 }

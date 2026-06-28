@@ -23,6 +23,12 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { getRuntime, assetCache, LoadCompressedSpriteSheet, LoadSpritePalette, FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';
 import { FreeSpritePaletteByTag, DestroySprite, IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
 import { loadTileBin, extractPngPlte } from '../harness/gba/png-loader';
+import {
+  AddWindow, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
+  CopyWindowToVram, ClearStdWindowAndFrame, DrawStdFrameWithCustomTileAndPalette,
+  type WindowTemplate,
+} from './engine/ui/gba-window-system';
+import { AddTextPrinterParameterized3, CHAR_SPACER_STR } from './engine/ui/gba-text-system';
 
 /** 1:1 décomp `#define MAX_MONEY 999999` (money.c:13). */
 export const MAX_MONEY = 999999;
@@ -84,6 +90,90 @@ export function RemoveMoney(toSub: number): void {
     toSet = current - toSub;
   }
   SetMoney(toSet);
+}
+
+// ─── Money box UI — 1:1 décomp money.c:112-178 ──────────────────────────────
+// Fenêtre money 10×2 affichée en haut pendant les transactions shop. Notre port :
+// AddWindow + DrawStdFrameWithCustomTileAndPalette + AddTextPrinterParameterized3.
+
+// 1:1 décomp `text.h` enum FontIds : FONT_NORMAL=1. (BUG racine « font de l'argent » :
+// si FONT_NORMAL valait 0 = FONT_SMALL, le montant s'imprime en petit + le CHAR_SPACER
+// demi-largeur rate l'alignement à droite. PrintMoneyAmount (money.c:138) → FONT_NORMAL.)
+const FONT_NORMAL = 1;
+const COLOR_BG_FG_SHADOW: [number, number, number] = [1, 2, 3];
+
+let _moneyBoxWindowId = -1;
+
+/** 1:1 décomp `DrawMoneyBox(amount, x, y)` (money.c:117).
+ *  Add window 10×2 à (x+1, y+1), fill, draw frame border, print amount avec ¥. */
+export function DrawMoneyBox(amount: number, x: number, y: number): void {
+  if (_moneyBoxWindowId >= 0) {
+    // Already shown, just refresh content.
+    ChangeAmountInMoneyBox(amount);
+    return;
+  }
+  const tmpl: WindowTemplate = {
+    bg: 0, tilemapLeft: x + 1, tilemapTop: y + 1,
+    width: 10, height: 2, paletteNum: 15 /* std menu */, baseBlock: 0x8,
+  };
+  _moneyBoxWindowId = AddWindow(tmpl);
+  if (_moneyBoxWindowId < 0) return;
+  // 1:1 décomp PrintMoneyAmountInMoneyBoxWithBorder : DrawStdFrame(wid, FALSE, 0x214, 14)
+  // + PrintMoneyAmountInMoneyBox(wid, amount, 0).
+  DrawStdFrameWithCustomTileAndPalette(_moneyBoxWindowId, false, 0x214, 14);
+  FillWindowPixelBuffer(_moneyBoxWindowId, 0x11);
+  PutWindowTilemap(_moneyBoxWindowId);
+  _printAmountInMoneyBox(amount);
+  CopyWindowToVram(_moneyBoxWindowId, 3 /* COPYWIN_FULL */);
+}
+
+/** 1:1 décomp `HideMoneyBox` (money.c:130). */
+export function HideMoneyBox(): void {
+  if (_moneyBoxWindowId < 0) return;
+  ClearStdWindowAndFrame(_moneyBoxWindowId, true);
+  RemoveWindow(_moneyBoxWindowId);
+  _moneyBoxWindowId = -1;
+}
+
+/** 1:1 décomp `ChangeAmountInMoneyBox(amount)` (money.c:112). */
+export function ChangeAmountInMoneyBox(amount: number): void {
+  if (_moneyBoxWindowId < 0) return;
+  FillWindowPixelBuffer(_moneyBoxWindowId, 0x11);
+  _printAmountInMoneyBox(amount);
+  CopyWindowToVram(_moneyBoxWindowId, 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `PrintMoneyAmount(windowId, x, y, amount, speed)` (money.c:138) :
+ *  ConvertIntToDecimalStringN(LEFT_ALIGN, 6) → pad `CHAR_SPACER` à gauche (champ 6 large
+ *  = alignement à droite) → StringExpandPlaceholders(gText_PokedollarVar1 = "{STR_VAR_1}¥").
+ *  Le symbole monnaie est **¥** (charmap décomp), PAS `₽` (Unicode non mappé).
+ *
+ *  Opère sur un `windowId` DONNÉ (1:1) : le shop l'appelle sur sa fenêtre WIN_MONEY ; la
+ *  money box overworld passe `_moneyBoxWindowId`. */
+export function PrintMoneyAmount(windowId: number, x: number, y: number, amount: number, speed: number): void {
+  if (windowId < 0) return;
+  const numStr = String(amount >>> 0);
+  const pad = Math.max(0, 6 - numStr.length);
+  const text = CHAR_SPACER_STR.repeat(pad) + numStr + '¥';
+  AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, y, COLOR_BG_FG_SHADOW, speed, text);
+}
+
+/** 1:1 décomp `PrintMoneyAmountInMoneyBox(windowId, amount, speed)` (money.c:133). */
+export function PrintMoneyAmountInMoneyBox(windowId: number, amount: number, speed: number): void {
+  PrintMoneyAmount(windowId, 38, 1, amount, speed);
+}
+
+/** 1:1 décomp `PrintMoneyAmountInMoneyBoxWithBorder(windowId, tileStart, pallete, amount)`
+ *  (money.c:155). C'est CETTE fonction (tile/palette PARAMÉTRÉS) que le buy-menu appelle
+ *  avec (1, 13) sur sa propre fenêtre WIN_MONEY. */
+export function PrintMoneyAmountInMoneyBoxWithBorder(windowId: number, tileStart: number, pallete: number, amount: number): void {
+  DrawStdFrameWithCustomTileAndPalette(windowId, false, tileStart, pallete);
+  PrintMoneyAmountInMoneyBox(windowId, amount, 0);
+}
+
+/** Money box overworld (= _moneyBoxWindowId) — applique `PrintMoneyAmountInMoneyBox`. */
+function _printAmountInMoneyBox(amount: number): void {
+  PrintMoneyAmountInMoneyBox(_moneyBoxWindowId, amount, 0);
 }
 
 // ─── Label "ARGENT" (sprite) — 1:1 décomp money.c:187-197 ────────────────────
@@ -156,4 +246,15 @@ export function RemoveMoneyLabelObject(): void {
   FreeSpritePaletteByTag(TAG_MONEY_LABEL);
   DestroySprite(sMoneyLabelSpriteId);
   sMoneyLabelSpriteId = -1;
+}
+
+// Enregistre les helpers money box sur globalThis.__moneyBoxUI : lus par les opcodes
+// money-box de scrcmd.ts via un accès globalThis LAZY (pattern anti-cycle scrcmd↔money).
+// `??=` + assign → coexiste avec la registration coins (coins.ts), ordre indifférent.
+{
+  const api = ((globalThis as Record<string, unknown>).__moneyBoxUI ??= {}) as Record<string, unknown>;
+  api.DrawMoneyBox = DrawMoneyBox;
+  api.HideMoneyBox = HideMoneyBox;
+  api.ChangeAmountInMoneyBox = ChangeAmountInMoneyBox;
+  api._getMoney = GetMoney;
 }
