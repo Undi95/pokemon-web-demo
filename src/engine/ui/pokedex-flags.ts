@@ -30,9 +30,9 @@ import {
   sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
 } from '../decomp-data/pokedex-order-tables';
 import { SPECIES_UNOWN, SPECIES_SPINDA } from '../../../include/constants/species';
-import { gPokedexEntries } from '../decomp-data/pokedex-entries-table';
-export type { PokedexEntryData } from '../decomp-data/pokedex-entries-table';
-export { gPokedexEntries } from '../decomp-data/pokedex-entries-table';
+import { gPokedexEntries } from '../../data/pokemon/pokedex_entries';
+export type { PokedexEntryData } from '../../data/pokemon/pokedex_entries';
+export { gPokedexEntries } from '../../data/pokemon/pokedex_entries';
 
 // ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
 // décomp `include/constants/pokedex.h` :

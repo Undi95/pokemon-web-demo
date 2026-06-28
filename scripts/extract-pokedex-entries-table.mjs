@@ -33,7 +33,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const decompPath = resolve(projectRoot, '..', 'decomps', 'pokeemeraude');
-const outPath = join(projectRoot, 'src', 'engine', 'decomp-data', 'auto', 'pokedex-entries-table.ts');
+// Chemin miroir 1:1 décomp (src/data/pokemon/pokedex_entries.h → .ts).
+const outPath = join(projectRoot, 'src', 'data', 'pokemon', 'pokedex_entries.ts');
 
 function die(m) { console.error('[extract-pokedex-entries-table] FATAL:', m); process.exit(1); }
 
