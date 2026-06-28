@@ -27,7 +27,7 @@
  *     commentées sur place.
  *   - s16/u16 décomp : wrap explicite `& 0xFFFF` + `_toS16` quand le C dépend du wrap.
  */
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   GetBattlerSpriteCoord,
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,

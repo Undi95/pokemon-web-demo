@@ -32,7 +32,7 @@
  */
 
 import { CreateSprite } from './sprite';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -761,7 +761,7 @@ import {
   AnimLoadCompressedBgTilemap as _fogLoadMap,
   LoadAnimBgPalette as _fogLoadPal,
   ClearBattleAnimBg as _fogClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 
 const _sHazeBlendAmounts: ReadonlyArray<number> = [0, 1, 2, 2, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6, 6, 7, 8, 8, 8, 9];
 const _sMistBlendAmounts: ReadonlyArray<number> = [0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5];

@@ -39,7 +39,7 @@
  */
 
 import { CreateSprite } from './sprite';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -1503,7 +1503,7 @@ import {
   GetBattleAnimBg1Data as _sfBgData, AnimLoadCompressedBgGfx as _sfLoadGfx,
   AnimLoadCompressedBgTilemap as _sfLoadMap, LoadAnimBgPalette as _sfLoadPal,
   ClearBattleAnimBg as _sfClear,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 function AnimTask_ScaryFace(task: _SpTask): void {
   const itf = _spItf2() as { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
@@ -2409,7 +2409,7 @@ import {
   AnimLoadCompressedBgTilemap as _hbLoadMap,
   LoadAnimBgPalette as _hbLoadPal,
   ClearBattleAnimBg as _hbClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _HbTask = { taskId: number; data: number[]; func?: unknown };

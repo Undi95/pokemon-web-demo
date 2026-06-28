@@ -15,7 +15,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 
 export const ANIM_TAG_SHARP_TEETH = 10139; // ANIM_SPRITES_START + 139
 
@@ -266,7 +266,7 @@ import {
   AnimLoadCompressedBgTilemap as _mshLoadMap,
   LoadAnimBgPalette as _mshLoadPal,
   ClearBattleAnimBg as _mshClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import { BlendPalette as _mshBlend } from '../harness/runtime/decomp-globals';
 
 type _MshTask = { taskId: number; data: number[]; func?: unknown };
@@ -393,7 +393,7 @@ import {
   MoveBattlerSpriteToBG as _dkMoveToBG,
   IsBattlerSpriteVisible as _dkIsVisible,
   GetBattleAnimBg1Data as _dkBgData,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import {
   GetBattlerSpriteBGPriorityRank as _dkBgRank,
   GetBattlerSpriteCoord as _dkCoord,
@@ -727,7 +727,7 @@ _dRegT({
 });
 
 /** 1:1 AnimTask_MementoHandleBg (battle_anim_dark.c.c:796) : rend le(s) BG anim au combat. */
-import { ResetBattleAnimBg as _dkResetBg } from './engine/battle/battle-anim-interpreter';
+import { ResetBattleAnimBg as _dkResetBg } from './battle_anim';
 function AnimTask_MementoHandleBg(task: _DkTask): void {
   const itf = _dItf3();
   const atk = itf.getAttacker?.() ?? 0;

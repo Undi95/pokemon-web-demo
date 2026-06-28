@@ -5,7 +5,7 @@
  * AnimSpinningKickOrPunch (+ finish 20f). Le gfx = ANIM_TAG_HANDS_AND_FEET
  * (table générée, anims variantes par args).
  */
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, GetBattlerSpriteCoord,
   StartAnimLinearTranslation, InitAnimLinearTranslation, AnimTranslateLinear,

@@ -17,7 +17,7 @@
  *    64x16 via SetSubspriteTables).
  */
 
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   InitAnimLinearTranslation, AnimTranslateLinear, StartAnimLinearTranslation,

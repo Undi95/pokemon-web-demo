@@ -1532,7 +1532,7 @@ EX :
     /** État courant du battle anim runner (= 1:1 décomp battle_anim.c).
      *  Retourne { active, pc, framesToWait, visualTasks, soundTasks, attacker, target }. */
     animState: async () => {
-      const anim = await import('./battle-anim-interpreter');
+      const anim = await import('../../battle_anim');
       return {
         active: anim.IsAnimRunning(),
         pc: anim.GetCurrentPC(),
@@ -1548,14 +1548,14 @@ EX :
     /** Lance une battle anim depuis un move ID (= e.g. 33 STRENGTH).
      *  Pour test : dev.battle.animPlay(33). */
     animPlay: async (moveId: number) => {
-      const anim = await import('./battle-anim-interpreter');
+      const anim = await import('../../battle_anim');
       anim.DoMoveAnim(moveId);
       return { launched: true, moveId, pc: anim.GetCurrentPC() };
     },
     /** Tick le runner manuellement (= pour debug step-by-step).
      *  Returns état après le tick. */
     animTick: async () => {
-      const anim = await import('./battle-anim-interpreter');
+      const anim = await import('../../battle_anim');
       anim.TickBattleAnim();
       return {
         active: anim.IsAnimRunning(),
@@ -1565,7 +1565,7 @@ EX :
     },
     /** Clear state + stop anim (= utilisé en cleanup post-test). */
     animClear: async () => {
-      const anim = await import('./battle-anim-interpreter');
+      const anim = await import('../../battle_anim');
       anim.ClearBattleAnimationVars();
       return 'cleared';
     },

@@ -16,7 +16,7 @@ import {
   BlendPalettes, LoadPalette, IndexOfSpritePaletteTag, OBJ_PLTT_ID, gPlttBufferUnfaded,
 } from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
 import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords, TranslateSpriteLinearFixedPoint, SetAnimSpriteInitialXOffset } from './battle_anim_mons';

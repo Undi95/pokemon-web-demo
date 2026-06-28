@@ -21,7 +21,7 @@ import {
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine, PrepareBattlerSpriteForRotScale,
 } from './battle_anim_mons';
 
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { Sin } from './trig';
 
 export const ANIM_TAG_BUBBLE = 10146;
@@ -1233,7 +1233,7 @@ import {
   AnimLoadCompressedBgTilemap as _swLoadMap,
   LoadAnimBgPalette as _swLoadPal,
   ClearBattleAnimBg as _swClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 
 type _SfwTask = { taskId: number; data: number[]; func?: unknown; priority?: number };

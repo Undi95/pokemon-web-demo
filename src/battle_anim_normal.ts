@@ -26,7 +26,7 @@ import {
   GetSpriteTileStartByTag, BlendPalettes,
 } from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import {

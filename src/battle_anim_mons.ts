@@ -1022,7 +1022,7 @@ export function AnimSpriteOnMonPos(sprite: { data: number[]; x: number; y: numbe
 }
 
 // PHASE 1a : callbacks par nom C pour les templates generes.
-import { registerAnimCallbacks as _regCb } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks as _regCb } from './battle_anim';
 _regCb({
   TranslateAnimSpriteToTargetMonLocation: TranslateAnimSpriteToTargetMonLocation as never,
   AnimSpriteOnMonPos: AnimSpriteOnMonPos as never,

@@ -17,7 +17,7 @@
  * localement préfixés _ (SetAverageBattlerPositions, InitSpriteDataForLinear-
  * Translation, InitAnimLinearTranslationWithSpeed, GetBattlerSpriteBGPriority).
  */
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker,
   InitAnimArcTranslation, TranslateAnimHorizontalArc,

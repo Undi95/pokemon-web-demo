@@ -9,7 +9,7 @@
  */
 
 import { CreateSprite } from './sprite';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
@@ -351,7 +351,7 @@ import {
   AnimLoadCompressedBgGfx as _ssbLoadGfx,
   AnimLoadCompressedBgTilemap as _ssbLoadMap,
   ClearBattleAnimBg as _ssbClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 
 type _SsbTask = { taskId: number; data: number[]; func?: unknown };
 function _ssbItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {

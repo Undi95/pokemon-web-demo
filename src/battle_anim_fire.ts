@@ -67,7 +67,7 @@ import {
   DestroySpriteAndMatrix, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
 } from './battle_anim_mons';
 import { Sin, Cos } from './trig';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 
 type _VSprite = { data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean; oamIndex?: number; callback: unknown };
 function _vItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {

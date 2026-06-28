@@ -12,7 +12,7 @@ import {
   GetSpriteTileStartByTag, getRuntime,
 } from '../harness/runtime/decomp-globals';
 import { registerAnimTemplates } from './engine/battle/battle-anim-registry';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
   GetBattlerSpriteCoord, GetBattlerElevation, InitSpritePosToAnimTarget,

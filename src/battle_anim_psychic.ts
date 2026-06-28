@@ -18,7 +18,7 @@
  */
 
 import { CreateSprite } from './sprite';
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
@@ -410,7 +410,7 @@ registerAnimCallbacks({ AnimQuestionMark: AnimQuestionMark as never });
 // Reflect/Light Screen/Safeguard : le mur translucide. Single non-contest :
 // monbg(OPPONENT_LEFT) -> mon invisible (le rendu = la copie BG) -> fade
 // BLDALPHA in -> rotation de palette (8 slots) -> fade out -> restore.
-import { MoveBattlerSpriteToBG, ResetBattleAnimBg } from './engine/battle/battle-anim-interpreter';
+import { MoveBattlerSpriteToBG, ResetBattleAnimBg } from './battle_anim';
 import { GetBattlerSpriteCoord as _dwCoord } from './battle_anim_mons';
 
 type _DwSprite = { data: number[]; x: number; y: number; invisible?: boolean; subpriority?: number; oamIndex?: number; callback: unknown };

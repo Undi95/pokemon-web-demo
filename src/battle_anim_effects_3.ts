@@ -24,7 +24,7 @@ import {
 import { registerAnimTemplates, registerAnimTasks, lookupAnimTemplate } from './engine/battle/battle-anim-registry';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, SeekSpriteAnim } from './sprite';
 // ─── Imports vague « callbacks 1:1 » (section en fin de fichier) ────────────
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   GetBattlerSpriteCoord,
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
@@ -3606,7 +3606,7 @@ import {
   AnimLoadCompressedBgTilemap as _msLoadMap,
   LoadAnimBgPalette as _msLoadPal,
   ClearBattleAnimBg as _msClearBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 
 const _gMorningSunCoords: ReadonlyArray<number> = [-24, 24, -4, 0]; // s8 0xE8,0x18,0xFC,0x00
 type _MsTask = { taskId: number; data: number[]; func?: unknown };

@@ -752,7 +752,7 @@ import { LaunchStatusAnimation } from './battle_anim_status_effects';
 import {
   LaunchBattleAnimation as _LaunchBattleAnim, isAnimScriptActive as _animActive,
   tickAnimScript as _tickAnim, setBattleAnimAttackerTarget as _setAnimAtkTgt,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import {
   setStatusAnimActive as _setStatusAnimActive, isStatusAnimActive as _isStatusAnimActive,
   isBehindSubstitute as _behindSub,

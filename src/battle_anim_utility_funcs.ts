@@ -610,7 +610,7 @@ import {
   AnimLoadCompressedBgTilemap as _smskLoadMap,
   LoadAnimBgPalette as _smskLoadPal,
   ResetBattleAnimBg as _smskResetBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 
 type _SmskTask = { taskId: number; data: number[]; func?: unknown };
 function _smskRt(): {
@@ -814,7 +814,7 @@ import {
   ClearBattleAnimBg as _scClearAnimBg,
   LoadAnimBgPalette as _scLoadPal,
   ResetBattleAnimBg as _scResetBg,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import { ENUM_STAT_3 as _SC_PAL } from '../include/battle_anim';
 import { resolveDecompConstant as _scSE } from '../harness/runtime/decomp-constants';
 import { gBattlerPartyIndexes as _scPartyIdx } from './engine/battle/state';

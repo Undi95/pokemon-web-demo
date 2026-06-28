@@ -20,7 +20,7 @@
  * battle_anim_fight.ts:48) ; le C lit gBattlerAttacker (≡ attaquant d'anim
  * pendant un move).
  */
-import { registerAnimCallbacks } from './engine/battle/battle-anim-generated-bridge';
+import { registerAnimCallbacks } from './battle_anim';
 import {
   GetBattlerSpriteCoord, SetSpriteCoordsToAnimAttackerCoords, SetAnimSpriteInitialXOffset,
   StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,

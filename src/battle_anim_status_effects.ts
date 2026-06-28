@@ -21,7 +21,7 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LaunchBattleAnimation, isAnimScriptActive, tickAnimScript,
   setBattleAnimAttackerTarget,
-} from './engine/battle/battle-anim-interpreter';
+} from './battle_anim';
 import { setStatusAnimActive } from './engine/battle/battle-sprites-data';
 
 /** 1:1 décomp `LaunchStatusAnimation(battler, statusAnimId)`

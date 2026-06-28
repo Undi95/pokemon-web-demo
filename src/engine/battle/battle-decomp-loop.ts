@@ -461,7 +461,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../battle_anim_effects_1'),      // registry Absorb orbs (T4)
     import('../../battle_anim_ground'),          // registry Sand-Attack (C1b)
     import('../../battle_anim_dark'),             // registry Bite crocs (micro-vague)
-    import('./battle-anim-generated-bridge'),           // PHASE 1a : donnees generees (387 tpl)
+    import('../../battle_anim'),           // PHASE 1a : donnees generees (387 tpl)
     import('../../battle_anim_rock'),               // vague 2c : vortex
     import('../../battle_anim_utility_funcs'),       // vague 2e : BlendBattleAnimPal (89 usages)
     import('../../battle_anim_fight'),                // vague 3h : poings/pieds
