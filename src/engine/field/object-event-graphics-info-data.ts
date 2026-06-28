@@ -90,7 +90,7 @@ import {
 import {
   sOamTables_16x16, sOamTables_16x32, sOamTables_32x32, sOamTables_48x48,
   sOamTables_64x32, sOamTables_64x64, sOamTables_96x40, sOamTables_88x32,
-} from './object-event-subsprites-data';
+} from '../../data/object_events/object_event_subsprites';
 
 
 // ─── sPicTable_* builders 1:1 décomp pic_tables.h ───────────────────────────
