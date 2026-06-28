@@ -33,7 +33,7 @@
  */
 
 import {
-  getScript, getText, ScriptJump, SetupNativeScript, StopScript,
+  getScript, getText,
   type ScriptContext, type Opcode,
 } from './script';
 import { registerSpecial } from './scrcmd';
@@ -531,29 +531,11 @@ export function _prepareTrainerBattleStart(): void {
   gWhichTrainerToFaceAfterBattle = 0;
 }
 
-// ─── Wires opcodes/scripts (consommés par script-opcodes-battle.ts) ─────────
+// ─── Lancement combat dresseur (voie A, partagé avec le byte-VM) ────────────
 
-/** Configure + jump vers le EventScript_* 1:1 (= `ctx->scriptPtr = Configure(...)`,
- *  scrcmd.c:1821-1825). Retourne false (le dispatcher continue sur le script jumpé). */
-export function ScrCmd_trainerbattle(ctx: ScriptContext, rawArgs: string[]): boolean {
-  const label = BattleSetup_ConfigureTrainerBattle(rawArgs, ctx);
-  if (label) {
-    const sc = getScript(label);
-    if (sc) {
-      ScriptJump(ctx, sc);
-    } else {
-      console.warn(`[battle_setup] script '${label}' introuvable — trainerbattle ignoré`);
-    }
-  }
-  return false;
-}
-
-/** 1:1 décomp `ScrCmd_dotrainerbattle` (scrcmd.c:1827-1831) : DoTrainerBattle()
- *  + ScriptContext_Stop. Notre stop = SetupNativeScript qui poll la fin du combat
- *  (inBattle=false + outcome posé) PUIS applique CB2_EndTrainerBattle (flags). */
-/** VOIE A : lancement combat dresseur partagé (parsé + byte-VM). Lance DoTrainerBattle
- *  (async, après ensureGTrainersLoaded) et renvoie le poll natif (true = combat fini +
- *  CB2_EndTrainerBattle appliqué). Chaque moteur l'enveloppe dans SON SetupNativeScript. */
+/** VOIE A : lancement combat dresseur partagé. Lance DoTrainerBattle (async, après
+ *  ensureGTrainersLoaded) et renvoie le poll natif (true = combat fini + CB2_EndTrainerBattle
+ *  appliqué). Le byte-VM l'enveloppe dans son SetupNativeScript (cf scrcmd_bytevm.ts). */
 export function startTrainerBattleAndGetPoll(): () => boolean {
   setBattleOutcome(0);
   _prepareTrainerBattleStart();
@@ -574,45 +556,10 @@ export function startTrainerBattleAndGetPoll(): () => boolean {
   };
 }
 
-export function ScrCmd_dotrainerbattle(ctx: ScriptContext): boolean {
-  SetupNativeScript(ctx, startTrainerBattleAndGetPoll());
-  return true;
-}
-
-/** 1:1 décomp `ScrCmd_gotopostbattlescript` (scrcmd.c:1833-1837). */
-export function ScrCmd_gotopostbattlescript(ctx: ScriptContext): boolean {
-  const r = BattleSetup_GetTrainerPostBattleScript();
-  if (typeof r === 'string') {
-    const sc = getScript(r);
-    if (sc) ScriptJump(ctx, sc);
-    else StopScript(ctx);   // EventScript_TryGetTrainerScript absent (std pas transpilé) → fin propre.
-  } else if ('opcodes' in r) {
-    ctx.scriptOpcodes = r.opcodes;
-    ctx.scriptIdx = r.idx;
-  } else {
-    StopScript(ctx);   // forme byte-VM ({buf,off}) côté parsé → arrêt propre
-  }
-  return false;
-}
-
-/** 1:1 décomp `ScrCmd_gotobeatenscript` (scrcmd.c:1839-1843) : reprend le script
- *  de map à la position capturée (sTrainerBattleEndScript). */
-export function ScrCmd_gotobeatenscript(ctx: ScriptContext): boolean {
-  const r = BattleSetup_GetScriptAddrAfterBattle();
-  if (typeof r === 'string') {
-    const sc = getScript(r);
-    if (sc) ScriptJump(ctx, sc);
-    else StopScript(ctx);
-  } else if ('opcodes' in r) {
-    ctx.scriptOpcodes = r.opcodes;
-    ctx.scriptIdx = r.idx;
-  } else {
-    // Forme byte-VM ({buf,off}) — le moteur parsé ne peut pas la reprendre (ne devrait
-    // pas arriver : seul le byte-VM la pose). Arrêt propre.
-    StopScript(ctx);
-  }
-  return false;
-}
+// (handlers parsés ScrCmd_dotrainerbattle/gotopostbattlescript/gotobeatenscript
+//  retirés au clean byte-VM — le byte-VM a les siens dans scrcmd_bytevm.ts ; les
+//  accesseurs partagés BattleSetup_GetTrainerPostBattleScript / GetScriptAddrAfterBattle
+//  restent, lus par le byte-VM.)
 
 // ─── T-C : approche dresseur (callers = trainer_see.c, non porté) ───────────
 
