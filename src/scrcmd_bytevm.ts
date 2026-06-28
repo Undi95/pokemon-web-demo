@@ -48,7 +48,7 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
 import type { TrainerArgSource } from './battle_setup';
 import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './engine/battle/battle-setup-helpers';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
-import { PlaySE, getRuntime, FadeOutBGM, FadeInBGM } from '../harness/runtime/decomp-globals';
+import { PlaySE, PlayFanfare, getRuntime, FadeOutBGM, FadeInBGM } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
@@ -595,10 +595,11 @@ const ScrCmd_cleartrainerflag: ScrCmdFunc = (ctx) => { ClearTrainerFlag(VarGet(S
 const _dg = (): any => (globalThis as Record<string, unknown>).__decompGlobals;
 const ScrCmd_playse: ScrCmdFunc = (ctx) => { PlaySE(ScriptReadHalfword(ctx)); return false; };
 const ScrCmd_waitse: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => !(_dg()?.IsSEPlaying?.() ?? false)); return true; };
-// ⚠️ Lire l'arg AVANT l'appel optional-chained : `_dg()?.PlayFanfare?.(ScriptReadHalfword(ctx))`
-// court-circuite ScriptReadHalfword si PlayFanfare est absent (audio exempt) → l'arg 2o
-// n'est PAS consommé → scriptPtr désaligné (cassait le ramassage d'item : playfanfare MUS_OBTAIN_ITEM).
-const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); _dg()?.PlayFanfare?.(song); return false; };
+// PlayFanfare importé DIRECTEMENT (comme PlaySE) : il n'est PAS sur __decompGlobals
+// (seul IsFanfareTaskInactive y est) → l'ancien `_dg()?.PlayFanfare?.(…)` était undefined
+// = aucune fanfare + (avec optional chaining) arg non consommé → scriptPtr désaligné.
+// Jouer la fanfare sur le slot dédié rend aussi waitfanfare correct (tient le texte).
+const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { PlayFanfare(ScriptReadHalfword(ctx)); return false; };
 const ScrCmd_waitfanfare: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsFanfareTaskInactive?.() ?? true); return true; };
 const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx); _dg()?.m4aSongNumStart?.(song, true); return false; };
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
