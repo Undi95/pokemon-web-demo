@@ -38,7 +38,7 @@ import {
 } from '../../src/title_screen';
 import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
-} from '../../src/engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
+} from '../../src/intro_credits_graphics';
 import { CB2_InitCopyrightScreenAfterBootup } from './copyright-boot';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
