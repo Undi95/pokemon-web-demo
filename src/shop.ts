@@ -61,7 +61,7 @@ import {
 } from './list_menu';
 import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './item';
 import { AddBagItem, CountTotalItemQuantityInBag } from './engine/bag/bag';
-import { CB2_GoToSellMenu, _setSellMenuExitCallback } from './engine/bag/bag-menu';
+import { CB2_GoToSellMenu, _setSellMenuExitCallback } from './item_menu';
 import { GetMoney, IsEnoughMoney, RemoveMoney, AddMoneyLabelObject, RemoveMoneyLabelObject, PreloadMoneyLabelAsset, PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './money';
 import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';

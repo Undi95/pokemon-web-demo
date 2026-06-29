@@ -69,7 +69,7 @@ export function makeSpecialInlineFlowPoll(name: string): (() => boolean) | null 
     }
     // Bag_ChooseBerry : ouvre le sac poche BAIES (waitstate implicite de la macro).
     case 'Bag_ChooseBerry': {
-      void import('./engine/bag/bag-menu').then((m) => m.CB2_ChooseBerry());
+      void import('./item_menu').then((m) => m.CB2_ChooseBerry());
       let framesWaited = 0;
       return () => { framesWaited++; return framesWaited >= 1; };
     }

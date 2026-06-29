@@ -60,7 +60,7 @@ import {
   Task_FadeAndCloseBagMenu,
   GoToBagMenu,
   ITEMMENULOCATION_LAST,
-} from './engine/bag/bag-menu';
+} from './item_menu';
 import {
   OpenPartyScreenForItemUse,
   GetPartyScreenSlotId,

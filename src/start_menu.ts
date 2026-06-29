@@ -80,7 +80,7 @@ import { preloadOptionMenuAssets } from './option_menu';
 // SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
-import { OpenBagScreen } from './engine/bag/bag-menu';
+import { OpenBagScreen } from './item_menu';
 import { OpenPartyScreen, TickPartyScreen } from './party_menu';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
 import { OpenPokedexFromStartMenu } from './pokedex';

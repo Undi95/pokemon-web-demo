@@ -11,7 +11,7 @@
  * feedback-map-loader-var-tdz : le danger = usage AU TOP-LEVEL d'un hub).
  */
 import { AddItemIconSprite, MAX_SPRITES } from './item_icon';
-import { gBagMenu } from './engine/bag/bag-menu';
+import { gBagMenu } from './item_menu';
 import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag, AllocOamMatrix, FreeOamMatrix, setSpriteAnims } from './sprite';
 import {
   getRuntime,
