@@ -30,7 +30,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const decompPath = resolve(projectRoot, '..', 'decomps', 'pokeemeraude');
-const outPath = join(projectRoot, 'src', 'engine', 'decomp-data', 'auto', 'pokedex-order-tables.ts');
+// Repointé 2026-06-29 vers le foyer data 1:1 (relocation depuis decomp-data, cf
+// template pokedex_entries). Source = static const de pokemon.c (pas de .h dédié) ;
+// leaf data → préserve l'anti-cycle de pokedex-flags (qui DOIT importer un leaf).
+const outPath = join(projectRoot, 'src', 'data', 'pokemon', 'pokedex_order_tables.ts');
 
 function die(msg) { console.error('[extract-pokedex-order-tables] FATAL:', msg); process.exit(1); }
 

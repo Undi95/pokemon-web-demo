@@ -28,7 +28,7 @@ import {
 } from '../../../include/constants/pokedex';
 import {
   sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
-} from '../decomp-data/pokedex-order-tables';
+} from '../../data/pokemon/pokedex_order_tables';
 import { SPECIES_UNOWN, SPECIES_SPINDA } from '../../../include/constants/species';
 import { gPokedexEntries } from '../../data/pokemon/pokedex_entries';
 export type { PokedexEntryData } from '../../data/pokemon/pokedex_entries';
