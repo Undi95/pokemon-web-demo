@@ -27,7 +27,7 @@ import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
-import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
+import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK, BATTLE_TYPE_FIRST_BATTLE } from './constants';
 // (Le miroir src/game/battle_transition.ts est chargé par la scène — import ici
 //  = cycle ESM TDZ au boot froid, BG_SCREEN_SIZE before initialization.)
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../../../include/constants/songs';
@@ -611,12 +611,17 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // La transition d'entrée tourne AVANT CB2_InitBattle ; fallback SLICE pour les
     // visuels pas encore portés. Le harness (returnToOverworld=false) boote direct.
     const isTrainer = (gBattleTypeFlags & BATTLE_TYPE_TRAINER) !== 0;
+    const isFirstBattle = (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) !== 0;
     const helpers = (globalThis as Record<string, unknown>).__battleSetupHelpers as {
       GetTrainerBattleTransition?: () => number;
     } | undefined;
-    const transition = (isTrainer && helpers?.GetTrainerBattleTransition)
-      ? helpers.GetTrainerBattleTransition()
-      : _GetWildBattleTransition();
+    // 1:1 décomp CB2_GiveStarter (battle_setup.c) : le 1er combat (tutoriel Birch) force
+    // `BattleTransition_Start(B_TRANSITION_BLUR)` (pixelisation) — pas la transition wild.
+    const transition = isFirstBattle
+      ? B_TRANSITION.B_TRANSITION_BLUR
+      : (isTrainer && helpers?.GetTrainerBattleTransition)
+        ? helpers.GetTrainerBattleTransition()
+        : _GetWildBattleTransition();
     getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb, transition) as never);
     return;
   }

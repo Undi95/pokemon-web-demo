@@ -677,7 +677,12 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     //   ResetAllPicSprites();
     //   SetMainCallback2(gMain.savedCallback);
     const selection = task.data[T_STARTER_SELECTION];
+    // 1:1 décomp Task_HandleConfirmStarterInput : gSpecialVar_Result = tStarterSelection.
     VarSet('VAR_RESULT', selection);
+    // 1:1 décomp CB2_GiveStarter (battle_setup.c) : *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result.
+    // VAR_STARTER_MON (=16419) détermine le starter du rival + IsStarterInParty + refs "ton starter".
+    // Était MANQUANT → tout lisait Treecko (idx 0) quel que soit le choix réel. [bug #1]
+    VarSet('VAR_STARTER_MON', selection);
     _committedStarter = selection;
 
     // 1:1 décomp post-CB2_GiveStarter : addToParty + chain CB2_StartFirstBattle.
@@ -705,8 +710,11 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     task.func = null;
     _tasks.delete(taskId);
 
-    // Cleanup BG/sprites + restore overworld.
-    cleanupScene();
+    // 1:1 décomp CB2_GiveStarter : PAS de restauration overworld ici. La transition
+    // BLUR (pixelisation) capture l'écran starter et fond vers le combat ; l'overworld
+    // revient APRÈS le combat (CB2_EndFirstBattle → ReturnToField). L'ancien cleanupScene()
+    // ré-initialisait BG1/2/3 sur la map + ShowBg → effaçait l'écran starter avant la
+    // transition (= pas d'effet pixelisation, écran vidé). [bug #2]
 
     // 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:930) : chained battle.
     // Voie L : boote la VRAIE boucle decomp (swap CB2). _firstBattleFlow reste null ->
@@ -960,7 +968,10 @@ async function _preloadDexEntries(): Promise<void> {
   } catch (e) { void e; }
 }
 
-// ─── Cleanup helper (= reverse de CB2_ChooseStarter init) ──────────────
+// ─── Cleanup helper — ⚠️ MORT depuis le fix bug #2 (restaurait l'overworld AVANT
+//     le combat = effaçait l'écran starter au lieu de laisser la transition BLUR le
+//     pixeliser ; pas dans la décomp CB2_GiveStarter). Conservé temporairement le temps
+//     de re-vérifier le retour OW post-combat, puis à supprimer. ──
 function cleanupScene(): void {
   const rt = getRuntime();
   if (!rt) return;
