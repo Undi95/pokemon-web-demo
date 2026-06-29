@@ -23,7 +23,7 @@ import {
   BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_16COLOR, BGCNT_TXT256x256,
   INTR_FLAG_VBLANK,
 } from '../runtime/decomp-globals';
-import { MainCB2_EndIntro, Task_Scene1_Load } from '../../src/engine/decomp-data/src/intro-callbacks-auto';
+import { MainCB2_EndIntro, Task_Scene1_Load } from '../../src/intro';
 import { ResetSpriteData } from '../../src/sprite';
 import type { CB2Callback } from '../runtime/decomp-runtime';
 

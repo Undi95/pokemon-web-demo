@@ -30,7 +30,7 @@ import {
   SpriteCB_WaterDrop_DangleFromLeaf, SpriteCB_WaterDrop_Fall, SpriteCB_WaterDropShort,
   SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
   SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
-} from '../../src/engine/decomp-data/src/intro-callbacks-auto';
+} from '../../src/intro';
 import {
   SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
   SpriteCB_PressStartCopyrightBanner,
