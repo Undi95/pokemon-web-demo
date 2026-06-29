@@ -54,10 +54,43 @@ import {
   TIMER_TORCHIC_EXIT,
   TIMER_TORCHIC_SPEED_UP,
 } from './engine/decomp-data/intro-data';
-import {
-  sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,
-  sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,
-} from './engine/decomp-data/src/_data-tables-flat';
+// ─── intro.c static const data tables (1:1 verbatim — ex-`_data-tables-flat`
+//     dissous : c'était une extraction lossy qui tronquait les rows [][3] en
+//     2-tuples → régression anim Groudon/Kyogre). Valeurs 1:1 décomp intro.c. ──
+// Enums lettres (intro.c:782-798).
+const GAMEFREAK_G = 0, GAMEFREAK_A = 1, GAMEFREAK_M = 2, GAMEFREAK_E = 3, GAMEFREAK_F = 4, GAMEFREAK_R = 5, GAMEFREAK_K = 6;
+const PRESENTS_P = 0, PRESENTS_R = 1, PRESENTS_E = 2, PRESENTS_S = 3, PRESENTS_N = 4, PRESENTS_T = 5;
+/** 1:1 décomp intro.c:824 `sGameFreakLetterData[NUM_GF_LETTERS][2]` (letter, x offset). */
+const sGameFreakLetterData: ReadonlyArray<readonly [number, number]> = [
+  [GAMEFREAK_G, -72], [GAMEFREAK_A, -56], [GAMEFREAK_M, -40], [GAMEFREAK_E, -24],
+  [GAMEFREAK_F, 8], [GAMEFREAK_R, 24], [GAMEFREAK_E, 40], [GAMEFREAK_A, 56], [GAMEFREAK_K, 72],
+];
+/** 1:1 décomp intro.c:923 `sGameFreakLetterStartDelays[NUM_GF_LETTERS]`. */
+const sGameFreakLetterStartDelays: readonly number[] = [0, 23, 23, 49, 62, 36, 36, 10, 10];
+/** 1:1 décomp intro.c:880 `sGameFreakLettersMoveSpeed[NUM_GF_LETTERS]`. */
+const sGameFreakLettersMoveSpeed: readonly number[] = [256, 192, 128, 64, 0, 64, 128, 192, 256];
+/** 1:1 décomp intro.c:837 `sPresentsLetterData[][2]`. */
+const sPresentsLetterData: ReadonlyArray<readonly [number, number]> = [
+  [PRESENTS_P, -28], [PRESENTS_R, -20], [PRESENTS_E, -12], [PRESENTS_S, -4],
+  [PRESENTS_E, 4], [PRESENTS_N, 12], [PRESENTS_T, 20], [PRESENTS_S, 28],
+];
+/** 1:1 décomp intro.c:259 `sSparkleCoords[][2]` (11 + terminateur {0,0} = 12 ARRAY_COUNT). */
+const sSparkleCoords: ReadonlyArray<readonly [number, number]> = [
+  [124, 40], [102, 30], [77, 30], [54, 15], [148, 9], [63, 28],
+  [93, 40], [148, 32], [173, 41], [94, 20], [208, 38], [0, 0],
+];
+/** 1:1 décomp intro.c:484 `s16 sGroudonRockData[][3]` (x, animNum, speed) — rows de 3 ! */
+const sGroudonRockData: ReadonlyArray<readonly [number, number, number]> = [
+  [104, 0, 0x0C0], [142, 3, 0x280], [83, 1, 0x180],
+  [155, 0, 0x080], [56, 2, 0x200], [174, 1, 0x100],
+];
+/** 1:1 décomp intro.c:506 `s16 sKyogreBubbleData[NUM_BUBBLES_IN_SET * 2][3]` — rows de 3 ! */
+const sKyogreBubbleData: ReadonlyArray<readonly [number, number, number]> = [
+  // Set 1, Kyogre's body
+  [66, 64, 1], [96, 96, 8], [128, 64, 1], [144, 48, 8], [160, 72, 1], [176, 96, 8],
+  // Set 2, Kyogre's fins
+  [96, 96, 4], [112, 104, 8], [128, 96, 4], [88, 32, 4], [104, 24, 8], [120, 32, 4],
+];
 import { gAncientPowerRockSpriteTemplate, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, PlaySE, SE_INTRO_BLAST, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalette_Sparkle, sSpritePalettes_Intro1, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_FlygonSilhouette, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon, sSpriteSheet_Sparkle, sSpriteSheet_WaterDropsAndLogo } from '../harness/runtime/decomp-globals';
 import { gSpriteSheet_IntroBrendan, gSpriteSheet_IntroMay, gSpriteSheet_IntroBicycle, gSpriteSheet_IntroFlygon, gSpritePalettes_IntroPlayerFlygon } from './engine/decomp-data/src/intro_credits_graphics-data';
 // CB2_InitTitleScreen dans src/title_screen.ts (ex-title_screen-callbacks-auto, dissous).
@@ -385,7 +418,7 @@ export const SpriteCB_GroudonRocks: SpriteCallback = (sprite, rt) => {
       {
       case 0:
            
-          sprite.data[2] += (sGroudonRockData[sprite.data[1]] as any)[2];
+          sprite.data[2] += sGroudonRockData[sprite.data[1]][2];
           sprite.y -= (sprite.data[2] & 0xFF00) >> 8;
           sprite.data[2] &= 0xFF;
 
@@ -2152,7 +2185,7 @@ export function CreateKyogreBubbleSprites_Body(taskId: number): number {
                                   i);
           _gs(rt, spriteId).invisible = true;
           _gs(rt, spriteId).data[5] = taskId;
-          _gs(rt, spriteId).data[6] = (sKyogreBubbleData[i] as any)[2];
+          _gs(rt, spriteId).data[6] = sKyogreBubbleData[i][2];
           _gs(rt, spriteId).data[7] = 64;
       }
   return -1;
@@ -2160,7 +2193,7 @@ export function CreateKyogreBubbleSprites_Body(taskId: number): number {
 
 /** Source: intro.c → CreateKyogreBubbleSprites_Fins (helper)
  *  MANUAL FIX: sDelay alias = data[6] (not data[2]). See SpriteCB_KyogreBubbles note.
- *  Note: décomp default build (no BUGFIX) uses (sKyogreBubbleData[i] as any)[2] (the "wrong"
+ *  Note: décomp default build (no BUGFIX) uses sKyogreBubbleData[i][2] (the "wrong"
  *  delay set per comment), so we keep that. */
 export function CreateKyogreBubbleSprites_Fins(): number {
   const rt = _getRuntime();
@@ -2176,7 +2209,7 @@ export function CreateKyogreBubbleSprites_Fins(): number {
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][1],
                                   i);
           _gs(rt, spriteId).invisible = true;
-          _gs(rt, spriteId).data[6] = (sKyogreBubbleData[i] as any)[2];
+          _gs(rt, spriteId).data[6] = sKyogreBubbleData[i][2];
           _gs(rt, spriteId).data[7] = 64;
       }
   return -1;
