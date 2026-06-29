@@ -34,7 +34,8 @@ import {
   VERSION_BANNER_Y_GOAL,
 } from '../title-screen-data';
 import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, FreeAllSpritePalettes, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sPokemonLogoShineSpriteSheet, sSpritePalette_PressStart, sSpriteSheet_EmeraldVersion, sSpriteSheet_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../../../../harness/runtime/decomp-globals';
-import { CB2_InitMainMenu } from './main_menu-callbacks-auto';
+// CB2_InitMainMenu fusionné dans src/main_menu.ts (ex-main_menu-callbacks-auto, dissous).
+import { CB2_InitMainMenu } from '../../../main_menu';
 import { CB2_InitCopyrightScreenAfterTitleScreen } from '../../../../harness/boot/copyright-boot';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_B_START_SELECT = 15;

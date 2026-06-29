@@ -60,7 +60,7 @@ import {
   SpriteCB_MovePlayerDownWhileShrinking,
   SpriteCB_Null,
   CB2_MainMenu,
-} from '../../src/engine/decomp-data/src/main_menu-callbacks-auto';
+} from '../../src/main_menu';
 import { CB2_NewGame } from '../../src/overworld';
 import {
   REG_OFFSET_DISPCNT,
