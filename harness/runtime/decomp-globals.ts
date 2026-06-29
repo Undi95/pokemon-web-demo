@@ -2609,7 +2609,6 @@ export { gSaveFileStatus } from '../../src/save';
 export * from '../../src/main_menu';
 export * from '../../src/engine/ui/gba-strings';
 export * from '../../src/engine/decomp-data/src/sprite-system-flat';
-export * from '../../src/engine/decomp-data/src/intro-c-data-auto';
 // Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).
 export {
   BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
