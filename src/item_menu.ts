@@ -41,7 +41,7 @@ import { BeginNormalPaletteFade } from './palette';
 import { ResetSpriteData } from './sprite';
 import { ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow, DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT } from './list_menu';
 import { GetStringCenterAlignXOffset } from './text';
-import { MENU_L_PRESSED, MENU_R_PRESSED } from './engine/decomp-data/include/menu_helpers-data';
+import { MENU_L_PRESSED, MENU_R_PRESSED } from '../include/menu_helpers';
 import { MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT } from './engine/decomp-data/include/menu-data';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../include/gba/io_reg';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';

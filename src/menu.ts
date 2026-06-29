@@ -42,7 +42,7 @@ import {
 } from '../include/gba/io_reg';
 import { MENU_NOTHING_CHOSEN, MENU_B_PRESSED, MENU_CURSOR_DELTA_NONE } from './engine/decomp-data/include/menu-data';
 import { SE_SELECT } from '../include/constants/songs';
-import { MENU_L_PRESSED, MENU_R_PRESSED } from './engine/decomp-data/include/menu_helpers-data';
+import { MENU_L_PRESSED, MENU_R_PRESSED } from '../include/menu_helpers';
 
 // 1:1 décomp `include/constants/options.h` (valeurs de optionsTextSpeed).
 const OPTIONS_TEXT_SPEED_SLOW = 0;
