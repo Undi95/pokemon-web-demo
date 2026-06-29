@@ -165,7 +165,7 @@ import {
 // MBC = source COMPLÈTE des MB_* (enum auto-extrait 1:1 du décomp). `metatile-behavior-
 // constants` est INCOMPLET (manque MB_UNUSED_SOOTOPOLIS_DEEP_WATER_2 etc.). Les valeurs
 // concordent ; ENUM_MB_0 comble les trous. TODO: basculer TOUT le fichier sur ENUM_MB_0.
-import { ENUM_MB_0 as MBC } from './engine/decomp-data/include/constants/metatile_behaviors-data';
+import { ENUM_MB_0 as MBC } from '../include/constants/metatile_behaviors';
 
 // ─── Door behaviors ─────────────────────────────────────────────────────────
 

@@ -44,7 +44,7 @@ import {
   METATILE_Building_TV_On,
   METATILE_Building_TV_Off,
 } from '../include/constants/metatile_labels';
-import { ENUM_MB_0 as MB } from './engine/decomp-data/include/constants/metatile_behaviors-data';
+import { ENUM_MB_0 as MB } from '../include/constants/metatile_behaviors';
 
 // 1:1 décomp `include/constants/tv.h:79-81` :
 //   #define PLAYERS_HOUSE_TV_NONE  0

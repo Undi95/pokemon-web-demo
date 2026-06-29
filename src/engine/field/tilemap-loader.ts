@@ -39,7 +39,7 @@ export interface LoadedTilemap {
  *  avec valeurs hex (= MB_BATTLE_PYRAMID_WARP=0x12, etc.) qui dévivaient des
  *  vraies valeurs de l'enum (= MB_BATTLE_PYRAMID_WARP=13). Bug latent : tile
  *  collision incorrect pour ces metatiles. Fix audit Opus session 102. */
-import { ENUM_MB_0 } from '../decomp-data/include/constants/metatile_behaviors-data';
+import { ENUM_MB_0 } from '../../../include/constants/metatile_behaviors';
 export const MB_NORMAL                     = ENUM_MB_0.MB_NORMAL;
 export const MB_TALL_GRASS                 = ENUM_MB_0.MB_TALL_GRASS;
 export const MB_LONG_GRASS                 = ENUM_MB_0.MB_LONG_GRASS;

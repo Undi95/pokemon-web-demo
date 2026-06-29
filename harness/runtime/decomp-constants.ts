@@ -67,7 +67,7 @@ import * as berryConstants from '../../include/constants/berry';
 // runtime ; donc on les charge dans la table pour que parseValue/VarGet fallback
 // les resolve correctement quand un script les référence.
 import * as metatileLabels from '../../include/constants/metatile_labels';
-import * as metatileBehaviors from '../../src/engine/decomp-data/include/constants/metatile_behaviors-data';
+import * as metatileBehaviors from '../../include/constants/metatile_behaviors';
 import * as mapScripts from '../../include/constants/map_scripts';
 // Audit session 126 LOT D2 : MULTI_* enum (= multichoice IDs script_menu.h).
 // Used par opcode multichoice/multichoicedefault/multichoicegrid pour resolve
