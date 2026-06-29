@@ -29,7 +29,7 @@ import { AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { SpriteCallbackDummy, BlendPalette } from '../harness/runtime/decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from '../harness/runtime/decomp-helpers';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
-import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './engine/decomp-data/src/mon-anim-tables-data';
+import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './data/pokemon/mon_anim_tables';
 import { ENUM_BattlerId } from '../include/constants/battle';
 // Substrat affine COMBAT (sIsSummaryAnim=FALSE) — matrice OAM du moteur combat.
 import {

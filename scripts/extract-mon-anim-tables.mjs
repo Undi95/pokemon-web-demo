@@ -35,7 +35,11 @@ const __dirname = path.dirname(__filename);
 const args = process.argv.slice(2);
 const DECOMP_ROOT = args[0] || 'D:/Projet 1/decomps/pokeemeraude';
 const POKEMON_C = path.join(DECOMP_ROOT, 'src', 'pokemon.c');
-const OUT_PATH = path.join(__dirname, '..', 'src', 'engine', 'decomp-data', 'auto', 'src', 'mon-anim-tables-data.ts');
+// Repointé 2026-06-29 vers le foyer data 1:1 (relocation depuis decomp-data, cf
+// template pokedex_entries/pokedex-order). Source = static const de pokemon.c
+// (sMonFrontAnimIdsTable etc., pas de .h dédié) ; leaf data → préserve l'anti-cycle
+// de pokemon_animation.ts. Diff vs committé = byte-identique au timestamp près.
+const OUT_PATH = path.join(__dirname, '..', 'src', 'data', 'pokemon', 'mon_anim_tables.ts');
 
 if (!fs.existsSync(POKEMON_C)) {
   console.error(`[extract-mon-anim-tables] pokemon.c not found at: ${POKEMON_C}`);
