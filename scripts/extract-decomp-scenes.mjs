@@ -43,7 +43,7 @@ const SCENES = [
   { key: 'save',           file: 'src/save.c' },
   // 'intro' retiré : intro.c relocalisé 1:1 dans src/intro.ts (constantes #define inline,
   // data tables inline, sprites relocalisés). Plus de decomp-data/intro-data.ts.
-  { key: 'title-screen',   file: 'src/title_screen.c' },
+  // 'title-screen' retiré : title_screen.c #define inline dans src/title_screen.ts.
   { key: 'new-game',       file: 'src/new_game.c' },
   { key: 'text-window',    file: 'src/text_window.c' },
   { key: 'menu',           file: 'src/menu.c' },

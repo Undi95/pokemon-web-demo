@@ -81,7 +81,10 @@ import * as tv from '../../include/constants/tv';
 // dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
 // "VERSION_BANNER_RIGHT_TILEOFFSET" au runtime sprite anim.
-import * as titleScreen from '../../src/engine/decomp-data/title-screen-data';
+// title-screen-data dissous : ses 9 constantes (VERSION_BANNER_*/NUM_*_FRAMES/SHINE_SPEED)
+// sont des #define internes à title_screen.c, inline dans src/title_screen.ts (import ESM
+// direct). Le merge dans _constantsTable était VESTIGIAL (0 lookup string via
+// resolveDecompConstant — vérifié : seuls hits = commentaires + bodyC C brut + dumps JSON).
 // MOVEMENT_TYPE_*/MOVEMENT_ACTION_*/ANIM_* — requis par le byte-VM (setobjectmovementtype
 // convertit l'id numérique → "MOVEMENT_TYPE_*" via reverseDecompConstant). Ajout additif.
 import * as eventObjectMovement from '../../include/constants/event_object_movement';
@@ -142,7 +145,6 @@ _constantsTable['FLAG_MAGIC_COAT_AFFECTED']  = 1 << 2;
 _constantsTable['FLAG_SNATCH_AFFECTED']      = 1 << 3;
 _constantsTable['FLAG_MIRROR_MOVE_AFFECTED'] = 1 << 4;
 _constantsTable['FLAG_KINGS_ROCK_AFFECTED']  = 1 << 5;
-_mergeConstants(titleScreen);
 _mergeConstants(metatileLabels);
 _mergeConstants(metatileBehaviors);
 _mergeConstants(mapScripts);
@@ -199,7 +201,7 @@ function _evalExprConstant(expr: string): number | undefined {
   const _exprNamespaces: Record<string, unknown>[] = [
     eventObjects, flags, items, moves, songs, species, trainers, battle,
     battleInclude, global, fieldEffects, opponents, pokemon, abilities,
-    battleMoveEffects, holdEffects, vars, titleScreen, metatileLabels,
+    battleMoveEffects, holdEffects, vars, metatileLabels,
     metatileBehaviors, mapScripts, scriptMenu, gameStats, tv,
   ];
   for (const ns of _exprNamespaces) {

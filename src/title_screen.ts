@@ -21,17 +21,17 @@ import {
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../harness/runtime/decomp-helpers';
-import {
-  NUM_COPYRIGHT_FRAMES,
-  NUM_PRESS_START_FRAMES,
-  SHINE_SPEED,
-  START_BANNER_X,
-  VERSION_BANNER_LEFT_X,
-  VERSION_BANNER_RIGHT_X,
-  VERSION_BANNER_RIGHT_TILEOFFSET,
-  VERSION_BANNER_Y,
-  VERSION_BANNER_Y_GOAL,
-} from './engine/decomp-data/title-screen-data';
+// ─── title_screen.c #define constantes 1:1 (ex-`decomp-data/title-screen-data`,
+//     auto-extrait dissous : foyer 1:1 = les #define de title_screen.c). ──
+const VERSION_BANNER_RIGHT_TILEOFFSET = 64;  // title_screen.c:32
+const VERSION_BANNER_LEFT_X = 98;            // :33
+const VERSION_BANNER_RIGHT_X = 162;          // :34
+const VERSION_BANNER_Y = 4;                  // :37
+const VERSION_BANNER_Y_GOAL = 68;            // :38
+const START_BANNER_X = 128;                  // :39
+const NUM_PRESS_START_FRAMES = 5;            // :268
+const NUM_COPYRIGHT_FRAMES = 5;              // :269
+const SHINE_SPEED = 4;                       // :464
 import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sSpritePalette_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../harness/runtime/decomp-globals';
 // CB2_InitMainMenu fusionné dans src/main_menu.ts (ex-main_menu-callbacks-auto, dissous).
 import { CB2_InitMainMenu } from './main_menu';
