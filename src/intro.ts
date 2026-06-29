@@ -91,7 +91,32 @@ const sKyogreBubbleData: ReadonlyArray<readonly [number, number, number]> = [
   // Set 2, Kyogre's fins
   [96, 96, 4], [112, 104, 8], [128, 96, 4], [88, 32, 4], [104, 24, 8], [120, 32, 4],
 ];
-import { gAncientPowerRockSpriteTemplate, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, PlaySE, SE_INTRO_BLAST, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalette_Sparkle, sSpritePalettes_Intro1, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_FlygonSilhouette, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon, sSpriteSheet_Sparkle, sSpriteSheet_WaterDropsAndLogo } from '../harness/runtime/decomp-globals';
+// ─── intro.c sprite sheets / palettes 1:1 (ex-`sprite-system-flat`, agrégat auto
+//     dissous : ces foyers 1:1 sont intro.c). Format = repr. établie des loaders
+//     (data = nom du gfx, size hex, tag string), cf hand-written de decomp-globals. ──
+/** 1:1 décomp intro.c:210 `sSpriteSheet_Sparkle`. */
+const sSpriteSheet_Sparkle: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroSparkle_Gfx', size: 0x400, tag: 'TAG_SPARKLE',
+};
+/** 1:1 décomp intro.c:215 `sSpritePalette_Sparkle` (palette Lightning ré-utilisée). */
+const sSpritePalette_Sparkle: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'gIntroLightning_Pal', tag: 'TAG_SPARKLE' },
+];
+/** 1:1 décomp intro.c:970 `sSpriteSheet_WaterDropsAndLogo`. */
+const sSpriteSheet_WaterDropsAndLogo: { data: string, size: number, tag: string | number } = {
+  data: 'sIntroDropsLogo_Gfx', size: 0x1400, tag: 'GFXTAG_DROPS_LOGO',
+};
+/** 1:1 décomp intro.c:975 `sSpriteSheet_FlygonSilhouette`. */
+const sSpriteSheet_FlygonSilhouette: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroFlygonSilhouette_Gfx', size: 0x400, tag: 'TAG_FLYGON_SILHOUETTE',
+};
+/** 1:1 décomp intro.c:980 `sSpritePalettes_Intro1`. */
+const sSpritePalettes_Intro1: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'sIntroDrops_Pal', tag: 'PALTAG_DROPS' },
+  { data: 'sIntroLogo_Pal', tag: 'PALTAG_LOGO' },
+  { data: 'sIntroFlygonSilhouette_Pal', tag: 'TAG_FLYGON_SILHOUETTE' },
+];
+import { gAncientPowerRockSpriteTemplate, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, PlaySE, SE_INTRO_BLAST, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon } from '../harness/runtime/decomp-globals';
 import { gSpriteSheet_IntroBrendan, gSpriteSheet_IntroMay, gSpriteSheet_IntroBicycle, gSpriteSheet_IntroFlygon, gSpritePalettes_IntroPlayerFlygon } from './engine/decomp-data/src/intro_credits_graphics-data';
 // CB2_InitTitleScreen dans src/title_screen.ts (ex-title_screen-callbacks-auto, dissous).
 import { CB2_InitTitleScreen } from './title_screen';

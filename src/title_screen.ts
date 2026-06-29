@@ -32,7 +32,7 @@ import {
   VERSION_BANNER_Y,
   VERSION_BANNER_Y_GOAL,
 } from './engine/decomp-data/title-screen-data';
-import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sPokemonLogoShineSpriteSheet, sSpritePalette_PressStart, sSpriteSheet_EmeraldVersion, sSpriteSheet_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../harness/runtime/decomp-globals';
+import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sSpritePalette_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../harness/runtime/decomp-globals';
 // CB2_InitMainMenu fusionné dans src/main_menu.ts (ex-main_menu-callbacks-auto, dissous).
 import { CB2_InitMainMenu } from './main_menu';
 import { CB2_InitCopyrightScreenAfterTitleScreen } from '../harness/boot/copyright-boot';
@@ -54,6 +54,20 @@ import {
   BLDCNT_TGT2_BD, BLDCNT_TGT2_BG0, DISPLAY_HEIGHT, DISPLAY_WIDTH,
 } from '../harness/runtime/decomp-runtime';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
+// ─── title_screen.c sprite sheets 1:1 (ex-`sprite-system-flat`, agrégat auto
+//     dissous : foyer 1:1 = title_screen.c). Repr. établie des loaders. ──
+/** 1:1 décomp title_screen.c:355 `sPokemonLogoShineSpriteSheet`. */
+const sPokemonLogoShineSpriteSheet: { data: string, size: number, tag: string | number } = {
+  data: 'sTitleScreenLogoShineGfx', size: 0x800, tag: 'TAG_LOGO_SHINE',
+};
+/** 1:1 décomp title_screen.c:189 `sSpriteSheet_EmeraldVersion`. */
+const sSpriteSheet_EmeraldVersion: { data: string, size: number, tag: string | number } = {
+  data: 'gTitleScreenEmeraldVersionGfx', size: 0x1000, tag: 'TAG_VERSION',
+};
+/** 1:1 décomp title_screen.c:297 `sSpriteSheet_PressStart`. */
+const sSpriteSheet_PressStart: { data: string, size: number, tag: string | number } = {
+  data: 'gTitleScreenPressStartGfx', size: 0x520, tag: 'TAG_PRESS_START_COPYRIGHT',
+};
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_B_START_SELECT = 15;
 const A_BUTTON = 1;

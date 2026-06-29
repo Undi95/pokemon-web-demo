@@ -2608,7 +2608,6 @@ export { gSaveFileStatus } from '../../src/save';
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.
 export * from '../../src/main_menu';
 export * from '../../src/engine/ui/gba-strings';
-export * from '../../src/engine/decomp-data/src/sprite-system-flat';
 // Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).
 export {
   BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
