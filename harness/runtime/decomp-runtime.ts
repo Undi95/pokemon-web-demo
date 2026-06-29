@@ -1804,6 +1804,11 @@ export class DecompRuntime {
   async LoadSpritePalettesFromTable(
     tableName: string,
     resolveUrl: (paletteName: string) => string | null,
+    // 🔑 Tags 1:1 NUMÉRIQUES : la data registre est pourrie (`tag: ".tag = TAG_X"`) →
+    // cleanTag tombe en string synthétique ≠ tag numérique du sprite → mauvais slot
+    // palette. resolveTag(name)→valeur numérique (ex 0x1000) rend les tags cohérents
+    // (le sprite résout via le même 0x1000). starter_choose le fournit.
+    resolveTag?: (paletteName: string) => number,
   ): Promise<void> {
     const table = (SPRITE_PALETTES as Record<string, { entries: ReadonlyArray<{ paletteName: string, tag: string }> }>)[tableName];
     if (!table) {
@@ -1826,8 +1831,10 @@ export class DecompRuntime {
       }
       // J — fix extracteur : entry.tag = ".tag = TAG_X" → strip préfixe.
       const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
+      // Tag NUMÉRIQUE 1:1 si resolveTag fourni (sinon fallback string legacy).
+      const tag: string | number = resolveTag ? resolveTag(entry.paletteName) : cleanTag;
       // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
-      if (sp?.IndexOfSpritePaletteTag?.(cleanTag) !== 0xFF) continue;
+      if (sp?.IndexOfSpritePaletteTag?.(tag) !== 0xFF) continue;
       // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) =
       // scan first-free dans [gReservedSpritePaletteCount, 16) via array primary.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
@@ -1862,8 +1869,8 @@ export class DecompRuntime {
         const markPal = (globalThis as Record<string, unknown>).__sprite as {
           MarkObjPaletteAllocated?: (slot: number, tag: string | number) => void;
         } | undefined;
-        markPal?.MarkObjPaletteAllocated?.(slot, cleanTag);
-        if (RT_DEBUG) console.log(`[runtime] palette ${cleanTag} → OBJ slot ${slot}`);
+        markPal?.MarkObjPaletteAllocated?.(slot, tag);
+        if (RT_DEBUG) console.log(`[runtime] palette ${tag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
       }
@@ -1876,6 +1883,8 @@ export class DecompRuntime {
   async LoadCompressedSpriteSheetsFromTable(
     tableName: string,
     resolveUrl: (gfxName: string) => string | null,
+    // 🔑 Tag NUMÉRIQUE 1:1 (cf LoadSpritePalettesFromTable) — cohérence sprite↔sheet.
+    resolveTag?: (gfxName: string) => number,
   ): Promise<void> {
     const table = (SPRITE_SHEETS as Record<string, { entries: ReadonlyArray<{ gfxName: string, sizeBytes: number | string, tag: string }> }>)[tableName];
     if (!table) {
@@ -1911,8 +1920,9 @@ export class DecompRuntime {
         // clé de registration matche celle utilisée par CreateSpriteFromTemplate
         // (= tpl.tileTag = "TAG_X" sans préfixe).
         const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
-        sp?.AllocSpriteTileRange?.(cleanTag, tileStart, tileCount);
-        if (RT_DEBUG) console.log(`[runtime] sheet ${cleanTag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
+        const tag: string | number = resolveTag ? resolveTag(entry.gfxName) : cleanTag;
+        sp?.AllocSpriteTileRange?.(tag, tileStart, tileCount);
+        if (RT_DEBUG) console.log(`[runtime] sheet ${tag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
       } catch (e) {
         console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
       }

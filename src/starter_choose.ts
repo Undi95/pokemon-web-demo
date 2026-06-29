@@ -49,7 +49,7 @@ import { AddTextPrinterParameterized, GetStringCenterAlignXOffset, FONT_NORMAL, 
 import { AddTextPrinterParameterized3 } from './menu';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
-import { DestroySprite, AllocOamMatrix } from './sprite';
+import { DestroySprite, AllocOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, type SpriteTemplate } from './sprite';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { CreateMon } from './engine/pokemon/pokemon';
@@ -157,6 +157,46 @@ const sTextColors: readonly number[] = [0, 1, 2];
 const sCursorCoords: readonly (readonly [number, number])[] = [
   [60, 32], [120, 56], [180, 32],
 ];
+
+// ─── OAM / anims / templates 1:1 starter_choose.c (objets DIRECTS, tags NUMÉRIQUES
+//     cohérents → fix couleur cercle/pokéball + câblage callback cercle → fix jitter.
+//     Remplace la voie par-nom `CreateSpriteFromTemplate` (registre data pourrie). ──
+/** 1:1 sOam_Hand (c:153) : 32x32, affine OFF, prio 1. */
+const sOam_Hand: SpriteTemplate['oam'] = { shape: 0, size: 2, priority: 1, affineMode: 0 };
+/** 1:1 sOam_Pokeball (c:170) : 32x32, affine OFF, prio 1. */
+const sOam_Pokeball: SpriteTemplate['oam'] = { shape: 0, size: 2, priority: 1, affineMode: 0 };
+/** 1:1 sOam_StarterCircle (c:187) : 64x64, AFFINE_DOUBLE(3), prio 1. */
+const sOam_StarterCircle: SpriteTemplate['oam'] = { shape: 0, size: 3, priority: 1, affineMode: 3 };
+// Anims (c:211-249) — tileNum = offset dans la sheet.
+const sAnim_Hand = [ANIMCMD_FRAME(48, 30), ANIMCMD_END];
+const sAnim_Pokeball_Still = [ANIMCMD_FRAME(0, 30), ANIMCMD_END];
+const sAnim_Pokeball_Moving = [
+  ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(32, 4), ANIMCMD_FRAME(0, 4),
+  ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(32, 4), ANIMCMD_FRAME(0, 4),
+  ANIMCMD_FRAME(0, 32),
+  ANIMCMD_FRAME(16, 8), ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(32, 8), ANIMCMD_FRAME(0, 8),
+  ANIMCMD_FRAME(16, 8), ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(32, 8), ANIMCMD_FRAME(0, 8),
+  ANIMCMD_JUMP(0),
+];
+const sAnim_StarterCircle = [ANIMCMD_FRAME(0, 8), ANIMCMD_END];
+const sAnims_Hand: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Hand];
+const sAnims_Pokeball: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Pokeball_Still, sAnim_Pokeball_Moving];
+const sAnims_StarterCircle: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_StarterCircle];
+/** 1:1 sSpriteTemplate_Hand (c:317) : callback (s,rt)→SpriteCB_SelectionHand(s, s.spriteId). */
+const sSpriteTemplate_Hand: SpriteTemplate = {
+  tileTag: TAG_POKEBALL_SELECT, paletteTag: TAG_POKEBALL_SELECT, oam: sOam_Hand, anims: sAnims_Hand,
+  affineAnims: null, callback: (s) => SpriteCB_SelectionHand(s as never, (s as { spriteId: number }).spriteId),
+};
+/** 1:1 sSpriteTemplate_Pokeball (c:328). */
+const sSpriteTemplate_Pokeball: SpriteTemplate = {
+  tileTag: TAG_POKEBALL_SELECT, paletteTag: TAG_POKEBALL_SELECT, oam: sOam_Pokeball, anims: sAnims_Pokeball,
+  affineAnims: null, callback: (s) => SpriteCB_Pokeball(s as never, (s as { spriteId: number }).spriteId),
+};
+/** 1:1 sSpriteTemplate_StarterCircle (c:339) : affine + callback = SpriteCB_StarterPokemon (le MOUVEMENT du cercle vers le centre). */
+const sSpriteTemplate_StarterCircle: SpriteTemplate = {
+  tileTag: TAG_STARTER_CIRCLE, paletteTag: TAG_STARTER_CIRCLE, oam: sOam_StarterCircle, anims: sAnims_StarterCircle,
+  affineAnims: 'sAffineAnims_StarterCircle', callback: (s) => SpriteCB_StarterPokemon(s as never),
+};
 
 // ─── Asset URLs (= ROM equivalents) ──────────────────────────────────────
 // J16 — tiles.png a 32 couleurs (2 sub-palettes : bag=sub-pal 0, grass=sub-pal 1).
@@ -406,11 +446,13 @@ async function CB2_ChooseStarter(): Promise<void> {
   _spriteRefs.clear(); _handBobTimers.clear();
   // ResetSpriteData(); — already done via OAM fill above + sprite store cleanup.
   // ResetPaletteFade(); — NOP (runtime manages).
-  // FreeAllSpritePalettes(); — clear OBJ palette tags.
-  const sp = (globalThis as Record<string, unknown>).__sprite as {
-    FreeAllSpritePalettes?: () => void;
-  } | undefined;
-  sp?.FreeAllSpritePalettes?.();
+  // FreeAllSpritePalettes() : 1:1 décomp CB2_ChooseStarter (c:415) — libère TOUS les slots
+  // OBJ palette (reserved=0 + tags=TAG_NONE). 🩸 ÉTAIT un no-op silencieux : appelé via
+  // `__sprite.FreeAllSpritePalettes?.()` qui est UNDEFINED (non exposé sur __sprite) → les
+  // palettes OBJ de l'overworld (slots 0-13) restaient → la pokéball/cercle prenaient des
+  // slots hauts (14/15) → COLLISION avec le slot 14 hardcodé du mon-pic (pokéball affichait
+  // la palette du starter choisi). Fix = import direct de FreeAllSpritePalettes.
+  FreeAllSpritePalettes();
   // ResetAllPicSprites(); — NOP (we don't use pic sprite registry).
 
   // LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP);
@@ -421,15 +463,18 @@ async function CB2_ChooseStarter(): Promise<void> {
   // LoadPalette(gBirchBagGrass_Pal, BG_PLTT_ID(0), sizeof(gBirchBagGrass_Pal));
   LoadPalette(_assets.birchPalette, BG_PLTT_ID(0), _assets.birchPalette.length * 2);
   // LoadCompressedSpriteSheet(&sSpriteSheet_PokeballSelect[0]);
-  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_PokeballSelect', () => POKEBALL_SHEET_URL);
+  // 🔑 resolveTag NUMÉRIQUE 1:1 (TAG_POKEBALL_SELECT=0x1000 / TAG_STARTER_CIRCLE=0x1001) :
+  // la data registre est pourrie (tag string) → on impose le tag numérique du décomp pour
+  // que sprite.tileTag/paletteTag (numérique) résolve le bon slot (fix cercle noir / pokéball).
+  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_PokeballSelect', () => POKEBALL_SHEET_URL, () => TAG_POKEBALL_SELECT);
   // LoadCompressedSpriteSheet(&sSpriteSheet_StarterCircle[0]);
-  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_StarterCircle', () => STARTER_CIRCLE_SHEET_URL);
+  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_StarterCircle', () => STARTER_CIRCLE_SHEET_URL, () => TAG_STARTER_CIRCLE);
   // LoadSpritePalettes(sSpritePalettes_StarterChoose);
   await rt.LoadSpritePalettesFromTable('sSpritePalettes_StarterChoose', (palName) => {
     if (palName.includes('PokeballSelection')) return POKEBALL_SHEET_URL;
     if (palName.includes('StarterCircle')) return STARTER_CIRCLE_SHEET_URL;
     return null;
-  });
+  }, (palName) => palName.includes('StarterCircle') ? TAG_STARTER_CIRCLE : TAG_POKEBALL_SELECT);
   // BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
   rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0x10, 0, 0);
 
@@ -467,13 +512,12 @@ async function CB2_ChooseStarter(): Promise<void> {
   getTask(taskId).data[T_STARTER_SELECTION] = 1;
 
   // Create hand sprite : spriteId = CreateSprite(&sSpriteTemplate_Hand, 120, 56, 2);
-  const handSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Hand', 120, 56, 2);
-  // gSprites[spriteId].data[0] = taskId;
+  const handSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Hand, 120, 56, 2);
+  // gSprites[spriteId].data[0] = taskId; (callback SpriteCB_SelectionHand posé par le template)
   const handSprite = rt.gSprites[handSpriteId];
   if (handSprite) {
     handSprite.data ||= new Array(8).fill(0);
     handSprite.data[0] = taskId;
-    handSprite.callback = (s) => SpriteCB_SelectionHand(s, handSpriteId);
   }
   _starterHandSpriteId = handSpriteId;
   _spriteRefs.set(handSpriteId, { taskId });
@@ -482,17 +526,13 @@ async function CB2_ChooseStarter(): Promise<void> {
   // Create 3 Poké Ball sprites (= 1:1 décomp C:450-460)
   _starterPokeballSpriteIds = [];
   for (let i = 0; i < STARTER_MON_COUNT; i++) {
-    const spriteId = rt.CreateSpriteFromTemplate(
-      'sSpriteTemplate_Pokeball',
-      sPokeballCoords[i][0], sPokeballCoords[i][1], 2,
-    );
-    // gSprites[spriteId].sTaskId = taskId; sBallId = i;
+    const spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Pokeball, sPokeballCoords[i][0], sPokeballCoords[i][1], 2);
+    // gSprites[spriteId].sTaskId = taskId; sBallId = i; (callback SpriteCB_Pokeball posé par le template)
     const sprite = rt.gSprites[spriteId];
     if (sprite) {
       sprite.data ||= new Array(8).fill(0);
       sprite.data[S_TASK_ID] = taskId;
       sprite.data[S_BALL_ID] = i;
-      sprite.callback = (s) => SpriteCB_Pokeball(s, spriteId);
     }
     _starterPokeballSpriteIds.push(spriteId);
     _spriteRefs.set(spriteId, { taskId, ballId: i });
@@ -561,25 +601,11 @@ function Task_HandleStarterChooseInput(taskId: number): void {
   if (newKeys & A_BUTTON) {
     // 1:1 décomp C:488-505 : ClearStarterLabel + spawn StarterCircle + mon sprite.
     ClearStarterLabel();
-    // spriteId = CreateSprite(&sSpriteTemplate_StarterCircle, ...)
-    const circleId = rt.CreateSpriteFromTemplate(
-      'sSpriteTemplate_StarterCircle',
-      sPokeballCoords[selection][0], sPokeballCoords[selection][1], 1,
-    );
+    // spriteId = CreateSprite(&sSpriteTemplate_StarterCircle, ...). _CreateSpriteAtTemplate pose
+    // l'affine (AllocOamMatrix + StartSpriteAffineAnim sur sAffineAnims_StarterCircle) ET le
+    // callback SpriteCB_StarterPokemon = le MOUVEMENT du cercle vers le centre (1:1 c:347).
+    const circleId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_StarterCircle, sPokeballCoords[selection][0], sPokeballCoords[selection][1], 1);
     task.data[T_CIRCLE_SPRITE_ID] = circleId;
-    // 1:1 décomp src/sprite.c:InitSpriteAffineAnim — quand sprite a affineMode
-    // affine ON ET affineAnims, allouer un matrixNum unique (= AllocOamMatrix).
-    // Sans ça, tous les sprites affine partagent matrix 0 (= identity = no anim).
-    const circleSprite = rt.gSprites[circleId];
-    if (circleSprite && circleSprite.affineMode !== 0) {
-      const mNum = AllocOamMatrix();
-      if (mNum >= 0) {
-        circleSprite.matrixNum = mNum;
-        const oam = rt.gba.oam[circleSprite.oamIndex];
-        if (oam) { oam.affineParamIndex = mNum; ((oam as unknown) as { matrixNum?: number }).matrixNum = mNum; }
-        circleSprite.affineAnimBeginning = true;
-      }
-    }
     // CreatePokemonFrontSprite : spawn front mon sprite at pokeball pos.
     const pkmnId = CreatePokemonFrontSprite(
       GetStarterPokemon(selection),
@@ -625,14 +651,13 @@ function Task_WaitForStarterSprite(taskId: number): void {
     task.func = Task_AskConfirmStarter;
     return;
   }
-  // Move circle toward STARTER_PKMN_POS via SpriteCB_StarterPokemon emulation
-  // (= 1:1 décomp C:658-669 SpriteCB_StarterPokemon move +/-4 x / +/-2 y per frame).
-  if (circleSprite.x > STARTER_PKMN_POS_X) circleSprite.x -= 4;
-  if (circleSprite.x < STARTER_PKMN_POS_X) circleSprite.x += 4;
-  if (circleSprite.y > STARTER_PKMN_POS_Y) circleSprite.y -= 2;
-  if (circleSprite.y < STARTER_PKMN_POS_Y) circleSprite.y += 2;
-  // 1:1 décomp check : x == POS_X && y == POS_Y (= sprite arrived at target).
-  if (circleSprite.x === STARTER_PKMN_POS_X && circleSprite.y === STARTER_PKMN_POS_Y) {
+  // 1:1 STRICT décomp C:518-526 : le cercle se déplace via SON callback SpriteCB_StarterPokemon
+  // (posé par sSpriteTemplate_StarterCircle = 1:1 c:347) + son affine scale (sAffineAnims_StarterCircle).
+  // La task ATTEND juste : affineAnimEnded && x==POS && y==POS. (Avant : émulation du mouvement DANS
+  // la task car le callback du cercle n'était pas câblé → sous-pixel = jitter 1px. Corrigé.)
+  if ((circleSprite as { affineAnimEnded?: boolean }).affineAnimEnded
+      && circleSprite.x === STARTER_PKMN_POS_X
+      && circleSprite.y === STARTER_PKMN_POS_Y) {
     task.func = Task_AskConfirmStarter;
   }
 }
