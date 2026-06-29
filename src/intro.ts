@@ -20,40 +20,43 @@ import {
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../harness/runtime/decomp-helpers';
 import { ResetSpriteData, DestroySprite, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type SpriteTemplate } from './sprite';
-import {
-  COLOR_CHANGES,
-  NARROW_HEIGHT,
-  NUM_BUBBLES_IN_SET,
-  NUM_GF_LETTERS,
-  TIMER_BIG_DROP_FALLS,
-  TIMER_BIG_DROP_START,
-  TIMER_END_PAN_UP,
-  TIMER_END_SCENE_1,
-  TIMER_END_SCENE_2,
-  TIMER_FLYGON_ENTER,
-  TIMER_FLYGON_SILHOUETTE_APPEAR,
-  TIMER_LOGO_APPEAR,
-  TIMER_LOGO_BLEND_OUT,
-  TIMER_LOGO_DISAPPEAR,
-  TIMER_LOGO_LETTERS_COLOR,
-  TIMER_MANECTRIC_ENTER,
-  TIMER_MANECTRIC_RUN_CIRCULAR,
-  TIMER_PLAYER_DRIFT_BACK,
-  TIMER_PLAYER_EXIT,
-  TIMER_PLAYER_HOLD_POSITION,
-  TIMER_PLAYER_MOVE_BACKWARD,
-  TIMER_PLAYER_MOVE_FORWARD,
-  TIMER_POKEBALL_FADE,
-  TIMER_SMALL_DROP_1,
-  TIMER_SMALL_DROP_2,
-  TIMER_SPARKLES,
-  TIMER_START_LEGENDARIES,
-  TIMER_START_SCENE_2,
-  TIMER_START_SCENE_3,
-  TIMER_TORCHIC_ENTER,
-  TIMER_TORCHIC_EXIT,
-  TIMER_TORCHIC_SPEED_UP,
-} from './engine/decomp-data/intro-data';
+// ─── intro.c #define constantes 1:1 (ex-`decomp-data/intro-data`, auto-extrait
+//     dissous : foyer 1:1 = les #define de intro.c). ──
+// Timeline (frames) de l'intro movie — intro.c:147-172.
+const TIMER_BIG_DROP_START = 76;
+const TIMER_LOGO_APPEAR = 128;
+const TIMER_LOGO_LETTERS_COLOR = 144;
+const TIMER_BIG_DROP_FALLS = 251;
+const TIMER_LOGO_BLEND_OUT = 256;
+const TIMER_LOGO_DISAPPEAR = 272;
+const TIMER_SMALL_DROP_1 = 368;
+const TIMER_SMALL_DROP_2 = 384;
+const TIMER_SPARKLES = 560;
+const TIMER_FLYGON_SILHOUETTE_APPEAR = 832;
+const TIMER_END_PAN_UP = 904;
+const TIMER_END_SCENE_1 = 1007;
+const TIMER_START_SCENE_2 = 1026;
+const TIMER_MANECTRIC_ENTER = 1088;
+const TIMER_PLAYER_DRIFT_BACK = 1109;
+const TIMER_MANECTRIC_RUN_CIRCULAR = 1168;
+const TIMER_PLAYER_MOVE_FORWARD = 1214;
+const TIMER_TORCHIC_ENTER = 1224;
+const TIMER_FLYGON_ENTER = 1394;
+const TIMER_PLAYER_MOVE_BACKWARD = 1398;
+const TIMER_PLAYER_HOLD_POSITION = 1576;
+const TIMER_PLAYER_EXIT = 1727;
+const TIMER_TORCHIC_SPEED_UP = 1735;
+const TIMER_TORCHIC_EXIT = 1856;
+const TIMER_END_SCENE_2 = 1946;
+const TIMER_START_SCENE_3 = 2068;
+// Timers locaux scène 3 — intro.c:174-175.
+const TIMER_POKEBALL_FADE = 28;
+const TIMER_START_LEGENDARIES = 43;
+// Compteurs — intro.c:503/823/1829/3172.
+const NUM_BUBBLES_IN_SET = 6;          // intro.c:503
+const NUM_GF_LETTERS = 9;              // intro.c:823 ("Game Freak")
+const NARROW_HEIGHT = 32;              // intro.c:1829
+const COLOR_CHANGES = 9;               // intro.c:3172 (étapes de changement de couleur des lettres)
 // ─── intro.c static const data tables (1:1 verbatim — ex-`_data-tables-flat`
 //     dissous : c'était une extraction lossy qui tronquait les rows [][3] en
 //     2-tuples → régression anim Groudon/Kyogre). Valeurs 1:1 décomp intro.c. ──
