@@ -71,7 +71,7 @@ import { getMapNameFr } from './data/map-names-fr';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet } from './engine/script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
-import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './engine/decomp-data/src/option_menu-callbacks-auto';
+import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './option_menu';
 // Le callback signature est (rt) => void, on adapte vers () => void pour
 // SetMainCallback2 (= notre runtime utilise no-arg callbacks).
 const CB2_InitOptionMenu = (): void => { const rt = (globalThis as Record<string, unknown>).__rt as Parameters<typeof _CB2_InitOptionMenu_callback>[0]; _CB2_InitOptionMenu_callback(rt); };

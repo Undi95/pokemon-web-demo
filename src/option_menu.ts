@@ -1,11 +1,12 @@
 /**
- * option-menu-impl.ts
+ * option_menu.ts  (= 1:1 décomp src/option_menu.c)
  * --------------------
- * Helpers 1:1 décomp `src/option_menu.c` qui complètent le state machine
- * auto-transpilé `option_menu-callbacks-auto.ts`. Toute l'architecture rendu
- * passe par notre engine GBA-style (LoadBgTiles / FillBgTilemapBufferRect /
- * AddTextPrinterParameterized3 / SetGpuReg). ZÉRO Phaser-canvas hack ici (vs
- * legacy `OptionMenuScene.ts` qui composait du PNG côté Phaser).
+ * Port 1:1 complet de `src/option_menu.c` : helpers de rendu (Draw, Process,
+ * Highlight) ET la state machine CB2_InitOptionMenu + Task_Option + MainCB2 +
+ * VBlankCB (fusionnée ici, ex-`option_menu-callbacks-auto.ts` retiré). Toute
+ * l'architecture rendu passe par notre engine GBA-style (LoadBgTiles /
+ * FillBgTilemapBufferRect / AddTextPrinterParameterized3 / SetGpuReg). ZÉRO
+ * Phaser-canvas hack ici (vs legacy `OptionMenuScene.ts` qui composait du PNG).
  *
  * Architecture :
  *   - WIN_HEADER : BG1, 26×2 tiles, baseBlock=2, palette=1 (= "OPTIONS" header)
@@ -27,12 +28,22 @@ import {
 import { FillWindowPixelRect } from './window';
 import { GetStringRightAlignXOffset } from './text';
 import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from './text_window';
-import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../harness/runtime/decomp-runtime';
+import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, BLDCNT_TGT1_BG0 } from '../harness/runtime/decomp-runtime';
+import type { DecompRuntime, DecompTask } from '../harness/runtime/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../harness/runtime/decomp-helpers';
 import { JOY_NEW } from '../harness/runtime/decomp-globals';
 import { SetPokemonCryStereo } from './sound';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { loadGbaPal } from '../harness/gba/png-loader';
+// State machine 1:1 décomp option_menu.c (CB2_InitOptionMenu + Task_*) — helpers
+// engine fusionnés depuis l'ex-callbacks-auto (retiré ce commit, voir bas du fichier).
+import {
+  gMain, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates, InitWindows,
+  DeactivateAllTextPrinters, ChangeBgX, ChangeBgY, ShowBg, ResetPaletteFade,
+  ScanlineEffect_Stop, ResetTasks, FreeAllWindowBuffers, DmaClear16,
+  VRAM, VRAM_SIZE, OAM, OAM_SIZE, WINOUT_WIN01_BG0, WINOUT_WIN01_CLR,
+} from '../harness/runtime/decomp-globals';
+import { ResetSpriteData } from './sprite';
 
 // ─── State globals ───────────────────────────────────────────────────────────
 
@@ -46,7 +57,10 @@ export function setSArrowPressed(v: boolean): void { sArrowPressed = v; }
 
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
-  A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
+  A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT, DPAD_UP, DPAD_DOWN,
+  REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../include/gba/io_reg';
 const WIN_HEADER = 0;
 const WIN_OPTIONS = 1;
@@ -507,6 +521,298 @@ const sOptionMenuBgTemplates = [
   { bg: 1, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
   { bg: 0, charBaseIndex: 1, mapBaseIndex: 31, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 },
 ] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State machine 1:1 décomp option_menu.c — CB2_InitOptionMenu + Task_Option* +
+// MainCB2/VBlankCB. Fusionnée dans CE fichier ce commit depuis l'ex-fichier
+// `decomp-data/src/option_menu-callbacks-auto.ts` (@ts-nocheck) → maintenant TYPÉE.
+// Les helpers (DrawHeaderText, *_DrawChoices, *_ProcessInput, HighlightOptionMenuItem,
+// templates, palettes, sArrowPressed) sont définis plus haut dans CE module →
+// références directes (plus de résolution via globalThis). Les fixes session-82
+// (DmaClear16 sur PLTT, SetVBlankCallback aux states 0/11, _gt au lieu de `task`
+// dans le scope CB2, transitions SetMainCallback2) sont conservés inline. Les
+// signatures `(task, rt)` / `(rt)` sont inchangées → les callers (start_menu,
+// main_menu) marchent sans modif, seul le chemin d'import a été rerouté.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Constantes locales 1:1 décomp (io_reg.h / option_menu.c) non exportées ailleurs.
+const BG_COORD_SET = 0;
+const COPYWIN_GFX = 2;
+const COPYWIN_FULL = 3;
+const WININ_WIN0_BG0 = 1;          // io_reg.h
+const WINOUT_WIN01_BG1 = 2;        // io_reg.h
+const BLDCNT_EFFECT_DARKEN = 192;  // io_reg.h
+const MENUITEM_TEXTSPEED = 0;
+const MENUITEM_BATTLESCENE = 1;
+const MENUITEM_BATTLESTYLE = 2;
+const MENUITEM_SOUND = 3;
+const MENUITEM_BUTTONMODE = 4;
+const MENUITEM_FRAMETYPE = 5;
+const MENUITEM_CANCEL = 6;
+
+type TaskCallback = (task: DecompTask, rt: DecompRuntime) => void;
+type CB2Callback = (rt: DecompRuntime) => void;
+
+// Task vide de repli (jamais atteint en pratique : _gt n'est appelé qu'après un
+// CreateTask qui vient de retourner un slot valide).
+const _emptyTask = {
+  taskId: -1, func: null, isActive: false, prev: -1, next: -1, priority: -1,
+  data: new Array(16).fill(0), followupFunc: null,
+} as unknown as DecompTask;
+function _gt(rt: DecompRuntime, id: number): DecompTask {
+  return (rt.gTasks[id] as DecompTask | undefined) ?? _emptyTask;
+}
+
+/** Source: option_menu.c → Task_OptionMenuFadeIn */
+export const Task_OptionMenuFadeIn: TaskCallback = (task, rt) => {
+  if (!rt.gPaletteFade.active)
+    task.func = (t) => Task_OptionMenuProcessInput(t, rt);
+};
+
+/** Source: option_menu.c → Task_OptionMenuProcessInput */
+export const Task_OptionMenuProcessInput: TaskCallback = (task, rt) => {
+  if (JOY_NEW(A_BUTTON))
+  {
+      if (task.data[0] == MENUITEM_CANCEL)
+          task.func = (t) => Task_OptionMenuSave(t, rt);
+  }
+  else if (JOY_NEW(B_BUTTON))
+  {
+      task.func = (t) => Task_OptionMenuSave(t, rt);
+  }
+  else if (JOY_NEW(DPAD_UP))
+  {
+      if (task.data[0] > 0)
+          task.data[0]--;
+      else
+          task.data[0] = MENUITEM_CANCEL;
+      HighlightOptionMenuItem(task.data[0]);
+  }
+  else if (JOY_NEW(DPAD_DOWN))
+  {
+      if (task.data[0] < MENUITEM_CANCEL)
+          task.data[0]++;
+      else
+          task.data[0] = 0;
+      HighlightOptionMenuItem(task.data[0]);
+  }
+  else
+  {
+      let previousOption = 0;
+
+      switch (task.data[0])
+      {
+      case MENUITEM_TEXTSPEED:
+          previousOption = task.data[1];
+          task.data[1] = TextSpeed_ProcessInput(task.data[1]);
+
+          if (previousOption != task.data[1])
+              TextSpeed_DrawChoices(task.data[1]);
+          break;
+      case MENUITEM_BATTLESCENE:
+          previousOption = task.data[2];
+          task.data[2] = BattleScene_ProcessInput(task.data[2]);
+
+          if (previousOption != task.data[2])
+              BattleScene_DrawChoices(task.data[2]);
+          break;
+      case MENUITEM_BATTLESTYLE:
+          previousOption = task.data[3];
+          task.data[3] = BattleStyle_ProcessInput(task.data[3]);
+
+          if (previousOption != task.data[3])
+              BattleStyle_DrawChoices(task.data[3]);
+          break;
+      case MENUITEM_SOUND:
+          previousOption = task.data[4];
+          task.data[4] = Sound_ProcessInput(task.data[4]);
+
+          if (previousOption != task.data[4])
+              Sound_DrawChoices(task.data[4]);
+          break;
+      case MENUITEM_BUTTONMODE:
+          previousOption = task.data[5];
+          task.data[5] = ButtonMode_ProcessInput(task.data[5]);
+
+          if (previousOption != task.data[5])
+              ButtonMode_DrawChoices(task.data[5]);
+          break;
+      case MENUITEM_FRAMETYPE:
+          previousOption = task.data[6];
+          task.data[6] = FrameType_ProcessInput(task.data[6]);
+
+          if (previousOption != task.data[6])
+              FrameType_DrawChoices(task.data[6]);
+          break;
+      default:
+          return;
+      }
+
+      if (sArrowPressed)
+      {
+          sArrowPressed = false;
+          CopyWindowToVram(WIN_OPTIONS, COPYWIN_GFX);
+      }
+  }
+};
+
+/** Source: option_menu.c → Task_OptionMenuSave */
+export const Task_OptionMenuSave: TaskCallback = (task, rt) => {
+  gSaveBlock2Ptr.optionsTextSpeed = task.data[1];
+  gSaveBlock2Ptr.optionsBattleSceneOff = task.data[2];
+  gSaveBlock2Ptr.optionsBattleStyle = task.data[3];
+  gSaveBlock2Ptr.optionsSound = task.data[4];
+  gSaveBlock2Ptr.optionsButtonMode = task.data[5];
+  gSaveBlock2Ptr.optionsWindowFrameType = task.data[6];
+
+  rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
+  task.func = (t) => Task_OptionMenuFadeOut(t, rt);
+};
+
+/** Source: option_menu.c → Task_OptionMenuFadeOut.
+ *  Fix session 82 : le TODO scene-transition (SetMainCallback2 vers
+ *  gMain.savedCallback) est remplacé par l'appel réel — sans ça le fade-out
+ *  finit mais reste bloqué sur écran noir car callback2 reste sur
+ *  CB2_InitOptionMenu/MainCB2. */
+export const Task_OptionMenuFadeOut: TaskCallback = (task, rt) => {
+  const taskId = task.taskId;
+  if (!rt.gPaletteFade.active)
+  {
+      rt.DestroyTask(taskId);
+      FreeAllWindowBuffers();
+      // Retour à l'appelant (= main menu CB2_ReinitMainMenu, ou field menu).
+      // gMain.savedCallback est set par le caller juste avant SetMainCallback2(CB2_InitOptionMenu).
+      rt.SetMainCallback2((gMain.savedCallback ?? null) as unknown as CB2Callback | null);
+  }
+};
+
+/** Source: option_menu.c → CB2_InitOptionMenu.
+ *  Fixes session 82 (in-place sur le body transpilé) :
+ *    - case 0/11 : SetVBlankCallback(null)/(VBlankCB) (1:1 décomp) — évite le
+ *      flash bright entre LoadPalette state 4 et fade-in state 11.
+ *    - case 1 : DmaClear16 sur PLTT (0x05000000-0x050003FF) — écran noir pendant
+ *      states 1-10 jusqu'au fade-in (1:1 option_menu.c:159).
+ *    - case 10 : `_gt(rt, taskId)` au lieu de `task` (non défini dans le scope CB2).
+ *    - case 11 : SetMainCallback2(MainCB2) réel (était un TODO transpileur). */
+export const CB2_InitOptionMenu: CB2Callback = (rt) => {
+  switch (gMain.state)
+  {
+  default:
+  case 0:
+      rt.SetVBlankCallback(null);
+      gMain.state++;
+      break;
+  case 1:
+      DmaClearLarge16(3, (VRAM), VRAM_SIZE, 0x1000);
+      DmaClear32(3, OAM, OAM_SIZE);
+      DmaClear16(3, 0x05000000, 0x400);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+      ResetBgsAndClearDma3BusyFlags(0);
+      InitBgsFromTemplates(0, sOptionMenuBgTemplates, ((sOptionMenuBgTemplates)?.length ?? 0));
+      ChangeBgX(0, 0, BG_COORD_SET);
+      ChangeBgY(0, 0, BG_COORD_SET);
+      ChangeBgX(1, 0, BG_COORD_SET);
+      ChangeBgY(1, 0, BG_COORD_SET);
+      ChangeBgX(2, 0, BG_COORD_SET);
+      ChangeBgY(2, 0, BG_COORD_SET);
+      ChangeBgX(3, 0, BG_COORD_SET);
+      ChangeBgY(3, 0, BG_COORD_SET);
+      InitWindows(sOptionMenuWinTemplates);
+      DeactivateAllTextPrinters();
+      rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
+      rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
+      rt.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG0);
+      rt.SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_CLR);
+      rt.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_DARKEN);
+      rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDY, 4);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
+      ShowBg(0);
+      ShowBg(1);
+      gMain.state++;
+      break;
+  case 2:
+      ResetPaletteFade();
+      ScanlineEffect_Stop();
+      ResetTasks();
+      ResetSpriteData();
+      gMain.state++;
+      break;
+  case 3:
+      LoadBgTiles(1, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, 0x120, 0x1A2);
+      gMain.state++;
+      break;
+  case 4:
+      LoadPalette(sOptionMenuBg_Pal, BG_PLTT_ID(0), ((sOptionMenuBg_Pal)?.length ?? 32));
+      LoadPalette(GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).pal as unknown as Uint16Array, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
+      gMain.state++;
+      break;
+  case 5:
+      // sOptionMenuText_Pal = asset chargé async → accessor getOptionMenuTextPal().
+      LoadPalette(getOptionMenuTextPal(), BG_PLTT_ID(1), (getOptionMenuTextPal()?.length ?? 32));
+      gMain.state++;
+      break;
+  case 6:
+      PutWindowTilemap(WIN_HEADER);
+      DrawHeaderText();
+      gMain.state++;
+      break;
+  case 7:
+      gMain.state++;
+      break;
+  case 8:
+      PutWindowTilemap(WIN_OPTIONS);
+      DrawOptionMenuTexts();
+      gMain.state++;
+      break;
+  case 9:
+      DrawBgWindowFrames();
+      gMain.state++;
+      break;
+  case 10:
+  {
+      const taskId = rt.CreateTask((t) => Task_OptionMenuFadeIn(t, rt), 0);
+      const task = _gt(rt, taskId);
+      task.data[0] = 0;
+      task.data[1] = gSaveBlock2Ptr.optionsTextSpeed;
+      task.data[2] = gSaveBlock2Ptr.optionsBattleSceneOff;
+      task.data[3] = gSaveBlock2Ptr.optionsBattleStyle;
+      task.data[4] = gSaveBlock2Ptr.optionsSound;
+      task.data[5] = gSaveBlock2Ptr.optionsButtonMode;
+      task.data[6] = gSaveBlock2Ptr.optionsWindowFrameType;
+
+      TextSpeed_DrawChoices(task.data[1]);
+      BattleScene_DrawChoices(task.data[2]);
+      BattleStyle_DrawChoices(task.data[3]);
+      Sound_DrawChoices(task.data[4]);
+      ButtonMode_DrawChoices(task.data[5]);
+      FrameType_DrawChoices(task.data[6]);
+      HighlightOptionMenuItem(task.data[0]);
+
+      CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
+      gMain.state++;
+      break;
+  }
+  case 11:
+      rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(MainCB2);
+      return;
+  }
+};
+
+/** Source: option_menu.c → MainCB2 (no-op : le runtime drive RunTasks +
+ *  UpdatePaletteFade automatiquement pour les callbacks MainCB2*). */
+export const MainCB2: CB2Callback = (_rt) => {
+  // No-op : runtime drives the rest.
+};
+
+/** Source: option_menu.c → VBlankCB. Notre runtime appelle TransferPlttBuffer()
+ *  automatiquement quand gMain.vblankCallback est non-null (mécanisme qui prévient
+ *  le flash bright pendant CB2_Init), donc body no-op suffit. */
+export const VBlankCB: () => void = () => {
+  // No-op : runtime appelle TransferPlttBuffer automatiquement quand vblankCallback est set.
+};
 
 // Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
 // fichier). On les expose sur globalThis pour matcher le scope C où ces
