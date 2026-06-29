@@ -45,6 +45,33 @@ declare const sSpriteMetadata_HouseSilhouette: any;
 const INTROCRED_SCENERY_FROZEN = 2;
 const INTROCRED_SCENERY_NORMAL = 0;
 
+// ─── sprite sheets / palettes GLOBAUX (g-prefix) 1:1, consommés par intro.c
+//     (ex-`decomp-data/src/intro_credits_graphics-data`, agrégat auto dissous :
+//     foyer 1:1 = intro_credits_graphics.c). Repr. établie des loaders. ──
+/** 1:1 décomp intro_credits_graphics.c `gSpriteSheet_IntroBrendan`. */
+export const gSpriteSheet_IntroBrendan: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroBrendan_Gfx', size: 0x2000, tag: 'TAG_BRENDAN',
+};
+/** 1:1 décomp intro_credits_graphics.c `gSpriteSheet_IntroMay`. */
+export const gSpriteSheet_IntroMay: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroMay_Gfx', size: 0x2000, tag: 'TAG_MAY',
+};
+/** 1:1 décomp intro_credits_graphics.c `gSpriteSheet_IntroBicycle`. */
+export const gSpriteSheet_IntroBicycle: { data: string, size: number, tag: string | number } = {
+  data: 'sBicycle_Gfx', size: 0x1000, tag: 'TAG_BICYCLE',
+};
+/** 1:1 décomp intro_credits_graphics.c `gSpriteSheet_IntroFlygon`. */
+export const gSpriteSheet_IntroFlygon: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroFlygon_Gfx', size: 0x1000, tag: 'TAG_FLYGON_LATIAS',
+};
+/** 1:1 décomp intro_credits_graphics.c `gSpritePalettes_IntroPlayerFlygon`. */
+export const gSpritePalettes_IntroPlayerFlygon: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'gIntroPlayer_Pal', tag: 'TAG_BRENDAN' },
+  { data: 'gIntroPlayer_Pal', tag: 'TAG_MAY' },
+  { data: 'gIntroFlygon_Pal', tag: 'TAG_FLYGON_LATIOS' },
+  { data: 'gIntroFlygon_Pal', tag: 'TAG_FLYGON_LATIAS' },
+];
+
 export type SpriteCallback = (sprite: DecompSprite, rt: DecompRuntime) => void;
 export type TaskCallback = (task: DecompTask, rt: DecompRuntime) => void;
 export type CB2Callback = (rt: DecompRuntime) => void;
