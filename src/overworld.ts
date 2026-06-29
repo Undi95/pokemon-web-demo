@@ -525,3 +525,21 @@ export function CB2_ReturnToFieldContinueScript_Manual(): void {
   gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
+
+// ─── Entrées de scène overworld (1:1 décomp overworld.c) ─────────────────────
+//
+// CB2_NewGame (overworld.c:1144) et CB2_ContinueSavedGame (overworld.c:1705) sont
+// les points d'entrée field-init du jeu (truck cinematic neuf / load de la map
+// sauvegardée). L'engine overworld complet (DoMapLoadLoop / InitMapFromSavedGame /
+// WarpIntoMap / object-event scripts…) n'est PAS encore porté → ces deux fns servent
+// de SENTINELLES D'IDENTITÉ : le runtime de scène (TestOverworldScene.update,
+// GameScene, BirchRuntimeScene) détecte `gMain.callback2 === CB2_NewGame |
+// CB2_ContinueSavedGame`, null-out le callback AVANT que le body tourne, et effectue
+// la vraie entrée OW côté scène (`transitionToOverworld('newgame'|'continue')`).
+// Body volontairement vide : il ne s'exécute jamais — et un no-op est plus sûr que
+// l'ancien body transpilé (ex-`overworld-callbacks-auto.ts`, dissous) qui crashait
+// sur les refs engine non-portées. Quand l'engine overworld sera porté, remplacer
+// par les vrais corps 1:1. Les ~18 autres CB2_* transpilés de ce fichier étaient
+// MORTS (zéro importeur), superséchés par les `CB2_ReturnToField*_Manual` ci-dessus.
+export const CB2_NewGame = (): void => { /* sentinelle d'identité — voir note ci-dessus */ };
+export const CB2_ContinueSavedGame = (): void => { /* sentinelle d'identité — voir note ci-dessus */ };

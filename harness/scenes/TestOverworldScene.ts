@@ -19,7 +19,7 @@ import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../runtime/decomp-globals';
 import { ResetSpriteData } from '../../src/sprite';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/overworld';
 // Chantier « c » Step 2.2 : boot intro réutilisable (host unifié intro+OW, gated ?unified).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';

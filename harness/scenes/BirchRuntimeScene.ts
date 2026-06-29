@@ -61,7 +61,7 @@ import {
   SpriteCB_Null,
   CB2_MainMenu,
 } from '../../src/engine/decomp-data/src/main_menu-callbacks-auto';
-import { CB2_NewGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
+import { CB2_NewGame } from '../../src/overworld';
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,

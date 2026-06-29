@@ -30,7 +30,7 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/engine/decomp-data/src/overworld-callbacks-auto';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/overworld';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../runtime/decomp-globals';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import { installEngineDevtools } from '../devtools/engine-devtools';
