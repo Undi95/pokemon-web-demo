@@ -59,7 +59,7 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).
 const FONT_NORMAL = 1;
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../include/text';
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 

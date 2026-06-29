@@ -34,7 +34,7 @@ import {
   PLACEHOLDER_ID_KYOGRE, PLACEHOLDER_ID_GROUDON,
 } from '../include/constants/characters';
 import { POKEMON_NAME_LENGTH, PLAYER_NAME_LENGTH, LANGUAGE_JAPANESE, MALE } from '../include/constants/global';
-import { ENUM_FONT_0 } from './engine/decomp-data/include/text-data';
+import { FONT_BRAILLE } from '../include/text';
 import { STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../include/string_util';
 // 1:1 décomp string_util.c `#include "strings.h"` : gText_ExpandedPlaceholder_*
 // (+ bridge transitoire d'encodage FR — cf. strings.ts).
@@ -51,9 +51,6 @@ import {
 // _KunChan / _RivalName lisent gSaveBlock2Ptr->playerName / ->playerGender.
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 
-// 1:1 décomp `text.h` enum (FONT_BRAILLE). Le futur `include/text.ts` réexposera ;
-// en attendant on lit l'enum extrait (= source unique, valeur 6 vérifiée).
-const FONT_BRAILLE = ENUM_FONT_0.FONT_BRAILLE;
 
 // ─── 1:1 décomp string_util.c:6-10 : buffers EWRAM ──────────────────────────
 // `EWRAM_DATA u8 gStringVarN[…] = {0}`. Sémantique pointeur `u8*` = vue subarray.

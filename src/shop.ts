@@ -74,7 +74,7 @@ import { CreateTask, DestroyTask } from './task';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import * as Songs from '../include/constants/songs';
 import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
-import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../include/text';
 import { GAME_STAT_SHOPPED } from '../include/constants/game_stat';
 
 // ─── Chargement de la table mart (data décomp) ───────────────────────────────

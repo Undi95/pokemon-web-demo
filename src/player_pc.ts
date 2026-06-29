@@ -83,7 +83,7 @@ import { FreeSpritePaletteByTag } from './sprite';
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).
 import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 // TEXT_SKIP_DRAW import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../include/text';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data, hardcode 1:1 justifié).
 const FONT_NORMAL = 1;

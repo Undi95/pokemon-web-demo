@@ -79,7 +79,7 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './engine/decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../include/text';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,

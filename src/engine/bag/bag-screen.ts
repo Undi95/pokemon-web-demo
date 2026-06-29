@@ -67,7 +67,7 @@ const FONT_NORMAL = 1;
  *  sItemListMenu.fontId = FONT_NARROW = glyph data narrow différent de FONT_NORMAL. */
 const FONT_NARROW = 7;
 // TEXT_SKIP_DRAW importé depuis decomp-data (= A8 audit).
-import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../../../include/text';
 /** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
  *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
  *  Mapping paletteNum=1 (= sub-palette 1 de menu_male.pal) :
