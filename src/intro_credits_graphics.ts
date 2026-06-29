@@ -11,7 +11,7 @@
 /* eslint-disable */
 
 import type { DecompRuntime, DecompSprite, DecompTask } from '../harness/runtime/decomp-runtime';
-import { DestroySprite } from './sprite';
+import { DestroySprite, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type SpriteTemplate } from './sprite';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -129,10 +129,48 @@ export const SpriteCB_FlygonRightHalf: SpriteCallback = (sprite, rt) => {
 };
 
 /** Source: intro_credits_graphics.c (failed: empty bodyC) */
-export const SpriteCB_Player: SpriteCallback = (_sprite, _rt) => { /* TODO empty bodyC */ };
+export const SpriteCB_Player: SpriteCallback = (_sprite, _rt) => { /* vide 1:1 décomp */ };
 
-/** Source: intro_credits_graphics.c (failed: empty bodyC) */
-export const SpriteCB_FlygonLeftHalf: SpriteCallback = (_sprite, _rt) => { /* TODO empty bodyC */ };
+/** 1:1 décomp intro_credits_graphics.c `SpriteCB_FlygonLeftHalf(sprite) {}` (corps vide). */
+export const SpriteCB_FlygonLeftHalf: SpriteCallback = (_sprite, _rt) => { /* vide 1:1 décomp */ };
+
+// ─── OAM / anims / templates GLOBAUX 1:1 (ex-registres SPRITE_* du moteur, réécriture
+//     1:1 réf-directe). Foyer = intro_credits_graphics.c. Consommés par CreateIntro*Sprite
+//     via `_CreateSpriteAtTemplate` (voie OBJET, remplace `rt.CreateSpriteFromTemplate('sX')`).
+//     NB : sSpriteTemplate_MovingScenery (oam/anims gDummy*, scène credits) reste sur la
+//     voie par-nom pour l'instant (non atteignable en intro). ──
+/** 1:1 décomp intro_credits_graphics.c `sOamData_Player` (64x64). */
+const sOamData_Player: SpriteTemplate['oam'] = { shape: 0, size: 3, priority: 1 };
+/** 1:1 décomp `sOamData_Bicycle` (64x32). */
+const sOamData_Bicycle: SpriteTemplate['oam'] = { shape: 1, size: 3, priority: 1 };
+/** 1:1 décomp `sOamData_Flygon` (64x64). */
+const sOamData_Flygon: SpriteTemplate['oam'] = { shape: 0, size: 3, priority: 1 };
+// Anims joueur (intro_credits_graphics.c) — tileNum = offset dans la sheet joueur.
+const sAnim_Player_Slow = [ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(64, 8), ANIMCMD_FRAME(128, 8), ANIMCMD_FRAME(192, 8), ANIMCMD_JUMP(0)];
+const sAnim_Player_Fast = [ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(128, 4), ANIMCMD_FRAME(192, 4), ANIMCMD_JUMP(0)];
+const sAnim_Player_LookBack = [ANIMCMD_FRAME(256, 4), ANIMCMD_FRAME(320, 4), ANIMCMD_FRAME(384, 4), ANIMCMD_END];
+const sAnim_Player_LookForward = [ANIMCMD_FRAME(384, 30), ANIMCMD_FRAME(320, 30), ANIMCMD_FRAME(256, 30), ANIMCMD_FRAME(256, 30), ANIMCMD_END];
+const sAnim_Bicycle = [ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(32, 8), ANIMCMD_FRAME(64, 8), ANIMCMD_FRAME(96, 8), ANIMCMD_JUMP(0)];
+const sAnim_FlygonLeft = [ANIMCMD_FRAME(0, 16), ANIMCMD_END];
+const sAnim_FlygonRight = [ANIMCMD_FRAME(64, 16), ANIMCMD_END];
+/** 1:1 `sAnims_Player[]` (Slow/Fast/LookBack/LookForward). */
+const sAnims_Player: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Player_Slow, sAnim_Player_Fast, sAnim_Player_LookBack, sAnim_Player_LookForward];
+/** 1:1 `sAnims_Bicycle[]`. */
+const sAnims_Bicycle: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Bicycle];
+/** 1:1 `sAnims_Flygon[]` (Left/Right). */
+const sAnims_Flygon: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_FlygonLeft, sAnim_FlygonRight];
+/** 1:1 `sSpriteTemplate_Brendan`. */
+const sSpriteTemplate_Brendan: SpriteTemplate = { tileTag: 'TAG_BRENDAN', paletteTag: 'TAG_BRENDAN', oam: sOamData_Player, anims: sAnims_Player, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_Player };
+/** 1:1 `sSpriteTemplate_BrendanBicycle`. */
+const sSpriteTemplate_BrendanBicycle: SpriteTemplate = { tileTag: 'TAG_BICYCLE', paletteTag: 'TAG_BRENDAN', oam: sOamData_Bicycle, anims: sAnims_Bicycle, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_Bicycle };
+/** 1:1 `sSpriteTemplate_May`. */
+const sSpriteTemplate_May: SpriteTemplate = { tileTag: 'TAG_MAY', paletteTag: 'TAG_MAY', oam: sOamData_Player, anims: sAnims_Player, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_Player };
+/** 1:1 `sSpriteTemplate_MayBicycle`. */
+const sSpriteTemplate_MayBicycle: SpriteTemplate = { tileTag: 'TAG_BICYCLE', paletteTag: 'TAG_MAY', oam: sOamData_Bicycle, anims: sAnims_Bicycle, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_Bicycle };
+/** 1:1 `sSpriteTemplate_FlygonLatias`. */
+const sSpriteTemplate_FlygonLatias: SpriteTemplate = { tileTag: 'TAG_FLYGON_LATIAS', paletteTag: 'TAG_FLYGON_LATIAS', oam: sOamData_Flygon, anims: sAnims_Flygon, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_FlygonLeftHalf };
+/** 1:1 `sSpriteTemplate_FlygonLatios`. */
+const sSpriteTemplate_FlygonLatios: SpriteTemplate = { tileTag: 'TAG_FLYGON_LATIOS', paletteTag: 'TAG_FLYGON_LATIOS', oam: sOamData_Flygon, anims: sAnims_Flygon, affineAnims: 'gDummySpriteAffineAnimTable', callback: SpriteCB_FlygonLeftHalf };
 
 /** Source: intro_credits_graphics.c → Task_BicycleBgAnimation */
 export const Task_BicycleBgAnimation: TaskCallback = (task, rt) => {
@@ -254,8 +292,8 @@ export function CreateHouseSprites(rt: DecompRuntime): number {
 export function CreateIntroBrendanSprite(rt: DecompRuntime, x: number, y: number): number {
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
-  let playerSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Brendan',  x, y, 2);
-      let bicycleSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_BrendanBicycle',  x, y + 8, 3);
+  let playerSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Brendan, x, y, 2);
+      let bicycleSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_BrendanBicycle, x, y + 8, 3);
       _gs(rt, bicycleSpriteId).data[0] = playerSpriteId;
       return playerSpriteId;
   return -1;
@@ -265,8 +303,8 @@ export function CreateIntroBrendanSprite(rt: DecompRuntime, x: number, y: number
 export function CreateIntroMaySprite(rt: DecompRuntime, x: number, y: number): number {
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
-  let playerSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_May',  x, y, 2);
-      let bicycleSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_MayBicycle',  x, y + 8, 3);
+  let playerSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_May, x, y, 2);
+      let bicycleSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_MayBicycle, x, y + 8, 3);
       _gs(rt, bicycleSpriteId).data[0] = playerSpriteId;
       return playerSpriteId;
   return -1;
@@ -276,8 +314,8 @@ export function CreateIntroMaySprite(rt: DecompRuntime, x: number, y: number): n
 export function CreateIntroFlygonSprite(rt: DecompRuntime, x: number, y: number): number {
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
-  let leftSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias',  x - 32, y, 5);
-      let rightSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias',  x + 32, y, 6);
+  let leftSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_FlygonLatias, x - 32, y, 5);
+      let rightSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_FlygonLatias, x + 32, y, 6);
       _gs(rt, rightSpriteId).data[0] = leftSpriteId;
       rt.StartSpriteAnim(rightSpriteId, 1);
       _gs(rt, rightSpriteId).callback = SpriteCB_FlygonRightHalf;
