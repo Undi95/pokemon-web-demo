@@ -35,7 +35,7 @@ import {
   SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
   SpriteCB_PressStartCopyrightBanner,
   SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
-} from '../../src/engine/decomp-data/src/title_screen-callbacks-auto';
+} from '../../src/title_screen';
 import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
 } from '../../src/engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
