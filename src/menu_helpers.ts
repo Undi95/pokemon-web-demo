@@ -16,7 +16,7 @@
  *    (conditions toujours fausses). Maps Trade Center / Union Room injoignables.
  */
 import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
-import { SE_SELECT } from './engine/decomp-data/_common-constants';
+import { SE_SELECT } from '../include/constants/songs';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 // OPTIONS_BUTTON_MODE_LR = 1:1 `include/constants/global.h` (constante) — importée
 // de sa source décomp-data, PAS de gba-menu-system (évite le cycle menu→menu_helpers

@@ -200,7 +200,7 @@ import {
   CHAR_NEWLINE,
   CHAR_PROMPT_SCROLL,
   EOS,
-} from '../decomp-data/_common-constants';
+} from '../../../include/constants/characters';
 
 import {
   BG_PLTT_ID,

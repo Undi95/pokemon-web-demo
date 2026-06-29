@@ -44,7 +44,7 @@ import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placehol
 // IsSEPlaying (sound.c). Cycle text.ts↔decomp-globals runtime-safe (appels dans des
 // fonctions, jamais au top-level). SE_SELECT = constants/songs.h.
 import { PlaySE, IsSEPlaying, getRuntime } from '../harness/runtime/decomp-globals';
-import { SE_SELECT } from './engine/decomp-data/_common-constants';
+import { SE_SELECT } from '../include/constants/songs';
 // Migration TEXTE byte : init la charmap du miroir strings.ts (gText_ExpandedPlaceholder_*
 // FR + EncodePlayerNameFR) — appelé par loadFontData une fois la charmap chargée.
 import { InitTextData } from '../include/strings';

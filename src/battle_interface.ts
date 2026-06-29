@@ -418,7 +418,7 @@ import { GET_BATTLER_SIDE, B_SIDE_PLAYER, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPP
 import {
   setPartyStatusSummaryShown, incSummaryBarsActive, decSummaryBarsActive, getSummaryBarsActive,
 } from './engine/battle/battle-sprites-data';
-import { SE_BALL_TRAY_ENTER, SE_BALL_TRAY_BALL, SE_BALL_TRAY_EXIT } from './engine/decomp-data/_common-constants';
+import { SE_BALL_TRAY_ENTER, SE_BALL_TRAY_BALL, SE_BALL_TRAY_EXIT } from '../include/constants/songs';
 
 // ─── Constantes 1:1 ──────────────────────────────────────────────────────────
 const PARTY_SIZE = 6;

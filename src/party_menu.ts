@@ -62,7 +62,7 @@ import {
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
 } from '../harness/runtime/decomp-globals';
 import { FlagGet } from './engine/script/script-vars';
-import { MUS_LEVEL_UP } from './engine/decomp-data/_common-constants';
+import { MUS_LEVEL_UP } from '../include/constants/songs';
 import { GetMapNameGeneric } from './region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
 import { CHAR_SLASH, EOS } from '../include/constants/characters';
