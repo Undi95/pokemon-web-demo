@@ -48,7 +48,6 @@ import { GetMonData, SetMonData, createEmptyPokemon, CreateMon, gPlayerParty, gE
 // Entrees voie L (scripted-wild) : enemy mon plein + boot de la VRAIE boucle decomp.
 // Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
 // n'importe pas ce module en retour, il passe par un wire globalThis).
-import { createPokemonInstance } from '../pokemon/pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.

@@ -127,9 +127,6 @@ import {
 import {
   gMapHeader,
 } from './fieldmap';
-import type {
-  PokemonInstance,
-} from './engine/pokemon/pokemon';
 import {
   gSaveBlock1Ptr,
   gSaveBlock2Ptr,

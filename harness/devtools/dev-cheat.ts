@@ -11,7 +11,7 @@
 import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
 import { SaveGame, ResetSaveBlocks } from '../../src/save';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
-import type { PokemonInstance } from '../../src/engine/pokemon/pokemon';
+import { CalculatePPWithBonus, type Pokemon } from '../../src/engine/battle/party-storage';
 
 // ─── Cheat helpers (= dev convenience) ───────────────────────────────────────
 
@@ -31,10 +31,13 @@ function _cheat_skipIntro(): void {
 function _cheat_heal(): void {
   // 1:1 décomp HealPlayerParty (script_pokemon_util.c) : restore HP + PP +
   // status pour tous les mons de gPlayerParty.
-  for (const m of (gSaveBlock1Ptr.playerParty as PokemonInstance[])) {
-    m.currentHp = m.maxHp;
-    m.status = null;
-    for (const mv of m.moves) mv.pp = mv.ppMax;
+  for (const m of (gSaveBlock1Ptr.playerParty as Pokemon[])) {
+    if (!m.species) continue;
+    m.hp = m.maxHP;
+    m.status = 0;
+    for (let i = 0; i < 4; i++) {
+      if (m.moves[i]) m.pp[i] = CalculatePPWithBonus(m.moves[i], m.ppBonuses, i);
+    }
   }
   console.log('[cheat] Party healed');
 }

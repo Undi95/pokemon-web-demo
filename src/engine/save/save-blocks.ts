@@ -19,9 +19,8 @@
  * flash sectors réels (= contrainte hardware GBA non applicable).
  */
 
-import type { PokemonInstance } from '../pokemon/pokemon';
-// Pokemon NUMÉRIQUE (foyer pokemon.c) : type de playerParty depuis l'effondrement du calque
-// de vues. Type-only (erasé) → zéro cycle. (PokemonInstance reste pour BoxPokemonSlot = boxes PC.)
+// Pokemon NUMÉRIQUE (foyer pokemon.c) : type de playerParty ET des boxes PC depuis
+// l'effondrement du calque de vues (2026-07-02). Type-only (erasé) → zéro cycle.
 import type { Pokemon } from '../../pokemon';
 import type { ItemSlot, Bag } from '../bag/bag';
 import { EOS } from '../../../include/constants/characters';

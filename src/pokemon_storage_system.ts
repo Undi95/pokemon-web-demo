@@ -10,7 +10,6 @@
 
 import { GetPokemonStorage } from './save';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
-import { moveEnumToDexId } from './engine/pokemon/pokemon';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :

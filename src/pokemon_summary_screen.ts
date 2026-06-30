@@ -75,7 +75,6 @@ const getMoveDescription = (move: number): string => gMoveDescriptions[move] ?? 
 const getContestMove = (move: number): ContestMove | undefined => gContestMoves[move];
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './pokemon_animation';
 import type { DecompTask, DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { PokemonInstance } from './engine/pokemon/pokemon';
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
 import { MAX_MON_MOVES } from '../include/constants/global';
 import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../include/constants/songs';

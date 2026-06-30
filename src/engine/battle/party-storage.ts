@@ -18,13 +18,9 @@
  *     de combat, et inverse à la fin pour persist HP/status/exp.
  */
 
-import type { PokemonInstance } from '../pokemon/pokemon';
 import { GetPlayerNameString } from '../../../include/text';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import {
-  speciesEnumToDexId, moveEnumToDexId,
-  pokemonToPokemonInstance,
-} from '../pokemon/pokemon';
+import { speciesEnumToDexId, moveEnumToDexId } from '../pokemon/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
 import type { PokemonStorage } from '../save/save-blocks';
 import { VarGet, VarSet, FlagClear } from '../script/script-vars';
@@ -99,9 +95,6 @@ export {
 /** 1:1 décomp `PARTY_SIZE` (include/constants/global.h). */
 export const PARTY_SIZE = 6;
 
-/** 1:1 décomp `MAX_MON_MOVES`. */
-const MAX_MON_MOVES_PARTY = 4;
-
 // Cœur mon-data CONSOLIDÉ vers le foyer pokemon.c (src/pokemon.ts = où struct Pokemon /
 // gPlayerParty / GetMonData sont définis dans la décomp). Import pour usage local + RE-EXPORT
 // pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
@@ -123,107 +116,6 @@ export { MonKnowsMove, GiveMoveToMon } from '../../pokemon';
 // vers le foyer pokemon.c (src/pokemon.ts ; lisent sTMHMMoves/getTmhmLearnset/
 // speciesNumberToEnum/GetMonData, tous déjà au foyer ou leaf). Re-export pour compat.
 export { CanSpeciesLearnTMHM, CanMonLearnTMHM } from '../../pokemon';
-
-// ─── Bridge PokemonInstance ↔ Pokemon ─────────────────────────────────────
-
-const _STATUS_TO_STATUS1: Record<string, number> = {
-  'PSN': 1 << 3,    // STATUS1_POISON
-  'BRN': 1 << 4,    // STATUS1_BURN
-  'FRZ': 1 << 5,    // STATUS1_FREEZE
-  'PAR': 1 << 6,    // STATUS1_PARALYSIS
-  'TOX': (1 << 7) | (1 << 3), // STATUS1_TOXIC_POISON | STATUS1_POISON
-  'SLP': 0,         // STATUS1_SLEEP_TURN bits are dynamic
-};
-
-/** Resolve un species enum ex. "SPECIES_TREECKO" vers un u16 id décomp. */
-function _resolveSpeciesId(enumStr: string): number {
-  const id = resolveDecompConstant(enumStr);
-  return typeof id === 'number' ? id : 0;
-}
-
-function _resolveMoveId(dexId: string): number {
-  return resolveMoveDexId(dexId);
-}
-
-/** Bridge un `PokemonInstance` runtime vers un `Pokemon` battle-side. */
-export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
-  const mon = createEmptyPokemon();
-  mon.personality = (inst.personality ?? 0) >>> 0;
-  // 1:1 décomp : mon.otId est le trainer ID du capturer. Pour les mons player-
-  // caught, c'est `gSaveBlock2Ptr->playerTrainerId` direct (= 1:1 strict).
-  mon.otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-  mon.nickname = inst.nickname || inst.speciesNameFr;
-  mon.species = _resolveSpeciesId(inst.speciesEnum) || inst.speciesId || 0;
-  mon.hasSpecies = mon.species ? 1 : 0;
-  mon.heldItem = inst.heldItem ? (resolveDecompConstant('ITEM_' + inst.heldItem.toUpperCase().replace(/-/g, '_')) as number | undefined ?? 0) : 0;
-  mon.experience = inst.currentExp ?? 0;
-  mon.friendship = inst.friendship ?? 70;   // 1:1 : bonheur de base de l'espèce (createPokemonInstance)
-  mon.level = inst.level;
-  mon.hp = inst.currentHp;
-  mon.maxHP = inst.maxHp;
-  // Champs meta/flags lus par la VUE (pokemonToPokemonInstance) : sans eux, le
-  // round-trip PokemonInstance→Pokemon→vue les PERDRAIT (bug A/B révélé par le
-  // pivot : l'œuf devenait un mon normal car isEgg n'était pas reporté).
-  // 1:1 MON_DATA_IS_EGG / MARKINGS / MET_LEVEL / MET_LOCATION / POKEBALL / OT.
-  mon.isEgg = inst.isEgg ? 1 : 0;
-  mon.markings = inst.markings ?? 0;
-  mon.metLevel = inst.metLevel ?? 0;
-  mon.metLocation = inst.metLocation ? (resolveDecompConstant(inst.metLocation) as number | undefined ?? 0) : 0;
-  mon.pokeball = inst.pokeball ? (resolveDecompConstant(inst.pokeball) as number | undefined ?? 0) : 0;
-  mon.otName = inst.otName ?? '';
-  mon.otGender = inst.otGender ?? 0;
-  // Moves + PP
-  for (let i = 0; i < MAX_MON_MOVES_PARTY; i++) {
-    const m = inst.moves[i];
-    if (m) {
-      mon.moves[i] = _resolveMoveId(m.id);
-      mon.pp[i] = m.pp;
-    } else {
-      mon.moves[i] = 0;
-      mon.pp[i] = 0;
-    }
-  }
-  // Stats — calculated via CalculateMonStats (= 1:1 décomp pokemon.c).
-  // Maintenant on calcule depuis IVs/EVs/level/nature/baseStats au lieu de
-  // les laisser à 0. C'est requis pour que le bytecode interpreter ait des
-  // stats réelles à damage-calc.
-  mon.attack = 0; mon.defense = 0; mon.speed = 0;
-  mon.spAttack = 0; mon.spDefense = 0;
-  // Délégué à CalculateMonStats ci-dessous.
-  // IVs
-  mon.hpIV = inst.ivs.hp & 0x1F;
-  mon.attackIV = inst.ivs.atk & 0x1F;
-  mon.defenseIV = inst.ivs.def & 0x1F;
-  mon.speedIV = inst.ivs.spe & 0x1F;
-  mon.spAttackIV = inst.ivs.spa & 0x1F;
-  mon.spDefenseIV = inst.ivs.spd & 0x1F;
-  // EVs
-  mon.hpEV = inst.evs.hp & 0xFF;
-  mon.attackEV = inst.evs.atk & 0xFF;
-  mon.defenseEV = inst.evs.def & 0xFF;
-  mon.speedEV = inst.evs.spe & 0xFF;
-  mon.spAttackEV = inst.evs.spa & 0xFF;
-  mon.spDefenseEV = inst.evs.spd & 0xFF;
-  // Status
-  if (inst.status) {
-    const mapped = _STATUS_TO_STATUS1[inst.status] ?? 0;
-    mon.status = mapped >>> 0;
-  }
-  // 1:1 décomp `CreateBoxMon` (pokemon.c:2297-2300) : abilityNum = personality & 1
-  // UNIQUEMENT si l'espèce a une 2e ability (abilities[1] != ABILITY_NONE) ; sinon 0.
-  // `GetAbilityBySpecies` (pokemon.c:4533) ne fait PAS de fallback → poser slot 1 sur
-  // une espèce mono-ability donnerait ABILITY_NONE. AVANT : codé en dur 0.
-  {
-    const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_');
-    const sinfo = speciesEnum ? getSpeciesInfo(speciesEnum) : null;
-    const has2ndAbility = !!(sinfo && sinfo.abilities[1] && sinfo.abilities[1] !== 'ABILITY_NONE');
-    mon.abilityNum = has2ndAbility ? ((mon.personality & 1) >>> 0) : 0;
-  }
-  // 1:1 décomp `CalculateMonStats(mon)` — calculate atk/def/spe/spa/spd/maxHP
-  // depuis baseStats + IVs + EVs + level + nature.
-  CalculateMonStats(mon);
-  return mon;
-}
 
 // ─── CalculatePlayerPartyCount (= 1:1 décomp pokemon.c:7011) ─────────────
 
