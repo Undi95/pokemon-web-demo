@@ -1001,17 +1001,9 @@ function _getNatureFromPersonality(personality: number): number {
   return GetNatureFromPersonality(personality >>> 0);
 }
 
-/** 1:1 décomp `u8 GetNature(struct Pokemon *mon)` (pokemon.c:5480) :
- *  `return GetMonData(mon, MON_DATA_PERSONALITY) % NUM_NATURES;`. Délègue au
- *  miroir GetNatureFromPersonality (DRY). Primitif partagé (8 appelants décomp :
- *  pokemon_summary_screen, field_specials [Nature Girl, GetPokeblockNameByMonNature],
- *  pokeblock/contest/animation…). Renvoie l'index de nature 0..24. */
-export function GetNature(mon: Pokemon): number {
-  return GetNatureFromPersonality((GetMonData(mon, MON_DATA_PERSONALITY) as number) >>> 0);
-}
-
-// Exposition dev (sonde déterministe GetNature), sans effet sur le jeu.
-(globalThis as Record<string, unknown>).__GetNature = GetNature;
+// GetNature : consolidé vers le foyer pokemon.c (src/pokemon.ts, à côté de
+// GetNatureFromPersonality). Le helper privé _getNatureFromPersonality reste ici
+// (utilisé par CalculateMonStats). La sonde dev __GetNature suit l'impl dans pokemon.ts.
 
 /** 1:1 décomp `u16 GetMonEVCount(struct Pokemon *mon)` (pokemon.c:6054-6062) :
  *  `for (i = 0; i < NUM_STATS; i++) count += GetMonData(mon, MON_DATA_HP_EV + i);`.

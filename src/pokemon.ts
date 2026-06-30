@@ -132,6 +132,19 @@ export function GetNatureFromPersonality(personality: number): number {
   return (personality >>> 0) % NUM_NATURES;
 }
 
+/** 1:1 décomp `u8 GetNature(struct Pokemon *mon)` (pokemon.c:5480) :
+ *    `return GetMonData(mon, MON_DATA_PERSONALITY) % NUM_NATURES;`. Délègue à
+ *  GetNatureFromPersonality (même fichier, DRY). Primitif partagé (8 appelants décomp :
+ *  pokemon_summary_screen, field_specials [Nature Girl], pokeblock/contest/animation…).
+ *  Adaptation modèle : lecture directe `mon.personality` (= GetMonData(PERSONALITY) sur
+ *  notre struct plat). Renvoie l'index de nature 0..24. Consolidé depuis party-storage.ts. */
+export function GetNature(mon: Pokemon): number {
+  return GetNatureFromPersonality(mon.personality >>> 0);
+}
+
+// Exposition dev (sonde déterministe GetNature), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetNature = GetNature;
+
 /** 1:1 décomp `u16 ModifyStatByNature(u8 nature, u16 stat, u8 statIndex)`
  *  (pokemon.c:5865-5899). statIndex est 1-based (STAT_ATK=1 … STAT_SPDEF=5) ; HP
  *  (0), Accuracy, Evasion ne sont pas modifiés. */
