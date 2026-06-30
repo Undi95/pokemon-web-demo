@@ -34,13 +34,10 @@ import { VAR_RESULT } from '../include/constants/vars';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
 // Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
-import { getSelectedNpc, OPPOSITE_DIR, isPlayerStepFinished } from './engine/script/script-opcodes-helpers';
+import { getSelectedNpc } from './engine/script/script-opcodes-helpers';
 import { gSelectedObjectEvent } from './engine/script/script-vars';
-import {
-  FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventClearHeldMovementIfFinished,
-  ObjectEventSetHeldMovement, gObjectEvents,
-} from './event_object_movement';
-import { GetPlayerFacingDirection, gPlayerAvatar, IncrementGameStat, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './field_player_avatar';
+import { ObjectEventClearHeldMovementIfFinished, gObjectEvents } from './event_object_movement';
+import { gPlayerAvatar, IncrementGameStat } from './field_player_avatar';
 import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
   configureTrainerBattleCore, startTrainerBattleAndGetPoll,
   BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript } from './battle_setup';
@@ -49,6 +46,12 @@ import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './en
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE, PlayFanfare, getRuntime, FadeOutBGM, FadeInBGM } from '../harness/runtime/decomp-globals';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
+// Système FREEZE 1:1 décomp event_object_lock.c (logique relocalisée de scrcmd → son foyer miroir).
+import {
+  Script_FacePlayer, FreezeObjects_WaitForPlayer, IsFreezePlayerFinished,
+  FreezeObjects_WaitForPlayerAndSelected, IsFreezeSelectedObjectAndPlayerFinished,
+  ScriptUnfreezeObjectEvents,
+} from './event_object_lock';
 import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } from './fieldmap';
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
@@ -56,9 +59,6 @@ import { Overworld_SetSavedMusic } from './overworld';
 import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
 import * as Songs from '../include/constants/songs';
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
-import {
-  MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP, MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
-} from '../include/constants/event_object_movement';
 // Tables de noms FR (= adaptation de gSpeciesNames/gMoveNames/gItems[].name/gTrainers[]
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
 import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
@@ -254,64 +254,40 @@ const ScrCmd_compare_var_to_value: ScrCmdFunc = (ctx) => { const a = varDeref(Sc
 const ScrCmd_compare_var_to_var: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = varDeref(ScriptReadHalfword(ctx)); ctx.comparisonResult = Compare(a, b); return false; }; // :453
 
 // ─── lock / release / faceplayer (1:1 scrcmd.c:1152-1263) ───────────────────
-/** 1:1 GetFaceDirectionMovementAction(dir) → MOVEMENT_ACTION_FACE_*. */
-function faceAction(dir: number): number {
-  switch (dir) {
-    case DIR_SOUTH: return MOVEMENT_ACTION_FACE_DOWN;
-    case DIR_NORTH: return MOVEMENT_ACTION_FACE_UP;
-    case DIR_WEST: return MOVEMENT_ACTION_FACE_LEFT;
-    case DIR_EAST: return MOVEMENT_ACTION_FACE_RIGHT;
-    default: return MOVEMENT_ACTION_FACE_DOWN;
-  }
-}
 
-// 1:1 scrcmd.c:1152-1156 ScrCmd_faceplayer (= ObjectEventFaceOppositeDirection).
+// 1:1 scrcmd.c:1152-1156 ScrCmd_faceplayer → event_object_lock.Script_FacePlayer.
 const ScrCmd_faceplayer: ScrCmdFunc = () => {
-  const npc = getSelectedNpc();
-  if (!npc) return false;
-  const opp = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
-  ObjectEventSetHeldMovement(npc, faceAction(opp));
+  Script_FacePlayer();
   return false;
 };
 
-// 1:1 scrcmd.c:1201-1213 ScrCmd_lockall : gèle tous les objets, attend le step joueur.
+// 1:1 scrcmd.c:1201-1213 ScrCmd_lockall : FreezeObjects_WaitForPlayer + attend IsFreezePlayerFinished.
 const ScrCmd_lockall: ScrCmdFunc = (ctx) => {
-  for (const npc of gObjectEvents) if (npc.active) FreezeObjectEvent(npc);
-  SetupNativeScript(ctx, () => isPlayerStepFinished());
+  FreezeObjects_WaitForPlayer();
+  SetupNativeScript(ctx, IsFreezePlayerFinished);
   return true;
 };
 
-// 1:1 scrcmd.c:1217-1237 ScrCmd_lock : gèle tous sauf player+selected ; gèle selected à la fin.
+// 1:1 scrcmd.c:1217-1237 ScrCmd_lock : FreezeObjects_WaitForPlayerAndSelected + attend le gate.
 const ScrCmd_lock: ScrCmdFunc = (ctx) => {
-  const npc = getSelectedNpc();
-  for (const n of gObjectEvents) if (n.active && n !== npc) FreezeObjectEvent(n);
-  SetupNativeScript(ctx, () => {
-    if (!isPlayerStepFinished()) return false;
-    if (npc) FreezeObjectEvent(npc);
-    return true;
-  });
+  FreezeObjects_WaitForPlayerAndSelected();
+  SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);
   return true;
 };
 
-// 1:1 scrcmd.c:1239-1249 ScrCmd_releaseall.
+// 1:1 scrcmd.c:1239-1249 ScrCmd_releaseall → HideFieldMessageBox + ScriptUnfreezeObjectEvents.
 const ScrCmd_releaseall: ScrCmdFunc = () => {
   HideFieldMessageBox();
-  const player = gObjectEvents[gPlayerAvatar.objectEventId];
-  if (player) ObjectEventClearHeldMovementIfFinished(player);
-  ScriptMovement_UnfreezeObjectEvents();
-  for (const npc of gObjectEvents) if (npc.active) UnfreezeObjectEvent(npc);
+  ScriptUnfreezeObjectEvents();
   return false;
 };
 
-// 1:1 scrcmd.c:1251-1263 ScrCmd_release.
+// 1:1 scrcmd.c:1251-1263 ScrCmd_release : clear du selected + ScriptUnfreezeObjectEvents.
 const ScrCmd_release: ScrCmdFunc = () => {
   HideFieldMessageBox();
   const selected = gObjectEvents[gSelectedObjectEvent.index];
   if (selected && selected.active) ObjectEventClearHeldMovementIfFinished(selected);
-  const player = gObjectEvents[gPlayerAvatar.objectEventId];
-  if (player) ObjectEventClearHeldMovementIfFinished(player);
-  ScriptMovement_UnfreezeObjectEvents();
-  for (const npc of gObjectEvents) if (npc.active) UnfreezeObjectEvent(npc);
+  ScriptUnfreezeObjectEvents();
   return false;
 };
 
