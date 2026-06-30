@@ -34,7 +34,6 @@ import { gMapHeader } from '../../fieldmap';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
 import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 import {
-  PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
   MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
 } from '../../../include/constants/pokemon';
 import { SPECIES_EGG } from '../../../include/constants/species';
@@ -341,50 +340,10 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
 
 // ─── CalculatePlayerPartyCount (= 1:1 décomp pokemon.c:7011) ─────────────
 
-/** 1:1 décomp `CalculatePlayerPartyCount()` (pokemon.c). Return le nombre de
- *  slots dans gPlayerParty avec species != 0. Used pour detect party full. */
-export function CalculatePlayerPartyCount(): number {
-  let count = 0;
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    if (gPlayerParty[i]?.species && gPlayerParty[i].species !== 0) count++;
-  }
-  return count;
-}
-
-/** 1:1 décomp `u8 GetMonsStateToDoubles(void)` (pokemon.c:4494-4512) :
- *  ```c
- *  CalculatePlayerPartyCount();
- *  if (gPlayerPartyCount == 1) return gPlayerPartyCount; // PLAYER_HAS_ONE_MON
- *  for (i = 0; i < gPlayerPartyCount; i++)
- *      if (GetMonData(SPECIES_OR_EGG) != SPECIES_EGG && GetMonData(HP) != 0
- *          && GetMonData(SPECIES_OR_EGG) != SPECIES_NONE) aliveCount++;
- *  return (aliveCount > 1) ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
- *  ```
- *  Éligibilité au combat double : ≥2 mons vivants non-œuf → TWO_USABLE. Adaptation
- *  modèle : notre `MON_DATA_SPECIES_OR_EGG` renvoie 0 (NONE) pour un œuf (pas
- *  SPECIES_EGG) → on teste `species != 0 && !IS_EGG` (équivalent strict). */
-export function GetMonsStateToDoubles(): number {
-  const partyCount = CalculatePlayerPartyCount();
-  if (partyCount === 1) return PLAYER_HAS_ONE_MON; // 1:1 : return gPlayerPartyCount (== 1)
-  let aliveCount = 0;
-  for (let i = 0; i < partyCount; i++) {
-    const mon = gPlayerParty[i];
-    if (mon.species !== 0 && !(GetMonData(mon, MON_DATA_IS_EGG) as number)
-        && (GetMonData(mon, MON_DATA_HP) as number) !== 0) {
-      aliveCount++;
-    }
-  }
-  return aliveCount > 1 ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
-}
-
-/** 1:1 décomp `CalculateEnemyPartyCount()` (pokemon.c). Idem pour gEnemyParty. */
-export function CalculateEnemyPartyCount(): number {
-  let count = 0;
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    if (gEnemyParty[i]?.species && gEnemyParty[i].species !== 0) count++;
-  }
-  return count;
-}
+// CalculatePlayerPartyCount / GetMonsStateToDoubles / CalculateEnemyPartyCount :
+// consolidés vers le foyer pokemon.c (src/pokemon.ts, = lisent gPlayerParty/gEnemyParty/GetMonData,
+// tous au foyer désormais). Re-export pour compat (~12 importateurs inchangés).
+export { CalculatePlayerPartyCount, GetMonsStateToDoubles, CalculateEnemyPartyCount } from '../../pokemon';
 
 // GetBoxMonGender / GetMonGender : consolidés vers le foyer pokemon.c (src/pokemon.ts,
 // à côté de GetGenderFromSpeciesAndPersonality). Réécrits 1:1 en numérique (sans le
