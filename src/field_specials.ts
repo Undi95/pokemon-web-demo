@@ -34,6 +34,7 @@ import { gSpeciesInfo } from './engine/data/game-data';
 import { GetPlayerNameString, setStringVar } from '../include/text';
 import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { gLocalTime } from './rtc';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -264,3 +265,63 @@ export function FoundAbandonedShipRoom1Key(): number { return _foundAbandonedShi
 export function FoundAbandonedShipRoom2Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY'); }
 export function FoundAbandonedShipRoom4Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY'); }
 export function FoundAbandonedShipRoom6Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY'); }
+
+// ─── Lot 4 — time/clock + buffers (Pacifidlog TM, semaine, lotto, TM/HM move) ───
+
+/** 1:1 décomp `GetWeekCount` (field_specials.c:940-947) :
+ *    u16 weekCount = gLocalTime.days / 7; if (weekCount > 9999) weekCount = 9999; return weekCount; */
+export function GetWeekCount(): number {
+  let weekCount = Math.floor(gLocalTime.days / 7);
+  if (weekCount > 9999) weekCount = 9999;
+  return weekCount & 0xFFFF;
+}
+
+/** 1:1 décomp `GetDaysUntilPacifidlogTMAvailable` (field_specials.c:1555-1564) :
+ *    tmReceivedDay = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+ *    if (gLocalTime.days - tmReceivedDay >= 7) return 0;
+ *    else if (gLocalTime.days < 0) return 8;
+ *    return 7 - (gLocalTime.days - tmReceivedDay);
+ *  Jours restants avant la TM hebdo de Pacifidlog (0 = disponible). */
+export function GetDaysUntilPacifidlogTMAvailable(): number {
+  const tmReceivedDay = VarGet('VAR_PACIFIDLOG_TM_RECEIVED_DAY');
+  if (gLocalTime.days - tmReceivedDay >= 7) return 0;
+  if (gLocalTime.days < 0) return 8;
+  return (7 - (gLocalTime.days - tmReceivedDay)) & 0xFFFF;
+}
+
+/** 1:1 décomp `SetPacifidlogTMReceivedDay` (field_specials.c:1566-1569) :
+ *    VarSet(VAR_PACIFIDLOG_TM_RECEIVED_DAY, gLocalTime.days); return gLocalTime.days; */
+export function SetPacifidlogTMReceivedDay(): number {
+  VarSet('VAR_PACIFIDLOG_TM_RECEIVED_DAY', gLocalTime.days);
+  return gLocalTime.days & 0xFFFF;
+}
+
+/** 1:1 décomp `BufferLottoTicketNumber` (field_specials.c:1585-1617) : pad VAR_RESULT à
+ *  5 chiffres (leading zeros) → gStringVar1 (équivalent String(v).padStart(5, '0')). */
+export function BufferLottoTicketNumber(): void {
+  setStringVar(1, String(VarGet('VAR_RESULT')).padStart(5, '0'));
+}
+
+/** 1:1 décomp `BufferTMHMMoveName` (field_specials.c:1638-1647) :
+ *    if (gSpecialVar_0x8004 in [ITEM_TM01, ITEM_HM08]) {
+ *      StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(item)]); return TRUE; }
+ *    return FALSE;
+ *  ItemIdToBattleMoveId/getMoveName via bridge globalThis (anti-cycle, comme avant). */
+export function BufferTMHMMoveName(): number {
+  const itemId = VarGet('VAR_0x8004');
+  if (itemId >= 289 /* ITEM_TM01 */ && itemId <= 346 /* ITEM_HM08 */) {
+    const tmhmFn = (globalThis as { __game_tmhm?: {
+      ItemIdToBattleMoveId?: (itemId: number) => string;
+    } }).__game_tmhm?.ItemIdToBattleMoveId;
+    const getMoveNameFn = (globalThis as { __game_data?: {
+      getMoveName?: (moveId: string | number) => string;
+    } }).__game_data?.getMoveName;
+    if (tmhmFn && getMoveNameFn) {
+      setStringVar(2, getMoveNameFn(tmhmFn(itemId)) || '');
+    }
+    VarSet('VAR_RESULT', 1);
+    return 1;
+  }
+  VarSet('VAR_RESULT', 0);
+  return 0;
+}

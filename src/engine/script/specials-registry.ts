@@ -38,6 +38,8 @@ import {
   SetSSTidalFlag, ResetSSTidalFlag, StorePlayerCoordsInVars,
   SetTrickHouseNuggetFlag, ResetTrickHouseNuggetFlag,
   FoundAbandonedShipRoom1Key, FoundAbandonedShipRoom2Key, FoundAbandonedShipRoom4Key, FoundAbandonedShipRoom6Key,
+  GetWeekCount, GetDaysUntilPacifidlogTMAvailable, SetPacifidlogTMReceivedDay,
+  BufferLottoTicketNumber, BufferTMHMMoveName,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -1491,11 +1493,7 @@ for (const name of _STUB_RETURN_0_SPECIALS) {
  *  }
  *  ```
  *  Retourne le nombre de semaines depuis le début (cap 9999). */
-registerSpecial('GetWeekCount', () => {
-  let weekCount = Math.floor(gLocalTime.days / 7);
-  if (weekCount > 9999) weekCount = 9999;
-  return weekCount & 0xFFFF;
-});
+registerSpecial('GetWeekCount', GetWeekCount);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `GetDaysUntilPacifidlogTMAvailable` (field_specials.c:1555-1564) :
  *  ```c
@@ -1507,12 +1505,7 @@ registerSpecial('GetWeekCount', () => {
  *  }
  *  ```
  *  Days restants pour récupérer la TM hebdo de Pacifidlog (= 0 si available). */
-registerSpecial('GetDaysUntilPacifidlogTMAvailable', () => {
-  const tmReceivedDay = VarGet('VAR_PACIFIDLOG_TM_RECEIVED_DAY');
-  if (gLocalTime.days - tmReceivedDay >= 7) return 0;
-  if (gLocalTime.days < 0) return 8;
-  return (7 - (gLocalTime.days - tmReceivedDay)) & 0xFFFF;
-});
+registerSpecial('GetDaysUntilPacifidlogTMAvailable', GetDaysUntilPacifidlogTMAvailable);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `BufferTMHMMoveName` (field_specials.c:1638-1647) :
  *  ```c
@@ -1525,29 +1518,7 @@ registerSpecial('GetDaysUntilPacifidlogTMAvailable', () => {
  *  }
  *  ```
  *  Buffer le nom de move correspondant à un TM/HM item dans gStringVar2. */
-registerSpecial('BufferTMHMMoveName', () => {
-  const itemId = VarGet('VAR_0x8004');
-  if (itemId >= 289 /* ITEM_TM01 */ && itemId <= 346 /* ITEM_HM08 */) {
-    // 1:1 décomp : utiliser ItemIdToBattleMoveId (= already ported tmhm-moves.ts)
-    // + getMoveName (= bag-menu.ts pattern). Import dynamique via globalThis pour
-    // éviter cycle ESM specials-registry ↔ tmhm-moves.
-    const tmhmFn = (globalThis as { __game_tmhm?: {
-      ItemIdToBattleMoveId?: (itemId: number) => string;
-    } }).__game_tmhm?.ItemIdToBattleMoveId;
-    const getMoveNameFn = (globalThis as { __game_data?: {
-      getMoveName?: (moveId: string | number) => string;
-    } }).__game_data?.getMoveName;
-    if (tmhmFn && getMoveNameFn) {
-      const moveId = tmhmFn(itemId);
-      const moveName = getMoveNameFn(moveId);
-      setStringVar(2, moveName || '');
-    }
-    VarSet('VAR_RESULT', 1);
-    return 1;
-  }
-  VarSet('VAR_RESULT', 0);
-  return 0;
-});
+registerSpecial('BufferTMHMMoveName', BufferTMHMMoveName);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session A2.29 batch — Abandoned Ship + Game stats + Contest random ────
 
@@ -1652,11 +1623,7 @@ registerSpecial('BufferQuizPrizeItem', () => {
  *  Pad le VAR_RESULT à 5 chiffres avec leading zeros, puis convert decimal.
  *  Branche par range >= 10000 / >= 1000 / >= 100 / >= 10 / < 10. 1:1 strict :
  *  équivalent à `String(value).padStart(5, '0')` (5 chars total). */
-registerSpecial('BufferLottoTicketNumber', () => {
-  const value = VarGet('VAR_RESULT');
-  // 1:1 décomp : pad-zero à 5 chars total.
-  setStringVar(1, String(value).padStart(5, '0'));
-});
+registerSpecial('BufferLottoTicketNumber', BufferLottoTicketNumber);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `ShouldDistributeEonTicket` (field_specials.c:3640-3646) :
  *  ```c
@@ -1980,10 +1947,7 @@ registerSpecial('FoundAbandonedShipRoom6Key', FoundAbandonedShipRoom6Key);
  *  }
  *  ```
  *  Mark le day de réception → bloque la TM 7j. */
-registerSpecial('SetPacifidlogTMReceivedDay', () => {
-  VarSet('VAR_PACIFIDLOG_TM_RECEIVED_DAY', gLocalTime.days);
-  return gLocalTime.days & 0xFFFF;
-});
+registerSpecial('SetPacifidlogTMReceivedDay', SetPacifidlogTMReceivedDay);  // impl 1:1 → src/field_specials.ts
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SESSION 131 — bulk register tous les specials décomp restants (= 411 specials
