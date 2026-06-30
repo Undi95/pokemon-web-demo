@@ -36,6 +36,7 @@ import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/scr
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
+import { Random } from './random';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -449,3 +450,108 @@ export function BufferFanClubTrainerName(): void { /* no-op (data Lilycove non p
  *    return TryGainNewFanFromCounter(gSpecialVar_0x8004);  (valeur de retour toujours ignorée).
  *  TryGainNewFanFromCounter (porté secret-base.ts) DIFFÉRÉ ici (éviter import cycle) → 0. */
 export function Script_TryGainNewFanFromCounter(): number { return 0; }
+
+// ─── Lot 7 — Cycling Road challenge + slot machine + IV rater + divers reads ────
+
+/** 1:1 décomp `ResetCyclingRoadChallengeData` (field_specials.c:154-159) :
+ *    gBikeCyclingChallenge = FALSE; gBikeCollisions = 0; sBikeCyclingTimer = 0; */
+export function ResetCyclingRoadChallengeData(): void {
+  gBikeCycling.challenge = 0;
+  gBikeCycling.collisions = 0;
+  gBikeCycling.timer = 0;
+}
+
+/** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c:161-166) :
+ *    gBikeCyclingChallenge = TRUE; gBikeCollisions = 0; sBikeCyclingTimer = gMain.vblankCounter1;
+ *  Adaptation : vblankCounter1 (frame counter) → performance.now()|0 (timer monotone comparable). */
+export function Special_BeginCyclingRoadChallenge(): void {
+  gBikeCycling.challenge = 1;
+  gBikeCycling.collisions = 0;
+  gBikeCycling.timer = (performance.now() | 0) >>> 0;
+}
+
+/** 1:1 décomp `Special_ShowDiploma` (field_specials.c:141-...) :
+ *    SetMainCallback2(CB2_ShowDiploma); LockPlayerFieldControls();
+ *  Dette R3 : CB2_ShowDiploma (diploma screen UI) non porté → no-op + log. */
+export function Special_ShowDiploma(): void {
+  console.log('[special Special_ShowDiploma] dette R3 (cascade CB2_ShowDiploma diploma UI U-tier)');
+}
+
+/** 1:1 décomp `GetSlotMachineId` (field_specials.c:1289-...) :
+ *    rnd = dewfordTrends[0].trendiness + dewfordTrends[0].rand + sSlotMachineRandomSeeds[VAR_0x8004];
+ *    if (IsPokeNewsActive(POKENEWS_GAME_CORNER)) return sSlotMachineServiceDayIds[rnd % 12];
+ *    return sSlotMachineIds[rnd % 12];
+ *  Choisit la « chance » d'une machine à sous (Game Corner). PokeNews non porté →
+ *  (pokeNews[] vide) → branche regular sauf si une entrée GAME_CORNER+ACTIVE existe. */
+export function GetSlotMachineId(): number {
+  const UNLUCKIEST = 0, UNLUCKIER = 1, UNLUCKY = 2;
+  const LUCKY = 3, LUCKIER = 4, LUCKIEST = 5;
+  const seeds = [12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6];
+  const ids = [
+    UNLUCKIEST, UNLUCKIER, UNLUCKIER,
+    UNLUCKY, UNLUCKY, UNLUCKY,
+    LUCKY, LUCKY, LUCKY,
+    LUCKIER, LUCKIER, LUCKIEST,
+  ];
+  const serviceDayIds = [
+    LUCKY, LUCKY, LUCKY, LUCKY, LUCKY, LUCKY,
+    LUCKIER, LUCKIER, LUCKIER, LUCKIER,
+    LUCKIEST, LUCKIEST,
+  ];
+  const slot = VarGet('VAR_0x8004');
+  const trends = gSaveBlock1Ptr.dewfordTrends?.[0];
+  if (!trends) return UNLUCKIEST;
+  const rnd = ((trends.trendiness ?? 0) + (trends.rand ?? 0) + (seeds[slot] ?? 0)) >>> 0;
+  // IsPokeNewsActive(POKENEWS_GAME_CORNER=2, STATE_ACTIVE=2) ; pokeNews non porté → vide.
+  const pokeNews = gSaveBlock1Ptr.pokeNews ?? [];
+  let pokeNewsActive = false;
+  for (let i = 0; i < 16; i++) {
+    const news = pokeNews[i];
+    if (news?.kind === 2 && news?.state === 2) { pokeNewsActive = true; break; }
+  }
+  if (pokeNewsActive) return (serviceDayIds[rnd % 12] ?? 0) & 0xFFFF;
+  return (ids[rnd % 12] ?? 0) & 0xFFFF;
+}
+
+/** 1:1 décomp `BufferVarsForIVRater` (field_specials.c:1969-...) : IV Rater de Lavaridge —
+ *  VAR_0x8005 = somme des 6 IVs du mon (slot VAR_0x8004), VAR_0x8006/0x8007 = idx+valeur de
+ *  la stat au plus haut IV (tiebreak Random()&1). */
+export function BufferVarsForIVRater(): void {
+  const slot = VarGet('VAR_0x8004') ?? 0;
+  const mon = gPlayerParty[slot];
+  if (!mon || (GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return;
+  const ivStorage: number[] = [
+    mon.hpIV, mon.attackIV, mon.defenseIV, mon.speedIV, mon.spAttackIV, mon.spDefenseIV,
+  ];
+  let sum = 0;
+  for (let i = 0; i < 6; i++) sum += ivStorage[i];
+  VarSet('VAR_0x8005', sum & 0xFFFF);
+  let maxIdx = 0;
+  let maxVal = ivStorage[0];
+  for (let i = 1; i < 6; i++) {
+    if (maxVal < ivStorage[i]) {
+      maxIdx = i; maxVal = ivStorage[i];
+    } else if (maxVal === ivStorage[i]) {
+      if (Random() & 1) { maxIdx = i; maxVal = ivStorage[i]; }  // 1:1 tiebreak Random()&1.
+    }
+  }
+  VarSet('VAR_0x8006', maxIdx);
+  VarSet('VAR_0x8007', maxVal & 0xFFFF);
+}
+
+/** 1:1 décomp `GetBattleTowerSinglesStreak` (field_specials.c:1279-1282) :
+ *    return GetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK=32); (gameStats cleartext). */
+export function GetBattleTowerSinglesStreak(): number {
+  return (gSaveBlock1Ptr.gameStats?.[32] ?? 0) & 0xFFFF;
+}
+
+/** 1:1 décomp `GetSecretBaseNearbyMapName` (field_specials.c:1274-1277) :
+ *    GetMapName(gStringVar1, VarGet(VAR_SECRET_BASE_MAP), 0);
+ *  GetMapName (region_map.c) via bridge globalThis (mapSec → nom, anti-cycle). */
+export function GetSecretBaseNearbyMapName(): void {
+  const mapsecId = VarGet('VAR_SECRET_BASE_MAP');
+  const bridge = (globalThis as { __game_bridge?: {
+    GetMapNameByMapSecId?: (id: number) => string;
+  } }).__game_bridge;
+  setStringVar(1, bridge?.GetMapNameByMapSecId?.(mapsecId) ?? '');
+}

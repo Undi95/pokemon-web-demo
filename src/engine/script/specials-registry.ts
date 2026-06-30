@@ -44,6 +44,8 @@ import {
   SetRoute119Weather, SetRoute123Weather,
   IsFanClubMemberFanOfPlayer, GetNumFansOfPlayerInTrainerFanClub, ResetFanClub,
   SetPlayerGotFirstFans, UpdateTrainerFanClubGameClear, BufferFanClubTrainerName, Script_TryGainNewFanFromCounter,
+  ResetCyclingRoadChallengeData, Special_BeginCyclingRoadChallenge, Special_ShowDiploma, GetSlotMachineId,
+  BufferVarsForIVRater, GetBattleTowerSinglesStreak, GetSecretBaseNearbyMapName,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -261,11 +263,7 @@ registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
  *  Globals EWRAM_DATA `gBikeCyclingChallenge=bool8` (= field_specials.c:78),
  *  `gBikeCollisions=u8`, `sBikeCyclingTimer=u32`. Stockés ici comme statics
  *  module-level (= EWRAM_DATA équivalent). */
-registerSpecial('ResetCyclingRoadChallengeData', () => {
-  gBikeCycling.challenge = 0;
-  gBikeCycling.collisions = 0;
-  gBikeCycling.timer = 0;
-});
+registerSpecial('ResetCyclingRoadChallengeData', ResetCyclingRoadChallengeData);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c:161-166) :
  *  ```c
@@ -277,11 +275,7 @@ registerSpecial('ResetCyclingRoadChallengeData', () => {
  *  ```
  *  vblankCounter1 = frame counter ; notre équivalent = performance.now() | 0
  *  pour granularité comparable (= timer monotonic). */
-registerSpecial('Special_BeginCyclingRoadChallenge', () => {
-  gBikeCycling.challenge = 1;
-  gBikeCycling.collisions = 0;
-  gBikeCycling.timer = (performance.now() | 0) >>> 0;
-});
+registerSpecial('Special_BeginCyclingRoadChallenge', Special_BeginCyclingRoadChallenge);  // impl 1:1 → src/field_specials.ts
 
 // `gBikeCycling` (EWRAM field_specials.c) vit dans `game/field_specials.ts` (feuille zéro-dup
 // sans import lourd, pour éviter les cycles ESM avec bike.ts). Importé ci-dessus.
@@ -295,9 +289,7 @@ registerSpecial('Special_BeginCyclingRoadChallenge', () => {
  *  ```
  *  Dette R3 doc : CB2_ShowDiploma demande diploma screen UI subsystem entier
  *  U-tier (= sprite player + banner + pokedex completion check). */
-registerSpecial('Special_ShowDiploma', () => {
-  console.log('[special Special_ShowDiploma] dette R3 (cascade CB2_ShowDiploma diploma UI U-tier)');
-});
+registerSpecial('Special_ShowDiploma', Special_ShowDiploma);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `bool8 IsBadEggInParty(void)` (field_specials.c:1649) :
  *  ```c
@@ -1014,44 +1006,7 @@ registerSpecial('HasEnoughMonsForDoubleBattle', () => {
  *  }
  *  ```
  *  Notre projet sans PokeNews subsystem actif → toujours branch sSlotMachineIds. */
-registerSpecial('GetSlotMachineId', () => {
-  // 1:1 décomp constants/slot_machine.h enums.
-  const UNLUCKIEST = 0, UNLUCKIER = 1, UNLUCKY = 2;
-  const LUCKY = 3, LUCKIER = 4, LUCKIEST = 5;
-  const seeds = [12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6];
-  const ids = [
-    UNLUCKIEST, UNLUCKIER, UNLUCKIER,
-    UNLUCKY, UNLUCKY, UNLUCKY,
-    LUCKY, LUCKY, LUCKY,
-    LUCKIER, LUCKIER, LUCKIEST,
-  ];
-  const serviceDayIds = [
-    LUCKY, LUCKY, LUCKY, LUCKY, LUCKY, LUCKY,
-    LUCKIER, LUCKIER, LUCKIER, LUCKIER,
-    LUCKIEST, LUCKIEST,
-  ];
-  const slot = VarGet('VAR_0x8004');
-  const trends = gSaveBlock1Ptr.dewfordTrends?.[0];
-  if (!trends) return UNLUCKIEST;
-  const rnd = ((trends.trendiness ?? 0) + (trends.rand ?? 0)
-             + (seeds[slot] ?? 0)) >>> 0;
-  // 1:1 décomp IsPokeNewsActive(POKENEWS_GAME_CORNER) :
-  // notre pokeNews[] reste empty (= news subsystem pas porté). Retourne FALSE.
-  // ShouldApplyPokeNewsEffect(POKENEWS_GAME_CORNER) = TRUE par défaut switch
-  // (cf. tv.c:2693), donc si pokeNews[i].kind = GAME_CORNER + state = ACTIVE,
-  // alors service-day path. Sans entries → toujours regular path.
-  const pokeNews = gSaveBlock1Ptr.pokeNews ?? [];
-  let pokeNewsActive = false;
-  // 1:1 constants/tv.h : POKENEWS_GAME_CORNER = 2, POKENEWS_STATE_ACTIVE = 2.
-  for (let i = 0; i < 16; i++) {
-    const news = pokeNews[i];
-    if (news?.kind === 2 && news?.state === 2) { pokeNewsActive = true; break; }
-  }
-  if (pokeNewsActive) {
-    return (serviceDayIds[rnd % 12] ?? 0) & 0xFFFF;
-  }
-  return (ids[rnd % 12] ?? 0) & 0xFFFF;
-});
+registerSpecial('GetSlotMachineId', GetSlotMachineId);  // impl 1:1 → src/field_specials.ts
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
@@ -3573,36 +3528,7 @@ registerSpecial('ClearQuizLadyQuestionAndAnswer', () => {
  *  }
  *  ```
  *  IV Rater à Lavaridge ; le NPC parle de la stat avec le plus haut IV. */
-registerSpecial('BufferVarsForIVRater', () => {
-  const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gPlayerParty[slot];
-  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return;
-  // 1:1 décomp ivStorage[NUM_STATS=6] = IVs natifs Pokemon (HP/ATK/DEF/SPEED/SPATK/SPDEF).
-  const ivStorage: number[] = [
-    mon.hpIV, mon.attackIV, mon.defenseIV, mon.speedIV, mon.spAttackIV, mon.spDefenseIV,
-  ];
-  // VAR_0x8005 = sum.
-  let sum = 0;
-  for (let i = 0; i < 6; i++) sum += ivStorage[i];
-  VarSet('VAR_0x8005', sum & 0xFFFF);
-  // VAR_0x8006/0x8007 = max stat idx + value (Random tiebreak).
-  let maxIdx = 0;
-  let maxVal = ivStorage[0];
-  for (let i = 1; i < 6; i++) {
-    if (maxVal < ivStorage[i]) {
-      maxIdx = i;
-      maxVal = ivStorage[i];
-    } else if (maxVal === ivStorage[i]) {
-      // 1:1 décomp Random() & 1 tiebreak.
-      if (Random() & 1) {
-        maxIdx = i;
-        maxVal = ivStorage[i];
-      }
-    }
-  }
-  VarSet('VAR_0x8006', maxIdx);
-  VarSet('VAR_0x8007', maxVal & 0xFFFF);
-});
+registerSpecial('BufferVarsForIVRater', BufferVarsForIVRater);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session B43 batch — 2 specials Battle Tower stat / Secret Base 1:1 strict ─
 
@@ -3614,9 +3540,7 @@ registerSpecial('BufferVarsForIVRater', () => {
  *  ```
  *  GAME_STAT_BATTLE_TOWER_SINGLES_STREAK=32. Notre projet stocke gameStats
  *  cleartext (= aligné GetGameStat porté). */
-registerSpecial('GetBattleTowerSinglesStreak', () => {
-  return (gSaveBlock1Ptr.gameStats?.[32] ?? 0) & 0xFFFF;
-});
+registerSpecial('GetBattleTowerSinglesStreak', GetBattleTowerSinglesStreak);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `GetSecretBaseNearbyMapName` (field_specials.c:1274-1277) :
  *  ```c
@@ -3627,14 +3551,7 @@ registerSpecial('GetBattleTowerSinglesStreak', () => {
  *  Cascade R3 partielle : GetMapName demande mapSec → name lookup table
  *  (= region_map.c). Notre VAR_SECRET_BASE_MAP est numeric MAPSEC_*.
  *  Bridge via __game_bridge.GetMapNameByMapSecId si dispo (= pattern aligné). */
-registerSpecial('GetSecretBaseNearbyMapName', () => {
-  const mapsecId = VarGet('VAR_SECRET_BASE_MAP');
-  const bridge = (globalThis as { __game_bridge?: {
-    GetMapNameByMapSecId?: (id: number) => string;
-  } }).__game_bridge;
-  const mapName = bridge?.GetMapNameByMapSecId?.(mapsecId) ?? '';
-  setStringVar(1, mapName);
-});
+registerSpecial('GetSecretBaseNearbyMapName', GetSecretBaseNearbyMapName);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session B41 batch — 2 specials Lilycove Lady 1:1 strict ─────────────
 
