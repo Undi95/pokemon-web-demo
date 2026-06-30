@@ -351,27 +351,9 @@ export { CalculatePlayerPartyCount, GetMonsStateToDoubles, CalculateEnemyPartyCo
 
 // ─── CheckPartyPokerus (= 1:1 décomp pokemon.c:6101-6127) ────────────────
 
-/** 1:1 décomp `CheckPartyPokerus(party, selection)` (pokemon.c:6101-6127).
- *  selection = bitmask des slots à scanner (= 1<<i). Si selection==0, scan
- *  uniquement slot 0. Retourne bitmask des slots avec pokerus actif (bit
- *  bas 4 bits non zéro), ou 1 si selection==0 et slot 0 a pokerus. */
-export function CheckPartyPokerus(party: Pokemon[], selection: number): number {
-  let retVal = 0;
-  let partyIndex = 0;
-  let curBit = 1;
-  if (selection) {
-    do {
-      if ((selection & 1) && ((GetMonData(party[partyIndex], MON_DATA_POKERUS) as number) & 0xF))
-        retVal |= curBit;
-      partyIndex++;
-      curBit <<= 1;
-      selection >>= 1;
-    } while (selection);
-  } else if ((GetMonData(party[0], MON_DATA_POKERUS) as number) & 0xF) {
-    retVal = 1;
-  }
-  return retVal;
-}
+// GetMonEVCount / CheckPartyPokerus / UpdatePartyPokerusTime : consolidés vers le foyer
+// pokemon.c (src/pokemon.ts, = lisent GetMonData/gPlayerParty au foyer). Re-export pour compat.
+export { GetMonEVCount, CheckPartyPokerus, UpdatePartyPokerusTime } from '../../pokemon';
 
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
@@ -520,29 +502,6 @@ export function SetWildMonHeldItem(): void {
 // Sonde déterministe : SetWildMonHeldItem. Sans effet jeu.
 (globalThis as Record<string, unknown>).__SetWildMonHeldItem = SetWildMonHeldItem;
 
-/** 1:1 décomp `UpdatePartyPokerusTime(days)` (pokemon.c:6157) : pour chaque mon
- *  encore infecté (compteur de jours = low nibble 0xF non nul), décrémente les jours
- *  de `days` ; si jours restants < days OU days > 4 → guérison (`&= 0xF0` : la souche
- *  high nibble reste, jours = 0) ; si l'octet tombe à 0 → 0x10 (marqueur conservé).
- *  Opère sur gPlayerParty (Pokemon struct numérique). */
-export function UpdatePartyPokerusTime(days: number): void {
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    if (mon && mon.species) {
-      let pokerus = mon.pokerus;
-      if (pokerus & 0xF) {
-        if ((pokerus & 0xF) < days || days > 4)
-          pokerus &= 0xF0;
-        else
-          pokerus -= days;
-        if (pokerus === 0)
-          pokerus = 0x10;
-        mon.pokerus = pokerus;
-      }
-    }
-  }
-}
-
 // ─── MonGainEVs (= 1:1 décomp pokemon.c:5975-6052) ───────────────────────
 
 const _MAX_TOTAL_EVS = 510;
@@ -612,22 +571,6 @@ function _getNatureFromPersonality(personality: number): number {
 // GetNature : consolidé vers le foyer pokemon.c (src/pokemon.ts, à côté de
 // GetNatureFromPersonality). Le helper privé _getNatureFromPersonality reste ici
 // (utilisé par CalculateMonStats). La sonde dev __GetNature suit l'impl dans pokemon.ts.
-
-/** 1:1 décomp `u16 GetMonEVCount(struct Pokemon *mon)` (pokemon.c:6054-6062) :
- *  `for (i = 0; i < NUM_STATS; i++) count += GetMonData(mon, MON_DATA_HP_EV + i);`.
- *  Somme des 6 EVs (HP/ATK/DEF/SPEED/SPATK/SPDEF — constantes contiguës 26..31).
- *  Utilisé par Special_AreLeadMonEVsMaxedOut (Dame du Ruban Effort à Yoda, EVs
- *  totaux >= MAX_TOTAL_EVS=510). */
-export function GetMonEVCount(mon: Pokemon): number {
-  let count = 0;
-  for (let i = 0; i < 6 /* NUM_STATS */; i++) {
-    count += GetMonData(mon, MON_DATA_HP_EV + i) as number;
-  }
-  return count;
-}
-
-// Exposition dev (sonde déterministe GetMonEVCount), sans effet sur le jeu.
-(globalThis as Record<string, unknown>).__GetMonEVCount = GetMonEVCount;
 
 /** Adaptateur 0-based → miroir `ModifyStatByNature` (1-based décomp : STAT_ATK=1…
  *  STAT_SPDEF=5). Ce fichier passe un statIndex 0-based (0=ATK…4=SPDEF, hérité de

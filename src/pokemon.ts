@@ -276,6 +276,63 @@ export function CalculateEnemyPartyCount(): number {
   return count;
 }
 
+/** 1:1 décomp `u16 GetMonEVCount(struct Pokemon *mon)` (pokemon.c:6054-6062) :
+ *  somme des 6 EVs (HP..SPDEF). Consolidé depuis party-storage.ts. */
+export function GetMonEVCount(mon: Pokemon): number {
+  let count = 0;
+  for (let i = 0; i < 6 /* NUM_STATS */; i++) {
+    count += GetMonData(mon, MON_DATA_HP_EV + i) as number;
+  }
+  return count;
+}
+// Exposition dev (sonde déterministe GetMonEVCount), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetMonEVCount = GetMonEVCount;
+
+/** 1:1 décomp `CheckPartyPokerus(party, selection)` (pokemon.c:6101-6127).
+ *  selection = bitmask des slots à scanner (= 1<<i). Si selection==0, scan
+ *  uniquement slot 0. Retourne bitmask des slots avec pokerus actif (bit
+ *  bas 4 bits non zéro), ou 1 si selection==0 et slot 0 a pokerus. */
+export function CheckPartyPokerus(party: Pokemon[], selection: number): number {
+  let retVal = 0;
+  let partyIndex = 0;
+  let curBit = 1;
+  if (selection) {
+    do {
+      if ((selection & 1) && ((GetMonData(party[partyIndex], MON_DATA_POKERUS) as number) & 0xF))
+        retVal |= curBit;
+      partyIndex++;
+      curBit <<= 1;
+      selection >>= 1;
+    } while (selection);
+  } else if ((GetMonData(party[0], MON_DATA_POKERUS) as number) & 0xF) {
+    retVal = 1;
+  }
+  return retVal;
+}
+
+/** 1:1 décomp `UpdatePartyPokerusTime(days)` (pokemon.c:6157) : pour chaque mon
+ *  encore infecté (compteur de jours = low nibble 0xF non nul), décrémente les jours
+ *  de `days` ; si jours restants < days OU days > 4 → guérison (`&= 0xF0` : la souche
+ *  high nibble reste, jours = 0) ; si l'octet tombe à 0 → 0x10 (marqueur conservé).
+ *  Opère sur gPlayerParty (Pokemon struct numérique). */
+export function UpdatePartyPokerusTime(days: number): void {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if (mon && mon.species) {
+      let pokerus = mon.pokerus;
+      if (pokerus & 0xF) {
+        if ((pokerus & 0xF) < days || days > 4)
+          pokerus &= 0xF0;
+        else
+          pokerus -= days;
+        if (pokerus === 0)
+          pokerus = 0x10;
+        mon.pokerus = pokerus;
+      }
+    }
+  }
+}
+
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────
 // Accesseurs universels mon-data. Consolidés depuis party-storage.ts vers le foyer
 // pokemon.c (= où ils sont définis dans la décomp). party-storage.ts re-exporte pour
