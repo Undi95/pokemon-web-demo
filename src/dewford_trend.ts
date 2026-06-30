@@ -18,14 +18,12 @@
  *  la troncature GBA (critique pour `gainingTrendiness = (quotient ^ 1) & 1`).
  *
  *  Consolidation 1:1 : toute la logique de dewford_trend.c vit ICI (foyer miroir) —
- *  10/13 fonctions. Les specials (IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex)
+ *  11/13 fonctions. Les specials (IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex)
  *  sont enregistrés depuis specials-registry (table gSpecials) qui importe ces fns.
- *  TrySetTrendyPhrase est appelé par le flow easy-chat (easy_chat.c:2980).
+ *  TrySetTrendyPhrase est appelé par le flow easy-chat (easy_chat.c:2980). InitDewfordTrend
+ *  est câblé dans NewGameInit (new-game-flags.ts) = NewGameInitData (new_game.c:192).
  *
- *  ── Différé (3/13) ──
- *   - `InitDewfordTrend` (seed des 5 tendances à la nouvelle partie) : BLOQUÉ sur
- *     `GetRandomEasyChatWordFromGroup` + EC_GROUP_CONDITIONS/LIFESTYLE/HOBBIES
- *     (infra word-group d'easy_chat pas encore portée). À câbler dans NewGameInitData.
+ *  ── Différé (2/13) ──
  *   - `ReceiveDewfordTrendData` + `GetSavedTrendIndex` : échange d'enregistrements (link).
  *   - `TryPutTrendWatcherOnAir` (appelé par TrySetTrendyPhrase) : TV « Trend Watcher »
  *     (tv.c) pas porté → l'appel est commenté.
@@ -34,12 +32,17 @@
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { Random } from './random';
 import { VarGet, FlagGet, FlagSet, gSpecialVar } from './engine/script/script-vars';
-import { ConvertEasyChatWordsToString } from './easy_chat';
+import { ConvertEasyChatWordsToString, GetRandomEasyChatWordFromGroup } from './easy_chat';
 import { gStringVar1, StringCopy } from './string_util';
 import { encodeOwText } from './text';
 import type { DewfordTrend } from './engine/save/save-blocks';
 
 const SAVED_TRENDS_COUNT = 5;  // 1:1 décomp constants/global.h:65.
+
+// 1:1 décomp include/constants/easy_chat.h — groupes de mots utilisés par InitDewfordTrend.
+const EC_GROUP_CONDITIONS = 10;
+const EC_GROUP_LIFESTYLE = 12;
+const EC_GROUP_HOBBIES = 13;
 
 // 1:1 décomp enum (dewford_trend.c:58-62).
 const SORT_MODE_NORMAL = 0;
@@ -92,6 +95,26 @@ function SortTrends(trends: DewfordTrend[], numTrends: number, mode: number): vo
       }
     }
   }
+}
+
+/** 1:1 décomp `InitDewfordTrend(void)` (dewford_trend.c:71-88) : seed les
+ *  SAVED_TRENDS_COUNT tendances à la nouvelle partie — mot[0] ∈ EC_GROUP_CONDITIONS,
+ *  mot[1] ∈ LIFESTYLE ou HOBBIES (pile/face), gainingTrendiness aléatoire, puis
+ *  SeedTrendRng + tri. Appelée par NewGameInitData (new_game.c:192) → câblée dans
+ *  NewGameInit (new-game-flags.ts). */
+export function InitDewfordTrend(): void {
+  const trends = gSaveBlock1Ptr.dewfordTrends;
+  for (let i = 0; i < SAVED_TRENDS_COUNT; i++) {
+    trends[i].words[0] = GetRandomEasyChatWordFromGroup(EC_GROUP_CONDITIONS);
+    if (Random() & 1) {
+      trends[i].words[1] = GetRandomEasyChatWordFromGroup(EC_GROUP_LIFESTYLE);
+    } else {
+      trends[i].words[1] = GetRandomEasyChatWordFromGroup(EC_GROUP_HOBBIES);
+    }
+    trends[i].gainingTrendiness = Random() & 1;
+    SeedTrendRng(trends[i]);
+  }
+  SortTrends(trends, SAVED_TRENDS_COUNT, SORT_MODE_NORMAL);
 }
 
 /** 1:1 décomp `UpdateDewfordTrendPerDay(days)` (dewford_trend.c:170) : fait évoluer

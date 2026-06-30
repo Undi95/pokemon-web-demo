@@ -10,6 +10,7 @@
 
 import { gEasyChatWordsByGroup } from './data/easy-chat-words';
 import { gSpeciesNames, gMoveNames } from './engine/data/game-data';
+import { Random } from './random';
 
 // ─── 1:1 décomp include/constants/easy_chat.h ────────────────────────────────
 const EC_MASK_BITS = 9;
@@ -59,6 +60,28 @@ function GetEasyChatWord(groupId: number, index: number): string {
       return (arr && arr[index]) ?? '';
     }
   }
+}
+
+/** 1:1 décomp `EC_WORD(groupId, index)` (easy_chat.h) : encode un mot = (group << 9) | index. */
+function EC_WORD(groupId: number, index: number): number {
+  return (((groupId << EC_MASK_BITS) | index) & 0xFFFF) >>> 0;
+}
+
+/** 1:1 décomp `u16 GetRandomEasyChatWordFromGroup(u16 groupId)` (easy_chat.c:5354) :
+ *    u16 index = Random() % gEasyChatGroups[groupId].numWords;
+ *    if (groupId == POKEMON|POKEMON_NATIONAL|MOVE_1|MOVE_2)
+ *        index = gEasyChatGroups[groupId].wordData.valueList[index];
+ *    return EC_WORD(groupId, index);
+ *
+ *  ⚠️ Groupes POKEMON/MOVE (valueList) : notre easy_chat indexe gSpeciesNames/gMoveNames
+ *  DIRECTEMENT (pas de valueList compacte GBA) → l'index EST déjà l'id final, cohérent
+ *  avec notre EC_GROUP/GetEasyChatWord. La sélection du sous-ensemble GBA (valueList) est
+ *  une divergence assumée côté easy_chat ; non utilisée par InitDewfordTrend (groupes simples). */
+export function GetRandomEasyChatWordFromGroup(groupId: number): number {
+  const numWords = _numWordsInGroup(groupId);
+  if (numWords <= 0) return EC_EMPTY_WORD;  // garde anti-NaN (groupe vide → mot vide).
+  const index = Random() % numWords;
+  return EC_WORD(groupId, index);
 }
 
 /** 1:1 décomp `bool8 IsEasyChatWordInvalid(u16 easyChatWord)` (easy_chat.c).

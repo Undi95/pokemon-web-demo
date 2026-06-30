@@ -25,6 +25,7 @@ import { gSaveBlock2Ptr } from './save-block-state';
 import { SetMoney } from '../../money';
 import { ClearBerryTrees } from '../../berry';
 import { ResetAllBerries } from './reset-all-berries';
+import { InitDewfordTrend } from '../../dewford_trend';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).
  *  159 flags à SET au démarrage d'une nouvelle partie. */
@@ -217,6 +218,11 @@ export function NewGameInit(): void {
   // ⇒ argent de départ standard du jeu (= 3000$ pour acheter PokéBalls/Potions
   // à Oldale Town / Petalburg Mart). Sans ça, le joueur boot à 0$.
   SetMoney(3000);
+  // 1:1 décomp `NewGameInitData` (new_game.c:192) : InitDewfordTrend() — seed les 5
+  // tendances de Poivressel avec des mots easy-chat aléatoires (CONDITIONS + LIFESTYLE/
+  // HOBBIES) + trendiness. Sans ça, dewfordTrends restait à words=[0,0] (phrase tendance
+  // vide au Hall ; trend->rand=0 fausse aussi les tuiles Feebas/Match Call/machine à sous).
+  InitDewfordTrend();
   // 1:1 décomp `NewGameInitData` (new_game.c:186-187) :
   //   ClearBag();
   //   NewGameInitPCItems();
