@@ -52,6 +52,9 @@ import { AddTextPrinterParameterized3 } from './menu';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
 import { ItemIsMail } from './mail_data';
+import { AddBagItem } from './engine/bag/bag';
+import { getItemKeyById } from '../harness/runtime/data-tables';
+import { GetItemName } from './item';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
@@ -308,7 +311,7 @@ interface PartyAssets {
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
   | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg'
-  | 'fieldmove_yesno' = 'idle';
+  | 'fieldmove_yesno' | 'helditem_msg' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -338,6 +341,9 @@ let _hpAnimFrameCounter = 0;  // pour throttler (= 1 HP par 2 frames typique).
 let _actionCursor = 0;
 let _actionWindowId = -1;
 let _actionList: number[] = [];  // MENU_SUMMARY=0, MENU_ITEM=3, MENU_CANCEL1=2 (= notre order)
+// 1:1 décomp : distingue le menu d'action mon (PARTY_MSG_DO_WHAT_WITH_MON) du
+// sous-menu objet ouvert par CursorCb_Item (ACTIONS_ITEM, PARTY_MSG_DO_WHAT_WITH_ITEM).
+let _actionSubMenu: 'mon' | 'item' = 'mon';
 /** 1:1 décomp `sPartyMenuInternal->exitCallback` — callback de sortie
  *  TRANSITOIRE, consommé UNE fois dans Task_ClosePartyMenuAndSetCB2
  *  (party_menu.c:1238). Distinct de `gPartyMenu.exitCallback` (= notre
@@ -988,7 +994,10 @@ function _drawMsg(): void {
   let msg: string;
   let template: WindowTemplate;
   if (_phase === 'action_menu') {
-    msg = getString('gText_DoWhatWithPokemon');  // "Que faire avec ce PKMN?"
+    // 1:1 décomp : le sous-menu objet (CursorCb_Item → ACTIONS_ITEM) affiche
+    // PARTY_MSG_DO_WHAT_WITH_ITEM ("Que faire avec un objet?") ; sinon le menu
+    // d'action mon affiche PARTY_MSG_DO_WHAT_WITH_MON ("Que faire avec ce PKMN?").
+    msg = getString(_actionSubMenu === 'item' ? 'gText_DoWhatWithItem' : 'gText_DoWhatWithPokemon');
     template = DO_WHAT_WITH_MON_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_SWITCH) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_MOVE_TO_WHERE)
@@ -999,7 +1008,7 @@ function _drawMsg(): void {
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
       || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
       || _phase === 'field_move_err' || _phase === 'softboiled_msg'
-      || _phase === 'fieldmove_yesno') && _itemUsedMsgText) {
+      || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
@@ -1741,6 +1750,15 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
     _actionList.push(MENU_ITEM);
   }
   _actionList.push(MENU_CANCEL1);
+  _actionSubMenu = 'mon';   // menu d'action mon (≠ sous-menu objet)
+  _spawnActionWindow();
+}
+
+/** Spawn l'action window (fenêtre de sélection à droite) depuis `_actionList`
+ *  courant. Partagé par _openActionMenu (menu d'action mon) et _cursorCbItem
+ *  (sous-menu objet ACTIONS_ITEM). 1:1 décomp `DisplaySelectionWindow`
+ *  (party_menu.c:2533) : window sizé par le nombre d'actions. */
+function _spawnActionWindow(): void {
   _actionCursor = 0;
   const numActions = _actionList.length;
   // 1:1 décomp window template : bg=2 width=10 height=(numActions*2).
@@ -1758,6 +1776,94 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
   LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
   _phase = 'action_menu';
   _drawMsg();
+  _renderActionMenuContents();
+}
+
+// ─── Sous-menu OBJET (cascade CursorCb_Item) — 1:1 décomp party_menu.c ───────
+// ACTIONS_ITEM = {MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2} (DONNER/PRENDRE/RETOUR).
+// PRENDRE + RETOUR portés ici ; DONNER (cascade bag-give CB2) = lot suivant.
+
+/** Retire le window du sous-menu objet (1:1 PartyMenuRemoveWindow ×2). */
+function _removeActionWindow(): void {
+  if (_actionWindowId >= 0) {
+    ClearStdWindowAndFrame(_actionWindowId, false);
+    CopyWindowToVram(_actionWindowId, 3);
+    RemoveWindow(_actionWindowId);
+    _actionWindowId = -1;
+  }
+}
+
+/** 1:1 décomp `CursorCb_Item` (party_menu.c:3074) : remplace le menu d'action
+ *  mon par le sous-menu objet ACTIONS_ITEM + message DO_WHAT_WITH_ITEM.
+ *  SE_SELECT déjà joué par le dispatch. */
+function _cursorCbItem(): void {
+  _removeActionWindow();
+  _actionList = [MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2];  // ACTIONS_ITEM
+  _actionSubMenu = 'item';
+  _spawnActionWindow();
+}
+
+/** 1:1 décomp `TryTakeMonItem` (party_menu.c:1813) : retire l'objet tenu vers le
+ *  sac. Retourne 0 (ne tient rien) / 1 (sac plein) / 2 (pris). */
+function TryTakeMonItem(mon: Pokemon): number {
+  const item = mon.heldItem;
+  if (!item) return 0;                                          // ITEM_NONE
+  if (AddBagItem(getItemKeyById(item), 1) === false) return 1;  // sac plein
+  mon.heldItem = 0;                                             // SetMonData(HELD_ITEM, ITEM_NONE)
+  return 2;
+}
+
+/** 1:1 décomp `CursorCb_TakeItem` (party_menu.c:3273) : PRENDRE l'objet tenu →
+ *  sac + message selon résultat, puis refresh l'icône + retour choix-mon.
+ *  SE_SELECT déjà joué par le dispatch. */
+function _cursorCbTakeItem(): void {
+  const mon = _slotMon(_slotId);
+  if (!mon) return;
+  const item = mon.heldItem;  // capturé AVANT TryTakeMonItem (1:1 : item lu en tête)
+  _removeActionWindow();
+  let msg: string;
+  switch (TryTakeMonItem(mon)) {
+    case 0:  // 1:1 :3284 ne tient rien → gText_PkmnNotHolding ("{nick} ne tient rien.")
+      msg = (getString('gText_PkmnNotHolding') || '')
+        .replace('{STR_VAR_1}', mon.nickname).replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      break;
+    case 1:  // 1:1 :3289 sac plein → BufferBagFullCantTakeItemMessage
+      msg = (getString('gText_BagFullCouldNotRemoveItem') || '')
+        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      break;
+    default: // 2 = pris → DisplayTookHeldItemMessage ("Reçu {item} de {nick}.")
+      msg = (getString('gText_ReceivedItemFromPkmn') || '')
+        .replace('{STR_VAR_2}', GetItemName(item)).replace('{STR_VAR_1}', mon.nickname)
+        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      break;
+  }
+  // 1:1 décomp Task_UpdateHeldItemSprite : refresh l'icône d'objet tenu du slot
+  // (= disparaît si l'objet a été pris).
+  _updatePartyMonHeldItem(_slotId);
+  _itemUsedMsgText = msg;
+  _actionList = [];
+  _actionCursor = 0;
+  _actionSubMenu = 'mon';
+  _phase = 'helditem_msg';
+  _drawMsg();
+}
+
+/** 1:1 décomp `CursorCb_Cancel2` (party_menu.c:3482) : RETOUR du sous-menu objet
+ *  → reconstruit le menu d'action mon (GetPartyMenuActionsType = ACTIONS_NONE →
+ *  field actions). SE_SELECT déjà joué par le dispatch (→ playSe=false). */
+function _cursorCbCancel2(rt: ReturnType<typeof getRuntime>): void {
+  _removeActionWindow();
+  _openActionMenu(rt, false);
+}
+
+/** 1:1 décomp `CursorCb_Give` (party_menu.c:3086) : exitCallback =
+ *  CB2_SelectBagItemToGive (ouvre le sac en mode "donner à un mon") + close.
+ *  DETTE (lot suivant) : la cascade bag-give (CB2_SelectBagItemToGive →
+ *  GoToBagMenu(ITEMMENULOCATION_PARTY) → CB2_GiveHoldItem → GiveItemToMon)
+ *  demande le handoff CB2 party↔bag en mode give. Reste sur le sous-menu en
+ *  attendant ce wire. */
+function _cursorCbGive(): void {
+  console.log('[party-screen] DONNER → dette : cascade bag-give (CB2_SelectBagItemToGive) à porter (lot suivant)');
   _renderActionMenuContents();
 }
 
@@ -2592,12 +2698,15 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
     } else if (action === MENU_SWITCH /* ORDRE */) {
       _cursorCbSwitch();
     } else if (action === MENU_ITEM /* OBJET */) {
-      // Dette R3 documentée : 1:1 décomp `CursorCb_Item` (party_menu.c:2786)
-      // cascade vers DisplaySelectionWindow(ACTIONS_ITEM) → MENU_GIVE/MENU_TAKE_ITEM
-      // sub-menu → CB2 swap vers bag-screen filtré. Demande wire CB2 swap
-      // bag-screen + sub-action handlers (= TakeMail/TakeItem/Give item from bag).
-      console.log('[party-screen] OBJET → dette R3 (cascade CursorCb_Item U-tier)');
-      _closeActionMenu();
+      // 1:1 décomp `CursorCb_Item` (party_menu.c:3074) : ouvre le sous-menu objet
+      // ACTIONS_ITEM = DONNER/PRENDRE/RETOUR.
+      _cursorCbItem();
+    } else if (action === MENU_GIVE /* DONNER */) {
+      _cursorCbGive();
+    } else if (action === MENU_TAKE_ITEM /* PRENDRE */) {
+      _cursorCbTakeItem();
+    } else if (action === MENU_CANCEL2 /* RETOUR (sous-menu objet) */) {
+      _cursorCbCancel2(rt);
     } else if (action === MENU_MAIL /* MAIL */) {
       // Dette R3 documentée : 1:1 décomp `CursorCb_Mail` (party_menu.c:2807)
       // cascade vers DisplaySelectionWindow(ACTIONS_MAIL) → READ/TAKE_MAIL.
@@ -2647,7 +2756,9 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // A/B → REVIENT au choix du mon (≈ Task_ReturnToChooseMonAfterText /
   // Task_CancelAfterAorBPress — ne ferme PAS le menu). L'action window a déjà
   // été retiré par CursorCb_FieldMove → on réaffiche juste "Choisir un POKéMON".
-  if (_phase === 'field_move_err') {
+  // 'helditem_msg' = même pattern : 1:1 décomp Task_UpdateHeldItemSprite →
+  // Task_ReturnToChooseMonAfterText (party_menu.c:3267) — A/B → retour choix-mon.
+  if (_phase === 'field_move_err' || _phase === 'helditem_msg') {
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (newKeys & (KEY_A | KEY_B)) {
@@ -2655,6 +2766,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       _itemUsedMsgText = null;
       _actionList = [];
       _actionCursor = 0;
+      _actionSubMenu = 'mon';
       _phase = 'open';
       _drawMsg();
     }
