@@ -40,7 +40,9 @@
  */
 
 // ─── Side-effect imports : préservent l'init ESM eager chain ────────────────
-import './pokemon/pokemon';
+// (ex `./pokemon/pokemon` = ancien 2e modèle, dissous 2026-07-02 → le foyer
+//  pokemon.c `src/pokemon.ts` reprend l'intention de chargement eager).
+import '../pokemon';
 import './bag/bag';
 import '../save';
 import '../load_save';

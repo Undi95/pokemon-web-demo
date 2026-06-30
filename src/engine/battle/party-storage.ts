@@ -20,7 +20,6 @@
 
 import { GetPlayerNameString } from '../../../include/text';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { speciesEnumToDexId, moveEnumToDexId } from '../pokemon/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
 import type { PokemonStorage } from '../save/save-blocks';
 import { VarGet, VarSet, FlagClear } from '../script/script-vars';
@@ -553,9 +552,6 @@ interface BattleMonLike {
 
 // GetAbilityBySpecies / GetMonAbility : consolidés vers le foyer pokemon.c (src/pokemon.ts).
 // Import-back (users internes l.~480/960) + re-export = via le bloc d'import en tête du fichier.
-
-// Silence unused warnings for helpers exposed for future reverse-conversion.
-void speciesEnumToDexId; void moveEnumToDexId;
 
 // ─── EmitSetMonData persistance bridge (Phase 1.4 wire) ────────────────────
 
