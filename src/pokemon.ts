@@ -74,6 +74,10 @@ import {
 } from './engine/battle/constants';
 import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
+// getSpeciesInfo (table espèces) + reverse/resolveDecompConstant : pour GetAbilityBySpecies.
+// game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
+import { getSpeciesInfo } from './engine/data/game-data';
+import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 // Constantes MON_DATA_* (enum include/pokemon.h) lues par GetMonData/SetMonData.
 // Restent définies dans party-storage (39 fichiers les importent de là) → import ici.
 // Lien 2-sens runtime-only avec party-storage : SÛR (lues seulement dans les fns, jamais
@@ -331,6 +335,29 @@ export function UpdatePartyPokerusTime(days: number): void {
       }
     }
   }
+}
+
+/** 1:1 décomp `GetAbilityBySpecies(species, abilityNum)` (pokemon.c).
+ *  Lookup `gSpeciesInfo[species].abilities[abilityNum]`. Retourne l'ability id
+ *  (= ABILITY_*) ou 0 (ABILITY_NONE) si pas trouvé. Consolidé depuis party-storage.ts. */
+export function GetAbilityBySpecies(species: number, abilityNum: number): number {
+  // Convert species id → SPECIES_X enum string for lookup.
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_');
+  if (!speciesEnum) return 0;
+  const info = getSpeciesInfo(speciesEnum);
+  if (!info) return 0;
+  const abilityStr = info.abilities[abilityNum & 1] || info.abilities[0] || '';
+  if (!abilityStr || abilityStr === 'ABILITY_NONE') return 0;
+  const id = resolveDecompConstant(abilityStr);
+  return typeof id === 'number' ? id : 0;
+}
+
+/** 1:1 décomp pokemon.c `u8 GetMonAbility(struct Pokemon *mon)` :
+ *  GetAbilityBySpecies(MON_DATA_SPECIES, MON_DATA_ABILITY_NUM) du mon. */
+export function GetMonAbility(mon: Pokemon): number {
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM) as number;
+  return GetAbilityBySpecies(species, abilityNum);
 }
 
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────

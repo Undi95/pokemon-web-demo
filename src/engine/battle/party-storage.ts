@@ -167,9 +167,11 @@ const MAX_MON_MOVES_PARTY = 4;
 // gPlayerParty / GetMonData sont définis dans la décomp). Import pour usage local + RE-EXPORT
 // pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
 // changement (struct/createEmptyPokemon/GetMonData/SetMonData/gPlayerParty/gEnemyParty).
-import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty } from '../../pokemon';
+import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
+  GetMonAbility, GetAbilityBySpecies } from '../../pokemon';
 import type { Pokemon } from '../../pokemon';
-export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty };
+export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
+  GetMonAbility, GetAbilityBySpecies };
 export type { Pokemon };
 
 /** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
@@ -997,28 +999,8 @@ interface BattleMonLike {
 
 // ─── GetAbilityBySpecies (= 1:1 décomp pokemon.c) ─────────────────────────
 
-/** 1:1 décomp `GetAbilityBySpecies(species, abilityNum)` (pokemon.c).
- *  Lookup `gSpeciesInfo[species].abilities[abilityNum]`. Retourne l'ability id
- *  (= ABILITY_*) ou 0 (ABILITY_NONE) si pas trouvé. */
-export function GetAbilityBySpecies(species: number, abilityNum: number): number {
-  // Convert species id → SPECIES_X enum string for lookup.
-  const speciesEnum = reverseDecompConstant(species, 'SPECIES_');
-  if (!speciesEnum) return 0;
-  const info = getSpeciesInfo(speciesEnum);
-  if (!info) return 0;
-  const abilityStr = info.abilities[abilityNum & 1] || info.abilities[0] || '';
-  if (!abilityStr || abilityStr === 'ABILITY_NONE') return 0;
-  const id = resolveDecompConstant(abilityStr);
-  return typeof id === 'number' ? id : 0;
-}
-
-/** 1:1 décomp pokemon.c `u8 GetMonAbility(struct Pokemon *mon)` :
- *  GetAbilityBySpecies(MON_DATA_SPECIES, MON_DATA_ABILITY_NUM) du mon. */
-export function GetMonAbility(mon: Pokemon): number {
-  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
-  const abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM) as number;
-  return GetAbilityBySpecies(species, abilityNum);
-}
+// GetAbilityBySpecies / GetMonAbility : consolidés vers le foyer pokemon.c (src/pokemon.ts).
+// Import-back (users internes l.~480/960) + re-export = via le bloc d'import en tête du fichier.
 
 // Silence unused warnings for helpers exposed for future reverse-conversion.
 void speciesEnumToDexId; void moveEnumToDexId;
