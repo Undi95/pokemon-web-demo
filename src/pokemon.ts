@@ -71,6 +71,34 @@ import {
 } from './engine/battle/constants';
 import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
+// Constantes MON_DATA_* (enum include/pokemon.h) lues par GetMonData/SetMonData.
+// Restent définies dans party-storage (39 fichiers les importent de là) → import ici.
+// Lien 2-sens runtime-only avec party-storage : SÛR (lues seulement dans les fns, jamais
+// à l'init ; createEmptyPokemon/GetMonData sont des `function` hoistées). Vérifié au restart.
+import {
+  MON_DATA_PERSONALITY, MON_DATA_OT_ID, MON_DATA_NICKNAME, MON_DATA_LANGUAGE,
+  MON_DATA_SANITY_IS_BAD_EGG, MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG,
+  MON_DATA_OT_NAME, MON_DATA_MARKINGS, MON_DATA_CHECKSUM, MON_DATA_ENCRYPT_SEPARATOR,
+  MON_DATA_SPECIES, MON_DATA_HELD_ITEM, MON_DATA_MOVE1, MON_DATA_MOVE2, MON_DATA_MOVE3,
+  MON_DATA_MOVE4, MON_DATA_PP1, MON_DATA_PP2, MON_DATA_PP3, MON_DATA_PP4,
+  MON_DATA_PP_BONUSES, MON_DATA_COOL, MON_DATA_BEAUTY, MON_DATA_CUTE, MON_DATA_EXP,
+  MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV, MON_DATA_SPEED_EV, MON_DATA_SPATK_EV,
+  MON_DATA_SPDEF_EV, MON_DATA_FRIENDSHIP, MON_DATA_SMART, MON_DATA_POKERUS,
+  MON_DATA_MET_LOCATION, MON_DATA_MET_LEVEL, MON_DATA_MET_GAME, MON_DATA_POKEBALL,
+  MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV, MON_DATA_SPEED_IV, MON_DATA_SPATK_IV,
+  MON_DATA_SPDEF_IV, MON_DATA_IS_EGG, MON_DATA_ABILITY_NUM, MON_DATA_TOUGH, MON_DATA_SHEEN,
+  MON_DATA_OT_GENDER, MON_DATA_COOL_RIBBON, MON_DATA_BEAUTY_RIBBON, MON_DATA_CUTE_RIBBON,
+  MON_DATA_SMART_RIBBON, MON_DATA_TOUGH_RIBBON, MON_DATA_STATUS, MON_DATA_LEVEL, MON_DATA_HP,
+  MON_DATA_MAX_HP, MON_DATA_ATK, MON_DATA_DEF, MON_DATA_SPEED, MON_DATA_SPATK,
+  MON_DATA_SPDEF, MON_DATA_MAIL, MON_DATA_SPECIES_OR_EGG, MON_DATA_IVS,
+  MON_DATA_CHAMPION_RIBBON, MON_DATA_WINNING_RIBBON, MON_DATA_VICTORY_RIBBON,
+  MON_DATA_ARTIST_RIBBON, MON_DATA_EFFORT_RIBBON, MON_DATA_MARINE_RIBBON,
+  MON_DATA_LAND_RIBBON, MON_DATA_SKY_RIBBON, MON_DATA_COUNTRY_RIBBON,
+  MON_DATA_NATIONAL_RIBBON, MON_DATA_EARTH_RIBBON, MON_DATA_WORLD_RIBBON,
+  MON_DATA_UNUSED_RIBBONS, MON_DATA_MODERN_FATEFUL_ENCOUNTER, MON_DATA_KNOWN_MOVES,
+  MON_DATA_RIBBON_COUNT, MON_DATA_RIBBONS, MON_DATA_ATK2, MON_DATA_DEF2, MON_DATA_SPEED2,
+  MON_DATA_SPATK2, MON_DATA_SPDEF2,
+} from './engine/battle/party-storage';
 
 // ─── struct Pokemon ─ 1:1 décomp `include/pokemon.h:219..232` ─────────────
 // Consolidé depuis party-storage.ts vers le foyer pokemon.c (= où gPlayerParty/
@@ -184,6 +212,253 @@ export function createEmptyPokemon(): Pokemon {
     attack: 0, defense: 0, speed: 0,
     spAttack: 0, spDefense: 0,
   };
+}
+
+// ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────
+// Accesseurs universels mon-data. Consolidés depuis party-storage.ts vers le foyer
+// pokemon.c (= où ils sont définis dans la décomp). party-storage.ts re-exporte pour
+// compat (40 fichiers les importent de là, inchangés).
+
+export function GetMonData(mon: Pokemon, field: number): number | string {
+  switch (field) {
+    case MON_DATA_PERSONALITY: return mon.personality >>> 0;
+    case MON_DATA_OT_ID: return mon.otId >>> 0;
+    case MON_DATA_NICKNAME: return mon.nickname;
+    case MON_DATA_LANGUAGE: return mon.language;
+    case MON_DATA_SANITY_IS_BAD_EGG: return mon.isBadEgg;
+    case MON_DATA_SANITY_HAS_SPECIES: return mon.hasSpecies;
+    case MON_DATA_SANITY_IS_EGG: return mon.isEgg;
+    case MON_DATA_OT_NAME: return mon.otName;
+    case MON_DATA_MARKINGS: return mon.markings;
+    case MON_DATA_SPECIES: return mon.species;
+    case MON_DATA_HELD_ITEM: return mon.heldItem;
+    case MON_DATA_MOVE1: return mon.moves[0];
+    case MON_DATA_MOVE2: return mon.moves[1];
+    case MON_DATA_MOVE3: return mon.moves[2];
+    case MON_DATA_MOVE4: return mon.moves[3];
+    case MON_DATA_PP1: return mon.pp[0];
+    case MON_DATA_PP2: return mon.pp[1];
+    case MON_DATA_PP3: return mon.pp[2];
+    case MON_DATA_PP4: return mon.pp[3];
+    case MON_DATA_PP_BONUSES: return mon.ppBonuses;
+    case MON_DATA_EXP: return mon.experience;
+    case MON_DATA_HP_EV: return mon.hpEV;
+    case MON_DATA_ATK_EV: return mon.attackEV;
+    case MON_DATA_DEF_EV: return mon.defenseEV;
+    case MON_DATA_SPEED_EV: return mon.speedEV;
+    case MON_DATA_SPATK_EV: return mon.spAttackEV;
+    case MON_DATA_SPDEF_EV: return mon.spDefenseEV;
+    case MON_DATA_FRIENDSHIP: return mon.friendship;
+    case MON_DATA_POKERUS: return mon.pokerus;
+    case MON_DATA_MET_LOCATION: return mon.metLocation;
+    case MON_DATA_MET_LEVEL: return mon.metLevel;
+    case MON_DATA_MET_GAME: return mon.metGame;
+    case MON_DATA_POKEBALL: return mon.pokeball;
+    case MON_DATA_OT_GENDER: return mon.otGender;
+    case MON_DATA_HP_IV: return mon.hpIV;
+    case MON_DATA_ATK_IV: return mon.attackIV;
+    case MON_DATA_DEF_IV: return mon.defenseIV;
+    case MON_DATA_SPEED_IV: return mon.speedIV;
+    case MON_DATA_SPATK_IV: return mon.spAttackIV;
+    case MON_DATA_SPDEF_IV: return mon.spDefenseIV;
+    case MON_DATA_IS_EGG: return mon.isEgg;
+    case MON_DATA_ABILITY_NUM: return mon.abilityNum;
+    case MON_DATA_STATUS: return mon.status >>> 0;
+    case MON_DATA_LEVEL: return mon.level;
+    case MON_DATA_HP: return mon.hp;
+    case MON_DATA_MAX_HP: return mon.maxHP;
+    case MON_DATA_ATK: return mon.attack;
+    case MON_DATA_DEF: return mon.defense;
+    case MON_DATA_SPEED: return mon.speed;
+    case MON_DATA_SPATK: return mon.spAttack;
+    case MON_DATA_SPDEF: return mon.spDefense;
+    case MON_DATA_MAIL: return mon.mail;
+    case MON_DATA_SPECIES_OR_EGG:
+      // 1:1 décomp : species si pas egg, sinon SPECIES_EGG (= 0).
+      return mon.isEgg ? 0 : mon.species;
+    case MON_DATA_IVS:
+      // 1:1 décomp : packed 30-bit u32 (= hp..spdef × 5 bits chacun).
+      return ((mon.hpIV & 0x1F)
+            | ((mon.attackIV & 0x1F) << 5)
+            | ((mon.defenseIV & 0x1F) << 10)
+            | ((mon.speedIV & 0x1F) << 15)
+            | ((mon.spAttackIV & 0x1F) << 20)
+            | ((mon.spDefenseIV & 0x1F) << 25)) >>> 0;
+    // 1:1 décomp pokemon.c GetBoxMonData:3869-3886 : conditions concours (substruct2->X).
+    case MON_DATA_COOL: return mon.cool ?? 0;
+    case MON_DATA_BEAUTY: return mon.beauty ?? 0;
+    case MON_DATA_CUTE: return mon.cute ?? 0;
+    case MON_DATA_SMART: return mon.smart ?? 0;
+    case MON_DATA_TOUGH: return mon.tough ?? 0;
+    case MON_DATA_SHEEN: return mon.sheen ?? 0;
+    // 1:1 décomp pokemon.c GetBoxMonData : rubans (champ direct). Concours = rang.
+    case MON_DATA_COOL_RIBBON: return mon.coolRibbon ?? 0;
+    case MON_DATA_BEAUTY_RIBBON: return mon.beautyRibbon ?? 0;
+    case MON_DATA_CUTE_RIBBON: return mon.cuteRibbon ?? 0;
+    case MON_DATA_SMART_RIBBON: return mon.smartRibbon ?? 0;
+    case MON_DATA_TOUGH_RIBBON: return mon.toughRibbon ?? 0;
+    case MON_DATA_CHAMPION_RIBBON: return mon.championRibbon ?? 0;
+    case MON_DATA_WINNING_RIBBON: return mon.winningRibbon ?? 0;
+    case MON_DATA_VICTORY_RIBBON: return mon.victoryRibbon ?? 0;
+    case MON_DATA_ARTIST_RIBBON: return mon.artistRibbon ?? 0;
+    case MON_DATA_EFFORT_RIBBON: return mon.effortRibbon ?? 0;
+    case MON_DATA_MARINE_RIBBON: return mon.marineRibbon ?? 0;
+    case MON_DATA_LAND_RIBBON: return mon.landRibbon ?? 0;
+    case MON_DATA_SKY_RIBBON: return mon.skyRibbon ?? 0;
+    case MON_DATA_COUNTRY_RIBBON: return mon.countryRibbon ?? 0;
+    case MON_DATA_NATIONAL_RIBBON: return mon.nationalRibbon ?? 0;
+    case MON_DATA_EARTH_RIBBON: return mon.earthRibbon ?? 0;
+    case MON_DATA_WORLD_RIBBON: return mon.worldRibbon ?? 0;
+    case MON_DATA_UNUSED_RIBBONS: return mon.unusedRibbons ?? 0;
+    case MON_DATA_MODERN_FATEFUL_ENCOUNTER: return mon.modernFatefulEncounter;
+    case MON_DATA_KNOWN_MOVES: {
+      // 1:1 décomp : bitmask des 4 moves slots qui ont un move défini.
+      let mask = 0;
+      for (let i = 0; i < 4 /* MAX_MON_MOVES */; i++) {
+        if (mon.moves[i] !== 0) mask |= (1 << i);
+      }
+      return mask;
+    }
+    case MON_DATA_RIBBON_COUNT: {
+      // 1:1 décomp pokemon.c GetBoxMonData : somme de tous les rubans (concours
+      // = rangs additionnés + award 1 bit), uniquement si species && !egg.
+      if (!mon.species || mon.isEgg) return 0;
+      return (mon.coolRibbon ?? 0) + (mon.beautyRibbon ?? 0) + (mon.cuteRibbon ?? 0)
+           + (mon.smartRibbon ?? 0) + (mon.toughRibbon ?? 0) + (mon.championRibbon ?? 0)
+           + (mon.winningRibbon ?? 0) + (mon.victoryRibbon ?? 0) + (mon.artistRibbon ?? 0)
+           + (mon.effortRibbon ?? 0) + (mon.marineRibbon ?? 0) + (mon.landRibbon ?? 0)
+           + (mon.skyRibbon ?? 0) + (mon.countryRibbon ?? 0) + (mon.nationalRibbon ?? 0)
+           + (mon.earthRibbon ?? 0) + (mon.worldRibbon ?? 0);
+    }
+    case MON_DATA_RIBBONS: {
+      // 1:1 décomp pokemon.c GetBoxMonData : rubans packés en u32 (positions de
+      // bits exactes), uniquement si species && !egg.
+      if (!mon.species || mon.isEgg) return 0;
+      return ((mon.championRibbon ?? 0)
+            | ((mon.coolRibbon ?? 0) << 1)
+            | ((mon.beautyRibbon ?? 0) << 4)
+            | ((mon.cuteRibbon ?? 0) << 7)
+            | ((mon.smartRibbon ?? 0) << 10)
+            | ((mon.toughRibbon ?? 0) << 13)
+            | ((mon.winningRibbon ?? 0) << 16)
+            | ((mon.victoryRibbon ?? 0) << 17)
+            | ((mon.artistRibbon ?? 0) << 18)
+            | ((mon.effortRibbon ?? 0) << 19)
+            | ((mon.marineRibbon ?? 0) << 20)
+            | ((mon.landRibbon ?? 0) << 21)
+            | ((mon.skyRibbon ?? 0) << 22)
+            | ((mon.countryRibbon ?? 0) << 23)
+            | ((mon.nationalRibbon ?? 0) << 24)
+            | ((mon.earthRibbon ?? 0) << 25)
+            | ((mon.worldRibbon ?? 0) << 26)) >>> 0;
+    }
+    case MON_DATA_ATK2: return mon.attack;
+    case MON_DATA_DEF2: return mon.defense;
+    case MON_DATA_SPEED2: return mon.speed;
+    case MON_DATA_SPATK2: return mon.spAttack;
+    case MON_DATA_SPDEF2: return mon.spDefense;
+    default:
+      return 0;
+  }
+}
+
+/** 1:1 décomp `SetMonData(mon, field, dataArg)`. */
+export function SetMonData(mon: Pokemon, field: number, value: number | string): void {
+  const v = typeof value === 'number' ? value : 0;
+  const s = typeof value === 'string' ? value : '';
+  switch (field) {
+    case MON_DATA_PERSONALITY: mon.personality = v >>> 0; return;
+    case MON_DATA_OT_ID: mon.otId = v >>> 0; return;
+    case MON_DATA_NICKNAME: mon.nickname = s; return;
+    case MON_DATA_LANGUAGE: mon.language = v & 0xFF; return;
+    case MON_DATA_SANITY_IS_BAD_EGG: mon.isBadEgg = v ? 1 : 0; return;
+    case MON_DATA_SANITY_HAS_SPECIES: mon.hasSpecies = v ? 1 : 0; return;
+    case MON_DATA_SANITY_IS_EGG: mon.isEgg = v ? 1 : 0; return;
+    case MON_DATA_OT_NAME: mon.otName = s; return;
+    case MON_DATA_MARKINGS: mon.markings = v & 0xFF; return;
+    case MON_DATA_SPECIES: mon.species = v & 0xFFFF; mon.hasSpecies = mon.species ? 1 : 0; return;
+    case MON_DATA_HELD_ITEM: mon.heldItem = v & 0xFFFF; return;
+    case MON_DATA_MOVE1: mon.moves[0] = v & 0xFFFF; return;
+    case MON_DATA_MOVE2: mon.moves[1] = v & 0xFFFF; return;
+    case MON_DATA_MOVE3: mon.moves[2] = v & 0xFFFF; return;
+    case MON_DATA_MOVE4: mon.moves[3] = v & 0xFFFF; return;
+    case MON_DATA_PP1: mon.pp[0] = v & 0xFF; return;
+    case MON_DATA_PP2: mon.pp[1] = v & 0xFF; return;
+    case MON_DATA_PP3: mon.pp[2] = v & 0xFF; return;
+    case MON_DATA_PP4: mon.pp[3] = v & 0xFF; return;
+    case MON_DATA_PP_BONUSES: mon.ppBonuses = v & 0xFF; return;
+    case MON_DATA_EXP: mon.experience = v >>> 0; return;
+    case MON_DATA_HP_EV: mon.hpEV = v & 0xFF; return;
+    case MON_DATA_ATK_EV: mon.attackEV = v & 0xFF; return;
+    case MON_DATA_DEF_EV: mon.defenseEV = v & 0xFF; return;
+    case MON_DATA_SPEED_EV: mon.speedEV = v & 0xFF; return;
+    case MON_DATA_SPATK_EV: mon.spAttackEV = v & 0xFF; return;
+    case MON_DATA_SPDEF_EV: mon.spDefenseEV = v & 0xFF; return;
+    case MON_DATA_FRIENDSHIP: mon.friendship = v & 0xFF; return;
+    case MON_DATA_POKERUS: mon.pokerus = v & 0xFF; return;
+    case MON_DATA_MET_LOCATION: mon.metLocation = v & 0xFF; return;
+    case MON_DATA_MET_LEVEL: mon.metLevel = v & 0x7F; return;
+    case MON_DATA_MET_GAME: mon.metGame = v & 0x0F; return;
+    case MON_DATA_POKEBALL: mon.pokeball = v & 0x0F; return;
+    case MON_DATA_OT_GENDER: mon.otGender = v & 1; return;
+    case MON_DATA_HP_IV: mon.hpIV = v & 0x1F; return;
+    case MON_DATA_ATK_IV: mon.attackIV = v & 0x1F; return;
+    case MON_DATA_DEF_IV: mon.defenseIV = v & 0x1F; return;
+    case MON_DATA_SPEED_IV: mon.speedIV = v & 0x1F; return;
+    case MON_DATA_SPATK_IV: mon.spAttackIV = v & 0x1F; return;
+    case MON_DATA_SPDEF_IV: mon.spDefenseIV = v & 0x1F; return;
+    case MON_DATA_IS_EGG: mon.isEgg = v ? 1 : 0; return;
+    case MON_DATA_ABILITY_NUM: mon.abilityNum = v & 1; return;
+    case MON_DATA_STATUS: mon.status = v >>> 0; return;
+    case MON_DATA_LEVEL: mon.level = v & 0xFF; return;
+    case MON_DATA_HP: mon.hp = v & 0xFFFF; return;
+    case MON_DATA_MAX_HP: mon.maxHP = v & 0xFFFF; return;
+    case MON_DATA_ATK: mon.attack = v & 0xFFFF; return;
+    case MON_DATA_DEF: mon.defense = v & 0xFFFF; return;
+    case MON_DATA_SPEED: mon.speed = v & 0xFFFF; return;
+    case MON_DATA_SPATK: mon.spAttack = v & 0xFFFF; return;
+    case MON_DATA_SPDEF: mon.spDefense = v & 0xFFFF; return;
+    case MON_DATA_MAIL: mon.mail = v & 0xFF; return;
+    case MON_DATA_MODERN_FATEFUL_ENCOUNTER: mon.modernFatefulEncounter = v ? 1 : 0; return;
+    // 1:1 décomp pokemon.c SetBoxMonData:4258-4275 : conditions concours (SET8 = u8).
+    case MON_DATA_COOL: mon.cool = v & 0xFF; return;
+    case MON_DATA_BEAUTY: mon.beauty = v & 0xFF; return;
+    case MON_DATA_CUTE: mon.cute = v & 0xFF; return;
+    case MON_DATA_SMART: mon.smart = v & 0xFF; return;
+    case MON_DATA_TOUGH: mon.tough = v & 0xFF; return;
+    case MON_DATA_SHEEN: mon.sheen = v & 0xFF; return;
+    // 1:1 décomp pokemon.c SetBoxMonData : rubans (concours 3 bits, award 1 bit,
+    // unusedRibbons 4 bits). Avant : tombaient en `default` → écriture silencieusement
+    // ignorée (= vrai trou 1:1, ex. GiveGiftRibbonToParty / Champion Ribbon no-op).
+    case MON_DATA_COOL_RIBBON: mon.coolRibbon = v & 7; return;
+    case MON_DATA_BEAUTY_RIBBON: mon.beautyRibbon = v & 7; return;
+    case MON_DATA_CUTE_RIBBON: mon.cuteRibbon = v & 7; return;
+    case MON_DATA_SMART_RIBBON: mon.smartRibbon = v & 7; return;
+    case MON_DATA_TOUGH_RIBBON: mon.toughRibbon = v & 7; return;
+    case MON_DATA_CHAMPION_RIBBON: mon.championRibbon = v & 1; return;
+    case MON_DATA_WINNING_RIBBON: mon.winningRibbon = v & 1; return;
+    case MON_DATA_VICTORY_RIBBON: mon.victoryRibbon = v & 1; return;
+    case MON_DATA_ARTIST_RIBBON: mon.artistRibbon = v & 1; return;
+    case MON_DATA_EFFORT_RIBBON: mon.effortRibbon = v & 1; return;
+    case MON_DATA_MARINE_RIBBON: mon.marineRibbon = v & 1; return;
+    case MON_DATA_LAND_RIBBON: mon.landRibbon = v & 1; return;
+    case MON_DATA_SKY_RIBBON: mon.skyRibbon = v & 1; return;
+    case MON_DATA_COUNTRY_RIBBON: mon.countryRibbon = v & 1; return;
+    case MON_DATA_NATIONAL_RIBBON: mon.nationalRibbon = v & 1; return;
+    case MON_DATA_EARTH_RIBBON: mon.earthRibbon = v & 1; return;
+    case MON_DATA_WORLD_RIBBON: mon.worldRibbon = v & 1; return;
+    case MON_DATA_UNUSED_RIBBONS: mon.unusedRibbons = v & 0xF; return;
+    case MON_DATA_IVS:
+      // 1:1 décomp : unpack packed 30-bit u32 vers 6 IVs.
+      mon.hpIV = (v >>> 0) & 0x1F;
+      mon.attackIV = ((v >>> 0) >>> 5) & 0x1F;
+      mon.defenseIV = ((v >>> 0) >>> 10) & 0x1F;
+      mon.speedIV = ((v >>> 0) >>> 15) & 0x1F;
+      mon.spAttackIV = ((v >>> 0) >>> 20) & 0x1F;
+      mon.spDefenseIV = ((v >>> 0) >>> 25) & 0x1F;
+      return;
+    default: return;
+  }
 }
 
 /** 1:1 décomp `#define NUM_NATURE_STATS (NUM_STATS - 1)` (constants/pokemon.h) = 5
