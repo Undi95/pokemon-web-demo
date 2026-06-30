@@ -32,6 +32,9 @@ import {
   CheckLeadMonCool, CheckLeadMonBeauty, CheckLeadMonCute, CheckLeadMonSmart, CheckLeadMonTough,
   GetLeadMonFriendshipScore, Special_AreLeadMonEVsMaxedOut, LeadMonHasEffortRibbon,
   MonOTNameNotPlayer, IsGrassTypeInParty,
+  IsStarterInParty, ScriptGetPartyMonSpecies, IsPokerusInParty,
+  GetPlayerBigGuyGirlString, GetRivalSonDaughterString, GetPlayerTrainerIdOnesDigit,
+  SetHiddenItemFlag, FoundBlackGlasses,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -97,12 +100,7 @@ import { DecorationAdd, DecorationRemove } from '../../decoration_inventory';
  *  Set sStringVar1 = "GRAND" (MALE) ou "GRANDE" (FEMALE) pour expand le
  *  placeholder {STR_VAR_1} dans dialogues type "Hum, salut, GRAND/GRANDE !".
  *  Used par e.g. LittlerootTown_Text_CanYouGoSeeWhatsHappening (= Twin NPC). */
-registerSpecial('GetPlayerBigGuyGirlString', () => {
-  const stringVar = gSaveBlock2Ptr.playerGender === MALE ? 'GRAND' : 'GRANDE';
-  // 1:1 décomp : StringCopy(gStringVar1, gText_BigGuy/gText_BigGirl).
-  // Notre version : stocke dans gameState pour expand par dialogue-box.ts.
-  setStringVar(1, stringVar);
-});
+registerSpecial('GetPlayerBigGuyGirlString', GetPlayerBigGuyGirlString);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `HealPlayerParty` (script_pokemon_util.c:30) :
  *  ```c
@@ -650,10 +648,7 @@ registerSpecial('IsTrainerRegistered', () => {
 
 /** 1:1 décomp `GetRivalSonDaughterString` (string_util.c) — set sStringVar1
  *  pour rival NPC dialog. May = "fille", Brendan = "fils". 3x usage. */
-registerSpecial('GetRivalSonDaughterString', () => {
-  const rivalIsBoy = gSaveBlock2Ptr.playerGender === FEMALE;
-  setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
-});
+registerSpecial('GetRivalSonDaughterString', GetRivalSonDaughterString);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `SavePlayerParty` / `LoadPlayerParty` — battle frontier party
  *  save state. Le décomp original copie `gPlayerParty` → `gSaveBlock2Ptr->
@@ -667,22 +662,7 @@ registerSpecial('LoadPlayerParty', () => { /* loaded at boot already */ });
 /** 1:1 décomp `IsStarterInParty` (field_specials.c:1437-1448).
  *  Loop party, return TRUE si starter (= GetStarterPokemon(VAR_STARTER_MON))
  *  est encore là. */
-registerSpecial('IsStarterInParty', () => {
-  // 1:1 décomp `GetStarterPokemon` (starter_choose.c) :
-  //   sStarterMon[3] = { SPECIES_TREECKO, SPECIES_TORCHIC, SPECIES_MUDKIP }
-  //   return sStarterMon[index] (default index 0 = Treecko si invalide).
-  const STARTER_BY_INDEX = [277 /* TREECKO */, 280 /* TORCHIC */, 283 /* MUDKIP */];
-  const starterIdx = VarGet('VAR_STARTER_MON') ?? 0;
-  const starter = STARTER_BY_INDEX[starterIdx] ?? STARTER_BY_INDEX[0];
-  const partyCount = CalculatePlayerPartyCount();
-  for (let i = 0; i < partyCount; i++) {
-    const mon = gPlayerParty[i];
-    const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
-    if (species === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
-    if (species === starter) return 1;
-  }
-  return 0;
-});
+registerSpecial('IsStarterInParty', IsStarterInParty);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `InitBirchState` (time_events.c:108-111) :
  *  ```c
@@ -797,9 +777,7 @@ registerSpecial('PetalburgGymUnlockRoomDoors', () => { /* no-op */ });
  *  }
  *  ```
  *  Simple FlagGet sur flag hidden item Route 116 cave. */
-registerSpecial('FoundBlackGlasses', () => {
-  return FlagGet('FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES') ? 1 : 0;
-});
+registerSpecial('FoundBlackGlasses', FoundBlackGlasses);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `ScriptMenu_CreateStartMenuForPokenavTutorial` (start_menu.c) —
  *  open special start menu only with PokeNav for tutorial. Dette R3 doc :
@@ -1413,12 +1391,7 @@ registerSpecial('BufferMonNickname', () => {
 /** 1:1 décomp `ScriptGetPartyMonSpecies` :
  *    return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES);
  *  Utilisé par scripts pour check le species du Pokémon en slot. */
-registerSpecial('ScriptGetPartyMonSpecies', () => {
-  // 1:1 décomp : return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES).
-  const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gPlayerParty[slot];
-  return mon ? (_GetMonData(mon, MON_DATA_SPECIES) as number) : 0;
-});
+registerSpecial('ScriptGetPartyMonSpecies', ScriptGetPartyMonSpecies);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `GetPlayerAvatarBike` (field_specials.c:168-175) :
  *  ```c
@@ -2774,10 +2747,7 @@ registerSpecial('LeadMonHasEffortRibbon', LeadMonHasEffortRibbon);  // impl 1:1 
 
 /** 1:1 décomp `GetPlayerTrainerIdOnesDigit` (field_specials.c:901-904).
  *  Retourne les low 16 bits du trainer ID modulo 10. */
-registerSpecial('GetPlayerTrainerIdOnesDigit', () => {
-  const trainerId = gSaveBlock2Ptr.playerTrainerId;
-  return (trainerId & 0xFFFF) % 10;
-});
+registerSpecial('GetPlayerTrainerIdOnesDigit', GetPlayerTrainerIdOnesDigit);  // impl 1:1 → src/field_specials.ts
 
 // `ScriptGetPartyMonSpecies` déjà porté ligne 692 (= duplicate skip).
 
@@ -3054,10 +3024,7 @@ registerSpecial('LinkContestTryHideWirelessIndicator', () => {
  *  VAR_0x8004 contient le numeric id du flag (set par script `setvar VAR_0x8004,
  *  FLAG_HIDDEN_ITEM_X`). Notre FlagSet accepte maintenant string | number
  *  (= refactor B1). reverseDecompConstant(numId, 'FLAG_') mappe au name string. */
-registerSpecial('SetHiddenItemFlag', () => {
-  const flagId = VarGet('VAR_0x8004');
-  FlagSet(flagId);
-});
+registerSpecial('SetHiddenItemFlag', SetHiddenItemFlag);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `SetRoute119Weather` (field_specials.c:1519-1523) :
  *  ```c
@@ -3154,10 +3121,7 @@ registerSpecial('GetObjectEventLocalIdByFlag', () => {
  *  Cascade R3 résolue : CheckPartyPokerus porté dans battle/party-storage.ts
  *  (= 1:1 pokemon.c:6101-6127). Lit MON_DATA_POKERUS sur chaque mon (bits 0-3
  *  = active pokerus). Retourne TRUE si au moins un mon a pokerus actif. */
-registerSpecial('IsPokerusInParty', () => {
-  // 1:1 décomp : CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1).
-  return CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1) ? 1 : 0;
-});
+registerSpecial('IsPokerusInParty', IsPokerusInParty);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `DoesPartyHaveEnigmaBerry` (script_pokemon_util.c:128-135) :
  *  ```c

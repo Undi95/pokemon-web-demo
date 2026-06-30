@@ -24,15 +24,20 @@
  */
 
 import {
-  gPlayerParty, GetMonData, CalculatePlayerPartyCount, GetMonEVCount,
+  gPlayerParty, GetMonData, CalculatePlayerPartyCount, GetMonEVCount, CheckPartyPokerus,
   MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_SANITY_IS_BAD_EGG,
   MON_DATA_COOL, MON_DATA_BEAUTY, MON_DATA_CUTE, MON_DATA_SMART, MON_DATA_TOUGH,
   MON_DATA_FRIENDSHIP, MON_DATA_OT_NAME,
 } from './engine/battle/party-storage';
 import { PARTY_SIZE } from '../include/constants/global';
 import { gSpeciesInfo } from './engine/data/game-data';
-import { GetPlayerNameString } from '../include/text';
-import { VarGet, VarSet } from './engine/script/script-vars';
+import { GetPlayerNameString, setStringVar } from '../include/text';
+import { VarGet, VarSet, FlagSet, FlagGet } from './engine/script/script-vars';
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+
+// 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
+const MALE = 0;
+const FEMALE = 1;
 
 // 1:1 décomp EWRAM_DATA (field_specials.c:78-80) : gBikeCyclingChallenge (bool8),
 // gBikeCollisions (u8), sBikeCyclingTimer (u32). Défini EN TÊTE (leaf anti-cycle :
@@ -140,4 +145,70 @@ export function IsGrassTypeInParty(): number {
   }
   VarSet('VAR_RESULT', result);
   return result;
+}
+
+// ─── Lot 2 — party query (suite) + player-info strings + flags simples ──────────────
+
+/** 1:1 décomp `IsStarterInParty` (field_specials.c:1437-1448) : TRUE si le starter choisi
+ *  (GetStarterPokemon(VAR_STARTER_MON)) est encore dans la party. */
+export function IsStarterInParty(): number {
+  // 1:1 décomp `GetStarterPokemon` (starter_choose.c) : sStarterMon[3] =
+  // { TREECKO, TORCHIC, MUDKIP } ; default index 0 si invalide.
+  const STARTER_BY_INDEX = [277 /* TREECKO */, 280 /* TORCHIC */, 283 /* MUDKIP */];
+  const starterIdx = VarGet('VAR_STARTER_MON') ?? 0;
+  const starter = STARTER_BY_INDEX[starterIdx] ?? STARTER_BY_INDEX[0];
+  const partyCount = CalculatePlayerPartyCount();
+  for (let i = 0; i < partyCount; i++) {
+    const mon = gPlayerParty[i];
+    const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+    if (species === 0 || (GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
+    if (species === starter) return 1;
+  }
+  return 0;
+}
+
+/** 1:1 décomp `ScriptGetPartyMonSpecies` (field_specials.c:1544) :
+ *    return GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPECIES); */
+export function ScriptGetPartyMonSpecies(): number {
+  const slot = VarGet('VAR_0x8004') ?? 0;
+  const mon = gPlayerParty[slot];
+  return mon ? (GetMonData(mon, MON_DATA_SPECIES) as number) : 0;
+}
+
+/** 1:1 décomp `IsPokerusInParty` (field_specials.c:1455-1461) :
+ *    return CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1) ? TRUE : FALSE; */
+export function IsPokerusInParty(): number {
+  return CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1) ? 1 : 0;
+}
+
+/** 1:1 décomp `GetPlayerBigGuyGirlString` (field_specials.c:906) : StringCopy(gStringVar1,
+ *  gText_BigGuy/gText_BigGirl) selon le genre. Notre version stocke la string FR pour expand. */
+export function GetPlayerBigGuyGirlString(): void {
+  setStringVar(1, gSaveBlock2Ptr.playerGender === MALE ? 'GRAND' : 'GRANDE');
+}
+
+/** 1:1 décomp `GetRivalSonDaughterString` (field_specials.c:914) : nom du rival selon le
+ *  genre du JOUEUR (joueur garçon → rivale May = « fille » ; joueuse → Brendan = « fils »). */
+export function GetRivalSonDaughterString(): void {
+  const rivalIsBoy = gSaveBlock2Ptr.playerGender === FEMALE;
+  setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
+}
+
+/** 1:1 décomp `GetPlayerTrainerIdOnesDigit` (field_specials.c:901-904) :
+ *    return (u16)(gSaveBlock2Ptr->playerTrainerId[0] | (playerTrainerId[1] << 8)) % 10; */
+export function GetPlayerTrainerIdOnesDigit(): number {
+  const trainerId = gSaveBlock2Ptr.playerTrainerId;
+  return (trainerId & 0xFFFF) % 10;
+}
+
+/** 1:1 décomp `SetHiddenItemFlag` (field_specials.c:935-938) :
+ *    FlagSet(gSpecialVar_0x8004);  (VAR_0x8004 = id numérique du flag posé par script). */
+export function SetHiddenItemFlag(): void {
+  FlagSet(VarGet('VAR_0x8004'));
+}
+
+/** 1:1 décomp `FoundBlackGlasses` (field_specials.c:1514-1517) :
+ *    return FlagGet(FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES); */
+export function FoundBlackGlasses(): number {
+  return FlagGet('FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES') ? 1 : 0;
 }
