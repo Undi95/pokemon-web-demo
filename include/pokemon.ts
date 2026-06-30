@@ -10,6 +10,7 @@ export {
   GetNatureFromPersonality,
   GetGenderFromSpeciesAndPersonality,
   IsShinyOtIdPersonality,
+  IsMonShiny,
   ModifyStatByNature,
   gNatureStatTable,
   gStatStageRatios,

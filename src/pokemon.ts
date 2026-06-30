@@ -222,6 +222,15 @@ export function IsShinyOtIdPersonality(otId: number, personality: number): boole
   return shinyValue < SHINY_ODDS;
 }
 
+/** 1:1 décomp `bool32 IsMonShiny(struct Pokemon *mon)` (pokemon.c:6702-6706) :
+ *    otId = GetMonData(OT_ID); personality = GetMonData(PERSONALITY);
+ *    return IsShinyOtIdPersonality(otId, personality);
+ *  Adaptation modèle : lecture directe mon.otId/personality. Retourne un number (0/1)
+ *  pour gBattleResults.shinyWildMon (bitfield). Consolidé depuis battle_main.ts. */
+export function IsMonShiny(mon: Pokemon): number {
+  return IsShinyOtIdPersonality(mon.otId >>> 0, mon.personality >>> 0) ? 1 : 0;
+}
+
 /** 1:1 décomp `bool8 IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c:6579-6595) :
  *  ```c
  *  if (otId == GET_PLAYER_TRAINER_ID()) {

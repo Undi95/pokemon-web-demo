@@ -3576,7 +3576,8 @@ export type BattleMainFunc = () => void;
 // 1:1 décomp `gBitTable[]` → consolidé sur le miroir `src/game/util.ts` (source unique ;
 // l'import vient de src/game/, pas de battle-controllers → pas de cycle).
 // (_gBitTable : importé en section C5.)
-import { IsShinyOtIdPersonality } from '../include/pokemon';
+import { IsMonShiny } from '../include/pokemon';
+import type { Pokemon } from './engine/battle/party-storage';
 
 // ─── Hardware/subsystem stubs (= dette R3 documentée) ──────────────────────
 
@@ -3860,14 +3861,8 @@ const BattleScript_ArenaTurnBeginning = {} as unknown;
 
 let gBattlescriptCurrInstr: unknown = null;
 
-/** 1:1 décomp `IsMonShiny(mon)` (pokemon.c). Compute shinyValue depuis
- *  personality + otId : XOR des 2 halves chacun → shinyValue < SHINY_ODDS (8). */
-function IsMonShiny(mon: unknown): number {
-  const m = mon as { personality?: number; otId?: number } | null;
-  if (!m) return 0;
-  // Calcul shiny consolidé sur le miroir `IsShinyOtIdPersonality` (pokemon.c).
-  return IsShinyOtIdPersonality(m.otId ?? 0, m.personality ?? 0) ? 1 : 0;
-}
+// IsMonShiny : consolidé vers le foyer pokemon.c (src/pokemon.ts, à côté de
+// IsShinyOtIdPersonality) ; importé via le re-export include/pokemon (cf. en-tête).
 
 /** 1:1 décomp `SpeciesToNationalPokedexNum(species)` (pokedex.c).
  *  Wire direct vers ui/pokedex-flags.ts (= existing 1:1 port). */
@@ -4140,7 +4135,7 @@ export function BattleStartClearSetData(): void {
   // 1:1 décomp ll. 3142-3144 : clear gBattleResults entièrement.
   resetBattleResults();
 
-  gBattleResults.shinyWildMon = IsMonShiny(_getEnemyParty()[0]);
+  gBattleResults.shinyWildMon = IsMonShiny(_getEnemyParty()[0] as Pokemon);
 
   gBattleStruct.arenaLostPlayerMons = 0;
   gBattleStruct.arenaLostOpponentMons = 0;
