@@ -79,7 +79,7 @@ import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
 // getSpeciesInfo (table espèces) + reverse/resolveDecompConstant : pour GetAbilityBySpecies.
 // game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
-import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset } from './engine/data/game-data';
+import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset, getLevelUpLearnset } from './engine/data/game-data';
 // sTMHMMoves : table FOREACH_TMHM (leaf, n'importe que constants/items) — pour CanSpeciesLearnTMHM.
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
@@ -681,6 +681,57 @@ export function GiveMoveToMon(mon: Pokemon, move: number): number {
   }
   return MON_HAS_MAX_MOVES;
 }
+
+/** 1:1 décomp `void DeleteFirstMoveAndGiveMoveToMon(struct Pokemon *mon, u16 move)`
+ *  (pokemon.c) : décale les capacités slots 2..4 → 1..3, met `move` au dernier slot
+ *  (PP de base `gBattleMoves[move].pp`), décale `ppBonuses` de 2 bits (jette le bonus
+ *  de la capacité supprimée). = remplace la capacité la PLUS ANCIENNE quand les 4 slots
+ *  sont pleins. Building-block de GiveBoxMonInitialMoveset. */
+export function DeleteFirstMoveAndGiveMoveToMon(mon: Pokemon, move: number): void {
+  const moves: number[] = [];
+  const pp: number[] = [];
+  for (let i = 0; i < 4 - 1; i++) {  // MAX_MON_MOVES - 1
+    moves[i] = GetMonData(mon, MON_DATA_MOVE2 + i) as number;
+    pp[i] = GetMonData(mon, MON_DATA_PP2 + i) as number;
+  }
+  let ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES) as number;
+  ppBonuses >>= 2;
+  moves[4 - 1] = move;
+  pp[4 - 1] = gBattleMoves[move]?.pp ?? 0;
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES
+    SetMonData(mon, MON_DATA_MOVE1 + i, moves[i]);
+    SetMonData(mon, MON_DATA_PP1 + i, pp[i]);
+  }
+  SetMonData(mon, MON_DATA_PP_BONUSES, ppBonuses);
+}
+
+/** 1:1 décomp `void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon)` (pokemon.c:2992) :
+ *  parcourt le level-up learnset de l'espèce, donne chaque capacité apprenable à
+ *  `level` (≤). Si les 4 slots sont pleins → DeleteFirstMove (remplace la + ancienne).
+ *  Adaptation modèle plat : `level` lu direct (MON_DATA_LEVEL ; à la création
+ *  level == GetLevelFromBoxMonExp) ; le learnset DÉCODÉ {level, MOVE_X} via
+ *  getLevelUpLearnset (= gLevelUpLearnsets[species], `moveLevel > level<<9` ⟺
+ *  `entry.level > level`). */
+export function GiveBoxMonInitialMoveset(mon: Pokemon): void {
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const learnset = getLevelUpLearnset(speciesEnum);
+  for (let i = 0; i < learnset.length; i++) {
+    if (learnset[i].level > level) break;
+    const move = (resolveDecompConstant(learnset[i].move) as number | undefined) ?? 0;
+    if (move === MOVE_NONE) continue;
+    if (GiveMoveToMon(mon, move) === MON_HAS_MAX_MOVES)
+      DeleteFirstMoveAndGiveMoveToMon(mon, move);
+  }
+}
+
+/** 1:1 décomp `void GiveMonInitialMoveset(struct Pokemon *mon)` (pokemon.c:2987). */
+export function GiveMonInitialMoveset(mon: Pokemon): void {
+  GiveBoxMonInitialMoveset(mon);
+}
+// Sonde dev (vérif équivalence vs pickLevelUpMoves), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GiveMonInitialMoveset = GiveMonInitialMoveset;
 
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
