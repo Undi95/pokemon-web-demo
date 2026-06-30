@@ -29,8 +29,7 @@ import { GetPlayerNameString } from '../../src/text';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
 import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
-import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../../src/engine/pokemon/pokemon';
-import { CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
+import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
 import { loadGameData } from '../../src/engine/data/game-data';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
 import { SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../src/engine/ui/pokedex-flags';
@@ -320,57 +319,49 @@ function applyNoIntroPreset(): void {
   // 1:1 : compte gPlayerParty natif (CalculatePlayerPartyCount) plutôt que la
   // façade de vues `gSaveBlock1Ptr.playerParty`.
   if (CalculatePlayerPartyCount() === 0) {
-    const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
-      heldItem: 'miracleseed',  // DEBUG fixture (= ITEM_MIRACLE_SEED)
-      ability: 'Overgrow',
-      // nature retirée : dérivée du PID 1:1 (getNatureFromPersonality), comme tout mon.
+    const arcko = createTestMon('SPECIES_TREECKO', 5, {
+      heldItem: 'ITEM_MIRACLE_SEED',  // DEBUG fixture (Grain Miracle FR)
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['pound', 'leer', 'absorb', 'quickattack'],
     });
-    // gender retiré (était forcé FEMALE pour tester le symbole ♀) : il DOIT dériver du
-    // PID 1:1 (GetGenderFromSpeciesAndPersonality), comme tout le reste. Le PID est canonique.
     // ⚠️ DEBUG ONLY : mons valides (user : "ball + lieu, qu'ils soient
     // valide"). Starter Treecko 1:1 = reçu à la ROUTE 101 niv.5 (sauvetage
-    // Birch). pokeball déjà = ITEM_POKE_BALL (createPokemonInstance 1:1).
-    arcko.metLocation = 'MAPSEC_ROUTE_101';
+    // Birch). pokeball déjà = ITEM_POKE_BALL (CreateMon 1:1). gender/nature/ability
+    // dérivent du PID (CreateMon), pas d'override.
+    arcko.metLocation = (resolveDecompConstant('MAPSEC_ROUTE_101') as number | undefined) ?? 0;
     arcko.metLevel = 5;
     // ⚠️ DEBUG ONLY : statut BRÛLÉ pour tester l'anim slide fenêtre STATUT
-    // du résumé (MED2, 1:1 PositionStatusSlidingWindow). ailment BRN=5
-    // (summary-screen _extractMonData : mon.status==='BRN' → ailment 5).
-    arcko.status = 'BRN';
-    GiveMonToPlayer(pokemonInstanceToPokemon(arcko));
-    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
+    // du résumé (MED2, 1:1 PositionStatusSlidingWindow). STATUS1_BURN = 1<<4.
+    arcko.status = (resolveDecompConstant('STATUS1_BURN') as number | undefined) ?? 0x10;
+    GiveMonToPlayer(arcko);
+    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.hp}/${arcko.maxHP}) held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
     // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
-    const jirachi = createPokemonInstance('SPECIES_JIRACHI', 100, {
-      heldItem: 'starpiece',
-      ability: 'Serene Grace',
-      // nature retirée : dérivée du PID 1:1 (getNatureFromPersonality), comme tout mon.
+    const jirachi = createTestMon('SPECIES_JIRACHI', 100, {
+      heldItem: 'ITEM_STAR_PIECE',
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
       moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],
     });
-    // Jirachi est MON_GENDERLESS : le gender dérive du PID+espèce (genderRatio 255) — override
-    // explicite retiré (redondant + 1:1 : tout dérive du PID, pas l'inverse).
     // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
-    jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    GiveMonToPlayer(pokemonInstanceToPokemon(jirachi));
-    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
+    jirachi.metLocation = (resolveDecompConstant('MAPSEC_LITTLEROOT_TOWN') as number | undefined) ?? 0;
+    GiveMonToPlayer(jirachi);
+    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.hp}/${jirachi.maxHP})`);
     // ⚠️ DEBUG ONLY : Leveinard (Chansey) — testeur des field moves de SOIN/utilitaire que les 3
     // field-mons ne couvrent pas. PAS un œuf (`isEgg=false`) : un œuf est SKIPPÉ par checkpartymove /
     // la détection field-move du party menu (= inutilisable pour tester). Lui donne les 2 moves
     // GENUINEMENT manquants dans l'équipe (Soin = MILK_DRINK + SOFT_BOILED, sur personne d'autre) +
     // Doux Parfum (3e, déjà sur Linoone mais pratique sur le soigneur). [Avant : œuf pour tester la
     // page résumé œuf — repassser `isEgg=true` + retirer `moves` si on veut re-tester cette page.]
-    const leveinard = createPokemonInstance('SPECIES_CHANSEY', 5, {
+    const leveinard = createTestMon('SPECIES_CHANSEY', 5, {
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['MOVE_SOFT_BOILED', 'MOVE_MILK_DRINK', 'MOVE_SWEET_SCENT'],
     });
     leveinard.metLevel = 5;
-    leveinard.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    GiveMonToPlayer(pokemonInstanceToPokemon(leveinard));
+    leveinard.metLocation = (resolveDecompConstant('MAPSEC_LITTLEROOT_TOWN') as number | undefined) ?? 0;
+    GiveMonToPlayer(leveinard);
     console.log(`[boot-mode] ?debug Leveinard ajouté (field-move tester : SOFT_BOILED/MILK_DRINK/SWEET_SCENT)`);
 
     // ⚠️ DEBUG ONLY : 3 mons « porteurs de CS + capacités hors-combat » pour tester les field
@@ -389,15 +380,15 @@ function applyNoIntroPreset(): void {
         moves: ['MOVE_FLY', 'MOVE_FLASH', 'MOVE_TELEPORT', 'MOVE_SECRET_POWER'] },
     ];
     for (const fm of fieldMons) {
-      const mon = createPokemonInstance(fm.species, fm.lvl, {
-        ability: fm.ability,
+      const mon = createTestMon(fm.species, fm.lvl, {
+        // ability dérive du PID (CreateMon) — fm.ability conservé en doc seulement.
         ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
         evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
         moves: fm.moves,
       });
-      mon.metLocation = 'MAPSEC_MOSSDEEP_CITY';
+      mon.metLocation = (resolveDecompConstant('MAPSEC_MOSSDEEP_CITY') as number | undefined) ?? 0;
       mon.metLevel = fm.lvl;
-      GiveMonToPlayer(pokemonInstanceToPokemon(mon));
+      GiveMonToPlayer(mon);
       console.log(`[boot-mode] ?debug field-mon ajouté : ${fm.species} Lv${fm.lvl} [${fm.moves.join(', ')}]`);
     }
 

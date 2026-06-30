@@ -107,7 +107,7 @@ const MAX_MON_MOVES_PARTY = 4;
 // pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
 // changement (struct/createEmptyPokemon/GetMonData/SetMonData/gPlayerParty/gEnemyParty).
 import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
-  GetMonAbility, GetAbilityBySpecies, CalculateMonStats } from '../../pokemon';
+  GetMonAbility, GetAbilityBySpecies, CalculateMonStats, CreateMon, SetMonMoveSlot } from '../../pokemon';
 import type { Pokemon } from '../../pokemon';
 export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
   GetMonAbility, GetAbilityBySpecies, CalculateMonStats };
@@ -377,6 +377,69 @@ export function restoreOwPartyAfterTest(): void {
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], sBackupOwParty[i]);
   sBackupOwParty = null;
   RefreshPlayerPartyViews();
+}
+
+// ─── Factory NUMÉRIQUE de Pokémon de test (HARNESS/TEST — exempt 1:1) ────────
+// Remplace feu `createPokemonInstance` (2e modèle string supprimé) : construit un
+// `Pokemon` NUMÉRIQUE via le vrai `CreateMon` (foyer pokemon.c) + applique les
+// overrides de test par SetMonData. Consommé par boot-mode (?debug) et les devtools
+// combat (battle-devtools / battle-decomp-loop). PAS 1:1 — c'est de l'échafaudage de
+// test ; le VRAI jeu crée ses mons via CreateMon direct (givemon/wild/trainer/starter).
+
+/** Spread de stats (notation Smogon) acceptée par les overrides IV/EV de test. */
+export interface TestStatSpread {
+  hp: number; atk: number; def: number; spa: number; spd: number; spe: number;
+}
+
+/** Construit un Pokémon de test numérique. `opts.moves` = ids runtime ("pound") OU
+ *  enums décomp ("MOVE_SURF"). `opts.heldItem` = id runtime ("miracleseed") OU enum.
+ *  `opts.personality` impose le PID (sinon Random32). */
+export function createTestMon(speciesEnum: string, level: number, opts?: {
+  moves?: string[]; nickname?: string; ivs?: TestStatSpread; evs?: TestStatSpread;
+  heldItem?: string; personality?: number;
+}): Pokemon {
+  const species = (resolveDecompConstant(speciesEnum) as number | undefined) ?? 0;
+  const mon = createEmptyPokemon();
+  const hasFixedPid = typeof opts?.personality === 'number';
+  // CreateMon(mon, species, level, fixedIV=USE_RANDOM_IVS(32), hasFixedPersonality,
+  // fixedPersonality, otIdType=OT_ID_PLAYER_ID(0), fixedOtId=0).
+  CreateMon(mon, species, level, 32, hasFixedPid, hasFixedPid ? (opts!.personality! >>> 0) : 0, 0, 0);
+  if (opts?.ivs) {
+    SetMonData(mon, MON_DATA_HP_IV, opts.ivs.hp & 0x1F);
+    SetMonData(mon, MON_DATA_ATK_IV, opts.ivs.atk & 0x1F);
+    SetMonData(mon, MON_DATA_DEF_IV, opts.ivs.def & 0x1F);
+    SetMonData(mon, MON_DATA_SPEED_IV, opts.ivs.spe & 0x1F);
+    SetMonData(mon, MON_DATA_SPATK_IV, opts.ivs.spa & 0x1F);
+    SetMonData(mon, MON_DATA_SPDEF_IV, opts.ivs.spd & 0x1F);
+  }
+  if (opts?.evs) {
+    SetMonData(mon, MON_DATA_HP_EV, opts.evs.hp & 0xFF);
+    SetMonData(mon, MON_DATA_ATK_EV, opts.evs.atk & 0xFF);
+    SetMonData(mon, MON_DATA_DEF_EV, opts.evs.def & 0xFF);
+    SetMonData(mon, MON_DATA_SPEED_EV, opts.evs.spe & 0xFF);
+    SetMonData(mon, MON_DATA_SPATK_EV, opts.evs.spa & 0xFF);
+    SetMonData(mon, MON_DATA_SPDEF_EV, opts.evs.spd & 0xFF);
+  }
+  if (opts?.moves) {
+    // Moveset imposé : remplit slot par slot ; vide les slots non spécifiés (= moveset
+    // EXACT, comme feu createPokemonInstance qui faisait moveIds.slice(0,4)).
+    for (let i = 0; i < 4; i++) {
+      const raw = opts.moves[i];
+      if (raw === undefined) { SetMonMoveSlot(mon, 0, i); continue; }
+      const enumKey = raw.startsWith('MOVE_') ? raw : moveDexIdToEnum(raw);
+      const moveId = (resolveDecompConstant(enumKey) as number | undefined) ?? 0;
+      SetMonMoveSlot(mon, moveId, i);
+    }
+  }
+  if (opts?.heldItem) {
+    const itemEnum = opts.heldItem.startsWith('ITEM_') ? opts.heldItem
+      : 'ITEM_' + opts.heldItem.toUpperCase().replace(/-/g, '_');
+    SetMonData(mon, MON_DATA_HELD_ITEM, (resolveDecompConstant(itemEnum) as number | undefined) ?? 0);
+  }
+  if (opts?.nickname) SetMonData(mon, MON_DATA_NICKNAME, opts.nickname);
+  // IVs/EVs changés après CreateMon (qui a calculé avec des valeurs random) → recalc.
+  if (opts?.ivs || opts?.evs) CalculateMonStats(mon);
+  return mon;
 }
 
 // ─── Migration Pokémon (palier B) : gPlayerParty = SOURCE, block1.playerParty = vues ──
