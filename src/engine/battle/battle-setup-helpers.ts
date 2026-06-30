@@ -42,9 +42,9 @@ import {
 } from '../../metatile_behavior';
 // Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
 // Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
-import { GetMonData, SetMonData, createEmptyPokemon, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
-// CreateMon NUMÉRIQUE 1:1 (foyer) — wild/scripted/Birch créent le mon ennemi en numérique direct.
-import { CreateMon } from '../../pokemon';
+// CreateMon NUMÉRIQUE 1:1 importé VIA party-storage (re-export du foyer) — PAS en edge direct
+// vers le foyer (évite le réordonnancement d'init ESM qui casse decomp-globals `_rt`).
+import { GetMonData, SetMonData, createEmptyPokemon, CreateMon, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
 // Entrees voie L (scripted-wild) : enemy mon plein + boot de la VRAIE boucle decomp.
 // Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
 // n'importe pas ce module en retour, il passe par un wire globalThis).

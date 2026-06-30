@@ -40,11 +40,11 @@ import {
 } from './constants';
 import { MAX_PER_STAT_IVS } from '../../../include/constants/pokemon';
 import { TRAINER_SECRET_BASE } from '../../../include/constants/trainers';
-// Voie L : mon dresseur BATTLE-READY (= CreateMon plein) ecrit dans gEnemyParty (party-storage,
-// array LU par la voie L). Remplace le _CreateMon stub (sans stats, mauvais array). T2 du port trainer.
-import { createPokemonInstance, type PokemonInstance, type StatSpread } from '../pokemon/pokemon';
-import { setupEnemyPartyForBattle } from './party-storage';
-import { reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
+// Voie L : mon dresseur BATTLE-READY écrit dans gEnemyParty. CreateMon NUMÉRIQUE 1:1 importé
+// VIA party-storage (re-export du foyer) — PAS en edge direct vers le foyer (évite le
+// réordonnancement d'init ESM qui casse decomp-globals `_rt`).
+import { CreateMon, setupEnemyPartyForBattle, createEmptyPokemon, SetMonData, SetMonMoveSlot,
+  type Pokemon } from './party-storage';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -196,18 +196,19 @@ function _ZeroEnemyPartyMons(): void {
 function _makeTrainerMon(
   species: number, lvl: number, fixedIV: number, personality: number,
   moves?: number[], heldItem?: number,
-): PokemonInstance {
-  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
-  const iv: StatSpread = { hp: fixedIV, atk: fixedIV, def: fixedIV, spa: fixedIV, spd: fixedIV, spe: fixedIV };
-  const opts: { personality: number; ivs: StatSpread; moves?: string[]; heldItem?: string } =
-    { personality: personality >>> 0, ivs: iv };
+): Pokemon {
+  // 1:1 décomp battle_main.c:2014 : CreateMon(&party[i], species, lvl, fixedIV, TRUE, personality,
+  // OT_ID_RANDOM_NO_SHINY, 0). personality IMPOSÉ (PID = nature/ability-slot/gender/shiny 1:1) ;
+  // OT_ID_RANDOM_NO_SHINY = OT id aléatoire non-shiny (≠ joueur → IsOtherTrainer = true, 1:1).
+  const mon = createEmptyPokemon();
+  CreateMon(mon, species, lvl, fixedIV, true, personality >>> 0, OT_ID_RANDOM_NO_SHINY, 0);
   if (moves && moves.length) {
-    // 1:1 ll.2028-2032 : moveset custom (MOVE_X). PP 1:1 via createPokemonInstance (gameDataGetMove().pp).
-    const ms = moves.filter((m) => m !== 0).map((m) => reverseDecompConstant(m, 'MOVE_') ?? '').filter(Boolean);
-    if (ms.length) opts.moves = ms;
+    // 1:1 ll.2028-2032 : moveset custom → set les 4 slots (move + PP de base via SetMonMoveSlot ;
+    // slot vide = move 0). Override du moveset level-up posé par CreateMon.
+    for (let j = 0; j < 4 /* MAX_MON_MOVES */; j++) SetMonMoveSlot(mon, moves[j] ?? 0, j);
   }
-  if (heldItem) { const it = reverseDecompConstant(heldItem, 'ITEM_'); if (it) opts.heldItem = it; }
-  return createPokemonInstance(speciesEnum, lvl, opts);
+  if (heldItem) SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);
+  return mon;
 }
 
 // ─── CreateNPCTrainerParty (battle_main.c:1960) — 1:1 strict ───────────────
@@ -263,7 +264,7 @@ export function CreateNPCTrainerParty(
     // 6 slots = ZeroEnemyPartyMons + remplit). Un appel par mon ecraserait les precedents.
     // DETTE (hors scope single) : multi-dresseur (TWO_OPPONENTS, firstTrainer=false) ecraserait la
     // party du 1er dresseur -> a gerer avec un accumulateur persistant quand le double sera porte.
-    const acc: PokemonInstance[] = [];
+    const acc: Pokemon[] = [];
     for (i = 0; i < monsCount; i++) {
       // 1:1 décomp ll. 1993-1998 : personality init selon gender flag.
       if (trainerData.doubleBattle) {

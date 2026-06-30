@@ -280,6 +280,10 @@ export { MonGainEVs } from '../../pokemon';
 // gPPUpGetMask / CalculatePPWithBonus / SetMonMoveSlot : consolidés vers le foyer pokemon.c
 // (src/pokemon.ts, = lisent gBattleMoves/SetMonData). Re-export pur (aucun user interne).
 export { gPPUpGetMask, CalculatePPWithBonus, SetMonMoveSlot } from '../../pokemon';
+// API de création numérique (foyer pokemon.c) re-exportée pour compat : les callers battle
+// (trainer-party…) l'importent d'ICI au lieu du foyer direct → pas de NOUVEL edge vers le
+// foyer (party-storage l'importe déjà) → pas de réordonnancement d'init (cycle decomp-globals).
+export { CreateMon, CreateBoxMon, GiveMonInitialMoveset, GiveBoxMonInitialMoveset } from '../../pokemon';
 
 /** Bridge inverse `Pokemon` → mise à jour de `PokemonInstance` (= persist
  *  HP/status/exp post-combat). */
