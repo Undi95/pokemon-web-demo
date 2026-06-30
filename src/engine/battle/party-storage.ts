@@ -135,14 +135,6 @@ const _STATUS_TO_STATUS1: Record<string, number> = {
   'SLP': 0,         // STATUS1_SLEEP_TURN bits are dynamic
 };
 
-const _STATUS1_TO_STATUS: Record<number, 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX' | null> = {
-  0x08: 'PSN',
-  0x10: 'BRN',
-  0x20: 'FRZ',
-  0x40: 'PAR',
-  0x88: 'TOX',
-};
-
 /** Resolve un species enum ex. "SPECIES_TREECKO" vers un u16 id décomp. */
 function _resolveSpeciesId(enumStr: string): number {
   const id = resolveDecompConstant(enumStr);
@@ -285,61 +277,35 @@ export { gPPUpGetMask, CalculatePPWithBonus, SetMonMoveSlot } from '../../pokemo
 // foyer (party-storage l'importe déjà) → pas de réordonnancement d'init (cycle decomp-globals).
 export { CreateMon, CreateBoxMon, GiveMonInitialMoveset, GiveBoxMonInitialMoveset } from '../../pokemon';
 
-/** Bridge inverse `Pokemon` → mise à jour de `PokemonInstance` (= persist
- *  HP/status/exp post-combat). */
-export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void {
-  inst.currentHp = mon.hp;
-  if (mon.experience !== undefined) inst.currentExp = mon.experience;
-  // Status decode (= masque sur les bits stables, sleep turns ignored).
-  const baseStatus = mon.status & 0xF8;
-  inst.status = _STATUS1_TO_STATUS[baseStatus] ?? (mon.status & 0x07 ? 'SLP' : null);
-  // Sync PP via moves array. GUARD `mon.moves[i] !== 0` : ne synchronise le PP QUE pour
-  // les moves que la copie de combat possédait. Un move APPRIS pendant le combat (slot vide
-  // en début de combat → mon.moves[i]===0) garde son PP plein (posé par makeMoveSlot) au lieu
-  // d'être écrasé à 0 par la copie périmée. Corrige l'apprentissage on-field ET off-field.
-  for (let i = 0; i < MAX_MON_MOVES_PARTY; i++) {
-    if (inst.moves[i] && mon.moves[i] !== 0) inst.moves[i].pp = mon.pp[i];
-  }
-}
-
 // ─── Party bridge (called at battle setup/end) ─────────────────────────────
 
-/** 1:1 décomp `LoadPlayerParty` (load_save.c:170) — copie save→runtime côté
- *  joueur (`gPlayerParty[i] = block1.playerParty[i]`), à travers le pont
- *  PokemonInstance→Pokemon. Slots vides reset via `createEmptyPokemon`. Partagé
- *  par `setupPartyForBattle` (boot combat) et `LoadPlayerParty` (boot/load OW). */
-export function loadPlayerPartyFromInstances(player: Array<Pokemon | PokemonInstance>): void {
+/** Charge une party de TEST (devtools/harness) dans gPlayerParty (mons NUMÉRIQUES,
+ *  = createTestMon/CreateMon). Slots vides reset via `createEmptyPokemon`. Appelé par
+ *  `setupPartyForBattle` (combats de test). Le vrai chargement OW = `LoadPlayerParty`
+ *  (load_save.ts), qui copie gPlayerParty direct (pas via cette fn). */
+export function loadTestPlayerParty(player: Pokemon[]): void {
   // ⚠️ Snapshot AVANT le reset : `player` peut référencer gPlayerParty (combats
   // de test). Reset gPlayerParty PUIS le lire le viderait → party vide. On copie
   // donc d'abord (snapshot indépendant), ensuite on reset + ré-écrit.
-  // TRANSITOIRE (unif 2e modèle) : accepte du NUMÉRIQUE direct (createTestMon/
-  // CreateMon, voie cible) OU un PokemonInstance legacy (discriminant 'speciesEnum').
   const n = Math.min(player.length, PARTY_SIZE);
   const snapshot: Pokemon[] = [];
   for (let i = 0; i < n; i++) {
-    const m = player[i];
-    const src = ('speciesEnum' in m) ? pokemonInstanceToPokemon(m) : m;
     const c = createEmptyPokemon();
-    Object.assign(c, src);
-    c.moves = [...src.moves];
-    c.pp = [...src.pp];
+    Object.assign(c, player[i]);
+    c.moves = [...player[i].moves];
+    c.pp = [...player[i].pp];
     snapshot.push(c);
   }
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], createEmptyPokemon());
   for (let i = 0; i < n; i++) Object.assign(gPlayerParty[i], snapshot[i]);
 }
 
-/** Fill gPlayerParty/gEnemyParty depuis runtime PokemonInstance arrays.
- *  Appelé au début de chaque combat. Les slots vides sont reset via
- *  `createEmptyPokemon`. */
-export function setupEnemyPartyForBattle(enemy: Array<Pokemon | PokemonInstance>): void {
+/** Remplit gEnemyParty depuis des mons NUMÉRIQUES (= CreateMon : wild/trainer/scripted).
+ *  Appelé au début de chaque combat. Les slots vides sont reset via `createEmptyPokemon`. */
+export function setupEnemyPartyForBattle(enemy: Pokemon[]): void {
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
   for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
-    const m = enemy[i];
-    // TRANSITOIRE (unif 2e modèle) : accepte un Pokemon NUMÉRIQUE (= CreateMon, voie cible)
-    // OU un PokemonInstance legacy (`speciesEnum` string = discriminant). Le moteur lit
-    // gEnemyParty numérique → on assigne direct si numérique, sinon on convertit.
-    Object.assign(gEnemyParty[i], ('speciesEnum' in m) ? pokemonInstanceToPokemon(m) : m);
+    Object.assign(gEnemyParty[i], enemy[i]);
   }
 }
 
@@ -350,9 +316,9 @@ export function setupEnemyPartyForBattle(enemy: Array<Pokemon | PokemonInstance>
  *  fonction (qui REMPLACE gPlayerParty) reste pour les COMBATS DE TEST (devtools)
  *  qui veulent une party artificielle ; ⚠️ elle écrase la party joueur courante
  *  (à entourer d'un backup/restore côté appelant — cf. push/popTestPlayerParty). */
-export function setupPartyForBattle(player: Array<Pokemon | PokemonInstance>, enemy: Array<Pokemon | PokemonInstance>): void {
+export function setupPartyForBattle(player: Pokemon[], enemy: Pokemon[]): void {
   backupOwPartyForTest();      // sauve la party OW (ce combat de TEST va écraser gPlayerParty)
-  loadPlayerPartyFromInstances(player);
+  loadTestPlayerParty(player);
   setupEnemyPartyForBattle(enemy);
   RefreshPlayerPartyViews();   // block1.playerParty reflète la party de test (pas de vues fantômes)
 }
@@ -565,18 +531,6 @@ export function SwitchPartyMonSlots(i: number, j: number): void {
   Object.assign(tmp, gPlayerParty[i]);
   Object.assign(gPlayerParty[i], gPlayerParty[j]);
   Object.assign(gPlayerParty[j], tmp);
-}
-
-/** Sync HP/status/exp post-combat depuis gPlayerParty vers PokemonInstance
- *  arrays. */
-export function teardownPartyAfterBattle(player: PokemonInstance[]): void {
-  for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
-    // Skip les slots de combat VIDES (species 0) : un mon ajouté à l'équipe APRÈS le setup
-    // (= mon capturé via GiveMonToPlayer) n'a pas de copie de combat dans gPlayerParty →
-    // sans ce guard, syncPokemonToInstance écraserait son HP/exp avec une struct vide (0/0).
-    if (gPlayerParty[i].species === 0) continue;
-    syncPokemonToInstance(gPlayerParty[i], player[i]);
-  }
 }
 
 /** 1:1 décomp `OpponentHandleGetMonData` + `BattleIntroDrawTrainersOrMonsSprites`
