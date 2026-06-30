@@ -23,7 +23,7 @@ import { GetPlayerNameString } from '../../../include/text';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
-  GetGenderFromSpeciesAndPersonality, pokemonToPokemonInstance,
+  pokemonToPokemonInstance,
 } from '../pokemon/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
 import type { PokemonStorage } from '../save/save-blocks';
@@ -737,27 +737,9 @@ export function CalculateEnemyPartyCount(): number {
   return count;
 }
 
-/** 1:1 décomp `u8 GetBoxMonGender(struct BoxPokemon *boxMon)` (pokemon.c:3453) :
- *    species = GetBoxMonData(SPECIES); personality = GetBoxMonData(PERSONALITY);
- *    return GetGenderFromSpeciesAndPersonality(species, personality);
- *  → MON_MALE (0) / MON_FEMALE (254) / MON_GENDERLESS (255). Primitif partagé
- *  (14 appelants décomp : Attract, breeding, affichage symbole genre…).
- *  Adaptation modèle : `mon.species` est un id numérique → converti en enum pour
- *  GetGenderFromSpeciesAndPersonality (notre version prend le speciesEnum string). */
-export function GetBoxMonGender(mon: Pokemon): number {
-  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
-  return GetGenderFromSpeciesAndPersonality(speciesEnum, mon.personality >>> 0);
-}
-
-/** 1:1 décomp `u8 GetMonGender(struct Pokemon *mon)` (pokemon.c:3448) :
- *    `return GetBoxMonGender(&mon->box);`. Notre modèle ne sépare pas
- *  Pokemon/BoxPokemon (champs inline) → GetMonGender == GetBoxMonGender. */
-export function GetMonGender(mon: Pokemon): number {
-  return GetBoxMonGender(mon);
-}
-
-// Exposition dev (sonde déterministe GetMonGender), sans effet sur le jeu.
-(globalThis as Record<string, unknown>).__GetMonGender = GetMonGender;
+// GetBoxMonGender / GetMonGender : consolidés vers le foyer pokemon.c (src/pokemon.ts,
+// à côté de GetGenderFromSpeciesAndPersonality). Réécrits 1:1 en numérique (sans le
+// détour reverseDecompConstant). La sonde dev __GetMonGender suit l'impl dans pokemon.ts.
 
 // ─── CheckPartyPokerus (= 1:1 décomp pokemon.c:6101-6127) ────────────────
 

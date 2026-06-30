@@ -14,6 +14,8 @@
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS } from '../include/constants/pokemon';
+// Type-only (erasé au runtime → aucun cycle/TDZ) : le foyer pokemon.c lit struct Pokemon.
+import type { Pokemon } from './engine/battle/party-storage';
 import {
   MOVE_CUT, MOVE_FLY, MOVE_SURF, MOVE_STRENGTH, MOVE_FLASH,
   MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE,
@@ -175,6 +177,27 @@ export function GetGenderFromSpeciesAndPersonality(species: number, personality:
   else
     return MON_MALE;
 }
+
+/** 1:1 décomp `u8 GetBoxMonGender(struct BoxPokemon *boxMon)` (pokemon.c:3453) :
+ *    species = GetBoxMonData(SPECIES); personality = GetBoxMonData(PERSONALITY);
+ *    return GetGenderFromSpeciesAndPersonality(species, personality);
+ *  Primitif partagé (14 appelants décomp : Attract, breeding, symbole genre…).
+ *  Adaptation modèle : notre struct Pokemon ne sépare pas Pokemon/BoxPokemon
+ *  (champs inline) → lecture directe `mon.species`/`mon.personality` (= GetBoxMonData).
+ *  Consolidé depuis party-storage.ts vers le foyer pokemon.c (numérique, sans le
+ *  détour reverseDecompConstant→version string : appelle la version numérique same-file). */
+export function GetBoxMonGender(mon: Pokemon): number {
+  return GetGenderFromSpeciesAndPersonality(mon.species, mon.personality >>> 0);
+}
+
+/** 1:1 décomp `u8 GetMonGender(struct Pokemon *mon)` (pokemon.c:3448) :
+ *    `return GetBoxMonGender(&mon->box);`. Modèle inline → GetMonGender == GetBoxMonGender. */
+export function GetMonGender(mon: Pokemon): number {
+  return GetBoxMonGender(mon);
+}
+
+// Exposition dev (sonde déterministe GetMonGender), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__GetMonGender = GetMonGender;
 
 /** 1:1 décomp `bool8 IsShinyOtIdPersonality(u32 otId, u32 personality)` (pokemon.c:6708) :
  *  shiny si `GET_SHINY_VALUE(otId, personality) < SHINY_ODDS` (= 8). */
