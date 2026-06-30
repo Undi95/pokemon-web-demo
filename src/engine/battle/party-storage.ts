@@ -30,25 +30,9 @@ import type { PokemonStorage } from '../save/save-blocks';
 import { VarGet, VarSet, FlagClear } from '../script/script-vars';
 import { SetPCBoxToSendMon, GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
-import { gMapHeader } from '../../fieldmap';
-// Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
-import {
-  MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
-} from '../../../include/constants/pokemon';
-import { SPECIES_EGG } from '../../../include/constants/species';
-import { MOVE_NONE } from '../../../include/constants/moves';
-// TM/HM learn-legality (CanMonLearnTMHM, pokemon.c) : data layer apprenable (game-data,
-// prouvée 1:1 par audit-tmhm-learnsets.cjs) + ordre sTMHMMoves + PP via gBattleMoves.
-// Tous DOWNSTREAM (data leaves) → aucun n'importe party-storage = acyclique.
-import { getTmhmLearnset } from '../data/game-data';
-import { speciesNumberToEnum } from './data/species-runtime';
-import { sTMHMMoves } from '../pokemon/tmhm-moves';
-import { getBattleMove } from './data/battle-moves';
-// 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
-// (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
-import { Random } from '../../random';
-import { getSpeciesInfo, gBattleMoves, gSpeciesInfo } from '../data/game-data';
-import { GetItemHoldEffect } from './data/item-hold-effects';
+// getSpeciesInfo (id→info espèce) : lu par pokemonInstanceToPokemon / CopyMonToPC /
+// les setters de types. resolveDecompConstant/reverseDecompConstant (l.32) = ponts string↔id.
+import { getSpeciesInfo } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).
 import { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
@@ -179,28 +163,10 @@ export { MonKnowsMove, GiveMoveToMon } from '../../pokemon';
 
 // ─── Légalité d'apprentissage CT/CS (1:1 décomp pokemon.c) ──────────────────
 
-/** 1:1 STRICT décomp `u32 CanSpeciesLearnTMHM(u16 species, u8 tm)` (pokemon.c:6252) :
- *    if (species == SPECIES_EGG) return 0;
- *    else if (tm < 32) return gTMHMLearnsets[species].as_u32s[0] & (1 << tm);
- *    else             return gTMHMLearnsets[species].as_u32s[1] & (1 << (tm - 32));
- *  Le bitfield `gTMHMLearnsets[species]` est matérialisé par notre data layer comme la
- *  LISTE des CT/CS apprenables (getTmhmLearnset, short-names) — prouvée 1:1 par
- *  audit-tmhm-learnsets.cjs. Le bit `tm` (ordre FOREACH_TMHM = ordre sTMHMMoves) est set
- *  ⟺ `sTMHMMoves[tm]` ∈ liste, donc l'`includes` est strictement équivalent au mask. */
-export function CanSpeciesLearnTMHM(species: number, tm: number): boolean {
-  if (species === SPECIES_EGG) return false;
-  const moveKey = sTMHMMoves[tm];               // 'MOVE_TOXIC' (tm-ième champ FOREACH_TMHM)
-  if (moveKey === undefined) return false;       // tm hors [0, 57]
-  const shortName = moveKey.slice(5);            // retire 'MOVE_' → 'TOXIC'
-  return getTmhmLearnset(speciesNumberToEnum(species)).includes(shortName);
-}
-
-/** 1:1 STRICT décomp `u32 CanMonLearnTMHM(struct Pokemon *mon, u8 tm)` (pokemon.c:6232).
- *  `species = MON_DATA_SPECIES_OR_EGG` (= 0 pour un œuf chez nous → liste vide → false,
- *  résultat 1:1 du guard SPECIES_EGG décomp). */
-export function CanMonLearnTMHM(mon: Pokemon, tm: number): boolean {
-  return CanSpeciesLearnTMHM(GetMonData(mon, MON_DATA_SPECIES_OR_EGG) as number, tm);
-}
+// CanSpeciesLearnTMHM / CanMonLearnTMHM (= 1:1 décomp pokemon.c:6232-6258) : consolidés
+// vers le foyer pokemon.c (src/pokemon.ts ; lisent sTMHMMoves/getTmhmLearnset/
+// speciesNumberToEnum/GetMonData, tous déjà au foyer ou leaf). Re-export pour compat.
+export { CanSpeciesLearnTMHM, CanMonLearnTMHM } from '../../pokemon';
 
 // ─── Bridge PokemonInstance ↔ Pokemon ─────────────────────────────────────
 
@@ -334,112 +300,16 @@ export { GetMonEVCount, CheckPartyPokerus, UpdatePartyPokerusTime } from '../../
 import { AdjustFriendship } from '../../pokemon';
 export { AdjustFriendship };
 
-/** 1:1 décomp `void SetWildMonHeldItem(void)` (pokemon.c) : donne (ou non) un objet
- *  tenu au Pokémon sauvage (gEnemyParty[0]) selon les chances itemCommon/itemRare de
- *  son espèce. Sauté en combat légendaire / dresseur / Frontier Pyramid/Pike.
- *  ```c
- *  rnd = Random() % 100 ; species = gEnemyParty[0].species ;
- *  chanceNoItem = 45, chanceNotRare = 95 ; lead non-œuf + Compound Eyes → 20/80 ;
- *  if (itemCommon == itemRare && itemCommon != NONE)  → 100 % itemCommon
- *  else  rnd<noItem → rien ; rnd<notRare → itemCommon ; sinon → itemRare.
- *  ```
- *  Altering Cave (LAYOUT_ALTERING_CAVE) DÉFÉRÉ : la cave est inactive dans le jeu de
- *  base (VAR_ALTERING_CAVE_WILD_SET jamais posé → table normale), cf. wild_encounter.ts:265 ;
- *  on applique donc le chemin normal (1:1 du sous-cas « cave inactive »). Adaptations
- *  modèle : `gSpeciesInfo[species]` id-indexé (1:1) ; itemCommon/itemRare = string `ITEM_X`
- *  → number via resolveDecompConstant ; gBattleTypeFlags + bit-flags via globalThis/literaux
- *  (cycle-safe, pattern AdjustFriendship). */
-export function SetWildMonHeldItem(): void {
-  const _BATTLE_TYPE_TRAINER = 1 << 3;     // 1:1 décomp include/constants/battle.h
-  const _BATTLE_TYPE_LEGENDARY = 1 << 13;
-  const _BATTLE_TYPE_PIKE = 1 << 20;
-  const _BATTLE_TYPE_PYRAMID = 1 << 21;
-  const gBattleTypeFlags = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0;
-  if (gBattleTypeFlags & (_BATTLE_TYPE_LEGENDARY | _BATTLE_TYPE_TRAINER | _BATTLE_TYPE_PYRAMID | _BATTLE_TYPE_PIKE)) return;
-  const rnd = Random() % 100;
-  const species = GetMonData(gEnemyParty[0], MON_DATA_SPECIES) as number;
-  let chanceNoItem = 45;
-  let chanceNotRare = 95;
-  if (!(GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG) as number)
-      && GetMonAbility(gPlayerParty[0]) === 14 /* ABILITY_COMPOUND_EYES (constants.ts:250) */) {
-    chanceNoItem = 20;
-    chanceNotRare = 80;
-  }
-  // ⚠️ 1:1 GAP (Dette R3, cohérent avec wild_encounter.ts:265 « ALTERING_CAVE ») : la décomp
-  // (pokemon.c SetWildMonHeldItem) branche ici sur `gMapHeader.mapLayoutId == LAYOUT_ALTERING_CAVE`
-  // → table spéciale `sAlteringCaveWildMonHeldItems` (Mareep→Ganlon Berry, etc.). NON porté : en
-  // vanilla Altering Cave est INERTE (seul Zubat y apparaît, absent de la table → branche
-  // « inactive » = objets normaux = ci-dessous), et le côté rencontre (espèces spéciales via
-  // VAR_ALTERING_CAVE_WILD_SET) est lui aussi R3 debt. La voie NORMALE ci-dessous est 1:1.
-  const info = gSpeciesInfo[species];
-  const itemCommon = info ? ((resolveDecompConstant(info.itemCommon) as number | undefined) ?? 0) : 0;
-  const itemRare = info ? ((resolveDecompConstant(info.itemRare) as number | undefined) ?? 0) : 0;
-  if (itemCommon === itemRare && itemCommon !== 0 /* ITEM_NONE */) {
-    // 1:1 décomp : les deux objets identiques (≠ NONE) → 100 % de chance.
-    SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemCommon);
-  } else {
-    if (rnd < chanceNoItem) return;
-    if (rnd < chanceNotRare) SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemCommon);
-    else SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, itemRare);
-  }
-}
-// Sonde déterministe : SetWildMonHeldItem. Sans effet jeu.
-(globalThis as Record<string, unknown>).__SetWildMonHeldItem = SetWildMonHeldItem;
+// SetWildMonHeldItem (= 1:1 décomp pokemon.c) : consolidé vers le foyer pokemon.c
+// (src/pokemon.ts ; lit gEnemyParty/gPlayerParty + gSpeciesInfo + GetMonAbility, déjà au
+// foyer ; gBattleTypeFlags via globalThis = cycle-safe). Re-export PUR (sonde __SetWildMonHeldItem
+// suit l'impl là-bas).
+export { SetWildMonHeldItem } from '../../pokemon';
 
-// ─── MonGainEVs (= 1:1 décomp pokemon.c:5975-6052) ───────────────────────
-
-const _MAX_TOTAL_EVS = 510;
-const _MAX_PER_STAT_EVS = 255;
-
-/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)`. Award EVs from defeated mon's
- *  evYield, cap à 510 total + 255 par stat.
- *
- *  ⚠️ DOUBLON MORT (audit 2026-06-05) : cette fonction n'est appelée NULLE PART.
- *  Le gain d'EV LIVE passe par `pokemon.ts:monGainEVs` (PokemonInstance) ; la voie-L
- *  bytecode passe par `battle-script-commands.ts:_MonGainEVs` (qui, LUI, câble bien
- *  Pokerus + Macho Brace). Cette copie-ci = candidate suppression (consolidation B1
- *  des 3 implémentations en une seule canonique).
- *
- *  Différés ici (NON câblés — contrairement à ce que prétendait l'ancien commentaire) :
- *    - Pokerus ×2 : `multiplier=1` en dur (PAS « wired via _CheckPartyHasHadPokerus »).
- *    - HOLD_EFFECT_MACHO_BRACE ×2 + ITEM_ENIGMA_BERRY hold effect : non câblés. */
-export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
-  if (mon.species === 0) return;
-  const info = getSpeciesInfo(defeatedSpeciesEnum);
-  if (!info?.evYield) return;
-  const evYield = info.evYield;
-  const evs = [mon.hpEV, mon.attackEV, mon.defenseEV, mon.speedEV, mon.spAttackEV, mon.spDefenseEV];
-  let totalEVs = evs.reduce((s, v) => s + v, 0);
-  const yields = [evYield.hp, evYield.atk, evYield.def, evYield.spe, evYield.spa, evYield.spd];
-
-  for (let i = 0; i < 6; i++) {
-    if (totalEVs >= _MAX_TOTAL_EVS) break;
-    // ⚠️ Pokerus ×2 NON câblé ici (multiplier en dur = 1). Cf. JSDoc (doublon mort).
-    const multiplier = 1;
-    let evIncrease = yields[i] * multiplier;
-    // MACHO_BRACE x2 hold effects deferred.
-
-    // 1:1 décomp ll.6038-6046 : cap à MAX_TOTAL_EVS et MAX_PER_STAT_EVS.
-    if (totalEVs + evIncrease > _MAX_TOTAL_EVS) {
-      evIncrease = (evIncrease + _MAX_TOTAL_EVS) - (totalEVs + evIncrease);
-    }
-    if (evs[i] + evIncrease > _MAX_PER_STAT_EVS) {
-      const val1 = evIncrease + _MAX_PER_STAT_EVS;
-      const val2 = evs[i] + evIncrease;
-      evIncrease = val1 - val2;
-    }
-    if (evIncrease < 0) evIncrease = 0;
-
-    evs[i] += evIncrease;
-    totalEVs += evIncrease;
-  }
-  mon.hpEV       = evs[0];
-  mon.attackEV   = evs[1];
-  mon.defenseEV  = evs[2];
-  mon.speedEV    = evs[3];
-  mon.spAttackEV = evs[4];
-  mon.spDefenseEV = evs[5];
-}
+// MonGainEVs (= 1:1 décomp pokemon.c:5975-6052) : consolidé vers le foyer pokemon.c
+// (src/pokemon.ts). Lit/écrit les champs EV du mon + getSpeciesInfo (déjà importé là-bas).
+// Re-export PUR (fonction MORTE : aucun appelant — cf. JSDoc côté pokemon.ts).
+export { MonGainEVs } from '../../pokemon';
 
 // ─── CalculateMonStats (= 1:1 décomp pokemon.c:1932-2017) ─────────────────
 
