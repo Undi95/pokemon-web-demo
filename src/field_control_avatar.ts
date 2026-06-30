@@ -41,10 +41,10 @@ import { IncrementRematchStepCounter } from './battle_setup';
 import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerParty } from './engine/battle/party-storage';
-import { STATUS1_POISON, STATUS1_TOXIC_POISON } from './engine/battle/constants';
-// Side-effect : pose globalThis.__TryFieldPoisonWhiteOut (consommé par le special
-// TryFieldPoisonWhiteOut, lancé depuis EventScript_FieldPoison après un faint poison).
-import './field_poison';
+// DoPoisonFieldEffect = dégât poison par pas (foyer 1:1 field_poison.ts). L'import
+// (nommé) déclenche aussi le side-effect du module : pose globalThis.__TryFieldPoisonWhiteOut
+// (consommé par le special TryFieldPoisonWhiteOut, lancé depuis EventScript_FieldPoison).
+import { DoPoisonFieldEffect } from './field_poison';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -926,16 +926,13 @@ export function UpdateFriendshipStepCounter(): void {
  *    }
  *    return FALSE;
  *
- *  DoPoisonFieldEffect 1:1 décomp field_poison.c:120-154 : decrement HP des
- *  party mons poisoned ; return FLDPSN_FNT si tous fainted, FLDPSN_PSN si
- *  encore en vie, FLDPSN_NONE si aucun poisoned.
+ *  Le dégât HP lui-même = `DoPoisonFieldEffect` (foyer 1:1 field_poison.ts) :
+ *  décrémente les mons empoisonnés, renvoie FLDPSN_FNT/PSN/NONE.
  *
- *  ✅ CÂBLÉ + CORRIGÉ (2026-06-24) : appelé via TryStartStepCountScript (wiré dans
- *  le bloc tookStep = field_control_avatar.c:537). Le bug modèle est résolu : on
- *  itère `gPlayerParty` (la SOURCE Pokemon numérique : species/status/hp), PAS
- *  `gSaveBlock1Ptr.playerParty` (= VUES PokemonInstance, status STRING, sur
- *  lesquelles le raw-field check échouait : `"BRN">>>0===0`). Décrément HP LIVE.
- *  RESTE : TryFieldPoisonWhiteOut (message + white-out quand tous KO) = stub. */
+ *  ✅ CÂBLÉ : appelé via TryStartStepCountScript (wiré dans le bloc tookStep =
+ *  field_control_avatar.c:537). DoPoisonFieldEffect itère gPlayerParty (SOURCE
+ *  Pokemon numérique). Sur FLDPSN_FNT → EventScript_FieldPoison → special
+ *  TryFieldPoisonWhiteOut (message + white-out, field_poison.ts). */
 export function UpdatePoisonStepCounter(): boolean {
   // 1:1 décomp : skip pour Secret Base.
   const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.
@@ -944,32 +941,13 @@ export function UpdatePoisonStepCounter(): boolean {
   }
   const counter = ((VarGet('VAR_POISON_STEP_COUNTER') + 1) & 0xFFFF) % 4;
   VarSet('VAR_POISON_STEP_COUNTER', counter);
-  if (counter !== 0) return false;
-  // 1:1 décomp DoPoisonFieldEffect (field_poison.c:120-154) :
-  //   iter party, decrement HP des poisoned mons, return FNT si tous KO.
-  const FLDPSN_FNT = 2;  // 1:1 décomp include/constants/pokemon.h.
-  // ⚠️ gPlayerParty (SOURCE Pokemon numérique : species/status/hp), PAS
-  // gSaveBlock1Ptr.playerParty (= VUES PokemonInstance, status STRING → check KO).
-  const party = gPlayerParty;
-  let numFainted = 0;
-  let numPoisoned = 0;
-  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
-    const mon = party[i];
-    if (!mon || mon.species === 0) continue;
-    // 1:1 décomp : status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON).
-    if ((mon.status >>> 0) & (STATUS1_POISON | STATUS1_TOXIC_POISON)) {
-      let hp = mon.hp;
-      if (hp === 0 || --hp === 0) numFainted++;
-      mon.hp = hp;
-      numPoisoned++;
+  if (counter === 0) {
+    // 1:1 décomp : switch (DoPoisonFieldEffect()).
+    switch (DoPoisonFieldEffect()) {
+      case 0 /* FLDPSN_NONE */: return false;
+      case 1 /* FLDPSN_PSN */:  return false;
+      case 2 /* FLDPSN_FNT */:  return true;
     }
-  }
-  // DoPoisonFieldEffect screen flash via FldEffPoison_Start — non porté (= UI).
-  void numPoisoned;  // mark used pour conformer au décomp.
-  if (numFainted !== 0) {
-    // 1:1 décomp : return FLDPSN_FNT === 2 → caller wraps en boolean.
-    void FLDPSN_FNT;
-    return true;
   }
   return false;
 }

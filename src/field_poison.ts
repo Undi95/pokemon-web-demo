@@ -54,6 +54,11 @@ const FRIENDSHIP_EVENT_FAINT_FIELD_PSN = 7;
 const FLDPSN_NO_WHITEOUT = 0;
 const FLDPSN_WHITEOUT = 1;
 
+/** 1:1 décomp include/constants/field_poison.h — codes de retour de DoPoisonFieldEffect. */
+const FLDPSN_NONE = 0;
+const FLDPSN_PSN = 1;
+const FLDPSN_FNT = 2;
+
 // gText_PkmnFainted_FldPsn (strings.c:1190) « {STR_VAR_1} est K.O…\p\n » : tiré de
 // getString() au point d'usage (anti-hardcode ; la map strings est peuplée async au boot).
 
@@ -102,6 +107,47 @@ function MonFaintedFromPoison(partyIdx: number): boolean {
   return false;
 }
 
+/** 1:1 décomp `DoPoisonFieldEffect(void)` (field_poison.c:120-154) :
+ *  ```c
+ *  for (i = 0; i < PARTY_SIZE; i++) {
+ *      if (GetMonData(MON_DATA_SANITY_HAS_SPECIES) && GetAilmentFromStatus(status) == AILMENT_PSN) {
+ *          hp = GetMonData(MON_DATA_HP);
+ *          if (hp == 0 || --hp == 0) numFainted++;
+ *          SetMonData(MON_DATA_HP, &hp);
+ *          numPoisoned++;
+ *      }
+ *  }
+ *  if (numFainted || numPoisoned) FldEffPoison_Start();
+ *  if (numFainted) return FLDPSN_FNT;
+ *  if (numPoisoned) return FLDPSN_PSN;
+ *  return FLDPSN_NONE;
+ *  ```
+ *  Décrémente 1 PV à chaque mon empoisonné de l'équipe. Appelée par
+ *  UpdatePoisonStepCounter (field_control_avatar.c) tous les 4 pas.
+ *
+ *  ⚠️ Itère gPlayerParty (SOURCE Pokemon numérique : species/status/hp), PAS les
+ *  VUES PokemonInstance (status STRING → le check raw échouerait). AILMENT_PSN ⟺
+ *  STATUS1_POISON | STATUS1_TOXIC_POISON. Le flash écran FldEffPoison_Start
+ *  (= fldeff_misc.c, UI) reste DÉFÉRÉ (non porté). */
+export function DoPoisonFieldEffect(): number {
+  let numPoisoned = 0;
+  let numFainted = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if (mon && mon.species !== 0
+        && ((mon.status >>> 0) & (STATUS1_POISON | STATUS1_TOXIC_POISON))) {
+      let hp = mon.hp;
+      if (hp === 0 || --hp === 0) numFainted++;
+      mon.hp = hp;
+      numPoisoned++;
+    }
+  }
+  // 1:1 : FldEffPoison_Start() (flash écran) si numFainted || numPoisoned — DÉFÉRÉ (UI non portée).
+  if (numFainted !== 0) return FLDPSN_FNT;
+  if (numPoisoned !== 0) return FLDPSN_PSN;
+  return FLDPSN_NONE;
+}
+
 // ─── Task + special 1:1 décomp ───────────────────────────────────────────────
 
 // data: tState = data[0], tPartyIdx = data[1] (1:1 décomp #define tState/tPartyIdx).
@@ -146,3 +192,4 @@ export function TryFieldPoisonWhiteOut(): void {
 // Hook globalThis (cycle-safe) consommé par specials-registry — même approche que
 // `__RockSmashWildEncounter` (le registry est lourd : import statique risque un cycle).
 (globalThis as Record<string, unknown>).__TryFieldPoisonWhiteOut = TryFieldPoisonWhiteOut;
+(globalThis as Record<string, unknown>).__DoPoisonFieldEffect = DoPoisonFieldEffect;
