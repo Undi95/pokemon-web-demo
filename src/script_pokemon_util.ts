@@ -17,7 +17,11 @@ import {
   SetMonMoveSlot, gPlayerParty, CalculatePlayerPartyCount,
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
-import { CreateMon } from './engine/pokemon/pokemon';
+// CreateMon NUMÉRIQUE 1:1 (foyer pokemon.c) — remplace la convenience legacy
+// engine/pokemon/pokemon:CreateMon(speciesEnum, opts). createEmptyPokemon = la struct cible.
+import { CreateMon, createEmptyPokemon } from './pokemon';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import { CreateEgg } from './daycare';
 import {
   SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT,
@@ -64,13 +68,18 @@ export function CheckPartyMonHasHeldItem(item: number): boolean {
  *  }
  *  return sentToPc;  // 0=PARTY, 1=PC, 2=CANT_GIVE
  *  ```
- *  Adaptation modèle : notre `CreateMon(speciesEnum, level, {heldItem})` prend le
- *  nom d'espèce/item (au lieu d'un u16 + SetMonData séparé) ; le n° Pokédex est
- *  dérivé de `mon.species` (numérique) après création. Le reste est 1:1 — y
- *  compris l'enregistrement Pokédex SEEN+CAUGHT (que l'ancien opcode inline
- *  oubliait → Pokémon offert jamais inscrit au Pokédex). */
+ *  Désormais 1:1 STRICT : `CreateMon` numérique (struct plat) + `SetMonData(HELD_ITEM)`
+ *  séparé, exactement comme la décomp. species/item = string → u16 via resolveDecompConstant.
+ *  Le n° Pokédex est dérivé de `mon.species` (numérique). Inclut l'enregistrement Pokédex
+ *  SEEN+CAUGHT (que l'ancien opcode inline oubliait → Pokémon offert jamais inscrit). */
 export function ScriptGiveMon(speciesEnum: string, level: number, heldItem?: string): number {
-  const mon = CreateMon(speciesEnum, level, heldItem ? { heldItem } : undefined);
+  // 1:1 décomp : CreateMon(&mon, species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
+  const mon = createEmptyPokemon();
+  CreateMon(mon, (resolveDecompConstant(speciesEnum) as number | undefined) ?? 0, level,
+    32 /* USE_RANDOM_IVS = MAX_PER_STAT_IVS + 1 */, false, 0, OT_ID_PLAYER_ID, 0);
+  // 1:1 décomp : SetMonData(&mon, MON_DATA_HELD_ITEM, &item).
+  if (heldItem)
+    SetMonData(mon, MON_DATA_HELD_ITEM, (resolveDecompConstant(heldItem) as number | undefined) ?? 0);
   const sentToPc = GiveMonToPlayer(mon);
   const nationalDexNum = SpeciesToNationalPokedexNum(mon.species);
   // 1:1 décomp : ne PAS poser les flags pour MON_CANT_GIVE.
