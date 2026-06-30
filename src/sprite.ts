@@ -75,7 +75,6 @@
 import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { OBJ_PLTT_ID } from './palette';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
-import { SPRITE_ANIM_TABLES, SPRITE_ANIMS } from './engine/decomp-data/src/sprite-system';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
 
@@ -1670,8 +1669,9 @@ export interface SpriteTemplate {
 /** 1:1 décomp `u8 CreateSprite(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)`
  *  (sprite.c:502) — API PUBLIQUE no-rt (décyclée du bridge, Phase G). Routeur 3-voies :
  *    • template INLINE (`images` array) ou par-TAG (`tileTag` + `oam`) → `_CreateSpriteAtTemplate`.
- *    • sinon (string nom / {name}) → voie par-nom overworld `rt.CreateSpriteFromTemplate`.
- *  Injecte le runtime via `_rt()` (getter injecté, anti-cycle). */
+ *  Injecte le runtime via `_rt()` (getter injecté, anti-cycle). La voie par-nom (registre
+ *  sprite-system.ts `CreateSpriteFromTemplate`) est SUPPRIMÉE (dissolution decomp-data) : tous
+ *  les templates sont des OBJETS directs (intro/title/starter/credits/combat). */
 export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
   const rt = _rt();
   if (template && typeof template === 'object' && Array.isArray(template.images)) {
@@ -1682,8 +1682,9 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
       && template.oam && typeof template.oam === 'object') {
     return _CreateSpriteAtTemplate(rt, template, x, y, subpriority);
   }
-  const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
-  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
+  // Plus de voie par-nom (registre dissous) : un template non-objet = erreur de programmation.
+  console.warn('[CreateSprite] template par-nom non supporté (registre dissous) — passe un OBJET SpriteTemplate', template);
+  return MAX_SPRITES;
 }
 
 /** 1:1 décomp `CreateSprite` inline/by-tag creator (sprite.c:502+540 fusionnés via
@@ -1868,13 +1869,13 @@ export function _resolveTileNum(raw: number | string | undefined): number {
  *  Le `imageValue` = offset tile (modèle sheet `oam.tileId = sheetTileStart + imageValue`,
  *  identique au legacy `tileBase + tileNum`). Retourne null si la table est introuvable. */
 export function resolveAnimTableToAnimCmds(rt: DecompRuntime, animTableName: string): ReadonlyArray<ReadonlyArray<AnimCmd>> | null {
-  const animTable = rt._extraAnimTables.get(animTableName)
-    ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[animTableName];
+  // Registre EXTRA = source UNIQUE (sprite-system.ts SPRITE_ANIMS/ANIM_TABLES dissous : tous les
+  // consommateurs — bag/swap-line/mon-front/overworld NPCs — enregistrent via registerExtraAnim/Table).
+  const animTable = rt._extraAnimTables.get(animTableName);
   if (!animTable) return null;
   const out: AnimCmd[][] = [];
   for (const animName of animTable.anims) {
-    const anim = rt._extraAnims.get(animName)
-      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
+    const anim = rt._extraAnims.get(animName);
     const cmds: AnimCmd[] = [];
     if (anim) {
       for (const f of anim.frames) {

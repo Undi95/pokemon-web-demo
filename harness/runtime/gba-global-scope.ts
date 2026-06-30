@@ -159,7 +159,6 @@ const symbolsToExpose: Record<string, unknown> = {
   InitSpriteAffineAnim: (spriteId: number, animNum: number) => dg.getRuntime().StartSpriteAffineAnim(spriteId, animNum),
   StartSpriteAffineAnim: (spriteId: number, animNum: number) => dg.getRuntime().StartSpriteAffineAnim(spriteId, animNum),
   CreateSpriteAtOam: (cfg: unknown) => dg.getRuntime().CreateSpriteAtOam(cfg as any),
-  CreateSpriteFromTemplate: (name: string, x: number, y: number) => dg.getRuntime().CreateSpriteFromTemplate(name, x, y),
   setSpriteInvisible: (id: number, inv: boolean) => dg.getRuntime().setSpriteInvisible(id, inv),
   setSpriteCallback: (id: number, cb: unknown) => dg.getRuntime().setSpriteCallback(id, cb as any),
   DestroySprite: (id: number) => _bridgeDestroySprite(id),

@@ -32,12 +32,9 @@ import {
   loadIndexedPngStrict,
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
 } from '../gba/png-loader';
-import {
-  SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
-} from '../../src/engine/decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from '../../src/palette';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../src/sprite';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../src/sprite';
 // Imports DIRECTS sprite.ts (Phase B élimination __sprite) : decomp-runtime importe déjà sprite.ts
 // ci-dessus (sprite.ts → decomp-runtime en TYPE only → ZÉRO cycle ESM). Ces helpers/arrays
 // remplacent les anciens accès `globalThis.__sprite.X` vestigiaux (= classe « no-op silencieux »).
@@ -55,29 +52,7 @@ import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } f
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 
-// _resolveTileNum : relocalisé vers game/sprite.ts (chantier A2), importé ci-dessus
-// (_resolveTileNum) — utilisé par les 3 sites SPRITE_ANIMS du harness + tickSpriteAnims.
-
-/** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
- *  Retourne [shape, size] depuis (width, height) en pixels. */
-function oamShapeSizeFromWH(w: number, h: number): { shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3 } {
-  // shape 0 = square, 1 = wide (w>h), 2 = tall (h>w)
-  // sizes (square): 8x8/16x16/32x32/64x64 = size 0/1/2/3
-  // sizes (wide):   16x8/32x8/32x16/64x32 = size 0/1/2/3
-  // sizes (tall):   8x16/8x32/16x32/32x64 = size 0/1/2/3
-  if (w === h) {
-    const map: Record<number, 0 | 1 | 2 | 3> = { 8: 0, 16: 1, 32: 2, 64: 3 };
-    return { shape: 0, size: map[w] ?? 0 };
-  } else if (w > h) {
-    const key = `${w}x${h}`;
-    const map: Record<string, 0 | 1 | 2 | 3> = { '16x8': 0, '32x8': 1, '32x16': 2, '64x32': 3 };
-    return { shape: 1, size: map[key] ?? 0 };
-  } else {
-    const key = `${w}x${h}`;
-    const map: Record<string, 0 | 1 | 2 | 3> = { '8x16': 0, '8x32': 1, '16x32': 2, '32x64': 3 };
-    return { shape: 2, size: map[key] ?? 0 };
-  }
-}
+// oamShapeSizeFromWH SUPPRIMÉ (2026-06-30) : n'était lu que par CreateSpriteFromTemplate (dissous).
 
 // (SpriteAnimState supprimé — convergence anim 2026-06-22 : la state-machine legacy
 //  spriteAnimStates est remplacée par `sprite.anims` 1:1 (setSpriteAnims/AnimateSprite).)
@@ -1807,105 +1782,11 @@ export class DecompRuntime {
   // palettes EN DIRECT via les fns 1:1 sprite.ts LoadSpriteSheet/LoadSpritePalette (objets, plus de
   // lookup registre). → sprite-system.ts perd SPRITE_PALETTES + SPRITE_SHEETS.
 
-  /** Helpers : décode les enum strings du décomp en valeurs numériques GBA OAM. */
-  private static parseAffineMode(s: string | undefined): 0 | 1 | 3 {
-    return s === 'ST_OAM_AFFINE_DOUBLE' ? 3
-         : s === 'ST_OAM_AFFINE_NORMAL' ? 1
-         : 0;
-  }
-
-  private static parseObjMode(s: string | undefined): 0 | 1 | 2 {
-    return s === 'ST_OAM_OBJ_BLEND' ? 1
-         : s === 'ST_OAM_OBJ_WINDOW' ? 2
-         : 0;
-  }
-
-  /** 1:1 décomp `CreateSprite(&sSpriteTemplate_X, x, y, subpriority)` :
-   *  résout template → OAM data + anim table + paletteTag/tileTag depuis sprite-system.ts,
-   *  alloue un OAM slot, configure-le, enregistre l'anim state, retourne spriteId. */
-  CreateSpriteFromTemplate(templateName: string, x: number, y: number, subpriority: number = 0xFF): number {
-    const tpl = (SPRITE_TEMPLATES as Record<string, { tileTag: string, paletteTag: string, oam: string, anims: string, affineAnims: string, callback: string }>)[templateName];
-    if (!tpl) {
-      console.warn(`[runtime] CreateSpriteFromTemplate: ${templateName} not found`);
-      return -1;
-    }
-    // Cast via unknown : les OAM_DATAS extraits depuis le décomp ont des fields
-    // partiels (= certains structs n'ont pas tous les fields, defaults omitted).
-    // On lit les fields utilisés avec fallbacks au runtime.
-    const oam = (OAM_DATAS as unknown as Record<string, { affineMode?: string, objMode?: string, bpp?: string, priority?: string, paletteNum?: string, _sizeWH?: readonly [number, number] }>)[tpl.oam];
-    if (!oam) {
-      console.warn(`[runtime] CreateSpriteFromTemplate ${templateName}: OamData ${tpl.oam} not found`);
-      return -1;
-    }
-    const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[tpl.anims];
-    const firstAnimName = animTable?.anims[0];
-    const firstAnim = firstAnimName ? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[firstAnimName] : null;
-    const initialTileOffset = firstAnim?.frames[0]?.tileNum !== undefined ? _resolveTileNum(firstAnim.frames[0].tileNum) : 0;
-
-    // 1:1 STRICT décomp : lecture array primary via imports DIRECTS sprite.ts (ex-`__sprite`)
-    // (GetSpriteTileStartByTag = sprite.c:1542 ; IndexOfSpritePaletteTag = sprite.c:1637).
-    const tileBaseRaw = _GetSpriteTileStartByTag_1to1(tpl.tileTag);
-    const palSlotRaw = _IndexOfSpritePaletteTag_1to1(tpl.paletteTag);
-    const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
-    const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
-
-    const [w, h] = oam._sizeWH ?? [8, 8];  // default 8x8 si extracteur incomplet
-    const { shape, size } = oamShapeSizeFromWH(w, h);
-
-    const affineModeNum = DecompRuntime.parseAffineMode(oam.affineMode);
-    const result = this.CreateSpriteAtOam({
-      tileId: tileBase + initialTileOffset,
-      paletteBank: palSlot,
-      x, y,
-      shape, size,
-      priority: parseInt(oam.priority ?? '0', 10) || 0,
-      paletteMode: oam.bpp === 'ST_OAM_8BPP' ? 1 : 0,
-      affineMode: affineModeNum,
-      subpriority,
-    });
-
-    if (animTable && firstAnim && firstAnim.frames.length > 0) {
-      // CONVERGENCE 1:1 : `sprite->anims = template->anims` (chemin inline décomp via
-      // setSpriteAnims/AnimateSprite) au lieu de la state-machine legacy `spriteAnimStates`.
-      // Modèle sheet (sprite référence une sheet chargée par tag, pas de tiles inline) →
-      // usingSheet=true. Couvre intro/title/starter/credits (tous CreateSpriteFromTemplate).
-      _setSpriteAnims_1to1(this, result.spriteId, tpl.anims, 0, tileBase);
-    }
-    // Store tileBase + objMode + centerToCornerVec + affineMode + affineAnims dans le sprite
-    const sprite = this.gSprites[result.spriteId];
-    if (sprite) {
-      sprite.tileBase = tileBase;
-      sprite.objMode = DecompRuntime.parseObjMode(oam.objMode);
-      // 1:1 décomp src/sprite.c:CreateSpriteAt — appel à CalcCenterToCornerVec
-      // après init du sprite, pour positionnement correct selon shape/size/affineMode.
-      const ctcv = CalcCenterToCornerVec(shape, size, affineModeNum);
-      sprite.centerToCornerVecX = ctcv.centerToCornerVecX;
-      sprite.centerToCornerVecY = ctcv.centerToCornerVecY;
-      sprite.affineMode = affineModeNum;
-      // 1:1 décomp src/sprite.c:CreateSpriteAt — sprite->affineAnims = template->affineAnims
-      // Si non-dummy (= sAffineAnims_X au lieu de gDummySpriteAffineAnimTable),
-      // on enregistre le table name pour StartSpriteAffineAnim plus tard.
-      if (tpl.affineAnims && tpl.affineAnims !== 'gDummySpriteAffineAnimTable') {
-        sprite.affineAnimsTableName = tpl.affineAnims;
-        // 1:1 décomp InitSpriteAffineAnim — si AFFINE_ON, allocate matrix + reset state
-        if (affineModeNum & 1) {  // ST_OAM_AFFINE_ON_MASK
-          sprite.affineAnimBeginning = true;  // sera processed au prochain tickFixed
-        }
-      }
-    }
-
-    // 1:1 décomp src/sprite.c:CreateSpriteAt — sprite->callback = template->callback
-    const cbName = tpl.callback;
-    if (cbName && cbName !== 'SpriteCallbackDummy' && cbName !== 'SpriteCallbackDummy2') {
-      const cb = this.spriteCallbacks.get(cbName) ?? (globalThis as any)[cbName] as ((sprite: DecompSprite, rt: DecompRuntime) => void) | undefined;
-      if (cb && sprite) {
-        sprite.callback = (spr: DecompSprite) => cb(spr, this);
-      }
-    }
-
-    if (RT_DEBUG) console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
-    return result.spriteId;
-  }
+  // CreateSpriteFromTemplate + parseAffineMode/parseObjMode SUPPRIMÉS (2026-06-30, dissolution
+  // decomp-data) : la voie par-nom (résolution template/oam/anims via le registre sprite-system.ts
+  // SPRITE_TEMPLATES/OAM_DATAS/SPRITE_ANIM_TABLES/SPRITE_ANIMS) n'a plus d'appelant — tous les
+  // templates sont des OBJETS directs créés via game/sprite.ts `CreateSprite`/`_CreateSpriteAtTemplate`
+  // (intro/title/starter/credits/combat). → sprite-system.ts entièrement dissous.
 
   /** Change manuellement l'anim active d'un sprite (1:1 décomp StartSpriteAnim). */
   StartSpriteAnim(spriteId: number, animIdx: number): void {

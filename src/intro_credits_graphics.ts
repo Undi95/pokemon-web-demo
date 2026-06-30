@@ -241,6 +241,14 @@ export function CreateBicycleBgAnimationTask(rt: DecompRuntime, mode: number, bg
   return -1;
 }
 
+/** 1:1 `sSpriteTemplate_MovingScenery` (intro_credits_graphics.c) — objet DIRECT (dissolution
+ *  decomp-data : plus de lookup registre). oam/anims = dummy (8x8) car ÉCRASÉS après création
+ *  par metadata[i].shape/size + l'anims param (cf. boucle ci-dessous). tileTag = TAG_MOVING_SCENERY. */
+const sSpriteTemplate_MovingScenery: SpriteTemplate = {
+  tileTag: 'TAG_MOVING_SCENERY', oam: { shape: 0, size: 0, priority: 3 },
+  anims: null, affineAnims: null, callback: SpriteCB_MovingScenery,
+};
+
 /** Source: intro_credits_graphics.c → CreateMovingScenerySprites (helper) */
 export function CreateMovingScenerySprites(rt: DecompRuntime, hasVerticalMove: number, metadata: any, anims: any, numSprites: number): number {
   let sprite: any = _emptySprite;
@@ -249,7 +257,7 @@ export function CreateMovingScenerySprites(rt: DecompRuntime, hasVerticalMove: n
 
       for(i = 0; i < numSprites; i++)
       {
-          let sprite = rt.CreateSpriteFromTemplate('sSpriteTemplate_MovingScenery',  metadata[i].x, metadata[i].y, metadata[i].subpriority);
+          let sprite = _CreateSpriteAtTemplate(rt, sSpriteTemplate_MovingScenery, metadata[i].x, metadata[i].y, metadata[i].subpriority);
           (() => { const _ctcv = CalcCenterToCornerVec(0, 0, 0); _gs(rt, sprite).centerToCornerVecX = _ctcv.centerToCornerVecX; _gs(rt, sprite).centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           rt.gba.oam[_gs(rt, sprite).oamIndex].priority = 3;
           rt.gba.oam[_gs(rt, sprite).oamIndex].shape = metadata[i].shape;
