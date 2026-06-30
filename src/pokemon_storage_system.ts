@@ -26,7 +26,7 @@ export function CheckFreePokemonStorageSpace(): boolean {
   for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
     for (let j = 0; j < IN_BOX_COUNT; j++) {
       const slot = boxes[i]?.[j];
-      if (!slot || !slot.speciesId) return true;
+      if (!slot || !slot.species) return true;
     }
   }
   return false;
@@ -48,16 +48,14 @@ export function StorageGetCurrentBox(): number {
  *  ```
  *  TRUE si AU MOINS un Pokémon (non-œuf) du PC connaît `move`. Utilisé par
  *  IsLastMonThatKnowsSurf (anti-softlock : on ne bloque l'oubli que si AUCUN mon
- *  party NI PC ne connaît le move). Adaptation modèle : `move` = id décomp →
- *  converti en dexId string (les box mons = PokemonInstance, moves[].id = dexId). */
+ *  party NI PC ne connaît le move). Box mons = Pokemon NUMÉRIQUES : `move` (id décomp)
+ *  comparé direct à `mon.moves[]` (number[]). */
 export function AnyStorageMonWithMove(move: number): boolean {
-  const moveEnum = reverseDecompConstant(move, 'MOVE_') ?? '';
-  const moveDexId = moveEnumToDexId(moveEnum);
   const boxes = GetPokemonStorage().boxes;
   for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
     for (let j = 0; j < IN_BOX_COUNT; j++) {
       const mon = boxes[i]?.[j];
-      if (mon && mon.speciesId && !mon.isEgg && mon.moves.some(m => m.id === moveDexId)) {
+      if (mon && mon.species && !mon.isEgg && mon.moves.includes(move)) {
         return true;
       }
     }
@@ -78,7 +76,7 @@ export function CountStorageNonEggMons(): number {
   for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
     for (let j = 0; j < IN_BOX_COUNT; j++) {
       const mon = boxes[i]?.[j];
-      if (mon && mon.speciesId && !mon.isEgg) count++;
+      if (mon && mon.species && !mon.isEgg) count++;
     }
   }
   return count;

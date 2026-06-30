@@ -116,15 +116,15 @@ export function PickLotteryCornerTicket(): void {
     }
   }
 
-  // 1:1 :84-102 : loop boîtes PC. Slots = `PokemonInstance | null` (speciesId 0 =
-  // SPECIES_NONE, isEgg flag). Partage `bestMatching` avec la party (= gSpecialVar
+  // 1:1 :84-102 : loop boîtes PC. Slots = `Pokemon | null` (species 0 = SPECIES_NONE,
+  // isEgg flag). Partage `bestMatching` avec la party (= gSpecialVar
   // _0x8004 dans la décomp ; comparaison `matching > bestMatching` où bestMatching
   // tient déjà `prevMatching - 1` → ties vont au mon plus tardif, 1:1 strict).
   const boxes = GetPokemonStorage().boxes;
   for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
     for (let j = 0; j < IN_BOX_COUNT; j++) {
       const slot = boxes[i]?.[j];
-      if (slot && slot.speciesId && !slot.isEgg) {
+      if (slot && slot.species && !slot.isEgg) {
         const otId = (slot.otId ?? 0) >>> 0;
         const matching = GetMatchingDigits(lottoNumber, otId & 0xFFFF);
         if (matching > bestMatching && matching > 1) {
@@ -153,7 +153,7 @@ export function PickLotteryCornerTicket(): void {
       VarSet('VAR_0x8006', 1);  // PC
       const winner = boxes[bestBox]?.[bestSlot];
       setStringVar(1, (winner?.nickname)
-        || (gSpeciesNames[(winner?.speciesId ?? 0)] ?? ''));
+        || (gSpeciesNames[(winner?.species ?? 0)] ?? ''));
     }
   }
 }

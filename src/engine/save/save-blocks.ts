@@ -591,10 +591,10 @@ export interface DaycareMail {
 
 // ─── BoxPokemon (= simplified pour daycare) ─────────────────────────────────
 
-/** 1:1 décomp `struct BoxPokemon`. Nous utilisons PokemonInstance qui couvre
- *  les mêmes données sémantiquement. Pour daycare on garde juste un
- *  PokemonInstance compatible. */
-export type BoxPokemonSlot = PokemonInstance | null;
+/** 1:1 décomp `struct BoxPokemon` : un slot de boîte PC = un Pokemon NUMÉRIQUE plat
+ *  (notre struct decoded ; le décomp stocke BoxPokemon = sous-ensemble de Pokemon).
+ *  null = slot vide (= SPECIES_NONE). Ex-PokemonInstance (calque effondré 2026-07-02). */
+export type BoxPokemonSlot = Pokemon | null;
 
 /** 1:1 décomp `struct DaycareMon` (global.h:788). */
 export interface DaycareMon {

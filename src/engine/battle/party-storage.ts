@@ -465,8 +465,14 @@ function CopyMonToPC(mon: Pokemon): number {
   do {
     for (let boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++) {
       const slot = storage.boxes[boxNo]?.[boxPos];
-      if (!slot || !slot.speciesId) {  // 1:1 : GetBoxMonData(SPECIES) == SPECIES_NONE
-        storage.boxes[boxNo][boxPos] = pokemonToPokemonInstance(mon);  // 1:1 CopyMon
+      if (!slot || !slot.species) {  // 1:1 : GetBoxMonData(SPECIES) == SPECIES_NONE (numérique)
+        // 1:1 CopyMon : copie INDÉPENDANTE du mon NUMÉRIQUE dans le slot de boîte (le slot
+        // party va être réutilisé → on ne partage pas les arrays moves/pp).
+        const boxed = createEmptyPokemon();
+        Object.assign(boxed, mon);
+        boxed.moves = [...mon.moves];
+        boxed.pp = [...mon.pp];
+        storage.boxes[boxNo][boxPos] = boxed;
         if (GetPCBoxToSendMon() !== boxNo) FlagClear('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
         VarSet('VAR_PC_BOX_TO_SEND_MON', boxNo);
         return MON_GIVEN_TO_PC;
