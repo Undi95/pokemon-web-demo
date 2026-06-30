@@ -84,10 +84,10 @@ import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset } from './e
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { Random } from './random';  // leaf (PRNG) — pour AdjustFriendship (gate WALKING).
-// Constantes MON_DATA_* (enum include/pokemon.h) lues par GetMonData/SetMonData.
-// Restent définies dans party-storage (39 fichiers les importent de là) → import ici.
-// Lien 2-sens runtime-only avec party-storage : SÛR (lues seulement dans les fns, jamais
-// à l'init ; createEmptyPokemon/GetMonData sont des `function` hoistées). Vérifié au restart.
+// Constantes MON_DATA_* : enum 1:1 de son foyer-header include/pokemon.ts (= include/pokemon.h).
+// Importées DEPUIS le header (leaf), plus depuis party-storage → supprime le back-edge
+// src/pokemon→party-storage (le cycle runtime documenté est éliminé : l'edge
+// include/pokemon↔src/pokemon préexistait déjà, fonction-only bénin).
 import {
   MON_DATA_PERSONALITY, MON_DATA_OT_ID, MON_DATA_NICKNAME, MON_DATA_LANGUAGE,
   MON_DATA_SANITY_IS_BAD_EGG, MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG,
@@ -111,7 +111,7 @@ import {
   MON_DATA_UNUSED_RIBBONS, MON_DATA_MODERN_FATEFUL_ENCOUNTER, MON_DATA_KNOWN_MOVES,
   MON_DATA_RIBBON_COUNT, MON_DATA_RIBBONS, MON_DATA_ATK2, MON_DATA_DEF2, MON_DATA_SPEED2,
   MON_DATA_SPATK2, MON_DATA_SPDEF2,
-} from './engine/battle/party-storage';
+} from '../include/pokemon';
 
 // ─── struct Pokemon ─ 1:1 décomp `include/pokemon.h:219..232` ─────────────
 // Consolidé depuis party-storage.ts vers le foyer pokemon.c (= où gPlayerParty/
