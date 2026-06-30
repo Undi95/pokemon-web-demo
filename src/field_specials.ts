@@ -37,6 +37,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
 import { Random } from './random';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -555,3 +556,33 @@ export function GetSecretBaseNearbyMapName(): void {
   } }).__game_bridge;
   setStringVar(1, bridge?.GetMapNameByMapSecId?.(mapsecId) ?? '');
 }
+
+// ─── Lot 8 — PC storage (field_specials.c §1450, 3415) ──────────────────────
+// (SetPCBoxToSendMon/GetPCBoxToSendMon vivent dans pc-box.ts = leaf anti-cycle partagé
+//  avec le flow GiveMonToPlayer ; DoPCTurnOn/OffEffect dans pc-anim.ts = anim tile-couplée.)
+
+/** 1:1 décomp `ScriptCheckFreePokemonStorageSpace` (field_specials.c:1450) :
+ *    return CheckFreePokemonStorageSpace();  → gSpecialVar_Result = TRUE s'il reste un slot PC. */
+export function ScriptCheckFreePokemonStorageSpace(): number {
+  return CheckFreePokemonStorageSpace() ? 1 : 0;
+}
+
+/** 1:1 décomp `ShouldShowBoxWasFullMessage` (field_specials.c:3415-3426) :
+ *    if (!FlagGet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE))
+ *      if (StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON)) {
+ *        FlagSet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE); return TRUE; }
+ *    return FALSE;
+ *  TRUE une seule fois (flag-gated) quand le mon capturé atterrit dans une AUTRE boîte que
+ *  celle du curseur PC (boîte courante pleine). Appelé par Cmd_givecaughtmon (battle) via
+ *  globalThis.__ShouldShowBoxWasFullMessage (= boolean, cycle-safe) + par le special. */
+export function ShouldShowBoxWasFullMessage(): number {
+  if (!FlagGet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE')) {
+    if (StorageGetCurrentBox() !== VarGet('VAR_PC_BOX_TO_SEND_MON')) {
+      FlagSet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
+      return 1;
+    }
+  }
+  return 0;
+}
+// Préserve le hook battle (Cmd_givecaughtmon, battle_script_commands.c:10062) : boolean.
+(globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage = () => ShouldShowBoxWasFullMessage() !== 0;

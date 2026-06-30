@@ -46,6 +46,7 @@ import {
   SetPlayerGotFirstFans, UpdateTrainerFanClubGameClear, BufferFanClubTrainerName, Script_TryGainNewFanFromCounter,
   ResetCyclingRoadChallengeData, Special_BeginCyclingRoadChallenge, Special_ShowDiploma, GetSlotMachineId,
   BufferVarsForIVRater, GetBattleTowerSinglesStreak, GetSecretBaseNearbyMapName,
+  ScriptCheckFreePokemonStorageSpace, ShouldShowBoxWasFullMessage,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -2207,9 +2208,7 @@ registerSpecial('IsPokemonJumpSpeciesInParty', () => {
 //   `return CheckFreePokemonStorageSpace();` → gSpecialVar_Result = TRUE s'il reste
 // un slot de boîte PC libre. Import direct (pokemon_storage_system.ts est une feuille ;
 // save.ts ne réimporte pas specials-registry → cycle-safe).
-registerSpecial('ScriptCheckFreePokemonStorageSpace', () => {
-  return CheckFreePokemonStorageSpace() ? 1 : 0;
-});
+registerSpecial('ScriptCheckFreePokemonStorageSpace', ScriptCheckFreePokemonStorageSpace);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `bool8 ShouldShowBoxWasFullMessage(void)` (field_specials.c:3415-3426) :
  *    if (!FlagGet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE))
@@ -2223,17 +2222,9 @@ registerSpecial('ScriptCheckFreePokemonStorageSpace', () => {
  *  la Boîte X ». Appelé par Cmd_givecaughtmon (battle_script_commands.c:10062) ;
  *  exposé sur globalThis pour ce caller (cycle-safe). Le déclenchement réel
  *  dépend du dépôt PC posant VAR_PC_BOX_TO_SEND_MON (dépendance d'étape). */
-function _shouldShowBoxWasFullMessage(): boolean {
-  if (!FlagGet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE')) {
-    if (StorageGetCurrentBox() !== VarGet('VAR_PC_BOX_TO_SEND_MON')) {
-      FlagSet('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
-      return true;
-    }
-  }
-  return false;
-}
-registerSpecial('ShouldShowBoxWasFullMessage', () => _shouldShowBoxWasFullMessage() ? 1 : 0);
-(globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage = _shouldShowBoxWasFullMessage;
+// impl 1:1 → src/field_specials.ts (le hook battle globalThis.__ShouldShowBoxWasFullMessage
+// y est aussi posé, pour Cmd_givecaughtmon).
+registerSpecial('ShouldShowBoxWasFullMessage', ShouldShowBoxWasFullMessage);
 
 // ─── Berry tree field interaction — récolte (1:1 décomp berry.c:1252-1313) ───
 // Specials retirés de _SESSION_131_DECOMP_SPECIALS (étaient no-op) → handlers
