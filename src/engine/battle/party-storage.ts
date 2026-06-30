@@ -110,6 +110,10 @@ export type { Pokemon };
 // Re-export pur (aucun user interne).
 export { MonKnowsMove, GiveMoveToMon } from '../../pokemon';
 
+// IsPokemonStorageFull / IsPlayerPartyAndPokemonStorageFull : foyer pokemon.c. Re-export pour
+// les modules BATTLE (battle_main) qui les importent d'ICI (anti-cycle : pas d'edge foyer direct).
+export { IsPokemonStorageFull, IsPlayerPartyAndPokemonStorageFull } from '../../pokemon';
+
 // ─── Légalité d'apprentissage CT/CS (1:1 décomp pokemon.c) ──────────────────
 
 // CanSpeciesLearnTMHM / CanMonLearnTMHM (= 1:1 décomp pokemon.c:6232-6258) : consolidés

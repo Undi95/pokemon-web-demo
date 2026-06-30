@@ -1990,7 +1990,7 @@ import {
   BIT_FLANK,
 } from './engine/battle/constants';
 import { GetBattlerAtPosition } from './engine/battle/util';
-import { CalculatePPWithBonus } from './engine/battle/party-storage';
+import { CalculatePPWithBonus, IsPlayerPartyAndPokemonStorageFull } from './engine/battle/party-storage';
 
 // ─── STATE enum 1:1 décomp (4116-4127) ─────────────────────────────────────
 
@@ -2204,11 +2204,6 @@ function _MarkBattlerForControllerExec(battler: number): void {
  *  sans jamais attendre l'input → BUG non-1:1.) */
 function _IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(battler: number): boolean {
   return (gBattleControllerExecFlags & _gBitTable[battler]) !== 0;
-}
-
-/** 1:1 décomp `IsPlayerPartyAndPokemonStorageFull()`. */
-function _IsPlayerPartyAndPokemonStorageFull(): boolean {
-  return false;
 }
 
 /** Délègue au canonique 1:1 `AreAllMovesUnusable` (battle_util, qui appelle le vrai
@@ -2476,7 +2471,7 @@ export function HandleTurnActionSelectionState(): void {
             _MarkBattlerForControllerExec(active);
           } else if (chosenAction === B_ACTION_SAFARI_BALL) {
             // 1:1 décomp ll. 4268-4277.
-            if (_IsPlayerPartyAndPokemonStorageFull()) {
+            if (IsPlayerPartyAndPokemonStorageFull()) {
               gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_PrintFullBox');
               gBattleCommunication[active] = STATE_SELECTION_SCRIPT;
               gBattleStruct.selectionScriptFinished[active] = 0;

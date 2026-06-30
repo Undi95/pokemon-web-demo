@@ -932,6 +932,31 @@ export function MonRestorePP(mon: Pokemon): void {
 }
 (globalThis as Record<string, unknown>).__MonRestorePP = MonRestorePP;
 
+/** 1:1 décomp `IsPokemonStorageFull(void)` (pokemon.c) : TRUE si AUCUN slot PC libre.
+ *  Storage PC via le hook `__getPokemonStorage` (cycle-safe : le foyer n'importe pas save.ts ;
+ *  exposé par pokemon_storage_system.ts). Si storage pas prêt → false (= il reste de la place). */
+export function IsPokemonStorageFull(): boolean {
+  const storage = (globalThis as { __getPokemonStorage?: () => { boxes: Array<Array<{ species: number } | null>> } }).__getPokemonStorage?.();
+  if (!storage) return false;
+  const TOTAL_BOXES_COUNT = 14, IN_BOX_COUNT = 30;  // 1:1 décomp constants (save-blocks)
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
+    for (let j = 0; j < IN_BOX_COUNT; j++) {
+      const slot = storage.boxes[i]?.[j];
+      if (!slot || !slot.species) return false;  // SPECIES_NONE → slot libre
+    }
+  }
+  return true;
+}
+
+/** 1:1 décomp `IsPlayerPartyAndPokemonStorageFull(void)` (pokemon.c) : TRUE si la party
+ *  EST PLEINE (6 espèces) ET le storage PC plein. */
+export function IsPlayerPartyAndPokemonStorageFull(): boolean {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if ((GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number) === 0 /* SPECIES_NONE */) return false;
+  }
+  return IsPokemonStorageFull();
+}
+
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
 /** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
