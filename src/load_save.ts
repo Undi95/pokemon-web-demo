@@ -31,7 +31,7 @@ import {
   emptySaveBlock1,
 } from './engine/save/save-blocks';
 import { GetSaveBlock1, GetSaveBlock2 } from './save';
-import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from './engine/battle/party-storage';
+import { RefreshPlayerPartyViews, gPlayerParty, createEmptyPokemon, PARTY_SIZE } from './engine/battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
@@ -192,16 +192,19 @@ export function SavePlayerParty(): void {
   block1.playerPartyCount = block1.playerParty.length;
 }
 
-/** 1:1 décomp `LoadPlayerParty(void)` (load_save.c:170).
- *  Sync `block1.playerParty` → `gPlayerParty`. Migration Pokémon (palier A) :
- *  peuple `gPlayerParty` (Pokemon/BoxMon) depuis `block1.playerParty`
- *  (PokemonInstance) à travers le pont. Tant que l'OW lit encore
- *  `block1.playerParty`, `gPlayerParty` est une copie runtime inerte ; le pivot
- *  qui en fait la source de vérité (block1.playerParty → vues) est le palier B. */
+/** 1:1 décomp `LoadPlayerParty(void)` (load_save.c:170) : `gPlayerParty[i] = block1.playerParty[i]`.
+ *  block1.playerParty (désérialisé du save = Pokemon NUMÉRIQUES plats, compact) → copié dans les
+ *  slots gPlayerParty (la source de vérité), padding empty au-delà. Puis RefreshPlayerPartyViews
+ *  re-pose block1.playerParty = refs aux slots. (Ex-conversion PokemonInstance retirée :
+ *  calque de vues effondré 2026-07-02.) */
 export function LoadPlayerParty(): void {
   const block1 = GetSaveBlock1();
-  loadPlayerPartyFromInstances(block1.playerParty);  // block1.playerParty (natifs/save) → gPlayerParty
-  RefreshPlayerPartyViews();                          // block1.playerParty ← vues live sur gPlayerParty
+  const saved = block1.playerParty;  // Pokemon[] (compact, du save)
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (i < saved.length && saved[i]) Object.assign(gPlayerParty[i], saved[i]);
+    else Object.assign(gPlayerParty[i], createEmptyPokemon());
+  }
+  RefreshPlayerPartyViews();  // block1.playerParty ← refs numériques aux slots gPlayerParty
 }
 
 /** 1:1 décomp `CopyPartyAndObjectsToSave(void)` (load_save.c:196). */

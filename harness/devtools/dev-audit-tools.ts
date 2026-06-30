@@ -48,7 +48,7 @@ interface DevAudit {
   save: () => unknown;
   assets: (filter?: string) => Array<{ key: string; type: string; size: number }>;
   bag: () => Array<{ pocket: string; itemKey: string; quantity: number }>;
-  party: () => Array<{ slot: number; species: string | undefined; level?: number; nick?: string }>;
+  party: () => Array<{ slot: number; species: number | undefined; level?: number; nick?: string }>;
   flags: (prefix?: string) => string[];
   vars: (prefix?: string) => Array<{ name: string; value: number }>;
   tile: (tileId: number, charBase?: number, paletteBank?: number) => string;
@@ -152,17 +152,13 @@ const audit: DevAudit = {
     return bagContents();
   },
 
-  party(): Array<{ slot: number; species: string | undefined; level?: number; nick?: string }> {
+  party(): Array<{ slot: number; species: number | undefined; level?: number; nick?: string }> {
     const sb1 = GetSaveBlock1();
-    const party = (sb1.playerParty ?? []) as Array<{
-      species?: string;
-      speciesNameFr?: string;
-      level?: number;
-      nickname?: string;
-    }>;
+    // playerParty = Pokemon NUMÉRIQUES (calque de vues effondré) : species id (number), nickname.
+    const party = (sb1.playerParty ?? []) as Array<{ species?: number; level?: number; nickname?: string }>;
     return party.map((mon, i) => ({
       slot: i,
-      species: mon.speciesNameFr ?? mon.species,
+      species: mon.species,
       level: mon.level,
       nick: mon.nickname,
     }));

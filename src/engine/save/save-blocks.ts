@@ -20,6 +20,9 @@
  */
 
 import type { PokemonInstance } from '../pokemon/pokemon';
+// Pokemon NUMÉRIQUE (foyer pokemon.c) : type de playerParty depuis l'effondrement du calque
+// de vues. Type-only (erasé) → zéro cycle. (PokemonInstance reste pour BoxPokemonSlot = boxes PC.)
+import type { Pokemon } from '../../pokemon';
 import type { ItemSlot, Bag } from '../bag/bag';
 import { EOS } from '../../../include/constants/characters';
 
@@ -1067,9 +1070,10 @@ export interface SaveBlock1 {
   mapLayoutId: number;
   /** Map view buffer (= 0x100 u16 = backup metatile snapshot). */
   mapView: number[];
-  /** Player party (= 1-6 Pokémon). */
+  /** Player party (= 1-6 Pokémon). Tableau COMPACT de Pokemon NUMÉRIQUES (refs aux slots
+   *  gPlayerParty, la source de vérité). Ex-PokemonInstance[] (calque de vues effondré 2026-07-02). */
   playerPartyCount: number;
-  playerParty: PokemonInstance[];
+  playerParty: Pokemon[];
   /** Money (= XOR'd avec encryptionKey dans le décomp). */
   money: number;
   /** Casino coins. */

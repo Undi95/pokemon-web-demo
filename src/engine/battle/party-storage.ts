@@ -381,20 +381,19 @@ export function restoreOwPartyAfterTest(): void {
 
 // ─── Migration Pokémon (palier B) : gPlayerParty = SOURCE, block1.playerParty = vues ──
 
-/** Reconstruit la FAÇADE transitoire `gSaveBlock1Ptr.playerParty` = tableau de
- *  vues LIVE (`makePokemonInstanceView`) sur les slots PEUPLÉS de `gPlayerParty`
- *  (= la source de vérité). Les ~129 lecteurs OW (PokemonInstance) lisent ET
- *  mutent gPlayerParty À TRAVERS ces vues, sans churn. Appelé après chaque
- *  mutation STRUCTURELLE de gPlayerParty (ajout via GiveMonToPlayer, LoadPlayerParty).
- *  Transitoire : disparaîtra quand les lecteurs passeront à GetMonData(gPlayerParty)
- *  (P3) puis que PokemonInstance sera retiré (P4). */
+/** Reconstruit `gSaveBlock1Ptr.playerParty` = tableau COMPACT (slots PEUPLÉS seulement)
+ *  de Pokemon NUMÉRIQUES — refs DIRECTES aux slots de `gPlayerParty` (la source de vérité).
+ *  `.length` = compte de party. Appelé après chaque mutation STRUCTURELLE de gPlayerParty
+ *  (GiveMonToPlayer, LoadPlayerParty).
+ *  ⚙️ Ex-calque de vues PokemonInstance (Proxy makePokemonInstanceView) EFFONDRÉ (2026-07-02) :
+ *  les lecteurs lisent du numérique via GetMonData / les champs plats (species/hp/status num). */
 export function RefreshPlayerPartyViews(): void {
-  const views: PokemonInstance[] = [];
+  const party: Pokemon[] = [];
   for (let i = 0; i < PARTY_SIZE; i++) {
-    if (gPlayerParty[i].species !== 0) views.push(makePokemonInstanceView(gPlayerParty[i]));
+    if (gPlayerParty[i].species !== 0) party.push(gPlayerParty[i]);
   }
-  gSaveBlock1Ptr.playerParty = views;
-  gSaveBlock1Ptr.playerPartyCount = views.length;
+  gSaveBlock1Ptr.playerParty = party;
+  gSaveBlock1Ptr.playerPartyCount = party.length;
 }
 
 /** 1:1 décomp `u8 MON_GIVEN_TO_PARTY/PC/CANT_GIVE` (include/pokemon.h). Co-localisés
