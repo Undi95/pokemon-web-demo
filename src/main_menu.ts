@@ -26,6 +26,7 @@
  */
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
+import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { SetPlayerName, GetPlayerNameString } from '../include/text';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
@@ -171,10 +172,12 @@ export const sScrollArrowsTemplate_MainMenu = {
 };
 (globalThis as Record<string, unknown>).sScrollArrowsTemplate_MainMenu = sScrollArrowsTemplate_MainMenu;
 
-/** 1:1 décomp main_menu.c:451 sSpriteAffineAnimTable_PlayerShrink — string-symbol
- *  pour lookup dans `SPRITE_AFFINE_ANIM_TABLES` (= auto-data sprite-system.ts:469).
- *  Cette table contient `sSpriteAffineAnim_PlayerShrink` (= 1 frame xScale=-2,
- *  yScale=-2, rotation=0, duration=48 → player shrink sur 48 frames). */
+/** 1:1 décomp main_menu.c:451 sSpriteAffineAnimTable_PlayerShrink — nom de table affine
+ *  (player shrink = 1 frame xScale=-2/yScale=-2/duration=48 → rétrécit sur 48 frames).
+ *  Relocalisé du registre auto sprite-system.ts vers le registre EXTRA (dissolution
+ *  decomp-data : sprite-system.ts perd SPRITE_AFFINE_ANIMS/TABLES). getAffineAnim le lit ici. */
+registerAffineAnim('sSpriteAffineAnim_PlayerShrink', { frames: [{ xScale: -2, yScale: -2, rotation: 0, duration: 48 }], terminator: 'END' });
+registerAffineAnimTable('sSpriteAffineAnimTable_PlayerShrink', { affineAnims: ['sSpriteAffineAnim_PlayerShrink'] });
 export const sSpriteAffineAnimTable_PlayerShrink = 'sSpriteAffineAnimTable_PlayerShrink';
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
 

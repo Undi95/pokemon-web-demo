@@ -134,21 +134,10 @@ export const SPRITE_ANIM_TABLES = {
   "sVersionBannerRightAnimTable": {"anims":["sVersionBannerRightAnimSequence"]},
 } as const;
 
-export const SPRITE_AFFINE_ANIMS = {
-  "sAffineAnim_GameFreak_GrowAndShrink": {"frames":[{"xScale":128,"yScale":128,"rotation":0,"duration":0},{"xScale":16,"yScale":16,"rotation":0,"duration":16},{"xScale":-16,"yScale":-16,"rotation":0,"duration":8}],"terminator":"END"},
-  "sAffineAnim_GameFreak_GrowBig": {"frames":[{"xScale":256,"yScale":256,"rotation":0,"duration":0},{"xScale":8,"yScale":8,"rotation":0,"duration":48}],"terminator":"END"},
-  "sAffineAnim_GameFreak_GrowMedium": {"frames":[{"xScale":256,"yScale":256,"rotation":0,"duration":0},{"xScale":2,"yScale":2,"rotation":0,"duration":48}],"terminator":"END"},
-  "sAffineAnim_GameFreak_Small": {"frames":[{"xScale":128,"yScale":128,"rotation":0,"duration":0}],"terminator":"END"},
-  "sAffineAnim_StarterCircle": {"frames":[{"xScale":20,"yScale":20,"rotation":0,"duration":0},{"xScale":20,"yScale":20,"rotation":0,"duration":15}],"terminator":"END"},
-  "sAffineAnim_StarterPokemon": {"frames":[{"xScale":16,"yScale":16,"rotation":0,"duration":0},{"xScale":16,"yScale":16,"rotation":0,"duration":15}],"terminator":"END"},
-  "sSpriteAffineAnim_PlayerShrink": {"frames":[{"xScale":-2,"yScale":-2,"rotation":0,"duration":48}],"terminator":"END"},
-} as const;
-
-export const SPRITE_AFFINE_ANIM_TABLES = {
-  "sAffineAnims_GameFreak": {"affineAnims":["sAffineAnim_GameFreak_Small","sAffineAnim_GameFreak_GrowAndShrink","sAffineAnim_GameFreak_GrowBig","sAffineAnim_GameFreak_GrowMedium"]},
-  "sAffineAnims_StarterCircle": {"affineAnims":["sAffineAnim_StarterCircle"]},
-  "sSpriteAffineAnimTable_PlayerShrink": {"affineAnims":["sSpriteAffineAnim_PlayerShrink"]},
-} as const;
+// SPRITE_AFFINE_ANIMS + SPRITE_AFFINE_ANIM_TABLES SUPPRIMÉS (2026-06-30, dissolution decomp-data) :
+// tous les consommateurs enregistrent désormais leurs affine anims dans le registre EXTRA
+// (sprite-affine-extras.ts via registerAffineAnim/Table) — battler/ballrotate/bag/starter
+// + GameFreak (intro.ts) + PlayerShrink (main_menu.ts). getAffineAnim ne lit QUE l'extra.
 
 export const SPRITE_TEMPLATES = {
   "sPokemonLogoShineSpriteTemplate": {"tileTag":"TAG_LOGO_SHINE","paletteTag":"TAG_PRESS_START_COPYRIGHT","oam":"sPokemonLogoShineOamData","anims":"sPokemonLogoShineAnimTable","images":"NULL","affineAnims":"gDummySpriteAffineAnimTable","callback":"SpriteCB_PokemonLogoShine"},
@@ -221,37 +210,8 @@ export const OAM_DATAS = {
   "sVersionBannerRightOamData": {"y":"DISPLAY_HEIGHT","affineMode":"ST_OAM_AFFINE_OFF","objMode":"ST_OAM_OBJ_NORMAL","mosaic":"FALSE","bpp":"ST_OAM_8BPP","shape":"SPRITE_SHAPE(64x32)","x":"0","matrixNum":"0","size":"SPRITE_SIZE(64x32)","tileNum":"0","priority":"0","paletteNum":"0","affineParam":"0","_sizeWH":[64,32],"_shapeWH":[64,32]},
 } as const;
 
-export const SPRITE_PALETTES = {
-  "sSpritePalette_Bubbles": {"entries":[{"paletteName":"gIntroBubbles_Pal","tag":"TAG_BUBBLES"}]},
-  "sSpritePalette_Lightning": {"entries":[{"paletteName":"gIntroLightning_Pal","tag":"TAG_LIGHTNING"}]},
-  "sSpritePalette_MonBg": {"entries":[{"paletteName":"(const u16 *)&gDecompressionBuffer[MONBG_OFFSET]","tag":"TAG_MON_BG"}]},
-  "sSpritePalette_PressStart": {"entries":[{"paletteName":".data = gTitleScreenPressStartPal","tag":".tag = TAG_PRESS_START_COPYRIGHT"}]},
-  "sSpritePalette_RayquazaOrb": {"entries":[{"paletteName":"sIntroRayquzaOrb_Pal","tag":"TAG_RAYQUAZA_ORB"}]},
-  "sSpritePalette_Sparkle": {"entries":[{"paletteName":"gIntroLightning_Pal","tag":"TAG_SPARKLE"}]},
-  "sSpritePalettes": {"entries":[{"paletteName":"gNamingScreenMenu_Pal[0]","tag":"PALTAG_MENU"},{"paletteName":"gNamingScreenMenu_Pal[1]","tag":"PALTAG_PAGE_SWAP_UPPER"},{"paletteName":"gNamingScreenMenu_Pal[2]","tag":"PALTAG_PAGE_SWAP_LOWER"},{"paletteName":"gNamingScreenMenu_Pal[3]","tag":"PALTAG_PAGE_SWAP_OTHERS"},{"paletteName":"gNamingScreenMenu_Pal[4]","tag":"PALTAG_PAGE_SWAP"},{"paletteName":"gNamingScreenMenu_Pal[5]","tag":"PALTAG_CURSOR"},{"paletteName":"gNamingScreenMenu_Pal[4]","tag":"PALTAG_BACK_BUTTON"},{"paletteName":"gNamingScreenMenu_Pal[4]","tag":"PALTAG_OK_BUTTON"}]},
-  "sSpritePalettes_Intro1": {"entries":[{"paletteName":"sIntroDrops_Pal","tag":"PALTAG_DROPS"},{"paletteName":"sIntroLogo_Pal","tag":"PALTAG_LOGO"},{"paletteName":"sIntroFlygonSilhouette_Pal","tag":"TAG_FLYGON_SILHOUETTE"}]},
-  "sSpritePalettes_RunningPokemon": {"entries":[{"paletteName":"gIntroVolbeat_Pal","tag":"TAG_VOLBEAT"},{"paletteName":"gIntroTorchic_Pal","tag":"TAG_TORCHIC"},{"paletteName":"gIntroManectric_Pal","tag":"TAG_MANECTRIC"}]},
-  "sSpritePalettes_StarterChoose": {"entries":[{"paletteName":".data = sPokeballSelection_Pal","tag":".tag = TAG_POKEBALL_SELECT"},{"paletteName":".data = sStarterCircle_Pal","tag":".tag = TAG_STARTER_CIRCLE"}]},
-} as const;
-
-export const SPRITE_SHEETS = {
-  "sPokemonLogoShineSpriteSheet": {"entries":[{"gfxName":".data = sTitleScreenLogoShineGfx","sizeBytes":".size = 0x800","tag":".tag = TAG_LOGO_SHINE"}]},
-  "sSpriteSheet_Bubbles": {"entries":[{"gfxName":"gIntroBubbles_Gfx","sizeBytes":1536,"tag":"TAG_BUBBLES"}]},
-  "sSpriteSheet_Clouds": {"entries":[{"gfxName":".data = sClouds_Gfx","sizeBytes":".size = 0x400","tag":".tag = TAG_MOVING_SCENERY"}]},
-  "sSpriteSheet_EmeraldVersion": {"entries":[{"gfxName":".data = gTitleScreenEmeraldVersionGfx","sizeBytes":".size = 0x1000","tag":".tag = TAG_VERSION"}]},
-  "sSpriteSheet_FlygonSilhouette": {"entries":[{"gfxName":"gIntroFlygonSilhouette_Gfx","sizeBytes":1024,"tag":"TAG_FLYGON_SILHOUETTE"}]},
-  "sSpriteSheet_HouseSilhouette": {"entries":[{"gfxName":".data = sHouseSilhouette_Gfx","sizeBytes":".size = 0x400","tag":".tag = TAG_MOVING_SCENERY"}]},
-  "sSpriteSheet_IntroFlygon_Unused": {"entries":[{"gfxName":".data = gIntroFlygon_Gfx","sizeBytes":".size = 0x1000","tag":".tag = TAG_FLYGON_LATIOS"}]},
-  "sSpriteSheet_Latias": {"entries":[{"gfxName":".data = sLatias_Gfx","sizeBytes":".size = 0x1000","tag":".tag = TAG_FLYGON_LATIAS"}]},
-  "sSpriteSheet_Latios": {"entries":[{"gfxName":".data = sLatios_Gfx","sizeBytes":".size = 0x1000","tag":".tag = TAG_FLYGON_LATIOS"}]},
-  "sSpriteSheet_Lightning": {"entries":[{"gfxName":"gIntroLightning_Gfx","sizeBytes":3072,"tag":"TAG_LIGHTNING"}]},
-  "sSpriteSheet_PokeballSelect": {"entries":[{"gfxName":".data = gPokeballSelection_Gfx","sizeBytes":".size = 0x0800","tag":".tag = TAG_POKEBALL_SELECT"}]},
-  "sSpriteSheet_PressStart": {"entries":[{"gfxName":".data = gTitleScreenPressStartGfx","sizeBytes":".size = 0x520","tag":".tag = TAG_PRESS_START_COPYRIGHT"}]},
-  "sSpriteSheet_RayquazaOrb": {"entries":[{"gfxName":"sIntroMisc_Gfx","sizeBytes":2560,"tag":"TAG_RAYQUAZA_ORB"}]},
-  "sSpriteSheet_RunningPokemon": {"entries":[{"gfxName":"gIntroVolbeat_Gfx","sizeBytes":1024,"tag":"TAG_VOLBEAT"},{"gfxName":"gIntroTorchic_Gfx","sizeBytes":3072,"tag":"TAG_TORCHIC"},{"gfxName":"gIntroManectric_Gfx","sizeBytes":8192,"tag":"TAG_MANECTRIC"}]},
-  "sSpriteSheet_Sparkle": {"entries":[{"gfxName":"gIntroSparkle_Gfx","sizeBytes":1024,"tag":"TAG_SPARKLE"}]},
-  "sSpriteSheet_StarterCircle": {"entries":[{"gfxName":".data = sStarterCircle_Gfx","sizeBytes":".size = 0x0800","tag":".tag = TAG_STARTER_CIRCLE"}]},
-  "sSpriteSheet_TreesSmall": {"entries":[{"gfxName":".data = sTreesSmall_Gfx","sizeBytes":".size = 0x400","tag":".tag = TAG_MOVING_SCENERY"}]},
-  "sSpriteSheet_WaterDropsAndLogo": {"entries":[{"gfxName":"sIntroDropsLogo_Gfx","sizeBytes":5120,"tag":"GFXTAG_DROPS_LOGO"}]},
-} as const;
+// SPRITE_PALETTES + SPRITE_SHEETS SUPPRIMÉS (2026-06-30, dissolution decomp-data) : leur seul
+// consommateur live (starter_choose via rt.Load*FromTable) charge désormais EN DIRECT via
+// LoadSpriteSheet/LoadSpritePalette (sprite.ts 1:1). Les autres entrées (intro/title/naming)
+// étaient déjà mortes (scènes migrées en chargement direct). Méthodes runtime associées retirées.
 

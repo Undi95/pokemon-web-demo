@@ -20,6 +20,7 @@ import {
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
 } from '../harness/runtime/decomp-helpers';
 import { ResetSpriteData, DestroySprite, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type SpriteTemplate } from './sprite';
+import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 // ─── intro.c #define constantes 1:1 (ex-`decomp-data/intro-data`, auto-extrait
 //     dissous : foyer 1:1 = les #define de intro.c). ──
 // Timeline (frames) de l'intro movie — intro.c:147-172.
@@ -2416,6 +2417,15 @@ const sSpriteTemplate_WaterDrop = {
   tileTag: 'GFXTAG_DROPS_LOGO', paletteTag: 'PALTAG_DROPS',
   oam: sOamData_WaterDrop, anims: sAnims_WaterDrop, images: null, affineAnims: null, callback: SpriteCB_WaterDrop,
 };
+
+// intro.c — affine anims du logo GameFreak (sAffineAnims_GameFreak). Relocalisées du registre
+// auto sprite-system.ts vers le registre EXTRA (dissolution decomp-data : sprite-system.ts
+// perd SPRITE_AFFINE_ANIMS/TABLES). getAffineAnim('sAffineAnims_GameFreak') les lit ici.
+registerAffineAnim('sAffineAnim_GameFreak_Small', { frames: [{ xScale: 128, yScale: 128, rotation: 0, duration: 0 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_GameFreak_GrowAndShrink', { frames: [{ xScale: 128, yScale: 128, rotation: 0, duration: 0 }, { xScale: 16, yScale: 16, rotation: 0, duration: 16 }, { xScale: -16, yScale: -16, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_GameFreak_GrowBig', { frames: [{ xScale: 256, yScale: 256, rotation: 0, duration: 0 }, { xScale: 8, yScale: 8, rotation: 0, duration: 48 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_GameFreak_GrowMedium', { frames: [{ xScale: 256, yScale: 256, rotation: 0, duration: 0 }, { xScale: 2, yScale: 2, rotation: 0, duration: 48 }], terminator: 'END' });
+registerAffineAnimTable('sAffineAnims_GameFreak', { affineAnims: ['sAffineAnim_GameFreak_Small', 'sAffineAnim_GameFreak_GrowAndShrink', 'sAffineAnim_GameFreak_GrowBig', 'sAffineAnim_GameFreak_GrowMedium'] });
 
 // intro.c:664 — sOamData_GameFreakLetter (16x16, 4bpp, AFFINE_DOUBLE, priority 0) ; 7 anims G/A/M/E/F/R/K
 const sOamData_GameFreakLetter = { shape: 0, size: 1, priority: 0, paletteNum: 0, affineMode: 3, paletteMode: 0, objMode: 0 };

@@ -49,7 +49,7 @@ import { AddTextPrinterParameterized, GetStringCenterAlignXOffset, FONT_NORMAL, 
 import { AddTextPrinterParameterized3 } from './menu';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
-import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, TAG_NONE, type SpriteTemplate } from './sprite';
+import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, TAG_NONE, type SpriteTemplate } from './sprite';
 import { CreateMonPicSprite_Affine, FreeAndDestroyMonPicSprite, ResetAllPicSprites, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './text_window';
@@ -452,19 +452,23 @@ async function CB2_ChooseStarter(): Promise<void> {
   LoadPalette(textboxPal, BG_PLTT_ID(14), textboxPal.length * 2);
   // LoadPalette(gBirchBagGrass_Pal, BG_PLTT_ID(0), sizeof(gBirchBagGrass_Pal));
   LoadPalette(_assets.birchPalette, BG_PLTT_ID(0), _assets.birchPalette.length * 2);
-  // LoadCompressedSpriteSheet(&sSpriteSheet_PokeballSelect[0]);
-  // 🔑 resolveTag NUMÉRIQUE 1:1 (TAG_POKEBALL_SELECT=0x1000 / TAG_STARTER_CIRCLE=0x1001) :
-  // la data registre est pourrie (tag string) → on impose le tag numérique du décomp pour
-  // que sprite.tileTag/paletteTag (numérique) résolve le bon slot (fix cercle noir / pokéball).
-  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_PokeballSelect', () => POKEBALL_SHEET_URL, () => TAG_POKEBALL_SELECT);
-  // LoadCompressedSpriteSheet(&sSpriteSheet_StarterCircle[0]);
-  await rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_StarterCircle', () => STARTER_CIRCLE_SHEET_URL, () => TAG_STARTER_CIRCLE);
-  // LoadSpritePalettes(sSpritePalettes_StarterChoose);
-  await rt.LoadSpritePalettesFromTable('sSpritePalettes_StarterChoose', (palName) => {
-    if (palName.includes('PokeballSelection')) return POKEBALL_SHEET_URL;
-    if (palName.includes('StarterCircle')) return STARTER_CIRCLE_SHEET_URL;
-    return null;
-  }, (palName) => palName.includes('StarterCircle') ? TAG_STARTER_CIRCLE : TAG_POKEBALL_SELECT);
+  // 1:1 décomp LoadCompressedSpriteSheet(&sSpriteSheet_PokeballSelect[0]) +
+  // LoadCompressedSpriteSheet(&sSpriteSheet_StarterCircle[0]) + LoadSpritePalettes(sSpritePalettes_StarterChoose).
+  // Chargement DIRECT via les fns 1:1 sprite.ts (LoadSpriteSheet/LoadSpritePalette) — plus de
+  // lookup dans le registre auto sprite-system.ts (dissolution decomp-data : il perd SPRITE_SHEETS/
+  // SPRITE_PALETTES). Tags NUMÉRIQUES 1:1 (TAG_POKEBALL_SELECT=0x1000 / TAG_STARTER_CIRCLE=0x1001).
+  // sheet = .4bpp via loadIndexedPngStrict (indices PLTE-cohérents) ; palette = PLTE chunk (même ordre).
+  {
+    const { loadIndexedPngStrict, extractPngPlte } = await import('../harness/gba/png-loader');
+    const pokeballGfx = await loadIndexedPngStrict(POKEBALL_SHEET_URL, 4);
+    LoadSpriteSheet({ data: pokeballGfx.charData, size: pokeballGfx.charData.length, tag: TAG_POKEBALL_SELECT });
+    const circleGfx = await loadIndexedPngStrict(STARTER_CIRCLE_SHEET_URL, 4);
+    LoadSpriteSheet({ data: circleGfx.charData, size: circleGfx.charData.length, tag: TAG_STARTER_CIRCLE });
+    const pokeballPlte = await extractPngPlte(POKEBALL_SHEET_URL);
+    if (pokeballPlte) LoadSpritePalette({ data: pokeballPlte.subarray(0, 16), tag: TAG_POKEBALL_SELECT });
+    const circlePlte = await extractPngPlte(STARTER_CIRCLE_SHEET_URL);
+    if (circlePlte) LoadSpritePalette({ data: circlePlte.subarray(0, 16), tag: TAG_STARTER_CIRCLE });
+  }
   // BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
   rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0x10, 0, 0);
 

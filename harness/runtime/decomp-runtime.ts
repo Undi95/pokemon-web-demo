@@ -29,12 +29,11 @@ const RT_DEBUG = typeof window !== 'undefined' && window.localStorage?.getItem('
 import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../gba/types';
 import {
   loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
-  loadIndexedPngStrict, extractPngPlte,
+  loadIndexedPngStrict,
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
 } from '../gba/png-loader';
 import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
-  SPRITE_PALETTES, SPRITE_SHEETS,
 } from '../../src/engine/decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from '../../src/palette';
@@ -47,7 +46,6 @@ import {
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
-  MarkObjPaletteAllocated as _MarkObjPaletteAllocated_1to1,
   sSpritePaletteTags as _sSpritePaletteTags_1to1,
   sSpriteTileRangeTags as _sSpriteTileRangeTags_1to1,
   sSpriteTileRanges as _sSpriteTileRanges_1to1,
@@ -1804,130 +1802,10 @@ export class DecompRuntime {
   // anims. Plus aucun hardcode tileId/paletteBank côté scène.
   // ============================================================================
 
-  /** 1:1 décomp `LoadSpritePalettes(sSpritePalettes_X)` :
-   *  parcourt la table, charge chaque palette à un slot OBJ libre via scan
-   *  first-free (= IndexOfSpritePaletteTag(TAG_NONE) dans le décomp), enregistre
-   *  paletteTag → slot pour résolution future via paletteTagToSlot.
-   *
-   *  BUG RACINE RÉSOLU : avant, faisait `this.nextObjPalSlot++` (counter monotone)
-   *  qui saturait après ~16 reloads PC/bag → palettes player+PNJ écrasées.
-   *  Maintenant : scan first-free dans [gReservedSpritePaletteCount, 16). */
-  async LoadSpritePalettesFromTable(
-    tableName: string,
-    resolveUrl: (paletteName: string) => string | null,
-    // 🔑 Tags 1:1 NUMÉRIQUES : la data registre est pourrie (`tag: ".tag = TAG_X"`) →
-    // cleanTag tombe en string synthétique ≠ tag numérique du sprite → mauvais slot
-    // palette. resolveTag(name)→valeur numérique (ex 0x1000) rend les tags cohérents
-    // (le sprite résout via le même 0x1000). starter_choose le fournit.
-    resolveTag?: (paletteName: string) => number,
-  ): Promise<void> {
-    const table = (SPRITE_PALETTES as Record<string, { entries: ReadonlyArray<{ paletteName: string, tag: string }> }>)[tableName];
-    if (!table) {
-      console.warn(`[runtime] LoadSpritePalettesFromTable: table ${tableName} not found in SPRITE_PALETTES`);
-      return;
-    }
-    // 1:1 STRICT décomp sprite.c LoadSpritePalettes loop : pour chaque entry,
-    // check existing tag (early return) ; sinon find first-free dans
-    // [gReservedSpritePaletteCount, 16) via sSpritePaletteTags array primary ;
-    // load palette + register tag.
-    // Imports DIRECTS sprite.ts (ex-`__sprite`) : arrays/fns primary 1:1 décomp.
-    for (const entry of table.entries) {
-      const url = resolveUrl(entry.paletteName);
-      if (!url) {
-        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: cannot resolve URL for ${entry.paletteName}`);
-        continue;
-      }
-      // J — fix extracteur : entry.tag = ".tag = TAG_X" → strip préfixe.
-      const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
-      // Tag NUMÉRIQUE 1:1 si resolveTag fourni (sinon fallback string legacy).
-      const tag: string | number = resolveTag ? resolveTag(entry.paletteName) : cleanTag;
-      // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
-      if (_IndexOfSpritePaletteTag_1to1(tag) !== 0xFF) continue;
-      // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) =
-      // scan first-free dans [gReservedSpritePaletteCount, 16) via array primary.
-      const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-      let slot = -1;
-      for (let i = reserved; i < 16; i++) {
-        if (_sSpritePaletteTags_1to1[i] === 0xFFFF) { slot = i; break; }
-      }
-      if (slot < 0) {
-        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${cleanTag}`);
-        break;
-      }
-      try {
-        if (url.endsWith('.png')) {
-          // J — fix 1:1 strict : loadIndexedPng rebuild palette par ordre
-          // d'apparition pixel ; mismatch avec tile data écrit via
-          // loadIndexedPngStrict (= PLTE order). Le décomp utilise
-          // INCGFX_U16("xxx.png", ".gbapal") = PLTE chunk extracted en RGB15.
-          // → lire le PLTE direct (= 1:1 strict décomp .gbapal sibling).
-          const plte = await extractPngPlte(url);
-          if (!plte) {
-            console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: no PLTE in ${url}`);
-          } else {
-            const pal16 = plte.subarray(0, 16);
-            this.LoadPaletteObj(pal16, OBJ_PLTT_ID(slot));
-          }
-        } else {
-          await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
-        }
-        // 1:1 STRICT register tag via sSpritePaletteTags array primary (import direct sprite.ts).
-        _MarkObjPaletteAllocated_1to1(slot, tag);
-        if (RT_DEBUG) console.log(`[runtime] palette ${tag} → OBJ slot ${slot}`);
-      } catch (e) {
-        console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
-      }
-    }
-  }
-
-  /** 1:1 décomp `LoadCompressedSpriteSheet(sSpriteSheet_X)` :
-   *  charge chaque sheet à un offset auto-incrémenté dans objVram, enregistre
-   *  tileTag → tileNum start pour résolution future. */
-  async LoadCompressedSpriteSheetsFromTable(
-    tableName: string,
-    resolveUrl: (gfxName: string) => string | null,
-    // 🔑 Tag NUMÉRIQUE 1:1 (cf LoadSpritePalettesFromTable) — cohérence sprite↔sheet.
-    resolveTag?: (gfxName: string) => number,
-  ): Promise<void> {
-    const table = (SPRITE_SHEETS as Record<string, { entries: ReadonlyArray<{ gfxName: string, sizeBytes: number | string, tag: string }> }>)[tableName];
-    if (!table) {
-      console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable: table ${tableName} not found`);
-      return;
-    }
-    // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet pour chaque
-    // entry : LZ77UnComp data → AllocSpriteTiles (bitmap scan first-free) →
-    // AllocSpriteTileRange (tag register) → CpuCopy16. Source unique = arrays
-    // primary, pas de cursor monotone.
-    // Imports DIRECTS sprite.ts (ex-`__sprite`) : AllocSpriteTiles/AllocSpriteTileRange 1:1.
-    for (const entry of table.entries) {
-      const url = resolveUrl(entry.gfxName);
-      if (!url) {
-        console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: cannot resolve URL for ${entry.gfxName}`);
-        continue;
-      }
-      try {
-        const png = await loadIndexedPngStrict(url, 4);
-        const tileCount = png.charData.length >> 5;
-        const tileStart = _AllocSpriteTiles_1to1(tileCount);
-        if (tileStart < 0) {
-          console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: OBJ VRAM saturated for ${entry.tag}`);
-          continue;
-        }
-        const byteOffset = tileStart << 5;
-        this._writeToObjVram(png.charData, byteOffset);
-        // J — fix extracteur : entry.tag = ".tag = TAG_X" (= full assignment string)
-        // au lieu de "TAG_X" (= juste la valeur). Strip le préfixe pour que la
-        // clé de registration matche celle utilisée par CreateSpriteFromTemplate
-        // (= tpl.tileTag = "TAG_X" sans préfixe).
-        const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
-        const tag: string | number = resolveTag ? resolveTag(entry.gfxName) : cleanTag;
-        _AllocSpriteTileRange_1to1(tag, tileStart, tileCount);
-        if (RT_DEBUG) console.log(`[runtime] sheet ${tag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
-      } catch (e) {
-        console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
-      }
-    }
-  }
+  // LoadSpritePalettesFromTable + LoadCompressedSpriteSheetsFromTable SUPPRIMÉES (2026-06-30,
+  // dissolution decomp-data) : leur seul appelant (starter_choose) charge désormais ses sheets/
+  // palettes EN DIRECT via les fns 1:1 sprite.ts LoadSpriteSheet/LoadSpritePalette (objets, plus de
+  // lookup registre). → sprite-system.ts perd SPRITE_PALETTES + SPRITE_SHEETS.
 
   /** Helpers : décode les enum strings du décomp en valeurs numériques GBA OAM. */
   private static parseAffineMode(s: string | undefined): 0 | 1 | 3 {

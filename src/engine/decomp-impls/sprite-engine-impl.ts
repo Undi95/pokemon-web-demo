@@ -22,9 +22,6 @@
 import { DecompRuntime, MAX_SPRITES, type DecompSprite } from '../../../harness/runtime/decomp-runtime';
 import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../../../harness/runtime/decomp-helpers';
 import {
-  SPRITE_AFFINE_ANIM_TABLES, SPRITE_AFFINE_ANIMS,
-} from '../decomp-data/src/sprite-system';
-import {
   getExtraAffineAnim, getExtraAffineAnimTable,
 } from './sprite-affine-extras';
 
@@ -40,13 +37,13 @@ interface AffineAnimFrameCmd {
  *  auto-generated `SPRITE_AFFINE_ANIM_TABLES` / `SPRITE_AFFINE_ANIMS`. */
 function getAffineAnim(sprite: DecompSprite): { frames: ReadonlyArray<AffineAnimFrameCmd>, terminator: string } | null {
   if (!sprite.affineAnimsTableName) return null;
-  const table = getExtraAffineAnimTable(sprite.affineAnimsTableName)
-    ?? (SPRITE_AFFINE_ANIM_TABLES as Record<string, { affineAnims: ReadonlyArray<string> }>)[sprite.affineAnimsTableName];
+  // Registre EXTRA = source UNIQUE (sprite-system.ts SPRITE_AFFINE_* dissous : tous les
+  // consommateurs — battler/ballrotate/bag/starter/gamefreak/playershrink — enregistrent en extra).
+  const table = getExtraAffineAnimTable(sprite.affineAnimsTableName);
   if (!table) return null;
   const animName = table.affineAnims[sprite.affineAnimNum];
   if (!animName) return null;
-  const anim = getExtraAffineAnim(animName)
-    ?? (SPRITE_AFFINE_ANIMS as Record<string, { frames: ReadonlyArray<AffineAnimFrameCmd>, terminator: string }>)[animName];
+  const anim = getExtraAffineAnim(animName);
   return anim ?? null;
 }
 
