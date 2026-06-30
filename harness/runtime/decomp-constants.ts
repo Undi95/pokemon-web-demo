@@ -75,6 +75,11 @@ import * as mapScripts from '../../include/constants/map_scripts';
 import * as scriptMenu from '../../include/constants/script_menu';
 // GAME_STAT_* enum (= incrementgamestat opcode resolves names).
 import * as gameStats from '../../include/constants/game_stat';
+// COMPARE_SIZE_* enum (pokemon_size_record.h) : la maison Lotad/Seedot de Sootopolis
+// branche `goto_if_eq VAR_RESULT, COMPARE_SIZE_INCORRECT_SPECIES/SMALLER/LARGER` après
+// CompareSeedotSize/CompareLotadSize. Sans ces constantes, parseValue → 0 pour les 3
+// → les 3 goto comparent à 0 → feature cassée (gros Seedot tombait sur "NotSeedot").
+import * as pokemonSizeRecord from '../../include/constants/pokemon_size_record';
 // PLAYERS_HOUSE_TV_NONE/LATI/MOVIE — used by EventScript_TV path dispatch.
 import * as tv from '../../include/constants/tv';
 // Misc per-screen constants (= title screen tile offsets, etc.) extraits
@@ -151,6 +156,7 @@ _mergeConstants(mapScripts);
 _mergeConstants(scriptMenu);
 _mergeConstants(gameStats);
 _mergeConstants(tv);
+_mergeConstantsIfAbsent(pokemonSizeRecord);   // additif (COMPARE_SIZE_* — Lotad/Seedot Sootopolis)
 _mergeConstantsIfAbsent(eventObjectMovement);   // additif (MOVEMENT_TYPE_/ACTION_/ANIM_)
 // include/battle.h : MOVE_TARGET_SELECTED(=0) + B_ACTION_* — si-absent only.
 _mergeConstantsIfAbsent(battleInclude);

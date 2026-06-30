@@ -20,14 +20,15 @@
 
 import { registerSpecial } from './scrcmd';
 import { VarSet, VarGet, gSpecialVar } from './engine/script/script-vars';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
+  gPlayerParty,
   GetMonData, MON_DATA_PERSONALITY,
   MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV,
   MON_DATA_SPEED_IV, MON_DATA_SPATK_IV, MON_DATA_SPDEF_IV,
   MON_DATA_IS_EGG, MON_DATA_SPECIES,
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
+import { gSpeciesNames } from './engine/data/game-data';
 import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
 import { STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, StringAppend, gStringVar1, gStringVar2, gStringVar3 } from '../include/string_util';
 import { encodeOwText, setStringVar, GetPlayerNameString } from '../include/text';
@@ -35,19 +36,16 @@ import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
 } from '../include/constants/species';
 import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from '../include/constants/vars';
+// 1:1 décomp pokemon_size_record.c:10 `#include "constants/pokemon_size_record.h"`.
+import {
+  COMPARE_SIZE_NONE, COMPARE_SIZE_INCORRECT_SPECIES,
+  COMPARE_SIZE_SMALLER, COMPARE_SIZE_LARGER,
+} from '../include/constants/pokemon_size_record';
+// 1:1 décomp pokemon_size_record.c:9 `#include "constants/party_menu.h"` (PARTY_NOTHING_CHOSEN).
+import { PARTY_NOTHING_CHOSEN } from '../include/constants/party_menu';
 
 // 1:1 décomp pokemon_size_record.c:12 — `#define DEFAULT_MAX_SIZE 0x8000`.
 const DEFAULT_MAX_SIZE = 0x8000;
-
-// 1:1 décomp include/constants/pokemon_size_record.h —
-// `enum CompareSizeResult { COMPARE_SIZE_LARGER, COMPARE_SIZE_SMALLER, ... }`.
-const COMPARE_SIZE_LARGER = 0;
-const COMPARE_SIZE_SMALLER = 1;
-const COMPARE_SIZE_INCORRECT_SPECIES = 2;
-const COMPARE_SIZE_NONE = 3;
-
-// 1:1 décomp include/constants/party_menu.h — `#define PARTY_NOTHING_CHOSEN 0xFF`.
-const PARTY_NOTHING_CHOSEN = 0xFF;
 
 // 1:1 décomp pokemon_size_record.c:14-19 — `struct UnknownStruct`.
 interface SizeBucketEntry { unk0: number; unk2: number; unk4: number }
@@ -141,8 +139,10 @@ function CompareMonSize(species: number, varName: string): number {
   if (gSpecialVar.Result === PARTY_NOTHING_CHOSEN) {
     return COMPARE_SIZE_NONE;
   }
-  const pkmn = gSaveBlock1Ptr.playerParty[gSpecialVar.Result] as unknown as Pokemon;
-  if (!pkmn) return COMPARE_SIZE_NONE;
+  // 1:1 décomp : `struct Pokemon *pkmn = &gPlayerParty[gSpecialVar_Result];`
+  // (gPlayerParty = source de vérité ; gSaveBlock1Ptr.playerParty n'est qu'une
+  // façade de vues live → on lit la source directe pour zéro vue périmée).
+  const pkmn = gPlayerParty[gSpecialVar.Result];
   if (GetMonData(pkmn, MON_DATA_IS_EGG) === 1 || GetMonData(pkmn, MON_DATA_SPECIES) !== species) {
     return COMPARE_SIZE_INCORRECT_SPECIES;
   }
@@ -163,12 +163,9 @@ function GetMonSizeRecordInfo(species: number, varName: string): void {
   const sizeRecord = VarGet(varName);
   const size = GetMonSize(species, sizeRecord);
   FormatMonSizeRecord(3, size);
-  // 1:1 décomp : `StringCopy(gStringVar1, gSpeciesNames[species])`.
-  // Cascade R3 : gSpeciesNames non utilisable directement ici. Bridge via
-  // setStringVar avec un lookup species → name (= utiliser pokemon module).
-  // Cette dette R3 est documentée : utilisé seulement par GetSeedot/Lotad
-  // SizeRecordInfo specials (= dialogue NPC, pas gameplay logic).
-  setStringVar(1, `SPECIES_${species}`);  // Placeholder cleartext jusqu'à port gSpeciesNames table.
+  // 1:1 décomp : `StringCopy(gStringVar1, gSpeciesNames[species])` (= nom d'espèce
+  // FR depuis la table id-indexée game-data, cf. lottery_corner.ts même pattern).
+  setStringVar(1, gSpeciesNames[species] ?? '');
   if (sizeRecord === DEFAULT_MAX_SIZE) {
     // 1:1 décomp `StringCopy(gStringVar2, gText_Marco)` réalisé par setStringVar
     // (encode + écrit gStringVar2). L'ancien `StringCopy('', gText_Marco)` (résultat
