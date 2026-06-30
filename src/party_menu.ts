@@ -2943,10 +2943,17 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       _phase = 'helditem_msg';
       _drawMsg();
     } else if (res === 1 || res === -1) {
-      // 1:1 :3199 NON/B → garde l'objet existant ; le message "Echanger?" reste
-      // affiché → A/B le dismiss (phase 'helditem_msg' → retour choix-mon).
-      PlaySE(5);
-      _phase = 'helditem_msg';
+      // 1:1 :3199 NON/B → garde l'objet → Task_ReturnToChooseMonAfterText. ⚠️ Le
+      // message "Echanger les deux objets?" n'a PAS de {PAUSE_UNTIL_PRESS} →
+      // Task_ReturnToChooseMonAfterText (IsPartyMenuTextPrinterActive==FALSE) revient
+      // IMMÉDIATEMENT au choix-mon (efface le message, SANS attendre A/B). Différent
+      // des messages give/swap/take qui ont {PAUSE_UNTIL_PRESS} (→ phase 'helditem_msg').
+      PlaySE(5);  // 1:1 MENU_B_PRESSED rejoue SE_SELECT
+      _itemUsedMsgText = null;
+      _actionList = [];
+      _actionCursor = 0;
+      _phase = 'open';
+      _drawMsg();  // → "Choisir un POKéMON"
     }
     return;
   }
