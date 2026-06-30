@@ -6,14 +6,39 @@
  * Solution : preload tout AVANT de poser la Task → cache populé → helpers
  * lookup-cache + write sync.
  *
- * Mapping symbol → URL via GFX_SOURCES (intro-data.ts auto-extrait).
+ * Mapping symbol → URL via GFX_SOURCES (const local ci-dessous, ex-intro-data.ts dissous).
  *
  * 1:1 décomp src/intro.c — `static const u32 sIntro1Bg_Gfx[] = INCGFX_U32(...)`
  * = data en ROM décompressable au runtime via LZ77UnCompVram.
  */
 import { assetCache } from '../runtime/decomp-globals';
-import { GFX_SOURCES } from '../../src/engine/decomp-data/src/intro-data';
 import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from '../gba/png-loader';
+
+/** Mapping symbole décomp INCGFX → chemin/ext/type. Relocalisé d'intro-data.ts (dissous 2026-06-30
+ *  — métadonnées auto-générées dont seul GFX_SOURCES était consommé, ici, = glue asset harness).
+ *  1:1 décomp src/intro.c `static const u32 sIntroX_Gfx[] = INCGFX_U32(...)` (data ROM). */
+const GFX_SOURCES: Record<string, { path: string; ext: string; type: string }> = {
+  'sIntroDrops_Pal': { path: 'graphics/intro/scene_1/drops.pal', ext: '.gbapal', type: 'u16' },
+  'sIntroLogo_Pal': { path: 'graphics/intro/scene_1/logo.pal', ext: '.gbapal', type: 'u16' },
+  'sIntroDropsLogo_Gfx': { path: 'graphics/intro/scene_1/drops_logo.png', ext: '.4bpp.lz', type: 'u32' },
+  'sIntro1Bg_Pal': { path: 'graphics/intro/scene_1/bg.pal', ext: '.gbapal', type: 'u16' },
+  'sIntro1Bg0_Tilemap': { path: 'graphics/intro/scene_1/bg0_map.bin', ext: '.lz', type: 'u32' },
+  'sIntro1Bg1_Tilemap': { path: 'graphics/intro/scene_1/bg1_map.bin', ext: '.lz', type: 'u32' },
+  'sIntro1Bg2_Tilemap': { path: 'graphics/intro/scene_1/bg2_map.bin', ext: '.lz', type: 'u32' },
+  'sIntro1Bg3_Tilemap': { path: 'graphics/intro/scene_1/bg3_map.bin', ext: '.lz', type: 'u32' },
+  'sIntro1Bg_Gfx': { path: 'graphics/intro/scene_1/bg.png', ext: '.4bpp.lz', type: 'u32' },
+  'sIntroPokeball_Pal': { path: 'graphics/intro/scene_3/pokeball.png', ext: '.gbapal', type: 'u16' },
+  'sIntroPokeball_Tilemap': { path: 'graphics/intro/scene_3/pokeball_map.bin', ext: '.lz', type: 'u32' },
+  'sIntroPokeball_Gfx': { path: 'graphics/intro/scene_3/pokeball.png', ext: '.8bpp.lz', type: 'u32' },
+  'sIntroStreaks_Pal': { path: 'graphics/intro/scene_3/streaks.png', ext: '.gbapal', type: 'u16' },
+  'sIntroStreaks_Gfx': { path: 'graphics/intro/scene_3/streaks.png', ext: '.4bpp.lz', type: 'u32' },
+  'sIntroStreaks_Tilemap': { path: 'graphics/intro/scene_3/streaks_map.bin', ext: '.lz', type: 'u32' },
+  'sIntroRayquzaOrb_Pal': { path: 'graphics/intro/scene_3/rayquaza_orb.pal', ext: '.gbapal', type: 'u16' },
+  'sIntroMisc_Pal': { path: 'graphics/intro/scene_3/misc.pal', ext: '.gbapal', type: 'u16' },
+  'sIntroMisc_Gfx': { path: 'graphics/intro/scene_3/misc.png', ext: '.4bpp.lz', type: 'u32' },
+  'sIntroFlygonSilhouette_Pal': { path: 'graphics/intro/scene_1/flygon.png', ext: '.gbapal', type: 'u16' },
+  'sIntroLati_Gfx': { path: 'graphics/intro/scene_1/lati.png', ext: '.4bpp.lz', type: 'u32' },
+};
 
 /** Charge un .4bpp.bin ou .8bpp.bin pré-extrait via scripts/extract-png-indexed-tiles.mjs.
  *  Ces fichiers parsent l'IDAT PNG directement → préservent les indices palette
