@@ -8,7 +8,7 @@
  */
 import { getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL, assetCache, PlaySE } from '../harness/runtime/decomp-globals';
 import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
-import { ListMenuLoadStdPalAt } from './menu';
+import { ListMenuLoadStdPalAt, DrawDialogFrameWithCustomTileAndPalette } from './menu';
 import { getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList, CompactItemsInBagPocket, SortBerriesOrTMHMs, BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition } from './engine/bag/bag-pockets';
 import { SetCursorWithinListBounds, SetCursorScrollWithinListBounds, MenuHelpers_IsLinkActive, type ListPos } from './menu_helpers';
 import { gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL, CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND, gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor, ListMenuSetTemplateField, type ListMenuTemplate, type ListMenu } from './list_menu';
@@ -2805,15 +2805,28 @@ function _itemMsg(gTextKey: string, opts?: { v1?: string; v2?: string }): string
 
 /** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION puis bascule la
  *  task en wait-for-A. Sur press A/B → return list (sans rebuild). */
+/** 1:1 décomp : les messages d'utilisation d'item (DadsAdvice, CoinCase, Repel,
+ *  Itemfinder…) s'affichent dans la VRAIE boîte message ITEMWIN_MESSAGE (encadrée,
+ *  27 tiles pleine largeur) — PAS WIN_DESCRIPTION (14 tiles → débordement, ex
+ *  gText_DadsAdvice "…{PLAYER}, chaque chose en son temps!"). On dessine le cadre
+ *  dialogue (tile=10 pal=13, = DisplayMessageAndContinueTask) + texte instantané +
+ *  wait-task. (Le flux TOSS garde WIN_DESCRIPTION via _CtxPrintItemMessage.) */
+function _printItemUseMessageBox(msg: string): void {
+  const wid = AddItemMessageWindow(ITEMWIN_MESSAGE);
+  DrawDialogFrameWithCustomTileAndPalette(wid, true, 10, 13);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(1));
+  BagMenu_Print(wid, FONT_NORMAL, msg, 0, 1, 0, 0, 0, COLORID_NORMAL);
+  ScheduleBgCopyTilemapToVram(1);
+}
 function _showItemMessage(task: DecompTask, msg: string): void {
-  _CtxPrintItemMessage(msg);
+  _printItemUseMessageBox(msg);
   task.func = Task_ItemUseMessageWaitForA;
 }
 
 /** Variant qui rebuild la liste après press A (= post-use d'item consommé :
  *  Repel/Medicine/etc. → quantité décrémentée, faut recharger la liste). */
 function _showItemMessageThenRebuild(task: DecompTask, msg: string): void {
-  _CtxPrintItemMessage(msg);
+  _printItemUseMessageBox(msg);
   task.func = Task_ItemUseMessageWaitForAThenRebuild;
 }
 
@@ -2821,6 +2834,7 @@ function _showItemMessageThenRebuild(task: DecompTask, msg: string): void {
 function Task_ItemUseMessageWaitForA(task: DecompTask): void {
   if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
+    RemoveItemMessageWindow(ITEMWIN_MESSAGE);  // ferme la boîte message encadrée
     _CtxReturnToList(task.taskId);
   }
 }
@@ -2829,6 +2843,7 @@ function Task_ItemUseMessageWaitForA(task: DecompTask): void {
 function Task_ItemUseMessageWaitForAThenRebuild(task: DecompTask): void {
   if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
+    RemoveItemMessageWindow(ITEMWIN_MESSAGE);  // ferme la boîte message encadrée
     _CtxReturnToListWithRebuild(task.taskId);
   }
 }
