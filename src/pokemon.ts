@@ -80,6 +80,7 @@ import { GetBattlerAtPosition } from './battle_anim_mons';
 // game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
 import { getSpeciesInfo, gBattleMoves } from './engine/data/game-data';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { Random } from './random';  // leaf (PRNG) — pour AdjustFriendship (gate WALKING).
 // Constantes MON_DATA_* (enum include/pokemon.h) lues par GetMonData/SetMonData.
 // Restent définies dans party-storage (39 fichiers les importent de là) → import ici.
 // Lien 2-sens runtime-only avec party-storage : SÛR (lues seulement dans les fns, jamais
@@ -465,6 +466,79 @@ export function GiveMoveToMon(mon: Pokemon, move: number): number {
     if (existingMove === move) return MON_ALREADY_KNOWS_MOVE;
   }
   return MON_HAS_MAX_MOVES;
+}
+
+// ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
+
+/** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
+ *  Indexed by event id (0..8) × friendshipLevel (0=low, 1=med, 2=high).
+ *  Value : signed mod to apply to mon.friendship. */
+const _SFRIENDSHIP_EVENT_MODIFIERS: ReadonlyArray<ReadonlyArray<number>> = [
+  [ 5,  3,  2],  // FRIENDSHIP_EVENT_GROW_LEVEL = 0
+  [ 5,  3,  2],  // FRIENDSHIP_EVENT_VITAMIN = 1
+  [ 1,  1,  0],  // FRIENDSHIP_EVENT_BATTLE_ITEM = 2
+  [ 3,  2,  1],  // FRIENDSHIP_EVENT_LEAGUE_BATTLE = 3
+  [ 1,  1,  0],  // FRIENDSHIP_EVENT_LEARN_TMHM = 4
+  [ 1,  1,  1],  // FRIENDSHIP_EVENT_WALKING = 5
+  [-1, -1, -1],  // FRIENDSHIP_EVENT_FAINT_SMALL = 6
+  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_FIELD_PSN = 7
+  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_LARGE = 8
+];
+
+const _MAX_FRIENDSHIP = 255;
+const _SPECIES_EGG_VAL = 412;  // 1:1 décomp constants/species.h SPECIES_EGG.
+
+/** 1:1 décomp `AdjustFriendship(mon, event)` (pokemon.c:5901-5973).
+ *  Adjust mon.friendship selon l'event + friendshipLevel + hold effect bonuses.
+ *  Consolidé depuis party-storage.ts. gMapHeader lu via globalThis (= pattern de l'état
+ *  combat ci-dessous) → le foyer pokemon.c n'importe PAS field/fieldmap (zéro cycle). */
+export function AdjustFriendship(mon: Pokemon, event: number): void {
+  if (mon.species === 0 || mon.species === _SPECIES_EGG_VAL) return;
+  if (event < 0 || event >= _SFRIENDSHIP_EVENT_MODIFIERS.length) return;
+
+  let friendshipLevel = 0;
+  if (mon.friendship > 99) friendshipLevel++;
+  if (mon.friendship > 199) friendshipLevel++;
+
+  // 1:1 décomp pokemon.c:5935-5939 : WALKING a 50% de chance de skip.
+  if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
+    if (Random() & 1) return;
+  }
+  // 1:1 décomp pokemon.c:5941-5950 : LEAGUE_BATTLE — gain seulement en combat DRESSEUR
+  // contre Champion d'Arène / Conseil 4 / Maître. Globals battle via globalThis (cycle-safe).
+  if (event === 3 /* FRIENDSHIP_EVENT_LEAGUE_BATTLE */) {
+    const _g = globalThis as {
+      __battleState?: { gBattleTypeFlags?: number };
+      __battleSetup?: { opponentA?: number };
+      __gTrainers?: Record<number, { trainerClass?: number }>;
+    };
+    const _BATTLE_TYPE_TRAINER = 1 << 3;  // 1:1 décomp include/constants/battle.h.
+    if (!((_g.__battleState?.gBattleTypeFlags ?? 0) & _BATTLE_TYPE_TRAINER)) return;
+    const _cls = _g.__gTrainers?.[_g.__battleSetup?.opponentA ?? 0]?.trainerClass ?? -1;
+    const _C = (n: string): number => (resolveDecompConstant(n) as number | undefined) ?? -2;
+    if (_cls !== _C('TRAINER_CLASS_LEADER') && _cls !== _C('TRAINER_CLASS_ELITE_FOUR') && _cls !== _C('TRAINER_CLASS_CHAMPION')) {
+      return;
+    }
+  }
+
+  // 1:1 décomp pokemon.c:5952-5965 : Soothe Bell (HOLD_EFFECT_FRIENDSHIP_UP) → mod
+  // +50% (arrondi bas) ; puis si mod > 0 : Luxury Ball → +1 ET met-location → +1.
+  const _HOLD_EFFECT_FRIENDSHIP_UP = 27;  // 1:1 décomp include/constants/hold_effects.h:31.
+  const _ITEM_LUXURY_BALL = 11;           // 1:1 décomp include/constants/items.h:17.
+  const holdEffect = GetItemHoldEffect(mon.heldItem);
+  let mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
+  if (mod > 0 && holdEffect === _HOLD_EFFECT_FRIENDSHIP_UP) mod = Math.floor((150 * mod) / 100);
+  let friendship = mon.friendship + mod;
+  if (mod > 0) {
+    if (mon.pokeball === _ITEM_LUXURY_BALL) friendship++;
+    // met-location : mon.metLocation (MAPSEC numérique) === regionMapSectionId courant.
+    // gMapHeader lu via globalThis (fieldmap l'expose) → pas d'import field/ dans le foyer.
+    const _mapHeader = (globalThis as { gMapHeader?: { regionMapSectionId?: string } }).gMapHeader;
+    if (mon.metLocation === resolveDecompConstant(_mapHeader?.regionMapSectionId ?? '')) friendship++;
+  }
+  if (friendship < 0) friendship = 0;
+  if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
+  mon.friendship = friendship;
 }
 
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────

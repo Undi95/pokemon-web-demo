@@ -328,100 +328,11 @@ export { CalculatePlayerPartyCount, GetMonsStateToDoubles, CalculateEnemyPartyCo
 // pokemon.c (src/pokemon.ts, = lisent GetMonData/gPlayerParty au foyer). Re-export pour compat.
 export { GetMonEVCount, CheckPartyPokerus, UpdatePartyPokerusTime } from '../../pokemon';
 
-// ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
-
-/** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
- *  Indexed by event id (0..8) × friendshipLevel (0=low, 1=med, 2=high).
- *  Value : signed mod to apply to mon.friendship. */
-const _SFRIENDSHIP_EVENT_MODIFIERS: ReadonlyArray<ReadonlyArray<number>> = [
-  [ 5,  3,  2],  // FRIENDSHIP_EVENT_GROW_LEVEL = 0
-  [ 5,  3,  2],  // FRIENDSHIP_EVENT_VITAMIN = 1
-  [ 1,  1,  0],  // FRIENDSHIP_EVENT_BATTLE_ITEM = 2
-  [ 3,  2,  1],  // FRIENDSHIP_EVENT_LEAGUE_BATTLE = 3
-  [ 1,  1,  0],  // FRIENDSHIP_EVENT_LEARN_TMHM = 4
-  [ 1,  1,  1],  // FRIENDSHIP_EVENT_WALKING = 5
-  [-1, -1, -1],  // FRIENDSHIP_EVENT_FAINT_SMALL = 6
-  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_FIELD_PSN = 7
-  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_LARGE = 8
-];
-
-const _MAX_FRIENDSHIP = 255;
-const _SPECIES_EGG_VAL = 412;  // 1:1 décomp constants/species.h SPECIES_EGG.
-
-/** 1:1 décomp `AdjustFriendship(mon, event)` (pokemon.c:5901-5973).
- *  Adjust mon.friendship selon l'event + friendshipLevel + hold effect bonuses.
- *
- *  Implémenté 1:1 : friendshipLevel (>99/>199), table sFriendshipEventModifiers,
- *  gate WALKING 50% (Random()&1), clamp 0..255.
- *
- *  Équivalents 1:1 (omis sans perte) :
- *    - ShouldSkipFriendshipChange = TRUE seulement en Frontier/Pike/Pyramid (sous-
- *      systèmes non portés) → toujours FALSE chez nous = même comportement.
- *
- *  Déférés (modifiers — bloqués par la fragilité du cast V/L et le risque de cycle) :
- *    - HOLD_EFFECT_FRIENDSHIP_UP +50% (Soothe Bell) + ITEM_LUXURY_BALL +1 : nécessitent
- *      heldItem/pokeball en NUMBER, mais le LIVE passe un PokemonInstance (string) →
- *      câblage V/L-aware requis (cf. bug #4). N'affecte que mod>0 sur events ≠ WALKING.
- *    - MET_LOCATION +1 : nécessite GetCurrentRegionMapSectionId (gMapHeader, field/) →
- *      importer field dans battle/ = risque de cycle d'init ESM (cf. deadlock rtc).
- *    - ITEM_ENIGMA_BERRY hold effect (rare) + LEAGUE_BATTLE trainer-class gate (niche). */
-export function AdjustFriendship(mon: Pokemon, event: number): void {
-  if (mon.species === 0 || mon.species === _SPECIES_EGG_VAL) return;
-  if (event < 0 || event >= _SFRIENDSHIP_EVENT_MODIFIERS.length) return;
-
-  let friendshipLevel = 0;
-  if (mon.friendship > 99) friendshipLevel++;
-  if (mon.friendship > 199) friendshipLevel++;
-
-  // 1:1 décomp pokemon.c:5935-5939 : WALKING a 50% de chance de skip (le compteur
-  // de pas overworld appelle ceci tous les 128 pas → ~1 gain tous les 256 pas).
-  // ⚠️ État réel (audit 2026-06-05) : `UpdateFriendshipStepCounter` (field-control-
-  // avatar) qui passerait WALKING ici est elle-même DORMANTE — son dispatch
-  // `TryStartStepCountScript` n'est PAS porté → friendship-à-la-marche = 0 en LIVE
-  // pour l'instant. Ce gate est donc 1:1-correct mais SANS effet live tant que le
-  // dispatch de compteurs de pas n'est pas câblé (cf. tâches #13/#15 + rematch).
-  if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
-    if (Random() & 1) return;
-  }
-  // 1:1 décomp pokemon.c:5941-5950 : LEAGUE_BATTLE — le gain n'est appliqué qu'en
-  // combat DRESSEUR (BATTLE_TYPE_TRAINER) contre une classe Champion d'Arène / Conseil 4
-  // / Maître. Globals battle lus via globalThis (cycle-safe : party-storage ne doit pas
-  // importer l'état de combat ; pattern de GetTrainerBattleTransition). Constantes de
-  // classe via resolveDecompConstant (pas de hardcode).
-  if (event === 3 /* FRIENDSHIP_EVENT_LEAGUE_BATTLE */) {
-    const _g = globalThis as {
-      __battleState?: { gBattleTypeFlags?: number };
-      __battleSetup?: { opponentA?: number };
-      __gTrainers?: Record<number, { trainerClass?: number }>;
-    };
-    const _BATTLE_TYPE_TRAINER = 1 << 3;  // 1:1 décomp include/constants/battle.h.
-    if (!((_g.__battleState?.gBattleTypeFlags ?? 0) & _BATTLE_TYPE_TRAINER)) return;
-    const _cls = _g.__gTrainers?.[_g.__battleSetup?.opponentA ?? 0]?.trainerClass ?? -1;
-    const _C = (n: string): number => (resolveDecompConstant(n) as number | undefined) ?? -2;
-    if (_cls !== _C('TRAINER_CLASS_LEADER') && _cls !== _C('TRAINER_CLASS_ELITE_FOUR') && _cls !== _C('TRAINER_CLASS_CHAMPION')) {
-      return;
-    }
-  }
-
-  // 1:1 décomp pokemon.c:5952-5965 : Soothe Bell (HOLD_EFFECT_FRIENDSHIP_UP) → mod
-  // +50% (arrondi bas) ; puis si mod > 0 : Luxury Ball → +1 ET met-location → +1.
-  const _HOLD_EFFECT_FRIENDSHIP_UP = 27;  // 1:1 décomp include/constants/hold_effects.h:31.
-  const _ITEM_LUXURY_BALL = 11;           // 1:1 décomp include/constants/items.h:17.
-  const holdEffect = GetItemHoldEffect(mon.heldItem);
-  let mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
-  if (mod > 0 && holdEffect === _HOLD_EFFECT_FRIENDSHIP_UP) mod = Math.floor((150 * mod) / 100);
-  let friendship = mon.friendship + mod;
-  if (mod > 0) {
-    if (mon.pokeball === _ITEM_LUXURY_BALL) friendship++;
-    // met-location : mon.metLocation = MAPSEC numérique (pokemonInstanceToPokemon:551
-    // convertit le string MAPSEC) ; GetCurrentRegionMapSectionId() = gMapHeader.region
-    // MapSectionId (string → numérique via resolveDecompConstant).
-    if (mon.metLocation === resolveDecompConstant(gMapHeader?.regionMapSectionId ?? '')) friendship++;
-  }
-  if (friendship < 0) friendship = 0;
-  if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
-  mon.friendship = friendship;
-}
+// AdjustFriendship (+ table sFriendshipEventModifiers) : consolidé vers le foyer pokemon.c
+// (src/pokemon.ts ; gMapHeader lu via globalThis là-bas → foyer sans import field/).
+// Import-back (user interne l.~933) + re-export.
+import { AdjustFriendship } from '../../pokemon';
+export { AdjustFriendship };
 
 /** 1:1 décomp `void SetWildMonHeldItem(void)` (pokemon.c) : donne (ou non) un objet
  *  tenu au Pokémon sauvage (gEnemyParty[0]) selon les chances itemCommon/itemRare de
