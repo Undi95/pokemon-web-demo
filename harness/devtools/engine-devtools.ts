@@ -591,9 +591,12 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const helpers = await import('../../src/engine/battle/battle-setup-helpers');
     const sbsMod = await import('../../src/engine/save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('../../src/engine/pokemon/pokemon');
-      const starter = pokeMod.CreateMon('SPECIES_TREECKO', 5);
-      pokeMod.GiveMonToPlayer(starter);
+      const pokeMod = await import('../../src/pokemon');           // foyer (CreateMon numérique)
+      const psMod = await import('../../src/engine/battle/party-storage');
+      const cMod = await import('../runtime/decomp-constants');
+      const starter = pokeMod.createEmptyPokemon();
+      pokeMod.CreateMon(starter, (cMod.resolveDecompConstant('SPECIES_TREECKO') as number | undefined) ?? 0, 5, 32, false, 0, 0, 0);
+      psMod.GiveMonToPlayer(starter);
     }
     (helpers as unknown as { StartFirstBattle?: () => void }).StartFirstBattle?.();
     return 'Birch tutorial (voie L) started';
@@ -618,9 +621,11 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const helpers = await import('../../src/engine/battle/battle-setup-helpers');
     const sbsMod2 = await import('../../src/engine/save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('../../src/engine/pokemon/pokemon');
-      const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, lvl - 1));
-      pokeMod.GiveMonToPlayer(starter);
+      const pokeMod = await import('../../src/pokemon');           // foyer (CreateMon numérique)
+      const psMod = await import('../../src/engine/battle/party-storage');
+      const starter = pokeMod.createEmptyPokemon();
+      pokeMod.CreateMon(starter, (constMod.resolveDecompConstant('SPECIES_TREECKO') as number | undefined) ?? 0, Math.max(5, lvl - 1), 32, false, 0, 0, 0);
+      psMod.GiveMonToPlayer(starter);
     }
     const h = helpers as unknown as { CreateScriptedWildMon?: (s: number, l: number, i: number) => void; BattleSetup_StartScriptedWildBattle?: () => void };
     h.CreateScriptedWildMon?.(speciesId, lvl, 0);

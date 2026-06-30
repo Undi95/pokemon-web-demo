@@ -583,20 +583,11 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
  * [abilityNum] ; nature/gender/shiny (helpers purs déjà portés) ; status bitfield
  * STATUS1_* → enum. ⚠️ Champs « edge » approximés (à affiner Phase 2/3 sous A/B) :
  * `pokeball` (index balle→enum item ; défaut POKE_BALL), `metLocation` (MAPSEC).
+ *
+ * NB : l'ex-convenience `CreateMon(speciesEnum, level, opts)` (legacy PokemonInstance) a été
+ * SUPPRIMÉE (2026-07-02) — tous ses callers (givemon/giveegg/starter/Zigzagoon/wild/scripted/
+ * trainer) sont passés au CreateMon NUMÉRIQUE 1:1 du foyer src/pokemon.ts.
  */
-/** 1:1 décomp `CreateMon` (pokemon.c:2196) : crée un Pokemon NATIF (destiné à
- *  gPlayerParty/gEnemyParty). Génération 1:1 `CreateBoxMon` via createPokemonInstance
- *  (ordre RNG préservé : personality puis IVs) + conversion native pokemonInstanceToPokemon.
- *  C'est l'API de création « un seul modèle » — les callers OW passent par ici au
- *  lieu de manipuler PokemonInstance. (PokemonInstance reste l'intermédiaire de
- *  génération + le format save jusqu'à P4b.) */
-export function CreateMon(
-  speciesEnum: string, level: number,
-  opts?: Parameters<typeof createPokemonInstance>[2],
-): Pokemon {
-  return pokemonInstanceToPokemon(createPokemonInstance(speciesEnum, level, opts));
-}
-
 export function pokemonToPokemonInstance(mon: Pokemon): PokemonInstance {
   const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
   const dexId = speciesEnumToDexId(speciesEnum);
