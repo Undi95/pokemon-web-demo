@@ -30,7 +30,8 @@ import {
   MON_DATA_FRIENDSHIP, MON_DATA_OT_NAME,
 } from './engine/battle/party-storage';
 import { PARTY_SIZE } from '../include/constants/global';
-import { gSpeciesInfo } from './engine/data/game-data';
+import { gSpeciesInfo, getMoveName } from './engine/data/game-data';
+import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
 import { GetPlayerNameString, setStringVar } from '../include/text';
 import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -308,21 +309,14 @@ export function BufferLottoTicketNumber(): void {
 
 /** 1:1 décomp `BufferTMHMMoveName` (field_specials.c:1638-1647) :
  *    if (gSpecialVar_0x8004 in [ITEM_TM01, ITEM_HM08]) {
- *      StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(item)]); return TRUE; }
+ *      StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(gSpecialVar_0x8004)]); return TRUE; }
  *    return FALSE;
- *  ItemIdToBattleMoveId/getMoveName via bridge globalThis (anti-cycle, comme avant). */
+ *  ✅ Branché 1:1 : ItemIdToBattleMoveId (tmhm-moves.ts) + getMoveName (game-data.ts), import direct
+ *  (les anciens bridges globalThis __game_tmhm/__game_data n'étaient JAMAIS fournis → nom vide). */
 export function BufferTMHMMoveName(): number {
   const itemId = VarGet('VAR_0x8004');
   if (itemId >= 289 /* ITEM_TM01 */ && itemId <= 346 /* ITEM_HM08 */) {
-    const tmhmFn = (globalThis as { __game_tmhm?: {
-      ItemIdToBattleMoveId?: (itemId: number) => string;
-    } }).__game_tmhm?.ItemIdToBattleMoveId;
-    const getMoveNameFn = (globalThis as { __game_data?: {
-      getMoveName?: (moveId: string | number) => string;
-    } }).__game_data?.getMoveName;
-    if (tmhmFn && getMoveNameFn) {
-      setStringVar(2, getMoveNameFn(tmhmFn(itemId)) || '');
-    }
+    setStringVar(2, getMoveName(ItemIdToBattleMoveId(itemId)) || '');
     VarSet('VAR_RESULT', 1);
     return 1;
   }
@@ -549,13 +543,15 @@ export function GetBattleTowerSinglesStreak(): number {
 
 /** 1:1 décomp `GetSecretBaseNearbyMapName` (field_specials.c:1274-1277) :
  *    GetMapName(gStringVar1, VarGet(VAR_SECRET_BASE_MAP), 0);
- *  GetMapName (region_map.c) via bridge globalThis (mapSec → nom, anti-cycle). */
+ *  ⚠️ DÉFÉRÉ no-op (l'ancien bridge globalThis __game_bridge n'était jamais fourni = même
+ *  résultat : nom vide). 3 blocages avérés à l'import direct de region_map.GetMapName :
+ *    (1) CYCLE : `import './region_map'` ici → TDZ `PALETTES_ALL` au boot (region_map est
+ *        palette-couplé, et field_specials est importé tôt par bike.ts) ;
+ *    (2) notre GetMapName est STRING-keyed (`MAPSEC_<NAME>`) ≠ VAR_SECRET_BASE_MAP NUMÉRIQUE ;
+ *    (3) le système base secrète qui remplit VAR_SECRET_BASE_MAP n'est pas porté.
+ *  À faire ensemble (résolveur mapSec numérique + cycle via bridge fourni + secret_base). */
 export function GetSecretBaseNearbyMapName(): void {
-  const mapsecId = VarGet('VAR_SECRET_BASE_MAP');
-  const bridge = (globalThis as { __game_bridge?: {
-    GetMapNameByMapSecId?: (id: number) => string;
-  } }).__game_bridge;
-  setStringVar(1, bridge?.GetMapNameByMapSecId?.(mapsecId) ?? '');
+  setStringVar(1, '');
 }
 
 // ─── Lot 8 — PC storage (field_specials.c §1450, 3415) ──────────────────────
