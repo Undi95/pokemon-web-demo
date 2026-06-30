@@ -1298,38 +1298,9 @@ function CopyMonToPC(mon: Pokemon): number {
   return MON_CANT_GIVE;  // toutes les boîtes pleines
 }
 
-/** 1:1 décomp `bool8 IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c:6579-6595) :
- *  ```c
- *  if (otId == GET_PLAYER_TRAINER_ID()) {
- *      for (i = 0; otName[i] != EOS; i++)
- *          if (otName[i] != gSaveBlock2Ptr->playerName[i]) return TRUE;
- *      return FALSE;
- *  }
- *  return TRUE;
- *  ```
- *  TRUE si le mon vient d'un AUTRE dresseur : otId différent du joueur, OU même
- *  otId mais nom OT différent (cas rare : 2 dresseurs au même TID). Adaptation
- *  modèle : playerTrainerId est un u32 packé, les noms sont des strings → la
- *  comparaison `otName !== playerName` équivaut 1:1 à la boucle char-par-char. */
-export function IsOtherTrainer(otId: number, otName: string): boolean {
-  const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-  if ((otId >>> 0) === playerTID) {
-    return otName !== (gSaveBlock2Ptr.playerName ?? '');
-  }
-  return true;
-}
-
-/** 1:1 décomp `bool8 IsTradedMon(struct Pokemon *mon)` (pokemon.c:6570-6577) :
- *  lit OT name + OT id du mon → IsOtherTrainer. Utilisé pour le bonus d'XP ×1.5
- *  des Pokémon échangés (Cmd_getexp, battle_script_commands.c:3381). */
-export function IsTradedMon(mon: Pokemon): boolean {
-  const otName = GetMonData(mon, MON_DATA_OT_NAME) as string;
-  const otId = GetMonData(mon, MON_DATA_OT_ID) as number;
-  return IsOtherTrainer(otId, otName);
-}
-
-// Exposition dev (sonde déterministe IsTradedMon), sans effet sur le jeu.
-(globalThis as Record<string, unknown>).__IsTradedMon = IsTradedMon;
+// IsOtherTrainer / IsTradedMon : consolidés vers le foyer pokemon.c (src/pokemon.ts,
+// à côté de IsShinyOtIdPersonality). IsTradedMon lit mon.otName/otId en direct (modèle plat).
+// La sonde dev __IsTradedMon suit l'impl dans pokemon.ts.
 
 /** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3030) côté STOCKAGE : swap le
  *  CONTENU des 2 slots `gPlayerParty` (la source) via un buffer temporaire. Les

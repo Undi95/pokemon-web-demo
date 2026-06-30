@@ -36,7 +36,7 @@ import {
   RecordAbilityBattle as _recordAbilityBattleSME,
   RecordAbilityBattle as _recordAbilityBattleFullSME,
 } from './battle_ai_script_commands';
-import { CalculateBaseDamage } from './pokemon';
+import { CalculateBaseDamage, IsTradedMon } from './pokemon';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
@@ -755,7 +755,7 @@ import {
 import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
 import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
-import { fillBattleMonFromParty, IsTradedMon, GiveMonToPlayer } from './engine/battle/party-storage';
+import { fillBattleMonFromParty, GiveMonToPlayer } from './engine/battle/party-storage';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import type {
   BattleOpcodeHandler,

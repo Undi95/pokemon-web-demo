@@ -16,6 +16,9 @@
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS } from '../include/constants/pokemon';
 // Type-only (erasé au runtime → aucun cycle/TDZ) : le foyer pokemon.c lit struct Pokemon.
 import type { Pokemon } from './engine/battle/party-storage';
+// gSaveBlock2Ptr : IsOtherTrainer compare otId/otName au joueur. save-block-state est leaf
+// (n'importe ni pokemon.ts ni party-storage) → edge one-way, zéro cycle.
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   MOVE_CUT, MOVE_FLY, MOVE_SURF, MOVE_STRENGTH, MOVE_FLASH,
   MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE,
@@ -218,6 +221,38 @@ export function IsShinyOtIdPersonality(otId: number, personality: number): boole
   const shinyValue = GET_SHINY_VALUE(otId, personality);
   return shinyValue < SHINY_ODDS;
 }
+
+/** 1:1 décomp `bool8 IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c:6579-6595) :
+ *  ```c
+ *  if (otId == GET_PLAYER_TRAINER_ID()) {
+ *      for (i = 0; otName[i] != EOS; i++)
+ *          if (otName[i] != gSaveBlock2Ptr->playerName[i]) return TRUE;
+ *      return FALSE;
+ *  }
+ *  return TRUE;
+ *  ```
+ *  TRUE si le mon vient d'un AUTRE dresseur : otId différent du joueur, OU même otId
+ *  mais nom OT différent. Adaptation modèle : playerTrainerId u32 packé, noms = strings
+ *  → `otName !== playerName` équivaut 1:1 à la boucle char-par-char. Consolidé depuis
+ *  party-storage.ts vers le foyer pokemon.c. */
+export function IsOtherTrainer(otId: number, otName: string): boolean {
+  const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
+  if ((otId >>> 0) === playerTID) {
+    return otName !== (gSaveBlock2Ptr.playerName ?? '');
+  }
+  return true;
+}
+
+/** 1:1 décomp `bool8 IsTradedMon(struct Pokemon *mon)` (pokemon.c:6570-6577) :
+ *  lit OT name + OT id du mon → IsOtherTrainer. Utilisé pour le bonus d'XP ×1.5 des
+ *  Pokémon échangés (Cmd_getexp, battle_script_commands.c:3381). Adaptation modèle :
+ *  lecture directe `mon.otName`/`mon.otId` (= GetMonData(OT_NAME/OT_ID) sur struct plat). */
+export function IsTradedMon(mon: Pokemon): boolean {
+  return IsOtherTrainer(mon.otId >>> 0, mon.otName);
+}
+
+// Exposition dev (sonde déterministe IsTradedMon), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__IsTradedMon = IsTradedMon;
 
 // ════════════════════════════════════════════════════════════════════════════
 // CalculateBaseDamage (pokemon.c:3107-3373) — formule de dégâts complète
