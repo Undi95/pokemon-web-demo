@@ -76,7 +76,7 @@ import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
 // getSpeciesInfo (table espèces) + reverse/resolveDecompConstant : pour GetAbilityBySpecies.
 // game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
-import { getSpeciesInfo } from './engine/data/game-data';
+import { getSpeciesInfo, gBattleMoves } from './engine/data/game-data';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 // Constantes MON_DATA_* (enum include/pokemon.h) lues par GetMonData/SetMonData.
 // Restent définies dans party-storage (39 fichiers les importent de là) → import ici.
@@ -411,6 +411,33 @@ export function CalculateMonStats(mon: Pokemon): void {
     if (mon.hp <= 0) mon.hp = 1;
   }
   // else : stay at 0 (= fainted).
+}
+
+/** 1:1 décomp `gPPUpGetMask` (pokemon.c) — masque 2 bits par slot de move. */
+export const gPPUpGetMask: readonly number[] = [0x03, 0x0c, 0x30, 0xc0];
+
+/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c:5005) :
+ *  `basePP + (basePP * 20 * nbPPUp) / 100`, nbPPUp = `(gPPUpGetMask[moveIndex] &
+ *  ppBonuses) >> (2*moveIndex)` (0..3), basePP = `gBattleMoves[move].pp`. Retourne u8.
+ *  Fonction CANONIQUE (= source unique 1:1) ; battle-action/summary/bag délèguent ici. */
+export function CalculatePPWithBonus(move: number, ppBonuses: number, moveIndex: number): number {
+  const basePP = gBattleMoves[move]?.pp ?? 0;
+  const ppUps = (gPPUpGetMask[moveIndex] & ppBonuses) >> (2 * moveIndex);
+  return (basePP + Math.floor((basePP * 20 * ppUps) / 100)) & 0xff;
+}
+
+/** 1:1 décomp `void SetMonMoveSlot(struct Pokemon *mon, u16 move, u8 slot)` (pokemon.c:6600-6604) :
+ *  ```c
+ *  SetMonData(mon, MON_DATA_MOVE1 + slot, &move);
+ *  SetMonData(mon, MON_DATA_PP1 + slot, &gBattleMoves[move].pp);
+ *  ```
+ *  Pose le move dans le slot + son PP de BASE (= sans PP Up). Primitif partagé
+ *  par 10 fichiers décomp (Mimic, frontier, move_relearner, party_menu,
+ *  evolution_scene…). NB : le décomp prend le PP brut `gBattleMoves[move].pp`,
+ *  PAS `CalculatePPWithBonus` (ppBonuses ignorés à la pose d'un slot). */
+export function SetMonMoveSlot(mon: Pokemon, move: number, slot: number): void {
+  SetMonData(mon, MON_DATA_MOVE1 + slot, move);
+  SetMonData(mon, MON_DATA_PP1 + slot, gBattleMoves[move]?.pp ?? 0);
 }
 
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────
