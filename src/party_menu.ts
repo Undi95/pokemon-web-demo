@@ -52,9 +52,10 @@ import { AddTextPrinterParameterized3 } from './menu';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
 import { ItemIsMail } from './mail_data';
-import { AddBagItem } from './engine/bag/bag';
+import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { GetItemName } from './item';
+import { GoToBagMenu, ITEMMENULOCATION_PARTY, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
@@ -65,7 +66,7 @@ import {
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
 } from '../harness/runtime/decomp-globals';
-import { FlagGet } from './engine/script/script-vars';
+import { FlagGet, gSpecialVar } from './engine/script/script-vars';
 import { MUS_LEVEL_UP } from '../include/constants/songs';
 import { GetMapNameGeneric } from './region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
@@ -76,7 +77,7 @@ import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '.
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './pokemon_summary_screen';
 import { getString } from './engine/ui/gba-strings';
 import { MON_ICON_PALETTE_INDICES } from './engine/pokemon/pokemon-icon-palettes';
-import type { DecompTask } from '../harness/runtime/decomp-runtime';
+import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).
@@ -344,6 +345,12 @@ let _actionList: number[] = [];  // MENU_SUMMARY=0, MENU_ITEM=3, MENU_CANCEL1=2 
 // 1:1 décomp : distingue le menu d'action mon (PARTY_MSG_DO_WHAT_WITH_MON) du
 // sous-menu objet ouvert par CursorCb_Item (ACTIONS_ITEM, PARTY_MSG_DO_WHAT_WITH_ITEM).
 let _actionSubMenu: 'mon' | 'item' = 'mon';
+// État du round-trip DONNER (CursorCb_Give → sac → CB2_GiveHoldItem) : préservés à
+// travers la fermeture/réouverture du party menu (le teardown reset _slotId=0 ;
+// GoToBagMenu écrase savedCallback). 1:1 décomp = gPartyMenu.slotId/exitCallback.
+let _giveHoldItemSlot = -1;
+let _giveReturnCb: CB2Callback | null = null;
+let _pendingGiveMessage: string | null = null;
 /** 1:1 décomp `sPartyMenuInternal->exitCallback` — callback de sortie
  *  TRANSITOIRE, consommé UNE fois dans Task_ClosePartyMenuAndSetCB2
  *  (party_menu.c:1238). Distinct de `gPartyMenu.exitCallback` (= notre
@@ -1863,8 +1870,80 @@ function _cursorCbCancel2(rt: ReturnType<typeof getRuntime>): void {
  *  demande le handoff CB2 party↔bag en mode give. Reste sur le sous-menu en
  *  attendant ce wire. */
 function _cursorCbGive(): void {
-  console.log('[party-screen] DONNER → dette : cascade bag-give (CB2_SelectBagItemToGive) à porter (lot suivant)');
-  _renderActionMenuContents();
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp `CursorCb_Give` (party_menu.c:3086) : exitCallback = CB2_SelectBagItemToGive,
+  // Task_ClosePartyMenu. On PERSISTE le slot receveur + le savedCallback field-return
+  // (le teardown reset _slotId=0 ; GoToBagMenu va écraser savedCallback).
+  _giveHoldItemSlot = _slotId;
+  _giveReturnCb = rt.gMain.savedCallback ?? null;
+  _removeActionWindow();
+  _partyTransientExitCb = CB2_SelectBagItemToGive;
+  ClosePartyScreen();  // = Task_ClosePartyMenu (close handoff → CB2_SelectBagItemToGive)
+}
+
+/** 1:1 décomp `CB2_SelectBagItemToGive` (party_menu.c:3093) : ouvre le sac en mode
+ *  "donner à un mon" (ITEMMENULOCATION_PARTY) avec exitCallback = CB2_GiveHoldItem. */
+function CB2_SelectBagItemToGive(): void {
+  GoToBagMenu(ITEMMENULOCATION_PARTY, POCKETS_COUNT, CB2_GiveHoldItem);
+}
+
+/** 1:1 décomp `CB2_GiveHoldItem` (party_menu.c:3100) : retour du sac. Lit
+ *  gSpecialVar.ItemId (objet choisi). 0 = annulé → reopen choix-mon. Sinon donne
+ *  l'objet (GiveItemToMon + RemoveBagItem) puis reopen + message "X doit tenir Y!".
+ *  DETTE 2b : already-holding (Task_SwitchHoldItemsPrompt) / mail = différés. */
+function CB2_GiveHoldItem(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const item = (gSpecialVar.ItemId as number) | 0;
+  const slot = _giveHoldItemSlot;
+  const mon = slot >= 0 ? gPlayerParty[slot] : undefined;
+  if (item === 0 || !mon || mon.species === 0) {
+    _reopenPartyForGive(null);              // annulé / invalide → reopen sans donner
+    return;
+  }
+  if (mon.heldItem !== 0) {
+    // 1:1 :3111 already-holding → Task_SwitchHoldItemsPrompt. DETTE 2b : on ne
+    // remplace PAS silencieusement → reopen sans rien donner (objet reste au sac).
+    console.log('[party-screen] DONNER : mon tient déjà un objet → dette 2b (switch prompt)');
+    _reopenPartyForGive(null);
+    return;
+  }
+  // 1:1 Task_GiveHoldItem (party_menu.c:3133) : GiveItemToMon + DisplayGaveHeldItem
+  // Message + RemoveBagItem.
+  GiveItemToMon(mon, item);
+  RemoveBagItem(getItemKeyById(item), 1);
+  const msg = (getString('gText_PkmnWasGivenItem') || '')
+    .replace('{STR_VAR_1}', mon.nickname).replace('{STR_VAR_2}', GetItemName(item))
+    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _reopenPartyForGive(msg);
+}
+
+/** 1:1 décomp `GiveItemToMon` (party_menu.c:1799) : non-mail → SetMonData(HELD_ITEM).
+ *  (Mail = GiveMailToMonByItemId, non modélisé = DETTE.) */
+function GiveItemToMon(mon: Pokemon, item: number): void {
+  if (ItemIsMail(item)) { /* DETTE mail : GiveMailToMonByItemId non modélisé */ }
+  mon.heldItem = item;
+}
+
+/** Réouvre le party menu après le round-trip sac (1:1 décomp `InitPartyMenu(
+ *  KEEP_PARTY_LAYOUT, …, Task_GiveHoldItem, gPartyMenu.exitCallback)`). Restaure le
+ *  slot receveur + le savedCallback field-return. `msg` (≠ null) = message
+ *  "X doit tenir Y!" affiché au reopen via la phase 'helditem_msg'. Même pattern
+ *  de réouverture que `OpenPartyScreenForItemUse`. */
+function _reopenPartyForGive(msg: string | null): void {
+  _slotId = _giveHoldItemSlot >= 0 ? _giveHoldItemSlot : 0;
+  _partyAction = PARTY_ACTION_CHOOSE_MON;
+  _pendingGiveMessage = msg;
+  _giveHoldItemSlot = -1;
+  const returnCb = _giveReturnCb;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = returnCb ?? null;
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => { console.error('[party-screen] reopen-give preload failed', e); });
 }
 
 function _closeActionMenu(): void {
@@ -3084,6 +3163,14 @@ export function CB2_InitPartyMenu(): void {
       if (_reopenActionMenuAfterInit) {
         _reopenActionMenuAfterInit = false;
         _openActionMenu(rt, false);
+      } else if (_pendingGiveMessage) {
+        // 1:1 décomp : après reopen (CB2_GiveHoldItem → Task_GiveHoldItem), le message
+        // "X doit tenir Y!" (DisplayGaveHeldItemMessage) s'affiche DANS le party menu
+        // → A/B retour choix-mon (phase 'helditem_msg', partagée avec PRENDRE).
+        _itemUsedMsgText = _pendingGiveMessage;
+        _pendingGiveMessage = null;
+        _phase = 'helditem_msg';
+        _drawMsg();
       }
       return;
   }

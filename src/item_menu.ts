@@ -2015,6 +2015,10 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
         // 1:1 sContextMenuFuncs[ITEMMENULOCATION_SHOP] = Task_ItemContext_Sell
         // (item_menu.c:348) — A sur un item en mode vente VEND (pas de menu Use/Give/Toss).
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Sell, Task_BagMenu_HandleInput);
+      } else if (gBagPosition.location === ITEMMENULOCATION_PARTY) {
+        // 1:1 sContextMenuFuncs[ITEMMENULOCATION_PARTY] = Task_ItemContext_GiveToParty
+        // (item_menu.c:347) — A sur un item en mode "donner à un mon" → valide + fade-close.
+        SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_GiveToParty, Task_BagMenu_HandleInput);
       } else {
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
       }
@@ -2963,6 +2967,24 @@ function DisplayItemMessage(taskId: number, fontId: number, str: string | Uint8A
 function CloseItemMessage(task: DecompTask): void {
   RemoveItemMessageWindow(ITEMWIN_MESSAGE);
   _CtxReturnToListWithRebuild(task.taskId);
+}
+
+/** 1:1 décomp `Task_ItemContext_GiveToParty` (item_menu.c:1631) : en mode
+ *  ITEMMENULOCATION_PARTY (= choisir un objet à DONNER comme objet tenu à un mon),
+ *  A sur un item le valide → `Task_FadeAndCloseBagMenu` (gSpecialVar.ItemId déjà
+ *  posé → l'exitCallback CB2_GiveHoldItem le lit). Objet important/clé →
+ *  "Impossible de tenir … ici." + retour liste (CloseItemMessage).
+ *  DETTE 2a : les branches mail (IsWritingMailAllowed) / IsHoldingItemAllowed =
+ *  edge cases différées (le check key-item/importance bloque déjà l'essentiel). */
+export function Task_ItemContext_GiveToParty(task: DecompTask): void {
+  const item = gSpecialVar.ItemId;
+  // 1:1 :1646 — pocket != KEYITEMS && !GetItemImportance → objet donnable.
+  if (gBagPosition.pocket !== KEYITEMS_POCKET && GetItemImportance(item) === 0) {
+    Task_FadeAndCloseBagMenu(task);
+  } else {
+    const m = (getString('gText_Var1CantBeHeldHere') || '').replace('{STR_VAR_1}', GetItemName(item));
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(m), CloseItemMessage);
+  }
 }
 
 /** Affiche un gText EXTRAIT (strings.json) dans la message box, après expansion 1:1
