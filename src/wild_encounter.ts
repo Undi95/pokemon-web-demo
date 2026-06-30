@@ -53,7 +53,7 @@ import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
 // CreateMon NUMÉRIQUE 1:1 importé VIA party-storage (re-export du foyer) — PAS en edge direct
 // vers le foyer (évite le réordonnancement d'init ESM qui casse decomp-globals `_rt`).
 import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, gEnemyParty, SetMonMoveSlot, createEmptyPokemon, CreateMon, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import { GetGenderFromSpeciesAndPersonality } from './engine/pokemon/pokemon';
+import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC, MAX_MON_MOVES } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
@@ -520,20 +520,20 @@ function CreateWildMon(species: string, level: number): void {
       && GetMonAbility(gPlayerParty[0]) === ABILITY_CUTE_CHARM && Random() % 3 !== 0) {
     const leadSpecies = GetMonData(gPlayerParty[0], MON_DATA_SPECIES) as number;
     const leadPersonality = GetMonData(gPlayerParty[0], MON_DATA_PERSONALITY) as number;
-    const leadEnum = reverseDecompConstant(leadSpecies, 'SPECIES_') ?? '';
-    const leadGender = GetGenderFromSpeciesAndPersonality(leadEnum, leadPersonality);
+    const leadGender = GetGenderFromSpeciesAndPersonality(leadSpecies, leadPersonality);
     targetGender = (leadGender === MON_FEMALE) ? MON_MALE : MON_FEMALE;  // 1:1 : opposé
   }
   const natureIdx = PickWildMonNature();
+  const speciesNum = (resolveDecompConstant(species) as number | undefined) ?? 0;
   let personality = Random32() >>> 0;
   while ((personality % 25) !== natureIdx
-         || (targetGender >= 0 && GetGenderFromSpeciesAndPersonality(species, personality) !== targetGender)) {
+         || (targetGender >= 0 && GetGenderFromSpeciesAndPersonality(speciesNum, personality) !== targetGender)) {
     personality = Random32() >>> 0;
   }
   // 1:1 décomp : CreateMon(&gEnemyParty[0], species, level, USE_RANDOM_IVS, TRUE, personality,
   // OT_ID_PLAYER_ID, 0) — personality FIXE (pré-roll nature/gender ci-dessus = CreateMonWithNature).
   const enemyMon = createEmptyPokemon();
-  CreateMon(enemyMon, (resolveDecompConstant(species) as number | undefined) ?? 0, level,
+  CreateMon(enemyMon, speciesNum, level,
     32 /* USE_RANDOM_IVS */, true, personality, 0 /* OT_ID_PLAYER_ID */, 0);
   setupEnemyPartyForBattle([enemyMon]);
   // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:408) : `gBattleTypeFlags = 0` (OVERWRITE).

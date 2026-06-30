@@ -60,8 +60,7 @@ import { getString } from './engine/ui/gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from './engine/battle/party-storage';
-import { IsShinyOtIdPersonality } from './pokemon';
-import { GetGenderFromSpeciesAndPersonality } from './engine/pokemon/pokemon';
+import { IsShinyOtIdPersonality, GetGenderFromSpeciesAndPersonality } from './pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 
 // Accès id-keyés locaux 1:1 décomp = indexation DIRECTE des tables id-strictes
@@ -986,9 +985,8 @@ function _printNotEggInfo(): void {
   const sum = sMon.summary;
   const mon = sMon.currentMon;
   if (!mon) return;
-  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
   const isShiny = IsShinyOtIdPersonality(mon.otId, mon.personality);
-  const gender = GetGenderFromSpeciesAndPersonality(speciesEnum, mon.personality);
+  const gender = GetGenderFromSpeciesAndPersonality(mon.species, mon.personality);
   const dexNum = _speciesToPokedexNum(sum.species2);
   if (dexNum !== 0xFFFF) {
     // gText_NumberClear01 = "{NO}{CLEAR 1}" (strings.c:210) + dexNum 3-digit

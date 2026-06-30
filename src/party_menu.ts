@@ -55,7 +55,8 @@ import { ItemIsMail } from './mail_data';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
-import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './engine/pokemon/pokemon';
+import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { MON_MALE, MON_FEMALE } from '../include/constants/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -663,7 +664,8 @@ function _drawSlot(slotIdx: number): void {
   // affiché à (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column,
   // AVEC palette swap genderMale/Female aux positions TEXT_DYNAMIC_COLOR_2/3
   // de la sub-pal du slot. Color triple stays [0, 0xB, 0xC] for both genders.
-  const gSym = getMonGenderSymbol({ personality: mon.personality, speciesEnum: reverseDecompConstant(mon.species, 'SPECIES_') ?? '' });
+  const _g = GetGenderFromSpeciesAndPersonality(mon.species, mon.personality);
+  const gSym: 'M' | 'F' | null = _g === MON_MALE ? 'M' : _g === MON_FEMALE ? 'F' : null;
   const genderStr = gSym === 'M' ? '♂' : gSym === 'F' ? '♀' : '';
   if (genderStr) {
     const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
@@ -718,7 +720,6 @@ function _drawSlot(slotIdx: number): void {
     _displayPartyPokemonHP(wid, 102, 12, mon.hp);
     _displayPartyPokemonMaxHP(wid, 117, 12, mon.maxHP);
   }
-  void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
   // red selon HP fraction) avec palette swap aux positions 9-10 de la sub-pal.
   _drawHpBar(slotIdx, mon);

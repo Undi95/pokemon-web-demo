@@ -114,7 +114,7 @@ import {
   B_WEATHER_SUN, B_WEATHER_SUN_PERMANENT,
   BIT_SIDE, BIT_FLANK,
 } from './engine/battle/constants';
-import { GetGenderFromSpeciesAndPersonality } from './engine/pokemon/pokemon';
+import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_ABE,
@@ -3207,18 +3207,13 @@ export function AbilityBattleEffects(
           }
           break;
         case ABILITY_CUTE_CHARM: {
-          // 1:1 décomp battle_util.c:2834-2853.
-          // Helper inline pour resolve species id → enum string → gender.
-          const _genderOf = (speciesId: number, personality: number): number => {
-            const speciesEnum = reverseDecompConstant(speciesId, 'SPECIES_');
-            if (!speciesEnum) return MON_GENDERLESS;
-            return GetGenderFromSpeciesAndPersonality(speciesEnum, personality);
-          };
-          const atkGender = _genderOf(
+          // 1:1 décomp battle_util.c:2834-2853 : GetGenderFromSpeciesAndPersonality
+          // appelée directement avec le species numérique (pas de round-trip enum).
+          const atkGender = GetGenderFromSpeciesAndPersonality(
             gBattleMons[gBattlerAttacker].species,
             gBattleMons[gBattlerAttacker].personality,
           );
-          const tgtGender = _genderOf(
+          const tgtGender = GetGenderFromSpeciesAndPersonality(
             gBattleMons[gBattlerTarget].species,
             gBattleMons[gBattlerTarget].personality,
           );
