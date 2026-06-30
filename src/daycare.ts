@@ -9,7 +9,11 @@
  * chantier dédié.
  */
 
-import { CreateMon } from './engine/pokemon/pokemon';
+// CreateMon NUMÉRIQUE 1:1 (foyer pokemon.c) — remplace la convenience legacy
+// engine/pokemon/pokemon:CreateMon(speciesEnum, opts). createEmptyPokemon = la struct cible.
+import { CreateMon, createEmptyPokemon } from './pokemon';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import {
   SetMonData,
   MON_DATA_POKEBALL, MON_DATA_NICKNAME, MON_DATA_FRIENDSHIP,
@@ -48,7 +52,10 @@ const METLOC_SPECIAL_EGG = 0xFD;
  *     donc le nickname stocké est cohérent avec ce qui s'affiche.
  *   - `eggCycles` lu via `gSpeciesInfo[mon.species]` (table id-indexée). */
 export function CreateEgg(speciesEnum: string, setHotSpringsLocation: boolean): Pokemon {
-  const mon = CreateMon(speciesEnum, EGG_HATCH_LEVEL);
+  // 1:1 décomp : CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
+  const mon = createEmptyPokemon();
+  CreateMon(mon, (resolveDecompConstant(speciesEnum) as number | undefined) ?? 0, EGG_HATCH_LEVEL,
+    32 /* USE_RANDOM_IVS = MAX_PER_STAT_IVS + 1 */, false, 0, OT_ID_PLAYER_ID, 0);
   SetMonData(mon, MON_DATA_POKEBALL, ITEM_POKE_BALL);
   SetMonData(mon, MON_DATA_NICKNAME, getString('gText_EggNickname'));
   SetMonData(mon, MON_DATA_FRIENDSHIP, gSpeciesInfo[mon.species]?.eggCycles ?? 0);
