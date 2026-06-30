@@ -68,7 +68,7 @@ import {
   setAbsentBattlerFlags as _setAbsentBattlerFlags,
   resetBattleState as _resetBattleState,
 } from './state';
-import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
+import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, createTestMon, PARTY_SIZE as _PARTY_SIZE, type Pokemon } from './party-storage';
 import { CalculateBaseDamage as _cbd } from '../../pokemon';
 import { getBattleMove as _gbm } from './data/battle-moves';
 import * as _MOVES_ENUM from '../../../include/constants/moves';
@@ -439,9 +439,7 @@ async function prepareTestBattle(opts?: {
   const realParty = (party as Array<unknown>).filter((m): m is { speciesEnum: string } => !!m);
   if (realParty.length === 0) return { ok: false, reason: 'empty party' };
 
-  // Use module-level imports (= same instance as Cmd_attackcanceler).
-  const pokemonMod = await import('../pokemon/pokemon');
-  const enemyMon = pokemonMod.createPokemonInstance(enemySpecies, enemyLevel);
+  const enemyMon = createTestMon(enemySpecies, enemyLevel);
   setupPartyForBattle(realParty as never[], [enemyMon]);
   fillActiveBattleMonsForBattleStart();
 
@@ -496,34 +494,34 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  Usage : scope.bytecode.testMoveBridge() — create un combat ad-hoc et exec
      *  Pound via bytecode, return damage measured. */
     testMoveBridge: async (opts?: { moveId?: string; enemy?: string; enemyLevel?: number; attackerSpecies?: string; attackerLevel?: number; persistMons?: boolean; }) => {
-      const pokemonMod = await import('../pokemon/pokemon');
-      let attacker: { speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; };
+      let attacker: Pokemon;
       if (opts?.attackerSpecies) {
-        attacker = pokemonMod.createPokemonInstance(opts.attackerSpecies, opts.attackerLevel ?? 50) as never;
+        attacker = createTestMon(opts.attackerSpecies, opts.attackerLevel ?? 50);
       } else {
-        // Use real gSaveBlock1Ptr.playerParty[0] for attacker (= 1:1 décomp).
+        // Use real gSaveBlock1Ptr.playerParty[0] for attacker (= 1:1 décomp, numérique).
         const sbsMod = await import('../save/save-block-state');
-        const realParty = (sbsMod.gSaveBlock1Ptr.playerParty as Array<typeof attacker> | undefined)?.filter(m => !!m);
+        const realParty = (sbsMod.gSaveBlock1Ptr.playerParty as Pokemon[] | undefined)?.filter(m => !!m);
         if (!realParty?.length) return { error: 'no party (specify attackerSpecies)' };
         attacker = realParty[0];
       }
-      // Si moveId override, on remplace attacker.moves[0].id par ce move (= force le bridge à lookup le bon effect script).
+      // Si moveId override : remplace le move du slot 0 (modèle numérique : moves[i] = id, pp[i]).
       if (opts?.moveId) {
-        attacker.moves = [{ id: opts.moveId, pp: 35 }, ...(attacker.moves.slice(1) || [])];
+        attacker.moves[0] = resolveMoveDexId(opts.moveId);
+        attacker.pp[0] = 35;
       }
-      const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2);
+      const enemyMon = createTestMon(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2);
       // Sauf si persistMons=true (= keep gBattleMons state across calls for multi-turn tests),
       // reinit gBattleMons via setupPartyForBattle + fillActive...
       if (!opts?.persistMons) {
-        setupPartyForBattle([attacker] as never, [enemyMon]);
+        setupPartyForBattle([attacker], [enemyMon]);
         fillActiveBattleMonsForBattleStart();
       }
       const defender = enemyMon;
-      const beforeHp = defender.currentHp;
+      const beforeHp = defender.hp;
       const beforeStatus1 = (globalThis as { __battleState?: { gBattleMons?: Array<{ status1: number; statStages: number[]; }> } }).__battleState?.gBattleMons?.[1];
       const beforeSnap = beforeStatus1 ? { status1: beforeStatus1.status1, stages: [...beforeStatus1.statStages] } : null;
       const result = runMoveScriptViaBytecode({
-        attacker: attacker as never,
+        attacker,
         defender,
         attackerMoveIdx: 0,
       });
@@ -532,9 +530,9 @@ export function buildBattleDevtools(): Record<string, unknown> {
       return {
         attacker_name: attacker.nickname,
         defender_name: defender.nickname,
-        moveUsed: attacker.moves[0]?.id,
+        moveUsed: attacker.moves[0],
         defenderHpBefore: beforeHp,
-        defenderHpAfter: defender.currentHp,
+        defenderHpAfter: defender.hp,
         statusBefore: beforeSnap?.status1,
         statusAfter: afterSnap?.status1,
         stagesBefore: beforeSnap?.stages,
@@ -590,22 +588,21 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  un matchup ad-hoc en mode TRAINER. Retourne le move choisi + scores. */
     aiChooseMove: async (opts?: { attackerSpecies?: string; attackerLevel?: number; enemy?: string; enemyLevel?: number; trainerId?: number; }) => {
       await ensureAiBytecodeLoaded();
-      const pokemonMod = await import('../pokemon/pokemon');
-      const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 10);
-      const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_POOCHYENA', opts?.enemyLevel ?? 7);
-      setupPartyForBattle([attacker] as never, [enemyMon]);
+      const attacker = createTestMon(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 10);
+      const enemyMon = createTestMon(opts?.enemy ?? 'SPECIES_POOCHYENA', opts?.enemyLevel ?? 7);
+      setupPartyForBattle([attacker], [enemyMon]);
       fillActiveBattleMonsForBattleStart();
       const choice = chooseOpponentMoveViaAI({
-        opponent: enemyMon as never,
-        player: attacker as never,
+        opponent: enemyMon,
+        player: attacker,
         isTrainer: true,
         trainerId: opts?.trainerId ?? 1,
       });
       return {
         enemy: enemyMon.nickname,
-        enemyMoves: enemyMon.moves.map(m => m?.id),
+        enemyMoves: enemyMon.moves.slice(0, 4),
         choice,
-        chosenMove: choice.index >= 0 ? enemyMon.moves[choice.index]?.id : `(${choice.action})`,
+        chosenMove: choice.index >= 0 ? enemyMon.moves[choice.index] : `(${choice.action})`,
         aiFlags: gAiThinkingStruct.aiFlags,
         scores: [...gAiThinkingStruct.score],
       };
@@ -625,9 +622,8 @@ export function buildBattleDevtools(): Record<string, unknown> {
         else scriptsResolved++;
       }
       try {
-        const pokemonMod = await import('../pokemon/pokemon');
-        const attacker = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 12);
-        const enemyMon = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 7);
+        const attacker = createTestMon('SPECIES_TREECKO', 12);
+        const enemyMon = createTestMon('SPECIES_POOCHYENA', 7);
         setupPartyForBattle([attacker] as never, [enemyMon]);
         fillActiveBattleMonsForBattleStart();
         for (let r = 0; r < 8; r++) {
@@ -652,14 +648,13 @@ export function buildBattleDevtools(): Record<string, unknown> {
     aiDoubles: async (opts?: { seed?: number }) => {
       await ensureAiBytecodeLoaded();
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
-        const p1 = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 15);
-        const p2 = pokemonMod.createPokemonInstance('SPECIES_TORCHIC', 15);
-        const e1 = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 13);
-        const e2 = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 13);
+        const p1 = createTestMon('SPECIES_TREECKO', 15);
+        const p2 = createTestMon('SPECIES_TORCHIC', 15);
+        const e1 = createTestMon('SPECIES_POOCHYENA', 13);
+        const e2 = createTestMon('SPECIES_ZIGZAGOON', 13);
         setupPartyForBattle([p1, p2] as never, [e1, e2] as never);
         // 2v2 réel : battlers 0/2 = player, 1/3 = enemy (layout Émeraude).
         fillBattleMonFromParty(0, 'player', 0);
@@ -710,11 +705,10 @@ export function buildBattleDevtools(): Record<string, unknown> {
       isFirstTurn?: number; mistTimer?: number;
     }) => {
       await loadItemEffects();
-      const pokemonMod = await import('../pokemon/pokemon');
       const items = opts?.items ?? [13]; // 13 = ITEM_POTION
       const run = () => {
-        const enemyMon = pokemonMod.createPokemonInstance(opts?.species ?? 'SPECIES_POOCHYENA', opts?.level ?? 10);
-        const playerMon = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 10);
+        const enemyMon = createTestMon(opts?.species ?? 'SPECIES_POOCHYENA', opts?.level ?? 10);
+        const playerMon = createTestMon('SPECIES_TREECKO', 10);
         setupPartyForBattle([playerMon] as never, [enemyMon]);
         fillActiveBattleMonsForBattleStart();
         const ab = 1;            // battler AI (côté opponent)
@@ -776,13 +770,12 @@ export function buildBattleDevtools(): Record<string, unknown> {
       seed?: number;
     }) => {
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
-        const active = pokemonMod.createPokemonInstance(opts?.active ?? 'SPECIES_POOCHYENA', opts?.activeLevel ?? 12);
-        const bench = (opts?.benchMons ?? ['SPECIES_ZIGZAGOON']).map((s) => pokemonMod.createPokemonInstance(s, 12));
-        const player = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 12);
+        const active = createTestMon(opts?.active ?? 'SPECIES_POOCHYENA', opts?.activeLevel ?? 12);
+        const bench = (opts?.benchMons ?? ['SPECIES_ZIGZAGOON']).map((s) => createTestMon(s, 12));
+        const player = createTestMon('SPECIES_TREECKO', 12);
         setupPartyForBattle([player] as never, [active, ...bench] as never);
         fillActiveBattleMonsForBattleStart();
         const ab = 1;
@@ -842,12 +835,11 @@ export function buildBattleDevtools(): Record<string, unknown> {
       double?: boolean; absent?: number[]; seed?: number;
     }) => {
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
-        const p = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 10);
-        const e = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 10);
+        const p = createTestMon('SPECIES_POOCHYENA', 10);
+        const e = createTestMon('SPECIES_ZIGZAGOON', 10);
         setupPartyForBattle([p] as never, [e] as never);
         fillActiveBattleMonsForBattleStart();
         const ab = opts?.attacker ?? 1;
@@ -933,20 +925,19 @@ export function buildBattleDevtools(): Record<string, unknown> {
         _debugResetRng();
         SeedRng(seed);
         _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
-        const pokemonMod = await import('../pokemon/pokemon');
-        const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, { ivs: fixedIvs, evs: fixedEvs });
-        const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2, { ivs: fixedIvs, evs: fixedEvs });
-        if (opts?.moveId) attacker.moves = [{ id: opts.moveId, nameFr: opts.moveId, pp: 35, ppMax: 35 }, ...attacker.moves.slice(1)];
-        setupPartyForBattle([attacker] as never, [enemyMon]);
+        const attacker = createTestMon(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, { ivs: fixedIvs, evs: fixedEvs });
+        const enemyMon = createTestMon(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2, { ivs: fixedIvs, evs: fixedEvs });
+        if (opts?.moveId) { attacker.moves[0] = resolveMoveDexId(opts.moveId); attacker.pp[0] = 35; }
+        setupPartyForBattle([attacker], [enemyMon]);
         fillActiveBattleMonsForBattleStart();
         const rngBeforeMove = _debugGetRngValue();
         const randCountBeforeMove = _debugGetRandCount();
-        const defenderHpBefore = enemyMon.currentHp;
-        const result = runMoveScriptViaBytecode({ attacker: attacker as never, defender: enemyMon as never, attackerMoveIdx: 0 });
+        const defenderHpBefore = enemyMon.hp;
+        const result = runMoveScriptViaBytecode({ attacker, defender: enemyMon, attackerMoveIdx: 0 });
         return {
-          seed, move: attacker.moves[0]?.id,
+          seed, move: attacker.moves[0],
           attackerStats: pick(0), defenderStats: pick(1),
-          defenderHpBefore, defenderHpAfter: enemyMon.currentHp,
+          defenderHpBefore, defenderHpAfter: enemyMon.hp,
           damage: result.damage, typeMul: result.typeMul, missed: result.missed, fainted: result.fainted,
           rngBeforeMove, randCountBeforeMove,
           rngAfter: _debugGetRngValue(), randCountAfter: _debugGetRandCount(),
@@ -979,7 +970,6 @@ export function buildBattleDevtools(): Record<string, unknown> {
     }) => {
       const seed = opts?.seed ?? 0;
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
-      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
@@ -990,9 +980,9 @@ export function buildBattleDevtools(): Record<string, unknown> {
         // createPokemonInstance (qui reremplit les mons) + entre run a/b.
         _resetBattleState();
         // attaquant = côté ennemi (battler 1) → pas de badge boost (1:1 pur).
-        const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TORCHIC', opts?.attackerLevel ?? 10, fix);
-        const defMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_TREECKO', opts?.enemyLevel ?? 10, fix);
-        if (opts?.moveId) atkMon.moves = [{ id: opts.moveId, nameFr: opts.moveId, pp: 35, ppMax: 35 }, ...atkMon.moves.slice(1)];
+        const atkMon = createTestMon(opts?.attackerSpecies ?? 'SPECIES_TORCHIC', opts?.attackerLevel ?? 10, fix);
+        const defMon = createTestMon(opts?.enemy ?? 'SPECIES_TREECKO', opts?.enemyLevel ?? 10, fix);
+        if (opts?.moveId) { atkMon.moves[0] = resolveMoveDexId(opts.moveId); atkMon.pp[0] = 35; }
         // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
         setupPartyForBattle([defMon] as never, [atkMon] as never);
         fillActiveBattleMonsForBattleStart();
@@ -1087,9 +1077,8 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const ev = opts?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
       _debugResetRng();
       SeedRng(seed);
-      const pokemonMod = await import('../pokemon/pokemon');
-      const mon = pokemonMod.createPokemonInstance(speciesEnum, level, { ivs: iv, evs: ev });
-      setupPartyForBattle([mon] as never, [pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 2)]);
+      const mon = createTestMon(speciesEnum, level, { ivs: iv, evs: ev });
+      setupPartyForBattle([mon] as never, [createTestMon('SPECIES_ZIGZAGOON', 2)]);
       fillActiveBattleMonsForBattleStart();
       const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number; maxHP: number; personality: number; species: number }> } }).__battleState?.gBattleMons?.[0];
       if (!bm) return { error: 'gBattleMons[0] absent' };
@@ -1168,9 +1157,8 @@ export function buildBattleDevtools(): Record<string, unknown> {
       _debugResetRng();
       SeedRng(seed);
       _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
-      const pokemonMod = await import('../pokemon/pokemon');
-      const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, fix);
-      const defMon = pokemonMod.createPokemonInstance(opts?.defenderSpecies ?? 'SPECIES_GEODUDE', opts?.defenderLevel ?? 14, fix);
+      const atkMon = createTestMon(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, fix);
+      const defMon = createTestMon(opts?.defenderSpecies ?? 'SPECIES_GEODUDE', opts?.defenderLevel ?? 14, fix);
       // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
       setupPartyForBattle([defMon] as never, [atkMon] as never);
       fillActiveBattleMonsForBattleStart();

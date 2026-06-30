@@ -19,7 +19,7 @@
  * wired les controllers UI à des callbacks réels.
  */
 
-import type { PokemonInstance } from '../pokemon/pokemon';
+import type { Pokemon } from './party-storage';
 import {
   gBattleMons,
   gBattleMoveDamage,
@@ -104,9 +104,8 @@ import {
   consumeItemWantedScript as consumeItemWantedScript_static,
 } from '../../battle_util';
 import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from '../../battle_ai_script_commands';
-import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { getMove } from '../data/game-data';
-import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';
 import {
   dequeueBattleEvent,
   clearBattleEventQueue,
@@ -137,15 +136,6 @@ function _decodeTypeMulFromResultFlags(flags: number): number {
   return 1;
 }
 
-// ─── Move id resolution from PokemonInstance.moves[i].id (dex string) ──
-
-/** 1:1 décomp resolveMoveId : dexId ("blazekick") → id numérique MOVE_*.
- *  Résolution 100% décomp-extraite (constantes moves-data normalisées) via
- *  party-storage — SOURCE DE VÉRITÉ UNIQUE, ZÉRO @pkmn/dex (1:1 strict). */
-function _resolveMoveId(dexId: string): number {
-  return resolveMoveDexId(dexId);
-}
-
 // ─── Effect resolution (= move's gBattleMoves[].effect → script label) ──
 
 /** 1:1 décomp gBattleMoves[move].effect (EFFECT_HIT, EFFECT_SLEEP, etc.). */
@@ -171,16 +161,6 @@ function _resolveMoveEffect(moveId: number): number {
   return 0;
 }
 
-/** Get move effect via dex id → getMove → effect. Résolution du nom d'enum
- *  100% décomp-extraite (moveDexIdToEnum, gère les noms composés type
- *  'tailwhip'→MOVE_TAIL_WHIP). Zéro @pkmn/dex. */
-function _resolveMoveEffectFromDexId(dexId: string): number {
-  const moveData = getMove(moveDexIdToEnum(dexId));
-  if (!moveData) return 0;
-  const effect = resolveDecompConstant(moveData.effect);
-  return typeof effect === 'number' ? effect : 0;
-}
-
 // ─── Public API ─────────────────────────────────────────────────────────
 
 /** Exécute un move via bytecode 1:1 décomp et retourne les outcomes mesurables.
@@ -198,8 +178,8 @@ function _resolveMoveEffectFromDexId(dexId: string): number {
  *  Si script introuvable / move data manquante : retourne damage=0 missed=true.
  */
 export function runMoveScriptViaBytecode(opts: {
-  attacker: PokemonInstance;
-  defender: PokemonInstance;
+  attacker: Pokemon;
+  defender: Pokemon;
   attackerMoveIdx: number;
   attackerBattlerId?: number;  // 0 ou 2 (player). Default 0.
   defenderBattlerId?: number;  // 1 ou 3 (enemy). Default 1.
@@ -226,24 +206,21 @@ export function runMoveScriptViaBytecode(opts: {
   let defBId = opts.defenderBattlerId ?? 1;
   // Clear queue avant chaque run pour éviter de mixer events cross-turn.
   clearBattleEventQueue();
-  const mv = opts.attacker.moves[opts.attackerMoveIdx];
-  if (!mv) {
+  // Modèle numérique : mon.moves[i] = id MOVE_* (number ; 0 = MOVE_NONE).
+  const moveId = opts.attacker.moves[opts.attackerMoveIdx];
+  if (!moveId) {
     return { ok: false, reason: 'no move at index', damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
-  const moveId = _resolveMoveId(mv.id);
-  if (!moveId) {
-    return { ok: false, reason: `move '${mv.id}' resolves to id 0`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
-  }
-  const effectId = _resolveMoveEffectFromDexId(mv.id);
+  const effectId = _resolveMoveEffect(moveId);
   const scriptOffset = getMoveEffectScriptOffset(effectId);
   if (scriptOffset < 0) {
     return { ok: false, reason: `no script for effect ${effectId}`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
   // 1:1 décomp : si move target = USER (= self-heal/buff), set gBattlerTarget
   // = gBattlerAttacker. Sinon : keep defender. Tableau gBattleMoves[move].target.
-  // Résolution nom composé 100% décomp-extraite (moveDexIdToEnum), zéro Showdown.
+  // Résolution enum depuis l'id numérique (reverseDecompConstant), zéro Showdown.
   try {
-    const moveData = getMove(moveDexIdToEnum(mv.id));
+    const moveData = getMove(reverseDecompConstant(moveId, 'MOVE_') ?? '');
     const targetField = moveData?.target;
     if (typeof targetField === 'string') {
       // 1:1 décomp include/constants/battle.h:96-103 MOVE_TARGET_*:
@@ -260,9 +237,9 @@ export function runMoveScriptViaBytecode(opts: {
   // Note : gBattleMons is assumed already filled with species/stats/etc. via
   // fillActiveBattleMonsForBattleStart at battle setup. This just refreshes HP
   // pour syncer entre les turns (= damage propagé par turn précédent).
-  gBattleMons[attBId].hp = opts.attacker.currentHp;
-  gBattleMons[defBId].hp = opts.defender.currentHp;
-  const defenderHpBefore = opts.defender.currentHp;
+  gBattleMons[attBId].hp = opts.attacker.hp;
+  gBattleMons[defBId].hp = opts.defender.hp;
+  const defenderHpBefore = opts.defender.hp;
 
   // Setup battle state vars for bytecode.
   setBattlerAttacker(attBId);
@@ -300,11 +277,10 @@ export function runMoveScriptViaBytecode(opts: {
   gBattlerPartyIndexes[defBId] = 0;
   resetAtkCancelerTracker();
 
-  // Sync PP : attacker move PP from PokemonInstance.
+  // Sync PP : attacker move PP depuis la struct numérique (mon.pp[]).
   for (let i = 0; i < 4; i++) {
-    const m = opts.attacker.moves[i];
-    if (m) {
-      gBattleMons[attBId].pp[i] = m.pp;
+    if (opts.attacker.moves[i]) {
+      gBattleMons[attBId].pp[i] = opts.attacker.pp[i];
     }
   }
 
@@ -335,27 +311,26 @@ export function runMoveScriptViaBytecode(opts: {
   }
   void opsCount;
 
-  // Sync gBattleMons HP back to PokemonInstance.
-  opts.attacker.currentHp = gBattleMons[attBId].hp;
-  opts.defender.currentHp = gBattleMons[defBId].hp;
+  // Sync gBattleMons HP back to la struct Pokemon numérique.
+  opts.attacker.hp = gBattleMons[attBId].hp;
+  opts.defender.hp = gBattleMons[defBId].hp;
 
   // Sync PP back.
   for (let i = 0; i < 4; i++) {
-    const m = opts.attacker.moves[i];
-    if (m && gBattleMons[attBId].pp[i] !== undefined) {
-      m.pp = gBattleMons[attBId].pp[i];
+    if (opts.attacker.moves[i] && gBattleMons[attBId].pp[i] !== undefined) {
+      opts.attacker.pp[i] = gBattleMons[attBId].pp[i];
     }
   }
 
-  // Sync status1 back to PokemonInstance (= persist BURN/PSN/PAR/etc. au-delà
-  // du combat). 1:1 décomp inverse mapping STATUS1_* → PSN/BRN/etc.
-  _syncStatus1ToInstance(opts.attacker, gBattleMons[attBId].status1);
-  _syncStatus1ToInstance(opts.defender, gBattleMons[defBId].status1);
+  // Sync status1 back (= persist BURN/PSN/PAR/etc. au-delà du combat). Modèle
+  // numérique : mon.status est DÉJÀ le bitfield STATUS1_* (assignation directe).
+  opts.attacker.status = gBattleMons[attBId].status1 >>> 0;
+  opts.defender.status = gBattleMons[defBId].status1 >>> 0;
 
-  const damage = defenderHpBefore - opts.defender.currentHp;
+  const damage = defenderHpBefore - opts.defender.hp;
   const typeMul = _decodeTypeMulFromResultFlags(gMoveResultFlags);
   const missed = (gMoveResultFlags & (MOVE_RESULT_MISSED | MOVE_RESULT_FAILED)) !== 0;
-  const fainted = opts.defender.currentHp <= 0;
+  const fainted = opts.defender.hp <= 0;
 
   // Drain le queue d'events bytecode produits par les BtlController_Emit*
   // appelés pendant runBattleScript. Decode les PRINTSTRING events en text
@@ -980,53 +955,13 @@ function _runScriptSync(label: string): void {
   }
 }
 
-// ─── Status1 sync helpers ──────────────────────────────────────────────
-
-/** 1:1 décomp STATUS1_* bits → PokemonInstance.status string. Inverse de
- *  `_STATUS_TO_STATUS1` dans party-storage.ts. */
-function _decodeStatus1(status1: number): 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX' | null {
-  if (status1 === 0) return null;
-  // SLEEP : bits 0-2 are the sleep counter, set if > 0.
-  if (status1 & 0x07) return 'SLP';
-  // TOXIC : bit 7 + bit 3 (= TOXIC_POISON | POISON). Check TOX first.
-  if ((status1 & 0x80) && (status1 & 0x08)) return 'TOX';
-  if (status1 & 0x08) return 'PSN';
-  if (status1 & 0x10) return 'BRN';
-  if (status1 & 0x20) return 'FRZ';
-  if (status1 & 0x40) return 'PAR';
-  return null;
-}
-
-/** Sync gBattleMons[X].status1 back to PokemonInstance.status. */
-function _syncStatus1ToInstance(inst: PokemonInstance, status1: number): void {
-  inst.status = _decodeStatus1(status1);
-}
-
-/** Sync gBattleMons[0]/[1] HP+status back vers les PokemonInstance actifs.
- *  Utile post `runBattleTurnPassedViaBytecode` / `runHandleFaintedMonActionsViaBytecode`
- *  qui mutent gBattleMons[i].hp via POISON/BURN/Wrap/Nightmare/etc. sans
- *  connaître la mapping PokemonInstance ↔ battlerId. Le caller (= battle-flow.ts)
- *  passe player + enemy (= battlerId 0 + 1 en single battle). */
-export function syncBattleMonsHpToInstances(player: PokemonInstance, enemy: PokemonInstance): void {
-  if (gBattleMons[0]) {
-    player.currentHp = gBattleMons[0].hp;
-    _syncStatus1ToInstance(player, gBattleMons[0].status1);
-  }
-  if (gBattleMons[1]) {
-    enemy.currentHp = gBattleMons[1].hp;
-    _syncStatus1ToInstance(enemy, gBattleMons[1].status1);
-  }
-}
-
-/** Refresh gBattleMons[bid].hp + pp depuis le PokemonInstance (= même idiome
- *  que runMoveScriptViaBytecode:264-292). status1/statStages restent ceux de
- *  gBattleMons (autoritaires pendant le combat, set par le bytecode). */
-function _refreshBattleMonFromInstance(bid: number, inst: PokemonInstance): void {
+/** Refresh gBattleMons[bid].hp + pp depuis la struct Pokemon NUMÉRIQUE. status1/
+ *  statStages restent ceux de gBattleMons (autoritaires pendant le combat). */
+function _refreshBattleMonFromInstance(bid: number, inst: Pokemon): void {
   if (!gBattleMons[bid]) return;
-  gBattleMons[bid].hp = inst.currentHp;
+  gBattleMons[bid].hp = inst.hp;
   for (let i = 0; i < MAX_MON_MOVES; i++) {
-    const m = inst.moves[i];
-    if (m && gBattleMons[bid].pp[i] !== undefined) gBattleMons[bid].pp[i] = m.pp;
+    if (inst.moves[i] && gBattleMons[bid].pp[i] !== undefined) gBattleMons[bid].pp[i] = inst.pp[i];
   }
 }
 
@@ -1045,8 +980,8 @@ function _refreshBattleMonFromInstance(bid: number, inst: PokemonInstance): void
  *  (= le caller retombe sur son comportement legacy). Robuste : tout throw →
  *  index -1 (jamais de crash du combat). */
 export function chooseOpponentMoveViaAI(opts: {
-  opponent: PokemonInstance;
-  player: PokemonInstance;
+  opponent: Pokemon;
+  player: Pokemon;
   opponentBattlerId?: number;
   playerBattlerId?: number;
   isTrainer?: boolean;
@@ -1057,8 +992,7 @@ export function chooseOpponentMoveViaAI(opts: {
     const pBId = opts.playerBattlerId ?? 0;
 
     const _slotEmpty = (i: number): boolean => {
-      const m = opts.opponent.moves[i];
-      return !m || !m.id;
+      return !opts.opponent.moves[i];  // 0 = MOVE_NONE (modèle numérique)
     };
 
     // 1:1 décomp OpponentHandleChooseMove (battle_controller_opponent.c:1563) :
@@ -1121,5 +1055,4 @@ export async function ensureAiBytecodeLoaded(): Promise<void> {
 void MOVE_RESULT_ONE_HIT_KO;
 void MOVE_RESULT_FOE_ENDURED;
 void MOVE_RESULT_FOE_HUNG_ON;
-void _resolveMoveEffect;
 void gBattleMoveDamage;
