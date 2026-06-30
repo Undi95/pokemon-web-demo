@@ -29,7 +29,7 @@
 import { registerSpecial } from '../../scrcmd';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
-import { GetLotteryNumber, SetLotteryNumber } from '../../lottery_corner';
+import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons } from '../../pokemon_storage_system';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
@@ -2714,14 +2714,9 @@ registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
   return GetMonEVCount(mon) >= 510 ? 1 : 0;  // MAX_TOTAL_EVS = 510, primitif nommé 1:1
 });
 
-/** 1:1 décomp `RetrieveLotteryNumber` (lottery_corner.c:42-46).
- *  Set gSpecialVar_Result = GetLotteryNumber() (= (lowNum << 16) | highNum).
- *  GetLotteryNumber décomp ligne 156-161 utilise VAR_POKELOT_RND1/2. */
-registerSpecial('RetrieveLotteryNumber', () => {
-  // GetLotteryNumber() importé de game/lottery_corner.ts (dédup). Note 1:1 strict :
-  // décomp retourne u32, mais gSpecialVar_Result est u16 → on tronque aux 16 bits bas.
-  return GetLotteryNumber() & 0xFFFF;
-});
+// `RetrieveLotteryNumber` (lottery_corner.c:42) : impl 1:1 dans son foyer
+// src/lottery_corner.ts, enregistrée ici (table gSpecials).
+registerSpecial('RetrieveLotteryNumber', RetrieveLotteryNumber);
 
 /** 1:1 décomp `HasBardSongBeenChanged` (mauville_old_man.c:151-154).
  *  Set gSpecialVar_Result = oldMan.bard.hasChangedSong (= 0/1). */
@@ -3493,133 +3488,15 @@ registerSpecial('GetBerryPowder', () => {
   return gSaveBlock2Ptr.berryCrush?.berryPowderAmount ?? 0;
 });
 
-// ─── Session E1 batch — lottery_corner.c 1:1 strict ────────────────────────
-
-/** 1:1 décomp `sLotteryPrizes[]` (lottery_corner.c:14-20). 4 prizes (= match
- *  digits 5/4/3/2 → MASTER_BALL/MAX_REVIVE/EXP_SHARE/PP_UP). */
-const _sLotteryPrizes_ITEMS = ['ITEM_PP_UP', 'ITEM_EXP_SHARE', 'ITEM_MAX_REVIVE', 'ITEM_MASTER_BALL'] as const;
-
-/** 1:1 décomp `GetMatchingDigits(winNumber, otId)` (lottery_corner.c:122-144) :
- *  compte digits LSB → MSB jusqu'à premier mismatch (= max 5). */
-function _getMatchingDigits(winNumber: number, otId: number): number {
-  let matching = 0;
-  for (let i = 0; i < 5; i++) {
-    const winDigit = winNumber % 10;
-    const otDigit = otId % 10;
-    if (winDigit === otDigit) {
-      winNumber = Math.floor(winNumber / 10);
-      otId = Math.floor(otId / 10);
-      matching++;
-    } else {
-      break;
-    }
-  }
-  return matching;
-}
-
-/** 1:1 décomp `ResetLotteryCorner(void)` (lottery_corner.c:24-30) :
- *      u16 rand = Random();
- *      SetLotteryNumber((Random() << 16) | rand);
- *      VarSet(VAR_POKELOT_PRIZE_ITEM, 0);
- *  (SetLotteryNumber importé de game/lottery_corner.ts — dédup.) */
-registerSpecial('ResetLotteryCorner', () => {
-  const rand = Random() & 0xFFFF;
-  SetLotteryNumber(((Random() & 0xFFFF) << 16) | rand);
-  VarSet('VAR_POKELOT_PRIZE_ITEM', 0);
-});
-
-// `SetRandomLotteryNumber` n'est PAS un special (absent de specials.inc) : c'est une
-// fonction appelée par UpdatePerDay(daysSince). Portée 1:1 dans src/lottery_corner.ts
-// + câblée dans clock.ts:UpdatePerDay. L'ancien wrapper-special spurious (lisant
-// VAR_0x8004, RNG buggé) est SUPPRIMÉ ici.
-
-/** 1:1 décomp `PickLotteryCornerTicket(void)` (lottery_corner.c:48-120).
- *
- *  Itère la party + tous les PC boxes pour trouver le mon avec le plus de
- *  digits matchant le lotto number (max 5). Si ≥ 2 digits → prize = sLotteryPrizes
- *  [matching - 2] + buffer nickname.
- *
- *  Dette R3 PC boxes : notre gPokemonStoragePtr (= TOTAL_BOXES_COUNT * IN_BOX_COUNT
- *  PC system) pas porté côté itération boxes — on loop party seulement (= simplification
- *  documented). Le gameplay reste cohérent (= early-game player ≤ 1 box).
- *
- *  Output via gSpecialVar :
- *    Result = lotto number
- *    0x8004 = matching digits - 1 (= prize index 0..3)
- *    0x8005 = sLotteryPrizes[idx] (= itemId du prize)
- *    0x8006 = 0 (party) | 1 (PC)
- *    StringVar1 = nickname du mon gagnant */
-function _pickLotteryCornerTicket(): void {
-  // 1:1 :44 : lotto number = GetLotteryNumber() & 0xFFFF (= u16).
-  const highNum = VarGet('VAR_POKELOT_RND1');
-  const lowNum = VarGet('VAR_POKELOT_RND2');
-  const lottoNumber = (((lowNum & 0xFFFF) << 16) | (highNum & 0xFFFF)) & 0xFFFF;
-
-  let bestMatching = 0;
-  let bestSlot = 0;
-  let bestBox = 0;  // 0 = party, TOTAL_BOXES_COUNT = party marker dans décomp
-  const TOTAL_BOXES_COUNT = 14;
-  const IN_BOX_COUNT = 30;
-
-  // 1:1 :58-82 : loop party.
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) break;
-    // skip eggs (= 1:1 :65-77).
-    if (_GetMonData(mon, MON_DATA_IS_EGG) as number) continue;
-    const otId = (_GetMonData(mon, MON_DATA_OT_ID) as number) >>> 0;
-    const matching = _getMatchingDigits(lottoNumber, otId & 0xFFFF);
-    if (matching > bestMatching && matching > 1) {
-      bestMatching = matching - 1;
-      bestBox = TOTAL_BOXES_COUNT;  // = party marker
-      bestSlot = i;
-    }
-  }
-
-  // 1:1 :84-102 : loop PC boxes. Slots = `PokemonInstance | null` (speciesId 0 =
-  // SPECIES_NONE, isEgg flag). Partage `bestMatching` avec la party (= gSpecialVar
-  // _0x8004 dans la décomp ; comparaison `matching > bestMatching` où bestMatching
-  // tient déjà `prevMatching - 1` → ties vont au mon plus tardif, 1:1 strict).
-  const boxes = GetPokemonStorage().boxes;
-  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
-    for (let j = 0; j < IN_BOX_COUNT; j++) {
-      const slot = boxes[i]?.[j];
-      if (slot && slot.speciesId && !slot.isEgg) {
-        const otId = (slot.otId ?? 0) >>> 0;
-        const matching = _getMatchingDigits(lottoNumber, otId & 0xFFFF);
-        if (matching > bestMatching && matching > 1) {
-          bestMatching = matching - 1;
-          bestBox = i;  // index de boîte (0..13, != TOTAL_BOXES_COUNT)
-          bestSlot = j;
-        }
-      }
-    }
-  }
-
-  gSpecialVar.Result = lottoNumber;
-  VarSet('VAR_0x8004', bestMatching);
-  if (bestMatching !== 0) {
-    // 1:1 :106 : prize from sLotteryPrizes[matching-1].
-    const prizeKey = _sLotteryPrizes_ITEMS[bestMatching - 1];
-    const prizeId = resolveDecompConstant(prizeKey) ?? 0;
-    VarSet('VAR_0x8005', prizeId);
-    // 1:1 :108-117 : box marker + nickname buffer.
-    if (bestBox === TOTAL_BOXES_COUNT) {
-      VarSet('VAR_0x8006', 0);  // party
-      const winner = gPlayerParty[bestSlot];
-      setStringVar(1, (_GetMonData(winner, MON_DATA_NICKNAME) as string)
-        || (gSpeciesNames[_GetMonData(winner, MON_DATA_SPECIES) as number] ?? ''));
-    } else {
-      VarSet('VAR_0x8006', 1);  // PC
-      const winner = boxes[bestBox]?.[bestSlot];
-      setStringVar(1, (winner?.nickname)
-        || (gSpeciesNames[(winner?.speciesId ?? 0)] ?? ''));
-    }
-  }
-}
-registerSpecial('PickLotteryCornerTicket', () => { _pickLotteryCornerTicket(); return 0; });
-// Exposition dev (sonde déterministe) : le special n'est pas appelable depuis eval.
-(globalThis as Record<string, unknown>).__pickLotteryCornerTicket = _pickLotteryCornerTicket;
+// ─── lottery_corner.c — specials enregistrés depuis le foyer 1:1 ───────────
+// Toute la logique (ResetLotteryCorner / PickLotteryCornerTicket / GetMatchingDigits
+// / sLotteryPrizes / GetLotteryNumber / SetLotteryNumber) vit dans son foyer miroir
+// src/lottery_corner.ts. Ici on se contente de l'enregistrer dans la table gSpecials.
+// `SetRandomLotteryNumber` n'est PAS un special (absent de specials.inc) : appelé par
+// UpdatePerDay(daysSince) → câblé dans clock.ts. `ResetLotteryCorner` est appelé
+// hors-script mais conservé enregistré (inerte si jamais référencé par la table bytecode).
+registerSpecial('ResetLotteryCorner', () => { ResetLotteryCorner(); return 0; });
+registerSpecial('PickLotteryCornerTicket', () => { PickLotteryCornerTicket(); return 0; });
 
 // ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
 
