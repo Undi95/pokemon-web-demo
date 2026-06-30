@@ -12,6 +12,8 @@ import { getRuntime, FreeSpriteTilesByTag } from '../harness/runtime/decomp-glob
 import { TASK_NONE } from '../include/task';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, sSpriteTileRangeTags as _spr_sSpriteTileRangeTags, sSpriteTileRanges as _spr_sSpriteTileRanges } from './sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './engine/battle/state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './engine/battle/util';
 import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BIT_SIDE, BIT_FLANK, BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
@@ -1061,7 +1063,7 @@ function Cmd_loadspritegfx(): void {
   // registry des templates (C0 goal 2026-06-11 : le load vient de l'OPCODE,
   // pas seulement du createsprite).
   _loadAnimSheetByTag(10000 + trueIndex);
-  _vtrace({ op: 'load', tag: 10000 + trueIndex, tileStart: ((globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined)?.GetSpriteTileStartByTag?.(10000 + trueIndex) });
+  _vtrace({ op: 'load', tag: 10000 + trueIndex, tileStart: _spr_GetSpriteTileStartByTag(10000 + trueIndex) });
   AddSpriteIndex(trueIndex);
   _pc += 2;
   sAnimFramesToWait = 1;
@@ -1123,10 +1125,8 @@ function _markLiveSpriteTiles(): void {
   // + LES RANGES par tag NON-anim (healthbox 4916x, balls...) : leurs sheets
   // depassent les tiles affichees (box = 128 tiles, sprites n'en montrent
   // que 32 — impact@512 ecrasait les frames non-affichees, 2026-06-11).
-  const spSurf = (globalThis as Record<string, unknown>).__sprite as {
-    sSpriteTileRangeTags?: Uint16Array; sSpriteTileRanges?: Uint16Array;
-  } | undefined;
-  const rTags = spSurf?.sSpriteTileRangeTags, rRanges = spSurf?.sSpriteTileRanges;
+  // Arrays primary (imports directs sprite.ts, ex-`__sprite`).
+  const rTags = _spr_sSpriteTileRangeTags, rRanges = _spr_sSpriteTileRanges;
   if (rTags && rRanges) {
     for (let i = 0; i < rTags.length; i++) {
       const tg = rTags[i];

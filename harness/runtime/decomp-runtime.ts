@@ -39,6 +39,20 @@ import {
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from '../../src/palette';
 import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, setSpriteAnims as _setSpriteAnims_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, _resolveTileNum, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../src/sprite';
+// Imports DIRECTS sprite.ts (Phase B élimination __sprite) : decomp-runtime importe déjà sprite.ts
+// ci-dessus (sprite.ts → decomp-runtime en TYPE only → ZÉRO cycle ESM). Ces helpers/arrays
+// remplacent les anciens accès `globalThis.__sprite.X` vestigiaux (= classe « no-op silencieux »).
+import {
+  IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
+  GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
+  AllocSpriteTiles as _AllocSpriteTiles_1to1,
+  AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
+  MarkObjPaletteAllocated as _MarkObjPaletteAllocated_1to1,
+  sSpritePaletteTags as _sSpritePaletteTags_1to1,
+  sSpriteTileRangeTags as _sSpriteTileRangeTags_1to1,
+  sSpriteTileRanges as _sSpriteTileRanges_1to1,
+  sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap_1to1,
+} from '../../src/sprite';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../../src/engine/decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
@@ -986,14 +1000,11 @@ export class DecompRuntime {
    *  paths historiques). Sans ce marker, le bitmap allocator (= field-effect via
    *  LoadSpriteSheet) voit ces tiles "libres" et alloue dessus → collision. */
   private _markTilesInBitmap(byteOffset: number, byteSize: number): void {
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      sSpriteTileAllocBitmap?: Uint8Array;
-    } | undefined;
-    if (!sp?.sSpriteTileAllocBitmap) return;
+    // Import direct sprite.ts (ex-`__sprite.sSpriteTileAllocBitmap`) = array primary 1:1 décomp.
     const tileStart = byteOffset >> 5;
     const tileCount = byteSize >> 5;
     for (let n = tileStart; n < tileStart + tileCount; n++) {
-      sp.sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
+      _sSpriteTileAllocBitmap_1to1[n >> 3] |= (1 << (n & 7));
     }
   }
 
@@ -1819,10 +1830,7 @@ export class DecompRuntime {
     // check existing tag (early return) ; sinon find first-free dans
     // [gReservedSpritePaletteCount, 16) via sSpritePaletteTags array primary ;
     // load palette + register tag.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      IndexOfSpritePaletteTag?: (tag: string | number) => number;
-      sSpritePaletteTags?: Uint16Array;
-    } | undefined;
+    // Imports DIRECTS sprite.ts (ex-`__sprite`) : arrays/fns primary 1:1 décomp.
     for (const entry of table.entries) {
       const url = resolveUrl(entry.paletteName);
       if (!url) {
@@ -1834,15 +1842,13 @@ export class DecompRuntime {
       // Tag NUMÉRIQUE 1:1 si resolveTag fourni (sinon fallback string legacy).
       const tag: string | number = resolveTag ? resolveTag(entry.paletteName) : cleanTag;
       // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
-      if (sp?.IndexOfSpritePaletteTag?.(tag) !== 0xFF) continue;
+      if (_IndexOfSpritePaletteTag_1to1(tag) !== 0xFF) continue;
       // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) =
       // scan first-free dans [gReservedSpritePaletteCount, 16) via array primary.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
       let slot = -1;
-      if (sp?.sSpritePaletteTags) {
-        for (let i = reserved; i < 16; i++) {
-          if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
-        }
+      for (let i = reserved; i < 16; i++) {
+        if (_sSpritePaletteTags_1to1[i] === 0xFFFF) { slot = i; break; }
       }
       if (slot < 0) {
         console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${cleanTag}`);
@@ -1865,11 +1871,8 @@ export class DecompRuntime {
         } else {
           await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
         }
-        // 1:1 STRICT register tag via sSpritePaletteTags array primary.
-        const markPal = (globalThis as Record<string, unknown>).__sprite as {
-          MarkObjPaletteAllocated?: (slot: number, tag: string | number) => void;
-        } | undefined;
-        markPal?.MarkObjPaletteAllocated?.(slot, tag);
+        // 1:1 STRICT register tag via sSpritePaletteTags array primary (import direct sprite.ts).
+        _MarkObjPaletteAllocated_1to1(slot, tag);
         if (RT_DEBUG) console.log(`[runtime] palette ${tag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
@@ -1895,10 +1898,7 @@ export class DecompRuntime {
     // entry : LZ77UnComp data → AllocSpriteTiles (bitmap scan first-free) →
     // AllocSpriteTileRange (tag register) → CpuCopy16. Source unique = arrays
     // primary, pas de cursor monotone.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      AllocSpriteTiles?: (count: number) => number;
-      AllocSpriteTileRange?: (tag: string | number, start: number, count: number) => void;
-    } | undefined;
+    // Imports DIRECTS sprite.ts (ex-`__sprite`) : AllocSpriteTiles/AllocSpriteTileRange 1:1.
     for (const entry of table.entries) {
       const url = resolveUrl(entry.gfxName);
       if (!url) {
@@ -1908,7 +1908,7 @@ export class DecompRuntime {
       try {
         const png = await loadIndexedPngStrict(url, 4);
         const tileCount = png.charData.length >> 5;
-        const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+        const tileStart = _AllocSpriteTiles_1to1(tileCount);
         if (tileStart < 0) {
           console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: OBJ VRAM saturated for ${entry.tag}`);
           continue;
@@ -1921,7 +1921,7 @@ export class DecompRuntime {
         // (= tpl.tileTag = "TAG_X" sans préfixe).
         const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
         const tag: string | number = resolveTag ? resolveTag(entry.gfxName) : cleanTag;
-        sp?.AllocSpriteTileRange?.(tag, tileStart, tileCount);
+        _AllocSpriteTileRange_1to1(tag, tileStart, tileCount);
         if (RT_DEBUG) console.log(`[runtime] sheet ${tag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
       } catch (e) {
         console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
@@ -1964,15 +1964,10 @@ export class DecompRuntime {
     const firstAnim = firstAnimName ? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[firstAnimName] : null;
     const initialTileOffset = firstAnim?.frames[0]?.tileNum !== undefined ? _resolveTileNum(firstAnim.frames[0].tileNum) : 0;
 
-    // 1:1 STRICT décomp : lecture array primary via __sprite global
-    // (GetSpriteTileStartByTag = sprite.c:1542 ; IndexOfSpritePaletteTag =
-    // sprite.c:1637). Évite la désync Map secondary observée bug user.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      GetSpriteTileStartByTag?: (tag: string | number) => number;
-      IndexOfSpritePaletteTag?: (tag: string | number) => number;
-    } | undefined;
-    const tileBaseRaw = sp?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF;
-    const palSlotRaw = sp?.IndexOfSpritePaletteTag?.(tpl.paletteTag) ?? 0xFF;
+    // 1:1 STRICT décomp : lecture array primary via imports DIRECTS sprite.ts (ex-`__sprite`)
+    // (GetSpriteTileStartByTag = sprite.c:1542 ; IndexOfSpritePaletteTag = sprite.c:1637).
+    const tileBaseRaw = _GetSpriteTileStartByTag_1to1(tpl.tileTag);
+    const palSlotRaw = _IndexOfSpritePaletteTag_1to1(tpl.paletteTag);
     const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
     const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
 
@@ -2328,16 +2323,11 @@ export class DecompRuntime {
    *  Palettes (= reset arrays primary). nextSpriteSheetByteOffset gardé pour
    *  les sites legacy (migration A2 à venir). */
   resetSpriteSystem(): void {
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      sSpriteTileRangeTags?: Uint16Array;
-      sSpriteTileRanges?: Uint16Array;
-      sSpritePaletteTags?: Uint16Array;
-      sSpriteTileAllocBitmap?: Uint8Array;
-    } | undefined;
-    if (sp?.sSpriteTileRangeTags) sp.sSpriteTileRangeTags.fill(0xFFFF);
-    if (sp?.sSpriteTileRanges) sp.sSpriteTileRanges.fill(0);
-    if (sp?.sSpritePaletteTags) sp.sSpritePaletteTags.fill(0xFFFF);
-    if (sp?.sSpriteTileAllocBitmap) sp.sSpriteTileAllocBitmap.fill(0);
+    // Imports DIRECTS sprite.ts (ex-`__sprite`) : reset des arrays primary 1:1 décomp.
+    _sSpriteTileRangeTags_1to1.fill(0xFFFF);
+    _sSpriteTileRanges_1to1.fill(0);
+    _sSpritePaletteTags_1to1.fill(0xFFFF);
+    _sSpriteTileAllocBitmap_1to1.fill(0);
     this.freedSpriteTileRanges.length = 0;
     this.accumulatorMs = 0;
   }

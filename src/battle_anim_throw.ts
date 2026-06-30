@@ -48,7 +48,7 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 import { MAX_SPRITES, type DecompRuntime, type DecompSprite } from '../harness/runtime/decomp-runtime';
 import { Sin, Cos } from './trig';
 import { DestroySprite } from './sprite';
-import { AllocOamMatrix, FreeOamMatrix, IndexOfSpritePaletteTag, AllocSpriteTileRange, MarkObjPaletteAllocated } from './sprite';
+import { AllocOamMatrix, FreeOamMatrix, IndexOfSpritePaletteTag, AllocSpriteTileRange, MarkObjPaletteAllocated, AllocSpriteTiles, sSpritePaletteTags } from './sprite';
 import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 
@@ -2420,10 +2420,7 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
   if (gfx && GetSpriteTileStartByTag(PARTICLES_TILE_TAG) === 0xFFFF) {
     const bytes = gfx instanceof Uint16Array ? new Uint8Array(gfx.buffer, gfx.byteOffset, gfx.byteLength) : gfx;
     const tileCount = bytes.length >> 5;
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      AllocSpriteTiles?: (count: number) => number;
-    } | undefined;
-    const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+    const tileStart = AllocSpriteTiles(tileCount);
     if (tileStart >= 0) {
       const byteOffset = tileStart << 5;
       const copySize = Math.min(bytes.length, rt.gba.objVram.length - byteOffset);
@@ -2442,12 +2439,10 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
     const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
     // Scan first-free via array primary (= sSpritePaletteTags), comme IndexOf
     // SpritePaletteTag(TAG_NONE) (sprite.c:1637-1645).
-    const sp = (globalThis as Record<string, unknown>).__sprite as { sSpritePaletteTags?: Uint16Array } | undefined;
+    // Array primary sSpritePaletteTags (import direct sprite.ts, ex-`__sprite`).
     let slot = -1;
-    if (sp?.sSpritePaletteTags) {
-      for (let i = reserved; i < 16; i++) {
-        if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
-      }
+    for (let i = reserved; i < 16; i++) {
+      if (sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
     }
     if (slot < 0) {
       console.warn(`[pokeball-effects] OBJ palette saturated (16/16), cannot load PARTICLES_PAL_TAG`);

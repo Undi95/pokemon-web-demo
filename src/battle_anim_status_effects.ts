@@ -64,8 +64,10 @@ function _ficRt(): {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 import { GetBattlerSpriteCoord as _ficCoord, BATTLER_COORD_X_2 as _FIC_X2, BATTLER_COORD_Y_PIC_OFFSET as _FIC_YPIC } from './battle_anim_mons';
-function _ficSpriteApi(): { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } {
-  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
+function _ficSpriteApi(): { GetSpriteTileStartByTag: (t: number | string) => number; IndexOfSpritePaletteTag: (t: number | string) => number } {
+  return { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
 }
 
 /** 1:1 AnimTask_FrozenIceCube (battle_anim_status_effects.c.c:381). */

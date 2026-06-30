@@ -16,6 +16,8 @@
  */
 import { CreateSprite as _CreateSpriteFromTemplate } from './sprite';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spr_FreeSpritePaletteByTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
@@ -2816,7 +2818,7 @@ function CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: bo
   const xs = [task.data[4] - xOffset, task.data[4] - xOffset - 4, task.data[4] + xOffset, task.data[4] + xOffset + 4];
   const ys = [task.data[5] + yOffset, task.data[5] + yOffset + 6];
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gFacadeSweatDropSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -2939,7 +2941,7 @@ function AnimTask_GlareEyeDots_Step(task: { taskId: number; data: number[] }): v
         task.data[1] = 0;
         const [x, y] = GetGlareEyeDotCoords(task.data[10], task.data[11], task.data[12], task.data[13], task.data[3], task.data[2]);
         const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+        const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gGlareEyeDotSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -3408,7 +3410,7 @@ function TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
       const var1 = task.data[4];
       const x = (task.data[1] & 1) ? task.data[2] - var1 : task.data[2] + var1;
       const y = task.data[3] + task.data[5];
-      const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+      const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
       const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
       const tpl = bridge?.lookupGeneratedTemplateTags?.('gThoughtBubbleSpriteTemplate');
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -3531,7 +3533,7 @@ function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unk
     DestroySprite?: (i: number) => void;
     gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   };
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gBarrageBallSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -3859,7 +3861,7 @@ function AnimTask_RolePlaySilhouette_Step2(task: _E3Task): void {
   if (++task.data[12] === 9) {
     if (sp) mons?.ResetSpriteRotScale?.(spriteId);
     // DestroySpriteAndFreeResources_ : destroy + libère tiles inline + palette tag.
-    const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+    const spApi = { FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
     const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
     if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
     DestroySprite(spriteId);
@@ -4370,7 +4372,7 @@ function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; 
       // 1:1 :5190-5201 : détruit le clone (DestroySpriteAndFreeResources_ =
       // palette par tag + destroy, pattern F77 Step2) ; replace l'attaquant
       // hors écran du côté opposé.
-      const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      const spApi = { FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
       const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
       if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
       DestroySprite(task.data[15]);

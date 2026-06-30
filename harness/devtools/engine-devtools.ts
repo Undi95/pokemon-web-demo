@@ -86,6 +86,13 @@
  */
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { MAX_SPRITES } from '../runtime/decomp-runtime';
+// Imports DIRECTS sprite.ts (Phase B élimination __sprite) : arrays primary 1:1 décomp.
+import {
+  sSpritePaletteTags as _sSpritePaletteTags,
+  sSpriteTileRangeTags as _sSpriteTileRangeTags,
+  sSpriteTileRanges as _sSpriteTileRanges,
+  sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
+} from '../../src/sprite';
 
 interface SaveState {
   vram: Uint8Array;
@@ -192,7 +199,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       gTasks: Array.from(rt.gTasks.entries()).map(([id, t]) => [id, { taskId: t.taskId, data: Array.from(t.data || []), func: t.func, isActive: t.isActive, prev: t.prev, next: t.next, priority: t.priority, followupFunc: t.followupFunc }]),
       gPaletteFade: { ...rt.gPaletteFade },
       gMain: { callback2: rt.gMain.callback2, state: rt.gMain.state, heldKeys: rt.gMain.heldKeys, newKeys: rt.gMain.newKeys },
-      // 1:1 STRICT arrays primary snapshot via globalThis.__sprite.
+      // 1:1 STRICT arrays primary snapshot (imports directs sprite.ts).
       sSpritePaletteTags: new Uint16Array(16),
       sSpriteTileRangeTags: new Uint16Array(64),
       sSpriteTileRanges: new Uint16Array(128),
@@ -203,17 +210,11 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       ss.pltUnfaded[i] = rt.gPlttBufferUnfaded.get(i);
       ss.pltFaded[i] = rt.gPlttBufferFaded.get(i);
     }
-    // 1:1 STRICT capture des arrays primary via globalThis.__sprite.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      sSpritePaletteTags?: Uint16Array;
-      sSpriteTileRangeTags?: Uint16Array;
-      sSpriteTileRanges?: Uint16Array;
-      sSpriteTileAllocBitmap?: Uint8Array;
-    } | undefined;
-    if (sp?.sSpritePaletteTags) ss.sSpritePaletteTags.set(sp.sSpritePaletteTags);
-    if (sp?.sSpriteTileRangeTags) ss.sSpriteTileRangeTags.set(sp.sSpriteTileRangeTags);
-    if (sp?.sSpriteTileRanges) ss.sSpriteTileRanges.set(sp.sSpriteTileRanges);
-    if (sp?.sSpriteTileAllocBitmap) ss.sSpriteTileAllocBitmap.set(sp.sSpriteTileAllocBitmap);
+    // 1:1 STRICT capture des arrays primary via imports DIRECTS sprite.ts (ex-`__sprite`).
+    ss.sSpritePaletteTags.set(_sSpritePaletteTags);
+    ss.sSpriteTileRangeTags.set(_sSpriteTileRangeTags);
+    ss.sSpriteTileRanges.set(_sSpriteTileRanges);
+    ss.sSpriteTileAllocBitmap.set(_sSpriteTileAllocBitmap);
     savestates.set(name, ss);
     return `saved '${name}' (frame=${ss.frameCounter}, sprites=${ss.gSprites.length}, tasks=${ss.gTasks.length})`;
   };
@@ -256,17 +257,11 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     Object.assign(rt.gPaletteFade, ss.gPaletteFade);
     rt.gMain.callback2 = ss.gMain.callback2;
     rt.gMain.state = ss.gMain.state;
-    // 1:1 STRICT restore des arrays primary via globalThis.__sprite.
-    const spR = (globalThis as Record<string, unknown>).__sprite as {
-      sSpritePaletteTags?: Uint16Array;
-      sSpriteTileRangeTags?: Uint16Array;
-      sSpriteTileRanges?: Uint16Array;
-      sSpriteTileAllocBitmap?: Uint8Array;
-    } | undefined;
-    if (spR?.sSpritePaletteTags) spR.sSpritePaletteTags.set(ss.sSpritePaletteTags);
-    if (spR?.sSpriteTileRangeTags) spR.sSpriteTileRangeTags.set(ss.sSpriteTileRangeTags);
-    if (spR?.sSpriteTileRanges) spR.sSpriteTileRanges.set(ss.sSpriteTileRanges);
-    if (spR?.sSpriteTileAllocBitmap) spR.sSpriteTileAllocBitmap.set(ss.sSpriteTileAllocBitmap);
+    // 1:1 STRICT restore des arrays primary via imports DIRECTS sprite.ts (ex-`__sprite`).
+    _sSpritePaletteTags.set(ss.sSpritePaletteTags);
+    _sSpriteTileRangeTags.set(ss.sSpriteTileRangeTags);
+    _sSpriteTileRanges.set(ss.sSpriteTileRanges);
+    _sSpriteTileAllocBitmap.set(ss.sSpriteTileAllocBitmap);
     rt.gIntroFrameCounter = ss.frameCounter;
     return `loaded '${name}' (frame=${ss.frameCounter}, sprites=${ss.gSprites.length}, tasks=${ss.gTasks.length})`;
   };

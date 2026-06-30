@@ -10,6 +10,9 @@
  * Asset : smokescreen_impact.4bpp.bin / .gbapal (extraits byte-exact,
  * 16x48 = 12 tiles = 3 frames 16x16). Tag dédié TAG_SMOKESCREEN (55019).
  */
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30) : zéro cycle (sprite.ts bas-niveau).
+import { GetSpriteTileStartByTag, IndexOfSpritePaletteTag, FreeSpriteTilesByTag, FreeSpritePaletteByTag } from './sprite';
+
 const TAG_SMOKESCREEN = 55019;
 
 type _SmSprite = {
@@ -25,12 +28,13 @@ function _smRt(): {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 function _smSpriteApi(): {
-  GetSpriteTileStartByTag?: (t: number) => number;
-  IndexOfSpritePaletteTag?: (t: number | string) => number;
-  FreeSpriteTilesByTag?: (t: number) => void;
-  FreeSpritePaletteByTag?: (t: number) => void;
+  GetSpriteTileStartByTag: (t: number | string) => number;
+  IndexOfSpritePaletteTag: (t: number | string) => number;
+  FreeSpriteTilesByTag: (t: number | string) => void;
+  FreeSpritePaletteByTag: (t: number | string) => void;
 } {
-  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+  // Ex-`globalThis.__sprite` → imports directs sprite.ts 1:1.
+  return { GetSpriteTileStartByTag, IndexOfSpritePaletteTag, FreeSpriteTilesByTag, FreeSpritePaletteByTag };
 }
 
 let _smAssets: { tiles: Uint8Array; pal: Uint16Array } | null = null;

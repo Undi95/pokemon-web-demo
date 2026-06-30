@@ -9,6 +9,8 @@
  */
 import { registerAnimTasks } from './engine/battle/battle-anim-registry';
 import { DestroySprite } from './sprite';
+// Import DIRECT sprite.ts (élimination __sprite, 2026-06-30).
+import { IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { BlendPalette } from '../harness/runtime/decomp-globals';
 
@@ -384,7 +386,7 @@ function AnimTask_SetCamouflageBlend(task: AnimTask): void {
  *  du TAG donné (args[0] = ANIM_TAG). */
 function AnimTask_BlendParticle(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [];
-  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const sp = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const palIdx = sp?.IndexOfSpritePaletteTag?.(args[0] | 0) ?? 0xFF;
   if (palIdx === 0xFF) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
   // ATTENTION layout : BlendParticle utilise args[1..4]=(delay,start,target,
@@ -787,7 +789,7 @@ function AnimTask_BlendColorCycleExclude(task: AnimTask): void {
 /** 1:1 AnimTask_BlendColorCycleByTag (battle_anim_normal.c.c:595) : la palette du tag. */
 function AnimTask_BlendColorCycleByTag(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [0, 0, 2, 0, 14, 0];
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const spApi = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const slot = spApi?.IndexOfSpritePaletteTag?.(args[0] | 0) ?? 0xFF;
   if (slot === 0xFF) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
   _initBlendCycleMask(task, args, (1 << (16 + slot)) >>> 0);

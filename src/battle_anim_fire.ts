@@ -22,6 +22,8 @@
 
 import { CreateSprite } from './sprite';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
@@ -699,7 +701,7 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
     x += 16;
     sign = -1;
   }
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gEruptionLaunchRockSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

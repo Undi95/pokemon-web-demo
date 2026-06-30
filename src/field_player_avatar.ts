@@ -200,6 +200,7 @@ import {
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
   DestroySprite,
+  sSpritePaletteTags, sSpriteTileRangeTags, sSpriteTileRanges, sSpriteTileAllocBitmap,
 } from './sprite';
 import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../include/constants/songs';
 import {
@@ -756,16 +757,11 @@ export async function InitPlayerAvatar(
   setReservedSpritePaletteCount_helper(0);
   // 1:1 STRICT clear arrays primary storage + bitmap (= ce que ResetSpriteData
   // décomp fait via FreeSpriteTileRanges + AllocSpriteTiles(0) + FreeAllSpritePalettes).
-  const spriteGlobal = (globalThis as Record<string, unknown>).__sprite as {
-    sSpritePaletteTags?: Uint16Array;
-    sSpriteTileRangeTags?: Uint16Array;
-    sSpriteTileRanges?: Uint16Array;
-    sSpriteTileAllocBitmap?: Uint8Array;
-  } | undefined;
-  if (spriteGlobal?.sSpritePaletteTags) spriteGlobal.sSpritePaletteTags.fill(0xFFFF);
-  if (spriteGlobal?.sSpriteTileRangeTags) spriteGlobal.sSpriteTileRangeTags.fill(0xFFFF);
-  if (spriteGlobal?.sSpriteTileRanges) spriteGlobal.sSpriteTileRanges.fill(0);
-  if (spriteGlobal?.sSpriteTileAllocBitmap) spriteGlobal.sSpriteTileAllocBitmap.fill(0);
+  // Imports DIRECTS sprite.ts (ex-`__sprite`) = arrays primary 1:1 décomp.
+  sSpritePaletteTags.fill(0xFFFF);
+  sSpriteTileRangeTags.fill(0xFFFF);
+  sSpriteTileRanges.fill(0);
+  sSpriteTileAllocBitmap.fill(0);
   // 1:1 décomp src/sprite.c:1486 LoadSpriteSheet : écrit OBJ VRAM + marker tag.
   const tileStart = LoadSpriteSheet({
     data: combined, size: combined.length, tag: 'PLAYER_AVATAR_GFX',

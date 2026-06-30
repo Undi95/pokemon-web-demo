@@ -11,6 +11,8 @@
 import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
@@ -599,7 +601,7 @@ function _CreateRolloutDirtSprite(task: _RoTask): void {
   const y = (task.data[3] >> 3) & 0xFFFF;
   x = (x + task.data[12] * 4) & 0xFFFF;
   const rt = _roRt();
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.(tplName);
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

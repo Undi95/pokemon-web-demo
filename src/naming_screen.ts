@@ -20,7 +20,7 @@
  * auto-callbacks y accèdent.
  */
 import { OBJ_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData } from './sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange, ResetSpriteData, sSpritePaletteTags, AllocSpriteTiles } from './sprite';
 import { SetPlayerName } from '../include/text';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
@@ -548,12 +548,10 @@ async function loadNamingScreenAssets(): Promise<void> {
       // (= sprite.c:1637-1645 IndexOfSpritePaletteTag(TAG_NONE)). Avant : scan
       // via Map secondary qui pouvait être désync avec l'array.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-      const sp = (globalThis as Record<string, unknown>).__sprite as { sSpritePaletteTags?: Uint16Array } | undefined;
+      // Import direct sprite.ts (ex-`__sprite.sSpritePaletteTags`) = array primary 1:1.
       let slot = -1;
-      if (sp?.sSpritePaletteTags) {
-        for (let i = reserved; i < 16; i++) {
-          if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
-        }
+      for (let i = reserved; i < 16; i++) {
+        if (sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
       }
       if (slot < 0) {
         console.warn(`[naming-screen] OBJ palette saturated (16/16), cannot load ${e.tag}`);
@@ -623,15 +621,13 @@ async function loadNamingScreenAssets(): Promise<void> {
     // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet pour chaque
     // entry : AllocSpriteTiles (bitmap scan first-free) → AllocSpriteTileRange
     // → CpuCopy16. Source unique = arrays primary.
-    const sp = (globalThis as Record<string, unknown>).__sprite as {
-      AllocSpriteTiles?: (count: number) => number;
-    } | undefined;
+    // Import direct sprite.ts (ex-`__sprite.AllocSpriteTiles`) = allocateur bitmap 1:1.
     for (const sheet of sheets) {
       // 1:1 STRICT check via array primary (sSpriteTileRangeTags).
       if (GetSpriteTileStartByTag(sheet.tag) !== 0xFFFF) continue;
       const charData = await loadTileBin(sheet.url, 4);
       const tileCount = sheet.sizeBytes >> 5;
-      const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+      const tileStart = AllocSpriteTiles(tileCount);
       if (tileStart < 0) {
         console.warn(`[naming-screen] OBJ VRAM saturated, cannot load ${sheet.tag}`);
         continue;

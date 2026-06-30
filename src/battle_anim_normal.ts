@@ -36,6 +36,8 @@ import {
   SetCallbackToStoredInData6, DestroySpriteAndMatrix,
 } from './battle_anim_mons';
 import { Random2 } from './random';
+// Import DIRECT sprite.ts (élimination __sprite, 2026-06-30).
+import { IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 
 export const ANIM_TAG_IMPACT = 10135; // ANIM_SPRITES_START(10000) + 135, battle_anim.h:145
 
@@ -703,7 +705,7 @@ function AnimTask_FlashAnimTagWithColor(task: { taskId: number; data: number[]; 
   task.func = _FlashTag_Step1;
 }
 function _FlashTag_Apply(tag: number, y: number, color: number): void {
-  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const sp = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const palIdx = sp?.IndexOfSpritePaletteTag?.(tag) ?? 0xFF;
   if (palIdx === 0xFF) return;
   const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined;

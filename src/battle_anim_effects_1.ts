@@ -9,6 +9,8 @@
 import { CreateSprite } from './sprite';
 import { BeginNormalPaletteFade as _mlBeginFade } from './palette';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30) — palette/tile tag system 1:1.
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag, AllocSpritePalette as _spr_AllocSpritePalette, FreeSpritePaletteByTag as _spr_FreeSpritePaletteByTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
@@ -316,7 +318,7 @@ export function AnimTask_CreateSmallSolarBeamOrbs(task: { taskId: number; data: 
       lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; paletteTag: number; oam?: { shape: number; size: number; objMode?: number }; anims?: unknown } | undefined;
     } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gSolarBeamSmallOrbSpriteTemplate');
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+    const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
     const rt = (globalThis as Record<string, unknown>).__rt as {
       CreateSpriteAtOam?: (cfg: Record<string, unknown>) => { spriteId: number };
       gSprites?: Array<_PSprite | undefined>;
@@ -2297,7 +2299,7 @@ const _gParticlesColorBlendTable: ReadonlyArray<readonly [number, readonly numbe
   [10175, [32767, 32666, 32597, 32528, 32460]],
 ];
 function AnimTask_MusicNotesRainbowBlend(task: { taskId: number }): void {
-  const spr = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number; AllocSpritePalette?: (t: number) => number } | undefined;
+  const spr = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag, AllocSpritePalette: _spr_AllocSpritePalette };
   const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } } | undefined;
   const pf = rt?.gPlttBufferFaded;
   // la 1re ligne : la palette EXISTANTE du tag MUSIC_NOTES, recolorée
@@ -2317,7 +2319,7 @@ function AnimTask_MusicNotesRainbowBlend(task: { taskId: number }): void {
   _sbItf().DestroyAnimVisualTask?.(task.taskId);
 }
 function AnimTask_MusicNotesClearRainbowBlend(task: { taskId: number }): void {
-  const spr = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+  const spr = { FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
   for (let j = 1; j < _gParticlesColorBlendTable.length; j++) {
     spr?.FreeSpritePaletteByTag?.(_gParticlesColorBlendTable[j][0]);
   }
@@ -2400,7 +2402,7 @@ function AnimTask_DoubleTeam(task: _DtTask): void {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   task.data[0] = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
   if (task.data[0] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+  const spApi = { AllocSpritePalette: _spr_AllocSpritePalette, FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
   task.data[1] = spApi?.AllocSpritePalette?.(10097 /* ANIM_TAG_BENT_SPOON */) ?? 0xFF;
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number; x2: number } | undefined>;
@@ -2441,7 +2443,7 @@ function _DoubleTeam_Step(task: _DtTask): void {
   if (!task.data[3]) {
     const rank = _dtMons().GetBattlerSpriteBGPriorityRank?.(_dtItf().getAttacker?.() ?? 0) ?? 2;
     _dtBgVisible(rank, true);
-    const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+    const spApi = { FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
     spApi?.FreeSpritePaletteByTag?.(10097);
     _dtItf().DestroyAnimVisualTask?.(task.taskId);
   }
@@ -2585,7 +2587,7 @@ const _ML_TAG_RAZOR_LEAF = 10160;  // ANIM_TAG_RAZOR_LEAF (START+160)
 /** 1:1 AnimTask_CycleMagicalLeafPal. */
 function AnimTask_CycleMagicalLeafPal(task: { taskId: number; data: number[] }): void {
   const itf = _sbItf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const spApi = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   switch (task.data[0]) {
     case 0: {
       const leaf = spApi?.IndexOfSpritePaletteTag?.(_ML_TAG_LEAF) ?? 0xFF;
@@ -2640,12 +2642,12 @@ function _mlRt(): {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 function _mlSlotOf(tag: number): number {
-  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const sp = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   return sp?.IndexOfSpritePaletteTag?.(tag) ?? 0xFF;
 }
 /** Signale les sprites des sheets MOON/SPARKLE (data[0]=1, 1:1 template-match). */
 function _mlSignalMoonSprites(): void {
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
   const rt = _mlRt();
   const ranges: Array<[number, number]> = [];
   for (const tag of [10194 /* ANIM_TAG_MOON (START+194) */, 10195 /* ANIM_TAG_GREEN_SPARKLE (START+195) */]) {
@@ -2795,7 +2797,7 @@ function _lbPicDim(battler: number, which: 'w' | 'h'): number {
 function _lbSpawnLeaf(x: number, y: number, subprio: number): number {
   const rt = _lbRt();
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gLeafBladeSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = CreateSprite({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;

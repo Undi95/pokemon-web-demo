@@ -34,6 +34,8 @@
 import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord,
@@ -1031,7 +1033,7 @@ function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, task
   }
   const spriteX = battlerX - Math.trunc((battlerY + 8) / 2);
   const rt = _hlRt();
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gHailParticleSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -1062,7 +1064,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
   if (sprite.x < sprite.data[3] && sprite.y < sprite.data[4]) return;
   const rt = _hlRt();
   if (sprite.data[0] === 1 && sprite.data[5] === 0) {
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+    const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gIceCrystalHitLargeSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

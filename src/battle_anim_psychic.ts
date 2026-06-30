@@ -20,6 +20,8 @@
 import { CreateSprite } from './sprite';
 import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import {
@@ -445,7 +447,7 @@ function AnimDefensiveWall(sprite: _DwSprite): void {
   sprite.y = _dwCoord(atk, 1) + (args[1] | 0);
   sprite.invisible = false;
   // data[0] = offset palette OBJ du tag du mur (rotation Step3)
-  const spSurf = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const spSurf = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const palIdx = spSurf?.IndexOfSpritePaletteTag?.(args[2] | 0) ?? 0xFF;
   sprite.data[0] = palIdx !== 0xFF ? 256 + palIdx * 16 : 256;
   sprite.data[1] = 0; sprite.data[2] = 0; sprite.data[3] = 0; sprite.data[7] = 0;
@@ -818,7 +820,7 @@ function _SkillSwap_Step(task: _SsTask): void {
           CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
           gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
         } | undefined;
-        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+        const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gSkillSwapOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -903,7 +905,7 @@ function AnimTask_ImprisonOrbs_Step(task: _SsTask): void {
     case 0:
       if (++task.data[1] > 8) {
         task.data[1] = 0;
-        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+        const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gImprisonOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

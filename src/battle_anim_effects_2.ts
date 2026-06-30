@@ -39,6 +39,8 @@
  */
 
 import { CreateSprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag, AllocSpritePalette as _spr_AllocSpritePalette, FreeSpritePaletteByTag as _spr_FreeSpritePaletteByTag } from './sprite';
 import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite, FreeOamMatrix } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
@@ -1705,10 +1707,9 @@ function AnimTask_SpeedDust_Step(task: _SpTask): void {
       if (++task.data[1] > 4) {
         task.data[1] = 0;
         const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
         const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
         const tpl = bridge?.lookupGeneratedTemplateTags?.('gSpeedDustSpriteTemplate');
-        const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+        const tileStart = tpl ? _spr_GetSpriteTileStartByTag(tpl.tileTag) : 0xFFFF;
         const sid = CreateSprite({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
         if (sid >= 0) {
           const sp = rt?.gSprites?.[sid];
@@ -1954,11 +1955,11 @@ _regTasks({ AnimTask_SketchDrawMon: AnimTask_SketchDrawMon as never });
 const _MN_NUM_PAL_TAGS = 3; // 1:1 NUM_MUSIC_NOTE_PAL_TAGS
 type _MnTask = { taskId: number; data: number[]; func?: unknown };
 function _mnSprite(): {
-  AllocSpritePalette?: (tag: number) => number;
-  FreeSpritePaletteByTag?: (tag: number) => void;
-  IndexOfSpritePaletteTag?: (tag: number | string) => number;
+  AllocSpritePalette: (tag: number | string) => number;
+  FreeSpritePaletteByTag: (tag: number | string) => void;
+  IndexOfSpritePaletteTag: (tag: number | string) => number;
 } {
-  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+  return { AllocSpritePalette: _spr_AllocSpritePalette, FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
 }
 function _mnWritePalBank(slot: number, p16: Uint16Array, bank: number): void {
   const rt = (globalThis as Record<string, unknown>).__rt as {
@@ -2301,17 +2302,16 @@ function GetBattlerSpriteSubpriority2(battler: number): number {
 function _AirCutterProjectileStep1(task: _AcTask): void {
   if (task.data[0]-- <= 0) {
     const rt = _acRt();
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gAirWaveProjectileSpriteTemplate');
-    const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+    const tileStart = tpl ? _spr_GetSpriteTileStartByTag(tpl.tileTag) : 0xFFFF;
     const sid = CreateSprite({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
     if (sid >= 0) {
       const sp = rt.gSprites?.[sid];
       const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart;
-        const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+        const pal = _spr_IndexOfSpritePaletteTag(tpl?.tileTag ?? 0);
         if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
       }
       // data[4]==1 : flips (matrixNum |= HFLIP|VFLIP -> sprite non-affine = hFlip/vFlip oam)

@@ -22,6 +22,8 @@ import { CreateSprite } from './sprite';
 import { BeginNormalPaletteFade as _csBeginFade } from './palette';
 import { registerAnimCallbacks } from './battle_anim';
 import { DestroySprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag, AllocSpritePalette as _spr_AllocSpritePalette, FreeSpritePaletteByTag as _spr_FreeSpritePaletteByTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
@@ -701,7 +703,7 @@ function AnimTask_GrudgeFlames_Step(task: _GfTask): void {
   const rt = _gfRt();
   switch (task.data[0]) {
     case 0: {
-      const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+      const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
       const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
       const tpl = bridge?.lookupGeneratedTemplateTags?.('gGrudgeFlameSpriteTemplate');
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -836,7 +838,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
   const baseX = GetBattlerSpriteCoord(atk, 2);
   const baseY = _dbPicBottom(atk);
   const battler = itf.getTarget?.() ?? 1; // single : seul ennemi visible
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gDestinyBondWhiteShadowSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -970,7 +972,7 @@ function AnimTask_SpiteTargetShadow_Step1(task: _SpwTask): void {
   const rt = _spwRt();
   switch (task.data[15]) {
     case 0: {
-      const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      const spApi = { AllocSpritePalette: _spr_AllocSpritePalette, FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
       task.data[14] = spApi?.AllocSpritePalette?.(10097) ?? 0xFF;
       if (task.data[14] === 0xFF || task.data[14] === 0xF) {
         itf.DestroyAnimVisualTask?.(task.taskId);
@@ -1082,7 +1084,7 @@ function AnimTask_SpiteTargetShadow_Step3(task: _SpwTask): void {
       if (tgtSp) tgtSp.invisible = true;
       const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { DestroySpriteWithActiveSheet?: (id: number) => void } | undefined;
       mons?.DestroySpriteWithActiveSheet?.(task.data[0]);
-      const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      const spApi = { FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
       spApi?.FreeSpritePaletteByTag?.(10097);
       rt.SetGpuReg?.(0x50, 0);
       rt.SetGpuReg?.(0x52, 0);

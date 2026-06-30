@@ -404,6 +404,8 @@ export function GetSubstituteSpriteDefault_Y(battler: number): number {
 
 import {ObjAffineSet} from "../harness/runtime/decomp-bridge";
 import { CreateSprite } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30) — palette tag system 1:1.
+import { IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag, AllocSpritePalette as _spr_AllocSpritePalette, FreeSpritePaletteByTag as _spr_FreeSpritePaletteByTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, DestroySprite } from './sprite';
 
@@ -660,8 +662,7 @@ function AnimTask_BlendMonInAndOut_Step(task: _F1Task): void {
 export function AnimTask_BlendPalInAndOutByTag(task: _F1Task): void {
   const itf = _f1Itf();
   const args = itf.getArgs?.() ?? [];
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const palette = spApi?.IndexOfSpritePaletteTag?.(args[0]) ?? 0xFF;
+  const palette = _spr_IndexOfSpritePaletteTag(args[0]);
   if (palette === 0xFF) {
     itf.DestroyAnimVisualTask?.(task.taskId);
     return;
@@ -1054,8 +1055,8 @@ type _PwTask = { taskId: number; data: number[]; func?: unknown };
 function _pwItf(): { getArgs?: () => number[]; getAttacker?: () => number; getAnimFriendship?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-function _pwSpriteApi(): { AllocSpritePalette?: (tag: number) => number; FreeSpritePaletteByTag?: (tag: number) => void } {
-  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+function _pwSpriteApi(): { AllocSpritePalette: (tag: number | string) => number; FreeSpritePaletteByTag: (tag: number | string) => void } {
+  return { AllocSpritePalette: _spr_AllocSpritePalette, FreeSpritePaletteByTag: _spr_FreeSpritePaletteByTag };
 }
 function _pwAtkSpriteId(): number {
   const b = _pwItf().getAttacker?.() ?? 0;
@@ -1448,8 +1449,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
     gPlttBufferUnfaded?: { set: (i: number, v: number) => void };
     gPlttBufferFaded?: { set: (i: number, v: number) => void };
   } | null;
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
-  const palSlot = spApi?.AllocSpritePalette?.(_CAM_TAGS[id & 1] ?? _CAM_TAGS[0]) ?? 0xFF;
+  const palSlot = _spr_AllocSpritePalette(_CAM_TAGS[id & 1] ?? _CAM_TAGS[0]);
   if (palSlot === 0xFF) return -1; // panne d'alloc palette = echec FRANC (pas de slot 0 silencieux)
   // pic coords : y += y_offset (front/back) — 1:1 battle_anim_mons.c.c:2135-2138.
   const enumName = _hl2RevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';

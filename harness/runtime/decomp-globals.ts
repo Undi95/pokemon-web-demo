@@ -64,17 +64,10 @@ import {
   LoadSpritePalette as _LoadSpritePalette_1to1,
   LoadSpritePalettes as _LoadSpritePalettes_1to1,
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
-  AllocSpritePalette as _AllocSpritePalette_1to1,
-  FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
-  DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
-  IndexOfSpriteTileTag as _IndexOfSpriteTileTag_1to1,
   _freeSpriteTileRangeByTag as _FreeSpriteTileRangeByTag_1to1,
-  MarkObjPaletteAllocated as _MarkObjPaletteAllocated_1to1,
-  MarkObjTilesAllocated as _MarkObjTilesAllocated_1to1,
-  sSpritePaletteTags as _sSpritePaletteTags,
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
@@ -115,30 +108,13 @@ export function setGlobalRuntime(rt: DecompRuntime): void {
   _setPaletteRuntimeGetter(getRuntime);
   // Expose pour devtools/inspect runtime — uniquement en preview/dev.
   (globalThis as Record<string, unknown>).__rt = rt;
-  (globalThis as Record<string, unknown>).__sprite = {
-    AllocSpritePalette: _AllocSpritePalette_1to1,
-    LoadSpritePalette: _LoadSpritePalette_1to1,
-    LoadSpritePalettes: _LoadSpritePalettes_1to1,
-    FreeSpritePaletteByTag: _FreeSpritePaletteByTag_1to1,
-    IndexOfSpritePaletteTag: _IndexOfSpritePaletteTag_1to1,
-    DoLoadSpritePalette: _DoLoadSpritePalette_1to1,
-    // Tile tag system lookups (sprite.c:1542 + :1550) — pour consumers qui
-    // ne peuvent pas importer sprite.ts directement (= cycle ESM).
-    GetSpriteTileStartByTag: _GetSpriteTileStartByTag_1to1,
-    IndexOfSpriteTileTag: _IndexOfSpriteTileTag_1to1,
-    AllocSpriteTileRange: _AllocSpriteTileRange_1to1,
-    // Helpers d'allocation sync arrays primary (= utilisés par les sites
-    // qui écrivent raw OBJ VRAM / palette sans passer par LoadSpriteSheet/Palette).
-    MarkObjPaletteAllocated: _MarkObjPaletteAllocated_1to1,
-    MarkObjTilesAllocated: _MarkObjTilesAllocated_1to1,
-    // 1:1 STRICT décomp EWRAM static arrays (Phase 1)
-    sSpritePaletteTags: _sSpritePaletteTags,
-    sSpriteTileRangeTags: _sSpriteTileRangeTags,
-    sSpriteTileRanges: _sSpriteTileRanges,
-    // 1:1 STRICT décomp tile alloc bitmap (Phase 2)
-    sSpriteTileAllocBitmap: _sSpriteTileAllocBitmap,
-    AllocSpriteTiles: _AllocSpriteTiles_1to1,
-  };
+  // ✅ `globalThis.__sprite` SUPPRIMÉ (2026-06-30) : la béquille anti-cycle ESM est ÉLIMINÉE.
+  // TOUS les consumers (runtime, overworld, naming_screen, devtools, starter, + les ~52 sites
+  // des anims de combat battle_anim_*) importent désormais sprite.ts DIRECTEMENT — sprite.ts
+  // n'importe decomp-runtime qu'en `type` → ZÉRO cycle ESM. Plus aucune classe « no-op
+  // silencieux » (les fns absentes de l'ancien __sprite, ex. FreeSpriteTilesByTag, sont
+  // maintenant les vraies fns 1:1). ⚠️ COMBAT EN PAUSE → migration combat tsc-validée mais à
+  // RE-TESTER en jeu à la réactivation du combat.
 }
 
 /** Récupère le runtime actif. Throw si pas init (= bug : on a oublié setGlobalRuntime). */
@@ -1901,14 +1877,12 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
       // 1:1 STRICT bitmap allocator sync : targetTileBase = overwrite ciblé
       // (LoadBallGfx remplace open.png frames). Marquer assure que ces tiles
       // ne sont pas re-attribuées par AllocSpriteTiles.
-      const sp = (globalThis as Record<string, unknown>).__sprite as {
-        sSpriteTileAllocBitmap?: Uint8Array;
-      } | undefined;
-      if (sp?.sSpriteTileAllocBitmap) {
+      // Import direct sprite.ts (ex-`__sprite.sSpriteTileAllocBitmap`) = array primary 1:1.
+      {
         const tileStart = byteOffset >> 5;
         const tileCount = copySize >> 5;
         for (let n = tileStart; n < tileStart + tileCount; n++) {
-          sp.sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
+          _sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
         }
       }
     }

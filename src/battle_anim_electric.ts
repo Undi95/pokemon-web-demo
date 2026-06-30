@@ -21,6 +21,8 @@ import {
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
 import { SetOamMatrix, AllocOamMatrix } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 
 type _VSprite = {
   data: number[]; x: number; y: number; x2: number; y2: number;
@@ -554,7 +556,7 @@ function AnimTask_ElectricBolt_Step(task: { taskId: number; data: number[] }): v
     // pattern minimal robuste : créer par le même chemin que les callbacks
     // (CreateSprite système avec le tag du bolt 10011=ANIM_TAG_LIGHTNING ?)
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; oamIndex: number; callback: unknown } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number }> } } | undefined;
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+    const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
     const tileStart = dg?.GetSpriteTileStartByTag?.(10038) ?? 0xFFFF; // ANIM_TAG_ELECTRIC_BOLT? — si absent, segment invisible (net doux)
     const sid = CreateSprite({ oam: { shape: 2, size: 0, priority: 2 }, images: [] } as never, x, y + r12, 2) ?? -1;
     if (sid >= 0) {
@@ -645,7 +647,7 @@ function _VoltTackleBolt_Step(task: { taskId: number; data: number[] }): void {
 }
 function CreateVoltTackleBolt(task: { taskId: number; data: number[] }): boolean {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
   const tileStart = dg?.GetSpriteTileStartByTag?.(10011) ?? 0xFFFF; // ANIM_TAG_LIGHTNING? net : si absent, bolt invisible doux
   const sid = CreateSprite({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, task.data[3], task.data[5], 35) ?? -1;
   if (sid >= 0) {
@@ -699,7 +701,7 @@ function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamSha
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.(tplName);
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

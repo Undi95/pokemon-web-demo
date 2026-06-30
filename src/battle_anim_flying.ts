@@ -27,6 +27,8 @@ import {
 import { Sin, Cos, gSineTable } from './trig';
 import { SetOamMatrix, AllocOamMatrix } from './sprite';
 import { SeekSpriteAnim } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import {
   getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
 } from '../harness/runtime/decomp-globals';
@@ -799,7 +801,7 @@ function AnimTask_AnimateGustTornadoPalette(task: { taskId: number; data: number
   const a = _flItf().getArgs?.() ?? [];
   task.data[0] = a[1]; // durée
   task.data[1] = a[0]; // intervalle
-  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const sp = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   task.data[2] = sp?.IndexOfSpritePaletteTag?.(10009 /* ANIM_TAG_GUST */) ?? 0xFF;
   task.data[10] = 0;
   task.data[11] = 0;
@@ -896,7 +898,7 @@ function AnimTask_DrillPeckHitSplats(task: { taskId: number; data: number[] }): 
       CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
       gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
     } | undefined;
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+    const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gFlashingHitSplatSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;

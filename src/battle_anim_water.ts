@@ -8,6 +8,8 @@
  */
 import { CreateSprite as _CreateSpriteFromTemplate } from './sprite';
 import { DestroySprite, FreeOamMatrix } from './sprite';
+// Imports DIRECTS sprite.ts (élimination __sprite, 2026-06-30).
+import { GetSpriteTileStartByTag as _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
@@ -668,7 +670,7 @@ function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): voi
     const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; oam: { shape: number; size: number }; callback: unknown; anims?: unknown } | undefined } | undefined;
     const tpl = bridge?.lookupGeneratedTemplateTags?.('gRainDropSpriteTemplate');
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
-    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+    const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag };
     const sid = _CreateSpriteFromTemplate({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
     if (sid >= 0) {
       const sp = rt?.gSprites?.[sid];
@@ -726,7 +728,7 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
-  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const dg = { GetSpriteTileStartByTag: _spr_GetSpriteTileStartByTag, IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
   const tpl = bridge?.lookupGeneratedTemplateTags?.('gSmallWaterOrbSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
@@ -1193,7 +1195,7 @@ _wRegT({
 // RAINBOW_RINGS (10140) toutes les 3 frames, pendant args[0] frames.
 function AnimTask_RotateAuroraRingColors(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
-  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const spApi = { IndexOfSpritePaletteTag: _spr_IndexOfSpritePaletteTag };
   task.data[0] = (itf.getArgs?.() ?? [40])[0] | 0;
   const slot = spApi?.IndexOfSpritePaletteTag?.(10140) ?? 0xFF; // ANIM_TAG_RAINBOW_RINGS
   if (slot === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
