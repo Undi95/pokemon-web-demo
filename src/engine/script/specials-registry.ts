@@ -27,7 +27,12 @@
  */
 
 import { registerSpecial } from '../../scrcmd';
-import { gBikeCycling } from '../../field_specials';
+import {
+  gBikeCycling, GetLeadMonIndex, IsBadEggInParty,
+  CheckLeadMonCool, CheckLeadMonBeauty, CheckLeadMonCute, CheckLeadMonSmart, CheckLeadMonTough,
+  GetLeadMonFriendshipScore, Special_AreLeadMonEVsMaxedOut, LeadMonHasEffortRibbon,
+  MonOTNameNotPlayer, IsGrassTypeInParty,
+} from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
 import { IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex } from '../../dewford_trend';
@@ -302,13 +307,7 @@ registerSpecial('Special_ShowDiploma', () => {
  *  de bad egg ») : `isBadEgg` EST posable via SetMonData → la vraie boucle est
  *  robuste ET identique en jeu normal (aucun mon bad-egg → FALSE). Appelé en
  *  `specialvar VAR_RESULT` (cable_club.inc:828 = garde anti-save-corrompue au link). */
-registerSpecial('IsBadEggInParty', () => {
-  const partyCount = CalculatePlayerPartyCount();
-  for (let i = 0; i < partyCount; i++) {
-    if ((_GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG) as number) === 1 /* TRUE */) return 1;
-  }
-  return 0;
-});
+registerSpecial('IsBadEggInParty', IsBadEggInParty);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `IsLeadMonNicknamedOrNotEnglish` (tv.c:3024-3027) →
  *  `IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex())` (tv.c:3010-3022) :
@@ -320,34 +319,12 @@ registerSpecial('IsBadEggInParty', () => {
  *
  *  Notre projet : FR-only (= tous mons GAME_LANGUAGE). Compare nickname vs
  *  speciesNameFr. Si match → FALSE (= pas renommé), sinon TRUE. */
-/** 1:1 décomp `GetLeadMonIndex` (pokemon.c) : 1er slot non-egg non-empty, sinon 0.
- *  Opère sur gPlayerParty + GetMonData(SPECIES/IS_EGG). */
-function _GetLeadMonIndex(): number {
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number)) {
-      return i;
-    }
-  }
-  return 0;
-}
-
-/** 1:1 décomp `CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}` (field_specials.c:1190-1228) :
- *    if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_X) < 200) return FALSE;
- *    return TRUE;
- *
- *  Renvoie TRUE (= gSpecialVar_Result=1) ssi la condition concours du Pokémon de
- *  tête atteint le seuil 200. Utilisé par les PNJ « montre-moi un POKéMON <stat> »
- *  (fans de concours). Les conditions montent via Pokéblocs (non portés) → renvoie
- *  FALSE tant qu'aucun mon n'est nourri (1:1 correct, dépendance d'étape). */
-function _checkLeadMonCondition(field: number): number {
-  return (_GetMonData(gPlayerParty[_GetLeadMonIndex()], field) as number) < 200 ? 0 : 1;
-}
-registerSpecial('CheckLeadMonCool', () => _checkLeadMonCondition(MON_DATA_COOL));
-registerSpecial('CheckLeadMonBeauty', () => _checkLeadMonCondition(MON_DATA_BEAUTY));
-registerSpecial('CheckLeadMonCute', () => _checkLeadMonCondition(MON_DATA_CUTE));
-registerSpecial('CheckLeadMonSmart', () => _checkLeadMonCondition(MON_DATA_SMART));
-registerSpecial('CheckLeadMonTough', () => _checkLeadMonCondition(MON_DATA_TOUGH));
+// CheckLeadMon{Cool,Beauty,Cute,Smart,Tough} + GetLeadMonIndex : impl 1:1 → src/field_specials.ts.
+registerSpecial('CheckLeadMonCool', CheckLeadMonCool);
+registerSpecial('CheckLeadMonBeauty', CheckLeadMonBeauty);
+registerSpecial('CheckLeadMonCute', CheckLeadMonCute);
+registerSpecial('CheckLeadMonSmart', CheckLeadMonSmart);
+registerSpecial('CheckLeadMonTough', CheckLeadMonTough);
 
 /** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
  *  Le décomp ouvre le naming screen UI. Notre runtime n'a pas encore wired le
@@ -1394,21 +1371,7 @@ registerSpecial('CloseFrontierExchangeCornerItemIconWindow', () => { /* no-op */
  *  }
  *  ```
  *  Retourne le bucket de friendship du lead mon (= 7 valeurs 0..6 → enum). */
-registerSpecial('GetLeadMonFriendshipScore', () => {
-  // 1:1 décomp GetLeadMonFriendshipScore (field_specials.c:949) : friendship du
-  // lead mon (GetLeadMonIndex) via GetMonData(MON_DATA_FRIENDSHIP).
-  const mon = gPlayerParty[_GetLeadMonIndex()];
-  // 1:1 décomp constants/pokemon.h : MAX_FRIENDSHIP=255, FRIENDSHIP_MAX=6,
-  // FRIENDSHIP_NONE=0 etc.
-  const friendship = _GetMonData(mon, MON_DATA_FRIENDSHIP) as number;
-  if (friendship === 255) return 6;        // FRIENDSHIP_MAX
-  if (friendship >= 200) return 5;         // FRIENDSHIP_200_TO_254
-  if (friendship >= 150) return 4;         // FRIENDSHIP_150_TO_199
-  if (friendship >= 100) return 3;         // FRIENDSHIP_100_TO_149
-  if (friendship >= 50) return 2;          // FRIENDSHIP_50_TO_99
-  if (friendship >= 1) return 1;           // FRIENDSHIP_1_TO_49
-  return 0;                                 // FRIENDSHIP_NONE
-});
+registerSpecial('GetLeadMonFriendshipScore', GetLeadMonFriendshipScore);  // impl 1:1 → src/field_specials.ts
 registerSpecial('WaitWeather', () => 0);
 registerSpecial('MauvilleGymPressSwitch', () => { /* no-op */ });
 registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
@@ -1634,7 +1597,8 @@ registerSpecial('BufferTMHMMoveName', () => {
  *  vs speciesNameFr). Comportement 1:1 strict identique vu que langage match. */
 registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   // 1:1 décomp tv.c:3018 : compare gSpeciesNames[species] vs nickname (FR-only).
-  const mon = gPlayerParty[_GetLeadMonIndex()];
+  // GetLeadMonIndex importé de field_specials.ts (foyer 1:1).
+  const mon = gPlayerParty[GetLeadMonIndex()];
   if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 0;
   const nickname = _GetMonData(mon, MON_DATA_NICKNAME) as string;
   const speciesName = gSpeciesNames[_GetMonData(mon, MON_DATA_SPECIES) as number] ?? '';
@@ -2706,14 +2670,7 @@ registerSpecial('HasAtLeastOneBerry', () => {
 
 /** 1:1 décomp `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390-1396).
  *  Return TRUE si EVs total du lead mon >= MAX_TOTAL_EVS (= 510). */
-registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
-  // 1:1 décomp Special_AreLeadMonEVsMaxedOut (field_specials.c:1390) :
-  // return GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS (510).
-  // Appelé via `specialvar VAR_RESULT` (Slateport) → le retour est capturé.
-  const mon = gPlayerParty[_GetLeadMonIndex()];
-  if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) return 0;
-  return GetMonEVCount(mon) >= 510 ? 1 : 0;  // MAX_TOTAL_EVS = 510, primitif nommé 1:1
-});
+registerSpecial('Special_AreLeadMonEVsMaxedOut', Special_AreLeadMonEVsMaxedOut);  // impl 1:1 → src/field_specials.ts
 
 // `RetrieveLotteryNumber` (lottery_corner.c:42) : impl 1:1 dans son foyer
 // src/lottery_corner.ts, enregistrée ici (table gSpecials).
@@ -2813,13 +2770,7 @@ registerSpecial('IsDodrioInParty', () => {
  *  pas porté). Return 0 = no ribbon, 1:1 strict justifié (= notre projet ne
  *  donne pas encore de ribbons via SetMonData MON_DATA_EFFORT_RIBBON).
  *  Dette R3 documentée : ajouter ribbons field PokemonInstance + serialization. */
-registerSpecial('LeadMonHasEffortRibbon', () => {
-  // 1:1 décomp :1374 GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_EFFORT_RIBBON).
-  const mon = gPlayerParty[_GetLeadMonIndex()];
-  if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) return 0;
-  // Dette R3 : effortRibbon pas dans GetMonData natif (subsystem rubans partiel) → 0.
-  return (mon as unknown as { effortRibbon?: number }).effortRibbon ?? 0;
-});
+registerSpecial('LeadMonHasEffortRibbon', LeadMonHasEffortRibbon);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `GetPlayerTrainerIdOnesDigit` (field_specials.c:901-904).
  *  Retourne les low 16 bits du trainer ID modulo 10. */
@@ -2833,38 +2784,12 @@ registerSpecial('GetPlayerTrainerIdOnesDigit', () => {
 /** 1:1 décomp `MonOTNameNotPlayer` (field_specials.c:1572-1583).
  *  Retourne TRUE si OT name du mon var0x8004 != player name OR language != GAME_LANGUAGE.
  *  Used par scripts e.g. NameRater pour bloquer rename de mons étrangers. */
-registerSpecial('MonOTNameNotPlayer', () => {
-  const slot = VarGet('VAR_0x8004');
-  const mon = gPlayerParty[slot];
-  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 1;
-  // 1:1 décomp :1574 MON_DATA_LANGUAGE != GAME_LANGUAGE → FR only, skip.
-  // 1:1 :1577-1582 compare playerName vs GetMonData(MON_DATA_OT_NAME).
-  const otName = (_GetMonData(mon, MON_DATA_OT_NAME) as string) ?? '';
-  const playerName = GetPlayerNameString();
-  if (!otName) return 1;  // pas d'OT → considère étranger
-  return otName === playerName ? 0 : 1;
-});
+registerSpecial('MonOTNameNotPlayer', MonOTNameNotPlayer);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `IsGrassTypeInParty` (field_specials.c:1230-1249).
  *  Loop sur les 6 slots party, retourne TRUE si au moins un mon non-egg a
  *  TYPE_GRASS comme type1 ou type2. Set gSpecialVar_Result. */
-registerSpecial('IsGrassTypeInParty', () => {
-  // 1:1 décomp :1240-1241 : check gSpeciesInfo[species].types[0/1] == TYPE_GRASS
-  // pour chaque mon non-egg non-empty de gPlayerParty.
-  let result = 0;
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
-    if (species === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
-    // Notre `gSpeciesInfo[].types` = enum-strings ('TYPE_GRASS'…) ≠ ids num décomp.
-    const types = gSpeciesInfo[species]?.types ?? [];
-    if (types[0] === 'TYPE_GRASS' || types[1] === 'TYPE_GRASS') { result = 1; break; }
-  }
-  // FIX : décomp VOID pose gSpecialVar_Result, appelé via `special` (Route123) →
-  // l'opcode `special` ignore le retour → VarSet explicite. [[gotcha-special-vs-specialvar-varresult]]
-  VarSet('VAR_RESULT', result);
-  return result;
-});
+registerSpecial('IsGrassTypeInParty', IsGrassTypeInParty);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session A2.24 batch — 5 specials triviaux 1:1 strict ──────────────────
 
