@@ -30,6 +30,7 @@ import { registerSpecial } from '../../scrcmd';
 import { gBikeCycling } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
+import { IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex } from '../../dewford_trend';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons } from '../../pokemon_storage_system';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
@@ -3069,18 +3070,8 @@ registerSpecial('ResetFanClub', () => {
  *  ```
  *  Determine si la phrase trendy courante (slot 0) est "boring" (= peu plus
  *  trendy que slot 1, et pas gagne pas, mais slot 1 gagne). */
-registerSpecial('IsTrendyPhraseBoring', () => {
-  const trends = gSaveBlock1Ptr.dewfordTrends;
-  let result = 0;
-  do {
-    if ((trends[0].trendiness - trends[1].trendiness) > 1) break;
-    if (trends[0].gainingTrendiness) break;
-    if (!trends[1].gainingTrendiness) break;
-    result = 1;
-  } while (false);
-  VarSet('VAR_RESULT', result);
-  return result;
-});
+// Impl 1:1 dans le foyer src/dewford_trend.ts (pose gSpecialVar.Result), enregistrée ici.
+registerSpecial('IsTrendyPhraseBoring', IsTrendyPhraseBoring);
 
 /** 1:1 décomp `IsContestWithRSPlayer` (contest_util.c:2762-2768) :
  *  ```c
@@ -3522,14 +3513,8 @@ registerSpecial('OffsetCameraForBattle', () => {
  *  ```
  *  Returns 0..7 index pour painting name dans Dewford Hall (= picked from
  *  current trendy phrase words). */
-registerSpecial('GetDewfordHallPaintingNameIndex', () => {
-  const trend = gSaveBlock1Ptr.dewfordTrends?.[0];
-  if (!trend?.words || trend.words.length < 2) {
-    gSpecialVar.Result = 0;
-    return;
-  }
-  gSpecialVar.Result = (trend.words[0] + trend.words[1]) & 7;
-});
+// Impl 1:1 dans le foyer src/dewford_trend.ts (pose gSpecialVar.Result), enregistrée ici.
+registerSpecial('GetDewfordHallPaintingNameIndex', GetDewfordHallPaintingNameIndex);
 
 // ─── Session B11 batch — 1 special Trainer Card stars 1:1 strict ──────────
 
