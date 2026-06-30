@@ -3673,13 +3673,30 @@ export function InitReflectionDistortion(rt: DecompRuntime): void {
     // BeginAffineAnim : process cmd0 (ABSOLUTE, duration 0).
     if (!('jump' in cmd0)) _reflDistortState[m].delayCounter = _reflDistortApplyFrame(rt, m, cmd0);
   }
+  _reserveReflectionMatrices();  // 1:1 net : les 2 sprites-reflets décomp tiennent les matrices 0/1.
   _reflDistortInited = true;
+}
+
+/** 🩸 RÉSERVATION matrices 0/1 dans gOamMatrixAllocBitmap (fix moteur 2026-06-29).
+ *  Dans la décomp, `CreateReflectionEffectSprites` crée 2 VRAIS sprites qui appellent
+ *  `InitSpriteAffineAnim` → `AllocOamMatrix()` → leurs slots (0 et 1, alloc à l'init map)
+ *  sont MARQUÉS dans le bitmap d'alloc → tout `AllocOamMatrix` ultérieur les SAUTE. Notre
+ *  moteur focalisé (`_reflDistortTick`) écrit les slots 0/1 EN DIRECT sans passer par
+ *  AllocOamMatrix → l'allocateur les croyait LIBRES → un sprite affine (ex. le cercle du
+ *  starter_choose) obtenait le slot 1 et était écrasé par l'ondulation des reflets (= jitter
+ *  ±1px "le rond s'étend à gauche/droite"). On réserve donc les 2 slots ICI (idempotent, par
+ *  frame → survit à un ResetAffineAnimData qui remettrait le bitmap à 0 pendant que les
+ *  reflets tournent) = l'effet net des 2 sprites-reflets décomp qui tiennent ces matrices. */
+function _reserveReflectionMatrices(): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gOamMatrixAllocBitmap = (((g.gOamMatrixAllocBitmap as number) ?? 0) | 0b11) >>> 0;
 }
 
 /** Tick par frame des 2 matrices de distorsion. À call dans la boucle overworld AVANT le
  *  rendu (les reflets eau lisent gba.affineParams[0]/[1] via leur affineParamIndex). */
 export function UpdateReflectionDistortionMatrices(rt: DecompRuntime): void {
   if (!_reflDistortInited) InitReflectionDistortion(rt);
+  _reserveReflectionMatrices();  // 1:1 net : matrices 0/1 possédées par les reflets.
   _reflDistortTick(rt, 0);
   _reflDistortTick(rt, 1);
 }
