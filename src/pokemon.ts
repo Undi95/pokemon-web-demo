@@ -15,9 +15,13 @@
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS,
   PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
-  MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES } from '../include/constants/pokemon';
-// PARTY_SIZE depuis le header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty.
-import { PARTY_SIZE } from '../include/constants/global';
+  MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
+  OT_ID_PRESET, OT_ID_RANDOM_NO_SHINY, MAX_IV_MASK } from '../include/constants/pokemon';
+// PARTY_SIZE + VERSION_EMERALD (gGameVersion) + LANGUAGE_FRENCH (gGameLanguage) depuis le
+// header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty + CreateBoxMon.
+import { PARTY_SIZE, VERSION_EMERALD, LANGUAGE_FRENCH } from '../include/constants/global';
+// Random32 (PRNG 32-bit) ← include/random (leaf) — pour CreateBoxMon (personality + OT id).
+import { Random32 } from '../include/random';
 // gSaveBlock2Ptr : IsOtherTrainer compare otId/otName au joueur. save-block-state est leaf
 // (n'importe ni pokemon.ts ni party-storage) → edge one-way, zéro cycle.
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -79,7 +83,8 @@ import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
 // getSpeciesInfo (table espèces) + reverse/resolveDecompConstant : pour GetAbilityBySpecies.
 // game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
-import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset, getLevelUpLearnset } from './engine/data/game-data';
+import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset, getLevelUpLearnset,
+  getExperienceForLevel, gSpeciesNames } from './engine/data/game-data';
 // sTMHMMoves : table FOREACH_TMHM (leaf, n'importe que constants/items) — pour CanSpeciesLearnTMHM.
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
@@ -705,6 +710,21 @@ export function DeleteFirstMoveAndGiveMoveToMon(mon: Pokemon, move: number): voi
   SetMonData(mon, MON_DATA_PP_BONUSES, ppBonuses);
 }
 
+/** 1:1 décomp `s32 GetLevelFromBoxMonExp(struct BoxPokemon *boxMon)` (pokemon.c) :
+ *  dérive le niveau depuis l'EXP courante via la table d'exp de la growthRate de l'espèce
+ *  (plus haut niveau dont le seuil d'exp ≤ exp du mon). Adaptation : seuils via
+ *  getExperienceForLevel (= gExperienceTables[growthRate][level]). */
+export function GetLevelFromBoxMonExp(mon: Pokemon): number {
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const exp = GetMonData(mon, MON_DATA_EXP) as number;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const growthRate = (getSpeciesInfo(speciesEnum) as { growthRate?: string } | undefined)?.growthRate ?? 'GROWTH_MEDIUM_FAST';
+  let level = 1;
+  while (level <= 100 /* MAX_LEVEL */ && getExperienceForLevel(growthRate, level) <= exp)
+    level++;
+  return level - 1;
+}
+
 /** 1:1 décomp `void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon)` (pokemon.c:2992) :
  *  parcourt le level-up learnset de l'espèce, donne chaque capacité apprenable à
  *  `level` (≤). Si les 4 slots sont pleins → DeleteFirstMove (remplace la + ancienne).
@@ -714,7 +734,10 @@ export function DeleteFirstMoveAndGiveMoveToMon(mon: Pokemon, move: number): voi
  *  `entry.level > level`). */
 export function GiveBoxMonInitialMoveset(mon: Pokemon): void {
   const species = GetMonData(mon, MON_DATA_SPECIES) as number;
-  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+  // 1:1 décomp : level = GetLevelFromBoxMonExp (= dérivé de l'EXP, PAS MON_DATA_LEVEL —
+  // crucial : dans CreateBoxMon le moveset est posé AVANT que CreateMon ne set MON_DATA_LEVEL,
+  // mais l'EXP est déjà posée → le niveau effectif vient de là).
+  const level = GetLevelFromBoxMonExp(mon);
   const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
   const learnset = getLevelUpLearnset(speciesEnum);
   for (let i = 0; i < learnset.length; i++) {
@@ -732,6 +755,108 @@ export function GiveMonInitialMoveset(mon: Pokemon): void {
 }
 // Sonde dev (vérif équivalence vs pickLevelUpMoves), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__GiveMonInitialMoveset = GiveMonInitialMoveset;
+
+/** 1:1 décomp `void CreateBoxMon(struct BoxPokemon*, species, level, fixedIV,
+ *  hasFixedPersonality, fixedPersonality, otIdType, fixedOtId)` (pokemon.c:2208).
+ *  Génère un Pokemon NUMÉRIQUE directement (PID → OT id → données espèce → IVs →
+ *  ability → moveset initial), remplaçant l'indirection PokemonInstance.
+ *
+ *  Adaptations modèle plat (assumées) : `ZeroBoxMonData` = Object.assign(createEmptyPokemon)
+ *  (notre struct DECODED, pas de substructs chiffrés) ; `CalculateBoxMonChecksum`/`EncryptBoxMon`
+ *  = SKIP (pas de chiffrement) ; `GetCurrentRegionMapSectionId` = gMapHeader.regionMapSectionId
+ *  (string MAPSEC) → id via resolveDecompConstant (lu en globalThis, pattern AdjustFriendship) ;
+ *  nickname = gSpeciesNames[species] (data layer) ; gGameLanguage/gGameVersion = LANGUAGE_FRENCH/
+ *  VERSION_EMERALD ; otName = gSaveBlock2Ptr.playerName (= 1:1 décomp). ORDRE RNG = personality
+ *  (Random32) puis IVs (2×Random) = IDENTIQUE à createPokemonInstance → save-compatible. */
+export function CreateBoxMon(
+  mon: Pokemon, species: number, level: number, fixedIV: number,
+  hasFixedPersonality: boolean, fixedPersonality: number,
+  otIdType: number, fixedOtId: number,
+): void {
+  Object.assign(mon, createEmptyPokemon());  // 1:1 ZeroBoxMonData
+
+  const personality = hasFixedPersonality ? (fixedPersonality >>> 0) : Random32();
+  SetMonData(mon, MON_DATA_PERSONALITY, personality);
+
+  // 1:1 décomp : OT id selon le type.
+  let value: number;
+  if (otIdType === OT_ID_RANDOM_NO_SHINY) {
+    let shinyValue: number;
+    do {
+      value = Random32();
+      shinyValue = GET_SHINY_VALUE(value, personality);
+    } while (shinyValue < SHINY_ODDS);
+  } else if (otIdType === OT_ID_PRESET) {
+    value = fixedOtId >>> 0;
+  } else {  // OT_ID_PLAYER_ID : le joueur est l'OT.
+    value = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
+  }
+  SetMonData(mon, MON_DATA_OT_ID, value);
+
+  // checksum + EncryptBoxMon : SKIP (modèle plat non-chiffré, adaptation assumée).
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const sInfo = getSpeciesInfo(speciesEnum) as { growthRate?: string; friendship?: number; abilities?: string[] } | undefined;
+  SetMonData(mon, MON_DATA_NICKNAME, gSpeciesNames[species] ?? speciesEnum.replace(/^SPECIES_/, ''));
+  SetMonData(mon, MON_DATA_LANGUAGE, LANGUAGE_FRENCH);
+  SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr.playerName ?? '');
+  SetMonData(mon, MON_DATA_SPECIES, species);
+  SetMonData(mon, MON_DATA_EXP, getExperienceForLevel(sInfo?.growthRate ?? 'GROWTH_MEDIUM_FAST', level));
+  SetMonData(mon, MON_DATA_FRIENDSHIP, sInfo?.friendship ?? 70);
+  const mapHeader = (globalThis as { gMapHeader?: { regionMapSectionId?: string } }).gMapHeader;
+  value = (resolveDecompConstant(mapHeader?.regionMapSectionId ?? '') as number | undefined) ?? 0;
+  SetMonData(mon, MON_DATA_MET_LOCATION, value);
+  SetMonData(mon, MON_DATA_MET_LEVEL, level);
+  SetMonData(mon, MON_DATA_MET_GAME, VERSION_EMERALD);
+  SetMonData(mon, MON_DATA_POKEBALL, 4 /* ITEM_POKE_BALL */);
+  SetMonData(mon, MON_DATA_OT_GENDER, gSaveBlock2Ptr.playerGender ?? 0);
+
+  // 1:1 décomp pokemon.c:2270-2295 : IVs fixes ou 2× Random() (layout 3×5 bits).
+  if (fixedIV < 32 /* USE_RANDOM_IVS = MAX_PER_STAT_IVS + 1 */) {
+    SetMonData(mon, MON_DATA_HP_IV, fixedIV);
+    SetMonData(mon, MON_DATA_ATK_IV, fixedIV);
+    SetMonData(mon, MON_DATA_DEF_IV, fixedIV);
+    SetMonData(mon, MON_DATA_SPEED_IV, fixedIV);
+    SetMonData(mon, MON_DATA_SPATK_IV, fixedIV);
+    SetMonData(mon, MON_DATA_SPDEF_IV, fixedIV);
+  } else {
+    let iv: number;
+    value = Random();
+    iv = value & MAX_IV_MASK;                  SetMonData(mon, MON_DATA_HP_IV, iv);
+    iv = (value & (MAX_IV_MASK << 5)) >> 5;    SetMonData(mon, MON_DATA_ATK_IV, iv);
+    iv = (value & (MAX_IV_MASK << 10)) >> 10;  SetMonData(mon, MON_DATA_DEF_IV, iv);
+    value = Random();
+    iv = value & MAX_IV_MASK;                  SetMonData(mon, MON_DATA_SPEED_IV, iv);
+    iv = (value & (MAX_IV_MASK << 5)) >> 5;    SetMonData(mon, MON_DATA_SPATK_IV, iv);
+    iv = (value & (MAX_IV_MASK << 10)) >> 10;  SetMonData(mon, MON_DATA_SPDEF_IV, iv);
+  }
+
+  // 1:1 décomp : slot d'ability = personality & 1 SI l'espèce a une 2e ability réelle.
+  if (sInfo?.abilities?.[1] && sInfo.abilities[1] !== 'ABILITY_NONE') {
+    SetMonData(mon, MON_DATA_ABILITY_NUM, personality & 1);
+  }
+
+  GiveBoxMonInitialMoveset(mon);
+}
+
+/** 1:1 décomp `void CreateMon(struct Pokemon*, species, level, fixedIV,
+ *  hasFixedPersonality, fixedPersonality, otIdType, fixedOtId)` (pokemon.c:2196) :
+ *  ZeroMonData → CreateBoxMon → SetLevel → SetMail(NONE) → CalculateMonStats.
+ *  ⚠️ NB : `CreateMon` (signature décomp numérique) ≠ l'ancienne convenience
+ *  `engine/pokemon/pokemon.ts:CreateMon(speciesEnum, level, opts)` (legacy PokemonInstance,
+ *  à retirer une fois les callers migrés). */
+export function CreateMon(
+  mon: Pokemon, species: number, level: number, fixedIV: number,
+  hasFixedPersonality: boolean, fixedPersonality: number,
+  otIdType: number, fixedOtId: number,
+): void {
+  Object.assign(mon, createEmptyPokemon());  // 1:1 ZeroMonData
+  CreateBoxMon(mon, species, level, fixedIV, hasFixedPersonality, fixedPersonality, otIdType, fixedOtId);
+  SetMonData(mon, MON_DATA_LEVEL, level);
+  SetMonData(mon, MON_DATA_MAIL, 0xFF /* MAIL_NONE */);
+  CalculateMonStats(mon);
+}
+// Sonde dev (vérif équivalence vs createPokemonInstance), sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__CreateMon = CreateMon;
 
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
