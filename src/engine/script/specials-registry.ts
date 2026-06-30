@@ -47,6 +47,7 @@ import {
   ResetCyclingRoadChallengeData, Special_BeginCyclingRoadChallenge, Special_ShowDiploma, GetSlotMachineId,
   BufferVarsForIVRater, GetBattleTowerSinglesStreak, GetSecretBaseNearbyMapName,
   ScriptCheckFreePokemonStorageSpace, ShouldShowBoxWasFullMessage,
+  OffsetCameraForBattle, ShakeCamera, SpawnCameraObject, RemoveCameraObject,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -909,9 +910,9 @@ registerSpecial('CloseLink', () => { /* 1:1 justified : no link subsystem */ });
 registerSpecial('IsWirelessAdapterConnected', () => 0);
 
 /** Cinematic camera (= e.g. Rayquaza scene, Steven battle). */
-registerSpecial('ShakeCamera', () => { /* no-op */ });
-registerSpecial('SpawnCameraObject', () => 0);
-registerSpecial('RemoveCameraObject', () => { /* no-op */ });
+registerSpecial('ShakeCamera', ShakeCamera);  // impl 1:1 (no-op différé) → src/field_specials.ts
+registerSpecial('SpawnCameraObject', SpawnCameraObject);  // impl 1:1 (no-op différé) → src/field_specials.ts
+registerSpecial('RemoveCameraObject', RemoveCameraObject);  // impl 1:1 (no-op différé) → src/field_specials.ts
 
 /** Trainer Fan Club (Lilycove, post-game). */
 /** 1:1 décomp `IsFanClubMemberFanOfPlayer` (field_specials.c:4117-4124) :
@@ -3216,10 +3217,7 @@ registerSpecial('PickLotteryCornerTicket', () => { PickLotteryCornerTicket(); re
  *  }
  *  ```
  *  Set camera offset (8, 0) avant battle (= shake centering pre-anim). */
-registerSpecial('OffsetCameraForBattle', () => {
-  SetCameraPanningCallback(null);
-  SetCameraPanning(8, 0);
-});
+registerSpecial('OffsetCameraForBattle', OffsetCameraForBattle);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `GetDewfordHallPaintingNameIndex` (dewford_trend.c:320-323) :
  *  ```c

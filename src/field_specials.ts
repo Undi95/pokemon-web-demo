@@ -38,6 +38,7 @@ import { gLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
 import { Random } from './random';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
+import { SetCameraPanning, SetCameraPanningCallback } from './field_camera';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -586,3 +587,27 @@ export function ShouldShowBoxWasFullMessage(): number {
 }
 // Préserve le hook battle (Cmd_givecaughtmon, battle_script_commands.c:10062) : boolean.
 (globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage = () => ShouldShowBoxWasFullMessage() !== 0;
+
+// ─── Lot 9 — camera (field_specials.c §1251, 1263, 1470, 1672) ──────────────
+
+/** 1:1 décomp `OffsetCameraForBattle` (field_specials.c:1672-1676) :
+ *    SetCameraPanningCallback(NULL); SetCameraPanning(8, 0);  (centrage caméra avant anim combat). */
+export function OffsetCameraForBattle(): void {
+  SetCameraPanningCallback(null);
+  SetCameraPanning(8, 0);
+}
+
+/** 1:1 décomp `ShakeCamera` (field_specials.c:1470-1480) : crée Task_ShakeCamera (oscille
+ *  SetCameraPanning(±tH, ±tV) toutes les tDelay frames, tNumShakes fois) + PlaySE(SE_M_STRENGTH).
+ *  ⚠️ DÉFÉRÉ no-op : le port réel appelle ScriptContext_Enable (StopCameraShake) → croiserait le
+ *  cycle field_specials→script→scrcmd→specials-registry→field_specials (à faire via bridge globalThis). */
+export function ShakeCamera(): void { /* no-op — port Task réel différé (cycle script) */ }
+
+/** 1:1 décomp `SpawnCameraObject` (field_specials.c:1251-...) : crée l'object event CAMERA que la
+ *  caméra suit (TrySpawnObjectEvent OBJ_EVENT_GFX_CAMERA + CameraObject_Init). DÉFÉRÉ no-op
+ *  (object event CAMERA non porté). */
+export function SpawnCameraObject(): number { return 0; }
+
+/** 1:1 décomp `RemoveCameraObject` (field_specials.c:1263-...) : retire l'object event CAMERA.
+ *  DÉFÉRÉ no-op (object event CAMERA non porté). */
+export function RemoveCameraObject(): void { /* no-op — object event CAMERA non porté */ }
