@@ -32,8 +32,8 @@ import {
 import { PARTY_SIZE } from '../include/constants/global';
 import { gSpeciesInfo } from './engine/data/game-data';
 import { GetPlayerNameString, setStringVar } from '../include/text';
-import { VarGet, VarSet, FlagSet, FlagGet } from './engine/script/script-vars';
-import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -212,3 +212,55 @@ export function SetHiddenItemFlag(): void {
 export function FoundBlackGlasses(): number {
   return FlagGet('FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES') ? 1 : 0;
 }
+
+// ─── Lot 3 — flags d'état (SS Tidal, Trick House, Abandoned Ship) + coords joueur ───
+
+/** 1:1 décomp `SetSSTidalFlag` (field_specials.c:276-280) :
+ *    FlagSet(FLAG_SYS_CRUISE_MODE); *GetVarPointer(VAR_CRUISE_STEP_COUNT) = 0;
+ *  Embarquement sur le SS Tidal (mode croisière + reset compteur de pas). */
+export function SetSSTidalFlag(): void {
+  FlagSet('FLAG_SYS_CRUISE_MODE');
+  VarSet('VAR_CRUISE_STEP_COUNT', 0);
+}
+
+/** 1:1 décomp `ResetSSTidalFlag` (field_specials.c:282-285) :
+ *    FlagClear(FLAG_SYS_CRUISE_MODE);  (fin de croisière SS Tidal). */
+export function ResetSSTidalFlag(): void {
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+}
+
+/** 1:1 décomp `StorePlayerCoordsInVars` (field_specials.c:895) :
+ *    *GetVarPointer(VAR_0x8004) = gSaveBlock1Ptr->pos.x;
+ *    *GetVarPointer(VAR_0x8005) = gSaveBlock1Ptr->pos.y;
+ *  Stocke les coords du joueur (pour positionner un NPC dessus). */
+export function StorePlayerCoordsInVars(): number {
+  VarSet('VAR_0x8004', gSaveBlock1Ptr.pos.x);
+  VarSet('VAR_0x8005', gSaveBlock1Ptr.pos.y);
+  return 0;
+}
+
+/** 1:1 décomp `SetTrickHouseNuggetFlag` (field_specials.c:1174-1180) :
+ *    gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET; FlagSet(flag);
+ *  (VarGet(name) résout l'id numérique du flag — adaptation : notre Flag* prend un name string.) */
+export function SetTrickHouseNuggetFlag(): void {
+  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
+  FlagSet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
+}
+
+/** 1:1 décomp `ResetTrickHouseNuggetFlag` (field_specials.c:1182-1188) :
+ *    gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET; FlagClear(flag); */
+export function ResetTrickHouseNuggetFlag(): void {
+  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
+  FlagClear('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
+}
+
+/** 1:1 décomp `FoundAbandonedShipRoom{1,2,4,6}Key` (field_specials.c:1328-1370) : pattern
+ *  uniforme — gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_N_KEY ; return FlagGet(flag). */
+function _foundAbandonedShipKey(flag: string): number {
+  VarSet('VAR_0x8004', VarGet(flag));
+  return FlagGet(flag) ? 1 : 0;
+}
+export function FoundAbandonedShipRoom1Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY'); }
+export function FoundAbandonedShipRoom2Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY'); }
+export function FoundAbandonedShipRoom4Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY'); }
+export function FoundAbandonedShipRoom6Key(): number { return _foundAbandonedShipKey('FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY'); }

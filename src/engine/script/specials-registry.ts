@@ -35,6 +35,9 @@ import {
   IsStarterInParty, ScriptGetPartyMonSpecies, IsPokerusInParty,
   GetPlayerBigGuyGirlString, GetRivalSonDaughterString, GetPlayerTrainerIdOnesDigit,
   SetHiddenItemFlag, FoundBlackGlasses,
+  SetSSTidalFlag, ResetSSTidalFlag, StorePlayerCoordsInVars,
+  SetTrickHouseNuggetFlag, ResetTrickHouseNuggetFlag,
+  FoundAbandonedShipRoom1Key, FoundAbandonedShipRoom2Key, FoundAbandonedShipRoom4Key, FoundAbandonedShipRoom6Key,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -808,9 +811,7 @@ registerSpecial('TryGetWallpaperWithWaldaPhrase', () => 0);
  *  state for SS Tidal cruise. */
 /** 1:1 décomp `ResetSSTidalFlag` (field_specials.c:282-285).
  *  Clear FLAG_SYS_CRUISE_MODE (= player no longer on SS Tidal cruise). */
-registerSpecial('ResetSSTidalFlag', () => {
-  FlagClear('FLAG_SYS_CRUISE_MODE');
-});
+registerSpecial('ResetSSTidalFlag', ResetSSTidalFlag);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `SetPlayerGotFirstFans` (field_specials.c:4271-4274).
  *  SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7). */
@@ -835,10 +836,7 @@ registerSpecial('SetPlayerGotFirstFans', () => {
  *  }
  *  ```
  *  Set cruise mode flag + reset step counter (= board SS Tidal). */
-registerSpecial('SetSSTidalFlag', () => {
-  FlagSet('FLAG_SYS_CRUISE_MODE');
-  VarSet('VAR_CRUISE_STEP_COUNT', 0);
-});
+registerSpecial('SetSSTidalFlag', SetSSTidalFlag);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
 registerSpecial('LoadLinkContestPlayerPalettes', () => 0);
@@ -1444,13 +1442,7 @@ registerSpecial('IsSelectedMonEgg', () => {
  *    *VarGetPtr(VAR_0x8004) = gPlayerAvatar.x;
  *    *VarGetPtr(VAR_0x8005) = gPlayerAvatar.y;
  *  Used par scripts qui veulent positionner un NPC à coords player. */
-registerSpecial('StorePlayerCoordsInVars', () => {
-  // 1:1 décomp : *VarGetPtr(VAR_0x8004) = gSaveBlock1Ptr->pos.x ; pareil pos.y.
-  // (= dans le décomp, pa n'a pas x/y ; on lit gSaveBlock1Ptr->pos).
-  VarSet('VAR_0x8004', gSaveBlock1Ptr.pos.x);
-  VarSet('VAR_0x8005', gSaveBlock1Ptr.pos.y);
-  return 0;
-});
+registerSpecial('StorePlayerCoordsInVars', StorePlayerCoordsInVars);  // impl 1:1 → src/field_specials.ts
 
 /** Misc post-game stubs (= return 0/no-op pour éviter NaN VAR_RESULT) :
  *  Battle Frontier, Museum, Mirage Island, Painting, etc. */
@@ -1975,32 +1967,10 @@ registerSpecial('IsMirageIslandPresent', IsMirageIslandPresent);
  *  Pattern uniforme : set gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_N_KEY
  *  + return FlagGet(flag). Note 1:1 strict : FlagSet/Get prend un name string,
  *  donc VarSet stocke le numeric flag id résolu via parseValue. */
-registerSpecial('FoundAbandonedShipRoom1Key', () => {
-  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY';
-  VarSet('VAR_0x8004', VarGet(flag));
-  return FlagGet(flag) ? 1 : 0;
-});
-
-/** 1:1 décomp `FoundAbandonedShipRoom2Key` (field_specials.c:1339-1348). */
-registerSpecial('FoundAbandonedShipRoom2Key', () => {
-  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY';
-  VarSet('VAR_0x8004', VarGet(flag));
-  return FlagGet(flag) ? 1 : 0;
-});
-
-/** 1:1 décomp `FoundAbandonedShipRoom4Key` (field_specials.c:1350-1359). */
-registerSpecial('FoundAbandonedShipRoom4Key', () => {
-  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY';
-  VarSet('VAR_0x8004', VarGet(flag));
-  return FlagGet(flag) ? 1 : 0;
-});
-
-/** 1:1 décomp `FoundAbandonedShipRoom6Key` (field_specials.c:1361-1370). */
-registerSpecial('FoundAbandonedShipRoom6Key', () => {
-  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY';
-  VarSet('VAR_0x8004', VarGet(flag));
-  return FlagGet(flag) ? 1 : 0;
-});
+registerSpecial('FoundAbandonedShipRoom1Key', FoundAbandonedShipRoom1Key);  // impl 1:1 → src/field_specials.ts
+registerSpecial('FoundAbandonedShipRoom2Key', FoundAbandonedShipRoom2Key);
+registerSpecial('FoundAbandonedShipRoom4Key', FoundAbandonedShipRoom4Key);
+registerSpecial('FoundAbandonedShipRoom6Key', FoundAbandonedShipRoom6Key);
 
 /** 1:1 décomp `SetPacifidlogTMReceivedDay` (field_specials.c:1566-1569) :
  *  ```c
@@ -2774,14 +2744,7 @@ registerSpecial('IsGrassTypeInParty', IsGrassTypeInParty);  // impl 1:1 → src/
  *  ```
  *  Stocke l'id numérique du flag dans VAR_0x8004 puis set le flag par name
  *  (notre FlagSet prend un name string = 1:1 strict comportementalement). */
-registerSpecial('SetTrickHouseNuggetFlag', () => {
-  // 1:1 décomp : VAR_0x8004 reçoit l'id numérique (= dette R3 architecturale
-  // documentée — notre VarSet stocke aussi un u16 number aligné décomp).
-  // Resolved via decomp-constants ; sans mapping pas critique pour le special
-  // car FlagSet utilise le name string ci-dessous.
-  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
-  FlagSet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
-});
+registerSpecial('SetTrickHouseNuggetFlag', SetTrickHouseNuggetFlag);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `ResetTrickHouseNuggetFlag` (field_specials.c:1182-1188) :
  *  ```c
@@ -2792,10 +2755,7 @@ registerSpecial('SetTrickHouseNuggetFlag', () => {
  *      FlagClear(flag);
  *  }
  *  ``` */
-registerSpecial('ResetTrickHouseNuggetFlag', () => {
-  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
-  FlagClear('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
-});
+registerSpecial('ResetTrickHouseNuggetFlag', ResetTrickHouseNuggetFlag);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `SwapRegisteredBike` (item.c:577-588) :
  *  ```c
