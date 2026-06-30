@@ -14,13 +14,15 @@
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS,
-  PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON } from '../include/constants/pokemon';
+  PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
+  MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES } from '../include/constants/pokemon';
 // PARTY_SIZE depuis le header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty.
 import { PARTY_SIZE } from '../include/constants/global';
 // gSaveBlock2Ptr : IsOtherTrainer compare otId/otName au joueur. save-block-state est leaf
 // (n'importe ni pokemon.ts ni party-storage) → edge one-way, zéro cycle.
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
+  MOVE_NONE,
   MOVE_CUT, MOVE_FLY, MOVE_SURF, MOVE_STRENGTH, MOVE_FLASH,
   MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE,
 } from '../include/constants/moves';
@@ -438,6 +440,31 @@ export function CalculatePPWithBonus(move: number, ppBonuses: number, moveIndex:
 export function SetMonMoveSlot(mon: Pokemon, move: number, slot: number): void {
   SetMonData(mon, MON_DATA_MOVE1 + slot, move);
   SetMonData(mon, MON_DATA_PP1 + slot, gBattleMoves[move]?.pp ?? 0);
+}
+
+/** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
+ *    for (i = 0; i < MAX_MON_MOVES; i++) if (GetMonData(MOVE1+i) == move) return TRUE; */
+export function MonKnowsMove(mon: Pokemon, move: number): boolean {
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES = 4
+    if (GetMonData(mon, MON_DATA_MOVE1 + i) === move) return true;
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `u16 GiveMoveToMon(struct Pokemon *mon, u16 move)` → `GiveMoveToBoxMon`
+ *  (pokemon.c) : remplit le 1er slot vide (move + PP = gBattleMoves[move].pp).
+ *    return move (appris) · MON_ALREADY_KNOWS_MOVE · MON_HAS_MAX_MOVES (4 capacités). */
+export function GiveMoveToMon(mon: Pokemon, move: number): number {
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES
+    const existingMove = GetMonData(mon, MON_DATA_MOVE1 + i) as number;
+    if (existingMove === MOVE_NONE) {
+      SetMonData(mon, MON_DATA_MOVE1 + i, move);
+      SetMonData(mon, MON_DATA_PP1 + i, getBattleMove(move).pp);
+      return move;
+    }
+    if (existingMove === move) return MON_ALREADY_KNOWS_MOVE;
+  }
+  return MON_HAS_MAX_MOVES;
 }
 
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────

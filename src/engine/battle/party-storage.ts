@@ -173,17 +173,9 @@ export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
   GetMonAbility, GetAbilityBySpecies, CalculateMonStats };
 export type { Pokemon };
 
-/** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
- *    for (i = 0; i < MAX_MON_MOVES; i++)
- *        if (GetMonData(mon, MON_DATA_MOVE1 + i, NULL) == move) return TRUE;
- *    return FALSE;
- *  Les moves natifs sont stockés en IDs numériques (cf. setmonmove/battle-trainer-party). */
-export function MonKnowsMove(mon: Pokemon, move: number): boolean {
-  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES = 4
-    if (GetMonData(mon, MON_DATA_MOVE1 + i) === move) return true;
-  }
-  return false;
-}
+// MonKnowsMove / GiveMoveToMon : consolidés vers le foyer pokemon.c (src/pokemon.ts).
+// Re-export pur (aucun user interne).
+export { MonKnowsMove, GiveMoveToMon } from '../../pokemon';
 
 // ─── Légalité d'apprentissage CT/CS (1:1 décomp pokemon.c) ──────────────────
 
@@ -209,26 +201,6 @@ export function CanSpeciesLearnTMHM(species: number, tm: number): boolean {
 export function CanMonLearnTMHM(mon: Pokemon, tm: number): boolean {
   return CanSpeciesLearnTMHM(GetMonData(mon, MON_DATA_SPECIES_OR_EGG) as number, tm);
 }
-
-/** 1:1 STRICT décomp `u16 GiveMoveToMon(struct Pokemon *mon, u16 move)` → `GiveMoveToBoxMon`
- *  (pokemon.c) : remplit le 1er slot vide (move + PP = gBattleMoves[move].pp).
- *    return move (appris) · MON_ALREADY_KNOWS_MOVE · MON_HAS_MAX_MOVES (4 capacités). */
-export function GiveMoveToMon(mon: Pokemon, move: number): number {
-  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES
-    const existingMove = GetMonData(mon, MON_DATA_MOVE1 + i) as number;
-    if (existingMove === MOVE_NONE) {
-      SetMonData(mon, MON_DATA_MOVE1 + i, move);
-      SetMonData(mon, MON_DATA_PP1 + i, getBattleMove(move).pp);
-      return move;
-    }
-    if (existingMove === move) return MON_ALREADY_KNOWS_MOVE;
-  }
-  return MON_HAS_MAX_MOVES;
-}
-
-// GetMonData / SetMonData : CONSOLIDÉS vers le foyer pokemon.c (src/pokemon.ts).
-// Import pour usage local + re-export pour compat (40 fichiers les importent de party-storage).
-
 
 // ─── Bridge PokemonInstance ↔ Pokemon ─────────────────────────────────────
 
