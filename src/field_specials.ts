@@ -35,6 +35,7 @@ import { GetPlayerNameString, setStringVar } from '../include/text';
 import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gLocalTime } from './rtc';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -324,4 +325,55 @@ export function BufferTMHMMoveName(): number {
   }
   VarSet('VAR_RESULT', 0);
   return 0;
+}
+
+// ─── Lot 5 — divers (battle outcome, vélo, mart, eon ticket) + météo de route ───
+
+/** 1:1 décomp `GetBattleOutcome` (field_specials.c:922) : return gBattleOutcome (win/lose/
+ *  run/draw/caught). Lu via bridge globalThis `__getBattleOutcome` (état battle live, anti-cycle). */
+export function GetBattleOutcome(): number {
+  const fn = (globalThis as { __getBattleOutcome?: () => number }).__getBattleOutcome;
+  return fn ? fn() : 0;  // 0 = aucun combat encore.
+}
+
+/** 1:1 décomp `GetPlayerAvatarBike` (field_specials.c:168-175) :
+ *    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE)) return 1;
+ *    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE)) return 2;
+ *    return 0;
+ *  Lit gPlayerAvatar.flags (bridge globalThis, anti-cycle) : ACRO=(1<<2), MACH=(1<<1). */
+export function GetPlayerAvatarBike(): number {
+  const pa = (globalThis as { gPlayerAvatar?: { flags?: number } }).gPlayerAvatar;
+  const flags = pa?.flags ?? 0;
+  if (flags & (1 << 2)) return 1;  // PLAYER_AVATAR_FLAG_ACRO_BIKE
+  if (flags & (1 << 1)) return 2;  // PLAYER_AVATAR_FLAG_MACH_BIKE
+  return 0;
+}
+
+/** 1:1 décomp `GetMartEmployeeObjectEventId` (field_specials.c:3598-3626) : lookup table de
+ *  12 marts ; commentaire décomp 3597 « All mart employees have a local id of 1 » → return 1. */
+export function GetMartEmployeeObjectEventId(): number {
+  return 1;
+}
+
+/** 1:1 décomp `ShouldDistributeEonTicket` (field_specials.c:3640-3646) :
+ *    if (!VarGet(VAR_DISTRIBUTE_EON_TICKET)) return FALSE; return TRUE;
+ *  Commentaire décomp 3639 « Always returns FALSE » (var jamais set hors event eShop). */
+export function ShouldDistributeEonTicket(): number {
+  return VarGet('VAR_DISTRIBUTE_EON_TICKET') !== 0 ? 1 : 0;
+}
+
+/** 1:1 décomp `SetRoute119Weather` (field_specials.c:1519-1523) :
+ *    if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE) SetSavedWeather(WEATHER_ROUTE119_CYCLE);
+ *  WEATHER_ROUTE119_CYCLE = 20 ; SetSavedWeather = gSaveBlock1Ptr.weather = N. */
+export function SetRoute119Weather(): void {
+  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    gSaveBlock1Ptr.weather = 20;  // WEATHER_ROUTE119_CYCLE
+  }
+}
+
+/** 1:1 décomp `SetRoute123Weather` (field_specials.c:1525-1529) : idem, WEATHER_ROUTE123_CYCLE = 21. */
+export function SetRoute123Weather(): void {
+  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    gSaveBlock1Ptr.weather = 21;  // WEATHER_ROUTE123_CYCLE
+  }
 }

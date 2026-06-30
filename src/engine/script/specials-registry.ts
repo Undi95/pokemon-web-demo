@@ -40,6 +40,8 @@ import {
   FoundAbandonedShipRoom1Key, FoundAbandonedShipRoom2Key, FoundAbandonedShipRoom4Key, FoundAbandonedShipRoom6Key,
   GetWeekCount, GetDaysUntilPacifidlogTMAvailable, SetPacifidlogTMReceivedDay,
   BufferLottoTicketNumber, BufferTMHMMoveName,
+  GetBattleOutcome, GetPlayerAvatarBike, GetMartEmployeeObjectEventId, ShouldDistributeEonTicket,
+  SetRoute119Weather, SetRoute123Weather,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -200,10 +202,7 @@ registerSpecial('PlayerPC', () => { /* see script-opcodes.ts dispatcher */ });
  *  = légendaires, post-battle). FIX : on lit le VRAI `gBattleOutcome` (state.ts)
  *  via le getter live `__getBattleOutcome` — avant, on lisait `__gBattleOutcome`
  *  qui n'était JAMAIS écrit → renvoyait toujours WIN (1) quel que soit le résultat. */
-registerSpecial('GetBattleOutcome', () => {
-  const fn = (globalThis as { __getBattleOutcome?: () => number }).__getBattleOutcome;
-  return fn ? fn() : 0;  // 1:1 : gBattleOutcome (0 = aucun combat encore)
-});
+registerSpecial('GetBattleOutcome', GetBattleOutcome);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `CalculatePlayerPartyCount` (pokemon.c) :
  *    gPlayerPartyCount = 0;
@@ -1403,13 +1402,7 @@ registerSpecial('ScriptGetPartyMonSpecies', ScriptGetPartyMonSpecies);  // impl 
  *  ```
  *  Read direct gPlayerAvatar.flags bits ACRO=(1<<2), MACH=(1<<1).
  *  Migré stub → port 1:1 (cleanup B12). */
-registerSpecial('GetPlayerAvatarBike', () => {
-  const pa = (globalThis as { gPlayerAvatar?: { flags?: number } }).gPlayerAvatar;
-  const flags = pa?.flags ?? 0;
-  if (flags & (1 << 2)) return 1;  // PLAYER_AVATAR_FLAG_ACRO_BIKE
-  if (flags & (1 << 1)) return 2;  // PLAYER_AVATAR_FLAG_MACH_BIKE
-  return 0;
-});
+registerSpecial('GetPlayerAvatarBike', GetPlayerAvatarBike);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `ShowMapNamePopup` (map_name_popup.c:231-256) :
  *  ```c
@@ -1547,7 +1540,7 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
  *  > // All mart employees have a local id of 1, so function always returns 1
  *  Fallback `return 1` si non trouvé.
  *  → 1:1 strict justifié : return 1 toujours. */
-registerSpecial('GetMartEmployeeObjectEventId', () => 1);
+registerSpecial('GetMartEmployeeObjectEventId', GetMartEmployeeObjectEventId);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session B3 batch — Buffer* specials 1:1 strict ────────────────────────
 
@@ -1634,9 +1627,7 @@ registerSpecial('BufferLottoTicketNumber', BufferLottoTicketNumber);  // impl 1:
  *  ```
  *  Commentaire décomp ligne 3639 : "Always returns FALSE" (= var jamais set
  *  dans le jeu, c'était pour event eShop distribution). */
-registerSpecial('ShouldDistributeEonTicket', () => {
-  return VarGet('VAR_DISTRIBUTE_EON_TICKET') !== 0 ? 1 : 0;
-});
+registerSpecial('ShouldDistributeEonTicket', ShouldDistributeEonTicket);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `IsTVShowAlreadyInQueue` (tv.c:3268-3278) :
  *  ```c
@@ -2958,19 +2949,11 @@ registerSpecial('SetHiddenItemFlag', SetHiddenItemFlag);  // impl 1:1 → src/fi
  *  }
  *  ```
  *  WEATHER_ROUTE119_CYCLE = 20. SetSavedWeather = gSaveBlock1Ptr.weather = N. */
-registerSpecial('SetRoute119Weather', () => {
-  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
-    gSaveBlock1Ptr.weather = 20;  // WEATHER_ROUTE119_CYCLE
-  }
-});
+registerSpecial('SetRoute119Weather', SetRoute119Weather);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `SetRoute123Weather` (field_specials.c:1525-1529) :
  *  Same pattern with WEATHER_ROUTE123_CYCLE = 21. */
-registerSpecial('SetRoute123Weather', () => {
-  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
-    gSaveBlock1Ptr.weather = 21;  // WEATHER_ROUTE123_CYCLE
-  }
-});
+registerSpecial('SetRoute123Weather', SetRoute123Weather);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `UpdateShoalTideFlag` (time_events.c:54-92) :
  *  ```c
