@@ -312,7 +312,7 @@ interface PartyAssets {
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
   | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg'
-  | 'fieldmove_yesno' | 'helditem_msg' = 'idle';
+  | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -351,6 +351,10 @@ let _actionSubMenu: 'mon' | 'item' = 'mon';
 let _giveHoldItemSlot = -1;
 let _giveReturnCb: CB2Callback | null = null;
 let _pendingGiveMessage: string | null = null;
+// Échange objet tenu (2b) : mon tient déjà un objet → prompt Oui/Non.
+let _giveOldItem = 0;          // sPartyMenuItemId (objet déjà tenu)
+let _giveNewItem = 0;          // gSpecialVar_ItemId persisté pour le swap après reopen
+let _pendingSwitchPrompt = false;
 /** 1:1 décomp `sPartyMenuInternal->exitCallback` — callback de sortie
  *  TRANSITOIRE, consommé UNE fois dans Task_ClosePartyMenuAndSetCB2
  *  (party_menu.c:1238). Distinct de `gPartyMenu.exitCallback` (= notre
@@ -1015,7 +1019,8 @@ function _drawMsg(): void {
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
       || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
       || _phase === 'field_move_err' || _phase === 'softboiled_msg'
-      || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg') && _itemUsedMsgText) {
+      || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg'
+      || _phase === 'switch_items_yesno') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
@@ -1903,10 +1908,10 @@ function CB2_GiveHoldItem(): void {
     return;
   }
   if (mon.heldItem !== 0) {
-    // 1:1 :3111 already-holding → Task_SwitchHoldItemsPrompt. DETTE 2b : on ne
-    // remplace PAS silencieusement → reopen sans rien donner (objet reste au sac).
-    console.log('[party-screen] DONNER : mon tient déjà un objet → dette 2b (switch prompt)');
-    _reopenPartyForGive(null);
+    // 1:1 :3111 already-holding → reopen + Task_SwitchHoldItemsPrompt (échange Oui/Non).
+    _giveOldItem = mon.heldItem;   // sPartyMenuItemId
+    _giveNewItem = item;            // gSpecialVar_ItemId
+    _reopenPartyForSwitch();
     return;
   }
   // 1:1 Task_GiveHoldItem (party_menu.c:3133) : GiveItemToMon + DisplayGaveHeldItem
@@ -1931,10 +1936,9 @@ function GiveItemToMon(mon: Pokemon, item: number): void {
  *  slot receveur + le savedCallback field-return. `msg` (≠ null) = message
  *  "X doit tenir Y!" affiché au reopen via la phase 'helditem_msg'. Même pattern
  *  de réouverture que `OpenPartyScreenForItemUse`. */
-function _reopenPartyForGive(msg: string | null): void {
+function _reopenPartyMenuCore(): void {
   _slotId = _giveHoldItemSlot >= 0 ? _giveHoldItemSlot : 0;
   _partyAction = PARTY_ACTION_CHOOSE_MON;
-  _pendingGiveMessage = msg;
   _giveHoldItemSlot = -1;
   const returnCb = _giveReturnCb;
   void _loadAssets().then(() => {
@@ -1944,6 +1948,32 @@ function _reopenPartyForGive(msg: string | null): void {
     rt.gMain.savedCallback = returnCb ?? null;
     rt.SetMainCallback2(CB2_InitPartyMenu);
   }).catch((e) => { console.error('[party-screen] reopen-give preload failed', e); });
+}
+
+/** Reopen + message "X doit tenir Y!" (1:1 Task_GiveHoldItem). */
+function _reopenPartyForGive(msg: string | null): void {
+  _pendingGiveMessage = msg;
+  _reopenPartyMenuCore();
+}
+
+/** Reopen + prompt d'échange (1:1 Task_SwitchHoldItemsPrompt — mon tient déjà un objet). */
+function _reopenPartyForSwitch(): void {
+  _pendingSwitchPrompt = true;
+  _reopenPartyMenuCore();
+}
+
+/** 1:1 décomp `Task_SwitchHoldItemsPrompt`→`Task_SwitchItemsYesNo` (party_menu.c:3146) :
+ *  DisplayAlreadyHoldingItemSwitchMessage("X tient déjà Y! Echanger les deux objets?")
+ *  + PartyMenuDisplayYesNoMenu. */
+function _showSwitchHoldItemsPrompt(): void {
+  const mon = gPlayerParty[_slotId];
+  _itemUsedMsgText = (getString('gText_PkmnAlreadyHoldingItemSwitch') || '')
+    .replace('{STR_VAR_1}', mon?.nickname ?? '')
+    .replace('{STR_VAR_2}', GetItemName(_giveOldItem))
+    .replace(/\\p/g, ' ').replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _phase = 'switch_items_yesno';
+  _drawMsg();
+  PartyMenuDisplayYesNoMenu();
 }
 
 function _closeActionMenu(): void {
@@ -2889,6 +2919,37 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     }
     return;
   }
+  // 'switch_items_yesno' = 1:1 Task_HandleSwitchItemsYesNoInput (party_menu.c:3164) :
+  //   OUI → RemoveBagItem(new) ; si pas de place pour rendre l'ancien → rollback +
+  //   "sac plein" ; sinon GiveItemToMon(new) + "X a remplacé Y". NON/B → garde l'objet.
+  if (_phase === 'switch_items_yesno') {
+    const res = Menu_ProcessInputNoWrapClearOnChoose();  // 0=OUI 1=NON -1=B
+    if (res === 0) {
+      const mon = gPlayerParty[_slotId];
+      RemoveBagItem(getItemKeyById(_giveNewItem), 1);
+      if (AddBagItem(getItemKeyById(_giveOldItem), 1) === false) {
+        // 1:1 :3171 pas de place pour rendre l'ancien → rollback (re-add new au sac).
+        AddBagItem(getItemKeyById(_giveNewItem), 1);
+        _itemUsedMsgText = (getString('gText_BagFullCouldNotRemoveItem') || '')
+          .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      } else if (mon) {
+        // 1:1 :3186 échange : donne le nouveau, message "X a remplacé Y".
+        GiveItemToMon(mon, _giveNewItem);
+        _updatePartyMonHeldItem(_slotId);
+        _itemUsedMsgText = (getString('gText_SwitchedPkmnItem') || '')
+          .replace('{STR_VAR_1}', GetItemName(_giveNewItem)).replace('{STR_VAR_2}', GetItemName(_giveOldItem))
+          .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      }
+      _phase = 'helditem_msg';
+      _drawMsg();
+    } else if (res === 1 || res === -1) {
+      // 1:1 :3199 NON/B → garde l'objet existant ; le message "Echanger?" reste
+      // affiché → A/B le dismiss (phase 'helditem_msg' → retour choix-mon).
+      PlaySE(5);
+      _phase = 'helditem_msg';
+    }
+    return;
+  }
   // Sub-states boîte de stats level-up (Rare Candy / Super Bonbon) — 1:1 décomp
   // Task_DisplayLevelUpStatsPg1 → Pg2 → Task_TryLearnNewMoves (party_menu.c:5009-5073).
   if (_phase === 'levelup_pg1') {
@@ -3171,6 +3232,10 @@ export function CB2_InitPartyMenu(): void {
         _pendingGiveMessage = null;
         _phase = 'helditem_msg';
         _drawMsg();
+      } else if (_pendingSwitchPrompt) {
+        // 1:1 : mon tient déjà un objet → prompt d'échange Oui/Non au reopen.
+        _pendingSwitchPrompt = false;
+        _showSwitchHoldItemsPrompt();
       }
       return;
   }
