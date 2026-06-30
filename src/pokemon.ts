@@ -477,6 +477,83 @@ export function UpdatePartyPokerusTime(days: number): void {
   }
 }
 
+/** 1:1 décomp `u8 CheckPartyHasHadPokerus(party, selection)` (pokemon.c:6129) : pour
+ *  les slots sélectionnés (bitmask), set le bit retVal si le mon a un octet Pokérus
+ *  != 0 (l'a / l'a eu). selection==0 → check slot 0. Consolidé depuis battle_main.ts. */
+export function CheckPartyHasHadPokerus(party: Array<{ pokerus: number }>, selection: number): number {
+  let retVal = 0;
+  let partyIndex = 0;
+  let curBit = 1;
+  if (selection) {
+    do {
+      if ((selection & 1) && party[partyIndex].pokerus) retVal |= curBit;
+      partyIndex++;
+      curBit <<= 1;
+      selection >>= 1;
+    } while (selection);
+  } else if (party[0].pokerus) {
+    retVal = 1;
+  }
+  return retVal;
+}
+
+/** 1:1 décomp `void RandomlyGivePartyPokerus(party)` (pokemon.c:6072) : ~3/65536 par
+ *  combat (Random ∈ {0x4000,0x8000,0xC000}) → tire un slot non-œuf au hasard ; s'il
+ *  n'a jamais eu le Pokérus, lui assigne un octet souche (low 3 bits non nuls,
+ *  dupliqué high nibble, masqué 0xF3, +1). `party` = gPlayerParty (Pokemon numérique).
+ *  Consolidé depuis battle_main.ts. */
+export function RandomlyGivePartyPokerus(party: unknown): void {
+  const p = party as Array<{ species: number; isEgg: number; pokerus: number }>;
+  const rnd = Random();
+  if (rnd === 0x4000 || rnd === 0x8000 || rnd === 0xC000) {
+    let slot: number;
+    do {
+      slot = Random() % PARTY_SIZE;
+    } while (!p[slot].species || p[slot].isEgg);
+    // 1:1 : gBitTable[slot] === (1 << slot).
+    if (!CheckPartyHasHadPokerus(p, 1 << slot)) {
+      let rnd2: number;
+      do {
+        rnd2 = Random() & 0xFF;
+      } while ((rnd2 & 0x7) === 0);
+      if (rnd2 & 0xF0) rnd2 &= 0x7;
+      rnd2 |= (rnd2 << 4);
+      rnd2 &= 0xF3;
+      rnd2++;
+      p[slot].pokerus = rnd2 & 0xFF;
+    }
+  }
+}
+
+/** 1:1 décomp `PartySpreadPokerus(party)` (pokemon.c:6181). 1/3 de chance après
+ *  combat : chaque mon infecté (souche = low nibble 0xF set) propage son octet
+ *  Pokérus complet aux mons adjacents JAMAIS infectés (high nibble 0xF0 == 0).
+ *  `party` = gPlayerParty (Pokemon struct numérique) → champs `species`/`pokerus`
+ *  lus/écrits direct (équivalent GetMonData/SetMonData(MON_DATA_POKERUS)).
+ *  Consolidé depuis battle_main.ts. */
+export function PartySpreadPokerus(party: unknown): void {
+  const p = party as Array<{ species: number; pokerus: number }>;
+  if ((Random() % 3) === 0) {
+    for (let i = 0; i < PARTY_SIZE; i++) {
+      const mon = p[i];
+      if (mon && mon.species) {
+        const pokerus = mon.pokerus;
+        const curPokerus = pokerus;
+        if (pokerus) {
+          if (pokerus & 0xF) {
+            if (i !== 0 && !(p[i - 1].pokerus & 0xF0))
+              p[i - 1].pokerus = curPokerus;
+            if (i !== (PARTY_SIZE - 1) && !(p[i + 1].pokerus & 0xF0)) {
+              p[i + 1].pokerus = curPokerus;
+              i++;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 /** 1:1 décomp `GetAbilityBySpecies(species, abilityNum)` (pokemon.c).
  *  Lookup `gSpeciesInfo[species].abilities[abilityNum]`. Retourne l'ability id
  *  (= ABILITY_*) ou 0 (ABILITY_NONE) si pas trouvé. Consolidé depuis party-storage.ts. */
