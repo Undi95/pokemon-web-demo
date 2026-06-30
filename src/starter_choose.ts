@@ -49,7 +49,8 @@ import { AddTextPrinterParameterized, GetStringCenterAlignXOffset, FONT_NORMAL, 
 import { AddTextPrinterParameterized3 } from './menu';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
 import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
-import { DestroySprite, AllocOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, type SpriteTemplate } from './sprite';
+import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, TAG_NONE, type SpriteTemplate } from './sprite';
+import { CreateMonPicSprite_Affine, FreeAndDestroyMonPicSprite, ResetAllPicSprites, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './text_window';
 import { CreateMon } from './engine/pokemon/pokemon';
@@ -257,12 +258,6 @@ const S_BALL_ID = 1;  // sBallId = data[1]
 const _spriteRefs = new Map<number, { taskId?: number; ballId?: number }>();
 
 // ─── Asset state ────────────────────────────────────────────────────────
-interface MonPicAsset {
-  /** Tile data 4bpp packed (64×64 = 64 tiles × 32 bytes = 2048 bytes). */
-  tileData: Uint8Array;
-  /** Palette 16 colors RGB15. */
-  palette: Uint16Array;
-}
 interface Assets {
   birchTilesData: Uint8Array;
   birchPalette: Uint16Array;
@@ -272,9 +267,6 @@ interface Assets {
    *  Fallback car GetOverworldTextboxPalettePtr() peut retourner null si
    *  l'asset n'est pas dans assetCache. */
   messageBoxPalette: Uint16Array;
-  /** Pokemon front sprites pré-chargés pour les 3 starters (= ROM-resident
-   *  équivalent pour CreateMonPicSprite_Affine sync semantics). */
-  monPics: Record<string, MonPicAsset>;
 }
 let _assets: Assets | null = null;
 
@@ -334,9 +326,8 @@ async function preloadAssets(): Promise<void> {
   const msgBoxPalBuf = await msgBoxPalResp.arrayBuffer();
   const messageBoxPalette = new Uint16Array(msgBoxPalBuf);
 
-  // Pre-load 3 starter front sprites + palettes (= ROM-resident sync access
-  // émulation pour CreateMonPicSprite_Affine).
-  const monPics: Record<string, MonPicAsset> = {};
+  // Pre-load 3 starter front sprites + palettes → substrat sync de trainer_pokemon_sprites
+  // (= ROM-resident equivalent pour CreateMonPicSprite_Affine sync).
   for (const speciesEnum of sStarterMon) {
     const speciesPath = speciesEnum.replace('SPECIES_', '').toLowerCase();
     const pngUrl = `/decomp/em/pokemon/${speciesPath}/front.png`;
@@ -346,10 +337,9 @@ async function preloadAssets(): Promise<void> {
         loadIndexedPngStrict(pngUrl, 4),
         loadGbaPal(palUrl),
       ]);
-      monPics[speciesEnum] = {
-        tileData: front.charData,
-        palette: pal.subarray(0, 16),
-      };
+      // Pré-remplit le substrat sync de trainer_pokemon_sprites (= ROM-resident equivalent)
+      // pour que CreateMonPicSprite_Affine(species,...) (sync, 1:1) y lise.
+      _registerMonPicSubstrate(speciesEnum, front.charData, pal.subarray(0, 16));
     } catch (e) {
       console.warn(`[StarterChoose] failed to load mon pic for ${speciesEnum}:`, e);
     }
@@ -361,7 +351,6 @@ async function preloadAssets(): Promise<void> {
     birchBagTilemap: bagTilemap,
     birchGrassTilemap: grassTilemap,
     messageBoxPalette,
-    monPics,
   };
 }
 
@@ -453,7 +442,8 @@ async function CB2_ChooseStarter(): Promise<void> {
   // slots hauts (14/15) → COLLISION avec le slot 14 hardcodé du mon-pic (pokéball affichait
   // la palette du starter choisi). Fix = import direct de FreeAllSpritePalettes.
   FreeAllSpritePalettes();
-  // ResetAllPicSprites(); — NOP (we don't use pic sprite registry).
+  // ResetAllPicSprites() : 1:1 décomp CB2_ChooseStarter (c:416) — clear le registre mon-pic.
+  ResetAllPicSprites();
 
   // LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP);
   // Fallback : GetOverworldTextboxPalettePtr() peut retourner null si l'asset
@@ -614,16 +604,12 @@ function Task_HandleStarterChooseInput(taskId: number): void {
     // 1:1 décomp C:500-501 :
     //   gSprites[spriteId].affineAnims = &sAffineAnims_StarterPokemon;
     //   gSprites[spriteId].callback = SpriteCB_StarterPokemon;
+    // La matrice OAM + l'affine anim ont déjà été allouées/démarrées par CreateMonPicSprite_Affine
+    // (1:1 InitSpriteAffineAnim) ; ici on OVERRIDE juste la table affine (battle → starter) + le
+    // callback (mouvement vers le centre), puis on re-StartSpriteAffineAnim pour réinit avec la table.
     const pkmnSprite = rt.gSprites[pkmnId];
     if (pkmnSprite) {
       pkmnSprite.affineAnimsTableName = 'sAffineAnims_StarterPokemon';
-      // Alloc dedicated matrix slot pour cette affine anim (= 1:1 strict).
-      const mNum = AllocOamMatrix();
-      if (mNum >= 0) {
-        pkmnSprite.matrixNum = mNum;
-        const oam = rt.gba.oam[pkmnSprite.oamIndex];
-        if (oam) { oam.affineParamIndex = mNum; ((oam as unknown) as { matrixNum?: number }).matrixNum = mNum; }
-      }
       StartSpriteAffineAnim(pkmnSprite as never, 0);
       pkmnSprite.callback = (s) => SpriteCB_StarterPokemon(s);
     }
@@ -721,14 +707,24 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     // post-tutorial avec ombre visible et couleurs résiduelles).
     // User feedback : "il reste l'ombre du pokémon choisi + ses couleur quand
     // on repop au labo".
+    // Divergence ASSUMÉE (le décomp YES fait juste ResetAllPicSprites + SetMainCallback2, et
+    // s'appuie sur le ResetSpriteData du combat pour effacer les sprites) : on détruit le mon
+    // (via le VRAI système = free tiles inline + palette) + le cercle explicitement pour éviter
+    // l'ombre/couleurs résiduelles au retour labo. User : "il reste l'ombre du pokémon choisi".
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { DestroySprite(pkmnId); } catch (e) { void e; }
+      const s = rt.gSprites[pkmnId];
+      if (s) { try { FreeOamMatrix(s.matrixNum); } catch (e) { void e; } }
+      try { FreeAndDestroyMonPicSprite(pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
+      const s = rt.gSprites[circleId];
+      if (s) { try { FreeOamMatrix(s.matrixNum); } catch (e) { void e; } }
       try { DestroySprite(circleId); } catch (e) { void e; }
     }
+    // 1:1 décomp C:547 : ResetAllPicSprites (clear le registre mon-pic).
+    ResetAllPicSprites();
 
     // Cleanup task — we don't return to ROM callback ; the next CB2 tick will
     // chain into StartBirchTutorialBattle.
@@ -761,12 +757,19 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
         PlaySE(5);  // SE_SELECT = 5 (= 1:1 décomp constants/songs.h:11)
       } catch (e) { void e; }
     })();
+    // 1:1 STRICT décomp C:553-559 :
+    //   spriteId = tPkmnSpriteId;  FreeOamMatrix(gSprites[spriteId].oam.matrixNum);  FreeAndDestroyMonPicSprite(spriteId);
+    //   spriteId = tCircleSpriteId; FreeOamMatrix(gSprites[spriteId].oam.matrixNum);  DestroySprite(&gSprites[spriteId]);
     const pkmnId = task.data[T_PKMN_SPRITE_ID];
     const circleId = task.data[T_CIRCLE_SPRITE_ID];
     if (pkmnId >= 0) {
-      try { DestroySprite(pkmnId); } catch (e) { void e; }
+      const s = rt.gSprites[pkmnId];
+      if (s) { try { FreeOamMatrix(s.matrixNum); } catch (e) { void e; } }
+      try { FreeAndDestroyMonPicSprite(pkmnId); } catch (e) { void e; }
     }
     if (circleId >= 0) {
+      const s = rt.gSprites[circleId];
+      if (s) { try { FreeOamMatrix(s.matrixNum); } catch (e) { void e; } }
       try { DestroySprite(circleId); } catch (e) { void e; }
     }
     task.func = Task_DeclineStarter;
@@ -879,54 +882,22 @@ function Task_CreateStarterLabel(taskId: number): void {
 
 // ─── CreatePokemonFrontSprite (= 1:1 décomp C:631-638) ──────────────────
 function CreatePokemonFrontSprite(species: string, x: number, y: number): number {
-  // 1:1 décomp `CreateMonPicSprite_Affine(species, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE)`.
-  // Notre TS émule la partie pertinente :
-  //   - assets pré-chargés (= sync ROM-equivalent via preloadAssets)
-  //   - alloc OBJ VRAM tiles + LoadPaletteObj à slot 14
-  //   - CreateSpriteAtOam shape=3 size=3 (64x64) affineMode=NORMAL_AFFINE.
-  // Le caller (Task_HandleStarterChooseInput) override .affineAnims +
-  // .callback = SpriteCB_StarterPokemon après.
+  // 1:1 STRICT décomp C:631-638 :
+  //   spriteId = CreateMonPicSprite_Affine(species, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);
+  //   gSprites[spriteId].oam.priority = 0;
+  //   return spriteId;
+  // SHINY_ODDS = 8 (décomp constants/pokemon.h) — otId : non pertinent ici (notre substrat
+  // = palette normale pré-chargée). Le VRAI système (trainer_pokemon_sprites) gère tiles inline
+  // + palette slot 14 + registry sSpritePics → DestroySprite libère les tiles au decline/re-select.
   const rt = getRuntime();
   if (!rt) return -1;
-  const asset = _assets?.monPics[species];
-  if (!asset) {
-    console.warn(`[StarterChoose] no monPic asset for ${species}`);
-    return -1;
-  }
-  // 1:1 décomp DecompressPic : LoadSpecialPokePic(&gMonFrontPicTable[species]).
-  // Substrat : assets déjà décodés. Alloc OBJ VRAM range pour les 64 tiles
-  // (= 64x64 = 8x8 tiles).
-  const sp = (globalThis as Record<string, unknown>).__sprite as {
-    AllocSpriteTiles?: (count: number) => number;
-  } | undefined;
-  const tileCount = asset.tileData.length >> 5;  // tile = 32 bytes
-  const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
-  if (tileStart < 0) {
-    console.warn(`[StarterChoose] OBJ VRAM saturated for ${species}`);
-    return -1;
-  }
-  // Write tiles to OBJ VRAM at tileStart × 32.
-  rt.gba.objVram.set(asset.tileData, tileStart * 32);
-  // 1:1 décomp LoadPicPaletteByTagOrSlot (paletteTag = TAG_NONE → LoadCompressedPalette
-  // à OBJ_PLTT_ID(paletteSlot=14)). OBJ_PLTT_ID(14) = 256 + 14*16 = 480.
-  rt.LoadPaletteObj(asset.palette, 256 + 14 * 16);
-  // 1:1 décomp CreateSprite(&sCreatingSpriteTemplate, x, y, 0) avec :
-  //   - oam = sOamData_Affine : shape=SPRITE_SHAPE(64x64)=0, size=SPRITE_SIZE(64x64)=3, affineMode=NORMAL
-  //   - tileTag = TAG_NONE → gSprites[spriteId].oam.paletteNum = paletteSlot (14)
-  const result = rt.CreateSpriteAtOam({
-    tileId: tileStart,
-    paletteBank: 14,
-    x, y,
-    shape: 0, size: 3,  // 64x64
-    priority: 1,
-    paletteMode: 0,
-    affineMode: 1,  // NORMAL_AFFINE
-    subpriority: 0,
-  });
-  // Décomp : gSprites[spriteId].oam.priority = 0 (override après return CreatePokemonFrontSprite).
-  const sprite = rt.gSprites[result.spriteId];
-  if (sprite) ((sprite as unknown) as { priority?: number }).priority = 0;
-  return result.spriteId;
+  const SHINY_ODDS = 8;
+  const spriteId = CreateMonPicSprite_Affine(species, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);
+  if (spriteId === 0xFFFF) return -1;
+  // 1:1 décomp C:636 : gSprites[spriteId].oam.priority = 0 (devant la pokéball/cercle).
+  const sprite = rt.gSprites[spriteId];
+  if (sprite) rt.gba.oam[sprite.oamIndex].priority = 0;
+  return spriteId;
 }
 
 // ─── SpriteCB_SelectionHand (= 1:1 décomp C:640-647) ────────────────────

@@ -839,6 +839,14 @@ export function _freeSpriteTileRangeByTag(tag: string | number): void {
   sSpriteTileRanges[index * 2 + 1] = 0;
 }
 
+/** 1:1 décomp `void FreeSpriteTilesByTag(u16 tag)` (sprite.c:1509-1529). Nom 1:1 exposé (=
+ *  `_freeSpriteTileRangeByTag`). Libère les tiles OBJ d'un tag + clear le slot range. Utilisé
+ *  par les anims de combat (ex. battle_anim_smokescreen `_smLoadSheet`/teardown) — auparavant
+ *  appelé via `__sprite.FreeSpriteTilesByTag` qui était UNDEFINED (= no-op silencieux latent). */
+export function FreeSpriteTilesByTag(tag: string | number): void {
+  _freeSpriteTileRangeByTag(tag);
+}
+
 /** 1:1 STRICT décomp src/sprite.c:702-753 — bitmap-based allocator :
  *  ```c
  *  s16 AllocSpriteTiles(u16 tileCount) {
@@ -1391,13 +1399,42 @@ export function DestroySprite(spriteId: number): void {
   const rt = _rt();
   const sprite = rt.gSprites[spriteId];
   if (!sprite) return;
-  rt.gba.oam[sprite.oamIndex].visible = false;
+  // 1:1 STRICT décomp sprite.c:618-631 :
+  //   void DestroySprite(struct Sprite *sprite) {
+  //       if (sprite->inUse) {
+  //           if (!sprite->usingSheet) {
+  //               u16 tileEnd = (sprite->images->size / TILE_SIZE_4BPP) + sprite->oam.tileNum;
+  //               for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+  //           }
+  //           ResetSprite(sprite);
+  //       }
+  //   }
+  if (!sprite.inUse) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  // 🩸 BUG MOTEUR CORRIGÉ (2026-06-29) : libérer les tiles INLINE (= tileTag==TAG_NONE →
+  // AllocSpriteTiles à la création, `usingSheet=FALSE`). Sans ça, les tiles OBJ VRAM d'un
+  // mon-pic / pic affine fuyaient à la destruction → re-création échouait (AllocSpriteTiles
+  // ne trouvait plus d'espace) → mon-pic INVISIBLE au re-select (starter decline→re-select).
+  // `oam.tileId` = décomp `sprite->oam.tileNum` ; `images[0].size` = octets du frame inline.
+  if (!sprite.usingSheet) {
+    const imgSize = sprite.images?.[0]?.size ?? 0;
+    if (imgSize > 0) {
+      const tileNum = oam.tileId;
+      const tileEnd = ((imgSize / TILE_SIZE_4BPP) | 0) + tileNum;
+      for (let i = tileNum; i < tileEnd; i++) _freeSpriteTile(i);
+    }
+  }
+  // ResetSprite (sprite.c:682-685 `*sprite = sDummySprite`) — dans notre modèle PLAT :
+  // cacher l'OAM possédé + marquer le slot gSprites libre (inUse=false) + retirer le callback.
+  oam.visible = false;
   sprite.invisible = true;
   sprite.inUse = false;
   sprite.callback = null;
-  // Si la matrice affine du sprite a été ALLOUÉE via AllocOamMatrix (_matrixUsed),
-  // la libérer (≈ FreeSpriteOamMatrix décomp). Sans ça, les matrices des mons de
-  // combat (1 alloc/sprite) fuieraient.
+  // Divergence ASSUMÉE (modèle plat) : le décomp libère la matrice OAM via le CALLER
+  // (FreeOamMatrix avant DestroySprite, ou DestroySpriteAndFreeResources), PAS dans
+  // DestroySprite. Comme certains call-sites combat appellent DestroySprite sans FreeOamMatrix
+  // explicite, on la libère ici si réellement allouée (idempotent vs un FreeOamMatrix
+  // caller = 1:1 decline path starter_choose.c:554/558).
   if (sprite.matrixNum > 0 && _isOamMatrixAllocated(sprite.matrixNum)) {
     FreeOamMatrix(sprite.matrixNum);
   }
