@@ -377,3 +377,75 @@ export function SetRoute123Weather(): void {
     gSaveBlock1Ptr.weather = 21;  // WEATHER_ROUTE123_CYCLE
   }
 }
+
+// ─── Lot 6 — Trainer Fan Club (field_specials.c §3967-4290) ─────────────────
+// 1:1 décomp macros (field_specials.c:3967-3971) :
+//   FANCLUB_BITFIELD = VAR_FANCLUB_FAN_COUNTER ;
+//   GET_TRAINER_FAN_CLUB_FLAG(flag) = (FANCLUB_BITFIELD >> flag) & 1 ;
+//   SET_TRAINER_FAN_CLUB_FLAG(flag) = (FANCLUB_BITFIELD |= 1 << flag).
+// FANCLUB_GOT_FIRST_FANS=7 ; FANCLUB_MEMBER1..8 = 8..15 ; NUM_TRAINER_FAN_CLUB_MEMBERS=8.
+
+/** 1:1 décomp `IsFanClubMemberFanOfPlayer` (field_specials.c:4168-4178) :
+ *    if (gSpecialVar_0x8004 >= NUM_TRAINER_FAN_CLUB_MEMBERS) return FALSE;
+ *    return GET_TRAINER_FAN_CLUB_FLAG(gSpecialVar_0x8004 + FANCLUB_MEMBER1); */
+export function IsFanClubMemberFanOfPlayer(): number {
+  const idx = VarGet('VAR_0x8004');
+  if (idx >= 8) return 0;  // NUM_TRAINER_FAN_CLUB_MEMBERS
+  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  return ((counter >> (idx + 8)) & 1) ? 1 : 0;  // FANCLUB_MEMBER1 = 8
+}
+
+/** 1:1 décomp `GetNumFansOfPlayerInTrainerFanClub` (field_specials.c:4126-4138) :
+ *    for (i=0; i<NUM_TRAINER_FAN_CLUB_MEMBERS; i++)
+ *      if (GET_TRAINER_FAN_CLUB_FLAG(i + FANCLUB_MEMBER1)) numFans++; */
+export function GetNumFansOfPlayerInTrainerFanClub(): number {
+  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  let numFans = 0;
+  for (let i = 0; i < 8; i++) {
+    if ((counter >> (i + 8)) & 1) numFans++;
+  }
+  return numFans;
+}
+
+/** 1:1 décomp `ResetFanClub` (field_specials.c:3979-3983) :
+ *    VAR_FANCLUB_FAN_COUNTER = 0; VAR_FANCLUB_LOSE_FAN_TIMER = 0; */
+export function ResetFanClub(): void {
+  VarSet('VAR_FANCLUB_FAN_COUNTER', 0);
+  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', 0);
+}
+
+/** 1:1 décomp `SetPlayerGotFirstFans` (field_specials.c:4271-4274) :
+ *    SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7) = VAR_FANCLUB_FAN_COUNTER |= (1<<7).
+ *  ⚠️ CORRIGÉ 1:1 : l'ancienne impl registry écrivait `trainerFanClub.flags` (bridge),
+ *  incohérent avec les lecteurs (IsFanClubMemberFanOfPlayer/GetNumFans/DidPlayerGetFirstFans)
+ *  qui lisent les bits de VAR_FANCLUB_FAN_COUNTER. Ici = le vrai bitfield du décomp. */
+export function SetPlayerGotFirstFans(): void {
+  VarSet('VAR_FANCLUB_FAN_COUNTER', (VarGet('VAR_FANCLUB_FAN_COUNTER') | (1 << 7)) & 0xFFFF);
+}
+
+/** 1:1 décomp `UpdateTrainerFanClubGameClear` (field_specials.c:3994-...) : si pas encore
+ *  GOT_FIRST_FANS → SetPlayerGotFirstFans + SetInitialFansOfPlayer (SET MEMBER6/1/3 = bits
+ *  13/8/10) + lose-timer = playTimeHours + clear FLAG_HIDE_FANCLUB_* + VAR_LILYCOVE_FAN_CLUB_STATE=1. */
+export function UpdateTrainerFanClubGameClear(): void {
+  let counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  if ((counter >> 7) & 1) return;  // GET_TRAINER_FAN_CLUB_FLAG(GOT_FIRST_FANS) → déjà fait.
+  counter |= (1 << 7);  // SetPlayerGotFirstFans.
+  counter |= (1 << 13) | (1 << 8) | (1 << 10);  // SetInitialFansOfPlayer : MEMBER6/1/3.
+  VarSet('VAR_FANCLUB_FAN_COUNTER', counter & 0xFFFF);
+  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', gSaveBlock2Ptr.playTimeHours ?? 0);
+  FlagClear('FLAG_HIDE_FANCLUB_OLD_LADY');
+  FlagClear('FLAG_HIDE_FANCLUB_BOY');
+  FlagClear('FLAG_HIDE_FANCLUB_LITTLE_BOY');
+  FlagClear('FLAG_HIDE_FANCLUB_LADY');
+  FlagClear('FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER');
+  VarSet('VAR_LILYCOVE_FAN_CLUB_STATE', 1);
+}
+
+/** 1:1 décomp `BufferFanClubTrainerName` (field_specials.c:4180-...) : buffer le nom d'un
+ *  membre du fan club. Data/UI Lilycove non portée → no-op (état antérieur préservé). */
+export function BufferFanClubTrainerName(): void { /* no-op (data Lilycove non portée) */ }
+
+/** 1:1 décomp `Script_TryGainNewFanFromCounter` (field_specials.c:4277-4280) :
+ *    return TryGainNewFanFromCounter(gSpecialVar_0x8004);  (valeur de retour toujours ignorée).
+ *  TryGainNewFanFromCounter (porté secret-base.ts) DIFFÉRÉ ici (éviter import cycle) → 0. */
+export function Script_TryGainNewFanFromCounter(): number { return 0; }

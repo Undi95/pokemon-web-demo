@@ -42,6 +42,8 @@ import {
   BufferLottoTicketNumber, BufferTMHMMoveName,
   GetBattleOutcome, GetPlayerAvatarBike, GetMartEmployeeObjectEventId, ShouldDistributeEonTicket,
   SetRoute119Weather, SetRoute123Weather,
+  IsFanClubMemberFanOfPlayer, GetNumFansOfPlayerInTrainerFanClub, ResetFanClub,
+  SetPlayerGotFirstFans, UpdateTrainerFanClubGameClear, BufferFanClubTrainerName, Script_TryGainNewFanFromCounter,
 } from '../../field_specials';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
@@ -816,19 +818,7 @@ registerSpecial('ResetSSTidalFlag', ResetSSTidalFlag);  // impl 1:1 → src/fiel
 
 /** 1:1 décomp `SetPlayerGotFirstFans` (field_specials.c:4271-4274).
  *  SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7). */
-registerSpecial('SetPlayerGotFirstFans', () => {
-  const setFanClubFlag = (globalThis as { __game_bridge?: {
-    SET_TRAINER_FAN_CLUB_FLAG?: (flag: number) => void;
-  } }).__game_bridge?.SET_TRAINER_FAN_CLUB_FLAG;
-  if (setFanClubFlag) setFanClubFlag(7);  // FANCLUB_GOT_FIRST_FANS = 7.
-  // Fallback : direct flags manipulation si bridge pas wire.
-  else {
-    const sb1 = gSaveBlock1Ptr as unknown as { trainerFanClub?: { flags?: number } };
-    if (sb1.trainerFanClub) {
-      sb1.trainerFanClub.flags = (sb1.trainerFanClub.flags ?? 0) | (1 << 7);
-    }
-  }
-});
+registerSpecial('SetPlayerGotFirstFans', SetPlayerGotFirstFans);  // impl 1:1 (corrigée) → src/field_specials.ts
 /** 1:1 décomp `SetSSTidalFlag` (field_specials.c:276-280) :
  *  ```c
  *  void SetSSTidalFlag(void) {
@@ -942,13 +932,8 @@ registerSpecial('RemoveCameraObject', () => { /* no-op */ });
  *  ```
  *  sFanClubMemberIds[NUM_TRAINER_FAN_CLUB_MEMBERS=8] = [FANCLUB_MEMBER1..8 =
  *  8..15]. FANCLUB_BITFIELD = vars[VAR_FANCLUB_FAN_COUNTER]. Bit shift+mask. */
-registerSpecial('IsFanClubMemberFanOfPlayer', () => {
-  const idx = VarGet('VAR_0x8004');
-  if (idx >= 8) return 0;  // NUM_TRAINER_FAN_CLUB_MEMBERS
-  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
-  return ((counter >> (idx + 8)) & 1) ? 1 : 0;  // FANCLUB_MEMBER1 = 8
-});
-registerSpecial('BufferFanClubTrainerName', () => { /* no-op */ });
+registerSpecial('IsFanClubMemberFanOfPlayer', IsFanClubMemberFanOfPlayer);  // impl 1:1 → src/field_specials.ts
+registerSpecial('BufferFanClubTrainerName', BufferFanClubTrainerName);  // impl 1:1 → src/field_specials.ts
 /** 1:1 décomp `GetNumFansOfPlayerInTrainerFanClub` (field_specials.c:4126-4138) :
  *  ```c
  *  u16 GetNumFansOfPlayerInTrainerFanClub(void) {
@@ -960,15 +945,8 @@ registerSpecial('BufferFanClubTrainerName', () => { /* no-op */ });
  *  }
  *  ```
  *  NUM_TRAINER_FAN_CLUB_MEMBERS=8, FANCLUB_MEMBER1=8. */
-registerSpecial('GetNumFansOfPlayerInTrainerFanClub', () => {
-  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
-  let numFans = 0;
-  for (let i = 0; i < 8; i++) {
-    if ((counter >> (i + 8)) & 1) numFans++;
-  }
-  return numFans;
-});
-registerSpecial('Script_TryGainNewFanFromCounter', () => 0);
+registerSpecial('GetNumFansOfPlayerInTrainerFanClub', GetNumFansOfPlayerInTrainerFanClub);  // impl 1:1 → src/field_specials.ts
+registerSpecial('Script_TryGainNewFanFromCounter', Script_TryGainNewFanFromCounter);  // impl 1:1 → src/field_specials.ts
 
 /** Special trainer battles (= legendary, gym leaders specifics, Rayquaza). */
 /** 1:1 décomp `SetBattledOwnerFromResult` (secret_base.c:1171-1174) :
@@ -2857,10 +2835,7 @@ registerSpecial('SetChampionSaveWarp', () => {
  *  }
  *  ```
  *  Reset fan club state (= counter + lose-fan timer). */
-registerSpecial('ResetFanClub', () => {
-  VarSet('VAR_FANCLUB_FAN_COUNTER', 0);
-  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', 0);
-});
+registerSpecial('ResetFanClub', ResetFanClub);  // impl 1:1 → src/field_specials.ts
 
 /** 1:1 décomp `IsTrendyPhraseBoring` (dewford_trend.c:296-314) :
  *  ```c
@@ -3855,25 +3830,7 @@ registerSpecial('SaveBardSongLyrics', () => {
  *  SetInitialFansOfPlayer (= field_specials.c:4173) : SET bits 6, 1, 3
  *  (= bits 13, 8, 10 dans counter). Inline ici.
  *  SetPlayerGotFirstFans (= déjà porté A2.22) : SET bit 7. Recall direct. */
-registerSpecial('UpdateTrainerFanClubGameClear', () => {
-  let counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
-  // 1:1 décomp GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7).
-  if ((counter >> 7) & 1) return;  // Déjà fait, skip.
-  // 1:1 décomp SetPlayerGotFirstFans : SET bit FANCLUB_GOT_FIRST_FANS=7.
-  counter |= (1 << 7);
-  // 1:1 décomp SetInitialFansOfPlayer (field_specials.c:4173-4178) :
-  //   SET bits FANCLUB_MEMBER6=13, MEMBER1=8, MEMBER3=10.
-  counter |= (1 << 13) | (1 << 8) | (1 << 10);
-  VarSet('VAR_FANCLUB_FAN_COUNTER', counter & 0xFFFF);
-  // VarSet VAR_FANCLUB_LOSE_FAN_TIMER = playTimeHours.
-  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', gSaveBlock2Ptr.playTimeHours ?? 0);
-  FlagClear('FLAG_HIDE_FANCLUB_OLD_LADY');
-  FlagClear('FLAG_HIDE_FANCLUB_BOY');
-  FlagClear('FLAG_HIDE_FANCLUB_LITTLE_BOY');
-  FlagClear('FLAG_HIDE_FANCLUB_LADY');
-  FlagClear('FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER');
-  VarSet('VAR_LILYCOVE_FAN_CLUB_STATE', 1);
-});
+registerSpecial('UpdateTrainerFanClubGameClear', UpdateTrainerFanClubGameClear);  // impl 1:1 → src/field_specials.ts
 
 // ─── Session B33 batch — 1 special Contest Museum 1:1 strict ─────────────
 
