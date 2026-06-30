@@ -42,7 +42,9 @@ import {
 } from '../../metatile_behavior';
 // Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
 // Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
-import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
+import { GetMonData, SetMonData, createEmptyPokemon, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
+// CreateMon NUMÉRIQUE 1:1 (foyer) — wild/scripted/Birch créent le mon ennemi en numérique direct.
+import { CreateMon } from '../../pokemon';
 // Entrees voie L (scripted-wild) : enemy mon plein + boot de la VRAIE boucle decomp.
 // Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
 // n'importe pas ce module en retour, il passe par un wire globalThis).
@@ -199,9 +201,10 @@ export function SetUpBattleVarsAndBirchZigzagoon(): void {
   // stats/moves/IVs) dans le gEnemyParty que LIT la voie L (party-storage, = chemin wild prouvé).
   // L'ancien _CreateMon (state ns, simplifié sans stats/moves) = combat injouable en voie L.
   if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) {
-    setupEnemyPartyForBattle([
-      createPokemonInstance(reverseDecompConstant(SPECIES_ZIGZAGOON, 'SPECIES_') ?? 'SPECIES_ZIGZAGOON', 2),
-    ]);
+    // 1:1 décomp : CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
+    const zig = createEmptyPokemon();
+    CreateMon(zig, SPECIES_ZIGZAGOON, 2, 32 /* USE_RANDOM_IVS */, false, 0, 0 /* OT_ID_PLAYER_ID */, 0);
+    setupEnemyPartyForBattle([zig]);
   }
 
   // 1:1 décomp ll. 77-78 : unused vars (never read).
@@ -220,11 +223,13 @@ export function SetUpBattleVarsAndBirchZigzagoon(): void {
  *  CreateMon 1:1, stats/moves/IVs réels — PAS le _CreateMon simplifié de Birch).
  *  Appelé par ScrCmd_setwildbattle (scrcmd.c:1869). */
 export function CreateScriptedWildMon(species: number, level: number, item: number): void {
-  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
-  const heldItem = item ? (reverseDecompConstant(item, 'ITEM_') ?? undefined) : undefined;
-  setupEnemyPartyForBattle([
-    createPokemonInstance(speciesEnum, level, heldItem ? { heldItem } : undefined),
-  ]);
+  // 1:1 décomp : ZeroEnemyPartyMons + CreateMon(&gEnemyParty[0], species, level, USE_RANDOM_IVS,
+  // FALSE, 0, OT_ID_PLAYER_ID, 0) + (si item) SetMonData(MON_DATA_HELD_ITEM, item). species/item
+  // sont déjà NUMÉRIQUES (u16) → CreateMon numérique direct, plus de détour PokemonInstance.
+  const mon = createEmptyPokemon();
+  CreateMon(mon, species, level, 32 /* USE_RANDOM_IVS */, false, 0, 0 /* OT_ID_PLAYER_ID */, 0);
+  if (item) SetMonData(mon, MON_DATA_HELD_ITEM, item);
+  setupEnemyPartyForBattle([mon]);
 }
 
 /** 1:1 décomp `BattleSetup_StartScriptedWildBattle(void)` (battle_setup.c:489-499).

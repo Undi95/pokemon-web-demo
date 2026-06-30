@@ -322,10 +322,14 @@ export function loadPlayerPartyFromInstances(player: PokemonInstance[]): void {
 /** Fill gPlayerParty/gEnemyParty depuis runtime PokemonInstance arrays.
  *  Appelé au début de chaque combat. Les slots vides sont reset via
  *  `createEmptyPokemon`. */
-export function setupEnemyPartyForBattle(enemy: PokemonInstance[]): void {
+export function setupEnemyPartyForBattle(enemy: Array<Pokemon | PokemonInstance>): void {
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
   for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
-    Object.assign(gEnemyParty[i], pokemonInstanceToPokemon(enemy[i]));
+    const m = enemy[i];
+    // TRANSITOIRE (unif 2e modèle) : accepte un Pokemon NUMÉRIQUE (= CreateMon, voie cible)
+    // OU un PokemonInstance legacy (`speciesEnum` string = discriminant). Le moteur lit
+    // gEnemyParty numérique → on assigne direct si numérique, sinon on convertit.
+    Object.assign(gEnemyParty[i], ('speciesEnum' in m) ? pokemonInstanceToPokemon(m) : m);
   }
 }
 

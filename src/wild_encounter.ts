@@ -50,7 +50,9 @@ import { gMapHeader, MAP_OFFSET } from './fieldmap';
 // Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
 // (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
 import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
-import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, gEnemyParty, SetMonMoveSlot, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, gEnemyParty, SetMonMoveSlot, createEmptyPokemon, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
+// CreateMon NUMÉRIQUE 1:1 (foyer) — le mon sauvage est créé en numérique direct.
+import { CreateMon } from './pokemon';
 import { createPokemonInstance, GetGenderFromSpeciesAndPersonality, type PokemonInstance } from './engine/pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC, MAX_MON_MOVES } from './engine/battle/constants';
@@ -528,7 +530,12 @@ function CreateWildMon(species: string, level: number): void {
          || (targetGender >= 0 && GetGenderFromSpeciesAndPersonality(species, personality) !== targetGender)) {
     personality = Random32() >>> 0;
   }
-  setupEnemyPartyForBattle([createPokemonInstance(species, level, { personality })]);
+  // 1:1 décomp : CreateMon(&gEnemyParty[0], species, level, USE_RANDOM_IVS, TRUE, personality,
+  // OT_ID_PLAYER_ID, 0) — personality FIXE (pré-roll nature/gender ci-dessus = CreateMonWithNature).
+  const enemyMon = createEmptyPokemon();
+  CreateMon(enemyMon, (resolveDecompConstant(species) as number | undefined) ?? 0, level,
+    32 /* USE_RANDOM_IVS */, true, personality, 0 /* OT_ID_PLAYER_ID */, 0);
+  setupEnemyPartyForBattle([enemyMon]);
   // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:408) : `gBattleTypeFlags = 0` (OVERWRITE).
   // ⚠️ FIX régression : l'ancien `& ~BATTLE_TYPE_TRAINER` PRÉSERVAIT BATTLE_TYPE_FIRST_BATTLE posé
   // par le tuto Birch (StartFirstBattle) → chaque combat sauvage APRÈS le tuto restait un Zigzagoon
