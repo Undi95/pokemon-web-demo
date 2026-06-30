@@ -14,6 +14,8 @@
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS } from '../include/constants/pokemon';
+// PARTY_SIZE depuis le header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty.
+import { PARTY_SIZE } from '../include/constants/global';
 // gSaveBlock2Ptr : IsOtherTrainer compare otId/otName au joueur. save-block-state est leaf
 // (n'importe ni pokemon.ts ni party-storage) → edge one-way, zéro cycle.
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -213,6 +215,20 @@ export function createEmptyPokemon(): Pokemon {
     spAttack: 0, spDefense: 0,
   };
 }
+
+// ─── gPlayerParty / gEnemyParty (= 1:1 décomp pokemon.c:EWRAM, pokemon.h:374-376) ──
+// Les parties joueur/ennemie. Consolidées depuis party-storage.ts vers le foyer pokemon.c.
+// Init à l'évaluation du module : createEmptyPokemon (function hoistée, même fichier) +
+// PARTY_SIZE (header global, leaf) → aucune dépendance au cycle party-storage. party-storage.ts
+// re-exporte (41/26 fichiers les importent de là, inchangés).
+
+export const gPlayerParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createEmptyPokemon);
+export const gEnemyParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createEmptyPokemon);
+
+// Wire debug : expose gPlayerParty/gEnemyParty (= la party canonique, décodée).
+(globalThis as { __gPlayerParty?: typeof gPlayerParty; __gEnemyParty?: typeof gEnemyParty })
+  .__gPlayerParty = gPlayerParty;
+(globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
 
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────
 // Accesseurs universels mon-data. Consolidés depuis party-storage.ts vers le foyer

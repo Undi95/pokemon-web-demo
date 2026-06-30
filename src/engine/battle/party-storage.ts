@@ -164,19 +164,14 @@ export const PARTY_SIZE = 6;
 /** 1:1 décomp `MAX_MON_MOVES`. */
 const MAX_MON_MOVES_PARTY = 4;
 
-// struct Pokemon + createEmptyPokemon : CONSOLIDÉS vers le foyer pokemon.c
-// (src/pokemon.ts = où `struct Pokemon` / gPlayerParty sont définis dans la décomp).
-// Import pour usage local + RE-EXPORT pour compat : les 41+ fichiers qui importent
-// `Pokemon`/`createEmptyPokemon` depuis party-storage continuent SANS changement.
-import { createEmptyPokemon, GetMonData, SetMonData } from '../../pokemon';
+// Cœur mon-data CONSOLIDÉ vers le foyer pokemon.c (src/pokemon.ts = où struct Pokemon /
+// gPlayerParty / GetMonData sont définis dans la décomp). Import pour usage local + RE-EXPORT
+// pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
+// changement (struct/createEmptyPokemon/GetMonData/SetMonData/gPlayerParty/gEnemyParty).
+import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty } from '../../pokemon';
 import type { Pokemon } from '../../pokemon';
-export { createEmptyPokemon, GetMonData, SetMonData };
+export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty };
 export type { Pokemon };
-
-// ─── gPlayerParty / gEnemyParty (= 1:1 décomp pokemon.h:374-376) ──────────
-
-export const gPlayerParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createEmptyPokemon);
-export const gEnemyParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createEmptyPokemon);
 
 /** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
  *    for (i = 0; i < MAX_MON_MOVES; i++)
@@ -1255,11 +1250,8 @@ export function SetBattleMonDataFromBuffer(monId: number, bufferA: ArrayLike<num
   if (mon) _applySetMonData(mon, requestId, value, active);
 }
 
-// Wire debug : expose gPlayerParty/gEnemyParty (= la party canonique du combat, décodée)
-// pour vérif runtime (move-learning party read, EXP/level-up, etc.).
-(globalThis as { __gPlayerParty?: typeof gPlayerParty; __gEnemyParty?: typeof gEnemyParty })
-  .__gPlayerParty = gPlayerParty;
-(globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
+// (__gPlayerParty/__gEnemyParty exposés depuis le foyer pokemon.ts désormais — évite tout
+//  accès top-level à gPlayerParty ici, donc zéro TDZ sur l'import depuis pokemon.ts.)
 // Sonde déterministe : GiveMonToPlayer (party plein → CopyMonToPC). Sans effet jeu.
 (globalThis as Record<string, unknown>).__GiveMonToPlayer = GiveMonToPlayer;
 // Sonde déterministe : AdjustFriendship (gate LEAGUE_BATTLE). Sans effet jeu.
