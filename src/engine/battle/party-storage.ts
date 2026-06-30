@@ -100,10 +100,10 @@ export const PARTY_SIZE = 6;
 // pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
 // changement (struct/createEmptyPokemon/GetMonData/SetMonData/gPlayerParty/gEnemyParty).
 import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
-  GetMonAbility, GetAbilityBySpecies, CalculateMonStats, CreateMon, SetMonMoveSlot } from '../../pokemon';
+  GetMonAbility, GetAbilityBySpecies, CalculateMonStats, CreateMon, SetMonMoveSlot, MonRestorePP } from '../../pokemon';
 import type { Pokemon } from '../../pokemon';
 export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
-  GetMonAbility, GetAbilityBySpecies, CalculateMonStats };
+  GetMonAbility, GetAbilityBySpecies, CalculateMonStats, MonRestorePP };
 export type { Pokemon };
 
 // MonKnowsMove / GiveMoveToMon : consolidés vers le foyer pokemon.c (src/pokemon.ts).
@@ -377,8 +377,8 @@ export function GiveMonToPlayer(mon: Pokemon): number {
  *  Dette R3 SOLDÉE : party pleine → mon au PC (au lieu d'être perdu). Adaptations
  *  modèle : box slot = PokemonInstance → conversion via pokemonToPokemonInstance ;
  *  storage via le hook `__getPokemonStorage` (cycle-safe : éviter d'importer save.ts
- *  lourd dans party-storage). MonRestorePP (PP au max) + gSpecialVar_MonBoxId/Pos
- *  (numéro pour le message « envoyé à la Boîte X ») = refinements différés. */
+ *  lourd dans party-storage). MonRestorePP (PP au max) = 1:1 ✅. gSpecialVar_MonBoxId/Pos
+ *  (numéro pour le message « envoyé à la Boîte X ») = refinement différé. */
 function CopyMonToPC(mon: Pokemon): number {
   const getStorage = (globalThis as { __getPokemonStorage?: () => PokemonStorage }).__getPokemonStorage;
   const storage = getStorage?.();
@@ -393,6 +393,7 @@ function CopyMonToPC(mon: Pokemon): number {
     for (let boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++) {
       const slot = storage.boxes[boxNo]?.[boxPos];
       if (!slot || !slot.species) {  // 1:1 : GetBoxMonData(SPECIES) == SPECIES_NONE (numérique)
+        MonRestorePP(mon);  // 1:1 décomp : PP au max avant le rangement au PC
         // 1:1 CopyMon : copie INDÉPENDANTE du mon NUMÉRIQUE dans le slot de boîte (le slot
         // party va être réutilisé → on ne partage pas les arrays moves/pp).
         const boxed = createEmptyPokemon();

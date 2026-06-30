@@ -913,6 +913,25 @@ export function BoxMonToMon(src: Pokemon, dest: Pokemon): void {
 (globalThis as Record<string, unknown>).__ZeroMonData = ZeroMonData;
 (globalThis as Record<string, unknown>).__BoxMonToMon = BoxMonToMon;
 
+/** 1:1 décomp `BoxMonRestorePP(boxMon)` (pokemon.c) : restaure chaque move au PP MAX
+ *  (CalculatePPWithBonus(move, ppBonuses, slot)). Slots vides (move 0) ignorés. */
+export function BoxMonRestorePP(boxMon: Pokemon): void {
+  for (let i = 0; i < 4; i++) {  // MAX_MON_MOVES = 4
+    const move = GetMonData(boxMon, MON_DATA_MOVE1 + i) as number;
+    if (move) {
+      const bonus = GetMonData(boxMon, MON_DATA_PP_BONUSES) as number;
+      const pp = CalculatePPWithBonus(move, bonus, i);
+      SetMonData(boxMon, MON_DATA_PP1 + i, pp);
+    }
+  }
+}
+
+/** 1:1 décomp `MonRestorePP(mon)` (pokemon.c) : `BoxMonRestorePP(&mon->box)`. Modèle plat. */
+export function MonRestorePP(mon: Pokemon): void {
+  BoxMonRestorePP(mon);
+}
+(globalThis as Record<string, unknown>).__MonRestorePP = MonRestorePP;
+
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
 /** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).

@@ -11,7 +11,7 @@
 import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
 import { SaveGame, ResetSaveBlocks } from '../../src/save';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
-import { CalculatePPWithBonus, type Pokemon } from '../../src/engine/battle/party-storage';
+import { MonRestorePP, type Pokemon } from '../../src/engine/battle/party-storage';
 
 // ─── Cheat helpers (= dev convenience) ───────────────────────────────────────
 
@@ -35,9 +35,7 @@ function _cheat_heal(): void {
     if (!m.species) continue;
     m.hp = m.maxHP;
     m.status = 0;
-    for (let i = 0; i < 4; i++) {
-      if (m.moves[i]) m.pp[i] = CalculatePPWithBonus(m.moves[i], m.ppBonuses, i);
-    }
+    MonRestorePP(m);  // 1:1 décomp : restaure le PP de chaque move au max
   }
   console.log('[cheat] Party healed');
 }
