@@ -53,7 +53,11 @@ import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, A
 import { CreateMonPicSprite_Affine, FreeAndDestroyMonPicSprite, ResetAllPicSprites, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './text_window';
-import { CreateMon } from './engine/pokemon/pokemon';
+// CreateMon NUMÉRIQUE 1:1 (foyer pokemon.c) — remplace la convenience legacy
+// engine/pokemon/pokemon:CreateMon(speciesEnum, opts). createEmptyPokemon = la struct cible.
+import { CreateMon, createEmptyPokemon } from './pokemon';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import { GiveMonToPlayer } from './engine/battle/party-storage';
 import { VarSet } from './engine/script/script-vars';
 import { Sin } from '../harness/runtime/decomp-helpers';
@@ -702,9 +706,12 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
 
     // 1:1 décomp post-CB2_GiveStarter : addToParty + chain CB2_StartFirstBattle.
     const speciesEnum = GetStarterPokemon(selection);
-    // P4a : création NATIVE directe dans gPlayerParty (CreateMon → Pokemon natif +
-    // give natif), plus de détour PokemonInstance. 1:1 décomp CB2_GiveStarter.
-    GiveMonToPlayer(CreateMon(speciesEnum, 5));
+    // Création NATIVE directe (CreateMon numérique 1:1 décomp), plus de détour PokemonInstance.
+    // 1:1 : CreateMon(&mon, species, 5, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
+    const starterMon = createEmptyPokemon();
+    CreateMon(starterMon, (resolveDecompConstant(speciesEnum) as number | undefined) ?? 0, 5,
+      32 /* USE_RANDOM_IVS = MAX_PER_STAT_IVS + 1 */, false, 0, OT_ID_PLAYER_ID, 0);
+    GiveMonToPlayer(starterMon);
 
     // 1:1 décomp C:546 `ResetAllPicSprites()` : destroy circle + pkmn sprites
     // explicitement (= sinon ils persistent over battle scene + repop labo
