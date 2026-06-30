@@ -849,7 +849,7 @@ export function CreateMon(
   hasFixedPersonality: boolean, fixedPersonality: number,
   otIdType: number, fixedOtId: number,
 ): void {
-  Object.assign(mon, createEmptyPokemon());  // 1:1 ZeroMonData
+  ZeroMonData(mon);  // 1:1 décomp CreateMon : ZeroMonData(mon)
   CreateBoxMon(mon, species, level, fixedIV, hasFixedPersonality, fixedPersonality, otIdType, fixedOtId);
   SetMonData(mon, MON_DATA_LEVEL, level);
   SetMonData(mon, MON_DATA_MAIL, 0xFF /* MAIL_NONE */);
@@ -857,6 +857,61 @@ export function CreateMon(
 }
 // Sonde dev (vérif équivalence vs createPokemonInstance), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CreateMon = CreateMon;
+
+// ─── Primitives mon-data (= 1:1 décomp pokemon.c) ────────────────────────────
+
+/** 1:1 décomp `ZeroBoxMonData(boxMon)` (pokemon.c) : memset la struct BoxPokemon à 0.
+ *  Modèle PLAT (struct décodée, pas de substruct chiffré) → reset via createEmptyPokemon. */
+export function ZeroBoxMonData(boxMon: Pokemon): void {
+  Object.assign(boxMon, createEmptyPokemon());
+}
+
+/** 1:1 décomp `ZeroMonData(mon)` (pokemon.c) : zéro la box PUIS status/level/hp/maxhp/
+ *  stats/mail via SetMonData. */
+export function ZeroMonData(mon: Pokemon): void {
+  ZeroBoxMonData(mon);
+  SetMonData(mon, MON_DATA_STATUS, 0);
+  SetMonData(mon, MON_DATA_LEVEL, 0);
+  SetMonData(mon, MON_DATA_HP, 0);
+  SetMonData(mon, MON_DATA_MAX_HP, 0);
+  SetMonData(mon, MON_DATA_ATK, 0);
+  SetMonData(mon, MON_DATA_DEF, 0);
+  SetMonData(mon, MON_DATA_SPEED, 0);
+  SetMonData(mon, MON_DATA_SPATK, 0);
+  SetMonData(mon, MON_DATA_SPDEF, 0);
+  SetMonData(mon, MON_DATA_MAIL, 0xFF /* MAIL_NONE */);
+}
+
+/** 1:1 décomp `ZeroPlayerPartyMons(void)` (pokemon.c) : reset les 6 slots gPlayerParty. */
+export function ZeroPlayerPartyMons(): void {
+  for (let i = 0; i < PARTY_SIZE; i++) ZeroMonData(gPlayerParty[i]);
+}
+
+/** 1:1 décomp `ZeroEnemyPartyMons(void)` (pokemon.c) : reset les 6 slots gEnemyParty. */
+export function ZeroEnemyPartyMons(): void {
+  for (let i = 0; i < PARTY_SIZE; i++) ZeroMonData(gEnemyParty[i]);
+}
+
+/** 1:1 décomp `CopyMon(dest, src, size)` (pokemon.c) : memcpy(dest, src, size). Modèle plat →
+ *  copie tous les champs + arrays moves/pp INDÉPENDANTS (le slot source peut être réutilisé). */
+export function CopyMon(dest: Pokemon, src: Pokemon): void {
+  Object.assign(dest, src);
+  dest.moves = [...src.moves];
+  dest.pp = [...src.pp];
+}
+
+/** 1:1 décomp `BoxMonToMon(src, dest)` (pokemon.c) : dest->box = *src ; reset status/hp/maxhp/
+ *  mail ; CalculateMonStats. Conversion box slot → Pokémon de party. */
+export function BoxMonToMon(src: Pokemon, dest: Pokemon): void {
+  CopyMon(dest, src);            // 1:1 dest->box = *src (modèle plat → copie struct)
+  SetMonData(dest, MON_DATA_STATUS, 0);
+  SetMonData(dest, MON_DATA_HP, 0);
+  SetMonData(dest, MON_DATA_MAX_HP, 0);
+  SetMonData(dest, MON_DATA_MAIL, 0xFF /* MAIL_NONE */);
+  CalculateMonStats(dest);
+}
+(globalThis as Record<string, unknown>).__ZeroMonData = ZeroMonData;
+(globalThis as Record<string, unknown>).__BoxMonToMon = BoxMonToMon;
 
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
