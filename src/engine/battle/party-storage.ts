@@ -22,7 +22,7 @@ import type { PokemonInstance } from '../pokemon/pokemon';
 import { GetPlayerNameString } from '../../../include/text';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
-  speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
+  speciesEnumToDexId, moveEnumToDexId,
   pokemonToPokemonInstance,
 } from '../pokemon/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
