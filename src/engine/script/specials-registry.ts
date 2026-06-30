@@ -612,8 +612,21 @@ registerSpecial('PutZigzagoonInPlayerParty', () => {
   // empty (= dev test), add a Zigzagoon. 1:1 count via CalculatePlayerPartyCount.
   if (CalculatePlayerPartyCount() === 0) {
     void (async () => {
-      const { CreateMon, GiveMonToPlayer } = await import('../pokemon/pokemon');
-      const zig = CreateMon('SPECIES_ZIGZAGOON', 5);
+      // 1:1 décomp battle_setup.c PutZigzagoonInPlayerParty : CreateMon NUMÉRIQUE +
+      // moveset FIXE tutorial (Tackle slot0, Tail Whip slot4). Import dynamique = anti-cycle
+      // (specials-registry ↔ pokemon). CreateMon ← foyer ; reste ← party-storage (re-export).
+      const { CreateMon } = await import('../../pokemon');
+      const { createEmptyPokemon, SetMonData, GiveMonToPlayer,
+        MON_DATA_MOVE1, MON_DATA_MOVE2, MON_DATA_MOVE3, MON_DATA_MOVE4 } = await import('../battle/party-storage');
+      const { resolveDecompConstant } = await import('../../../harness/runtime/decomp-constants');
+      const rc = (n: string): number => (resolveDecompConstant(n) as number | undefined) ?? 0;
+      const zig = createEmptyPokemon();
+      CreateMon(zig, rc('SPECIES_ZIGZAGOON'), 5, 32 /* USE_RANDOM_IVS */, false, 0, 0 /* OT_ID_PLAYER_ID */, 0);
+      // 1:1 décomp : moveset tutorial imposé (override du level-up moveset par défaut).
+      SetMonData(zig, MON_DATA_MOVE1, rc('MOVE_TACKLE'));
+      SetMonData(zig, MON_DATA_MOVE2, 0 /* MOVE_NONE */);
+      SetMonData(zig, MON_DATA_MOVE3, 0 /* MOVE_NONE */);
+      SetMonData(zig, MON_DATA_MOVE4, rc('MOVE_TAIL_WHIP'));
       GiveMonToPlayer(zig);
     })();
   }
