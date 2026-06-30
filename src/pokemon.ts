@@ -14,8 +14,6 @@
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
  */
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS } from '../include/constants/pokemon';
-// Type-only (erasé au runtime → aucun cycle/TDZ) : le foyer pokemon.c lit struct Pokemon.
-import type { Pokemon } from './engine/battle/party-storage';
 // gSaveBlock2Ptr : IsOtherTrainer compare otId/otName au joueur. save-block-state est leaf
 // (n'importe ni pokemon.ts ni party-storage) → edge one-way, zéro cycle.
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
@@ -73,6 +71,120 @@ import {
 } from './engine/battle/constants';
 import { FlagGet as _FlagGetN0 } from './engine/script/script-vars';
 import { GetBattlerAtPosition } from './battle_anim_mons';
+
+// ─── struct Pokemon ─ 1:1 décomp `include/pokemon.h:219..232` ─────────────
+// Consolidé depuis party-storage.ts vers le foyer pokemon.c (= où gPlayerParty/
+// GetMonData sont définis dans la décomp). party-storage.ts re-exporte pour compat.
+
+/** 1:1 décomp `struct Pokemon` champs plats accessibles (= notre version
+ *  decoded ; le décomp stocke certains champs dans BoxPokemon.secure.substructs
+ *  encrypted). */
+export interface Pokemon {
+  // BoxPokemon fields
+  personality: number;   // u32
+  otId: number;          // u32
+  nickname: string;      // 10 chars max
+  language: number;      // u8
+  isBadEgg: number;      // bit
+  hasSpecies: number;    // bit
+  isEgg: number;         // bit
+  otName: string;        // 7 chars max
+  markings: number;      // u8
+  // Substruct0
+  species: number;       // u16
+  heldItem: number;      // u16
+  experience: number;    // u32
+  ppBonuses: number;     // u8
+  friendship: number;    // u8
+  // Substruct1
+  moves: number[];       // 4 × u16
+  pp: number[];          // 4 × u8
+  // Substruct2 — EVs (post-battle gain) + condition stats
+  hpEV: number; attackEV: number; defenseEV: number;
+  speedEV: number; spAttackEV: number; spDefenseEV: number;
+  // Conditions concours (1:1 décomp pokemon.h:123-128 struct PokemonSubstruct2)
+  // — u8 0..255, montées par les Pokéblocs. Optionnelles (= 0 par défaut via
+  // `?? 0`) pour ne casser aucun constructeur. Avant : GetMonData(MON_DATA_COOL..
+  // SHEEN) tombait en `default` → 0 silencieux (= trou 1:1, ex. CheckLeadMon*).
+  cool?: number;
+  beauty?: number;
+  cute?: number;
+  smart?: number;
+  tough?: number;
+  sheen?: number;
+  // Substruct3
+  pokerus: number;       // u8
+  metLocation: number;   // u8
+  metLevel: number;      // bit field
+  metGame: number;       // bit field
+  pokeball: number;      // bit field
+  otGender: number;      // bit field
+  hpIV: number; attackIV: number; defenseIV: number;
+  speedIV: number; spAttackIV: number; spDefenseIV: number;
+  abilityNum: number;
+  modernFatefulEncounter: number;
+  // Substruct3 ribbons — 1:1 décomp pokemon.h:150-167. Optionnels (= 0 par
+  // défaut via `?? 0`) pour ne casser aucun autre constructeur de Pokemon.
+  // Concours (3 bits, rang 0-4) :
+  coolRibbon?: number;
+  beautyRibbon?: number;
+  cuteRibbon?: number;
+  smartRibbon?: number;
+  toughRibbon?: number;
+  // Award (1 bit chacun, sauf unusedRibbons = 4 bits) :
+  championRibbon?: number;
+  winningRibbon?: number;
+  victoryRibbon?: number;
+  artistRibbon?: number;
+  effortRibbon?: number;
+  marineRibbon?: number;
+  landRibbon?: number;
+  skyRibbon?: number;
+  countryRibbon?: number;
+  nationalRibbon?: number;
+  earthRibbon?: number;
+  worldRibbon?: number;
+  unusedRibbons?: number;
+  // Pokemon (non-box) fields
+  status: number;        // u32 (STATUS1_* flags)
+  level: number;         // u8
+  mail: number;          // u8
+  hp: number;            // u16
+  maxHP: number;         // u16
+  attack: number;        // u16
+  defense: number;       // u16
+  speed: number;         // u16
+  spAttack: number;      // u16
+  spDefense: number;     // u16
+}
+
+/** Create un Pokemon vide (= ZeroMonData équivalent). */
+export function createEmptyPokemon(): Pokemon {
+  return {
+    personality: 0, otId: 0, nickname: '', language: 0,
+    isBadEgg: 0, hasSpecies: 0, isEgg: 0,
+    otName: '', markings: 0,
+    species: 0, heldItem: 0, experience: 0,
+    ppBonuses: 0, friendship: 0,
+    moves: [0, 0, 0, 0], pp: [0, 0, 0, 0],
+    hpEV: 0, attackEV: 0, defenseEV: 0,
+    speedEV: 0, spAttackEV: 0, spDefenseEV: 0,
+    cool: 0, beauty: 0, cute: 0, smart: 0, tough: 0, sheen: 0,
+    pokerus: 0, metLocation: 0, metLevel: 0, metGame: 0,
+    pokeball: 0, otGender: 0,
+    hpIV: 0, attackIV: 0, defenseIV: 0,
+    speedIV: 0, spAttackIV: 0, spDefenseIV: 0,
+    abilityNum: 0, modernFatefulEncounter: 0,
+    coolRibbon: 0, beautyRibbon: 0, cuteRibbon: 0, smartRibbon: 0, toughRibbon: 0,
+    championRibbon: 0, winningRibbon: 0, victoryRibbon: 0, artistRibbon: 0, effortRibbon: 0,
+    marineRibbon: 0, landRibbon: 0, skyRibbon: 0, countryRibbon: 0, nationalRibbon: 0,
+    earthRibbon: 0, worldRibbon: 0, unusedRibbons: 0,
+    status: 0, level: 0, mail: 0,
+    hp: 0, maxHP: 0,
+    attack: 0, defense: 0, speed: 0,
+    spAttack: 0, spDefense: 0,
+  };
+}
 
 /** 1:1 décomp `#define NUM_NATURE_STATS (NUM_STATS - 1)` (constants/pokemon.h) = 5
  *  (ATK, DEF, SPEED, SPATK, SPDEF ; HP exclu). decomp-data ne le résout pas
