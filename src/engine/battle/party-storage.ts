@@ -32,7 +32,6 @@ import { SetPCBoxToSendMon, GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { gMapHeader } from '../../fieldmap';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
-import { GetNatureFromPersonality, ModifyStatByNature } from '../../../include/pokemon';
 import {
   MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
 } from '../../../include/constants/pokemon';
@@ -168,10 +167,10 @@ const MAX_MON_MOVES_PARTY = 4;
 // pour compat : les fichiers qui importent ces symboles depuis party-storage continuent SANS
 // changement (struct/createEmptyPokemon/GetMonData/SetMonData/gPlayerParty/gEnemyParty).
 import { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
-  GetMonAbility, GetAbilityBySpecies } from '../../pokemon';
+  GetMonAbility, GetAbilityBySpecies, CalculateMonStats } from '../../pokemon';
 import type { Pokemon } from '../../pokemon';
 export { createEmptyPokemon, GetMonData, SetMonData, gPlayerParty, gEnemyParty,
-  GetMonAbility, GetAbilityBySpecies };
+  GetMonAbility, GetAbilityBySpecies, CalculateMonStats };
 export type { Pokemon };
 
 /** 1:1 STRICT décomp `MonKnowsMove(struct Pokemon *mon, u16 move)` (pokemon.c) :
@@ -564,76 +563,10 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
 // `gNatureStatTable` + `ModifyStatByNature` + `GetNatureFromPersonality` = consolidés
 // sur le miroir `src/game/pokemon.ts` (source unique 1:1, cf. import en tête).
 
-/** 1:1 décomp `GetNature(mon)` — personality % 25. Délègue au miroir
- *  `GetNatureFromPersonality` ; nom privé conservé pour les callers de ce fichier. */
-function _getNatureFromPersonality(personality: number): number {
-  return GetNatureFromPersonality(personality >>> 0);
-}
-
-// GetNature : consolidé vers le foyer pokemon.c (src/pokemon.ts, à côté de
-// GetNatureFromPersonality). Le helper privé _getNatureFromPersonality reste ici
-// (utilisé par CalculateMonStats). La sonde dev __GetNature suit l'impl dans pokemon.ts.
-
-/** Adaptateur 0-based → miroir `ModifyStatByNature` (1-based décomp : STAT_ATK=1…
- *  STAT_SPDEF=5). Ce fichier passe un statIndex 0-based (0=ATK…4=SPDEF, hérité de
- *  CalculateMonStats/CALC_STAT) → +1 pour la signature 1:1 du miroir. Résultat
- *  identique. */
-export function _modifyStatByNature(nature: number, stat: number, statIndex: number): number {
-  return ModifyStatByNature(nature, stat, statIndex + 1);
-}
-
-/** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:1932-2017).
- *  Calcule maxHP + attack + defense + speed + spAttack + spDefense
- *  depuis baseStats (= gSpeciesInfo[species]) + IVs + EVs + level + nature.
- *  Met à jour aussi `currentHP` si la diff doit être propagée. */
-export function CalculateMonStats(mon: Pokemon): void {
-  if (mon.species === 0) return;
-  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_');
-  if (!speciesEnum) return;
-  const info = getSpeciesInfo(speciesEnum);
-  if (!info?.stats) return;
-  const base = info.stats;
-  const level = mon.level || 1;
-  const nature = _getNatureFromPersonality(mon.personality);
-
-  // 1:1 décomp species.h : SPECIES_SHEDINJA = 303.
-  // AUDIT BUG FIX : était 292 (= SPECIES_GIRAFARIG !) → 303.
-  const SPECIES_SHEDINJA = 303;
-  let newMaxHP: number;
-  if (mon.species === SPECIES_SHEDINJA) {
-    newMaxHP = 1;
-  } else {
-    const n = 2 * base.hp + mon.hpIV;
-    newMaxHP = Math.floor(((n + Math.floor(mon.hpEV / 4)) * level) / 100) + level + 10;
-  }
-  const previousMaxHP = mon.maxHP;
-  mon.maxHP = newMaxHP & 0xFFFF;
-
-  // CALC_STAT macro inline expand : (((2*base + IV + EV/4) * level) / 100) + 5,
-  // then ModifyStatByNature.
-  const calc = (baseStat: number, iv: number, ev: number, statIdx: number): number => {
-    const n = 2 * baseStat + iv;
-    let stat = Math.floor(((n + Math.floor(ev / 4)) * level) / 100) + 5;
-    stat = _modifyStatByNature(nature, stat, statIdx) & 0xFFFF;
-    return stat;
-  };
-  mon.attack    = calc(base.atk, mon.attackIV,    mon.attackEV,    0); // STAT_ATK
-  mon.defense   = calc(base.def, mon.defenseIV,   mon.defenseEV,   1); // STAT_DEF
-  mon.speed     = calc(base.spe, mon.speedIV,     mon.speedEV,     2); // STAT_SPEED
-  mon.spAttack  = calc(base.spa, mon.spAttackIV,  mon.spAttackEV,  3); // STAT_SPATK
-  mon.spDefense = calc(base.spd, mon.spDefenseIV, mon.spDefenseEV, 4); // STAT_SPDEF
-
-  // 1:1 décomp : adjust currentHP par la diff maxHP - previousMaxHP.
-  if (mon.species === SPECIES_SHEDINJA) {
-    if (mon.hp !== 0 || previousMaxHP === 0) mon.hp = 1;
-  } else if (mon.hp === 0 && previousMaxHP === 0) {
-    mon.hp = newMaxHP;
-  } else if (mon.hp !== 0) {
-    mon.hp += newMaxHP - previousMaxHP;
-    if (mon.hp <= 0) mon.hp = 1;
-  }
-  // else : stay at 0 (= fainted).
-}
+// GetNature / CalculateMonStats (+ helpers _getNatureFromPersonality / _modifyStatByNature) :
+// consolidés vers le foyer pokemon.c (src/pokemon.ts) — les helpers inlinés là-bas
+// (GetNatureFromPersonality + ModifyStatByNature, same-file). CalculateMonStats : import-back
+// + re-export via le bloc d'import en tête (user interne l.~339).
 
 /** 1:1 décomp `gPPUpGetMask` (pokemon.c) — masque 2 bits par slot de move. */
 export const gPPUpGetMask: readonly number[] = [0x03, 0x0c, 0x30, 0xc0];

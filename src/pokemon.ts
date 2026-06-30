@@ -360,6 +360,59 @@ export function GetMonAbility(mon: Pokemon): number {
   return GetAbilityBySpecies(species, abilityNum);
 }
 
+/** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:1932-2017).
+ *  Calcule maxHP + attack + defense + speed + spAttack + spDefense depuis baseStats
+ *  (= gSpeciesInfo[species]) + IVs + EVs + level + nature. Met à jour aussi `currentHP`
+ *  si la diff doit être propagée. Consolidé depuis party-storage.ts (nature +
+ *  ModifyStatByNature appelés same-file ; l'ex-adapter _modifyStatByNature inliné `+1`). */
+export function CalculateMonStats(mon: Pokemon): void {
+  if (mon.species === 0) return;
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_');
+  if (!speciesEnum) return;
+  const info = getSpeciesInfo(speciesEnum);
+  if (!info?.stats) return;
+  const base = info.stats;
+  const level = mon.level || 1;
+  const nature = GetNatureFromPersonality(mon.personality >>> 0);
+
+  // 1:1 décomp species.h : SPECIES_SHEDINJA = 303.
+  const SPECIES_SHEDINJA = 303;
+  let newMaxHP: number;
+  if (mon.species === SPECIES_SHEDINJA) {
+    newMaxHP = 1;
+  } else {
+    const n = 2 * base.hp + mon.hpIV;
+    newMaxHP = Math.floor(((n + Math.floor(mon.hpEV / 4)) * level) / 100) + level + 10;
+  }
+  const previousMaxHP = mon.maxHP;
+  mon.maxHP = newMaxHP & 0xFFFF;
+
+  // CALC_STAT macro inline expand : (((2*base + IV + EV/4) * level) / 100) + 5,
+  // then ModifyStatByNature (statIdx 0-based ici → +1 pour la signature 1-based 1:1).
+  const calc = (baseStat: number, iv: number, ev: number, statIdx: number): number => {
+    const n = 2 * baseStat + iv;
+    let stat = Math.floor(((n + Math.floor(ev / 4)) * level) / 100) + 5;
+    stat = ModifyStatByNature(nature, stat, statIdx + 1) & 0xFFFF;
+    return stat;
+  };
+  mon.attack    = calc(base.atk, mon.attackIV,    mon.attackEV,    0); // STAT_ATK
+  mon.defense   = calc(base.def, mon.defenseIV,   mon.defenseEV,   1); // STAT_DEF
+  mon.speed     = calc(base.spe, mon.speedIV,     mon.speedEV,     2); // STAT_SPEED
+  mon.spAttack  = calc(base.spa, mon.spAttackIV,  mon.spAttackEV,  3); // STAT_SPATK
+  mon.spDefense = calc(base.spd, mon.spDefenseIV, mon.spDefenseEV, 4); // STAT_SPDEF
+
+  // 1:1 décomp : adjust currentHP par la diff maxHP - previousMaxHP.
+  if (mon.species === SPECIES_SHEDINJA) {
+    if (mon.hp !== 0 || previousMaxHP === 0) mon.hp = 1;
+  } else if (mon.hp === 0 && previousMaxHP === 0) {
+    mon.hp = newMaxHP;
+  } else if (mon.hp !== 0) {
+    mon.hp += newMaxHP - previousMaxHP;
+    if (mon.hp <= 0) mon.hp = 1;
+  }
+  // else : stay at 0 (= fainted).
+}
+
 // ─── GetMonData / SetMonData (= 1:1 décomp pokemon.c) ─────────────────────
 // Accesseurs universels mon-data. Consolidés depuis party-storage.ts vers le foyer
 // pokemon.c (= où ils sont définis dans la décomp). party-storage.ts re-exporte pour
