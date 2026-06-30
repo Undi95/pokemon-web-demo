@@ -899,7 +899,6 @@ export async function harnessExecuteTurnL(opts?: {
   const si = await import('./script-interpreter');
   await si.loadBattleScriptBytecode();
   const ps = await import('./party-storage');
-  const pk = await import('../pokemon/pokemon');
   const st = await import('./state');
   const td = await import('./battle-turn-dispatch');
   const bmf = await import('./battle-main-functions');
@@ -908,9 +907,9 @@ export async function harnessExecuteTurnL(opts?: {
   const C = await import('./constants');
 
   // 1. Combat ad-hoc + peuplement gBattleMons[0],[1].
-  const playerMon = pk.createPokemonInstance(playerSpecies, playerLevel);
-  const enemyMon = pk.createPokemonInstance(enemySpecies, enemyLevel);
-  ps.setupPartyForBattle([playerMon as never], [enemyMon as never]);
+  const playerMon = ps.createTestMon(playerSpecies, playerLevel);
+  const enemyMon = ps.createTestMon(enemySpecies, enemyLevel);
+  ps.setupPartyForBattle([playerMon], [enemyMon]);
   ps.fillActiveBattleMonsForBattleStart();
 
   /* @strings-ignore-start: diagnostic dev interne (fail() = builder de résultat d'erreur), pas joué */
@@ -1101,11 +1100,10 @@ export async function harnessRunDecompLoopAsync(maxFrames = 3000, frameDelayMs =
   // et CB2_InitBattle init le MOTEUR sans peupler les parties (= 1:1 : le code qui
   // déclenche le combat pose gPlayerParty/gEnemyParty AVANT CB2_InitBattle). Le
   // reste (fillActiveBattleMons, gBattleMons, controllers) est fait par l'intro.
-  const _pk = await import('../pokemon/pokemon');
   const _ps = await import('./party-storage');
-  const _pMon = _pk.createPokemonInstance('SPECIES_TREECKO', 10);
-  const _eMon = _pk.createPokemonInstance('SPECIES_POOCHYENA', 7);
-  _ps.setupPartyForBattle([_pMon as never], [_eMon as never]);
+  const _pMon = _ps.createTestMon('SPECIES_TREECKO', 10);
+  const _eMon = _ps.createTestMon('SPECIES_POOCHYENA', 7);
+  _ps.setupPartyForBattle([_pMon], [_eMon]);
   bootDecompBattleLoop();
   for (; f < maxFrames; f++) {
     gmain.newKeys = pending; pending = 0;          // injecte l'input AVANT le tick
@@ -1155,7 +1153,6 @@ export async function harnessSetupParties(
   eOpts?: { moves?: string[]; nature?: string; ivs?: object; evs?: object; ability?: string; personality?: number },
   trainerOpponent?: number,
 ): Promise<boolean> {
-  const pk = await import('../pokemon/pokemon');
   const ps = await import('./party-storage');
   const si = await import('./script-interpreter');
   const st = await import('./state');
@@ -1164,9 +1161,9 @@ export async function harnessSetupParties(
   // pOpts/eOpts → createPokemonInstance : permet de FORCER moves (slot 0 = move
   // testé par autoPlay), nature, ivs/evs, ability, personality (PID → shiny/nature/
   // gender) pour les vérifs 1:1 ciblées (statut/drain/multi-hit/type, EV/IV/shiny).
-  const pMon = pk.createPokemonInstance(playerSpecies, playerLevel, pOpts as never);
-  const eMon = pk.createPokemonInstance(enemySpecies, enemyLevel, eOpts as never);
-  ps.setupPartyForBattle([pMon as never], [eMon as never]);
+  const pMon = ps.createTestMon(playerSpecies, playerLevel, pOpts as never);
+  const eMon = ps.createTestMon(enemySpecies, enemyLevel, eOpts as never);
+  ps.setupPartyForBattle([pMon], [eMon]);
   // Type de combat : DRESSEUR (BATTLE_TYPE_TRAINER + gTrainerBattleOpponent_A pour
   // getmoneyreward/classe/intro) si trainerOpponent fourni, sinon SAUVAGE. On ne
   // touche QUE le bit TRAINER (preserve le reste) + reset entre runs pour éviter
@@ -1190,15 +1187,14 @@ export async function harnessSetupPartiesN(
   enemies: Array<{ species: string; level: number; opts?: object }>,
   trainerOpponent?: number,
 ): Promise<boolean> {
-  const pk = await import('../pokemon/pokemon');
   const ps = await import('./party-storage');
   const si = await import('./script-interpreter');
   const st = await import('./state');
   const cst = await import('./constants');
   await si.loadBattleScriptBytecode();
-  const pMons = players.map((p) => pk.createPokemonInstance(p.species, p.level, p.opts as never));
-  const eMons = enemies.map((e) => pk.createPokemonInstance(e.species, e.level, e.opts as never));
-  ps.setupPartyForBattle(pMons as never, eMons as never);
+  const pMons = players.map((p) => ps.createTestMon(p.species, p.level, p.opts as never));
+  const eMons = enemies.map((e) => ps.createTestMon(e.species, e.level, e.opts as never));
+  ps.setupPartyForBattle(pMons, eMons);
   if (trainerOpponent !== undefined) {
     st.setBattleTypeFlags((st.gBattleTypeFlags | cst.BATTLE_TYPE_TRAINER) >>> 0);
     st.setTrainerBattleOpponentA(trainerOpponent);

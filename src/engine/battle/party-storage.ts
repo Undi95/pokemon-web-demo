@@ -308,17 +308,23 @@ export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void
  *  joueur (`gPlayerParty[i] = block1.playerParty[i]`), à travers le pont
  *  PokemonInstance→Pokemon. Slots vides reset via `createEmptyPokemon`. Partagé
  *  par `setupPartyForBattle` (boot combat) et `LoadPlayerParty` (boot/load OW). */
-export function loadPlayerPartyFromInstances(player: PokemonInstance[]): void {
-  // ⚠️ Snapshot AVANT le reset : depuis le pivot (palier B), `player` peut être
-  // `block1.playerParty` = des VUES LIVE sur gPlayerParty (combat sauvage via
-  // wild-encounter, battle-flow). Reset gPlayerParty PUIS lire les vues les
-  // viderait (elles pointent vers les slots qu'on vient de reset) → party de
-  // combat vide. On convertit donc d'abord en Pokemon natifs (snapshot lu sur
-  // gPlayerParty intact), ensuite on reset + ré-écrit. Pour les appelants qui
-  // passent des natifs (harness/devtools) le résultat est identique.
+export function loadPlayerPartyFromInstances(player: Array<Pokemon | PokemonInstance>): void {
+  // ⚠️ Snapshot AVANT le reset : `player` peut référencer gPlayerParty (combats
+  // de test). Reset gPlayerParty PUIS le lire le viderait → party vide. On copie
+  // donc d'abord (snapshot indépendant), ensuite on reset + ré-écrit.
+  // TRANSITOIRE (unif 2e modèle) : accepte du NUMÉRIQUE direct (createTestMon/
+  // CreateMon, voie cible) OU un PokemonInstance legacy (discriminant 'speciesEnum').
   const n = Math.min(player.length, PARTY_SIZE);
   const snapshot: Pokemon[] = [];
-  for (let i = 0; i < n; i++) snapshot.push(pokemonInstanceToPokemon(player[i]));
+  for (let i = 0; i < n; i++) {
+    const m = player[i];
+    const src = ('speciesEnum' in m) ? pokemonInstanceToPokemon(m) : m;
+    const c = createEmptyPokemon();
+    Object.assign(c, src);
+    c.moves = [...src.moves];
+    c.pp = [...src.pp];
+    snapshot.push(c);
+  }
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], createEmptyPokemon());
   for (let i = 0; i < n; i++) Object.assign(gPlayerParty[i], snapshot[i]);
 }
@@ -344,7 +350,7 @@ export function setupEnemyPartyForBattle(enemy: Array<Pokemon | PokemonInstance>
  *  fonction (qui REMPLACE gPlayerParty) reste pour les COMBATS DE TEST (devtools)
  *  qui veulent une party artificielle ; ⚠️ elle écrase la party joueur courante
  *  (à entourer d'un backup/restore côté appelant — cf. push/popTestPlayerParty). */
-export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonInstance[]): void {
+export function setupPartyForBattle(player: Array<Pokemon | PokemonInstance>, enemy: Array<Pokemon | PokemonInstance>): void {
   backupOwPartyForTest();      // sauve la party OW (ce combat de TEST va écraser gPlayerParty)
   loadPlayerPartyFromInstances(player);
   setupEnemyPartyForBattle(enemy);
