@@ -3982,6 +3982,21 @@ export function DoGroundEffects_OnFinishStep(rt: DecompRuntime, npc: ObjectEvent
   }
 }
 
+/** 1:1 STRICT décomp `TryEnableObjectEventAnim(objectEvent, sprite)`
+ *  (event_object_movement.c:7335) : quand `enableAnim` est posé (ex.
+ *  `Fishing_GetRodOut` → pêche, certains field moves), DÉPAUSE l'anim du sprite +
+ *  consomme le flag. SANS cet appel, l'anim spéciale (pêche : take-out/put-away
+ *  rod) reste `animPaused=TRUE` → `AnimateSprite` ne l'avance JAMAIS → `animEnded`
+ *  jamais posé → `Task_Fishing` zombie bloqué à `Fishing_PutRodAway` + field
+ *  controls verrouillés à vie (= régression canne à pêche). */
+function TryEnableObjectEventAnim(objectEvent: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (objectEvent.enableAnim && sprite) {
+    sprite.animPaused = false;
+    objectEvent.disableAnim = false;
+    objectEvent.enableAnim = false;
+  }
+}
+
 /** Tick chaque NPC selon son movementType. À call chaque frame. */
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
@@ -4020,6 +4035,10 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
       ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites[gPlayerAvatar.spriteId] : undefined)
       : (npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : undefined);
     DoGroundEffects_OnSpawn(rt, npc, sprite);
+    // 1:1 décomp UpdateObjectEventCurrentMovement (event_object_movement.c:4932) :
+    // TryEnableObjectEventAnim juste après DoGroundEffects_OnSpawn. Dépause les anims
+    // spéciales (pêche) posées via enableAnim. FIX régression canne à pêche.
+    TryEnableObjectEventAnim(npc, sprite);
 
     if (ObjectEventIsHeldMovementActive(npc)) {
       _execHeldMovementAction(rt, npc);
