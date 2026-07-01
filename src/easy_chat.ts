@@ -29,7 +29,7 @@
 
 import { BG_SCREEN_SIZE } from '../include/gba/defines';
 import {CpuFastFill, WIN_RANGE} from "../harness/runtime/decomp-bridge";
-import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../harness/runtime/decomp-globals';
+import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet, LoadBgTiles } from '../harness/runtime/decomp-globals';
 import { DestroySprite } from './sprite';
 import { CreateSprite } from './sprite';
 import { LoadSpriteSheets, StartSpriteAnim, ANIMCMD_FRAME, ANIMCMD_END } from './sprite';
@@ -788,18 +788,38 @@ function makeEasyChatScreenWordData(): EasyChatScreenWordData {
 //   Ces helpers sont dÃ©finis ailleurs dans easy_chat.c (sections 0-2 et 4-5)
 //   ou dans d'autres modules decomp non encore portÃ©s. STUB explicite ici.
 
-function SetBgTilemapBuffer(_bg: number, _buf: Uint16Array): void {
-  console.warn('[easy-chat-render STUB] SetBgTilemapBuffer hors-scope (bg.c)');
+function SetBgTilemapBuffer(bg: number, _buf: Uint16Array): void {
+  // 1:1 décomp `SetBgTilemapBuffer(bg, buffer)` = associe un buffer tilemap externe au BG.
+  // Notre moteur : le tilemap du BG est un buffer readonly PERSISTANT (rt.gba.bg(bg).tilemap)
+  // → on pointe le buffer easy_chat (sScreenControl.bgXTilemapBuffer) VERS celui du moteur, pour
+  //   que BufferFrameTilemap y écrive et que CopyBgTilemapBufferToVram le remonte en VRAM.
+  if (!sScreenControl) return;
+  if (bg === 3) sScreenControl.bg3TilemapBuffer = GetBgTilemapBuffer(3);
+  else if (bg === 1) sScreenControl.bg1TilemapBuffer = GetBgTilemapBuffer(1);
 }
-function DecompressAndLoadBgGfxUsingHeap(_bg: number, _src: unknown, _size: number, _offset: number, _mode: number): void {
-  console.warn('[easy-chat-render STUB] DecompressAndLoadBgGfxUsingHeap hors-scope (menu.c)');
+function DecompressAndLoadBgGfxUsingHeap(bg: number, src: unknown, _size: number, offset: number, _mode: number): void {
+  // 1:1 décomp : LZ-décompresse `src` puis charge dans le char base du BG. Nos assets .lz =
+  // PNG déjà décompressés (Uint8Array) → LoadBgTiles direct (offset en tiles).
+  const data = src as Uint8Array | null;
+  if (!data) return;
+  LoadBgTiles(bg, data, data.length, offset);
 }
 function IsDma3ManagerBusyWithBgCopy(): boolean {
   // 1:1 decomp : dans notre engine la copie est synchrone => jamais busy.
   return false;
 }
-function CopyToBgTilemapBufferRect(_bg: number, _src: Uint16Array | unknown, _destX: number, _destY: number, _width: number, _height: number): void {
-  console.warn('[easy-chat-render STUB] CopyToBgTilemapBufferRect hors-scope (bg.c)');
+function CopyToBgTilemapBufferRect(bg: number, src: Uint16Array | unknown, destX: number, destY: number, width: number, height: number): void {
+  // 1:1 décomp `CopyToBgTilemapBufferRect(bg, src, destX, destY, width, height)` : copie un rect
+  // width×height depuis src (linéaire) dans la tilemap du BG à (destX,destY).
+  const tilemap = GetBgTilemapBuffer(bg);
+  const s = src as Uint16Array;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const di = (destY + y) * 32 + (destX + x);
+      const si = y * width + x;
+      if (di >= 0 && di < tilemap.length && si < s.length) tilemap[di] = s[si];
+    }
+  }
 }
 
 // Section 4 sprite helpers (lignes 4624+) â€” STUB pour les call-sites lignes 3000-4500.
