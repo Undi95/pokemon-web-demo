@@ -206,9 +206,14 @@ function FieldCB_UseItemOnField(): void {
  *      if (tUsingRegisteredKeyItem != TRUE) { gFieldCallback = FieldCB_UseItemOnField;
  *                                             SetUpItemUseCallback(taskId); }
  *      else sItemUseOnFieldCB(taskId);
- *  La branche "registered key item on field" (select-button registered item) n'est
- *  pas portée → on prend toujours la branche normale (depuis le sac). */
+ *  tUsingRegisteredKeyItem = task.data[3] (item_use.c:78). Branche registered
+ *  (SELECT sur l'objet-clé enregistré) : appel DIRECT du CB (PAS de fade-bag, il
+ *  n'y a pas de sac ouvert) — UseRegisteredKeyItemOnField a déjà lock+set l'item. */
 export function SetUpItemUseOnFieldCallback(task: DecompTask): void {
+  if (task.data[3] === 1) {  // tUsingRegisteredKeyItem == TRUE
+    sItemUseOnFieldCB?.(task);
+    return;
+  }
   (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_UseItemOnField;
   SetUpItemUseCallback(task);
 }

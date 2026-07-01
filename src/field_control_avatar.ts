@@ -337,6 +337,15 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
     return true;
   }
 
+  // 1:1 décomp field_control_avatar.c:188 : SELECT → utilise l'objet-clé enregistré
+  // (UseRegisteredKeyItemOnField). START (:182-186 ShowStartMenu) = géré par
+  // TickStartMenu dans la scène (déviation port assumée). Appel via globalThis
+  // (anti-cycle : field_control_avatar n'importe pas item_menu).
+  if (input.pressedSelectButton) {
+    const useRegistered = (globalThis as Record<string, unknown>).__UseRegisteredKeyItemOnField as (() => boolean) | undefined;
+    if (useRegistered && useRegistered()) return true;
+  }
+
   return false;
 }
 

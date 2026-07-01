@@ -47,7 +47,7 @@ import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../include/gba/io_r
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from './overworld';
 import { gSpecialVar } from './engine/script/script-vars';
-import { RemoveBagItem } from './engine/bag/bag';
+import { RemoveBagItem, CheckBagHasItem } from './engine/bag/bag';
 import { AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite, AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite, AddSwitchPocketRotatingBallSprite, TAG_BAG_GFX } from './item_menu_icons';
 import { preloadSwapLineAssets, LoadListMenuSwapLineGfx, CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos, SWAP_LINE_HAS_MARGIN } from './menu_helpers';
 import { preloadItemIconAssets } from './item_icon';
@@ -2610,7 +2610,15 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
           const flag = sec === 'ACRO_BIKE' ? pa.PLAYER_AVATAR_FLAG_ACRO_BIKE : pa.PLAYER_AVATAR_FLAG_MACH_BIKE;
           const state = sec === 'ACRO_BIKE' ? pa.PLAYER_AVATAR_STATE_ACRO_BIKE : pa.PLAYER_AVATAR_STATE_MACH_BIKE;
           Promise.resolve(pa.PreloadObjectEventGraphics(pa.GetPlayerAvatarGraphicsIdByStateId(state)))
-            .then(() => { bk.GetOnOffBike(flag); });
+            .then(() => {
+              bk.GetOnOffBike(flag);
+              // 1:1 décomp `ItemUseOnFieldCB_Bike` (item_use.c:231-232) : ScriptUnfreeze
+              // ObjectEvents + UnlockPlayerFieldControls après GetOnOffBike. DÉVERROUILLE le
+              // path registered (SELECT vélo → UseRegisteredKeyItemOnField a lock). Idempotent
+              // pour le path sac (déjà déverrouillé au retour OW). (Unfreeze = DETTE, cohérent
+              // avec le skip FreezeObjectEvents côté UseRegisteredKeyItemOnField.)
+              (globalThis as Record<string, unknown>).__sLockFieldControls = false;
+            });
         });
         SetUpItemUseOnFieldCallback(task);
         return;
@@ -3200,6 +3208,45 @@ function ItemMenu_Register(task: DecompTask): void {
   }
   _returnToList(task);
 }
+
+/** 1:1 décomp `UseRegisteredKeyItemOnField(void)` (item_menu.c:2046) : appelé sur
+ *  SELECT au champ (field_control_avatar.c:188). Si un objet-clé est enregistré ET
+ *  encore dans le sac → lock+freeze+`CreateTask(field func)` avec `tUsingRegistered
+ *  KeyItem=TRUE` (= data[3], item_use.c:78) ; l'objet plus dans le sac → dé-enregistre.
+ *  Le field func (Bike/Rod/Itemfinder) via `SetUpItemUseOnFieldCallback` prend la
+ *  branche registered → CB DIRECT (pas de fade-bag). Exposé sur globalThis pour
+ *  field_control_avatar (anti-cycle, comme __FieldCallback_Dig).
+ *  Checks union/pyramid/pike = single-player → toujours OK (skip). DETTE :
+ *  PlayerFreeze()/StopPlayerAvatar() (joueur stationnaire au SELECT) + Freeze
+ *  ObjectEvents + EventScript_SelectWithoutRegisteredItem (message "aucun objet"). */
+export function UseRegisteredKeyItemOnField(): boolean {
+  const reg = gSaveBlock1Ptr.registeredItem;
+  if (reg !== 0) {
+    // CheckBagHasItem attend une CLÉ string (le sac stocke des clés, pas l'id numérique).
+    if (CheckBagHasItem(getItemKeyById(reg), 1)) {
+      // 1:1 :2058 LockPlayerFieldControls() (= __sLockFieldControls, cf. script.ts).
+      (globalThis as Record<string, unknown>).__sLockFieldControls = true;
+      // 1:1 :2062 gSpecialVar_ItemId = registeredItem ; :2063 CreateTask(GetItemFieldFunc,8).
+      // Notre dispatcher = ItemMenu_UseOutOfBattle (lit gSpecialVar.ItemId + GetItemFieldFunc).
+      gSpecialVar.ItemId = reg;
+      const rt = getRuntime();
+      if (rt) {
+        const taskId = rt.CreateTask(ItemMenu_UseOutOfBattle, 8);
+        const t = rt.gTasks[taskId];
+        if (t) t.data[3] = 1;  // tUsingRegisteredKeyItem = TRUE
+      }
+      return true;
+    } else {
+      // 1:1 :2069 objet plus dans le sac → dé-enregistre.
+      gSaveBlock1Ptr.registeredItem = 0;
+      gSaveBlock1Ptr.__registeredItemKey = '';
+    }
+  }
+  // DETTE :2072 ScriptContext_SetupScript(EventScript_SelectWithoutRegisteredItem)
+  // ("Aucun objet enregistré.") → pour l'instant : SELECT sans objet = no-op (false).
+  return false;
+}
+(globalThis as Record<string, unknown>).__UseRegisteredKeyItemOnField = UseRegisteredKeyItemOnField;
 
 /** 1:1 décomp `ItemMenu_Give(u8 taskId)` (item_menu.c:1933) : donner l'objet du
  *  SAC à un mon (#12). Trois gardes puis ouverture party (« Donner à quel POKéMON ? ») :
