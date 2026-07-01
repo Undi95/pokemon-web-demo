@@ -255,6 +255,59 @@ if (gnpM) {
   }
 }
 
+// ─── 4b. sEasyChatScreenTemplates (types/frameId + textes FR résolus) ────────
+// EASY_CHAT_TYPE_* (constants/easy_chat.h)
+const EASY_CHAT_TYPE = {};
+for (const m of constSrc.matchAll(/#define\s+(EASY_CHAT_TYPE_\w+)\s+(\d+)/g)) EASY_CHAT_TYPE[m[1]] = Number(m[2]);
+// FRAMEID_* : enum anonyme dans easy_chat.c → indices séquentiels.
+const FRAMEID = {};
+{
+  const em = ecSrc.match(/enum\s*\{([^}]*FRAMEID_GENERAL_2x2[^}]*)\}/);
+  if (em) {
+    em[1].split(',').map((s) => s.trim().replace(/\/\/.*$/, '').trim()).filter(Boolean)
+      .forEach((name, i) => { FRAMEID[name] = i; });
+  }
+}
+// Toutes les strings gText_* (strings.c) → texte FR.
+const gText = {};
+for (const m of stringsSrc.matchAll(/const\s+u8\s+(gText_\w+)\s*\[\s*\]\s*=\s*_\("((?:[^"\\]|\\.)*)"\)/g)) {
+  gText[m[1]] = m[2];
+}
+const resolveText = (tok) => {
+  const t = tok.trim();
+  if (t === 'NULL') return null;
+  if (gText[t] === undefined) { console.warn(`  ⚠️ gText inconnu: ${t}`); return null; }
+  return gText[t];
+};
+// Parse le corps de sEasyChatScreenTemplates.
+const tmplM = ecSrc.match(/static\s+const\s+struct\s+EasyChatScreenTemplate\s+sEasyChatScreenTemplates\s*\[\s*\]\s*=\s*\{([\s\S]*?)\n\};/);
+const sEasyChatScreenTemplates = [];
+if (tmplM) {
+  for (const e of tmplM[1].matchAll(/\{([\s\S]*?)\n\s*\}/g)) {
+    const b = e[1];
+    const field = (name) => { const mm = b.match(new RegExp(`\\.${name}\\s*=\\s*([^,\\n]+)`)); return mm ? mm[1].trim() : null; };
+    sEasyChatScreenTemplates.push({
+      type: EASY_CHAT_TYPE[field('type')],
+      numColumns: Number(field('numColumns')),
+      numRows: Number(field('numRows')),
+      frameId: FRAMEID[field('frameId')],
+      fourFooterOptions: field('fourFooterOptions') === 'TRUE',
+      titleText: resolveText(field('titleText')),
+      instructionsText1: resolveText(field('instructionsText1')),
+      instructionsText2: resolveText(field('instructionsText2')),
+      confirmText1: resolveText(field('confirmText1')),
+      confirmText2: resolveText(field('confirmText2')),
+    });
+  }
+}
+// Strings de prompt (getters exit/deletion — easy_chat.c GetEasyChatConfirm*Text).
+const PROMPT_SYMS = [
+  'gText_StopGivingPkmnMail', 'gText_LikeToQuitQuiz', 'gText_ChallengeQuestionMark',
+  'gText_QuitEditing', 'gText_AllTextBeingEditedWill', 'gText_BeDeletedThatOkay',
+];
+const easyChatPromptTexts = {};
+for (const s of PROMPT_SYMS) easyChatPromptTexts[s] = gText[s] ?? null;
+
 // ─── 5. Émettre le module TS ─────────────────────────────────────────────────
 const groupVals = Object.keys(gEasyChatGroups).map(Number).sort((a, b) => a - b);
 let ts = `// AUTO-GÉNÉRÉ par scripts/extract-easy-chat-data.cjs — NE PAS ÉDITER À LA MAIN.\n`;
@@ -304,6 +357,21 @@ ts += `export const sAlphabetGroupIdMap: number[][] = [\n${sAlphabetGroupIdMap
 ts += `export const sEasyChatGroupNamePointers: string[] = [${sEasyChatGroupNamePointers
   .map((s) => JSON.stringify(s))
   .join(', ')}];\n`;
+
+ts += `\nexport interface EasyChatScreenTemplateData {\n`;
+ts += `  type: number; numColumns: number; numRows: number; frameId: number; fourFooterOptions: boolean;\n`;
+ts += `  titleText: string | null; instructionsText1: string | null; instructionsText2: string | null;\n`;
+ts += `  confirmText1: string | null; confirmText2: string | null;\n`;
+ts += `}\n`;
+ts += `/** 1:1 sEasyChatScreenTemplates[] (easy_chat.c:428). */\n`;
+ts += `export const sEasyChatScreenTemplates: EasyChatScreenTemplateData[] = [\n`;
+for (const t of sEasyChatScreenTemplates) {
+  ts += `  { type: ${t.type}, numColumns: ${t.numColumns}, numRows: ${t.numRows}, frameId: ${t.frameId}, fourFooterOptions: ${t.fourFooterOptions}, titleText: ${JSON.stringify(t.titleText)}, instructionsText1: ${JSON.stringify(t.instructionsText1)}, instructionsText2: ${JSON.stringify(t.instructionsText2)}, confirmText1: ${JSON.stringify(t.confirmText1)}, confirmText2: ${JSON.stringify(t.confirmText2)} },\n`;
+}
+ts += `];\n`;
+ts += `export const easyChatPromptTexts = {\n`;
+for (const [k, v] of Object.entries(easyChatPromptTexts)) ts += `  ${k}: ${JSON.stringify(v)},\n`;
+ts += `};\n`;
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, ts, 'utf8');

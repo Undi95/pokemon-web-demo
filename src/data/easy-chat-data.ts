@@ -94,3 +94,41 @@ export const sAlphabetGroupIdMap: number[][] = [
   [20, 21, 22, 23, 24, 25, 26],
 ];
 export const sEasyChatGroupNamePointers: string[] = ["POKéMON", "DRESSEUR", "STATUT", "COMBAT", "POLITESSES", "PERSONNES", "REACTIONS", "DISCOURS", "LIAISON", "EMOTIONS", "ETAT", "ACTIONS", "VIE QUOTIDIEN.", "HOBBIES", "TEMPORALITE", "DIVERS", "QUALIFICATIFS", "EVENEMENTS", "CAPACITE 1", "CAPACITE 2", "MOTS COOL", "POKéMON2"];
+
+export interface EasyChatScreenTemplateData {
+  type: number; numColumns: number; numRows: number; frameId: number; fourFooterOptions: boolean;
+  titleText: string | null; instructionsText1: string | null; instructionsText2: string | null;
+  confirmText1: string | null; confirmText2: string | null;
+}
+/** 1:1 sEasyChatScreenTemplates[] (easy_chat.c:428). */
+export const sEasyChatScreenTemplates: EasyChatScreenTemplateData[] = [
+  { type: 0, numColumns: 2, numRows: 2, frameId: 0, fourFooterOptions: false, titleText: "PROFIL", instructionsText1: "Combinez 4 mots ou groupes", instructionsText2: "de mots et créez votre profil.", confirmText1: "Votre profil ", confirmText2: "est comme ceci. OK?" },
+  { type: 1, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "Avant le combat.", instructionsText1: "Créez un message avec six mots.", instructionsText2: "Max. deux (groupes de) mots/ligne.", confirmText1: "Votre sentiment avant le combat ", confirmText2: "est comme ceci. OK?" },
+  { type: 2, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "Après une victoire.", instructionsText1: "Créez un message avec six mots.", instructionsText2: "Max. deux (groupes de) mots/ligne.", confirmText1: "Ce que vous dites si vous gagnez ", confirmText2: "est comme ceci. OK?" },
+  { type: 3, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "Après une défaite.", instructionsText1: "Créez un message avec six mots.", instructionsText2: "Max. deux (groupes de) mots/ligne.", confirmText1: "Ce que vous dites si vous perdez ", confirmText2: "est comme ceci. OK?" },
+  { type: 4, numColumns: 2, numRows: 5, frameId: 2, fourFooterOptions: false, titleText: null, instructionsText1: "Avec neuf (groupes de) mots,", instructionsText2: "créez un message.", confirmText1: "Le message de la LETTRE ", confirmText2: "est comme ceci. OK?" },
+  { type: 5, numColumns: 2, numRows: 2, frameId: 5, fourFooterOptions: false, titleText: "Interview", instructionsText1: "Combinez 4 mots ou groupes", instructionsText2: "de mots pour répondre.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 6, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "La chanson de CAPELO", instructionsText1: "Changez un mot ou groupe de mots", instructionsText2: "de la chanson de CAPELO.", confirmText1: "La nouvelle chanson ", confirmText2: "est comme ceci. OK?" },
+  { type: 7, numColumns: 1, numRows: 1, frameId: 4, fourFooterOptions: false, titleText: "Interview", instructionsText1: "Choisissez des mots qui", instructionsText2: "décrivent votre opinion.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 9, numColumns: 2, numRows: 1, frameId: 3, fourFooterOptions: false, titleText: "C'est quoi la dernière chose à la mode?", instructionsText1: "Avec deux (groupes de) mots,", instructionsText2: "créez une expression cool.", confirmText1: "L'expression cool ", confirmText2: "est comme ceci. OK?" },
+  { type: 16, numColumns: 2, numRows: 5, frameId: 7, fourFooterOptions: true, titleText: null, instructionsText1: "Après avoir lu la question", instructionsText2: "du quiz, appuyez sur le bouton A.", confirmText1: null, confirmText2: null },
+  { type: 15, numColumns: 1, numRows: 1, frameId: 6, fourFooterOptions: true, titleText: "La réponse est?", instructionsText1: "Parmi les choix proposés,", instructionsText2: "sélectionnez la réponse!", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 17, numColumns: 2, numRows: 5, frameId: 8, fourFooterOptions: true, titleText: null, instructionsText1: "Avec neuf (groupes de) mots,", instructionsText2: "vous devez créer un quiz!", confirmText1: "Est-ce que ce quiz est OK?", confirmText2: null },
+  { type: 18, numColumns: 1, numRows: 1, frameId: 6, fourFooterOptions: true, titleText: "La réponse est?", instructionsText1: "Choisissez un mot ou un groupe", instructionsText2: "de mots pour créer la réponse.", confirmText1: "Est-ce que ce quiz est OK?", confirmText2: null },
+  { type: 6, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "La chanson de CAPELO", instructionsText1: "Changez un mot ou groupe de mots", instructionsText2: "de la chanson de CAPELO.", confirmText1: "La nouvelle chanson ", confirmText2: "est comme ceci. OK?" },
+  { type: 19, numColumns: 2, numRows: 3, frameId: 1, fourFooterOptions: false, titleText: "Expression de l'apprenti", instructionsText1: "Trouvez des mots pour décrire", instructionsText2: "l'image du DRESSEUR.", confirmText1: "L'expression de l'apprenti", confirmText2: "est comme ceci. OK?" },
+  { type: 13, numColumns: 2, numRows: 1, frameId: 3, fourFooterOptions: false, titleText: "Expression", instructionsText1: "Avec deux (groupes de) mots,", instructionsText2: "apprenez-lui une expression.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 10, numColumns: 1, numRows: 1, frameId: 4, fourFooterOptions: false, titleText: "Interview", instructionsText1: "Choisissez des mots qui", instructionsText2: "décrivent votre opinion.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 12, numColumns: 1, numRows: 1, frameId: 4, fourFooterOptions: false, titleText: "Interview", instructionsText1: "Choisissez des mots qui", instructionsText2: "décrivent votre opinion.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 11, numColumns: 1, numRows: 1, frameId: 4, fourFooterOptions: false, titleText: "Interview", instructionsText1: "Choisissez des mots qui", instructionsText2: "décrivent votre opinion.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+  { type: 14, numColumns: 1, numRows: 1, frameId: 4, fourFooterOptions: false, titleText: "Question du fan", instructionsText1: "Trouvez des mots pour décrire", instructionsText2: "l'image du DRESSEUR.", confirmText1: "L'image", confirmText2: "est comme ceci. OK?" },
+  { type: 20, numColumns: 2, numRows: 2, frameId: 0, fourFooterOptions: false, titleText: "SONDAGE", instructionsText1: "Combinez 4 mots ou groupes", instructionsText2: "de mots pour remplir le sondage.", confirmText1: "La réponse", confirmText2: "est comme ceci. OK?" },
+];
+export const easyChatPromptTexts = {
+  gText_StopGivingPkmnMail: "Ne plus donner LETTRE à PKMN?",
+  gText_LikeToQuitQuiz: "Voulez-vous quitter le défi",
+  gText_ChallengeQuestionMark: "du quiz?",
+  gText_QuitEditing: "Quitter?",
+  gText_AllTextBeingEditedWill: "Tout votre texte sera effacé.",
+  gText_BeDeletedThatOkay: "D'accord?",
+};
