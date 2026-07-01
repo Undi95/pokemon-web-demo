@@ -78,6 +78,11 @@ export interface BgConfig {
   charBaseIndex: number;
   /** Map base (où est stocké le tilemap en VRAM). 0-31 (×2KB). */
   mapBaseIndex: number;
+  /** 1:1 décomp `BgTemplate.baseTile` (bg.c) — offset (en tuiles) ajouté au placement
+   *  VRAM (bg.c:382 `(baseTile + destOffset) * 0x20`) ET aux numéros de tuiles du tilemap
+   *  des fenêtres (window.c:325 `baseTile + baseBlock`). Permet à 2 BG partageant un charBase
+   *  de sous-allouer sans collision (easy_chat BG0/BG2 charBase 0 : BG2 baseTile 0x80). */
+  baseTile: number;
   /** Screen size 0-3 (signification dépend de isAffine) :
    *  Text BG : 32×32 / 64×32 / 32×64 / 64×64 tiles
    *  Affine BG : 16×16 / 32×32 / 64×64 / 128×128 tiles
@@ -212,6 +217,7 @@ export function defaultBgConfig(): BgConfig {
     priority: 0,
     charBaseIndex: 0,
     mapBaseIndex: 0,
+    baseTile: 0,
     screenSize: 0,
     paletteMode: 0,
     mosaic: false,

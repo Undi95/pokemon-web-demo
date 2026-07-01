@@ -156,15 +156,19 @@ function copyPixelBufferToVram(
   const rt = getRuntime();
   if (!rt) return;
   const gba = rt.gba;
-  const vram = gba.bg(bgIdx as 0 | 1 | 2 | 3).vram;
-  const byteOffset = baseBlock * 32;
+  const bgLayer = gba.bg(bgIdx as 0 | 1 | 2 | 3);
+  const vram = bgLayer.vram;
+  // 1:1 décomp : `LoadBgTiles` place à `(baseTile + destOffset) * 0x20` (bg.c:382). baseTile
+  // sépare 2 BG partageant un charBase (easy_chat BG0/BG2 charBase 0, BG2 baseTile 0x80 →
+  // le clavier n'écrase plus la boîte d'instructions WIN_MSG en VRAM). 0 partout ailleurs.
+  const baseTile = bgLayer.config.baseTile ?? 0;
+  const byteOffset = (baseTile + baseBlock) * 32;
   const widthTiles = win.widthTiles;
   const heightTiles = win.heightTiles;
   const buf = win.pixelBuffer;
 
   for (let ty = 0; ty < heightTiles; ty++) {
     for (let tx = 0; tx < widthTiles; tx++) {
-      const tileId = baseBlock + ty * widthTiles + tx;
       const tileOffset = byteOffset + (ty * widthTiles + tx) * 32;
       if (tileOffset + 32 > vram.length) continue;
 
@@ -197,7 +201,9 @@ function writeWindowTilemap(win: GbaWindow, clear = false): void {
   const tilemap = bg.tilemap;
   const screenSize = bg.config.screenSize;
   const paletteNum = t.paletteNum;
-  const baseBlock = t.baseBlock;
+  // 1:1 décomp window.c:325 : le tilemap référence les tuiles à `baseTile + baseBlock + i`
+  // (aligné avec le placement VRAM de copyPixelBufferToVram qui ajoute aussi baseTile).
+  const baseBlock = (bg.config.baseTile ?? 0) + t.baseBlock;
 
   for (let ty = 0; ty < t.height; ty++) {
     for (let tx = 0; tx < t.width; tx++) {
@@ -212,7 +218,6 @@ function writeWindowTilemap(win: GbaWindow, clear = false): void {
         const tileId = baseBlock + ty * t.width + tx;
         tilemap[mapIdx] = tileId | (paletteNum << 12);
       }
-      // DEBUG removed
     }
   }
 }
@@ -604,7 +609,8 @@ export function InitBgFromTemplate(template: BgTemplate): void {
   cfg.screenSize = template.screenSize as 0 | 1 | 2 | 3;
   cfg.paletteMode = template.paletteMode as 0 | 1;
   cfg.priority = template.priority;
-  // baseTile n'est pas utilisé dans notre engine pour l'instant
+  // 1:1 décomp bg.c:334/360 `sGpuBgConfigs2[bg].baseTile = template->baseTile`.
+  cfg.baseTile = template.baseTile ?? 0;
 }
 
 /** 1:1 décomp `ShowBg(bg)` — décomp `bg.c:ShowBg` set le flag dans
