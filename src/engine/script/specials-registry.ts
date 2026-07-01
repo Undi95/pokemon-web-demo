@@ -27,6 +27,7 @@
  */
 
 import { registerSpecial } from '../../scrcmd';
+import { ShowEasyChatScreen } from '../../easy_chat';
 import {
   gBikeCycling, GetLeadMonIndex, IsBadEggInParty,
   CheckLeadMonCool, CheckLeadMonBeauty, CheckLeadMonCute, CheckLeadMonSmart, CheckLeadMonTough,
@@ -434,6 +435,10 @@ registerSpecial('CheckForPlayersHouseNews', () => _CheckForPlayersHouseNews());
  *  SetupNativeScript dans script-opcodes.ts (= dispatch direct), wait IsOpen()
  *  false → script reprend après. Fade-from-black géré au open (= ouverture
  *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
+// 1:1 décomp `special ShowEasyChatScreen` (specials.inc:114 → easy_chat.c:1456) : ouvre le
+// clavier de mots (mail / mot-tendance Dewford / interview / quiz…) selon VAR_0x8004.
+registerSpecial('ShowEasyChatScreen', () => { ShowEasyChatScreen(); });
+
 registerSpecial('FieldShowRegionMap', () => {
   void import('../field/region-map').then(async ({ OpenRegionMap }) => {
     await OpenRegionMap();

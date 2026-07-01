@@ -141,7 +141,7 @@ import { GetNationalPokedexCount, GetSetPokedexFlag, SpeciesToNationalPokedexNum
 import { TrySetTrendyPhrase } from './dewford_trend';
 import {
   ResetTasks, JOY_NEW, JOY_REPEAT, BlendPalettes, FreeAllSpritePalettes,
-  AnimateSprites, BuildOamBuffer, PlaySE, RunTasks, TransferPlttBuffer, gSaveBlock1Ptr,
+  AnimateSprites, BuildOamBuffer, PlaySE, RunTasks, TransferPlttBuffer, gSaveBlock1Ptr, gSaveBlock2Ptr,
 } from '../harness/runtime/decomp-globals';
 import { ResetSpriteData, LoadOam, ProcessSpriteCopyRequests } from './sprite';
 import { UpdatePaletteFade, BeginNormalPaletteFade } from './palette';
@@ -149,7 +149,9 @@ import { CreateTask } from './task';
 import { Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { FreeAllWindowBuffers } from './window';
 import { SetVBlankCallback } from '../harness/runtime/decomp-bridge';
-import { gSpecialVar, VarSet } from './engine/script/script-vars';
+import { gSpecialVar, VarSet, VarGet } from './engine/script/script-vars';
+import { CB2_ReturnToFieldContinueScript_Manual } from './overworld';
+import { gStringVar3 } from './string_util';
 import { loadGbaPal, loadTilemapBin, loadIndexedPngStrict } from '../harness/gba/png-loader';
 import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
 
@@ -3289,6 +3291,108 @@ export function DoEasyChatScreen(
   sPendingWords = words;
   sPendingExitCallback = exitCallback;
   SetMainCallback2(CB2_EasyChatScreen);
+}
+
+// EASY_CHAT_TYPE_* restants (les autres sont dans le bloc de déclarations en tête).
+const EASY_CHAT_TYPE_BATTLE_START = 1;
+const EASY_CHAT_TYPE_BATTLE_WON = 2;
+const EASY_CHAT_TYPE_BATTLE_LOST = 3;
+const EASY_CHAT_TYPE_INTERVIEW = 5;
+const EASY_CHAT_TYPE_FAN_CLUB = 7;
+const EASY_CHAT_TYPE_DUMMY_SHOW = 8;
+const EASY_CHAT_TYPE_GABBY_AND_TY = 10;
+const EASY_CHAT_TYPE_BATTLE_TOWER_INTERVIEW = 12;
+const EASY_CHAT_TYPE_FAN_QUESTION = 14;
+const EASY_CHAT_PERSON_REPORTER_MALE_L = 0;
+const EASY_CHAT_PERSON_REPORTER_FEMALE_L = 1;
+const EASY_CHAT_PERSON_BOY_L = 2;
+const NUM_BARD_SONG_WORDS = 6;
+
+/** 1:1 décomp `void CleanupOverworldWindowsAndTilemaps(void)` — nettoie l'OW avant l'écran
+ *  plein. Notre init easy-chat (ResetSpriteData/FreeAllSpritePalettes/ResetBgs) fait le reset. */
+function CleanupOverworldWindowsAndTilemaps(): void { /* no-op : reset fait par InitEasyChatScreen */ }
+
+/** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)`. */
+function InitializeEasyChatWordArray(words: Uint16Array, length: number): void {
+  for (let i = length - 1; i !== 0xFFFF && i < 0x10000; i--) { words[i] = EC_EMPTY_WORD; if (i === 0) break; }
+}
+
+/** GetQuestionnaireWordsPtr (mystery gift questionnaire) — buffer local (hors scope test). */
+function GetQuestionnaireWordsPtr(): Uint16Array { return new Uint16Array(4).fill(EC_EMPTY_WORD); }
+
+/** 1:1 décomp `void ShowEasyChatScreen(void)` (easy_chat.c:1456). Special de champ :
+ *  lit gSpecialVar_0x8004 (type) → sélectionne le buffer de mots → DoEasyChatScreen. */
+export function ShowEasyChatScreen(): void {
+  let words: Uint16Array;
+  let displayedPersonType = EASY_CHAT_PERSON_DISPLAY_NONE;
+  const sb1 = gSaveBlock1Ptr as Record<string, any>;
+  const sb2 = gSaveBlock2Ptr as Record<string, any>;
+  const v8004 = VarGet('VAR_0x8004');
+  const v8005 = VarGet('VAR_0x8005');
+  const v8006 = VarGet('VAR_0x8006');
+  // gStringVar3 réinterprété u16 (= décomp `words = (u16 *)gStringVar3`).
+  const sv3 = new Uint16Array(gStringVar3.buffer, gStringVar3.byteOffset, 4);
+  switch (v8004) {
+    case EASY_CHAT_TYPE_PROFILE: words = sb1.easyChatProfile; break;
+    case EASY_CHAT_TYPE_BATTLE_START: words = sb1.easyChatBattleStart; break;
+    case EASY_CHAT_TYPE_BATTLE_WON: words = sb1.easyChatBattleWon; break;
+    case EASY_CHAT_TYPE_BATTLE_LOST: words = sb1.easyChatBattleLost; break;
+    case EASY_CHAT_TYPE_MAIL: words = sb1.mail[v8005].words; break;
+    case EASY_CHAT_TYPE_BARD_SONG: {
+      const bard = sb1.oldMan.bard;
+      for (let i = 0; i < NUM_BARD_SONG_WORDS; i++) bard.newSongLyrics[i] = bard.songLyrics[i];
+      words = bard.newSongLyrics;
+      break;
+    }
+    case EASY_CHAT_TYPE_INTERVIEW:
+      words = sb1.tvShows[v8005].bravoTrainer.words;
+      displayedPersonType = v8006;
+      break;
+    case EASY_CHAT_TYPE_FAN_CLUB:
+      words = sb1.tvShows[v8005].fanclubOpinions.words.subarray(v8006);
+      displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE_L;
+      break;
+    case EASY_CHAT_TYPE_DUMMY_SHOW:
+      words = sb1.tvShows[v8005].dummy.words;
+      displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE_L;
+      break;
+    case EASY_CHAT_TYPE_TRENDY_PHRASE:
+      words = sv3;
+      words[0] = sb1.dewfordTrends[0].words[0];
+      words[1] = sb1.dewfordTrends[0].words[1];
+      break;
+    case EASY_CHAT_TYPE_GABBY_AND_TY:
+      words = sb1.gabbyAndTyData.quote;
+      words[0] = EC_EMPTY_WORD;
+      displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE_L;
+      break;
+    case EASY_CHAT_TYPE_CONTEST_INTERVIEW:
+      words = sb1.tvShows[v8005].bravoTrainer.words.subarray(v8006);
+      displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE_L;
+      break;
+    case EASY_CHAT_TYPE_BATTLE_TOWER_INTERVIEW:
+      words = sb1.tvShows[v8005].bravoTrainerTower.words;
+      displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE_L;
+      break;
+    case EASY_CHAT_TYPE_GOOD_SAYING:
+      words = sv3;
+      InitializeEasyChatWordArray(words, 2);
+      break;
+    case EASY_CHAT_TYPE_FAN_QUESTION:
+      words = sb1.tvShows[v8005].fanClubSpecial.words;
+      words[0] = EC_EMPTY_WORD;
+      displayedPersonType = EASY_CHAT_PERSON_BOY_L;
+      break;
+    case EASY_CHAT_TYPE_QUIZ_ANSWER: words = sb1.lilycoveLady.quiz.playerAnswer; break;
+    case EASY_CHAT_TYPE_QUIZ_QUESTION: return;
+    case EASY_CHAT_TYPE_QUIZ_SET_QUESTION: words = sb1.lilycoveLady.quiz.question; break;
+    case EASY_CHAT_TYPE_QUIZ_SET_ANSWER: words = sb1.lilycoveLady.quiz.correctAnswer; break;
+    case EASY_CHAT_TYPE_APPRENTICE: words = sb2.apprentices[0].speechWon; break;
+    case EASY_CHAT_TYPE_QUESTIONNAIRE: words = GetQuestionnaireWordsPtr(); break;
+    default: return;
+  }
+  CleanupOverworldWindowsAndTilemaps();
+  DoEasyChatScreen(v8004, words, CB2_ReturnToFieldContinueScript_Manual, displayedPersonType);
 }
 
 function CB2_EasyChatScreen(): void {
