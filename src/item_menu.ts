@@ -33,7 +33,7 @@ import { MALE } from '../harness/runtime/decomp-globals';
 import { ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2, ITEMMENU_SWAP_LINE_LENGTH } from '../include/item_menu';
 import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT } from '../include/constants/item';
 import { BG_SCREEN_SIZE } from '../include/gba/defines';
-import { ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01, ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../include/constants/items';
+import { ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01, ITEM_CHERI_BERRY, ITEM_MACH_BIKE, ITEM_ACRO_BIKE, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../include/constants/items';
 import { SE_SELECT } from '../include/constants/songs';
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../harness/runtime/decomp-globals';
 import { SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from './task';
@@ -2331,7 +2331,24 @@ export function OpenContextMenu(_task: DecompTask): void {
       // dispatch par pocket. Notre TS : link non modélisé → branche normale.
       switch (gBagPosition.pocket) {
         case ITEMS_POCKET:    items = sContextMenuItems_ItemsPocket; break;
-        case KEYITEMS_POCKET: items = sContextMenuItems_KeyItemsPocket; break;
+        case KEYITEMS_POCKET: {
+          // 1:1 décomp item_menu.c:1626-1636 : memcpy dans un buffer MUTABLE puis 2 swaps
+          // (on NE mute PAS la const partagée → .slice()).
+          const buf = sContextMenuItems_KeyItemsPocket.slice();
+          // (1) :1630-1631 — objet DÉJÀ enregistré → ENREG.(REGISTER) devient ANNUL.(DESELECT).
+          if (gSaveBlock1Ptr.registeredItem === gSpecialVar.ItemId)
+            buf[1] = ACTION_DESELECT;
+          // (2) :1632-1636 — vélo MACH/ACRO ET déjà à vélo → UTILIS.(USE) devient MARCHER(WALK)
+          // (= redescendre du vélo). TestPlayerAvatarFlags via le module field_player_avatar
+          // (lazy ; null pendant le boot → skip, comportement par défaut UTILIS.).
+          if ((gSpecialVar.ItemId === ITEM_MACH_BIKE || gSpecialVar.ItemId === ITEM_ACRO_BIKE)
+            && _playerAvatarMod
+            && _playerAvatarMod.TestPlayerAvatarFlags(
+              _playerAvatarMod.PLAYER_AVATAR_FLAG_MACH_BIKE | _playerAvatarMod.PLAYER_AVATAR_FLAG_ACRO_BIKE))
+            buf[0] = ACTION_WALK;
+          items = buf;
+          break;
+        }
         case BALLS_POCKET:    items = sContextMenuItems_BallsPocket; break;
         case TMHM_POCKET:     items = sContextMenuItems_TmHmPocket; break;
         case BERRIES_POCKET:  items = sContextMenuItems_BerriesPocket; break;
