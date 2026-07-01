@@ -323,7 +323,7 @@ export function easyChatGfxReady(): Promise<void> {
 async function _loadEasyChatGfxAssets(): Promise<void> {
   if (_easyChatGfxLoaded) return;
   const base = '/decomp/em/easy_chat';
-  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng, triCursor] = await Promise.all([
+  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng, triCursor, rectCursor] = await Promise.all([
     loadGbaPal(`${base}/text.pal`),
     loadGbaPal(`${base}/title_text.pal`),
     loadGbaPal(`${base}/text_input_frame_orange.pal`),
@@ -333,6 +333,7 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
     loadTilemapBin(`${base}/window.bin`),
     loadIndexedPngStrict(`${base}/text_input_frame.png`, 4),
     loadIndexedPngStrict(`${base}/triangle_cursor.png`, 4),
+    loadIndexedPngStrict(`${base}/rectangle_cursor.png`, 4),
   ]);
   _setSText_Pal(textPal);
   _setSTitleText_Pal(titlePal);
@@ -342,10 +343,16 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
   _setGEasyChatWindow_Gfx(winPng.charData);
   _setGEasyChatWindow_Tilemap(winMap);
   _setSTextInputFrame_Gfx(framePng.charData);
-  // Sprite curseur triangle (principal + word-select). tag 0 = GFXTAG/PALTAG_TRIANGLE_CURSOR
-  // (le template décomp inverse tileTag/paletteTag mais les 2 valent 0 → inoffensif).
-  _setSSpriteSheets([{ data: triCursor.charData, size: triCursor.charData.length, tag: 0 }]);
-  _setSSpritePalettes([{ data: triCursor.palette, tag: 0 }]);
+  // Sprites curseurs : triangle (tag 0, principal+word-select) + rectangle (tag 1, clavier).
+  // tag 0 = GFXTAG/PALTAG_TRIANGLE_CURSOR (swap inoffensif car 0==0) ; tag 1 = *_RECTANGLE_CURSOR.
+  _setSSpriteSheets([
+    { data: triCursor.charData, size: triCursor.charData.length, tag: 0 },
+    { data: rectCursor.charData, size: rectCursor.charData.length, tag: 1 },
+  ]);
+  _setSSpritePalettes([
+    { data: triCursor.palette, tag: 0 },
+    { data: rectCursor.palette, tag: 1 },
+  ]);
   _easyChatGfxLoaded = true;
 }
 

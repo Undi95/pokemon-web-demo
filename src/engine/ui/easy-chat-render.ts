@@ -130,7 +130,7 @@ import {CpuFastFill, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
 import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
 import { CreateSprite } from '../../sprite';
-import { LoadSpriteSheets, StartSpriteAnim } from '../../sprite';
+import { LoadSpriteSheets, StartSpriteAnim, ANIMCMD_FRAME, ANIMCMD_END } from '../../sprite';
 import { SetGpuReg } from '../../gpu_regs';
 
 import {
@@ -955,12 +955,100 @@ function StopMainCursorAnim(): void {
   s.data[0] = 0; s.data[1] = 0; s.x2 = 0;
 }
 
-// Curseur rectangle (clavier) — DIFFÉRÉ (sheet rectangle_cursor + anims). STUB.
+// ─── Curseur rectangle (clavier) — 1:1 easy_chat.c:4680-4785 ─────────────────
+const sOamData_RectangleCursor = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 1 /* 64x32 H_RECTANGLE */, x: 0, matrixNum: 0, size: 3 /* 64x32 */,
+  tileNum: 0, priority: 1, paletteNum: 0, affineParam: 0,
+};
+const sAnims_RectangleCursor = [
+  [ANIMCMD_FRAME(0, 0), ANIMCMD_END],   // ON_GROUP
+  [ANIMCMD_FRAME(32, 0), ANIMCMD_END],  // ON_BUTTON
+  [ANIMCMD_FRAME(64, 0), ANIMCMD_END],  // ON_OTHERS
+  [ANIMCMD_FRAME(96, 0), ANIMCMD_END],  // ON_LETTER
+];
+const sSpriteTemplate_RectangleCursor = {
+  tileTag: 1, paletteTag: 1, oam: sOamData_RectangleCursor,
+  anims: sAnims_RectangleCursor, images: null, affineAnims: [], callback: SpriteCB_Cursor,
+};
+let _rectCursorRightId = -1;
+let _rectCursorLeftId = -1;
+
+/** 1:1 CreateRectangleCursorSprites (easy_chat.c:4680) — 2 moitiés (droite hFlip). */
 function CreateRectangleCursorSprites(): void {
-  console.warn('[easy-chat-render STUB] CreateRectangleCursorSprites (rectangle cursor différé)');
+  if (!sScreenControl) return;
+  const rt = getRuntime();
+  let spriteId = CreateSprite(sSpriteTemplate_RectangleCursor, 0, 0, 3);
+  _rectCursorRightId = spriteId;
+  const right = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.rectangleCursorSpriteRight = right;
+  if (right) right.x2 = 32;
+
+  spriteId = CreateSprite(sSpriteTemplate_RectangleCursor, 0, 0, 3);
+  _rectCursorLeftId = spriteId;
+  const left = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.rectangleCursorSpriteLeft = left;
+  if (left) left.x2 = -32;
+
+  if (right) right.hFlip = true;
+  UpdateRectangleCursorPos();
 }
-function DestroyRectangleCursorSprites(): void { /* STUB rectangle différé */ }
-function UpdateRectangleCursorPos(): void { /* STUB rectangle différé */ }
+
+/** 1:1 DestroyRectangleCursorSprites (easy_chat.c:4694). */
+function DestroyRectangleCursorSprites(): void {
+  if (_rectCursorRightId >= 0) { DestroySprite(_rectCursorRightId); _rectCursorRightId = -1; }
+  if (_rectCursorLeftId >= 0) { DestroySprite(_rectCursorLeftId); _rectCursorLeftId = -1; }
+  if (sScreenControl) {
+    sScreenControl.rectangleCursorSpriteRight = null;
+    sScreenControl.rectangleCursorSpriteLeft = null;
+  }
+}
+
+/** 1:1 UpdateRectangleCursorPos (easy_chat.c:4702). */
+function UpdateRectangleCursorPos(): void {
+  if (sScreenControl?.rectangleCursorSpriteRight && sScreenControl?.rectangleCursorSpriteLeft) {
+    const { column, row } = _GetKeyboardCursorColAndRow();
+    if (!_GetInAlphabetMode()) SetRectangleCursorPos_GroupMode(column, row);
+    else SetRectangleCursorPos_AlphabetMode(column, row);
+  }
+}
+
+/** 1:1 SetRectangleCursorPos_GroupMode (easy_chat.c:4718). */
+function SetRectangleCursorPos_GroupMode(column: number, row: number): void {
+  const right = sScreenControl?.rectangleCursorSpriteRight;
+  const left = sScreenControl?.rectangleCursorSpriteLeft;
+  if (!right || !left) return;
+  if (column !== -1) {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_GROUP); right.x = column * 84 + 58; right.y = row * 16 + 96;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_GROUP); left.x = column * 84 + 58; left.y = row * 16 + 96;
+  } else {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_BUTTON); right.x = 216; right.y = row * 16 + 112;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_BUTTON); left.x = 216; left.y = row * 16 + 112;
+  }
+}
+
+/** 1:1 SetRectangleCursorPos_AlphabetMode (easy_chat.c:4744). */
+function SetRectangleCursorPos_AlphabetMode(column: number, row: number): void {
+  const right = sScreenControl?.rectangleCursorSpriteRight;
+  const left = sScreenControl?.rectangleCursorSpriteLeft;
+  if (!right || !left) return;
+  if (column !== -1) {
+    const y = row * 16 + 96;
+    let x = 32;
+    let anim: number;
+    if (column === NUM_ALPHABET_COLUMNS - 1 && row === 0) {
+      x = 158; anim = RECTCURSOR_ANIM_ON_OTHERS;
+    } else {
+      x += _sAlphabetKeyboardColumnOffsets[(column & 0xFF) < NUM_ALPHABET_COLUMNS ? column : 0];
+      anim = RECTCURSOR_ANIM_ON_LETTER;
+    }
+    StartSpriteAnim(right as never, anim); right.x = x; right.y = y;
+    StartSpriteAnim(left as never, anim); left.x = x; left.y = y;
+  } else {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_BUTTON); right.x = 216; right.y = row * 16 + 112;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_BUTTON); left.x = 216; left.y = row * 16 + 112;
+  }
+}
 
 /** 1:1 CreateWordSelectCursorSprite (easy_chat.c:4789) — même sprite que le principal. */
 function CreateWordSelectCursorSprite(): void {
