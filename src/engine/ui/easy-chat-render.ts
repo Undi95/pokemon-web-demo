@@ -130,6 +130,7 @@ import {CpuFastFill, WIN_RANGE} from "../../../harness/runtime/decomp-bridge";
 import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../../../harness/runtime/decomp-globals';
 import { DestroySprite } from '../../sprite';
 import { CreateSprite } from '../../sprite';
+import { LoadSpriteSheets, StartSpriteAnim } from '../../sprite';
 import { SetGpuReg } from '../../gpu_regs';
 
 import {
@@ -896,35 +897,120 @@ function CopyToBgTilemapBufferRect(_bg: number, _src: Uint16Array | unknown, _de
 }
 
 // Section 4 sprite helpers (lignes 4624+) â€” STUB pour les call-sites lignes 3000-4500.
+// ─── Curseur triangle (principal + word-select) — 1:1 easy_chat.c:4634-4828 ──
+// data[0]=sDelayTimer, data[1]=sAnimateCursor (EXPR macros décomp). Le bob = x2 −6..0.
+const sOamData_TriangleCursor = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0 /* 8x8 square */, x: 0, matrixNum: 0, size: 0 /* 8x8 */,
+  tileNum: 0, priority: 3, paletteNum: 0, affineParam: 0,
+};
+// 1:1 sSpriteTemplate_TriangleCursor (tileTag/paletteTag inversés dans le décomp
+// mais GFXTAG==PALTAG_TRIANGLE_CURSOR==0 → inoffensif).
+const sSpriteTemplate_TriangleCursor = {
+  tileTag: 0, paletteTag: 0, oam: sOamData_TriangleCursor,
+  anims: [], images: null, affineAnims: [], callback: SpriteCB_Cursor,
+};
+let _wordSelectCursorSpriteId = -1;
+
+/** 1:1 CreateMainCursorSprite (easy_chat.c:4637). */
 function CreateMainCursorSprite(): void {
-  console.warn('[easy-chat-render STUB] CreateMainCursorSprite â€” section 4 (ligne 4624+)');
+  if (!sScreenControl) return;
+  const frameId = _GetEasyChatScreenFrameId();
+  const x = _sPhraseFrameDimensions[frameId].left * 8 + 13;
+  const y = _sPhraseFrameDimensions[frameId].top * 8 + 8;
+  const spriteId = CreateSprite(sSpriteTemplate_TriangleCursor, x, y, 2);
+  const rt = getRuntime();
+  sScreenControl.mainCursorSprite = rt.gSprites[spriteId] as unknown as DecompSprite;
+  if (sScreenControl.mainCursorSprite) sScreenControl.mainCursorSprite.data[1] = 1; // sAnimateCursor = TRUE
 }
-function SetMainCursorPos(_x: number, _y: number): void {
-  console.warn('[easy-chat-render STUB] SetMainCursorPos â€” section 4');
+
+/** 1:1 SpriteCB_Cursor (easy_chat.c:4647) — bob horizontal x2 −6..0. */
+function SpriteCB_Cursor(sprite: DecompSprite): void {
+  if (sprite.data[1]) {
+    sprite.data[0] += 1;
+    if (sprite.data[0] > 2) {
+      sprite.data[0] = 0;
+      sprite.x2 += 1;
+      if (sprite.x2 > 0) sprite.x2 = -6;
+    }
+  }
 }
+
+/** 1:1 SetMainCursorPos (easy_chat.c:4660). */
+function SetMainCursorPos(x: number, y: number): void {
+  const s = sScreenControl?.mainCursorSprite;
+  if (!s) return;
+  s.x = x; s.y = y; s.x2 = 0; s.data[0] = 0;
+}
+
+/** 1:1 StartMainCursorAnim (easy_chat.c:4675). */
 function StartMainCursorAnim(): void {
-  console.warn('[easy-chat-render STUB] StartMainCursorAnim â€” section 4');
+  if (sScreenControl?.mainCursorSprite) sScreenControl.mainCursorSprite.data[1] = 1;
 }
+
+/** 1:1 StopMainCursorAnim (easy_chat.c:4668). */
 function StopMainCursorAnim(): void {
-  console.warn('[easy-chat-render STUB] StopMainCursorAnim â€” section 4');
+  const s = sScreenControl?.mainCursorSprite;
+  if (!s) return;
+  s.data[0] = 0; s.data[1] = 0; s.x2 = 0;
 }
+
+// Curseur rectangle (clavier) — DIFFÉRÉ (sheet rectangle_cursor + anims). STUB.
 function CreateRectangleCursorSprites(): void {
-  console.warn('[easy-chat-render STUB] CreateRectangleCursorSprites â€” section 4');
+  console.warn('[easy-chat-render STUB] CreateRectangleCursorSprites (rectangle cursor différé)');
 }
-function DestroyRectangleCursorSprites(): void {
-  console.warn('[easy-chat-render STUB] DestroyRectangleCursorSprites â€” section 4');
-}
-function UpdateRectangleCursorPos(): void {
-  console.warn('[easy-chat-render STUB] UpdateRectangleCursorPos â€” section 4');
-}
+function DestroyRectangleCursorSprites(): void { /* STUB rectangle différé */ }
+function UpdateRectangleCursorPos(): void { /* STUB rectangle différé */ }
+
+/** 1:1 CreateWordSelectCursorSprite (easy_chat.c:4789) — même sprite que le principal. */
 function CreateWordSelectCursorSprite(): void {
-  console.warn('[easy-chat-render STUB] CreateWordSelectCursorSprite â€” section 4');
+  if (!sScreenControl) return;
+  const spriteId = CreateSprite(sSpriteTemplate_TriangleCursor, 0, 0, 4);
+  const rt = getRuntime();
+  _wordSelectCursorSpriteId = spriteId;
+  const ws = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.wordSelectCursorSprite = ws;
+  if (ws) {
+    ws.callback = SpriteCB_WordSelectCursor as never;
+    // 1:1 `sprite->oam.priority = 2` (OBJ devant le word-select bg2) → gba.oam[oamIndex].
+    const oamEntry = (rt.gba as unknown as { oam?: Array<{ priority: number }> }).oam?.[ws.oamIndex];
+    if (oamEntry) oamEntry.priority = 2;
+  }
+  UpdateWordSelectCursorPos();
 }
-function DestroyWordSelectCursorSprite(): void {
-  console.warn('[easy-chat-render STUB] DestroyWordSelectCursorSprite â€” section 4');
+
+/** 1:1 SpriteCB_WordSelectCursor (easy_chat.c:4798) — bob (sans le gate sAnimateCursor). */
+function SpriteCB_WordSelectCursor(sprite: DecompSprite): void {
+  sprite.data[0] += 1;
+  if (sprite.data[0] > 2) {
+    sprite.data[0] = 0;
+    sprite.x2 += 1;
+    if (sprite.x2 > 0) sprite.x2 = -6;
+  }
 }
+
+/** 1:1 UpdateWordSelectCursorPos (easy_chat.c:4808). */
 function UpdateWordSelectCursorPos(): void {
-  console.warn('[easy-chat-render STUB] UpdateWordSelectCursorPos â€” section 4');
+  const { column, row } = _GetWordSelectColAndRow();
+  let x = column * 13;
+  x = x * 8 + 28;
+  const y = row * 16 + 96;
+  SetWordSelectCursorPos(x, y);
+}
+
+/** 1:1 SetWordSelectCursorPos (easy_chat.c:4819). */
+function SetWordSelectCursorPos(x: number, y: number): void {
+  const s = sScreenControl?.wordSelectCursorSprite;
+  if (s) { s.x = x; s.y = y; s.x2 = 0; s.data[0] = 0; }
+}
+
+/** 1:1 DestroyWordSelectCursorSprite (easy_chat.c:4830). */
+function DestroyWordSelectCursorSprite(): void {
+  if (sScreenControl?.wordSelectCursorSprite && _wordSelectCursorSpriteId >= 0) {
+    DestroySprite(_wordSelectCursorSpriteId);
+    _wordSelectCursorSpriteId = -1;
+    sScreenControl.wordSelectCursorSprite = null;
+  }
 }
 function CreateSideWindowSprites(): void {
   console.warn('[easy-chat-render STUB] CreateSideWindowSprites â€” section 4');
@@ -977,8 +1063,11 @@ function TryAddInterviewObjectEvents(): void {
 function AddMainScreenButtonWindow(): void {
   console.warn('[easy-chat-render STUB] AddMainScreenButtonWindow â€” section 4');
 }
+/** 1:1 LoadEasyChatGfx (easy_chat.c:4624) : charge sheets + palettes sprites.
+ *  (sCompressedSpriteSheets = rectangle/mode/interview différés.) */
 function LoadEasyChatGfx(): void {
-  console.warn('[easy-chat-render STUB] LoadEasyChatGfx â€” section 4');
+  LoadSpriteSheets(_sSpriteSheets as never);
+  LoadSpritePalettes(_sSpritePalettes as never);
 }
 function GetFooterOptionXOffset(_optionIdx: number): number {
   console.warn('[easy-chat-render STUB] GetFooterOptionXOffset â€” section 4');

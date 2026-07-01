@@ -191,6 +191,7 @@ import {
   _setSFooterTextOptions, _setSText_Clear17,
   _setSText_Pal, _setSTitleText_Pal, _setSTextInputFrameOrange_Pal, _setSTextInputFrameGreen_Pal,
   _setGEasyChatMode_Pal, _setGEasyChatWindow_Gfx, _setGEasyChatWindow_Tilemap, _setSTextInputFrame_Gfx,
+  _setSSpriteSheets, _setSSpritePalettes,
 } from './engine/ui/easy-chat-render';
 import {
   gEasyChatGroups, gEasyChatWordsByLetterPointers, sRestrictedWordSpecies,
@@ -322,7 +323,7 @@ export function easyChatGfxReady(): Promise<void> {
 async function _loadEasyChatGfxAssets(): Promise<void> {
   if (_easyChatGfxLoaded) return;
   const base = '/decomp/em/easy_chat';
-  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng] = await Promise.all([
+  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng, triCursor] = await Promise.all([
     loadGbaPal(`${base}/text.pal`),
     loadGbaPal(`${base}/title_text.pal`),
     loadGbaPal(`${base}/text_input_frame_orange.pal`),
@@ -331,6 +332,7 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
     loadIndexedPngStrict(`${base}/window.png`, 4),
     loadTilemapBin(`${base}/window.bin`),
     loadIndexedPngStrict(`${base}/text_input_frame.png`, 4),
+    loadIndexedPngStrict(`${base}/triangle_cursor.png`, 4),
   ]);
   _setSText_Pal(textPal);
   _setSTitleText_Pal(titlePal);
@@ -340,6 +342,10 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
   _setGEasyChatWindow_Gfx(winPng.charData);
   _setGEasyChatWindow_Tilemap(winMap);
   _setSTextInputFrame_Gfx(framePng.charData);
+  // Sprite curseur triangle (principal + word-select). tag 0 = GFXTAG/PALTAG_TRIANGLE_CURSOR
+  // (le template décomp inverse tileTag/paletteTag mais les 2 valent 0 → inoffensif).
+  _setSSpriteSheets([{ data: triCursor.charData, size: triCursor.charData.length, tag: 0 }]);
+  _setSSpritePalettes([{ data: triCursor.palette, tag: 0 }]);
   _easyChatGfxLoaded = true;
 }
 
