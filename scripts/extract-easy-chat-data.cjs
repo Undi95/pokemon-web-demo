@@ -308,13 +308,126 @@ const PROMPT_SYMS = [
 const easyChatPromptTexts = {};
 for (const s of PROMPT_SYMS) easyChatPromptTexts[s] = gText[s] ?? null;
 
+// ─── 4c. Tables de LAYOUT (bg/window templates, frame dims, footer) ──────────
+// Enums FOOTER_* / WIN_* (easy_chat.c anonymes).
+function parseAnonEnum(firstMember) {
+  const m = ecSrc.match(new RegExp(`enum\\s*\\{([^}]*${firstMember}[^}]*)\\}`));
+  const map = {};
+  if (m) {
+    m[1].split(',').map((s) => s.trim().replace(/\/\/.*$/, '').trim()).filter(Boolean)
+      .forEach((name, i) => { map[name] = i; });
+  }
+  return map;
+}
+const FOOTER = parseAnonEnum('FOOTER_NORMAL');
+const WIN = parseAnonEnum('WIN_TITLE');
+const num = (v) => Number(v.trim()); // gère "0x80", "28", etc.
+
+// Parse un bloc `{ .field = val, ... }` → objet {field: rawStr}.
+function parseFields(block) {
+  const o = {};
+  for (const m of block.matchAll(/\.(\w+)\s*=\s*([^,\n}]+)/g)) o[m[1]] = m[2].trim();
+  return o;
+}
+// Extrait le corps `{...}` d'une table nommée.
+function tableBody(name, isSingle = false) {
+  const re = new RegExp(`${name}\\s*(?:\\[[^\\]]*\\])*\\s*=\\s*\\{([\\s\\S]*?)\\n\\};`);
+  const m = ecSrc.match(re);
+  return m ? m[1] : null;
+}
+// Découpe un corps de tableau de structs en blocs `[DESIG] = { ... }` ou `{ ... }`.
+function splitStructBlocks(body) {
+  const blocks = [];
+  const re = /(?:\[\s*(\w+)\s*\]\s*=\s*)?\{([^{}]*)\}/g;
+  let m;
+  while ((m = re.exec(body))) blocks.push({ desig: m[1] || null, body: m[2] });
+  return blocks;
+}
+
+// sEasyChatBgTemplates (séquentiel).
+const bgBody = tableBody('sEasyChatBgTemplates');
+const sEasyChatBgTemplates = splitStructBlocks(bgBody).map((b) => {
+  const f = parseFields(b.body);
+  return {
+    bg: num(f.bg), charBaseIndex: num(f.charBaseIndex), mapBaseIndex: num(f.mapBaseIndex),
+    screenSize: num(f.screenSize), paletteMode: num(f.paletteMode), priority: num(f.priority),
+    baseTile: num(f.baseTile),
+  };
+});
+
+// sEasyChatWindowTemplates (désignés WIN_* + DUMMY_WIN_TEMPLATE).
+const winBody = tableBody('sEasyChatWindowTemplates');
+const winArr = [];
+for (const b of splitStructBlocks(winBody)) {
+  const f = parseFields(b.body);
+  const t = {
+    bg: num(f.bg), tilemapLeft: num(f.tilemapLeft), tilemapTop: num(f.tilemapTop),
+    width: num(f.width), height: num(f.height), paletteNum: num(f.paletteNum), baseBlock: num(f.baseBlock),
+  };
+  const idx = b.desig ? WIN[b.desig] : winArr.length;
+  winArr[idx] = t;
+}
+// DUMMY_WIN_TEMPLATE (terminateur bg=0xFF) — le split ne l'attrape pas (macro), on l'ajoute.
+if (/DUMMY_WIN_TEMPLATE/.test(winBody)) {
+  winArr.push({ bg: 0xFF, tilemapLeft: 0, tilemapTop: 0, width: 0, height: 0, paletteNum: 0, baseBlock: 0 });
+}
+const sEasyChatWindowTemplates = winArr;
+
+// sEasyChatYesNoWindowTemplate (single).
+const ynBody = tableBody('sEasyChatYesNoWindowTemplate', true);
+const ynF = parseFields(ynBody);
+const sEasyChatYesNoWindowTemplate = {
+  bg: num(ynF.bg), tilemapLeft: num(ynF.tilemapLeft), tilemapTop: num(ynF.tilemapTop),
+  width: num(ynF.width), height: num(ynF.height), paletteNum: num(ynF.paletteNum), baseBlock: num(ynF.baseBlock),
+};
+
+// sPhraseFrameDimensions (désignés FRAMEID_*).
+const pfBody = tableBody('sPhraseFrameDimensions');
+const pfArr = [];
+for (const b of splitStructBlocks(pfBody)) {
+  const f = parseFields(b.body);
+  const footerId = FOOTER[f.footerId] !== undefined ? FOOTER[f.footerId]
+    : (f.footerId === 'NUM_FOOTER_TYPES' ? Object.keys(FOOTER).filter((k) => k.startsWith('FOOTER_')).length : Number(f.footerId));
+  const idx = FRAMEID[b.desig];
+  pfArr[idx] = { left: num(f.left), top: num(f.top), width: num(f.width), height: num(f.height), footerId };
+}
+const sPhraseFrameDimensions = pfArr;
+
+// sAlphabetKeyboardColumnOffsets (flat).
+const akm = ecSrc.match(/sAlphabetKeyboardColumnOffsets\s*\[[^\]]*\]\s*=\s*\{([^}]*)\}/);
+const sAlphabetKeyboardColumnOffsets = akm ? akm[1].split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n)) : [];
+
+// sFooterOptionXOffsets (désignés FOOTER_*, 4 nums).
+const foBody = tableBody('sFooterOptionXOffsets');
+const foArr = [];
+for (const m of foBody.matchAll(/\[\s*(FOOTER_\w+)\s*\]\s*=\s*\{([^}]*)\}/g)) {
+  foArr[FOOTER[m[1]]] = m[2].split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+}
+const sFooterOptionXOffsets = foArr;
+
+// sFooterTextOptions (désignés FOOTER_*, 4 gText/NULL → FR).
+const ftBody = tableBody('sFooterTextOptions');
+const ftArr = [];
+for (const m of ftBody.matchAll(/\[\s*(FOOTER_\w+)\s*\]\s*=\s*\{([^}]*)\}/g)) {
+  ftArr[FOOTER[m[1]]] = m[2].split(',').map((s) => {
+    const t = s.trim();
+    if (t === 'NULL' || t === '') return null;
+    return gText[t] ?? null;
+  }).filter((_, i, a) => i < 4);
+}
+const sFooterTextOptions = ftArr;
+
+// sText_Clear17 = {CLEAR 17} = EXT_CTRL_CODE_BEGIN(0xFC), EXT_CTRL_CODE_CLEAR(0x11), 17, EOS(0xFF).
+const sText_Clear17 = [0xFC, 0x11, 17, 0xFF];
+
 // ─── 5. Émettre le module TS ─────────────────────────────────────────────────
 const groupVals = Object.keys(gEasyChatGroups).map(Number).sort((a, b) => a - b);
 let ts = `// AUTO-GÉNÉRÉ par scripts/extract-easy-chat-data.cjs — NE PAS ÉDITER À LA MAIN.\n`;
 ts += `// Données complètes easy_chat pour l'écran de saisie (mail write), 1:1 décomp.\n`;
 ts += `// Source : src/data/easy_chat/easy_chat_groups.h + easy_chat_words_by_letter.h + easy_chat.c.\n`;
 ts += `// Types = ceux du renderer (import type) → injectables directement via _setG*.\n\n`;
-ts += `import type { EasyChatGroup, EasyChatWordsByLetter } from '../engine/ui/easy-chat-render';\n\n`;
+ts += `import type { EasyChatGroup, EasyChatWordsByLetter, EasyChatPhraseFrameDimensions } from '../engine/ui/easy-chat-render';\n`;
+ts += `import type { BgTemplate, WindowTemplate } from '../window';\n\n`;
 
 // gEasyChatGroups en tableau dense indexé par groupVal (0..21), shape 1:1 EasyChatGroup.
 const maxGroup = Math.max(...groupVals);
@@ -358,6 +471,18 @@ ts += `export const sEasyChatGroupNamePointers: string[] = [${sEasyChatGroupName
   .map((s) => JSON.stringify(s))
   .join(', ')}];\n`;
 
+// ── Tables de layout (rendu) ──
+const j = JSON.stringify;
+ts += `\n// ─── Layout (rendu écran de saisie) ───\n`;
+ts += `export const sEasyChatBgTemplates: BgTemplate[] = ${j(sEasyChatBgTemplates)};\n`;
+ts += `export const sEasyChatWindowTemplates: WindowTemplate[] = ${j(sEasyChatWindowTemplates)};\n`;
+ts += `export const sEasyChatYesNoWindowTemplate: WindowTemplate = ${j(sEasyChatYesNoWindowTemplate)};\n`;
+ts += `export const sPhraseFrameDimensions: EasyChatPhraseFrameDimensions[] = ${j(sPhraseFrameDimensions)};\n`;
+ts += `export const sAlphabetKeyboardColumnOffsets: number[] = ${j(sAlphabetKeyboardColumnOffsets)};\n`;
+ts += `export const sFooterOptionXOffsets: number[][] = ${j(sFooterOptionXOffsets)};\n`;
+ts += `export const sFooterTextOptions: Array<Array<string | null>> = ${j(sFooterTextOptions)};\n`;
+ts += `export const sText_Clear17: number[] = ${j(sText_Clear17)};\n`;
+
 ts += `\nexport interface EasyChatScreenTemplateData {\n`;
 ts += `  type: number; numColumns: number; numRows: number; frameId: number; fourFooterOptions: boolean;\n`;
 ts += `  titleText: string | null; instructionsText1: string | null; instructionsText2: string | null;\n`;
@@ -386,3 +511,7 @@ console.log(`  sDefaultBattleWonWords=${JSON.stringify(sDefaultBattleWonWords)}`
 console.log(`  sBerryMasterWifePhrases=${JSON.stringify(sBerryMasterWifePhrases)}`);
 console.log(`  sAlphabetGroupIdMap rows=${sAlphabetGroupIdMap.length}`);
 console.log(`  groupNames[0..2]=${JSON.stringify(sEasyChatGroupNamePointers.slice(0, 3))} len=${sEasyChatGroupNamePointers.length}`);
+console.log(`  bgTemplates=${sEasyChatBgTemplates.length} winTemplates=${sEasyChatWindowTemplates.length} (WIN_INPUT_SELECT bg=${sEasyChatWindowTemplates[2]?.bg})`);
+console.log(`  phraseFrameDims[MAIL=2]=${JSON.stringify(sPhraseFrameDimensions[2])}`);
+console.log(`  footerXOffsets[0]=${JSON.stringify(sFooterOptionXOffsets[0])} footerText[0]=${JSON.stringify(sFooterTextOptions[0])}`);
+console.log(`  colOffsets=${JSON.stringify(sAlphabetKeyboardColumnOffsets)}`);

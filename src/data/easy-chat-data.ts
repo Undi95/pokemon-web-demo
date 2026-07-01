@@ -3,7 +3,8 @@
 // Source : src/data/easy_chat/easy_chat_groups.h + easy_chat_words_by_letter.h + easy_chat.c.
 // Types = ceux du renderer (import type) → injectables directement via _setG*.
 
-import type { EasyChatGroup, EasyChatWordsByLetter } from '../engine/ui/easy-chat-render';
+import type { EasyChatGroup, EasyChatWordsByLetter, EasyChatPhraseFrameDimensions } from '../engine/ui/easy-chat-render';
+import type { BgTemplate, WindowTemplate } from '../window';
 
 /** 1:1 gEasyChatGroups[] (indexé par EC_GROUP_*). */
 export const gEasyChatGroups: EasyChatGroup[] = [
@@ -94,6 +95,16 @@ export const sAlphabetGroupIdMap: number[][] = [
   [20, 21, 22, 23, 24, 25, 26],
 ];
 export const sEasyChatGroupNamePointers: string[] = ["POKéMON", "DRESSEUR", "STATUT", "COMBAT", "POLITESSES", "PERSONNES", "REACTIONS", "DISCOURS", "LIAISON", "EMOTIONS", "ETAT", "ACTIONS", "VIE QUOTIDIEN.", "HOBBIES", "TEMPORALITE", "DIVERS", "QUALIFICATIFS", "EVENEMENTS", "CAPACITE 1", "CAPACITE 2", "MOTS COOL", "POKéMON2"];
+
+// ─── Layout (rendu écran de saisie) ───
+export const sEasyChatBgTemplates: BgTemplate[] = [{"bg":0,"charBaseIndex":0,"mapBaseIndex":28,"screenSize":0,"paletteMode":0,"priority":0,"baseTile":0},{"bg":1,"charBaseIndex":3,"mapBaseIndex":29,"screenSize":0,"paletteMode":0,"priority":1,"baseTile":0},{"bg":2,"charBaseIndex":0,"mapBaseIndex":30,"screenSize":0,"paletteMode":0,"priority":2,"baseTile":128},{"bg":3,"charBaseIndex":2,"mapBaseIndex":31,"screenSize":0,"paletteMode":0,"priority":3,"baseTile":0}];
+export const sEasyChatWindowTemplates: WindowTemplate[] = [{"bg":1,"tilemapLeft":0,"tilemapTop":0,"width":30,"height":2,"paletteNum":10,"baseBlock":16},{"bg":0,"tilemapLeft":3,"tilemapTop":15,"width":24,"height":4,"paletteNum":15,"baseBlock":10},{"bg":2,"tilemapLeft":1,"tilemapTop":0,"width":28,"height":32,"paletteNum":3,"baseBlock":0},{"bg":255,"tilemapLeft":0,"tilemapTop":0,"width":0,"height":0,"paletteNum":0,"baseBlock":0}];
+export const sEasyChatYesNoWindowTemplate: WindowTemplate = {"bg":0,"tilemapLeft":22,"tilemapTop":9,"width":5,"height":4,"paletteNum":15,"baseBlock":106};
+export const sPhraseFrameDimensions: EasyChatPhraseFrameDimensions[] = [{"left":3,"top":4,"width":24,"height":4,"footerId":0},{"left":3,"top":3,"width":24,"height":6,"footerId":0},{"left":3,"top":0,"width":24,"height":10,"footerId":0},{"left":3,"top":5,"width":24,"height":2,"footerId":0},{"left":16,"top":5,"width":12,"height":2,"footerId":0},{"left":3,"top":4,"width":24,"height":4,"footerId":0},{"left":9,"top":4,"width":12,"height":2,"footerId":1},{"left":5,"top":3,"width":20,"height":10,"footerId":3},{"left":3,"top":0,"width":24,"height":10,"footerId":2}];
+export const sAlphabetKeyboardColumnOffsets: number[] = [0,12,24,56,68,80,92];
+export const sFooterOptionXOffsets: number[][] = [[16,111,196,0],[16,82,148,184],[16,78,141,174]];
+export const sFooterTextOptions: Array<Array<string | null>> = [["TOUT EF.","ANNULER","OK",null],["TOUT EF.","ANNULER","OK","QUIZ"],["TOUT EF.","ANNULER","OK","REPONSE"]];
+export const sText_Clear17: number[] = [252,17,17,255];
 
 export interface EasyChatScreenTemplateData {
   type: number; numColumns: number; numRows: number; frameId: number; fourFooterOptions: boolean;

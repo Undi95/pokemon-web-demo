@@ -186,11 +186,17 @@ import {
   _setSRestrictedWordSpecies, _setSEasyChatGroupNamePointers,
   _setFlagGet, _setIsNationalPokedexEnabled, _setGetNationalPokedexCount,
   _setGetSetPokedexFlag, _setSpeciesToNationalPokedexNum, _setRandom, _setGSaveBlock1Ptr,
+  _setSEasyChatBgTemplates, _setSEasyChatWindowTemplates, _setSEasyChatYesNoWindowTemplate,
+  _setSPhraseFrameDimensions, _setSAlphabetKeyboardColumnOffsets, _setSFooterOptionXOffsets,
+  _setSFooterTextOptions, _setSText_Clear17,
 } from './engine/ui/easy-chat-render';
 import {
   gEasyChatGroups, gEasyChatWordsByLetterPointers, sRestrictedWordSpecies,
   sEasyChatGroupNamePointers, sEasyChatScreenTemplates, sMysteryGiftPhrase,
   sBerryMasterWifePhrases, sAlphabetGroupIdMap, easyChatPromptTexts,
+  sEasyChatBgTemplates, sEasyChatWindowTemplates, sEasyChatYesNoWindowTemplate,
+  sPhraseFrameDimensions, sAlphabetKeyboardColumnOffsets, sFooterOptionXOffsets,
+  sFooterTextOptions, sText_Clear17,
 } from './data/easy-chat-data';
 import { FlagGet, FlagSet, IsNationalPokedexEnabled } from './event_data';
 import {
@@ -342,6 +348,16 @@ function _installEasyChatBridges(): void {
   _setSpeciesToNationalPokedexNum(SpeciesToNationalPokedexNum);
   _setRandom(Random);
   _setGSaveBlock1Ptr(gSaveBlock1Ptr);
+
+  // Layout (rendu écran de saisie).
+  _setSEasyChatBgTemplates(sEasyChatBgTemplates);
+  _setSEasyChatWindowTemplates(sEasyChatWindowTemplates);
+  _setSEasyChatYesNoWindowTemplate(sEasyChatYesNoWindowTemplate);
+  _setSPhraseFrameDimensions(sPhraseFrameDimensions);
+  _setSAlphabetKeyboardColumnOffsets(sAlphabetKeyboardColumnOffsets);
+  _setSFooterOptionXOffsets(sFooterOptionXOffsets);
+  _setSFooterTextOptions(sFooterTextOptions);
+  _setSText_Clear17(new Uint8Array(sText_Clear17));
 }
 
 // ─── DoEasyChatScreen / CB2 / Task (easy_chat.c:1294) ────────────────────────
