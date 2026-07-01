@@ -438,11 +438,11 @@ const FEMALE = 1;
 // FLAG_GET_SEEN (1:1 decomp include/constants/pokedex.h).
 const FLAG_GET_SEEN = 0;
 
-// FLAG_ constants utilisÃ©es (1:1 decomp include/constants/flags.h).
-// Valeurs placeholder â€” rÃ©solues via _setFlagGet getter au runtime.
-// (Ã€ injecter ; ici sentinel 0 si non set, gÃ©rÃ© par STUB FlagGet().)
-const FLAG_SYS_GAME_CLEAR        = 0;
-const FLAG_UNLOCKED_TRENDY_SAYINGS = 0;
+// FLAG_ constants 1:1 decomp include/constants/flags.h. SYSTEM_FLAGS = 0x860 :
+// FLAG_SYS_GAME_CLEAR = SYSTEM_FLAGS + 0x4 ; FLAG_UNLOCKED_TRENDY_SAYINGS = +0x6.
+// Résolus via _FlagGet(id) au runtime.
+const FLAG_SYS_GAME_CLEAR        = 0x864;
+const FLAG_UNLOCKED_TRENDY_SAYINGS = 0x866;
 
 // â”€â”€â”€ Structs 1:1 decomp (cf. include/easy_chat.h) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -984,27 +984,257 @@ function GetFooterOptionXOffset(_optionIdx: number): number {
   console.warn('[easy-chat-render STUB] GetFooterOptionXOffset â€” section 4');
   return 0;
 }
-function CopyEasyChatWord(dest: Uint8Array, _ecWord: number): Uint8Array {
-  console.warn('[easy-chat-render STUB] CopyEasyChatWord â€” section 4');
-  if (dest.length > 0) dest[0] = EOS;
-  return dest.subarray(0);
+// ─── Word text lookup (1:1 decomp easy_chat.c:5136-5237, 5667-5684) ──────────
+
+/** 1:1 GetEasyChatWord (easy_chat.c:5202). */
+function GetEasyChatWord(groupId: number, index: number): Uint8Array | string {
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+    case EC_GROUP_POKEMON_NATIONAL:
+      return _gSpeciesNames[index] ?? '';
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2:
+      return _gMoveNames[index] ?? '';
+    default:
+      return _gEasyChatGroups[groupId]?.wordData.words?.[index]?.text ?? '';
+  }
 }
-function CopyEasyChatWordPadded(dest: Uint8Array, _ecWord: number, _padLength: number): Uint8Array {
-  console.warn('[easy-chat-render STUB] CopyEasyChatWordPadded â€” section 4');
-  if (dest.length > 0) dest[0] = EOS;
-  return dest.subarray(0);
+
+/** 1:1 IsEasyChatWordInvalid (easy_chat.c:5136). */
+function IsEasyChatWordInvalid(easyChatWord: number): boolean {
+  if (easyChatWord === EC_EMPTY_WORD) return false;
+  const groupId = EC_GROUP(easyChatWord);
+  const index = EC_INDEX(easyChatWord);
+  if (groupId >= EC_NUM_GROUPS) return true;
+  const numWords = _gEasyChatGroups[groupId].numWords;
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+    case EC_GROUP_POKEMON_NATIONAL:
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2: {
+      const list = _gEasyChatGroups[groupId].wordData.valueList!;
+      for (let i = 0; i < numWords; i++) if (index === list[i]) return false;
+      return true;
+    }
+  }
+  return index >= numWords;
 }
-function GetEasyChatWordGroupName(_groupId: number): Uint8Array | string {
-  console.warn('[easy-chat-render STUB] GetEasyChatWordGroupName â€” section 4');
-  return '';
+
+/** 1:1 CopyEasyChatWord (easy_chat.c:5217). Retourne l'end-ptr (subarray sur EOS). */
+function CopyEasyChatWord(dest: Uint8Array, easyChatWord: number): Uint8Array {
+  let resultStr: Uint8Array;
+  if (IsEasyChatWordInvalid(easyChatWord)) {
+    resultStr = StringCopy(dest, _gText_ThreeQuestionMarks ?? '???');
+  } else if (easyChatWord !== EC_EMPTY_WORD) {
+    const index = EC_INDEX(easyChatWord);
+    const groupId = EC_GROUP(easyChatWord);
+    resultStr = StringCopy(dest, GetEasyChatWord(groupId, index));
+  } else {
+    dest[0] = EOS;
+    resultStr = dest;
+  }
+  return resultStr;
 }
-function GetUnlockedEasyChatGroupId(_idx: number): number {
-  console.warn('[easy-chat-render STUB] GetUnlockedEasyChatGroupId â€” section 4');
-  return EC_NUM_GROUPS;
+
+/** 1:1 CopyEasyChatWordPadded (easy_chat.c:5672). */
+function CopyEasyChatWordPadded(dest: Uint8Array, easyChatWord: number, totalChars: number): Uint8Array {
+  let str = CopyEasyChatWord(dest, easyChatWord);
+  for (let i = str.byteOffset - dest.byteOffset; i < totalChars; i++) {
+    str[0] = CHAR_SPACE;
+    str = str.subarray(1);
+  }
+  str[0] = EOS;
+  return str;
 }
-function GetWordFromSelectedGroup(_wordIndex: number): number {
-  console.warn('[easy-chat-render STUB] GetWordFromSelectedGroup â€” section 4');
-  return EC_EMPTY_WORD;
+
+/** 1:1 GetEasyChatWordGroupName (easy_chat.c:5667) = sEasyChatGroupNamePointers[groupId]. */
+function GetEasyChatWordGroupName(groupId: number): Uint8Array | string {
+  return _sEasyChatGroupNamePointers[groupId] ?? '';
+}
+
+// ─── Word data (sWordData) — 1:1 decomp easy_chat.c section 5598-5849 ─────────
+
+/** 1:1 InitEasyChatScreenWordData (easy_chat.c:5598). */
+export function InitEasyChatScreenWordData(): boolean {
+  sWordData = makeEasyChatScreenWordData(); // Alloc
+  if (!sWordData) return false;
+  SetUnlockedEasyChatGroups();
+  SetUnlockedWordsByAlphabet();
+  return true;
+}
+
+/** 1:1 FreeEasyChatScreenWordData (easy_chat.c:5609). */
+export function FreeEasyChatScreenWordData(): void {
+  sWordData = null;
+}
+
+/** 1:1 SetUnlockedEasyChatGroups (easy_chat.c:5614). */
+function SetUnlockedEasyChatGroups(): void {
+  if (!sWordData) return;
+  sWordData.numUnlockedGroups = 0;
+  if (_GetNationalPokedexCount(FLAG_GET_SEEN))
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON;
+
+  // Ces groupes sont déverrouillés automatiquement.
+  for (let i = EC_GROUP_TRAINER; i <= EC_GROUP_ADJECTIVES; i++)
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = i;
+
+  if (_FlagGet(FLAG_SYS_GAME_CLEAR)) {
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_EVENTS;
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_1;
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_2;
+  }
+  if (_FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS))
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_TRENDY_SAYING;
+  if (_IsNationalPokedexEnabled())
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON_NATIONAL;
+}
+
+/** 1:1 GetNumUnlockedEasyChatGroups (easy_chat.c:5640). */
+export function GetNumUnlockedEasyChatGroups(): number {
+  return sWordData ? sWordData.numUnlockedGroups : 0;
+}
+
+/** 1:1 GetUnlockedEasyChatGroupId (easy_chat.c:5645). */
+export function GetUnlockedEasyChatGroupId(index: number): number {
+  if (!sWordData || index >= sWordData.numUnlockedGroups) return EC_NUM_GROUPS;
+  return sWordData.unlockedGroupIds[index];
+}
+
+/** 1:1 SetUnlockedWordsByAlphabet (easy_chat.c:5686). Liste compressée
+ *  EC_EMPTY_WORD+count (DOUBLE_SPECIES_NAME) : garde le premier mot débloqué. */
+function SetUnlockedWordsByAlphabet(): void {
+  if (!sWordData) return;
+  for (let i = 0; i < EC_NUM_ALPHABET_GROUPS; i++) {
+    const numWords = _gEasyChatWordsByLetterPointers[i].numWords;
+    const words = _gEasyChatWordsByLetterPointers[i].words;
+    sWordData.numUnlockedAlphabetWords[i] = 0;
+    let index = 0;
+    let w = 0; // pointeur mobile (= `words` du décomp)
+    for (let j = 0; j < numWords; j++) {
+      let numToProcess: number;
+      if (words[w] === EC_EMPTY_WORD) {
+        w++;
+        numToProcess = words[w];
+        w++;
+        j += 1 + numToProcess;
+      } else {
+        numToProcess = 1;
+      }
+      for (let k = 0; k < numToProcess; k++) {
+        if (IsEasyChatWordUnlocked(words[w + k])) {
+          sWordData.unlockedAlphabetWords[i][index++] = words[w + k];
+          sWordData.numUnlockedAlphabetWords[i]++;
+          break;
+        }
+      }
+      w += numToProcess;
+    }
+  }
+}
+
+/** 1:1 SetSelectedWordGroup (easy_chat.c:5729). */
+export function SetSelectedWordGroup(inAlphabetMode: boolean, groupId: number): void {
+  if (!sWordData) return;
+  if (!inAlphabetMode)
+    sWordData.numSelectedGroupWords = SetSelectedWordGroup_GroupMode(groupId);
+  else
+    sWordData.numSelectedGroupWords = SetSelectedWordGroup_AlphabetMode(groupId);
+}
+
+/** 1:1 GetWordFromSelectedGroup (easy_chat.c:5737). */
+export function GetWordFromSelectedGroup(index: number): number {
+  if (!sWordData || index >= sWordData.numSelectedGroupWords) return EC_EMPTY_WORD;
+  return sWordData.selectedGroupWords[index];
+}
+
+/** 1:1 GetNumWordsInSelectedGroup (easy_chat.c:5745). */
+export function GetNumWordsInSelectedGroup(): number {
+  return sWordData ? sWordData.numSelectedGroupWords : 0;
+}
+
+/** 1:1 SetSelectedWordGroup_GroupMode (easy_chat.c:5750). */
+function SetSelectedWordGroup_GroupMode(groupId: number): number {
+  if (!sWordData) return 0;
+  const numWords = _gEasyChatGroups[groupId].numWords;
+  let totalWords = 0;
+  if (
+    groupId === EC_GROUP_POKEMON || groupId === EC_GROUP_POKEMON_NATIONAL ||
+    groupId === EC_GROUP_MOVE_1 || groupId === EC_GROUP_MOVE_2
+  ) {
+    const list = _gEasyChatGroups[groupId].wordData.valueList!;
+    for (let i = 0; i < numWords; i++) {
+      if (IsEasyChatIndexAndGroupUnlocked(list[i], groupId))
+        sWordData.selectedGroupWords[totalWords++] = EC_WORD(groupId, list[i]);
+    }
+    return totalWords;
+  } else {
+    const wordInfo = _gEasyChatGroups[groupId].wordData.words!;
+    for (let i = 0; i < numWords; i++) {
+      const alphabeticalOrder = wordInfo[i].alphabeticalOrder;
+      if (IsEasyChatIndexAndGroupUnlocked(alphabeticalOrder, groupId))
+        sWordData.selectedGroupWords[totalWords++] = EC_WORD(groupId, alphabeticalOrder);
+    }
+    return totalWords;
+  }
+}
+
+/** 1:1 SetSelectedWordGroup_AlphabetMode (easy_chat.c:5784). */
+function SetSelectedWordGroup_AlphabetMode(groupId: number): number {
+  if (!sWordData) return 0;
+  let totalWords = 0;
+  for (let i = 0; i < sWordData.numUnlockedAlphabetWords[groupId]; i++)
+    sWordData.selectedGroupWords[totalWords++] = sWordData.unlockedAlphabetWords[groupId][i];
+  return totalWords;
+}
+
+/** 1:1 IsEasyChatGroupUnlocked2 (easy_chat.c:5795). */
+function IsEasyChatGroupUnlocked2(groupId: number): boolean {
+  if (!sWordData) return false;
+  for (let i = 0; i < sWordData.numUnlockedGroups; i++)
+    if (sWordData.unlockedGroupIds[i] === groupId) return true;
+  return false;
+}
+
+/** 1:1 IsEasyChatIndexAndGroupUnlocked (easy_chat.c:5807). */
+function IsEasyChatIndexAndGroupUnlocked(wordIndex: number, groupId: number): boolean {
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+      return !!_GetSetPokedexFlag(_SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
+    case EC_GROUP_POKEMON_NATIONAL:
+      if (IsRestrictedWordSpecies(wordIndex))
+        _GetSetPokedexFlag(_SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
+      return true;
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2:
+      return true;
+    case EC_GROUP_TRENDY_SAYING:
+      return IsTrendySayingUnlocked(wordIndex);
+    default:
+      return !!_gEasyChatGroups[groupId].wordData.words![wordIndex].enabled;
+  }
+}
+
+/** 1:1 IsRestrictedWordSpecies (easy_chat.c:5829). */
+function IsRestrictedWordSpecies(species: number): boolean {
+  for (let i = 0; i < _sRestrictedWordSpecies.length; i++)
+    if (_sRestrictedWordSpecies[i] === species) return true;
+  return false;
+}
+
+/** 1:1 IsEasyChatWordUnlocked (easy_chat.c:5841). */
+function IsEasyChatWordUnlocked(easyChatWord: number): boolean {
+  const groupId = EC_GROUP(easyChatWord);
+  const index = EC_INDEX(easyChatWord);
+  if (!IsEasyChatGroupUnlocked2(groupId)) return false;
+  return IsEasyChatIndexAndGroupUnlocked(index, groupId);
+}
+
+/** 1:1 IsTrendySayingUnlocked (easy_chat.c:5446). */
+function IsTrendySayingUnlocked(wordIndex: number): boolean {
+  const byteOffset = Math.floor(wordIndex / 8);
+  const shift = wordIndex % 8;
+  return ((_gSaveBlock1Ptr.unlockedTrendySayings[byteOffset] >> shift) & 1) !== 0;
 }
 
 // TRY_FREE_AND_SET_NULL 1:1 decomp macro (include/malloc.h).

@@ -28,6 +28,7 @@ const SPECIES_H = path.join(DECOMP, 'include/constants/species.h');
 const MOVES_H = path.join(DECOMP, 'include/constants/moves.h');
 const DATA_DIR = path.join(DECOMP, 'src/data/easy_chat');
 const EASY_CHAT_C = path.join(DECOMP, 'src/easy_chat.c');
+const STRINGS_C = path.join(DECOMP, 'src/strings.c');
 const OUT = 'D:/Projet 1/pokemon-web-demo/src/data/easy-chat-data.ts';
 
 const EC_MASK_BITS = 9;
@@ -239,59 +240,70 @@ if (agmM) {
   }
 }
 
+// sEasyChatGroupNamePointers[EC_NUM_GROUPS] — noms de groupes (strings.c FR).
+const stringsSrc = fs.readFileSync(STRINGS_C, 'utf8');
+const groupNameSym2Text = {};
+for (const m of stringsSrc.matchAll(/const\s+u8\s+(gEasyChatGroupName_\w+)\s*\[\s*\]\s*=\s*_\("((?:[^"\\]|\\.)*)"\)/g)) {
+  groupNameSym2Text[m[1]] = m[2];
+}
+const gnpM = ecSrc.match(/static\s+const\s+u8\s+\*const\s+sEasyChatGroupNamePointers\s*\[[^\]]*\]\s*=\s*\{([\s\S]*?)\n\};/);
+const sEasyChatGroupNamePointers = [];
+if (gnpM) {
+  for (const e of gnpM[1].matchAll(/\[\s*(EC_GROUP_\w+)\s*\]\s*=\s*(gEasyChatGroupName_\w+)\s*,/g)) {
+    const gv = EC_GROUP[e[1]];
+    sEasyChatGroupNamePointers[gv] = groupNameSym2Text[e[2]];
+  }
+}
+
 // ─── 5. Émettre le module TS ─────────────────────────────────────────────────
 const groupVals = Object.keys(gEasyChatGroups).map(Number).sort((a, b) => a - b);
 let ts = `// AUTO-GÉNÉRÉ par scripts/extract-easy-chat-data.cjs — NE PAS ÉDITER À LA MAIN.\n`;
 ts += `// Données complètes easy_chat pour l'écran de saisie (mail write), 1:1 décomp.\n`;
-ts += `// Source : src/data/easy_chat/easy_chat_groups.h + easy_chat_words_by_letter.h + easy_chat.c.\n\n`;
+ts += `// Source : src/data/easy_chat/easy_chat_groups.h + easy_chat_words_by_letter.h + easy_chat.c.\n`;
+ts += `// Types = ceux du renderer (import type) → injectables directement via _setG*.\n\n`;
+ts += `import type { EasyChatGroup, EasyChatWordsByLetter } from '../engine/ui/easy-chat-render';\n\n`;
 
-ts += `export interface EasyChatWordInfo { text: string; alphabeticalOrder: number; enabled: boolean; }\n`;
-ts += `export interface EasyChatGroupData {\n`;
-ts += `  valueList?: readonly number[];\n`;
-ts += `  words?: readonly EasyChatWordInfo[];\n`;
-ts += `  numWords: number;\n`;
-ts += `  numEnabledWords: number;\n`;
-ts += `}\n`;
-ts += `export interface EasyChatWordsByLetterData { words: readonly number[]; numWords: number; }\n\n`;
-
-// gEasyChatGroups en tableau dense indexé par groupVal (0..21).
+// gEasyChatGroups en tableau dense indexé par groupVal (0..21), shape 1:1 EasyChatGroup.
 const maxGroup = Math.max(...groupVals);
 ts += `/** 1:1 gEasyChatGroups[] (indexé par EC_GROUP_*). */\n`;
-ts += `export const gEasyChatGroups: readonly EasyChatGroupData[] = [\n`;
+ts += `export const gEasyChatGroups: EasyChatGroup[] = [\n`;
 for (let gv = 0; gv <= maxGroup; gv++) {
   const g = gEasyChatGroups[gv];
-  if (!g) { ts += `  { numWords: 0, numEnabledWords: 0 }, // ${gv} (absent)\n`; continue; }
+  if (!g) { ts += `  { wordData: {}, numWords: 0, numEnabledWords: 0 }, // ${gv} (absent)\n`; continue; }
   if (g.valueList) {
-    ts += `  { valueList: [${g.valueList.join(', ')}], numWords: ${g.numWords}, numEnabledWords: ${g.numEnabledWords} }, // ${gv}\n`;
+    ts += `  { wordData: { valueList: [${g.valueList.join(', ')}] }, numWords: ${g.numWords}, numEnabledWords: ${g.numEnabledWords} }, // ${gv}\n`;
   } else {
     const words = g.words
-      .map((w) => `{ text: ${JSON.stringify(w.text)}, alphabeticalOrder: ${w.alphabeticalOrder}, enabled: ${w.enabled} }`)
+      .map((w) => `{ text: ${JSON.stringify(w.text)}, alphabeticalOrder: ${w.alphabeticalOrder}, enabled: ${w.enabled ? 1 : 0} }`)
       .join(', ');
-    ts += `  { words: [${words}], numWords: ${g.numWords}, numEnabledWords: ${g.numEnabledWords} }, // ${gv}\n`;
+    ts += `  { wordData: { words: [${words}] }, numWords: ${g.numWords}, numEnabledWords: ${g.numEnabledWords} }, // ${gv}\n`;
   }
 }
 ts += `];\n\n`;
 
 ts += `/** 1:1 gEasyChatWordsByLetterPointers[] (Others, A..Z ; 27 utilisés). */\n`;
-ts += `export const gEasyChatWordsByLetterPointers: readonly EasyChatWordsByLetterData[] = [\n`;
+ts += `export const gEasyChatWordsByLetterPointers: EasyChatWordsByLetter[] = [\n`;
 for (const e of gEasyChatWordsByLetterPointers) {
   ts += `  { words: [${e.words.join(', ')}], numWords: ${e.numWords} },\n`;
 }
 ts += `];\n\n`;
 
-const emitArr = (name, arr) => `export const ${name}: readonly number[] = [${arr.join(', ')}];\n`;
+const emitArr = (name, arr) => `export const ${name}: number[] = [${arr.join(', ')}];\n`;
 ts += emitArr('sRestrictedWordSpecies', sRestrictedWordSpecies);
 ts += emitArr('sDefaultProfileWords', sDefaultProfileWords);
 ts += emitArr('sDefaultBattleStartWords', sDefaultBattleStartWords);
 ts += emitArr('sDefaultBattleWonWords', sDefaultBattleWonWords);
 ts += emitArr('sDefaultBattleLostWords', sDefaultBattleLostWords);
 ts += emitArr('sMysteryGiftPhrase', sMysteryGiftPhrase);
-ts += `export const sBerryMasterWifePhrases: ReadonlyArray<readonly [number, number]> = [${sBerryMasterWifePhrases
+ts += `export const sBerryMasterWifePhrases: Array<[number, number]> = [${sBerryMasterWifePhrases
   .map((p) => `[${p[0]}, ${p[1]}]`)
   .join(', ')}];\n`;
-ts += `export const sAlphabetGroupIdMap: ReadonlyArray<readonly number[]> = [\n${sAlphabetGroupIdMap
+ts += `export const sAlphabetGroupIdMap: number[][] = [\n${sAlphabetGroupIdMap
   .map((r) => `  [${r.join(', ')}],`)
   .join('\n')}\n];\n`;
+ts += `export const sEasyChatGroupNamePointers: string[] = [${sEasyChatGroupNamePointers
+  .map((s) => JSON.stringify(s))
+  .join(', ')}];\n`;
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, ts, 'utf8');
@@ -305,3 +317,4 @@ console.log(`  wordsByLetter: ${gEasyChatWordsByLetterPointers.length} groupes ;
 console.log(`  sDefaultBattleWonWords=${JSON.stringify(sDefaultBattleWonWords)}`);
 console.log(`  sBerryMasterWifePhrases=${JSON.stringify(sBerryMasterWifePhrases)}`);
 console.log(`  sAlphabetGroupIdMap rows=${sAlphabetGroupIdMap.length}`);
+console.log(`  groupNames[0..2]=${JSON.stringify(sEasyChatGroupNamePointers.slice(0, 3))} len=${sEasyChatGroupNamePointers.length}`);
