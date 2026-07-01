@@ -18,30 +18,51 @@ import { Overworld_ResetStateAfterDigEscRope } from './overworld';
 import { setPendingWarp } from './engine/field/warp-system';
 import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
 import { FadeScreen, FADE_TO_BLACK } from './field_weather';
+import { gMapHeader } from './fieldmap';
 
 /** 1:1 décomp `FLDEFF_USE_DIG = 38` (include/constants/field_effects.h). */
 const FLDEFF_USE_DIG = 38;
 
-/** Cœur warp (simplifié) de `FldEff_UseDig` (fldeff_dig.c:38) + `StartDigFieldEffect`
- *  (`Task_UseDigEscapeRopeOnField` → warp vers escapeWarp). Le port stocke l'escape
- *  warp dans `globalThis.__escapeWarp` ({mapName, x, y}, mapName SANS préfixe MAP_,
- *  posé par `setescapewarp`). L'anim de creusage 1:1 = follow-up. */
-export function FldEff_UseDig(_rt: DecompRuntime): number {
-  FieldEffectActiveListRemove(FLDEFF_USE_DIG);
+/** Cœur warp PARTAGÉ Dig/EscapeRope (simplifié, même décision que Téléport) : fade
+ *  + warp vers l'`escapeWarp` (entrée du donjon courant, posée par `setescapewarp`).
+ *  Le port le stocke dans `globalThis.__escapeWarp` ({mapName SANS préfixe MAP_, x, y}).
+ *  Le spin/creusage 1:1 (Task_*WarpOut state machine) = follow-up rendu. */
+function _warpToEscapeWarp(): void {
   const esc = (globalThis as Record<string, unknown>).__escapeWarp as
     { mapName?: string; x?: number; y?: number } | undefined;
   if (esc && esc.mapName) {
     const destMap = esc.mapName.startsWith('MAP_') ? esc.mapName : `MAP_${esc.mapName}`;
-    // ≈ WarpFadeOutScreen (FADE_TO_BLACK) ; l'anim de creusage 1:1 = follow-up.
+    // ≈ WarpFadeOutScreen (FADE_TO_BLACK).
     FadeScreen(FADE_TO_BLACK, 0);
     setPendingWarp(
       { destMap, x: esc.x ?? 0, y: esc.y ?? 0, elevation: 0, warpId: -1 },
       'step',
     );
   } else {
-    console.warn('[FldEff_UseDig] pas d\'escapeWarp set (setescapewarp)');
+    console.warn('[escapeWarp] pas d\'escapeWarp set (setescapewarp)');
   }
+}
+
+/** 1:1 décomp `FldEff_UseDig` (fldeff_dig.c:38) → warp vers escapeWarp. */
+export function FldEff_UseDig(_rt: DecompRuntime): number {
+  FieldEffectActiveListRemove(FLDEFF_USE_DIG);
+  _warpToEscapeWarp();
   return 0;  // FALSE
+}
+
+/** 1:1 décomp `CanUseDigOrEscapeRopeOnCurMap` (item_use.c:922) :
+ *      return gMapHeader.allowEscaping; */
+export function CanUseDigOrEscapeRopeOnCurMap(): boolean {
+  return gMapHeader?.allowEscaping === true;
+}
+
+/** 1:1 décomp `StartEscapeRopeFieldEffect` (field_effect.c:2242) — simplifié (le spin
+ *  du joueur + WarpFadeOut = state machine Task_EscapeRopeWarpOut, follow-up rendu M3
+ *  comme le creusage Dig) : LockPlayerFieldControls + warp vers __escapeWarp.
+ *  DETTE : FreezeObjectEvents + l'animation de spin. */
+export function StartEscapeRopeFieldEffect(): void {
+  (globalThis as Record<string, unknown>).__sLockFieldControls = true;  // LockPlayerFieldControls
+  _warpToEscapeWarp();
 }
 
 /** 1:1 décomp `FieldCallback_Dig(void)` (fldeff_dig.c:28) :

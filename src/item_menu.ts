@@ -45,7 +45,8 @@ import { MENU_L_PRESSED, MENU_R_PRESSED } from '../include/menu_helpers';
 import { MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT } from '../include/menu';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../include/gba/io_reg';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from './overworld';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual, Overworld_ResetStateAfterDigEscRope } from './overworld';
+import { CanUseDigOrEscapeRopeOnCurMap, StartEscapeRopeFieldEffect } from './fldeff_dig';
 import { gSpecialVar } from './engine/script/script-vars';
 import { RemoveBagItem, CheckBagHasItem } from './engine/bag/bag';
 import { AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite, AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite, AddSwitchPocketRotatingBallSprite, TAG_BAG_GFX } from './item_menu_icons';
@@ -2626,10 +2627,31 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       msg = _itemMsg('gText_DadsAdvice');
       break;
     }
-    case 'ItemUseOutOfBattle_EscapeRope':
-      // Escape Rope : warp out (SetEscapeWarp + DoEscapeRopeFieldEffect) non porté → DadsAdvice 1:1.
+    case 'ItemUseOutOfBattle_EscapeRope': {
+      // 1:1 décomp `ItemUseOutOfBattle_EscapeRope` (item_use.c:930) :
+      //   if (CanUseDigOrEscapeRopeOnCurMap()) { sItemUseOnFieldCB = ItemUseOnFieldCB_
+      //     EscapeRope; SetUpItemUseOnFieldCallback(taskId); }
+      //   else DisplayDadsAdviceCannotUseItemMessage();
+      // ItemUseOnFieldCB_EscapeRope (item_use.c:914) : Overworld_ResetStateAfterDigEscRope
+      // + RemoveUsedItem + message + Task_UseDigEscapeRopeOnField → StartEscapeRope
+      // FieldEffect (= warp vers escapeWarp, réutilise le mécanisme Dig via fldeff_dig).
+      if (CanUseDigOrEscapeRopeOnCurMap()) {
+        const escItemId = itemId;
+        setItemUseOnFieldCB((t) => {
+          getRuntime()?.DestroyTask(t.taskId);
+          Overworld_ResetStateAfterDigEscRope();
+          _CtxRemoveUsedItem(escItemId);
+          // DETTE : DisplayItemMessageOnField ("{PLAYER} a utilisé {ITEM}.") +
+          // ResetInitialPlayerAvatarState (dismount bike/surf avant warp) non portés.
+          StartEscapeRopeFieldEffect();
+        });
+        SetUpItemUseOnFieldCallback(task);
+        return;
+      }
+      // 1:1 :939 map n'autorise pas l'évasion → DadsAdvice.
       msg = _itemMsg('gText_DadsAdvice');
       break;
+    }
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
       const repelActive = VarGet('VAR_REPEL_STEP_COUNT');
