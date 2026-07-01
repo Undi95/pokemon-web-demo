@@ -69,7 +69,12 @@ import {
   ShowLevelUpStatsBox,
   RefreshPartySlot,
   PartyMenuAnimateHP,
+  CB2_ChooseMonToGiveItem,
 } from './party_menu';
+// Re-export pour item_menu.ts (ItemMenu_Give pose gBagMenu.newScreenCallback =
+// CB2_ChooseMonToGiveItem). Routé via item_use pour réutiliser l'edge existant
+// item_menu→item_use→party_menu (évite un edge direct item_menu→party_menu = cycle).
+export { CB2_ChooseMonToGiveItem };
 import { GetMonLevelUpWindowStats } from './menu_specialized';
 import { getString } from './engine/ui/gba-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';

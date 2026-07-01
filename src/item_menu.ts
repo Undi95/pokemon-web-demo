@@ -54,13 +54,13 @@ import { preloadItemIconAssets } from './item_icon';
 import { AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized, RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT, SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate } from './list_menu';
 import { GetPlayerNameString } from '../include/text';
 import { AddMoney, GetMoney, AddMoneyLabelObject, RemoveMoneyLabelObject, PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmount, PrintMoneyAmountInMoneyBox } from './money';
-import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput, DisplayMessageAndContinueTask } from './menu_helpers';
+import { CreateYesNoMenuWithCallbacks, AdjustQuantityAccordingToDPadInput, DisplayMessageAndContinueTask, IsWritingMailAllowed } from './menu_helpers';
 import { GetPlayerTextSpeedDelay, ClearDialogWindowAndFrameToTransparent } from './menu';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './engine/script/script-vars';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getItem as _getItem } from '../harness/runtime/data-tables';
 import { ApplyMedicineEffect } from './engine/bag/bag-item-effects';
-import { setItemUseCB, SetUpItemUseCallback, setItemUseOnFieldCB, SetUpItemUseOnFieldCallback, ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp, ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh, ItemUseCB_EvolutionStone, ItemUseCB_TMHM } from './item_use';
+import { setItemUseCB, SetUpItemUseCallback, setItemUseOnFieldCB, SetUpItemUseOnFieldCallback, ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp, ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh, ItemUseCB_EvolutionStone, ItemUseCB_TMHM, CB2_ChooseMonToGiveItem } from './item_use';
 import { GetSaveBlock1, GetSaveBlock2 } from './save';
 import { gMapHeader } from './fieldmap';
 import { GetItemEffectType, ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP, ITEM_EFFECT_CURE_BURN, ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS, ITEM_EFFECT_CURE_ALL_STATUS, ITEM_EFFECT_HP_EV, ITEM_EFFECT_ATK_EV, ITEM_EFFECT_DEF_EV, ITEM_EFFECT_SPEED_EV, ITEM_EFFECT_SPATK_EV, ITEM_EFFECT_SPDEF_EV, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_PP_UP, ITEM_EFFECT_PP_MAX, ITEM_EFFECT_HEAL_PP } from './engine/bag/bag-item-effects';
@@ -3184,11 +3184,34 @@ function ItemMenu_Register(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** 1:1 décomp `ItemMenu_Give(u8 taskId)` (item_menu.c:1933) — dette R3 doc :
- *  cascade CB2_ChooseMonToGiveItem (= party screen state machines U-tier U2). */
+/** 1:1 décomp `ItemMenu_Give(u8 taskId)` (item_menu.c:1933) : donner l'objet du
+ *  SAC à un mon (#12). Trois gardes puis ouverture party (« Donner à quel POKéMON ? ») :
+ *    - !IsWritingMailAllowed        → "Impossible d'écrire une LETTRE ici."
+ *    - GetItemImportance != 0        → "Impossible de tenir {objet}!" (objet clé/important)
+ *    - CalculatePlayerPartyCount==0 → "Il n'y a pas de POKéMON."
+ *    - sinon → gBagMenu.newScreenCallback = CB2_ChooseMonToGiveItem + fade+close.
+ *  Le retour du party menu revient au SAC (CB2_ReturnToBagMenu = GoToBagMenu LAST).
+ *  Note port : les 3 messages d'erreur passent par _showItemMessage (= même boîte
+ *  ITEMWIN_MESSAGE + wait A + retour liste) au lieu de DisplayItemMessage+HandleError
+ *  Message — visuellement/comportement 1:1 (cf. les autres gardes du dispatcher). */
 function ItemMenu_Give(task: DecompTask): void {
   RemoveContextWindow();
-  _returnToList(task);
+  const item = gSpecialVar.ItemId;
+  if (!IsWritingMailAllowed(item)) {
+    _showItemMessage(task, _itemMsg('gText_CantWriteMail'));
+  } else if (GetItemImportance(item) === 0) {
+    if (gSaveBlock1Ptr.playerParty.length === 0) {   // 1:1 CalculatePlayerPartyCount() == 0
+      _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+    } else {
+      // 1:1 :1948-1949 — gBagMenu->newScreenCallback = CB2_ChooseMonToGiveItem ;
+      // Task_FadeAndCloseBagMenu (l'exitCallback lira gSpecialVar.ItemId).
+      gBagMenu!.newScreenCallback = CB2_ChooseMonToGiveItem;
+      Task_FadeAndCloseBagMenu(task);
+    }
+  } else {
+    // 1:1 PrintItemCantBeHeld : "Impossible de tenir {STR_VAR_1}!".
+    _showItemMessage(task, _itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(item) }));
+  }
 }
 
 /** 1:1 décomp ItemMenu_Cancel (item_menu.c) — retour liste sans action. */

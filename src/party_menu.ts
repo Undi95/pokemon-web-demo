@@ -55,7 +55,7 @@ import { ItemIsMail } from './mail_data';
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { GetItemName } from './item';
-import { GoToBagMenu, ITEMMENULOCATION_PARTY, POCKETS_COUNT } from './item_menu';
+import { GoToBagMenu, ITEMMENULOCATION_PARTY, ITEMMENULOCATION_LAST, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
@@ -86,7 +86,7 @@ const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/le
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { TEXT_SKIP_DRAW } from '../include/text';
 import {
-  PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
+  PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM, PARTY_ACTION_GIVE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED,
 } from '../include/constants/party_menu';
@@ -355,6 +355,13 @@ let _pendingGiveMessage: string | null = null;
 let _giveOldItem = 0;          // sPartyMenuItemId (objet déjà tenu)
 let _giveNewItem = 0;          // gSpecialVar_ItemId persisté pour le swap après reopen
 let _pendingSwitchPrompt = false;
+// GIVE-FROM-BAG (#12) : donner un objet du SAC à un mon (bag→party). Entrée =
+// CB2_ChooseMonToGiveItem (mode PARTY_ACTION_GIVE_ITEM). Différence avec DONNER
+// (party→bag) : la CONTINUATION après le message (X reçu / échangé / erreur mail)
+// FERME le party menu → retour SAC (phase 'item_used_msg'), au lieu de revenir au
+// choix-mon (phase 'helditem_msg'). `_giveFromBag` aiguille les handlers partagés.
+let _giveFromBag = false;
+let _partyBagItem = 0;         // 1:1 décomp gPartyMenu.bagItem (objet choisi dans le sac)
 /** 1:1 décomp `sPartyMenuInternal->exitCallback` — callback de sortie
  *  TRANSITOIRE, consommé UNE fois dans Task_ClosePartyMenuAndSetCB2
  *  (party_menu.c:1238). Distinct de `gPartyMenu.exitCallback` (= notre
@@ -1029,6 +1036,12 @@ function _drawMsg(): void {
     // gardent ce même message ("X est promu au N.Y") affiché sous la box.
     msg = _itemUsedMsgText;
     template = ITEM_USED_MSG_WINDOW_TEMPLATE;
+  } else if (_partyAction === PARTY_ACTION_GIVE_ITEM) {
+    // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_GIVE_TO_WHICH_MON)
+    // (party_menu.c:5362 ; gText_GiveToWhichPokemon = "Donner à quel POKéMON?").
+    // Famille fenêtre CHOOSE_MON (= give-from-bag, #12).
+    msg = getString('gText_GiveToWhichPokemon');
+    template = MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_USE_ITEM || _partyAction === PARTY_ACTION_SOFTBOILED) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
     // (party_menu.c:4646 ; party_menu.h:605 → gText_UseOnWhichPokemon ;
@@ -1974,6 +1987,103 @@ function _showSwitchHoldItemsPrompt(): void {
   _phase = 'switch_items_yesno';
   _drawMsg();
   PartyMenuDisplayYesNoMenu();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GIVE-FROM-BAG (#12) — donner un objet du SAC à un mon (bag→party).
+// 1:1 décomp party_menu.c:5359-5528. Entrée depuis item_menu.c:ItemMenu_Give
+// (gBagMenu->newScreenCallback = CB2_ChooseMonToGiveItem ; Task_FadeAndCloseBagMenu).
+// RÉUTILISE l'infra DONNER (GiveItemToMon, _showSwitchHoldItemsPrompt, phase
+// 'switch_items_yesno') ; seule la CONTINUATION change : close→sac via la phase
+// partagée 'item_used_msg' (au lieu de retour choix-mon), aiguillée par _giveFromBag.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `CB2_ChooseMonToGiveItem` (party_menu.c:5359) :
+ *    InitPartyMenu(FIELD, SINGLE, PARTY_ACTION_GIVE_ITEM, FALSE,
+ *                  PARTY_MSG_GIVE_TO_WHICH_MON, Task_HandleChooseMonInput, CB2_ReturnToBagMenu);
+ *    gPartyMenu.bagItem = gSpecialVar_ItemId;
+ *  (Battle Pyramid bag non porté → toujours CB2_ReturnToBagMenu.) */
+export function CB2_ChooseMonToGiveItem(): void {
+  _partyBagItem = (gSpecialVar.ItemId as number) | 0;   // 1:1 gPartyMenu.bagItem
+  OpenPartyScreenForGiveItem(CB2_ReturnToBagMenu);
+}
+
+/** Ouvre le party menu en mode GIVE_ITEM (« Donner à quel POKéMON ? »). Même
+ *  pattern que OpenPartyScreenForItemUse mais PARTY_ACTION_GIVE_ITEM + flag
+ *  _giveFromBag (aiguille la continuation vers close→sac). */
+function OpenPartyScreenForGiveItem(returnBagCb: CB2Callback): void {
+  if (_isOpen) return;
+  _partyAction = PARTY_ACTION_GIVE_ITEM;
+  _giveFromBag = true;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = returnBagCb;
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => { console.error('[party-screen] give-item preload failed', e); });
+}
+
+/** 1:1 décomp `CB2_ReturnToBagMenu` (party_menu.c:4276) :
+ *    GoToBagMenu(ITEMMENULOCATION_LAST, POCKETS_COUNT, NULL);
+ *  (LAST = restaure la poche/curseur du sac tels quels.) */
+function CB2_ReturnToBagMenu(): void {
+  GoToBagMenu(ITEMMENULOCATION_LAST, POCKETS_COUNT, null);
+}
+
+/** 1:1 décomp `TryGiveItemOrMailToSelectedMon` (party_menu.c:5366), appelé au A
+ *  sur un mon en mode GIVE_ITEM. Selon l'objet DÉJÀ tenu par le mon :
+ *    - aucun          → GiveItemOrMailToSelectedMon (donne directement).
+ *    - une LETTRE      → DisplayItemMustBeRemovedFirstMessage (refus).
+ *    - un autre objet → prompt d'échange (phase 'switch_items_yesno'). */
+function TryGiveItemOrMailToSelectedMon(): void {
+  const mon = gPlayerParty[_slotId];
+  const held = mon ? mon.heldItem : 0;    // 1:1 sPartyMenuItemId = MON_DATA_HELD_ITEM
+  _giveOldItem = held;
+  if (held === 0) {
+    GiveItemOrMailToSelectedMon();
+  } else if (ItemIsMail(held)) {
+    DisplayItemMustBeRemovedFirstMessage();
+  } else {
+    // 1:1 :5379 DisplayAlreadyHoldingItemSwitchMessage + Task_SwitchItemsFromBagYesNo.
+    _giveNewItem = _partyBagItem;
+    _showSwitchHoldItemsPrompt();   // phase 'switch_items_yesno' (continuation via _giveFromBag).
+  }
+}
+
+/** 1:1 décomp `GiveItemOrMailToSelectedMon` (party_menu.c:5384). DETTE #7 : le
+ *  cas LETTRE (CB2_WriteMailToGiveMonFromBag + DoEasyChatScreen) n'est pas porté
+ *  → on donne la lettre comme objet tenu sans écrire son contenu (l'écriture sera
+ *  branchée au chantier mail ; GiveItemToMon décomp ne fait lui aussi que
+ *  SetMonData(HELD_ITEM), le contenu étant écrit séparément). */
+function GiveItemOrMailToSelectedMon(): void {
+  GiveItemToSelectedMon();
+}
+
+/** 1:1 décomp `GiveItemToSelectedMon` (party_menu.c:5398) : DisplayGaveHeldItem
+ *  Message("X doit tenir Y!") + GiveItemToMon + RemoveBagItem → close→sac. */
+function GiveItemToSelectedMon(): void {
+  const mon = gPlayerParty[_slotId];
+  const item = _partyBagItem;
+  if (!mon) return;
+  // 1:1 DisplayGaveHeldItemMessage (gText_PkmnWasGivenItem = "X doit tenir Y!").
+  _itemUsedMsgText = (getString('gText_PkmnWasGivenItem') || '')
+    .replace('{STR_VAR_1}', mon.nickname).replace('{STR_VAR_2}', GetItemName(item))
+    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  GiveItemToMon(mon, item);
+  RemoveBagItem(getItemKeyById(item), 1);
+  _updatePartyMonHeldItem(_slotId);   // 1:1 UpdatePartyMonHeldItemSprite
+  _phase = 'item_used_msg';           // A/B → Task_UpdateHeldItemSpriteAndClosePartyMenu (close→sac).
+  _drawMsg();
+}
+
+/** 1:1 décomp `DisplayItemMustBeRemovedFirstMessage` (party_menu.c:5515) :
+ *    "Il faut enlever la LETTRE pour pouvoir garder un objet." → close→sac. */
+function DisplayItemMustBeRemovedFirstMessage(): void {
+  _itemUsedMsgText = (getString('gText_RemoveMailBeforeItem') || '')
+    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _phase = 'item_used_msg';
+  _drawMsg();
 }
 
 function _closeActionMenu(): void {
@@ -2940,20 +3050,28 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
           .replace('{STR_VAR_1}', GetItemName(_giveNewItem)).replace('{STR_VAR_2}', GetItemName(_giveOldItem))
           .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
       }
-      _phase = 'helditem_msg';
+      // Continuation : DONNER (party→bag) revient au choix-mon (phase 'helditem_msg') ;
+      // GIVE-FROM-BAG (#12) ferme → SAC (phase 'item_used_msg' = close→savedCallback).
+      // 1:1 : Task_HandleSwitchItemsYesNoInput (3186) vs Task_HandleSwitchItemsFromBag
+      // YesNoInput (5501) diffèrent uniquement sur le Task_* de continuation.
+      _phase = _giveFromBag ? 'item_used_msg' : 'helditem_msg';
       _drawMsg();
     } else if (res === 1 || res === -1) {
-      // 1:1 :3199 NON/B → garde l'objet → Task_ReturnToChooseMonAfterText. ⚠️ Le
-      // message "Echanger les deux objets?" n'a PAS de {PAUSE_UNTIL_PRESS} →
-      // Task_ReturnToChooseMonAfterText (IsPartyMenuTextPrinterActive==FALSE) revient
-      // IMMÉDIATEMENT au choix-mon (efface le message, SANS attendre A/B). Différent
-      // des messages give/swap/take qui ont {PAUSE_UNTIL_PRESS} (→ phase 'helditem_msg').
+      // 1:1 :3199 NON/B → garde l'objet. DONNER : Task_ReturnToChooseMonAfterText → le
+      // message "Echanger les deux objets?" n'a PAS de {PAUSE_UNTIL_PRESS} → revient
+      // IMMÉDIATEMENT au choix-mon (SANS attendre A/B). GIVE-FROM-BAG (#12) : 1:1
+      // Task_HandleSwitchItemsFromBagYesNoInput case 1 → Task_UpdateHeldItemSpriteAnd
+      // ClosePartyMenu = ferme direct → SAC.
       PlaySE(5);  // 1:1 MENU_B_PRESSED rejoue SE_SELECT
       _itemUsedMsgText = null;
-      _actionList = [];
-      _actionCursor = 0;
-      _phase = 'open';
-      _drawMsg();  // → "Choisir un POKéMON"
+      if (_giveFromBag) {
+        ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
+      } else {
+        _actionList = [];
+        _actionCursor = 0;
+        _phase = 'open';
+        _drawMsg();  // → "Choisir un POKéMON"
+      }
     }
     return;
   }
@@ -3042,6 +3160,22 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         const taskId = _inputTaskId;
         cb(taskId, null);  // 1:1 :1316 gItemUseCB(taskId, Task_ClosePartyMenuAfterText)
       }
+    } else if (_partyAction === PARTY_ACTION_GIVE_ITEM) {
+      // 1:1 décomp Task_HandleChooseMonInput case PARTY_ACTION_GIVE_ITEM
+      // (party_menu.c:1339-1341) : A sur un mon → TryGiveItemOrMailToSelectedMon.
+      // CANCEL (slot 7) → gPartyMenu.task → retour SAC (savedCallback=CB2_ReturnToBagMenu).
+      const PARTY_SIZE = 6;
+      const CANCEL = PARTY_SIZE + 1; // = 7
+      if (_slotId === CANCEL) {
+        PlaySE(5);
+        ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
+        return;
+      }
+      const party = _party();
+      const mon = party[_slotId];
+      if (!mon) return;              // 1:1 IsSelectedMonNotEgg FALSE = silent skip.
+      PlaySE(5);                     // 1:1 :1340 PlaySE(SE_SELECT)
+      TryGiveItemOrMailToSelectedMon();
     } else if (_partyAction === PARTY_ACTION_SEND_OUT) {
       // Étape 4 (combat) : choix du mon à envoyer (switch volontaire / après K.O.).
       // 1:1 décomp Task_HandleChooseMonInput case PARTY_ACTION_SEND_OUT →
@@ -3562,6 +3696,7 @@ export function CB2_ReturnToPartyMenuFromSummary(): void {
 
 export function ClosePartyScreen(): void {
   if (!_isOpen || _phase === 'fading_out') return;
+  _giveFromBag = false;   // #12 : la session give-from-bag se termine à la fermeture.
   // 1:1 UpdatePartyToFieldOrder (party_menu.c) : TOUTE sortie du menu combat
   // (choix OU annulation B) restaure l'ordre FIELD de gPlayerParty + persiste
   // les nibbles (battlerPartyOrders) pour la prochaine ouverture.
