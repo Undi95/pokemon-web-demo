@@ -519,6 +519,7 @@ let gEasyChatWindow_Tilemap: Uint16Array = new Uint16Array(0);
 let sTextInputFrame_Gfx: Uint8Array | null = null;
 let sSpriteSheets: Array<{ data: unknown; size: number; tag: number }> = [];
 let sSpritePalettes: Array<{ data: unknown; tag: number }> = [];
+let sCompressedSpriteSheets: Array<{ data: unknown; size: number; tag: number }> = [];
 
 // ─── Constantes GBA (masques input) + SE + états — 1:1 décomp ─────────────────
 const A_BUTTON = 1 << 0;
@@ -598,9 +599,33 @@ const gText_YouCannotQuitHere: StringOrU8 = null;
 const gText_SectionMustBeCompleted: StringOrU8 = null;
 const gText_ThreeQuestionMarks = '???';
 
-// Clavier alphabet A-Z (gText_EasyChatKeyboard_*) — control codes {CLEAR N}.
-// TODO Phase C : porter les 4 lignes FR ; [] = mode alphabet vide (parité ancien code).
-const sEasyChatKeyboardAlphabet: StringOrU8[] = [];
+// Clavier alphabet A-Z — 1:1 décomp sEasyChatKeyboardAlphabet (text_input_strings.c) :
+//   gText_EasyChatKeyboard_ABCDEFothers / _GHIJKL / _MNOPQRS / _TUVWXYZ.
+// Chaque ligne = {CLEAR N} (= [0xFC, 0x11, N], espacement pixel) + lettres encodées.
+// Construites lazy (charmap chargé) via encodeStringForFont. `autres` = "others" FR.
+const EXT_CTRL_CODE_BEGIN_B = 0xFC;
+const EXT_CTRL_CODE_CLEAR_B = 0x11;
+function _buildKeyboardRow(tokens: Array<number | string>): Uint8Array {
+  const out: number[] = [];
+  const cm = getOwCharmap() ?? {};
+  for (const t of tokens) {
+    if (typeof t === 'number') { out.push(EXT_CTRL_CODE_BEGIN_B, EXT_CTRL_CODE_CLEAR_B, t); }
+    else { const b = encodeStringForFont(t, cm); for (let i = 0; i < b.length && b[i] !== EOS; i++) out.push(b[i]); }
+  }
+  out.push(EOS);
+  return Uint8Array.from(out);
+}
+let _sEasyChatKeyboardAlphabet: Uint8Array[] | null = null;
+function getEasyChatKeyboardAlphabet(): Uint8Array[] {
+  if (_sEasyChatKeyboardAlphabet) return _sEasyChatKeyboardAlphabet;
+  _sEasyChatKeyboardAlphabet = [
+    _buildKeyboardRow([11, 'A', 6, 'B', 6, 'C', 26, 'D', 6, 'E', 6, 'F', 26, 'autres']),
+    _buildKeyboardRow([11, 'G', 6, 'H', 6, 'I', 26, 'J', 6, 'K', 6, 'L']),
+    _buildKeyboardRow([11, 'M', 6, 'N', 6, 'O', 26, 'P', 6, 'Q', 6, 'R', 6, 'S', 26, ' ']),
+    _buildKeyboardRow([11, 'T', 6, 'U', 6, 'V', 26, 'W', 6, 'X', 6, 'Y', 6, 'Z', 26, ' ']),
+  ];
+  return _sEasyChatKeyboardAlphabet;
+}
 
 // ─── Getters 1:1 décomp (accès direct sEasyChatScreen) easy_chat.c:2682-2853 ──
 function GetEasyChatScreenType(): number { return sEasyChatScreen!.type; }
@@ -981,70 +1006,286 @@ function DestroyWordSelectCursorSprite(): void {
     sScreenControl.wordSelectCursorSprite = null;
   }
 }
+// ─── Sprites section 4 (1:1 décomp easy_chat.c:1032-1198 data + 4839-5106 fns) ─
+const sOamData_ModeWindow = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 1 /* 64x32 */, x: 0, matrixNum: 0, size: 3, tileNum: 0, priority: 1, paletteNum: 0, affineParam: 0,
+};
+const sAnims_ModeWindow = [
+  [ANIMCMD_FRAME(96, 0), ANIMCMD_END],                       // HIDDEN
+  [ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(32, 4), ANIMCMD_END], // TO_GROUP (transition + 'Groupe')
+  [ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(0, 4), ANIMCMD_END],  // TO_ALPHABET (transition + 'A-Z')
+  [ANIMCMD_FRAME(64, 4), ANIMCMD_FRAME(96, 0), ANIMCMD_END], // TO_HIDDEN
+  [ANIMCMD_FRAME(64, 4), ANIMCMD_END],                       // TRANSITION
+];
+const sSpriteTemplate_ModeWindow = {
+  tileTag: GFXTAG_MODE_WINDOW, paletteTag: PALTAG_MISC_UI, oam: sOamData_ModeWindow,
+  anims: sAnims_ModeWindow, images: null, affineAnims: [], callback: SpriteCallbackDummy,
+};
+const sOamData_ButtonWindow = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0 /* 64x64 */, x: 0, matrixNum: 0, size: 3, tileNum: 0, priority: 3, paletteNum: 0, affineParam: 0,
+};
+const sSpriteTemplate_ButtonWindow = {
+  tileTag: GFXTAG_BUTTON_WINDOW, paletteTag: PALTAG_MISC_UI, oam: sOamData_ButtonWindow,
+  anims: [], images: null, affineAnims: [], callback: SpriteCallbackDummy,
+};
+const sOamData_StartSelectButton = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 1 /* 32x8 */, x: 0, matrixNum: 0, size: 1, tileNum: 0, priority: 1, paletteNum: 0, affineParam: 0,
+};
+const sOamData_ScrollIndicator = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0 /* 16x16 */, x: 0, matrixNum: 0, size: 1, tileNum: 0, priority: 1, paletteNum: 0, affineParam: 0,
+};
+const sAnims_TwoFrame = [
+  [ANIMCMD_FRAME(0, 0), ANIMCMD_END],
+  [ANIMCMD_FRAME(4, 0), ANIMCMD_END],
+];
+const sSpriteTemplate_StartSelectButton = {
+  tileTag: GFXTAG_START_SELECT_BUTTONS, paletteTag: PALTAG_MISC_UI, oam: sOamData_StartSelectButton,
+  anims: sAnims_TwoFrame, images: null, affineAnims: [], callback: SpriteCallbackDummy,
+};
+const sSpriteTemplate_ScrollIndicator = {
+  tileTag: GFXTAG_SCROLL_INDICATOR, paletteTag: PALTAG_MISC_UI, oam: sOamData_ScrollIndicator,
+  anims: sAnims_TwoFrame, images: null, affineAnims: [], callback: SpriteCallbackDummy,
+};
+let _buttonWindowSpriteId = -1;
+let _modeWindowSpriteId = -1;
+
+/** 1:1 CreateSideWindowSprites (easy_chat.c:4839). */
 function CreateSideWindowSprites(): void {
-  console.warn('[easy-chat-render STUB] CreateSideWindowSprites â€” section 4');
+  if (!sScreenControl) return;
+  const rt = getRuntime();
+  let spriteId = CreateSprite(sSpriteTemplate_ButtonWindow, 208, 128, 6);
+  _buttonWindowSpriteId = spriteId;
+  const bw = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.buttonWindowSprite = bw;
+  if (bw) bw.x2 = -64;
+
+  spriteId = CreateSprite(sSpriteTemplate_ModeWindow, 208, 80, 5);
+  _modeWindowSpriteId = spriteId;
+  sScreenControl.modeWindowSprite = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.modeWindowState = 0;
 }
-function DestroySideWindowSprites(): boolean {
-  console.warn('[easy-chat-render STUB] DestroySideWindowSprites â€” section 4');
-  return false;
-}
+
+/** 1:1 ShowSideWindow (easy_chat.c:4850) — slide button window + anim mode window. */
 function ShowSideWindow(): boolean {
-  console.warn('[easy-chat-render STUB] ShowSideWindow â€” section 4');
-  return false;
+  if (!sScreenControl) return false;
+  const bw = sScreenControl.buttonWindowSprite;
+  const mw = sScreenControl.modeWindowSprite;
+  switch (sScreenControl.modeWindowState) {
+    default:
+      return false;
+    case 0:
+      if (bw) {
+        bw.x2 += 8;
+        if (bw.x2 >= 0) {
+          bw.x2 = 0;
+          if (!GetInAlphabetMode()) StartSpriteAnim(mw as never, MODEWINDOW_ANIM_TO_GROUP);
+          else StartSpriteAnim(mw as never, MODEWINDOW_ANIM_TO_ALPHABET);
+          sScreenControl.modeWindowState++;
+        }
+      }
+      break;
+    case 1:
+      if (mw && mw.animEnded) {
+        sScreenControl.modeWindowState = 2;
+        return false;
+      }
+  }
+  return true;
 }
+
+/** 1:1 HideModeWindow (easy_chat.c:4883). */
 function HideModeWindow(): void {
-  console.warn('[easy-chat-render STUB] HideModeWindow â€” section 4');
+  if (!sScreenControl) return;
+  sScreenControl.modeWindowState = 0;
+  StartSpriteAnim(sScreenControl.modeWindowSprite as never, MODEWINDOW_ANIM_TO_HIDDEN);
 }
+
+/** 1:1 DestroySideWindowSprites (easy_chat.c:4889). */
+function DestroySideWindowSprites(): boolean {
+  if (!sScreenControl) return false;
+  const bw = sScreenControl.buttonWindowSprite;
+  const mw = sScreenControl.modeWindowSprite;
+  switch (sScreenControl.modeWindowState) {
+    default:
+      return false;
+    case 0:
+      if (mw && mw.animEnded) sScreenControl.modeWindowState = 1;
+      break;
+    case 1:
+      if (bw) {
+        bw.x2 -= 8;
+        if (bw.x2 <= -64) {
+          if (_modeWindowSpriteId >= 0) { DestroySprite(_modeWindowSpriteId); _modeWindowSpriteId = -1; }
+          if (_buttonWindowSpriteId >= 0) { DestroySprite(_buttonWindowSpriteId); _buttonWindowSpriteId = -1; }
+          sScreenControl.modeWindowSprite = null;
+          sScreenControl.buttonWindowSprite = null;
+          sScreenControl.modeWindowState++;
+          return false;
+        }
+      }
+  }
+  return true;
+}
+
+/** 1:1 SetModeWindowToTransition (easy_chat.c:4915). */
 function SetModeWindowToTransition(): void {
-  console.warn('[easy-chat-render STUB] SetModeWindowToTransition â€” section 4');
+  if (!sScreenControl) return;
+  StartSpriteAnim(sScreenControl.modeWindowSprite as never, MODEWINDOW_ANIM_TRANSITION);
 }
+
+/** 1:1 UpdateModeWindowAnim (easy_chat.c:4920). */
 function UpdateModeWindowAnim(): void {
-  console.warn('[easy-chat-render STUB] UpdateModeWindowAnim â€” section 4');
+  if (!sScreenControl) return;
+  if (!GetInAlphabetMode()) StartSpriteAnim(sScreenControl.modeWindowSprite as never, MODEWINDOW_ANIM_TO_GROUP);
+  else StartSpriteAnim(sScreenControl.modeWindowSprite as never, MODEWINDOW_ANIM_TO_ALPHABET);
 }
+
+/** 1:1 IsModeWindowAnimActive (easy_chat.c:4928). */
 function IsModeWindowAnimActive(): boolean {
-  console.warn('[easy-chat-render STUB] IsModeWindowAnimActive â€” section 4');
-  return false;
+  return !(sScreenControl?.modeWindowSprite?.animEnded);
 }
+
+/** 1:1 CreateScrollIndicatorSprites (easy_chat.c:4933). */
 function CreateScrollIndicatorSprites(): void {
-  console.warn('[easy-chat-render STUB] CreateScrollIndicatorSprites â€” section 4');
+  if (!sScreenControl) return;
+  const rt = getRuntime();
+  let spriteId = CreateSprite(sSpriteTemplate_ScrollIndicator, 96, 80, 0);
+  if (spriteId !== MAX_SPRITES) sScreenControl.scrollIndicatorUpSprite = rt.gSprites[spriteId] as unknown as DecompSprite;
+  spriteId = CreateSprite(sSpriteTemplate_ScrollIndicator, 96, 156, 0);
+  if (spriteId !== MAX_SPRITES) {
+    const down = rt.gSprites[spriteId] as unknown as DecompSprite;
+    sScreenControl.scrollIndicatorDownSprite = down;
+    if (down) down.vFlip = true;
+  }
+  HideScrollIndicators();
 }
+
+/** 1:1 UpdateScrollIndicatorsVisibility (easy_chat.c:4949). */
 function UpdateScrollIndicatorsVisibility(): void {
-  console.warn('[easy-chat-render STUB] UpdateScrollIndicatorsVisibility â€” section 4');
+  if (!sScreenControl) return;
+  if (sScreenControl.scrollIndicatorUpSprite) sScreenControl.scrollIndicatorUpSprite.invisible = !CanScrollUp();
+  if (sScreenControl.scrollIndicatorDownSprite) sScreenControl.scrollIndicatorDownSprite.invisible = !CanScrollDown();
 }
+
+/** 1:1 HideScrollIndicators (easy_chat.c:4955). */
 function HideScrollIndicators(): void {
-  console.warn('[easy-chat-render STUB] HideScrollIndicators â€” section 4');
+  if (!sScreenControl) return;
+  if (sScreenControl.scrollIndicatorUpSprite) sScreenControl.scrollIndicatorUpSprite.invisible = true;
+  if (sScreenControl.scrollIndicatorDownSprite) sScreenControl.scrollIndicatorDownSprite.invisible = true;
 }
-function SetScrollIndicatorXPos(_inWordSelect: boolean): void {
-  console.warn('[easy-chat-render STUB] SetScrollIndicatorXPos â€” section 4');
+
+/** 1:1 SetScrollIndicatorXPos (easy_chat.c:4961). */
+function SetScrollIndicatorXPos(inWordSelect: boolean): void {
+  if (!sScreenControl) return;
+  const up = sScreenControl.scrollIndicatorUpSprite;
+  const down = sScreenControl.scrollIndicatorDownSprite;
+  if (!inWordSelect) {
+    if (up) up.x = 96;
+    if (down) down.x = 96;
+  } else {
+    if (up) up.x = 120;
+    if (down) down.x = 120;
+  }
 }
+
+/** 1:1 CreateStartSelectButtonSprites (easy_chat.c:4978) — Start/Select = indicateurs page. */
 function CreateStartSelectButtonSprites(): void {
-  console.warn('[easy-chat-render STUB] CreateStartSelectButtonSprites â€” section 4');
+  if (!sScreenControl) return;
+  const rt = getRuntime();
+  let spriteId = CreateSprite(sSpriteTemplate_StartSelectButton, 220, 84, 1);
+  if (spriteId !== MAX_SPRITES) sScreenControl.startButtonSprite = rt.gSprites[spriteId] as unknown as DecompSprite;
+  spriteId = CreateSprite(sSpriteTemplate_StartSelectButton, 220, 156, 1);
+  if (spriteId !== MAX_SPRITES) {
+    const sel = rt.gSprites[spriteId] as unknown as DecompSprite;
+    sScreenControl.selectButtonSprite = sel;
+    StartSpriteAnim(sel as never, 1);
+  }
+  HideStartSelectButtons();
 }
+
+/** 1:1 UpdateStartSelectButtonsVisibility (easy_chat.c:4994). */
 function UpdateStartSelectButtonsVisibility(): void {
-  console.warn('[easy-chat-render STUB] UpdateStartSelectButtonsVisibility â€” section 4');
+  if (!sScreenControl) return;
+  if (sScreenControl.startButtonSprite) sScreenControl.startButtonSprite.invisible = !CanScrollUp();
+  if (sScreenControl.selectButtonSprite) sScreenControl.selectButtonSprite.invisible = !CanScrollDown();
 }
+
+/** 1:1 HideStartSelectButtons (easy_chat.c:5000). */
 function HideStartSelectButtons(): void {
-  console.warn('[easy-chat-render STUB] HideStartSelectButtons â€” section 4');
+  if (!sScreenControl) return;
+  if (sScreenControl.startButtonSprite) sScreenControl.startButtonSprite.invisible = true;
+  if (sScreenControl.selectButtonSprite) sScreenControl.selectButtonSprite.invisible = true;
 }
+
+/** 1:1 TryAddInterviewObjectEvents (easy_chat.c:5006) — interview seulement
+ *  (mail/dewford = DISPLAY_NONE → return default). Le rendu des sprites reporter/
+ *  joueur reste à câbler (OBJ gfx) = chantier interview parallèle (Gabby&Ty). */
 function TryAddInterviewObjectEvents(): void {
-  console.warn('[easy-chat-render STUB] TryAddInterviewObjectEvents â€” section 4');
+  switch (GetDisplayedPersonType()) {
+    case EASY_CHAT_PERSON_REPORTER_MALE:
+    case EASY_CHAT_PERSON_REPORTER_FEMALE:
+    case EASY_CHAT_PERSON_BOY:
+      break;
+    default:
+      return;
+  }
+  if (GetEasyChatScreenFrameId() !== FRAMEID_INTERVIEW_SHOW_PERSON) return;
+  // TODO interview : CreateObjectGraphicsSprite(reporter, 76, 40) + joueur (52, 40).
 }
+
+/** 1:1 GetFooterIndex (easy_chat.c:5052). */
+function GetFooterIndex(): number {
+  const frameId = GetEasyChatScreenFrameId();
+  switch (sPhraseFrameDimensions[frameId].footerId) {
+    case FOOTER_QUIZ: return FOOTER_QUIZ;
+    case FOOTER_ANSWER: return FOOTER_ANSWER;
+    case FOOTER_NORMAL: return FOOTER_NORMAL;
+    default: return NUM_FOOTER_TYPES;
+  }
+}
+
+/** 1:1 GetFooterOptionXOffset (easy_chat.c:5068). */
+function GetFooterOptionXOffset(option: number): number {
+  const footerIndex = GetFooterIndex();
+  if (footerIndex < NUM_FOOTER_TYPES) return sFooterOptionXOffsets[footerIndex][option] + 4;
+  else return 0;
+}
+
+/** 1:1 AddMainScreenButtonWindow (easy_chat.c:5077) — barre de boutons du bas. */
 function AddMainScreenButtonWindow(): void {
-  console.warn('[easy-chat-render STUB] AddMainScreenButtonWindow â€” section 4');
+  const footerIndex = GetFooterIndex();
+  if (footerIndex === NUM_FOOTER_TYPES) return;
+  const template: WindowTemplate = {
+    bg: 3, tilemapLeft: 1, tilemapTop: 11, width: 28, height: 2,
+    paletteNum: 11, baseBlock: 0x4C, //!< French Difference
+  };
+  const windowId = AddWindow(template);
+  FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+  for (let i = 0; i < sFooterTextOptions[0].length; i++) {
+    const str = sFooterTextOptions[footerIndex][i];
+    if (str) {
+      const x = sFooterOptionXOffsets[footerIndex][i];
+      PrintEasyChatText(windowId, FONT_NORMAL, str, x, 1, 0, null);
+    }
+  }
+  PutWindowTilemap(windowId);
 }
-/** 1:1 LoadEasyChatGfx (easy_chat.c:4624) : charge sheets + palettes sprites.
- *  (sCompressedSpriteSheets = rectangle/mode/interview différés.) */
+
+/** 1:1 LoadEasyChatGfx (easy_chat.c:4624). Décomp : LoadSpriteSheets + LoadSpritePalettes
+ *  + boucle LoadCompressedSpriteSheet. Adaptation : nos assets .lz du décomp sont des PNG
+ *  DÉJÀ décompressés → on charge les "compressed sheets" comme des sheets bruts par tag. */
 function LoadEasyChatGfx(): void {
   LoadSpriteSheets(sSpriteSheets as never);
   LoadSpritePalettes(sSpritePalettes as never);
+  LoadSpriteSheets(sCompressedSpriteSheets as never);
 }
-function GetFooterOptionXOffset(_optionIdx: number): number {
-  console.warn('[easy-chat-render STUB] GetFooterOptionXOffset â€” section 4');
-  return 0;
-}
+
 // ─── Word text lookup (1:1 decomp easy_chat.c:5136-5237, 5667-5684) ──────────
 
-/** 1:1 GetEasyChatWord (easy_chat.c:5202). */
 function GetEasyChatWord(groupId: number, index: number): Uint8Array | string {
   switch (groupId) {
     case EC_GROUP_POKEMON:
@@ -2669,10 +2910,9 @@ function PrintKeyboardGroupNames(): void {
 
 /** 1:1 decomp easy_chat.c:4271 */
 function PrintKeyboardAlphabet(): void {
-  for (let i = 0; i < sEasyChatKeyboardAlphabet.length; i++) {
-    const letter = sEasyChatKeyboardAlphabet[i];
-    if (!letter) continue;
-    PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, letter, 10, 97 + i * 16, TEXT_SKIP_DRAW, null);
+  const alphabet = getEasyChatKeyboardAlphabet();
+  for (let i = 0; i < alphabet.length; i++) {
+    PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, alphabet[i], 10, 97 + i * 16, TEXT_SKIP_DRAW, null);
   }
 }
 
@@ -2965,7 +3205,8 @@ export function easyChatGfxReady(): Promise<void> {
 async function _loadEasyChatGfxAssets(): Promise<void> {
   if (_easyChatGfxLoaded) return;
   const base = '/decomp/em/easy_chat';
-  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng, triCursor, rectCursor] = await Promise.all([
+  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng,
+         triCursor, rectCursor, scrollInd, startSelect, buttonWin, interview] = await Promise.all([
     loadGbaPal(`${base}/text.pal`),
     loadGbaPal(`${base}/title_text.pal`),
     loadGbaPal(`${base}/text_input_frame_orange.pal`),
@@ -2976,6 +3217,10 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
     loadIndexedPngStrict(`${base}/text_input_frame.png`, 4),
     loadIndexedPngStrict(`${base}/triangle_cursor.png`, 4),
     loadIndexedPngStrict(`${base}/rectangle_cursor.png`, 4),
+    loadIndexedPngStrict(`${base}/scroll_indicator.png`, 4),
+    loadIndexedPngStrict(`${base}/start_select_buttons.png`, 4),
+    loadIndexedPngStrict(`${base}/button_window.png`, 4),
+    loadIndexedPngStrict(`${base}/interview_frame.png`, 4),
   ]);
   sText_Pal = textPal;
   sTitleText_Pal = titlePal;
@@ -2985,15 +3230,27 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
   gEasyChatWindow_Gfx = winPng.charData;
   gEasyChatWindow_Tilemap = winMap;
   sTextInputFrame_Gfx = framePng.charData;
-  // NOTE Phase B : sSpriteSheets/sSpritePalettes/sCompressedSpriteSheets divergent
-  // encore du décomp (rectangle bricolé ici ; scroll/start-select/mode manquants).
+  // 1:1 décomp sSpriteSheets (easy_chat.c:879) : triangle + scroll_indicator + start_select_buttons.
   sSpriteSheets = [
-    { data: triCursor.charData, size: triCursor.charData.length, tag: 0 },
-    { data: rectCursor.charData, size: rectCursor.charData.length, tag: 1 },
+    { data: triCursor.charData, size: triCursor.charData.length, tag: GFXTAG_TRIANGLE_CURSOR },
+    { data: scrollInd.charData, size: scrollInd.charData.length, tag: GFXTAG_SCROLL_INDICATOR },
+    { data: startSelect.charData, size: startSelect.charData.length, tag: GFXTAG_START_SELECT_BUTTONS },
   ];
+  // 1:1 décomp sSpritePalettes (easy_chat.c:898) : triangle(0) + rectangle(1) +
+  // button_window→PALTAG_MISC_UI(2, palette partagée mode/boutons/scroll/start-select) + rs_interview(3).
   sSpritePalettes = [
-    { data: triCursor.palette, tag: 0 },
-    { data: rectCursor.palette, tag: 1 },
+    { data: triCursor.palette, tag: PALTAG_TRIANGLE_CURSOR },
+    { data: rectCursor.palette, tag: PALTAG_RECTANGLE_CURSOR },
+    { data: buttonWin.palette, tag: PALTAG_MISC_UI },
+    { data: interview.palette, tag: PALTAG_RS_INTERVIEW_FRAME },
+  ];
+  // 1:1 décomp sCompressedSpriteSheets (easy_chat.c:918) : rs_interview + rectangle + button_window + mode.
+  // (Assets .lz du décomp → PNG déjà décompressés chez nous ; LoadCompressedSpriteSheet charge par tag.)
+  sCompressedSpriteSheets = [
+    { data: interview.charData, size: interview.charData.length, tag: GFXTAG_RS_INTERVIEW_FRAME },
+    { data: rectCursor.charData, size: rectCursor.charData.length, tag: GFXTAG_RECTANGLE_CURSOR },
+    { data: buttonWin.charData, size: buttonWin.charData.length, tag: GFXTAG_BUTTON_WINDOW },
+    { data: modePng.charData, size: modePng.charData.length, tag: GFXTAG_MODE_WINDOW },
   ];
   _easyChatGfxLoaded = true;
 }
