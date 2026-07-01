@@ -3308,16 +3308,23 @@ const EASY_CHAT_PERSON_REPORTER_FEMALE_L = 1;
 const EASY_CHAT_PERSON_BOY_L = 2;
 const NUM_BARD_SONG_WORDS = 6;
 
-/** 1:1 décomp `void CleanupOverworldWindowsAndTilemaps(void)` — nettoie l'OW avant l'écran
- *  plein. Notre init easy-chat (ResetSpriteData/FreeAllSpritePalettes/ResetBgs) fait le reset. */
-function CleanupOverworldWindowsAndTilemaps(): void { /* no-op : reset fait par InitEasyChatScreen */ }
+// ⚠️ NON-1:1 (dép. externe non portée) : `CleanupOverworldWindowsAndTilemaps` vit dans
+// overworld.c:1416 (ClearMirageTowerPulseBlendEffect + FreeAllOverworldWindowBuffers +
+// TRY_FREE_AND_SET_NULL gOverworldTilemapBuffer_Bg1/2/3) — PAS PORTÉE. Stub : notre
+// InitEasyChatScreen (ResetBgs/ResetSpriteData/FreeAllWindowBuffers) couvre le reset nécessaire.
+function CleanupOverworldWindowsAndTilemaps(): void { /* overworld.c:1416 non portée */ }
 
-/** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)`. */
+/** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)` (easy_chat.c) :
+ *    for (i = length - 1; i != EC_EMPTY_WORD; i--) *(words++) = EC_EMPTY_WORD; */
 function InitializeEasyChatWordArray(words: Uint16Array, length: number): void {
-  for (let i = length - 1; i !== 0xFFFF && i < 0x10000; i--) { words[i] = EC_EMPTY_WORD; if (i === 0) break; }
+  let w = 0; // pointeur mobile = `words++` du décomp
+  for (let i = (length - 1) & 0xFFFF; i !== EC_EMPTY_WORD; i = (i - 1) & 0xFFFF)
+    words[w++] = EC_EMPTY_WORD;
 }
 
-/** GetQuestionnaireWordsPtr (mystery gift questionnaire) — buffer local (hors scope test). */
+// ⚠️ NON-1:1 (dép. externe non portée) : `GetQuestionnaireWordsPtr` vit dans mystery_gift.c:54
+// (pointeur vers le buffer questionnaire du Mystery Gift) — mystery_gift.c PAS PORTÉ → buffer
+// local vide. Hors scope mail/dewford/interview (= Mystery Gift uniquement).
 function GetQuestionnaireWordsPtr(): Uint16Array { return new Uint16Array(4).fill(EC_EMPTY_WORD); }
 
 /** 1:1 décomp `void ShowEasyChatScreen(void)` (easy_chat.c:1456). Special de champ :
@@ -3383,6 +3390,10 @@ export function ShowEasyChatScreen(): void {
       words[0] = EC_EMPTY_WORD;
       displayedPersonType = EASY_CHAT_PERSON_BOY_L;
       break;
+    // ⚠️ Cases QUIZ = Lilycove Lady (lilycove_lady.c) PAS PORTÉE : la save n'a pas
+    // lilycoveLady → ces branches ne se déclenchent pas (hors mail/dewford/interview).
+    // Décomp : QUIZ_ANSWER/QUIZ_SET_ANSWER = `&quiz.playerAnswer`/`&quiz.correctAnswer`
+    // (pointeur sur 1 u16) ; à porter en vue 1-élément quand lilycove_lady.c sera fait.
     case EASY_CHAT_TYPE_QUIZ_ANSWER: words = sb1.lilycoveLady.quiz.playerAnswer; break;
     case EASY_CHAT_TYPE_QUIZ_QUESTION: return;
     case EASY_CHAT_TYPE_QUIZ_SET_QUESTION: words = sb1.lilycoveLady.quiz.question; break;
