@@ -168,8 +168,9 @@ export function UpdateDewfordTrendPerDay(days: number): void {
  *  ConvertEasyChatWordsToString renvoie la string → on l'encode dans gStringVar1. */
 export function BufferTrendyPhraseString(): void {
   const trend = gSaveBlock1Ptr.dewfordTrends[VarGet('VAR_0x8004')];
-  const str = ConvertEasyChatWordsToString(null, trend.words, 2, 1);
-  StringCopy(gStringVar1, encodeOwText(str));
+  // 1:1 décomp : ConvertEasyChatWordsToString(gStringVar1, trend->words, 2, 1) —
+  // écrit directement les octets charmap dans gStringVar1 (plus de round-trip string).
+  ConvertEasyChatWordsToString(gStringVar1, trend.words, 2, 1);
 }
 
 /** Copie par VALEUR d'une DewfordTrend. En C, `dewfordTrends[j] = dewfordTrends[j-1]`

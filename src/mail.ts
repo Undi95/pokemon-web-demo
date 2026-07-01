@@ -777,19 +777,14 @@ function BufferMailText(): void {
     //   &sMailRead->mail->words[numWords],
     //   sMailRead->layout->lines[i].numEasyChatWords, 1).
     const wordsSlice = sMailRead.mail.words.slice(numWords, numWords + sMailRead.layout.lines[i].numEasyChatWords);
-    const converted = ConvertEasyChatWordsToString(
+    // 1:1 décomp : écrit directement les octets charmap dans message[i]
+    // (versions u8 de CopyEasyChatWord/ConvertEasyChatWordsToString, plus de .__str).
+    ConvertEasyChatWordsToString(
       sMailRead.message[i],
       wordsSlice,
       sMailRead.layout.lines[i].numEasyChatWords,
       1,
     );
-    // Conversion → string : on encode dans message[i] (Uint8Array)
-    // pour préserver le buffer décomp ; AddTextPrinterParameterized3 prendra
-    // soit la string soit le buffer (l'engine TS accepte string direct).
-    if (typeof converted === 'string') {
-      // Stocke aussi la string sur le buffer (custom field — récupéré par PrintMailText)
-      (sMailRead.message[i] as any).__str = converted;
-    }
     numWords += sMailRead.layout.lines[i].numEasyChatWords;
   }
 
@@ -823,11 +818,11 @@ function PrintMailText(): void {
   for (let i = 0; i < sMailRead.layout.numLines; i++) {
     // 1:1 décomp : si premier char EOS ou CHAR_SPACE → skip line.
     const buf = sMailRead.message[i];
-    const str: string = (buf as any).__str ?? '';
+    // 1:1 décomp : si premier char EOS ou CHAR_SPACE → skip line.
     const first = buf[0];
     if (first === 0xFF /* EOS */ || first === 0x00 /* CHAR_SPACE */) continue;
-    if (!str || str.length === 0) continue;
 
+    // 1:1 décomp : imprime le buffer message[i] (octets charmap) directement.
     AddTextPrinterParameterized3(
       0,
       FONT_NORMAL,
@@ -835,7 +830,7 @@ function PrintMailText(): void {
       y + sMailRead.layout.wordsYPos,
       sTextColors as any,
       0,
-      str,
+      buf as unknown as string,
     );
     y += sMailRead.layout.lines[i].height;
   }

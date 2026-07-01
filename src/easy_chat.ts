@@ -1,198 +1,129 @@
-// easy_chat.ts — portage 1:1 de src/easy_chat.c.
+// easy_chat.ts — port 1:1 STRICT de src/easy_chat.c (fichier unique, miroir décomp).
 //
-// Deux parties :
-//   1. Conversion words → texte (lecture seule) : GetEasyChatWord/CopyEasyChatWord/
-//      ConvertEasyChatWordsToString/GetRandomEasyChatWordFromGroup (mail read).
-//   2. Écran de saisie (mail write) : sEasyChatScreen (état input) + HandleEasyChatInput_*
-//      + DoEasyChatScreen/CB2/Task. Le RENDU + le contrôle (sScreenControl) + la word-data
-//      (sWordData) vivent dans engine/ui/easy-chat-render.ts, câblés via injection.
+// UN seul fichier = 1:1 avec easy_chat.c : accès DIRECT aux statiques module
+// sEasyChatScreen (état input) / sScreenControl (rendu) / sWordData (word-select).
+// Plus AUCUNE injection (l'ancien split engine/ui/easy-chat-render.ts + ~60 setters
+// _setG*/_setGetX a été dissous ici, 2026-07).
 //
-// Données : src/data/easy-chat-words.ts (texte, mail read) + src/data/easy-chat-data.ts
-// (gEasyChatGroups complet + templates, écran de saisie), AUTO-GÉN depuis le décomp.
+// Contenu (ordre décomp) : constantes/structs (include/easy_chat.h) → data statique →
+//   word-text lookup (GetEasyChatWord/CopyEasyChatWord/IsEasyChatWordInvalid) →
+//   word-data (sWordData) → rendu/sprites (sections 3-4) → converters (mail read) +
+//   lifecycle (DoEasyChatScreen/CB2/Task) + input state machine (sections 0-2).
+//
+// API externe : CopyEasyChatWord/ConvertEasyChatWordsToString (mail.ts, versions u8
+//   1:1 décomp) · GetRandomEasyChatWordFromGroup (dewford_trend.ts) · DoEasyChatScreen
+//   + easyChatGfxReady (party_menu.ts). Données bundlées = src/data/easy-chat-data.ts.
+//
+// Adaptations web assumées (hardware-exempt) : GFX/palettes chargés async (fetch au lieu
+//   d'INCGFX) via easyChatGfxReady ; converters écrivent des octets charmap encodés
+//   (StringCopy encode les strings JS en indices police GBA).
+//
+// Source de vérité (ne JAMAIS diverger) : D:/Projet 1/decomps/pokeemeraude/src/easy_chat.c
+//   + include/easy_chat.h + include/constants/easy_chat.h
+//
+// RESTE (2026-07) : Phase B = pipeline GFX 1:1 (sSpriteSheets/Palettes/CompressedSheets :
+//   rectangle=compressed sheet, PALTAG_MISC_UI, scroll/start-select/mode manquants) ;
+//   Phase C = porter les stubs section-4 (side/mode window, scroll indicators,
+//   start/select buttons, AddMainScreenButtonWindow, clavier alphabet {CLEAR N}) ;
+//   Phase D = ShowEasyChatScreen (special) + wire Dewford/Gabby&Ty.
 
-import { gEasyChatWordsByGroup } from './data/easy-chat-words';
-import { gSpeciesNames, gMoveNames } from './engine/data/game-data';
-import { Random } from './random';
+import { BG_SCREEN_SIZE } from '../include/gba/defines';
+import {CpuFastFill, WIN_RANGE} from "../harness/runtime/decomp-bridge";
+import { LoadPalette, ResetPaletteFade, LoadCompressedSpriteSheet } from '../harness/runtime/decomp-globals';
+import { DestroySprite } from './sprite';
+import { CreateSprite } from './sprite';
+import { LoadSpriteSheets, StartSpriteAnim, ANIMCMD_FRAME, ANIMCMD_END } from './sprite';
+import { SetGpuReg } from './gpu_regs';
 
-// ─── 1:1 décomp include/constants/easy_chat.h ────────────────────────────────
-const EC_MASK_BITS = 9;
-const EC_MASK_INDEX = (1 << EC_MASK_BITS) - 1;
-const EC_EMPTY_WORD = 0xFFFF;
-const EC_GROUP_POKEMON = 0;
-const EC_GROUP_MOVE_1 = 18;
-const EC_GROUP_MOVE_2 = 19;
-const EC_GROUP_POKEMON_NATIONAL = 21;
-const EC_NUM_GROUPS = 22;
-
-/** 1:1 décomp `EC_GROUP(word)` (easy_chat.h:1125). */
-function EC_GROUP(word: number): number { return word >> EC_MASK_BITS; }
-/** 1:1 décomp `EC_INDEX(word)` (easy_chat.h:1126). */
-function EC_INDEX(word: number): number { return word & EC_MASK_INDEX; }
-
-// 1:1 décomp gText_ThreeQuestionMarks (mot invalide).
-const gText_ThreeQuestionMarks = '???';
-
-/** Nombre de mots du groupe (= `gEasyChatGroups[g].numWords`, ou tables noms). */
-function _numWordsInGroup(groupId: number): number {
-  switch (groupId) {
-    case EC_GROUP_POKEMON:
-    case EC_GROUP_POKEMON_NATIONAL:
-      return gSpeciesNames.length;
-    case EC_GROUP_MOVE_1:
-    case EC_GROUP_MOVE_2:
-      return gMoveNames.length;
-    default: {
-      const arr = gEasyChatWordsByGroup[groupId];
-      return arr ? arr.length : 0;
-    }
-  }
-}
-
-/** 1:1 décomp `static const u8 *GetEasyChatWord(u8 groupId, u16 index)` (easy_chat.c:5202). */
-function GetEasyChatWord(groupId: number, index: number): string {
-  switch (groupId) {
-    case EC_GROUP_POKEMON:
-    case EC_GROUP_POKEMON_NATIONAL:
-      return gSpeciesNames[index] ?? '';
-    case EC_GROUP_MOVE_1:
-    case EC_GROUP_MOVE_2:
-      return gMoveNames[index] ?? '';
-    default: {
-      const arr = gEasyChatWordsByGroup[groupId];
-      return (arr && arr[index]) ?? '';
-    }
-  }
-}
-
-/** 1:1 décomp `EC_WORD(groupId, index)` (easy_chat.h) : encode un mot = (group << 9) | index. */
-function EC_WORD(groupId: number, index: number): number {
-  return (((groupId << EC_MASK_BITS) | index) & 0xFFFF) >>> 0;
-}
-
-/** 1:1 décomp `u16 GetRandomEasyChatWordFromGroup(u16 groupId)` (easy_chat.c:5354) :
- *    u16 index = Random() % gEasyChatGroups[groupId].numWords;
- *    if (groupId == POKEMON|POKEMON_NATIONAL|MOVE_1|MOVE_2)
- *        index = gEasyChatGroups[groupId].wordData.valueList[index];
- *    return EC_WORD(groupId, index);
- *
- *  ⚠️ Groupes POKEMON/MOVE (valueList) : notre easy_chat indexe gSpeciesNames/gMoveNames
- *  DIRECTEMENT (pas de valueList compacte GBA) → l'index EST déjà l'id final, cohérent
- *  avec notre EC_GROUP/GetEasyChatWord. La sélection du sous-ensemble GBA (valueList) est
- *  une divergence assumée côté easy_chat ; non utilisée par InitDewfordTrend (groupes simples). */
-export function GetRandomEasyChatWordFromGroup(groupId: number): number {
-  const numWords = _numWordsInGroup(groupId);
-  if (numWords <= 0) return EC_EMPTY_WORD;  // garde anti-NaN (groupe vide → mot vide).
-  const index = Random() % numWords;
-  return EC_WORD(groupId, index);
-}
-
-/** 1:1 décomp `bool8 IsEasyChatWordInvalid(u16 easyChatWord)` (easy_chat.c).
- *  EC_EMPTY_WORD est VALIDE (= mot vide, pas garbage). */
-function IsEasyChatWordInvalid(easyChatWord: number): boolean {
-  if (easyChatWord === EC_EMPTY_WORD) return false;
-  const groupId = EC_GROUP(easyChatWord);
-  const index = EC_INDEX(easyChatWord);
-  if (groupId >= EC_NUM_GROUPS) return true;
-  return index >= _numWordsInGroup(groupId);
-}
-
-/** 1:1 décomp `u8 *CopyEasyChatWord(u8 *dest, u16 easyChatWord)` (easy_chat.c:5219).
- *  Signature décomp `(dest, word)` conservée (= pointeur parserSingle du mail) ;
- *  port string-based → renvoie le TEXTE du mot ('???' si invalide, '' si
- *  EC_EMPTY_WORD) au lieu d'écrire dans dest + retourner le end-ptr. */
-export function CopyEasyChatWord(_dest: Uint8Array | null, easyChatWord: number): string {
-  if (IsEasyChatWordInvalid(easyChatWord)) return gText_ThreeQuestionMarks;
-  if (easyChatWord !== EC_EMPTY_WORD) {
-    return GetEasyChatWord(EC_GROUP(easyChatWord), EC_INDEX(easyChatWord));
-  }
-  return '';
-}
-
-/** 1:1 décomp `u8 *ConvertEasyChatWordsToString(u8 *dest, const u16 *src, u16 columns, u16 rows)`
- *  (easy_chat.c:5239). Words joints par CHAR_SPACE, lignes par CHAR_NEWLINE ; la
- *  dernière NEWLINE est remplacée par EOS.
- *
- *  Port : renvoie la string convertie (consommée par mail BufferMailText →
- *  message[i].__str). Écrit aussi `dest[0]` (marqueur EOS/non-EOS) pour le test
- *  de skip-ligne de PrintMailText (`buf[0] === EOS || CHAR_SPACE`). */
-export function ConvertEasyChatWordsToString(
-  dest: Uint8Array | null,
-  src: ArrayLike<number>,
-  columns: number,
-  rows: number,
-): string {
-  const numColumns = columns - 1;
-  let result = '';
-  let s = 0;
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < numColumns; j++) {
-      const word = src[s];
-      result += CopyEasyChatWord(null, word);
-      if (word !== EC_EMPTY_WORD) result += ' '; // CHAR_SPACE
-      s++;
-    }
-    result += CopyEasyChatWord(null, src[s]);
-    s++;
-    result += '\n'; // CHAR_NEWLINE
-  }
-  // 1:1 décomp : dest--; *dest = EOS → retire la NEWLINE finale.
-  if (result.length > 0) result = result.slice(0, -1);
-
-  if (dest instanceof Uint8Array && dest.length > 0) {
-    // PrintMailText skip si dest[0] == EOS(0xFF) ou CHAR_SPACE(0x00). On marque
-    // dest[0] = 1 (texte présent) ou 0xFF (ligne vide).
-    dest[0] = result.length === 0 ? 0xFF : 1;
-  }
-  return result;
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-//  ÉCRAN DE SAISIE (mail write) — 1:1 décomp easy_chat.c sections input/main.
-// ═════════════════════════════════════════════════════════════════════════════
-
-import type { EasyChatScreen } from './engine/ui/easy-chat-render';
-import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
-type MainCallback = CB2Callback | (() => void);
 import {
-  // ECFUNC_* / INPUT_* (enums) + types.
-  ECFUNC_NONE, ECFUNC_EXIT, ECFUNC_OPEN_KEYBOARD, ECFUNC_UPDATE_MAIN_CURSOR,
-  ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS, ECFUNC_PROMPT_EXIT, ECFUNC_PROMPT_CONFIRM,
-  ECFUNC_CLOSE_PROMPT, ECFUNC_CLOSE_PROMPT_AFTER_DELETE, ECFUNC_PROMPT_DELETE_ALL,
-  ECFUNC_CLOSE_KEYBOARD, ECFUNC_OPEN_WORD_SELECT, ECFUNC_CLOSE_WORD_SELECT,
-  ECFUNC_RETURN_TO_KEYBOARD, ECFUNC_UPDATE_KEYBOARD_CURSOR, ECFUNC_GROUP_NAMES_SCROLL_DOWN,
-  ECFUNC_GROUP_NAMES_SCROLL_UP, ECFUNC_UPDATE_WORD_SELECT_CURSOR, ECFUNC_WORD_SELECT_SCROLL_UP,
-  ECFUNC_WORD_SELECT_SCROLL_DOWN, ECFUNC_WORD_SELECT_PAGE_UP, ECFUNC_WORD_SELECT_PAGE_DOWN,
-  ECFUNC_SWITCH_KEYBOARD_MODE, ECFUNC_REPRINT_PHRASE, ECFUNC_PROMPT_CONFIRM_LYRICS,
-  ECFUNC_MSG_SONG_TOO_SHORT, ECFUNC_MSG_CANT_EXIT, ECFUNC_MSG_CREATE_QUIZ,
-  ECFUNC_MSG_SELECT_ANSWER, ECFUNC_MSG_COMBINE_TWO_WORDS, ECFUNC_MSG_CANT_DELETE_LYRICS,
-  ECFUNC_QUIZ_QUESTION, ECFUNC_QUIZ_ANSWER, ECFUNC_SET_QUIZ_QUESTION, ECFUNC_SET_QUIZ_ANSWER,
-  INPUT_RIGHT, INPUT_LEFT, INPUT_UP, INPUT_DOWN, INPUT_START, INPUT_SELECT,
-  // Contrôle + word-data (renderer = owner sScreenControl/sWordData).
-  InitEasyChatScreenControl, LoadEasyChatScreen, FreeEasyChatScreenControl,
-  StartEasyChatFunction, RunEasyChatFunction,
-  InitEasyChatScreenWordData, FreeEasyChatScreenWordData, GetNumUnlockedEasyChatGroups,
-  GetUnlockedEasyChatGroupId, SetSelectedWordGroup, GetNumWordsInSelectedGroup,
-  GetWordFromSelectedGroup,
-  // Injection (getters + data).
-  _setEasyChatScreen,
-  _setGetEasyChatScreenFrameId, _setGetEasyChatScreenType, _setGetMainCursorColumn,
-  _setGetMainCursorRow, _setGetNumColumns, _setGetNumRows, _setGetCurrentPhrase,
-  _setGetTitleText, _setGetInAlphabetMode, _setGetKeyboardCursorColAndRow,
-  _setGetWordSelectColAndRow, _setGetKeyboardScrollOffset, _setGetWordSelectScrollOffset,
-  _setGetWordSelectLastRow, _setGetEasyChatInstructionsText, _setGetEasyChatConfirmExitText,
-  _setGetEasyChatConfirmText, _setGetEasyChatConfirmDeletionText, _setCanScrollUp,
-  _setCanScrollDown, _setGetDisplayedPersonType, _setFooterHasFourOptions_,
-  _setGEasyChatGroups, _setGEasyChatWordsByLetterPointers, _setGSpeciesNames, _setGMoveNames,
-  _setSRestrictedWordSpecies, _setSEasyChatGroupNamePointers,
-  _setFlagGet, _setIsNationalPokedexEnabled, _setGetNationalPokedexCount,
-  _setGetSetPokedexFlag, _setSpeciesToNationalPokedexNum, _setRandom, _setGSaveBlock1Ptr,
-  _setSEasyChatBgTemplates, _setSEasyChatWindowTemplates, _setSEasyChatYesNoWindowTemplate,
-  _setSPhraseFrameDimensions, _setSAlphabetKeyboardColumnOffsets, _setSFooterOptionXOffsets,
-  _setSFooterTextOptions, _setSText_Clear17,
-  _setSText_Pal, _setSTitleText_Pal, _setSTextInputFrameOrange_Pal, _setSTextInputFrameGreen_Pal,
-  _setGEasyChatMode_Pal, _setGEasyChatWindow_Gfx, _setGEasyChatWindow_Tilemap, _setSTextInputFrame_Gfx,
-  _setSSpriteSheets, _setSSpritePalettes,
-} from './engine/ui/easy-chat-render';
+  InitWindows,
+  AddWindow,
+  PutWindowTilemap,
+  FillWindowPixelBuffer,
+  FillWindowPixelRect,
+  CopyWindowToVram,
+  InitBgsFromTemplates,
+  ResetBgsAndClearDma3BusyFlags,
+  ShowBg,
+  HideBg,
+  ChangeBgX,
+  ChangeBgY,
+  FillBgTilemapBufferRect,
+  FillBgTilemapBufferRect_Palette0,
+  CopyBgTilemapBufferToVram,
+  CopyToBgTilemapBuffer,
+  GetBgTilemapBuffer,
+  type WindowTemplate,
+  type BgTemplate,
+} from './window';
+
+import { DeactivateAllTextPrinters, GetStringCenterAlignXOffset, GetStringWidth, TEXT_SKIP_DRAW } from './text';
+import { AddTextPrinterParameterized3 } from './menu';
+
+// 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
+// dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
+import { AddTextPrinterParameterized } from './text';
+import { encodeStringForFont, getOwCharmap } from './text';
+
+import {
+  LoadUserWindowBorderGfx,
+  DrawTextBorderOuter,
+} from './text_window';
+
+import { CreateYesNoMenu } from './menu';
+
+import {
+  getRuntime,
+  SpriteCallbackDummy,
+  LoadSpritePalettes,
+} from '../harness/runtime/decomp-globals';
+
+// DecompSprite interface vit dans decomp-runtime.ts (= source de vÃ©ritÃ© Sprite).
+import type { DecompSprite } from '../harness/runtime/decomp-runtime';
+import {
+  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
+} from '../include/gba/io_reg';
+
+import {
+  CreateObjectGraphicsSprite,
+} from './engine/field/object-event-graphics';
+
+import {
+  TEXT_COLOR_TRANSPARENT,
+  TEXT_COLOR_DARK_GRAY,
+  TEXT_COLOR_LIGHT_GRAY,
+  TEXT_COLOR_WHITE,
+  TEXT_COLOR_LIGHT_RED,
+  FONT_NORMAL,
+  PIXEL_FILL,
+} from './engine/battle/battle-windows';
+
+import {
+  CHAR_HYPHEN,
+  CHAR_SPACE,
+  CHAR_NEWLINE,
+  CHAR_PROMPT_SCROLL,
+  EOS,
+} from '../include/constants/characters';
+
+import {
+  BG_PLTT_ID,
+  REG_OFFSET_DISPCNT,
+  REG_OFFSET_WIN0H,
+  REG_OFFSET_WIN0V,
+  REG_OFFSET_WININ,
+  REG_OFFSET_WINOUT,
+  DISPCNT_MODE_0,
+} from '../harness/runtime/decomp-runtime';
+
+import {PLTT_SIZE_4BPP} from "../harness/runtime/decomp-bridge";
+
+import {
+  OAM,
+  OAM_SIZE,
+} from '../harness/runtime/decomp-globals';
+
+// ─── Données bundlées (easy-chat-data.ts, auto-gén décomp) ────────────────────
 import {
   gEasyChatGroups, gEasyChatWordsByLetterPointers, sRestrictedWordSpecies,
   sEasyChatGroupNamePointers, sEasyChatScreenTemplates, sMysteryGiftPhrase,
@@ -201,14 +132,17 @@ import {
   sPhraseFrameDimensions, sAlphabetKeyboardColumnOffsets, sFooterOptionXOffsets,
   sFooterTextOptions, sText_Clear17,
 } from './data/easy-chat-data';
+import { gSpeciesNames, gMoveNames } from './engine/data/game-data';
+
+// ─── Bridges (flags/pokedex/random/vars/tasks/palette) ────────────────────────
+import { Random } from './random';
 import { FlagGet, FlagSet, IsNationalPokedexEnabled } from './event_data';
-import {
-  GetNationalPokedexCount, GetSetPokedexFlag, SpeciesToNationalPokedexNum,
-} from './engine/ui/pokedex-flags';
+import { GetNationalPokedexCount, GetSetPokedexFlag, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
 import { TrySetTrendyPhrase } from './dewford_trend';
-import { getRuntime, ResetTasks, JOY_NEW, JOY_REPEAT, BlendPalettes, ResetPaletteFade,
-  FreeAllSpritePalettes, AnimateSprites, BuildOamBuffer, PlaySE, RunTasks,
-  TransferPlttBuffer, gSaveBlock1Ptr } from '../harness/runtime/decomp-globals';
+import {
+  ResetTasks, JOY_NEW, JOY_REPEAT, BlendPalettes, FreeAllSpritePalettes,
+  AnimateSprites, BuildOamBuffer, PlaySE, RunTasks, TransferPlttBuffer, gSaveBlock1Ptr,
+} from '../harness/runtime/decomp-globals';
 import { ResetSpriteData, LoadOam, ProcessSpriteCopyRequests } from './sprite';
 import { UpdatePaletteFade, BeginNormalPaletteFade } from './palette';
 import { CreateTask } from './task';
@@ -217,8 +151,376 @@ import { FreeAllWindowBuffers } from './window';
 import { SetVBlankCallback } from '../harness/runtime/decomp-bridge';
 import { gSpecialVar, VarSet } from './engine/script/script-vars';
 import { loadGbaPal, loadTilemapBin, loadIndexedPngStrict } from '../harness/gba/png-loader';
+import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
 
-// ─── Constantes GBA (masques input) + SE + états — 1:1 décomp ────────────────
+// â”€â”€â”€ Constantes locales 1:1 decomp (cf. easy_chat.c:229-403) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// PALTAGs (easy_chat.c:229-234)
+const PALTAG_TRIANGLE_CURSOR     = 0;
+const PALTAG_RECTANGLE_CURSOR    = 1;
+const PALTAG_MISC_UI             = 2;
+const PALTAG_RS_INTERVIEW_FRAME  = 3;
+
+// GFXTAGs (easy_chat.c:236-244)
+const GFXTAG_TRIANGLE_CURSOR       = 0;
+const GFXTAG_RECTANGLE_CURSOR      = 1;
+const GFXTAG_SCROLL_INDICATOR      = 2;
+const GFXTAG_START_SELECT_BUTTONS  = 3;
+const GFXTAG_MODE_WINDOW           = 4;
+const GFXTAG_RS_INTERVIEW_FRAME    = 5;
+const GFXTAG_BUTTON_WINDOW         = 6;
+
+// MSG_ enum (easy_chat.c:274-285) â€” PrintEasyChatStdMessage msgId.
+export const MSG_INSTRUCTIONS        = 0;
+export const MSG_CONFIRM_DELETE      = 1;
+export const MSG_CONFIRM_EXIT        = 2;
+export const MSG_CONFIRM             = 3;
+export const MSG_CREATE_QUIZ         = 4;
+export const MSG_SELECT_ANSWER       = 5;
+export const MSG_SONG_TOO_SHORT      = 6;
+export const MSG_CANT_DELETE_LYRICS  = 7;
+export const MSG_COMBINE_TWO_WORDS   = 8;
+export const MSG_CANT_QUIT           = 9;
+
+// ECFUNC_ enum (easy_chat.c:290-326)
+export const ECFUNC_NONE                          = 0;
+export const ECFUNC_REPRINT_PHRASE                = 1;
+export const ECFUNC_UPDATE_MAIN_CURSOR            = 2;
+export const ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS = 3;
+export const ECFUNC_PROMPT_DELETE_ALL             = 4;
+export const ECFUNC_PROMPT_EXIT                   = 5;
+export const ECFUNC_PROMPT_CONFIRM                = 6;
+export const ECFUNC_CLOSE_PROMPT                  = 7;
+export const ECFUNC_CLOSE_PROMPT_AFTER_DELETE     = 8;
+export const ECFUNC_OPEN_KEYBOARD                 = 9;
+export const ECFUNC_CLOSE_KEYBOARD                = 10;
+export const ECFUNC_OPEN_WORD_SELECT              = 11;
+export const ECFUNC_CLOSE_WORD_SELECT             = 12;
+export const ECFUNC_PROMPT_CONFIRM_LYRICS         = 13;
+export const ECFUNC_RETURN_TO_KEYBOARD            = 14;
+export const ECFUNC_UPDATE_KEYBOARD_CURSOR        = 15;
+export const ECFUNC_GROUP_NAMES_SCROLL_DOWN       = 16;
+export const ECFUNC_GROUP_NAMES_SCROLL_UP         = 17;
+export const ECFUNC_UPDATE_WORD_SELECT_CURSOR     = 18;
+export const ECFUNC_WORD_SELECT_SCROLL_UP         = 19;
+export const ECFUNC_WORD_SELECT_SCROLL_DOWN       = 20;
+export const ECFUNC_WORD_SELECT_PAGE_UP           = 21;
+export const ECFUNC_WORD_SELECT_PAGE_DOWN         = 22;
+export const ECFUNC_SWITCH_KEYBOARD_MODE          = 23;
+export const ECFUNC_EXIT                          = 24;
+export const ECFUNC_QUIZ_QUESTION                 = 25;
+export const ECFUNC_QUIZ_ANSWER                   = 26;
+export const ECFUNC_SET_QUIZ_QUESTION             = 27;
+export const ECFUNC_SET_QUIZ_ANSWER               = 28;
+export const ECFUNC_MSG_CREATE_QUIZ               = 29;
+export const ECFUNC_MSG_SELECT_ANSWER             = 30;
+export const ECFUNC_MSG_SONG_TOO_SHORT            = 31;
+export const ECFUNC_MSG_CANT_DELETE_LYRICS        = 32;
+export const ECFUNC_MSG_COMBINE_TWO_WORDS         = 33;
+export const ECFUNC_MSG_CANT_EXIT                 = 34;
+
+// TEXT_ enum (easy_chat.c:329-333) â€” InitLowerWindowText whichText.
+const TEXT_GROUPS      = 0;
+const TEXT_ALPHABET    = 1;
+const TEXT_WORD_SELECT = 2;
+
+// NUM_*_ROWS / COLUMNS (easy_chat.c:335-342)
+const NUM_ALPHABET_ROWS     = 4;
+const NUM_GROUP_NAME_ROWS   = 4;
+const NUM_WORD_SELECT_ROWS  = 4;
+const NUM_BUTTON_ROWS       = 3;
+const NUM_ALPHABET_COLUMNS  = 7;
+const NUM_GROUP_NAME_COLUMNS  = 2;
+const NUM_WORD_SELECT_COLUMNS = 2;
+
+// FRAMEID_ enum (easy_chat.c:344-354)
+const FRAMEID_GENERAL_2x2          = 0;
+const FRAMEID_GENERAL_2x3          = 1;
+const FRAMEID_MAIL                 = 2;
+const FRAMEID_COMBINE_TWO_WORDS    = 3;
+const FRAMEID_INTERVIEW_SHOW_PERSON = 4;
+const FRAMEID_INTERVIEW            = 5;
+const FRAMEID_QUIZ_ANSWER          = 6;
+const FRAMEID_QUIZ_QUESTION        = 7;
+const FRAMEID_QUIZ_SET_QUESTION    = 8;
+
+// FOOTER_ enum (easy_chat.c:357-362)
+const FOOTER_NORMAL     = 0;
+const FOOTER_QUIZ       = 1;
+const FOOTER_ANSWER     = 2;
+const NUM_FOOTER_TYPES  = 3;
+
+// INPUT_ enum (easy_chat.c:364-371) â€” exported for input handler module.
+export const INPUT_RIGHT  = 0;
+export const INPUT_LEFT   = 1;
+export const INPUT_UP     = 2;
+export const INPUT_DOWN   = 3;
+export const INPUT_START  = 4;
+export const INPUT_SELECT = 5;
+
+// WINANIM_ enum (easy_chat.c:374-382)
+const WINANIM_OPEN_KEYBOARD        = 0;
+const WINANIM_CLOSE_KEYBOARD       = 1;
+const WINANIM_OPEN_WORD_SELECT     = 2;
+const WINANIM_CLOSE_WORD_SELECT    = 3;
+const WINANIM_RETURN_TO_KEYBOARD   = 4;
+const WINANIM_KEYBOARD_SWITCH_OUT  = 5;
+const WINANIM_KEYBOARD_SWITCH_IN   = 6;
+
+// WIN_ enum (easy_chat.c:385-389) â€” Window IDs.
+const WIN_TITLE         = 0;
+const WIN_MSG           = 1;
+const WIN_INPUT_SELECT  = 2;
+
+// FRAME_OFFSET_ / FRAME_TILE_ (easy_chat.c:392-403)
+const FRAME_OFFSET_ORANGE = 0x1000;
+const FRAME_OFFSET_GREEN  = 0x4000;
+const FRAME_TILE_TRANSPARENT     = 0x0;
+const FRAME_TILE_TOP_L_CORNER    = 0x1;
+const FRAME_TILE_TOP_EDGE        = 0x2;
+const FRAME_TILE_TOP_R_CORNER    = 0x3;
+const FRAME_TILE_L_EDGE          = 0x5;
+const FRAME_TILE_R_EDGE          = 0x7;
+const FRAME_TILE_BOTTOM_L_CORNER = 0x9;
+const FRAME_TILE_BOTTOM_EDGE     = 0xA;
+const FRAME_TILE_BOTTOM_R_CORNER = 0xB;
+
+// RECTCURSOR_ANIM_ enum (easy_chat.c:1007-1012)
+const RECTCURSOR_ANIM_ON_GROUP   = 0;
+const RECTCURSOR_ANIM_ON_BUTTON  = 1;
+const RECTCURSOR_ANIM_ON_OTHERS  = 2;
+const RECTCURSOR_ANIM_ON_LETTER  = 3;
+
+// MODEWINDOW_ANIM_ enum (easy_chat.c:1076-1082)
+const MODEWINDOW_ANIM_HIDDEN       = 0;
+const MODEWINDOW_ANIM_TO_GROUP     = 1;
+const MODEWINDOW_ANIM_TO_ALPHABET  = 2;
+const MODEWINDOW_ANIM_TO_HIDDEN    = 3;
+const MODEWINDOW_ANIM_TRANSITION   = 4;
+
+// GBA window/dispcnt bits — 1:1 décomp `include/gba/io_reg.h`.
+// Migrés vers imports decomp-data io_reg-data.ts (cleanup B7).
+const WININ_WIN0_BG0     = 0x01;
+const WININ_WIN0_BG1     = 0x02;
+const WININ_WIN0_BG2     = 0x04;
+const WININ_WIN0_BG3     = 0x08;
+const WININ_WIN0_BG_ALL  = WININ_WIN0_BG0 | WININ_WIN0_BG1 | WININ_WIN0_BG2 | WININ_WIN0_BG3;
+const WININ_WIN0_OBJ     = 0x10;
+const WININ_WIN0_CLR     = 0x20;
+const WINOUT_WIN01_BG0   = 0x01;
+const WINOUT_WIN01_BG1   = 0x02;
+const WINOUT_WIN01_BG3   = 0x08;
+const WINOUT_WIN01_OBJ   = 0x10;
+const WINOUT_WIN01_CLR   = 0x20;
+
+// COPYWIN_ (1:1 decomp include/window.h).
+const COPYWIN_FULL = 3;
+const COPYWIN_GFX  = 2;
+
+// BG_COORD_ (1:1 decomp include/gba/types.h).
+const BG_COORD_SET = 0;
+const BG_COORD_ADD = 1;
+
+// MAX_SPRITES (decomp include/sprite.h MAX_SPRITES = 64).
+// Migré vers import decomp-data sprite-data.ts (cleanup B7).
+import { MAX_SPRITES } from '../include/sprite';
+
+// EC_ constants (1:1 decomp include/constants/easy_chat.h).
+const EC_MASK_BITS  = 9;
+const EC_MASK_GROUP = 0x7F;
+export const EC_EMPTY_WORD = 0xFFFF;
+
+// EC_GROUP_* (easy_chat.h:31-53). 1:1 valeurs (constantes, pas de hardcode au sens
+// "logique runtime fragile" : ce sont des IDs de groupe figÃ©s par le format ROM).
+const EC_GROUP_POKEMON          = 0;
+const EC_GROUP_TRAINER          = 1;
+const EC_GROUP_LIFESTYLE        = 12;
+const EC_GROUP_HOBBIES          = 13;
+const EC_GROUP_ADJECTIVES       = 16;
+const EC_GROUP_EVENTS           = 17;
+const EC_GROUP_MOVE_1           = 18;
+const EC_GROUP_MOVE_2           = 19;
+const EC_GROUP_TRENDY_SAYING    = 20;
+const EC_GROUP_POKEMON_NATIONAL = 21;
+const EC_NUM_GROUPS             = 22;
+
+const EC_NUM_ALPHABET_GROUPS   = 27;
+const EC_MAX_WORDS_IN_GROUP    = 270;
+const NUM_TRENDY_SAYINGS       = 33;
+const NUM_QUESTIONNAIRE_WORDS  = 4;
+const EASY_CHAT_BATTLE_WORDS_COUNT = 6;
+const MAIL_COUNT                   = 16;
+const MAIL_WORDS_COUNT             = 9;
+
+// EASY_CHAT_TYPE_ (easy_chat.h:4-24).
+const EASY_CHAT_TYPE_QUIZ_QUESTION = 16;
+
+// EASY_CHAT_PERSON_ (easy_chat.h:26-29).
+const EASY_CHAT_PERSON_REPORTER_MALE   = 0;
+const EASY_CHAT_PERSON_REPORTER_FEMALE = 1;
+const EASY_CHAT_PERSON_BOY             = 2;
+
+// EC_GROUP / EC_INDEX / EC_WORD helpers (easy_chat.h macros).
+function EC_GROUP(word: number): number { return (word >> EC_MASK_BITS) & EC_MASK_GROUP; }
+function EC_INDEX(word: number): number { return word & ((1 << EC_MASK_BITS) - 1); }
+function EC_WORD(group: number, idx: number): number { return ((group & EC_MASK_GROUP) << EC_MASK_BITS) | (idx & ((1 << EC_MASK_BITS) - 1)); }
+
+// MALE/FEMALE (1:1 decomp include/constants/pokemon.h).
+const MALE   = 0;
+const FEMALE = 1;
+
+// FLAG_GET_SEEN (1:1 decomp include/constants/pokedex.h).
+const FLAG_GET_SEEN = 0;
+
+// FLAG_ constants 1:1 decomp include/constants/flags.h. SYSTEM_FLAGS = 0x860 :
+// FLAG_SYS_GAME_CLEAR = SYSTEM_FLAGS + 0x4 ; FLAG_UNLOCKED_TRENDY_SAYINGS = +0x6.
+// Résolus via FlagGet(id) au runtime.
+const FLAG_SYS_GAME_CLEAR        = 0x864;
+const FLAG_UNLOCKED_TRENDY_SAYINGS = 0x866;
+
+// â”€â”€â”€ Structs 1:1 decomp (cf. include/easy_chat.h) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+/** 1:1 decomp struct EasyChatScreen (easy_chat.h:20-46). */
+export interface EasyChatScreen {
+  type: number;
+  templateId: number;
+  numColumns: number;
+  numRows: number;
+  inputState: number;
+  mainCursorColumn: number;
+  mainCursorRow: number;
+  maxWords: number;
+  inputStateBackup: number;
+  inAlphabetMode: number; // bool8
+  keyboardColumn: number;
+  keyboardRow: number;
+  keyboardScrollOffset: number;
+  keyboardLastRow: number;
+  wordSelectScrollOffset: number;
+  wordSelectLastRow: number;
+  wordSelectColumn: number;
+  wordSelectRow: number;
+  displayedPersonType: number;
+  unused: number;
+  quizTitle: Uint8Array;
+  titleText: Uint8Array | string | null;
+  savedPhrase: Uint16Array | null;
+  currentPhrase: Uint16Array;
+}
+
+/** 1:1 decomp struct EasyChatScreenControl (easy_chat.h:48-75). */
+export interface EasyChatScreenControl {
+  funcState: number;
+  windowId: number;
+  currentFuncId: number;
+  curWindowAnimState: number;
+  destWindowAnimState: number;
+  windowAnimStateDir: number;
+  modeWindowState: number;
+  fourFooterOptions: number; // bool8
+  phrasePrintBuffer: Uint8Array;     // [193]
+  wordSelectPrintBuffer: Uint8Array; // [514]
+  scrollOffset: number;
+  scrollDest: number;
+  scrollSpeed: number;
+  mainCursorSprite: DecompSprite | null;
+  rectangleCursorSpriteRight: DecompSprite | null;
+  rectangleCursorSpriteLeft: DecompSprite | null;
+  wordSelectCursorSprite: DecompSprite | null;
+  buttonWindowSprite: DecompSprite | null;
+  modeWindowSprite: DecompSprite | null;
+  scrollIndicatorUpSprite: DecompSprite | null;
+  scrollIndicatorDownSprite: DecompSprite | null;
+  startButtonSprite: DecompSprite | null;
+  selectButtonSprite: DecompSprite | null;
+  bg1TilemapBuffer: Uint16Array; // [BG_SCREEN_SIZE / 2]
+  bg3TilemapBuffer: Uint16Array; // [BG_SCREEN_SIZE / 2]
+}
+
+/** 1:1 decomp struct EasyChatPhraseFrameDimensions (easy_chat.h:77-84). */
+export interface EasyChatPhraseFrameDimensions {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  footerId: number;
+}
+
+/** 1:1 decomp struct EasyChatWordInfo (easy_chat.h:86-91). */
+export interface EasyChatWordInfo {
+  text: Uint8Array | string;
+  alphabeticalOrder: number;
+  enabled: number;
+}
+
+/** 1:1 decomp union EasyChatGroupWordData (easy_chat.h:93-97). */
+export interface EasyChatGroupWordData {
+  valueList?: Uint16Array | number[];
+  words?: ReadonlyArray<EasyChatWordInfo>;
+}
+
+/** 1:1 decomp struct EasyChatGroup (easy_chat.h:99-104). */
+export interface EasyChatGroup {
+  wordData: EasyChatGroupWordData;
+  numWords: number;
+  numEnabledWords: number;
+}
+
+/** 1:1 decomp struct EasyChatScreenWordData (easy_chat.h:106-115). */
+export interface EasyChatScreenWordData {
+  numUnlockedGroups: number;
+  unlockedGroupIds: Uint16Array;             // [EC_NUM_GROUPS]
+  numUnlockedAlphabetWords: Uint16Array;     // [EC_NUM_ALPHABET_GROUPS]
+  unlockedAlphabetWords: Uint16Array[];      // [EC_NUM_ALPHABET_GROUPS][EC_MAX_WORDS_IN_GROUP]
+  unused: Uint8Array;                        // [44]
+  selectedGroupWords: Uint16Array;           // [EC_MAX_WORDS_IN_GROUP]
+  numSelectedGroupWords: number;
+}
+
+/** 1:1 decomp struct EasyChatWordsByLetter (easy_chat.h:117-121). */
+export interface EasyChatWordsByLetter {
+  words: Uint16Array | number[];
+  numWords: number;
+}
+
+// â”€â”€â”€ EWRAM-level static state (1:1 decomp easy_chat.c:36-38) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+/** static EWRAM_DATA struct EasyChatScreen *sEasyChatScreen = NULL;
+ *  InjectÃ© par easy-chat.ts (section 1-2) via _setEasyChatScreen. */
+let sEasyChatScreen: EasyChatScreen | null = null;
+
+/** static EWRAM_DATA struct EasyChatScreenControl *sScreenControl = NULL;
+ *  AllouÃ© par InitEasyChatScreenControl_ (= ce module = owner). */
+let sScreenControl: EasyChatScreenControl | null = null;
+
+/** static EWRAM_DATA struct EasyChatScreenWordData *sWordData = NULL;
+ *  AllouÃ© par InitEasyChatScreenWordData (= ce module = owner). */
+let sWordData: EasyChatScreenWordData | null = null;
+
+type StringOrU8 = Uint8Array | string | null;
+type MainCallback = CB2Callback | (() => void);
+
+// ─── État écran/words en attente + gate GFX async (adaptation web) ────────────
+// SetWordTaskArg/GetWordTaskArg (easy_chat.c:1282) empilent des pointeurs 32-bit
+// dans des slots u16 → un seul écran actif : words + exitCallback en module-vars.
+let sPendingWords: Uint16Array | null = null;
+let sPendingExitCallback: MainCallback | null = null;
+let _easyChatGfxLoaded = false;
+let _easyChatGfxLoading: Promise<void> | null = null;
+
+// ─── Assets chargés async (INCGFX/INCBIN décomp → fetch public/decomp/em) ─────
+let sText_Pal: Uint16Array | null = null;
+let sTitleText_Pal: Uint16Array | null = null;
+let sTextInputFrameOrange_Pal: Uint16Array | null = null;
+let sTextInputFrameGreen_Pal: Uint16Array | null = null;
+let gEasyChatMode_Pal: Uint16Array | null = null;
+let gEasyChatWindow_Gfx: Uint8Array | null = null;
+let gEasyChatWindow_Tilemap: Uint16Array = new Uint16Array(0);
+let sTextInputFrame_Gfx: Uint8Array | null = null;
+let sSpriteSheets: Array<{ data: unknown; size: number; tag: number }> = [];
+let sSpritePalettes: Array<{ data: unknown; tag: number }> = [];
+
+// ─── Constantes GBA (masques input) + SE + états — 1:1 décomp ─────────────────
 const A_BUTTON = 1 << 0;
 const B_BUTTON = 1 << 1;
 const SELECT_BUTTON = 1 << 2;
@@ -254,37 +556,29 @@ const MAINSTATE_TO_QUIZ_LADY = 3;
 const MAINSTATE_EXIT = 4;
 const MAINSTATE_WAIT_FADE_IN = 5;
 
-// FRAMEID_* (easy_chat.c:344) — utilisés par IsCurrentFrame2x5.
-const FRAMEID_MAIL = 2;
-const FRAMEID_QUIZ_QUESTION = 7;
-const FRAMEID_QUIZ_SET_QUESTION = 8;
-
-// NUM_* (easy_chat.c:335).
-const NUM_ALPHABET_ROWS = 4;
-const NUM_GROUP_NAME_ROWS = 4;
-const NUM_WORD_SELECT_ROWS = 4;
-const NUM_BUTTON_ROWS = 3;
-const NUM_ALPHABET_COLUMNS = 7;
-const NUM_GROUP_NAME_COLUMNS = 2;
-const NUM_WORD_SELECT_COLUMNS = 2;
-
-// EASY_CHAT_TYPE_* (constants/easy_chat.h) — utilisés par la logique input.
-const EASY_CHAT_TYPE_QUIZ_SET_QUESTION = 17;
-const EASY_CHAT_TYPE_QUIZ_SET_ANSWER = 18;
-const EASY_CHAT_TYPE_QUIZ_QUESTION = 16;
-const EASY_CHAT_TYPE_QUIZ_ANSWER = 15;
+// EASY_CHAT_TYPE_* (constants/easy_chat.h) — QUIZ_QUESTION déjà défini plus haut.
+const EASY_CHAT_TYPE_PROFILE = 0;
 const EASY_CHAT_TYPE_MAIL = 4;
 const EASY_CHAT_TYPE_BARD_SONG = 6;
-const EASY_CHAT_TYPE_APPRENTICE = 19;
-const EASY_CHAT_TYPE_CONTEST_INTERVIEW = 11;
 const EASY_CHAT_TYPE_TRENDY_PHRASE = 9;
+const EASY_CHAT_TYPE_CONTEST_INTERVIEW = 11;
 const EASY_CHAT_TYPE_GOOD_SAYING = 13;
+const EASY_CHAT_TYPE_QUIZ_ANSWER = 15;
+const EASY_CHAT_TYPE_QUIZ_SET_QUESTION = 17;
+const EASY_CHAT_TYPE_QUIZ_SET_ANSWER = 18;
+const EASY_CHAT_TYPE_APPRENTICE = 19;
 const EASY_CHAT_TYPE_QUESTIONNAIRE = 20;
-const EASY_CHAT_TYPE_PROFILE = 0;
-
 const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
 
-// gText_* (prompts exit/deletion) — depuis data (résolus FR).
+const EC_MAX_WORDS_CURRENT_PHRASE = 10; // ARRAY_COUNT(sEasyChatScreen->currentPhrase)
+const FLAG_SYS_CHAT_USED = 0x861; // 1:1 flags.h (SYSTEM_FLAGS + 0x1)
+
+// tData index (easy_chat.c:1287).
+const tState = 0;      // data[0]
+const tType = 1;       // data[1]
+const tPersonType = 7; // data[7]
+
+// gText_* prompts exit/deletion (data FR résolue).
 const gText_StopGivingPkmnMail = easyChatPromptTexts.gText_StopGivingPkmnMail;
 const gText_LikeToQuitQuiz = easyChatPromptTexts.gText_LikeToQuitQuiz;
 const gText_ChallengeQuestionMark = easyChatPromptTexts.gText_ChallengeQuestionMark;
@@ -292,29 +586,2377 @@ const gText_QuitEditing = easyChatPromptTexts.gText_QuitEditing;
 const gText_AllTextBeingEditedWill = easyChatPromptTexts.gText_AllTextBeingEditedWill;
 const gText_BeDeletedThatOkay = easyChatPromptTexts.gText_BeDeletedThatOkay;
 
-// ─── EWRAM state (1:1 décomp easy_chat.c:36) ─────────────────────────────────
-let sEasyChatScreen: EasyChatScreen | null = null;
+// gText_* messages quiz/bard/apprentice — hors scope mail/dewford (Lilycove/Bard).
+// TODO Phase C : extraire les vraies chaînes FR ; null = message non affiché (parité).
+const gText_CreateAQuiz: StringOrU8 = null;
+const gText_SelectTheAnswer: StringOrU8 = null;
+const gText_OnlyOnePhrase: StringOrU8 = null;
+const gText_OriginalSongWillBeUsed: StringOrU8 = null;
+const gText_LyricsCantBeDeleted: StringOrU8 = null;
+const gText_CombineTwoWordsOrPhrases3: StringOrU8 = null;
+const gText_YouCannotQuitHere: StringOrU8 = null;
+const gText_SectionMustBeCompleted: StringOrU8 = null;
+const gText_ThreeQuestionMarks = '???';
 
-// SetWordTaskArg/GetWordTaskArg (easy_chat.c:1282) empilent des pointeurs 32-bit
-// dans des slots u16 → adaptation JS : un seul écran actif, on garde words +
-// exitCallback en module-vars (les u16 tType/tPersonType restent dans gTasks.data).
-let sPendingWords: Uint16Array | null = null;
-let sPendingExitCallback: MainCallback | null = null;
+// Clavier alphabet A-Z (gText_EasyChatKeyboard_*) — control codes {CLEAR N}.
+// TODO Phase C : porter les 4 lignes FR ; [] = mode alphabet vide (parité ancien code).
+const sEasyChatKeyboardAlphabet: StringOrU8[] = [];
 
-// Défauts d'injection posés (une seule fois) — voir _installEasyChatBridges.
-let _bridgesInstalled = false;
+// ─── Getters 1:1 décomp (accès direct sEasyChatScreen) easy_chat.c:2682-2853 ──
+function GetEasyChatScreenType(): number { return sEasyChatScreen!.type; }
+function GetEasyChatScreenFrameId(): number { return sEasyChatScreenTemplates[sEasyChatScreen!.templateId].frameId; }
+function GetTitleText(): StringOrU8 { return sEasyChatScreen!.titleText; }
+function GetCurrentPhrase(): Uint16Array { return sEasyChatScreen!.currentPhrase; }
+function GetNumRows(): number { return sEasyChatScreen!.numRows; }
+function GetNumColumns(): number { return sEasyChatScreen!.numColumns; }
+function GetMainCursorColumn(): number { return sEasyChatScreen!.mainCursorColumn; }
+function GetMainCursorRow(): number { return sEasyChatScreen!.mainCursorRow; }
+function GetEasyChatInstructionsText(): { text1: StringOrU8; text2: StringOrU8 } {
+  const t = sEasyChatScreenTemplates[sEasyChatScreen!.templateId];
+  return { text1: t.instructionsText1, text2: t.instructionsText2 };
+}
+function GetEasyChatConfirmText(): { text1: StringOrU8; text2: StringOrU8 } {
+  const t = sEasyChatScreenTemplates[sEasyChatScreen!.templateId];
+  return { text1: t.confirmText1, text2: t.confirmText2 };
+}
+function GetEasyChatConfirmExitText(): { text1: StringOrU8; text2: StringOrU8 } {
+  switch (sEasyChatScreen!.type) {
+    case EASY_CHAT_TYPE_MAIL: return { text1: gText_StopGivingPkmnMail, text2: null };
+    case EASY_CHAT_TYPE_QUIZ_ANSWER:
+    case EASY_CHAT_TYPE_QUIZ_QUESTION: return { text1: gText_LikeToQuitQuiz, text2: gText_ChallengeQuestionMark };
+    default: return { text1: gText_QuitEditing, text2: null };
+  }
+}
+function GetEasyChatConfirmDeletionText(): { text1: StringOrU8; text2: StringOrU8 } {
+  return { text1: gText_AllTextBeingEditedWill, text2: gText_BeDeletedThatOkay };
+}
+function GetKeyboardCursorColAndRow(): { column: number; row: number } {
+  return { column: sEasyChatScreen!.keyboardColumn, row: sEasyChatScreen!.keyboardRow };
+}
+function GetInAlphabetMode(): boolean { return !!sEasyChatScreen!.inAlphabetMode; }
+function GetKeyboardScrollOffset(): number { return sEasyChatScreen!.keyboardScrollOffset; }
+function GetWordSelectColAndRow(): { column: number; row: number } {
+  return { column: sEasyChatScreen!.wordSelectColumn, row: sEasyChatScreen!.wordSelectRow };
+}
+function GetWordSelectScrollOffset(): number { return sEasyChatScreen!.wordSelectScrollOffset; }
+function GetWordSelectLastRow(): number { return sEasyChatScreen!.wordSelectLastRow; }
+function GetDisplayedPersonType(): number { return sEasyChatScreen!.displayedPersonType; }
+function FooterHasFourOptions_(): number { return FooterHasFourOptions(); }
 
-// tData index (easy_chat.c:1287).
-const tState = 0;   // data[0]
-const tType = 1;    // data[1]
-const tPersonType = 7; // data[7]
+/** 1:1 décomp `static bool32 CanScrollUp(void)`. */
+function CanScrollUp(): boolean {
+  const s = sEasyChatScreen!;
+  switch (s.inputState) {
+    case INPUTSTATE_KEYBOARD:
+      if (!s.inAlphabetMode && s.keyboardScrollOffset) return true;
+      break;
+    case INPUTSTATE_WORD_SELECT:
+      if (s.wordSelectScrollOffset) return true;
+      break;
+  }
+  return false;
+}
+/** 1:1 décomp `static bool32 CanScrollDown(void)`. */
+function CanScrollDown(): boolean {
+  const s = sEasyChatScreen!;
+  switch (s.inputState) {
+    case INPUTSTATE_KEYBOARD:
+      if (!s.inAlphabetMode && s.keyboardScrollOffset + NUM_GROUP_NAME_ROWS <= s.keyboardLastRow - 1) return true;
+      break;
+    case INPUTSTATE_WORD_SELECT:
+      if (s.wordSelectScrollOffset + NUM_WORD_SELECT_ROWS <= s.wordSelectLastRow) return true;
+      break;
+  }
+  return false;
+}
+
+
+// â”€â”€â”€ String helpers locaux (1:1 decomp string_util.c minimal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function StringCopy(dest: Uint8Array, src: Uint8Array | string): Uint8Array {
+  // 1:1 decomp StringCopy : copie jusqu'Ã  EOS, retourne ptr sur EOS.
+  // 🩸 src string = texte lisible JS → ENCODER en octets charmap GBA (comme le
+  // décomp où GetEasyChatWord renvoie du `const u8 *` déjà encodé). Sans ça, les
+  // buffers word-select/phrase contiendraient de l'ASCII brut (charCodeAt) rendu
+  // comme indices de police GBA = texte brouillé.
+  const bytes = typeof src === 'string' ? encodeStringForFont(src, getOwCharmap() ?? {}) : src;
+  let i = 0;
+  for (i = 0; i < bytes.length && i < dest.length - 1; i++) {
+    const b = bytes[i];
+    if (b === EOS) break;
+    dest[i] = b;
+  }
+  if (i < dest.length) dest[i] = EOS;
+  // Retourne subarray pointant juste sur EOS (= Ã©quivalent ptr arithmetic decomp).
+  return dest.subarray(i);
+}
+
+function StringAppend(dest: Uint8Array, src: Uint8Array | string): Uint8Array {
+  // 1:1 decomp StringAppend : find EOS in dest, then StringCopy src there.
+  let p = 0;
+  while (p < dest.length && dest[p] !== EOS) p++;
+  return StringCopy(dest.subarray(p), src);
+}
+
+function StringLength(str: Uint8Array | string): number {
+  if (typeof str === 'string') return str.length;
+  let i = 0;
+  while (i < str.length && str[i] !== EOS) i++;
+  return i;
+}
+
+// 1:1 décomp `u8 *WriteColorChangeControlCode(u8 *dest, u32 colorType, u8 color)`
+// (string_util.c:602) — CONSOLIDÉ vers le miroir `src/game/string_util.ts` (0 dup).
+// NB : le miroir écrit le `EOS` final que cette impl locale OMETTAIT (vraie divergence
+// 1:1 corrigée) ; les callers ré-écrivent aussitôt cette position (CHAR_HYPHEN / StringAppend).
+import { WriteColorChangeControlCode } from '../include/string_util';
+
+// â”€â”€â”€ Memory allocation 1:1 (Alloc / TRY_FREE_AND_SET_NULL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function Alloc<T>(factory: () => T): T { return factory(); }
+
+function makeEasyChatScreenControl(): EasyChatScreenControl {
+  return {
+    funcState: 0,
+    windowId: 0,
+    currentFuncId: 0,
+    curWindowAnimState: 0,
+    destWindowAnimState: 0,
+    windowAnimStateDir: 0,
+    modeWindowState: 0,
+    fourFooterOptions: 0,
+    phrasePrintBuffer: new Uint8Array(193),
+    wordSelectPrintBuffer: new Uint8Array(514),
+    scrollOffset: 0,
+    scrollDest: 0,
+    scrollSpeed: 0,
+    mainCursorSprite: null,
+    rectangleCursorSpriteRight: null,
+    rectangleCursorSpriteLeft: null,
+    wordSelectCursorSprite: null,
+    buttonWindowSprite: null,
+    modeWindowSprite: null,
+    scrollIndicatorUpSprite: null,
+    scrollIndicatorDownSprite: null,
+    startButtonSprite: null,
+    selectButtonSprite: null,
+    bg1TilemapBuffer: new Uint16Array(BG_SCREEN_SIZE / 2),
+    bg3TilemapBuffer: new Uint16Array(BG_SCREEN_SIZE / 2),
+  };
+}
+
+function makeEasyChatScreenWordData(): EasyChatScreenWordData {
+  return {
+    numUnlockedGroups: 0,
+    unlockedGroupIds: new Uint16Array(EC_NUM_GROUPS),
+    numUnlockedAlphabetWords: new Uint16Array(EC_NUM_ALPHABET_GROUPS),
+    unlockedAlphabetWords: Array.from({ length: EC_NUM_ALPHABET_GROUPS },
+      () => new Uint16Array(EC_MAX_WORDS_IN_GROUP)),
+    unused: new Uint8Array(44),
+    selectedGroupWords: new Uint16Array(EC_MAX_WORDS_IN_GROUP),
+    numSelectedGroupWords: 0,
+  };
+}
+
+// â”€â”€â”€ Local STUBs for helpers hors-scope (= lignes hors range 3000-4500) â”€â”€â”€â”€â”€â”€
+//
+//   Ces helpers sont dÃ©finis ailleurs dans easy_chat.c (sections 0-2 et 4-5)
+//   ou dans d'autres modules decomp non encore portÃ©s. STUB explicite ici.
+
+function SetBgTilemapBuffer(_bg: number, _buf: Uint16Array): void {
+  console.warn('[easy-chat-render STUB] SetBgTilemapBuffer hors-scope (bg.c)');
+}
+function DecompressAndLoadBgGfxUsingHeap(_bg: number, _src: unknown, _size: number, _offset: number, _mode: number): void {
+  console.warn('[easy-chat-render STUB] DecompressAndLoadBgGfxUsingHeap hors-scope (menu.c)');
+}
+function IsDma3ManagerBusyWithBgCopy(): boolean {
+  // 1:1 decomp : dans notre engine la copie est synchrone => jamais busy.
+  return false;
+}
+function CopyToBgTilemapBufferRect(_bg: number, _src: Uint16Array | unknown, _destX: number, _destY: number, _width: number, _height: number): void {
+  console.warn('[easy-chat-render STUB] CopyToBgTilemapBufferRect hors-scope (bg.c)');
+}
+
+// Section 4 sprite helpers (lignes 4624+) â€” STUB pour les call-sites lignes 3000-4500.
+// ─── Curseur triangle (principal + word-select) — 1:1 easy_chat.c:4634-4828 ──
+// data[0]=sDelayTimer, data[1]=sAnimateCursor (EXPR macros décomp). Le bob = x2 −6..0.
+const sOamData_TriangleCursor = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0 /* 8x8 square */, x: 0, matrixNum: 0, size: 0 /* 8x8 */,
+  tileNum: 0, priority: 3, paletteNum: 0, affineParam: 0,
+};
+// 1:1 sSpriteTemplate_TriangleCursor (tileTag/paletteTag inversés dans le décomp
+// mais GFXTAG==PALTAG_TRIANGLE_CURSOR==0 → inoffensif).
+const sSpriteTemplate_TriangleCursor = {
+  tileTag: 0, paletteTag: 0, oam: sOamData_TriangleCursor,
+  anims: [], images: null, affineAnims: [], callback: SpriteCB_Cursor,
+};
+let _wordSelectCursorSpriteId = -1;
+
+/** 1:1 CreateMainCursorSprite (easy_chat.c:4637). */
+function CreateMainCursorSprite(): void {
+  if (!sScreenControl) return;
+  const frameId = GetEasyChatScreenFrameId();
+  const x = sPhraseFrameDimensions[frameId].left * 8 + 13;
+  const y = sPhraseFrameDimensions[frameId].top * 8 + 8;
+  const spriteId = CreateSprite(sSpriteTemplate_TriangleCursor, x, y, 2);
+  const rt = getRuntime();
+  sScreenControl.mainCursorSprite = rt.gSprites[spriteId] as unknown as DecompSprite;
+  if (sScreenControl.mainCursorSprite) sScreenControl.mainCursorSprite.data[1] = 1; // sAnimateCursor = TRUE
+}
+
+/** 1:1 SpriteCB_Cursor (easy_chat.c:4647) — bob horizontal x2 −6..0. */
+function SpriteCB_Cursor(sprite: DecompSprite): void {
+  if (sprite.data[1]) {
+    sprite.data[0] += 1;
+    if (sprite.data[0] > 2) {
+      sprite.data[0] = 0;
+      sprite.x2 += 1;
+      if (sprite.x2 > 0) sprite.x2 = -6;
+    }
+  }
+}
+
+/** 1:1 SetMainCursorPos (easy_chat.c:4660). */
+function SetMainCursorPos(x: number, y: number): void {
+  const s = sScreenControl?.mainCursorSprite;
+  if (!s) return;
+  s.x = x; s.y = y; s.x2 = 0; s.data[0] = 0;
+}
+
+/** 1:1 StartMainCursorAnim (easy_chat.c:4675). */
+function StartMainCursorAnim(): void {
+  if (sScreenControl?.mainCursorSprite) sScreenControl.mainCursorSprite.data[1] = 1;
+}
+
+/** 1:1 StopMainCursorAnim (easy_chat.c:4668). */
+function StopMainCursorAnim(): void {
+  const s = sScreenControl?.mainCursorSprite;
+  if (!s) return;
+  s.data[0] = 0; s.data[1] = 0; s.x2 = 0;
+}
+
+// ─── Curseur rectangle (clavier) — 1:1 easy_chat.c:4680-4785 ─────────────────
+const sOamData_RectangleCursor = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 1 /* 64x32 H_RECTANGLE */, x: 0, matrixNum: 0, size: 3 /* 64x32 */,
+  tileNum: 0, priority: 1, paletteNum: 0, affineParam: 0,
+};
+const sAnims_RectangleCursor = [
+  [ANIMCMD_FRAME(0, 0), ANIMCMD_END],   // ON_GROUP
+  [ANIMCMD_FRAME(32, 0), ANIMCMD_END],  // ON_BUTTON
+  [ANIMCMD_FRAME(64, 0), ANIMCMD_END],  // ON_OTHERS
+  [ANIMCMD_FRAME(96, 0), ANIMCMD_END],  // ON_LETTER
+];
+const sSpriteTemplate_RectangleCursor = {
+  tileTag: 1, paletteTag: 1, oam: sOamData_RectangleCursor,
+  anims: sAnims_RectangleCursor, images: null, affineAnims: [], callback: SpriteCB_Cursor,
+};
+let _rectCursorRightId = -1;
+let _rectCursorLeftId = -1;
+
+/** 1:1 CreateRectangleCursorSprites (easy_chat.c:4680) — 2 moitiés (droite hFlip). */
+function CreateRectangleCursorSprites(): void {
+  if (!sScreenControl) return;
+  const rt = getRuntime();
+  let spriteId = CreateSprite(sSpriteTemplate_RectangleCursor, 0, 0, 3);
+  _rectCursorRightId = spriteId;
+  const right = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.rectangleCursorSpriteRight = right;
+  if (right) right.x2 = 32;
+
+  spriteId = CreateSprite(sSpriteTemplate_RectangleCursor, 0, 0, 3);
+  _rectCursorLeftId = spriteId;
+  const left = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.rectangleCursorSpriteLeft = left;
+  if (left) left.x2 = -32;
+
+  if (right) right.hFlip = true;
+  UpdateRectangleCursorPos();
+}
+
+/** 1:1 DestroyRectangleCursorSprites (easy_chat.c:4694). */
+function DestroyRectangleCursorSprites(): void {
+  if (_rectCursorRightId >= 0) { DestroySprite(_rectCursorRightId); _rectCursorRightId = -1; }
+  if (_rectCursorLeftId >= 0) { DestroySprite(_rectCursorLeftId); _rectCursorLeftId = -1; }
+  if (sScreenControl) {
+    sScreenControl.rectangleCursorSpriteRight = null;
+    sScreenControl.rectangleCursorSpriteLeft = null;
+  }
+}
+
+/** 1:1 UpdateRectangleCursorPos (easy_chat.c:4702). */
+function UpdateRectangleCursorPos(): void {
+  if (sScreenControl?.rectangleCursorSpriteRight && sScreenControl?.rectangleCursorSpriteLeft) {
+    const { column, row } = GetKeyboardCursorColAndRow();
+    if (!GetInAlphabetMode()) SetRectangleCursorPos_GroupMode(column, row);
+    else SetRectangleCursorPos_AlphabetMode(column, row);
+  }
+}
+
+/** 1:1 SetRectangleCursorPos_GroupMode (easy_chat.c:4718). */
+function SetRectangleCursorPos_GroupMode(column: number, row: number): void {
+  const right = sScreenControl?.rectangleCursorSpriteRight;
+  const left = sScreenControl?.rectangleCursorSpriteLeft;
+  if (!right || !left) return;
+  if (column !== -1) {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_GROUP); right.x = column * 84 + 58; right.y = row * 16 + 96;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_GROUP); left.x = column * 84 + 58; left.y = row * 16 + 96;
+  } else {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_BUTTON); right.x = 216; right.y = row * 16 + 112;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_BUTTON); left.x = 216; left.y = row * 16 + 112;
+  }
+}
+
+/** 1:1 SetRectangleCursorPos_AlphabetMode (easy_chat.c:4744). */
+function SetRectangleCursorPos_AlphabetMode(column: number, row: number): void {
+  const right = sScreenControl?.rectangleCursorSpriteRight;
+  const left = sScreenControl?.rectangleCursorSpriteLeft;
+  if (!right || !left) return;
+  if (column !== -1) {
+    const y = row * 16 + 96;
+    let x = 32;
+    let anim: number;
+    if (column === NUM_ALPHABET_COLUMNS - 1 && row === 0) {
+      x = 158; anim = RECTCURSOR_ANIM_ON_OTHERS;
+    } else {
+      x += sAlphabetKeyboardColumnOffsets[(column & 0xFF) < NUM_ALPHABET_COLUMNS ? column : 0];
+      anim = RECTCURSOR_ANIM_ON_LETTER;
+    }
+    StartSpriteAnim(right as never, anim); right.x = x; right.y = y;
+    StartSpriteAnim(left as never, anim); left.x = x; left.y = y;
+  } else {
+    StartSpriteAnim(right as never, RECTCURSOR_ANIM_ON_BUTTON); right.x = 216; right.y = row * 16 + 112;
+    StartSpriteAnim(left as never, RECTCURSOR_ANIM_ON_BUTTON); left.x = 216; left.y = row * 16 + 112;
+  }
+}
+
+/** 1:1 CreateWordSelectCursorSprite (easy_chat.c:4789) — même sprite que le principal. */
+function CreateWordSelectCursorSprite(): void {
+  if (!sScreenControl) return;
+  const spriteId = CreateSprite(sSpriteTemplate_TriangleCursor, 0, 0, 4);
+  const rt = getRuntime();
+  _wordSelectCursorSpriteId = spriteId;
+  const ws = rt.gSprites[spriteId] as unknown as DecompSprite;
+  sScreenControl.wordSelectCursorSprite = ws;
+  if (ws) {
+    ws.callback = SpriteCB_WordSelectCursor as never;
+    // 1:1 `sprite->oam.priority = 2` (OBJ devant le word-select bg2) → gba.oam[oamIndex].
+    const oamEntry = (rt.gba as unknown as { oam?: Array<{ priority: number }> }).oam?.[ws.oamIndex];
+    if (oamEntry) oamEntry.priority = 2;
+  }
+  UpdateWordSelectCursorPos();
+}
+
+/** 1:1 SpriteCB_WordSelectCursor (easy_chat.c:4798) — bob (sans le gate sAnimateCursor). */
+function SpriteCB_WordSelectCursor(sprite: DecompSprite): void {
+  sprite.data[0] += 1;
+  if (sprite.data[0] > 2) {
+    sprite.data[0] = 0;
+    sprite.x2 += 1;
+    if (sprite.x2 > 0) sprite.x2 = -6;
+  }
+}
+
+/** 1:1 UpdateWordSelectCursorPos (easy_chat.c:4808). */
+function UpdateWordSelectCursorPos(): void {
+  const { column, row } = GetWordSelectColAndRow();
+  let x = column * 13;
+  x = x * 8 + 28;
+  const y = row * 16 + 96;
+  SetWordSelectCursorPos(x, y);
+}
+
+/** 1:1 SetWordSelectCursorPos (easy_chat.c:4819). */
+function SetWordSelectCursorPos(x: number, y: number): void {
+  const s = sScreenControl?.wordSelectCursorSprite;
+  if (s) { s.x = x; s.y = y; s.x2 = 0; s.data[0] = 0; }
+}
+
+/** 1:1 DestroyWordSelectCursorSprite (easy_chat.c:4830). */
+function DestroyWordSelectCursorSprite(): void {
+  if (sScreenControl?.wordSelectCursorSprite && _wordSelectCursorSpriteId >= 0) {
+    DestroySprite(_wordSelectCursorSpriteId);
+    _wordSelectCursorSpriteId = -1;
+    sScreenControl.wordSelectCursorSprite = null;
+  }
+}
+function CreateSideWindowSprites(): void {
+  console.warn('[easy-chat-render STUB] CreateSideWindowSprites â€” section 4');
+}
+function DestroySideWindowSprites(): boolean {
+  console.warn('[easy-chat-render STUB] DestroySideWindowSprites â€” section 4');
+  return false;
+}
+function ShowSideWindow(): boolean {
+  console.warn('[easy-chat-render STUB] ShowSideWindow â€” section 4');
+  return false;
+}
+function HideModeWindow(): void {
+  console.warn('[easy-chat-render STUB] HideModeWindow â€” section 4');
+}
+function SetModeWindowToTransition(): void {
+  console.warn('[easy-chat-render STUB] SetModeWindowToTransition â€” section 4');
+}
+function UpdateModeWindowAnim(): void {
+  console.warn('[easy-chat-render STUB] UpdateModeWindowAnim â€” section 4');
+}
+function IsModeWindowAnimActive(): boolean {
+  console.warn('[easy-chat-render STUB] IsModeWindowAnimActive â€” section 4');
+  return false;
+}
+function CreateScrollIndicatorSprites(): void {
+  console.warn('[easy-chat-render STUB] CreateScrollIndicatorSprites â€” section 4');
+}
+function UpdateScrollIndicatorsVisibility(): void {
+  console.warn('[easy-chat-render STUB] UpdateScrollIndicatorsVisibility â€” section 4');
+}
+function HideScrollIndicators(): void {
+  console.warn('[easy-chat-render STUB] HideScrollIndicators â€” section 4');
+}
+function SetScrollIndicatorXPos(_inWordSelect: boolean): void {
+  console.warn('[easy-chat-render STUB] SetScrollIndicatorXPos â€” section 4');
+}
+function CreateStartSelectButtonSprites(): void {
+  console.warn('[easy-chat-render STUB] CreateStartSelectButtonSprites â€” section 4');
+}
+function UpdateStartSelectButtonsVisibility(): void {
+  console.warn('[easy-chat-render STUB] UpdateStartSelectButtonsVisibility â€” section 4');
+}
+function HideStartSelectButtons(): void {
+  console.warn('[easy-chat-render STUB] HideStartSelectButtons â€” section 4');
+}
+function TryAddInterviewObjectEvents(): void {
+  console.warn('[easy-chat-render STUB] TryAddInterviewObjectEvents â€” section 4');
+}
+function AddMainScreenButtonWindow(): void {
+  console.warn('[easy-chat-render STUB] AddMainScreenButtonWindow â€” section 4');
+}
+/** 1:1 LoadEasyChatGfx (easy_chat.c:4624) : charge sheets + palettes sprites.
+ *  (sCompressedSpriteSheets = rectangle/mode/interview différés.) */
+function LoadEasyChatGfx(): void {
+  LoadSpriteSheets(sSpriteSheets as never);
+  LoadSpritePalettes(sSpritePalettes as never);
+}
+function GetFooterOptionXOffset(_optionIdx: number): number {
+  console.warn('[easy-chat-render STUB] GetFooterOptionXOffset â€” section 4');
+  return 0;
+}
+// ─── Word text lookup (1:1 decomp easy_chat.c:5136-5237, 5667-5684) ──────────
+
+/** 1:1 GetEasyChatWord (easy_chat.c:5202). */
+function GetEasyChatWord(groupId: number, index: number): Uint8Array | string {
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+    case EC_GROUP_POKEMON_NATIONAL:
+      return gSpeciesNames[index] ?? '';
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2:
+      return gMoveNames[index] ?? '';
+    default:
+      return gEasyChatGroups[groupId]?.wordData.words?.[index]?.text ?? '';
+  }
+}
+
+/** 1:1 IsEasyChatWordInvalid (easy_chat.c:5136). */
+function IsEasyChatWordInvalid(easyChatWord: number): boolean {
+  if (easyChatWord === EC_EMPTY_WORD) return false;
+  const groupId = EC_GROUP(easyChatWord);
+  const index = EC_INDEX(easyChatWord);
+  if (groupId >= EC_NUM_GROUPS) return true;
+  const numWords = gEasyChatGroups[groupId].numWords;
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+    case EC_GROUP_POKEMON_NATIONAL:
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2: {
+      const list = gEasyChatGroups[groupId].wordData.valueList!;
+      for (let i = 0; i < numWords; i++) if (index === list[i]) return false;
+      return true;
+    }
+  }
+  return index >= numWords;
+}
+
+/** 1:1 CopyEasyChatWord (easy_chat.c:5217). Retourne l'end-ptr (subarray sur EOS). */
+export function CopyEasyChatWord(dest: Uint8Array, easyChatWord: number): Uint8Array {
+  let resultStr: Uint8Array;
+  if (IsEasyChatWordInvalid(easyChatWord)) {
+    resultStr = StringCopy(dest, gText_ThreeQuestionMarks ?? '???');
+  } else if (easyChatWord !== EC_EMPTY_WORD) {
+    const index = EC_INDEX(easyChatWord);
+    const groupId = EC_GROUP(easyChatWord);
+    resultStr = StringCopy(dest, GetEasyChatWord(groupId, index));
+  } else {
+    dest[0] = EOS;
+    resultStr = dest;
+  }
+  return resultStr;
+}
+
+/** 1:1 CopyEasyChatWordPadded (easy_chat.c:5672). */
+function CopyEasyChatWordPadded(dest: Uint8Array, easyChatWord: number, totalChars: number): Uint8Array {
+  let str = CopyEasyChatWord(dest, easyChatWord);
+  for (let i = str.byteOffset - dest.byteOffset; i < totalChars; i++) {
+    str[0] = CHAR_SPACE;
+    str = str.subarray(1);
+  }
+  str[0] = EOS;
+  return str;
+}
+
+/** 1:1 GetEasyChatWordGroupName (easy_chat.c:5667) = sEasyChatGroupNamePointers[groupId]. */
+function GetEasyChatWordGroupName(groupId: number): Uint8Array | string {
+  return sEasyChatGroupNamePointers[groupId] ?? '';
+}
+
+// ─── Word data (sWordData) — 1:1 decomp easy_chat.c section 5598-5849 ─────────
+
+/** 1:1 InitEasyChatScreenWordData (easy_chat.c:5598). */
+export function InitEasyChatScreenWordData(): boolean {
+  sWordData = makeEasyChatScreenWordData(); // Alloc
+  if (!sWordData) return false;
+  SetUnlockedEasyChatGroups();
+  SetUnlockedWordsByAlphabet();
+  return true;
+}
+
+/** 1:1 FreeEasyChatScreenWordData (easy_chat.c:5609). */
+export function FreeEasyChatScreenWordData(): void {
+  sWordData = null;
+}
+
+/** 1:1 SetUnlockedEasyChatGroups (easy_chat.c:5614). */
+function SetUnlockedEasyChatGroups(): void {
+  if (!sWordData) return;
+  sWordData.numUnlockedGroups = 0;
+  if (GetNationalPokedexCount(FLAG_GET_SEEN))
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON;
+
+  // Ces groupes sont déverrouillés automatiquement.
+  for (let i = EC_GROUP_TRAINER; i <= EC_GROUP_ADJECTIVES; i++)
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = i;
+
+  if (FlagGet(FLAG_SYS_GAME_CLEAR)) {
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_EVENTS;
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_1;
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_2;
+  }
+  if (FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS))
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_TRENDY_SAYING;
+  if (IsNationalPokedexEnabled())
+    sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON_NATIONAL;
+}
+
+/** 1:1 GetNumUnlockedEasyChatGroups (easy_chat.c:5640). */
+export function GetNumUnlockedEasyChatGroups(): number {
+  return sWordData ? sWordData.numUnlockedGroups : 0;
+}
+
+/** 1:1 GetUnlockedEasyChatGroupId (easy_chat.c:5645). */
+export function GetUnlockedEasyChatGroupId(index: number): number {
+  if (!sWordData || index >= sWordData.numUnlockedGroups) return EC_NUM_GROUPS;
+  return sWordData.unlockedGroupIds[index];
+}
+
+/** 1:1 SetUnlockedWordsByAlphabet (easy_chat.c:5686). Liste compressée
+ *  EC_EMPTY_WORD+count (DOUBLE_SPECIES_NAME) : garde le premier mot débloqué. */
+function SetUnlockedWordsByAlphabet(): void {
+  if (!sWordData) return;
+  for (let i = 0; i < EC_NUM_ALPHABET_GROUPS; i++) {
+    const numWords = gEasyChatWordsByLetterPointers[i].numWords;
+    const words = gEasyChatWordsByLetterPointers[i].words;
+    sWordData.numUnlockedAlphabetWords[i] = 0;
+    let index = 0;
+    let w = 0; // pointeur mobile (= `words` du décomp)
+    for (let j = 0; j < numWords; j++) {
+      let numToProcess: number;
+      if (words[w] === EC_EMPTY_WORD) {
+        w++;
+        numToProcess = words[w];
+        w++;
+        j += 1 + numToProcess;
+      } else {
+        numToProcess = 1;
+      }
+      for (let k = 0; k < numToProcess; k++) {
+        if (IsEasyChatWordUnlocked(words[w + k])) {
+          sWordData.unlockedAlphabetWords[i][index++] = words[w + k];
+          sWordData.numUnlockedAlphabetWords[i]++;
+          break;
+        }
+      }
+      w += numToProcess;
+    }
+  }
+}
+
+/** 1:1 SetSelectedWordGroup (easy_chat.c:5729). */
+export function SetSelectedWordGroup(inAlphabetMode: boolean, groupId: number): void {
+  if (!sWordData) return;
+  if (!inAlphabetMode)
+    sWordData.numSelectedGroupWords = SetSelectedWordGroup_GroupMode(groupId);
+  else
+    sWordData.numSelectedGroupWords = SetSelectedWordGroup_AlphabetMode(groupId);
+}
+
+/** 1:1 GetWordFromSelectedGroup (easy_chat.c:5737). */
+export function GetWordFromSelectedGroup(index: number): number {
+  if (!sWordData || index >= sWordData.numSelectedGroupWords) return EC_EMPTY_WORD;
+  return sWordData.selectedGroupWords[index];
+}
+
+/** 1:1 GetNumWordsInSelectedGroup (easy_chat.c:5745). */
+export function GetNumWordsInSelectedGroup(): number {
+  return sWordData ? sWordData.numSelectedGroupWords : 0;
+}
+
+/** 1:1 SetSelectedWordGroup_GroupMode (easy_chat.c:5750). */
+function SetSelectedWordGroup_GroupMode(groupId: number): number {
+  if (!sWordData) return 0;
+  const numWords = gEasyChatGroups[groupId].numWords;
+  let totalWords = 0;
+  if (
+    groupId === EC_GROUP_POKEMON || groupId === EC_GROUP_POKEMON_NATIONAL ||
+    groupId === EC_GROUP_MOVE_1 || groupId === EC_GROUP_MOVE_2
+  ) {
+    const list = gEasyChatGroups[groupId].wordData.valueList!;
+    for (let i = 0; i < numWords; i++) {
+      if (IsEasyChatIndexAndGroupUnlocked(list[i], groupId))
+        sWordData.selectedGroupWords[totalWords++] = EC_WORD(groupId, list[i]);
+    }
+    return totalWords;
+  } else {
+    const wordInfo = gEasyChatGroups[groupId].wordData.words!;
+    for (let i = 0; i < numWords; i++) {
+      const alphabeticalOrder = wordInfo[i].alphabeticalOrder;
+      if (IsEasyChatIndexAndGroupUnlocked(alphabeticalOrder, groupId))
+        sWordData.selectedGroupWords[totalWords++] = EC_WORD(groupId, alphabeticalOrder);
+    }
+    return totalWords;
+  }
+}
+
+/** 1:1 SetSelectedWordGroup_AlphabetMode (easy_chat.c:5784). */
+function SetSelectedWordGroup_AlphabetMode(groupId: number): number {
+  if (!sWordData) return 0;
+  let totalWords = 0;
+  for (let i = 0; i < sWordData.numUnlockedAlphabetWords[groupId]; i++)
+    sWordData.selectedGroupWords[totalWords++] = sWordData.unlockedAlphabetWords[groupId][i];
+  return totalWords;
+}
+
+/** 1:1 IsEasyChatGroupUnlocked2 (easy_chat.c:5795). */
+function IsEasyChatGroupUnlocked2(groupId: number): boolean {
+  if (!sWordData) return false;
+  for (let i = 0; i < sWordData.numUnlockedGroups; i++)
+    if (sWordData.unlockedGroupIds[i] === groupId) return true;
+  return false;
+}
+
+/** 1:1 IsEasyChatIndexAndGroupUnlocked (easy_chat.c:5807). */
+function IsEasyChatIndexAndGroupUnlocked(wordIndex: number, groupId: number): boolean {
+  switch (groupId) {
+    case EC_GROUP_POKEMON:
+      return !!GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
+    case EC_GROUP_POKEMON_NATIONAL:
+      if (IsRestrictedWordSpecies(wordIndex))
+        GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
+      return true;
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2:
+      return true;
+    case EC_GROUP_TRENDY_SAYING:
+      return IsTrendySayingUnlocked(wordIndex);
+    default:
+      return !!gEasyChatGroups[groupId].wordData.words![wordIndex].enabled;
+  }
+}
+
+/** 1:1 IsRestrictedWordSpecies (easy_chat.c:5829). */
+function IsRestrictedWordSpecies(species: number): boolean {
+  for (let i = 0; i < sRestrictedWordSpecies.length; i++)
+    if (sRestrictedWordSpecies[i] === species) return true;
+  return false;
+}
+
+/** 1:1 IsEasyChatWordUnlocked (easy_chat.c:5841). */
+function IsEasyChatWordUnlocked(easyChatWord: number): boolean {
+  const groupId = EC_GROUP(easyChatWord);
+  const index = EC_INDEX(easyChatWord);
+  if (!IsEasyChatGroupUnlocked2(groupId)) return false;
+  return IsEasyChatIndexAndGroupUnlocked(index, groupId);
+}
+
+/** 1:1 IsTrendySayingUnlocked (easy_chat.c:5446). */
+function IsTrendySayingUnlocked(wordIndex: number): boolean {
+  const byteOffset = Math.floor(wordIndex / 8);
+  const shift = wordIndex % 8;
+  return ((gSaveBlock1Ptr.unlockedTrendySayings[byteOffset] >> shift) & 1) !== 0;
+}
+
+// TRY_FREE_AND_SET_NULL 1:1 decomp macro (include/malloc.h).
+function TRY_FREE_AND_SET_NULL<T>(ref: { value: T | null }): void {
+  if (ref.value !== null) {
+    ref.value = null;
+  }
+}
+
+// â”€â”€â”€ Lower window scroll/dimensions â€” utilisÃ© par section 3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//
+//   DÃ©comp easy_chat.c lignes ~4602-4622 â€” proches du range, helpers utilisÃ©s
+//   par les fonctions du range et par section 4. Port 1:1.
+
+let sLowerWindowScroll = 0;
+
+function ResetLowerWindowScroll(): void {
+  sLowerWindowScroll = 0;
+}
+
+function InitLowerWindowScroll(scrollChange: number, scrollSpeed: number): void {
+  if (!sScreenControl) return;
+  sScreenControl.scrollOffset = sLowerWindowScroll;
+  sScreenControl.scrollDest = sLowerWindowScroll + scrollChange * 16;
+  sScreenControl.scrollSpeed = scrollSpeed;
+}
+
+function UpdateLowerWindowScroll(): boolean {
+  if (!sScreenControl) return false;
+  if (sScreenControl.scrollOffset === sScreenControl.scrollDest) return false;
+
+  if (sScreenControl.scrollOffset < sScreenControl.scrollDest) {
+    sScreenControl.scrollOffset += sScreenControl.scrollSpeed;
+    if (sScreenControl.scrollOffset >= sScreenControl.scrollDest) {
+      sScreenControl.scrollOffset = sScreenControl.scrollDest;
+    }
+  } else {
+    sScreenControl.scrollOffset -= sScreenControl.scrollSpeed;
+    if (sScreenControl.scrollOffset <= sScreenControl.scrollDest) {
+      sScreenControl.scrollOffset = sScreenControl.scrollDest;
+    }
+  }
+  sLowerWindowScroll = sScreenControl.scrollOffset;
+  return sScreenControl.scrollOffset !== sScreenControl.scrollDest;
+}
+
+function GetLowerWindowScrollOffset(): number {
+  return Math.floor(sLowerWindowScroll / 16);
+}
+
+function SetWindowDimensions(_left: number, _top: number, _right: number, _bottom: number): void {
+  // 1:1 decomp : configure REG_WIN0H/V via SetGpuReg. Pour notre engine, no-op.
+  // (Le clipping rectangle est traitÃ© par le compositor.)
+}
+
+function BufferLowerWindowFrame(left: number, top: number, width: number, height: number): void {
+  // 1:1 decomp easy_chat.c â€” dessine un cadre dans la BG1 tilemap pour
+  // l'animation d'ouverture/fermeture du clavier/word select.
+  // Note : appelÃ© depuis DrawLowerWindowFrame (range 3000-4500).
+  const right = left + width;
+  const bottom = top + height;
+  // Top-left corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_L_CORNER, left, top, 1, 1, 4);
+  // Top edge.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_EDGE, left + 1, top, width - 1, 1, 4);
+  // Top-right corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_R_CORNER, right, top, 1, 1, 4);
+  // Left/right edges + middle.
+  for (let y = top + 1; y < bottom; y++) {
+    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_L_EDGE, left, y, 1, 1, 4);
+    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TRANSPARENT, left + 1, y, width - 1, 1, 4);
+    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_R_EDGE, right, y, 1, 1, 4);
+  }
+  // Bottom-left corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_L_CORNER, left, bottom, 1, 1, 4);
+  // Bottom edge.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_EDGE, left + 1, bottom, width - 1, 1, 4);
+  // Bottom-right corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_R_CORNER, right, bottom, 1, 1, 4);
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//   PORT 1:1 STRICT â€” easy_chat.c lignes 3005-4499
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+/** 1:1 decomp easy_chat.c:3005 */
+function ClearUnusedField(): void {
+  if (!sEasyChatScreen) return;
+  sEasyChatScreen.unused = 0;
+}
+
+/** 1:1 decomp easy_chat.c:3010 */
+function DummyWordCheck(_easyChatWord: number): boolean {
+  return false;
+}
+
+/** 1:1 decomp easy_chat.c:3015 */
+export function InitEasyChatScreenControl(): boolean {
+  if (!InitEasyChatScreenControl_()) return false;
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3023 */
+export function LoadEasyChatScreen(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      ResetBgsAndClearDma3BusyFlags(0);
+      InitBgsFromTemplates(0, sEasyChatBgTemplates, sEasyChatBgTemplates.length);
+      SetBgTilemapBuffer(3, sScreenControl.bg3TilemapBuffer);
+      SetBgTilemapBuffer(1, sScreenControl.bg1TilemapBuffer);
+      InitWindows(sEasyChatWindowTemplates);
+      DeactivateAllTextPrinters();
+      LoadEasyChatPalettes();
+      InitEasyChatBgs();
+      CpuFastFill(0, OAM as unknown as Uint8Array, OAM_SIZE);
+      break;
+    case 1:
+      DecompressAndLoadBgGfxUsingHeap(3, gEasyChatWindow_Gfx, 0, 0, 0);
+      CopyToBgTilemapBuffer(3, gEasyChatWindow_Tilemap, 0, 0);
+      AdjustBgTilemapForFooter();
+      BufferFrameTilemap(sScreenControl.bg1TilemapBuffer);
+      AddPhraseWindow();
+      AddMainScreenButtonWindow();
+      CopyBgTilemapBufferToVram(3);
+      break;
+    case 2:
+      DecompressAndLoadBgGfxUsingHeap(1, sTextInputFrame_Gfx, 0, 0, 0);
+      CopyBgTilemapBufferToVram(1);
+      break;
+    case 3:
+      PrintTitle();
+      PrintInitialInstructions();
+      PrintCurrentPhrase();
+      DrawLowerWindow();
+      break;
+    case 4:
+      LoadEasyChatGfx();
+      if (GetEasyChatScreenType() !== EASY_CHAT_TYPE_QUIZ_QUESTION) {
+        CreateMainCursorSprite();
+      }
+      break;
+    case 5:
+      if (IsDma3ManagerBusyWithBgCopy()) {
+        return true;
+      } else {
+        SetWindowDimensions(0, 0, 0, 0);
+        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);
+        SetGpuReg(REG_OFFSET_WINOUT,
+          WINOUT_WIN01_BG0 |
+          WINOUT_WIN01_BG1 |
+          WINOUT_WIN01_BG3 |
+          WINOUT_WIN01_OBJ |
+          WINOUT_WIN01_CLR,
+        );
+        ShowBg(3);
+        ShowBg(1);
+        ShowBg(2);
+        ShowBg(0);
+        CreateScrollIndicatorSprites();
+        CreateStartSelectButtonSprites();
+        TryAddInterviewObjectEvents();
+      }
+      break;
+    default:
+      return false;
+  }
+  sScreenControl.funcState++;
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3093 */
+export function FreeEasyChatScreenControl(): void {
+  if (sScreenControl !== null) {
+    TRY_FREE_AND_SET_NULL({ value: sScreenControl });
+    sScreenControl = null;
+  }
+}
+
+/** 1:1 decomp easy_chat.c:3098 */
+export function StartEasyChatFunction(funcId: number): void {
+  if (!sScreenControl) return;
+  sScreenControl.currentFuncId = funcId;
+  sScreenControl.funcState = 0;
+  RunEasyChatFunction();
+}
+
+/** 1:1 decomp easy_chat.c:3106 â€” Returns FALSE when called function has finished. */
+export function RunEasyChatFunction(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.currentFuncId) {
+    case ECFUNC_NONE: return false;
+    case ECFUNC_REPRINT_PHRASE: return ReprintPhrase();
+    case ECFUNC_UPDATE_MAIN_CURSOR: return UpdateMainCursor();
+    case ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS: return UpdateMainCursorOnButtons();
+    case ECFUNC_PROMPT_DELETE_ALL: return ShowConfirmDeleteAllPrompt();
+    case ECFUNC_PROMPT_EXIT: return ShowConfirmExitPrompt();
+    case ECFUNC_PROMPT_CONFIRM: return ShowConfirmPrompt();
+    case ECFUNC_CLOSE_PROMPT: return ClosePrompt();
+    case ECFUNC_CLOSE_PROMPT_AFTER_DELETE: return ClosePromptAfterDeleteAll();
+    case ECFUNC_OPEN_KEYBOARD: return OpenKeyboard();
+    case ECFUNC_CLOSE_KEYBOARD: return CloseKeyboard();
+    case ECFUNC_OPEN_WORD_SELECT: return OpenWordSelect();
+    case ECFUNC_CLOSE_WORD_SELECT: return CloseWordSelect();
+    case ECFUNC_PROMPT_CONFIRM_LYRICS: return ShowConfirmLyricsPrompt();
+    case ECFUNC_RETURN_TO_KEYBOARD: return ReturnToKeyboard();
+    case ECFUNC_UPDATE_KEYBOARD_CURSOR: return UpdateKeyboardCursor();
+    case ECFUNC_GROUP_NAMES_SCROLL_DOWN: return GroupNamesScrollDown();
+    case ECFUNC_GROUP_NAMES_SCROLL_UP: return GroupNamesScrollUp();
+    case ECFUNC_UPDATE_WORD_SELECT_CURSOR: return UpdateWordSelectCursor();
+    case ECFUNC_WORD_SELECT_SCROLL_UP: return WordSelectScrollUp();
+    case ECFUNC_WORD_SELECT_SCROLL_DOWN: return WordSelectScrollDown();
+    case ECFUNC_WORD_SELECT_PAGE_UP: return WordSelectPageScrollUp();
+    case ECFUNC_WORD_SELECT_PAGE_DOWN: return WordSelectPageScrollDown();
+    case ECFUNC_SWITCH_KEYBOARD_MODE: return SwitchKeyboardMode();
+    case ECFUNC_EXIT: return false;
+    case ECFUNC_QUIZ_QUESTION: return false;
+    case ECFUNC_QUIZ_ANSWER: return false;
+    case ECFUNC_SET_QUIZ_QUESTION: return false;
+    case ECFUNC_SET_QUIZ_ANSWER: return false;
+    case ECFUNC_MSG_CREATE_QUIZ: return ShowCreateQuizMsg();
+    case ECFUNC_MSG_SELECT_ANSWER: return ShowSelectAnswerMsg();
+    case ECFUNC_MSG_SONG_TOO_SHORT: return ShowSongTooShortMsg();
+    case ECFUNC_MSG_CANT_DELETE_LYRICS: return ShowCantDeleteLyricsMsg();
+    case ECFUNC_MSG_COMBINE_TWO_WORDS: return ShowCombineTwoWordsMsg();
+    case ECFUNC_MSG_CANT_EXIT: return ShowCantExitMsg();
+    default: return false;
+  }
+}
+
+/** 1:1 decomp easy_chat.c:3150 â€” Only used to update the current phrase after a word deletion. */
+function ReprintPhrase(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintCurrentPhrase();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3165 */
+function UpdateMainCursor(): boolean {
+  if (!sScreenControl) return false;
+  let i: number;
+  let currentPhrase: Uint16Array;
+  let frameId: number;
+  let cursorColumn: number, cursorRow: number, numColumns: number;
+  let x: number;
+  let stringWidth: number;
+  let trueStringWidth: number;
+  let y: number;
+  const str = new Uint8Array(64);
+
+  currentPhrase = GetCurrentPhrase();
+  frameId = GetEasyChatScreenFrameId();
+  cursorColumn = GetMainCursorColumn();
+  cursorRow = GetMainCursorRow();
+  numColumns = GetNumColumns();
+  let ecWordIdx = cursorRow * numColumns;
+  const frame = sPhraseFrameDimensions[frameId];
+  if (!frame) {
+    console.warn('[easy-chat-render] UpdateMainCursor: sPhraseFrameDimensions not injected');
+    return false;
+  }
+  x = 8 * frame.left + 13;
+  for (i = 0; i < cursorColumn; i++) {
+    const ecWord = currentPhrase[ecWordIdx];
+    if (ecWord === EC_EMPTY_WORD) {
+      stringWidth = 72;
+    } else {
+      CopyEasyChatWord(str, ecWord);
+      // 1:1 decomp: GetStringWidth(FONT_NORMAL, str, 0)
+      // (engine TS signature collapsed to 1 arg = font-implicit / spacing=0)
+      stringWidth = GetStringWidth(str as unknown as string);
+    }
+    trueStringWidth = stringWidth + 17;
+    x += trueStringWidth;
+    ecWordIdx++;
+  }
+  y = 8 * (frame.top + cursorRow * 2);
+  SetMainCursorPos(x, y + 8);
+  return false;
+}
+
+/** 1:1 decomp easy_chat.c:3207 */
+function UpdateMainCursorOnButtons(): boolean {
+  const xOffset = GetFooterOptionXOffset(GetMainCursorColumn());
+  SetMainCursorPos(xOffset, 96);
+  return false;
+}
+
+/** 1:1 decomp easy_chat.c:3214 */
+function ShowConfirmExitPrompt(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CONFIRM_EXIT);
+      CreateEasyChatYesNoMenu(1);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3231 */
+function ShowConfirmPrompt(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CONFIRM);
+      CreateEasyChatYesNoMenu(0);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3248 */
+function ShowConfirmDeleteAllPrompt(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CONFIRM_DELETE);
+      CreateEasyChatYesNoMenu(1);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3265 */
+function ClosePrompt(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StartMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_INSTRUCTIONS);
+      PrintCurrentPhrase();
+      ShowBg(0);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3283 */
+function ClosePromptAfterDeleteAll(): boolean {
+  if (!sScreenControl) return false;
+  // 1:1 decomp : case 0 fall-through case 1 (= action puis IsDma3...).
+  // TS noFallthroughCasesInSwitch => on remplace par if/else equivalent.
+  if (sScreenControl.funcState === 0) {
+    StartMainCursorAnim();
+    PrintEasyChatStdMessage(MSG_INSTRUCTIONS);
+    PrintCurrentPhrase();
+    sScreenControl.funcState++;
+    return IsDma3ManagerBusyWithBgCopy();
+  }
+  if (sScreenControl.funcState === 1) {
+    return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3300 */
+function OpenKeyboard(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      HideBg(0);
+      SetWindowDimensions(0, 0, 0, 0);
+      PrintKeyboardText();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_OPEN_KEYBOARD);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy() && !UpdateLowerWindowAnim()) {
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        CreateSideWindowSprites();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      if (!ShowSideWindow()) {
+        CreateRectangleCursorSprites();
+        SetScrollIndicatorXPos(false);
+        UpdateScrollIndicatorsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3346 */
+function CloseKeyboard(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      DestroyRectangleCursorSprites();
+      HideModeWindow();
+      HideScrollIndicators();
+      sScreenControl.funcState++;
+      break;
+    case 1: {
+      // 1:1 decomp : si DestroySideWindowSprites()==TRUE => break out of switch.
+      // Sinon InitLowerWindowAnim + funcState++ + FALL-THROUGH to case 2.
+      if (DestroySideWindowSprites() === true) break;
+      InitLowerWindowAnim(WINANIM_CLOSE_KEYBOARD);
+      sScreenControl.funcState++;
+      // TS noFallthroughCasesInSwitch => exécute case 2 inline.
+      if (!UpdateLowerWindowAnim()) {
+        sScreenControl.funcState++;
+      }
+      break;
+    }
+    case 2:
+      if (!UpdateLowerWindowAnim()) {
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        StartMainCursorAnim();
+        ShowBg(0);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3382 */
+function SwitchKeyboardMode(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      DestroyRectangleCursorSprites();
+      HideScrollIndicators();
+      SetModeWindowToTransition();
+      InitLowerWindowAnim(WINANIM_KEYBOARD_SWITCH_OUT);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!UpdateLowerWindowAnim() && !IsModeWindowAnimActive()) {
+        PrintKeyboardText();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_KEYBOARD_SWITCH_IN);
+        UpdateModeWindowAnim();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!UpdateLowerWindowAnim() && !IsModeWindowAnimActive()) {
+        UpdateScrollIndicatorsVisibility();
+        CreateRectangleCursorSprites();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 4:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3424 */
+function UpdateKeyboardCursor(): boolean {
+  UpdateRectangleCursorPos();
+  return false;
+}
+
+/** 1:1 decomp easy_chat.c:3430 */
+function GroupNamesScrollDown(): boolean {
+  if (!sScreenControl) return false;
+  // 1:1 decomp : case 0 fall-through case 1. TS => if/else equivalent.
+  if (sScreenControl.funcState === 0) {
+    InitLowerWindowScroll(1, 4);
+    sScreenControl.funcState++;
+    // fall-through into case 1 body
+    if (!UpdateLowerWindowScroll()) {
+      UpdateRectangleCursorPos();
+      UpdateScrollIndicatorsVisibility();
+      return false;
+    }
+    return true;
+  }
+  if (sScreenControl.funcState === 1) {
+    if (!UpdateLowerWindowScroll()) {
+      UpdateRectangleCursorPos();
+      UpdateScrollIndicatorsVisibility();
+      return false;
+    }
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3451 */
+function GroupNamesScrollUp(): boolean {
+  if (!sScreenControl) return false;
+  // 1:1 decomp : case 0 fall-through case 1. TS => if/else equivalent.
+  if (sScreenControl.funcState === 0) {
+    InitLowerWindowScroll(-1, 4);
+    sScreenControl.funcState++;
+    // fall-through into case 1 body
+    if (!UpdateLowerWindowScroll()) {
+      UpdateScrollIndicatorsVisibility();
+      sScreenControl.funcState++;
+      return false;
+    }
+    return true;
+  }
+  if (sScreenControl.funcState === 1) {
+    if (!UpdateLowerWindowScroll()) {
+      UpdateScrollIndicatorsVisibility();
+      sScreenControl.funcState++;
+      return false;
+    }
+    return true;
+  }
+  if (sScreenControl.funcState === 2) {
+    return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3474 */
+function OpenWordSelect(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      DestroyRectangleCursorSprites();
+      HideModeWindow();
+      HideScrollIndicators();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!DestroySideWindowSprites()) {
+        ClearWordSelectWindow();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_OPEN_WORD_SELECT);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!UpdateLowerWindowAnim()) {
+        InitLowerWindowText(TEXT_WORD_SELECT);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        CreateWordSelectCursorSprite();
+        SetScrollIndicatorXPos(true);
+        UpdateScrollIndicatorsVisibility();
+        UpdateStartSelectButtonsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 5:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3523 */
+function CloseWordSelect(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintCurrentPhrase();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      DestroyWordSelectCursorSprite();
+      HideScrollIndicators();
+      HideStartSelectButtons();
+      ClearWordSelectWindow();
+      sScreenControl.funcState++;
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_CLOSE_WORD_SELECT);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!UpdateLowerWindowAnim()) {
+        ShowBg(0);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        StartMainCursorAnim();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 5:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3567 */
+function ShowConfirmLyricsPrompt(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintCurrentPhrase();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      DestroyWordSelectCursorSprite();
+      HideScrollIndicators();
+      HideStartSelectButtons();
+      ClearWordSelectWindow();
+      sScreenControl.funcState++;
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_CLOSE_WORD_SELECT);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!UpdateLowerWindowAnim()) {
+        PrintEasyChatStdMessage(MSG_CONFIRM);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        ShowBg(0);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 5:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        StartMainCursorAnim();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 6:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3618 */
+function ReturnToKeyboard(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      DestroyWordSelectCursorSprite();
+      HideScrollIndicators();
+      HideStartSelectButtons();
+      ClearWordSelectWindow();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowAnim(WINANIM_RETURN_TO_KEYBOARD);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!UpdateLowerWindowAnim()) {
+        PrintKeyboardText();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        CreateSideWindowSprites();
+        sScreenControl.funcState++;
+      }
+      break;
+    case 4:
+      if (!ShowSideWindow()) {
+        CreateRectangleCursorSprites();
+        SetScrollIndicatorXPos(false);
+        UpdateScrollIndicatorsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3665 */
+function UpdateWordSelectCursor(): boolean {
+  UpdateWordSelectCursorPos();
+  return false;
+}
+
+/** 1:1 decomp easy_chat.c:3671 */
+function WordSelectScrollDown(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintWordSelectNextRowDown();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowScroll(1, 4);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!UpdateLowerWindowScroll()) {
+        UpdateWordSelectCursorPos();
+        UpdateScrollIndicatorsVisibility();
+        UpdateStartSelectButtonsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 3:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3703 */
+function WordSelectScrollUp(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintWordSelectNextRowUp();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        InitLowerWindowScroll(-1, 4);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!UpdateLowerWindowScroll()) {
+        UpdateScrollIndicatorsVisibility();
+        UpdateStartSelectButtonsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 3:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3734 */
+function WordSelectPageScrollDown(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintWordSelectRowsPageDown();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        const scrollChange = GetWordSelectScrollOffset() - GetLowerWindowScrollOffset();
+        InitLowerWindowScroll(scrollChange, 8);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!UpdateLowerWindowScroll()) {
+        UpdateWordSelectCursorPos();
+        UpdateScrollIndicatorsVisibility();
+        UpdateStartSelectButtonsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 3:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3767 */
+function WordSelectPageScrollUp(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      PrintWordSelectRowsPageUp();
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        const scrollChange = GetWordSelectScrollOffset() - GetLowerWindowScrollOffset();
+        InitLowerWindowScroll(scrollChange, 8);
+        sScreenControl.funcState++;
+      }
+      break;
+    case 2:
+      if (!UpdateLowerWindowScroll()) {
+        UpdateScrollIndicatorsVisibility();
+        UpdateStartSelectButtonsVisibility();
+        sScreenControl.funcState++;
+        return false;
+      }
+      break;
+    case 3:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3799 */
+function ShowCreateQuizMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CREATE_QUIZ);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3815 */
+function ShowSelectAnswerMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_SELECT_ANSWER);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3831 */
+function ShowSongTooShortMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_SONG_TOO_SHORT);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3847 */
+function ShowCantDeleteLyricsMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CANT_DELETE_LYRICS);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3863 */
+function ShowCombineTwoWordsMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_COMBINE_TWO_WORDS);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3879 */
+function ShowCantExitMsg(): boolean {
+  if (!sScreenControl) return false;
+  switch (sScreenControl.funcState) {
+    case 0:
+      StopMainCursorAnim();
+      PrintEasyChatStdMessage(MSG_CANT_QUIT);
+      sScreenControl.funcState++;
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3895 */
+function InitEasyChatScreenControl_(): boolean {
+  sScreenControl = Alloc(() => makeEasyChatScreenControl());
+  if (!sScreenControl) return false;
+
+  sScreenControl.funcState = 0;
+  sScreenControl.mainCursorSprite = null;
+  sScreenControl.rectangleCursorSpriteRight = null;
+  sScreenControl.rectangleCursorSpriteLeft = null;
+  sScreenControl.wordSelectCursorSprite = null;
+  sScreenControl.buttonWindowSprite = null;
+  sScreenControl.modeWindowSprite = null;
+  sScreenControl.scrollIndicatorUpSprite = null;
+  sScreenControl.scrollIndicatorDownSprite = null;
+  sScreenControl.startButtonSprite = null;
+  sScreenControl.selectButtonSprite = null;
+  sScreenControl.fourFooterOptions = FooterHasFourOptions_();
+  return true;
+}
+
+/** 1:1 decomp easy_chat.c:3916 */
+function InitEasyChatBgs(): void {
+  ChangeBgX(3, 0, BG_COORD_SET);
+  ChangeBgY(3, 0, BG_COORD_SET);
+  ChangeBgX(1, 0, BG_COORD_SET);
+  ChangeBgY(1, 0, BG_COORD_SET);
+  ChangeBgX(2, 0, BG_COORD_SET);
+  ChangeBgY(2, 0, BG_COORD_SET);
+  ChangeBgX(0, 0, BG_COORD_SET);
+  ChangeBgY(0, 0, BG_COORD_SET);
+  SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON | DISPCNT_WIN0_ON);
+}
+
+/** 1:1 decomp easy_chat.c:3929 */
+function LoadEasyChatPalettes(): void {
+  ResetPaletteFade();
+  LoadPalette(gEasyChatMode_Pal as Uint16Array, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
+  LoadPalette(sTextInputFrameOrange_Pal as Uint16Array, BG_PLTT_ID(1), 32);
+  LoadPalette(sTextInputFrameGreen_Pal as Uint16Array, BG_PLTT_ID(4), 32);
+  LoadPalette(sTitleText_Pal as Uint16Array, BG_PLTT_ID(10), 32);
+  LoadPalette(sText_Pal as Uint16Array, BG_PLTT_ID(11), 32);
+  LoadPalette(sText_Pal as Uint16Array, BG_PLTT_ID(15), 32);
+  LoadPalette(sText_Pal as Uint16Array, BG_PLTT_ID(3), 32);
+}
+
+/** 1:1 decomp easy_chat.c:3941 */
+function PrintTitle(): void {
+  let xOffset: number;
+  const titleText = GetTitleText();
+  if (!titleText) return;
+
+  //!< French Difference
+  // 1:1 decomp: GetStringCenterAlignXOffset(FONT_NORMAL, titleText, 240)
+  // (engine TS signature collapsed to 2 args = font-implicit)
+  xOffset = GetStringCenterAlignXOffset(titleText as unknown as string, 240);
+  FillWindowPixelBuffer(WIN_TITLE, PIXEL_FILL(0));
+  PrintEasyChatTextWithColors(
+    WIN_TITLE,
+    FONT_NORMAL,
+    titleText as unknown as Uint8Array,
+    xOffset,
+    1,
+    TEXT_SKIP_DRAW,
+    TEXT_COLOR_TRANSPARENT,
+    TEXT_COLOR_DARK_GRAY,
+    TEXT_COLOR_LIGHT_GRAY,
+  );
+  PutWindowTilemap(WIN_TITLE);
+  CopyWindowToVram(WIN_TITLE, COPYWIN_FULL);
+}
+
+/** 1:1 decomp easy_chat.c:3956 */
+function PrintEasyChatText(
+  windowId: number,
+  fontId: number,
+  str: Uint8Array | string,
+  x: number,
+  y: number,
+  speed: number,
+  callback: ((tp: unknown, _x: number) => void) | null,
+): void {
+  AddTextPrinterParameterized(windowId, fontId, str, x, y, speed, callback);
+}
+
+/** 1:1 decomp easy_chat.c:3961 */
+function PrintEasyChatTextWithColors(
+  windowId: number,
+  fontId: number,
+  str: Uint8Array | string,
+  left: number,
+  top: number,
+  speed: number,
+  bg: number,
+  fg: number,
+  shadow: number,
+): void {
+  // 1:1 decomp: u8 color[3] = { bg, fg, shadow }. AddTextPrinterParameterized3
+  // attend readonly number[] dans notre engine.
+  const color: readonly number[] = [bg, fg, shadow];
+  AddTextPrinterParameterized3(windowId, fontId, left, top, color, speed, str as unknown as string);
+}
+
+/** 1:1 decomp easy_chat.c:3970 */
+function PrintInitialInstructions(): void {
+  FillBgTilemapBufferRect(0, 0, 0, 0, 32, 20, 17);
+  LoadUserWindowBorderGfx(WIN_MSG, 1, BG_PLTT_ID(14));
+  DrawTextBorderOuter(WIN_MSG, 1, 14);
+  PrintEasyChatStdMessage(MSG_INSTRUCTIONS);
+  PutWindowTilemap(WIN_MSG);
+  CopyBgTilemapBufferToVram(0);
+}
+
+/** 1:1 decomp easy_chat.c:3980 */
+function PrintEasyChatStdMessage(msgId: number): void {
+  let text2: StringOrU8 = null;
+  let text1: StringOrU8 = null;
+  switch (msgId) {
+    case MSG_INSTRUCTIONS: {
+      const r = GetEasyChatInstructionsText();
+      text1 = r.text1; text2 = r.text2;
+      break;
+    }
+    case MSG_CONFIRM_EXIT: {
+      const r = GetEasyChatConfirmExitText();
+      text1 = r.text1; text2 = r.text2;
+      break;
+    }
+    case MSG_CONFIRM: {
+      const r = GetEasyChatConfirmText();
+      text1 = r.text1; text2 = r.text2;
+      break;
+    }
+    case MSG_CONFIRM_DELETE: {
+      const r = GetEasyChatConfirmDeletionText();
+      text1 = r.text1; text2 = r.text2;
+      break;
+    }
+    case MSG_CREATE_QUIZ:
+      text1 = gText_CreateAQuiz;
+      break;
+    case MSG_SELECT_ANSWER:
+      text1 = gText_SelectTheAnswer;
+      break;
+    case MSG_SONG_TOO_SHORT:
+      text1 = gText_OnlyOnePhrase;
+      text2 = gText_OriginalSongWillBeUsed;
+      break;
+    case MSG_CANT_DELETE_LYRICS:
+      text1 = gText_LyricsCantBeDeleted;
+      break;
+    case MSG_COMBINE_TWO_WORDS:
+      text1 = gText_CombineTwoWordsOrPhrases3;
+      break;
+    case MSG_CANT_QUIT:
+      text1 = gText_YouCannotQuitHere;
+      text2 = gText_SectionMustBeCompleted;
+      break;
+  }
+
+  FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(1));
+  if (text1) {
+    PrintEasyChatText(WIN_MSG, FONT_NORMAL, text1, 0, 1, TEXT_SKIP_DRAW, null);
+  }
+  if (text2) {
+    PrintEasyChatText(WIN_MSG, FONT_NORMAL, text2, 0, 17, TEXT_SKIP_DRAW, null);
+  }
+  CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+}
+
+/** 1:1 decomp easy_chat.c:4030 */
+function CreateEasyChatYesNoMenu(initialCursorPos: number): void {
+  if (!sEasyChatYesNoWindowTemplate) {
+    console.warn('[easy-chat-render] CreateEasyChatYesNoMenu: sEasyChatYesNoWindowTemplate not injected');
+    return;
+  }
+  CreateYesNoMenu(sEasyChatYesNoWindowTemplate, 1, 14, initialCursorPos);
+}
+
+/** 1:1 decomp easy_chat.c:4035 */
+function AddPhraseWindow(): void {
+  if (!sScreenControl) return;
+  const frameId = GetEasyChatScreenFrameId();
+  const frame = sPhraseFrameDimensions[frameId];
+  if (!frame) {
+    console.warn('[easy-chat-render] AddPhraseWindow: sPhraseFrameDimensions not injected');
+    return;
+  }
+  const template: WindowTemplate = {
+    bg: 3,
+    tilemapLeft: frame.left,
+    tilemapTop: frame.top,
+    width: frame.width,
+    height: frame.height,
+    paletteNum: 11,
+    baseBlock: 0x84, //!< French Difference
+  };
+  sScreenControl.windowId = AddWindow(template);
+  PutWindowTilemap(sScreenControl.windowId);
+}
+
+/** 1:1 decomp easy_chat.c:4052 */
+function PrintCurrentPhrase(): void {
+  if (!sScreenControl) return;
+  const strClear = new Uint8Array(4);
+  let currentPhrase: Uint16Array;
+  let numColumns: number, numRows: number;
+  let str: Uint8Array;
+  let frameId: number;
+  let isQuizQuestion: boolean;
+  let i: number, j: number, k: number;
+
+  currentPhrase = GetCurrentPhrase();
+  numColumns = GetNumColumns();
+  numRows = GetNumRows();
+  frameId = GetEasyChatScreenFrameId();
+
+  isQuizQuestion = false;
+  if (frameId === FRAMEID_QUIZ_QUESTION) {
+    isQuizQuestion = true;
+  }
+
+  FillWindowPixelBuffer(sScreenControl.windowId, PIXEL_FILL(1));
+  let phraseIdx = 0;
+  for (i = 0; i < numRows; i++) {
+    // memcpy(strClear, sText_Clear17, sizeof(sText_Clear17));
+    if (sText_Clear17) {
+      for (let m = 0; m < strClear.length && m < sText_Clear17.length; m++) {
+        strClear[m] = sText_Clear17[m];
+      }
+    }
+    if (isQuizQuestion) {
+      strClear[2] = 6;
+    }
+
+    str = sScreenControl.phrasePrintBuffer;
+    sScreenControl.phrasePrintBuffer[0] = EOS;
+    str = StringAppend(str, strClear);
+    for (j = 0; j < numColumns; j++) {
+      if (currentPhrase[phraseIdx] !== EC_EMPTY_WORD) {
+        str = CopyEasyChatWord(str, currentPhrase[phraseIdx]);
+        phraseIdx++;
+      } else {
+        phraseIdx++;
+        if (!isQuizQuestion) {
+          str = WriteColorChangeControlCode(str, 0, 4);
+          for (k = 0; k < 12; k++) {
+            str[0] = CHAR_HYPHEN;
+            str = str.subarray(1);
+          }
+          str = WriteColorChangeControlCode(str, 0, 2);
+        }
+      }
+
+      if (isQuizQuestion) {
+        strClear[2] = 3;
+      }
+      str = StringAppend(str, strClear);
+
+      if (frameId === FRAMEID_MAIL || frameId === FRAMEID_QUIZ_QUESTION || frameId === FRAMEID_QUIZ_SET_QUESTION) {
+        // Is 2x5 frame, end on 9th word
+        if (j === 0 && i === 4) break;
+      }
+    }
+    if (str.length > 0) str[0] = EOS;
+    PrintEasyChatText(
+      sScreenControl.windowId,
+      FONT_NORMAL,
+      sScreenControl.phrasePrintBuffer,
+      0,
+      i * 16 + 1,
+      TEXT_SKIP_DRAW,
+      null,
+    );
+  }
+
+  CopyWindowToVram(sScreenControl.windowId, COPYWIN_FULL);
+}
+
+/** 1:1 decomp easy_chat.c:4124 */
+function BufferFrameTilemap(tilemap: Uint16Array): void {
+  let frameId: number;
+  let right: number, bottom: number;
+  let x: number, y: number;
+
+  frameId = GetEasyChatScreenFrameId();
+  CpuFastFill(0, tilemap as unknown as Uint8Array, BG_SCREEN_SIZE);
+  const frame = sPhraseFrameDimensions[frameId];
+  if (!frame) {
+    console.warn('[easy-chat-render] BufferFrameTilemap: sPhraseFrameDimensions not injected');
+    return;
+  }
+  if (frameId === FRAMEID_MAIL || frameId === FRAMEID_QUIZ_SET_QUESTION) {
+    // These frames fill the screen, no need to draw top/bottom edges
+    right = frame.left + frame.width;
+    bottom = frame.top + frame.height;
+
+    // Draw middle section
+    for (y = frame.top; y < bottom; y++) {
+      x = frame.left - 1;
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;
+      x++;
+      for (; x < right; x++) {
+        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;
+      }
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;
+    }
+  } else {
+    y = frame.top - 1;
+    x = frame.left - 1;
+    right = frame.left + frame.width;
+    bottom = frame.top + frame.height;
+
+    // Draw top edge
+    tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_L_CORNER;
+    x++;
+    for (; x < right; x++) {
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_EDGE;
+    }
+    tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_R_CORNER;
+    y++;
+
+    // Draw middle section
+    for (; y < bottom; y++) {
+      x = frame.left - 1;
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;
+      x++;
+      for (; x < right; x++) {
+        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;
+      }
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;
+    }
+
+    // Draw bottom edge
+    x = frame.left - 1;
+    tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_L_CORNER;
+    x++;
+    for (; x < right; x++) {
+      tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_EDGE;
+    }
+    tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_R_CORNER;
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4189 */
+function AdjustBgTilemapForFooter(): void {
+  let frameId: number;
+  let tilemap: Uint16Array;
+
+  tilemap = GetBgTilemapBuffer(3) as Uint16Array;
+  frameId = GetEasyChatScreenFrameId();
+  const frame = sPhraseFrameDimensions[frameId];
+  if (!frame) {
+    console.warn('[easy-chat-render] AdjustBgTilemapForFooter: sPhraseFrameDimensions not injected');
+    return;
+  }
+  switch (frame.footerId) {
+    case FOOTER_ANSWER:
+      tilemap = tilemap.subarray(0x2A0);
+      CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);
+      break;
+    case FOOTER_QUIZ:
+      tilemap = tilemap.subarray(0x300);
+      CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);
+      break;
+    case NUM_FOOTER_TYPES:
+      CopyToBgTilemapBufferRect(3, tilemap, 0, 10, 32, 4);
+      break;
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4212 */
+function DrawLowerWindow(): void {
+  PutWindowTilemap(WIN_INPUT_SELECT);
+  CopyBgTilemapBufferToVram(WIN_INPUT_SELECT);
+}
+
+/** 1:1 decomp easy_chat.c:4218 */
+function InitLowerWindowText(whichText: number): void {
+  ResetLowerWindowScroll();
+  FillWindowPixelBuffer(WIN_INPUT_SELECT, PIXEL_FILL(1));
+  switch (whichText) {
+    case TEXT_GROUPS:
+      PrintKeyboardGroupNames();
+      break;
+    case TEXT_ALPHABET:
+      PrintKeyboardAlphabet();
+      break;
+    case TEXT_WORD_SELECT:
+      PrintInitialWordSelectText();
+      break;
+  }
+  CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);
+}
+
+/** 1:1 decomp easy_chat.c:4238 */
+function PrintKeyboardText(): void {
+  if (!GetInAlphabetMode()) {
+    InitLowerWindowText(TEXT_GROUPS);
+  } else {
+    InitLowerWindowText(TEXT_ALPHABET);
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4246 */
+function PrintKeyboardGroupNames(): void {
+  let i: number;
+  let x: number, y: number;
+
+  i = 0;
+  y = 97;
+  while (true) {
+    for (x = 0; x < 2; x++) {
+      const groupId = GetUnlockedEasyChatGroupId(i++);
+      if (groupId === EC_NUM_GROUPS) {
+        InitLowerWindowScroll(GetKeyboardScrollOffset(), 0);
+        return;
+      }
+      PrintEasyChatText(
+        WIN_INPUT_SELECT,
+        FONT_NORMAL,
+        GetEasyChatWordGroupName(groupId),
+        x * 84 + 10,
+        y,
+        TEXT_SKIP_DRAW,
+        null,
+      );
+    }
+    y += 16;
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4271 */
+function PrintKeyboardAlphabet(): void {
+  for (let i = 0; i < sEasyChatKeyboardAlphabet.length; i++) {
+    const letter = sEasyChatKeyboardAlphabet[i];
+    if (!letter) continue;
+    PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, letter, 10, 97 + i * 16, TEXT_SKIP_DRAW, null);
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4279 */
+function PrintInitialWordSelectText(): void {
+  PrintWordSelectText(0, NUM_WORD_SELECT_ROWS);
+}
+
+/** 1:1 decomp easy_chat.c:4284 */
+function PrintWordSelectNextRowDown(): void {
+  const wordScroll = GetWordSelectScrollOffset() + NUM_WORD_SELECT_ROWS - 1;
+  EraseWordSelectRows(wordScroll, 1);
+  PrintWordSelectText(wordScroll, 1);
+}
+
+/** 1:1 decomp easy_chat.c:4291 */
+function PrintWordSelectNextRowUp(): void {
+  const wordScroll = GetWordSelectScrollOffset();
+  EraseWordSelectRows(wordScroll, 1);
+  PrintWordSelectText(wordScroll, 1);
+}
+
+/** 1:1 decomp easy_chat.c:4298 */
+function PrintWordSelectRowsPageDown(): void {
+  const wordScroll = GetWordSelectScrollOffset();
+  let maxScroll = wordScroll + NUM_WORD_SELECT_ROWS;
+  const maxRows = GetWordSelectLastRow() + 1;
+  if (maxScroll > maxRows) {
+    maxScroll = maxRows;
+  }
+  if (wordScroll < maxScroll) {
+    const numRows = maxScroll - wordScroll;
+    EraseWordSelectRows(wordScroll, numRows);
+    PrintWordSelectText(wordScroll, numRows);
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4314 */
+function PrintWordSelectRowsPageUp(): void {
+  const wordScroll = GetWordSelectScrollOffset();
+  const windowScroll = GetLowerWindowScrollOffset();
+  if (wordScroll < windowScroll) {
+    const numRows = windowScroll - wordScroll;
+    EraseWordSelectRows(wordScroll, numRows);
+    PrintWordSelectText(wordScroll, numRows);
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4328 â€” Print the easy chat words available for selection
+ *  in the currently selected group and at the given offset and row. */
+function PrintWordSelectText(scrollOffset: number, numRows: number): void {
+  if (!sScreenControl) return;
+  let i: number, j: number;
+  let easyChatWord: number;
+  let y: number;
+  let wordIndex: number;
+
+  wordIndex = scrollOffset * NUM_WORD_SELECT_COLUMNS;
+  y = (scrollOffset * 16 + 96) & 0xFF;
+  y++;
+  for (i = 0; i < numRows; i++) {
+    for (j = 0; j < 2; j++) {
+      easyChatWord = GetWordFromSelectedGroup(wordIndex++);
+      if (easyChatWord !== EC_EMPTY_WORD) {
+        CopyEasyChatWordPadded(sScreenControl.wordSelectPrintBuffer, easyChatWord, 0);
+        if (!DummyWordCheck(easyChatWord)) {
+          PrintEasyChatText(
+            WIN_INPUT_SELECT,
+            FONT_NORMAL,
+            sScreenControl.wordSelectPrintBuffer,
+            (j * 13 + 3) * 8,
+            y,
+            TEXT_SKIP_DRAW,
+            null,
+          );
+        } else {
+          // Never reached
+          PrintEasyChatTextWithColors(
+            WIN_INPUT_SELECT,
+            FONT_NORMAL,
+            sScreenControl.wordSelectPrintBuffer,
+            (j * 13 + 3) * 8,
+            y,
+            TEXT_SKIP_DRAW,
+            TEXT_COLOR_WHITE,
+            TEXT_COLOR_LIGHT_RED,
+            TEXT_COLOR_LIGHT_GRAY,
+          );
+        }
+      }
+    }
+    y += 16;
+  }
+  CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);
+}
+
+/** 1:1 decomp easy_chat.c:4359 */
+function EraseWordSelectRows(scrollOffset: number, numRows: number): void {
+  let y: number;
+  let var0: number;
+  let var1: number;
+  let var2: number;
+
+  y = (scrollOffset * 16 + 96) & 0xFF;
+  var2 = numRows * 16;
+  var0 = y + var2;
+
+  if (var0 > 255) {
+    var1 = var0 - 256;
+    var2 = 256 - y;
+  } else {
+    var1 = 0;
+  }
+
+  FillWindowPixelRect(WIN_INPUT_SELECT, PIXEL_FILL(1), 0, y, 224, var2);
+  if (var1) {
+    FillWindowPixelRect(WIN_INPUT_SELECT, PIXEL_FILL(1), 0, 0, 224, var1);
+  }
+}
+
+/** 1:1 decomp easy_chat.c:4385 */
+function ClearWordSelectWindow(): void {
+  FillWindowPixelBuffer(WIN_INPUT_SELECT, PIXEL_FILL(1));
+  CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);
+}
+
+/** 1:1 decomp easy_chat.c:4391 */
+function InitLowerWindowAnim(winAnimType: number): void {
+  if (!sScreenControl) return;
+  switch (winAnimType) {
+    case WINANIM_OPEN_KEYBOARD:
+      sScreenControl.curWindowAnimState = 0;
+      sScreenControl.destWindowAnimState = 10;
+      break;
+    case WINANIM_CLOSE_KEYBOARD:
+      sScreenControl.curWindowAnimState = 9;
+      sScreenControl.destWindowAnimState = 0;
+      break;
+    case WINANIM_OPEN_WORD_SELECT:
+      sScreenControl.curWindowAnimState = 11;
+      sScreenControl.destWindowAnimState = 17;
+      break;
+    case WINANIM_CLOSE_WORD_SELECT:
+      sScreenControl.curWindowAnimState = 17;
+      sScreenControl.destWindowAnimState = 0;
+      break;
+    case WINANIM_RETURN_TO_KEYBOARD:
+      sScreenControl.curWindowAnimState = 17;
+      sScreenControl.destWindowAnimState = 10;
+      break;
+    case WINANIM_KEYBOARD_SWITCH_OUT:
+      sScreenControl.curWindowAnimState = 18;
+      sScreenControl.destWindowAnimState = 22;
+      break;
+    case WINANIM_KEYBOARD_SWITCH_IN:
+      sScreenControl.curWindowAnimState = 22;
+      sScreenControl.destWindowAnimState = 18;
+      break;
+  }
+  sScreenControl.windowAnimStateDir =
+    sScreenControl.curWindowAnimState < sScreenControl.destWindowAnimState ? 1 : -1;
+}
+
+/** 1:1 decomp easy_chat.c:4429 â€” Returns FALSE if the anim is finished. */
+function UpdateLowerWindowAnim(): boolean {
+  if (!sScreenControl) return false;
+  let curState: number, destState: number;
+  if (sScreenControl.curWindowAnimState === sScreenControl.destWindowAnimState) {
+    return false;
+  }
+  sScreenControl.curWindowAnimState += sScreenControl.windowAnimStateDir;
+  DrawLowerWindowFrame(sScreenControl.curWindowAnimState);
+  curState = sScreenControl.curWindowAnimState;
+  destState = sScreenControl.destWindowAnimState;
+  return (curState ^ destState) > 0;
+}
+
+/** 1:1 decomp easy_chat.c:4445 â€” States in this function are used incrementally
+ *  with differing start/end cases to draw the lower window and create the appearance
+ *  that it's opening/closing/animating. See InitLowerWindowAnim. */
+function DrawLowerWindowFrame(type: number): void {
+  FillBgTilemapBufferRect_Palette0(1, 0, 0, 10, 30, 10);
+  switch (type) {
+    case 0: // Closed
+      break;
+    case 1:
+      BufferLowerWindowFrame(11, 14, 3, 2);
+      break;
+    case 2:
+      BufferLowerWindowFrame(9, 14, 7, 2);
+      break;
+    case 3:
+      BufferLowerWindowFrame(7, 14, 11, 2);
+      break;
+    case 4:
+      BufferLowerWindowFrame(5, 14, 15, 2);
+      break;
+    case 5:
+      BufferLowerWindowFrame(3, 14, 19, 2);
+      break;
+    case 6:
+      BufferLowerWindowFrame(1, 14, 23, 2);
+      break;
+    case 7:
+      BufferLowerWindowFrame(1, 13, 23, 4);
+      break;
+    case 8:
+      BufferLowerWindowFrame(1, 12, 23, 6);
+      break;
+    case 9:
+      BufferLowerWindowFrame(1, 11, 23, 8);
+      break;
+    case 10:
+      BufferLowerWindowFrame(1, 10, 23, 10);
+      break;
+    case 11:
+      BufferLowerWindowFrame(1, 10, 24, 10);
+      break;
+    case 12:
+      BufferLowerWindowFrame(1, 10, 25, 10);
+      break;
+    case 13:
+      BufferLowerWindowFrame(1, 10, 26, 10);
+      break;
+    case 14:
+      BufferLowerWindowFrame(1, 10, 27, 10);
+      break;
+    case 15:
+      BufferLowerWindowFrame(1, 10, 28, 10);
+      break;
+    case 16:
+      BufferLowerWindowFrame(1, 10, 29, 10);
+      break;
+  }
+  // Note : type >= 17 = section 4 (lignes 4500+), reste Ã  porter hors scope range.
+}
+
+// â”€â”€â”€ Wire helpers exposÃ©s au reste du module / appelants futurs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// (Fusion 1 fichier : ancien bloc `export {}` retiré — tout est interne ici.)
+// State machine functions (ECFUNC dispatch â€” already exported via Run/Start).
+  // Render helpers utiles Ã  section 1-2 / debug :
+// ═════════════════════════════════════════════════════════════════════════════
+//  SECTIONS 0-2 — Converters (mail read) + lifecycle + input state machine
+//  (1:1 décomp easy_chat.c) — fusionnées dans ce fichier (plus d'injection).
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `u8 *ConvertEasyChatWordsToString(u8 *dest, const u16 *src, u16 columns, u16 rows)`
+ *  (easy_chat.c:5239). Écrit les mots (joints CHAR_SPACE, lignes CHAR_NEWLINE)
+ *  dans dest, la dernière NEWLINE remplacée par EOS ; retourne l'end-ptr. */
+export function ConvertEasyChatWordsToString(
+  dest: Uint8Array, src: ArrayLike<number>, columns: number, rows: number,
+): Uint8Array {
+  const base = dest.byteOffset;
+  let d = dest;
+  const numColumns = columns - 1;
+  let si = 0;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < numColumns; j++) {
+      d = CopyEasyChatWord(d, src[si]);
+      if (src[si] !== EC_EMPTY_WORD) { d[0] = CHAR_SPACE; d = d.subarray(1); }
+      si++;
+    }
+    d = CopyEasyChatWord(d, src[si++]);
+    d[0] = CHAR_NEWLINE; d = d.subarray(1);
+  }
+  const pos = d.byteOffset - base - 1; // 1:1 décomp : dest--; *dest = EOS
+  dest[pos] = EOS;
+  return dest.subarray(pos);
+}
+
+/** 1:1 décomp `u16 GetRandomEasyChatWordFromGroup(u16 groupId)` (easy_chat.c:5354). */
+export function GetRandomEasyChatWordFromGroup(groupId: number): number {
+  let index = Random() % gEasyChatGroups[groupId].numWords;
+  if (groupId === EC_GROUP_POKEMON || groupId === EC_GROUP_POKEMON_NATIONAL
+   || groupId === EC_GROUP_MOVE_1 || groupId === EC_GROUP_MOVE_2) {
+    index = gEasyChatGroups[groupId].wordData.valueList![index];
+  }
+  return EC_WORD(groupId, index);
+}
 
 // ─── Chargement GFX (palettes + frames) — assets décomp public/decomp/em/easy_chat ─
-// Les INCGFX_U16(.gbapal)/INCGFX(.png) du décomp → fetch async. Adaptation JS
-// hardware-exempte : préchargé une fois, injecté dans le renderer. `easyChatGfxReady`
-// = gate (le flux give attend avant DoEasyChatScreen, cf. init synchrone du CB2).
-let _easyChatGfxLoaded = false;
-let _easyChatGfxLoading: Promise<void> | null = null;
+// Adaptation JS hardware-exempte : préchargé une fois. easyChatGfxReady = gate
+// (le flux give attend avant DoEasyChatScreen, cf. init synchrone du CB2).
 export function easyChatGfxReady(): Promise<void> {
   if (_easyChatGfxLoaded) return Promise.resolve();
   if (!_easyChatGfxLoading) _easyChatGfxLoading = _loadEasyChatGfxAssets();
@@ -335,93 +2977,32 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
     loadIndexedPngStrict(`${base}/triangle_cursor.png`, 4),
     loadIndexedPngStrict(`${base}/rectangle_cursor.png`, 4),
   ]);
-  _setSText_Pal(textPal);
-  _setSTitleText_Pal(titlePal);
-  _setSTextInputFrameOrange_Pal(orangePal);
-  _setSTextInputFrameGreen_Pal(greenPal);
-  _setGEasyChatMode_Pal(modePng.palette);
-  _setGEasyChatWindow_Gfx(winPng.charData);
-  _setGEasyChatWindow_Tilemap(winMap);
-  _setSTextInputFrame_Gfx(framePng.charData);
-  // Sprites curseurs : triangle (tag 0, principal+word-select) + rectangle (tag 1, clavier).
-  // tag 0 = GFXTAG/PALTAG_TRIANGLE_CURSOR (swap inoffensif car 0==0) ; tag 1 = *_RECTANGLE_CURSOR.
-  _setSSpriteSheets([
+  sText_Pal = textPal;
+  sTitleText_Pal = titlePal;
+  sTextInputFrameOrange_Pal = orangePal;
+  sTextInputFrameGreen_Pal = greenPal;
+  gEasyChatMode_Pal = modePng.palette;
+  gEasyChatWindow_Gfx = winPng.charData;
+  gEasyChatWindow_Tilemap = winMap;
+  sTextInputFrame_Gfx = framePng.charData;
+  // NOTE Phase B : sSpriteSheets/sSpritePalettes/sCompressedSpriteSheets divergent
+  // encore du décomp (rectangle bricolé ici ; scroll/start-select/mode manquants).
+  sSpriteSheets = [
     { data: triCursor.charData, size: triCursor.charData.length, tag: 0 },
     { data: rectCursor.charData, size: rectCursor.charData.length, tag: 1 },
-  ]);
-  _setSSpritePalettes([
+  ];
+  sSpritePalettes = [
     { data: triCursor.palette, tag: 0 },
     { data: rectCursor.palette, tag: 1 },
-  ]);
+  ];
   _easyChatGfxLoaded = true;
 }
 
-// ─── Injection : câble getters + data dans le renderer ───────────────────────
-function _installEasyChatBridges(): void {
-  if (_bridgesInstalled) return;
-  _bridgesInstalled = true;
-  void easyChatGfxReady(); // kick off le préchargement des assets (palettes+frames)
-
-  // Getters (état input → renderer).
-  _setGetEasyChatScreenFrameId(GetEasyChatScreenFrameId);
-  _setGetEasyChatScreenType(GetEasyChatScreenType);
-  _setGetMainCursorColumn(GetMainCursorColumn);
-  _setGetMainCursorRow(GetMainCursorRow);
-  _setGetNumColumns(GetNumColumns);
-  _setGetNumRows(GetNumRows);
-  _setGetCurrentPhrase(GetCurrentPhrase);
-  _setGetTitleText(GetTitleText);
-  _setGetInAlphabetMode(() => (GetInAlphabetMode() ? 1 : 0));
-  _setGetKeyboardCursorColAndRow(GetKeyboardCursorColAndRow);
-  _setGetWordSelectColAndRow(GetWordSelectColAndRow);
-  _setGetKeyboardScrollOffset(GetKeyboardScrollOffset);
-  _setGetWordSelectScrollOffset(GetWordSelectScrollOffset);
-  _setGetWordSelectLastRow(GetWordSelectLastRow);
-  _setGetEasyChatInstructionsText(GetEasyChatInstructionsText);
-  _setGetEasyChatConfirmExitText(GetEasyChatConfirmExitText);
-  _setGetEasyChatConfirmText(GetEasyChatConfirmText);
-  _setGetEasyChatConfirmDeletionText(GetEasyChatConfirmDeletionText);
-  _setCanScrollUp(CanScrollUp);
-  _setCanScrollDown(CanScrollDown);
-  _setGetDisplayedPersonType(GetDisplayedPersonType);
-  _setFooterHasFourOptions_(FooterHasFourOptions_);
-
-  // Data (word-data + rendu).
-  _setGEasyChatGroups(gEasyChatGroups);
-  _setGEasyChatWordsByLetterPointers(gEasyChatWordsByLetterPointers);
-  _setGSpeciesNames(gSpeciesNames);
-  _setGMoveNames(gMoveNames);
-  _setSRestrictedWordSpecies(sRestrictedWordSpecies);
-  _setSEasyChatGroupNamePointers(sEasyChatGroupNamePointers);
-  _setFlagGet(FlagGet);
-  _setIsNationalPokedexEnabled(IsNationalPokedexEnabled);
-  _setGetNationalPokedexCount(GetNationalPokedexCount);
-  _setGetSetPokedexFlag(GetSetPokedexFlag);
-  _setSpeciesToNationalPokedexNum(SpeciesToNationalPokedexNum);
-  _setRandom(Random);
-  _setGSaveBlock1Ptr(gSaveBlock1Ptr);
-
-  // Layout (rendu écran de saisie).
-  _setSEasyChatBgTemplates(sEasyChatBgTemplates);
-  _setSEasyChatWindowTemplates(sEasyChatWindowTemplates);
-  _setSEasyChatYesNoWindowTemplate(sEasyChatYesNoWindowTemplate);
-  _setSPhraseFrameDimensions(sPhraseFrameDimensions);
-  _setSAlphabetKeyboardColumnOffsets(sAlphabetKeyboardColumnOffsets);
-  _setSFooterOptionXOffsets(sFooterOptionXOffsets);
-  _setSFooterTextOptions(sFooterTextOptions);
-  _setSText_Clear17(new Uint8Array(sText_Clear17));
-}
-
 // ─── DoEasyChatScreen / CB2 / Task (easy_chat.c:1294) ────────────────────────
-
 /** 1:1 décomp `void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType)`. */
 export function DoEasyChatScreen(
-  type: number,
-  words: Uint16Array | null,
-  exitCallback: MainCallback | null,
-  displayedPersonType: number,
+  type: number, words: Uint16Array | null, exitCallback: MainCallback | null, displayedPersonType: number,
 ): void {
-  _installEasyChatBridges();
   const rt = getRuntime();
   ResetTasks();
   const taskId = CreateTask(Task_InitEasyChatScreen, 0);
@@ -433,7 +3014,6 @@ export function DoEasyChatScreen(
   SetMainCallback2(CB2_EasyChatScreen);
 }
 
-/** 1:1 décomp `static void CB2_EasyChatScreen(void)`. */
 function CB2_EasyChatScreen(): void {
   RunTasks();
   AnimateSprites();
@@ -441,30 +3021,25 @@ function CB2_EasyChatScreen(): void {
   UpdatePaletteFade();
 }
 
-/** 1:1 décomp `static void VBlankCB_EasyChatScreen(void)`. */
 function VBlankCB_EasyChatScreen(): void {
   TransferPlttBuffer();
   LoadOam();
   ProcessSpriteCopyRequests(getRuntime());
 }
 
-/** 1:1 décomp `static void StartEasyChatScreen(u8 taskId, TaskFunc taskFunc)`. */
 function StartEasyChatScreen(taskId: number, taskFunc: (task: DecompTask) => void): void {
   const rt = getRuntime();
   rt.gTasks[taskId].func = taskFunc;
   rt.gTasks[taskId].data[tState] = MAINSTATE_FADE_IN;
 }
 
-/** 1:1 décomp `static void Task_InitEasyChatScreen(u8 taskId)`.
- *  Solo (non-link) : `while (InitEasyChatScreen(taskId));` (init synchrone). */
+/** Solo (non-link) : `while (InitEasyChatScreen(taskId));` (init synchrone). */
 function Task_InitEasyChatScreen(task: DecompTask): void {
   const taskId = task.taskId;
-  // IsOverworldLinkActive() = FALSE en solo.
   while (InitEasyChatScreen(taskId));
   StartEasyChatScreen(taskId, Task_EasyChatScreen);
 }
 
-/** 1:1 décomp `static void Task_EasyChatScreen(u8 taskId)` — boucle principale. */
 function Task_EasyChatScreen(task: DecompTask): void {
   const taskId = task.taskId;
   const rt = getRuntime();
@@ -500,7 +3075,6 @@ function Task_EasyChatScreen(task: DecompTask): void {
   }
 }
 
-/** 1:1 décomp `static bool8 InitEasyChatScreen(u8 taskId)`. Retourne TRUE tant qu'init. */
 function InitEasyChatScreen(taskId: number): boolean {
   const rt = getRuntime();
   const data = rt.gTasks[taskId].data;
@@ -531,7 +3105,6 @@ function InitEasyChatScreen(taskId: number): boolean {
   return true;
 }
 
-/** 1:1 décomp `static void ExitEasyChatScreen(MainCallback callback)`. */
 function ExitEasyChatScreen(callback: MainCallback | null): void {
   FreeEasyChatScreenControl();
   FreeEasyChatScreenStruct();
@@ -541,8 +3114,6 @@ function ExitEasyChatScreen(callback: MainCallback | null): void {
 }
 
 // ─── InitEasyChatScreenStruct (easy_chat.c:1637) ─────────────────────────────
-
-/** 1:1 décomp `static bool8 InitEasyChatScreenStruct(u8 type, u16 *words, u8 displayedPersonType)`. */
 function InitEasyChatScreenStruct(type: number, words: Uint16Array | null, displayedPersonType: number): boolean {
   sEasyChatScreen = {
     type, templateId: 0, numColumns: 0, numRows: 0, inputState: 0,
@@ -553,13 +3124,9 @@ function InitEasyChatScreenStruct(type: number, words: Uint16Array | null, displ
     quizTitle: new Uint8Array(32), titleText: null, savedPhrase: words,
     currentPhrase: new Uint16Array(EC_MAX_WORDS_CURRENT_PHRASE),
   };
-  _setEasyChatScreen(sEasyChatScreen);
-
   const templateId = GetEachChatScreenTemplateId(type);
-  // (EASY_CHAT_TYPE_QUIZ_QUESTION : titre = quiz — hors périmètre mail, laissé au flux quiz.)
   sEasyChatScreen.inputState = INPUTSTATE_PHRASE;
   sEasyChatScreen.titleText = sEasyChatScreenTemplates[templateId].titleText;
-
   sEasyChatScreen.numColumns = sEasyChatScreenTemplates[templateId].numColumns;
   sEasyChatScreen.numRows = sEasyChatScreenTemplates[templateId].numRows;
   sEasyChatScreen.maxWords = sEasyChatScreen.numColumns * sEasyChatScreen.numRows;
@@ -568,26 +3135,19 @@ function InitEasyChatScreenStruct(type: number, words: Uint16Array | null, displ
     sEasyChatScreen.maxWords = EC_MAX_WORDS_CURRENT_PHRASE;
 
   if (words !== null) {
-    // Phrase pré-remplie → copie dans currentPhrase.
     for (let i = 0; i < sEasyChatScreen.maxWords; i++) sEasyChatScreen.currentPhrase[i] = words[i];
   } else {
     for (let i = 0; i < sEasyChatScreen.maxWords; i++) sEasyChatScreen.currentPhrase[i] = EC_EMPTY_WORD;
     sEasyChatScreen.savedPhrase = sEasyChatScreen.currentPhrase;
   }
-
   sEasyChatScreen.keyboardLastRow = Math.floor((GetNumUnlockedEasyChatGroups() - 1) / 2) + 1;
   return true;
 }
-// ARRAY_COUNT(sEasyChatScreen->currentPhrase) : la struct décomp a currentPhrase[10].
-const EC_MAX_WORDS_CURRENT_PHRASE = 10;
 
-/** 1:1 décomp `static void FreeEasyChatScreenStruct(void)`. */
 function FreeEasyChatScreenStruct(): void {
   sEasyChatScreen = null;
-  _setEasyChatScreen(null);
 }
 
-/** 1:1 décomp `static u8 GetEachChatScreenTemplateId(u8 type)`. */
 function GetEachChatScreenTemplateId(type: number): number {
   for (let i = 0; i < sEasyChatScreenTemplates.length; i++) {
     if (sEasyChatScreenTemplates[i].type === type) return i;
@@ -596,8 +3156,6 @@ function GetEachChatScreenTemplateId(type: number): number {
 }
 
 // ─── HandleEasyChatInput + sous-handlers (easy_chat.c:1698) ──────────────────
-
-/** 1:1 décomp `static u16 HandleEasyChatInput(void)`. */
 function HandleEasyChatInput(): number {
   switch (sEasyChatScreen!.inputState) {
     case INPUTSTATE_PHRASE: return HandleEasyChatInput_Phrase();
@@ -615,7 +3173,6 @@ function HandleEasyChatInput(): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static bool32 IsCurrentFrame2x5(void)`. */
 function IsCurrentFrame2x5(): boolean {
   switch (GetEasyChatScreenFrameId()) {
     case FRAMEID_MAIL:
@@ -626,7 +3183,6 @@ function IsCurrentFrame2x5(): boolean {
   return false;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_Phrase(void)`. */
 function HandleEasyChatInput_Phrase(): number {
   const s = sEasyChatScreen!;
   let dpad = true;
@@ -643,43 +3199,32 @@ function HandleEasyChatInput_Phrase(): number {
     } else if (JOY_NEW(START_BUTTON)) {
       return TryConfirmWords();
     } else if (JOY_NEW(DPAD_UP)) {
-      s.mainCursorRow--;
-      break;
+      s.mainCursorRow--; break;
     } else if (JOY_NEW(DPAD_LEFT)) {
-      s.mainCursorColumn--;
-      break;
+      s.mainCursorColumn--; break;
     } else if (JOY_NEW(DPAD_DOWN)) {
-      s.mainCursorRow++;
-      break;
+      s.mainCursorRow++; break;
     } else if (JOY_NEW(DPAD_RIGHT)) {
-      s.mainCursorColumn++;
-      break;
+      s.mainCursorColumn++; break;
     }
     dpad = false;
   } while (false);
   if (!dpad) return ECFUNC_NONE;
 
   const tmpl = sEasyChatScreenTemplates[s.templateId];
-  // Wrap row.
   if (s.mainCursorRow < 0) s.mainCursorRow = tmpl.numRows;
   if (s.mainCursorRow > tmpl.numRows) s.mainCursorRow = 0;
-
   if (s.mainCursorRow === tmpl.numRows) {
     if (s.mainCursorColumn > 2) s.mainCursorColumn = 2;
     s.inputState = INPUTSTATE_MAIN_SCREEN_BUTTONS;
     return ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS;
   }
-
-  // Wrap column.
   if (s.mainCursorColumn < 0) s.mainCursorColumn = tmpl.numColumns - 1;
   if (s.mainCursorColumn >= tmpl.numColumns) s.mainCursorColumn = 0;
-
   if (IsCurrentFrame2x5() && s.mainCursorColumn === 1 && s.mainCursorRow === 4) s.mainCursorColumn = 0;
-
   return ECFUNC_UPDATE_MAIN_CURSOR;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_MainScreenButtons(void)`. */
 function HandleEasyChatInput_MainScreenButtons(): number {
   const s = sEasyChatScreen!;
   let dpad = true;
@@ -697,17 +3242,13 @@ function HandleEasyChatInput_MainScreenButtons(): number {
     } else if (JOY_NEW(START_BUTTON)) {
       return TryConfirmWords();
     } else if (JOY_NEW(DPAD_UP)) {
-      s.mainCursorRow--;
-      break;
+      s.mainCursorRow--; break;
     } else if (JOY_NEW(DPAD_LEFT)) {
-      s.mainCursorColumn--;
-      break;
+      s.mainCursorColumn--; break;
     } else if (JOY_NEW(DPAD_DOWN)) {
-      s.mainCursorRow = 0;
-      break;
+      s.mainCursorRow = 0; break;
     } else if (JOY_NEW(DPAD_RIGHT)) {
-      s.mainCursorColumn++;
-      break;
+      s.mainCursorColumn++; break;
     }
     dpad = false;
   } while (false);
@@ -720,15 +3261,12 @@ function HandleEasyChatInput_MainScreenButtons(): number {
     if (s.mainCursorColumn >= numFooterColumns) s.mainCursorColumn = 0;
     return ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS;
   }
-
   if (s.mainCursorColumn >= tmpl.numColumns) s.mainCursorColumn = tmpl.numColumns - 1;
   if (IsCurrentFrame2x5() && s.mainCursorColumn === 1 && s.mainCursorRow === 4) s.mainCursorColumn = 0;
-
   s.inputState = INPUTSTATE_PHRASE;
   return ECFUNC_UPDATE_MAIN_CURSOR;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_Keyboard(void)`. */
 function HandleEasyChatInput_Keyboard(): number {
   const s = sEasyChatScreen!;
   if (JOY_NEW(B_BUTTON)) return ExitKeyboardToMainScreen();
@@ -748,7 +3286,6 @@ function HandleEasyChatInput_Keyboard(): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_WordSelect(void)`. */
 function HandleEasyChatInput_WordSelect(): number {
   const s = sEasyChatScreen!;
   if (JOY_NEW(B_BUTTON)) {
@@ -765,15 +3302,14 @@ function HandleEasyChatInput_WordSelect(): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_ExitPrompt(void)`. */
 function HandleEasyChatInput_ExitPrompt(): number {
   const s = sEasyChatScreen!;
   switch (Menu_ProcessInputNoWrapClearOnChoose()) {
     case MENU_B_PRESSED:
-    case 1: // No (Continue)
+    case 1:
       s.inputState = GetEasyChatBackupState();
       return ECFUNC_CLOSE_PROMPT;
-    case 0: // Yes (Exit)
+    case 0:
       gSpecialVar.Result = 0;
       if (s.type === EASY_CHAT_TYPE_QUIZ_SET_QUESTION || s.type === EASY_CHAT_TYPE_QUIZ_SET_ANSWER)
         SaveCurrentPhrase();
@@ -783,7 +3319,6 @@ function HandleEasyChatInput_ExitPrompt(): number {
   }
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_ConfirmWordsYesNo(void)`. */
 function HandleEasyChatInput_ConfirmWordsYesNo(): number {
   const s = sEasyChatScreen!;
   switch (Menu_ProcessInputNoWrapClearOnChoose()) {
@@ -801,7 +3336,6 @@ function HandleEasyChatInput_ConfirmWordsYesNo(): number {
   }
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_DeleteAllYesNo(void)`. */
 function HandleEasyChatInput_DeleteAllYesNo(): number {
   const s = sEasyChatScreen!;
   switch (Menu_ProcessInputNoWrapClearOnChoose()) {
@@ -818,14 +3352,12 @@ function HandleEasyChatInput_DeleteAllYesNo(): number {
   }
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_QuizQuestion(void)`. */
 function HandleEasyChatInput_QuizQuestion(): number {
   if (JOY_NEW(A_BUTTON)) return ECFUNC_QUIZ_ANSWER;
   if (JOY_NEW(B_BUTTON)) return StartConfirmExitPrompt();
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_WaitForMsg(void)`. */
 function HandleEasyChatInput_WaitForMsg(): number {
   const s = sEasyChatScreen!;
   if (JOY_NEW(A_BUTTON | B_BUTTON)) {
@@ -835,13 +3367,11 @@ function HandleEasyChatInput_WaitForMsg(): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_StartConfirmLyrics(void)`. */
 function HandleEasyChatInput_StartConfirmLyrics(): number {
   sEasyChatScreen!.inputState = INPUTSTATE_CONFIRM_LYRICS_YES_NO;
   return ECFUNC_PROMPT_CONFIRM;
 }
 
-/** 1:1 décomp `static u16 HandleEasyChatInput_ConfirmLyricsYesNo(void)`. */
 function HandleEasyChatInput_ConfirmLyricsYesNo(): number {
   const s = sEasyChatScreen!;
   switch (Menu_ProcessInputNoWrapClearOnChoose()) {
@@ -860,7 +3390,6 @@ function HandleEasyChatInput_ConfirmLyricsYesNo(): number {
   }
 }
 
-/** 1:1 décomp `static u16 StartConfirmExitPrompt(void)`. */
 function StartConfirmExitPrompt(): number {
   const s = sEasyChatScreen!;
   if (s.type === EASY_CHAT_TYPE_APPRENTICE || s.type === EASY_CHAT_TYPE_CONTEST_INTERVIEW) {
@@ -874,7 +3403,6 @@ function StartConfirmExitPrompt(): number {
   }
 }
 
-/** 1:1 décomp `static int DoDeleteAllButton(void)`. */
 function DoDeleteAllButton(): number {
   const s = sEasyChatScreen!;
   s.inputStateBackup = s.inputState;
@@ -888,7 +3416,6 @@ function DoDeleteAllButton(): number {
   }
 }
 
-/** 1:1 décomp `static u16 TryConfirmWords(void)`. */
 function TryConfirmWords(): number {
   const s = sEasyChatScreen!;
   s.inputStateBackup = s.inputState;
@@ -923,7 +3450,6 @@ function TryConfirmWords(): number {
   }
 }
 
-/** 1:1 décomp `static int DoQuizButton(void)`. */
 function DoQuizButton(): number {
   const s = sEasyChatScreen!;
   s.inputStateBackup = s.inputState;
@@ -935,10 +3461,8 @@ function DoQuizButton(): number {
   }
 }
 
-/** 1:1 décomp `static u8 GetEasyChatBackupState(void)`. */
 function GetEasyChatBackupState(): number { return sEasyChatScreen!.inputStateBackup; }
 
-/** 1:1 décomp `static int SelectKeyboardGroup(void)`. */
 function SelectKeyboardGroup(): number {
   const s = sEasyChatScreen!;
   if (!s.inAlphabetMode) {
@@ -957,13 +3481,11 @@ function SelectKeyboardGroup(): number {
   return ECFUNC_OPEN_WORD_SELECT;
 }
 
-/** 1:1 décomp `static int ExitKeyboardToMainScreen(void)`. */
 function ExitKeyboardToMainScreen(): number {
   sEasyChatScreen!.inputState = INPUTSTATE_PHRASE;
   return ECFUNC_CLOSE_KEYBOARD;
 }
 
-/** 1:1 décomp `static int StartSwitchKeyboardMode(void)`. */
 function StartSwitchKeyboardMode(): number {
   const s = sEasyChatScreen!;
   s.keyboardColumn = 0;
@@ -973,7 +3495,6 @@ function StartSwitchKeyboardMode(): number {
   return ECFUNC_SWITCH_KEYBOARD_MODE;
 }
 
-/** 1:1 décomp `static int DeleteSelectedWord(void)`. */
 function DeleteSelectedWord(): number {
   if (sEasyChatScreen!.type === EASY_CHAT_TYPE_BARD_SONG) {
     PlaySE(SE_FAILURE);
@@ -984,7 +3505,6 @@ function DeleteSelectedWord(): number {
   }
 }
 
-/** 1:1 décomp `static int SelectNewWord(void)`. */
 function SelectNewWord(): number {
   const s = sEasyChatScreen!;
   const easyChatWord = GetWordFromSelectedGroup(GetSelectedWordIndex());
@@ -1003,31 +3523,26 @@ function SelectNewWord(): number {
   }
 }
 
-/** 1:1 décomp `static void SaveCurrentPhrase(void)`. */
 function SaveCurrentPhrase(): void {
   const s = sEasyChatScreen!;
   for (let i = 0; i < s.maxWords; i++) s.savedPhrase![i] = s.currentPhrase[i];
 }
 
-/** 1:1 décomp `static void ResetCurrentPhrase(void)`. */
 function ResetCurrentPhrase(): void {
   const s = sEasyChatScreen!;
   for (let i = 0; i < s.maxWords; i++) s.currentPhrase[i] = EC_EMPTY_WORD;
 }
 
-/** 1:1 décomp `static void ResetCurrentPhraseToSaved(void)`. */
 function ResetCurrentPhraseToSaved(): void {
   const s = sEasyChatScreen!;
   for (let i = 0; i < s.maxWords; i++) s.currentPhrase[i] = s.savedPhrase![i];
 }
 
-/** 1:1 décomp `static void SetSelectedWord(u16 easyChatWord)`. */
 function SetSelectedWord(easyChatWord: number): void {
   const index = GetWordIndexToReplace();
   sEasyChatScreen!.currentPhrase[index] = easyChatWord;
 }
 
-/** 1:1 décomp `static bool8 DidPhraseChange(void)`. */
 function DidPhraseChange(): boolean {
   const s = sEasyChatScreen!;
   for (let i = 0; i < s.maxWords; i++) {
@@ -1036,7 +3551,6 @@ function DidPhraseChange(): boolean {
   return false;
 }
 
-/** 1:1 décomp `static bool32 GetEasyChatCompleted(void)`. */
 function GetEasyChatCompleted(): boolean {
   const s = sEasyChatScreen!;
   if (s.type === EASY_CHAT_TYPE_QUIZ_SET_QUESTION || s.type === EASY_CHAT_TYPE_QUIZ_SET_ANSWER) {
@@ -1048,7 +3562,6 @@ function GetEasyChatCompleted(): boolean {
   }
 }
 
-/** 1:1 décomp `static u16 MoveKeyboardCursor(int input)`. */
 function MoveKeyboardCursor(input: number): number {
   const s = sEasyChatScreen!;
   if (s.keyboardColumn !== -1) {
@@ -1059,7 +3572,6 @@ function MoveKeyboardCursor(input: number): number {
   }
 }
 
-/** 1:1 décomp `static int MoveKeyboardCursor_GroupNames(u32 input)`. */
 function MoveKeyboardCursor_GroupNames(input: number): number {
   const s = sEasyChatScreen!;
   switch (input) {
@@ -1094,7 +3606,6 @@ function MoveKeyboardCursor_GroupNames(input: number): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static int MoveKeyboardCursor_Alphabet(u32 input)`. */
 function MoveKeyboardCursor_Alphabet(input: number): number {
   const s = sEasyChatScreen!;
   switch (input) {
@@ -1120,7 +3631,6 @@ function MoveKeyboardCursor_Alphabet(input: number): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static int MoveKeyboardCursor_ButtonWindow(u32 input)`. */
 function MoveKeyboardCursor_ButtonWindow(input: number): number {
   const s = sEasyChatScreen!;
   switch (input) {
@@ -1144,14 +3654,12 @@ function MoveKeyboardCursor_ButtonWindow(input: number): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static void SetKeyboardCursorInButtonWindow(void)`. */
 function SetKeyboardCursorInButtonWindow(): void {
   const s = sEasyChatScreen!;
   s.keyboardColumn = -1;
   if (s.keyboardRow) s.keyboardRow--;
 }
 
-/** 1:1 décomp `static void SetKeyboardCursorToLastColumn(void)`. */
 function SetKeyboardCursorToLastColumn(): void {
   const s = sEasyChatScreen!;
   if (!s.inAlphabetMode) {
@@ -1162,7 +3670,6 @@ function SetKeyboardCursorToLastColumn(): void {
   }
 }
 
-/** 1:1 décomp `static u16 MoveWordSelectCursor(u32 input)`. */
 function MoveWordSelectCursor(input: number): number {
   const s = sEasyChatScreen!;
   let funcId: number;
@@ -1216,19 +3723,16 @@ function MoveWordSelectCursor(input: number): number {
   return ECFUNC_NONE;
 }
 
-/** 1:1 décomp `static u16 GetWordIndexToReplace(void)`. */
 function GetWordIndexToReplace(): number {
   const s = sEasyChatScreen!;
   return s.mainCursorRow * s.numColumns + s.mainCursorColumn;
 }
 
-/** 1:1 décomp `static u16 GetSelectedGroupIndex(void)`. */
 function GetSelectedGroupIndex(): number {
   const s = sEasyChatScreen!;
   return NUM_GROUP_NAME_COLUMNS * (s.keyboardRow + s.keyboardScrollOffset) + s.keyboardColumn;
 }
 
-/** 1:1 décomp `static int GetSelectedAlphabetGroupId(void)`. */
 function GetSelectedAlphabetGroupId(): number {
   const s = sEasyChatScreen!;
   const column = (s.keyboardColumn & 0xFF) < NUM_ALPHABET_COLUMNS ? s.keyboardColumn : 0;
@@ -1236,13 +3740,11 @@ function GetSelectedAlphabetGroupId(): number {
   return sAlphabetGroupIdMap[row][column];
 }
 
-/** 1:1 décomp `static u16 GetSelectedWordIndex(void)`. */
 function GetSelectedWordIndex(): number {
   const s = sEasyChatScreen!;
   return NUM_WORD_SELECT_COLUMNS * (s.wordSelectRow + s.wordSelectScrollOffset) + s.wordSelectColumn;
 }
 
-/** 1:1 décomp `static u8 GetLastAlphabetColumn(u8 row)`. */
 function GetLastAlphabetColumn(row: number): number {
   switch (row) {
     case 1: return NUM_ALPHABET_COLUMNS - 2;
@@ -1251,7 +3753,6 @@ function GetLastAlphabetColumn(row: number): number {
   }
 }
 
-/** 1:1 décomp `static void ReduceToValidKeyboardColumn(void)`. */
 function ReduceToValidKeyboardColumn(): void {
   const s = sEasyChatScreen!;
   while (IsSelectedKeyboardIndexInvalid()) {
@@ -1260,7 +3761,6 @@ function ReduceToValidKeyboardColumn(): void {
   }
 }
 
-/** 1:1 décomp `static void ReduceToValidWordSelectColumn(void)`. */
 function ReduceToValidWordSelectColumn(): void {
   const s = sEasyChatScreen!;
   while (IsSelectedWordIndexInvalid()) {
@@ -1269,102 +3769,25 @@ function ReduceToValidWordSelectColumn(): void {
   }
 }
 
-/** 1:1 décomp `static bool8 IsSelectedKeyboardIndexInvalid(void)`. */
 function IsSelectedKeyboardIndexInvalid(): boolean {
   const s = sEasyChatScreen!;
   if (!s.inAlphabetMode) return GetSelectedGroupIndex() >= GetNumUnlockedEasyChatGroups();
   else return s.keyboardColumn > GetLastAlphabetColumn(s.keyboardRow);
 }
 
-/** 1:1 décomp `static bool8 IsSelectedWordIndexInvalid(void)`. */
 function IsSelectedWordIndexInvalid(): boolean {
   return GetSelectedWordIndex() >= GetNumWordsInSelectedGroup();
 }
 
-/** 1:1 décomp `static int FooterHasFourOptions(void)`. */
 function FooterHasFourOptions(): number {
   return sEasyChatScreenTemplates[sEasyChatScreen!.templateId].fourFooterOptions ? 1 : 0;
 }
 
-// ─── Getters (injectés dans le renderer) — easy_chat.c:2682-2853 ─────────────
-function GetEasyChatScreenType(): number { return sEasyChatScreen!.type; }
-function GetEasyChatScreenFrameId(): number { return sEasyChatScreenTemplates[sEasyChatScreen!.templateId].frameId; }
-function GetTitleText(): Uint8Array | string | null { return sEasyChatScreen!.titleText; }
-function GetCurrentPhrase(): Uint16Array { return sEasyChatScreen!.currentPhrase; }
-function GetNumRows(): number { return sEasyChatScreen!.numRows; }
-function GetNumColumns(): number { return sEasyChatScreen!.numColumns; }
-function GetMainCursorColumn(): number { return sEasyChatScreen!.mainCursorColumn; }
-function GetMainCursorRow(): number { return sEasyChatScreen!.mainCursorRow; }
-
-function GetEasyChatInstructionsText(): { text1: Uint8Array | string | null; text2: Uint8Array | string | null } {
-  const t = sEasyChatScreenTemplates[sEasyChatScreen!.templateId];
-  return { text1: t.instructionsText1, text2: t.instructionsText2 };
-}
-function GetEasyChatConfirmText(): { text1: Uint8Array | string | null; text2: Uint8Array | string | null } {
-  const t = sEasyChatScreenTemplates[sEasyChatScreen!.templateId];
-  return { text1: t.confirmText1, text2: t.confirmText2 };
-}
-function GetEasyChatConfirmExitText(): { text1: Uint8Array | string | null; text2: Uint8Array | string | null } {
-  switch (sEasyChatScreen!.type) {
-    case EASY_CHAT_TYPE_MAIL: return { text1: gText_StopGivingPkmnMail, text2: null };
-    case EASY_CHAT_TYPE_QUIZ_ANSWER:
-    case EASY_CHAT_TYPE_QUIZ_QUESTION: return { text1: gText_LikeToQuitQuiz, text2: gText_ChallengeQuestionMark };
-    default: return { text1: gText_QuitEditing, text2: null };
-  }
-}
-function GetEasyChatConfirmDeletionText(): { text1: Uint8Array | string | null; text2: Uint8Array | string | null } {
-  return { text1: gText_AllTextBeingEditedWill, text2: gText_BeDeletedThatOkay };
-}
-function GetKeyboardCursorColAndRow(): { column: number; row: number } {
-  return { column: sEasyChatScreen!.keyboardColumn, row: sEasyChatScreen!.keyboardRow };
-}
-function GetInAlphabetMode(): boolean { return !!sEasyChatScreen!.inAlphabetMode; }
-function GetKeyboardScrollOffset(): number { return sEasyChatScreen!.keyboardScrollOffset; }
-function GetWordSelectColAndRow(): { column: number; row: number } {
-  return { column: sEasyChatScreen!.wordSelectColumn, row: sEasyChatScreen!.wordSelectRow };
-}
-function GetWordSelectScrollOffset(): number { return sEasyChatScreen!.wordSelectScrollOffset; }
-function GetWordSelectLastRow(): number { return sEasyChatScreen!.wordSelectLastRow; }
-
-/** 1:1 décomp `static bool32 CanScrollUp(void)`. */
-function CanScrollUp(): boolean {
-  const s = sEasyChatScreen!;
-  switch (s.inputState) {
-    case INPUTSTATE_KEYBOARD:
-      if (!s.inAlphabetMode && s.keyboardScrollOffset) return true;
-      break;
-    case INPUTSTATE_WORD_SELECT:
-      if (s.wordSelectScrollOffset) return true;
-      break;
-  }
-  return false;
-}
-
-/** 1:1 décomp `static bool32 CanScrollDown(void)`. */
-function CanScrollDown(): boolean {
-  const s = sEasyChatScreen!;
-  switch (s.inputState) {
-    case INPUTSTATE_KEYBOARD:
-      if (!s.inAlphabetMode && s.keyboardScrollOffset + NUM_GROUP_NAME_ROWS <= s.keyboardLastRow - 1) return true;
-      break;
-    case INPUTSTATE_WORD_SELECT:
-      if (s.wordSelectScrollOffset + NUM_WORD_SELECT_ROWS <= s.wordSelectLastRow) return true;
-      break;
-  }
-  return false;
-}
-
-/** 1:1 décomp `static int FooterHasFourOptions_(void)`. */
-function FooterHasFourOptions_(): number { return FooterHasFourOptions(); }
-
-/** 1:1 décomp `static bool8 IsPhraseDifferentThanPlayerInput(const u16 *phrase, u8 phraseLength)`. */
 function IsPhraseDifferentThanPlayerInput(phrase: readonly number[], phraseLength: number): boolean {
   const s = sEasyChatScreen!;
   for (let i = 0; i < phraseLength; i++) if (phrase[i] !== s.currentPhrase[i]) return true;
   return false;
 }
-
-function GetDisplayedPersonType(): number { return sEasyChatScreen!.displayedPersonType; }
 
 // ─── Phrase state helpers (easy_chat.c:2868-3013) ────────────────────────────
 function IsCurrentPhraseEmpty(): boolean {
@@ -1392,12 +3815,6 @@ function IsQuizAnswerEmpty(): boolean {
   return (q?.quiz?.correctAnswer ?? EC_EMPTY_WORD) === EC_EMPTY_WORD;
 }
 
-/** 1:1 décomp `static void ClearUnusedField(void)`. */
-function ClearUnusedField(): void { sEasyChatScreen!.unused = 0; }
-
-/** 1:1 décomp `static bool32 DummyWordCheck(int easyChatWord)`. */
-function DummyWordCheck(_easyChatWord: number): boolean { return false; }
-
 /** 1:1 décomp `static void SetSpecialEasyChatResult(void)`. */
 function SetSpecialEasyChatResult(): void {
   const s = sEasyChatScreen!;
@@ -1416,14 +3833,11 @@ function SetSpecialEasyChatResult(): void {
       break;
   }
 }
-const FLAG_SYS_CHAT_USED = 0x861; // 1:1 flags.h (SYSTEM_FLAGS + 0x1)
 
-/** 1:1 décomp `static int DidPlayerInputMysteryGiftPhrase(void)`. */
 function DidPlayerInputMysteryGiftPhrase(): number {
   return IsPhraseDifferentThanPlayerInput(sMysteryGiftPhrase, sMysteryGiftPhrase.length) ? 0 : 1;
 }
 
-/** 1:1 décomp `static u16 DidPlayerInputABerryMasterWifePhrase(void)`. */
 function DidPlayerInputABerryMasterWifePhrase(): number {
   for (let i = 0; i < sBerryMasterWifePhrases.length; i++) {
     if (!IsPhraseDifferentThanPlayerInput(sBerryMasterWifePhrases[i], 2)) return i + 1;
@@ -1431,31 +3845,10 @@ function DidPlayerInputABerryMasterWifePhrase(): number {
   return 0;
 }
 
-// ─── SetMainCallback2 wrap (1:1, cf. mail.ts) ────────────────────────────────
+// ─── SetMainCallback2 wrap ───────────────────────────────────────────────────
 function SetMainCallback2(cb: MainCallback | null): void {
   const rt = getRuntime();
   if (!rt) return;
   rt.SetMainCallback2(cb as CB2Callback);
 }
 
-// ─── Hook headless (test logique sans rendu) ─────────────────────────────────
-/** Expose l'installation des bridges + accès à l'état pour un test logique headless
- *  (drive SelectKeyboardGroup/SelectNewWord et lit currentPhrase). NON 1:1 (harness). */
-export const __easyChatTest = {
-  install: _installEasyChatBridges,
-  initStruct: (type: number, words: Uint16Array | null) => {
-    InitEasyChatScreenWordData();
-    return InitEasyChatScreenStruct(type, words, EASY_CHAT_PERSON_DISPLAY_NONE);
-  },
-  getScreen: () => sEasyChatScreen,
-  SelectKeyboardGroup, SelectNewWord, GetWordFromSelectedGroup, GetSelectedWordIndex,
-  GetNumWordsInSelectedGroup, GetNumUnlockedEasyChatGroups, GetUnlockedEasyChatGroupId,
-  CopyEasyChatWord,
-  /** Ouvre l'écran easy-chat (visuel) : précharge les assets puis DoEasyChatScreen.
-   *  exitCb = retour overworld (fourni par l'appelant). */
-  open: async (type: number, words: Uint16Array | null, exitCb: () => void) => {
-    _installEasyChatBridges();
-    await easyChatGfxReady();
-    DoEasyChatScreen(type, words, exitCb, EASY_CHAT_PERSON_DISPLAY_NONE);
-  },
-};

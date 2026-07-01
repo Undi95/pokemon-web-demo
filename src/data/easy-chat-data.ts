@@ -3,7 +3,7 @@
 // Source : src/data/easy_chat/easy_chat_groups.h + easy_chat_words_by_letter.h + easy_chat.c.
 // Types = ceux du renderer (import type) → injectables directement via _setG*.
 
-import type { EasyChatGroup, EasyChatWordsByLetter, EasyChatPhraseFrameDimensions } from '../engine/ui/easy-chat-render';
+import type { EasyChatGroup, EasyChatWordsByLetter, EasyChatPhraseFrameDimensions } from '../easy_chat';
 import type { BgTemplate, WindowTemplate } from '../window';
 
 /** 1:1 gEasyChatGroups[] (indexé par EC_GROUP_*). */
