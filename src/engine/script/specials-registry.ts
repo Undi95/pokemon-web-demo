@@ -472,8 +472,8 @@ registerSpecial('GetMomOrDadStringForTVMessage', () => {
     setStringVar(1, cached % 2 === 0 ? 'MAMAN' : 'PAPA');
     return;
   }
-  // Random 50/50
-  if (Math.floor(Math.random() * 2) !== 0) {
+  // Random 50/50 — 1:1 décomp tv.c GetMomOrDadStringForTVMessage `Random() & 1`.
+  if ((Random() & 1) !== 0) {
     setStringVar(1, 'MAMAN');
     VarSet('VAR_TEMP_3', 1);
   } else {

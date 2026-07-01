@@ -1584,21 +1584,36 @@ function Task_ScrollIndicatorArrowPair(t: number | { taskId: number }): void {
 }
 
 /** 1:1 décomp `void Task_ScrollIndicatorArrowPairOnMainMenu(u8 taskId)`
- *  (list_menu.c:1144-1159). `data[15]` = tIsScrolled (posé par main_menu.c
- *  quand porté ; ici champ struct = 1:1 sémantique du slot). */
-export function Task_ScrollIndicatorArrowPairOnMainMenu(t: number | { taskId: number }): void {
+ *  (list_menu.c:1144-1159). `#define tIsScrolled data[15]` (:1142) — flag posé
+ *  sur la TASK flèches par main_menu.c (`gTasks[tScrollArrowTaskId].data[15]`,
+ *  main_menu.c:871/:910/:922) → lu ici sur la task, PAS sur le struct pair. */
+export function Task_ScrollIndicatorArrowPairOnMainMenu(t: number | { taskId: number; data?: number[] }): void {
   const taskId = typeof t === 'number' ? t : t.taskId;
-  const data = sScrollIndicatorData.get(taskId);
-  if (!data) return;
-  const top = _getSpriteFull(data.topSpriteId);
-  const bot = _getSpriteFull(data.bottomSpriteId);
-  if (data.tIsScrolled) {                                     // 1:1 :1149
+  const scrollData = sScrollIndicatorData.get(taskId);
+  if (!scrollData) return;
+  const tIsScrolled = (typeof t === 'object' ? t.data?.[15] : _getTaskData(taskId)?.[15]) ?? 0;
+  const top = _getSpriteFull(scrollData.topSpriteId);
+  const bot = _getSpriteFull(scrollData.bottomSpriteId);
+  if (tIsScrolled) {                                          // 1:1 :1149
     if (top) top.invisible = false;                           // 1:1 :1151
     if (bot) bot.invisible = true;                            // 1:1 :1152
   } else {
     if (top) top.invisible = true;                            // 1:1 :1156
     if (bot) bot.invisible = false;                           // 1:1 :1157
   }
+}
+
+function _getTaskData(taskId: number): number[] | undefined {
+  const rt = getRuntime() as unknown as { gTasks?: unknown } | null;
+  const g = rt?.gTasks as
+    | { get?: (id: number) => { data?: number[] } | undefined }
+    | Array<{ data?: number[] } | undefined>
+    | undefined;
+  if (!g) return undefined;
+  const task = typeof (g as { get?: unknown }).get === 'function'
+    ? (g as { get: (id: number) => { data?: number[] } | undefined }).get(taskId)
+    : (g as Array<{ data?: number[] } | undefined>)[taskId];
+  return task?.data;
 }
 
 /** 1:1 décomp `void RemoveScrollIndicatorArrowPair(u8 taskId)`

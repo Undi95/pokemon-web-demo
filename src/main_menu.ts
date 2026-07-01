@@ -21,13 +21,16 @@
  *   - HighlightSelectedMainMenuItem (= WIN0 cursor highlight)
  *   - LoadMainMenuWindowFrameTiles (= partagé avec option_menu via gba-text-window)
  *   - DrawMainMenuWindowBorder / ClearMainMenuWindowTilemap (= 1:1 décomp tilemap helpers)
- *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
- *   - sBirch* templates (= placeholders Birch, à porter 1:1 Phase D)
+ *   - NewGameBirchSpeech_* + Task_NewGameBirchSpeech_* (= Phase D FAITE :
+ *     state-machine Birch complète, genre/nom/naming → CB2_NewGame)
+ *   - sBirch* data (= affine shrink 1:1 + assets via clés assetCache,
+ *     préchargés par preloadBirchSpeechAssets)
  */
 import { getRuntime, assetCache } from '../harness/runtime/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { SetPlayerName, GetPlayerNameString } from '../include/text';
+import { Random } from './random';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {
@@ -146,29 +149,21 @@ export let sStartedPokeBallTask = false;
 (globalThis as Record<string, unknown>).sBirchSpeechMainTaskId = sBirchSpeechMainTaskId;
 (globalThis as Record<string, unknown>).sStartedPokeBallTask = sStartedPokeBallTask;
 
-// ─── Birch speech templates / palette placeholders ──────────────────────────
+// ─── Birch speech data (= main_menu.c data-section) ─────────────────────────
 //
-// ⚠️ PHASE D PLACEHOLDERS — à remplacer lors implémentation Birch flow.
-//
-// Source décomp : `src/main_menu.c` data-section :
-//   - sScrollArrowsTemplate_MainMenu (= ScrollArrowParams struct)
-//   - sBirchBgTemplate (= BgTemplate struct, BG3 charBase/mapBase pour BG Birch)
-//   - sBirchSpeechBgPals / sBirchSpeechBgGradientPal[3] (= palettes)
-//   - sBirchSpeechPlatformBlackPal (= palette 11-frame fade transition)
-//   - sBirchSpeechBgMap (= LZ77 compressed BG tilemap, à charger via LZ77UnCompVram)
-//   - sSpriteAffineAnimTable_PlayerShrink (= affine anim table, player shrink fx)
-//
-// TODO Phase D : porter ces structs Birch 1:1 dans ce fichier (= main_menu.c) depuis
-// le décomp (LZ77 gfx/tilemap/palette + affine anim table player-shrink).
-//
-// Pour l'instant : valeurs string-symbol (= matchent le getAsset() pattern) ou
-// zero-init structs. Le code Birch ne sera jamais déclenché tant qu'on n'a
-// pas implémenté Task_NewGameBirchSpeech_*, donc ces placeholders ne crashent
-// pas le boot mais signalent clairement leur statut.
+// Le flow Birch (Task_NewGameBirchSpeech_*) est PORTÉ (state-machine complète
+// plus bas). Les données ci-dessous suivent 2 patterns assumés :
+//   - structs pures (BgTemplate, ScrollArrowsTemplate, affine anims) = 1:1 inline ;
+//   - assets binaires (LZ77 gfx/tilemap/palettes) = clés string vers assetCache,
+//     préchargées async par preloadBirchSpeechAssets (adaptation asset web).
 
-export const sScrollArrowsTemplate_MainMenu = {
-  firstArrowType: 0, firstX: 0, firstY: 0, secondArrowType: 1, secondX: 0, secondY: 0,
-  fullyOutOfBoundsValue: 0, tileTag: 0, palTag: 0, palNum: 0,
+// 1:1 décomp main_menu.c:444 sScrollArrowsTemplate_MainMenu =
+// {2, 0x78, 8, 3, 0x78, 0x98, 3, 4, 1, 1, 0} (struct ScrollArrowsTemplate).
+export const sScrollArrowsTemplate_MainMenu: ScrollArrowsTemplate = {
+  firstArrowType: 2, firstX: 0x78, firstY: 8,
+  secondArrowType: 3, secondX: 0x78, secondY: 0x98,
+  fullyUpThreshold: 3, fullyDownThreshold: 4,
+  tileTag: 1, palTag: 1, palNum: 0,
 };
 (globalThis as Record<string, unknown>).sScrollArrowsTemplate_MainMenu = sScrollArrowsTemplate_MainMenu;
 
@@ -672,29 +667,16 @@ const sFemalePresetNames = [
 
 /** 1:1 décomp main_menu.c:2107 NewGameBirchSpeech_SetDefaultPlayerName(nameId).
  *  Set gSaveBlock2Ptr.playerName depuis sMalePresetNames[nameId] ou
- *  sFemalePresetNames[nameId] selon le gender.
- *
- *  Bug fix session 122 : l'auto file (main_menu-callbacks-auto.ts:77) déclare
- *  `NUM_PRESET_NAMES = _UNDEFINED = 0` (= macro non-résolue par le transpileur),
- *  donc `Math.random() % 0 = NaN` arrive ici comme nameId. Si invalide,
- *  utiliser `Random() % 20` 1:1 décomp (= NUM_PRESET_NAMES réel = 20).
- *
- *  Aussi 1:1 décomp : le décomp utilise `Random()` (= seed=0 reproductible),
- *  pas Math.random(). On override le rng ici aussi pour 1:1 fidélité. */
+ *  sFemalePresetNames[nameId] selon le gender. Garde anti-NaN : le caller 1:1
+ *  passe `Random() % NUM_PRESET_NAMES` (main_menu.c:1604) ; un index invalide
+ *  retombe sur un tirage Random() sync (ex-fallback async import cassé —
+ *  l'assignation arrivait APRÈS l'usage). */
 export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
-  // 1:1 décomp NUM_PRESET_NAMES = 20.
+  // 1:1 décomp NUM_PRESET_NAMES = 20 (min des 2 tables, main_menu.c:509).
   const NUM_PRESET_NAMES = 20;
   let validIdx = nameId;
   if (!Number.isInteger(validIdx) || validIdx < 0 || validIdx >= NUM_PRESET_NAMES) {
-    // Fallback : Random() % 20 (= 1:1 décomp main_menu.c:1604).
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    void import('./random').then(({ Random }) => {
-      validIdx = Random() % NUM_PRESET_NAMES;
-      _applyPresetName(validIdx);
-    });
-    // Apply temporary fallback synchronously to avoid empty playerName
-    // pendant que l'async import résout (= deterministic seed=0 → idx 0).
-    validIdx = 0;
+    validIdx = Random() % NUM_PRESET_NAMES;
   }
   _applyPresetName(validIdx);
 }
@@ -708,10 +690,6 @@ function _applyPresetName(nameId: number): void {
   const name = getString(presetSymbol);
   if (name.startsWith('[MISSING:')) return;  // safety, ne jamais set un missing
   SetPlayerName(name);
-}
-
-export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {
-  // TODO Phase D : créer le menu Yes/No pour le nom.
 }
 
 /** 1:1 décomp `main_menu.c:2265 CreateYesNoMenuParameterized(x, y, baseTileNum,
@@ -1104,20 +1082,13 @@ export function ResetAllPicSprites(): void {
   if (typeof reset === 'function') (reset as () => void)();
 }
 
-// ─── Scroll indicator stubs (= Phase D Birch flow) ──────────────────────────
+// ─── Scroll indicator arrows : vraies fns 1:1 de list_menu.c ────────────────
+// (Ex-stubs no-op locaux qui SHADOWAIENT les vrais ports de list_menu.ts —
+//  supprimés. Import + re-export pour les consommateurs historiques via
+//  decomp-globals `export * from main_menu`.)
 
-export function AddScrollIndicatorArrowPair(_params: unknown, _taskFunc: unknown): number {
-  // TODO Phase D : créer la paire de flèches scroll arrow.
-  return 0;
-}
-
-export function RemoveScrollIndicatorArrowPair(_taskId: number): void {
-  // no-op stub.
-}
-
-export function Task_ScrollIndicatorArrowPairOnMainMenu(_task: unknown, _rt: unknown): void {
-  // no-op stub.
-}
+import { AddScrollIndicatorArrowPair, RemoveScrollIndicatorArrowPair, Task_ScrollIndicatorArrowPairOnMainMenu, type ScrollArrowsTemplate } from './list_menu';
+export { AddScrollIndicatorArrowPair, RemoveScrollIndicatorArrowPair, Task_ScrollIndicatorArrowPairOnMainMenu };
 
 // ─── InitMainMenu — 1:1 décomp src/main_menu.c:558-615 ─────────────────────
 
@@ -1191,16 +1162,6 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
   ShowBg(0);
   HideBg(1);
-  // Diagnostic : log gSaveFileStatus juste avant que Task_MainMenuCheckSaveFile
-  // le lise (= devrait être 1 = SAVE_STATUS_OK si une save existe).
-  // Lecture via 2 paths : (a) import direct gba-menu-system, (b) globalThis
-  // (utilisé par les auto-callbacks). Les 2 doivent matcher.
-  try {
-    // Eviter cycle d'import : lecture via globalThis (= via defineProperty
-    // getter installé par gba-menu-system au load).
-    const viaGlobal = (globalThis as { gSaveFileStatus?: number }).gSaveFileStatus;
-    console.log(`[main-menu-impl] InitMainMenu : globalThis.gSaveFileStatus=${viaGlobal} (= 1 → Continue, 0 → New Game only)`);
-  } catch { /* ignore */ }
   rt.CreateTask((t) => Task_MainMenuCheckSaveFile(t, rt), 0);
 }
 
@@ -1331,8 +1292,9 @@ export const SpriteCB_MovePlayerDownWhileShrinking: SpriteCallback = (sprite, rt
       sprite.data[0] = y;
 };
 
-/** Source: main_menu.c (failed: empty bodyC) */
-export const SpriteCB_Null: SpriteCallback = (_sprite, _rt) => { /* TODO empty bodyC */ };
+/** 1:1 décomp main_menu.c:1865 `SpriteCB_Null` — corps VIDE dans la décomp
+ *  aussi (callback placeholder des sprites Birch/Lotad). */
+export const SpriteCB_Null: SpriteCallback = (_sprite, _rt) => {};
 
 /** Source: main_menu.c → Task_MainMenuCheckSaveFile */
 export const Task_MainMenuCheckSaveFile: TaskCallback = (task, rt) => {
@@ -1577,8 +1539,11 @@ export const Task_DisplayMainMenu: TaskCallback = (task, rt) => {
                   DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], MAIN_MENU_BORDER_TILE);
                   DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[5], MAIN_MENU_BORDER_TILE);
                   DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[6], MAIN_MENU_BORDER_TILE);
-                  data[13] = AddScrollIndicatorArrowPair(sScrollArrowsTemplate_MainMenu, (globalThis as any).sCurrItemAndOptionMenuCheck);
-                  _gt(rt, data[13]).func = (t) => Task_ScrollIndicatorArrowPairOnMainMenu(t, rt);
+                  // 1:1 main_menu.c:864 — 2e arg décomp = &sCurrItemAndOptionMenuCheck
+                  // (pointeur) → closure getter live (le curseur bouge après création).
+                  data[13] = AddScrollIndicatorArrowPair(sScrollArrowsTemplate_MainMenu,
+                    () => ((globalThis as Record<string, unknown>).sCurrItemAndOptionMenuCheck as number) ?? 0);
+                  _gt(rt, data[13]).func = (t) => Task_ScrollIndicatorArrowPairOnMainMenu(t);
                   if ((globalThis as any).sCurrItemAndOptionMenuCheck == 4)
                   {
                       ChangeBgY(0, 0x2000, BG_COORD_ADD);
@@ -2192,7 +2157,7 @@ export const Task_NewGameBirchSpeech_StartNamingScreen: TaskCallback = (task, rt
       {
           FreeAllWindowBuffers();
           FreeAndDestroyMonPicSprite(task.data[9]);
-          NewGameBirchSpeech_SetDefaultPlayerName(Math.floor(Math.random() * 0x10000) % NUM_PRESET_NAMES);
+          NewGameBirchSpeech_SetDefaultPlayerName(Random() % NUM_PRESET_NAMES);  // 1:1 main_menu.c:1604
           rt.DestroyTask(taskId);
           DoNamingScreen(NAMING_SCREEN_PLAYER, GetPlayerNameString(), gSaveBlock2Ptr.playerGender, 0, 0, CB2_NewGameBirchSpeech_ReturnFromNamingScreen as unknown as () => void);
       }

@@ -85,7 +85,6 @@ const symbolsToExpose: Record<string, unknown> = {
   NewGameBirchSpeech_ShowGenderMenu: dg.NewGameBirchSpeech_ShowGenderMenu,
   NewGameBirchSpeech_ProcessGenderMenuInput: dg.NewGameBirchSpeech_ProcessGenderMenuInput,
   NewGameBirchSpeech_SetDefaultPlayerName: dg.NewGameBirchSpeech_SetDefaultPlayerName,
-  NewGameBirchSpeech_CreateNameYesNo: dg.NewGameBirchSpeech_CreateNameYesNo,
   AddScrollIndicatorArrowPair: dg.AddScrollIndicatorArrowPair,
   RemoveScrollIndicatorArrowPair: dg.RemoveScrollIndicatorArrowPair,
   Task_ScrollIndicatorArrowPairOnMainMenu: dg.Task_ScrollIndicatorArrowPairOnMainMenu,

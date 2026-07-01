@@ -613,16 +613,19 @@ export function InitBgFromTemplate(template: BgTemplate): void {
   cfg.baseTile = template.baseTile ?? 0;
 }
 
-/** 1:1 décomp `ShowBg(bg)` — décomp `bg.c:ShowBg` set le flag dans
- *  `sGpuBgConfigs.bgVisibilityAndMode` PUIS appelle `SyncBgVisibilityAndMode`
- *  IMMEDIATEMENT (= setGpuReg DISPCNT bit BG_ON immediate). Pas de queue. */
+/** = décomp `ShowBg(bg)` (bg.c:464 : flag `sGpuBgConfigs.bgVisibilityAndMode`
+ *  + `SyncBgVisibilityAndMode()` = écrit DISPCNT bit BG_ON immédiat).
+ *  ADAPTATION substrat : on ne pose QUE `config.visible` — le compositor lit
+ *  la config à chaque frame, donc l'effet est immédiat SANS passer par le
+ *  chemin registre DISPCNT (Sync* non porté). Écart doctrinal connu (audit
+ *  gfx-substrat 2026-07-02) : le chemin register-encode est perdu. */
 export function ShowBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;
   rt.gba.bg(bg as 0 | 1 | 2 | 3).config.visible = true;
 }
 
-/** 1:1 décomp `HideBg(bg)` — same as ShowBg, immediate. */
+/** = décomp `HideBg(bg)` (bg.c:470) — même adaptation que ShowBg. */
 export function HideBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;

@@ -436,16 +436,33 @@ export function CpuFill32(value: number, destAddr: number, sizeBytes: number): v
   }
 }
 
-/** 1:1 décomp `CpuSet(src, dest, control)` — copy/fill words.
- *  Stub : notre engine ne supporte pas l'adressage mémoire brut C. */
-export function CpuSet(_src: any, _dest: any, _control: number): void {
-  // no-op stub
+/** = BIOS `CpuSet(src, dest, control)` — copy/fill 16/32-bit.
+ *  Copie réelle quand src/dest sont des TypedArray (le cas des callers portés) ;
+ *  control = count (bits 0-20) | fill (bit 24) | 32-bit (bit 26), 1:1 gba/syscall.
+ *  Adresses GBA brutes (nombres) : non modélisées → throw fail-fast (pas de
+ *  no-op silencieux — doctrine anti-stub, audit gfx-substrat 2026-07-02). */
+export function CpuSet(src: unknown, dest: unknown, control: number): void {
+  const count = control & 0x1FFFFF;
+  const fill = (control & (1 << 24)) !== 0;
+  const is32 = (control & (1 << 26)) !== 0;
+  const units = count * (is32 ? 2 : 1);  // en unités 16-bit pour les vues u16
+  const d = dest as { length?: number; set?: unknown; [i: number]: number };
+  const s = src as { length?: number; [i: number]: number };
+  if (d && typeof d.length === 'number') {
+    if (fill) {
+      const v = s && typeof s.length === 'number' ? s[0] : (src as number);
+      for (let i = 0; i < units && i < d.length; i++) d[i] = v;
+    } else if (s && typeof s.length === 'number') {
+      for (let i = 0; i < units && i < d.length && i < s.length; i++) d[i] = s[i];
+    }
+    return;
+  }
+  throw new Error('[decomp-globals] CpuSet : dest non-TypedArray (adressage GBA brut non modélisé)');
 }
 
-/** 1:1 décomp `CpuFastSet(src, dest, control)` — fast copy/fill.
- *  Stub : idem CpuSet. */
-export function CpuFastSet(_src: any, _dest: any, _control: number): void {
-  // no-op stub
+/** = BIOS `CpuFastSet` — même sémantique que CpuSet (32-bit, count en words). */
+export function CpuFastSet(src: unknown, dest: unknown, control: number): void {
+  CpuSet(src, dest, (control & 0x1FFFFF) | (control & (1 << 24)) | (1 << 26));
 }
 
 /** 1:1 décomp src/intro_credits_graphics.c:729 — charge BG2/BG3 Scene 2.
@@ -1551,14 +1568,16 @@ export function DmaFill32(_channel: number, value: number, destAddr: number, siz
     }
   }
 }
-/** 1:1 décomp src/palette.c ResetPaletteFade :
- *  Resets internal fade STATE only (= gPaletteFade.y, .active, .targetY, etc.).
- *  ⚠️ NE TOUCHE PAS le BLDY register (= gba.blend.brightness) ni le BLDCNT.
- *  Avant cette fix, on resettait `r.gba.blend.brightness = 0`, ce qui kill le
- *  BLDY=4 setup au state 1 de CB2_InitOptionMenu → cursor highlight darken
- *  effect jamais visible. Cf. décomp palette.c:374 — ResetPaletteFade ne
- *  set que `gPaletteFade.bufferTransferDisabled = FALSE` et internal fade
- *  state. */
+/** = décomp `ResetPaletteFade` (palette.c:136-144) : boucle
+ *  `PaletteStruct_Reset(i)` ×16 PUIS `ResetPaletteFadeControl()` (palette.c:363
+ *  = reset de TOUS les champs de gPaletteFade).
+ *  Notre port = la partie ResetPaletteFadeControl seulement — le sous-système
+ *  PaletteStruct (sPaletteStructs[16], palette.c:206-360) n'est PAS porté
+ *  (seul caller vivant = battle_anim_mons.c:725, combat PAUSE ; cf. audit
+ *  gfx-substrat 2026-07-02). À porter avec PaletteStruct.
+ *  ⚠️ NE TOUCHE PAS le BLDY register (= gba.blend.brightness) ni le BLDCNT :
+ *  avant ce fix on resettait `r.gba.blend.brightness = 0`, ce qui tuait le
+ *  BLDY=4 posé au state 1 de CB2_InitOptionMenu (cursor highlight darken). */
 export function ResetPaletteFade(): void {
   const r = rt();
   // 1:1 décomp ResetPaletteFade (palette.c:374) : reset internal fade state only.

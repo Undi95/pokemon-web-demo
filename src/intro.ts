@@ -147,6 +147,7 @@ import { BG_PLTT_ID } from './palette';
 import { BG_SCREEN_SIZE } from '../include/gba/defines';
 import { LoadGameSave, Save_ResetSaveCounters } from './save';
 import { SetPokemonCryStereo } from './sound';
+import { Random } from './random';
 // Cold-boot init NON porté : les 2 CB2 copyright d'intro.ts (AfterBootup/AfterTitleScreen)
 // sont SUPERSÉDÉS par la version hand-written de harness/boot/copyright-boot.ts (la chaîne
 // boot live importe CB2_InitCopyrightScreen* DE LÀ, pas d'ici). Ces fns d'init froid
@@ -775,7 +776,7 @@ export const SpriteCB_PlayerOnBicycle: SpriteCallback = (sprite, rt) => {
       else
       {
            
-          switch (Math.floor(Math.random() * 0x10000) & 3)
+          switch (Random() & 3)  // 1:1 intro.c:3119 `Random() & 3`
           {
           case 0:
               sprite.y2 = -1;
@@ -1039,7 +1040,7 @@ export const SpriteCB_RayquazaOrb: SpriteCallback = (sprite, rt) => {
 export const Task_Scene1_Load: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.SetVBlankCallback(VBlankCB);
-      (globalThis as any).sIntroCharacterGender = ((Math.floor(Math.random() * 0x10000)) % (GENDER_COUNT));
+      (globalThis as any).sIntroCharacterGender = ((Random()) % (GENDER_COUNT));  // 1:1 intro.c:1172 MOD(Random(), GENDER_COUNT)
       rt.IntroResetGpuRegs();
       rt.SetGpuReg(REG_OFFSET_BG3VOFS, 0);
       rt.SetGpuReg(REG_OFFSET_BG2VOFS, 80);
@@ -1930,7 +1931,7 @@ export const Task_Scene3_Rayquaza: TaskCallback = (task, rt) => {
               data[3] += 2;
               data[4]++;
           }
-          if (data[1] == 160)
+          if (data[1] == 0x68)
           {
               data[0]++;
               data[5] = 1;
@@ -1958,7 +1959,7 @@ export const Task_Scene3_Rayquaza: TaskCallback = (task, rt) => {
       }
 };
 
-/** Source: intro.c → Task_EndIntroMovie */
+/** Source: intro.c → MainCB2_EndIntro */
 export const MainCB2_EndIntro: CB2Callback = (rt) => {
   if (!UpdatePaletteFade())
     rt.SetMainCallback2(CB2_InitTitleScreen);

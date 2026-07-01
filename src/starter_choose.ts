@@ -975,54 +975,9 @@ async function _preloadDexEntries(): Promise<void> {
   } catch (e) { void e; }
 }
 
-// ─── Cleanup helper — ⚠️ MORT depuis le fix bug #2 (restaurait l'overworld AVANT
-//     le combat = effaçait l'écran starter au lieu de laisser la transition BLUR le
-//     pixeliser ; pas dans la décomp CB2_GiveStarter). Conservé temporairement le temps
-//     de re-vérifier le retour OW post-combat, puis à supprimer. ──
-function cleanupScene(): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  // Destroy all our spawned sprites.
-  for (const id of _starterPokeballSpriteIds) {
-    if (id >= 0) { try { DestroySprite(id); } catch (e) { void e; } }
-  }
-  if (_starterHandSpriteId >= 0) {
-    try { DestroySprite(_starterHandSpriteId); } catch (e) { void e; }
-  }
-  _starterPokeballSpriteIds = [];
-  _starterHandSpriteId = -1;
-  // Cleanup label window if any.
-  if (sStarterLabelWindowId >= 0) ClearStarterLabel();
-  if (sStarterChooseWindowId >= 0) {
-    try { ClearStdWindowAndFrame(sStarterChooseWindowId, true); } catch (e) { void e; }
-    try { RemoveWindow(sStarterChooseWindowId); } catch (e) { void e; }
-    sStarterChooseWindowId = -1;
-  }
-  // Reset GPU regs we set.
-  rt.SetGpuReg(0x40, 0); rt.SetGpuReg(0x44, 0);
-  rt.SetGpuReg(0x48, 0); rt.SetGpuReg(0x4A, 0);
-  rt.SetGpuReg(0x50, 0); rt.SetGpuReg(0x54, 0);
-  // Restore overworld BGs.
-  try {
-    HideBg(2); HideBg(3);
-    InitBgFromTemplate({ bg: 1, charBaseIndex: 0, mapBaseIndex: 29, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 });
-    InitBgFromTemplate({ bg: 2, charBaseIndex: 0, mapBaseIndex: 28, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 });
-    InitBgFromTemplate({ bg: 3, charBaseIndex: 0, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 });
-    if (gMapHeader) CopyMapTilesetsToVram(gMapHeader.mapLayout);
-    flushOverworldTilemaps(rt);
-    resumeTilesetAnimations();
-    setFieldCameraSuspended(false);
-    ShowBg(1); ShowBg(2); ShowBg(3);
-  } catch (e) { void e; }
-  // Restore pre-existing sprite visibility (= reverse de CB2_ChooseStarter mass-hide).
-  for (const id of _savedVisibleSpriteIds) {
-    const s = rt.gSprites[id];
-    if (s) s.invisible = false;
-  }
-  _savedVisibleSpriteIds = [];
-  setObjectEventsSuspended(false);
-  _savedVisibleOam.clear();
-}
+// (cleanupScene SUPPRIMÉ 2026-07-02 — code mort depuis le fix bug #2 : il
+//  restaurait l'overworld AVANT le combat, cassant la transition BLUR ; pas
+//  dans la décomp CB2_GiveStarter. Retour OW post-combat vérifié en jeu.)
 
 // ─── Public interface ───────────────────────────────────────────────────
 

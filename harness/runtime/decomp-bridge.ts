@@ -168,8 +168,15 @@ const EC_MASK_INDEX_M = (1 << EC_MASK_BITS) - 1;
 
 // GetBerryInfo : wrapper bridge mort (0 importeur) retiré — foyer 1:1 = src/berry.ts.
 
-/** 1:1 décomp `src/malloc.c` AllocZeroed(size) — heap alloc + memset 0.
- *  En JS, retourne `{}` (= same as Alloc since defaults sont implicit). */
+/** = décomp `src/malloc.c` AllocZeroed(size) — heap alloc + memset 0.
+ *  ADAPTATION (pas 1:1) : retourne un objet vide `{}` = alloc de STRUCT dont
+ *  les champs seront posés par le caller (seul usage vivant : mail.ts:508,
+ *  qui zero-init explicitement ses champs ensuite).
+ *  ⚠️ NE PAS l'utiliser comme BUFFER d'octets (`buf[i] = x` sur `{}` part
+ *  dans le vide) : les chemins byte-buffer de la décomp (LZ77UnCompWram →
+ *  LoadCompressedSpriteSheetUsingHeap…) sont réimplémentés SANS ce heap
+ *  (decomp-globals). Un vrai foyer malloc.c n'est pas nécessaire (GC JS) —
+ *  audit gfx-substrat 2026-07-02. */
 export function AllocZeroed<T = any>(_sizeBytes: number): T {
   return {} as T;
 }
@@ -180,8 +187,8 @@ export function AllocZeroed<T = any>(_sizeBytes: number): T {
 //   #define CpuCopy16(src, dst, size) CpuSet(src, dst, ((size)/2)|CPU_SET_16BIT)
 //   #define CpuCopy32(src, dst, size) CpuSet(src, dst, ((size)/4)|CPU_SET_32BIT)
 //
-// Comme `CpuSet` est notre no-op, ces helpers le sont aussi côté impl directe.
-// Pour plus tard, on peut typed-array copy si src/dst sont des Uint*Array.
+// `CpuSet`/`CpuFastSet` (decomp-globals) copient réellement les TypedArray
+// depuis 2026-07-02 ; CpuCopy16 ci-dessous fait sa propre copie directe.
 export function CpuCopy16(src: any, dst: any, sizeBytes: number): void {
   // Bound-check basique : si les deux sont des typed arrays, on copy directement.
   if (src instanceof Uint16Array && dst instanceof Uint16Array) {

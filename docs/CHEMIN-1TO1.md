@@ -45,12 +45,12 @@ Le contrat « pas de commentaire mensonger » est violé à ~10 endroits, prouv�
 - **`intro.ts:1933`** : `if (data[1] == 160)` → `0x68` (décomp intro.c:2571). data[1] part de 0xA8 et décrémente de 2 → cible 104. **Seul vrai bug de transcription load-bearing trouvé par toute la flotte.**
 - **`play_time.ts:77`** : `playTimeVBlanks = 0` → `= 59` (play_time.c:72).
 - **Commentaires menteurs** (corriger le commentaire OU livrer la marchandise) :
-  - `specials-registry.ts` ~l.1985-1986 et 2050-2058 : « porté 1:1 décomp » pour des specials TV Gabby&Ty **sans handler enregistré**.
+  - ~~`specials-registry.ts` : specials TV Gabby&Ty « sans handler »~~ → **FAUX POSITIF vérifié au sol** : les 10 handlers (Before/AfterInterview, IsGabbyAndTyShowOnTheAir…) existent avec corps 1:1 complets (l.1081-4007). L'agent était tombé dans le piège du grep naïf sur les listes commentées. Rien à corriger.
   - `main_menu.ts:24, 149-167, 220-251` : « NewGameBirchSpeech_* stubs à implémenter Phase D » alors que la Phase D est FAITE plus bas. Aussi `SpriteCB_Null` (ts:1335) « TODO empty body » — le décomp est légitimement vide.
   - `window.ts:616-618` : ShowBg « appelle SyncBgVisibilityAndMode IMMÉDIATEMENT » — faux, n'appelle rien.
   - `decomp-globals.ts:1559-1560` : ResetPaletteFade sous-décrit le vrai C (16 PaletteStruct + control).
   - `intro.ts:1961` : JSDoc « Task_EndIntroMovie » posé sur `MainCB2_EndIntro`.
-- **Code mort à supprimer** : `NewGameBirchSpeech_CreateNameYesNo` (main_menu.ts:713, doublon vide du vrai à ts:2211) · `cleanupScene` (starter_choose.ts:982) · copies mortes `CB2_InitCopyrightScreen*` (intro.ts:2161/2176) · `console.log` diagnostic dans `InitMainMenu` (main_menu.ts:1198-1203).
+- **Code mort à supprimer** : `NewGameBirchSpeech_CreateNameYesNo` (main_menu.ts:713, doublon vide du vrai à ts:2211) · `cleanupScene` (starter_choose.ts:982) · `console.log` diagnostic dans `InitMainMenu` (main_menu.ts:1198-1203). ⚠️ Les « copies mortes » `CB2_InitCopyrightScreen*` d'intro.ts sont en réalité VOLONTAIRES et documentées (corps 1:1 gardés, supersédés par copyright-boot — en-tête intro.ts:150-154) : NE PAS supprimer, les rapatrier en vif au Palier 3.9.
 - **Oracle mort** : `scripts/audit-opcode-argbytes.cjs:19` lit `src/scrcmd_bytevm.ts` (supprimé) → re-cibler `src/scrcmd.ts`.
 - **`AllocZeroed` stub `{}`** (decomp-bridge.ts:173) → `new Uint8Array(n)` (ou throw fail-fast, doctrine du bridge lui-même) ; **`CpuSet`/`CpuFastSet` no-op** (decomp-globals.ts:441/447) → vraies copies typed-array.
 - **Main_menu scroll-arrows** : supprimer les no-op locaux (ts:1109-1120) qui shadowent les vrais `AddScrollIndicatorArrowPair` de list_menu.ts.

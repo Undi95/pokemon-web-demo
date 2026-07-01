@@ -22,7 +22,7 @@ import { GetSaveBlock2 } from './save';
 
 const STOPPED = 0;
 const RUNNING = 1;
-const STOPPED_AT_MAX = 2;
+const MAXED_OUT = 2;
 
 let _state = STOPPED;
 
@@ -58,15 +58,15 @@ export function PlayTimeCounter_Start(): void {
  *    sPlayTimeCounterState = STOPPED;
  *  Appelé pendant les CB2 non-overworld (= title screen, save menu, battle). */
 export function PlayTimeCounter_Stop(): void {
-  if (_state !== STOPPED_AT_MAX) _state = STOPPED;
+  if (_state !== MAXED_OUT) _state = STOPPED;
 }
 
-/** 1:1 décomp `PlayTimeCounter_SetToMax` (play_time.c:71) :
- *    sPlayTimeCounterState = STOPPED_AT_MAX;
- *    block2.playTimeHours = 999; minutes = 59; seconds = 59; vBlanks = 0;
+/** 1:1 décomp `PlayTimeCounter_SetToMax` (play_time.c:65) :
+ *    sPlayTimeCounterState = MAXED_OUT;
+ *    block2.playTimeHours = 999; minutes = 59; seconds = 59; vBlanks = 59;
  *  Appelé quand on dépasse 999h. Frozen. */
 export function PlayTimeCounter_SetToMax(): void {
-  _state = STOPPED_AT_MAX;
+  _state = MAXED_OUT;
   const b2 = GetSaveBlock2() as {
     playTimeHours?: number; playTimeMinutes?: number;
     playTimeSeconds?: number; playTimeVBlanks?: number;
@@ -74,7 +74,7 @@ export function PlayTimeCounter_SetToMax(): void {
   b2.playTimeHours = 999;
   b2.playTimeMinutes = 59;
   b2.playTimeSeconds = 59;
-  b2.playTimeVBlanks = 0;
+  b2.playTimeVBlanks = 59;
 }
 
 /** 1:1 décomp `PlayTimeCounter_Update` (play_time.c:34) :
