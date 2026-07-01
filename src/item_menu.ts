@@ -23,7 +23,7 @@ import { getString } from './engine/ui/gba-strings';
 import { ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap, ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates, ScheduleBgCopyTilemapToVram, FillWindowPixelRect, FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow, AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty, ClearWindowTilemap, BlitBitmapRectToWindow, type WindowTemplate } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { DeactivateAllTextPrinters, FONT_NARROW, FONT_NORMAL, GetMenuCursorDimensionByFont, GetStringRightAlignXOffset, TEXT_SKIP_DRAW } from './text';
-import { AddTextPrinterParameterized4 } from './menu';
+import { AddTextPrinterParameterized4, AddTextPrinterParameterized2 } from './menu';
 import { StringExpandPlaceholders } from '../include/string_util';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN, TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5 } from '../include/constants/characters';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
@@ -2815,7 +2815,14 @@ function _printItemUseMessageBox(msg: string): void {
   const wid = AddItemMessageWindow(ITEMWIN_MESSAGE);
   DrawDialogFrameWithCustomTileAndPalette(wid, true, 10, 13);
   FillWindowPixelBuffer(wid, PIXEL_FILL(1));
-  BagMenu_Print(wid, FONT_NORMAL, msg, 0, 1, 0, 0, 0, COLORID_NORMAL);
+  // 1:1 décomp `DisplayMessageAndContinueTask` (menu_helpers.c:133) : couleurs de la
+  // boîte de dialogue = fg=DARK_GRAY (texte SOMBRE), bg=WHITE, shadow=LIGHT_GRAY.
+  // ⚠️ PAS COLORID_NORMAL (fg=WHITE=index 1) : dans la palette du cadre-dialogue
+  // (slot 13), l'index WHITE rend blanc → texte invisible sur fond clair. (La liste
+  // rend sombre avec COLORID_NORMAL car SA fenêtre utilise une AUTRE palette où
+  // l'index 1 est sombre.) speed=0 = instantané (le wait-for-A gère la fermeture).
+  AddTextPrinterParameterized2(wid, FONT_NORMAL, msg, 0, null,
+    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
   ScheduleBgCopyTilemapToVram(1);
 }
 function _showItemMessage(task: DecompTask, msg: string): void {
