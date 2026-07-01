@@ -51,7 +51,11 @@ import { GetStringCenterAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
-import { ItemIsMail } from './mail_data';
+import { ItemIsMail, GiveMailToMonByItemId, TakeMailFromMon, MAIL_NONE } from './mail_data';
+import { DoEasyChatScreen, easyChatGfxReady } from './easy_chat';
+// 1:1 décomp include/constants/easy_chat.h.
+const EASY_CHAT_TYPE_MAIL = 4;
+const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { GetItemName } from './item';
@@ -1937,10 +1941,12 @@ function CB2_GiveHoldItem(): void {
   _reopenPartyForGive(msg);
 }
 
-/** 1:1 décomp `GiveItemToMon` (party_menu.c:1799) : non-mail → SetMonData(HELD_ITEM).
- *  (Mail = GiveMailToMonByItemId, non modélisé = DETTE.) */
+/** 1:1 décomp `GiveItemToMon` (party_menu.c:1799) : mail → GiveMailToMonByItemId
+ *  (alloue le slot mail, échoue si plein → return) ; puis SetMonData(HELD_ITEM). */
 function GiveItemToMon(mon: Pokemon, item: number): void {
-  if (ItemIsMail(item)) { /* DETTE mail : GiveMailToMonByItemId non modélisé */ }
+  if (ItemIsMail(item)) {
+    if (GiveMailToMonByItemId(mon, item) === MAIL_NONE) return;  // sac mail plein → abandon
+  }
   mon.heldItem = item;
 }
 
@@ -2051,13 +2057,82 @@ function TryGiveItemOrMailToSelectedMon(): void {
   }
 }
 
-/** 1:1 décomp `GiveItemOrMailToSelectedMon` (party_menu.c:5384). DETTE #7 : le
- *  cas LETTRE (CB2_WriteMailToGiveMonFromBag + DoEasyChatScreen) n'est pas porté
- *  → on donne la lettre comme objet tenu sans écrire son contenu (l'écriture sera
- *  branchée au chantier mail ; GiveItemToMon décomp ne fait lui aussi que
- *  SetMonData(HELD_ITEM), le contenu étant écrit séparément). */
+/** 1:1 décomp `GiveItemOrMailToSelectedMon` (party_menu.c:5384) : LETTRE → retirer
+ *  du sac + fermer le party menu vers CB2_WriteMailToGiveMonFromBag (ouvre l'easy-chat
+ *  d'écriture) ; sinon → GiveItemToSelectedMon. */
 function GiveItemOrMailToSelectedMon(): void {
-  GiveItemToSelectedMon();
+  if (ItemIsMail(_partyBagItem)) {
+    RemoveItemToGiveFromBag(_partyBagItem);
+    _partyTransientExitCb = CB2_WriteMailToGiveMonFromBag;
+    ClosePartyScreen();  // = Task_ClosePartyMenu (handoff → CB2_WriteMailToGiveMonFromBag)
+  } else {
+    GiveItemToSelectedMon();
+  }
+}
+
+/** 1:1 décomp `RemoveItemToGiveFromBag` (party_menu.c:5522) : GIVE_PC_ITEM jamais
+ *  atteint (unused) → RemoveBagItem. */
+function RemoveItemToGiveFromBag(item: number): void {
+  RemoveBagItem(getItemKeyById(item), 1);
+}
+
+/** 1:1 décomp `ReturnGiveItemToBagOrPC` (party_menu.c:5532) : GIVE_ITEM → AddBagItem. */
+function ReturnGiveItemToBagOrPC(item: number): boolean {
+  return AddBagItem(getItemKeyById(item), 1);
+}
+
+// État de gate pour l'ouverture de l'easy-chat depuis CB2_WriteMailToGiveMonFromBag
+// (adaptation web : chargement gfx async avant l'init synchrone de DoEasyChatScreen).
+let _mailWriteGateState = 0;
+
+/** 1:1 décomp `CB2_WriteMailToGiveMonFromBag` (party_menu.c:5423) : donne la lettre
+ *  au mon (alloue le slot mail) puis DoEasyChatScreen(MAIL, mail.words, retour).
+ *  Gate : on attend le préchargement gfx easy-chat avant l'init sync (sinon freeze). */
+function CB2_WriteMailToGiveMonFromBag(): void {
+  const mon = gPlayerParty[_slotId];
+  if (!mon) return;
+  if (_mailWriteGateState === 0) {
+    GiveItemToMon(mon, _partyBagItem);            // alloue mon.mail (slot)
+    _mailWriteGateState = 1;
+    const mailId = mon.mail;                       // GetMonData(MON_DATA_MAIL)
+    void easyChatGfxReady().then(() => {
+      _mailWriteGateState = 0;
+      DoEasyChatScreen(
+        EASY_CHAT_TYPE_MAIL,
+        gSaveBlock1Ptr.mail[mailId].words,
+        CB2_ReturnToPartyOrBagMenuFromWritingMail,
+        EASY_CHAT_PERSON_DISPLAY_NONE,
+      );
+    });
+  }
+  // état 1 : gfx en chargement → on attend (ce CB2 re-fire jusqu'au swap DoEasyChatScreen).
+}
+
+/** 1:1 décomp `CB2_ReturnToPartyOrBagMenuFromWritingMail` (party_menu.c:5436) :
+ *  annulé (Result==0) → reprendre la lettre du mon + la rendre au sac + retour sac ;
+ *  écrit → rouvrir le party menu + message "X doit tenir la LETTRE". */
+function CB2_ReturnToPartyOrBagMenuFromWritingMail(): void {
+  const mon = gPlayerParty[_slotId];
+  if (!mon) return;
+  const item = mon.heldItem;  // GetMonData(MON_DATA_HELD_ITEM) = la lettre donnée
+  if (gSpecialVar.Result === 0) {
+    // Écriture annulée : reprendre la lettre, la remettre dans le sac.
+    TakeMailFromMon(mon);
+    mon.heldItem = _giveOldItem;  // SetMonData(HELD_ITEM, sPartyMenuItemId = ancien objet)
+    if (_giveOldItem !== 0) RemoveBagItem(getItemKeyById(_giveOldItem), 1);
+    ReturnGiveItemToBagOrPC(item);  // rend la lettre au sac
+    const rt = getRuntime();
+    rt?.SetMainCallback2((_giveReturnCb ?? null) as never);
+  } else {
+    // Lettre écrite : rouvrir le party + message "X doit tenir la LETTRE" (1:1
+    // Task_DisplayGaveMailFromBagMessage → DisplayGaveHeldItemMessage, sPartyMenuItemId=0).
+    const mon2 = gPlayerParty[_slotId];
+    const msg = (getString('gText_PkmnWasGivenItem') || '')
+      .replace('{STR_VAR_1}', mon2?.nickname ?? '')
+      .replace('{STR_VAR_2}', GetItemName(_partyBagItem))
+      .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+    _reopenPartyForGive(msg);
+  }
 }
 
 /** 1:1 décomp `GiveItemToSelectedMon` (party_menu.c:5398) : DisplayGaveHeldItem
