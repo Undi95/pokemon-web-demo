@@ -1149,6 +1149,10 @@ interface AnimDispatchSprite {
   animEnded: boolean;
   hFlip: boolean;
   vFlip: boolean;
+  // Flip de la FRAME d'anim courante (≠ sprite.hFlip = flip MANUEL). 1:1 décomp :
+  // oam flip = frame XOR manuel (SetSpriteOamFlipBits ne touche pas sprite->hFlip).
+  animHFlip?: boolean;
+  animVFlip?: boolean;
   usingSheet: boolean;
   sheetTileStart: number;
   images: ReadonlyArray<SpriteFrameImage> | null;
@@ -1158,12 +1162,15 @@ interface AnimDispatchSprite {
 /** 1:1 décomp `void SetSpriteOamFlipBits(struct Sprite *sprite, u8 hFlip,
  *  u8 vFlip)` : sync flip bits sur l'OAM si pas en affine. */
 function SetSpriteOamFlipBits(rt: DecompRuntime, sprite: AnimDispatchSprite, hFlip: boolean, vFlip: boolean): void {
-  sprite.hFlip = hFlip;
-  sprite.vFlip = vFlip;
+  // 1:1 décomp sprite.c:1246 : `oam.matrixNum |= ((hFlip ^ sprite->hFlip) << 3)` — la frame
+  // NE touche PAS sprite->hFlip (= flip MANUEL) ; le flip OAM effectif = frame XOR manuel.
+  // (Bug historique : on écrasait sprite.hFlip → le hFlip manuel du curseur rectangle sautait.)
+  sprite.animHFlip = hFlip;
+  sprite.animVFlip = vFlip;
   const oam = rt.gba.oam[sprite.oamIndex];
   if (!oam) return;
-  oam.flipH = hFlip;
-  oam.flipV = vFlip;
+  oam.flipH = (!!hFlip) !== (!!sprite.hFlip);
+  oam.flipV = (!!vFlip) !== (!!sprite.vFlip);
 }
 
 /** Décrément le delay counter (= sprite.animDelayCounter--). */
@@ -1834,8 +1841,9 @@ export function syncSpritesToOam(rt: DecompRuntime): void {
       oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
     }
     oam.visible = !sprite.invisible && sprite.subspriteMode !== 'on';
-    oam.flipH = sprite.hFlip;
-    oam.flipV = sprite.vFlip;
+    // 1:1 décomp : flip OAM effectif = sprite.hFlip (MANUEL) XOR flip de la frame d'anim courante.
+    oam.flipH = sprite.hFlip !== ((sprite as { animHFlip?: boolean }).animHFlip ?? false);
+    oam.flipV = sprite.vFlip !== ((sprite as { animVFlip?: boolean }).animVFlip ?? false);
     oam.affineParamIndex = sprite.matrixNum;
     oam.objMode = sprite.objMode as 0 | 1 | 2;
     oam.subpriority = sprite.subpriority;
