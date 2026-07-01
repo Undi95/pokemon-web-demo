@@ -14,9 +14,11 @@
 //   1:1 décomp) · GetRandomEasyChatWordFromGroup (dewford_trend.ts) · DoEasyChatScreen
 //   + easyChatGfxReady (party_menu.ts). Données bundlées = src/data/easy-chat-data.ts.
 //
-// Adaptations web assumées (hardware-exempt) : GFX/palettes chargés async (fetch au lieu
-//   d'INCGFX) via easyChatGfxReady ; converters écrivent des octets charmap encodés
-//   (StringCopy encode les strings JS en indices police GBA).
+// Seules divergences (PIPELINE D'ASSETS, pas « hardware », = exemptions standard du repo) :
+//   GFX/palettes chargés async (fetch PNG déjà décompressé au lieu de LZ/INCBIN) via
+//   easyChatGfxReady ; converters écrivent des octets charmap encodés (StringCopy encode
+//   les strings JS en indices police GBA). La LOGIQUE (input SM / word-data / rendu /
+//   sélection buffers) est transcrite 1:1 de easy_chat.c — rien d'inventé.
 //
 // Source de vérité (ne JAMAIS diverger) : D:/Projet 1/decomps/pokeemeraude/src/easy_chat.c
 //   + include/easy_chat.h + include/constants/easy_chat.h
@@ -58,7 +60,7 @@ import {
 } from './window';
 
 import { DeactivateAllTextPrinters, GetStringCenterAlignXOffset, GetStringWidth, TEXT_SKIP_DRAW } from './text';
-import { AddTextPrinterParameterized3 } from './menu';
+import { AddTextPrinterParameterized3, FreeAllOverworldWindowBuffers } from './menu';
 
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
@@ -787,8 +789,11 @@ function makeEasyChatScreenWordData(): EasyChatScreenWordData {
 
 // â”€â”€â”€ Local STUBs for helpers hors-scope (= lignes hors range 3000-4500) â”€â”€â”€â”€â”€â”€
 //
-//   Ces helpers sont dÃ©finis ailleurs dans easy_chat.c (sections 0-2 et 4-5)
-//   ou dans d'autres modules decomp non encore portÃ©s. STUB explicite ici.
+//   Réconciliations FONCTIONNELLES (pas des stubs vides) des helpers bg.c/menu.c :
+//   SetBgTilemapBuffer (bg.c:848, modèle buffer-persistant du moteur = pattern repo),
+//   DecompressAndLoadBgGfxUsingHeap (menu.c:1798, LZ→PNG pré-décompressé = pipeline
+//   d'assets), IsDma3ManagerBusyWithBgCopy (copie synchrone → jamais busy),
+//   CopyToBgTilemapBufferRect (bg.c:907, transcription 1:1 branche BG_TYPE_NORMAL).
 
 function SetBgTilemapBuffer(bg: number, _buf: Uint16Array): void {
   // 1:1 décomp `SetBgTilemapBuffer(bg, buffer)` = associe un buffer tilemap externe au BG.
@@ -1606,35 +1611,39 @@ function GetLowerWindowScrollOffset(): number {
   return Math.floor(sLowerWindowScroll / 16);
 }
 
-function SetWindowDimensions(_left: number, _top: number, _right: number, _bottom: number): void {
-  // 1:1 decomp : configure REG_WIN0H/V via SetGpuReg. Pour notre engine, no-op.
-  // (Le clipping rectangle est traitÃ© par le compositor.)
+function SetWindowDimensions(left: number, top: number, width: number, height: number): void {
+  // 1:1 décomp easy_chat.c:4616 : configure la fenêtre GPU WIN0 (rectangle de clipping).
+  // WIN0 clippe le clavier (BG2) à l'intérieur du cadre vert ; hors WIN0 le WINOUT masque BG2.
+  // Notre runtime SetGpuReg(WIN0H/V) → gba.windows.win0.{x1,x2,y1,y2}, lu par le compositor.
+  const horizontalDimensions = WIN_RANGE(left, left + width);
+  const verticalDimensions = WIN_RANGE(top, top + height);
+  SetGpuReg(REG_OFFSET_WIN0H, horizontalDimensions);
+  SetGpuReg(REG_OFFSET_WIN0V, verticalDimensions);
 }
 
 function BufferLowerWindowFrame(left: number, top: number, width: number, height: number): void {
-  // 1:1 decomp easy_chat.c â€” dessine un cadre dans la BG1 tilemap pour
-  // l'animation d'ouverture/fermeture du clavier/word select.
-  // Note : appelÃ© depuis DrawLowerWindowFrame (range 3000-4500).
-  const right = left + width;
-  const bottom = top + height;
-  // Top-left corner.
+  // 1:1 décomp easy_chat.c:4523 : dessine le cadre VERT (palette 4, BG1) pour l'animation
+  // d'ouverture/fermeture clavier/word-select. Géométrie : cadre de `width`×`height` tuiles
+  // (right = left+width-1). Chaque bord/coin écrit dans le bg1TilemapBuffer.
+  const right = left + width - 1;
+  const bottom = top + height - 1;
+  const midH = height - 2;   // nb de rangées entre le haut et le bas (top+1 .. bottom-1)
+  const edgeW = width - 2;   // nb de tuiles d'arête horizontale (left+1 .. right-1)
+  // Bord haut : coin TL, arête haute, coin TR.
   FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_L_CORNER, left, top, 1, 1, 4);
-  // Top edge.
-  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_EDGE, left + 1, top, width - 1, 1, 4);
-  // Top-right corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_EDGE, left + 1, top, edgeW, 1, 4);
   FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TOP_R_CORNER, right, top, 1, 1, 4);
-  // Left/right edges + middle.
-  for (let y = top + 1; y < bottom; y++) {
-    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_L_EDGE, left, y, 1, 1, 4);
-    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TRANSPARENT, left + 1, y, width - 1, 1, 4);
-    FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_R_EDGE, right, y, 1, 1, 4);
-  }
-  // Bottom-left corner.
+  // Section centrale : arête gauche, intérieur transparent, arête droite.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_L_EDGE, left, top + 1, 1, midH, 4);
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_TRANSPARENT, left + 1, top + 1, edgeW, midH, 4);
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_R_EDGE, right, top + 1, 1, midH, 4);
+  // Bord bas : coin BL, arête basse, coin BR.
   FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_L_CORNER, left, bottom, 1, 1, 4);
-  // Bottom edge.
-  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_EDGE, left + 1, bottom, width - 1, 1, 4);
-  // Bottom-right corner.
+  FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_EDGE, left + 1, bottom, edgeW, 1, 4);
   FillBgTilemapBufferRect(1, FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_R_CORNER, right, bottom, 1, 1, 4);
+  // 1:1 décomp easy_chat.c:4564 : WIN0 = l'INTÉRIEUR du cadre (1 tuile en retrait). Le clavier
+  // (BG2) n'est visible QUE dans WIN0 → révélé progressivement par l'animation d'ouverture.
+  SetWindowDimensions((left + 1) * 8, (top + 1) * 8, (width - 2) * 8, (height - 2) * 8);
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -3168,8 +3177,26 @@ function DrawLowerWindowFrame(type: number): void {
     case 16:
       BufferLowerWindowFrame(1, 10, 29, 10);
       break;
+    case 17:
+      BufferLowerWindowFrame(0, 10, 30, 10);
+      break;
+    case 18:
+      BufferLowerWindowFrame(1, 10, 23, 10);
+      break;
+    case 19:
+      BufferLowerWindowFrame(1, 11, 23, 8);
+      break;
+    case 20:
+      BufferLowerWindowFrame(1, 12, 23, 6);
+      break;
+    case 21:
+      BufferLowerWindowFrame(1, 13, 23, 4);
+      break;
+    case 22:
+      BufferLowerWindowFrame(1, 14, 23, 2);
+      break;
   }
-  // Note : type >= 17 = section 4 (lignes 4500+), reste Ã  porter hors scope range.
+  CopyBgTilemapBufferToVram(1);   // 1:1 décomp easy_chat.c:4520 (remonte le cadre BG1 en VRAM)
 }
 
 // â”€â”€â”€ Wire helpers exposÃ©s au reste du module / appelants futurs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3308,11 +3335,19 @@ const EASY_CHAT_PERSON_REPORTER_FEMALE_L = 1;
 const EASY_CHAT_PERSON_BOY_L = 2;
 const NUM_BARD_SONG_WORDS = 6;
 
-// ⚠️ NON-1:1 (dép. externe non portée) : `CleanupOverworldWindowsAndTilemaps` vit dans
-// overworld.c:1416 (ClearMirageTowerPulseBlendEffect + FreeAllOverworldWindowBuffers +
-// TRY_FREE_AND_SET_NULL gOverworldTilemapBuffer_Bg1/2/3) — PAS PORTÉE. Stub : notre
-// InitEasyChatScreen (ResetBgs/ResetSpriteData/FreeAllWindowBuffers) couvre le reset nécessaire.
-function CleanupOverworldWindowsAndTilemaps(): void { /* overworld.c:1416 non portée */ }
+/** 1:1 décomp `void CleanupOverworldWindowsAndTilemaps(void)` (overworld.c:1416).
+ *  Foyer réel = overworld.c → à relocaliser vers overworld.ts au HUB 2 ; défini ici en
+ *  attendant, appelé tel quel. Chacune des 3 lignes décomp :
+ *   • ClearMirageTowerPulseBlendEffect() : no-op GARANTI chez nous (sMirageTowerPulseBlend
+ *     toujours NULL → le décomp early-return aussi, cf. field_camera.ts:796). Pas d'import
+ *     field_camera (anti-cycle) : le résultat est strictement identique.
+ *   • FreeAllOverworldWindowBuffers() : CÂBLÉ (menu.ts, = FreeAllWindowBuffers). Idempotent.
+ *   • TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg3/2/1) : chez nous ces buffers sont
+ *     PERSISTANTS (field_camera.ts:389), pas des allocs heap → no-op structurel (les
+ *     libérer+nuller casserait le prochain redraw de map ; le décomp les ré-alloue, nous non). */
+function CleanupOverworldWindowsAndTilemaps(): void {
+  FreeAllOverworldWindowBuffers();
+}
 
 /** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)` (easy_chat.c) :
  *    for (i = length - 1; i != EC_EMPTY_WORD; i--) *(words++) = EC_EMPTY_WORD; */
@@ -3322,10 +3357,15 @@ function InitializeEasyChatWordArray(words: Uint16Array, length: number): void {
     words[w++] = EC_EMPTY_WORD;
 }
 
-// ⚠️ NON-1:1 (dép. externe non portée) : `GetQuestionnaireWordsPtr` vit dans mystery_gift.c:54
-// (pointeur vers le buffer questionnaire du Mystery Gift) — mystery_gift.c PAS PORTÉ → buffer
-// local vide. Hors scope mail/dewford/interview (= Mystery Gift uniquement).
-function GetQuestionnaireWordsPtr(): Uint16Array { return new Uint16Array(4).fill(EC_EMPTY_WORD); }
+/** 1:1 décomp `u16 *GetQuestionnaireWordsPtr(void)` (mystery_gift.c:54) :
+ *    return gSaveBlock1Ptr->mysteryGift.questionnaireWords;
+ *  Foyer réel = mystery_gift.c (feature multijoueur, NON portée volontairement), mais
+ *  l'accessor + le buffer save (save-blocks.ts:947 `questionnaireWords`) EXISTENT — c'est
+ *  tout ce que easy_chat en consomme. On rend la référence VIVANTE (les mots saisis
+ *  s'écrivent dans la save), pas une copie. */
+function GetQuestionnaireWordsPtr(): Uint16Array {
+  return (gSaveBlock1Ptr as Record<string, any>).mysteryGift.questionnaireWords;
+}
 
 /** 1:1 décomp `void ShowEasyChatScreen(void)` (easy_chat.c:1456). Special de champ :
  *  lit gSpecialVar_0x8004 (type) → sélectionne le buffer de mots → DoEasyChatScreen. */
@@ -3390,10 +3430,11 @@ export function ShowEasyChatScreen(): void {
       words[0] = EC_EMPTY_WORD;
       displayedPersonType = EASY_CHAT_PERSON_BOY_L;
       break;
-    // ⚠️ Cases QUIZ = Lilycove Lady (lilycove_lady.c) PAS PORTÉE : la save n'a pas
-    // lilycoveLady → ces branches ne se déclenchent pas (hors mail/dewford/interview).
-    // Décomp : QUIZ_ANSWER/QUIZ_SET_ANSWER = `&quiz.playerAnswer`/`&quiz.correctAnswer`
-    // (pointeur sur 1 u16) ; à porter en vue 1-élément quand lilycove_lady.c sera fait.
+    // Cases QUIZ = Lilycove Lady. La struct save `lilycoveLady` EXISTE (save-blocks.ts:1195,
+    // union quiz/favor/contest) ; ce qui manque = le FLOW lilycove_lady.c (mono-joueur) qui
+    // déclenche ces types via ses scripts — pas encore branché, mais rien de hardware ni de
+    // multijoueur. Décomp : QUIZ_ANSWER/QUIZ_SET_ANSWER = `&quiz.playerAnswer`/`&quiz.correctAnswer`
+    // (pointeur sur 1 u16). Le câblage save ci-dessous est déjà 1:1 pour quand le flow sera là.
     case EASY_CHAT_TYPE_QUIZ_ANSWER: words = sb1.lilycoveLady.quiz.playerAnswer; break;
     case EASY_CHAT_TYPE_QUIZ_QUESTION: return;
     case EASY_CHAT_TYPE_QUIZ_SET_QUESTION: words = sb1.lilycoveLady.quiz.question; break;

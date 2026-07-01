@@ -2086,7 +2086,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'QuizLadyTakePrizeForCustomQuiz' — porté 1:1 décomp lilycove_lady.c:542 ci-bas (batch B46).
   // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
-  'RejectEggFromDayCare', 'ResetTVShowState',
+  // 'ResetTVShowState' — no-op explicite documenté ci-dessus (~417). RETIRÉ du stub-loop
+  //   pour ne pas écraser silencieusement la registration explicite (même comportement, no-op).
+  'RejectEggFromDayCare',
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom',
   // 'RockSmashWildEncounter' — porté 1:1 décomp wild_encounter.c (game/wild_encounter.ts) → registré ci-bas.
@@ -2138,7 +2140,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
   'ShowContestEntryMonPic', 'ShowContestPainting', 'ShowDaycareLevelMenu',
   'ShowDeptStoreElevatorFloorSelect', 'ShowDodrioBerryPickingRecords',
-  'ShowEasyChatProfile', 'ShowEasyChatScreen', 'ShowFrontierGamblerLookingMessage',
+  // 'ShowEasyChatScreen' — PORTÉ 1:1 (easy_chat.c:1456) + registré ci-dessus (~443). RETIRÉ
+  //   de la liste de stubs : sinon la boucle `registerSpecial(name, () => 0)` (bas de fichier)
+  //   ÉCRASE le vrai handler → `special ShowEasyChatScreen` depuis un PNJ ne ferait RIEN.
+  'ShowEasyChatProfile', 'ShowFrontierGamblerLookingMessage',
   'ShowFrontierManiacMessage', 'ShowGlassWorkshopMenu',
   'ShowLinkBattleRecords', 'ShowNatureGirlMessage',
   'ShowPokedexRatingMessage', 'ShowPokemonJumpRecords',
