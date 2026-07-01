@@ -27,7 +27,7 @@
  */
 
 import { registerSpecial } from '../../scrcmd';
-import { ShowEasyChatScreen } from '../../easy_chat';
+import { ShowEasyChatScreen, easyChatGfxReady } from '../../easy_chat';
 import {
   gBikeCycling, GetLeadMonIndex, IsBadEggInParty,
   CheckLeadMonCool, CheckLeadMonBeauty, CheckLeadMonCute, CheckLeadMonSmart, CheckLeadMonTough,
@@ -437,6 +437,9 @@ registerSpecial('CheckForPlayersHouseNews', () => _CheckForPlayersHouseNews());
  *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
 // 1:1 décomp `special ShowEasyChatScreen` (specials.inc:114 → easy_chat.c:1456) : ouvre le
 // clavier de mots (mail / mot-tendance Dewford / interview / quiz…) selon VAR_0x8004.
+// Adaptation web : les GFX sont fetch (pas en ROM) et le special de champ ne peut pas await
+// → on précharge au boot pour qu'ils soient prêts quand un PNJ déclenche l'écran.
+void easyChatGfxReady();
 registerSpecial('ShowEasyChatScreen', () => { ShowEasyChatScreen(); });
 
 registerSpecial('FieldShowRegionMap', () => {
