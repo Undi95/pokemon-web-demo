@@ -189,6 +189,8 @@ import {
   _setSEasyChatBgTemplates, _setSEasyChatWindowTemplates, _setSEasyChatYesNoWindowTemplate,
   _setSPhraseFrameDimensions, _setSAlphabetKeyboardColumnOffsets, _setSFooterOptionXOffsets,
   _setSFooterTextOptions, _setSText_Clear17,
+  _setSText_Pal, _setSTitleText_Pal, _setSTextInputFrameOrange_Pal, _setSTextInputFrameGreen_Pal,
+  _setGEasyChatMode_Pal, _setGEasyChatWindow_Gfx, _setGEasyChatWindow_Tilemap, _setSTextInputFrame_Gfx,
 } from './engine/ui/easy-chat-render';
 import {
   gEasyChatGroups, gEasyChatWordsByLetterPointers, sRestrictedWordSpecies,
@@ -213,6 +215,7 @@ import { Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { FreeAllWindowBuffers } from './window';
 import { SetVBlankCallback } from '../harness/runtime/decomp-bridge';
 import { gSpecialVar, VarSet } from './engine/script/script-vars';
+import { loadGbaPal, loadTilemapBin, loadIndexedPngStrict } from '../harness/gba/png-loader';
 
 // ─── Constantes GBA (masques input) + SE + états — 1:1 décomp ────────────────
 const A_BUTTON = 1 << 0;
@@ -305,10 +308,46 @@ const tState = 0;   // data[0]
 const tType = 1;    // data[1]
 const tPersonType = 7; // data[7]
 
+// ─── Chargement GFX (palettes + frames) — assets décomp public/decomp/em/easy_chat ─
+// Les INCGFX_U16(.gbapal)/INCGFX(.png) du décomp → fetch async. Adaptation JS
+// hardware-exempte : préchargé une fois, injecté dans le renderer. `easyChatGfxReady`
+// = gate (le flux give attend avant DoEasyChatScreen, cf. init synchrone du CB2).
+let _easyChatGfxLoaded = false;
+let _easyChatGfxLoading: Promise<void> | null = null;
+export function easyChatGfxReady(): Promise<void> {
+  if (_easyChatGfxLoaded) return Promise.resolve();
+  if (!_easyChatGfxLoading) _easyChatGfxLoading = _loadEasyChatGfxAssets();
+  return _easyChatGfxLoading;
+}
+async function _loadEasyChatGfxAssets(): Promise<void> {
+  if (_easyChatGfxLoaded) return;
+  const base = '/decomp/em/easy_chat';
+  const [textPal, titlePal, orangePal, greenPal, modePng, winPng, winMap, framePng] = await Promise.all([
+    loadGbaPal(`${base}/text.pal`),
+    loadGbaPal(`${base}/title_text.pal`),
+    loadGbaPal(`${base}/text_input_frame_orange.pal`),
+    loadGbaPal(`${base}/text_input_frame_green.pal`),
+    loadIndexedPngStrict(`${base}/mode.png`, 4),
+    loadIndexedPngStrict(`${base}/window.png`, 4),
+    loadTilemapBin(`${base}/window.bin`),
+    loadIndexedPngStrict(`${base}/text_input_frame.png`, 4),
+  ]);
+  _setSText_Pal(textPal);
+  _setSTitleText_Pal(titlePal);
+  _setSTextInputFrameOrange_Pal(orangePal);
+  _setSTextInputFrameGreen_Pal(greenPal);
+  _setGEasyChatMode_Pal(modePng.palette);
+  _setGEasyChatWindow_Gfx(winPng.charData);
+  _setGEasyChatWindow_Tilemap(winMap);
+  _setSTextInputFrame_Gfx(framePng.charData);
+  _easyChatGfxLoaded = true;
+}
+
 // ─── Injection : câble getters + data dans le renderer ───────────────────────
 function _installEasyChatBridges(): void {
   if (_bridgesInstalled) return;
   _bridgesInstalled = true;
+  void easyChatGfxReady(); // kick off le préchargement des assets (palettes+frames)
 
   // Getters (état input → renderer).
   _setGetEasyChatScreenFrameId(GetEasyChatScreenFrameId);
@@ -1399,4 +1438,11 @@ export const __easyChatTest = {
   SelectKeyboardGroup, SelectNewWord, GetWordFromSelectedGroup, GetSelectedWordIndex,
   GetNumWordsInSelectedGroup, GetNumUnlockedEasyChatGroups, GetUnlockedEasyChatGroupId,
   CopyEasyChatWord,
+  /** Ouvre l'écran easy-chat (visuel) : précharge les assets puis DoEasyChatScreen.
+   *  exitCb = retour overworld (fourni par l'appelant). */
+  open: async (type: number, words: Uint16Array | null, exitCb: () => void) => {
+    _installEasyChatBridges();
+    await easyChatGfxReady();
+    DoEasyChatScreen(type, words, exitCb, EASY_CHAT_PERSON_DISPLAY_NONE);
+  },
 };
