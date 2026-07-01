@@ -160,6 +160,7 @@ import { AddTextPrinterParameterized3 } from '../../menu';
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
 import { AddTextPrinterParameterized } from '../../text';
+import { encodeStringForFont, getOwCharmap } from '../../text';
 
 import {
   LoadUserWindowBorderGfx,
@@ -792,17 +793,16 @@ export function _setObjEventGfxConstants(v: {
 
 function StringCopy(dest: Uint8Array, src: Uint8Array | string): Uint8Array {
   // 1:1 decomp StringCopy : copie jusqu'Ã  EOS, retourne ptr sur EOS.
+  // 🩸 src string = texte lisible JS → ENCODER en octets charmap GBA (comme le
+  // décomp où GetEasyChatWord renvoie du `const u8 *` déjà encodé). Sans ça, les
+  // buffers word-select/phrase contiendraient de l'ASCII brut (charCodeAt) rendu
+  // comme indices de police GBA = texte brouillé.
+  const bytes = typeof src === 'string' ? encodeStringForFont(src, getOwCharmap() ?? {}) : src;
   let i = 0;
-  if (typeof src === 'string') {
-    for (i = 0; i < src.length && i < dest.length - 1; i++) {
-      dest[i] = src.charCodeAt(i);
-    }
-  } else {
-    for (i = 0; i < src.length && i < dest.length - 1; i++) {
-      const b = src[i];
-      if (b === EOS) break;
-      dest[i] = b;
-    }
+  for (i = 0; i < bytes.length && i < dest.length - 1; i++) {
+    const b = bytes[i];
+    if (b === EOS) break;
+    dest[i] = b;
   }
   if (i < dest.length) dest[i] = EOS;
   // Retourne subarray pointant juste sur EOS (= Ã©quivalent ptr arithmetic decomp).
