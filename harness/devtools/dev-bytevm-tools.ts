@@ -20,7 +20,8 @@ import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-syst
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
 import { MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET } from '../../src/fieldmap';
-import { installByteVmHandlers, setSpecialNames, registerSpecial } from '../../src/scrcmd';
+import { installByteVmHandlers, setSpecialNames, registerSpecial, invokeSpecial } from '../../src/scrcmd';
+import { ShowEasyChatScreen, DoEasyChatScreen, easyChatGfxReady } from '../../src/easy_chat';
 import { getText, loadMapScripts } from '../../src/script';
 import { IsFieldMessageBoxHidden, HideFieldMessageBox } from '../../src/field_message_box';
 import { VarGet, VarSet, FlagSet, FlagClear } from '../../src/event_data';
@@ -1150,5 +1151,79 @@ export function run(label: string): boolean {
   return RunScriptImmediatelyByLabel(label);
 }
 
+// ─── Inspection vars/specials (résout NOM ↔ id sur l'instance runtime du jeu) ───
+// VarSet/VarGet sont importés STATIQUEMENT ci-dessus → même `gSpecialVars`/`vars` que le
+// jeu (pas d'`import()` dynamique = instance Vite fraîche). resolveVarId gère 'VAR_RESULT'
+// (constante décomp) ET 'VAR_0x8004' (le hex est dans le nom → parse direct).
+function resolveVarId(nameOrId: string | number): number {
+  if (typeof nameOrId === 'number') return nameOrId;
+  const c = resolveDecompConstant(nameOrId);
+  if (typeof c === 'number') return c;
+  const m = /0x([0-9A-Fa-f]+)/.exec(nameOrId);
+  if (m) return parseInt(m[1], 16);
+  return Number(nameOrId);
+}
+function _cb2Name(): string {
+  const g = (globalThis as { gMain?: { callback2?: { name?: string } } }).gMain;
+  return g && g.callback2 ? (g.callback2.name || 'anon') : 'n/a';
+}
+
+/** Lit une var par NOM ('VAR_0x8004', 'VAR_RESULT') ou id — instance runtime du jeu. */
+export function getVar(nameOrId: string | number): number { return VarGet(resolveVarId(nameOrId)); }
+
+/** Écrit une var par NOM ou id, puis relit (preuve). Même instance que le jeu. */
+export function setVar(nameOrId: string | number, value: number): number {
+  const id = resolveVarId(nameOrId);
+  VarSet(id, value & 0xFFFF);
+  return VarGet(id);
+}
+
+/** Invoque un special par NOM directement (`gSpecials[i]()`), sans le bytecode ni le poll
+ *  inline-flow — chemin déterministe pour ouvrir un écran de special. Reporte la bascule CB2. */
+export function special(name: string): string {
+  const before = _cb2Name();
+  const r = invokeSpecial(name);
+  return `special '${name}' → ${r} | CB2 ${before} → ${_cb2Name()}`;
+}
+
+/** SaveBlock1 runtime (même instance que le jeu) — inspecter/préparer un test depuis la console. */
+export function sb1(): unknown { return gSaveBlock1Ptr; }
+
+/** Ouvre N'IMPORTE QUEL type d'écran easy-chat pour INSPECTION VISUELLE (dev menu), via
+ *  `DoEasyChatScreen(type, motsDémo, …)` DIRECTEMENT — indépendant de l'état save (pas
+ *  besoin de mail/tvShows/dewfordTrends valides). Montre le layout/cadres/instructions du
+ *  type. Les sprites interview (reporter) ne sont pas encore portés → zone personne vide. */
+export async function openEasyChatDemo(type: number): Promise<string> {
+  await easyChatGfxReady();
+  const EC_EMPTY = 0xFFFF;
+  const words = new Uint16Array(9).fill(EC_EMPTY);
+  words[0] = (5 << 9) | 0;   // EC_WORD(group, index) — 2 mots d'exemple
+  words[1] = (2 << 9) | 3;
+  const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
+  try {
+    DoEasyChatScreen(type, words, null, EASY_CHAT_PERSON_DISPLAY_NONE);
+    return `openEasyChatDemo(${type}) ouvert (démo, mots factices) | CB2 ${_cb2Name()}`;
+  } catch (e) {
+    return `openEasyChatDemo(${type}) ERREUR : ${String((e as Error)?.message ?? e)}`;
+  }
+}
+
+/** Ouvre l'écran easy-chat DIRECTEMENT depuis le bundle principal (même instance que le jeu),
+ *  en contournant le bytecode/poll — chemin déterministe pour VALIDER l'écran visuellement.
+ *  type = EASY_CHAT_TYPE_* (0=PROFILE, 4=MAIL, 9=TRENDY_PHRASE, 11=CONTEST_INTERVIEW…).
+ *  Diagnostique aussi : getRuntime()===__rt live ? + reset des tasks (preuve que DoEasyChatScreen
+ *  a bien tapé le runtime live) + bascule CB2. */
+export async function openEasyChat(type = 9): Promise<string> {
+  await easyChatGfxReady();
+  setVar('VAR_0x8004', type);
+  const rt = getRuntime() as { gTasks?: Array<{ isActive: boolean }> } | null;
+  const liveRt = (globalThis as { __rt?: unknown }).__rt;
+  const nActive = (r: typeof rt) => (r?.gTasks || []).filter((t) => t.isActive).length;
+  const tasksBefore = nActive(rt);
+  ShowEasyChatScreen();
+  const tasksAfter = nActive(rt);
+  return `openEasyChat(${type}) | getRuntime===__rt: ${rt === liveRt} | tasks ${tasksBefore}→${tasksAfter} | CB2 ${_cb2Name()}`;
+}
+
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, launchScript, run, VarGet, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, launchScript, run, VarGet, getVar, setVar, special, sb1, openEasyChat, openEasyChatDemo, getScriptOffset };

@@ -101,22 +101,52 @@ const PANEL_ID = 'dvt-panel';
 // des map.json de la décomp via scripts/extract-pc-warps.py). On spawn 1 tuile au SUD
 // (devant l'entrée) → `__devGotoMap(id, pcx, pcy + 1)`. Ordre = progression du jeu.
 // Littleroot n'a pas de PC (labo/maisons) → absent.
+// `name` = nom FR OFFICIEL (verbatim `public/decomp/em/map-names-fr.json`, extrait des
+// region_map_sections de la décomp — pas de traduction maison). ⚠️ contre-intuitif :
+// Dewford=MYOKARA, Slateport=POIVRESSEL, Mauville=LAVANDIA, Fortree=CIMETRONELLE, Mossdeep=ALGATIA.
 const TELEPORT_TOWNS: ReadonlyArray<{ name: string; id: string; pcx: number; pcy: number }> = [
-  { name: 'Oldale',     id: 'MAP_OLDALE_TOWN',     pcx: 6,  pcy: 16 },
-  { name: 'Petalburg',  id: 'MAP_PETALBURG_CITY',  pcx: 20, pcy: 16 },
-  { name: 'Rustboro',   id: 'MAP_RUSTBORO_CITY',   pcx: 16, pcy: 38 },
-  { name: 'Dewford',    id: 'MAP_DEWFORD_TOWN',    pcx: 2,  pcy: 10 },
-  { name: 'Slateport',  id: 'MAP_SLATEPORT_CITY',  pcx: 19, pcy: 19 },
-  { name: 'Mauville',   id: 'MAP_MAUVILLE_CITY',   pcx: 22, pcy: 5  },
-  { name: 'Verdanturf', id: 'MAP_VERDANTURF_TOWN', pcx: 16, pcy: 3  },
-  { name: 'Fallarbor',  id: 'MAP_FALLARBOR_TOWN',  pcx: 14, pcy: 7  },
-  { name: 'Lavaridge',  id: 'MAP_LAVARIDGE_TOWN',  pcx: 9,  pcy: 6  },
-  { name: 'Fortree',    id: 'MAP_FORTREE_CITY',    pcx: 5,  pcy: 6  },
-  { name: 'Lilycove',   id: 'MAP_LILYCOVE_CITY',   pcx: 24, pcy: 14 },
-  { name: 'Mossdeep',   id: 'MAP_MOSSDEEP_CITY',   pcx: 28, pcy: 16 },
-  { name: 'Sootopolis', id: 'MAP_SOOTOPOLIS_CITY', pcx: 43, pcy: 31 },
-  { name: 'Pacifidlog', id: 'MAP_PACIFIDLOG_TOWN', pcx: 8,  pcy: 15 },
-  { name: 'Ever Grande',id: 'MAP_EVER_GRANDE_CITY',pcx: 27, pcy: 48 },
+  { name: 'ROSYERES',        id: 'MAP_OLDALE_TOWN',     pcx: 6,  pcy: 16 },
+  { name: 'CLEMENTI-VILLE',  id: 'MAP_PETALBURG_CITY',  pcx: 20, pcy: 16 },
+  { name: 'MEROUVILLE',      id: 'MAP_RUSTBORO_CITY',   pcx: 16, pcy: 38 },
+  { name: 'VILLAGE MYOKARA', id: 'MAP_DEWFORD_TOWN',    pcx: 2,  pcy: 10 },
+  { name: 'POIVRESSEL',      id: 'MAP_SLATEPORT_CITY',  pcx: 19, pcy: 19 },
+  { name: 'LAVANDIA',        id: 'MAP_MAUVILLE_CITY',   pcx: 22, pcy: 5  },
+  { name: 'VERGAZON',        id: 'MAP_VERDANTURF_TOWN', pcx: 16, pcy: 3  },
+  { name: 'AUTEQUIA',        id: 'MAP_FALLARBOR_TOWN',  pcx: 14, pcy: 7  },
+  { name: 'VERMILAVA',       id: 'MAP_LAVARIDGE_TOWN',  pcx: 9,  pcy: 6  },
+  { name: 'CIMETRONELLE',    id: 'MAP_FORTREE_CITY',    pcx: 5,  pcy: 6  },
+  { name: 'NENUCRIQUE',      id: 'MAP_LILYCOVE_CITY',   pcx: 24, pcy: 14 },
+  { name: 'ALGATIA',         id: 'MAP_MOSSDEEP_CITY',   pcx: 28, pcy: 16 },
+  { name: 'ATALANOPOLIS',    id: 'MAP_SOOTOPOLIS_CITY', pcx: 43, pcy: 31 },
+  { name: 'PACIFIVILLE',     id: 'MAP_PACIFIDLOG_TOWN', pcx: 8,  pcy: 15 },
+  { name: 'ETERNARA',        id: 'MAP_EVER_GRANDE_CITY',pcx: 27, pcy: 48 },
+];
+
+// ─── Easy Chat : tous les types d'écran (EASY_CHAT_TYPE_*, include/constants/easy_chat.h) ──
+// Chaque bouton ouvre l'écran via `__byteVm.openEasyChatDemo(type)` (mots factices, indépendant
+// de la save) pour inspecter cadres/titre/instructions de CHAQUE type — même en ?debug.
+const EASY_CHAT_TYPES: ReadonlyArray<{ t: number; label: string }> = [
+  { t: 0,  label: 'Profil' },
+  { t: 1,  label: 'Début combat' },
+  { t: 2,  label: 'Victoire' },
+  { t: 3,  label: 'Défaite' },
+  { t: 4,  label: 'Lettre' },
+  { t: 5,  label: 'Interview' },
+  { t: 6,  label: 'Chant barde' },
+  { t: 7,  label: 'Fan club' },
+  { t: 8,  label: 'TV (dummy)' },
+  { t: 9,  label: 'Mot tendance' },
+  { t: 10, label: 'Gabby & Ty' },
+  { t: 11, label: 'Interview concours' },
+  { t: 12, label: 'Tour combat' },
+  { t: 13, label: 'Bon mot' },
+  { t: 14, label: 'Question fan' },
+  { t: 15, label: 'Quiz réponse' },
+  { t: 16, label: 'Quiz question' },
+  { t: 17, label: 'Quiz déf. question' },
+  { t: 18, label: 'Quiz déf. réponse' },
+  { t: 19, label: 'Apprenti' },
+  { t: 20, label: 'Questionnaire' },
 ];
 
 // ─── Montage (idempotent) ─────────────────────────────────────────────────────
@@ -487,6 +517,13 @@ function teleportButtonsHtml(): string {
   ).join('');
 }
 
+/** Boutons Easy Chat (1 par type d'écran) — ouvre l'écran en démo pour inspection visuelle. */
+function easyChatButtonsHtml(): string {
+  return EASY_CHAT_TYPES.map((e) =>
+    `<button data-ec="${e.t}" title="EASY_CHAT_TYPE ${e.t}">${esc(e.label)}</button>`,
+  ).join('');
+}
+
 function buildDom(): void {
   const panel = document.createElement('div');
   panel.id = PANEL_ID;
@@ -510,6 +547,9 @@ function buildDom(): void {
     <div class="dvt-body">
       <details open><summary>🗺 Téléport <span class="dvt-dim">(devant les Pokémon Centers)</span></summary>
         <div id="dvt-tp" class="dvt-tp">${teleportButtonsHtml()}</div>
+      </details>
+      <details><summary>💬 Easy Chat <span class="dvt-dim">(tous les écrans, démo)</span></summary>
+        <div id="dvt-ec" class="dvt-tp">${easyChatButtonsHtml()}</div>
       </details>
       <details open><summary>🎨 Palettes <span class="dvt-dim">(rendu réel)</span></summary>
         <div class="dvt-pal-ctl">
@@ -610,6 +650,17 @@ function wireControls(): void {
     const fn = g().__devGotoMap;
     if (fn) fn(map, x, y);
     else console.warn('[devtools] __devGotoMap indisponible (overworld pas booté ?)');
+  });
+
+  // Easy Chat (délégation) — ouvre chaque type d'écran via __byteVm.openEasyChatDemo.
+  document.getElementById('dvt-ec')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-ec]') as HTMLElement | null;
+    if (!btn) return;
+    const type = parseInt(btn.dataset.ec ?? '', 10);
+    if (Number.isNaN(type)) return;
+    const bv = (g() as { __byteVm?: { openEasyChatDemo?: (t: number) => Promise<string> } }).__byteVm;
+    if (bv?.openEasyChatDemo) void bv.openEasyChatDemo(type);
+    else console.warn('[devtools] __byteVm.openEasyChatDemo indisponible (jeu pas booté ?)');
   });
 
   // Scénarios
