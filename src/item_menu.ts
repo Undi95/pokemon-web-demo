@@ -29,6 +29,8 @@ import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_CO
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { ReadMail } from './mail';
+import type { Mail } from './engine/save/save-blocks';
 import { MALE } from '../harness/runtime/decomp-globals';
 import { ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2, ITEMMENU_SWAP_LINE_LENGTH } from '../include/item_menu';
 import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT } from '../include/constants/item';
@@ -2457,6 +2459,16 @@ export function RemoveContextWindow(): void {
  *  handlers concrets seront portés type-par-type (Medicine, TMHM, Bike, etc.).
  *  Pour l'instant : `CannotUse` 1:1 (= dialog "Pas le moment"), les autres
  *  affichent un message générique "[handler] à porter" → retour liste sur A/B. */
+/** 1:1 décomp `CB2_CheckMail` (item_use.c:189) : affiche le DESIGN de la lettre
+ *  (fond, sans texte — la lettre du sac n'est pas encore écrite). Mail blanc avec
+ *  seulement itemId = gSpecialVar.ItemId ; ReadMail(mail, retour-sac, hasText=FALSE).
+ *  ReadMail (mail.ts) = écran 1:1 déjà porté (12 designs + icône + easy-chat). */
+function CB2_CheckMail(): void {
+  const mail: Mail = { words: [], playerName: [], trainerId: [], species: 0, itemId: gSpecialVar.ItemId };
+  // 1:1 CB2_ReturnToBagMenuPocket = GoToBagMenu(ITEMMENULOCATION_LAST) (restaure la poche).
+  ReadMail(mail, () => GoToBagMenu(ITEMMENULOCATION_LAST, POCKETS_COUNT, null), false);
+}
+
 function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   const itemId = gSpecialVar.ItemId;
   const fieldUseFunc = GetItemFieldFunc(itemId);
@@ -2823,12 +2835,19 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       break;
     }
     case 'ItemUseOutOfBattle_Mail':
+      // 1:1 décomp `ItemUseOutOfBattle_Mail` (item_use.c:196) :
+      //   gBagMenu->newScreenCallback = CB2_CheckMail; Task_FadeAndCloseBagMenu(taskId);
+      // → fade sac → CB2_CheckMail affiche le DESIGN de la lettre (ReadMail, blanc, pas
+      //   de texte car la lettre du sac n'est pas encore écrite) → retour sac (LAST).
+      gBagMenu!.newScreenCallback = CB2_CheckMail;
+      Task_FadeAndCloseBagMenu(task);
+      return;
     case 'ItemUseOutOfBattle_PokeblockCase':
     case 'ItemUseOutOfBattle_Berry':
     case 'ItemUseOutOfBattle_WailmerPail':
-      // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou un sous-système overworld
+      // 1:1 décomp : ces handlers ouvrent un screen dédié (pokeblock) ou un sous-système overworld
       // (wailmer berry / plant berry) pas encore portés → DadsAdvice 1:1 (condition prerequisite jamais
-      // remplie). À étendre quand mail/pokeblock/berry-water seront portés (chantiers indépendants).
+      // remplie). À étendre quand pokeblock/berry-water seront portés (chantiers indépendants).
       msg = _itemMsg('gText_DadsAdvice');
       break;
     default:
