@@ -41,6 +41,7 @@ import {
 // pokeball-effects/sprite) inchangés. Le scaffold decomp-data/src/sine-table a été retiré.
 import { gSineTable as G_SINE_TABLE } from '../../src/trig';
 import { SONG_ID_TO_NAME, getSongConfig } from '../../src/engine/decomp-data/src/song-table';
+import { getSongMusicPlayer } from '../../src/engine/decomp-data/src/song-players';
 import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
 import { setReverb as _staticSetReverb } from '../m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
@@ -830,10 +831,15 @@ if (typeof globalThis !== 'undefined') {
  *  M4A engine maison (`src/engine/m4a/`). Pas SpessaSynth ni emerald.sf2.
  *  Async fire-and-forget : await m4aPrime() puis playSong().
  *  Le voicegroup est résolu via `song-voicegroups.json` (extracted décomp). */
-// Song ID courante (= dernière passée à m4aSongNumStart). Utilisée par le
-// handler visibilitychange dans main.ts pour replay au retour de focus.
+// Song ID courante du slot BGM (= dernière song PLAYER 0 passée à
+// m4aSongNumStart). Utilisée par le handler visibilitychange dans main.ts pour
+// replay au retour de focus — les jingles SE2 n'y touchent PAS (sinon le
+// retour de focus rejouerait le jingle au lieu du BGM).
 let _currentSongId: number | null = null;
 export function getCurrentSongId(): number | null { return _currentSongId; }
+// Garde anti-course PAR SLOT (2 m4aSongNumStart concurrents sur des players
+// différents ne doivent pas s'annuler — 1:1 GBA : players indépendants).
+const _lastSongIdBySlot: Record<string, number> = {};
 
 export function m4aSongNumStart(songId: number, loop: boolean = false): void {
   // 1:1 décomp : MUS_NONE (= 0xFFFF) et 0 = no music. Silent skip pour éviter
@@ -844,13 +850,22 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
     console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
     return;
   }
-  _currentSongId = songId;
-  // STOP IMMÉDIAT et SYNC du slot BGM uniquement (= laisse SE1/SE2 jouer).
-  // Static imports (top of file) garantissent disponibilité immédiate.
-  // Critique pour éviter le micro-replay de loop entre 2 BGMs.
-  // NOTE : on N'appelle PAS _staticStopAllNotes() ici car ça killerait aussi
-  // les SE en cours (architecture multi-slot 1:1 GBA).
-  _staticStopSong('bgm');
+  // 1:1 gSongTable (sound/song_table.inc, colonne ms) : chaque song joue sur
+  // SON music player — BGM=0, SE1=1, SE2=2, SE3=3. 🐛 fix 2026-07-02 (verdict
+  // A/B) : les jingles MUS_* (mus_evolved, mus_level_up, mus_obtain_item… tous
+  // PLAYER_SE2) jouent PAR-DESSUS le BGM sans le couper — avant, tout partait
+  // sur le slot 'bgm' → PlayBGM(MUS_EVOLVED) REMPLAÇAIT MUS_EVOLUTION → silence
+  // net à la fin du jingle. SE3 (7 sons météo/low-health) → slot 'se2' (pas de
+  // 4e slot ; ces SE passent par le path PlaySE/noise en pratique).
+  const player = getSongMusicPlayer(songName);
+  const slot = player === 0 ? 'bgm' : player === 1 ? 'se1' : 'se2';
+  if (slot === 'bgm') _currentSongId = songId;
+  _lastSongIdBySlot[slot] = songId;
+  // STOP IMMÉDIAT et SYNC du slot CIBLE uniquement (= 1:1 MPlayStart remplace
+  // la song de CE player, les autres continuent). Static imports (top of file)
+  // garantissent disponibilité immédiate. Critique pour éviter le micro-replay
+  // de loop entre 2 BGMs.
+  _staticStopSong(slot);
   void (async () => {
     try {
       await m4aPrime();
@@ -866,9 +881,9 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
         return;
       }
       const midi = await _staticLoadMidi(url);
-      // Re-vérification : si une autre m4aSongNumStart est passée entre-temps,
-      // _currentSongId aura changé. Skip pour ne pas écraser la nouvelle.
-      if (_currentSongId !== songId) return;
+      // Re-vérification : si une autre m4aSongNumStart est passée entre-temps
+      // SUR CE SLOT, skip pour ne pas écraser la nouvelle.
+      if (_lastSongIdBySlot[slot] !== songId) return;
       // Reverb + volume par-song 1:1 décomp `sound/songs/midi/midi.cfg` (mid2agb args).
       // Ex : mus_intro = R50 V90 (overworld léger), mus_cave_of_origin = R90 (cavernes).
       const cfg = getSongConfig(songName);
@@ -883,9 +898,9 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
       const hasLoopMarkers = !!midiLoop && midiLoop.start !== midiLoop.end;
       const useLoop = loop || hasLoopMarkers;
       await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, useLoop, 'bgm', songVol,
+        midi, voicegroup, _vgLookup!, useLoop, slot, songVol,
       );
-      console.log(`[m4aSongNumStart] playing ${url} (vg=${vgName}) slot=bgm V=${songVol ?? 'default'} loop=${useLoop}${hasLoopMarkers ? ' (auto-detected)' : ''}`);
+      console.log(`[m4aSongNumStart] playing ${url} (vg=${vgName}) slot=${slot} V=${songVol ?? 'default'} loop=${useLoop}${hasLoopMarkers ? ' (auto-detected)' : ''}`);
     } catch (e) {
       console.error('[m4aSongNumStart] failed:', e);
     }

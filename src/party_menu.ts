@@ -45,7 +45,11 @@ import {
   type WindowTemplate,
 } from './window';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
+import {
+  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
+  AddTextPrinterParameterized2, GetPlayerTextSpeedDelay,
+} from './menu';
+import { gTextFlags, IsTextPrinterActive } from './text';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from './menu_specialized';
 import { GetStringCenterAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
@@ -328,7 +332,7 @@ let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item
   | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno'
   | 'levelup_learn_next' | 'levelup_learned_fanfare' | 'levelup_learned_msg'
   | 'levelup_replace_msg' | 'replace_yesno' | 'which_move_msg' | 'learnmove_return'
-  | 'forgot_move_msg' | 'stop_learning_yesno' | 'move_not_learned_msg' = 'idle';
+  | 'forgot_move_msg' | 'stop_learning_msg' | 'stop_learning_yesno' | 'move_not_learned_msg' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -1040,45 +1044,26 @@ function _dispatchLearnMoveResult(learnMove: number): void {
  *  (« {mon} apprend {move}! ») → Task_DoLearnedMoveFanfareAfterText. */
 function _displayMonLearnedMove(move: number): void {
   const mon = _party()[_slotId];
-  _itemUsedMsgText = (getString('gText_PkmnLearnedMove3') || '')
-    .replace(/\{STR_VAR_1\}/g, mon?.nickname ?? '')
-    .replace(/\{STR_VAR_2\}/g, gMoveNames[move] ?? '')
-    .replace(/\\p/g, ' ').replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_PkmnLearnedMove3') || '',
+    mon?.nickname ?? '', gMoveNames[move] ?? '');
   _phase = 'levelup_learned_fanfare';
   _drawMsg();
 }
 
-/** Pages du message replace-move (gText_PkmnNeedsToReplaceMove = 3 pages `\p`
- *  de 2 lignes — la fenêtre WIN_MSG fait 2 lignes, coller les pages COUPAIT le
- *  texte après « connaît déjà » ; signalé user 2026-07-02). A/B avance la page. */
-let _lvlUpMsgPages: string[] = [];
-let _lvlUpMsgPageIdx = 0;
-
 /** 1:1 `DisplayMonNeedsToReplaceMove(taskId)` (party_menu.c:5113-5122) — le
- *  message décomp complet, PAGINÉ sur `\p` (le printer décomp gère \p nativement),
- *  puis Task_ReplaceMoveYesNo (le YesNo s'affiche par-dessus la DERNIÈRE page,
- *  dès que le printer est inactif). `moveOverride` = gPartyMenu.data1 pour le
- *  ré-affichage après refus d'arrêt (.c:4941-4944) ; défaut = gMoveToLearn (:5116). */
+ *  message décomp COMPLET (3 pages `\p` gérées nativement par le printer : A
+ *  avance chaque page avec le ▼), puis Task_ReplaceMoveYesNo (phase
+ *  'levelup_replace_msg' : le YesNo s'affiche dès que le printer est inactif).
+ *  `moveOverride` = gPartyMenu.data1 pour le ré-affichage après refus d'arrêt
+ *  (.c:4941-4944) ; défaut = gMoveToLearn (:5116). */
 function _displayMonNeedsToReplaceMove(moveOverride?: number): void {
   const mon = _party()[_slotId];
   const move = moveOverride ?? gMoveToLearn;
-  const raw = (getString('gText_PkmnNeedsToReplaceMove') || '')
-    .replace(/\{STR_VAR_1\}/g, mon?.nickname ?? '')
-    .replace(/\{STR_VAR_2\}/g, gMoveNames[move] ?? '')
-    .replace(/\{[^}]*\}/g, '');
-  _lvlUpMsgPages = raw.split('\\p').map(p => p.replace(/\\n/g, '\n').replace(/\\l/g, '\n'));
-  _lvlUpMsgPageIdx = 0;
-  _itemUsedMsgText = _lvlUpMsgPages[0] ?? '';
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_PkmnNeedsToReplaceMove') || '',
+    mon?.nickname ?? '', gMoveNames[move] ?? '');
   _learnMoveData1 = move;  // 1:1 :5120 gPartyMenu.data1 = gMoveToLearn
-  if (_lvlUpMsgPages.length <= 1) {
-    // Message mono-page → printer inactif immédiat → YesNo direct (1:1 :4815).
-    _phase = 'replace_yesno';
-    _drawMsg();
-    PartyMenuDisplayYesNoMenu();
-  } else {
-    _phase = 'levelup_replace_msg';
-    _drawMsg();
-  }
+  _phase = 'levelup_replace_msg';  // = Task_ReplaceMoveYesNo (:4815)
+  _drawMsg();
 }
 
 // ─── Flux replace-move complet (1:1 party_menu.c:4815-4953) — dette #8 soldée ──
@@ -1116,18 +1101,14 @@ function CB2_ReturnToPartyMenuWhileLearningMove(): void {
 }
 
 /** 1:1 `DisplayPartyMenuForgotMoveMessage` (:4871-4880) : gText_12PoofForgotMove
- *  (« 1, 2, et… Tadaa! \p X ne sait plus utiliser Y. \p Et… ») PAGINÉ ; la
- *  dernière page acquittée → Task_PartyMenuReplaceMove. */
+ *  (« 1, 2, et… Tadaa! \p X ne sait plus utiliser Y. \p Et…{PAUSE_UNTIL_PRESS} »)
+ *  — texte COMPLET au printer (pauses/pages natives) ; à la fin →
+ *  Task_PartyMenuReplaceMove (phase 'forgot_move_msg'). */
 function _displayPartyMenuForgotMoveMessage(): void {
   const mon = _party()[_slotId];
   const forgotten = mon?.moves?.[GetMoveSlotToReplace()] ?? 0;
-  const raw = (getString('gText_12PoofForgotMove') || '')
-    .replace(/\{STR_VAR_1\}/g, mon?.nickname ?? '')
-    .replace(/\{STR_VAR_2\}/g, gMoveNames[forgotten] ?? '')
-    .replace(/\{[^}]*\}/g, '');
-  _lvlUpMsgPages = raw.split('\\p').map(p => p.replace(/\\n/g, '\n').replace(/\\l/g, '\n'));
-  _lvlUpMsgPageIdx = 0;
-  _itemUsedMsgText = _lvlUpMsgPages[0] ?? '';
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_12PoofForgotMove') || '',
+    mon?.nickname ?? '', gMoveNames[forgotten] ?? '');
   _phase = 'forgot_move_msg';
   _drawMsg();
 }
@@ -1157,17 +1138,14 @@ function _taskLearnedMove(): void {
   _displayMonLearnedMove(_learnMoveData1);
 }
 
-/** 1:1 `StopLearningMovePrompt` (:4897-4904) + `Task_StopLearningMoveYesNo`
- *  (:4906-4913) : « Arrêter d'enseigner {move}? » (pas de PAUSE finale → le
- *  printer devient inactif dès le rendu) + YesNo immédiat. */
+/** 1:1 `StopLearningMovePrompt` (:4897-4904) : « Arrêter d'enseigner {move}? »
+ *  puis `Task_StopLearningMoveYesNo` (:4906-4913) attend la fin du printer
+ *  avant de poser le YesNo (phase 'stop_learning_msg' → 'stop_learning_yesno'). */
 function _stopLearningMovePrompt(): void {
-  _itemUsedMsgText = (getString('gText_StopLearningMove2') || '')
-    .replace(/\{STR_VAR_2\}/g, gMoveNames[_learnMoveData1] ?? '')
-    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
-  _lvlUpMsgPages = [];
-  _phase = 'stop_learning_yesno';
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_StopLearningMove2') || '',
+    undefined, gMoveNames[_learnMoveData1] ?? '');
+  _phase = 'stop_learning_msg';
   _drawMsg();
-  PartyMenuDisplayYesNoMenu();
 }
 
 /** 1:1 `PartyMenuTryEvolution(taskId)` (party_menu.c:5095-5111) :
@@ -1240,8 +1218,8 @@ function _drawMsg(): void {
       || _phase === 'levelup_learn_next' || _phase === 'levelup_learned_fanfare'
       || _phase === 'levelup_learned_msg' || _phase === 'levelup_replace_msg'
       || _phase === 'replace_yesno' || _phase === 'which_move_msg'
-      || _phase === 'forgot_move_msg' || _phase === 'stop_learning_yesno'
-      || _phase === 'move_not_learned_msg'
+      || _phase === 'forgot_move_msg' || _phase === 'stop_learning_msg'
+      || _phase === 'stop_learning_yesno' || _phase === 'move_not_learned_msg'
       || _phase === 'field_move_err' || _phase === 'softboiled_msg'
       || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg'
       || _phase === 'switch_items_yesno') && _itemUsedMsgText) {
@@ -1273,8 +1251,46 @@ function _drawMsg(): void {
   _msgWid = AddWindow(template);
   // 1:1 décomp `DrawStdFrameWithCustomTileAndPalette(*windowPtr, FALSE, 0x4F, 13)`.
   DrawStdFrameWithCustomTileAndPalette(_msgWid, false, 0x4F, 13);
-  AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 0, 1, [1, 2, 3], TEXT_SKIP_DRAW, msg);
+  if (template === ITEM_USED_MSG_WINDOW_TEMPLATE && _itemUsedMsgText) {
+    // 1:1 décomp `PrintMessage` (party_menu.c:2566-2571) — les MESSAGES D'ACTION
+    // (level-up/learn/replace/item-used) défilent à la vitesse joueur avec A/B
+    // speed-up + ▼ sur les pauses (le printer gère \p/{PAUSE_UNTIL_PRESS}
+    // nativement). Tick = RunTextPrinters global (runOneFrame ; le décomp tick
+    // via Task_PrintAndWaitForText → RunTextPrintersRetIsActive, même cadence).
+    // 🐛 fix 2026-07-02 (verdict A/B « textes instantanés + ▼ manquants ») :
+    // avant, TOUT passait en TEXT_SKIP_DRAW.
+    gTextFlags.canABSpeedUpPrint = true;   // 1:1 :2569
+    gTextFlags.useAlternateDownArrow = false;
+    AddTextPrinterParameterized2(_msgWid, FONT_NORMAL, msg, GetPlayerTextSpeedDelay(), null,
+      2 /* TEXT_COLOR_DARK_GRAY */, 1 /* TEXT_COLOR_WHITE */, 3 /* TEXT_COLOR_LIGHT_GRAY */);
+  } else {
+    // 1:1 décomp `DisplayPartyMenuStdMessage` (party_menu.c:2459-2501) — les
+    // PROMPTS statiques (« Choisir un POKéMON », « Utiliser sur quel POKéMON? »)
+    // s'affichent d'un bloc sur ROM aussi (AddTextPrinterParameterized speed=0).
+    AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 0, 1, [1, 2, 3], TEXT_SKIP_DRAW, msg);
+  }
   CopyWindowToVram(_msgWid, 3);
+}
+
+/** 1:1 décomp `IsPartyMenuTextPrinterActive` (party_menu.c:1731) =
+ *  FuncIsActiveTask(Task_PrintAndWaitForText). Adaptation : notre tick est
+ *  global (runOneFrame) — la task .c ne sert qu'à ticker + fermer la fenêtre
+ *  (le clear est géré par le _drawMsg suivant) → équivalent = printer WIN_MSG
+ *  actif. */
+function _isPartyMenuTextPrinterActive(): boolean {
+  return _msgWid >= 0 && IsTextPrinterActive(_msgWid);
+}
+
+/** Prépare un texte message party pour le PRINTER (≠ l'ancien strip intégral) :
+ *  garde \p/\l/\n (prompts natifs) + {PAUSE_UNTIL_PRESS}/{PAUSE n}/{WAIT_SE}
+ *  (rendus par le moteur), expanse STR_VAR_1/2, strippe uniquement les codes
+ *  non rendus ({PLAY_SE X}/{PLAY_BGM X} à arg nommé — dette encodeur). */
+function _preparePartyMsg(raw: string, var1?: string, var2?: string): string {
+  return raw
+    .replace(/\{STR_VAR_1\}/g, var1 ?? '')
+    .replace(/\{STR_VAR_2\}/g, var2 ?? '')
+    .replace(/\{PLAY_SE [^}]*\}/g, '')
+    .replace(/\{PLAY_BGM [^}]*\}/g, '');
 }
 
 /** 1:1 décomp `CreatePartyMonPokeballSprite` (party_menu.c:4122) :
@@ -3250,6 +3266,10 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472) : check
   // !IsPartyMenuTextPrinterActive + A/B press → Task_ClosePartyMenu.
   if (_phase === 'item_used_msg') {
+    // 1:1 : pendant l'impression, A/B accélère le texte (canABSpeedUpPrint) —
+    // la phase n'avance qu'une fois le printer inactif (gate de TOUS les Task_*
+    // .c via IsPartyMenuTextPrinterActive).
+    if (_isPartyMenuTextPrinterActive()) return;
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (newKeys & (KEY_A | KEY_B)) {
@@ -3266,6 +3286,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // 'helditem_msg' = même pattern : 1:1 décomp Task_UpdateHeldItemSprite →
   // Task_ReturnToChooseMonAfterText (party_menu.c:3267) — A/B → retour choix-mon.
   if (_phase === 'field_move_err' || _phase === 'helditem_msg') {
+    if (_isPartyMenuTextPrinterActive()) return;  // 1:1 gate printer (cf item_used_msg)
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (newKeys & (KEY_A | KEY_B)) {
@@ -3284,6 +3305,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // Task_ChooseNewMonForSoftboiled (qui attendent !IsPartyMenuTextPrinterActive ;
   // notre msg = {PAUSE_UNTIL_PRESS} → ack par A/B).
   if (_phase === 'softboiled_msg') {
+    if (_isPartyMenuTextPrinterActive()) return;  // 1:1 gate printer (cf item_used_msg)
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (newKeys & (KEY_A | KEY_B)) {
@@ -3367,7 +3389,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // Task_DisplayLevelUpStatsPg1 → Pg2 → Task_TryLearnNewMoves (party_menu.c:5009-5073).
   if (_phase === 'levelup_pg1') {
     // 1:1 :5011 WaitFanfare(FALSE) && !IsPartyMenuTextPrinterActive && (A||B).
-    // (texte rendu instantané via TEXT_SKIP_DRAW → printer toujours inactif.)
+    if (_isPartyMenuTextPrinterActive()) return;
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (WaitFanfare(false) && (newKeys & (KEY_A | KEY_B))) {
@@ -3420,8 +3442,9 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'levelup_learned_fanfare') {
-    // 1:1 Task_DoLearnedMoveFanfareAfterText (party_menu.c) : printer inactif
-    // (nos messages party = rendu instantané) → PlayFanfare(MUS_LEVEL_UP).
+    // 1:1 Task_DoLearnedMoveFanfareAfterText (:4789-4796) : attend la FIN du
+    // défilement (« X apprend Y! ») puis PlayFanfare(MUS_LEVEL_UP).
+    if (_isPartyMenuTextPrinterActive()) return;
     PlayFanfare(MUS_LEVEL_UP);
     _phase = 'levelup_learned_msg';
     return;
@@ -3440,24 +3463,12 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'levelup_replace_msg') {
-    // Pages du message (gText_PkmnNeedsToReplaceMove = 3 pages \p) : A/B avance.
-    // Quand la DERNIÈRE page s'affiche, le printer décomp devient inactif →
-    // Task_ReplaceMoveYesNo (:4815) pose le YesNo PAR-DESSUS la page.
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);
-      if (_lvlUpMsgPageIdx < _lvlUpMsgPages.length - 1) {
-        _lvlUpMsgPageIdx++;
-        _itemUsedMsgText = _lvlUpMsgPages[_lvlUpMsgPageIdx];
-        _drawMsg();
-        if (_lvlUpMsgPageIdx === _lvlUpMsgPages.length - 1) {
-          // Dernière page affichée → YesNo (1:1 Task_ReplaceMoveYesNo :4815-4822).
-          _phase = 'replace_yesno';
-          PartyMenuDisplayYesNoMenu();
-        }
-      }
-    }
+    // 1:1 Task_ReplaceMoveYesNo (:4815-4822) : le printer gère les 3 pages \p
+    // nativement (A avance chaque page avec ▼) ; quand le texte ENTIER est fini,
+    // le YesNo se pose par-dessus la dernière page.
+    if (_isPartyMenuTextPrinterActive()) return;
+    PartyMenuDisplayYesNoMenu();
+    _phase = 'replace_yesno';
     return;
   }
   if (_phase === 'replace_yesno') {
@@ -3465,9 +3476,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     const res = Menu_ProcessInputNoWrapClearOnChoose();  // 0=OUI 1=NON -1=B -2=rien
     if (res === 0) {
       // OUI → « Oublier quelle capacité?{PAUSE_UNTIL_PRESS} » puis summary.
-      _itemUsedMsgText = (getString('gText_WhichMoveToForget') || '')
-        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
-      _lvlUpMsgPages = [];
+      _itemUsedMsgText = _preparePartyMsg(getString('gText_WhichMoveToForget') || '');
       _phase = 'which_move_msg';
       _drawMsg();
     } else if (res === 1 || res === -1) {
@@ -3477,18 +3486,16 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'which_move_msg') {
-    // 1:1 Task_ShowSummaryScreenToForgetMove (:4841-4848) : A/B acquitte le
-    // {PAUSE_UNTIL_PRESS} → sPartyMenuInternal->exitCallback =
-    // CB2_ShowSummaryScreenToForgetMove + Task_ClosePartyMenu (fade + teardown).
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      _learnMoveSlot = _slotId;
-      _learnMoveReturnCb = rt.gMain.savedCallback ?? null;  // gPartyMenu.exitCallback conservé
-      _partyTransientExitCb = _CB2_ShowSummaryScreenToForgetMove;
-      _itemUsedMsgText = null;
-      ClosePartyScreen();
-    }
+    // 1:1 Task_ShowSummaryScreenToForgetMove (:4841-4848) : attend la fin du
+    // printer (le A qui acquitte {PAUSE_UNTIL_PRESS} est consommé par la pause)
+    // → sPartyMenuInternal->exitCallback = CB2_ShowSummaryScreenToForgetMove +
+    // Task_ClosePartyMenu (fade + teardown).
+    if (_isPartyMenuTextPrinterActive()) return;
+    _learnMoveSlot = _slotId;
+    _learnMoveReturnCb = rt.gMain.savedCallback ?? null;  // gPartyMenu.exitCallback conservé
+    _partyTransientExitCb = _CB2_ShowSummaryScreenToForgetMove;
+    _itemUsedMsgText = null;
+    ClosePartyScreen();
     return;
   }
   if (_phase === 'learnmove_return') {
@@ -3503,21 +3510,18 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'forgot_move_msg') {
-    // Pages de gText_12PoofForgotMove ; dernière page acquittée →
-    // Task_PartyMenuReplaceMove (:4882).
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);
-      if (_lvlUpMsgPageIdx < _lvlUpMsgPages.length - 1) {
-        _lvlUpMsgPageIdx++;
-        _itemUsedMsgText = _lvlUpMsgPages[_lvlUpMsgPageIdx];
-        _drawMsg();
-        return;
-      }
-      _lvlUpMsgPages = [];
-      _taskPartyMenuReplaceMove();
-    }
+    // 1:1 Task_PartyMenuReplaceMove (:4882-4895) : gText_12PoofForgotMove
+    // (pauses/pages natives du printer) — à la fin du texte, remplace le move.
+    if (_isPartyMenuTextPrinterActive()) return;
+    _taskPartyMenuReplaceMove();
+    return;
+  }
+  if (_phase === 'stop_learning_msg') {
+    // 1:1 Task_StopLearningMoveYesNo (:4906-4913) : attend la fin du texte
+    // « Arrêter d'enseigner {move}? » puis pose le YesNo.
+    if (_isPartyMenuTextPrinterActive()) return;
+    PartyMenuDisplayYesNoMenu();
+    _phase = 'stop_learning_yesno';
     return;
   }
   if (_phase === 'stop_learning_yesno') {
@@ -3526,10 +3530,8 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     if (res === 0) {
       // OUI (arrêter) → « X n'a pas appris la capacité Y.{PAUSE_UNTIL_PRESS} »
       const monStop = _party()[_slotId];
-      _itemUsedMsgText = (getString('gText_MoveNotLearned') || '')
-        .replace(/\{STR_VAR_1\}/g, monStop?.nickname ?? '')
-        .replace(/\{STR_VAR_2\}/g, gMoveNames[_learnMoveData1] ?? '')
-        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      _itemUsedMsgText = _preparePartyMsg(getString('gText_MoveNotLearned') || '',
+        monStop?.nickname ?? '', gMoveNames[_learnMoveData1] ?? '');
       _phase = 'move_not_learned_msg';
       _drawMsg();
     } else if (res === 1 || res === -1) {
@@ -3540,16 +3542,13 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'move_not_learned_msg') {
-    // 1:1 : learnMoveState==1 → Task_TryLearningNextMoveAfterText (:4949) ;
-    // sinon (CT/CS) → Task_ClosePartyMenuAfterText (:4934).
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);
-      _itemUsedMsgText = null;
-      if (_learnMoveState === 1) _phase = 'levelup_learn_next';
-      else ClosePartyScreen();
-    }
+    // 1:1 Task_TryLearningNextMoveAfterText (:4949-4953) : attend la fin du
+    // printer (le A de {PAUSE_UNTIL_PRESS} est consommé par la pause) puis
+    // learnMoveState==1 → Task_TryLearningNextMove ; sinon (CT/CS) → close (:4934).
+    if (_isPartyMenuTextPrinterActive()) return;
+    _itemUsedMsgText = null;
+    if (_learnMoveState === 1) _phase = 'levelup_learn_next';
+    else ClosePartyScreen();
     return;
   }
   if (_phase !== 'open') return;
