@@ -53,8 +53,8 @@ import {
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from './engine/bag/bag-item-effects';
-import { getItem as _getItem, getItemKeyById } from '../harness/runtime/data-tables';
-import { GetItemType } from './item';
+import { getItem as _getItem } from '../harness/runtime/data-tables';
+import { GetItemType, GetBagItemKey } from './item';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
@@ -70,6 +70,7 @@ import {
   RefreshPartySlot,
   PartyMenuAnimateHP,
   CB2_ChooseMonToGiveItem,
+  ItemUseCB_TMHM,
 } from './party_menu';
 // Re-export pour item_menu.ts (ItemMenu_Give pose gBagMenu.newScreenCallback =
 // CB2_ChooseMonToGiveItem). Routé via item_use pour réutiliser l'edge existant
@@ -81,15 +82,8 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { CB2_ReturnToField_Manual } from './overworld';
-import type { Pokemon } from './engine/battle/party-storage';
-import {
-  gPlayerParty, CanMonLearnTMHM, GiveMoveToMon, MonKnowsMove, AdjustFriendship,
-} from './engine/battle/party-storage';
+import { gPlayerParty } from './engine/battle/party-storage';
 import { gMoveNames } from './engine/data/game-data';
-import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
-import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
-import { MON_HAS_MAX_MOVES, FRIENDSHIP_EVENT_LEARN_TMHM } from '../include/constants/pokemon';
-import { ITEM_TM01, ITEM_HM01 } from '../include/constants/items';
 import { RemoveBagItem } from './engine/bag/bag';
 import { SE_USE_ITEM, SE_SELECT } from '../include/constants/songs';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
@@ -219,11 +213,12 @@ export function SetUpItemUseOnFieldCallback(task: DecompTask): void {
 }
 
 // ─── RemoveBagItem helper (1:1 sem `RemoveBagItem(itemId, 1)`) ──────────────
-// Utilise bag-pockets via gameState. Notre store party utilise les keys
-// "POTION" — converter depuis itemId est dans data-tables (= getItemKeyById).
+// Utilise bag-pockets via gameState. Converter itemId → CLÉ items.json via
+// GetBagItemKey (item.ts) : normalise aussi TM/HM enum-numbered → move-named
+// ("ITEM_TM_TOXIC") — getItemKeyById brut renverrait "ITEM_TM06" → RemoveBagItem
+// no-op silencieux (leçon CheckBagHasItem attend une CLÉ).
 function _itemKeyForId(itemId: number): string | undefined {
-  const key = getItemKeyById(itemId);
-  return key;
+  return GetBagItemKey(itemId);
 }
 
 function _removeOneFromBag(itemId: number): void {
@@ -259,9 +254,13 @@ function _removeOneFromBag(itemId: number): void {
 // Nous : ApplyMedicineEffect (1:1-sem) retourne {hpHealed, statusCured,
 // cannotUse}. Le message est affiché dans le msgWid party-screen (= bottom
 // bar) puis close direct vers CB2_ReturnToBagMenu.
-// ─── _expandStr : substitue placeholders FR (STR_VAR_1/2/3, gender, etc.) ───
-// Décomp `StringExpandPlaceholders` est complet ; ici on couvre les
-// placeholders utilisés par les messages medicine + level-up + EV gains.
+// ─── _expandStr : substitue placeholders FR (STR_VAR_1/2/3) ─────────────────
+// = StringExpandPlaceholders (expansion des variables SEULEMENT). Les control
+// codes ({PAUSE_UNTIL_PRESS}/{PAUSE n}/{WAIT_SE}/{PLAY_SE X}) et les prompts
+// \p/\l/\n sont GARDÉS : le printer party (encodeStringForFont + RenderText)
+// les rend nativement, 1:1 décomp — l'ancien strip cassait le ▼/pause final
+// (le message se fermait sur un press supplémentaire au lieu du press de la
+// pause elle-même).
 function _expandStr(
   template: string,
   vars: { var1?: string; var2?: string; var3?: string },
@@ -269,12 +268,7 @@ function _expandStr(
   return template
     .replace(/\{STR_VAR_1\}/g, vars.var1 ?? '')
     .replace(/\{STR_VAR_2\}/g, vars.var2 ?? '')
-    .replace(/\{STR_VAR_3\}/g, vars.var3 ?? '')
-    .replace(/\{PAUSE_UNTIL_PRESS\}/g, '')
-    .replace(/\{PAUSE \d+\}/g, '')
-    .replace(/\{WAIT_SE\}/g, '')
-    .replace(/\\n/g, '\n')
-    .replace(/\\p/g, '\n');
+    .replace(/\{STR_VAR_3\}/g, vars.var3 ?? '');
 }
 
 /** 1:1 décomp `GetMedicineItemEffectMessage(item)` (party_menu.c:4309-4372).
@@ -533,65 +527,11 @@ export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: De
   ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), { var1: mon.nickname }));
 }
 
-// 1:1 décomp party_menu.c:163 — enum résultat de CanMonLearnTMTutor.
-const CAN_LEARN_MOVE = 0, CANNOT_LEARN_MOVE = 1, ALREADY_KNOWS_MOVE = 2, CANNOT_LEARN_MOVE_IS_EGG = 3;
-
-/** 1:1 STRICT décomp `static u8 CanMonLearnTMTutor(struct Pokemon *mon, u16 item, u8 tutor)`
- *  (party_menu.c:2033). Branche CT/CS (item >= ITEM_TM01) complète ; branche move-tutor
- *  (gTutorMoves/sTutorLearnsets) = mécanique distincte non portée, sans appelant câblé →
- *  garde-frontière fail-fast (jamais atteinte via ItemUseCB_TMHM, toujours item >= ITEM_TM01). */
-function CanMonLearnTMTutor(mon: Pokemon, item: number, tutor: number): number {
-  if (mon.isEgg) return CANNOT_LEARN_MOVE_IS_EGG;          // GetMonData(MON_DATA_IS_EGG)
-  let move: number;
-  if (item >= ITEM_TM01) {
-    if (!CanMonLearnTMHM(mon, item - ITEM_TM01)) return CANNOT_LEARN_MOVE;
-    move = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;
-  } else {
-    void tutor;
-    throw new Error('CanMonLearnTMTutor: branche move-tutor non portée (gTutorMoves)');
-  }
-  return MonKnowsMove(mon, move) ? ALREADY_KNOWS_MOVE : CAN_LEARN_MOVE;
-}
-
-// ─── ItemUseCB_TMHM (party_menu.c:4733) — 1:1 ──────────────────────────────
-export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
-  void _returnTask; void taskId;
-  PlaySE(SE_SELECT);                                       // 1:1 :4739
-  const slotId = GetPartyScreenSlotId();
-  const mon = gPlayerParty[slotId];
-  if (!mon || !mon.species) return;
-  const item = gSpecialVar.ItemId;
-  const moveNum = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;  // move[0]
-  const nick = mon.nickname;                               // GetMonNickname → gStringVar1
-  const moveName = gMoveNames[moveNum] ?? '';              // gStringVar2 = gMoveNames[move[0]]
-  const vars = { var1: nick, var2: moveName };
-
-  switch (CanMonLearnTMTutor(mon, item, 0)) {              // 1:1 :4748
-    case CANNOT_LEARN_MOVE:
-    case CANNOT_LEARN_MOVE_IS_EGG:
-      // 1:1 :4751 DisplayLearnMoveMessageAndClose(gText_PkmnCantLearnMove)
-      ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnCantLearnMove'), vars));
-      return;
-    case ALREADY_KNOWS_MOVE:
-      // 1:1 :4754 DisplayLearnMoveMessageAndClose(gText_PkmnAlreadyKnows)
-      ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnAlreadyKnows'), vars));
-      return;
-  }
-  // 1:1 :4758 if (GiveMoveToMon(mon, move[0]) != MON_HAS_MAX_MOVES) → la capacité est apprise.
-  if (GiveMoveToMon(mon, moveNum) !== MON_HAS_MAX_MOVES) {
-    // 1:1 Task_LearnedMove (:4768) : friendship + consomme la CT (PAS la CS) + message.
-    AdjustFriendship(mon, FRIENDSHIP_EVENT_LEARN_TMHM);
-    if (item < ITEM_HM01) _removeOneFromBag(item);         // RemoveBagItem(item, 1) — CT à usage unique
-    RefreshPartySlot(slotId);
-    ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnLearnedMove3'), vars));
-  } else {
-    // 1:1 :4763 DisplayLearnMoveMessage(gText_PkmnNeedsToReplaceMove) + Task_ReplaceMoveYesNo.
-    // FRONTIÈRE : le menu interactif de remplacement (Yes/No → sélection de capacité à
-    // oublier) n'est pas porté → on affiche le message 1:1 ; un mon à 4 capacités ne
-    // remplace pas encore. À compléter quand le flux ReplaceMove sera porté.
-    ShowPartyMenuItemMessage(_expandStr(getString('gText_PkmnNeedsToReplaceMove'), vars));
-  }
-}
+// ─── ItemUseCB_TMHM (party_menu.c:4733) — porté 1:1 DANS party_menu.ts ──────
+// (avec CanMonLearnTMTutor :2033 + Task_LearnedMove :4769 + le flux replace-move
+// complet YesNo → summary select-move → Task_PartyMenuReplaceMove). Re-export
+// ici pour l'edge existant item_menu → item_use (UseTMHM pose gItemUseCB).
+export { ItemUseCB_TMHM };
 
 // Expose globals (= gItemUseCB lookup par party-screen, etc.).
 {

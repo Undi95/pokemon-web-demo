@@ -31,7 +31,7 @@
 
 import type { WarpEvent, MapHeader } from '../../fieldmap';
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../../fieldmap';
-import { GetMapConnection, Overworld_GetMapHeaderByGroupAndId } from '../../overworld';
+import { GetMapConnection, Overworld_GetMapHeaderByGroupAndId, SetWarpDestinationFromMapName } from '../../overworld';
 import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../../../include/constants/global';
 import type { WarpData } from '../save/save-blocks';
 import {
@@ -426,7 +426,13 @@ let _sDiveWarpDest: { destMap: string; x: number; y: number } | null = null;
 function SetDiveWarp(dir: number, x: number, y: number): boolean {
   const connection = GetMapConnection(dir);
   if (connection !== null) {
-    // SetWarpDestination(connection->map, WARP_ID_NONE, x, y) : dest = map connectée aux (x,y).
+    // 1:1 décomp `SetWarpDestination(connection->mapGroup, connection->mapNum,
+    // WARP_ID_NONE, x, y)` (overworld.c:762) : pose sWarpDestination (foyer
+    // overworld.ts) — consommée par TryFadeOutOldMapMusic/GetWarpDestinationMusic
+    // + ApplyCurrentWarp au moment du warp.
+    SetWarpDestinationFromMapName(connection.destMap, -1, x, y);
+    // Modèle pending-warp du port : la dest transite AUSSI par _sDiveWarpDest
+    // (consommée par DoDiveWarp → setPendingWarp).
     _sDiveWarpDest = { destMap: connection.destMap, x, y };
     return true;
   }
@@ -449,9 +455,10 @@ export function SetDiveWarpDive(x: number, y: number): boolean {
  *    PlayRainStoppingSoundEffect(); gFieldCallback = FieldCB_DefaultWarpExit;
  *    CreateTask(Task_WarpAndLoadMap, 10);
  *  Adaptation port : le warp = `setPendingWarp(dest, 'step')` (la scène MainCB2 le
- *  consomme → fade + Task_WarpAndLoadMap + exit task selon la tuile dest, comme
- *  __devGotoMap). Musique/SE = skip 1:1 (audio). La dest doit avoir été posée par
- *  SetDiveWarpDive/Emerge. */
+ *  consomme → executeWarp = LockPlayerFieldControls + TryFadeOutOldMapMusic +
+ *  fade + Task_WarpAndLoadMap + exit task selon la tuile dest, comme
+ *  __devGotoMap). La dest doit avoir été posée par SetDiveWarpDive/Emerge
+ *  (qui pose aussi sWarpDestination, overworld.ts). */
 export function DoDiveWarp(): void {
   if (!_sDiveWarpDest) return;
   setPendingWarp(
@@ -484,6 +491,9 @@ export function setLastUsedWarp(w: WarpData): void {
   gLastUsedWarp.x = w.x;
   gLastUsedWarp.y = w.y;
 }
+// Pont pour `ApplyCurrentWarp` (overworld.ts) : overworld ne peut pas importer
+// warp-system (warp-system importe déjà overworld → cycle ESM) — pattern projet.
+(globalThis as Record<string, unknown>).__setLastUsedWarp = setLastUsedWarp;
 
 /** 1:1 décomp `u8 GetMapTypeByGroupAndId(s8 mapGroup, s8 mapNum)` (overworld.c:1334) :
  *  `return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapType;`. */

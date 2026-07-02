@@ -62,13 +62,21 @@ const EASY_CHAT_TYPE_MAIL = 4;
 const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
-import { GetItemName } from './item';
+import { GetItemName, GetItemPocket, GetBagItemKey } from './item';
 import { GoToBagMenu, ITEMMENULOCATION_PARTY, ITEMMENULOCATION_LAST, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
 // Rare Candy learn/évolution (1:1 party_menu.c:5047-5133, Palier 2.1 étape 4) :
 // foyer pokemon.ts (MonTryLearningNewMove/GetEvolutionTargetSpecies) + scène.
-import { MonTryLearningNewMove, GetEvolutionTargetSpecies, RemoveMonPPBonus, SetMonMoveSlot } from './pokemon';
+import {
+  MonTryLearningNewMove, GetEvolutionTargetSpecies, RemoveMonPPBonus, SetMonMoveSlot,
+  CanMonLearnTMHM, GiveMoveToMon, MonKnowsMove, AdjustFriendship,
+} from './pokemon';
+// 1:1 décomp party_menu.c:4688 ItemIdToBattleMoveId + sa table sTMHMMoves
+// (relocalisées en feuille pure engine/pokemon/tmhm-moves.ts, cf. en-tête là-bas).
+import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { ITEM_TM01, ITEM_HM01 } from '../include/constants/items';
+import { FRIENDSHIP_EVENT_LEARN_TMHM, MON_HAS_MAX_MOVES } from '../include/constants/pokemon';
 import { BeginEvolutionScene, SetCB2AfterEvolution } from './evolution_scene';
 import { gMoveToLearn } from './engine/battle/state';
 import { PlayFanfare } from '../harness/runtime/decomp-globals';
@@ -81,7 +89,7 @@ import {
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
 } from '../harness/runtime/decomp-globals';
 import { FlagGet, gSpecialVar } from './engine/script/script-vars';
-import { MUS_LEVEL_UP } from '../include/constants/songs';
+import { MUS_LEVEL_UP, SE_FAILURE } from '../include/constants/songs';
 import { GetMapNameGeneric } from './region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
 import { CHAR_SLASH, EOS } from '../include/constants/characters';
@@ -328,7 +336,7 @@ interface PartyAssets {
 
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
-  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg'
+  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'field_move_cancel' | 'softboiled_msg'
   | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno'
   | 'levelup_learn_next' | 'levelup_learned_fanfare' | 'levelup_learned_msg'
   | 'levelup_replace_msg' | 'replace_yesno' | 'which_move_msg' | 'learnmove_return'
@@ -1130,12 +1138,104 @@ function _taskPartyMenuReplaceMove(): void {
  *  gText_PkmnLearnedMove3 + fanfare (mêmes phases que DisplayMonLearnedMove). */
 function _taskLearnedMove(): void {
   if (_learnMoveState === 0) {
-    // Chemin CT/CS (ItemUseCB_TMHM, .c:4733) — non branché à ce jour : cette
-    // chaîne n'est atteinte que par le level-up (learnMoveState=1). Le
-    // friendship + RemoveBagItem(CT) arriveront avec le portage ItemUseCB_TMHM.
-    console.warn('[party_menu] _taskLearnedMove learnMoveState=0 (CT/CS) — chemin non câblé');
+    // 1:1 :4775-4780 (chemin CT/CS = ItemUseCB_TMHM) :
+    //   AdjustFriendship(mon, FRIENDSHIP_EVENT_LEARN_TMHM);
+    //   if (item < ITEM_HM01) RemoveBagItem(item, 1);   // CT consommée, CS jamais
+    const mon = _party()[_slotId];
+    const item = (gSpecialVar.ItemId as number) | 0;   // gSpecialVar_ItemId
+    if (mon) AdjustFriendship(mon, FRIENDSHIP_EVENT_LEARN_TMHM);
+    // ⚠️ clé SAC move-named ("ITEM_TM_TOXIC") via GetBagItemKey — getItemKeyById
+    // renverrait "ITEM_TM06" (enum) → RemoveBagItem no-op silencieux.
+    if (item < ITEM_HM01) RemoveBagItem(GetBagItemKey(item), 1);
   }
   _displayMonLearnedMove(_learnMoveData1);
+}
+
+// ─── ItemUseCB_TMHM (party_menu.c:4733-4767) + prérequis — 1:1 ───────────────
+
+/** 1:1 décomp party_menu.c:163 — enum résultat de `CanMonLearnTMTutor`. */
+const CANNOT_LEARN_MOVE = 1, ALREADY_KNOWS_MOVE = 2, CANNOT_LEARN_MOVE_IS_EGG = 3;
+
+/** 1:1 STRICT décomp `static u8 CanMonLearnTMTutor(struct Pokemon *mon, u16 item,
+ *  u8 tutor)` (party_menu.c:2033). Branche CT/CS (item >= ITEM_TM01) complète ;
+ *  branche move-tutor (gTutorMoves/sTutorLearnsets) = mécanique distincte non
+ *  portée, sans appelant câblé → garde-frontière fail-fast (jamais atteinte via
+ *  ItemUseCB_TMHM : item toujours >= ITEM_TM01). */
+function CanMonLearnTMTutor(mon: Pokemon, item: number, tutor: number): number {
+  if (mon.isEgg) return CANNOT_LEARN_MOVE_IS_EGG;   // GetMonData(MON_DATA_IS_EGG)
+  let move: number;
+  if (item >= ITEM_TM01) {
+    if (!CanMonLearnTMHM(mon, item - ITEM_TM01)) return CANNOT_LEARN_MOVE;
+    move = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;
+  } else {
+    void tutor;
+    throw new Error('CanMonLearnTMTutor: branche move-tutor non portée (gTutorMoves)');
+  }
+  return MonKnowsMove(mon, move) ? ALREADY_KNOWS_MOVE : 0 /* CAN_LEARN_MOVE */;
+}
+
+/** 1:1 `DisplayLearnMoveMessageAndClose(taskId, str)` (:4725-4729) :
+ *  DisplayLearnMoveMessage(str) (gStringVar1=nick, gStringVar2=move) puis
+ *  `func = Task_ClosePartyMenuAfterText` (= phase 'item_used_msg' : ferme dès
+ *  que le printer est inactif — le A qui lève {PAUSE_UNTIL_PRESS} est consommé
+ *  par la pause elle-même). */
+function _displayLearnMoveMessageAndClose(strKey: string, var1?: string, var2?: string): void {
+  _itemUsedMsgText = _preparePartyMsg(getString(strKey) || '', var1, var2);
+  _phase = 'item_used_msg';
+  _drawMsg();
+}
+
+/** 1:1 `void ItemUseCB_TMHM(u8 taskId, TaskFunc task)` (party_menu.c:4733-4767) :
+ *  ```c
+ *  PlaySE(SE_SELECT);
+ *  mon = &gPlayerParty[gPartyMenu.slotId];
+ *  move = &gPartyMenu.data1;                       // move[1] = learnMoveState
+ *  item = gSpecialVar_ItemId;
+ *  GetMonNickname(mon, gStringVar1);
+ *  move[0] = ItemIdToBattleMoveId(item);
+ *  StringCopy(gStringVar2, gMoveNames[move[0]]);
+ *  move[1] = 0;
+ *  switch (CanMonLearnTMTutor(mon, item, 0)) {
+ *  case CANNOT_LEARN_MOVE:  DisplayLearnMoveMessageAndClose(gText_PkmnCantLearnMove); return;
+ *  case ALREADY_KNOWS_MOVE: DisplayLearnMoveMessageAndClose(gText_PkmnAlreadyKnows);  return;
+ *  }
+ *  if (GiveMoveToMon(mon, move[0]) != MON_HAS_MAX_MOVES) gTasks[taskId].func = Task_LearnedMove;
+ *  else { DisplayLearnMoveMessage(gText_PkmnNeedsToReplaceMove); gTasks[taskId].func = Task_ReplaceMoveYesNo; }
+ *  ```
+ *  Réutilise la machinerie replace-move du level-up (dette #8) : phases
+ *  'levelup_replace_msg' → YesNo → summary select-move → Task_PartyMenuReplaceMove
+ *  → Task_LearnedMove (qui consomme la CT via learnMoveState==0). Le cas œuf
+ *  (CANNOT_LEARN_MOVE_IS_EGG) est filtré en amont 1:1 (IsSelectedMonNotEgg,
+ *  HandleChooseMonSelection :1310). Appelé via gItemUseCB (globalThis). */
+export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void taskId; void _returnTask;
+  PlaySE(5);                                          // 1:1 :4739 PlaySE(SE_SELECT)
+  const mon = _party()[_slotId];                      // &gPlayerParty[gPartyMenu.slotId]
+  if (!mon) return;                                   // (slot vide — jamais via USE_ITEM 1:1)
+  const item = (gSpecialVar.ItemId as number) | 0;    // gSpecialVar_ItemId
+  const move0 = resolveDecompConstant(ItemIdToBattleMoveId(item)) ?? 0;  // move[0]
+  _learnMoveData1 = move0;                            // gPartyMenu.data1
+  _learnMoveState = 0;                                // move[1] = 0 (chemin CT/CS)
+  const nick = mon.nickname;                          // gStringVar1
+  const moveName = gMoveNames[move0] ?? '';           // gStringVar2 = gMoveNames[move[0]]
+
+  switch (CanMonLearnTMTutor(mon, item, 0)) {         // 1:1 :4748
+    case CANNOT_LEARN_MOVE:
+      _displayLearnMoveMessageAndClose('gText_PkmnCantLearnMove', nick, moveName);  // :4751
+      return;
+    case ALREADY_KNOWS_MOVE:
+      _displayLearnMoveMessageAndClose('gText_PkmnAlreadyKnows', nick, moveName);   // :4754
+      return;
+  }
+
+  if (GiveMoveToMon(mon, move0) !== MON_HAS_MAX_MOVES) {
+    _taskLearnedMove();                               // 1:1 :4760 func = Task_LearnedMove
+  } else {
+    // 1:1 :4764-4765 DisplayLearnMoveMessage(gText_PkmnNeedsToReplaceMove) +
+    // func = Task_ReplaceMoveYesNo (= _displayMonNeedsToReplaceMove pose data1 +
+    // la phase 'levelup_replace_msg').
+    _displayMonNeedsToReplaceMove(move0);
+  }
 }
 
 /** 1:1 `StopLearningMovePrompt` (:4897-4904) : « Arrêter d'enseigner {move}? »
@@ -1220,7 +1320,7 @@ function _drawMsg(): void {
       || _phase === 'replace_yesno' || _phase === 'which_move_msg'
       || _phase === 'forgot_move_msg' || _phase === 'stop_learning_msg'
       || _phase === 'stop_learning_yesno' || _phase === 'move_not_learned_msg'
-      || _phase === 'field_move_err' || _phase === 'softboiled_msg'
+      || _phase === 'field_move_err' || _phase === 'field_move_cancel' || _phase === 'softboiled_msg'
       || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg'
       || _phase === 'switch_items_yesno') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
@@ -1238,11 +1338,15 @@ function _drawMsg(): void {
     msg = getString('gText_GiveToWhichPokemon');
     template = MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_USE_ITEM || _partyAction === PARTY_ACTION_SOFTBOILED) {
-    // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
-    // (party_menu.c:4646 ; party_menu.h:605 → gText_UseOnWhichPokemon ;
-    //  strings.c:433 = "Utiliser sur quel POKéMON?"). Famille fenêtre CHOOSE_MON.
+    // 1:1 décomp CB2_ShowPartyMenuForItemUse (party_menu.c:4264-4269) :
+    //   GetPocketByItemId(item) == POCKET_TM_HM → PARTY_MSG_TEACH_WHICH_MON
+    //   ("Enseigner à quel POKéMON?") ; sinon PARTY_MSG_USE_ON_WHICH_MON
+    //   ("Utiliser sur quel POKéMON?"). Famille fenêtre CHOOSE_MON.
     // SOFTBOILED (Soin/E-Coque) : choix du receveur du transfert PV.
-    msg = getString('gText_UseOnWhichPokemon');
+    msg = (_partyAction === PARTY_ACTION_USE_ITEM
+        && GetItemPocket((gSpecialVar.ItemId as number) | 0) === 'POCKET_TM_HM')
+      ? getString('gText_TeachWhichPokemon')
+      : getString('gText_UseOnWhichPokemon');
     template = MSG_WINDOW_TEMPLATE;
   } else {
     msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
@@ -1283,14 +1387,13 @@ function _isPartyMenuTextPrinterActive(): boolean {
 
 /** Prépare un texte message party pour le PRINTER (≠ l'ancien strip intégral) :
  *  garde \p/\l/\n (prompts natifs) + {PAUSE_UNTIL_PRESS}/{PAUSE n}/{WAIT_SE}
- *  (rendus par le moteur), expanse STR_VAR_1/2, strippe uniquement les codes
- *  non rendus ({PLAY_SE X}/{PLAY_BGM X} à arg nommé — dette encodeur). */
+ *  + {PLAY_SE X}/{PLAY_BGM X} (l'encodeur `encodeStringForFont` émet le control
+ *  code + u16 LE, le renderer joue le SE/BGM — dette encodeur soldée), expanse
+ *  uniquement STR_VAR_1/2 (= StringExpandPlaceholders). */
 function _preparePartyMsg(raw: string, var1?: string, var2?: string): string {
   return raw
     .replace(/\{STR_VAR_1\}/g, var1 ?? '')
-    .replace(/\{STR_VAR_2\}/g, var2 ?? '')
-    .replace(/\{PLAY_SE [^}]*\}/g, '')
-    .replace(/\{PLAY_BGM [^}]*\}/g, '');
+    .replace(/\{STR_VAR_2\}/g, var2 ?? '');
 }
 
 /** 1:1 décomp `CreatePartyMonPokeballSprite` (party_menu.c:4122) :
@@ -2082,17 +2185,15 @@ function _cursorCbTakeItem(): void {
   let msg: string;
   switch (TryTakeMonItem(mon)) {
     case 0:  // 1:1 :3284 ne tient rien → gText_PkmnNotHolding ("{nick} ne tient rien.")
-      msg = (getString('gText_PkmnNotHolding') || '')
-        .replace('{STR_VAR_1}', mon.nickname).replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      // 1:1 texte décomp COMPLET ({PAUSE_UNTIL_PRESS} final rendu par le printer).
+      msg = _preparePartyMsg(getString('gText_PkmnNotHolding') || '', mon.nickname);
       break;
     case 1:  // 1:1 :3289 sac plein → BufferBagFullCantTakeItemMessage
-      msg = (getString('gText_BagFullCouldNotRemoveItem') || '')
-        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      msg = _preparePartyMsg(getString('gText_BagFullCouldNotRemoveItem') || '');
       break;
     default: // 2 = pris → DisplayTookHeldItemMessage ("Reçu {item} de {nick}.")
-      msg = (getString('gText_ReceivedItemFromPkmn') || '')
-        .replace('{STR_VAR_2}', GetItemName(item)).replace('{STR_VAR_1}', mon.nickname)
-        .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+      msg = _preparePartyMsg(getString('gText_ReceivedItemFromPkmn') || '',
+        mon.nickname, GetItemName(item));
       break;
   }
   // 1:1 décomp Task_UpdateHeldItemSprite : refresh l'icône d'objet tenu du slot
@@ -2164,9 +2265,8 @@ function CB2_GiveHoldItem(): void {
   // Message + RemoveBagItem.
   GiveItemToMon(mon, item);
   RemoveBagItem(getItemKeyById(item), 1);
-  const msg = (getString('gText_PkmnWasGivenItem') || '')
-    .replace('{STR_VAR_1}', mon.nickname).replace('{STR_VAR_2}', GetItemName(item))
-    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  const msg = _preparePartyMsg(getString('gText_PkmnWasGivenItem') || '',
+    mon.nickname, GetItemName(item));
   _reopenPartyForGive(msg);
 }
 
@@ -2356,10 +2456,8 @@ function CB2_ReturnToPartyOrBagMenuFromWritingMail(): void {
     // Lettre écrite : rouvrir le party + message "X doit tenir la LETTRE" (1:1
     // Task_DisplayGaveMailFromBagMessage → DisplayGaveHeldItemMessage, sPartyMenuItemId=0).
     const mon2 = gPlayerParty[_slotId];
-    const msg = (getString('gText_PkmnWasGivenItem') || '')
-      .replace('{STR_VAR_1}', mon2?.nickname ?? '')
-      .replace('{STR_VAR_2}', GetItemName(_partyBagItem))
-      .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+    const msg = _preparePartyMsg(getString('gText_PkmnWasGivenItem') || '',
+      mon2?.nickname ?? '', GetItemName(_partyBagItem));
     _reopenPartyForGive(msg);
   }
 }
@@ -2371,9 +2469,8 @@ function GiveItemToSelectedMon(): void {
   const item = _partyBagItem;
   if (!mon) return;
   // 1:1 DisplayGaveHeldItemMessage (gText_PkmnWasGivenItem = "X doit tenir Y!").
-  _itemUsedMsgText = (getString('gText_PkmnWasGivenItem') || '')
-    .replace('{STR_VAR_1}', mon.nickname).replace('{STR_VAR_2}', GetItemName(item))
-    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_PkmnWasGivenItem') || '',
+    mon.nickname, GetItemName(item));
   GiveItemToMon(mon, item);
   RemoveBagItem(getItemKeyById(item), 1);
   _updatePartyMonHeldItem(_slotId);   // 1:1 UpdatePartyMonHeldItemSprite
@@ -2384,8 +2481,7 @@ function GiveItemToSelectedMon(): void {
 /** 1:1 décomp `DisplayItemMustBeRemovedFirstMessage` (party_menu.c:5515) :
  *    "Il faut enlever la LETTRE pour pouvoir garder un objet." → close→sac. */
 function DisplayItemMustBeRemovedFirstMessage(): void {
-  _itemUsedMsgText = (getString('gText_RemoveMailBeforeItem') || '')
-    .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _itemUsedMsgText = _preparePartyMsg(getString('gText_RemoveMailBeforeItem') || '');
   _phase = 'item_used_msg';
   _drawMsg();
 }
@@ -3091,10 +3187,16 @@ const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
  *  REVENIR au choix du mon (≈ décomp Task_ReturnToChooseMonAfterText /
  *  Task_CancelAfterAorBPress — ne FERME pas le menu, contrairement à
  *  item_used_msg). Strip des placeholders {…} (PAUSE_UNTIL_PRESS, etc.). */
-function _displayFieldMoveErrorMessage(stringKey: string): void {
-  const raw = getString(stringKey) || '';
-  _itemUsedMsgText = raw.replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
-  _phase = 'field_move_err';
+function _displayFieldMoveErrorMessage(stringKey: string, cancelOnPress = false): void {
+  // 1:1 texte décomp COMPLET. Deux continuations décomp distinctes :
+  //   - badge manquant (gText_CantUseUntilNewBadge, AVEC {PAUSE_UNTIL_PRESS}) →
+  //     Task_ReturnToChooseMonAfterText (:1745) = phase 'field_move_err' (ferme
+  //     dès que le printer est inactif — le A est consommé par la pause) ;
+  //   - « Impossible ici. » etc. (messages STD SANS pause, party_menu.c:3774-3777)
+  //     → Task_CancelAfterAorBPress (:3838) = phase 'field_move_cancel' (attend
+  //     un press A/B → CursorCb_Cancel1 = retour choix-mon).
+  _itemUsedMsgText = _preparePartyMsg(getString(stringKey) || '');
+  _phase = cancelOnPress ? 'field_move_cancel' : 'field_move_err';
   _drawMsg();
 }
 
@@ -3164,17 +3266,18 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
         //   else CANT_SURF_HERE.  (PLAYER_AVATAR_FLAG_SURFING = 1<<3 = 8.)
         const testFlags = (globalThis as Record<string, unknown>).__TestPlayerAvatarFlags as ((f: number) => number) | undefined;
         _displayFieldMoveErrorMessage(
-          (testFlags?.(8) ?? 0) !== 0 ? 'gText_AlreadySurfing' : 'gText_CantSurfHere');
+          (testFlags?.(8) ?? 0) !== 0 ? 'gText_AlreadySurfing' : 'gText_CantSurfHere', true);
         break;
       }
       case FIELD_MOVE_FLASH:
         // 1:1 décomp DisplayCantUseFlashMessage (party_menu.c:3844) :
         //   if (FlagGet(FLAG_SYS_USE_FLASH)) ALREADY_IN_USE  else CANT_USE_HERE.
         _displayFieldMoveErrorMessage(
-          FlagGet('FLAG_SYS_USE_FLASH') ? 'gText_InUseAlready_PM' : 'gText_CantUseHere');
+          FlagGet('FLAG_SYS_USE_FLASH') ? 'gText_InUseAlready_PM' : 'gText_CantUseHere', true);
         break;
       default:
-        _displayFieldMoveErrorMessage(cb.msgId);
+        // 1:1 :3774-3777 DisplayPartyMenuStdMessage(msgId) + Task_CancelAfterAorBPress.
+        _displayFieldMoveErrorMessage(cb.msgId, true);
         break;
     }
   }
@@ -3262,21 +3365,15 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
   // Sub-state hp_anim : tick l'anim HP bar (= 1:1 PartyMenuModifyHP).
   if (_phase === 'hp_anim') { _tickHpAnim(); return; }
-  // Sub-state item used message : attend ack A/B press → close.
-  // 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472) : check
-  // !IsPartyMenuTextPrinterActive + A/B press → Task_ClosePartyMenu.
+  // Sub-state item used message. 1:1 décomp Task_ClosePartyMenuAfterText
+  // (party_menu.c:4472-4480) : `if (IsPartyMenuTextPrinterActive() != TRUE)
+  // Task_ClosePartyMenu(taskId);` — AUCUN press supplémentaire : le A qui lève
+  // le {PAUSE_UNTIL_PRESS} final du message est consommé par la pause du
+  // printer (pendant l'impression, A/B accélère via canABSpeedUpPrint).
   if (_phase === 'item_used_msg') {
-    // 1:1 : pendant l'impression, A/B accélère le texte (canABSpeedUpPrint) —
-    // la phase n'avance qu'une fois le printer inactif (gate de TOUS les Task_*
-    // .c via IsPartyMenuTextPrinterActive).
     if (_isPartyMenuTextPrinterActive()) return;
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);  // SE_SELECT
-      _itemUsedMsgText = null;
-      ClosePartyScreen();
-    }
+    _itemUsedMsgText = null;
+    ClosePartyScreen();
     return;
   }
   // Sub-state message d'erreur field-move (badge manquant / can't use) : attend
@@ -3286,11 +3383,28 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // 'helditem_msg' = même pattern : 1:1 décomp Task_UpdateHeldItemSprite →
   // Task_ReturnToChooseMonAfterText (party_menu.c:3267) — A/B → retour choix-mon.
   if (_phase === 'field_move_err' || _phase === 'helditem_msg') {
-    if (_isPartyMenuTextPrinterActive()) return;  // 1:1 gate printer (cf item_used_msg)
+    // 1:1 décomp Task_ReturnToChooseMonAfterText (party_menu.c:1745) :
+    // `if (IsPartyMenuTextPrinterActive() != TRUE) { … retour choix-mon }` —
+    // pas de press supplémentaire (le {PAUSE_UNTIL_PRESS} final est levé DANS
+    // le printer par le A du joueur).
+    if (_isPartyMenuTextPrinterActive()) return;
+    _itemUsedMsgText = null;
+    _actionList = [];
+    _actionCursor = 0;
+    _actionSubMenu = 'mon';
+    _phase = 'open';
+    _drawMsg();
+    return;
+  }
+  // 1:1 décomp Task_CancelAfterAorBPress (party_menu.c:3838) : messages
+  // « Impossible ici. » etc. SANS {PAUSE_UNTIL_PRESS} → attend un press A/B
+  // puis CursorCb_Cancel1 (= PlaySE(SE_SELECT) + retour choix-mon).
+  if (_phase === 'field_move_cancel') {
+    if (_isPartyMenuTextPrinterActive()) return;
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);  // SE_SELECT
+      PlaySE(5);  // SE_SELECT (CursorCb_Cancel1)
       _itemUsedMsgText = null;
       _actionList = [];
       _actionCursor = 0;
@@ -3350,15 +3464,13 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       if (AddBagItem(getItemKeyById(_giveOldItem), 1) === false) {
         // 1:1 :3171 pas de place pour rendre l'ancien → rollback (re-add new au sac).
         AddBagItem(getItemKeyById(_giveNewItem), 1);
-        _itemUsedMsgText = (getString('gText_BagFullCouldNotRemoveItem') || '')
-          .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+        _itemUsedMsgText = _preparePartyMsg(getString('gText_BagFullCouldNotRemoveItem') || '');
       } else if (mon) {
         // 1:1 :3186 échange : donne le nouveau, message "X a remplacé Y".
         GiveItemToMon(mon, _giveNewItem);
         _updatePartyMonHeldItem(_slotId);
-        _itemUsedMsgText = (getString('gText_SwitchedPkmnItem') || '')
-          .replace('{STR_VAR_1}', GetItemName(_giveNewItem)).replace('{STR_VAR_2}', GetItemName(_giveOldItem))
-          .replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+        _itemUsedMsgText = _preparePartyMsg(getString('gText_SwitchedPkmnItem') || '',
+          GetItemName(_giveNewItem), GetItemName(_giveOldItem));
       }
       // Continuation : DONNER (party→bag) revient au choix-mon (phase 'helditem_msg') ;
       // GIVE-FROM-BAG (#12) ferme → SAC (phase 'item_used_msg' = close→savedCallback).
@@ -3580,11 +3692,12 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         ClosePartyScreen();
         return;
       }
-      // 1:1 décomp IsSelectedMonNotEgg : on évite slot vide/egg. Notre party
-      // n'a pas d'œuf encore, on check juste mon présent.
+      // 1:1 décomp IsSelectedMonNotEgg (party_menu.c:1928) : œuf →
+      // PlaySE(SE_FAILURE) + FALSE (= skip). Slot vide = skip silencieux.
       const party = _party();
       const mon = party[_slotId];
       if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
+      if (mon.isEgg) { PlaySE(SE_FAILURE); return; }  // 1:1 IsSelectedMonNotEgg
       // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
       const cb = (globalThis as Record<string, unknown>).gItemUseCB as
         | ((taskId: number, returnTask: ((task: DecompTask) => void) | null) => void)
@@ -3608,6 +3721,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       const party = _party();
       const mon = party[_slotId];
       if (!mon) return;              // 1:1 IsSelectedMonNotEgg FALSE = silent skip.
+      if (mon.isEgg) { PlaySE(SE_FAILURE); return; }  // 1:1 IsSelectedMonNotEgg (œuf)
       PlaySE(5);                     // 1:1 :1340 PlaySE(SE_SELECT)
       TryGiveItemOrMailToSelectedMon();
     } else if (_partyAction === PARTY_ACTION_SEND_OUT) {

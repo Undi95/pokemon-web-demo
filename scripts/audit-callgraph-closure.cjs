@@ -19,7 +19,8 @@
  * NE PAS committer le JSON (comme les autres audit-reports).
  *
  * Conventions de nommage acceptées côté TS (statiques historiques) :
- *   Name (exact) · _Name · _name (underscore + lowerFirst) → PORTÉ (drift noté).
+ *   Name (exact) · Name_Manual (port manuel, ex. CB2_ReturnToField_Manual)
+ *   · _Name · _name (underscore + lowerFirst) → PORTÉ (drift noté, champ variant).
  *   name nu (lowerFirst sans underscore) → PAS compté porté, listé « suspect ».
  */
 
@@ -250,7 +251,9 @@ function findPorted(name, kind = 'fn') {
   const key = kind + ':' + name;
   if (portedCache.has(key)) return portedCache.get(key);
   let r = null;
-  for (const v of [name, '_' + name, '_' + lowerFirst(name)]) {
+  // Name_Manual = convention repo « port manuel » (CB2_ReturnToField_Manual…) ;
+  // le variant matché est reporté tel quel dans le champ `variant` (JSON/console).
+  for (const v of [name, name + '_Manual', '_' + name, '_' + lowerFirst(name)]) {
     if (tsDefs.has(v)) { r = { variant: v, exact: v === name, files: tsDefs.get(v) }; break; }
     // une DATA/macro/script peut vivre en propriété de l'objet runtime (decomp-globals/runtime)
     if (kind !== 'fn' && tsProps.has(v)) { r = { variant: v, exact: v === name, prop: true, files: tsProps.get(v) }; break; }
@@ -403,7 +406,7 @@ const scripts = sorted.filter(([, i]) => i.kind === 'script');
 const totalFns = [...fnDefs.values()].reduce((n, v) => n + v.length, 0);
 console.log(`Décomp : ${decompFiles.length} .c (+headers src & include, data asm) · ${totalFns} fonctions · ${dataDefs.size} data · ${macroDefs.size} macros · ${scriptDefs.size} labels scripts`);
 console.log(`Mirror : ${tsFiles.length} fichiers .ts · ${tsDefs.size} défs fortes · ${tsProps.size} propriétés`);
-console.log(`Fonctions décomp portées : ${portedRoots} (${exactRoots} exactes, ${portedRoots - exactRoots} driftées _nom)`);
+console.log(`Fonctions décomp portées : ${portedRoots} (${exactRoots} exactes, ${portedRoots - exactRoots} driftées _nom/_Manual)`);
 console.log(`\n=== GAPS DIRECTS fn+data : ${core.length} symboles manquants requis par des fonctions portées ===\n`);
 function printGap(name, info) {
   const req = info.requiredBy.slice(0, 5).join(', ') + (info.requiredBy.length > 5 ? ` +${info.requiredBy.length - 5}` : '');

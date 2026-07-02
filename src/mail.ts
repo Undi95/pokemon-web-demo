@@ -78,7 +78,7 @@ import {
 import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './window';
 import { loadTileBin, loadGbaPal, loadTilemapBin } from '../harness/gba/png-loader';
 import { ConvertEasyChatWordsToString, CopyEasyChatWord } from './easy_chat';
-import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded, UpdateMailMonIcon } from './pokemon_icon';
+import { GetIconSpeciesNoPersonality, LoadMonIconPalette, CreateMonIconNoPersonality, FreeMonIconPalette, FreeAndDestroyMonIconSprite, PreloadMonIcon, IsMonIconLoaded } from './pokemon_icon';
 import { RunTextPrinters, DeactivateAllTextPrinters, FONT_NORMAL, GetStringCenterAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { StringCopy, StringAppend, StringLength } from '../include/string_util';
@@ -876,9 +876,9 @@ function VBlankCB_MailRead(): void {
 function CB2_MailRead(): void {
   if (!sMailRead) return;
   if (sMailRead.iconType !== ICON_TYPE_NONE) {
-    // M3 : avance le bob de l'icône mon (le décomp le fait via le système d'anim
-    // sprite dans AnimateSprites ; notre sprite CreateSpriteAtOam n'a pas d'anim).
-    UpdateMailMonIcon();
+    // 1:1 ROM : l'icône est FIGÉE frame 0 (SpriteCallbackDummy + animPaused=TRUE
+    // posé par CreateMonIconSprite, pokemon_icon.c:1289) — AnimateSprites ne
+    // l'avance pas.
     AnimateSprites();
     BuildOamBuffer();
   }

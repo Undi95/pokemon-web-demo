@@ -72,39 +72,13 @@ export function PreloadMonIcon(iconSpecies: number): void {
 
 let _iconPalSlot = -1;
 
-// ─── Bob idle 2-frames (1:1 décomp sMonIconAnims sAnim_0 : frame 0/1, dur 6) ──
-// Le décomp pilote ça via le système d'anim sprite (UpdateMonIconFrame). Notre
-// sprite CreateSpriteAtOam n'a pas d'anim → on toggle oam.tileId à la main,
-// piloté par le render-loop du mail (CB2_MailRead → UpdateMailMonIcon).
-let _mailIconSpriteId = 0xFF;
-let _mailIconTileStart = 0;
-let _mailIconAnimDelay = 0;
-let _mailIconCmdIdx = 0;
-const _mailIconAnimDur = 6; // sAnim_0 : {img:0,dur:6},{img:1,dur:6},jump:0
-
-function _setMailIconFrame(img: number): void {
-  const rt = getRuntime();
-  if (!rt || _mailIconSpriteId === 0xFF) return;
-  const spr = rt.gSprites[_mailIconSpriteId];
-  if (!spr) return;
-  const oam = rt.gba.oam[spr.oamIndex];
-  if (!oam) return;
-  oam.tileId = _mailIconTileStart + img * ICON_TILES_PER_FRAME;
-}
-
-/** 1:1 décomp `UpdateMonIconFrame` (pokemon_icon.c:1235) pour l'icône mail, anim
- *  sAnim_0. Appelé chaque frame par CB2_MailRead (= AnimateSprites du décomp qui
- *  avance l'anim sprite). No-op si pas d'icône. */
-export function UpdateMailMonIcon(): void {
-  if (_mailIconSpriteId === 0xFF) return;
-  if (_mailIconAnimDelay === 0) {
-    _setMailIconFrame(_mailIconCmdIdx); // cmdIdx ∈ {0,1} = img
-    _mailIconAnimDelay = _mailIconAnimDur;
-    _mailIconCmdIdx ^= 1; // toggle frame 0↔1 (= jump:0 loop)
-  } else {
-    _mailIconAnimDelay--;
-  }
-}
+// NOTE 1:1 : les icônes créées via CreateMonIconNoPersonality avec
+// SpriteCallbackDummy sont FIGÉES frame 0 en ROM — CreateMonIconSprite
+// (pokemon_icon.c:1289-1290) pose animPaused=TRUE + animBeginning=FALSE, et
+// sprite.c (ContinueAnim/DecrementAnimDelayCounter) est gaté sur animPaused.
+// Seuls les écrans qui passent un callback per-frame (SpriteCB_MonIcon du
+// party menu, trade, battle dome…) font bobber l'icône. Mail et naming screen
+// = statiques.
 
 /** 1:1 décomp `void LoadMonIconPalette(u16 species)` (pokemon_icon.c:1152). */
 export function LoadMonIconPalette(iconSpecies: number): void {
@@ -114,8 +88,10 @@ export function LoadMonIconPalette(iconSpecies: number): void {
 }
 
 /** 1:1 décomp `u8 CreateMonIconNoPersonality(species, callback, x, y, subpriority, handleDeoxys)`
- *  (pokemon_icon.c:1051). Port : sprite STATIQUE (frame 0) via LoadSpriteSheet +
- *  CreateSpriteAtOam. Les 2 frames sont chargées (bob = raffinement à venir). */
+ *  (pokemon_icon.c:1051). Port : sprite statique frame 0 via LoadSpriteSheet +
+ *  CreateSpriteAtOam = comportement ROM exact pour un callback SpriteCallbackDummy
+ *  (animPaused=TRUE à la création, cf. note en tête). Les 2 frames sont chargées
+ *  pour les futurs écrans à SpriteCB_MonIcon (party menu, trade…). */
 export function CreateMonIconNoPersonality(
   iconSpecies: number,
   _callback: ((sprite: unknown) => void) | null,
@@ -135,11 +111,6 @@ export function CreateMonIconNoPersonality(
     priority: 1,
     subpriority,
   });
-  // État du bob idle (toggle frame 0/1 piloté par UpdateMailMonIcon).
-  _mailIconSpriteId = spr.spriteId;
-  _mailIconTileStart = tileStart;
-  _mailIconAnimDelay = 0;
-  _mailIconCmdIdx = 0;
   return spr.spriteId;
 }
 
@@ -155,6 +126,4 @@ export function FreeAndDestroyMonIconSprite(spriteId: number): void {
   if (!rt || spriteId === 0xFF) return;
   _freeSpriteTileRangeByTag(ICON_SHEET_TAG);
   DestroySprite(spriteId);
-  if (spriteId === _mailIconSpriteId) _mailIconSpriteId = 0xFF; // stoppe le bob
-
 }

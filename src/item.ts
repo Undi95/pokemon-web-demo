@@ -14,7 +14,10 @@ import { sTMHMMoves as _sTMHMMoves } from './engine/pokemon/tmhm-moves';
  *  bag-pockets.slotItemId qui fait le sens inverse. getItemKeyById fait
  *  numéric → enum-numbered ("ITEM_TM01") via constants.items reverse ;
  *  on convertit ensuite en move-named via sTMHMMoves (= clé items.json).
- *  Sans ça, getItem("ITEM_TM01") rate (items.json n'a que "ITEM_TM_…"). */
+ *  Sans ça, getItem("ITEM_TM01") rate (items.json n'a que "ITEM_TM_…").
+ *  Exposé sous `GetBagItemKey` pour RemoveBagItem/AddBagItem/CheckBagHasItem
+ *  qui attendent la CLÉ items.json (⚠️ getItemKeyById brut renvoie
+ *  "ITEM_TM01" → CheckBagHasItem rate → RemoveBagItem no-op silencieux). */
 function _itemKeyForLookup(itemId: number): string {
   const enumKey = _getItemKeyById(itemId);
   if (enumKey.startsWith('ITEM_TM') && /^\d+$/.test(enumKey.slice(7))) {
@@ -27,6 +30,13 @@ function _itemKeyForLookup(itemId: number): string {
     if (move) return 'ITEM_HM_' + move.slice(5);
   }
   return enumKey;
+}
+
+/** Clé items.json (= clé SAC) d'un itemId numérique — `_itemKeyForLookup`
+ *  exposé (TM/HM enum-numbered → move-named). À utiliser pour RemoveBagItem/
+ *  AddBagItem/CheckBagHasItem (leçon : CheckBagHasItem attend une CLÉ). */
+export function GetBagItemKey(itemId: number): string {
+  return _itemKeyForLookup(itemId);
 }
 
 /** 1:1 décomp `src/item.c:879 GetItemName(itemId)` :

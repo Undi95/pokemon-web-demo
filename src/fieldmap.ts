@@ -696,6 +696,16 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
   return header;
 }
 
+/** Accès SYNC au cache des map headers (clé = constante 'MAP_*'). Consommé par
+ *  `Overworld_GetMapHeaderByGroupAndId` (overworld.ts) — la décomp lit
+ *  `gMapGroups[group][num]` en ROM (sync) ; notre équivalent est ce cache,
+ *  peuplé par `loadMapHeader` (boot + prefetch connexions depth 2 + pré-chargement
+ *  du header destination avant un warp, executeWarp Phase 2). Retourne null si
+ *  la map n'a jamais été chargée. */
+export function getCachedMapHeader(mapId: string): MapHeader | null {
+  return mapHeaderCache.get(mapId) ?? null;
+}
+
 /** Pré-load complet d'une map (= tilesets + layout + header + connexions).
  *  Set `gMapHeader`. Synchroniquement disponible après.
  *

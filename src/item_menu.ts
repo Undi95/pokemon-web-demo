@@ -36,7 +36,7 @@ import { ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2, ITEMMEN
 import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT } from '../include/constants/item';
 import { BG_SCREEN_SIZE } from '../include/gba/defines';
 import { ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01, ITEM_CHERI_BERRY, ITEM_MACH_BIKE, ITEM_ACRO_BIKE, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../include/constants/items';
-import { SE_SELECT } from '../include/constants/songs';
+import { SE_SELECT, SE_PC_LOGIN } from '../include/constants/songs';
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../harness/runtime/decomp-globals';
 import { SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from './task';
 import { BeginNormalPaletteFade } from './palette';
@@ -2520,21 +2520,20 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       return;
     }
     case 'ItemUseOutOfBattle_TMHM': {
-      // 1:1 décomp item_use.c:807-825 ItemUseOutOfBattle_TMHM :
-      //     RemoveUsingBlankMessageBox;
-      //     DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpTM_HM,
-      //                        BootUpSound_TMHM);
-      // → message "CT activée."/"CS activée." + YesNoBox "Apprendre {move}
-      // à un POKéMON ?" + UseTMHM = setItemUseCB(ItemUseCB_TMHM) +
-      // SetUpItemUseCallback. Notre 1ère itération : skip le YES/NO box
-      // (= polish), enchaîne direct setItemUseCB + SetUpItemUseCallback.
-      // L'utilisateur verra le party-screen "Apprendre à quel POKéMON ?".
+      // 1:1 décomp item_use.c:789-795 ItemUseOutOfBattle_TMHM :
+      //     if (gSpecialVar_ItemId >= ITEM_HM01)
+      //         DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpHM, BootUpSoundTMHM);
+      //     else
+      //         DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpTM, BootUpSoundTMHM);
+      // Chaîne complète : BootUpSoundTMHM (SE_PC_LOGIN) → Task_ShowTMHMContainedMessage
+      // (A/B → "Elle contient {move}. Apprendre {move} à un POKéMON?") → UseTMHMYesNo
+      // → OUI = UseTMHM (gItemUseCB = ItemUseCB_TMHM + SetUpItemUseCallback) /
+      // NON = CloseItemMessage.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, _itemMsg('gText_NoPokemon'));
         return;
       }
-      setItemUseCB(ItemUseCB_TMHM);
-      SetUpItemUseCallback(task);
+      ItemUseOutOfBattle_TMHM(task);
       return;
     }
     case 'ItemUseOutOfBattle_PPRecovery': {
@@ -3056,6 +3055,60 @@ function CloseItemMessage(task: DecompTask): void {
   RemoveItemMessageWindow(ITEMWIN_MESSAGE);
   _CtxReturnToListWithRebuild(task.taskId);
 }
+
+// ─── Chaîne CT/CS (1:1 item_use.c:789-822) ────────────────────────────────────
+// ItemUseOutOfBattle_TMHM → BootUpSoundTMHM → Task_ShowTMHMContainedMessage →
+// UseTMHMYesNo → { UseTMHM | CloseItemMessage }. Transcrite ICI (comme les autres
+// ItemUseOutOfBattle_* du dispatch) car elle consomme l'infra message/YesNo
+// privée du sac (DisplayItemMessage / sContextMenuWindowTemplates).
+
+/** 1:1 `void ItemUseOutOfBattle_TMHM(u8 taskId)` (item_use.c:789-795). */
+function ItemUseOutOfBattle_TMHM(task: DecompTask): void {
+  if (gSpecialVar.ItemId >= ITEM_HM01)
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(getString('gText_BootedUpHM')), BootUpSoundTMHM);   // HM
+  else
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(getString('gText_BootedUpTM')), BootUpSoundTMHM);   // TM
+}
+
+/** 1:1 `static void BootUpSoundTMHM(u8 taskId)` (item_use.c:797-801) :
+ *  PlaySE(SE_PC_LOGIN) + `gTasks[taskId].func = Task_ShowTMHMContainedMessage`.
+ *  (Pattern task : le runtime passe l'OBJET task à func.) */
+function BootUpSoundTMHM(task: DecompTask): void {
+  PlaySE(SE_PC_LOGIN);
+  task.func = Task_ShowTMHMContainedMessage;
+}
+
+/** 1:1 `static void Task_ShowTMHMContainedMessage(u8 taskId)` (item_use.c:803-811) :
+ *  JOY_NEW(A|B) → gStringVar1 = gMoveNames[ItemIdToBattleMoveId(item)] +
+ *  gText_TMHMContainedVar1 ("Elle contient {move}. Apprendre {move} à un
+ *  POKéMON?") → DisplayItemMessage(…, UseTMHMYesNo). */
+function Task_ShowTMHMContainedMessage(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const KEY_A = 0x0001, KEY_B = 0x0002;   // A_BUTTON | B_BUTTON
+  if (rt.gMain.newKeys & (KEY_A | KEY_B)) {
+    const moveName = getMoveName(ItemIdToBattleMoveId(gSpecialVar.ItemId)) || '';
+    const msg = (getString('gText_TMHMContainedVar1') || '').replace(/\{STR_VAR_1\}/g, moveName);
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(msg), UseTMHMYesNo);
+  }
+}
+
+/** 1:1 `static void UseTMHMYesNo(u8 taskId)` (item_use.c:813-816) :
+ *  BagMenu_YesNo(taskId, ITEMWIN_YESNO_HIGH, &sUseTMHMYesNoFuncTable). */
+function UseTMHMYesNo(task: DecompTask): void {
+  // 1:1 décomp BagMenu_YesNo = CreateYesNoMenuWithCallbacks(taskId, template, 1, 0, 2, 1, 14, funcs).
+  CreateYesNoMenuWithCallbacks(task.taskId, sContextMenuWindowTemplates[ITEMWIN_YESNO_HIGH], 1, 0, 2, 1, 14, sUseTMHMYesNoFuncTable);
+}
+
+/** 1:1 `static void UseTMHM(u8 taskId)` (item_use.c:818-822) :
+ *  gItemUseCB = ItemUseCB_TMHM ; SetUpItemUseCallback(taskId). */
+function UseTMHM(task: DecompTask): void {
+  setItemUseCB(ItemUseCB_TMHM);
+  SetUpItemUseCallback(task);
+}
+
+/** 1:1 `sUseTMHMYesNoFuncTable` (item_use.c:80) = { UseTMHM, CloseItemMessage }. */
+const sUseTMHMYesNoFuncTable = { yesFunc: UseTMHM, noFunc: CloseItemMessage };
 
 /** 1:1 décomp `Task_ItemContext_GiveToParty` (item_menu.c:1631) : en mode
  *  ITEMMENULOCATION_PARTY (= choisir un objet à DONNER comme objet tenu à un mon),

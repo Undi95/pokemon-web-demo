@@ -9,7 +9,7 @@
 
 import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { gMapHeader, type MapConnection } from './fieldmap';
+import { gMapHeader, getCachedMapHeader, type MapConnection } from './fieldmap';
 import {
   getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
@@ -43,8 +43,10 @@ import {
 import * as SongsTable from '../include/constants/songs';
 import {
   PlayNewMapMusic, GetCurrentMapMusic, FadeOutAndPlayNewMapMusic,
-  FadeOutAndFadeInNewMapMusic, ResetMapMusic,
+  FadeOutAndFadeInNewMapMusic, ResetMapMusic, FadeOutMapMusic,
+  IsNotWaitingForBGMStop,
 } from './sound';
+import { MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE } from '../include/constants/map_types';
 import { MAP_CONSTANTS } from '../include/constants/map_groups';
 import { GetSavedWeather } from './field_weather_effect';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
@@ -65,13 +67,25 @@ const gMaxFlashLevel = 8;
 //
 // Décyclé du bridge (foyer 1:1 = overworld.c). Notre map data est async (fetch
 // JSON) alors que la fn décomp est sync (`return gMapGroups[mapGroup][mapNum];`).
-// Stopgap port : on lit un registre peuplé par `defineMapHeaderEntry`, sinon on
-// retourne un header structurellement vide pour éviter le crash. NOTE : à ce jour
-// `defineMapHeaderEntry` n'a aucun appelant → le getter retourne toujours le
-// fallback (les consommateurs de mapType routent sur `gMapHeader.mapType`).
+// Port : (1) registre `defineMapHeaderEntry` (legacy, vide à ce jour), puis
+// (2) cache SYNC de fieldmap.ts (`getCachedMapHeader`, peuplé par loadMapHeader :
+// boot + prefetch connexions + pré-chargement du header dest avant warp) via le
+// reverse-index MAP_CONSTANTS (group, num) → 'MAP_*'. Sinon header
+// structurellement vide pour éviter le crash.
 const _mapHeaderRegistry = new Map<string, any>();
 export function defineMapHeaderEntry(key: string, header: any): void {
   _mapHeaderRegistry.set(key, header);
+}
+/** Reverse-index (group<<8|num) → nom 'MAP_*', construit lazy depuis MAP_CONSTANTS
+ *  (map_groups.ts, généré 1:1 depuis map_groups.json). */
+let _mapNameByPacked: Map<number, string> | null = null;
+function _mapNameByGroupAndNum(mapGroup: number, mapNum: number): string | undefined {
+  if (!_mapNameByPacked) {
+    _mapNameByPacked = new Map<number, string>();
+    for (const [name, packed] of Object.entries(MAP_CONSTANTS))
+      _mapNameByPacked.set(packed, name);
+  }
+  return _mapNameByPacked.get(((mapGroup & 0xFF) << 8) | (mapNum & 0xFF));
 }
 /** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :
  *    return gMapGroups[mapGroup][mapNum]; */
@@ -79,6 +93,12 @@ export function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: num
   const key = `${mapGroup}.${mapNum}`;
   const header = _mapHeaderRegistry.get(key);
   if (header) return header;
+  // gMapGroups en ROM = lecture sync ; équivalent port = cache fieldmap.
+  const name = _mapNameByGroupAndNum(mapGroup, mapNum);
+  if (name) {
+    const cached = getCachedMapHeader(name);
+    if (cached) return cached;
+  }
   // Fallback : header structurellement vide (champs .music/.mapType/.battleType = 0/undef).
   return {
     mapLayoutId: 0,
@@ -108,6 +128,20 @@ export function Overworld_MapTypeAllowsTeleportAndFly(mapType: string | number |
       || mapType === 'MAP_TYPE_TOWN'
       || mapType === 'MAP_TYPE_OCEAN_ROUTE'
       || mapType === 'MAP_TYPE_CITY';
+}
+
+/** 1:1 décomp `bool8 IsMapTypeIndoors(u8 mapType)` (overworld.c:1377-1384) :
+ *    if (mapType == MAP_TYPE_INDOOR || mapType == MAP_TYPE_SECRET_BASE) return TRUE;
+ *  `mapType` = STRING dans les headers JSON du port (ex. 'MAP_TYPE_INDOOR') ;
+ *  accepte aussi la forme numérique (registre legacy). */
+export function IsMapTypeIndoors(mapType: string | number | undefined): boolean {
+  if (mapType === 'MAP_TYPE_INDOOR'
+   || mapType === 'MAP_TYPE_SECRET_BASE'
+   || mapType === MAP_TYPE_INDOOR
+   || mapType === MAP_TYPE_SECRET_BASE)
+    return true;
+  else
+    return false;
 }
 
 /** 1:1 STRICT décomp `Overworld_ResetStateAfterTeleport(void)` (overworld.c:partie sup.) :
@@ -241,6 +275,70 @@ export function Overworld_ClearSavedMusic(): void {
   gSaveBlock1Ptr.savedMusic = MUS_DUMMY;
 }
 
+// ─── sWarpDestination + chaîne warp (1:1 overworld.c:194 + 540-641) ──────────
+
+/** 1:1 décomp `EWRAM_DATA static struct WarpData sWarpDestination = {0};`
+ *  (overworld.c:194) — destination du prochain warp. Posée par
+ *  `SetWarpDestination*` (sites : executeWarp harness = SetupWarp/Do*Warp,
+ *  SetDiveWarp warp-system.ts, handleConnectionTransition =
+ *  LoadMapFromCameraTransition:788) ; consommée par GetWarpDestinationMusic,
+ *  GetDestinationWarpMapHeader/GetMapMusicFadeoutSpeed, TryFadeOutOldMapMusic
+ *  et ApplyCurrentWarp. */
+const sWarpDestination: WarpData = { mapGroup: 0, mapNum: 0, warpId: 0, x: 0, y: 0 };
+
+/** 1:1 décomp `static void SetWarpData(struct WarpData *warp, s8 mapGroup,
+ *  s8 mapNum, s8 warpId, s8 x, s8 y)` (overworld.c:554-561). */
+function SetWarpData(warp: WarpData, mapGroup: number, mapNum: number, warpId: number, x: number, y: number): void {
+  warp.mapGroup = mapGroup;
+  warp.mapNum = mapNum;
+  warp.warpId = warpId;
+  warp.x = x;
+  warp.y = y;
+}
+
+/** 1:1 décomp `void SetWarpDestination(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)`
+ *  (overworld.c:633-636) : SetWarpData(&sWarpDestination, …). */
+export function SetWarpDestination(mapGroup: number, mapNum: number, warpId: number, x: number, y: number): void {
+  SetWarpData(sWarpDestination, mapGroup, mapNum, warpId, x, y);
+}
+
+/** ADAPTATION port (modèle warp name-based) : résout 'MAP_*' → (group, num) via
+ *  MAP_CONSTANTS puis SetWarpDestination 1:1. Consommé par les call-sites décomp
+ *  qui chez nous transportent le NOM de map (executeWarp, SetDiveWarp
+ *  warp-system.ts, handleConnectionTransition). Map inconnue → (-1, -1)
+ *  (≈ MAP_UNDEFINED) : GetLocationMusic retombera sur le header vide (music 0). */
+export function SetWarpDestinationFromMapName(mapName: string, warpId: number, x: number, y: number): void {
+  const packed = MAP_CONSTANTS[mapName];
+  if (packed === undefined) {
+    console.warn(`[overworld] SetWarpDestinationFromMapName : map inconnue '${mapName}'`);
+    SetWarpDestination(-1, -1, warpId, x, y);
+    return;
+  }
+  SetWarpDestination(packed >> 8, packed & 0xFF, warpId, x, y);
+}
+
+/** 1:1 décomp `struct MapHeader const *const GetDestinationWarpMapHeader(void)`
+ *  (overworld.c:584-587). */
+export function GetDestinationWarpMapHeader(): any {
+  return Overworld_GetMapHeaderByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
+}
+
+/** 1:1 décomp `void ApplyCurrentWarp(void)` (overworld.c:540-546) :
+ *    gLastUsedWarp = gSaveBlock1Ptr->location;
+ *    gSaveBlock1Ptr->location = sWarpDestination;
+ *    sFixedDiveWarp = sDummyWarpData;
+ *    sFixedHoleWarp = sDummyWarpData;
+ *  `gLastUsedWarp` a son foyer dans warp-system.ts (qui importe overworld →
+ *  cycle ESM) → pont `globalThis.__setLastUsedWarp` posé par warp-system.
+ *  `sFixedDiveWarp`/`sFixedHoleWarp` : statics non portés (dette dive/hole fixe
+ *  documentée dans warp-system.ts SetDiveWarp) → les 2 clears sont sans objet. */
+export function ApplyCurrentWarp(): void {
+  const setLast = (globalThis as Record<string, unknown>).__setLastUsedWarp as
+    ((w: WarpData) => void) | undefined;
+  setLast?.(gSaveBlock1Ptr.location as WarpData);
+  gSaveBlock1Ptr.location = { ...sWarpDestination };
+}
+
 // ─── Résolution musique de map (1:1 overworld.c:1010-1205) ───────────────────
 // 🐛 fix 2026-07-02 (évolution bug 4) : GetCurrLocationDefaultMusic/GetLocationMusic
 // n'avaient JAMAIS été portés (Overworld_PlaySpecialMapMusic = stub savedMusic-only)
@@ -265,7 +363,10 @@ function TestPlayerAvatarFlags(flags: number): boolean {
   return !!(f && f(flags));
 }
 
-type WarpData = { mapGroup: number; mapNum: number };
+/** 1:1 décomp `struct WarpData { s8 mapGroup, mapNum, warpId; s16 x, y; }`
+ *  (global.h). Les helpers musique ne lisent que group/num ; sWarpDestination
+ *  et TryFadeOutOldMapMusic (check Sootopolis x/y) utilisent les 5 champs. */
+type WarpData = { mapGroup: number; mapNum: number; warpId: number; x: number; y: number };
 
 /** `mapHeader->music` : chez nous le header JSON porte la STRING 'MUS_*' →
  *  résolution via la table songs (même pattern que TestOverworldScene). */
@@ -346,9 +447,10 @@ function IsInfiltratedSpaceCenter(warp: WarpData): boolean {
 }
 
 /** 1:1 décomp `u16 GetLocationMusic(struct WarpData *warp)` (overworld.c:1082-1094).
- *  ADAPTATION : `Overworld_GetMapHeaderByGroupAndId(...)->music` — notre registre
- *  de headers est vide à ce jour (fallback music:0) → pour la location COURANTE
- *  on lit le gMapHeader LIVE (fieldmap, music = STRING 'MUS_*'). */
+ *  ADAPTATION : `Overworld_GetMapHeaderByGroupAndId(...)->music` est désormais
+ *  résolu via le cache fieldmap (loadMapHeader) — pour la location COURANTE on
+ *  garde le raccourci gMapHeader LIVE (music = STRING 'MUS_*'), robuste si
+ *  location n'est pas encore synchronisée (boot). */
 function GetLocationMusic(warp: WarpData): number {
   if (NoMusicInSootopolisWithLegendaries(warp))
     return MUS_NONE;
@@ -387,18 +489,19 @@ export function GetCurrLocationDefaultMusic(): number {
   }
 }
 
-/** 1:1 décomp `u16 GetWarpDestinationMusic(void)` (overworld.c:1120-1135).
- *  ADAPTATION : `sWarpDestination` (static overworld.c) non exposé chez nous —
- *  notre unique caller (TransitionMapMusic, cross-connexion TestOverworldScene)
- *  tourne quand gMapHeader/location SONT déjà la map de destination →
- *  GetLocationMusic(location courante). La branche MUS_ROUTE118 garde la
- *  comparaison Mauville 1:1. */
+/** 1:1 décomp `u16 GetWarpDestinationMusic(void)` (overworld.c:1120-1135) :
+ *    u16 music = GetLocationMusic(&sWarpDestination);
+ *    if (music != MUS_ROUTE118) return music;
+ *    else → 110 si la location COURANTE est Mauville (route splittée), sinon 119.
+ *  sWarpDestination est posée AVANT (SetupWarp/SetDiveWarp/
+ *  LoadMapFromCameraTransition) — chez nous executeWarp Phase 2 /
+ *  SetDiveWarp / handleConnectionTransition via SetWarpDestinationFromMapName. */
 function GetWarpDestinationMusic(): number {
-  const loc = gSaveBlock1Ptr.location as WarpData | undefined;
-  const music = loc ? GetLocationMusic(loc) : 0;
+  const music = GetLocationMusic(sWarpDestination);
   if (music !== MUS_ROUTE118) {
     return music;
   } else {
+    const loc = gSaveBlock1Ptr.location as WarpData | undefined;
     if (loc && loc.mapGroup === MAP_GROUP(MC.MAP_MAUVILLE_CITY)
       && loc.mapNum === MAP_NUM(MC.MAP_MAUVILLE_CITY))
       return MUS_ROUTE110;
@@ -469,6 +572,57 @@ export function Overworld_ChangeMusicTo(newMusic: number): void {
   const currentMusic = GetCurrentMapMusic();
   if (currentMusic !== newMusic && currentMusic !== MUS_ABNORMAL_WEATHER)
     FadeOutAndPlayNewMapMusic(newMusic, 8);
+}
+
+/** 1:1 décomp `u8 GetMapMusicFadeoutSpeed(void)` (overworld.c:1207-1214) :
+ *    mapHeader = GetDestinationWarpMapHeader();
+ *    return IsMapTypeIndoors(mapHeader->mapType) == TRUE ? 2 : 4; */
+export function GetMapMusicFadeoutSpeed(): number {
+  const mapHeader = GetDestinationWarpMapHeader() as { mapType?: string | number } | undefined;
+  if (IsMapTypeIndoors(mapHeader?.mapType) === true)
+    return 2;
+  else
+    return 4;
+}
+
+/** 1:1 décomp `void TryFadeOutOldMapMusic(void)` (overworld.c:1216-1233) :
+ *  si FLAG_DONT_TRANSITION_MUSIC pas posé et que la musique de sWarpDestination
+ *  diffère de la courante → FadeOutMapMusic(GetMapMusicFadeoutSpeed()).
+ *  Exception : MUS_SURF conservé au warp intérieur de Sootopolis (29,53) pendant
+ *  VAR_SKY_PILLAR_STATE == 2 (cinématique Rayquaza).
+ *  Sites décomp : DoWarp/DoDiveWarp/DoWhiteFadeWarp/DoTeleportTileWarp/
+ *  DoMossdeepGymWarp/DoCableClubWarp/Task_ReturnToWorldFromLinkRoom/
+ *  Task_DoDoorWarp/DoContestHallWarp (field_screen_effect.c) + escalator/
+ *  Lavaridge/EscapeRope/Teleport (field_effect.c) — chez nous ces flux passent
+ *  tous par executeWarp Phase 2 (TestOverworldScene). */
+export function TryFadeOutOldMapMusic(): void {
+  const currentMusic = GetCurrentMapMusic();
+  const warpMusic = GetWarpDestinationMusic();
+  if (FlagGet('FLAG_DONT_TRANSITION_MUSIC') !== true && warpMusic !== GetCurrentMapMusic()) {
+    if (currentMusic === MUS_SURF
+      && VarGet('VAR_SKY_PILLAR_STATE') === 2
+      && gSaveBlock1Ptr.location.mapGroup === MAP_GROUP(MC.MAP_SOOTOPOLIS_CITY)
+      && gSaveBlock1Ptr.location.mapNum === MAP_NUM(MC.MAP_SOOTOPOLIS_CITY)
+      && sWarpDestination.mapGroup === MAP_GROUP(MC.MAP_SOOTOPOLIS_CITY)
+      && sWarpDestination.mapNum === MAP_NUM(MC.MAP_SOOTOPOLIS_CITY)
+      && sWarpDestination.x === 29
+      && sWarpDestination.y === 53)
+      return;
+    FadeOutMapMusic(GetMapMusicFadeoutSpeed());
+  }
+}
+
+/** 1:1 décomp `bool8 BGMusicStopped(void)` (overworld.c:1235-1238) :
+ *    return IsNotWaitingForBGMStop();
+ *  Consommé par Task_WarpAndLoadMap case 1 (field_screen_effect.c:657) — le
+ *  warp attend que le fade-out musique soit terminé avant WarpIntoMap. */
+export function BGMusicStopped(): boolean {
+  return IsNotWaitingForBGMStop();
+}
+
+/** 1:1 décomp `void Overworld_FadeOutMapMusic(void)` (overworld.c:1240-1243). */
+export function Overworld_FadeOutMapMusic(): void {
+  FadeOutMapMusic(4);
 }
 
 /** 1:1 décomp `Overworld_IsBikingAllowed` (overworld.c:959) :

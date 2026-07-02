@@ -25,6 +25,7 @@ import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-h
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import {
   loadMapByName,
+  loadMapHeader,
   InitMap,
   InitMapFromSavedGame,
   CopyMapTilesetsToVram,
@@ -165,7 +166,10 @@ import { setReservedSpritePaletteCount } from '../../src/sprite';
 import {
   SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters,
   Overworld_PlaySpecialMapMusic, TransitionMapMusic,
+  TryFadeOutOldMapMusic, BGMusicStopped, SetWarpDestinationFromMapName,
+  ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
 } from '../../src/overworld';
+import { MAP_CONSTANTS } from '../../include/constants/map_groups';
 import { OBJ_PALSLOT_COUNT } from '../../src/engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../../src/coord_event_weather';
@@ -976,6 +980,23 @@ export class TestOverworldScene extends Phaser.Scene {
     const header = await loadMapByName(mapId);
     console.log(`[TestOverworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
 
+    // Port `ApplyCurrentWarp` partiel pour les flux SANS Do*Warp (boot, resume,
+    // whiteout direct…) : load_save.ts pose location {mapGroup:0, mapNum:0}
+    // (stale) — on aligne group/num RÉELS depuis MAP_CONSTANTS[header.id]
+    // (source des checks 1:1 : GetCurrLocationDefaultMusic Route111,
+    // NoMusicInSootopolis, GetWarpDestinationMusic Mauville…). Les warps ont
+    // déjà location juste (ApplyCurrentWarp en Phase 3 d'executeWarp) → no-op.
+    {
+      const packed = MAP_CONSTANTS[header.id];
+      if (packed !== undefined) {
+        const loc = gSaveBlock1Ptr.location;
+        if (loc.mapGroup !== (packed >> 8) || loc.mapNum !== (packed & 0xFF)) {
+          loc.mapGroup = packed >> 8;
+          loc.mapNum = packed & 0xFF;
+        }
+      }
+    }
+
     // 1:1 décomp `ResetScreenForMapLoad` (overworld.c:2077, state 1 de
     // LoadMapInStepsLocal) — éteint l'affichage (DISPCNT=0) + reset OAM le temps
     // du map load. Sans DISPCNT=0, pendant les frames entre LoadMapTilesetPalettes
@@ -1511,10 +1532,45 @@ export class TestOverworldScene extends Phaser.Scene {
 
       // ─── Phase 2 : fade out (= WarpFadeOutScreen + SE_EXIT) ─────────────
       this.warpInProgress = true;
-      // 1:1 décomp `TryFadeOutOldMapMusic` : check si dest map music ID ≠ courante.
-      // TODO Phase 4.7 : implementer + wait BGMusicStopped. Pour l'instant : skip,
-      // Overworld_PlaySpecialMapMusic dans loadAndInitMap relance/dedup (guard
-      // GetCurrentMapMusic) automatiquement.
+      // 1:1 décomp `Do*Warp` (field_screen_effect.c:484/495/505/549/559…) :
+      // SetupWarp a posé sWarpDestination AVANT ; puis TryFadeOutOldMapMusic
+      // compare la musique de la dest à la courante et lance
+      // FadeOutMapMusic(GetMapMusicFadeoutSpeed()) si elles diffèrent.
+      // Port : résout la dest (MAP_DYNAMIC sync via GetDynamicWarp) + pré-charge
+      // le header dest (la décomp lit gMapGroups en ROM = sync ; chez nous le
+      // JSON doit être en cache pour GetLocationMusic/GetMapMusicFadeoutSpeed),
+      // puis pose sWarpDestination (overworld.ts).
+      {
+        let musicDestMapId = warp.destMap;
+        if (musicDestMapId === 'MAP_DYNAMIC')
+          musicDestMapId = GetDynamicWarp()?.mapId ?? musicDestMapId;
+        if (musicDestMapId !== 'MAP_DYNAMIC') {
+          try {
+            await loadMapHeader(musicDestMapId);
+          } catch (e) {
+            console.warn(`[executeWarp] préchargement header dest '${musicDestMapId}' KO :`, e);
+          }
+          if (warp.destMap === 'MAP_DYNAMIC') {
+            // 1:1 SetWarpDestinationToDynamicWarp (overworld.c:653) : copie le
+            // dynamicWarp ENTIER dans sWarpDestination (warpId/x/y du
+            // dynamicWarp, PAS ceux du warp event).
+            const dw = GetDynamicWarp();
+            SetWarpDestinationFromMapName(musicDestMapId, -1, dw?.x ?? -1, dw?.y ?? -1);
+          } else {
+            // 1:1 ScrCmd_warp (scrcmd.c:739) : warpId encodé u8 dans le
+            // byte-stream (WARP_ID_NONE = 0xFF) → cast s8 comme la décomp.
+            // Puis SetupWarp (field_control_avatar.c:817) : warpId valide →
+            // SetWarpDestinationToMapWarp(group, num, warpId) = x/y -1 ;
+            // warpsilent/coords explicites (warpId < 0) → coords transmises.
+            const warpIdS8 = (warp.warpId << 24) >> 24;
+            if (warpIdS8 >= 0)
+              SetWarpDestinationFromMapName(musicDestMapId, warpIdS8, -1, -1);
+            else
+              SetWarpDestinationFromMapName(musicDestMapId, warpIdS8, warp.x, warp.y);
+          }
+        }
+        TryFadeOutOldMapMusic();
+      }
       this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
       // 1:1 décomp `DoWarp` (field_screen_effect.c:484) : PlaySE(SE_EXIT) pour
       // step warps. Pour 'door' : SE déjà joué dans Task_DoDoorWarp.
@@ -1529,6 +1585,22 @@ export class TestOverworldScene extends Phaser.Scene {
         PlaySE(SE_WARP_IN);
       }
       await this.waitForFadeComplete();
+      // 1:1 décomp `Task_WarpAndLoadMap` case 1 (field_screen_effect.c:657-667) :
+      // attend `!PaletteFadeActive() && BGMusicStopped()` avant WarpIntoMap →
+      // le fade-out musique (TryFadeOutOldMapMusic) se termine AVANT le load.
+      // Garde-fou harness (pas décomp) : cap 10 s — le fade m4a court sur un
+      // setInterval wall-clock ; si l'audio est bloqué par le navigateur
+      // (autoplay policy), on ne gèle pas les warps pour autant.
+      {
+        const bgmWaitStart = performance.now();
+        while (!BGMusicStopped()) {
+          if (performance.now() - bgmWaitStart > 10000) {
+            console.warn('[executeWarp] BGMusicStopped timeout (10 s) — on continue');
+            break;
+          }
+          await new Promise<void>((r) => setTimeout(r, 17));
+        }
+      }
 
       // ─── Phase 3 : WarpIntoMap = load dest map + spawn ─────────────────
       // 1:1 décomp `WarpIntoMap` → `ApplyCurrentWarp` + `SetPlayerCoordsFromWarp`.
@@ -1608,6 +1680,12 @@ export class TestOverworldScene extends Phaser.Scene {
       // 1:1 décomp pattern utilisé par battle_pyramid_bag, berry_crush, contest, etc.
       // pendant les loads où on veut prevent palette flash.
       this.rt.gPaletteFade.bufferTransferDisabled = true;
+      // 1:1 décomp `Task_WarpAndLoadMap` case 2 → `WarpIntoMap()` →
+      // `ApplyCurrentWarp()` (overworld.c:540) : gLastUsedWarp = location ;
+      // location = sWarpDestination (group/num RÉELS — consommés par
+      // GetCurrLocationDefaultMusic/GetWarpDestinationMusic/NoMusicInSootopolis…).
+      // sWarpDestination a été posée en Phase 2 (y compris MAP_DYNAMIC résolue).
+      ApplyCurrentWarp();
       const destHeader = await this.loadAndInitMap(destMapId, destX, destY, destDir);
       console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
 
@@ -1922,11 +2000,25 @@ export class TestOverworldScene extends Phaser.Scene {
       UpdateObjectEvents(this.rt);
     });
 
-    // 1:1 décomp `TransitionMapMusic()` (overworld.c:1170, call-site
-    // LoadMapFromCameraTransition:792) : fade-out + play différé si la musique
-    // de la nouvelle map diffère (guards ABNORMAL_WEATHER/underwater/surf/vélo).
-    // gMapHeader est déjà la map de destination à ce point (posé ci-dessus).
-    TransitionMapMusic();
+    // 1:1 décomp `LoadMapFromCameraTransition` (overworld.c:788-794) :
+    //   SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, -1, -1);
+    //   if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER)
+    //       TransitionMapMusic();
+    //   ApplyCurrentWarp();
+    // Au moment du check décomp, gMapHeader = l'ANCIENNE map (LoadCurrentMapData
+    // arrive après) ; chez nous gMapHeader est déjà la nouvelle → on lit l'ancien
+    // header via location (pas encore ApplyCurrentWarp). Les 2 maps BF Outside
+    // West/East sont de toute façon toutes deux MAPSEC_BATTLE_FRONTIER.
+    // TransitionMapMusic : fade-out + play différé si la musique de la nouvelle
+    // map (= GetWarpDestinationMusic sur sWarpDestination) diffère (guards
+    // ABNORMAL_WEATHER/underwater/surf/vélo).
+    SetWarpDestinationFromMapName(newHeader.id, -1, -1, -1);
+    const oldHeaderForMusic = Overworld_GetMapHeaderByGroupAndId(
+      gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum,
+    ) as { regionMapSectionId?: string | number };
+    if (oldHeaderForMusic?.regionMapSectionId !== 'MAPSEC_BATTLE_FRONTIER')
+      TransitionMapMusic();
+    ApplyCurrentWarp();
 
     // 1:1 décomp `ShowMapNamePopup()` (overworld.c:822-824 fin LoadMapFromCameraTransition).
     // Skip si même mapsec (= e.g. cross-border vers même région). Internally

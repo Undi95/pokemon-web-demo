@@ -45,6 +45,9 @@ import { DynamicPlaceholderTextUtil_GetPlaceholderPtr } from './dynamic_placehol
 // fonctions, jamais au top-level). SE_SELECT = constants/songs.h.
 import { PlaySE, IsSEPlaying, getRuntime } from '../harness/runtime/decomp-globals';
 import { SE_SELECT } from '../include/constants/songs';
+// Résolution SE_*/MUS_* → id numérique pour l'encodage {PLAY_SE X}/{PLAY_BGM X}
+// (decomp-constants = feuille : n'importe que include/constants/* — pas de cycle).
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 // Migration TEXTE byte : init la charmap du miroir strings.ts (gText_ExpandedPlaceholder_*
 // FR + EncodePlayerNameFR) — appelé par loadFontData une fois la charmap chargée.
 import { InitTextData } from '../include/strings';
@@ -1515,6 +1518,24 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
         if (inner === 'WAIT_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_WAIT_SE); i = closeIdx + 1; continue; }
         if (inner === 'PLAY_BGM') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_BGM); i = closeIdx + 1; continue; }
         if (inner === 'PLAY_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_SE); i = closeIdx + 1; continue; }
+        // {PLAY_SE SE_X} / {PLAY_BGM MUS_X} à argument NOMMÉ (forme des textes extraits,
+        // ex. gText_12PoofForgotMove "{PLAY_SE SE_BALL_BOUNCE_1}Tadaa!") : 1:1 format
+        // binaire décomp = BEGIN + code + u16 LE (le renderer lit l'id → PlaySE/PlayBGM).
+        // La résolution SE_*/MUS_* → id passe par la table des constantes décomp
+        // (= même source que playse/playbgm du byte-VM).
+        const mSnd = inner.match(/^(PLAY_SE|PLAY_BGM)\s+(\S+)$/);
+        if (mSnd) {
+          const id = /^(\d|0x)/i.test(mSnd[2]) ? Number(mSnd[2]) : resolveDecompConstant(mSnd[2]);
+          if (typeof id === 'number' && Number.isFinite(id)) {
+            bytes.push(EXT_CTRL_CODE_BEGIN,
+              mSnd[1] === 'PLAY_SE' ? EXT_CTRL_CODE_PLAY_SE : EXT_CTRL_CODE_PLAY_BGM,
+              id & 0xFF, (id >> 8) & 0xFF);
+          } else {
+            console.warn('[text] encodeStringForFont: constante son non résolue', inner);
+          }
+          i = closeIdx + 1;
+          continue;
+        }
         // octet littéral {0xNN} (arg brut d'un code ext, ex. song id de PLAY_BGM).
         if (/^0x[0-9a-fA-F]{1,2}$/.test(inner)) { bytes.push(parseInt(inner, 16) & 0xFF); i = closeIdx + 1; continue; }
         // 1:1 décomp src/text.c:1023-1043 : COLOR/SHADOW/HIGHLIGHT/PAUSE + CLEAR/SKIP/
