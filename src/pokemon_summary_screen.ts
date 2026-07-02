@@ -2010,8 +2010,11 @@ function _setTypeIcons(): void {
   if (_typeSpriteIds.length === 0) _createMoveTypeIcons(); // sécurité si init sautée
   switch (sMon.currPageIndex) {
     case PSS_PAGE_INFO: _setMonTypeIcons(); break;
-    case PSS_PAGE_BATTLE_MOVES: _setMoveTypeIcons(); break;
-    case PSS_PAGE_CONTEST_MOVES: _setContestMoveTypeIcons(); break;
+    // 1:1 .c:3783-3790 : pages moves = icônes des 4 moves + celle du NEW MOVE
+    // (🐛 fix 2026-07-02 : l'icône de type de la 5e ligne — TAILLADE — disparaissait
+    // après un changement de page en mode select-move, signalé user).
+    case PSS_PAGE_BATTLE_MOVES: _setMoveTypeIcons(); _setNewMoveTypeIcon(); break;
+    case PSS_PAGE_CONTEST_MOVES: _setContestMoveTypeIcons(); _setNewMoveTypeIcon(); break;
     // SKILLS = pas d'icônes type (cachées par _hidePageSpecificSprites).
   }
 }
