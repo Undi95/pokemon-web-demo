@@ -755,7 +755,11 @@ export function TryRunOnWarpIntoMapScript(): boolean {
     if (op.name !== 'map_script_2') continue;
     const [varName, valueTok, scriptLabel] = op.args;
     if (!varName || !valueTok || !scriptLabel) continue;
-    const expected = /^-?\d+$/.test(valueTok) ? Number(valueTok) : 0;
+    // 1:1 décomp MapHeaderCheckScriptTable (script.c:299) : les DEUX côtés passent par
+    // VarGet — `if (VarGet(varIndex1) == VarGet(varIndex2))` ; un littéral traverse VarGet
+    // inchangé, un nom VAR_* est déréférencé. Même pattern que TryRunOnFrameMapScript :732.
+    // (Avant : `Number(valueTok)` sinon 0 → une valeur symbolique était toujours lue 0.)
+    const expected = VarGet(valueTok);
     if (VarGet(varName) === expected) {
       console.log(`[script-runtime] OnWarpIntoMap match : ${varName}=${expected} → ${scriptLabel}`);
       RunScriptImmediately(scriptLabel);

@@ -379,7 +379,7 @@ export function stopAllSongs(): void {
 const _fadeIntervals: Partial<Record<SlotKind, number>> = {};
 const FADE_STEP_FRAMES = 16; // 64 / 4 = 16 steps de la décomp
 const FRAME_MS = 1000 / 60;
-function _fade(slot: SlotKind, speed: number, startGain: number, endGain: number, stopAtEnd: boolean): void {
+function _fade(slot: SlotKind, speed: number, startGain: number, endGain: number, endAction: 'stop' | 'pause' | 'none'): void {
   const state = _slots[slot];
   if (!state?.sequencer) return;
   const prevHandle = _fadeIntervals[slot];
@@ -399,7 +399,8 @@ function _fade(slot: SlotKind, speed: number, startGain: number, endGain: number
     if (step >= steps) {
       window.clearInterval(handle);
       delete _fadeIntervals[slot];
-      if (stopAtEnd) stopSong(slot);
+      if (endAction === 'stop') stopSong(slot);
+      else if (endAction === 'pause') pauseSong(slot);
     }
   }, stepMs);
   _fadeIntervals[slot] = handle;
@@ -407,12 +408,29 @@ function _fade(slot: SlotKind, speed: number, startGain: number, endGain: number
 
 export function fadeOutBgm(speed: number): void {
   // Spessasynth default masterGain ≈ 0.8125 (cf playSong setMasterParameter).
-  _fade('bgm', speed, 0.8125, 0, true);
+  _fade('bgm', speed, 0.8125, 0, 'stop');
 }
 
-/** 1:1 décomp `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
+/** 1:1 décomp `m4aMPlayFadeOutTemporarily(&gMPlayInfo_BGM, speed)` (m4a.c:707) :
+ *  comme FadeOut mais pose TEMPORARILY_PAUSE à la fin (position conservée) —
+ *  `m4aMPlayFadeIn` peut ensuite reprendre la même song où elle en était. */
+export function fadeOutBgmTemporarily(speed: number): void {
+  _fade('bgm', speed, 0.8125, 0, 'pause');
+}
+
+/** 1:1 décomp `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)` (m4a.c:722) : relance
+ *  le player s'il était pausé par un fade-out temporaire, puis ramène le gain. */
 export function fadeInBgm(speed: number): void {
-  _fade('bgm', speed, 0, 0.8125, false);
+  if (isPaused('bgm')) resumeSong('bgm');
+  _fade('bgm', speed, 0, 0.8125, 'none');
+}
+
+/** 1:1 décomp `IsBGMPausedOrStopped()` (sound.c:276-283) : status PAUSE → TRUE,
+ *  !(status TRACK) → TRUE, sinon FALSE. Notre mapping : pausé (fade temporaire
+ *  fini) OU plus aucune song en lecture. PENDANT un fade la song joue encore
+ *  → FALSE (le script `fadeoutbgm` reste bloqué jusqu'à la fin du fade, 1:1). */
+export function isBgmPausedOrStopped(): boolean {
+  return isPaused('bgm') || !isPlaying('bgm');
 }
 
 /** Détection loopStart : non implémenté (spessasynth gère les markers MIDI lui-même). */

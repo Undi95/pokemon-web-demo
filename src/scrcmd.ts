@@ -47,7 +47,8 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
 import type { TrainerArgSource } from './battle_setup';
 import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './engine/battle/battle-setup-helpers';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
-import { PlaySE, PlayFanfare, getRuntime, FadeOutBGM, FadeInBGM } from '../harness/runtime/decomp-globals';
+import { PlaySE, PlayFanfare, getRuntime, FadeInBGM } from '../harness/runtime/decomp-globals';
+import { FadeOutBGMTemporarily, IsBGMPausedOrStopped } from './sound';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 // Système FREEZE 1:1 décomp event_object_lock.c (logique relocalisée de scrcmd → son foyer miroir).
 import {
@@ -355,9 +356,25 @@ const ScrCmd_warphole: ScrCmdFunc = (ctx) => {                                //
   return false;
 };
 
-// ─── BGM fade (1:1 scrcmd.c:969/981 ; hardware-exempt → FadeOutBGM/FadeInBGM, identique au parsé) ──
-const ScrCmd_fadeoutbgm: ScrCmdFunc = (ctx) => { const speed = ScriptReadByte(ctx); FadeOutBGM(speed || 4); return false; };  // :969
-const ScrCmd_fadeinbgm: ScrCmdFunc = (ctx) => { const speed = ScriptReadByte(ctx); FadeInBGM(speed || 4); return false; };    // :981
+// ─── BGM fade (1:1 scrcmd.c:969/981 — BLOQUANTS via SetupNativeScript ; moteur m4a exempt) ──
+/** 1:1 scrcmd.c:969-979 : FadeOutBGMTemporarily(4*speed || 4) + le script reste
+ *  BLOQUÉ (SetupNativeScript → IsBGMPausedOrStopped) jusqu'à la fin du fade.
+ *  (Avant : FadeOutBGM(speed||4) non bloquant + sans le ×4 — le script enchaînait
+ *  pendant le fade et la musique ne pouvait pas reprendre via fadeinbgm.) */
+const ScrCmd_fadeoutbgm: ScrCmdFunc = (ctx) => {
+  const speed = ScriptReadByte(ctx);
+  if (speed !== 0) FadeOutBGMTemporarily(4 * speed);
+  else FadeOutBGMTemporarily(4);
+  SetupNativeScript(ctx, IsBGMPausedOrStopped);
+  return true;
+};
+/** 1:1 scrcmd.c:981-990 : FadeInBGM(4*speed || 4), non bloquant (reprend la BGM pausée). */
+const ScrCmd_fadeinbgm: ScrCmdFunc = (ctx) => {
+  const speed = ScriptReadByte(ctx);
+  if (speed !== 0) FadeInBGM(4 * speed);
+  else FadeInBGM(4);
+  return false;
+};
 
 // ─── messageinstant (1:1 scrcmd.c:1298) — rendu instantané = dette (alias message, comme le parsé) ──
 const ScrCmd_messageinstant: ScrCmdFunc = (ctx) => { let p = ScriptReadWord(ctx); if (p === 0) p = ctx.data[0]; showFieldText(p); return false; };  // :1298

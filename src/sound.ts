@@ -8,6 +8,7 @@
  * Rapatriés depuis `gba-menu-system.ts` (fourre-tout dissous, MIRROR 1:1).
  */
 import { m4aSongNumStart } from '../harness/runtime/decomp-globals';
+import { fadeOutBgmTemporarily, isBgmPausedOrStopped } from '../harness/m4a/player';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { OPTIONS_SOUND_MONO, OPTIONS_SOUND_STEREO } from '../include/constants/global';
 
@@ -31,6 +32,24 @@ export function SetPokemonCryStereo(selection: number): void {
   gSaveBlock2Ptr.optionsSound = selection | 0;
 }
 
+/** 1:1 décomp `void FadeOutBGMTemporarily(u8 speed)` (sound.c:295-298) :
+ *  m4aMPlayFadeOutTemporarily(&gMPlayInfo_BGM, speed) — fade puis PAUSE
+ *  (position conservée, FadeInBGM reprend). Moteur m4a = exempt ; la sémantique
+ *  pause-vs-stop, elle, est 1:1 (consommée par ScrCmd_fadeoutbgm bloquant). */
+export function FadeOutBGMTemporarily(speed: number): void {
+  fadeOutBgmTemporarily(speed);
+}
+
+/** 1:1 décomp `bool8 IsBGMPausedOrStopped(void)` (sound.c:276-283) :
+ *  status & PAUSE → TRUE ; !(status & TRACK) → TRUE ; sinon FALSE.
+ *  Native script de ScrCmd_fadeoutbgm (scrcmd.c:977) : le script reste bloqué
+ *  tant que le fade n'est pas fini. */
+export function IsBGMPausedOrStopped(): boolean {
+  return isBgmPausedOrStopped();
+}
+
 // Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck).
 (globalThis as Record<string, unknown>).IsStereoSound = IsStereoSound;
 (globalThis as Record<string, unknown>).SetPokemonCryStereo = SetPokemonCryStereo;
+(globalThis as Record<string, unknown>).IsBGMPausedOrStopped = IsBGMPausedOrStopped;
+(globalThis as Record<string, unknown>).FadeOutBGMTemporarily = FadeOutBGMTemporarily;
