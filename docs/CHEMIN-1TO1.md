@@ -23,8 +23,8 @@
 |---|--------|--------|---------------|
 | 1 | Fix transcription `intro.ts:1933` : `160` → `0x68` | 1 caractère | Intro scène 3 : l'orbe Rayquaza recule au bon moment |
 | 2 | Passe honnêteté : corriger/supprimer les ~10 commentaires menteurs + 2 fns mortes (liste au Palier 0) | S | grep = 0 mensonge restant |
-| 3 | Opcodes scrcmd `gotostd_if`/`callstd_if`/`vcall_if` | S | Battre Bastien (Dewford) → le post-combat se joue sans `cmd 0xa non porté` |
-| 4 | Opcodes `setptr`/`loadbytefromptr`/`setptrbyte` + `compare_*_ptr_*` + stubs d'alignement (`drawbox`, `gettime`, `addpcitem`…) | S/M | Trick House Route 110 ; Norman rematch (`gettime`) |
+| 3 | ~~Opcodes scrcmd « atteints par les gyms »~~ → **FAUX POSITIF réfuté au sol** (désassemblage d'agent désaligné sur les args variables de `trainerbattle` ; 0 usage .inc vérifié) — table néanmoins COMPLÉTÉE à 225/225 pour tuer la classe de bug (fait, `0d072805`+suivant) | ✅ | `[byte-vm] 227 handlers installés` + self-test PASS |
+| 4 | Les **14 mismatch de l'oracle argbytes** — tous vérifiés BÉNINS (readWarp=7 octets cachés à l'oracle ; nop1 partagé par les opcodes FRLG = désalignement IDENTIQUE au vrai jeu ; hidemoneybox = 2 octets `0` exécutés comme 2 nops, comme sur GBA) | ✅ | oracle re-run : 216 analysés, 14 bénins documentés |
 | 5 | `GameClear` + `SetCB2WhiteOut` (post_battle_event_funcs.c, 2 fns) | S | Vaincre la Ligue → Hall of Fame déclenché |
 | 6 | `GetEvolutionTargetSpecies` RÉEL dans pokemon.ts (la data `evolutions.json` est vérifiée prête) | M | Poussifeu niv.16 → l'évolution se DÉCLENCHE (même sans la scène : logique d'abord) |
 | 7 | `CalculateMonStats` 1:1 (`GetLevelFromMonExp` + `levelUpHP` + bug Pomeg préservé) + `TryIncrementMonLevel` + `MonTryLearningNewMove` | M | Passage de niveau en combat : stats recalculées + capacité apprise |
@@ -58,11 +58,7 @@ Le contrat « pas de commentaire mensonger » est violé à ~10 endroits, prouv�
 
 ## Palier 1 — Quick-wins gameplay (S, quelques jours)
 
-1. **Opcodes scrcmd manquants** — LA trouvaille script-vm : des opcodes RÉELLEMENT ÉMIS dans le bytecode live tombent sur `warnMissingCmd` + STOP (script tronqué, `release` jamais exécuté → joueur potentiellement figé). Preuve par désassemblage (`script-bytecode.json`) :
-   - Contrôle de flux : `gotostd_if` (0x0a, scrcmd.c:255), `callstd_if` (0x0b, :269), `vcall_if` (0xbc, :225) — atteints par Bastien, Maxie, Norman rematch, grunts Magma/Aqua. Motif déjà présent (`goto_if` + résolution std).
-   - Pointeurs RAM : `setptr`/`loadbytefromptr`/`setptrbyte` (0x11-0x13) + `compare_local_to_ptr`/`ptr_to_local`/`ptr_to_value`/`ptr_to_ptr` (0x1d-0x20) — Trick House, MtChimney, Routes 109/113/117/121. Minimum = stub qui consomme les octets (alignement) ; idéal = petit scratch-RAM.
-   - Stubs d'alignement : `drawbox`/`drawboxtext` (no-op DANS la décomp aussi), `addelevmenuitem`/`showelevmenu` (no-op RS), `initclock`/`gettime` (RtcCalcLocalTime→gLocalTime), `addpcitem`, `removedecoration`/`checkdecor`, `setmysteryeventstatus`.
-   - Oracle : console sans aucun `[byte-vm] cmd 0x… non porté` sur Bastien + Trick House. Bonus : investiguer les **37 `unresolvedRelocs`** du bytecode (méta compile-scripts).
+1. **Opcodes scrcmd manquants** — ✅ FAIT (2026-07-02), avec CORRECTION : la « preuve » de l'agent (opcodes atteints par Bastien/Trick House) était un **désassemblage désaligné** (args variables de `trainerbattle` → opcodes fantômes). Contre-vérification : **0 usage** de ces opcodes dans les .inc décomp (morts ou gift_*/mystery-gift exempt). La table a néanmoins été COMPLÉTÉE à **225/225 opcodes** (`227 handlers installés`) : gotostd_if/callstd_if (logique réelle), vcall_if (alias 1:1), **ports RÉELS** initclock/gettime (rtc.ts), addpcitem + upgrade checkpcitem (pc-items.ts), removedecoration/checkdecor (decoration_inventory.ts), checkmodernfatefulencounter (GetMonData), et consommation d'octets 1:1 documentée pour la famille pointeur-RAM/v*/callnative (précédent copybyte). La classe de bug « cmd non porté → script STOP » est éliminée structurellement. Reste du point : investiguer les **37 `unresolvedRelocs`** du bytecode (méta compile-scripts).
 2. **`GameClear`/`SetCB2WhiteOut`** (stub-loop specials-registry:1415/2112) — 2 fns, débloque tout le end-game.
 3. **Compteur Pokédex de l'écran Continue** : `_countCaughtPokedexFlags` (main_menu.ts:489) = `return 0` en dur → brancher le vrai comptage flags CAUGHT.
 4. **`MonGainEVs`** (pokemon.ts:335) : câbler Pokérus ×2 + MACHO_BRACE + hold-effects EV (multiplier=1 en dur aujourd'hui).

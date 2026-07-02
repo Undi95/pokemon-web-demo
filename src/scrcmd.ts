@@ -22,7 +22,10 @@ import {
   getText,
 } from './script';
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
-import { VAR_0x8004 } from '../include/constants/vars';
+import { VAR_0x8000, VAR_0x8001, VAR_0x8002, VAR_0x8004 } from '../include/constants/vars';
+import { RtcInitLocalTimeOffset, RtcCalcLocalTime, gLocalTime } from './rtc';
+import { AddPCItem, CheckPCHasItem } from './engine/pokemon/pc-items';
+import { DecorationRemove, CheckHasDecoration } from './decoration_inventory';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
@@ -241,6 +244,12 @@ const ScrCmd_call_if: ScrCmdFunc = (ctx) => {                               // :
 const ScrCmd_loadword: ScrCmdFunc = (ctx) => { const i = ScriptReadByte(ctx); ctx.data[i] = ScriptReadWord(ctx); return false; };   // :304
 const ScrCmd_loadbyte: ScrCmdFunc = (ctx) => { const i = ScriptReadByte(ctx); ctx.data[i] = ScriptReadByte(ctx); return false; };   // :328
 const ScrCmd_copylocal: ScrCmdFunc = (ctx) => { const d = ScriptReadByte(ctx); const s = ScriptReadByte(ctx); ctx.data[d] = ctx.data[s]; return false; }; // :344
+// Famille pointeur RAM brut (scrcmd.c:312/:320/:336) — même adaptation que copybyte :
+// LISENT leurs octets 1:1 (alignement) mais le deref d'adresse GBA n'est pas modélisé.
+// 0 usage dans les .inc Émeraude (vérifié 2026-07-02) = code-mort ; complétude de table.
+const ScrCmd_loadbytefromptr: ScrCmdFunc = (ctx) => { const i = ScriptReadByte(ctx); ScriptReadWord(ctx); ctx.data[i] = 0; return false; };  // :312 (*(u8*)ptr non modélisé)
+const ScrCmd_setptr: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadWord(ctx); return false; };      // :320
+const ScrCmd_setptrbyte: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadWord(ctx); return false; };  // :336
 
 const ScrCmd_setvar: ScrCmdFunc = (ctx) => { const id = ScriptReadHalfword(ctx); varStore(id, ScriptReadHalfword(ctx)); return false; };          // :360
 const ScrCmd_copyvar: ScrCmdFunc = (ctx) => { const id = ScriptReadHalfword(ctx); varStore(id, varDeref(ScriptReadHalfword(ctx))); return false; }; // :367
@@ -250,6 +259,13 @@ const ScrCmd_subvar: ScrCmdFunc = (ctx) => { const id = ScriptReadHalfword(ctx);
 
 const ScrCmd_compare_local_to_local: ScrCmdFunc = (ctx) => { const a = ctx.data[ScriptReadByte(ctx)]; const b = ctx.data[ScriptReadByte(ctx)]; ctx.comparisonResult = Compare(a & 0xFF, b & 0xFF); return false; }; // :390
 const ScrCmd_compare_local_to_value: ScrCmdFunc = (ctx) => { const a = ctx.data[ScriptReadByte(ctx)]; const b = ScriptReadByte(ctx); ctx.comparisonResult = Compare(a & 0xFF, b); return false; }; // :399
+// Variantes *ptr* (scrcmd.c:408-441) — deref RAM brut non modélisé (cf. copybyte) :
+// consomment leurs octets 1:1, comparisonResult INCHANGÉ (pas d'invention de valeur).
+// 0 usage .inc Émeraude (vérifié 2026-07-02) = code-mort ; complétude de table.
+const ScrCmd_compare_local_to_ptr: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadWord(ctx); return false; };   // :408
+const ScrCmd_compare_ptr_to_local: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); ScriptReadByte(ctx); return false; };   // :417
+const ScrCmd_compare_ptr_to_value: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); ScriptReadByte(ctx); return false; };   // :426
+const ScrCmd_compare_ptr_to_ptr: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); ScriptReadWord(ctx); return false; };     // :435
 const ScrCmd_compare_var_to_value: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = ScriptReadHalfword(ctx); ctx.comparisonResult = Compare(a, b); return false; }; // :444
 const ScrCmd_compare_var_to_var: ScrCmdFunc = (ctx) => { const a = varDeref(ScriptReadHalfword(ctx)); const b = varDeref(ScriptReadHalfword(ctx)); ctx.comparisonResult = Compare(a, b); return false; }; // :453
 
@@ -360,9 +376,21 @@ const ScrCmd_setmodernfatefulencounter: ScrCmdFunc = (ctx) => {               //
   if (idx < PARTY_SIZE) SetMonData(gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER, 1);
   return false;
 };
+// 1:1 scrcmd.c:2218 : gSpecialVar_Result = GetMonData(&gPlayerParty[i], MODERN_FATEFUL_ENCOUNTER).
+const ScrCmd_checkmodernfatefulencounter: ScrCmdFunc = (ctx) => {             // :2218
+  const idx = VarGet(ScriptReadHalfword(ctx));
+  if (idx < PARTY_SIZE) setResult(GetMonData(gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER) ? 1 : 0);
+  return false;
+};
 
 // ─── returnram (1:1 scrcmd.c:283) — RAM script (mystery event) ; parsé = StopScript (dette). ──
 const ScrCmd_returnram: ScrCmdFunc = (ctx) => { StopScript(ctx); return false; };  // :283
+// 1:1 scrcmd.c:289 endram : ClearRamScript() + StopScript. RAM script = Mystery Event
+// (exempt) → ClearRamScript non porté ; le StopScript est le comportement observable.
+const ScrCmd_endram: ScrCmdFunc = (ctx) => { StopScript(ctx); return true; };      // :289
+// 1:1 scrcmd.c:296 setmysteryeventstatus : SetMysteryEventScriptStatus(u8) — Mystery
+// Event exempt → consomme l'octet 1:1, statut non modélisé.
+const ScrCmd_setmysteryeventstatus: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); return false; };  // :296
 
 // ─── checkitemtype (1:1 scrcmd.c:523) : VAR_RESULT = GetPocketByItemId(VarGet(itemId)). Voie A. ──
 const ScrCmd_checkitemtype: ScrCmdFunc = (ctx) => { setResult(GetPocketByItemId(VarGet(ScriptReadHalfword(ctx)))); return false; };  // :523
@@ -421,7 +449,9 @@ const ScrCmd_pokemartdecoration: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); re
 const ScrCmd_pokemartdecoration2: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };  // :1905
 
 // ─── checkpcitem (1:1 scrcmd.c:540) — stub VAR_RESULT=0 (PC items non portés, comme le parsé) ──
-const ScrCmd_checkpcitem: ScrCmdFunc = (ctx) => { ScriptReadHalfword(ctx); ScriptReadHalfword(ctx); setResult(0); return false; };  // :540
+// 1:1 scrcmd.c:540 : gSpecialVar_Result = CheckPCHasItem(itemId, quantity) — port RÉEL
+// (pc-items.ts ; ex-stub setResult(0) upgradé 2026-07-02).
+const ScrCmd_checkpcitem: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(CheckPCHasItem(itemKeyOf(id), q) ? 1 : 0); return false; };  // :540
 
 // ─── warpteleport (1:1 scrcmd.c:799) — DoTeleportTileWarp = warp simple (transition = dette) ──
 const ScrCmd_warpteleport: ScrCmdFunc = (ctx) => { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; };  // :799
@@ -458,6 +488,30 @@ const ScrCmd_lockfortrainer: ScrCmdFunc = (ctx) => {                          //
 // ─── long-tail simple #3 (1:1 scrcmd.c) ─────────────────────────────────────
 // erasebox : lit 4 octets, no-op (= décomp Menu_EraseWindowRect commenté).
 const ScrCmd_erasebox: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); return false; };
+// drawbox (:1390) : corps décomp INTÉGRALEMENT commenté, y compris les ScriptReadByte
+// → ne lit RIEN (verbatim ; les octets args éventuels s'exécuteraient comme sur GBA).
+const ScrCmd_drawbox: ScrCmdFunc = () => false;                                // :1390
+// drawboxtext (:1431) : lit 4 octets ; le Multichoice est commenté dans la décomp.
+const ScrCmd_drawboxtext: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); ScriptReadByte(ctx); return false; };  // :1431
+// addelevmenuitem (:2110) : lit u8 + 3×VarGet(u16) ; ScriptAddElevatorMenuItem commenté (RS).
+const ScrCmd_addelevmenuitem: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); return false; };  // :2110
+// showelevmenu (:2121) : corps décomp intégralement commenté → no-op sans lecture.
+const ScrCmd_showelevmenu: ScrCmdFunc = () => false;                           // :2121
+// initclock (:681) : RtcInitLocalTimeOffset(hour, minute) — port RÉEL (rtc.ts).
+const ScrCmd_initclock: ScrCmdFunc = (ctx) => { const h = VarGet(ScriptReadHalfword(ctx)); const m = VarGet(ScriptReadHalfword(ctx)); RtcInitLocalTimeOffset(h & 0xFF, m & 0xFF); return false; };  // :681
+// gettime (:696) : RtcCalcLocalTime → VAR_0x8000/1/2 = h/m/s — port RÉEL (rtc.ts).
+const ScrCmd_gettime: ScrCmdFunc = () => {                                     // :696
+  RtcCalcLocalTime();
+  VarSet(VAR_0x8000, gLocalTime.hours);
+  VarSet(VAR_0x8001, gLocalTime.minutes);
+  VarSet(VAR_0x8002, gLocalTime.seconds);
+  return false;
+};
+// addpcitem (:531) : gSpecialVar_Result = AddPCItem(itemId, quantity) — port RÉEL (pc-items).
+const ScrCmd_addpcitem: ScrCmdFunc = (ctx) => { const id = VarGet(ScriptReadHalfword(ctx)); const q = VarGet(ScriptReadHalfword(ctx)); setResult(AddPCItem(itemKeyOf(id), q) ? 1 : 0); return false; };  // :531
+// removedecoration (:557) / checkdecor (:573) : ports RÉELS (decoration_inventory.ts 1:1).
+const ScrCmd_removedecoration: ScrCmdFunc = (ctx) => { const d = VarGet(ScriptReadHalfword(ctx)); setResult(DecorationRemove(d) ? 1 : 0); return false; };  // :557
+const ScrCmd_checkdecor: ScrCmdFunc = (ctx) => { const d = VarGet(ScriptReadHalfword(ctx)); setResult(CheckHasDecoration(d) ? 1 : 0); return false; };      // :573
 // getpokenewsactive : gSpecialVar_Result = IsPokeNewsActive(newsKind). Pas de pokenews → 0 (= parsé).
 const ScrCmd_getpokenewsactive: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); setResult(0); return false; };
 // messageautoscroll : lit le ptr texte (u32) puis no-op (dette autoscroll U-tier = parsé).
@@ -699,6 +753,26 @@ const ScrCmd_waitmovementat: ScrCmdFunc = (ctx) => {
 // ─── std scripts (1:1 scrcmd.c:235-253) ─────────────────────────────────────
 const ScrCmd_gotostd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptJump(ctx, ptrFromOffset(off)); return false; };
 const ScrCmd_callstd: ScrCmdFunc = (ctx) => { const off = fetchStdOffset(ScriptReadByte(ctx)); if (off !== null) ScriptCall(ctx, ptrFromOffset(off)); return false; };
+// 1:1 scrcmd.c:255/:269 — variantes conditionnelles. 0 usage dans les .inc Émeraude
+// (vérifié 2026-07-02) ; portées pour la complétude 1:1 de la table.
+const ScrCmd_gotostd_if: ScrCmdFunc = (ctx) => {                             // :255
+  const condition = ScriptReadByte(ctx);
+  const index = ScriptReadByte(ctx);
+  if (sScriptConditionTable[condition][ctx.comparisonResult] === 1) {
+    const off = fetchStdOffset(index);
+    if (off !== null) ScriptJump(ctx, ptrFromOffset(off));
+  }
+  return false;
+};
+const ScrCmd_callstd_if: ScrCmdFunc = (ctx) => {                             // :269
+  const condition = ScriptReadByte(ctx);
+  const index = ScriptReadByte(ctx);
+  if (sScriptConditionTable[condition][ctx.comparisonResult] === 1) {
+    const off = fetchStdOffset(index);
+    if (off !== null) ScriptCall(ctx, ptrFromOffset(off));
+  }
+  return false;
+};
 
 // ─── messages (1:1 scrcmd.c:1265-1320) ──────────────────────────────────────
 /** Résout un pointeur de texte (id de symbole, ou data[0] si NULL) → bytes charmap → affiche. */
@@ -943,6 +1017,15 @@ const ScrCmd_checkpartymove: ScrCmdFunc = (ctx) => {
 const ScrCmd_vgoto: ScrCmdFunc = ScrCmd_goto;
 const ScrCmd_vcall: ScrCmdFunc = ScrCmd_call;
 const ScrCmd_vgoto_if: ScrCmdFunc = ScrCmd_goto_if;
+const ScrCmd_vcall_if: ScrCmdFunc = ScrCmd_call_if;  // :225 (usage = scripts gift_* mystery-gift uniquement)
+// vbuffermessage (:1622) / vbufferstring (:1610) : StringExpandPlaceholders/StringCopy vers
+// gStringVar4/sScriptStringVars depuis un ptr v-adressé — usage = gift_* mystery-gift
+// uniquement (0 usage solo, vérifié 2026-07-02) → consomment leurs octets 1:1, no-op.
+const ScrCmd_vbuffermessage: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };                       // :1622
+const ScrCmd_vbufferstring: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); ScriptReadWord(ctx); return false; };   // :1610
+// callnative (:118) : NativeFunc(ScriptReadWord)() — table d'adresses natives non modélisée
+// (même dette que gotonative, Phase 4b) ; 0 usage .inc Émeraude. Consomme le word 1:1.
+const ScrCmd_callnative: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };                           // :118
 const ScrCmd_vmessage: ScrCmdFunc = (ctx) => { showFieldText(ScriptReadWord(ctx)); return false; };
 const ScrCmd_setvaddress: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return false; };           // offset moot (scripts label-based)
 const ScrCmd_copybyte: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); ScriptReadWord(ctx); return false; }; // no-op (= parsé ; ptrs RAM non modélisés)
@@ -970,11 +1053,15 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_special, ScrCmd_specialvar,
   ScrCmd_goto, ScrCmd_return, ScrCmd_call, ScrCmd_goto_if, ScrCmd_call_if,
   ScrCmd_loadword, ScrCmd_loadbyte, ScrCmd_copylocal,
+  ScrCmd_loadbytefromptr, ScrCmd_setptr, ScrCmd_setptrbyte,
   ScrCmd_setvar, ScrCmd_copyvar, ScrCmd_setorcopyvar, ScrCmd_addvar, ScrCmd_subvar,
   ScrCmd_compare_local_to_local, ScrCmd_compare_local_to_value,
+  ScrCmd_compare_local_to_ptr, ScrCmd_compare_ptr_to_local,
+  ScrCmd_compare_ptr_to_value, ScrCmd_compare_ptr_to_ptr,
   ScrCmd_compare_var_to_value, ScrCmd_compare_var_to_var,
   ScrCmd_setflag, ScrCmd_clearflag, ScrCmd_checkflag,
-  ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
+  ScrCmd_gotostd, ScrCmd_callstd, ScrCmd_gotostd_if, ScrCmd_callstd_if,
+  ScrCmd_message, ScrCmd_waitmessage, ScrCmd_closemessage,
   ScrCmd_faceplayer, ScrCmd_lock, ScrCmd_lockall, ScrCmd_release, ScrCmd_releaseall,
   ScrCmd_applymovement, ScrCmd_applymovementat, ScrCmd_waitmovement, ScrCmd_waitmovementat,
   ScrCmd_warp, ScrCmd_warpsilent, ScrCmd_addmoney, ScrCmd_removemoney, ScrCmd_checkmoney,
@@ -1001,9 +1088,12 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_showmoneybox, ScrCmd_hidemoneybox, ScrCmd_updatemoneybox,
   ScrCmd_showcoinsbox, ScrCmd_hidecoinsbox, ScrCmd_updatecoinsbox,
   ScrCmd_dotimebasedevents, ScrCmd_checkpartymove,
-  ScrCmd_vgoto, ScrCmd_vcall, ScrCmd_vgoto_if, ScrCmd_vmessage, ScrCmd_setvaddress, ScrCmd_copybyte,
+  ScrCmd_vgoto, ScrCmd_vcall, ScrCmd_vgoto_if, ScrCmd_vcall_if, ScrCmd_vmessage, ScrCmd_setvaddress, ScrCmd_copybyte,
+  ScrCmd_vbuffermessage, ScrCmd_vbufferstring, ScrCmd_callnative, ScrCmd_checkmodernfatefulencounter,
   ScrCmd_setwarp, ScrCmd_setdivewarp, ScrCmd_setholewarp, ScrCmd_setescapewarp, ScrCmd_setdynamicwarp,
-  ScrCmd_erasebox, ScrCmd_getpokenewsactive, ScrCmd_messageautoscroll, ScrCmd_fadescreenswapbuffers,
+  ScrCmd_erasebox, ScrCmd_drawbox, ScrCmd_drawboxtext, ScrCmd_addelevmenuitem, ScrCmd_showelevmenu,
+  ScrCmd_initclock, ScrCmd_gettime, ScrCmd_addpcitem, ScrCmd_removedecoration, ScrCmd_checkdecor,
+  ScrCmd_getpokenewsactive, ScrCmd_messageautoscroll, ScrCmd_fadescreenswapbuffers,
   ScrCmd_savebgm, ScrCmd_fadedefaultbgm, ScrCmd_setobjectsubpriority, ScrCmd_resetobjectsubpriority,
   ScrCmd_setmonmove, ScrCmd_fadenewbgm, ScrCmd_bufferboxname, ScrCmd_braillemessage, ScrCmd_closebraillemessage,
   ScrCmd_setflashlevel, ScrCmd_animateflash,
@@ -1012,7 +1102,8 @@ export const BYTEVM_HANDLERS: Record<string, ScrCmdFunc> = {
   ScrCmd_setwildbattle, ScrCmd_dowildbattle,
   ScrCmd_warpdoor, ScrCmd_warpmossdeepgym, ScrCmd_warpspinenter, ScrCmd_warpwhitefade, ScrCmd_warphole,
   ScrCmd_fadeoutbgm, ScrCmd_fadeinbgm, ScrCmd_messageinstant, ScrCmd_pokenavcall,
-  ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram, ScrCmd_checkitemtype, ScrCmd_setrespawn,
+  ScrCmd_setmonmetlocation, ScrCmd_setmodernfatefulencounter, ScrCmd_returnram, ScrCmd_endram,
+  ScrCmd_setmysteryeventstatus, ScrCmd_checkitemtype, ScrCmd_setrespawn,
   ScrCmd_selectapproachingtrainer, ScrCmd_lockfortrainer,
   ScrCmd_multichoice, ScrCmd_multichoicedefault, ScrCmd_multichoicegrid, ScrCmd_yesnobox,
   ScrCmd_showmonpic, ScrCmd_hidemonpic, ScrCmd_adddecoration, ScrCmd_checkdecorspace,
