@@ -211,6 +211,11 @@ function applyNoIntroPreset(): void {
   // Running shoes (= FLAG_SYS_B_DASH set par dad in
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
   FlagSet('FLAG_SYS_B_DASH');
+  // ⚠️ DEBUG : options confort test (user 2026-07-02) — VIT. TEXTE « 3 » =
+  // OPTIONS_TEXT_SPEED_FAST (2) + FENETRE « TYPE 3 » = frameType index 2
+  // (affichage 1-based du menu OPTIONS).
+  gSaveBlock2Ptr.optionsTextSpeed = 2;
+  gSaveBlock2Ptr.optionsWindowFrameType = 2;
   // Pokédex + Pokémon menu unlocks (= 1:1 décomp BuildNormalStartMenu requis
   // pour POKéDEX et POKéMON entries du start menu). Permet aussi de tester
   // ces écrans via ?nointro sans avoir à faire toute l'intro.
