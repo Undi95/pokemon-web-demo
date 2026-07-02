@@ -16,9 +16,14 @@
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS,
   PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
   MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
-  EVO_MODE_NORMAL, EVO_MODE_TRADE, EVO_MODE_ITEM_USE, EVO_MODE_ITEM_CHECK,
+  EVO_MODE_NORMAL, EVO_MODE_TRADE, EVO_MODE_ITEM_USE, EVO_MODE_ITEM_CHECK, MAX_LEVEL,
   OT_ID_PRESET, OT_ID_RANDOM_NO_SHINY, MAX_IV_MASK } from '../include/constants/pokemon';
-import { RtcCalcLocalTime, gLocalTime } from './rtc';
+// ⚠️ PAS d'import statique de rtc.ts ici : pokemon.ts est FONDATIONNEL (tiré par
+// party-storage très tôt) et rtc.ts importe save.ts + string_util → cycle ESM
+// (TDZ gStringVar1 à text.ts:1253, vu au boot 2026-07-02). Pattern établi :
+// `globalThis.__rtc` (rtc.ts:332 — lazy, pour les consommateurs profonds).
+type RtcBridge = { RtcCalcLocalTime: () => void; gLocalTime: { hours: number } };
+const _rtc = (): RtcBridge | undefined => (globalThis as { __rtc?: RtcBridge }).__rtc;
 // PARTY_SIZE + VERSION_EMERALD (gGameVersion) + LANGUAGE_FRENCH (gGameLanguage) depuis le
 // header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty + CreateBoxMon.
 import { PARTY_SIZE, VERSION_EMERALD, LANGUAGE_FRENCH } from '../include/constants/global';
@@ -411,16 +416,22 @@ export function GetEvolutionTargetSpecies(mon: Pokemon, mode: number, evolutionI
           case 'EVO_FRIENDSHIP':
             if (friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
             break;
-          case 'EVO_FRIENDSHIP_DAY':
-            RtcCalcLocalTime();
-            if (gLocalTime.hours >= DAY_EVO_HOUR_BEGIN && gLocalTime.hours < DAY_EVO_HOUR_END
+          case 'EVO_FRIENDSHIP_DAY': {
+            const rtc = _rtc();               // 1:1 RtcCalcLocalTime() + gLocalTime.hours
+            rtc?.RtcCalcLocalTime();
+            const hours = rtc?.gLocalTime.hours ?? 0;
+            if (hours >= DAY_EVO_HOUR_BEGIN && hours < DAY_EVO_HOUR_END
               && friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
             break;
-          case 'EVO_FRIENDSHIP_NIGHT':
-            RtcCalcLocalTime();
-            if (gLocalTime.hours >= NIGHT_EVO_HOUR_BEGIN && gLocalTime.hours < NIGHT_EVO_HOUR_END
+          }
+          case 'EVO_FRIENDSHIP_NIGHT': {
+            const rtc = _rtc();
+            rtc?.RtcCalcLocalTime();
+            const hours = rtc?.gLocalTime.hours ?? 0;
+            if (hours >= NIGHT_EVO_HOUR_BEGIN && hours < NIGHT_EVO_HOUR_END
               && friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
             break;
+          }
           case 'EVO_LEVEL':
             if (evo.param <= level) targetSpecies = targetIdOf(evo.target);
             break;
@@ -712,7 +723,7 @@ export function GetMonAbility(mon: Pokemon): number {
   return GetAbilityBySpecies(species, abilityNum);
 }
 
-/** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:1932-2017).
+/** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:2824-2899).
  *  Calcule maxHP + attack + defense + speed + spAttack + spDefense depuis baseStats
  *  (= gSpeciesInfo[species]) + IVs + EVs + level + nature. Met à jour aussi `currentHP`
  *  si la diff doit être propagée. Consolidé depuis party-storage.ts (nature +
@@ -724,7 +735,11 @@ export function CalculateMonStats(mon: Pokemon): void {
   const info = getSpeciesInfo(speciesEnum);
   if (!info?.stats) return;
   const base = info.stats;
-  const level = mon.level || 1;
+  // 1:1 :2841-2845 : le NIVEAU est RE-DÉRIVÉ de l'EXP puis re-posé (c'est CE mécanisme
+  // qui fait monter le niveau après un gain d'EXP — Cmd_getexp/Rare Candy appellent
+  // CalculateMonStats après avoir crédité l'EXP). Avant : `mon.level || 1` figé.
+  const level = GetLevelFromMonExp(mon);
+  SetMonData(mon, MON_DATA_LEVEL, level);
   const nature = GetNatureFromPersonality(mon.personality >>> 0);
 
   // 1:1 décomp species.h : SPECIES_SHEDINJA = 303.
@@ -738,6 +753,11 @@ export function CalculateMonStats(mon: Pokemon): void {
   }
   const previousMaxHP = mon.maxHP;
   mon.maxHP = newMaxHP & 0xFFFF;
+
+  // 1:1 :2856-2858 : gBattleScripting.levelUpHP = diff (min 1) — consommé par
+  // l'affichage « +N PV » du level-up en combat (Cmd_getexp / boîte stats).
+  gBattleScripting.levelUpHP = (newMaxHP - previousMaxHP) & 0xFF;
+  if (gBattleScripting.levelUpHP === 0) gBattleScripting.levelUpHP = 1;
 
   // CALC_STAT macro inline expand : (((2*base + IV + EV/4) * level) / 100) + 5,
   // then ModifyStatByNature (statIdx 0-based ici → +1 pour la signature 1-based 1:1).
@@ -753,16 +773,22 @@ export function CalculateMonStats(mon: Pokemon): void {
   mon.spAttack  = calc(base.spa, mon.spAttackIV,  mon.spAttackEV,  3); // STAT_SPATK
   mon.spDefense = calc(base.spd, mon.spDefenseIV, mon.spDefenseEV, 4); // STAT_SPDEF
 
-  // 1:1 décomp : adjust currentHP par la diff maxHP - previousMaxHP.
+  // 1:1 décomp :2870-2896 : adjust currentHP par la diff maxHP - previousMaxHP.
   if (mon.species === SPECIES_SHEDINJA) {
     if (mon.hp !== 0 || previousMaxHP === 0) mon.hp = 1;
+    else return;
   } else if (mon.hp === 0 && previousMaxHP === 0) {
     mon.hp = newMaxHP;
   } else if (mon.hp !== 0) {
+    // BUG décomp CONSERVÉ (pokemon.c:2886) : « currentHP is unintentionally able to
+    // become <= 0 » = le Pomeg berry glitch. Le clamp `hp = 1` est sous #ifdef BUGFIX
+    // (non défini sur la ROM) → PAS de clamp chez nous non plus (1:1 structurel).
     mon.hp += newMaxHP - previousMaxHP;
-    if (mon.hp <= 0) mon.hp = 1;
+  } else {
+    return; // stay at 0 (= fainted)
   }
-  // else : stay at 0 (= fainted).
+
+  // 1:1 :2898 SetMonData(MON_DATA_HP, &currentHP) — mon.hp déjà écrit ci-dessus (modèle plat).
 }
 
 /** 1:1 décomp `gPPUpGetMask` (pokemon.c) — masque 2 bits par slot de move. */
@@ -850,9 +876,38 @@ export function GetLevelFromBoxMonExp(mon: Pokemon): number {
   const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
   const growthRate = (getSpeciesInfo(speciesEnum) as { growthRate?: string } | undefined)?.growthRate ?? 'GROWTH_MEDIUM_FAST';
   let level = 1;
-  while (level <= 100 /* MAX_LEVEL */ && getExperienceForLevel(growthRate, level) <= exp)
+  while (level <= MAX_LEVEL && getExperienceForLevel(growthRate, level) <= exp)
     level++;
   return level - 1;
+}
+
+/** 1:1 décomp `u8 GetLevelFromMonExp(struct Pokemon *mon)` (pokemon.c:2911-2921) —
+ *  même corps que GetLevelFromBoxMonExp (le décomp duplique ; notre modèle plat
+ *  Pokemon == BoxPokemon → délégation). Consommé par CalculateMonStats (1:1 :2841). */
+export function GetLevelFromMonExp(mon: Pokemon): number {
+  return GetLevelFromBoxMonExp(mon);
+}
+
+/** 1:1 décomp `bool8 TryIncrementMonLevel(struct Pokemon *mon)` (pokemon.c:6211-6230) :
+ *  clamp l'EXP au max de la growth table, puis passe au niveau suivant si le seuil
+ *  est atteint (FALSE si déjà MAX_LEVEL ou seuil non atteint). Consommé par
+ *  Cmd_getexp (combat) + Rare Candy (party_menu). */
+export function TryIncrementMonLevel(mon: Pokemon): boolean {
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const nextLevel = (GetMonData(mon, MON_DATA_LEVEL) as number) + 1;
+  let expPoints = GetMonData(mon, MON_DATA_EXP) as number;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const growthRate = (getSpeciesInfo(speciesEnum) as { growthRate?: string } | undefined)?.growthRate ?? 'GROWTH_MEDIUM_FAST';
+  if (expPoints > getExperienceForLevel(growthRate, MAX_LEVEL)) {
+    expPoints = getExperienceForLevel(growthRate, MAX_LEVEL);
+    SetMonData(mon, MON_DATA_EXP, expPoints);
+  }
+  if (nextLevel > MAX_LEVEL || expPoints < getExperienceForLevel(growthRate, nextLevel)) {
+    return false;
+  } else {
+    SetMonData(mon, MON_DATA_LEVEL, nextLevel);
+    return true;
+  }
 }
 
 /** 1:1 décomp `void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon)` (pokemon.c:2992) :
