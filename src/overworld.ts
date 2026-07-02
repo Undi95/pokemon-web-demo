@@ -712,14 +712,18 @@ function ReturnToFieldLocal_Manual(): boolean {
             _isRestoringOverworld = false;
             // _restoreOverworldFromMenu fait SetMainCallback2(MainCB2_Overworld) à sa fin →
             // le state machine n'est plus tické → case 2 (RunFieldCallback) ne tourne pas via
-            // le tick. Le décomp run RunFieldCallback (case 2) AVANT SetMainCallback2(CB2_Overworld).
-            // Pour un field-move party-menu en attente (gPostMenuFieldCallback) ou item-use field
-            // (gFieldCallback), on run RunFieldCallback ICI (place 1:1 de case 2). On N'inclut PAS
-            // gFieldCallback2 seul (= retour WithOpenMenu = ré-ouvre start menu) pour ne pas
-            // changer le retour-sac/options standard.
+            // le tick. Le décomp run RunFieldCallback (case 2) AVANT SetMainCallback2(CB2_Overworld)
+            // → on le run ICI (place 1:1 de case 2), gFieldCallback2 INCLUS.
+            // 🐛 fix 2026-07-02 (verdict user « retour à l'OW violent ») : gFieldCallback2
+            // (= FieldCB_ReturnToFieldOpenStartMenu posé par CB2_ReturnToFieldWithOpenMenu)
+            // était EXCLU → sortir du SAC/OPTIONS ne ré-ouvrait jamais le start menu ni ne
+            // fadait. La chaîne .c s'étale sur 2 frames (noircir → open menu + FadeScreen
+            // FROM_BLACK) via « return FALSE = répéter » : ici le CB2 OW a déjà la main →
+            // on déroule la chaîne SYNC (aucun rendu entre les deux → pas de flash).
             const g = globalThis as Record<string, unknown>;
-            if (g.gPostMenuFieldCallback || g.gFieldCallback) {
-              RunFieldCallback_Manual();
+            if (g.gPostMenuFieldCallback || g.gFieldCallback || g.gFieldCallback2) {
+              let guard = 8;
+              while (!RunFieldCallback_Manual() && --guard > 0) { /* chaîne gFieldCallback2 (2 steps) */ }
             }
           }).catch(e => {
             console.error('[CB2_ReturnToFieldLocal_Manual case 1] restore THREW:', e);

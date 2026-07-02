@@ -1591,6 +1591,19 @@ function _taskPrintBattleMoves(task: DecompTask): void {
   }
   task.data[0]++;
 }
+/** 1:1 décomp `PrintContestMoveDescription(moveSlot)` (:3645-3659) : la
+ *  description d'EFFET CONCOURS du move pointé (gContestEffectDescription
+ *  Pointers[gContestMoves[move].effect]) dans la fenêtre DESCRIPTION. */
+function _printContestMoveDescription(moveSlot: number): void {
+  const move = (moveSlot === MAX_MON_MOVES) ? sMon.newMove : sMon.summary.moves[moveSlot];
+  if (move) {
+    const wid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
+    const cm = getContestMove(move);
+    _printTextOnWindow(wid, cm ? getContestEffectDescription(cm.effect) : '', 6, 1, 0, 0);
+    _flushWin(wid);
+  }
+}
+
 /** 1:1 décomp `Task_PrintContestMoves` (:3609). Cases 5-6 = SELECT_MOVE only. */
 function _taskPrintContestMoves(task: DecompTask): void {
   const rt = getRuntime();
@@ -1599,12 +1612,15 @@ function _taskPrintContestMoves(task: DecompTask): void {
     case 2: _printMoveNameAndPP(1); break;
     case 3: _printMoveNameAndPP(2); break;
     case 4: _printMoveNameAndPP(3); break;
-    // 1:1 :3627-3637 — SELECT_MOVE : 5e ligne (new move/ANNULE). case 6 décomp =
-    // PrintContestMoveDescription (= description concours du move pointé) : NON porté
-    // ici (même en NORMAL `_printContestMoves` n'imprime pas la description — gap
-    // pré-existant page concours, hors scope 0x5A ; le flux learn-move est sur BATTLE_MOVES).
+    // 1:1 :3627-3637 — SELECT_MOVE : 5e ligne (new move/ANNULE) puis la
+    // description concours du move pointé. 🐛 fix 2026-07-02 : case 6 était
+    // vide → au changement de page en mode oubli, la DESCRIPTION gardait le
+    // texte combat STALE de l'autre page (signalé user, VOL-VIE sous TAILLADE).
     case 5: if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) _printNewMoveDetailsOrCancelText(); break;
-    case 6: break;
+    case 6:
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE && (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES))
+        _printContestMoveDescription(sMon.firstMoveIndex);
+      break;
     case 7: rt?.DestroyTask(task.taskId); return;
   }
   task.data[0]++;
@@ -1650,11 +1666,25 @@ function _putPageWindowTilemaps(page: number): void {
       break;
     case PSS_PAGE_BATTLE_MOVES:
       PutWindowTilemap(PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      // 1:1 .c:2913-2922 — SELECT_MOVE : le panneau PUISS./PRECISION remplace
+      // le prompt INFOS (🐛 fix 2026-07-02 : panneau vide au changement de page
+      // en mode oubli de capacité — signalé user).
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+        if (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES)
+          PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+      } else {
+        PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      }
       break;
     case PSS_PAGE_CONTEST_MOVES:
       PutWindowTilemap(PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      // 1:1 .c:2924-2934 — SELECT_MOVE : le panneau EFFET (CHARME/BLOCAGE).
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+        if (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES)
+          PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+      } else {
+        PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      }
       break;
   }
   for (let i = 0; i < sMon.windowIds.length; i++) {
@@ -1675,8 +1705,23 @@ function _clearPageWindowTilemaps(page: number): void {
       ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP);
       break;
     case PSS_PAGE_BATTLE_MOVES:
+      // 1:1 .c:2961-2972 — SELECT_MOVE : c'est le panneau PUISS./PRECISION
+      // qu'on retire (le prompt INFOS n'est pas posé dans ce mode).
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+        if (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES)
+          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+      } else {
+        ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      }
+      break;
     case PSS_PAGE_CONTEST_MOVES:
-      ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      // 1:1 .c:2973-2984 — SELECT_MOVE : panneau EFFET (CHARME/BLOCAGE).
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+        if (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES)
+          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+      } else {
+        ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      }
       break;
   }
   for (let i = 0; i < sMon.windowIds.length; i++) _removeWindowByIndex(i);
