@@ -142,7 +142,22 @@ Tout le RESTE du contrat tient (voir ci-dessous).
 - Anim EMERGE au reveal éclosion : sondée correcte, jamais validée frame-par-frame à l'œil.
 - + la section « Dettes mineures notées par les contre-vérifs » ci-dessus.
 
-### 🎯 PROCHAIN CHANTIER PRÊT : aggro dresseurs P2.3 (plan complet, diag contre-vérifié)
+### ✅ AGGRO DRESSEURS P2.3 — FAIT ET VALIDÉ EN JEU (`bb6b3b6b`, Opus 4.8, 2026-07-03)
+trainer_see.c 36/36. Chaîne complète testée Route 110 (KINESISTE EDOUARD) : vision → « ! » →
+approche multi-tuiles → intro → combat → post-combat (joueur face au dresseur + gotobeatenscript)
+→ unlock ; déjà-battu = pas de re-aggro ; 2e dresseur aggro OK. Fixes superviseur au sol :
+- DATA trainerType : `fieldmap.ts parseTrainerType` (était 0) + spawn copie trainerType/
+  trainerRange du template (event_object_movement.c:1330/1332). Sinon 0 dresseur vu.
+- Bug waitstate : DoTrainerApproach = PLAIN special (pas special-flow — doublait le waitstate
+  opcode → freeze) ; Task_EndTrainerApproach émet SignalWaitState.
+- Cascade cycles ESM/TDZ (P2.3 réordonnait l'init) : ponts globalThis trainer_see→scrcmd/
+  battle_setup, field_control_avatar→trainer_see ; OPPOSITE_DIR→direction-coords ; mail MALE/
+  FEMALE→global.ts. Diag : `import('/harness/main.ts')` console + find-import-cycle.cjs.
+RESTE (dettes, non bloquant) : double-battle non testé en jeu ; disguise reveal arbre/montagne
+non porté (StartRevealDisguise) ; musique de rencontre = MALE pour tous tant que le bridge
+battle-trainer-data ne mappe pas encounterMusic (string trainer-parties.json) → id.
+
+### (archive) plan P2.3 d'origine — pour référence
 État : moitié AVAL portée et démarrable (opcode trainerbattle → TrainerBattleLoadArgs →
 dotrainerbattle → BattleSetup_StartTrainerBattle, scripts trainer_battle.inc dans l'image
 byte-VM) ; moitié AMONT (trainer_see.c) absente à 83% (6/36, seulement les icônes FldEff_*).
