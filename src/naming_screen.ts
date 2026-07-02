@@ -44,6 +44,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { loadGbaPal, loadTileBin, loadTilemapBin } from '../harness/gba/png-loader';
+import { GetIconSpeciesNoPersonality, PreloadMonIcon, IsMonIconLoaded, LoadMonIconPalette, CreateMonIconNoPersonality } from './pokemon_icon';
 import type { DecompSprite, DecompTask } from '../harness/runtime/decomp-runtime';
 import { gKeyRepeat } from '../harness/runtime/decomp-runtime';
 import {
@@ -754,6 +755,10 @@ export function DoNamingScreen(
   // tickFixed's syncSpritesToOam pass. See decomp-runtime.ts:1795 hook
   // dispatch comment for foundation rationale.
   (globalThis as Record<string, unknown>)._syncSubspriteOam = syncSubspriteOam;
+
+  // Icône mon (iconFunction 3) : kick le fetch async DÈS l'ouverture pour que
+  // l'icône soit en cache quand NamingScreen_CreateMonIcon la crée (fade-in).
+  if (tpl.iconFunction === 3) PreloadMonIcon(GetIconSpeciesNoPersonality(monSpecies));
 
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_LoadNamingScreen);
@@ -1744,10 +1749,38 @@ function CreateInputTargetIcon(): void {
     case 0: /* NoIcon */ break;
     case 1: /* PlayerIcon */ NamingScreen_CreatePlayerIcon(); break;
     case 2: /* PCIcon */ NamingScreen_CreatePCIcon(); break;
-    case 3: /* MonIcon */ /* deferred */ break;
+    case 3: /* MonIcon */ NamingScreen_CreateMonIcon(); break;
     case 4: /* WaldaDadIcon */ /* deferred */ break;
     default: break;  // No-op (= NoIcon fallback)
   }
+}
+
+/** 1:1 décomp src/naming_screen.c NamingScreen_CreateMonIcon :
+ *    LoadMonIconPalettes();
+ *    spriteId = CreateMonIcon(sNamingScreen->monSpecies, SpriteCallbackDummy, 56, 40, 0, personality, 1);
+ *    gSprites[spriteId].oam.priority = 3;
+ *  Moteur pokemon_icon (= mail) : icône fetchée async (PreloadMonIcon kické par
+ *  DoNamingScreen) → si pas encore en cache, mini-task d'attente (1-2 frames dev).
+ *  GetIconSpeciesNoPersonality : seul Unown dépend de la personality (doc pokemon_icon). */
+function NamingScreen_CreateMonIcon(): void {
+  if (!sNamingScreen) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  const iconSpecies = GetIconSpeciesNoPersonality(sNamingScreen.monSpecies);
+  const create = (): void => {
+    LoadMonIconPalette(iconSpecies);
+    const spriteId = CreateMonIconNoPersonality(iconSpecies, null, 56, 40, 0, true);
+    if (spriteId !== 0xFF) {
+      const spr = rt.gSprites[spriteId];
+      const oam = spr ? rt.gba.oam[spr.oamIndex] : undefined;
+      if (oam) oam.priority = 3; // 1:1 gSprites[spriteId].oam.priority = 3
+    }
+  };
+  if (IsMonIconLoaded(iconSpecies)) { create(); return; }
+  PreloadMonIcon(iconSpecies);
+  rt.CreateTask((t: { taskId: number }) => {
+    if (IsMonIconLoaded(iconSpecies)) { create(); rt.DestroyTask(t.taskId); }
+  }, 0);
 }
 
 // 1:1 décomp src/naming_screen.c:1397-1406 NamingScreen_CreatePlayerIcon.

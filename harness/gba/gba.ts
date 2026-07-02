@@ -164,13 +164,19 @@ export class Gba {
     this.vblankCbs.delete(cb);
   }
 
+  /** 1:1 GBA DISPCNT bit 12 (DISPCNT_OBJ_ON) : rendu OBJ activé. Posé par
+   *  applyDispCnt (decomp-runtime). Default true (état pré-premier SetGpuReg).
+   *  Sans ce bit, SetGpuReg(DISPCNT, 0) laissait les sprites OAM stale visibles
+   *  pendant les transitions de scène (corruption verdict A/B éclosion). */
+  objEnabled = true;
+
   /** Render une frame complète + run VBLANK callbacks.
    *  À appeler à 60fps. */
   tick(): void {
     // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine + mosaic)
     composeFrame(
       this.frameBuffer, this.bgWrappers, this.palette,
-      this.oam, this.objVram,
+      this.objEnabled ? this.oam : undefined, this.objVram,
       this.blend, this.windows, this.affineParams,
       this.bgAffineMatrices, this.mosaic,
       this.hblankCb ?? undefined,

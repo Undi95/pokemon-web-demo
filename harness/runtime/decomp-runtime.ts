@@ -703,6 +703,7 @@ export class DecompRuntime {
         if (this.gba.bg(1).config.visible) v |= DISPCNT_BG1_ON;
         if (this.gba.bg(2).config.visible) v |= DISPCNT_BG2_ON;
         if (this.gba.bg(3).config.visible) v |= DISPCNT_BG3_ON;
+        if (this.gba.objEnabled) v |= DISPCNT_OBJ_ON; // bit 12 (sinon les RMW l'effacent)
         if (this.gba.windows.win0.enabled) v |= DISPCNT_WIN0_ON;
         if (this.gba.windows.win1.enabled) v |= DISPCNT_WIN1_ON;
         if (this.gba.windows.winObjEnabled) v |= DISPCNT_WINOBJ_ON;
@@ -831,6 +832,10 @@ export class DecompRuntime {
     this.gba.bg(1).config.visible = !!(value & DISPCNT_BG1_ON);
     this.gba.bg(2).config.visible = !!(value & DISPCNT_BG2_ON);
     this.gba.bg(3).config.visible = !!(value & DISPCNT_BG3_ON);
+
+    // Bit 12 : OBJ enable (1:1 hardware — DISPCNT=0 masque AUSSI les sprites ;
+    // manquait → OAM stale visible pendant les inits de scène, verdict éclosion).
+    this.gba.objEnabled = !!(value & DISPCNT_OBJ_ON);
 
     // Bits 13-15 : Win0/Win1/WinObj enable
     this.gba.windows.win0.enabled = !!(value & DISPCNT_WIN0_ON);

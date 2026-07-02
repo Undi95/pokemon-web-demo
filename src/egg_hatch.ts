@@ -363,14 +363,18 @@ function EggHatchCreateMonSprite(useAlt: number, state: number, partyId: number)
       break;
     }
     case 1: {
-      // Create mon sprite (= SetMultiuseSpriteTemplateToPokemon + CreateSprite(&gMultiuseSpriteTemplate))
+      // Create mon sprite (= SetMultiuseSpriteTemplateToPokemon + CreateSprite(&gMultiuseSpriteTemplate)).
+      // OAM battler 1:1 = gOamData_BattleSpriteOpponentSide (battle_main.c:274) :
+      // affineMode ST_OAM_AFFINE_NORMAL dès la CRÉATION — sinon StartSpriteAffineAnim(EMERGE)
+      // au reveal ne joue pas (BeginAffineAnim early-return) et le mon apparaît plein-taille
+      // avant de rétrécir quand l'anim front pose l'affine (bug verdict A/B, sondé live).
       const tiles = gMonSpritesGfxPtr.sprites.ptr[(useAlt * 2) + 1];
       if (!tiles) { console.warn('[egg_hatch] tiles mon absentes'); return 64; }
       const palSlot = LoadSpritePalette({ data: _gfx!.monPal, tag: 'PAL_EGG_HATCH_MON' });
       const twoFrames = tiles.length >= MON_PIC_SIZE * 2;
       const frame0 = twoFrames ? tiles.subarray(0, MON_PIC_SIZE * 2) : tiles.subarray(0, MON_PIC_SIZE);
       spriteId = CreateSprite({
-        oam: { shape: 0, size: 3, priority: 2, paletteNum: palSlot, affineMode: 0 },
+        oam: { shape: 0, size: 3, priority: 2, paletteNum: palSlot, affineMode: 1 /* ST_OAM_AFFINE_NORMAL */ },
         images: [{ data: frame0, size: frame0.length }],
         callback: null,
       }, EGG_X, EGG_Y, 6);
@@ -380,10 +384,12 @@ function EggHatchCreateMonSprite(useAlt: number, state: number, partyId: number)
         s.callback = SpriteCallbackDummy as unknown as DecompSprite['callback'];
         // gMultiuseSpriteTemplate.affineAnims = gAffineAnims_BattleSpriteOpponentSide
         // (BATTLER_AFFINE_EMERGE au reveal) — la voie inline n'attache pas l'affine :
-        // on pose table + matrice comme la voie sheet (sprite.ts:1758-1799).
+        // table + matrice + anim 0 (statique) comme la voie sheet (sprite.ts:1758-1799).
         (s as unknown as { affineAnimsTableName: string | null }).affineAnimsTableName = 'gAffineAnims_BattleSpriteOpponentSide';
+        (s as unknown as { affineMode: number }).affineMode = 1;
         const m = AllocOamMatrix();
         if (m > 0) (s as unknown as { matrixNum: number }).matrixNum = m;
+        rt.StartSpriteAffineAnim(spriteId, 0 /* BATTLER_AFFINE_NORMAL (statique) */);
       }
       void position;
       break;
