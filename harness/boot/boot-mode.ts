@@ -31,7 +31,7 @@ import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
 import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
 import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
-import { loadGameData } from '../../src/engine/data/game-data';
+import { loadGameData, getSpeciesInfo, getExperienceForLevel } from '../../src/engine/data/game-data';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
 import { SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../src/engine/ui/pokedex-flags';
 
@@ -201,6 +201,9 @@ function applyNoIntroPreset(): void {
     'ITEM_ULTRA_BALL': 2,
     'ITEM_ORAN_BERRY': 5,
     'ITEM_CHERI_BERRY': 4,
+    // ⚠️ DEBUG : ×5 pour tester la scène d'évolution en boucle (Arcko preset
+    // à 1 exp du Lv16 → 1 SUPER BONBON = évolution MASSKO immédiate).
+    'ITEM_RARE_CANDY': 5,
   };
   for (const k of getAllItemKeys()) {
     AddBagItem(k, SPECIAL_QTY[k] ?? 1);
@@ -305,14 +308,16 @@ function applyNoIntroPreset(): void {
   // L'API `setObjectMovementType` n'existe pas encore sur gameState. Mom
   // gardera son MOVEMENT_TYPE_FACE_RIGHT du template jusqu'à ce qu'on étende.
 
-  // ⚠️ DEBUG ONLY : ajouter Arcko Lv5 complet à la party (= testing Pokemon
-  // screen pages, party UI, battle system). Pokémon "complet" :
+  // ⚠️ DEBUG ONLY : ajouter Arcko Lv15 complet à la party (= testing Pokemon
+  // screen pages, party UI, battle system, SCÈNE D'ÉVOLUTION). Pokémon "complet" :
   //   - Species : SPECIES_TREECKO (= ARCKO en FR, starter gen 3 Hoenn)
-  //   - Level : 5 (= 1:1 décomp starter au début du jeu)
+  //   - Level : 15, exp = exp(Lv16) - 1 → PILE sous le niveau d'évolution :
+  //     1 SUPER BONBON = Lv16 = learn POURSUITE (MAX_MOVES → flux replace)
+  //     + évolution MASSKO — recipe de test scène évo en 1 item (user 2026-07-02)
   //   - Held item : ITEM_MIRACLE_SEED (= "Grain Miracle" FR, +20% dmg Plante)
   //   - Ability : "Overgrow" (= Engrais FR, +50% Plante moves quand HP < 1/3)
-  //   - Moves 4 : Pound, Leer (= level-up natural), Absorb (Lv6 cheat), Quick
-  //     Attack (= variety pour test type categories Normal/Physical)
+  //   - Moves 4 : Pound, Leer, Absorb, Quick Attack (= learnset naturel Lv15 :
+  //     1/1/6/11 — le set plein déclenche le replace-move à POURSUITE Lv16)
   //   - Nature : Hardy (= +0/-0, balanced pour tests)
   //   - IVs : 31/31/31/31/31/31 (= max, simplifie damage calc tests)
   //   - EVs : 0 (= un fresh starter)
@@ -320,12 +325,16 @@ function applyNoIntroPreset(): void {
   // 1:1 : compte gPlayerParty natif (CalculatePlayerPartyCount) plutôt que la
   // façade de vues `gSaveBlock1Ptr.playerParty`.
   if (CalculatePlayerPartyCount() === 0) {
-    const arcko = createTestMon('SPECIES_TREECKO', 5, {
+    const arcko = createTestMon('SPECIES_TREECKO', 15, {
       heldItem: 'ITEM_MIRACLE_SEED',  // DEBUG fixture (Grain Miracle FR)
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['pound', 'leer', 'absorb', 'quickattack'],
     });
+    // Exp pile sous le seuil Lv16 (Treecko = GROWTH_MEDIUM_SLOW → 2535 - 1 =
+    // 2534) — calculée depuis les tables réelles, pas de valeur en dur.
+    const growthRate = getSpeciesInfo('SPECIES_TREECKO')?.growthRate ?? 'GROWTH_MEDIUM_SLOW';
+    arcko.experience = getExperienceForLevel(growthRate, 16) - 1;
     // ⚠️ DEBUG ONLY : mons valides (user : "ball + lieu, qu'ils soient
     // valide"). Starter Treecko 1:1 = reçu à la ROUTE 101 niv.5 (sauvetage
     // Birch). pokeball déjà = ITEM_POKE_BALL (CreateMon 1:1). gender/nature/ability
