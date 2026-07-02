@@ -8,15 +8,20 @@
  * Rapatriés depuis `gba-menu-system.ts` (fourre-tout dissous, MIRROR 1:1).
  */
 import { m4aSongNumStart } from '../harness/runtime/decomp-globals';
-import { fadeOutBgmTemporarily, isBgmPausedOrStopped } from '../harness/m4a/player';
+import { fadeOutBgmTemporarily, isBgmPausedOrStopped, stopSong } from '../harness/m4a/player';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { OPTIONS_SOUND_MONO, OPTIONS_SOUND_STEREO } from '../include/constants/global';
 
-/** 1:1 décomp `sound.c PlayBGM(songNum)` — bridge vers m4aSongNumStart loop=true.
- *  Skip si MUS_NONE (0xFFFF) ou 0 (= maps sans music, ex. MAP_INSIDE_OF_TRUCK). */
+/** 1:1 décomp `sound.c PlayBGM(songNum)` — bridge vers m4aSongNumStart.
+ *  Skip si MUS_NONE (0xFFFF) ou 0 (= maps sans music, ex. MAP_INSIDE_OF_TRUCK).
+ *  🐛 fix 2026-07-02 : NE PAS forcer loop=true — la boucle vient des MARKERS du
+ *  song (mid2agb `[`/`]` → autodétectés par m4aSongNumStart), comme le song data
+ *  GBA. Le forçage faisait REBOUCLER les jingles sans markers (MUS_EVOLVED joué
+ *  en boucle pendant l'affichage du mon évolué — signalé user). Les BGM de map
+ *  ont tous leurs markers → boucle inchangée pour eux. */
 export function PlayBGM(songNum: number): void {
   if (songNum === 0xFFFF || songNum === 0) return;
-  m4aSongNumStart(songNum, true);  // BGM = loop
+  m4aSongNumStart(songNum);
 }
 
 /** Audio pan adjustment — true si STEREO (= apply pan), false si MONO (= centered).
@@ -46,6 +51,22 @@ export function FadeOutBGMTemporarily(speed: number): void {
  *  tant que le fade n'est pas fini. */
 export function IsBGMPausedOrStopped(): boolean {
   return isBgmPausedOrStopped();
+}
+
+/** 1:1 décomp `void PlayNewMapMusic(u16 songNum)` (sound.c:335-340) : coupe la
+ *  map-music courante et lance songNum (décomp : state machine sMapMusicState
+ *  MAPMUS_STATE_STOP_AND_FADE → play au tick ; notre moteur = swap direct,
+ *  exemption son [[hardware-non-1to1-exemptions]]). Consommé par la scène
+ *  d'évolution (MUS_EVOLUTION). */
+export function PlayNewMapMusic(songNum: number): void {
+  PlayBGM(songNum);
+}
+
+/** 1:1 décomp `void StopMapMusic(void)` (sound.c:414-419) : sMapMusicState =
+ *  MAPMUS_STATE_STOP (le tick suivant fait m4aSongNumStop(map music)). Notre
+ *  moteur : stop direct du slot BGM. */
+export function StopMapMusic(): void {
+  stopSong('bgm');
 }
 
 // Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck).

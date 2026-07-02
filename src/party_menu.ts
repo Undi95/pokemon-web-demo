@@ -62,6 +62,12 @@ import { GetItemName } from './item';
 import { GoToBagMenu, ITEMMENULOCATION_PARTY, ITEMMENULOCATION_LAST, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { gMoveNames } from './engine/data/game-data';
+// Rare Candy learn/évolution (1:1 party_menu.c:5047-5133, Palier 2.1 étape 4) :
+// foyer pokemon.ts (MonTryLearningNewMove/GetEvolutionTargetSpecies) + scène.
+import { MonTryLearningNewMove, GetEvolutionTargetSpecies } from './pokemon';
+import { BeginEvolutionScene, SetCB2AfterEvolution } from './evolution_scene';
+import { gMoveToLearn } from './engine/battle/state';
+import { PlayFanfare } from '../harness/runtime/decomp-globals';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
 import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { MON_MALE, MON_FEMALE } from '../include/constants/pokemon';
@@ -316,7 +322,9 @@ interface PartyAssets {
 let _isOpen = false;
 let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
   | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' | 'field_move_err' | 'softboiled_msg'
-  | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno' = 'idle';
+  | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno'
+  | 'levelup_learn_next' | 'levelup_learned_fanfare' | 'levelup_learned_msg'
+  | 'levelup_replace_msg' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -994,6 +1002,86 @@ function _drawCancelButtonWindow(): void {
  *  Remove existing msg window, add NEW window with appropriate template
  *  selon stringId. Différents templates pour CHOOSE_MON vs DO_WHAT_WITH_MON
  *  (= widths différents pour ne pas overlap avec action menu). */
+// ─── Rare Candy : learn move + évolution (1:1 party_menu.c:5047-5133) ────────
+
+/** 1:1 dispatch commun Task_TryLearnNewMoves (:5057) / Task_TryLearningNextMove
+ *  (:5079) : case 0 → PartyMenuTryEvolution ; MON_HAS_MAX_MOVES → DisplayMonNeeds
+ *  ToReplaceMove ; default → DisplayMonLearnedMove. (MON_ALREADY_KNOWS_MOVE est
+ *  géré par les phases appelantes — comportements distincts :5066/:5088.) */
+function _dispatchLearnMoveResult(learnMove: number): void {
+  if (learnMove === 0 /* MOVE_NONE */) { _partyMenuTryEvolution(); return; }
+  if (learnMove === 0xFFFF /* MON_HAS_MAX_MOVES */) { _displayMonNeedsToReplaceMove(); return; }
+  _displayMonLearnedMove(learnMove);
+}
+
+/** 1:1 `DisplayMonLearnedMove(taskId, move)` (party_menu.c:5124-5133) :
+ *  gStringVar1=nickname, gStringVar2=gMoveNames[move], gText_PkmnLearnedMove3
+ *  (« {mon} apprend {move}! ») → Task_DoLearnedMoveFanfareAfterText. */
+function _displayMonLearnedMove(move: number): void {
+  const mon = _party()[_slotId];
+  _itemUsedMsgText = (getString('gText_PkmnLearnedMove3') || '')
+    .replace(/\{STR_VAR_1\}/g, mon?.nickname ?? '')
+    .replace(/\{STR_VAR_2\}/g, gMoveNames[move] ?? '')
+    .replace(/\\p/g, ' ').replace(/\{[^}]*\}/g, '').replace(/\\n/g, '\n');
+  _phase = 'levelup_learned_fanfare';
+  _drawMsg();
+}
+
+/** Pages du message replace-move (gText_PkmnNeedsToReplaceMove = 3 pages `\p`
+ *  de 2 lignes — la fenêtre WIN_MSG fait 2 lignes, coller les pages COUPAIT le
+ *  texte après « connaît déjà » ; signalé user 2026-07-02). A/B avance la page. */
+let _lvlUpMsgPages: string[] = [];
+let _lvlUpMsgPageIdx = 0;
+
+/** 1:1 `DisplayMonNeedsToReplaceMove(taskId)` (party_menu.c:5113-5122) — le
+ *  message décomp complet, PAGINÉ sur `\p` (le printer décomp gère \p nativement) ;
+ *  la SUITE (Task_ReplaceMoveYesNo → summary select-move PARTY, zone TM) =
+ *  DETTE #8 (cf. phase 'levelup_replace_msg'). */
+function _displayMonNeedsToReplaceMove(): void {
+  const mon = _party()[_slotId];
+  const raw = (getString('gText_PkmnNeedsToReplaceMove') || '')
+    .replace(/\{STR_VAR_1\}/g, mon?.nickname ?? '')
+    .replace(/\{STR_VAR_2\}/g, gMoveNames[gMoveToLearn] ?? '')
+    .replace(/\{[^}]*\}/g, '');
+  _lvlUpMsgPages = raw.split('\\p').map(p => p.replace(/\\n/g, '\n').replace(/\\l/g, '\n'));
+  _lvlUpMsgPageIdx = 0;
+  _itemUsedMsgText = _lvlUpMsgPages[0] ?? '';
+  _phase = 'levelup_replace_msg';
+  _drawMsg();
+}
+
+/** 1:1 `PartyMenuTryEvolution(taskId)` (party_menu.c:5095-5111) :
+ *  ```c
+ *  u16 targetSpecies = GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL, ITEM_NONE);
+ *  if (targetSpecies != SPECIES_NONE) {
+ *      FreePartyPointers();
+ *      gCB2_AfterEvolution = gPartyMenu.exitCallback;  // = notre gMain.savedCallback
+ *      BeginEvolutionScene(mon, targetSpecies, TRUE, gPartyMenu.slotId);
+ *      DestroyTask(taskId);
+ *  } else {
+ *      gTasks[taskId].func = Task_ClosePartyMenuAfterText;
+ *  }
+ *  ```
+ *  ≙ FreePartyPointers+DestroyTask : libère l'état module party (fenêtres/OAM
+ *  disparaissent pendant le fade de Task_BeginEvolutionScene — la scène ré-init
+ *  ensuite TOUT le vidéo : ResetSpriteData/ResetTasks/battleInitVideo). */
+function _partyMenuTryEvolution(): void {
+  const rt = getRuntime();
+  const mon = _party()[_slotId];
+  const targetSpecies = mon ? GetEvolutionTargetSpecies(mon, 0 /* EVO_MODE_NORMAL */, 0 /* ITEM_NONE */) : 0;
+  if (targetSpecies !== 0 /* SPECIES_NONE */ && mon) {
+    if (_inputTaskId >= 0) { rt.DestroyTask(_inputTaskId); _inputTaskId = -1; }
+    const exitCb = rt.gMain.savedCallback as (() => void) | null;  // 1:1 gPartyMenu.exitCallback
+    _freePartyMenu();
+    _isOpen = false;
+    _phase = 'idle';
+    SetCB2AfterEvolution(exitCb ?? null);
+    BeginEvolutionScene(mon, targetSpecies, true, _slotId);
+  } else {
+    ClosePartyScreen();  // 1:1 Task_ClosePartyMenuAfterText
+  }
+}
+
 function _drawMsg(): void {
   // 1:1 décomp `if (*windowPtr != WINDOW_NONE) PartyMenuRemoveWindow(windowPtr);`
   // PartyMenuRemoveWindow → ClearStdWindowAndFrameToTransparent + RemoveWindow.
@@ -1029,6 +1117,8 @@ function _drawMsg(): void {
     template = MSG_WINDOW_TEMPLATE;
   } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
       || _phase === 'levelup_pg2' || _phase === 'levelup_learn'
+      || _phase === 'levelup_learn_next' || _phase === 'levelup_learned_fanfare'
+      || _phase === 'levelup_learned_msg' || _phase === 'levelup_replace_msg'
       || _phase === 'field_move_err' || _phase === 'softboiled_msg'
       || _phase === 'fieldmove_yesno' || _phase === 'helditem_msg'
       || _phase === 'switch_items_yesno') && _itemUsedMsgText) {
@@ -3176,19 +3266,67 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase === 'levelup_learn') {
-    // 1:1 :5052 WaitFanfare(FALSE) && (A||B) → RemoveLevelUpStatsWindow + learn/evo.
+    // 1:1 Task_TryLearnNewMoves (party_menu.c:5047-5073) : WaitFanfare(FALSE) &&
+    // (A||B) → RemoveLevelUpStatsWindow + MonTryLearningNewMove(mon, TRUE) + dispatch.
     const newKeys = rt.gMain.newKeys;
     const KEY_A = 0x0001, KEY_B = 0x0002;
     if (WaitFanfare(false) && (newKeys & (KEY_A | KEY_B))) {
+      PlaySE(5);  // 1:1 :5053 PlaySE(SE_SELECT)
       RemoveLevelUpStatsWindow();  // 1:1 :5054
       _itemUsedMsgText = null;
-      // ⚠️ DETTE 1:1 (R3) : MonTryLearningNewMove + PartyMenuTryEvolution non
-      //   portés (fonctions absentes). Le décomp case 0 "No moves to learn" →
-      //   PartyMenuTryEvolution → (pas d'évo) → Task_ClosePartyMenuAfterText.
-      //   C'est le chemin par défaut le + courant → on close directement (retour
-      //   bag via savedCallback). À porter : apprentissage de move + évolution
-      //   au level-up via Super Bonbon.
-      ClosePartyScreen();
+      const monLearn = _party()[_slotId];
+      const learnMove = monLearn ? MonTryLearningNewMove(monLearn, true) : 0;  // 1:1 :5055
+      _dispatchLearnMoveResult(learnMove);
+    }
+    return;
+  }
+  if (_phase === 'levelup_learn_next') {
+    // 1:1 Task_TryLearningNextMove (party_menu.c:5075-5093) — tourne chaque frame ;
+    // MON_ALREADY_KNOWS_MOVE → return (reboucle, :5088).
+    const monNext = _party()[_slotId];
+    const result = monNext ? MonTryLearningNewMove(monNext, false) : 0;
+    if (result === 0xFFFE /* MON_ALREADY_KNOWS_MOVE */) return;
+    _dispatchLearnMoveResult(result);
+    return;
+  }
+  if (_phase === 'levelup_learned_fanfare') {
+    // 1:1 Task_DoLearnedMoveFanfareAfterText (party_menu.c) : printer inactif
+    // (nos messages party = rendu instantané) → PlayFanfare(MUS_LEVEL_UP).
+    PlayFanfare(MUS_LEVEL_UP);
+    _phase = 'levelup_learned_msg';
+    return;
+  }
+  if (_phase === 'levelup_learned_msg') {
+    // 1:1 Task_LearnedMoveFanfareAfterText : fanfare finie + A/B → next move.
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (WaitFanfare(false) && (newKeys & (KEY_A | KEY_B))) {
+      PlaySE(5);
+      _itemUsedMsgText = null;
+      _phase = 'levelup_learn_next';  // → Task_TryLearningNextMove
+    }
+    return;
+  }
+  if (_phase === 'levelup_replace_msg') {
+    // Pages du message (gText_PkmnNeedsToReplaceMove = 3 pages \p) : A/B avance.
+    // ⚠️ DETTE 1:1 (HUB 1b, #8) : après la question, Task_ReplaceMoveYesNo →
+    // summary select-move PARTY (party_menu.c:5113 + zone TM) non porté →
+    // dernière page acquittée = réponse « NON » (le mon n'apprend pas la
+    // capacité, 1:1 branche StopLearningMove YES) puis Task_TryLearningNextMove.
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (newKeys & (KEY_A | KEY_B)) {
+      PlaySE(5);
+      if (_lvlUpMsgPageIdx < _lvlUpMsgPages.length - 1) {
+        _lvlUpMsgPageIdx++;
+        _itemUsedMsgText = _lvlUpMsgPages[_lvlUpMsgPageIdx];
+        _drawMsg();
+        return;
+      }
+      console.warn('[party_menu] replace-move party UI non portée (#8) — capacité refusée (= NON)');
+      _itemUsedMsgText = null;
+      _lvlUpMsgPages = [];
+      _phase = 'levelup_learn_next';
     }
     return;
   }
@@ -3580,9 +3718,14 @@ function CreateLevelUpStatsWindow(): number {
 }
 
 /** 1:1 décomp `RemoveLevelUpStatsWindow` (party_menu.c:2585) : ClearWindowTilemap
- *  + PartyMenuRemoveWindow(&windowId). */
+ *  + PartyMenuRemoveWindow(&windowId). 🐛 fix 2026-07-02 : PartyMenuRemoveWindow
+ *  (party_menu.c:2570) fait AUSSI ClearStdWindowAndFrameToTransparent — sans lui,
+ *  le CADRE std (qui déborde d'1 tile autour de la fenêtre) restait affiché en
+ *  boîte vide après le Super Bonbon (signalé user ; même pattern que _drawMsg). */
 function RemoveLevelUpStatsWindow(): void {
   if (_lvlUpStatsWinId < 0) return;
+  ClearStdWindowAndFrame(_lvlUpStatsWinId, false);
+  CopyWindowToVram(_lvlUpStatsWinId, 3);
   ClearWindowTilemap(_lvlUpStatsWinId);
   RemoveWindow(_lvlUpStatsWinId);   // 1:1 PartyMenuRemoveWindow
   _lvlUpStatsWinId = -1;

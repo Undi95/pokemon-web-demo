@@ -36,7 +36,7 @@ import {
   RecordAbilityBattle as _recordAbilityBattleSME,
   RecordAbilityBattle as _recordAbilityBattleFullSME,
 } from './battle_ai_script_commands';
-import { CalculateBaseDamage, IsTradedMon } from './pokemon';
+import { CalculateBaseDamage, IsTradedMon, MonTryLearningNewMove as MonTryLearningNewMove_Foyer } from './pokemon';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
@@ -9944,85 +9944,17 @@ function _stayOnOpcode__b32(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-// 1:1 décomp `static u8 sLearningMoveTableID` (pokemon.c:155-ish).
-// État persistant entre Cmd_handlelearnnewmove successifs.
-let _sLearningMoveTableID = 0;
-
-/** 1:1 décomp `MonTryLearningNewMove(mon, firstMove)` (pokemon.c:3015-3045).
- *  Iterate gLevelUpLearnsets[species] depuis sLearningMoveTableID, set gMoveToLearn
- *  pour le premier match level, et GiveMoveToMon. Retourne :
- *   - MOVE_NONE : aucun nouveau move à apprendre
- *   - MON_HAS_MAX_MOVES : 4 moves déjà connus
- *   - MON_ALREADY_KNOWS_MOVE : move déjà connu, caller doit reboucler
- *   - retour de GiveMoveToMon : move appris.
- *
- *  Source learnset : (globalThis.__game_data).getLevelUpLearnset(SPECIES_X). */
+/** 1:1 décomp call-site `MonTryLearningNewMove(&gPlayerParty[gBattleStruct->
+ *  expGetterMonId], firstMove)` (battle_script_commands.c Cmd_handlelearnnewmove).
+ *  L'impl (+ sLearningMoveTableID) vit au FOYER pokemon.ts (pokemon.c:3015-3045) —
+ *  consolidée 2026-07-02 (Palier 2.1, partagée avec evolution_scene + party_menu).
+ *  CRITIQUE : lire gPlayerParty (party-storage = la party CANONIQUE du combat, comme
+ *  Cmd_getexp + le décomp), PAS gSaveBlock1Ptr.playerParty (divergé chez nous). */
 function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number {
   const partyIdx = _gBattleStruct32.expGetterMonId ?? 0;
-  // 1:1 décomp `MonTryLearningNewMove(&gPlayerParty[gBattleStruct->expGetterMonId], ...)`.
-  // CRITIQUE : lire gPlayerParty (party-storage = la party CANONIQUE du combat, comme
-  // Cmd_getexp + le décomp), PAS gSaveBlock1Ptr.playerParty (qui a DIVERGÉ chez nous →
-  // un mon par défaut → le learn touchait le mauvais mon). Format = Pokemon décodé →
-  // Get/SetMonData.
   const mon = gPlayerParty[partyIdx];
   if (!mon) return MOVE_NONE;
-  const speciesNum = GetMonData(mon, MON_DATA_SPECIES) as number;
-  if (speciesNum === 0) return MOVE_NONE;
-  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
-
-  // Resolve species enum (= SPECIES_TREECKO) via globalThis cache (speciesNum → enum).
-  const cache = (globalThis as { gameDataSpeciesNumToEnum?: Record<number, string> }).gameDataSpeciesNumToEnum;
-  const enumKey = cache?.[speciesNum] ?? `SPECIES_${speciesNum}`;
-  // Lookup learnset depuis bridge globalThis (= populé au boot par game-data.ts).
-  const learnsets = (globalThis as { gameDataLevelUpLearnsets?: Record<string, Array<{ level: number; move: string }>> }).gameDataLevelUpLearnsets;
-  const learnset = learnsets?.[enumKey];
-  if (!learnset || learnset.length === 0) return MOVE_NONE;
-
-  // 1:1 décomp pokemon.c:3025-3034 : if firstMove → reset sLearningMoveTableID + skip
-  // jusqu'au premier entry à level == mon.level.
-  if (firstMove) {
-    _sLearningMoveTableID = 0;
-    while (_sLearningMoveTableID < learnset.length
-           && learnset[_sLearningMoveTableID].level !== level) {
-      _sLearningMoveTableID++;
-    }
-    if (_sLearningMoveTableID >= learnset.length) return MOVE_NONE;
-  }
-  // 1:1 décomp pokemon.c:3037-3042 : check entry courante à ce level.
-  if (_sLearningMoveTableID >= learnset.length
-      || learnset[_sLearningMoveTableID].level !== level) {
-    return MOVE_NONE;
-  }
-
-  const moveName = learnset[_sLearningMoveTableID].move;  // ex. "MOVE_ABSORB"
-  // Resolve enum → moveId via reverse de gameDataMovesNumToEnum (les constantes MOVE_* ne
-  // sont PAS sur globalThis — l'ancien `globalThis[moveName]` donnait undefined→0=MOVE_NONE,
-  // donc aucun move appris). Reverse map caché sur globalThis (1× au boot).
-  const gMoves = globalThis as { gameDataMovesNumToEnum?: Record<number, string>; __movesEnumToNum?: Record<string, number> };
-  if (!gMoves.__movesEnumToNum && gMoves.gameDataMovesNumToEnum) {
-    gMoves.__movesEnumToNum = {};
-    for (const [num, enm] of Object.entries(gMoves.gameDataMovesNumToEnum)) gMoves.__movesEnumToNum[enm] = Number(num);
-  }
-  const moveId = gMoves.__movesEnumToNum?.[moveName] ?? 0;
-  // 1:1 décomp : `gMoveToLearn = ...` (pour Cmd_buffermovetolearn).
-  const setM = (globalThis as { __battleStateMutators?: { setMoveToLearn?: (v: number) => void } })
-    .__battleStateMutators?.setMoveToLearn;
-  if (setM) setM(moveId);
-  _sLearningMoveTableID++;
-
-  // 1:1 décomp `GiveMoveToMon` → `GiveMoveToBoxMon` (pokemon.c) : pour chaque slot, si
-  // vide (MOVE_NONE) → SetMonData(MOVE + PP) + return moveId ; si == moveId →
-  // MON_ALREADY_KNOWS_MOVE ; après les 4 → MON_HAS_MAX_MOVES. Sur gPlayerParty décodé.
-  for (let i = 0; i < 4; i++) {
-    const existing = GetMonData(mon, _MON_DATA_MOVE1_AAS + i) as number;
-    if (existing === 0 /* MOVE_NONE */) {
-      SetMonData(mon, _MON_DATA_MOVE1_AAS + i, moveId);
-      SetMonData(mon, _MON_DATA_PP1_MTL + i, getBattleMove(moveId).pp);
-      return moveId;
-    }
-    if (existing === moveId) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
-  }
-  return 0xFFFF /* MON_HAS_MAX_MOVES */;
+  return MonTryLearningNewMove_Foyer(mon, !!firstMove);
 }
 
 const MON_HAS_MAX_MOVES = 0xFFFF;

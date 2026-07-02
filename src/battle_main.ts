@@ -3561,9 +3561,11 @@ let _gPreBattleCallback1: (() => void) | null = null;
 export function setPreBattleCallback1(cb: (() => void) | null): void { _gPreBattleCallback1 = cb; }
 export function getPreBattleCallback1(): (() => void) | null { return _gPreBattleCallback1; }
 
-let _gCB2_AfterEvolution: (() => void) | null = null;
-export function setCB2AfterEvolution(cb: (() => void) | null): void { _gCB2_AfterEvolution = cb; }
-export function getCB2AfterEvolution(): (() => void) | null { return _gCB2_AfterEvolution; }
+// 1:1 décomp `gCB2_AfterEvolution` : COMMON_DATA défini dans evolution_scene.c
+// → FOYER src/evolution_scene.ts (consolidé 2026-07-02, Palier 2.1). Les set/get
+// exportés ici (compat callers battle-main-functions) délèguent au foyer.
+export function setCB2AfterEvolution(cb: (() => void) | null): void { SetCB2AfterEvolution_Foyer(cb); }
+export function getCB2AfterEvolution(): (() => void) | null { return GetCB2AfterEvolution_Foyer(); }
 
 /** Function pointer type pour gBattleMainFunc. */
 export type BattleMainFunc = () => void;
@@ -3575,6 +3577,13 @@ import { IsMonShiny } from '../include/pokemon';
 // Famille Pokérus consolidée au foyer pokemon.c. Edge battle_main→src/pokemon = sens
 // unique (pokemon.ts n'importe PAS battle_main) → zéro cycle.
 import { RandomlyGivePartyPokerus, PartySpreadPokerus, GetEvolutionTargetSpecies as GetEvolutionTargetSpecies_Foyer } from './pokemon';
+// Scène d'évolution : FOYER src/evolution_scene.ts (Palier 2.1 — imports
+// fonction-hoisted, cycle battle_main↔evolution_scene fonction-only bénin).
+import {
+  EvolutionScene as EvolutionScene_Foyer,
+  SetCB2AfterEvolution as SetCB2AfterEvolution_Foyer,
+  GetCB2AfterEvolution as GetCB2AfterEvolution_Foyer,
+} from './evolution_scene';
 import type { Pokemon } from './engine/battle/party-storage';
 
 // ─── Hardware/subsystem stubs (= dette R3 documentée) ──────────────────────
@@ -3848,11 +3857,10 @@ function GetEvolutionTargetSpecies(mon: unknown, evoMode: number, evolutionItem:
   return GetEvolutionTargetSpecies_Foyer(mon as Parameters<typeof GetEvolutionTargetSpecies_Foyer>[0], evoMode, evolutionItem);
 }
 
-/** 1:1 décomp `EvolutionScene(mon, species, canStopEvo, partyId)` (evolution_scene.c). */
-function EvolutionScene(_mon: unknown, _species: number, _canStopEvo: boolean, _partyId: number): void {
-  // Dette R3 : full evolution scene (= sprite morph + level-up display).
-  // Pour now : log warn.
-  console.warn('[battle-main-functions] EvolutionScene — full scene not yet ported (dette R3)');
+/** 1:1 décomp `EvolutionScene(mon, species, canStopEvo, partyId)` — impl RÉELLE
+ *  au foyer evolution_scene.ts (scène complète, Palier 2.1 étape 4). */
+function EvolutionScene(mon: unknown, species: number, canStopEvo: boolean, partyId: number): void {
+  EvolutionScene_Foyer(mon as Parameters<typeof EvolutionScene_Foyer>[0], species, canStopEvo, partyId);
 }
 
 /** 1:1 décomp `gSpeciesInfo[species].catchRate`. */
@@ -5014,7 +5022,7 @@ export function HandleEndTurn_FinishBattle(): void {
     BeginFastPaletteFade(3);
     FadeOutMapMusic(5);
     gBattleMainFunc = FreeResetData_ReturnToOvOrDoEvolutions;
-    _gCB2_AfterEvolution = BattleMainCB2;
+    SetCB2AfterEvolution_Foyer(BattleMainCB2);  // 1:1 gCB2_AfterEvolution = BattleMainCB2
   } else {
     // 1:1 décomp ll. 5150-5152 :
     //   `if (gBattleControllerExecFlags == 0) gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]();`
@@ -5081,13 +5089,12 @@ export function TryEvolvePokemon(): void {
 
 // ─── WaitForEvoSceneToFinish (5211) ────────────────────────────────────────
 
-/** 1:1 décomp `WaitForEvoSceneToFinish()` (battle_main.c:5211-5215). */
+/** 1:1 décomp `WaitForEvoSceneToFinish()` (battle_main.c:5211-5215) :
+ *  `if (gMain.callback2 == BattleMainCB2) gBattleMainFunc = TryEvolvePokemon;`
+ *  — la scène rend la main en posant gCB2_AfterEvolution (= BattleMainCB2). */
 export function WaitForEvoSceneToFinish(): void {
-  // 1:1 décomp : if (gMain.callback2 == BattleMainCB2) gBattleMainFunc = TryEvolvePokemon.
-  // Notre port : on assume que la scène évolution s'est terminée si CB2_AfterEvolution
-  // a été appelé et restauré CB2.
-  // Pour now : retour direct (= evolution scene noop).
-  gBattleMainFunc = TryEvolvePokemon;
+  if (getRuntime().gMain.callback2 === (BattleMainCB2 as unknown))
+    gBattleMainFunc = TryEvolvePokemon;
 }
 
 // ─── ReturnFromBattleToOverworld (5217) ────────────────────────────────────

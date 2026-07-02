@@ -1073,8 +1073,15 @@ export function PlaySE(seId: number): void {
     console.warn(`[PlaySE] SE id ${seId} not mapped — songs.h missing entry?`);
     return;
   }
-  if (!name.startsWith('se_') && !name.startsWith('ph_')) {
-    console.warn(`[PlaySE] id ${seId} = ${name} is NOT a SE/PH — use m4aSongNumStart instead`);
+  // 1:1 décomp sound.c `PlaySE(songNum) = m4aSongNumStart(&gMPlay_SE1/2, songNum)` :
+  // le routage vers le player SE vient de la SONG TABLE, pas du nom — la décomp
+  // joue AUSSI des jingles MUS_* en SE (ex. evolution_scene.c:678
+  // PlaySE(MUS_EVOLUTION_INTRO), gaté ensuite par IsSEPlaying). Le guard ne
+  // rejette donc que les vraies BGM de map (mus_* AVEC loop markers = jamais
+  // passées à PlaySE dans la décomp) ; les jingles one-shot mus_* passent par
+  // le path spessasynth slot SE ci-dessous (durée trackée → IsSEPlaying 1:1).
+  if (!name.startsWith('se_') && !name.startsWith('ph_') && !name.startsWith('mus_')) {
+    console.warn(`[PlaySE] id ${seId} = ${name} is NOT a SE/PH/MUS — use m4aSongNumStart instead`);
     return;
   }
   // Alterne entre se1 et se2 (= 1:1 décomp src/sound.c:577-598 : si SE1

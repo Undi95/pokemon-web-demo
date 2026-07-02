@@ -49,6 +49,7 @@ import {
   gBattleWeather, gCritMultiplier, gBattleScripting, gCurrentMove,
   gActiveBattler, gAbsentBattlerFlags,
   gBattleResourcesFlags as gBattleResourcesFlagsDC,
+  setMoveToLearn,
 } from './engine/battle/state';
 import { getBattleMove } from './engine/battle/data/battle-moves';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from './engine/battle/data/item-hold-effects';
@@ -553,6 +554,18 @@ export function SetWildMonHeldItem(): void {
 // Sonde déterministe : SetWildMonHeldItem. Sans effet jeu.
 (globalThis as Record<string, unknown>).__SetWildMonHeldItem = SetWildMonHeldItem;
 
+/** 1:1 décomp `void EvolutionRenameMon(struct Pokemon *mon, u16 oldSpecies, u16 newSpecies)`
+ *  (pokemon.c:5801-5808) : si le mon n'a pas de surnom custom (nickname == nom d'espèce,
+ *  même langue que le jeu), le « surnom » suit l'évolution (TREECKO → GROVYLE).
+ *  Adaptation modèle : nicknames = strings JS (gSpeciesNames data layer) → le
+ *  StringCompare décomp (bytes) ⟺ `!==` strict sur strings. GAME_LANGUAGE = FRENCH. */
+export function EvolutionRenameMon(mon: Pokemon, oldSpecies: number, newSpecies: number): void {
+  const nickname = GetMonData(mon, MON_DATA_NICKNAME) as string;
+  const language = GetMonData(mon, MON_DATA_LANGUAGE) as number;
+  if (language === LANGUAGE_FRENCH /* GAME_LANGUAGE */ && nickname === (gSpeciesNames[oldSpecies] ?? ''))
+    SetMonData(mon, MON_DATA_NICKNAME, gSpeciesNames[newSpecies] ?? '');
+}
+
 // ─── Légalité d'apprentissage CT/CS (1:1 décomp pokemon.c) ────────────────
 
 /** 1:1 STRICT décomp `u32 CanSpeciesLearnTMHM(u16 species, u8 tm)` (pokemon.c:6252) :
@@ -794,6 +807,19 @@ export function CalculateMonStats(mon: Pokemon): void {
 /** 1:1 décomp `gPPUpGetMask` (pokemon.c) — masque 2 bits par slot de move. */
 export const gPPUpGetMask: readonly number[] = [0x03, 0x0c, 0x30, 0xc0];
 
+/** 1:1 décomp `gPPUpClearMask` (pokemon.c, juste sous gPPUpGetMask) — masque
+ *  inverse (efface les 2 bits PP-Up du slot). Consommé par RemoveMonPPBonus. */
+export const gPPUpClearMask: readonly number[] = [0xfc, 0xf3, 0xcf, 0x3f];
+
+/** 1:1 décomp `void RemoveMonPPBonus(struct Pokemon *mon, u8 moveIndex)`
+ *  (pokemon.c:4643-4648) : ppBonuses &= gPPUpClearMask[moveIndex]. Consommé par
+ *  l'oubli de capacité (evolution_scene / battle Cmd_setmovepp / party_menu). */
+export function RemoveMonPPBonus(mon: Pokemon, moveIndex: number): void {
+  let ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES) as number;
+  ppBonuses &= gPPUpClearMask[moveIndex];
+  SetMonData(mon, MON_DATA_PP_BONUSES, ppBonuses);
+}
+
 /** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c:5005) :
  *  `basePP + (basePP * 20 * nbPPUp) / 100`, nbPPUp = `(gPPUpGetMask[moveIndex] &
  *  ppBonuses) >> (2*moveIndex)` (0..3), basePP = `gBattleMoves[move].pp`. Retourne u8.
@@ -940,6 +966,48 @@ export function GiveMonInitialMoveset(mon: Pokemon): void {
 }
 // Sonde dev (vérif équivalence vs pickLevelUpMoves), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__GiveMonInitialMoveset = GiveMonInitialMoveset;
+
+/** 1:1 décomp `EWRAM_DATA static u8 sLearningMoveTableID` (pokemon.c:76) — index
+ *  persistant dans le learnset entre appels successifs de MonTryLearningNewMove
+ *  (« since you can learn more than one move per level »). */
+let sLearningMoveTableID = 0;
+
+/** 1:1 décomp `u16 MonTryLearningNewMove(struct Pokemon *mon, bool8 firstMove)`
+ *  (pokemon.c:3015-3045) : si firstMove, rembobine sLearningMoveTableID sur la
+ *  1re entrée du learnset à `level` (MOVE_NONE si aucune) ; puis si l'entrée
+ *  courante est à `level` → gMoveToLearn = move ; sLearningMoveTableID++ ;
+ *  return GiveMoveToMon(mon, move) (= move appris · MON_ALREADY_KNOWS_MOVE ·
+ *  MON_HAS_MAX_MOVES). Sinon MOVE_NONE. Adaptation modèle : learnset DÉCODÉ
+ *  {level, 'MOVE_X'} via getLevelUpLearnset (⟺ `gLevelUpLearnsets[species]`,
+ *  `& LEVEL_UP_MOVE_LV == level<<9` ⟺ `entry.level === level`) ; gMoveToLearn
+ *  posé via setMoveToLearn (foyer engine/battle/state = battle_main.c EWRAM).
+ *  Callers : evolution_scene, party_menu (Rare Candy), Cmd_handlelearnnewmove. */
+export function MonTryLearningNewMove(mon: Pokemon, firstMove: boolean): number {
+  let retVal = MOVE_NONE;
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const learnset = getLevelUpLearnset(speciesEnum);
+
+  if (firstMove) {
+    sLearningMoveTableID = 0;
+    while (learnset[sLearningMoveTableID]?.level !== level) {
+      sLearningMoveTableID++;
+      if (sLearningMoveTableID >= learnset.length)  // ⟺ LEVEL_UP_END
+        return MOVE_NONE;
+    }
+  }
+
+  if (sLearningMoveTableID < learnset.length
+      && learnset[sLearningMoveTableID].level === level) {
+    const move = (resolveDecompConstant(learnset[sLearningMoveTableID].move) as number | undefined) ?? 0;
+    setMoveToLearn(move);  // 1:1 `gMoveToLearn = ...`
+    sLearningMoveTableID++;
+    retVal = GiveMoveToMon(mon, move);
+  }
+
+  return retVal;
+}
 
 /** 1:1 décomp `void CreateBoxMon(struct BoxPokemon*, species, level, fixedIV,
  *  hasFixedPersonality, fixedPersonality, otIdType, fixedOtId)` (pokemon.c:2208).

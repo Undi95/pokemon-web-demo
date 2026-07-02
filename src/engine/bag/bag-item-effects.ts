@@ -18,6 +18,9 @@
  */
 
 import { type Pokemon, CalculateMonStats, CalculatePPWithBonus } from '../battle/party-storage';
+// Pierre d'évolution (case ITEM4_EVO_STONE) : foyer pokemon.ts + scène (P2.1 é4).
+import { GetEvolutionTargetSpecies } from '../../pokemon';
+import { BeginEvolutionScene } from '../../evolution_scene';
 import { gBattleMoves, gSpeciesInfo, getExperienceForLevel } from '../data/game-data';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
@@ -617,12 +620,17 @@ export function PokemonUseItemEffects(
                 //         BeginEvolutionScene(mon, targetSpecies, FALSE, partyIndex);
                 //         return FALSE;
                 //     }
-                // Pas porté — evolution scene n'existe pas. Pour 1:1 strict :
-                // return FALSE (= cannotUse=false) si l'evo serait possible,
-                // sans déclencher la scene. Le caller affichera un message
-                // honnête (= "Pas porté : BeginEvolutionScene field"). Pour
-                // l'instant on traite comme cannotUse=true (= retVal=true).
-                result.evolved = false;
+                // Scène RÉELLE (evolution_scene.ts, P2.1 é4). `return FALSE` décomp
+                // = item efficace → cannotUse=false + evolved=true (le caller
+                // ItemUseCB_EvolutionStone : RemoveBagItem + FreePartyPointers,
+                // la scène a déjà pris le CB2 via BeginEvolutionScene).
+                const targetSpecies = GetEvolutionTargetSpecies(mon, 2 /* EVO_MODE_ITEM_USE */, itemId);
+                if (targetSpecies !== 0 /* SPECIES_NONE */) {
+                  BeginEvolutionScene(mon, targetSpecies, false, partyIndex);
+                  result.evolved = true;
+                  result.cannotUse = false;
+                  return result;  // 1:1 `return FALSE` (sortie immédiate)
+                }
                 break;
               }
               // cases 4-6 sont HEAL_PP_ONE/PP_UP/REVIVE — déjà traités above.
