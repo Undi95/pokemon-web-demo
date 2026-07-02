@@ -16,7 +16,9 @@
 import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS,
   PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
   MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
+  EVO_MODE_NORMAL, EVO_MODE_TRADE, EVO_MODE_ITEM_USE, EVO_MODE_ITEM_CHECK,
   OT_ID_PRESET, OT_ID_RANDOM_NO_SHINY, MAX_IV_MASK } from '../include/constants/pokemon';
+import { RtcCalcLocalTime, gLocalTime } from './rtc';
 // PARTY_SIZE + VERSION_EMERALD (gGameVersion) + LANGUAGE_FRENCH (gGameLanguage) depuis le
 // header global (leaf, zéro cycle) — pour gPlayerParty/gEnemyParty + CreateBoxMon.
 import { PARTY_SIZE, VERSION_EMERALD, LANGUAGE_FRENCH } from '../include/constants/global';
@@ -54,6 +56,7 @@ import {
   HOLD_EFFECT_METAL_POWDER as _HOLD_EFFECT_METAL_POWDER,
   HOLD_EFFECT_THICK_CLUB as _HOLD_EFFECT_THICK_CLUB,
   HOLD_EFFECT_MACHO_BRACE,
+  HOLD_EFFECT_PREVENT_EVOLVE,
 } from '../include/constants/hold_effects';
 import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -87,7 +90,7 @@ import { GetBattlerAtPosition } from './battle_anim_mons';
 // getSpeciesInfo (table espèces) + reverse/resolveDecompConstant : pour GetAbilityBySpecies.
 // game-data + decomp-constants sont leaf (n'importent pas le foyer) → edges one-way, zéro cycle.
 import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset, getLevelUpLearnset,
-  getExperienceForLevel, gSpeciesNames } from './engine/data/game-data';
+  getExperienceForLevel, gSpeciesNames, getEvolutions } from './engine/data/game-data';
 // sTMHMMoves : table FOREACH_TMHM (leaf, n'importe que constants/items) — pour CanSpeciesLearnTMHM.
 import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
@@ -360,6 +363,129 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
   mon.speedEV    = evs[3];
   mon.spAttackEV = evs[4];
   mon.spDefenseEV = evs[5];
+}
+
+// ─── GetEvolutionTargetSpecies (= 1:1 décomp pokemon.c:5490-5608) ──────────
+
+// 1:1 décomp pokemon.c:52-58 (defines locaux au fichier).
+const DAY_EVO_HOUR_BEGIN = 12;
+const DAY_EVO_HOUR_END = 24;        // HOURS_PER_DAY
+const NIGHT_EVO_HOUR_BEGIN = 0;
+const NIGHT_EVO_HOUR_END = 12;
+const FRIENDSHIP_EVO_THRESHOLD = 220;
+
+/** 1:1 décomp `u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 mode, u16 evolutionItem)`
+ *  (pokemon.c:5490-5608). Table : `gEvolutionTable[species][EVOS_PER_MON]` =
+ *  notre `getEvolutions(SPECIES_key)` (evolutions.json, diff 1:1 vérifié 172/172 ;
+ *  les slots EVO_NONE du C sont absents du JSON → itérer les entrées présentes est
+ *  identique, EVO_NONE ne matche aucun case). `method` = noms EVO_* string (mêmes
+ *  noms décomp) ; `target` clé SPECIES_* → id via resolveDecompConstant ; `param`
+ *  déjà numérique (niveaux/items/beauté). Everstone bloque sauf EVO_MODE_ITEM_CHECK. */
+export function GetEvolutionTargetSpecies(mon: Pokemon, mode: number, evolutionItem: number): number {
+  let targetSpecies = 0;
+  const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+  let heldItem = GetMonData(mon, MON_DATA_HELD_ITEM) as number;
+  const personality = (GetMonData(mon, MON_DATA_PERSONALITY) as number) >>> 0;
+  const beauty = GetMonData(mon, MON_DATA_BEAUTY) as number;
+  const upperPersonality = (personality >>> 16) & 0xFFFF;
+
+  // 1:1 :5503-5506 : Enigma Berry lit la save (solo), sinon table hold effects.
+  const holdEffect = heldItem === ITEM_ENIGMA_BERRY
+    ? ((gSaveBlock1Ptr as { enigmaBerry?: { holdEffect?: number } }).enigmaBerry?.holdEffect ?? 0)
+    : GetItemHoldEffect(heldItem);
+
+  // Prevent evolution with Everstone, unless we're just viewing the party menu with an evolution item
+  if (holdEffect === HOLD_EFFECT_PREVENT_EVOLVE && mode !== EVO_MODE_ITEM_CHECK)
+    return 0; // SPECIES_NONE
+
+  const speciesKey = reverseDecompConstant(species, 'SPECIES_');
+  const evolutions = speciesKey ? getEvolutions(speciesKey) : [];
+  const targetIdOf = (key: string): number => (resolveDecompConstant(key) as number | undefined) ?? 0;
+
+  switch (mode) {
+    case EVO_MODE_NORMAL: {
+      const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+      const friendship = GetMonData(mon, MON_DATA_FRIENDSHIP) as number;
+      for (const evo of evolutions) {
+        switch (evo.method) {
+          case 'EVO_FRIENDSHIP':
+            if (friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_FRIENDSHIP_DAY':
+            RtcCalcLocalTime();
+            if (gLocalTime.hours >= DAY_EVO_HOUR_BEGIN && gLocalTime.hours < DAY_EVO_HOUR_END
+              && friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_FRIENDSHIP_NIGHT':
+            RtcCalcLocalTime();
+            if (gLocalTime.hours >= NIGHT_EVO_HOUR_BEGIN && gLocalTime.hours < NIGHT_EVO_HOUR_END
+              && friendship >= FRIENDSHIP_EVO_THRESHOLD) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL':
+            if (evo.param <= level) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_ATK_GT_DEF':
+            if (evo.param <= level)
+              if ((GetMonData(mon, MON_DATA_ATK) as number) > (GetMonData(mon, MON_DATA_DEF) as number))
+                targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_ATK_EQ_DEF':
+            if (evo.param <= level)
+              if ((GetMonData(mon, MON_DATA_ATK) as number) === (GetMonData(mon, MON_DATA_DEF) as number))
+                targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_ATK_LT_DEF':
+            if (evo.param <= level)
+              if ((GetMonData(mon, MON_DATA_ATK) as number) < (GetMonData(mon, MON_DATA_DEF) as number))
+                targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_SILCOON':
+            if (evo.param <= level && (upperPersonality % 10) <= 4) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_CASCOON':
+            if (evo.param <= level && (upperPersonality % 10) > 4) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_LEVEL_NINJASK':
+            // (EVO_LEVEL_SHEDINJA n'est PAS géré ici — cf. CreateShedinja, appelé par la scène d'évolution.)
+            if (evo.param <= level) targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_BEAUTY':
+            if (evo.param <= beauty) targetSpecies = targetIdOf(evo.target);
+            break;
+        }
+      }
+      break;
+    }
+    case EVO_MODE_TRADE: {
+      for (const evo of evolutions) {
+        switch (evo.method) {
+          case 'EVO_TRADE':
+            targetSpecies = targetIdOf(evo.target);
+            break;
+          case 'EVO_TRADE_ITEM':
+            if (evo.param === heldItem) {
+              heldItem = 0; // ITEM_NONE — l'objet est consommé par l'échange (1:1 :5586)
+              SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);
+              targetSpecies = targetIdOf(evo.target);
+            }
+            break;
+        }
+      }
+      break;
+    }
+    case EVO_MODE_ITEM_USE:
+    case EVO_MODE_ITEM_CHECK: {
+      for (const evo of evolutions) {
+        if (evo.method === 'EVO_ITEM' && evo.param === evolutionItem) {
+          targetSpecies = targetIdOf(evo.target);
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  return targetSpecies;
 }
 
 // ─── SetWildMonHeldItem (= 1:1 décomp pokemon.c) ──────────────────────────

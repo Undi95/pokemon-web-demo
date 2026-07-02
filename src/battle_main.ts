@@ -3574,7 +3574,7 @@ export type BattleMainFunc = () => void;
 import { IsMonShiny } from '../include/pokemon';
 // Famille Pokérus consolidée au foyer pokemon.c. Edge battle_main→src/pokemon = sens
 // unique (pokemon.ts n'importe PAS battle_main) → zéro cycle.
-import { RandomlyGivePartyPokerus, PartySpreadPokerus } from './pokemon';
+import { RandomlyGivePartyPokerus, PartySpreadPokerus, GetEvolutionTargetSpecies as GetEvolutionTargetSpecies_Foyer } from './pokemon';
 import type { Pokemon } from './engine/battle/party-storage';
 
 // ─── Hardware/subsystem stubs (= dette R3 documentée) ──────────────────────
@@ -3841,11 +3841,11 @@ function ResetSentPokesToOpponentValue(): void {
     stateMod.gSentPokesToOpponent[(i & 2 /* BIT_FLANK */) >> 1] = bits;
 }
 
-/** 1:1 décomp `GetEvolutionTargetSpecies(mon, evoMode, levelUpBits)` (pokemon.c). */
-function GetEvolutionTargetSpecies(_mon: unknown, _evoMode: number, _levelUpBits: number): number {
-  // Dette R3 : evolution table + condition matcher. Pour now : pas
-  // d'évolution post-battle.
-  return SPECIES_NONE;
+/** 1:1 décomp `GetEvolutionTargetSpecies(mon, evoMode, evolutionItem)` — impl réelle
+ *  au FOYER pokemon.ts (pokemon.c:5490). NB quirk décomp authentique : TryEvolvePokemon
+ *  (battle_main.c:5196) passe `levelUpBits` en 3e arg — ignoré en EVO_MODE_NORMAL. */
+function GetEvolutionTargetSpecies(mon: unknown, evoMode: number, evolutionItem: number): number {
+  return GetEvolutionTargetSpecies_Foyer(mon as Parameters<typeof GetEvolutionTargetSpecies_Foyer>[0], evoMode, evolutionItem);
 }
 
 /** 1:1 décomp `EvolutionScene(mon, species, canStopEvo, partyId)` (evolution_scene.c). */
