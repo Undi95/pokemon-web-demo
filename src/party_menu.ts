@@ -61,7 +61,6 @@ import { DoEasyChatScreen, easyChatGfxReady } from './easy_chat';
 const EASY_CHAT_TYPE_MAIL = 4;
 const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
-import { getItemKeyById } from '../harness/runtime/data-tables';
 import { GetItemName, GetItemPocket, GetBagItemKey } from './item';
 import { GoToBagMenu, ITEMMENULOCATION_PARTY, ITEMMENULOCATION_LAST, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
@@ -83,6 +82,7 @@ import { PlayFanfare } from '../harness/runtime/decomp-globals';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
 import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { MON_MALE, MON_FEMALE } from '../include/constants/pokemon';
+import { PARTY_SIZE } from '../include/constants/global';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -1379,7 +1379,14 @@ function _drawMsg(): void {
   _msgWid = AddWindow(template);
   // 1:1 décomp `DrawStdFrameWithCustomTileAndPalette(*windowPtr, FALSE, 0x4F, 13)`.
   DrawStdFrameWithCustomTileAndPalette(_msgWid, false, 0x4F, 13);
-  if (template === ITEM_USED_MSG_WINDOW_TEMPLATE && _itemUsedMsgText) {
+  // 1:1 décomp : les messages « Impossible ici. » / « Déjà en train de surfer. » etc.
+  // (phase 'field_move_cancel') passent par DisplayPartyMenuStdMessage (party_menu.c:
+  // 2459-2501, AddTextPrinterParameterized speed=0) → INSTANTANÉS, PAS par le printer
+  // animé DisplayPartyMenuMessage. (Le badge-missing 'field_move_err' reste animé =
+  // DisplayPartyMenuMessage(..., TRUE) avec {PAUSE_UNTIL_PRESS}.)
+  if (_phase === 'field_move_cancel') {
+    AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 0, 1, [1, 2, 3], TEXT_SKIP_DRAW, msg);
+  } else if (template === ITEM_USED_MSG_WINDOW_TEMPLATE && _itemUsedMsgText) {
     // 1:1 décomp `PrintMessage` (party_menu.c:2566-2571) — les MESSAGES D'ACTION
     // (level-up/learn/replace/item-used) défilent à la vitesse joueur avec A/B
     // speed-up + ▼ sur les pauses (le printer gère \p/{PAUSE_UNTIL_PRESS}
@@ -2212,7 +2219,7 @@ function _cursorCbItem(): void {
 function TryTakeMonItem(mon: Pokemon): number {
   const item = mon.heldItem;
   if (!item) return 0;                                          // ITEM_NONE
-  if (AddBagItem(getItemKeyById(item), 1) === false) return 1;  // sac plein
+  if (AddBagItem(GetBagItemKey(item), 1) === false) return 1;  // sac plein (clé SAC, cf. GetBagItemKey)
   mon.heldItem = 0;                                             // SetMonData(HELD_ITEM, ITEM_NONE)
   return 2;
 }
@@ -2307,7 +2314,7 @@ function CB2_GiveHoldItem(): void {
   // 1:1 Task_GiveHoldItem (party_menu.c:3133) : GiveItemToMon + DisplayGaveHeldItem
   // Message + RemoveBagItem.
   GiveItemToMon(mon, item);
-  RemoveBagItem(getItemKeyById(item), 1);
+  RemoveBagItem(GetBagItemKey(item), 1);  // clé SAC (TM/HM enum-numbered → move-named)
   const msg = _preparePartyMsg(getString('gText_PkmnWasGivenItem') || '',
     mon.nickname, GetItemName(item));
   _reopenPartyForGive(msg);
@@ -2446,12 +2453,12 @@ function GiveItemOrMailToSelectedMon(): void {
 /** 1:1 décomp `RemoveItemToGiveFromBag` (party_menu.c:5522) : GIVE_PC_ITEM jamais
  *  atteint (unused) → RemoveBagItem. */
 function RemoveItemToGiveFromBag(item: number): void {
-  RemoveBagItem(getItemKeyById(item), 1);
+  RemoveBagItem(GetBagItemKey(item), 1);  // clé SAC (TM/HM enum-numbered → move-named)
 }
 
 /** 1:1 décomp `ReturnGiveItemToBagOrPC` (party_menu.c:5532) : GIVE_ITEM → AddBagItem. */
 function ReturnGiveItemToBagOrPC(item: number): boolean {
-  return AddBagItem(getItemKeyById(item), 1);
+  return AddBagItem(GetBagItemKey(item), 1);  // clé SAC (TM/HM enum-numbered → move-named)
 }
 
 // État de gate pour l'ouverture de l'easy-chat depuis CB2_WriteMailToGiveMonFromBag
@@ -2492,7 +2499,7 @@ function CB2_ReturnToPartyOrBagMenuFromWritingMail(): void {
     // Écriture annulée : reprendre la lettre, la remettre dans le sac.
     TakeMailFromMon(mon);
     mon.heldItem = _giveOldItem;  // SetMonData(HELD_ITEM, sPartyMenuItemId = ancien objet)
-    if (_giveOldItem !== 0) RemoveBagItem(getItemKeyById(_giveOldItem), 1);
+    if (_giveOldItem !== 0) RemoveBagItem(GetBagItemKey(_giveOldItem), 1);  // clé SAC
     ReturnGiveItemToBagOrPC(item);  // rend la lettre au sac
     const rt = getRuntime();
     rt?.SetMainCallback2((_giveReturnCb ?? null) as never);
@@ -2516,7 +2523,7 @@ function GiveItemToSelectedMon(): void {
   _itemUsedMsgText = _preparePartyMsg(getString('gText_PkmnWasGivenItem') || '',
     mon.nickname, GetItemName(item));
   GiveItemToMon(mon, item);
-  RemoveBagItem(getItemKeyById(item), 1);
+  RemoveBagItem(GetBagItemKey(item), 1);  // clé SAC (TM/HM enum-numbered → move-named)
   _updatePartyMonHeldItem(_slotId);   // 1:1 UpdatePartyMonHeldItemSprite
   _phase = 'item_used_msg';           // A/B → Task_UpdateHeldItemSpriteAndClosePartyMenu (close→sac).
   _drawMsg();
@@ -3514,10 +3521,10 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     const res = Menu_ProcessInputNoWrapClearOnChoose();  // 0=OUI 1=NON -1=B
     if (res === 0) {
       const mon = gPlayerParty[_slotId];
-      RemoveBagItem(getItemKeyById(_giveNewItem), 1);
-      if (AddBagItem(getItemKeyById(_giveOldItem), 1) === false) {
+      RemoveBagItem(GetBagItemKey(_giveNewItem), 1);  // clé SAC (TM/HM enum-numbered → move-named)
+      if (AddBagItem(GetBagItemKey(_giveOldItem), 1) === false) {
         // 1:1 :3171 pas de place pour rendre l'ancien → rollback (re-add new au sac).
-        AddBagItem(getItemKeyById(_giveNewItem), 1);
+        AddBagItem(GetBagItemKey(_giveNewItem), 1);
         _itemUsedMsgText = _preparePartyMsg(getString('gText_BagFullCouldNotRemoveItem') || '');
       } else if (mon) {
         // 1:1 :3186 échange : donne le nouveau, message "X a remplacé Y".
@@ -3850,8 +3857,8 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       // Mode DAYCARE : le slot forcé à PARTY_SIZE+1 fait produire
       // PARTY_NOTHING_CHOSEN par BufferMonSelection (exitCallback).
       if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
-        VarSet(0x8004, 6 + 1);  // gSpecialVar_0x8004 = PARTY_SIZE + 1
-        _slotId = 6 + 1;        // *slotPtr = PARTY_SIZE + 1
+        VarSet(0x8004, PARTY_SIZE + 1);  // gSpecialVar_0x8004 = PARTY_SIZE + 1
+        _slotId = PARTY_SIZE + 1;        // *slotPtr = PARTY_SIZE + 1
       }
       // PARTY_ACTION_USE_ITEM : B → retour bag via savedCallback
       // (= CB2_ReturnToBagMenu défini par OpenPartyScreenForItemUse).
@@ -4058,7 +4065,7 @@ export function ChooseMonForDaycare(): void {
  *  Tourne comme CB2 (exitCallback) après le teardown du party menu. */
 function BufferMonSelection(): void {
   let monId = GetCursorSelectionMonId();
-  if (monId >= 6 /* PARTY_SIZE */) monId = PARTY_NOTHING_CHOSEN;
+  if (monId >= PARTY_SIZE) monId = PARTY_NOTHING_CHOSEN;
   VarSet(0x8004, monId);  // gSpecialVar_0x8004
   (globalThis as Record<string, unknown>).gFieldCallback2 = CB2_FadeFromPartyMenu;
   getRuntime().SetMainCallback2(CB2_ReturnToField_Manual);

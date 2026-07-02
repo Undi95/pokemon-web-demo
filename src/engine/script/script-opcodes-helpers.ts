@@ -15,7 +15,7 @@ import { gMapHeader, MAP_OFFSET } from '../../fieldmap';
 import { GetCurrentMap } from '../../load_save';
 import { GetSaveBlock1 } from '../../save';
 import { VarGet, gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, T_TILE_TRANSITION } from '../../field_player_avatar';
+import { gPlayerAvatar, T_TILE_TRANSITION } from '../../field_player_avatar';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { getRuntime } from '../../../harness/runtime/decomp-globals';
 
@@ -24,13 +24,10 @@ void GetCurrentMap;
 void GetSaveBlock1;
 void getRuntime;
 
-/** 1:1 décomp event_object_movement.c : direction opposée. */
-export const OPPOSITE_DIR: Record<number, number> = {
-  [DIR_SOUTH]: DIR_NORTH,
-  [DIR_NORTH]: DIR_SOUTH,
-  [DIR_WEST]: DIR_EAST,
-  [DIR_EAST]: DIR_WEST,
-};
+/** 1:1 décomp `GetOppositeDirection` : ré-exporté depuis la source unique
+ *  direction-coords.ts (module de constantes pur). Le doublon local qui évaluait
+ *  DIR_SOUTH de field_player_avatar au top-level fermait un cycle ESM/TDZ. */
+export { OPPOSITE_DIR } from '../field/direction-coords';
 
 /** A_BUTTON = 0x01 (= 1:1 décomp gba/key.h). */
 export const A_BUTTON = 0x01;

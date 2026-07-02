@@ -33,10 +33,24 @@
  */
 
 import {
-  getScript, getText,
+  getText,
+  getScriptImage, ScriptContext_SetupScript, LockPlayerFieldControls,
   type Opcode,
 } from './script';
-import { registerSpecial } from './scrcmd';
+import { registerSpecial, makeByteVmTrainerArgSourceFromCursor } from './scrcmd';
+import {
+  TRAINER_ENCOUNTER_MUSIC_MALE, TRAINER_ENCOUNTER_MUSIC_FEMALE, TRAINER_ENCOUNTER_MUSIC_GIRL,
+  TRAINER_ENCOUNTER_MUSIC_INTENSE, TRAINER_ENCOUNTER_MUSIC_COOL, TRAINER_ENCOUNTER_MUSIC_AQUA,
+  TRAINER_ENCOUNTER_MUSIC_MAGMA, TRAINER_ENCOUNTER_MUSIC_SWIMMER, TRAINER_ENCOUNTER_MUSIC_TWINS,
+  TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR, TRAINER_ENCOUNTER_MUSIC_HIKER, TRAINER_ENCOUNTER_MUSIC_INTERVIEWER,
+  TRAINER_ENCOUNTER_MUSIC_RICH,
+} from '../include/constants/trainers';
+import {
+  MUS_ENCOUNTER_MALE, MUS_ENCOUNTER_FEMALE, MUS_ENCOUNTER_GIRL, MUS_ENCOUNTER_INTENSE,
+  MUS_ENCOUNTER_COOL, MUS_ENCOUNTER_AQUA, MUS_ENCOUNTER_MAGMA, MUS_ENCOUNTER_SWIMMER,
+  MUS_ENCOUNTER_TWINS, MUS_ENCOUNTER_ELITE_FOUR, MUS_ENCOUNTER_HIKER, MUS_ENCOUNTER_INTERVIEWER,
+  MUS_ENCOUNTER_RICH, MUS_ENCOUNTER_SUSPICIOUS,
+} from '../include/constants/songs';
 import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
 import { parseValue } from './engine/script/script-opcodes-helpers';
 import { ShowFieldMessage } from './field_message_box';
@@ -111,12 +125,32 @@ let sTrainerABattleScriptRetAddr: TrainerContinuation = null;
 let sTrainerBBattleScriptRetAddr: TrainerContinuation = null;
 let sShouldCheckTrainerBScript = false;
 let sNoOfPossibleTrainerRetScripts = 0;
-/** 1:1 décomp `gWhichTrainerToFaceAfterBattle` (battle_setup.c). */
-export let gWhichTrainerToFaceAfterBattle = 0;
-/** 1:1 décomp `gApproachingTrainerId` (trainer_see.c) — trainer_see non porté → 0. */
-const gApproachingTrainerId = 0;
-/** 1:1 décomp `gNoOfApproachingTrainers` (trainer_see.c) — idem → 0. */
-const gNoOfApproachingTrainers = 0;
+/** Pont trainer_see (module propriétaire de gApproachingTrainers/gApproachingTrainerId/
+ *  gNoOfApproachingTrainers/gWhichTrainerToFaceAfterBattle). Posé par trainer_see au
+ *  chargement (import trainer_see→battle_setup ; le sens inverse passe par ce pont
+ *  globalThis pour casser le cycle ESM). */
+interface TrainerSeeBridge {
+  GetNoOfApproachingTrainers(): number;
+  GetApproachingTrainerId(): number;
+  GetApproachingTrainerObjectEventId(i: number): number;
+  GetApproachingTrainerScriptOff(i: number): number;
+  DidTrainerApproachPlayer(): boolean;
+  SetWhichTrainerToFaceAfterBattle(v: number): void;
+}
+function _trainerSee(): TrainerSeeBridge | undefined {
+  return (globalThis as { __trainerSee?: TrainerSeeBridge }).__trainerSee;
+}
+/** 1:1 décomp `gApproachingTrainerId` (trainer_see.c). Lu via le pont (0 tant que
+ *  trainer_see n'a rien peuplé). */
+function gApproachingTrainerId_(): number { return _trainerSee()?.GetApproachingTrainerId() ?? 0; }
+/** 1:1 décomp `gNoOfApproachingTrainers` (trainer_see.c). */
+function gNoOfApproachingTrainers_(): number { return _trainerSee()?.GetNoOfApproachingTrainers() ?? 0; }
+/** 1:1 décomp `gWhichTrainerToFaceAfterBattle` (trainer_see.c:56 = module propriétaire).
+ *  battle_setup l'ÉCRIT (comme la décomp) via le pont ; trainer_see le lit dans
+ *  PlayerFaceTrainerAfterBattle. */
+function setWhichTrainerToFaceAfterBattle_(v: number): void {
+  _trainerSee()?.SetWhichTrainerToFaceAfterBattle(v);
+}
 
 /** Miroir local de gTrainerBattleOpponent_A (la canonique vit dans state.ts via
  *  setTrainerBattleOpponentA — GetTrainerFlag de specials-registry la lit par
@@ -316,7 +350,7 @@ export function ResetTrainerOpponentIds(): void {
 /** 1:1 décomp `InitTrainerBattleVariables()` (battle_setup.c:1018-1037). */
 function InitTrainerBattleVariables(): void {
   sTrainerBattleMode = 0;
-  if (gApproachingTrainerId === 0) {
+  if (gApproachingTrainerId_() === 0) {
     sTrainerAIntroSpeech = null;
     sTrainerADefeatSpeech = null;
     sTrainerABattleScriptRetAddr = null;
@@ -366,7 +400,7 @@ export function configureTrainerBattleCore(mode: number, src: TrainerArgSource):
       SetMapVarsToTrainer();
       return 'EventScript_TryDoDoubleTrainerBattle';
     case TRAINER_BATTLE_CONTINUE_SCRIPT:
-      if (gApproachingTrainerId === 0) {
+      if (gApproachingTrainerId_() === 0) {
         TrainerBattleLoadArgs(sContinueScriptBattleParams, src);
         SetMapVarsToTrainer();
       } else {
@@ -402,7 +436,7 @@ export function configureTrainerBattleCore(mode: number, src: TrainerArgSource):
       return null;
     // TRAINER_BATTLE_PYRAMID / TRAINER_BATTLE_HILL : frontier, dette T-C (:1147-1178).
     default:
-      if (gApproachingTrainerId === 0) {
+      if (gApproachingTrainerId_() === 0) {
         TrainerBattleLoadArgs(sOrdinaryBattleParams, src);
         SetMapVarsToTrainer();
       } else {
@@ -473,7 +507,7 @@ function ReturnEmptyStringIfNull(label: string | null): string {
 /** 1:1 décomp `GetIntroSpeechOfApproachingTrainer()` (battle_setup.c:1509-1515) —
  *  hors trainer_see (=0) : speech A. (B = 2 approchants, dette trainer_see.) */
 function GetIntroSpeechOfApproachingTrainer(): string {
-  return gApproachingTrainerId === 0
+  return gApproachingTrainerId_() === 0
     ? ReturnEmptyStringIfNull(sTrainerAIntroSpeech)
     : ReturnEmptyStringIfNull(sTrainerBIntroSpeech);
 }
@@ -513,12 +547,12 @@ export function BattleSetup_GetTrainerPostBattleScript(): string | ScriptPos | B
   if (sShouldCheckTrainerBScript) {
     sShouldCheckTrainerBScript = false;
     if (sTrainerBBattleScriptRetAddr !== null) {
-      gWhichTrainerToFaceAfterBattle = 1;
+      setWhichTrainerToFaceAfterBattle_(1);
       return sTrainerBBattleScriptRetAddr;
     }
   } else {
     if (sTrainerABattleScriptRetAddr !== null) {
-      gWhichTrainerToFaceAfterBattle = 0;
+      setWhichTrainerToFaceAfterBattle_(0);
       return sTrainerABattleScriptRetAddr;
     }
   }
@@ -529,10 +563,10 @@ export function BattleSetup_GetTrainerPostBattleScript(): string | ScriptPos | B
  *  notre boot (helpers) ne couvre pas : reset des compteurs trainer_see. Appelé
  *  par l'opcode dotrainerbattle avant le boot. */
 export function _prepareTrainerBattleStart(): void {
-  sNoOfPossibleTrainerRetScripts = gNoOfApproachingTrainers;
+  sNoOfPossibleTrainerRetScripts = gNoOfApproachingTrainers_();
   void sNoOfPossibleTrainerRetScripts;
   sShouldCheckTrainerBScript = false;
-  gWhichTrainerToFaceAfterBattle = 0;
+  setWhichTrainerToFaceAfterBattle_(0);
 }
 
 // ─── Lancement combat dresseur (voie A, partagé avec le byte-VM) ────────────
@@ -567,47 +601,114 @@ export function startTrainerBattleAndGetPoll(): () => boolean {
 
 // ─── T-C : approche dresseur (callers = trainer_see.c, non porté) ───────────
 
-/** 1:1 décomp `ConfigureTwoTrainersBattle(trainerObjEventId, trainerScript)`
- *  (battle_setup.c:1202-1208). Caller unique = trainer_see.c TryPrepareSecond
- *  ApproachingTrainer (2 approchants) — dette trainer_see : appelé avec la
- *  POSITION du script du dresseur B ({opcodes, idx} sur l'opcode trainerbattle,
- *  équivalent structurel du `trainerScript + 1` décomp = les args). */
-export function ConfigureTwoTrainersBattle(trainerObjEventId: number, trainerScript: { opcodes: Array<{ op: string; args?: string[] }>; idx: number }): void {
+/** Lit `gObjectEvents[id].localId` via le pont globalThis (évite un import direct
+ *  event_object_movement → battle_setup, réservé au flux talk). */
+function _objectEventLocalId(id: number): number {
+  const arr = (globalThis as { __gObjectEvents?: Array<{ localId: number }> }).__gObjectEvents;
+  return arr?.[id]?.localId ?? id;
+}
+
+/** Curseur binaire sur l'image de scripts positionné sur l'opcode `trainerbattle`
+ *  d'un dresseur (= le pointeur ROM `trainerScript` décomp). `+1` saute l'opcode
+ *  pour atteindre le mode (= `trainerScript + 1` décomp que BattleSetup_ConfigureTrainerBattle
+ *  reçoit). L'offset -1 (script absent) → source vide → mode 0. */
+function _configureTrainerBattleFromScriptOffset(scriptOff: number): string | null {
+  const img = getScriptImage();
+  if (scriptOff < 0) return configureTrainerBattleCore(0, makeByteVmTrainerArgSourceFromCursor({ buf: img, off: img.length }));
+  const mode = img[scriptOff + 1]; // peek mode (= *(trainerScript + 1))
+  // Curseur sur les args : APRÈS le mode byte (LoadArgs consomme mode via u8() en premier).
+  return configureTrainerBattleCore(mode, makeByteVmTrainerArgSourceFromCursor({ buf: img, off: scriptOff + 1 }));
+}
+
+/** 1:1 décomp `ConfigureAndSetUpOneTrainerBattle(trainerObjEventId, trainerScript)`
+ *  (battle_setup.c:1193-1200). Forme byte-VM : `trainerScript` = offset de l'opcode
+ *  `trainerbattle` dans l'image. Configure le combat + arme EventScript_StartTrainerApproach
+ *  + verrouille les contrôles field (= le dresseur approche puis engage). */
+export function ConfigureAndSetUpOneTrainerBattle(trainerObjEventId: number, scriptOff: number): void {
   gSelectedObjectEvent.index = trainerObjEventId;
-  // 1:1 :1206 gSpecialVar_LastTalked = gObjectEvents[trainerObjEventId].localId
-  // (chez nous l'appelant trainer_see fournira le localId via l'objet NPC ;
-  //  l'index sert de LastTalked en attendant — même sémantique d'interaction).
-  gSpecialVar.LastTalked = trainerObjEventId;
-  const op = trainerScript.opcodes[trainerScript.idx];
-  BattleSetup_ConfigureTrainerBattle(op?.args ?? [], { scriptOpcodes: trainerScript.opcodes, scriptIdx: trainerScript.idx + 1 } as never);
+  gSpecialVar.LastTalked = _objectEventLocalId(trainerObjEventId);
+  _configureTrainerBattleFromScriptOffset(scriptOff);
+  ScriptContext_SetupScript('EventScript_StartTrainerApproach');
+  LockPlayerFieldControls();
+}
+
+/** 1:1 décomp `ConfigureTwoTrainersBattle(trainerObjEventId, trainerScript)`
+ *  (battle_setup.c:1202-1208). Forme byte-VM (offset image). */
+export function ConfigureTwoTrainersBattle(trainerObjEventId: number, scriptOff: number): void {
+  gSelectedObjectEvent.index = trainerObjEventId;
+  gSpecialVar.LastTalked = _objectEventLocalId(trainerObjEventId);
+  _configureTrainerBattleFromScriptOffset(scriptOff);
 }
 
 /** 1:1 décomp `SetUpTwoTrainersBattle()` (battle_setup.c:1209-1214) :
- *  ScriptContext_SetupScript(EventScript_StartTrainerApproach) + lock.
- *  Le script transpilé EXISTE (trainer_battle-data.ts idx 0) ; le run réel
- *  passera par le contexte NPC global de trainer_see (dette trainer_see). */
+ *  ScriptContext_SetupScript(EventScript_StartTrainerApproach) + lock. */
 export function SetUpTwoTrainersBattle(): void {
-  const sc = getScript('EventScript_StartTrainerApproach');
-  if (sc) RunScriptImmediatelyCompat('EventScript_StartTrainerApproach');
+  ScriptContext_SetupScript('EventScript_StartTrainerApproach');
+  LockPlayerFieldControls();
 }
 
+// Pont anti-cycle (P2.3) : trainer_see appelle ces 4 setups d'aggro au RUNTIME uniquement.
+// L'import statique trainer_see→battle_setup tirait tout le sous-arbre combat/shop/mail dans
+// l'init précoce de decomp-globals (via field_effect→trainer_see) → TDZ en cascade
+// (MALE, RGB_WHITE…). battle_setup reste chargé au boot (field_control_avatar l'importe),
+// donc ce pont est posé avant tout appel runtime. Arrows → fns hoistées.
+(globalThis as Record<string, unknown>).__battleSetupAggro = {
+  ResetTrainerOpponentIds: () => ResetTrainerOpponentIds(),
+  ConfigureAndSetUpOneTrainerBattle: (o: number, s: number) => ConfigureAndSetUpOneTrainerBattle(o, s),
+  ConfigureTwoTrainersBattle: (o: number, s: number) => ConfigureTwoTrainersBattle(o, s),
+  SetUpTwoTrainersBattle: () => SetUpTwoTrainersBattle(),
+};
+
 /** 1:1 décomp `GetTrainerFlagFromScriptPointer(data)` (battle_setup.c:1215-1223) :
- *  lit l'arg trainer (u16 à data+2 = l'opérande du trainerbattle) → flag battu.
- *  Forme structurelle : (opcodes, idx) sur l'opcode trainerbattle* transpilé →
- *  args[1] (le trainer) — `TrainerBattleLoadArg16(data + 2)` 1:1. */
-export function GetTrainerFlagFromScriptPointer(script: { opcodes: Array<{ op: string; args?: string[] }>; idx: number }): boolean {
-  const op = script.opcodes[script.idx];
-  const raw = op?.args?.[1];
-  if (raw === undefined) return false;
-  const flag = resolveTrainerNumId(raw) & 0xFFFF;
+ *  `TrainerBattleLoadArg16(data + 2)` = trainer u16 à off+2 (opcode+mode) → flag battu.
+ *  Forme byte-VM (offset image). */
+export function GetTrainerFlagFromScriptPointer(scriptOff: number): boolean {
+  if (scriptOff < 0) return false;
+  const img = getScriptImage();
+  const flag = (img[scriptOff + 2] | (img[scriptOff + 3] << 8)) & 0xFFFF;
   return FlagGet(TRAINER_FLAGS_START + flag);
 }
 
-/** Wrapper RunScriptImmediately importé en bas de fichier (devtools) — alias
- *  local pour SetUpTwoTrainersBattle (anti-hoisting d'import). */
-function RunScriptImmediatelyCompat(label: string): void {
-  const g = (globalThis as { __runEventScript?: (l: string) => void });
-  g.__runEventScript?.(label);
+/** 1:1 décomp `PlayTrainerEncounterMusic(void)` (battle_setup.c:1440). Route la
+ *  musique de rencontre selon `GetTrainerEncounterMusicId` (= encounterMusic_gender &
+ *  0x7F du dresseur). PlayNewMapMusic via le pont globalThis (sound.ts). */
+export function PlayTrainerEncounterMusic(): void {
+  const trainerId = gApproachingTrainerId_() === 0 ? _trainerBattleOpponentA : _trainerBattleOpponentB;
+
+  if (sTrainerBattleMode !== TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC
+   && sTrainerBattleMode !== TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE_NO_MUSIC) {
+    let music: number;
+    switch (_GetTrainerEncounterMusicId(trainerId)) {
+      case TRAINER_ENCOUNTER_MUSIC_MALE:        music = MUS_ENCOUNTER_MALE; break;
+      case TRAINER_ENCOUNTER_MUSIC_FEMALE:      music = MUS_ENCOUNTER_FEMALE; break;
+      case TRAINER_ENCOUNTER_MUSIC_GIRL:        music = MUS_ENCOUNTER_GIRL; break;
+      case TRAINER_ENCOUNTER_MUSIC_INTENSE:     music = MUS_ENCOUNTER_INTENSE; break;
+      case TRAINER_ENCOUNTER_MUSIC_COOL:        music = MUS_ENCOUNTER_COOL; break;
+      case TRAINER_ENCOUNTER_MUSIC_AQUA:        music = MUS_ENCOUNTER_AQUA; break;
+      case TRAINER_ENCOUNTER_MUSIC_MAGMA:       music = MUS_ENCOUNTER_MAGMA; break;
+      case TRAINER_ENCOUNTER_MUSIC_SWIMMER:     music = MUS_ENCOUNTER_SWIMMER; break;
+      case TRAINER_ENCOUNTER_MUSIC_TWINS:       music = MUS_ENCOUNTER_TWINS; break;
+      case TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR:  music = MUS_ENCOUNTER_ELITE_FOUR; break;
+      case TRAINER_ENCOUNTER_MUSIC_HIKER:       music = MUS_ENCOUNTER_HIKER; break;
+      case TRAINER_ENCOUNTER_MUSIC_INTERVIEWER: music = MUS_ENCOUNTER_INTERVIEWER; break;
+      case TRAINER_ENCOUNTER_MUSIC_RICH:        music = MUS_ENCOUNTER_RICH; break;
+      default:                                  music = MUS_ENCOUNTER_SUSPICIOUS;
+    }
+    const g = globalThis as { PlayNewMapMusic?: (songNum: number) => void };
+    g.PlayNewMapMusic?.(music);
+  }
+}
+
+/** 1:1 décomp `GetTrainerEncounterMusicId(trainerId)` (pokemon.c:5855) = branche
+ *  `TRAINER_ENCOUNTER_MUSIC(trainerId)` = `gTrainers[id].encounterMusic_gender & 0x7F`
+ *  (hors Pyramid/Hill). Lit __gTrainers (battle-trainer-data-bridge).
+ *  ⚠️ DÉPENDANCE : le bridge ne peuple actuellement que le bit gender (0x80) de
+ *  encounterMusic_gender, pas l'id de musique (bits 0-6) → renvoie 0 (MALE) pour tous
+ *  tant que le bridge n'aura pas mappé la string encounterMusic → id. Le routage
+ *  ci-dessus est 1:1 ; la valeur exacte suivra l'enrichissement du bridge. */
+function _GetTrainerEncounterMusicId(trainerId: number): number {
+  const t = (globalThis as { __gTrainers?: Record<number, { encounterMusic_gender: number }> }).__gTrainers?.[trainerId];
+  return (t?.encounterMusic_gender ?? 0) & 0x7F;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1049,9 +1150,15 @@ export function _bootRematchBattleForScript(): () => boolean {
 registerSpecial('GetTrainerBattleMode', () => GetTrainerBattleMode());
 registerSpecial('ShowTrainerIntroSpeech', () => { ShowTrainerIntroSpeech(); });
 registerSpecial('ShowTrainerCantBattleSpeech', () => { ShowTrainerCantBattleSpeech(); });
-// 1:1 trainer_see.c TryPrepareSecondApproachingTrainer : trainer_see non porté
-// (gNoOfApproachingTrainers=0) → FALSE (dette T-C).
-registerSpecial('TryPrepareSecondApproachingTrainer', () => 0);
+// 1:1 battle_setup.c:1440 PlayTrainerEncounterMusic — porté (routage song table).
+registerSpecial('PlayTrainerEncounterMusic', () => { PlayTrainerEncounterMusic(); });
+// 1:1 trainer_see.c:666 TryPrepareSecondApproachingTrainer — porté (trainer_see.ts),
+// routé via le pont globalThis (cycle ESM trainer_see↔battle_setup).
+registerSpecial('TryPrepareSecondApproachingTrainer', () => {
+  (globalThis as { __trainerSee?: { TryPrepareSecondApproachingTrainer?: () => void } })
+    .__trainerSee?.TryPrepareSecondApproachingTrainer?.();
+  return 0;
+});
 // T-B rematches (remplacent les stubs `() => 0` de specials-registry).
 registerSpecial('IsTrainerReadyForRematch', () => (IsTrainerReadyForRematch() ? 1 : 0));
 registerSpecial('ShouldTryRematchBattle', () => (ShouldTryRematchBattle() ? 1 : 0));

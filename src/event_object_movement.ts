@@ -105,6 +105,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../harness/runt
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { OBJECT_EVENT_TEMPLATES_COUNT } from '../include/constants/global';
 import { GetSaveBlock1 } from './save';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from './berry';
 // Reflets relocalisés au miroir 1:1 (field_effect_helpers.c) — appelé par le spine
@@ -1940,6 +1941,19 @@ export function FreezeObjectEventsExceptOne(objectEventId: number): void {
     const npc = gObjectEvents[i];
     if (i !== objectEventId && npc.active && i !== gPlayerAvatar.objectEventId) {
       FreezeObjectEvent(npc);
+    }
+  }
+}
+
+/** 1:1 décomp `FreezeObjectEventsExceptTwo(objectEventId1, objectEventId2)`
+ *  (event_object_movement.c:8175). Utilisé par event_object_lock.c
+ *  Task_FreezeObjectAndPlayer pour figer tout SAUF le dresseur approché + le
+ *  joueur (double-battle : les 2 dresseurs restent libres). */
+export function FreezeObjectEventsExceptTwo(objectEventId1: number, objectEventId2: number): void {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    if (i !== objectEventId1 && i !== objectEventId2
+        && gObjectEvents[i].active && i !== gPlayerAvatar.objectEventId) {
+      FreezeObjectEvent(gObjectEvents[i]);
     }
   }
 }
@@ -5690,9 +5704,27 @@ function _MovementAction_Figure8(rt: DecompRuntime, npc: ObjectEvent): boolean {
  *  Dette H3 cascade : SetBuriedTrainerMovement + UpdateRevealDisguise +
  *  Disguise/Buried sub-systems. State machine porté partial. */
 function _MovementAction_RevealTrainer_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // 1:1 décomp : if movementType BURIED, SetBuriedTrainerMovement.
-  // DETTE H3 : SetBuriedTrainerMovement + UpdateRevealDisguise cascade.
-  npc.actionStep = 1;
+  // 1:1 décomp `MovementAction_RevealTrainer_Step0` (event_object_movement.c:6503) :
+  //   if (movementType == MOVEMENT_TYPE_BURIED) { SetBuriedTrainerMovement(obj); return FALSE; }
+  //   if (movementType != TREE_DISGUISE && != MOUNTAIN_DISGUISE) { sActionFuncId=2; return TRUE; }
+  //   StartRevealDisguise(obj); sActionFuncId=1; return MovementAction_RevealTrainer_Step1(...);
+  if (npc.movementType === 'MOVEMENT_TYPE_BURIED') {
+    // SetBuriedTrainerMovement vit dans trainer_see.ts (module propriétaire de la
+    // machine TRSEE) → pont globalThis pour éviter le cycle ESM eom↔trainer_see.
+    const g = globalThis as { __trainerSee?: { SetBuriedTrainerMovement?: (o: ObjectEvent) => void } };
+    g.__trainerSee?.SetBuriedTrainerMovement?.(npc);
+    return false;
+  }
+  if (npc.movementType !== 'MOVEMENT_TYPE_TREE_DISGUISE' && npc.movementType !== 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE') {
+    // Chemin dresseur NORMAL (route 102/103…) : reveal instantané, action finie.
+    npc.actionStep = 2;
+    return true;
+  }
+  // DÉTTE : StartRevealDisguise/UpdateRevealDisguise (animation tree/mountain
+  // disguise) non portée — l'action se termine ici (le dresseur déguisé n'a pas
+  // encore son animation de révélation). Concerne uniquement les rares NPCs
+  // déguisés (arbre/montagne), pas l'aggro dresseur normal.
+  npc.actionStep = 2;
   return true;
 }
 
@@ -6378,6 +6410,101 @@ const gJumpMovementActions = [
 export function GetJumpMovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gJumpMovementActions[dir];
+}
+
+// ─── Trainer movement type + template overrides (1:1 event_object_movement.c) ──
+
+/** 1:1 décomp `gTrainerFacingDirectionMovementTypes[]` (event_object_movement.c:881).
+ *  Indexé par direction → nom du MOVEMENT_TYPE_FACE_* (notre `movementType` est un
+ *  string ; le décomp stocke le numéro MOVEMENT_TYPE_FACE_DOWN/UP/LEFT/RIGHT). */
+const gTrainerFacingDirectionMovementTypes: readonly string[] = [
+  'MOVEMENT_TYPE_FACE_DOWN',   // DIR_NONE
+  'MOVEMENT_TYPE_FACE_DOWN',   // DIR_SOUTH
+  'MOVEMENT_TYPE_FACE_UP',     // DIR_NORTH
+  'MOVEMENT_TYPE_FACE_LEFT',   // DIR_WEST
+  'MOVEMENT_TYPE_FACE_RIGHT',  // DIR_EAST
+  'MOVEMENT_TYPE_FACE_DOWN',   // DIR_SOUTHWEST
+  'MOVEMENT_TYPE_FACE_DOWN',   // DIR_SOUTHEAST
+  'MOVEMENT_TYPE_FACE_UP',     // DIR_NORTHWEST
+  'MOVEMENT_TYPE_FACE_UP',     // DIR_NORTHEAST
+];
+
+/** 1:1 décomp `GetTrainerFacingDirectionMovementType(direction)`
+ *  (event_object_movement.c:4645). */
+export function GetTrainerFacingDirectionMovementType(direction: number): string {
+  return gTrainerFacingDirectionMovementTypes[direction] ?? 'MOVEMENT_TYPE_FACE_DOWN';
+}
+
+/** 1:1 décomp `SetTrainerMovementType(objectEvent, movementType)`
+ *  (event_object_movement.c:4636).
+ *  ```c
+ *  objectEvent->movementType = movementType;
+ *  objectEvent->directionSequenceIndex = 0;
+ *  objectEvent->playerCopyableMovement = 0;
+ *  gSprites[objectEvent->spriteId].callback = sMovementTypeCallbacks[movementType];
+ *  gSprites[objectEvent->spriteId].sTypeFuncId = 0;
+ *  ```
+ *  Adaptation modèle : le port web ne dispatche pas les movement-types par pointeur
+ *  de callback sprite (sMovementTypeCallbacks[]) mais par string-match de
+ *  `npc.movementType` dans `dispatchSpecialMovement` — donc « reprogrammer la
+ *  callback » = poser `npc.movementType` + reset du state machine (movementStep =
+ *  sTypeFuncId). Comportement identique. */
+export function SetTrainerMovementType(objectEvent: ObjectEvent, movementType: string): void {
+  objectEvent.movementType = movementType;
+  objectEvent.directionSeqIdx = 0;      // directionSequenceIndex
+  objectEvent.playerCopyableMovement = 0;
+  objectEvent.movementStep = 0;         // sTypeFuncId = 0
+}
+
+/** 1:1 décomp `GetBaseTemplateForObjectEvent(objectEvent)`
+ *  (event_object_movement.c:2462). Renvoie le template save-block correspondant au
+ *  localId sur la map courante, ou null hors map courante / introuvable. */
+type SaveBlockObjectEventTemplate = (typeof gSaveBlock1Ptr.objectEventTemplates)[number];
+function GetBaseTemplateForObjectEvent(objectEvent: ObjectEvent): SaveBlockObjectEventTemplate | null {
+  const loc = gSaveBlock1Ptr.location;
+  if (!loc || objectEvent.mapNum !== loc.mapNum || objectEvent.mapGroup !== loc.mapGroup) {
+    return null;
+  }
+  const templates = gSaveBlock1Ptr.objectEventTemplates;
+  for (let i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++) {
+    const t = templates[i];
+    if (t && objectEvent.localId === t.localId) return t;
+  }
+  return null;
+}
+
+/** 1:1 décomp `OverrideTemplateCoordsForObjectEvent(objectEvent)`
+ *  (event_object_movement.c:2478). Persiste la position courante du NPC dans son
+ *  template (x/y en coords LOGIQUES = current - MAP_OFFSET) → un dresseur qui a
+ *  marché vers le joueur reste à sa nouvelle place au re-load de map. */
+export function OverrideTemplateCoordsForObjectEvent(objectEvent: ObjectEvent): void {
+  const t = GetBaseTemplateForObjectEvent(objectEvent);
+  if (t !== null) {
+    t.x = objectEvent.currentCoordsX - MAP_OFFSET;
+    t.y = objectEvent.currentCoordsY - MAP_OFFSET;
+  }
+}
+
+/** 1:1 décomp `TryOverrideTemplateCoordsForObjectEvent(objectEvent, movementType)`
+ *  (event_object_movement.c:2499). Persiste le movement-type dans le template. */
+export function TryOverrideTemplateCoordsForObjectEvent(objectEvent: ObjectEvent, movementType: string): void {
+  const t = GetBaseTemplateForObjectEvent(objectEvent);
+  if (t !== null) t.movementType = movementType;
+}
+
+/** 1:1 décomp `gJumpInPlaceMovementActions[]` (event_object_movement.c:982). */
+const gJumpInPlaceMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_JUMP_IN_PLACE_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT,  // DIR_EAST
+];
+/** 1:1 décomp `GetJumpInPlaceMovementAction` (event_object_movement.c:4966, via
+ *  `dirn_to_anim`). Utilisé par trainer_see.c JumpInPlaceBuriedTrainer. */
+export function GetJumpInPlaceMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gJumpInPlaceMovementActions[dir];
 }
 
 /** 1:1 décomp `gJumpInPlaceTurnAroundMovementActions` (event_object_movement.c:989). */
@@ -7125,6 +7252,13 @@ function _spawnSingleNpcFromTemplate(
   npc.localIdRaw = template.localIdRaw;  // Phase 4.10 : pour movement-system applymovement.
   npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
   npc.scriptLabel = template.script ?? '';
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1330/1332) :
+  //   objectEvent->trainerType = template->trainerType;
+  //   objectEvent->trainerRange_berryTreeId = template->trainerRange_berryTreeId;
+  // Requis par l'aggro dresseurs (CheckForTrainersWantingBattle lit npc.trainerType) et par
+  // les berry trees (le spawn berry-tree spécialisé le posait déjà ; ici = flow standard).
+  npc.trainerType = template.trainerType;
+  npc.trainerRange_berryTreeId = template.trainerRange_berryTreeId;
   // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1298-1312) :
   //   x = template->x + MAP_OFFSET;
   //   y = template->y + MAP_OFFSET;

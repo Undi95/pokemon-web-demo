@@ -31,7 +31,8 @@ import { EOS } from '../../../include/constants/characters';
 // RÉ-EXPORTÉ ici pour les importeurs historiques (dont *-auto.ts que tsc ne vérifie pas).
 // TODO dédup : POKEMON_NAME_LENGTH / TRAINER_ID_LENGTH / PARTY_SIZE sont AUSSI dans
 // include/constants/global.ts → à sourcer depuis la feuille (chantier global.h dédié).
-export { PLAYER_NAME_LENGTH } from '../../../include/constants/global';
+import { PLAYER_NAME_LENGTH } from '../../../include/constants/global';
+export { PLAYER_NAME_LENGTH };
 export const POKEMON_NAME_LENGTH = 10;
 export const TRAINER_ID_LENGTH = 4;
 export const PARTY_SIZE = 6;
@@ -1382,7 +1383,15 @@ function emptyMail(): Mail {
 }
 
 function emptyDaycareMail(): DaycareMail {
-  return { message: emptyMail(), otName: [EOS], monName: [EOS], gameLanguage: 0, monLanguage: 0 };
+  // 1:1 décomp `ClearDaycareMonMail` (daycare.c:348-358) : otName[PLAYER_NAME_LENGTH+1]
+  // et monName[POKEMON_NAME_LENGTH+1] zérotés PLEINE LONGUEUR (pas [EOS] len-1) — même
+  // représentation d'état vide que `_freshDaycareMail` (daycare.ts).
+  return {
+    message: emptyMail(),
+    otName: zeros(PLAYER_NAME_LENGTH + 1),
+    monName: zeros(POKEMON_NAME_LENGTH + 1),
+    gameLanguage: 0, monLanguage: 0,
+  };
 }
 
 function emptyDayCare(): DayCare {

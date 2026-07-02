@@ -58,7 +58,6 @@ import {
   ScanlineEffect_Stop,
   FreeAllSpritePalettes,
   PALETTES_ALL,
-  MALE, FEMALE,
   CpuFill16, OAM_SIZE, OAM,
 } from '../harness/runtime/decomp-globals';
 import {AllocZeroed, SetVBlankCallback} from "../harness/runtime/decomp-bridge";
@@ -91,7 +90,7 @@ import { PIXEL_FILL } from '../harness/runtime/decomp-globals';
 import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import type { Mail } from './engine/save/save-blocks';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_WIDTH, TILE_HEIGHT } from '../include/gba/defines';
-import { GENDER_COUNT, LANGUAGE_FRENCH } from '../include/constants/global';
+import { GENDER_COUNT, LANGUAGE_FRENCH, MALE, FEMALE } from '../include/constants/global';
 import {
   ITEM_ORANGE_MAIL, ITEM_HARBOR_MAIL, ITEM_GLITTER_MAIL, ITEM_MECH_MAIL,
   ITEM_WOOD_MAIL, ITEM_WAVE_MAIL, ITEM_BEAD_MAIL, ITEM_SHADOW_MAIL,

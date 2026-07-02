@@ -295,6 +295,35 @@ export function GetMonsStateToDoubles(): number {
   return aliveCount > 1 ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
 }
 
+/** 1:1 décomp `u8 GetMonsStateToDoubles_2(void)` (pokemon.c:4514-4531).
+ *  ```c
+ *  for (i = 0; i < PARTY_SIZE; i++) {
+ *      u32 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL);
+ *      if (species != SPECIES_EGG && species != SPECIES_NONE
+ *       && GetMonData(&gPlayerParty[i], MON_DATA_HP, NULL) != 0)
+ *          aliveCount++;
+ *  }
+ *  if (aliveCount == 1) return PLAYER_HAS_ONE_MON;
+ *  return (aliveCount > 1) ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
+ *  ```
+ *  Variante bornée PARTY_SIZE (≠ gPlayerPartyCount) utilisée par trainer_see.c
+ *  (CheckForTrainersWantingBattle / CheckTrainer) pour décider si un dresseur
+ *  double peut engager. Adaptation modèle identique à GetMonsStateToDoubles :
+ *  MON_DATA_SPECIES_OR_EGG renvoie 0 (NONE) pour un œuf chez nous → on teste
+ *  `species != 0 && !IS_EGG` (équivalent strict aux 2 gardes SPECIES_EGG/NONE). */
+export function GetMonsStateToDoubles_2(): number {
+  let aliveCount = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if (mon && mon.species !== 0 && !(GetMonData(mon, MON_DATA_IS_EGG) as number)
+        && (GetMonData(mon, MON_DATA_HP) as number) !== 0) {
+      aliveCount++;
+    }
+  }
+  if (aliveCount === 1) return PLAYER_HAS_ONE_MON; // may have more than one, but only one is alive
+  return aliveCount > 1 ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
+}
+
 /** 1:1 décomp `CalculateEnemyPartyCount()` (pokemon.c). Idem pour gEnemyParty. */
 export function CalculateEnemyPartyCount(): number {
   let count = 0;

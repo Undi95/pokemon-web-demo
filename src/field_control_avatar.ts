@@ -41,6 +41,15 @@ import { IncrementGameStat } from './field_player_avatar';
 import { GAME_STAT_HATCHED_EGGS } from '../include/constants/game_stat';
 import { ShouldEggHatch } from './daycare';
 import { IncrementRematchStepCounter } from './battle_setup';
+// CheckForTrainersWantingBattle : appelée via le pont globalThis.__trainerSee (posé par
+// trainer_see, tiré au boot par field_effect). L'import statique field_control_avatar→
+// trainer_see tirait le sous-arbre aggro dans l'init précoce de field_control_avatar →
+// réordonnancement ESM → TDZ (DIR_SOUTH/MALE via decomp-globals).
+interface TrainerSeeAggroBridge { CheckForTrainersWantingBattle(): boolean }
+function _checkForTrainersWantingBattle(): boolean {
+  return (globalThis as { __trainerSee?: TrainerSeeAggroBridge })
+    .__trainerSee?.CheckForTrainersWantingBattle() ?? false;
+}
 import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerParty } from './engine/battle/party-storage';
@@ -255,9 +264,9 @@ export function FieldGetPlayerInput(input: FieldInput, newKeys: number, heldKeys
  *  ⚠️ Le dispatch warp réutilise les helpers PROUVÉS `findWarpEventAt`/`getWarpKindFor`/
  *  `setPendingWarp` (mécanisme warp-system, récupéré par `MainCB2_Overworld::getPendingWarp`),
  *  PAS les `TryArrowWarp`/`TryStartWarpEventScript` de ce fichier (lookup différent, jamais
- *  activé en jeu). Non encore portés (gérés ailleurs ou sous-système dédié absent) : `CheckForTrainersWanting
- *  Battle`, `TryRunOnFrameMapScript` (appelé par la scène), dive emerge/down, start menu
- *  (`TickStartMenu`), select item, misc/step-count/repel scripts. */
+ *  activé en jeu). `CheckForTrainersWantingBattle` = PORTÉ (P2.3, aggro dresseurs). Non encore
+ *  portés (gérés ailleurs ou sous-système dédié absent) : `TryRunOnFrameMapScript` (appelé par
+ *  la scène), dive emerge/down, start menu (`TickStartMenu`), select item, misc/step-count/repel. */
 export function ProcessPlayerFieldInput(input: FieldInput): boolean {
   gSpecialVar.LastTalked = LOCALID_NONE;
   gSelectedObjectEvent.index = 0;
@@ -266,6 +275,13 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
   const position: MapPosition = { x: 0, y: 0, elevation: 0 };
   GetPlayerPosition(position);  // INTERNAL coords + elevation
   let metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
+
+  // 1:1 décomp field_control_avatar.c:147 : if (CheckForTrainersWantingBattle() == TRUE) return TRUE.
+  // Aggro dresseurs (P2.3, trainer_see.c) : un dresseur en ligne de vue lève un « ! », marche
+  // jusqu'au joueur puis engage. En TÊTE de ProcessPlayerFieldInput, avant tookStep.
+  if (_checkForTrainersWantingBattle() === true) {
+    return true;
+  }
 
   // input->pressedBButton : 1:1 décomp `TrySetupDiveEmergeScript` (field_control_avatar.c:153) —
   // B en underwater sur tuile émergeable → remonte. Placé TÔT (avant tookStep), comme la décomp.

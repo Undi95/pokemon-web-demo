@@ -124,6 +124,11 @@ export function SignalWaitState(): void {
 // via globalThis — un import statique de scrcmd depuis ce module tirait tout le byte-VM
 // (script-opcodes-*) dans le sous-arbre d'éval de field_player_avatar → TDZ DIR_SOUTH.
 (globalThis as Record<string, unknown>).__SignalWaitState = SignalWaitState;
+// Pont anti-cycle (P2.3) : trainer_see (PlayerFaceTrainerAfterBattle) appelle SetMovingNpcId
+// via globalThis. L'import statique trainer_see→scrcmd fermait le cycle
+// field_player_avatar→field_effect→trainer_see→scrcmd→script-opcodes-helpers → même TDZ DIR_SOUTH.
+// (SetMovingNpcId est une déclaration hoistée → référençable dans cette closure.)
+(globalThis as Record<string, unknown>).__SetMovingNpcId = (id: number) => SetMovingNpcId(id);
 
 /** Consomme le signal waitstate (true une seule fois). Lu par `ScrCmd_waitstate`. */
 export function consumeWaitStateSignal(): boolean {
@@ -622,19 +627,40 @@ const ScrCmd_giveegg: ScrCmdFunc = (ctx) => {                                // 
 // tables + switch que le parsé), bridge symbole-texte→label / ret-addr→curseur, puis
 // `ctx->scriptPtr = <event-script>` : LE BYTE-VM EXÉCUTE l'event-script décomp
 // (EventScript_TryDoNormalTrainerBattle → … → dotrainerbattle → gotobeatenscript).
-function makeByteVmTrainerArgSource(ctx: ScriptContext): TrainerArgSource {
+/** Curseur binaire minimal (buf + offset mutable) — abstraction commune à
+ *  makeByteVmTrainerArgSource (ScriptContext) et à ConfigureAndSetUpOneTrainerBattle
+ *  (curseur arbitraire sur l'image, trainer_see.c → battle_setup.c). */
+interface TrainerArgCursor { buf: Uint8Array; off: number; }
+
+/** Cœur factorisé : construit une TrainerArgSource lisant un curseur binaire arbitraire
+ *  (le curseur `.off` avance à chaque lecture). Utilisé par le byte-VM (curseur = le
+ *  ScriptContext) ET par ConfigureAndSetUpOneTrainerBattle (curseur sur l'image des scripts). */
+export function makeByteVmTrainerArgSourceFromCursor(cur: TrainerArgCursor): TrainerArgSource {
+  const readByte = (): number => { const v = cur.buf[cur.off]; cur.off++; return v; };
+  const readHalf = (): number => { let v = cur.buf[cur.off]; cur.off++; v |= cur.buf[cur.off] << 8; cur.off++; return v; };
+  const readWord = (): number => {
+    const v0 = cur.buf[cur.off]; cur.off++; const v1 = cur.buf[cur.off]; cur.off++;
+    const v2 = cur.buf[cur.off]; cur.off++; const v3 = cur.buf[cur.off]; cur.off++;
+    return ((((((v3 << 8) + v2) << 8) + v1) << 8) + v0) >>> 0;
+  };
   return {
-    u8: () => ScriptReadByte(ctx),
-    u16: () => ScriptReadHalfword(ctx),
+    u8: () => readByte(),
+    u16: () => readHalf(),
     ptr32: (key) => {
-      const v = ScriptReadWord(ctx);
+      const v = readWord();
       if (key === 'sTrainerABattleScriptRetAddr' || key === 'sTrainerBBattleScriptRetAddr') {
         return v ? ptrFromOffset(v) : null;                   // continue-script : reloc → curseur image
       }
       return v ? (resolveSymbol(v)?.label ?? null) : null;    // speech : symbole texte → label
     },
-    retAddr: () => { const p = ctx.scriptPtr!; return { buf: p.buf, off: p.off }; },   // reprise = curseur APRÈS args
+    retAddr: () => ({ buf: cur.buf, off: cur.off }),   // reprise = curseur APRÈS args
   };
+}
+
+function makeByteVmTrainerArgSource(ctx: ScriptContext): TrainerArgSource {
+  // Le curseur PARTAGE l'objet scriptPtr du ctx → les lectures avancent ctx.scriptPtr.off
+  // (comme avant via ScriptRead*), donc `retAddr` capture bien la position APRÈS les args.
+  return makeByteVmTrainerArgSourceFromCursor(ctx.scriptPtr!);
 }
 const ScrCmd_trainerbattle: ScrCmdFunc = (ctx) => {                          // scrcmd.c:1821
   const sp = ctx.scriptPtr; if (!sp) return false;
@@ -752,6 +778,10 @@ const ScrCmd_removecoins: ScrCmdFunc = (ctx) => { const c = VarGet(ScriptReadHal
 
 // ─── applymovement / waitmovement (1:1 scrcmd.c:992-1045) ───────────────────
 let sMovingNpcId = 0;
+/** 1:1 décomp `SetMovingNpcId(localId)` (script_movement.c) : pose l'id du NPC dont
+ *  `waitmovement 0` doit attendre la fin du mouvement. Appelé par
+ *  PlayerFaceTrainerAfterBattle (trainer_see.c) après un combat de dresseur. */
+export function SetMovingNpcId(localId: number): void { sMovingNpcId = localId & 0xFFFF; }
 /** Résout le pointeur de mouvement (symbole) → label de séquence de mouvement. */
 function movementLabel(symId: number): string | null {
   const sym = resolveSymbol(symId);

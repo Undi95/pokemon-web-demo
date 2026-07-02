@@ -82,7 +82,7 @@ import type { DayCare, DaycareMon, DaycareMail, Mail } from './engine/save/save-
 import { Random, Random2, SeedRng2 } from './random';
 import { FlagSet, VarSet, VarGet } from './event_data';
 import { FLAG_PENDING_DAYCARE_EGG } from '../include/constants/flags';
-import { gMain, getRuntime, JOY_NEW, PlaySE } from '../harness/runtime/decomp-globals';
+import { gMain, getRuntime, JOY_NEW } from '../harness/runtime/decomp-globals';
 import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import { gMoveToLearn } from './engine/battle/state';
 import { MonHasMail, TakeMailFromMon, GiveMailToMon, ClearMail } from './mail_data';

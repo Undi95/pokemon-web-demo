@@ -2091,6 +2091,12 @@ let _bikeMod: typeof import('./bike') | null = null;
 void import('./bike').then((m) => { _bikeMod = m; });
 let _overworldMod: typeof import('./overworld') | null = null;
 void import('./overworld').then((m) => { _overworldMod = m; });
+// Lazy import event_object_lock/movement (anti-cycle/TDZ : graphe field) pour
+// ScriptUnfreezeObjectEvents (CB vélo) + FreezeObjectEvents (UseRegisteredKeyItemOnField).
+let _eventObjLockMod: typeof import('./event_object_lock') | null = null;
+void import('./event_object_lock').then((m) => { _eventObjLockMod = m; });
+let _eventObjMoveMod: typeof import('./event_object_movement') | null = null;
+void import('./event_object_movement').then((m) => { _eventObjMoveMod = m; });
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
@@ -2625,11 +2631,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
             .then(() => {
               bk.GetOnOffBike(flag);
               // 1:1 décomp `ItemUseOnFieldCB_Bike` (item_use.c:231-232) : ScriptUnfreeze
-              // ObjectEvents + UnlockPlayerFieldControls après GetOnOffBike. DÉVERROUILLE le
-              // path registered (SELECT vélo → UseRegisteredKeyItemOnField a lock). Idempotent
-              // pour le path sac (déjà déverrouillé au retour OW). (Unfreeze = DETTE, cohérent
-              // avec le skip FreezeObjectEvents côté UseRegisteredKeyItemOnField.)
-              (globalThis as Record<string, unknown>).__sLockFieldControls = false;
+              // ObjectEvents() + UnlockPlayerFieldControls() après GetOnOffBike. DÉVERROUILLE le
+              // path registered (SELECT vélo → UseRegisteredKeyItemOnField a Freeze+Lock). Idempotent
+              // pour le path sac (déjà déverrouillé/dégelé au retour OW).
+              _eventObjLockMod?.ScriptUnfreezeObjectEvents();  // item_use.c:231
+              (globalThis as Record<string, unknown>).__sLockFieldControls = false;  // UnlockPlayerFieldControls (item_use.c:232)
             });
         });
         SetUpItemUseOnFieldCallback(task);
@@ -3310,9 +3316,9 @@ function ItemMenu_Register(task: DecompTask): void {
  *  Le field func (Bike/Rod/Itemfinder) via `SetUpItemUseOnFieldCallback` prend la
  *  branche registered → CB DIRECT (pas de fade-bag). Exposé sur globalThis pour
  *  field_control_avatar (anti-cycle, comme __FieldCallback_Dig).
- *  Checks union/pyramid/pike = single-player → toujours OK (skip). DETTE :
- *  FreezeObjectEvents (:2059, skip cohérent avec l'unfreeze absent des CB vélo/itemfinder)
- *  + EventScript_SelectWithoutRegisteredItem (message "aucun objet"). */
+ *  Checks union/pyramid/pike = single-player → toujours OK (skip). FreezeObjectEvents
+ *  (:2059) porté (dégelé par ScriptUnfreezeObjectEvents des CB de sortie). DETTE :
+ *  EventScript_SelectWithoutRegisteredItem (message "aucun objet"). */
 export function UseRegisteredKeyItemOnField(): boolean {
   const reg = gSaveBlock1Ptr.registeredItem;
   if (reg !== 0) {
@@ -3320,6 +3326,9 @@ export function UseRegisteredKeyItemOnField(): boolean {
     if (CheckBagHasItem(getItemKeyById(reg), 1)) {
       // 1:1 :2058 LockPlayerFieldControls() (= __sLockFieldControls, cf. script.ts).
       (globalThis as Record<string, unknown>).__sLockFieldControls = true;
+      // 1:1 :2059 FreezeObjectEvents() — gèle les NPCs pendant l'usage de l'objet-clé.
+      // Dégelé par ScriptUnfreezeObjectEvents dans le CB de sortie (vélo/itemfinder/rod).
+      _eventObjMoveMod?.FreezeObjectEvents();
       // 1:1 item_menu.c:2060-2061 : PlayerFreeze(); StopPlayerAvatar(); — le joueur
       // termine en pose neutre (held FACE_X forcé) au SELECT. Handle lazy _playerAvatarMod
       // (pattern anti-cycle du fichier) : résolu au boot, bien avant tout input SELECT.

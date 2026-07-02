@@ -519,6 +519,19 @@ function parseMovementType(s: string): number {
   return map[s] ?? 0;
 }
 
+/** 1:1 décomp `include/constants/trainer_types.h`. Résout la string du map JSON
+ *  (`trainer_type`) → id numérique (packé dans ObjectEvent.trainerType). */
+function parseTrainerType(s: string | undefined): number {
+  const map: Record<string, number> = {
+    TRAINER_TYPE_NONE: 0,
+    TRAINER_TYPE_NORMAL: 1,
+    TRAINER_TYPE_SEE_ALL_DIRECTIONS: 2,
+    TRAINER_TYPE_BURIED: 3,
+  };
+  if (s === undefined || s === '') return 0;
+  return map[s] ?? 0;
+}
+
 /** Convertit "OBJ_EVENT_GFX_TWIN" → numeric ID. Mapping étendu via fetch des
  *  graphics-id-table si besoin. Pour l'instant on garde la string en raw. */
 function parseGraphicsId(s: string): number {
@@ -628,8 +641,9 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     // `BERRY_TREE_ROUTE_*`). La source JSON met une string : "7" (sight) ou
     // "BERRY_TREE_ROUTE_104_CHERI_1" (id berry) ou "0". Résolu ici (= était
     // hardcodé à 0 → toutes les berry trees lisaient berryTrees[0]).
-    // trainerType reste 0 = chantier trainer-sight séparé (non porté).
-    trainerType: 0,
+    // 1:1 décomp : trainerType (TRAINER_TYPE_NORMAL/SEE_ALL_DIRECTIONS/BURIED) résolu
+    // depuis le map JSON — requis par l'aggro dresseurs (CheckForTrainersWantingBattle).
+    trainerType: parseTrainerType(e.trainer_type),
     trainerRange_berryTreeId: _resolveBerryOrSightId(e.trainer_sight_or_berry_tree_id),
     script: e.script,
     flagId: e.flag,

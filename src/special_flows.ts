@@ -73,6 +73,13 @@ export function makeSpecialInlineFlowPoll(name: string): (() => boolean) | null 
       let framesWaited = 0;
       return () => { framesWaited++; return framesWaited >= 1; };
     }
+    // NOTE : DoTrainerApproach n'est PAS un special-flow. Le décomp le déclare
+    // `def_special DoTrainerApproach, waitstate=1` → le script fait un `waitstate`
+    // (ScriptContext_Stop) APRÈS le special, relâché par le ScriptContext_Enable() de
+    // Task_EndTrainerApproach. Chez nous, DoTrainerApproach est un PLAIN special (registry)
+    // qui lance la task ; le `waitstate` opcode (déjà dans l'image byte-VM) bloque, et
+    // Task_EndTrainerApproach émet SignalWaitState pour reprendre — 1:1, un seul mécanisme
+    // de blocage (un special-flow poll ici doublait le waitstate → freeze).
     default:
       return null;
   }

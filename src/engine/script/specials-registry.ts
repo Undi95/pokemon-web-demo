@@ -108,6 +108,21 @@ import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup'
 import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { getGObjectEvents } from '../field/field-globals';
+
+/** Pont trainer_see (P2.3 aggro dresseurs). Le module trainer_see pose ces accesseurs
+ *  sur globalThis.__trainerSee (import trainer_see→battle_setup→…→field_effect→trainer_see :
+ *  cycle brisé côté specials via ce pont, jamais d'import statique). */
+interface TrainerSeeSpecials {
+  DoTrainerApproach?: () => void;
+  SetTrainerFacingDirection?: () => void;
+  TryPrepareSecondApproachingTrainer?: () => void;
+  GetCurrentApproachingTrainerObjectEventId?: () => number;
+  GetChosenApproachingTrainerObjectEventId?: (arrayId: number) => number;
+  PlayerFaceTrainerAfterBattle?: () => void;
+}
+function _trainerSeeSpecials(): TrainerSeeSpecials | undefined {
+  return (globalThis as { __trainerSee?: TrainerSeeSpecials }).__trainerSee;
+}
 import { AddBagItem } from '../bag/bag';
 import {
   GetBerryTypeByBerryTreeId, GetStageByBerryTreeId, GetNumStagesWateredByBerryTreeId,
@@ -535,9 +550,9 @@ registerSpecial('SetUnlockedPokedexFlags', () => {
  *  (= Latios/Latias). Used post-EV. Stub no-op. */
 registerSpecial('InitRoamer', () => { /* no-op */ });
 
-/** 1:1 décomp `PlayerFaceTrainerAfterBattle` (event_object_movement.c) :
- *  After winning trainer battle, player turns to face the trainer. Stub. */
-registerSpecial('PlayerFaceTrainerAfterBattle', () => { /* no-op */ });
+/** 1:1 décomp `PlayerFaceTrainerAfterBattle` (trainer_see.c:794) : après un combat de
+ *  dresseur, le joueur se tourne pour lui faire face. Porté (trainer_see.ts). */
+registerSpecial('PlayerFaceTrainerAfterBattle', () => { _trainerSeeSpecials()?.PlayerFaceTrainerAfterBattle?.(); });
 
 // ─── Additional commonly-used early-game specials ───────────────────────────
 
@@ -983,7 +998,8 @@ registerSpecial('SetBattledOwnerFromResult', () => {
 });
 registerSpecial('DoSpecialTrainerBattle', () => 0);
 registerSpecial('BattleSetup_StartLegendaryBattle', () => 0);
-registerSpecial('PlayTrainerEncounterMusic', () => { /* no-op */ });
+// 'PlayTrainerEncounterMusic' — porté 1:1 (battle_setup.c:1440) dans battle_setup.ts
+// (routage song table). No-op RETIRÉ (double registration = clobber).
 
 /** Records / Link Battle UI. */
 registerSpecial('RemoveRecordsWindow', () => { /* no-op */ });
@@ -1324,7 +1340,15 @@ registerSpecial('ShowFieldMessageStringVar4', () => {
 });
 registerSpecial('Script_FacePlayer', () => { /* no-op */ });
 registerSpecial('Script_ClearHeldMovement', Script_ClearHeldMovement); // 1:1 event_object_lock.c:124
-registerSpecial('SetTrainerFacingDirection', () => { /* no-op */ });
+// 1:1 décomp `SetTrainerFacingDirection` (battle_setup.c:1224) — porté (trainer_see.ts).
+// (GetChosenApproachingTrainerObjectEventId n'est PAS un special : fn C appelée par
+//  event_object_lock.c/battle_pyramid.c — exportée de trainer_see.ts.)
+registerSpecial('SetTrainerFacingDirection', () => { _trainerSeeSpecials()?.SetTrainerFacingDirection?.(); });
+// 1:1 décomp `special DoTrainerApproach` (trainer_see.c:648, def_special waitstate=1) : lance
+// la task d'approche ; le `waitstate` opcode qui suit (image byte-VM) bloque, relâché par le
+// SignalWaitState de Task_EndTrainerApproach. PLAIN special (pas special-flow — un poll doublait
+// le waitstate → freeze).
+registerSpecial('DoTrainerApproach', () => { _trainerSeeSpecials()?.DoTrainerApproach?.(); });
 registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
 // 'GetDaycareState' — porté 1:1 décomp daycare.c:971 (src/daycare.ts), handler
 // enregistré dans le bloc PENSION ci-bas. STUB `() => 0` RETIRÉ (il court-circuitait
@@ -1974,7 +1998,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
   'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
-  'DoTVShowInSearchOfTrainers', 'DoTrainerApproach',
+  'DoTVShowInSearchOfTrainers',
+  // 'DoTrainerApproach' — porté 1:1 (trainer_see.c:648) via special-flow (special_flows.ts).
   // 'DoWateringBerryTreeAnim' — handler concret 1:1 décomp enregistré plus bas (arrosage).
   // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
   // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
