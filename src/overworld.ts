@@ -38,6 +38,9 @@ import { InitFieldMessageBox } from './field_message_box';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { MUS_DUMMY } from '../include/constants/songs';
 import { FlagGet, FlagClear, VarGet, VarSet } from './engine/script/script-vars';
+import { GetHealLocationByName } from './heal_location';
+import { GetMoney, SetMoney } from './money';
+import { HealPlayerParty } from './script_pokemon_util';
 
 /** 1:1 décomp `enum { BG_COORD_SET, BG_COORD_ADD }` (bg.h:26) → BG_COORD_SET = 0.
  *  Const locale (pas d'enum bg.h porté côté valeur). */
@@ -142,6 +145,57 @@ export function Overworld_ResetStateAfterWhiteOut(): void {
   if (VarGet('VAR_SHOULD_END_ABNORMAL_WEATHER') === 1) {
     VarSet('VAR_SHOULD_END_ABNORMAL_WEATHER', 0);
     VarSet('VAR_ABNORMAL_WEATHER_LOCATION', 0);  // ABNORMAL_WEATHER_NONE
+  }
+}
+
+/** 1:1 décomp `SetContinueGameWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)`
+ *  (overworld.c:723) = SetWarpData(&sb1->continueGameWarp, …). Adaptation
+ *  name-based : mapGroup/mapNum → nom de map + bridge `__continueGameWarpMapId`
+ *  (même pattern que dynamicWarp/__dynamicWarpMapId, cf. load_save.ts). */
+export function SetContinueGameWarp(mapName: string, warpId: number, x: number, y: number): void {
+  const b1 = gSaveBlock1Ptr as {
+    continueGameWarp?: { mapGroup: number; mapNum: number; warpId: number; x: number; y: number };
+    __continueGameWarpMapId?: string;
+  };
+  b1.continueGameWarp = { mapGroup: -1, mapNum: -1, warpId, x, y };
+  b1.__continueGameWarpMapId = mapName;
+}
+
+/** 1:1 décomp `SetContinueGameWarpToHealLocation(u8 healLocationId)` (overworld.c:728) :
+ *  résout le lieu de soins → continueGameWarp (WARP_ID_NONE = -1). Name-based. */
+export function SetContinueGameWarpToHealLocation(healLocationId: string): void {
+  const healLocation = GetHealLocationByName(healLocationId);
+  if (healLocation) SetContinueGameWarp(healLocation.map, -1, healLocation.x, healLocation.y);
+}
+
+/** 1:1 décomp `DoWhiteOut(void)` (overworld.c:358-366) :
+ *  ```c
+ *  RunScriptImmediately(EventScript_WhiteOut);      // reset Elite Four + Mr Briney
+ *  SetMoney(&gSaveBlock1Ptr->money, GetMoney(...) / 2);
+ *  HealPlayerParty();
+ *  Overworld_ResetStateAfterWhiteOut();
+ *  SetWarpDestinationToLastHealLocation();
+ *  WarpIntoMap();
+ *  ```
+ *  ADAPTATIONS : warp = pending-warp name-based via respawnLocation (même mécanisme
+ *  que le whiteout combat, battle-decomp-loop.ts) ; RunScriptImmediately + warp-system
+ *  en import dynamique (anti-cycle script/warp-system ↔ overworld). */
+export function DoWhiteOut(): void {
+  void import('./script').then((m) => {
+    try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[DoWhiteOut] EventScript_WhiteOut KO', e); }
+  });
+  SetMoney(Math.floor(GetMoney() / 2));
+  HealPlayerParty();
+  Overworld_ResetStateAfterWhiteOut();
+  const respawn = (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation;
+  const heal = GetHealLocationByName(respawn);
+  if (heal) {
+    void import('./engine/field/warp-system').then((ws) => {
+      ws.setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+      console.log(`[DoWhiteOut] respawn warp → ${heal.map} (${heal.x},${heal.y})`);
+    });
+  } else {
+    console.warn('[DoWhiteOut] respawnLocation non résolue :', respawn);
   }
 }
 

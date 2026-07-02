@@ -39,6 +39,15 @@ import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_O
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MALE, FEMALE } from '../harness/runtime/decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from './engine/script/script-vars';
+import { GetMonData } from './engine/battle/party-storage';
+import type { Pokemon } from './engine/battle/party-storage';
+import {
+  MON_DATA_COOL_RIBBON, MON_DATA_BEAUTY_RIBBON, MON_DATA_CUTE_RIBBON, MON_DATA_SMART_RIBBON,
+  MON_DATA_TOUGH_RIBBON, MON_DATA_CHAMPION_RIBBON, MON_DATA_WINNING_RIBBON, MON_DATA_VICTORY_RIBBON,
+  MON_DATA_ARTIST_RIBBON, MON_DATA_EFFORT_RIBBON, MON_DATA_MARINE_RIBBON, MON_DATA_LAND_RIBBON,
+  MON_DATA_SKY_RIBBON, MON_DATA_COUNTRY_RIBBON, MON_DATA_NATIONAL_RIBBON, MON_DATA_EARTH_RIBBON,
+  MON_DATA_WORLD_RIBBON,
+} from '../include/pokemon';
 import { DrawWholeMapView } from './field_camera';
 import {
   METATILE_Building_TV_On,
@@ -155,4 +164,30 @@ export function TurnOnTVScreen(): void {
   const ml = gMapHeader.mapLayout;
   SetTVMetatilesOnMap(ml.width, ml.height, METATILE_Building_TV_On);
   DrawWholeMapView();
+}
+
+/** 1:1 décomp `u8 GetRibbonCount(struct Pokemon *pokemon)` (tv.c:2277-2302) :
+ *  somme des 17 rubans du mon (les 5 rubans concours = compteurs 0-4, les 12
+ *  autres = bits 0/1 — GetMonData retourne la valeur brute dans les deux cas).
+ *  Appelé par GameClear (post_battle_event_funcs.c) + contest_util + battle_tower. */
+export function GetRibbonCount(pokemon: Pokemon): number {
+  let nRibbons = 0;
+  nRibbons += GetMonData(pokemon, MON_DATA_COOL_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_BEAUTY_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_CUTE_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_SMART_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_TOUGH_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_CHAMPION_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_WINNING_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_VICTORY_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_ARTIST_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_EFFORT_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_MARINE_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_LAND_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_SKY_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_COUNTRY_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_NATIONAL_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_EARTH_RIBBON) as number;
+  nRibbons += GetMonData(pokemon, MON_DATA_WORLD_RIBBON) as number;
+  return nRibbons;
 }

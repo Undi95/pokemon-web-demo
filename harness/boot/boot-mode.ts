@@ -22,6 +22,7 @@ import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from '../
 import { SetDynamicWarp } from '../../src/engine/field/warp-system';
 import { GetCurrentMap } from '../../src/load_save';
 import { SetObjEventTemplateCoords } from '../../src/load_save';
+import { UseContinueGameWarp, ClearContinueGameWarpStatus } from '../../src/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
@@ -423,6 +424,25 @@ function applyNoIntroPreset(): void {
   console.log(`[boot-mode] ?nointro preset : name='${gSaveBlock2Ptr.playerName ?? ''}' gender='${gSaveBlock2Ptr.playerGender === FEMALE ? 'FEMALE' : 'MALE'}' INTRO_STATE=6 (RAM-only, pas de save auto)`);
 }
 
+/** 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1705) : si CONTINUE_GAME_WARP
+ *  est posé dans specialSaveWarpFlags (= GameClear post-Ligue → chambre du joueur),
+ *  le Continue warpe vers `continueGameWarp` au lieu de la position sauvée, puis
+ *  CLEAR le flag (ClearContinueGameWarpStatus). Bridge name-based :
+ *  `__continueGameWarpMapId` (posé par SetContinueGameWarp, overworld.ts). */
+function tryContinueGameWarpSpawn(): BootSpawn | null {
+  if (!UseContinueGameWarp()) return null;
+  ClearContinueGameWarpStatus();
+  const b1 = gSaveBlock1Ptr as {
+    continueGameWarp?: { x: number; y: number };
+    __continueGameWarpMapId?: string;
+  };
+  const mapId = b1.__continueGameWarpMapId;
+  const w = b1.continueGameWarp;
+  if (!mapId || !w) return null;
+  console.log(`[boot-mode] CONTINUE_GAME_WARP → ${mapId} (${w.x}, ${w.y})`);
+  return { mapId, x: w.x, y: w.y, facing: DIR_SOUTH, mode: 'resume' };
+}
+
 /**
  * Décide le mode de boot et retourne le spawn initial.
  *
@@ -474,6 +494,8 @@ export function decideBootMode(): BootSpawn {
     // Pas de preset, pas de touch à la save : juste resume.
     const _resumedMap = (HasValidSave() && LoadGameSave() === SAVE_STATUS_OK) ? GetCurrentMap() : undefined;
     if (_resumedMap) {
+      const cgw = tryContinueGameWarpSpawn();
+      if (cgw) return cgw;
       const m = _resumedMap;
       console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y}) (SRAM bloquée)`);
       return {
@@ -525,6 +547,8 @@ export function decideBootMode(): BootSpawn {
   // Tentative de resume from save (= cold boot avec save existante, pas post-Birch).
   const _loadedMap = (!cameFromBirch && HasValidSave() && LoadGameSave() === SAVE_STATUS_OK) ? GetCurrentMap() : undefined;
   if (_loadedMap) {
+    const cgw = tryContinueGameWarpSpawn();
+    if (cgw) return cgw;
     const m = _loadedMap;
     return {
       mapId: m.name,

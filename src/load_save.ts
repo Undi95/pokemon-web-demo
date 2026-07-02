@@ -219,6 +219,21 @@ export function CopyPartyAndObjectsFromSave(): void {
   LoadObjectEvents();
 }
 
+/** 1:1 décomp `ClearContinueGameWarpStatus(void)` (load_save.c:139) :
+ *  `gSaveBlock2Ptr->specialSaveWarpFlags &= ~CONTINUE_GAME_WARP`. */
+export function ClearContinueGameWarpStatus(): void {
+  GetSaveBlock2().specialSaveWarpFlags &= ~0x4;
+}
+
+/** 1:1 décomp `SetContinueGameWarpStatus(void)` (load_save.c:144) :
+ *  `gSaveBlock2Ptr->specialSaveWarpFlags |= CONTINUE_GAME_WARP`.
+ *  Appelé par GameClear (post_battle_event_funcs.c) → au Continue, le boot
+ *  doit warper vers `continueGameWarp` (chambre du joueur) au lieu de la
+ *  position sauvée. */
+export function SetContinueGameWarpStatus(): void {
+  GetSaveBlock2().specialSaveWarpFlags |= 0x4;  // CONTINUE_GAME_WARP = 0x4
+}
+
 /** 1:1 décomp `SetContinueGameWarpStatusToDynamicWarp(void)` (load_save.c:149).
  *  Set `block1.continueGameWarp = block1.dynamicWarp` + flag CONTINUE_GAME_WARP.
  *

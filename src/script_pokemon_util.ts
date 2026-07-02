@@ -26,8 +26,31 @@ import { CreateEgg } from './daycare';
 import {
   SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT,
 } from './engine/ui/pokedex-flags';
-import { PARTY_SIZE } from '../include/constants/global';
+import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { SPECIES_NONE, SPECIES_EGG } from '../include/constants/species';
+import {
+  MON_DATA_MAX_HP, MON_DATA_HP, MON_DATA_PP_BONUSES, MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_STATUS,
+} from '../include/pokemon';
+import { CalculatePPWithBonus } from './pokemon';
+
+/** 1:1 décomp `HealPlayerParty` (script_pokemon_util.c:30-45) : pour chaque mon
+ *  (< partyCount) : HP→maxHP, PP recalculés avec ppBonuses, statut effacé.
+ *  (Rapatrié de specials-registry `_healPlayerParty` — foyer 1:1, 2026-07-02.
+ *  Dette systémique documentée : ppMax via CalculatePPWithBonus = fidèle.) */
+export function HealPlayerParty(): void {
+  const count = CalculatePlayerPartyCount();
+  for (let i = 0; i < count; i++) {
+    const mon = gPlayerParty[i];
+    const maxHP = GetMonData(mon, MON_DATA_MAX_HP) as number;
+    SetMonData(mon, MON_DATA_HP, maxHP);
+    const ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES) as number;
+    for (let j = 0; j < MAX_MON_MOVES; j++) {
+      const pp = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + j) as number, ppBonuses, j);
+      SetMonData(mon, MON_DATA_PP1 + j, pp);
+    }
+    SetMonData(mon, MON_DATA_STATUS, 0);
+  }
+}
 
 /** 1:1 décomp `CheckPartyMonHasHeldItem(item)` (script_pokemon_util.c:115-126).
  *  ```c

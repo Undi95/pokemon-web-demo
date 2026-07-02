@@ -1202,7 +1202,7 @@ export function IncrementGameStat(index: number): void {
 }
 
 /** 1:1 décomp `GetGameStat(u8 index)` (overworld.c:447-453). */
-function GetGameStat(index: number): number {
+export function GetGameStat(index: number): number {
   if (index >= NUM_USED_GAME_STATS) return 0;
   const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
   const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
@@ -1210,7 +1210,7 @@ function GetGameStat(index: number): number {
 }
 
 /** 1:1 décomp `SetGameStat(u8 index, u32 value)` (overworld.c:455-459). */
-function SetGameStat(index: number, value: number): void {
+export function SetGameStat(index: number, value: number): void {
   if (index < NUM_USED_GAME_STATS) {
     const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
     const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;

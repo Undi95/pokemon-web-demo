@@ -90,7 +90,8 @@ import {
 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
-import { CheckPartyMonHasHeldItem } from '../../script_pokemon_util';
+import { CheckPartyMonHasHeldItem, HealPlayerParty } from '../../script_pokemon_util';
+import { GameClear, SetCB2WhiteOut } from '../../post_battle_event_funcs';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup';
 import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
@@ -151,22 +152,14 @@ registerSpecial('GetPlayerBigGuyGirlString', GetPlayerBigGuyGirlString);  // imp
  *  STATUS = 0. Opère sur gPlayerParty + GetMonData/SetMonData (1:1).
  *  ⚠️ Corrige le bug latent de l'ancienne version : `mv.pp = mv.ppMax` sur les
  *  VUES nested (`mon.moves[i].pp`) n'était PAS propagé au modèle natif. */
-function _healPlayerParty(): void {
-  const count = CalculatePlayerPartyCount();
-  for (let i = 0; i < count; i++) {
-    const mon = gPlayerParty[i];
-    const maxHP = _GetMonData(mon, MON_DATA_MAX_HP) as number;
-    SetMonData(mon, MON_DATA_HP, maxHP);
-    const ppBonuses = _GetMonData(mon, MON_DATA_PP_BONUSES) as number;
-    for (let j = 0; j < MAX_MON_MOVES; j++) {
-      const pp = CalculatePPWithBonus(_GetMonData(mon, _MON_DATA_MOVE1 + j) as number, ppBonuses, j);
-      SetMonData(mon, MON_DATA_PP1 + j, pp);
-    }
-    SetMonData(mon, MON_DATA_STATUS, 0);
-  }
-  console.log(`[special HealPlayerParty] healed ${count} mons (1:1 gPlayerParty)`);
-}
-registerSpecial('HealPlayerParty', _healPlayerParty);
+// (corps rapatrié au foyer 1:1 src/script_pokemon_util.ts — HealPlayerParty, 2026-07-02)
+registerSpecial('HealPlayerParty', HealPlayerParty);
+
+// 1:1 décomp post_battle_event_funcs.c (foyer src/post_battle_event_funcs.ts) :
+// GameClear = victoire Ligue (EverGrandeCity_HallOfFame `special GameClear`) ;
+// SetCB2WhiteOut = K.O. poison field (EventScript_FieldWhiteOut). Dé-stubés 2026-07-02.
+registerSpecial('GameClear', GameClear);
+registerSpecial('SetCB2WhiteOut', () => { SetCB2WhiteOut(); return 0; });
 
 /** 1:1 décomp `ChooseStarter` (battle_setup.c:911) :
  *  ```c
@@ -1412,7 +1405,8 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'GiveFrontierBattlePoints' — porté 1:1 décomp field_specials.c:2954 ci-bas (batch B39).
   'CloseBattleFrontierTutorWindow',
   // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
-  'GameClear', 'SetMewAboveGrass',
+  // 'GameClear' — porté 1:1 décomp post_battle_event_funcs.c:12 ci-haut (2026-07-02).
+  'SetMewAboveGrass',
   'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics', 'ShouldDoBrailleRegicePuzzle',
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
@@ -2109,7 +2103,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'Script_StorytellerInitializeRandomStat',
   'ScrollRankingHallRecordsWindow', 'ScrollableMultichoice_ClosePersistentMenu',
   'ScrollableMultichoice_RedrawPersistentMenu',
-  'ScrollableMultichoice_TryReturnToList', 'SetCB2WhiteOut',
+  'ScrollableMultichoice_TryReturnToList',
+  // 'SetCB2WhiteOut' — porté 1:1 décomp post_battle_event_funcs.c:92 ci-haut (2026-07-02).
   // 'SetChampionSaveWarp' — porté 1:1 décomp save_location.c:136 ci-bas.
   'SetContestCategoryStringVarForInterview',
   // 'SetContestLadyGivenPokeblock' — porté 1:1 décomp lilycove_lady.c:769 ci-bas (batch B29).
