@@ -33,6 +33,10 @@ import {
 } from '../include/constants/metatile_behaviors';
 import { PopSecretBaseBalloon, ShatterSecretBaseBreakableDoor } from './fldeff_misc';
 import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { emptySecretBase } from './engine/save/save-blocks';
+import type { SecretBase } from './engine/save/save-blocks';
+import { SECRET_BASES_COUNT } from '../include/constants/global';
 import {
   METATILE_SecretBase_SolidBoard_Top,
   METATILE_SecretBase_SolidBoard_Bottom,
@@ -188,5 +192,21 @@ export function SecretBasePerStepCallback(task: DecompTask): void {
       // 1:1 décomp : "This state is never reached, and tFldEff is never set".
       if (!FieldEffectActiveListContains(data[4])) data[1] = 1; // tFldEff / tState
       break;
+  }
+}
+
+// ─── Seeding new-game (NewGameInitData, new_game.c:170) ─────────────────────
+
+/** 1:1 décomp `static void ClearSecretBase(struct SecretBase *secretBase)`
+ *  (secret_base.c:222-228) : CpuFastFill16(0, …, sizeof) + trainerName[i]=EOS.
+ *  Chez nous = remplace le slot par la struct zéro (trainerName '' = EOS ×7). */
+function ClearSecretBase(secretBases: SecretBase[], index: number): void {
+  secretBases[index] = emptySecretBase();
+}
+
+/** 1:1 décomp `void ClearSecretBases(void)` (secret_base.c:230-235). */
+export function ClearSecretBases(): void {
+  for (let i = 0; i < SECRET_BASES_COUNT; i++) {
+    ClearSecretBase(gSaveBlock1Ptr.secretBases, i);
   }
 }

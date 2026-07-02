@@ -55,6 +55,8 @@ import {
   HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
 } from './engine/ui/pokedex-flags';
 import { gSpeciesNames } from './engine/data/game-data';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { DisableNationalPokedex } from './event_data';
 import { SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE, SE_PIN } from '../include/constants/songs';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
@@ -181,9 +183,9 @@ interface PokedexView {
 }
 let sPokedexView: PokedexView | null = null;
 let sLastSelectedPokemon = 0;
-// 1:1 décomp `ResetPokedexScrollPositions`/`ResetPokedex` (pokedex.c:1521/1543) : posent
-// sPokeBallRotation = POKEBALL_ROTATION_TOP (64) au chargement de partie (new_game.c /
-// event_data.c). Le port n'appelle pas encore cette chaîne → on initialise la valeur ici.
+// 1:1 décomp `ResetPokedexScrollPositions`/`ResetPokedex` (pokedex.c:1540/1516) : posent
+// sPokeBallRotation = POKEBALL_ROTATION_TOP (64). ResetPokedex est câblé dans
+// NewGameInitData (new_game.ts) ; init statique = même valeur pour les autres boots.
 let sPokeBallRotation = 64; // POKEBALL_ROTATION_TOP
 
 // 1:1 décomp `ResetPokedexView` (champs 1a ; le reste = jalons suivants).
@@ -403,6 +405,35 @@ export function ResetPokedexScrollPositions(): void {
   sPokeBallRotation = POKEBALL_ROTATION_TOP;
 }
 (globalThis as { __resetPokedexScrollPositions?: () => void }).__resetPokedexScrollPositions = ResetPokedexScrollPositions;
+
+/** 1:1 décomp `u8 gUnusedPokedexU8` (pokedex.c — global UNUSED, 0 lecteur ;
+ *  remis à 0 par ResetPokedex ci-bas ET ClearPokedexFlags (new_game.c:101,
+ *  qui ne peut pas assigner un binding importé en ESM — même effet, les deux
+ *  écrivent 0). */
+let gUnusedPokedexU8 = 0;
+
+/** 1:1 décomp `void ResetPokedex(void)` (pokedex.c:1516-1538) : seeding
+ *  new-game du SaveBlock2.pokedex (mode Hoenn, national off, flags vus/pris
+ *  à zéro). Appelé par NewGameInitData (new_game.c:158). */
+export function ResetPokedex(): void {
+  sLastSelectedPokemon = 0;
+  sPokeBallRotation = POKEBALL_ROTATION_TOP;
+  gUnusedPokedexU8 = 0;
+  gSaveBlock2Ptr.pokedex.mode = DEX_MODE_HOENN;
+  gSaveBlock2Ptr.pokedex.order = 0;
+  gSaveBlock2Ptr.pokedex.nationalMagic = 0;
+  gSaveBlock2Ptr.pokedex.unknown2 = 0;
+  gSaveBlock2Ptr.pokedex.unownPersonality = 0;
+  gSaveBlock2Ptr.pokedex.spindaPersonality = 0;
+  gSaveBlock2Ptr.pokedex.unknown3 = 0;
+  DisableNationalPokedex();
+  for (let i = 0; i < gSaveBlock2Ptr.pokedex.owned.length; i++) {   // NUM_DEX_FLAG_BYTES
+    gSaveBlock2Ptr.pokedex.owned[i] = 0;
+    gSaveBlock2Ptr.pokedex.seen[i] = 0;
+    gSaveBlock1Ptr.seen1[i] = 0;
+    gSaveBlock1Ptr.seen2[i] = 0;
+  }
+}
 const sScrollMonIncrements = [4, 8, 16, 32, 32];   // pokedex.c:803
 const sScrollTimers = [8, 4, 2, 1, 1];             // pokedex.c:804
 // Tiles OBJ des mon-pics : la sheet interface occupe 0..255 (vérifié déterministe :

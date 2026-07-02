@@ -3367,6 +3367,82 @@ function GetQuestionnaireWordsPtr(): Uint16Array {
   return (gSaveBlock1Ptr as Record<string, any>).mysteryGift.questionnaireWords;
 }
 
+/** 1:1 décomp `void InitQuestionnaireWords(void)` (easy_chat.c:5858-5864) :
+ *  seed new-game du questionnaire Mystery Gift (4 mots → EC_EMPTY_WORD).
+ *  Appelé par ClearMysteryGift (mystery_gift.c:31). */
+export function InitQuestionnaireWords(): void {
+  const words = GetQuestionnaireWordsPtr();
+  for (let i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++) words[i] = EC_EMPTY_WORD;
+}
+
+// ─── Défauts new-game (easy_chat.c:1240-1272) ────────────────────────────────
+// Valeurs EC_WORD_* résolues depuis constants/easy_chat.h ((group << 9) | index),
+// commentées 1:1. EASY_CHAT_BATTLE_WORDS_COUNT = 6 (profile = COUNT - 2 = 4).
+
+/** 1:1 décomp `sDefaultProfileWords[EASY_CHAT_BATTLE_WORDS_COUNT - 2]` (easy_chat.c:1240). */
+const sDefaultProfileWords: readonly number[] = [
+  0x1228, // EC_WORD_ADORE
+  0x0E0C, // EC_WORD_CASE
+  0x020E, // EC_WORD_POKEMON
+  0xFFFF, // EC_EMPTY_WORD
+];
+
+/** 1:1 décomp `sDefaultBattleStartWords[EASY_CHAT_BATTLE_WORDS_COUNT]` (easy_chat.c:1247). */
+const sDefaultBattleStartWords: readonly number[] = [
+  0x080C, // EC_WORD_APOLOGIZE
+  0x0C00, // EC_WORD_EXCL
+  0x0803, // EC_WORD_HERE_I_COME
+  0x0C00, // EC_WORD_EXCL
+  0xFFFF, // EC_EMPTY_WORD
+  0xFFFF, // EC_EMPTY_WORD
+];
+
+/** 1:1 décomp `sDefaultBattleWonWords[EASY_CHAT_BATTLE_WORDS_COUNT]` (easy_chat.c:1256). */
+const sDefaultBattleWonWords: readonly number[] = [
+  0x0C3A, // EC_WORD_YAY
+  0x0C3A, // EC_WORD_YAY
+  0x0A2A, // EC_WORD_I_VE
+  0x0E2C, // EC_WORD_REALLY
+  0x0605, // EC_WORD_WINS
+  0x0C01, // EC_WORD_EXCL_EXCL
+];
+
+/** 1:1 décomp `sDefaultBattleLostWords[EASY_CHAT_BATTLE_WORDS_COUNT]` (easy_chat.c:1265). */
+const sDefaultBattleLostWords: readonly number[] = [
+  0x0A31, // EC_WORD_IT_S
+  0xFFFF, // EC_EMPTY_WORD
+  0x1436, // EC_WORD_AWFUL
+  0x0C04, // EC_WORD_ELLIPSIS
+  0x0A2A, // EC_WORD_I_VE
+  0x0630, // EC_WORD_LOST
+];
+
+/** 1:1 décomp `void InitEasyChatPhrases(void)` (easy_chat.c:5563-5596) : seed
+ *  new-game du profil/phrases de combat + vide les mots des mails + reset des
+ *  trendy sayings débloqués. NB décomp : la boucle originale « for (i = 0;
+ *  i < 64; i++) unlockedTrendySayings[i] = 0 » est un BUG documenté (efface
+ *  64 OCTETS au lieu de 64 bits, débordant sur oldMan — sans effet car
+ *  SetMauvilleOldMan est appelé juste après). Notre tableau fait
+ *  NUM_TRENDY_SAYING_BYTES entrées ; on écrit la version UBFIX (même résultat
+ *  final, pas de débordement mémoire possible en TS). */
+export function InitEasyChatPhrases(): void {
+  const sb1 = gSaveBlock1Ptr;
+  for (let i = 0; i < sDefaultProfileWords.length; i++)
+    sb1.easyChatProfile[i] = sDefaultProfileWords[i];
+  for (let i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+    sb1.easyChatBattleStart[i] = sDefaultBattleStartWords[i];
+  for (let i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+    sb1.easyChatBattleWon[i] = sDefaultBattleWonWords[i];
+  for (let i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+    sb1.easyChatBattleLost[i] = sDefaultBattleLostWords[i];
+  for (let i = 0; i < MAIL_COUNT; i++) {
+    for (let j = 0; j < MAIL_WORDS_COUNT; j++)
+      sb1.mail[i].words[j] = EC_EMPTY_WORD;
+  }
+  for (let i = 0; i < sb1.unlockedTrendySayings.length; i++)
+    sb1.unlockedTrendySayings[i] = 0;
+}
+
 /** 1:1 décomp `void ShowEasyChatScreen(void)` (easy_chat.c:1456). Special de champ :
  *  lit gSpecialVar_0x8004 (type) → sélectionne le buffer de mots → DoEasyChatScreen. */
 export function ShowEasyChatScreen(): void {

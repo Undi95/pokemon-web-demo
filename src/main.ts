@@ -13,9 +13,14 @@
  * (glue maison, PAS main.c) — ce fichier-ci est le miroir décomp pur.
  */
 import { SeedRng } from './random';
+import { LANGUAGE_FRENCH } from '../include/constants/global';
 
 // ─── 1:1 décomp main.c:72 — static u16 sTrainerId. ───────────────────────────
 let sTrainerId = 0;
+
+/** 1:1 décomp main.c — `EWRAM_DATA u8 gGameLanguage = GAME_LANGUAGE`.
+ *  GAME_LANGUAGE = (LANGUAGE_FRENCH) = 3 (constants/global.h:22/:30, build FR). */
+export const gGameLanguage = LANGUAGE_FRENCH;
 
 /**
  * Simule `REG_TM1CNT_L` (timer 1 GBA, 16 bits) lu par SeedRngAndSetTrainerId :

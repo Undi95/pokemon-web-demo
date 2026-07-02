@@ -92,6 +92,8 @@ import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem, HealPlayerParty } from '../../script_pokemon_util';
 import { GameClear, SetCB2WhiteOut } from '../../post_battle_event_funcs';
+import { SetMauvilleOldManObjEventGfx, GetCurrentMauvilleOldMan } from '../../mauville_old_man';
+import { gGameLanguage } from '../../main';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup';
 import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
@@ -2689,10 +2691,9 @@ registerSpecial('SwapRegisteredBike', () => {
  *      VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BARD);
  *  }
  *  ```
- *  Force le sprite Mauville Old Man en BARD (= old man par défaut). */
-registerSpecial('SetMauvilleOldManObjEventGfx', () => {
-  VarSet('VAR_OBJ_GFX_ID_0', OBJ_EVENT_GFX_BARD);
-});
+ *  Force le sprite Mauville Old Man en BARD (= old man par défaut).
+ *  Impl 1:1 → foyer src/mauville_old_man.ts (aussi appelée par SetMauvilleOldMan). */
+registerSpecial('SetMauvilleOldManObjEventGfx', SetMauvilleOldManObjEventGfx);
 
 /** 1:1 décomp `GiddyShouldTellAnotherTale` (mauville_old_man.c:267-280) :
  *  ```c
@@ -2733,9 +2734,10 @@ registerSpecial('GiddyShouldTellAnotherTale', () => {
  *      gSpecialVar_Result = GetCurrentMauvilleOldMan();
  *  }
  *  ```
- *  Et `GetCurrentMauvilleOldMan` :142 retourne `gSaveBlock1Ptr->oldMan.common.id`. */
+ *  Et `GetCurrentMauvilleOldMan` :142 (foyer src/mauville_old_man.ts) retourne
+ *  `gSaveBlock1Ptr->oldMan.common.id`. */
 registerSpecial('Script_GetCurrentMauvilleMan', () => {
-  const id = gSaveBlock1Ptr.oldMan?.id ?? 0;
+  const id = GetCurrentMauvilleOldMan();
   VarSet('VAR_RESULT', id);
   return id;
 });
@@ -4083,9 +4085,10 @@ registerSpecial('TraderDoDecorationTrade', () => {
   if (slotIdx >= 0 && slotIdx < oldMan.decorations.length) {
     oldMan.decorations[slotIdx] = decorToGive;
   }
-  // 1:1 :207 : language = GAME_LANGUAGE (= LANGUAGE_FRENCH = 5 chez nous).
+  // 1:1 :207 : language = GAME_LANGUAGE (= LANGUAGE_FRENCH = 3, constants/global.h:22).
+  // 🐛 Fix 2026-07-02 : valait 5 en dur (5 = LANGUAGE_GERMAN) — faux.
   if (slotIdx >= 0 && slotIdx < oldMan.language.length) {
-    oldMan.language[slotIdx] = 5;  // LANGUAGE_FRENCH
+    oldMan.language[slotIdx] = gGameLanguage;
   }
   // 1:1 :208 : alreadyTraded = TRUE.
   oldMan.alreadyTraded = 1;

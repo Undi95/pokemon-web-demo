@@ -145,3 +145,25 @@ export function GenerateTrainerHillFloorLayout(mapArg: Uint16Array): void {
 
 // Sonde dev (port injouable pour l'instant) — sans effet sur le jeu courant.
 (globalThis as Record<string, unknown>).__GenerateTrainerHillFloorLayout = GenerateTrainerHillFloorLayout;
+
+// ─── Seeding new-game (NewGameInitData, new_game.c:205) ─────────────────────
+
+import { gSaveBlock1Ptr as _sb1NewGame, gSaveBlock2Ptr as _sb2NewGame } from './engine/save/save-block-state';
+import { NUM_TRAINER_HILL_MODES as _NUM_TH_MODES } from './engine/save/save-blocks';
+
+// 1:1 décomp trainer_hill.c:35 — 60 * 60 * 60 - 1 frames.
+const HILL_MAX_TIME = 215999;
+
+/** 1:1 décomp `static void SetTimerValue(u32 *dst, u32 val)` (trainer_hill.c:626-629). */
+function SetTimerValue(dst: number[], index: number, val: number): void {
+  dst[index] = val;
+}
+
+/** 1:1 décomp `void ResetTrainerHillResults(void)` (trainer_hill.c:280-289). */
+export function ResetTrainerHillResults(): void {
+  _sb2NewGame.frontier.savedGame = 0;
+  _sb2NewGame.frontier.unk_EF9 = 0;
+  _sb1NewGame.trainerHill.bestTime = 0;
+  for (let i = 0; i < _NUM_TH_MODES; i++)
+    SetTimerValue(_sb1NewGame.trainerHillTimes, i, HILL_MAX_TIME);
+}

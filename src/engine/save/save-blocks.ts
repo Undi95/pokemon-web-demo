@@ -1283,7 +1283,8 @@ function emptyEmeraldBattleTowerRecord(): EmeraldBattleTowerRecord {
   };
 }
 
-function emptyBattleFrontier(): BattleFrontier {
+/** Exportée pour `ClearFrontierRecord` (new_game.ts) = CpuFill32(0, &frontier, sizeof). */
+export function emptyBattleFrontier(): BattleFrontier {
   return {
     towerPlayer: emptyEmeraldBattleTowerRecord(),
     towerRecords: arr(5, emptyEmeraldBattleTowerRecord),
@@ -1386,7 +1387,8 @@ function emptyDayCare(): DayCare {
   };
 }
 
-function emptySecretBase(): SecretBase {
+/** Exportée pour `ClearSecretBase` (secret_base.ts) = CpuFastFill16(0, secretBase, sizeof). */
+export function emptySecretBase(): SecretBase {
   return {
     secretBaseId: 0, toRegister: 0, gender: 0, battledOwnerToday: 0, registryStatus: 0,
     trainerName: '', trainerId: zeros(TRAINER_ID_LENGTH), language: 0,
@@ -1401,7 +1403,8 @@ function emptySecretBase(): SecretBase {
   };
 }
 
-function emptyMysteryGift(): MysteryGiftSave {
+/** Exportée pour `ClearMysteryGift` (mystery_gift.ts) = CpuFill32(0, &mysteryGift, sizeof). */
+export function emptyMysteryGift(): MysteryGiftSave {
   return {
     newsCrc: 0,
     news: { id: 0, sendType: 0, bgType: 0, titleText: '', bodyText: arr(WONDER_NEWS_BODY_TEXT_LINES, () => '') },

@@ -514,6 +514,11 @@ export class TestOverworldScene extends Phaser.Scene {
       // Pre-load items.json AVANT decideBootMode (= AddBagItem dans le preset
       // ?nointro lookup .pocket via getItem(itemKey) qui dépend de cette table).
       await preloadBootData();
+      // Charger le moteur byte-VM AVANT decideBootMode : NewGameInitData
+      // (new_game.ts) exécute RunScriptImmediately('EventScript_ResetAllMapFlags')
+      // = le VRAI script décomp (159 setflag + ResetAllBerries) — il faut l'image
+      // bytecode + les handlers installés. Idempotent (no-op si déjà chargé).
+      await (await import('../../src/bytevm-boot')).loadByteVmEngine();
       const boot = decideBootMode();
       console.log(`[TestOverworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
       // Étape 5 : resume save → InitMapFromSavedGame (LoadSavedMapView). Les

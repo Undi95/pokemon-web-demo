@@ -36,7 +36,7 @@
  */
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './fieldmap';
-import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MALE, FEMALE } from '../harness/runtime/decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from './engine/script/script-vars';
 import { GetMonData } from './engine/battle/party-storage';
@@ -190,4 +190,56 @@ export function GetRibbonCount(pokemon: Pokemon): number {
   nRibbons += GetMonData(pokemon, MON_DATA_EARTH_RIBBON) as number;
   nRibbons += GetMonData(pokemon, MON_DATA_WORLD_RIBBON) as number;
   return nRibbons;
+}
+
+// ─── Seeding new-game (NewGameInitData, new_game.c:168-169) ─────────────────
+
+// 1:1 décomp constants/tv.h:4/:11.
+const POKENEWS_NONE = 0;
+const POKENEWS_STATE_INACTIVE = 0;
+
+/** 1:1 décomp `static void ClearPokeNewsBySlot(u8 i)` (tv.c:2578-2583). */
+function ClearPokeNewsBySlot(i: number): void {
+  gSaveBlock1Ptr.pokeNews[i].kind = POKENEWS_NONE;
+  gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_INACTIVE;
+  gSaveBlock1Ptr.pokeNews[i].dayCountdown = 0;
+}
+
+/** 1:1 décomp `static void ClearPokeNews(void)` (tv.c:2570-2576). */
+function ClearPokeNews(): void {
+  for (let i = 0; i < gSaveBlock1Ptr.pokeNews.length; i++) ClearPokeNewsBySlot(i);  // POKE_NEWS_COUNT = 16
+}
+
+/** 1:1 décomp `void ClearTVShowData(void)` (tv.c:761-773) : vide les 25 slots
+ *  (kind/active/data) + ClearPokeNews. Notre TVShow = `{kind, active, data?}`
+ *  (union décomp aplatie, save-blocks.ts:859). */
+export function ClearTVShowData(): void {
+  for (let i = 0; i < gSaveBlock1Ptr.tvShows.length; i++) {   // ARRAY_COUNT = 25
+    gSaveBlock1Ptr.tvShows[i].kind = 0;
+    gSaveBlock1Ptr.tvShows[i].active = 0;
+    gSaveBlock1Ptr.tvShows[i].data = undefined;               // commonInit.data[j] = 0
+  }
+  ClearPokeNews();
+}
+
+/** 1:1 décomp `void ResetGabbyAndTy(void)` (tv.c:914-933). */
+export function ResetGabbyAndTy(): void {
+  const gt = gSaveBlock1Ptr.gabbyAndTyData;
+  gt.mon1 = 0;                    // SPECIES_NONE
+  gt.mon2 = 0;                    // SPECIES_NONE
+  gt.lastMove = 0;                // MOVE_NONE
+  gt.quote[0] = 0xFFFF;           // 1:1 :919 quote[0] = -1 (u16 → 0xFFFF = EC_EMPTY_WORD)
+  gt.battleTookMoreThanOneTurn = 0;
+  gt.playerLostAMon = 0;
+  gt.playerUsedHealingItem = 0;
+  gt.playerThrewABall = 0;
+  gt.onAir = 0;
+  gt.valA_5 = 0;
+  gt.battleTookMoreThanOneTurn2 = 0;
+  gt.playerLostAMon2 = 0;
+  gt.playerUsedHealingItem2 = 0;
+  gt.playerThrewABall2 = 0;
+  gt.valB_4 = 0;
+  gt.mapnum = 0;
+  gt.battleNum = 0;
 }

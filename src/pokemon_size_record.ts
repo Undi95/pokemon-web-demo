@@ -178,10 +178,12 @@ function GetMonSizeRecordInfo(species: number, varName: string): void {
 
 // ─── Specials registry (= 6 entries) ───────────────────────────────────────
 
-/** 1:1 décomp `InitSeedotSizeRecord` (pokemon_size_record.c:152-155). */
-registerSpecial('InitSeedotSizeRecord', () => {
+/** 1:1 décomp `void InitSeedotSizeRecord(void)` (pokemon_size_record.c:152-155).
+ *  Exportée : appelée aussi par NewGameInitData (new_game.c:178). */
+export function InitSeedotSizeRecord(): void {
   VarSet('VAR_SEEDOT_SIZE_RECORD', DEFAULT_MAX_SIZE);
-});
+}
+registerSpecial('InitSeedotSizeRecord', InitSeedotSizeRecord);
 
 /** 1:1 décomp `GetSeedotSizeRecordInfo` (pokemon_size_record.c:157-162). */
 registerSpecial('GetSeedotSizeRecordInfo', () => {
@@ -193,10 +195,12 @@ registerSpecial('CompareSeedotSize', () => {
   gSpecialVar.Result = CompareMonSize(SPECIES_SEEDOT, 'VAR_SEEDOT_SIZE_RECORD');
 });
 
-/** 1:1 décomp `InitLotadSizeRecord` (pokemon_size_record.c:171-174). */
-registerSpecial('InitLotadSizeRecord', () => {
+/** 1:1 décomp `void InitLotadSizeRecord(void)` (pokemon_size_record.c:171-174).
+ *  Exportée : appelée aussi par NewGameInitData (new_game.c:179). */
+export function InitLotadSizeRecord(): void {
   VarSet('VAR_LOTAD_SIZE_RECORD', DEFAULT_MAX_SIZE);
-});
+}
+registerSpecial('InitLotadSizeRecord', InitLotadSizeRecord);
 
 /** 1:1 décomp `GetLotadSizeRecordInfo` (pokemon_size_record.c:176-181). */
 registerSpecial('GetLotadSizeRecordInfo', () => {

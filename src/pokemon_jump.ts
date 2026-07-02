@@ -187,3 +187,25 @@ export function IsPokemonJumpSpeciesInParty(): void {
   _g.__IsPokemonJumpSpeciesInParty = IsPokemonJumpSpeciesInParty;
   _g.__IsSpeciesAllowedInPokemonJump = IsSpeciesAllowedInPokemonJump;
 }
+
+// ─── Seeding new-game (ResetMiniGamesRecords, new_game.c:213) ────────────────
+
+import { gSaveBlock2Ptr } from './engine/save/save-block-state';
+import type { PokemonJumpRecords } from './engine/save/save-blocks';
+
+/** 1:1 décomp `static struct PokemonJumpRecords *GetPokeJumpRecords(void)`
+ *  (pokemon_jump.c) : return &gSaveBlock2Ptr->pokeJump. */
+function GetPokeJumpRecords(): PokemonJumpRecords {
+  return gSaveBlock2Ptr.pokeJump;
+}
+
+/** 1:1 décomp `void ResetPokemonJumpRecords(void)` (pokemon_jump.c:4098-4107). */
+export function ResetPokemonJumpRecords(): void {
+  const records = GetPokeJumpRecords();
+  records.jumpsInRow = 0;
+  records.bestJumpScore = 0;
+  records.excellentsInRow = 0;
+  records.gamesWithMaxPlayers = 0;
+  records.unused2 = 0;
+  records.unused1 = 0;
+}

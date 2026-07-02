@@ -220,7 +220,7 @@ import {
   getInputDirection as _getInputDirection,
 } from './engine/field/direction-coords';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
-import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../include/constants/game_stat';
+import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS, NUM_GAME_STATS } from '../include/constants/game_stat';
 import {
   OBJ_EVENT_GFX_PUSHABLE_BOULDER,
   OBJ_EVENT_GFX_BRENDAN_NORMAL, OBJ_EVENT_GFX_BRENDAN_MACH_BIKE, OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,
@@ -1216,6 +1216,13 @@ export function SetGameStat(index: number, value: number): void {
     const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
     stats[index] = (value | 0) ^ key;
   }
+}
+
+/** 1:1 décomp `void ResetGameStats(void)` (overworld.c:425-431) : les 64 stats
+ *  à zéro (seeding new-game). Même dette de foyer que Get/SetGameStat ci-haut
+ *  (décomp = overworld.c). NUM_GAME_STATS = 64 (constants/game_stat.h:58). */
+export function ResetGameStats(): void {
+  for (let i = 0; i < NUM_GAME_STATS; i++) SetGameStat(i, 0);
 }
 
 // ─── 1:1 décomp `CheckForObjectEventCollision` subsystems ──────────────────

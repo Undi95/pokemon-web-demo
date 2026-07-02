@@ -31,6 +31,9 @@ import {
   emptySaveBlock1,
 } from './engine/save/save-blocks';
 import { GetSaveBlock1, GetSaveBlock2 } from './save';
+import { SetSaveBlock1 } from './engine/save/save-block-state';
+import { SetBagItemsPointers } from './engine/bag/bag';
+import { SetDecorationInventoriesPointers } from './decoration_inventory';
 import { RefreshPlayerPartyViews, gPlayerParty, createEmptyPokemon, PARTY_SIZE } from './engine/battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
@@ -138,6 +141,18 @@ function applySnapshotToObjectEvent(npc: ObjectEvent, snap: ObjectEventSnapshot)
 }
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────
+
+/** 1:1 décomp `void ClearSav1(void)` (load_save.c:64-67) :
+ *  CpuFill16(0, &gSaveblock1, sizeof) → chez nous : SaveBlock1 ← struct zéro
+ *  (emptySaveBlock1) + re-câblage des pointeurs dérivés (gBagPockets +
+ *  gDecorationInventories visent le nouvel objet — 1:1 load_save.c:80
+ *  SetSaveBlocksPointers fait pareil après le move ASLR). N'efface PAS la
+ *  flash ni SaveBlock2 ni le PC storage. Appelé par NewGameInitData. */
+export function ClearSav1(): void {
+  SetSaveBlock1(emptySaveBlock1());
+  SetBagItemsPointers();
+  SetDecorationInventoriesPointers();
+}
 
 /** 1:1 décomp `SaveObjectEvents(void)` (load_save.c:180).
  *  Snapshot tous les gObjectEvents live → block1.objectEvents persisted.

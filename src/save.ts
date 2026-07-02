@@ -716,6 +716,14 @@ export function GetPokemonStorage(): PokemonStorage {
   return sCurrentStorage;
 }
 
+/** 1:1 décomp `void ResetPokemonStorageSystem(void)` (pokemon_storage_system.c:1729-1748) :
+ *  SetCurrentBox(0) + ZeroBoxMonAt(toutes) + noms « BOITE 1..14 » + wallpapers
+ *  i % 4 — tout réalisé par la factory `emptyPokemonStorage` (voir sa JSDoc,
+ *  save-blocks.ts). Appelé par NewGameInitData (new_game.c:182). */
+export function ResetPokemonStorageSystem(): void {
+  sCurrentStorage = emptyPokemonStorage();
+}
+
 /** 1:1 décomp `Sav2_ClearSetDefault` + `ClearSav1` — reset RAM des blocs
  *  (NewGame). NE touche PAS la flash (= 1:1, la flash n'est effacée que
  *  par un save ou ClearSaveData). */
