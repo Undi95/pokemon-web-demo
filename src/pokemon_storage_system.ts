@@ -3,14 +3,19 @@
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/pokemon_storage_system.c`.
  *
- * Ne porte ici que `CheckFreePokemonStorageSpace` (le système PC complet — UI boîtes,
- * dépôt/retrait — est un gros sous-système déféré). La struct PokemonStorage (14×30
- * BoxPokemon) existe déjà dans le save block (sectors 5-13).
+ * Porte les helpers de comptage/espace (CheckFreePokemonStorageSpace, StorageGetCurrentBox,
+ * AnyStorageMonWithMove, CountStorageNonEggMons, CountPartyAliveNonEggMonsExcept…) —
+ * le système PC complet (UI boîtes, dépôt/retrait) est un gros sous-système déféré.
+ * La struct PokemonStorage (14×30 BoxPokemon) existe déjà dans le save block (sectors 5-13).
  */
 
 import { GetPokemonStorage } from './save';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import {
+  gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_HP,
+} from './engine/battle/party-storage';
+import { VarGet } from './event_data';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -79,6 +84,29 @@ export function CountStorageNonEggMons(): number {
     }
   }
   return count;
+}
+
+/** 1:1 décomp `u8 CountPartyAliveNonEggMonsExcept(u8 slotToIgnore)`
+ *  (pokemon_storage_system.c:1440) : compte les mons party vivants (HP>0), non-œufs,
+ *  hors slot `slotToIgnore` (PARTY_SIZE = aucun slot ignoré). */
+export function CountPartyAliveNonEggMonsExcept(slotToIgnore: number): number {
+  let count = 0;
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const mon = gPlayerParty[i];
+    if (i !== slotToIgnore
+      && (GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 /* SPECIES_NONE */
+      && !(GetMonData(mon, MON_DATA_IS_EGG) as number)
+      && (GetMonData(mon, MON_DATA_HP) as number) !== 0) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/** 1:1 décomp `u16 CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(void)`
+ *  (pokemon_storage_system.c:1458) — special (pension : « dernier mon valide ? »). */
+export function CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(): number {
+  return CountPartyAliveNonEggMonsExcept(VarGet(0x8004) /* gSpecialVar_0x8004 */);
 }
 
 // Exposition dev (sonde déterministe), sans effet sur le jeu.

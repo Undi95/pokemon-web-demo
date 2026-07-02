@@ -24,6 +24,7 @@ import { GetCurrentMap } from '../../src/load_save';
 import { SetObjEventTemplateCoords } from '../../src/load_save';
 import { UseContinueGameWarp, ClearContinueGameWarpStatus } from '../../src/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
+import { CreateEgg, GetDaycareData } from '../../src/daycare';
 import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
 import { GetPlayerNameString } from '../../src/text';
@@ -351,18 +352,17 @@ function applyNoIntroPreset(): void {
     arcko.status = (resolveDecompConstant('STATUS1_BURN') as number | undefined) ?? 0x10;
     GiveMonToPlayer(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.hp}/${arcko.maxHP}) held=${arcko.heldItem}`);
-    // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
-    // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
-    const jirachi = createTestMon('SPECIES_JIRACHI', 100, {
-      heldItem: 'ITEM_STAR_PIECE',
-      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-      evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
-      moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],
-    });
-    // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
-    jirachi.metLocation = (resolveDecompConstant('MAPSEC_LITTLEROOT_TOWN') as number | undefined) ?? 0;
-    GiveMonToPlayer(jirachi);
-    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.hp}/${jirachi.maxHP})`);
+    // ⚠️ DEBUG ONLY : ŒUF (Poussifeu) prêt à éclore — chantier P2.2 éclosion.
+    // Remplace l'ex-Jirachi « curseur » (l'œuf occupe le même slot 1 et teste le
+    // curseur pareil). friendship = 0 (cycles épuisés) + daycare.stepCounter = 253 :
+    // TryProduceOrHatchEgg (check à ==255) déclenche l'éclosion ~2 pas après spawn.
+    // Après éclosion : POUSSIFEU Lv5 (SEEN+CAUGHT posés 1:1 par AddHatchedMonToParty).
+    // Re-tester = recharger ?debug (preset RAM-only, l'œuf se ré-arme).
+    const egg = CreateEgg('SPECIES_TORCHIC', false);
+    egg.friendship = 0; // cycles d'œuf épuisés (MON_DATA_FRIENDSHIP = compteur cycles)
+    GiveMonToPlayer(egg);
+    GetDaycareData().stepCounter = 253;
+    console.log('[boot-mode] ?debug ŒUF (Poussifeu) ajouté : éclosion ~2 pas (stepCounter=253, cycles=0)');
     // ⚠️ DEBUG ONLY : Leveinard (Chansey) — testeur des field moves de SOIN/utilitaire que les 3
     // field-mons ne couvrent pas. PAS un œuf (`isEgg=false`) : un œuf est SKIPPÉ par checkpartymove /
     // la détection field-move du party menu (= inutilisable pour tester). Lui donne les 2 moves
@@ -413,7 +413,8 @@ function applyNoIntroPreset(): void {
     // combat → on pose les flags ici pour que le dex reflète l'équipe (sinon il resterait
     // vide → ne s'ouvrirait même pas, cf. garde « dex vide »). SET_SEEN d'abord (triple
     // write seen/seen1/seen2 anti-triche) puis SET_CAUGHT (owned).
-    const debugDexSpecies = ['SPECIES_TREECKO', 'SPECIES_JIRACHI', 'SPECIES_CHANSEY',
+    // (Pas l'ŒUF : Poussifeu sera VU+PRIS par AddHatchedMonToParty à l'éclosion, 1:1.)
+    const debugDexSpecies = ['SPECIES_TREECKO', 'SPECIES_CHANSEY',
       ...fieldMons.map(fm => fm.species)];
     for (const sp of debugDexSpecies) {
       const speciesNum = resolveDecompConstant(sp);

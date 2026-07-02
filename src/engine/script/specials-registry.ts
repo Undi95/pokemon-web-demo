@@ -53,7 +53,8 @@ import {
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
 import { IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex } from '../../dewford_trend';
-import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons } from '../../pokemon_storage_system';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons, CountPartyAliveNonEggMons_IgnoreVar0x8004Slot } from '../../pokemon_storage_system';
+import { EggHatch, ScriptHatchMon, CheckDaycareMonReceivedMail, CountPartyAliveNonEggMons } from '../../egg_hatch';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
@@ -1930,7 +1931,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CallFallarborTentFunction', 'CallFrontierUtilFunc',
   'CallSlateportTentFunction', 'CallTrainerHillFunction',
   'CallVerdanturfTentFunction', 'ChangeBoxPokemonNickname',
-  'CheckDaycareMonReceivedMail',
+  // 'CheckDaycareMonReceivedMail' — porté 1:1 décomp egg_hatch.c:418 (src/egg_hatch.ts), handler ci-bas.
   // 'CheckForPlayersHouseNews' — handler concret enregistré supra (= TV path dispatch 1:1).
   // 'CheckInteractedWithFriendsCushionDecor' — porté 1:1 décomp secret_base.c:1840 ci-bas.
   // 'CheckInteractedWithFriendsDollDecor' — porté 1:1 décomp secret_base.c:1834 ci-bas.
@@ -1967,7 +1968,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
   // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
   // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
-  'DrewSecretBaseBattle', 'EggHatch',
+  'DrewSecretBaseBattle',
+  // 'EggHatch' — porté 1:1 décomp egg_hatch.c:472 (src/egg_hatch.ts, scène complète), handler ci-bas.
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
   'EnterSafariMode', 'EnterSecretBase', 'ExitLinkRoom', 'ExitSafariMode',
   // 'FavorLadyGetPrize' — porté 1:1 décomp lilycove_lady.c:278 ci-bas (batch B9).
@@ -2092,7 +2094,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SaveGame' — porté 1:1 décomp start_menu.c:896 ci-bas (batch B40).
   // 'ScriptCheckFreePokemonStorageSpace' — porté 1:1 décomp pokemon_storage_system.c:9572 (handler ci-bas).
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
-  'ScriptHatchMon',
+  // 'ScriptHatchMon' — porté 1:1 décomp egg_hatch.c:395 (src/egg_hatch.ts), handler ci-bas.
   'ScriptMenu_CreatePCMultichoice',
   'Script_BufferContestLadyCategoryAndMonName',
   'Script_DoesFavorLadyLikeItem', 'Script_FadeOutMapMusic',
@@ -2438,37 +2440,27 @@ registerSpecial('CountPartyNonEggMons', () => {
   return count;
 });
 
-/** 1:1 décomp `CountPartyAliveNonEggMons` (egg_hatch.c:941-947) :
- *    count = CountStorageNonEggMons();                       // mons du PC
- *    count += CountPartyAliveNonEggMonsExcept(PARTY_SIZE);   // party vivants non-œuf
- *    return count;
- *  FIX : on n'incluait PAS `CountStorageNonEggMons()` (invisible tant que les boîtes
- *  PC étaient vides ; désormais peuplables via CopyMonToPC → undercount sinon). */
-registerSpecial('CountPartyAliveNonEggMons', () => {
-  let count = CountStorageNonEggMons();  // 1:1 : + mons (non-œuf) du PC
-  // 1:1 CountPartyAliveNonEggMonsExcept(PARTY_SIZE) : party non-empty, non-egg, HP != 0.
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) count++;
-  }
-  return count;
-});
+/** 1:1 décomp `CountPartyAliveNonEggMons` (egg_hatch.c:941-947) — la fn 1:1 vit
+ *  désormais dans src/egg_hatch.ts (chantier éclosion) : l'impl inline dupliquée
+ *  d'ici a été dissoute (consolidation N:1 → miroir). */
+registerSpecial('CountPartyAliveNonEggMons', () => CountPartyAliveNonEggMons());
 
-/** 1:1 décomp `CountPartyAliveNonEggMons_IgnoreVar0x8004Slot` (field_specials.c)
- *  = CountPartyAliveNonEggMonsExcept(gSpecialVar_0x8004). Le slot var0x8004 est
- *  ignoré (used par scripts qui considèrent le mon que le joueur est en train
- *  de transférer/déposer). */
-registerSpecial('CountPartyAliveNonEggMons_IgnoreVar0x8004Slot', () => {
-  // 1:1 décomp CountPartyAliveNonEggMonsExcept(gSpecialVar_0x8004) : ignore ce slot.
-  const slotToIgnore = VarGet('VAR_0x8004');
-  let count = 0;
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    if (i === slotToIgnore) continue;
-    const mon = gPlayerParty[i];
-    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) count++;
-  }
-  return count;
-});
+/** 1:1 décomp `CountPartyAliveNonEggMons_IgnoreVar0x8004Slot`
+ *  (pokemon_storage_system.c:1458) — fn 1:1 dans src/pokemon_storage_system.ts. */
+registerSpecial('CountPartyAliveNonEggMons_IgnoreVar0x8004Slot', () => CountPartyAliveNonEggMons_IgnoreVar0x8004Slot());
+
+// ─── Éclosion d'œuf (chantier P2.2, src/egg_hatch.ts — 1:1 egg_hatch.c) ──────
+
+/** 1:1 décomp `EggHatch` (egg_hatch.c:472) — def_special waitstate=1 : lance la
+ *  scène d'éclosion ; le script (EventScript_EggHatch) reprend via
+ *  FieldCB_ContinueScriptHandleMusic → ScriptContext_Enable + SignalWaitState. */
+registerSpecial('EggHatch', () => { EggHatch(); return 0; });
+
+/** 1:1 décomp `ScriptHatchMon` (egg_hatch.c:395) : AddHatchedMonToParty(VAR_0x8004). */
+registerSpecial('ScriptHatchMon', () => { ScriptHatchMon(); return 0; });
+
+/** 1:1 décomp `CheckDaycareMonReceivedMail` (egg_hatch.c:418). */
+registerSpecial('CheckDaycareMonReceivedMail', () => (CheckDaycareMonReceivedMail() ? 1 : 0));
 
 /** 1:1 décomp `HasAtLeastOneBerry` (item.c:163-177).
  *  Loop sur les berry slots (ITEM_CHERI_BERRY..ITEM_BRIGHT_POWDER-1, soit

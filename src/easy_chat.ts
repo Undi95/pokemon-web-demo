@@ -60,7 +60,8 @@ import {
 } from './window';
 
 import { DeactivateAllTextPrinters, GetStringCenterAlignXOffset, GetStringWidth, TEXT_SKIP_DRAW } from './text';
-import { AddTextPrinterParameterized3, FreeAllOverworldWindowBuffers } from './menu';
+import { AddTextPrinterParameterized3 } from './menu';
+import { CleanupOverworldWindowsAndTilemaps } from './overworld';
 
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
@@ -3335,19 +3336,8 @@ const EASY_CHAT_PERSON_REPORTER_FEMALE_L = 1;
 const EASY_CHAT_PERSON_BOY_L = 2;
 const NUM_BARD_SONG_WORDS = 6;
 
-/** 1:1 décomp `void CleanupOverworldWindowsAndTilemaps(void)` (overworld.c:1416).
- *  Foyer réel = overworld.c → à relocaliser vers overworld.ts au HUB 2 ; défini ici en
- *  attendant, appelé tel quel. Chacune des 3 lignes décomp :
- *   • ClearMirageTowerPulseBlendEffect() : no-op GARANTI chez nous (sMirageTowerPulseBlend
- *     toujours NULL → le décomp early-return aussi, cf. field_camera.ts:796). Pas d'import
- *     field_camera (anti-cycle) : le résultat est strictement identique.
- *   • FreeAllOverworldWindowBuffers() : CÂBLÉ (menu.ts, = FreeAllWindowBuffers). Idempotent.
- *   • TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg3/2/1) : chez nous ces buffers sont
- *     PERSISTANTS (field_camera.ts:389), pas des allocs heap → no-op structurel (les
- *     libérer+nuller casserait le prochain redraw de map ; le décomp les ré-alloue, nous non). */
-function CleanupOverworldWindowsAndTilemaps(): void {
-  FreeAllOverworldWindowBuffers();
-}
+// CleanupOverworldWindowsAndTilemaps : relocalisée vers overworld.ts (foyer réel
+// overworld.c:1416, chantier éclosion 2026-07-02) — importée en tête de fichier.
 
 /** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)` (easy_chat.c) :
  *    for (i = length - 1; i != EC_EMPTY_WORD; i--) *(words++) = EC_EMPTY_WORD; */

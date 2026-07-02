@@ -254,6 +254,8 @@ export const gWeather: Weather = _makeWeather();
 /** 1:1 décomp `struct Weather *const gWeatherPtr = &gWeather` (field_weather.c:83).
  *  En JS : même référence d'objet (pas de pointeur séparé). */
 export const gWeatherPtr: Weather = gWeather;
+// Exposition dev (sonde live weather/fades), sans effet jeu.
+(globalThis as Record<string, unknown>).__gWeatherPtr = gWeatherPtr;
 
 // field_weather.c:64-66 — tables de type de color map par palette.
 let sPaletteColorMapTypes: ReadonlyArray<number>;

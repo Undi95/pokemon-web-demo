@@ -120,6 +120,10 @@ let _waitStateSignaled = false;
 export function SignalWaitState(): void {
   _waitStateSignaled = true;
 }
+// Pont anti-cycle : field_screen_effect (Task_WaitForFadeAndEnableScriptCtx) l'appelle
+// via globalThis — un import statique de scrcmd depuis ce module tirait tout le byte-VM
+// (script-opcodes-*) dans le sous-arbre d'éval de field_player_avatar → TDZ DIR_SOUTH.
+(globalThis as Record<string, unknown>).__SignalWaitState = SignalWaitState;
 
 /** Consomme le signal waitstate (true une seule fois). Lu par `ScrCmd_waitstate`. */
 export function consumeWaitStateSignal(): boolean {

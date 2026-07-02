@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../../../harness/main';
+// Résolution native GBA (240×160). Constantes LOCALES : l'import depuis harness/main
+// (l'ENTRÉE du bundle) réinjectait tout le sous-arbre de main dans le graphe de CE
+// module → cycles ESM/TDZ en cascade (« Cannot access 'X' before initialization »
+// au boot, diagnostiqué chantier éclosion 2026-07-02).
+const GAME_W = 240;
+const GAME_H = 160;
 
 export interface TilesetPairInfo {
   primaryTileset: string;

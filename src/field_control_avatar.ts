@@ -37,6 +37,9 @@ import {
   IsPlayerSurfingNorth,
   PLAYER_AVATAR_FLAG_FORCED_MOVE,
 } from './field_player_avatar';
+import { IncrementGameStat } from './field_player_avatar';
+import { GAME_STAT_HATCHED_EGGS } from '../include/constants/game_stat';
+import { ShouldEggHatch } from './daycare';
 import { IncrementRematchStepCounter } from './battle_setup';
 import { FlagGet } from './engine/script/script-vars';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -962,10 +965,10 @@ export function UpdatePoisonStepCounter(): boolean {
 }
 
 /** 1:1 décomp `TryStartStepCountScript` (field_control_avatar.c:565-630), version
- *  portée : compteurs de pas Rematch + Amitié + Poison. (InUnionRoom,
- *  UpdateFarawayIslandStepCounter, ShouldEggHatch, AbnormalWeather, appels Match
- *  Call Wally/Scott/Roxanne/Rayquaza, Safari, SS Tidal = sous-systèmes non portés,
- *  omis.) Retourne TRUE si un script de pas a démarré (poison white-out). */
+ *  portée : compteurs de pas Rematch + Amitié + Poison + Éclosion d'œuf. (InUnionRoom,
+ *  UpdateFarawayIslandStepCounter, AbnormalWeather, appels Match Call
+ *  Wally/Scott/Roxanne/Rayquaza, Safari, SS Tidal = sous-systèmes non portés,
+ *  omis.) Retourne TRUE si un script de pas a démarré (poison white-out, éclosion). */
 function TryStartStepCountScript(metatileBehavior: number): boolean {
   IncrementRematchStepCounter();
   UpdateFriendshipStepCounter();
@@ -973,6 +976,12 @@ function TryStartStepCountScript(metatileBehavior: number): boolean {
       && !MetatileBehavior_IsForcedMovementTile(metatileBehavior)) {
     if (UpdatePoisonStepCounter()) {
       ScriptContext_SetupScript('EventScript_FieldPoison');
+      return true;
+    }
+    // 1:1 décomp :554-559.
+    if (ShouldEggHatch()) {
+      IncrementGameStat(GAME_STAT_HATCHED_EGGS);
+      ScriptContext_SetupScript('EventScript_EggHatch');
       return true;
     }
   }

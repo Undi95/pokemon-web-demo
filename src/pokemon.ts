@@ -1442,7 +1442,9 @@ export function SetMonData(mon: Pokemon, field: number, value: number | string):
     case MON_DATA_LANGUAGE: mon.language = v & 0xFF; return;
     case MON_DATA_SANITY_IS_BAD_EGG: mon.isBadEgg = v ? 1 : 0; return;
     case MON_DATA_SANITY_HAS_SPECIES: mon.hasSpecies = v ? 1 : 0; return;
-    case MON_DATA_SANITY_IS_EGG: mon.isEgg = v ? 1 : 0; return;
+    // bitfield :1 décomp (v & 1, PAS truthy) : AddHatchedMonToParty passe 0x46 (LSB 0)
+    // pour dé-œuffer le mon (egg_hatch.c:360 `u8 isEgg = 0x46; // ?`).
+    case MON_DATA_SANITY_IS_EGG: mon.isEgg = v & 1; return;
     case MON_DATA_OT_NAME: mon.otName = s; return;
     case MON_DATA_MARKINGS: mon.markings = v & 0xFF; return;
     case MON_DATA_SPECIES: mon.species = v & 0xFFFF; mon.hasSpecies = mon.species ? 1 : 0; return;
@@ -1476,7 +1478,7 @@ export function SetMonData(mon: Pokemon, field: number, value: number | string):
     case MON_DATA_SPEED_IV: mon.speedIV = v & 0x1F; return;
     case MON_DATA_SPATK_IV: mon.spAttackIV = v & 0x1F; return;
     case MON_DATA_SPDEF_IV: mon.spDefenseIV = v & 0x1F; return;
-    case MON_DATA_IS_EGG: mon.isEgg = v ? 1 : 0; return;
+    case MON_DATA_IS_EGG: mon.isEgg = v & 1; return; // bitfield :1 (cf. SANITY_IS_EGG)
     case MON_DATA_ABILITY_NUM: mon.abilityNum = v & 1; return;
     case MON_DATA_STATUS: mon.status = v >>> 0; return;
     case MON_DATA_LEVEL: mon.level = v & 0xFF; return;

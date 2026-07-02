@@ -34,6 +34,7 @@ import {
 import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange, ResetSpriteData } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';
+import { FreeAllOverworldWindowBuffers } from './menu';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import {
   MUS_DUMMY, MUS_NONE, MUS_ABNORMAL_WEATHER, MUS_ENCOUNTER_MAGMA, MUS_MT_CHIMNEY,
@@ -762,6 +763,18 @@ export function CB2_ReturnToFieldLocal_Manual(): void {
       console.error('[CB2_ReturnToFieldLocal_Manual] _overworldMainCB2 not exposed');
     }
   }
+}
+
+/** 1:1 décomp `void CleanupOverworldWindowsAndTilemaps(void)` (overworld.c:1416).
+ *  Relocalisée depuis easy_chat.ts (foyer réel = overworld.c). Chacune des 3 lignes décomp :
+ *   • ClearMirageTowerPulseBlendEffect() : no-op GARANTI chez nous (sMirageTowerPulseBlend
+ *     toujours NULL → le décomp early-return aussi, cf. field_camera.ts:796).
+ *   • FreeAllOverworldWindowBuffers() : CÂBLÉ (menu.ts, = FreeAllWindowBuffers). Idempotent.
+ *   • TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg3/2/1) : chez nous ces buffers sont
+ *     PERSISTANTS (field_camera.ts:389), pas des allocs heap → no-op structurel (les
+ *     libérer+nuller casserait le prochain redraw de map ; le décomp les ré-alloue, nous non). */
+export function CleanupOverworldWindowsAndTilemaps(): void {
+  FreeAllOverworldWindowBuffers();
 }
 
 /** 1:1 décomp `void CB2_ReturnToFieldWithOpenMenu(void)` (overworld.c:1670). Reset gMain.state

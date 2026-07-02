@@ -223,8 +223,9 @@ async function loadBattleTerrainAssets(env: number): Promise<TerrainAssets> {
   return assets;
 }
 
-/** Load textbox assets (= 1:1 décomp LoadBattleTextboxAndBackground ll. 859-867). */
-async function loadBattleTextboxAssets(): Promise<TextboxAssets> {
+/** Load textbox assets (= 1:1 décomp LoadBattleTextboxAndBackground ll. 859-867).
+ *  Exporté : egg_hatch.ts charge les mêmes assets (CB2_LoadEggHatch case 2). */
+export async function loadBattleTextboxAssets(): Promise<TextboxAssets> {
   if (_textboxAssets) return _textboxAssets;
   const base = '/decomp/em/battle_interface';
   const [tiles, tilemap, palette0, palette1] = await Promise.all([

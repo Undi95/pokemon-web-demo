@@ -7,9 +7,18 @@
  * buffer. Quand le compositeur supportera le WIN0 scanline, ceci sera remplacé par le vrai
  * chemin 1:1 dans `src/field_screen_effect.ts`.
  *
- * Donnée 1:1 = `sFlashLevelToRadius` (src/field_screen_effect.ts).
+ * Donnée 1:1 = `sFlashLevelToRadius` (src/field_screen_effect.ts), lue via le pont
+ * `globalThis.__sFlashLevelToRadius` : l'import statique tirait field_screen_effect
+ * (devenu non-feuille au chantier éclosion : scrcmd/overworld/script) dans le
+ * sous-arbre d'init de decomp-globals → cycle ESM/TDZ (« Cannot access 'MALE' »).
  */
-import { sFlashLevelToRadius } from '../../src/field_screen_effect';
+
+/** Pont anti-cycle (posé par field_screen_effect.ts à son évaluation). Fallback =
+ *  copie de la table 1:1 (field_screen_effect.c:53) si le module n'est pas encore évalué. */
+function _flashLevelToRadius(): readonly number[] {
+  return (globalThis as { __sFlashLevelToRadius?: readonly number[] }).__sFlashLevelToRadius
+    ?? [200, 72, 64, 56, 48, 40, 32, 24, 0];
+}
 
 const SCREEN_W = 240;
 const SCREEN_H = 160;
@@ -33,7 +42,7 @@ export function applyFlashMask(frameBuffer: Uint8ClampedArray): boolean {
   const cb2name = (globalThis as { gMain?: { callback2?: { name?: string } } })
     .gMain?.callback2?.name ?? '';
   if (!cb2name.startsWith('MainCB2_Overworld')) return false;
-  const radius = sFlashLevelToRadius[Math.min(level, 8)];
+  const radius = _flashLevelToRadius()[Math.min(level, 8)];
   if (radius >= 200) return false;  // rayon assez large pour couvrir tout l'écran
   const radiusSq = radius * radius;
 
