@@ -15,7 +15,11 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_HP,
 } from './engine/battle/party-storage';
+// CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
+// il passe par le hook __getPokemonStorage — donc pas de cycle).
+import { CopyMon, ZeroMonData } from './pokemon';
 import { VarGet } from './event_data';
+import { PARTY_SIZE } from '../include/constants/global';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -84,6 +88,37 @@ export function CountStorageNonEggMons(): number {
     }
   }
   return count;
+}
+
+/** 1:1 décomp `s16 CompactPartySlots(void)` (pokemon_storage_system.c:6734-6757) :
+ *  ```c
+ *  for (i = 0, last = 0; i < PARTY_SIZE; i++) {
+ *      u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
+ *      if (species != SPECIES_NONE) {
+ *          if (i != last) gPlayerParty[last] = gPlayerParty[i];
+ *          last++;
+ *      } else if (retVal == -1) retVal = i;
+ *  }
+ *  for (; last < PARTY_SIZE; last++) ZeroMonData(&gPlayerParty[last]);
+ *  ```
+ *  Compacte les slots party (mons valides remontés en tête, queue zérotée) ;
+ *  retourne l'index du 1er slot qui était vide (-1 si aucun). La copie de struct
+ *  `gPlayerParty[last] = gPlayerParty[i]` = CopyMon (copie par VALEUR — les slots
+ *  gPlayerParty sont des objets fixes, jamais réassignés par référence). */
+export function CompactPartySlots(): number {
+  let retVal = -1;
+  let last = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+    if (species !== 0 /* SPECIES_NONE */) {
+      if (i !== last) CopyMon(gPlayerParty[last], gPlayerParty[i]);
+      last++;
+    } else if (retVal === -1) {
+      retVal = i;
+    }
+  }
+  for (; last < PARTY_SIZE; last++) ZeroMonData(gPlayerParty[last]);
+  return retVal;
 }
 
 /** 1:1 décomp `u8 CountPartyAliveNonEggMonsExcept(u8 slotToIgnore)`

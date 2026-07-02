@@ -3311,8 +3311,8 @@ function ItemMenu_Register(task: DecompTask): void {
  *  branche registered → CB DIRECT (pas de fade-bag). Exposé sur globalThis pour
  *  field_control_avatar (anti-cycle, comme __FieldCallback_Dig).
  *  Checks union/pyramid/pike = single-player → toujours OK (skip). DETTE :
- *  PlayerFreeze()/StopPlayerAvatar() (joueur stationnaire au SELECT) + Freeze
- *  ObjectEvents + EventScript_SelectWithoutRegisteredItem (message "aucun objet"). */
+ *  FreezeObjectEvents (:2059, skip cohérent avec l'unfreeze absent des CB vélo/itemfinder)
+ *  + EventScript_SelectWithoutRegisteredItem (message "aucun objet"). */
 export function UseRegisteredKeyItemOnField(): boolean {
   const reg = gSaveBlock1Ptr.registeredItem;
   if (reg !== 0) {
@@ -3320,6 +3320,11 @@ export function UseRegisteredKeyItemOnField(): boolean {
     if (CheckBagHasItem(getItemKeyById(reg), 1)) {
       // 1:1 :2058 LockPlayerFieldControls() (= __sLockFieldControls, cf. script.ts).
       (globalThis as Record<string, unknown>).__sLockFieldControls = true;
+      // 1:1 item_menu.c:2060-2061 : PlayerFreeze(); StopPlayerAvatar(); — le joueur
+      // termine en pose neutre (held FACE_X forcé) au SELECT. Handle lazy _playerAvatarMod
+      // (pattern anti-cycle du fichier) : résolu au boot, bien avant tout input SELECT.
+      _playerAvatarMod?.PlayerFreeze();
+      _playerAvatarMod?.StopPlayerAvatar();
       // 1:1 :2062 gSpecialVar_ItemId = registeredItem ; :2063 CreateTask(GetItemFieldFunc,8).
       // Notre dispatcher = ItemMenu_UseOutOfBattle (lit gSpecialVar.ItemId + GetItemFieldFunc).
       gSpecialVar.ItemId = reg;

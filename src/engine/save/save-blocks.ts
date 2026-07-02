@@ -579,11 +579,16 @@ export interface Mail {
   itemId: number;
 }
 
-/** 1:1 décomp `struct DaycareMail` (global.h:779). */
+/** 1:1 décomp `struct DaycareMail` (global.h:779).
+ *  `otName`/`monName` = `u8 [PLAYER_NAME_LENGTH + 1]` / `u8 [POKEMON_NAME_LENGTH + 1]`
+ *  (charmap, EOS-terminé) — `number[]` de bytes comme `Mail.playerName` (round-trip
+ *  JSON de la save ; un Uint8Array ne round-trip pas). Écrits par
+ *  StorePokemonInDaycare (daycare.ts), lus byte-level par _CheckDaycareMonReceivedMail
+ *  (egg_hatch.ts, StringCompareWithoutExtCtrlCodes). */
 export interface DaycareMail {
   message: Mail;
-  otName: string;
-  monName: string;
+  otName: number[];
+  monName: number[];
   gameLanguage: number;
   monLanguage: number;
 }
@@ -1377,7 +1382,7 @@ function emptyMail(): Mail {
 }
 
 function emptyDaycareMail(): DaycareMail {
-  return { message: emptyMail(), otName: '', monName: '', gameLanguage: 0, monLanguage: 0 };
+  return { message: emptyMail(), otName: [EOS], monName: [EOS], gameLanguage: 0, monLanguage: 0 };
 }
 
 function emptyDayCare(): DayCare {

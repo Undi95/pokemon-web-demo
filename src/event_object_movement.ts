@@ -1928,6 +1928,21 @@ export function FreezeObjectEvents(): void {
     }
   }
 }
+
+/** 1:1 STRICT décomp event_object_movement.c:8167-8173 FreezeObjectEventsExceptOne :
+ *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+ *        if (i != objectEventId && gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
+ *            FreezeObjectEvent(&gObjectEvents[i]);
+ *
+ *  Gèle tout SAUF le slot `objectEventId` (selected) et le joueur. */
+export function FreezeObjectEventsExceptOne(objectEventId: number): void {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const npc = gObjectEvents[i];
+    if (i !== objectEventId && npc.active && i !== gPlayerAvatar.objectEventId) {
+      FreezeObjectEvent(npc);
+    }
+  }
+}
 // Phase 4.6 audit Opus §5 : back-compat globalThis + register field-globals.
 (globalThis as Record<string, unknown>).__UnfreezeAllNpcs = UnfreezeAllNpcs;
 

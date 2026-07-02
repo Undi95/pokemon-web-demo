@@ -110,6 +110,7 @@ import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './engin
 import {
   GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,
   BikeClearState, Bike_HandleBumpySlopeJump, MovePlayerOnBike, GetOnOffBike,
+  IsPlayerNotUsingAcroBikeOnBumpySlope,
 } from './bike';
 // Re-export pour le sac (bag-menu-ctx précharge la gfx vélo via _playerAvatarMod avant GetOnOffBike).
 export { PreloadObjectEventGraphics };
@@ -1604,6 +1605,12 @@ function PlayerAnimIsMultiFrameStationaryAndStateNotTurning(): boolean {
   return PlayerAnimIsMultiFrameStationary() && gPlayerAvatar.runningState !== TURN_DIRECTION;
 }
 
+/** 1:1 décomp `PlayerForceSetHeldMovement` (field_player_avatar.c:944) :
+ *    ObjectEventForceSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], movementActionId); */
+function PlayerForceSetHeldMovement(movementActionId: number): void {
+  ObjectEventForceSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);
+}
+
 /** 1:1 décomp `PlayerSetAnimId` (field_player_avatar.c:949) :
  *    if (!PlayerIsAnimActive()) { PlayerSetCopyableMovement(c); ObjectEventSetHeldMovement(player, id); } */
 export function PlayerSetAnimId(movementActionId: number, copyableMovement: number): void {
@@ -1640,6 +1647,20 @@ export function PlayerTurnInPlace(direction: number): void {
 export function PlayerJumpLedge(direction: number): void {
   PlaySE(SE_LEDGE);
   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
+}
+
+/** 1:1 décomp `PlayerFreeze` (field_player_avatar.c:1022) :
+ *    // Stop player on current facing direction once they're done moving and if they're
+ *    // not currently Acro Biking on bumpy slope
+ *    if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)
+ *        if (IsPlayerNotUsingAcroBikeOnBumpySlope())
+ *            PlayerForceSetHeldMovement(GetFaceDirectionMovementAction(facingDirection));
+ *  → FORCE le held FACE_X (pose neutre pieds joints) une fois le pas terminé. */
+export function PlayerFreeze(): void {
+  if (gPlayerAvatar.tileTransitionState === T_TILE_CENTER || gPlayerAvatar.tileTransitionState === T_NOT_MOVING) {
+    if (IsPlayerNotUsingAcroBikeOnBumpySlope())
+      PlayerForceSetHeldMovement(GetFaceDirectionMovementAction(gObjectEvents[gPlayerAvatar.objectEventId].facingDirection));
+  }
 }
 
 /** 1:1 décomp `PlayerFaceDirection` (field_player_avatar.c:1007) :
@@ -2819,6 +2840,22 @@ export function IsPlayerSpinExitActive(): boolean {
  *  Sort le joueur de l'état forced (utilisé par les scripts/warps). */
 export function CancelPlayerForcedMovement(): void {
   ForcedMovement_None();
+}
+
+/** 1:1 décomp `StopPlayerAvatar` (field_player_avatar.c:1206) :
+ *    playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
+ *    npc_clear_strange_bits(playerObjEvent);
+ *    SetObjectEventDirection(playerObjEvent, playerObjEvent->facingDirection);
+ *    if (TestPlayerAvatarFlags(MACH_BIKE | ACRO_BIKE)) { Bike_HandleBumpySlopeJump(); Bike_UpdateBikeCounterSpeed(0); } */
+export function StopPlayerAvatar(): void {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+
+  npc_clear_strange_bits(playerObjEvent);
+  SetObjectEventDirection(playerObjEvent, playerObjEvent.facingDirection);
+  if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE)) {
+    Bike_HandleBumpySlopeJump();
+    Bike_UpdateBikeCounterSpeed(0);
+  }
 }
 
 /** 1:1 STRICT décomp `TryInterruptObjectEventSpecialAnim` (field_player_avatar.c:355).

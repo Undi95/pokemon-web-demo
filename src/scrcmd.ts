@@ -75,7 +75,7 @@ import { FadeScreen } from './field_weather';
 import { Random } from './random';
 import { PlantBerryTree } from './berry';
 import { GetHealLocation } from './heal_location';
-import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer } from './scrcmd_trainer';
+import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer, IsOverworldLinkActive } from './scrcmd_trainer';
 import { ScriptMenu_Multichoice, ScriptMenu_MultichoiceWithDefault, ScriptMenu_MultichoiceGrid, ScriptMenu_YesNo } from './script_menu';
 import { DecorationAdd, DecorationCheckSpace } from './decoration';
 import { sContestNames } from './contest_strings';
@@ -282,18 +282,37 @@ const ScrCmd_faceplayer: ScrCmdFunc = () => {
   return false;
 };
 
-// 1:1 scrcmd.c:1201-1213 ScrCmd_lockall : FreezeObjects_WaitForPlayer + attend IsFreezePlayerFinished.
+// 1:1 scrcmd.c:1201-1213 ScrCmd_lockall :
+//   if (IsOverworldLinkActive()) return FALSE;
+//   else { FreezeObjects_WaitForPlayer(); SetupNativeScript(ctx, IsFreezePlayerFinished); return TRUE; }
 const ScrCmd_lockall: ScrCmdFunc = (ctx) => {
-  FreezeObjects_WaitForPlayer();
-  SetupNativeScript(ctx, IsFreezePlayerFinished);
-  return true;
+  if (IsOverworldLinkActive()) {
+    return false;
+  } else {
+    FreezeObjects_WaitForPlayer();
+    SetupNativeScript(ctx, IsFreezePlayerFinished);
+    return true;
+  }
 };
 
-// 1:1 scrcmd.c:1217-1237 ScrCmd_lock : FreezeObjects_WaitForPlayerAndSelected + attend le gate.
+// 1:1 scrcmd.c:1217-1237 ScrCmd_lock :
+//   if (IsOverworldLinkActive()) return FALSE;
+//   else if (gObjectEvents[gSelectedObjectEvent].active)
+//        { FreezeObjects_WaitForPlayerAndSelected(); SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished); }
+//   else { FreezeObjects_WaitForPlayer(); SetupNativeScript(ctx, IsFreezePlayerFinished); }
 const ScrCmd_lock: ScrCmdFunc = (ctx) => {
-  FreezeObjects_WaitForPlayerAndSelected();
-  SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);
-  return true;
+  if (IsOverworldLinkActive()) {
+    return false;
+  } else {
+    if (gObjectEvents[gSelectedObjectEvent.index]?.active) {
+      FreezeObjects_WaitForPlayerAndSelected();
+      SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);
+    } else {
+      FreezeObjects_WaitForPlayer();
+      SetupNativeScript(ctx, IsFreezePlayerFinished);
+    }
+    return true;
+  }
 };
 
 // 1:1 scrcmd.c:1239-1249 ScrCmd_releaseall → HideFieldMessageBox + ScriptUnfreezeObjectEvents.

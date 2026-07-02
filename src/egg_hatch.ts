@@ -326,12 +326,16 @@ function _CheckDaycareMonReceivedMail(daycare: DayCare, daycareId: number): bool
   if (!daycareMon.mon) return false;
   GetBoxMonNickname(daycareMon.mon, nickname);
   const playerName = encodeOwText((gSaveBlock2Ptr.playerName as string) ?? '');
+  // mail.otName/monName = number[] (bytes charmap, save-blocks.ts round-trip JSON)
+  // → vues Uint8Array pour les fns string_util (lecture seule ici).
+  const mailOtName = Uint8Array.from(daycareMon.mail.otName);
+  const mailMonName = Uint8Array.from(daycareMon.mail.monName);
   if (daycareMon.mail.message.itemId !== 0 /* ITEM_NONE */
-    && (StringCompareWithoutExtCtrlCodes(nickname, daycareMon.mail.monName) !== 0
-      || StringCompareWithoutExtCtrlCodes(playerName, daycareMon.mail.otName) !== 0)) {
+    && (StringCompareWithoutExtCtrlCodes(nickname, mailMonName) !== 0
+      || StringCompareWithoutExtCtrlCodes(playerName, mailOtName) !== 0)) {
     StringCopy(gStringVar1, nickname);
-    TVShowConvertInternationalString(gStringVar2, daycareMon.mail.otName, daycareMon.mail.gameLanguage);
-    TVShowConvertInternationalString(gStringVar3, daycareMon.mail.monName, daycareMon.mail.monLanguage);
+    TVShowConvertInternationalString(gStringVar2, mailOtName, daycareMon.mail.gameLanguage);
+    TVShowConvertInternationalString(gStringVar3, mailMonName, daycareMon.mail.monLanguage);
     return true;
   }
   return false;

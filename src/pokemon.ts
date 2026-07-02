@@ -17,6 +17,7 @@ import { NUM_NATURES, STAT_HP, MON_MALE, MON_FEMALE, MON_GENDERLESS, SHINY_ODDS,
   PLAYER_HAS_TWO_USABLE_MONS, PLAYER_HAS_ONE_MON, PLAYER_HAS_ONE_USABLE_MON,
   MON_ALREADY_KNOWS_MOVE, MON_HAS_MAX_MOVES,
   EVO_MODE_NORMAL, EVO_MODE_TRADE, EVO_MODE_ITEM_USE, EVO_MODE_ITEM_CHECK, MAX_LEVEL,
+  MAX_LEVEL_UP_MOVES,
   OT_ID_PRESET, OT_ID_RANDOM_NO_SHINY, MAX_IV_MASK } from '../include/constants/pokemon';
 // ⚠️ PAS d'import statique de rtc.ts ici : pokemon.ts est FONDATIONNEL (tiré par
 // party-storage très tôt) et rtc.ts importe save.ts + string_util → cycle ESM
@@ -1007,6 +1008,25 @@ export function MonTryLearningNewMove(mon: Pokemon, firstMove: boolean): number 
   }
 
   return retVal;
+}
+
+/** 1:1 décomp `u8 GetLevelUpMovesBySpecies(u16 species, u16 *moves)` (pokemon.c:6310-6318) :
+ *  ```c
+ *  for (i = 0; i < MAX_LEVEL_UP_MOVES && gLevelUpLearnsets[species][i] != LEVEL_UP_END; i++)
+ *      moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
+ *  return numMoves;
+ *  ```
+ *  Remplit `moves` avec TOUS les moves du level-up learnset (sans filtre de niveau),
+ *  retourne le compte. Adaptation modèle : learnset DÉCODÉ {level, 'MOVE_X'} via
+ *  getLevelUpLearnset (⟺ gLevelUpLearnsets[species] ; fin de liste ⟺ LEVEL_UP_END).
+ *  Consommé par BuildEggMoveset (daycare.c:651). */
+export function GetLevelUpMovesBySpecies(species: number, moves: number[]): number {
+  let numMoves = 0;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const learnset = getLevelUpLearnset(speciesEnum);
+  for (let i = 0; i < MAX_LEVEL_UP_MOVES && i < learnset.length; i++)
+    moves[numMoves++] = (resolveDecompConstant(learnset[i].move) as number | undefined) ?? 0;
+  return numMoves;
 }
 
 /** 1:1 décomp `void CreateBoxMon(struct BoxPokemon*, species, level, fixedIV,

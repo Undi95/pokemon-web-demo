@@ -48,6 +48,11 @@ import { AddTextPrinterParameterized3 } from './menu';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT, FLAG_GET_SEEN } from './engine/ui/pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
 import { IsNationalPokedexEnabled } from './event_data';
+// 1:1 décomp start_menu.c:584-587 ShowStartMenu : FreezeObjectEvents + PlayerFreeze + StopPlayerAvatar.
+// (find-import-cycle.cjs vérifié : aucun chemin field_player_avatar/event_object_movement → start_menu.)
+import { FreezeObjectEvents } from './event_object_movement';
+import { PlayerFreeze, StopPlayerAvatar } from './field_player_avatar';
+import { IsOverworldLinkActive } from './scrcmd_trainer';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
@@ -626,12 +631,17 @@ export function OpenStartMenu(): void {
   //     PlayerFreeze();
   //     StopPlayerAvatar();
   //   }
-  // Freeze TOUS les NPCs immédiatement (= mid-step si nécessaire). Le player
-  // est aussi frozen via LockPlayerFieldControls (= input bloqué). Les NPCs
-  // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
+  // Freeze TOUS les NPCs immédiatement (= mid-step si nécessaire). PUIS le joueur :
+  // PlayerFreeze() FORCE le held FACE_X (pose neutre pieds joints — le press START ne
+  // peut arriver qu'entre deux pas, tileTransitionState ∈ {T_TILE_CENTER, T_NOT_MOVING})
+  // et StopPlayerAvatar() clear les strange bits + repose la direction (+ bike).
   // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
   // menu ET ses sous-menus, même mid-step."
-  void import('./event_object_movement').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
+  if (!IsOverworldLinkActive()) {
+    FreezeObjectEvents();
+    PlayerFreeze();
+    StopPlayerAvatar();
+  }
   sIsOpen = true;
   // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
   // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même

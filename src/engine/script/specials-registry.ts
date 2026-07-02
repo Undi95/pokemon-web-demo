@@ -55,6 +55,14 @@ import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } fr
 import { IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex } from '../../dewford_trend';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, AnyStorageMonWithMove, CountStorageNonEggMons, CountPartyAliveNonEggMons_IgnoreVar0x8004Slot } from '../../pokemon_storage_system';
 import { EggHatch, ScriptHatchMon, CheckDaycareMonReceivedMail, CountPartyAliveNonEggMons } from '../../egg_hatch';
+// Pension 1:1 (src/daycare.ts = daycare.c complet — chantier daycare 2026-07-02).
+import {
+  GetDaycareState, GetDaycareMonNicknames, GetSelectedMonNicknameAndSpecies,
+  StoreSelectedPokemonInDaycare, ChooseSendDaycareMon, GetDaycareCost,
+  GetNumLevelsGainedFromDaycare, TakePokemonFromDaycare, GiveEggFromDaycare,
+  RejectEggFromDayCare, SetDaycareCompatibilityString, ShowDaycareLevelMenu,
+} from '../../daycare';
+import { Script_ClearHeldMovement } from '../../event_object_lock';
 import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
@@ -1315,10 +1323,12 @@ registerSpecial('ShowFieldMessageStringVar4', () => {
   ShowFieldMessage(gStringVar4);
 });
 registerSpecial('Script_FacePlayer', () => { /* no-op */ });
-registerSpecial('Script_ClearHeldMovement', () => { /* no-op */ });
+registerSpecial('Script_ClearHeldMovement', Script_ClearHeldMovement); // 1:1 event_object_lock.c:124
 registerSpecial('SetTrainerFacingDirection', () => { /* no-op */ });
 registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
-registerSpecial('GetDaycareState', () => 0);
+// 'GetDaycareState' — porté 1:1 décomp daycare.c:971 (src/daycare.ts), handler
+// enregistré dans le bloc PENSION ci-bas. STUB `() => 0` RETIRÉ (il court-circuitait
+// tout le dialogue pension : état toujours DAYCARE_NO_MONS).
 // IsTrainerRegistered + IsWirelessContest already registered in iter7/iter9.
 
 // ─── Audit session 126 (post-test) : specials wire batch ─────────────────────
@@ -1942,7 +1952,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CheckPlayerHasSecretBase' — porté 1:1 décomp secret_base.c:258 ci-bas.
   // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
   'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',
-  'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame', 'ChooseSendDaycareMon',
+  'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame',
+  // 'ChooseSendDaycareMon' — porté 1:1 décomp daycare.c:1294 (bloc PENSION ci-bas).
   'CleanupLinkRoomState', 'ClearAndLeaveSecretBase',
   // 'ClearQuizLadyPlayerAnswer' — porté 1:1 décomp lilycove_lady.c:505 ci-bas (batch B45).
   // 'ClearQuizLadyQuestionAndAnswer' — porté 1:1 décomp lilycove_lady.c:526 ci-bas (batch B45).
@@ -1995,15 +2006,17 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetContestMonCondition', 'GetContestMonConditionRanking',
   'GetContestPlayerId', 'GetContestantNamesAtRank',
   // 'GetCurSecretBaseRegistrationValidity' — porté 1:1 décomp secret_base.c:881 dans secret-base.ts (batch B24).
-  'GetDaycareCost',
-  'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
+  // 'GetDaycareCost' — porté 1:1 décomp daycare.c:329 (bloc PENSION ci-bas).
+  // 'GetDaycareMonNicknames' — porté 1:1 décomp daycare.c:966 (bloc PENSION ci-bas).
+  'GetDeptStoreDefaultFloorChoice',
   // 'GetFavorLadyState' — porté 1:1 décomp lilycove_lady.c:159 ci-bas.
   'GetLinkPartnerNames',
   // 'GetMartEmployeeObjectEventId' — porté 1:1 décomp field_specials.c:3598 ci-bas.
   // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
-  'GetNpcContestantLocalId', 'GetNumLevelsGainedFromDaycare',
+  'GetNpcContestantLocalId',
+  // 'GetNumLevelsGainedFromDaycare' — porté 1:1 décomp daycare.c:340 (bloc PENSION ci-bas).
   // 'GetNumMovesSelectedMonHas' — porté 1:1 décomp party_menu.c:6347 ci-bas (batch B6).
   // 'GetObjectEventLocalIdByFlag' — porté 1:1 décomp decoration.c:2217 ci-bas (batch B6).
   // 'GetPCBoxToSendMon' — porté 1:1 décomp field_specials.c:3410 ci-bas (batch B6).
@@ -2017,13 +2030,14 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetSecretBaseOwnerAndState' — porté 1:1 décomp secret_base.c:1176 ci-bas (batch B22).
   'GetSecretBaseTypeInFrontOfPlayer',
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
-  'GetSelectedMonNicknameAndSpecies',
+  // 'GetSelectedMonNicknameAndSpecies' — porté 1:1 décomp daycare.c:960 (bloc PENSION ci-bas).
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
   // 'GetTrainerFlag' — porté 1:1 décomp battle_setup.c:1235 ci-bas (refactor B1).
   // 'GetTrainerBattleMode' — porté 1:1 décomp battle_setup.c:1230 (game/battle_setup.ts).
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
   // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
-  'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
+  // 'GiveEggFromDaycare' — porté 1:1 décomp daycare.c:874 (bloc PENSION ci-bas).
+  'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
   // 'HasAnotherPlayerGivenFavorLadyItem' — porté 1:1 décomp lilycove_lady.c:181 ci-bas.
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
   // 'HasBardSongBeenChanged' — porté 1:1 décomp mauville_old_man.c:151 ci-bas.
@@ -2086,7 +2100,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
   // 'ResetTVShowState' — no-op explicite documenté ci-dessus (~417). RETIRÉ du stub-loop
   //   pour ne pas écraser silencieusement la registration explicite (même comportement, no-op).
-  'RejectEggFromDayCare',
+  // 'RejectEggFromDayCare' — porté 1:1 décomp daycare.c:726 (bloc PENSION ci-bas).
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom',
   // 'RockSmashWildEncounter' — porté 1:1 décomp wild_encounter.c (game/wild_encounter.ts) → registré ci-bas.
@@ -2113,7 +2127,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetContestCategoryStringVarForInterview',
   // 'SetContestLadyGivenPokeblock' — porté 1:1 décomp lilycove_lady.c:769 ci-bas (batch B29).
   'SetContestTrainerGfxIds',
-  'SetDaycareCompatibilityString', 'SetDecoration',
+  // 'SetDaycareCompatibilityString' — porté 1:1 décomp daycare.c:1082 (bloc PENSION ci-bas).
+  'SetDecoration',
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
   // 'SetHiddenItemFlag' — porté 1:1 décomp field_specials.c:935 ci-bas (refactor B1).
   'SetFavorLadyState_Complete', 'SetHipsterTaughtWord',
@@ -2137,7 +2152,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShouldReadyContestArtist',
   // 'ShouldShowBoxWasFullMessage' — porté 1:1 field_specials.c:3415 ci-bas.
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
-  'ShowContestEntryMonPic', 'ShowContestPainting', 'ShowDaycareLevelMenu',
+  'ShowContestEntryMonPic', 'ShowContestPainting',
+  // 'ShowDaycareLevelMenu' — porté 1:1 décomp daycare.c:1270 (bloc PENSION ci-bas).
   'ShowDeptStoreElevatorFloorSelect', 'ShowDodrioBerryPickingRecords',
   // 'ShowEasyChatScreen' — PORTÉ 1:1 (easy_chat.c:1456) + registré ci-dessus (~443). RETIRÉ
   //   de la liste de stubs : sinon la boucle `registerSpecial(name, () => 0)` (bas de fichier)
@@ -2156,12 +2172,14 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'StartGroudonKyogreBattle', 'StartMirageTowerDisintegration',
   'StartMirageTowerFossilFallAndSink', 'StartMirageTowerShake',
   'StartPlayerDescendMirageTower', 'StopMapMusic',
-  'StoreSelectedPokemonInDaycare', 'StorytellerGetFreeStorySlot',
+  // 'StoreSelectedPokemonInDaycare' — porté 1:1 décomp daycare.c:190 (bloc PENSION ci-bas).
+  'StorytellerGetFreeStorySlot',
   'StorytellerStoryListMenu', 'StorytellerUpdateStat',
   // 'SwapRegisteredBike' — porté 1:1 décomp item.c:577 ci-bas.
   // 'SubtractMoneyFromVar0x8005' — porté 1:1 décomp money.c:128 ci-bas.
   // 'TakeBerryPowder' — porté 1:1 décomp berry_powder.c:188 ci-bas (batch B38).
-  'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
+  // 'TakePokemonFromDaycare' — porté 1:1 décomp daycare.c:281 (bloc PENSION ci-bas).
+  'TeachMoveRelearnerMove',
   // 'ToggleCurSecretBaseRegistry' — porté 1:1 décomp secret_base.c:891 ci-bas.
   // 'TraderDoDecorationTrade' — porté 1:1 décomp trader.c:199 ci-bas (batch D5).
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
@@ -2461,6 +2479,58 @@ registerSpecial('ScriptHatchMon', () => { ScriptHatchMon(); return 0; });
 
 /** 1:1 décomp `CheckDaycareMonReceivedMail` (egg_hatch.c:418). */
 registerSpecial('CheckDaycareMonReceivedMail', () => (CheckDaycareMonReceivedMail() ? 1 : 0));
+
+// ─── PENSION (chantier daycare 2026-07-02, src/daycare.ts = daycare.c 1:1) ────
+// Tous RETIRÉS de _SESSION_131_DECOMP_SPECIALS (+ stub direct GetDaycareState) :
+// une double registration = clobber silencieux. Scripts : data/scripts/day_care.inc.
+
+/** 1:1 décomp `GetDaycareState` (daycare.c:971) — specialvar VAR_RESULT :
+ *  DAYCARE_NO_MONS(0)/EGG_WAITING(1)/ONE_MON(2)/TWO_MONS(3). */
+registerSpecial('GetDaycareState', () => GetDaycareState());
+
+/** 1:1 décomp `GetDaycareMonNicknames` (daycare.c:966) — gStringVar1/2 = nicknames,
+ *  gStringVar3 = OT du mon 1. */
+registerSpecial('GetDaycareMonNicknames', () => { GetDaycareMonNicknames(); return 0; });
+
+/** 1:1 décomp `GetSelectedMonNicknameAndSpecies` (daycare.c:960) — specialvar
+ *  VAR_0x8005 = species du mon sélectionné (party menu), gStringVar1 = nickname. */
+registerSpecial('GetSelectedMonNicknameAndSpecies', () => GetSelectedMonNicknameAndSpecies());
+
+/** 1:1 décomp `StoreSelectedPokemonInDaycare` (daycare.c:190) — dépose
+ *  gPlayerParty[GetCursorSelectionMonId()] dans le 1er slot pension libre. */
+registerSpecial('StoreSelectedPokemonInDaycare', () => { StoreSelectedPokemonInDaycare(); return 0; });
+
+/** 1:1 décomp `ChooseSendDaycareMon` (daycare.c:1294) — def_special waitstate=1 :
+ *  ouvre le party menu mode DAYCARE ; le script reprend via BufferMonSelection →
+ *  CB2_FadeFromPartyMenu → Task_PartyMenuWaitForFade (ScriptContext_Enable). */
+registerSpecial('ChooseSendDaycareMon', () => { ChooseSendDaycareMon(); return 0; });
+
+/** 1:1 décomp `GetDaycareCost` (daycare.c:329) — VAR_0x8005 = 100 + 100×niveaux
+ *  gagnés du mon en slot VAR_0x8004 (gStringVar1 = nickname, gStringVar2 = coût). */
+registerSpecial('GetDaycareCost', () => { GetDaycareCost(); return 0; });
+
+/** 1:1 décomp `GetNumLevelsGainedFromDaycare` (daycare.c:340) — specialvar VAR_RESULT. */
+registerSpecial('GetNumLevelsGainedFromDaycare', () => GetNumLevelsGainedFromDaycare());
+
+/** 1:1 décomp `TakePokemonFromDaycare` (daycare.c:281) — specialvar VAR_RESULT =
+ *  species du mon retiré (EXP pension appliquée + shift des slots). */
+registerSpecial('TakePokemonFromDaycare', () => TakePokemonFromDaycare());
+
+/** 1:1 décomp `GiveEggFromDaycare` (daycare.c:874) — crée l'œuf (hérédité complète)
+ *  dans la party, retire l'œuf pendant de la pension. */
+registerSpecial('GiveEggFromDaycare', () => { GiveEggFromDaycare(); return 0; });
+
+/** 1:1 décomp `RejectEggFromDayCare` (daycare.c:726). */
+registerSpecial('RejectEggFromDayCare', () => { RejectEggFromDayCare(); return 0; });
+
+/** 1:1 décomp `SetDaycareCompatibilityString` (daycare.c:1082) — gStringVar4
+ *  (lu par ShowFieldMessageStringVar4). */
+registerSpecial('SetDaycareCompatibilityString', () => { SetDaycareCompatibilityString(); return 0; });
+
+/** 1:1 décomp `ShowDaycareLevelMenu` (daycare.c:1270) — def_special waitstate=1 :
+ *  list menu 3 entrées (mon 1 / mon 2 / RETOUR) ; Task_HandleDaycareLevelMenuInput
+ *  pose VAR_RESULT puis ScriptContext_Enable + SignalWaitState. */
+registerSpecial('ShowDaycareLevelMenu', () => { ShowDaycareLevelMenu(); return 0; });
 
 /** 1:1 décomp `HasAtLeastOneBerry` (item.c:163-177).
  *  Loop sur les berry slots (ITEM_CHERI_BERRY..ITEM_BRIGHT_POWDER-1, soit

@@ -114,7 +114,13 @@ import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM, PARTY_ACTION_GIVE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED,
+  PARTY_MENU_TYPE_FIELD, PARTY_MENU_TYPE_DAYCARE, PARTY_NOTHING_CHOSEN,
 } from '../include/constants/party_menu';
+// Mode DAYCARE (ChooseMonForDaycare/BufferMonSelection, party_menu.c:6197-6231) :
+// retour au field script-driven (gFieldCallback2 = CB2_FadeFromPartyMenu).
+import { IsWeatherNotFadingIn } from './field_weather';
+import { UnlockPlayerFieldControls, ScriptContext_Enable } from './script';
+import { VarSet } from './event_data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;
@@ -458,6 +464,16 @@ let _lastSelectedSlot = 0;
 // 1:1 décomp constants/party_menu.h:67-77 — importé depuis decomp-data au top
 // (= PARTY_ACTION_CHOOSE_MON/USE_ITEM/SWITCH/SWITCHING + reste de l'enum).
 let _partyAction: number = PARTY_ACTION_CHOOSE_MON;
+/** 1:1 décomp `gPartyMenu.menuType` (party_menu.h) — sous-ensemble utilisé :
+ *  FIELD (défaut) et DAYCARE (dépôt pension, InitPartyMenu type 6). PERSISTE à
+ *  travers close/reopen (1:1 : le décomp ne le reset jamais au teardown — le
+ *  round-trip résumé daycare le relit) ; posé par chaque point d'entrée. */
+let _menuType: number = PARTY_MENU_TYPE_FIELD;
+/** 1:1 décomp `gPartyMenu.slotId` PERSISTÉ après close : le décomp ne reset pas
+ *  gPartyMenu au teardown, et les specials pension (GetSelectedMonNicknameAndSpecies,
+ *  StoreSelectedPokemonInDaycare) lisent GetCursorSelectionMonId APRÈS la fermeture
+ *  du menu. Notre _freePartyMenu reset _slotId=0 (adaptation) → capture ici. */
+let _cursorSelectionMonId = 0;
 // Étape 4 (switch en combat, mode PARTY_ACTION_SEND_OUT) : slot du mon ACTIF
 // (interdit de le re-choisir) + si l'annulation B est permise (switch volontaire
 // = oui ; choix forcé après K.O. = non). Lus par les handlers A/B SEND_OUT.
@@ -1097,6 +1113,7 @@ function CB2_ReturnToPartyMenuWhileLearningMove(): void {
   _showForgetSummaryPending = false;
   _pendingLearnMoveReturn = true;
   _slotId = _learnMoveSlot >= 0 ? _learnMoveSlot : 0;
+  _menuType = PARTY_MENU_TYPE_FIELD;  // apprentissage CT/level-up = flux field
   _partyAction = PARTY_ACTION_CHOOSE_MON;
   const returnCb = _learnMoveReturnCb;
   void _loadAssets().then(() => {
@@ -1347,6 +1364,13 @@ function _drawMsg(): void {
         && GetItemPocket((gSpecialVar.ItemId as number) | 0) === 'POCKET_TM_HM')
       ? getString('gText_TeachWhichPokemon')
       : getString('gText_UseOnWhichPokemon');
+    template = MSG_WINDOW_TEMPLATE;
+  } else if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
+    // 1:1 décomp ChooseMonForDaycare (party_menu.c:6199) : PARTY_MSG_CHOOSE_MON_2
+    // = gText_ChoosePokemon2 (« Choisir un POKéMON. » — variante statique, sans le
+    // switch ShouldUseChooseMonText de PARTY_MSG_CHOOSE_MON). Aussi ré-affichée par
+    // CursorCb_Cancel1 en mode daycare (party_menu.c:3067-3070).
+    msg = getString('gText_ChoosePokemon2');
     template = MSG_WINDOW_TEMPLATE;
   } else {
     msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
@@ -1727,6 +1751,10 @@ function _freePartyMenu(): void {
   _actionCursor = 0;
   _isOpen = false;
   _phase = 'idle';
+  // 1:1 : le décomp NE reset PAS gPartyMenu.slotId au teardown — les specials
+  // pension le lisent APRÈS la fermeture (GetCursorSelectionMonId). On capture
+  // avant le reset (adaptation _slotId=0, cf. _cursorSelectionMonId).
+  _cursorSelectionMonId = _slotId;
   _slotId = 0;
   _lastSelectedSlot = 0;
   _graphicsReady = false;
@@ -1972,6 +2000,7 @@ const MENU_MAIL         = 6;
 const MENU_TAKE_MAIL    = 7;
 const MENU_READ         = 8;
 const MENU_CANCEL2      = 9;
+const MENU_STORE        = 14;  // = "DEPOSER" FR (gText_Store) — pension (ACTIONS_STORE)
 const MENU_FIELD_MOVES  = 19;
 
 /** 1:1 décomp `sFieldMoves[]` (data/party_menu.h:745-764). Notre format :
@@ -2002,6 +2031,7 @@ const ACTION_MENU_STRINGS_FR: Record<number, string> = {
   [MENU_MAIL]:       'MAIL',
   [MENU_TAKE_MAIL]:  'PRENDRE',
   [MENU_READ]:       'LIRE',
+  [MENU_STORE]:      'DEPOSER',  // 1:1 gText_Store (strings.c:197 FR)
   [MENU_CANCEL1]:    'RETOUR',
   [MENU_CANCEL2]:    'RETOUR',
   // MENU_FIELD_MOVES + j (= field move name FR from gMoveNames).
@@ -2073,6 +2103,19 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
   // Au retour du résumé (Task_TryCreateSelectionWindow → CreateSelectionWindow)
   // aucun SE n'est rejoué → playSe=false.
   if (playSe) PlaySE(5);  // SE_SELECT
+  // 1:1 décomp `GetPartyMenuActionsType` (party_menu.c:2640-2669) case
+  // PARTY_MENU_TYPE_DAYCARE (:2668) : œuf → ACTIONS_SUMMARY_ONLY
+  // (= sPartyMenuAction_SummaryCancel), sinon ACTIONS_STORE
+  // (= sPartyMenuAction_StoreSummaryCancel, data/party_menu.h:701).
+  if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
+    const dcMon = _slotMon(_slotId);
+    _actionList = dcMon?.isEgg
+      ? [MENU_SUMMARY, MENU_CANCEL1]                // ACTIONS_SUMMARY_ONLY
+      : [MENU_STORE, MENU_SUMMARY, MENU_CANCEL1];   // ACTIONS_STORE
+    _actionSubMenu = 'mon';
+    _spawnActionWindow();
+    return;
+  }
   // 1:1 décomp `SetPartyMonFieldSelectionActions` (party_menu.c:2607) :
   //   AppendToList(MENU_SUMMARY);
   //   for each field move: AppendToList(MENU_FIELD_MOVES + j);
@@ -2286,6 +2329,7 @@ function GiveItemToMon(mon: Pokemon, item: number): void {
  *  de réouverture que `OpenPartyScreenForItemUse`. */
 function _reopenPartyMenuCore(): void {
   _slotId = _giveHoldItemSlot >= 0 ? _giveHoldItemSlot : 0;
+  _menuType = PARTY_MENU_TYPE_FIELD;  // round-trip DONNER = flux field uniquement
   _partyAction = PARTY_ACTION_CHOOSE_MON;
   _giveHoldItemSlot = -1;
   const returnCb = _giveReturnCb;
@@ -2822,9 +2866,13 @@ const FIELD_MOVE_SWEET_SCENT  = 13;
 const FLDEFF_USE_SURF = 9;
 const FLDEFF_SWEET_SCENT = 51;
 
-/** 1:1 décomp `GetCursorSelectionMonId(void)` (party_menu.c) = gPartyMenu.slotId. */
-function GetCursorSelectionMonId(): number {
-  return _slotId;
+/** 1:1 décomp `GetCursorSelectionMonId(void)` (party_menu.c:6221) = gPartyMenu.slotId.
+ *  Menu fermé → valeur PERSISTÉE (le décomp ne reset pas gPartyMenu ; les specials
+ *  pension GetSelectedMonNicknameAndSpecies/StoreSelectedPokemonInDaycare lisent
+ *  le slot APRÈS la fermeture). Exportée + pont globalThis (daycare.ts — cycle ESM
+ *  party_menu → overworld → script_pokemon_util → daycare). */
+export function GetCursorSelectionMonId(): number {
+  return _isOpen ? _slotId : _cursorSelectionMonId;
 }
 
 /** 1:1 décomp `GetFieldMoveMonSpecies(void)` (party_menu.c:3833) :
@@ -3327,6 +3375,12 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
       // 1:1 décomp `CursorCb_Item` (party_menu.c:3074) : ouvre le sous-menu objet
       // ACTIONS_ITEM = DONNER/PRENDRE/RETOUR.
       _cursorCbItem();
+    } else if (action === MENU_STORE /* DEPOSER (pension) */) {
+      // 1:1 décomp `CursorCb_Store` (party_menu.c:3587-3591) :
+      //   PlaySE(SE_SELECT);            ← déjà joué par le dispatch
+      //   Task_ClosePartyMenu(taskId);  → exitCallback = BufferMonSelection
+      // (le slot choisi est capturé par _freePartyMenu → _cursorSelectionMonId).
+      ClosePartyScreen();
     } else if (action === MENU_GIVE /* DONNER */) {
       _cursorCbGive();
     } else if (action === MENU_TAKE_ITEM /* PRENDRE */) {
@@ -3790,6 +3844,15 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         ClosePartyScreen();
       }
     } else {
+      // 1:1 décomp HandleChooseMonCancel default (party_menu.c:1395-1403) :
+      //   gSpecialVar_0x8004 = PARTY_SIZE + 1; *slotPtr = PARTY_SIZE + 1;
+      //   Task_ClosePartyMenu.
+      // Mode DAYCARE : le slot forcé à PARTY_SIZE+1 fait produire
+      // PARTY_NOTHING_CHOSEN par BufferMonSelection (exitCallback).
+      if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
+        VarSet(0x8004, 6 + 1);  // gSpecialVar_0x8004 = PARTY_SIZE + 1
+        _slotId = 6 + 1;        // *slotPtr = PARTY_SIZE + 1
+      }
       // PARTY_ACTION_USE_ITEM : B → retour bag via savedCallback
       // (= CB2_ReturnToBagMenu défini par OpenPartyScreenForItemUse).
       // PARTY_ACTION_CHOOSE_MON : B → retour overworld via savedCallback
@@ -3946,6 +4009,7 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   //   InitPartyMenu(PARTY_MENU_TYPE_FIELD, PARTY_LAYOUT_SINGLE,
   //                 PARTY_ACTION_CHOOSE_MON, FALSE, PARTY_MSG_CHOOSE_MON,
   //                 Task_HandleChooseMonInput, CB2_ReturnToFieldWithOpenMenu);
+  _menuType = PARTY_MENU_TYPE_FIELD;
   _partyAction = PARTY_ACTION_CHOOSE_MON;
   void _loadAssets().then(() => {
     const rt = getRuntime();
@@ -3956,6 +4020,79 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   }).catch((e) => {
     console.error('[party-screen] preload failed', e);
   });
+}
+
+// ─── Mode DAYCARE (dépôt pension) — 1:1 party_menu.c:6197-6231 ───────────────
+
+/** 1:1 décomp `void ChooseMonForDaycare(void)` (party_menu.c:6197-6200) :
+ *  ```c
+ *  InitPartyMenu(PARTY_MENU_TYPE_DAYCARE, PARTY_LAYOUT_SINGLE, PARTY_ACTION_CHOOSE_MON,
+ *      FALSE, PARTY_MSG_CHOOSE_MON_2, Task_HandleChooseMonInput, BufferMonSelection);
+ *  ```
+ *  keepCursorPos=FALSE → slotId=0. exitCallback (= gMain.savedCallback chez nous)
+ *  = BufferMonSelection. Appelée par ChooseSendDaycareMon (daycare.ts) via le pont
+ *  globalThis (cycle ESM party_menu → overworld → script_pokemon_util → daycare). */
+export function ChooseMonForDaycare(): void {
+  if (_isOpen) return;
+  _menuType = PARTY_MENU_TYPE_DAYCARE;
+  _partyAction = PARTY_ACTION_CHOOSE_MON;
+  _slotId = 0;  // keepCursorPos = FALSE
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = BufferMonSelection;  // gPartyMenu.exitCallback
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => {
+    console.error('[party-screen] daycare preload failed', e);
+  });
+}
+
+/** 1:1 décomp `static void BufferMonSelection(void)` (party_menu.c:6208-6215) :
+ *  ```c
+ *  gSpecialVar_0x8004 = GetCursorSelectionMonId();
+ *  if (gSpecialVar_0x8004 >= PARTY_SIZE) gSpecialVar_0x8004 = PARTY_NOTHING_CHOSEN;
+ *  gFieldCallback2 = CB2_FadeFromPartyMenu;
+ *  SetMainCallback2(CB2_ReturnToField);
+ *  ```
+ *  Tourne comme CB2 (exitCallback) après le teardown du party menu. */
+function BufferMonSelection(): void {
+  let monId = GetCursorSelectionMonId();
+  if (monId >= 6 /* PARTY_SIZE */) monId = PARTY_NOTHING_CHOSEN;
+  VarSet(0x8004, monId);  // gSpecialVar_0x8004
+  (globalThis as Record<string, unknown>).gFieldCallback2 = CB2_FadeFromPartyMenu;
+  getRuntime().SetMainCallback2(CB2_ReturnToField_Manual);
+}
+
+/** 1:1 décomp `bool8 CB2_FadeFromPartyMenu(void)` (party_menu.c:6217-6222) :
+ *  FadeInFromBlack() + CreateTask(Task_PartyMenuWaitForFade, 10) ; return TRUE.
+ *  Tourne via gFieldCallback2 (RunFieldCallback_Manual, retour-field case 2).
+ *  FillPalBufferBlack AVANT le fade = pattern anti-flash établi
+ *  (FieldCallback_PrepareFadeInFromMenu ci-dessus). */
+function CB2_FadeFromPartyMenu(): boolean {
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);  // = FadeInFromBlack()
+  getRuntime().CreateTask(Task_PartyMenuWaitForFade, 10);
+  return true;
+}
+
+/** 1:1 décomp `static void Task_PartyMenuWaitForFade(u8 taskId)` (party_menu.c:6224-6231) :
+ *  ```c
+ *  if (IsWeatherNotFadingIn()) {
+ *      DestroyTask(taskId);
+ *      UnlockPlayerFieldControls();
+ *      ScriptContext_Enable();
+ *  }
+ *  ```
+ *  + SignalWaitState (port : l'opcode `waitstate` du byte-VM — appendu après
+ *  `special ChooseSendDaycareMon`, def_special waitstate=1 — attend le latch). */
+function Task_PartyMenuWaitForFade(task: DecompTask): void {
+  if (IsWeatherNotFadingIn()) {
+    getRuntime().DestroyTask(task.taskId);
+    UnlockPlayerFieldControls();
+    ScriptContext_Enable();
+    ((globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined)?.();
+  }
 }
 
 /** 1:1 décomp `CB2_ShowPartyMenuForItemUse` (party_menu.c:4225-4274) — entrée
@@ -3976,6 +4113,7 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
  *  = fallback DadsAdvice actuellement). */
 export function OpenPartyScreenForItemUse(returnBagCb: () => void): void {
   if (_isOpen) return;
+  _menuType = PARTY_MENU_TYPE_FIELD;
   _partyAction = PARTY_ACTION_USE_ITEM;
   void _loadAssets().then(() => {
     const rt = getRuntime();
@@ -4004,6 +4142,9 @@ export function OpenPartyScreenForBattleSwitch(
   opts: { activeSlot: number; allowCancel: boolean },
 ): void {
   if (_isOpen) return;
+  // (1:1 décomp = PARTY_MENU_TYPE_IN_BATTLE ; notre port ne branche pas sur ce
+  // type en combat → FIELD, comportement inchangé.)
+  _menuType = PARTY_MENU_TYPE_FIELD;
   _partyAction = PARTY_ACTION_SEND_OUT;
   // 1:1 party_menu.c (combat) : le menu vit en ORDRE BATTLE — gPlayerParty est
   // physiquement réordonnée (UpdatePartyToBattleOrder : l'ACTIF au slot affiché 0,
@@ -4295,3 +4436,8 @@ export function TickPartyScreen(_newKeys: number): void {
     }
   }
 }
+// Ponts pension (daycare.ts — cycle ESM party_menu → overworld →
+// script_pokemon_util → daycare, vérifié scripts/find-import-cycle.cjs) :
+// posés par le module PROPRIÉTAIRE (party_menu.c est le foyer des deux fns).
+(globalThis as Record<string, unknown>).__ChooseMonForDaycare = ChooseMonForDaycare;
+(globalThis as Record<string, unknown>).__GetCursorSelectionMonId = GetCursorSelectionMonId;

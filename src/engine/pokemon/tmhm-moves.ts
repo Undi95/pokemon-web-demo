@@ -4,8 +4,9 @@
  * ============================================================================
  * Chaînon MAILLON (méthode user "remonte la chaîne") : le SAC (bag-menu.ts
  * étape 5b `GetItemNameFromPocket`, poche TMHM) résout le nom via
- * `gMoveNames[ItemIdToBattleMoveId(itemId)]` — non porté. `ItemIdToBattleMoveId`
- * + sa table `sTMHMMoves` appartiennent à party_menu.c / src/data/party_menu.h
+ * `gMoveNames[ItemIdToBattleMoveId(itemId)]` — PORTÉ ici (note « non porté »
+ * soldée 2026-07-02, chantier daycare : BuildEggMoveset le consomme aussi).
+ * `ItemIdToBattleMoveId` + sa table `sTMHMMoves` appartiennent à party_menu.c / src/data/party_menu.h
  * (sous-système PARTAGÉ : sac, boutique, item_use, field_specials). Leur
  * MAISON = ici (feuille pure, 0 import risqué — ≠ tirer party-screen.ts =
  * pas de cycle TDZ, leçon map-loader).
