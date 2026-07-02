@@ -19,6 +19,7 @@
  *  - Le DMA HBlank du scanline est géré par scanline_effect.ts (importé).
  */
 import { Cos2 } from './trig';
+import { SetBgAttribute } from './window';
 import { gScanlineEffect, gScanlineEffectRegBuffers } from './scanline_effect';
 import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
@@ -97,7 +98,8 @@ function CpuFill32_BgScreen(screenBase: number, sizeBytes: number): void {
   const base = screenBase * BG_SCREEN_SIZE;  // BG_SCREEN_ADDR(n) = VRAM + n*0x800
   vram.fill(0, base, Math.min(vram.length, base + sizeBytes));
 }
-function SetBgAttribute(bg: number, attr: number, val: number): void { rt()?.SetBgAttribute?.(bg, attr, val); }
+// SetBgAttribute : désormais le VRAI port 1:1 bg.c:476 (src/window.ts) — l'ancien
+// dispatch `rt()?.SetBgAttribute?.()` était un no-op silencieux (jamais porté).
 
 // ─── globals battle_main (globalThis) : accès typés courts ──────────────────
 function gBattleTypeFlags(): number { return (G.gBattleTypeFlags | 0) || (rt()?.gBattleTypeFlags | 0) || 0; }

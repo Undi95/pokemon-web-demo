@@ -162,7 +162,10 @@ import { SetUpFieldTasks } from '../../src/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr, FadeScreen, FADE_FROM_BLACK } from '../../src/field_weather';
 import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../../src/sprite';
-import { SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters } from '../../src/overworld';
+import {
+  SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters,
+  Overworld_PlaySpecialMapMusic, TransitionMapMusic,
+} from '../../src/overworld';
 import { OBJ_PALSLOT_COUNT } from '../../src/engine/field/object-event-graphics-info';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../../src/coord_event_weather';
@@ -216,8 +219,7 @@ import { TickRegionMap } from '../../src/engine/field/region-map';
 import { syncSubspriteOam } from '../../src/event_object_movement';
 import { preloadFontData } from '../../src/text';
 import { preloadTextWindowFrames } from '../../src/text_window';
-import { PlayBGM, FillPalBufferBlack } from '../runtime/decomp-globals';
-import * as Songs from '../../include/constants/songs';
+import { FillPalBufferBlack } from '../runtime/decomp-globals';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../../src/engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
@@ -248,10 +250,9 @@ function _walkActionForDirection(dir: number): string {
   return 'walk_down';
 }
 
-// 1:1 décomp `Overworld_PlaySpecialMapMusic` (overworld.c) — track current
-// playing BGM id pour skip restart si new map a la même music. Sans ça, warp
-// Bourg-en-Vol → MaysHouse (= same MUS_LITTLEROOT) restart le BGM = glitch.
-let _currentMapBgmId = 0;
+// (Shadow tracker `_currentMapBgmId` SUPPRIMÉ 2026-07-02 : source de vérité
+// unique = sCurrentMapMusic dans src/sound.ts, dedup = guard 1:1
+// `music != GetCurrentMapMusic()` d'Overworld_PlaySpecialMapMusic.)
 
 // 1:1 décomp `DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP` flags.
 const DISPCNT_OBJ_ON = 0x1000;
@@ -1378,22 +1379,15 @@ export class TestOverworldScene extends Phaser.Scene {
     InitFieldMessageBox();
     ScriptContext_Init();
 
-    // 1:1 décomp `Overworld_PlaySpecialMapMusic` (overworld.c) :
-    // si la new map music ID == currently playing → do nothing (= keep playing
-    // sans restart). Sinon → PlayBGM(newId) (= fade out + play new).
-    // Sans ce check : warp Bourg-en-Vol → Mays House (= les 2 ont MUS_LITTLEROOT)
-    // restart le BGM à chaque transition = audio glitch.
-    const songId = (Songs as unknown as Record<string, number>)[header.music] ?? 0;
-    // MUS_NONE = 0xFFFF (= map sans music, e.g. MAP_INSIDE_OF_TRUCK). Skip pour
-    // éviter spam warnings. 0 = invalid lookup, skip aussi.
-    const isValidSong = songId !== 0 && songId !== 0xFFFF;
-    if (isValidSong && songId !== _currentMapBgmId) {
-      console.log(`[TestOverworld] PlayBGM(${header.music} = ${songId})`);
-      PlayBGM(songId);
-      _currentMapBgmId = songId;
-    } else if (isValidSong) {
-      console.log(`[TestOverworld] BGM ${header.music} déjà playing, skip restart`);
-    }
+    // 1:1 décomp `Overworld_PlaySpecialMapMusic()` à l'entrée de map
+    // (field_screen_effect.c:128). La résolution (header.music, savedMusic,
+    // underwater, surf) + le dedup « même musique → pas de restart » (guard
+    // `music != GetCurrentMapMusic()`, overworld.c:1156) vivent au foyer
+    // src/overworld.ts ; le play réel part au tick MapMusicMain (sound.c:64).
+    // 🐛 fix 2026-07-02 (évolution bug 4) : remplace le tracker maison
+    // `_currentMapBgmId` + PlayBGM direct — il court-circuitait sCurrentMapMusic,
+    // donc Overworld_PlaySpecialMapMusic ne savait jamais quoi relancer.
+    Overworld_PlaySpecialMapMusic();
 
     // 1:1 décomp `InitOverworldGraphicsRegisters` (overworld.c:2096, state 4 de
     // LoadMapInStepsLocal) — rallume l'affichage (DISPCNT OW : OBJ + WIN0/1 +
@@ -1518,8 +1512,9 @@ export class TestOverworldScene extends Phaser.Scene {
       // ─── Phase 2 : fade out (= WarpFadeOutScreen + SE_EXIT) ─────────────
       this.warpInProgress = true;
       // 1:1 décomp `TryFadeOutOldMapMusic` : check si dest map music ID ≠ courante.
-      // TODO Phase 4.7 : implementer + wait BGMusicStopped. Pour MVP : skip,
-      // PlayBGM dans loadAndInitMap override automatiquement.
+      // TODO Phase 4.7 : implementer + wait BGMusicStopped. Pour l'instant : skip,
+      // Overworld_PlaySpecialMapMusic dans loadAndInitMap relance/dedup (guard
+      // GetCurrentMapMusic) automatiquement.
       this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
       // 1:1 décomp `DoWarp` (field_screen_effect.c:484) : PlaySE(SE_EXIT) pour
       // step warps. Pour 'door' : SE déjà joué dans Task_DoDoorWarp.
@@ -1927,13 +1922,11 @@ export class TestOverworldScene extends Phaser.Scene {
       UpdateObjectEvents(this.rt);
     });
 
-    // BGM transition. 1:1 décomp `TransitionMapMusic`.
-    const songId = (Songs as unknown as Record<string, number>)[newHeader.music] ?? 0;
-    if (songId > 0 && songId !== _currentMapBgmId) {
-      console.log(`[connection] PlayBGM(${newHeader.music} = ${songId})`);
-      PlayBGM(songId);
-      _currentMapBgmId = songId;
-    }
+    // 1:1 décomp `TransitionMapMusic()` (overworld.c:1170, call-site
+    // LoadMapFromCameraTransition:792) : fade-out + play différé si la musique
+    // de la nouvelle map diffère (guards ABNORMAL_WEATHER/underwater/surf/vélo).
+    // gMapHeader est déjà la map de destination à ce point (posé ci-dessus).
+    TransitionMapMusic();
 
     // 1:1 décomp `ShowMapNamePopup()` (overworld.c:822-824 fin LoadMapFromCameraTransition).
     // Skip si même mapsec (= e.g. cross-border vers même région). Internally

@@ -1975,6 +1975,14 @@ export class DecompRuntime {
     const playTimeUpdate = (globalThis as Record<string, unknown>).PlayTimeCounter_Update as
       (() => void) | undefined;
     playTimeUpdate?.();
+    // 1:1 décomp `MapMusicMain()` (main.c:159, juste APRÈS PlayTimeCounter_Update
+    // dans la boucle AgbMain) : tick de la state machine map-music (sound.c:64) —
+    // CHAQUE frame, quelle que soit la scène (la scène d'évolution compte dessus
+    // pour son PlayNewMapMusic différé). Lookup globalThis (foyer src/sound.ts),
+    // anti-cycle decomp-runtime ↔ src.
+    const mapMusicMain = (globalThis as Record<string, unknown>).MapMusicMain as
+      (() => void) | undefined;
+    mapMusicMain?.();
     // 1:1 décomp : seuls les `MainCB2*` callbacks (= main loops de scène)
     // appellent RunTasks + AnimateSprites + BuildOamBuffer (cf intro.c:1042).
     // Les CB2 de transition (CB2_GoTo*) et d'init (CB2_Init*) ne tournent que

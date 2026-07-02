@@ -941,13 +941,25 @@ export function FillPalBufferWhite(): void {
 const MUS_NONE = _MUS_NONE;
 let _gDisableMusic = false;
 export function PlayBGM(songNum: number): void {
+  // Délégation FOYER 1:1 src/sound.ts (__soundPlayBGM) : sound.c:563 fait
+  // `songNum = 0` sur MUS_NONE/gDisableMusic puis m4aSongNumStart(0) = jouer
+  // MUS_DUMMY = STOP du BGM — l'ancien early-return d'ici laissait l'ancienne
+  // musique tourner (divergence). Fallback historique si sound.ts pas encore
+  // évalué (boot précoce).
+  const foyer = (globalThis as Record<string, unknown>).__soundPlayBGM as ((n: number) => void) | undefined;
+  if (foyer) { foyer(songNum); return; }
   if (_gDisableMusic) return;
   if (songNum === MUS_NONE || songNum === 0) return;
   m4aSongNumStart(songNum);
 }
 
-/** 1:1 décomp `gDisableMusic` accessor (= utilisé par option menu). */
-export function setDisableMusic(v: boolean): void { _gDisableMusic = v; }
+/** 1:1 décomp `gDisableMusic` accessor (= utilisé par option menu). Route AUSSI
+ *  vers le foyer src/sound.ts (gDisableMusic unique, lu par PlayBGM/FadeInNewBGM). */
+export function setDisableMusic(v: boolean): void {
+  _gDisableMusic = v;
+  const foyer = (globalThis as Record<string, unknown>).__soundSetDisableMusic as ((v: boolean) => void) | undefined;
+  foyer?.(v);
+}
 export function getDisableMusic(): boolean { return _gDisableMusic; }
 
 /** Jeton anti-chevauchement des fanfares : seule la DERNIÈRE fanfare a le droit

@@ -613,6 +613,71 @@ export function InitBgFromTemplate(template: BgTemplate): void {
   cfg.baseTile = template.baseTile ?? 0;
 }
 
+// 1:1 décomp `enum { BG_ATTR_* }` (include/bg.h:6-15).
+export const BG_ATTR_CHARBASEINDEX = 1;
+export const BG_ATTR_MAPBASEINDEX = 2;
+export const BG_ATTR_SCREENSIZE = 3;
+export const BG_ATTR_PALETTEMODE = 4;
+export const BG_ATTR_MOSAIC = 5;
+export const BG_ATTR_WRAPAROUND = 6;
+export const BG_ATTR_PRIORITY = 7;
+export const BG_ATTR_METRIC = 8;
+export const BG_ATTR_TYPE = 9;
+export const BG_ATTR_BASETILE = 10;
+
+/** 1:1 décomp `SetBgControlAttributes` (bg.c:99-143) : écrit champ-par-champ la
+ *  config du BG, sentinelle 0xFF = « ne pas toucher ». Le .c termine par
+ *  `sGpuBgConfigs.configs[bg].visible = 1` — fidèle ici ; comme sur GBA, la
+ *  visibilité effective reste pilotée par DISPCNT (applyDispCnt réécrit
+ *  config.visible), donc un caller qui re-pose DISPCNT ensuite re-cache le BG. */
+function SetBgControlAttributes(bg: number, charBaseIndex: number, mapBaseIndex: number,
+  screenSize: number, paletteMode: number, priority: number, mosaic: number, wraparound: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (bg > 3 || bg < 0) return;  // 1:1 `if (!IsInvalidBg(bg))` (bg.c:101)
+  const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
+  if (charBaseIndex !== 0xFF) cfg.charBaseIndex = charBaseIndex as 0 | 1 | 2 | 3;
+  if (mapBaseIndex !== 0xFF) cfg.mapBaseIndex = mapBaseIndex;
+  if (screenSize !== 0xFF) cfg.screenSize = screenSize as 0 | 1 | 2 | 3;
+  if (paletteMode !== 0xFF) cfg.paletteMode = paletteMode as 0 | 1;
+  if (priority !== 0xFF) cfg.priority = priority;
+  if (mosaic !== 0xFF) cfg.mosaic = !!mosaic;
+  if (wraparound !== 0xFF) cfg.wraparound = !!wraparound;
+  cfg.visible = true;  // 1:1 bg.c:141
+}
+
+/** 1:1 décomp `SetBgAttribute(u8 bg, u8 attributeId, u8 value)` (bg.c:476-502).
+ *  Consommé par evolution_scene (StartBgAnimation/RestoreBgAfterAnim : démotion
+ *  BG1/BG2 prio 2 pour que mons OBJ prio 2 et sparkles prio 1 passent DEVANT le
+ *  fond) et battle_intro (charbase). 🐛 fix 2026-07-02 : n'existait NULLE PART
+ *  (call-sites en `rt.SetBgAttribute?.()` = no-op silencieux) → fond de la scène
+ *  d'évolution rendu PAR-DESSUS les silhouettes du cycle et les étincelles. */
+export function SetBgAttribute(bg: number, attributeId: number, value: number): void {
+  switch (attributeId) {
+    case BG_ATTR_CHARBASEINDEX:
+      SetBgControlAttributes(bg, value, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+      break;
+    case BG_ATTR_MAPBASEINDEX:
+      SetBgControlAttributes(bg, 0xFF, value, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+      break;
+    case BG_ATTR_SCREENSIZE:
+      SetBgControlAttributes(bg, 0xFF, 0xFF, value, 0xFF, 0xFF, 0xFF, 0xFF);
+      break;
+    case BG_ATTR_PALETTEMODE:
+      SetBgControlAttributes(bg, 0xFF, 0xFF, 0xFF, value, 0xFF, 0xFF, 0xFF);
+      break;
+    case BG_ATTR_PRIORITY:
+      SetBgControlAttributes(bg, 0xFF, 0xFF, 0xFF, 0xFF, value, 0xFF, 0xFF);
+      break;
+    case BG_ATTR_MOSAIC:
+      SetBgControlAttributes(bg, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, value, 0xFF);
+      break;
+    case BG_ATTR_WRAPAROUND:
+      SetBgControlAttributes(bg, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, value);
+      break;
+  }
+}
+
 /** = décomp `ShowBg(bg)` (bg.c:464 : flag `sGpuBgConfigs.bgVisibilityAndMode`
  *  + `SyncBgVisibilityAndMode()` = écrit DISPCNT bit BG_ON immédiat).
  *  ADAPTATION substrat : on ne pose QUE `config.visible` — le compositor lit

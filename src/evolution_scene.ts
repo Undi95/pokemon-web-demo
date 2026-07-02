@@ -90,7 +90,7 @@ import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { LoadUserWindowBorderGfx } from './text_window';
 import {
   ShowBg, FillBgTilemapBufferRect, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram,
-  GetBgTilemapBuffer, FreeAllWindowBuffers,
+  GetBgTilemapBuffer, FreeAllWindowBuffers, SetBgAttribute, BG_ATTR_PRIORITY,
 } from './window';
 import { LoadBgTiles } from '../harness/runtime/decomp-globals';
 import { loadTileBin, loadGbaPal, extractPngPlte } from '../harness/gba/png-loader';
@@ -130,11 +130,6 @@ import { GetBattleBgTemplateData, SpriteCallbackDummy_2 } from './battle_main';
 import { RunTextPrinters } from './text';
 
 const _rt = (): DecompRuntime => getRuntime();
-/** SetBgAttribute : pas dans le typage DecompRuntime — dispatch runtime optionnel
- *  (pattern battle_intro.ts:100). */
-const _setBgAttribute = (bg: number, attr: number, val: number): void => {
-  (_rt() as unknown as { SetBgAttribute?: (b: number, a: number, v: number) => void }).SetBgAttribute?.(bg, attr, val);
-};
 
 // ─── struct EvoInfo (evolution_scene.c:39-46) ────────────────────────────────
 type EvoInfo = {
@@ -1597,7 +1592,12 @@ function Task_UpdateBgPalette(taskId: number): void {
         data[3] = 0;
         data[2]++;
       }
-      data[1] = ctl[0];  // tPalStage = START_PAL
+      // 🐛 fix 2026-07-02 : START_PAL est un MACRO (.c:1475) ré-évalué ICI, donc
+      // APRÈS le tControlStage++ ci-dessus — relire depuis le stage COURANT (le
+      // `ctl[0]` capturé en entrée rejouait le stage précédent = accroc visible
+      // au bouclage du fond, transitions 0→1 et 2→3). Stage 4 = hors-bornes
+      // comme le .c, valeur jamais consommée (DestroyTask même tick) → `?? 0`.
+      data[1] = sBgAnim_PaletteControl[data[2]]?.[0] ?? 0;  // tPalStage = START_PAL
     } else {
       // Haven't reached final palette in current stage, load the current palette
       if (sBgAnimPal)
@@ -1682,8 +1682,8 @@ function StartBgAnimation(isLink: boolean): void {
     rt.SetGpuReg(REG_OFFSET_BLDALPHA, 8 | (8 << 8) /* BLDALPHA_BLEND(8, 8) */);
     rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | (DISPCNT_BG0_ON << 2) | (DISPCNT_BG0_ON << 1) | DISPCNT_BG0_ON | DISPCNT_OBJ_1D_MAP);
 
-    _setBgAttribute(innerBgId, 7 /* BG_ATTR_PRIORITY */, 2);
-    _setBgAttribute(outerBgId, 7, 2);
+    SetBgAttribute(innerBgId, BG_ATTR_PRIORITY, 2);
+    SetBgAttribute(outerBgId, BG_ATTR_PRIORITY, 2);
 
     ShowBg(1);
     ShowBg(2);
@@ -1724,8 +1724,8 @@ function RestoreBgAfterAnim(): void {
   _setBg('gBattle_BG1_X', 0);
   _setBg('gBattle_BG1_Y', 0);
   _setBg('gBattle_BG2_X', 0);
-  _setBgAttribute(1, 7 /* BG_ATTR_PRIORITY */, GetBattleBgTemplateData(1, 5));
-  _setBgAttribute(2, 7, GetBattleBgTemplateData(2, 5));
+  SetBgAttribute(1, BG_ATTR_PRIORITY, GetBattleBgTemplateData(1, 5));
+  SetBgAttribute(2, BG_ATTR_PRIORITY, GetBattleBgTemplateData(2, 5));
   rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | (DISPCNT_BG0_ON << 3) | DISPCNT_BG0_ON | DISPCNT_OBJ_1D_MAP);
   sBgAnimPal = null;  // Free(sBgAnimPal)
 }

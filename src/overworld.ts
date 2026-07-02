@@ -1,18 +1,17 @@
 // 1:1 mirror partiel de `src/overworld.c` (pokeemerald) — fonctions de musique de map +
 // gating vélo. Créé « en chemin » pour le sous-système vélo (bike.ts) qui les appelle.
 //
-// ⚠️ Le sous-système de RÉSOLUTION de musique de map (GetCurrLocationDefaultMusic /
-// GetCurrentMapMusic / PlayNewMapMusic / FadeOut* = sound.c + tables musique par location)
-// n'est PAS encore porté → c'est un chantier séparé. Ici on porte la LOGIQUE d'état 1:1
-// (`gSaveBlock1Ptr->savedMusic` bookkeeping) et on ROUTE le playback vers `PlayBGM`
-// (= le moteur son, qu'on ne touche pas — no-op silencieux dans notre moteur). Le contrat :
-// on porte la logique musique, on ne remplace PAS le moteur son.
+// Musique de map : chaîne de RÉSOLUTION complète portée 2026-07-02 (évolution bug 4) —
+// GetLocationMusic/GetCurrLocationDefaultMusic/Overworld_PlaySpecialMapMusic/
+// TransitionMapMusic (overworld.c:1010-1205). Le STATE (sCurrentMapMusic +
+// MapMusicMain tické chaque frame) vit au foyer src/sound.ts (sound.c). Le moteur
+// son m4a lui-même reste exempt ([[hardware-non-1to1-exemptions]]).
 
 import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gMapHeader, type MapConnection } from './fieldmap';
 import {
-  PlayBGM, getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
+  getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
   WINOUT_WIN01_BG0, WINOUT_WINOBJ_BG0, BLDALPHA_BLEND,
 } from '../harness/runtime/decomp-globals';
@@ -36,7 +35,18 @@ import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange, ResetSpriteData } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
-import { MUS_DUMMY } from '../include/constants/songs';
+import {
+  MUS_DUMMY, MUS_NONE, MUS_ABNORMAL_WEATHER, MUS_ENCOUNTER_MAGMA, MUS_MT_CHIMNEY,
+  MUS_DESERT, MUS_ROUTE118, MUS_ROUTE110, MUS_ROUTE119, MUS_UNDERWATER, MUS_SURF,
+} from '../include/constants/songs';
+import * as SongsTable from '../include/constants/songs';
+import {
+  PlayNewMapMusic, GetCurrentMapMusic, FadeOutAndPlayNewMapMusic,
+  FadeOutAndFadeInNewMapMusic, ResetMapMusic,
+} from './sound';
+import { MAP_CONSTANTS } from '../include/constants/map_groups';
+import { GetSavedWeather } from './field_weather_effect';
+import { WEATHER_SANDSTORM } from '../include/constants/weather';
 import { FlagGet, FlagClear, VarGet, VarSet } from './engine/script/script-vars';
 import { GetHealLocationByName } from './heal_location';
 import { GetMoney, SetMoney } from './money';
@@ -230,25 +240,234 @@ export function Overworld_ClearSavedMusic(): void {
   gSaveBlock1Ptr.savedMusic = MUS_DUMMY;
 }
 
-/** 1:1 décomp `Overworld_PlaySpecialMapMusic` (overworld.c:1142).
- *  Restaure la musique de map (= sortie de vélo / surf). La résolution de la musique
- *  par défaut (GetCurrLocationDefaultMusic) appartient au chantier sound.c non porté ;
- *  on porte la branche `savedMusic` (state réel) et on route vers PlayBGM (moteur son). */
-export function Overworld_PlaySpecialMapMusic(): void {
-  // GetCurrLocationDefaultMusic() + GetCurrentMapType()/SURFING → chantier sound.c.
-  // Branche portable : si une musique sauvegardée est posée, la jouer.
-  const music = gSaveBlock1Ptr.savedMusic;
-  if (music)
-    PlayBGM(music);  // = PlayNewMapMusic(music) → moteur son (no-op dans notre moteur).
+// ─── Résolution musique de map (1:1 overworld.c:1010-1205) ───────────────────
+// 🐛 fix 2026-07-02 (évolution bug 4) : GetCurrLocationDefaultMusic/GetLocationMusic
+// n'avaient JAMAIS été portés (Overworld_PlaySpecialMapMusic = stub savedMusic-only)
+// → silence total après le jingle MUS_EVOLVED (StopMapMusic coupait, rien ne
+// relançait). State machine consommée = src/sound.ts (sCurrentMapMusic, tick
+// MapMusicMain chaque frame via runOneFrame = AgbMain main.c:159).
+
+// 1:1 macros map_groups.h : MAP_GROUP(map) = map >> 8 ; MAP_NUM(map) = map & 0xFF.
+const MAP_GROUP = (m: number): number => m >> 8;
+const MAP_NUM = (m: number): number => m & 0xFF;
+const MC = MAP_CONSTANTS;
+
+// 1:1 global.h PLAYER_AVATAR_FLAG_* — consts locales + pont __TestPlayerAvatarFlags
+// (field_player_avatar.ts:593) : field_player_avatar importe overworld → cycle ESM,
+// on passe par globalThis (pattern projet).
+const PLAYER_AVATAR_FLAG_MACH_BIKE = 1 << 1;
+const PLAYER_AVATAR_FLAG_ACRO_BIKE = 1 << 2;
+const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
+function TestPlayerAvatarFlags(flags: number): boolean {
+  const f = (globalThis as Record<string, unknown>).__TestPlayerAvatarFlags as
+    ((fl: number) => number | boolean) | undefined;
+  return !!(f && f(flags));
 }
 
-/** 1:1 décomp `Overworld_ChangeMusicTo` (overworld.c:1200) :
- *    if (currentMusic != newMusic && currentMusic != MUS_ABNORMAL_WEATHER)
- *        FadeOutAndPlayNewMapMusic(newMusic, 8);
- *  Le guard `!= GetCurrentMapMusic()` dépend du tracking de musique courante (chantier
- *  sound.c) ; on route directement le playback vers PlayBGM (moteur son). */
+type WarpData = { mapGroup: number; mapNum: number };
+
+/** `mapHeader->music` : chez nous le header JSON porte la STRING 'MUS_*' →
+ *  résolution via la table songs (même pattern que TestOverworldScene). */
+function _resolveMusicId(music: string | number | undefined): number {
+  if (typeof music === 'number') return music;
+  if (typeof music === 'string') return (SongsTable as unknown as Record<string, number>)[music] ?? 0;
+  return 0;
+}
+
+/** 1:1 décomp `ShouldLegendaryMusicPlayAtLocation(warp)` (overworld.c:1010-1041) :
+ *  météo Kyogre/Groudon active (FLAG_SYS_WEATHER_CTRL) sur les maps côtières. */
+function ShouldLegendaryMusicPlayAtLocation(warp: WarpData): boolean {
+  if (!FlagGet('FLAG_SYS_WEATHER_CTRL'))
+    return false;
+  if (warp.mapGroup === 0) {
+    switch (warp.mapNum) {
+      case MAP_NUM(MC.MAP_LILYCOVE_CITY):
+      case MAP_NUM(MC.MAP_MOSSDEEP_CITY):
+      case MAP_NUM(MC.MAP_SOOTOPOLIS_CITY):
+      case MAP_NUM(MC.MAP_EVER_GRANDE_CITY):
+      case MAP_NUM(MC.MAP_ROUTE124):
+      case MAP_NUM(MC.MAP_ROUTE125):
+      case MAP_NUM(MC.MAP_ROUTE126):
+      case MAP_NUM(MC.MAP_ROUTE127):
+      case MAP_NUM(MC.MAP_ROUTE128):
+        return true;
+      default:
+        if (VarGet('VAR_SOOTOPOLIS_CITY_STATE') < 4)
+          return false;
+        switch (warp.mapNum) {
+          case MAP_NUM(MC.MAP_ROUTE129):
+          case MAP_NUM(MC.MAP_ROUTE130):
+          case MAP_NUM(MC.MAP_ROUTE131):
+            return true;
+        }
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `NoMusicInSootopolisWithLegendaries(warp)` (overworld.c:1043-1053). */
+function NoMusicInSootopolisWithLegendaries(warp: WarpData): boolean {
+  if (VarGet('VAR_SKY_PILLAR_STATE') !== 1)
+    return false;
+  else if (warp.mapGroup !== MAP_GROUP(MC.MAP_SOOTOPOLIS_CITY))
+    return false;
+  else if (warp.mapNum === MAP_NUM(MC.MAP_SOOTOPOLIS_CITY))
+    return true;
+  else
+    return false;
+}
+
+/** 1:1 décomp `IsInfiltratedWeatherInstitute(warp)` (overworld.c:1055-1066). */
+function IsInfiltratedWeatherInstitute(warp: WarpData): boolean {
+  if (VarGet('VAR_WEATHER_INSTITUTE_STATE'))
+    return false;
+  else if (warp.mapGroup !== MAP_GROUP(MC.MAP_ROUTE119_WEATHER_INSTITUTE_1F))
+    return false;
+  else if (warp.mapNum === MAP_NUM(MC.MAP_ROUTE119_WEATHER_INSTITUTE_1F)
+    || warp.mapNum === MAP_NUM(MC.MAP_ROUTE119_WEATHER_INSTITUTE_2F))
+    return true;
+  else
+    return false;
+}
+
+/** 1:1 décomp `IsInfiltratedSpaceCenter(warp)` (overworld.c:1068-1080). */
+function IsInfiltratedSpaceCenter(warp: WarpData): boolean {
+  if (VarGet('VAR_MOSSDEEP_CITY_STATE') === 0)
+    return false;
+  else if (VarGet('VAR_MOSSDEEP_CITY_STATE') > 2)
+    return false;
+  else if (warp.mapGroup !== MAP_GROUP(MC.MAP_MOSSDEEP_CITY_SPACE_CENTER_1F))
+    return false;
+  else if (warp.mapNum === MAP_NUM(MC.MAP_MOSSDEEP_CITY_SPACE_CENTER_1F)
+    || warp.mapNum === MAP_NUM(MC.MAP_MOSSDEEP_CITY_SPACE_CENTER_2F))
+    return true;
+  return false;
+}
+
+/** 1:1 décomp `u16 GetLocationMusic(struct WarpData *warp)` (overworld.c:1082-1094).
+ *  ADAPTATION : `Overworld_GetMapHeaderByGroupAndId(...)->music` — notre registre
+ *  de headers est vide à ce jour (fallback music:0) → pour la location COURANTE
+ *  on lit le gMapHeader LIVE (fieldmap, music = STRING 'MUS_*'). */
+function GetLocationMusic(warp: WarpData): number {
+  if (NoMusicInSootopolisWithLegendaries(warp))
+    return MUS_NONE;
+  else if (ShouldLegendaryMusicPlayAtLocation(warp))
+    return MUS_ABNORMAL_WEATHER;
+  else if (IsInfiltratedSpaceCenter(warp))
+    return MUS_ENCOUNTER_MAGMA;
+  else if (IsInfiltratedWeatherInstitute(warp))
+    return MUS_MT_CHIMNEY;
+  const loc = gSaveBlock1Ptr.location as WarpData | undefined;
+  if (loc && warp.mapGroup === loc.mapGroup && warp.mapNum === loc.mapNum && gMapHeader)
+    return _resolveMusicId((gMapHeader as { music?: string | number }).music);
+  return _resolveMusicId(Overworld_GetMapHeaderByGroupAndId(warp.mapGroup, warp.mapNum)?.music);
+}
+
+/** 1:1 décomp `u16 GetCurrLocationDefaultMusic(void)` (overworld.c:1096-1118). */
+export function GetCurrLocationDefaultMusic(): number {
+  // Play the desert music only when the sandstorm is active on Route 111.
+  const loc = gSaveBlock1Ptr.location as WarpData | undefined;
+  if (loc && loc.mapGroup === MAP_GROUP(MC.MAP_ROUTE111)
+    && loc.mapNum === MAP_NUM(MC.MAP_ROUTE111)
+    && GetSavedWeather() === WEATHER_SANDSTORM)
+    return MUS_DESERT;
+
+  const music = loc ? GetLocationMusic(loc) : 0;
+  if (music !== MUS_ROUTE118) {
+    return music;
+  } else {
+    // MUS_ROUTE118 = sentinelle « split » (32767) : la route 118 joue la musique
+    // de la 110 à l'ouest, de la 119 à l'est.
+    const pos = (gSaveBlock1Ptr as { pos?: { x: number } }).pos;
+    if ((pos?.x ?? 0) < 24)
+      return MUS_ROUTE110;
+    else
+      return MUS_ROUTE119;
+  }
+}
+
+/** 1:1 décomp `u16 GetWarpDestinationMusic(void)` (overworld.c:1120-1135).
+ *  ADAPTATION : `sWarpDestination` (static overworld.c) non exposé chez nous —
+ *  notre unique caller (TransitionMapMusic, cross-connexion TestOverworldScene)
+ *  tourne quand gMapHeader/location SONT déjà la map de destination →
+ *  GetLocationMusic(location courante). La branche MUS_ROUTE118 garde la
+ *  comparaison Mauville 1:1. */
+function GetWarpDestinationMusic(): number {
+  const loc = gSaveBlock1Ptr.location as WarpData | undefined;
+  const music = loc ? GetLocationMusic(loc) : 0;
+  if (music !== MUS_ROUTE118) {
+    return music;
+  } else {
+    if (loc && loc.mapGroup === MAP_GROUP(MC.MAP_MAUVILLE_CITY)
+      && loc.mapNum === MAP_NUM(MC.MAP_MAUVILLE_CITY))
+      return MUS_ROUTE110;
+    else
+      return MUS_ROUTE119;
+  }
+}
+
+/** 1:1 décomp `void Overworld_ResetMapMusic(void)` (overworld.c:1137-1140). */
+export function Overworld_ResetMapMusic(): void {
+  ResetMapMusic();
+}
+
+/** 1:1 décomp `Overworld_PlaySpecialMapMusic` (overworld.c:1142-1158) : résout la
+ *  musique de la map courante (défaut / savedMusic / underwater / surf) et la
+ *  (re)lance si différente de la musique courante. Appelé à l'entrée de map
+ *  (field_screen_effect.c:128) et par la scène d'évolution post-jingle.
+ *  ADAPTATION : check UNDERWATER via gMapHeader.mapType (STRING dans le port,
+ *  cf Overworld_MapTypeAllowsTeleportAndFly) — GetCurrentMapType (warp-system)
+ *  = cycle ESM connu avec overworld. */
+export function Overworld_PlaySpecialMapMusic(): void {
+  let music = GetCurrLocationDefaultMusic();
+
+  if (music !== MUS_ABNORMAL_WEATHER && music !== MUS_NONE) {
+    if (gSaveBlock1Ptr.savedMusic)
+      music = gSaveBlock1Ptr.savedMusic;
+    else if ((gMapHeader as { mapType?: string | number } | undefined)?.mapType === 'MAP_TYPE_UNDERWATER')
+      music = MUS_UNDERWATER;
+    else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+      music = MUS_SURF;
+  }
+
+  if (music !== GetCurrentMapMusic())
+    PlayNewMapMusic(music);
+}
+
+/** 1:1 décomp `static void TransitionMapMusic(void)` (overworld.c:1170-1191) —
+ *  exporté chez nous (consommé par le cross-connexion TestOverworldScene, = le
+ *  call-site LoadMapFromCameraTransition overworld.c:792). */
+export function TransitionMapMusic(): void {
+  if (FlagGet('FLAG_DONT_TRANSITION_MUSIC') !== true) {
+    let newMusic = GetWarpDestinationMusic();
+    const currentMusic = GetCurrentMapMusic();
+    if (newMusic !== MUS_ABNORMAL_WEATHER && newMusic !== MUS_NONE) {
+      if (currentMusic === MUS_UNDERWATER || currentMusic === MUS_SURF)
+        return;
+      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+        newMusic = MUS_SURF;
+    }
+    if (newMusic !== currentMusic) {
+      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+        FadeOutAndFadeInNewMapMusic(newMusic, 4, 4);
+      else
+        FadeOutAndPlayNewMapMusic(newMusic, 8);
+    }
+  }
+}
+
+/** 1:1 décomp `Overworld_ChangeMusicToDefault` (overworld.c:1193-1198). */
+export function Overworld_ChangeMusicToDefault(): void {
+  const currentMusic = GetCurrentMapMusic();
+  if (currentMusic !== GetCurrLocationDefaultMusic())
+    FadeOutAndPlayNewMapMusic(GetCurrLocationDefaultMusic(), 8);
+}
+
+/** 1:1 décomp `Overworld_ChangeMusicTo` (overworld.c:1200-1205). */
 export function Overworld_ChangeMusicTo(newMusic: number): void {
-  PlayBGM(newMusic);  // = FadeOutAndPlayNewMapMusic(newMusic, 8) → moteur son (no-op).
+  const currentMusic = GetCurrentMapMusic();
+  if (currentMusic !== newMusic && currentMusic !== MUS_ABNORMAL_WEATHER)
+    FadeOutAndPlayNewMapMusic(newMusic, 8);
 }
 
 /** 1:1 décomp `Overworld_IsBikingAllowed` (overworld.c:959) :

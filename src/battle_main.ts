@@ -74,6 +74,7 @@ import {
 } from './scanline_effect';
 import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1, drawBattleEntryBackground,
+  gBattleBgTemplates,
 } from './battle_bg';
 
 // ─── BG/WIN scroll state 1:1 décomp (battle_main.c:124-135) ─────────────────
@@ -182,28 +183,13 @@ export function HBlankCB_Battle(): void {
 }
 
 // ─── GetBattleBgTemplateData (battle_main.c:2385-2416) ─────────────────────
-
-/** 1:1 décomp `gBattleBgTemplates[4]` (battle_bg.c). 4 entries pour BG0/1/2/3. */
-interface BgTemplate {
-  bg: number;
-  charBaseIndex: number;
-  mapBaseIndex: number;
-  screenSize: number;
-  paletteMode: number;
-  priority: number;
-  baseTile: number;
-}
-
-const gBattleBgTemplates: BgTemplate[] = [
-  // 1:1 décomp battle_bg.c sStandardBattleBgTemplates[]. Stub minimal.
-  { bg: 0, charBaseIndex: 0, mapBaseIndex: 24, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
-  { bg: 1, charBaseIndex: 0, mapBaseIndex: 28, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 },
-  { bg: 2, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 },
-  { bg: 3, charBaseIndex: 2, mapBaseIndex: 26, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
-];
+// 🐛 fix 2026-07-02 : la copie locale « stub minimal » de gBattleBgTemplates avait
+// des données FAUSSES (BG1 prio 1 / BG2 prio 2 au lieu de 0/1, screenSize 0
+// partout) → RestoreBgAfterAnim (scène évolution) restaurait de mauvaises
+// priorités. Doublon dissous : source unique = battle_bg.ts (1:1 battle_bg.c:123-161).
 
 /** 1:1 décomp `GetBattleBgTemplateData(arrayId, caseId)` (battle_main.c:2385-2416).
- *  Accès field-by-field aux gBattleBgTemplates[arrayId]. */
+ *  Accès field-by-field aux gBattleBgTemplates[arrayId] (foyer battle_bg.ts). */
 export function GetBattleBgTemplateData(arrayId: number, caseId: number): number {
   const tpl = gBattleBgTemplates[arrayId];
   if (!tpl) return 0;
