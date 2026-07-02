@@ -53,7 +53,10 @@ import {
   HOLD_EFFECT_LIGHT_BALL as _HOLD_EFFECT_LIGHT_BALL,
   HOLD_EFFECT_METAL_POWDER as _HOLD_EFFECT_METAL_POWDER,
   HOLD_EFFECT_THICK_CLUB as _HOLD_EFFECT_THICK_CLUB,
+  HOLD_EFFECT_MACHO_BRACE,
 } from '../include/constants/hold_effects';
+import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import {
   SPECIES_LATIAS as SPECIES_LATIAS_LOCAL,
   SPECIES_LATIOS as SPECIES_LATIOS_LOCAL,
@@ -308,18 +311,14 @@ export function GetMonEVCount(mon: Pokemon): number {
 const _MAX_TOTAL_EVS = 510;
 const _MAX_PER_STAT_EVS = 255;
 
-/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)`. Award EVs from defeated mon's
- *  evYield, cap à 510 total + 255 par stat.
- *
- *  ⚠️ DOUBLON MORT (audit 2026-06-05) : cette fonction n'est appelée NULLE PART.
- *  Le gain d'EV LIVE passe par `pokemon.ts:monGainEVs` (PokemonInstance) ; la voie-L
- *  bytecode passe par `battle-script-commands.ts:_MonGainEVs` (qui, LUI, câble bien
- *  Pokerus + Macho Brace). Cette copie-ci = candidate suppression (consolidation B1
- *  des 3 implémentations en une seule canonique).
- *
- *  Différés ici (NON câblés — contrairement à ce que prétendait l'ancien commentaire) :
- *    - Pokerus ×2 : `multiplier=1` en dur (PAS « wired via _CheckPartyHasHadPokerus »).
- *    - HOLD_EFFECT_MACHO_BRACE ×2 + ITEM_ENIGMA_BERRY hold effect : non câblés. */
+/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)` (pokemon.c:5975-6052) — FOYER canonique.
+ *  Award EVs from defeated mon's evYield : Pokérus ×2 (CheckPartyHasHadPokerus) +
+ *  HOLD_EFFECT_MACHO_BRACE ×2 (Enigma Berry → holdEffect de la save 1:1 ; la branche
+ *  `gMain.inBattle → gEnigmaBerries[0]` = link/combat, N/A solo), caps 510 total /
+ *  255 par stat.
+ *  ⚠️ CONSOLIDATION DIFFÉRÉE (reprise combat) : la voie combat vivante =
+ *  `battle_script_commands.ts:_MonGainEVs` (même logique 1:1, monId+species
+ *  numérique) — à re-router vers CE foyer quand le combat sera dé-pausé. */
 export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
   if (mon.species === 0) return;
   const info = getSpeciesInfo(defeatedSpeciesEnum);
@@ -331,10 +330,15 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
 
   for (let i = 0; i < 6; i++) {
     if (totalEVs >= _MAX_TOTAL_EVS) break;
-    // ⚠️ Pokerus ×2 NON câblé ici (multiplier en dur = 1). Cf. JSDoc (doublon mort).
-    const multiplier = 1;
+    // 1:1 pokemon.c:5996-5999 : Pokérus (actif OU guéri) → ×2.
+    const multiplier = CheckPartyHasHadPokerus([mon], 0) ? 2 : 1;
     let evIncrease = yields[i] * multiplier;
-    // MACHO_BRACE x2 hold effects deferred.
+
+    // 1:1 pokemon.c:6023-6036 : hold effect — Enigma Berry lit la save (solo).
+    const holdEffect = mon.heldItem === ITEM_ENIGMA_BERRY
+      ? ((gSaveBlock1Ptr as { enigmaBerry?: { holdEffect?: number } }).enigmaBerry?.holdEffect ?? 0)
+      : GetItemHoldEffect(mon.heldItem);
+    if (holdEffect === HOLD_EFFECT_MACHO_BRACE) evIncrease *= 2;
 
     // 1:1 décomp ll.6038-6046 : cap à MAX_TOTAL_EVS et MAX_PER_STAT_EVS.
     if (totalEVs + evIncrease > _MAX_TOTAL_EVS) {

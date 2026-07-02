@@ -31,6 +31,8 @@ import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, ResetSpriteData, Dest
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { SetPlayerName, GetPlayerNameString } from '../include/text';
 import { Random } from './random';
+import { IsNationalPokedexEnabled } from './event_data';
+import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {
@@ -453,7 +455,7 @@ export function MainMenu_FormatSavegameText(): void {
 
   // (3) Pokedex line (conditional sur FLAG_SYS_POKEDEX_GET)
   if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
-    const dexCount = _countCaughtPokedexFlags(FlagGet);
+    const dexCount = _countCaughtPokedexFlags();
     const dexStr = String(dexCount);
     AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, getString('gText_ContinueMenuPokedex'));
     AddTextPrinterParameterized3(
@@ -478,14 +480,14 @@ export function MainMenu_FormatSavegameText(): void {
   );
 }
 
-/** Compte les Pokémon attrapés dans le pokedex via les flags FLAG_SYS_DEX_FLAGS_X.
- *  1:1 décomp `GetHoennPokedexCount(FLAG_GET_CAUGHT)` / `GetNationalPokedexCount`.
- *  Implémentation simplifiée : itère les flags `FLAG_SYS_POKEDEX_FLAG_<id>` set. */
-function _countCaughtPokedexFlags(flagGet: (name: string) => boolean): number {
-  // Pour une démo Phase 1 : on retourne 0 (= pokedex pas encore implémenté).
-  // TODO Phase 4+ : itérer sur les NUM_SPECIES flags caught/seen.
-  void flagGet;
-  return 0;
+/** 1:1 décomp MainMenu_FormatSavegamePokedex (main_menu.c:2163-2175) — branche comptage :
+ *  `IsNationalPokedexEnabled() ? GetNationalPokedexCount(FLAG_GET_CAUGHT)
+ *                              : GetHoennPokedexCount(FLAG_GET_CAUGHT)`.
+ *  (Ex-stub `return 0` — l'écran Continue affichait toujours « Pokédex : 0 ».) */
+function _countCaughtPokedexFlags(): number {
+  return IsNationalPokedexEnabled()
+    ? GetNationalPokedexCount(FLAG_GET_CAUGHT)
+    : GetHoennPokedexCount(FLAG_GET_CAUGHT);
 }
 
 /** 1:1 décomp main_menu.c:2121-2130 CreateMainMenuErrorWindow.
