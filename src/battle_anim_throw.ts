@@ -49,6 +49,7 @@ import { MAX_SPRITES, type DecompRuntime, type DecompSprite } from '../harness/r
 import { Sin, Cos } from './trig';
 import { DestroySprite } from './sprite';
 import { AllocOamMatrix, FreeOamMatrix, IndexOfSpritePaletteTag, AllocSpriteTileRange, MarkObjPaletteAllocated, AllocSpriteTiles, sSpritePaletteTags } from './sprite';
+import { ChangeSpriteAffineAnim as _ChangeSpriteAffineAnim_impl } from './engine/decomp-impls/sprite-engine-impl';
 import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 
@@ -674,6 +675,14 @@ function _startAffine(sprite: BallSprite, n: number): void {
   const rt = getRuntime() as unknown as { StartSpriteAffineAnim?: (i: number, n: number) => void };
   if (id >= 0) rt?.StartSpriteAffineAnim?.(id, n);
 }
+/** 1:1 décomp ChangeSpriteAffineAnim : PRÉSERVE l'angle accumulé (pivots du wobble,
+ *  battle_anim_throw.c:1172/1214) — Start (reset angle) faisait « sauter » la ball. */
+function _changeAffine(sprite: BallSprite, n: number): void {
+  const id = _spriteIdOf(sprite);
+  const rt = getRuntime();
+  const s = rt?.gSprites?.[id];
+  if (s) _ChangeSpriteAffineAnim_impl(s, n);
+}
 function _destroyBall(sprite: BallSprite): void {
   const id = _spriteIdOf(sprite);
   const rt = getRuntime();
@@ -888,7 +897,8 @@ function SpriteCB_Ball_Wobble_Step(sprite: BallSprite): void {
         sprite.data[4] = -sprite.data[4];
         sprite.data[3]++;
         sprite.affineAnimPaused = false;
-        _startAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
+        // 1:1 ChangeSpriteAffineAnim (:1172) — l'angle penché PERSISTE au pivot.
+        _changeAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
       } else {
         sprite.affineAnimPaused = true;
       }
@@ -909,7 +919,8 @@ function SpriteCB_Ball_Wobble_Step(sprite: BallSprite): void {
       sprite.data[4] = -sprite.data[4];
       sprite.data[3]++;
       sprite.affineAnimPaused = false;
-      _startAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
+      // 1:1 ChangeSpriteAffineAnim (:1214) — pivot sans reset d'angle.
+      _changeAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
       // 1:1 fall through vers BALL_ROLL_3 (deplie, tsc strict) :
       rollSub();
       sprite.data[5]++;

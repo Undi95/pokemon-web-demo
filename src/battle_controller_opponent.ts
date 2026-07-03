@@ -411,6 +411,13 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
         monSpr.affineAnimsTableName = isOpponent
           ? 'gAffineAnims_BattleSpriteOpponentSide'
           : 'gAffineAnims_BattleSpritePlayerSide';
+        // ⚠️ SYNC STRUCT↔OAM (bug capture user 2026-07-03) : la matrice allouée
+        // n'allait QUE dans oam.affineParamIndex — sprite.matrixNum restait 0.
+        // PrepareBattlerSpriteForRotScale (shrink de capture) fait ensuite
+        // `oam.matrixNum = sprite.matrixNum` (=0) et SetSpriteRotScale écrit la
+        // matrice 0 → le mon ADVERSE basculait sur la matrice du mon JOUEUR et
+        // les DEUX rétrécissaient (film : ARCKO aspiré avec MEDHYENA).
+        monSpr.matrixNum = _monMatrixNum >= 0 ? _monMatrixNum : 0;
       }
     }
     // 1:1 décomp OpponentHandleLoadMonSprite (battle_controller_opponent.c:1149-1153) : le mon

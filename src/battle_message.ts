@@ -2162,6 +2162,9 @@ export const BATTLE_STRINGS_TABLE: Record<number, string> = {
 export const BATTLE_STRING_ID_TABLES: Record<string, Uint16Array> = {
   gAbsorbDrainStringIds: new Uint16Array([45, 313]),
   gAttractUsedStringIds: new Uint16Array([69, 310]),
+  // 1:1 battle_message.c:1148 — BROKEFREE/APPEAREDCAUGHT/AARGH/SHOOTSOCLOSE (échec
+  // capture par nb de secousses ; absente = printfromtable → stringId 0 = msg d'intro !).
+  gBallEscapeStringIds: new Uint16Array([263, 264, 265, 266]),
   gBerryEffectStringIds: new Uint16Array([297, 342]),
   gBRNPreventionStringIds: new Uint16Array([305, 355, 362]),
   gCaughtMonStringIds: new Uint16Array([375, 376, 377, 378]),
@@ -2201,7 +2204,13 @@ export const BATTLE_STRING_ID_TABLES: Record<string, Uint16Array> = {
   gStockpileUsedStringIds: new Uint16Array([115, 116]),
   gSubstituteUsedStringIds: new Uint16Array([126, 251]),
   gSwallowFailStringIds: new Uint16Array([247, 76]),
+  // 1:1 battle_message.c — AI_HEAL_CONFUSION/PARALYSIS/FREEZE/BURN/POISON/SLEEP
+  // (dresseur utilise un objet de soin sur son mon).
+  gTrainerItemCuredStatusStringIds: new Uint16Array([296, 291, 294, 293, 292, 295]),
   gTransformUsedStringIds: new Uint16Array([125, 229]),
+  // 1:1 battle_message.c — météo OW → message d'ouverture de combat, indexée par
+  // WEATHER_* (0-15) : ITISRAINING partout sauf SANDSTORM(8)=273 et DROUGHT(12)=241.
+  gWeatherStartsStringIds: new Uint16Array([272, 272, 272, 272, 272, 272, 272, 272, 273, 272, 272, 272, 241, 272, 272, 272]),
   gUproarAwakeStringIds: new Uint16Array([117, 118, 119]),
   gUproarOverTurnStringIds: new Uint16Array([112, 113]),
   gWokeUpStringIds: new Uint16Array([108, 110]),

@@ -84,6 +84,18 @@ export function StartSpriteAffineAnim(sprite: DecompSprite, animNum: number): vo
   sprite.affineAnimEnded = !sprite.affineAnimsTableName;
 }
 
+/** 1:1 décomp ChangeSpriteAffineAnim(sprite, animNum) (sprite.c:1352-1358) :
+ *  pose SEULEMENT animNum + beginning — ≠ StartSpriteAffineAnim : les
+ *  xScale/yScale/ROTATION accumulés PERSISTENT (BeginAffineAnim au tick suivant
+ *  fait RestartAnim = cmdIndex/delay seuls). C'est ce qui rend le wobble de la
+ *  Pokéball CONTINU (l'angle penché se déroule au pivot au lieu de sauter à 0 —
+ *  « bobbing 2 frames au lieu de 3 », verdict user 2026-07-03). */
+export function ChangeSpriteAffineAnim(sprite: DecompSprite, animNum: number): void {
+  sprite.affineAnimNum = animNum;
+  sprite.affineAnimBeginning = true;
+  sprite.affineAnimEnded = !sprite.affineAnimsTableName;
+}
+
 /** 1:1 décomp src/sprite.c:ConvertScaleParam (l.1316-1320) :
  *    s16 ConvertScaleParam(s16 scale) { return SAFE_DIV(0x10000, scale); }
  *  Inverse le scale pour le passer à ObjAffineSet (= sprite affine = inverse

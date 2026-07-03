@@ -4,7 +4,9 @@
  * Implémente le système d'animation de tiles du tileset overworld Émeraude :
  *   - Double buffer VRAM (= sTilesetDMA3TransferBuffer[20])
  *   - Compteurs primaire/secondaire (= sPrimaryTilesetAnimCounter/Max)
- *   - Callbacks par tileset (= TilesetAnim_General, TilesetAnim_Building + 18 stubs)
+ *   - Callbacks par tileset — TOUS IMPLÉMENTÉS (vérifié au sol 2026-07-03 :
+ *     rondins Pacifidlog animés, sonde VRAM 3 hashes distincts). La liste
+ *     « stub » ci-dessous est PÉRIMÉE (gardée pour l'historique des noms).
  *   - Flush VRAM au VBlank (= TransferTilesetAnimsBuffer)
  *
  * Source de vérité : D:/Projet 1/decomps/pokeemeraude/src/tileset_anims.c
