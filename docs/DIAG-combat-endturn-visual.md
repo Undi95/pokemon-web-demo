@@ -1,5 +1,11 @@
 # DIAG — effets fin-de-tour combat invisibles (brûlure/poison/… anim + perte PV)
 
+> ✅ **RÉSOLU (`1ea0141a`)** : `_BattleTurnPassed` réécrit en 1:1 décomp `BattleTurnPassed()`
+> avec pacing PER-FRAME via `BattleScriptExecute` (au lieu de la rafale synchrone). Vérifié en
+> jeu : barre PV brûlure 35→31→21→17 animée tour après tour, modèle+instance+visuel en sync,
+> progression de tour + fin de combat OK. Répare TOUS les effets résiduels. Le reste du doc
+> ci-dessous = le diagnostic d'origine (conservé pour référence).
+
 **Bug user #1** : « Le feu, son animation ET la perte de PV ne marchent pas, mais atk bien
 divisée en deux. » Reproduit et diagnostiqué en jeu 2026-07-03 (combat sauvage RATTATA,
 ARCKO brûlé).
@@ -65,7 +71,15 @@ intermédiaire visible-mais-non-animé en attendant le fix pacing.
 
 ## Statut bugs combat liés (mêmes racines probables)
 
-- **#2 apprentissage attaque via lvl up in-battle** : probablement même famille (script
-  `BattleScript_LearnMoveTryLearn`/EXP joué en rafale sans pacing/UI). À repro.
+- **#2 apprentissage attaque via lvl up in-battle** — DIAGNOSTIQUÉ (2026-07-03) : PAS la
+  même famille. `_monTryLearningNewMove` (battle_script_commands.ts:9953) appelle le VRAI
+  `MonTryLearningNewMove_Foyer` → un mon avec **<4 moves apprend correctement** (le commentaire
+  « stub retourne MOVE_NONE » était PÉRIMÉ, corrigé). Le vrai bug = **`Cmd_yesnoboxlearnmove`
+  (battle_script_commands.ts:10270), cases 1-4 stubés « auto-NO »** : quand le mon a déjà 4
+  capacités et doit en oublier une, le YES/NO box + l'écran summary de sélection de slot NE
+  sont PAS wirés en combat → le move n'est jamais appris (auto-NO). ARCKO (4 moves) tombe pile
+  dessus. FIX = câbler le flux replace-move EN COMBAT (YES/NO box battle + summary screen slot-pick
+  → SetMonMoveSlot + RemoveMonPPBonus), réutiliser la machinerie replace-move déjà portée dans
+  party_menu.ts (dette #8 soldée : phases YesNo→summary→slot). Sous-chantier UI battle dédié.
 - **#3 dialogue + BGM combat se relance** : à repro séparément (piste : re-entrée d'un
   état/CB2, pas forcément lié au pacing).

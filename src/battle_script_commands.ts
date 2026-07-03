@@ -10211,7 +10211,9 @@ function Cmd_handlelearnnewmove(ctx: BattleScriptContext): boolean {
 
   let learnMove = _monTryLearningNewMove(0 /* expGetterMonId proxy */, firstMoveFlag);
   // 1:1 décomp : while (learnMove == MON_ALREADY_KNOWS_MOVE) try again.
-  // Notre stub retourne toujours MOVE_NONE → boucle skip.
+  // (_monTryLearningNewMove appelle le VRAI MonTryLearningNewMove_Foyer — pas un stub :
+  //  un mon avec <4 moves apprend bien. Le cas 4-moves → replace = Cmd_yesnoboxlearnmove,
+  //  encore stubé auto-NO ci-dessous = dette UI battle « oublier une capacité ».)
   let safety = 0;
   while (learnMove === 0xFFFE /* MON_ALREADY_KNOWS_MOVE */ && safety++ < 100) {
     learnMove = _monTryLearningNewMove(0, 0);
