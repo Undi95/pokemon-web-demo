@@ -35,11 +35,39 @@ const outArg = argVal('--out');
 const toStdout = argv.includes('--stdout');
 const dryRun = argv.includes('--dry') || rankMode;
 const force = argv.includes('--force');
-if (!fileArg && !batchArg && !rankMode) { console.error('usage: transpile-c.cjs --file <nom.c> | --batch a.c,b.c | --rank  [--out src/x.ts] [--stdout] [--dry] [--force]'); process.exit(1); }
+const mergeMode = argv.includes('--merge');
+if (!fileArg && !batchArg && !rankMode) { console.error('usage: transpile-c.cjs --file <nom.c> | --batch a.c,b.c | --rank  [--out src/x.ts] [--stdout] [--dry] [--force] [--merge]'); process.exit(1); }
 
 // État PER-FICHIER (réinitialisé par resetFileState)
 let cRel = '', cPath = '', baseName = '', outPath = '';
 let report = null;
+// --merge : noms top-level + noms importés du .ts existant (défs à SKIPPER).
+let mergeNames = new Set();
+let mergeImported = new Set();
+let mergeSkipped = 0;
+
+/** --merge : parse léger du .ts existant — noms top-level définis + noms importés. */
+function parseExistingTs(p) {
+  const src = fs.readFileSync(p, 'utf8');
+  const names = new Set(), imported = new Set();
+  for (const re of [
+    /^(?:export )?(?:async )?function ([A-Za-z_$][\w$]*)/gm,
+    /^(?:export )?(?:const|let|var) ([A-Za-z_$][\w$]*)/gm,
+    /^(?:export )?(?:interface|class|enum) ([A-Za-z_$][\w$]*)/gm,
+    /^(?:export )?type ([A-Za-z_$][\w$]*)/gm,
+  ]) {
+    for (const m of src.matchAll(re)) names.add(m[1]);
+  }
+  for (const m of src.matchAll(/^import (?:type )?\{([^}]+)\}/gm)) {
+    for (const tok of m[1].split(',')) {
+      const t = tok.trim();
+      if (!t) continue;
+      const asIdx = t.indexOf(' as ');
+      imported.add(asIdx >= 0 ? t.slice(asIdx + 4).trim() : t.replace(/^type /, '').trim());
+    }
+  }
+  return { names, imported };
+}
 function flag(line, kind, detail) { report.flags.push({ line, kind, detail }); }
 function resetFileState(fileRel, outOverride) {
   cRel = fileRel.startsWith('src/') ? fileRel : 'src/' + fileRel;
@@ -58,6 +86,9 @@ function resetFileState(fileRel, outOverride) {
   localConstMap = new Map();
   constsToInline.length = 0;
   SRC = '';
+  mergeNames = new Set();
+  mergeImported = new Set();
+  mergeSkipped = 0;
 }
 
 // ─── SECTION 1 : résolution préprocesseur (build vanilla FR) ─────────────────
@@ -1291,8 +1322,17 @@ async function transpileOne(fileRel) {
   resetFileState(fileRel, targetsSingle() ? outArg : null);
   if (!fs.existsSync(cPath)) throw new Error(`introuvable : ${cPath}`);
   if (!rankMode) console.log(`— transpile ${cRel} → ${path.relative(REPO, outPath)}`);
-  if (fs.existsSync(outPath) && !force && !toStdout && !dryRun) {
-    console.error(`  REFUS : ${outPath} existe déjà (--force pour écraser).`);
+  if (mergeMode) {
+    if (!fs.existsSync(outPath)) {
+      console.error(`  REFUS --merge : ${outPath} n'existe pas (transpile normal sans --merge).`);
+      return null;
+    }
+    const parsed = parseExistingTs(outPath);
+    mergeNames = parsed.names;
+    mergeImported = parsed.imported;
+    console.log(`  --merge : ${mergeNames.size} défs top-level existantes, ${mergeImported.size} imports existants`);
+  } else if (fs.existsSync(outPath) && !force && !toStdout && !dryRun) {
+    console.error(`  REFUS : ${outPath} existe déjà (--force pour écraser, --merge pour compléter).`);
     return null;
   }
 
@@ -1379,6 +1419,7 @@ async function transpileOne(fileRel) {
         const name = n.childForFieldName('name').text;
         const valN = n.childForFieldName('value');
         if (!valN) break;
+        if (mergeMode && mergeNames.has(name)) { mergeSkipped++; break; }
         if (fieldAliases.has(name) || bareAliases.has(name)) { chunks.push(`// #define ${name} ${valN.text.trim()}  (alias — expansé aux usages)`); break; }
         const tsVal = emitDefineValue(valN.text.trim());
         chunks.push(`const ${name} = ${tsVal}; // 1:1 ${baseName}.c:${line(n)}`);
@@ -1399,15 +1440,32 @@ async function transpileOne(fileRel) {
       }
       case 'type_definition': case 'struct_specifier': case 'union_specifier': case 'enum_specifier': {
         const out = emitTypeDef(n);
-        if (out) { chunks.push(out); if (out.startsWith('interface') || out.includes('\ninterface')) interfaces.push(out); }
+        if (out) {
+          if (mergeMode) {
+            const m = out.match(/(?:interface|enum|type) ([A-Za-z_$][\w$]*)/);
+            if (m && mergeNames.has(m[1])) { mergeSkipped++; break; }
+          }
+          chunks.push(out); if (out.startsWith('interface') || out.includes('\ninterface')) interfaces.push(out);
+        }
         break;
       }
       case 'declaration': {
         const out = emitTopDecl(n);
-        if (out !== null) { chunks.push(out); nData++; }
+        if (out !== null) {
+          // --merge : skip si TOUTES les défs de la ligne existent déjà dans le .ts.
+          if (mergeMode) {
+            const declared = [...out.matchAll(/^(?:export )?(?:const|let|var|function) ([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
+            if (declared.length && declared.every((nm) => mergeNames.has(nm))) { mergeSkipped++; break; }
+          }
+          chunks.push(out); nData++;
+        }
         break;
       }
       case 'function_definition': {
+        if (mergeMode) {
+          const nameN = findFnName(n.childForFieldName('declarator'));
+          if (nameN && mergeNames.has(nameN.text)) { mergeSkipped++; break; }
+        }
         const out = emitFunction(n);
         if (out) { chunks.push(out); fns.push(out); nFns++; }
         break;
@@ -1438,7 +1496,19 @@ async function transpileOne(fileRel) {
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 `;
-  let body = header + '\n' + importBlock + '\n' + chunks.join('\n\n') + '\n';
+  let body;
+  if (mergeMode) {
+    // append au fichier existant : les imports ES peuvent apparaître après du
+    // code au top-level (hoistés) — légal. Le header standard n'est pas ré-émis.
+    const mergeSep = `\n// ═══════════════════════════════════════════════════════════════════════════
+// MERGE transpile-c : fns/data manquantes de ${baseName}.c (${mergeSkipped} défs
+// existantes préservées ci-dessus). Revue humaine OBLIGATOIRE avant commit —
+// rapport audit-reports/transpile/${baseName}.md.
+// ═══════════════════════════════════════════════════════════════════════════\n\n`;
+    body = fs.readFileSync(outPath, 'utf8') + mergeSep + importBlock + '\n' + chunks.join('\n\n') + '\n';
+  } else {
+    body = header + '\n' + importBlock + '\n' + chunks.join('\n\n') + '\n';
+  }
   // flat-union TVShow : seulement si la source utilise le type (tv.c, battle_tv.c…).
   if (/\bTVShow\b/.test(SRC)) {
     body = flattenTvShowUnions(body);
@@ -1448,7 +1518,7 @@ async function transpileOne(fileRel) {
   }
 
   // ─── rapport ───────────────────────────────────────────────────────────────
-  report.stats = { fns: nFns, data: nData, defines: nDefines, flags: report.flags.length, unresolved: report.unresolved.size, gtext: report.gtext.length };
+  report.stats = { fns: nFns, data: nData, defines: nDefines, flags: report.flags.length, unresolved: report.unresolved.size, gtext: report.gtext.length, mergeSkipped };
   const ranking = {
     file: cRel, fns: nFns, data: nData, defines: nDefines, flagCount: report.flags.length,
     unresolved: report.unresolved.size, unresolvedNames: [...report.unresolved.keys()],
@@ -1476,7 +1546,7 @@ ${report.gtext.map((g) => `- :${g.line} ${g.name}`).join('\n') || '(aucun)'}
 
   if (toStdout) console.log(body);
   else if (!dryRun) { fs.writeFileSync(outPath, body); console.log(`  écrit : ${outPath}`); }
-  console.log(`  ${nFns} fns · ${nData} data · ${nDefines} defines · ${report.flags.length} flags · ${report.unresolved.size} non-résolus`);
+  console.log(`  ${nFns} fns · ${nData} data · ${nDefines} defines · ${report.flags.length} flags · ${report.unresolved.size} non-résolus${mergeMode ? ` · ${mergeSkipped} défs existantes skippées (merge)` : ``}`);
   console.log(`  rapport : ${reportPath}`);
   return ranking;
 }
@@ -1723,6 +1793,8 @@ function resolveImports() {
   const index = symbolIndex;
   const JS_GLOBALS = new Set(['Math', 'Number', 'Array', 'Object', 'String', 'JSON', 'console', 'Uint8Array', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array', 'undefined', 'globalThis', 'Boolean', 'parseInt', 'NaN', 'Infinity']);
   for (const name of usedIdents) {
+    // --merge : le symbole est déjà défini ou importé dans le .ts existant.
+    if (mergeMode && (mergeNames.has(name) || mergeImported.has(name))) continue;
     if (localModuleNames.has(name) || JS_GLOBALS.has(name) || fieldAliases.has(name)) continue;
     if (localConstMap.has(name) && !localModuleNames.has(name)) {
       // constante d'un header décomp connue mais non importable → const locale documentée
