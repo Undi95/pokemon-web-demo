@@ -2975,6 +2975,27 @@ function SetUpFieldMove_Surf(): boolean {
   return false;
 }
 
+/** 1:1 décomp `SetUpFieldMove_Strength(void)` (fldeff_strength.c:18-28) :
+ *      if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_PUSHABLE_BOULDER) == TRUE) {
+ *          gSpecialVar_Result = GetCursorSelectionMonId();
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Strength;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  Helpers via globalThis (anti-cycle ESM, pattern Surf/Flash). */
+function SetUpFieldMove_Strength(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const check = g.__CheckObjectGraphicsInFrontOfPlayer as ((gfx: string) => boolean) | undefined;
+  if (check?.('OBJ_EVENT_GFX_PUSHABLE_BOULDER') === true) {
+    VarSet(0x800D /* gSpecialVar_Result */, GetCursorSelectionMonId());
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_Strength as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
 /** 1:1 décomp `SetUpFieldMove_Flash(void)` (fldeff_flash.c:73) :
  *      if (ShouldDoBrailleRegisteelEffect()) { ... }              // dette (tombe Registeel)
  *      else if (gMapHeader.cave == TRUE && !FlagGet(FLAG_SYS_USE_FLASH)) {
@@ -3279,6 +3300,7 @@ interface FieldMoveCursorCallback {
   msgId: string;
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
+  [FIELD_MOVE_STRENGTH]:    { fieldMoveFunc: SetUpFieldMove_Strength,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
   [FIELD_MOVE_TELEPORT]:    { fieldMoveFunc: SetUpFieldMove_Teleport,   msgId: 'gText_CantUseHere' },

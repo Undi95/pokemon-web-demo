@@ -54,6 +54,7 @@ import {
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
 import { FldEff_UseRockSmash } from './fldeff_rocksmash';
+import { FldEff_UseStrength } from './fldeff_strength';
 import { FldEff_SweetScent } from './fldeff_sweetscent';
 import { FldEff_UseTeleport } from './fldeff_teleport';
 import { FldEff_UseDig } from './fldeff_dig';
@@ -116,6 +117,7 @@ export const FLDEFF_USE_TELEPORT               = 63;
 export const FLDEFF_USE_DIG                    = 38;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_USE_WATERFALL              = 43;
+export const FLDEFF_USE_STRENGTH               = 40;
 export const FLDEFF_USE_DIVE                   = 44;
 export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
@@ -256,6 +258,7 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   [FLDEFF_USE_DIVE]:              [{ op: 'callnative', native: FldEff_UseDive }, { op: 'end' }],
   [FLDEFF_USE_CUT_ON_TREE]:       [{ op: 'callnative', native: FldEff_UseCutOnTree }, { op: 'end' }],
   [FLDEFF_USE_ROCK_SMASH]:        [{ op: 'callnative', native: FldEff_UseRockSmash }, { op: 'end' }],
+  [FLDEFF_USE_STRENGTH]:          [{ op: 'callnative', native: FldEff_UseStrength }, { op: 'end' }],
   [FLDEFF_SWEET_SCENT]:           [{ op: 'callnative', native: FldEff_SweetScent }, { op: 'end' }],
   [FLDEFF_USE_TELEPORT]:          [{ op: 'callnative', native: FldEff_UseTeleport }, { op: 'end' }],
   [FLDEFF_USE_DIG]:               [{ op: 'callnative', native: FldEff_UseDig }, { op: 'end' }],

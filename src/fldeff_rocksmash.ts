@@ -19,6 +19,9 @@ import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-
 import { ScriptContext_Enable } from './script';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_M_ROCK_THROW } from '../include/constants/songs';
+import { GetXYCoordsOneStepInFrontOfPlayer, PlayerGetElevation } from './field_player_avatar';
+import { GetObjectEventIdByPosition, gObjectEvents } from './event_object_movement';
+import { VarSet } from './event_data';
 
 /** 1:1 décomp `FLDEFF_USE_ROCK_SMASH = 37` (include/constants/field_effects.h). */
 const FLDEFF_USE_ROCK_SMASH = 37;
@@ -48,3 +51,26 @@ export function FldEff_UseRockSmash(_rt: DecompRuntime): number {
   CreateFieldMoveTask(FieldMove_RockSmash);
   return 0;  // FALSE
 }
+
+/** 1:1 STRICT décomp `bool8 CheckObjectGraphicsInFrontOfPlayer(u8 graphicsId)`
+ *  (fldeff_rocksmash.c:30-46) : object event à la case devant le joueur avec le
+ *  graphics demandé → pose gSpecialVar_LastTalked (0x800F) + TRUE. `graphicsId`
+ *  chez nous = clé string ('OBJ_EVENT_GFX_PUSHABLE_BOULDER'). Le décomp passe
+ *  par la global gPlayerFacingPosition — locals équivalents ici (aucun autre
+ *  lecteur ne dépend de la global entre deux appels). */
+export function CheckObjectGraphicsInFrontOfPlayer(graphicsId: string): boolean {
+  const { x, y } = GetXYCoordsOneStepInFrontOfPlayer();
+  const elevation = PlayerGetElevation();
+  const objEventId = GetObjectEventIdByPosition(x, y, elevation);
+  const npc = gObjectEvents[objEventId];
+  if (!npc || npc.graphicsId !== graphicsId) {
+    return false;
+  } else {
+    VarSet(0x800F /* gSpecialVar_LastTalked */, npc.localId);
+    return true;
+  }
+}
+
+// Pont globalThis (pattern __PartyHasMonWithSurf) : party_menu.SetUpFieldMove_Strength
+// ne peut pas importer ce module (cycle ESM party_menu ⇄ field/eom).
+(globalThis as Record<string, unknown>).__CheckObjectGraphicsInFrontOfPlayer = CheckObjectGraphicsInFrontOfPlayer;
