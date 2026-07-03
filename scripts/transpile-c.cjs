@@ -94,7 +94,10 @@ const SPRITE_DIMS = {
 function resolveSpriteDims(src) {
   return src
     .replace(/SPRITE_SHAPE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][0]} /* ${m} */` : m))
-    .replace(/SPRITE_SIZE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][1]} /* ${m} */` : m));
+    .replace(/SPRITE_SIZE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][1]} /* ${m} */` : m))
+    .replace(/\bALIGNED\(\d+\)\s*/g, '')                 // attribut alignement — sans objet en TS
+    .replace(/\b__attribute__\(\([^)]*\)\)\s*/g, '')     // attributs GCC
+    .replace(/\bUNUSED\s+/g, '');                        // macro UNUSED
 }
 
 // gSpecialVar_* → VarGet/VarSet (adaptation documentée : vars store byte-VM,
@@ -115,7 +118,9 @@ function specialVarGet(name) {
 }
 function specialVarSet(name, valueStr) {
   markUsed('VarSet');
-  return `VarSet(0x${SPECIAL_VARS[name].toString(16).toUpperCase()} /* ${name} */, ${valueStr})`;
+  // +() : coercition C-exacte (bool8 → 0/1 ; nombre inchangé)
+  const v = /^[0-9]+$|^0x[0-9a-fA-F]+$/.test(valueStr.trim()) ? valueStr : `+(${valueStr})`;
+  return `VarSet(0x${SPECIAL_VARS[name].toString(16).toUpperCase()} /* ${name} */, ${v})`;
 }
 
 function resolvePreproc(src) {
@@ -409,7 +414,7 @@ function tsTypeFor(cType, ptr, dims) {
     if (t === 'void') return { ts: 'any', kind: 'any' };
     if (SCALARS.has(t)) return { ts: t === 'u8' || t === 'char' ? 'Uint8Array' : TYPED_ARRAY[t] || 'any', kind: 'scalarptr', elem: t };
     if (BOOLS.has(t)) return { ts: 'any', kind: 'scalarptr', elem: t };
-    return { ts: tsNameForStruct(t), kind: 'structptr' };
+    return { ts: tsNameForStruct(t), kind: 'structptr', structName: t.replace(/^struct |^union |^enum /, '') };
   }
   if (t === 'void') return { ts: 'void', kind: 'void' };
   if (BOOLS.has(t)) return { ts: 'boolean', kind: 'bool' };
@@ -444,8 +449,12 @@ function emitExpr(n, ctx) {
   switch (n.type) {
     case 'identifier': {
       const name = n.text;
-      if (name === 'TRUE') return 'true';
-      if (name === 'FALSE') return 'false';
+      if (name === 'TRUE' || name === 'FALSE') {
+        // en comparaison (x == TRUE) → 1/0 (C : TRUE=1 ; évite number vs boolean)
+        const p = n.parent;
+        if (p && p.type === 'binary_expression') return name === 'TRUE' ? '1' : '0';
+        return name === 'TRUE' ? 'true' : 'false';
+      }
       if (name === 'NULL') return 'null';
       if (ctx && ctx.boxed.has(name)) return name + '.v';
       if (bareAliases.has(name)) return bareAliases.get(name); // #define sTimer sprite->data[0]
@@ -480,8 +489,25 @@ function emitExpr(n, ctx) {
       return n.text; // JS string littéral compatible
     case 'concatenated_string':
       return n.children.filter((c) => c.type === 'string_literal').map((c) => c.text).join(' + ');
-    case 'true': return 'true';
-    case 'false': return 'false';
+    case 'true': case 'false': {
+      // TRUE/FALSE (parsés en nœuds true/false par tree-sitter-c) :
+      // - comparaison (x == TRUE) → 1/0 (C : TRUE=1)
+      // - affectation dans data[i]/tableau → 1/0 (slots numériques)
+      // - sinon true/false (params/retours bool8 → boolean, convention repo)
+      const on = n.type === 'true' ? '1' : '0';
+      const off = n.type === 'true' ? 'true' : 'false';
+      const p = n.parent;
+      if (p && p.type === 'binary_expression') return on;
+      if (p && p.type === 'assignment_expression') {
+        const valueN = p.childForFieldName('right');
+        if (valueN && valueN.startIndex === n.startIndex) {
+          const left = p.childForFieldName('left');
+          if (left && (left.type === 'subscript_expression'
+            || (left.type === 'identifier' && bareAliases.has(left.text)))) return on; // data[N]
+        }
+      }
+      return off;
+    }
     case 'null': return 'null';
     case 'parenthesized_expression':
       return '(' + emitExpr(n.namedChildren[0], ctx) + ')';
@@ -496,7 +522,21 @@ function emitExpr(n, ctx) {
       if (op === '&') {
         // &x : struct/array → référence directe ; scalaire boxé → la box
         if (arg.type === 'identifier' && ctx && ctx.boxed.has(arg.text)) return arg.text;
-        if (arg.type === 'identifier' || arg.type === 'subscript_expression' || arg.type === 'field_expression')
+        if (arg.type === 'subscript_expression') {
+          // &arr[i] : élément struct → référence OK ; élément SCALAIRE (data[4]…)
+          // → passage par valeur silencieusement FAUX → flag
+          const base = arg.childForFieldName('argument');
+          const bi = base && base.type === 'identifier' && ctx ? ctx.types.get(base.text) || moduleDataTypes.get(base.text) : null;
+          const KNOWN_STRUCT_ARRAYS = new Set(['gObjectEvents', 'gPlayerParty', 'gEnemyParty', 'gTasks', 'gSprites', 'gBattleMons', 'gSaveBlock1Ptr']);
+          const isStructArray = (bi && (bi.kind === 'array' || bi.kind === 'struct'))
+            || (base && base.type === 'identifier' && KNOWN_STRUCT_ARRAYS.has(base.text));
+          if (!isStructArray) {
+            flag(line(n), 'adresse-element', n.text.slice(0, 60));
+            return emitExpr(arg, ctx) + ' /* TRANSPILER-TODO &élément scalaire (out-param ?) */';
+          }
+          return emitExpr(arg, ctx);
+        }
+        if (arg.type === 'identifier' || arg.type === 'field_expression')
           return emitExpr(arg, ctx);
         flag(line(n), 'adresse', n.text.slice(0, 60));
         return emitExpr(arg, ctx) + ' /* TRANSPILER-TODO & */';
@@ -526,12 +566,19 @@ function emitExpr(n, ctx) {
     case 'assignment_expression': {
       const l = n.childForFieldName('left'), r = n.childForFieldName('right');
       const op = n.childForFieldName('operator').text;
-      const rs = emitExpr(r, ctx);
+      let rs = emitExpr(r, ctx);
       // gSpecialVar_X = / += / |= … → VarSet (adaptation vars store byte-VM)
       if (l.type === 'identifier' && SPECIAL_VARS[l.text] !== undefined && !localModuleNames.has(l.text)) {
         const name = l.text;
         if (op === '=') return specialVarSet(name, rs);
         return specialVarSet(name, `${specialVarGet(name)} ${op.slice(0, -1)} ${rs}`);
+      }
+      // bool8 → slot numérique (data[N] = goingUp) : coercition C-exacte +()
+      const leftIsDataSlot = l.type === 'subscript_expression'
+        || (l.type === 'identifier' && bareAliases.has(l.text));
+      if (leftIsDataSlot && op === '=' && r.type === 'identifier' && ctx) {
+        const rti = ctx.types.get(r.text);
+        if (rti && rti.kind === 'bool') rs = `+(${rs})`;
       }
       const ls = emitExpr(l, ctx);
       if (op === '/=') return `${ls} = Math.trunc(${ls} / ${rs})`;
@@ -561,6 +608,20 @@ function emitExpr(n, ctx) {
       const fn = n.childForFieldName('function');
       const args = n.childForFieldName('arguments');
       const argList = args.namedChildren.filter((c) => c.type !== 'comment').map((c) => emitExpr(c, ctx));
+      // « (u8)(expr) » mal parsé en call : fn = (identifiant type scalaire) → CAST
+      if (fn.type === 'parenthesized_expression' && fn.namedChildren.length === 1
+        && fn.namedChildren[0].type === 'identifier'
+        && (SCALARS.has(fn.namedChildren[0].text) || BOOLS.has(fn.namedChildren[0].text))) {
+        const t = fn.namedChildren[0].text;
+        const v = argList.join(', ');
+        const CASTS = {
+          u8: `((${v}) & 0xFF)`, s8: `(((${v}) << 24) >> 24)`,
+          u16: `((${v}) & 0xFFFF)`, s16: `(((${v}) << 16) >> 16)`,
+          u32: `((${v}) >>> 0)`, s32: `((${v}) | 0)`, int: `((${v}) | 0)`,
+          bool8: `!!(${v})`, bool16: `!!(${v})`, bool32: `!!(${v})`, bool: `!!(${v})`,
+        };
+        if (CASTS[t]) return CASTS[t];
+      }
       if (fn.type === 'identifier') {
         const name = fn.text;
         if (name === 'sizeof') return emitSizeof(n, ctx);
@@ -570,7 +631,8 @@ function emitExpr(n, ctx) {
           return `${argList[0]} = null /* ${name} — GC */`;
         if (name === 'Free' || name === 'FreeIfNotNull') return `void ${argList[0]} /* ${name} — GC */`;
         if (name === 'Alloc' || name === 'AllocZeroed') {
-          // Alloc(sizeof(struct X)) → objet zéro 1:1 (exemption malloc = GC côté TS)
+          // Alloc(sizeof(struct X)) / Alloc(sizeof(*sPtr)) → objet zéro 1:1
+          // (exemption malloc = GC côté TS)
           const rawArgs = args.namedChildren.filter((c) => c.type !== 'comment');
           const a0 = rawArgs[0];
           if (rawArgs.length === 1 && a0 && a0.type === 'sizeof_expression') {
@@ -579,6 +641,20 @@ function emitExpr(n, ctx) {
               const bare = typeN.text.replace(/\s+/g, ' ').replace(/^const /, '').replace(/^struct |^union /, '').trim();
               const z = zeroObjectFor(bare);
               if (z) return `(${z}) /* ${name}(sizeof(${typeN.text.replace(/\s+/g, ' ')})) */`;
+            }
+            // sizeof(*sPtr) : struct pointée par une var connue
+            const valN = a0.childForFieldName('value');
+            const deref = valN && (valN.type === 'pointer_expression' ? valN
+              : valN.type === 'parenthesized_expression' && valN.namedChildren[0] && valN.namedChildren[0].type === 'pointer_expression' ? valN.namedChildren[0] : null);
+            if (deref && deref.child(0).text === '*') {
+              const target = deref.childForFieldName('argument');
+              if (target && target.type === 'identifier') {
+                const ti = (ctx && ctx.types.get(target.text)) || moduleDataTypes.get(target.text);
+                if (ti && ti.structName) {
+                  const z = zeroObjectFor(ti.structName);
+                  if (z) return `(${z}) /* ${name}(sizeof(*${target.text})) */`;
+                }
+              }
             }
           }
           flag(line(n), 'alloc', n.text.slice(0, 60));
@@ -608,7 +684,12 @@ function emitExpr(n, ctx) {
     case 'field_expression': {
       const arg = n.childForFieldName('argument');
       const field = n.childForFieldName('field').text;
-      const as = emitExpr(arg, ctx);
+      let as = emitExpr(arg, ctx);
+      // static pointeur NULL-init (EWRAM) : accès membre → sFoo! (flux 1:1 = alloué avant usage)
+      if (arg.type === 'identifier' && !(ctx && ctx.types.has(arg.text))) {
+        const mt = moduleDataTypes.get(arg.text);
+        if (mt && mt.kind === 'structptr') as = as + '!';
+      }
       if (fieldAliases.has(field)) return `${as}.${fieldAliases.get(field)}`;
       return `${as}.${field}`;
     }
@@ -746,7 +827,7 @@ function emitStatement(n, ctx, depth) {
         const valueN = c.childForFieldName('value');
         const label = valueN ? `case ${emitExpr(valueN, ctx)}:` : 'default:';
         const stmts = c.namedChildren
-          .filter((s) => s !== valueN)
+          .filter((s) => !valueN || s.startIndex !== valueN.startIndex)
           .map((s) => emitStatement(s, ctx, depth + 2))
           .filter((s) => s !== null);
         return indentOf(depth + 1) + label + (stmts.length ? '\n' + stmts.join('\n') : '');
@@ -773,9 +854,11 @@ function emitStatement(n, ctx, depth) {
       const inner = n.namedChildren.filter((c) => c.type !== 'statement_identifier').map((c) => emitStatement(c, ctx, depth)).join('\n');
       return ind + `/* TRANSPILER-TODO label ${n.childForFieldName('label') ? n.childForFieldName('label').text : ''}: */\n` + inner;
     }
-    case 'preproc_call': case 'preproc_def': case 'preproc_function_def':
+    case 'preproc_call': case 'preproc_def': case 'preproc_function_def': {
+      if (/^\s*#\s*undef\b/.test(n.text)) return null; // #undef alias : scoping C, sans objet
       flag(line(n), 'preproc-in-fn', n.text.split('\n')[0]);
       return ind + `/* TRANSPILER-TODO ${n.text.split('\n')[0]} */`;
+    }
     case ';': case '{': case '}': return null;
     default:
       if (!n.isNamed) return null;
@@ -798,7 +881,7 @@ function emitLocalDecl(n, ctx, depth) {
   const outs = [];
   if (/^\s*static\b/.test(n.text)) flag(line(n), 'static-local', n.text.split('\n')[0].slice(0, 60));
   for (const d of n.namedChildren) {
-    if (d === typeN || d.type === 'comment') { if (d.type === 'comment') outs.push(ind + d.text); continue; }
+    if ((typeN && d.startIndex === typeN.startIndex) || d.type === 'comment') { if (d.type === 'comment') outs.push(ind + d.text); continue; }
     const info = analyzeDeclarator(d, baseType);
     if (!info) continue;
     const { name, ptr, dims, initN } = info;
@@ -975,13 +1058,15 @@ function emitInitValue(n, fieldInfo, ctx, depth, elemStructType) {
     return emitInitList(n, t, ctx, depth + 1);
   }
   let v = emitExpr(n, ctx);
-  // wrap C : littéral négatif stocké dans un champ non-signé (u16 flag = -1 → 0xFFFF)
   if (fieldInfo && !fieldInfo.ptr && !fieldInfo.dims) {
     const base = fieldInfo.type.replace(/^const /, '').trim();
+    // wrap C : littéral négatif stocké dans un champ non-signé (u16 flag = -1 → 0xFFFF)
     if (UNSIGNED.has(base) && /^-\d/.test(v.trim())) {
       const bits = base === 'u8' ? 0xFF : base === 'u16' ? 0xFFFF : null;
       v = bits !== null ? `(${v} & 0x${bits.toString(16).toUpperCase()}) /* wrap C ${base} */` : `((${v}) >>> 0) /* wrap C u32 */`;
     }
+    // TRUE/FALSE dans un champ numérique → 1/0
+    if (SCALARS.has(base) && (v === 'true' || v === 'false')) v = v === 'true' ? '1' : '0';
   }
   return v;
 }
@@ -1009,7 +1094,7 @@ function prescanLocalTypes(fnBody, ctx) {
       const typeN = n.childForFieldName('type');
       const baseType = typeN ? typeN.text : 'int';
       for (const d of n.namedChildren) {
-        if (d === typeN) continue;
+        if (typeN && d.startIndex === typeN.startIndex) continue;
         const info = analyzeDeclarator(d, baseType);
         if (info) {
           const ti = tsTypeFor(baseType, info.ptr, info.dims.length ? info.dims : null);
@@ -1101,7 +1186,7 @@ async function transpileOne(fileRel) {
     } else if (n.type === 'declaration') {
       const typeN = n.childForFieldName('type');
       for (const d of n.namedChildren) {
-        if (d === typeN) continue;
+        if (typeN && d.startIndex === typeN.startIndex) continue;
         const info = analyzeDeclarator(d, typeN ? typeN.text : 'int');
         if (info) localModuleNames.add(info.name);
       }
@@ -1131,8 +1216,14 @@ async function transpileOne(fileRel) {
       if (!valN) { localModuleNames.delete(name); continue; }
       const valTxt = valN.text.trim();
       // alias champ : #define tState data[1] → usage `gTasks[i].tState` (après un point)
+      // ET usage nu `tState` (fns avec local `s16 *data = gTasks[taskId].data`)
       const aliasM = valTxt.match(/^data\[(\w+)\]$/);
-      if (aliasM) { fieldAliases.set(name, `data[${aliasM[1]}] /* ${name} */`); localModuleNames.delete(name); continue; }
+      if (aliasM) {
+        fieldAliases.set(name, `data[${aliasM[1]}] /* ${name} */`);
+        bareAliases.set(name, `data[${aliasM[1]}] /* ${name} */`);
+        localModuleNames.delete(name);
+        continue;
+      }
       // alias nu : #define sTimer sprite->data[0] / #define tX gTasks[taskId].data[2]
       const bareM = valTxt.match(/^(\w+(?:\[\w+\])?(?:->|\.)\w+(?:\[\w+\])*(?:(?:->|\.)\w+(?:\[\w+\])*)*)$/);
       if (bareM && /(->|\.)/.test(valTxt)) {
@@ -1191,6 +1282,9 @@ async function transpileOne(fileRel) {
         if (out) { chunks.push(out); fns.push(out); nFns++; }
         break;
       }
+      case 'preproc_call':
+        if (!/^\s*#\s*undef\b/.test(n.text)) flag(line(n), 'top-level-inconnu', n.text.split('\n')[0]);
+        break;
       case 'ERROR':
         flag(line(n), 'parse-error', n.text.slice(0, 100));
         chunks.push(`/* TRANSPILER-TODO parse-error (${baseName}.c:${line(n)}) :\n${n.text.slice(0, 400)}\n*/`);
@@ -1334,7 +1428,7 @@ function emitTopDecl(n) {
   const isStatic = /^\s*static\b/.test(txt);
   const outs = [];
   for (const d of n.namedChildren) {
-    if (d === typeN) continue;
+    if (typeN && d.startIndex === typeN.startIndex) continue;
     if (d.type === 'comment') { outs.push(d.text); continue; }
     const info = analyzeDeclarator(d, baseType);
     if (!info) {

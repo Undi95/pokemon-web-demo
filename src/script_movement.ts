@@ -276,6 +276,7 @@ import {
   ObjectEventSetHeldMovement,
   FreezeObjectEvent,
   UnfreezeObjectEvent,
+  TryGetObjectEventIdByLocalIdAndMap,
 } from './event_object_movement';
 
 /** 1:1 décomp `OBJECT_EVENTS_COUNT` (= include/constants/global.h) : max 16
@@ -452,37 +453,28 @@ export function ScriptMovement_MoveObjects(): void {
 }
 
 /** 1:1 décomp `ScriptMovement_StartObjectMovementScript(localId, mapNum, mapGroup, script)`
- *  (script_movement.c:21) :
- *    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))
- *      return TRUE;
- *    if (!FuncIsActiveTask(ScriptMovement_MoveObjects))
- *      ScriptMovement_StartMoveObjects(50);
- *    return ScriptMovement_TryAddNewMovement(taskId, objEventId, script);
- *
- *  Notre TS : `objEventId` passé direct (= caller a déjà résolu). Returns
- *  TRUE si refused / failed, FALSE si accepté. */
-export function ScriptMovement_StartObjectMovementScript(objEventId: number, script: Uint8Array): boolean {
-  if (objEventId < 0 || objEventId >= gObjectEvents.length) return true;
-  const npc = gObjectEvents[objEventId];
-  if (!npc || !npc.active) return true;
+ *  (script_movement.c:21) — signature 1:1 restaurée (fix drift : l'ancienne
+ *  version prenait un objEventId déjà résolu ; la décomp résout via
+ *  TryGetObjectEventIdByLocalIdAndMap, ce qui couvre les localIds spéciaux
+ *  LOCALID_PLAYER/CAMERA). Returns TRUE si refused/failed, FALSE si accepté. */
+export function ScriptMovement_StartObjectMovementScript(
+  localId: number, mapNum: number, mapGroup: number, movementScript: Uint8Array,
+): boolean {
+  const r = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (r.notFound) return true;
   if (!_scriptMovementTaskActive) {
     _ScriptMovement_StartMoveObjects();
   }
-  return _ScriptMovement_TryAddNewMovement(objEventId, script);
+  return _ScriptMovement_TryAddNewMovement(r.objectEventId, movementScript);
 }
 
 /** 1:1 décomp `ScriptMovement_IsObjectMovementFinished(localId, mapNum, mapGroup)`
- *  (script_movement.c:32) :
- *    if (TryGetObjectEventIdByLocalIdAndMap) return TRUE;  // NPC absent → finished
- *    moveScrId = GetMovementScriptIdFromObjectEventId;
- *    if (moveScrId == OBJECT_EVENTS_COUNT) return TRUE;  // pas de queue → finished
- *    return IsMovementScriptFinished(taskId, moveScrId); */
-export function ScriptMovement_IsObjectMovementFinished(objEventId: number): boolean {
-  if (objEventId < 0 || objEventId >= gObjectEvents.length) return true;
-  const npc = gObjectEvents[objEventId];
-  if (!npc || !npc.active) return true;
+ *  (script_movement.c:32) — signature 1:1 restaurée (fix drift objEventId). */
+export function ScriptMovement_IsObjectMovementFinished(localId: number, mapNum: number, mapGroup: number): boolean {
+  const r = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (r.notFound) return true;
   if (!_scriptMovementTaskActive) return true;
-  const moveScrId = _GetMovementScriptIdFromObjectEventId(objEventId);
+  const moveScrId = _GetMovementScriptIdFromObjectEventId(r.objectEventId);
   if (moveScrId === OBJECT_EVENTS_COUNT) return true;
   return _IsMovementScriptFinishedBitmask(moveScrId);
 }

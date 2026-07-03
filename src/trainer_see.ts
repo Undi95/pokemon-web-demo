@@ -845,11 +845,12 @@ export function GetChosenApproachingTrainerObjectEventId(arrayId: number): numbe
   else return gApproachingTrainers[1].objectEventId;
 }
 
-/** 1:1 décomp `PlayerFaceTrainerAfterBattle(void)` (trainer_see.c:794). Adaptation
- *  modèle : la décomp appelle `ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER,
- *  mapNum, mapGroup, script)` (résout localId→objEventId en interne) ; notre port prend
- *  l'objEventId direct (= gPlayerAvatar.objectEventId, le player) + un Uint8Array de
- *  movement action IDs. SetMovingNpcId(LOCALID_PLAYER) pose l'id attendu par waitmovement. */
+/** 1:1 décomp `PlayerFaceTrainerAfterBattle(void)` (trainer_see.c:794). La décomp
+ *  appelle `ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, mapNum, mapGroup,
+ *  script)` (résolution localId→objEventId interne, signature 1:1 restaurée) ; on
+ *  passe par l'identité de l'object event joueur (équivalent, robuste au localId
+ *  effectif du player spawn). SetMovingNpcId(LOCALID_PLAYER) pose l'id attendu
+ *  par waitmovement. */
 const LOCALID_PLAYER = 255;
 export function PlayerFaceTrainerAfterBattle(): void {
   let objEvent: ObjectEvent;
@@ -862,7 +863,9 @@ export function PlayerFaceTrainerAfterBattle(): void {
     gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(objEvent.facingDirection);
     gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;
   }
+  const playerObj = gObjectEvents[gPlayerAvatar.objectEventId];
   ScriptMovement_StartObjectMovementScript(
-    gPlayerAvatar.objectEventId, Uint8Array.from([gPostBattleMovementScript[0], gPostBattleMovementScript[1]]));
+    playerObj.localId, playerObj.mapNum, playerObj.mapGroup,
+    Uint8Array.from([gPostBattleMovementScript[0], gPostBattleMovementScript[1]]));
   _setMovingNpcId(LOCALID_PLAYER);
 }

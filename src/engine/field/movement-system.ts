@@ -91,7 +91,10 @@ export function applyMovement(targetLocalId: string, movementLabelOrActions: str
     console.warn(`[movement-system] applyMovement : actions non mappables ${JSON.stringify(actions)}`);
     return;
   }
-  ScriptMovement_StartObjectMovementScript(objEventId, script);
+  // Signature 1:1 restaurée (localId, mapNum, mapGroup) — on repasse par
+  // l'identité de l'object event résolu (localIds spéciaux inclus).
+  const npc = gObjectEvents[objEventId];
+  ScriptMovement_StartObjectMovementScript(npc.localId, npc.mapNum, npc.mapGroup, script);
 }
 
 /** True si la queue ScriptMovement pour targetLocalId est done (= no-op si absent). */
@@ -102,7 +105,8 @@ export function isMovementDone(targetLocalId: string): boolean {
     ? gPlayerAvatar.objectEventId
     : (target.npc ? gObjectEvents.indexOf(target.npc) : -1);
   if (objEventId < 0) return true;
-  return ScriptMovement_IsObjectMovementFinished(objEventId);
+  const npc = gObjectEvents[objEventId];
+  return ScriptMovement_IsObjectMovementFinished(npc.localId, npc.mapNum, npc.mapGroup);
 }
 
 /** True si TOUTES les queues ScriptMovement sont done. Used par `waitmovement 0`. */
@@ -110,7 +114,7 @@ export function isAllMovementsDone(): boolean {
   for (let i = 0; i < gObjectEvents.length; i++) {
     const npc = gObjectEvents[i];
     if (!npc || !npc.active) continue;
-    if (!ScriptMovement_IsObjectMovementFinished(i)) return false;
+    if (!ScriptMovement_IsObjectMovementFinished(npc.localId, npc.mapNum, npc.mapGroup)) return false;
   }
   return true;
 }

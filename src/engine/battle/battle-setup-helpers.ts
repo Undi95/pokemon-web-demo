@@ -247,8 +247,10 @@ export function BattleSetup_StartScriptedWildBattle(): void {
   // 1:1 décomp l.494 : CreateBattleStartTask(GetWildBattleTransition(), 0) + (l.407 modèle)
   // gMain.savedCallback = retour OW. bootDecompBattleLoop(true) encapsule les deux (1:1 CreateWildMon).
   bootDecompBattleLoop(true);
-  // DETTE 1:1 (hors démo) : IncrementGameStat(GAME_STAT_TOTAL_BATTLES/WILD_BATTLES) +
-  // IncrementDailyWildBattles + TryUpdateGymLeaderRematchFromWild (stats/rematch) — non portés.
+  // 1:1 l.495-498 : stats TOTAL/WILD + TryUpdateGymLeaderRematchFromWild — pont
+  // globalThis posé par battle_setup.ts (cycle scrcmd ⇄ battle_setup interdit).
+  // (IncrementDailyWildBattles = dette TV wave.)
+  ((globalThis as Record<string, unknown>).__WildBattleStatsHook as (() => void) | undefined)?.();
 }
 
 /** 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:930-948) — entrée du 1er combat

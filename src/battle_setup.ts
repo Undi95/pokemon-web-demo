@@ -59,6 +59,9 @@ import { resolveTrainerNumId, ensureGTrainersLoaded } from './engine/battle/batt
 import {
   setTrainerBattleOpponentA, setTrainerBattleOpponentB, setBattleOutcome, gBattleOutcome,
 } from './engine/battle/state';
+import { IncrementGameStat, GetGameStat } from './field_player_avatar';
+import { GAME_STAT_TOTAL_BATTLES, GAME_STAT_WILD_BATTLES, GAME_STAT_TRAINER_BATTLES } from '../include/constants/game_stat';
+import { UpdateGymLeaderRematch } from './gym_leader_rematch';
 
 // ─── Modes 1:1 décomp `include/battle_setup.h` (TRAINER_BATTLE_*) ───────────
 export const TRAINER_BATTLE_SINGLE = 0;
@@ -474,13 +477,40 @@ export function ClearTrainerFlag(trainerId: number): void {
   FlagClear(TRAINER_FLAGS_START + trainerId);
 }
 
+/** 1:1 décomp `static void TryUpdateGymLeaderRematchFromWild(void)` (battle_setup.c:956-960). */
+export function TryUpdateGymLeaderRematchFromWild(): void {
+  if (GetGameStat(GAME_STAT_WILD_BATTLES) % 60 === 0)
+    UpdateGymLeaderRematch();
+}
+
+/** Hook stats+rematch des combats sauvages (1:1 battle_setup.c:415-418/:495-498 :
+ *  IncrementGameStat TOTAL/WILD + TryUpdateGymLeaderRematchFromWild). Pont
+ *  globalThis : battle-setup-helpers/wild_encounter ne peuvent pas importer
+ *  battle_setup (cycle scrcmd ⇄ battle_setup, cf. leçon P2.3).
+ *  (IncrementDailyWildBattles = dette TV wave.) */
+export function WildBattleStatsHook(): void {
+  IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
+  IncrementGameStat(GAME_STAT_WILD_BATTLES);
+  TryUpdateGymLeaderRematchFromWild();
+}
+(globalThis as Record<string, unknown>).__WildBattleStatsHook = WildBattleStatsHook;
+
+/** 1:1 décomp `static void TryUpdateGymLeaderRematchFromTrainer(void)` (battle_setup.c:962-966). */
+export function TryUpdateGymLeaderRematchFromTrainer(): void {
+  if (GetGameStat(GAME_STAT_TRAINER_BATTLES) % 20 === 0)
+    UpdateGymLeaderRematch();
+}
+
 /** 1:1 décomp `DoTrainerBattle()` (battle_setup.c:459-465) :
  *  CreateBattleStartTask(GetTrainerBattleTransition(), 0) + stats + rematch update.
  *  Notre port : BattleSetup_StartTrainerBattle (battle-setup-helpers.ts:290, C5
  *  validé) = BATTLE_TYPE_TRAINER + sTrainerADefeatSpeech + bootDecompBattleLoop
- *  (transition + savedCallback retour OW). Stats/rematch = dette (cf. wild). */
+ *  (transition + savedCallback retour OW). Stats + rematch payés 1:1 (:462-464). */
 export function DoTrainerBattle(): void {
   BattleSetup_StartTrainerBattle(sTrainerADefeatSpeech ?? undefined);
+  IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
+  IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
+  TryUpdateGymLeaderRematchFromTrainer();
 }
 
 /** 1:1 décomp `CB2_EndTrainerBattle()` (battle_setup.c:1327-1349) — la partie
@@ -835,10 +865,11 @@ export const gRematchTable: readonly RematchTrainerEntry[] = [
 ];
 
 /** Entrée résolue en numérique (trainerIds via resolveTrainerNumId, map via
- *  MAP_CONSTANTS → group/num 1:1 MAP_GROUP/MAP_NUM). */
+ *  MAP_CONSTANTS → group/num 1:1 MAP_GROUP/MAP_NUM). Exporté pour les autres
+ *  consommateurs de gRematchTable (gym_leader_rematch.ts). */
 interface ResolvedRematch { trainerIds: number[]; mapGroup: number; mapNum: number }
 let _rematchResolvedCache: ResolvedRematch[] | null = null;
-function _rematchTable(): ResolvedRematch[] {
+export function _rematchTable(): ResolvedRematch[] {
   if (_rematchResolvedCache) return _rematchResolvedCache;
   _rematchResolvedCache = gRematchTable.map((e) => {
     const mapConst = MAP_CONSTANTS[e.map] ?? 0xFFFF;

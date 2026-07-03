@@ -542,6 +542,9 @@ function CreateWildMon(species: string, level: number): void {
   // Lv2 infuyable. Le reset complet à 0 (= la décomp) efface FIRST_BATTLE/TRAINER/etc.
   setBattleTypeFlags(0);
   bootDecompBattleLoop(true);
+  // 1:1 battle_setup.c:415-418 : stats TOTAL/WILD + TryUpdateGymLeaderRematchFromWild
+  // (pont globalThis posé par battle_setup.ts — cycle d'import interdit).
+  ((globalThis as Record<string, unknown>).__WildBattleStatsHook as (() => void) | undefined)?.();
 }
 
 /** 1:1 décomp `TryGetRandomWildMonIndexByType` (wild_encounter.c:915-934) : parmi

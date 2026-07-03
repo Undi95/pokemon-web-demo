@@ -1095,12 +1095,30 @@ export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
 /** 1:1 décomp `GetObjectEventIdByLocalIdAndMapInternal` (event_object_movement.c:1263).
  *  Cherche l'object event actif par (localId, mapNum, mapGroup). Retourne
  *  OBJECT_EVENTS_COUNT si absent. */
-export function GetObjectEventIdByLocalIdAndMap(localId: number, mapNum: number, mapGroup: number): number {
+function GetObjectEventIdByLocalIdAndMapInternal(localId: number, mapNum: number, mapGroup: number): number {
   for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
     const o = gObjectEvents[i];
     if (o.active && o.localId === localId && o.mapNum === mapNum && o.mapGroup === mapGroup) return i;
   }
   return OBJECT_EVENTS_COUNT;
+}
+
+/** 1:1 décomp `static u8 GetObjectEventIdByLocalId(u8 localId)` (event_object_movement.c:1275)
+ *  — lookup par localId seul (ids spéciaux ≥ LOCALID_PLAYER : joueur/caméra). */
+function GetObjectEventIdByLocalId(localId: number): number {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    if (gObjectEvents[i].active && gObjectEvents[i].localId === localId) return i;
+  }
+  return OBJECT_EVENTS_COUNT;
+}
+
+/** 1:1 décomp `u8 GetObjectEventIdByLocalIdAndMap(u8, u8, u8)` (event_object_movement.c:1234).
+ *  (Fix drift : l'ancienne version implémentait Internal SANS le dispatch des
+ *  localIds spéciaux — LOCALID_PLAYER=0xFF ne résolvait jamais le joueur.) */
+export function GetObjectEventIdByLocalIdAndMap(localId: number, mapNum: number, mapGroup: number): number {
+  if (localId < 0xFF /* LOCALID_PLAYER */)
+    return GetObjectEventIdByLocalIdAndMapInternal(localId, mapNum, mapGroup);
+  return GetObjectEventIdByLocalId(localId);
 }
 
 /** 1:1 décomp `TryGetObjectEventIdByLocalIdAndMap` (event_object_movement.c:1242).

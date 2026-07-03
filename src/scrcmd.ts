@@ -29,6 +29,7 @@ import { DecorationRemove, CheckHasDecoration } from './decoration_inventory';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
+import { InitRotatingTilePuzzle, FreeRotatingTilePuzzle, MoveRotatingTileObjects, TurnRotatingTileObjects } from './rotating_tile_puzzle';
 import { setPendingWarp, SetDynamicWarp, getPendingWarp } from './engine/field/warp-system';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
@@ -508,10 +509,11 @@ const ScrCmd_buffercontestname: ScrCmdFunc = (ctx) => { const idx = ScriptReadBy
 //     wondercard) : STUBS identiques au moteur parsé (dette documentée, partagée), consommation
 //     d'octets 1:1 pour préserver l'alignement du curseur. ──
 const ScrCmd_playslotmachine: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); let f = 0; SetupNativeScript(ctx, () => { f++; return f >= 1; }); return true; };  // :1914
-const ScrCmd_initrotatingtilepuzzle: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); return false; };   // :2172
-const ScrCmd_moverotatingtileobjects: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx)); return false; };  // :2158
-const ScrCmd_turnrotatingtileobjects: ScrCmdFunc = () => false;   // :2166 (0 arg)
-const ScrCmd_freerotatingtilepuzzle: ScrCmdFunc = () => false;    // :2180 (0 arg)
+// rotating-tile puzzle : câblé 1:1 → src/rotating_tile_puzzle.ts (transpilé, vague A1)
+const ScrCmd_initrotatingtilepuzzle: ScrCmdFunc = (ctx) => { const isTrickHouse = VarGet(ScriptReadHalfword(ctx)); InitRotatingTilePuzzle(!!isTrickHouse); return false; };   // :2172
+const ScrCmd_moverotatingtileobjects: ScrCmdFunc = (ctx) => { const puzzleNumber = VarGet(ScriptReadHalfword(ctx)); SetMovingNpcId(MoveRotatingTileObjects(puzzleNumber)); return false; };  // :2158
+const ScrCmd_turnrotatingtileobjects: ScrCmdFunc = () => { TurnRotatingTileObjects(); return false; };   // :2166
+const ScrCmd_freerotatingtilepuzzle: ScrCmdFunc = () => { FreeRotatingTilePuzzle(); return false; };     // :2180
 const ScrCmd_showcontestpainting: ScrCmdFunc = (ctx) => { ScriptReadByte(ctx); return false; };  // :1468 (contestWinnerId u8)
 const ScrCmd_choosecontestmon: ScrCmdFunc = () => false;          // :1944 (0 arg)
 const ScrCmd_startcontest: ScrCmdFunc = () => false;              // :1952 (0 arg)
