@@ -24,6 +24,14 @@ import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCu
 import type { WindowTemplate } from './window';
 import { VarSet } from './event_data';
 import { VAR_RESULT } from '../include/constants/vars';
+import { GetStringWidth } from './text';
+import { FONT_NORMAL } from '../include/text';
+import { MAX_MULTICHOICE_WIDTH } from '../include/constants/script_menu';
+
+/** 1:1 décomp `int ConvertPixelWidthToTileWidth(int width)` (script_menu.c:743). */
+export function ConvertPixelWidthToTileWidth(width: number): number {
+  return (Math.trunc((width + 9) / 8) + 1) > MAX_MULTICHOICE_WIDTH ? MAX_MULTICHOICE_WIDTH : (Math.trunc((width + 9) / 8) + 1);
+}
 
 interface RawMultichoiceData {
   lists: Record<string, string[]>;     // MultichoiceList_X → [gText_A, gText_B, ...]
@@ -118,10 +126,14 @@ let _multichoiceWindowId = -1;
 function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8Array)[], cursorPos: number): void {
   const count = items.length;
   if (count === 0) return;
-  // Estimate width : max len of items (= 1:1 décomp DisplayTextAndGetWidth + ConvertPixelWidthToTileWidth).
-  let maxChars = 4;
-  for (const t of items) { const len = (t ?? '').length; if (len > maxChars) maxChars = len; }
-  const width = Math.max(5, Math.min(28, Math.ceil(maxChars * 0.7) + 2));
+  // 1:1 décomp DrawMultichoiceMenuInternal : width = max(GetStringWidth(FONT_NORMAL, item))
+  // par item puis ConvertPixelWidthToTileWidth (script_menu.c:104-106).
+  let maxPixels = 0;
+  for (const t of items) {
+    const w = GetStringWidth(t ?? '', FONT_NORMAL, 0);
+    if (w > maxPixels) maxPixels = w;
+  }
+  const width = ConvertPixelWidthToTileWidth(maxPixels);
   const tmpl: WindowTemplate = { bg: 0, tilemapLeft: left, tilemapTop: top, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
   _multichoiceWindowId = AddWindow(tmpl);
   DrawStdFrameWithCustomTileAndPalette(_multichoiceWindowId, true, 0x214, 14);
