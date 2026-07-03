@@ -97,6 +97,14 @@ registerAffineAnim('sAffineAnim_Battler_Return', {
   terminator: 'END',
 });
 
+// sprite.c:177-179 — gDummySpriteAffineAnimTable = { &sDummyAffineAnim } où
+// sDummyAffineAnim = { AFFINE_ANIM_END } : une anim vide, END immédiat.
+// (Consommée via le NOM exporté par src/sprite.ts — kernel transpiler.)
+registerAffineAnim('sDummyAffineAnim', { frames: [], terminator: 'END' });
+registerAffineAnimTable('gDummySpriteAffineAnimTable', {
+  affineAnims: ['sDummyAffineAnim'],
+});
+
 // src/data.c:198 — gAffineAnims_BattleSpritePlayerSide
 // The first three indices are explicitly named (NORMAL=0, EMERGE=1, RETURN=2).
 // We only need those three for non-battle scenes; battle adds 6 more (squish,

@@ -36,6 +36,7 @@
  *   au VBlank (= compositor read).
  */
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
+import { makeStateProxy } from '../harness/runtime/state-proxy';
 
 // ─── Constantes 1:1 décomp include/palette.h ────────────────────────────────
 
@@ -79,6 +80,18 @@ function _rt(): DecompRuntime {
   if (!_runtimeGetter) throw new Error('palette.ts: runtime not wired (call _setPaletteRuntimeGetter)');
   return _runtimeGetter();
 }
+
+// ─── Globals 1:1 (kernel transpiler) ─────────────────────────────────────────
+// Proxys paresseux vers l'état runtime (makeStateProxy = zéro import, anti-cycle).
+// Le code miroir/transpilé lit `gPaletteFade.active` / `gPlttBufferFaded[i]`
+// exactement comme la décomp.
+
+/** 1:1 décomp `gPaletteFade` (palette.c). */
+export const gPaletteFade = makeStateProxy<Record<string, number | boolean>>(() => _rt(), 'gPaletteFade');
+/** 1:1 décomp `gPlttBufferUnfaded[PLTT_BUFFER_SIZE]` (palette.c). */
+export const gPlttBufferUnfaded = makeStateProxy<Record<number, number> & { length?: number }>(() => _rt(), 'gPlttBufferUnfaded');
+/** 1:1 décomp `gPlttBufferFaded[PLTT_BUFFER_SIZE]` (palette.c). */
+export const gPlttBufferFaded = makeStateProxy<Record<number, number> & { length?: number }>(() => _rt(), 'gPlttBufferFaded');
 
 // ─── Color helpers (1:1 décomp include/gba/types.h GET_R/G/B + RGB2) ─────────
 

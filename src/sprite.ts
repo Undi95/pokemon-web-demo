@@ -75,6 +75,7 @@
 import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { OBJ_PLTT_ID } from './palette';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { makeStateProxy } from '../harness/runtime/state-proxy';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
 
@@ -1957,3 +1958,28 @@ export function AnimateSprites(): void {
 export function BuildOamBuffer(): void {
   _rt().syncSpritesToOamPublic();
 }
+
+// ─── Globals 1:1 (kernel transpiler) ─────────────────────────────────────────
+
+/** 1:1 décomp `gSprites[MAX_SPRITES + …]` (sprite.c) — proxy paresseux vers
+ *  rt.gSprites : le code miroir/transpilé écrit `gSprites[id].x` comme la
+ *  décomp (via makeStateProxy, anti-cycle : sprite.ts n'importe pas
+ *  decomp-globals, getter injecté _rt). */
+export const gSprites = makeStateProxy<(DecompSprite | undefined)[]>(() => _rt(), 'gSprites');
+
+/** 1:1 décomp `gDummyOamData = DUMMY_OAM_DATA` (sprite.c:101-116, :171). */
+export const gDummyOamData = {
+  y: 160 /* DISPLAY_HEIGHT */, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0 /* SPRITE_SHAPE(8x8) */, x: 240 + 64 /* DISPLAY_WIDTH + 64 */, matrixNum: 0,
+  size: 0 /* SPRITE_SIZE(8x8) */, tileNum: 0, priority: 3, paletteNum: 0, affineParam: 0,
+} as const;
+
+/** 1:1 décomp `gDummySpriteAnimTable[] = { &sDummyAnim }` (sprite.c:173-175) —
+ *  une seule anim : ANIM_END immédiat. */
+export const gDummySpriteAnimTable: AnimCmd[][] = [[ANIMCMD_END]];
+
+/** 1:1 décomp `gDummySpriteAffineAnimTable[]` (sprite.c:177-179). Convention
+ *  miroir : `template.affineAnims` = NOM de la table enregistrée dans
+ *  sprite-affine-extras.ts (où la table dummy — une anim END immédiate — est
+ *  enregistrée). */
+export const gDummySpriteAffineAnimTable = 'gDummySpriteAffineAnimTable';

@@ -5,6 +5,13 @@
 // injecte le runtime via getRuntime(). Le port-1:1 de l'ordonnanceur lui-même
 // (liste chaînée task.c vs Map runtime) est un chantier séparé (cf. mémoire).
 import { getRuntime } from '../harness/runtime/decomp-globals';
+import { runtimeProxy } from '../harness/runtime/runtime-proxy';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
+
+/** 1:1 décomp `gTasks[NUM_TASKS]` (task.c:12) — proxy paresseux vers l'état
+ *  runtime (rt.gTasks). Permet au code miroir/transpilé d'écrire
+ *  `gTasks[taskId].data[0]` exactement comme la décomp. */
+export const gTasks = runtimeProxy<DecompTask[]>('gTasks');
 
 /** 1:1 décomp `src/task.c:27 CreateTask(func, priority)` — alloue un task slot. */
 export function CreateTask(func: any, priority: number): number {

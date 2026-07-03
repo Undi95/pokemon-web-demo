@@ -22,23 +22,43 @@ const INDEX_PATH = path.join(REPO, 'audit-reports', 'ts-symbol-index.json');
 const REPORT_DIR = path.join(REPO, 'audit-reports', 'transpile');
 
 // ─── CLI ─────────────────────────────────────────────────────────────────────
+// --file x.c          : transpile un fichier → src/x.ts
+// --batch a.c,b.c     : transpile plusieurs fichiers (DB construites une fois)
+// --rank              : dry-run tous les .c à 0% porté (closure JSON) → classement
+// --stdout / --dry    : pas d'écriture ; --force : écraser un .ts existant
 const argv = process.argv.slice(2);
 function argVal(flag) { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : null; }
 const fileArg = argVal('--file');
+const batchArg = argVal('--batch');
+const rankMode = argv.includes('--rank');
 const outArg = argVal('--out');
 const toStdout = argv.includes('--stdout');
+const dryRun = argv.includes('--dry') || rankMode;
 const force = argv.includes('--force');
-if (!fileArg) { console.error('usage: transpile-c.cjs --file <nom.c> [--out src/x.ts] [--stdout] [--force]'); process.exit(1); }
+if (!fileArg && !batchArg && !rankMode) { console.error('usage: transpile-c.cjs --file <nom.c> | --batch a.c,b.c | --rank  [--out src/x.ts] [--stdout] [--dry] [--force]'); process.exit(1); }
 
-const cRel = fileArg.startsWith('src/') ? fileArg : 'src/' + fileArg;
-const cPath = path.join(DECOMP, cRel);
-if (!fs.existsSync(cPath)) { console.error(`introuvable : ${cPath}`); process.exit(1); }
-const baseName = path.basename(cRel, '.c');
-const outPath = outArg ? path.join(REPO, outArg) : path.join(REPO, 'src', baseName + '.ts');
-
-// ─── Rapport ─────────────────────────────────────────────────────────────────
-const report = { flags: [], unresolved: new Map(), gtext: [], ubfix: [], stats: {} };
+// État PER-FICHIER (réinitialisé par resetFileState)
+let cRel = '', cPath = '', baseName = '', outPath = '';
+let report = null;
 function flag(line, kind, detail) { report.flags.push({ line, kind, detail }); }
+function resetFileState(fileRel, outOverride) {
+  cRel = fileRel.startsWith('src/') ? fileRel : 'src/' + fileRel;
+  cPath = path.join(DECOMP, cRel);
+  baseName = path.basename(cRel, '.c');
+  outPath = outOverride ? path.join(REPO, outOverride) : path.join(REPO, 'src', baseName + '.ts');
+  report = { flags: [], unresolved: new Map(), gtext: [], ubfix: [], stats: {} };
+  usedIdents.clear();
+  localModuleNames.clear();
+  fieldAliases.clear();
+  bareAliases.clear();
+  exprMacros.clear();
+  neededImports.clear();
+  neededTypeImports.clear();
+  moduleDataTypes.clear();
+  localConstMap = new Map();
+  constsToInline.length = 0;
+  SRC = '';
+}
 
 // ─── SECTION 1 : résolution préprocesseur (build vanilla FR) ─────────────────
 // Valeurs connues (include/config.h + constantes numériques usuelles).
@@ -65,6 +85,39 @@ function ppEval(expr, srcLine) {
   js = js.replace(/[^0-9+\-*/%()<>=!&|^~ \tLxXa-fA-F]/g, ' ');
   try { return !!eval(js); } catch { flag(srcLine, 'preproc-eval', expr.trim()); return true; }
 }
+// SPRITE_SHAPE(NxM)/SPRITE_SIZE(NxM) → valeurs OAM (gba/sprites : shape, size)
+const SPRITE_DIMS = {
+  '8x8': [0, 0], '16x16': [0, 1], '32x32': [0, 2], '64x64': [0, 3],
+  '16x8': [1, 0], '32x8': [1, 1], '32x16': [1, 2], '64x32': [1, 3],
+  '8x16': [2, 0], '8x32': [2, 1], '16x32': [2, 2], '32x64': [2, 3],
+};
+function resolveSpriteDims(src) {
+  return src
+    .replace(/SPRITE_SHAPE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][0]} /* ${m} */` : m))
+    .replace(/SPRITE_SIZE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][1]} /* ${m} */` : m));
+}
+
+// gSpecialVar_* → VarGet/VarSet (adaptation documentée : vars store byte-VM,
+// mapping 1:1 event_data.c:10-27 + vars.h:283-304)
+const SPECIAL_VARS = {
+  gSpecialVar_0x8000: 0x8000, gSpecialVar_0x8001: 0x8001, gSpecialVar_0x8002: 0x8002,
+  gSpecialVar_0x8003: 0x8003, gSpecialVar_0x8004: 0x8004, gSpecialVar_0x8005: 0x8005,
+  gSpecialVar_0x8006: 0x8006, gSpecialVar_0x8007: 0x8007, gSpecialVar_0x8008: 0x8008,
+  gSpecialVar_0x8009: 0x8009, gSpecialVar_0x800A: 0x800A, gSpecialVar_0x800B: 0x800B,
+  gSpecialVar_Facing: 0x800C, gSpecialVar_Result: 0x800D, gSpecialVar_ItemId: 0x800E,
+  gSpecialVar_LastTalked: 0x800F, gSpecialVar_ContestRank: 0x8010,
+  gSpecialVar_ContestCategory: 0x8011, gSpecialVar_MonBoxId: 0x8012,
+  gSpecialVar_MonBoxPos: 0x8013, gSpecialVar_Unused_0x8014: 0x8014,
+};
+function specialVarGet(name) {
+  markUsed('VarGet');
+  return `VarGet(0x${SPECIAL_VARS[name].toString(16).toUpperCase()}) /* ${name} */`;
+}
+function specialVarSet(name, valueStr) {
+  markUsed('VarSet');
+  return `VarSet(0x${SPECIAL_VARS[name].toString(16).toUpperCase()} /* ${name} */, ${valueStr})`;
+}
+
 function resolvePreproc(src) {
   const lines = src.split('\n');
   const out = [];
@@ -296,14 +349,17 @@ function buildDecompDefMap() {
   }
 }
 
-// ─── SECTION 4 : parse tree-sitter ───────────────────────────────────────────
+// ─── SECTION 4 : parse tree-sitter (parser mis en cache pour le mode batch) ──
+let _parser = null;
 async function parseC(src) {
-  const { Parser, Language } = require(path.join(REPO, 'node_modules', 'web-tree-sitter', 'web-tree-sitter.cjs'));
-  await Parser.init();
-  const C = await Language.load(path.join(REPO, 'node_modules', 'tree-sitter-c', 'tree-sitter-c.wasm'));
-  const parser = new Parser();
-  parser.setLanguage(C);
-  return parser.parse(src);
+  if (!_parser) {
+    const { Parser, Language } = require(path.join(REPO, 'node_modules', 'web-tree-sitter', 'web-tree-sitter.cjs'));
+    await Parser.init();
+    const C = await Language.load(path.join(REPO, 'node_modules', 'tree-sitter-c', 'tree-sitter-c.wasm'));
+    _parser = new Parser();
+    _parser.setLanguage(C);
+  }
+  return _parser.parse(src);
 }
 
 // ─── SECTION 5 : mapping types ───────────────────────────────────────────────
@@ -403,6 +459,8 @@ function emitExpr(n, ctx) {
         markUsed('MAP_CONSTANTS');
         return `MAP_CONSTANTS.${name}`;
       }
+      // gSpecialVar_X (lecture) → VarGet (adaptation vars store byte-VM)
+      if (SPECIAL_VARS[name] !== undefined && !localModuleNames.has(name)) return specialVarGet(name);
       if (!(ctx && (ctx.types.has(name)))) markUsed(name);
       return name;
     }
@@ -468,7 +526,14 @@ function emitExpr(n, ctx) {
     case 'assignment_expression': {
       const l = n.childForFieldName('left'), r = n.childForFieldName('right');
       const op = n.childForFieldName('operator').text;
-      const ls = emitExpr(l, ctx), rs = emitExpr(r, ctx);
+      const rs = emitExpr(r, ctx);
+      // gSpecialVar_X = / += / |= … → VarSet (adaptation vars store byte-VM)
+      if (l.type === 'identifier' && SPECIAL_VARS[l.text] !== undefined && !localModuleNames.has(l.text)) {
+        const name = l.text;
+        if (op === '=') return specialVarSet(name, rs);
+        return specialVarSet(name, `${specialVarGet(name)} ${op.slice(0, -1)} ${rs}`);
+      }
+      const ls = emitExpr(l, ctx);
       if (op === '/=') return `${ls} = Math.trunc(${ls} / ${rs})`;
       return `${ls} ${op} ${rs}`;
     }
@@ -476,6 +541,10 @@ function emitExpr(n, ctx) {
       const arg = n.childForFieldName('argument');
       const opN = n.childForFieldName('operator') || n.children.find((c) => c.type === '++' || c.type === '--');
       const op = opN.text;
+      // gSpecialVar_X++ / -- → VarSet(VarGet ± 1)
+      if (arg.type === 'identifier' && SPECIAL_VARS[arg.text] !== undefined && !localModuleNames.has(arg.text)) {
+        return specialVarSet(arg.text, `${specialVarGet(arg.text)} ${op === '++' ? '+' : '-'} 1`);
+      }
       const isPrefix = n.child(0).type === '++' || n.child(0).type === '--';
       const as = emitExpr(arg, ctx);
       // ptr++ sur pointeur non-boxé = arithmétique de pointeur
@@ -496,6 +565,39 @@ function emitExpr(n, ctx) {
         const name = fn.text;
         if (name === 'sizeof') return emitSizeof(n, ctx);
         if (name === '_' || name === '__') { markUsed('encodeOwText'); return `encodeOwText(${argList.join(', ')})`; }
+        if (name === 'ARRAY_COUNT') return `${argList[0]}.length`;
+        if (name === 'FREE_AND_SET_NULL' || name === 'TRY_FREE_AND_SET_NULL')
+          return `${argList[0]} = null /* ${name} — GC */`;
+        if (name === 'Free' || name === 'FreeIfNotNull') return `void ${argList[0]} /* ${name} — GC */`;
+        if (name === 'Alloc' || name === 'AllocZeroed') {
+          // Alloc(sizeof(struct X)) → objet zéro 1:1 (exemption malloc = GC côté TS)
+          const rawArgs = args.namedChildren.filter((c) => c.type !== 'comment');
+          const a0 = rawArgs[0];
+          if (rawArgs.length === 1 && a0 && a0.type === 'sizeof_expression') {
+            const typeN = a0.childForFieldName('type');
+            if (typeN) {
+              const bare = typeN.text.replace(/\s+/g, ' ').replace(/^const /, '').replace(/^struct |^union /, '').trim();
+              const z = zeroObjectFor(bare);
+              if (z) return `(${z}) /* ${name}(sizeof(${typeN.text.replace(/\s+/g, ' ')})) */`;
+            }
+          }
+          flag(line(n), 'alloc', n.text.slice(0, 60));
+          return `({} as any) /* TRANSPILER-TODO ${name} */`;
+        }
+        if (name === 'memset' && argList.length === 3) {
+          const dst = args.namedChildren.filter((c) => c.type !== 'comment')[0];
+          const ti = dst && dst.type === 'identifier' && ctx ? ctx.types.get(dst.text) || moduleDataTypes.get(dst.text) : null;
+          if (ti && ti.kind === 'typedarray' && ti.ts === 'Uint8Array') return `${argList[0]}.fill(${argList[1]}, 0, ${argList[2]})`;
+          if (argList[1] === '0' && /\.length( \* \d+)?$/.test(argList[2].trim())) return `${argList[0]}.fill(0)`;
+          flag(line(n), 'memset', n.text.slice(0, 60));
+          return `${name}(${argList.join(', ')}) /* TRANSPILER-TODO memset */`;
+        }
+        if (name === 'memcpy' && argList.length === 3) {
+          // memcpy(dst, src, sizeof(src|dst)) sur typed arrays → dst.set(src)
+          if (/\.length( \* \d+)?$/.test(argList[2].trim())) return `${argList[0]}.set(${argList[1]})`;
+          flag(line(n), 'memcpy', n.text.slice(0, 60));
+          return `${name}(${argList.join(', ')}) /* TRANSPILER-TODO memcpy */`;
+        }
         markUsed(name);
         return `${name}(${argList.join(', ')})`;
       }
@@ -923,20 +1025,64 @@ function prescanLocalTypes(fnBody, ctx) {
 
 // ─── SECTION 11 : traitement top-level ───────────────────────────────────────
 async function main() {
-  console.log(`— transpile ${cRel} → ${path.relative(REPO, outPath)}`);
-  if (fs.existsSync(outPath) && !force && !toStdout) {
-    console.error(`REFUS : ${outPath} existe déjà (mode merge pas encore implémenté ; --force pour écraser).`);
-    process.exit(1);
-  }
   if (!fs.existsSync(INDEX_PATH)) { console.error(`index manquant — lancer d'abord scripts/build-ts-symbol-index.cjs`); process.exit(1); }
   symbolIndex = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf8')).symbols;
   buildConstDB();
   buildStructDB();
   buildDecompDefMap();
-  console.log(`  DB: ${constDB.size} constantes, ${structDB.size} structs, ${decompDefFile.size} défs décomp, ${Object.keys(symbolIndex).length} symboles TS`);
+  console.log(`DB: ${constDB.size} constantes, ${structDB.size} structs, ${decompDefFile.size} défs décomp, ${Object.keys(symbolIndex).length} symboles TS`);
+
+  let targets = [];
+  if (rankMode) {
+    const closure = path.join(REPO, 'audit-reports', 'callgraph-closure.json');
+    if (!fs.existsSync(closure)) { console.error('closure JSON manquant — lancer scripts/audit-callgraph-closure.cjs'); process.exit(1); }
+    const pf = JSON.parse(fs.readFileSync(closure, 'utf8')).perFile;
+    targets = Object.entries(pf)
+      .filter(([f, v]) => f.startsWith('src/') && f.endsWith('.c') && v.ported === 0 && v.total > 0)
+      .map(([f]) => f);
+    console.log(`--rank : ${targets.length} fichiers 0% porté\n`);
+  } else if (batchArg) {
+    targets = batchArg.split(',').map((s) => s.trim()).filter(Boolean);
+  } else {
+    targets = [fileArg];
+  }
+
+  const rankings = [];
+  for (const t of targets) {
+    try {
+      const r = await transpileOne(t);
+      if (r) rankings.push(r);
+    } catch (e) {
+      console.error(`  ✗ ${t} : ${e.message}`);
+      rankings.push({ file: t, error: e.message });
+    }
+  }
+  if (rankMode) {
+    rankings.sort((a, b) => (a.unresolved ?? 999) - (b.unresolved ?? 999) || (b.fns ?? 0) - (a.fns ?? 0));
+    console.log('\n=== CLASSEMENT (moins de trous d\'abord) ===');
+    console.log('fichier                                   fns  data  flags  NON-RÉSOLUS');
+    for (const r of rankings) {
+      if (r.error) { console.log(`${r.file.padEnd(42)} ERREUR: ${r.error.slice(0, 60)}`); continue; }
+      console.log(`${r.file.padEnd(42)} ${String(r.fns).padStart(4)} ${String(r.data).padStart(5)} ${String(r.flagCount).padStart(6)} ${String(r.unresolved).padStart(4)}  ${r.unresolvedNames.slice(0, 6).join(', ')}${r.unresolvedNames.length > 6 ? ` +${r.unresolvedNames.length - 6}` : ''}`);
+    }
+    const rankOut = path.join(REPORT_DIR, '_rank.json');
+    fs.mkdirSync(REPORT_DIR, { recursive: true });
+    fs.writeFileSync(rankOut, JSON.stringify(rankings, null, 1));
+    console.log(`\nJSON : ${rankOut}`);
+  }
+}
+
+async function transpileOne(fileRel) {
+  resetFileState(fileRel, targetsSingle() ? outArg : null);
+  if (!fs.existsSync(cPath)) throw new Error(`introuvable : ${cPath}`);
+  if (!rankMode) console.log(`— transpile ${cRel} → ${path.relative(REPO, outPath)}`);
+  if (fs.existsSync(outPath) && !force && !toStdout && !dryRun) {
+    console.error(`  REFUS : ${outPath} existe déjà (--force pour écraser).`);
+    return null;
+  }
 
   const raw = fs.readFileSync(cPath, 'utf8');
-  SRC = resolvePreproc(raw);
+  SRC = resolveSpriteDims(resolvePreproc(raw));
   const tree = await parseC(SRC);
   const root = tree.rootNode;
 
@@ -1072,6 +1218,13 @@ async function main() {
 
   // ─── rapport ───────────────────────────────────────────────────────────────
   report.stats = { fns: nFns, data: nData, defines: nDefines, flags: report.flags.length, unresolved: report.unresolved.size, gtext: report.gtext.length };
+  const ranking = {
+    file: cRel, fns: nFns, data: nData, defines: nDefines, flagCount: report.flags.length,
+    unresolved: report.unresolved.size, unresolvedNames: [...report.unresolved.keys()],
+    flagKinds: [...new Set(report.flags.map((f) => f.kind))],
+  };
+  if (rankMode) return ranking;
+
   fs.mkdirSync(REPORT_DIR, { recursive: true });
   const reportPath = path.join(REPORT_DIR, baseName + '.md');
   const flagLines = report.flags.map((f) => `- :${f.line} **${f.kind}** — \`${(f.detail || '').replace(/`/g, "'")}\``);
@@ -1091,10 +1244,12 @@ ${report.gtext.map((g) => `- :${g.line} ${g.name}`).join('\n') || '(aucun)'}
 `);
 
   if (toStdout) console.log(body);
-  else { fs.writeFileSync(outPath, body); console.log(`  écrit : ${outPath}`); }
+  else if (!dryRun) { fs.writeFileSync(outPath, body); console.log(`  écrit : ${outPath}`); }
   console.log(`  ${nFns} fns · ${nData} data · ${nDefines} defines · ${report.flags.length} flags · ${report.unresolved.size} non-résolus`);
   console.log(`  rapport : ${reportPath}`);
+  return ranking;
 }
+function targetsSingle() { return !!fileArg && !batchArg && !rankMode; }
 
 function emitDefineValue(txt) {
   // valeur de #define → expression TS (heuristique légère : réutilise l'émetteur si parsable)

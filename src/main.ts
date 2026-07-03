@@ -14,6 +14,19 @@
  */
 import { SeedRng } from './random';
 import { LANGUAGE_FRENCH } from '../include/constants/global';
+import { getRuntime } from '../harness/runtime/decomp-globals';
+
+/** 1:1 décomp main.c — `void SetMainCallback2(MainCallback callback)`.
+ *  Délègue au substrat runtime (swap de scène CB2). Foyer 1:1 : les modules
+ *  miroir/transpilés importent d'ICI (même fichier que la décomp). */
+export function SetMainCallback2(callback: ((...args: unknown[]) => void) | null): void {
+  getRuntime().SetMainCallback2(callback as never);
+}
+
+/** 1:1 décomp main.c — `void SetVBlankCallback(IntrCallback callback)`. */
+export function SetVBlankCallback(callback: (() => void) | null): void {
+  getRuntime().SetVBlankCallback(callback);
+}
 
 // ─── 1:1 décomp main.c:72 — static u16 sTrainerId. ───────────────────────────
 let sTrainerId = 0;
