@@ -116,6 +116,9 @@ marqueurs stub de ce fichier lors des audits : lire le CODE.
 
 | item_use.ts / party_menu.ts (ItemUseCB_EvolutionStone) | STUB « GetEvolutionTargetSpecies + BeginEvolutionScene non porté → aucun effet » alors que les DEUX sont portés 1:1 (P2.1) → **les pierres d'évolution ne marchaient pas** | ✅ porté 1:1 dans party_menu.ts (via PokemonUseItemEffects case EVO_STONE + gCB2_AfterEvolution) + re-export item_use.ts | `<en cours>` |
 
+| party_menu.ts (DisplaySelectionWindow action menu) | field moves (CS) forcés en color 3 (gris) au lieu de color 4 (BLEU, sFontColorTable[4]) — party_menu.c:2556 `(action >= MENU_FIELD_MOVES) ? 4 : 3` | ✅ corrigé (VOL/SURF/… en bleu) | `<en cours>` |
+| party_menu.ts (header) | commentaire « MVP / polish à venir » PÉRIMÉ (barres PV/genre/statut/objet/action menu/stats/évolution tous FAITS) | ✅ header réécrit | `<en cours>` |
+
 **Findings item_use.ts** : (1) EVO_STONE stub soldé (ci-dessus, vérifié en jeu Goupix+Pierre
 Feu → Feunard → retour sac). (2) DRIFT STRUCTUREL : les field-funcs `ItemUseOutOfBattle_*`
 (Bike/Rod/Itemfinder/Berry/Medicine/TMHM…) sont **inlinées dans le switch de item_menu.ts**

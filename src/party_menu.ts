@@ -15,21 +15,16 @@
  *   - Slot 1..5 (= right)  : (12, 1+3*N), 18×3, palette 4..8, baseBlock 0xA9+
  *   - WIN_MSG (= bottom)   : bg=2, (1, 15), 28×4, palette 14, baseBlock 0x1DF
  *
- * MVP scope (= 1ère itération, polish à venir) :
- *   - 6 slots avec text rendering (nickname, Lv, HP)
- *   - Pokémon icon OAM per slot (16×16, animated front)
- *   - Bottom dialog "Choisir un PKMN ou annuler"
- *   - SORTIR button (= text, polish icon plus tard)
- *   - A/B/START close
- *
- * Future polish :
- *   - HP bar tilemap (= rendre la barre verte/jaune/rouge)
- *   - Gender symbol ♂/♀
- *   - Status icon (= PSN/PAR/etc.)
- *   - Held item icon (hold_icons.png)
- *   - Cursor highlight (= ROM utilise palette swap par slot)
- *   - Action menu (RESUME / OBJET / RETOUR au press A)
- *   - Stats pages flip (= INFOS / APTITU / CAPACITES)
+ * État (l'écran est désormais complet 1:1 pour le jeu de base — l'ancienne
+ * liste « MVP / polish à venir » est PÉRIMÉE) :
+ *   - 6 slots : nickname/Lv/HP + barre PV (vert/jaune/rouge) + genre ♂/♀ +
+ *     icône statut (PSN/PAR/BRU…) + icône objet tenu + icône OAM animée
+ *   - Dialog bas + bouton SORTIR ; curseur highlight (palette swap par slot)
+ *   - Menu d'action (RESUME / OBJET / DÉPLACER / DONNER / RETOUR + capacités CS)
+ *   - Flux OBJET (Medicine/PP/RareCandy/EV/SacredAsh/TMHM/EvolutionStone),
+ *     level-up + replace-move, boîte de stats, évolution (level-up ET pierre)
+ *   - Reste non porté = sous-systèmes hors jeu de base : Battle Frontier
+ *     (Pyramid bag), PSS/contest, union room, move-tutor (gTutorMoves).
  */
 
 import {
@@ -136,6 +131,12 @@ const COLOR_HP: [number, number, number] = [0, 3, 2];
  *  runtime selon le gender via sGenderMalePalIds [59,60] (rouge ♂) ou
  *  sGenderFemalePalIds [75,76] (bleu ♀) — cf. _loadGenderColors. */
 const COLOR_GENDER: [number, number, number] = [0, 0xB, 0xC];
+/** 1:1 décomp `sFontColorTable[3]` (party_menu.h:118) actions de sélection :
+ *  [WHITE, DARK_GRAY, LIGHT_GRAY] = [1, 2, 3]. */
+const COLOR_ACTION_SELECTION: [number, number, number] = [1, 2, 3];
+/** 1:1 décomp `sFontColorTable[4]` (party_menu.h:119) capacités CS (field moves) :
+ *  [WHITE, BLUE, LIGHT_BLUE] = [1, 8, 9] → texte BLEU (VOL/SURF/COUPE… en bleu). */
+const COLOR_ACTION_FIELD_MOVE: [number, number, number] = [1, 8, 9];
 const sGenderMalePalIds   = [59, 60];
 const sGenderFemalePalIds = [75, 76];
 
@@ -2141,10 +2142,13 @@ function _renderActionMenuContents(): void {
         TEXT_SKIP_DRAW, '▶',
       );
     }
-    // sFontColorTable[3] = [WHITE, DARK_GRAY, LIGHT_GRAY] pour actions selection.
+    // 1:1 décomp party_menu.c:2556 : fontColorsId = (action >= MENU_FIELD_MOVES) ? 4 : 3.
+    // → capacités CS (VOL/SURF/COUPE…) en BLEU (sFontColorTable[4]), actions normales
+    // (RESUME/OBJET/DÉPLACER/DONNER/RETOUR) en gris (sFontColorTable[3]).
+    const actionColor = actionKey >= MENU_FIELD_MOVES ? COLOR_ACTION_FIELD_MOVE : COLOR_ACTION_SELECTION;
     AddTextPrinterParameterized3(
       _actionWindowId, FONT_NORMAL, 8, i * 16 + 1,
-      [1, 2, 3] as [number, number, number],
+      actionColor,
       TEXT_SKIP_DRAW, str,
     );
   }
