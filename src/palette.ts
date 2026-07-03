@@ -88,17 +88,39 @@ function _rt(): DecompRuntime {
 
 /** 1:1 décomp `gPaletteFade` (palette.c). */
 export const gPaletteFade = makeStateProxy<Record<string, number | boolean>>(() => _rt(), 'gPaletteFade');
+
+/** Adaptateur indexé : le substrat PaletteBuffer (decomp-helpers) expose
+ *  get(i)/set(i,v) — le proxy traduit `gPlttBufferFaded[i]` (lecture/écriture
+ *  décomp-style) vers ces méthodes. Index 0-511 (256 BG + 256 OBJ). */
+function makePlttBufferProxy(prop: 'gPlttBufferFaded' | 'gPlttBufferUnfaded'): Record<number, number> {
+  return new Proxy({} as Record<number, number>, {
+    get(_, p) {
+      const buf = (_rt() as unknown as Record<string, { get(i: number): number } & Record<PropertyKey, unknown>>)[prop];
+      if (typeof p === 'string' && /^\d+$/.test(p)) return buf.get(Number(p));
+      const v = buf[p as PropertyKey];
+      return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(buf) : v;
+    },
+    set(_, p, v) {
+      const buf = (_rt() as unknown as Record<string, { set(i: number, v: number): void }>)[prop];
+      if (typeof p === 'string' && /^\d+$/.test(p)) { buf.set(Number(p), v as number); return true; }
+      (buf as Record<PropertyKey, unknown>)[p as PropertyKey] = v;
+      return true;
+    },
+  });
+}
 /** 1:1 décomp `gPlttBufferUnfaded[PLTT_BUFFER_SIZE]` (palette.c). */
-export const gPlttBufferUnfaded = makeStateProxy<Record<number, number> & { length?: number }>(() => _rt(), 'gPlttBufferUnfaded');
+export const gPlttBufferUnfaded = makePlttBufferProxy('gPlttBufferUnfaded');
 /** 1:1 décomp `gPlttBufferFaded[PLTT_BUFFER_SIZE]` (palette.c). */
-export const gPlttBufferFaded = makeStateProxy<Record<number, number> & { length?: number }>(() => _rt(), 'gPlttBufferFaded');
+export const gPlttBufferFaded = makePlttBufferProxy('gPlttBufferFaded');
 
 // ─── Color helpers (1:1 décomp include/gba/types.h GET_R/G/B + RGB2) ─────────
+// Exportés (kernel transpiler) : consommés par palette_util.ts & co pour les
+// accès bitfield `struct PlttData` (décompose/recompose r/g/b 5 bits).
 
-function GET_R(c: number): number { return c & 0x1F; }
-function GET_G(c: number): number { return (c >> 5) & 0x1F; }
-function GET_B(c: number): number { return (c >> 10) & 0x1F; }
-function RGB2(r: number, g: number, b: number): number {
+export function GET_R(c: number): number { return c & 0x1F; }
+export function GET_G(c: number): number { return (c >> 5) & 0x1F; }
+export function GET_B(c: number): number { return (c >> 10) & 0x1F; }
+export function RGB2(r: number, g: number, b: number): number {
   return ((r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10)) & 0x7FFF;
 }
 
