@@ -112,6 +112,12 @@ décomp. Chemins absolus + `git -C`. Jamais `git add -A` ; jamais commit
 | mail.ts (lecture) | sTextColors + sBgColors (RGB MALE/FEMALE) = décomp exact ; 61 marqueurs = dette ÉCRITURE (DoEasyChatScreen, déféré) | ✅ RAS lecture | — |
 | daycare.ts | 67/67 portées, testé en jeu (dépôt/retrait/menu niveau) | ✅ RAS | — |
 | pokemon_summary_screen.ts | sTextColors[][3] (13 entrées) = décomp exact (:708) | ✅ RAS | — |
+| shop.ts | sShopBuyMenuTextColors (COLORID_NORMAL/ITEM_LIST) = décomp exact ; call-site prix évite déjà le « fond blanc » ; 16/57 = buy partiellement porté (portage, pas divergence) | ✅ RAS (couleurs) | — |
+| pokemon.ts (CalculateMonStats) | formule HP + CALC_STAT + clamp levelUpHP==0→1 + bug Pomeg (#ifdef BUGFIX off) = décomp exact byte-for-byte (:2824) | ✅ RAS | — |
+
+**Fichiers « drift structurel » (marchent mais pas same-names, oracle sous-compte)** : start_menu
+(4/80), shop (16/57), item_use field-funcs (inlinés item_menu). = réimplémentés fonctionnellement,
+non 1:1 en NOMS. Backlog « renommer vers la décomp » distinct de « divergence de comportement ».
 
 **Méta-leçon audit** : les **tables de couleurs** (sFontColorTable/sTextColors/sKeyboardTextColors/
 sBgColors) sont systématiquement transcrites 1:1 correctement. Les vraies divergences trouvées
