@@ -505,16 +505,78 @@ export interface LinkBattlerHeader {
   // (le décomp a struct + champs sub à charge link multi battle)
 }
 
-/** Pour `gBattleStruct->tvMovePoints` — TV stats accumulator. */
+/** 1:1 décomp `struct BattleTvMovePoints` (battle.h:340) : s16 points[2][PARTY_SIZE*4]. */
 export interface BattleTvMovePoints {
-  points: number[];                 // s16[2][4*4]
+  points: number[][];               // s16[2][24]
 }
 
-/** Pour `gBattleStruct->tv` — TV battle stats. */
+/** 1:1 décomp `struct BattleTv_Side` (battle.h:260-291) — bitfields u32 → champs number. */
+export interface BattleTvSide {
+  spikesMonId: number; reflectMonId: number; lightScreenMonId: number;
+  safeguardMonId: number; mistMonId: number; futureSightMonId: number;
+  doomDesireMonId: number; perishSongMonId: number; wishMonId: number;
+  grudgeMonId: number; usedMoveSlot: number; spikesMoveSlot: number;
+  reflectMoveSlot: number; lightScreenMoveSlot: number; safeguardMoveSlot: number;
+  mistMoveSlot: number; futureSightMoveSlot: number; doomDesireMoveSlot: number;
+  perishSongMoveSlot: number; wishMoveSlot: number; grudgeMoveSlot: number;
+  destinyBondMonId: number; destinyBondMoveSlot: number; faintCause: number;
+  faintCauseMonId: number; explosion: number | boolean; explosionMoveSlot: number;
+  explosionMonId: number; perishSong: number | boolean;
+}
+
+/** 1:1 décomp `struct BattleTv_Position` (battle.h:293-315). */
+export interface BattleTvPosition {
+  curseMonId: number; leechSeedMonId: number; nightmareMonId: number;
+  wrapMonId: number; attractMonId: number; confusionMonId: number;
+  curseMoveSlot: number; leechSeedMoveSlot: number; nightmareMoveSlot: number;
+  wrapMoveSlot: number; attractMoveSlot: number; confusionMoveSlot: number;
+  waterSportMoveSlot: number; waterSportMonId: number; mudSportMonId: number;
+  mudSportMoveSlot: number; ingrainMonId: number; ingrainMoveSlot: number;
+  attackedByMonId: number; attackedByMoveSlot: number;
+}
+
+/** 1:1 décomp `struct BattleTv_Mon` (battle.h:317-331). */
+export interface BattleTvMon {
+  psnMonId: number; badPsnMonId: number; brnMonId: number; prlzMonId: number;
+  slpMonId: number; frzMonId: number; psnMoveSlot: number; badPsnMoveSlot: number;
+  brnMoveSlot: number; prlzMoveSlot: number; slpMoveSlot: number; frzMoveSlot: number;
+}
+
+/** 1:1 décomp `struct BattleTv` (battle.h:333-338) :
+ *  mon[2][PARTY_SIZE] · pos[2][2] (side, flank) · side[2]. */
 export interface BattleTv {
-  pokemonSlot: number;              // u8
-  side: number;                     // u8
-  stars: number[];                  // bitfield placeholder
+  mon: BattleTvMon[][];
+  pos: BattleTvPosition[][];
+  side: BattleTvSide[];
+}
+
+function _makeBlankBattleTvMon(): BattleTvMon {
+  return {
+    psnMonId: 0, badPsnMonId: 0, brnMonId: 0, prlzMonId: 0, slpMonId: 0, frzMonId: 0,
+    psnMoveSlot: 0, badPsnMoveSlot: 0, brnMoveSlot: 0, prlzMoveSlot: 0, slpMoveSlot: 0, frzMoveSlot: 0,
+  };
+}
+
+function _makeBlankBattleTvPosition(): BattleTvPosition {
+  return {
+    curseMonId: 0, leechSeedMonId: 0, nightmareMonId: 0, wrapMonId: 0, attractMonId: 0,
+    confusionMonId: 0, curseMoveSlot: 0, leechSeedMoveSlot: 0, nightmareMoveSlot: 0,
+    wrapMoveSlot: 0, attractMoveSlot: 0, confusionMoveSlot: 0, waterSportMoveSlot: 0,
+    waterSportMonId: 0, mudSportMonId: 0, mudSportMoveSlot: 0, ingrainMonId: 0,
+    ingrainMoveSlot: 0, attackedByMonId: 0, attackedByMoveSlot: 0,
+  };
+}
+
+function _makeBlankBattleTvSide(): BattleTvSide {
+  return {
+    spikesMonId: 0, reflectMonId: 0, lightScreenMonId: 0, safeguardMonId: 0, mistMonId: 0,
+    futureSightMonId: 0, doomDesireMonId: 0, perishSongMonId: 0, wishMonId: 0, grudgeMonId: 0,
+    usedMoveSlot: 0, spikesMoveSlot: 0, reflectMoveSlot: 0, lightScreenMoveSlot: 0,
+    safeguardMoveSlot: 0, mistMoveSlot: 0, futureSightMoveSlot: 0, doomDesireMoveSlot: 0,
+    perishSongMoveSlot: 0, wishMoveSlot: 0, grudgeMoveSlot: 0, destinyBondMonId: 0,
+    destinyBondMoveSlot: 0, faintCause: 0, faintCauseMonId: 0, explosion: 0,
+    explosionMoveSlot: 0, explosionMonId: 0, perishSong: 0,
+  };
 }
 
 function _makeBlankLinkBattlerHeader(): LinkBattlerHeader {
@@ -525,11 +587,17 @@ function _makeBlankLinkBattlerHeader(): LinkBattlerHeader {
 }
 
 function _makeBlankBattleTvMovePoints(): BattleTvMovePoints {
-  return { points: new Array(32).fill(0) };
+  // 1:1 s16 points[2][PARTY_SIZE * 4] (battle.h:342).
+  return { points: Array.from({ length: 2 }, () => new Array(24).fill(0)) };
 }
 
 function _makeBlankBattleTv(): BattleTv {
-  return { pokemonSlot: 0, side: 0, stars: new Array(8).fill(0) };
+  // 1:1 mon[2][PARTY_SIZE] · pos[2][2] · side[2] (battle.h:333-338).
+  return {
+    mon: Array.from({ length: 2 }, () => Array.from({ length: 6 }, _makeBlankBattleTvMon)),
+    pos: Array.from({ length: 2 }, () => Array.from({ length: 2 }, _makeBlankBattleTvPosition)),
+    side: Array.from({ length: 2 }, _makeBlankBattleTvSide),
+  };
 }
 
 /** 1:1 décomp `struct BattleStruct` (battle.h:354-447). */
@@ -1172,3 +1240,13 @@ if (!(globalThis as Record<string, unknown>).__battleStateMutators) {
   setMoveToLearn: (v: number) => { gMoveToLearn = v & 0xFFFF; },
 };
 }  // end of if-not-set guard for __battleStateMutators
+
+// Devtool harness : lecture LIVE de l'état combat depuis la console. Les sondes
+// eval reçoivent une instance de module SÉPARÉE (leçon module-identity) — ce
+// pont expose l'instance du JEU (guard if-not-set : la 1re évaluation gagne,
+// même pattern que __battleStateMutators ci-dessus).
+if (!(globalThis as Record<string, unknown>).__getBattleState) {
+  (globalThis as Record<string, unknown>).__getBattleState = () => ({
+    gBattleStruct, gBattleMons, gBattlerAttacker, gBattlerTarget,
+  });
+}

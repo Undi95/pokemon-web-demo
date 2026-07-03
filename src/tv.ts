@@ -2284,7 +2284,7 @@ export function TryPutLotteryWinnerReportOnAir(): void {
 }
 
 /** 1:1 `void TryPutBattleSeminarOnAir(u16 foeSpecies, u16 species, u8 moveIndex, const u16 *movePtr, u16 betterMove)` (tv.c:2204-2233). */
-export function TryPutBattleSeminarOnAir(foeSpecies: number, species: number, moveIndex: number, movePtr: Uint16Array, betterMove: number): void {
+export function TryPutBattleSeminarOnAir(foeSpecies: number, species: number, moveIndex: number, movePtr: Uint16Array | number[], betterMove: number): void {
   let show: any = null;
   let i = 0;
   let j = 0;

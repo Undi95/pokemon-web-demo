@@ -351,10 +351,11 @@ function _CopyBgTilemapBufferToVram(bg: number): void {
   CopyBgTilemapBufferToVram(bg);
 }
 
-/** 1:1 décomp `BattleTv_ClearExplosionFaintCause()` (battle_tv.c).
- *  Dette R3 : recorded battle TV stats (= user "Report jusqu'à fin projet"). */
+/** 1:1 décomp `BattleTv_ClearExplosionFaintCause()` — porté 1:1 battle_tv.ts
+ *  (transpilé, ex-stub dette R3 soldé). Import dyn anti-cycle (battle_tv → tv →
+ *  overworld ; le contrôleur est tiré tôt par battle_main). */
 function _BattleTv_ClearExplosionFaintCause(): void {
-  // No-op : recorded battle/TV stats non porté.
+  void import('./battle_tv').then((m) => m.BattleTv_ClearExplosionFaintCause());
 }
 
 /** 1:1 signature décomp `BattleStringExpandPlaceholdersToDisplayedString(src)`
@@ -1394,6 +1395,13 @@ function PlayerHandleMoveAnimation(): void {
     itfT.setAnimFriendship?.(buf[10]);
     _moveAnimState[gActiveBattler] = 0;
     gBattlerControllerFuncs[gActiveBattler] = PlayerDoMoveAnimation;
+    // 1:1 :2489 BattleTv_SetDataBasedOnMove(move, gWeatherMoveAnim, gAnimDisableStructPtr)
+    // — gAnimDisableStructPtr ≙ gDisableStructs[gActiveBattler].
+    const _mv = _moveAnimMove[gActiveBattler];
+    const _weather = buf[12] | (buf[13] << 8);
+    void import('./battle_tv').then((m) =>
+      import('./engine/battle/state').then((st) =>
+        m.BattleTv_SetDataBasedOnMove(_mv, _weather, st.gDisableStructs[gActiveBattler])));
   }
 }
 
@@ -1530,10 +1538,11 @@ function _IsTextPrinterActive(windowId: number): boolean {
   return !!(m?.[windowId]);
 }
 
-/** 1:1 décomp `BattleTv_SetDataBasedOnString(stringId)` (battle_tv.c).
- *  Dette R3 : recorded battle TV stats (= user "Report jusqu'à fin projet"). */
-function _BattleTv_SetDataBasedOnString(_stringId: number): void {
-  // No-op : recorded battle/TV stats non porté.
+/** 1:1 décomp `BattleTv_SetDataBasedOnString(stringId)` — porté 1:1 battle_tv.ts
+ *  (transpilé, ex-stub dette R3 soldé). Le micro-délai dyn est sans effet
+ *  observable (les stats TV sont lues en fin de combat). */
+function _BattleTv_SetDataBasedOnString(stringId: number): void {
+  void import('./battle_tv').then((m) => m.BattleTv_SetDataBasedOnString(stringId));
 }
 
 /** 1:1 décomp `BattleArena_DeductSkillPoints(battler, stringId)`
@@ -2593,6 +2602,8 @@ function PlayerHandleBattleAnimation(): void {
     gActiveBattler, gActiveBattler, gActiveBattler, animationId, argument) ?? true;
   if (skipped) PlayerBufferExecCompleted();
   else gBattlerControllerFuncs[gActiveBattler] = PlayerCompleteOnFinishedBattleAnimation;
+  // 1:1 :3093 BattleTv_SetDataBasedOnAnimation(animationId).
+  void import('./battle_tv').then((m) => m.BattleTv_SetDataBasedOnAnimation(animationId));
 }
 
 /** 1:1 décomp `CompleteOnFinishedBattleAnimation()` (côté player) : attend la

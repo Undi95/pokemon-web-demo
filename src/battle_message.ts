@@ -460,11 +460,16 @@ export function BattleStringExpandPlaceholders(src: Uint8Array, dst: Uint8Array,
 
 // ─── BufferStringBattle (point d'entrée, 1:1 décomp 1968-2320) ──────────────
 
+/** 1:1 décomp `EWRAM_DATA struct BattleMsgData *gBattleMsgDataPtr` (battle_message.c:52),
+ *  posé par BufferStringBattle (:1975) — lu par battle_tv.c BattleTv_SetDataBasedOnString. */
+export let gBattleMsgDataPtr: BattleMsgData | null = null;
+
 /** 1:1 décomp `BufferStringBattle(stringID)` (1968) — version voie L byte-level.
  *  Réutilise les `_resolve*StringName` (switch 1:1 déjà porté) pour choisir le
  *  sText, encode le template en bytes, puis expand dans gDisplayedStringBattle.
  *  Retourne la longueur écrite. msgData = snapshot IPC (gBattleBufferA[active][4]). */
 export function BufferStringBattle(stringID: number, msgData: BattleMsgData): number {
+  gBattleMsgDataPtr = msgData;  // 1:1 :1975
   _loadTextBuffs(msgData);
   let sTextName: string | null = null;
   switch (stringID) {
