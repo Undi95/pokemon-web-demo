@@ -343,6 +343,7 @@ function buildStructDB() {
 // ─── SECTION 3b : carte des définitions décomp (symbole → fichier .c/.h) ─────
 // Sert au résolveur d'imports : préférer src/<base-du-.c-décomp>.ts.
 const decompDefFile = new Map(); // name → base sans extension ('event_data', …)
+const scriptLabels = new Set();  // labels asm data/ (EventScript_… — byte-VM = réfs par STRING)
 function buildDecompDefMap() {
   const FN_DEF = /^[A-Za-z_][A-Za-z0-9_ \t*]*[ \t*]([A-Za-z_]\w*)[ \t]*\(([^;{}]*?)\)[ \t]*\r?\n\{/gm;
   const DATA_DEF = /^(?!extern\b)[A-Za-z_][^;{}()=\n]*[ \t*]([gs][A-Z]\w*)((?:\[[^\]\n]*\])+)?[ \t]*[=;]/gm;
@@ -354,6 +355,13 @@ function buildDecompDefMap() {
       re.lastIndex = 0;
       while ((m = re.exec(text))) if (!decompDefFile.has(m[1])) decompDefFile.set(m[1], base);
     }
+  }
+  const LABEL_DEF = /^([A-Za-z_]\w*)::?[ \t]*(?:@.*)?$/gm;
+  for (const p of walk(path.join(DECOMP, 'data'), ['.s', '.inc'])) {
+    const text = fs.readFileSync(p, 'utf8');
+    let m;
+    LABEL_DEF.lastIndex = 0;
+    while ((m = LABEL_DEF.exec(text))) scriptLabels.add(m[1]);
   }
 }
 
@@ -473,6 +481,11 @@ function emitExpr(n, ctx) {
       }
       // gSpecialVar_X (lecture) → VarGet (adaptation vars store byte-VM)
       if (SPECIAL_VARS[name] !== undefined && !localModuleNames.has(name)) return specialVarGet(name);
+      // label script asm (EventScript_… data/) → STRING (convention byte-VM)
+      if (!localModuleNames.has(name) && !symbolIndex[name] && !(ctx && ctx.types.has(name))
+        && scriptLabels.has(name) && !decompDefFile.has(name)) {
+        return `'${name}'`;
+      }
       if (!(ctx && (ctx.types.has(name)))) markUsed(name);
       return name;
     }
@@ -1665,6 +1678,23 @@ function resolveImports() {
       localModuleNames.add(name);
       continue;
     }
+    // variantes historiques du repo : Name_Manual / _Name (conventions oracle)
+    let variantHit = false;
+    for (const v of [name + '_Manual', '_' + name]) {
+      const ve = index[v];
+      if (ve && ve.length) {
+        const pick = ve.find((e) => e.file.startsWith('src/')) || ve[0];
+        const rel = importPathFor(pick.file);
+        if (!neededImports.has(rel)) neededImports.set(rel, new Set());
+        neededImports.get(rel).add(v);
+        constsToInline.push(`const ${name} = ${v}; // variante repo (${pick.file})`);
+        localModuleNames.add(name);
+        flag(0, 'variante-repo', `${name} → ${v}`);
+        variantHit = true;
+        break;
+      }
+    }
+    if (variantHit) continue;
     if (!report.unresolved.has(name)) report.unresolved.set(name, []);
   }
   const lines = [];

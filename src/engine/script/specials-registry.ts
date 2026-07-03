@@ -72,6 +72,7 @@ import {
   CheckRelicanthWailord, DoSealedChamberShakingEffect_Long, DoSealedChamberShakingEffect_Short,
   ShouldDoBrailleRegicePuzzle, ShouldDoBrailleRegirockEffectOld,
 } from '../../braille_puzzles';
+import { EnterSafariMode, ExitSafariMode, GetPokeblockFeederInFront } from '../../safari_zone';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
@@ -2002,7 +2003,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DrewSecretBaseBattle',
   // 'EggHatch' — porté 1:1 décomp egg_hatch.c:472 (src/egg_hatch.ts, scène complète), handler ci-bas.
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
-  'EnterSafariMode', 'EnterSecretBase', 'ExitLinkRoom', 'ExitSafariMode',
+  // 'EnterSafariMode'/'ExitSafariMode' — portés 1:1 safari_zone.ts (transpilé), handlers ci-bas.
+  'EnterSecretBase', 'ExitLinkRoom',
   // 'FavorLadyGetPrize' — porté 1:1 décomp lilycove_lady.c:278 ci-bas (batch B9).
   // 'FieldShowRegionMap' — handler concret enregistré infra (= fade-from-black
   // jusqu'au port 1:1 worldmap UI region_map.c).
@@ -2041,7 +2043,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetObjectEventLocalIdByFlag' — porté 1:1 décomp decoration.c:2217 ci-bas (batch B6).
   // 'GetPCBoxToSendMon' — porté 1:1 décomp field_specials.c:3410 ci-bas (batch B6).
   // 'GetPlayerTrainerIdOnesDigit' — porté 1:1 décomp field_specials.c:901 ci-bas.
-  'GetPokeblockFeederInFront', 'GetPokeblockNameByMonNature',
+  // 'GetPokeblockFeederInFront' — porté 1:1 safari_zone.ts (transpilé), handler ci-bas.
+  'GetPokeblockNameByMonNature',
   'GetQuizAuthor',
   // 'GetQuizLadyState' — porté 1:1 décomp lilycove_lady.c:347 ci-bas (batch B10).
   'GetRandomActiveShowIdx',
@@ -2442,6 +2445,15 @@ registerSpecial('DoSealedChamberShakingEffect_Short', () => { DoSealedChamberSha
 registerSpecial('ShouldDoBrailleRegicePuzzle', () => (ShouldDoBrailleRegicePuzzle() ? 1 : 0));
 /** 1:1 décomp `ShouldDoBrailleRegirockEffectOld` (braille_puzzles.c:107) — nullsub ROM. */
 registerSpecial('ShouldDoBrailleRegirockEffectOld', () => { ShouldDoBrailleRegirockEffectOld(); });
+
+// ─── Safari Zone — impl transpilées safari_zone.ts ──────────────────────────
+
+/** 1:1 décomp `EnterSafariMode` (safari_zone.c:55) — 30 balles, 500 pas, stat. */
+registerSpecial('EnterSafariMode', () => { EnterSafariMode(); });
+/** 1:1 décomp `ExitSafariMode` (safari_zone.c:66) — reset flag/feeders/balles. */
+registerSpecial('ExitSafariMode', () => { ExitSafariMode(); });
+/** 1:1 décomp `GetPokeblockFeederInFront` (safari_zone.c:131) — VAR_RESULT + gStringVar1. */
+registerSpecial('GetPokeblockFeederInFront', () => { GetPokeblockFeederInFront(); });
 
 /** 1:1 décomp `GetTrainerFlag` (battle_setup.c:1235-1243) :
  *  ```c
