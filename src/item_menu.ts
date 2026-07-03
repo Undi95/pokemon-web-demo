@@ -964,9 +964,15 @@ export function _CtxPrintQuantityInWindow(windowId: number, count: number): void
   FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
   ConvertIntToDecimalStringN(gStringVar1, count, STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS);
   StringExpandPlaceholders(gStringVar4, encodeOwText(gText_xVar1));
-  // Décomp : GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28) ; fenêtre
-  // largeur 5 (40px) → offset centré ~4px (ajustable A/B).
-  BagMenu_Print(windowId, FONT_NORMAL, gStringVar4, 4, 2, 0, 0, TEXT_SKIP_DRAW, COLORID_NORMAL);
+  // 1:1 décomp `PrintItemQuantity` (item_menu.c:2526) : AddTextPrinterParameterized
+  // (couleurs PAR DÉFAUT du font FONT_NORMAL = fg 2 DARK_GRAY/bg 1/shadow 3), centré
+  // dans 0x28 (40px). ⚠️ PAS BagMenu_Print(COLORID_NORMAL) : COLORID_NORMAL a fg=1
+  // (WHITE) → texte blanc invisible sur le fond PIXEL_FILL(1) (bug couleur "×NN").
+  // Décomp : GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28). Notre
+  // signature = (str, totalWidth, fontId) → mêmes valeurs, ordre d'args du port.
+  AddTextPrinterParameterized(
+    windowId, FONT_NORMAL, gStringVar4,
+    GetStringCenterAlignXOffset(gStringVar4, 0x28, FONT_NORMAL), 2, 0, null);
   CopyWindowToVram(windowId, 3 /* COPYWIN_FULL */);
 }
 
