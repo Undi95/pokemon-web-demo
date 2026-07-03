@@ -107,6 +107,10 @@ décomp. Chemins absolus + `git -C`. Jamais `git add -A` ; jamais commit
 | item_menu.ts (_bagDrawRegisteredIcon) | icône SELECT objet-clé enregistré = no-op « déféré » alors que l'asset select_button.4bpp.bin est DÉJÀ extrait | ✅ corrigé (blit 1:1) | `7cfb4056` |
 | item_menu.ts (ItemMenu_Register) | omettait le rebuild de liste (:1926-1929) → l'icône SELECT ne se (re)dessinait jamais ; appelait _returnToList au lieu de ItemMenu_Cancel | ✅ corrigé | `7cfb4056` |
 | item_menu.ts (revue affichage) | BagMenu_Print / sFontColorTable / PrintItemDescription / ItemPrintCallback = 1:1 exact ; **commentaires STUB/DÉFÉRÉ périmés** (dispatcher UseOutOfBattle en fait complet, « le vrai est dans bag-menu.ts » alors que bag-menu.ts a été fusionné) | ⚠️ comportement OK, commentaires à nettoyer | — |
+| egg_hatch.ts | textColor [0,5,6] = décomp exact ; 25/25 portées ; msgs testés en jeu | ✅ RAS | — |
+| naming_screen.ts | sKeyboardTextColors [0xE/0xD/0xF,1,2] + sFillValues [0xEE/0xDD/0xFF] = décomp exact | ✅ RAS | — |
+| mail.ts (lecture) | sTextColors + sBgColors (RGB MALE/FEMALE) = décomp exact ; 61 marqueurs = dette ÉCRITURE (DoEasyChatScreen, déféré) | ✅ RAS lecture | — |
+| daycare.ts | 67/67 portées, testé en jeu (dépôt/retrait/menu niveau) | ✅ RAS | — |
 
 **Note item_menu.ts** : le fichier a été consolidé (bag-menu.ts fusionné) mais garde des
 commentaires d'un ancien plan Phase 2/3 (« STUB à implémenter », « [handler] à porter »,
