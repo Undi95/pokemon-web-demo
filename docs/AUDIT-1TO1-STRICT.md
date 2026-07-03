@@ -111,6 +111,14 @@ décomp. Chemins absolus + `git -C`. Jamais `git add -A` ; jamais commit
 | naming_screen.ts | sKeyboardTextColors [0xE/0xD/0xF,1,2] + sFillValues [0xEE/0xDD/0xFF] = décomp exact | ✅ RAS | — |
 | mail.ts (lecture) | sTextColors + sBgColors (RGB MALE/FEMALE) = décomp exact ; 61 marqueurs = dette ÉCRITURE (DoEasyChatScreen, déféré) | ✅ RAS lecture | — |
 | daycare.ts | 67/67 portées, testé en jeu (dépôt/retrait/menu niveau) | ✅ RAS | — |
+| pokemon_summary_screen.ts | sTextColors[][3] (13 entrées) = décomp exact (:708) | ✅ RAS | — |
+
+**Méta-leçon audit** : les **tables de couleurs** (sFontColorTable/sTextColors/sKeyboardTextColors/
+sBgColors) sont systématiquement transcrites 1:1 correctement. Les vraies divergences trouvées
+sont des erreurs de **logique dans les call-sites de print** : mauvais COLORID choisi (bag ×NN
+blanc), branche de couleur jamais prise (CS gris au lieu de bleu), ou fonction stub dans une
+zone finie (pierre d'évolution). → auditer les CALL-SITES conditionnels + les stubs, pas (que)
+les tables. Bug combat brûlure = classe à part (rendu/pacing, `docs/DIAG-combat-endturn-visual.md`).
 
 **Note item_menu.ts** : le fichier a été consolidé (bag-menu.ts fusionné) mais garde des
 commentaires d'un ancien plan Phase 2/3 (« STUB à implémenter », « [handler] à porter »,
