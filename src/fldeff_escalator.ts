@@ -166,7 +166,8 @@ function Task_DrawEscalator(taskId: number): void {
  *  Revue transpiler : `PlayerGetDestCoords(&tPlayerX, &tPlayerY)` (out-params C)
  *  → notre port retourne {x, y}. */
 function CreateEscalatorTask(goingUp: boolean): number {
-  let taskId = CreateTask(Task_DrawEscalator, 0);
+  // Revue transpiler : pattern task runtime OBLIGATOIRE (t)=>fn(t.taskId).
+  let taskId = CreateTask((t: { taskId: number }) => Task_DrawEscalator(t.taskId), 0);
   let data = gTasks[taskId].data;
   const dest = PlayerGetDestCoords();
   data[4] /* tPlayerX */ = dest.x;

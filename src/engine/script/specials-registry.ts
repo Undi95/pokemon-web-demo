@@ -68,6 +68,10 @@ import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SetUnlockedPokedexFlags, SetChampionSaveWarp } from '../../save_location';
+import {
+  CheckRelicanthWailord, DoSealedChamberShakingEffect_Long, DoSealedChamberShakingEffect_Short,
+  ShouldDoBrailleRegicePuzzle, ShouldDoBrailleRegirockEffectOld,
+} from '../../braille_puzzles';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
@@ -1421,7 +1425,8 @@ const _STUB_RETURN_0_SPECIALS = [
   'UpdateBattlePointsWindow',
   // 'CountPlayerMuseumPaintings' — porté 1:1 décomp contest_util.c:2380 ci-bas (batch B33).
   'CloseDeptStoreElevatorWindow',
-  'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
+  'BufferMoveDeleterNicknameAndMove',
+  // 'DoSealedChamberShakingEffect_Short' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'RemoveBerryPowderVendorMenu',
   // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
   // 'DoBattlePyramidMonsHaveHeldItem' — porté 1:1 décomp party_menu.c:6307 ci-bas (batch B49).
@@ -1432,7 +1437,8 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
   // 'GameClear' — porté 1:1 décomp post_battle_event_funcs.c:12 ci-haut (2026-07-02).
   'SetMewAboveGrass',
-  'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics', 'ShouldDoBrailleRegicePuzzle',
+  'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics',
+  // 'ShouldDoBrailleRegicePuzzle' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
   'DoOrbEffect', 'FadeOutOrbEffect', 'MauvilleGymDeactivatePuzzle',
@@ -1985,7 +1991,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
-  'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
+  // 'DoSealedChamberShakingEffect_Long' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
+  'DoSoftReset', 'DoTVShow',
   'DoTVShowInSearchOfTrainers',
   // 'DoTrainerApproach' — porté 1:1 (trainer_see.c:648) via special-flow (special_flows.ts).
   // 'DoWateringBerryTreeAnim' — handler concret 1:1 décomp enregistré plus bas (arrosage).
@@ -2161,7 +2168,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetSootopolisGymCrackedIceMetatiles',
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
   // 'ShouldContestLadyShowGoOnAir' — porté 1:1 décomp lilycove_lady.c:747 ci-bas (batch B31).
-  'ShouldDoBrailleRegirockEffectOld', 'ShouldHideFanClubInterviewer',
+  // 'ShouldDoBrailleRegirockEffectOld' — porté 1:1 braille_puzzles.ts (transpilé, nullsub), handler ci-bas.
+  'ShouldHideFanClubInterviewer',
   'ShouldReadyContestArtist',
   // 'ShouldShowBoxWasFullMessage' — porté 1:1 field_specials.c:3415 ci-bas.
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
@@ -2415,18 +2423,25 @@ registerSpecial('CheckPlayerHasSecretBase', () => {
   return result;
 });
 
-/** 1:1 décomp `CheckRelicanthWailord` (braille_puzzles.c:92-104).
- *  Sealed Chamber puzzle : WAILORD en slot 0 + RELICANTH en dernier slot
- *  occupé de la party. Emerald flip vs RS (= "First comes Wailord"). */
-registerSpecial('CheckRelicanthWailord', () => {
-  // 1:1 décomp :96 GetMonData(&gPlayerParty[0], SPECIES) == SPECIES_WAILORD.
-  if ((_GetMonData(gPlayerParty[0], MON_DATA_SPECIES) as number) !== SPECIES_WAILORD) return 0;
-  // 1:1 décomp :98 CalculatePlayerPartyCount.
-  const partyCount = CalculatePlayerPartyCount();
-  if (partyCount === 0) return 0;
-  // 1:1 décomp :100 GetMonData(&gPlayerParty[partyCount-1], SPECIES) == SPECIES_RELICANTH.
-  return (_GetMonData(gPlayerParty[partyCount - 1], MON_DATA_SPECIES) as number) === SPECIES_RELICANTH ? 1 : 0;
-});
+/** 1:1 décomp `CheckRelicanthWailord` (braille_puzzles.c:92-104) — impl transpilée
+ *  dans src/braille_puzzles.ts (source unique ; utilise MON_DATA_SPECIES_OR_EGG
+ *  comme la décomp — l'ancienne inline lisait MON_DATA_SPECIES : un ŒUF en bout
+ *  de party ne doit PAS compter comme RELICANTH). */
+registerSpecial('CheckRelicanthWailord', () => (CheckRelicanthWailord() ? 1 : 0));
+
+// ─── Braille puzzles (Regi/Sealed Chamber) — impl transpilées braille_puzzles.ts ───
+
+/** 1:1 décomp `DoSealedChamberShakingEffect_Long` (braille_puzzles.c:117) —
+ *  special waitstate=1 ; la task émet ScriptContext_Enable + SignalWaitState. */
+registerSpecial('DoSealedChamberShakingEffect_Long', () => { DoSealedChamberShakingEffect_Long(); });
+/** 1:1 décomp `DoSealedChamberShakingEffect_Short` (braille_puzzles.c:129) — waitstate=1. */
+registerSpecial('DoSealedChamberShakingEffect_Short', () => { DoSealedChamberShakingEffect_Short(); });
+/** 1:1 décomp `ShouldDoBrailleRegicePuzzle` (braille_puzzles.c:283). NB : la décomp
+ *  l'appelle AUSSI per-step (field_control_avatar.c:565) — câblage per-step = dette
+ *  field_control (tracée au rapport transpile). */
+registerSpecial('ShouldDoBrailleRegicePuzzle', () => (ShouldDoBrailleRegicePuzzle() ? 1 : 0));
+/** 1:1 décomp `ShouldDoBrailleRegirockEffectOld` (braille_puzzles.c:107) — nullsub ROM. */
+registerSpecial('ShouldDoBrailleRegirockEffectOld', () => { ShouldDoBrailleRegirockEffectOld(); });
 
 /** 1:1 décomp `GetTrainerFlag` (battle_setup.c:1235-1243) :
  *  ```c

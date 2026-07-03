@@ -97,7 +97,10 @@ function resolveSpriteDims(src) {
     .replace(/SPRITE_SIZE\((\d+x\d+)\)/g, (m, d) => (SPRITE_DIMS[d] ? `${SPRITE_DIMS[d][1]} /* ${m} */` : m))
     .replace(/\bALIGNED\(\d+\)\s*/g, '')                 // attribut alignement — sans objet en TS
     .replace(/\b__attribute__\(\([^)]*\)\)\s*/g, '')     // attributs GCC
-    .replace(/\bUNUSED\s+/g, '');                        // macro UNUSED
+    .replace(/\bUNUSED\s+/g, '')                         // macro UNUSED
+    .replace(/\bEWRAM_DATA\s+/g, '')                     // attribut section EWRAM (data normale)
+    .replace(/\bIWRAM_DATA\s+/g, '')                     // attribut section IWRAM
+    .replace(/\bCOMMON_DATA\s+/g, '');                   // attribut section COMMON
 }
 
 // gSpecialVar_* → VarGet/VarSet (adaptation documentée : vars store byte-VM,
@@ -497,13 +500,25 @@ function emitExpr(n, ctx) {
       const on = n.type === 'true' ? '1' : '0';
       const off = n.type === 'true' ? 'true' : 'false';
       const p = n.parent;
-      if (p && p.type === 'binary_expression') return on;
+      if (p && p.type === 'binary_expression') {
+        // sauf si l'autre opérande est un bool CONNU (static/local boolean) → true/false
+        const sib = p.childForFieldName('left');
+        if (sib && sib.type === 'identifier' && sib.startIndex !== n.startIndex) {
+          const st = (ctx && ctx.types.get(sib.text)) || moduleDataTypes.get(sib.text);
+          if (st && st.kind === 'bool') return off;
+        }
+        return on;
+      }
       if (p && p.type === 'assignment_expression') {
         const valueN = p.childForFieldName('right');
         if (valueN && valueN.startIndex === n.startIndex) {
           const left = p.childForFieldName('left');
           if (left && (left.type === 'subscript_expression'
             || (left.type === 'identifier' && bareAliases.has(left.text)))) return on; // data[N]
+          if (left && left.type === 'identifier') {
+            const mt = moduleDataTypes.get(left.text);
+            if (mt && mt.kind === 'num') return on;   // static numérique (bool8 émis number)
+          }
         }
       }
       return off;
@@ -555,6 +570,11 @@ function emitExpr(n, ctx) {
       const l = n.childForFieldName('left'), r = n.childForFieldName('right');
       const op = n.childForFieldName('operator').text;
       const ls = emitExpr(l, ctx), rs = emitExpr(r, ctx);
+      // fns booléennes connues comparées à 0/1 (C bool8) → forme booléenne
+      if ((op === '==' || op === '!=') && /^(FlagGet|IsPlayerDefeated)\(/.test(ls) && (rs === '0' || rs === '1')) {
+        const truthy = (rs === '1') === (op === '==');
+        return truthy ? ls : `!${ls}`;
+      }
       if (op === '/') return `Math.trunc(${ls} / ${rs})`;
       if (op === '>>') {
         // >>> si l'opérande gauche est non-signée connue
@@ -572,6 +592,12 @@ function emitExpr(n, ctx) {
         const name = l.text;
         if (op === '=') return specialVarSet(name, rs);
         return specialVarSet(name, `${specialVarGet(name)} ${op.slice(0, -1)} ${rs}`);
+      }
+      // gTasks[i].func = TaskFn / task->func = TaskFn → wrapper (t)=>fn(t.taskId)
+      if (op === '=' && l.type === 'field_expression' && l.childForFieldName('field')
+        && l.childForFieldName('field').text === 'func' && r.type === 'identifier' && r.text !== 'NULL') {
+        markUsed(r.text);
+        return `${emitExpr(l, ctx)} = (t: { taskId: number }) => ${r.text}(t.taskId)`;
       }
       // bool8 → slot numérique (data[N] = goingUp) : coercition C-exacte +()
       const leftIsDataSlot = l.type === 'subscript_expression'
@@ -632,6 +658,24 @@ function emitExpr(n, ctx) {
         if (name === 'sizeof') return emitSizeof(n, ctx);
         if (name === '_' || name === '__') { markUsed('encodeOwText'); return `encodeOwText(${argList.join(', ')})`; }
         if (name === 'ARRAY_COUNT') return `${argList[0]}.length`;
+        if (name === 'GetMonData' && argList.length === 3 && (argList[2] === '0' || argList[2] === 'null')) {
+          markUsed('GetMonData');
+          return `GetMonData(${argList[0]}, ${argList[1]})`; // 3e arg data=NULL (scalaires) — signature repo 2 args
+        }
+        if (name === 'SetCameraPanningCallback' && argList[0] === '0') {
+          markUsed(name);
+          return `${name}(null)`; // C passe 0 = pas de callback
+        }
+        if (name === 'CreateTask' || name === 'CreateTaskAtEnd') {
+          // Pattern runtime OBLIGATOIRE : func reçoit le TASK OBJECT → (t)=>fn(t.taskId)
+          // (DestroyTask(objet) = no-op silencieux = task zombie, leçon payée).
+          const a0 = args.namedChildren.filter((c) => c.type !== 'comment')[0];
+          if (a0 && a0.type === 'identifier') {
+            markUsed(name);
+            markUsed(a0.text);
+            return `${name}((t: { taskId: number }) => ${a0.text}(t.taskId), ${argList.slice(1).join(', ')})`;
+          }
+        }
         if (name === 'FREE_AND_SET_NULL' || name === 'TRY_FREE_AND_SET_NULL')
           return `${argList[0]} = null /* ${name} — GC */`;
         if (name === 'Free' || name === 'FreeIfNotNull') return `void ${argList[0]} /* ${name} — GC */`;
@@ -1470,7 +1514,12 @@ function emitTopDecl(n) {
     if (dims.length && ti.kind === 'typedarray') {
       if (initN && initN.type !== 'initializer_list')
         outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name} = ${emitExpr(initN, null)};`);
-      else if (initN) outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name} = ${ti.ts}.from(${emitInitList(initN, null, null).replace(/\n/g, '\n')}${dims.length > 1 ? '.flat(9) as number[]' : ''});`);
+      else if (initN && dims.length > 1) {
+        // multi-dim scalaire → tableaux imbriqués (indexation [i][j] 1:1)
+        moduleDataTypes.set(name, { kind: 'array', ts: 'number[][]' });
+        outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name}: number[][] = ${emitInitList(initN, null, null)};`);
+      }
+      else if (initN) outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name} = ${ti.ts}.from(${emitInitList(initN, null, null)});`);
       else {
         const dimsV = dims.map((x) => cConstEval(x.text, localConstMap) ?? x.text);
         outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name} = new ${ti.ts}(${dimsV.join(' * ')});`);
@@ -1487,14 +1536,16 @@ function emitTopDecl(n) {
         else { outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}const ${name}: any[] = []; // TRANSPILER-TODO init tableau ${baseType}`); flag(line(d), 'data-array', `${name}: ${baseType}[${dims.map((x) => x.text).join('][')}]`); }
       }
     } else if (initN) {
-      const v = ptr > 0 && initN.text === 'NULL' ? 'null' : emitInitList(initN, ptr > 0 ? null : baseType, null);
+      let v = ptr > 0 && initN.text === 'NULL' ? 'null' : emitInitList(initN, ptr > 0 ? null : baseType, null);
+      if (ti.kind === 'bool' && (v === '0' || v === '1')) v = v === '1' ? 'true' : 'false';
+      if (ti.kind === 'num' || ti.kind === 'bool') moduleDataTypes.set(name, ti);
       const letKw = constV && !ptr ? 'const' : 'let';
       const typeAnn = ptr > 0 ? `: ${ti.ts === 'any' ? 'any' : ti.ts + ' | null'}` : '';
       outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}${letKw} ${name}${typeAnn} = ${v};`);
     } else {
       // scalaire/pointeur mutable non initialisé (EWRAM/IWRAM)
-      if (ti.kind === 'num') outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}let ${name} = 0;`);
-      else if (ti.kind === 'bool') outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}let ${name} = false;`);
+      if (ti.kind === 'num') { moduleDataTypes.set(name, ti); outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}let ${name} = 0;`); }
+      else if (ti.kind === 'bool') { moduleDataTypes.set(name, ti); outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}let ${name} = false;`); }
       else if (ti.kind === 'struct') {
         const z = zeroObjectFor(ti.local || ti.ts);
         outs.push(`/** 1:1 (${baseName}.c:${line(d)}) */\n${exportKw}${z ? `const ${name} = ${z};` : `let ${name}: any = {}; // TRANSPILER-TODO struct ${baseType}`}`);

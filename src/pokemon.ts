@@ -259,14 +259,19 @@ export const gEnemyParty: Pokemon[] = Array.from({ length: PARTY_SIZE }, createE
   .__gPlayerParty = gPlayerParty;
 (globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
 
-/** 1:1 décomp `CalculatePlayerPartyCount()` (pokemon.c). Return le nombre de
- *  slots dans gPlayerParty avec species != 0. Used pour detect party full. */
+/** 1:1 décomp `EWRAM_DATA u8 gPlayerPartyCount` (pokemon.c) — posé par
+ *  CalculatePlayerPartyCount ; lu par braille_puzzles/GetMonsStateToDoubles/etc. */
+export let gPlayerPartyCount = 0;
+
+/** 1:1 décomp `u8 CalculatePlayerPartyCount(void)` (pokemon.c) : compte CONTIGU
+ *  — s'arrête au premier slot SPECIES_NONE (≠ compter tous les slots non vides,
+ *  fix drift : la décomp while-loop), et pose gPlayerPartyCount. */
 export function CalculatePlayerPartyCount(): number {
-  let count = 0;
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    if (gPlayerParty[i]?.species && gPlayerParty[i].species !== 0) count++;
-  }
-  return count;
+  gPlayerPartyCount = 0;
+  while (gPlayerPartyCount < PARTY_SIZE
+    && (gPlayerParty[gPlayerPartyCount]?.species ?? 0) !== 0)
+    gPlayerPartyCount++;
+  return gPlayerPartyCount;
 }
 
 /** 1:1 décomp `u8 GetMonsStateToDoubles(void)` (pokemon.c:4494-4512) :
