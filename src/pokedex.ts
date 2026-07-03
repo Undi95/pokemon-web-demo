@@ -24,7 +24,7 @@
  */
 import {
   getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes,
-  ScanlineEffect_Stop, LoadPalette, PlaySE,
+  ScanlineEffect_Stop, LoadPalette, PlaySE, IsSEPlaying,
   LoadCompressedSpriteSheet, LoadSpritePalettes, assetCache,
 } from '../harness/runtime/decomp-globals';
 import {
@@ -45,7 +45,7 @@ import {
 } from './window';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from './text';
 import { AddTextPrinterParameterized4 } from './menu';
-import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
+import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal, loadIndexedPngRawIndices } from '../harness/gba/png-loader';
 import { CopyMonCategoryText, GetStringCenterAlignXOffset } from './international_string_util';
@@ -67,10 +67,18 @@ import {
   NationalToHoennOrder, HoennToNationalOrder, NationalPokedexNumToSpecies,
   HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
 } from './engine/ui/pokedex-flags';
-import { gSpeciesNames } from './engine/data/game-data';
+import { gSpeciesNames, getSpeciesInfo } from './engine/data/game-data';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
-import { DisableNationalPokedex } from './event_data';
-import { SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE, SE_PIN, SE_FAILURE } from '../include/constants/songs';
+import { DisableNationalPokedex, IsNationalPokedexEnabled } from './event_data';
+import { GetOverworldTextboxPalettePtr } from './text_window';
+import {
+  gPokedexOrder_Alphabetical, gPokedexOrder_Weight, gPokedexOrder_Height,
+} from './data/pokedex_orders';
+import { GetNationalPokedexCount } from './engine/ui/pokedex-flags';
+import {
+  SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE, SE_PIN, SE_FAILURE, SE_SELECT,
+  SE_PC_LOGIN, SE_BALL, SE_DEX_SEARCH, SE_SUCCESS, SE_TRUCK_DOOR,
+} from '../include/constants/songs';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // ─── Constantes 1:1 (pokedex.h / pokedex.c) ──────────────────────────────────
@@ -83,8 +91,14 @@ const PAGE_CRY = 6;
 const PAGE_SIZE = 7;
 
 const DEX_MODE_HOENN = 0;
-// const DEX_MODE_NATIONAL = 1;              // national : jalon 4
+const DEX_MODE_NATIONAL = 1;
 const ORDER_NUMERICAL = 0;
+const ORDER_ALPHABETICAL = 1;
+const ORDER_HEAVIEST = 2;
+const ORDER_LIGHTEST = 3;
+const ORDER_TALLEST = 4;
+const ORDER_SMALLEST = 5;
+const PAGE_SEARCH = 2;
 // 1:1 enum écrans (pokedex.c:44) — AREA en PREMIER = 0 (selectedScreen défaut, pokedex.c:1637).
 const AREA_SCREEN = 0;
 const CRY_SCREEN = 1;
@@ -175,8 +189,13 @@ interface PokedexView {
   dexMode: number;
   dexOrder: number;
   currentPage: number;
+  currentPageBackup: number;
   isSearchResults: boolean;
   selectedPokemon: number;
+  selectedPokemonBackup: number;
+  dexModeBackup: number;
+  dexOrderBackup: number;
+  pokeBallRotationBackup: number;
   selectedScreen: number;
   screenSwitchState: number;   // 1:1 pokedex.h (dispatch inter-écrans fiche/zone/cri/taille)
   pokeBallRotation: number;
@@ -212,8 +231,13 @@ function ResetPokedexView(v: PokedexView): void {
   v.dexMode = DEX_MODE_HOENN;
   v.dexOrder = ORDER_NUMERICAL;
   v.currentPage = PAGE_MAIN;
+  v.currentPageBackup = PAGE_MAIN;
   v.isSearchResults = false;
   v.selectedPokemon = 0;
+  v.selectedPokemonBackup = 0;
+  v.dexModeBackup = DEX_MODE_HOENN;
+  v.dexOrderBackup = ORDER_NUMERICAL;
+  v.pokeBallRotationBackup = 0;
   v.selectedScreen = AREA_SCREEN;
   v.screenSwitchState = 0;
   v.pokeBallRotation = 0;
@@ -258,6 +282,14 @@ interface PokedexAssets {
   screenSelectBarSubmenuTilemap: Uint16Array; // gPokedexScreenSelectBarSubmenu_Tilemap (CRI/TAILLE/RETOUR)
   sizeSilhouettePal: Uint16Array;          // sSizeScreenSilhouette_Pal (silhouettes violettes)
   cryScreenTilemap: Uint16Array;           // gPokedexCryScreen_Tilemap (cry_screen.bin, cadre CRI)
+  // ─── Jalon 4 : recherche / National ───
+  searchMenuTiles: Uint8Array;             // gPokedexSearchMenu_Gfx (search_menu.4bpp.bin → BG3 charBase 0)
+  searchMenuPal: Uint16Array;              // gPokedexSearchMenu_Pal (search_menu.pal, 4 banks)
+  searchHoennTilemap: Uint16Array;         // gPokedexSearchMenuHoenn_Tilemap
+  searchNationalTilemap: Uint16Array;      // gPokedexSearchMenuNational_Tilemap
+  searchResultsBgPal: Uint16Array;         // gPokedexSearchResults_Pal (search_results_bg.pal)
+  bgNationalPal: Uint16Array;              // gPokedexBgNational_Pal (bg_national.pal)
+  startMenuSearchResultsTilemap: Uint16Array; // gPokedexStartMenuSearchResults_Tilemap
 }
 let _assets: PokedexAssets | null = null;
 let _assetsLoading: Promise<PokedexAssets> | null = null;
@@ -265,7 +297,7 @@ function _loadAssets(): Promise<PokedexAssets> {
   if (_assets) return Promise.resolve(_assets);
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap, sizeScreenTilemap, screenSelectBarSubmenuTilemap, sizeSilhouettePal, cryScreenTilemap] = await Promise.all([
+    const [menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap, sizeScreenTilemap, screenSelectBarSubmenuTilemap, sizeSilhouettePal, cryScreenTilemap, searchMenuTiles, searchMenuPal, searchHoennTilemap, searchNationalTilemap, searchResultsBgPal, bgNationalPal, startMenuSearchResultsTilemap] = await Promise.all([
       loadTileBin(`${ASSET}/menu.png`, 4),          // sibling menu.4bpp.bin (indices bruts)
       loadTilemapBin(`${ASSET}/list.bin`),
       loadTilemapBin(`${ASSET}/list_underlay.bin`),
@@ -279,8 +311,15 @@ function _loadAssets(): Promise<PokedexAssets> {
       loadTilemapBin(`${ASSET}/screen_select_bar_submenu.bin`), // barre CRI/TAILLE/RETOUR
       loadGbaPal(`${ASSET}/size_silhouette.pal`),    // sSizeScreenSilhouette_Pal
       loadTilemapBin(`${ASSET}/cry_screen.bin`),     // gPokedexCryScreen_Tilemap (cadre CRI)
+      loadTileBin(`${ASSET}/search_menu.png`, 4),    // sibling search_menu.4bpp.bin
+      loadGbaPal(`${ASSET}/search_menu.pal`),
+      loadTilemapBin(`${ASSET}/search_menu_hoenn.bin`),
+      loadTilemapBin(`${ASSET}/search_menu_national.bin`),
+      loadGbaPal(`${ASSET}/search_results_bg.pal`),
+      loadGbaPal(`${ASSET}/bg_national.pal`),
+      loadTilemapBin(`${ASSET}/start_menu_search_results.bin`),
     ]);
-    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap, sizeScreenTilemap, screenSelectBarSubmenuTilemap, sizeSilhouettePal, cryScreenTilemap };
+    _assets = { menuTiles, listTilemap, underlayTilemap, startMenuTilemap, bgHoennPal, caughtBall, interfaceTiles, infoScreenTilemap, screenSelectBarMainTilemap, sizeScreenTilemap, screenSelectBarSubmenuTilemap, sizeSilhouettePal, cryScreenTilemap, searchMenuTiles, searchMenuPal, searchHoennTilemap, searchNationalTilemap, searchResultsBgPal, bgNationalPal, startMenuSearchResultsTilemap };
     // assetCache keyed pour LoadCompressedSpriteSheet/LoadSpritePalettes (sprites d'interface, TAG 4096).
     assetCache.set('gPokedexInterface_Gfx', interfaceTiles);
     assetCache.set('gPokedexBgHoenn_Pal', bgHoennPal);
@@ -292,23 +331,115 @@ function _loadAssets(): Promise<PokedexAssets> {
 // ─── Liste des mons (JALON 1b) ───────────────────────────────────────────────
 // const LIST_SCROLL_STEP = 16;   // JALON 1d (scroll Up/Down)
 
-// 1:1 décomp `CreatePokedexList` (pokedex.c:2190) — ORDER_NUMERICAL (Hoenn).
-// (Tris alphabétique/poids/taille + mode National = JALON 4.)
-function CreatePokedexList(_dexMode: number, _order: number): void {
+// 1:1 décomp `CreatePokedexList` (pokedex.c:2190) — 6 ordres + mode National.
+function CreatePokedexList(dexMode: number, order: number): void {
   if (!sPokedexView) return;
   const v = sPokedexView;
   v.pokemonListCount = 0;
-  const dexCount = HOENN_DEX_COUNT; // DEX_MODE_HOENN (National = jalon 4)
-  for (let i = 0; i < dexCount; i++) {
-    const dexNum = HoennToNationalOrder(i + 1);
-    v.pokedexList[i].dexNum = dexNum;
-    v.pokedexList[i].seen = GetSetPokedexFlag(dexNum, FLAG_GET_SEEN) !== 0;
-    v.pokedexList[i].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
-    if (v.pokedexList[i].seen) v.pokemonListCount = i + 1;
+
+  let dexCount: number;
+  let isHoennDex: boolean;
+  switch (dexMode) {
+    default:
+    case DEX_MODE_HOENN:
+      dexCount = HOENN_DEX_COUNT;
+      isHoennDex = true;
+      break;
+    case DEX_MODE_NATIONAL:
+      if (IsNationalPokedexEnabled()) {
+        dexCount = NATIONAL_DEX_COUNT;
+        isHoennDex = false;
+      } else {
+        dexCount = HOENN_DEX_COUNT;
+        isHoennDex = true;
+      }
+      break;
   }
-  // 1:1 décomp pokedex.c:2328-2333 : efface (dexNum=0xFFFF) toutes les entrées AU-DELÀ du
-  // plus haut Nº vu → la liste s'arrête à pokemonListCount (= se fixe au plus gros vu ; les
-  // non-vus EN-DESSOUS restent « ---------- », ceux au-dessus disparaissent).
+
+  switch (order) {
+    case ORDER_NUMERICAL:
+      if (isHoennDex) {
+        for (let i = 0; i < dexCount; i++) {
+          const dexNum = HoennToNationalOrder(i + 1);
+          v.pokedexList[i].dexNum = dexNum;
+          v.pokedexList[i].seen = GetSetPokedexFlag(dexNum, FLAG_GET_SEEN) !== 0;
+          v.pokedexList[i].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
+          if (v.pokedexList[i].seen) v.pokemonListCount = i + 1;
+        }
+      } else {
+        // 1:1 : la liste nationale COMMENCE au premier vu (r10 = « déjà croisé un vu »).
+        let r5 = 0, r10 = 0;
+        for (let i = 0; i < dexCount; i++) {
+          const dexNum = i + 1;
+          if (GetSetPokedexFlag(dexNum, FLAG_GET_SEEN)) r10 = 1;
+          if (r10) {
+            v.pokedexList[r5].dexNum = dexNum;
+            v.pokedexList[r5].seen = GetSetPokedexFlag(dexNum, FLAG_GET_SEEN) !== 0;
+            v.pokedexList[r5].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
+            if (v.pokedexList[r5].seen) v.pokemonListCount = r5 + 1;
+            r5++;
+          }
+        }
+      }
+      break;
+    case ORDER_ALPHABETICAL:
+      for (let i = 0; i < gPokedexOrder_Alphabetical.length /* NUM_SPECIES - 1 */; i++) {
+        const dexNum = gPokedexOrder_Alphabetical[i];
+        if (NationalToHoennOrder(dexNum) <= dexCount && GetSetPokedexFlag(dexNum, FLAG_GET_SEEN)) {
+          v.pokedexList[v.pokemonListCount].dexNum = dexNum;
+          v.pokedexList[v.pokemonListCount].seen = true;
+          v.pokedexList[v.pokemonListCount].owned = GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT) !== 0;
+          v.pokemonListCount++;
+        }
+      }
+      break;
+    case ORDER_HEAVIEST:
+      for (let i = NATIONAL_DEX_COUNT - 1; i >= 0; i--) {
+        const dexNum = gPokedexOrder_Weight[i];
+        if (NationalToHoennOrder(dexNum) <= dexCount && GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
+          v.pokedexList[v.pokemonListCount].dexNum = dexNum;
+          v.pokedexList[v.pokemonListCount].seen = true;
+          v.pokedexList[v.pokemonListCount].owned = true;
+          v.pokemonListCount++;
+        }
+      }
+      break;
+    case ORDER_LIGHTEST:
+      for (let i = 0; i < NATIONAL_DEX_COUNT; i++) {
+        const dexNum = gPokedexOrder_Weight[i];
+        if (NationalToHoennOrder(dexNum) <= dexCount && GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
+          v.pokedexList[v.pokemonListCount].dexNum = dexNum;
+          v.pokedexList[v.pokemonListCount].seen = true;
+          v.pokedexList[v.pokemonListCount].owned = true;
+          v.pokemonListCount++;
+        }
+      }
+      break;
+    case ORDER_TALLEST:
+      for (let i = NATIONAL_DEX_COUNT - 1; i >= 0; i--) {
+        const dexNum = gPokedexOrder_Height[i];
+        if (NationalToHoennOrder(dexNum) <= dexCount && GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
+          v.pokedexList[v.pokemonListCount].dexNum = dexNum;
+          v.pokedexList[v.pokemonListCount].seen = true;
+          v.pokedexList[v.pokemonListCount].owned = true;
+          v.pokemonListCount++;
+        }
+      }
+      break;
+    case ORDER_SMALLEST:
+      for (let i = 0; i < NATIONAL_DEX_COUNT; i++) {
+        const dexNum = gPokedexOrder_Height[i];
+        if (NationalToHoennOrder(dexNum) <= dexCount && GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
+          v.pokedexList[v.pokemonListCount].dexNum = dexNum;
+          v.pokedexList[v.pokemonListCount].seen = true;
+          v.pokedexList[v.pokemonListCount].owned = true;
+          v.pokemonListCount++;
+        }
+      }
+      break;
+  }
+
+  // 1:1 décomp pokedex.c:2328-2333 : efface (dexNum=0xFFFF) toutes les entrées au-delà.
   for (let i = v.pokemonListCount; i < NATIONAL_DEX_COUNT; i++) {
     v.pokedexList[i].dexNum = 0xffff;
     v.pokedexList[i].seen = false;
@@ -847,6 +978,27 @@ const sHoennDexSeenOwnNumberSpriteTemplate: SpriteTemplate = {
   anims: Array.from({ length: 10 }, (_, d) => [ANIMCMD_FRAME(128 + d * 2, 30), ANIMCMD_END]),
   affineAnims: null, callback: SpriteCB_SeenOwnInfo,
 };
+// 1:1 sHoennNationalTextSpriteTemplate (pokedex.c:746) — labels HOENN(160)/NATIONAL(168), 32x16.
+const sHoennNationalTextSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 1, size: 2, priority: 0, objMode: 0, affineMode: 0 },
+  anims: [[ANIMCMD_FRAME(160, 30), ANIMCMD_END], [ANIMCMD_FRAME(168, 30), ANIMCMD_END]],
+  affineAnims: null, callback: SpriteCB_SeenOwnInfo,
+};
+// 1:1 sNationalDexSeenOwnNumberSpriteTemplate (pokedex.c:768) — chiffres 0..9 (frames 176..194, +2).
+const sNationalDexSeenOwnNumberSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 2, size: 0, priority: 0, objMode: 0, affineMode: 0 },
+  anims: Array.from({ length: 10 }, (_, d) => [ANIMCMD_FRAME(176 + d * 2, 30), ANIMCMD_END]),
+  affineAnims: null, callback: SpriteCB_SeenOwnInfo,
+};
+// 1:1 sDexListStartMenuCursorSpriteTemplate (pokedex.c:779) — curseur menu START (8x16, frame 4).
+const sDexListStartMenuCursorSpriteTemplate: SpriteTemplate = {
+  tileTag: TAG_DEX_INTERFACE, paletteTag: TAG_DEX_INTERFACE,
+  oam: { shape: 2, size: 0, priority: 0, objMode: 0, affineMode: 0 },
+  anims: [[ANIMCMD_FRAME(4, 30), ANIMCMD_END]],
+  affineAnims: null, callback: SpriteCB_DexListStartMenuCursor,
+};
 // 1:1 sScrollArrowSpriteTemplate (pokedex.c:702) — flèches défilement haut/bas (16x8, frame 1).
 // La décomp n'a qu'1 anim (frame 1) et flippe la flèche BAS via `sprite->vFlip = TRUE`
 // (pokedex.c:2800), combiné par SetSpriteOamFlipBits (sprite.c:1246 : oam = animFlip ^ sprite->vFlip).
@@ -954,6 +1106,25 @@ function SpriteCB_DexListInterfaceText(sprite: DecompSprite): void {
     DestroySprite(sprite.spriteId);
 }
 
+// 1:1 décomp `SpriteCB_DexListStartMenuCursor` (pokedex.c:3165) : visible + oscillant
+// quand le menu START est déployé (menuY = 80 main / 96 results), suit menuCursorPos.
+function SpriteCB_DexListStartMenuCursor(sprite: DecompSprite): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== PAGE_SEARCH_RESULTS) {
+    DestroySprite(sprite.spriteId);
+    return;
+  }
+  const r1 = sPokedexView.currentPage === PAGE_MAIN ? 80 : 96;
+  if (sPokedexView.menuIsOpen && sPokedexView.menuY === r1) {
+    sprite.invisible = false;
+    sprite.y2 = sPokedexView.menuCursorPos * 16;
+    sprite.x2 = Math.trunc(gSineTable[sprite.data[2] & 0xff] / 64);
+    sprite.data[2] = (sprite.data[2] + 8) & 0xffff;
+  } else {
+    sprite.invisible = true;
+  }
+}
+
 // 1:1 décomp `CreateInterfaceSprites` (pokedex.c:2790) — JALON 1c : Pokéball affine + compteurs
 // VUS/PRIS (Hoenn). [Flèches scroll / scrollbar / labels START-MENU-SELECT-RECHERCHE / National
 // = sous-étapes suivantes ; sprite du mon = CreateMonSpritesAtPos jalon 1c-mon.]
@@ -998,37 +1169,47 @@ function CreateInterfaceSprites(page: number): void {
   id = CreateSprite(sRotatingPokeBallSpriteTemplate, 0, DISPLAY_HEIGHT / 2, 2);
   { const s = rt.gSprites[id]; if (s) { s.affineMode = 1; s.matrixNum = 31; s.data[0] = 31; s.data[1] = 128; } }
 
+  // Helper 1:1 : 3 chiffres (centaines/dizaines/unités) avec masquage des zéros de tête.
+  const drawCount = (template: SpriteTemplate, value: number, x0: number, y: number, dx: number): void => {
+    let drawNextDigit = false;
+    let sid = CreateSprite(template, x0, y, 1);
+    let digitNum = Math.floor(value / 100);
+    anim(sid, digitNum);
+    if (digitNum !== 0) drawNextDigit = true; else hide(sid);
+    sid = CreateSprite(template, x0 + dx, y, 1);
+    digitNum = Math.floor((value % 100) / 10);
+    if (digitNum !== 0 || drawNextDigit) anim(sid, digitNum); else hide(sid);
+    sid = CreateSprite(template, x0 + dx * 2, y, 1);
+    anim(sid, (value % 100) % 10);
+  };
+
   if (page === PAGE_MAIN) {
-    // Hoenn (!IsNationalPokedexEnabled). National = jalon 4.
-    let digitNum: number;
-    let drawNextDigit: boolean;
-    // Labels VUS / PRIS
-    CreateSprite(sSeenOwnTextSpriteTemplate, 32, 40, 1);
-    anim(CreateSprite(sSeenOwnTextSpriteTemplate, 32, 72, 1), 1);
-
-    // Valeur VUS : centaines / dizaines / unités (masquage des zéros de tête).
-    drawNextDigit = false;
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 24, 48, 1);
-    digitNum = Math.floor(sPokedexView.seenCount / 100);
-    anim(id, digitNum);
-    if (digitNum !== 0) drawNextDigit = true; else hide(id);
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 32, 48, 1);
-    digitNum = Math.floor((sPokedexView.seenCount % 100) / 10);
-    if (digitNum !== 0 || drawNextDigit) anim(id, digitNum); else hide(id);
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 40, 48, 1);
-    anim(id, (sPokedexView.seenCount % 100) % 10);
-
-    // Valeur PRIS : centaines / dizaines / unités.
-    drawNextDigit = false;
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 24, 80, 1);
-    digitNum = Math.floor(sPokedexView.ownCount / 100);
-    anim(id, digitNum);
-    if (digitNum !== 0) drawNextDigit = true; else hide(id);
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 32, 80, 1);
-    digitNum = Math.floor((sPokedexView.ownCount % 100) / 10);
-    if (digitNum !== 0 || drawNextDigit) anim(id, digitNum); else hide(id);
-    id = CreateSprite(sHoennDexSeenOwnNumberSpriteTemplate, 40, 80, 1);
-    anim(id, (sPokedexView.ownCount % 100) % 10);
+    if (!IsNationalPokedexEnabled()) {
+      // Labels VUS / PRIS + compteurs Hoenn (1:1 pokedex.c:2836-2888).
+      CreateSprite(sSeenOwnTextSpriteTemplate, 32, 40, 1);
+      anim(CreateSprite(sSeenOwnTextSpriteTemplate, 32, 72, 1), 1);
+      drawCount(sHoennDexSeenOwnNumberSpriteTemplate, sPokedexView.seenCount, 24, 48, 8);
+      drawCount(sHoennDexSeenOwnNumberSpriteTemplate, sPokedexView.ownCount, 24, 80, 8);
+    } else {
+      // National (1:1 pokedex.c:2891-3008) : labels VUS/PRIS + HOENN/NATIONAL ×2 +
+      // 4 compteurs (vus Hoenn/National, pris Hoenn/National).
+      CreateSprite(sSeenOwnTextSpriteTemplate, 32, 40, 1);
+      anim(CreateSprite(sSeenOwnTextSpriteTemplate, 32, 76, 1), 1);
+      CreateSprite(sHoennNationalTextSpriteTemplate, 17, 45, 1);
+      anim(CreateSprite(sHoennNationalTextSpriteTemplate, 17, 55, 1), 1);
+      CreateSprite(sHoennNationalTextSpriteTemplate, 17, 81, 1);
+      anim(CreateSprite(sHoennNationalTextSpriteTemplate, 17, 91, 1), 1);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, DexGetHoennCount(FLAG_GET_SEEN), 40, 45, 8);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, sPokedexView.seenCount, 40, 55, 8);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, DexGetHoennCount(FLAG_GET_CAUGHT), 40, 81, 8);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, sPokedexView.ownCount, 40, 91, 8);
+    }
+    id = CreateSprite(sDexListStartMenuCursorSpriteTemplate, 136, 96, 1);
+    hide(id);
+  } else {
+    // PAGE_SEARCH_RESULTS (1:1 pokedex.c:3012-3016).
+    id = CreateSprite(sDexListStartMenuCursorSpriteTemplate, 136, 80, 1);
+    hide(id);
   }
 }
 
@@ -1061,14 +1242,20 @@ export function CB2_OpenPokedex(): void {
       sPokedexView = v;
       _dexInitSpritesDone = false;    // re-créer + recharger les mon-pics à chaque ouverture
       rt.CreateTask(Task_OpenPokedexMainPage, 0);
-      // dexMode/order depuis le saveblock — jalon 4 (national). 1a = Hoenn défaut.
-      v.dexMode = DEX_MODE_HOENN;
-      v.dexOrder = ORDER_NUMERICAL;
+      // 1:1 pokedex.c:1631-1648 : dexMode/order depuis gSaveBlock2Ptr->pokedex.
+      v.dexMode = _savePokedex().mode;
+      if (!IsNationalPokedexEnabled()) v.dexMode = DEX_MODE_HOENN;
+      v.dexOrder = _savePokedex().order;
       v.selectedPokemon = sLastSelectedPokemon;
       v.pokeBallRotation = sPokeBallRotation;
       v.selectedScreen = AREA_SCREEN;
-      v.seenCount = DexGetHoennCount(FLAG_GET_SEEN);
-      v.ownCount = DexGetHoennCount(FLAG_GET_CAUGHT);
+      if (!IsNationalPokedexEnabled()) {
+        v.seenCount = DexGetHoennCount(FLAG_GET_SEEN);
+        v.ownCount = DexGetHoennCount(FLAG_GET_CAUGHT);
+      } else {
+        v.seenCount = GetNationalPokedexCount(FLAG_GET_SEEN);
+        v.ownCount = GetNationalPokedexCount(FLAG_GET_CAUGHT);
+      }
       v.initialVOffset = 8;
       rt.gMain.state++;
       break;
@@ -1106,9 +1293,7 @@ function Task_HandlePokedexInput(task: DecompTask): void {
     sPokedexView.menuY -= 8;
     return;
   }
-  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
-  // JALON 2 : A → fiche info (gaté sur .seen). START (menu list-top/bottom/close) + SELECT
-  // (recherche) = jalon 4 (non gérés → tombent dans la branche D-pad).
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002, SELECT_BUTTON = 0x0004, START_BUTTON = 0x0008;
   if ((rt.gMain.newKeys & A_BUTTON) && sPokedexView.pokedexList[sPokedexView.selectedPokemon].seen) {
     // 1:1 décomp pokedex.c:1688-1696.
     UpdateSelectedMonSpriteId();
@@ -1119,6 +1304,26 @@ function Task_HandlePokedexInput(task: DecompTask): void {
     if (monSprite) monSprite.callback = SpriteCB_MoveMonForInfoScreen as unknown as typeof monSprite.callback;
     task.func = Task_OpenInfoScreenAfterMonMovement;
     PlaySE(SE_PIN);
+    FreeWindowAndBgBuffers();
+  } else if (rt.gMain.newKeys & START_BUTTON) {
+    // 1:1 pokedex.c:1697-1704 : ouvre le menu START de la liste (slide BG0).
+    sPokedexView.menuY = 0;
+    sPokedexView.menuIsOpen = true;
+    sPokedexView.menuCursorPos = 0;
+    task.func = Task_HandlePokedexStartMenuInput;
+    PlaySE(SE_SELECT);
+  } else if (rt.gMain.newKeys & SELECT_BUTTON) {
+    // 1:1 pokedex.c:1705-1717 : SELECT → menu RECHERCHE.
+    PlaySE(SE_SELECT);
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+    task.data[0] = LoadSearchMenu();
+    sPokedexView.screenSwitchState = 0;
+    sPokedexView.pokeBallRotationBackup = sPokedexView.pokeBallRotation;
+    sPokedexView.selectedPokemonBackup = sPokedexView.selectedPokemon;
+    sPokedexView.dexModeBackup = sPokedexView.dexMode;
+    sPokedexView.dexOrderBackup = sPokedexView.dexOrder;
+    task.func = Task_WaitForExitSearch;
+    PlaySE(SE_PC_LOGIN);
     FreeWindowAndBgBuffers();
   } else if (rt.gMain.newKeys & B_BUTTON) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
@@ -1131,11 +1336,76 @@ function Task_HandlePokedexInput(task: DecompTask): void {
   }
 }
 
+// 1:1 décomp `Task_HandlePokedexStartMenuInput` (pokedex.c:1741) : menu START de la
+// liste (RETOUR LISTE / DÉBUT / FIN / FERMER), slide BG0 jusqu'à menuY=80.
+function Task_HandlePokedexStartMenuInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, sPokedexView.menuY);
+  if (sPokedexView.menuY !== 80) {
+    sPokedexView.menuY += 8;
+    return;
+  }
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002, START_BUTTON = 0x0008;
+  if (rt.gMain.newKeys & A_BUTTON) {
+    switch (sPokedexView.menuCursorPos) {
+      case 0: // RETOUR LISTE
+      default:
+        rt.gMain.newKeys |= START_BUTTON;   // 1:1 : force la fermeture du menu
+        break;
+      case 1: // DÉBUT DE LISTE
+        sPokedexView.selectedPokemon = 0;
+        sPokedexView.pokeBallRotation = 64; // POKEBALL_ROTATION_TOP
+        ClearMonSprites();
+        CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+        rt.gMain.newKeys |= START_BUTTON;
+        break;
+      case 2: // FIN DE LISTE
+        sPokedexView.selectedPokemon = sPokedexView.pokemonListCount - 1;
+        sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + 48; // POKEBALL_ROTATION_BOTTOM (64-16)
+        ClearMonSprites();
+        CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+        rt.gMain.newKeys |= START_BUTTON;
+        break;
+      case 3: // FERMER LE POKÉDEX
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+        task.func = Task_ClosePokedex;
+        PlaySE(SE_PC_OFF);
+        break;
+    }
+  }
+  if (rt.gMain.newKeys & (START_BUTTON | B_BUTTON)) {
+    sPokedexView.menuIsOpen = false;
+    task.func = Task_HandlePokedexInput;
+    PlaySE(SE_SELECT);
+  } else if ((rt.gMain.newAndRepeatedKeys & DPAD_UP) && sPokedexView.menuCursorPos !== 0) {
+    sPokedexView.menuCursorPos--;
+    PlaySE(SE_SELECT);
+  } else if ((rt.gMain.newAndRepeatedKeys & DPAD_DOWN) && sPokedexView.menuCursorPos < 3) {
+    sPokedexView.menuCursorPos++;
+    PlaySE(SE_SELECT);
+  }
+}
+
+// 1:1 gSaveBlock2Ptr->pokedex.{mode,order} — champ créé à la volée dans notre save
+// (le C l'a en dur dans SaveBlock2 ; la save JSON du port tolère l'ajout).
+function _savePokedex(): { mode: number; order: number } {
+  const s2 = gSaveBlock2Ptr as unknown as { pokedex?: { mode: number; order: number } };
+  s2.pokedex ??= { mode: DEX_MODE_HOENN, order: ORDER_NUMERICAL };
+  return s2.pokedex;
+}
+
 // ─── Task_ClosePokedex (pokedex.c) ───────────────────────────────────────────
 function Task_ClosePokedex(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (rt.gPaletteFade.active) return;
+  // 1:1 pokedex.c:1861-1864 : persiste mode/order dans la save.
+  if (sPokedexView) {
+    const sp = _savePokedex();
+    sp.mode = IsNationalPokedexEnabled() ? sPokedexView.dexMode : DEX_MODE_HOENN;
+    sp.order = sPokedexView.dexOrder;
+  }
   sLastSelectedPokemon = sPokedexView ? sPokedexView.selectedPokemon : 0;
   sPokeBallRotation = sPokedexView ? sPokedexView.pokeBallRotation : 0;
   FreeWindowAndBgBuffers();
@@ -2214,7 +2484,8 @@ function LoadPokedexListPage(page: number): boolean {
       rt.gba.vram.set(_assets.menuTiles, 0 * 0x4000);
       CopyToBgTilemapBuffer(1, _assets.listTilemap, 0, 0);
       CopyToBgTilemapBuffer(3, _assets.underlayTilemap, 0, 0);
-      CopyToBgTilemapBuffer(0, _assets.startMenuTilemap, 0, 0x280);
+      // 1:1 : menu START main (4 items) ou search-results (5 items, + RETOUR POKÉDEX).
+      CopyToBgTilemapBuffer(0, page === PAGE_MAIN ? _assets.startMenuTilemap : _assets.startMenuSearchResultsTilemap, 0, 0x280);
       CopyBgTilemapBufferToVram(0);
       CopyBgTilemapBufferToVram(1);
       CopyBgTilemapBufferToVram(2);
@@ -2290,21 +2561,1119 @@ let _bgReady = false;
 function LoadPokedexBgPalette(isSearchResults: boolean): void {
   if (!_assets) {
     // Palette chargée avec les assets ; si pas encore prête, re-applique au ready.
-    void _loadAssets().then(() => { if (!isSearchResults) _applyHoennBgPalette(); });
+    void _loadAssets().then(() => LoadPokedexBgPalette(isSearchResults));
     return;
   }
-  if (!isSearchResults) _applyHoennBgPalette();
-}
-function _applyHoennBgPalette(): void {
-  if (!_assets) return;
-  // LoadPalette(gPokedexBgHoenn_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(6*16 - 1)).
-  LoadPalette(_assets.bgHoennPal.subarray(1), BG_PLTT_ID(0) + 1, (6 * 16 - 1) * 2);
+  // 1:1 pokedex.c:2160 : results → gPokedexSearchResults_Pal ; sinon Hoenn/National
+  // selon IsNationalPokedexEnabled. +1 = 6*16-1 couleurs à partir de l'index 1.
+  if (isSearchResults)
+    LoadPalette(_assets.searchResultsBgPal.subarray(1), BG_PLTT_ID(0) + 1, (6 * 16 - 1) * 2);
+  else if (!IsNationalPokedexEnabled())
+    LoadPalette(_assets.bgHoennPal.subarray(1), BG_PLTT_ID(0) + 1, (6 * 16 - 1) * 2);
+  else
+    LoadPalette(_assets.bgNationalPal.subarray(1), BG_PLTT_ID(0) + 1, (6 * 16 - 1) * 2);
+  // LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP).
+  const textboxPal = GetOverworldTextboxPalettePtr();
+  if (textboxPal) LoadPalette(textboxPal.subarray(0, 16), BG_PLTT_ID(15), 32);
 }
 
 // ─── FreeWindowAndBgBuffers (pokedex.c:2171) ─────────────────────────────────
 function FreeWindowAndBgBuffers(): void {
   FreeAllWindowBuffers();
   // Les buffers tilemap BG sont intrinsèques au runtime (pas d'alloc manuelle) → rien à free.
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// JALON 4 — RECHERCHE / TRI / NATIONAL (miroir 1:1 pokedex.c:4624-5605)
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 enums (pokedex.c:60-108).
+const SEARCH_TOPBAR_SEARCH = 0;
+const SEARCH_TOPBAR_SHIFT = 1;
+const SEARCH_TOPBAR_CANCEL = 2;
+const SEARCH_NAME = 0;
+const SEARCH_COLOR = 1;
+const SEARCH_TYPE_LEFT = 2;
+const SEARCH_TYPE_RIGHT = 3;
+const SEARCH_ORDER = 4;
+const SEARCH_MODE = 5;
+const SEARCH_OK = 6;
+const SEARCH_COUNT = 7;
+const MAX_SEARCH_PARAM_ON_SCREEN = 6;
+const MAX_SEARCH_PARAM_CURSOR_POS = MAX_SEARCH_PARAM_ON_SCREEN - 1;
+const TYPE_NONE = 255;
+
+// 1:1 gTypeNames (include/data/text/type_names.h, ROM FR).
+const gTypeNames: readonly string[] = ['NORMAL', 'COMBAT', 'VOL', 'POISON', 'SOL', 'ROCHE', 'INSECTE',
+  'SPECTRE', 'ACIER', '???', 'FEU', 'EAU', 'PLANTE', 'ÉLECTRIK', 'PSY',
+  'GLACE', 'DRAGON', 'TÉNÈBRES'];
+// 1:1 include/constants/pokemon.h : TYPE_*/BODY_COLOR_* → indices (gSpeciesInfo stocke les enums string).
+const _TYPE_INDEX: Record<string, number> = { TYPE_NORMAL: 0, TYPE_FIGHTING: 1, TYPE_FLYING: 2, TYPE_POISON: 3, TYPE_GROUND: 4, TYPE_ROCK: 5, TYPE_BUG: 6, TYPE_GHOST: 7, TYPE_STEEL: 8, TYPE_MYSTERY: 9, TYPE_FIRE: 10, TYPE_WATER: 11, TYPE_GRASS: 12, TYPE_ELECTRIC: 13, TYPE_PSYCHIC: 14, TYPE_ICE: 15, TYPE_DRAGON: 16, TYPE_DARK: 17 };
+const _BODY_COLOR_INDEX: Record<string, number> = { BODY_COLOR_RED: 0, BODY_COLOR_BLUE: 1, BODY_COLOR_YELLOW: 2, BODY_COLOR_GREEN: 3, BODY_COLOR_BLACK: 4, BODY_COLOR_BROWN: 5, BODY_COLOR_PURPLE: 6, BODY_COLOR_GRAY: 7, BODY_COLOR_WHITE: 8, BODY_COLOR_PINK: 9 };
+
+// 1:1 sLetterSearchRanges (pokedex.c:1008) — adaptation JS : plages de LETTRES (le C
+// compare les bytes charmap CHAR_A..; nos gSpeciesNames sont des strings, un nom FR
+// commençant par un caractère hors plage (accent) ne matche aucun groupe = ROM).
+const sLetterSearchRanges: readonly (readonly [string, number])[] = [
+  ['', 0], ['A', 3], ['D', 3], ['G', 3], ['J', 3], ['M', 3], ['P', 3], ['S', 3], ['V', 3], ['Y', 2],
+];
+function _letterInRange(letter: string, range: number): boolean {
+  const [start, count] = sLetterSearchRanges[range];
+  if (!start) return false;
+  const up = letter.charCodeAt(0) - start.charCodeAt(0);
+  const lo = letter.charCodeAt(0) - start.toLowerCase().charCodeAt(0);
+  return (up >= 0 && up < count) || (lo >= 0 && lo < count);
+}
+
+// 1:1 sSearchMenuTopBarItems (pokedex.c:1030) — descriptions = clés gText (résolues au print).
+const sSearchMenuTopBarItems = [
+  { description: 'gText_SearchForPkmnBasedOnParameters', highlightX: 0, highlightY: 0, highlightWidth: 5 },
+  { description: 'gText_SwitchPokedexListings', highlightX: 6, highlightY: 0, highlightWidth: 5 },
+  { description: 'gText_ReturnToPokedex', highlightX: 12, highlightY: 0, highlightWidth: 5 },
+] as const;
+
+// 1:1 sSearchMenuItems (pokedex.c:1055).
+const sSearchMenuItems = [
+  /* NAME       */ { description: 'gText_ListByFirstLetter', titleBgX: 0, titleBgY: 2, titleBgWidth: 5, selectionBgX: 5, selectionBgY: 2, selectionBgWidth: 12 },
+  /* COLOR      */ { description: 'gText_ListByBodyColor', titleBgX: 0, titleBgY: 4, titleBgWidth: 5, selectionBgX: 5, selectionBgY: 4, selectionBgWidth: 12 },
+  /* TYPE_LEFT  */ { description: 'gText_ListByType', titleBgX: 0, titleBgY: 6, titleBgWidth: 5, selectionBgX: 5, selectionBgY: 6, selectionBgWidth: 6 },
+  /* TYPE_RIGHT */ { description: 'gText_ListByType', titleBgX: 0, titleBgY: 6, titleBgWidth: 5, selectionBgX: 11, selectionBgY: 6, selectionBgWidth: 6 },
+  /* ORDER      */ { description: 'gText_SelectPokedexListingMode', titleBgX: 0, titleBgY: 8, titleBgWidth: 5, selectionBgX: 5, selectionBgY: 8, selectionBgWidth: 12 },
+  /* MODE       */ { description: 'gText_SelectPokedexMode', titleBgX: 0, titleBgY: 10, titleBgWidth: 5, selectionBgX: 5, selectionBgY: 10, selectionBgWidth: 12 },
+  /* OK         */ { description: 'gText_ExecuteSearchSwitch', titleBgX: 0, titleBgY: 12, titleBgWidth: 5, selectionBgX: 0, selectionBgY: 0, selectionBgWidth: 0 },
+] as const;
+
+// 1:1 les 4 movement maps [Left, Right, Up, Down] (pokedex.c:1130-1341).
+const X = 0xff;
+const sSearchMovementMap_SearchNatDex: readonly (readonly number[])[] = [
+  /* NAME       */ [X, X, X, SEARCH_COLOR],
+  /* COLOR      */ [X, X, SEARCH_NAME, SEARCH_TYPE_LEFT],
+  /* TYPE_LEFT  */ [X, SEARCH_TYPE_RIGHT, SEARCH_COLOR, SEARCH_ORDER],
+  /* TYPE_RIGHT */ [SEARCH_TYPE_LEFT, X, SEARCH_COLOR, SEARCH_ORDER],
+  /* ORDER      */ [X, X, SEARCH_TYPE_LEFT, SEARCH_MODE],
+  /* MODE       */ [X, X, SEARCH_ORDER, SEARCH_OK],
+  /* OK         */ [X, X, SEARCH_MODE, X],
+];
+const sSearchMovementMap_ShiftNatDex: readonly (readonly number[])[] = [
+  [X, X, X, X], [X, X, X, X], [X, X, X, X], [X, X, X, X],
+  /* ORDER */ [X, X, X, SEARCH_MODE],
+  /* MODE  */ [X, X, SEARCH_ORDER, SEARCH_OK],
+  /* OK    */ [X, X, SEARCH_MODE, X],
+];
+const sSearchMovementMap_SearchHoennDex: readonly (readonly number[])[] = [
+  [X, X, X, SEARCH_COLOR],
+  [X, X, SEARCH_NAME, SEARCH_TYPE_LEFT],
+  [X, SEARCH_TYPE_RIGHT, SEARCH_COLOR, SEARCH_ORDER],
+  [SEARCH_TYPE_LEFT, X, SEARCH_COLOR, SEARCH_ORDER],
+  /* ORDER */ [X, X, SEARCH_TYPE_LEFT, SEARCH_OK],
+  /* MODE  */ [X, X, X, X],
+  /* OK    */ [X, X, SEARCH_ORDER, X],
+];
+const sSearchMovementMap_ShiftHoennDex: readonly (readonly number[])[] = [
+  [X, X, X, X], [X, X, X, X], [X, X, X, X], [X, X, X, X],
+  /* ORDER */ [X, X, X, SEARCH_OK],
+  /* MODE  */ [X, X, X, X],
+  /* OK    */ [X, X, SEARCH_ORDER, X],
+];
+
+// 1:1 SearchOptionText tables (pokedex.c:1343-1413) — title/description = clés gText ou
+// littéral FR (types) ; sentinelle {null} = terminator du C.
+interface SearchOptionText { description: string | null; title: string | null }
+const sDexModeOptions: SearchOptionText[] = [
+  { description: 'gText_DexHoennDescription', title: 'gText_DexHoennTitle' },
+  { description: 'gText_DexNatDescription', title: 'gText_DexNatTitle' },
+  { description: null, title: null },
+];
+const sDexOrderOptions: SearchOptionText[] = [
+  { description: 'gText_DexSortNumericalDescription', title: 'gText_DexSortNumericalTitle' },
+  { description: 'gText_DexSortAtoZDescription', title: 'gText_DexSortAtoZTitle' },
+  { description: 'gText_DexSortHeaviestDescription', title: 'gText_DexSortHeaviestTitle' },
+  { description: 'gText_DexSortLightestDescription', title: 'gText_DexSortLightestTitle' },
+  { description: 'gText_DexSortTallestDescription', title: 'gText_DexSortTallestTitle' },
+  { description: 'gText_DexSortSmallestDescription', title: 'gText_DexSortSmallestTitle' },
+  { description: null, title: null },
+];
+const sDexSearchNameOptions: SearchOptionText[] = [
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchDontSpecify' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaABC' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaDEF' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaGHI' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaJKL' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaMNO' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaPQR' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaSTU' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaVWX' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchAlphaYZ' },
+  { description: null, title: null },
+];
+const sDexSearchColorOptions: SearchOptionText[] = [
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchDontSpecify' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorRed' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorBlue' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorYellow' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorGreen' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorBlack' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorBrown' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorPurple' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorGray' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorWhite' },
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchColorPink' },
+  { description: null, title: null },
+];
+// Types : titles = littéraux FR (le C référence gTypeNames directement) — préfixe '=' :
+// marqueur interne « littéral, pas une clé gText » (cf. _searchText).
+const sDexSearchTypeOptions: SearchOptionText[] = [
+  { description: 'gText_DexEmptyString', title: 'gText_DexSearchTypeNone' },
+  ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17].map((t) => ({ description: 'gText_DexEmptyString', title: '=' + gTypeNames[t] })),
+  { description: null, title: null },
+];
+const sPokedexModes: readonly number[] = [DEX_MODE_HOENN, DEX_MODE_NATIONAL];
+const sOrderOptions: readonly number[] = [ORDER_NUMERICAL, ORDER_ALPHABETICAL, ORDER_HEAVIEST, ORDER_LIGHTEST, ORDER_TALLEST, ORDER_SMALLEST];
+const sDexSearchTypeIds: readonly number[] = [TYPE_NONE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17];
+
+// 1:1 sSearchOptions (pokedex.c:1450) : {texts, taskDataCursorPos, taskDataScrollOffset, numOptions}.
+const sSearchOptions = [
+  /* NAME       */ { texts: sDexSearchNameOptions, taskDataCursorPos: 6, taskDataScrollOffset: 7, numOptions: sDexSearchNameOptions.length - 1 },
+  /* COLOR      */ { texts: sDexSearchColorOptions, taskDataCursorPos: 8, taskDataScrollOffset: 9, numOptions: sDexSearchColorOptions.length - 1 },
+  /* TYPE_LEFT  */ { texts: sDexSearchTypeOptions, taskDataCursorPos: 10, taskDataScrollOffset: 11, numOptions: sDexSearchTypeOptions.length - 1 },
+  /* TYPE_RIGHT */ { texts: sDexSearchTypeOptions, taskDataCursorPos: 12, taskDataScrollOffset: 13, numOptions: sDexSearchTypeOptions.length - 1 },
+  /* ORDER      */ { texts: sDexOrderOptions, taskDataCursorPos: 4, taskDataScrollOffset: 5, numOptions: sDexOrderOptions.length - 1 },
+  /* MODE       */ { texts: sDexModeOptions, taskDataCursorPos: 2, taskDataScrollOffset: 3, numOptions: sDexModeOptions.length - 1 },
+] as const;
+
+// 1:1 sSearchMenu_BgTemplate (pokedex.c:1460) + sSearchMenu_WindowTemplate (pokedex.c:1500).
+const sSearchMenu_BgTemplate: BgTemplate[] = [
+  { bg: 0, charBaseIndex: 2, mapBaseIndex: 12, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 1, charBaseIndex: 0, mapBaseIndex: 13, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 },
+  { bg: 2, charBaseIndex: 2, mapBaseIndex: 14, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 },
+  { bg: 3, charBaseIndex: 0, mapBaseIndex: 15, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
+];
+const sSearchMenu_WindowTemplate: WindowTemplate[] = [
+  { bg: 2, tilemapLeft: 0, tilemapTop: 0, width: 32, height: 20, paletteNum: 0, baseBlock: 1 },
+];
+let _searchWindowId = 0;
+
+// ─── DoPokedexSearch (pokedex.c:4624) ────────────────────────────────────────
+function DoPokedexSearch(dexMode: number, order: number, abcGroup: number, bodyColor: number, type1: number, type2: number): number {
+  if (!sPokedexView) return 0;
+  const v = sPokedexView;
+  CreatePokedexList(dexMode, order);
+
+  let resultsCount = 0;
+  for (let i = 0; i < NATIONAL_DEX_COUNT; i++) {
+    if (v.pokedexList[i].seen) {
+      v.pokedexList[resultsCount] = { ...v.pokedexList[i] };
+      resultsCount++;
+    }
+  }
+  v.pokemonListCount = resultsCount;
+
+  // Filtre par première lettre du nom.
+  if (abcGroup !== 0xff) {
+    resultsCount = 0;
+    for (let i = 0; i < v.pokemonListCount; i++) {
+      const species = NationalPokedexNumToSpecies(v.pokedexList[i].dexNum);
+      const firstLetter = (gSpeciesNames[species] ?? '')[0] ?? '';
+      if (firstLetter && _letterInRange(firstLetter, abcGroup)) {
+        v.pokedexList[resultsCount] = { ...v.pokedexList[i] };
+        resultsCount++;
+      }
+    }
+    v.pokemonListCount = resultsCount;
+  }
+
+  // Filtre par couleur de corps.
+  if (bodyColor !== 0xff) {
+    resultsCount = 0;
+    for (let i = 0; i < v.pokemonListCount; i++) {
+      const species = NationalPokedexNumToSpecies(v.pokedexList[i].dexNum);
+      const info = getSpeciesInfo(reverseDecompConstant(species, 'SPECIES_') ?? '');
+      if (info && bodyColor === (_BODY_COLOR_INDEX[info.bodyColor] ?? -1)) {
+        v.pokedexList[resultsCount] = { ...v.pokedexList[i] };
+        resultsCount++;
+      }
+    }
+    v.pokemonListCount = resultsCount;
+  }
+
+  // Filtre par type(s) — 1:1 : ne garde que les POSSÉDÉS.
+  if (type1 !== TYPE_NONE || type2 !== TYPE_NONE) {
+    if (type1 === TYPE_NONE) { type1 = type2; type2 = TYPE_NONE; }
+    resultsCount = 0;
+    for (let i = 0; i < v.pokemonListCount; i++) {
+      if (!v.pokedexList[i].owned) continue;
+      const species = NationalPokedexNumToSpecies(v.pokedexList[i].dexNum);
+      const info = getSpeciesInfo(reverseDecompConstant(species, 'SPECIES_') ?? '');
+      if (!info) continue;
+      const t0 = _TYPE_INDEX[info.types[0]] ?? -1;
+      const t1 = _TYPE_INDEX[info.types[1]] ?? -1;
+      const match = type2 === TYPE_NONE
+        ? (t0 === type1 || t1 === type1)
+        : ((t0 === type1 && t1 === type2) || (t0 === type2 && t1 === type1));
+      if (match) {
+        v.pokedexList[resultsCount] = { ...v.pokedexList[i] };
+        resultsCount++;
+      }
+    }
+    v.pokemonListCount = resultsCount;
+  }
+
+  if (v.pokemonListCount !== 0) {
+    for (let i = v.pokemonListCount; i < NATIONAL_DEX_COUNT; i++) {
+      v.pokedexList[i].dexNum = 0xffff;
+      v.pokedexList[i].seen = false;
+      v.pokedexList[i].owned = false;
+    }
+  }
+  return resultsCount;
+}
+
+// ─── LoadSearchMenu (pokedex.c:4738) ─────────────────────────────────────────
+function LoadSearchMenu(): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  return rt.CreateTask(Task_LoadSearchMenu, 0);
+}
+
+// _searchText : résout une clé gText OU un littéral (préfixe '=' : types FR).
+function _searchText(key: string | null): string {
+  if (!key) return '';
+  return key.startsWith('=') ? key.slice(1) : getString(key);
+}
+
+// 1:1 PrintSearchText (pokedex.c:4744) : couleurs [TRANSPARENT, DYNAMIC_6, DARK_GRAY].
+function PrintSearchText(str: string, x: number, y: number): void {
+  const color: [number, number, number] = [TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_DARK_GRAY];
+  AddTextPrinterParameterized4(_searchWindowId, FONT_NORMAL, x, y, 0, 0, color, TEXT_SKIP_DRAW, str);
+}
+
+function ClearSearchMenuRect(x: number, y: number, width: number, height: number): void {
+  FillWindowPixelRect(_searchWindowId, 0, x, y, width, height);
+}
+
+// Task data (pokedex.c:1432-1447) : tTopBarItem=0, tMenuItem=1, cursor/scroll par option
+// (cf. sSearchOptions), tCursorPos=14, tScrollOffset=15.
+
+// ─── Task_LoadSearchMenu (pokedex.c:4776) ────────────────────────────────────
+function Task_LoadSearchMenu(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView || !_assets) return;
+  switch (rt.gMain.state) {
+    default:
+    case 0:
+      if (rt.gPaletteFade.active) return;
+      sPokedexView.currentPage = PAGE_SEARCH;
+      ResetBgsAndClearDma3BusyFlags(0);
+      InitBgsFromTemplates(0, sSearchMenu_BgTemplate, sSearchMenu_BgTemplate.length);
+      // 1:1 SetBgTilemapBuffer(n, AllocZeroed) ×4 → buffers NEUFS ZÉRO (leçon A/B).
+      for (const n of [0, 1, 2, 3] as const) rt.gba.bg(n).tilemap.fill(0);
+      {
+        const ids = InitWindows(sSearchMenu_WindowTemplate);
+        _searchWindowId = ids[0] ?? 0;
+      }
+      DeactivateAllTextPrinters();
+      PutWindowTilemap(_searchWindowId);
+      // DecompressAndLoadBgGfxUsingHeap(3, gPokedexSearchMenu_Gfx, 0x2000, 0, 0) → charBase 0.
+      rt.gba.vram.set(_assets.searchMenuTiles, 0 * 0x4000);
+      CopyToBgTilemapBuffer(3, !IsNationalPokedexEnabled() ? _assets.searchHoennTilemap : _assets.searchNationalTilemap, 0, 0);
+      LoadPalette(_assets.searchMenuPal.subarray(1), BG_PLTT_ID(0) + 1, (4 * 16 - 1) * 2);
+      rt.gMain.state = 1;
+      break;
+    case 1:
+      LoadCompressedSpriteSheet({ data: 'gPokedexInterface_Gfx', size: 0x2000, tag: TAG_DEX_INTERFACE });
+      LoadSpritePalettes([{ data: 'gPokedexBgHoenn_Pal', tag: TAG_DEX_INTERFACE }]);
+      CreateSearchParameterScrollArrows(task.taskId);
+      for (let i = 0; i < 16; i++) task.data[i] = 0;
+      SetDefaultSearchModeAndOrder(task.taskId);
+      HighlightSelectedSearchTopBarItem(SEARCH_TOPBAR_SEARCH);
+      PrintSelectedSearchParameters(task.taskId);
+      CopyWindowToVram(_searchWindowId, 3 /* COPYWIN_FULL */);
+      CopyBgTilemapBufferToVram(1);
+      CopyBgTilemapBufferToVram(2);
+      CopyBgTilemapBufferToVram(3);
+      rt.gMain.state++;
+      break;
+    case 2:
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      rt.gMain.state++;
+      break;
+    case 3:
+      rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x40 | 0x1000 /* OBJ_1D_MAP | OBJ_ON */);
+      HideBg(0);
+      ShowBg(1);
+      ShowBg(2);
+      ShowBg(3);
+      rt.gMain.state++;
+      break;
+    case 4:
+      if (!rt.gPaletteFade.active) {
+        task.func = Task_SwitchToSearchMenuTopBar;
+        rt.gMain.state = 0;
+      }
+      break;
+  }
+}
+
+function FreeSearchWindowAndBgBuffers(): void {
+  FreeAllWindowBuffers();
+  // Buffers tilemap intrinsèques (pas d'alloc manuelle) → rien à free.
+}
+
+// ─── Top bar (pokedex.c:4867) ────────────────────────────────────────────────
+function Task_SwitchToSearchMenuTopBar(task: DecompTask): void {
+  HighlightSelectedSearchTopBarItem(task.data[0]);
+  PrintSelectedSearchParameters(task.taskId);
+  CopyWindowToVram(_searchWindowId, 2 /* COPYWIN_GFX */);
+  CopyBgTilemapBufferToVram(3);
+  task.func = Task_HandleSearchTopBarInput;
+}
+
+function Task_HandleSearchTopBarInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+  if (rt.gMain.newKeys & B_BUTTON) {
+    PlaySE(SE_PC_OFF);
+    task.func = Task_ExitSearch;
+    return;
+  }
+  if (rt.gMain.newKeys & A_BUTTON) {
+    switch (task.data[0]) {
+      case SEARCH_TOPBAR_SEARCH:
+        PlaySE(SE_PIN);
+        task.data[1] = SEARCH_NAME;
+        task.func = Task_SwitchToSearchMenu;
+        break;
+      case SEARCH_TOPBAR_SHIFT:
+        PlaySE(SE_PIN);
+        task.data[1] = SEARCH_ORDER;
+        task.func = Task_SwitchToSearchMenu;
+        break;
+      case SEARCH_TOPBAR_CANCEL:
+        PlaySE(SE_PC_OFF);
+        task.func = Task_ExitSearch;
+        break;
+    }
+    return;
+  }
+  if ((rt.gMain.newKeys & DPAD_LEFT) && task.data[0] > SEARCH_TOPBAR_SEARCH) {
+    PlaySE(SE_DEX_PAGE);
+    task.data[0]--;
+    HighlightSelectedSearchTopBarItem(task.data[0]);
+    CopyWindowToVram(_searchWindowId, 2);
+    CopyBgTilemapBufferToVram(3);
+  }
+  if ((rt.gMain.newKeys & DPAD_RIGHT) && task.data[0] < SEARCH_TOPBAR_CANCEL) {
+    PlaySE(SE_DEX_PAGE);
+    task.data[0]++;
+    HighlightSelectedSearchTopBarItem(task.data[0]);
+    CopyWindowToVram(_searchWindowId, 2);
+    CopyBgTilemapBufferToVram(3);
+  }
+}
+
+// ─── Menu principal de recherche (pokedex.c:4922) ────────────────────────────
+function Task_SwitchToSearchMenu(task: DecompTask): void {
+  HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
+  PrintSelectedSearchParameters(task.taskId);
+  CopyWindowToVram(_searchWindowId, 2);
+  CopyBgTilemapBufferToVram(3);
+  task.func = Task_HandleSearchMenuInput;
+}
+
+function Task_HandleSearchMenuInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+  let movementMap: readonly (readonly number[])[];
+  if (task.data[0] !== SEARCH_TOPBAR_SEARCH)
+    movementMap = !IsNationalPokedexEnabled() ? sSearchMovementMap_ShiftHoennDex : sSearchMovementMap_ShiftNatDex;
+  else
+    movementMap = !IsNationalPokedexEnabled() ? sSearchMovementMap_SearchHoennDex : sSearchMovementMap_SearchNatDex;
+
+  if (rt.gMain.newKeys & B_BUTTON) {
+    PlaySE(SE_BALL);
+    SetDefaultSearchModeAndOrder(task.taskId);
+    task.func = Task_SwitchToSearchMenuTopBar;
+    return;
+  }
+  if (rt.gMain.newKeys & A_BUTTON) {
+    if (task.data[1] === SEARCH_OK) {
+      if (task.data[0] !== SEARCH_TOPBAR_SEARCH) {
+        // SHIFT : applique mode/ordre et sort (la liste se recharge avec).
+        sPokeBallRotation = 64; // POKEBALL_ROTATION_TOP
+        sPokedexView.pokeBallRotationBackup = 64;
+        sLastSelectedPokemon = 0;
+        sPokedexView.selectedPokemonBackup = 0;
+        const sp = _savePokedex();
+        sp.mode = GetSearchModeSelection(task.taskId, SEARCH_MODE);
+        if (!IsNationalPokedexEnabled()) sp.mode = DEX_MODE_HOENN;
+        sPokedexView.dexModeBackup = sp.mode;
+        sp.order = GetSearchModeSelection(task.taskId, SEARCH_ORDER);
+        sPokedexView.dexOrderBackup = sp.order;
+        PlaySE(SE_PC_OFF);
+        task.func = Task_ExitSearch;
+      } else {
+        EraseAndPrintSearchTextBox(getString('gText_SearchingPleaseWait'));
+        task.func = Task_StartPokedexSearch;
+        PlaySE(SE_DEX_SEARCH);
+        CopyWindowToVram(_searchWindowId, 2);
+      }
+    } else {
+      PlaySE(SE_PIN);
+      task.func = Task_SelectSearchMenuItem;
+    }
+    return;
+  }
+
+  const move = (dir: number): void => {
+    PlaySE(SE_SELECT);
+    task.data[1] = movementMap[task.data[1]][dir];
+    HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
+    CopyWindowToVram(_searchWindowId, 2);
+    CopyBgTilemapBufferToVram(3);
+  };
+  if ((rt.gMain.newKeys & DPAD_LEFT) && movementMap[task.data[1]][0] !== 0xff) move(0);
+  if ((rt.gMain.newKeys & DPAD_RIGHT) && movementMap[task.data[1]][1] !== 0xff) move(1);
+  if ((rt.gMain.newKeys & DPAD_UP) && movementMap[task.data[1]][2] !== 0xff) move(2);
+  if ((rt.gMain.newKeys & DPAD_DOWN) && movementMap[task.data[1]][3] !== 0xff) move(3);
+}
+
+// ─── Lancement de la recherche (pokedex.c:5027) ──────────────────────────────
+function Task_StartPokedexSearch(task: DecompTask): void {
+  const dexMode = GetSearchModeSelection(task.taskId, SEARCH_MODE);
+  const order = GetSearchModeSelection(task.taskId, SEARCH_ORDER);
+  const abcGroup = GetSearchModeSelection(task.taskId, SEARCH_NAME);
+  const bodyColor = GetSearchModeSelection(task.taskId, SEARCH_COLOR);
+  const type1 = GetSearchModeSelection(task.taskId, SEARCH_TYPE_LEFT);
+  const type2 = GetSearchModeSelection(task.taskId, SEARCH_TYPE_RIGHT);
+  DoPokedexSearch(dexMode, order, abcGroup, bodyColor, type1, type2);
+  task.func = Task_WaitAndCompleteSearch;
+}
+
+function Task_WaitAndCompleteSearch(task: DecompTask): void {
+  if (!sPokedexView) return;
+  if (!IsSEPlaying()) {
+    if (sPokedexView.pokemonListCount !== 0) {
+      PlaySE(SE_SUCCESS);
+      EraseAndPrintSearchTextBox(getString('gText_SearchCompleted'));
+    } else {
+      PlaySE(SE_FAILURE);
+      EraseAndPrintSearchTextBox(getString('gText_NoMatchingPkmnWereFound'));
+    }
+    task.func = Task_SearchCompleteWaitForInput;
+    CopyWindowToVram(_searchWindowId, 2);
+  }
+}
+
+function Task_SearchCompleteWaitForInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (rt.gMain.newKeys & 0x0001 /* A */) {
+    if (sPokedexView.pokemonListCount !== 0) {
+      // Retour à la liste avec les résultats.
+      sPokedexView.screenSwitchState = 1;
+      sPokedexView.dexMode = GetSearchModeSelection(task.taskId, SEARCH_MODE);
+      sPokedexView.dexOrder = GetSearchModeSelection(task.taskId, SEARCH_ORDER);
+      task.func = Task_ExitSearch;
+      PlaySE(SE_PC_OFF);
+    } else {
+      task.func = Task_SwitchToSearchMenu;
+      PlaySE(SE_BALL);
+    }
+  }
+}
+
+// ─── Sélection d'un paramètre (colonne de droite) (pokedex.c:5081) ───────────
+function Task_SelectSearchMenuItem(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  DrawOrEraseSearchParameterBox(false);
+  const menuItem = task.data[1];
+  const cursorPos = task.data[sSearchOptions[menuItem].taskDataCursorPos];
+  const scrollOffset = task.data[sSearchOptions[menuItem].taskDataScrollOffset];
+  task.data[14] = cursorPos;
+  task.data[15] = scrollOffset;
+  PrintSearchParameterText(task.taskId);
+  PrintSelectorArrow(cursorPos);
+  task.func = Task_HandleSearchParameterInput;
+  CopyWindowToVram(_searchWindowId, 2);
+  CopyBgTilemapBufferToVram(3);
+}
+
+function Task_HandleSearchParameterInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+  const menuItem = task.data[1];
+  const texts = sSearchOptions[menuItem].texts;
+  const cpIdx = sSearchOptions[menuItem].taskDataCursorPos;
+  const soIdx = sSearchOptions[menuItem].taskDataScrollOffset;
+  const maxOption = sSearchOptions[menuItem].numOptions - 1;
+  if (rt.gMain.newKeys & A_BUTTON) {
+    PlaySE(SE_PIN);
+    ClearSearchParameterBoxText();
+    DrawOrEraseSearchParameterBox(true);
+    task.func = Task_SwitchToSearchMenu;
+    CopyWindowToVram(_searchWindowId, 2);
+    CopyBgTilemapBufferToVram(3);
+    return;
+  }
+  if (rt.gMain.newKeys & B_BUTTON) {
+    PlaySE(SE_BALL);
+    ClearSearchParameterBoxText();
+    DrawOrEraseSearchParameterBox(true);
+    task.data[cpIdx] = task.data[14];
+    task.data[soIdx] = task.data[15];
+    task.func = Task_SwitchToSearchMenu;
+    CopyWindowToVram(_searchWindowId, 2);
+    CopyBgTilemapBufferToVram(3);
+    return;
+  }
+  let moved = false;
+  if (rt.gMain.newAndRepeatedKeys & DPAD_UP) {
+    if (task.data[cpIdx] !== 0) {
+      EraseSelectorArrow(task.data[cpIdx]);
+      task.data[cpIdx]--;
+      PrintSelectorArrow(task.data[cpIdx]);
+      moved = true;
+    } else if (task.data[soIdx] !== 0) {
+      task.data[soIdx]--;
+      PrintSearchParameterText(task.taskId);
+      PrintSelectorArrow(task.data[cpIdx]);
+      moved = true;
+    }
+    if (moved) {
+      PlaySE(SE_SELECT);
+      EraseAndPrintSearchTextBox(_searchText(texts[task.data[cpIdx] + task.data[soIdx]].description));
+      CopyWindowToVram(_searchWindowId, 2);
+    }
+    return;
+  }
+  if (rt.gMain.newAndRepeatedKeys & DPAD_DOWN) {
+    if (task.data[cpIdx] < MAX_SEARCH_PARAM_CURSOR_POS && task.data[cpIdx] < maxOption) {
+      EraseSelectorArrow(task.data[cpIdx]);
+      task.data[cpIdx]++;
+      PrintSelectorArrow(task.data[cpIdx]);
+      moved = true;
+    } else if (maxOption > MAX_SEARCH_PARAM_CURSOR_POS && task.data[soIdx] < maxOption - MAX_SEARCH_PARAM_CURSOR_POS) {
+      task.data[soIdx]++;
+      PrintSearchParameterText(task.taskId);
+      PrintSelectorArrow(5);
+      moved = true;
+    }
+    if (moved) {
+      PlaySE(SE_SELECT);
+      EraseAndPrintSearchTextBox(_searchText(texts[task.data[cpIdx] + task.data[soIdx]].description));
+      CopyWindowToVram(_searchWindowId, 2);
+    }
+    return;
+  }
+}
+
+// ─── Sortie de la recherche (pokedex.c:5196) ─────────────────────────────────
+function Task_ExitSearch(task: DecompTask): void {
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  task.func = Task_ExitSearchWaitForFade;
+}
+
+function Task_ExitSearchWaitForFade(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!rt.gPaletteFade.active) {
+    FreeSearchWindowAndBgBuffers();
+    rt.DestroyTask(task.taskId);
+  }
+}
+
+// ─── Highlights (tilemap BG3, bits palette) (pokedex.c:5210) ─────────────────
+function SetSearchRectHighlight(flags: number, x: number, y: number, width: number): void {
+  const buf = GetBgTilemapBuffer(3);
+  if (!buf) return;
+  for (let i = 0; i < width; i++) {
+    for (const dy of [0, 1]) {
+      const idx = (y + dy) * 32 + x + i;
+      buf[idx] = (buf[idx] & 0x0fff) | (flags << 12);
+    }
+  }
+}
+
+const SEARCH_TOPBAR_COUNT = 3;
+const SEARCH_BG_TYPE_TITLE = SEARCH_COUNT + SEARCH_TOPBAR_COUNT;
+
+function DrawSearchMenuItemBgHighlight(searchBg: number, unselected: boolean, disabled: boolean): void {
+  const highlightFlags = (unselected ? 1 : 0) | ((disabled ? 1 : 0) << 1);
+  switch (searchBg) {
+    case SEARCH_TOPBAR_SEARCH:
+    case SEARCH_TOPBAR_SHIFT:
+    case SEARCH_TOPBAR_CANCEL: {
+      const it = sSearchMenuTopBarItems[searchBg];
+      SetSearchRectHighlight(highlightFlags, it.highlightX, it.highlightY, it.highlightWidth);
+      break;
+    }
+    case SEARCH_NAME + SEARCH_TOPBAR_COUNT:
+    case SEARCH_COLOR + SEARCH_TOPBAR_COUNT:
+    case SEARCH_ORDER + SEARCH_TOPBAR_COUNT:
+    case SEARCH_MODE + SEARCH_TOPBAR_COUNT: {
+      const it = sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT];
+      SetSearchRectHighlight(highlightFlags, it.titleBgX, it.titleBgY, it.titleBgWidth);
+      SetSearchRectHighlight(highlightFlags, it.selectionBgX, it.selectionBgY, it.selectionBgWidth);
+      break;
+    }
+    case SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT:
+    case SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT: {
+      const it = sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT];
+      SetSearchRectHighlight(highlightFlags, it.selectionBgX, it.selectionBgY, it.selectionBgWidth);
+      break;
+    }
+    case SEARCH_BG_TYPE_TITLE: {
+      const it = sSearchMenuItems[SEARCH_TYPE_LEFT];
+      SetSearchRectHighlight(highlightFlags, it.titleBgX, it.titleBgY, it.titleBgWidth);
+      break;
+    }
+    case SEARCH_OK + SEARCH_TOPBAR_COUNT: {
+      const it = sSearchMenuItems[SEARCH_OK];
+      if (!IsNationalPokedexEnabled())
+        SetSearchRectHighlight(highlightFlags, it.titleBgX, it.titleBgY - 2, it.titleBgWidth);
+      else
+        SetSearchRectHighlight(highlightFlags, it.titleBgX, it.titleBgY, it.titleBgWidth);
+      break;
+    }
+  }
+}
+
+function SetInitialSearchMenuBgHighlights(topBarItem: number): void {
+  const B = SEARCH_TOPBAR_COUNT;
+  switch (topBarItem) {
+    case SEARCH_TOPBAR_SEARCH:
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SEARCH, false, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SHIFT, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_CANCEL, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_NAME + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_COLOR + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_LEFT + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_RIGHT + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_ORDER + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_MODE + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_OK + B, true, false);
+      break;
+    case SEARCH_TOPBAR_SHIFT:
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SEARCH, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SHIFT, false, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_CANCEL, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_NAME + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_COLOR + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_LEFT + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_RIGHT + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_ORDER + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_MODE + B, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_OK + B, true, false);
+      break;
+    case SEARCH_TOPBAR_CANCEL:
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SEARCH, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_SHIFT, true, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TOPBAR_CANCEL, false, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_NAME + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_COLOR + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_LEFT + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_RIGHT + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_ORDER + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_MODE + B, true, true);
+      DrawSearchMenuItemBgHighlight(SEARCH_OK + B, true, true);
+      break;
+  }
+}
+
+function HighlightSelectedSearchTopBarItem(topBarItem: number): void {
+  SetInitialSearchMenuBgHighlights(topBarItem);
+  EraseAndPrintSearchTextBox(_searchText(sSearchMenuTopBarItems[topBarItem].description));
+}
+
+function HighlightSelectedSearchMenuItem(topBarItem: number, menuItem: number): void {
+  SetInitialSearchMenuBgHighlights(topBarItem);
+  const B = SEARCH_TOPBAR_COUNT;
+  switch (menuItem) {
+    case SEARCH_NAME:
+      DrawSearchMenuItemBgHighlight(SEARCH_NAME + B, false, false);
+      break;
+    case SEARCH_COLOR:
+      DrawSearchMenuItemBgHighlight(SEARCH_COLOR + B, false, false);
+      break;
+    case SEARCH_TYPE_LEFT:
+      DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, false, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_LEFT + B, false, false);
+      break;
+    case SEARCH_TYPE_RIGHT:
+      DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, false, false);
+      DrawSearchMenuItemBgHighlight(SEARCH_TYPE_RIGHT + B, false, false);
+      break;
+    case SEARCH_ORDER:
+      DrawSearchMenuItemBgHighlight(SEARCH_ORDER + B, false, false);
+      break;
+    case SEARCH_MODE:
+      DrawSearchMenuItemBgHighlight(SEARCH_MODE + B, false, false);
+      break;
+    case SEARCH_OK:
+      DrawSearchMenuItemBgHighlight(SEARCH_OK + B, false, false);
+      break;
+  }
+  EraseAndPrintSearchTextBox(_searchText(sSearchMenuItems[menuItem].description));
+}
+
+// 1:1 PrintSelectedSearchParameters (pokedex.c:5356).
+function PrintSelectedSearchParameters(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const t = rt.gTasks[taskId];
+  ClearSearchMenuRect(40, 16, 96, 80);
+  let id = t.data[6] + t.data[7];
+  PrintSearchText(_searchText(sDexSearchNameOptions[id].title), 0x2d, 0x11);
+  id = t.data[8] + t.data[9];
+  PrintSearchText(_searchText(sDexSearchColorOptions[id].title), 0x2d, 0x21);
+  id = t.data[10] + t.data[11];
+  PrintSearchText(_searchText(sDexSearchTypeOptions[id].title), 0x2d, 0x31);
+  id = t.data[12] + t.data[13];
+  PrintSearchText(_searchText(sDexSearchTypeOptions[id].title), 0x5d, 0x31);
+  id = t.data[4] + t.data[5];
+  PrintSearchText(_searchText(sDexOrderOptions[id].title), 0x2d, 0x41);
+  if (IsNationalPokedexEnabled()) {
+    id = t.data[2] + t.data[3];
+    PrintSearchText(_searchText(sDexModeOptions[id].title), 0x2d, 0x51);
+  }
+}
+
+// 1:1 DrawOrEraseSearchParameterBox (pokedex.c:5385) : cadre tilemap BG3 cols 17-30.
+function DrawOrEraseSearchParameterBox(erase: boolean): void {
+  const buf = GetBgTilemapBuffer(3);
+  if (!buf) return;
+  if (!erase) {
+    buf[0x11] = 0xc0b;
+    for (let i = 0x12; i < 0x1f; i++) buf[i] = 0x80d;
+    for (let j = 1; j < 13; j++) {
+      buf[0x11 + j * 32] = 0x40a;
+      for (let i = 0x12; i < 0x1f; i++) buf[j * 32 + i] = 2;
+    }
+    buf[0x1b1] = 0x40b;
+    for (let i = 0x12; i < 0x1f; i++) buf[0x1a0 + i] = 0xd;
+  } else {
+    for (let j = 0; j < 14; j++) {
+      for (let i = 0x11; i < 0x1e; i++) buf[j * 32 + i] = 0x4f;
+    }
+  }
+}
+
+// 1:1 PrintSearchParameterText (pokedex.c:5420).
+function PrintSearchParameterText(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const t = rt.gTasks[taskId];
+  const menuItem = t.data[1];
+  const texts = sSearchOptions[menuItem].texts;
+  const cursorPos = t.data[sSearchOptions[menuItem].taskDataCursorPos];
+  const scrollOffset = t.data[sSearchOptions[menuItem].taskDataScrollOffset];
+  ClearSearchParameterBoxText();
+  for (let i = 0, j = scrollOffset; i < MAX_SEARCH_PARAM_ON_SCREEN && texts[j].title !== null; i++, j++)
+    PrintSearchParameterTitle(i, _searchText(texts[j].title));
+  EraseAndPrintSearchTextBox(_searchText(texts[cursorPos + scrollOffset].description));
+}
+
+// 1:1 GetSearchModeSelection (pokedex.c:5436).
+function GetSearchModeSelection(taskId: number, option: number): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  const t = rt.gTasks[taskId];
+  const id = t.data[sSearchOptions[option].taskDataCursorPos] + t.data[sSearchOptions[option].taskDataScrollOffset];
+  switch (option) {
+    default:
+      return 0;
+    case SEARCH_MODE:
+      return sPokedexModes[id];
+    case SEARCH_ORDER:
+      return sOrderOptions[id];
+    case SEARCH_NAME:
+      return id === 0 ? 0xff : id;
+    case SEARCH_COLOR:
+      return id === 0 ? 0xff : id - 1;
+    case SEARCH_TYPE_LEFT:
+    case SEARCH_TYPE_RIGHT:
+      return sDexSearchTypeIds[id];
+  }
+}
+
+// 1:1 SetDefaultSearchModeAndOrder (pokedex.c:5465).
+function SetDefaultSearchModeAndOrder(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  const t = rt.gTasks[taskId];
+  t.data[2] = sPokedexView.dexModeBackup === DEX_MODE_NATIONAL ? DEX_MODE_NATIONAL : DEX_MODE_HOENN;   // tCursorPos_Mode
+  const o = sPokedexView.dexOrderBackup;
+  t.data[4] = (o >= ORDER_NUMERICAL && o <= ORDER_SMALLEST) ? o : ORDER_NUMERICAL;                     // tCursorPos_Order
+}
+
+function SearchParamCantScrollUp(taskId: number): boolean {
+  const rt = getRuntime();
+  if (!rt) return true;
+  const t = rt.gTasks[taskId];
+  const menuItem = t.data[1];
+  const scrollOffset = t.data[sSearchOptions[menuItem].taskDataScrollOffset];
+  const lastOption = sSearchOptions[menuItem].numOptions - 1;
+  return !(lastOption > MAX_SEARCH_PARAM_CURSOR_POS && scrollOffset !== 0);
+}
+
+function SearchParamCantScrollDown(taskId: number): boolean {
+  const rt = getRuntime();
+  if (!rt) return true;
+  const t = rt.gTasks[taskId];
+  const menuItem = t.data[1];
+  const scrollOffset = t.data[sSearchOptions[menuItem].taskDataScrollOffset];
+  const lastOption = sSearchOptions[menuItem].numOptions - 1;
+  return !(lastOption > MAX_SEARCH_PARAM_CURSOR_POS && scrollOffset < lastOption - MAX_SEARCH_PARAM_CURSOR_POS);
+}
+
+// 1:1 SpriteCB_SearchParameterScrollArrow (pokedex.c:5527) : visibles pendant le scroll
+// d'un paramètre seulement, oscillation gSineTable/128. data[0]=taskId, data[1]=isDown.
+function SpriteCB_SearchParameterScrollArrow(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tk = rt.gTasks[sprite.data[0]];
+  if (tk && tk.isActive && tk.func === Task_HandleSearchParameterInput) {
+    if (sprite.data[1] /* isDownArrow */)
+      sprite.invisible = SearchParamCantScrollDown(sprite.data[0]);
+    else
+      sprite.invisible = SearchParamCantScrollUp(sprite.data[0]);
+    const val = (sprite.data[2] + sprite.data[1] * 128) & 0xff;
+    sprite.y2 = Math.trunc(gSineTable[val] / 128);
+    sprite.data[2] = (sprite.data[2] + 8) & 0xffff;
+  } else {
+    sprite.invisible = true;
+  }
+}
+
+// 1:1 CreateSearchParameterScrollArrows (pokedex.c:5556).
+function CreateSearchParameterScrollArrows(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  let id = CreateSprite(sScrollArrowSpriteTemplate, 184, 4, 0);
+  { const s = rt.gSprites[id]; if (s) { s.data[0] = taskId; s.data[1] = 0; s.callback = SpriteCB_SearchParameterScrollArrow as unknown as typeof s.callback; } }
+  id = CreateSprite(sScrollArrowSpriteTemplate, 184, 108, 0);
+  { const s = rt.gSprites[id]; if (s) { s.data[0] = taskId; s.data[1] = 1; s.callback = SpriteCB_SearchParameterScrollArrow as unknown as typeof s.callback; } }
+  rt.StartSpriteAnim(id, 1);   // vFlip via anim 1 (adaptation flip du port, cf. sScrollArrowSpriteTemplate)
+}
+
+// 1:1 helpers texte (pokedex.c:5581-5605).
+function EraseAndPrintSearchTextBox(str: string): void {
+  ClearSearchMenuRect(8, 120, 224, 32);
+  PrintSearchText(str, 8, 121);
+}
+
+function EraseSelectorArrow(y: number): void {
+  ClearSearchMenuRect(144, y * 16 + 8, 8, 16);
+}
+
+function PrintSelectorArrow(y: number): void {
+  PrintSearchText(getString('gText_SelectorArrow'), 144, y * 16 + 9);
+}
+
+function PrintSearchParameterTitle(y: number, str: string): void {
+  PrintSearchText(str, 152, y * 16 + 9);
+}
+
+function ClearSearchParameterBoxText(): void {
+  ClearSearchMenuRect(144, 8, 96, 96);
+}
+
+// ─── Retour de la recherche → liste principale ou résultats (pokedex.c:1830) ─
+function Task_WaitForExitSearch(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (!rt.gTasks[task.data[0]].isActive) {
+    ClearMonSprites();
+    if (sPokedexView.screenSwitchState !== 0) {
+      // La recherche a produit des résultats.
+      sPokedexView.selectedPokemon = 0;
+      sPokedexView.pokeBallRotation = 64; // POKEBALL_ROTATION_TOP
+      _dexInitSpritesDone = false;
+      task.func = Task_OpenSearchResults;
+    } else {
+      // Annulée : restaure l'état d'avant.
+      sPokedexView.pokeBallRotation = sPokedexView.pokeBallRotationBackup;
+      sPokedexView.selectedPokemon = sPokedexView.selectedPokemonBackup;
+      sPokedexView.dexMode = sPokedexView.dexModeBackup;
+      if (!IsNationalPokedexEnabled()) sPokedexView.dexMode = DEX_MODE_HOENN;
+      sPokedexView.dexOrder = sPokedexView.dexOrderBackup;
+      _dexInitSpritesDone = false;
+      task.func = Task_OpenPokedexMainPage;
+    }
+  }
+}
+
+// ─── Écran des résultats de recherche (pokedex.c:1874) ───────────────────────
+function Task_OpenSearchResults(task: DecompTask): void {
+  if (!sPokedexView) return;
+  sPokedexView.isSearchResults = true;
+  if (LoadPokedexListPage(PAGE_SEARCH_RESULTS))
+    task.func = Task_HandleSearchResultsInput;
+}
+
+function Task_HandleSearchResultsInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, sPokedexView.menuY);
+  if (sPokedexView.menuY) {
+    sPokedexView.menuY -= 8;
+    return;
+  }
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002, SELECT_BUTTON = 0x0004, START_BUTTON = 0x0008;
+  if ((rt.gMain.newKeys & A_BUTTON) && sPokedexView.pokedexList[sPokedexView.selectedPokemon].seen) {
+    UpdateSelectedMonSpriteId();
+    const monSprite = rt.gSprites[sPokedexView.selectedMonSpriteId];
+    const palSlot = monSprite ? monSprite.data[1] : 0;
+    if (monSprite) monSprite.callback = SpriteCB_MoveMonForInfoScreen as unknown as typeof monSprite.callback;
+    BeginNormalPaletteFade((~(1 << (palSlot + 16))) >>> 0, 0, 0, 0x10, RGB_BLACK);
+    task.func = Task_OpenSearchResultsInfoScreenAfterMonMovement;
+    PlaySE(SE_PIN);
+    FreeWindowAndBgBuffers();
+  } else if (rt.gMain.newKeys & START_BUTTON) {
+    sPokedexView.menuY = 0;
+    sPokedexView.menuIsOpen = true;
+    sPokedexView.menuCursorPos = 0;
+    task.func = Task_HandleSearchResultsStartMenuInput;
+    PlaySE(SE_SELECT);
+  } else if (rt.gMain.newKeys & SELECT_BUTTON) {
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+    task.data[0] = LoadSearchMenu();
+    sPokedexView.screenSwitchState = 0;
+    task.func = Task_WaitForExitSearch;
+    PlaySE(SE_PC_LOGIN);
+    FreeWindowAndBgBuffers();
+  } else if (rt.gMain.newKeys & B_BUTTON) {
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+    task.func = Task_ReturnToPokedexFromSearchResults;
+    PlaySE(SE_PC_OFF);
+  } else {
+    sPokedexView.selectedPokemon = TryDoPokedexScroll(sPokedexView.selectedPokemon, 0xe);
+    if (sPokedexView.scrollTimer) task.func = Task_WaitForSearchResultsScroll;
+  }
+}
+
+function Task_WaitForSearchResultsScroll(task: DecompTask): void {
+  if (!sPokedexView) return;
+  if (UpdateDexListScroll(sPokedexView.scrollDirection, sPokedexView.scrollMonIncrement, sPokedexView.maxScrollTimer))
+    task.func = Task_HandleSearchResultsInput;
+}
+
+function Task_HandleSearchResultsStartMenuInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, sPokedexView.menuY);
+  if (sPokedexView.menuY !== 96) {
+    sPokedexView.menuY += 8;
+    return;
+  }
+  const A_BUTTON = 0x0001, B_BUTTON = 0x0002, START_BUTTON = 0x0008;
+  if (rt.gMain.newKeys & A_BUTTON) {
+    switch (sPokedexView.menuCursorPos) {
+      case 0: // RETOUR LISTE
+      default:
+        rt.gMain.newKeys |= START_BUTTON;
+        break;
+      case 1: // DÉBUT DE LISTE
+        sPokedexView.selectedPokemon = 0;
+        sPokedexView.pokeBallRotation = 64;
+        ClearMonSprites();
+        CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+        rt.gMain.newKeys |= START_BUTTON;
+        break;
+      case 2: // FIN DE LISTE
+        sPokedexView.selectedPokemon = sPokedexView.pokemonListCount - 1;
+        sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + 48;
+        ClearMonSprites();
+        CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xe);
+        rt.gMain.newKeys |= START_BUTTON;
+        break;
+      case 3: // RETOUR AU POKÉDEX
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+        task.func = Task_ReturnToPokedexFromSearchResults;
+        PlaySE(SE_TRUCK_DOOR);
+        break;
+      case 4: // FERMER LE POKÉDEX
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+        task.func = Task_ClosePokedexFromSearchResultsStartMenu;
+        PlaySE(SE_PC_OFF);
+        break;
+    }
+  }
+  if (rt.gMain.newKeys & (START_BUTTON | B_BUTTON)) {
+    sPokedexView.menuIsOpen = false;
+    task.func = Task_HandleSearchResultsInput;
+    PlaySE(SE_SELECT);
+  } else if ((rt.gMain.newAndRepeatedKeys & DPAD_UP) && sPokedexView.menuCursorPos) {
+    sPokedexView.menuCursorPos--;
+    PlaySE(SE_SELECT);
+  } else if ((rt.gMain.newAndRepeatedKeys & DPAD_DOWN) && sPokedexView.menuCursorPos < 4) {
+    sPokedexView.menuCursorPos++;
+    PlaySE(SE_SELECT);
+  }
+}
+
+function Task_OpenSearchResultsInfoScreenAfterMonMovement(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  const s = rt.gSprites[sPokedexView.selectedMonSpriteId];
+  if (s && s.x === MON_PAGE_X && s.y === MON_PAGE_Y) {
+    sPokedexView.currentPageBackup = sPokedexView.currentPage;
+    task.data[0] = LoadInfoScreen(sPokedexView.pokedexList[sPokedexView.selectedPokemon], sPokedexView.selectedMonSpriteId);
+    sPokedexView.selectedMonSpriteId = 0xffff;   // 1:1 : -1
+    task.func = Task_WaitForExitSearchResultsInfoScreen;
+  }
+}
+
+function Task_WaitForExitSearchResultsInfoScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (rt.gTasks[task.data[0]].isActive) {
+    if (sPokedexView.currentPage === PAGE_INFO && !IsInfoScreenScrolling(task.data[0]) && TryDoInfoScreenScroll())
+      StartInfoScreenScroll(sPokedexView.pokedexList[sPokedexView.selectedPokemon], task.data[0]);
+  } else {
+    // Sortie : retour aux résultats.
+    _dexInitSpritesDone = false;
+    task.func = Task_OpenSearchResults;
+  }
+}
+
+function Task_ReturnToPokedexFromSearchResults(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (!rt.gPaletteFade.active) {
+    sPokedexView.pokeBallRotation = sPokedexView.pokeBallRotationBackup;
+    sPokedexView.selectedPokemon = sPokedexView.selectedPokemonBackup;
+    sPokedexView.dexMode = sPokedexView.dexModeBackup;
+    if (!IsNationalPokedexEnabled()) sPokedexView.dexMode = DEX_MODE_HOENN;
+    sPokedexView.dexOrder = sPokedexView.dexOrderBackup;
+    _dexInitSpritesDone = false;
+    task.func = Task_OpenPokedexMainPage;
+    ClearMonSprites();
+    FreeWindowAndBgBuffers();
+  }
+}
+
+function Task_ClosePokedexFromSearchResultsStartMenu(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (!rt.gPaletteFade.active) {
+    sPokedexView.pokeBallRotation = sPokedexView.pokeBallRotationBackup;
+    sPokedexView.selectedPokemon = sPokedexView.selectedPokemonBackup;
+    sPokedexView.dexMode = sPokedexView.dexModeBackup;
+    if (!IsNationalPokedexEnabled()) sPokedexView.dexMode = DEX_MODE_HOENN;
+    sPokedexView.dexOrder = sPokedexView.dexOrderBackup;
+    task.func = Task_ClosePokedex;
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
