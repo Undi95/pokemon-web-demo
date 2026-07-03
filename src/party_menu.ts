@@ -61,6 +61,7 @@ import { DoEasyChatScreen, easyChatGfxReady } from './easy_chat';
 const EASY_CHAT_TYPE_MAIL = 4;
 const EASY_CHAT_PERSON_DISPLAY_NONE = 3;
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
+import { PokemonUseItemEffects } from './engine/bag/bag-item-effects';
 import { GetItemName, GetItemPocket, GetBagItemKey } from './item';
 import { GoToBagMenu, ITEMMENULOCATION_PARTY, ITEMMENULOCATION_LAST, POCKETS_COUNT } from './item_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
@@ -1252,6 +1253,52 @@ export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) 
     // func = Task_ReplaceMoveYesNo (= _displayMonNeedsToReplaceMove pose data1 +
     // la phase 'levelup_replace_msg').
     _displayMonNeedsToReplaceMove(move0);
+  }
+}
+
+/** 1:1 `ItemUseCB_EvolutionStone` (party_menu.c:5232) :
+ *  ```c
+ *  PlaySE(SE_SELECT);
+ *  gCB2_AfterEvolution = gPartyMenu.exitCallback;
+ *  if (ExecuteTableBasedItemEffect_(gPartyMenu.slotId, gSpecialVar_ItemId, 0)) {  // TRUE = aucun effet
+ *      gPartyMenuUseExitCallback = FALSE;
+ *      DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
+ *      ScheduleBgCopyTilemapToVram(2);
+ *      gTasks[taskId].func = task;
+ *  } else {  // effet appliqué → PokemonUseItemEffects a démarré BeginEvolutionScene
+ *      RemoveBagItem(gSpecialVar_ItemId, 1);
+ *      FreePartyPointers();
+ *  }
+ *  ```
+ *  ExecuteTableBasedItemEffect_ = PokemonUseItemEffects(mon, item, slotId, 0, FALSE).
+ *  Le case ITEM4_EVO_STONE (bag-item-effects.ts:616) appelle GetEvolutionTargetSpecies
+ *  (EVO_MODE_ITEM_USE) + BeginEvolutionScene → gCB2_AfterEvolution DOIT être posé AVANT
+ *  l'effet (lu en fin de scène). Porté ICI (party_menu.c home) + re-export item_use.ts
+ *  (comme ItemUseCB_TMHM). Teardown success = mirror _partyMenuTryEvolution (level-up). */
+export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void taskId; void _returnTask;
+  const rt = getRuntime();
+  PlaySE(5);                                          // 1:1 :5234 PlaySE(SE_SELECT)
+  const mon = _party()[_slotId];                      // &gPlayerParty[gPartyMenu.slotId]
+  if (!mon) return;
+  const item = (gSpecialVar.ItemId as number) | 0;    // gSpecialVar_ItemId
+  // 1:1 :5235 gCB2_AfterEvolution = gPartyMenu.exitCallback (posé AVANT l'effet :
+  // PokemonUseItemEffects case EVO_STONE appelle BeginEvolutionScene qui le lit).
+  const exitCb = rt.gMain.savedCallback as (() => void) | null;
+  SetCB2AfterEvolution(exitCb ?? null);
+  // 1:1 :5236 ExecuteTableBasedItemEffect_ = PokemonUseItemEffects(mon, item, slotId, 0, FALSE).
+  const result = PokemonUseItemEffects(mon, item, _slotId, 0, false);
+  if (result.cannotUse) {                             // 1:1 TRUE = aucun effet
+    // 1:1 :5238-5241 DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE) → reste dans le menu.
+    ShowPartyMenuItemMessage(_preparePartyMsg(getString('gText_WontHaveEffect') || ''));
+  } else {
+    // 1:1 :5245-5246 : la scène a démarré (BeginEvolutionScene dans PokemonUseItemEffects).
+    RemoveBagItem(GetBagItemKey(item), 1);            // 1:1 RemoveBagItem(item, 1)
+    // 1:1 FreePartyPointers : teardown module party (= _partyMenuTryEvolution level-up).
+    if (_inputTaskId >= 0) { rt.DestroyTask(_inputTaskId); _inputTaskId = -1; }
+    _freePartyMenu();
+    _isOpen = false;
+    _phase = 'idle';
   }
 }
 

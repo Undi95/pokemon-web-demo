@@ -71,6 +71,7 @@ import {
   PartyMenuAnimateHP,
   CB2_ChooseMonToGiveItem,
   ItemUseCB_TMHM,
+  ItemUseCB_EvolutionStone,
 } from './party_menu';
 // Re-export pour item_menu.ts (ItemMenu_Give pose gBagMenu.newScreenCallback =
 // CB2_ChooseMonToGiveItem). Routé via item_use pour réutiliser l'edge existant
@@ -516,16 +517,11 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
   ));
 }
 
-// ─── ItemUseCB_EvolutionStone (party_menu.c:5232) — 1:1-sémantique ──────────
-export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
-  void _returnTask; void taskId;
-  const slotId = GetPartyScreenSlotId();
-  const mon = gPlayerParty[slotId];
-  if (!mon || !mon.species) return;
-  // GetEvolutionTargetSpecies + BeginEvolutionScene non porté.
-  // → "Ça n'aura aucun effet." 1:1 fallback.
-  ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), { var1: mon.nickname }));
-}
+// ─── ItemUseCB_EvolutionStone (party_menu.c:5232) — porté 1:1 DANS party_menu.ts ──
+// (GetEvolutionTargetSpecies EVO_MODE_ITEM_USE + BeginEvolutionScene via
+// PokemonUseItemEffects case EVO_STONE ; teardown = _partyMenuTryEvolution). Re-export
+// ici pour l'edge item_menu → item_use (setItemUseCB(ItemUseCB_EvolutionStone)).
+export { ItemUseCB_EvolutionStone };
 
 // ─── ItemUseCB_TMHM (party_menu.c:4733) — porté 1:1 DANS party_menu.ts ──────
 // (avec CanMonLearnTMTutor :2033 + Task_LearnedMove :4769 + le flux replace-move

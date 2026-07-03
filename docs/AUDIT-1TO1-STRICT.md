@@ -114,6 +114,18 @@ commentaires d'un ancien plan Phase 2/3 (« STUB à implémenter », « [handler
 RareCandy/EvolutionStone/Bike/EscapeRope) sont tous câblés 1:1. Ne pas se fier aux
 marqueurs stub de ce fichier lors des audits : lire le CODE.
 
+| item_use.ts / party_menu.ts (ItemUseCB_EvolutionStone) | STUB « GetEvolutionTargetSpecies + BeginEvolutionScene non porté → aucun effet » alors que les DEUX sont portés 1:1 (P2.1) → **les pierres d'évolution ne marchaient pas** | ✅ porté 1:1 dans party_menu.ts (via PokemonUseItemEffects case EVO_STONE + gCB2_AfterEvolution) + re-export item_use.ts | `<en cours>` |
+
+**Findings item_use.ts** : (1) EVO_STONE stub soldé (ci-dessus, vérifié en jeu Goupix+Pierre
+Feu → Feunard → retour sac). (2) DRIFT STRUCTUREL : les field-funcs `ItemUseOutOfBattle_*`
+(Bike/Rod/Itemfinder/Berry/Medicine/TMHM…) sont **inlinées dans le switch de item_menu.ts**
+au lieu d'être des fonctions dans item_use.ts (oracle 12/74 = faux négatif de portage ; la
+logique EST là, mais pas sous forme 1:1 same-name). (3) FEATURES NON PORTÉES (vrais trous,
+pas des divergences) : Itemfinder (Task_UseItemfinder + IsHiddenItemPresent*), PokéblockCase,
+CoinCase, PowderJar, WailmerPail/Sudowoodo. (4) APPROXIMATIONS documentées : ItemUseCB_PPRecovery/
+PPUp forcent moveIndex=0 (Ether devrait laisser choisir la capacité) ; ItemUseCB_ReduceEV/
+SacredAsh messages simplifiés. → (2)(3)(4) = backlog, pas de la « divergence dans du fini ».
+
 ## Bugs combat mis EN ATTENTE (repris après l'audit, ou si user re-priorise)
 
 Diag démarré : `ENDTURN_BURN` (battle_util.ts:3969) + `DoBattlerEndTurnEffects` = portés 1:1
