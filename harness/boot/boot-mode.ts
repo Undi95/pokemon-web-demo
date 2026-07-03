@@ -317,9 +317,9 @@ function applyNoIntroPreset(): void {
   // ⚠️ DEBUG ONLY : ajouter Arcko Lv15 complet à la party (= testing Pokemon
   // screen pages, party UI, battle system, SCÈNE D'ÉVOLUTION). Pokémon "complet" :
   //   - Species : SPECIES_TREECKO (= ARCKO en FR, starter gen 3 Hoenn)
-  //   - Level : 15, exp = exp(Lv16) - 1 → PILE sous le niveau d'évolution :
-  //     1 SUPER BONBON = Lv16 = learn POURSUITE (MAX_MOVES → flux replace)
-  //     + évolution MASSKO — recipe de test scène évo en 1 item (user 2026-07-02)
+  //   - Level : 12 (4 niveaux sous l'évolution MASSKO Lv16 : n'évolue plus au
+  //     moindre combat/bonbon, user 2026-07-03). Pour re-tester la scène d'évo en
+  //     1 SUPER BONBON, remettre Lv15 + arcko.experience = exp(Lv16) - 1.
   //   - Held item : ITEM_MIRACLE_SEED (= "Grain Miracle" FR, +20% dmg Plante)
   //   - Ability : "Overgrow" (= Engrais FR, +50% Plante moves quand HP < 1/3)
   //   - Moves 4 : Pound, Leer, Absorb, Quick Attack (= learnset naturel Lv15 :
@@ -331,16 +331,16 @@ function applyNoIntroPreset(): void {
   // 1:1 : compte gPlayerParty natif (CalculatePlayerPartyCount) plutôt que la
   // façade de vues `gSaveBlock1Ptr.playerParty`.
   if (CalculatePlayerPartyCount() === 0) {
-    const arcko = createTestMon('SPECIES_TREECKO', 15, {
+    const arcko = createTestMon('SPECIES_TREECKO', 12, {
       heldItem: 'ITEM_MIRACLE_SEED',  // DEBUG fixture (Grain Miracle FR)
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['pound', 'leer', 'absorb', 'quickattack'],
     });
-    // Exp pile sous le seuil Lv16 (Treecko = GROWTH_MEDIUM_SLOW → 2535 - 1 =
-    // 2534) — calculée depuis les tables réelles, pas de valeur en dur.
-    const growthRate = getSpeciesInfo('SPECIES_TREECKO')?.growthRate ?? 'GROWTH_MEDIUM_SLOW';
-    arcko.experience = getExperienceForLevel(growthRate, 16) - 1;
+    // Lv12 = 4 niveaux sous l'évolution MASSKO (Lv16) : ARCKO n'évolue plus au
+    // moindre combat/bonbon (user 2026-07-03, ça gênait les tests d'aggro). Exp
+    // = début pile de Lv12 (createTestMon la calcule depuis les tables réelles).
+    void getExperienceForLevel; void getSpeciesInfo;
     // ⚠️ DEBUG ONLY : mons valides (user : "ball + lieu, qu'ils soient
     // valide"). Starter Treecko 1:1 = reçu à la ROUTE 101 niv.5 (sauvetage
     // Birch). pokeball déjà = ITEM_POKE_BALL (CreateMon 1:1). gender/nature/ability
@@ -352,17 +352,11 @@ function applyNoIntroPreset(): void {
     arcko.status = (resolveDecompConstant('STATUS1_BURN') as number | undefined) ?? 0x10;
     GiveMonToPlayer(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.hp}/${arcko.maxHP}) held=${arcko.heldItem}`);
-    // ⚠️ DEBUG ONLY : ŒUF (Poussifeu) prêt à éclore — chantier P2.2 éclosion.
-    // Remplace l'ex-Jirachi « curseur » (l'œuf occupe le même slot 1 et teste le
-    // curseur pareil). friendship = 0 (cycles épuisés) + daycare.stepCounter = 253 :
-    // TryProduceOrHatchEgg (check à ==255) déclenche l'éclosion ~2 pas après spawn.
-    // Après éclosion : POUSSIFEU Lv5 (SEEN+CAUGHT posés 1:1 par AddHatchedMonToParty).
-    // Re-tester = recharger ?debug (preset RAM-only, l'œuf se ré-arme).
-    const egg = CreateEgg('SPECIES_TORCHIC', false);
-    egg.friendship = 0; // cycles d'œuf épuisés (MON_DATA_FRIENDSHIP = compteur cycles)
-    GiveMonToPlayer(egg);
-    GetDaycareData().stepCounter = 253;
-    console.log('[boot-mode] ?debug ŒUF (Poussifeu) ajouté : éclosion ~2 pas (stepCounter=253, cycles=0)');
+    // ŒUF (Poussifeu) RETIRÉ du preset (user 2026-07-03 : l'éclosion ~2 pas gênait
+    // les tests d'aggro dresseurs). Pour re-tester l'éclosion P2.2, remettre :
+    //   const egg = CreateEgg('SPECIES_TORCHIC', false); egg.friendship = 0;
+    //   GiveMonToPlayer(egg); GetDaycareData().stepCounter = 253;
+    void CreateEgg; void GetDaycareData;
     // ⚠️ DEBUG ONLY : Leveinard (Chansey) — testeur des field moves de SOIN/utilitaire que les 3
     // field-mons ne couvrent pas. PAS un œuf (`isEgg=false`) : un œuf est SKIPPÉ par checkpartymove /
     // la détection field-move du party menu (= inutilisable pour tester). Lui donne les 2 moves
