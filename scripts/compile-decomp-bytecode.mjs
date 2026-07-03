@@ -135,6 +135,15 @@ for (const [k, v] of scrapeConstants(autoRoot)) constantsMap.set(k, v);
 for (const [k, v] of scrapeConstants(includeRoot)) {
   if (!constantsMap.has(k)) constantsMap.set(k, v);
 }
+// 2026-07-04 : B_SCR_OP_* / STRINGID_* / CMP_* / ITEM_* / GAME_STAT_* / MOVEEND_*
+// vivent dans include/ RACINE du projet (miroir TS des headers decomp) depuis la
+// purge de decomp-data/auto/ (7951ee00 « ~840 fichiers cassés ») — sans cette
+// racine, 53 symboles de battle_scripts_* retombaient en placeholder 0 à la
+// regen (« ARCKO utilise ?! », messages/opcodes corrompus).
+const rootIncludeRoot = resolve(projectRoot, 'include');
+for (const [k, v] of scrapeConstants(rootIncludeRoot)) {
+  if (!constantsMap.has(k)) constantsMap.set(k, v);
+}
 // goal T4 : constantes des HEADERS decomp consommees par battle_anim_scripts
 // (ANIM_TAG_*, SOUND_PAN_*, ANIM_ATTACKER/TARGET, SE_*...) — sans elles, les
 // args des createsprite deviendraient des marqueurs nominaux (= corrompus).
@@ -612,6 +621,11 @@ const BATTLE_MEMORY_SYMBOLS = new Set([
   'gStatUpStringIds', 'gStockpileUsedStringIds', 'gSubstituteUsedStringIds',
   'gSwallowFailStringIds', 'gTransformUsedStringIds', 'gUproarAwakeStringIds',
   'gUproarOverTurnStringIds', 'gWokeUpStringIds', 'gWrappedStringIds',
+  // 2026-07-04 : tables capture/objets/météo — absentes de la whitelist alors que
+  // BATTLE_STRING_ID_TABLES (battle_message.ts) les résout : le bytecode émettait
+  // l'adresse EWROM brute → resolveStringIdTable=null → fallback stringId 0 =
+  // « Un X sauvage apparaît ! » affiché comme message d'échec de capture (bug A/B).
+  'gBallEscapeStringIds', 'gTrainerItemCuredStatusStringIds', 'gWeatherStartsStringIds',
 ]);
 const symbolToId = new Map();  // name → id
 const idToSymbol = [];          // id → name (= reverse lookup for exports)

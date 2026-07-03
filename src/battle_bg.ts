@@ -574,6 +574,7 @@ export async function LoadBattleMenuWindowGfx(): Promise<void> {
 export async function loadBattleTextboxAndBackground1to1(
   env: number = BATTLE_ENVIRONMENT_GRASS,
 ): Promise<void> {
+  _lastBattleEnv = env;
   _bgCopiesInFlight++;
   try {
     await loadBattleTextbox();
@@ -591,6 +592,12 @@ export async function loadBattleTextboxAndBackground1to1(
 // attendre, sinon le fill est écrasé par le tileset qui finit de se charger.
 let _bgCopiesInFlight = 0;
 export function IsDma3ManagerBusyWithBgCopy(): boolean { return _bgCopiesInFlight > 0; }
+
+/** Dernier environnement passé à loadBattleTextboxAndBackground1to1 (= le
+ *  gBattleEnvironment du combat courant). Pour les rechargements mid-combat
+ *  (Cmd_displaydexinfo case 3 : le décor doit rester le même). */
+let _lastBattleEnv = BATTLE_ENVIRONMENT_GRASS;
+export function getLastBattleEnvironment(): number { return _lastBattleEnv; }
 
 /** 1:1 décomp portion vidéo de `CB2_InitBattleInternal` (battle_main.c:619+) :
  *  `CpuFill32(0, VRAM, VRAM_SIZE)` → `InitBattleBgsVideo` (=

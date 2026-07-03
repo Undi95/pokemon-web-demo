@@ -47,7 +47,8 @@ import { FONT_NARROW, TEXT_SKIP_DRAW } from './text';
 import { AddTextPrinterParameterized4 } from './menu';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
-import { loadTileBin, loadTilemapBin, loadGbaPal, loadIndexedPngRawIndices } from '../harness/gba/png-loader';
+import { loadTileBin, loadTilemapBin, loadGbaPal, loadIndexedPngRawIndices, loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { CreateMonPicSprite_Affine, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { CopyMonCategoryText, GetStringCenterAlignXOffset } from './international_string_util';
 import { CopyToWindowPixelBuffer } from './window';
 import { getString } from './engine/ui/gba-strings';
@@ -3702,3 +3703,218 @@ export function OpenPokedexFromStartMenu(): void {
   rt.gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
   rt.SetMainCallback2(CB2_OpenPokedex);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Page « nouvelle espèce enregistrée » post-capture (pokedex.c:3940-4118).
+// Appelée PENDANT le combat (Cmd_displaydexinfo 0xF2) : task au-dessus de
+// BattleMainCB2 (le CB2 ne change pas) — l'écran se monte par-dessus la vidéo
+// combat, puis le Cmd reconstruit la vidéo combat à la sortie.
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 décomp `sNewEntryInfoScreen_BgTemplate` (pokedex.c:956).
+const sNewEntryInfoScreen_BgTemplate: BgTemplate[] = [
+  { bg: 2, charBaseIndex: 2, mapBaseIndex: 14, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 },
+  { bg: 3, charBaseIndex: 1, mapBaseIndex: 15, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
+];
+// 1:1 décomp `sNewEntryInfoScreen_WindowTemplates` (pokedex.c:978) — mêmes ids
+// WIN_INFO(0)/WIN_FOOTPRINT(1) que la fiche.
+const sNewEntryInfoScreen_WindowTemplates: WindowTemplate[] = [
+  /* WIN_INFO      */ { bg: 2, tilemapLeft: 0,  tilemapTop: 0, width: 32, height: 20, paletteNum: 0,  baseBlock: 1 },
+  /* WIN_FOOTPRINT */ { bg: 2, tilemapLeft: 25, tilemapTop: 8, width: 2,  height: 2,  paletteNum: 15, baseBlock: 641 },
+];
+
+/** = gPokedexVBlankCB (pokedex.c) : VBlank du combat sauvé pendant la page. */
+let _newEntrySavedVBlankCB: (() => void) | null = null;
+let _newEntryMonPicPending = 0;
+let _newEntryMonPal: Uint16Array | null = null;
+
+// Préchargement async de la pic du mon (le C décompresse la ROM en synchrone) —
+// alimente le substrat sync de CreateMonPicSprite_Affine ; gate au case 4.
+function _preloadNewEntryMonPic(dexNum: number): void {
+  const species = NationalPokedexNumToSpecies(dexNum);
+  const enumName = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const folder = enumName.replace('SPECIES_', '').toLowerCase();
+  _newEntryMonPicPending++;
+  void (async () => {
+    try {
+      const [front, pal] = await Promise.all([
+        loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4),
+        loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`),
+      ]);
+      _newEntryMonPal = pal.subarray(0, 16);
+      _registerMonPicSubstrate(enumName, front.charData, _newEntryMonPal);
+    } catch (e) { console.warn('[pokedex] new-entry mon pic préload KO', enumName, e); }
+  })().finally(() => { _newEntryMonPicPending--; });
+}
+
+/** 1:1 décomp `CreateMonSpriteFromNationalDexNumber(nationalNum, x, y, paletteSlot)`
+ *  (pokedex.c) : NationalPokedexNumToSpecies → CreateMonPicSprite_HandleDeoxys(
+ *  species, SHINY_ODDS, 0, TRUE=MON_PIC_AFFINE_FRONT, x, y, paletteSlot, TAG_NONE). */
+function CreateMonSpriteFromNationalDexNumber(dexNum: number, x: number, y: number, paletteSlot: number): number {
+  const species = NationalPokedexNumToSpecies(dexNum);
+  const enumName = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  return CreateMonPicSprite_Affine(enumName, 8 /* SHINY_ODDS */, 0, MON_PIC_AFFINE_FRONT, x, y, paletteSlot, 0xFFFF /* TAG_NONE */);
+}
+
+// #define tState data[0] · tDexNum data[1] · tPalTimer data[2] · tMonSpriteId data[3]
+// · tOtIdLo/Hi data[12]/[13] · tPersonalityLo/Hi data[14]/[15] (pokedex.c:3953).
+
+/** 1:1 décomp `DisplayCaughtMonDexPage(dexNum, otId, personality)` (pokedex.c:3961). */
+export function DisplayCaughtMonDexPage(dexNum: number, otId: number, personality: number): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  const taskId = rt.CreateTask(Task_DisplayCaughtMonDexPage, 0);
+  const t = rt.gTasks[taskId];
+  t.data[0] = 0;
+  t.data[1] = dexNum;
+  t.data[12] = otId & 0xffff;
+  t.data[13] = (otId >>> 16) & 0xffff;
+  t.data[14] = personality & 0xffff;
+  t.data[15] = (personality >>> 16) & 0xffff;
+  // Préchargements async du port (le C lit la ROM en synchrone) : assets dex +
+  // empreinte (gates case 1) + pic du mon (gate case 4).
+  if (!_assets) void _loadAssets();
+  _loadFootprint(dexNum);
+  _preloadNewEntryMonPic(dexNum);
+  return taskId;
+}
+
+/** 1:1 décomp `Task_DisplayCaughtMonDexPage` (pokedex.c:3974) — states 0..6. */
+function Task_DisplayCaughtMonDexPage(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const dexNum = task.data[1];
+  switch (task.data[0]) {
+    case 0:
+    default:
+      if (!rt.gPaletteFade.active) {
+        // 1:1 : gPokedexVBlankCB = gMain.vblankCallback ; SetVBlankCallback(NULL).
+        _newEntrySavedVBlankCB = (rt.gMain.vblankCallback as (() => void) | null) ?? null;
+        rt.SetVBlankCallback(null);
+        // OBJ absent du mask → ResetSpriteData + FreeAllSpritePalettes : les sprites
+        // du combat meurent ici (1:1 ROM : plus de healthbox pendant/après la page).
+        ResetOtherVideoRegisters(DISPCNT_BG0_ON);
+        ResetBgsAndClearDma3BusyFlags(0);
+        InitBgsFromTemplates(0, sNewEntryInfoScreen_BgTemplate, sNewEntryInfoScreen_BgTemplate.length);
+        // 1:1 SetBgTilemapBuffer(3/2, AllocZeroed(BG_SCREEN_SIZE)) : tilemaps NEUFS
+        // ZÉRO (nos buffers sont intrinsèques/partagés → équivalent = fill(0)).
+        rt.gba.bg(2).tilemap.fill(0);
+        rt.gba.bg(3).tilemap.fill(0);
+        InitWindows(sNewEntryInfoScreen_WindowTemplates);
+        DeactivateAllTextPrinters();
+        task.data[0] = 1;
+      }
+      break;
+    case 1:
+      if (!_assets || !_footprintReady) break;   // gates async du port
+      // 1:1 DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0) —
+      // BG3 charBaseIndex=1 → tiles à VRAM 0x4000.
+      rt.gba.vram.set(_assets.menuTiles, 0x4000);
+      CopyToBgTilemapBuffer(3, _assets.infoScreenTilemap, 0, 0);
+      FillWindowPixelBuffer(WIN_INFO, 0 /* PIXEL_FILL(0) */);
+      PutWindowTilemap(WIN_INFO);
+      PutWindowTilemap(WIN_FOOTPRINT);
+      DrawFootprint(WIN_FOOTPRINT, dexNum);
+      CopyWindowToVram(WIN_FOOTPRINT, 2 /* COPYWIN_GFX */);
+      // 1:1 ResetPaletteFade() : fade déjà inactif ici (le Cmd a attendu la fin du
+      // fade-out avant de créer la task) — rien à nettoyer chez nous.
+      LoadPokedexBgPalette(false);
+      task.data[0]++;
+      break;
+    case 2:
+      task.data[0]++;
+      break;
+    case 3:
+      // 1:1 : PrintMonInfo(dexNum, IsNationalPokedexEnabled(), owned=1, newEntry=1).
+      PrintMonInfo(dexNum, IsNationalPokedexEnabled() ? 1 : 0, 1, 1);
+      CopyWindowToVram(WIN_INFO, 3 /* COPYWIN_FULL */);
+      CopyBgTilemapBufferToVram(2);
+      CopyBgTilemapBufferToVram(3);
+      task.data[0]++;
+      break;
+    case 4: {
+      if (_newEntryMonPicPending > 0) break;   // gate async pic (substrat sync ensuite)
+      const spriteId = CreateMonSpriteFromNationalDexNumber(dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
+      if (spriteId !== 0xFFFF) {
+        const s = rt.gSprites[spriteId];
+        const oamIdx = (s as unknown as { oamIndex?: number })?.oamIndex;
+        if (oamIdx !== undefined && rt.gba.oam[oamIdx]) rt.gba.oam[oamIdx].priority = 0;
+      }
+      BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);   // fade IN
+      rt.SetVBlankCallback(_newEntrySavedVBlankCB);
+      task.data[3] = spriteId;
+      task.data[0]++;
+      break;
+    }
+    case 5:
+      rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+      rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1040 /* DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON */);
+      ShowBg(2);
+      ShowBg(3);
+      task.data[0]++;
+      break;
+    case 6:
+      if (!rt.gPaletteFade.active) {
+        // 1:1 PlayCry_Normal(NationalPokedexNumToSpecies(dexNum), 0) — WAV pré-extrait.
+        const sp = reverseDecompConstant(NationalPokedexNumToSpecies(dexNum), 'SPECIES_') ?? 'SPECIES_NONE';
+        void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
+        task.data[2] = 0;
+        task.func = Task_HandleCaughtMonPageInput;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `Task_HandleCaughtMonPageInput` (pokedex.c:4048) : A/B → fade out
+ *  BG-only + le mon GLISSE vers le centre (il reste affiché pour le yes/no surnom,
+ *  1:1) ; sinon flicker de la couleur « capturé » (palette BG3 1..7, alternance
+ *  toutes les 16 frames). */
+function Task_HandleCaughtMonPageInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !_assets) return;
+  if (rt.gMain.newKeys & 0x0003 /* A_BUTTON | B_BUTTON */) {
+    BeginNormalPaletteFade(0x0000FFFF /* PALETTES_BG */, 0, 0, 16, RGB_BLACK);
+    const s = rt.gSprites[task.data[3]];
+    if (s) s.callback = SpriteCB_SlideCaughtMonToCenter as unknown as typeof s.callback;
+    task.func = Task_ExitCaughtMonPage;
+  } else if (++task.data[2] & 16) {
+    LoadPalette(_assets.bgHoennPal.subarray(1, 8), BG_PLTT_ID(3) + 1, 14 /* PLTT_SIZEOF(7) */);
+  } else {
+    LoadPalette(_assets.bgHoennPal.subarray(49, 56), BG_PLTT_ID(3) + 1, 14);
+  }
+}
+
+/** 1:1 décomp `Task_ExitCaughtMonPage` (pokedex.c:4067). */
+function Task_ExitCaughtMonPage(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!rt.gPaletteFade.active) {
+    rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1040 /* DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON */);
+    FreeAllWindowBuffers();
+    // (Free(GetBgTilemapBuffer(2/3)) : buffers intrinsèques chez nous — rien à libérer.)
+    // 1:1 : LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(…),
+    // OBJ_PLTT_ID(paletteNum)) — repose la palette du mon (unfaded+faded) après le
+    // fade BG-only, le sprite reste affiché au centre pendant le yes/no surnom.
+    const s = rt.gSprites[task.data[3]];
+    const oamIdx = (s as unknown as { oamIndex?: number })?.oamIndex;
+    if (s && oamIdx !== undefined && _newEntryMonPal) {
+      const palNum = rt.gba.oam[oamIdx]?.paletteBank ?? 0;
+      LoadPalette(_newEntryMonPal, 0x100 + palNum * 16, 32);
+    }
+    rt.DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 décomp `SpriteCB_SlideCaughtMonToCenter` (pokedex.c:4102). */
+function SpriteCB_SlideCaughtMonToCenter(sprite: DecompSprite): void {
+  if (sprite.x < 120 /* DISPLAY_WIDTH/2 */) sprite.x += 2;
+  if (sprite.x > 120) sprite.x -= 2;
+  if (sprite.y < 80 /* DISPLAY_HEIGHT/2 */) sprite.y += 1;
+  if (sprite.y > 80) sprite.y -= 1;
+}
+
+// Pont globalThis pour Cmd_displaydexinfo (battle_script_commands) — pas d'arête
+// ESM combat → pokedex ; le Cmd tire ce module en dynamique si le pont est absent.
+(globalThis as Record<string, unknown>).DisplayCaughtMonDexPage = DisplayCaughtMonDexPage;

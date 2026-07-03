@@ -9753,46 +9753,95 @@ function _flagGet_GC(flag: number): boolean {
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_displaydexinfo. 1 byte. State machine via
- *  gBattleCommunication[0] qui fade out, show dex page, fade back in.
- *
- *  Note 1:1 partial : les helpers UI (BeginNormalPaletteFade, DisplayCaughtMonDexPage,
- *  ShowBg, etc.) ne sont pas wired ici. State machine reduce à advance
- *  immédiat (= simulate completed). */
+// Imports chaîne capture (displaydexinfo + trygivecaughtmonnick). Top-level ESM
+// (le fichier a déjà des blocs d'import mid-file, cf. :10475).
+import { BeginFastPaletteFade } from './palette';
+import { ShowBg } from './window';  // (FreeAllWindowBuffers déjà importé par le bloc drawlvlupbox :10561)
+import { GetMonGender } from './pokemon';
+import { battleInitVideo1to1, IsDma3ManagerBusyWithBgCopy, getLastBattleEnvironment } from './battle_bg';
+
+/** 1:1 décomp Cmd_displaydexinfo (battle_script_commands.c:10104-10152). 1 byte.
+ *  State machine 6 cases via gBattleCommunication[0] : fade out → page dex
+ *  « nouvelle espèce » (DisplayCaughtMonDexPage, task au-dessus de BattleMainCB2)
+ *  → reconstruction vidéo combat (InitBattleBgsVideo + LoadBattleTextboxAndBackground)
+ *  → fade in BG. La page elle-même vit dans pokedex.ts (pont globalThis). */
 function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
-  // 1:1 décomp battle_script_commands.c:10104-10152 : state machine 6 cases (0..5).
-  // Cases :
-  //   0 : BeginNormalPaletteFade out → state 1
-  //   1 : wait fade done + DisplayCaughtMonDexPage → state 2
-  //   2 : wait fade + task done + restore VBlankCB → state 3
-  //   3 : InitBattleBgsVideo + LoadBattleTextboxAndBackground → state 4
-  //   4 : wait DMA + BeginNormalPaletteFade in → state 5
-  //   5 : wait fade done → advance opcode.
-  //
-  // Notre port : state machine fidele, stubs UI advance instant. DETTE
-  // (goal tranche 1, 2026-06-10) : l'ECRAN dex du mon capture
-  // (DisplayCaughtMonDexPage -> page entry pokedex + cri + flavor) = meme
-  // calibre UI que le naming screen -> tranche pokedex-UI ulterieure ; le
-  // FLUX (fades + restore bgs combat) ne bloque pas (outcome 7 valide).
+  const rt = _getRuntimeBSC();
+  if (!rt) { gBattleCommunication[0] = 0; return false; }
   switch (gBattleCommunication[0]) {
     case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-      // Stubs UI Phase 1.4 — advance state.
+      // 1:1 : BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK) = fade OUT.
+      rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0x0000);
+      _displayDexSavedCB2 = (rt.gMain as { callback2?: unknown }).callback2 ?? null; // = BattleMainCB2 (comparé au case 2)
       gBattleCommunication[0]++;
-      ctx.scriptPtr--;  // stay on opcode (= re-enter next tick).
+      ctx.scriptPtr--;
+      return true;
+    case 1:
+      if (!rt.gPaletteFade.active) {
+        const display = (globalThis as Record<string, unknown>).DisplayCaughtMonDexPage as
+          ((dexNum: number, otId: number, personality: number) => number) | undefined;
+        if (!display) {
+          // Module pokedex pas encore évalué → le tirer et re-poller ce state.
+          void import('./pokedex');
+          ctx.scriptPtr--;
+          return true;
+        }
+        FreeAllWindowBuffers();
+        // 1:1 : species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES) ;
+        // otId/personality = gBattleMons[gBattlerTarget].
+        const species = _GetMonDataGC(_gEnemyPartyGC[0], _MON_DATA_SPECIES_GC) as number;
+        gBattleCommunication[1 /* TASK_ID */] = display(
+          SpeciesToNationalPokedexNum(species),
+          gBattleMons[gBattlerTarget].otId >>> 0,
+          gBattleMons[gBattlerTarget].personality >>> 0,
+        );
+        gBattleCommunication[0]++;
+      }
+      ctx.scriptPtr--;
+      return true;
+    case 2:
+      // 1:1 : fade fini + callback2 == BattleMainCB2 + task page dex morte →
+      // SetVBlankCallback(VBlankCB_Battle) (la page a rendu le VBlank qu'elle a sauvé).
+      if (!rt.gPaletteFade.active
+          && (rt.gMain as { callback2?: unknown }).callback2 === _displayDexSavedCB2
+          && !rt.gTasks[gBattleCommunication[1]]?.isActive) {
+        gBattleCommunication[0]++;
+      }
+      ctx.scriptPtr--;
+      return true;
+    case 3:
+      // 1:1 : InitBattleBgsVideo() + LoadBattleTextboxAndBackground() + gBattle_BG3_X=256.
+      // Notre battleInitVideo1to1 = les deux (async ; IsDma3ManagerBusyWithBgCopy gate le case 4).
+      void battleInitVideo1to1(getLastBattleEnvironment());
+      (globalThis as Record<string, unknown>).gBattle_BG3_X = 256;
+      gBattleCommunication[0]++;
+      ctx.scriptPtr--;
+      return true;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        // 1:1 : BeginNormalPaletteFade(PALETTES_BG, 0, 16, 0, RGB_BLACK) = fade IN BG.
+        rt.BeginNormalPaletteFade(0x0000FFFF, 0, 16, 0, 0x0000);
+        ShowBg(0);
+        ShowBg(3);
+        gBattleCommunication[0]++;
+      }
+      ctx.scriptPtr--;
       return true;
     case 5:
-      // 1:1 décomp : advance opcode + reset.
-      gBattleCommunication[0] = 0;
-      return false;
+      if (!rt.gPaletteFade.active) {
+        gBattleCommunication[0] = 0; // (script fait setbyte 0 ensuite — reset local robuste)
+        return false;
+      }
+      ctx.scriptPtr--;
+      return true;
     default:
       gBattleCommunication[0] = 0;
       return false;
   }
 }
+
+/** CB2 combat capturé au case 0 (= BattleMainCB2 1:1, comparé au case 2). */
+let _displayDexSavedCB2: unknown = null;
 
 // ─── 0xF3 trygivecaughtmonnick ────────────────────────────────────────────
 
@@ -9823,8 +9872,7 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
   }
   switch (gBattleCommunication[0 /* MULTIUSE_STATE */]) {
     case 0:
-      // 1:1 decomp case 0 : VRAIE yes/no box (HandleBattleWindow + texte
-      // OUI/NON + curseur) — remplace l'auto-NO (tranche 1 goal).
+      // 1:1 decomp case 0 : yes/no box (HandleBattleWindow + texte OUI/NON + curseur).
       HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
       BattlePutTextOnWindow('OUI' + String.fromCharCode(10) + 'NON', B_WIN_YESNO); // 1:1 gText_BattleYesNoChoice (battle_message.c:1283) — codes PALETTE/COLOR dynamiques = dette douce
       gBattleCommunication[0]++;
@@ -9849,24 +9897,15 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       if (JOY_NEW(A_BUTTON)) {
         PlaySE(SE_SELECT);
         if (gBattleCommunication[CURSOR_POSITION] === 0) {
-          // OUI -> decomp case 2/3 : fade + DoNamingScreen + SetMonData(nickname)
-          // PUIS `gBattlescriptCurrInstr = T1_READ_PTR(+1)` = JUMP jumpPtr
-          // (BattleScript_GiveCaughtMonEnd = givecaughtmon SEUL, pas de message PC).
-          // NAMING SCREEN = DETTE (pas de renommage) MAIS le JUMP est 1:1 OBLIGATOIRE :
-          // sans lui on tombait sur `givecaughtmon ; printfromtable gCaughtMonStringIds`
-          // = message "PC d'ANNETTE" + "BOITE ()" affiché À TORT alors que le mon va
-          // à la PARTY (bug user #8/#9 — le message PC ne doit sortir QUE si party pleine,
-          // via le case 4). Sortie 1:1 = jump GiveCaughtMonEnd.
-          console.warn('[capture] naming screen non porte (dette) — OUI = pas de surnom');
-          HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
-          gBattleCommunication[0] = 0;
-          ctx.scriptPtr = jumpPtr;
-          return false;
+          // 1:1 : OUI → state 2 (fade out rapide, puis naming screen). Le C ne
+          // clear PAS la box (l'écran fade to black, le naming la remplace).
+          gBattleCommunication[0]++;
+          BeginFastPaletteFade(3 /* FAST_FADE_OUT_TO_BLACK */);
         } else {
           gBattleCommunication[0] = 4;
-          ctx.scriptPtr -= 5;
-          return true;
         }
+        ctx.scriptPtr -= 5;
+        return true;
       } else if (JOY_NEW(B_BUTTON)) {
         PlaySE(SE_SELECT);
         gBattleCommunication[0] = 4;
@@ -9875,19 +9914,68 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       }
       ctx.scriptPtr -= 5;
       return true;
-    case 4: {
-      // 1:1 decomp case 4 : NON -> party pleine ? continue (+5 : le mon part au
-      // PC, texte gCaughtMonStringIds) : jump (jumpPtr = GiveCaughtMonEnd).
-      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
-      gBattleCommunication[0] = 0;
-      let playerPartyCount = 0;
-      const gParty = (globalThis as { gPlayerParty?: Array<{ species?: number }> }).gPlayerParty;
-      if (gParty) {
-        for (let i = 0; i < 6; i++) {
-          if (gParty[i]?.species) playerPartyCount++;
+    case 2: {
+      // 1:1 decomp case 2 : fade fini → nickname courant → gBattleStruct->caughtMonNick,
+      // FreeAllWindowBuffers, DoNamingScreen(NAMING_SCREEN_CAUGHT_MON, …, BattleMainCB2).
+      const rt2 = _getRuntimeBSC();
+      if (rt2 && !rt2.gPaletteFade.active) {
+        const doNaming = (globalThis as Record<string, unknown>).DoNamingScreen as
+          | ((tpl: number, buf: number[], species: number, gender: number,
+              personality: number, cb: unknown) => void)
+          | undefined;
+        if (!doNaming) {
+          // Module naming_screen pas encore évalué (pont globalThis absent) →
+          // le tirer et re-poller ce state au tick suivant.
+          void import('./naming_screen');
+          ctx.scriptPtr -= 5;
+          return true;
         }
+        const caughtMon = _gEnemyPartyGC[_gBattlerPartyIndexesGC[_BATTLE_OPPOSITE_GC(_gBattlerAttackerGC)]];
+        // GetMonData(MON_DATA_NICKNAME) → buffer (= gBattleStruct->caughtMonNick) :
+        // préfill = si le joueur valide sans rien taper, le nom reste l'espèce.
+        const nick = _GetMonDataGC(caughtMon, 2 /* MON_DATA_NICKNAME */) as string;
+        _caughtMonNickBuffer.length = 0;
+        for (let i = 0; i < nick.length && i < 10; i++) _caughtMonNickBuffer.push(nick.charCodeAt(i));
+        FreeAllWindowBuffers();
+        // returnCallback 1:1 = BattleMainCB2 = le CB2 combat LIVE courant (capturé
+        // ici plutôt qu'importé : évite l'arête ESM vers battle_main).
+        _caughtNickReturnCB2 = (rt2.gMain as { callback2?: unknown }).callback2 ?? null;
+        doNaming(
+          2 /* NAMING_SCREEN_CAUGHT_MON */, _caughtMonNickBuffer,
+          _GetMonDataGC(caughtMon, _MON_DATA_SPECIES_GC) as number,
+          GetMonGender(caughtMon as Parameters<typeof GetMonGender>[0]),
+          _GetMonDataGC(caughtMon, 0 /* MON_DATA_PERSONALITY */) as number,
+          _caughtNickReturnCB2,
+        );
+        gBattleCommunication[0]++;
       }
-      if (playerPartyCount === 6) {
+      ctx.scriptPtr -= 5;
+      return true;
+    }
+    case 3: {
+      // 1:1 decomp case 3 : gMain.callback2 == BattleMainCB2 && !fade →
+      // SetMonData(MON_DATA_NICKNAME, caughtMonNick) + jump.
+      const rt3 = _getRuntimeBSC();
+      if (rt3 && (rt3.gMain as { callback2?: unknown }).callback2 === _caughtNickReturnCB2
+          && !rt3.gPaletteFade.active) {
+        const caughtMon = _gEnemyPartyGC[_gBattlerPartyIndexesGC[_BATTLE_OPPOSITE_GC(_gBattlerAttackerGC)]];
+        if (_caughtMonNickBuffer.length) {
+          SetMonData(caughtMon as Parameters<typeof SetMonData>[0], 2 /* MON_DATA_NICKNAME */,
+            String.fromCharCode(..._caughtMonNickBuffer));
+        }
+        gBattleCommunication[0] = 0; // (le script fait `setbyte gBattleCommunication 0` avant la prochaine SM — reset local = même effet, robuste)
+        ctx.scriptPtr = jumpPtr;
+        return false;
+      }
+      ctx.scriptPtr -= 5;
+      return true;
+    }
+    case 4: {
+      // 1:1 decomp case 4 : NON/B -> party pleine ? continue (+5 : le mon part au
+      // PC, texte gCaughtMonStringIds) : jump (jumpPtr = GiveCaughtMonEnd). Pas de
+      // clear box (1:1 : elle reste pendant le fade de fin de combat).
+      gBattleCommunication[0] = 0;
+      if (CalculatePlayerPartyCount() === 6 /* PARTY_SIZE */) {
         return false;
       } else {
         ctx.scriptPtr = jumpPtr;
@@ -9899,6 +9987,13 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       return false;
   }
 }
+
+/** Buffer surnom partagé avec le naming screen (= gBattleStruct->caughtMonNick,
+ *  battle.h). Char codes JS (convention DoNamingScreen destBuffer). */
+const _caughtMonNickBuffer: number[] = [];
+/** CB2 combat capturé avant DoNamingScreen (= BattleMainCB2 1:1) — le case 3
+ *  détecte le retour du naming screen par `gMain.callback2 === _caughtNickReturnCB2`. */
+let _caughtNickReturnCB2: unknown = null;
 
 // ─── Install handlers ──────────────────────────────────────────────────────
 

@@ -1180,12 +1180,31 @@ export function BtlController_EmitResetActionMoveSelection(bufferId: number, cas
 
 // ─── UI/Input stubs ─────────────────────────────────────────────────────────
 
-/** 1:1 signature décomp `HandleBattleWindow(xStart, yStart, xEnd, yEnd, flags)`.
- *  Décomp construit/clear un rect window dans BG tilemap. Phase 1 stub : no-op. */
+/** 1:1 décomp `HandleBattleWindow(xStart, yStart, xEnd, yEnd, flags)`
+ *  (battle_script_commands.c:10156-10202) : dessine (WINDOW_CLEAR efface) le
+ *  CADRE de fenêtre yes/no dans le tilemap BG0 (BG1 si WINDOW_BG1) — tiles
+ *  0x22-0x2A du charset textbox combat, palette 1 (entrées 0x1022-0x102A).
+ *  `CopyToBgTilemapBufferRect_ChangePalette(..., 0x11)` = palette 17 → default
+ *  de CopyTileMapEntry (bg.c) = copie l'entrée SRC telle quelle. Les x/y combat
+ *  sont tous < 32 → index tilemap linéaire y*32+x (vrai pour tout screenSize). */
 export function HandleBattleWindow(
-  _xStart: number, _yStart: number, _xEnd: number, _yEnd: number, _flags: number,
+  xStart: number, yStart: number, xEnd: number, yEnd: number, flags: number,
 ): void {
-  // Phase 1.4 UI : draw/clear window au framework UI.
+  const rt = _getRuntimeGba();
+  if (!rt) return;
+  const bg = (flags & 2 /* WINDOW_BG1 */) ? 1 : 0;
+  const tilemap = rt.gba.bg(bg as 0 | 1).tilemap;
+  for (let destY = yStart; destY <= yEnd; destY++) {
+    for (let destX = xStart; destX <= xEnd; destX++) {
+      let v: number;
+      if (destY === yStart) v = destX === xStart ? 0x1022 : destX === xEnd ? 0x1024 : 0x1023;
+      else if (destY === yEnd) v = destX === xStart ? 0x1028 : destX === xEnd ? 0x102A : 0x1029;
+      else v = destX === xStart ? 0x1025 : destX === xEnd ? 0x1027 : 0x1026;
+      if (flags & 1 /* WINDOW_CLEAR */) v = 0;
+      const idx = destY * 32 + destX;
+      if (idx >= 0 && idx < tilemap.length) tilemap[idx] = v;
+    }
+  }
 }
 
 /** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`
@@ -1346,19 +1365,34 @@ export function BattlePutTextOnWindowBytes(bytes: Uint8Array, windowId: number):
   }, frames * (1000 / 60)) as unknown) as number;
 }
 
-/** 1:1 signature décomp `BattleCreateYesNoCursorAt(cursorPosition)`. Phase 1 stub. */
-export function BattleCreateYesNoCursorAt(_cursorPosition: number): void {
-  // Phase 1.4 UI : draw yes/no cursor sprite.
+/** 1:1 décomp `BattleCreateYesNoCursorAt(cursorPosition)` (battle_script_commands.c:10204,
+ *  version FR « French Difference ») : curseur ► = tiles 1/2 (palette 0) à
+ *  x=0x18, y=9+2*pos dans le tilemap BG0. CopyBgTilemapBufferToVram(0) = no-op
+ *  chez nous (compositor lit le buffer direct). */
+export function BattleCreateYesNoCursorAt(cursorPosition: number): void {
+  const rt = _getRuntimeGba();
+  if (!rt) return;
+  const tilemap = rt.gba.bg(0).tilemap;
+  const y = 9 + 2 * cursorPosition;
+  tilemap[y * 32 + 0x18] = 1;
+  tilemap[(y + 1) * 32 + 0x18] = 2;
 }
 
-/** 1:1 signature décomp `BattleDestroyYesNoCursorAt(cursorPosition)`. Phase 1 stub. */
-export function BattleDestroyYesNoCursorAt(_cursorPosition: number): void {
-  // Phase 1.4 UI : remove yes/no cursor sprite.
+/** 1:1 décomp `BattleDestroyYesNoCursorAt(cursorPosition)` (:10215, FR) :
+ *  ré-écrit l'intérieur de cadre 0x1016 (tile 0x16, palette 1) sur les 2 tuiles. */
+export function BattleDestroyYesNoCursorAt(cursorPosition: number): void {
+  const rt = _getRuntimeGba();
+  if (!rt) return;
+  const tilemap = rt.gba.bg(0).tilemap;
+  const y = 9 + 2 * cursorPosition;
+  tilemap[y * 32 + 0x18] = 0x1016;
+  tilemap[(y + 1) * 32 + 0x18] = 0x1016;
 }
 
-/** 1:1 signature décomp `PlaySE(seId)`. Phase 1 stub (= SE channel not wired). */
-export function PlaySE(_seId: number): void {
-  // Phase 1.4 UI : trigger SE via audio engine.
+/** 1:1 signature décomp `PlaySE(seId)` — route vers le moteur audio réel
+ *  (`__PlaySE` exposé par decomp-globals ; pont globalThis = pas d'arête ESM). */
+export function PlaySE(seId: number): void {
+  (globalThis as { __PlaySE?: (n: number) => void }).__PlaySE?.(seId);
 }
 
 /** 1:1 signature décomp `JOY_NEW(button)` (= include/global.h:134 macro
@@ -1382,6 +1416,14 @@ export function JOY_REPEAT(button: number): number {
 export function JOY_HELD(button: number): number {
   const rt = _getRuntimeLazy();
   return rt ? (rt.gMain.heldKeys & button) : 0;
+}
+
+/** Accès tilemaps BG pour HandleBattleWindow/curseurs yes/no (même voie lazy
+ *  __rt que _getRuntimeLazy — évite le cycle ESM avec decomp-globals). */
+function _getRuntimeGba(): { gba: { bg: (n: 0 | 1 | 2 | 3) => { tilemap: Uint16Array } } } | null {
+  const r = (globalThis as { __rt?: unknown }).__rt as
+    { gba?: { bg: (n: 0 | 1 | 2 | 3) => { tilemap: Uint16Array } } } | undefined;
+  return r && r.gba ? (r as { gba: { bg: (n: 0 | 1 | 2 | 3) => { tilemap: Uint16Array } } }) : null;
 }
 
 /** Lazy lookup runtime via globalThis.__rt (exposé par decomp-globals
