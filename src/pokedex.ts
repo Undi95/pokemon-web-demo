@@ -1156,13 +1156,82 @@ function Task_OpenInfoScreenAfterMonMovement(task: DecompTask): void {
   }
 }
 
-// 1:1 décomp `Task_WaitForExitInfoScreen` (pokedex.c:1813) : tant que la fiche est active, ne
-// rien faire (scroll DANS la fiche = jalon 2b/3) ; à sa fin → retour à la liste.
+// 1:1 décomp `IsInfoScreenScrolling` (pokedex.c:3230) : la fiche est « au repos » si
+// !tScrolling ET son handler est l'input (sinon transition/scroll en cours).
+function IsInfoScreenScrolling(taskId: number): boolean {
+  const rt = getRuntime();
+  if (!rt) return true;
+  const t = rt.gTasks[taskId];
+  if (!t.data[0] /* tScrolling */ && t.func === Task_HandleInfoScreenInput) return false;
+  return true;
+}
+
+// 1:1 décomp `StartInfoScreenScroll` (pokedex.c:3238) : arme le rechargement de la fiche
+// sur le nouveau mon (le fade + Task_LoadInfoScreenWaitForFade suivent côté fiche).
+function StartInfoScreenScroll(item: PokedexListItem, taskId: number): number {
+  const rt = getRuntime();
+  if (!rt) return taskId;
+  sPokedexListItem = item;
+  _loadFootprint(item.dexNum);   // préchargement empreinte du nouveau mon (gate case 1)
+  const t = rt.gTasks[taskId];
+  t.data[0] = 1;   // tScrolling = TRUE
+  t.data[1] = 0;   // tMonSpriteDone = FALSE (recréer le sprite au case 5)
+  t.data[2] = 0;   // tBgLoaded = FALSE
+  t.data[3] = 0;   // tSkipCry = FALSE (le cri du nouveau mon joue)
+  return taskId;
+}
+
+// 1:1 décomp `TryDoInfoScreenScroll` (pokedex.c:2683) : D-pad haut/bas sur la fiche =
+// mon VU précédent/suivant (saute les non-vus) ; tourne la Pokéball (∓16).
+function TryDoInfoScreenScroll(): boolean {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return false;
+  let selectedPokemon = sPokedexView.selectedPokemon;
+  if ((rt.gMain.newKeys & DPAD_UP) && selectedPokemon) {
+    let nextPokemon = selectedPokemon;
+    while (nextPokemon !== 0) {
+      nextPokemon = GetNextPosition(1, nextPokemon, 0, sPokedexView.pokemonListCount - 1);
+      if (sPokedexView.pokedexList[nextPokemon].seen) {
+        selectedPokemon = nextPokemon;
+        break;
+      }
+    }
+    if (sPokedexView.selectedPokemon === selectedPokemon) {
+      return false;
+    } else {
+      sPokedexView.selectedPokemon = selectedPokemon;
+      sPokedexView.pokeBallRotation -= 16;
+      return true;
+    }
+  } else if ((rt.gMain.newKeys & DPAD_DOWN) && selectedPokemon < sPokedexView.pokemonListCount - 1) {
+    let nextPokemon = selectedPokemon;
+    while (nextPokemon < sPokedexView.pokemonListCount - 1) {
+      nextPokemon = GetNextPosition(0, nextPokemon, 0, sPokedexView.pokemonListCount - 1);
+      if (sPokedexView.pokedexList[nextPokemon].seen) {
+        selectedPokemon = nextPokemon;
+        break;
+      }
+    }
+    if (sPokedexView.selectedPokemon === selectedPokemon) {
+      return false;
+    } else {
+      sPokedexView.selectedPokemon = selectedPokemon;
+      sPokedexView.pokeBallRotation += 16;
+      return true;
+    }
+  }
+  return false;
+}
+
+// 1:1 décomp `Task_WaitForExitInfoScreen` (pokedex.c:1813) : surveille la fiche ; D-pad
+// haut/bas au repos → StartInfoScreenScroll (fiche du mon suivant/précédent) ; à sa fin
+// → retour à la liste.
 function Task_WaitForExitInfoScreen(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || !sPokedexView) return;
   if (rt.gTasks[task.data[0]].isActive) {
-    // JALON 2b/3 : IsInfoScreenScrolling/TryDoInfoScreenScroll/StartInfoScreenScroll.
+    if (sPokedexView.currentPage === PAGE_INFO && !IsInfoScreenScrolling(task.data[0]) && TryDoInfoScreenScroll())
+      StartInfoScreenScroll(sPokedexView.pokedexList[sPokedexView.selectedPokemon], task.data[0]);
   } else {
     sLastSelectedPokemon = sPokedexView.selectedPokemon;
     sPokeBallRotation = sPokedexView.pokeBallRotation;
@@ -1419,8 +1488,18 @@ function Task_LoadInfoScreen(task: DecompTask): void {
       break;
     }
     case 5:
-      // tMonSpriteDone TRUE → réutilise le sprite de la liste (déjà chargé) : rien à créer.
-      // (Le chemin !tMonSpriteDone = scroll/saut DANS la fiche = jalon 2b/3.)
+      // 1:1 : !tMonSpriteDone (scroll DANS la fiche) → crée le sprite du nouveau mon à
+      // MON_PAGE (le pic charge async pendant l'écran noir, comme la liste), priority 0.
+      if (!task.data[1]) {
+        const spriteId = CreatePokedexMonSprite(sPokedexListItem.dexNum, MON_PAGE_X, MON_PAGE_Y);
+        task.data[4] = spriteId;
+        const ms = rt.gSprites[spriteId];
+        if (ms) {
+          SetOamMatrix(ms.data[1] + 1, 0x100, 0, 0, 0x100);  // identité (pas de CB liste)
+          const oamIdx = (ms as unknown as { oamIndex?: number }).oamIndex;
+          if (oamIdx !== undefined && rt.gba.oam[oamIdx]) rt.gba.oam[oamIdx].priority = 0;
+        }
+      }
       rt.gMain.state++;
       break;
     case 6: {
@@ -1516,7 +1595,13 @@ function Task_HandleInfoScreenInput(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || !sPokedexView) return;
   const A_BUTTON = 0x0001, B_BUTTON = 0x0002;
-  if (task.data[0]) return;   // tScrolling (scroll dans la fiche) = jalon 2b/3
+  if (task.data[0]) {
+    // 1:1 tScrolling : fade noir puis rechargement de la fiche (nouveau mon).
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+    task.func = Task_LoadInfoScreenWaitForFade;
+    PlaySE(SE_DEX_SCROLL);
+    return;
+  }
   if (rt.gMain.newKeys & B_BUTTON) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     task.func = Task_ExitInfoScreen;
@@ -1551,6 +1636,18 @@ function Task_HandleInfoScreenInput(task: DecompTask): void {
   }
 }
 
+// 1:1 décomp `Task_LoadInfoScreenWaitForFade` (pokedex.c:3477) : fade fini → libère le
+// sprite du mon courant et relance Task_LoadInfoScreen (fiche du nouveau mon).
+function Task_LoadInfoScreenWaitForFade(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!rt.gPaletteFade.active) {
+    _freeInfoMonSprite(task.data[4]);
+    task.data[4] = 0xffff;
+    task.func = Task_LoadInfoScreen;
+  }
+}
+
 // 1:1 décomp `Task_ExitInfoScreen` (pokedex.c:3484) : libère le sprite mon + buffers, détruit la tâche.
 function Task_ExitInfoScreen(task: DecompTask): void {
   const rt = getRuntime();
@@ -1561,11 +1658,17 @@ function Task_ExitInfoScreen(task: DecompTask): void {
   rt.DestroyTask(task.taskId);
 }
 
-// décomp FreeAndDestroyMonPicSprite : libère le slot image-based. Port = DestroySprite (les
-// tiles/palette sont réinit au prochain ResetSpriteData de la liste).
+// décomp FreeAndDestroyMonPicSprite : libère le slot image-based. Port = DestroySprite +
+// libération du slot monSpriteIds (data[1]) pour que CreatePokedexMonSprite (scroll de
+// fiche) retrouve un slot libre. Tiles/palette réinit au prochain ResetSpriteData.
 function _freeInfoMonSprite(spriteId: number): void {
+  const rt = getRuntime();
   if (spriteId !== 0xffff && spriteId !== undefined) {
+    const s = rt?.gSprites[spriteId];
+    const slot = s?.data[1];
     try { DestroySprite(spriteId); } catch { /* déjà détruit */ }
+    if (sPokedexView && slot !== undefined && sPokedexView.monSpriteIds[slot] === spriteId)
+      sPokedexView.monSpriteIds[slot] = 0xffff;
   }
 }
 
