@@ -37,6 +37,10 @@ import {
   RecordAbilityBattle as _recordAbilityBattleFullSME,
 } from './battle_ai_script_commands';
 import { CalculateBaseDamage, IsTradedMon, MonTryLearningNewMove as MonTryLearningNewMove_Foyer } from './pokemon';
+// Briques replace-move in-battle (Cmd_yesnoboxlearnmove) — mêmes fns 1:1 que party_menu/evolution_scene.
+import { SetMonMoveSlot, RemoveMonPPBonus, IsHMMove2, CalculatePPWithBonus, gPPUpClearMask, CalculatePlayerPartyCount } from './pokemon';
+import { ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace } from './pokemon_summary_screen';
+import { ReshowBattleScreenAfterMenu } from './reshow_battle_screen';
 import { getSpeciesInfo } from './engine/data/game-data';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
@@ -10269,49 +10273,139 @@ function Cmd_handlelearnnewmove(ctx: BattleScriptContext): boolean {
  *
  *  Notre port : state machine fidèle. UI Phase 1.4 deferred : auto-NO Phase 1.4 (= jump à
  *  forgetMovePtr direct car summary screen pas wired). */
+/** Guard async ouverture summary (comme evolution_scene `_summaryHandoffPending`) :
+ *  ShowSelectMovePokemonSummaryScreen est ASYNC chez nous → on attend que le summary
+ *  PRENNE le CB2 (quitte BattleMainCB2) avant d'armer le check retour décomp. */
+let _learnMoveSummaryHandoffPending = false;
+
+/** 1:1 décomp `Cmd_yesnoboxlearnmove` (battle_script_commands.c:5398-5511).
+ *  ⭐ FIX bug #2 : flux replace-move EN COMBAT (mon à 4 capacités qui level-up et doit
+ *  en oublier une). Était stubé « auto-NO » ; câblé 1:1 en réutilisant la MÊME machinerie
+ *  que evolution_scene (learn-move post-évolution) : YES/NO box battle → summary select-move
+ *  (ShowSelectMovePokemonSummaryScreen, retour ReshowBattleScreenAfterMenu) → GetMoveSlotToReplace
+ *  → SetMonMoveSlot. Le ptr `forgotMovePtr` = BattleScript_ForgotAndLearnedNewMove (SUCCÈS) ;
+ *  fall-through (give-up) = printstring STOPLEARNINGMOVE (data/battle_scripts_1.s:3171). */
 function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
-  const forgetMovePtr = readWord(ctx);
+  const forgotMovePtr = readWord(ctx);            // ptr succès ; ctx.scriptPtr = fall-through (opcode+5)
+  setActiveBattler(0);                            // 1:1 :5400 gActiveBattler = 0
   const bs = (globalThis as { __battleState?: {
     gBattleScripting?: { learnMoveState: number };
     gBattleCommunication?: number[];
   } }).__battleState;
-  if (!bs?.gBattleScripting || !bs.gBattleCommunication) {
-    ctx.scriptPtr = forgetMovePtr;
-    return false;
-  }
+  const rt = _getRuntimeBSC() as unknown as {
+    gPaletteFade?: { active: boolean };
+    gMain?: { callback2?: { name?: string } | null };
+    BeginNormalPaletteFade?: (sel: number, d: number, s: number, t: number, c: number) => void;
+  } | null;
+  if (!bs?.gBattleScripting || !bs.gBattleCommunication || !rt) { return false; }
+  // 1:1 :5455/5461 `gMain.callback2 == BattleMainCB2`. Le CB2 live s'appelle « _BattleMainCB2 »
+  // (wrapper) → match par includes (robuste au préfixe/wrapper, ≠ ReshowBattleScreenAfterMenu).
+  const isBackInBattle = () => (rt.gMain?.callback2?.name ?? '').includes('BattleMainCB2');
+  const CURSOR = CURSOR_POSITION;
+  const STAY = () => { ctx.scriptPtr -= 5; return true; };  // décomp break (re-entrée opcode)
+
   switch (bs.gBattleScripting.learnMoveState) {
     case 0:
-      // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
-      bs.gBattleCommunication[1 /* CURSOR_POSITION */] = 0;
+      // 1:1 :5405-5409 : HandleBattleWindow + gText_BattleYesNoChoice + cursor 0.
+      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
+      BattlePutTextOnWindow('OUI' + String.fromCharCode(10) + 'NON', B_WIN_YESNO);
       bs.gBattleScripting.learnMoveState++;
-      ctx.scriptPtr -= 5;
-      return true;
+      bs.gBattleCommunication[CURSOR] = 0;
+      BattleCreateYesNoCursorAt(0);
+      return STAY();
     case 1:
-      // UI Phase 1.4 deferred : auto-NO → state 5.
-      bs.gBattleScripting.learnMoveState = 5;
-      ctx.scriptPtr -= 5;
-      return true;
+      // 1:1 :5411-5445 : input UP/DOWN/A/B.
+      if (JOY_NEW(DPAD_UP) && bs.gBattleCommunication[CURSOR] !== 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(bs.gBattleCommunication[CURSOR]);
+        bs.gBattleCommunication[CURSOR] = 0;
+        BattleCreateYesNoCursorAt(0);
+      }
+      if (JOY_NEW(DPAD_DOWN) && bs.gBattleCommunication[CURSOR] === 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(bs.gBattleCommunication[CURSOR]);
+        bs.gBattleCommunication[CURSOR] = 1;
+        BattleCreateYesNoCursorAt(1);
+      }
+      if (JOY_NEW(A_BUTTON)) {
+        PlaySE(SE_SELECT);
+        if (bs.gBattleCommunication[CURSOR] === 0) {
+          // OUI → clear box + fade + state 2.
+          HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+          rt.BeginNormalPaletteFade?.(0xFFFFFFFF /* PALETTES_ALL */, 0, 0, 16, 0x0000 /* RGB_BLACK */);
+          bs.gBattleScripting.learnMoveState++;
+        } else {
+          bs.gBattleScripting.learnMoveState = 5;  // NON
+        }
+      } else if (JOY_NEW(B_BUTTON)) {
+        PlaySE(SE_SELECT);
+        bs.gBattleScripting.learnMoveState = 5;
+      }
+      return STAY();
     case 2:
+      // 1:1 :5446-5453 : fade fini → FreeAllWindowBuffers + ShowSelectMovePokemonSummaryScreen.
+      if (!rt.gPaletteFade?.active) {
+        FreeAllWindowBuffers();
+        _learnMoveSummaryHandoffPending = true;
+        const monId = _gBattleStruct32.expGetterMonId ?? 0;
+        // 1:1 :5450 : returnCB = ReshowBattleScreenAfterMenu (import statique — le pont globalThis
+        // avait un souci de timing : reshow_battle_screen chargé paresseusement → bridge undefined).
+        ShowSelectMovePokemonSummaryScreen(gPlayerParty, monId, CalculatePlayerPartyCount() - 1,
+          ReshowBattleScreenAfterMenu as unknown as () => void, reverseDecompConstant(gMoveToLearn, 'MOVE_') ?? '');
+        bs.gBattleScripting.learnMoveState++;
+      }
+      return STAY();
     case 3:
-    case 4:
-      // UI Phase 1.4 deferred : summary screen state machine. Skip à state 5.
-      bs.gBattleScripting.learnMoveState = 5;
-      ctx.scriptPtr -= 5;
-      return true;
+      // 1:1 :5454-5458 : attend retour à BattleMainCB2 (guard async ouverture summary).
+      if (_learnMoveSummaryHandoffPending) {
+        if (!isBackInBattle()) _learnMoveSummaryHandoffPending = false;  // summary a pris le CB2
+        return STAY();
+      }
+      if (!rt.gPaletteFade?.active && isBackInBattle()) bs.gBattleScripting.learnMoveState++;
+      return STAY();
+    case 4: {
+      // 1:1 :5460-5500 : GetMoveSlotToReplace + apply.
+      if (!rt.gPaletteFade?.active && isBackInBattle()) {
+        const monId = _gBattleStruct32.expGetterMonId ?? 0;
+        const mon = gPlayerParty[monId];
+        const movePosition = GetMoveSlotToReplace();
+        if (movePosition === MAX_MON_MOVES) {
+          bs.gBattleScripting.learnMoveState = 5;  // annulé
+        } else if (mon) {
+          const move = GetMonData_BU(mon, _MON_DATA_MOVE1_AAS + movePosition) as number;
+          if (IsHMMove2(move)) {
+            // 1:1 :5473-5474 : CS inoubliable → message + retry (state 6).
+            PrepareStringBattle(319 /* STRINGID_HMMOVESCANTBEFORGOTTEN */, gActiveBattler);
+            bs.gBattleScripting.learnMoveState = 6;
+          } else {
+            // 1:1 :5478-5496 : jump succès + buffer move oublié + remplace slot (+ sync battle mon).
+            PREPARE_MOVE_BUFFER(gBattleTextBuff2, move);
+            RemoveMonPPBonus(mon, movePosition);
+            SetMonMoveSlot(mon, gMoveToLearn, movePosition);
+            // 1:1 :5485-5496 : si le mon qui level-up EST le battler actif → sync gBattleMons.
+            const p0 = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+            if (_gBattlerPartyIndexes_32[p0] === monId && _moveIsPermanent_N23(p0, movePosition)) {
+              gBattleMons[p0].ppBonuses &= gPPUpClearMask[movePosition];                 // RemoveBattleMonPPBonus
+              gBattleMons[p0].moves[movePosition] = gMoveToLearn;                         // SetBattleMonMoveSlot
+              gBattleMons[p0].pp[movePosition] = CalculatePPWithBonus(gMoveToLearn, gBattleMons[p0].ppBonuses, movePosition);
+            }
+            ctx.scriptPtr = forgotMovePtr;  // jump BattleScript_ForgotAndLearnedNewMove
+            return false;
+          }
+        }
+      }
+      return STAY();
+    }
     case 5:
-      // 1:1 décomp : close window + jump à forgetMovePtr (= refuse learn).
-      bs.gBattleScripting.learnMoveState = 0;  // reset.
-      ctx.scriptPtr = forgetMovePtr;
-      return false;
+      // 1:1 :5501-5503 : close window + fall-through (= printstring STOPLEARNINGMOVE).
+      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+      return false;  // ctx.scriptPtr déjà à opcode+5 (fall-through) après readWord
     case 6:
-      // 1:1 décomp : wait controller exec → retry state 2.
-      bs.gBattleScripting.learnMoveState = 2;
-      ctx.scriptPtr -= 5;
-      return true;
+      // 1:1 :5505-5510 : attend fin controller → retry state 2.
+      if (gBattleControllerExecFlags === 0) bs.gBattleScripting.learnMoveState = 2;
+      return STAY();
     default:
-      bs.gBattleScripting.learnMoveState = 0;
-      ctx.scriptPtr = forgetMovePtr;
-      return false;
+      return STAY();
   }
 }
 
@@ -10369,6 +10463,7 @@ import {
   AddWindow as _AddWindowBSC, RemoveWindow as _RemoveWindowBSC,
   PutWindowTilemap as _PutWindowTilemapBSC, ClearWindowTilemap as _ClearWindowTilemapBSC,
   CopyWindowToVram as _CopyWindowToVramBSC, CopyToWindowPixelBuffer as _CopyToWindowPixelBufferBSC,
+  FreeAllWindowBuffers,
 } from './window';
 import { AddTextPrinterParameterized3 as _AddTextPrinterParameterized3BSC } from './menu';
 import { loadIndexedPngStrict as _loadIndexedPngStrictBSC, loadGbaPal as _loadGbaPalBSC } from '../harness/gba/png-loader';
