@@ -47,7 +47,14 @@ import { FONT_NARROW, TEXT_SKIP_DRAW } from './text';
 import { AddTextPrinterParameterized4 } from './menu';
 import { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_DYNAMIC_COLOR_6 } from '../include/constants/characters';
 import { BG_PLTT_ID, type DecompTask } from '../harness/runtime/decomp-runtime';
-import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+import { loadTileBin, loadTilemapBin, loadGbaPal, loadIndexedPngRawIndices } from '../harness/gba/png-loader';
+import { CopyMonCategoryText, GetStringCenterAlignXOffset } from './international_string_util';
+import { CopyToWindowPixelBuffer } from './window';
+import { getString } from './engine/ui/gba-strings';
+import { gPokedexEntries } from './data/pokemon/pokedex_entries';
+import { FONT_NORMAL } from '../include/text';
+import { EOS, CHAR_SPACER, CHAR_0, CHAR_COMMA } from '../include/constants/characters';
+import { encodeOwText } from './text';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 import {
   GetSetPokedexFlag, GetHoennPokedexCount as DexGetHoennCount,
@@ -1169,6 +1176,7 @@ function LoadInfoScreen(item: PokedexListItem, monSpriteId: number): number {
   const rt = getRuntime();
   if (!rt) return 0;
   sPokedexListItem = item;
+  _loadFootprint(item.dexNum);   // préchargement async du PNG empreinte (gate case 1)
   const taskId = rt.CreateTask(Task_LoadInfoScreen, 0);
   const t = rt.gTasks[taskId];
   t.data[0] = 0;            // tScrolling = FALSE
@@ -1179,7 +1187,11 @@ function LoadInfoScreen(item: PokedexListItem, monSpriteId: number): number {
   t.data[5] = 0xffff;       // tTrainerSpriteId = SPRITE_NONE
   ResetBgsAndClearDma3BusyFlags(0);
   InitBgsFromTemplates(0, sInfoScreen_BgTemplate, sInfoScreen_BgTemplate.length);
-  // SetBgTilemapBuffer(n) : buffers intrinsèques au runtime → no-op (cf. LoadPokedexListPage).
+  // 1:1 décomp : SetBgTilemapBuffer(n, AllocZeroed(BG_SCREEN_SIZE)) ×4 — la fiche démarre
+  // sur des tilemaps ZÉRO. Nos buffers tilemap sont intrinsèques au runtime (partagés
+  // entre écrans) → équivalent exact : les zéroter (sinon les restes de la LISTE — panneau
+  // jaune list_underlay sous la barre select 32×3 — transparaissent : couture x=128 vue 2b).
+  for (const n of [0, 1, 2, 3] as const) rt.gba.bg(n).tilemap.fill(0);
   InitWindows(sInfoScreen_WindowTemplates);
   DeactivateAllTextPrinters();
   // gMain.state vaut 0 ici (LoadPokedexListPage case 6 l'a remis à 0 ; rien ne l'a touché
@@ -1187,8 +1199,172 @@ function LoadInfoScreen(item: PokedexListItem, monSpriteId: number): number {
   return taskId;
 }
 
-// 1:1 décomp `Task_LoadInfoScreen` (pokedex.c:3248) — state-machine 0..10. JALON 2a : tout
-// SAUF PrintMonInfo (texte) + DrawFootprint (= 2b). Le mon = sprite réutilisé de la liste.
+// ─── JALON 2b : textes de la fiche + empreinte ───────────────────────────────
+
+// 1:1 décomp `PrintInfoScreenText` (pokedex.c:3189) : couleurs [TRANSPARENT,
+// DYNAMIC_6, LIGHT_GRAY], FONT_NORMAL, TEXT_SKIP_DRAW, fenêtre WIN_INFO (0).
+function PrintInfoScreenText(str: string | Uint8Array, left: number, top: number): void {
+  const color: [number, number, number] = [TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_LIGHT_GRAY];
+  AddTextPrinterParameterized4(0, FONT_NORMAL, left, top, 0, 0, color, TEXT_SKIP_DRAW, str);
+}
+
+// 1:1 décomp `PrintInfoSubMenuText` (pokedex.c:4423) — mêmes couleurs, windowId param.
+function PrintInfoSubMenuText(windowId: number, str: string | Uint8Array, left: number, top: number): void {
+  const color: [number, number, number] = [TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_LIGHT_GRAY];
+  AddTextPrinterParameterized4(windowId, FONT_NORMAL, left, top, 0, 0, color, TEXT_SKIP_DRAW, str);
+}
+
+// 1:1 décomp `PrintDecimalNum` (pokedex.c:4488, build métrique FR) : "12,3" avec
+// zéros de tête remplacés par CHAR_SPACER — composé en BYTES charmap.
+function PrintDecimalNum(windowId: number, num: number, left: number, top: number): void {
+  const str = new Uint8Array(6);
+  let outputted = false;
+  let result = Math.trunc(num / 1000);
+  if (result === 0) {
+    str[0] = CHAR_SPACER;
+    outputted = false;
+  } else {
+    str[0] = CHAR_0 + result;
+    outputted = true;
+  }
+  result = Math.trunc((num % 1000) / 100);
+  if (result === 0 && !outputted) {
+    str[1] = CHAR_SPACER;
+    outputted = false;
+  } else {
+    str[1] = CHAR_0 + result;
+    outputted = true;
+  }
+  str[2] = CHAR_0 + Math.trunc(((num % 1000) % 100) / 10);
+  str[3] = CHAR_COMMA;              // CHAR_DEC_SEPARATOR (config.h:49, build FR)
+  str[4] = CHAR_0 + ((num % 1000) % 100) % 10;
+  str[5] = EOS;
+  PrintInfoSubMenuText(windowId, str, left, top);
+}
+
+// 1:1 décomp `PrintMonHeight`/`PrintMonWeight` (French Difference, pokedex.c:4173) :
+// gabarit "          m"/"          kg" puis les chiffres par-dessus.
+function PrintMonHeight(height: number, left: number, top: number): void {
+  PrintInfoScreenText(getString('gText_EmptyHeight'), left, top);
+  PrintDecimalNum(0, height, left, top);
+}
+function PrintMonWeight(weight: number, left: number, top: number): void {
+  PrintInfoScreenText(getString('gText_EmptyWeight'), left, top);
+  PrintDecimalNum(0, weight, left, top);
+}
+
+// Description FR : décomp `gPokedexEntries[num].description` → pointeur vers
+// g<Espèce>PokedexText (data/pokemon/pokedex_text.h) — chez nous strings.json a
+// les 388 g*PokedexText ; résolution species → nom global (SPECIES_MR_MIME →
+// gMrMimePokedexText : CamelCase des segments).
+function _pokedexDescription(num: number): string {
+  const species = NationalPokedexNumToSpecies(num);
+  const enumName = reverseDecompConstant(species, 'SPECIES_')?.replace(/^SPECIES_/, '');
+  if (!enumName) return '';
+  const camel = enumName.split('_').map((s) => s.charAt(0) + s.slice(1).toLowerCase()).join('');
+  return getString(`g${camel}PokedexText`);
+}
+
+// 1:1 décomp `PrintMonInfo(u32 num, u32 value, u32 owned, u32 newEntry)` (pokedex.c:4119).
+// value = bool national-dex-enabled (0 → n° Hoenn). Textes FR (French Difference :
+// PrintMonHeight/Weight métriques, catégorie sans suffixe POKéMON).
+function PrintMonInfo(num: number, value: number, owned: number, newEntry: number): void {
+  if (newEntry)
+    PrintInfoScreenText(getString('gText_PokedexRegistration'),
+      GetStringCenterAlignXOffset(FONT_NORMAL, getString('gText_PokedexRegistration'), 240 /* DISPLAY_WIDTH */), 0);
+  if (value === 0)
+    value = NationalToHoennOrder(num);
+  else
+    value = num;
+  // StringCopy(str, gText_NumberClear01="{NO}{CLEAR 1}") + ConvertIntToDecimalStringN(LEADING_ZEROS, 3)
+  const str = getString('gText_NumberClear01') + String(value % 1000).padStart(3, '0');
+  PrintInfoScreenText(str, 0x60, 0x19);
+  const natNum = NationalPokedexNumToSpecies(num);
+  const name: string = natNum ? (gSpeciesNames[natNum] ?? '----------') : '----------';  // sText_TenDashes2
+  PrintInfoScreenText(name, 0x84, 0x19);
+  let category: string | Uint8Array;
+  if (owned) {
+    const str2 = new Uint8Array(32);
+    CopyMonCategoryText(num, str2);
+    category = str2;
+  } else {
+    category = getString('gText_5MarksPokemon');
+  }
+  PrintInfoScreenText(category, 0x64, 0x29);
+  PrintInfoScreenText(getString('gText_HTHeight'), 0x60, 0x39);
+  PrintInfoScreenText(getString('gText_WTWeight'), 0x60, 0x49);
+  if (owned) {
+    PrintMonHeight(gPokedexEntries[num].height, 0x90, 0x39); //!< French Difference
+    PrintMonWeight(gPokedexEntries[num].weight, 0x90, 0x49); //!< ^
+  } else {
+    PrintInfoScreenText(getString('gText_UnkHeight'), 0x90, 0x39); //!< French Difference
+    PrintInfoScreenText(getString('gText_UnkWeight'), 0x90, 0x49); //!< ^
+  }
+  const description = owned ? _pokedexDescription(num) : '';  // sExpandedPlaceholder_PokedexDescription = vide
+  PrintInfoScreenText(description, GetStringCenterAlignXOffset(FONT_NORMAL, description, 240), 95);
+}
+
+// ─── Empreinte (DrawFootprint, pokedex.c:4531) ───────────────────────────────
+// Décomp : gMonFootprintTable[species] = 32 bytes 1BPP (4 tiles 8x8, bit N = pixel N).
+// Chez nous : public/decomp/em/pokemon/<espèce>/footprint.png (16×16 indexé 1-bit) →
+// indices bruts → buffer 1bpp ordre tiles, préchargé async (gate case 1).
+const FOOTPRINT_COLOR_IDX = 2;
+const NUM_FOOTPRINT_TILES = 4;
+const TILE_SIZE_1BPP = 8;
+let _footprint1bpp: Uint8Array | null = null;
+let _footprintForDexNum = -1;
+let _footprintReady = false;
+
+function _loadFootprint(dexNum: number): void {
+  _footprintReady = false;
+  _footprint1bpp = null;
+  _footprintForDexNum = dexNum;
+  const species = NationalPokedexNumToSpecies(dexNum);
+  const folder = (reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE').replace(/^SPECIES_/, '').toLowerCase();
+  void loadIndexedPngRawIndices(`/decomp/em/pokemon/${folder}/footprint.png`)
+    .then((png: { indices: Uint8Array; widthPx: number }) => {
+      if (_footprintForDexNum !== dexNum) return;   // fiche déjà changée
+      // pixels (16×16, index 0/1) → 32 bytes 1bpp ordre tiles (bit N = pixel N, LSB=gauche).
+      const out = new Uint8Array(TILE_SIZE_1BPP * NUM_FOOTPRINT_TILES);
+      for (let t = 0; t < NUM_FOOTPRINT_TILES; t++) {
+        const tx = (t % 2) * 8, ty = Math.trunc(t / 2) * 8;
+        for (let row = 0; row < 8; row++) {
+          let b = 0;
+          for (let px = 0; px < 8; px++) {
+            if (png.indices[(ty + row) * 16 + tx + px]) b |= 1 << px;
+          }
+          out[t * 8 + row] = b;
+        }
+      }
+      _footprint1bpp = out;
+      _footprintReady = true;
+    })
+    .catch(() => { _footprint1bpp = null; _footprintReady = true; /* pas d'empreinte (espèce sans asset) */ });
+}
+
+// 1:1 décomp `DrawFootprint(u8 windowId, u16 dexNum)` (pokedex.c:4531) : 1BPP → 4BPP
+// (FOOTPRINT_COLOR_IDX=2 sur palette 15 de la fenêtre) → CopyToWindowPixelBuffer.
+function DrawFootprint(windowId: number, _dexNum: number): void {
+  const footprint4bpp = new Uint8Array(32 * NUM_FOOTPRINT_TILES);
+  const footprintGfx = _footprint1bpp;
+  if (footprintGfx) {
+    let tileIdx = 0;
+    for (let i = 0; i < TILE_SIZE_1BPP * NUM_FOOTPRINT_TILES; i++) {
+      const footprint1bpp = footprintGfx[i];
+      for (let j = 0; j < 4; j++) {
+        let tile = 0;
+        if (footprint1bpp & (1 << (2 * j))) tile |= FOOTPRINT_COLOR_IDX;
+        if (footprint1bpp & (2 << (2 * j))) tile |= FOOTPRINT_COLOR_IDX << 4;
+        footprint4bpp[tileIdx] = tile;
+        tileIdx++;
+      }
+    }
+  }
+  CopyToWindowPixelBuffer(windowId, footprint4bpp, footprint4bpp.length, 0);
+}
+
+// 1:1 décomp `Task_LoadInfoScreen` (pokedex.c:3248) — state-machine 0..10. Le mon =
+// sprite réutilisé de la liste ; DrawFootprint gate sur le préchargement async du PNG.
 function Task_LoadInfoScreen(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || !sPokedexView || !sPokedexListItem || !_assets) return;
@@ -1206,15 +1382,14 @@ function Task_LoadInfoScreen(task: DecompTask): void {
       }
       break;
     case 1:
+      if (!_footprintReady) break;   // gate async : PNG empreinte (lancé dans LoadInfoScreen)
       // 1:1 DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx) → tiles menu @ charBase 0.
       rt.gba.vram.set(_assets.menuTiles, 0);
       CopyToBgTilemapBuffer(3, _assets.infoScreenTilemap, 0, 0);
       FillWindowPixelBuffer(WIN_INFO, 0);
       PutWindowTilemap(WIN_INFO);
       PutWindowTilemap(WIN_FOOTPRINT);
-      // JALON 2b : DrawFootprint(WIN_FOOTPRINT, dexNum) (besoin de gMonFootprintTable). En 2a
-      // la fenêtre footprint reste vide (cadre visible, empreinte ajoutée en 2b).
-      FillWindowPixelBuffer(WIN_FOOTPRINT, 0);
+      DrawFootprint(WIN_FOOTPRINT, sPokedexListItem.dexNum);
       CopyWindowToVram(WIN_FOOTPRINT, 2 /* COPYWIN_GFX */);
       rt.gMain.state++;
       break;
@@ -1227,15 +1402,22 @@ function Task_LoadInfoScreen(task: DecompTask): void {
     case 3:
       rt.gMain.state++;
       break;
-    case 4:
-      // JALON 2b : PrintMonInfo(dexNum, …) = Nº/nom/catégorie FR/taille/poids/description.
-      // Sans texte WIN_INFO reste vide ; le cadre + la barre s'affichent.
+    case 4: {
+      // 1:1 : PrintMonInfo(dexNum, national?, owned, 0) + palette BG3 grisée si non-possédé
+      // (copie de la palette BG0 offsets 1..15 → BG3 : le cadre perd ses couleurs "owned").
+      PrintMonInfo(sPokedexListItem.dexNum, sPokedexView.dexMode === DEX_MODE_HOENN ? 0 : 1, sPokedexListItem.owned ? 1 : 0, 0);
+      if (!sPokedexListItem.owned) {
+        const buf = new Uint16Array(15);
+        for (let i = 0; i < 15; i++) buf[i] = rt.gPlttBufferUnfaded.get(BG_PLTT_ID(0) + 1 + i);
+        LoadPalette(buf, BG_PLTT_ID(3) + 1, 15 * 2);
+      }
       CopyWindowToVram(WIN_INFO, 3 /* COPYWIN_FULL */);
       CopyBgTilemapBufferToVram(1);
       CopyBgTilemapBufferToVram(2);
       CopyBgTilemapBufferToVram(3);
       rt.gMain.state++;
       break;
+    }
     case 5:
       // tMonSpriteDone TRUE → réutilise le sprite de la liste (déjà chargé) : rien à créer.
       // (Le chemin !tMonSpriteDone = scroll/saut DANS la fiche = jalon 2b/3.)

@@ -391,7 +391,7 @@ export async function loadIndexedPngRawIndices(
     off += 12 + length;
   }
   if (colorType !== 3) throw new Error(`PNG ${url}: colorType ${colorType} not indexed (expected 3)`);
-  if (bitDepth !== 8 && bitDepth !== 4) throw new Error(`PNG ${url}: bitDepth ${bitDepth} unsupported (expected 4/8)`);
+  if (bitDepth !== 8 && bitDepth !== 4 && bitDepth !== 1) throw new Error(`PNG ${url}: bitDepth ${bitDepth} unsupported (expected 1/4/8)`);
 
   // Concat IDAT
   let totalLen = 0; for (const p of idatParts) totalLen += p.length;
@@ -432,7 +432,8 @@ export async function loadIndexedPngRawIndices(
     for (let x = 0; x < widthPx; x++) {
       let v: number;
       if (bitDepth === 8) v = out[y*rowBytes + x];
-      else { const byteVal = out[y*rowBytes + (x >> 1)]; v = (x & 1) ? (byteVal & 0xF) : (byteVal >> 4); }
+      else if (bitDepth === 4) { const byteVal = out[y*rowBytes + (x >> 1)]; v = (x & 1) ? (byteVal & 0xF) : (byteVal >> 4); }
+      else { v = (out[y*rowBytes + (x >> 3)] >> (7 - (x & 7))) & 1; }   // 1bpp : MSB-first (footprints)
       indices[y*widthPx + x] = v;
     }
   }
