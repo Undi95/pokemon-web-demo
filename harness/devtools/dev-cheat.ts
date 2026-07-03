@@ -12,6 +12,7 @@ import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
 import { SaveGame, ResetSaveBlocks } from '../../src/save';
 import { gSaveBlock1Ptr } from '../../src/engine/save/save-block-state';
 import { MonRestorePP, type Pokemon } from '../../src/engine/battle/party-storage';
+import { EnableNationalPokedex } from '../../src/event_data';
 
 // ─── Cheat helpers (= dev convenience) ───────────────────────────────────────
 
@@ -40,6 +41,17 @@ function _cheat_heal(): void {
   console.log('[cheat] Party healed');
 }
 
+function _cheat_money(amount = 10000): void {
+  const sb1 = gSaveBlock1Ptr as { money?: number };
+  sb1.money = Math.min(999999, (sb1.money ?? 0) + amount);   // cap 1:1 MAX_MONEY
+  console.log(`[cheat] Money → ${sb1.money}₽`);
+}
+
+function _cheat_nationalDex(): void {
+  EnableNationalPokedex();   // 1:1 event_data.c:63 (magic + var + flag + mode)
+  console.log('[cheat] Dex National activé');
+}
+
 function _cheat_resetSave(): void {
   ResetSaveBlocks();
   void SaveGame();
@@ -52,6 +64,8 @@ if (typeof window !== 'undefined') {
   (window as unknown as { cheat: Record<string, unknown> }).cheat = {
     skipIntro: _cheat_skipIntro,
     heal: _cheat_heal,
+    money: _cheat_money,
+    nationalDex: _cheat_nationalDex,
     resetSave: _cheat_resetSave,
   };
 }

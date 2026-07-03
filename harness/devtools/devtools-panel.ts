@@ -16,21 +16,30 @@
  *
  * Toggle : touche F2 ou bouton flottant 🛠. Sections repliables (<details>).
  *
- * Sections :
+ * Sections (2026-07-03 : refonte user — SEUL le Téléport ouvert par défaut, ordre
+ * joueur-d'abord, grilles 2 colonnes compactes) :
  *   1. Header live      — frame / tasks / sprites / fps / [PAUSED] (absorbe l'overlay texte).
- *   2. Frame control    — ❚❚/▶ · ⏭1 · ⏭8 · vitesse 1×/½×/¼×/.1× (slow-mo).
- *   3. Palettes         — grilles 16×16 OBJ + BG, couleurs RÉELLEMENT rendues (getObjRgba/getBgRgba).
- *   4. Sprites / OAM    — table des sprites actifs (valeurs OAM = vérité rendue) + highlight au clic.
- *   5. BG / Blend / Win — config des 4 BG + blend (BLDCNT/BLDY) + fenêtres.
- *   6. Battle state     — inBattle, CB2, anim attacker/target, opcodes récents.
- *   7. Audio            — BGM courant + SE-playing/cry + journal SE (best-effort, observe-only).
- *   8. Scénarios        — refresh, combat sauvage / rival (refresh PUIS autoboot), move-anim.
+ *   2. Frame control    — ❚❚/▶ · ⏭1 · ⏭8 · vitesse ¼/½/1×/2×/4× (slow-mo ET turbo).
+ *   3. Téléport (OPEN)  — villes à Pokémon Center, spawn devant la porte.
+ *   4. Joueur           — cheats : soin équipe / +10 000₽ / Dex National / skip intro.
+ *   5. Scénarios combat — refresh, combat sauvage / rival (refresh PUIS autoboot), move-anim.
+ *   6. Rencontres event — Barpau / Altering Cave.
+ *   7. Easy Chat        — tous les types d'écran en démo.
+ *   8. Palettes         — grilles 16×16 OBJ + BG, couleurs RÉELLEMENT rendues.
+ *   9. Sprites / OAM    — table des sprites actifs + highlight au clic.
+ *  10. BG / Blend / Win — config des 4 BG + blend (BLDCNT/BLDY) + fenêtres.
+ *  11. Battle state     — inBattle, CB2, anim attacker/target, opcodes récents.
+ *  12. Audio            — BGM courant + SE + journal (observe-only).
+ *
+ * Sondes console : `dev.gfx.*` (dev-gfx-tools.ts) — films de transition, luminosité,
+ * tiles VRAM ASCII, dump OAM, tilemap rows. `window.cheat.*` (dev-cheat.ts).
  */
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { MAX_SPRITES } from '../runtime/decomp-runtime';
 import { getCurrentSongId, getRuntime } from '../runtime/decomp-globals';
 // byte-VM (Phase 3) : expose window.__byteVm pour vérif déterministe (slice vertical).
 import './dev-bytevm-tools';
+import { installGfxTools } from './dev-gfx-tools';
 import {
   tpToRandomFeebasTile, tpToAlteringCave, cycleAlteringCaveTable,
   getAlteringCaveTable, alteringCaveLabel, loadAlteringCaveSpecies,
@@ -160,6 +169,7 @@ export function mountDevtoolsPanel(): void {
   wireControls();
   wireAudioMonitor();
   installKeybind();
+  installGfxTools();   // sondes graphiques console (dev.gfx.*)
   resumeAutobootIfPending();
 
   // Expose un petit contrôleur pratique.
@@ -539,33 +549,26 @@ function buildDom(): void {
       <button data-fc="step1" title="Avancer 1 frame">⏭1</button>
       <button data-fc="step8" title="Avancer 8 frames">⏭8</button>
       <span class="dvt-dim">vit</span>
+      <button data-spd="0.25">¼</button>
+      <button data-spd="0.5">½</button>
       <button data-spd="1">1×</button>
-      <button data-spd="0.5">½×</button>
-      <button data-spd="0.25">¼×</button>
-      <button data-spd="0.1">.1×</button>
+      <button data-spd="2">2×</button>
+      <button data-spd="4">4×</button>
     </div>
     <div class="dvt-body">
-      <details open><summary>🗺 Téléport <span class="dvt-dim">(devant les Pokémon Centers)</span></summary>
-        <div id="dvt-tp" class="dvt-tp">${teleportButtonsHtml()}</div>
+      <details open><summary>🗺 Téléport <span class="dvt-dim">(devant les PC)</span></summary>
+        <div id="dvt-tp" class="dvt-tpgrid">${teleportButtonsHtml()}</div>
       </details>
-      <details><summary>💬 Easy Chat <span class="dvt-dim">(tous les écrans, démo)</span></summary>
-        <div id="dvt-ec" class="dvt-tp">${easyChatButtonsHtml()}</div>
-      </details>
-      <details open><summary>🎨 Palettes <span class="dvt-dim">(rendu réel)</span></summary>
-        <div class="dvt-pal-ctl">
-          <label><input type="checkbox" id="dvt-cb-obj" checked> OBJ</label>
-          <label><input type="checkbox" id="dvt-cb-bg" checked> BG</label>
+      <details><summary>🎮 Joueur <span class="dvt-dim">(cheats)</span></summary>
+        <div id="dvt-plr" class="dvt-tpgrid">
+          <button data-plr="heal" title="PV + PP + statuts de toute l'équipe">💊 Soigner l'équipe</button>
+          <button data-plr="money" title="+10 000₽ (cap 999 999)">💰 +10 000₽</button>
+          <button data-plr="natdex" title="EnableNationalPokedex 1:1 (magic+var+flag)">📕 Dex National</button>
+          <button data-plr="skipintro" title="Pose les flags/vars de début d'aventure + save">⏩ Skip intro</button>
         </div>
-        <div id="dvt-pal"></div>
+        <div id="dvt-plr-status" class="dvt-dim"></div>
       </details>
-      <details><summary>🧩 Sprites / OAM</summary>
-        <label class="dvt-pal-ctl"><input type="checkbox" id="dvt-cb-vis" checked> visibles seulement</label>
-        <div id="dvt-spr"></div>
-      </details>
-      <details><summary>🗺 BG / Blend / Window</summary><div id="dvt-bg"></div></details>
-      <details><summary>⚔ Battle state</summary><div id="dvt-bat"></div></details>
-      <details><summary>🔊 Audio <span class="dvt-dim">(observe-only)</span></summary><div id="dvt-aud"></div></details>
-      <details open><summary>🚀 Scénarios</summary>
+      <details><summary>🚀 Scénarios combat</summary>
         <div id="dvt-scn" class="dvt-scn">
           <button data-scn="refresh" title="window.location.reload()">⟳ Refresh</button>
           <button data-scn="wild" title="Refresh PUIS combat Treecko vs Poochyena">🌿 Combat sauvage</button>
@@ -584,6 +587,23 @@ function buildDom(): void {
         </div>
         <div id="dvt-enc-status" class="dvt-dim"></div>
       </details>
+      <details><summary>💬 Easy Chat <span class="dvt-dim">(tous les écrans, démo)</span></summary>
+        <div id="dvt-ec" class="dvt-tpgrid">${easyChatButtonsHtml()}</div>
+      </details>
+      <details><summary>🎨 Palettes <span class="dvt-dim">(rendu réel)</span></summary>
+        <div class="dvt-pal-ctl">
+          <label><input type="checkbox" id="dvt-cb-obj" checked> OBJ</label>
+          <label><input type="checkbox" id="dvt-cb-bg" checked> BG</label>
+        </div>
+        <div id="dvt-pal"></div>
+      </details>
+      <details><summary>🧩 Sprites / OAM</summary>
+        <label class="dvt-pal-ctl"><input type="checkbox" id="dvt-cb-vis" checked> visibles seulement</label>
+        <div id="dvt-spr"></div>
+      </details>
+      <details><summary>🗺 BG / Blend / Window</summary><div id="dvt-bg"></div></details>
+      <details><summary>⚔ Battle state</summary><div id="dvt-bat"></div></details>
+      <details><summary>🔊 Audio <span class="dvt-dim">(observe-only)</span></summary><div id="dvt-aud"></div></details>
     </div>`;
   document.body.appendChild(panel);
 
@@ -661,6 +681,24 @@ function wireControls(): void {
     const bv = (g() as { __byteVm?: { openEasyChatDemo?: (t: number) => Promise<string> } }).__byteVm;
     if (bv?.openEasyChatDemo) void bv.openEasyChatDemo(type);
     else console.warn('[devtools] __byteVm.openEasyChatDemo indisponible (jeu pas booté ?)');
+  });
+
+  // Joueur (cheats) — délègue à window.cheat (dev-cheat.ts, importe src en direct).
+  document.getElementById('dvt-plr')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-plr]') as HTMLElement | null;
+    if (!btn) return;
+    const cheat = (globalThis as { cheat?: Record<string, (...a: unknown[]) => void> }).cheat;
+    const status = (txt: string): void => {
+      const el = document.getElementById('dvt-plr-status');
+      if (el) el.textContent = txt;
+    };
+    if (!cheat) { status('window.cheat indisponible (jeu pas booté ?)'); return; }
+    switch (btn.dataset.plr) {
+      case 'heal': cheat.heal?.(); status('Équipe soignée (PV/PP/statuts).'); break;
+      case 'money': cheat.money?.(); status('+10 000₽.'); break;
+      case 'natdex': cheat.nationalDex?.(); status('Dex National activé (rouvre le dex).'); break;
+      case 'skipintro': cheat.skipIntro?.(); status('Intro skippée + save.'); break;
+    }
   });
 
   // Scénarios
@@ -773,6 +811,9 @@ function injectStyles(): void {
 #${PANEL_ID} .dvt-kv{margin:2px 0}
 #${PANEL_ID} .dvt-tp{display:flex;flex-wrap:wrap;gap:3px}
 #${PANEL_ID} .dvt-tp button{flex:0 0 auto;padding:2px 5px;font-size:10px}
+#${PANEL_ID} .dvt-tpgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+#${PANEL_ID} .dvt-tpgrid button{padding:3px 5px;font-size:10px;text-align:left;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
 #${PANEL_ID} .dvt-scn{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 #${PANEL_ID} .dvt-scn button{width:100%;text-align:left}
 #${PANEL_ID} .dvt-mv{display:flex;gap:3px;width:100%}

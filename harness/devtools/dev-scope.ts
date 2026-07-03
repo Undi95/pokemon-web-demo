@@ -321,9 +321,12 @@ function _bag(): Record<string, Array<{ item: string; qty: number }>> {
 }
 
 function _flags(filterPrefix?: string): string[] {
-  // 1:1 strict (session 2026-05-23 refactor) : flags vivent direct dans
-  // gSaveBlock1Ptr.flags (= Record<string, boolean>). Ancien `gameState.getAllFlagNames`
-  // wrapper éliminé. Iter direct sur les keys.
+  // ⚠️ Piège payé (mémoire) : l'ancien store Record<string, boolean> de sb1.flags
+  // est DÉSYNC depuis la migration id-indexée (flags = number[] bit-packé).
+  // Source de vérité = dev.audit.flags() (énumération FLAG_* + FlagGet) → reroute.
+  const audit = _g<{ audit?: { flags?: (p?: string) => string[] } }>('dev')?.audit;
+  if (audit?.flags) return audit.flags(filterPrefix);
+  // Fallback legacy (boot très tôt, audit pas monté).
   const flags = (_sb1 as { flags?: Record<string, boolean> }).flags ?? {};
   const all = Object.keys(flags).filter(k => flags[k]);
   if (filterPrefix) return all.filter(f => f.startsWith(filterPrefix));
@@ -331,9 +334,16 @@ function _flags(filterPrefix?: string): string[] {
 }
 
 function _vars(): Record<string, number> {
-  // 1:1 strict : vars vivent direct dans gSaveBlock1Ptr.vars.
+  // ⚠️ Même désync que _flags (migration id-indexée) → reroute vers dev.audit.vars()
+  // (retourne [{name, value}] → re-projeté en Record pour garder le contrat scope).
+  const audit = _g<{ audit?: { vars?: (p?: string) => Array<{ name: string; value: number }> } }>('dev')?.audit;
+  if (audit?.vars) {
+    const out: Record<string, number> = {};
+    for (const { name, value } of audit.vars()) out[name] = value;
+    return out;
+  }
+  // Fallback legacy.
   const all = (_sb1 as { vars?: Record<string, number> }).vars ?? {};
-  // Filter out zero-value vars to reduce noise.
   const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(all)) {
     if (v !== 0) out[k] = v;
@@ -557,6 +567,10 @@ function _maskForKey(key: string): number {
 }
 
 function _rtSafe(): DecompRuntime | null {
+  // ⚠️ Piège payé : `dev._rt` peut être DÉSYNC (posé par une scène morte / HMR).
+  // Source de vérité = globalThis.__rt (le runtime LIVE) ; dev._rt = fallback.
+  const live = _g<DecompRuntime>('__rt');
+  if (live) return live;
   const dev = _g<{ _rt?: DecompRuntime }>('dev');
   return dev?._rt ?? null;
 }
