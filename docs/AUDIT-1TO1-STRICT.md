@@ -10,15 +10,32 @@ détectées (ex. le texte quantité du sac affiché en BLANC — `PrintItemQuant
 tomber sur ces glitchs par hasard, on **audite proactivement** ce qui est déjà là et on
 corrige tout ce qui n'est pas 1:1 strict avec la décomp. Fichier par fichier.
 
+## Périmètre : TOUT le repo miroir (pas seulement le récent)
+
+Audit exhaustif de **tous** les fichiers portés vs leur décomp. L'oracle de Fable 5
+(`scripts/audit-callgraph-closure.cjs`) est la SOURCE (ne pas réinventer d'inventaire —
+un essai maison basename-only a été supprimé, il était redondant et inférieur).
+
+**Liste des fichiers à auditer = le `perFile` de l'oracle** (785 fichiers .c avec ≥1 fn
+portée ; ~530 à 100% de portage — à auditer quand même pour les divergences internes —
+et ~255 avec des trous). Régénérer + lire la liste :
+```
+node scripts/audit-callgraph-closure.cjs            # régénère audit-reports/callgraph-closure.json
+node -e "const d=require('./audit-reports/callgraph-closure.json');const r=Object.entries(d.perFile).map(([f,v])=>({f,t:v.total,p:v.ported,gap:v.total-v.ported}));r.sort((a,b)=>b.p-a.p);r.forEach(x=>console.log(String(x.p).padStart(4)+'/'+String(x.t).padStart(4),x.gap?('GAP'+x.gap):'   ',x.f))"
+```
+(⚠️ `callgraph-closure.json` = JAMAIS commité ; on le régénère.)
+
 ## Ce que l'oracle détecte (et pas)
 
-`node scripts/audit-callgraph-closure.cjs --file X.c` :
-- ✅ Fonctions **ABSENTES** (à porter), **DRIFT** (nom/variante, adaptation), **PORTÉ exact**.
-- ⚠️ NE détecte PAS les **divergences internes** d'une fonction portée (couleur, valeur,
+`--file X.c` (par fichier) / `--sym Name` (par symbole) / global (gaps triés) :
+- ✅ Fonctions **ABSENTES** (à porter), **DRIFT** (nom/variante, adaptation), **PORTÉ exact**,
+  + `perFile` (total/portées par fichier), + gaps triés par nb d'appelants.
+- ⚠️ NE détecte PAS les **divergences internes** d'une fonction déjà portée (couleur, valeur,
   ordre, arithmétique, condition, branche manquante). ← c'est le gros du travail ici.
 
-→ L'oracle donne l'**inventaire des fonctions** d'un fichier ; la fidélité interne se
-vérifie en **lisant le .ts et le .c côte à côte**.
+→ L'oracle donne l'**inventaire des fonctions** (par fichier + trous) ; la fidélité interne
+se vérifie en **lisant le .ts et le .c côte à côte**. Un fichier « 100% porté » selon
+l'oracle peut TOUJOURS contenir des divergences internes (ex. bag ×NN blanc `93ec1ea1`).
 
 ## Méthode par fichier (boucle)
 
@@ -40,9 +57,12 @@ Pour chaque fichier `src/X.ts` (miroir de `decomps/pokeemeraude/src/X.c`) :
 6. **Commit par fichier** (ou par petit lot cohérent) : staging explicite, message heredoc,
    `Authored-by: Opus 4.8 & Undi <noreply@anthropic.com>`.
 
-## Ordre proposé (systèmes récemment « finis », surface UI d'abord = divergences visibles)
+## Ordre proposé — PUIS dérouler TOUT le perFile (785 fichiers, rien n'est exempt)
 
-Cocher au fur et à mesure. Croiser avec l'oracle `--file`.
+Point de DÉPART = surface UI (divergences les plus visibles), listé ci-dessous. Ensuite,
+dérouler **l'intégralité du perFile** de l'oracle (par nb de fns portées décroissant, ou par
+domaine). L'objectif est 785/785 fichiers audités. Cocher au fur et à mesure ; croiser
+chaque fichier avec l'oracle `--file X.c`.
 
 - [ ] `src/item_menu.ts` (sac — le bag couleur était là ; ÉNORME item_menu.c, prioriser les
       fonctions d'affichage : BagMenu_Print/ItemPrintCallback/PrintItemQuantity/contexte menus)
