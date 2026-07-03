@@ -1254,6 +1254,39 @@ async function main() {
   }
 }
 
+// ─── flat-union TVShow (round 7) ─────────────────────────────────────────────
+// L'union TVShow (global.tv.h:6-493, 34 vues sur les mêmes 0x24 bytes) est
+// aplatie PAR NOM chez nous (même adaptation actée que les coords plats
+// d'ObjectEvent) : on supprime le segment de vue (`show.pokemonToday.kind` →
+// `show.kind`). Sûr car le round-trip write/read passe par les mêmes noms
+// (StorePlayerIdIn*Show ↔ lectures common.trainerId*). Garde-fous :
+//  - `.common.` seulement devant les champs de TVShowCommon (générique sinon) ;
+//  - `.frontier.` PAS après gSaveBlock2Ptr (frontier = struct save distincte).
+// ⚠️ `.commonInit.data[j]` (reset byte-level) devient `.data[j]` → à corriger
+// à la main en reset de slot (flag `flat-union-reset` émis pour le rapport).
+const TVSHOW_COMMON_FIELDS = 'kind|active|data|srcTrainerId3Lo|srcTrainerId3Hi|srcTrainerId2Lo|srcTrainerId2Hi|srcTrainerIdLo|srcTrainerIdHi|trainerIdLo|trainerIdHi';
+const TVSHOW_UNION_VIEWS = [
+  'commonInit', 'fanclubLetter', 'recentHappenings', 'fanclubOpinions', 'dummy',
+  'nameRaterShow', 'bravoTrainer', 'bravoTrainerTower', 'contestLiveUpdates',
+  'threeCheers', 'battleUpdate', 'fanClubSpecial', 'contestLady', 'pokemonToday',
+  'smartshopperShow', 'pokemonTodayFailed', 'pokemonAngler', 'worldOfMasters',
+  'rivalTrainer', 'trendWatcher', 'treasureInvestigators', 'findThatGamer',
+  'breakingNews', 'secretBaseVisit', 'lottoWinner', 'battleSeminar',
+  'trainerFanClub', 'cuties', 'frontier', 'numberOne', 'secretBaseSecrets',
+  'safariFanClub', 'massOutbreak',
+];
+function flattenTvShowUnions(text) {
+  text = text.replace(new RegExp(`\\.common\\.(${TVSHOW_COMMON_FIELDS})\\b`, 'g'), '.$1');
+  for (const view of TVSHOW_UNION_VIEWS) {
+    if (view === 'frontier') {
+      text = text.replace(/(?<!gSaveBlock2Ptr)\.frontier\./g, '.');
+    } else {
+      text = text.replace(new RegExp(`\\.${view}\\.`, 'g'), '.');
+    }
+  }
+  return text;
+}
+
 async function transpileOne(fileRel) {
   resetFileState(fileRel, targetsSingle() ? outArg : null);
   if (!fs.existsSync(cPath)) throw new Error(`introuvable : ${cPath}`);
@@ -1405,7 +1438,14 @@ async function transpileOne(fileRel) {
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 `;
-  const body = header + '\n' + importBlock + '\n' + chunks.join('\n\n') + '\n';
+  let body = header + '\n' + importBlock + '\n' + chunks.join('\n\n') + '\n';
+  // flat-union TVShow : seulement si la source utilise le type (tv.c, battle_tv.c…).
+  if (/\bTVShow\b/.test(SRC)) {
+    body = flattenTvShowUnions(body);
+    for (const m of body.matchAll(/^.*\.data\[[^\]]*\]\s*=\s*0.*$/gm)) {
+      flag(0, 'flat-union-reset', m[0].trim().slice(0, 80));
+    }
+  }
 
   // ─── rapport ───────────────────────────────────────────────────────────────
   report.stats = { fns: nFns, data: nData, defines: nDefines, flags: report.flags.length, unresolved: report.unresolved.size, gtext: report.gtext.length };

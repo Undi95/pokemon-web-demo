@@ -303,6 +303,7 @@ export function OpenPokemart(itemList: string[]): void {
   void _loadShopAssets();        // précharge le cadre (prêt au moment du Buy)
   void preloadItemIconAssets();  // précharge les icônes d'objets (sprite synchrone après)
   _setShopItemsForSale(itemList);
+  ClearItemPurchases();          // 1:1 shop.c:1253
   _createShopMenu(MART_TYPE_NORMAL);
   console.log(`[shop] Pokémart ouvert (${sItemCount} objets)`);
 }
@@ -922,6 +923,40 @@ function _buyMenuConfirmPurchase(): void {
   CreateYesNoMenuWithCallbacks(sBuyTaskId, WIN_YESNO, 1, 0, 0, BUY_FRAME_TILE, BUY_FRAME_PAL, sShopPurchaseYesNoFuncs);
 }
 
+// ─── historique d'achats (Smart Shopper TV) ──────────────────────────────────
+
+/** 1:1 décomp `EWRAM_DATA struct ItemSlot gMartPurchaseHistory[SMARTSHOPPER_NUM_ITEMS]`
+ *  (shop.c:113) — achats de la session mart courante, lus par le TV show Smart
+ *  Shopper (tv.c SmartShopper_BeforeInterview). itemId = clé item ('ITEM_X') ou 0. */
+export const gMartPurchaseHistory: Array<{ itemId: string | number; quantity: number }> =
+  Array.from({ length: 3 /* SMARTSHOPPER_NUM_ITEMS */ }, () => ({ itemId: 0, quantity: 0 }));
+let sPurchaseHistoryId = 0;
+
+/** 1:1 décomp `ClearItemPurchases` (shop.c:1211). */
+function ClearItemPurchases(): void {
+  sPurchaseHistoryId = 0;
+  for (const s of gMartPurchaseHistory) { s.itemId = 0; s.quantity = 0; }
+}
+
+/** 1:1 décomp `RecordItemPurchase(taskId)` (shop.c:1217) — tItemId/tItemCount =
+ *  nos sSelectedKey/sQuantity (task data → module state, adaptation shop.ts). */
+function RecordItemPurchase(): void {
+  for (let i = 0; i < gMartPurchaseHistory.length; i++) {
+    if (gMartPurchaseHistory[i].itemId === sSelectedKey && gMartPurchaseHistory[i].quantity !== 0) {
+      if (gMartPurchaseHistory[i].quantity + sQuantity.value > 255)
+        gMartPurchaseHistory[i].quantity = 255;
+      else
+        gMartPurchaseHistory[i].quantity += sQuantity.value;
+      return;
+    }
+  }
+  if (sPurchaseHistoryId < gMartPurchaseHistory.length) {
+    gMartPurchaseHistory[sPurchaseHistoryId].itemId = sSelectedKey;
+    gMartPurchaseHistory[sPurchaseHistoryId].quantity = sQuantity.value;
+    sPurchaseHistoryId++;
+  }
+}
+
 // ─── BuyMenuTryMakePurchase (1:1 shop.c:1097) — callback YES du yes/no ───────
 function _buyMenuTryMakePurchase(): void {
   if (sListWindowId >= 0) PutWindowTilemap(sListWindowId);  // 1:1 shop.c:1101
@@ -929,6 +964,7 @@ function _buyMenuTryMakePurchase(): void {
     // 1:1 : BuyMenuDisplayMessage(gText_HereYouGoThankYou, BuyMenuSubtractMoney). L'argent est
     // retiré APRÈS l'impression du « Tenez! Merci infiniment. » (= continuation = SE_SHOP cha-ching).
     _displayMessage(getString('gText_HereYouGoThankYou'), _buyMenuSubtractMoney);
+    RecordItemPurchase();  // 1:1 shop.c:1108
   } else {
     _displayMessage(getString('gText_NoMoreRoomForThis'), _buyReturnToItemList);
   }

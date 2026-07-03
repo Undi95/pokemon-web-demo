@@ -3341,7 +3341,7 @@ const NUM_BARD_SONG_WORDS = 6;
 
 /** 1:1 décomp `void InitializeEasyChatWordArray(u16 *words, u16 length)` (easy_chat.c) :
  *    for (i = length - 1; i != EC_EMPTY_WORD; i--) *(words++) = EC_EMPTY_WORD; */
-function InitializeEasyChatWordArray(words: Uint16Array, length: number): void {
+export function InitializeEasyChatWordArray(words: Uint16Array | number[], length: number): void {
   let w = 0; // pointeur mobile = `words++` du décomp
   for (let i = (length - 1) & 0xFFFF; i !== EC_EMPTY_WORD; i = (i - 1) & 0xFFFF)
     words[w++] = EC_EMPTY_WORD;

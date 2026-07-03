@@ -47,6 +47,21 @@ export function StorageGetCurrentBox(): number {
   return GetPokemonStorage().currentBox;
 }
 
+/** 1:1 décomp `struct BoxPokemon *GetBoxedMonPtr(u8 boxId, u8 boxPosition)`
+ *  (pokemon_storage_system.c:9450) : `&gPokemonStoragePtr->boxes[boxId][boxPosition]`.
+ *  Nos slots = Pokemon | null (modèle unifié Pokemon == BoxPokemon). */
+export function GetBoxedMonPtr(boxId: number, boxPosition: number) {
+  return GetPokemonStorage().boxes[boxId]?.[boxPosition] ?? null;
+}
+
+/** 1:1 décomp `void SetBoxMonNickAt(u8 boxId, u8 boxPosition, const u8 *nick)`
+ *  (pokemon_storage_system.c:9461) : SetBoxMonDataAt(MON_DATA_NICKNAME). Nos
+ *  nicknames save = string JS. */
+export function SetBoxMonNickAt(boxId: number, boxPosition: number, nick: string): void {
+  const mon = GetPokemonStorage().boxes[boxId]?.[boxPosition];
+  if (mon) mon.nickname = nick;
+}
+
 /** 1:1 décomp `bool8 AnyStorageMonWithMove(u16 move)` (pokemon_storage_system.c:9636) :
  *  ```c
  *  for (i < TOTAL_BOXES_COUNT) for (j < IN_BOX_COUNT)

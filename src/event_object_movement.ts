@@ -96,7 +96,7 @@ import {
   GetMoveDirectionFasterAnimNum, GetMoveDirectionFastestAnimNum,
 } from './engine/field/direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from './engine/field/field-globals';
-import { FlagGet, VarGet } from './engine/script/script-vars';
+import { FlagGet, FlagSet, VarGet } from './engine/script/script-vars';
 import { Random } from './random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
 import { reverseDecompConstant as _reverseDecompConstant } from '../harness/runtime/decomp-constants';
@@ -8176,6 +8176,38 @@ export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): bool
   );
   const tpl = sav ? { ...romTpl, x: sav.x, y: sav.y } : romTpl;
   return _spawnSingleNpcFromTemplate(tpl, mh.id, rt, _graphicsCatalog);
+}
+
+/** 1:1 décomp `void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)`
+ *  (event_object_movement.c:1389-1397) :
+ *    if (!TryGetObjectEventIdByLocalIdAndMap(...)) {
+ *        FlagSet(GetObjectEventFlagIdByObjectEventId(objectEventId));
+ *        RemoveObjectEvent(&gObjectEvents[objectEventId]);
+ *    }
+ *  Utilisé par tv.c (reporter du lobby Tour de Combat). Le despawn réutilise la
+ *  mécanique 1:1 de RemoveObjectEventsOutsideView (sprite + tiles + active). */
+export function RemoveObjectEventByLocalIdAndMap(localId: number, mapNum: number, mapGroup: number): void {
+  const r = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (!r.notFound) {
+    const npc = gObjectEvents[r.objectEventId];
+    // GetObjectEventFlagIdByObjectEventId → template.flagId (event_object_movement.c:1408).
+    const tpl = (gMapHeader?.events?.objectEvents ?? []).find(t => t.localId === npc.localId);
+    if (tpl?.flagId && tpl.flagId !== '0') FlagSet(tpl.flagId);
+    // RemoveObjectEvent : active=FALSE + destroy sprite (event_object_movement.c:1374).
+    const rt = getRuntime();
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites[npc.spriteId];
+      if (sprite) {
+        sprite.inUse = false;
+        rt.gba.oam[sprite.oamIndex].visible = false;
+      }
+      if (npc.objTileBase > 0) {
+        MarkObjTilesFree(npc.objTileBase * 32, (npc.objTileCount > 0 ? npc.objTileCount : TILES_PER_NPC) * 32);
+      }
+    }
+    npc.active = false;
+    npc.spriteId = -1;
+  }
 }
 
 /** 1:1 STRICT décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`

@@ -858,16 +858,19 @@ export interface ObjectEventTemplate {
 
 // ─── TVShow / PokeNews / GabbyAndTy ─────────────────────────────────────────
 
-/** 1:1 décomp `union TVShow`. 25 variants discriminés par `kind`.
- *  Pour MVP web port on stocke comme `unknown` — sera typed-up plus tard
- *  quand les TVShows seront implémentés. Le décomp utilise 0x24 bytes (= 36)
- *  par TVShow, on garde n'importe quel object compatible. */
+/** 1:1 décomp `union TVShow` (global.tv.h:6-493) — 34 vues sur les mêmes 0x24
+ *  bytes, discriminées par `kind`. Chez nous : union APLATIE PAR NOM (adaptation
+ *  actée type « coords plats ») : chaque show est un objet plat portant les
+ *  champs de SON variant + les champs communs (kind/active/trainerId*…) ; les
+ *  segments de vue (.common/.pokemonToday/…) sont supprimés par le transpiler
+ *  (flattenTvShowUnions). Champs texte (playerName/nickname…) = string JS
+ *  (convention save), conversion charmap aux frontières (encodeOwText).
+ *  Reset de slot (C `commonInit.data[j]=0`) = ClearTVShowSlot (tv.ts). */
 export type TVShow = {
   kind: number;
-  active: number;
-  /** Raw payload bytes. Décomp utilise des accès field-specific via union ;
-   *  notre version stocke en object générique. */
-  data?: Record<string, unknown>;
+  active: number | boolean;
+  /** Champs de variant (species, ballsUsed, playerName…) — voir global.tv.h. */
+  [variantField: string]: any;
 };
 
 /** 1:1 décomp `struct PokeNews` (global.tv.h:495). */
