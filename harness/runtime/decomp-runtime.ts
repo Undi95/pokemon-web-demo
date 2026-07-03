@@ -311,6 +311,15 @@ export class MainStruct {
    *  (incrémenté chaque frame, JAMAIS reset). Utilisé par RunTimeBasedEvents
    *  (field_tasks.c) via `vblankCounter1 & (1<<12)` pour un tick périodique. */
   vblankCounter1 = 0;
+  /** 1:1 décomp `struct OamData gMain.oamBuffer[128]` (main.h:52) — buffer OAM CPU
+   *  recopié en OAM hardware au VBlank. Écrit EN DIRECT (hors gSprites) par
+   *  digit_obj_util.c pour ses compteurs numériques. Harness : modèle de données ;
+   *  le rendu des entrées hors-sprite arrivera avec les consommateurs
+   *  (berry_crush/pokemon_jump). */
+  oamBuffer = Array.from({ length: 128 }, () => ({
+    y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0, shape: 0, x: 0,
+    matrixNum: 0, size: 0, tileNum: 0, priority: 0, paletteNum: 0, affineParam: 0,
+  }));
 }
 
 /** 1:1 décomp gKeyRepeatStartDelay = 40 (frames before 1ère répétition).

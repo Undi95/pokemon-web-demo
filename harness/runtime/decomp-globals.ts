@@ -418,6 +418,19 @@ export function CpuFill16(value: number, destAddr: number, sizeBytes: number): v
   }
 }
 
+/** 1:1 décomp `u32 GetDecompressedDataSize(const u32 *ptr)` (decompress.c) — lit
+ *  la taille décompressée dans l'en-tête LZ77 (bytes 1-3 little-endian).
+ *  Harness : les assets sont PRÉ-décompressés → taille = byteLength de l'asset
+ *  (symbole string via assetCache, ou buffer direct). */
+export function GetDecompressedDataSize(data: string | Uint8Array | null): number {
+  if (!data) return 0;
+  if (typeof data === 'string') {
+    const a = getAsset(data);
+    return a ? a.byteLength : 0;
+  }
+  return data.byteLength;
+}
+
 /** 1:1 décomp `CpuFill32(value, dest, size)` — fill 32-bit.
  *  Supporte VRAM, OAM (hide sprites) et PLTT. */
 export function CpuFill32(value: number, destAddr: number, sizeBytes: number): void {
@@ -1858,6 +1871,12 @@ export const gMain = new Proxy({} as {
   newAndRepeatedKeys: number;
   keyRepeatCounter: number;
   vblankCounter1: number;
+  /** 1:1 `struct OamData gMain.oamBuffer[128]` (main.h:52) — écrit en direct par digit_obj_util.c. */
+  oamBuffer: Array<{
+    y: number; affineMode: number; objMode: number; mosaic: boolean; bpp: number;
+    shape: number; x: number; matrixNum: number; size: number; tileNum: number;
+    priority: number; paletteNum: number; affineParam: number;
+  }>;
 }, {
   get(_, k) { return (rt().gMain as unknown as Record<string, unknown>)[k as string]; },
   set(_, k, v) { (rt().gMain as unknown as Record<string, unknown>)[k as string] = v; return true; },
