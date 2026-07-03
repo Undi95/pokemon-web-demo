@@ -226,6 +226,23 @@ function buildGeneratedConstants() {
     let i = 1;
     for (const s of j.heal_locations || []) constDB.set(s.id, { value: i++, file: 'generated:heal_locations', line: 0 });
   }
+  // LOCALID_* par map (mapjson) : local id = index 1-based dans object_events du map.json
+  const mapsDir = path.join(DECOMP, 'data', 'maps');
+  if (fs.existsSync(mapsDir)) {
+    for (const e of fs.readdirSync(mapsDir, { withFileTypes: true })) {
+      if (!e.isDirectory()) continue;
+      const mj = path.join(mapsDir, e.name, 'map.json');
+      if (!fs.existsSync(mj)) continue;
+      let j;
+      try { j = JSON.parse(fs.readFileSync(mj, 'utf8')); } catch { continue; }
+      const evts = j.object_events || [];
+      for (let k = 0; k < evts.length; k++) {
+        const lid = evts[k].local_id;
+        if (typeof lid === 'string' && lid.startsWith('LOCALID_') && !constDB.has(lid))
+          constDB.set(lid, { value: k + 1, file: `generated:maps/${e.name}`, line: 0 });
+      }
+    }
+  }
 }
 const mapConstKeys = new Set(); // clés MAP_* du record MAP_CONSTANTS (convention repo)
 function buildMapConstKeys() {
@@ -679,6 +696,16 @@ function emitExpr(n, ctx) {
           markUsed(name);
           return `${name}(null)`; // C passe 0 = pas de callback
         }
+        if (name === 'DestroySprite') {
+          // Convention repo : DestroySprite(spriteId) — décomp passe &gSprites[id]
+          const a0 = args.namedChildren.filter((c) => c.type !== 'comment')[0];
+          const inner = a0 && a0.type === 'pointer_expression' ? a0.childForFieldName('argument') : a0;
+          if (inner && inner.type === 'subscript_expression'
+            && inner.childForFieldName('argument').text === 'gSprites') {
+            markUsed(name);
+            return `${name}(${emitExpr(inner.childForFieldName('index'), ctx)})`;
+          }
+        }
         if (name === 'CreateTask' || name === 'CreateTaskAtEnd') {
           // Pattern runtime OBLIGATOIRE : func reçoit le TASK OBJECT → (t)=>fn(t.taskId)
           // (DestroyTask(objet) = no-op silencieux = task zombie, leçon payée).
@@ -746,6 +773,14 @@ function emitExpr(n, ctx) {
     case 'field_expression': {
       const arg = n.childForFieldName('argument');
       const field = n.childForFieldName('field').text;
+      // modèle PLAT ObjectEvent (adaptation repo) : X.currentCoords.x → X.currentCoordsX
+      if ((field === 'x' || field === 'y') && arg.type === 'field_expression') {
+        const innerField = arg.childForFieldName('field');
+        if (innerField && (innerField.text === 'currentCoords' || innerField.text === 'previousCoords')) {
+          const base = emitExpr(arg.childForFieldName('argument'), ctx);
+          return `${base}.${innerField.text}${field.toUpperCase()}`;
+        }
+      }
       let as = emitExpr(arg, ctx);
       // static pointeur NULL-init (EWRAM) : accès membre → sFoo! (flux 1:1 = alloué avant usage)
       if (arg.type === 'identifier' && !(ctx && ctx.types.has(arg.text))) {

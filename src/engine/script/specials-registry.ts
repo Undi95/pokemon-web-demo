@@ -73,6 +73,7 @@ import {
   ShouldDoBrailleRegicePuzzle, ShouldDoBrailleRegirockEffectOld,
 } from '../../braille_puzzles';
 import { EnterSafariMode, ExitSafariMode, GetPokeblockFeederInFront } from '../../safari_zone';
+import { SetMewAboveGrass, DestroyMewEmergingGrassSprite } from '../../faraway_island';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
@@ -1437,7 +1438,7 @@ const _STUB_RETURN_0_SPECIALS = [
   'CloseBattleFrontierTutorWindow',
   // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
   // 'GameClear' — porté 1:1 décomp post_battle_event_funcs.c:12 ci-haut (2026-07-02).
-  'SetMewAboveGrass',
+  // 'SetMewAboveGrass' — porté 1:1 faraway_island.ts (transpilé), handler ci-bas.
   'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics',
   // 'ShouldDoBrailleRegicePuzzle' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
@@ -1987,7 +1988,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CountPlayerTrainerStars' — porté 1:1 décomp trainer_card.c:663 ci-bas (batch B11).
   // 'CreateAbnormalWeatherEvent' — porté 1:1 décomp field_specials.c:3453 ci-bas (batch B32).
   'CreateEnemyEventMon',
-  'DestroyMewEmergingGrassSprite',
+  // 'DestroyMewEmergingGrassSprite' — porté 1:1 faraway_island.ts (transpilé), handler ci-bas.
   // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
@@ -2454,6 +2455,13 @@ registerSpecial('EnterSafariMode', () => { EnterSafariMode(); });
 registerSpecial('ExitSafariMode', () => { ExitSafariMode(); });
 /** 1:1 décomp `GetPokeblockFeederInFront` (safari_zone.c:131) — VAR_RESULT + gStringVar1. */
 registerSpecial('GetPokeblockFeederInFront', () => { GetPokeblockFeederInFront(); });
+
+// ─── Faraway Island (Mew) — impl transpilées faraway_island.ts ──────────────
+
+/** 1:1 décomp `SetMewAboveGrass` (faraway_island.c:370) — émergence de Mew. */
+registerSpecial('SetMewAboveGrass', () => { SetMewAboveGrass(); });
+/** 1:1 décomp `DestroyMewEmergingGrassSprite` (faraway_island.c:411). */
+registerSpecial('DestroyMewEmergingGrassSprite', () => { DestroyMewEmergingGrassSprite(); });
 
 /** 1:1 décomp `GetTrainerFlag` (battle_setup.c:1235-1243) :
  *  ```c

@@ -523,6 +523,13 @@ export function preloadLongGrassEffect(_rt: DecompRuntime): Promise<void> {
   return _longGrassInitPromise;
 }
 
+/** Pièces du template 1:1 `gFieldEffectObjectTemplatePointers[FLDEFFOBJ_LONG_GRASS]`
+ *  pour les consommateurs EXTERNES (faraway_island.ts : herbe d'émergence de Mew,
+ *  faraway_island.c:400 fait CreateSpriteAtEnd sur ce template). */
+export function getFldEffLongGrassParts(): { ready: boolean; tileStart: number; anims: ReadonlyArray<ReadonlyArray<AnimCmd>> } {
+  return { ready: _longGrassInit, tileStart: _longGrassTileStart, anims: sAnims_LongGrass };
+}
+
 /** 1:1 décomp `FldEff_LongGrass` (field_effect_helpers.c:395). args[0/1]=tuile INTERNAL, [2]=elevation,
  *  [4]=(localId<<8)|mapNum, [5]=mapGroup, [6]=currentMap, [7]=skip-to-end. */
 export function FldEff_LongGrass(rt: DecompRuntime): number {
