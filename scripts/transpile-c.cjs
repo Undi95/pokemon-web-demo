@@ -581,6 +581,11 @@ function emitExpr(n, ctx) {
         if (rti && rti.kind === 'bool') rs = `+(${rs})`;
       }
       const ls = emitExpr(l, ctx);
+      // lvalue intranspilable (*p++ = v…) → statement neutralisé compilable + flag
+      if (ls.includes('TRANSPILER-TODO')) {
+        flag(line(n), 'assign-intranspilable', n.text.slice(0, 70));
+        return `void 0 /* TRANSPILER-TODO ASSIGN: ${n.text.replace(/\*\//g, '* /').slice(0, 90)} */`;
+      }
       if (op === '/=') return `${ls} = Math.trunc(${ls} / ${rs})`;
       return `${ls} ${op} ${rs}`;
     }
