@@ -7,6 +7,7 @@
  */
 
 import { B_OUTCOME_CAUGHT, B_OUTCOME_NO_SAFARI_BALLS } from '../include/constants/battle';
+import { TryPutSafariFanClubOnAir } from './tv';
 import { FLAG_SYS_SAFARI_MODE } from '../include/constants/flags';
 import { GAME_STAT_ENTERED_SAFARI_ZONE } from '../include/constants/game_stat';
 import { STR_CONV_MODE_LEADING_ZEROS } from '../include/string_util';
@@ -97,8 +98,7 @@ export function EnterSafariMode(): void {
 
 /** 1:1 `void ExitSafariMode(void)` (safari_zone.c:66-73). */
 export function ExitSafariMode(): void {
-  // DETTE TV wave (tracée rapport) : TryPutSafariFanClubOnAir(sSafariZoneCaughtMons,
-  // sSafariZonePkblkUses) — tv.c:2235, show record-mix only, substrat TVShow non porté.
+  TryPutSafariFanClubOnAir(sSafariZoneCaughtMons, sSafariZonePkblkUses); // 1:1 :68 (dette TV soldée)
   ResetSafariZoneFlag();
   ClearAllPokeblockFeeders();
   gNumSafariBalls = 0;

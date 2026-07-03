@@ -3653,16 +3653,16 @@ function RecordedBattle_SetPlaybackFinished(): void {
   // recorded battle system. Noop.
 }
 
-/** 1:1 décomp `TryPutPokemonTodayOnAir()` (tv.c). Trigger TV show
- *  "Pokemon Today" si conditions remplies post-combat. */
+// TryPutPokemonTodayOnAir + TryPutBreakingNewsOnAir : portés 1:1 tv.ts (transpilé)
+// — import dynamique anti-cycle (battle_main est tiré très tôt ; tv → overworld/eom,
+// pattern DoWhiteOut). Ex-stubs dette R3 SOLDÉS. Le micro-délai async est sans effet
+// observable (le show n'est lu qu'à la prochaine interaction TV).
 function TryPutPokemonTodayOnAir(): void {
-  // Dette R3 : TV show triggers post-battle. Notre TV system handle d'autres
-  // shows mais pas Pokemon Today encore.
+  void import('./tv').then((m) => m.TryPutPokemonTodayOnAir());
 }
 
-/** 1:1 décomp `TryPutBreakingNewsOnAir()` (tv.c). */
 function TryPutBreakingNewsOnAir(): void {
-  // Dette R3 : TV breaking news trigger pour shiny capture.
+  void import('./tv').then((m) => m.TryPutBreakingNewsOnAir());
 }
 
 /** 1:1 décomp `BattleArena_InitPoints()` (battle_arena.c). */

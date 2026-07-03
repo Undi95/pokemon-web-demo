@@ -1263,7 +1263,7 @@ export function TryPutPokemonTodayOnAir(): void {
           show.playerName = tvStr(gSaveBlock2Ptr.playerName);
           show.nickname = tvStr(gBattleResults.caughtMonNick);
           language2 = GetNicknameLanguage(show.nickname);
-          StripExtCtrlCodes(show.nickname);
+          // 1:1 StripExtCtrlCodes(show.nickname) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
           show.species = gBattleResults.caughtMonSpecies;
           StorePlayerIdInRecordMixShow(show);
           show.language = gGameLanguage;
@@ -1509,7 +1509,7 @@ export function ContestLiveUpdates_SetLoserData(flag: number, loser: number): vo
   {
     show.losingSpecies = gContestMons[loser].species;
     show.losingTrainerName = tvStr(gContestMons[loser].trainerName);
-    StripExtCtrlCodes(show.losingTrainerName);
+    // 1:1 StripExtCtrlCodes(show.losingTrainerName) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
     show.loserAppealFlag = flag;
     if (loser + 1 > gNumLinkContestPlayers)
       show.losingTrainerLanguage = gLinkPlayers[0].language;
@@ -1572,7 +1572,7 @@ export function BravoTrainerPokemonProfile_BeforeInterview2(contestStandingPlace
     show.contestRank = VarGet(0x8010) /* gSpecialVar_ContestRank */;
     show.species = (GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_SPECIES) as number);
     show.pokemonNickname = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_NICKNAME) as string;
-    StripExtCtrlCodes(show.pokemonNickname);
+    // 1:1 StripExtCtrlCodes(show.pokemonNickname) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
     show.pokemonNameLanguage = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_LANGUAGE);
   }
 }
@@ -1650,7 +1650,7 @@ export function PutNameRaterShowOnTheAir(): void {
       show.randomSpecies = GetRandomDifferentSpeciesSeenByPlayer(show.species);
       show.trainerName = tvStr(gSaveBlock2Ptr.playerName);
       show.pokemonName = GetMonData(gPlayerParty[VarGet(0x8004) /* gSpecialVar_0x8004 */], MON_DATA_NICKNAME) as string;
-      StripExtCtrlCodes(show.pokemonName);
+      // 1:1 StripExtCtrlCodes(show.pokemonName) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
       StorePlayerIdInNormalShow(show);
       show.language = gGameLanguage;
       show.pokemonNameLanguage = GetMonData(gPlayerParty[VarGet(0x8004) /* gSpecialVar_0x8004 */], MON_DATA_LANGUAGE);
@@ -1725,7 +1725,7 @@ function InterviewAfter_PkmnFanClubOpinions(): void {
   show.questionAsked = VarGet(0x8007) /* gSpecialVar_0x8007 */;
   show.playerName = tvStr(gSaveBlock2Ptr.playerName);
   show.nickname = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_NICKNAME) as string;
-  StripExtCtrlCodes(show.nickname);
+  // 1:1 StripExtCtrlCodes(show.nickname) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
   show.species = (GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES) as number);
   StorePlayerIdInNormalShow(show);
   show.language = gGameLanguage;
@@ -2344,7 +2344,7 @@ export function TryPutSpotTheCutiesOnAir(pokemon: Pokemon, ribbonMonDataIdx: num
     // NOTE: Show is not active until passed via Record Mix.
     show.playerName = tvStr(gSaveBlock2Ptr.playerName);
     show.nickname = GetMonData(pokemon, MON_DATA_NICKNAME) as string;
-    StripExtCtrlCodes(show.nickname);
+    // 1:1 StripExtCtrlCodes(show.nickname) — no-op chez nous : les champs show = string JS déjà sans ext-ctrl-codes (decodeOwBytes).
     show.nRibbons = GetRibbonCount(pokemon);
     show.selectedRibbon = MonDataIdxToRibbon(ribbonMonDataIdx);
     StorePlayerIdInRecordMixShow(show);

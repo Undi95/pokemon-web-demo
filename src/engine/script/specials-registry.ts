@@ -76,7 +76,19 @@ import { EnterSafariMode, ExitSafariMode, GetPokeblockFeederInFront } from '../.
 import { SetMewAboveGrass, DestroyMewEmergingGrassSprite } from '../../faraway_island';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
-import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
+import {
+  CheckForPlayersHouseNews as _CheckForPlayersHouseNews,
+  ChangePokemonNickname as _ChangePokemonNickname,
+  ChangeBoxPokemonNickname as _ChangeBoxPokemonNickname,
+  DoTVShow as _DoTVShow,
+  DoPokeNews as _DoPokeNews,
+  DoTVShowInSearchOfTrainers as _DoTVShowInSearchOfTrainers,
+  InterviewBefore as _InterviewBefore,
+  InterviewAfter as _InterviewAfter,
+  SetContestCategoryStringVarForInterview as _SetContestCategoryStringVarForInterview,
+  ShouldHideFanClubInterviewer as _ShouldHideFanClubInterviewer,
+  TryPutNameRaterShowOnTheAir as _TryPutNameRaterShowOnTheAir,
+} from '../../tv';
 import { setStringVar, GetPlayerNameString } from '../../../include/text';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../../../include/constants/species';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../include/constants/items';
@@ -351,32 +363,13 @@ registerSpecial('CheckLeadMonCute', CheckLeadMonCute);
 registerSpecial('CheckLeadMonSmart', CheckLeadMonSmart);
 registerSpecial('CheckLeadMonTough', CheckLeadMonTough);
 
-/** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
- *  Le décomp ouvre le naming screen UI. Notre runtime n'a pas encore wired le
- *  naming-screen-impl.ts depuis ce special (= scene change complexe).
- *
- *  Audit session 126 (post-test user) : bug observé "OUI black screen avec
- *  dialogue qui continue" → cause = `fadescreen FADE_TO_BLACK; special
- *  ChangePokemonNickname; return` du script `Common_EventScript_NameReceived
- *  PartyMon` → notre special était missing → fade reste black.
- *
- *  Fix MVP : re-fade FROM_BLACK pour débloquer visuellement (= skip rename).
- *  Player garde le nom species par défaut. À wirer naming-screen-impl
- *  proprement Phase 6+. */
+/** 1:1 décomp `ChangePokemonNickname` (tv.c:3292) — porté 1:1 tv.ts (transpilé) :
+ *  ouvre le VRAI naming screen (pattern egg_hatch : buffer charCodes + CB →
+ *  SetMonData + CB2_ReturnToFieldContinueScript_Manual). Le script fait
+ *  `fadescreen; special ChangePokemonNickname; waitstate` — la reprise passe
+ *  par gFieldCallback ContinueScript (ex-stub MVP « skip rename » remplacé). */
 registerSpecial('ChangePokemonNickname', () => {
-  // Force unfade pour rendre le screen visible.
-  try {
-    const rt = (globalThis as Record<string, unknown>).__rt as
-      { BeginNormalPaletteFade?: (...args: unknown[]) => void } | undefined;
-    rt?.BeginNormalPaletteFade?.('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
-  } catch { /* */ }
-  // Lazy import pour avoid circular.
-  void (async () => {
-    try {
-      const { getRuntime } = await import('../../../harness/runtime/decomp-globals');
-      getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
-    } catch { /* */ }
-  })();
+  _ChangePokemonNickname();
   return 0;
 });
 
@@ -1258,8 +1251,16 @@ registerSpecial('DeclinedSecretBaseBattle', () => {
 });
 registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op */ });
 
-/** Interview / TV. */
-registerSpecial('InterviewBefore', () => 0);
+/** Interview / TV — portés 1:1 tv.ts (transpilé) : dispatchers des 25 shows. */
+registerSpecial('InterviewBefore', () => { _InterviewBefore(); return 0; });
+registerSpecial('InterviewAfter', () => { _InterviewAfter(); return 0; });
+registerSpecial('DoTVShow', () => { _DoTVShow(); return 0; });
+registerSpecial('DoPokeNews', () => { _DoPokeNews(); return 0; });
+registerSpecial('DoTVShowInSearchOfTrainers', () => { _DoTVShowInSearchOfTrainers(); return 0; });
+registerSpecial('SetContestCategoryStringVarForInterview', () => { _SetContestCategoryStringVarForInterview(); return 0; });
+registerSpecial('ShouldHideFanClubInterviewer', () => +_ShouldHideFanClubInterviewer());
+registerSpecial('TryPutNameRaterShowOnTheAir', () => +_TryPutNameRaterShowOnTheAir());
+registerSpecial('ChangeBoxPokemonNickname', () => { _ChangeBoxPokemonNickname(); return 0; });
 
 /** Berries. */
 /** 1:1 décomp `PlayerHasBerries` (berry.c:1315-1318).
@@ -1960,7 +1961,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CallBattlePyramidFunction', 'CallBattleTowerFunc',
   'CallFallarborTentFunction', 'CallFrontierUtilFunc',
   'CallSlateportTentFunction', 'CallTrainerHillFunction',
-  'CallVerdanturfTentFunction', 'ChangeBoxPokemonNickname',
+  'CallVerdanturfTentFunction',
+  // 'ChangeBoxPokemonNickname' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'CheckDaycareMonReceivedMail' — porté 1:1 décomp egg_hatch.c:418 (src/egg_hatch.ts), handler ci-bas.
   // 'CheckForPlayersHouseNews' — handler concret enregistré supra (= TV path dispatch 1:1).
   // 'CheckInteractedWithFriendsCushionDecor' — porté 1:1 décomp secret_base.c:1840 ci-bas.
@@ -1992,10 +1994,12 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
-  'DoMirageTowerCeilingCrumble', 'DoPokeNews',
+  'DoMirageTowerCeilingCrumble',
+  // 'DoPokeNews' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'DoSealedChamberShakingEffect_Long' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
-  'DoSoftReset', 'DoTVShow',
-  'DoTVShowInSearchOfTrainers',
+  'DoSoftReset',
+  // 'DoTVShow' — porté 1:1 tv.ts (transpilé), handler ci-haut.
+  // 'DoTVShowInSearchOfTrainers' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'DoTrainerApproach' — porté 1:1 (trainer_see.c:648) via special-flow (special_flows.ts).
   // 'DoWateringBerryTreeAnim' — handler concret 1:1 décomp enregistré plus bas (arrosage).
   // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
@@ -2076,7 +2080,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'InitSecretBaseDecorationSprites',
   // 'InitSecretBaseVars' — porté 1:1 décomp secret_base.c:1805 ci-bas.
   'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
-  'InterviewAfter',
+  // 'InterviewAfter' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
   // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
   // 'IsCurSecretBaseOwnedByAnotherPlayer' — porté 1:1 décomp secret_base.c:720 dans secret-base.ts (batch B23).
@@ -2148,7 +2152,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ScrollableMultichoice_TryReturnToList',
   // 'SetCB2WhiteOut' — porté 1:1 décomp post_battle_event_funcs.c:92 ci-haut (2026-07-02).
   // 'SetChampionSaveWarp' — porté 1:1 décomp save_location.c:136 ci-bas.
-  'SetContestCategoryStringVarForInterview',
+  // 'SetContestCategoryStringVarForInterview' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'SetContestLadyGivenPokeblock' — porté 1:1 décomp lilycove_lady.c:769 ci-bas (batch B29).
   'SetContestTrainerGfxIds',
   // 'SetDaycareCompatibilityString' — porté 1:1 décomp daycare.c:1082 (bloc PENSION ci-bas).
@@ -2173,7 +2177,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
   // 'ShouldContestLadyShowGoOnAir' — porté 1:1 décomp lilycove_lady.c:747 ci-bas (batch B31).
   // 'ShouldDoBrailleRegirockEffectOld' — porté 1:1 braille_puzzles.ts (transpilé, nullsub), handler ci-bas.
-  'ShouldHideFanClubInterviewer',
+  // 'ShouldHideFanClubInterviewer' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   'ShouldReadyContestArtist',
   // 'ShouldShowBoxWasFullMessage' — porté 1:1 field_specials.c:3415 ci-bas.
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
@@ -2215,7 +2219,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'TryJoinLinkGroup', 'TryLoseFansFromPlayTime',
   'TryLoseFansFromPlayTimeAfterLinkBattle',
   // 'TryPrepareSecondApproachingTrainer' — porté (=0, trainer_see dette) game/battle_setup.ts.
-  'TryPutNameRaterShowOnTheAir',
+  // 'TryPutNameRaterShowOnTheAir' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   'TryPutTrainerFanClubOnAir', 'TryPutTreasureInvestigatorsOnAir',
   'TryRecordMixLinkup', 'TrySetBattleTowerLinkType',
   'TryStoreHeldItemsInPyramidBag', 'TryTradeLinkup',

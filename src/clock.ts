@@ -24,6 +24,7 @@ import { UpdateWeatherPerDay } from './field_weather_effect';
 import { UpdateMirageRnd, UpdateBirchState } from './time_events';
 import { UpdateDewfordTrendPerDay } from './dewford_trend';
 import { SetRandomLotteryNumber } from './lottery_corner';
+import { UpdateTVShowsPerDay } from './tv';
 
 /** 1:1 décomp `DoTimeBasedEvents` (clock.c:26) :
  *    - Read gSaveBlock1Ptr->lastBerryTreeUpdate
@@ -54,10 +55,11 @@ export function DoTimeBasedEvents(): void {
     if (days !== gLocalTime.days && days <= gLocalTime.days) {
       const daysSince = gLocalTime.days - days;
       // 1:1 décomp UpdatePerDay (ordre) : ClearDailyFlags, UpdateDewfordTrendPerDay,
-      // [TV non porté], UpdateWeatherPerDay, UpdatePartyPokerusTime, UpdateMirageRnd,
+      // UpdateTVShowsPerDay, UpdateWeatherPerDay, UpdatePartyPokerusTime, UpdateMirageRnd,
       // UpdateBirchState, [Frontier×2/Shoal non portés], SetRandomLotteryNumber.
       ClearDailyFlags();
       UpdateDewfordTrendPerDay(daysSince);
+      UpdateTVShowsPerDay(daysSince);
       UpdateWeatherPerDay(daysSince);
       UpdatePartyPokerusTime(daysSince);
       UpdateMirageRnd(daysSince);

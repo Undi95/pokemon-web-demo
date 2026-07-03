@@ -487,10 +487,11 @@ export function TryUpdateGymLeaderRematchFromWild(): void {
  *  IncrementGameStat TOTAL/WILD + TryUpdateGymLeaderRematchFromWild). Pont
  *  globalThis : battle-setup-helpers/wild_encounter ne peuvent pas importer
  *  battle_setup (cycle scrcmd ⇄ battle_setup, cf. leçon P2.3).
- *  (IncrementDailyWildBattles = dette TV wave.) */
+ *  IncrementDailyWildBattles = 1:1 :417 (dette TV soldée). */
 export function WildBattleStatsHook(): void {
   IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
   IncrementGameStat(GAME_STAT_WILD_BATTLES);
+  IncrementDailyWildBattles();
   TryUpdateGymLeaderRematchFromWild();
 }
 (globalThis as Record<string, unknown>).__WildBattleStatsHook = WildBattleStatsHook;
@@ -1201,6 +1202,7 @@ registerSpecial('ShouldTryGetTrainerScript', () => { ShouldTryGetTrainerScript()
 // Devtools/debug. (__runEventScript = lancer un script de map par label, pour
 // les A/B du flux dresseur sans marcher jusqu'au NPC.)
 import { RunScriptImmediately as _RunScriptImmediately } from './script';
+import { IncrementDailyWildBattles } from './tv';
 (globalThis as Record<string, unknown>).__runEventScript = (label: string): void => _RunScriptImmediately(label);
 (globalThis as Record<string, unknown>).__battleSetup = {
   BattleSetup_ConfigureTrainerBattle, GetTrainerBattleMode, HasTrainerBeenFought,
