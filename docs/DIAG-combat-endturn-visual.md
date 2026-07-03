@@ -71,7 +71,10 @@ intermédiaire visible-mais-non-animé en attendant le fix pacing.
 
 ## Statut bugs combat liés (mêmes racines probables)
 
-- **#2 apprentissage attaque via lvl up in-battle** — DIAGNOSTIQUÉ (2026-07-03) : PAS la
+- **#2 apprentissage attaque via lvl up in-battle** — ✅ **RÉSOLU (`bc112e8f`, vérifié en jeu
+  de bout en bout : ARCKO 4 moves → box → summary → remplacement → « apprend POURSUITE! »).**
+  Cmd_yesnoboxlearnmove câblé 1:1 (cases 0-6, réutilise la machinerie evolution_scene/party_menu).
+  Diagnostic d'origine : PAS la
   même famille. `_monTryLearningNewMove` (battle_script_commands.ts:9953) appelle le VRAI
   `MonTryLearningNewMove_Foyer` → un mon avec **<4 moves apprend correctement** (le commentaire
   « stub retourne MOVE_NONE » était PÉRIMÉ, corrigé). Le vrai bug = **`Cmd_yesnoboxlearnmove`
