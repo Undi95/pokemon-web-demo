@@ -47,7 +47,7 @@ import { MENU_L_PRESSED, MENU_R_PRESSED } from '../include/menu_helpers';
 import { MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT } from '../include/menu';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../include/gba/io_reg';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual, Overworld_ResetStateAfterDigEscRope } from './overworld';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual, CB2_ReturnToField_Manual, Overworld_ResetStateAfterDigEscRope } from './overworld';
 import { CanUseDigOrEscapeRopeOnCurMap, StartEscapeRopeFieldEffect } from './fldeff_dig';
 import { gSpecialVar } from './engine/script/script-vars';
 import { RemoveBagItem, CheckBagHasItem } from './engine/bag/bag';
@@ -3441,20 +3441,50 @@ function ItemMenu_Show(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** 1:1 décomp `ItemMenu_GiveFavorLady(u8 taskId)` (item_menu.c, ACTION_GIVE_FAVOR_LADY)
- *  — dette R3 doc : cascade Favor Lady give flow (= lilycove_lady gift item +
- *  script special U-tier). */
+/** 1:1 décomp `ItemMenu_GiveFavorLady(u8 taskId)` (item_menu.c:2392) : retire
+ *  l'objet du sac, Result=TRUE, ferme le sac (le script lit ItemId/Result). */
 function ItemMenu_GiveFavorLady(task: DecompTask): void {
+  RemoveBagItem(getItemKeyById(gSpecialVar.ItemId), 1);
+  gSpecialVar.Result = 1;
   RemoveContextWindow();
-  _returnToList(task);
+  Task_FadeAndCloseBagMenu(task);
 }
 
-/** 1:1 décomp `ItemMenu_ConfirmQuizLady(u8 taskId)` (item_menu.c, ACTION_CONFIRM_QUIZ_LADY)
- *  — dette R3 doc : cascade Quiz Lady confirm flow (= lilycove_lady quiz prize
- *  setup U-tier). */
+/** 1:1 décomp `ItemMenu_ConfirmQuizLady(u8 taskId)` (item_menu.c:2408) : confirme
+ *  l'objet-prix du quiz custom (Result=TRUE), ferme le sac. */
 function ItemMenu_ConfirmQuizLady(task: DecompTask): void {
+  gSpecialVar.Result = 1;
   RemoveContextWindow();
-  _returnToList(task);
+  Task_FadeAndCloseBagMenu(task);
+}
+
+/** 1:1 décomp `CB2_FavorLadyExitBagMenu` (item_menu.c:2400) : gFieldCallback ←
+ *  FieldCallback_FavorLadyEnableScriptContexts puis CB2_ReturnToField. Le field
+ *  callback vient de lilycove_lady.ts via pont globalThis (anti-cycle item_menu
+ *  ↔ lilycove_lady, pattern trainer_see→scrcmd). */
+function CB2_FavorLadyExitBagMenu(): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gFieldCallback = g.__FieldCallback_FavorLadyEnableScriptContexts ?? null;
+  getRuntime()?.SetMainCallback2(CB2_ReturnToField_Manual);
+}
+
+/** 1:1 décomp `CB2_QuizLadyExitBagMenu` (item_menu.c:2415). */
+function CB2_QuizLadyExitBagMenu(): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gFieldCallback = g.__FieldCallback_QuizLadyEnableScriptContexts ?? null;
+  getRuntime()?.SetMainCallback2(CB2_ReturnToField_Manual);
+}
+
+/** 1:1 décomp `void FavorLadyOpenBagMenu(void)` (item_menu.c:605). */
+export function FavorLadyOpenBagMenu(): void {
+  GoToBagMenu(ITEMMENULOCATION_FAVOR_LADY, POCKETS_COUNT, CB2_FavorLadyExitBagMenu);
+  gSpecialVar.Result = 0;
+}
+
+/** 1:1 décomp `void QuizLadyOpenBagMenu(void)` (item_menu.c:611). */
+export function QuizLadyOpenBagMenu(): void {
+  GoToBagMenu(ITEMMENULOCATION_QUIZ_LADY, POCKETS_COUNT, CB2_QuizLadyExitBagMenu);
+  gSpecialVar.Result = 0;
 }
 
 /** STUB local — fade puis fermeture du sac. Le vrai est dans bag-menu.ts. */

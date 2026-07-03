@@ -121,11 +121,23 @@ const LAYOUT_SS_TIDAL_ROOMS = 'LAYOUT_SS_TIDAL_ROOMS';
 const gContestMons: Array<{ nickname: string; trainerName: string; species: number }> = [];
 const gContestMonPartyIndex = 0;
 const gNumLinkContestPlayers = 0;
-function BufferContestLadyLanguage(_lang: unknown): void { /* DETTE lilycove_lady.c */ }
-function BufferContestLadyPlayerName(_dest: unknown): void { /* DETTE lilycove_lady.c */ }
-function BufferContestLadyMonName(_cat: unknown, _dest: unknown): void { /* DETTE lilycove_lady.c */ }
-function GetContestLadyPokeblockState(): number { return 0; /* DETTE lilycove_lady.c */ }
-function BufferContestName(_dest: Uint8Array, _category: number): void { /* DETTE contest_util.c */ }
+// Lilycove Ladies — CÂBLÉ (vague lilycove) : délégations pont __lilycoveLady
+// (posé par lilycove_lady.ts ; anti-cycle : tv ↛ lilycove_lady en import statique).
+type _LilycoveLadyBridge = {
+  BufferContestLadyLanguage(dest: { v: number }): void;
+  BufferContestLadyPlayerName(dest: Uint8Array): void;
+  BufferContestLadyMonName(cat: { v: number }, nick: Uint8Array): void;
+  GetContestLadyPokeblockState(): number;
+  BufferContestName(dest: Uint8Array, category: number): void;
+};
+function _lilycoveBridge(): _LilycoveLadyBridge | undefined {
+  return (globalThis as { __lilycoveLady?: _LilycoveLadyBridge }).__lilycoveLady;
+}
+function BufferContestLadyLanguage(dest: { v: number }): void { _lilycoveBridge()?.BufferContestLadyLanguage(dest); }
+function BufferContestLadyPlayerName(dest: Uint8Array): void { _lilycoveBridge()?.BufferContestLadyPlayerName(dest); }
+function BufferContestLadyMonName(cat: { v: number }, nick: Uint8Array): void { _lilycoveBridge()?.BufferContestLadyMonName(cat, nick); }
+function GetContestLadyPokeblockState(): number { return _lilycoveBridge()?.GetContestLadyPokeblockState() ?? 0; }
+function BufferContestName(dest: Uint8Array, category: number): void { _lilycoveBridge()?.BufferContestName(dest, category); }
 // SECRET BASE (secret_base.c partiel) :
 function CopyCurSecretBaseOwnerName_StrVar1(): void { /* DETTE secret_base.c */ }
 // LINK (exemption hardware — record mixing inerte en solo) :
@@ -1682,13 +1694,23 @@ export function PutLilycoveContestLadyShowOnTheAir(): void {
   Script_FindFirstEmptyNormalTVShowSlot();
   if (VarGet(0x800D) /* gSpecialVar_Result */ != 1)
   {
-    show = gSaveBlock1Ptr.tvShows[sCurTVShowSlot] /* TRANSPILER-TODO &élément scalaire (out-param ?) */;
-    BufferContestLadyLanguage(show.language);
+    show = gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
+    // 1:1 : les Buffer* du foyer lilycove_lady.ts sont OUT-params C (u8*) —
+    // boxes/buffers temporaires + recopie dans le show (champs save string/number).
+    const langBox = { v: 0 };
+    BufferContestLadyLanguage(langBox);
+    show.language = langBox.v;
     show.pokemonNameLanguage = GAME_LANGUAGE;
     show.kind = TVSHOW_LILYCOVE_CONTEST_LADY;
     show.active = true;
-    BufferContestLadyPlayerName(show.playerName);
-    BufferContestLadyMonName(show.contestCategory, show.nickname);
+    const nameBuf = new Uint8Array(16);
+    BufferContestLadyPlayerName(nameBuf);
+    show.playerName = tvStr(nameBuf);
+    const catBox = { v: 0 };
+    const nickBuf = new Uint8Array(16);
+    BufferContestLadyMonName(catBox, nickBuf);
+    show.contestCategory = catBox.v;
+    show.nickname = tvStr(nickBuf);
     show.pokeblockState = GetContestLadyPokeblockState();
     StorePlayerIdInNormalShow(show);
   }

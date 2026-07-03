@@ -409,7 +409,7 @@ export interface EasyChatScreen {
   unused: number;
   quizTitle: Uint8Array;
   titleText: Uint8Array | string | null;
-  savedPhrase: Uint16Array | null;
+  savedPhrase: Uint16Array | number[] | null;
   currentPhrase: Uint16Array;
 }
 
@@ -508,7 +508,7 @@ type MainCallback = CB2Callback | (() => void);
 // ─── État écran/words en attente + gate GFX async (adaptation web) ────────────
 // SetWordTaskArg/GetWordTaskArg (easy_chat.c:1282) empilent des pointeurs 32-bit
 // dans des slots u16 → un seul écran actif : words + exitCallback en module-vars.
-let sPendingWords: Uint16Array | null = null;
+let sPendingWords: Uint16Array | number[] | null = null;
 let sPendingExitCallback: MainCallback | null = null;
 let _easyChatGfxLoaded = false;
 let _easyChatGfxLoading: Promise<void> | null = null;
@@ -1521,6 +1521,41 @@ function IsEasyChatGroupUnlocked2(groupId: number): boolean {
   for (let i = 0; i < sWordData.numUnlockedGroups; i++)
     if (sWordData.unlockedGroupIds[i] === groupId) return true;
   return false;
+}
+
+/** 1:1 EasyChatIsNationalPokedexEnabled (easy_chat.c) = IsNationalPokedexEnabled(). */
+function EasyChatIsNationalPokedexEnabled(): boolean {
+  return IsNationalPokedexEnabled();
+}
+
+/** 1:1 IsEasyChatGroupUnlocked (easy_chat.c:5108) — version FLAGS (≠ Unlocked2 qui
+ *  lit sWordData, dispo seulement écran EasyChat ouvert). */
+function IsEasyChatGroupUnlocked(groupId: number): boolean {
+  switch (groupId) {
+    case EC_GROUP_TRENDY_SAYING:
+      return !!FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS);
+    case EC_GROUP_EVENTS:
+    case EC_GROUP_MOVE_1:
+    case EC_GROUP_MOVE_2:
+      return !!FlagGet(FLAG_SYS_GAME_CLEAR);
+    case EC_GROUP_POKEMON_NATIONAL:
+      return EasyChatIsNationalPokedexEnabled();
+    default:
+      return true;
+  }
+}
+
+/** 1:1 `bool32 IsEasyChatAnswerUnlocked(int easyChatWord)` (easy_chat.c:5866) —
+ *  utilisé par GetQuizAuthor (lilycove_lady.c:358) pour re-tirer une question
+ *  dont la réponse n'est pas débloquée. */
+export function IsEasyChatAnswerUnlocked(easyChatWord: number): boolean {
+  const groupId = EC_GROUP(easyChatWord);
+  const mask = EC_MASK_GROUP;
+  const index = EC_INDEX(easyChatWord);
+  if (!IsEasyChatGroupUnlocked(groupId & mask))
+    return false;
+  else
+    return IsEasyChatIndexAndGroupUnlocked(index, groupId & mask);
 }
 
 /** 1:1 IsEasyChatIndexAndGroupUnlocked (easy_chat.c:5807). */
@@ -3308,7 +3343,7 @@ async function _loadEasyChatGfxAssets(): Promise<void> {
 // ─── DoEasyChatScreen / CB2 / Task (easy_chat.c:1294) ────────────────────────
 /** 1:1 décomp `void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType)`. */
 export function DoEasyChatScreen(
-  type: number, words: Uint16Array | null, exitCallback: MainCallback | null, displayedPersonType: number,
+  type: number, words: Uint16Array | number[] | null, exitCallback: MainCallback | null, displayedPersonType: number,
 ): void {
   const rt = getRuntime();
   ResetTasks();
@@ -3435,8 +3470,18 @@ export function InitEasyChatPhrases(): void {
 
 /** 1:1 décomp `void ShowEasyChatScreen(void)` (easy_chat.c:1456). Special de champ :
  *  lit gSpecialVar_0x8004 (type) → sélectionne le buffer de mots → DoEasyChatScreen. */
+/** Array-like de longueur 1 qui lit/écrit un champ scalaire save — émule le
+ *  `&quiz.playerAnswer` C (pointeur sur 1 u16) passé comme buffer words. */
+function _quizScalarWords<K extends string>(obj: Record<K, number>, field: K): number[] {
+  return {
+    get 0() { return obj[field]; },
+    set 0(v: number) { obj[field] = v; },
+    length: 1,
+  } as unknown as number[];
+}
+
 export function ShowEasyChatScreen(): void {
-  let words: Uint16Array;
+  let words: Uint16Array | number[];
   let displayedPersonType = EASY_CHAT_PERSON_DISPLAY_NONE;
   const sb1 = gSaveBlock1Ptr as Record<string, any>;
   const sb2 = gSaveBlock2Ptr as Record<string, any>;
@@ -3496,15 +3541,20 @@ export function ShowEasyChatScreen(): void {
       words[0] = EC_EMPTY_WORD;
       displayedPersonType = EASY_CHAT_PERSON_BOY_L;
       break;
-    // Cases QUIZ = Lilycove Lady. La struct save `lilycoveLady` EXISTE (save-blocks.ts:1195,
-    // union quiz/favor/contest) ; ce qui manque = le FLOW lilycove_lady.c (mono-joueur) qui
-    // déclenche ces types via ses scripts — pas encore branché, mais rien de hardware ni de
-    // multijoueur. Décomp : QUIZ_ANSWER/QUIZ_SET_ANSWER = `&quiz.playerAnswer`/`&quiz.correctAnswer`
-    // (pointeur sur 1 u16). Le câblage save ci-dessous est déjà 1:1 pour quand le flow sera là.
-    case EASY_CHAT_TYPE_QUIZ_ANSWER: words = sb1.lilycoveLady.quiz.playerAnswer; break;
+    // Cases QUIZ = Lilycove Lady (flow lilycove_lady.ts). Union save PLATE (kind) ;
+    // décomp : QUIZ_ANSWER/QUIZ_SET_ANSWER = `&quiz.playerAnswer`/`&quiz.correctAnswer`
+    // (pointeur sur 1 u16) → array-like accesseur qui lit/écrit le champ save (l'écran
+    // mute words[i] in-place ; question = number[] partagé, référence directe 1:1).
+    case EASY_CHAT_TYPE_QUIZ_ANSWER:
+      words = _quizScalarWords(sb1.lilycoveLady as { playerAnswer: number }, 'playerAnswer');
+      break;
     case EASY_CHAT_TYPE_QUIZ_QUESTION: return;
-    case EASY_CHAT_TYPE_QUIZ_SET_QUESTION: words = sb1.lilycoveLady.quiz.question; break;
-    case EASY_CHAT_TYPE_QUIZ_SET_ANSWER: words = sb1.lilycoveLady.quiz.correctAnswer; break;
+    case EASY_CHAT_TYPE_QUIZ_SET_QUESTION:
+      words = (sb1.lilycoveLady as { question: number[] }).question;
+      break;
+    case EASY_CHAT_TYPE_QUIZ_SET_ANSWER:
+      words = _quizScalarWords(sb1.lilycoveLady as { correctAnswer: number }, 'correctAnswer');
+      break;
     case EASY_CHAT_TYPE_APPRENTICE: words = sb2.apprentices[0].speechWon; break;
     case EASY_CHAT_TYPE_QUESTIONNAIRE: words = GetQuestionnaireWordsPtr(); break;
     default: return;
@@ -3613,7 +3663,7 @@ function ExitEasyChatScreen(callback: MainCallback | null): void {
 }
 
 // ─── InitEasyChatScreenStruct (easy_chat.c:1637) ─────────────────────────────
-function InitEasyChatScreenStruct(type: number, words: Uint16Array | null, displayedPersonType: number): boolean {
+function InitEasyChatScreenStruct(type: number, words: Uint16Array | number[] | null, displayedPersonType: number): boolean {
   sEasyChatScreen = {
     type, templateId: 0, numColumns: 0, numRows: 0, inputState: 0,
     mainCursorColumn: 0, mainCursorRow: 0, maxWords: 0, inputStateBackup: 0,

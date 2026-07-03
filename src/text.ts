@@ -1488,6 +1488,12 @@ export function blitGlyphToWindow(
  * Encode une JS string en bytes pour le moteur, via charmap.
  * (Pas de \p / \l ici — gérés en amont par paginate, mais escapes traités.)
  */
+/** 1:1 charmap.txt : entrées multi-bytes (tuiles composées de la font). */
+const CHARMAP_LIGATURES: Readonly<Record<string, readonly number[]>> = {
+  PKMN: [0x53, 0x54],                          // « POKéMON »
+  POKEBLOCK: [0x55, 0x56, 0x57, 0x58, 0x59],   // « POKéBLOC »
+};
+
 export function encodeStringForFont(str: string, charmap: Record<string, number>): Uint8Array {
   const bytes: number[] = [];
   let i = 0;
@@ -1569,6 +1575,14 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
         const sym = EXTRA_SYMBOL[inner as keyof typeof EXTRA_SYMBOL];
         if (sym !== undefined) {
           bytes.push(CHAR_EXTRA_SYMBOL, sym);
+          i = closeIdx + 1;
+          continue;
+        }
+        // 1:1 charmap.txt ligatures multi-bytes : {PKMN} = 53 54 (« POKéMON »),
+        // {POKEBLOCK} = 55 56 57 58 59 (« POKéBLOC ») — tuiles composées de la font.
+        const liga = CHARMAP_LIGATURES[inner];
+        if (liga !== undefined) {
+          bytes.push(...liga);
           i = closeIdx + 1;
           continue;
         }

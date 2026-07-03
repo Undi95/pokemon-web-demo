@@ -27,6 +27,7 @@
  */
 
 import { registerSpecial } from '../../scrcmd';
+import { ScriptContext_Enable } from '../../script';
 import { ShowEasyChatScreen, easyChatGfxReady } from '../../easy_chat';
 import {
   gBikeCycling, GetLeadMonIndex, IsBadEggInParty,
@@ -88,6 +89,7 @@ import {
   SetContestCategoryStringVarForInterview as _SetContestCategoryStringVarForInterview,
   ShouldHideFanClubInterviewer as _ShouldHideFanClubInterviewer,
   TryPutNameRaterShowOnTheAir as _TryPutNameRaterShowOnTheAir,
+  PutLilycoveContestLadyShowOnTheAir as _tvPutLilycoveContestLadyShowOnTheAir,
 } from '../../tv';
 import { ShowPokedexRatingMessage as _ShowPokedexRatingMessage } from '../../birch_pc';
 import { setStringVar, GetPlayerNameString } from '../../../include/text';
@@ -1345,7 +1347,7 @@ registerSpecial('SetTrainerFacingDirection', () => { _trainerSeeSpecials()?.SetT
 // SignalWaitState de Task_EndTrainerApproach. PLAIN special (pas special-flow — un poll doublait
 // le waitstate → freeze).
 registerSpecial('DoTrainerApproach', () => { _trainerSeeSpecials()?.DoTrainerApproach?.(); });
-registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
+registerSpecial('BufferFavorLadyRequest', _lilycove.BufferFavorLadyRequest);
 // 'GetDaycareState' — porté 1:1 décomp daycare.c:971 (src/daycare.ts), handler
 // enregistré dans le bloc PENSION ci-bas. STUB `() => 0` RETIRÉ (il court-circuitait
 // tout le dialogue pension : état toujours DAYCARE_NO_MONS).
@@ -1356,6 +1358,7 @@ registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
 // sont post-game (Frontier/Tower/Museum). Voici les wired pour le path normal :
 
 import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
+import * as _lilycove from '../../lilycove_lady';
 
 /** 1:1 décomp `BufferMonNickname` (pokemon_util.c) :
  *    GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, dest);
@@ -1537,17 +1540,7 @@ registerSpecial('GetMartEmployeeObjectEventId', GetMartEmployeeObjectEventId);  
  *  }
  *  ```
  *  BufferItemName = StringCopy(dest, GetItemName(itemId)). */
-registerSpecial('BufferFavorLadyItemName', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor') {
-    // 1:1 décomp string_util.c StringCopy via setStringVar.
-    const helpers = (globalThis as { __game_bridge?: {
-      GetItemName?: (id: number) => string;
-    } }).__game_bridge;
-    const name = helpers?.GetItemName?.(lady.itemId ?? 0) ?? '';
-    setStringVar(2, name);
-  }
-});
+registerSpecial('BufferFavorLadyItemName', _lilycove.BufferFavorLadyItemName);
 
 /** 1:1 décomp `BufferFavorLadyPlayerName` (lilycove_lady.c:210-215) :
  *  ```c
@@ -1559,12 +1552,7 @@ registerSpecial('BufferFavorLadyItemName', () => {
  *  ```
  *  SetFavorLadyPlayerName = memset EOS + StringCopy_PlayerName(dest, src).
  *  Notre projet FR-only → ConvertInternationalString = no-op. */
-registerSpecial('BufferFavorLadyPlayerName', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor') {
-    setStringVar(3, lady.playerName ?? '');
-  }
-});
+registerSpecial('BufferFavorLadyPlayerName', _lilycove.BufferFavorLadyPlayerName);
 
 /** 1:1 décomp `BufferQuizPrizeName` (lilycove_lady.c:452-455) :
  *  ```c
@@ -1572,16 +1560,7 @@ registerSpecial('BufferFavorLadyPlayerName', () => {
  *      StringCopy(gStringVar1, GetItemName(sQuizLadyPtr->prize));
  *  }
  *  ``` */
-registerSpecial('BufferQuizPrizeName', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    const helpers = (globalThis as { __game_bridge?: {
-      GetItemName?: (id: number) => string;
-    } }).__game_bridge;
-    const name = helpers?.GetItemName?.(lady.prize ?? 0) ?? '';
-    setStringVar(1, name);
-  }
-});
+registerSpecial('BufferQuizPrizeName', _lilycove.BufferQuizPrizeName);
 
 /** 1:1 décomp `BufferQuizPrizeItem` (lilycove_lady.c:487-491) :
  *  ```c
@@ -1590,12 +1569,7 @@ registerSpecial('BufferQuizPrizeName', () => {
  *      gSpecialVar_0x8005 = sQuizLadyPtr->prize;
  *  }
  *  ``` */
-registerSpecial('BufferQuizPrizeItem', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    VarSet('VAR_0x8005', lady.prize ?? 0);
-  }
-});
+registerSpecial('BufferQuizPrizeItem', _lilycove.BufferQuizPrizeItem);
 
 /** 1:1 décomp `BufferLottoTicketNumber` (field_specials.c:1585-1617) :
  *  Pad le VAR_RESULT à 5 chiffres avec leading zeros, puis convert decimal.
@@ -1641,13 +1615,7 @@ registerSpecial('IsTVShowAlreadyInQueue', () => {
  *      return sQuizLadyPtr->waitingForChallenger;
  *  }
  *  ``` */
-registerSpecial('IsQuizLadyWaitingForChallenger', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    return lady.waitingForChallenger ?? 0;
-  }
-  return 0;
-});
+registerSpecial('IsQuizLadyWaitingForChallenger', () => +_lilycove.IsQuizLadyWaitingForChallenger());
 
 /** 1:1 décomp `QuizLadySetWaitingForChallenger` (lilycove_lady.c:559-563) :
  *  ```c
@@ -1656,12 +1624,7 @@ registerSpecial('IsQuizLadyWaitingForChallenger', () => {
  *      sQuizLadyPtr->waitingForChallenger = TRUE;
  *  }
  *  ``` */
-registerSpecial('QuizLadySetWaitingForChallenger', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    lady.waitingForChallenger = 1;
-  }
-});
+registerSpecial('QuizLadySetWaitingForChallenger', _lilycove.QuizLadySetWaitingForChallenger);
 
 /** 1:1 décomp `GetFavorLadyState` (lilycove_lady.c:159-168) :
  *  ```c
@@ -1673,14 +1636,7 @@ registerSpecial('QuizLadySetWaitingForChallenger', () => {
  *  }
  *  ```
  *  Retourne state clamped à PRIZE/COMPLETED/READY (= 2/1/0). */
-registerSpecial('GetFavorLadyState', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor') {
-    if (lady.state === 2) return 2;
-    if (lady.state === 1) return 1;
-  }
-  return 0;
-});
+registerSpecial('GetFavorLadyState', _lilycove.GetFavorLadyState);
 
 /** 1:1 décomp `SetQuizLadyState_Complete` (lilycove_lady.c:493-497) :
  *  ```c
@@ -1690,12 +1646,7 @@ registerSpecial('GetFavorLadyState', () => {
  *  }
  *  ```
  *  LILYCOVE_LADY_STATE_COMPLETED = 1. */
-registerSpecial('SetQuizLadyState_Complete', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    lady.state = 1;
-  }
-});
+registerSpecial('SetQuizLadyState_Complete', _lilycove.SetQuizLadyState_Complete);
 
 /** 1:1 décomp `SetQuizLadyState_GivePrize` (lilycove_lady.c:499-503) :
  *  ```c
@@ -1705,12 +1656,7 @@ registerSpecial('SetQuizLadyState_Complete', () => {
  *  }
  *  ```
  *  LILYCOVE_LADY_STATE_PRIZE = 2. */
-registerSpecial('SetQuizLadyState_GivePrize', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    lady.state = 2;
-  }
-});
+registerSpecial('SetQuizLadyState_GivePrize', _lilycove.SetQuizLadyState_GivePrize);
 
 /** 1:1 décomp `HasAnotherPlayerGivenFavorLadyItem` (lilycove_lady.c:181-191) :
  *  ```c
@@ -1726,15 +1672,7 @@ registerSpecial('SetQuizLadyState_GivePrize', () => {
  *  ```
  *  Check si un autre joueur a donné un item à la Favor Lady (= record-mixed).
  *  Notre projet FR-only → ConvertInternationalString = no-op. */
-registerSpecial('HasAnotherPlayerGivenFavorLadyItem', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor' && lady.playerName && lady.playerName.length > 0) {
-    // 1:1 décomp StringCopy_PlayerName(gStringVar3, sFavorLadyPtr->playerName).
-    setStringVar(3, lady.playerName);
-    return 1;
-  }
-  return 0;
-});
+registerSpecial('HasAnotherPlayerGivenFavorLadyItem', () => +_lilycove.HasAnotherPlayerGivenFavorLadyItem());
 
 /** 1:1 décomp `ScriptGetPokedexInfo` (birch_pc.c:7-21) :
  *  ```c
@@ -1957,8 +1895,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'BufferLottoTicketNumber' — porté 1:1 décomp field_specials.c:1585 ci-bas.
   // 'BufferQuizPrizeItem' — porté 1:1 décomp lilycove_lady.c:487 ci-bas.
   // 'BufferQuizPrizeName' — porté 1:1 décomp lilycove_lady.c:452 ci-bas.
-  'BufferQuizAuthorNameAndCheckIfLady',
-  'BufferQuizCorrectAnswer',
+  // 'BufferQuizAuthorNameAndCheckIfLady' — porté 1:1 lilycove_lady.c:457.
+  // 'BufferQuizCorrectAnswer' — porté 1:1 lilycove_lady.c:565.
   // 'BufferTMHMMoveName' — porté 1:1 décomp field_specials.c:1638 ci-bas.
   // 'BufferTrendyPhraseString' — porté 1:1 décomp dewford_trend.c:290 (src/dewford_trend.ts), handler ci-bas.
   'BufferUnionRoomPlayerName',
@@ -2059,7 +1997,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetPlayerTrainerIdOnesDigit' — porté 1:1 décomp field_specials.c:901 ci-bas.
   // 'GetPokeblockFeederInFront' — porté 1:1 safari_zone.ts (transpilé), handler ci-bas.
   'GetPokeblockNameByMonNature',
-  'GetQuizAuthor',
+  // 'GetQuizAuthor' — porté 1:1 lilycove_lady.c:358.
   // 'GetQuizLadyState' — porté 1:1 décomp lilycove_lady.c:347 ci-bas (batch B10).
   'GetRandomActiveShowIdx',
   'GetRecordedCyclingRoadResults',
@@ -2102,7 +2040,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
   // 'IsPokemonJumpSpeciesInParty' — porté 1:1 décomp pokemon_jump.c:2350 (src/pokemon_jump.ts), handler ci-bas.
   // 'IsPokerusInParty' — porté 1:1 décomp field_specials.c:1455 ci-bas (batch B6).
-  'IsQuizAnswerCorrect',
+  // 'IsQuizAnswerCorrect' — porté 1:1 lilycove_lady.c:479.
   // 'IsQuizLadyWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:468 ci-bas.
   // 'IsTVShowAlreadyInQueue' — porté 1:1 décomp tv.c:3268 ci-bas.
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
@@ -2118,7 +2056,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/GetBerryName/
   // PickBerryTree/RemoveBerryTree/WaterBerryTree/PlantBerryTree : handlers concrets
   // 1:1 décomp enregistrés plus bas (récolte + arrosage + plantation).
-  'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
+  'OpenPokeblockCaseOnFeeder',
   'Overworld_PlaySpecialMapMusic',
   // 'PickLotteryCornerTicket' — porté 1:1 décomp lottery_corner.c:48 ci-bas (batch E1).
   'PlayBardSong', 'PlayRoulette', 'PlayerNotAtTrainerHillEntrance',
@@ -2126,12 +2064,12 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'PrepSecretBaseBattleFlags' — porté 1:1 décomp secret_base.c:1164 dans secret-base.ts (batch B24).
   'PrintPlayerBerryPowderAmount',
   'PutAwayDecorationIteration', 'PutFanClubSpecialOnTheAir',
-  'PutLilycoveContestLadyShowOnTheAir', 'QuizLadyGetPlayerAnswer',
-  'QuizLadyPickNewQuestion',
+  // 'QuizLadyGetPlayerAnswer' — porté 1:1 lilycove_lady.c:474.
+  // 'QuizLadyPickNewQuestion' — porté 1:1 lilycove_lady.c:516.
   // 'QuizLadyRecordCustomQuizData' — porté 1:1 décomp lilycove_lady.c:547 ci-bas (batch B46).
   // 'QuizLadySetWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:559 ci-bas.
-  'QuizLadySetCustomQuestion',
-  'QuizLadyShowQuizQuestion',
+  // 'QuizLadySetCustomQuestion' — porté 1:1 lilycove_lady.c:536.
+  // 'QuizLadyShowQuizQuestion' — porté 1:1 DETTE écran easy_chat.c:1573 — handler anti-freeze ci-bas.
   // 'QuizLadyTakePrizeForCustomQuiz' — porté 1:1 décomp lilycove_lady.c:542 ci-bas (batch B46).
   // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
@@ -2147,12 +2085,12 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
   // 'ScriptHatchMon' — porté 1:1 décomp egg_hatch.c:395 (src/egg_hatch.ts), handler ci-bas.
   'ScriptMenu_CreatePCMultichoice',
-  'Script_BufferContestLadyCategoryAndMonName',
-  'Script_DoesFavorLadyLikeItem', 'Script_FadeOutMapMusic',
+  // 'Script_BufferContestLadyCategoryAndMonName' — porté 1:1 lilycove_lady.c:759.
+  'Script_FadeOutMapMusic',
   // 'Script_GetCurrentMauvilleMan' — porté 1:1 décomp mauville_old_man.c:146 ci-bas.
-  'Script_FavorLadyOpenBagMenu',
+  // 'Script_FavorLadyOpenBagMenu' — porté 1:1 lilycove_lady.c:224.
   // 'Script_GetLilycoveLadyId' — porté 1:1 décomp lilycove_lady.c:115 ci-bas (batch B41).
-  'Script_QuizLadyOpenBagMenu',
+  // 'Script_QuizLadyOpenBagMenu' — porté 1:1 lilycove_lady.c:511.
   'Script_ResetUnionRoomTrade', 'Script_ShowLinkTrainerCard',
   'Script_StartWiredTrade', 'Script_StorytellerDisplayStory',
   'Script_StorytellerInitializeRandomStat',
@@ -2168,7 +2106,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetDecoration',
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
   // 'SetHiddenItemFlag' — porté 1:1 décomp field_specials.c:935 ci-bas (refactor B1).
-  'SetFavorLadyState_Complete', 'SetHipsterTaughtWord',
+  'SetHipsterTaughtWord',
   // 'SetHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:246 ci-bas.
   // 'SetLilycoveLadyGfx' — porté 1:1 décomp lilycove_lady.c:44 ci-bas (batch B41).
   'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
@@ -3217,13 +3155,7 @@ registerSpecial('BufferBattleTowerElevatorFloors', () => {
  *      return sFavorLadyPtr->likedItem ? TRUE : FALSE;
  *  }
  *  ``` */
-registerSpecial('DidFavorLadyLikeItem', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor') {
-    return lady.likedItem ? 1 : 0;
-  }
-  return 0;
-});
+registerSpecial('DidFavorLadyLikeItem', () => +_lilycove.DidFavorLadyLikeItem());
 
 /** 1:1 décomp `IsFavorLadyThresholdMet` (lilycove_lady.c:264-271) :
  *  ```c
@@ -3235,13 +3167,7 @@ registerSpecial('DidFavorLadyLikeItem', () => {
  *  }
  *  ```
  *  LILYCOVE_LADY_GIFT_THRESHOLD = 5 (= lilycove_lady-data.ts). */
-registerSpecial('IsFavorLadyThresholdMet', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'favor') {
-    return (lady.numItemsGiven ?? 0) < 5 ? 0 : 1;  // LILYCOVE_LADY_GIFT_THRESHOLD
-  }
-  return 0;
-});
+registerSpecial('IsFavorLadyThresholdMet', () => +_lilycove.IsFavorLadyThresholdMet());
 
 /** 1:1 décomp `FavorLadyGetPrize` (lilycove_lady.c:278-287) :
  *  ```c
@@ -3256,28 +3182,7 @@ registerSpecial('IsFavorLadyThresholdMet', () => {
  *  ```
  *  sFavorLadyPrizes 1:1 décomp data/lilycove_lady.h:423-431 (6 items).
  *  LILYCOVE_LADY_STATE_PRIZE = 2. */
-registerSpecial('FavorLadyGetPrize', () => {
-  // 1:1 décomp `static const u16 sFavorLadyPrizes[]`.
-  const sFavorLadyPrizes: ReadonlyArray<number> = [
-    11,   // ITEM_LUXURY_BALL
-    110,  // ITEM_NUGGET
-    64,   // ITEM_PROTEIN
-    111,  // ITEM_HEART_SCALE
-    68,   // ITEM_RARE_CANDY
-    71,   // ITEM_PP_MAX
-  ];
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (!lady || lady.kind !== 'favor') return 0;
-  const prize = sFavorLadyPrizes[lady.favorId ?? 0] ?? 0;
-  // 1:1 décomp `FavorLadyBufferPrizeName` → `BufferItemName(gStringVar2, prize)`.
-  const helpers = (globalThis as { __game_bridge?: {
-    GetItemName?: (id: number) => string;
-  } }).__game_bridge;
-  const name = helpers?.GetItemName?.(prize) ?? '';
-  setStringVar(2, name);
-  lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
-  return prize;
-});
+registerSpecial('FavorLadyGetPrize', _lilycove.FavorLadyGetPrize);
 
 // ─── Session B18 batch — 1 special Berry Powder 1:1 strict ────────────────
 
@@ -3451,14 +3356,7 @@ registerSpecial('CountPlayerTrainerStars', () => {
  *  ```
  *  Retourne state clamped à PRIZE/COMPLETED/READY (= 2/1/0). Identique
  *  pattern GetFavorLadyState (= aligned discriminated union access). */
-registerSpecial('GetQuizLadyState', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    if (lady.state === 2) return 2;  // LILYCOVE_LADY_STATE_PRIZE
-    if (lady.state === 1) return 1;  // LILYCOVE_LADY_STATE_COMPLETED
-  }
-  return 0;  // LILYCOVE_LADY_STATE_READY
-});
+registerSpecial('GetQuizLadyState', _lilycove.GetQuizLadyState);
 
 // ─── Session B25 batch — 1 special Storyteller 1:1 strict ────────────────
 
@@ -3567,16 +3465,7 @@ registerSpecial('CableClubSaveGame', () => {
  *  ```
  *  Notre RemoveBagItem demande itemKey string ; gSpecialVar.ItemId est number.
  *  Bridge via reverseDecompConstant 'ITEM_'. */
-registerSpecial('QuizLadyTakePrizeForCustomQuiz', () => {
-  const itemId = gSpecialVar.ItemId;
-  const itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? `__item_${itemId}`;
-  void (async () => {
-    try {
-      const mod = await import('../bag/bag');
-      mod.RemoveBagItem(itemKey, 1);
-    } catch { /* fallback no-op */ }
-  })();
-});
+registerSpecial('QuizLadyTakePrizeForCustomQuiz', _lilycove.QuizLadyTakePrizeForCustomQuiz);
 
 /** 1:1 décomp `QuizLadyRecordCustomQuizData` (lilycove_lady.c:547-557) :
  *  ```c
@@ -3591,17 +3480,7 @@ registerSpecial('QuizLadyTakePrizeForCustomQuiz', () => {
  *  }
  *  ```
  *  TRAINER_ID_LENGTH=4, gGameLanguage=LANGUAGE_FRENCH=3 chez nous. */
-registerSpecial('QuizLadyRecordCustomQuizData', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (!lady || lady.kind !== 'quiz') return;
-  lady.prize = gSpecialVar.ItemId;
-  if (!lady.playerTrainerId) lady.playerTrainerId = [0, 0, 0, 0];
-  for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
-    lady.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
-  }
-  lady.playerName = GetPlayerNameString();
-  lady.language = 3;  // LANGUAGE_FRENCH
-});
+registerSpecial('QuizLadyRecordCustomQuizData', _lilycove.QuizLadyRecordCustomQuizData);
 
 // ─── Session B45 batch — 2 specials Quiz Lady clear 1:1 strict ───────────
 
@@ -3613,12 +3492,7 @@ registerSpecial('QuizLadyRecordCustomQuizData', () => {
  *  }
  *  ```
  *  EC_EMPTY_WORD = 0xFFFF (= constants/easy_chat.h). */
-registerSpecial('ClearQuizLadyPlayerAnswer', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    lady.playerAnswer = 0xFFFF;  // EC_EMPTY_WORD
-  }
-});
+registerSpecial('ClearQuizLadyPlayerAnswer', _lilycove.ClearQuizLadyPlayerAnswer);
 
 /** 1:1 décomp `ClearQuizLadyQuestionAndAnswer` (lilycove_lady.c:526-534) :
  *  ```c
@@ -3631,14 +3505,7 @@ registerSpecial('ClearQuizLadyPlayerAnswer', () => {
  *  }
  *  ```
  *  QUIZ_QUESTION_LEN = 9. */
-registerSpecial('ClearQuizLadyQuestionAndAnswer', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'quiz') {
-    if (!lady.question) lady.question = new Array(9).fill(0);
-    for (let i = 0; i < 9; i++) lady.question[i] = 0xFFFF;
-    lady.correctAnswer = 0xFFFF;
-  }
-});
+registerSpecial('ClearQuizLadyQuestionAndAnswer', _lilycove.ClearQuizLadyQuestionAndAnswer);
 
 // ─── Session B44 batch — 1 special IV Rater 1:1 strict ───────────────────
 
@@ -3693,9 +3560,7 @@ registerSpecial('GetSecretBaseNearbyMapName', GetSecretBaseNearbyMapName);  // i
  *  }
  *  ```
  *  LILYCOVE_LADY_QUIZ=0, _FAVOR=1, _CONTEST=2 dans le id. */
-registerSpecial('Script_GetLilycoveLadyId', () => {
-  gSpecialVar.Result = gSaveBlock1Ptr.lilycoveLady?.id ?? 0;
-});
+registerSpecial('Script_GetLilycoveLadyId', _lilycove.Script_GetLilycoveLadyId);
 
 /** 1:1 décomp `SetLilycoveLadyGfx` (lilycove_lady.c:44-59) :
  *  ```c
@@ -3714,21 +3579,7 @@ registerSpecial('Script_GetLilycoveLadyId', () => {
  *  sContestLadyMonGfxId 1:1 décomp data/lilycove_lady.h:5 =
  *  [ZIGZAGOON_1=98, SKITTY=203, POOCHYENA=220, KECLEON=204, PIKACHU=209]
  *  indexed par contest category (= COOL/BEAUTY/CUTE/SMART/TOUGH). */
-registerSpecial('SetLilycoveLadyGfx', () => {
-  const sLilycoveLadyGfxId: ReadonlyArray<number> = [26, 20, 10];  // WOMAN_4, WOMAN_2, GIRL_2
-  const ladyId = gSaveBlock1Ptr.lilycoveLady?.id ?? 0;
-  VarSet('VAR_OBJ_GFX_ID_0', sLilycoveLadyGfxId[ladyId] ?? 0);
-  // LILYCOVE_LADY_CONTEST = 2 (= include/constants/lilycove_lady.h).
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (ladyId === 2 && lady && lady.kind === 'contest') {
-    const sContestLadyMonGfxId: ReadonlyArray<number> = [98, 203, 220, 204, 209];
-    // COOL=0, BEAUTY=1, CUTE=2, SMART=3, TOUGH=4
-    VarSet('VAR_OBJ_GFX_ID_1', sContestLadyMonGfxId[lady.category] ?? 0);
-    gSpecialVar.Result = 1;
-  } else {
-    gSpecialVar.Result = 0;
-  }
-});
+registerSpecial('SetLilycoveLadyGfx', _lilycove.SetLilycoveLadyGfx);
 
 // ─── Session B40 batch — 1 special SaveGame 1:1 strict ───────────────────
 
@@ -3951,13 +3802,7 @@ registerSpecial('CreateAbnormalWeatherEvent', () => {
  *      return FALSE;
  *  }
  *  ``` */
-registerSpecial('HasPlayerGivenContestLadyPokeblock', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'contest') {
-    return lady.givenPokeblock ? 1 : 0;
-  }
-  return 0;
-});
+registerSpecial('HasPlayerGivenContestLadyPokeblock', () => +_lilycove.HasPlayerGivenContestLadyPokeblock());
 
 /** 1:1 décomp `ShouldContestLadyShowGoOnAir` (lilycove_lady.c:747-757) :
  *  ```c
@@ -3971,16 +3816,7 @@ registerSpecial('HasPlayerGivenContestLadyPokeblock', () => {
  *  }
  *  ```
  *  LILYCOVE_LADY_GIFT_THRESHOLD = 5. */
-registerSpecial('ShouldContestLadyShowGoOnAir', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'contest') {
-    if ((lady.numGoodPokeblocksGiven ?? 0) >= 5
-        || (lady.numOtherPokeblocksGiven ?? 0) >= 5) {
-      return 1;
-    }
-  }
-  return 0;
-});
+registerSpecial('ShouldContestLadyShowGoOnAir', () => +_lilycove.ShouldContestLadyShowGoOnAir());
 
 // ─── Session B30 batch — 2 specials Contest Lady 1:1 strict ───────────────
 
@@ -3994,20 +3830,7 @@ registerSpecial('ShouldContestLadyShowGoOnAir', () => {
  *  sContestLadyMonSpecies 1:1 décomp data/lilycove_lady.h:461 :
  *    [COOL=0]=ZIGZAGOON, [BEAUTY=1]=SKITTY, [CUTE=2]=POOCHYENA,
  *    [SMART=3]=KECLEON, [TOUGH=4]=PIKACHU. */
-registerSpecial('GetContestLadyMonSpecies', () => {
-  const sContestLadyMonSpecies: ReadonlyArray<number> = [
-    288,  // SPECIES_ZIGZAGOON  COOL=0
-    315,  // SPECIES_SKITTY     BEAUTY=1
-    286,  // SPECIES_POOCHYENA  CUTE=2
-    317,  // SPECIES_KECLEON    SMART=3
-    25,   // SPECIES_PIKACHU    TOUGH=4
-  ];
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'contest') {
-    const species = sContestLadyMonSpecies[lady.category] ?? 0;
-    VarSet('VAR_0x8005', species);
-  }
-});
+registerSpecial('GetContestLadyMonSpecies', _lilycove.GetContestLadyMonSpecies);
 
 /** 1:1 décomp `GetContestLadyCategory` (lilycove_lady.c:781-785) :
  *  ```c
@@ -4016,13 +3839,7 @@ registerSpecial('GetContestLadyMonSpecies', () => {
  *      return sContestLadyPtr->category;
  *  }
  *  ``` */
-registerSpecial('GetContestLadyCategory', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'contest') {
-    return lady.category & 0xFF;
-  }
-  return 0;
-});
+registerSpecial('GetContestLadyCategory', _lilycove.GetContestLadyCategory);
 
 /** 1:1 décomp `SetContestLadyGivenPokeblock` (lilycove_lady.c:769-773) :
  *  ```c
@@ -4032,12 +3849,7 @@ registerSpecial('GetContestLadyCategory', () => {
  *  }
  *  ```
  *  Discriminated union access sur kind === 'contest'. */
-registerSpecial('SetContestLadyGivenPokeblock', () => {
-  const lady = gSaveBlock1Ptr.lilycoveLady;
-  if (lady && lady.kind === 'contest') {
-    lady.givenPokeblock = 1;
-  }
-});
+registerSpecial('SetContestLadyGivenPokeblock', _lilycove.SetContestLadyGivenPokeblock);
 
 // ─── Session B28 batch — 1 special TV Gabby/Ty Before Interview 1:1 strict ────
 
@@ -4248,3 +4060,31 @@ registerSpecial('GetSecretBaseOwnerAndState', () => {
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
 console.log(`[specials-registry] loaded — ${130 + 6 + _STUB_RETURN_0_SPECIALS.length + _SESSION_131_DECOMP_SPECIALS.length} stubs registered (Phase 5.7+ iter10 + audit126 + session131 1:1 décomp completion)`);
+
+// ─── LILYCOVE LADIES (suite) : specials du flow complet, délégations au foyer
+// lilycove_lady.ts (dédoublonnage vague lilycove — impl inline remplacées). ───
+registerSpecial('GetQuizAuthor', _lilycove.GetQuizAuthor);
+registerSpecial('QuizLadyGetPlayerAnswer', _lilycove.QuizLadyGetPlayerAnswer);
+registerSpecial('IsQuizAnswerCorrect', () => +_lilycove.IsQuizAnswerCorrect());
+registerSpecial('QuizLadyPickNewQuestion', _lilycove.QuizLadyPickNewQuestion);
+registerSpecial('QuizLadySetCustomQuestion', _lilycove.QuizLadySetCustomQuestion);
+registerSpecial('Script_QuizLadyOpenBagMenu', _lilycove.Script_QuizLadyOpenBagMenu);
+registerSpecial('Script_FavorLadyOpenBagMenu', _lilycove.Script_FavorLadyOpenBagMenu);
+registerSpecial('Script_DoesFavorLadyLikeItem', () => +_lilycove.Script_DoesFavorLadyLikeItem());
+registerSpecial('BufferQuizAuthorNameAndCheckIfLady', () => +_lilycove.BufferQuizAuthorNameAndCheckIfLady());
+registerSpecial('BufferQuizCorrectAnswer', _lilycove.BufferQuizCorrectAnswer);
+registerSpecial('Script_BufferContestLadyCategoryAndMonName', _lilycove.Script_BufferContestLadyCategoryAndMonName);
+registerSpecial('SetFavorLadyState_Complete', _lilycove.SetFavorLadyState_Complete);
+registerSpecial('GetContestLadyPokeblockState', _lilycove.GetContestLadyPokeblockState);
+registerSpecial('ResetLilycoveLadyForRecordMix', _lilycove.ResetLilycoveLadyForRecordMix);
+registerSpecial('OpenPokeblockCaseForContestLady', _lilycove.OpenPokeblockCaseForContestLady);
+
+// PutLilycoveContestLadyShowOnTheAir — porté 1:1 tv.c:1581 (tv.ts), délégation directe.
+registerSpecial('PutLilycoveContestLadyShowOnTheAir', _tvPutLilycoveContestLadyShowOnTheAir);
+// 🚧 DETTE : QuizLadyShowQuizQuestion = SetMainCallback2(CB2_QuizLadyQuestion)
+// (easy_chat.c:1573, écran d'affichage de la question du quiz) — écran non porté.
+// Anti-freeze : le script fait `special` + `waitstate` → on ré-enable le contexte.
+registerSpecial('QuizLadyShowQuizQuestion', () => {
+  console.warn('[specials] QuizLadyShowQuizQuestion : écran CB2_QuizLadyQuestion non porté (dette easy_chat)');
+  ScriptContext_Enable();
+});
