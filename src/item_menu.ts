@@ -35,7 +35,7 @@ import { MALE } from '../harness/runtime/decomp-globals';
 import { ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2, ITEMMENU_SWAP_LINE_LENGTH } from '../include/item_menu';
 import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT } from '../include/constants/item';
 import { BG_SCREEN_SIZE } from '../include/gba/defines';
-import { ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01, ITEM_CHERI_BERRY, ITEM_MACH_BIKE, ITEM_ACRO_BIKE, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../include/constants/items';
+import { ITEM_NONE, ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01, ITEM_CHERI_BERRY, ITEM_MACH_BIKE, ITEM_ACRO_BIKE, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS } from '../include/constants/items';
 import { SE_SELECT, SE_PC_LOGIN } from '../include/constants/songs';
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../harness/runtime/decomp-globals';
 import { SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from './task';
@@ -270,6 +270,7 @@ interface BagAssets {
   palFemale: Uint16Array;    // gBagScreenFemale_Pal (menu_female.pal)
   stdMenuPal: Uint16Array;   // gStandardMenuPalette (interface/std_menu.pal)
   hmIcon: Uint8Array;        // gBagMenuHMIcon_Gfx (bag/hm.4bpp.bin) — graphique 16×16 4bpp "CS" pour les HM/CS de la liste sac (BlitBitmapToWindow, item_menu.c:971)
+  registeredSelect: Uint8Array; // sRegisteredSelect_Gfx (bag/select_button.4bpp.bin) — 24×16 4bpp icône SELECT de l'objet-clé enregistré (BlitBitmapToWindow, item_menu.c:993)
   bagSpriteMale: Uint8Array;     // gBagMaleTiles   (bag_male.4bpp.bin, 0x3000 = 6 frames 64×64 4bpp)
   bagSpriteFemale: Uint8Array;   // gBagFemaleTiles (bag_female.4bpp.bin)
   bagSpritePal: Uint16Array;     // gBagPalette     (bag.pal — palette OBJ partagée gender-neutral, item_menu_icons.c:142)
@@ -306,7 +307,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // preloadSwapLineAssets : barre grise ▶ rouge affichée pendant SELECT swap.
     await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets(), preloadSwapLineAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
-           scrollGfx, redPal, hmIcon,
+           scrollGfx, redPal, hmIcon, registeredSelect,
            bagSpriteMale, bagSpriteFemale, bagSpritePal,
            rotatingBallGfx, rotatingBallPal] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
@@ -320,6 +321,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadTileBin('/decomp/em/interface/scroll_indicator.4bpp.bin', 4), // sScrollIndicator_Gfx
       loadGbaPal('/decomp/em/interface/red.pal'),             // sRedInterface_Pal
       loadTileBin('/decomp/em/bag/hm.4bpp.bin', 4),           // gBagMenuHMIcon_Gfx (badge "CS" 16×16)
+      loadTileBin('/decomp/em/bag/select_button.4bpp.bin', 4), // sRegisteredSelect_Gfx (icône SELECT 24×16)
       loadTileBin('/decomp/em/bag/bag_male.4bpp.bin', 4),     // gBagMaleTiles (sprite sac mâle, 6×64×64)
       loadTileBin('/decomp/em/bag/bag_female.4bpp.bin', 4),   // gBagFemaleTiles (sprite sac femelle)
       loadGbaPal('/decomp/em/bag/bag_male.gbapal'),           // gBagPalette (palette OBJ, item_menu_icons.c:142 — partagée gender-neutral)
@@ -343,7 +345,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     assetCache.set('sScrollIndicator_Gfx', scrollGfx);
     assetCache.set('sRedInterface_Pal', redPal);
     _bagAssets = {
-      bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon,
+      bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon, registeredSelect,
       bagSpriteMale, bagSpriteFemale, bagSpritePal,
       menuInfoGfx, menuInfoPal,
     };
@@ -870,14 +872,15 @@ function AllocateBagItemListBuffers(): void {
 function _bagBlitHMIcon(windowId: number, y: number): void {
   if (_bagAssets) BlitBitmapToWindow(windowId, _bagAssets.hmIcon, 8, y - 1, 16, 16);
 }
-/** DÉFÉRÉ — `if (gSaveBlock1Ptr->registeredItem != ITEM_NONE &&
- *  == itemId) BlitBitmapToWindow(windowId, sRegisteredSelect_Gfx, 96, y-1,
- *  24, 16)` (item_menu.c:990-994) : asset sRegisteredSelect_Gfx non extrait
- *  + registeredItem save (chaînon ultérieur). */
-function _bagDrawRegisteredIcon(_windowId: number, _y: number, _itemId: number): void {
-  /* DÉFÉRÉ Phase 3 — blit sRegisteredSelect_Gfx (asset non extrait +
-     save registeredItem). No-op honnête (icône SELECT objets-clés =
-     cosmétique, non bloquant ouvrable). */
+/** 1:1 décomp item_menu.c:990-994 :
+ *    if (gSaveBlock1Ptr->registeredItem != ITEM_NONE && gSaveBlock1Ptr->registeredItem == itemId)
+ *        BlitBitmapToWindow(windowId, sRegisteredSelect_Gfx, 96, y - 1, 24, 16);
+ *  Icône SELECT de l'objet-clé enregistré (poche objets-clés). Asset
+ *  sRegisteredSelect_Gfx = bag/select_button.4bpp.bin (préchargé _bagAssets). */
+function _bagDrawRegisteredIcon(windowId: number, y: number, itemId: number): void {
+  if (gSaveBlock1Ptr.registeredItem !== ITEM_NONE && gSaveBlock1Ptr.registeredItem === itemId) {
+    if (_bagAssets) BlitBitmapToWindow(windowId, _bagAssets.registeredSelect, 96, y - 1, 24, 16);
+  }
 }
 // GetItemImportance : PORTÉ 1:1 (item.c:910) → importé de decomp-bridge ↑.
 // items.json re-extrait avec le champ `importance` (scripts/extract-items.mjs).
@@ -3297,8 +3300,9 @@ function WaitAfterItemSell(task: DecompTask): void {
  *  Notre port : update saveBlock1.registeredItem direct + sync bridge string
  *  __registeredItemKey + retour liste via _returnToList. */
 function ItemMenu_Register(task: DecompTask): void {
-  RemoveContextWindow();
+  // 1:1 décomp `ItemMenu_Register` (item_menu.c:1916).
   const itemId = gSpecialVar.ItemId;
+  // :1922-1925 toggle registeredItem.
   if (gSaveBlock1Ptr.registeredItem === itemId) {
     gSaveBlock1Ptr.registeredItem = 0;  // ITEM_NONE
     gSaveBlock1Ptr.__registeredItemKey = '';
@@ -3312,7 +3316,20 @@ function ItemMenu_Register(task: DecompTask): void {
       gSaveBlock1Ptr.__registeredItemKey = '';
     }
   }
-  _returnToList(task);
+  // :1926-1929 DestroyListMenuTask + LoadBagItemListBuffers + ListMenuInit +
+  // ScheduleBgCopyTilemapToVram(0) : RECONSTRUIT la liste → BagMenu_ItemPrintCallback
+  // se réexécute et (dé)dessine l'icône SELECT (_bagDrawRegisteredIcon) sur la ligne.
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  LoadBagItemListBuffers(gBagPosition.pocket);
+  task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
+    gBagPosition.scrollPosition[gBagPosition.pocket],
+    gBagPosition.cursorPosition[gBagPosition.pocket],
+  );
+  ScheduleBgCopyTilemapToVram(0);
+  // :1930 ItemMenu_Cancel(taskId) (= RemoveContextWindow + re-print desc/cursor + ReturnToItemList).
+  ItemMenu_Cancel(task);
 }
 
 /** 1:1 décomp `UseRegisteredKeyItemOnField(void)` (item_menu.c:2046) : appelé sur
