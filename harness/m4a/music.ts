@@ -148,6 +148,39 @@ export async function playSE(name: string): Promise<void> {
   }
 }
 
+// État du cri courant pour la waveform de l'écran CRI du Pokédex (le C lit le
+// buffer PCM DirectSound en temps réel ; nous : les samples du WAV décodé à la
+// position de lecture ctx.currentTime - startedAt).
+let _currentCry: { buffer: AudioBuffer; startedAt: number; ctx: AudioContext } | null = null;
+
+/** Le cri joue-t-il encore ? (équivalent IsCryPlaying, durée réelle du WAV). */
+export function isCryPlaying(): boolean {
+  if (!_currentCry) return false;
+  return (_currentCry.ctx.currentTime - _currentCry.startedAt) < _currentCry.buffer.duration;
+}
+
+/** N samples s8 à la position de lecture (≈ gSoundInfo.pcmBuffer du C, 1 sample
+ *  sur 2 comme BufferCryWaveformSegment). null si aucun cri en lecture. */
+export function getCryWaveformSamples(count: number): Int8Array | null {
+  if (!_currentCry) return null;
+  const { buffer, startedAt, ctx } = _currentCry;
+  const t = ctx.currentTime - startedAt;
+  if (t < 0 || t >= buffer.duration) return null;
+  const data = buffer.getChannelData(0);
+  const pos = Math.floor(t * buffer.sampleRate);
+  const out = new Int8Array(count);
+  for (let i = 0; i < count; i++) {
+    const v = data[pos + i * 2] ?? 0;   // buffer[i * 2] (1 sample sur 2, 1:1)
+    out[i] = Math.max(-128, Math.min(127, Math.round(v * 127)));
+  }
+  return out;
+}
+
+/** Arrête le suivi du cri courant (équivalent StopCry côté waveform). */
+export function stopCry(): void {
+  _currentCry = null;
+}
+
 /** Joue le cri d'un Pokémon (WAV pré-extrait). Routé via masterGain (= respect
  *  du volume slider topbar/devtool). Track end time pour IsCryPlaying / waitmoncry. */
 export function playCry(species: string): void {
@@ -168,6 +201,7 @@ export function playCry(species: string): void {
       gain.gain.value = 0.7;
       src.connect(gain).connect(getMasterGain());
       src.start();
+      _currentCry = { buffer: audioBuf, startedAt: ctx.currentTime, ctx };
       // 1:1 décomp : track cry end time pour IsCryPlaying. Override le 1s
       // default set par PlayCryInternal avec la vraie durée du WAV.
       void import('../runtime/decomp-globals').then(({ _markAudioSlotActive }) => {
