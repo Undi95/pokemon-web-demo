@@ -688,6 +688,10 @@ function CreatePokedexMonSprite(num: number, x: number, y: number): number {
         shape: 0, size: 3,                          // 64×64
         priority: 3,                                // 1:1 oam.priority = 3
         affineMode: 1, affineParamIndex: i + 1,     // ST_OAM_AFFINE_NORMAL, matrixNum = i+1
+        // 1:1 trainer_pokemon_sprites.c:197 CreateSprite(..., 0) : subpriority 0 = le mon
+        // passe DEVANT les sprites d'interface (subpriority 1). Sans ça (défaut 255), les
+        // chiffres VUS/PRIS fadés noir se dessinaient SUR le mon en transition (« barres »).
+        subpriority: 0,
       });
       const s = rt.gSprites[spriteId];
       if (s) {
@@ -1071,7 +1075,11 @@ function SpriteCB_Scrollbar(sprite: DecompSprite): void {
   if (sPokedexView.currentPage !== PAGE_MAIN && sPokedexView.currentPage !== PAGE_SEARCH_RESULTS) {
     DestroySprite(sprite.spriteId);
   } else {
-    sprite.y2 = Math.trunc((sPokedexView.selectedPokemon * 120) / (sPokedexView.pokemonListCount - 1));
+    // Liste à 1 entrée (recherche à résultat unique) : le C divise par zéro —
+    // __divsi3(0,0) agbcc retourne 0 → curseur en haut. En JS 0/0 = NaN (curseur
+    // rendu n'importe où, « OOB » verdict A/B) → garde explicite = même résultat ROM.
+    const denom = sPokedexView.pokemonListCount - 1;
+    sprite.y2 = denom > 0 ? Math.trunc((sPokedexView.selectedPokemon * 120) / denom) : 0;
   }
 }
 
@@ -1916,6 +1924,7 @@ function CreateSizeScreenTrainerPic(_picId: number, x: number, y: number, _palSl
     paletteBank: DEX_TRAINER_SLOT, x, y,
     shape: 0, size: 3, priority: 0,
     affineMode: 1, affineParamIndex: 1,          // matrixNum 1 (posé aussi ci-dessous)
+    subpriority: 0,                              // 1:1 trainer_pokemon_sprites.c CreateSprite(..., 0)
   });
   return spriteId;
 }

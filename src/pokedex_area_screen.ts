@@ -464,6 +464,7 @@ function CreateAreaMarkerSprites(): void {
     const { spriteId } = rt.CreateSpriteAtOam({
       tileId: MARKER_TILE_BASE, paletteBank: MARKER_PAL_BANK, x, y,
       shape: 0, size: 1 /* 16×16 */, priority: 1,
+      subpriority: 0,   // 1:1 CreateSprite(&sAreaMarkerSpriteTemplate, x, y, 0)
     });
     const sp = rt.gSprites[spriteId];
     if (sp) sp.invisible = true;
@@ -487,6 +488,7 @@ function CreateAreaUnknownSprites(): void {
       tileId: UNKNOWN_TILE_BASE + i * 16, paletteBank: UNKNOWN_PAL_BANK,
       x: i * 32 + 160, y: 140,
       shape: 0, size: 2 /* 32×32 */, priority: 1,
+      subpriority: 0,   // 1:1 CreateSprite(&sAreaUnknownSpriteTemplate, …, 0)
     });
     s.areaUnknownSpriteIds.push(spriteId);
   }
@@ -504,6 +506,7 @@ function CreatePlayerIconSprite(): void {
     tileId: PLAYER_ICON_TILE_BASE, paletteBank: PLAYER_ICON_PAL_BANK,
     x: loc.x * 8 + 4, y: loc.y * 8 + 4,
     shape: 0, size: 1 /* 16×16 */, priority: 1,
+    subpriority: 0,   // 1:1 CreateRegionMapPlayerIcon → CreateSprite(…, 0)
   });
   const sp = rt.gSprites[spriteId];
   if (sp) { sp.x2 = 0; sp.y2 = 8; }   // -(−8) : la carte est décalée de −8

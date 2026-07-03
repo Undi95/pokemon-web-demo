@@ -352,6 +352,7 @@ export function LoadCryMeter(window: CryScreenWindow, windowId: number): boolean
         x: 40 + window.xPos * 8, y: 56 + window.yPos * 8,
         shape: 0, size: 3 /* 64×64 */, priority: 1,
         affineMode: 1, affineParamIndex: 0,
+        subpriority: 1,   // 1:1 CreateSprite(&sCryMeterNeedleSpriteTemplate, …, 1)
       });
       const s = rt.gSprites[spriteId];
       if (s) {
