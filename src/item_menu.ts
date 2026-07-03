@@ -2457,7 +2457,7 @@ export function RemoveContextWindow(): void {
   _ctxWindowId = WINDOW_NONE;
 }
 
-// ─── Action handlers — STUBS (à implémenter type-d'item-par-type-d'item) ──────
+// ─── Action handlers (usage hors/en combat, toss, register, give, etc.) ──────
 
 /** 1:1 décomp `ItemMenu_UseOutOfBattle` (item_menu.c:1796) :
  *    if (GetItemFieldFunc(itemId)) {
@@ -2470,10 +2470,10 @@ export function RemoveContextWindow(): void {
  *            GetItemFieldFunc(itemId)(taskId);  // dispatch
  *        }
  *    }
- *  Notre TS dispatch via le NOM du handler (string depuis items.json). Les
- *  handlers concrets seront portés type-par-type (Medicine, TMHM, Bike, etc.).
- *  Pour l'instant : `CannotUse` 1:1 (= dialog "Pas le moment"), les autres
- *  affichent un message générique "[handler] à porter" → retour liste sur A/B. */
+ *  Notre TS dispatch via le NOM du handler (string depuis items.json, = le
+ *  pointeur de fonction GetItemFieldFunc côté décomp). Handlers câblés 1:1 :
+ *  CannotUse / Medicine / TMHM / PPRecovery / PPUp / RareCandy / ReduceEV /
+ *  SacredAsh / EvolutionStone / Bike / EscapeRope (cf. switch ci-dessous). */
 /** 1:1 décomp `CB2_CheckMail` (item_use.c:189) : affiche le DESIGN de la lettre
  *  (fond, sans texte — la lettre du sac n'est pas encore écrite). Mail blanc avec
  *  seulement itemId = gSpecialVar.ItemId ; ReadMail(mail, retour-sac, hasText=FALSE).
@@ -2501,8 +2501,8 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     _showItemMessage(task, _itemMsg('gText_NoPokemon'));
     return;
   }
-  // 1:1 :1804-1806 — fill desc + dispatch.
-  // Dispatcher : pour l'instant, message FR par handler (vrai handler à porter).
+  // 1:1 :1804-1806 — fill desc + dispatch (= GetItemFieldFunc(itemId)(taskId)),
+  // via switch sur le nom du handler (chaque case = le field func 1:1 de item_use.c).
   const itemName = GetItemName(itemId);
   let msg: string;
   switch (fieldUseFunc) {

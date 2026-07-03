@@ -104,7 +104,15 @@ décomp. Chemins absolus + `git -C`. Jamais `git add -A` ; jamais commit
 | Fichier | Divergences trouvées | Statut | Commit |
 |---------|----------------------|--------|--------|
 | item_menu.ts (PrintItemQuantity) | couleur ×NN blanche → font default | ✅ corrigé | `93ec1ea1` |
-| _(à remplir)_ | | | |
+| item_menu.ts (_bagDrawRegisteredIcon) | icône SELECT objet-clé enregistré = no-op « déféré » alors que l'asset select_button.4bpp.bin est DÉJÀ extrait | ✅ corrigé (blit 1:1) | `7cfb4056` |
+| item_menu.ts (ItemMenu_Register) | omettait le rebuild de liste (:1926-1929) → l'icône SELECT ne se (re)dessinait jamais ; appelait _returnToList au lieu de ItemMenu_Cancel | ✅ corrigé | `7cfb4056` |
+| item_menu.ts (revue affichage) | BagMenu_Print / sFontColorTable / PrintItemDescription / ItemPrintCallback = 1:1 exact ; **commentaires STUB/DÉFÉRÉ périmés** (dispatcher UseOutOfBattle en fait complet, « le vrai est dans bag-menu.ts » alors que bag-menu.ts a été fusionné) | ⚠️ comportement OK, commentaires à nettoyer | — |
+
+**Note item_menu.ts** : le fichier a été consolidé (bag-menu.ts fusionné) mais garde des
+commentaires d'un ancien plan Phase 2/3 (« STUB à implémenter », « [handler] à porter »,
+« DÉFÉRÉ ») qui ne reflètent PLUS la réalité — les handlers d'usage (Medicine/TMHM/PP/
+RareCandy/EvolutionStone/Bike/EscapeRope) sont tous câblés 1:1. Ne pas se fier aux
+marqueurs stub de ce fichier lors des audits : lire le CODE.
 
 ## Bugs combat mis EN ATTENTE (repris après l'audit, ou si user re-priorise)
 
