@@ -2268,7 +2268,7 @@ function _bp(): { BlendPalette: BlendPaletteFn } {
 const PARTICLES_TILE_TAG = 'TAG_PARTICLES_POKEBALL';
 const PARTICLES_PAL_TAG = 0xD8FF;  // unique slot for ball-particle palette
 
-export function AnimateBallOpenParticlesForPokeball(rt: DecompRuntime, x: number, y: number, priority: number, _subpriority: number, ballId: number = BALL_POKE): number {
+export function AnimateBallOpenParticlesForPokeball(rt: DecompRuntime, x: number, y: number, priority: number, subpriority: number, ballId: number = BALL_POKE): number {
   // 1:1 décomp battle_anim_throw.c:1568 LoadBallParticleGfx(ballId) — load
   // the particle sprite sheet + palette into OBJ VRAM. Idempotent (the
   // engine's LoadCompressedSpriteSheet skips if the tag already exists).
@@ -2287,7 +2287,7 @@ export function AnimateBallOpenParticlesForPokeball(rt: DecompRuntime, x: number
       rt.DestroyTask(task.taskId);
       return;
     }
-    spawnSparkle(rt, task.data[1], task.data[2], task.data[3], tileBase, palSlot, task.data[0]);
+    spawnSparkle(rt, task.data[1], task.data[2], task.data[3], task.data[4], tileBase, palSlot, task.data[0]);
     task.data[0]++;
   }, 5);
 
@@ -2297,7 +2297,7 @@ export function AnimateBallOpenParticlesForPokeball(rt: DecompRuntime, x: number
     task.data[1] = x;
     task.data[2] = y;
     task.data[3] = priority;
-    task.data[4] = 0;  // subpriority (not currently used)
+    task.data[4] = subpriority;  // 1:1 PokeBallOpenParticleAnimation data[4] (c:1613)
     task.data[15] = ballId;
   }
 
@@ -2331,20 +2331,25 @@ const _RegularBallAnimFrames: ReadonlyArray<{ tile: number, hFlip: boolean }> = 
  *  (sheet particles, sAnim_MasterBall = ANIMCMD_FRAME(3,1) -> tile 3 statique,
  *  sBallParticleAnimNums[BALL_MASTER]=1). Le caller (battle-anim-throw)
  *  pose data/arc/callback flicker. Retourne le spriteId (-1 si echec). */
-export function CreateCaptureStarSprite(rt: DecompRuntime, x: number, y: number, priority: number): number {
+export function CreateCaptureStarSprite(rt: DecompRuntime, x: number, y: number, subpriority: number): number {
   loadParticlesAssets(rt, 4 /* BALL_MASTER */);
   const tileBaseRaw = GetSpriteTileStartByTag(PARTICLES_TILE_TAG);
   const palSlotRaw = IndexOfSpritePaletteTag(PARTICLES_PAL_TAG);
   const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
   const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
+  // 🩸 le 4e arg de CreateSprite C = SUBPRIORITY (battle_anim_throw.c:1435) ;
+  // la priority OAM = 2 vient du template (gOamData_AffineOff_ObjNormal_8x8,
+  // data/battle_anim.h:11). L'ancien code posait la subpriority (~28) comme
+  // priority OAM → priorityBufs[28]=undefined → ~52 TypeError/capture au
+  // compositor (bridge.tick THREW pendant les étoiles).
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileBase + 3, paletteBank: palSlot, x, y,
-    shape: 0, size: 0, priority,
+    shape: 0, size: 0, priority: 2, subpriority,
   });
   return spriteId ?? -1;
 }
 
-function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number, tileBase: number, palSlot: number, spawnIdx: number): void {
+function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number, subpriority: number, tileBase: number, palSlot: number, spawnIdx: number): void {
   // 1:1 décomp battle_anim_throw.c:1623 :
   //   var0 = (u8)gTasks[taskId].data[0];
   //   if (var0 >= 8) var0 -= 8;
@@ -2355,9 +2360,11 @@ function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number,
   // Spawn 8x8 sprite at (x, y) with shape=square size=0 (= 8x8).
   // 1:1 décomp sBallParticleSpriteTemplates[BALL_POKE] uses
   // gOamData_AffineOff_ObjNormal_8x8 (= shape 0, size 0).
+  // 1:1 : CreateSprite(template, x, y, subpriority) puis oam.priority = priority
+  // (PokeBallOpenParticleAnimation, battle_anim_throw.c:1615/1621).
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileBase, paletteBank: palSlot, x, y,
-    shape: 0, size: 0, priority,
+    shape: 0, size: 0, priority, subpriority,
   });
   if (spriteId < 0) return;
   const sprite = rt.gSprites[spriteId];
