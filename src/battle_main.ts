@@ -3405,7 +3405,7 @@ import {
   consumeAbilityWantedScript,
 } from './battle_util';
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './battle_util';
-import { runBattleTurnPassedViaBytecode } from './engine/battle/wire-bytecode-bridge';
+import { DoFieldEndTurnEffects, DoBattlerEndTurnEffects, HandleWishPerishSongOnTurnEnd } from './battle_util';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   OPTIONS_BATTLE_SCENE_ON, OPTIONS_BATTLE_SCENE_OFF, OPTIONS_BATTLE_STYLE_SHIFT,
@@ -4731,22 +4731,77 @@ export function HandleEndTurn_ContinueBattle(): void {
 }
 
 /** 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019).
- *  Étapes 1-16 (TurnValuesCleanUp, DoField/BattlerEndTurnEffects = dégâts
- *  poison/brûlure/météo, HandleWishPerishSong, reset markers/comm/chosen/turnCounter)
- *  exécutées par le wire 1:1 `runBattleTurnPassedViaBytecode` (rafale ; pacing
- *  per-frame des effets end-turn = dette R3). Puis pose `gBattleMainFunc` — la
- *  dernière ligne de la décomp, qui manquait (stub) → le tour 2 ne démarrait jamais :
- *   - outcome == 0  → `HandleTurnActionSelectionState` (nouveau tour)
- *   - outcome != 0  → `RunTurnActionsFunctions` (le wire a posé gCurrentActionFuncId
- *     = B_ACTION_FINISHED → HandleAction_TryFinish → fin de combat). */
+ *
+ *  ⭐ FIX pacing per-frame (bug brûlure/poison/… invisibles, `docs/DIAG-combat-endturn-visual.md`) :
+ *  chaque effet fin-de-tour (DoField/DoBattlerEndTurnEffects) pose son script via
+ *  `BattleScriptExecute` = pacing PER-FRAME (RunBattleScriptCommands, EXACTEMENT comme les
+ *  moves) → l'animation de statut + la barre PV animée + le message jouent, puis la
+ *  callback-stack RE-RENTRE `_BattleTurnPassed` (via gBattleMainFunc restauré) → effet
+ *  suivant. Remplace l'ancienne rafale synchrone `runBattleTurnPassedViaBytecode` (dette
+ *  R3), qui appliquait les dégâts au MODÈLE (datahpupdate) mais SANS rendu (statusanimation/
+ *  healthbarupdate sans frames). Le reset des trackers (turnEffectsTracker/BattlerId/
+ *  wishPerishSongState) est fait 1× en amont dans HandleEndTurn_ContinueBattle → _BattleTurnPassed
+ *  est RÉ-ENTRANT (ne PAS reset ici ; les Do*EndTurnEffects avancent l'état persistant).
+ *  (`runBattleTurnPassedViaBytecode` reste dans le wire pour les devtools/tests.) */
 function _BattleTurnPassed(): void {
-  const res = runBattleTurnPassedViaBytecode();
-  if (res?.battleEnded) {
-    const td = (globalThis as { __battleTurnDispatch?: { RunTurnActionsFunctions?: () => void } }).__battleTurnDispatch;
-    if (td?.RunTurnActionsFunctions) gBattleMainFunc = td.RunTurnActionsFunctions;
+  TurnValuesCleanUp(true);                                    // 1:1 :3960
+  if (gBattleOutcome === 0) {                                 // 1:1 :3961
+    const f = DoFieldEndTurnEffects();                        // 1:1 :3963
+    if (f) { BattleScriptExecute(f.scriptLabel); return; }    // 1:1 :3964 (return → script per-frame)
+    const b = DoBattlerEndTurnEffects();                      // 1:1 :3965
+    if (b) { BattleScriptExecute(b.scriptLabel); return; }    // 1:1 :3966
+  }
+  // 1:1 :3968-3969 HandleFaintedMonActions — NON PORTÉ dans ce flux (comme l'ancienne rafale) :
+  // les faints sont gérés par le state-machine (HandleAction_*). TODO 1:1 : porter + re-router ici.
+  gBattleStruct.faintedActionsState = 0;                      // 1:1 :3970
+  const w = HandleWishPerishSongOnTurnEnd();                  // 1:1 :3971
+  if (w) { BattleScriptExecute(w.scriptLabel); return; }      // 1:1 :3972
+
+  // 1:1 :3974-3986 cleanup fin de tour.
+  TurnValuesCleanUp(false);
+  const HITMARKER_NO_ATTACKSTRING    = 1 << 9;
+  const HITMARKER_UNABLE_TO_USE_MOVE = 1 << 19;
+  const HITMARKER_PASSIVE_HP_UPDATE  = 1 << 20;
+  const HITMARKER_PLAYER_FAINTED     = 1 << 22;
+  setHitMarker(gHitMarker & ~(HITMARKER_NO_ATTACKSTRING | HITMARKER_UNABLE_TO_USE_MOVE
+    | HITMARKER_PLAYER_FAINTED | HITMARKER_PASSIVE_HP_UPDATE));
+  gBattleScripting.animTurn = 0;
+  gBattleScripting.animTargetsHit = 0;
+  gBattleScripting.moveendState = 0;
+  setBattleMoveDamage(0);
+  setMoveResultFlags(0);
+  for (let i = 0; i < 5; i++) gBattleCommunication[i] = 0;
+
+  // 1:1 :3988-3993 : outcome != 0 → B_ACTION_FINISHED + RunTurnActionsFunctions (fin de combat).
+  if (gBattleOutcome !== 0) {
+    setCurrentActionFuncId(B_ACTION_FINISHED);
+    gBattleMainFunc = RunTurnActionsFunctions;
     return;
   }
+
+  // 1:1 :3995-3999 : incrémente les compteurs de tour (cap 0xFF).
+  if (gBattleResults.battleTurnCounter < 0xFF) {
+    gBattleResults.battleTurnCounter++;
+    gBattleStruct.arenaTurnCounter++;
+  }
+  // 1:1 :4001-4005 : reset des actions/moves choisis.
+  for (let i = 0; i < gBattlersCount; i++) {
+    gChosenActionByBattler[i] = B_ACTION_NONE;
+    gChosenMoveByBattler[i] = MOVE_NONE;
+  }
+  // 1:1 :4007-4008 : reset monToSwitchIntoId.
+  for (let i = 0; i < MAX_BATTLERS_COUNT; i++) gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE;
+  // 1:1 :4010 : sauve absentBattlerFlags.
+  gBattleStruct.absentBattlerFlags = gAbsentBattlerFlags;
+  // 1:1 :4012-4013 : nouveau tour + gRandomTurnNumber.
   gBattleMainFunc = _getHandleTurnActionSelectionState();
+  setRandomTurnNumber(Random());
+  // 1:1 :4015-4018 : scripts spéciaux Palace/Arena.
+  if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+    BattleScriptExecute('BattleScript_PalacePrintFlavorText');
+  } else if ((gBattleTypeFlags & BATTLE_TYPE_ARENA) && gBattleStruct.arenaTurnCounter === 0) {
+    BattleScriptExecute('BattleScript_ArenaTurnBeginning');
+  }
 }
 
 // ─── HandleEndTurn_BattleWon (4960) ────────────────────────────────────────
