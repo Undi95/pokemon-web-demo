@@ -67,6 +67,7 @@ import { GetPokemonStorage } from '../../save';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../../fieldmap';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { SetUnlockedPokedexFlags, SetChampionSaveWarp } from '../../save_location';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
 import { GetCurrentMap } from '../../load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../../tv';
@@ -529,22 +530,9 @@ registerSpecial('EnableNationalPokedex', () => {
   // ResetPokedexScrollPositions : dette R3 cascade pokedex UI subsystem.
 });
 
-/** 1:1 décomp `SetUnlockedPokedexFlags` (pokedex_data.c) : when player gets PokeDex,
- *  flag the dex types as unlocked. Stub no-op. */
-/** 1:1 décomp `SetUnlockedPokedexFlags` (save_location.c:125-134).
- *  Set bits 0, 1, 2, 3, 4, 5, 15 dans gSaveBlock2Ptr->gcnLinkFlags. */
-registerSpecial('SetUnlockedPokedexFlags', () => {
-  const sb2 = gSaveBlock2Ptr as unknown as { gcnLinkFlags?: number };
-  if (sb2 && typeof sb2.gcnLinkFlags === 'number') {
-    sb2.gcnLinkFlags |= (1 << 15);
-    sb2.gcnLinkFlags |= (1 << 0);
-    sb2.gcnLinkFlags |= (1 << 1);
-    sb2.gcnLinkFlags |= (1 << 2);
-    sb2.gcnLinkFlags |= (1 << 4);
-    sb2.gcnLinkFlags |= (1 << 5);
-    sb2.gcnLinkFlags |= (1 << 3);
-  }
-});
+/** 1:1 décomp `SetUnlockedPokedexFlags` (save_location.c:125-134) — impl
+ *  transpilée dans src/save_location.ts (source unique, même fichier que la décomp). */
+registerSpecial('SetUnlockedPokedexFlags', () => { SetUnlockedPokedexFlags(); });
 
 /** 1:1 décomp `InitRoamer` (roamer.c) : initialize legendary roamer state
  *  (= Latios/Latias). Used post-EV. Stub no-op. */
@@ -2870,17 +2858,9 @@ registerSpecial('IncrementDailyPickedBerries', () => {
   VarSet('VAR_DAILY_PICKED_BERRIES', (VarGet('VAR_DAILY_PICKED_BERRIES') + delta) & 0xFFFF);
 });
 
-/** 1:1 décomp `SetChampionSaveWarp` (save_location.c:136-139) :
- *  ```c
- *  void SetChampionSaveWarp(void) {
- *      gSaveBlock2Ptr->specialSaveWarpFlags |= CHAMPION_SAVEWARP;
- *  }
- *  ```
- *  Set le flag respawn after Champion battle. CHAMPION_SAVEWARP = (1 << 7). */
-registerSpecial('SetChampionSaveWarp', () => {
-  // 1:1 décomp save_location.h:13 CHAMPION_SAVEWARP = (1 << 7) = 128.
-  gSaveBlock2Ptr.specialSaveWarpFlags = (gSaveBlock2Ptr.specialSaveWarpFlags | (1 << 7)) & 0xFF;
-});
+/** 1:1 décomp `SetChampionSaveWarp` (save_location.c:136-139) — impl
+ *  transpilée dans src/save_location.ts (source unique, même fichier que la décomp). */
+registerSpecial('SetChampionSaveWarp', () => { SetChampionSaveWarp(); });
 
 // ─── Session A2.26 batch — 5 specials triviaux 1:1 strict ──────────────────
 

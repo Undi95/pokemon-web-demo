@@ -166,12 +166,22 @@ function buildGeneratedConstants() {
     for (const s of j.heal_locations || []) constDB.set(s.id, { value: i++, file: 'generated:heal_locations', line: 0 });
   }
 }
+const mapConstKeys = new Set(); // clés MAP_* du record MAP_CONSTANTS (convention repo)
+function buildMapConstKeys() {
+  const p = path.join(REPO, 'include', 'constants', 'map_groups.ts');
+  if (!fs.existsSync(p)) return;
+  const text = fs.readFileSync(p, 'utf8');
+  let m;
+  const re = /(MAP_\w+):/g;
+  while ((m = re.exec(text))) mapConstKeys.add(m[1]);
+}
 function buildConstDB() {
   buildGeneratedConstants();
+  buildMapConstKeys();
   const headers = [
     ...walk(path.join(DECOMP, 'include', 'constants'), ['.h']),
-    path.join(DECOMP, 'include', 'global.h'),
-    path.join(DECOMP, 'include', 'gba', 'defines.h'),
+    ...walk(path.join(DECOMP, 'include'), ['.h']).filter((p) => !p.includes('constants')),
+    ...walk(path.join(DECOMP, 'src'), ['.h']),
     path.join(DECOMP, 'include', 'config.h'),
   ].filter(fs.existsSync);
   // 2 passes pour les dépendances inter-headers
@@ -387,6 +397,11 @@ function emitExpr(n, ctx) {
         report.gtext.push({ line: line(n), name });
         markUsed('getString');
         return `getString('${name}')`;
+      }
+      // MAP_X → MAP_CONSTANTS.MAP_X (convention repo include/constants/map_groups.ts)
+      if (mapConstKeys.has(name) && !localModuleNames.has(name) && !symbolIndex[name]) {
+        markUsed('MAP_CONSTANTS');
+        return `MAP_CONSTANTS.${name}`;
       }
       if (!(ctx && (ctx.types.has(name)))) markUsed(name);
       return name;
