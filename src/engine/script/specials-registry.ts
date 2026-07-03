@@ -89,6 +89,7 @@ import {
   ShouldHideFanClubInterviewer as _ShouldHideFanClubInterviewer,
   TryPutNameRaterShowOnTheAir as _TryPutNameRaterShowOnTheAir,
 } from '../../tv';
+import { ShowPokedexRatingMessage as _ShowPokedexRatingMessage } from '../../birch_pc';
 import { setStringVar, GetPlayerNameString } from '../../../include/text';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../../../include/constants/species';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../include/constants/items';
@@ -1770,6 +1771,14 @@ registerSpecial('ScriptGetPokedexInfo', () => {
   return helpers?.IsNationalPokedexEnabled?.() ? 1 : 0;
 });
 
+/** 1:1 décomp `ShowPokedexRatingMessage` (birch_pc.c:85) — porté 1:1 birch_pc.ts
+ *  (transpilé) : ShowFieldMessage(GetPokedexRatingText(VAR_0x8004)). Import
+ *  STATIQUE : le texte doit être posé DANS le contexte script (dyn = trop tard). */
+registerSpecial('ShowPokedexRatingMessage', () => {
+  _ShowPokedexRatingMessage();
+  return 0;
+});
+
 /** 1:1 décomp `SetMirageTowerVisibility` (mirage_tower.c:319-344) :
  *  ```c
  *  void SetMirageTowerVisibility(void) {
@@ -2190,7 +2199,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShowEasyChatProfile', 'ShowFrontierGamblerLookingMessage',
   'ShowFrontierManiacMessage', 'ShowGlassWorkshopMenu',
   'ShowLinkBattleRecords', 'ShowNatureGirlMessage',
-  'ShowPokedexRatingMessage', 'ShowPokemonJumpRecords',
+  // 'ShowPokedexRatingMessage' — porté 1:1 birch_pc.ts (transpilé), handler ci-bas.
+  'ShowPokemonJumpRecords',
   'ShowPokemonStorageSystemPC', 'ShowRankingHallRecordsWindow',
   'ShowSecretBaseDecorationMenu', 'ShowSecretBaseRegistryMenu',
   // 'ShowTrainerCantBattleSpeech' — porté 1:1 décomp battle_setup.c:1435 (game/battle_setup.ts).
