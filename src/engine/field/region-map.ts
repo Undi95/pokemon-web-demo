@@ -384,7 +384,7 @@ export function TickRegionMap(): void {
  *
  *  Le cursor est ensuite positionné à `gRegionMapEntries[mapSecId].x + MAPCURSOR_X_MIN`
  *  + .y + MAPCURSOR_Y_MIN (= conversion grille → cursor coords). */
-function _getPlayerMapsecLocation(): { x: number; y: number; mapSecId: string } {
+export function _getPlayerMapsecLocation(): { x: number; y: number; mapSecId: string } {
   const rawMapSecId = gMapHeader?.regionMapSectionId ?? '';
   if (!rawMapSecId) return { x: 15, y: 9, mapSecId: 'MAPSEC_NONE' };
   // 1:1 décomp `LoadRegionMapGfx` case 5 (region_map.c:579) :

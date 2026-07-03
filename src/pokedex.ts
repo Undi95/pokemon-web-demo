@@ -55,6 +55,7 @@ import { gPokedexEntries } from './data/pokemon/pokedex_entries';
 import { FONT_NORMAL } from '../include/text';
 import { EOS, CHAR_SPACER, CHAR_0, CHAR_COMMA } from '../include/constants/characters';
 import { encodeOwText, GetPlayerNameString } from './text';
+import { ShowPokedexAreaScreen } from './pokedex_area_screen';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 import {
   GetSetPokedexFlag, GetHoennPokedexCount as DexGetHoennCount,
@@ -72,6 +73,7 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 const PAGE_MAIN = 0;
 const PAGE_INFO = 1;
 const PAGE_SEARCH_RESULTS = 3;
+const PAGE_AREA = 5;
 const PAGE_SIZE = 7;
 
 const DEX_MODE_HOENN = 0;
@@ -1889,7 +1891,72 @@ function Task_SwitchScreensFromInfoScreen(task: DecompTask): void {
         break;
       case 1:
       default:
-        console.warn('[pokedex] écran ZONE non porté (dette pokedex_area_screen.c) — retour fiche');
+        task.func = Task_LoadAreaScreen;
+        break;
+    }
+  }
+}
+
+// 1:1 décomp `Task_LoadAreaScreen` (pokedex.c:3494) : barre submenu + délégation à
+// pokedex_area_screen.ts (ShowPokedexAreaScreen), qui rend la main via screenSwitchState.
+function Task_LoadAreaScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView || !sPokedexListItem || !_assets) return;
+  switch (rt.gMain.state) {
+    case 0:
+    default:
+      if (!rt.gPaletteFade.active) {
+        sPokedexView.currentPage = PAGE_AREA;
+        rt.SetVBlankCallback(null);
+        ResetOtherVideoRegisters(DISPCNT_BG1_ON);
+        sPokedexView.selectedScreen = AREA_SCREEN;
+        rt.gMain.state = 1;
+      }
+      break;
+    case 1:
+      LoadScreenSelectBarSubmenu(0xd);
+      HighlightSubmenuScreenSelectBarItem(0, 0xd);
+      LoadPokedexBgPalette(sPokedexView.isSearchResults);
+      // SetGpuReg(BG1CNT, priorité 0) — notre BG1 garde sa config template (pri 1
+      // → 0 pour passer devant la carte).
+      rt.gba.bg(1).config.priority = 0;
+      rt.gMain.state++;
+      break;
+    case 2:
+      ShowPokedexAreaScreen(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), {
+        set: (v: number) => { if (sPokedexView) sPokedexView.screenSwitchState = v; },
+      });
+      rt.SetVBlankCallback(VBlankCB_Pokedex);
+      sPokedexView.screenSwitchState = 0;
+      rt.gMain.state = 0;
+      task.func = Task_WaitForAreaScreenInput;
+      break;
+  }
+}
+
+// 1:1 décomp `Task_WaitForAreaScreenInput` (pokedex.c:3527).
+function Task_WaitForAreaScreenInput(task: DecompTask): void {
+  if (!sPokedexView) return;
+  if (sPokedexView.screenSwitchState !== 0)
+    task.func = Task_SwitchScreensFromAreaScreen;
+}
+
+// 1:1 décomp `Task_SwitchScreensFromAreaScreen` (pokedex.c:3534) : retour fiche (1)
+// ou écran CRI (2, dette → fiche en attendant). Restaure la priorité BG1 template.
+function Task_SwitchScreensFromAreaScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || !sPokedexView) return;
+  if (!rt.gPaletteFade.active) {
+    rt.gba.bg(1).config.priority = 1;
+    task.data[1] = 0;   // tMonSpriteDone = FALSE → la fiche recrée son sprite
+    task.data[4] = 0xffff;
+    switch (sPokedexView.screenSwitchState) {
+      case 2:
+        console.warn('[pokedex] écran CRI non porté (dette pokedex_cry_screen.c) — retour fiche');
+        task.func = Task_LoadInfoScreen;
+        break;
+      case 1:
+      default:
         task.func = Task_LoadInfoScreen;
         break;
     }
