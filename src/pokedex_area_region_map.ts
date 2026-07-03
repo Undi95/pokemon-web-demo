@@ -12,7 +12,7 @@
  * TryShowPokedexAreaMap qui poll FreeTempTileDataBuffersIfPossible — notre
  * équivalent exact : poll « assets arrivés »).
  */
-import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { ShowBg } from './window';
@@ -49,8 +49,10 @@ export function LoadPokedexAreaMapGfx(template: PokedexAreaMapTemplate): void {
     rt.gba.vram.set(tiles, (bg.config.charBaseIndex & 3) * 0x4000);
     // ... (tilemap, mode 1) → buffer tilemap du BG (AddValToTilemapBuffer offset 0 = no-op).
     bg.tilemap.set(tilemap.subarray(0, bg.tilemap.length));
-    // CpuCopy32(sPokedexAreaMap_Pal, &gPlttBufferUnfaded[BG_PLTT_ID(7)]) — 48 couleurs.
-    LoadPalette(pal, BG_PLTT_ID(7), pal.length * 2);
+    // CpuCopy32(sPokedexAreaMap_Pal, &gPlttBufferUnfaded[BG_PLTT_ID(7)]) — 48 couleurs,
+    // UNFADED SEUL : l'écran est noir (post fade-out) et la carte ne doit apparaître
+    // qu'au fade-in — LoadPalette (les 2 buffers) la rendait visible en avance (A/B).
+    rt.gPlttBufferUnfaded.cpuCopy16(pal, 0, BG_PLTT_ID(7), pal.length);
     _gfxReady = true;
   })();
   // ChangeBgX/Y(bg, 0, SET).

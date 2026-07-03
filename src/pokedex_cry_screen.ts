@@ -72,9 +72,12 @@ let _bgTile: Uint8Array | null = null;        // cry_screen_bg.png tile 0 (fond 
 let _bgPal: Uint16Array | null = null;
 let _meterTiles: Uint8Array | null = null;    // cry_meter.png (cadran, fenêtre VU)
 let _meterPal: Uint16Array | null = null;
-let _needleReady = false;
-const NEEDLE_TILE_BASE = 384;                 // slot OBJ 64×64 (64 tiles)
-const NEEDLE_PAL_BANK = 3;
+let _needleChar: Uint8Array | null = null;    // cry_meter_needle.4bpp.bin (64 tiles)
+let _needlePal: Uint16Array | null = null;
+// Tiles 896-959 : HORS des slots mon (256-767) et dresseur TAILLE (768-895) — la
+// needle @384 se faisait écraser par la pic du mon slot 1 (= « disque noir » A/B).
+const NEEDLE_TILE_BASE = 896;                 // slot OBJ 64×64 (64 tiles)
+const NEEDLE_PAL_BANK = 5;                    // banks 0-3 = mons, 4 = dresseur TAILLE
 let _assetsLoading = false;
 let _assetsReady = false;
 
@@ -83,22 +86,23 @@ function _loadCryAssets(rt: NonNullable<ReturnType<typeof getRuntime>>): void {
   _assetsLoading = true;
   void (async () => {
     try {
-      const [bgTiles, bgPal, meterTiles, meterPal, needle] = await Promise.all([
+      const [bgTiles, bgPal, meterTiles, meterPal, needleChar, needlePal] = await Promise.all([
         loadTileBin('/decomp/em/pokedex/cry_screen_bg.png', 4),
         // sCryScreenBg_Pal = cry_screen_bg (gbapal BINAIRE 16×u16 — contient le
         // dégradé bleu→blanc de la waveform, la PLTE du PNG ne l'a PAS).
         fetch('/decomp/em/pokedex/cry_screen_bg').then((r) => r.arrayBuffer()).then((b) => new Uint16Array(b))
           .catch(() => import('../harness/gba/png-loader').then((m) => m.loadIndexedPngStrict('/decomp/em/pokedex/cry_screen_bg.png', 4)).then((p) => p.palette)),
         loadTileBin('/decomp/em/pokedex/cry_meter.png', 4),
-        import('../harness/gba/png-loader').then((m) => m.loadIndexedPngStrict('/decomp/em/pokedex/cry_meter.png', 4)).then((p) => p.palette),
-        rt.LoadCompressedSpriteSheet('/decomp/em/pokedex/cry_meter_needle.png', NEEDLE_TILE_BASE * 32),
+        loadGbaPal('/decomp/em/pokedex/cry_meter.gbapal'),
+        loadTileBin('/decomp/em/pokedex/cry_meter_needle.png', 4),
+        loadGbaPal('/decomp/em/pokedex/cry_meter_needle.gbapal'),
       ]);
       _bgTile = bgTiles.subarray(0, 32);
       _bgPal = bgPal;
       _meterTiles = meterTiles;
       _meterPal = meterPal;
-      if (needle.palette) LoadPalette(needle.palette.subarray(0, 16), 0x100 + NEEDLE_PAL_BANK * 16, 32);
-      _needleReady = true;
+      _needleChar = needleChar;
+      _needlePal = needlePal;
     } catch (e) {
       console.error('[pokedex_cry] assets load failed:', e);
     }
@@ -336,7 +340,13 @@ export function LoadCryMeter(window: CryScreenWindow, windowId: number): boolean
       gDexCryScreenState++;
       break;
     case 1: {
-      if (!_needleReady || !sCryMeterNeedle) return false;
+      if (!_needleChar || !_needlePal || !sCryMeterNeedle) return false;
+      // 1:1 LoadSpriteSheets(sCryMeterNeedleSpriteSheets) + LoadSpritePalettes :
+      // le C recharge les gfx à CHAQUE entrée d'écran — obligatoire chez nous
+      // aussi (les tiles OBJ sont partagées, un écran précédent a pu écraser).
+      rt._writeToObjVram(_needleChar, NEEDLE_TILE_BASE * 32);
+      rt._markTilesInBitmap(NEEDLE_TILE_BASE * 32, _needleChar.length);
+      LoadPalette(_needlePal.subarray(0, 16), 0x100 + NEEDLE_PAL_BANK * 16, 32);
       const { spriteId } = rt.CreateSpriteAtOam({
         tileId: NEEDLE_TILE_BASE, paletteBank: NEEDLE_PAL_BANK,
         x: 40 + window.xPos * 8, y: 56 + window.yPos * 8,

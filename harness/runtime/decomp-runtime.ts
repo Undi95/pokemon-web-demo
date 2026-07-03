@@ -986,7 +986,7 @@ export class DecompRuntime {
    *  un write avec byteOffset fourni par le caller (= rt.LoadCompressedSpriteSheet
    *  paths historiques). Sans ce marker, le bitmap allocator (= field-effect via
    *  LoadSpriteSheet) voit ces tiles "libres" et alloue dessus → collision. */
-  private _markTilesInBitmap(byteOffset: number, byteSize: number): void {
+  _markTilesInBitmap(byteOffset: number, byteSize: number): void {
     // Import direct sprite.ts (ex-`__sprite.sSpriteTileAllocBitmap`) = array primary 1:1 décomp.
     const tileStart = byteOffset >> 5;
     const tileCount = byteSize >> 5;

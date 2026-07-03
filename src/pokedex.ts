@@ -2205,7 +2205,11 @@ function LoadPokedexListPage(page: number): boolean {
       rt.SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sPokedex_BgTemplate, sPokedex_BgTemplate.length);
-      // SetBgTilemapBuffer(n, …) : buffer intrinsèque par-BG dans le port → no-op.
+      // 1:1 SetBgTilemapBuffer(n, AllocZeroed(BG_SCREEN_SIZE)) ×4 : buffers NEUFS ZÉRO.
+      // Nos buffers BG sont intrinsèques/partagés → fill(0) obligatoire, sinon le tilemap
+      // du sous-écran précédent survit (ex. fenêtre waveform CRI rangées 13-19 sur BG0
+      // = corruption bas de liste au retour de fiche, verdict A/B).
+      for (const n of [0, 1, 2, 3] as const) rt.gba.bg(n).tilemap.fill(0);
       // 1:1 DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx) → BG3 charBase 0 + tilemaps.
       rt.gba.vram.set(_assets.menuTiles, 0 * 0x4000);
       CopyToBgTilemapBuffer(1, _assets.listTilemap, 0, 0);

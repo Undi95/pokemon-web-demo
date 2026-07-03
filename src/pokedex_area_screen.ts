@@ -342,7 +342,9 @@ function DrawAreaGlow(): boolean {
     }
     case 3:
       // FreeTempTileDataBuffersIfPossible (chargement déjà fait) + palette glow → BG 10.
-      LoadPalette(_glowAssets!.palette.subarray(0, 16), BG_PLTT_ID(GLOW_PALETTE), 32);
+      // 1:1 CpuCopy32(sAreaGlow_Pal, &gPlttBufferUnfaded[…]) : UNFADED SEUL — l'écran
+      // est noir, le glow n'apparaît qu'au fade-in (LoadPalette le montrait en avance).
+      rt.gPlttBufferUnfaded.cpuCopy16(_glowAssets!.palette, 0, BG_PLTT_ID(GLOW_PALETTE), 16);
       s.drawAreaGlowState++;
       return true;
     case 4:
