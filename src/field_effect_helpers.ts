@@ -4297,12 +4297,17 @@ registerAffineAnimTable('sAffineAnims_FlyBird', {
 function CreateFlyBirdSprite(): number {
   const rt = getRuntime();
   if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
+  // Palette : résoudre le bank AU CREATE (le warp/map-load rebat les banks via FreeAllSpritePalettes
+  // → _flyBirdPaletteBank stale = oiseau ROSE à l'arrivée selon la map). 1:1 le décomp pose la
+  // palette du template ici (oam.paletteNum au create), pas via une valeur module figée.
+  const _pb = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+  const paletteBank = _pb === 0xFF ? _flyBirdPaletteBank : _pb;
   const { spriteId } = rt.CreateSpriteAtOam({
-    // Déviation z-order : décomp = oam.priority 1, mais NOTRE joueur (fly/surf) est priority 2 →
-    // oiseau priority 1 le rendait DEVANT le joueur (joueur « sous » l'oiseau). Priority 2 (= match
-    // joueur) : à priorité égale, le joueur (oamIndex bas) passe DEVANT l'oiseau (oamIndex haut). 1:1 visuel.
-    tileId: _flyBirdTileStart, paletteBank: _flyBirdPaletteBank,
-    x: 0xFF, y: 0xB4, shape: 0, size: 2, priority: 2,
+    // 1:1 field_effect.c:3305-3306 : oam.priority = 1 → l'oiseau (grand sprite) passe DEVANT les
+    // bâtiments (BG) ET recouvre le joueur (priority 2) pendant l'envol — c'est le rendu VOULU
+    // (le joueur « sous » l'oiseau est authentique). Priority 2 (essai) l'enfonçait derrière les BG.
+    tileId: _flyBirdTileStart, paletteBank,
+    x: 0xFF, y: 0xB4, shape: 0, size: 2, priority: 1,
     paletteMode: 0, affineMode: 0, subpriority: 1,
   });
   const sprite = rt.gSprites[spriteId];
@@ -4341,8 +4346,15 @@ function SetFlyBirdPlayerSpriteId(birdSpriteId: number, playerSpriteId: number):
 function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): void {
   if (sprite.data[7] === 0) {  // sAnimCompleted
     if (sprite.data[0] === 0) {
-      sprite.affineMode = 3;  // ST_OAM_AFFINE_DOUBLE
-      { const _m = AllocOamMatrix(); if (_m > 0) sprite.matrixNum = _m; }  // = InitSpriteAffineAnim (alloue la matrice)
+      // 1:1 field_effect.c:3357-3360 : oam.affineMode = ST_OAM_AFFINE_DOUBLE + InitSpriteAffineAnim
+      // (alloue la matrice) + StartSpriteAffineAnim(0). Le SCALE est piloté par l'OAM CANONIQUE
+      // (rt.gba.oam[oamIndex]) : poser sprite.affineMode seul ne propage PAS (le ticker/renderer lisent
+      // oam.affineMode/matrixNum) → sonde : xScale figé 256, aucun scale. Cf. battle_anim_mons.ts:448-450.
+      const _m = AllocOamMatrix();
+      sprite.affineMode = 3;
+      if (_m > 0) sprite.matrixNum = _m;
+      const _oam = _rt.gba.oam[sprite.oamIndex];
+      if (_oam) { _oam.affineMode = 3; if (_m > 0) _oam.affineParamIndex = _m; }
       StartSpriteAffineAnim(sprite, 0);
       sprite.x = 0x76; sprite.y = -0x30;
       sprite.data[0]++;
@@ -4356,6 +4368,8 @@ function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): vo
     if (sprite.data[1] > 0x81) {
       sprite.data[7]++;  // sAnimCompleted
       sprite.affineMode = 0;
+      const _oam = _rt.gba.oam[sprite.oamIndex];
+      if (_oam) _oam.affineMode = 0;
       FreeOamMatrix(sprite.matrixNum);
       const v = CalcCenterToCornerVec(0, 2, 0);
       sprite.centerToCornerVecX = v.centerToCornerVecX;
@@ -4385,8 +4399,13 @@ function SpriteCB_FlyBirdSwoopDown(sprite: DecompSprite, rt: DecompRuntime): voi
 function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime): void {
   if (sprite.data[7] === 0) {
     if (sprite.data[0] === 0) {
+      // 1:1 field_effect.c:3410-3413 : oam.affineMode = DOUBLE + InitSpriteAffineAnim + StartSpriteAffineAnim(1)
+      // (rétrécir avant d'entrer dans la ball). OAM canonique obligatoire (cf. LeaveBall ci-dessus).
+      const _m = AllocOamMatrix();
       sprite.affineMode = 3;
-      { const _m = AllocOamMatrix(); if (_m > 0) sprite.matrixNum = _m; }  // = InitSpriteAffineAnim (alloue la matrice)
+      if (_m > 0) sprite.matrixNum = _m;
+      const _oam = _rt.gba.oam[sprite.oamIndex];
+      if (_oam) { _oam.affineMode = 3; if (_m > 0) _oam.affineParamIndex = _m; }
       StartSpriteAffineAnim(sprite, 1);
       sprite.x = 0x5e; sprite.y = -0x20;
       sprite.data[0]++;
@@ -4405,6 +4424,8 @@ function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime):
     if (sprite.data[3] >= 60) {
       sprite.data[7]++;
       sprite.affineMode = 0;
+      const _oam = _rt.gba.oam[sprite.oamIndex];
+      if (_oam) _oam.affineMode = 0;
       FreeOamMatrix(sprite.matrixNum);
       sprite.invisible = true;
     }
@@ -4691,6 +4712,9 @@ export function FldEff_FlyIn(_rt: DecompRuntime): number {
 function Task_FlyIntoMap(task: DecompTask): void {
   if (task.data[0] === 0) {
     if (!_flyBirdReady) return;      // asset oiseau + gfx pose rechargés après le warp
+    // Palette effectivement rechargée (preloadFlyBirdEffect est async : sans ce gate, l'oiseau naît
+    // AVANT la recharge → bank stale = ROSE). _flyBirdReady reste true post-1er-preload, insuffisant seul.
+    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF) return;
     if (gPaletteFade.active) return;
     FieldEffectStart(FLDEFF_FLY_IN);
     task.data[0]++;
@@ -4739,8 +4763,10 @@ function SpriteCB_NPCFlyOut(sprite: DecompSprite, rt: DecompRuntime): void {
 export function FldEff_NPCFlyOut(_rt: DecompRuntime): number {
   const rt = getRuntime();
   if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
+  const _pb = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+  const paletteBank = _pb === 0xFF ? _flyBirdPaletteBank : _pb;
   const { spriteId } = rt.CreateSpriteAtOam({
-    tileId: _flyBirdTileStart, paletteBank: _flyBirdPaletteBank,
+    tileId: _flyBirdTileStart, paletteBank,
     x: 0x78, y: 0, shape: 0, size: 2, priority: 1,
     paletteMode: 0, affineMode: 0, subpriority: 1,
   });
