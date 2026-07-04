@@ -1535,6 +1535,10 @@ function OpponentHandleHitAnimation(): void {
   const sprite = rt?.gSprites?.[getBattlerMonSpriteId(gActiveBattler)];
   if (!sprite || sprite.invisible === true) { OpponentBufferExecCompleted(); return; }
   sprite.data[1] = 0;
+  // 1:1 décomp : DoHitAnimHealthboxEffect(gActiveBattler) — la box du battler TAPÉ
+  // secoue (ex-dette R3). Battler CAPTURÉ avant l'import async (même piège que player).
+  const hitBattler = gActiveBattler;
+  void import('./pokeball').then((m) => m.DoHitAnimHealthboxEffect?.(hitBattler)).catch(() => { /* noop */ });
   _setBattlerControllerFunc(gActiveBattler, _DoHitAnimBlinkSpriteEffect_Opp);
 }
 /** 1:1 décomp `DoHitAnimBlinkSpriteEffect()` (battle_controller_*.c) côté adverse. */

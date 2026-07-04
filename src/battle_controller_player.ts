@@ -2141,6 +2141,12 @@ const MAX_LEVEL_LOCAL = 100;
 function _CompleteOnExpBarDone(): void {
   const ret = MoveBattleBar(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), EXP_BAR, 0);
   if (ret === -1) {
+    // 1:1 décomp Task_UpdateLvlInHealthbox (battle_controller_player.c:1263) :
+    // après la barre EXP, UpdateHealthboxAttribute(HEALTHBOX_ALL) recompose
+    // niveau + PV + barre depuis la party — sans ça la box gardait l'ancien
+    // niveau/PV après un level-up (verdict A/B « N.5 reste après lvl 6 »).
+    const mon = gPlayerParty[gBattlerPartyIndexes[gActiveBattler]];
+    _UpdateHealthboxAttribute(_gHealthboxSpriteId(gActiveBattler), mon, 0 /* HEALTHBOX_ALL */);
     PlayerBufferExecCompleted();
   }
 }
@@ -2286,7 +2292,11 @@ function PlayerHandleHitAnimation(): void {
   _gDoingBattleAnim = true;
   sprite.data[1] = 0;
   // 1:1 DoHitAnimHealthboxEffect (pokeball.c) — goal T5 2026-06-10.
-  void import('./pokeball').then((m) => m.DoHitAnimHealthboxEffect?.(gActiveBattler)).catch(() => {});
+  // ⚠️ CAPTURER gActiveBattler AVANT l'import async : lu à la RÉSOLUTION de la
+  // promesse (post-boucle CB1) il vaut toujours le DERNIER battler itéré →
+  // la healthbox ENNEMIE secouait quel que soit le tapé (verdict A/B).
+  const hitBattler = gActiveBattler;
+  void import('./pokeball').then((m) => m.DoHitAnimHealthboxEffect?.(hitBattler)).catch(() => {});
   gBattlerControllerFuncs[gActiveBattler] = _DoHitAnimBlinkSpriteEffect;
 }
 

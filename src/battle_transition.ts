@@ -71,6 +71,16 @@ async function _ensureTrailAssets(): Promise<void> {
   _trailTile = trail.charData;
   _ballTiles = ball.charData;
   _ballPal = ball.palette ?? null;
+  // Les PNG battle_transitions extraits sont RGBA SANS PLTE → palette null →
+  // traînées BLANCHES + balls NOIRES (verdict A/B « palette mauvaise », image 2).
+  // Fallback 1:1 : sFieldEffectPal_Pokeball convertie depuis
+  // graphics/field_effects/palettes/pokeball.pal (JASC → BGR555 .gbapal).
+  if (!_ballPal) {
+    try {
+      const { loadGbaPal } = await import('../harness/gba/png-loader');
+      _ballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
+    } catch (e) { console.warn('[battle_transition] pokeball.gbapal KO', e); }
+  }
   _assetsReady = true;
 }
 
