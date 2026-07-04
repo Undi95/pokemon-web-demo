@@ -191,11 +191,12 @@ const COPYWIN_FULL = 3, TEXT_SKIP_DRAW = 0xFF, PIXEL_FILL_1 = 0x11;
 /** 1:1 `sMainMenuTexts` (:882) — {text=libellé menu, desc=description}. Libellés FR ≈ gText_*
  *  du décomp (à câbler sur les vraies strings gba au raffinement). */
 const sMainMenuTexts: ReadonlyArray<{ text: string; desc: string }> = [
-  { text: 'RETIRER POKéMON', desc: 'Récupère des POKéMON gardés dans le PC.' },      // OPTION_WITHDRAW
-  { text: 'DÉPOSER POKéMON', desc: "Range des POKéMON de l'équipe dans le PC." },     // OPTION_DEPOSIT
-  { text: 'DÉPLACER POKéMON', desc: 'Réorganise les POKéMON du PC.' },                // OPTION_MOVE_MONS
-  { text: 'RANGER OBJETS', desc: 'Déplace les objets tenus par les POKéMON du PC.' }, // OPTION_MOVE_ITEMS
-  { text: 'AU REVOIR', desc: "Ferme l'accès au PC." },                               // OPTION_EXIT
+  // 1:1 strings.c:932-941 (décomp FR) — libellés (gText_*) + descriptions (gText_*Description).
+  { text: 'RETIRER POKéMON', desc: "Intégrer dans l'équipe des POKéMON se\ntrouvant dans les BOITES." },   // OPTION_WITHDRAW
+  { text: 'DEPOSER POKéMON', desc: "Déposer des POKéMON de l'équipe\ndans des BOITES." },                   // OPTION_DEPOSIT
+  { text: 'DEPLACER POKéMON', desc: "Organiser les POKéMON dans les BOITES\net dans l'équipe." },           // OPTION_MOVE_MONS
+  { text: 'DEPLACER OBJETS', desc: "Déplacer des objets tenus\ndans une BOITE ou par l'équipe." },          // OPTION_MOVE_ITEMS
+  { text: 'SALUT!', desc: 'Retour au menu précédent.' },                                                    // OPTION_EXIT
 ];
 // 1:1 `sWindowTemplate_MainMenu` (:891)
 const sWindowTemplate_MainMenu = { bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 17, height: 10, paletteNum: 15, baseBlock: 0x1 };
