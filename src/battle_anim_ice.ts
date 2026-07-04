@@ -1118,3 +1118,141 @@ function _AnimHailContinue(sprite: { data: number[] }): void {
   }
 }
 _iceRegT({ AnimTask_Hail: AnimTask_Hail as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BRUME + GAZ POISON (2026-07-04, append-only) — InitSwirlingFogAnim(+Anim)
+// (battle_anim_ice.c:904/972, gMistCloudSpriteTemplate/gSmogCloudSpriteTemplate =
+// BRUME/SMOG) + InitPoisonGasCloudAnim/MovePoisonGasCloud (:1194/1241,
+// gPoisonGasCloudSpriteTemplate = GAZ TOXIK, 6 usages). Callbacks jamais portés
+// → nuages figés (même famille que AnimBurnFlame/AnimWaterBubbleProjectile,
+// oracle scripts/audit-anim-callbacks.cjs).
+// ════════════════════════════════════════════════════════════════════════════
+import {
+  InitSpritePosToAnimAttacker as _fogInitAtk, InitSpritePosToAnimTarget as _fogInitTgt,
+  InitAnimLinearTranslation as _fogInitLin, AnimTranslateLinear as _fogTransLin,
+  GetBattlerSpriteCoord as _fogCoord, BATTLER_COORD_X_2 as _FOG_X2,
+  BATTLER_COORD_Y_PIC_OFFSET as _FOG_YPIC, BATTLER_COORD_X as _FOG_X,
+  BATTLER_COORD_Y as _FOG_Y,
+} from './battle_anim_mons';
+import { Sin as _fogSin, Cos as _fogCos, gSineTable as _fogSineTable } from './trig';
+import { FreeOamMatrix as _fogFreeOam } from './sprite';
+
+type _FogSprite = {
+  x: number; y: number; x2: number; y2: number; data: number[];
+  callback?: unknown; subpriority?: number;
+  oam?: { priority?: number; affineMode?: number; matrixNum?: number };
+};
+function _fog2Itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 `GetBattlerSpriteBGPriority` (battle_anim_mons.c:2063) — copie du précédent
+ *  effects_1 (IsContest=false, position = battler en simples). */
+function _fogBGPriority(battler: number): number {
+  return (battler === 0 || battler === 3) ? 2 : 1;
+}
+/** 1:1 `InitAnimLinearTranslationWithSpeed` (battle_anim_mons.c:1155) — copie bug.ts. */
+function _fogInitLinWithSpeed(sprite: _FogSprite): void {
+  const s16 = (v: number) => (v << 16) >> 16;
+  const v1 = Math.abs(s16(sprite.data[2]) - s16(sprite.data[1])) << 8;
+  sprite.data[0] = s16(Math.trunc(v1 / s16(sprite.data[0])));
+  _fogInitLin(sprite as never);
+}
+
+
+/** 1:1 `InitPoisonGasCloudAnim` (battle_anim_ice.c:1194). */
+function InitPoisonGasCloudAnim(sprite: _FogSprite): void {
+  const args = _fog2Itf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  const atk = _fog2Itf().getAttacker?.() ?? 0;
+  const tgt = _fog2Itf().getTarget?.() ?? 1;
+  sprite.data[0] = args[0] | 0;
+  if (_fogCoord(atk, _FOG_X2) < _fogCoord(tgt, _FOG_X2)) sprite.data[7] = 0x8000;
+  if ((tgt & 1) === 0 /* GET_BATTLER_SIDE2 == B_SIDE_PLAYER */) {
+    args[1] = -args[1];
+    args[3] = -args[3];
+    // (subpriority tweak du C omis en simples : GetAnimBattlerSpriteId indispo ici)
+    sprite.data[6] = 1;
+  }
+  sprite.x = _fogCoord(atk, _FOG_X2);
+  sprite.y = _fogCoord(atk, _FOG_YPIC);
+  if (args[7]) {
+    sprite.data[1] = sprite.x + (args[1] | 0);
+    sprite.data[2] = _fogCoord(tgt, _FOG_X2) + (args[3] | 0);
+    sprite.data[3] = sprite.y + (args[2] | 0);
+    sprite.data[4] = _fogCoord(tgt, _FOG_YPIC) + (args[4] | 0);
+  } else {
+    sprite.data[1] = sprite.x + (args[1] | 0);
+    sprite.data[2] = _fogCoord(tgt, _FOG_X) + (args[3] | 0);
+    sprite.data[3] = sprite.y + (args[2] | 0);
+    sprite.data[4] = _fogCoord(tgt, _FOG_Y) + (args[4] | 0);
+  }
+  sprite.data[7] |= _fogBGPriority(tgt) << 8;
+  _fogInitLin(sprite as never);
+  sprite.callback = MovePoisonGasCloud;
+}
+
+/** 1:1 `MovePoisonGasCloud` (battle_anim_ice.c:1241) — 3 phases (approche
+ *  sinusoïdale, orbite cible, sortie écran → destroy). */
+function MovePoisonGasCloud(sprite: _FogSprite): void {
+  const tgt = _fog2Itf().getTarget?.() ?? 1;
+  let value: number;
+  switch (sprite.data[7] & 0xFF) {
+    case 0:
+      _fogTransLin(sprite as never);
+      value = _fogSineTable[sprite.data[5] & 0xFF] ?? 0;
+      sprite.x2 += value >> 4;
+      if (sprite.data[6]) sprite.data[5] = (sprite.data[5] - 8) & 0xFF;
+      else sprite.data[5] = (sprite.data[5] + 8) & 0xFF;
+      if (sprite.data[0] <= 0) {
+        sprite.data[0] = 80;
+        sprite.x = _fogCoord(tgt, _FOG_X);
+        sprite.data[1] = sprite.x;
+        sprite.data[2] = sprite.x;
+        sprite.y += sprite.y2;
+        sprite.data[3] = sprite.y;
+        sprite.data[4] = sprite.y + 29;
+        sprite.data[7]++;
+        sprite.data[5] = ((tgt & 1) !== 0) ? 204 : 80;
+        sprite.y2 = 0;
+        value = _fogSineTable[sprite.data[5] & 0xFF] ?? 0;
+        sprite.x2 = value >> 3;
+        sprite.data[5] = (sprite.data[5] + 2) & 0xFF;
+        _fogInitLin(sprite as never);
+      }
+      break;
+    case 1:
+      _fogTransLin(sprite as never);
+      value = _fogSineTable[sprite.data[5] & 0xFF] ?? 0;
+      sprite.x2 += value >> 3;
+      sprite.y2 += ((_fogSineTable[(sprite.data[5] + 0x40) & 0xFF] ?? 0) * -3) >> 8;
+      {
+        const var0 = (sprite.data[5] - 0x40) & 0xFFFF;
+        if (var0 <= 0x7F) { if (sprite.oam) sprite.oam.priority = sprite.data[7] >> 8; }
+        else { if (sprite.oam) sprite.oam.priority = (sprite.data[7] >> 8) + 1; }
+        sprite.data[5] = (sprite.data[5] + 4) & 0xFF;
+      }
+      if (sprite.data[0] <= 0) {
+        sprite.data[0] = 0x300;
+        sprite.data[1] = sprite.x += sprite.x2;
+        sprite.data[3] = sprite.y += sprite.y2;
+        sprite.data[4] = sprite.y + 4;
+        sprite.data[2] = ((tgt & 1) !== 0) ? 240 + 16 : -16;
+        sprite.data[7]++;
+        sprite.x2 = 0; sprite.y2 = 0;
+        _fogInitLinWithSpeed(sprite);
+      }
+      break;
+    case 2:
+      if (_fogTransLin(sprite as never)) {
+        if (sprite.oam && ((sprite.oam.affineMode ?? 0) & 1)) {
+          _fogFreeOam(sprite.oam.matrixNum ?? 0);
+          sprite.oam.affineMode = 0;
+        }
+        _fog2Itf().DestroyAnimSprite?.(sprite);
+      }
+      break;
+  }
+}
+
+registerAnimCallbacks({
+  InitPoisonGasCloudAnim: InitPoisonGasCloudAnim as never,
+});

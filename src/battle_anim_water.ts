@@ -1407,3 +1407,103 @@ function _SurfWaveScanlineEffect(task: _SfwTask): void {
   }
 }
 _wRegT({ AnimTask_CreateSurfWave: AnimTask_CreateSurfWave as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BULLES D'EAU (2026-07-04, append-only) — AnimWaterBubbleProjectile (+3 Steps)
+// (battle_anim_water.c:530-600, gWaterBubbleProjectileSpriteTemplate = BULLES/
+// BULLES D'O : 12 usages battle_anim_scripts.s). Callback jamais porté → sprites
+// figés (même famille que AnimBurnFlame). Le sprite compagnon invisible du C
+// (CreateInvisibleSpriteWithCallback) = porteur des data de l'onde sinusoïdale.
+// ════════════════════════════════════════════════════════════════════════════
+import { Cos as _wCos } from './trig';
+import {
+  RunStoredCallbackWhenAnimEnds as _wRunStored, WaitAnimForDuration as _wWaitDur,
+  DestroySpriteAndMatrix as _wDestroyMx, BATTLER_COORD_X_2 as _W_X2,
+  BATTLER_COORD_Y_PIC_OFFSET as _W_YPIC,
+} from './battle_anim_mons';
+
+type _WBSprite = { x: number; y: number; x2: number; y2: number; data: number[]; animPaused?: boolean; callback?: unknown };
+function _wbItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _wbRt(): { gSprites?: Array<{ data: number[] } | undefined>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; DestroySprite?: (i: number) => void } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+/** 1:1 `AnimWaterBubbleProjectile` (battle_anim_water.c:530). */
+function AnimWaterBubbleProjectile(sprite: _WBSprite): void {
+  const args = _wbItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0];
+  const atk = _wbItf().getAttacker?.() ?? 0;
+  const tgt = _wbItf().getTarget?.() ?? 1;
+  if ((atk & 1) !== 0 /* GetBattlerSide != B_SIDE_PLAYER */) {
+    sprite.x = GetBattlerSpriteCoord(atk, _W_X2) - (args[0] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, _W_YPIC) + (args[1] | 0);
+    sprite.animPaused = true;
+  } else {
+    sprite.x = GetBattlerSpriteCoord(atk, _W_X2) + (args[0] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, _W_YPIC) + (args[1] | 0);
+    sprite.animPaused = true;
+  }
+  if ((atk & 1) !== 0) args[2] = -args[2];
+  sprite.data[0] = args[6] | 0;
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, _W_X2);
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, _W_YPIC);
+  InitAnimLinearTranslation(sprite as never);
+  // 1:1 CreateInvisibleSpriteWithCallback(SpriteCallbackDummy) : porteur de data.
+  const rt = _wbRt();
+  const spriteId = rt.CreateSpriteInline
+    ? rt.CreateSpriteInline({ oam: { shape: 0, size: 0, priority: 3 }, images: [{ data: new Uint8Array(32), size: 32 }], callback: null }, 0, 0, 31)
+    : -1;
+  sprite.data[5] = spriteId;
+  const other = spriteId >= 0 ? rt.gSprites?.[spriteId] : undefined;
+  if (other) (other as { invisible?: boolean }).invisible = true;
+  sprite.x -= Sin(args[4] & 0xFF, args[2] | 0);
+  sprite.y -= _wCos(args[4] & 0xFF, args[3] | 0);
+  if (other) {
+    other.data[0] = args[2] | 0;
+    other.data[1] = args[3] | 0;
+    other.data[2] = args[5] | 0;
+    other.data[3] = (args[4] & 0xFF) * 256;
+    other.data[4] = args[6] | 0;
+  }
+  sprite.callback = AnimWaterBubbleProjectile_Step1;
+  AnimWaterBubbleProjectile_Step1(sprite);
+}
+
+/** 1:1 `AnimWaterBubbleProjectile_Step1` (:566). */
+function AnimWaterBubbleProjectile_Step1(sprite: _WBSprite): void {
+  const rt = _wbRt();
+  const other = rt.gSprites?.[sprite.data[5]];
+  if (!other) { sprite.callback = AnimWaterBubbleProjectile_Step2; return; }
+  const timer = other.data[4];
+  const trigIndex = other.data[3] & 0xFFFF;
+  sprite.data[0] = 1;
+  AnimTranslateLinear(sprite as never);
+  sprite.x2 += Sin(trigIndex >> 8, other.data[0]);
+  sprite.y2 += _wCos(trigIndex >> 8, other.data[1]);
+  other.data[3] = (trigIndex + other.data[2]) & 0xFFFF;
+  if (timer - 1 !== 0) {
+    other.data[4] = timer - 1;
+  } else {
+    sprite.callback = AnimWaterBubbleProjectile_Step2;
+    rt.DestroySprite?.(sprite.data[5]);
+  }
+}
+
+/** 1:1 `AnimWaterBubbleProjectile_Step2` (:588). */
+function AnimWaterBubbleProjectile_Step2(sprite: _WBSprite): void {
+  sprite.animPaused = false;
+  sprite.callback = _wRunStored;
+  StoreSpriteCallbackInData6(sprite as never, AnimWaterBubbleProjectile_Step3 as never);
+}
+
+/** 1:1 `AnimWaterBubbleProjectile_Step3` (:595). */
+function AnimWaterBubbleProjectile_Step3(sprite: _WBSprite): void {
+  sprite.data[0] = 10;
+  sprite.callback = _wWaitDur;
+  StoreSpriteCallbackInData6(sprite as never, _wDestroyMx as never);
+}
+
+registerAnimCallbacks({ AnimWaterBubbleProjectile: AnimWaterBubbleProjectile as never });
