@@ -4736,6 +4736,17 @@ export function FldEff_NPCFlyOut(_rt: DecompRuntime): number {
   return spriteId;
 }
 
+/** Garde : le fly-in d'arrivée ne doit tourner qu'UNE fois (2 hooks : gFieldCallback + poll map). */
+let _flyInArmed = false;
+function _fireFlyInOnce(): void {
+  if (!_flyInArmed) return;
+  _flyInArmed = false;
+  // Dev : auto-film du fly-in PILE à l'arrivée (échantillonnage fin), si armé.
+  const dev = (globalThis as Record<string, unknown>).dev as { gfx?: { film?: (o: unknown) => void; filmClear?: () => void } } | undefined;
+  if ((globalThis as Record<string, unknown>).__flyFilmArrival && dev?.gfx?.film) { dev.gfx.filmClear?.(); dev.gfx.film({ every: 4, seconds: 3 }); }
+  FieldCallback_FlyIntoMap();
+}
+
 /** Exposé pour Task_UseFly (orchestration warp dans fly-field-move.ts) : lance le
  *  fly-out (bird carries player) puis, quand FLDEFF_USE_FLY quitte la liste active,
  *  déclenche le warp posé (globalThis.__flyDoWarp). ≈ décomp `Task_UseFly`
@@ -4754,14 +4765,23 @@ export function StartFlyOutThenWarp(monSlot: number): void {
   const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
   const slot = (cur?.() ?? monSlot) & 0xFF;
   gFieldEffectArguments[0] = slot > 5 ? 0 : slot;
+  const srcLayout = gMapHeader?.mapLayoutId;
   FieldEffectStart(FLDEFF_USE_FLY);
   const poll = () => {
     if (!FieldEffectActiveListContains(FLDEFF_USE_FLY)) {
-      // 1:1 : à l'arrivée, `gFieldCallback = FieldCallback_FlyIntoMap` (RunFieldCallback l'exécute
-      // au retour-field post-warp) → fly-in (atterrissage + restaure le joueur + rend le contrôle).
-      (globalThis as Record<string, unknown>).gFieldCallback = FieldCallback_FlyIntoMap;
+      // Arme le fly-in à l'arrivée. Hook DOUBLE gardé : le 'step' warp exécute gFieldCallback de façon
+      // FLAKY (parfois clobbé par le warp-exit → Task_FlyIntoMap jamais créé). On garde gFieldCallback
+      // 1:1 + un poll sur le changement de map ; _flyInArmed garantit UNE seule exécution.
+      _flyInArmed = true;
+      (globalThis as Record<string, unknown>).gFieldCallback = _fireFlyInOnce;
       const doWarp = (globalThis as Record<string, unknown>).__flyDoWarp as (() => void) | undefined;
       doWarp?.();
+      const arrPoll = () => {
+        if (!_flyInArmed) return;
+        if (gMapHeader?.mapLayoutId !== srcLayout) { _fireFlyInOnce(); return; }
+        requestAnimationFrame(arrPoll);
+      };
+      requestAnimationFrame(arrPoll);
       return;
     }
     requestAnimationFrame(poll);
@@ -4793,5 +4813,26 @@ export function StartFlyOutThenWarp(monSlot: number): void {
       });
     };
     StartFlyOutThenWarp(monSlot);
+    // Recorder rAF (contexte JEU = pas throttlé) : log l'état du fly-in + l'oiseau frame par frame.
+    (globalThis as Record<string, unknown>).__flyInLog = [];
+    let recN = 0;
+    const rec = () => {
+      const rt2 = getRuntime();
+      recN++;
+      if (rt2) {
+        const intoMap = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIntoMap');
+        const flyIn = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIn');
+        if (intoMap || flyIn) {
+          let bird: unknown = null;
+          for (let i = 0; i < rt2.gSprites.length; i++) { const s = rt2.gSprites[i]; if (s && s.inUse && s.callback && /FlyBird/.test(s.callback.name || '')) bird = { cb: s.callback.name, aff: s.affineMode, x: Math.round(s.x), inv: s.invisible }; }
+          const arr = (globalThis as Record<string, unknown>).__flyInLog as Record<string, unknown>[];
+          const e = { im: intoMap ? intoMap.data[0] : -1, fi: flyIn ? flyIn.data[0] : -1, rdy: _flyBirdReady, fade: gPaletteFade.active, bird };
+          const last = arr[arr.length - 1];
+          if (!last || last.im !== e.im || last.fi !== e.fi || last.rdy !== e.rdy || last.fade !== e.fade || JSON.stringify(last.bird) !== JSON.stringify(e.bird)) arr.push(e);
+        }
+      }
+      if (recN < 500) requestAnimationFrame(rec);
+    };
+    requestAnimationFrame(rec);
   });
 };
