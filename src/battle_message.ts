@@ -61,6 +61,11 @@ import { getMoveName as _getMoveNameFr } from './engine/data/game-data';
 import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../harness/runtime/data-tables';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { gBattleMons, gBattleScripting, gBattleStruct } from './engine/battle/state';
+// 1:1 décomp : battle_message.c inclut pokemon.h — les décodeurs B_BUFF_MON_NICK[_WITH_PREFIX]
+// lisent la PARTY à l'index encodé dans le buffer (src[+2]), PAS gBattleMons (le mon annoncé
+// peut ne pas encore être au combat, ex. STRINGID_ENEMYABOUTTOSWITCHPKMN).
+import { gPlayerParty, gEnemyParty, GetMonData } from './pokemon';
+import { MON_DATA_NICKNAME } from '../include/pokemon';
 import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_MULTI, BATTLE_TYPE_LEGENDARY, BATTLE_TYPE_WALLY_TUTORIAL, BATTLE_TYPE_TWO_OPPONENTS, BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_TOWER_LINK_MULTI, BATTLE_TYPE_RECORDED, BATTLE_TYPE_RECORDED_LINK } from './engine/battle/constants';
 
 
@@ -413,10 +418,10 @@ export function ExpandBattleTextBuffPlaceholders(src: Uint8Array, dst: Uint8Arra
       }
       case B_BUFF_MOVE: { StringAppend_(dst, encodeChars(_moveName(src[srcID + 1] | (src[srcID + 2] << 8)))); srcID += 3; break; }
       case B_BUFF_TYPE: { StringAppend_(dst, encodeChars(_typeName(src[srcID + 1]))); srcID += 2; break; }
-      case B_BUFF_MON_NICK_WITH_PREFIX: { StringAppend_(dst, encodeChars(_monNicknameWithPrefix(src[srcID + 1]))); srcID += 3; break; }
+      case B_BUFF_MON_NICK_WITH_PREFIX: { StringAppend_(dst, encodeChars(_partyMonNicknameWithPrefix(src[srcID + 1], src[srcID + 2]))); srcID += 3; break; }
       case B_BUFF_STAT: { StringAppend_(dst, encodeChars(STAT_NAMES_FR[src[srcID + 1]] ?? '')); srcID += 2; break; }
       case B_BUFF_SPECIES: { StringAppend_(dst, encodeChars(_speciesName(src[srcID + 1] | (src[srcID + 2] << 8)))); srcID += 3; break; }
-      case B_BUFF_MON_NICK: { StringAppend_(dst, encodeChars(_monNickname(src[srcID + 1]))); srcID += 3; break; }
+      case B_BUFF_MON_NICK: { StringAppend_(dst, encodeChars(_partyMonNickname(src[srcID + 1], src[srcID + 2]))); srcID += 3; break; }
       case B_BUFF_NEGATIVE_FLAVOR: {
         // 1:1 décomp battle_message.c:2924 : gPokeblockWasTooXStringTable[flavorId] = saveur
         // POKéBLOCK (FLAVOR_SPICY=0..SOUR=4), extraits sText_PokeblockWasTooX. (Avant : degrés FAUX.)
@@ -837,6 +842,30 @@ function _monNicknameWithPrefix(battlerId: number): string {
   return isTrainerBattle ? `${nick} ennemi` : `${nick} sauvage`;
 }
 
+/** 1:1 décomp battle_message.c:2916-2923 (case B_BUFF_MON_NICK) : le nick vient de la
+ *  PARTY (gPlayerParty/gEnemyParty selon GetBattlerSide(battler)) à l'index partyId
+ *  encodé dans le buffer — PAS de gBattleMons[battler] : le mon annoncé peut ne pas
+ *  encore être au combat (STRINGID_ENEMYABOUTTOSWITCHPKMN est imprimé AVANT
+ *  getswitchedmondata → gBattleMons contient encore le mon K.O.). */
+function _partyMonNickname(battler: number, partyId: number): string {
+  const party = (battler & 1) === 0 ? gPlayerParty : gEnemyParty;
+  const mon = party[partyId];
+  if (!mon) return '?';
+  const nick = GetMonData(mon, MON_DATA_NICKNAME) as string;
+  if (typeof nick === 'string' && nick.length > 0) return nick;
+  return _speciesName((mon as { species?: number }).species ?? 0);
+}
+
+/** 1:1 décomp battle_message.c:2890-2907 (case B_BUFF_MON_NICK_WITH_PREFIX) :
+ *  party nick + suffixe FR « ennemi »/« sauvage » côté opponent. */
+function _partyMonNicknameWithPrefix(battler: number, partyId: number): string {
+  const nick = _partyMonNickname(battler, partyId);
+  if ((battler & 1) === 0) return nick;
+  const bs = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState;
+  const isTrainerBattle = ((bs?.gBattleTypeFlags ?? 0) & 0x08 /* BATTLE_TYPE_TRAINER */) !== 0;
+  return isTrainerBattle ? `${nick} ennemi` : `${nick} sauvage`;
+}
+
 // ─── Decode B_BUFF1/2/3 (= mini-format placeholder) 1:1 décomp ─────────────
 
 /** Decode un gBattleTextBuff{1,2,3} content. 1:1 décomp `BattleStringExpand`
@@ -918,9 +947,8 @@ function _decodeTextBuff(buf: Uint8Array): string {
       }
       case B_BUFF_MON_NICK_WITH_PREFIX: {
         const battler = buf[i++];
-        // partyIdx pas utilisé dans notre port (= bridge battle-side gBattleMons direct).
-        i++;
-        out += _monNicknameWithPrefix(battler);
+        const partyIdx = buf[i++];
+        out += _partyMonNicknameWithPrefix(battler, partyIdx);
         break;
       }
       case B_BUFF_STAT: {
@@ -936,8 +964,8 @@ function _decodeTextBuff(buf: Uint8Array): string {
       }
       case B_BUFF_MON_NICK: {
         const battler = buf[i++];
-        i++;  // partyIdx unused
-        out += _monNickname(battler);
+        const partyIdx = buf[i++];
+        out += _partyMonNickname(battler, partyIdx);
         break;
       }
       case B_BUFF_NEGATIVE_FLAVOR: {

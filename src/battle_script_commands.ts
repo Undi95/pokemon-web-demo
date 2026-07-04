@@ -10217,19 +10217,16 @@ function Cmd_switchhandleorder(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode__b32(ctx);
   const battlerArg = readByte(ctx);
   const caseId = readByte(ctx);
-  const active = (globalThis as { __battleStateMutators?: { setAttacker?: (v: number) => void } })
-    .__battleStateMutators; void active;
-  // Resolve active battler via getBattlerForBattleScript équivalent.
-  // Pour single battle, BS_ATTACKER (1) = gBattlerAttacker, BS_TARGET (0) = gBattlerTarget.
-  let activeBattler = battlerArg;
   const bs = (globalThis as { __battleState?: {
     gBattlerAttacker?: number; gBattlerTarget?: number;
     gBattlerPartyIndexes?: number[];
     gBattleMons?: Array<{ species?: number }>;
     gBattleCommunication?: number[];
   } }).__battleState;
-  if (battlerArg === 0 && bs?.gBattlerTarget !== undefined) activeBattler = bs.gBattlerTarget;
-  else if (battlerArg === 1 && bs?.gBattlerAttacker !== undefined) activeBattler = bs.gBattlerAttacker;
+  // 1:1 décomp 5161 : gActiveBattler = GetBattlerForBattleScript(gBattlescriptCurrInstr[1])
+  // (le script passe BS_FAINTED au switch-on-faint → résoudre TOUS les cas BS_*,
+  // pas seulement target/attacker — sinon battler fantôme = nick « ? »).
+  const activeBattler = getBattlerForBattleScript(battlerArg);
   setActiveBattler(activeBattler);
 
   switch (caseId) {
