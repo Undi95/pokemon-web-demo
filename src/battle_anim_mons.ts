@@ -1004,6 +1004,40 @@ export function DestroySpriteAndMatrix(sprite: unknown): void {
   _projItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimTravelDiagonally(struct Sprite *)` (battle_anim_mons.c:1591) : translation
+ *  linéaire vers (coord du battler args[5] + args[2..3]) en args[4] frames ;
+ *  args[6] = coordType (0 = Y_PIC_OFFSET/respect offsets). Le double
+ *  InitSpritePosToAnimTarget inconditionnel est DANS le décomp (quirk GF).
+ *  Foyer 1:1 (consommé par fire AnimEmberFlare/AnimBurnFlame + fight). */
+export function AnimTravelDiagonally(sprite: { x: number; y: number; data: number[]; callback?: unknown }): void {
+  const args = _projItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  let respectMonPicOffsets: boolean;
+  let coordType: number;
+  if (!args[6]) {
+    respectMonPicOffsets = true;
+    coordType = BATTLER_COORD_Y_PIC_OFFSET;
+  } else {
+    respectMonPicOffsets = false;
+    coordType = BATTLER_COORD_Y;
+  }
+  let battler: number;
+  if ((args[5] | 0) === 0 /* ANIM_ATTACKER */) {
+    InitSpritePosToAnimAttacker(sprite, respectMonPicOffsets);
+    battler = _projItf().getAttacker?.() ?? 0;
+  } else {
+    InitSpritePosToAnimTarget(sprite, respectMonPicOffsets);
+    battler = _projItf().getTarget?.() ?? 1;
+  }
+  if (((_projItf().getAttacker?.() ?? 0) & 1) !== 0 /* GetBattlerSide(attacker) */)
+    args[2] = -args[2];
+  InitSpritePosToAnimTarget(sprite, respectMonPicOffsets);
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2) + (args[2] | 0);
+  sprite.data[4] = GetBattlerSpriteCoord(battler, coordType) + (args[3] | 0);
+  sprite.callback = StartAnimLinearTranslation;
+  StoreSpriteCallbackInData6(sprite as never, ((s: unknown) => _projItf().DestroyAnimSprite?.(s)) as never);
+}
+
 /** 1:1 `AnimSpriteOnMonPos` (battle_anim_mons.c) — LE callback générique des
  *  sprites « posés sur un mon » (13 templates générés !) :
  *  args [x, y, target?, ignorePicOffsets?] ; attend animEnded/affineAnimEnded

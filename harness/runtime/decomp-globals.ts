@@ -1268,6 +1268,13 @@ export function PlayCryInternal(
   }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
 }
 
+// Canal cris des anims combat : battle_anim_sound_tasks (_playCryOf → GROWL/ROAR/
+// Hyper Voice…) lit `globalThis.__playCry` qui n'était ÉCRIT NULLE PART → tous les
+// cris d'anims étaient muets (no-op silencieux). Pan ignoré (même dette que
+// PlayCryInternal).
+(globalThis as Record<string, unknown>).__playCry = (species: number, pan?: number) =>
+  PlayCryInternal(species, pan ?? 0, 0, 0, 0);
+
 // ─── 1:1 décomp IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive ─
 // Source : src/sound.c. Décomp utilise gMPlayInfo_SE1/2.status (= hardware m4a
 // state). Notre port utilise spessasynth + raw AudioBufferSource → on tracke

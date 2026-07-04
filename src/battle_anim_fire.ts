@@ -865,3 +865,39 @@ _fRegT({
   AnimTask_MoveHeatWaveTargets: AnimTask_MoveHeatWaveTargets as never,
   AnimTask_BlendBackground: AnimTask_BlendBackground as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BRÛLURE + EMBER FLARE (2026-07-04, append-only) — AnimBurnFlame
+// (battle_anim_fire.c:672, gBurnFlameSpriteTemplate = Status_Burn : LES FLAMMES
+// DE LA BRÛLURE fin-de-tour, invisibles jusqu'ici : callback jamais porté →
+// createsprite muet) + AnimEmberFlare (:655, gEmberFlareSpriteTemplate).
+// Les deux délèguent à AnimTravelDiagonally (foyer battle_anim_mons.c:1591).
+// ════════════════════════════════════════════════════════════════════════════
+import { AnimTravelDiagonally as _fireTravelDiag } from './battle_anim_mons';
+
+/** 1:1 `AnimEmberFlare` (battle_anim_fire.c:655) : flip args[2] si attaquant et
+ *  cible du même côté (positions droites), puis travel diagonal IMMÉDIAT
+ *  (`sprite->callback(sprite)` 1:1). */
+function AnimEmberFlare(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  // 1:1 : GetBattlerSide(atk)==GetBattlerSide(tgt) && atk en position DROITE (2/3).
+  if ((atk & 1) === (tgt & 1) && (atk === 2 || atk === 3)) args[2] = -args[2];
+  sprite.callback = _fireTravelDiag as never;
+  _fireTravelDiag(sprite as never);
+}
+
+/** 1:1 `AnimBurnFlame` (battle_anim_fire.c:672) : négation args[0]/args[2] puis
+ *  callback = AnimTravelDiagonally (PAS d'appel immédiat, 1:1). */
+function AnimBurnFlame(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  args[0] = -args[0];
+  args[2] = -args[2];
+  sprite.callback = _fireTravelDiag as never;
+}
+
+registerAnimCallbacks({
+  AnimEmberFlare: AnimEmberFlare as never,
+  AnimBurnFlame: AnimBurnFlame as never,
+});
