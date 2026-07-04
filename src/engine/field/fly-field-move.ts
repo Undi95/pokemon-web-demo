@@ -26,6 +26,7 @@
 import { setPendingWarp } from './warp-system';
 import { GetHealLocationByName } from '../../heal_location';
 import { FlagGet } from '../script/script-vars';
+import { LockPlayerFieldControls } from '../../script';
 
 /** 1:1 décomp `sMapHealLocations[]` (region_map.c:289) — mapsec → HEAL_LOCATION_* (destination
  *  Vol de chaque ville). Les 16 villes Fly-ables ; les routes = HEAL_LOCATION_NONE (non listées). */
@@ -88,6 +89,10 @@ function _flyWarp(mapSec: string): void {
  *  callback de warp. Posé comme `gPostMenuFieldCallback` par `SetUpFieldMove_Fly` (party menu) →
  *  s'exécute au retour-field après fermeture du menu. */
 export function FieldCallback_Fly(): void {
+  // Verrou SYNCHRONE dès l'entrée : gPostMenuFieldCallback tourne au retour-field APRÈS le fade-in,
+  // et l'import region-map ci-dessous est ASYNC → sans ce lock immédiat, le joueur peut marcher
+  // quelques frames + le field se ré-affiche AVANT que la carte s'ouvre (fade « sur l'OW pas la carte »).
+  LockPlayerFieldControls();
   // import LAZY de region-map (anti-cycle ESM TDZ : l'import STATIQUE tire tout le gros graphe
   // field → gba-global-scope.BG_SCREEN_SIZE avant son init = crash boot. Piège déjà payé sur
   // fishing/bag-menu → import dynamique au runtime quand le module léger appelle le gros).

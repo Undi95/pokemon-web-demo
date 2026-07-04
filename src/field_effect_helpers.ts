@@ -55,7 +55,7 @@ import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runt
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
 import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
 import {
@@ -4239,7 +4239,18 @@ let _flyBirdInitPromise: Promise<void> | null = null;
 
 /** Préchargement asset oiseau (concern plateforme — le décomp charge via le template). */
 export function preloadFlyBirdEffect(): Promise<void> {
-  if (_flyBirdReady && IndexOfSpriteTileTag(TAG_FLY_BIRD) !== 0xFF) return Promise.resolve();
+  if (_flyBirdReady && IndexOfSpriteTileTag(TAG_FLY_BIRD) !== 0xFF) {
+    // Tiles OK — mais une map peut avoir LIBÉRÉ le slot palette (FreeAllSpritePalettes au map-load)
+    // → couleur oiseau fausse selon la map. On re-charge la palette si le tag n'est plus présent.
+    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF) {
+      return loadGbaPal('/decomp/em/field_effects/bird.gbapal').then((pal) => {
+        LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
+        _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+      });
+    }
+    _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+    return Promise.resolve();
+  }
   if (_flyBirdInitPromise && !_flyBirdReady) return _flyBirdInitPromise;
   _flyBirdReady = false; _flyBirdInitPromise = null;
   _flyBirdInitPromise = (async () => {
@@ -4287,8 +4298,11 @@ function CreateFlyBirdSprite(): number {
   const rt = getRuntime();
   if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
   const { spriteId } = rt.CreateSpriteAtOam({
+    // Déviation z-order : décomp = oam.priority 1, mais NOTRE joueur (fly/surf) est priority 2 →
+    // oiseau priority 1 le rendait DEVANT le joueur (joueur « sous » l'oiseau). Priority 2 (= match
+    // joueur) : à priorité égale, le joueur (oamIndex bas) passe DEVANT l'oiseau (oamIndex haut). 1:1 visuel.
     tileId: _flyBirdTileStart, paletteBank: _flyBirdPaletteBank,
-    x: 0xFF, y: 0xB4, shape: 0, size: 2, priority: 1,
+    x: 0xFF, y: 0xB4, shape: 0, size: 2, priority: 2,
     paletteMode: 0, affineMode: 0, subpriority: 1,
   });
   const sprite = rt.gSprites[spriteId];
@@ -4328,6 +4342,7 @@ function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): vo
   if (sprite.data[7] === 0) {  // sAnimCompleted
     if (sprite.data[0] === 0) {
       sprite.affineMode = 3;  // ST_OAM_AFFINE_DOUBLE
+      { const _m = AllocOamMatrix(); if (_m > 0) sprite.matrixNum = _m; }  // = InitSpriteAffineAnim (alloue la matrice)
       StartSpriteAffineAnim(sprite, 0);
       sprite.x = 0x76; sprite.y = -0x30;
       sprite.data[0]++;
@@ -4371,6 +4386,7 @@ function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime):
   if (sprite.data[7] === 0) {
     if (sprite.data[0] === 0) {
       sprite.affineMode = 3;
+      { const _m = AllocOamMatrix(); if (_m > 0) sprite.matrixNum = _m; }  // = InitSpriteAffineAnim (alloue la matrice)
       StartSpriteAffineAnim(sprite, 1);
       sprite.x = 0x5e; sprite.y = -0x20;
       sprite.data[0]++;
@@ -4820,6 +4836,14 @@ export function StartFlyOutThenWarp(monSlot: number): void {
       const rt2 = getRuntime();
       recN++;
       if (rt2) {
+        const flyOut = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyOut');
+        if (flyOut && flyOut.data[0] >= 6 && !(globalThis as Record<string, unknown>).__flyOutZ) {
+          const pa2 = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId: number };
+          const psp = rt2.gSprites[pa2.spriteId];
+          let bz: unknown = null;
+          for (let i = 0; i < rt2.gSprites.length; i++) { const s = rt2.gSprites[i]; if (s && s.inUse && s.callback && /FlyBird/.test(s.callback.name || '')) bz = { sub: s.subpriority, oamP: rt2.gba.oam[s.oamIndex]?.priority, idx: s.oamIndex }; }
+          if (psp) (globalThis as Record<string, unknown>).__flyOutZ = { player: { sub: psp.subpriority, oamP: rt2.gba.oam[psp.oamIndex]?.priority, idx: psp.oamIndex }, bird: bz };
+        }
         const intoMap = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIntoMap');
         const flyIn = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIn');
         if (intoMap || flyIn) {
