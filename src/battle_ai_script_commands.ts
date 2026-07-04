@@ -15,6 +15,7 @@
  */
 
 import { Random } from './random';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gBattleMons,
   gBattlerTarget,
@@ -1735,18 +1736,14 @@ export function BattleAI_HandleItemUseBeforeAISetup(defaultScoreMoves: number): 
   BattleAI_SetupAIData(defaultScoreMoves);
 }
 
-// Item name → id (1:1 : gTrainers[].items[] sont des ITEM_X). Lazy resolve.
-let _itemNameToId: Record<string, number> | null = null;
+// Item name → id (1:1 : gTrainers[].items[] sont des u16 ITEM_X ; notre JSON les
+// stocke en enum-strings). resolveDecompConstant = LE canal items du repo (même
+// résolveur que le bridge trainer pour les held items). ⚠️ L'ancienne voie
+// `globalThis.__itemsEnum` n'était ÉCRITE NULLE PART → itemId 0 systématique →
+// gBattleHistory.trainerItems restait vide → ShouldUseItem ne trouvait JAMAIS
+// d'item → l'IA dresseur n'utilisait aucune potion (trou mandat dresseurs).
 function _resolveItemId(name: string): number {
-  if (!_itemNameToId) {
-    _itemNameToId = {};
-    try {
-      // chargé sync si déjà importé ailleurs ; sinon 0 jusqu'au prochain combat.
-      const g = globalThis as { __itemsEnum?: Record<string, number> };
-      if (g.__itemsEnum) _itemNameToId = g.__itemsEnum;
-    } catch { /* noop */ }
-  }
-  return _itemNameToId[name] ?? 0;
+  return resolveDecompConstant(name) ?? 0;
 }
 
 // ─── ChooseMoveOrAction (battle_ai_script_commands.c:382-570) ───────────────
@@ -1897,10 +1894,16 @@ export function BattleAI_ChooseMoveOrAction(): number {
 
 // Expose pour battle-controller-opponent lazy lookup (= éviter cycle ESM).
 // AI_TrySwitchOrUseItem est dans ai-switch-items.ts, set par celui-ci.
+// + BattleAI_HandleItemUseBeforeAISetup : appelé par SetUpBattleVarsAndBirchZigzagoon
+// (battle-setup-helpers, = battle_controllers.c:66) — l'import direct crée un cycle
+// TDZ (boot mort vérifié 2026-07-04) → même pont que le reste de la surface AI.
 (globalThis as { __battleAi?: Record<string, unknown> }).__battleAi = {
   ...(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi,
   BattleAI_SetupAIData,
   BattleAI_ChooseMoveOrAction,
+  BattleAI_HandleItemUseBeforeAISetup,
+  // lecture devtools/sondes (getter : gBattleHistory est déclaré plus BAS → TDZ à l'éval)
+  get gBattleHistory() { return gBattleHistory; },
 };
 
 

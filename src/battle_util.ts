@@ -210,6 +210,21 @@ import {
   B_BUFF_STRING as _B_BUFF_STRING_IBE,
   B_BUFF_EOS as _B_BUFF_EOS_IBE,
 } from '../include/battle_message';
+// 1:1 decomp battle_ai_switch_items.h (enums AI_ITEM_*/AI_HEAL_*/AI_X_*) + strings /
+// anim pour la branche IA de HandleAction_UseItem (battle_util.c:332-403).
+import { ENUM_AI_0 as _ENUM_AI_0_HAUI, ENUM_AI_1 as _ENUM_AI_1_HAUI, ENUM_AI_2 as _ENUM_AI_2_HAUI } from '../include/battle_ai_switch_items';
+import { B_MSG_STAT_ROSE_ITEM, B_MSG_USED_DIRE_HIT, B_MSG_SET_MIST } from '../include/constants/battle_string_ids';
+import { STAT_ANIM_PLUS1 } from '../include/battle_anim';
+import { CHAR_X } from '../include/constants/characters';
+const {
+  AI_ITEM_FULL_RESTORE, AI_ITEM_HEAL_HP, AI_ITEM_CURE_CONDITION,
+  AI_ITEM_X_STAT, AI_ITEM_GUARD_SPEC,
+} = _ENUM_AI_0_HAUI;
+const {
+  AI_HEAL_CONFUSION, AI_HEAL_PARALYSIS, AI_HEAL_FREEZE,
+  AI_HEAL_BURN, AI_HEAL_POISON, AI_HEAL_SLEEP,
+} = _ENUM_AI_1_HAUI;
+const { AI_DIRE_HIT } = _ENUM_AI_2_HAUI;
 import {
   getMoveEffectScriptOffset, getBattleScriptOffset,
   stepBattleScriptCommand, gBattleScriptContext,
@@ -601,7 +616,7 @@ export function HandleAction_UseItem(ctx?: BattleScriptContext): void {
   // 1:1 decomp battle_util.c:324-330 : POKE_DOLL(80)/FLUFFY_TAIL(81) ->
   // BattleScript_RunByUsingItem (fuite garantie wild) ; autres items joueur ->
   // BattleScript_PlayerUsesItem (message + finishaction ; l effet medecine/X a
-  // deja ete applique cote bag/party 1:1). Branche AI trainer items = dette.
+  // deja ete applique cote bag/party 1:1).
   if (item === 80 || item === 81) {
     const off2 = getBattleScriptOffset('BattleScript_RunByUsingItem');
     const c2 = ctx ?? gBattleScriptContext;
@@ -610,17 +625,85 @@ export function HandleAction_UseItem(ctx?: BattleScriptContext): void {
       setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
       return;
     }
-  } else if (item > 0) {
-    const off3 = getBattleScriptOffset('BattleScript_PlayerUsesItem');
-    const c3 = ctx ?? gBattleScriptContext;
-    if (off3 >= 0 && c3) {
-      c3.scriptPtr = off3;
+  } else if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
+    if (item > 0) {
+      const off3 = getBattleScriptOffset('BattleScript_PlayerUsesItem');
+      const c3 = ctx ?? gBattleScriptContext;
+      if (off3 >= 0 && c3) {
+        c3.scriptPtr = off3;
+        setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+        return;
+      }
+    }
+  } else {
+    // 1:1 decomp battle_util.c:332-403 (branche IA dresseur) : gBattleScripting.battler,
+    // MULTISTRING_CHOOSER selon AI_itemType/AI_itemFlags (poses par ShouldUseItem), puis
+    // gBattlescriptCurrInstr = gBattlescriptsForUsingItem[AI_itemType] (battle_scripts_2.s:31,
+    // AI_ITEM_FULL_RESTORE=1 -> OpponentUsesHealItem etc.). C'etait LA dette « l'IA
+    // dresseur n'utilise jamais ses potions » : l'action USE_ITEM opponent tombait dans
+    // B_ACTION_FINISHED muet, l'item deja consomme par ShouldUseItem etait perdu.
+    gBattleScripting.battler = gBattlerAttacker;
+    const half = gBattlerAttacker >> 1;
+    switch (gBattleStruct.AI_itemType[half]) {
+      case AI_ITEM_FULL_RESTORE:
+      case AI_ITEM_HEAL_HP:
+        break;
+      case AI_ITEM_CURE_CONDITION:
+        gBattleCommunication[MULTISTRING_CHOOSER] = AI_HEAL_CONFUSION;
+        if (gBattleStruct.AI_itemFlags[half] & (1 << AI_HEAL_CONFUSION)) {
+          if (gBattleStruct.AI_itemFlags[half] & ((1 << AI_HEAL_PARALYSIS) | (1 << AI_HEAL_FREEZE)
+            | (1 << AI_HEAL_BURN) | (1 << AI_HEAL_POISON) | (1 << AI_HEAL_SLEEP))) {
+            gBattleCommunication[MULTISTRING_CHOOSER] = AI_HEAL_SLEEP;
+          }
+        } else {
+          // 1:1 : premier statut trouve (il ne devrait y en avoir qu'un).
+          while (!(gBattleStruct.AI_itemFlags[half] & 1)) {
+            gBattleStruct.AI_itemFlags[half] >>= 1;
+            gBattleCommunication[MULTISTRING_CHOOSER]++;
+          }
+        }
+        break;
+      case AI_ITEM_X_STAT:
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STAT_ROSE_ITEM;
+        if (gBattleStruct.AI_itemFlags[half] & (1 << AI_DIRE_HIT)) {
+          gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_USED_DIRE_HIT;
+        } else {
+          _PREPARE_STAT_BUFFER_IBE(_gBattleTextBuff1_IBE, STAT_ATK);
+          _PREPARE_STRING_BUFFER_IBE(_gBattleTextBuff2_IBE, CHAR_X);
+          while (!(gBattleStruct.AI_itemFlags[half] & 1)) {
+            gBattleStruct.AI_itemFlags[half] >>= 1;
+            _gBattleTextBuff1_IBE[2]++;
+          }
+          gBattleScripting.animArg1 = _gBattleTextBuff1_IBE[2] + STAT_ANIM_PLUS1;
+          gBattleScripting.animArg2 = 0;
+        }
+        break;
+      case AI_ITEM_GUARD_SPEC:
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_MIST;
+        break;
+    }
+    const offAi = getBattleScriptOffset(GBATTLESCRIPTS_FOR_USING_ITEM[gBattleStruct.AI_itemType[half]]
+      ?? 'BattleScript_PlayerUsesItem');
+    const cAi = ctx ?? gBattleScriptContext;
+    if (offAi >= 0 && cAi) {
+      cAi.scriptPtr = offAi;
       setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
       return;
     }
   }
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
+
+/** 1:1 decomp `gBattlescriptsForUsingItem` (data/battle_scripts_2.s:31) — indexee
+ *  par AI_itemType (AI_ITEM_FULL_RESTORE=1 ... AI_ITEM_GUARD_SPEC=5, 0 = joueur). */
+const GBATTLESCRIPTS_FOR_USING_ITEM = [
+  'BattleScript_PlayerUsesItem',
+  'BattleScript_OpponentUsesHealItem',        // AI_ITEM_FULL_RESTORE
+  'BattleScript_OpponentUsesHealItem',        // AI_ITEM_HEAL_HP
+  'BattleScript_OpponentUsesStatusCureItem',  // AI_ITEM_CURE_CONDITION
+  'BattleScript_OpponentUsesXItem',           // AI_ITEM_X_STAT
+  'BattleScript_OpponentUsesGuardSpec',       // AI_ITEM_GUARD_SPEC
+];
 
 /** 1:1 décomp `HandleAction_Run` (battle_util.c:487-539). */
 export function HandleAction_Run(ctx?: BattleScriptContext): void {

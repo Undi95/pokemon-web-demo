@@ -122,9 +122,15 @@ function ClearBattleMonForms(): void {
   // Dette R3 : per-battler form tracker (Castform weather / Unown letter).
 }
 
-/** 1:1 décomp `BattleAI_HandleItemUseBeforeAISetup(itemMask)`. */
-function BattleAI_HandleItemUseBeforeAISetup(_itemMask: number): void {
-  // Dette R3 : trainer pre-battle items use (= X Attack / Guard Spec).
+/** 1:1 décomp : battle_controllers.c inclut battle_ai_script_commands.h — le VRAI
+ *  BattleAI_HandleItemUseBeforeAISetup (battle_ai_script_commands.ts:1714) remplit
+ *  gBattleHistory.trainerItems depuis gTrainers[opponent].items. L'ancien stub local
+ *  vide ici court-circuitait TOUTE la chaîne objets IA (ShouldUseItem ne trouvait
+ *  jamais d'item → l'IA dresseur n'utilisait aucune potion). Import direct = cycle
+ *  TDZ (boot mort vérifié) → pont __battleAi (même surface que AI_TrySwitchOrUseItem). */
+function BattleAI_HandleItemUseBeforeAISetup(itemMask: number): void {
+  const m = (globalThis as { __battleAi?: { BattleAI_HandleItemUseBeforeAISetup?: (mask: number) => void } }).__battleAi;
+  m?.BattleAI_HandleItemUseBeforeAISetup?.(itemMask);
 }
 
 /** 1:1 décomp `ZeroEnemyPartyMons()`. */
