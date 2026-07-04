@@ -38,9 +38,10 @@ import {
   PreloadMonIcon, IsMonIconLoaded, LoadMonIconPaletteToOwnSlot, GetIconSpeciesNoPersonality,
   CreateMonIconNoPersonality, FreeAndDestroyMonIconSprite,
 } from './pokemon_icon';
-import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
+import { ResetSpriteData, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, DestroySprite } from './sprite';
 import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
+import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -193,6 +194,7 @@ const STATE_LOAD = 0, STATE_FADE_IN = 1, STATE_HANDLE_INPUT = 2, STATE_ERROR_MSG
 // Menu_ProcessInput sentinelles (menu.ts) + touches GBA (io_reg) + text/window (text.ts)
 const MENU_NOTHING_CHOSEN = -2, MENU_B_PRESSED = -1;
 const DPAD_UP = 0x0040, DPAD_DOWN = 0x0080, A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+const DPAD_RIGHT = 0x0010, DPAD_LEFT = 0x0020;
 const FONT_NORMAL = 1, TEXT_COLOR_DARK_GRAY = 2, TEXT_COLOR_WHITE = 1, TEXT_COLOR_LIGHT_GRAY = 3;
 const COPYWIN_FULL = 3, TEXT_SKIP_DRAW = 0xFF, PIXEL_FILL_1 = 0x11;
 
@@ -354,14 +356,63 @@ function _createBoxMonIcons(boxId: number): void {
   }
 }
 
-/** Task d'init : attend le préchargement async des icônes, puis les crée + allume l'écran. */
+// ─── CURSEUR MAIN (hand_cursor) — ≈ CreateCursorSprites (:7735) : sprite 32×32 pointant un slot.
+let _pcCursorSpriteId = -1;
+let _pcCursorPos = 0;           // slot pointé (0..IN_BOX_COUNT-1, grille IN_BOX_COLUMNS)
+let _pcCursorTileStart = -1;
+let _pcCursorPalBank = 0;
+let _pcCursorReady = false;
+
+async function _loadCursorGfx(): Promise<void> {
+  if (_pcCursorReady) return;
+  const png = await loadIndexedPngStrict('/decomp/em/pokemon_storage/hand_cursor.png', 4);
+  _pcCursorTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: 'pc_cursor' });
+  _pcCursorPalBank = LoadSpritePalette({ data: png.palette, tag: 'pc_cursor_pal' });
+  _pcCursorReady = true;
+}
+
+/** Coords écran du slot `pos` (mêmes que l'icône, 1:1 :4484-4485) — le curseur main pointe le slot. */
+function _cursorSlotCoords(pos: number): { x: number; y: number } {
+  return { x: 8 * (3 * (pos % IN_BOX_COLUMNS)) + 100, y: 8 * (3 * Math.floor(pos / IN_BOX_COLUMNS)) + 44 };
+}
+
+/** ≈ `CreateCursorSprites` (:7735) — crée le sprite 32×32 du curseur au slot courant. */
+function _createCursor(): void {
+  const rt = getRuntime(); if (!rt || !_pcCursorReady) return;
+  const { x, y } = _cursorSlotCoords(_pcCursorPos);
+  // Décomp subpriority=6 (HW GBA : subpriority basse = devant). Notre buildOamBuffer trie à l'INVERSE
+  // (subpriority haute = devant), donc pour garder le curseur DEVANT les icônes (subpriority 14-19) on
+  // prend une valeur haute — adaptation renderer, prouvée en jeu (sonde : sub 6 = derrière, 25 = devant).
+  const spr = rt.CreateSpriteAtOam({ tileId: _pcCursorTileStart, paletteBank: _pcCursorPalBank, x, y, shape: 0, size: 2, priority: 1, subpriority: 30 });
+  _pcCursorSpriteId = spr.spriteId;
+}
+
+/** Déplace le curseur dans la grille (wrap intra-boîte). Raffinement 1:1 = sortie vers flèches/party/titre. */
+function _moveCursor(dCol: number, dRow: number): void {
+  const rt = getRuntime(); if (!rt || _pcCursorSpriteId < 0) return;
+  const rows = IN_BOX_COUNT / IN_BOX_COLUMNS;  // 5
+  let col = _pcCursorPos % IN_BOX_COLUMNS;
+  let row = Math.floor(_pcCursorPos / IN_BOX_COLUMNS);
+  col = (col + dCol + IN_BOX_COLUMNS) % IN_BOX_COLUMNS;
+  row = (row + dRow + rows) % rows;
+  _pcCursorPos = row * IN_BOX_COLUMNS + col;
+  const { x, y } = _cursorSlotCoords(_pcCursorPos);
+  const spr = rt.gSprites[_pcCursorSpriteId];
+  if (spr) { spr.x = x; spr.y = y; }
+}
+
+/** Task d'init : attend le préchargement async des icônes + du curseur, puis crée tout + allume l'écran. */
 function Task_PcBoxRender(taskId: number): void {
   const rt = getRuntime(); if (!rt) return;
+  if (!_pcCursorReady) return;  // gate async curseur
   const storage = GetPokemonStorage();
   for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
     const mon = storage.boxes[_pcPendingBoxId]?.[pos];
-    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return; // gate async
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return; // gate async icônes
   }
+  // Curseur AVANT les icônes : 1:1 décomp (InitCursor état 4 < CreateInitBoxTask état 8) ; dans notre
+  // renderer oamIndex bas = devant, donc le curseur (créé en 1er) passe devant les icônes qu'il survole.
+  _createCursor();
   _createBoxMonIcons(_pcPendingBoxId);
   rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1040);  // OBJ ON (bit12) + 1D mapping (bit6) — icônes visibles
   // fade-in : copie gPlttBufferUnfaded → gPlttBufferFaded (sinon le renderer lit du noir).
@@ -376,7 +427,13 @@ function CB2_PokeStorage(): void {
   rt.animateSprites?.();
   rt.buildOamBuffer?.();
   rt.UpdatePaletteFade?.();
+  // Navigation du curseur dans la grille (brique curseur ; l'action A viendra avec le menu contextuel).
+  if (gMain.newKeys & DPAD_UP) _moveCursor(0, -1);
+  else if (gMain.newKeys & DPAD_DOWN) _moveCursor(0, 1);
+  else if (gMain.newKeys & DPAD_LEFT) _moveCursor(-1, 0);
+  else if (gMain.newKeys & DPAD_RIGHT) _moveCursor(1, 0);
   if (gMain.newKeys & B_BUTTON) {  // ≈ CB2_ExitPokeStorage (retour field ; raffinement = FieldTask_ReturnToPcMenu)
+    if (_pcCursorSpriteId >= 0) { DestroySprite(_pcCursorSpriteId); _pcCursorSpriteId = -1; }
     _pcBoxIconSprites.forEach((id) => FreeAndDestroyMonIconSprite(id));
     _pcBoxIconSprites = [];
     FreeAllSpritePalettes();
@@ -395,13 +452,28 @@ function EnterPokeStorage(_boxOption: number): void {
   FreeAllSpritePalettes();
   rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
   _pcPendingBoxId = StorageGetCurrentBox();
+  _pcCursorPos = 0;
   _preloadBoxIcons(_pcPendingBoxId);
+  void _loadCursorGfx();
   rt.CreateTask((t) => Task_PcBoxRender(t.taskId), 3);
   rt.SetMainCallback2(CB2_PokeStorage as never);
 }
 
 // Pont dev/déclencheur : ouvrir le menu PC (le script « PC POKéMON » l'appellera au câblage).
 (globalThis as Record<string, unknown>).__ShowPokemonStorageSystemPC = ShowPokemonStorageSystemPC;
+
+// Sonde dev (diag curseur) — sans effet sur le jeu.
+(globalThis as Record<string, unknown>).__pcProbe = () => {
+  const rt = getRuntime();
+  const spr = rt && _pcCursorSpriteId >= 0 ? rt.gSprites[_pcCursorSpriteId] : null;
+  const oam = spr && rt ? rt.gba?.oam?.[spr.oamIndex] : null;
+  return {
+    cursorId: _pcCursorSpriteId, ready: _pcCursorReady, pos: _pcCursorPos,
+    tileStart: _pcCursorTileStart, palBank: _pcCursorPalBank,
+    spr: spr ? { x: spr.x, y: spr.y, inUse: spr.inUse, invisible: spr.invisible, oamIndex: spr.oamIndex } : null,
+    oam: oam ? { x: oam.x, y: oam.y, tileId: oam.tileId, paletteBank: oam.paletteBank, shape: oam.shape, size: oam.size, priority: oam.priority, affineMode: oam.affineMode } : null,
+  };
+};
 
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
