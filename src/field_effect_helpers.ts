@@ -1696,6 +1696,10 @@ export function FldEff_FieldMoveShowMonInit(_rt: DecompRuntime): number {
  *  Indoors). Même ensemble 1:1 qu'`IsMapTypeOutdoors` (overworld.c:1354) : ROUTE|TOWN|UNDERWATER|
  *  CITY|OCEAN_ROUTE. (mapType est une STRING dans le port.) */
 export function FldEff_FieldMoveShowMon(rt: DecompRuntime): number {
+  // Port : précharge les assets streaks (fond de la bannière) — async, donc lancé ICI et le
+  // LoadGfx de la task est GATÉ dessus (sans ça _streaks*=null → LoadGfx skippe tout → fond NOIR).
+  // Le décomp les a en ROM (CpuCopy16 sync) ; nous fetchons le PNG. early-return si déjà init.
+  void preloadFieldMoveShowMonEffect(rt);
   const mt = gMapHeader?.mapType;
   const isOutdoors = mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN' || mt === 'MAP_TYPE_UNDERWATER'
                   || mt === 'MAP_TYPE_CITY' || mt === 'MAP_TYPE_OCEAN_ROUTE';
@@ -1740,6 +1744,9 @@ function FieldMoveShowMonOutdoorsEffect_Init(task: DecompTask): void {
 function FieldMoveShowMonOutdoorsEffect_LoadGfx(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
+  // Gate port : les assets streaks sont préchargés en ASYNC (FldEff_FieldMoveShowMon) → attendre
+  // qu'ils soient prêts avant de peupler BG0, sinon fond de bannière NOIR (tiles/palette absentes).
+  if (!_streaksOutdoorsGfx || !_streaksOutdoorsPal || !_streaksOutdoorsTilemap) return;
   const bg0 = rt.gba.bg(0);
   // CpuCopy16(sFieldMoveStreaksOutdoors_Gfx, VRAM+offset, 0x200) — 16 tuiles 4bpp à charBase 2.
   if (_streaksOutdoorsGfx) bg0.vram.set(_streaksOutdoorsGfx.subarray(0, 0x200), 0);
@@ -1900,6 +1907,8 @@ function FieldMoveShowMonIndoorsEffect_Init(task: DecompTask): void {
 function FieldMoveShowMonIndoorsEffect_LoadGfx(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
+  // Gate port : assets streaks indoors préchargés en ASYNC → attendre (sinon fond bannière NOIR).
+  if (!_streaksIndoorsGfx || !_streaksIndoorsPal || !_streaksIndoorsTilemap) return;
   const bg0 = rt.gba.bg(0);
   if (_streaksIndoorsGfx) bg0.vram.set(_streaksIndoorsGfx.subarray(0, 0x80), 0);  // CpuCopy16 0x80 = 4 tuiles
   bg0.tilemap.fill(0);                                                            // CpuFill32(0, VRAM+delta, 0x800)
