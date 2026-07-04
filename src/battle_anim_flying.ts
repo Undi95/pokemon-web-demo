@@ -791,6 +791,36 @@ function AnimBounceBallShrink(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimBounceBallShrink: AnimBounceBallShrink as never });
 
+/** 1:1 `AnimBounceBallLand` (battle_anim_flying.c:985) : tour d'ATTAQUE de Rebond (Bounce) —
+ *  la « boule » (ombre ronde, gBounceBallLandSpriteTemplate) TOMBE (case 1 : y2 += 10) puis
+ *  REMONTE (case 2 : y2 -= 10) ; en remontant hors-champ (y+y2 < -32), RESTAURE la visibilité
+ *  de l'ATTAQUANT (invisible=FALSE — il était masqué par AnimBounceBallShrink au tour de charge)
+ *  + DestroyAnimSprite. Self-stepper (switch data[0]). Sans lui, l'attaquant restait INVISIBLE. */
+function AnimBounceBallLand(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.y = GetBattlerSpriteCoord(_vItf().getTarget?.() ?? 1, BATTLER_COORD_Y);
+      sprite.y2 = -sprite.y - 32;
+      sprite.data[0]++;
+      break;
+    case 1:
+      sprite.y2 += 10;
+      if (sprite.y2 >= 0) ++sprite.data[0];
+      break;
+    case 2:
+      sprite.y2 -= 10;
+      if (sprite.y + sprite.y2 < -32) {
+        // 1:1 gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE
+        const monId = _getBattlerMonSpriteId(_vItf().getAttacker?.() ?? 0);
+        const mon = monId >= 0 ? _rt()?.gSprites?.[monId] : undefined;
+        if (mon) mon.invisible = false;
+        _vItf().DestroyAnimSprite?.(sprite);
+      }
+      break;
+  }
+}
+registerAnimCallbacks({ AnimBounceBallLand: AnimBounceBallLand as never });
+
 // ─── VAGUE F12 : AnimTask_AnimateGustTornadoPalette (battle_anim_flying.c.c, 3 hits) ──────
 // Rotation des couleurs 1-8 de la palette GUST toutes args[0] frames pendant
 // args[1] frames (le tourbillon qui scintille).
