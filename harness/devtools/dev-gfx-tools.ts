@@ -202,19 +202,35 @@ function findColor(rgb: readonly [number, number, number], tol = 30): Array<{ y:
 const FILM_ID = '__devGfxFilm';
 
 /** Capture `frames` images (1 toutes les `every` rAF) en mosaïque plein écran.
- *  Lancer PUIS déclencher la transition. 1 screenshot = tout le déroulé. */
-function film(opts: { frames?: number; every?: number; cols?: number } = {}): string {
-  const frames = opts.frames ?? 12;
+ *  Lancer PUIS déclencher la transition. 1 screenshot = tout le déroulé.
+ *  Mode précis : `seconds` remplace `frames` → capture pendant S secondes à 1/every rAF
+ *  (ex. film({every:15, seconds:2}) = toutes les 15 frames pendant 2 s ≈ 8 vignettes). */
+function film(opts: { frames?: number; every?: number; cols?: number; seconds?: number } = {}): string {
   const every = opts.every ?? 2;
+  const frames = opts.seconds !== undefined
+    ? Math.max(1, Math.ceil((opts.seconds * 60) / every))
+    : (opts.frames ?? 12);
   const cols = opts.cols ?? 4;
   filmClear();
   const src = gameCanvas();
   if (!src) return 'canvas introuvable';
   const rows = Math.ceil(frames / cols);
+  // Wrapper (id = FILM_ID pour filmClear) : canvas + croix ✕ EN HAUT À DROITE de la
+  // mosaïque (le panel devtools est caché derrière elle — la croix doit être dessus).
+  const wrap = document.createElement('div');
+  wrap.id = FILM_ID;
+  wrap.style.cssText = 'position:fixed;top:0;left:0;z-index:2147483001;width:100vw;max-height:100vh;overflow:auto;';
   const mc = document.createElement('canvas');
   mc.width = 240 * cols; mc.height = 160 * rows;
-  mc.id = FILM_ID;
-  mc.style.cssText = 'position:fixed;top:0;left:0;z-index:2147483001;background:#222;image-rendering:pixelated;width:100vw;';
+  mc.style.cssText = 'display:block;background:#222;image-rendering:pixelated;width:100vw;';
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.title = 'Fermer la mosaïque';
+  closeBtn.style.cssText = 'position:fixed;top:8px;right:14px;z-index:2147483002;background:#c0392b;color:#fff;'
+    + 'border:none;border-radius:4px;width:32px;height:32px;font-size:18px;cursor:pointer;box-shadow:0 1px 4px #000;';
+  closeBtn.onclick = filmClear;
+  wrap.appendChild(mc);
+  wrap.appendChild(closeBtn);
   const ctx = mc.getContext('2d');
   if (!ctx) return 'ctx 2d indisponible';
   let raf = 0, f = 0;
@@ -236,7 +252,7 @@ function film(opts: { frames?: number; every?: number; cols?: number } = {}): st
     }
     raf++;
     if (f < frames) requestAnimationFrame(tick);
-    else { document.body.appendChild(mc); console.log(`[dev.gfx.film] ${frames} frames posées (1/${every} rAF) — dev.gfx.filmClear() pour retirer`); }
+    else { document.body.appendChild(wrap); console.log(`[dev.gfx.film] ${frames} frames posées (1/${every} rAF) — croix ✕ ou dev.gfx.filmClear() pour retirer`); }
   };
   requestAnimationFrame(tick);
   return `capture de ${frames} frames (1/${every} rAF) lancée — déclenche la transition MAINTENANT`;
@@ -264,6 +280,7 @@ export function installGfxTools(): void {
         '  lum(x?,y?,w?,h?)     luminosité moyenne canvas (fades)',
         '  findColor([r,g,b])   géométrie d\'une couleur (xAvg par rangée)',
         '  film({frames,every}) mosaïque de frames rAF (transitions)',
+        '  film({every,seconds}) mode précis : 1/every rAF pendant S secondes',
         '  filmClear()          retire la mosaïque',
       ].join('\n');
     },
