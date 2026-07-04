@@ -848,3 +848,82 @@ export function isBattleTransitionBlurActive(): boolean { return _blur !== null;
   startBattleTransitionBlur, tickBattleTransitionBlur,
   stopBattleTransitionBlur, isBattleTransitionBlurActive,
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+// SWIRL (2026-07-04, append-only) — B_TRANSITION_SWIRL (battle_transition.c:
+// Swirl_Init:1181/Swirl_End:1197) : LA transition sauvage « ennemi plus fort »
+// (sBattleTransitionTable_Wild[1]). Les BG ondulent en sinusoïde d'amplitude
+// croissante pendant le fade noir. SetSinWave 1:1 (:4560).
+// ════════════════════════════════════════════════════════════════════════════
+import { Sin as _swSin } from './trig';
+
+interface SwirlState { sinIndex: number; amplitude: number; blend: number; blendTimer: number; lastFrame: number }
+let _swirl: SwirlState | null = null;
+
+/** 1:1 `SetSinWave(array, sinAdd, index, indexIncrementer, amplitude, arrSize)`
+ *  (battle_transition.c:4560). */
+function _setSinWave(array: { [i: number]: number }, sinAdd: number, index: number, indexIncrementer: number, amplitude: number, arrSize: number): void {
+  for (let i = 0; arrSize > 0; arrSize--, i++, index += indexIncrementer) {
+    array[i] = sinAdd + _swSin(index & 0xFF, amplitude);
+  }
+}
+
+/** 1:1 `Swirl_Init` (:1181) : fade noir (delay 4) + sinwave amplitude 0 +
+ *  HBlank HOFS BG1-3 ← buffer[VCOUNT] (VBlankCB_Swirl copie buffers[0]→[1]). */
+export function startBattleTransitionSwirl(): void {
+  ScanlineEffect_Clear();
+  _swirl = { sinIndex: 0, amplitude: 0, blend: 0, blendTimer: 0, lastFrame: -1 };
+  _setSinWave(gScanlineEffectRegBuffers[1], 0 /* cameraX */, 0, 2, 0, DISPLAY_HEIGHT);
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      const offset = gScanlineEffectRegBuffers[1][y];
+      rt.gba.bg(1).config.hofs = offset;
+      rt.gba.bg(2).config.hofs = offset;
+      rt.gba.bg(3).config.hofs = offset;
+    }
+  });
+}
+
+/** 1:1 `Swirl_End` (:1197) : sinIndex += 4, amplitude += 8, SetSinWave live ;
+ *  fini quand le fade noir (BeginNormalPaletteFade ALL delay 4) atteint 16. */
+export function tickBattleTransitionSwirl(): boolean {
+  if (!_swirl) return true;
+  const s = _swirl;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === s.lastFrame) return false;
+  s.lastFrame = fc;
+  s.sinIndex += 4;
+  s.amplitude += 8;
+  _setSinWave(gScanlineEffectRegBuffers[0], 0, s.sinIndex, 2, s.amplitude, DISPLAY_HEIGHT);
+  // VBlankCB_Swirl : DmaCopy buffers[0] → buffers[1] (lu par le HBlank).
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  // BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK) : +1 coeff / 5 frames.
+  if (++s.blendTimer >= 5) {
+    s.blendTimer = 0;
+    s.blend++;
+    BlendPalettes(PALETTES_ALL, Math.min(s.blend, 16), 0x0000);
+  }
+  if (s.blend >= 16) {
+    stopBattleTransitionSwirl();
+    return true;
+  }
+  return false;
+}
+
+export function stopBattleTransitionSwirl(): void {
+  _swirl = null;
+  const rt = getRuntime();
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.bg(1).config.hofs = 0;
+    rt.gba.bg(2).config.hofs = 0;
+    rt.gba.bg(3).config.hofs = 0;
+  }
+  ScanlineEffect_Stop();
+}
+
+Object.assign((globalThis as Record<string, unknown>).__battleTransitionMirror as Record<string, unknown>, {
+  startBattleTransitionSwirl, tickBattleTransitionSwirl, stopBattleTransitionSwirl,
+});

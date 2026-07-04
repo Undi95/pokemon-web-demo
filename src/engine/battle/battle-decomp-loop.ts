@@ -41,6 +41,7 @@ type _TransitionMirror = {
   startBattleTransitionPokeballsTrail?: () => void; tickBattleTransitionPokeballsTrail?: () => boolean;
   startBattleTransitionAngledWipes?: () => void; tickBattleTransitionAngledWipes?: () => boolean;
   startBattleTransitionBlur?: () => void; tickBattleTransitionBlur?: () => boolean;
+  startBattleTransitionSwirl?: () => void; tickBattleTransitionSwirl?: () => boolean;
 };
 function _transitionMirror(): _TransitionMirror {
   return ((globalThis as Record<string, unknown>).__battleTransitionMirror as _TransitionMirror) ?? {};
@@ -177,6 +178,9 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
   } else if (transition === B_TRANSITION.B_TRANSITION_BLUR && m.startBattleTransitionBlur && m.tickBattleTransitionBlur) {
     startTransition = m.startBattleTransitionBlur;
     tickTransition = m.tickBattleTransitionBlur;
+  } else if (transition === B_TRANSITION.B_TRANSITION_SWIRL && m.startBattleTransitionSwirl && m.tickBattleTransitionSwirl) {
+    startTransition = m.startBattleTransitionSwirl;
+    tickTransition = m.tickBattleTransitionSwirl;
   } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE && transition !== B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
     console.warn(`[decomp-loop] transition=${transition} non portée → fallback SLICE (visuel A/B à porter)`);
   }

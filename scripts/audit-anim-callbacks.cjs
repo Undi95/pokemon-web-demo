@@ -59,3 +59,16 @@ for (const r of rows) {
 const agg = [...byCb.values()].sort((a, b) => b.uses - a.uses);
 for (const e of agg) console.log(String(e.uses).padStart(4), e.cb, ' ←', e.tpls.slice(0, 3).join(','), e.tpls.length > 3 ? `(+${e.tpls.length - 3})` : '');
 console.log(`\nTOTAL callbacks manquants: ${agg.length} (${rows.length} templates, usages ≥${minArg})`);
+
+// ─── 2e volet : TASKS (createvisualtask/createsoundtask X, ...) × registered ───
+const taskUses = new Map();
+for (const m of scripts.matchAll(/create(?:visual|sound)task (\w+)/g)) {
+  taskUses.set(m[1], (taskUses.get(m[1]) ?? 0) + 1);
+}
+const missingTasks = [...taskUses.entries()]
+  .filter(([name]) => !registered.has(name))
+  .filter(([, uses]) => uses >= minArg)
+  .sort((a, b) => b[1] - a[1]);
+console.log('\n─── TASKS d\'anim manquantes (createvisualtask/soundtask) ───');
+for (const [name, uses] of missingTasks) console.log(String(uses).padStart(4), name);
+console.log(`TOTAL tasks manquantes: ${missingTasks.length} / ${taskUses.size} distinctes`);
