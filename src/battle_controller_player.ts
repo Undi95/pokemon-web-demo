@@ -66,6 +66,7 @@ import {
   SE_SELECT,
 } from './battle_controllers';
 import { MarkBattlerForControllerExec } from './battle_util';
+import { isBallThrowAnimActive } from './battle_anim_throw';
 // PlaySE wired via globalThis.__PlaySE (exposé par decomp-globals ligne ~722) —
 // évite cycle ESM avec import direct.
 function PlaySE(seId: number): void {
@@ -1336,11 +1337,14 @@ function PlayerHandleBallThrowAnim(): void {
   setBattlerControllerFunc(gActiveBattler, CompleteOnSpecialAnimDone);
 }
 
-/** 1:1 decomp `CompleteOnSpecialAnimDone()` (battle_controller_player.c) :
- *  complete quand l'anim speciale est finie (gDoingBattleAnim cleared par la
- *  chaine capture ; specialAnimActive non modelise = gDoingBattleAnim suffit). */
+/** 1:1 decomp `CompleteOnFinishedBattleAnimation()` (battle_controller_player.c) :
+ *  complete quand l'anim DU TABLEAU est finie (animFromTableActive). Pour le
+ *  throw = isBallThrowAnimActive (cleared à la destruction de la ball, ~sTimer
+ *  315 + fade out). L'ancien gate gDoingBattleAnim (cleared à sTimer 95) rendait
+ *  la main TROP TÔT → le message Gotcha + {PLAY_BGM MUS_CAUGHT} partaient en
+ *  même temps que l'intro-jingle SE de :95 (bug user, tempo ROM ≈ +3,7 s). */
 function CompleteOnSpecialAnimDone(): void {
-  if (!gDoingBattleAnimState) PlayerBufferExecCompleted();
+  if (!gDoingBattleAnimState && !isBallThrowAnimActive()) PlayerBufferExecCompleted();
 }
 
 /** 1:1 EXACT : le corps décomp est un busy-loop `while (timer != 0) timer--;`

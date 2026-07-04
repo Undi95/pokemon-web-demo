@@ -643,6 +643,25 @@ function _wildMonInvisible(): boolean {
 
 /** Slot palette OBJ REEL du sprite mon adverse (l'arg « spritePalNum » de
  *  LaunchBallFadeMonTask — battler==slot sur GBA, pas chez nous). */
+/** Slot palette OBJ RÉEL du sprite BALL (via son entrée OAM — le champ
+ *  `oam.paletteNum` du décomp = `paletteBank` chez nous). -1 si introuvable. */
+function _ballPalNum(sprite: BallSprite): number {
+  const rt = getRuntime();
+  const oamIdx = (sprite as unknown as { oamIndex?: number }).oamIndex;
+  if (!rt || oamIdx === undefined) return _findBallPalFallback(sprite);
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteBank?: number }> } }).gba?.oam?.[oamIdx];
+  return oam?.paletteBank ?? _findBallPalFallback(sprite);
+}
+function _findBallPalFallback(sprite: BallSprite): number {
+  // BallSprite sans oamIndex direct → retrouve l'id puis l'OAM.
+  const id = _spriteIdOf(sprite);
+  const rt = getRuntime();
+  const sp = id >= 0 ? (rt?.gSprites?.[id] as { oamIndex?: number } | undefined) : undefined;
+  if (!rt || !sp || sp.oamIndex === undefined) return 15; // slot OBJ 15 : jamais un battler (0-3) → blend inoffensif
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteBank?: number }> } }).gba?.oam?.[sp.oamIndex];
+  return oam?.paletteBank ?? 15;
+}
+
 function _monPalNum(): number {
   const rt = getRuntime();
   const sp = rt?.gSprites?.[_getBattlerSpriteId(_getAnimState().target)] as { oamIndex?: number } | undefined;
@@ -1000,10 +1019,13 @@ function SpriteCB_Ball_Capture_Step(sprite: BallSprite): void {
   sprite.data[4]++;
   if (sprite.data[4] === 40) {
     _PlaySE(SE_RG_BALL_CLICK_T);
-    BlendPalettes(0x10000 << (sprite.oam?.paletteNum ?? 0), 6, 0x0000);
+    // 🩸 `sprite.oam.paletteNum` n'existe PAS chez nous (le champ OAM réel =
+    // `paletteBank`, via oamIndex) → `?? 0` blendait la palette OBJ 0 = le
+    // back-sprite JOUEUR viré au noir, et la BALL ne recevait RIEN (bug A/B ×2).
+    BlendPalettes(0x10000 << _ballPalNum(sprite), 6, 0x0000);
     MakeCaptureStars(sprite);
   } else if (sprite.data[4] === 60) {
-    BeginNormalPaletteFade(0x10000 << (sprite.oam?.paletteNum ?? 0), 2, 6, 0, 0x0000);
+    BeginNormalPaletteFade(0x10000 << _ballPalNum(sprite), 2, 6, 0, 0x0000);
   } else if (sprite.data[4] === 95) {
     setGDoingBattleAnim(false);
     _updateOamPriorityInAllHealthboxes(1);
@@ -1057,8 +1079,11 @@ function SpriteCB_Ball_FadeOut(sprite: BallSprite): void {
   }
 }
 
-/** 1:1 décomp `DestroySpriteAfterOneFrame(sprite)` (:1398). */
+/** 1:1 décomp `DestroySpriteAfterOneFrame(sprite)` (:1398). Fin de la chaîne
+ *  ball (succès/échec/block) → clear animFromTableActive (le controller peut
+ *  compléter, le script combat reprend). */
 function DestroySpriteAfterOneFrame(sprite: BallSprite): void {
+  _ballThrowAnimActive = false;
   if (sprite.data[0] === 0) {
     sprite.data[0] = -1;
   } else {
@@ -1716,6 +1741,7 @@ function DestroyBallOpenAnimationParticle(sprite: BallSprite): void {
  *  caller via gDoingBattleAnim (cleared 1:1 par Capture_Step :95 /
  *  Release_Wait / Block_Step). */
 export function Special_BallThrow_TS(): void {
+  _ballThrowAnimActive = true;   // = animFromTableActive (cleared à DestroySpriteAfterOneFrame)
   if (_ballThrowCaseId() === BALL_TRAINER_BLOCK) {
     const taskId = CreateTask(() => { /* géré par les SpriteCB */ }, 2);
     AnimTask_ThrowBall_StandingTrainer(taskId);
@@ -1724,6 +1750,17 @@ export function Special_BallThrow_TS(): void {
     AnimTask_ThrowBall(taskId);
   }
 }
+
+/** = healthBoxesData[b].animFromTableActive du décomp pour B_ANIM_BALL_THROW :
+ *  TRUE du lancement jusqu'à la destruction de la ball (fin de FadeOut/Release/
+ *  Block — les 3 chemins convergent sur DestroySpriteAfterOneFrame :1398).
+ *  Le controller (CompleteOnSpecialAnimDone) gate là-dessus : avant, il
+ *  complétait sur gDoingBattleAnim (cleared à sTimer 95) → le message Gotcha +
+ *  {PLAY_BGM MUS_CAUGHT} partaient EN MÊME TEMPS que l'intro-jingle SE de :95
+ *  (bug user « le SE + le BGM 2 se lancent en même temps ») au lieu de ~2,3 s
+ *  plus tard (315 + fade out, comme la ROM). */
+let _ballThrowAnimActive = false;
+export function isBallThrowAnimActive(): boolean { return _ballThrowAnimActive; }
 
 // ─── Registry bytecode (Cmd_createvisualtask → AnimTaskFn) ─────────────────
 // Les scripts gBattleAnims_Special (Special_SwitchOutPlayerMon/OpponentMon,
