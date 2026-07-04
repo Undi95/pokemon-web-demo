@@ -404,6 +404,14 @@ registerSpecial('DoPCTurnOnEffect', () => {
   });
 });
 
+/** 1:1 décomp `ShowPokemonStorageSystemPC` (pokemon_storage_system.c:1650) — le script « PC POKéMON »
+ *  (menu accès au PC dans un Centre) l'appelle via `special`. Ouvre le menu RETIRER/DÉPOSER/... */
+registerSpecial('ShowPokemonStorageSystemPC', () => {
+  void import('../../pokemon_storage_system').then(({ ShowPokemonStorageSystemPC }) => {
+    ShowPokemonStorageSystemPC();
+  });
+});
+
 /** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
  *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
 registerSpecial('DoPCTurnOffEffect', () => {
@@ -2139,7 +2147,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShowLinkBattleRecords', 'ShowNatureGirlMessage',
   // 'ShowPokedexRatingMessage' — porté 1:1 birch_pc.ts (transpilé), handler ci-bas.
   'ShowPokemonJumpRecords',
-  'ShowPokemonStorageSystemPC', 'ShowRankingHallRecordsWindow',
+  // 'ShowPokemonStorageSystemPC' — PORTÉ (phase 1 menu PC, pokemon_storage_system.ts) + registré
+  //   ci-dessus. RETIRÉ de la stub-loop (sinon `() => 0` écrase → accéder au PC ne ferait RIEN).
+  'ShowRankingHallRecordsWindow',
   'ShowSecretBaseDecorationMenu', 'ShowSecretBaseRegistryMenu',
   // 'ShowTrainerCantBattleSpeech' — porté 1:1 décomp battle_setup.c:1435 (game/battle_setup.ts).
   'ShowTrainerHillRecords',
