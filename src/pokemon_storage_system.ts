@@ -33,6 +33,14 @@ import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
 import { CalculatePlayerPartyCount } from './pokemon';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
+// ─── ÉCRAN DES BOÎTES (phase 2, rendu de base) : icônes + infra CB2 ─────────
+import {
+  PreloadMonIcon, IsMonIconLoaded, LoadMonIconPalette, GetIconSpeciesNoPersonality,
+  CreateMonIconNoPersonality, FreeAndDestroyMonIconSprite,
+} from './pokemon_icon';
+import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
+import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
+import { BeginNormalPaletteFade } from './palette';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -305,9 +313,86 @@ export function ShowPokemonStorageSystemPC(): void {
   LockPlayerFieldControls();
 }
 
-/** STUB phase 2 : l'écran des boîtes (EnterPokeStorage/CB2_EnterPokeStorage :1998) — à porter. */
+// ═══════════════════════════════════════════════════════════════════════════
+// ÉCRAN DES BOÎTES — RENDU DE BASE (phase 2a) : ouvre un CB2 plein, affiche la boîte
+// courante avec les icônes des pokémon. 1:1 sur les positions (CreateBoxMonIconAtPos :4478).
+// ⚠️ BASE PRAGMATIQUE — à raffiner vers le 1:1 STRICT : Task_InitPokeStorage (11 états),
+// wallpapers, scrolling_bg, titre de boîte, curseur main, menus, dépôt/retrait (cf. [[chantier-pc-storage]]).
+// ═══════════════════════════════════════════════════════════════════════════
+const IN_BOX_COLUMNS = 6;
+let _pcBoxIconSprites: number[] = [];
+let _pcPendingBoxId = -1;
+
+/** Précharge (fire-and-forget) les icônes des pokémon de la boîte. */
+function _preloadBoxIcons(boxId: number): void {
+  const storage = GetPokemonStorage();
+  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
+    const mon = storage.boxes[boxId]?.[pos];
+    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
+  }
+}
+
+/** 1:1 `CreateBoxMonIconAtPos` (pokemon_storage_system.c:4478) — positions des 30 slots. */
+function _createBoxMonIcons(boxId: number): void {
+  _pcBoxIconSprites = [];
+  const storage = GetPokemonStorage();
+  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
+    const mon = storage.boxes[boxId]?.[pos];
+    if (mon && mon.species) {
+      const x = 8 * (3 * (pos % IN_BOX_COLUMNS)) + 100;          // 1:1 :4484
+      const y = 8 * (3 * Math.floor(pos / IN_BOX_COLUMNS)) + 44; // 1:1 :4485
+      const iconSpecies = GetIconSpeciesNoPersonality(mon.species);
+      LoadMonIconPalette(iconSpecies);
+      const spriteId = CreateMonIconNoPersonality(iconSpecies, null, x, y, 19 - (pos % IN_BOX_COLUMNS), false);
+      if (spriteId !== 0xFF) _pcBoxIconSprites.push(spriteId);
+    }
+  }
+}
+
+/** Task d'init : attend le préchargement async des icônes, puis les crée + allume l'écran. */
+function Task_PcBoxRender(taskId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const storage = GetPokemonStorage();
+  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
+    const mon = storage.boxes[_pcPendingBoxId]?.[pos];
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return; // gate async
+  }
+  _createBoxMonIcons(_pcPendingBoxId);
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1040);  // OBJ ON (bit12) + 1D mapping (bit6) — icônes visibles
+  // fade-in : copie gPlttBufferUnfaded → gPlttBufferFaded (sinon le renderer lit du noir).
+  BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0x0000);
+  rt.DestroyTask(taskId);
+}
+
+/** ≈ `CB2_PokeStorage` (pokemon_storage_system.c:2036) — main loop de l'écran boîtes. */
+function CB2_PokeStorage(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.runTasks?.();
+  rt.animateSprites?.();
+  rt.buildOamBuffer?.();
+  rt.UpdatePaletteFade?.();
+  if (gMain.newKeys & B_BUTTON) {  // ≈ CB2_ExitPokeStorage (retour field ; raffinement = FieldTask_ReturnToPcMenu)
+    _pcBoxIconSprites.forEach((id) => FreeAndDestroyMonIconSprite(id));
+    _pcBoxIconSprites = [];
+    FreeAllSpritePalettes();
+    void import('./overworld').then((m) => {
+      const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
+      if (cb) cb();
+    });
+  }
+}
+
+/** ≈ `EnterPokeStorage` (pokemon_storage_system.c:1998) — RENDU DE BASE : CB2 plein + boîte + icônes. */
 function EnterPokeStorage(_boxOption: number): void {
-  console.log('[PC] EnterPokeStorage (écran boîtes) — phase 2 non encore portée');
+  const rt = getRuntime(); if (!rt) return;
+  rt.ResetTasks?.();
+  ResetSpriteData();
+  FreeAllSpritePalettes();
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+  _pcPendingBoxId = StorageGetCurrentBox();
+  _preloadBoxIcons(_pcPendingBoxId);
+  rt.CreateTask((t) => Task_PcBoxRender(t.taskId), 3);
+  rt.SetMainCallback2(CB2_PokeStorage as never);
 }
 
 // Pont dev/déclencheur : ouvrir le menu PC (le script « PC POKéMON » l'appellera au câblage).
