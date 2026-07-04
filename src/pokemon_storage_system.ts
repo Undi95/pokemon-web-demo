@@ -367,7 +367,12 @@ async function _loadCursorGfx(): Promise<void> {
   if (_pcCursorReady) return;
   const png = await loadIndexedPngStrict('/decomp/em/pokemon_storage/hand_cursor.png', 4);
   _pcCursorTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: 'pc_cursor' });
-  _pcCursorPalBank = LoadSpritePalette({ data: png.palette, tag: 'pc_cursor_pal' });
+  // Curseur = 2 palettes 1:1 (:7820-7821) sur les mêmes tiles : misc_2 (= sWaveform_Pal, :1045) donne la
+  // main BLANCHE (état normal, défaut sAutoActionOn=0) ; misc_1 (hand_cursor PLTE) donne la main JAUNE
+  // (auto-action, raffinement futur avec ToggleCursorAutoAction). Défaut = blanc.
+  const waveform = await loadIndexedPngStrict('/decomp/em/pokemon_storage/waveform.png', 4);
+  _pcCursorPalBank = LoadSpritePalette({ data: waveform.palette, tag: 'pc_cursor_pal_white' });  // misc_2 (blanc)
+  LoadSpritePalette({ data: png.palette, tag: 'pc_cursor_pal_yellow' });                          // misc_1 (jaune)
   _pcCursorReady = true;
 }
 
