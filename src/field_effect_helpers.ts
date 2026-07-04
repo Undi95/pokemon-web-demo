@@ -4249,10 +4249,13 @@ export function preloadFlyBirdEffect(): Promise<void> {
     const pal = await loadGbaPal('/decomp/em/field_effects/bird.gbapal');
     LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
     _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
-    // Précharge le gfx POSE field-move du joueur (SetPlayerAvatarFieldMove le requiert : sans lui,
-    // ObjectEventSetGraphicsId ne swappe pas → le sprite reste sur l'idle qui BOUCLE → la pose ne
-    // finit jamais → Task_FlyOut bloqué au state 1. Même préchargement que la montée de Surf.)
-    await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(5 /* PLAYER_AVATAR_STATE_FIELD_MOVE */));
+    // Précharge les gfx joueur requis par l'anim de Vol : POSE field-move (SetPlayerAvatarFieldMove —
+    // sans lui le swap échoue → l'idle BOUCLE → la pose ne finit jamais) ET SURFING (pose « monté sur
+    // l'oiseau » du fly-out ET du fly-in). Même préchargement que la montée de Surf.
+    await Promise.all([
+      PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(5 /* PLAYER_AVATAR_STATE_FIELD_MOVE */)),
+      PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING)),
+    ]);
     _flyBirdReady = true;
   })();
   return _flyBirdInitPromise;
@@ -4501,6 +4504,10 @@ function FlyOutFieldEffect_WaitFlyOff(task: DecompTask): void {
 /** 1:1 `FlyOutFieldEffect_End` (field_effect.c:3290). */
 function FlyOutFieldEffect_End(task: DecompTask): void {
   if (!gPaletteFade.active) {
+    // Adaptation : notre warp (setPendingWarp) ne reset PAS les sprites comme le map-load décomp →
+    // on détruit l'oiseau ici (sinon il persiste sur la map dest = « oiseau fantôme »). Le fly-in
+    // en recrée un frais à l'arrivée.
+    DestroySprite(task.data[1]);  // tBirdSpriteId
     FieldEffectActiveListRemove(FLDEFF_USE_FLY);
     DestroyTask(task.taskId);
   }
@@ -4663,6 +4670,38 @@ export function FldEff_FlyIn(_rt: DecompRuntime): number {
   return 0;
 }
 
+/** 1:1 `Task_FlyIntoMap` (field_effect.c:1395) — attend le fade + le rechargement des gfx, puis
+ *  lance le fly-in (atterrissage) ; à la fin, rend le contrôle au joueur. */
+function Task_FlyIntoMap(task: DecompTask): void {
+  if (task.data[0] === 0) {
+    if (!_flyBirdReady) return;      // asset oiseau + gfx pose rechargés après le warp
+    if (gPaletteFade.active) return;
+    FieldEffectStart(FLDEFF_FLY_IN);
+    task.data[0]++;
+  }
+  if (!FieldEffectActiveListContains(FLDEFF_FLY_IN)) {
+    UnlockPlayerFieldControls();
+    UnfreezeObjectEvents();
+    DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 `FieldCallback_FlyIntoMap` (field_effect.c:1380) — posé comme `gFieldCallback` par
+ *  StartFlyOutThenWarp ; RunFieldCallback l'exécute À L'ARRIVÉE sur la map dest. Rend le joueur
+ *  invisible (l'oiseau le fera réapparaître) + le tourne ouest si surf, puis lance Task_FlyIntoMap.
+ *  Recharge d'abord l'asset oiseau + gfx pose (le warp a pu reset les sprites/gfx chargés). */
+export function FieldCallback_FlyIntoMap(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  void preloadFlyBirdEffect();
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  objectEvent.invisible = true;
+  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING) ObjectEventTurn(objectEvent, DIR_WEST);
+  LockPlayerFieldControls();
+  FreezeObjectEventsExceptOne(gPlayerAvatar.objectEventId);
+  rt.CreateTask(Task_FlyIntoMap, 0);
+}
+
 /** 1:1 `SpriteCB_NPCFlyOut` (field_effect.c:3131). */
 function SpriteCB_NPCFlyOut(sprite: DecompSprite, rt: DecompRuntime): void {
   sprite.x2 = Cos(sprite.data[2], 0x8c);
@@ -4710,10 +4749,17 @@ export function StartFlyOutThenWarp(monSlot: number): void {
   // fly-out (states 0-1 : field-move pose / face-left) ne tique plus = Task_FlyOut bloqué.
   // On gèle donc SAUF le joueur — le fly-out le pilote lui-même. Net-effect identique.
   FreezeObjectEventsExceptOne(gPlayerAvatar.objectEventId);
-  gFieldEffectArguments[0] = monSlot;
+  // 1:1 `Task_UseFly` : gFieldEffectArguments[0] = GetCursorSelectionMonId() (le mon qui connaît VOL,
+  // pas le slot 0). Lu via pont globalThis (party_menu, anti-cycle). Clamp PARTY_SIZE-1.
+  const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
+  const slot = (cur?.() ?? monSlot) & 0xFF;
+  gFieldEffectArguments[0] = slot > 5 ? 0 : slot;
   FieldEffectStart(FLDEFF_USE_FLY);
   const poll = () => {
     if (!FieldEffectActiveListContains(FLDEFF_USE_FLY)) {
+      // 1:1 : à l'arrivée, `gFieldCallback = FieldCallback_FlyIntoMap` (RunFieldCallback l'exécute
+      // au retour-field post-warp) → fly-in (atterrissage + restaure le joueur + rend le contrôle).
+      (globalThis as Record<string, unknown>).gFieldCallback = FieldCallback_FlyIntoMap;
       const doWarp = (globalThis as Record<string, unknown>).__flyDoWarp as (() => void) | undefined;
       doWarp?.();
       return;
@@ -4739,7 +4785,13 @@ export function StartFlyOutThenWarp(monSlot: number): void {
 // Pont dev (test en jeu de l'anim d'envol sans passer par la carte région ni warper).
 (globalThis as Record<string, unknown>).__flyTest = (monSlot = 0): void => {
   void preloadFlyBirdEffect().then(() => {
-    (globalThis as Record<string, unknown>).__flyDoWarp = () => console.log('[flyTest] anim finie (pas de warp en test)');
+    // Warp RÉEL vers Oldale (comme le vrai flux) pour tester TOUTE la séquence : fly-out → warp → fly-in.
+    (globalThis as Record<string, unknown>).__flyDoWarp = () => {
+      void Promise.all([import('./engine/field/warp-system'), import('./heal_location')]).then(([ws, hl]) => {
+        const heal = (hl as { GetHealLocationByName: (n: string) => { map: string; x: number; y: number } | null }).GetHealLocationByName('HEAL_LOCATION_OLDALE_TOWN');
+        if (heal) (ws as { setPendingWarp: (w: unknown, k: string) => void }).setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+      });
+    };
     StartFlyOutThenWarp(monSlot);
   });
 };

@@ -2932,6 +2932,8 @@ const FLDEFF_SWEET_SCENT = 51;
 export function GetCursorSelectionMonId(): number {
   return _isOpen ? _slotId : _cursorSelectionMonId;
 }
+// Pont anti-cycle : le Vol (field_effect_helpers, StartFlyOutThenWarp) lit le mon qui connaît VOL.
+(globalThis as Record<string, unknown>).__getCursorSelectionMonId = GetCursorSelectionMonId;
 
 /** 1:1 décomp `GetFieldMoveMonSpecies(void)` (party_menu.c:3833) :
  *      return GetMonData(&gPlayerParty[gPartyMenu.slotId], MON_DATA_SPECIES); */
