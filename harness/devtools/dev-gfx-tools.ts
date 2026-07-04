@@ -218,11 +218,20 @@ function film(opts: { frames?: number; every?: number; cols?: number } = {}): st
   const ctx = mc.getContext('2d');
   if (!ctx) return 'ctx 2d indisponible';
   let raf = 0, f = 0;
+  const t0 = performance.now();
   const tick = (): void => {
     if (raf % every === 0 && f < frames) {
-      ctx.drawImage(src, (f % cols) * 240, Math.floor(f / cols) * 160);
+      const x = (f % cols) * 240, y = Math.floor(f / cols) * 160;
+      ctx.drawImage(src, x, y);
       ctx.strokeStyle = '#444';
-      ctx.strokeRect((f % cols) * 240 + 0.5, Math.floor(f / cols) * 160 + 0.5, 239, 159);
+      ctx.strokeRect(x + 0.5, y + 0.5, 239, 159);
+      // Timestamp SECONDES depuis le lancement (lisible sur chaque vignette).
+      const sec = ((performance.now() - t0) / 1000).toFixed(2) + 's';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(x + 2, y + 2, ctx.measureText(sec).width + 6, 14);
+      ctx.fillStyle = '#ffe200';
+      ctx.fillText(sec, x + 5, y + 13);
       f++;
     }
     raf++;

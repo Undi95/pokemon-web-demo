@@ -1022,6 +1022,45 @@ export interface AddTextPrinterTemplate {
   shadowColor: number;
 }
 
+// ─── Journal des textes affichés (devtool « logs », OFF par défaut) ─────────
+// Capture au point UNIQUE (AddTextPrinter = tout texte rendu : OW, combat, menus).
+// Activé par le panel devtools via globalThis.__uiTextLogEnabled ; le journal =
+// globalThis.__uiTextLog [{at: secondes session, t}]. Harness pur, PAS du 1:1.
+let _revCharmap: Map<number, string> | null = null;
+function _logPrintedText(str: string | Uint8Array, encoded: Uint8Array): void {
+  const g = globalThis as { __uiTextLogEnabled?: boolean; __uiTextLog?: Array<{ at: number; t: string }> };
+  if (!g.__uiTextLogEnabled) return;
+  let text: string;
+  if (typeof str === 'string') {
+    text = str;
+  } else {
+    if (!_revCharmap) {
+      _revCharmap = new Map();
+      const cm = getOwCharmap() ?? {};
+      for (const [ch, code] of Object.entries(cm)) {
+        if (typeof code === 'number' && !_revCharmap.has(code)) _revCharmap.set(code, ch);
+      }
+    }
+    let out = '';
+    for (let i = 0; i < encoded.length; i++) {
+      const b = encoded[i];
+      if (b === 0xFF) break;                       // EOS
+      if (b === 0xFE) { out += '\n'; continue; }   // \n
+      if (b === 0xFB || b === 0xFA) { out += ' '; continue; } // \p / \l
+      if (b === 0xFD || b === 0xFC) { i++; continue; }        // placeholders/ctrl (1 arg min)
+      out += _revCharmap.get(b) ?? '';
+    }
+    text = out;
+  }
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  g.__uiTextLog ??= [];
+  const last = g.__uiTextLog[g.__uiTextLog.length - 1];
+  if (last && last.t === trimmed) return;          // dédoublonne les re-prints
+  g.__uiTextLog.push({ at: Math.round(performance.now() / 100) / 10, t: trimmed });
+  if (g.__uiTextLog.length > 3000) g.__uiTextLog.splice(0, 500);
+}
+
 /** 1:1 décomp `src/text.c:271 AddTextPrinter(struct TextPrinterTemplate *, u8 speed,
  *  callback)`. Cœur PARTAGÉ (appelé par `AddTextPrinterParameterized` de text.c + par
  *  `AddTextPrinterParameterized2/3/4`/`ForMessage*` de menu.c) : crée le printer, pose
@@ -1039,6 +1078,7 @@ export function AddTextPrinter(
   }
   // Byte-entry : bytes charmap pré-encodés passés directement ; sinon encode.
   const encoded = (template.str instanceof Uint8Array) ? template.str : encodeStringForFont(template.str, getOwCharmap() ?? {});
+  _logPrintedText(template.str, encoded);
   const opts: AddTextPrinterOpts = {
     window: win,
     encodedString: encoded,

@@ -604,6 +604,23 @@ function buildDom(): void {
       <details><summary>🗺 BG / Blend / Window</summary><div id="dvt-bg"></div></details>
       <details><summary>⚔ Battle state</summary><div id="dvt-bat"></div></details>
       <details><summary>🔊 Audio <span class="dvt-dim">(observe-only)</span></summary><div id="dvt-aud"></div></details>
+      <details><summary>🎬 Studio <span class="dvt-dim">(film / logs / transitions)</span></summary>
+        <div class="dvt-scn">
+          <div class="dvt-mv">
+            <input id="dvt-film-n" placeholder="frames (12)" style="width:72px" />
+            <input id="dvt-film-e" placeholder="1/N rAF (2)" style="width:72px" />
+            <button id="dvt-film-go" title="Mosaïque de frames horodatées en secondes">🎥 Filmer</button>
+            <button id="dvt-film-clear" title="Retirer la mosaïque">✕</button>
+          </div>
+          <label class="dvt-pal-ctl"><input type="checkbox" id="dvt-txtlog-en"> 📜 Log des textes affichés <span class="dvt-dim">(session)</span></label>
+          <div id="dvt-txtlog" style="display:none;max-height:180px;overflow-y:auto;font:10px monospace;background:#111;padding:4px;white-space:pre-wrap"></div>
+          <div class="dvt-mv">
+            <select id="dvt-trans-sel" style="max-width:180px"></select>
+            <button id="dvt-trans-go" title="Combat sauvage avec la transition choisie (forcée)">⚔ Tester</button>
+          </div>
+          <div id="dvt-studio-status" class="dvt-dim"></div>
+        </div>
+      </details>
     </div>`;
   document.body.appendChild(panel);
 
@@ -751,6 +768,59 @@ function wireControls(): void {
   void loadAlteringCaveSpecies().then(() => {
     const b = document.querySelector('[data-enc="altcycle"]');
     if (b) { try { b.textContent = `🔄 ${alteringCaveLabel(getAlteringCaveTable())}`; } catch { /* var pas prête */ } }
+  });
+
+  // ─── 🎬 Studio : film / log textes / transitions forcées ──────────────────
+  const g = globalThis as Record<string, unknown>;
+  const devGfx = (): { film?: (o?: { frames?: number; every?: number }) => string; filmClear?: () => void } =>
+    ((g.dev as Record<string, unknown> | undefined)?.gfx as never) ?? {};
+  document.getElementById('dvt-film-go')?.addEventListener('click', () => {
+    const frames = Number((document.getElementById('dvt-film-n') as HTMLInputElement)?.value) || 12;
+    const every = Number((document.getElementById('dvt-film-e') as HTMLInputElement)?.value) || 2;
+    const msg = devGfx().film?.({ frames, every }) ?? 'dev.gfx.film indisponible';
+    const st = document.getElementById('dvt-studio-status');
+    if (st) st.textContent = msg;
+  });
+  document.getElementById('dvt-film-clear')?.addEventListener('click', () => devGfx().filmClear?.());
+
+  let _txtLogTimer: ReturnType<typeof setInterval> | null = null;
+  document.getElementById('dvt-txtlog-en')?.addEventListener('change', (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    g.__uiTextLogEnabled = on;
+    const box = document.getElementById('dvt-txtlog');
+    if (!box) return;
+    box.style.display = on ? 'block' : 'none';
+    if (_txtLogTimer) { clearInterval(_txtLogTimer); _txtLogTimer = null; }
+    if (on) {
+      _txtLogTimer = setInterval(() => {
+        const log = (g.__uiTextLog as Array<{ at: number; t: string }> | undefined) ?? [];
+        const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
+        box.textContent = log.map((l) => `[${l.at.toFixed(1)}s] ${l.t.replace(/\n/g, ' · ')}`).join('\n');
+        if (atBottom) box.scrollTop = box.scrollHeight;
+      }, 500);
+    }
+  });
+
+  // Transitions : peuple le select depuis l'enum 1:1 (0..COUNT-1, y compris mugshots ligue).
+  const sel = document.getElementById('dvt-trans-sel') as HTMLSelectElement | null;
+  if (sel) {
+    void import('../../include/battle_transition').then((m) => {
+      const entries = Object.entries((m as { ENUM_B_1: Record<string, number> }).ENUM_B_1)
+        .filter(([k]) => k.startsWith('B_TRANSITION_') && !k.endsWith('_COUNT'))
+        .sort((a, b) => a[1] - b[1]);
+      sel.innerHTML = '<option value="-1">— transition normale —</option>'
+        + entries.map(([k, v]) => `<option value="${v}">${v} ${k.replace('B_TRANSITION_', '')}</option>`).join('');
+    }).catch(() => { sel.innerHTML = '<option value="-1">enum indisponible</option>'; });
+    sel.addEventListener('change', () => {
+      const v = Number(sel.value);
+      g.__forcedBattleTransition = v >= 0 ? v : undefined;
+      const st = document.getElementById('dvt-studio-status');
+      if (st) st.textContent = v >= 0 ? `transition forcée : ${v} (tous les prochains combats)` : 'transition normale';
+    });
+  }
+  document.getElementById('dvt-trans-go')?.addEventListener('click', () => {
+    const dev = g.dev as { battle?: { startWild?: (sp: number, lvl: number) => void } } | undefined;
+    dev?.battle?.startWild?.(288, 5);
   });
 }
 

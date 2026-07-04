@@ -157,6 +157,12 @@ function _playBattleBGM(): void {
  *  Mirror EXACT du flow voie V (battle-flow.ts:2105-2131). Gaté in-game (returnToOverworld) :
  *  le harness boote CB2_InitBattle direct (pas d'OW à découper). */
 function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: number): () => void {
+  // Devtool : override « forcer une transition » (panel F2 🎬 Studio). Harness pur.
+  const forced = (globalThis as { __forcedBattleTransition?: number }).__forcedBattleTransition;
+  if (typeof forced === 'number' && forced >= 0) {
+    console.log(`[decomp-loop] transition FORCÉE (devtool) : ${forced} (au lieu de ${transition})`);
+    transition = forced;
+  }
   let state = 0;  // 0 = lance le flash, 1 = flash en cours, 2 = transition en cours
   // Dispatch 1:1 `CreateBattleStartTask(transition, …)` (battle_setup.c) : le flash gris
   // (CreateIntroTask) est COMMUN à toutes les transitions, puis la transition SÉLECTIONNÉE
