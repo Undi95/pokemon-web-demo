@@ -39,7 +39,8 @@ import { SE_PC_LOGIN } from '../include/constants/songs';
 import {
   DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
-  ClearStdWindowAndFrame, AddTextPrinterParameterized2,
+  ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, DrawStdFrameWithCustomTileAndPalette,
+  AddTextPrinterParameterized2,
 } from './menu';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
@@ -2094,8 +2095,217 @@ function MultiMove_Init(): boolean {
   return sStorage!.multiMoveWindowId !== 0xFF;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION — SECTION Options menus (:7924-8085) + Task_OnSelectedMon (:2580)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// :5860 GetSpeciesAtCursorPosition — l'espèce sous le curseur (party ou boîte).
+function GetSpeciesAtCursorPosition(): number {
+  switch (sCursorArea) {
+    case CURSOR_AREA_IN_PARTY: return (gPlayerParty[sCursorPosition] as Pokemon | undefined)?.species ?? SPECIES_NONE;
+    case CURSOR_AREA_IN_BOX: return _boxMonAt(StorageGetCurrentBox(), sCursorPosition)?.species ?? SPECIES_NONE;
+    default: return SPECIES_NONE;
+  }
+}
+
+// sMenuTexts (:7933) — libellés FR (strings.c gPCText_* :893-901), indexés par MENU_*.
+const sMenuTexts: string[] = [];
+sMenuTexts[MENU_CANCEL] = 'ANNULER';   sMenuTexts[MENU_STORE] = 'DEPOSER';
+sMenuTexts[MENU_WITHDRAW] = 'RETIRER'; sMenuTexts[MENU_MOVE] = 'DEPLACER';
+sMenuTexts[MENU_SHIFT] = 'CHANGER';    sMenuTexts[MENU_PLACE] = 'PLACER';
+sMenuTexts[MENU_SUMMARY] = 'RESUME';   sMenuTexts[MENU_RELEASE] = 'RELACHER';
+sMenuTexts[MENU_MARK] = 'MARQUER';
+// (JUMP/WALLPAPER/NAME/TAKE/GIVE/… = lots wallpaper/items suivants)
+
+// ─── :7924 InitMenu ───
+function InitMenu(): void {
+  const s = sStorage!;
+  s.menuItemsCount = 0;
+  s.menuWidth = 0;
+  s.menuWindow.bg = 0;
+  s.menuWindow.paletteNum = 15;
+  s.menuWindow.baseBlock = 92;
+}
+
+// ─── :7976 SetMenuText — nos libellés = string JS → StringLength = .length. ───
+function SetMenuText(textId: number): void {
+  const s = sStorage!;
+  if (s.menuItemsCount < s.menuItems.length) {
+    const menu = s.menuItems[s.menuItemsCount];
+    menu.text = sMenuTexts[textId] ?? '';
+    menu.textId = textId;
+    const len = menu.text.length;
+    if (len > s.menuWidth) s.menuWidth = len;
+    s.menuItemsCount++;
+  }
+}
+
+// ─── :7993 GetMenuItemTextId ───
+function GetMenuItemTextId(menuIdx: number): number {
+  const s = sStorage!;
+  return menuIdx >= s.menuItemsCount ? -1 : s.menuItems[menuIdx].textId;
+}
+
+// ─── :8001 AddMenu ───
+function AddMenu(): void {
+  const s = sStorage!;
+  s.menuWindow.width = s.menuWidth + 2;
+  s.menuWindow.height = 2 * s.menuItemsCount;
+  s.menuWindow.tilemapLeft = 29 - s.menuWindow.width;
+  s.menuWindow.tilemapTop = 15 - s.menuWindow.height;
+  s.menuWindowId = AddWindow(s.menuWindow as never);
+  ClearWindowTilemap(s.menuWindowId);
+  DrawStdFrameWithCustomTileAndPalette(s.menuWindowId, false, 11, 14);
+  PrintMenuTable(s.menuWindowId, s.menuItemsCount,
+    s.menuItems.slice(0, s.menuItemsCount).map((m) => ({ text: m.text, func: () => {} })) as unknown as MenuAction[]);
+  InitMenuInUpperLeftCornerNormal(s.menuWindowId, s.menuItemsCount, 0);
+  ScheduleBgCopyTilemapToVram(0);
+  s.menuUnusedField = 0;
+}
+
+// ─── :8019 IsMenuLoading (décomp : toujours FALSE) ───
+function IsMenuLoading(): boolean { return false; }
+
+// ─── :8024 HandleMenuInput — retourne le textId choisi, MENU_B_PRESSED, ou MENU_NOTHING_CHOSEN. ───
+function HandleMenuInput(): number {
+  let input: number = MENU_NOTHING_CHOSEN;
+  do {
+    if (gMain.newKeys & A_BUTTON) { input = Menu_GetCursorPos(); break; }
+    else if (gMain.newKeys & B_BUTTON) { PlaySE(0x5 /* SE_SELECT */); input = MENU_B_PRESSED; }
+    if (gMain.newKeys & DPAD_UP) { PlaySE(0x5); Menu_MoveCursor(-1); }
+    else if (gMain.newKeys & DPAD_DOWN) { PlaySE(0x5); Menu_MoveCursor(1); }
+  } while (0);
+  if (input !== MENU_NOTHING_CHOSEN) RemoveMenu();
+  if (input >= 0) input = sStorage!.menuItems[input].textId;
+  return input;
+}
+
+// ─── :8060 RemoveMenu ───
+function RemoveMenu(): void {
+  const s = sStorage!;
+  ClearStdWindowAndFrameToTransparent(s.menuWindowId, true);
+  RemoveWindow(s.menuWindowId);
+}
+
+// ─── :7621 SetMenuTexts_Mon — construit la liste d'options selon boxOption/contexte. ───
+function SetMenuTexts_Mon(): boolean {
+  const s = sStorage!;
+  const species = GetSpeciesAtCursorPosition();
+  switch (s.boxOption) {
+    case OPTION_DEPOSIT:
+      if (species !== SPECIES_NONE) SetMenuText(MENU_STORE); else return false;
+      break;
+    case OPTION_WITHDRAW:
+      if (species !== SPECIES_NONE) SetMenuText(MENU_WITHDRAW); else return false;
+      break;
+    case OPTION_MOVE_MONS:
+      if (sIsMonBeingMoved) {
+        if (species !== SPECIES_NONE) SetMenuText(MENU_SHIFT); else SetMenuText(MENU_PLACE);
+      } else {
+        if (species !== SPECIES_NONE) SetMenuText(MENU_MOVE); else return false;
+      }
+      break;
+    case OPTION_MOVE_ITEMS:
+    default:
+      return false;
+  }
+  SetMenuText(MENU_SUMMARY);
+  if (s.boxOption === OPTION_MOVE_MONS) {
+    if (sCursorArea === CURSOR_AREA_IN_BOX) SetMenuText(MENU_WITHDRAW);
+    else SetMenuText(MENU_STORE);
+  }
+  SetMenuText(MENU_MARK);
+  SetMenuText(MENU_RELEASE);
+  SetMenuText(MENU_CANCEL);
+  return true;
+}
+
+// ─── :8082 SetSelectionMenuTexts (MOVE_ITEMS → SetMenuTexts_Item, lot Move Items). ───
+function SetSelectionMenuTexts(): boolean {
+  InitMenu();
+  if (sStorage!.boxOption !== OPTION_MOVE_ITEMS) return SetMenuTexts_Mon();
+  return false;  // SetMenuTexts_Item : lot items
+}
+
+// ─── ClearBottomWindow (:env 4250) ───
+function ClearBottomWindow(): void {
+  ClearStdWindowAndFrameToTransparent(WIN_MESSAGE, false);
+  ScheduleBgCopyTilemapToVram(0);
+}
+
+// ─── PrintMessage (:4273) — message du bas. sMessages FR (strings.c gText_* :867-879) des ids du
+// flux menu ; placeholder {DYNAMIC 0} → nom du mon affiché/relâché (DynamicPlaceholderTextUtil). ───
+const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
+  [MSG_IS_SELECTED]: { text: '{0} sélectionné.', varKind: MSG_VAR_MON_NAME_1 },
+  [MSG_WAS_DEPOSITED]: { text: '{0} a été déposé.', varKind: MSG_VAR_MON_NAME_1 },
+  [MSG_BOX_IS_FULL]: { text: 'BOITE pleine.', varKind: MSG_VAR_NONE },
+  [MSG_RELEASE_POKE]: { text: 'Relâcher ce POKéMON?', varKind: MSG_VAR_NONE },
+  [MSG_WAS_RELEASED]: { text: '{0} a été relâché.', varKind: MSG_VAR_RELEASE_MON_1 },
+  [MSG_BYE_BYE]: { text: 'Bye-bye, {0}!', varKind: MSG_VAR_RELEASE_MON_3 },
+  [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
+  [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
+};
+function PrintMessage(id: number): void {
+  const s = sStorage!;
+  const entry = sStorageMessagesFr[id];
+  let text = entry ? entry.text : '';
+  if (entry) {
+    if (entry.varKind === MSG_VAR_MON_NAME_1) text = text.replace('{0}', s.displayMonName);
+    else if (entry.varKind === MSG_VAR_RELEASE_MON_1 || entry.varKind === MSG_VAR_RELEASE_MON_3) text = text.replace('{0}', s.releaseMonName);
+  }
+  FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL_1);
+  DrawDialogueFrame(WIN_MESSAGE, false);
+  AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, text, 0, 1, TEXT_SKIP_DRAW, null);
+  PutWindowTilemap(WIN_MESSAGE);
+  CopyWindowToVram(WIN_MESSAGE, 3 /* COPYWIN_FULL */);
+  ScheduleBgCopyTilemapToVram(0);
+}
+
+// ─── :2580 Task_OnSelectedMon — affiche le menu contextuel puis dispatche l'option choisie.
+// Les tasks d'ACTION (retrait/dépôt/déplacer/résumé/marquer/relâcher) = lot #3-suite : elles
+// dépendent du party menu (CreatePartyMonsSprites/DoShowPartyMenu) et de MonPlaceChange, gros
+// morceaux non encore portés → loguées nominativement + retour propre (pas de crash de la CB2). ───
+function _pcActionTodo(name: string): void {
+  console.warn(`[pc-storage] action « ${name} » : lot suivant (party menu / MonPlaceChange / summary). Retour au main.`);
+  ClearBottomWindow();
+  SetPokeStorageTask(Task_PokeStorageMain);
+}
+function Task_OnSelectedMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (!IsDisplayMosaicActive()) {
+        PlaySE(0x5 /* SE_SELECT */);
+        if (s.boxOption !== OPTION_MOVE_ITEMS) PrintMessage(MSG_IS_SELECTED);
+        AddMenu();
+        s.state = 1;
+      }
+      break;
+    case 1:
+      if (!IsMenuLoading()) s.state = 2;
+      break;
+    case 2:
+      switch (HandleMenuInput()) {
+        case MENU_B_PRESSED:
+        case MENU_CANCEL:
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case MENU_WITHDRAW: _pcActionTodo('RETIRER (Task_WithdrawMon)'); break;
+        case MENU_STORE: _pcActionTodo('DEPOSER (Task_DepositMenu)'); break;
+        case MENU_MOVE: _pcActionTodo('DEPLACER (Task_MoveMon)'); break;
+        case MENU_SHIFT: _pcActionTodo('CHANGER (Task_ShiftMon)'); break;
+        case MENU_PLACE: _pcActionTodo('PLACER (Task_PlaceMon)'); break;
+        case MENU_SUMMARY: _pcActionTodo('RESUME (Task_ShowMonSummary)'); break;
+        case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
+        case MENU_RELEASE: _pcActionTodo('RELACHER (Task_ReleaseMon)'); break;
+      }
+      break;
+  }
+}
+
 // ─── HandleInput — PROVISOIRE (lot #2 = InBoxInput/InPartyInput/OnButtonsInput/OnBoxTitleInput
-// :6200-6700). Nav grille 6×5 wrap + B. Les INPUT_* renvoyés sont 1:1. ───
+// :6200-6700). Nav grille 6×5 wrap + A (menu contextuel) + B. Les INPUT_* renvoyés sont 1:1. ───
 function HandleInput(): number {
   const rows = IN_BOX_COUNT / IN_BOX_COLUMNS;
   if (sCursorArea === CURSOR_AREA_IN_BOX) {
@@ -2111,6 +2321,11 @@ function HandleInput(): number {
     if (moved) {
       SetCursorPosition(CURSOR_AREA_IN_BOX, row * IN_BOX_COLUMNS + col);
       return INPUT_MOVE_CURSOR;
+    }
+    // A sur un mon (1:1 InBoxInput_Normal :7092) : SetSelectionMenuTexts → menu contextuel.
+    // (sAutoActionOn = dispatch direct WITHDRAW/etc → lot suivant ; ici on ouvre toujours le menu.)
+    if ((gMain.newKeys & A_BUTTON) && SetSelectionMenuTexts()) {
+      return INPUT_IN_MENU;
     }
   }
   if (gMain.newKeys & B_BUTTON) return INPUT_PRESSED_B;
@@ -2307,6 +2522,9 @@ function Task_PokeStorageMain(_taskId: number): void {
         case INPUT_MOVE_CURSOR:
           PlaySE(0x5 /* SE_SELECT */);
           s.state = MSTATE_MOVE_CURSOR;
+          break;
+        case INPUT_IN_MENU:  // :2288 → menu contextuel (RETIRER/RESUME/MARQUER/RELACHER/ANNULER)
+          SetPokeStorageTask(Task_OnSelectedMon);
           break;
         case INPUT_PRESSED_B:
           // Task_OnBPressed (:fermeture complète = tâche #4) — provisoire : sortie directe propre.
