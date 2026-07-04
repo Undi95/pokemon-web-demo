@@ -22,8 +22,19 @@ import { CopyMon, ZeroMonData, type Pokemon } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
-import { getRuntime, gMain } from '../harness/runtime/decomp-globals';
-import { AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, type WindowTemplate } from './window';
+import {
+  getRuntime, gMain, LoadBgTiles, LoadPalette, BlendPalettes, ResetPaletteFade, PlaySE,
+  FuncIsActiveTask,
+} from '../harness/runtime/decomp-globals';
+import {
+  AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
+  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
+  GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
+  type WindowTemplate,
+} from './window';
+import { GetStringWidth, AddTextPrinterParameterized } from './text';
+import { LoadUserWindowBorderGfx } from './text_window';
+import { SE_PC_LOGIN } from '../include/constants/songs';
 import {
   DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
@@ -36,13 +47,23 @@ import { CalculatePlayerPartyCount } from './pokemon';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 // ─── ÉCRAN DES BOÎTES (phase 2, rendu de base) : icônes + infra CB2 ─────────
 import {
-  PreloadMonIcon, IsMonIconLoaded, LoadMonIconPaletteToOwnSlot, GetIconSpeciesNoPersonality,
-  CreateMonIconNoPersonality, FreeAndDestroyMonIconSprite,
+  PreloadMonIcon, IsMonIconLoaded, GetIconSpeciesNoPersonality,
+  LoadMonIconPalettes, PreloadMonIconPalettes, AreMonIconPalettesLoaded, CreateMonIconSprite,
 } from './pokemon_icon';
-import { ResetSpriteData, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, DestroySprite } from './sprite';
+import { InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles } from './mon_markings';
+import {
+  ComputerScreenOpenEffect, ComputerScreenCloseEffect,
+  IsComputerScreenOpenEffectActive, IsComputerScreenCloseEffectActive,
+} from './fldeff_misc';
+import {
+  ResetSpriteData, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, DestroySprite,
+  CreateSprite, StartSpriteAnim, StartSpriteAnimIfDifferent, IndexOfSpritePaletteTag,
+  FreeSpritePaletteByTag, _freeSpriteTileRangeByTag,
+  ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd,
+} from './sprite';
 import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
-import { BeginNormalPaletteFade } from './palette';
-import { loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { BeginNormalPaletteFade, UpdatePaletteFade, BG_PLTT_ID } from './palette';
+import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION 1:1 pokemon_storage_system.c — FONDATIONS
@@ -487,6 +508,287 @@ let sIsMonBeingMoved = false;                              // :574 EWRAM bool8
 let sMovingMonOrigBoxId = 0;                               // :575 EWRAM u8
 let sMovingMonOrigBoxPos = 0;                              // :576 EWRAM u8
 let sAutoActionOn = false;                                 // :577 EWRAM bool8
+let sSavedCursorPosition = 0;                              // :6116 EWRAM u8
+
+// ─── ASSETS (adaptation ROM→réseau, pattern icônes/mail) : les INCBIN/INCGFX (:952-968, :1318-1320,
+// gStorageSystemMenu_Gfx, sDisplayMenu_Tilemap, gStorageSystemPartyMenu_*) se chargent en async au
+// EnterPokeStorage ; Task_InitPokeStorage GATE dessus à l'état 0 (= le LZ77/DMA du décomp). ────────
+interface StorageAssets {
+  menuGfx: Uint8Array;                 // gStorageSystemMenu_Gfx (menu.png, BG1 char base)
+  displayMenuTilemap: Uint16Array;     // sDisplayMenu_Tilemap (display_menu.bin)
+  displayMenuPal: Uint16Array;         // display_menu.pal
+  pkmnDataTilemap: Uint16Array;        // sPkmnData_Tilemap (pkmn_data.bin) :956
+  interfacePal: Uint16Array;           // sInterface_Pal :958
+  pkmnDataGrayPal: Uint16Array;        // sPkmnDataGray_Pal :959
+  scrollingBgTiles: Uint8Array;        // sScrollingBg_Gfx :952 (scrolling_bg.png)
+  scrollingBgTilemap: Uint16Array;     // sScrollingBg_Tilemap :953 (scrolling_bg.bin)
+  scrollingBgPal: Uint16Array;         // sScrollingBg_Pal :960
+  scrollingBgMoveItemsPal: Uint16Array;// sScrollingBgMoveItems_Pal :961
+  closeBoxButtonTilemap: Uint16Array;  // sCloseBoxButton_Tilemap :962
+  partySlotFilledTilemap: Uint16Array; // sPartySlotFilled_Tilemap :963
+  partySlotEmptyTilemap: Uint16Array;  // sPartySlotEmpty_Tilemap :964
+  waveformGfx: Uint8Array;             // sWaveform_Gfx :966 (waveform.png)
+  waveformPal: Uint16Array;            // sWaveform_Pal :965
+  textWindowsPal: Uint16Array;         // sTextWindows_Pal :968
+  partyMenuTilemap: Uint16Array;       // gStorageSystemPartyMenu_Tilemap (party_menu.bin)
+  partyMenuPal: Uint16Array;           // gStorageSystemPartyMenu_Pal (party_menu.pal)
+  arrowGfx: Uint8Array;                // sArrow_Gfx :1244 (arrow.png)
+  handCursorGfx: Uint8Array;           // sHandCursor_Gfx :1319 (hand_cursor.png)
+  handCursorPal: Uint16Array;          // sHandCursor_Pal :1318 (PLTE = main JAUNE, misc_1)
+  handCursorShadowGfx: Uint8Array;     // sHandCursorShadow_Gfx :1320
+}
+let sStorageAssets: StorageAssets | null = null;
+let _storageAssetsLoading: Promise<void> | null = null;
+
+/** Tiles 4bpp d'un PNG du décomp : PLTE (indexé) via loadIndexedPngStrict, sinon GRAYSCALE
+ *  (gbagfx sans palette : gris = index — menu/scrolling_bg/arrow) via canvas, index = R>>4. */
+async function _loadTiles4bpp(url: string): Promise<Uint8Array> {
+  try {
+    return (await loadIndexedPngStrict(url, 4)).charData;
+  } catch {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error(`PNG load failed: ${url}`));
+      el.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const wT = canvas.width >> 3, hT = canvas.height >> 3;
+    const out = new Uint8Array(wT * hT * 32);
+    let o = 0;
+    for (let ty = 0; ty < hT; ty++) for (let tx = 0; tx < wT; tx++)
+      for (let py = 0; py < 8; py++) for (let px = 0; px < 8; px += 2) {
+        const i0 = ((ty * 8 + py) * canvas.width + tx * 8 + px) * 4;
+        const lo = data[i0] >> 4, hi = data[i0 + 4] >> 4;  // gris = index<<4 (R=G=B)
+        out[o++] = lo | (hi << 4);
+      }
+    return out;
+  }
+}
+
+function LoadStorageAssets(): void {
+  if (sStorageAssets || _storageAssetsLoading) return;
+  const base = '/decomp/em/pokemon_storage';
+  _storageAssetsLoading = (async () => {
+    const [menuGfx, dmTm, dmPal, pkTm, intPal, pkGrayPal, sbTiles, sbTm, sbPal, sbMiPal,
+      cbTm, psfTm, pseTm, wavePng, twPal, pmTm, pmPal, arrowGfx, hcPng, hcsGfx] = await Promise.all([
+      _loadTiles4bpp(`${base}/menu.png`),
+      loadTilemapBin(`${base}/display_menu.bin`), loadGbaPal(`${base}/display_menu.pal`),
+      loadTilemapBin(`${base}/pkmn_data.bin`), loadGbaPal(`${base}/interface.pal`),
+      loadGbaPal(`${base}/pkmn_data_gray.pal`),
+      _loadTiles4bpp(`${base}/scrolling_bg.png`), loadTilemapBin(`${base}/scrolling_bg.bin`),
+      loadGbaPal(`${base}/scrolling_bg.pal`), loadGbaPal(`${base}/scrolling_bg_move_items.pal`),
+      loadTilemapBin(`${base}/close_box_button.bin`),
+      loadTilemapBin(`${base}/party_slot_filled.bin`), loadTilemapBin(`${base}/party_slot_empty.bin`),
+      loadIndexedPngStrict(`${base}/waveform.png`, 4),
+      loadGbaPal(`${base}/text_windows.pal`),
+      loadTilemapBin(`${base}/party_menu.bin`), loadGbaPal(`${base}/party_menu.pal`),
+      _loadTiles4bpp(`${base}/arrow.png`),
+      loadIndexedPngStrict(`${base}/hand_cursor.png`, 4),
+      _loadTiles4bpp(`${base}/hand_cursor_shadow.png`),
+    ]);
+    sStorageAssets = {
+      menuGfx,
+      displayMenuTilemap: dmTm, displayMenuPal: dmPal,
+      pkmnDataTilemap: pkTm, interfacePal: intPal, pkmnDataGrayPal: pkGrayPal,
+      scrollingBgTiles: sbTiles, scrollingBgTilemap: sbTm,
+      scrollingBgPal: sbPal, scrollingBgMoveItemsPal: sbMiPal,
+      closeBoxButtonTilemap: cbTm, partySlotFilledTilemap: psfTm, partySlotEmptyTilemap: pseTm,
+      waveformGfx: wavePng.charData, waveformPal: wavePng.palette,
+      textWindowsPal: twPal, partyMenuTilemap: pmTm, partyMenuPal: pmPal,
+      arrowGfx,
+      handCursorGfx: hcPng.charData, handCursorPal: hcPng.palette,
+      handCursorShadowGfx: hcsGfx,
+    };
+  })().catch((e) => { console.error('[pc-storage] échec chargement assets :', e); _storageAssetsLoading = null; });
+}
+
+// ─── sWindowTemplates (:970-1001) ────────────────────────────────────────────
+const sWindowTemplates: WindowTemplate[] = [
+  // The panel below the currently displayed Pokémon
+  { bg: 1, tilemapLeft: 0, tilemapTop: 11, width: 9, height: 7, paletteNum: 3, baseBlock: 0xC0 },   // WIN_DISPLAY_INFO
+  { bg: 0, tilemapLeft: 11, tilemapTop: 17, width: 18, height: 2, paletteNum: 15, baseBlock: 0x14 },// WIN_MESSAGE
+  { bg: 0, tilemapLeft: 0, tilemapTop: 13, width: 21, height: 7, paletteNum: 15, baseBlock: 0x14 }, // WIN_ITEM_DESC
+] as WindowTemplate[];
+
+// ─── sBgTemplates (:1003-1041) ───────────────────────────────────────────────
+const sBgTemplates = [
+  { bg: 0, charBaseIndex: 0, mapBaseIndex: 29, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 1, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0x100 },
+  { bg: 2, charBaseIndex: 2, mapBaseIndex: 27, screenSize: 1, paletteMode: 0, priority: 2, baseTile: 0 },
+  { bg: 3, charBaseIndex: 3, mapBaseIndex: 31, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 },
+];
+
+// ─── Données sprites 1:1 (:1043-1320) ────────────────────────────────────────
+const sOamData_DisplayMon = { shape: 0 as const, size: 3 as const, priority: 0 };   // :1111 64×64
+const sOamData_Waveform = { shape: 1 as const, size: 0 as const, priority: 0 };     // :1128 16×8
+const sOamData_MonIcon = { shape: 0 as const, size: 2 as const, priority: 0 };      // :1204 32×32
+const sOamData_BoxTitle = { shape: 1 as const, size: 2 as const, priority: 2 };     // :1246 32×16
+const sOamData_Arrow = { shape: 2 as const, size: 0 as const, priority: 2 };        // :1282 8×16
+
+const sAnims_Waveform: AnimCmd[][] = [                                              // :1145-1179
+  [ANIMCMD_FRAME(0, 5), ANIMCMD_END],                                    // LeftOff
+  [ANIMCMD_FRAME(2, 8), ANIMCMD_FRAME(4, 8), ANIMCMD_FRAME(6, 8), ANIMCMD_JUMP(0)], // LeftOn
+  [ANIMCMD_FRAME(8, 5), ANIMCMD_END],                                    // RightOff
+  [ANIMCMD_FRAME(10, 8), ANIMCMD_FRAME(4, 8), ANIMCMD_FRAME(12, 8), ANIMCMD_JUMP(0)], // RightOn
+];
+const sAnims_BoxTitle: AnimCmd[][] = [                                              // :1253-1269
+  [ANIMCMD_FRAME(0, 5), ANIMCMD_END],
+  [ANIMCMD_FRAME(8, 5), ANIMCMD_END],
+];
+const sAnims_Arrow: AnimCmd[][] = [                                                 // :1289-1305
+  [ANIMCMD_FRAME(0, 5), ANIMCMD_END],
+  [ANIMCMD_FRAME(2, 5), ANIMCMD_END],
+];
+
+// ─── Save accessors 1:1 (:1398, :9415-9560) — modèle unifié : champs directs des objets Pokemon. ──
+/** 1:1 `u8 CountMonsInBox(u8 boxId)` (:1398). */
+function CountMonsInBox(boxId: number): number {
+  const boxes = GetPokemonStorage().boxes;
+  let count = 0;
+  for (let i = 0; i < IN_BOX_COUNT; i++) if (boxes[boxId]?.[i]?.species) count++;
+  return count;
+}
+/** 1:1 `GetBoxMonDataAt(boxId, boxPosition, request)` (:9415) — requêtes servies par champ direct. */
+function _boxMonAt(boxId: number, pos: number): Pokemon | null {
+  return GetPokemonStorage().boxes[boxId]?.[pos] ?? null;
+}
+/** 1:1 `u8 *GetBoxNamePtr(u8 boxId)` (:9520) — nos noms = strings JS du save block. */
+function GetBoxNamePtr(boxId: number): string {
+  return GetPokemonStorage().boxNames?.[boxId] ?? `BOITE ${boxId + 1}`;
+}
+/** 1:1 `u8 GetBoxWallpaper(u8 boxId)` / `void SetBoxWallpaper(...)` (:9530-9545). */
+function GetBoxWallpaper(boxId: number): number {
+  return (GetPokemonStorage() as unknown as { wallpapers?: number[] }).wallpapers?.[boxId] ?? (boxId % 4);
+}
+
+// ─── TilemapUtil (:9772-9967) — moteur de tilemaps rectangulaires du PC. ─────
+interface TilemapUtilRect { x: number; y: number; width: number; height: number; destX: number; destY: number; }
+interface TilemapUtilEntry {
+  savedTilemap: Uint16Array | null;
+  tilemap: Uint16Array | null;
+  bg: number;
+  width: number; height: number;
+  altWidth: number; altHeight: number;
+  tileSize: number; rowSize: number;
+  cur: TilemapUtilRect; prev: TilemapUtilRect;
+  active: boolean;
+}
+let sTilemapUtil: TilemapUtilEntry[] = [];
+let sNumTilemapUtilIds = 0;
+
+/** 1:1 `TilemapUtil_Init(u8 count)` (:9772). */
+function TilemapUtil_Init(count: number): void {
+  sTilemapUtil = Array.from({ length: count }, () => ({
+    savedTilemap: null, tilemap: null, bg: 0, width: 0, height: 0,
+    altWidth: 0, altHeight: 0, tileSize: 0, rowSize: 0,
+    cur: { x: 0, y: 0, width: 0, height: 0, destX: 0, destY: 0 },
+    prev: { x: 0, y: 0, width: 0, height: 0, destX: 0, destY: 0 },
+    active: false,
+  }));
+  sNumTilemapUtilIds = count;
+}
+/** 1:1 `TilemapUtil_Free` (:9785). */
+function TilemapUtil_Free(): void { sTilemapUtil = []; sNumTilemapUtilIds = 0; }
+/** 1:1 `TilemapUtil_SetMap(id, bg, tilemap, width, height)` (:9821) — nos BG PC = BG_TYPE_NORMAL,
+ *  screenSize 0 (256×256) sauf BG2 512×256 (sBgTemplates :1023 screenSize=1). */
+function TilemapUtil_SetMap(id: number, bg: number, tilemap: Uint16Array, width: number, height: number): void {
+  if (id >= sNumTilemapUtilIds) return;
+  const e = sTilemapUtil[id];
+  e.savedTilemap = null;
+  e.tilemap = tilemap;
+  e.bg = bg;
+  e.width = width; e.height = height;
+  const screenSize = bg === 2 ? 1 : 0;             // = GetBgAttribute(bg, BG_ATTR_SCREENSIZE) via sBgTemplates
+  e.altWidth = screenSize === 1 ? 512 : 256;       // sTilemapDimensions[BG_TYPE_NORMAL][screenSize] :9801
+  e.altHeight = 256;
+  e.tileSize = 2;                                   // BG_TYPE_NORMAL
+  e.rowSize = e.tileSize * width;
+  e.cur = { x: 0, y: 0, width, height, destX: 0, destY: 0 };
+  e.prev = { ...e.cur };
+  e.active = true;
+}
+/** 1:1 `TilemapUtil_SetPos(id, x, y)` (:9863). */
+function TilemapUtil_SetPos(id: number, x: number, y: number): void {
+  if (id >= sNumTilemapUtilIds) return;
+  sTilemapUtil[id].cur.destX = x;
+  sTilemapUtil[id].cur.destY = y;
+  sTilemapUtil[id].active = true;
+}
+/** 1:1 `TilemapUtil_SetRect(id, x, y, width, height)` (:9873). */
+function TilemapUtil_SetRect(id: number, x: number, y: number, width: number, height: number): void {
+  if (id >= sNumTilemapUtilIds) return;
+  const e = sTilemapUtil[id];
+  e.cur.x = x; e.cur.y = y; e.cur.width = width; e.cur.height = height;
+  e.active = true;
+}
+/** 1:1 `TilemapUtil_Move(id, mode, val)` (:9885). */
+function TilemapUtil_Move(id: number, mode: number, val: number): void {
+  if (id >= sNumTilemapUtilIds) return;
+  const e = sTilemapUtil[id];
+  switch (mode) {
+    case 0: e.cur.destX += val; e.cur.width -= val; break;
+    case 1: e.cur.x += val; e.cur.width += val; break;
+    case 2: e.cur.destY += val; e.cur.height -= val; break;
+    case 3: e.cur.y -= val; e.cur.height += val; break;
+    case 4: e.cur.destX += val; break;
+    case 5: e.cur.destY += val; break;
+  }
+  e.active = true;
+}
+/** 1:1 `CopyToBgTilemapBufferRect(bg, src, destX, destY, width, height)` (bg.c:907, branche
+ *  BG_TYPE_NORMAL) — copie un rect linéaire src dans la tilemap du BG (précédent : easy_chat.ts). */
+function CopyToBgTilemapBufferRect(bg: number, src: Uint16Array, srcOffset: number, destX: number, destY: number, width: number, height: number): void {
+  const tilemap = GetBgTilemapBuffer(bg);
+  const rowWidth = bg === 2 ? 64 : 32;  // BG2 = 512px = 64 tiles de large
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const di = (destY + y) * rowWidth + (destX + x);
+      const si = srcOffset + y * width + x;
+      if (di >= 0 && di < tilemap.length && si < src.length) tilemap[di] = src[si];
+    }
+  }
+}
+/** 1:1 `TilemapUtil_Draw(id)` (:9950) — copie le rect `cur` ligne par ligne. */
+function TilemapUtil_Draw(id: number): void {
+  const e = sTilemapUtil[id];
+  if (!e.tilemap) return;
+  for (let i = 0; i < e.cur.height; i++) {
+    const srcOffset = (e.cur.y + i) * e.width + e.cur.x;
+    CopyToBgTilemapBufferRect(e.bg, e.tilemap, srcOffset, e.cur.destX, e.cur.destY + i, e.cur.width, 1);
+  }
+}
+/** 1:1 `TilemapUtil_Update(id)` (:9919) — savedTilemap toujours NULL (décomp : DrawPrev jamais appelé). */
+function TilemapUtil_Update(id: number): void {
+  if (id >= sNumTilemapUtilIds) return;
+  TilemapUtil_Draw(id);
+  sTilemapUtil[id].prev = { ...sTilemapUtil[id].cur };
+}
+
+// ─── UnkUtil (:9980-10002) — « functionally unused » (décomp) : Run tourne à vide chaque VBlank,
+// les Add* sont UNUSED (jamais appelées) → non transcrites, documenté. ────────
+let sUnkUtil: UnkUtil | null = null;
+/** 1:1 `UnkUtil_Init(util, data, max)` (:9982). */
+function UnkUtil_Init(util: UnkUtil, data: UnkUtilData[], max: number): void {
+  sUnkUtil = util;
+  util.data = data;
+  util.max = max;
+  util.numActive = 0;
+}
+/** 1:1 `UnkUtil_Run` (:9990) — numActive reste 0 (aucun Add), boucle à vide 1:1. */
+function UnkUtil_Run(): void {
+  if (sUnkUtil && sUnkUtil.numActive) {
+    for (let i = 0; i < sUnkUtil.numActive; i++) {
+      const d = sUnkUtil.data![i];
+      d.func?.(d);
+    }
+    sUnkUtil.numActive = 0;
+  }
+}
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -627,6 +929,864 @@ export function CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(): number {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION — SECTION Main tasks + gfx init (:1979-4290, :5183-5860, :6802-6990)
+// ═══════════════════════════════════════════════════════════════════════════
+const FONT_SMALL = 0, FONT_SHORT = 2;             // fonts.h (FONT_NORMAL=1 déclaré plus bas)
+const MON_PIC_SIZE = 0x800;                       // 64×64 4bpp
+const SPECIES_NONE = 0;
+// io_reg offsets 1:1 (gba/io_reg.h) — locaux (le module include n'exporte que DISPCNT).
+const REG_OFFSET_BG0CNT = 0x8, REG_OFFSET_BG1CNT = 0xA, REG_OFFSET_BG2CNT = 0xC, REG_OFFSET_BG3CNT = 0xE;
+const REG_OFFSET_BG2HOFS = 0x18, REG_OFFSET_BG2VOFS = 0x1A, REG_OFFSET_BG3HOFS = 0x1C, REG_OFFSET_BG3VOFS = 0x1E;
+const REG_OFFSET_BG0HOFS = 0x10, REG_OFFSET_BG0VOFS = 0x12, REG_OFFSET_BG1HOFS = 0x14, REG_OFFSET_BG1VOFS = 0x16;
+const REG_OFFSET_BLDCNT = 0x50, REG_OFFSET_BLDALPHA = 0x52, REG_OFFSET_MOSAIC = 0x4C;
+const PALETTES_ALL = 0xFFFFFFFF;
+const RGB_BLACK = 0x0000;
+
+/** Adaptation renderer PROUVÉE (sonde live, cf. [[chantier-pc-storage]]) : notre buildOamBuffer trie
+ *  la subpriority à l'INVERSE du HW GBA (haute = devant). Mapping monotone 31−n sur TOUTES les
+ *  subpriorities de cet écran → l'ordre relatif 1:1 est préservé à l'identique. */
+function _sub(n: number): number { return 31 - n; }
+/** Sprite live par id (nos champs sStorage.*Sprite = spriteIds). */
+function _spr(id: number) { const rt = getRuntime(); return rt && id >= 0 ? rt.gSprites[id] : null; }
+
+// ─── Cache front-pic du display mon (adaptation ROM→réseau, pattern pokemon_icon) ───
+const _displayMonCache = new Map<number, { tiles: Uint8Array; pal: Uint16Array } | null>();
+function PreloadDisplayMonPic(species: number): void {
+  if (species === SPECIES_NONE || _displayMonCache.has(species)) return;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const dexId = speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+  _displayMonCache.set(species, null); // gate posé (null = en cours/échec)
+  void (async () => {
+    const png = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/anim_front.png`, 4);
+    const pal = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`);
+    _displayMonCache.set(species, { tiles: png.charData.subarray(0, MON_PIC_SIZE), pal });
+    if (sStorage && sStorage.displayMonSpecies === species) LoadDisplayMonGfx(species, sStorage.displayMonPersonality);
+  })().catch((e) => console.error('[pc-storage] front pic', dexId, e));
+}
+
+// ─── :1979 VBlankCB_PokeStorage — LoadOam/SpriteCopy/TransferPltt = harness ; reste 1:1. ───
+function VBlankCB_PokeStorage(): void {
+  const rt = getRuntime(); if (!rt || !sStorage) return;
+  UnkUtil_Run();
+  rt.SetGpuReg(REG_OFFSET_BG2HOFS, sStorage.bg2_X);
+}
+
+// ─── :1988 CB2_PokeStorage ───
+function CB2_PokeStorage(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.runTasks?.();
+  // DoScheduledBgTilemapCopiesToVram : nos copies BG sont synchrones (ScheduleBgCopyTilemapToVram no-op).
+  ScrollBackground();
+  UpdateCloseBoxButtonFlash();
+  rt.animateSprites?.();
+  rt.buildOamBuffer?.();
+  rt.UpdatePaletteFade?.();  // harness : avance gPaletteFade (décomp : VBlank TransferPlttBuffer)
+  VBlankCB_PokeStorage();
+}
+
+// ─── :2037 ResetAllBgCoords ───
+function ResetAllBgCoords(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BG0HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG1HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG1VOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG2HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG3HOFS, 0); rt.SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+}
+
+// ─── :2049 ResetForPokeStorage ───
+function ResetForPokeStorage(): void {
+  const s = sStorage!;
+  ResetPaletteFade();
+  ResetSpriteData();          // + FreeSpriteTileRanges/ClearDma3Requests/gReservedSpriteTileCount : harness
+  FreeAllSpritePalettes();
+  // gKeyRepeatStartDelay = 20 : géré par le harness input.
+  UnkUtil_Init(s.unkUtil, s.unkUtilData, s.unkUtilData.length);
+  TilemapUtil_Init(TILEMAPID_COUNT);
+  TilemapUtil_SetMap(TILEMAPID_PKMN_DATA, 1, sStorageAssets!.pkmnDataTilemap, 8, 4);
+  TilemapUtil_SetPos(TILEMAPID_PKMN_DATA, 1, 0);
+  s.closeBoxFlashing = false;
+}
+
+// ─── :2066 InitStartingPosData ───
+function InitStartingPosData(): void {
+  ClearSavedCursorPos();
+  sInPartyMenu = (sStorage!.boxOption === OPTION_DEPOSIT);
+  sDepositBoxId = 0;
+}
+
+// ─── :2073 SetMonIconTransparency ───
+function SetMonIconTransparency(): void {
+  const rt = getRuntime(); if (!rt) return;
+  if (sStorage!.boxOption === OPTION_MOVE_ITEMS) {
+    rt.SetGpuReg(REG_OFFSET_BLDCNT, 0x3F00 /* BLDCNT_TGT2_ALL */);
+    rt.SetGpuReg(REG_OFFSET_BLDALPHA, (11 << 8) | 7 /* BLDALPHA_BLEND(7, 11) */);
+  }
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1F40);  // DISPCNT_OBJ_ON | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_1D_MAP
+}
+
+// ─── :2083 SetPokeStorageTask ───
+function SetPokeStorageTask(newFunc: (taskId: number) => void): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.gTasks[sStorage!.taskId].func = (t: { taskId: number }) => newFunc(t.taskId);
+  sStorage!.state = 0;
+}
+
+// ─── :3773 GiveChosenBagItem / :6687 LoadSavedMovingMon / :6726 SetSelectionAfterSummaryScreen —
+// chemins reopening (retour bag/name/summary) : transcription au lot fermeture/reshow (tâche #4).
+function LoadSavedMovingMon(): void { throw new Error('[pc-storage] LoadSavedMovingMon : lot reshow (tâche #4)'); }
+function SetSelectionAfterSummaryScreen(): void { throw new Error('[pc-storage] SetSelectionAfterSummaryScreen : lot reshow (tâche #4)'); }
+function GiveChosenBagItem(): void { throw new Error('[pc-storage] GiveChosenBagItem : lot reshow (tâche #4)'); }
+// ─── :items (MOVE_ITEMS) : lot déplacer-objets. IsItemIconAnimActive faux par défaut (aucun item icon).
+function CreateItemIconSprites(): void { throw new Error('[pc-storage] CreateItemIconSprites : lot items'); }
+function InitCursorItemIcon(): void { throw new Error('[pc-storage] InitCursorItemIcon : lot items'); }
+function IsItemIconAnimActive(): boolean { return false; }
+function IsMovingItem(): boolean { return false; }  // :items — MOVE_ITEMS non ouvert pour l'instant
+
+// ─── :3807 SetScrollingBackground + :3814 ScrollBackground ───
+let _bg3X = 0, _bg3Y = 0;  // BG_COORD 8.8 (ChangeBgX/Y accumulés, VBlank remonte >>8)
+function SetScrollingBackground(): void {
+  const rt = getRuntime(); const a = sStorageAssets; if (!rt || !a) return;
+  rt.SetGpuReg(REG_OFFSET_BG3CNT, (3 << 0) | (3 << 2) | (31 << 8));  // PRIORITY(3)|CHARBASE(3)|SCREENBASE(31)|16COLOR
+  LoadBgTiles(3, a.scrollingBgTiles, a.scrollingBgTiles.length, 0);
+  GetBgTilemapBuffer(3).set(a.scrollingBgTilemap.subarray(0, GetBgTilemapBuffer(3).length));
+  ShowBg(3);
+  _bg3X = 0; _bg3Y = 0;
+}
+function ScrollBackground(): void {
+  const rt = getRuntime(); if (!rt) return;
+  _bg3X = (_bg3X + 128) >>> 0;          // ChangeBgX(3, 128, BG_COORD_ADD)
+  _bg3Y = (_bg3Y - 128) >>> 0;          // ChangeBgY(3, 128, BG_COORD_SUB)
+  rt.SetGpuReg(REG_OFFSET_BG3HOFS, (_bg3X >> 8) & 0x1FF);
+  rt.SetGpuReg(REG_OFFSET_BG3VOFS, (_bg3Y >> 8) & 0x1FF);
+}
+
+// ─── :3820 LoadPokeStorageMenuGfx ───
+function LoadPokeStorageMenuGfx(): void {
+  const rt = getRuntime(); const a = sStorageAssets; if (!rt || !a) return;
+  InitBgsFromTemplates(0, sBgTemplates, sBgTemplates.length);
+  // bg.c GBA : LoadBgTiles ajoute le baseTile du template (BG1 baseTile=0x100, sBgTemplates :1021)
+  // → display_menu.bin référence les tiles du menu à 0x100+n. Notre LoadBgTiles ne connaît pas le
+  // template : offset explicite.
+  LoadBgTiles(1, a.menuGfx, a.menuGfx.length, 0x100);
+  // LZ77UnCompWram(sDisplayMenu_Tilemap → displayMenuTilemapBuffer) + SetBgTilemapBuffer(1) :
+  // adaptation moteur (précédent easy_chat) : écrire direct la tilemap BG1 du moteur.
+  GetBgTilemapBuffer(1).set(a.displayMenuTilemap.subarray(0, GetBgTilemapBuffer(1).length));
+  ShowBg(1);
+  ScheduleBgCopyTilemapToVram(1);
+}
+
+// ─── :3830 InitPokeStorageWindows ───
+function InitPokeStorageWindows(): boolean {
+  InitWindows(sWindowTemplates);
+  // DeactivateAllTextPrinters : harness (printers par window, pas de pool global).
+  return true;
+}
+
+// ─── :3843 LoadWaveformSpritePalette ───
+function LoadWaveformSpritePalette(): void {
+  LoadSpritePalette({ data: sStorageAssets!.waveformPal, tag: PALTAG_MISC_2 });  // sWaveformSpritePalette :1043
+}
+
+// ─── :3848 InitPalettesAndSprites ───
+function InitPalettesAndSprites(): void {
+  const rt = getRuntime(); const a = sStorageAssets; if (!rt || !a) return;
+  LoadPalette(a.interfacePal, BG_PLTT_ID(0), a.interfacePal.length * 2);
+  LoadPalette(a.pkmnDataGrayPal, BG_PLTT_ID(2), a.pkmnDataGrayPal.length * 2);
+  LoadPalette(a.textWindowsPal, BG_PLTT_ID(15), a.textWindowsPal.length * 2);
+  if (sStorage!.boxOption !== OPTION_MOVE_ITEMS)
+    LoadPalette(a.scrollingBgPal, BG_PLTT_ID(3), a.scrollingBgPal.length * 2);
+  else
+    LoadPalette(a.scrollingBgMoveItemsPal, BG_PLTT_ID(3), a.scrollingBgMoveItemsPal.length * 2);
+  rt.SetGpuReg(REG_OFFSET_BG1CNT, (1 << 0) | (1 << 2) | (30 << 8));  // PRIORITY(1)|CHARBASE(1)|SCREENBASE(30)
+  CreateDisplayMonSprite();
+  CreateMarkingComboSprite();
+  CreateWaveformSprites();
+  RefreshDisplayMonData();
+}
+
+// ─── :3865 CreateMarkingComboSprite ───
+function CreateMarkingComboSprite(): void {
+  const s = sStorage!;
+  s.markingComboSprite = CreateMonMarkingComboSprite(GFXTAG_MARKING_COMBO, PALTAG_MARKING_COMBO, null);
+  const spr = _spr(s.markingComboSprite);
+  if (spr) {
+    const rt = getRuntime()!;
+    rt.gba.oam[spr.oamIndex].priority = 1;
+    spr.subpriority = _sub(1);
+    spr.x = 40; spr.y = 150;
+  }
+}
+
+// ─── :3875 CreateWaveformSprites ───
+function CreateWaveformSprites(): void {
+  const s = sStorage!; const a = sStorageAssets!;
+  LoadSpriteSheet({ data: a.waveformGfx, size: a.waveformGfx.length, tag: GFXTAG_WAVEFORM });  // sSpriteSheet_Waveform :1048
+  for (let i = 0; i < 2; i++) {
+    const spriteId = CreateSprite({
+      tileTag: GFXTAG_WAVEFORM, paletteTag: PALTAG_MISC_2, oam: sOamData_Waveform,
+      anims: sAnims_Waveform, callback: null,
+    }, i * 63 + 8, 9, _sub(2));
+    s.waveformSprites[i] = spriteId;
+  }
+}
+
+// ─── :3888 RefreshDisplayMonData ───
+function RefreshDisplayMonData(): void {
+  const s = sStorage!;
+  LoadDisplayMonGfx(s.displayMonSpecies, s.displayMonPersonality);
+  PrintDisplayMonInfo();
+  UpdateWaveformAnimation();
+  ScheduleBgCopyTilemapToVram(0);
+}
+
+// ─── :3896 StartDisplayMonMosaicEffect + :3909 IsDisplayMosaicActive + :3914 SpriteCB ───
+function StartDisplayMonMosaicEffect(): void {
+  const rt = getRuntime(); const s = sStorage!;
+  RefreshDisplayMonData();
+  const spr = _spr(s.displayMonSprite);
+  if (rt && spr) {
+    rt.gba.oam[spr.oamIndex].mosaic = true;
+    spr.data[0] = 10; spr.data[1] = 1;
+    spr.callback = SpriteCB_DisplayMonMosaic;
+    rt.SetGpuReg(REG_OFFSET_MOSAIC, (spr.data[0] << 12) | (spr.data[0] << 8));
+  }
+}
+function IsDisplayMosaicActive(): boolean {
+  const rt = getRuntime(); const spr = _spr(sStorage!.displayMonSprite);
+  return !!(rt && spr && rt.gba.oam[spr.oamIndex].mosaic);
+}
+function SpriteCB_DisplayMonMosaic(sprite: { data: number[]; oamIndex: number; callback: unknown }): void {
+  const rt = getRuntime(); if (!rt) return;
+  sprite.data[0] -= sprite.data[1];
+  if (sprite.data[0] < 0) sprite.data[0] = 0;
+  rt.SetGpuReg(REG_OFFSET_MOSAIC, (sprite.data[0] << 12) | (sprite.data[0] << 8));
+  if (sprite.data[0] === 0) {
+    rt.gba.oam[sprite.oamIndex].mosaic = false;
+    sprite.callback = null;
+  }
+}
+
+// ─── :3927 CreateDisplayMonSprite ───
+function CreateDisplayMonSprite(): void {
+  const s = sStorage!;
+  s.tileBuffer.fill(0, 0, MON_PIC_SIZE);
+  s.displayMonPalBuffer.fill(0, 0, 16);
+  s.displayMonSprite = -1;
+  const tileStart = LoadSpriteSheet({ data: s.tileBuffer.subarray(0, MON_PIC_SIZE), size: MON_PIC_SIZE, tag: GFXTAG_DISPLAY_MON });
+  const palSlot = LoadSpritePalette({ data: s.displayMonPalBuffer.subarray(0, 16), tag: PALTAG_DISPLAY_MON });
+  const spriteId = CreateSprite({
+    tileTag: GFXTAG_DISPLAY_MON, paletteTag: PALTAG_DISPLAY_MON, oam: sOamData_DisplayMon,
+    anims: null, callback: null,
+  }, 40, 48, _sub(0));
+  if (spriteId !== 64 /* MAX_SPRITES */) {
+    s.displayMonSprite = spriteId;
+    s.displayMonPalOffset = 256 + palSlot * 16;  // OBJ_PLTT_ID(palSlot)
+    s.displayMonTilePtr = tileStart;              // adaptation : tile start OBJ VRAM
+  } else {
+    _freeSpriteTileRangeByTag(GFXTAG_DISPLAY_MON);
+    FreeSpritePaletteByTag(PALTAG_DISPLAY_MON);
+  }
+}
+
+// ─── :3970 LoadDisplayMonGfx ───
+function LoadDisplayMonGfx(species: number, _pid: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  const spr = _spr(s.displayMonSprite);
+  if (!rt || !spr) return;
+  if (species !== SPECIES_NONE) {
+    const entry = _displayMonCache.get(species);
+    if (!entry) { PreloadDisplayMonPic(species); spr.invisible = true; return; }  // gate async (recharge à l'arrivée)
+    // LoadSpecialPokePic + LZ77UnCompWram(pal) + CpuCopy32 → OBJ VRAM + LoadPalette :
+    s.tileBuffer.set(entry.tiles.subarray(0, MON_PIC_SIZE));
+    rt._writeToObjVram?.(entry.tiles.subarray(0, MON_PIC_SIZE), (s.displayMonTilePtr as number) * 32);
+    for (let i = 0; i < 16; i++) s.displayMonPalBuffer[i] = entry.pal[i];
+    LoadPalette(entry.pal.subarray(0, 16), s.displayMonPalOffset, 32);
+    spr.invisible = false;
+  } else {
+    spr.invisible = true;
+  }
+}
+
+// ─── :3989 PrintDisplayMonInfo ───
+function PrintDisplayMonInfo(): void {
+  const s = sStorage!;
+  FillWindowPixelBuffer(WIN_DISPLAY_INFO, PIXEL_FILL_1);
+  if (s.boxOption !== OPTION_MOVE_ITEMS) {
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, s.displayMonNameText, 6, 0, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, s.displayMonSpeciesName, 6, 15, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, s.displayMonGenderLvlText, 10, 29, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, s.displayMonItemName, 6, 43, TEXT_SKIP_DRAW, null);
+  } else {
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, s.displayMonItemName, 6, 0, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, s.displayMonNameText, 6, 13, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, s.displayMonSpeciesName, 6, 28, TEXT_SKIP_DRAW, null);
+    AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, s.displayMonGenderLvlText, 10, 42, TEXT_SKIP_DRAW, null);
+  }
+  CopyWindowToVram(WIN_DISPLAY_INFO, 2 /* COPYWIN_GFX */);
+  const combo = _spr(s.markingComboSprite);
+  if (s.displayMonSpecies !== SPECIES_NONE) {
+    UpdateMonMarkingTiles(s.displayMonMarkings, s.markingComboTilesPtr);
+    if (combo) combo.invisible = false;
+  } else {
+    if (combo) combo.invisible = true;
+  }
+}
+
+// ─── :4020 UpdateWaveformAnimation ───
+function UpdateWaveformAnimation(): void {
+  const s = sStorage!;
+  if (s.displayMonSpecies !== SPECIES_NONE) {
+    TilemapUtil_SetRect(TILEMAPID_PKMN_DATA, 0, 0, 8, 2);
+    for (let i = 0; i < 2; i++) { const w = _spr(s.waveformSprites[i]); if (w) StartSpriteAnimIfDifferent(w as never, i * 2 + 1); }
+  } else {
+    TilemapUtil_SetRect(TILEMAPID_PKMN_DATA, 0, 2, 8, 2);
+    for (let i = 0; i < 2; i++) { const w = _spr(s.waveformSprites[i]); if (w) StartSpriteAnim(w as never, i * 2); }
+  }
+  TilemapUtil_Update(TILEMAPID_PKMN_DATA);
+  ScheduleBgCopyTilemapToVram(1);
+}
+
+// ─── :4043 InitSupplementalTilemaps ───
+function InitSupplementalTilemaps(): void {
+  const a = sStorageAssets!; const s = sStorage!;
+  s.partyMenuTilemapBuffer.set(a.partyMenuTilemap.subarray(0, s.partyMenuTilemapBuffer.length));  // LZ77UnCompWram
+  LoadPalette(a.partyMenuPal, BG_PLTT_ID(1), 32);
+  TilemapUtil_SetMap(TILEMAPID_PARTY_MENU, 1, s.partyMenuTilemapBuffer, 12, 22);
+  TilemapUtil_SetMap(TILEMAPID_CLOSE_BUTTON, 1, a.closeBoxButtonTilemap, 9, 4);
+  TilemapUtil_SetPos(TILEMAPID_PARTY_MENU, 10, 0);
+  TilemapUtil_SetPos(TILEMAPID_CLOSE_BUTTON, 21, 0);
+  SetPartySlotTilemaps();
+  if (sInPartyMenu) {
+    UpdateCloseBoxButtonTilemap(true);
+    CreatePartyMonsSprites(true);
+    TilemapUtil_Update(TILEMAPID_CLOSE_BUTTON);
+    TilemapUtil_Update(TILEMAPID_PARTY_MENU);
+  } else {
+    TilemapUtil_SetRect(TILEMAPID_PARTY_MENU, 0, 20, 12, 2);
+    UpdateCloseBoxButtonTilemap(true);
+    TilemapUtil_Update(TILEMAPID_PARTY_MENU);
+    TilemapUtil_Update(TILEMAPID_CLOSE_BUTTON);
+  }
+  ScheduleBgCopyTilemapToVram(1);
+  s.closeBoxFlashing = false;
+}
+
+// ─── :4143-4177 close box button ───
+function UpdateCloseBoxButtonTilemap(normal: boolean): void {
+  if (normal) TilemapUtil_SetRect(TILEMAPID_CLOSE_BUTTON, 0, 0, 9, 2);
+  else TilemapUtil_SetRect(TILEMAPID_CLOSE_BUTTON, 0, 2, 9, 2);
+  TilemapUtil_Update(TILEMAPID_CLOSE_BUTTON);
+  ScheduleBgCopyTilemapToVram(1);
+}
+function StartFlashingCloseBoxButton(): void {
+  const s = sStorage!;
+  s.closeBoxFlashing = true; s.closeBoxFlashTimer = 30; s.closeBoxFlashState = true;
+}
+function StopFlashingCloseBoxButton(): void {
+  const s = sStorage!;
+  if (s.closeBoxFlashing) { s.closeBoxFlashing = false; UpdateCloseBoxButtonTilemap(true); }
+}
+function UpdateCloseBoxButtonFlash(): void {
+  const s = sStorage; if (!s) return;
+  if (s.closeBoxFlashing && ++s.closeBoxFlashTimer > 30) {
+    s.closeBoxFlashTimer = 0;
+    s.closeBoxFlashState = !s.closeBoxFlashState;
+    UpdateCloseBoxButtonTilemap(s.closeBoxFlashState);
+  }
+}
+
+// ─── :4180 SetPartySlotTilemaps + :4193 SetPartySlotTilemap ───
+function SetPartySlotTilemaps(): void {
+  for (let i = 1; i < PARTY_SIZE; i++) {
+    const species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+    SetPartySlotTilemap(i, species !== SPECIES_NONE);
+  }
+}
+function SetPartySlotTilemap(partyId: number, hasMon: boolean): void {
+  const a = sStorageAssets!; const s = sStorage!;
+  const data = hasMon ? a.partySlotFilledTilemap : a.partySlotEmptyTilemap;
+  let index = 3 * (3 * (partyId - 1) + 1);
+  index *= 4;
+  index += 7;
+  let src = 0;
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 4; j++) s.partyMenuTilemapBuffer[index + j] = data[src + j];
+    src += 4;
+    index += 12;
+  }
+}
+function UpdatePartySlotColors(): void {
+  SetPartySlotTilemaps();
+  TilemapUtil_SetRect(TILEMAPID_PARTY_MENU, 0, 0, 12, 22);
+  TilemapUtil_Update(TILEMAPID_PARTY_MENU);
+  ScheduleBgCopyTilemapToVram(1);
+}
+// CreatePartyMonsSprites (:4610 env.) : icônes party = lot navigation/party (tâche #2).
+function CreatePartyMonsSprites(_reshow: boolean): void { console.warn('[pc-storage] CreatePartyMonsSprites : lot party (tâche #2)'); }
+
+// ─── :4265 InitPokeStorageBg0 ───
+function InitPokeStorageBg0(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BG0CNT, (0 << 0) | (0 << 2) | (29 << 8));  // PRIORITY(0)|CHARBASE(0)|SCREENBASE(29)
+  LoadUserWindowBorderGfx(WIN_MESSAGE, 2, BG_PLTT_ID(13));
+  FillBgTilemapBufferRect(0, 0, 0, 0, 32, 20, 17);
+  CopyBgTilemapBufferToVram(0);
+}
+
+// ─── :4404 InitMonIconFields ───
+function InitMonIconFields(): void {
+  const s = sStorage!;
+  LoadMonIconPalettes();
+  for (let i = 0; i < MAX_MON_ICONS; i++) s.numIconsPerSpecies[i] = 0;
+  for (let i = 0; i < MAX_MON_ICONS; i++) s.iconSpeciesList[i] = SPECIES_NONE;
+  for (let i = 0; i < PARTY_SIZE; i++) s.partySprites[i] = -1;
+  for (let i = 0; i < IN_BOX_COUNT; i++) s.boxMonsSprites[i] = -1;
+  s.movingMonSprite = -1;
+  s.unkUnused1 = 0;
+}
+
+// ─── :4437 InitBoxMonSprites + :4478 CreateBoxMonIconAtPos ───
+const IN_BOX_ROWS = 5;
+function InitBoxMonSprites(boxId: number): void {
+  const s = sStorage!;
+  let boxPosition = 0;
+  let count = 0;
+  for (let i = 0; i < IN_BOX_ROWS; i++) {
+    for (let j = 0; j < IN_BOX_COLUMNS; j++) {
+      const mon = _boxMonAt(boxId, boxPosition);
+      const species = mon && mon.species ? mon.species : SPECIES_NONE;
+      if (species !== SPECIES_NONE) {
+        const personality = mon!.personality ?? 0;
+        s.boxMonsSprites[count] = CreateMonIconSprite(species, personality, 8 * (3 * j) + 100, 8 * (3 * i) + 44, 2, _sub(19 - j));
+      } else {
+        s.boxMonsSprites[count] = -1;
+      }
+      boxPosition++;
+      count++;
+    }
+  }
+  // boxOption MOVE_ITEMS : blend des icônes sans objet (lot items).
+}
+function CreateBoxMonIconAtPos(boxPosition: number): void {
+  const s = sStorage!;
+  const mon = _boxMonAt(StorageGetCurrentBox(), boxPosition);
+  const species = mon && mon.species ? mon.species : SPECIES_NONE;
+  if (species !== SPECIES_NONE) {
+    const x = 8 * (3 * (boxPosition % IN_BOX_COLUMNS)) + 100;
+    const y = 8 * (3 * Math.floor(boxPosition / IN_BOX_COLUMNS)) + 44;
+    s.boxMonsSprites[boxPosition] = CreateMonIconSprite(species, mon!.personality ?? 0, x, y, 2, _sub(19 - (boxPosition % IN_BOX_COLUMNS)));
+  }
+}
+
+// ─── :5079 SetMovingMonPriority ───
+function SetMovingMonPriority(priority: number): void {
+  const rt = getRuntime(); const spr = _spr(sStorage!.movingMonSprite);
+  if (rt && spr) rt.gba.oam[spr.oamIndex].priority = priority;
+}
+
+// ─── :5183 CreateInitBoxTask + :5190 IsInitBoxActive + :5195 Task_InitBox ───
+function CreateInitBoxTask(boxId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const taskId = rt.CreateTask((t: { taskId: number }) => Task_InitBox(t.taskId), 2);
+  rt.gTasks[taskId].data[2] = boxId;  // tBoxId = data[2] (:5181 #define)
+}
+function IsInitBoxActive(): boolean {
+  return FuncIsActiveTask(Task_InitBox as never);
+}
+function Task_InitBox(taskId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const task = rt.gTasks[taskId];
+  const s = sStorage!;
+  switch (task.data[0] /* tState */) {
+    case 0:
+      s.wallpaperOffset = 0;
+      s.bg2_X = 0;
+      s.wallpaperBgTilemapBuffer.fill(0);  // RequestDma3Fill(0, buffer) — copie synchrone
+      GetBgTilemapBuffer(2).fill(0);
+      break;
+    case 1:
+      // CheckForSpaceForDma3Request : synchrone → toujours prêt. SetBgTilemapBuffer(2) : tilemap moteur directe.
+      ShowBg(2);
+      break;
+    case 2:
+      LoadWallpaperGfx(task.data[2] /* tBoxId */, 0);
+      break;
+    case 3:
+      if (!WaitForWallpaperGfxLoad()) return;
+      InitBoxTitle(task.data[2]);
+      CreateBoxScrollArrows();
+      InitBoxMonSprites(task.data[2]);
+      rt.SetGpuReg(REG_OFFSET_BG2CNT, (2 << 0) | (2 << 2) | (27 << 8) | (1 << 14));  // PRIORITY(2)|CHARBASE(2)|SCREENBASE(27)|TXT512x256
+      break;
+    case 4:
+      rt.DestroyTask(taskId);
+      return;
+    default:
+      task.data[0] = 0;
+      return;
+  }
+  task.data[0]++;
+}
+
+// ─── :5315-5460 Wallpaper gfx — assets = wallpapers/<dir>/{frame.png(tiles), tilemap.bin} ; palettes
+// (2×16) = PLTE du frame.png. Chargement async par wallpaper (cache), gate = WaitForWallpaperGfxLoad. ───
+const sWallpaperDirs = [  // 1:1 enum WALLPAPER_* (data/wallpapers.h) → dossiers assets
+  'forest', 'city', 'desert', 'savanna', 'crag', 'volcano', 'snow', 'cave',
+  'beach', 'seafloor', 'river', 'sky', 'polkadot', 'pokecenter', 'machine', 'simple',
+];
+const _wallpaperCache = new Map<number, { tiles: Uint8Array; tilemap: Uint16Array; palettes: Uint16Array } | null>();
+let _wallpaperLoadPending = false;
+function _loadWallpaperAssets(wallpaperId: number): void {
+  if (_wallpaperCache.has(wallpaperId)) return;
+  _wallpaperLoadPending = true;
+  const dir = sWallpaperDirs[wallpaperId] ?? 'forest';
+  void (async () => {
+    // Assets : frame.png (128×32 = 64 tiles, sous-palette 0) + bg.png (32×16 = 8 tiles, sous-palette 1),
+    // concaténés comme le blob décomp (Walda copie son icône à +0x800 = après les 64 tiles du frame).
+    const frame = await loadIndexedPngStrict(`/decomp/em/pokemon_storage/wallpapers/${dir}/frame.png`, 4);
+    const bg = await loadIndexedPngStrict(`/decomp/em/pokemon_storage/wallpapers/${dir}/bg.png`, 4);
+    const tilemap = await loadTilemapBin(`/decomp/em/pokemon_storage/wallpapers/${dir}/tilemap.bin`);
+    const tiles = new Uint8Array(frame.charData.length + bg.charData.length);
+    tiles.set(frame.charData, 0);
+    tiles.set(bg.charData, frame.charData.length);
+    const palettes = new Uint16Array(32);                    // 2 palettes 4bpp (frame + bg)
+    palettes.set(frame.palette.subarray(0, 16), 0);
+    palettes.set(bg.palette.subarray(0, 16), 16);
+    _wallpaperCache.set(wallpaperId, { tiles, tilemap, palettes });
+  })().catch((e) => {
+    console.error('[pc-storage] wallpaper', dir, e);
+    _wallpaperCache.set(wallpaperId, null);  // release le gate (écran sans wallpaper plutôt que freeze)
+  }).finally(() => { _wallpaperLoadPending = false; });
+}
+function LoadWallpaperGfx(boxId: number, direction: number): void {
+  const s = sStorage!;
+  s.wallpaperLoadState = 0;
+  s.wallpaperLoadBoxId = boxId;
+  s.wallpaperLoadDir = direction;
+  if (s.wallpaperLoadDir !== 0) {
+    s.wallpaperOffset = s.wallpaperOffset === 0 ? 1 : 0;
+    TrimOldWallpaper();
+  }
+  const wallpaperId = GetBoxWallpaper(s.wallpaperLoadBoxId);
+  _loadWallpaperAssets(wallpaperId);  // async : la suite au WaitForWallpaperGfxLoad
+}
+function _applyLoadedWallpaper(): void {
+  const s = sStorage!;
+  const wallpaperId = GetBoxWallpaper(s.wallpaperLoadBoxId);
+  const wp = _wallpaperCache.get(wallpaperId);
+  if (!wp) return;  // échec de chargement : pas de wallpaper (loggué)
+  s.wallpaperTilemap.set(wp.tilemap.subarray(0, s.wallpaperTilemap.length));  // LZ77UnCompWram
+  DrawWallpaper(s.wallpaperTilemap, s.wallpaperLoadDir, s.wallpaperOffset);
+  const palOffset = BG_PLTT_ID(4) + BG_PLTT_ID(s.wallpaperOffset * 2);
+  LoadPalette(wp.palettes, palOffset, 64);  // 2 palettes 4bpp (dir≠0 : fade géré ; dir=0 : CpuCopy16 ≈ LoadPalette)
+  LoadBgTiles(2, wp.tiles, wp.tiles.length, s.wallpaperOffset << 8);
+  CopyBgTilemapBufferToVram(2);
+}
+function WaitForWallpaperGfxLoad(): boolean {
+  if (_wallpaperLoadPending) return false;   // IsDma3ManagerBusyWithBgCopy
+  _applyLoadedWallpaper();
+  const s = sStorage!;
+  s.wallpaperTiles = null;                    // TRY_FREE_AND_SET_NULL
+  return true;
+}
+// ─── :5423 DrawWallpaper ───
+function DrawWallpaper(tilemap: Uint16Array, direction: number, offset: number): void {
+  const s = sStorage!;
+  const tileOffset = offset * 256;
+  const paletteNum = (offset * 2) + 3;
+  let x = ((Math.floor(s.bg2_X / 8) + 10) + (direction * 24)) & 0x3F;
+  // CopyRectToBgTilemapBufferRect(2, tilemap, 0,0, 20,18, x,2, 20,18, 17, tileOffset, paletteNum) :
+  // bg.c — palette1=17 (>15) = conserver la palette source ; tileOffset et paletteNum s'AJOUTENT
+  // à chaque entrée (srcPal 1..2 + 3 → banques 4..5 = les 2 palettes wallpaper chargées).
+  const dest = GetBgTilemapBuffer(2);
+  for (let ty = 0; ty < 18; ty++) {
+    for (let tx = 0; tx < 20; tx++) {
+      const entry = tilemap[ty * 20 + tx];
+      const srcPal = (entry >> 12) & 0xF;
+      const destX = (x + tx) & 0x3F;
+      const di = (2 + ty) * 64 + destX;
+      if (di < dest.length) dest[di] = ((entry & 0x3FF) + tileOffset) | (((srcPal + paletteNum) & 0xF) << 12) | (entry & 0x0C00);
+    }
+  }
+  if (direction === 0) return;
+  if (direction > 0) x += 20; else x -= 4;
+  FillBgTilemapBufferRect(2, 0, x, 2, 4, 0x12, 17);
+}
+// ─── :5441 TrimOldWallpaper — efface la colonne de l'ancien wallpaper (scroll). ───
+function TrimOldWallpaper(): void {
+  const s = sStorage!;
+  const dest = GetBgTilemapBuffer(2);
+  let r3 = (Math.floor(s.bg2_X / 8) + 30) & 0x3F;
+  for (let i = 0; i < 0x2C; i++) {
+    const col = r3 & 0x3F;
+    const row = 2 + (i % 22);  // approximation structurée du parcours 0x260/0x640 (colonnes×22 lignes)
+    const di = row * 64 + col;
+    if (di < dest.length) dest[di] = 0;
+    r3 = (r3 + 1) & 0x3F;
+  }
+}
+
+// ─── :5469 InitBoxTitle + :5621 GetBoxTitleBaseX ───
+function InitBoxTitle(boxId: number): void {
+  const s = sStorage!;
+  // sBoxTitleColors[wallpaperId] : shadow+text par wallpaper (data/wallpapers.h) — table au lot title-text.
+  LoadSpritePalette({ data: s.boxTitlePal.subarray(0, 16), tag: PALTAG_BOX_TITLE });
+  s.wallpaperPalBits = 0x3f0;
+  const tagIndex = IndexOfSpritePaletteTag(PALTAG_BOX_TITLE);
+  s.boxTitlePalOffset = 256 + tagIndex * 16 + 14;
+  s.boxTitleAltPalOffset = 256 + tagIndex * 16 + 14;
+  s.boxTitleText = GetBoxNamePtr(boxId);
+  // DrawTextWindowAndBufferTiles(boxTitleText → boxTitleTiles) : pipeline texte→tiles sprite à câbler
+  // (lot title-text, aussi requis par ChooseBoxMenu_PrintInfo) — sprites créés, tiles vides pour l'instant.
+  console.warn('[pc-storage] InitBoxTitle : rendu texte→tiles du titre au lot title-text');
+  LoadSpriteSheet({ data: s.boxTitleTiles.subarray(0, 0x200), size: 0x200, tag: GFXTAG_BOX_TITLE });
+  const x = GetBoxTitleBaseX(s.boxTitleText);
+  for (let i = 0; i < 2; i++) {
+    const spriteId = CreateSprite({
+      tileTag: GFXTAG_BOX_TITLE, paletteTag: PALTAG_BOX_TITLE, oam: sOamData_BoxTitle,
+      anims: sAnims_BoxTitle, callback: null,
+    }, x + i * 32, 28, _sub(24));
+    s.curBoxTitleSprites[i] = spriteId;
+    const spr = _spr(spriteId);
+    if (spr) StartSpriteAnim(spr as never, i);
+  }
+  s.boxTitleCycleId = 0;
+}
+function GetBoxTitleBaseX(str: string): number {
+  return 240 - 64 - Math.floor(GetStringWidth(str, FONT_NORMAL, 0) / 2);
+}
+
+// ─── :5637 CreateBoxScrollArrows + :5700 AnimateBoxScrollArrows + :5723 SpriteCB_Arrow ───
+function CreateBoxScrollArrows(): void {
+  const s = sStorage!; const a = sStorageAssets!;
+  LoadSpriteSheet({ data: a.arrowGfx, size: a.arrowGfx.length, tag: GFXTAG_ARROW });  // sSpriteSheet_Arrow :1244
+  for (let i = 0; i < 2; i++) {
+    const spriteId = CreateSprite({
+      tileTag: GFXTAG_ARROW, paletteTag: PALTAG_MISC_2, oam: sOamData_Arrow,
+      anims: sAnims_Arrow, callback: SpriteCB_Arrow as never,
+    }, 92 + i * 136, 28, _sub(22));
+    if (spriteId !== 64) {
+      const spr = _spr(spriteId)!;
+      StartSpriteAnim(spr as never, i);
+      spr.data[3] = (i === 0) ? -1 : 1;  // sSpeed
+      s.arrowSprites[i] = spriteId;
+    }
+  }
+  if (IsCursorOnBoxTitle()) AnimateBoxScrollArrows(true);
+}
+function AnimateBoxScrollArrows(animate: boolean): void {
+  const s = sStorage!;
+  for (let i = 0; i < 2; i++) {
+    const spr = _spr(s.arrowSprites[i]); if (!spr) continue;
+    if (animate) { spr.data[0] = 1; spr.data[1] = 0; spr.data[2] = 0; spr.data[4] = 0; }
+    else spr.data[0] = 0;
+  }
+}
+function SpriteCB_Arrow(sprite: { data: number[]; x: number; x2: number; invisible: boolean }): void {
+  switch (sprite.data[0] /* sState */) {
+    case 0: sprite.x2 = 0; break;
+    case 1:
+      if (++sprite.data[1] > 3) {
+        sprite.data[1] = 0;
+        sprite.x2 += sprite.data[3];
+        if (++sprite.data[2] > 5) { sprite.data[2] = 0; sprite.x2 = 0; }
+      }
+      break;
+    case 2: sprite.data[0] = 3; break;
+    case 3:
+      sprite.x -= sStorage!.scrollSpeed;
+      if (sprite.x <= 72 || sprite.x >= 248) sprite.invisible = true;
+      if (--sprite.data[1] === 0) { sprite.x = sprite.data[2]; sprite.invisible = false; sprite.data[0] = 4; }
+      break;
+    case 4: sprite.x -= sStorage!.scrollSpeed; break;
+  }
+}
+
+// ─── :5788 InitCursor + :5807 InitCursorOnReopen + :5820 GetCursorCoordsByPos ───
+function InitCursor(): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_DEPOSIT) sCursorArea = CURSOR_AREA_IN_BOX;
+  else sCursorArea = CURSOR_AREA_IN_PARTY;
+  sCursorPosition = 0;
+  sIsMonBeingMoved = false;
+  sMovingMonOrigBoxId = 0;
+  sMovingMonOrigBoxPos = 0;
+  sAutoActionOn = false;
+  ClearSavedCursorPos();
+  CreateCursorSprites();
+  s.cursorPrevHorizPos = 1;
+  s.inBoxMovingMode = MOVE_MODE_NORMAL;
+  TryRefreshDisplayMon();
+}
+function InitCursorOnReopen(): void {
+  const s = sStorage!;
+  CreateCursorSprites();
+  ReshowDisplayMon();
+  s.cursorPrevHorizPos = 1;
+  s.inBoxMovingMode = MOVE_MODE_NORMAL;
+  if (sIsMonBeingMoved && sSavedMovingMon) {
+    s.movingMon = sSavedMovingMon;
+    // CreateMovingMonIcon : lot déplacement (tâche #3).
+  }
+}
+function GetCursorCoordsByPos(cursorArea: number, cursorPosition: number): { x: number; y: number } {
+  let x = 0, y = 0;
+  switch (cursorArea) {
+    case CURSOR_AREA_IN_BOX:
+      x = (cursorPosition % IN_BOX_COLUMNS) * 24 + 100;
+      y = Math.floor(cursorPosition / IN_BOX_COLUMNS) * 24 + 32;
+      break;
+    case CURSOR_AREA_IN_PARTY:
+      if (cursorPosition === 0) { x = 104; y = 52; }
+      else if (cursorPosition === PARTY_SIZE) { x = 152; y = 132; }
+      else { x = 152; y = (cursorPosition - 1) * 24 + 4; }
+      break;
+    case CURSOR_AREA_BOX_TITLE:
+      x = 162; y = 12;
+      break;
+    case CURSOR_AREA_BUTTONS:
+      y = sIsMonBeingMoved ? 8 : 14;
+      x = cursorPosition * 88 + 120;
+      break;
+    case 4:
+      x = 160; y = 96;
+      break;
+  }
+  return { x, y };
+}
+
+// ─── :7735 CreateCursorSprites (+ anims :7690-7730 env.) ───
+const sAnims_Cursor: AnimCmd[][] = [
+  [ANIMCMD_FRAME(0, 30), ANIMCMD_FRAME(16, 30), ANIMCMD_JUMP(0)],  // CURSOR_ANIM_BOUNCE
+  [ANIMCMD_FRAME(0, 5), ANIMCMD_END],                              // CURSOR_ANIM_STILL
+  [ANIMCMD_FRAME(32, 5), ANIMCMD_END],                             // CURSOR_ANIM_OPEN
+  [ANIMCMD_FRAME(48, 5), ANIMCMD_END],                             // CURSOR_ANIM_FIST
+];
+function CreateCursorSprites(): void {
+  const rt = getRuntime(); const s = sStorage!; const a = sStorageAssets!;
+  // Sheets : sHandCursor_Gfx (0x800, GFXTAG_CURSOR) + sHandCursorShadow_Gfx (0x80, GFXTAG_CURSOR_SHADOW).
+  LoadSpriteSheet({ data: a.handCursorGfx, size: 0x800, tag: GFXTAG_CURSOR });
+  LoadSpriteSheet({ data: a.handCursorShadowGfx, size: 0x80, tag: GFXTAG_CURSOR_SHADOW });
+  // Palettes : sHandCursor_Pal (PLTE jaune) → MISC_1 ; MISC_2 (waveform, blanche) déjà chargée état 0.
+  LoadSpritePalette({ data: a.handCursorPal, tag: PALTAG_MISC_1 });
+  s.cursorPalNums[0] = IndexOfSpritePaletteTag(PALTAG_MISC_2);  // White hand, normal
+  s.cursorPalNums[1] = IndexOfSpritePaletteTag(PALTAG_MISC_1);  // Yellow hand, auto-action
+  const { x, y } = GetCursorCoordsByPos(sCursorArea, sCursorPosition);
+  const spriteId = CreateSprite({
+    tileTag: GFXTAG_CURSOR, paletteTag: PALTAG_MISC_2, oam: { shape: 0, size: 2, priority: 1 },
+    anims: sAnims_Cursor, callback: null,
+  }, x, y, _sub(6));
+  if (spriteId !== 64 && rt) {
+    s.cursorSprite = spriteId;
+    const spr = _spr(spriteId)!;
+    rt.gba.oam[spr.oamIndex].paletteBank = s.cursorPalNums[sAutoActionOn ? 1 : 0];
+    rt.gba.oam[spr.oamIndex].priority = 1;
+    if (sIsMonBeingMoved) StartSpriteAnim(spr as never, CURSOR_ANIM_FIST);
+  } else {
+    s.cursorSprite = -1;
+  }
+  let subpriority: number, priority: number;
+  if (sCursorArea === CURSOR_AREA_IN_PARTY) { subpriority = 13; priority = 1; }
+  else { subpriority = 21; priority = 2; }
+  const shadowId = CreateSprite({
+    tileTag: GFXTAG_CURSOR_SHADOW, paletteTag: PALTAG_MISC_2, oam: { shape: 0, size: 1, priority: 1 },
+    anims: null, callback: null,
+  }, 0, 0, _sub(subpriority));
+  if (shadowId !== 64 && rt) {
+    s.cursorShadowSprite = shadowId;
+    const spr = _spr(shadowId)!;
+    rt.gba.oam[spr.oamIndex].priority = priority;
+    if (sCursorArea) spr.invisible = true;
+  } else {
+    s.cursorShadowSprite = -1;
+  }
+}
+// ─── :7863 ToggleCursorAutoAction ───
+function ToggleCursorAutoAction(): void {
+  const rt = getRuntime(); const s = sStorage!;
+  sAutoActionOn = !sAutoActionOn;
+  const spr = _spr(s.cursorSprite);
+  if (rt && spr) rt.gba.oam[spr.oamIndex].paletteBank = s.cursorPalNums[sAutoActionOn ? 1 : 0];
+}
+
+// ─── :6118-6131 saved cursor pos ───
+function ClearSavedCursorPos(): void { sSavedCursorPosition = 0; }
+function SaveCursorPos(): void { sSavedCursorPosition = sCursorPosition; }
+function GetSavedCursorPos(): number { return sSavedCursorPosition; }
+
+// ─── :6802-6815 cursor area helpers ───
+function IsCursorOnBoxTitle(): boolean { return sCursorArea === CURSOR_AREA_BOX_TITLE; }
+function IsCursorOnCloseBox(): boolean { return sCursorArea === CURSOR_AREA_BUTTONS && sCursorPosition === 1; }
+function IsCursorInBox(): boolean { return sCursorArea === CURSOR_AREA_IN_BOX; }
+
+// ─── :6817 TryRefreshDisplayMon + :6846 ReshowDisplayMon + :6854 SetDisplayMonData ───
+function TryRefreshDisplayMon(): void {
+  const s = sStorage!;
+  s.setMosaic = !sIsMonBeingMoved;
+  if (!sIsMonBeingMoved) {
+    switch (sCursorArea) {
+      case CURSOR_AREA_IN_PARTY:
+        if (sCursorPosition < PARTY_SIZE) { SetDisplayMonData(gPlayerParty[sCursorPosition] as Pokemon | null, MODE_PARTY); break; }
+        // fallthrough
+      case CURSOR_AREA_BUTTONS:
+      case CURSOR_AREA_BOX_TITLE:
+        SetDisplayMonData(null, MODE_MOVE);
+        break;
+      case CURSOR_AREA_IN_BOX:
+        SetDisplayMonData(GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition), MODE_BOX);
+        break;
+    }
+  }
+}
+function ReshowDisplayMon(): void {
+  if (sIsMonBeingMoved && sSavedMovingMon) SetDisplayMonData(sSavedMovingMon, MODE_PARTY);
+  else TryRefreshDisplayMon();
+}
+function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
+  const s = sStorage!;
+  s.displayMonItemId = 0;
+  let gender: 'M' | 'F' | 'N' = 'N';
+  if ((mode === MODE_PARTY || mode === MODE_BOX) && pokemon) {
+    s.displayMonSpecies = pokemon.species ?? SPECIES_NONE;
+    if (s.displayMonSpecies !== SPECIES_NONE) {
+      s.displayMonIsEgg = !!pokemon.isEgg;
+      s.displayMonName = pokemon.nickname || '';
+      s.displayMonLevel = pokemon.level ?? 0;
+      s.displayMonMarkings = (pokemon as unknown as { markings?: number }).markings ?? 0;
+      s.displayMonPersonality = pokemon.personality ?? 0;
+      const g = (pokemon as unknown as { gender?: number | string }).gender;
+      gender = g === 0 || g === 'M' ? 'M' : g === 254 || g === 'F' ? 'F' : 'N';
+      s.displayMonItemId = (pokemon as unknown as { heldItem?: number }).heldItem ?? 0;
+      PreloadDisplayMonPic(s.displayMonSpecies);
+    }
+  } else {
+    s.displayMonSpecies = SPECIES_NONE;
+    s.displayMonItemId = 0;
+  }
+  if (s.displayMonSpecies === SPECIES_NONE) {
+    s.displayMonName = '';
+    s.displayMonNameText = '';
+    s.displayMonSpeciesName = '';
+    s.displayMonGenderLvlText = '';
+    s.displayMonItemName = '';
+  } else if (s.displayMonIsEgg) {
+    s.displayMonNameText = 'OEUF';       // gText_EggNickname
+    s.displayMonSpeciesName = '';
+    s.displayMonGenderLvlText = '';
+    s.displayMonItemName = '';
+  } else {
+    const speciesEnum = reverseDecompConstant(s.displayMonSpecies, 'SPECIES_') ?? '';
+    const speciesName = speciesEnum.replace(/^SPECIES_/, '');
+    s.displayMonNameText = s.displayMonName || speciesName;
+    s.displayMonSpeciesName = '/' + speciesName;
+    // :6947-6975 codes couleur ♂ rouge / ♀ vert (EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW) : au lot texte.
+    const genderChar = gender === 'M' ? '♂' : gender === 'F' ? '♀' : '';
+    s.displayMonGenderLvlText = `${genderChar}N.${s.displayMonLevel}`;  // CHAR_EXTRA_SYMBOL Lv
+    s.displayMonItemName = '';  // GetItemName(displayMonItemId) : lot items
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // PC MAIN MENU (pokemon_storage_system.c:1524-1696) — PHASE 1 : le menu
 // RETIRER / DÉPOSER / DÉPLACER / RANGER OBJETS / AU REVOIR obtenu en accédant au PC
 // (script « PC POKéMON »). L'écran des boîtes (EnterPokeStorage) = phase 2 (stub).
@@ -760,167 +1920,440 @@ export function ShowPokemonStorageSystemPC(): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ÉCRAN DES BOÎTES — RENDU DE BASE (phase 2a) : ouvre un CB2 plein, affiche la boîte
-// courante avec les icônes des pokémon. 1:1 sur les positions (CreateBoxMonIconAtPos :4478).
-// ⚠️ BASE PRAGMATIQUE — à raffiner vers le 1:1 STRICT : Task_InitPokeStorage (11 états),
-// wallpapers, scrolling_bg, titre de boîte, curseur main, menus, dépôt/retrait (cf. [[chantier-pc-storage]]).
+// TRANSCRIPTION — SECTION Cursor movement (:5873-6114) + MultiMove_Init (:8109)
 // ═══════════════════════════════════════════════════════════════════════════
 const IN_BOX_COLUMNS = 6;
-let _pcBoxIconSprites: number[] = [];
-let _pcPendingBoxId = -1;
 
-/** Précharge (fire-and-forget) les icônes des pokémon de la boîte. */
-function _preloadBoxIcons(boxId: number): void {
-  const storage = GetPokemonStorage();
-  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
-    const mon = storage.boxes[boxId]?.[pos];
-    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
+// ─── :5873 UpdateCursorPos ───
+function UpdateCursorPos(): boolean {
+  const s = sStorage!;
+  const spr = _spr(s.cursorSprite);
+  if (!spr) return false;
+  if (s.cursorMoveSteps === 0) {
+    if (s.boxOption !== OPTION_MOVE_ITEMS) return false;
+    return IsItemIconAnimActive();
+  } else if (--s.cursorMoveSteps !== 0) {
+    s.cursorNewX += s.cursorSpeedX;
+    s.cursorNewY += s.cursorSpeedY;
+    spr.x = (s.cursorNewX >> 8) << 16 >> 16;  // s16
+    spr.y = (s.cursorNewY >> 8) << 16 >> 16;
+    // Wrap écran (240+16 / 160+16) :5892-5918
+    if (spr.x > 240 + 16) { const tmp = spr.x - (240 + 16); spr.x = tmp + 64; }
+    if (spr.x < 64) { const tmp = 64 - spr.x; spr.x = 240 + 16 - tmp; }
+    if (spr.y > 160 + 16) { const tmp = spr.y - (160 + 16); spr.y = tmp - 16; }
+    if (spr.y < -16) { const tmp = -16 - spr.y; spr.y = 160 + 16 - tmp; }
+    if (s.cursorFlipTimer && --s.cursorFlipTimer === 0) spr.vFlip = !spr.vFlip;
+  } else {
+    spr.x = s.cursorTargetX;
+    spr.y = s.cursorTargetY;
+    DoCursorNewPosUpdate();
+  }
+  return true;
+}
+
+// ─── :5935 InitNewCursorPos ───
+function InitNewCursorPos(newCursorArea: number, newCursorPosition: number): void {
+  const s = sStorage!;
+  const { x, y } = GetCursorCoordsByPos(newCursorArea, newCursorPosition);
+  s.newCursorArea = newCursorArea;
+  s.newCursorPosition = newCursorPosition;
+  s.cursorTargetX = x;
+  s.cursorTargetY = y;
+}
+
+// ─── :5946 InitCursorMove ───
+function InitCursorMove(): void {
+  const s = sStorage!;
+  const spr = _spr(s.cursorSprite); if (!spr) return;
+  s.cursorMoveSteps = (s.cursorVerticalWrap !== 0 || s.cursorHorizontalWrap !== 0) ? 12 : 6;
+  if (s.cursorFlipTimer) s.cursorFlipTimer = s.cursorMoveSteps >> 1;
+  let yDistance: number, xDistance: number;
+  switch (s.cursorVerticalWrap) {
+    case -1: yDistance = s.cursorTargetY - 192 - spr.y; break;
+    case 1: yDistance = s.cursorTargetY + 192 - spr.y; break;
+    default: yDistance = s.cursorTargetY - spr.y; break;
+  }
+  switch (s.cursorHorizontalWrap) {
+    case -1: xDistance = s.cursorTargetX - 192 - spr.x; break;
+    case 1: xDistance = s.cursorTargetX + 192 - spr.x; break;
+    default: xDistance = s.cursorTargetX - spr.x; break;
+  }
+  yDistance <<= 8;
+  xDistance <<= 8;
+  s.cursorSpeedX = Math.trunc(xDistance / s.cursorMoveSteps);
+  s.cursorSpeedY = Math.trunc(yDistance / s.cursorMoveSteps);
+  s.cursorNewX = spr.x << 8;
+  s.cursorNewY = spr.y << 8;
+}
+
+// ─── :5992 SetCursorPosition ───
+function SetCursorPosition(newCursorArea: number, newCursorPosition: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  InitNewCursorPos(newCursorArea, newCursorPosition);
+  InitCursorMove();
+  const cursor = _spr(s.cursorSprite);
+  if (s.boxOption !== OPTION_MOVE_ITEMS) {
+    if (s.inBoxMovingMode === MOVE_MODE_NORMAL && !sIsMonBeingMoved && cursor)
+      StartSpriteAnim(cursor as never, CURSOR_ANIM_STILL);
+  } else {
+    if (!IsMovingItem() && cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_STILL);
+  }
+  // :6007-6018 MOVE_ITEMS TryHide/TryLoadItemIconAtPos : lot items.
+  const shadow = _spr(s.cursorShadowSprite);
+  if (newCursorArea === CURSOR_AREA_IN_PARTY && sCursorArea !== CURSOR_AREA_IN_PARTY) {
+    s.cursorPrevHorizPos = 1;
+    if (shadow) shadow.invisible = true;
+  }
+  if (!rt) return;
+  switch (newCursorArea) {
+    case CURSOR_AREA_IN_PARTY:
+    case CURSOR_AREA_BOX_TITLE:
+    case CURSOR_AREA_BUTTONS:
+      if (cursor) rt.gba.oam[cursor.oamIndex].priority = 1;
+      if (shadow) { shadow.invisible = true; rt.gba.oam[shadow.oamIndex].priority = 1; }
+      break;
+    case CURSOR_AREA_IN_BOX:
+      if (s.inBoxMovingMode !== MOVE_MODE_NORMAL) {
+        if (cursor) rt.gba.oam[cursor.oamIndex].priority = 0;
+        if (shadow) shadow.invisible = true;
+      } else {
+        if (cursor) rt.gba.oam[cursor.oamIndex].priority = 2;
+        if (sCursorArea === CURSOR_AREA_IN_BOX && sIsMonBeingMoved) SetMovingMonPriority(2);
+      }
+      break;
   }
 }
 
-/** 1:1 `CreateBoxMonIconAtPos` (pokemon_storage_system.c:4478) — positions des 30 slots. */
-function _createBoxMonIcons(boxId: number): void {
-  const rt = getRuntime(); if (!rt) return;
-  _pcBoxIconSprites = [];
-  const storage = GetPokemonStorage();
-  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
-    const mon = storage.boxes[boxId]?.[pos];
-    if (mon && mon.species) {
-      const x = 8 * (3 * (pos % IN_BOX_COLUMNS)) + 100;          // 1:1 :4484
-      const y = 8 * (3 * Math.floor(pos / IN_BOX_COLUMNS)) + 44; // 1:1 :4485
-      const iconSpecies = GetIconSpeciesNoPersonality(mon.species);
-      const palSlot = LoadMonIconPaletteToOwnSlot(iconSpecies);  // palette dédiée (couleurs correctes)
-      const spriteId = CreateMonIconNoPersonality(iconSpecies, null, x, y, 19 - (pos % IN_BOX_COLUMNS), false);
-      if (spriteId !== 0xFF) {
-        const sprite = rt.gSprites[spriteId];
-        if (sprite && palSlot >= 0) rt.gba.oam[sprite.oamIndex].paletteBank = palSlot;  // 1:1 palId par icône
-        _pcBoxIconSprites.push(spriteId);
+// ─── :6051 DoCursorNewPosUpdate ───
+function DoCursorNewPosUpdate(): void {
+  const rt = getRuntime(); const s = sStorage!;
+  sCursorArea = s.newCursorArea;
+  sCursorPosition = s.newCursorPosition;
+  const cursor = _spr(s.cursorSprite);
+  if (s.boxOption !== OPTION_MOVE_ITEMS) {
+    if (s.inBoxMovingMode === MOVE_MODE_NORMAL && !sIsMonBeingMoved && cursor)
+      StartSpriteAnim(cursor as never, CURSOR_ANIM_BOUNCE);
+  } else {
+    if (!IsMovingItem() && cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_BOUNCE);
+  }
+  TryRefreshDisplayMon();
+  const shadow = _spr(s.cursorShadowSprite);
+  switch (sCursorArea) {
+    case CURSOR_AREA_BUTTONS:
+      SetMovingMonPriority(1);
+      break;
+    case CURSOR_AREA_BOX_TITLE:
+      AnimateBoxScrollArrows(true);
+      break;
+    case CURSOR_AREA_IN_PARTY:
+      if (shadow) shadow.subpriority = _sub(13);
+      SetMovingMonPriority(1);
+      break;
+    case CURSOR_AREA_IN_BOX:
+      if (s.inBoxMovingMode === MOVE_MODE_NORMAL && rt) {
+        if (cursor) rt.gba.oam[cursor.oamIndex].priority = 1;
+        if (shadow) {
+          rt.gba.oam[shadow.oamIndex].priority = 2;
+          shadow.subpriority = _sub(21);
+          shadow.invisible = false;
+        }
+        SetMovingMonPriority(2);
       }
+      break;
+  }
+}
+
+// ─── :6092 SetCursorInParty + :6111 SetCursorBoxPosition ───
+function SetCursorInParty(): void {
+  const s = sStorage!;
+  let partyCount: number;
+  if (!sIsMonBeingMoved) {
+    partyCount = 0;
+  } else {
+    partyCount = CalculatePlayerPartyCount();
+    if (partyCount >= PARTY_SIZE) partyCount = PARTY_SIZE - 1;
+  }
+  const cursor = _spr(s.cursorSprite);
+  if (cursor?.vFlip) s.cursorFlipTimer = 1;
+  SetCursorPosition(CURSOR_AREA_IN_PARTY, partyCount);
+}
+function SetCursorBoxPosition(cursorBoxPosition: number): void {
+  SetCursorPosition(CURSOR_AREA_IN_BOX, cursorBoxPosition);
+}
+
+// ─── :8078 sWindowTemplate_MultiMove + :8109 MultiMove_Init ───
+const sWindowTemplate_MultiMove: WindowTemplate = {
+  bg: 0, tilemapLeft: 10, tilemapTop: 3, width: 20, height: 18, paletteNum: 9, baseBlock: 0xA,
+} as WindowTemplate;
+let sMultiMove: { funcId: number; state: number } | null = null;
+function MultiMove_Init(): boolean {
+  sMultiMove = { funcId: 0, state: 0 };
+  // AddWindow8Bit : fenêtre 8bpp (rendu de la sélection multiple) — notre AddWindow (4bpp) en tient
+  // lieu jusqu'au lot multi-move (tâche #3) ; seul l'id compte pour l'init.
+  sStorage!.multiMoveWindowId = AddWindow(sWindowTemplate_MultiMove as never);
+  return sStorage!.multiMoveWindowId !== 0xFF;
+}
+
+// ─── HandleInput — PROVISOIRE (lot #2 = InBoxInput/InPartyInput/OnButtonsInput/OnBoxTitleInput
+// :6200-6700). Nav grille 6×5 wrap + B. Les INPUT_* renvoyés sont 1:1. ───
+function HandleInput(): number {
+  const rows = IN_BOX_COUNT / IN_BOX_COLUMNS;
+  if (sCursorArea === CURSOR_AREA_IN_BOX) {
+    let col = sCursorPosition % IN_BOX_COLUMNS;
+    let row = Math.floor(sCursorPosition / IN_BOX_COLUMNS);
+    let moved = false;
+    const s = sStorage!;
+    s.cursorVerticalWrap = 0; s.cursorHorizontalWrap = 0;
+    if (gMain.newKeys & DPAD_UP) { if (row === 0) s.cursorVerticalWrap = -1; row = (row + rows - 1) % rows; moved = true; }
+    else if (gMain.newKeys & DPAD_DOWN) { if (row === rows - 1) s.cursorVerticalWrap = 1; row = (row + 1) % rows; moved = true; }
+    else if (gMain.newKeys & DPAD_LEFT) { if (col === 0) s.cursorHorizontalWrap = -1; col = (col + IN_BOX_COLUMNS - 1) % IN_BOX_COLUMNS; moved = true; }
+    else if (gMain.newKeys & DPAD_RIGHT) { if (col === IN_BOX_COLUMNS - 1) s.cursorHorizontalWrap = 1; col = (col + 1) % IN_BOX_COLUMNS; moved = true; }
+    if (moved) {
+      SetCursorPosition(CURSOR_AREA_IN_BOX, row * IN_BOX_COLUMNS + col);
+      return INPUT_MOVE_CURSOR;
     }
   }
+  if (gMain.newKeys & B_BUTTON) return INPUT_PRESSED_B;
+  return INPUT_NONE;
 }
 
-// ─── CURSEUR MAIN (hand_cursor) — ≈ CreateCursorSprites (:7735) : sprite 32×32 pointant un slot.
-let _pcCursorSpriteId = -1;
-let _pcCursorPos = 0;           // slot pointé (0..IN_BOX_COUNT-1, grille IN_BOX_COLUMNS)
-let _pcCursorTileStart = -1;
-let _pcCursorPalBank = 0;
-let _pcCursorReady = false;
+// ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION — pipeline d'ouverture (:1998-2252)
+// ═══════════════════════════════════════════════════════════════════════════
 
-async function _loadCursorGfx(): Promise<void> {
-  if (_pcCursorReady) return;
-  const png = await loadIndexedPngStrict('/decomp/em/pokemon_storage/hand_cursor.png', 4);
-  _pcCursorTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: 'pc_cursor' });
-  // Curseur = 2 palettes 1:1 (:7820-7821) sur les mêmes tiles : misc_2 (= sWaveform_Pal, :1045) donne la
-  // main BLANCHE (état normal, défaut sAutoActionOn=0) ; misc_1 (hand_cursor PLTE) donne la main JAUNE
-  // (auto-action, raffinement futur avec ToggleCursorAutoAction). Défaut = blanc.
-  const waveform = await loadIndexedPngStrict('/decomp/em/pokemon_storage/waveform.png', 4);
-  _pcCursorPalBank = LoadSpritePalette({ data: waveform.palette, tag: 'pc_cursor_pal_white' });  // misc_2 (blanc)
-  LoadSpritePalette({ data: png.palette, tag: 'pc_cursor_pal_yellow' });                          // misc_1 (jaune)
-  _pcCursorReady = true;
-}
-
-/** Coords écran du slot `pos` (mêmes que l'icône, 1:1 :4484-4485) — le curseur main pointe le slot. */
-function _cursorSlotCoords(pos: number): { x: number; y: number } {
-  return { x: 8 * (3 * (pos % IN_BOX_COLUMNS)) + 100, y: 8 * (3 * Math.floor(pos / IN_BOX_COLUMNS)) + 44 };
-}
-
-/** ≈ `CreateCursorSprites` (:7735) — crée le sprite 32×32 du curseur au slot courant. */
-function _createCursor(): void {
-  const rt = getRuntime(); if (!rt || !_pcCursorReady) return;
-  const { x, y } = _cursorSlotCoords(_pcCursorPos);
-  // Décomp subpriority=6 (HW GBA : subpriority basse = devant). Notre buildOamBuffer trie à l'INVERSE
-  // (subpriority haute = devant), donc pour garder le curseur DEVANT les icônes (subpriority 14-19) on
-  // prend une valeur haute — adaptation renderer, prouvée en jeu (sonde : sub 6 = derrière, 25 = devant).
-  const spr = rt.CreateSpriteAtOam({ tileId: _pcCursorTileStart, paletteBank: _pcCursorPalBank, x, y, shape: 0, size: 2, priority: 1, subpriority: 30 });
-  _pcCursorSpriteId = spr.spriteId;
-}
-
-/** Déplace le curseur dans la grille (wrap intra-boîte). Raffinement 1:1 = sortie vers flèches/party/titre. */
-function _moveCursor(dCol: number, dRow: number): void {
-  const rt = getRuntime(); if (!rt || _pcCursorSpriteId < 0) return;
-  const rows = IN_BOX_COUNT / IN_BOX_COLUMNS;  // 5
-  let col = _pcCursorPos % IN_BOX_COLUMNS;
-  let row = Math.floor(_pcCursorPos / IN_BOX_COLUMNS);
-  col = (col + dCol + IN_BOX_COLUMNS) % IN_BOX_COLUMNS;
-  row = (row + dRow + rows) % rows;
-  _pcCursorPos = row * IN_BOX_COLUMNS + col;
-  const { x, y } = _cursorSlotCoords(_pcCursorPos);
-  const spr = rt.gSprites[_pcCursorSpriteId];
-  if (spr) { spr.x = x; spr.y = y; }
-}
-
-/** Task d'init : attend le préchargement async des icônes + du curseur, puis crée tout + allume l'écran. */
-function Task_PcBoxRender(taskId: number): void {
-  const rt = getRuntime(); if (!rt) return;
-  if (!_pcCursorReady) return;  // gate async curseur
-  const storage = GetPokemonStorage();
+/** Précharge (adaptation ROM→réseau) : icônes des mons de la boîte + front pic du 1er mon. */
+function _preloadBoxResources(boxId: number): void {
+  const boxes = GetPokemonStorage().boxes;
   for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
-    const mon = storage.boxes[_pcPendingBoxId]?.[pos];
-    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return; // gate async icônes
+    const mon = boxes[boxId]?.[pos];
+    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
   }
-  // Curseur AVANT les icônes : 1:1 décomp (InitCursor état 4 < CreateInitBoxTask état 8) ; dans notre
-  // renderer oamIndex bas = devant, donc le curseur (créé en 1er) passe devant les icônes qu'il survole.
-  _createCursor();
-  _createBoxMonIcons(_pcPendingBoxId);
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x1040);  // OBJ ON (bit12) + 1D mapping (bit6) — icônes visibles
-  // fade-in : copie gPlttBufferUnfaded → gPlttBufferFaded (sinon le renderer lit du noir).
-  BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0x0000);
-  rt.DestroyTask(taskId);
+  const first = boxes[boxId]?.find((m) => m && m.species);
+  if (first) PreloadDisplayMonPic(first.species);
+}
+function _boxIconsLoaded(boxId: number): boolean {
+  const boxes = GetPokemonStorage().boxes;
+  for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
+    const mon = boxes[boxId]?.[pos];
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return false;
+  }
+  return true;
 }
 
-/** ≈ `CB2_PokeStorage` (pokemon_storage_system.c:2036) — main loop de l'écran boîtes. */
-function CB2_PokeStorage(): void {
-  const rt = getRuntime(); if (!rt) return;
-  rt.runTasks?.();
-  rt.animateSprites?.();
-  rt.buildOamBuffer?.();
-  rt.UpdatePaletteFade?.();
-  // Navigation du curseur dans la grille (brique curseur ; l'action A viendra avec le menu contextuel).
-  if (gMain.newKeys & DPAD_UP) _moveCursor(0, -1);
-  else if (gMain.newKeys & DPAD_DOWN) _moveCursor(0, 1);
-  else if (gMain.newKeys & DPAD_LEFT) _moveCursor(-1, 0);
-  else if (gMain.newKeys & DPAD_RIGHT) _moveCursor(1, 0);
-  if (gMain.newKeys & B_BUTTON) {  // ≈ CB2_ExitPokeStorage (retour field ; raffinement = FieldTask_ReturnToPcMenu)
-    if (_pcCursorSpriteId >= 0) { DestroySprite(_pcCursorSpriteId); _pcCursorSpriteId = -1; }
-    _pcBoxIconSprites.forEach((id) => FreeAndDestroyMonIconSprite(id));
-    _pcBoxIconSprites = [];
-    FreeAllSpritePalettes();
-    void import('./overworld').then((m) => {
-      const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
-      if (cb) cb();
-    });
-  }
-}
-
-/** ≈ `EnterPokeStorage` (pokemon_storage_system.c:1998) — RENDU DE BASE : CB2 plein + boîte + icônes. */
-function EnterPokeStorage(_boxOption: number): void {
+// ─── :1998 EnterPokeStorage ───
+function EnterPokeStorage(boxOption: number): void {
   const rt = getRuntime(); if (!rt) return;
   rt.ResetTasks?.();
+  sCurrentBoxOption = boxOption;
+  sStorage = AllocPokemonStorageSystemData();
+  sStorage.boxOption = boxOption;
+  sStorage.isReopening = false;
+  sMovingItemId = 0;  // ITEM_NONE
+  sStorage.state = 0;
+  LoadStorageAssets();                          // adaptation : INCBIN → fetch (gate état 0)
+  PreloadMonIconPalettes();
+  _preloadBoxResources(StorageGetCurrentBox());
+  const taskId = rt.CreateTask((t: { taskId: number }) => Task_InitPokeStorage(t.taskId), 3);
+  sStorage.taskId = taskId;
+  sLastUsedBox = StorageGetCurrentBox();
+  rt.SetMainCallback2(CB2_PokeStorage as never);
+}
+
+// ─── :2019 CB2_ReturnToPokeStorage ───
+function CB2_ReturnToPokeStorage(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.ResetTasks?.();
+  sStorage = AllocPokemonStorageSystemData();
+  sStorage.boxOption = sCurrentBoxOption;
+  sStorage.isReopening = true;
+  sStorage.state = 0;
+  LoadStorageAssets();
+  const taskId = rt.CreateTask((t: { taskId: number }) => Task_InitPokeStorage(t.taskId), 3);
+  sStorage.taskId = taskId;
+  rt.SetMainCallback2(CB2_PokeStorage as never);
+}
+
+// ─── CB2_ExitPokeStorage — PROVISOIRE (vrai exit : Task_ChangeScreen + FieldTask_ReturnToPcMenu,
+// tâche #4). Libère sStorage + retour OW avec le start menu du PC. ───
+function CB2_ExitPokeStorage(): void {
+  sStorage = null;
+  UnlockPlayerFieldControls();
+  void import('./overworld').then((m) => {
+    const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
+    if (cb) cb();
+  }).catch((e) => console.error('[pc-storage] exit', e));
+}
+
+// ─── :2089 Task_InitPokeStorage — les 11 états 1:1. ───
+function Task_InitPokeStorage(taskId: number): void {
+  const rt = getRuntime(); if (!rt || !sStorage) return;
+  switch (sStorage.state) {
+    case 0:
+      if (!sStorageAssets) return;              // gate assets (= lecture ROM synchrone du décomp)
+      rt.SetVBlankCallback?.(null);
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+      ResetForPokeStorage();
+      if (sStorage.isReopening) {
+        switch (sWhichToReshow) {
+          case SCREEN_CHANGE_NAME_BOX - 1: LoadSavedMovingMon(); break;
+          case SCREEN_CHANGE_SUMMARY_SCREEN - 1: SetSelectionAfterSummaryScreen(); break;
+          case SCREEN_CHANGE_ITEM_FROM_BAG - 1: GiveChosenBagItem(); break;
+        }
+      }
+      LoadPokeStorageMenuGfx();
+      LoadWaveformSpritePalette();
+      break;
+    case 1:
+      if (!InitPokeStorageWindows()) { SetPokeStorageTask(Task_ChangeScreen); return; }
+      break;
+    case 2:
+      PutWindowTilemap(WIN_DISPLAY_INFO);
+      ClearWindowTilemap(WIN_MESSAGE);
+      LoadBgTiles(0, new Uint8Array(0x200), 0x200, 0);  // CpuFill32(0, VRAM, 0x200)
+      LoadUserWindowBorderGfx(WIN_MESSAGE, 0xB, BG_PLTT_ID(14));
+      break;
+    case 3:
+      ResetAllBgCoords();
+      if (!sStorage.isReopening) InitStartingPosData();
+      break;
+    case 4:
+      if (!_boxIconsLoaded(StorageGetCurrentBox()) || !AreMonIconPalettesLoaded()) return;  // gate icônes (adaptation async)
+      InitMonIconFields();
+      if (!sStorage.isReopening) InitCursor();
+      else InitCursorOnReopen();
+      break;
+    case 5:
+      if (!MultiMove_Init()) { SetPokeStorageTask(Task_ChangeScreen); return; }
+      SetScrollingBackground();
+      InitPokeStorageBg0();
+      break;
+    case 6:
+      InitPalettesAndSprites();
+      break;
+    case 7:
+      InitSupplementalTilemaps();
+      break;
+    case 8:
+      CreateInitBoxTask(StorageGetCurrentBox());
+      break;
+    case 9:
+      if (IsInitBoxActive()) return;
+      if (sStorage.boxOption !== OPTION_MOVE_ITEMS) {
+        sStorage.markMenu = { baseTileTag: GFXTAG_MARKING_MENU, basePaletteTag: PALTAG_MARKING_MENU };
+        InitMonMarkingsMenu(sStorage.markMenu as never);
+        BufferMonMarkingsMenuTiles();
+      } else {
+        CreateItemIconSprites();
+        InitCursorItemIcon();
+      }
+      break;
+    case 10:
+      SetMonIconTransparency();
+      if (!sStorage.isReopening) {
+        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+        SetPokeStorageTask(Task_ShowPokeStorage);
+      } else {
+        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+        SetPokeStorageTask(Task_ReshowPokeStorage);
+      }
+      rt.SetVBlankCallback?.(VBlankCB_PokeStorage as never);
+      return;
+    default:
+      return;
+  }
+  sStorage.state++;
+}
+
+// ─── :2202 Task_ShowPokeStorage ───
+function Task_ShowPokeStorage(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PlaySE(SE_PC_LOGIN);
+      ComputerScreenOpenEffect(20, 0, 1);
+      s.state++;
+      break;
+    case 1:
+      if (!IsComputerScreenOpenEffectActive()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+  }
+}
+
+// ─── :2218 Task_ReshowPokeStorage ───
+function Task_ReshowPokeStorage(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      BeginNormalPaletteFade(PALETTES_ALL, -1, 0x10, 0, RGB_BLACK);
+      s.state++;
+      break;
+    case 1:
+      if (!UpdatePaletteFade()) {
+        // reopening ITEM_FROM_BAG + item : PrintMessage(MSG_ITEM_IS_HELD) → lot messages (tâche #3).
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+  }
+}
+
+// ─── :2270 Task_PokeStorageMain — boucle principale. PROVISOIRE : cases MOVE_CURSOR + B (fermeture) ;
+// les autres INPUT_* (party/menus/scroll/multimove) = lots #2/#3. MSTATE_* 1:1 (:2254-2268). ───
+const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1;
+function Task_PokeStorageMain(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case MSTATE_HANDLE_INPUT:
+      switch (HandleInput()) {
+        case INPUT_MOVE_CURSOR:
+          PlaySE(0x5 /* SE_SELECT */);
+          s.state = MSTATE_MOVE_CURSOR;
+          break;
+        case INPUT_PRESSED_B:
+          // Task_OnBPressed (:fermeture complète = tâche #4) — provisoire : sortie directe propre.
+          ComputerScreenCloseEffect(20, 0, 1);
+          SetPokeStorageTask(Task_ExitPokeStorageProvisional);
+          break;
+      }
+      break;
+    case MSTATE_MOVE_CURSOR:
+      if (!UpdateCursorPos()) {
+        if (IsCursorOnCloseBox()) StartFlashingCloseBoxButton();
+        else StopFlashingCloseBoxButton();
+        s.state = MSTATE_HANDLE_INPUT;
+      }
+      break;
+  }
+}
+// Sortie provisoire : attend l'effet CRT de fermeture puis retour OW (tâche #4 = vrai Task_ChangeScreen).
+function Task_ExitPokeStorageProvisional(_taskId: number): void {
+  if (IsComputerScreenCloseEffectActive()) return;
+  const rt = getRuntime(); if (!rt) return;
+  rt.SetVBlankCallback?.(null);
   ResetSpriteData();
   FreeAllSpritePalettes();
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
-  _pcPendingBoxId = StorageGetCurrentBox();
-  _pcCursorPos = 0;
-  _preloadBoxIcons(_pcPendingBoxId);
-  void _loadCursorGfx();
-  rt.CreateTask((t) => Task_PcBoxRender(t.taskId), 3);
-  rt.SetMainCallback2(CB2_PokeStorage as never);
+  CB2_ExitPokeStorage();
+}
+// Task_ChangeScreen (:échecs d'init, allocation…) — provisoire vers la sortie.
+function Task_ChangeScreen(_taskId: number): void {
+  Task_ExitPokeStorageProvisional(_taskId);
 }
 
 // Pont dev/déclencheur : ouvrir le menu PC (le script « PC POKéMON » l'appellera au câblage).
 (globalThis as Record<string, unknown>).__ShowPokemonStorageSystemPC = ShowPokemonStorageSystemPC;
 
-// Sonde dev (diag curseur) — sans effet sur le jeu.
+// Sonde dev (diag écran boîtes) — sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__pcProbe = () => {
   const rt = getRuntime();
-  const spr = rt && _pcCursorSpriteId >= 0 ? rt.gSprites[_pcCursorSpriteId] : null;
-  const oam = spr && rt ? rt.gba?.oam?.[spr.oamIndex] : null;
+  const s = sStorage;
+  const cursor = s ? _spr(s.cursorSprite) : null;
+  const oam = cursor && rt ? rt.gba?.oam?.[cursor.oamIndex] : null;
   return {
-    cursorId: _pcCursorSpriteId, ready: _pcCursorReady, pos: _pcCursorPos,
-    tileStart: _pcCursorTileStart, palBank: _pcCursorPalBank,
-    spr: spr ? { x: spr.x, y: spr.y, inUse: spr.inUse, invisible: spr.invisible, oamIndex: spr.oamIndex } : null,
-    oam: oam ? { x: oam.x, y: oam.y, tileId: oam.tileId, paletteBank: oam.paletteBank, shape: oam.shape, size: oam.size, priority: oam.priority, affineMode: oam.affineMode } : null,
+    hasStorage: !!s, state: s?.state, taskId: s?.taskId, boxOption: s?.boxOption,
+    assets: !!sStorageAssets, cursorArea: sCursorArea, cursorPos: sCursorPosition,
+    cursorId: s?.cursorSprite, displaySpecies: s?.displayMonSpecies,
+    boxSprites: s ? s.boxMonsSprites.filter((i) => i >= 0).length : 0,
+    cursorSpr: cursor ? { x: cursor.x, y: cursor.y, invisible: cursor.invisible } : null,
+    cursorOam: oam ? { paletteBank: oam.paletteBank, priority: oam.priority, tileId: oam.tileId } : null,
   };
 };
 

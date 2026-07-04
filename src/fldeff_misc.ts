@@ -106,3 +106,160 @@ export function ShatterSecretBaseBreakableDoor(x: number, y: number): void {
     }
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION — ComputerScreenEffect (fldeff_misc.c:311-481) : effet « écran CRT »
+// à l'ouverture/fermeture du PC (storage + Hall of Fame). WIN0 hardware (compositor OK).
+// task data 1:1 (:332-340) : tState=0 tHorzIncrement=1 tVertIncrement=2 tWinLeft=3
+// tWinRight=4 tWinTop=5 tWinBottom=6 tBlendCnt=7 tBlendY=8.
+// ═══════════════════════════════════════════════════════════════════════════
+import { getRuntime, BlendPalettes } from '../harness/runtime/decomp-globals';
+
+const REG_DISPCNT = 0x0, REG_WIN0H = 0x40, REG_WIN0V = 0x44, REG_WININ = 0x48, REG_WINOUT = 0x4A;
+const REG_BLDCNT = 0x50, REG_BLDY = 0x54;
+const DISPCNT_WIN0_ON = 1 << 13;
+const WININ_WIN0_ALL = 0x3F;                       // BG_ALL | OBJ | CLR
+const BLDCNT_TGT1_ALL_LIGHTEN = 0x3F | (2 << 6);   // BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN
+const DISPLAY_WIDTH = 240, DISPLAY_HEIGHT = 160;
+const WIN_RANGE = (a: number, b: number) => ((a & 0xFF) << 8) | (b & 0xFF);
+
+/** 1:1 `void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority)` (:312). */
+export function ComputerScreenOpenEffect(increment: number, unused: number, priority: number): void {
+  CreateComputerScreenEffectTask(Task_ComputerScreenOpenEffect, increment, unused, priority);
+}
+/** 1:1 `void ComputerScreenCloseEffect(...)` (:317). */
+export function ComputerScreenCloseEffect(increment: number, unused: number, priority: number): void {
+  CreateComputerScreenEffectTask(Task_ComputerScreenCloseEffect, increment, unused, priority);
+}
+/** 1:1 `bool8 IsComputerScreenOpenEffectActive(void)` (:322) — FuncIsActiveTask par marqueur. */
+export function IsComputerScreenOpenEffectActive(): boolean {
+  const rt = getRuntime();
+  return !!rt && rt.gTasks.some((t: unknown) => (t as { inUse?: boolean; __csFx?: string })?.inUse && (t as { __csFx?: string }).__csFx === 'open');
+}
+/** 1:1 `bool8 IsComputerScreenCloseEffectActive(void)` (:327). */
+export function IsComputerScreenCloseEffectActive(): boolean {
+  const rt = getRuntime();
+  return !!rt && rt.gTasks.some((t: unknown) => (t as { inUse?: boolean; __csFx?: string })?.inUse && (t as { __csFx?: string }).__csFx === 'close');
+}
+
+/** 1:1 `static void CreateComputerScreenEffectTask(func, increment, unused, priority)` (:342). */
+function CreateComputerScreenEffectTask(func: (taskId: number) => void, increment: number, _unused: number, priority: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const taskId = rt.CreateTask((t: { taskId: number }) => func(t.taskId), priority);
+  const task = rt.gTasks[taskId];
+  (task as { __csFx?: string }).__csFx = func === Task_ComputerScreenOpenEffect ? 'open' : 'close';
+  task.data[0] = 0;
+  task.data[1] = increment === 0 ? 16 : increment;
+  task.data[2] = increment === 0 ? 20 : increment;
+  func(taskId);
+}
+
+/** 1:1 `static void Task_ComputerScreenOpenEffect(u8 taskId)` (:352). */
+function Task_ComputerScreenOpenEffect(taskId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const task = rt.gTasks[taskId];
+  const d = task.data;
+  switch (d[0]) {
+    case 0:
+      d[3] = DISPLAY_WIDTH / 2;
+      d[4] = DISPLAY_WIDTH / 2;
+      d[5] = DISPLAY_HEIGHT / 2;
+      d[6] = DISPLAY_HEIGHT / 2 + 1;
+      rt.SetGpuReg(REG_DISPCNT, rt.GetGpuReg(REG_DISPCNT) | DISPCNT_WIN0_ON);
+      rt.SetGpuReg(REG_WIN0H, WIN_RANGE(d[3], d[4]));
+      rt.SetGpuReg(REG_WIN0V, WIN_RANGE(d[5], d[6]));
+      rt.SetGpuReg(REG_WININ, WININ_WIN0_ALL);
+      rt.SetGpuReg(REG_WINOUT, 0);
+      break;
+    case 1:
+      d[7] = rt.GetGpuReg(REG_BLDCNT);
+      d[8] = rt.GetGpuReg(REG_BLDY);
+      rt.SetGpuReg(REG_BLDCNT, BLDCNT_TGT1_ALL_LIGHTEN);
+      rt.SetGpuReg(REG_BLDY, 16);
+      break;
+    case 2:
+      d[3] -= d[1];
+      d[4] += d[1];
+      if (d[3] < 1 || d[4] > DISPLAY_WIDTH - 1) {
+        d[3] = 0;
+        d[4] = DISPLAY_WIDTH;
+        rt.SetGpuReg(REG_BLDY, 0);
+        rt.SetGpuReg(REG_BLDCNT, d[7]);
+        BlendPalettes(0xFFFFFFFF, 0, 0);
+        rt.gPlttBufferFaded.set(0, 0);
+      }
+      rt.SetGpuReg(REG_WIN0H, WIN_RANGE(d[3], d[4]));
+      if (d[3] !== 0) return;
+      break;
+    case 3:
+      d[5] -= d[2];
+      d[6] += d[2];
+      if (d[5] < 1 || d[6] > DISPLAY_HEIGHT - 1) {
+        d[5] = 0;
+        d[6] = DISPLAY_HEIGHT;
+        rt.SetGpuReg(REG_DISPCNT, rt.GetGpuReg(REG_DISPCNT) & ~DISPCNT_WIN0_ON);
+      }
+      rt.SetGpuReg(REG_WIN0V, WIN_RANGE(d[5], d[6]));
+      if (d[5] !== 0) return;
+      break;
+    default:
+      rt.SetGpuReg(REG_BLDCNT, d[7]);
+      rt.DestroyTask(taskId);
+      return;
+  }
+  d[0]++;
+}
+
+/** 1:1 `static void Task_ComputerScreenCloseEffect(u8 taskId)` (:420). */
+function Task_ComputerScreenCloseEffect(taskId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const task = rt.gTasks[taskId];
+  const d = task.data;
+  switch (d[0]) {
+    case 0:
+      rt.gPlttBufferFaded.set(0, 0);
+      break;
+    case 1:
+      d[3] = 0;
+      d[4] = DISPLAY_WIDTH;
+      d[5] = 0;
+      d[6] = DISPLAY_HEIGHT;
+      rt.SetGpuReg(REG_DISPCNT, rt.GetGpuReg(REG_DISPCNT) | DISPCNT_WIN0_ON);
+      rt.SetGpuReg(REG_WIN0H, WIN_RANGE(d[3], d[4]));
+      rt.SetGpuReg(REG_WIN0V, WIN_RANGE(d[5], d[6]));
+      rt.SetGpuReg(REG_WININ, WININ_WIN0_ALL);
+      rt.SetGpuReg(REG_WINOUT, 0);
+      break;
+    case 2:
+      d[5] += d[2];
+      d[6] -= d[2];
+      if (d[5] >= DISPLAY_HEIGHT / 2 || d[6] <= DISPLAY_HEIGHT / 2 + 1) {
+        d[5] = DISPLAY_HEIGHT / 2;
+        d[6] = DISPLAY_HEIGHT / 2 + 1;
+        rt.SetGpuReg(REG_BLDCNT, BLDCNT_TGT1_ALL_LIGHTEN);
+        rt.SetGpuReg(REG_BLDY, 16);
+      }
+      rt.SetGpuReg(REG_WIN0V, WIN_RANGE(d[5], d[6]));
+      if (d[5] !== DISPLAY_HEIGHT / 2) return;
+      break;
+    case 3:
+      d[3] += d[1];
+      d[4] -= d[1];
+      if (d[3] >= DISPLAY_WIDTH / 2 || d[4] <= DISPLAY_WIDTH / 2) {
+        d[3] = DISPLAY_WIDTH / 2;
+        d[4] = DISPLAY_WIDTH / 2;
+        BlendPalettes(0xFFFFFFFF, 16, 0);
+        rt.gPlttBufferFaded.set(0, 0);
+      }
+      rt.SetGpuReg(REG_WIN0H, WIN_RANGE(d[3], d[4]));
+      if (d[3] !== DISPLAY_WIDTH / 2) return;
+      break;
+    default:
+      rt.SetGpuReg(REG_DISPCNT, rt.GetGpuReg(REG_DISPCNT) & ~DISPCNT_WIN0_ON);
+      rt.SetGpuReg(REG_BLDY, 0);
+      rt.SetGpuReg(REG_BLDCNT, 0);
+      rt.DestroyTask(taskId);
+      return;
+  }
+  d[0]++;
+}
