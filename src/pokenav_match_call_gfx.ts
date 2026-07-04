@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_match_call_gfx.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_match_call_gfx.c` (transpilé).
  *
@@ -34,8 +35,80 @@ import { DrawTextBorderOuter, LoadUserWindowBorderGfx } from './text_window';
 import { gSineTable } from './trig';
 import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetBgTilemapBuffer, GetWindowAttribute, PutWindowTilemap, RemoveWindow, ShowBg, WINDOW_BG } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
+const BgDmaFill: any = __wireTodo('BgDmaFill');
+const BufferMatchCallNameAndDesc: any = __wireTodo('BufferMatchCallNameAndDesc');
+const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CpuCopy32: any = __wireTodo('CpuCopy32');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const CreatePokenavList: any = __wireTodo('CreatePokenavList');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const DecompressPicFromTable: any = __wireTodo('DecompressPicFromTable');
+const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
+const DrawMatchCallTextBoxBorder: any = __wireTodo('DrawMatchCallTextBoxBorder');
+const FadeToBlackExceptPrimary: any = __wireTodo('FadeToBlackExceptPrimary');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetIndexDeltaOfNextCheckPageDown: any = __wireTodo('GetIndexDeltaOfNextCheckPageDown');
+const GetIndexDeltaOfNextCheckPageUp: any = __wireTodo('GetIndexDeltaOfNextCheckPageUp');
+const GetMatchCallList: any = __wireTodo('GetMatchCallList');
+const GetMatchCallMapSec: any = __wireTodo('GetMatchCallMapSec');
+const GetMatchCallMessageText: any = __wireTodo('GetMatchCallMessageText');
+const GetMatchCallOptionCursorPos: any = __wireTodo('GetMatchCallOptionCursorPos');
+const GetMatchCallOptionId: any = __wireTodo('GetMatchCallOptionId');
+const GetMatchCallTrainerPic: any = __wireTodo('GetMatchCallTrainerPic');
+const GetNumberRegistered: any = __wireTodo('GetNumberRegistered');
+const GetSpinningPokenavSprite: any = __wireTodo('GetSpinningPokenavSprite');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const HideSpinningPokenavSprite: any = __wireTodo('HideSpinningPokenavSprite');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsMatchCallListInitFinished: any = __wireTodo('IsMatchCallListInitFinished');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
+const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
+const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
+const LoadMatchCallWindowGfx: any = __wireTodo('LoadMatchCallWindowGfx');
+const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
+const PokenavCopyPalette: any = __wireTodo('PokenavCopyPalette');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const PokenavList_DrawCurrentItemIcon: any = __wireTodo('PokenavList_DrawCurrentItemIcon');
+const PokenavList_EraseListForCheckPage: any = __wireTodo('PokenavList_EraseListForCheckPage');
+const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
+const PokenavList_GetTopIndex: any = __wireTodo('PokenavList_GetTopIndex');
+const PokenavList_IsMoveWindowTaskActive: any = __wireTodo('PokenavList_IsMoveWindowTaskActive');
+const PokenavList_IsTaskActive: any = __wireTodo('PokenavList_IsTaskActive');
+const PokenavList_MoveCursorDown: any = __wireTodo('PokenavList_MoveCursorDown');
+const PokenavList_MoveCursorUp: any = __wireTodo('PokenavList_MoveCursorUp');
+const PokenavList_PageDown: any = __wireTodo('PokenavList_PageDown');
+const PokenavList_PageUp: any = __wireTodo('PokenavList_PageUp');
+const PokenavList_ReshowListFromCheckPage: any = __wireTodo('PokenavList_ReshowListFromCheckPage');
+const PokenavList_ToggleVerticalArrows: any = __wireTodo('PokenavList_ToggleVerticalArrows');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const PrintCheckPageInfo: any = __wireTodo('PrintCheckPageInfo');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
+const ShouldDrawRematchPokeballIcon: any = __wireTodo('ShouldDrawRematchPokeballIcon');
+const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
+const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
+const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
+const gMatchCallUI_Gfx: any = __wireTodo('gMatchCallUI_Gfx');
+const gMatchCallUI_Pal: any = __wireTodo('gMatchCallUI_Pal');
+const gMatchCallUI_Tilemap: any = __wireTodo('gMatchCallUI_Tilemap');
+const gTrainerFrontPicPaletteTable: any = __wireTodo('gTrainerFrontPicPaletteTable');
+const gTrainerFrontPicTable: any = __wireTodo('gTrainerFrontPicTable');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_MATCH_CALL_OPEN = 6; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -162,8 +235,7 @@ const sMatchCallLocationWindowTemplate = {
   width: 11,
   height: 2,
   paletteNum: 2,
-  baseBlock: 16,
-};
+  baseBlock: 16 };
 
 /** 1:1 (pokenav_match_call_gfx.c:187) */
 const sMatchCallInfoBoxWindowTemplate = {
@@ -173,8 +245,7 @@ const sMatchCallInfoBoxWindowTemplate = {
   width: 11,
   height: 8,
   paletteNum: 2,
-  baseBlock: 38,
-};
+  baseBlock: 38 };
 
 /** 1:1 (pokenav_match_call_gfx.c:198) */
 const sMatchCallOptionTexts = Uint8Array.from([
@@ -196,24 +267,21 @@ const sCallMsgBoxWindowTemplate = {
   width: 28,
   height: 4,
   paletteNum: 1,
-  baseBlock: 10,
-};
+  baseBlock: 10 };
 
 /** 1:1 (pokenav_match_call_gfx.c:219) */
 const sOptionsCursorSpriteSheets = [
   {
     data: sOptionsCursor_Gfx,
     size: 0x40,
-    tag: GFXTAG_CURSOR,
-  },
+    tag: GFXTAG_CURSOR },
 ];
 
 /** 1:1 (pokenav_match_call_gfx.c:224) */
 const sOptionsCursorSpritePalettes = [
   {
     data: sOptionsCursor_Pal,
-    tag: PALTAG_CURSOR,
-  },
+    tag: PALTAG_CURSOR },
 ];
 
 /** 1:1 (pokenav_match_call_gfx.c:229) */
@@ -240,8 +308,7 @@ const sOptionsCursorSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCB_OptionsCursor,
-};
+  callback: SpriteCB_OptionsCursor };
 
 /** 1:1 (pokenav_match_call_gfx.c:254) */
 const sTrainerPicOamData = {
@@ -267,8 +334,7 @@ const sTrainerPicSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 `bool32 OpenMatchCall(void)` (pokenav_match_call_gfx.c:279-289). */
 export function OpenMatchCall(): boolean {

@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_main_menu.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_main_menu.c` (transpilé).
  *
@@ -24,8 +25,32 @@ import { BG_PLTT_ID, BeginNormalPaletteFade, GET_B, GET_G, GET_R, OBJ_PLTT_ID, P
 import { ANIMCMD_FRAME, ANIMCMD_JUMP, AllocSpritePalette, CreateSprite, DestroySprite, FreeAllSpritePalettes, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, PLTT_SIZE_4BPP, ResetSpriteData, gDummySpriteAffineAnimTable, gDummySpriteAnimTable, gSprites } from './sprite';
 import { COPYWIN_FULL, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, FillWindowPixelBuffer, FillWindowPixelRect, FreeAllWindowBuffers, InitBgFromTemplate, InitBgsFromTemplates, InitWindows, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetTempTileDataBuffers, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { BgTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetBgY: any = __wireTodo('GetBgY');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
+const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
+const ResetBgPositions: any = __wireTodo('ResetBgPositions');
+const ResetBldCnt_: any = __wireTodo('ResetBldCnt_');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
+const gPokenavHeader_Gfx: any = __wireTodo('gPokenavHeader_Gfx');
+const gPokenavHeader_Pal: any = __wireTodo('gPokenavHeader_Pal');
+const gPokenavHeader_Tilemap: any = __wireTodo('gPokenavHeader_Tilemap');
+const gPokenavLeftHeaderHoennMap_Gfx: any = __wireTodo('gPokenavLeftHeaderHoennMap_Gfx');
+const gPokenavLeftHeader_Pal: any = __wireTodo('gPokenavLeftHeader_Pal');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_MAIN_MENU = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -103,10 +128,8 @@ const sHelpBarWindowTemplate = {
     width: 16,
     height: 2,
     paletteNum: 0,
-    baseBlock: 0x36,
-  },
-  tilemapLeft: DUMMY_WIN_TEMPLATE,
-};
+    baseBlock: 0x36 },
+  tilemapLeft: DUMMY_WIN_TEMPLATE };
 
 /** 1:1 (pokenav_main_menu.c:87) */
 const sHelpBarTexts = Uint8Array.from([
@@ -136,16 +159,14 @@ const sSpinningPokenavSpriteSheet = [
   {
     data: sSpinningPokenav_Gfx,
     size: 0x1000,
-    tag: 0,
-  },
+    tag: 0 },
 ];
 
 /** 1:1 (pokenav_main_menu.c:117) */
 const sSpinningNavgearPalettes = [
   {
     data: sSpinningPokenav_Pal,
-    tag: 0,
-  },
+    tag: 0 },
   [
 
   ],
@@ -156,8 +177,7 @@ const sMenuLeftHeaderSpriteSheet = {
   data: gPokenavLeftHeaderHoennMap_Gfx,
   // Hoenn map is the first of the headers listed
   size: 0xC00,
-  tag: 2,
-};
+  tag: 2 };
 
 /** 1:1 (pokenav_main_menu.c:133) */
 const sMenuLeftHeaderSpriteSheets = {
@@ -228,8 +248,7 @@ const sSpinningPokenavSpriteTemplate = {
   anims: sSpinningPokenavAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCB_SpinningPokenav,
-};
+  callback: SpriteCB_SpinningPokenav };
 
 /** 1:1 (pokenav_main_menu.c:242) */
 const sOamData_LeftHeader = {
@@ -272,8 +291,7 @@ const sLeftHeaderSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 (pokenav_main_menu.c:282) */
 const sSubmenuLeftHeaderSpriteTemplate = {
@@ -283,8 +301,7 @@ const sSubmenuLeftHeaderSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 `bool32 InitPokenavMainMenu(void)` (pokenav_main_menu.c:293-305). */
 export function InitPokenavMainMenu(): boolean {

@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_region_map.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_region_map.c` (transpilé).
  *
@@ -28,8 +29,61 @@ import { AddTextPrinterParameterized } from './text';
 import { DrawTextBorderOuter, LoadUserWindowBorderGfx_ } from './text_window';
 import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
+const BgDmaFill: any = __wireTodo('BgDmaFill');
+const BlendRegionMap: any = __wireTodo('BlendRegionMap');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const CreateRegionMapCursor: any = __wireTodo('CreateRegionMapCursor');
+const CreateRegionMapPlayerIcon: any = __wireTodo('CreateRegionMapPlayerIcon');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const DoRegionMapInputCallback: any = __wireTodo('DoRegionMapInputCallback');
+const FadeToBlackExceptPrimary: any = __wireTodo('FadeToBlackExceptPrimary');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeRegionMapIconResources: any = __wireTodo('FreeRegionMapIconResources');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const FuncIsActiveLoopedTask: any = __wireTodo('FuncIsActiveLoopedTask');
+const GetBgY: any = __wireTodo('GetBgY');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const InitRegionMapData: any = __wireTodo('InitRegionMapData');
+const IsEventIslandMapSecId: any = __wireTodo('IsEventIslandMapSecId');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const IsRegionMapZoomed: any = __wireTodo('IsRegionMapZoomed');
+const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
+const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
+const LoadRegionMapGfx: any = __wireTodo('LoadRegionMapGfx');
+const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const PutWindowRectTilemap: any = __wireTodo('PutWindowRectTilemap');
+const SetBgMode: any = __wireTodo('SetBgMode');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
+const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
+const SetRegionMapDataForZoom: any = __wireTodo('SetRegionMapDataForZoom');
+const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
+const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
+const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
+const TrySetPlayerIconBlink: any = __wireTodo('TrySetPlayerIconBlink');
+const UpdateRegionMapRightHeaderTiles: any = __wireTodo('UpdateRegionMapRightHeaderTiles');
+const UpdateRegionMapVideoRegs: any = __wireTodo('UpdateRegionMapVideoRegs');
+const UpdateRegionMapZoom: any = __wireTodo('UpdateRegionMapZoom');
+const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
+const gRegionMapCityZoomText_Gfx: any = __wireTodo('gRegionMapCityZoomText_Gfx');
+const gRegionMapCityZoomTiles_Pal: any = __wireTodo('gRegionMapCityZoomTiles_Pal');
+const sPokenavCityMaps: any = __wireTodo('sPokenavCityMaps');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_REGION_MAP_STATE = 3; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -139,16 +193,14 @@ const sCityZoomTextSpriteSheet = [
   {
     data: gRegionMapCityZoomText_Gfx,
     size: 0x800,
-    tag: GFXTAG_CITY_ZOOM,
-  },
+    tag: GFXTAG_CITY_ZOOM },
 ];
 
 /** 1:1 (pokenav_region_map.c:130) */
 const sCityZoomTilesSpritePalette = [
   {
     data: gRegionMapCityZoomTiles_Pal,
-    tag: PALTAG_CITY_ZOOM,
-  },
+    tag: PALTAG_CITY_ZOOM },
   [
 
   ],
@@ -163,8 +215,7 @@ const sMapSecInfoWindowTemplate = {
   //!< French Difference
   height: 13,
   paletteNum: 1,
-  baseBlock: 0x4C,
-};
+  baseBlock: 0x4C };
 
 /** 1:1 (pokenav_region_map.c:149) */
 const sCityZoomTextSprite_OamData = {
@@ -190,8 +241,7 @@ const sCityZoomTextSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCB_CityZoomText,
-};
+  callback: SpriteCB_CityZoomText };
 
 /** 1:1 `u32 PokenavCallback_Init_RegionMap(void)` (pokenav_region_map.c:174-190). */
 export function PokenavCallback_Init_RegionMap(): number {

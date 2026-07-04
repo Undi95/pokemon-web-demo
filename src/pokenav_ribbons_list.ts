@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_ribbons_list.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_ribbons_list.c` (transpilé).
  *
@@ -28,6 +29,45 @@ import { AddTextPrinterParameterized, encodeOwText } from './text';
 import { AddWindow, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { Pokemon } from './engine/battle/party-storage';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
+const CheckBoxMonSanityAt: any = __wireTodo('CheckBoxMonSanityAt');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const CreatePokenavList: any = __wireTodo('CreatePokenavList');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetBoxMonData: any = __wireTodo('GetBoxMonData');
+const GetBoxMonDataAt: any = __wireTodo('GetBoxMonDataAt');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
+const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
+const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
+const PokenavList_IsMoveWindowTaskActive: any = __wireTodo('PokenavList_IsMoveWindowTaskActive');
+const PokenavList_MoveCursorDown: any = __wireTodo('PokenavList_MoveCursorDown');
+const PokenavList_MoveCursorUp: any = __wireTodo('PokenavList_MoveCursorUp');
+const PokenavList_PageDown: any = __wireTodo('PokenavList_PageDown');
+const PokenavList_PageUp: any = __wireTodo('PokenavList_PageUp');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
+const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
+const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
+const gMonRibbonListFramePal: any = __wireTodo('gMonRibbonListFramePal');
+const gMonRibbonListFrameTilemap: any = __wireTodo('gMonRibbonListFrameTilemap');
+const gMonRibbonListFrameTiles: any = __wireTodo('gMonRibbonListFrameTiles');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_RIBBONS_MON_LIST = 9; // 1:1 include/pokenav.h:0 (à consolider dans include/)

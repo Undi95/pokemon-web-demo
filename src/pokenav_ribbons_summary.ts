@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_ribbons_summary.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_ribbons_summary.c` (transpilé).
  *
@@ -37,8 +38,43 @@ import { FreeAndDestroyMonPicSprite, ResetAllPicSprites } from './trainer_pokemo
 import { AddWindow, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { Pokemon } from './engine/battle/party-storage';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AFFINEANIMCMD_END: any = __wireTodo('AFFINEANIMCMD_END');
+const AFFINEANIMCMD_FRAME: any = __wireTodo('AFFINEANIMCMD_FRAME');
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const BgDmaFill: any = __wireTodo('BgDmaFill');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const CreateMonPicSprite_HandleDeoxys: any = __wireTodo('CreateMonPicSprite_HandleDeoxys');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetBoxMonData: any = __wireTodo('GetBoxMonData');
+const GetBoxMonDataAt: any = __wireTodo('GetBoxMonDataAt');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const PokenavFillPalette: any = __wireTodo('PokenavFillPalette');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const gGiftRibbonDescriptionPointers: any = __wireTodo('gGiftRibbonDescriptionPointers');
+const gKeyRepeatContinueDelay: any = __wireTodo('gKeyRepeatContinueDelay');
+const gKeyRepeatStartDelay: any = __wireTodo('gKeyRepeatStartDelay');
+const gPokenavRibbonsSummaryBg_Gfx: any = __wireTodo('gPokenavRibbonsSummaryBg_Gfx');
+const gPokenavRibbonsSummaryBg_Pal: any = __wireTodo('gPokenavRibbonsSummaryBg_Pal');
+const gPokenavRibbonsSummaryBg_Tilemap: any = __wireTodo('gPokenavRibbonsSummaryBg_Tilemap');
+const gRibbonDescriptionPointers: any = __wireTodo('gRibbonDescriptionPointers');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST = 13; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -874,8 +910,7 @@ const sRibbonCountWindowTemplate = {
   width: 16,
   height: 4,
   paletteNum: 1,
-  baseBlock: 0x14,
-};
+  baseBlock: 0x14 };
 
 /** 1:1 `static void AddRibbonCountWindow(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:797-802). */
 function AddRibbonCountWindow(menu: Pokenav_RibbonsSummaryMenu): void {
@@ -941,8 +976,7 @@ const sRibbonSummaryMonNameWindowTemplate = {
   width: 13,
   height: 2,
   paletteNum: 10,
-  baseBlock: 0x54,
-};
+  baseBlock: 0x54 };
 
 /** 1:1 `static void AddRibbonSummaryMonNameWindow(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:861-866). */
 function AddRibbonSummaryMonNameWindow(menu: Pokenav_RibbonsSummaryMenu): void {
@@ -999,8 +1033,7 @@ const sRibbonMonListIndexWindowTemplate = [
     width: 7,
     height: 2,
     paletteNum: 1,
-    baseBlock: 0x6E,
-  },
+    baseBlock: 0x6E },
   [
 
   ],
@@ -1314,31 +1347,25 @@ function BufferSmallRibbonGfxData(dst: Uint16Array, ribbonId: number): void {
 const sSpriteSheet_RibbonIconsBig = {
   data: sRibbonIconsBig_Gfx,
   size: 0x1800,
-  tag: GFXTAG_RIBBON_ICONS_BIG,
-};
+  tag: GFXTAG_RIBBON_ICONS_BIG };
 
 /** 1:1 (pokenav_ribbons_summary.c:1143) */
 const sSpritePalettes_RibbonIcons = [
   {
     data: sRibbonIcons1_Pal,
-    tag: PALTAG_RIBBON_ICONS_1,
-  },
+    tag: PALTAG_RIBBON_ICONS_1 },
   {
     data: sRibbonIcons2_Pal,
-    tag: PALTAG_RIBBON_ICONS_2,
-  },
+    tag: PALTAG_RIBBON_ICONS_2 },
   {
     data: sRibbonIcons3_Pal,
-    tag: PALTAG_RIBBON_ICONS_3,
-  },
+    tag: PALTAG_RIBBON_ICONS_3 },
   {
     data: sRibbonIcons4_Pal,
-    tag: PALTAG_RIBBON_ICONS_4,
-  },
+    tag: PALTAG_RIBBON_ICONS_4 },
   {
     data: sRibbonIcons5_Pal,
-    tag: PALTAG_RIBBON_ICONS_5,
-  },
+    tag: PALTAG_RIBBON_ICONS_5 },
   [
 
   ],
@@ -1360,28 +1387,24 @@ const sOamData_RibbonIconBig = {
   tileNum: 0, /* :10 */
   priority: 1, /* :2 */
   paletteNum: 0, /* :4 */
-  affineParam: 0,
-};
+  affineParam: 0 };
 
 /** 1:1 (pokenav_ribbons_summary.c:1170) */
 const sAffineAnim_RibbonIconBig_Normal = {
   type: AFFINEANIMCMD_FRAME(128, 128, 0, 0),
-  frame: AFFINEANIMCMD_END,
-};
+  frame: AFFINEANIMCMD_END };
 
 /** 1:1 (pokenav_ribbons_summary.c:1176) */
 const sAffineAnim_RibbonIconBig_ZoomIn = {
   type: AFFINEANIMCMD_FRAME(128, 128, 0, 0),
   frame: AFFINEANIMCMD_FRAME(32, 32, 0, 4),
-  loop: AFFINEANIMCMD_END,
-};
+  loop: AFFINEANIMCMD_END };
 
 /** 1:1 (pokenav_ribbons_summary.c:1183) */
 const sAffineAnim_RibbonIconBig_ZoomOut = {
   type: AFFINEANIMCMD_FRAME(256, 256, 0, 0),
   frame: AFFINEANIMCMD_FRAME(-32, -32, 0, 4),
-  loop: AFFINEANIMCMD_END,
-};
+  loop: AFFINEANIMCMD_END };
 
 // enum pokenav_ribbons_summary.c:1190
 const RIBBONANIM_NORMAL = 0;
@@ -1403,8 +1426,7 @@ const sSpriteTemplate_RibbonIconBig = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: sAffineAnims_RibbonIconBig,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 // Create dummy sprite to be used for the zoomed in version of the selected ribbon
 

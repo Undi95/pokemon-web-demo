@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_list.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_list.c` (transpilé).
  *
@@ -20,8 +21,28 @@ import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByT
 import { AddTextPrinterParameterized } from './text';
 import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, GetBgTilemapBuffer, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WINDOW_BG } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { BgTemplate, WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const BgDmaFill: any = __wireTodo('BgDmaFill');
+const ClearRematchPokeballIcon: any = __wireTodo('ClearRematchPokeballIcon');
+const CopyWindowRectToVram: any = __wireTodo('CopyWindowRectToVram');
+const CpuFastFill8: any = __wireTodo('CpuFastFill8');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FuncIsActiveLoopedTask: any = __wireTodo('FuncIsActiveLoopedTask');
+const GetBgY: any = __wireTodo('GetBgY');
+const GetMatchCallFlavorText: any = __wireTodo('GetMatchCallFlavorText');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_LIST = 17; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -748,16 +769,14 @@ const sListArrowSpriteSheets = [
   {
     data: sListArrow_Gfx,
     size: 0xC0,
-    tag: GFXTAG_ARROW,
-  },
+    tag: GFXTAG_ARROW },
 ];
 
 /** 1:1 (pokenav_list.c:782) */
 const sListArrowPalettes = [
   {
     data: sListArrow_Pal,
-    tag: PALTAG_ARROW,
-  },
+    tag: PALTAG_ARROW },
   [
 
   ],
@@ -787,8 +806,7 @@ const sSpriteTemplate_RightArrow = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCB_RightArrow,
-};
+  callback: SpriteCB_RightArrow };
 
 /** 1:1 (pokenav_list.c:816) */
 const sOamData_UpDownArrow = {
@@ -814,8 +832,7 @@ const sSpriteTemplate_UpDownArrow = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 `static void LoadListArrowGfx(void)` (pokenav_list.c:841-850). */
 function LoadListArrowGfx(): void {

@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_menu_handler_gfx.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_menu_handler_gfx.c` (transpilé).
  *
@@ -32,8 +33,54 @@ import { gSineTable } from './trig';
 import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { ScanlineEffectParams } from './scanline_effect';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { DISPLAY_WIDTH } from '../include/gba/defines';
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AFFINEANIMCMD_END: any = __wireTodo('AFFINEANIMCMD_END');
+const AFFINEANIMCMD_FRAME: any = __wireTodo('AFFINEANIMCMD_FRAME');
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetCurrentMenuItemId: any = __wireTodo('GetCurrentMenuItemId');
+const GetHelpBarTextId: any = __wireTodo('GetHelpBarTextId');
+const GetMatchTableMapSectionId: any = __wireTodo('GetMatchTableMapSectionId');
+const GetPokenavCursorPos: any = __wireTodo('GetPokenavCursorPos');
+const GetPokenavMenuType: any = __wireTodo('GetPokenavMenuType');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const GetWordTaskArg: any = __wireTodo('GetWordTaskArg');
+const HideMainOrSubMenuLeftHeader: any = __wireTodo('HideMainOrSubMenuLeftHeader');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const IsRematchEntryRegistered: any = __wireTodo('IsRematchEntryRegistered');
+const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
+const PokenavCopyPalette: any = __wireTodo('PokenavCopyPalette');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const REG_WIN0H: any = __wireTodo('REG_WIN0H');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
+const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
+const SetWordTaskArg: any = __wireTodo('SetWordTaskArg');
+const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
+const SlideMenuHeaderUp: any = __wireTodo('SlideMenuHeaderUp');
+const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
+const gPokenavMessageBox_Gfx: any = __wireTodo('gPokenavMessageBox_Gfx');
+const gPokenavMessageBox_Pal: any = __wireTodo('gPokenavMessageBox_Pal');
+const gPokenavMessageBox_Tilemap: any = __wireTodo('gPokenavMessageBox_Tilemap');
+const gPokenavOptions_Gfx: any = __wireTodo('gPokenavOptions_Gfx');
+const gPokenavOptions_Pal: any = __wireTodo('gPokenavOptions_Pal');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const REMATCH_TABLE_ENTRIES = 78; // 1:1 include/constants/rematches.h:0 (à consolider dans include/)
@@ -170,41 +217,33 @@ const sPokenavOptionsSpriteSheets = [
   {
     data: gPokenavOptions_Gfx,
     size: 0x3400,
-    tag: GFXTAG_OPTIONS,
-  },
+    tag: GFXTAG_OPTIONS },
   {
     data: sMatchCallBlueLightTiles,
     size: 0x0100,
-    tag: GFXTAG_BLUE_LIGHT,
-  },
+    tag: GFXTAG_BLUE_LIGHT },
 ];
 
 /** 1:1 (pokenav_menu_handler_gfx.c:166) */
 const sPokenavOptionsSpritePalettes = [
   {
     data: gPokenavOptions_Pal[0x00] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: PALTAG_OPTIONS_DEFAULT,
-  },
+    tag: PALTAG_OPTIONS_DEFAULT },
   {
     data: gPokenavOptions_Pal[0x10] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: PALTAG_OPTIONS_BLUE,
-  },
+    tag: PALTAG_OPTIONS_BLUE },
   {
     data: gPokenavOptions_Pal[0x20] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: PALTAG_OPTIONS_PINK,
-  },
+    tag: PALTAG_OPTIONS_PINK },
   {
     data: gPokenavOptions_Pal[0x30] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: PALTAG_OPTIONS_BEIGE,
-  },
+    tag: PALTAG_OPTIONS_BEIGE },
   {
     data: gPokenavOptions_Pal[0x40] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: PALTAG_OPTIONS_RED,
-  },
+    tag: PALTAG_OPTIONS_RED },
   {
     data: sMatchCallBlueLightPal,
-    tag: PALTAG_BLUE_LIGHT,
-  },
+    tag: PALTAG_BLUE_LIGHT },
   [
 
   ],
@@ -299,8 +338,7 @@ export const sPokenavMenuOptionLabelGfx = [
       sOptionsLabelGfx_RegionMap,
       sOptionsLabelGfx_Condition,
       sOptionsLabelGfx_SwitchOff,
-    ],
-  }, // [POKENAV_MENU_TYPE_DEFAULT]
+    ] }, // [POKENAV_MENU_TYPE_DEFAULT]
   {
     yStart: 42,
     deltaY: 20,
@@ -309,8 +347,7 @@ export const sPokenavMenuOptionLabelGfx = [
       sOptionsLabelGfx_Condition,
       sOptionsLabelGfx_MatchCall,
       sOptionsLabelGfx_SwitchOff,
-    ],
-  }, // [POKENAV_MENU_TYPE_UNLOCK_MC]
+    ] }, // [POKENAV_MENU_TYPE_UNLOCK_MC]
   {
     yStart: 42,
     deltaY: 20,
@@ -320,8 +357,7 @@ export const sPokenavMenuOptionLabelGfx = [
       sOptionsLabelGfx_MatchCall,
       sOptionsLabelGfx_Ribbons,
       sOptionsLabelGfx_SwitchOff,
-    ],
-  }, // [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS]
+    ] }, // [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS]
   {
     yStart: 56,
     deltaY: 20,
@@ -329,8 +365,7 @@ export const sPokenavMenuOptionLabelGfx = [
       sOptionsLabelGfx_Party,
       sOptionsLabelGfx_Search,
       sOptionsLabelGfx_Cancel,
-    ],
-  }, // [POKENAV_MENU_TYPE_CONDITION]
+    ] }, // [POKENAV_MENU_TYPE_CONDITION]
   {
     yStart: 40,
     deltaY: 16,
@@ -341,8 +376,7 @@ export const sPokenavMenuOptionLabelGfx = [
       sOptionsLabelGfx_Smart,
       sOptionsLabelGfx_Tough,
       sOptionsLabelGfx_Cancel,
-    ],
-  }, // [POKENAV_MENU_TYPE_CONDITION_SEARCH]
+    ] }, // [POKENAV_MENU_TYPE_CONDITION_SEARCH]
 ];
 
 /** 1:1 (pokenav_menu_handler_gfx.c:257) */
@@ -353,8 +387,7 @@ const sOptionDescWindowTemplate = {
   width: 24,
   height: 2,
   paletteNum: 1,
-  baseBlock: 8,
-};
+  baseBlock: 8 };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:268) */
 const sPageDescriptions = Uint8Array.from([
@@ -407,15 +440,13 @@ const sOamData_MenuOption = {
 /** 1:1 (pokenav_menu_handler_gfx.c:303) */
 const sAffineAnim_MenuOption_Normal = {
   type: AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),
-  frame: AFFINEANIMCMD_END,
-};
+  frame: AFFINEANIMCMD_END };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:309) */
 const sAffineAnim_MenuOption_Zoom = {
   type: AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),
   frame: AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0x12),
-  loop: AFFINEANIMCMD_END,
-};
+  loop: AFFINEANIMCMD_END };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:316) */
 const sAffineAnims_MenuOption = [
@@ -431,8 +462,7 @@ const sMenuOptionSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: sAffineAnims_MenuOption,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:333) */
 const sBlueLightOamData = {
@@ -458,16 +488,14 @@ const sMatchCallBlueLightSpriteTemplate = {
   anims: gDummySpriteAnimTable,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCallbackDummy,
-};
+  callback: SpriteCallbackDummy };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:358) */
 const sPokenavMainMenuScanlineEffectParams = {
   dmaDest: REG_WIN0H,
   dmaControl: ((DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
   initState: 1,
-  unused9: 0,
-};
+  unused9: 0 };
 
 /** 1:1 `static bool32 AreAnyTrainerRematchesNearby(void)` (pokenav_menu_handler_gfx.c:366-379). */
 function AreAnyTrainerRematchesNearby(): boolean {

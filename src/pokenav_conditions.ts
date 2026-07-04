@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_conditions.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_conditions.c` (transpilé).
  *
@@ -22,6 +23,27 @@ import { getString } from './engine/ui/gba-strings';
 import { CalculatePlayerPartyCount, GetBoxMonGender, GetLevelFromBoxMonExp, GetMonGender, SetMonData, gPlayerParty } from './pokemon';
 import { GetBoxedMonPtr } from './pokemon_storage_system';
 import { ConvertIntToDecimalStringN, StringCompare, StringCopyPadded, StringGet_Nickname } from './string_util';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const ConditionGraph_CalcPositions: any = __wireTodo('ConditionGraph_CalcPositions');
+const ConditionGraph_Init: any = __wireTodo('ConditionGraph_Init');
+const ConditionGraph_SetNewPositions: any = __wireTodo('ConditionGraph_SetNewPositions');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const GET_NUM_CONDITION_SPARKLES: any = __wireTodo('GET_NUM_CONDITION_SPARKLES');
+const GetBoxNamePtr: any = __wireTodo('GetBoxNamePtr');
+const GetBoxOrPartyMonData: any = __wireTodo('GetBoxOrPartyMonData');
+const GetMonMarkingsData: any = __wireTodo('GetMonMarkingsData');
+const GetMonSpritePalFromSpeciesAndPersonality: any = __wireTodo('GetMonSpritePalFromSpeciesAndPersonality');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const HandleMonMarkingsMenuInput: any = __wireTodo('HandleMonMarkingsMenuInput');
+const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
+const LoadSpecialPokePic: any = __wireTodo('LoadSpecialPokePic');
+const SetBoxMonDataAt: any = __wireTodo('SetBoxMonDataAt');
+const gKeyRepeatStartDelay: any = __wireTodo('gKeyRepeatStartDelay');
+const gMonFrontPicTable: any = __wireTodo('gMonFrontPicTable');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU = 11; // 1:1 include/pokenav.h:0 (à consolider dans include/)

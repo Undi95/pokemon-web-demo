@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_match_call_list.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_match_call_list.c` (transpilé).
  *
@@ -19,6 +20,31 @@ import { gMapHeader } from './fieldmap';
 import { GetStringClearToWidth, GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { Overworld_GetMapHeaderByGroupAndId, Overworld_MapTypeAllowsTeleportAndFly } from './overworld';
 import { gStringVar4 } from './string_util';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const GetPokenavMode: any = __wireTodo('GetPokenavMode');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const GetTrainerIdxByRematchIdx: any = __wireTodo('GetTrainerIdxByRematchIdx');
+const MatchCall_GetEnabled: any = __wireTodo('MatchCall_GetEnabled');
+const MatchCall_GetMapSec: any = __wireTodo('MatchCall_GetMapSec');
+const MatchCall_GetMessage: any = __wireTodo('MatchCall_GetMessage');
+const MatchCall_GetNameAndDesc: any = __wireTodo('MatchCall_GetNameAndDesc');
+const MatchCall_GetOverrideFacilityClass: any = __wireTodo('MatchCall_GetOverrideFacilityClass');
+const MatchCall_GetOverrideFlavorText: any = __wireTodo('MatchCall_GetOverrideFlavorText');
+const MatchCall_GetRematchTableIdx: any = __wireTodo('MatchCall_GetRematchTableIdx');
+const MatchCall_HasCheckPage: any = __wireTodo('MatchCall_HasCheckPage');
+const MatchCall_HasRematchId: any = __wireTodo('MatchCall_HasRematchId');
+const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
+const SelectMatchCallMessage: any = __wireTodo('SelectMatchCallMessage');
+const SetPokenavMode: any = __wireTodo('SetPokenavMode');
+const gFacilityClassToPicIndex: any = __wireTodo('gFacilityClassToPicIndex');
+const gMatchCallFlavorTexts: any = __wireTodo('gMatchCallFlavorTexts');
+const gTrainers: any = __wireTodo('gTrainers');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const MATCH_CALL_OPTION_CALL = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)

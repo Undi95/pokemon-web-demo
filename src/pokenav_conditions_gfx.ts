@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_conditions_gfx.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_conditions_gfx.c` (transpilé).
  *
@@ -26,6 +27,76 @@ import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilem
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
+const BgDmaFill: any = __wireTodo('BgDmaFill');
+const BufferMonMarkingsMenuTiles: any = __wireTodo('BufferMonMarkingsMenuTiles');
+const ConditionGraph_Draw: any = __wireTodo('ConditionGraph_Draw');
+const ConditionGraph_InitResetScanline: any = __wireTodo('ConditionGraph_InitResetScanline');
+const ConditionGraph_InitWindow: any = __wireTodo('ConditionGraph_InitWindow');
+const ConditionGraph_ResetScanline: any = __wireTodo('ConditionGraph_ResetScanline');
+const ConditionGraph_SetNewPositions: any = __wireTodo('ConditionGraph_SetNewPositions');
+const ConditionGraph_TryUpdate: any = __wireTodo('ConditionGraph_TryUpdate');
+const ConditionMenu_UpdateMonEnter: any = __wireTodo('ConditionMenu_UpdateMonEnter');
+const ConditionMenu_UpdateMonExit: any = __wireTodo('ConditionMenu_UpdateMonExit');
+const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
+const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
+const CreateConditionSparkleSprites: any = __wireTodo('CreateConditionSparkleSprites');
+const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+const CreateMonMarkingAllCombosSprite: any = __wireTodo('CreateMonMarkingAllCombosSprite');
+const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+const DestroyConditionSparkleSprites: any = __wireTodo('DestroyConditionSparkleSprites');
+const DmaCopy16Defvars: any = __wireTodo('DmaCopy16Defvars');
+const FreeConditionSparkles: any = __wireTodo('FreeConditionSparkles');
+const FreeMonMarkingsMenu: any = __wireTodo('FreeMonMarkingsMenu');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+const GetConditionGraphCurrentListIndex: any = __wireTodo('GetConditionGraphCurrentListIndex');
+const GetConditionGraphMenuCurrentLoadIndex: any = __wireTodo('GetConditionGraphMenuCurrentLoadIndex');
+const GetConditionGraphPtr: any = __wireTodo('GetConditionGraphPtr');
+const GetConditionMonDataBuffer: any = __wireTodo('GetConditionMonDataBuffer');
+const GetConditionMonLocationText: any = __wireTodo('GetConditionMonLocationText');
+const GetConditionMonNameText: any = __wireTodo('GetConditionMonNameText');
+const GetConditionMonPal: any = __wireTodo('GetConditionMonPal');
+const GetConditionMonPicGfx: any = __wireTodo('GetConditionMonPicGfx');
+const GetMonListCount: any = __wireTodo('GetMonListCount');
+const GetNumConditionMonSparkles: any = __wireTodo('GetNumConditionMonSparkles');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const InitBgTemplates: any = __wireTodo('InitBgTemplates');
+const InitMonMarkingsMenu: any = __wireTodo('InitMonMarkingsMenu');
+const IsConditionMenuSearchMode: any = __wireTodo('IsConditionMenuSearchMode');
+const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
+const LoadConditionGraphMenuGfx: any = __wireTodo('LoadConditionGraphMenuGfx');
+const LoadConditionMonPicTemplate: any = __wireTodo('LoadConditionMonPicTemplate');
+const LoadConditionSelectionIcons: any = __wireTodo('LoadConditionSelectionIcons');
+const LoadConditionSparkle: any = __wireTodo('LoadConditionSparkle');
+const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
+const LoadNextConditionMenuMonData: any = __wireTodo('LoadNextConditionMenuMonData');
+const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
+const MoveConditionMonOffscreen: any = __wireTodo('MoveConditionMonOffscreen');
+const OpenMonMarkingsMenu: any = __wireTodo('OpenMonMarkingsMenu');
+const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
+const PokenavFillPalette: any = __wireTodo('PokenavFillPalette');
+const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
+const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
+const ResetConditionSparkleSprites: any = __wireTodo('ResetConditionSparkleSprites');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
+const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
+const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
+const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
+const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
+const TryGetMonMarkId: any = __wireTodo('TryGetMonMarkId');
+const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
+const gPokenavCondition_Gfx: any = __wireTodo('gPokenavCondition_Gfx');
+const gPokenavCondition_Pal: any = __wireTodo('gPokenavCondition_Pal');
+const gPokenavCondition_Tilemap: any = __wireTodo('gPokenavCondition_Tilemap');
+const gPokenavOptions_Tilemap: any = __wireTodo('gPokenavOptions_Tilemap');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX = 12; // 1:1 include/pokenav.h:0 (à consolider dans include/)

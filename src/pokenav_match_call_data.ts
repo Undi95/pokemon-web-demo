@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_match_call_data.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_match_call_data.c` (transpilé).
  *
@@ -16,6 +17,15 @@ import { getString } from './engine/ui/gba-strings';
 import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const Brendan: any = __wireTodo('Brendan');
+const BufferPokedexRatingForMatchCall: any = __wireTodo('BufferPokedexRatingForMatchCall');
+const MCFLAVOR: any = __wireTodo('MCFLAVOR');
+const May: any = __wireTodo('May');
+const gTrainers: any = __wireTodo('gTrainers');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const REMATCH_NORMAN = 69; // 1:1 include/constants/rematches.h:0 (à consolider dans include/)

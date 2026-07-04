@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * pokenav_menu_handler.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/pokenav_menu_handler.c` (transpilé).
  *
@@ -12,6 +13,20 @@ import { A_BUTTON, B_BUTTON, DPAD_DOWN, DPAD_UP } from '../include/gba/io_reg';
 import { JOY_NEW, PlaySE } from './battle_controllers';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet } from './event_data';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const AllocSubstruct: any = __wireTodo('AllocSubstruct');
+const CanViewRibbonsMenu: any = __wireTodo('CanViewRibbonsMenu');
+const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
+const GetPokenavMode: any = __wireTodo('GetPokenavMode');
+const GetSelectedConditionSearch: any = __wireTodo('GetSelectedConditionSearch');
+const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
+const MAX_POKENAV_MENUITEMS: any = __wireTodo('MAX_POKENAV_MENUITEMS');
+const POKENAV_MENU_FUNC_EXIT: any = __wireTodo('POKENAV_MENU_FUNC_EXIT');
+const SetPokenavMode: any = __wireTodo('SetPokenavMode');
+const SetSelectedConditionSearch: any = __wireTodo('SetSelectedConditionSearch');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_MENUITEM_MAP = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)

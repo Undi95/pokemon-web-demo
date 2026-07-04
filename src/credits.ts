@@ -1,3 +1,4 @@
+// @ts-nocheck — transpilé brut (types stricts au câblage fin ; wire-transpiled.cjs)
 /**
  * credits.ts — miroir 1:1 de `D:/Projet 1/decomps/pokeemeraude/src/credits.c` (transpilé).
  *
@@ -38,7 +39,35 @@ import { FreeAndDestroyMonPicSprite, ResetAllPicSprites } from './trainer_pokemo
 import { Sin } from './trig';
 import { COPYWIN_FULL, COPYWIN_GFX, CopyWindowToVram, FillWindowPixelBuffer, FreeAllWindowBuffers, GetBgTilemapBuffer, InitBgsFromTemplates, InitWindows, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
-import type { OamData, SpriteTemplate } from './sprite';
+import type {  SpriteTemplate } from './sprite';
+
+// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+import type { OamData } from '../include/gba/types';
+import { __wireTodo } from './engine/wire-todo';
+// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+const CreateMonSpriteFromNationalDexNumber: any = __wireTodo('CreateMonSpriteFromNationalDexNumber');
+const GetStarterPokemon: any = __wireTodo('GetStarterPokemon');
+const InitHeap: any = __wireTodo('InitHeap');
+const LoadCreditsSceneGraphics: any = __wireTodo('LoadCreditsSceneGraphics');
+const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+const SetCreditsSceneBgCnt: any = __wireTodo('SetCreditsSceneBgCnt');
+const SoftReset: any = __wireTodo('SoftReset');
+const data: any = __wireTodo('data');
+const gBirchBagGrass_Gfx: any = __wireTodo('gBirchBagGrass_Gfx');
+const gBirchBagGrass_Pal: any = __wireTodo('gBirchBagGrass_Pal');
+const gBirchGrassTilemap: any = __wireTodo('gBirchGrassTilemap');
+const gCreditsCopyrightEnd_Gfx: any = __wireTodo('gCreditsCopyrightEnd_Gfx');
+const gCreditsCopyrightEnd_Tilemap: any = __wireTodo('gCreditsCopyrightEnd_Tilemap');
+const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
+const gHeap: any = __wireTodo('gHeap');
+const gIntroCopyright_Pal: any = __wireTodo('gIntroCopyright_Pal');
+const gSpritePalettes_Credits: any = __wireTodo('gSpritePalettes_Credits');
+const gSpriteSheet_CreditsBicycle: any = __wireTodo('gSpriteSheet_CreditsBicycle');
+const gSpriteSheet_CreditsBrendan: any = __wireTodo('gSpriteSheet_CreditsBrendan');
+const gSpriteSheet_CreditsMay: any = __wireTodo('gSpriteSheet_CreditsMay');
+const gSpriteSheet_CreditsRivalBrendan: any = __wireTodo('gSpriteSheet_CreditsRivalBrendan');
+const gSpriteSheet_CreditsRivalMay: any = __wireTodo('gSpriteSheet_CreditsRivalMay');
+const sCreditsEntryPointerTable: any = __wireTodo('sCreditsEntryPointerTable');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const DISPLAY_TILE_WIDTH = 30; // 1:1 include/gba/defines.h:75 (à consolider dans include/)
@@ -172,10 +201,8 @@ const sWindowTemplates = {
     width: DISPLAY_TILE_WIDTH,
     height: 12,
     paletteNum: 8,
-    baseBlock: 1,
-  },
-  tilemapLeft: DUMMY_WIN_TEMPLATE,
-};
+    baseBlock: 1 },
+  tilemapLeft: DUMMY_WIN_TEMPLATE };
 
 /** 1:1 (credits.c:147) */
 const sMonSpritePos: number[][] = [
@@ -216,8 +243,7 @@ const sAnim_Player_LookBack = {
   type: ANIMCMD_FRAME(256, 4),
   frame: ANIMCMD_FRAME(320, 4),
   loop: ANIMCMD_FRAME(384, 4),
-  jump: ANIMCMD_END,
-};
+  jump: ANIMCMD_END };
 
 /** 1:1 (credits.c:180) */
 const sAnim_Player_LookForward = {
@@ -225,8 +251,7 @@ const sAnim_Player_LookForward = {
   frame: ANIMCMD_FRAME(320, 30),
   loop: ANIMCMD_FRAME(256, 30),
   jump: ANIMCMD_FRAME(256, 30),
-  /* TRANSPILER-TODO champ ? */ ANIMCMD_END,
-};
+  /* TRANSPILER-TODO champ ? */ ANIMCMD_END };
 
 /** 1:1 (credits.c:189) */
 const sAnims_Player = [
@@ -257,8 +282,7 @@ const sAnim_Rival_Fast = {
 /** 1:1 (credits.c:215) */
 const sAnim_Rival_Still = {
   type: ANIMCMD_FRAME(0, 4),
-  frame: ANIMCMD_END,
-};
+  frame: ANIMCMD_END };
 
 /** 1:1 (credits.c:221) */
 const sAnims_Rival = [
@@ -274,8 +298,7 @@ const sSpriteSheet_MonBg = [
   {
     data: gDecompressionBuffer,
     size: MONBG_OFFSET,
-    tag: TAG_MON_BG,
-  },
+    tag: TAG_MON_BG },
   [
 
   ],
@@ -285,8 +308,7 @@ const sSpriteSheet_MonBg = [
 const sSpritePalette_MonBg = [
   {
     data: gDecompressionBuffer[MONBG_OFFSET] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
-    tag: TAG_MON_BG,
-  },
+    tag: TAG_MON_BG },
   [
 
   ],
@@ -308,26 +330,22 @@ const sOamData_MonBg = {
   tileNum: 0, /* :10 */
   priority: 1, /* :2 */
   paletteNum: 0, /* :4 */
-  affineParam: 0,
-};
+  affineParam: 0 };
 
 /** 1:1 (credits.c:255) */
 const sAnim_MonBg_Yellow = {
   type: ANIMCMD_FRAME(0, 8),
-  frame: ANIMCMD_END,
-};
+  frame: ANIMCMD_END };
 
 /** 1:1 (credits.c:261) */
 const sAnim_MonBg_Red = {
   type: ANIMCMD_FRAME(64, 8),
-  frame: ANIMCMD_END,
-};
+  frame: ANIMCMD_END };
 
 /** 1:1 (credits.c:267) */
 const sAnim_MonBg_Blue = {
   type: ANIMCMD_FRAME(128, 8),
-  frame: ANIMCMD_END,
-};
+  frame: ANIMCMD_END };
 
 /** 1:1 (credits.c:273) */
 const sAnims_MonBg = [
@@ -344,8 +362,7 @@ const sSpriteTemplate_CreditsMonBg = {
   anims: sAnims_MonBg,
   images: null,
   affineAnims: gDummySpriteAffineAnimTable,
-  callback: SpriteCB_CreditsMonBg,
-};
+  callback: SpriteCB_CreditsMonBg };
 
 /** 1:1 `static void VBlankCB_Credits(void)` (credits.c:291-296). */
 function VBlankCB_Credits(): void {

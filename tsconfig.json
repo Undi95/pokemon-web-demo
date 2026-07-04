@@ -3,7 +3,11 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -14,12 +18,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src", "vite.config.ts"],
-  "exclude": [
-    "src/pokenav.ts", "src/pokenav_conditions.ts", "src/pokenav_conditions_gfx.ts",
-    "src/pokenav_conditions_search_results.ts", "src/pokenav_list.ts", "src/pokenav_main_menu.ts",
-    "src/pokenav_match_call_data.ts", "src/pokenav_match_call_gfx.ts", "src/pokenav_match_call_list.ts",
-    "src/pokenav_menu_handler.ts", "src/pokenav_menu_handler_gfx.ts", "src/pokenav_region_map.ts",
-    "src/pokenav_ribbons_list.ts", "src/pokenav_ribbons_summary.ts", "src/credits.ts"
+  "include": [
+    "src",
+    "vite.config.ts"
   ]
 }
