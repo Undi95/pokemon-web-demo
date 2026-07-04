@@ -1,5 +1,31 @@
 # REPRISE OPUS 4.8 — mode d'emploi COMPLET (2026-07-04, Fable ~10%)
 
+## §0. PROTOCOLE D'EXÉCUTION — BUDGETS DURS (Fable, après 500k gaspillés sur 1 bug)
+> Le problème n'est JAMAIS le manque d'information (tout est dans ce doc). C'est la
+> discipline d'exécution. Ces gates sont MÉCANIQUES — pas de « juste cette fois ».
+1. **Le cycle unique autorisé** : QUESTION (1 ligne, écrite avant) → 1 SONDE/ORACLE →
+   VERDICT (1 ligne) → ACTION (édit/test). Jamais 2 sondes de suite sans édit entre
+   elles, sauf verdict contradictoire explicite.
+2. **Budget Read : 3 par chantier** (le C de LA fonction transcrite · l'API d'UN helper ·
+   1 joker). **0 Read pour un bug** — un bug se diagnostique par sonde LIVE, jamais en
+   lisant du source. Grep = trouver UNE définition (« où est X »), jamais « comprendre ».
+3. **Sonde INSTALLÉE, pas jetable** : état pas accessible en eval → poser un pont
+   `globalThis.__probe*` dans le module (2 min, réutilisable à vie) au lieu de 10 IIFE
+   de 30 lignes. Preuve : `__playerOE` a résolu en 2 sondes ce que 40 appels d'archéologie
+   n'avaient pas trouvé.
+4. **Checkpoint tous les 10 tool calls** : 1 ligne « qu'ai-je appris depuis 10 appels ? ».
+   Réponse vide → CHANGER de méthode (installer une sonde, filmer, oracle) — ne JAMAIS
+   répéter l'appel qui n'a rien donné.
+5. **Prose : 2 phrases max entre tool calls.** Le résultat, pas le trajet. Zéro plan
+   re-narré, zéro option non retenue, zéro re-délibération d'un choix déjà tranché.
+6. **La sortie d'un outil est un FAIT.** Oracle dit ABSENT → c'est absent, on n'en
+   re-vérifie pas la sortie par un autre moyen sans contradiction concrète.
+7. **Visuel → film d'abord** : `dev.gfx.film({every,seconds})` (précis : 1/every rAF
+   pendant S s) PUIS déclencher. Croix ✕ sur la mosaïque. Un screenshot unique rate
+   toute anim <1 s.
+8. **Scoper = 5 appels max avant la 1re ligne écrite.** tsc pointera les trous restants
+   (c'est SON travail) ; on colmate après, pas avant.
+
 > **LIS D'ABORD** : `MEMORY.md` (index mémoire) → topic `chantier-combat-100pct.md` (mandat final 17% en tête, ordre strict, cases à cocher). Contrat : **port miroir 1:1 STRICT** de `D:/Projet 1/decomps/pokeemeraude` — TRANSCRIRE ligne à ligne, jamais improviser, mêmes noms fichiers/fns/globals/imports. RIEN n'est « fini » sans test EN JEU. SOLO sur le code. Branche `Byte-VM-ultra`, JAMAIS push. Commits heredoc signés `Authored-by: Fable 5 & Undi <noreply@anthropic.com>`. Vérif : `npx tsc --noEmit` = 0 **ET** boot sain **ET** sonde en jeu.
 
 ## 1. Boucle de travail standard
