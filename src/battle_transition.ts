@@ -31,6 +31,10 @@ import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
 } from '../harness/runtime/decomp-globals';
 import { DestroySprite, AllocOamMatrix } from './sprite';
+import {
+  LoadSpritePalette as _sprLoadSpritePalette,
+  IndexOfSpritePaletteTag as _sprIndexOfSpritePaletteTag,
+} from './sprite';
 import { loadIndexedPng } from '../harness/gba/png-loader';
 import { Random } from './random';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
@@ -67,20 +71,17 @@ async function _ensureTrailAssets(): Promise<void> {
   // loadIndexedPng tolérant (les png battle_transitions extraits sont RGBA, pas
   // de PLTE → loadIndexedPngStrict throw « no PLTE chunk »).
   const trail = await loadIndexedPng('/decomp/em/battle_transitions/pokeball_trail.png');
-  const ball = await loadIndexedPng('/decomp/em/battle_transitions/pokeball.png');
   _trailTile = trail.charData;
-  _ballTiles = ball.charData;
-  _ballPal = ball.palette ?? null;
-  // Les PNG battle_transitions extraits sont RGBA SANS PLTE → palette null →
-  // traînées BLANCHES + balls NOIRES (verdict A/B « palette mauvaise », image 2).
-  // Fallback 1:1 : sFieldEffectPal_Pokeball convertie depuis
-  // graphics/field_effects/palettes/pokeball.pal (JASC → BGR555 .gbapal).
-  if (!_ballPal) {
-    try {
-      const { loadGbaPal } = await import('../harness/gba/png-loader');
-      _ballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
-    } catch (e) { console.warn('[battle_transition] pokeball.gbapal KO', e); }
-  }
+  // Ball : tiles BYTE-EXACTS + palette en ordre PLTE (extract-png-indexed-tiles
+  // depuis le png INDEXÉ décomp). L'ancienne voie loadIndexedPng sur la copie
+  // public/ RGBA sans PLTE quantifiait les indices → ball NOIRE (verdict A/B ×2)
+  // même avec une palette correcte.
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const resp = await fetch('/decomp/em/battle_transitions/pokeball.4bpp.bin');
+    _ballTiles = new Uint8Array(await resp.arrayBuffer());
+    _ballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
+  } catch (e) { console.warn('[battle_transition] assets ball KO', e); }
   _assetsReady = true;
 }
 
@@ -209,19 +210,19 @@ interface TrailSprite {
 function _fldEffPokeballTrail(x: number, y: number, side: number, delay: number): void {
   const rt = getRuntime();
   if (!rt || !_ballTiles) return;
-  // Palette OBJ par TAG (pattern LoadSpritePalette : idempotent).
   const r = rt as unknown as {
-    LoadSpritePalette?: (p: { data: Uint16Array; tag: number }) => number;
-    IndexOfSpritePaletteTag?: (t: number) => number;
     CreateSpriteInline?: (tpl: unknown, x: number, y: number, sub?: number) => number;
     AllocOamMatrix?: () => number;
     gSprites?: Array<TrailSprite | undefined>;
   };
-  let pal = r.IndexOfSpritePaletteTag?.(OBJ_PAL_TAG_TRAIL) ?? 0xFF;
-  if (pal === 0xFF && _ballPal && r.LoadSpritePalette) {
-    pal = r.LoadSpritePalette({ data: _ballPal, tag: OBJ_PAL_TAG_TRAIL });
+  // Palette OBJ par TAG — IMPORTS DIRECTS sprite.ts : l'ancienne voie
+  // `rt.LoadSpritePalette?.()` n'existait PAS sur le runtime (optional chaining
+  // silencieux ×2) → slot 15 jamais écrit → BALL NOIRE (verdict A/B ×2).
+  let pal = _sprIndexOfSpritePaletteTag(OBJ_PAL_TAG_TRAIL);
+  if (pal === 0xFF && _ballPal) {
+    pal = _sprLoadSpritePalette({ data: _ballPal, tag: OBJ_PAL_TAG_TRAIL });
   }
-  if (pal === 0xFF || pal === undefined) pal = _ballPalSlot;
+  if (pal === 0xFF || pal === undefined || pal < 0) pal = _ballPalSlot;
   _ballPalSlot = pal;
   const matrix = AllocOamMatrix() ?? 0;
   const spriteId = CreateSprite({
