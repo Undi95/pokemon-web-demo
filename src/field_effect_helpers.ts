@@ -1205,7 +1205,7 @@ function SurfFieldEffect_ShowMon(task: DecompTask): void {
   const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   if (ObjectEventCheckHeldMovementStatus(objectEvent)) {
     gFieldEffectArguments[0] = task.data[15] | SHOW_MON_CRY_NO_DUCKING;  // tMonId
-    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op (mon-show à part)
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // montre le mon (bannière streaks) — porté, cf. FldEff_FieldMoveShowMon
     task.data[0]++;
   }
 }
@@ -1276,9 +1276,9 @@ export function FldEff_UseSurf(rt: DecompRuntime): number {
 // Séquence : Lock + preventStep → (show-mon) → grimpe lente vers le nord (WALK_SLOW) en boucle tant
 // que la tuile courante est une cascade → Unlock.
 //
-// ⚠️ MÊME DÉPENDANCE NON PORTÉE QUE LE SURF : FLDEFF_FIELD_MOVE_SHOW_MON (le Pokémon apparaît) n'est pas
-// dans le dispatch → `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)` gardé 1:1 mais no-op →
-// `FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)` = false → la séquence enchaîne directement.
+// ✅ FLDEFF_FIELD_MOVE_SHOW_MON est PORTÉ (FldEff_FieldMoveShowMon) : la bannière du mon joue, et
+// `FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)` = true pendant ~2 s → WaterfallFieldEffect_
+// WaitForShowMon attend sa fin avant de grimper (1:1). Vérifié en jeu (Surf montre le mon + cri).
 //
 // ⚠️ `Task_UseWaterfall` a une BOUCLE `while (func(...))` (≠ surf, une func/tick) : dans un même tick,
 // on ré-exécute la func de l'état courant tant qu'elle renvoie TRUE (= avance multi-états par frame).
@@ -1297,7 +1297,7 @@ function WaterfallFieldEffect_ShowMon(task: DecompTask, objectEvent: ObjectEvent
   if (!ObjectEventIsMovementOverridden(objectEvent)) {
     ObjectEventClearHeldMovementIfFinished(objectEvent);
     gFieldEffectArguments[0] = task.data[1];  // tMonId
-    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op (mon-show à part)
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // montre le mon (bannière streaks) — porté, cf. FldEff_FieldMoveShowMon
     task.data[0]++;
   }
   return false;
@@ -1389,7 +1389,7 @@ function DiveFieldEffect_Init(task: DecompTask): boolean {
 function DiveFieldEffect_ShowMon(task: DecompTask): boolean {
   LockPlayerFieldControls();
   gFieldEffectArguments[0] = task.data[15];  // monId
-  FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // effet non porté → no-op
+  FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // montre le mon (porté) — Plongée
   task.data[0]++;
   return false;
 }
@@ -2440,7 +2440,7 @@ function Task_DoFieldMove_Init(task: DecompTask): void {
   if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
     if (gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER') {
       // Skip field move pose underwater.
-      FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // no-op
+      FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // montre le mon (porté)
       task.func = Task_DoFieldMove_WaitForMon;
     } else {
       if (!_fieldMoveGfxReady) return;  // attend le préload de la pose (swap sync 1:1)
@@ -2454,7 +2454,7 @@ function Task_DoFieldMove_Init(task: DecompTask): void {
 /** 1:1 STRICT décomp `Task_DoFieldMove_ShowMonAfterPose` (fldeff_rocksmash.c:80). */
 function Task_DoFieldMove_ShowMonAfterPose(task: DecompTask): void {
   if (ObjectEventCheckHeldMovementStatus(gObjectEvents[gPlayerAvatar.objectEventId])) {
-    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // no-op
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);  // montre le mon (porté) — Coupe/Force/Éclate-Roc/Flash
     task.func = Task_DoFieldMove_WaitForMon;
   }
 }
