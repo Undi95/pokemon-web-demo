@@ -32,11 +32,18 @@
  */
 
 import type Phaser from 'phaser';
-import { SignalWaitState } from '../../scrcmd';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE } from '../../../harness/runtime/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { gMapHeader } from '../../fieldmap';
+
+// Pont anti-cycle (P2.3, même mécanisme que field_screen_effect/trainer_see) :
+// l'import statique de scrcmd depuis ce module engine fermait le cycle
+// battle_script_commands→pokedex→pokedex_area_screen→region-map→scrcmd→shop→…
+// (TDZ RGB_WHITE, boot mort silencieux). scrcmd expose __SignalWaitState.
+function SignalWaitState(): void {
+  ((globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined)?.();
+}
 import { getMapNameFr } from '../../data/map-names-fr';
 import { getString } from '../ui/gba-strings';
 import { getRuntime, getAsset, PlaySE } from '../../../harness/runtime/decomp-globals';

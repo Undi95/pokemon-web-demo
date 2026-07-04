@@ -2454,9 +2454,6 @@ function CreateHelperTasks(): void {
 // ─── Globals exposure for auto-callbacks (= used by transpiled code) ────────
 
 (globalThis as Record<string, unknown>).Task_NamingScreen = Task_NamingScreen;
-// Pont pour Cmd_trygivecaughtmonnick (battle_script_commands — pas d'arête ESM
-// combat → naming_screen ; le Cmd tire ce module en dynamique si absent).
-(globalThis as Record<string, unknown>).DoNamingScreen = DoNamingScreen;
 (globalThis as Record<string, unknown>).CB2_LoadNamingScreen = CB2_LoadNamingScreen;
 (globalThis as Record<string, unknown>).CB2_NamingScreen = CB2_NamingScreen;
 (globalThis as Record<string, unknown>).MainState_FadeIn = MainState_FadeIn;

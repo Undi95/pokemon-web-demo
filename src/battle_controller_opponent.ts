@@ -95,7 +95,7 @@ import {
   AllocateBattleSpritesData, AllocateMonSpritesGfx, gMonSpritesGfxPtr,
   BattleLoadOpponentMonSpriteGfx, BattleLoadPlayerMonSpriteGfx,
 } from './battle_gfx_sfx_util';
-import { SetUpForReleaseAffineAnim } from './battle_anim_throw';
+import { SetUpForReleaseAffineAnim, TryShinyAnimation, isShinyAnimFinished, hasTriedShinyAnim, resetShinyAnimFlags } from './battle_anim_throw';
 // Send-out dresseur adverse 1:1 (mirror du player, battle_controller_opponent.c:1240/1867/1890/1897) :
 //   - helpers sprite-anim (game/battle_anim_mons) : slide-off lineaire + callback differe.
 //   - chain ball #22 (game/pokeball) : POKEBALL_OPPONENT_SENDOUT cree+ouvre la ball, emerge le mon.
@@ -265,9 +265,7 @@ function OpponentHandleSetRawMonData(): void { OpponentBufferExecCompleted(); }
 /** 1:1 décomp `OpponentHandleLoadMonSprite()` (battle_controller_opponent.c:1137).
  *  Charge le front pic du mon ennemi (gfx + palette OBJ slot battler) + spawn le
  *  sprite via CreateSprite (template inline → keystone CreateSpriteInline). Asset
- *  PNG = chargé ASYNC → fire-and-forget (le sprite apparaît dès le chargement).
- *  On garde OpponentBufferExecCompleted pour ne PAS bloquer le flux vérifié (le
- *  décomp installe TryShinyAnimAfterMonAnim ; shiny/shadow/StartSpriteAnim = raffinement). */
+ *  PNG = chargé ASYNC (le sprite apparaît dès le chargement). */
 function OpponentHandleLoadMonSprite(): void {
   const battler = gActiveBattler;
   void _loadAndCreateBattlerMonSprite(battler, true).then(() => {
@@ -280,7 +278,34 @@ function OpponentHandleLoadMonSprite(): void {
     const species = ep?.[gBattlerPartyIndexes[battler] ?? 0]?.species ?? 0;
     gfx?.SetBattlerShadowSpriteCallback?.(battler, species);
   });
-  OpponentBufferExecCompleted();
+  // 1:1 c:1157 : gBattlerControllerFuncs = TryShinyAnimAfterMonAnim — le flag exec
+  // RESTE posé jusqu'à la fin de l'entrée du mon (x2==0 + repos + shiny anim), donc
+  // BattleIntroPrintWildMonAttacked (gate exec flags) n'imprime pas « Un X sauvage
+  // apparaît ! » PENDANT l'anim d'entrée (bug user « ▼ trop tôt »).
+  _setBattlerControllerFunc(battler, TryShinyAnimAfterMonAnim);
+}
+
+/** 1:1 décomp `TryShinyAnimAfterMonAnim()` (battle_controller_opponent.c:385-400) :
+ *  x2==0 (slide fini) → TryShinyAnimation une fois ; sprite au repos
+ *  (SpriteCallbackDummy) ET shiny anim finie → reset flags + ExecCompleted. */
+function TryShinyAnimAfterMonAnim(): void {
+  const battler = gActiveBattler;
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(battler)] as
+    { x2?: number; callback?: unknown } | undefined;
+  if (!sprite) return;   // création async plateforme en cours → attendre
+  const ep = (globalThis as { __gEnemyParty?: Array<{ otId?: number; personality?: number }> }).__gEnemyParty;
+  // 1:1 : tried gate l'appel unique ; finished (posé par TryShinyAnimation pour un
+  // non-shiny, ou par la fin des Task_ShinyStars pour un shiny) gate la sortie.
+  if (sprite.x2 === 0 && !hasTriedShinyAnim(battler))
+    TryShinyAnimation(battler, ep?.[gBattlerPartyIndexes[battler] ?? 0] ?? null);
+  // Repos : SpriteCallbackDummy strict OU null (nos créations posent null — même
+  // sémantique : plus d'anim d'entrée en cours).
+  const atRest = sprite.callback === SpriteCallbackDummy || sprite.callback === null || sprite.callback === undefined;
+  if (atRest && hasTriedShinyAnim(battler) && isShinyAnimFinished(battler)) {
+    resetShinyAnimFlags(battler);
+    OpponentBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `sBattlerCoords[Single][position]` (battle_anim_mons.c:38-45). */

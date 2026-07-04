@@ -534,7 +534,13 @@ export function BattleInitBgsAndWindows(): void {
 export async function LoadBattleMenuWindowGfx(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
-  const frame = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
+  // 1:1 LoadUserWindowBorderGfx : le cadre est CELUI CHOISI PAR LE USER
+  // (gSaveBlock2Ptr->optionsWindowFrameType, OPTIONS > FENÊTRE TYPE N) —
+  // sWindowFrames[type] = (type+1).png. L'ancien '1.png' hardcodé ignorait le
+  // choix (bug user « j'utilise le style 3 avec les pokéballs ») ; le doublon
+  // loadBattleStdFrame (:416) faisait déjà le calcul correct.
+  const frameType = ((gSaveBlock2Ptr.optionsWindowFrameType ?? 0) % 20 + 20) % 20;
+  const frame = await loadIndexedPngStrict(`/decomp/em/ui/text_window/${frameType + 1}.png`, 4);
   // GetWindowAttribute(B_WIN_ACTION_MENU=2, WINDOW_BG) = bg 0 (template NORMAL).
   const bg = GetWindowAttribute(B_WIN_ACTION_MENU, WINDOW_BG);
   // LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1)) — frame tiles → BG0 @ tile 0x12.

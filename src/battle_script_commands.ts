@@ -9753,12 +9753,14 @@ function _flagGet_GC(flag: number): boolean {
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────
 
-// Imports chaîne capture (displaydexinfo + trygivecaughtmonnick). Top-level ESM
-// (le fichier a déjà des blocs d'import mid-file, cf. :10475).
+// Imports chaîne capture (displaydexinfo + trygivecaughtmonnick) — directs, comme
+// les #include de battle_script_commands.c (pokedex.h, naming_screen.h).
 import { BeginFastPaletteFade } from './palette';
 import { ShowBg } from './window';  // (FreeAllWindowBuffers déjà importé par le bloc drawlvlupbox :10561)
 import { GetMonGender } from './pokemon';
 import { battleInitVideo1to1, IsDma3ManagerBusyWithBgCopy, getLastBattleEnvironment } from './battle_bg';
+import { DisplayCaughtMonDexPage } from './pokedex';
+import { DoNamingScreen } from './naming_screen';
 
 /** 1:1 décomp Cmd_displaydexinfo (battle_script_commands.c:10104-10152). 1 byte.
  *  State machine 6 cases via gBattleCommunication[0] : fade out → page dex
@@ -9778,19 +9780,11 @@ function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
       return true;
     case 1:
       if (!rt.gPaletteFade.active) {
-        const display = (globalThis as Record<string, unknown>).DisplayCaughtMonDexPage as
-          ((dexNum: number, otId: number, personality: number) => number) | undefined;
-        if (!display) {
-          // Module pokedex pas encore évalué → le tirer et re-poller ce state.
-          void import('./pokedex');
-          ctx.scriptPtr--;
-          return true;
-        }
         FreeAllWindowBuffers();
         // 1:1 : species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES) ;
         // otId/personality = gBattleMons[gBattlerTarget].
         const species = _GetMonDataGC(_gEnemyPartyGC[0], _MON_DATA_SPECIES_GC) as number;
-        gBattleCommunication[1 /* TASK_ID */] = display(
+        gBattleCommunication[1 /* TASK_ID */] = DisplayCaughtMonDexPage(
           SpeciesToNationalPokedexNum(species),
           gBattleMons[gBattlerTarget].otId >>> 0,
           gBattleMons[gBattlerTarget].personality >>> 0,
@@ -9919,17 +9913,6 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       // FreeAllWindowBuffers, DoNamingScreen(NAMING_SCREEN_CAUGHT_MON, …, BattleMainCB2).
       const rt2 = _getRuntimeBSC();
       if (rt2 && !rt2.gPaletteFade.active) {
-        const doNaming = (globalThis as Record<string, unknown>).DoNamingScreen as
-          | ((tpl: number, buf: number[], species: number, gender: number,
-              personality: number, cb: unknown) => void)
-          | undefined;
-        if (!doNaming) {
-          // Module naming_screen pas encore évalué (pont globalThis absent) →
-          // le tirer et re-poller ce state au tick suivant.
-          void import('./naming_screen');
-          ctx.scriptPtr -= 5;
-          return true;
-        }
         const caughtMon = _gEnemyPartyGC[_gBattlerPartyIndexesGC[_BATTLE_OPPOSITE_GC(_gBattlerAttackerGC)]];
         // GetMonData(MON_DATA_NICKNAME) → buffer (= gBattleStruct->caughtMonNick) :
         // préfill = si le joueur valide sans rien taper, le nom reste l'espèce.
@@ -9938,14 +9921,14 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
         for (let i = 0; i < nick.length && i < 10; i++) _caughtMonNickBuffer.push(nick.charCodeAt(i));
         FreeAllWindowBuffers();
         // returnCallback 1:1 = BattleMainCB2 = le CB2 combat LIVE courant (capturé
-        // ici plutôt qu'importé : évite l'arête ESM vers battle_main).
+        // sur gMain : même identité que ce que le naming screen restaurera).
         _caughtNickReturnCB2 = (rt2.gMain as { callback2?: unknown }).callback2 ?? null;
-        doNaming(
+        DoNamingScreen(
           2 /* NAMING_SCREEN_CAUGHT_MON */, _caughtMonNickBuffer,
           _GetMonDataGC(caughtMon, _MON_DATA_SPECIES_GC) as number,
           GetMonGender(caughtMon as Parameters<typeof GetMonGender>[0]),
           _GetMonDataGC(caughtMon, 0 /* MON_DATA_PERSONALITY */) as number,
-          _caughtNickReturnCB2,
+          _caughtNickReturnCB2 as Parameters<typeof DoNamingScreen>[5],
         );
         gBattleCommunication[0]++;
       }

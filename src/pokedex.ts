@@ -3915,6 +3915,3 @@ function SpriteCB_SlideCaughtMonToCenter(sprite: DecompSprite): void {
   if (sprite.y > 80) sprite.y -= 1;
 }
 
-// Pont globalThis pour Cmd_displaydexinfo (battle_script_commands) — pas d'arête
-// ESM combat → pokedex ; le Cmd tire ce module en dynamique si le pont est absent.
-(globalThis as Record<string, unknown>).DisplayCaughtMonDexPage = DisplayCaughtMonDexPage;

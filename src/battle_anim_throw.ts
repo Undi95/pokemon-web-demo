@@ -646,9 +646,13 @@ function _wildMonInvisible(): boolean {
 function _monPalNum(): number {
   const rt = getRuntime();
   const sp = rt?.gSprites?.[_getBattlerSpriteId(_getAnimState().target)] as { oamIndex?: number } | undefined;
-  if (!rt || !sp || sp.oamIndex === undefined) return _getAnimState().target;
+  // ⚠️ Pas de fallback sur `target` : chez nous battler ≠ slot palette OBJ
+  // (allocation dynamique) — blender le slot « target » teintait la palette d'un
+  // AUTRE sprite (le back-sprite joueur viré au noir à la capture, bug A/B).
+  // Sprite introuvable → -1, LaunchBallFadeMonTask skippe le blend.
+  if (!rt || !sp || sp.oamIndex === undefined) return -1;
   const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteBank?: number }> } }).gba?.oam?.[sp.oamIndex];
-  return oam?.paletteBank ?? _getAnimState().target;
+  return oam?.paletteBank ?? -1;
 }
 
 function _rtSprite(spriteId: number): BallSprite | undefined {
@@ -2103,6 +2107,7 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
   // OBJ_PLTT_ID(n) in décomp is `(n + 16) * 16` because PLTT register puts
   // OBJ palettes at offset 256 (= 16 BG palettes × 16 colors). Our PaletteBuffer
   // is one flat 512-entry buffer where OBJ starts at index 256 — same indexing.
+  if (spritePalNum < 0) return -1;  // _monPalNum() : sprite cible introuvable → pas de blend (jamais un slot arbitraire)
   const PLTT_OFFSET = (spritePalNum + 16) * 16;  // = OBJ_PLTT_ID
   const RGB_WHITE = 0x7FFF;
   const fadeColor = gBallOpenFadeColors[ballId] ?? gBallOpenFadeColors[BALL_POKE];
