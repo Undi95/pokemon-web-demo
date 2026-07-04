@@ -164,8 +164,16 @@ function CB2_ReshowBattleScreenAfterMenu(): void {
       // (async plateforme) → les cases 11-14 (CreateBattlerSprite) deviennent no-op.
       const battler = state - 7;
       if (battler < gBattlersCount) {
-        _reshowBusy = true;
         const isOpp = GET_BATTLER_SIDE(battler) !== B_SIDE_PLAYER;
+        // 1:1 décomp CreateBattlerSprite (reshow_battle_screen.c:221/257) :
+        // `if (GetMonData(mon, MON_DATA_HP) == 0) return;` — un battler K.O. n'est
+        // PAS recréé au reshow (retour du party menu post-faint). Sans ce check :
+        // sprite zombie jamais enregistré (le send-out suivant ré-enregistre
+        // par-dessus) ni détruit, qui réaffiche les tiles VRAM du back suivant
+        // = « sprite fantôme » à chaque envoi post-K.O. (A/B 2026-07-04).
+        const reshowMon = (isOpp ? gEnemyParty : gPlayerParty)[gBattlerPartyIndexes[battler] ?? 0];
+        if (((reshowMon as { hp?: number } | undefined)?.hp ?? 0) === 0) break;
+        _reshowBusy = true;
         // reshow:true → mon STATIQUE (1:1 CreateBattlerSprite), pas le slide-in/emerge
         // d'intro → l'ennemi ne "re-scrolle" plus comme s'il réapparaissait (#2).
         void _loadAndCreateBattlerMonSprite(battler, isOpp, { reshow: true }).then(() => {
