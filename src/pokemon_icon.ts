@@ -87,6 +87,17 @@ export function LoadMonIconPalette(iconSpecies: number): void {
   _iconPalSlot = LoadSpritePalette({ data: entry.pal, tag: ICON_PAL_TAG });
 }
 
+/** Variante multi-icônes (écran BOÎTES du PC) : charge la palette dans un slot DÉDIÉ par index de
+ *  palette (`MON_ICON_PALETTE_INDICES`), tag distinct par palIdx → plusieurs palettes coexistent
+ *  (LoadMonIconPalette partage un seul tag = 1 slot). Renvoie le slot (-1 si icône non chargée). */
+export function LoadMonIconPaletteToOwnSlot(iconSpecies: number): number {
+  const entry = _iconCache.get(iconSpecies);
+  if (!entry) return -1;
+  const speciesEnum = reverseDecompConstant(iconSpecies, 'SPECIES_') ?? 'SPECIES_NONE';
+  const palIdx = MON_ICON_PALETTE_INDICES[speciesEnum] ?? 0;
+  return LoadSpritePalette({ data: entry.pal, tag: `mon_icon_pal_${palIdx}` });
+}
+
 /** 1:1 décomp `u8 CreateMonIconNoPersonality(species, callback, x, y, subpriority, handleDeoxys)`
  *  (pokemon_icon.c:1051). Port : sprite statique frame 0 via LoadSpriteSheet +
  *  CreateSpriteAtOam = comportement ROM exact pour un callback SpriteCallbackDummy

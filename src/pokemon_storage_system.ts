@@ -35,7 +35,7 @@ import { CalculatePlayerPartyCount } from './pokemon';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 // ─── ÉCRAN DES BOÎTES (phase 2, rendu de base) : icônes + infra CB2 ─────────
 import {
-  PreloadMonIcon, IsMonIconLoaded, LoadMonIconPalette, GetIconSpeciesNoPersonality,
+  PreloadMonIcon, IsMonIconLoaded, LoadMonIconPaletteToOwnSlot, GetIconSpeciesNoPersonality,
   CreateMonIconNoPersonality, FreeAndDestroyMonIconSprite,
 } from './pokemon_icon';
 import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
@@ -334,6 +334,7 @@ function _preloadBoxIcons(boxId: number): void {
 
 /** 1:1 `CreateBoxMonIconAtPos` (pokemon_storage_system.c:4478) — positions des 30 slots. */
 function _createBoxMonIcons(boxId: number): void {
+  const rt = getRuntime(); if (!rt) return;
   _pcBoxIconSprites = [];
   const storage = GetPokemonStorage();
   for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
@@ -342,9 +343,13 @@ function _createBoxMonIcons(boxId: number): void {
       const x = 8 * (3 * (pos % IN_BOX_COLUMNS)) + 100;          // 1:1 :4484
       const y = 8 * (3 * Math.floor(pos / IN_BOX_COLUMNS)) + 44; // 1:1 :4485
       const iconSpecies = GetIconSpeciesNoPersonality(mon.species);
-      LoadMonIconPalette(iconSpecies);
+      const palSlot = LoadMonIconPaletteToOwnSlot(iconSpecies);  // palette dédiée (couleurs correctes)
       const spriteId = CreateMonIconNoPersonality(iconSpecies, null, x, y, 19 - (pos % IN_BOX_COLUMNS), false);
-      if (spriteId !== 0xFF) _pcBoxIconSprites.push(spriteId);
+      if (spriteId !== 0xFF) {
+        const sprite = rt.gSprites[spriteId];
+        if (sprite && palSlot >= 0) rt.gba.oam[sprite.oamIndex].paletteBank = palSlot;  // 1:1 palId par icône
+        _pcBoxIconSprites.push(spriteId);
+      }
     }
   }
 }
