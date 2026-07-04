@@ -61,10 +61,16 @@ function scanFile(file) {
     }
     const bodyText = body.join('\n');
     // Statements réels (hors commentaires/lignes vides/accolades seules).
-    const stmts = body
+    let stmts = body
       .map(l => l.replace(/\/\/.*$/, '').trim())
       .filter(l => l && l !== '{' && l !== '}' && !l.startsWith('*') && !l.startsWith('/*') && !l.startsWith('*/'))
       .length - 1; // -1 pour la ligne de signature
+    // One-liner : du code APRÈS le `{` sur la ligne de signature (ex.
+    // `function TryFlipX(s) { if (!sDontFlip(s)) s.x2 *= -1; }` = 1:1 légitime,
+    // PAS un stub). Le -1 ci-dessus l'excluait → faux « corps-vide ».
+    const sigLine = lines[i].replace(/\/\/.*$/, '');
+    const afterBrace = sigLine.slice(sigLine.indexOf('{') + 1).replace(/\}\s*$/, '').trim();
+    if (sigLine.includes('{') && afterBrace) stmts = Math.max(stmts + 1, 1);
     // Doc au-dessus (jusqu'à 12 lignes).
     const doc = lines.slice(Math.max(0, i - 12), i).join('\n');
 
