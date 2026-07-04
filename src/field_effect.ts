@@ -50,6 +50,7 @@ import {
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
   FldEff_Shadow, FldEff_PokecenterHeal,
   FldEff_FieldMoveShowMon, FldEff_FieldMoveShowMonInit,
+  FldEff_UseFly, FldEff_FlyIn, FldEff_NPCFlyOut,
   LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette, LoadPokeballGlowFieldEffectPalette,
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
@@ -125,6 +126,9 @@ export const FLDEFF_SPARKLE                    = 54;
 export const FLDEFF_POKECENTER_HEAL            = 25;
 export const FLDEFF_FIELD_MOVE_SHOW_MON        = 6;
 export const FLDEFF_FIELD_MOVE_SHOW_MON_INIT   = 59;
+export const FLDEFF_NPCFLY_OUT                 = 30;
+export const FLDEFF_USE_FLY                    = 31;
+export const FLDEFF_FLY_IN                     = 32;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -270,6 +274,12 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   //    de Surf/Cut/Fly/Strength/Waterfall/Dive (qui attendaient cet effet dans la liste active). ──
   [FLDEFF_FIELD_MOVE_SHOW_MON]:      [{ op: 'callnative', native: FldEff_FieldMoveShowMon }, { op: 'end' }],
   [FLDEFF_FIELD_MOVE_SHOW_MON_INIT]: [{ op: 'callnative', native: FldEff_FieldMoveShowMonInit }, { op: 'end' }],
+
+  // ── Vol (field_effect.c:3118/3163/3454) : l'oiseau emporte (USE_FLY) / dépose (FLY_IN) le joueur,
+  //    ou emporte un NPC (NPCFLY_OUT). `callnative` seul → crée la task d'animation. ──
+  [FLDEFF_USE_FLY]:    [{ op: 'callnative', native: FldEff_UseFly }, { op: 'end' }],
+  [FLDEFF_FLY_IN]:     [{ op: 'callnative', native: FldEff_FlyIn }, { op: 'end' }],
+  [FLDEFF_NPCFLY_OUT]: [{ op: 'callnative', native: FldEff_NPCFlyOut }, { op: 'end' }],
 
   // ── Effets « morts » (0 caller en Émeraude) + WaterSurfacing (plongée) : `loadfadedpal_callnative GENERAL_N`. ──
   [FLDEFF_UNUSED_GRASS]:          [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_UnusedGrass }, { op: 'end' }],

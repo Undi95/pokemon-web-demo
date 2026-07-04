@@ -5910,7 +5910,13 @@ function _MovementAction_StartAnimInDirection_Step0(rt: DecompRuntime, npc: Obje
   // Notre table aplatit les sActionFuncId dans `npc.actionStep`. AVANT (DETTE H1) : seul Step0 →
   // le held ne finissait JAMAIS (heldMovementFinished restait FALSE) → bloquait p.ex. la pose
   // field-move de la montée de surf (SurfFieldEffect_ShowMon attend ObjectEventCheckHeldMovementStatus).
-  const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
+  // ⚠️ Le slot object-event du JOUEUR a spriteId=-1 (son sprite visuel est sur gPlayerAvatar.spriteId,
+  // cf. le special-case du tick TickObjectEventMovements). Sans ce même special-case ici, `sprite`=null
+  // pour le joueur → l'anim de pose ne démarre jamais → `animEnded` jamais TRUE → held 57 jamais fini
+  // (= la pose field-move de VOL/Surf restait bloquée sur le joueur).
+  const sprite = npc.isPlayer
+    ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites[gPlayerAvatar.spriteId] : null)
+    : (npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null);
   if (npc.actionStep === 0) {
     // 1:1 `StartSpriteAnimInDirection` (event_object_movement.c:6084) : SetAndStartSpriteAnim(animNum, 0)
     // (re-démarre l'anim courante depuis frame 0) + SetObjectEventDirection + sActionFuncId = 1.

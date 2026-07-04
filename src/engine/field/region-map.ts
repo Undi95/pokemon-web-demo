@@ -207,13 +207,14 @@ export function CloseRegionMap(confirmed = false): void {
   PlaySE(5);  // SE_SELECT
   // 1:1 décomp stub Fly : si mode FLY + confirmed + mapSec valide → fire le
   // callback Fly transition. Pour la démo, juste log et continue.
+  // Vol : on DIFFÈRE le callback (envol de l'oiseau) jusqu'à la fermeture COMPLÈTE de la carte
+  // (map source révélée + contrôles re-verrouillables) — sinon l'anim jouerait derrière l'overlay/
+  // rect noir, et l'`UnlockPlayerFieldControls` du close écraserait le lock du fly-out. 1:1 décomp :
+  // `FieldCallback_UseFly` tourne APRÈS `CB2_ReturnToField`.
+  let _pendingFlyTarget: string | null = null;
   if (st.mode === 'FLY' && confirmed) {
-    const targetMapSec = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
-    if (_flyCallback) {
-      _flyCallback(targetMapSec);
-    } else {
-      console.log(`[region-map] FLY stub : would warp to ${targetMapSec} (no callback registered)`);
-    }
+    _pendingFlyTarget = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
+    if (!_flyCallback) console.log(`[region-map] FLY : would warp to ${_pendingFlyTarget} (no callback registered)`);
   }
   // 1:1 décomp `field_region_map.c` state 5-6 fade-out :
   //   case 5: BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
@@ -279,6 +280,9 @@ export function CloseRegionMap(confirmed = false): void {
         if (rt) rt.gMain.newKeys = 0;
         // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
         SignalWaitState();
+        // Vol : map source révélée, overlay détruit → lancer l'envol (StartFlyOutThenWarp
+        // re-verrouille les contrôles APRÈS l'unlock ci-dessus).
+        if (_pendingFlyTarget !== null && _flyCallback) { const t = _pendingFlyTarget; _pendingFlyTarget = null; _flyCallback(t); }
       },
     });
     // Tween la carte vers alpha 0 EN PARALLÈLE pendant que le rect noir
@@ -300,6 +304,7 @@ export function CloseRegionMap(confirmed = false): void {
     const rt = getRuntime();
     if (rt) rt.gMain.newKeys = 0;
     SignalWaitState();
+    if (_pendingFlyTarget !== null && _flyCallback) { const t = _pendingFlyTarget; _pendingFlyTarget = null; _flyCallback(t); }
   }
 }
 

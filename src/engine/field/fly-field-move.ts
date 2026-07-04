@@ -25,7 +25,6 @@
 
 import { setPendingWarp } from './warp-system';
 import { GetHealLocationByName } from '../../heal_location';
-import { FadeScreen, FADE_TO_BLACK } from '../../field_weather';
 import { FlagGet } from '../script/script-vars';
 
 /** 1:1 décomp `sMapHealLocations[]` (region_map.c:289) — mapsec → HEAL_LOCATION_* (destination
@@ -72,10 +71,17 @@ function _flyWarp(mapSec: string): void {
     console.warn(`[fly] heal location non résolue: ${healId}`);
     return;
   }
-  // ≈ WarpFadeOutScreen (FADE_TO_BLACK) puis warp (le spin Fly 1:1 = follow-up).
-  FadeScreen(FADE_TO_BLACK, 0);
-  setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
-  console.log(`[fly] warp → ${heal.map} (${heal.x},${heal.y})`);
+  // Pose le warp DIFFÉRÉ : StartFlyOutThenWarp le déclenche quand l'anim d'envol de l'oiseau
+  // est finie (≈ décomp Task_UseFly → WarpIntoMap/CB2_LoadMap, adapté au warp-system).
+  (globalThis as Record<string, unknown>).__flyDoWarp = () => {
+    setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+    console.log(`[fly] warp → ${heal.map} (${heal.x},${heal.y})`);
+  };
+  // Lance l'ANIMATION d'envol 1:1 (l'oiseau sort de la Ball, plonge, le joueur saute dessus,
+  // envol → puis le warp différé). Précharge d'abord l'asset oiseau + le gfx pose field-move.
+  void import('../../field_effect_helpers').then(({ preloadFlyBirdEffect, StartFlyOutThenWarp }) => {
+    void preloadFlyBirdEffect().then(() => StartFlyOutThenWarp(0));
+  });
 }
 
 /** ≈ décomp `CB2_OpenFlyMap` (region_map.c) : ouvre la carte région en mode FLY + enregistre le

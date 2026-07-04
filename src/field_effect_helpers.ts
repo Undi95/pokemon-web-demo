@@ -55,8 +55,8 @@ import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runt
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite } from './sprite';
-import { UpdateSpritePaletteWithWeather } from './field_weather';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
+import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
@@ -69,14 +69,16 @@ import {
   // 1:1 décomp Task_SurfFieldEffect / Task_UseWaterfall (field_effect.c) — montée de surf + cascade.
   ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished,
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
-  GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, UnfreezeObjectEvents, PreloadObjectEventGraphics,
+  GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, FreezeObjectEventsExceptOne, UnfreezeObjectEvents, PreloadObjectEventGraphics,
   GetFaceDirectionMovementAction,
+  CameraObjectFreeze, ObjectEventClearHeldMovementIfActive, ObjectEventTurn, MoveObjectEventToMapCoords,
 } from './event_object_movement';
 import { MoveCoords, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from './engine/field/direction-coords';
 import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
   GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,
   GetPlayerAvatarGraphicsIdByCurrentState, GetXYCoordsOneStepInFrontOfPlayer, GetPlayerFacingDirection,
+  SetPlayerAvatarTransitionFlags, PLAYER_AVATAR_FLAG_ON_FOOT,
 } from './field_player_avatar';
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
@@ -104,7 +106,11 @@ import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
 import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo } from './overworld';
-import { MUS_SURF, SE_BALL, MUS_HEAL } from '../include/constants/songs';
+import { MUS_SURF, SE_BALL, MUS_HEAL, SE_M_FLY } from '../include/constants/songs';
+import { Cos, Sin } from './trig';
+import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
+import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
+import { gPaletteFade } from './palette';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart, FieldEffectFreeGraphicsResources,
 } from './field_effect';
@@ -4197,3 +4203,543 @@ export function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: Dec
     roam.affineParamIndex = 0;
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// CS/MOVE VOL — animation d'envol/atterrissage 1:1 (field_effect.c:3118-3610)
+// ────────────────────────────────────────────────────────────────────────────
+// Port 1:1 STRICT de la chaîne Vol : FldEff_UseFly → Task_FlyOut (l'oiseau sort de
+// la Ball, plonge, le joueur saute dessus, envol) + helpers oiseau + FldEff_FlyIn /
+// Task_FlyIn (atterrissage) + FldEff_NPCFlyOut. Le cœur warp (WarpIntoMap/CB2_LoadMap
+// du décomp) est ADAPTÉ au warp-system via le pont globalThis.__flyDoWarp posé par
+// engine/field/fly-field-move.ts (même adaptation ratifiée que fldeff_teleport.ts /
+// safari_zone.ts). Le mon (tMonId) est posé dans gFieldEffectArguments[0] par
+// l'orchestration (fly-field-move) → défaut 0.
+//
+// Asset : graphics/field_effects/pics/bird.png (32×32 4bpp) extrait en
+// public/decomp/em/field_effects/bird.4bpp.bin + .gbapal. Template décomp
+// gFieldEffectObjectTemplate_Bird : tileTag/paletteTag=TAG_NONE, oam 32×32. Le
+// décomp pose paletteNum=0 ; notre port charge la palette PROPRE de l'oiseau dans
+// un slot (déviation : couleurs exactes garanties au lieu de dépendre d'OBJ pal 0).
+// ════════════════════════════════════════════════════════════════════════════
+
+const FLDEFF_USE_FLY = 31;
+const FLDEFF_NPCFLY_OUT = 30;
+const FLDEFF_FLY_IN = 32;
+const MOVEMENT_ACTION_FACE_LEFT = 0x2;               // event_object_movement.h:89
+const MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT = 0x48;     // event_object_movement.h:159
+const ANIM_GET_ON_OFF_POKEMON_WEST = 22;             // ANIM_STD_COUNT(20) + 2
+const PLAYER_AVATAR_STATE_NORMAL_FLY = 0;            // global.fieldmap.h
+const TAG_FLY_BIRD = 0x1361;
+
+// Asset oiseau (préchargé, comme les autres field-effects — LoadSpriteSheet une fois).
+let _flyBirdTileStart = -1;
+let _flyBirdPaletteBank = 0;
+let _flyBirdReady = false;
+let _flyBirdInitPromise: Promise<void> | null = null;
+
+/** Préchargement asset oiseau (concern plateforme — le décomp charge via le template). */
+export function preloadFlyBirdEffect(): Promise<void> {
+  if (_flyBirdReady && IndexOfSpriteTileTag(TAG_FLY_BIRD) !== 0xFF) return Promise.resolve();
+  if (_flyBirdInitPromise && !_flyBirdReady) return _flyBirdInitPromise;
+  _flyBirdReady = false; _flyBirdInitPromise = null;
+  _flyBirdInitPromise = (async () => {
+    const tilesRes = await fetch('/decomp/em/field_effects/bird.4bpp.bin');
+    const tiles = new Uint8Array(await tilesRes.arrayBuffer());
+    _flyBirdTileStart = LoadSpriteSheet({ data: tiles, size: tiles.length, tag: TAG_FLY_BIRD });
+    const pal = await loadGbaPal('/decomp/em/field_effects/bird.gbapal');
+    LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
+    _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+    // Précharge le gfx POSE field-move du joueur (SetPlayerAvatarFieldMove le requiert : sans lui,
+    // ObjectEventSetGraphicsId ne swappe pas → le sprite reste sur l'idle qui BOUCLE → la pose ne
+    // finit jamais → Task_FlyOut bloqué au state 1. Même préchargement que la montée de Surf.)
+    await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(5 /* PLAYER_AVATAR_STATE_FIELD_MOVE */));
+    _flyBirdReady = true;
+  })();
+  return _flyBirdInitPromise;
+}
+
+// Affine anims oiseau (field_effect.c:3334-3349) — enregistrées au chargement du module.
+registerAffineAnim('sAffineAnim_FlyBirdLeaveBall', {
+  frames: [
+    { xScale: 8, yScale: 8, rotation: -30, duration: 0 },
+    { xScale: 28, yScale: 28, rotation: 0, duration: 30 },
+  ], terminator: 'END',
+});
+registerAffineAnim('sAffineAnim_FlyBirdReturnToBall', {
+  frames: [
+    { xScale: 256, yScale: 256, rotation: 64, duration: 0 },
+    { xScale: -10, yScale: -10, rotation: 0, duration: 22 },
+  ], terminator: 'END',
+});
+registerAffineAnimTable('sAffineAnims_FlyBird', {
+  affineAnims: ['sAffineAnim_FlyBirdLeaveBall', 'sAffineAnim_FlyBirdReturnToBall'],
+});
+
+// Sprite data oiseau : sPlayerSpriteId=data[6], sAnimCompleted=data[7] (field_effect.c:3160-3161).
+// Task data Fly : tState=data[0], tMonId/tBirdSpriteId=data[1], tTimer=data[2],
+//   tAvatarFlags=data[15] (field_effect.c:3152-3157).
+
+/** 1:1 `CreateFlyBirdSprite` (field_effect.c:3299) — "leave ball" anim par défaut. */
+function CreateFlyBirdSprite(): number {
+  const rt = getRuntime();
+  if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: _flyBirdTileStart, paletteBank: _flyBirdPaletteBank,
+    x: 0xFF, y: 0xB4, shape: 0, size: 2, priority: 1,
+    paletteMode: 0, affineMode: 0, subpriority: 1,
+  });
+  const sprite = rt.gSprites[spriteId];
+  if (!sprite) return MAX_SPRITES;
+  sprite.affineAnimsTableName = 'sAffineAnims_FlyBird';
+  sprite.callback = SpriteCB_FlyBirdLeaveBall;
+  return spriteId;
+}
+
+/** 1:1 `GetFlyBirdAnimCompleted` (field_effect.c:3311). */
+function GetFlyBirdAnimCompleted(spriteId: number): number {
+  const rt = getRuntime();
+  return rt?.gSprites[spriteId]?.data[7] ?? 1;  // sAnimCompleted
+}
+
+/** 1:1 `StartFlyBirdSwoopDown` (field_effect.c:3316). */
+function StartFlyBirdSwoopDown(spriteId: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites[spriteId];
+  if (!sprite) return;
+  sprite.callback = SpriteCB_FlyBirdSwoopDown;
+  sprite.x = 240 / 2;  // DISPLAY_WIDTH / 2
+  sprite.y = 0; sprite.x2 = 0; sprite.y2 = 0;
+  for (let i = 0; i < 8; i++) sprite.data[i] = 0;  // memset data[0..7]
+  sprite.data[6] = MAX_SPRITES;  // sPlayerSpriteId
+}
+
+/** 1:1 `SetFlyBirdPlayerSpriteId` (field_effect.c:3329). */
+function SetFlyBirdPlayerSpriteId(birdSpriteId: number, playerSpriteId: number): void {
+  const rt = getRuntime();
+  const s = rt?.gSprites[birdSpriteId];
+  if (s) s.data[6] = playerSpriteId;  // sPlayerSpriteId
+}
+
+/** 1:1 `SpriteCB_FlyBirdLeaveBall` (field_effect.c:3351). */
+function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): void {
+  if (sprite.data[7] === 0) {  // sAnimCompleted
+    if (sprite.data[0] === 0) {
+      sprite.affineMode = 3;  // ST_OAM_AFFINE_DOUBLE
+      StartSpriteAffineAnim(sprite, 0);
+      sprite.x = 0x76; sprite.y = -0x30;
+      sprite.data[0]++;
+      sprite.data[1] = 0x40;
+      sprite.data[2] = 0x100;
+    }
+    sprite.data[1] += (sprite.data[2] >> 8);
+    sprite.x2 = Cos(sprite.data[1], 0x78);
+    sprite.y2 = Sin(sprite.data[1], 0x78);
+    if (sprite.data[2] < 0x800) sprite.data[2] += 0x60;
+    if (sprite.data[1] > 0x81) {
+      sprite.data[7]++;  // sAnimCompleted
+      sprite.affineMode = 0;
+      FreeOamMatrix(sprite.matrixNum);
+      const v = CalcCenterToCornerVec(0, 2, 0);
+      sprite.centerToCornerVecX = v.centerToCornerVecX;
+      sprite.centerToCornerVecY = v.centerToCornerVecY;
+    }
+  }
+}
+
+/** 1:1 `SpriteCB_FlyBirdSwoopDown` (field_effect.c:3384) — porte le sprite joueur. */
+function SpriteCB_FlyBirdSwoopDown(sprite: DecompSprite, rt: DecompRuntime): void {
+  sprite.x2 = Cos(sprite.data[2], 0x8c);
+  sprite.y2 = Sin(sprite.data[2], 0x48);
+  sprite.data[2] = (sprite.data[2] + 4) & 0xff;
+  if (sprite.data[6] !== MAX_SPRITES) {  // sPlayerSpriteId
+    const sprite1 = rt.gSprites[sprite.data[6]];
+    if (sprite1) {
+      sprite1.coordOffsetEnabled = false;
+      sprite1.x = sprite.x + sprite.x2;
+      sprite1.y = sprite.y + sprite.y2 - 8;
+      sprite1.x2 = 0; sprite1.y2 = 0;
+    }
+  }
+  if (sprite.data[2] >= 0x80) sprite.data[7] = 1;  // sAnimCompleted
+}
+
+/** 1:1 `SpriteCB_FlyBirdReturnToBall` (field_effect.c:3404). */
+function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime): void {
+  if (sprite.data[7] === 0) {
+    if (sprite.data[0] === 0) {
+      sprite.affineMode = 3;
+      StartSpriteAffineAnim(sprite, 1);
+      sprite.x = 0x5e; sprite.y = -0x20;
+      sprite.data[0]++;
+      sprite.data[1] = 0xf0;
+      sprite.data[2] = 0x800;
+      sprite.data[4] = 0x80;
+    }
+    sprite.data[1] += sprite.data[2] >> 8;
+    sprite.data[3] += sprite.data[2] >> 8;
+    sprite.data[1] &= 0xff;
+    sprite.x2 = Cos(sprite.data[1], 0x20);
+    sprite.y2 = Sin(sprite.data[1], 0x78);
+    if (sprite.data[2] > 0x100) sprite.data[2] -= sprite.data[4];
+    if (sprite.data[4] < 0x100) sprite.data[4] += 24;
+    if (sprite.data[2] < 0x100) sprite.data[2] = 0x100;
+    if (sprite.data[3] >= 60) {
+      sprite.data[7]++;
+      sprite.affineMode = 0;
+      FreeOamMatrix(sprite.matrixNum);
+      sprite.invisible = true;
+    }
+  }
+}
+
+/** 1:1 `StartFlyBirdReturnToBall` (field_effect.c:3448). */
+function StartFlyBirdReturnToBall(spriteId: number): void {
+  StartFlyBirdSwoopDown(spriteId);  // même setup, callback écrasé ci-dessous
+  const rt = getRuntime();
+  const s = rt?.gSprites[spriteId];
+  if (s) s.callback = SpriteCB_FlyBirdReturnToBall;
+}
+
+// ─── Task_FlyOut : l'oiseau emporte le joueur (field_effect.c:3182-3298) ────────
+
+/** 1:1 `FlyOutFieldEffect_FieldMovePose` (field_effect.c:3187). */
+function FlyOutFieldEffect_FieldMovePose(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    task.data[15] = gPlayerAvatar.flags;  // tAvatarFlags
+    gPlayerAvatar.preventStep = true;
+    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
+    SetPlayerAvatarFieldMove();
+    ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+    task.data[0]++;
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_ShowMon` (field_effect.c:3201). */
+function FlyOutFieldEffect_ShowMon(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    task.data[0]++;
+    gFieldEffectArguments[0] = task.data[1];  // tMonId
+    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_BirdLeaveBall` (field_effect.c:3212). */
+function FlyOutFieldEffect_BirdLeaveBall(task: DecompTask): void {
+  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON)) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    if (task.data[15] & PLAYER_AVATAR_FLAG_SURFING) {  // tAvatarFlags
+      SetSurfBlob_BobState(getRuntime(), objectEvent.fieldEffectSpriteId, BOB_JUST_MON);
+      SetSurfBlob_DontSyncAnim(getRuntime(), objectEvent.fieldEffectSpriteId, false);
+    }
+    task.data[1] = CreateFlyBirdSprite();  // tBirdSpriteId (réutilise data[1])
+    task.data[0]++;
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_WaitBirdLeave` (field_effect.c:3227). */
+function FlyOutFieldEffect_WaitBirdLeave(task: DecompTask): void {
+  if (GetFlyBirdAnimCompleted(task.data[1])) {
+    task.data[0]++;
+    task.data[2] = 16;  // tTimer
+    SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);
+    ObjectEventSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], MOVEMENT_ACTION_FACE_LEFT);
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_BirdSwoopDown` (field_effect.c:3238). */
+function FlyOutFieldEffect_BirdSwoopDown(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if ((task.data[2] === 0 || (--task.data[2]) === 0) && ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    task.data[0]++;
+    PlaySE(SE_M_FLY);
+    StartFlyBirdSwoopDown(task.data[1]);
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_JumpOnBird` (field_effect.c:3249). */
+function FlyOutFieldEffect_JumpOnBird(task: DecompTask): void {
+  if ((++task.data[2]) >= 8) {
+    const rt = getRuntime();
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
+    const _pSpr = rt?.gSprites[objectEvent.spriteId];
+    if (_pSpr) StartSpriteAnim(_pSpr as never, ANIM_GET_ON_OFF_POKEMON_WEST);
+    objectEvent.inanimate = true;
+    ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT);
+    if (task.data[15] & PLAYER_AVATAR_FLAG_SURFING) {
+      if (rt) DestroySprite(objectEvent.fieldEffectSpriteId);
+    }
+    task.data[0]++;
+    task.data[2] = 0;
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_FlyOffWithBird` (field_effect.c:3267). */
+function FlyOutFieldEffect_FlyOffWithBird(task: DecompTask): void {
+  if ((++task.data[2]) >= 10) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    ObjectEventClearHeldMovementIfActive(objectEvent);
+    objectEvent.inanimate = false;
+    objectEvent.hasShadow = false;
+    SetFlyBirdPlayerSpriteId(task.data[1], objectEvent.spriteId);
+    CameraObjectFreeze();
+    task.data[0]++;
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_WaitFlyOff` (field_effect.c:3281). */
+function FlyOutFieldEffect_WaitFlyOff(task: DecompTask): void {
+  if (GetFlyBirdAnimCompleted(task.data[1])) {
+    // Adaptation warp-system : WarpFadeOutScreen → FADE_TO_BLACK (cf. fldeff_teleport).
+    FadeScreen(FADE_TO_BLACK, 0);
+    task.data[0]++;
+  }
+}
+
+/** 1:1 `FlyOutFieldEffect_End` (field_effect.c:3290). */
+function FlyOutFieldEffect_End(task: DecompTask): void {
+  if (!gPaletteFade.active) {
+    FieldEffectActiveListRemove(FLDEFF_USE_FLY);
+    DestroyTask(task.taskId);
+  }
+}
+
+const sFlyOutFieldEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  FlyOutFieldEffect_FieldMovePose,
+  FlyOutFieldEffect_ShowMon,
+  FlyOutFieldEffect_BirdLeaveBall,
+  FlyOutFieldEffect_WaitBirdLeave,
+  FlyOutFieldEffect_BirdSwoopDown,
+  FlyOutFieldEffect_JumpOnBird,
+  FlyOutFieldEffect_FlyOffWithBird,
+  FlyOutFieldEffect_WaitFlyOff,
+  FlyOutFieldEffect_End,
+];
+
+/** 1:1 `Task_FlyOut` (field_effect.c:3182). */
+function Task_FlyOut(task: DecompTask): void {
+  sFlyOutFieldEffectFuncs[task.data[0]](task);
+}
+
+/** 1:1 `FldEff_UseFly` (field_effect.c:3163) — dispatché par FLDEFF_USE_FLY. */
+export function FldEff_UseFly(_rt: DecompRuntime): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  const taskId = rt.CreateTask(Task_FlyOut, 254);
+  rt.gTasks[taskId].data[1] = gFieldEffectArguments[0];  // tMonId
+  return 0;
+}
+
+// ─── Task_FlyIn : l'oiseau dépose le joueur à l'arrivée (field_effect.c:3454-3606) ─
+
+/** 1:1 `FlyInFieldEffect_BirdSwoopDown` (field_effect.c:3475). */
+function FlyInFieldEffect_BirdSwoopDown(task: DecompTask): void {
+  const rt = getRuntime();
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    task.data[0]++;
+    task.data[2] = 17;
+    task.data[15] = gPlayerAvatar.flags;
+    gPlayerAvatar.preventStep = true;
+    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
+    if (task.data[15] & PLAYER_AVATAR_FLAG_SURFING) {
+      SetSurfBlob_BobState(getRuntime(), objectEvent.fieldEffectSpriteId, BOB_NONE);
+    }
+    ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
+    CameraObjectFreeze();
+    ObjectEventTurn(objectEvent, DIR_WEST);
+    const _pSpr = rt?.gSprites[objectEvent.spriteId];
+    if (_pSpr) StartSpriteAnim(_pSpr as never, ANIM_GET_ON_OFF_POKEMON_WEST);
+    objectEvent.invisible = false;
+    task.data[1] = CreateFlyBirdSprite();
+    StartFlyBirdSwoopDown(task.data[1]);
+    SetFlyBirdPlayerSpriteId(task.data[1], objectEvent.spriteId);
+  }
+}
+
+/** 1:1 `FlyInFieldEffect_FlyInWithBird` (field_effect.c:3501). */
+function FlyInFieldEffect_FlyInWithBird(task: DecompTask): void {
+  const rt = getRuntime();
+  if (task.data[2] === 0 || (--task.data[2]) === 0) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    const sprite = rt?.gSprites[objectEvent.spriteId];
+    SetFlyBirdPlayerSpriteId(task.data[1], MAX_SPRITES);
+    if (sprite) {
+      sprite.x += sprite.x2;
+      sprite.y += sprite.y2;
+      sprite.x2 = 0; sprite.y2 = 0;
+    }
+    task.data[0]++;
+    task.data[2] = 0;
+  }
+}
+
+const sFlyInJumpYPositions: ReadonlyArray<number> = [
+  -2, -4, -5, -6, -7, -8, -8, -8, -7, -7, -6, -5, -3, -2, 0, 2, 4, 8,
+];
+
+/** 1:1 `FlyInFieldEffect_JumpOffBird` (field_effect.c:3519). */
+function FlyInFieldEffect_JumpOffBird(task: DecompTask): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites[gPlayerAvatar.spriteId];
+  if (sprite) sprite.y2 = sFlyInJumpYPositions[task.data[2]];
+  if ((++task.data[2]) >= sFlyInJumpYPositions.length) task.data[0]++;
+}
+
+/** 1:1 `FlyInFieldEffect_FieldMovePose` (field_effect.c:3548). */
+function FlyInFieldEffect_FieldMovePose(task: DecompTask): void {
+  const rt = getRuntime();
+  if (GetFlyBirdAnimCompleted(task.data[1])) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    const sprite = rt?.gSprites[objectEvent.spriteId];
+    objectEvent.inanimate = false;
+    MoveObjectEventToMapCoords(objectEvent, objectEvent.currentCoordsX, objectEvent.currentCoordsY);
+    if (sprite) {
+      sprite.x2 = 0; sprite.y2 = 0;
+      sprite.coordOffsetEnabled = true;
+    }
+    SetPlayerAvatarFieldMove();
+    ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+    task.data[0]++;
+  }
+}
+
+/** 1:1 `FlyInFieldEffect_BirdReturnToBall` (field_effect.c:3567). */
+function FlyInFieldEffect_BirdReturnToBall(task: DecompTask): void {
+  if (ObjectEventClearHeldMovementIfFinished(gObjectEvents[gPlayerAvatar.objectEventId])) {
+    task.data[0]++;
+    StartFlyBirdReturnToBall(task.data[1]);
+  }
+}
+
+/** 1:1 `FlyInFieldEffect_WaitBirdReturn` (field_effect.c:3576). */
+function FlyInFieldEffect_WaitBirdReturn(task: DecompTask): void {
+  if (GetFlyBirdAnimCompleted(task.data[1])) {
+    DestroySprite(task.data[1]);
+    task.data[0]++;
+    task.data[1] = 16;
+  }
+}
+
+/** 1:1 `FlyInFieldEffect_End` (field_effect.c:3586). */
+function FlyInFieldEffect_End(task: DecompTask): void {
+  if ((--task.data[1]) === 0) {
+    const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+    let state = PLAYER_AVATAR_STATE_NORMAL_FLY;
+    if (task.data[15] & PLAYER_AVATAR_FLAG_SURFING) {
+      state = PLAYER_AVATAR_STATE_SURFING;
+      SetSurfBlob_BobState(getRuntime(), objectEvent.fieldEffectSpriteId, BOB_PLAYER_AND_MON);
+    }
+    ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(state));
+    ObjectEventTurn(objectEvent, DIR_SOUTH);
+    gPlayerAvatar.flags = task.data[15];
+    gPlayerAvatar.preventStep = false;
+    FieldEffectActiveListRemove(FLDEFF_FLY_IN);
+    DestroyTask(task.taskId);
+  }
+}
+
+const sFlyInFieldEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  FlyInFieldEffect_BirdSwoopDown,
+  FlyInFieldEffect_FlyInWithBird,
+  FlyInFieldEffect_JumpOffBird,
+  FlyInFieldEffect_FieldMovePose,
+  FlyInFieldEffect_BirdReturnToBall,
+  FlyInFieldEffect_WaitBirdReturn,
+  FlyInFieldEffect_End,
+];
+
+/** 1:1 `Task_FlyIn` (field_effect.c:3470). */
+function Task_FlyIn(task: DecompTask): void {
+  sFlyInFieldEffectFuncs[task.data[0]](task);
+}
+
+/** 1:1 `FldEff_FlyIn` (field_effect.c:3454) — dispatché par FLDEFF_FLY_IN. */
+export function FldEff_FlyIn(_rt: DecompRuntime): number {
+  const rt = getRuntime();
+  if (rt) rt.CreateTask(Task_FlyIn, 254);
+  return 0;
+}
+
+/** 1:1 `SpriteCB_NPCFlyOut` (field_effect.c:3131). */
+function SpriteCB_NPCFlyOut(sprite: DecompSprite, rt: DecompRuntime): void {
+  sprite.x2 = Cos(sprite.data[2], 0x8c);
+  sprite.y2 = Sin(sprite.data[2], 0x48);
+  sprite.data[2] = (sprite.data[2] + 4) & 0xff;
+  if (sprite.data[0]) {
+    const npcSprite = rt.gSprites[sprite.data[1]];
+    if (npcSprite) {
+      npcSprite.coordOffsetEnabled = false;
+      npcSprite.x = sprite.x + sprite.x2;
+      npcSprite.y = sprite.y + sprite.y2 - 8;
+      npcSprite.x2 = 0; npcSprite.y2 = 0;
+    }
+  }
+  if (sprite.data[2] >= 0x80) FieldEffectStop(rt, sprite, FLDEFF_NPCFLY_OUT);
+}
+
+/** 1:1 `FldEff_NPCFlyOut` (field_effect.c:3118) — dispatché par FLDEFF_NPCFLY_OUT. */
+export function FldEff_NPCFlyOut(_rt: DecompRuntime): number {
+  const rt = getRuntime();
+  if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: _flyBirdTileStart, paletteBank: _flyBirdPaletteBank,
+    x: 0x78, y: 0, shape: 0, size: 2, priority: 1,
+    paletteMode: 0, affineMode: 0, subpriority: 1,
+  });
+  const sprite = rt.gSprites[spriteId];
+  if (!sprite) return MAX_SPRITES;
+  sprite.callback = SpriteCB_NPCFlyOut;
+  sprite.data[1] = gFieldEffectArguments[0];
+  PlaySE(SE_M_FLY);
+  return spriteId;
+}
+
+/** Exposé pour Task_UseFly (orchestration warp dans fly-field-move.ts) : lance le
+ *  fly-out (bird carries player) puis, quand FLDEFF_USE_FLY quitte la liste active,
+ *  déclenche le warp posé (globalThis.__flyDoWarp). ≈ décomp `Task_UseFly`
+ *  (field_effect.c:1354) sans la partie CB2_LoadMap (adaptée au warp-system). */
+export function StartFlyOutThenWarp(monSlot: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  LockPlayerFieldControls();
+  // Décomp : FreezeObjectEvents() (gèle NPCs pendant l'envol). Adaptation : chez nous
+  // ce freeze gèle AUSSI le joueur (sprite callback → dummy) → son held movement du
+  // fly-out (states 0-1 : field-move pose / face-left) ne tique plus = Task_FlyOut bloqué.
+  // On gèle donc SAUF le joueur — le fly-out le pilote lui-même. Net-effect identique.
+  FreezeObjectEventsExceptOne(gPlayerAvatar.objectEventId);
+  gFieldEffectArguments[0] = monSlot;
+  FieldEffectStart(FLDEFF_USE_FLY);
+  const poll = () => {
+    if (!FieldEffectActiveListContains(FLDEFF_USE_FLY)) {
+      const doWarp = (globalThis as Record<string, unknown>).__flyDoWarp as (() => void) | undefined;
+      doWarp?.();
+      return;
+    }
+    requestAnimationFrame(poll);
+  };
+  requestAnimationFrame(poll);
+}
+
+// Pont dev (sonde état held-movement du joueur — diag anim envol).
+(globalThis as Record<string, unknown>).__playerOE = () => {
+  const oe = gObjectEvents[gPlayerAvatar.objectEventId] as unknown as Record<string, unknown>;
+  const rt = getRuntime();
+  const s = rt && gPlayerAvatar.spriteId >= 0 ? rt.gSprites[gPlayerAvatar.spriteId] as unknown as Record<string, unknown> : null;
+  const anims = s && s.anims as unknown[] | undefined;
+  return oe ? {
+    heldActive: oe.heldMovementActive, heldFinished: oe.heldMovementFinished, mAction: oe.movementActionId,
+    graphicsId: oe.graphicsId, frozen: oe.frozen, inanimate: oe.inanimate,
+    sprite: s ? { animNum: s.animNum, animEnded: s.animEnded, animPaused: s.animPaused, animsLen: anims ? anims.length : '?', curAnimLen: anims && anims[s.animNum as number] ? (anims[s.animNum as number] as unknown[]).length : '?' } : null,
+  } : null;
+};
+
+// Pont dev (test en jeu de l'anim d'envol sans passer par la carte région ni warper).
+(globalThis as Record<string, unknown>).__flyTest = (monSlot = 0): void => {
+  void preloadFlyBirdEffect().then(() => {
+    (globalThis as Record<string, unknown>).__flyDoWarp = () => console.log('[flyTest] anim finie (pas de warp en test)');
+    StartFlyOutThenWarp(monSlot);
+  });
+};
