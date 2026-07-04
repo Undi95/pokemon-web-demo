@@ -554,6 +554,8 @@ function buildDom(): void {
       <button data-spd="1">1×</button>
       <button data-spd="2">2×</button>
       <button data-spd="4">4×</button>
+      <button data-fc="film" title="Capture : mosaïque 1 frame/15 pendant 2 s (dev.gfx.film)">🎬 2s</button>
+      <button data-fc="filmclear" title="Retirer la mosaïque">🎬✕</button>
     </div>
     <div class="dvt-body">
       <details open><summary>🗺 Téléport <span class="dvt-dim">(devant les PC)</span></summary>
@@ -645,6 +647,15 @@ function wireControls(): void {
   });
   document.querySelector('[data-fc="step1"]')?.addEventListener('click', () => step(1));
   document.querySelector('[data-fc="step8"]')?.addEventListener('click', () => step(8));
+  // 🎬 Capture (demande user 2026-07-04) : mode précis 1 capture / 15 frames pendant 2 s.
+  document.querySelector('[data-fc="film"]')?.addEventListener('click', () => {
+    const dev = (globalThis as Record<string, unknown>).dev as { gfx?: { film?: (o: object) => void } } | undefined;
+    dev?.gfx?.film?.({ every: 15, seconds: 2 });
+  });
+  document.querySelector('[data-fc="filmclear"]')?.addEventListener('click', () => {
+    const dev = (globalThis as Record<string, unknown>).dev as { gfx?: { filmClear?: () => void } } | undefined;
+    dev?.gfx?.filmClear?.();
+  });
   document.querySelectorAll('[data-spd]').forEach((b) => {
     b.addEventListener('click', () => {
       const r = rt(); if (!r) return;
