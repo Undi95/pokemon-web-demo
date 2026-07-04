@@ -566,10 +566,12 @@ function buildItems(): MenuItem[] {
   return items;
 }
 
-/** 1:1 décomp `StartMenu_Pokenav` (start_menu.c) — dette R3 doc : cascade
- *  PokeNav UI subsystem entier U-tier. Show transient message en fallback. */
+/** 1:1 décomp `StartMenu_Pokenav` (start_menu.c) → CB2_InitPokeNav.
+ *  SQUELETTE UI (pokenav.ts) : le menu s'ouvre, entrées affichées, B = retour ;
+ *  subscreens à porter (docs/REPRISE-OPUS-48.md §7.5). */
 function pokenavAction(): boolean {
-  return showMessageThenReturn('Le POKéNAV n\'est pas\nencore disponible.');
+  void import('./pokenav').then((m) => m.StartMenu_OpenPokenav());
+  return true;
 }
 
 /** Spawn la window principale du start menu et la draw avec items + cursor.
