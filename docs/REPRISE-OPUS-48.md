@@ -67,6 +67,14 @@
 Dresseurs A→Z sains (intro/switch-in ennemi/INTIMIDATION/argent exact/OW) · IA objets complète (« GUERISON est utilisé(e) par… ») · sprite fantôme soldé (reshow check HP==0) · annonce mon entrant · cris d'anims + flammes brûlure + bulles + gaz poison · lose text rival · shake healthbox · level-up box refresh · transitions : 7 portées (SLICE/WHITE_BARS/POKEBALLS_TRAIL(balls ROUGES)/ANGLED_WIPES/BLUR/SWIRL/SHUFFLE), le dispatcher log en console la transition demandée non portée (fallback SLICE).
 
 ## 7. RESTE (ordre user, mandat final — cocher dans chantier-combat-100pct.md)
+
+> **MAJ run autonome Opus 4.8 (2026-07-04) — vérifié EN JEU (sondes/film), plusieurs « restes » ci-dessous sont PÉRIMÉS :**
+> - ✅ **CS/moves OW SAINS** : VOL affine réparé (`f9aa988c`). FLDEFF_FIELD_MOVE_SHOW_MON marche (fond noir+rayures défilantes = **design 1:1**, PAS un bug — assets préchargés au boot via `harness/scenes/TestOverworldScene.ts`, cf. [[showmon-banner-is-1to1]]). Les CS (Surf/Cut/Fly/...) montrent le mon+cri (Surf vérifié : ARCKO glisse + surf blob).
+> - ✅ **Combat sauvage A→Z SAIN** : menu→attaque(ÉCRAS'FACE)→dégâts→K.O.→EXP→retour OW, vérifié.
+> - ✅ **Mail écriture PORTÉ** (point 7) : Easy Chat fonctionnel — écran principal + sélecteur de groupes de mots (`CB2_EasyChatScreen`, ouvre via `__byteVm.openEasyChat`).
+> - ✅ **Anims combat** (point 8) : oracle `audit-anim-callbacks` = FAUX POSITIFS (SwapMonSprite/healthbox-flash/Substitute portés+enregistrés). Vrais trous marginaux seulement : AnimBounceBallLand (Rebond), SpriteCB_PokeBlock_Throw (concours).
+> - 🔴 **VRAI RESTE #1 = POKÉNAV** (point 5) : squelette CONFIRMÉ — le menu s'affiche (CARTE DE HOENN/CONDITION/MATCH CALL/RUBANS/ÉTEINDRE) mais fond NOIR (pas de décor bg) + options NON câblées (press A = no-op). LE prochain gros chantier.
+
 5. **Pokénav UI squelette** (pokenav.c : CB2_InitPokenav/menu handler — structure seule, contenu après).
 6. **CS/moves OW** (AUDIT FAIT 2026-07-04) : `FldEff_FieldMoveShowMon` PORTÉ+câblé (field_effect.ts:271) — le mugshot manque À L'USAGE → vérifier que les chaînes de CS (Coupe/Surf/Flash) déclenchent FLDEFF_FIELD_MOVE_SHOW_MON. **VOL : Task_UseFly / FieldCallback_UseFly / Task_FlyIntoMap / FldEff_NPCFlyOut = ✗** (aucune anim d'envol/atterrissage). field_effect.c = 149 ✗ au callgraph (l'interpréteur FieldEffectScript_* est inliné chez nous = faux positifs, trier).
 7. **SAC/OBJETS** (AUDIT FAIT) : item_use.c ✗ apparents (DisplayCannotUseItemMessage/DadsAdvice/Bike CB) = vérifier les foyers réels AVANT de porter (le vélo marche). Restes RÉELS (topic chantier-sac-objets-complet) : mail ÉCRITURE (DoEasyChatScreen), PokéblockCase, Berry plant/Wailmer, ÉTIQUETTES/DESCRIPTIONS BAIES, message item-combat joueur.
