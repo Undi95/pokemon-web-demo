@@ -33,6 +33,7 @@ import {
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized } from './text';
+import { gSpeciesNames } from './engine/data/game-data';
 import { LoadUserWindowBorderGfx } from './text_window';
 import { SE_PC_LOGIN } from '../include/constants/songs';
 import {
@@ -1775,8 +1776,7 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
     s.displayMonGenderLvlText = '';
     s.displayMonItemName = '';
   } else {
-    const speciesEnum = reverseDecompConstant(s.displayMonSpecies, 'SPECIES_') ?? '';
-    const speciesName = speciesEnum.replace(/^SPECIES_/, '');
+    const speciesName = gSpeciesNames[s.displayMonSpecies] ?? '----------';  // noms FR (game-data)
     s.displayMonNameText = s.displayMonName || speciesName;
     s.displayMonSpeciesName = '/' + speciesName;
     // :6947-6975 codes couleur ♂ rouge / ♀ vert (EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW) : au lot texte.
