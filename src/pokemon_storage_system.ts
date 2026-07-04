@@ -20,6 +20,19 @@ import {
 import { CopyMon, ZeroMonData } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
+// ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
+import { getRuntime, gMain } from '../harness/runtime/decomp-globals';
+import { AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram } from './window';
+import {
+  DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
+  Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
+  ClearStdWindowAndFrame, AddTextPrinterParameterized2,
+} from './menu';
+import type { MenuAction } from './menu';
+import { GetMaxWidthInMenuTable } from './international_string_util';
+import { CleanupOverworldWindowsAndTilemaps } from './overworld';
+import { CalculatePlayerPartyCount } from './pokemon';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 
 /** 1:1 décomp `CheckFreePokemonStorageSpace(void)` (pokemon_storage_system.c:9572) :
  *    for (i = 0; i < TOTAL_BOXES_COUNT; i++)
@@ -158,6 +171,146 @@ export function CountPartyAliveNonEggMonsExcept(slotToIgnore: number): number {
 export function CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(): number {
   return CountPartyAliveNonEggMonsExcept(VarGet(0x8004) /* gSpecialVar_0x8004 */);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PC MAIN MENU (pokemon_storage_system.c:1524-1696) — PHASE 1 : le menu
+// RETIRER / DÉPOSER / DÉPLACER / RANGER OBJETS / AU REVOIR obtenu en accédant au PC
+// (script « PC POKéMON »). L'écran des boîtes (EnterPokeStorage) = phase 2 (stub).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// 1:1 enum options (pokemon_storage_system.c:54-60)
+const OPTION_WITHDRAW = 0, OPTION_DEPOSIT = 1, OPTION_EXIT = 4, OPTIONS_COUNT = 5;
+// 1:1 enum états (:1524)
+const STATE_LOAD = 0, STATE_FADE_IN = 1, STATE_HANDLE_INPUT = 2, STATE_ERROR_MSG = 3;
+// Menu_ProcessInput sentinelles (menu.ts) + touches GBA (io_reg) + text/window (text.ts)
+const MENU_NOTHING_CHOSEN = -2, MENU_B_PRESSED = -1;
+const DPAD_UP = 0x0040, DPAD_DOWN = 0x0080, A_BUTTON = 0x0001, B_BUTTON = 0x0002;
+const FONT_NORMAL = 1, TEXT_COLOR_DARK_GRAY = 2, TEXT_COLOR_WHITE = 1, TEXT_COLOR_LIGHT_GRAY = 3;
+const COPYWIN_FULL = 3, TEXT_SKIP_DRAW = 0xFF, PIXEL_FILL_1 = 0x11;
+
+/** 1:1 `sMainMenuTexts` (:882) — {text=libellé menu, desc=description}. Libellés FR ≈ gText_*
+ *  du décomp (à câbler sur les vraies strings gba au raffinement). */
+const sMainMenuTexts: ReadonlyArray<{ text: string; desc: string }> = [
+  { text: 'RETIRER POKéMON', desc: 'Récupère des POKéMON gardés dans le PC.' },      // OPTION_WITHDRAW
+  { text: 'DÉPOSER POKéMON', desc: "Range des POKéMON de l'équipe dans le PC." },     // OPTION_DEPOSIT
+  { text: 'DÉPLACER POKéMON', desc: 'Réorganise les POKéMON du PC.' },                // OPTION_MOVE_MONS
+  { text: 'RANGER OBJETS', desc: 'Déplace les objets tenus par les POKéMON du PC.' }, // OPTION_MOVE_ITEMS
+  { text: 'AU REVOIR', desc: "Ferme l'accès au PC." },                               // OPTION_EXIT
+];
+// 1:1 `sWindowTemplate_MainMenu` (:891)
+const sWindowTemplate_MainMenu = { bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 17, height: 10, paletteNum: 15, baseBlock: 0x1 };
+
+// task data (:1532) : tState=data[0] tSelectedOption=data[1] tInput=data[2] tNextOption=data[3] tWindowId=data[15]
+
+function _mainMenuActions(): MenuAction[] {
+  return sMainMenuTexts.map((t) => ({ text: t.text, func: () => {} } as unknown as MenuAction));
+}
+
+function _printDesc(option: number, skipDraw: number): void {
+  FillWindowPixelBuffer(0, PIXEL_FILL_1);
+  AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[option].desc, skipDraw, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+}
+
+/** 1:1 `CreateMainMenu` (pokemon_storage_system.c:1678). */
+function CreateMainMenu(whichMenu: number): number {
+  const template = { ...sWindowTemplate_MainMenu };
+  template.width = GetMaxWidthInMenuTable(_mainMenuActions(), OPTIONS_COUNT);
+  const windowId = AddWindow(template as never);
+  DrawStdWindowFrame(windowId, false);
+  PrintMenuTable(windowId, OPTIONS_COUNT, _mainMenuActions());
+  InitMenuInUpperLeftCornerNormal(windowId, OPTIONS_COUNT, whichMenu);
+  return windowId;
+}
+
+/** 1:1 `Task_PCMainMenu` (pokemon_storage_system.c:1538). */
+function Task_PCMainMenu(taskId: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const task = rt.gTasks[taskId];
+  switch (task.data[0] /* tState */) {
+    case STATE_LOAD:
+      task.data[15] = CreateMainMenu(task.data[1]);  // tWindowId ← tSelectedOption
+      LoadMessageBoxAndBorderGfx();
+      DrawDialogueFrame(0, false);
+      _printDesc(task.data[1], TEXT_SKIP_DRAW);
+      CopyWindowToVram(0, COPYWIN_FULL);
+      CopyWindowToVram(task.data[15], COPYWIN_FULL);
+      task.data[0]++;
+      break;
+    case STATE_FADE_IN:
+      // 1:1 IsWeatherNotFadingIn() — hors OW, pas de fondu météo → on avance (net-effect).
+      task.data[0]++;
+      break;
+    case STATE_HANDLE_INPUT: {
+      task.data[2] = Menu_ProcessInput();  // tInput
+      const input = task.data[2];
+      if (input === MENU_NOTHING_CHOSEN) {
+        task.data[3] = task.data[1];  // tNextOption ← tSelectedOption
+        if ((gMain.newKeys & DPAD_UP) && --task.data[3] < 0) task.data[3] = OPTIONS_COUNT - 1;
+        if ((gMain.newKeys & DPAD_DOWN) && ++task.data[3] > OPTIONS_COUNT - 1) task.data[3] = 0;
+        if (task.data[1] !== task.data[3]) {
+          task.data[1] = task.data[3];
+          _printDesc(task.data[1], 0);
+        }
+      } else if (input === MENU_B_PRESSED || input === OPTION_EXIT) {
+        ClearStdWindowAndFrame(task.data[15], true);
+        UnlockPlayerFieldControls();
+        RemoveWindow(task.data[15]);
+        rt.DestroyTask(taskId);
+      } else if (input === OPTION_WITHDRAW && CalculatePlayerPartyCount() === PARTY_SIZE) {
+        FillWindowPixelBuffer(0, PIXEL_FILL_1);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, 'Ton équipe est pleine !', 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        task.data[0] = STATE_ERROR_MSG;
+      } else if (input === OPTION_DEPOSIT && CalculatePlayerPartyCount() === 1) {
+        FillWindowPixelBuffer(0, PIXEL_FILL_1);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, "Il n'y a qu'un POKéMON !", 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        task.data[0] = STATE_ERROR_MSG;
+      } else {
+        // Enter PC — phase 2 (écran boîtes) = stub : on referme proprement pour l'instant.
+        EnterPokeStorage(input);
+        ClearStdWindowAndFrame(task.data[15], true);
+        UnlockPlayerFieldControls();
+        RemoveWindow(task.data[15]);
+        rt.DestroyTask(taskId);
+      }
+      break;
+    }
+    case STATE_ERROR_MSG:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON)) {
+        _printDesc(task.data[1], 0);
+        task.data[0] = STATE_HANDLE_INPUT;
+      } else if (gMain.newKeys & DPAD_UP) {
+        if (--task.data[1] < 0) task.data[1] = OPTIONS_COUNT - 1;
+        Menu_MoveCursor(-1);
+        task.data[1] = Menu_GetCursorPos();
+        _printDesc(task.data[1], 0);
+        task.data[0] = STATE_HANDLE_INPUT;
+      } else if (gMain.newKeys & DPAD_DOWN) {
+        if (++task.data[1] >= OPTIONS_COUNT - 1) task.data[1] = 0;
+        Menu_MoveCursor(1);
+        task.data[1] = Menu_GetCursorPos();
+        _printDesc(task.data[1], 0);
+        task.data[0] = STATE_HANDLE_INPUT;
+      }
+      break;
+  }
+}
+
+/** 1:1 `ShowPokemonStorageSystemPC` (pokemon_storage_system.c:1650) — point d'entrée du PC. */
+export function ShowPokemonStorageSystemPC(): void {
+  const rt = getRuntime(); if (!rt) return;
+  const taskId = rt.CreateTask((t) => Task_PCMainMenu(t.taskId), 80);
+  rt.gTasks[taskId].data[0] = 0;  // tState
+  rt.gTasks[taskId].data[1] = 0;  // tSelectedOption
+  LockPlayerFieldControls();
+}
+
+/** STUB phase 2 : l'écran des boîtes (EnterPokeStorage/CB2_EnterPokeStorage :1998) — à porter. */
+function EnterPokeStorage(_boxOption: number): void {
+  console.log('[PC] EnterPokeStorage (écran boîtes) — phase 2 non encore portée');
+}
+
+// Pont dev/déclencheur : ouvrir le menu PC (le script « PC POKéMON » l'appellera au câblage).
+(globalThis as Record<string, unknown>).__ShowPokemonStorageSystemPC = ShowPokemonStorageSystemPC;
 
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__CheckFreePokemonStorageSpace = CheckFreePokemonStorageSpace;
