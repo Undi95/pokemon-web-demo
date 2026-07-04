@@ -927,3 +927,73 @@ export function stopBattleTransitionSwirl(): void {
 Object.assign((globalThis as Record<string, unknown>).__battleTransitionMirror as Record<string, unknown>, {
   startBattleTransitionSwirl, tickBattleTransitionSwirl, stopBattleTransitionSwirl,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHUFFLE (2026-07-04, append-only) — B_TRANSITION_SHUFFLE (battle_transition.c
+// Shuffle_Init/Shuffle_End) : LA transition sauvage GROTTE (sBattleTransition
+// Table_Wild cave). Les lignes se secouent VERTICALEMENT (VOFS sinusoïdal par
+// scanline, sinVal+=4224/ligne, amplitude+=384/frame Q8.8) pendant le fade noir.
+// ════════════════════════════════════════════════════════════════════════════
+interface ShuffleState { sinVal: number; amplitude: number; blend: number; blendTimer: number; lastFrame: number }
+let _shuffle: ShuffleState | null = null;
+
+/** 1:1 `Shuffle_Init` : fade noir delay 4 + buffers[1] ← cameraY(0) + HBlank VOFS. */
+export function startBattleTransitionShuffle(): void {
+  ScanlineEffect_Clear();
+  _shuffle = { sinVal: 0, amplitude: 0, blend: 0, blendTimer: 0, lastFrame: -1 };
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = 0;
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      const v = gScanlineEffectRegBuffers[1][y];
+      rt.gba.bg(1).config.vofs = v;
+      rt.gba.bg(2).config.vofs = v;
+      rt.gba.bg(3).config.vofs = v;
+    }
+  });
+}
+
+/** 1:1 `Shuffle_End` : sinVal += 4224 (frame ET par ligne), amplitude += 384 (Q8.8). */
+export function tickBattleTransitionShuffle(): boolean {
+  if (!_shuffle) return true;
+  const s = _shuffle;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === s.lastFrame) return false;
+  s.lastFrame = fc;
+  let sinVal = s.sinVal & 0xFFFF;
+  const amplitude = (s.amplitude >> 8) & 0xFFFF;
+  s.sinVal = (s.sinVal + 4224) & 0xFFFF;
+  s.amplitude += 384;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++, sinVal = (sinVal + 4224) & 0xFFFF) {
+    const sinIndex = (sinVal / 256) | 0;
+    gScanlineEffectRegBuffers[0][i] = _swSin(sinIndex & 0xFF, amplitude);
+  }
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  if (++s.blendTimer >= 5) {
+    s.blendTimer = 0;
+    s.blend++;
+    BlendPalettes(PALETTES_ALL, Math.min(s.blend, 16), 0x0000);
+  }
+  if (s.blend >= 16) {
+    stopBattleTransitionShuffle();
+    return true;
+  }
+  return false;
+}
+
+export function stopBattleTransitionShuffle(): void {
+  _shuffle = null;
+  const rt = getRuntime();
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.bg(1).config.vofs = 0;
+    rt.gba.bg(2).config.vofs = 0;
+    rt.gba.bg(3).config.vofs = 0;
+  }
+  ScanlineEffect_Stop();
+}
+
+Object.assign((globalThis as Record<string, unknown>).__battleTransitionMirror as Record<string, unknown>, {
+  startBattleTransitionShuffle, tickBattleTransitionShuffle, stopBattleTransitionShuffle,
+});
