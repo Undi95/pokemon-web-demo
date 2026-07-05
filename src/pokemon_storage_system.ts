@@ -547,11 +547,12 @@ interface StorageAssets {
 let sStorageAssets: StorageAssets | null = null;
 let _storageAssetsLoading: Promise<void> | null = null;
 
-/** Tiles 4bpp d'un PNG du décomp : PLTE (indexé) via loadIndexedPngStrict, sinon GRAYSCALE.
- *  🩸 gbagfx INVERSE les couleurs des PNG SANS palette (convert_png.c:95 hasPalette=false →
- *  gfx.c:167-170 `index = 15 - gray`). Donc scrolling_bg/arrow/box_popup (colorType 0) : le gris
- *  5/6/7 devient index 10/9/8 (les couleurs pâles). Reproduit ici : index = 15 - (R>>4). */
-async function _loadTiles4bpp(url: string): Promise<Uint8Array> {
+/** Tiles 4bpp d'un PNG du décomp : PLTE (indexé) via loadIndexedPngStrict, sinon GRAYSCALE via canvas.
+ *  🩸 gbagfx INVERSE les index des PNG SANS palette (convert_png.c:95 hasPalette=false → gfx.c:167-170
+ *  `index = 15 - gray`). Nos PNG public/ diffèrent selon l'extraction : arrow/box_popup sont déjà dans
+ *  l'ordre final (R>>4 direct OK) ; scrolling_bg garde les valeurs grises brutes (5/6/7) → `invert=true`
+ *  reproduit le 15-gray → index 10/9/8 = les couleurs PASTEL (rose/bleu pâle selon la palette). */
+async function _loadTiles4bpp(url: string, invert = false): Promise<Uint8Array> {
   try {
     return (await loadIndexedPngStrict(url, 4)).charData;
   } catch {
@@ -572,7 +573,8 @@ async function _loadTiles4bpp(url: string): Promise<Uint8Array> {
     for (let ty = 0; ty < hT; ty++) for (let tx = 0; tx < wT; tx++)
       for (let py = 0; py < 8; py++) for (let px = 0; px < 8; px += 2) {
         const i0 = ((ty * 8 + py) * canvas.width + tx * 8 + px) * 4;
-        const lo = 15 - (data[i0] >> 4), hi = 15 - (data[i0 + 4] >> 4);  // inversion gbagfx grayscale
+        const l0 = data[i0] >> 4, h0 = data[i0 + 4] >> 4;
+        const lo = invert ? 15 - l0 : l0, hi = invert ? 15 - h0 : h0;  // invert = inversion gbagfx grayscale
         out[o++] = lo | (hi << 4);
       }
     return out;
@@ -590,7 +592,7 @@ function LoadStorageAssets(): void {
       loadTilemapBin(`${base}/display_menu.bin`), loadGbaPal(`${base}/display_menu.pal`),
       loadTilemapBin(`${base}/pkmn_data.bin`), loadGbaPal(`${base}/interface.pal`),
       loadGbaPal(`${base}/pkmn_data_gray.pal`),
-      _loadTiles4bpp(`${base}/scrolling_bg.png`), loadTilemapBin(`${base}/scrolling_bg.bin`),
+      _loadTiles4bpp(`${base}/scrolling_bg.png`, true), loadTilemapBin(`${base}/scrolling_bg.bin`),
       loadGbaPal(`${base}/scrolling_bg.pal`), loadGbaPal(`${base}/scrolling_bg_move_items.pal`),
       loadTilemapBin(`${base}/close_box_button.bin`),
       loadTilemapBin(`${base}/party_slot_filled.bin`), loadTilemapBin(`${base}/party_slot_empty.bin`),
