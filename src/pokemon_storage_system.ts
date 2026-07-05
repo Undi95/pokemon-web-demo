@@ -2104,7 +2104,15 @@ function DrawWallpaper(tilemap: Uint16Array, direction: number, offset: number):
   }
   if (direction === 0) return;
   if (direction > 0) x += 20; else x -= 4;
-  FillBgTilemapBufferRect(2, 0, x, 2, 4, 0x12, 17);
+  // Gap de 4×18 tiles (:5439) — X DOIT wrapper & 0x3F (BG2 512-wide), comme la partie principale.
+  // Sans le wrap, x dépassait 63 (x+20) / passait sous 0 (x-4) → FillBgTilemapBufferRect écrivait le
+  // gap dans le MAUVAIS screenblock → trous accumulés (bande fragmentée pendant le slide). tile 0 = fond.
+  for (let gy = 0; gy < 18; gy++) {
+    for (let gx = 0; gx < 4; gx++) {
+      const gi = tileMapIndex((x + gx) & 0x3F, 2 + gy, screenSize);
+      if (gi >= 0 && gi < dest.length) dest[gi] = 0;
+    }
+  }
 }
 // ─── :5441 TrimOldWallpaper — efface la colonne de l'ancien wallpaper (scroll). ───
 function TrimOldWallpaper(): void {
