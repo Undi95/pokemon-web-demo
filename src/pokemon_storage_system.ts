@@ -2110,14 +2110,16 @@ function DrawWallpaper(tilemap: Uint16Array, direction: number, offset: number):
 function TrimOldWallpaper(): void {
   const s = sStorage!;
   const dest = GetBgTilemapBuffer(2);
-  const screenSize = getRuntime()?.gba.bg(2).config.screenSize ?? 1;  // screenblock-major (cf. DrawWallpaper)
+  // 1:1 (:5441) — parcours pointeur LINÉAIRE du buffer BG2 (screenblock-major, cf. DrawWallpaper)
+  // avec sauts de bloc, PAS (col,row). L'ancienne « approximation » effaçait en diagonale → gap beige.
   let r3 = (Math.floor(s.bg2_X / 8) + 30) & 0x3F;
+  let di = r3 <= 31 ? r3 + 0x260 : r3 + 0x640;
   for (let i = 0; i < 0x2C; i++) {
-    const col = r3 & 0x3F;
-    const row = 2 + (i % 22);  // approximation structurée du parcours 0x260/0x640 (colonnes×22 lignes)
-    const di = tileMapIndex(col, row, screenSize);
     if (di >= 0 && di < dest.length) dest[di] = 0;
+    di++;
     r3 = (r3 + 1) & 0x3F;
+    if (r3 === 0) di -= 0x420;
+    if (r3 === 0x20) di += 0x3e0;
   }
 }
 
