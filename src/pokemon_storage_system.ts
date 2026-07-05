@@ -2096,6 +2096,226 @@ function MultiMove_Init(): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION — Déplacer un Pokémon (grab/place/shift intra-boîte, sans party menu)
+// Pokémon data (:6304-6398) + sprites moving mon (:4866-5088) + MonPlaceChange (:6133-6292)
+// + Task_MoveMon/PlaceMon/ShiftMon (:2737-2793). Déplacement de RÉFÉRENCE (notre boxes[][] = objets).
+// ═══════════════════════════════════════════════════════════════════════════
+const MODE_PARTY_MOVE = MODE_PARTY;  // alias lisibilité (MoveMon utilise TOTAL_BOXES_COUNT comme sentinelle party)
+
+// :4422 GetMonIconPriorityByCursorPos ───
+function GetMonIconPriorityByCursorPos(): number { return IsCursorInBox() ? 2 : 1; }
+
+// :4925 SetMovingMonSprite — transforme l'icône du slot en « icône tenue » (suit le curseur). ───
+function SetMovingMonSprite(mode: number, id: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  if (mode === MODE_PARTY) { s.movingMonSprite = s.partySprites[id]; s.partySprites[id] = -1; }
+  else if (mode === MODE_BOX) { s.movingMonSprite = s.boxMonsSprites[id]; s.boxMonsSprites[id] = -1; }
+  else return;
+  const spr = _spr(s.movingMonSprite);
+  if (spr && rt) {
+    spr.callback = SpriteCB_HeldMon;
+    rt.gba.oam[spr.oamIndex].priority = GetMonIconPriorityByCursorPos();
+    spr.subpriority = _sub(7);
+  }
+}
+
+// :4947 SetPlacedMonSprite — repose l'icône tenue dans un slot. ───
+function SetPlacedMonSprite(boxId: number, position: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  if (boxId === TOTAL_BOXES_COUNT) {
+    s.partySprites[position] = s.movingMonSprite;
+    const spr = _spr(s.movingMonSprite);
+    if (spr && rt) { rt.gba.oam[spr.oamIndex].priority = 1; spr.subpriority = _sub(12); }
+  } else {
+    s.boxMonsSprites[position] = s.movingMonSprite;
+    const spr = _spr(s.movingMonSprite);
+    if (spr && rt) { rt.gba.oam[spr.oamIndex].priority = 2; spr.subpriority = _sub(19 - (position % IN_BOX_COLUMNS)); }
+  }
+  const spr = _spr(s.movingMonSprite);
+  if (spr) spr.callback = null;  // SpriteCallbackDummy
+  s.movingMonSprite = -1;
+}
+
+// :5084 SpriteCB_HeldMon — l'icône tenue colle au curseur. ───
+function SpriteCB_HeldMon(sprite: { x: number; y: number }): void {
+  const cursor = _spr(sStorage!.cursorSprite);
+  if (cursor) { sprite.x = cursor.x; sprite.y = cursor.y + cursor.y2 + 4; }
+}
+
+// :4866 DestroyMovingMonIcon ───
+function DestroyMovingMonIcon(): void {
+  const s = sStorage!;
+  if (s.movingMonSprite >= 0) { DestroySprite(s.movingMonSprite); s.movingMonSprite = -1; }
+}
+// :4427 CreateMovingMonIcon (reprise avec mon en main). ───
+function CreateMovingMonIcon(): void {
+  const s = sStorage!;
+  const mon = s.movingMon; if (!mon) return;
+  const priority = GetMonIconPriorityByCursorPos();
+  s.movingMonSprite = CreateMonIconSprite(mon.species ?? 0, mon.personality ?? 0, 0, 0, priority, _sub(7));
+  const spr = _spr(s.movingMonSprite);
+  if (spr) spr.callback = SpriteCB_HeldMon;
+}
+
+// :6353 SetMovingMonData / :6365 SetPlacedMonData / :6378 PurgeMonOrBoxMon — déplacement de RÉFÉRENCE.
+function SetMovingMonData(boxId: number, position: number): void {
+  const s = sStorage!;
+  if (boxId === TOTAL_BOXES_COUNT) s.movingMon = gPlayerParty[sCursorPosition] as Pokemon;
+  else s.movingMon = _boxMonAt(boxId, position);
+  PurgeMonOrBoxMon(boxId, position);
+  sMovingMonOrigBoxId = boxId;
+  sMovingMonOrigBoxPos = position;
+}
+function SetPlacedMonData(boxId: number, position: number): void {
+  const s = sStorage!;
+  if (boxId === TOTAL_BOXES_COUNT) { if (s.movingMon) gPlayerParty[position] = s.movingMon as never; }
+  else { const st = GetPokemonStorage(); if (st.boxes[boxId]) st.boxes[boxId][position] = s.movingMon as never; }
+}
+function PurgeMonOrBoxMon(boxId: number, position: number): void {
+  if (boxId === TOTAL_BOXES_COUNT) ZeroMonData(gPlayerParty[position]);
+  else { const st = GetPokemonStorage(); if (st.boxes[boxId]) st.boxes[boxId][position] = null as never; }  // ZeroBoxMonAt
+}
+
+// :6304 MoveMon / :6326 PlaceMon ───
+function MoveMon(): void {
+  const s = sStorage!;
+  switch (sCursorArea) {
+    case CURSOR_AREA_IN_PARTY:
+      SetMovingMonData(TOTAL_BOXES_COUNT, sCursorPosition);
+      SetMovingMonSprite(MODE_PARTY_MOVE, sCursorPosition);
+      break;
+    case CURSOR_AREA_IN_BOX:
+      if (s.inBoxMovingMode === MOVE_MODE_NORMAL) {
+        SetMovingMonData(StorageGetCurrentBox(), sCursorPosition);
+        SetMovingMonSprite(MODE_BOX, sCursorPosition);
+      }
+      break;
+    default: return;
+  }
+  sIsMonBeingMoved = true;
+}
+function PlaceMon(): void {
+  switch (sCursorArea) {
+    case CURSOR_AREA_IN_PARTY:
+      SetPlacedMonData(TOTAL_BOXES_COUNT, sCursorPosition);
+      SetPlacedMonSprite(TOTAL_BOXES_COUNT, sCursorPosition);
+      break;
+    case CURSOR_AREA_IN_BOX: {
+      const boxId = StorageGetCurrentBox();
+      SetPlacedMonData(boxId, sCursorPosition);
+      SetPlacedMonSprite(boxId, sCursorPosition);
+      break;
+    }
+    default: return;
+  }
+  sIsMonBeingMoved = false;
+}
+
+// :6133 InitMonPlaceChange + :6158 DoMonPlaceChange + MonPlaceChange_* (:6163-6292) ───
+function InitMonPlaceChange(type: number): void {
+  const s = sStorage!;
+  s.monPlaceChangeFunc = type === CHANGE_GRAB ? MonPlaceChange_Grab
+    : type === CHANGE_PLACE ? MonPlaceChange_Place : MonPlaceChange_Shift;
+  s.monPlaceChangeState = 0;
+}
+function DoMonPlaceChange(): boolean {
+  return sStorage!.monPlaceChangeFunc ? sStorage!.monPlaceChangeFunc() : false;
+}
+function MonPlaceChange_CursorDown(): boolean {
+  const spr = _spr(sStorage!.cursorSprite); if (!spr) return false;
+  if (spr.y2 === 8) return false;   // atteint le bas
+  spr.y2++;
+  return true;
+}
+function MonPlaceChange_CursorUp(): boolean {
+  const spr = _spr(sStorage!.cursorSprite); if (!spr) return false;
+  if (spr.y2 === 0) return false;   // atteint le haut
+  spr.y2--;
+  return true;
+}
+function MonPlaceChange_Grab(): boolean {
+  const s = sStorage!; const cursor = _spr(s.cursorSprite);
+  switch (s.monPlaceChangeState) {
+    case 0:
+      if (sIsMonBeingMoved) return false;
+      if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_OPEN);
+      s.monPlaceChangeState++;
+      break;
+    case 1:
+      if (!MonPlaceChange_CursorDown()) {
+        if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_FIST);
+        MoveMon();
+        s.monPlaceChangeState++;
+      }
+      break;
+    case 2:
+      if (!MonPlaceChange_CursorUp()) s.monPlaceChangeState++;
+      break;
+    case 3:
+      return false;
+  }
+  return true;
+}
+function MonPlaceChange_Place(): boolean {
+  const s = sStorage!; const cursor = _spr(s.cursorSprite);
+  switch (s.monPlaceChangeState) {
+    case 0:
+      if (!MonPlaceChange_CursorDown()) {
+        if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_OPEN);
+        PlaceMon();
+        s.monPlaceChangeState++;
+      }
+      break;
+    case 1:
+      if (!MonPlaceChange_CursorUp()) {
+        if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_BOUNCE);
+        s.monPlaceChangeState++;
+      }
+      break;
+    case 2:
+      return false;
+  }
+  return true;
+}
+function MonPlaceChange_Shift(): boolean {
+  // SHIFT (échange mon en main ↔ mon du slot) : nécessite SaveMonSpriteAtPos/MoveShiftingMons/
+  // SetShiftedMonData (:4965-5079) → lot suivant. Log nominatif + termine (pas de crash).
+  console.warn('[pc-storage] MonPlaceChange_Shift (CHANGER) : SaveMonSpriteAtPos/MoveShiftingMons = lot suivant.');
+  return false;
+}
+
+// :2737 Task_MoveMon / :2757 Task_PlaceMon / :2777 Task_ShiftMon ───
+function Task_MoveMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: InitMonPlaceChange(CHANGE_GRAB); s.state++; break;
+    case 1:
+      if (!DoMonPlaceChange()) SetPokeStorageTask(Task_PokeStorageMain);  // (sInPartyMenu = lot party)
+      break;
+  }
+}
+function Task_PlaceMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: InitMonPlaceChange(CHANGE_PLACE); s.state++; break;
+    case 1:
+      if (!DoMonPlaceChange()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+  }
+}
+function Task_ShiftMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: InitMonPlaceChange(CHANGE_SHIFT); s.state++; break;
+    case 1:
+      if (!DoMonPlaceChange()) { StartDisplayMonMosaicEffect(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+  }
+}
+// :6783 CanShiftMon — SHIFT possible ? (mon en main + slot occupé). Simplifié : lot shift.
+function CanShiftMon(): boolean { return false; }
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION — SECTION Options menus (:7924-8085) + Task_OnSelectedMon (:2580)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -2291,11 +2511,18 @@ function Task_OnSelectedMon(_taskId: number): void {
           ClearBottomWindow();
           SetPokeStorageTask(Task_PokeStorageMain);
           break;
+        case MENU_MOVE:  // :2611 (IsRemovingLastPartyMon check = lot party ; in-box = jamais atteint)
+          PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_MoveMon);
+          break;
+        case MENU_PLACE:  // :2623
+          PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_PlaceMon);
+          break;
+        case MENU_SHIFT:  // :2628
+          if (!CanShiftMon()) _pcActionTodo('CHANGER (Task_ShiftMon)');
+          else { PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_ShiftMon); }
+          break;
         case MENU_WITHDRAW: _pcActionTodo('RETIRER (Task_WithdrawMon)'); break;
         case MENU_STORE: _pcActionTodo('DEPOSER (Task_DepositMenu)'); break;
-        case MENU_MOVE: _pcActionTodo('DEPLACER (Task_MoveMon)'); break;
-        case MENU_SHIFT: _pcActionTodo('CHANGER (Task_ShiftMon)'); break;
-        case MENU_PLACE: _pcActionTodo('PLACER (Task_PlaceMon)'); break;
         case MENU_SUMMARY: _pcActionTodo('RESUME (Task_ShowMonSummary)'); break;
         case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
         case MENU_RELEASE: _pcActionTodo('RELACHER (Task_ReleaseMon)'); break;
