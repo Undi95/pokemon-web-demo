@@ -599,11 +599,11 @@ function LoadStorageAssets(): void {
       loadIndexedPngStrict(`${base}/waveform.png`, 4),
       loadGbaPal(`${base}/text_windows.pal`),
       loadTilemapBin(`${base}/party_menu.bin`), loadGbaPal(`${base}/party_menu.pal`),
-      _loadTiles4bpp(`${base}/arrow.png`),
+      _loadTiles4bpp(`${base}/arrow.png`, true),
       loadIndexedPngStrict(`${base}/hand_cursor.png`, 4),
       _loadTiles4bpp(`${base}/hand_cursor_shadow.png`),
-      _loadTiles4bpp(`${base}/box_selection_popup_center.png`),
-      _loadTiles4bpp(`${base}/box_selection_popup_sides.png`),
+      _loadTiles4bpp(`${base}/box_selection_popup_center.png`, true),
+      _loadTiles4bpp(`${base}/box_selection_popup_sides.png`, true),
     ]);
     sStorageAssets = {
       menuGfx,
