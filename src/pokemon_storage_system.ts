@@ -1323,8 +1323,223 @@ function UpdatePartySlotColors(): void {
   TilemapUtil_Update(TILEMAPID_PARTY_MENU);
   ScheduleBgCopyTilemapToVram(1);
 }
-// CreatePartyMonsSprites (:4610 env.) : icônes party = lot navigation/party (tâche #2).
-function CreatePartyMonsSprites(_reshow: boolean): void { console.warn('[pc-storage] CreatePartyMonsSprites : lot party (tâche #2)'); }
+// ═══ Party menu latéral (:4739-4915 sprites + :4071-4254 menu) — RETIRER/DÉPOSER ═══
+const DISPLAY_HEIGHT = 160;
+// :4739 CreatePartyMonsSprites — les 6 icônes de l'équipe (slot 0 en haut-gauche, 1-5 à droite).
+function CreatePartyMonsSprites(visible: boolean): void {
+  const s = sStorage!;
+  let species = (gPlayerParty[0] as Pokemon | undefined)?.species ?? SPECIES_NONE;
+  let personality = (gPlayerParty[0] as Pokemon | undefined)?.personality ?? 0;
+  s.partySprites[0] = CreateMonIconSprite(species, personality, 104, 64, 1, _sub(12));
+  let count = 1;
+  for (let i = 1; i < PARTY_SIZE; i++) {
+    species = (gPlayerParty[i] as Pokemon | undefined)?.species ?? SPECIES_NONE;
+    if (species !== SPECIES_NONE) {
+      personality = (gPlayerParty[i] as Pokemon).personality ?? 0;
+      s.partySprites[i] = CreateMonIconSprite(species, personality, 152, 8 * (3 * (i - 1)) + 16, 1, _sub(12));
+      count++;
+    } else {
+      s.partySprites[i] = -1;
+    }
+  }
+  if (!visible) {
+    for (let i = 0; i < count; i++) {
+      const spr = _spr(s.partySprites[i]);
+      if (spr) { spr.y -= DISPLAY_HEIGHT; spr.invisible = true; }
+    }
+  }
+  // boxOption MOVE_ITEMS : blend des icônes sans objet (lot items).
+}
+// :4781 CompactPartySprites / :4801 GetNumPartySpritesCompacting ───
+function CompactPartySprites(): void {
+  const s = sStorage!;
+  s.numPartyToCompact = 0;
+  let targetSlot = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (s.partySprites[i] >= 0) {
+      if (i !== targetSlot) {
+        MovePartySpriteToNextSlot(s.partySprites[i], targetSlot);
+        s.partySprites[i] = -1;
+        s.numPartyToCompact++;
+      }
+      targetSlot++;
+    }
+  }
+}
+function GetNumPartySpritesCompacting(): number { return sStorage!.numPartyToCompact; }
+// :4813 MovePartySpriteToNextSlot (data[1]=partyId, [2]=monX, [3]=monY, [4]=speedX, [5]=speedY, [6]=steps).
+function MovePartySpriteToNextSlot(spriteId: number, partyId: number): void {
+  const spr = _spr(spriteId); if (!spr) return;
+  spr.data[1] = partyId;
+  let x: number, y: number;
+  if (partyId === 0) { x = 104; y = 64; } else { x = 152; y = 8 * (3 * (partyId - 1)) + 16; }
+  spr.data[2] = (spr.x & 0xFFFF) * 8;
+  spr.data[3] = (spr.y & 0xFFFF) * 8;
+  spr.data[4] = Math.trunc(((x * 8) - spr.data[2]) / 8);
+  spr.data[5] = Math.trunc(((y * 8) - spr.data[3]) / 8);
+  spr.data[6] = 8;
+  spr.callback = SpriteCB_MovePartyMonToNextSlot;
+}
+function SpriteCB_MovePartyMonToNextSlot(sprite: { x: number; y: number; data: number[]; callback: unknown }): void {
+  if (sprite.data[6] !== 0) {
+    sprite.data[2] += sprite.data[4]; const x = sprite.data[2];
+    sprite.data[3] += sprite.data[5]; const y = sprite.data[3];
+    sprite.x = Math.trunc(x / 8);
+    sprite.y = Math.trunc(y / 8);
+    sprite.data[6]--;
+  } else {
+    if (sprite.data[1] === 0) { sprite.x = 104; sprite.y = 64; }
+    else { sprite.x = 152; sprite.y = 8 * (3 * (sprite.data[1] - 1)) + 16; }
+    sprite.callback = null;  // SpriteCallbackDummy
+  }
+}
+// :4875 MovePartySprites / :4894 DestroyPartyMonIcon / :4903 DestroyAllPartyMonIcons ───
+function MovePartySprites(yDelta: number): void {
+  const s = sStorage!;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const spr = _spr(s.partySprites[i]);
+    if (spr) {
+      spr.y += yDelta;
+      const posY = spr.y + spr.y2 + spr.centerToCornerVecY + 16;
+      spr.invisible = posY > 192;
+    }
+  }
+}
+function DestroyPartyMonIcon(partyId: number): void {
+  const s = sStorage!;
+  if (s.partySprites[partyId] >= 0) { DestroySprite(s.partySprites[partyId]); s.partySprites[partyId] = -1; }  // DestroyBoxMonIcon (refcount tiles = lot suivant)
+}
+function DestroyAllPartyMonIcons(): void {
+  const s = sStorage!;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (s.partySprites[i] >= 0) { DestroySprite(s.partySprites[i]); s.partySprites[i] = -1; }
+  }
+}
+
+// :4071 SetUpShowPartyMenu / :4079 ShowPartyMenu ───
+function SetUpShowPartyMenu(): void {
+  const s = sStorage!;
+  s.partyMenuUnused1 = 20; s.partyMenuY = 2; s.partyMenuMoveTimer = 0;
+  CreatePartyMonsSprites(false);
+}
+function ShowPartyMenu(): boolean {
+  const s = sStorage!;
+  if (s.partyMenuMoveTimer === 20) return false;
+  s.partyMenuUnused1--; s.partyMenuY++;
+  TilemapUtil_Move(TILEMAPID_PARTY_MENU, 3, 1);
+  TilemapUtil_Update(TILEMAPID_PARTY_MENU);
+  ScheduleBgCopyTilemapToVram(1);
+  MovePartySprites(8);
+  if (++s.partyMenuMoveTimer === 20) { sInPartyMenu = true; return false; }
+  return true;
+}
+// :4101 SetUpHidePartyMenu / :4110 HidePartyMenu ───
+function SetUpHidePartyMenu(): void {
+  const s = sStorage!;
+  s.partyMenuUnused1 = 0; s.partyMenuY = 22; s.partyMenuMoveTimer = 0;
+  // boxOption MOVE_ITEMS : MoveHeldItemWithPartyMenu (lot items).
+}
+function HidePartyMenu(): boolean {
+  const s = sStorage!;
+  if (s.partyMenuMoveTimer !== 20) {
+    s.partyMenuUnused1++; s.partyMenuY--;
+    TilemapUtil_Move(TILEMAPID_PARTY_MENU, 3, -1);
+    TilemapUtil_Update(TILEMAPID_PARTY_MENU);
+    FillBgTilemapBufferRect_Palette0(1, 0x100, 10, s.partyMenuY, 12, 1);
+    MovePartySprites(-8);
+    if (++s.partyMenuMoveTimer !== 20) { ScheduleBgCopyTilemapToVram(1); return true; }
+    sInPartyMenu = false;
+    DestroyAllPartyMonIcons();
+    CompactPartySlots();
+    TilemapUtil_SetRect(TILEMAPID_CLOSE_BUTTON, 0, 0, 9, 2);
+    TilemapUtil_Update(TILEMAPID_CLOSE_BUTTON);
+    ScheduleBgCopyTilemapToVram(1);
+    return false;
+  }
+  return false;
+}
+// :4224 SetUpDoShowPartyMenu / :4231 DoShowPartyMenu ───
+function SetUpDoShowPartyMenu(): void {
+  sStorage!.showPartyMenuState = 0;
+  PlaySE(0x15 /* SE_WIN_OPEN */);
+  SetUpShowPartyMenu();
+}
+function DoShowPartyMenu(): boolean {
+  const s = sStorage!;
+  switch (s.showPartyMenuState) {
+    case 0:
+      if (!ShowPartyMenu()) { SetCursorInParty(); s.showPartyMenuState++; }
+      break;
+    case 1:
+      if (!UpdateCursorPos()) {
+        if (s.setMosaic) StartDisplayMonMosaicEffect();
+        s.showPartyMenuState++;
+      }
+      break;
+    case 2:
+      return false;
+  }
+  return true;
+}
+
+// :2538 Task_ShowPartyPokemon / :2553 Task_HidePartyPokemon / :3332 Task_HandleMovingMonFromParty ───
+function Task_ShowPartyPokemon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: SetUpDoShowPartyMenu(); s.state++; break;
+    case 1: if (!DoShowPartyMenu()) SetPokeStorageTask(Task_PokeStorageMain); break;
+  }
+}
+function Task_HidePartyPokemon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: PlaySE(0x5 /* SE_SELECT */); SetUpHidePartyMenu(); s.state++; break;
+    case 1:
+      if (!HidePartyMenu()) { SetCursorBoxPosition(GetSavedCursorPos()); s.state++; }
+      break;
+    case 2:
+      if (!UpdateCursorPos()) {
+        if (s.setMosaic) StartDisplayMonMosaicEffect();
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+  }
+}
+function Task_HandleMovingMonFromParty(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0: CompactPartySlots(); CompactPartySprites(); s.state++; break;
+    case 1:
+      if (GetNumPartySpritesCompacting() === 0) { UpdatePartySlotColors(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+  }
+}
+
+// :2795 Task_WithdrawMon — RETIRER : grab boîte → party menu → place équipe → hide. ───
+function Task_WithdrawMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (CalculatePlayerPartyCount() === PARTY_SIZE) { PrintMessage(MSG_PARTY_FULL); s.state = 1; }
+      else { SaveCursorPos(); InitMonPlaceChange(CHANGE_GRAB); s.state = 2; }
+      break;
+    case 1:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0 /* DPAD_ANY */)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+    case 2:
+      if (!DoMonPlaceChange()) { SetMovingMonPriority(1); SetUpDoShowPartyMenu(); s.state++; }
+      break;
+    case 3:
+      if (!DoShowPartyMenu()) { InitMonPlaceChange(CHANGE_PLACE); s.state++; }
+      break;
+    case 4:
+      if (!DoMonPlaceChange()) { UpdatePartySlotColors(); s.state++; }
+      break;
+    case 5:
+      SetPokeStorageTask(Task_HidePartyPokemon);
+      break;
+  }
+}
 
 // ─── :4265 InitPokeStorageBg0 ───
 function InitPokeStorageBg0(): void {
@@ -2290,7 +2505,7 @@ function Task_MoveMon(_taskId: number): void {
   switch (s.state) {
     case 0: InitMonPlaceChange(CHANGE_GRAB); s.state++; break;
     case 1:
-      if (!DoMonPlaceChange()) SetPokeStorageTask(Task_PokeStorageMain);  // (sInPartyMenu = lot party)
+      if (!DoMonPlaceChange()) SetPokeStorageTask(sInPartyMenu ? Task_HandleMovingMonFromParty : Task_PokeStorageMain);
       break;
   }
 }
@@ -2299,7 +2514,7 @@ function Task_PlaceMon(_taskId: number): void {
   switch (s.state) {
     case 0: InitMonPlaceChange(CHANGE_PLACE); s.state++; break;
     case 1:
-      if (!DoMonPlaceChange()) SetPokeStorageTask(Task_PokeStorageMain);
+      if (!DoMonPlaceChange()) SetPokeStorageTask(sInPartyMenu ? Task_HandleMovingMonFromParty : Task_PokeStorageMain);
       break;
   }
 }
@@ -2521,7 +2736,9 @@ function Task_OnSelectedMon(_taskId: number): void {
           if (!CanShiftMon()) _pcActionTodo('CHANGER (Task_ShiftMon)');
           else { PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_ShiftMon); }
           break;
-        case MENU_WITHDRAW: _pcActionTodo('RETIRER (Task_WithdrawMon)'); break;
+        case MENU_WITHDRAW:  // :2640
+          PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_WithdrawMon);
+          break;
         case MENU_STORE: _pcActionTodo('DEPOSER (Task_DepositMenu)'); break;
         case MENU_SUMMARY: _pcActionTodo('RESUME (Task_ShowMonSummary)'); break;
         case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
