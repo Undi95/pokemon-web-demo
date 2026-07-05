@@ -1804,6 +1804,157 @@ function CreateBoxMonIconAtPos(boxPosition: number): void {
   }
 }
 
+// ─── :4494-4737 Système d'icônes de scroll de boîte (colonne-par-colonne) ───
+// data des icônes : sDistance=data[1], sSpeed=data[2], sScrollInDestX=data[3], sDelay=data[4], sScrollOutX=data[5].
+type ScrollIconSprite = { data: number[]; x: number; x2: number; callback: unknown };
+// :4500 StartBoxMonIconsScrollOut
+function StartBoxMonIconsScrollOut(speed: number): void {
+  const s = sStorage!;
+  for (let i = 0; i < IN_BOX_COUNT; i++) {
+    const spr = _spr(s.boxMonsSprites[i]);
+    if (spr) { spr.data[2] = speed; spr.data[4] = 1; spr.callback = SpriteCB_BoxMonIconScrollOut as never; }
+  }
+}
+// :4515 SpriteCB_BoxMonIconScrollIn
+function SpriteCB_BoxMonIconScrollIn(sprite: ScrollIconSprite): void {
+  if (sprite.data[1] !== 0) {  // sDistance
+    sprite.data[1]--;
+    sprite.x += sprite.data[2];  // sSpeed
+  } else {
+    sStorage!.iconScrollNumIncoming--;
+    sprite.x = sprite.data[3];  // sScrollInDestX
+    sprite.callback = null;  // SpriteCallbackDummy
+  }
+}
+// :4532 SpriteCB_BoxMonIconScrollOut
+function SpriteCB_BoxMonIconScrollOut(sprite: ScrollIconSprite): void {
+  if (sprite.data[4] !== 0) {  // sDelay
+    sprite.data[4]--;
+  } else {
+    sprite.x += sprite.data[2];  // sSpeed
+    sprite.data[5] = sprite.x + sprite.x2;  // sScrollOutX
+    if (sprite.data[5] <= 68 || sprite.data[5] >= 252) sprite.callback = null;  // SpriteCallbackDummy
+  }
+}
+// :4552 DestroyBoxMonIconsInColumn
+function DestroyBoxMonIconsInColumn(column: number): void {
+  const s = sStorage!;
+  let boxPosition = column;
+  for (let row = 0; row < IN_BOX_ROWS; row++) {
+    if (s.boxMonsSprites[boxPosition] >= 0) {
+      DestroySprite(s.boxMonsSprites[boxPosition]);  // DestroyBoxMonIcon (refcount tiles = lot suivant)
+      s.boxMonsSprites[boxPosition] = -1;
+    }
+    boxPosition += IN_BOX_COLUMNS;
+  }
+}
+// :4569 CreateBoxMonIconsInColumn — icônes entrantes de la colonne
+function CreateBoxMonIconsInColumn(column: number, distance: number, speed: number): number {
+  const s = sStorage!;
+  const xDest = 8 * (3 * column) + 100;
+  const x = xDest - ((distance + 1) * speed);
+  const subpriority = 19 - column;
+  let iconsCreated = 0;
+  let boxPosition = column;
+  let y = 44;
+  // OPTION_MOVE_ITEMS (blend objMode des icônes sans objet) = lot items (#10) ; ici cas principal.
+  for (let i = 0; i < IN_BOX_ROWS; i++) {
+    if (s.boxSpecies[boxPosition] !== SPECIES_NONE) {
+      const id = CreateMonIconSprite(s.boxSpecies[boxPosition], s.boxPersonalities[boxPosition], x, y, 2, subpriority);
+      s.boxMonsSprites[boxPosition] = id;
+      const spr = _spr(id);
+      if (spr) {
+        spr.data[1] = distance;  // sDistance
+        spr.data[2] = speed;     // sSpeed
+        spr.data[3] = xDest;     // sScrollInDestX
+        spr.callback = SpriteCB_BoxMonIconScrollIn as never;
+        iconsCreated++;
+      }
+    }
+    boxPosition += IN_BOX_COLUMNS;
+    y += 24;
+  }
+  return iconsCreated;
+}
+// :4637 InitBoxMonIconScroll
+function InitBoxMonIconScroll(boxId: number, direction: number): void {
+  const s = sStorage!;
+  s.iconScrollState = 0;
+  s.iconScrollToBoxId = boxId;
+  s.iconScrollDirection = direction;
+  s.iconScrollDistance = 32;
+  s.iconScrollSpeed = -(6 * direction);
+  s.iconScrollNumIncoming = 0;
+  GetIncomingBoxMonData(boxId);
+  if (direction > 0) s.iconScrollCurColumn = 0;
+  else s.iconScrollCurColumn = IN_BOX_COLUMNS - 1;
+  s.iconScrollPos = (24 * s.iconScrollCurColumn) + 100;
+  StartBoxMonIconsScrollOut(s.iconScrollSpeed);
+}
+// :4655 UpdateBoxMonIconScroll
+function UpdateBoxMonIconScroll(): boolean {
+  const s = sStorage!;
+  if (s.iconScrollDistance !== 0) s.iconScrollDistance--;
+  switch (s.iconScrollState) {
+    case 0:
+      s.iconScrollPos += s.iconScrollSpeed;
+      if (s.iconScrollPos <= 64 || s.iconScrollPos >= 252) {
+        DestroyBoxMonIconsInColumn(s.iconScrollCurColumn);
+        s.iconScrollPos += s.iconScrollDirection * 24;
+        s.iconScrollState++;
+      }
+      break;
+    case 1:
+      s.iconScrollPos += s.iconScrollSpeed;
+      s.iconScrollNumIncoming += CreateBoxMonIconsInColumn(s.iconScrollCurColumn, s.iconScrollDistance, s.iconScrollSpeed);
+      if ((s.iconScrollDirection > 0 && s.iconScrollCurColumn === IN_BOX_COLUMNS - 1)
+       || (s.iconScrollDirection < 0 && s.iconScrollCurColumn === 0)) {
+        s.iconScrollState++;
+      } else {
+        s.iconScrollCurColumn += s.iconScrollDirection;
+        s.iconScrollState = 0;
+      }
+      break;
+    case 2:
+      if (s.iconScrollNumIncoming === 0) {
+        s.iconScrollDistance++;
+        return false;
+      }
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+// :4705 GetIncomingBoxMonData
+function GetIncomingBoxMonData(boxId: number): void {
+  const s = sStorage!;
+  let boxPosition = 0;
+  for (let i = 0; i < IN_BOX_ROWS; i++) {
+    for (let j = 0; j < IN_BOX_COLUMNS; j++) {
+      // GetBoxMonDataAt(boxId, pos, MON_DATA_*) → _boxMonAt chez nous (champs directs du save block).
+      const mon = _boxMonAt(boxId, boxPosition);
+      s.boxSpecies[boxPosition] = mon && mon.species ? mon.species : SPECIES_NONE;
+      if (s.boxSpecies[boxPosition] !== SPECIES_NONE)
+        s.boxPersonalities[boxPosition] = mon!.personality ?? 0;
+      boxPosition++;
+    }
+  }
+  s.incomingBoxId = boxId;
+}
+// :4724 DestroyBoxMonIconAtPosition + :4733 SetBoxMonIconObjMode
+function DestroyBoxMonIconAtPosition(boxPosition: number): void {
+  const s = sStorage!;
+  if (s.boxMonsSprites[boxPosition] >= 0) {
+    DestroySprite(s.boxMonsSprites[boxPosition]);
+    s.boxMonsSprites[boxPosition] = -1;
+  }
+}
+function SetBoxMonIconObjMode(boxPosition: number, objMode: number): void {
+  // oam.objMode (blend MOVE_ITEMS) = lot items (#10) ; no-op hors MOVE_ITEMS.
+  void boxPosition; void objMode;
+}
+
 // ─── :5079 SetMovingMonPriority ───
 function SetMovingMonPriority(priority: number): void {
   const rt = getRuntime(); const spr = _spr(sStorage!.movingMonSprite);
