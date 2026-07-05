@@ -18,7 +18,7 @@ import {
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
-import { CopyMon, ZeroMonData, type Pokemon } from './pokemon';
+import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, type Pokemon } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
@@ -2512,8 +2512,9 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
       s.displayMonLevel = pokemon.level ?? 0;
       s.displayMonMarkings = (pokemon as unknown as { markings?: number }).markings ?? 0;
       s.displayMonPersonality = pokemon.personality ?? 0;
-      const g = (pokemon as unknown as { gender?: number | string }).gender;
-      gender = g === 0 || g === 'M' ? 'M' : g === 254 || g === 'F' ? 'F' : 'N';
+      // 1:1 : le sexe se CALCULE depuis species+personality (GetMonGender), ce n'est pas un champ stocké.
+      const g = GetGenderFromSpeciesAndPersonality(s.displayMonSpecies, s.displayMonPersonality);
+      gender = g === 0 /* MON_MALE */ ? 'M' : g === 254 /* MON_FEMALE */ ? 'F' : 'N';
       s.displayMonItemId = (pokemon as unknown as { heldItem?: number }).heldItem ?? 0;
       PreloadDisplayMonPic(s.displayMonSpecies);
     }

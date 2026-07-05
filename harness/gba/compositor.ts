@@ -212,11 +212,11 @@ export function composeFrame(
     // Render OAM sprites pour cette scanline (par priority)
     if (oam && objVram) {
       for (const buf of oamPriorityBufs) buf.fill(0);
+      // Mosaic OBJ (REG_MOSAIC) : appliqué PAR SPRITE dans renderOamSpriteNormal (seuls
+      // les sprites avec oam.mosaic=1), PAS globalement à tous les sprites — 1:1 HW GBA.
+      _objMosH = mosaic ? mosaic.objH : 0;
+      _objMosV = mosaic ? mosaic.objV : 0;
       renderOamScanline(y, oam, objVram, palette, oamPriorityBufs, affineParams);
-      // Apply mosaic horizontal OAM
-      if (mosaic && mosaic.objH > 0) {
-        for (const buf of oamPriorityBufs) applyMosaicHorizontal(buf, mosaic.objH);
-      }
     }
 
     // Compute WINOBJ mask scanline (bool[] de 240 entries) — pixels où un sprite
@@ -382,6 +382,9 @@ export function composeFrame(
  * Si plusieurs sprites se chevauchent à la même priority, le sprite avec
  * l'index OAM le plus PETIT gagne (1:1 GBA).
  */
+// Mosaic OBJ courant (REG_MOSAIC objH/objV), setté par composeFrame avant le rendu OAM.
+// Appliqué PAR SPRITE dans renderOamSpriteNormal (seuls les sprites avec oam.mosaic=1) — 1:1 HW GBA.
+let _objMosH = 0, _objMosV = 0;
 function renderOamScanline(
   scanline: number,
   oam: ReadonlyArray<OamEntry>,
@@ -451,12 +454,17 @@ function renderOamSpriteNormal(
   // champ au lieu de réapparaître à droite → « passe une seule fois » au lieu
   // d'en continu. Sprites dans [-256, 511] inchangés (la maths concorde).
   const objX = (sprite.x | 0) & 0x1FF;
+  // Mosaic OBJ : quantifie les coords d'échantillonnage (relatif au coin du sprite),
+  // seulement si CE sprite a le bit mosaic — 1:1 GBATEK (REG_MOSAIC objH/objV).
+  const mosH = sprite.mosaic ? _objMosH : 0;
+  const mLocalY = (sprite.mosaic && _objMosV > 0) ? localY - (localY % (_objMosV + 1)) : localY;
   for (let dx = 0; dx < wPx; dx++) {
     const screenX = (objX + dx) & 0x1FF;
     if (screenX >= SCREEN_W) continue;
 
-    const localX = sprite.flipH ? (wPx - 1 - dx) : dx;
-    const adjLocalY = sprite.flipV ? (hPx - 1 - localY) : localY;
+    const mdx = mosH > 0 ? dx - (dx % (mosH + 1)) : dx;
+    const localX = sprite.flipH ? (wPx - 1 - mdx) : mdx;
+    const adjLocalY = sprite.flipV ? (hPx - 1 - mLocalY) : mLocalY;
 
     const tileX = (localX / 8) | 0;
     const tileY = (adjLocalY / 8) | 0;
