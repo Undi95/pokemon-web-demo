@@ -1982,9 +1982,15 @@ function DrawTextWindowAndBufferTiles(str: string, dst: Uint8Array, zero1: numbe
 }
 
 // ─── :5469 InitBoxTitle + :5621 GetBoxTitleBaseX ───
+// 1:1 sBoxTitleColors[WALLPAPER_COUNT][2] (data/wallpapers.h:154) : {shadow, text} — IDENTIQUE
+// pour les 17 wallpapers → RGB(7,7,7)=0x1CE7 (ombre gris foncé), RGB_WHITE=0x7FFF (texte blanc).
+const sBoxTitleShadowColor = 0x1CE7;  // RGB(7,7,7) = 7|(7<<5)|(7<<10)
+const sBoxTitleTextColor = 0x7FFF;    // RGB_WHITE
 function InitBoxTitle(boxId: number): void {
   const s = sStorage!;
-  // sBoxTitleColors[wallpaperId] : shadow+text par wallpaper (data/wallpapers.h) — table au lot title-text.
+  // wallpaperId = GetBoxWallpaper(boxId) : couleurs identiques pour tous les wp → constantes ci-dessus.
+  s.boxTitlePal[14] = sBoxTitleShadowColor;  // :5483 boxTitlePal[14] = sBoxTitleColors[wp][0] (shadow)
+  s.boxTitlePal[15] = sBoxTitleTextColor;    // :5484 boxTitlePal[15] = sBoxTitleColors[wp][1] (text)
   LoadSpritePalette({ data: s.boxTitlePal.subarray(0, 16), tag: PALTAG_BOX_TITLE });
   s.wallpaperPalBits = 0x3f0;
   const tagIndex = IndexOfSpritePaletteTag(PALTAG_BOX_TITLE);
