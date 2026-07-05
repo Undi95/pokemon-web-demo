@@ -33,7 +33,7 @@ import {
   ExtractWindowTiles4bpp,
   type WindowTemplate,
 } from './window';
-import { GetStringWidth, AddTextPrinterParameterized } from './text';
+import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
 import { gSpeciesNames } from './engine/data/game-data';
 import { LoadUserWindowBorderGfx } from './text_window';
 import { SE_PC_LOGIN } from '../include/constants/songs';
@@ -41,7 +41,7 @@ import {
   DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
   ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, DrawStdFrameWithCustomTileAndPalette,
-  AddTextPrinterParameterized2, AddTextPrinterParameterized4,
+  AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
 } from './menu';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
@@ -61,7 +61,7 @@ import {
 import {
   ResetSpriteData, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, DestroySprite,
   CreateSprite, StartSpriteAnim, StartSpriteAnimIfDifferent, IndexOfSpritePaletteTag,
-  FreeSpritePaletteByTag, _freeSpriteTileRangeByTag,
+  FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, GetSpriteTileStartByTag,
   ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd,
 } from './sprite';
 import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
@@ -539,6 +539,8 @@ interface StorageAssets {
   handCursorGfx: Uint8Array;           // sHandCursor_Gfx :1319 (hand_cursor.png)
   handCursorPal: Uint16Array;          // sHandCursor_Pal :1318 (PLTE = main JAUNE, misc_1)
   handCursorShadowGfx: Uint8Array;     // sHandCursorShadow_Gfx :1320
+  chooseBoxCenterGfx: Uint8Array;      // sChooseBoxMenuCenter_Gfx :1771 (0x800 = 64 tiles, popup centre)
+  chooseBoxSidesGfx: Uint8Array;       // sChooseBoxMenuSides_Gfx :1772 (0x180 = 12 tiles, popup bords)
 }
 let sStorageAssets: StorageAssets | null = null;
 let _storageAssetsLoading: Promise<void> | null = null;
@@ -578,7 +580,8 @@ function LoadStorageAssets(): void {
   const base = '/decomp/em/pokemon_storage';
   _storageAssetsLoading = (async () => {
     const [menuGfx, dmTm, dmPal, pkTm, intPal, pkGrayPal, sbTiles, sbTm, sbPal, sbMiPal,
-      cbTm, psfTm, pseTm, wavePng, twPal, pmTm, pmPal, arrowGfx, hcPng, hcsGfx] = await Promise.all([
+      cbTm, psfTm, pseTm, wavePng, twPal, pmTm, pmPal, arrowGfx, hcPng, hcsGfx,
+      chooseBoxCenterGfx, chooseBoxSidesGfx] = await Promise.all([
       _loadTiles4bpp(`${base}/menu.png`),
       loadTilemapBin(`${base}/display_menu.bin`), loadGbaPal(`${base}/display_menu.pal`),
       loadTilemapBin(`${base}/pkmn_data.bin`), loadGbaPal(`${base}/interface.pal`),
@@ -593,6 +596,8 @@ function LoadStorageAssets(): void {
       _loadTiles4bpp(`${base}/arrow.png`),
       loadIndexedPngStrict(`${base}/hand_cursor.png`, 4),
       _loadTiles4bpp(`${base}/hand_cursor_shadow.png`),
+      _loadTiles4bpp(`${base}/box_selection_popup_center.png`),
+      _loadTiles4bpp(`${base}/box_selection_popup_sides.png`),
     ]);
     sStorageAssets = {
       menuGfx,
@@ -606,6 +611,7 @@ function LoadStorageAssets(): void {
       arrowGfx,
       handCursorGfx: hcPng.charData, handCursorPal: hcPng.palette,
       handCursorShadowGfx: hcsGfx,
+      chooseBoxCenterGfx, chooseBoxSidesGfx,
     };
   })().catch((e) => { console.error('[pc-storage] échec chargement assets :', e); _storageAssetsLoading = null; });
 }
@@ -1538,6 +1544,202 @@ function Task_WithdrawMon(_taskId: number): void {
       break;
     case 5:
       SetPokeStorageTask(Task_HidePartyPokemon);
+      break;
+  }
+}
+
+// ═══ Choose Box menu (:1761-1966) — popup de choix de boîte (dépôt/jump) + DÉPOSER ═══
+const sAnims_ChooseBoxMenu: AnimCmd[][] = [
+  [ANIMCMD_FRAME(0, 5), ANIMCMD_END],   // TopLeft
+  [ANIMCMD_FRAME(4, 5), ANIMCMD_END],   // BottomLeft
+  [ANIMCMD_FRAME(6, 5), ANIMCMD_END],   // TopRight
+  [ANIMCMD_FRAME(10, 5), ANIMCMD_END],  // BottomRight
+];
+// :1761 LoadChooseBoxMenuGfx (loadPal toujours FALSE → palette = misc_1 déjà chargée par le curseur).
+function LoadChooseBoxMenuGfx(menu: ChooseBoxMenu, tileTag: number, palTag: number, subpriority: number, _loadPal: boolean): void {
+  const a = sStorageAssets!;
+  LoadSpriteSheet({ data: a.chooseBoxCenterGfx, size: 0x800, tag: tileTag });
+  LoadSpriteSheet({ data: a.chooseBoxSidesGfx, size: 0x180, tag: tileTag + 1 });
+  sChooseBoxMenu = menu;
+  menu.tileTag = tileTag;
+  menu.paletteTag = palTag;
+  menu.subpriority = subpriority;
+  menu.loadedPalette = false;
+}
+function FreeChooseBoxMenu(): void {
+  const m = sChooseBoxMenu; if (!m) return;
+  if (m.loadedPalette) FreeSpritePaletteByTag(m.paletteTag);
+  _freeSpriteTileRangeByTag(m.tileTag);
+  _freeSpriteTileRangeByTag(m.tileTag + 1);
+}
+function CreateChooseBoxMenuSprites(curBox: number): void { ChooseBoxMenu_CreateSprites(curBox); }
+function DestroyChooseBoxMenuSprites(): void { ChooseBoxMenu_DestroySprites(); }
+// :1806 HandleChooseBoxMenuInput ───
+function HandleChooseBoxMenuInput(): number {
+  const m = sChooseBoxMenu!;
+  if (gMain.newKeys & B_BUTTON) { PlaySE(0x5); return BOXID_CANCELED; }
+  if (gMain.newKeys & A_BUTTON) { PlaySE(0x5); return m.curBox; }
+  if (gMain.newKeys & DPAD_LEFT) { PlaySE(0x5); ChooseBoxMenu_MoveLeft(); }
+  else if (gMain.newKeys & DPAD_RIGHT) { PlaySE(0x5); ChooseBoxMenu_MoveRight(); }
+  return BOXID_NONE_CHOSEN;
+}
+// :1831 ChooseBoxMenu_CreateSprites — centre 64×64 + 4 bords 8×32 + 2 flèches. ───
+function ChooseBoxMenu_CreateSprites(curBox: number): void {
+  const rt = getRuntime(); const m = sChooseBoxMenu!; if (!rt) return;
+  m.curBox = curBox;
+  const centerId = CreateSprite({
+    tileTag: m.tileTag, paletteTag: m.paletteTag, oam: { shape: 0, size: 3, priority: 0, paletteNum: 1 },
+    anims: null, callback: null,
+  }, 160, 96, 0);
+  m.menuSprite = centerId;
+  for (let i = 0; i < 4; i++) {
+    const spriteId = CreateSprite({
+      tileTag: m.tileTag + 1, paletteTag: m.paletteTag, oam: { shape: 2, size: 1, priority: 0 },
+      anims: sAnims_ChooseBoxMenu, callback: null,
+    }, 124, 80, _sub(m.subpriority));
+    m.menuSideSprites[i] = spriteId;
+    let anim = 0;
+    const spr = _spr(spriteId);
+    if (i & 2) { if (spr) spr.x = 196; anim = 2; }
+    if (i & 1) { if (spr) { spr.y = 112; rt.gba.oam[spr.oamIndex].size = 0; } anim++; }
+    if (spr) StartSpriteAnim(spr as never, anim);
+  }
+  for (let i = 0; i < 2; i++) {
+    const arrowId = CreateChooseBoxArrows(72 * i + 124, 88, i, 0, m.subpriority);
+    m.arrowSprites[i] = arrowId;
+    const spr = _spr(arrowId);
+    if (spr) { spr.data[0] = (i === 0 ? -1 : 1); spr.callback = SpriteCB_ChooseBoxArrow; }
+  }
+  ChooseBoxMenu_PrintInfo();
+}
+function ChooseBoxMenu_DestroySprites(): void {
+  const m = sChooseBoxMenu!;
+  if (m.menuSprite >= 0) { DestroySprite(m.menuSprite); m.menuSprite = -1; }
+  for (let i = 0; i < 4; i++) if (m.menuSideSprites[i] >= 0) { DestroySprite(m.menuSideSprites[i]); m.menuSideSprites[i] = -1; }
+  for (let i = 0; i < 2; i++) if (m.arrowSprites[i] >= 0) DestroySprite(m.arrowSprites[i]);
+}
+// :1908 MoveRight / :1915 MoveLeft ───
+function ChooseBoxMenu_MoveRight(): void {
+  const m = sChooseBoxMenu!;
+  if (++m.curBox >= TOTAL_BOXES_COUNT) m.curBox = 0;
+  ChooseBoxMenu_PrintInfo();
+}
+function ChooseBoxMenu_MoveLeft(): void {
+  const m = sChooseBoxMenu!;
+  m.curBox = m.curBox === 0 ? TOTAL_BOXES_COUNT - 1 : m.curBox - 1;
+  ChooseBoxMenu_PrintInfo();
+}
+// :1921 ChooseBoxMenu_PrintInfo — nom + #/30 → tiles → OBJ VRAM du sprite centre. ───
+function ChooseBoxMenu_PrintInfo(): void {
+  const rt = getRuntime(); const m = sChooseBoxMenu!; if (!rt) return;
+  const boxName = GetBoxNamePtr(m.curBox);
+  const numInBox = CountMonsInBox(m.curBox);
+  const winTemplate = { bg: 0, tilemapLeft: 0, tilemapTop: 0, width: 8, height: 4, paletteNum: 0, baseBlock: 0 } as WindowTemplate;
+  const windowId = AddWindow(winTemplate);
+  FillWindowPixelBuffer(windowId, 0x44);  // PIXEL_FILL(4)
+  const colors = [1 /* TEXT_COLOR_RED */, 15, 14];  // sChooseBoxMenu_TextColors
+  let center = GetStringCenterAlignXOffset(boxName, 64, FONT_NORMAL);
+  AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 1, colors, TEXT_SKIP_DRAW, boxName);
+  const numText = String(numInBox).padStart(2, ' ') + '/30';  // ConvertIntToDecimalStringN(RIGHT_ALIGN,2)+OutOf30
+  center = GetStringCenterAlignXOffset(numText, 64, FONT_NORMAL);
+  AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 17, colors, TEXT_SKIP_DRAW, numText);
+  const tiles = ExtractWindowTiles4bpp(windowId);  // 32 tiles (8×4) = 0x400
+  const tileStart = GetSpriteTileStartByTag(m.tileTag);
+  rt._writeToObjVram?.(tiles, tileStart * 32 + 0x100);  // CpuCopy32 → OBJ VRAM sprite centre + 0x100
+  RemoveWindow(windowId);
+}
+// :1954 SpriteCB_ChooseBoxArrow ───
+function SpriteCB_ChooseBoxArrow(sprite: { data: number[]; x2: number }): void {
+  if (++sprite.data[1] > 3) {
+    sprite.data[1] = 0;
+    sprite.x2 += sprite.data[0];
+    if (++sprite.data[2] > 5) { sprite.data[2] = 0; sprite.x2 = 0; }
+  }
+}
+// :5766 CreateChooseBoxArrows (flèches gauche/droite de la popup). ───
+function CreateChooseBoxArrows(x: number, y: number, animId: number, priority: number, subpriority: number): number {
+  const rt = getRuntime(); const a = sStorageAssets!; if (!rt) return -1;
+  LoadSpriteSheet({ data: a.arrowGfx, size: a.arrowGfx.length, tag: GFXTAG_ARROW });
+  const spriteId = CreateSprite({
+    tileTag: GFXTAG_ARROW, paletteTag: PALTAG_MISC_2, oam: sOamData_Arrow, anims: sAnims_Arrow, callback: null,
+  }, x, y, _sub(subpriority));
+  if (spriteId === 64) return -1;
+  const spr = _spr(spriteId)!;
+  StartSpriteAnim(spr as never, animId % 2);
+  rt.gba.oam[spr.oamIndex].priority = priority;
+  return spriteId;
+}
+
+// :6426 ResetSelectionAfterDeposit ───
+function ResetSelectionAfterDeposit(): void {
+  const cursor = _spr(sStorage!.cursorSprite);
+  if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_BOUNCE);
+  TryRefreshDisplayMon();
+}
+// :6400 TryStorePartyMonInBox — stocke le mon (en main OU sous le curseur party) dans la boîte. ───
+function TryStorePartyMonInBox(boxId: number): boolean {
+  const boxPosition = GetFirstFreeBoxSpot(boxId);
+  if (boxPosition === -1) return false;
+  if (sIsMonBeingMoved) {
+    SetPlacedMonData(boxId, boxPosition);
+    DestroyMovingMonIcon();
+    sIsMonBeingMoved = false;
+  } else {
+    SetMovingMonData(TOTAL_BOXES_COUNT, sCursorPosition);
+    SetPlacedMonData(boxId, boxPosition);
+    DestroyPartyMonIcon(sCursorPosition);
+  }
+  if (boxId === StorageGetCurrentBox()) CreateBoxMonIconAtPos(boxPosition);
+  const cursor = _spr(sStorage!.cursorSprite);
+  if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_STILL);
+  return true;
+}
+// :1411 GetFirstFreeBoxSpot ───
+function GetFirstFreeBoxSpot(boxId: number): number {
+  const boxes = GetPokemonStorage().boxes;
+  for (let i = 0; i < IN_BOX_COUNT; i++) {
+    if (!boxes[boxId]?.[i]?.species) return i;
+  }
+  return -1;
+}
+
+// :2847 Task_DepositMenu — DÉPOSER : choisir la boîte (popup) → TryStorePartyMonInBox. ───
+function Task_DepositMenu(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PrintMessage(MSG_DEPOSIT_IN_WHICH_BOX);
+      LoadChooseBoxMenuGfx(s.chooseBoxMenu, GFXTAG_CHOOSE_BOX_MENU, PALTAG_MISC_1, 3, false);
+      CreateChooseBoxMenuSprites(sDepositBoxId);
+      s.state++;
+      break;
+    case 1: {
+      const boxId = HandleChooseBoxMenuInput();
+      if (boxId === BOXID_NONE_CHOSEN) break;
+      if (boxId === BOXID_CANCELED) {
+        ClearBottomWindow(); DestroyChooseBoxMenuSprites(); FreeChooseBoxMenu();
+        SetPokeStorageTask(Task_PokeStorageMain);
+      } else if (TryStorePartyMonInBox(boxId)) {
+        sDepositBoxId = boxId;
+        ClearBottomWindow(); DestroyChooseBoxMenuSprites(); FreeChooseBoxMenu();
+        s.state = 2;
+      } else {
+        PrintMessage(MSG_BOX_IS_FULL);
+        s.state = 4;
+      }
+      break;
+    }
+    case 2:
+      CompactPartySlots(); CompactPartySprites(); s.state++;
+      break;
+    case 3:
+      if (GetNumPartySpritesCompacting() === 0) {
+        ResetSelectionAfterDeposit(); StartDisplayMonMosaicEffect(); UpdatePartySlotColors();
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+    case 4:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { PrintMessage(MSG_DEPOSIT_IN_WHICH_BOX); s.state = 1; }
       break;
   }
 }
@@ -2758,7 +2960,9 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_WITHDRAW:  // :2640
           PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_WithdrawMon);
           break;
-        case MENU_STORE: _pcActionTodo('DEPOSER (Task_DepositMenu)'); break;
+        case MENU_STORE:  // :2645 (IsRemovingLastPartyMon/ItemIsMail checks = lot suivant)
+          PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_DepositMenu);
+          break;
         case MENU_SUMMARY: _pcActionTodo('RESUME (Task_ShowMonSummary)'); break;
         case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
         case MENU_RELEASE: _pcActionTodo('RELACHER (Task_ReleaseMon)'); break;
@@ -2785,12 +2989,10 @@ function HandleInput(): number {
       SetCursorPosition(CURSOR_AREA_IN_BOX, row * IN_BOX_COLUMNS + col);
       return INPUT_MOVE_CURSOR;
     }
-    // A sur un mon (1:1 InBoxInput_Normal :7092) : SetSelectionMenuTexts → menu contextuel.
-    // (sAutoActionOn = dispatch direct WITHDRAW/etc → lot suivant ; ici on ouvre toujours le menu.)
-    if ((gMain.newKeys & A_BUTTON) && SetSelectionMenuTexts()) {
-      return INPUT_IN_MENU;
-    }
   }
+  // A dans toute zone (boîte OU party) → SetSelectionMenuTexts → menu contextuel (:7092 InBox /
+  // :InParty ; nav party réelle = lot InParty). sAutoActionOn = dispatch direct (lot suivant).
+  if ((gMain.newKeys & A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
   if (gMain.newKeys & B_BUTTON) return INPUT_PRESSED_B;
   return INPUT_NONE;
 }
