@@ -3253,14 +3253,14 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_BYE_BYE]: { text: 'Bye-bye, {0}!', varKind: MSG_VAR_RELEASE_MON_3 },
   [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
   [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
-  [MSG_EXIT_BOX]: { text: 'Quitter la BOITE?', varKind: MSG_VAR_NONE },
-  [MSG_CONTINUE_BOX]: { text: 'Continuer les\nopérations BOITE?', varKind: MSG_VAR_NONE },
-  [MSG_HOLDING_POKE]: { text: 'Vous tenez\nun POKéMON!', varKind: MSG_VAR_NONE },
-  // Box-options (:7933 gText_*) :
-  [MSG_WHAT_YOU_DO]: { text: 'Que faire?', varKind: MSG_VAR_NONE },
-  [MSG_JUMP_TO_WHICH_BOX]: { text: 'Aller à quelle\nBOITE?', varKind: MSG_VAR_NONE },
-  [MSG_PICK_A_THEME]: { text: 'Choisis un\ngroupe.', varKind: MSG_VAR_NONE },
-  [MSG_PICK_A_WALLPAPER]: { text: 'Choisis une\ndéco.', varKind: MSG_VAR_NONE },
+  [MSG_EXIT_BOX]: { text: 'Sortir de la BOITE?', varKind: MSG_VAR_NONE },
+  [MSG_CONTINUE_BOX]: { text: 'Continuer gestion BOITE?', varKind: MSG_VAR_NONE },
+  [MSG_HOLDING_POKE]: { text: 'Vous tenez un POKéMON!', varKind: MSG_VAR_NONE },
+  // Box-options (strings.c gText_* :864-868), 1:1 texte FR décomp (1 ligne, WIN_MESSAGE height=2) :
+  [MSG_WHAT_YOU_DO]: { text: 'Que voulez-vous faire?', varKind: MSG_VAR_NONE },
+  [MSG_JUMP_TO_WHICH_BOX]: { text: 'Aller dans quelle BOITE?', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_THEME]: { text: 'Choisissez une catégorie.', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_WALLPAPER]: { text: 'Choisissez un fond.', varKind: MSG_VAR_NONE },
 };
 function PrintMessage(id: number): void {
   const s = sStorage!;
