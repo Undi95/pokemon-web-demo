@@ -831,6 +831,11 @@ export function StorageGetCurrentBox(): number {
   return GetPokemonStorage().currentBox;
 }
 
+/** 1:1 décomp `void SetCurrentBox(u8 boxId)` (pokemon_storage_system.c:9412). */
+function SetCurrentBox(boxId: number): void {
+  if (boxId < TOTAL_BOXES_COUNT) GetPokemonStorage().currentBox = boxId;
+}
+
 /** 1:1 décomp `struct BoxPokemon *GetBoxedMonPtr(u8 boxId, u8 boxPosition)`
  *  (pokemon_storage_system.c:9450) : `&gPokemonStoragePtr->boxes[boxId][boxPosition]`.
  *  Nos slots = Pokemon | null (modèle unifié Pokemon == BoxPokemon). */
@@ -2170,6 +2175,62 @@ function GetBoxTitleBaseX(str: string): number {
   return 240 - 64 - Math.floor(GetStringWidth(str, FONT_NORMAL, 0) / 2);
 }
 
+// ─── :5523 CreateIncomingBoxTitle + :5571 CycleBoxTitleSprites + CB titre ───
+// data titre : sSpeed=data[0], sIncomingX/sOutgoingDelay=data[1], sIncomingDelay/sOutgoingX=data[2].
+type TitleSprite = ScrollIconSprite & { spriteId: number };
+function CreateIncomingBoxTitle(boxId: number, direction: number): void {
+  const s = sStorage!;
+  s.boxTitleCycleId = s.boxTitleCycleId === 0 ? 1 : 0;
+  const tileTag = s.boxTitleCycleId === 0 ? GFXTAG_BOX_TITLE : GFXTAG_BOX_TITLE_ALT;
+  s.boxTitleText = GetBoxNamePtr(boxId);  // StringCopyPadded(…, BOX_NAME_LENGTH)
+  DrawTextWindowAndBufferTiles(s.boxTitleText, s.boxTitleTiles, 0, 0, 2);
+  LoadSpriteSheet({ data: s.boxTitleTiles.subarray(0, 0x200), size: 0x200, tag: tileTag });
+  // LoadPalette(sBoxTitleColors[GetBoxWallpaper(boxId)], boxTitlePalOffset, 4) : sBoxTitleColors IDENTIQUES
+  // pour tous les wallpapers → couleurs déjà à boxTitlePalOffset (InitBoxTitle). Recharge redondante omise.
+  const x = GetBoxTitleBaseX(s.boxTitleText);
+  const adjustedX = x + direction * 192;
+  for (let i = 0; i < 2; i++) {
+    const spriteId = CreateSprite({
+      tileTag, paletteTag: PALTAG_BOX_TITLE, oam: sOamData_BoxTitle,
+      anims: sAnims_BoxTitle, callback: SpriteCB_IncomingBoxTitle as never,
+    }, i * 32 + adjustedX, 28, _sub(24));
+    s.nextBoxTitleSprites[i] = spriteId;
+    const nspr = _spr(spriteId);
+    if (nspr) {
+      nspr.data[0] = (-direction) * 6;  // sSpeed
+      nspr.data[1] = i * 32 + x;        // sIncomingX
+      nspr.data[2] = 0;                 // sIncomingDelay
+      StartSpriteAnim(nspr as never, i);
+    }
+    const cspr = _spr(s.curBoxTitleSprites[i]);
+    if (cspr) {
+      cspr.data[0] = (-direction) * 6;  // sSpeed
+      cspr.data[1] = 1;                 // sOutgoingDelay
+      cspr.callback = SpriteCB_OutgoingBoxTitle as never;
+    }
+  }
+}
+function CycleBoxTitleSprites(): void {
+  const s = sStorage!;
+  if (s.boxTitleCycleId === 0) _freeSpriteTileRangeByTag(GFXTAG_BOX_TITLE_ALT);
+  else _freeSpriteTileRangeByTag(GFXTAG_BOX_TITLE);
+  s.curBoxTitleSprites[0] = s.nextBoxTitleSprites[0];
+  s.curBoxTitleSprites[1] = s.nextBoxTitleSprites[1];
+}
+function SpriteCB_IncomingBoxTitle(sprite: TitleSprite): void {
+  if (sprite.data[2] !== 0) sprite.data[2]--;  // sIncomingDelay
+  else if ((sprite.x += sprite.data[0]) === sprite.data[1]) sprite.callback = null;  // sSpeed → sIncomingX
+}
+function SpriteCB_OutgoingBoxTitle(sprite: TitleSprite): void {
+  if (sprite.data[1] !== 0) {  // sOutgoingDelay
+    sprite.data[1]--;
+  } else {
+    sprite.x += sprite.data[0];             // sSpeed
+    sprite.data[2] = sprite.x + sprite.x2;  // sOutgoingX
+    if (sprite.data[2] < 64 || sprite.data[2] > 240 + 16) DestroySprite(sprite.spriteId);
+  }
+}
+
 // ─── :5637 CreateBoxScrollArrows + :5700 AnimateBoxScrollArrows + :5723 SpriteCB_Arrow ───
 function CreateBoxScrollArrows(): void {
   const s = sStorage!; const a = sStorageAssets!;
@@ -2256,6 +2317,47 @@ function StopBoxScrollArrowsSlide(): void {
     a.x = 136 * i + 92; a.x2 = 0; a.invisible = false;
   }
   AnimateBoxScrollArrows(true);
+}
+// :5240 SetUpScrollToBox
+function SetUpScrollToBox(boxId: number): void {
+  const s = sStorage!;
+  const direction = DetermineBoxScrollDirection(boxId);
+  s.scrollSpeed = (direction > 0) ? 6 : -6;
+  s.scrollUnused1 = (direction > 0) ? 1 : 2;
+  s.scrollTimer = 32;
+  s.scrollToBoxIdUnused = boxId;
+  // scrollUnused2-6 / scrollDirectionUnused : champs inutilisés du décomp, omis.
+  s.scrollToBoxId = boxId;
+  s.scrollDirection = direction;
+  s.scrollState = 0;
+}
+// :5260 ScrollToBox — anime le slide (retourne false quand fini)
+function ScrollToBox(): boolean {
+  const s = sStorage!;
+  let iconsScrolling: boolean;
+  switch (s.scrollState) {
+    case 0:
+      LoadWallpaperGfx(s.scrollToBoxId, s.scrollDirection);
+      s.scrollState++;
+      // fallthrough
+    case 1:
+      if (!WaitForWallpaperGfxLoad()) return true;
+      InitBoxMonIconScroll(s.scrollToBoxId, s.scrollDirection);
+      CreateIncomingBoxTitle(s.scrollToBoxId, s.scrollDirection);
+      StartBoxScrollArrowsSlide(s.scrollDirection);
+      break;
+    case 2:
+      iconsScrolling = UpdateBoxMonIconScroll();
+      if (s.scrollTimer !== 0) {
+        s.bg2_X += s.scrollSpeed;
+        if (--s.scrollTimer !== 0) return true;
+        CycleBoxTitleSprites();
+        StopBoxScrollArrowsSlide();
+      }
+      return iconsScrolling;
+  }
+  s.scrollState++;
+  return true;
 }
 
 // ─── :5788 InitCursor + :5807 InitCursorOnReopen + :5820 GetCursorCoordsByPos ───
@@ -3541,7 +3643,7 @@ function Task_ReshowPokeStorage(_taskId: number): void {
 
 // ─── :2270 Task_PokeStorageMain — boucle principale. PROVISOIRE : cases MOVE_CURSOR + B (fermeture) ;
 // les autres INPUT_* (party/menus/scroll/multimove) = lots #2/#3. MSTATE_* 1:1 (:2254-2268). ───
-const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1;
+const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1, MSTATE_SCROLL_BOX = 2;
 function Task_PokeStorageMain(_taskId: number): void {
   const s = sStorage!;
   switch (s.state) {
@@ -3560,15 +3662,39 @@ function Task_PokeStorageMain(_taskId: number): void {
         case INPUT_CLOSE_BOX:  // :2306 bouton FERMER → fermeture propre → menu PC
           SetPokeStorageTask(Task_OnCloseBoxPressed);
           break;
-        // :2281 INPUT_SHOW_PARTY / :2319 INPUT_SCROLL_* / :2312 INPUT_BOX_OPTIONS → party/scroll/box-options :
-        // lots non portés (SetUpScrollToBox+ScrollToBox+MSTATE_SCROLL_BOX, Task_ShowPartyPokemon garde, Task_HandleBoxOptions).
-        // Inertes : le curseur reste, aucun freeze (state demeure MSTATE_HANDLE_INPUT).
+        case INPUT_SCROLL_RIGHT:  // :2319 ◀▶ tenu sur le titre → boîte suivante (slide)
+          PlaySE(0x5 /* SE_SELECT */);
+          s.newCurrBoxId = StorageGetCurrentBox() + 1;
+          if (s.newCurrBoxId >= TOTAL_BOXES_COUNT) s.newCurrBoxId = 0;
+          // OPTION_MOVE_ITEMS (TryHideItemAtCursor + MSTATE_SCROLL_BOX_ITEM) = lot #10.
+          SetUpScrollToBox(s.newCurrBoxId);
+          s.state = MSTATE_SCROLL_BOX;
+          break;
+        case INPUT_SCROLL_LEFT:  // :2335 → boîte précédente
+          PlaySE(0x5 /* SE_SELECT */);
+          s.newCurrBoxId = StorageGetCurrentBox() - 1;
+          if (s.newCurrBoxId < 0) s.newCurrBoxId = TOTAL_BOXES_COUNT - 1;
+          SetUpScrollToBox(s.newCurrBoxId);
+          s.state = MSTATE_SCROLL_BOX;
+          break;
+        // :2281 INPUT_SHOW_PARTY (party garde) / :2312 INPUT_BOX_OPTIONS = lot #7 (box-options). Inertes.
       }
       break;
     case MSTATE_MOVE_CURSOR:
       if (!UpdateCursorPos()) {
         if (IsCursorOnCloseBox()) StartFlashingCloseBoxButton();
         else StopFlashingCloseBoxButton();
+        s.state = MSTATE_HANDLE_INPUT;
+      }
+      break;
+    case MSTATE_SCROLL_BOX:  // :2459 anime le slide, puis finalise la nouvelle boîte
+      if (!ScrollToBox()) {
+        SetCurrentBox(s.newCurrBoxId);
+        if (!sInPartyMenu && !sIsMonBeingMoved) {  // !IsMonBeingMoved()
+          RefreshDisplayMonData();
+          StartDisplayMonMosaicEffect();
+        }
+        // OPTION_MOVE_ITEMS (TryShowItemAtCursor + MSTATE_WAIT_ITEM_ANIM) = lot #10.
         s.state = MSTATE_HANDLE_INPUT;
       }
       break;
