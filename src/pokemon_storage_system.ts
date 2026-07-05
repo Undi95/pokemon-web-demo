@@ -3684,6 +3684,7 @@ function Task_PokeStorageMain(_taskId: number): void {
       if (!UpdateCursorPos()) {
         if (IsCursorOnCloseBox()) StartFlashingCloseBoxButton();
         else StopFlashingCloseBoxButton();
+        if (s.setMosaic) StartDisplayMonMosaicEffect();  // :2454 — rafraîchit (RefreshDisplayMonData) + pixelise le displayMon
         s.state = MSTATE_HANDLE_INPUT;
       }
       break;
@@ -3812,7 +3813,16 @@ function Task_OnCloseBoxPressed(_taskId: number): void {
     cursorSpr: cursor ? { x: cursor.x, y: cursor.y, invisible: cursor.invisible } : null,
     cursorOam: oam ? { paletteBank: oam.paletteBank, priority: oam.priority, tileId: oam.tileId } : null,
     arrows: s ? s.arrowSprites.map((id) => { const a = _spr(id); return a ? { d0: a.data[0], d3: a.data[3], x: a.x, x2: a.x2, inv: a.invisible, cb: (a as { callback?: { name?: string } }).callback?.name } : null; }) : null,
+    displayMonSpr: s ? (() => { const d = _spr(s.displayMonSprite); return d ? { inv: d.invisible } : null; })() : null,
+    displayCache: s ? (s.displayMonSpecies == null ? 'n/a' : (_displayMonCache.has(s.displayMonSpecies) ? (_displayMonCache.get(s.displayMonSpecies) ? 'filled' : 'null-gate') : 'absent')) : null,
   };
+};
+// Sonde diag : force un re-render du displayMon + retourne l'état.
+(globalThis as Record<string, unknown>).__dbgReloadDisplay = () => {
+  const s = sStorage; if (!s) return 'no storage';
+  const sp = s.displayMonSpecies;
+  LoadDisplayMonGfx(sp, s.displayMonPersonality);
+  return JSON.stringify({ sp, cache: _displayMonCache.get(sp) ? 'filled' : String(_displayMonCache.get(sp)), inv: _spr(s.displayMonSprite)?.invisible });
 };
 
 // Exposition dev (sonde déterministe), sans effet sur le jeu.
