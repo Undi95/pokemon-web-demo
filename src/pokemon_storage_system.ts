@@ -2260,7 +2260,7 @@ const STATE_LOAD = 0, STATE_FADE_IN = 1, STATE_HANDLE_INPUT = 2, STATE_ERROR_MSG
 // Menu_ProcessInput sentinelles (menu.ts) + touches GBA (io_reg) + text/window (text.ts)
 const MENU_NOTHING_CHOSEN = -2, MENU_B_PRESSED = -1;
 const DPAD_UP = 0x0040, DPAD_DOWN = 0x0080, A_BUTTON = 0x0001, B_BUTTON = 0x0002;
-const DPAD_RIGHT = 0x0010, DPAD_LEFT = 0x0020;
+const DPAD_RIGHT = 0x0010, DPAD_LEFT = 0x0020, START_BUTTON = 0x0008, SELECT_BUTTON = 0x0004;
 const FONT_NORMAL = 1, TEXT_COLOR_DARK_GRAY = 2, TEXT_COLOR_WHITE = 1, TEXT_COLOR_LIGHT_GRAY = 3;
 const COPYWIN_FULL = 3, TEXT_SKIP_DRAW = 0xFF, PIXEL_FILL_1 = 0x11;
 
@@ -3005,30 +3005,128 @@ function Task_OnSelectedMon(_taskId: number): void {
   }
 }
 
-// ─── HandleInput — PROVISOIRE (lot #2 = InBoxInput/InPartyInput/OnButtonsInput/OnBoxTitleInput
-// :6200-6700). Nav grille 6×5 wrap + A (menu contextuel) + B. Les INPUT_* renvoyés sont 1:1. ───
-function HandleInput(): number {
-  const rows = IN_BOX_COUNT / IN_BOX_COLUMNS;
-  if (sCursorArea === CURSOR_AREA_IN_BOX) {
-    let col = sCursorPosition % IN_BOX_COLUMNS;
-    let row = Math.floor(sCursorPosition / IN_BOX_COLUMNS);
-    let moved = false;
-    const s = sStorage!;
-    s.cursorVerticalWrap = 0; s.cursorHorizontalWrap = 0;
-    if (gMain.newKeys & DPAD_UP) { if (row === 0) s.cursorVerticalWrap = -1; row = (row + rows - 1) % rows; moved = true; }
-    else if (gMain.newKeys & DPAD_DOWN) { if (row === rows - 1) s.cursorVerticalWrap = 1; row = (row + 1) % rows; moved = true; }
-    else if (gMain.newKeys & DPAD_LEFT) { if (col === 0) s.cursorHorizontalWrap = -1; col = (col + IN_BOX_COLUMNS - 1) % IN_BOX_COLUMNS; moved = true; }
-    else if (gMain.newKeys & DPAD_RIGHT) { if (col === IN_BOX_COLUMNS - 1) s.cursorHorizontalWrap = 1; col = (col + 1) % IN_BOX_COLUMNS; moved = true; }
-    if (moved) {
-      SetCursorPosition(CURSOR_AREA_IN_BOX, row * IN_BOX_COLUMNS + col);
-      return INPUT_MOVE_CURSOR;
+// ─── :7014 InBoxInput_Normal + :7433 HandleInput_OnBox + :7504 HandleInput_OnButtons + :7577 HandleInput ───
+// JOY_* : décomp JOY_REPEAT = newAndRepeatedKeys, JOY_HELD = heldKeys, JOY_NEW = newKeys.
+const JOY_REPEAT = (keys: number): number => ((gMain as { newAndRepeatedKeys?: number }).newAndRepeatedKeys ?? gMain.newKeys) & keys;
+const JOY_HELD = (keys: number): number => ((gMain as { heldKeys?: number }).heldKeys ?? 0) & keys;
+const JOY_NEW = (keys: number): number => gMain.newKeys & keys;
+
+function InBoxInput_Normal(): number {
+  let retVal = INPUT_NONE; let cursorArea = sCursorArea; let cursorPosition = sCursorPosition;
+  const s = sStorage!;
+  do {
+    cursorArea = sCursorArea; cursorPosition = sCursorPosition;
+    s.cursorVerticalWrap = 0; s.cursorHorizontalWrap = 0; s.cursorFlipTimer = 0;
+    if (JOY_REPEAT(DPAD_UP)) {
+      retVal = INPUT_MOVE_CURSOR;
+      if (sCursorPosition >= IN_BOX_COLUMNS) cursorPosition -= IN_BOX_COLUMNS;
+      else { cursorArea = CURSOR_AREA_BOX_TITLE; cursorPosition = 0; }
+      break;
+    } else if (JOY_REPEAT(DPAD_DOWN)) {
+      retVal = INPUT_MOVE_CURSOR; cursorPosition += IN_BOX_COLUMNS;
+      if (cursorPosition >= IN_BOX_COUNT) {
+        cursorArea = CURSOR_AREA_BUTTONS; cursorPosition -= IN_BOX_COUNT;
+        cursorPosition = Math.floor(cursorPosition / 3); s.cursorVerticalWrap = 1; s.cursorFlipTimer = 1;
+      }
+      break;
+    } else if (JOY_REPEAT(DPAD_LEFT)) {
+      retVal = INPUT_MOVE_CURSOR;
+      if (sCursorPosition % IN_BOX_COLUMNS !== 0) cursorPosition--;
+      else { s.cursorHorizontalWrap = -1; cursorPosition += (IN_BOX_COLUMNS - 1); }
+      break;
+    } else if (JOY_REPEAT(DPAD_RIGHT)) {
+      retVal = INPUT_MOVE_CURSOR;
+      if ((sCursorPosition + 1) % IN_BOX_COLUMNS !== 0) cursorPosition++;
+      else { s.cursorHorizontalWrap = 1; cursorPosition -= (IN_BOX_COLUMNS - 1); }
+      break;
+    } else if (JOY_NEW(START_BUTTON)) {
+      retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_BOX_TITLE; cursorPosition = 0; break;
     }
+    // :7092 A → SetSelectionMenuTexts → menu (sAutoActionOn dispatch direct = lot suivant).
+    if (JOY_NEW(A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
+    if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
+    if (JOY_NEW(SELECT_BUTTON)) { ToggleCursorAutoAction(); return INPUT_NONE; }
+    retVal = INPUT_NONE;
+  } while (false);
+  if (retVal !== INPUT_NONE) SetCursorPosition(cursorArea, cursorPosition);
+  return retVal;
+}
+
+function HandleInput_OnBox(): number {
+  let retVal = INPUT_NONE; let cursorArea = 0; let cursorPosition = 0;
+  const s = sStorage!;
+  do {
+    s.cursorHorizontalWrap = 0; s.cursorVerticalWrap = 0; s.cursorFlipTimer = 0;
+    if (JOY_REPEAT(DPAD_UP)) {
+      retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_BUTTONS; cursorPosition = 0; s.cursorFlipTimer = 1; break;
+    } else if (JOY_REPEAT(DPAD_DOWN)) {
+      retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_IN_BOX; cursorPosition = 2; break;
+    }
+    if (JOY_HELD(DPAD_LEFT)) return INPUT_SCROLL_LEFT;
+    if (JOY_HELD(DPAD_RIGHT)) return INPUT_SCROLL_RIGHT;
+    // :7447 A → AnimateBoxScrollArrows(FALSE); AddBoxOptionsMenu() → INPUT_BOX_OPTIONS → Task_HandleBoxOptions
+    // (SAUTER/DÉCO/NOM). Lot box-options non porté → A inerte (curseur reste sur le titre, flèches actives).
+    if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
+    if (JOY_NEW(SELECT_BUTTON)) { ToggleCursorAutoAction(); return INPUT_NONE; }
+    retVal = INPUT_NONE;
+  } while (false);
+  if (retVal !== INPUT_NONE) {
+    if (cursorArea !== CURSOR_AREA_BOX_TITLE) AnimateBoxScrollArrows(false);
+    SetCursorPosition(cursorArea, cursorPosition);
   }
-  // A dans toute zone (boîte OU party) → SetSelectionMenuTexts → menu contextuel (:7092 InBox /
-  // :InParty ; nav party réelle = lot InParty). sAutoActionOn = dispatch direct (lot suivant).
-  if ((gMain.newKeys & A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
-  if (gMain.newKeys & B_BUTTON) return INPUT_PRESSED_B;
+  return retVal;
+}
+
+function HandleInput_OnButtons(): number {
+  let retVal = INPUT_NONE; let cursorArea = sCursorArea; let cursorPosition = sCursorPosition;
+  const s = sStorage!;
+  do {
+    cursorArea = sCursorArea; cursorPosition = sCursorPosition;
+    s.cursorHorizontalWrap = 0; s.cursorVerticalWrap = 0; s.cursorFlipTimer = 0;
+    if (JOY_REPEAT(DPAD_UP)) {
+      retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_IN_BOX; s.cursorVerticalWrap = -1;
+      cursorPosition = (sCursorPosition === 0) ? (IN_BOX_COUNT - 1 - 5) : (IN_BOX_COUNT - 1);
+      s.cursorFlipTimer = 1; break;
+    }
+    if (JOY_REPEAT(DPAD_DOWN | START_BUTTON)) {
+      retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_BOX_TITLE; cursorPosition = 0; s.cursorFlipTimer = 1; break;
+    }
+    if (JOY_REPEAT(DPAD_LEFT)) { retVal = INPUT_MOVE_CURSOR; if (--cursorPosition < 0) cursorPosition = 1; break; }
+    else if (JOY_REPEAT(DPAD_RIGHT)) { retVal = INPUT_MOVE_CURSOR; if (++cursorPosition > 1) cursorPosition = 0; break; }
+    if (JOY_NEW(A_BUTTON)) return (cursorPosition === 0) ? INPUT_SHOW_PARTY : INPUT_CLOSE_BOX;
+    if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
+    if (JOY_NEW(SELECT_BUTTON)) { ToggleCursorAutoAction(); return INPUT_NONE; }
+    retVal = INPUT_NONE;
+  } while (false);
+  if (retVal !== INPUT_NONE) SetCursorPosition(cursorArea, cursorPosition);
+  return retVal;
+}
+
+// :7310 HandleInput_InParty — nav party réelle = lot suivant ; ici A/B minimal (le user teste RETIRER, pas la party).
+function HandleInput_InParty(): number {
+  if (JOY_NEW(A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
+  if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
   return INPUT_NONE;
+}
+
+// ─── :7577 HandleInput — dispatch selon sCursorArea. ───
+function HandleInput(): number {
+  switch (sCursorArea) {
+    case CURSOR_AREA_IN_BOX: return InBoxInput_Normal();
+    case CURSOR_AREA_IN_PARTY: return HandleInput_InParty();
+    case CURSOR_AREA_BOX_TITLE: return HandleInput_OnBox();
+    case CURSOR_AREA_BUTTONS: return HandleInput_OnButtons();
+  }
+  return INPUT_NONE;
+}
+
+// ─── :7603 AddBoxOptionsMenu ───
+function AddBoxOptionsMenu(): void {
+  InitMenu();
+  SetMenuText(MENU_JUMP);
+  SetMenuText(MENU_WALLPAPER);
+  SetMenuText(MENU_NAME);
+  SetMenuText(MENU_CANCEL);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3266,6 +3364,12 @@ function Task_PokeStorageMain(_taskId: number): void {
         case INPUT_PRESSED_B:  // :2295 → Task_OnBPressed (« Continuer ? » Oui/Non → fermeture propre → menu PC)
           SetPokeStorageTask(Task_OnBPressed);
           break;
+        case INPUT_CLOSE_BOX:  // :2306 bouton FERMER → fermeture propre → menu PC
+          SetPokeStorageTask(Task_OnCloseBoxPressed);
+          break;
+        // :2281 INPUT_SHOW_PARTY / :2319 INPUT_SCROLL_* / :2312 INPUT_BOX_OPTIONS → party/scroll/box-options :
+        // lots non portés (SetUpScrollToBox+ScrollToBox+MSTATE_SCROLL_BOX, Task_ShowPartyPokemon garde, Task_HandleBoxOptions).
+        // Inertes : le curseur reste, aucun freeze (state demeure MSTATE_HANDLE_INPUT).
       }
       break;
     case MSTATE_MOVE_CURSOR:
@@ -3388,6 +3492,7 @@ function Task_OnCloseBoxPressed(_taskId: number): void {
     boxSprites: s ? s.boxMonsSprites.filter((i) => i >= 0).length : 0,
     cursorSpr: cursor ? { x: cursor.x, y: cursor.y, invisible: cursor.invisible } : null,
     cursorOam: oam ? { paletteBank: oam.paletteBank, priority: oam.priority, tileId: oam.tileId } : null,
+    arrows: s ? s.arrowSprites.map((id) => { const a = _spr(id); return a ? { d0: a.data[0], d3: a.data[3], x: a.x, x2: a.x2, inv: a.invisible, cb: (a as { callback?: { name?: string } }).callback?.name } : null; }) : null,
   };
 };
 
