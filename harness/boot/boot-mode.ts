@@ -212,11 +212,13 @@ function applyNoIntroPreset(): void {
   // Running shoes (= FLAG_SYS_B_DASH set par dad in
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
   FlagSet('FLAG_SYS_B_DASH');
-  // ⚠️ DEBUG : options confort test (user 2026-07-02) — VIT. TEXTE « 3 » =
-  // OPTIONS_TEXT_SPEED_FAST (2) + FENETRE « TYPE 3 » = frameType index 2
-  // (affichage 1-based du menu OPTIONS).
+  // ⚠️ DEBUG : VIT. TEXTE « 3 » = OPTIONS_TEXT_SPEED_FAST (2) pour le confort de test.
+  // optionsWindowFrameType = 0 = défaut new_game.c:94 (cadre « TYPE 1 » bleu
+  // classique). Le type 3 (index 2), mis en test le 2026-07-02, rendait le cadre
+  // du message PC (et de tous les écrans user-frame : sac/options/carte) en
+  // pointillé rouge/bleu détonnant — 0 est le rendu 1:1 d'un playthrough normal.
   gSaveBlock2Ptr.optionsTextSpeed = 2;
-  gSaveBlock2Ptr.optionsWindowFrameType = 2;
+  gSaveBlock2Ptr.optionsWindowFrameType = 0;
   // Pokédex + Pokémon menu unlocks (= 1:1 décomp BuildNormalStartMenu requis
   // pour POKéDEX et POKéMON entries du start menu). Permet aussi de tester
   // ces écrans via ?nointro sans avoir à faire toute l'intro.
