@@ -35,7 +35,7 @@ import {
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
 import { gSpeciesNames } from './engine/data/game-data';
-import { LoadUserWindowBorderGfx } from './text_window';
+import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
 import { SE_PC_LOGIN } from '../include/constants/songs';
 import {
   DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
@@ -679,6 +679,12 @@ function GetBoxNamePtr(boxId: number): string {
 /** 1:1 `u8 GetBoxWallpaper(u8 boxId)` / `void SetBoxWallpaper(...)` (:9530-9545). */
 function GetBoxWallpaper(boxId: number): number {
   return (GetPokemonStorage() as unknown as { wallpapers?: number[] }).wallpapers?.[boxId] ?? (boxId % 4);
+}
+/** 1:1 `void SetBoxWallpaper(u8 boxId, u8 wallpaper)` (:9545). */
+function SetBoxWallpaper(boxId: number, wallpaperId: number): void {
+  const st = GetPokemonStorage() as unknown as { wallpapers?: number[] };
+  if (!st.wallpapers) st.wallpapers = [];
+  st.wallpapers[boxId] = wallpaperId;
 }
 
 // ─── TilemapUtil (:9772-9967) — moteur de tilemaps rectangulaires du PC. ─────
@@ -3108,7 +3114,17 @@ sMenuTexts[MENU_WITHDRAW] = 'RETIRER'; sMenuTexts[MENU_MOVE] = 'DEPLACER';
 sMenuTexts[MENU_SHIFT] = 'CHANGER';    sMenuTexts[MENU_PLACE] = 'PLACER';
 sMenuTexts[MENU_SUMMARY] = 'RESUME';   sMenuTexts[MENU_RELEASE] = 'RELACHER';
 sMenuTexts[MENU_MARK] = 'MARQUER';
-// (JUMP/WALLPAPER/NAME/TAKE/GIVE/… = lots wallpaper/items suivants)
+// Box-options (:7933 gPCText_*) : libellés FR police GBA (majuscules sans diacritiques, comme DEPOSER/RESUME).
+sMenuTexts[MENU_JUMP] = 'SAUTER';      sMenuTexts[MENU_WALLPAPER] = 'DECO';    sMenuTexts[MENU_NAME] = 'NOM';
+// Thèmes de déco (AddWallpaperSetsMenu) :
+sMenuTexts[MENU_SCENERY_1] = 'PAYSAGE 1'; sMenuTexts[MENU_SCENERY_2] = 'PAYSAGE 2';
+sMenuTexts[MENU_SCENERY_3] = 'PAYSAGE 3'; sMenuTexts[MENU_ETCETERA] = 'DIVERS'; sMenuTexts[MENU_FRIENDS] = 'WALDA';
+// Wallpapers (AddWallpapersMenu) :
+sMenuTexts[MENU_FOREST] = 'FORET';   sMenuTexts[MENU_CITY] = 'VILLE';     sMenuTexts[MENU_DESERT] = 'DESERT';  sMenuTexts[MENU_SAVANNA] = 'SAVANE';
+sMenuTexts[MENU_CRAG] = 'PIC';       sMenuTexts[MENU_VOLCANO] = 'VOLCAN'; sMenuTexts[MENU_SNOW] = 'NEIGE';     sMenuTexts[MENU_CAVE] = 'GROTTE';
+sMenuTexts[MENU_BEACH] = 'PLAGE';    sMenuTexts[MENU_SEAFLOOR] = 'MER';   sMenuTexts[MENU_RIVER] = 'RIVIERE';  sMenuTexts[MENU_SKY] = 'CIEL';
+sMenuTexts[MENU_POLKADOT] = 'POIS';  sMenuTexts[MENU_POKECENTER] = 'CENTRE'; sMenuTexts[MENU_MACHINE] = 'MACHINE'; sMenuTexts[MENU_SIMPLE] = 'SIMPLE';
+// (TAKE/GIVE/… = lot items suivant)
 
 // ─── :7924 InitMenu ───
 function InitMenu(): void {
@@ -3240,6 +3256,11 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_EXIT_BOX]: { text: 'Quitter la BOITE?', varKind: MSG_VAR_NONE },
   [MSG_CONTINUE_BOX]: { text: 'Continuer les\nopérations BOITE?', varKind: MSG_VAR_NONE },
   [MSG_HOLDING_POKE]: { text: 'Vous tenez\nun POKéMON!', varKind: MSG_VAR_NONE },
+  // Box-options (:7933 gText_*) :
+  [MSG_WHAT_YOU_DO]: { text: 'Que faire?', varKind: MSG_VAR_NONE },
+  [MSG_JUMP_TO_WHICH_BOX]: { text: 'Aller à quelle\nBOITE?', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_THEME]: { text: 'Choisis un\ngroupe.', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_WALLPAPER]: { text: 'Choisis une\ndéco.', varKind: MSG_VAR_NONE },
 };
 function PrintMessage(id: number): void {
   const s = sStorage!;
@@ -3250,8 +3271,9 @@ function PrintMessage(id: number): void {
     else if (entry.varKind === MSG_VAR_RELEASE_MON_1 || entry.varKind === MSG_VAR_RELEASE_MON_3) text = text.replace('{0}', s.releaseMonName);
   }
   FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL_1);
-  DrawDialogueFrame(WIN_MESSAGE, false);
   AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, text, 0, 1, TEXT_SKIP_DRAW, null);
+  DrawTextBorderOuter(WIN_MESSAGE, 2, 14);  // :4309 cadre « outer » du PC (tiles chargées à 2 via :1768) —
+  // PAS DrawDialogueFrame (cadre overworld, tiles non chargées dans le PC → bords noirs glitchés).
   PutWindowTilemap(WIN_MESSAGE);
   CopyWindowToVram(WIN_MESSAGE, 3 /* COPYWIN_FULL */);
   ScheduleBgCopyTilemapToVram(0);
@@ -3370,8 +3392,8 @@ function HandleInput_OnBox(): number {
     }
     if (JOY_HELD(DPAD_LEFT)) return INPUT_SCROLL_LEFT;
     if (JOY_HELD(DPAD_RIGHT)) return INPUT_SCROLL_RIGHT;
-    // :7447 A → AnimateBoxScrollArrows(FALSE); AddBoxOptionsMenu() → INPUT_BOX_OPTIONS → Task_HandleBoxOptions
-    // (SAUTER/DÉCO/NOM). Lot box-options non porté → A inerte (curseur reste sur le titre, flèches actives).
+    // :7447 A → menu box-options (SAUTER/DÉCO/NOM/ANNULER).
+    if (JOY_NEW(A_BUTTON)) { AnimateBoxScrollArrows(false); AddBoxOptionsMenu(); return INPUT_BOX_OPTIONS; }
     if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
     if (JOY_NEW(SELECT_BUTTON)) { ToggleCursorAutoAction(); return INPUT_NONE; }
     retVal = INPUT_NONE;
@@ -3434,6 +3456,253 @@ function AddBoxOptionsMenu(): void {
   SetMenuText(MENU_NAME);
   SetMenuText(MENU_CANCEL);
 }
+
+// ─── :3378 Task_HandleBoxOptions — menu SAUTER/DÉCO/NOM/ANNULER ───
+function Task_HandleBoxOptions(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PrintMessage(MSG_WHAT_YOU_DO);
+      AddMenu();
+      s.state++;
+      break;
+    case 1:
+      if (IsMenuLoading()) return;
+      s.state++;
+    // fallthrough
+    case 2:
+      switch (HandleMenuInput()) {
+        case MENU_B_PRESSED:
+        case MENU_CANCEL:
+          AnimateBoxScrollArrows(true);
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case MENU_NAME:
+          PlaySE(0x5 /* SE_SELECT */);
+          SetPokeStorageTask(Task_NameBox);
+          break;
+        case MENU_WALLPAPER:
+          PlaySE(0x5);
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_HandleWallpapers);
+          break;
+        case MENU_JUMP:
+          PlaySE(0x5);
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_JumpBox);
+          break;
+      }
+      break;
+  }
+}
+// ─── :3419 Task_HandleWallpapers — DÉCO : 2 menus (thèmes → wallpapers) + changement gfx ───
+function Task_HandleWallpapers(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      AddWallpaperSetsMenu();
+      PrintMessage(MSG_PICK_A_THEME);
+      s.state++;
+      break;
+    case 1:
+      if (!IsMenuLoading()) s.state++;
+      break;
+    case 2:
+      s.wallpaperSetId = HandleMenuInput();
+      switch (s.wallpaperSetId) {
+        case MENU_B_PRESSED:
+          AnimateBoxScrollArrows(true);
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case MENU_SCENERY_1:
+        case MENU_SCENERY_2:
+        case MENU_SCENERY_3:
+        case MENU_ETCETERA:
+          PlaySE(0x5);
+          RemoveMenu();
+          s.wallpaperSetId -= MENU_WALLPAPER_SETS_START;
+          s.state++;
+          break;
+        case MENU_FRIENDS:  // Walda (jamais atteint : IsWaldaWallpaperUnlocked=false)
+          PlaySE(0x5);
+          s.wallpaperId = WALLPAPER_FRIENDS;
+          RemoveMenu();
+          ClearBottomWindow();
+          s.state = 6;
+          break;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        AddWallpapersMenu(s.wallpaperSetId);
+        PrintMessage(MSG_PICK_A_WALLPAPER);
+        s.state++;
+      }
+      break;
+    case 4:
+      s.wallpaperId = HandleMenuInput();
+      switch (s.wallpaperId) {
+        case MENU_NOTHING_CHOSEN:
+          break;
+        case MENU_B_PRESSED:
+          ClearBottomWindow();
+          s.state = 0;
+          break;
+        default:
+          PlaySE(0x5);
+          ClearBottomWindow();
+          s.wallpaperId -= MENU_WALLPAPERS_START;
+          SetWallpaperForCurrentBox(s.wallpaperId);
+          s.state++;
+          break;
+      }
+      break;
+    case 5:
+      if (!DoWallpaperGfxChange()) {
+        AnimateBoxScrollArrows(true);
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+    case 6:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        SetWallpaperForCurrentBox(s.wallpaperId);
+        s.state = 5;
+      }
+      break;
+  }
+}
+// ─── :3504 Task_JumpBox — SAUTER : ChooseBoxMenu → scroll direct ───
+function Task_JumpBox(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PrintMessage(MSG_JUMP_TO_WHICH_BOX);
+      LoadChooseBoxMenuGfx(s.chooseBoxMenu, GFXTAG_CHOOSE_BOX_MENU, PALTAG_MISC_1, 3, false);
+      CreateChooseBoxMenuSprites(StorageGetCurrentBox());
+      s.state++;
+      break;
+    case 1:
+      s.newCurrBoxId = HandleChooseBoxMenuInput();
+      switch (s.newCurrBoxId) {
+        case BOXID_NONE_CHOSEN:
+          break;
+        default:
+          ClearBottomWindow();
+          DestroyChooseBoxMenuSprites();
+          FreeChooseBoxMenu();
+          if (s.newCurrBoxId === BOXID_CANCELED || s.newCurrBoxId === StorageGetCurrentBox()) {
+            AnimateBoxScrollArrows(true);
+            SetPokeStorageTask(Task_PokeStorageMain);
+          } else {
+            s.state++;
+          }
+          break;
+      }
+      break;
+    case 2:
+      SetUpScrollToBox(s.newCurrBoxId);
+      s.state++;
+      break;
+    case 3:
+      if (!ScrollToBox()) {
+        SetCurrentBox(s.newCurrBoxId);
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+  }
+}
+// ─── :3550 Task_NameBox — NOM : fade + changement d'écran (naming screen = lot séparé) ───
+function Task_NameBox(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      // SaveMovingMon() : sauve le mon en déplacement (lot MultiMove) — pas de mon en déplacement ici.
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      s.state++;
+      break;
+    case 1:
+      if (!UpdatePaletteFade()) {
+        s.screenChangeType = SCREEN_CHANGE_NAME_BOX;
+        SetPokeStorageTask(Task_ChangeScreen);
+      }
+      break;
+  }
+}
+// ─── :4327 AddWallpaperSetsMenu + :4339 AddWallpapersMenu ───
+function AddWallpaperSetsMenu(): void {
+  InitMenu();
+  SetMenuText(MENU_SCENERY_1);
+  SetMenuText(MENU_SCENERY_2);
+  SetMenuText(MENU_SCENERY_3);
+  SetMenuText(MENU_ETCETERA);
+  if (IsWaldaWallpaperUnlocked()) SetMenuText(MENU_FRIENDS);
+  AddMenu();
+}
+function AddWallpapersMenu(wallpaperSet: number): void {
+  InitMenu();
+  switch (wallpaperSet) {
+    case MENU_SCENERY_1 - MENU_WALLPAPER_SETS_START:
+      SetMenuText(MENU_FOREST); SetMenuText(MENU_CITY); SetMenuText(MENU_DESERT); SetMenuText(MENU_SAVANNA);
+      break;
+    case MENU_SCENERY_2 - MENU_WALLPAPER_SETS_START:
+      SetMenuText(MENU_CRAG); SetMenuText(MENU_VOLCANO); SetMenuText(MENU_SNOW); SetMenuText(MENU_CAVE);
+      break;
+    case MENU_SCENERY_3 - MENU_WALLPAPER_SETS_START:
+      SetMenuText(MENU_BEACH); SetMenuText(MENU_SEAFLOOR); SetMenuText(MENU_RIVER); SetMenuText(MENU_SKY);
+      break;
+    case MENU_ETCETERA - MENU_WALLPAPER_SETS_START:
+      SetMenuText(MENU_POLKADOT); SetMenuText(MENU_POKECENTER); SetMenuText(MENU_MACHINE); SetMenuText(MENU_SIMPLE);
+      break;
+  }
+  AddMenu();
+}
+// ─── :5315 SetWallpaperForCurrentBox + :5322 DoWallpaperGfxChange + :5611 CycleBoxTitleColor ───
+function SetWallpaperForCurrentBox(wallpaperId: number): void {
+  const s = sStorage!;
+  const boxId = StorageGetCurrentBox();
+  SetBoxWallpaper(boxId, wallpaperId);
+  s.wallpaperChangeState = 0;
+}
+function DoWallpaperGfxChange(): boolean {
+  const s = sStorage!;
+  switch (s.wallpaperChangeState) {
+    case 0:
+      BeginNormalPaletteFade(s.wallpaperPalBits, 1, 0, 16, RGB_WHITEALPHA);
+      s.wallpaperChangeState++;
+      break;
+    case 1:
+      if (!UpdatePaletteFade()) {
+        LoadWallpaperGfx(StorageGetCurrentBox(), 0);
+        s.wallpaperChangeState++;
+      }
+      break;
+    case 2:
+      if (WaitForWallpaperGfxLoad() === true) {
+        CycleBoxTitleColor();
+        BeginNormalPaletteFade(s.wallpaperPalBits, 1, 16, 0, RGB_WHITEALPHA);
+        s.wallpaperChangeState++;
+      }
+      break;
+    case 3:
+      if (!UpdatePaletteFade()) s.wallpaperChangeState++;
+      break;
+    case 4:
+      return false;
+  }
+  return true;
+}
+function CycleBoxTitleColor(): void {
+  // sBoxTitleColors[wp] IDENTIQUES pour tous les wallpapers (constantes) → couleurs du titre inchangées.
+  // Le décomp recopie sBoxTitleColors[wp] vers gPlttBufferUnfaded ; ici no-op 1:1 effectif.
+}
+// Walda wallpaper (event optionnel Émeraude) : jamais débloqué chez nous.
+function IsWaldaWallpaperUnlocked(): boolean { return false; }
+const WALLPAPER_FRIENDS = 16;     // wallpaper Walda (index après les 16 standards)
+const RGB_WHITEALPHA = 0xFFFF;    // RGB_WHITE (0x7FFF) | 0x8000 (bit alpha)
+// DMA3 async : nos copies de tilemap BG sont synchrones → jamais busy.
+function IsDma3ManagerBusyWithBgCopy(): boolean { return false; }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION — pipeline d'ouverture (:1998-2252)
@@ -3688,7 +3957,11 @@ function Task_PokeStorageMain(_taskId: number): void {
           SetUpScrollToBox(s.newCurrBoxId);
           s.state = MSTATE_SCROLL_BOX;
           break;
-        // :2281 INPUT_SHOW_PARTY (party garde) / :2312 INPUT_BOX_OPTIONS = lot #7 (box-options). Inertes.
+        case INPUT_BOX_OPTIONS:  // :2312 A sur titre → menu SAUTER/DÉCO/NOM
+          PlaySE(0x5 /* SE_SELECT */);
+          SetPokeStorageTask(Task_HandleBoxOptions);
+          break;
+        // :2281 INPUT_SHOW_PARTY (party garde) = inerte (lot party menu).
       }
       break;
     case MSTATE_MOVE_CURSOR:
