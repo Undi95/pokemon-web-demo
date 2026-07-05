@@ -547,8 +547,10 @@ interface StorageAssets {
 let sStorageAssets: StorageAssets | null = null;
 let _storageAssetsLoading: Promise<void> | null = null;
 
-/** Tiles 4bpp d'un PNG du décomp : PLTE (indexé) via loadIndexedPngStrict, sinon GRAYSCALE
- *  (gbagfx sans palette : gris = index — menu/scrolling_bg/arrow) via canvas, index = R>>4. */
+/** Tiles 4bpp d'un PNG du décomp : PLTE (indexé) via loadIndexedPngStrict, sinon GRAYSCALE.
+ *  🩸 gbagfx INVERSE les couleurs des PNG SANS palette (convert_png.c:95 hasPalette=false →
+ *  gfx.c:167-170 `index = 15 - gray`). Donc scrolling_bg/arrow/box_popup (colorType 0) : le gris
+ *  5/6/7 devient index 10/9/8 (les couleurs pâles). Reproduit ici : index = 15 - (R>>4). */
 async function _loadTiles4bpp(url: string): Promise<Uint8Array> {
   try {
     return (await loadIndexedPngStrict(url, 4)).charData;
@@ -570,7 +572,7 @@ async function _loadTiles4bpp(url: string): Promise<Uint8Array> {
     for (let ty = 0; ty < hT; ty++) for (let tx = 0; tx < wT; tx++)
       for (let py = 0; py < 8; py++) for (let px = 0; px < 8; px += 2) {
         const i0 = ((ty * 8 + py) * canvas.width + tx * 8 + px) * 4;
-        const lo = data[i0] >> 4, hi = data[i0 + 4] >> 4;  // gris = index<<4 (R=G=B)
+        const lo = 15 - (data[i0] >> 4), hi = 15 - (data[i0 + 4] >> 4);  // inversion gbagfx grayscale
         out[o++] = lo | (hi << 4);
       }
     return out;
