@@ -31,7 +31,7 @@ import { GetPlayerNameString } from '../../src/text';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
 import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
-import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount } from '../../src/engine/battle/party-storage';
+import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount, CopyMonToPC } from '../../src/engine/battle/party-storage';
 import { loadGameData, getSpeciesInfo, getExperienceForLevel } from '../../src/engine/data/game-data';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
 import { SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../src/engine/ui/pokedex-flags';
@@ -400,6 +400,18 @@ function applyNoIntroPreset(): void {
       GiveMonToPlayer(mon);
       console.log(`[boot-mode] ?debug field-mon ajouté : ${fm.species} Lv${fm.lvl} [${fm.moves.join(', ')}]`);
     }
+
+    // ⚠️ DEBUG ONLY : Bulbizarre Lv12 rangé DANS LE PC (boîte 1) — tester le rendu des mons dans
+    // l'écran des boîtes (icône, fenêtre DONNÉES, couleurs). CopyMonToPC = 1re boîte libre (1:1 décomp).
+    const bulbi = createTestMon('SPECIES_BULBASAUR', 12, {
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      moves: ['MOVE_TACKLE', 'MOVE_GROWL', 'MOVE_LEECH_SEED', 'MOVE_VINE_WHIP'],
+    });
+    bulbi.metLevel = 5;
+    bulbi.metLocation = (resolveDecompConstant('MAPSEC_LITTLEROOT_TOWN') as number | undefined) ?? 0;
+    CopyMonToPC(bulbi);
+    console.log(`[boot-mode] ?debug Bulbizarre rangé dans le PC (boîte 1)`);
 
     // ⚠️ DEBUG ONLY : enregistre les mons de l'équipe debug au Pokédex (VUS + CAPTURÉS).
     // En jeu réel, obtenir un mon pose FLAG_SET_SEEN (rencontre) puis FLAG_SET_CAUGHT

@@ -382,7 +382,7 @@ export function GiveMonToPlayer(mon: Pokemon): number {
  *  storage via le hook `__getPokemonStorage` (cycle-safe : éviter d'importer save.ts
  *  lourd dans party-storage). MonRestorePP (PP au max) = 1:1 ✅. gSpecialVar_MonBoxId/Pos
  *  (numéro pour le message « envoyé à la Boîte X ») = refinement différé. */
-function CopyMonToPC(mon: Pokemon): number {
+export function CopyMonToPC(mon: Pokemon): number {
   const getStorage = (globalThis as { __getPokemonStorage?: () => PokemonStorage }).__getPokemonStorage;
   const storage = getStorage?.();
   if (!storage) {
