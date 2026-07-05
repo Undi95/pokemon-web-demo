@@ -2065,6 +2065,48 @@ function SpriteCB_Arrow(sprite: { data: number[]; x: number; x2: number; invisib
   }
 }
 
+// ─── Scroll de boîte — FONDATIONS (inertes ; système d'icônes colonne-par-colonne = lot suivant :
+// GetIncomingBoxMonData, StartBoxMonIconsScrollOut, Create/DestroyBoxMonIconsInColumn,
+// Init/UpdateBoxMonIconScroll, SetUpScrollToBox, ScrollToBox, CreateIncomingBoxTitle, CycleBoxTitleSprites).
+// Ces 3 fns sont autonomes (arrowSprites + AnimateBoxScrollArrows existent). ───
+// :5294 DetermineBoxScrollDirection
+function DetermineBoxScrollDirection(boxId: number): number {
+  let i: number;
+  let currentBox = StorageGetCurrentBox();
+  for (i = 0; currentBox !== boxId; i++) {
+    currentBox++;
+    if (currentBox >= TOTAL_BOXES_COUNT) currentBox = 0;
+  }
+  return (i < TOTAL_BOXES_COUNT / 2) ? 1 : -1;
+}
+// :5658 StartBoxScrollArrowsSlide (sState=data[0], sTimer=data[1])
+function StartBoxScrollArrowsSlide(direction: number): void {
+  const s = sStorage!;
+  for (let i = 0; i < 2; i++) {
+    const a = _spr(s.arrowSprites[i]); if (!a) continue;
+    a.x2 = 0; a.data[0] = 2;
+  }
+  const a0 = _spr(s.arrowSprites[0]), a1 = _spr(s.arrowSprites[1]);
+  if (!a0 || !a1) return;
+  if (direction < 0) {
+    a0.data[1] = 29; a1.data[1] = 5;
+    a0.data[2] = 72; a1.data[2] = 72;
+  } else {
+    a0.data[1] = 5; a1.data[1] = 29;
+    a0.data[2] = 240 + 8; a1.data[2] = 240 + 8;  // DISPLAY_WIDTH + 8
+  }
+  a0.data[7] = 0; a1.data[7] = 1;
+}
+// :5686 StopBoxScrollArrowsSlide — new box's arrows entered, stop sliding + set position
+function StopBoxScrollArrowsSlide(): void {
+  const s = sStorage!;
+  for (let i = 0; i < 2; i++) {
+    const a = _spr(s.arrowSprites[i]); if (!a) continue;
+    a.x = 136 * i + 92; a.x2 = 0; a.invisible = false;
+  }
+  AnimateBoxScrollArrows(true);
+}
+
 // ─── :5788 InitCursor + :5807 InitCursorOnReopen + :5820 GetCursorCoordsByPos ───
 function InitCursor(): void {
   const s = sStorage!;
