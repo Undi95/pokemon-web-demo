@@ -2310,6 +2310,9 @@ function Task_PCMainMenu(taskId: number): void {
         UnlockPlayerFieldControls();
         RemoveWindow(task.data[15]);
         rt.DestroyTask(taskId);
+        // AU REVOIR/B → relâche l'opcode `waitstate` (ShowPokemonStorageSystemPC = waitstate=1)
+        // → le script reprend à `goto EventScript_PCMainMenu` (re-menu « Quel PC? »).
+        (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
       } else if (input === OPTION_WITHDRAW && CalculatePlayerPartyCount() === PARTY_SIZE) {
         FillWindowPixelBuffer(0, PIXEL_FILL_1);
         AddTextPrinterParameterized2(0, FONT_NORMAL, 'Ton équipe est pleine !', 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
@@ -2349,7 +2352,10 @@ function Task_PCMainMenu(taskId: number): void {
   }
 }
 
-/** 1:1 `ShowPokemonStorageSystemPC` (pokemon_storage_system.c:1650) — point d'entrée du PC. */
+/** 1:1 `ShowPokemonStorageSystemPC` (pokemon_storage_system.c:1650) — point d'entrée du PC.
+ *  def_special waitstate=1 : le script (pc.inc) a un opcode `waitstate` inséré après ce special ;
+ *  il bloque tant que le PC est ouvert. À AU REVOIR/B (Task_PCMainMenu), SignalWaitState relâche
+ *  → le script reprend à `goto EventScript_PCMainMenu` (re-menu « Quel PC? »). */
 export function ShowPokemonStorageSystemPC(): void {
   const rt = getRuntime(); if (!rt) return;
   const taskId = rt.CreateTask((t) => Task_PCMainMenu(t.taskId), 80);
@@ -3079,22 +3085,31 @@ function ShowYesNoWindow(cursorPos: number): void {
   Menu_MoveCursorNoWrapAround(cursorPos);
 }
 function CB2_ExitPokeStorage(): void {
+  // 1:1 décomp:1691-1696 — gFieldCallback = FieldTask_ReturnToPcMenu ; SetMainCallback2(CB2_ReturnToField).
+  // ⚠️ PAS CB2_ReturnToFieldWithOpenMenu_Manual : il pose gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu
+  // (→ START MENU à la place du menu PC). CB2_ReturnToField(_Manual) laisse gFieldCallback (=RunFieldCallback)
+  // recréer le menu PC. Pas de UnlockPlayerFieldControls (le décomp garde le lock jusqu'à AU REVOIR).
   sPreviousBoxOption = GetCurrentBoxOption();
-  UnlockPlayerFieldControls();
   void import('./overworld').then((m) => {
-    const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
-    if (cb) cb();
-    (globalThis as Record<string, unknown>).gFieldCallback = FieldTask_ReturnToPcMenu;  // recrée le menu PC (:1694)
+    (globalThis as Record<string, unknown>).gFieldCallback = FieldTask_ReturnToPcMenu;  // :1694
+    (globalThis as Record<string, unknown>).gFieldCallback2 = null;
+    const cb = (m as Record<string, unknown>).CB2_ReturnToField_Manual as (() => void) | undefined;
+    if (cb) cb();  // :1695 SetMainCallback2(CB2_ReturnToField)
   }).catch((e) => console.error('[pc-storage] exit', e));
 }
 // :1658 FieldTask_ReturnToPcMenu — recrée le menu PC (RETIRER/DÉPOSER/…) après retour OW. ───
 function FieldTask_ReturnToPcMenu(): void {
   const rt = getRuntime(); if (!rt) return;
+  // 1:1 décomp:1661/1668 — SAUVE puis RESTAURE le vblank. Sans la restauration, vblankCallback
+  // reste NULL → TransferPlttBuffer skippé (decomp-runtime.ts:2064) → palettes de la map jamais
+  // transférées = OW glitché (Centre vert, tiles noirs) au retour de l'écran boîtes.
+  const vblankCb = (gMain as { vblankCallback?: (() => void) | null }).vblankCallback ?? null;  // :1661
   rt.SetVBlankCallback?.(null);
   const taskId = rt.CreateTask((t: { taskId: number }) => Task_PCMainMenu(t.taskId), 80);
   rt.gTasks[taskId].data[0] = 0;                     // tState
   rt.gTasks[taskId].data[1] = sPreviousBoxOption;    // tSelectedOption
   Task_PCMainMenu(taskId);
+  rt.SetVBlankCallback?.(vblankCb as never);         // :1668 restaure le vblank de la map
   FadeInFromBlack();
 }
 

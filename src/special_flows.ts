@@ -52,6 +52,12 @@ export function makeSpecialInlineFlowPoll(name: string): (() => boolean) | null 
         return { isOpen: m.IsBedroomPCOpen };
       });
     }
+    // NOTE : ScriptMenu_CreatePCMultichoice ET ShowPokemonStorageSystemPC sont `waitstate=1`
+    // (specials.inc:79/281) → le script a un opcode `waitstate` INSÉRÉ après le special. Ce ne
+    // sont donc PAS des special-flows : un poll bloquant ici DOUBLERAIT le waitstate (le poll
+    // résout mais l'opcode waitstate attend un SignalWaitState jamais émis → freeze — même piège
+    // que DoTrainerApproach ci-dessous). Ils sont des PLAIN specials (specials-registry.ts) dont
+    // la task émet SignalWaitState au choix / à AU REVOIR pour relâcher le waitstate. 1:1 décomp.
     // Wall clock VIEW / SET : overlay horloge.
     case 'Special_ViewWallClock':
     case 'StartWallClock': {

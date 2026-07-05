@@ -412,6 +412,26 @@ registerSpecial('ShowPokemonStorageSystemPC', () => {
   });
 });
 
+/** 1:1 décomp `ScriptMenu_CreatePCMultichoice` (script_menu.c:314) — def_special waitstate=1 :
+ *  menu « Quel PC? » (PC DE QUELQU'UN/JOUEUR/[PANTHEON]/DECONNEXION). Le multichoice tourne en
+ *  task (ticke le poll Menu_ProcessInput) ; au choix → VAR_RESULT posé + SignalWaitState pour
+ *  relâcher l'opcode `waitstate` inséré après le special → reprise à EventScript_AccessPC.
+ *  PLAIN special (pas special-flow — un poll bloquant doublerait le waitstate, cf. special_flows.ts). */
+registerSpecial('ScriptMenu_CreatePCMultichoice', () => {
+  void import('../../script_menu').then(({ ScriptMenu_CreatePCMultichoice }) => {
+    const poll = ScriptMenu_CreatePCMultichoice();  // spawn le menu + retourne le tick
+    void import('../../../harness/runtime/decomp-globals').then(({ getRuntime }) => {
+      const rt = getRuntime(); if (!rt) return;
+      rt.CreateTask((t) => {
+        if (poll()) {  // Menu_ProcessInput a résolu (VAR_RESULT posé)
+          rt.DestroyTask(t.taskId);
+          (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
+        }
+      }, 80);
+    });
+  });
+});
+
 /** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
  *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
 registerSpecial('DoPCTurnOffEffect', () => {
@@ -2092,7 +2112,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ScriptCheckFreePokemonStorageSpace' — porté 1:1 décomp pokemon_storage_system.c:9572 (handler ci-bas).
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
   // 'ScriptHatchMon' — porté 1:1 décomp egg_hatch.c:395 (src/egg_hatch.ts), handler ci-bas.
-  'ScriptMenu_CreatePCMultichoice',
+  // 'ScriptMenu_CreatePCMultichoice' — porté 1:1 script_menu.c:314 (src/script_menu.ts),
+  //   câblé comme special-flow waitstate=1 dans special_flows.ts (menu PC Pokémon Center).
   // 'Script_BufferContestLadyCategoryAndMonName' — porté 1:1 lilycove_lady.c:759.
   'Script_FadeOutMapMusic',
   // 'Script_GetCurrentMauvilleMan' — porté 1:1 décomp mauville_old_man.c:146 ci-bas.

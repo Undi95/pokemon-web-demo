@@ -22,9 +22,9 @@ import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Men
 import { AddTextPrinterParameterized3 } from './menu';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './window';
 import type { WindowTemplate } from './window';
-import { VarSet } from './event_data';
+import { VarSet, FlagGet } from './event_data';
 import { VAR_RESULT } from '../include/constants/vars';
-import { GetStringWidth } from './text';
+import { GetStringWidth, GetPlayerNameString } from './text';
 import { FONT_NORMAL } from '../include/text';
 import { MAX_MULTICHOICE_WIDTH } from '../include/constants/script_menu';
 
@@ -216,4 +216,27 @@ export function ScriptMenu_YesNo(left: number, top: number): () => boolean {
     menuActive = false;
     return true;
   };
+}
+
+// ═══ PC multichoice — 1:1 décomp `script_menu.c:314` ═════════════════════════
+// FLAG_SYS_GAME_CLEAR = SYSTEM_FLAGS(0x860)+0x4 ; FLAG_SYS_PC_LANETTE = +0x4B (flags.h:1354/1437).
+const FLAG_SYS_GAME_CLEAR = 0x864;
+const FLAG_SYS_PC_LANETTE = 0x8AB;
+
+/** 1:1 décomp `ScriptMenu_CreatePCMultichoice` (script_menu.c:314) + `CreatePCMultichoice`
+ *  (:328) : menu du PC (Pokémon Center) — PC DE QUELQU'UN/ANNETTE (0), PC DE [JOUEUR] (1),
+ *  [PANTHEON (2) si FLAG_SYS_GAME_CLEAR], DECONNEXION (dernier). Le décomp rend x=8,
+ *  y=1/17/33/49 = exactement les positions de `_spawnMultichoiceMenu` (AddTextPrinter
+ *  y=1+i*16). `gText_PlayersPC` = "PC de {PLAYER}" → nom joueur résolu (StringExpandPlaceholders
+ *  + PrintPlayerNameOnWindow décomp). Renvoie le poll (makeMultichoiceTick → VAR_RESULT = index).
+ *  Câblé comme special waitstate=1 (specials.inc:281) via special_flows.ts. */
+export function ScriptMenu_CreatePCMultichoice(): () => boolean {
+  VarSet(VAR_RESULT, 0xFF);  // décomp :322 gSpecialVar_Result = 0xFF
+  const someones = getString(FlagGet(FLAG_SYS_PC_LANETTE) ? 'gText_LanettesPC' : 'gText_SomeonesPC');  // :367-370
+  const players = getString('gText_PlayersPC').replace('{PLAYER}', GetPlayerNameString() || 'PLAYER');  // :372-373
+  const items: (string | Uint8Array)[] = [someones, players];
+  if (FlagGet(FLAG_SYS_GAME_CLEAR)) items.push(getString('gText_HallOfFame'));  // :344-355 champion → PANTHEON
+  items.push(getString('gText_LogOff'));  // :356/363 DECONNEXION
+  _spawnMultichoiceMenu(0, 0, items, 0);  // décomp CreateWindowFromRect(0, 0, width, …) + InitMenuInUpperLeftCornerNormal
+  return makeMultichoiceTick(items, false);  // InitMultichoiceCheckWrap(FALSE, numChoices, windowId, MULTI_PC)
 }
