@@ -42,7 +42,9 @@ import {
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
   ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, DrawStdFrameWithCustomTileAndPalette,
   AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
+  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, Menu_MoveCursorNoWrapAround,
 } from './menu';
+import { FadeInFromBlack } from './field_screen_effect';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
@@ -2900,6 +2902,9 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_BYE_BYE]: { text: 'Bye-bye, {0}!', varKind: MSG_VAR_RELEASE_MON_3 },
   [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
   [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
+  [MSG_EXIT_BOX]: { text: 'Quitter la BOITE?', varKind: MSG_VAR_NONE },
+  [MSG_CONTINUE_BOX]: { text: 'Continuer les\nopérations BOITE?', varKind: MSG_VAR_NONE },
+  [MSG_HOLDING_POKE]: { text: 'Vous tenez\nun POKéMON!', varKind: MSG_VAR_NONE },
 };
 function PrintMessage(id: number): void {
   const s = sStorage!;
@@ -3053,15 +3058,44 @@ function CB2_ReturnToPokeStorage(): void {
   rt.SetMainCallback2(CB2_PokeStorage as never);
 }
 
-// ─── CB2_ExitPokeStorage — PROVISOIRE (vrai exit : Task_ChangeScreen + FieldTask_ReturnToPcMenu,
-// tâche #4). Libère sStorage + retour OW avec le start menu du PC. ───
+// :1691 CB2_ExitPokeStorage — retour OW puis FieldTask_ReturnToPcMenu recrée le menu PC. ───
+function GetCurrentBoxOption(): number { return sCurrentBoxOption; }
+function IsMonBeingMoved(): boolean { return sIsMonBeingMoved; }
+function MultiMove_Free(): void { sMultiMove = null; }
+function FreePokeStorageData(): void {
+  TilemapUtil_Free();
+  MultiMove_Free();
+  sStorage = null;  // Free(sStorage)
+}
+// :4256 UpdateBoxToSendMons — mémorise la boîte courante (flag « box full » = lot flags).
+function UpdateBoxToSendMons(): void {
+  if (sLastUsedBox !== StorageGetCurrentBox()) {
+    // FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE) + VarSet(VAR_PC_BOX_TO_SEND_MON) : lot field flags/vars.
+  }
+}
+const sYesNoWindowTemplate = { bg: 0, tilemapLeft: 24, tilemapTop: 11, width: 5, height: 4, paletteNum: 15, baseBlock: 0x5C } as WindowTemplate;  // :1100
+function ShowYesNoWindow(cursorPos: number): void {
+  CreateYesNoMenu(sYesNoWindowTemplate, 11, 14, 0);
+  Menu_MoveCursorNoWrapAround(cursorPos);
+}
 function CB2_ExitPokeStorage(): void {
-  sStorage = null;
+  sPreviousBoxOption = GetCurrentBoxOption();
   UnlockPlayerFieldControls();
   void import('./overworld').then((m) => {
     const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
     if (cb) cb();
+    (globalThis as Record<string, unknown>).gFieldCallback = FieldTask_ReturnToPcMenu;  // recrée le menu PC (:1694)
   }).catch((e) => console.error('[pc-storage] exit', e));
+}
+// :1658 FieldTask_ReturnToPcMenu — recrée le menu PC (RETIRER/DÉPOSER/…) après retour OW. ───
+function FieldTask_ReturnToPcMenu(): void {
+  const rt = getRuntime(); if (!rt) return;
+  rt.SetVBlankCallback?.(null);
+  const taskId = rt.CreateTask((t: { taskId: number }) => Task_PCMainMenu(t.taskId), 80);
+  rt.gTasks[taskId].data[0] = 0;                     // tState
+  rt.gTasks[taskId].data[1] = sPreviousBoxOption;    // tSelectedOption
+  Task_PCMainMenu(taskId);
+  FadeInFromBlack();
 }
 
 // ─── :2089 Task_InitPokeStorage — les 11 états 1:1. ───
@@ -3191,10 +3225,8 @@ function Task_PokeStorageMain(_taskId: number): void {
         case INPUT_IN_MENU:  // :2288 → menu contextuel (RETIRER/RESUME/MARQUER/RELACHER/ANNULER)
           SetPokeStorageTask(Task_OnSelectedMon);
           break;
-        case INPUT_PRESSED_B:
-          // Task_OnBPressed (:fermeture complète = tâche #4) — provisoire : sortie directe propre.
-          ComputerScreenCloseEffect(20, 0, 1);
-          SetPokeStorageTask(Task_ExitPokeStorageProvisional);
+        case INPUT_PRESSED_B:  // :2295 → Task_OnBPressed (« Continuer ? » Oui/Non → fermeture propre → menu PC)
+          SetPokeStorageTask(Task_OnBPressed);
           break;
       }
       break;
@@ -3207,18 +3239,99 @@ function Task_PokeStorageMain(_taskId: number): void {
       break;
   }
 }
-// Sortie provisoire : attend l'effet CRT de fermeture puis retour OW (tâche #4 = vrai Task_ChangeScreen).
-function Task_ExitPokeStorageProvisional(_taskId: number): void {
-  if (IsComputerScreenCloseEffectActive()) return;
-  const rt = getRuntime(); if (!rt) return;
-  rt.SetVBlankCallback?.(null);
-  ResetSpriteData();
-  FreeAllSpritePalettes();
-  CB2_ExitPokeStorage();
-}
-// Task_ChangeScreen (:échecs d'init, allocation…) — provisoire vers la sortie.
+// :3731 Task_ChangeScreen — dispatch selon screenChangeType. EXIT porté ; SUMMARY/NAME/ITEM = lots suivants.
 function Task_ChangeScreen(_taskId: number): void {
-  Task_ExitPokeStorageProvisional(_taskId);
+  const s = sStorage!;
+  const screenChangeType = s.screenChangeType;
+  sMovingItemId = 0;  // ITEM_NONE (MOVE_ITEMS = lot items)
+  switch (screenChangeType) {
+    case SCREEN_CHANGE_EXIT_BOX:
+    default:
+      FreePokeStorageData();
+      const rt = getRuntime();
+      rt?.SetMainCallback2(CB2_ExitPokeStorage as never);
+      break;
+    case SCREEN_CHANGE_SUMMARY_SCREEN:
+    case SCREEN_CHANGE_NAME_BOX:
+    case SCREEN_CHANGE_ITEM_FROM_BAG:
+      console.warn(`[pc-storage] Task_ChangeScreen type ${screenChangeType} (RÉSUMÉ/RENOMMER/OBJET) : lot suivant.`);
+      FreePokeStorageData();
+      getRuntime()?.SetMainCallback2(CB2_ExitPokeStorage as never);
+      break;
+  }
+}
+
+// :3670 Task_OnBPressed — B : « Continuer les opérations ? » Oui = rester, Non = fermer (menu PC). ───
+function Task_OnBPressed(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (IsMonBeingMoved()) { PlaySE(0x20 /* SE_FAILURE */); PrintMessage(MSG_HOLDING_POKE); s.state = 1; }
+      else if (IsMovingItem()) { console.warn('[pc-storage] Task_CloseBoxWhileHoldingItem : lot items'); SetPokeStorageTask(Task_PokeStorageMain); }
+      else { PlaySE(0x5 /* SE_SELECT */); PrintMessage(MSG_CONTINUE_BOX); ShowYesNoWindow(0); s.state = 2; }
+      break;
+    case 1:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0 /* DPAD_ANY */)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+    case 2:
+      switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+        case 0:  // Oui : continuer
+          ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case 1:
+        case MENU_B_PRESSED:  // Non : fermer
+          PlaySE(3 /* SE_PC_OFF */); ClearBottomWindow(); s.state++;
+          break;
+      }
+      break;
+    case 3:
+      ComputerScreenCloseEffect(20, 0, 0); s.state++;
+      break;
+    case 4:
+      if (!IsComputerScreenCloseEffectActive()) {
+        UpdateBoxToSendMons();
+        CalculatePlayerPartyCount();  // gPlayerPartyCount
+        s.screenChangeType = SCREEN_CHANGE_EXIT_BOX;
+        SetPokeStorageTask(Task_ChangeScreen);
+      }
+      break;
+  }
+}
+// :3609 Task_OnCloseBoxPressed — curseur sur FERMER BOITE + A : « Quitter ? » Oui = fermer. ───
+function Task_OnCloseBoxPressed(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (IsMonBeingMoved()) { PlaySE(0x20); PrintMessage(MSG_HOLDING_POKE); s.state = 1; }
+      else if (IsMovingItem()) { console.warn('[pc-storage] Task_CloseBoxWhileHoldingItem : lot items'); SetPokeStorageTask(Task_PokeStorageMain); }
+      else { PlaySE(0x5); PrintMessage(MSG_EXIT_BOX); ShowYesNoWindow(0); s.state = 2; }
+      break;
+    case 1:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+    case 2:
+      switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+        case MENU_B_PRESSED:
+        case 1:  // Non : rester
+          ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case 0:  // Oui : fermer
+          PlaySE(3); ClearBottomWindow(); s.state++;
+          break;
+      }
+      break;
+    case 3:
+      ComputerScreenCloseEffect(20, 0, 1); s.state++;
+      break;
+    case 4:
+      if (!IsComputerScreenCloseEffectActive()) {
+        UpdateBoxToSendMons();
+        CalculatePlayerPartyCount();
+        s.screenChangeType = SCREEN_CHANGE_EXIT_BOX;
+        SetPokeStorageTask(Task_ChangeScreen);
+      }
+      break;
+  }
 }
 
 // Pont dev/déclencheur : ouvrir le menu PC (le script « PC POKéMON » l'appellera au câblage).
