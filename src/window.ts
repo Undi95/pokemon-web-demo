@@ -223,7 +223,7 @@ function writeWindowTilemap(win: GbaWindow, clear = false): void {
 }
 
 /** Calcule l'index linéaire dans la tilemap selon screenSize (1:1 GBA). */
-function tileMapIndex(tileX: number, tileY: number, screenSize: number): number {
+export function tileMapIndex(tileX: number, tileY: number, screenSize: number): number {
   // Screen sizes: 0=32x32, 1=64x32, 2=32x64, 3=64x64
   // Layout: blocks de 32x32 entries en ordre TL, TR, BL, BR
   if (screenSize === 0) {

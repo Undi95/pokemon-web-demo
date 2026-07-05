@@ -30,7 +30,7 @@ import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
   GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
-  ExtractWindowTiles4bpp,
+  ExtractWindowTiles4bpp, tileMapIndex,
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
@@ -1856,6 +1856,12 @@ const sWallpaperDirs = [  // 1:1 enum WALLPAPER_* (data/wallpapers.h) → dossie
   'forest', 'city', 'desert', 'savanna', 'crag', 'volcano', 'snow', 'cave',
   'beach', 'seafloor', 'river', 'sky', 'polkadot', 'pokecenter', 'machine', 'simple',
 ];
+// 1:1 graphics_file_rules.mk:178-275 — `frame.png → frame.4bpp -num_tiles N` PUIS
+// `cat frame.4bpp bg.4bpp > tiles.4bpp`. Le -num_tiles TRONQUE frame à N tiles (padding du .png
+// ignoré) → bg est concaténé au tile N, PAS à la fin des 64 tiles décodés. La tilemap réfère bg
+// à partir du tile N. 0 = pas de -num_tiles (règle générique %.4bpp: %.png = tout le .png).
+const sWallpaperFrameNumTiles = [55, 52, 0, 45, 49, 56, 57, 55, 46, 54, 51, 45, 54, 35, 33, 18];
+const sWallpaperBgNumTiles    = [0, 0, 0, 23, 0, 0, 0, 0, 23, 0, 11, 0, 0, 0, 0, 0];
 const _wallpaperCache = new Map<number, { tiles: Uint8Array; tilemap: Uint16Array; palettes: Uint16Array } | null>();
 let _wallpaperLoadPending = false;
 function _loadWallpaperAssets(wallpaperId: number): void {
@@ -1868,9 +1874,12 @@ function _loadWallpaperAssets(wallpaperId: number): void {
     const frame = await loadIndexedPngStrict(`/decomp/em/pokemon_storage/wallpapers/${dir}/frame.png`, 4);
     const bg = await loadIndexedPngStrict(`/decomp/em/pokemon_storage/wallpapers/${dir}/bg.png`, 4);
     const tilemap = await loadTilemapBin(`/decomp/em/pokemon_storage/wallpapers/${dir}/tilemap.bin`);
-    const tiles = new Uint8Array(frame.charData.length + bg.charData.length);
-    tiles.set(frame.charData, 0);
-    tiles.set(bg.charData, frame.charData.length);
+    // 1:1 Makefile : frame tronqué à -num_tiles (0 = tout), bg tronqué idem, puis concaténés.
+    const frameLen = (sWallpaperFrameNumTiles[wallpaperId] || frame.charData.length / 32) * 32;
+    const bgLen = (sWallpaperBgNumTiles[wallpaperId] || bg.charData.length / 32) * 32;
+    const tiles = new Uint8Array(frameLen + bgLen);
+    tiles.set(frame.charData.subarray(0, frameLen), 0);
+    tiles.set(bg.charData.subarray(0, bgLen), frameLen);
     const palettes = new Uint16Array(32);                    // 2 palettes 4bpp (frame + bg)
     palettes.set(frame.palette.subarray(0, 16), 0);
     palettes.set(bg.palette.subarray(0, 16), 16);
@@ -1921,13 +1930,16 @@ function DrawWallpaper(tilemap: Uint16Array, direction: number, offset: number):
   // bg.c — palette1=17 (>15) = conserver la palette source ; tileOffset et paletteNum s'AJOUTENT
   // à chaque entrée (srcPal 1..2 + 3 → banques 4..5 = les 2 palettes wallpaper chargées).
   const dest = GetBgTilemapBuffer(2);
+  // BG2 = screenSize 1 (512×256) → tilemap screenblock-major (2 blocs 32×32), PAS linéaire stride 64.
+  // `tileMapIndex` mappe (x,y)→index 1:1 comme bg.c ; l'ancien `(2+ty)*64+destX` sautait 1 row sur 2.
+  const screenSize = getRuntime()?.gba.bg(2).config.screenSize ?? 1;
   for (let ty = 0; ty < 18; ty++) {
     for (let tx = 0; tx < 20; tx++) {
       const entry = tilemap[ty * 20 + tx];
       const srcPal = (entry >> 12) & 0xF;
       const destX = (x + tx) & 0x3F;
-      const di = (2 + ty) * 64 + destX;
-      if (di < dest.length) dest[di] = ((entry & 0x3FF) + tileOffset) | (((srcPal + paletteNum) & 0xF) << 12) | (entry & 0x0C00);
+      const di = tileMapIndex(destX, 2 + ty, screenSize);
+      if (di >= 0 && di < dest.length) dest[di] = ((entry & 0x3FF) + tileOffset) | (((srcPal + paletteNum) & 0xF) << 12) | (entry & 0x0C00);
     }
   }
   if (direction === 0) return;
@@ -1938,12 +1950,13 @@ function DrawWallpaper(tilemap: Uint16Array, direction: number, offset: number):
 function TrimOldWallpaper(): void {
   const s = sStorage!;
   const dest = GetBgTilemapBuffer(2);
+  const screenSize = getRuntime()?.gba.bg(2).config.screenSize ?? 1;  // screenblock-major (cf. DrawWallpaper)
   let r3 = (Math.floor(s.bg2_X / 8) + 30) & 0x3F;
   for (let i = 0; i < 0x2C; i++) {
     const col = r3 & 0x3F;
     const row = 2 + (i % 22);  // approximation structurée du parcours 0x260/0x640 (colonnes×22 lignes)
-    const di = row * 64 + col;
-    if (di < dest.length) dest[di] = 0;
+    const di = tileMapIndex(col, row, screenSize);
+    if (di >= 0 && di < dest.length) dest[di] = 0;
     r3 = (r3 + 1) & 0x3F;
   }
 }
