@@ -30,6 +30,7 @@ import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
   GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
+  ExtractWindowTiles4bpp,
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized } from './text';
@@ -40,7 +41,7 @@ import {
   DrawStdWindowFrame, PrintMenuTable, InitMenuInUpperLeftCornerNormal, Menu_ProcessInput,
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
   ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, DrawStdFrameWithCustomTileAndPalette,
-  AddTextPrinterParameterized2,
+  AddTextPrinterParameterized2, AddTextPrinterParameterized4,
 } from './menu';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
@@ -1743,6 +1744,26 @@ function TrimOldWallpaper(): void {
   }
 }
 
+// :1328 DrawTextWindowAndBufferTiles — rend un texte dans un window temp puis repack ses tiles vers
+// dst (buffer de tiles sprite), 2 rangées entrelacées (sprites 32×16 : 4 tiles row0 + 4 tiles row1).
+function DrawTextWindowAndBufferTiles(str: string, dst: Uint8Array, zero1: number, zero2: number, bytesToBuffer: number): void {
+  const winTemplate = { bg: 0, tilemapLeft: 0, tilemapTop: 0, width: 24, height: 2, paletteNum: 0, baseBlock: 0 } as WindowTemplate;
+  const windowId = AddWindow(winTemplate);
+  FillWindowPixelBuffer(windowId, (zero2 << 4) | zero2);   // PIXEL_FILL(zero2)
+  const txtColor = [zero1 ? zero2 : 0 /* TEXT_COLOR_TRANSPARENT */, 15 /* TEXT_DYNAMIC_COLOR_6 */, 14 /* TEXT_DYNAMIC_COLOR_5 */];
+  AddTextPrinterParameterized4(windowId, FONT_NORMAL, 0, 1, 0, 0, txtColor, TEXT_SKIP_DRAW, str);
+  const tiles = ExtractWindowTiles4bpp(windowId);          // tileData1 = row 0 (24 tiles), tileData2 = row 1
+  const rowBytes = 24 * 32;
+  let t1 = 0, t2 = rowBytes, d = 0;
+  const n = Math.min(bytesToBuffer, 6);
+  for (let i = n; i > 0; i--) {
+    dst.set(tiles.subarray(t1, t1 + 0x80), d);             // 4 tiles row 0
+    dst.set(tiles.subarray(t2, t2 + 0x80), d + 0x80);      // 4 tiles row 1
+    t1 += 0x80; t2 += 0x80; d += 0x100;
+  }
+  RemoveWindow(windowId);
+}
+
 // ─── :5469 InitBoxTitle + :5621 GetBoxTitleBaseX ───
 function InitBoxTitle(boxId: number): void {
   const s = sStorage!;
@@ -1752,10 +1773,8 @@ function InitBoxTitle(boxId: number): void {
   const tagIndex = IndexOfSpritePaletteTag(PALTAG_BOX_TITLE);
   s.boxTitlePalOffset = 256 + tagIndex * 16 + 14;
   s.boxTitleAltPalOffset = 256 + tagIndex * 16 + 14;
-  s.boxTitleText = GetBoxNamePtr(boxId);
-  // DrawTextWindowAndBufferTiles(boxTitleText → boxTitleTiles) : pipeline texte→tiles sprite à câbler
-  // (lot title-text, aussi requis par ChooseBoxMenu_PrintInfo) — sprites créés, tiles vides pour l'instant.
-  console.warn('[pc-storage] InitBoxTitle : rendu texte→tiles du titre au lot title-text');
+  s.boxTitleText = GetBoxNamePtr(boxId);  // StringCopyPadded(…, BOX_NAME_LENGTH)
+  DrawTextWindowAndBufferTiles(s.boxTitleText, s.boxTitleTiles, 0, 0, 2);  // texte → tiles du titre
   LoadSpriteSheet({ data: s.boxTitleTiles.subarray(0, 0x200), size: 0x200, tag: GFXTAG_BOX_TITLE });
   const x = GetBoxTitleBaseX(s.boxTitleText);
   for (let i = 0; i < 2; i++) {

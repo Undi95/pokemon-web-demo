@@ -293,6 +293,28 @@ export function GetWindowAttribute(windowId: number, attributeId: number): numbe
   }
 }
 
+/** Extrait les tiles 4bpp packed du window (tile-major : row 0 tiles puis row 1…), pour le
+ *  rendu texte→sprite (DrawTextWindowAndBufferTiles : PC titre de boîte, popup choix de boîte).
+ *  Notre pixelBuffer est linéaire 1 byte/pixel → repack en tiles 8×8, 2 pixels/byte. */
+export function ExtractWindowTiles4bpp(windowId: number): Uint8Array {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return new Uint8Array(0);
+  const w = gw.win;
+  const out = new Uint8Array(w.widthTiles * w.heightTiles * 32);
+  let o = 0;
+  for (let ty = 0; ty < w.heightTiles; ty++) {
+    for (let tx = 0; tx < w.widthTiles; tx++) {
+      for (let py = 0; py < 8; py++) {
+        for (let px = 0; px < 8; px += 2) {
+          const i0 = (ty * 8 + py) * w.widthPx + tx * 8 + px;
+          out[o++] = (w.pixelBuffer[i0] & 0xF) | ((w.pixelBuffer[i0 + 1] & 0xF) << 4);
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export function AddWindow(template: WindowTemplate): number {
   const win = createWindow(template.width, template.height, template.paletteNum);
   const id = nextWindowId++;
