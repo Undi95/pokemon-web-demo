@@ -3602,7 +3602,7 @@ function DoCursorNewPosUpdate(): void {
       AnimateBoxScrollArrows(true);
       break;
     case CURSOR_AREA_IN_PARTY:
-      if (shadow) shadow.subpriority = _sub(13);
+      if (shadow) shadow.subpriority = 13;  // :6076 brut (pas _sub : cf. subpriority ombre vs box mon)
       SetMovingMonPriority(1);
       break;
     case CURSOR_AREA_IN_BOX:
@@ -3610,7 +3610,7 @@ function DoCursorNewPosUpdate(): void {
         if (cursor) rt.gba.oam[cursor.oamIndex].priority = 1;
         if (shadow) {
           rt.gba.oam[shadow.oamIndex].priority = 2;
-          shadow.subpriority = _sub(21);
+          shadow.subpriority = 21;  // :6084 brut (pas _sub) → ombre DERRIÈRE le box mon (sub 12/19)
           shadow.invisible = false;
         }
         SetMovingMonPriority(2);
