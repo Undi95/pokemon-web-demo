@@ -2572,9 +2572,15 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
     const speciesName = gSpeciesNames[s.displayMonSpecies] ?? '----------';  // noms FR (game-data)
     s.displayMonNameText = s.displayMonName || speciesName;
     s.displayMonSpeciesName = '/' + speciesName;
-    // :6947-6975 codes couleur ♂ rouge / ♀ vert (EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW) : au lot texte.
-    const genderChar = gender === 'M' ? '♂' : gender === 'F' ? '♀' : '';
-    s.displayMonGenderLvlText = `${genderChar}N.${s.displayMonLevel}`;  // CHAR_EXTRA_SYMBOL Lv
+    // :6947-6979 1:1 — codes couleur du symbole de genre (décomp EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW) :
+    // ♂ = RED/LIGHT_RED (→ bleu via la palette WIN_DISPLAY_INFO), ♀ = GREEN/LIGHT_GREEN (→ rose), puis
+    // reset DARK_GRAY pour « N.niveau ». Le moteur texte convertit {COLOR/HIGHLIGHT/SHADOW} en codes ext.
+    const genderPart = gender === 'M'
+      ? '{COLOR RED}{HIGHLIGHT WHITE}{SHADOW LIGHT_RED}♂'
+      : gender === 'F'
+      ? '{COLOR GREEN}{HIGHLIGHT WHITE}{SHADOW LIGHT_GREEN}♀'
+      : '{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}';
+    s.displayMonGenderLvlText = `${genderPart}{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}N.${s.displayMonLevel}`;
     s.displayMonItemName = '';  // GetItemName(displayMonItemId) : lot items
   }
 }
