@@ -93,6 +93,7 @@ import { AddBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gSineTable } from './trig';
+import { DoNamingScreen } from './naming_screen';
 import { ITEM_NONE } from '../include/constants/items';
 const TILE_SIZE_4BPP = 32;
 
@@ -4787,6 +4788,20 @@ function CB2_ReturnToPokeStorage(): void {
   rt.SetMainCallback2(CB2_PokeStorage as never);
 }
 
+// Buffer charCodes JS pour DoNamingScreen (pattern egg_hatch `_nicknameBuffer`). Le naming
+// screen (SaveInputText) le remplit du texte saisi ; NameBox_SetAndReturn le relit au retour.
+const _boxNameBuffer: number[] = [];
+// Callback naming screen pour RENOMMER une boîte. Le décomp (:3762) passe CB2_ReturnToPokeStorage
+// DIRECTEMENT (le naming écrit dans le save block via GetBoxNamePtr = pointeur). Chez nous les noms
+// de boîte sont des strings immuables → on wrappe : applique le buffer au save block PUIS rouvre le PC.
+function NameBox_SetAndReturn(): void {
+  const name = _boxNameBuffer.length ? String.fromCharCode(..._boxNameBuffer) : '';
+  const st = GetPokemonStorage() as unknown as { boxNames?: string[] };
+  if (!st.boxNames) st.boxNames = [];
+  if (name.length) st.boxNames[StorageGetCurrentBox()] = name;
+  CB2_ReturnToPokeStorage();
+}
+
 // :1691 CB2_ExitPokeStorage — retour OW puis FieldTask_ReturnToPcMenu recrée le menu PC. ───
 function GetCurrentBoxOption(): number { return sCurrentBoxOption; }
 function IsMonBeingMoved(): boolean { return sIsMonBeingMoved; }
@@ -5415,9 +5430,19 @@ function Task_ChangeScreen(_taskId: number): void {
         { monList, startIndex: sIdx, maxIndex: mIdx, mode });
       break;
     }
-    case SCREEN_CHANGE_NAME_BOX:
+    case SCREEN_CHANGE_NAME_BOX: {
+      // 1:1 :3760 — DoNamingScreen(NAMING_SCREEN_BOX, GetBoxNamePtr(box), 0,0,0, CB2_ReturnToPokeStorage).
+      // Adaptation : buffer charCodes préfilled avec le nom actuel ; NameBox_SetAndReturn applique
+      // le nom saisi au save block puis rouvre le PC (GetBoxNamePtr = string, pas un pointeur mutable).
+      const boxId = StorageGetCurrentBox();
+      _boxNameBuffer.length = 0;
+      for (const c of GetBoxNamePtr(boxId)) _boxNameBuffer.push(c.charCodeAt(0));
+      FreePokeStorageData();
+      DoNamingScreen(1 /* NAMING_SCREEN_BOX */, _boxNameBuffer, 0, 0, 0, NameBox_SetAndReturn as never);
+      break;
+    }
     case SCREEN_CHANGE_ITEM_FROM_BAG:
-      console.warn(`[pc-storage] Task_ChangeScreen type ${screenChangeType} (RENOMMER/OBJET) : lot suivant.`);
+      console.warn(`[pc-storage] Task_ChangeScreen ITEM_FROM_BAG (DONNER depuis sac) : lot suivant.`);
       FreePokeStorageData();
       getRuntime()?.SetMainCallback2(CB2_ExitPokeStorage as never);
       break;
