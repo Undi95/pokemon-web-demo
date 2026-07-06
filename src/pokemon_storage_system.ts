@@ -86,7 +86,10 @@ import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade, UpdatePaletteFade, BG_PLTT_ID } from './palette';
 import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { GetItemName, GetItemDescription } from './item';
-import { GetItemIconPicById, GetItemIconPaletteById } from './item_icon';
+import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
+import { ItemIsMail } from './mail_data';
+import { AddBagItem } from './engine/bag/bag';
+import { getItemKeyById } from '../harness/runtime/data-tables';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gSineTable } from './trig';
 import { ITEM_NONE } from '../include/constants/items';
@@ -649,6 +652,7 @@ function LoadStorageAssets(): void {
     // rendu avec une palette vide (noire = marques invisibles).
     await EnsureMonMarkingsGfxLoaded();
     await EnsureMonMarkingsMenuGfxLoaded();  // gfx du menu MARQUER (idem : évite sprites vides à la 1re ouverture)
+    await preloadItemIconAssets();  // buffers icônes objets (le décomp lit la ROM SYNC ; ici on précharge → LoadItemIconGfx SYNC 1:1)
     sStorageAssets = {
       menuGfx,
       displayMenuTilemap: dmTm, displayMenuPal: dmPal,
@@ -1472,6 +1476,15 @@ function TryHideItemIconAtPos(cursorArea: number, cursorPos: number): void {
   SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, cursorArea, cursorPos);
 }
 
+/** 1:1 `static void TryHideItemAtCursor(void)` (:7903). */
+function TryHideItemAtCursor(): void {
+  if (sCursorArea === CURSOR_AREA_IN_BOX) TryHideItemIconAtPos(CURSOR_AREA_IN_BOX, sCursorPosition);
+}
+/** 1:1 `static void TryShowItemAtCursor(void)` (:7909). */
+function TryShowItemAtCursor(): void {
+  if (sCursorArea === CURSOR_AREA_IN_BOX) TryLoadItemIconAtPos(CURSOR_AREA_IN_BOX, sCursorPosition);
+}
+
 /** 1:1 `static void TakeItemFromMon(u8, u8)` (:8809). */
 function TakeItemFromMon(cursorArea: number, cursorPos: number): void {
   const s = sStorage!;
@@ -1622,6 +1635,173 @@ function InitCursorItemIcon(): void {
     InitItemIconInCursor(s.movingItemId);
     StartCursorAnim(CURSOR_ANIM_FIST);
   }
+}
+
+// ═══ :3066-3374 Tâches DÉPLACER OBJETS (prendre/donner/sac/échanger/infos/fermer/mail) ═══
+const DPAD_ANY = 0xF0;
+
+/** 1:1 `static void Task_TakeItemForMoving(u8)` (:3066). */
+function Task_TakeItemForMoving(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (!ItemIsMail(s.displayMonItemId)) { ClearBottomWindow(); s.state++; }
+      else SetPokeStorageTask(Task_PrintCantStoreMail);
+      break;
+    case 1:
+      StartCursorAnim(CURSOR_ANIM_OPEN);
+      TakeItemFromMon(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
+      s.state++;
+      break;
+    case 2:
+      if (!IsItemIconAnimActive()) {
+        StartCursorAnim(CURSOR_ANIM_FIST); ClearBottomWindow();
+        TryRefreshDisplayMon(); PrintDisplayMonInfo(); s.state++;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+  }
+}
+
+/** 1:1 `static void Task_GiveMovingItemToMon(u8)` (:3103). */
+function Task_GiveMovingItemToMon(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0: ClearBottomWindow(); s.state++; break;
+    case 1:
+      StartCursorAnim(CURSOR_ANIM_OPEN);
+      GiveItemToMon(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
+      s.state++;
+      break;
+    case 2:
+      if (!IsItemIconAnimActive()) {
+        StartCursorAnim(CURSOR_ANIM_BOUNCE); TryRefreshDisplayMon(); PrintDisplayMonInfo();
+        PrintMessage(MSG_ITEM_IS_HELD); s.state++;
+      }
+      break;
+    case 3:
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); s.state++; }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+  }
+}
+
+/** 1:1 `static void Task_ItemToBag(u8)` (:3140). */
+function Task_ItemToBag(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (!AddBagItem(getItemKeyById(s.displayMonItemId), 1)) {
+        PlaySE(0x16 /* SE_FAILURE */); PrintMessage(MSG_BAG_FULL); s.state = 3;
+      } else {
+        PlaySE(0x5 /* SE_SELECT */);
+        MoveItemFromMonToBag(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
+        s.state = 1;
+      }
+      break;
+    case 1:
+      if (!IsItemIconAnimActive()) { PrintMessage(MSG_PLACED_IN_BAG); s.state = 2; }
+      break;
+    case 2:
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) {
+        ClearBottomWindow(); TryRefreshDisplayMon(); PrintDisplayMonInfo(); s.state = 4;
+      }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+    case 3:
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+  }
+}
+
+/** 1:1 `static void Task_SwitchSelectedItem(u8)` (:3188). */
+function Task_SwitchSelectedItem(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      if (!ItemIsMail(s.displayMonItemId)) { ClearBottomWindow(); s.state++; }
+      else SetPokeStorageTask(Task_PrintCantStoreMail);
+      break;
+    case 1:
+      StartCursorAnim(CURSOR_ANIM_OPEN);
+      SwapItemsWithMon(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
+      s.state++;
+      break;
+    case 2:
+      if (!IsItemIconAnimActive()) {
+        StartCursorAnim(CURSOR_ANIM_FIST); TryRefreshDisplayMon(); PrintDisplayMonInfo();
+        PrintMessage(MSG_CHANGED_TO_ITEM); s.state++;
+      }
+      break;
+    case 3:
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); s.state++; }
+      break;
+    case 4:
+      if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+  }
+}
+
+/** 1:1 `static void Task_ShowItemInfo(u8)` (:3232). */
+function Task_ShowItemInfo(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0: ClearBottomWindow(); s.state++; break;
+    case 1:
+      if (!IsDma3ManagerBusyWithBgCopy()) { PlaySE(0x15 /* SE_WIN_OPEN */); PrintItemDescription(); InitItemInfoWindow(); s.state++; }
+      break;
+    case 2: if (!UpdateItemInfoWindowSlideIn()) s.state++; break;
+    case 3: if (!IsDma3ManagerBusyWithBgCopy()) s.state++; break;
+    case 4: if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { PlaySE(0x15); s.state++; } break;
+    case 5: if (!UpdateItemInfoWindowSlideOut()) s.state++; break;
+    case 6: if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain); break;
+  }
+}
+
+/** 1:1 `static void Task_CloseBoxWhileHoldingItem(u8)` (:3275). */
+function Task_CloseBoxWhileHoldingItem(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0: PlaySE(0x5 /* SE_SELECT */); PrintMessage(MSG_PUT_IN_BAG); ShowYesNoWindow(0); s.state = 1; break;
+    case 1:
+      switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+        case MENU_B_PRESSED:
+        case 1: ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); break;
+        case 0:
+          if (AddBagItem(getItemKeyById(s.movingItemId), 1) === true) { ClearBottomWindow(); s.state = 3; }
+          else { PrintMessage(MSG_BAG_FULL); s.state = 2; }
+          break;
+      }
+      break;
+    case 2: if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); s.state = 5; } break;
+    case 3: MoveItemFromCursorToBag(); s.state = 4; break;
+    case 4: if (!IsItemIconAnimActive()) { StartCursorAnim(CURSOR_ANIM_BOUNCE); SetPokeStorageTask(Task_PokeStorageMain); } break;
+    case 5: if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain); break;
+  }
+}
+
+/** 1:1 `static void Task_PrintCantStoreMail(u8)` (:3351). */
+function Task_PrintCantStoreMail(taskId: number): void {
+  void taskId; const s = sStorage!;
+  switch (s.state) {
+    case 0: PrintMessage(MSG_CANT_STORE_MAIL); s.state++; break;
+    case 1: if (!IsDma3ManagerBusyWithBgCopy()) s.state++; break;
+    case 2: if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); s.state++; } break;
+    case 3: if (!IsDma3ManagerBusyWithBgCopy()) SetPokeStorageTask(Task_PokeStorageMain); break;
+  }
+}
+
+/** :3590 Task_GiveItemFromBag — donner un objet du sac au mon (reopening ITEM_FROM_BAG). Lot suivant. */
+function Task_GiveItemFromBag(taskId: number): void {
+  void taskId;
+  console.warn('[pc-storage] Task_GiveItemFromBag : lot reopening ITEM_FROM_BAG');
+  SetPokeStorageTask(Task_PokeStorageMain);
 }
 
 // ─── :3807 SetScrollingBackground + :3814 ScrollBackground ───
@@ -3135,7 +3315,8 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
       ? '{COLOR GREEN}{HIGHLIGHT WHITE}{SHADOW LIGHT_GREEN}♀'
       : '{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}';
     s.displayMonGenderLvlText = `${genderPart}{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}N.${s.displayMonLevel}`;
-    s.displayMonItemName = '';  // GetItemName(displayMonItemId) : lot items
+    // :6985 StringCopyPadded(displayMonItemName, GetItemName(id), CHAR_SPACE, 8) sinon StringFill espaces.
+    s.displayMonItemName = s.displayMonItemId !== ITEM_NONE ? GetItemName(s.displayMonItemId) : '';
   }
 }
 
@@ -3357,7 +3538,14 @@ function SetCursorPosition(newCursorArea: number, newCursorPosition: number): vo
   } else {
     if (!IsMovingItem() && cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_STILL);
   }
-  // :6007-6018 MOVE_ITEMS TryHide/TryLoadItemIconAtPos : lot items.
+  // :6007-6018 MODE DÉPLACER OBJETS : cache l'icône à l'ancienne pos (sCursorArea/Position, pas encore
+  // mis à jour → DoCursorNewPosUpdate), charge celle de la nouvelle.
+  if (s.boxOption === OPTION_MOVE_ITEMS) {
+    if (sCursorArea === CURSOR_AREA_IN_BOX) TryHideItemIconAtPos(CURSOR_AREA_IN_BOX, sCursorPosition);
+    else if (sCursorArea === CURSOR_AREA_IN_PARTY) TryHideItemIconAtPos(CURSOR_AREA_IN_PARTY, sCursorPosition);
+    if (newCursorArea === CURSOR_AREA_IN_BOX) TryLoadItemIconAtPos(newCursorArea, newCursorPosition);
+    else if (newCursorArea === CURSOR_AREA_IN_PARTY) TryLoadItemIconAtPos(newCursorArea, newCursorPosition);
+  }
   const shadow = _spr(s.cursorShadowSprite);
   if (newCursorArea === CURSOR_AREA_IN_PARTY && sCursorArea !== CURSOR_AREA_IN_PARTY) {
     s.cursorPrevHorizPos = 1;
@@ -3710,7 +3898,9 @@ sMenuTexts[MENU_FOREST] = 'FORET';   sMenuTexts[MENU_CITY] = 'VILLE';     sMenuT
 sMenuTexts[MENU_CRAG] = 'PIC';       sMenuTexts[MENU_VOLCANO] = 'VOLCAN'; sMenuTexts[MENU_SNOW] = 'NEIGE';     sMenuTexts[MENU_CAVE] = 'GROTTE';
 sMenuTexts[MENU_BEACH] = 'PLAGE';    sMenuTexts[MENU_SEAFLOOR] = 'MER';   sMenuTexts[MENU_RIVER] = 'RIVIERE';  sMenuTexts[MENU_SKY] = 'CIEL';
 sMenuTexts[MENU_POLKADOT] = 'POIS';  sMenuTexts[MENU_POKECENTER] = 'CENTRE'; sMenuTexts[MENU_MACHINE] = 'MACHINE'; sMenuTexts[MENU_SIMPLE] = 'SIMPLE';
-// (TAKE/GIVE/… = lot items suivant)
+// Menu DÉPLACER OBJETS (:7947 gPCText_* strings.c:905-909) :
+sMenuTexts[MENU_TAKE] = 'PRENDRE'; sMenuTexts[MENU_GIVE] = 'DONNER'; sMenuTexts[MENU_GIVE_2] = 'DONNER';
+sMenuTexts[MENU_SWITCH] = 'ORDRE'; sMenuTexts[MENU_BAG] = 'SAC';    sMenuTexts[MENU_INFO] = 'INFOS';
 
 // ─── :7924 InitMenu ───
 function InitMenu(): void {
@@ -3815,11 +4005,42 @@ function SetMenuTexts_Mon(): boolean {
   return true;
 }
 
-// ─── :8082 SetSelectionMenuTexts (MOVE_ITEMS → SetMenuTexts_Item, lot Move Items). ───
+// ─── :8062 SetMenuTexts_Item (menu contextuel MODE DÉPLACER OBJETS) ───
+function SetMenuTexts_Item(): boolean {
+  const s = sStorage!;
+  // :8064 `if (displayMonSpecies == SPECIES_EGG)` — notre modèle garde l'espèce réelle + flag displayMonIsEgg.
+  if (s.displayMonIsEgg) return false;
+
+  if (!IsMovingItem()) {
+    if (s.displayMonItemId === ITEM_NONE) {
+      if (s.displayMonSpecies === SPECIES_NONE) return false;
+      SetMenuText(MENU_GIVE_2);
+    } else {
+      if (!ItemIsMail(s.displayMonItemId)) {
+        SetMenuText(MENU_TAKE);
+        SetMenuText(MENU_BAG);
+      }
+      SetMenuText(MENU_INFO);
+    }
+  } else {
+    if (s.displayMonItemId === ITEM_NONE) {
+      if (s.displayMonSpecies === SPECIES_NONE) return false;
+      SetMenuText(MENU_GIVE);
+    } else {
+      if (ItemIsMail(s.displayMonItemId) === true) return false;
+      SetMenuText(MENU_SWITCH);
+    }
+  }
+
+  SetMenuText(MENU_CANCEL);
+  return true;
+}
+
+// ─── :8082 SetSelectionMenuTexts (MOVE_ITEMS → SetMenuTexts_Item). ───
 function SetSelectionMenuTexts(): boolean {
   InitMenu();
   if (sStorage!.boxOption !== OPTION_MOVE_ITEMS) return SetMenuTexts_Mon();
-  return false;  // SetMenuTexts_Item : lot items
+  return SetMenuTexts_Item();
 }
 
 // ─── ClearBottomWindow (:env 4250) ───
@@ -3890,6 +4111,14 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_JUMP_TO_WHICH_BOX]: { text: 'Aller dans quelle BOITE?', varKind: MSG_VAR_NONE },
   [MSG_PICK_A_THEME]: { text: 'Choisissez une catégorie.', varKind: MSG_VAR_NONE },
   [MSG_PICK_A_WALLPAPER]: { text: 'Choisissez un fond.', varKind: MSG_VAR_NONE },
+  // Menu DÉPLACER OBJETS (strings.c gText_* :886-892), 1:1 texte FR décomp :
+  [MSG_GIVE_TO_MON]: { text: 'DONNER à un POKéMON?', varKind: MSG_VAR_NONE },        // gText_GiveToAPkmn
+  [MSG_PLACED_IN_BAG]: { text: 'Objet placé dans le SAC.', varKind: MSG_VAR_ITEM_NAME }, // gText_PlacedItemInBag
+  [MSG_BAG_FULL]: { text: 'Le SAC est plein.', varKind: MSG_VAR_NONE },             // gText_BagIsFull2
+  [MSG_PUT_IN_BAG]: { text: 'Placer objet dans le SAC?', varKind: MSG_VAR_NONE },   // gText_PutItemInBag
+  [MSG_ITEM_IS_HELD]: { text: '{0} tenu.', varKind: MSG_VAR_ITEM_NAME },            // gText_ItemIsNowHeld
+  [MSG_CHANGED_TO_ITEM]: { text: 'Changé pour {0}!', varKind: MSG_VAR_ITEM_NAME },  // gText_ChangedToNewItem
+  [MSG_CANT_STORE_MAIL]: { text: 'Impossible à ranger!', varKind: MSG_VAR_NONE },   // gText_MailCantBeStored
 };
 function PrintMessage(id: number): void {
   const s = sStorage!;
@@ -3898,6 +4127,8 @@ function PrintMessage(id: number): void {
   if (entry) {
     if (entry.varKind === MSG_VAR_MON_NAME_1) text = text.replace('{0}', s.displayMonName);
     else if (entry.varKind === MSG_VAR_RELEASE_MON_1 || entry.varKind === MSG_VAR_RELEASE_MON_3) text = text.replace('{0}', s.releaseMonName);
+    // :4292 MSG_VAR_ITEM_NAME : nom de l'objet en main (IsMovingItem) ou celui du mon affiché, trim espaces.
+    else if (entry.varKind === MSG_VAR_ITEM_NAME) text = text.replace('{0}', (IsMovingItem() ? GetMovingItemName() : s.displayMonItemName).replace(/ +$/, ''));
   }
   FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL_1);
   AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, text, 0, 1, TEXT_SKIP_DRAW, null);
@@ -3964,6 +4195,24 @@ function Task_OnSelectedMon(_taskId: number): void {
           // suivant (IsRemovingLastPartyMon + ItemIsMail non portés ; AtLeastThreeUsableMons dans
           // Task_ReleaseMon couvre déjà « pas assez de mons » via la séquence « il est revenu »).
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ReleaseMon);
+          break;
+        case MENU_TAKE:  // :2688 (MOVE_ITEMS)
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_TakeItemForMoving);
+          break;
+        case MENU_GIVE:  // :2692
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_GiveMovingItemToMon);
+          break;
+        case MENU_BAG:  // :2696
+          SetPokeStorageTask(Task_ItemToBag);
+          break;
+        case MENU_SWITCH:  // :2699
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_SwitchSelectedItem);
+          break;
+        case MENU_GIVE_2:  // :2703 (donner un objet du sac = reopening ITEM_FROM_BAG)
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_GiveItemFromBag);
+          break;
+        case MENU_INFO:  // :2707
+          SetPokeStorageTask(Task_ShowItemInfo);
           break;
       }
       break;
@@ -4560,7 +4809,9 @@ function Task_ReshowPokeStorage(_taskId: number): void {
 
 // ─── :2270 Task_PokeStorageMain — boucle principale. PROVISOIRE : cases MOVE_CURSOR + B (fermeture) ;
 // les autres INPUT_* (party/menus/scroll/multimove) = lots #2/#3. MSTATE_* 1:1 (:2254-2268). ───
-const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1, MSTATE_SCROLL_BOX = 2;
+// :2254 enum MSTATE_* — HANDLE_INPUT..WAIT_ITEM_ANIM. SCROLL_BOX_ITEM/WAIT_ITEM_ANIM = MODE DÉPLACER OBJETS.
+const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1, MSTATE_SCROLL_BOX = 2,
+  MSTATE_SCROLL_BOX_ITEM = 10, MSTATE_WAIT_ITEM_ANIM = 11;
 function Task_PokeStorageMain(_taskId: number): void {
   const s = sStorage!;
   switch (s.state) {
@@ -4583,16 +4834,25 @@ function Task_PokeStorageMain(_taskId: number): void {
           PlaySE(0x5 /* SE_SELECT */);
           s.newCurrBoxId = StorageGetCurrentBox() + 1;
           if (s.newCurrBoxId >= TOTAL_BOXES_COUNT) s.newCurrBoxId = 0;
-          // OPTION_MOVE_ITEMS (TryHideItemAtCursor + MSTATE_SCROLL_BOX_ITEM) = lot #10.
-          SetUpScrollToBox(s.newCurrBoxId);
-          s.state = MSTATE_SCROLL_BOX;
+          if (s.boxOption !== OPTION_MOVE_ITEMS) {
+            SetUpScrollToBox(s.newCurrBoxId);
+            s.state = MSTATE_SCROLL_BOX;
+          } else {  // :2329 — cache l'icône avant le slide, puis scrolle une fois l'anim finie
+            TryHideItemAtCursor();
+            s.state = MSTATE_SCROLL_BOX_ITEM;
+          }
           break;
         case INPUT_SCROLL_LEFT:  // :2335 → boîte précédente
           PlaySE(0x5 /* SE_SELECT */);
           s.newCurrBoxId = StorageGetCurrentBox() - 1;
           if (s.newCurrBoxId < 0) s.newCurrBoxId = TOTAL_BOXES_COUNT - 1;
-          SetUpScrollToBox(s.newCurrBoxId);
-          s.state = MSTATE_SCROLL_BOX;
+          if (s.boxOption !== OPTION_MOVE_ITEMS) {
+            SetUpScrollToBox(s.newCurrBoxId);
+            s.state = MSTATE_SCROLL_BOX;
+          } else {  // :2345
+            TryHideItemAtCursor();
+            s.state = MSTATE_SCROLL_BOX_ITEM;
+          }
           break;
         case INPUT_BOX_OPTIONS:  // :2312 A sur titre → menu SAUTER/DÉCO/NOM
           PlaySE(0x5 /* SE_SELECT */);
@@ -4616,9 +4876,22 @@ function Task_PokeStorageMain(_taskId: number): void {
           RefreshDisplayMonData();
           StartDisplayMonMosaicEffect();
         }
-        // OPTION_MOVE_ITEMS (TryShowItemAtCursor + MSTATE_WAIT_ITEM_ANIM) = lot #10.
-        s.state = MSTATE_HANDLE_INPUT;
+        if (s.boxOption === OPTION_MOVE_ITEMS) {  // :2469 — réaffiche l'icône à la nouvelle position
+          TryShowItemAtCursor();
+          s.state = MSTATE_WAIT_ITEM_ANIM;
+        } else {
+          s.state = MSTATE_HANDLE_INPUT;
+        }
       }
+      break;
+    case MSTATE_SCROLL_BOX_ITEM:  // :2524 attend la fin de l'anim « disparaît » puis lance le slide
+      if (!IsItemIconAnimActive()) {
+        SetUpScrollToBox(s.newCurrBoxId);
+        s.state = MSTATE_SCROLL_BOX;
+      }
+      break;
+    case MSTATE_WAIT_ITEM_ANIM:  // :2531 attend la fin de l'anim « apparaît »
+      if (!IsItemIconAnimActive()) s.state = MSTATE_HANDLE_INPUT;
       break;
   }
 }
@@ -5010,7 +5283,7 @@ function Task_OnBPressed(_taskId: number): void {
   switch (s.state) {
     case 0:
       if (IsMonBeingMoved()) { PlaySE(0x20 /* SE_FAILURE */); PrintMessage(MSG_HOLDING_POKE); s.state = 1; }
-      else if (IsMovingItem()) { console.warn('[pc-storage] Task_CloseBoxWhileHoldingItem : lot items'); SetPokeStorageTask(Task_PokeStorageMain); }
+      else if (IsMovingItem()) { SetPokeStorageTask(Task_CloseBoxWhileHoldingItem); }
       else { PlaySE(0x5 /* SE_SELECT */); PrintMessage(MSG_CONTINUE_BOX); ShowYesNoWindow(0); s.state = 2; }
       break;
     case 1:
@@ -5046,7 +5319,7 @@ function Task_OnCloseBoxPressed(_taskId: number): void {
   switch (s.state) {
     case 0:
       if (IsMonBeingMoved()) { PlaySE(0x20); PrintMessage(MSG_HOLDING_POKE); s.state = 1; }
-      else if (IsMovingItem()) { console.warn('[pc-storage] Task_CloseBoxWhileHoldingItem : lot items'); SetPokeStorageTask(Task_PokeStorageMain); }
+      else if (IsMovingItem()) { SetPokeStorageTask(Task_CloseBoxWhileHoldingItem); }
       else { PlaySE(0x5); PrintMessage(MSG_EXIT_BOX); ShowYesNoWindow(0); s.state = 2; }
       break;
     case 1:
