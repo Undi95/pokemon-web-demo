@@ -66,7 +66,11 @@ import {
   PreloadMonIcon, IsMonIconLoaded, GetIconSpeciesNoPersonality,
   LoadMonIconPalettes, PreloadMonIconPalettes, AreMonIconPalettesLoaded, CreateMonIconSprite,
 } from './pokemon_icon';
-import { InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles, EnsureMonMarkingsGfxLoaded } from './mon_markings';
+import {
+  InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles,
+  EnsureMonMarkingsGfxLoaded, EnsureMonMarkingsMenuGfxLoaded, OpenMonMarkingsMenu,
+  HandleMonMarkingsMenuInput, FreeMonMarkingsMenu, type MonMarkingsMenu,
+} from './mon_markings';
 import {
   ComputerScreenOpenEffect, ComputerScreenCloseEffect,
   IsComputerScreenOpenEffectActive, IsComputerScreenCloseEffectActive,
@@ -391,7 +395,7 @@ interface PokemonStorageSystemData {
   markingComboSprite: number;                 // struct Sprite * → spriteId
   waveformSprites: number[];                  // struct Sprite *[2]
   markingComboTilesPtr: unknown;              // u16 * — typé au port markings
-  markMenu: unknown;                          // struct MonMarkingsMenu — mon_markings pas transcrit
+  markMenu: MonMarkingsMenu;                  // struct MonMarkingsMenu (embedded)
   chooseBoxMenu: ChooseBoxMenu;
   movingMon: Pokemon | null;                  // struct Pokemon (inline zéroté) → null jusqu'au 1er usage
   tempMon: Pokemon | null;                    // struct Pokemon
@@ -481,7 +485,7 @@ function AllocPokemonStorageSystemData(): PokemonStorageSystemData {
     monPlaceChangeFunc: null, monPlaceChangeState: 0, shiftBoxId: 0,
     markingComboSprite: -1, waveformSprites: [-1, -1],
     markingComboTilesPtr: null,
-    markMenu: null,
+    markMenu: { baseTileTag: 0, basePaletteTag: 0 },
     chooseBoxMenu: {
       menuSprite: -1, menuSideSprites: [-1, -1, -1, -1], unused1: [0, 0, 0],
       arrowSprites: [-1, -1], unused2: new Uint8Array(0x214), loadedPalette: false,
@@ -620,6 +624,7 @@ function LoadStorageAssets(): void {
     // AVANT que sStorageAssets soit prêt → le marking combo du panneau DONNEES n'est plus
     // rendu avec une palette vide (noire = marques invisibles).
     await EnsureMonMarkingsGfxLoaded();
+    await EnsureMonMarkingsMenuGfxLoaded();  // gfx du menu MARQUER (idem : évite sprites vides à la 1re ouverture)
     sStorageAssets = {
       menuGfx,
       displayMenuTilemap: dmTm, displayMenuPal: dmPal,
@@ -3284,6 +3289,45 @@ function ClearBottomWindow(): void {
   ScheduleBgCopyTilemapToVram(0);
 }
 
+// ─── :3043 Task_ShowMarkMenu — menu MARQUER interactif (OpenMonMarkingsMenu + HandleInput) ───
+function Task_ShowMarkMenu(taskId: number): void {
+  void taskId;
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PrintMessage(MSG_MARK_POKE);
+      s.markMenu.markings = s.displayMonMarkings;
+      OpenMonMarkingsMenu(s.displayMonMarkings, 0xb0, 0x10);
+      s.state++;
+      break;
+    case 1:
+      if (!HandleMonMarkingsMenuInput()) {
+        FreeMonMarkingsMenu();
+        ClearBottomWindow();
+        SetMonMarkings(s.markMenu.markings ?? 0);
+        RefreshDisplayMonData();
+        SetPokeStorageTask(Task_PokeStorageMain);
+      }
+      break;
+  }
+}
+
+// ─── :6759 SetMonMarkings — écrit les marques sur le mon (moving / party / box) ───
+function SetMonMarkings(markings: number): void {
+  const s = sStorage!;
+  s.displayMonMarkings = markings;
+  if (sIsMonBeingMoved) {
+    (s.movingMon as unknown as { markings?: number }).markings = markings;
+  } else {
+    if (sCursorArea === CURSOR_AREA_IN_PARTY)
+      (gPlayerParty[sCursorPosition] as unknown as { markings?: number }).markings = markings;
+    if (sCursorArea === CURSOR_AREA_IN_BOX) {
+      const boxMon = GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+      if (boxMon) (boxMon as unknown as { markings?: number }).markings = markings;
+    }
+  }
+}
+
 // ─── PrintMessage (:4273) — message du bas. sMessages FR (strings.c gText_* :867-879) des ids du
 // flux menu ; placeholder {DYNAMIC 0} → nom du mon affiché/relâché (DynamicPlaceholderTextUtil). ───
 const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
@@ -3373,7 +3417,9 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_SUMMARY:  // :2650
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMonSummary);
           break;
-        case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
+        case MENU_MARK:  // :2684
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMarkMenu);
+          break;
         case MENU_RELEASE:  // :2661 — cas normal. Gardes last-mon (state 3)/mail (4)/egg (5) = lot
           // suivant (IsRemovingLastPartyMon + ItemIsMail non portés ; AtLeastThreeUsableMons dans
           // Task_ReleaseMon couvre déjà « pas assez de mons » via la séquence « il est revenu »).
