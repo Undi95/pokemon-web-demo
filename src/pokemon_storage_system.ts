@@ -19,7 +19,7 @@ import {
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
-import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, type Pokemon } from './pokemon';
+import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, SetMonData, type Pokemon } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
@@ -89,11 +89,14 @@ import { GetItemName, GetItemDescription } from './item';
 import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
 import { getString } from './engine/ui/gba-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
 import { ItemIsMail } from './mail_data';
-import { AddBagItem } from './engine/bag/bag';
+import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gSineTable } from './trig';
 import { DoNamingScreen } from './naming_screen';
+import { gSpecialVar } from './engine/script/script-vars';
+// GoToBagMenu / ITEMMENULOCATION_PCBOX : import DYNAMIQUE dans Task_ChangeScreen (case ITEM_FROM_BAG)
+// pour casser le cycle ESM item_menu ↔ pokemon_storage_system (gros module → TDZ boot au top-level).
 import { ITEM_NONE } from '../include/constants/items';
 const TILE_SIZE_4BPP = 32;
 
@@ -1015,6 +1018,7 @@ const REG_OFFSET_BG0CNT = 0x8, REG_OFFSET_BG1CNT = 0xA, REG_OFFSET_BG2CNT = 0xC,
 const REG_OFFSET_BG2HOFS = 0x18, REG_OFFSET_BG2VOFS = 0x1A, REG_OFFSET_BG3HOFS = 0x1C, REG_OFFSET_BG3VOFS = 0x1E;
 const REG_OFFSET_BG0HOFS = 0x10, REG_OFFSET_BG0VOFS = 0x12, REG_OFFSET_BG1HOFS = 0x14, REG_OFFSET_BG1VOFS = 0x16;
 const REG_OFFSET_BLDCNT = 0x50, REG_OFFSET_BLDALPHA = 0x52, REG_OFFSET_MOSAIC = 0x4C;
+const MON_DATA_HELD_ITEM = 22;  // 1:1 include/constants/pokemon.h (= battle-setup-helpers.ts)
 const PALETTES_ALL = 0xFFFFFFFF;
 const RGB_BLACK = 0x0000;
 
@@ -1129,7 +1133,20 @@ function SetSelectionAfterSummaryScreen(): void {
   if (sIsMonBeingMoved) LoadSavedMovingMon();
   else sCursorPosition = GetSummaryLastMonIndex();  // = gLastViewedMonIndex
 }
-function GiveChosenBagItem(): void { throw new Error('[pc-storage] GiveChosenBagItem : lot reshow (tâche #4)'); }
+// :3773 GiveChosenBagItem — au retour du sac (mode PCBOX), donne l'objet choisi au mon du curseur.
+function GiveChosenBagItem(): void {
+  const itemId = gSpecialVar.ItemId;
+  if (itemId !== 0 /* ITEM_NONE */) {
+    const pos = GetCursorPosition();
+    if (sInPartyMenu) SetMonData(gPlayerParty[pos] as Pokemon, MON_DATA_HELD_ITEM, itemId);
+    else {
+      // SetCurrentBoxMonData(pos, MON_DATA_HELD_ITEM, itemId) — accès direct au box mon (pattern :1448).
+      const bm = GetBoxedMonPtr(StorageGetCurrentBox(), pos) as unknown as { heldItem?: number } | null;
+      if (bm) bm.heldItem = itemId;
+    }
+    RemoveBagItem(getItemKeyById(itemId), 1);  // RemoveBagItem attend une CLÉ (pas un ID)
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DÉPLACER OBJETS (OPTION_MOVE_ITEMS) — item icons (:8636-9378). Sprites d'objets
@@ -1804,11 +1821,22 @@ function Task_PrintCantStoreMail(taskId: number): void {
   }
 }
 
-/** :3590 Task_GiveItemFromBag — donner un objet du sac au mon (reopening ITEM_FROM_BAG). Lot suivant. */
-function Task_GiveItemFromBag(taskId: number): void {
-  void taskId;
-  console.warn('[pc-storage] Task_GiveItemFromBag : lot reopening ITEM_FROM_BAG');
-  SetPokeStorageTask(Task_PokeStorageMain);
+/** :3590 Task_GiveItemFromBag — fade puis bascule vers le sac (SCREEN_CHANGE_ITEM_FROM_BAG). */
+function Task_GiveItemFromBag(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      s.state++;
+      break;
+    case 1:
+      if (!UpdatePaletteFade()) {
+        sWhichToReshow = SCREEN_CHANGE_ITEM_FROM_BAG - 1;
+        s.screenChangeType = SCREEN_CHANGE_ITEM_FROM_BAG;
+        SetPokeStorageTask(Task_ChangeScreen);
+      }
+      break;
+  }
 }
 
 // ─── :3807 SetScrollingBackground + :3814 ScrollBackground ───
@@ -5442,9 +5470,12 @@ function Task_ChangeScreen(_taskId: number): void {
       break;
     }
     case SCREEN_CHANGE_ITEM_FROM_BAG:
-      console.warn(`[pc-storage] Task_ChangeScreen ITEM_FROM_BAG (DONNER depuis sac) : lot suivant.`);
+      // 1:1 :3764 — ouvre le sac en mode PCBOX (choisir un objet du SAC à donner au mon),
+      // retour = CB2_ReturnToPokeStorage qui rejoue GiveChosenBagItem (reshow ITEM_FROM_BAG-1).
       FreePokeStorageData();
-      getRuntime()?.SetMainCallback2(CB2_ExitPokeStorage as never);
+      void import('./item_menu').then((m) => {
+        m.GoToBagMenu(m.ITEMMENULOCATION_PCBOX, 0 /* ITEMS_POCKET */, CB2_ReturnToPokeStorage as never);
+      }).catch((e) => console.error('[pc-storage] GoToBagMenu(PCBOX)', e));
       break;
   }
 }

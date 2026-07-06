@@ -16,6 +16,7 @@ import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../harnes
 import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
 import { getMoveName, getMove } from './engine/data/game-data';
 import { GetItemName, GetItemDescription, GetItemImportance } from './item';
+import { ItemIsMail } from './mail_data';
 import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
 import { setStringVar, encodeOwText } from '../include/text';
 import { gStringVar4 } from '../include/string_util';
@@ -2031,6 +2032,10 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
         // 1:1 sContextMenuFuncs[ITEMMENULOCATION_PARTY] = Task_ItemContext_GiveToParty
         // (item_menu.c:347) — A sur un item en mode "donner à un mon" → valide + fade-close.
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_GiveToParty, Task_BagMenu_HandleInput);
+      } else if (gBagPosition.location === ITEMMENULOCATION_PCBOX) {
+        // 1:1 sContextMenuFuncs[ITEMMENULOCATION_PCBOX] = Task_ItemContext_GiveToPC
+        // (item_menu.c:356) — DONNER un objet du SAC à un mon du PC → valide + fade-close (retour PC).
+        SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_GiveToPC, Task_BagMenu_HandleInput);
       } else {
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
       }
@@ -3405,6 +3410,24 @@ function ItemMenu_Give(task: DecompTask): void {
     }
   } else {
     // 1:1 PrintItemCantBeHeld : "Impossible de tenir {STR_VAR_1}!".
+    _showItemMessage(task, _itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(item) }));
+  }
+}
+
+/** 1:1 décomp `Task_ItemContext_GiveToPC` (item_menu.c:2034) — A sur un objet en mode PCBOX
+ *  (donner un objet du SAC à un mon du PC). Trois gardes puis fade+close (l'objet choisi est
+ *  déjà dans gSpecialVar.ItemId, l'exitCallback CB2_ReturnToPokeStorage le lira via GiveChosenBagItem) :
+ *    - ItemIsMail                                  → « Impossible d'écrire une LETTRE ici. »
+ *    - pocket == KEYITEMS || GetItemImportance != 0 → « Impossible de tenir {objet}! » (clé/important)
+ *    - sinon → Task_FadeAndCloseBagMenu (retour PC avec l'objet). */
+function Task_ItemContext_GiveToPC(task: DecompTask): void {
+  RemoveContextWindow();
+  const item = gSpecialVar.ItemId;
+  if (ItemIsMail(item)) {
+    _showItemMessage(task, _itemMsg('gText_CantWriteMail'));
+  } else if (gBagPosition.pocket !== KEYITEMS_POCKET && GetItemImportance(item) === 0) {
+    Task_FadeAndCloseBagMenu(task);
+  } else {
     _showItemMessage(task, _itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(item) }));
   }
 }
