@@ -2483,6 +2483,7 @@ function CreateCursorSprites(): void {
   if (shadowId !== 64 && rt) {
     s.cursorShadowSprite = shadowId;
     const spr = _spr(shadowId)!;
+    spr.callback = SpriteCB_CursorShadow as never;  // :7815 template callback → l'ombre colle sous la main (sinon reste à 0,0 = pixel gris)
     rt.gba.oam[spr.oamIndex].priority = priority;
     if (sCursorArea) spr.invisible = true;
   } else {
@@ -2933,6 +2934,12 @@ function SetPlacedMonSprite(boxId: number, position: number): void {
 function SpriteCB_HeldMon(sprite: { x: number; y: number }): void {
   const cursor = _spr(sStorage!.cursorSprite);
   if (cursor) { sprite.x = cursor.x; sprite.y = cursor.y + cursor.y2 + 4; }
+}
+
+// :7729 SpriteCB_CursorShadow — l'ombre de la main colle sous le curseur (+20 en y). ───
+function SpriteCB_CursorShadow(sprite: { x: number; y: number }): void {
+  const cursor = _spr(sStorage!.cursorSprite);
+  if (cursor) { sprite.x = cursor.x; sprite.y = cursor.y + 20; }
 }
 
 // :4866 DestroyMovingMonIcon ───
