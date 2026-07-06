@@ -15,6 +15,7 @@ import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_HP,
+  MON_DATA_SANITY_HAS_SPECIES, MON_DATA_KNOWN_MOVES,
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
@@ -50,6 +51,15 @@ import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
 import { CalculatePlayerPartyCount } from './pokemon';
 import { GetSummaryLastMonIndex, OpenSummaryScreen } from './pokemon_summary_screen';
+import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { MOVE_SURF, MOVE_DIVE, MOVE_STRENGTH, MOVE_ROCK_SMASH } from '../include/constants/moves';
+import { MAP_GROUP, MAP_NUM, MAP_CONSTANTS } from '../include/constants/map_groups';
+// MAP_GROUPS_COUNT (décomp = nb de groupes de maps) sert de sentinelle « n'importe quelle map »
+// dans sRestrictedReleaseMoves (Surf/Dive restreints partout). Émeraude = 34 (> tout vrai mapGroup).
+const MAP_GROUPS_COUNT = 34;
+const MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F = MAP_CONSTANTS.MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F;
+const MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F = MAP_CONSTANTS.MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F;
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 // ─── ÉCRAN DES BOÎTES (phase 2, rendu de base) : icônes + infra CB2 ─────────
 import {
@@ -3282,6 +3292,9 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_RELEASE_POKE]: { text: 'Relâcher ce POKéMON?', varKind: MSG_VAR_NONE },
   [MSG_WAS_RELEASED]: { text: '{0} a été relâché.', varKind: MSG_VAR_RELEASE_MON_1 },
   [MSG_BYE_BYE]: { text: 'Bye-bye, {0}!', varKind: MSG_VAR_RELEASE_MON_3 },
+  [MSG_CAME_BACK]: { text: '{0} est revenu!', varKind: MSG_VAR_RELEASE_MON_1 },   // gText_PkmnCameBack
+  [MSG_WORRIED]: { text: "Il s'est inquiété?", varKind: MSG_VAR_NONE },            // gText_WasItWorriedAboutYou
+  [MSG_SURPRISE]: { text: '… … … … !', varKind: MSG_VAR_NONE },                    // gText_FourEllipsesExclamation
   [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
   [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
   [MSG_EXIT_BOX]: { text: 'Sortir de la BOITE?', varKind: MSG_VAR_NONE },
@@ -3360,7 +3373,11 @@ function Task_OnSelectedMon(_taskId: number): void {
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMonSummary);
           break;
         case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
-        case MENU_RELEASE: _pcActionTodo('RELACHER (Task_ReleaseMon)'); break;
+        case MENU_RELEASE:  // :2661 — cas normal. Gardes last-mon (state 3)/mail (4)/egg (5) = lot
+          // suivant (IsRemovingLastPartyMon + ItemIsMail non portés ; AtLeastThreeUsableMons dans
+          // Task_ReleaseMon couvre déjà « pas assez de mons » via la séquence « il est revenu »).
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ReleaseMon);
+          break;
       }
       break;
   }
@@ -4018,6 +4035,299 @@ function Task_PokeStorageMain(_taskId: number): void {
       break;
   }
 }
+// ═══════════ RELÂCHER (#8) : Task_ReleaseMon (:2912) + helpers (:5011, :6432-6700) ═══════════
+// (RELEASE_ANIM_RELEASE / RELEASE_ANIM_CAME_BACK déjà déclarés plus haut.)
+
+// Affine anims du mon relâché (1:1 :1221-1238) via le moteur affine générique (précédent
+// hors-combat sAffineAnims_FlyBird, field_effect_helpers.ts:4288). Release = rétrécit
+// (delta −2/frame ×120) ; CameBack = re-grossit (+16/frame ×15) pour « il est revenu ».
+registerAffineAnim('sAffineAnim_ReleaseMon_Release', {
+  frames: [{ xScale: -2, yScale: -2, rotation: 0, duration: 120 }], terminator: 'END',
+});
+registerAffineAnim('sAffineAnim_ReleaseMon_CameBack', {
+  frames: [
+    { xScale: 16, yScale: 16, rotation: 0, duration: 0 },
+    { xScale: 16, yScale: 16, rotation: 0, duration: 15 },
+  ], terminator: 'END',
+});
+registerAffineAnimTable('sAffineAnims_ReleaseMon', {
+  affineAnims: ['sAffineAnim_ReleaseMon_Release', 'sAffineAnim_ReleaseMon_CameBack'],
+});
+
+// 1:1 sRestrictedReleaseMoves (:6496) : CS dont on ne peut relâcher le dernier porteur
+// (anti-softlock). Surf/Dive partout (mapGroup = MAP_GROUPS_COUNT) ; Force/Éclate-Roc en Ligue.
+const sRestrictedReleaseMoves: { mapGroup: number; mapNum: number; move: number }[] = [
+  { mapGroup: MAP_GROUPS_COUNT, mapNum: 0, move: MOVE_SURF },
+  { mapGroup: MAP_GROUPS_COUNT, mapNum: 0, move: MOVE_DIVE },
+  { mapGroup: MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), mapNum: MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), move: MOVE_STRENGTH },
+  { mapGroup: MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), mapNum: MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), move: MOVE_ROCK_SMASH },
+  { mapGroup: MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), mapNum: MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), move: MOVE_STRENGTH },
+  { mapGroup: MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), mapNum: MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), move: MOVE_ROCK_SMASH },
+];
+
+/** 1:1 `GetRestrictedReleaseMoves` (:6506) — remplit `moves` des CS restreintes sur la map actuelle. */
+function GetRestrictedReleaseMoves(moves: Uint16Array): void {
+  let n = 0;
+  for (const r of sRestrictedReleaseMoves) {
+    if (r.mapGroup === MAP_GROUPS_COUNT
+      || (r.mapGroup === gSaveBlock1Ptr.location.mapGroup && r.mapNum === gSaveBlock1Ptr.location.mapNum)) {
+      moves[n++] = r.move;
+    }
+  }
+  moves[n] = 0;  // terminateur (adaptation : 0 = MOVE_NONE au lieu de MOVES_COUNT ; cf. GetMonData KNOWN_MOVES)
+}
+
+/** 1:1 `AtLeastThreeUsableMons` (:6573) — ≥3 mons présents (party + PC), le mon en main compte. */
+function AtLeastThreeUsableMons(): boolean {
+  let count = sIsMonBeingMoved ? 1 : 0;
+  for (let j = 0; j < PARTY_SIZE; j++) if (GetMonData(gPlayerParty[j], MON_DATA_SANITY_HAS_SPECIES)) count++;
+  if (count >= 3) return true;
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++)
+    for (let j = 0; j < IN_BOX_COUNT; j++)
+      if ((_boxMonAt(i, j)?.species ?? SPECIES_NONE) !== SPECIES_NONE) { if (++count >= 3) return true; }
+  return false;
+}
+
+/** 1:1 `InitCanReleaseMonVars` (:6523) — prépare la vérif « peut-on relâcher ce mon ? ». */
+function InitCanReleaseMonVars(): void {
+  const s = sStorage!;
+  if (!AtLeastThreeUsableMons()) { s.releaseStatusResolved = true; s.canReleaseMon = 0; return; }
+  if (sIsMonBeingMoved) { s.tempMon = s.movingMon; s.releaseBoxId = -1; s.releaseBoxPos = -1; }
+  else {
+    if (sCursorArea === CURSOR_AREA_IN_PARTY) { s.tempMon = gPlayerParty[sCursorPosition]; s.releaseBoxId = TOTAL_BOXES_COUNT; }
+    else { s.tempMon = GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition); s.releaseBoxId = StorageGetCurrentBox(); }
+    s.releaseBoxPos = sCursorPosition;
+  }
+  GetRestrictedReleaseMoves(s.restrictedMoveList);
+  s.restrictedReleaseMonMoves = s.tempMon ? (GetMonData(s.tempMon, MON_DATA_KNOWN_MOVES, s.restrictedMoveList) as number) : 0;
+  if (s.restrictedReleaseMonMoves !== 0) s.releaseStatusResolved = false;
+  else { s.releaseStatusResolved = true; s.canReleaseMon = 1; }
+  s.releaseCheckState = 0;
+}
+
+/** 1:1 `RunCanReleaseMon` (:6604) — cherche un AUTRE mon (party puis PC) connaissant les CS
+ *  restreintes du mon relâché. Retourne 1/0 quand résolu, -1 tant qu'en cours (state-machine). */
+function RunCanReleaseMon(): number {
+  const s = sStorage!;
+  if (s.releaseStatusResolved) return s.canReleaseMon;
+  switch (s.releaseCheckState) {
+    case 0:
+      for (let i = 0; i < PARTY_SIZE; i++) {
+        if (s.releaseBoxId !== TOTAL_BOXES_COUNT || s.releaseBoxPos !== i) {
+          const knownMoves = GetMonData(gPlayerParty[i], MON_DATA_KNOWN_MOVES, s.restrictedMoveList) as number;
+          s.restrictedReleaseMonMoves &= ~knownMoves;
+        }
+      }
+      if (s.restrictedReleaseMonMoves === 0) { s.releaseStatusResolved = true; s.canReleaseMon = 1; }
+      else { s.releaseCheckBoxId = 0; s.releaseCheckBoxPos = 0; s.releaseCheckState++; }
+      break;
+    case 1:
+      for (let i = 0; i < IN_BOX_COUNT; i++) {
+        const bm = GetBoxedMonPtr(s.releaseCheckBoxId, s.releaseCheckBoxPos);
+        const knownMoves = bm ? (GetMonData(bm, MON_DATA_KNOWN_MOVES, s.restrictedMoveList) as number) : 0;
+        if (knownMoves !== 0 && !(s.releaseBoxId === s.releaseCheckBoxId && s.releaseBoxPos === s.releaseCheckBoxPos)) {
+          s.restrictedReleaseMonMoves &= ~knownMoves;
+          if (s.restrictedReleaseMonMoves === 0) { s.releaseStatusResolved = true; s.canReleaseMon = 1; break; }
+        }
+        if (++s.releaseCheckBoxPos >= IN_BOX_COUNT) {
+          s.releaseCheckBoxPos = 0;
+          if (++s.releaseCheckBoxId >= TOTAL_BOXES_COUNT) { s.releaseStatusResolved = true; s.canReleaseMon = 0; }
+        }
+      }
+      break;
+  }
+  return -1;
+}
+
+// releaseMonSpritePtr adapté (décomp = struct Sprite **) : descripteur {mode, pos} → slot
+// de sprite (partySprites/boxMonsSprites/movingMonSprite = IDs numériques chez nous).
+type ReleasePtr = { mode: number; pos: number } | null;
+function _relSpriteId(): number {
+  const s = sStorage!; const p = s.releaseMonSpritePtr as ReleasePtr;
+  if (!p) return -1;
+  if (p.mode === MODE_PARTY) return s.partySprites[p.pos];
+  if (p.mode === MODE_BOX) return s.boxMonsSprites[p.pos];
+  return s.movingMonSprite;
+}
+function _relSprSet(id: number): void {
+  const s = sStorage!; const p = s.releaseMonSpritePtr as ReleasePtr;
+  if (!p) return;
+  if (p.mode === MODE_PARTY) s.partySprites[p.pos] = id;
+  else if (p.mode === MODE_BOX) s.boxMonsSprites[p.pos] = id;
+  else s.movingMonSprite = id;
+}
+
+/** 1:1 `SetReleaseMon` (:5011) — pointe l'icône à relâcher + lance l'anim de rétrécissement. */
+function SetReleaseMon(mode: number, position: number): void {
+  const s = sStorage!; const rt = getRuntime();
+  if (mode === MODE_PARTY || mode === MODE_BOX) s.releaseMonSpritePtr = { mode, pos: position };
+  else if (mode === MODE_MOVE) s.releaseMonSpritePtr = { mode: MODE_MOVE, pos: 0 };
+  else return;
+  const id = _relSpriteId();
+  if (id >= 0 && rt) {
+    const spr = _spr(id);
+    if (spr) {
+      spr.affineAnimsTableName = 'sAffineAnims_ReleaseMon';
+      rt.gba.oam[spr.oamIndex].affineMode = 1;  // ST_OAM_AFFINE_NORMAL
+      rt.StartSpriteAffineAnim(id, RELEASE_ANIM_RELEASE);
+    }
+  }
+}
+
+/** 1:1 `TryHideReleaseMonSprite` (:5037) — cache l'icône quand l'anim de rétrécissement finit. */
+function TryHideReleaseMonSprite(): boolean {
+  const id = _relSpriteId(); const spr = id >= 0 ? _spr(id) : null;
+  if (!spr || spr.invisible) return false;
+  if (spr.affineAnimEnded) spr.invisible = true;
+  return true;
+}
+
+/** 1:1 `DestroyReleaseMonIcon` (:5049) — libère la matrice OAM + détruit l'icône. */
+function DestroyReleaseMonIcon(): void {
+  const id = _relSpriteId();
+  if (id >= 0) {
+    // Décomp :5053 FreeOamMatrix(oam.matrixNum) : adaptation — notre moteur affine
+    // (sprite-engine-impl) libère la matrice OAM à la destruction du sprite.
+    DestroySprite(id);  // DestroyBoxMonIcon
+    _relSprSet(-1);
+  }
+}
+
+/** 1:1 `ReshowReleaseMon` (:5059) — ré-affiche l'icône + anim « il revient ». */
+function ReshowReleaseMon(): void {
+  const rt = getRuntime(); const id = _relSpriteId();
+  if (id >= 0 && rt) {
+    const spr = _spr(id);
+    if (spr) { spr.invisible = false; rt.StartSpriteAffineAnim(id, RELEASE_ANIM_CAME_BACK); }
+  }
+}
+
+/** 1:1 `ResetReleaseMonSpritePtr` (:5068) — libère le pointeur quand l'anim retour finit. */
+function ResetReleaseMonSpritePtr(): boolean {
+  const s = sStorage!;
+  if (!s.releaseMonSpritePtr) return false;
+  const id = _relSpriteId(); const spr = id >= 0 ? _spr(id) : null;
+  if (spr && spr.affineAnimEnded) s.releaseMonSpritePtr = null;
+  return true;
+}
+
+/** 1:1 `InitReleaseMon` (:6432) — choisit le slot (party/box/move) + garde le nom pour les messages. */
+function InitReleaseMon(): void {
+  const s = sStorage!;
+  const mode = sIsMonBeingMoved ? MODE_MOVE : (sCursorArea === CURSOR_AREA_IN_PARTY ? MODE_PARTY : MODE_BOX);
+  SetReleaseMon(mode, sCursorPosition);
+  s.releaseMonName = s.displayMonName;
+}
+
+/** 1:1 `TryHideReleaseMon` (:6447) — attend que l'icône soit cachée (sinon curseur qui rebondit). */
+function TryHideReleaseMon(): boolean {
+  const s = sStorage!;
+  if (!TryHideReleaseMonSprite()) { const c = _spr(s.cursorSprite); if (c) StartSpriteAnim(c as never, CURSOR_ANIM_BOUNCE); return false; }
+  return true;
+}
+
+/** 1:1 `ReleaseMon` (:6460) — retire réellement le mon (main / party / box) du stockage. */
+function ReleaseMon(): void {
+  const s = sStorage!;
+  DestroyReleaseMonIcon();
+  if (sIsMonBeingMoved) { sIsMonBeingMoved = false; }
+  else {
+    const boxId = sCursorArea === CURSOR_AREA_IN_PARTY ? TOTAL_BOXES_COUNT : StorageGetCurrentBox();
+    PurgeMonOrBoxMon(boxId, sCursorPosition);
+  }
+  TryRefreshDisplayMon();
+}
+
+/** 1:1 `TrySetCursorFistAnim` (:6481) — poing du curseur si un mon est en main. */
+function TrySetCursorFistAnim(): void {
+  const c = _spr(sStorage!.cursorSprite);
+  if (sIsMonBeingMoved && c) StartSpriteAnim(c as never, CURSOR_ANIM_FIST);
+}
+
+/** 1:1 `Task_ReleaseMon` (:2912) — confirmation → anim rétrécissement + vérif anti-softlock →
+ *  retrait réel → « Bye-bye » ; ou séquence « il est revenu » si la CS est irremplaçable. */
+function Task_ReleaseMon(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      PrintMessage(MSG_RELEASE_POKE);
+      ShowYesNoWindow(1);
+      s.state++;
+      // fallthrough
+    case 1:
+      switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+        case MENU_B_PRESSED:
+        case 1:  // Non
+          ClearBottomWindow();
+          SetPokeStorageTask(Task_PokeStorageMain);
+          break;
+        case 0:  // Oui
+          ClearBottomWindow();
+          InitCanReleaseMonVars();
+          InitReleaseMon();
+          s.state++;
+          break;
+      }
+      break;
+    case 2:
+      RunCanReleaseMon();
+      if (!TryHideReleaseMon()) {
+        for (;;) {
+          const canRelease = RunCanReleaseMon();
+          if (canRelease === 1) { s.state++; break; }
+          else if (canRelease === 0) { s.state = 8; break; }
+        }
+      }
+      break;
+    case 3:
+      ReleaseMon();
+      RefreshDisplayMonData();
+      PrintMessage(MSG_WAS_RELEASED);
+      s.state++;
+      break;
+    case 4:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0 /* DPAD_ANY */)) { PrintMessage(MSG_BYE_BYE); s.state++; }
+      break;
+    case 5:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) {
+        ClearBottomWindow();
+        if (sInPartyMenu) { CompactPartySlots(); CompactPartySprites(); s.state++; }
+        else { s.state = 7; }
+      }
+      break;
+    case 6:
+      if (GetNumPartySpritesCompacting() === 0) {
+        TryRefreshDisplayMon();  // décomp RefreshDisplayMon → notre TryRefreshDisplayMon (recharge l'affichage)
+        StartDisplayMonMosaicEffect();
+        UpdatePartySlotColors();
+        s.state++;
+      }
+      break;
+    case 7:
+      SetPokeStorageTask(Task_PokeStorageMain);
+      break;
+    case 8:  // Séquence « impossible de relâcher » (dernier porteur d'une CS requise).
+      PrintMessage(MSG_WAS_RELEASED);
+      s.state++;
+      break;
+    case 9:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { PrintMessage(MSG_SURPRISE); s.state++; }
+      break;
+    case 10:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { ClearBottomWindow(); ReshowReleaseMon(); s.state++; }
+      break;
+    case 11:
+      if (!ResetReleaseMonSpritePtr()) { TrySetCursorFistAnim(); PrintMessage(MSG_CAME_BACK); s.state++; }
+      break;
+    case 12:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { PrintMessage(MSG_WORRIED); s.state++; }
+      break;
+    case 13:
+      if (gMain.newKeys & (A_BUTTON | B_BUTTON | 0xF0)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
+      break;
+  }
+}
+
 // ─── RÉSUMÉ (#9) : Task_ShowMonSummary (:3570) + InitSummaryScreenData (:6700) ───
 const SUMMARY_MODE_NORMAL_PSS = 0;   // pokemon_summary_screen PSS_MODE_NORMAL
 const SUMMARY_MODE_BOX_PSS = 2;      // PSS_MODE_BOX (lecture seule, pas de réordre moves)
