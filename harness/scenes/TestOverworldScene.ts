@@ -1689,6 +1689,19 @@ export class TestOverworldScene extends Phaser.Scene {
       const destHeader = await this.loadAndInitMap(destMapId, destX, destY, destDir);
       console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
 
+      // ─── Anti-flash : re-masquer NOIR AVANT les await de Pre-Phase 4 ────────
+      // `loadAndInitMap` → LoadMapTilesetPalettes a flushTo() les NEW colors en
+      // VRAM (push direct qui bypass `bufferTransferDisabled`, cf. Phase 3). Les
+      // await de Pre-Phase 4 (surtout `FieldSetDoorOpened`, plusieurs frames au
+      // cache-froid) rendent alors des frames NON-masquées : tileset NEW +
+      // palette transitoire = "magenta + tiles bizarres" (glitch user warp
+      // intérieur, [[warp-stale-camera-glitch]]). La décomp garde l'écran NOIR
+      // pendant TOUT le load (WarpFadeOut → WarpFadeIn) ; notre load étant async,
+      // on re-pose BLACK ici — avant tout await — pour tenir le même invariant.
+      // `FillPalBufferBlack` + flushTo déjà utilisés en Phase 4 (même précédent).
+      FillPalBufferBlack();
+      this.rt.gPlttBufferFaded.flushTo();
+
       // ─── Pre-Phase 4 : determine exit task kind + setup pre-fade-in state ──
       // 1:1 décomp `Task_ExitDoor` case 0 (field_screen_effect.c:325-330) +
       // `Task_ExitNonAnimDoor` case 0 (field_screen_effect.c:373-378) :
