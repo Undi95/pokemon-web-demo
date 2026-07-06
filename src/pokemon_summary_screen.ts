@@ -3385,19 +3385,20 @@ export function GetSummaryLastMonIndex(): number {
 
 /** 1:1 décomp `ShowPokemonSummaryScreen` (party_menu.c via CursorCb_Summary).
  *  callback = retour party menu (sMonSummaryScreen->callback). */
-export function OpenSummaryScreen(mon: Pokemon, callback?: () => void): void {
+export function OpenSummaryScreen(mon: Pokemon, callback?: () => void,
+    opts?: { monList?: Pokemon[]; startIndex?: number; maxIndex?: number; mode?: number }): void {
   if (_isOpen) return;
   // 1:1 décomp ShowPokemonSummaryScreen(PSS_MODE_NORMAL, gPlayerParty, slotId, …).
-  _monList = gPlayerParty;
-  const idx = gPlayerParty.indexOf(mon);
+  _monList = opts?.monList ?? gPlayerParty;
+  const idx = opts?.startIndex ?? _monList.indexOf(mon);
   sMon.curMonIndex = idx >= 0 ? idx : 0;
-  sMon.maxMonIndex = Math.max(0, CalculatePlayerPartyCount() - 1);
+  sMon.maxMonIndex = opts?.maxIndex ?? Math.max(0, CalculatePlayerPartyCount() - 1);
   sMon.currentMon = mon;
   sMon.currPageIndex = PSS_PAGE_INFO;
   sMon.minPageIndex = PSS_PAGE_INFO;
   sMon.maxPageIndex = PSS_PAGE_CONTEST_MOVES;
   sMon.bgDisplayOrder = 0;
-  sMon.mode = SUMMARY_MODE_NORMAL;
+  sMon.mode = opts?.mode ?? SUMMARY_MODE_NORMAL;
   // 1:1 décomp : flux party→RÉSUME = mode NORMAL → pas de nouveau move,
   // réordre autorisé (lockMovesFlag FALSE), curseurs réinitialisés.
   sMon.newMove = 0;

@@ -49,6 +49,7 @@ import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
 import { CalculatePlayerPartyCount } from './pokemon';
+import { GetSummaryLastMonIndex, OpenSummaryScreen } from './pokemon_summary_screen';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 // ─── ÉCRAN DES BOÎTES (phase 2, rendu de base) : icônes + infra CB2 ─────────
 import {
@@ -1059,8 +1060,21 @@ function SetPokeStorageTask(newFunc: (taskId: number) => void): void {
 
 // ─── :3773 GiveChosenBagItem / :6687 LoadSavedMovingMon / :6726 SetSelectionAfterSummaryScreen —
 // chemins reopening (retour bag/name/summary) : transcription au lot fermeture/reshow (tâche #4).
-function LoadSavedMovingMon(): void { throw new Error('[pc-storage] LoadSavedMovingMon : lot reshow (tâche #4)'); }
-function SetSelectionAfterSummaryScreen(): void { throw new Error('[pc-storage] SetSelectionAfterSummaryScreen : lot reshow (tâche #4)'); }
+/** 1:1 décomp `SaveMovingMon` (:6681) — sauve le mon en main avant un écran externe. */
+function SaveMovingMon(): void {
+  if (sIsMonBeingMoved) sSavedMovingMon = sStorage!.movingMon;
+}
+/** 1:1 décomp `LoadSavedMovingMon` (:6687) — restaure le mon en main au retour.
+ *  Modèle unifié (movingMon = Pokemon) → box vs party = même struct copiée. */
+function LoadSavedMovingMon(): void {
+  if (sIsMonBeingMoved && sSavedMovingMon) sStorage!.movingMon = sSavedMovingMon;
+}
+/** 1:1 décomp `SetSelectionAfterSummaryScreen` (:6726) — replace le curseur sur le
+ *  dernier mon vu dans le RÉSUMÉ (`gLastViewedMonIndex`), ou restaure le mon en main. */
+function SetSelectionAfterSummaryScreen(): void {
+  if (sIsMonBeingMoved) LoadSavedMovingMon();
+  else sCursorPosition = GetSummaryLastMonIndex();  // = gLastViewedMonIndex
+}
 function GiveChosenBagItem(): void { throw new Error('[pc-storage] GiveChosenBagItem : lot reshow (tâche #4)'); }
 // ─── :items (MOVE_ITEMS) : lot déplacer-objets. IsItemIconAnimActive faux par défaut (aucun item icon).
 function CreateItemIconSprites(): void { throw new Error('[pc-storage] CreateItemIconSprites : lot items'); }
@@ -3325,7 +3339,9 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_STORE:  // :2645 (IsRemovingLastPartyMon/ItemIsMail checks = lot suivant)
           PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_DepositMenu);
           break;
-        case MENU_SUMMARY: _pcActionTodo('RESUME (Task_ShowMonSummary)'); break;
+        case MENU_SUMMARY:  // :2650
+          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMonSummary);
+          break;
         case MENU_MARK: _pcActionTodo('MARQUER (Task_ShowMarkMenu)'); break;
         case MENU_RELEASE: _pcActionTodo('RELACHER (Task_ReleaseMon)'); break;
       }
@@ -3985,7 +4001,54 @@ function Task_PokeStorageMain(_taskId: number): void {
       break;
   }
 }
-// :3731 Task_ChangeScreen — dispatch selon screenChangeType. EXIT porté ; SUMMARY/NAME/ITEM = lots suivants.
+// ─── RÉSUMÉ (#9) : Task_ShowMonSummary (:3570) + InitSummaryScreenData (:6700) ───
+const SUMMARY_MODE_NORMAL_PSS = 0;   // pokemon_summary_screen PSS_MODE_NORMAL
+const SUMMARY_MODE_BOX_PSS = 2;      // PSS_MODE_BOX (lecture seule, pas de réordre moves)
+
+/** 1:1 décomp `InitSummaryScreenData` (:6700) — prépare le mon affiché dans le RÉSUMÉ
+ *  (+ mode/index de navigation) selon le contexte : mon en main / party / boîte. */
+function InitSummaryScreenData(): void {
+  const s = sStorage!;
+  if (sIsMonBeingMoved) {
+    SaveMovingMon();
+    s.summaryMon = sSavedMovingMon;
+    s.summaryStartPos = 0;
+    s.summaryMaxPos = 0;
+    s.summaryScreenMode = SUMMARY_MODE_NORMAL_PSS;
+  } else if (sCursorArea === CURSOR_AREA_IN_PARTY) {
+    s.summaryMon = gPlayerParty[sCursorPosition];
+    s.summaryStartPos = sCursorPosition;
+    s.summaryMaxPos = CalculatePlayerPartyCount() - 1;
+    s.summaryScreenMode = SUMMARY_MODE_NORMAL_PSS;
+  } else {
+    s.summaryMon = GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+    s.summaryStartPos = sCursorPosition;
+    s.summaryMaxPos = IN_BOX_COUNT - 1;
+    s.summaryScreenMode = SUMMARY_MODE_BOX_PSS;
+  }
+}
+
+/** 1:1 décomp `Task_ShowMonSummary` (:3570) — fond noir puis bascule vers l'écran
+ *  RÉSUMÉ via Task_ChangeScreen (SCREEN_CHANGE_SUMMARY_SCREEN). */
+function Task_ShowMonSummary(_taskId: number): void {
+  const s = sStorage!;
+  switch (s.state) {
+    case 0:
+      InitSummaryScreenData();
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      s.state++;
+      break;
+    case 1:
+      if (!UpdatePaletteFade()) {
+        sWhichToReshow = SCREEN_CHANGE_SUMMARY_SCREEN - 1;
+        s.screenChangeType = SCREEN_CHANGE_SUMMARY_SCREEN;
+        SetPokeStorageTask(Task_ChangeScreen);
+      }
+      break;
+  }
+}
+
+// :3731 Task_ChangeScreen — dispatch selon screenChangeType. EXIT + SUMMARY portés ; NAME/ITEM = lots suivants.
 function Task_ChangeScreen(_taskId: number): void {
   const s = sStorage!;
   const screenChangeType = s.screenChangeType;
@@ -3997,10 +4060,30 @@ function Task_ChangeScreen(_taskId: number): void {
       const rt = getRuntime();
       rt?.SetMainCallback2(CB2_ExitPokeStorage as never);
       break;
-    case SCREEN_CHANGE_SUMMARY_SCREEN:
+    case SCREEN_CHANGE_SUMMARY_SCREEN: {
+      // 1:1 :3749 — bascule vers l'écran RÉSUMÉ. On capture mon+mode AVANT
+      // FreePokeStorageData (qui invalide sStorage). CB2_ReturnToPokeStorage rouvre
+      // le PC au retour (SetSelectionAfterSummaryScreen replace le curseur).
+      const summaryMon = s.summaryMon;
+      const startPos = s.summaryStartPos;
+      const maxPos = s.summaryMaxPos;
+      const mode = s.summaryScreenMode;
+      FreePokeStorageData();
+      if (!summaryMon) { getRuntime()?.SetMainCallback2(CB2_ExitPokeStorage as never); break; }
+      // monList = liste de navigation ▲▼. Party = gPlayerParty (nav 1:1). Boîte/en-main
+      // = affichage direct du mon (nav multi-boîte = lot ultérieur, évite les slots vides).
+      let monList: Pokemon[] = gPlayerParty;
+      let sIdx = startPos, mIdx = maxPos;
+      if (mode === SUMMARY_MODE_BOX_PSS || summaryMon === sSavedMovingMon) {
+        monList = [summaryMon]; sIdx = 0; mIdx = 0;
+      }
+      OpenSummaryScreen(summaryMon, CB2_ReturnToPokeStorage as unknown as () => void,
+        { monList, startIndex: sIdx, maxIndex: mIdx, mode });
+      break;
+    }
     case SCREEN_CHANGE_NAME_BOX:
     case SCREEN_CHANGE_ITEM_FROM_BAG:
-      console.warn(`[pc-storage] Task_ChangeScreen type ${screenChangeType} (RÉSUMÉ/RENOMMER/OBJET) : lot suivant.`);
+      console.warn(`[pc-storage] Task_ChangeScreen type ${screenChangeType} (RENOMMER/OBJET) : lot suivant.`);
       FreePokeStorageData();
       getRuntime()?.SetMainCallback2(CB2_ExitPokeStorage as never);
       break;
