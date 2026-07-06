@@ -1049,6 +1049,11 @@ function VBlankCB_PokeStorage(): void {
 function CB2_PokeStorage(): void {
   const rt = getRuntime(); if (!rt) return;
   rt.runTasks?.();
+  // Transition de sortie : Task_ChangeScreen a appelé FreePokeStorageData (sStorage=null) puis SetMainCallback2.
+  // Le décomp fait aussi RunTasks→AnimateSprites : sur GBA, les SpriteCB lisant sStorage->… déréférencent NULL
+  // = garbage lu sans faute (pas de MMU), sprite détruit au frame suivant → invisible. Notre moteur JS strict
+  // crasherait (TypeError dans SpriteCB_CursorShadow). On skip le rendu de ce frame mourant : 1:1 visuel.
+  if (!sStorage) return;
   // DoScheduledBgTilemapCopiesToVram : nos copies BG sont synchrones (ScheduleBgCopyTilemapToVram no-op).
   ScrollBackground();
   UpdateCloseBoxButtonFlash();
