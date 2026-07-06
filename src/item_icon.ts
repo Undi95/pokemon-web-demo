@@ -30,6 +30,7 @@ import { assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette } 
 import { CpuCopy16 } from '../harness/runtime/decomp-bridge';
 import { loadTileBin, loadGbaPal } from '../harness/gba/png-loader';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
+import { getItemKeyById } from '../harness/runtime/data-tables';
 
 // 1:1 décomp `#define MAX_SPRITES 64` (sprite.h) — retour échec AddItemIcon.
 export const MAX_SPRITES = 64;
@@ -115,6 +116,16 @@ function CopyItemIconPicTo4x4Buffer(src: Uint8Array, dest: Uint8Array): void {
  *  ITEM_LIST_END → dernière icône (flèche retour) ; sinon buffer préchargé. */
 function _getIconAsset(itemKey: string): { tiles: Uint8Array; pal: Uint16Array } | undefined {
   return _iconAssets.get(itemKey) ?? _iconAssets.get('ITEM_LIST_END');
+}
+
+/** Pic/palette d'un item icon par itemId numérique (adaptation PC storage MOVE_ITEMS,
+ *  = `GetItemIconPic`/`GetItemIconPalette` :9169/:9174) : itemId → itemKey → buffer préchargé
+ *  (null si non préchargé). */
+export function GetItemIconPicById(itemId: number): Uint8Array | null {
+  return _getIconAsset(getItemKeyById(itemId))?.tiles ?? null;
+}
+export function GetItemIconPaletteById(itemId: number): Uint16Array | null {
+  return _getIconAsset(getItemKeyById(itemId))?.pal ?? null;
 }
 
 /** 1:1 décomp `AddItemIconSprite(tilesTag, paletteTag, itemId)`

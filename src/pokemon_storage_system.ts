@@ -25,7 +25,7 @@ import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
 import {
   getRuntime, gMain, LoadBgTiles, LoadPalette, BlendPalettes, ResetPaletteFade, PlaySE,
-  FuncIsActiveTask,
+  FuncIsActiveTask, SpriteCallbackDummy,
 } from '../harness/runtime/decomp-globals';
 import {
   AddWindow, AddWindow8Bit, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
@@ -35,6 +35,7 @@ import {
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
+import { PIXEL_FILL } from './engine/battle/battle-windows';
 import { gSpeciesNames } from './engine/data/game-data';
 import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
 import { SE_PC_LOGIN } from '../include/constants/songs';
@@ -78,12 +79,35 @@ import {
 import {
   ResetSpriteData, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, DestroySprite,
   CreateSprite, StartSpriteAnim, StartSpriteAnimIfDifferent, IndexOfSpritePaletteTag,
-  FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, GetSpriteTileStartByTag,
+  FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, GetSpriteTileStartByTag, AllocSpritePalette,
   ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd,
 } from './sprite';
 import { REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade, UpdatePaletteFade, BG_PLTT_ID } from './palette';
 import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+import { GetItemName, GetItemDescription } from './item';
+import { GetItemIconPicById, GetItemIconPaletteById } from './item_icon';
+import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
+import { gSineTable } from './trig';
+import { ITEM_NONE } from '../include/constants/items';
+const TILE_SIZE_4BPP = 32;
+
+// ─── Adaptations bg tilemap (item info window) — helpers bg.c non encore dans window.ts. ───
+const BG_ATTR_BASETILE = 8;  // include/gba/types.h — attribut « baseTile » d'un BgTemplate.
+/** 1:1-sém `GetBgAttribute(bg, BG_ATTR_BASETILE)` : baseTile du BG (0 dans notre moteur — les
+ *  tuiles item_info_frame sont chargées à l'offset absolu 0x13A). */
+function GetBgAttribute(_bg: number, _attr: number): number { return 0; }
+/** 1:1-sém `WriteSequenceToBgTilemapBuffer(bg, firstTileNum, x, y, width, height, palNum, tileStep)`
+ *  (bg.c) : remplit un rect du tilemap avec une séquence de tuiles incrémentées de `tileStep`. */
+function WriteSequenceToBgTilemapBuffer(bg: number, firstTileNum: number, x: number, y: number, width: number, height: number, palNum: number, tileStep: number): void {
+  let tile = firstTileNum;
+  for (let ty = 0; ty < height; ty++)
+    for (let tx = 0; tx < width; tx++) { FillBgTilemapBufferRect(bg, tile, x + tx, y + ty, 1, 1, palNum); tile += tileStep; }
+}
+/** 1:1-sém `AddTextPrinterParameterized5` (text.c) — adaptation via AddTextPrinterParameterized. */
+function AddTextPrinterParameterized5(windowId: number, fontId: number, str: string, x: number, y: number, _speed: number, _cb: unknown, _letterSpacing: number, _lineSpacing: number): void {
+  AddTextPrinterParameterized(windowId, fontId, str, x, y, 0);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION 1:1 pokemon_storage_system.c — FONDATIONS
@@ -1095,11 +1119,510 @@ function SetSelectionAfterSummaryScreen(): void {
   else sCursorPosition = GetSummaryLastMonIndex();  // = gLastViewedMonIndex
 }
 function GiveChosenBagItem(): void { throw new Error('[pc-storage] GiveChosenBagItem : lot reshow (tâche #4)'); }
-// ─── :items (MOVE_ITEMS) : lot déplacer-objets. IsItemIconAnimActive faux par défaut (aucun item icon).
-function CreateItemIconSprites(): void { throw new Error('[pc-storage] CreateItemIconSprites : lot items'); }
-function InitCursorItemIcon(): void { throw new Error('[pc-storage] InitCursorItemIcon : lot items'); }
-function IsItemIconAnimActive(): boolean { return false; }
-function IsMovingItem(): boolean { return false; }  // :items — MOVE_ITEMS non ouvert pour l'instant
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DÉPLACER OBJETS (OPTION_MOVE_ITEMS) — item icons (:8636-9378). Sprites d'objets
+// tenus animés en affine (prise/dépose), swap, retour au sac + fenêtre d'infos.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// sItemInfoFrame_Gfx (graphics/pokemon_storage/item_info_frame.png) — chargé async (asset).
+let _itemInfoFrameGfx: Uint8Array | null = null;
+let _itemInfoLoadTried = false;
+function _loadItemInfoFrameGfx(): void {
+  if (_itemInfoLoadTried) return;
+  _itemInfoLoadTried = true;
+  (async () => { _itemInfoFrameGfx = (await loadIndexedPngStrict('/decomp/em/pokemon_storage/item_info_frame.png', 4)).charData; })()
+    .catch((e) => console.warn('[pc-storage] item_info_frame.png absent :', e));
+}
+
+// Affine anims item icon (mon_storage.c:8655-8713). AFFINEANIMCMD_FRAME(xScale,yScale,rot,dur).
+registerAffineAnim('sAffineAnim_ItemIcon_Small', { frames: [{ xScale: 128, yScale: 128, rotation: 0, duration: 0 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_Appear', { frames: [{ xScale: 88, yScale: 88, rotation: 0, duration: 0 }, { xScale: 5, yScale: 5, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_Disappear', { frames: [{ xScale: 128, yScale: 128, rotation: 0, duration: 0 }, { xScale: -5, yScale: -5, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_PickUp', { frames: [{ xScale: 128, yScale: 128, rotation: 0, duration: 0 }, { xScale: 10, yScale: 10, rotation: 0, duration: 12 }, { xScale: 256, yScale: 256, rotation: 0, duration: 0 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_PutDown', { frames: [{ xScale: 256, yScale: 256, rotation: 0, duration: 0 }, { xScale: -10, yScale: -10, rotation: 0, duration: 12 }, { xScale: 128, yScale: 128, rotation: 0, duration: 0 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_PutAway', { frames: [{ xScale: 256, yScale: 256, rotation: 0, duration: 0 }, { xScale: -5, yScale: -5, rotation: 0, duration: 16 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_ItemIcon_Large', { frames: [{ xScale: 256, yScale: 256, rotation: 0, duration: 0 }], terminator: 'END' });
+registerAffineAnimTable('sAffineAnims_ItemIcon', { affineAnims: [
+  'sAffineAnim_ItemIcon_Small', 'sAffineAnim_ItemIcon_Appear', 'sAffineAnim_ItemIcon_Disappear',
+  'sAffineAnim_ItemIcon_PickUp', 'sAffineAnim_ItemIcon_PutDown', 'sAffineAnim_ItemIcon_PutAway',
+  'sAffineAnim_ItemIcon_Large',
+] });
+
+// sOamData_ItemIcon (:8638) : 32×32 affine.
+const sOamData_ItemIcon = { shape: 0 as const, size: 2 as const, priority: 1 };
+
+/** Accès au sprite runtime d'un item icon par son id (0..MAX_ITEM_ICONS). */
+function _itemIconSpr(id: number) {
+  const rt = getRuntime(); const s = sStorage;
+  if (!rt || !s || id >= MAX_ITEM_ICONS) return null;
+  return s.itemIcons[id].sprite >= 0 ? rt.gSprites[s.itemIcons[id].sprite] : null;
+}
+
+/** 1:1 `static void CreateItemIconSprites(void)` (:8726). 3 sprites 32×32 invisibles. */
+function CreateItemIconSprites(): void {
+  const rt = getRuntime(); const s = sStorage; if (!rt || !s) return;
+  if (s.boxOption === OPTION_MOVE_ITEMS) {
+    for (let i = 0; i < MAX_ITEM_ICONS; i++) {
+      // LoadCompressedSpriteSheet(sItemIconGfxBuffer, 0x200, tag) : tiles réels posés par LoadItemIconGfx.
+      LoadSpriteSheet({ data: new Uint8Array(0x200), size: 0x200, tag: GFXTAG_ITEM_ICON_0 + i });
+      const palIndex = AllocSpritePalette(PALTAG_ITEM_ICON_0 + i);
+      s.itemIcons[i].palIndex = OBJ_PLTT_ID(palIndex);
+      const spriteId = CreateSprite({
+        tileTag: GFXTAG_ITEM_ICON_0 + i, paletteTag: PALTAG_ITEM_ICON_0 + i,
+        oam: sOamData_ItemIcon, anims: null, callback: SpriteCallbackDummy as never,
+      }, 0, 0, 11);
+      s.itemIcons[i].sprite = spriteId;
+      const spr = _itemIconSpr(i);
+      if (spr) {
+        (spr as { affineAnimsTableName?: string }).affineAnimsTableName = 'sAffineAnims_ItemIcon';
+        rt.gba.oam[spr.oamIndex].affineMode = 1;   // ST_OAM_AFFINE_NORMAL
+        spr.invisible = true;
+      }
+      s.itemIcons[i].active = false;
+    }
+  }
+  s.movingItemId = ITEM_NONE;
+}
+
+/** 1:1 `static u8 GetNewItemIconIdx(void)` (:8997). */
+function GetNewItemIconIdx(): number {
+  const s = sStorage!;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++) {
+    if (!s.itemIcons[i].active) { s.itemIcons[i].active = true; return i; }
+  }
+  return MAX_ITEM_ICONS;
+}
+
+/** 1:1 `static bool32 IsItemIconAtPosition(u8, u8)` (:9012). */
+function IsItemIconAtPosition(cursorArea: number, cursorPos: number): boolean {
+  const s = sStorage!;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++)
+    if (s.itemIcons[i].active && s.itemIcons[i].area === cursorArea && s.itemIcons[i].pos === cursorPos) return true;
+  return false;
+}
+
+/** 1:1 `static u8 GetItemIconIdxByPosition(u8, u8)` (:9026). */
+function GetItemIconIdxByPosition(cursorArea: number, cursorPos: number): number {
+  const s = sStorage!;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++)
+    if (s.itemIcons[i].active && s.itemIcons[i].area === cursorArea && s.itemIcons[i].pos === cursorPos) return i;
+  return MAX_ITEM_ICONS;
+}
+
+/** 1:1 `static u8 GetItemIconIdxBySprite(struct Sprite *)` (:9040) — via oamIndex. */
+function GetItemIconIdxBySprite(oamIndex: number): number {
+  const rt = getRuntime(); const s = sStorage!;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++) {
+    const spr = _itemIconSpr(i);
+    if (s.itemIcons[i].active && spr && rt && spr === rt.gSprites[s.itemIcons[i].sprite] && spr.oamIndex === oamIndex) return i;
+  }
+  return MAX_ITEM_ICONS;
+}
+
+/** 1:1 `static void SetItemIconPosition(u8, u8, u8)` (:9053). */
+function SetItemIconPosition(id: number, cursorArea: number, cursorPos: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  if (id >= MAX_ITEM_ICONS) return;
+  const spr = _itemIconSpr(id);
+  if (spr) {
+    if (cursorArea === CURSOR_AREA_IN_BOX) {
+      const x = cursorPos % IN_BOX_COLUMNS, y = Math.floor(cursorPos / IN_BOX_COLUMNS);
+      spr.x = (24 * x) + 112; spr.y = (24 * y) + 56;
+      if (rt) rt.gba.oam[spr.oamIndex].priority = 2;
+    } else if (cursorArea === CURSOR_AREA_IN_PARTY) {
+      if (cursorPos === 0) { spr.x = 116; spr.y = 76; }
+      else { spr.x = 164; spr.y = 24 * (cursorPos - 1) + 28; }
+      if (rt) rt.gba.oam[spr.oamIndex].priority = 1;
+    }
+  }
+  s.itemIcons[id].area = cursorArea;
+  s.itemIcons[id].pos = cursorPos;
+}
+
+/** 1:1 `static void LoadItemIconGfx(u8, const u32 *, const u32 *)` (:9088). Écrit tiles+pal en OBJ VRAM. */
+function LoadItemIconGfx(id: number, itemTiles: Uint8Array | null, itemPal: Uint16Array | null): void {
+  const rt = getRuntime(); const s = sStorage!;
+  if (id >= MAX_ITEM_ICONS || !rt) return;
+  // Décomp : LZ77UnCompWram(tiles) → tileBuffer, réarrangé 3×0x60→0x80, copié en OBJ VRAM à itemIcons[id].tiles.
+  // Nos assets item_icon sont déjà décompressés (loadIndexedPng) → copie directe des 3 tuiles.
+  const buf = new Uint8Array(0x200);
+  if (itemTiles) buf.set(itemTiles.subarray(0, Math.min(itemTiles.length, 0x200)));
+  const tileStart = GetSpriteTileStartByTag(GFXTAG_ITEM_ICON_0 + id);
+  if (tileStart >= 0) (rt as { _writeToObjVram?: (d: Uint8Array, o: number) => void })._writeToObjVram?.(buf, tileStart * TILE_SIZE_4BPP);
+  if (itemPal) LoadPalette(itemPal, s.itemIcons[id].palIndex, 0x20);
+}
+
+/** 1:1 `static void SetItemIconAffineAnim(u8, u8)` (:9105). */
+function SetItemIconAffineAnim(id: number, animNum: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  if (id >= MAX_ITEM_ICONS || !rt) return;
+  rt.StartSpriteAffineAnim?.(s.itemIcons[id].sprite, animNum);
+}
+
+/** 1:1 `static void SetItemIconActive(u8, bool8)` (:9160). */
+function SetItemIconActive(id: number, active: boolean): void {
+  const s = sStorage!;
+  if (id >= MAX_ITEM_ICONS) return;
+  s.itemIcons[id].active = active;
+  const spr = _itemIconSpr(id);
+  if (spr) spr.invisible = !active;
+}
+
+/** 1:1 `static const u32 *GetItemIconPic(u16)` / `GetItemIconPalette(u16)` (:9169/:9174). */
+function GetItemIconPic(itemId: number): Uint8Array | null { return GetItemIconPicById(itemId); }
+function GetItemIconPalette(itemId: number): Uint16Array | null { return GetItemIconPaletteById(itemId); }
+
+/** 1:1 `static bool8 IsItemIconAnimActive(void)` (:8952). */
+function IsItemIconAnimActive(): boolean {
+  const s = sStorage!;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++) {
+    if (s.itemIcons[i].active) {
+      const spr = _itemIconSpr(i);
+      if (!spr) continue;
+      const sp = spr as { affineAnimEnded?: boolean; affineAnimBeginning?: boolean; callback?: unknown };
+      if (!sp.affineAnimEnded && sp.affineAnimBeginning) return true;
+      if (spr.callback !== SpriteCallbackDummy && spr.callback !== (SpriteCB_ItemIcon_SetPosToCursor as never)) return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 `static bool8 IsMovingItem(void)` (:8971). */
+function IsMovingItem(): boolean {
+  const s = sStorage!;
+  if (s.boxOption === OPTION_MOVE_ITEMS) {
+    for (let i = 0; i < MAX_ITEM_ICONS; i++)
+      if (s.itemIcons[i].active && s.itemIcons[i].area === CURSOR_AREA_IN_HAND) return true;
+  }
+  return false;
+}
+
+/** 1:1 `static u16 GetMovingItemId(void)` (:8992). */
+function GetMovingItemId(): number { return sStorage!.movingItemId; }
+/** 1:1 `static const u8 *GetMovingItemName(void)` (:8987). */
+function GetMovingItemName(): string { return GetItemName(sStorage!.movingItemId); }
+
+// sItemIconId/sState = data[0], sCursorArea = data[6], sCursorPos = data[7] (#define décomp :9113).
+type ItemIconSprite = { data: number[]; x: number; y: number; x2: number; y2: number; oamIndex: number; affineAnimEnded?: boolean; callback: unknown };
+
+/** 1:1 `static void SetItemIconCallback(u8, u8, u8, u8)` (:9118). */
+function SetItemIconCallback(id: number, callbackId: number, cursorArea: number, cursorPos: number): void {
+  if (id >= MAX_ITEM_ICONS) return;
+  const spr = _itemIconSpr(id) as ItemIconSprite | null; if (!spr) return;
+  switch (callbackId) {
+    case ITEM_CB_WAIT_ANIM: spr.data[0] = id; spr.callback = SpriteCB_ItemIcon_WaitAnim; break;
+    case ITEM_CB_TO_HAND: spr.data[0] = 0; spr.callback = SpriteCB_ItemIcon_ToHand; break;
+    case ITEM_CB_TO_MON: spr.data[0] = 0; spr.data[6] = cursorArea; spr.data[7] = cursorPos; spr.callback = SpriteCB_ItemIcon_ToMon; break;
+    case ITEM_CB_SWAP_TO_HAND: spr.data[0] = 0; spr.callback = SpriteCB_ItemIcon_SwapToHand; spr.data[6] = cursorArea; spr.data[7] = cursorPos; break;
+    case ITEM_CB_SWAP_TO_MON: spr.data[0] = 0; spr.data[6] = cursorArea; spr.data[7] = cursorPos; spr.callback = SpriteCB_ItemIcon_SwapToMon; break;
+    case ITEM_CB_HIDE_PARTY: spr.callback = SpriteCB_ItemIcon_HideParty; break;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_WaitAnim(struct Sprite *)` (:9253). */
+function SpriteCB_ItemIcon_WaitAnim(sprite: ItemIconSprite): void {
+  if (sprite.affineAnimEnded) { SetItemIconActive(sprite.data[0], false); sprite.callback = SpriteCallbackDummy; }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_SetPosToCursor(struct Sprite *)` (:9284). */
+function SpriteCB_ItemIcon_SetPosToCursor(sprite: ItemIconSprite): void {
+  const rt = getRuntime(); const s = sStorage!;
+  const cur = rt && s.cursorSprite >= 0 ? rt.gSprites[s.cursorSprite] : null;
+  if (cur) {
+    sprite.x = cur.x + 4;
+    sprite.y = cur.y + (cur as { y2?: number }).y2! + 8;
+    if (rt) rt.gba.oam[sprite.oamIndex].priority = rt.gba.oam[cur.oamIndex].priority;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_ToHand(struct Sprite *)` (:9262). */
+function SpriteCB_ItemIcon_ToHand(sprite: ItemIconSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[1] = sprite.x << 4; sprite.data[2] = sprite.y << 4;
+      sprite.data[3] = 10; sprite.data[4] = 21; sprite.data[5] = 0;
+      sprite.data[0]++;
+      // fallthrough
+    case 1:
+      sprite.data[1] -= sprite.data[3]; sprite.data[2] -= sprite.data[4];
+      sprite.x = sprite.data[1] >> 4; sprite.y = sprite.data[2] >> 4;
+      if (++sprite.data[5] > 11) sprite.callback = SpriteCB_ItemIcon_SetPosToCursor;
+      break;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_ToMon(struct Sprite *)` (:9291). */
+function SpriteCB_ItemIcon_ToMon(sprite: ItemIconSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[1] = sprite.x << 4; sprite.data[2] = sprite.y << 4;
+      sprite.data[3] = 10; sprite.data[4] = 21; sprite.data[5] = 0;
+      sprite.data[0]++;
+      // fallthrough
+    case 1:
+      sprite.data[1] += sprite.data[3]; sprite.data[2] += sprite.data[4];
+      sprite.x = sprite.data[1] >> 4; sprite.y = sprite.data[2] >> 4;
+      if (++sprite.data[5] > 11) {
+        SetItemIconPosition(GetItemIconIdxBySprite(sprite.oamIndex), sprite.data[6], sprite.data[7]);
+        sprite.callback = SpriteCallbackDummy;
+      }
+      break;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_SwapToHand(struct Sprite *)` (:9316). */
+function SpriteCB_ItemIcon_SwapToHand(sprite: ItemIconSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[1] = sprite.x << 4; sprite.data[2] = sprite.y << 4;
+      sprite.data[3] = 10; sprite.data[4] = 21; sprite.data[5] = 0;
+      sprite.data[0]++;
+      // fallthrough
+    case 1:
+      sprite.data[1] -= sprite.data[3]; sprite.data[2] -= sprite.data[4];
+      sprite.x = sprite.data[1] >> 4; sprite.y = sprite.data[2] >> 4;
+      sprite.x2 = gSineTable[sprite.data[5] * 8] >> 4;
+      if (++sprite.data[5] > 11) {
+        SetItemIconPosition(GetItemIconIdxBySprite(sprite.oamIndex), sprite.data[6], sprite.data[7]);
+        sprite.x2 = 0;
+        sprite.callback = SpriteCB_ItemIcon_SetPosToCursor;
+      }
+      break;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_SwapToMon(struct Sprite *)` (:9343). */
+function SpriteCB_ItemIcon_SwapToMon(sprite: ItemIconSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[1] = sprite.x << 4; sprite.data[2] = sprite.y << 4;
+      sprite.data[3] = 10; sprite.data[4] = 21; sprite.data[5] = 0;
+      sprite.data[0]++;
+      // fallthrough
+    case 1:
+      sprite.data[1] += sprite.data[3]; sprite.data[2] += sprite.data[4];
+      sprite.x = sprite.data[1] >> 4; sprite.y = sprite.data[2] >> 4;
+      sprite.x2 = -(gSineTable[sprite.data[5] * 8] >> 4);
+      if (++sprite.data[5] > 11) {
+        SetItemIconPosition(GetItemIconIdxBySprite(sprite.oamIndex), sprite.data[6], sprite.data[7]);
+        sprite.callback = SpriteCallbackDummy;
+        sprite.x2 = 0;
+      }
+      break;
+  }
+}
+
+/** 1:1 `static void SpriteCB_ItemIcon_HideParty(struct Sprite *)` (:9370). */
+function SpriteCB_ItemIcon_HideParty(sprite: ItemIconSprite): void {
+  sprite.y -= 8;
+  if (sprite.y + sprite.y2 < -16) {
+    sprite.callback = SpriteCallbackDummy;
+    SetItemIconActive(GetItemIconIdxBySprite(sprite.oamIndex), false);
+  }
+}
+
+// Accès held item du mon pointé (modèle unifié : champ direct .heldItem).
+function _getHeldItem(cursorArea: number, cursorPos: number): number {
+  if (cursorArea === CURSOR_AREA_IN_BOX) {
+    const bm = GetBoxedMonPtr(StorageGetCurrentBox(), cursorPos) as unknown as { heldItem?: number } | null;
+    return bm?.heldItem ?? ITEM_NONE;
+  }
+  return (gPlayerParty[cursorPos] as unknown as { heldItem?: number })?.heldItem ?? ITEM_NONE;
+}
+function _setHeldItem(cursorArea: number, cursorPos: number, itemId: number): void {
+  if (cursorArea === CURSOR_AREA_IN_BOX) {
+    const bm = GetBoxedMonPtr(StorageGetCurrentBox(), cursorPos) as unknown as { heldItem?: number } | null;
+    if (bm) bm.heldItem = itemId;
+  } else {
+    const m = gPlayerParty[cursorPos] as unknown as { heldItem?: number };
+    if (m) m.heldItem = itemId;
+  }
+}
+
+/** 1:1 `static void TryLoadItemIconAtPos(u8, u8)` (:8757). */
+function TryLoadItemIconAtPos(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  if (IsItemIconAtPosition(cursorArea, cursorPos)) return;
+  let heldItem: number;
+  if (cursorArea === CURSOR_AREA_IN_BOX) {
+    const bm = GetBoxedMonPtr(StorageGetCurrentBox(), cursorPos) as unknown as { species?: number; heldItem?: number } | null;
+    if (!bm || !bm.species) return;
+    heldItem = bm.heldItem ?? ITEM_NONE;
+  } else if (cursorArea === CURSOR_AREA_IN_PARTY) {
+    if (cursorPos >= PARTY_SIZE || !GetMonData(gPlayerParty[cursorPos], MON_DATA_SANITY_HAS_SPECIES)) return;
+    heldItem = (gPlayerParty[cursorPos] as unknown as { heldItem?: number }).heldItem ?? ITEM_NONE;
+  } else return;
+  if (heldItem !== ITEM_NONE) {
+    const id = GetNewItemIconIdx();
+    SetItemIconPosition(id, cursorArea, cursorPos);
+    LoadItemIconGfx(id, GetItemIconPic(heldItem), GetItemIconPalette(heldItem));
+    SetItemIconAffineAnim(id, ITEM_ANIM_APPEAR);
+    SetItemIconActive(id, true);
+  }
+}
+
+/** 1:1 `static void TryHideItemIconAtPos(u8, u8)` (:8797). */
+function TryHideItemIconAtPos(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  const id = GetItemIconIdxByPosition(cursorArea, cursorPos);
+  SetItemIconAffineAnim(id, ITEM_ANIM_DISAPPEAR);
+  SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, cursorArea, cursorPos);
+}
+
+/** 1:1 `static void TakeItemFromMon(u8, u8)` (:8809). */
+function TakeItemFromMon(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  const id = GetItemIconIdxByPosition(cursorArea, cursorPos);
+  SetItemIconAffineAnim(id, ITEM_ANIM_PICK_UP);
+  SetItemIconCallback(id, ITEM_CB_TO_HAND, cursorArea, cursorPos);
+  SetItemIconPosition(id, CURSOR_AREA_IN_HAND, 0);
+  _setHeldItem(cursorArea, cursorPos, ITEM_NONE);
+  if (cursorArea === CURSOR_AREA_IN_BOX) SetBoxMonIconObjMode(cursorPos, 1 /* ST_OAM_OBJ_BLEND */);
+  else SetPartyMonIconObjMode(cursorPos, 1);
+  s.movingItemId = s.displayMonItemId;
+}
+
+/** 1:1 `static void InitItemIconInCursor(u16)` (:8836). */
+function InitItemIconInCursor(itemId: number): void {
+  const s = sStorage!;
+  const id = GetNewItemIconIdx();
+  LoadItemIconGfx(id, GetItemIconPic(itemId), GetItemIconPalette(itemId));
+  SetItemIconAffineAnim(id, ITEM_ANIM_LARGE);
+  SetItemIconCallback(id, ITEM_CB_TO_HAND, CURSOR_AREA_IN_BOX, 0);
+  SetItemIconPosition(id, CURSOR_AREA_IN_HAND, 0);
+  SetItemIconActive(id, true);
+  s.movingItemId = itemId;
+}
+
+/** 1:1 `static void SwapItemsWithMon(u8, u8)` (:8849). */
+function SwapItemsWithMon(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  let id = GetItemIconIdxByPosition(cursorArea, cursorPos);
+  SetItemIconAffineAnim(id, ITEM_ANIM_PICK_UP);
+  SetItemIconCallback(id, ITEM_CB_SWAP_TO_HAND, CURSOR_AREA_IN_HAND, 0);
+  const itemId = _getHeldItem(cursorArea, cursorPos);
+  _setHeldItem(cursorArea, cursorPos, s.movingItemId);
+  s.movingItemId = itemId;
+  id = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+  SetItemIconAffineAnim(id, ITEM_ANIM_PUT_DOWN);
+  SetItemIconCallback(id, ITEM_CB_SWAP_TO_MON, cursorArea, cursorPos);
+}
+
+/** 1:1 `static void GiveItemToMon(u8, u8)` (:8878). */
+function GiveItemToMon(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  const id = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+  SetItemIconAffineAnim(id, ITEM_ANIM_PUT_DOWN);
+  SetItemIconCallback(id, ITEM_CB_TO_MON, cursorArea, cursorPos);
+  _setHeldItem(cursorArea, cursorPos, s.movingItemId);
+  if (cursorArea === CURSOR_AREA_IN_BOX) SetBoxMonIconObjMode(cursorPos, 0 /* ST_OAM_OBJ_NORMAL */);
+  else SetPartyMonIconObjMode(cursorPos, 0);
+}
+
+/** 1:1 `static void MoveItemFromMonToBag(u8, u8)` (:8900). */
+function MoveItemFromMonToBag(cursorArea: number, cursorPos: number): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  const id = GetItemIconIdxByPosition(cursorArea, cursorPos);
+  SetItemIconAffineAnim(id, ITEM_ANIM_DISAPPEAR);
+  SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, cursorArea, cursorPos);
+  _setHeldItem(cursorArea, cursorPos, ITEM_NONE);
+  if (cursorArea === CURSOR_AREA_IN_BOX) SetBoxMonIconObjMode(cursorPos, 1);
+  else SetPartyMonIconObjMode(cursorPos, 1);
+}
+
+/** 1:1 `static void MoveItemFromCursorToBag(void)` (:8924). */
+function MoveItemFromCursorToBag(): void {
+  const s = sStorage!;
+  if (s.boxOption === OPTION_MOVE_ITEMS) {
+    const id = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+    SetItemIconAffineAnim(id, ITEM_ANIM_PUT_AWAY);
+    SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, CURSOR_AREA_IN_HAND, 0);
+  }
+}
+
+/** 1:1 `static void MoveHeldItemWithPartyMenu(void)` (:8937). */
+function MoveHeldItemWithPartyMenu(): void {
+  const s = sStorage!;
+  if (s.boxOption !== OPTION_MOVE_ITEMS) return;
+  for (let i = 0; i < MAX_ITEM_ICONS; i++)
+    if (s.itemIcons[i].active && s.itemIcons[i].area === CURSOR_AREA_IN_PARTY)
+      SetItemIconCallback(i, ITEM_CB_HIDE_PARTY, CURSOR_AREA_IN_HAND, 0);
+}
+
+/** 1:1 `static void PrintItemDescription(void)` (:9179). */
+function PrintItemDescription(): void {
+  const description = IsMovingItem() ? GetItemDescription(sStorage!.movingItemId) : GetItemDescription(sStorage!.displayMonItemId);
+  FillWindowPixelBuffer(WIN_ITEM_DESC, PIXEL_FILL(1));
+  AddTextPrinterParameterized5(WIN_ITEM_DESC, FONT_NORMAL, description, 4, 0, 0, null, 0, 1);
+}
+
+/** 1:1 `static void InitItemInfoWindow(void)` (:9192). */
+function InitItemInfoWindow(): void {
+  const s = sStorage!;
+  s.itemInfoWindowOffset = 21;
+  _loadItemInfoFrameGfx();
+  if (_itemInfoFrameGfx) LoadBgTiles(0, _itemInfoFrameGfx, 0x80, 0x13A);
+  DrawItemInfoWindow(0);
+}
+
+/** 1:1 `static bool8 UpdateItemInfoWindowSlideIn(void)` (:9199). */
+function UpdateItemInfoWindowSlideIn(): boolean {
+  const s = sStorage!;
+  if (s.itemInfoWindowOffset === 0) return false;
+  s.itemInfoWindowOffset--;
+  const pos = 21 - s.itemInfoWindowOffset;
+  for (let i = 0; i < pos; i++)
+    WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + 0x14 + s.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
+  DrawItemInfoWindow(pos);
+  return s.itemInfoWindowOffset !== 0;
+}
+
+/** 1:1 `static bool8 UpdateItemInfoWindowSlideOut(void)` (:9215). */
+function UpdateItemInfoWindowSlideOut(): boolean {
+  const s = sStorage!;
+  if (s.itemInfoWindowOffset === 22) return false;
+  if (s.itemInfoWindowOffset === 0) FillBgTilemapBufferRect(0, 0, 21, 12, 1, 9, 17);
+  s.itemInfoWindowOffset++;
+  const pos = 21 - s.itemInfoWindowOffset;
+  for (let i = 0; i < pos; i++)
+    WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + 0x14 + s.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
+  if (pos >= 0) DrawItemInfoWindow(pos);
+  FillBgTilemapBufferRect(0, 0, pos + 1, 12, 1, 9, 17);
+  ScheduleBgCopyTilemapToVram(0);
+  return true;
+}
+
+/** 1:1 `static void DrawItemInfoWindow(u32)` (:9240). */
+function DrawItemInfoWindow(x: number): void {
+  if (x !== 0) {
+    FillBgTilemapBufferRect(0, 0x13A, 0, 0xC, x, 1, 15);
+    FillBgTilemapBufferRect(0, 0x93A, 0, 0x14, x, 1, 15);
+  }
+  FillBgTilemapBufferRect(0, 0x13B, x, 0xD, 1, 7, 15);
+  FillBgTilemapBufferRect(0, 0x13C, x, 0xC, 1, 1, 15);
+  FillBgTilemapBufferRect(0, 0x13D, x, 0x14, 1, 1, 15);
+  ScheduleBgCopyTilemapToVram(0);
+}
+
+/** 1:1 `static void InitCursorItemIcon(void)` (:4377). */
+function InitCursorItemIcon(): void {
+  const s = sStorage!;
+  if (!IsCursorOnBoxTitle()) {
+    if (sInPartyMenu) TryLoadItemIconAtPos(CURSOR_AREA_IN_PARTY, GetCursorPosition());
+    else TryLoadItemIconAtPos(CURSOR_AREA_IN_BOX, GetCursorPosition());
+  }
+  if (s.movingItemId !== ITEM_NONE) {
+    InitItemIconInCursor(s.movingItemId);
+    StartCursorAnim(CURSOR_ANIM_FIST);
+  }
+}
 
 // ─── :3807 SetScrollingBackground + :3814 ScrollBackground ───
 let _bg3X = 0, _bg3Y = 0;  // BG_COORD 8.8 (ChangeBgX/Y accumulés, VBlank remonte >>8)
@@ -1994,9 +2517,25 @@ function DestroyBoxMonIconAtPosition(boxPosition: number): void {
     s.boxMonsSprites[boxPosition] = -1;
   }
 }
+/** 1:1 `static void SetBoxMonIconObjMode(u8, u8)` (:4733). */
 function SetBoxMonIconObjMode(boxPosition: number, objMode: number): void {
-  // oam.objMode (blend MOVE_ITEMS) = lot items (#10) ; no-op hors MOVE_ITEMS.
-  void boxPosition; void objMode;
+  const rt = getRuntime(); const s = sStorage!;
+  const spr = rt && s.boxMonsSprites[boxPosition] >= 0 ? rt.gSprites[s.boxMonsSprites[boxPosition]] : null;
+  if (spr && rt) rt.gba.oam[spr.oamIndex].objMode = objMode as 0 | 1 | 2;
+}
+/** 1:1 `static void SetPartyMonIconObjMode(u8, u8)` (:4917). */
+function SetPartyMonIconObjMode(partyId: number, objMode: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  const spr = rt && s.partySprites[partyId] >= 0 ? rt.gSprites[s.partySprites[partyId]] : null;
+  if (spr && rt) rt.gba.oam[spr.oamIndex].objMode = objMode as 0 | 1 | 2;
+}
+/** 1:1 `static u8 GetCursorPosition(void)` (:7869). */
+function GetCursorPosition(): number { return sCursorPosition; }
+/** 1:1 `static void StartCursorAnim(u8)` (:7888). */
+function StartCursorAnim(animNum: number): void {
+  const rt = getRuntime(); const s = sStorage!;
+  const spr = rt && s.cursorSprite >= 0 ? rt.gSprites[s.cursorSprite] : null;
+  if (spr) StartSpriteAnim(spr as never, animNum);
 }
 
 // ─── :5079 SetMovingMonPriority ───
@@ -3341,6 +3880,7 @@ const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
   [MSG_WORRIED]: { text: "Il s'est inquiété?", varKind: MSG_VAR_NONE },            // gText_WasItWorriedAboutYou
   [MSG_SURPRISE]: { text: '… … … … !', varKind: MSG_VAR_NONE },                    // gText_FourEllipsesExclamation
   [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
+  [MSG_MARK_POKE]: { text: 'Marquez votre POKéMON.', varKind: MSG_VAR_NONE },   // gText_MarkYourPkmn
   [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
   [MSG_EXIT_BOX]: { text: 'Sortir de la BOITE?', varKind: MSG_VAR_NONE },
   [MSG_CONTINUE_BOX]: { text: 'Continuer gestion BOITE?', varKind: MSG_VAR_NONE },
