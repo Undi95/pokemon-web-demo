@@ -1272,10 +1272,13 @@ function SetItemIconPosition(id: number, cursorArea: number, cursorPos: number):
 function LoadItemIconGfx(id: number, itemTiles: Uint8Array | null, itemPal: Uint16Array | null): void {
   const rt = getRuntime(); const s = sStorage!;
   if (id >= MAX_ITEM_ICONS || !rt) return;
-  // Décomp : LZ77UnCompWram(tiles) → tileBuffer, réarrangé 3×0x60→0x80, copié en OBJ VRAM à itemIcons[id].tiles.
-  // Nos assets item_icon sont déjà décompressés (loadIndexedPng) → copie directe des 3 tuiles.
+  // 1:1 décomp:9095-9100 — les tiles item icon sont 24×24 (3 rangées de 3 tuiles = 3×0x60).
+  // Le décomp les RÉORGANISE dans un buffer 32×32 (3 rangées à l'offset i*0x80, la 4e vide =
+  // padding) via `CpuFastCopy(&tileBuffer[i*0x60], &itemIconBuffer[i*0x80], 0x60)`. C'est
+  // exactement `CopyItemIconPicTo4x4Buffer` (item_icon.ts:110 = ce que fait le SAC). La copie
+  // directe (buf.set) désalignait les tuiles → icône corrompue « violette » (queue glitchée).
   const buf = new Uint8Array(0x200);
-  if (itemTiles) buf.set(itemTiles.subarray(0, Math.min(itemTiles.length, 0x200)));
+  if (itemTiles) for (let i = 0; i < 3; i++) buf.set(itemTiles.subarray(i * 0x60, i * 0x60 + 0x60), i * 0x80);
   const tileStart = GetSpriteTileStartByTag(GFXTAG_ITEM_ICON_0 + id);
   if (tileStart >= 0) (rt as { _writeToObjVram?: (d: Uint8Array, o: number) => void })._writeToObjVram?.(buf, tileStart * TILE_SIZE_4BPP);
   if (itemPal) LoadPalette(itemPal, s.itemIcons[id].palIndex, 0x20);
