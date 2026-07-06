@@ -3219,10 +3219,14 @@ function CreateCursorSprites(): void {
   let subpriority: number, priority: number;
   if (sCursorArea === CURSOR_AREA_IN_PARTY) { subpriority = 13; priority = 1; }
   else { subpriority = 21; priority = 2; }
+  // subpriority BRUTE (pas _sub) : le décomp (:7845) passe 21/13 direct, et les box mons utilisent aussi
+  // du brut (CreateBoxMonIconsInColumn :2608 `19 - column`). Le compositor honore la subpriority (plus
+  // grande = derrière) → ombre 21 > box mon 19 = ombre DERRIÈRE le mon (1:1). `_sub(21)`=10 la mettait
+  // DEVANT (bug « ombre sur le Pokémon »). L'ombre n'est visible qu'en IN_BOX (invisible ailleurs).
   const shadowId = CreateSprite({
     tileTag: GFXTAG_CURSOR_SHADOW, paletteTag: PALTAG_MISC_2, oam: { shape: 0, size: 1, priority: 1 },
     anims: null, callback: null,
-  }, 0, 0, _sub(subpriority));
+  }, 0, 0, subpriority);
   if (shadowId !== 64 && rt) {
     s.cursorShadowSprite = shadowId;
     const spr = _spr(shadowId)!;
