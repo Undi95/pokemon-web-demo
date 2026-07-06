@@ -1342,7 +1342,7 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
 // pokemon.c (= où ils sont définis dans la décomp). party-storage.ts re-exporte pour
 // compat (40 fichiers les importent de là, inchangés).
 
-export function GetMonData(mon: Pokemon, field: number): number | string {
+export function GetMonData(mon: Pokemon, field: number, data?: Uint16Array): number | string {
   switch (field) {
     case MON_DATA_PERSONALITY: return mon.personality >>> 0;
     case MON_DATA_OT_ID: return mon.otId >>> 0;
@@ -1435,7 +1435,20 @@ export function GetMonData(mon: Pokemon, field: number): number | string {
     case MON_DATA_UNUSED_RIBBONS: return mon.unusedRibbons ?? 0;
     case MON_DATA_MODERN_FATEFUL_ENCOUNTER: return mon.modernFatefulEncounter;
     case MON_DATA_KNOWN_MOVES: {
-      // 1:1 décomp : bitmask des 4 moves slots qui ont un move défini.
+      if (data) {
+        // 1:1 décomp GetBoxMonData KNOWN_MOVES avec buffer : bitmask des moves de `data`
+        // (liste à tester) que le mon connaît. Adaptation : notre buffer est terminé par 0
+        // (MOVE_NONE) au lieu de MOVES_COUNT — seuls des moves valides (!=0) y figurent,
+        // donc le premier 0 = fin de liste.
+        let retVal = 0;
+        for (let k = 0; k < data.length && data[k] !== 0; k++) {
+          for (let i = 0; i < 4 /* MAX_MON_MOVES */; i++) {
+            if (mon.moves[i] === data[k]) retVal |= (1 << k);
+          }
+        }
+        return retVal;
+      }
+      // Sans buffer : bitmask des 4 slots qui ont un move défini.
       let mask = 0;
       for (let i = 0; i < 4 /* MAX_MON_MOVES */; i++) {
         if (mon.moves[i] !== 0) mask |= (1 << i);
