@@ -56,7 +56,7 @@ import {
   PreloadMonIcon, IsMonIconLoaded, GetIconSpeciesNoPersonality,
   LoadMonIconPalettes, PreloadMonIconPalettes, AreMonIconPalettesLoaded, CreateMonIconSprite,
 } from './pokemon_icon';
-import { InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles } from './mon_markings';
+import { InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles, EnsureMonMarkingsGfxLoaded } from './mon_markings';
 import {
   ComputerScreenOpenEffect, ComputerScreenCloseEffect,
   IsComputerScreenOpenEffectActive, IsComputerScreenCloseEffectActive,
@@ -606,6 +606,10 @@ function LoadStorageAssets(): void {
       _loadTiles4bpp(`${base}/box_selection_popup_center.png`, true),
       _loadTiles4bpp(`${base}/box_selection_popup_sides.png`, true),
     ]);
+    // Précharge palette/gfx des marques (sMonMarkings_Pal = donnée statique dans le décomp)
+    // AVANT que sStorageAssets soit prêt → le marking combo du panneau DONNEES n'est plus
+    // rendu avec une palette vide (noire = marques invisibles).
+    await EnsureMonMarkingsGfxLoaded();
     sStorageAssets = {
       menuGfx,
       displayMenuTilemap: dmTm, displayMenuPal: dmPal,

@@ -37,14 +37,23 @@ let sMenu: MonMarkingsMenu | null = null;
 let _markingsGfx: Uint8Array | null = null;
 let _markingsPal: Uint16Array | null = null;
 let _markingsLoadTried = false;
+let _markingsLoadPromise: Promise<void> | null = null;
 function _loadMarkingsGfx(): void {
   if (_markingsLoadTried) return;
   _markingsLoadTried = true;
-  void (async () => {
-    const png = await loadIndexedPngStrict('/decomp/em/misc/mon_markings.png', 4);
+  _markingsLoadPromise = (async () => {
+    const png = await loadIndexedPngStrict('/decomp/em/ui/interface/mon_markings.png', 4);
     _markingsGfx = png.charData;
     _markingsPal = png.palette;
-  })().catch((e) => console.warn('[mon_markings] asset mon_markings.png absent (à extraire) :', e));
+  })();
+  _markingsLoadPromise.catch((e) => console.warn('[mon_markings] asset mon_markings.png absent (à extraire) :', e));
+}
+/** Précharge (async) le gfx/pal des marques. À await AVANT CreateMonMarkingComboSprite :
+ *  le décomp a `sMonMarkings_Pal` en donnée statique (dispo immédiatement), donc sans ce
+ *  préchargement la 1re création charge une palette vide (16 zéros = noir) = marques invisibles. */
+export async function EnsureMonMarkingsGfxLoaded(): Promise<void> {
+  _loadMarkingsGfx();
+  if (_markingsLoadPromise) { try { await _markingsLoadPromise; } catch { /* warn déjà loggué ci-dessus */ } }
 }
 
 /** 1:1 `void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr)` (mon_markings.c:290). */
