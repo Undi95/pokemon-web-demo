@@ -322,6 +322,20 @@ export function AddWindow(template: WindowTemplate): number {
   return id;
 }
 
+/** 1:1 décomp `u16 AddWindow8Bit(const struct WindowTemplate *)` (window.c) — alloue une
+ *  fenêtre 8bpp. Le décomp alloue le tile-data en RAM et NE touche PAS la VRAM à la
+ *  création (le gfx n'est copié qu'au `CopyWindowToVram` explicite). Adaptation moteur :
+ *  notre `AddWindow` laisse `needsFlush=true` (le 1er `flushDirtyWindows` copie le buffer
+ *  encore vide) ; on le remet à false ici pour NE PAS écraser un cadre déjà chargé qui
+ *  chevauche le `baseBlock` tant que la fenêtre n'est pas explicitement dessinée
+ *  (ex. cadre YesNo tuiles 0xB-0x13 vs MultiMove `baseBlock` 0xA sur BG0). */
+export function AddWindow8Bit(template: WindowTemplate): number {
+  const id = AddWindow(template);
+  const gw = gWindows.find((w) => w.id === id);
+  if (gw) gw.win.needsFlush = false;
+  return id;
+}
+
 export function RemoveWindow(windowId: number): void {
   const idx = gWindows.findIndex((w) => w.id === windowId);
   if (idx >= 0) gWindows.splice(idx, 1);

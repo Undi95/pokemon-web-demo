@@ -28,7 +28,7 @@ import {
   FuncIsActiveTask,
 } from '../harness/runtime/decomp-globals';
 import {
-  AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
+  AddWindow, AddWindow8Bit, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
   GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
   ExtractWindowTiles4bpp, tileMapIndex,
@@ -2903,9 +2903,10 @@ const sWindowTemplate_MultiMove: WindowTemplate = {
 let sMultiMove: { funcId: number; state: number } | null = null;
 function MultiMove_Init(): boolean {
   sMultiMove = { funcId: 0, state: 0 };
-  // AddWindow8Bit : fenêtre 8bpp (rendu de la sélection multiple) — notre AddWindow (4bpp) en tient
-  // lieu jusqu'au lot multi-move (tâche #3) ; seul l'id compte pour l'init.
-  sStorage!.multiMoveWindowId = AddWindow(sWindowTemplate_MultiMove as never);
+  // AddWindow8Bit : fenêtre 8bpp (rendu de la sélection multiple). Le décomp alloue le tile-data
+  // sans toucher la VRAM à l'init ; notre AddWindow (4bpp) flusherait le buffer vide sur tile 0xA-…
+  // et écraserait le cadre YesNo chargé à 0xB (:3888). AddWindow8Bit n'active pas le flush initial.
+  sStorage!.multiMoveWindowId = AddWindow8Bit(sWindowTemplate_MultiMove as never);
   return sStorage!.multiMoveWindowId !== 0xFF;
 }
 
