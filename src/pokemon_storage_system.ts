@@ -5242,7 +5242,13 @@ function Task_ShowMonSummary(_taskId: number): void {
 
 // :3731 Task_ChangeScreen — dispatch selon screenChangeType. EXIT + SUMMARY portés ; NAME/ITEM = lots suivants.
 function Task_ChangeScreen(_taskId: number): void {
-  const s = sStorage!;
+  // Ce task bascule de CB2 (summary/bag/exit) mais n'est PAS détruit ici : runTasks (global) le rejoue
+  // tant que l'écran cible n'a pas fait son ResetTasks. Au 1er passage sStorage existe et fait le
+  // changement (FreePokeStorageData → sStorage=null) ; aux passages suivants sStorage est null → skip.
+  // Le décomp évite le crash car l'écran cible ResetTasks avant que le task ne re-tourne ; chez nous le
+  // ResetTasks de CB2_ReturnToPokeStorage (retour) / du field (exit) nettoie ce task orphelin.
+  if (!sStorage) return;
+  const s = sStorage;
   const screenChangeType = s.screenChangeType;
   sMovingItemId = 0;  // ITEM_NONE (MOVE_ITEMS = lot items)
   switch (screenChangeType) {
