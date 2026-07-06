@@ -419,6 +419,55 @@ export function CopyWindowToVram(windowId: number, mode: number): void {
   copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
 }
 
+// 8bpp (256 couleurs) — utilisé par le MultiMove du PC (icônes attrapées dessinées dans un BG0
+// 256-couleurs puis défilées). Le renderer lit ces tuiles via decodeTile8bpp (bg-layer.ts:70,126 :
+// tileSizeBytes=64, tuile à tileId*64) quand le BG est en BGCNT_256COLOR + paletteMode=1.
+
+/** 1:1 décomp `copyPixelBufferToVram8Bit` (voie 8bpp) — écrit le pixelBuffer (déjà 1 byte/pixel =
+ *  format 8bpp naturel) en VRAM : 64 o/tuile, 1 octet/pixel (index 0-255), layout row-major par tuile
+ *  identique à decodeTile8bpp (baseOffset = tileId*64, out[row*8+col] = charData[base + row*8 + col]). */
+function copyPixelBufferToVram8Bit(win: Window, bgIdx: number, baseBlock: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const bgLayer = rt.gba.bg(bgIdx as 0 | 1 | 2 | 3);
+  const vram = bgLayer.vram;
+  const baseTile = bgLayer.config.baseTile ?? 0;
+  const widthTiles = win.widthTiles;
+  const heightTiles = win.heightTiles;
+  const buf = win.pixelBuffer;
+  for (let ty = 0; ty < heightTiles; ty++) {
+    for (let tx = 0; tx < widthTiles; tx++) {
+      const tileId = baseTile + baseBlock + ty * widthTiles + tx;
+      const tileOffset = tileId * 64; // TILE_BYTES_8BPP
+      if (tileOffset + 64 > vram.length) continue;
+      for (let row = 0; row < 8; row++) {
+        const srcRowStart = (ty * 8 + row) * win.widthPx + tx * 8;
+        const dstRowStart = tileOffset + row * 8;
+        for (let col = 0; col < 8; col++) vram[dstRowStart + col] = buf[srcRowStart + col] & 0xFF;
+      }
+    }
+  }
+  win.needsFlush = false;
+}
+
+/** 1:1 décomp `FillWindowPixelBuffer8Bit(u8 windowId, u8 fillValue)` (window.c:647) — remplit tout
+ *  le tileData 8bpp. Notre pixelBuffer = 1 byte/pixel → fill direct (masque 0xFF au lieu de 0x0F). */
+export function FillWindowPixelBuffer8Bit(windowId: number, fillValue: number): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  gw.win.pixelBuffer.fill(fillValue & 0xFF);
+  gw.win.needsFlush = true;
+}
+
+/** 1:1 décomp `CopyWindowToVram8Bit(u8 windowId, u8 mode)` (window.c:684). Comme CopyWindowToVram
+ *  (4bpp), notre moteur écrit les tiles ici ; le tilemap est posé par PutWindowTilemap. */
+export function CopyWindowToVram8Bit(windowId: number, mode: number): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  void mode; // COPYWIN_GFX=2 / FULL=3 : les deux copient les tiles (MAP seul = jamais utilisé par MultiMove)
+  copyPixelBufferToVram8Bit(gw.win, gw.template.bg, gw.template.baseBlock);
+}
+
 export function PutWindowTilemap(windowId: number): void {
   const gw = gWindows.find((w) => w.id === windowId);
   if (!gw) return;
