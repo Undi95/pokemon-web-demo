@@ -125,7 +125,7 @@ function CreateMarkingComboSprite(tileTag: number | string, paletteTag: number |
   LoadSpritePalette({ data: pal, tag: paletteTag });
   const spriteId = CreateSprite({
     tileTag, paletteTag,
-    oam: { shape: 0, size: 1, priority: 0 },  // sOamData_MarkingCombo : 16×16
+    oam: { shape: 1, size: 1, priority: 0 },  // sOamData_MarkingCombo : SPRITE_SHAPE/SIZE(32x8) — 4 marques EN LIGNE (mon_markings.c:162)
     anims: null, callback: null,
   }, 0, 0, 0);
   return spriteId === 64 /* MAX_SPRITES */ ? -1 : spriteId;
