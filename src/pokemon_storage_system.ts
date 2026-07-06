@@ -87,6 +87,7 @@ import { BeginNormalPaletteFade, UpdatePaletteFade, BG_PLTT_ID } from './palette
 import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { GetItemName, GetItemDescription } from './item';
 import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
+import { getString } from './engine/ui/gba-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
 import { ItemIsMail } from './mail_data';
 import { AddBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
@@ -3890,26 +3891,22 @@ function GetSpeciesAtCursorPosition(): number {
   }
 }
 
-// sMenuTexts (:7933) — libellés FR (strings.c gPCText_* :893-901), indexés par MENU_*.
+// sMenuTexts (:7933) — table du décomp : MENU_* → NOM gPCText_* (PAS de texte hardcodé). Le libellé
+// FR est résolu au runtime via getString() depuis strings.json = donnée extraite du décomp = source de
+// vérité 1:1. (Le hardcodage divergeait : ex. MENU_JUMP réel = « BOITES » pas « SAUTER ».)
 const sMenuTexts: string[] = [];
-sMenuTexts[MENU_CANCEL] = 'ANNULER';   sMenuTexts[MENU_STORE] = 'DEPOSER';
-sMenuTexts[MENU_WITHDRAW] = 'RETIRER'; sMenuTexts[MENU_MOVE] = 'DEPLACER';
-sMenuTexts[MENU_SHIFT] = 'CHANGER';    sMenuTexts[MENU_PLACE] = 'PLACER';
-sMenuTexts[MENU_SUMMARY] = 'RESUME';   sMenuTexts[MENU_RELEASE] = 'RELACHER';
-sMenuTexts[MENU_MARK] = 'MARQUER';
-// Box-options (:7933 gPCText_*) : libellés FR police GBA (majuscules sans diacritiques, comme DEPOSER/RESUME).
-sMenuTexts[MENU_JUMP] = 'SAUTER';      sMenuTexts[MENU_WALLPAPER] = 'DECO';    sMenuTexts[MENU_NAME] = 'NOM';
-// Thèmes de déco (AddWallpaperSetsMenu) :
-sMenuTexts[MENU_SCENERY_1] = 'PAYSAGE 1'; sMenuTexts[MENU_SCENERY_2] = 'PAYSAGE 2';
-sMenuTexts[MENU_SCENERY_3] = 'PAYSAGE 3'; sMenuTexts[MENU_ETCETERA] = 'DIVERS'; sMenuTexts[MENU_FRIENDS] = 'WALDA';
-// Wallpapers (AddWallpapersMenu) :
-sMenuTexts[MENU_FOREST] = 'FORET';   sMenuTexts[MENU_CITY] = 'VILLE';     sMenuTexts[MENU_DESERT] = 'DESERT';  sMenuTexts[MENU_SAVANNA] = 'SAVANE';
-sMenuTexts[MENU_CRAG] = 'PIC';       sMenuTexts[MENU_VOLCANO] = 'VOLCAN'; sMenuTexts[MENU_SNOW] = 'NEIGE';     sMenuTexts[MENU_CAVE] = 'GROTTE';
-sMenuTexts[MENU_BEACH] = 'PLAGE';    sMenuTexts[MENU_SEAFLOOR] = 'MER';   sMenuTexts[MENU_RIVER] = 'RIVIERE';  sMenuTexts[MENU_SKY] = 'CIEL';
-sMenuTexts[MENU_POLKADOT] = 'POIS';  sMenuTexts[MENU_POKECENTER] = 'CENTRE'; sMenuTexts[MENU_MACHINE] = 'MACHINE'; sMenuTexts[MENU_SIMPLE] = 'SIMPLE';
-// Menu DÉPLACER OBJETS (:7947 gPCText_* strings.c:905-909) :
-sMenuTexts[MENU_TAKE] = 'PRENDRE'; sMenuTexts[MENU_GIVE] = 'DONNER'; sMenuTexts[MENU_GIVE_2] = 'DONNER';
-sMenuTexts[MENU_SWITCH] = 'ORDRE'; sMenuTexts[MENU_BAG] = 'SAC';    sMenuTexts[MENU_INFO] = 'INFOS';
+sMenuTexts[MENU_CANCEL] = 'gPCText_Cancel';   sMenuTexts[MENU_STORE] = 'gPCText_Store';       sMenuTexts[MENU_WITHDRAW] = 'gPCText_Withdraw';
+sMenuTexts[MENU_MOVE] = 'gPCText_Move';       sMenuTexts[MENU_SHIFT] = 'gPCText_Shift';       sMenuTexts[MENU_PLACE] = 'gPCText_Place';
+sMenuTexts[MENU_SUMMARY] = 'gPCText_Summary'; sMenuTexts[MENU_RELEASE] = 'gPCText_Release';   sMenuTexts[MENU_MARK] = 'gPCText_Mark';
+sMenuTexts[MENU_JUMP] = 'gPCText_Jump';       sMenuTexts[MENU_WALLPAPER] = 'gPCText_Wallpaper'; sMenuTexts[MENU_NAME] = 'gPCText_Name';
+sMenuTexts[MENU_SCENERY_1] = 'gPCText_Scenery1'; sMenuTexts[MENU_SCENERY_2] = 'gPCText_Scenery2'; sMenuTexts[MENU_SCENERY_3] = 'gPCText_Scenery3';
+sMenuTexts[MENU_ETCETERA] = 'gPCText_Etcetera';  sMenuTexts[MENU_FRIENDS] = 'gPCText_Friends';
+sMenuTexts[MENU_FOREST] = 'gPCText_Forest';   sMenuTexts[MENU_CITY] = 'gPCText_City';         sMenuTexts[MENU_DESERT] = 'gPCText_Desert';   sMenuTexts[MENU_SAVANNA] = 'gPCText_Savanna';
+sMenuTexts[MENU_CRAG] = 'gPCText_Crag';       sMenuTexts[MENU_VOLCANO] = 'gPCText_Volcano';   sMenuTexts[MENU_SNOW] = 'gPCText_Snow';       sMenuTexts[MENU_CAVE] = 'gPCText_Cave';
+sMenuTexts[MENU_BEACH] = 'gPCText_Beach';     sMenuTexts[MENU_SEAFLOOR] = 'gPCText_Seafloor'; sMenuTexts[MENU_RIVER] = 'gPCText_River';     sMenuTexts[MENU_SKY] = 'gPCText_Sky';
+sMenuTexts[MENU_POLKADOT] = 'gPCText_PolkaDot'; sMenuTexts[MENU_POKECENTER] = 'gPCText_Pokecenter'; sMenuTexts[MENU_MACHINE] = 'gPCText_Machine'; sMenuTexts[MENU_SIMPLE] = 'gPCText_Simple';
+sMenuTexts[MENU_TAKE] = 'gPCText_Take';       sMenuTexts[MENU_GIVE] = 'gPCText_Give';         sMenuTexts[MENU_GIVE_2] = 'gPCText_Give';
+sMenuTexts[MENU_SWITCH] = 'gPCText_Switch';   sMenuTexts[MENU_BAG] = 'gPCText_Bag';           sMenuTexts[MENU_INFO] = 'gPCText_Info';
 
 // ─── :7924 InitMenu ───
 function InitMenu(): void {
@@ -3926,7 +3923,8 @@ function SetMenuText(textId: number): void {
   const s = sStorage!;
   if (s.menuItemsCount < s.menuItems.length) {
     const menu = s.menuItems[s.menuItemsCount];
-    menu.text = sMenuTexts[textId] ?? '';
+    const gTextName = sMenuTexts[textId];  // NOM gPCText_* → texte FR résolu depuis strings.json.
+    menu.text = gTextName ? getString(gTextName) : '';
     menu.textId = textId;
     const len = menu.text.length;
     if (len > s.menuWidth) s.menuWidth = len;
@@ -4099,45 +4097,52 @@ function SetMonMarkings(markings: number): void {
 
 // ─── PrintMessage (:4273) — message du bas. sMessages FR (strings.c gText_* :867-879) des ids du
 // flux menu ; placeholder {DYNAMIC 0} → nom du mon affiché/relâché (DynamicPlaceholderTextUtil). ───
-const sStorageMessagesFr: Record<number, { text: string; varKind: number }> = {
-  [MSG_IS_SELECTED]: { text: '{0} sélectionné.', varKind: MSG_VAR_MON_NAME_1 },
-  [MSG_WAS_DEPOSITED]: { text: '{0} a été déposé.', varKind: MSG_VAR_MON_NAME_1 },
-  [MSG_BOX_IS_FULL]: { text: 'BOITE pleine.', varKind: MSG_VAR_NONE },
-  [MSG_RELEASE_POKE]: { text: 'Relâcher ce POKéMON?', varKind: MSG_VAR_NONE },
-  [MSG_WAS_RELEASED]: { text: '{0} a été relâché.', varKind: MSG_VAR_RELEASE_MON_1 },
-  [MSG_BYE_BYE]: { text: 'Bye-bye, {0}!', varKind: MSG_VAR_RELEASE_MON_3 },
-  [MSG_CAME_BACK]: { text: '{0} est revenu!', varKind: MSG_VAR_RELEASE_MON_1 },   // gText_PkmnCameBack
-  [MSG_WORRIED]: { text: "Il s'est inquiété?", varKind: MSG_VAR_NONE },            // gText_WasItWorriedAboutYou
-  [MSG_SURPRISE]: { text: '… … … … !', varKind: MSG_VAR_NONE },                    // gText_FourEllipsesExclamation
-  [MSG_PARTY_FULL]: { text: "L'équipe est pleine!", varKind: MSG_VAR_NONE },
-  [MSG_MARK_POKE]: { text: 'Marquez votre POKéMON.', varKind: MSG_VAR_NONE },   // gText_MarkYourPkmn
-  [MSG_WHICH_ONE_WILL_TAKE]: { text: 'Lequel prenez-vous?', varKind: MSG_VAR_NONE },
-  [MSG_EXIT_BOX]: { text: 'Sortir de la BOITE?', varKind: MSG_VAR_NONE },
-  [MSG_CONTINUE_BOX]: { text: 'Continuer gestion BOITE?', varKind: MSG_VAR_NONE },
-  [MSG_HOLDING_POKE]: { text: 'Vous tenez un POKéMON!', varKind: MSG_VAR_NONE },
-  // Box-options (strings.c gText_* :864-868), 1:1 texte FR décomp (1 ligne, WIN_MESSAGE height=2) :
-  [MSG_WHAT_YOU_DO]: { text: 'Que voulez-vous faire?', varKind: MSG_VAR_NONE },
-  [MSG_JUMP_TO_WHICH_BOX]: { text: 'Aller dans quelle BOITE?', varKind: MSG_VAR_NONE },
-  [MSG_PICK_A_THEME]: { text: 'Choisissez une catégorie.', varKind: MSG_VAR_NONE },
-  [MSG_PICK_A_WALLPAPER]: { text: 'Choisissez un fond.', varKind: MSG_VAR_NONE },
-  // Menu DÉPLACER OBJETS (strings.c gText_* :886-892), 1:1 texte FR décomp :
-  [MSG_GIVE_TO_MON]: { text: 'DONNER à un POKéMON?', varKind: MSG_VAR_NONE },        // gText_GiveToAPkmn
-  [MSG_PLACED_IN_BAG]: { text: 'Objet placé dans le SAC.', varKind: MSG_VAR_ITEM_NAME }, // gText_PlacedItemInBag
-  [MSG_BAG_FULL]: { text: 'Le SAC est plein.', varKind: MSG_VAR_NONE },             // gText_BagIsFull2
-  [MSG_PUT_IN_BAG]: { text: 'Placer objet dans le SAC?', varKind: MSG_VAR_NONE },   // gText_PutItemInBag
-  [MSG_ITEM_IS_HELD]: { text: '{0} tenu.', varKind: MSG_VAR_ITEM_NAME },            // gText_ItemIsNowHeld
-  [MSG_CHANGED_TO_ITEM]: { text: 'Changé pour {0}!', varKind: MSG_VAR_ITEM_NAME },  // gText_ChangedToNewItem
-  [MSG_CANT_STORE_MAIL]: { text: 'Impossible à ranger!', varKind: MSG_VAR_NONE },   // gText_MailCantBeStored
+// sMessages (:1065) — table du décomp : MSG_* → NOM gText_* + varKind. AUCUN texte hardcodé : le FR
+// est résolu au runtime via getString() depuis strings.json (donnée extraite du décomp = source 1:1).
+const sMessages: Record<number, { gText: string; varKind: number }> = {
+  [MSG_EXIT_BOX]: { gText: 'gText_ExitFromBox', varKind: MSG_VAR_NONE },
+  [MSG_WHAT_YOU_DO]: { gText: 'gText_WhatDoYouWantToDo', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_THEME]: { gText: 'gText_PleasePickATheme', varKind: MSG_VAR_NONE },
+  [MSG_PICK_A_WALLPAPER]: { gText: 'gText_PickTheWallpaper', varKind: MSG_VAR_NONE },
+  [MSG_IS_SELECTED]: { gText: 'gText_PkmnIsSelected', varKind: MSG_VAR_MON_NAME_1 },
+  [MSG_JUMP_TO_WHICH_BOX]: { gText: 'gText_JumpToWhichBox', varKind: MSG_VAR_NONE },
+  [MSG_DEPOSIT_IN_WHICH_BOX]: { gText: 'gText_DepositInWhichBox', varKind: MSG_VAR_NONE },
+  [MSG_WAS_DEPOSITED]: { gText: 'gText_PkmnWasDeposited', varKind: MSG_VAR_MON_NAME_1 },
+  [MSG_BOX_IS_FULL]: { gText: 'gText_BoxIsFull2', varKind: MSG_VAR_NONE },
+  [MSG_RELEASE_POKE]: { gText: 'gText_ReleaseThisPokemon', varKind: MSG_VAR_NONE },
+  [MSG_WAS_RELEASED]: { gText: 'gText_PkmnWasReleased', varKind: MSG_VAR_RELEASE_MON_1 },
+  [MSG_BYE_BYE]: { gText: 'gText_ByeByePkmn', varKind: MSG_VAR_RELEASE_MON_3 },
+  [MSG_MARK_POKE]: { gText: 'gText_MarkYourPkmn', varKind: MSG_VAR_NONE },
+  [MSG_LAST_POKE]: { gText: 'gText_ThatsYourLastPkmn', varKind: MSG_VAR_NONE },
+  [MSG_PARTY_FULL]: { gText: 'gText_YourPartysFull', varKind: MSG_VAR_NONE },
+  [MSG_HOLDING_POKE]: { gText: 'gText_YoureHoldingAPkmn', varKind: MSG_VAR_NONE },
+  [MSG_WHICH_ONE_WILL_TAKE]: { gText: 'gText_WhichOneWillYouTake', varKind: MSG_VAR_NONE },
+  [MSG_CANT_RELEASE_EGG]: { gText: 'gText_YouCantReleaseAnEgg', varKind: MSG_VAR_NONE },
+  [MSG_CONTINUE_BOX]: { gText: 'gText_ContinueBoxOperations', varKind: MSG_VAR_NONE },
+  [MSG_CAME_BACK]: { gText: 'gText_PkmnCameBack', varKind: MSG_VAR_MON_NAME_1 },
+  [MSG_WORRIED]: { gText: 'gText_WasItWorriedAboutYou', varKind: MSG_VAR_NONE },
+  [MSG_SURPRISE]: { gText: 'gText_FourEllipsesExclamation', varKind: MSG_VAR_NONE },
+  [MSG_PLEASE_REMOVE_MAIL]: { gText: 'gText_PleaseRemoveTheMail', varKind: MSG_VAR_NONE },
+  [MSG_IS_SELECTED2]: { gText: 'gText_PkmnIsSelected', varKind: MSG_VAR_ITEM_NAME },
+  [MSG_GIVE_TO_MON]: { gText: 'gText_GiveToAPkmn', varKind: MSG_VAR_NONE },
+  [MSG_PLACED_IN_BAG]: { gText: 'gText_PlacedItemInBag', varKind: MSG_VAR_ITEM_NAME },
+  [MSG_BAG_FULL]: { gText: 'gText_BagIsFull2', varKind: MSG_VAR_NONE },
+  [MSG_PUT_IN_BAG]: { gText: 'gText_PutItemInBag', varKind: MSG_VAR_NONE },
+  [MSG_ITEM_IS_HELD]: { gText: 'gText_ItemIsNowHeld', varKind: MSG_VAR_ITEM_NAME },
+  [MSG_CHANGED_TO_ITEM]: { gText: 'gText_ChangedToNewItem', varKind: MSG_VAR_ITEM_NAME },
+  [MSG_CANT_STORE_MAIL]: { gText: 'gText_MailCantBeStored', varKind: MSG_VAR_NONE },
 };
 function PrintMessage(id: number): void {
   const s = sStorage!;
-  const entry = sStorageMessagesFr[id];
-  let text = entry ? entry.text : '';
+  const entry = sMessages[id];
+  let text = entry ? getString(entry.gText) : '';  // texte FR 1:1 depuis strings.json (donnée du décomp)
   if (entry) {
-    if (entry.varKind === MSG_VAR_MON_NAME_1) text = text.replace('{0}', s.displayMonName);
-    else if (entry.varKind === MSG_VAR_RELEASE_MON_1 || entry.varKind === MSG_VAR_RELEASE_MON_3) text = text.replace('{0}', s.releaseMonName);
+    // Placeholder décomp {DYNAMIC 0} (= DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, …)) : substitution
+    // directe dans la string (notre modèle texte = string JS, pas buffer d'octets GBA — résultat identique).
+    if (entry.varKind === MSG_VAR_MON_NAME_1) text = text.replace('{DYNAMIC 0}', s.displayMonName);
+    else if (entry.varKind === MSG_VAR_RELEASE_MON_1 || entry.varKind === MSG_VAR_RELEASE_MON_3) text = text.replace('{DYNAMIC 0}', s.releaseMonName);
     // :4292 MSG_VAR_ITEM_NAME : nom de l'objet en main (IsMovingItem) ou celui du mon affiché, trim espaces.
-    else if (entry.varKind === MSG_VAR_ITEM_NAME) text = text.replace('{0}', (IsMovingItem() ? GetMovingItemName() : s.displayMonItemName).replace(/ +$/, ''));
+    else if (entry.varKind === MSG_VAR_ITEM_NAME) text = text.replace('{DYNAMIC 0}', (IsMovingItem() ? GetMovingItemName() : s.displayMonItemName).replace(/ +$/, ''));
   }
   FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL_1);
   AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, text, 0, 1, TEXT_SKIP_DRAW, null);
@@ -4157,6 +4162,13 @@ function _pcActionTodo(name: string): void {
   ClearBottomWindow();
   SetPokeStorageTask(Task_PokeStorageMain);
 }
+/** 1:1 `static bool8 IsRemovingLastPartyMon(void)` (:6775) — vrai si on s'apprête à retirer de
+ *  l'équipe son dernier POKéMON en état de combattre (garde-fou anti-équipe-vide). */
+function IsRemovingLastPartyMon(): boolean {
+  return sCursorArea === CURSOR_AREA_IN_PARTY && !sIsMonBeingMoved
+    && CountPartyAliveNonEggMonsExcept(sCursorPosition) === 0;
+}
+
 function Task_OnSelectedMon(_taskId: number): void {
   const s = sStorage!;
   switch (s.state) {
@@ -4178,8 +4190,9 @@ function Task_OnSelectedMon(_taskId: number): void {
           ClearBottomWindow();
           SetPokeStorageTask(Task_PokeStorageMain);
           break;
-        case MENU_MOVE:  // :2611 (IsRemovingLastPartyMon check = lot party ; in-box = jamais atteint)
-          PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_MoveMon);
+        case MENU_MOVE:  // :2611 — refus (state 3) si dernier mon utilisable de l'équipe
+          if (IsRemovingLastPartyMon()) s.state = 3;
+          else { PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_MoveMon); }
           break;
         case MENU_PLACE:  // :2623
           PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_PlaceMon);
@@ -4191,8 +4204,10 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_WITHDRAW:  // :2640
           PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_WithdrawMon);
           break;
-        case MENU_STORE:  // :2645 (IsRemovingLastPartyMon/ItemIsMail checks = lot suivant)
-          PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_DepositMenu);
+        case MENU_STORE:  // :2645 — refus si dernier mon utilisable (3) ou si le mon tient une lettre (4)
+          if (IsRemovingLastPartyMon()) s.state = 3;
+          else if (ItemIsMail(s.displayMonItemId)) s.state = 4;
+          else { PlaySE(0x5 /* SE_SELECT */); ClearBottomWindow(); SetPokeStorageTask(Task_DepositMenu); }
           break;
         case MENU_SUMMARY:  // :2650
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMonSummary);
@@ -4200,10 +4215,11 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_MARK:  // :2684
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ShowMarkMenu);
           break;
-        case MENU_RELEASE:  // :2661 — cas normal. Gardes last-mon (state 3)/mail (4)/egg (5) = lot
-          // suivant (IsRemovingLastPartyMon + ItemIsMail non portés ; AtLeastThreeUsableMons dans
-          // Task_ReleaseMon couvre déjà « pas assez de mons » via la séquence « il est revenu »).
-          PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ReleaseMon);
+        case MENU_RELEASE:  // :2661 — refus si dernier mon utilisable (3) / œuf (5) / lettre (4)
+          if (IsRemovingLastPartyMon()) s.state = 3;
+          else if (s.displayMonIsEgg) s.state = 5;
+          else if (ItemIsMail(s.displayMonItemId)) s.state = 4;
+          else { PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_ReleaseMon); }
           break;
         case MENU_TAKE:  // :2688 (MOVE_ITEMS)
           PlaySE(0x5 /* SE_SELECT */); SetPokeStorageTask(Task_TakeItemForMoving);
@@ -4224,6 +4240,18 @@ function Task_OnSelectedMon(_taskId: number): void {
           SetPokeStorageTask(Task_ShowItemInfo);
           break;
       }
+      break;
+    case 3:  // :2712 — refus : dernier POKéMON utilisable de l'équipe
+      PlaySE(0x20 /* SE_FAILURE */); PrintMessage(MSG_LAST_POKE); s.state = 6;
+      break;
+    case 5:  // :2717 — refus : impossible de relâcher un ŒUF
+      PlaySE(0x20 /* SE_FAILURE */); PrintMessage(MSG_CANT_RELEASE_EGG); s.state = 6;
+      break;
+    case 4:  // :2722 — refus : le POKéMON tient une LETTRE, la retirer d'abord
+      PlaySE(0x20 /* SE_FAILURE */); PrintMessage(MSG_PLEASE_REMOVE_MAIL); s.state = 6;
+      break;
+    case 6:  // :2727 — attend un input puis retour au main
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) { ClearBottomWindow(); SetPokeStorageTask(Task_PokeStorageMain); }
       break;
   }
 }
