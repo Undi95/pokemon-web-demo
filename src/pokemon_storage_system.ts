@@ -3840,11 +3840,104 @@ function MonPlaceChange_Place(): boolean {
   }
   return true;
 }
+// :4965 SaveMonSpriteAtPos — mémorise le sprite du slot cible pour l'anim d'échange.
+// `shiftMonSpritePtr` = struct Sprite ** décomp → descripteur { arr, idx } (arr[idx] = ID sprite).
+function SaveMonSpriteAtPos(boxId: number, position: number): void {
+  const s = sStorage!;
+  if (boxId === TOTAL_BOXES_COUNT)  // party mon
+    s.shiftMonSpritePtr = { arr: s.partySprites, idx: position };
+  else
+    s.shiftMonSpritePtr = { arr: s.boxMonsSprites, idx: position };
+  const moving = _spr(s.movingMonSprite);
+  if (moving) moving.callback = null;  // SpriteCallbackDummy
+  s.shiftTimer = 0;
+}
+
+// :4976 MoveShiftingMons — anim d'échange (16 frames) : les 2 icônes glissent l'une vers l'autre
+// (y± + oscillation x2 via gSineTable), échange priority/subpriority à mi-course (8), swap des
+// pointeurs sprite à la fin (16). Retourne FALSE quand l'anim est terminée.
+function MoveShiftingMons(): boolean {
+  const rt = getRuntime(); const s = sStorage!;
+  const ptr = s.shiftMonSpritePtr as { arr: number[]; idx: number };
+  const moving = _spr(s.movingMonSprite);
+  if (s.shiftTimer === 16) return false;
+
+  s.shiftTimer++;
+  if (s.shiftTimer & 1) {
+    const sh = _spr(ptr.arr[ptr.idx]);
+    if (sh) sh.y--;
+    if (moving) moving.y++;
+  }
+  {
+    const sh = _spr(ptr.arr[ptr.idx]);
+    const off = Math.trunc(gSineTable[s.shiftTimer * 8] / 16);
+    if (sh) sh.x2 = off;
+    if (moving) moving.x2 = -off;
+  }
+  if (s.shiftTimer === 8) {
+    const sh = _spr(ptr.arr[ptr.idx]);
+    if (moving && sh && rt) {
+      rt.gba.oam[moving.oamIndex].priority = rt.gba.oam[sh.oamIndex].priority;
+      moving.subpriority = sh.subpriority;
+      rt.gba.oam[sh.oamIndex].priority = GetMonIconPriorityByCursorPos();
+      sh.subpriority = _sub(7);
+    }
+  }
+  if (s.shiftTimer === 16) {
+    // swap movingMonSprite <-> *shiftMonSpritePtr (échange des IDs de sprite)
+    const spriteId = s.movingMonSprite;
+    s.movingMonSprite = ptr.arr[ptr.idx];
+    ptr.arr[ptr.idx] = spriteId;
+    const newMoving = _spr(s.movingMonSprite);
+    if (newMoving) newMoving.callback = SpriteCB_HeldMon;
+    const newShift = _spr(ptr.arr[ptr.idx]);
+    if (newShift) newShift.callback = null;  // SpriteCallbackDummy
+  }
+  return true;
+}
+
+// :6386 SetShiftedMonData — échange les DONNÉES : place le mon en main dans le slot occupé,
+// reprend l'ancien occupant en main (tempMon). Ordre 1:1 : sauve l'occupant → place le tenu →
+// l'occupant devient le tenu.
+function SetShiftedMonData(boxId: number, position: number): void {
+  const s = sStorage!;
+  if (boxId === TOTAL_BOXES_COUNT)
+    s.tempMon = gPlayerParty[position] as Pokemon;    // struct copy décomp (case réassignée après → réf sûre)
+  else
+    s.tempMon = _boxMonAt(boxId, position);           // BoxMonAtToMon
+  SetPlacedMonData(boxId, position);
+  s.movingMon = s.tempMon;
+  SetDisplayMonData(s.movingMon, MODE_PARTY);
+  sMovingMonOrigBoxId = boxId;
+  sMovingMonOrigBoxPos = position;
+}
+
+// :6218 MonPlaceChange_Shift — SHIFT (échange mon en main ↔ mon du slot occupé).
 function MonPlaceChange_Shift(): boolean {
-  // SHIFT (échange mon en main ↔ mon du slot) : nécessite SaveMonSpriteAtPos/MoveShiftingMons/
-  // SetShiftedMonData (:4965-5079) → lot suivant. Log nominatif + termine (pas de crash).
-  console.warn('[pc-storage] MonPlaceChange_Shift (CHANGER) : SaveMonSpriteAtPos/MoveShiftingMons = lot suivant.');
-  return false;
+  const s = sStorage!;
+  const cursor = _spr(s.cursorSprite);
+  switch (s.monPlaceChangeState) {
+    case 0:
+      switch (sCursorArea) {
+        case CURSOR_AREA_IN_PARTY: s.shiftBoxId = TOTAL_BOXES_COUNT; break;
+        case CURSOR_AREA_IN_BOX: s.shiftBoxId = StorageGetCurrentBox(); break;
+        default: return false;
+      }
+      if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_OPEN);
+      SaveMonSpriteAtPos(s.shiftBoxId, sCursorPosition);
+      s.monPlaceChangeState++;
+      break;
+    case 1:
+      if (!MoveShiftingMons()) {
+        if (cursor) StartSpriteAnim(cursor as never, CURSOR_ANIM_FIST);
+        SetShiftedMonData(s.shiftBoxId, sCursorPosition);
+        s.monPlaceChangeState++;
+      }
+      break;
+    case 2:
+      return false;
+  }
+  return true;
 }
 
 // :2737 Task_MoveMon / :2757 Task_PlaceMon / :2777 Task_ShiftMon ───
@@ -3875,8 +3968,19 @@ function Task_ShiftMon(_taskId: number): void {
       break;
   }
 }
-// :6783 CanShiftMon — SHIFT possible ? (mon en main + slot occupé). Simplifié : lot shift.
-function CanShiftMon(): boolean { return false; }
+// :6783 CanShiftMon — SHIFT possible ? (mon en main ; refuse seulement si on viderait la party
+// de son dernier combattant en la remplaçant par un œuf / un mon KO).
+function CanShiftMon(): boolean {
+  const s = sStorage!;
+  if (sIsMonBeingMoved) {
+    if (sCursorArea === CURSOR_AREA_IN_PARTY && CountPartyAliveNonEggMonsExcept(sCursorPosition) === 0) {
+      if (s.displayMonIsEgg || (s.movingMon?.hp ?? 0) === 0)
+        return false;
+    }
+    return true;
+  }
+  return false;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION — SECTION Options menus (:7924-8085) + Task_OnSelectedMon (:2580)
