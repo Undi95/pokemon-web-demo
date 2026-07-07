@@ -51,6 +51,7 @@ import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, Menu_MoveCursorNoWrapAround,
 } from './menu';
 import { FadeInFromBlack } from './field_screen_effect';
+import { CopyMapTilesetsToVram } from './fieldmap';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
@@ -3740,7 +3741,7 @@ function Task_PCMainMenu(taskId: number): void {
   const rt = getRuntime(); if (!rt) return;
   const task = rt.gTasks[taskId];
   switch (task.data[0] /* tState */) {
-    case STATE_LOAD:
+    case STATE_LOAD: {
       task.data[15] = CreateMainMenu(task.data[1]);  // tWindowId ← tSelectedOption
       LoadMessageBoxAndBorderGfx();
       DrawDialogueFrame(0, false);
@@ -3749,7 +3750,16 @@ function Task_PCMainMenu(taskId: number): void {
       CopyWindowToVram(task.data[15], COPYWIN_FULL);
       task.data[0]++;
       break;
+    }
     case STATE_FADE_IN:
+      // 🩸 Fix damier magenta hors-map (adaptation moteur, symptôme) : l'écran boîtes corrompt la tile
+      // VRAM 513 (border, metatile 513) — pleine/opaque en field pur, elle devient un coin diagonal
+      // transparent qui laisse voir le garbage BG3 (tile 20, pal 3 = magenta) dans le HORS-MAP (map PC
+      // Center < écran). Sondé : tile 513 = 64 px à CB2_ReturnToField_Manual PUIS 23 px au 1er frame
+      // MainCB2_Overworld2 (écriture VRAM unique via ref capturée, source exacte non identifiée — à
+      // re-diagnostiquer). On RECHARGE ici (1er état qui tourne EN OW, donc APRÈS la corruption) les
+      // tiles du tileset via CopyMapTilesetsToVram (1:1 décomp). Cf. [[diag-pc-center-magenta-camera-decadree]].
+      CopyMapTilesetsToVram(((globalThis as { gMapHeader?: { mapLayout?: unknown } }).gMapHeader?.mapLayout ?? null) as never);
       // 1:1 IsWeatherNotFadingIn() — hors OW, pas de fondu météo → on avance (net-effect).
       task.data[0]++;
       break;
@@ -5730,6 +5740,9 @@ function CB2_ExitPokeStorage(): void {
 // :1658 FieldTask_ReturnToPcMenu — recrée le menu PC (RETIRER/DÉPOSER/…) après retour OW. ───
 function FieldTask_ReturnToPcMenu(): void {
   const rt = getRuntime(); if (!rt) return;
+  // NB damier magenta hors-map : le rechargement des tiles du tileset (que l'écran boîtes corrompt) est
+  // fait par Task_PCMainMenu STATE_FADE_IN — 1er état qui tourne EN OW, donc APRÈS la corruption VRAM du
+  // 1er frame overworld. Le faire ici (avant OW) serait un no-op. Cf. [[diag-pc-center-magenta-camera-decadree]].
   // 1:1 décomp:1661/1668 — SAUVE puis RESTAURE le vblank. Sans la restauration, vblankCallback
   // reste NULL → TransferPlttBuffer skippé (decomp-runtime.ts:2064) → palettes de la map jamais
   // transférées = OW glitché (Centre vert, tiles noirs) au retour de l'écran boîtes.
