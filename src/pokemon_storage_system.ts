@@ -28,7 +28,7 @@ import {
   getRuntime, gMain, LoadBgTiles, LoadPalette, BlendPalettes, ResetPaletteFade, PlaySE,
   FuncIsActiveTask, SpriteCallbackDummy, GetTextWindowPalette,
 } from '../harness/runtime/decomp-globals';
-import { SetGpuRegBits, ClearGpuRegBits, RGB_WHITE } from '../harness/runtime/decomp-helpers';
+import { SetGpuRegBits, ClearGpuRegBits, RGB_WHITE, RGB } from '../harness/runtime/decomp-helpers';
 import {
   AddWindow, AddWindow8Bit, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg, HideBg,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
@@ -93,7 +93,7 @@ import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from
 import { GetItemName, GetItemDescription } from './item';
 import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
 import { getString } from './engine/ui/gba-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
-import { ItemIsMail } from './mail_data';
+import { ItemIsMail, EOS } from './mail_data';
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';
@@ -844,8 +844,31 @@ function TilemapUtil_Draw(id: number): void {
 /** 1:1 `TilemapUtil_Update(id)` (:9919) — savedTilemap toujours NULL (décomp : DrawPrev jamais appelé). */
 function TilemapUtil_Update(id: number): void {
   if (id >= sNumTilemapUtilIds) return;
+  if (sTilemapUtil[id].savedTilemap != null) TilemapUtil_DrawPrev(id); // jamais (savedTilemap toujours NULL)
   TilemapUtil_Draw(id);
   sTilemapUtil[id].prev = { ...sTilemapUtil[id].cur };
+}
+/** 1:1 `void UNUSED TilemapUtil_UpdateAll(void)` (:9790). */
+function TilemapUtil_UpdateAll(): void {
+  for (let i = 0; i < sNumTilemapUtilIds; i++) {
+    if (sTilemapUtil[i].active === true) TilemapUtil_Update(i);
+  }
+}
+/** 1:1 `void UNUSED TilemapUtil_SetSavedMap(u8 id, const void *tilemap)` (:9854). */
+function TilemapUtil_SetSavedMap(id: number, tilemap: Uint16Array): void {
+  if (id >= sNumTilemapUtilIds) return;
+  sTilemapUtil[id].savedTilemap = tilemap;
+  sTilemapUtil[id].active = true;
+}
+/** 1:1 `void TilemapUtil_DrawPrev(u8 id)` (:9931) — jamais appelé (savedTilemap NULL) ; copie le
+ *  rect `prev` du savedTilemap (adressage altWidth, srcOffset en tiles). */
+function TilemapUtil_DrawPrev(id: number): void {
+  const e = sTilemapUtil[id];
+  if (!e.savedTilemap) return;
+  for (let i = 0; i < e.prev.height; i++) {
+    const srcOffset = (e.prev.destY + i) * e.altWidth + e.prev.destX;
+    CopyToBgTilemapBufferRect(e.bg, e.savedTilemap, srcOffset, e.prev.destX, e.prev.destY + i, e.prev.width, 1);
+  }
 }
 
 // ─── UnkUtil (:9980-10002) — « functionally unused » (décomp) : Run tourne à vide chaque VBlank,
@@ -866,6 +889,46 @@ function UnkUtil_Run(): void {
       d.func?.(d);
     }
     sUnkUtil.numActive = 0;
+  }
+}
+// ─── UnkUtil Add/Run (:10004-10058) — « functionally unused » (décomp : les Add ne sont JAMAIS
+// appelées → Run tourne à vide). Portées 1:1 pour la fermeture de l'oracle ; inertes. ──
+/** 1:1 `bool8 UNUSED UnkUtil_CpuAdd(u8 *dest, u16 dLeft, dTop, const u8 *src, u16 sLeft, sTop, width, height, unkArg)` (:10004). */
+function UnkUtil_CpuAdd(dest: Uint8Array, dLeft: number, dTop: number, src: Uint8Array, sLeft: number, sTop: number, width: number, height: number, unkArg: number): boolean {
+  if (!sUnkUtil || sUnkUtil.numActive >= sUnkUtil.max) return false;
+  const data = sUnkUtil.data![sUnkUtil.numActive++];
+  data.size = width * 2;
+  data.dest = dest.subarray(2 * (dTop * 32 + dLeft));
+  data.src = src.subarray(2 * (sTop * unkArg + sLeft));
+  data.height = height;
+  data.unk = unkArg;
+  data.func = UnkUtil_CpuRun;
+  return true;
+}
+/** 1:1 `void UnkUtil_CpuRun(struct UnkUtilData *data)` (:10022) — functionally unused. */
+function UnkUtil_CpuRun(data: UnkUtilData): void {
+  let destOff = 0, srcOff = 0;
+  for (let i = 0; i < data.height; i++) {
+    if (data.src && data.dest) data.dest.set(data.src.subarray(srcOff, srcOff + data.size), destOff); // CpuCopy16
+    destOff += 64; srcOff += data.unk * 2;
+  }
+}
+/** 1:1 `bool8 UNUSED UnkUtil_DmaAdd(void *dest, u16 dLeft, dTop, width, height)` (:10034). */
+function UnkUtil_DmaAdd(dest: Uint8Array, dLeft: number, dTop: number, width: number, height: number): boolean {
+  if (!sUnkUtil || sUnkUtil.numActive >= sUnkUtil.max) return false;
+  const data = sUnkUtil.data![sUnkUtil.numActive++];
+  data.size = width * 2;
+  data.dest = dest.subarray((dTop * 32 + dLeft) * 2);
+  data.height = height;
+  data.func = UnkUtil_DmaRun;
+  return true;
+}
+/** 1:1 `void UnkUtil_DmaRun(struct UnkUtilData *data)` (:10050) — functionally unused. */
+function UnkUtil_DmaRun(data: UnkUtilData): void {
+  let destOff = 0;
+  for (let i = 0; i < data.height; i++) {
+    if (data.dest) data.dest.fill(0, destOff, destOff + data.size); // CpuFill16/Dma3FillLarge16_ (inerte)
+    destOff += 64;
   }
 }
 
@@ -5039,8 +5102,43 @@ function CycleBoxTitleColor(): void {
   // sBoxTitleColors[wp] IDENTIQUES pour tous les wallpapers (constantes) → couleurs du titre inchangées.
   // Le décomp recopie sBoxTitleColors[wp] vers gPlttBufferUnfaded ; ici no-op 1:1 effectif.
 }
-// Walda wallpaper (event optionnel Émeraude) : jamais débloqué chez nous.
-function IsWaldaWallpaperUnlocked(): boolean { return false; }
+// ─── SECTION Walda (:9661-9727) — wallpaper secret (event optionnel Émeraude, Route 121).
+// Jamais débloqué chez nous (patternUnlocked reste false) → accesseurs 1:1 sur un état local
+// `_waldaPhrase` (struct WaldaPhrase global.h:855 ; pas dans le save block, feature inerte).
+const _waldaPhrase = { colors: new Uint16Array(2), text: [EOS] as number[], iconId: 0, patternId: 0, patternUnlocked: false };
+const WALDA_WALLPAPERS_COUNT = 5;      // ARRAY_COUNT(sWaldaWallpapers) — tables gfx non portées (inerte)
+const WALDA_WALLPAPER_ICONS_COUNT = 20; // ARRAY_COUNT(sWaldaWallpaperIcons)
+/** 1:1 `void ResetWaldaWallpaper(void)` (:9661). */
+function ResetWaldaWallpaper(): void {
+  _waldaPhrase.iconId = 0;
+  _waldaPhrase.patternId = 0;
+  _waldaPhrase.patternUnlocked = false;
+  _waldaPhrase.colors[0] = RGB(21, 25, 30);
+  _waldaPhrase.colors[1] = RGB(6, 12, 24);
+  _waldaPhrase.text[0] = EOS;
+}
+/** 1:1 `void SetWaldaWallpaperLockedOrUnlocked(bool32 unlocked)` (:9671). */
+function SetWaldaWallpaperLockedOrUnlocked(unlocked: boolean): void { _waldaPhrase.patternUnlocked = unlocked; }
+/** 1:1 `bool32 IsWaldaWallpaperUnlocked(void)` (:9676). */
+function IsWaldaWallpaperUnlocked(): boolean { return _waldaPhrase.patternUnlocked; }
+/** 1:1 `u32 GetWaldaWallpaperPatternId(void)` (:9681). */
+function GetWaldaWallpaperPatternId(): number { return _waldaPhrase.patternId; }
+/** 1:1 `void SetWaldaWallpaperPatternId(u8 id)` (:9686). */
+function SetWaldaWallpaperPatternId(id: number): void { if (id < WALDA_WALLPAPERS_COUNT) _waldaPhrase.patternId = id; }
+/** 1:1 `u32 GetWaldaWallpaperIconId(void)` (:9692). */
+function GetWaldaWallpaperIconId(): number { return _waldaPhrase.iconId; }
+/** 1:1 `void SetWaldaWallpaperIconId(u8 id)` (:9697). */
+function SetWaldaWallpaperIconId(id: number): void { if (id < WALDA_WALLPAPER_ICONS_COUNT) _waldaPhrase.iconId = id; }
+/** 1:1 `u16 *GetWaldaWallpaperColorsPtr(void)` (:9703). */
+function GetWaldaWallpaperColorsPtr(): Uint16Array { return _waldaPhrase.colors; }
+/** 1:1 `void SetWaldaWallpaperColors(u16 color1, u16 color2)` (:9708). */
+function SetWaldaWallpaperColors(color1: number, color2: number): void { _waldaPhrase.colors[0] = color1; _waldaPhrase.colors[1] = color2; }
+/** 1:1 `u8 *GetWaldaPhrasePtr(void)` (:9714). */
+function GetWaldaPhrasePtr(): number[] { return _waldaPhrase.text; }
+/** 1:1 `void SetWaldaPhrase(const u8 *src)` (:9719) — StringCopy. */
+function SetWaldaPhrase(src: number[]): void { _waldaPhrase.text = src.slice(); }
+/** 1:1 `bool32 IsWaldaPhraseEmpty(void)` (:9724). */
+function IsWaldaPhraseEmpty(): boolean { return _waldaPhrase.text[0] === EOS; }
 const WALLPAPER_FRIENDS = 16;     // wallpaper Walda (index après les 16 standards)
 const RGB_WHITEALPHA = 0xFFFF;    // RGB_WHITE (0x7FFF) | 0x8000 (bit alpha)
 // DMA3 async : nos copies de tilemap BG sont synchrones → jamais busy.
