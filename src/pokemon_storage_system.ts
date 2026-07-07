@@ -2600,8 +2600,16 @@ function DoShowPartyMenu(): boolean {
 function Task_ShowPartyPokemon(_taskId: number): void {
   const s = sStorage!;
   switch (s.state) {
-    case 0: SetUpDoShowPartyMenu(); s.state++; break;
-    case 1: if (!DoShowPartyMenu()) SetPokeStorageTask(Task_PokeStorageMain); break;
+    case 0:  // adaptation async : précharge les icônes de l'équipe avant de les créer (cf. gate init box).
+      _preloadPartyIcons();
+      s.state++;
+      break;
+    case 1:  // gate : attend le cache icônes/palettes party (sinon CreateMonIconSprite renvoie 0xFF = pas d'icône).
+      if (!_partyIconsLoaded()) break;
+      SetUpDoShowPartyMenu();
+      s.state++;
+      break;
+    case 2: if (!DoShowPartyMenu()) SetPokeStorageTask(Task_PokeStorageMain); break;
   }
 }
 function Task_HidePartyPokemon(_taskId: number): void {
@@ -5363,6 +5371,21 @@ function _boxIconsLoaded(boxId: number): boolean {
   }
   return true;
 }
+/** Idem pour l'ÉQUIPE : précharge les icônes des mons de la party (adaptation ROM→réseau) — le décomp
+ *  crée les icônes à la volée (CreateMonIcon charge le gfx), notre CreateMonIconSprite exige le cache. */
+function _preloadPartyIcons(): void {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i] as { species?: number } | undefined;
+    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
+  }
+}
+function _partyIconsLoaded(): boolean {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i] as { species?: number } | undefined;
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return false;
+  }
+  return AreMonIconPalettesLoaded();
+}
 
 // ─── :1998 EnterPokeStorage ───
 function EnterPokeStorage(boxOption: number): void {
@@ -6652,3 +6675,18 @@ function Task_OnCloseBoxPressed(_taskId: number): void {
 // __getPokemonStorage : accès au storage PC sans importer save.ts (cycle-break).
 // Utilisé par la sonde déterministe ET par CopyMonToPC (party-storage.ts).
 (globalThis as Record<string, unknown>).__getPokemonStorage = GetPokemonStorage;
+
+// ─── Pont debug (harness, NON 1:1) : sonder 100% de l'état PC + party (Fable §0 : sondes installées). ───
+(globalThis as Record<string, unknown>).__pss = {
+  get storage() { return sStorage; },
+  get cursorArea() { return sCursorArea; },
+  get cursorPosition() { return sCursorPosition; },
+  get inPartyMenu() { return sInPartyMenu; },
+  get boxOption() { return sStorage?.boxOption; },
+  get partySprites() { return sStorage?.partySprites; },
+  get party() { return gPlayerParty; },
+  partyCount: () => CalculatePlayerPartyCount(),
+  partySpecies: () => Array.from({ length: PARTY_SIZE }, (_v, i) => (gPlayerParty[i] as { species?: number } | undefined)?.species ?? 0),
+  // cheat : réduit la party à n mons (species=0 au-delà) pour tester les cas limites (0 mon...).
+  setPartyCount: (n: number) => { for (let i = 0; i < PARTY_SIZE; i++) { const m = gPlayerParty[i] as { species?: number } | undefined; if (i >= n && m) m.species = 0; } return CalculatePlayerPartyCount(); },
+};
