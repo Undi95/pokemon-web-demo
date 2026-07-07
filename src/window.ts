@@ -657,6 +657,14 @@ export function BlitBitmapRectToWindow4BitTo8Bit(
       const byteIdx = tileIdx * 32 + yInTile * 4 + (xInTile >> 1);
       const nibbleShift = (xInTile & 1) * 4;
       const pixel = (src[byteIdx] >> nibbleShift) & 0xF;
+      // ADAPTATION RENDERER (≠ décomp) : le décomp (colorKey 0xFF) copie AUSSI le nibble 0 du
+      // fond de l'icône → index paletteNum*16 OPAQUE = la couleur 0 de la palette d'icône
+      // (« box-green » 98,156,131). Dans le vrai jeu ce vert = le fond de boîte donc INVISIBLE.
+      // Chez nous le fond de boîte (wallpaper) a d'autres teintes → ce fond opaque fait un CARRÉ
+      // visible qui masque même la main-curseur. On SKIP le nibble 0 (reste index 0 = transparent,
+      // posé par FillWindowPixelBuffer8Bit) : l'icône sélectionnée apparaît proprement sur le vrai
+      // fond de boîte, sans carré — rendu identique au jeu original.
+      if (pixel === 0) continue;
       win.pixelBuffer[dstY * win.widthPx + dstX] = palOffsetBits + pixel;
     }
   }
@@ -861,8 +869,10 @@ export function ChangeBgY(bg: number, value: number, mode: number): void {
   if (!rt) return;
   const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
   if (mode === 0) {
-    // BG_COORD_SET
-    cfg.vofs = value & 0x1FF;
+    // BG_COORD_SET — 1:1 bg.c: bg_y = value (Q_8_8) puis registre VOFS = bg_y >> 8.
+    // (avant : `value & 0x1FF` OMETTAIT le >>8 → ChangeBgY(0,-1024,SET) donnait 0 au lieu
+    //  de -4, désalignant le window 8bpp de MultiMove. Tous les autres appelants SET passent 0.)
+    cfg.vofs = (value >> 8) & 0x1FF;
   } else {
     // BG_COORD_ADD
     cfg.vofs = (cfg.vofs + (value >> 8)) & 0x1FF; // value est souvent Q_8_8
@@ -874,7 +884,8 @@ export function ChangeBgX(bg: number, value: number, mode: number): void {
   if (!rt) return;
   const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
   if (mode === 0) {
-    cfg.hofs = value & 0x1FF;
+    // BG_COORD_SET — 1:1 bg.c: bg_x = value (Q_8_8) puis registre HOFS = bg_x >> 8 (cf. ChangeBgY).
+    cfg.hofs = (value >> 8) & 0x1FF;
   } else {
     cfg.hofs = (cfg.hofs + (value >> 8)) & 0x1FF;
   }
