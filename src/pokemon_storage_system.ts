@@ -15,7 +15,7 @@ import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_HP,
-  MON_DATA_SANITY_HAS_SPECIES, MON_DATA_KNOWN_MOVES,
+  MON_DATA_SANITY_HAS_SPECIES, MON_DATA_KNOWN_MOVES, MON_DATA_PERSONALITY, MON_DATA_SPECIES_OR_EGG,
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
@@ -25,13 +25,16 @@ import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
 import {
   getRuntime, gMain, LoadBgTiles, LoadPalette, BlendPalettes, ResetPaletteFade, PlaySE,
-  FuncIsActiveTask, SpriteCallbackDummy,
+  FuncIsActiveTask, SpriteCallbackDummy, GetTextWindowPalette,
 } from '../harness/runtime/decomp-globals';
+import { SetGpuRegBits, ClearGpuRegBits, RGB_WHITE } from '../harness/runtime/decomp-helpers';
 import {
-  AddWindow, AddWindow8Bit, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg,
+  AddWindow, AddWindow8Bit, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram, InitBgsFromTemplates, ShowBg, HideBg,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
   GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
-  ExtractWindowTiles4bpp, tileMapIndex,
+  ExtractWindowTiles4bpp, tileMapIndex, ChangeBgX, ChangeBgY, SetBgAttribute, BG_ATTR_PALETTEMODE,
+  FillWindowPixelBuffer8Bit, CopyWindowToVram8Bit, BlitBitmapRectToWindow4BitTo8Bit, FillWindowPixelRect8Bit,
+  COPYWIN_GFX,
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
@@ -66,6 +69,7 @@ import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
 import {
   PreloadMonIcon, IsMonIconLoaded, GetIconSpeciesNoPersonality,
   LoadMonIconPalettes, PreloadMonIconPalettes, AreMonIconPalettesLoaded, CreateMonIconSprite,
+  GetMonIconPtr, GetValidMonIconPalIndex, TryLoadAllMonIconPalettesAtOffset,
 } from './pokemon_icon';
 import {
   InitMonMarkingsMenu, BufferMonMarkingsMenuTiles, CreateMonMarkingComboSprite, UpdateMonMarkingTiles,
@@ -900,6 +904,24 @@ function SetCurrentBox(boxId: number): void {
  *  Nos slots = Pokemon | null (modèle unifié Pokemon == BoxPokemon). */
 export function GetBoxedMonPtr(boxId: number, boxPosition: number) {
   return GetPokemonStorage().boxes[boxId]?.[boxPosition] ?? null;
+}
+
+// pokemon_storage.c — accès data box via notre modèle unifié (Pokemon == BoxPokemon ;
+// slot vide = null). GetCurrentBoxMonData = GetBoxMonDataAt(StorageGetCurrentBox()).
+function GetCurrentBoxMonData(boxPos: number, field: number): number {
+  const mon = _boxMonAt(StorageGetCurrentBox(), boxPos);
+  return mon ? (GetMonData(mon as never, field) as number) : 0; // slot vide → SPECIES_NONE/0
+}
+function GetBoxMonData(mon: Pokemon | null, field: number): number {
+  return mon ? (GetMonData(mon as never, field) as number) : 0;
+}
+function SetBoxMonAt(boxId: number, boxPos: number, src: Pokemon): void {
+  const box = GetPokemonStorage().boxes[boxId];
+  if (box) box[boxPos] = src; // *src : la copie isolée de m.boxMons[i]
+}
+function ZeroBoxMonAt(boxId: number, boxPos: number): void {
+  const box = GetPokemonStorage().boxes[boxId];
+  if (box) box[boxPos] = null; // ZeroBoxMonData → slot vide (notre modèle : null)
 }
 
 /** 1:1 décomp `void SetBoxMonNickAt(u8 boxId, u8 boxPosition, const u8 *nick)`
@@ -2756,6 +2778,18 @@ function StartCursorAnim(animNum: number): void {
   if (spr) StartSpriteAnim(spr as never, animNum);
 }
 
+// :7874 GetCursorBoxColumnAndRow — pointeurs C (column,row) → objet retourné.
+function GetCursorBoxColumnAndRow(): { column: number; row: number } {
+  if (sCursorArea === CURSOR_AREA_IN_BOX)
+    return { column: sCursorPosition % IN_BOX_COLUMNS, row: (sCursorPosition / IN_BOX_COLUMNS) | 0 };
+  return { column: 0, row: 0 };
+}
+// :7898 SetCursorPriorityTo1 — oam.priority via rt.gba.oam[oamIndex] (cf. SetMovingMonPriority).
+function SetCursorPriorityTo1(): void {
+  const rt = getRuntime(); const spr = _spr(sStorage!.cursorSprite);
+  if (rt && spr) rt.gba.oam[spr.oamIndex].priority = 1;
+}
+
 // ─── :5079 SetMovingMonPriority ───
 function SetMovingMonPriority(priority: number): void {
   const rt = getRuntime(); const spr = _spr(sStorage!.movingMonSprite);
@@ -3674,12 +3708,25 @@ function SetCursorBoxPosition(cursorBoxPosition: number): void {
 const sWindowTemplate_MultiMove: WindowTemplate = {
   bg: 0, tilemapLeft: 10, tilemapTop: 3, width: 20, height: 18, paletteNum: 9, baseBlock: 0xA,
 } as WindowTemplate;
-let sMultiMove: { funcId: number; state: number } | null = null;
+// 1:1 struct EWRAM anonyme *sMultiMove (:8089-8107). boxMons = BoxPokemon[IN_BOX_COUNT] (copies).
+let sMultiMove: {
+  funcId: number; state: number;
+  fromColumn: number; fromRow: number; toColumn: number; toRow: number;
+  cursorColumn: number; cursorRow: number;
+  minColumn: number; minRow: number; columnsTotal: number; rowsTotal: number;
+  bgX: number; bgY: number; bgMoveSteps: number;
+  boxMons: (Pokemon | null)[];
+} | null = null;
 function MultiMove_Init(): boolean {
-  sMultiMove = { funcId: 0, state: 0 };
+  sMultiMove = {
+    funcId: 0, state: 0, fromColumn: 0, fromRow: 0, toColumn: 0, toRow: 0,
+    cursorColumn: 0, cursorRow: 0, minColumn: 0, minRow: 0, columnsTotal: 0, rowsTotal: 0,
+    bgX: 0, bgY: 0, bgMoveSteps: 0, boxMons: new Array(IN_BOX_COUNT).fill(null),
+  };
   // AddWindow8Bit : fenêtre 8bpp (rendu de la sélection multiple). Le décomp alloue le tile-data
   // sans toucher la VRAM à l'init ; notre AddWindow (4bpp) flusherait le buffer vide sur tile 0xA-…
   // et écraserait le cadre YesNo chargé à 0xB (:3888). AddWindow8Bit n'active pas le flush initial.
+  // (Décomp :8117 fait FillWindowPixelBuffer(PIXEL_FILL(0)) ici — OMIS pour ne pas flush le cadre.)
   sStorage!.multiMoveWindowId = AddWindow8Bit(sWindowTemplate_MultiMove as never);
   return sStorage!.multiMoveWindowId !== 0xFF;
 }
@@ -3872,6 +3919,16 @@ function MonPlaceChange_Place(): boolean {
   }
   return true;
 }
+// :6148 InitMultiMonPlaceChange — pas de Shift en multi-déplacement, seulement grab/place ;
+// le curseur descend (Down) puis remonte (Up).
+function InitMultiMonPlaceChange(up: boolean): void {
+  const s = sStorage!;
+  s.monPlaceChangeFunc = up ? MultiMonPlaceChange_Up : MultiMonPlaceChange_Down;
+  s.monPlaceChangeState = 0;
+}
+function MultiMonPlaceChange_Down(): boolean { return MonPlaceChange_CursorDown(); } // :6253
+function MultiMonPlaceChange_Up(): boolean { return MonPlaceChange_CursorUp(); }     // :6258
+
 // :4965 SaveMonSpriteAtPos — mémorise le sprite du slot cible pour l'anim d'échange.
 // `shiftMonSpritePtr` = struct Sprite ** décomp → descripteur { arr, idx } (arr[idx] = ID sprite).
 function SaveMonSpriteAtPos(boxId: number, position: number): void {
@@ -4837,6 +4894,381 @@ function NameBox_SetAndReturn(): void {
 function GetCurrentBoxOption(): number { return sCurrentBoxOption; }
 function IsMonBeingMoved(): boolean { return sIsMonBeingMoved; }
 function MultiMove_Free(): void { sMultiMove = null; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRANSCRIPTION 1:1 — MultiMove (:8131-8626) : sélection/déplacement d'un GROUPE
+// de Pokémon dans une boîte. Le BG0 passe en 256 couleurs (8bpp) ; les icônes des
+// mons sélectionnés sont blittées dans multiMoveWindowId, puis le BG glisse pour
+// l'animation. sMultiMove->boxMons[] = copies (par valeur) des mons ramassés.
+// ═══════════════════════════════════════════════════════════════════════════
+const BG_COORD_SET = 0, BG_COORD_ADD = 1;              // bg.h:26
+const Q_8_8 = (n: number): number => n << 8;           // fixed-point 8.8 (n * 256)
+const REG_OFFSET_BG0CNT_MM = 0x08;                     // io_reg.h REG_OFFSET_BG0CNT
+const BGCNT_256COLOR_MM = 0x0080;                      // bg.h bit 7 du BGxCNT
+
+// :8131 MultiMove_SetFunction
+function MultiMove_SetFunction(id: number): void {
+  sMultiMove!.funcId = id;
+  sMultiMove!.state = 0;
+}
+// :8138 MultiMove_RunFunction — TRUE si la fonction appelée a encore du travail.
+function MultiMove_RunFunction(): boolean {
+  switch (sMultiMove!.funcId) {
+    case MULTIMOVE_START: return MultiMove_Start();
+    case MULTIMOVE_CANCEL: return MultiMove_Cancel();
+    case MULTIMOVE_CHANGE_SELECTION: return MultiMove_ChangeSelection();
+    case MULTIMOVE_GRAB_SELECTION: return MultiMove_GrabSelection();
+    case MULTIMOVE_MOVE_MONS: return MultiMove_MoveMons();
+    case MULTIMOVE_PLACE_MONS: return MultiMove_PlaceMons();
+  }
+  return false;
+}
+// :8158 MultiMove_Start
+function MultiMove_Start(): boolean {
+  const m = sMultiMove!;
+  switch (m.state) {
+    case 0:
+      HideBg(0);
+      TryLoadAllMonIconPalettesAtOffset(BG_PLTT_ID(8));
+      m.state++;
+      break;
+    case 1: {
+      const cr = GetCursorBoxColumnAndRow();
+      m.fromColumn = cr.column; m.fromRow = cr.row;
+      m.toColumn = m.fromColumn;
+      m.toRow = m.fromRow;
+      ChangeBgX(0, -1024, BG_COORD_SET);
+      ChangeBgY(0, -1024, BG_COORD_SET);
+      FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
+      FillWindowPixelBuffer8Bit(sStorage!.multiMoveWindowId, PIXEL_FILL(0));
+      MultiMove_SetIconToBg(m.fromColumn, m.fromRow);
+      SetBgAttribute(0, BG_ATTR_PALETTEMODE, 1);
+      PutWindowTilemap(sStorage!.multiMoveWindowId);
+      CopyWindowToVram8Bit(sStorage!.multiMoveWindowId, COPYWIN_FULL);
+      BlendPalettes(0x3F00, 8, RGB_WHITE);
+      StartCursorAnim(CURSOR_ANIM_OPEN);
+      SetGpuRegBits(REG_OFFSET_BG0CNT_MM, BGCNT_256COLOR_MM);
+      m.state++;
+      break;
+    }
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) { ShowBg(0); return false; }
+      break;
+  }
+  return true;
+}
+// :8196 MultiMove_Cancel
+function MultiMove_Cancel(): boolean {
+  const m = sMultiMove!;
+  switch (m.state) {
+    case 0:
+      HideBg(0);
+      m.state++;
+      break;
+    case 1:
+      MultiMove_ResetBg();
+      StartCursorAnim(CURSOR_ANIM_BOUNCE);
+      m.state++;
+      break;
+    case 2:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        SetCursorPriorityTo1();
+        LoadPalette(GetTextWindowPalette(3)!, BG_PLTT_ID(13), 32 /* PLTT_SIZE_4BPP */);
+        ShowBg(0);
+        return false;
+      }
+      break;
+  }
+  return true;
+}
+// :8223 MultiMove_ChangeSelection
+function MultiMove_ChangeSelection(): boolean {
+  const m = sMultiMove!;
+  switch (m.state) {
+    case 0:
+      if (!UpdateCursorPos()) {
+        const cr = GetCursorBoxColumnAndRow();
+        m.cursorColumn = cr.column; m.cursorRow = cr.row;
+        MultiMove_UpdateSelectedIcons();
+        m.toColumn = m.cursorColumn;
+        m.toRow = m.cursorRow;
+        CopyWindowToVram8Bit(sStorage!.multiMoveWindowId, COPYWIN_GFX);
+        m.state++;
+      }
+      break;
+    case 1:
+      return IsDma3ManagerBusyWithBgCopy();
+  }
+  return true;
+}
+// :8245 MultiMove_GrabSelection
+function MultiMove_GrabSelection(): boolean {
+  const m = sMultiMove!;
+  let movingBg: boolean, movingMon: boolean;
+  switch (m.state) {
+    case 0:
+      MultiMove_GetMonsFromSelection();
+      MultiMove_RemoveMonsFromBox();
+      InitMultiMonPlaceChange(false);
+      m.state++;
+      break;
+    case 1:
+      if (!DoMonPlaceChange()) {
+        StartCursorAnim(CURSOR_ANIM_FIST);
+        MultiMove_InitMove(0, Q_8_8(1), 8);
+        InitMultiMonPlaceChange(true);
+        m.state++;
+      }
+      break;
+    case 2:
+      movingBg = MultiMove_UpdateMove() !== 0;
+      movingMon = DoMonPlaceChange();
+      if (!movingBg && !movingMon) return false; // terminé
+      break;
+  }
+  return true;
+}
+// :8277 MultiMove_MoveMons
+function MultiMove_MoveMons(): boolean {
+  const movingCursor = UpdateCursorPos();
+  const movingBg = MultiMove_UpdateMove() !== 0;
+  return movingCursor || movingBg;
+}
+// :8288 MultiMove_PlaceMons
+function MultiMove_PlaceMons(): boolean {
+  const m = sMultiMove!;
+  switch (m.state) {
+    case 0:
+      MultiMove_SetPlacedMonData();
+      MultiMove_InitMove(0, Q_8_8(-1), 8);
+      InitMultiMonPlaceChange(false);
+      m.state++;
+      break;
+    case 1:
+      if (!DoMonPlaceChange() && MultiMove_UpdateMove() === 0) {
+        MultiMove_CreatePlacedMonIcons();
+        StartCursorAnim(CURSOR_ANIM_OPEN);
+        InitMultiMonPlaceChange(true);
+        HideBg(0);
+        m.state++;
+      }
+      break;
+    case 2:
+      if (!DoMonPlaceChange()) {
+        StartCursorAnim(CURSOR_ANIM_BOUNCE);
+        MultiMove_ResetBg();
+        m.state++;
+      }
+      break;
+    case 3:
+      if (!IsDma3ManagerBusyWithBgCopy()) {
+        LoadPalette(GetTextWindowPalette(3)!, BG_PLTT_ID(13), 32 /* PLTT_SIZE_4BPP */);
+        SetCursorPriorityTo1();
+        ShowBg(0);
+        return false;
+      }
+      break;
+  }
+  return true;
+}
+// :8330 MultiMove_TryMoveGroup — TRUE si le déplacement du groupe a réussi.
+function MultiMove_TryMoveGroup(dir: number): boolean {
+  const m = sMultiMove!;
+  switch (dir) {
+    case 0: // Up
+      if (m.minRow === 0) return false;
+      m.minRow--;
+      MultiMove_InitMove(0, Q_8_8(4), 6);
+      break;
+    case 1: // Down
+      if (m.minRow + m.rowsTotal >= IN_BOX_ROWS) return false;
+      m.minRow++;
+      MultiMove_InitMove(0, Q_8_8(-4), 6);
+      break;
+    case 2: // Left
+      if (m.minColumn === 0) return false;
+      m.minColumn--;
+      MultiMove_InitMove(Q_8_8(4), 0, 6);
+      break;
+    case 3: // Right
+      if (m.minColumn + m.columnsTotal >= IN_BOX_COLUMNS) return false;
+      m.minColumn++;
+      MultiMove_InitMove(Q_8_8(-4), 0, 6);
+      break;
+  }
+  return true;
+}
+// :8362 MultiMove_UpdateSelectedIcons
+function MultiMove_UpdateSelectedIcons(): void {
+  const m = sMultiMove!;
+  const columnChange = (Math.abs(m.fromColumn - m.cursorColumn)) - (Math.abs(m.fromColumn - m.toColumn));
+  const rowChange = (Math.abs(m.fromRow - m.cursorRow)) - (Math.abs(m.fromRow - m.toRow));
+  if (columnChange > 0)
+    MultiMove_SelectColumn(m.cursorColumn, m.fromRow, m.toRow);
+  if (columnChange < 0) {
+    MultiMove_DeselectColumn(m.toColumn, m.fromRow, m.toRow);
+    MultiMove_SelectColumn(m.cursorColumn, m.fromRow, m.toRow);
+  }
+  if (rowChange > 0)
+    MultiMove_SelectRow(m.cursorRow, m.fromColumn, m.toColumn);
+  if (rowChange < 0) {
+    MultiMove_DeselectRow(m.toRow, m.fromColumn, m.toColumn);
+    MultiMove_SelectRow(m.cursorRow, m.fromColumn, m.toColumn);
+  }
+}
+// :8386 MultiMove_SelectColumn / :8398 SelectRow / :8410 DeselectColumn / :8422 DeselectRow
+function MultiMove_SelectColumn(column: number, minRow: number, maxRow: number): void {
+  if (minRow > maxRow) { const t = minRow; minRow = maxRow; maxRow = t; }
+  while (minRow <= maxRow) MultiMove_SetIconToBg(column, minRow++);
+}
+function MultiMove_SelectRow(row: number, minColumn: number, maxColumn: number): void {
+  if (minColumn > maxColumn) { const t = minColumn; minColumn = maxColumn; maxColumn = t; }
+  while (minColumn <= maxColumn) MultiMove_SetIconToBg(minColumn++, row);
+}
+function MultiMove_DeselectColumn(column: number, minRow: number, maxRow: number): void {
+  if (minRow > maxRow) { const t = minRow; minRow = maxRow; maxRow = t; }
+  while (minRow <= maxRow) MultiMove_ClearIconFromBg(column, minRow++);
+}
+function MultiMove_DeselectRow(row: number, minColumn: number, maxColumn: number): void {
+  if (minColumn > maxColumn) { const t = minColumn; minColumn = maxColumn; maxColumn = t; }
+  while (minColumn <= maxColumn) MultiMove_ClearIconFromBg(minColumn++, row);
+}
+// :8434 MultiMove_SetIconToBg — blit l'icône du mon (x,y) dans le window 8bpp.
+function MultiMove_SetIconToBg(x: number, y: number): void {
+  const position = x + (IN_BOX_COLUMNS * y);
+  const species = GetCurrentBoxMonData(position, MON_DATA_SPECIES_OR_EGG);
+  const personality = GetCurrentBoxMonData(position, MON_DATA_PERSONALITY);
+  if (species !== SPECIES_NONE) {
+    const iconGfx = GetMonIconPtr(species, personality, true);
+    const index = GetValidMonIconPalIndex(species) + 8;
+    if (iconGfx)
+      BlitBitmapRectToWindow4BitTo8Bit(sStorage!.multiMoveWindowId, iconGfx, 0, 0, 32, 32, 24 * x, 24 * y, 32, 32, index);
+  }
+}
+// :8459 MultiMove_ClearIconFromBg
+function MultiMove_ClearIconFromBg(x: number, y: number): void {
+  const position = x + (IN_BOX_COLUMNS * y);
+  const species = GetCurrentBoxMonData(position, MON_DATA_SPECIES_OR_EGG);
+  if (species !== SPECIES_NONE)
+    FillWindowPixelRect8Bit(sStorage!.multiMoveWindowId, PIXEL_FILL(0), 24 * x, 24 * y, 32, 32);
+}
+// :8475 MultiMove_InitMove / :8482 MultiMove_UpdateMove
+function MultiMove_InitMove(x: number, y: number, moveSteps: number): void {
+  const m = sMultiMove!;
+  m.bgX = x; m.bgY = y; m.bgMoveSteps = moveSteps;
+}
+function MultiMove_UpdateMove(): number {
+  const m = sMultiMove!;
+  if (m.bgMoveSteps !== 0) {
+    ChangeBgX(0, m.bgX, BG_COORD_ADD);
+    ChangeBgY(0, m.bgY, BG_COORD_ADD);
+    m.bgMoveSteps--;
+  }
+  return m.bgMoveSteps;
+}
+// :8495 MultiMove_GetMonsFromSelection — stocke (copie par valeur) les mons ramassés.
+function MultiMove_GetMonsFromSelection(): void {
+  const m = sMultiMove!;
+  m.minColumn = Math.min(m.fromColumn, m.toColumn);
+  m.minRow = Math.min(m.fromRow, m.toRow);
+  m.columnsTotal = Math.abs(m.fromColumn - m.toColumn) + 1;
+  m.rowsTotal = Math.abs(m.fromRow - m.toRow) + 1;
+  const boxId = StorageGetCurrentBox();
+  let monArrayId = 0;
+  const columnCount = m.minColumn + m.columnsTotal;
+  const rowCount = m.minRow + m.rowsTotal;
+  for (let i = m.minRow; i < rowCount; i++) {
+    let boxPosition = (IN_BOX_COLUMNS * i) + m.minColumn;
+    for (let j = m.minColumn; j < columnCount; j++) {
+      const boxMon = GetBoxedMonPtr(boxId, boxPosition);
+      if (boxMon != null)
+        m.boxMons[monArrayId] = structuredClone(boxMon) as Pokemon; // *boxMon = copie par valeur
+      monArrayId++;
+      boxPosition++;
+    }
+  }
+}
+// :8530 MultiMove_RemoveMonsFromBox — efface les mons ramassés de leurs positions d'origine.
+function MultiMove_RemoveMonsFromBox(): void {
+  const m = sMultiMove!;
+  const columnCount = m.minColumn + m.columnsTotal;
+  const rowCount = m.minRow + m.rowsTotal;
+  const boxId = StorageGetCurrentBox();
+  for (let i = m.minRow; i < rowCount; i++) {
+    let boxPosition = (IN_BOX_COLUMNS * i) + m.minColumn;
+    for (let j = m.minColumn; j < columnCount; j++) {
+      DestroyBoxMonIconAtPosition(boxPosition);
+      ZeroBoxMonAt(boxId, boxPosition);
+      boxPosition++;
+    }
+  }
+}
+// :8549 MultiMove_CreatePlacedMonIcons
+function MultiMove_CreatePlacedMonIcons(): void {
+  const m = sMultiMove!;
+  const columnCount = m.minColumn + m.columnsTotal;
+  const rowCount = m.minRow + m.rowsTotal;
+  let monArrayId = 0;
+  for (let i = m.minRow; i < rowCount; i++) {
+    let boxPosition = (IN_BOX_COLUMNS * i) + m.minColumn;
+    for (let j = m.minColumn; j < columnCount; j++) {
+      if (m.boxMons[monArrayId] && GetBoxMonData(m.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES))
+        CreateBoxMonIconAtPos(boxPosition);
+      monArrayId++;
+      boxPosition++;
+    }
+  }
+}
+// :8569 MultiMove_SetPlacedMonData
+function MultiMove_SetPlacedMonData(): void {
+  const m = sMultiMove!;
+  const columnCount = m.minColumn + m.columnsTotal;
+  const rowCount = m.minRow + m.rowsTotal;
+  const boxId = StorageGetCurrentBox();
+  let monArrayId = 0;
+  for (let i = m.minRow; i < rowCount; i++) {
+    let boxPosition = (IN_BOX_COLUMNS * i) + m.minColumn;
+    for (let j = m.minColumn; j < columnCount; j++) {
+      if (m.boxMons[monArrayId] && GetBoxMonData(m.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES))
+        SetBoxMonAt(boxId, boxPosition, m.boxMons[monArrayId]!);
+      boxPosition++;
+      monArrayId++;
+    }
+  }
+}
+// :8590 MultiMove_ResetBg
+function MultiMove_ResetBg(): void {
+  ChangeBgX(0, 0, BG_COORD_SET);
+  ChangeBgY(0, 0, BG_COORD_SET);
+  SetBgAttribute(0, BG_ATTR_PALETTEMODE, 0);
+  ClearGpuRegBits(REG_OFFSET_BG0CNT_MM, BGCNT_256COLOR_MM);
+  FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);
+  CopyBgTilemapBufferToVram(0);
+}
+// :8600 MultiMove_GetOrigin
+function MultiMove_GetOrigin(): number {
+  const m = sMultiMove!;
+  return (IN_BOX_COLUMNS * m.fromRow) + m.fromColumn;
+}
+// :8605 MultiMove_CanPlaceSelection — FALSE si un slot cible est déjà occupé.
+function MultiMove_CanPlaceSelection(): boolean {
+  const m = sMultiMove!;
+  const columnCount = m.minColumn + m.columnsTotal;
+  const rowCount = m.minRow + m.rowsTotal;
+  let monArrayId = 0;
+  for (let i = m.minRow; i < rowCount; i++) {
+    let boxPosition = (IN_BOX_COLUMNS * i) + m.minColumn;
+    for (let j = m.minColumn; j < columnCount; j++) {
+      if (m.boxMons[monArrayId] && GetBoxMonData(m.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES)
+        && GetCurrentBoxMonData(boxPosition, MON_DATA_SANITY_HAS_SPECIES))
+        return false;
+      monArrayId++;
+      boxPosition++;
+    }
+  }
+  return true;
+}
+
 function FreePokeStorageData(): void {
   TilemapUtil_Free();
   MultiMove_Free();
