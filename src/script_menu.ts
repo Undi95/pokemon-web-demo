@@ -237,6 +237,10 @@ export function ScriptMenu_CreatePCMultichoice(): () => boolean {
   const items: (string | Uint8Array)[] = [someones, players];
   if (FlagGet(FLAG_SYS_GAME_CLEAR)) items.push(getString('gText_HallOfFame'));  // :344-355 champion → PANTHEON
   items.push(getString('gText_LogOff'));  // :356/363 DECONNEXION
-  _spawnMultichoiceMenu(0, 0, items, 0);  // décomp CreateWindowFromRect(0, 0, width, …) + InitMenuInUpperLeftCornerNormal
+  // 1:1 décomp `CreateWindowFromRect(0, 0, width, …)` (script_menu.c:628-630) =
+  // `CreateWindowTemplate(0, x + 1, y + 1, …)` → le window est à la tuile (1, 1), PAS (0, 0).
+  // Le +1 laisse une tuile de marge pour le CADRE (DrawStdFrame déborde de 1 tuile autour) ;
+  // sans lui le cadre haut/gauche est en (-1, -1) = hors écran (coupé).
+  _spawnMultichoiceMenu(1, 1, items, 0);
   return makeMultichoiceTick(items, false);  // InitMultichoiceCheckWrap(FALSE, numChoices, windowId, MULTI_PC)
 }
