@@ -705,12 +705,7 @@ export function GetCameraTopLeftCoords(): { x: number; y: number } {
  *  DrawWholeMapView) + les pans. Quand le BG glisse alors que `_camPos`/bgV
  *  sont constants, c'est `tileOffset` qui désync. Même esprit que
  *  `getMovementTrace` ci-dessus. */
-export function __getFieldCameraDebug(): {
-  camX: number; camY: number;
-  xTileOffset: number; yTileOffset: number;
-  xPixelOffset: number; yPixelOffset: number;
-  vPan: number; hPan: number; copyBGToVRAM: boolean;
-} {
+export function __getFieldCameraDebug(): Record<string, number | boolean> {
   return {
     camX: _camPos.x, camY: _camPos.y,
     xTileOffset: sFieldCameraOffset.xTileOffset,
@@ -719,8 +714,13 @@ export function __getFieldCameraDebug(): {
     yPixelOffset: sFieldCameraOffset.yPixelOffset,
     vPan: sVerticalCameraPan, hPan: sHorizontalCameraPan,
     copyBGToVRAM: sFieldCameraOffset.copyBGToVRAM,
+    gTotalX: gTotalCamera.pixelOffsetX, gTotalY: gTotalCamera.pixelOffsetY,
+    fcSpriteId: gFieldCamera.spriteId, fcX: gFieldCamera.x, fcY: gFieldCamera.y,
   };
 }
+// Sonde devtools installée (pont live vers __getFieldCameraDebug) : lire l'état caméra interne
+// (offsets pixel/tuile, gTotalCamera, gFieldCamera) sans archéologie. Read-only, zéro effet jeu.
+(globalThis as Record<string, unknown>).__getFieldCameraDebug = __getFieldCameraDebug;
 
 /** 1:1 décomp `SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY)`
  *  (event_object_movement.c:4801-4818). Convertit des coords MAP (INTERNAL) en
