@@ -3684,7 +3684,8 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
       : gender === 'F'
       ? '{COLOR GREEN}{HIGHLIGHT WHITE}{SHADOW LIGHT_GREEN}♀'
       : '{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}';
-    s.displayMonGenderLvlText = `${genderPart}{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY}N.${s.displayMonLevel}`;
+    // :6977 CHAR_SPACE entre le symbole de genre et « Lv » (= « N. » en FR) — l'espace manquait.
+    s.displayMonGenderLvlText = `${genderPart}{COLOR DARK_GRAY}{HIGHLIGHT WHITE}{SHADOW LIGHT_GRAY} N.${s.displayMonLevel}`;
     // :6985 StringCopyPadded(displayMonItemName, GetItemName(id), CHAR_SPACE, 8) sinon StringFill espaces.
     s.displayMonItemName = s.displayMonItemId !== ITEM_NONE ? GetItemName(s.displayMonItemId) : '';
   }
@@ -4961,11 +4962,81 @@ function HandleInput_OnButtons(): number {
   return retVal;
 }
 
-// :7310 HandleInput_InParty — nav party réelle = lot suivant ; ici A/B minimal (le user teste RETIRER, pas la party).
+// :7310 HandleInput_InParty — nav 1:1 dans l'ÉQUIPE (colonne party à gauche des boîtes).
 function HandleInput_InParty(): number {
-  if (JOY_NEW(A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
-  if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
-  return INPUT_NONE;
+  const s = sStorage!;
+  let cursorArea = sCursorArea;
+  let cursorPosition = sCursorPosition;
+  s.cursorHorizontalWrap = 0;
+  s.cursorVerticalWrap = 0;
+  s.cursorFlipTimer = 0;
+  let gotoBox = false;
+  let retVal = INPUT_NONE;
+
+  dispatch: {
+    if (JOY_REPEAT(DPAD_UP)) {
+      if (--cursorPosition < 0) cursorPosition = PARTY_SIZE;
+      if (cursorPosition !== sCursorPosition) retVal = INPUT_MOVE_CURSOR;
+      break dispatch;
+    } else if (JOY_REPEAT(DPAD_DOWN)) {
+      if (++cursorPosition > PARTY_SIZE) cursorPosition = 0;
+      if (cursorPosition !== sCursorPosition) retVal = INPUT_MOVE_CURSOR;
+      break dispatch;
+    } else if (JOY_REPEAT(DPAD_LEFT) && sCursorPosition !== 0) {
+      retVal = INPUT_MOVE_CURSOR;
+      s.cursorPrevHorizPos = sCursorPosition;
+      cursorPosition = 0;
+      break dispatch;
+    } else if (JOY_REPEAT(DPAD_RIGHT)) {
+      if (sCursorPosition === 0) {
+        retVal = INPUT_MOVE_CURSOR;
+        cursorPosition = s.cursorPrevHorizPos;
+      } else {
+        retVal = INPUT_HIDE_PARTY;
+        cursorArea = CURSOR_AREA_IN_BOX;
+        cursorPosition = 0;
+      }
+      break dispatch;
+    }
+
+    if (JOY_NEW(A_BUTTON)) {
+      if (sCursorPosition === PARTY_SIZE) {
+        if (s.boxOption === OPTION_DEPOSIT) return INPUT_CLOSE_BOX;
+        gotoBox = true;
+      } else if (SetSelectionMenuTexts()) {
+        if (!sAutoActionOn) return INPUT_IN_MENU;
+        switch (GetMenuItemTextId(0)) {
+          case MENU_STORE: return INPUT_DEPOSIT;
+          case MENU_WITHDRAW: return INPUT_WITHDRAW;
+          case MENU_MOVE: return INPUT_MOVE_MON;
+          case MENU_SHIFT: return INPUT_SHIFT_MON;
+          case MENU_PLACE: return INPUT_PLACE_MON;
+          case MENU_TAKE: return INPUT_TAKE_ITEM;
+          case MENU_GIVE: return INPUT_GIVE_ITEM;
+          case MENU_SWITCH: return INPUT_SWITCH_ITEMS;
+        }
+      }
+    }
+
+    if (JOY_NEW(B_BUTTON)) {
+      if (s.boxOption === OPTION_DEPOSIT) return INPUT_PRESSED_B;
+      gotoBox = true;
+    }
+
+    if (gotoBox) {
+      retVal = INPUT_HIDE_PARTY;
+      cursorArea = CURSOR_AREA_IN_BOX;
+      cursorPosition = 0;
+    } else if (JOY_NEW(SELECT_BUTTON)) {
+      ToggleCursorAutoAction();
+      return INPUT_NONE;
+    }
+  }
+
+  if (retVal !== INPUT_NONE) {
+    if (retVal !== INPUT_HIDE_PARTY) SetCursorPosition(cursorArea, cursorPosition);
+  }
+  return retVal;
 }
 
 // ─── :7577 HandleInput — dispatch selon sCursorArea. ───
@@ -5900,6 +5971,7 @@ function Task_ReshowPokeStorage(_taskId: number): void {
 // les autres INPUT_* (party/menus/scroll/multimove) = lots #2/#3. MSTATE_* 1:1 (:2254-2268). ───
 // :2254 enum MSTATE_* — HANDLE_INPUT..WAIT_ITEM_ANIM. SCROLL_BOX_ITEM/WAIT_ITEM_ANIM = MODE DÉPLACER OBJETS.
 const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1, MSTATE_SCROLL_BOX = 2,
+  MSTATE_WAIT_MSG = 3, MSTATE_ERROR_LAST_PARTY_MON = 4, MSTATE_ERROR_HAS_MAIL = 5, MSTATE_WAIT_ERROR_MSG = 6,
   MSTATE_MULTIMOVE_RUN = 7, MSTATE_MULTIMOVE_RUN_CANCEL = 8, MSTATE_MULTIMOVE_RUN_MOVED = 9,
   MSTATE_SCROLL_BOX_ITEM = 10, MSTATE_WAIT_ITEM_ANIM = 11;
 function Task_PokeStorageMain(_taskId: number): void {
@@ -5980,7 +6052,23 @@ function Task_PokeStorageMain(_taskId: number): void {
         case INPUT_MULTIMOVE_UNABLE:
           PlaySE(0x16 /* SE_FAILURE */);
           break;
-        // :2281 INPUT_SHOW_PARTY (party garde) = inerte (lot party menu).
+        case INPUT_SHOW_PARTY:  // :2281 A sur ÉQUIPE PKMN → affiche la party (DÉPLACER) ou message (RETIRER/DÉPOSER)
+          if (s.boxOption !== OPTION_MOVE_MONS && s.boxOption !== OPTION_MOVE_ITEMS) {
+            PrintMessage(MSG_WHICH_ONE_WILL_TAKE);
+            s.state = MSTATE_WAIT_MSG;
+          } else {
+            ClearSavedCursorPos();
+            SetPokeStorageTask(Task_ShowPartyPokemon);
+          }
+          break;
+        case INPUT_HIDE_PARTY:  // :2293 ▶/B depuis la party → masque la party, retour aux boîtes
+          if (s.boxOption === OPTION_MOVE_MONS) {
+            if (IsMonBeingMoved() && ItemIsMail(s.displayMonItemId)) s.state = MSTATE_ERROR_HAS_MAIL;
+            else SetPokeStorageTask(Task_HidePartyPokemon);
+          } else if (s.boxOption === OPTION_MOVE_ITEMS) {
+            SetPokeStorageTask(Task_HidePartyPokemon);
+          }
+          break;
       }
       break;
     case MSTATE_MOVE_CURSOR:
@@ -6004,6 +6092,28 @@ function Task_PokeStorageMain(_taskId: number): void {
         } else {
           s.state = MSTATE_HANDLE_INPUT;
         }
+      }
+      break;
+    case MSTATE_WAIT_MSG:  // :2480 — attend A/B/DPAD après un message, efface la fenêtre du bas
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) {
+        ClearBottomWindow();
+        s.state = MSTATE_HANDLE_INPUT;
+      }
+      break;
+    case MSTATE_ERROR_LAST_PARTY_MON:  // :2487
+      PlaySE(0x20 /* SE_FAILURE */);
+      PrintMessage(MSG_LAST_POKE);
+      s.state = MSTATE_WAIT_ERROR_MSG;
+      break;
+    case MSTATE_ERROR_HAS_MAIL:  // :2492
+      PlaySE(0x20 /* SE_FAILURE */);
+      PrintMessage(MSG_PLEASE_REMOVE_MAIL);
+      s.state = MSTATE_WAIT_ERROR_MSG;
+      break;
+    case MSTATE_WAIT_ERROR_MSG:  // :2497 — attend A/B/DPAD après une erreur, reprend la boucle
+      if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY)) {
+        ClearBottomWindow();
+        SetPokeStorageTask(Task_PokeStorageMain);
       }
       break;
     case MSTATE_SCROLL_BOX_ITEM:  // :2524 attend la fin de l'anim « disparaît » puis lance le slide
