@@ -254,6 +254,7 @@ const CHANGE_GRAB = 0, CHANGE_PLACE = 1, CHANGE_SHIFT = 2;
 
 // Modes for selecting and moving Pokémon in the box. (:302-314)
 const MOVE_MODE_NORMAL = 0, MOVE_MODE_MULTIPLE_SELECTING = 1, MOVE_MODE_MULTIPLE_MOVING = 2;
+const CHAR_SPACE = 0x00; // charmap.txt : ' ' = 0x00
 
 // IDs for the main functions for moving multiple Pokémon. (:316-325)
 const MULTIMOVE_START = 0, MULTIMOVE_CANCEL = 1 /* If only 1 Pokémon is grabbed */,
@@ -1105,6 +1106,107 @@ function CountAllStorageMons(): number {
     }
   }
   return count;
+}
+/** 1:1 `u8 CountPartyNonEggMons(void)` (:1424). */
+function CountPartyNonEggMons(): number {
+  let count = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) !== SPECIES_NONE && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG)) count++;
+  }
+  return count;
+}
+/** 1:1 `u8 CountPartyMons(void)` (:1463). */
+function CountPartyMons(): number {
+  let count = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) !== SPECIES_NONE) count++;
+  }
+  return count;
+}
+/** 1:1 `u8 *StringCopyAndFillWithSpaces(u8 *dst, const u8 *src, u16 n)` (:1478) — copie src puis
+ *  remplit d'espaces (CHAR_SPACE) jusqu'à n, termine EOS. Chaînes = number[] (charCodes). */
+function StringCopyAndFillWithSpaces(dst: number[], src: number[], n: number): number[] {
+  let i = 0;
+  for (; i < src.length && src[i] !== EOS; i++) dst[i] = src[i]; // StringCopy
+  for (; i < n; i++) dst[i] = CHAR_SPACE;
+  dst[i] = EOS;
+  return dst;
+}
+// ─── 3 fns UNUSED (:1374/1489/1504, jamais appelées) — signatures 1:1, corps inertes. ──
+/** 1:1 `void UNUSED UnusedDrawTextWindow(...)` (:1374) — rendait un texte dans un window
+ *  temporaire et copiait ses tiles dans dst. UNUSED (aucun site) → inerte. */
+function UnusedDrawTextWindow(_string: number[], _dst: Uint8Array, _offset: number, _bgColor: number, _fgColor: number, _shadowColor: number): void { /* UNUSED */ }
+/** 1:1 `void UNUSED UnusedWriteRectCpu(u16 *dest, dest_left, dest_top, const u16 *src, src_left,
+ *  src_top, dest_width, dest_height, src_width)` (:1489) — copie rect (comme UnkUtil_CpuRun). */
+function UnusedWriteRectCpu(dest: Uint16Array, destLeft: number, destTop: number, src: Uint16Array, srcLeft: number, srcTop: number, destWidth: number, destHeight: number, srcWidth: number): void {
+  destWidth *= 1; // (décomp *2 en bytes ; nous en tiles u16 → largeur en tiles)
+  let d = destTop * 0x20 + destLeft, s = srcTop * srcWidth + srcLeft;
+  for (let i = 0; i < destHeight; i++) {
+    dest.set(src.subarray(s, s + destWidth), d);
+    d += 0x20; s += srcWidth;
+  }
+}
+/** 1:1 `void UNUSED UnusedWriteRectDma(u16 *dest, dest_left, dest_top, width, height)` (:1504). */
+function UnusedWriteRectDma(dest: Uint16Array, destLeft: number, destTop: number, width: number, height: number): void {
+  let d = destTop * 0x20 + destLeft;
+  for (let i = 0; i < height; d += 0x20, i++) dest.fill(0, d, d + width);
+}
+// ─── Refcount des tiles d'icônes de boîte (:5090-5169). iconSpeciesList/numIconsPerSpecies
+// dans sStorage. Adaptation : le CHARGEMENT VRAM (CpuCopy32 GetMonIconTiles → OBJ_VRAM) se fait
+// via LoadSpriteSheet dans CreateMonIconSprite (pokemon_icon.ts) ; ici on gère la liste + l'offset.
+/** 1:1 `u16 TryLoadMonIconTiles(u16 species)` (:5090) — ajoute species à la liste (refcount),
+ *  renvoie l'offset tile (16*i) ou 0xFFFF si liste pleine. */
+function TryLoadMonIconTiles(species: number): number {
+  const s = sStorage!;
+  let i: number;
+  for (i = 0; i < MAX_MON_ICONS; i++) if (s.iconSpeciesList[i] === species) break;
+  if (i === MAX_MON_ICONS) {
+    for (i = 0; i < MAX_MON_ICONS; i++) if (s.iconSpeciesList[i] === 0) break;
+    if (i === MAX_MON_ICONS) return 0xFFFF;
+  }
+  s.iconSpeciesList[i] = species;
+  s.numIconsPerSpecies[i]++;
+  const offset = 16 * i;
+  // décomp : CpuCopy32(GetMonIconTiles(species, TRUE), OBJ_VRAM0 + offset*TILE_SIZE_4BPP, 0x200)
+  // — chez nous le sheet est chargé par LoadSpriteSheet (CreateMonIconSprite).
+  return offset;
+}
+/** 1:1 `void RemoveSpeciesFromIconList(u16 species)` (:5125) — décrémente le refcount, retire
+ *  species de la liste si plus aucune icône. */
+function RemoveSpeciesFromIconList(species: number): void {
+  const s = sStorage!;
+  for (let i = 0; i < MAX_MON_ICONS; i++) {
+    if (s.iconSpeciesList[i] === species) {
+      if (--s.numIconsPerSpecies[i] === 0) s.iconSpeciesList[i] = SPECIES_NONE;
+      break;
+    }
+  }
+}
+/** 1:1 `void DestroyBoxMonIcon(struct Sprite *sprite)` (:5165) — retire species de la liste + détruit
+ *  le sprite (data[0] = species, posé par CreateMonIconSprite). */
+function DestroyBoxMonIcon(spriteId: number): void {
+  const spr = _spr(spriteId);
+  if (spr) RemoveSpeciesFromIconList(spr.data[0]);
+  DestroySprite(spriteId);
+}
+/** 1:1 `void RefreshDisplayMon(void)` (:6348) — wrapper de TryRefreshDisplayMon. */
+function RefreshDisplayMon(): void { TryRefreshDisplayMon(); }
+/** 1:1 `u8 UNUSED GetMovingMonOriginalBoxId(void)` (:7893). */
+function GetMovingMonOriginalBoxId(): number { return sMovingMonOrigBoxId; }
+/** 1:1 `s16 UNUSED StorageSystemGetNextMonIndex(struct BoxPokemon *box, s8 startIdx, u8 stopIdx,
+ *  u8 mode)` (:1698) — comme AdvanceStorageMonIndex sur un array box. UNUSED. */
+function StorageSystemGetNextMonIndex(box: (Pokemon | null)[], startIdx: number, stopIdx: number, mode: number): number {
+  const direction = (mode === 0 || mode === 1) ? 1 : -1;
+  if (mode === 1 || mode === 3) {
+    for (let i = startIdx + direction; i >= 0 && i <= stopIdx; i += direction) {
+      if (GetBoxMonData(box[i], MON_DATA_SPECIES) !== 0) return i;
+    }
+  } else {
+    for (let i = startIdx + direction; i >= 0 && i <= stopIdx; i += direction) {
+      if (GetBoxMonData(box[i], MON_DATA_SPECIES) !== 0 && !GetBoxMonData(box[i], MON_DATA_IS_EGG)) return i;
+    }
+  }
+  return -1;
 }
 
 /** 1:1 décomp `void SetBoxMonNickAt(u8 boxId, u8 boxPosition, const u8 *nick)`
