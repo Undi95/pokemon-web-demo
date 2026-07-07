@@ -20,7 +20,7 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getString } from './engine/ui/gba-strings';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { AddTextPrinterParameterized3 } from './menu';
-import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette, PutWindowTilemap, RemoveWindow } from './window';
+import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, SetStandardWindowBorderStyle, PutWindowTilemap, RemoveWindow } from './window';
 import type { WindowTemplate } from './window';
 import { VarSet, FlagGet } from './event_data';
 import { VAR_RESULT } from '../include/constants/vars';
@@ -136,7 +136,12 @@ function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8
   const width = ConvertPixelWidthToTileWidth(maxPixels);
   const tmpl: WindowTemplate = { bg: 0, tilemapLeft: left, tilemapTop: top, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
   _multichoiceWindowId = AddWindow(tmpl);
-  DrawStdFrameWithCustomTileAndPalette(_multichoiceWindowId, true, 0x214, 14);
+  // 1:1 décomp `script_menu.c:109` DrawMultichoiceMenuInternal : SetStandardWindowBorderStyle
+  // CHARGE la bordure std (LoadMessageBoxAndBorderGfx) puis dessine. L'ancien
+  // `DrawStdFrameWithCustomTileAndPalette(..., 0x214, 14)` (helper + tile inventés) dessinait
+  // SANS charger → cadre placeholder rayé + écrasait le cadre field partagé (persistait sur tous
+  // les dialogues après le PC, cf. les 2 PC partagent ce multichoice).
+  SetStandardWindowBorderStyle(_multichoiceWindowId, false);
   for (let i = 0; i < count; i++) {
     AddTextPrinterParameterized3(_multichoiceWindowId, 1, 8, 1 + i * 16, [1, 2, 3], 255, items[i] ?? '');
   }
