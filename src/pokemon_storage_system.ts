@@ -1329,10 +1329,13 @@ const MON_DATA_HELD_ITEM = 22;  // 1:1 include/constants/pokemon.h (= battle-set
 const PALETTES_ALL = 0xFFFFFFFF;
 const RGB_BLACK = 0x0000;
 
-/** Adaptation renderer PROUVÉE (sonde live, cf. [[chantier-pc-storage]]) : notre buildOamBuffer trie
- *  la subpriority à l'INVERSE du HW GBA (haute = devant). Mapping monotone 31−n sur TOUTES les
- *  subpriorities de cet écran → l'ordre relatif 1:1 est préservé à l'identique. */
-function _sub(n: number): number { return 31 - n; }
+/** IDENTITÉ (2026-07-07) : le compositor actuel (harness/gba/compositor.ts:164-176) trie déjà les OBJ
+ *  par `subpriority | (oam.priority << 8)` ASC = BASSE subpriority DEVANT, comme le HW GBA. Le vieux
+ *  `31 − n` (vestige d'un `buildOamBuffer` tri-par-Y « haute = devant » aujourd'hui disparu) INVERSAIT
+ *  donc le Z-order (bug sonde live : main-curseur `_sub(6)`=25 PASSAIT DERRIÈRE les box mons `_sub(19)`=12).
+ *  L'ombre était déjà passée en brut (:3957/:3965) ; on aligne tout l'écran sur la subpriority décomp
+ *  DIRECTE (les valeurs passées à `_sub` SONT déjà les valeurs brutes du décomp). Cf. [[pitfall-pc-sub-wrapper-inverts-subpriority]]. */
+function _sub(n: number): number { return n; }
 /** Sprite live par id (nos champs sStorage.*Sprite = spriteIds). */
 function _spr(id: number) { const rt = getRuntime(); return rt && id >= 0 ? rt.gSprites[id] : null; }
 
