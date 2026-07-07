@@ -420,6 +420,14 @@ registerSpecial('ShowPokemonStorageSystemPC', () => {
 registerSpecial('ScriptMenu_CreatePCMultichoice', () => {
   void import('../../script_menu').then(({ ScriptMenu_CreatePCMultichoice }) => {
     const poll = ScriptMenu_CreatePCMultichoice();  // spawn le menu + retourne le tick
+    // 🩸 Fix damier magenta hors-map (même cause moteur que Task_PCMainMenu STATE_FADE_IN et
+    // DoPCTurnOffEffect, cf. mémoire diag-pc-center-magenta) : au SALUT, le retour du menu PC vers
+    // ce multichoice re-corrompt la tile VRAM 513 (border, charBase 0). Ce special tourne APRÈS la
+    // corruption (1er frame OW, après le message « Quel PC? ») → on recharge le tileset field ici.
+    // À la 1re ouverture du PC la tile est déjà saine → rechargement idempotent, inoffensif.
+    void import('../../fieldmap').then(({ CopyMapTilesetsToVram, gMapHeader }) => {
+      CopyMapTilesetsToVram((gMapHeader?.mapLayout ?? null) as never);
+    }).catch((e) => console.error('[pc-multichoice-tileset-reload]', e));
     void import('../../../harness/runtime/decomp-globals').then(({ getRuntime }) => {
       const rt = getRuntime(); if (!rt) return;
       rt.CreateTask((t) => {

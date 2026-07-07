@@ -17,7 +17,7 @@
  * -1 si WEST, +1 si EAST.
  */
 
-import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../../fieldmap';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, CopyMapTilesetsToVram } from '../../fieldmap';
 import { GetPlayerFacingDirection } from '../../field_player_avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
@@ -102,6 +102,13 @@ export function DoPCTurnOffEffect(): void {
   if (!dxdy) return;
   const { dx, dy } = dxdy;
   _setPCMetatileToOff(dx, dy);
+  // 🩸 Adaptation moteur (SYMPTÔME, pas 1:1 — cf. mémoire diag-pc-center-magenta) : les fenêtres du
+  // PC (menu / multichoice « Quel PC? » / écran boîtes) écrivent dans la zone VRAM du tileset field
+  // (charBase 0 partagé) et corrompent la tile 513 (border), révélant le damier magenta BG3 hors-map
+  // sur les petites maps (PC Center 14×9 < écran). On RECHARGE le tileset field ici : DoPCTurnOffEffect
+  // est le hook commun à TOUS les PC (EventScript_TurnOffPC : déconnexion ET MULTI_B_PRESSED, + PC
+  // chambre via TurnOffPlayerPC). Complète le fix Task_PCMainMenu STATE_FADE_IN (retour écran boîtes).
+  CopyMapTilesetsToVram(gMapHeader?.mapLayout ?? null);
   DrawWholeMapView();
 }
 
