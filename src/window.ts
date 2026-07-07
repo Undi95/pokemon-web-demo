@@ -618,6 +618,80 @@ export function FillWindowPixelRect(
   fillWindowPixelRect(gw.win, fill, x, y, w, h);
 }
 
+/** 1:1 décomp `BlitBitmapRectToWindow4BitTo8Bit(u8 windowId, const u8 *pixels,
+ *  u16 srcX, srcY, srcWidth, srcHeight, destX, destY, rectWidth, rectHeight,
+ *  u8 paletteNum)` (window.c:451) → `BlitBitmapRect4BitTo8Bit(src, dst, destX,
+ *  destY, srcX, srcY, rectW, rectH, 0xFF, paletteNum)` (blit.c:106). Blit un
+ *  rect 4bpp source (tile-arranged, local palette) dans le pixelBuffer 8bpp du
+ *  window : chaque nibble 4bpp devient l'index 8bpp `paletteNum*16 + nibble`
+ *  (colorKey 0xFF = pas de transparence, TOUS les pixels copiés dont le 0).
+ *  Notre pixelBuffer est LINÉAIRE 1 byte/pixel (cf. BlitBitmapRectToWindow) →
+ *  même adressage src tile-packed, dst = `y*widthPx + x`. */
+export function BlitBitmapRectToWindow4BitTo8Bit(
+  windowId: number,
+  src: Uint8Array,
+  srcX: number, srcY: number,
+  srcWidth: number, _srcHeight: number,
+  destX: number, destY: number,
+  rectW: number, rectH: number,
+  paletteNum: number,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const win = gw.win;
+  const palOffsetBits = paletteNum * 16;
+  const srcWidthTiles = srcWidth / 8;
+  for (let py = 0; py < rectH; py++) {
+    const dstY = destY + py;
+    if (dstY < 0 || dstY >= win.heightPx) continue;
+    const sy = srcY + py;
+    const tileY = (sy / 8) | 0;
+    const yInTile = sy & 7;
+    for (let px = 0; px < rectW; px++) {
+      const dstX = destX + px;
+      if (dstX < 0 || dstX >= win.widthPx) continue;
+      const sx = srcX + px;
+      const tileX = (sx / 8) | 0;
+      const xInTile = sx & 7;
+      const tileIdx = tileY * srcWidthTiles + tileX;
+      const byteIdx = tileIdx * 32 + yInTile * 4 + (xInTile >> 1);
+      const nibbleShift = (xInTile & 1) * 4;
+      const pixel = (src[byteIdx] >> nibbleShift) & 0xF;
+      win.pixelBuffer[dstY * win.widthPx + dstX] = palOffsetBits + pixel;
+    }
+  }
+  win.needsFlush = true;
+}
+
+/** 1:1 décomp `FillWindowPixelRect8Bit(u8 windowId, u8 fillValue, u16 x, u16 y,
+ *  u16 width, u16 height)` (window.c:673) → `FillBitmapRect8Bit` (blit.c:184).
+ *  Remplit un rect du pixelBuffer 8bpp avec fillValue (byte plein, masque 0xFF
+ *  au lieu de 0x0F). pixelBuffer LINÉAIRE → `y*widthPx + x`. */
+export function FillWindowPixelRect8Bit(
+  windowId: number,
+  fill: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const win = gw.win;
+  const value = fill & 0xFF;
+  for (let py = 0; py < h; py++) {
+    const dstY = y + py;
+    if (dstY < 0 || dstY >= win.heightPx) continue;
+    const rowBase = dstY * win.widthPx;
+    for (let px = 0; px < w; px++) {
+      const dstX = x + px;
+      if (dstX < 0 || dstX >= win.widthPx) continue;
+      win.pixelBuffer[rowBase + dstX] = value;
+    }
+  }
+  win.needsFlush = true;
+}
+
 /** 1:1 décomp `src/window.c:478 ScrollWindow(u8 windowId, u8 direction,
  *  u8 distance, u8 fillValue)`.
  *

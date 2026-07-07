@@ -8,7 +8,7 @@
 // icon_palettes/icon_palette_<idx>.pal. Index palette = MON_ICON_PALETTE_INDICES
 // (table partagée pokemon-icon-palettes.ts, 1:1 gMonIconPaletteIndices).
 
-import { getRuntime } from '../harness/runtime/decomp-globals';
+import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, DestroySprite, IndexOfSpritePaletteTag } from './sprite';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
@@ -18,6 +18,7 @@ import { MailSpeciesToSpecies, NUM_SPECIES, SPECIES_UNOWN } from './mail_data';
 // ─── 1:1 décomp constantes ───────────────────────────────────────────────────
 const SPECIES_UNOWN_B = NUM_SPECIES + 1;       // species.h:422 (NUM_SPECIES + 1)
 const INVALID_ICON_SPECIES = 260;              // pokemon_icon.c:9 = SPECIES_OLD_UNOWN_J
+const SPECIES_DEOXYS = 410;                    // species.h:416
 const ICON_TILES_PER_FRAME = 16;               // 32×32 4bpp = 16 tiles
 const ICON_SHEET_TAG = 'mail_mon_icon';
 const ICON_PAL_TAG = 'mail_mon_icon_pal';
@@ -161,6 +162,53 @@ export function LoadMonIconPalettes(): void {
     const pal = _monIconPals.get(palIdx);
     if (pal) LoadSpritePalette({ data: pal, tag: POKE_ICON_BASE_PAL_TAG + palIdx });
     else console.error(`[pokemon_icon] LoadMonIconPalettes : palette ${palIdx} pas préchargée (PreloadMonIconPalettes manquant ?)`);
+  }
+}
+
+// ─── 1:1 décomp helpers icône « tiles + palette BG » (PC MultiMove) ───────────
+/** 1:1 décomp `const u8 *GetMonIconTiles(u16 species, bool32 handleDeoxys)`
+ *  (pokemon_icon.c:1188) : renvoie les tiles 4bpp de l'espèce (frame courante).
+ *  DEOXYS + handleDeoxys → forme Speed (offset 0x400 bytes = 32 tiles plus loin).
+ *  Nos tiles sont dans `_iconCache` (chargées async) ; null si pas prêtes. */
+export function GetMonIconTiles(iconSpecies: number, handleDeoxys: boolean): Uint8Array | null {
+  const entry = _iconCache.get(iconSpecies);
+  if (!entry) return null;
+  let iconSprite = entry.tiles;
+  if (iconSpecies === SPECIES_DEOXYS && handleDeoxys === true)
+    iconSprite = iconSprite.subarray(0x400); // forme Deoxys spécifique (Speed)
+  return iconSprite;
+}
+
+/** 1:1 décomp `const u8 *GetMonIconPtr(u16 species, u32 personality,
+ *  bool32 handleDeoxys)` (pokemon_icon.c:1124). */
+export function GetMonIconPtr(species: number, personality: number, handleDeoxys: boolean): Uint8Array | null {
+  return GetMonIconTiles(GetIconSpeciesFull(species, personality), handleDeoxys);
+}
+
+/** 1:1 décomp `u8 GetValidMonIconPalIndex(u16 species)` (pokemon_icon.c:1216) :
+ *  clampe species hors-borne à INVALID_ICON_SPECIES puis renvoie l'index palette
+ *  (`gMonIconPaletteIndices[species]` → MON_ICON_PALETTE_INDICES[speciesEnum]). */
+export function GetValidMonIconPalIndex(species: number): number {
+  if (species > NUM_SPECIES) species = INVALID_ICON_SPECIES;
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  return MON_ICON_PALETTE_INDICES[speciesEnum] ?? 0;
+}
+
+/** 1:1 décomp `void TryLoadAllMonIconPalettesAtOffset(u16 offset)`
+ *  (pokemon_icon.c:1198) : charge les 3 palettes d'icônes (gMonIconPaletteTable)
+ *  dans la palette BG à offset, offset+0x10, offset+0x20 (16 couleurs chacune,
+ *  0x20 bytes) SSI offset ≤ BG_PLTT_ID(13)=208 (place pour 3 palettes). Boucle
+ *  descendante décomp (3 tours, pointeur + offset croissants). */
+export function TryLoadAllMonIconPalettesAtOffset(offset: number): void {
+  if (offset <= 13 * 16) { // BG_PLTT_ID(16 - ARRAY_COUNT(gMonIconPaletteTable)=3) = BG_PLTT_ID(13)
+    let ptr = 0;
+    for (let i = 3 - 1; i >= 0; i--) {
+      const pal = _monIconPals.get(ptr);
+      if (pal) LoadPalette(pal, offset, 0x20);
+      else console.error(`[pokemon_icon] TryLoadAllMonIconPalettesAtOffset : palette ${ptr} pas préchargée`);
+      offset += 0x10;
+      ptr++;
+    }
   }
 }
 
