@@ -136,11 +136,14 @@ function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8
   const width = ConvertPixelWidthToTileWidth(maxPixels);
   const tmpl: WindowTemplate = { bg: 0, tilemapLeft: left, tilemapTop: top, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
   _multichoiceWindowId = AddWindow(tmpl);
-  // 1:1 décomp `script_menu.c:109` DrawMultichoiceMenuInternal : SetStandardWindowBorderStyle
-  // CHARGE la bordure std (LoadMessageBoxAndBorderGfx) puis dessine. L'ancien
-  // `DrawStdFrameWithCustomTileAndPalette(..., 0x214, 14)` (helper + tile inventés) dessinait
-  // SANS charger → cadre placeholder rayé + écrasait le cadre field partagé (persistait sur tous
-  // les dialogues après le PC, cf. les 2 PC partagent ce multichoice).
+  // 1:1 décomp `script_menu.c:109` DrawMultichoiceMenuInternal : `SetStandardWindowBorderStyle(id,
+  // FALSE)` dessine le cadre du menu (le gfx du thème `optionsWindowFrameType` est déjà chargé en
+  // VRAM par le field msgbox précédent — pas de re-load ici). L'ancien
+  // `DrawStdFrameWithCustomTileAndPalette(id, TRUE, 0x214, 14)` (helper inventé) avait copyToVram
+  // = TRUE : il flushait le pixelBuffer du window (VIDE à ce stade) → écrasait le cadre du MESSAGE
+  // field partagé (message rayé/cassé après le PC). copyToVram = FALSE (1:1) : le CopyWindowToVram
+  // plus bas suffit. NB : le cadre rayé bleu/blanc du multichoice n'est PAS un bug = c'est le
+  // thème de fenêtre choisi dans OPTIONS (optionsWindowFrameType, ex. type 3).
   SetStandardWindowBorderStyle(_multichoiceWindowId, false);
   for (let i = 0; i < count; i++) {
     AddTextPrinterParameterized3(_multichoiceWindowId, 1, 8, 1 + i * 16, [1, 2, 3], 255, items[i] ?? '');
