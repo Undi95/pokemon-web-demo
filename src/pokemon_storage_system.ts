@@ -4486,14 +4486,120 @@ function InBoxInput_Normal(): number {
     } else if (JOY_NEW(START_BUTTON)) {
       retVal = INPUT_MOVE_CURSOR; cursorArea = CURSOR_AREA_BOX_TITLE; cursorPosition = 0; break;
     }
-    // :7092 A → SetSelectionMenuTexts → menu (sAutoActionOn dispatch direct = lot suivant).
-    if (JOY_NEW(A_BUTTON) && SetSelectionMenuTexts()) return INPUT_IN_MENU;
+    // :7092 A → SetSelectionMenuTexts → menu, OU (auto-action + MOVE_MONS + pas de mon tenu)
+    // démarre une SÉLECTION MULTIPLE (MultiMove).
+    if (JOY_NEW(A_BUTTON) && SetSelectionMenuTexts()) {
+      if (!sAutoActionOn) return INPUT_IN_MENU;
+      if (s.boxOption !== OPTION_MOVE_MONS || sIsMonBeingMoved) {
+        // Auto-action dispatch direct des autres actions (dépôt/retrait/…) = ouvre le
+        // menu contextuel (le dispatch immédiat par item = confort auto-action, à compléter).
+        return INPUT_IN_MENU;
+      } else {
+        s.inBoxMovingMode = MOVE_MODE_MULTIPLE_SELECTING;
+        return INPUT_MULTIMOVE_START;
+      }
+    }
     if (JOY_NEW(B_BUTTON)) return INPUT_PRESSED_B;
     if (JOY_NEW(SELECT_BUTTON)) { ToggleCursorAutoAction(); return INPUT_NONE; }
     retVal = INPUT_NONE;
   } while (false);
   if (retVal !== INPUT_NONE) SetCursorPosition(cursorArea, cursorPosition);
   return retVal;
+}
+
+// :7000 HandleInput_InBox — dispatch selon le mode de déplacement dans la boîte.
+function HandleInput_InBox(): number {
+  switch (sStorage!.inBoxMovingMode) {
+    case MOVE_MODE_MULTIPLE_SELECTING: return InBoxInput_SelectingMultiple();
+    case MOVE_MODE_MULTIPLE_MOVING: return InBoxInput_MovingMultiple();
+    default: return InBoxInput_Normal(); // MOVE_MODE_NORMAL
+  }
+}
+
+// :7153 InBoxInput_SelectingMultiple — A tenu + DPAD étend la sélection ; relâcher A → ramasse
+// le groupe (GRAB) ou, si un seul mon, retombe en déplacement simple (SINGLE→CANCEL).
+function InBoxInput_SelectingMultiple(): number {
+  const s = sStorage!;
+  if (JOY_HELD(A_BUTTON)) {
+    if (JOY_REPEAT(DPAD_UP)) {
+      if (Math.floor(sCursorPosition / IN_BOX_COLUMNS) !== 0) {
+        SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - IN_BOX_COLUMNS);
+        return INPUT_MULTIMOVE_CHANGE_SELECTION;
+      }
+      return INPUT_MULTIMOVE_UNABLE;
+    } else if (JOY_REPEAT(DPAD_DOWN)) {
+      if (sCursorPosition + IN_BOX_COLUMNS < IN_BOX_COUNT) {
+        SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + IN_BOX_COLUMNS);
+        return INPUT_MULTIMOVE_CHANGE_SELECTION;
+      }
+      return INPUT_MULTIMOVE_UNABLE;
+    } else if (JOY_REPEAT(DPAD_LEFT)) {
+      if (sCursorPosition % IN_BOX_COLUMNS !== 0) {
+        SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - 1);
+        return INPUT_MULTIMOVE_CHANGE_SELECTION;
+      }
+      return INPUT_MULTIMOVE_UNABLE;
+    } else if (JOY_REPEAT(DPAD_RIGHT)) {
+      if ((sCursorPosition + 1) % IN_BOX_COLUMNS !== 0) {
+        SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + 1);
+        return INPUT_MULTIMOVE_CHANGE_SELECTION;
+      }
+      return INPUT_MULTIMOVE_UNABLE;
+    }
+    return INPUT_NONE;
+  } else {
+    if (MultiMove_GetOrigin() === sCursorPosition) {
+      // Sélection multiple mais un seul mon choisi → déplacement simple.
+      s.inBoxMovingMode = MOVE_MODE_NORMAL;
+      { const shadow = _spr(s.cursorShadowSprite); if (shadow) shadow.invisible = false; }
+      return INPUT_MULTIMOVE_SINGLE;
+    } else {
+      sIsMonBeingMoved = (s.displayMonSpecies !== SPECIES_NONE);
+      s.inBoxMovingMode = MOVE_MODE_MULTIPLE_MOVING;
+      sMovingMonOrigBoxId = StorageGetCurrentBox();
+      return INPUT_MULTIMOVE_GRAB_SELECTION;
+    }
+  }
+}
+
+// :7229 InBoxInput_MovingMultiple — DPAD déplace le groupe (TryMoveGroup), A le pose, B = unable.
+function InBoxInput_MovingMultiple(): number {
+  const s = sStorage!;
+  if (JOY_REPEAT(DPAD_UP)) {
+    if (MultiMove_TryMoveGroup(0)) {
+      SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - IN_BOX_COLUMNS);
+      return INPUT_MULTIMOVE_MOVE_MONS;
+    }
+    return INPUT_MULTIMOVE_UNABLE;
+  } else if (JOY_REPEAT(DPAD_DOWN)) {
+    if (MultiMove_TryMoveGroup(1)) {
+      SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + IN_BOX_COLUMNS);
+      return INPUT_MULTIMOVE_MOVE_MONS;
+    }
+    return INPUT_MULTIMOVE_UNABLE;
+  } else if (JOY_REPEAT(DPAD_LEFT)) {
+    if (MultiMove_TryMoveGroup(2)) {
+      SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - 1);
+      return INPUT_MULTIMOVE_MOVE_MONS;
+    }
+    return INPUT_SCROLL_LEFT;
+  } else if (JOY_REPEAT(DPAD_RIGHT)) {
+    if (MultiMove_TryMoveGroup(3)) {
+      SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + 1);
+      return INPUT_MULTIMOVE_MOVE_MONS;
+    }
+    return INPUT_SCROLL_RIGHT;
+  } else if (JOY_NEW(A_BUTTON)) {
+    if (MultiMove_CanPlaceSelection()) {
+      sIsMonBeingMoved = false;
+      s.inBoxMovingMode = MOVE_MODE_NORMAL;
+      return INPUT_MULTIMOVE_PLACE_MONS;
+    }
+    return INPUT_MULTIMOVE_UNABLE;
+  } else if (JOY_NEW(B_BUTTON)) {
+    return INPUT_MULTIMOVE_UNABLE;
+  }
+  return INPUT_NONE; // (option L/R scroll = confort, non transcrit)
 }
 
 function HandleInput_OnBox(): number {
@@ -4556,7 +4662,7 @@ function HandleInput_InParty(): number {
 // ─── :7577 HandleInput — dispatch selon sCursorArea. ───
 function HandleInput(): number {
   switch (sCursorArea) {
-    case CURSOR_AREA_IN_BOX: return InBoxInput_Normal();
+    case CURSOR_AREA_IN_BOX: return HandleInput_InBox();
     case CURSOR_AREA_IN_PARTY: return HandleInput_InParty();
     case CURSOR_AREA_BOX_TITLE: return HandleInput_OnBox();
     case CURSOR_AREA_BUTTONS: return HandleInput_OnButtons();
@@ -5430,6 +5536,7 @@ function Task_ReshowPokeStorage(_taskId: number): void {
 // les autres INPUT_* (party/menus/scroll/multimove) = lots #2/#3. MSTATE_* 1:1 (:2254-2268). ───
 // :2254 enum MSTATE_* — HANDLE_INPUT..WAIT_ITEM_ANIM. SCROLL_BOX_ITEM/WAIT_ITEM_ANIM = MODE DÉPLACER OBJETS.
 const MSTATE_HANDLE_INPUT = 0, MSTATE_MOVE_CURSOR = 1, MSTATE_SCROLL_BOX = 2,
+  MSTATE_MULTIMOVE_RUN = 7, MSTATE_MULTIMOVE_RUN_CANCEL = 8, MSTATE_MULTIMOVE_RUN_MOVED = 9,
   MSTATE_SCROLL_BOX_ITEM = 10, MSTATE_WAIT_ITEM_ANIM = 11;
 function Task_PokeStorageMain(_taskId: number): void {
   const s = sStorage!;
@@ -5477,6 +5584,38 @@ function Task_PokeStorageMain(_taskId: number): void {
           PlaySE(0x5 /* SE_SELECT */);
           SetPokeStorageTask(Task_HandleBoxOptions);
           break;
+        // :2411 MultiMove (sélection multiple) — SetFunction + état qui pompe RunFunction.
+        case INPUT_MULTIMOVE_START:
+          PlaySE(0x5 /* SE_SELECT */);
+          MultiMove_SetFunction(MULTIMOVE_START);
+          s.state = MSTATE_MULTIMOVE_RUN;
+          break;
+        case INPUT_MULTIMOVE_SINGLE:
+          MultiMove_SetFunction(MULTIMOVE_CANCEL);
+          s.state = MSTATE_MULTIMOVE_RUN_CANCEL;
+          break;
+        case INPUT_MULTIMOVE_CHANGE_SELECTION:
+          PlaySE(0x5 /* SE_SELECT */);
+          MultiMove_SetFunction(MULTIMOVE_CHANGE_SELECTION);
+          s.state = MSTATE_MULTIMOVE_RUN_MOVED;
+          break;
+        case INPUT_MULTIMOVE_GRAB_SELECTION:
+          MultiMove_SetFunction(MULTIMOVE_GRAB_SELECTION);
+          s.state = MSTATE_MULTIMOVE_RUN;
+          break;
+        case INPUT_MULTIMOVE_MOVE_MONS:
+          PlaySE(0x5 /* SE_SELECT */);
+          MultiMove_SetFunction(MULTIMOVE_MOVE_MONS);
+          s.state = MSTATE_MULTIMOVE_RUN_MOVED;
+          break;
+        case INPUT_MULTIMOVE_PLACE_MONS:
+          PlaySE(0x5 /* SE_SELECT */);
+          MultiMove_SetFunction(MULTIMOVE_PLACE_MONS);
+          s.state = MSTATE_MULTIMOVE_RUN;
+          break;
+        case INPUT_MULTIMOVE_UNABLE:
+          PlaySE(0x16 /* SE_FAILURE */);
+          break;
         // :2281 INPUT_SHOW_PARTY (party garde) = inerte (lot party menu).
       }
       break;
@@ -5511,6 +5650,18 @@ function Task_PokeStorageMain(_taskId: number): void {
       break;
     case MSTATE_WAIT_ITEM_ANIM:  // :2531 attend la fin de l'anim « apparaît »
       if (!IsItemIconAnimActive()) s.state = MSTATE_HANDLE_INPUT;
+      break;
+    case MSTATE_MULTIMOVE_RUN:  // :2504 pompe la fonction MultiMove jusqu'à fin
+      if (!MultiMove_RunFunction()) s.state = MSTATE_HANDLE_INPUT;
+      break;
+    case MSTATE_MULTIMOVE_RUN_CANCEL:  // :2508 sélection réduite à 1 mon → déplacement simple
+      if (!MultiMove_RunFunction()) SetPokeStorageTask(Task_MoveMon);
+      break;
+    case MSTATE_MULTIMOVE_RUN_MOVED:  // :2516 fin de sélection/déplacement → refresh mosaic
+      if (!MultiMove_RunFunction()) {
+        if (s.setMosaic) StartDisplayMonMosaicEffect();
+        s.state = MSTATE_HANDLE_INPUT;
+      }
       break;
   }
 }
