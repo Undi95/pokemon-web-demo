@@ -55,6 +55,8 @@ import { CopyMapTilesetsToVram } from './fieldmap';
 import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
+import { FadeScreen, FADE_TO_BLACK } from './field_weather';
+import { FreeAllWindowBuffers } from './window';
 import { CalculatePlayerPartyCount } from './pokemon';
 import { GetSummaryLastMonIndex, OpenSummaryScreen } from './pokemon_summary_screen';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
@@ -3693,7 +3695,7 @@ function SetDisplayMonData(pokemon: Pokemon | null, mode: number): void {
 
 // OPTION_* / OPTIONS_COUNT : déclarés dans la section TRANSCRIPTION en tête (:53-61).
 // 1:1 enum états (:1524)
-const STATE_LOAD = 0, STATE_FADE_IN = 1, STATE_HANDLE_INPUT = 2, STATE_ERROR_MSG = 3;
+const STATE_LOAD = 0, STATE_FADE_IN = 1, STATE_HANDLE_INPUT = 2, STATE_ERROR_MSG = 3, STATE_ENTER_PC = 4;
 // Menu_ProcessInput sentinelles (menu.ts) + touches GBA (io_reg) + text/window (text.ts)
 const MENU_NOTHING_CHOSEN = -2, MENU_B_PRESSED = -1;
 const DPAD_UP = 0x0040, DPAD_DOWN = 0x0080, A_BUTTON = 0x0001, B_BUTTON = 0x0002;
@@ -3784,19 +3786,16 @@ function Task_PCMainMenu(taskId: number): void {
         (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
       } else if (input === OPTION_WITHDRAW && CalculatePlayerPartyCount() === PARTY_SIZE) {
         FillWindowPixelBuffer(0, PIXEL_FILL_1);
-        AddTextPrinterParameterized2(0, FONT_NORMAL, 'Ton équipe est pleine !', 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, getString('gText_PartyFull'), 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
         task.data[0] = STATE_ERROR_MSG;
       } else if (input === OPTION_DEPOSIT && CalculatePlayerPartyCount() === 1) {
         FillWindowPixelBuffer(0, PIXEL_FILL_1);
-        AddTextPrinterParameterized2(0, FONT_NORMAL, "Il n'y a qu'un POKéMON !", 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, getString('gText_JustOnePkmn'), 0, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
         task.data[0] = STATE_ERROR_MSG;
       } else {
-        // Enter PC — phase 2 (écran boîtes) = stub : on referme proprement pour l'instant.
-        EnterPokeStorage(input);
-        ClearStdWindowAndFrame(task.data[15], true);
-        UnlockPlayerFieldControls();
-        RemoveWindow(task.data[15]);
-        rt.DestroyTask(taskId);
+        // 1:1 :1601-1603 « Enter PC » — fondu au noir, puis STATE_ENTER_PC attend la fin du fade.
+        FadeScreen(FADE_TO_BLACK, 0);
+        task.data[0] = STATE_ENTER_PC;
       }
       break;
     }
@@ -3816,6 +3815,15 @@ function Task_PCMainMenu(taskId: number): void {
         task.data[1] = Menu_GetCursorPos();
         _printDesc(task.data[1], 0);
         task.data[0] = STATE_HANDLE_INPUT;
+      }
+      break;
+    case STATE_ENTER_PC:
+      // 1:1 :1638-1645 — attend la fin du fondu au noir, nettoie les fenêtres OW, ouvre l'écran boîtes.
+      if (!UpdatePaletteFade()) {
+        CleanupOverworldWindowsAndTilemaps();
+        EnterPokeStorage(task.data[2] /* tInput */);
+        RemoveWindow(task.data[15]);
+        rt.DestroyTask(taskId);
       }
       break;
   }
@@ -5712,6 +5720,7 @@ function FreePokeStorageData(): void {
   TilemapUtil_Free();
   MultiMove_Free();
   sStorage = null;  // Free(sStorage)
+  FreeAllWindowBuffers();  // :3794 — libère les buffers des fenêtres du PC.
 }
 // :4256 UpdateBoxToSendMons — mémorise la boîte courante (flag « box full » = lot flags).
 function UpdateBoxToSendMons(): void {
