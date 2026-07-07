@@ -56,7 +56,6 @@ import type { MenuAction } from './menu';
 import { GetMaxWidthInMenuTable } from './international_string_util';
 import { CleanupOverworldWindowsAndTilemaps } from './overworld';
 import { FadeScreen, FADE_TO_BLACK } from './field_weather';
-import { FreeAllWindowBuffers } from './window';
 import { CalculatePlayerPartyCount } from './pokemon';
 import { GetSummaryLastMonIndex, OpenSummaryScreen } from './pokemon_summary_screen';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
@@ -5817,7 +5816,10 @@ function FreePokeStorageData(): void {
   TilemapUtil_Free();
   MultiMove_Free();
   sStorage = null;  // Free(sStorage)
-  FreeAllWindowBuffers();  // :3794 — libère les buffers des fenêtres du PC.
+  // NB : le décomp appelle ici FreeAllWindowBuffers() (:3794), MAIS notre window manager ne recrée pas
+  // le window 0 (message box du field) au retour comme le GBA → AddWindow réutiliserait le slot 0 pour
+  // le menu PC, le faisant COLLISIONNER avec le window 0 de description (« dialogue et menu fusionnés »).
+  // Adaptation moteur : on NE libère PAS globalement les buffers ici. Cf. [[pitfall-window-placeholder-flush-erases-frame]].
 }
 // :4256 UpdateBoxToSendMons — mémorise la boîte courante (flag « box full » = lot flags).
 function UpdateBoxToSendMons(): void {
