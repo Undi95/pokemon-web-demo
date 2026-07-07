@@ -1971,8 +1971,11 @@ function InitCursorItemIcon(): void {
     if (sInPartyMenu) TryLoadItemIconAtPos(CURSOR_AREA_IN_PARTY, GetCursorPosition());
     else TryLoadItemIconAtPos(CURSOR_AREA_IN_BOX, GetCursorPosition());
   }
-  if (s.movingItemId !== ITEM_NONE) {
-    InitItemIconInCursor(s.movingItemId);
+  // :4387 — lit sMovingItemId (var MODULE persistante, mémorisée par Task_ChangeScreen au départ vers
+  // le résumé/sac), PAS s.movingItemId (sStorage recréé au retour = 0) : restaure l'icône de l'objet
+  // tenu + le poing du curseur à la réouverture du PC.
+  if (sMovingItemId !== ITEM_NONE) {
+    InitItemIconInCursor(sMovingItemId);
     StartCursorAnim(CURSOR_ANIM_FIST);
   }
 }
@@ -5870,9 +5873,25 @@ function Task_ReshowPokeStorage(_taskId: number): void {
       break;
     case 1:
       if (!UpdatePaletteFade()) {
-        // reopening ITEM_FROM_BAG + item : PrintMessage(MSG_ITEM_IS_HELD) → lot messages (tâche #3).
-        SetPokeStorageTask(Task_PokeStorageMain);
+        // 1:1 :2229 — au retour du sac (SCREEN_CHANGE_ITEM_FROM_BAG) avec un objet choisi, affiche
+        // « … tient un/e … » avant de rendre la main ; sinon reprend la boucle directement.
+        if (sWhichToReshow === SCREEN_CHANGE_ITEM_FROM_BAG - 1 && gSpecialVar.ItemId !== ITEM_NONE) {
+          PrintMessage(MSG_ITEM_IS_HELD);
+          s.state++;
+        } else {
+          SetPokeStorageTask(Task_PokeStorageMain);
+        }
       }
+      break;
+    case 2:  // 1:1 :2240 — attend la fin du BG copy + A/B pour valider le message.
+      if (!IsDma3ManagerBusyWithBgCopy() && (gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        ClearBottomWindow();
+        s.state++;
+      }
+      break;
+    case 3:  // 1:1 :2247 — message effacé, reprend la boucle principale.
+      if (!IsDma3ManagerBusyWithBgCopy())
+        SetPokeStorageTask(Task_PokeStorageMain);
       break;
   }
 }
@@ -6360,7 +6379,10 @@ function Task_ChangeScreen(_taskId: number): void {
   if (!sStorage) return;
   const s = sStorage;
   const screenChangeType = s.screenChangeType;
-  sMovingItemId = 0;  // ITEM_NONE (MOVE_ITEMS = lot items)
+  // 1:1 :3737 — si on quitte l'écran (résumé/sac) en TENANT un objet (mode DÉPLACER OBJETS), on le
+  // mémorise pour restaurer son icône dans le curseur au retour (lu par InitCursorItemIcon). Sinon rien.
+  if (s.boxOption === OPTION_MOVE_ITEMS && IsMovingItem()) sMovingItemId = GetMovingItemId();
+  else sMovingItemId = 0;  // ITEM_NONE
   switch (screenChangeType) {
     case SCREEN_CHANGE_EXIT_BOX:
     default:
