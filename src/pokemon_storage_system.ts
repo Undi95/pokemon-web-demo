@@ -16,10 +16,11 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_HP,
   MON_DATA_SANITY_HAS_SPECIES, MON_DATA_KNOWN_MOVES, MON_DATA_PERSONALITY, MON_DATA_SPECIES_OR_EGG,
+  MON_DATA_SANITY_IS_EGG, MON_DATA_SANITY_IS_BAD_EGG,
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
-import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, SetMonData, type Pokemon } from './pokemon';
+import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, SetMonData, GetLevelFromBoxMonExp, CreateBoxMon, BoxMonToMon, type Pokemon } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
@@ -906,22 +907,141 @@ export function GetBoxedMonPtr(boxId: number, boxPosition: number) {
   return GetPokemonStorage().boxes[boxId]?.[boxPosition] ?? null;
 }
 
-// pokemon_storage.c — accès data box via notre modèle unifié (Pokemon == BoxPokemon ;
-// slot vide = null). GetCurrentBoxMonData = GetBoxMonDataAt(StorageGetCurrentBox()).
-function GetCurrentBoxMonData(boxPos: number, field: number): number {
-  const mon = _boxMonAt(StorageGetCurrentBox(), boxPos);
-  return mon ? (GetMonData(mon as never, field) as number) : 0; // slot vide → SPECIES_NONE/0
+// pokemon_storage.c :9392-9640 — accesseurs box data (modèle unifié : boxes[id][pos] =
+// Pokemon|null ; GetBoxMonData(mon,req) = GetMonData ; slot vide = null).
+/** 1:1 `void UNUSED BackupPokemonStorage(void)` (:9392) — corps vide (leftover FRLG). */
+function BackupPokemonStorage(): void { /* //*dest = *gPokemonStoragePtr; */ }
+/** 1:1 `void UNUSED RestorePokemonStorage(void)` (:9398) — corps vide (leftover FRLG). */
+function RestorePokemonStorage(): void { /* //*gPokemonStoragePtr = *src; */ }
+/** 1:1 `u32 GetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request)` (:9415). */
+function GetBoxMonDataAt(boxId: number, boxPosition: number, request: number): number {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    return mon ? (GetMonData(mon as never, request) as number) : 0;
+  }
+  return 0;
 }
+/** 1:1 `void SetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, const void *value)` (:9423). */
+function SetBoxMonDataAt(boxId: number, boxPosition: number, request: number, value: unknown): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    if (mon) SetMonData(mon as never, request, value as never);
+  }
+}
+/** 1:1 `u32 GetCurrentBoxMonData(u8 boxPosition, s32 request)` (:9429). */
+function GetCurrentBoxMonData(boxPosition: number, request: number): number {
+  return GetBoxMonDataAt(StorageGetCurrentBox(), boxPosition, request);
+}
+/** 1:1 `void SetCurrentBoxMonData(u8 boxPosition, s32 request, const void *value)` (:9434). */
+function SetCurrentBoxMonData(boxPosition: number, request: number, value: unknown): void {
+  SetBoxMonDataAt(StorageGetCurrentBox(), boxPosition, request, value);
+}
+/** 1:1 pokemon.c `GetBoxMonData(&boxMon, req)` sur notre modèle unifié (mon objet | null). */
 function GetBoxMonData(mon: Pokemon | null, field: number): number {
   return mon ? (GetMonData(mon as never, field) as number) : 0;
 }
-function SetBoxMonAt(boxId: number, boxPos: number, src: Pokemon): void {
-  const box = GetPokemonStorage().boxes[boxId];
-  if (box) box[boxPos] = src; // *src : la copie isolée de m.boxMons[i]
+/** 1:1 `void GetBoxMonNickAt(u8 boxId, u8 boxPosition, u8 *dst)` (:9439) — nick = string (JS). */
+function GetBoxMonNickAt(boxId: number, boxPosition: number): string {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    return mon ? (mon.nickname ?? '') : '';
+  }
+  return '';
 }
-function ZeroBoxMonAt(boxId: number, boxPos: number): void {
-  const box = GetPokemonStorage().boxes[boxId];
-  if (box) box[boxPos] = null; // ZeroBoxMonData → slot vide (notre modèle : null)
+/** 1:1 `u32 GetBoxMonLevelAt(u8 boxId, u8 boxPosition)` (:9447). */
+function GetBoxMonLevelAt(boxId: number, boxPosition: number): number {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    if (mon && GetMonData(mon as never, MON_DATA_SANITY_HAS_SPECIES)) return GetLevelFromBoxMonExp(mon as never);
+  }
+  return 0;
+}
+/** 1:1 `u32 GetAndCopyBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, void *dst)` (:9467). */
+function GetAndCopyBoxMonDataAt(boxId: number, boxPosition: number, request: number, dst: unknown): number {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    return mon ? (GetMonData(mon as never, request, dst as never) as number) : 0;
+  }
+  return 0;
+}
+/** 1:1 `void SetBoxMonAt(u8 boxId, u8 boxPosition, struct BoxPokemon *src)` (:9475). */
+function SetBoxMonAt(boxId: number, boxPosition: number, src: Pokemon): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const box = GetPokemonStorage().boxes[boxId];
+    if (box) box[boxPosition] = src; // *src
+  }
+}
+/** 1:1 `void CopyBoxMonAt(u8 boxId, u8 boxPosition, struct BoxPokemon *dst)` (:9481). */
+function CopyBoxMonAt(boxId: number, boxPosition: number, dst: Pokemon): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    if (mon) CopyMon(dst, mon); // *dst = boxMon
+  }
+}
+/** 1:1 `void CreateBoxMonAt(u8 boxId, u8 boxPosition, u16 species, u8 level, u8 fixedIV,
+ *  u8 hasFixedPersonality, u32 personality, u8 otIDType, u32 otID)` (:9487). */
+function CreateBoxMonAt(boxId: number, boxPosition: number, species: number, level: number,
+  fixedIV: number, hasFixedPersonality: number, personality: number, otIDType: number, otID: number): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const box = GetPokemonStorage().boxes[boxId];
+    if (box) {
+      const mon = {} as Pokemon;
+      CreateBoxMon(mon as never, species, level, fixedIV, (hasFixedPersonality !== 0) as never, personality, otIDType as never, otID);
+      box[boxPosition] = mon;
+    }
+  }
+}
+/** 1:1 `void ZeroBoxMonAt(u8 boxId, u8 boxPosition)` (:9500) — slot vide = null (notre modèle). */
+function ZeroBoxMonAt(boxId: number, boxPosition: number): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const box = GetPokemonStorage().boxes[boxId];
+    if (box) box[boxPosition] = null;
+  }
+}
+/** 1:1 `void BoxMonAtToMon(u8 boxId, u8 boxPosition, struct Pokemon *dst)` (:9506). */
+function BoxMonAtToMon(boxId: number, boxPosition: number, dst: Pokemon): void {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    if (mon) BoxMonToMon(mon as never, dst as never);
+  }
+}
+/** 1:1 `s16 AdvanceStorageMonIndex(struct BoxPokemon *boxMons, u8 currIndex, u8 maxIndex, u8 mode)`
+ *  (:9543) — prochain mon (résumé) : mode 0/1 avant, 2/3 arrière ; 1/3 inclut œufs. */
+function AdvanceStorageMonIndex(boxMons: (Pokemon | null)[], currIndex: number, maxIndex: number, mode: number): number {
+  const direction = (mode === 0 || mode === 1) ? 1 : -1;
+  if (mode === 1 || mode === 3) {
+    for (let i = ((currIndex << 24) >> 24) + direction; i >= 0 && i <= maxIndex; i += direction) {
+      if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) !== SPECIES_NONE) return i;
+    }
+  } else {
+    for (let i = ((currIndex << 24) >> 24) + direction; i >= 0 && i <= maxIndex; i += direction) {
+      if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) !== SPECIES_NONE
+        && !GetBoxMonData(boxMons[i], MON_DATA_IS_EGG)) return i;
+    }
+  }
+  return -1;
+}
+/** 1:1 `bool32 CheckBoxMonSanityAt(u32 boxId, u32 boxPosition)` (:9588). */
+function CheckBoxMonSanityAt(boxId: number, boxPosition: number): boolean {
+  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
+    const mon = _boxMonAt(boxId, boxPosition);
+    return !!(mon && GetMonData(mon as never, MON_DATA_SANITY_HAS_SPECIES)
+      && !GetMonData(mon as never, MON_DATA_SANITY_IS_EGG)
+      && !GetMonData(mon as never, MON_DATA_SANITY_IS_BAD_EGG));
+  }
+  return false;
+}
+/** 1:1 `u32 CountAllStorageMons(void)` (:9618) — compte mons + œufs de toutes les boîtes. */
+function CountAllStorageMons(): number {
+  const boxes = GetPokemonStorage().boxes;
+  let count = 0;
+  for (let i = 0; i < TOTAL_BOXES_COUNT; i++) {
+    for (let j = 0; j < IN_BOX_COUNT; j++) {
+      const mon = boxes[i]?.[j];
+      if (mon && (GetMonData(mon as never, MON_DATA_SANITY_HAS_SPECIES) || GetMonData(mon as never, MON_DATA_SANITY_IS_EGG))) count++;
+    }
+  }
+  return count;
 }
 
 /** 1:1 décomp `void SetBoxMonNickAt(u8 boxId, u8 boxPosition, const u8 *nick)`
