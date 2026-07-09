@@ -48,3 +48,8 @@ DEV_LOG.md
 ROADMAP.md
 *_NOTES.md
 *_SCRATCH.md
+
+# Rapports d'audit JSON = artefacts régénérables (scripts/audit-*.cjs, cartograph…).
+# Les synthèses .md/.txt restent trackées ; les .json se régénèrent à la demande.
+audit-reports/**/*.json
+audit-coverage.json
