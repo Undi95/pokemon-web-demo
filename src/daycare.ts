@@ -34,7 +34,7 @@ import {
 import { CompactPartySlots } from './pokemon_storage_system';
 // 1:1 décomp party_menu.c:4688 `ItemIdToBattleMoveId` — feuille tmhm-moves.ts
 // (consommé par BuildEggMoveset, boucle CT/CS du père).
-import { ItemIdToBattleMoveId as _ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { ItemIdToBattleMoveId as _ItemIdToBattleMoveId } from './party_menu';
 import { resolveDecompConstant, reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   OT_ID_PLAYER_ID, EGG_GROUP_DITTO, EGG_GROUP_NO_EGGS_DISCOVERED, EGG_GROUPS_PER_MON,

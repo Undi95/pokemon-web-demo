@@ -99,7 +99,7 @@ import { GetBattlerAtPosition } from './battle_anim_mons';
 import { getSpeciesInfo, gBattleMoves, gSpeciesInfo, getTmhmLearnset, getLevelUpLearnset,
   getExperienceForLevel, gSpeciesNames, getEvolutions } from './engine/data/game-data';
 // sTMHMMoves : table FOREACH_TMHM (leaf, n'importe que constants/items) — pour CanSpeciesLearnTMHM.
-import { sTMHMMoves } from './engine/pokemon/tmhm-moves';
+import { sTMHMMoves } from './data/party_menu';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { Random } from './random';  // leaf (PRNG) — pour AdjustFriendship (gate WALKING).
 // Constantes MON_DATA_* : enum 1:1 de son foyer-header include/pokemon.ts (= include/pokemon.h).

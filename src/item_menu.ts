@@ -13,7 +13,7 @@ import { getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList
 import { SetCursorWithinListBounds, SetCursorScrollWithinListBounds, MenuHelpers_IsLinkActive, type ListPos } from './menu_helpers';
 import { gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL, CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND, gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor, ListMenuSetTemplateField, type ListMenuTemplate, type ListMenu } from './list_menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../harness/runtime/data-tables';
-import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { ItemIdToBattleMoveId } from './party_menu';
 import { getMoveName, getMove } from './engine/data/game-data';
 import { GetItemName, GetItemDescription, GetItemImportance } from './item';
 import { ItemIsMail } from './mail_data';

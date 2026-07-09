@@ -69,7 +69,8 @@ import {
 } from './pokemon';
 // 1:1 décomp party_menu.c:4688 ItemIdToBattleMoveId + sa table sTMHMMoves
 // (relocalisées en feuille pure engine/pokemon/tmhm-moves.ts, cf. en-tête là-bas).
-import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { sTMHMMoves as _sTMHMMoves_TM } from './data/party_menu';
+import { ITEM_TM01 as _ITEM_TM01_TM } from '../include/constants/items';
 import { ITEM_TM01, ITEM_HM01 } from '../include/constants/items';
 import { FRIENDSHIP_EVENT_LEARN_TMHM, MON_HAS_MAX_MOVES } from '../include/constants/pokemon';
 import { BeginEvolutionScene, SetCB2AfterEvolution } from './evolution_scene';
@@ -4523,3 +4524,16 @@ export function TickPartyScreen(_newKeys: number): void {
 // posés par le module PROPRIÉTAIRE (party_menu.c est le foyer des deux fns).
 (globalThis as Record<string, unknown>).__ChooseMonForDaycare = ChooseMonForDaycare;
 (globalThis as Record<string, unknown>).__GetCursorSelectionMonId = GetCursorSelectionMonId;
+
+// ─── ItemIdToBattleMoveId 1:1 (party_menu.c:4688) — ex-tmhm-moves.ts (lot 10) ──
+/** 1:1 décomp `party_menu.c:4688` :
+ *    u16 ItemIdToBattleMoveId(u16 item) {
+ *      u16 tmNumber = item - ITEM_TM01;
+ *      return sTMHMMoves[tmNumber];
+ *    }
+ *  Retour = identifiant enum move ("MOVE_X") 1:1-sém (cf. en-tête) ;
+ *  `gMoveNames[...]` côté appelant = `getMoveName(thisResult)`. */
+export function ItemIdToBattleMoveId(item: number): string {
+  const tmNumber = item - _ITEM_TM01_TM;
+  return _sTMHMMoves_TM[tmNumber];
+}

@@ -31,7 +31,7 @@ import {
 } from './engine/battle/party-storage';
 import { PARTY_SIZE } from '../include/constants/global';
 import { gSpeciesInfo, getMoveName } from './engine/data/game-data';
-import { ItemIdToBattleMoveId } from './engine/pokemon/tmhm-moves';
+import { ItemIdToBattleMoveId } from './party_menu';
 import { GetPlayerNameString, setStringVar } from '../include/text';
 import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';

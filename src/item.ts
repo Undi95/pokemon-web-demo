@@ -7,7 +7,7 @@ import {
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
 } from '../harness/runtime/data-tables';
-import { sTMHMMoves as _sTMHMMoves } from './engine/pokemon/tmhm-moves';
+import { sTMHMMoves as _sTMHMMoves } from './data/party_menu';
 
 /** items.json key d'un itemId numérique (= modèle move-named du projet :
  *  "ITEM_TM_FOCUS_PUNCH" pour TM01, "ITEM_HM_CUT" pour HM01) — miroir de

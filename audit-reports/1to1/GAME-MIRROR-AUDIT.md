@@ -16,15 +16,11 @@
 | fichier engine | → game/ | nos fn | match | pureté | complét. | divergence |
 |---|---|---|---|---|---|---|
 
-## 🟡 Partiels (7) — décomp-nommés mais dispersés/hybrides (évaluer au cas par cas)
+## 🟡 Partiels (3) — décomp-nommés mais dispersés/hybrides (évaluer au cas par cas)
 
 | fichier engine | best .c | nos fn | match partout | pureté(p) | divergence |
 |---|---|---|---|---|---|
-| `engine/battle/battle-link-end.ts` | `battle_main.c` | 42 | 37 | 88% | 5 |
-| `engine/battle/battle-setup-helpers.ts` | `battle_setup.c` | 29 | 22 | 76% | 7 |
 | `engine/battle/constants.ts` | `—` | 22 | 22 | 100% | 0 |
-| `engine/battle/data/experience-tables.ts` | `—` | 11 | 8 | 73% | 3 |
-| `engine/bag/bag-pockets.ts` | `item.c` | 10 | 6 | 60% | 4 |
 | `engine/script/script-vars.ts` | `event_data.c` | 9 | 6 | 67% | 3 |
 | `engine/field/region-map-data.ts` | `region_map.c` | 8 | 5 | 63% | 3 |
 
