@@ -596,7 +596,7 @@ import {
   MAX_LEVEL,
   getLevelFromExp,
   getExpForLevel,
-} from './engine/battle/data/experience-tables';
+} from './data/pokemon/experience_tables';
 import {
   GetNatureFromPersonality as _getNatureFromPersonalityN34,
 } from './engine/battle/data/flavor-compat';

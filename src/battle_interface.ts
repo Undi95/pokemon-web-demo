@@ -891,7 +891,7 @@ import {
   MON_DATA_SPECIES, MON_DATA_NICKNAME,
 } from './engine/battle/party-storage';
 import { gBattlerPartyIndexes } from './engine/battle/state';
-import { getExpForLevel } from './engine/battle/data/experience-tables';
+import { getExpForLevel } from './data/pokemon/experience_tables';
 import { getSpeciesGrowthRate, GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { GetBattlerPosition } from './engine/battle/util';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_WALLY_TUTORIAL } from './engine/battle/constants';

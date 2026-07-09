@@ -12,7 +12,7 @@
 
 import { getSpeciesInfo } from '../../data/game-data';
 import * as SpeciesConsts from '../../../../include/constants/species';
-import { GROWTH_MEDIUM_FAST } from './experience-tables';
+import { GROWTH_MEDIUM_FAST } from '../../../data/pokemon/experience_tables';
 
 /** 1:1 décomp constants/pokemon_types.h — TYPE_* enum. */
 const _typeNameToNumber: Record<string, number> = {

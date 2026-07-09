@@ -1,24 +1,23 @@
 /**
- * battle/data/experience-tables.ts — `gExperienceTables[]` 1:1 décomp.
- *
- * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/data/pokemon/experience_tables.h`.
+ * experience_tables.ts — miroir 1:1 décomp `src/data/pokemon/experience_tables.h`
+ * (`gExperienceTables[]`). Ex-`engine/battle/data/experience-tables.ts`
+ * (unification miroir : les data vivent sous src/data/ comme dans le décomp).
  *
  * 6 growth groups × 101 levels (MAX_LEVEL = 100, indexed 0..100) = 606 entries.
- *
  * Computé à la volée à partir des formules décomp pour 1:1 strict (= pas de
  * risque de drift vs valeurs hardcoded).
  */
 
-// ─── GROWTH_* enum (constants/pokemon.h:216-221) — 1:1 décomp ─────────────
-export const GROWTH_MEDIUM_FAST = 0;
-export const GROWTH_ERRATIC     = 1;
-export const GROWTH_FLUCTUATING = 2;
-export const GROWTH_MEDIUM_SLOW = 3;
-export const GROWTH_FAST        = 4;
-export const GROWTH_SLOW        = 5;
+// GROWTH_* / MAX_LEVEL : source unique = include/constants/pokemon.ts (miroir
+// header, constants/pokemon.h:216-221) — l'ex-leaf les DUPLIQUAIT. Ré-exportés
+// pour les importeurs existants.
+export {
+  GROWTH_MEDIUM_FAST, GROWTH_ERRATIC, GROWTH_FLUCTUATING,
+  GROWTH_MEDIUM_SLOW, GROWTH_FAST, GROWTH_SLOW, MAX_LEVEL,
+} from '../../../include/constants/pokemon';
+import { MAX_LEVEL } from '../../../include/constants/pokemon';
 
 export const NUM_GROWTH_TABLES = 6;
-export const MAX_LEVEL = 100;
 
 // ─── Helpers macros 1:1 décomp ─────────────────────────────────────────────
 function _CUBE(n: number): number { return n * n * n; }

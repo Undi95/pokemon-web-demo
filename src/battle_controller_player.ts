@@ -120,7 +120,7 @@ import {
 } from './engine/battle/battle-sprites-data';
 import { B_ANIM_SWITCH_OUT_PLAYER_MON } from '../include/constants/battle_anim';
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from './engine/battle/constants';
-import { getExpForLevel } from './engine/battle/data/experience-tables';
+import { getExpForLevel } from './data/pokemon/experience_tables';
 import { getSpeciesGrowthRate } from './engine/battle/data/species-runtime';
 import { LoadPalette, BG_PLTT_ID, getRuntime, SpriteCallbackDummy, PlayFanfare } from '../harness/runtime/decomp-globals';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
