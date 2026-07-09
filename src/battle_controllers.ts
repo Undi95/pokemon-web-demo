@@ -1180,32 +1180,15 @@ export function BtlController_EmitResetActionMoveSelection(bufferId: number, cas
 
 // ─── UI/Input stubs ─────────────────────────────────────────────────────────
 
-/** 1:1 décomp `HandleBattleWindow(xStart, yStart, xEnd, yEnd, flags)`
- *  (battle_script_commands.c:10156-10202) : dessine (WINDOW_CLEAR efface) le
- *  CADRE de fenêtre yes/no dans le tilemap BG0 (BG1 si WINDOW_BG1) — tiles
- *  0x22-0x2A du charset textbox combat, palette 1 (entrées 0x1022-0x102A).
- *  `CopyToBgTilemapBufferRect_ChangePalette(..., 0x11)` = palette 17 → default
- *  de CopyTileMapEntry (bg.c) = copie l'entrée SRC telle quelle. Les x/y combat
- *  sont tous < 32 → index tilemap linéaire y*32+x (vrai pour tout screenSize). */
-export function HandleBattleWindow(
-  xStart: number, yStart: number, xEnd: number, yEnd: number, flags: number,
-): void {
-  const rt = _getRuntimeGba();
-  if (!rt) return;
-  const bg = (flags & 2 /* WINDOW_BG1 */) ? 1 : 0;
-  const tilemap = rt.gba.bg(bg as 0 | 1).tilemap;
-  for (let destY = yStart; destY <= yEnd; destY++) {
-    for (let destX = xStart; destX <= xEnd; destX++) {
-      let v: number;
-      if (destY === yStart) v = destX === xStart ? 0x1022 : destX === xEnd ? 0x1024 : 0x1023;
-      else if (destY === yEnd) v = destX === xStart ? 0x1028 : destX === xEnd ? 0x102A : 0x1029;
-      else v = destX === xStart ? 0x1025 : destX === xEnd ? 0x1027 : 0x1026;
-      if (flags & 1 /* WINDOW_CLEAR */) v = 0;
-      const idx = destY * 32 + destX;
-      if (idx >= 0 && idx < tilemap.length) tilemap[idx] = v;
-    }
-  }
-}
+// HandleBattleWindow / BattleCreateYesNoCursorAt / BattleDestroyYesNoCursorAt :
+// DISSOUS dans le miroir battle_script_commands.ts (leur .c : 10155-10223) à
+// l'unification. L'ex-copie locale testait `flags & 2` pour WINDOW_BG1 (bug
+// latent, la vraie valeur header = 1<<7) — corrigé par la version miroir.
+import {
+  HandleBattleWindow as _HandleBattleWindow_BSC,
+  BattleCreateYesNoCursorAt as _BattleCreateYesNoCursorAt_BSC,
+  BattleDestroyYesNoCursorAt as _BattleDestroyYesNoCursorAt_BSC,
+} from './battle_script_commands';
 
 /** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`
  *  (battle_message.c:1957-1961). R2 wire : delegate au battle-flow.ts
@@ -1365,29 +1348,8 @@ export function BattlePutTextOnWindowBytes(bytes: Uint8Array, windowId: number):
   }, frames * (1000 / 60)) as unknown) as number;
 }
 
-/** 1:1 décomp `BattleCreateYesNoCursorAt(cursorPosition)` (battle_script_commands.c:10204,
- *  version FR « French Difference ») : curseur ► = tiles 1/2 (palette 0) à
- *  x=0x18, y=9+2*pos dans le tilemap BG0. CopyBgTilemapBufferToVram(0) = no-op
- *  chez nous (compositor lit le buffer direct). */
-export function BattleCreateYesNoCursorAt(cursorPosition: number): void {
-  const rt = _getRuntimeGba();
-  if (!rt) return;
-  const tilemap = rt.gba.bg(0).tilemap;
-  const y = 9 + 2 * cursorPosition;
-  tilemap[y * 32 + 0x18] = 1;
-  tilemap[(y + 1) * 32 + 0x18] = 2;
-}
-
-/** 1:1 décomp `BattleDestroyYesNoCursorAt(cursorPosition)` (:10215, FR) :
- *  ré-écrit l'intérieur de cadre 0x1016 (tile 0x16, palette 1) sur les 2 tuiles. */
-export function BattleDestroyYesNoCursorAt(cursorPosition: number): void {
-  const rt = _getRuntimeGba();
-  if (!rt) return;
-  const tilemap = rt.gba.bg(0).tilemap;
-  const y = 9 + 2 * cursorPosition;
-  tilemap[y * 32 + 0x18] = 0x1016;
-  tilemap[(y + 1) * 32 + 0x18] = 0x1016;
-}
+// BattleCreateYesNoCursorAt / BattleDestroyYesNoCursorAt : cf. bloc ci-dessus —
+// dissous dans battle_script_commands.ts (import alias _*_BSC pour le pont).
 
 /** 1:1 signature décomp `PlaySE(seId)` — route vers le moteur audio réel
  *  (`__PlaySE` exposé par decomp-globals ; pont globalThis = pas d'arête ESM). */
@@ -1471,7 +1433,7 @@ export { gBattleScripting };
   BattlePutTextOnWindowBytes,
   BattlePutTextOnWindow,
   // T5 : consommes par PlayerHandleYesNoBox/Input (acces lazy anti-cycle).
-  HandleBattleWindow,
-  BattleCreateYesNoCursorAt,
-  BattleDestroyYesNoCursorAt,
+  HandleBattleWindow: _HandleBattleWindow_BSC,
+  BattleCreateYesNoCursorAt: _BattleCreateYesNoCursorAt_BSC,
+  BattleDestroyYesNoCursorAt: _BattleDestroyYesNoCursorAt_BSC,
 };

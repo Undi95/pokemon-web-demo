@@ -55,9 +55,9 @@ import { ScanlineEffect_Stop, ScanlineEffect_InitHBlankDmaTransfer } from './sca
 import { battleInitVideo1to1 } from './battle_bg';
 import { AllocateMonSpritesGfx, FreeMonSpritesGfx, gMonSpritesGfxPtr, MON_PIC_SIZE } from './battle_gfx_sfx_util';
 import {
-  HandleBattleWindow, YESNOBOX_X_Y, WINDOW_CLEAR,
-  BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt,
-} from './engine/battle/battle-window-frame';
+  HandleBattleWindow, BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt,
+} from './battle_script_commands';
+import { YESNOBOX_X_Y, WINDOW_CLEAR } from '../include/battle_script_commands';
 import { BattlePutTextOnWindow, BattlePutTextOnWindowBytes } from './battle_controllers';
 import {
   BufferStringBattle, gDisplayedStringBattle,

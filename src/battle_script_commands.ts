@@ -173,8 +173,6 @@ import {
 import {
   A_BUTTON,
   B_BUTTON,
-  BattleCreateYesNoCursorAt,
-  BattleDestroyYesNoCursorAt,
   BattlePutTextOnWindow,
   BtlController_EmitBallThrowAnim as _BtlController_EmitBallThrowAnim_HBT,
   BtlController_EmitBattleAnimation,
@@ -204,7 +202,6 @@ import {
   BtlController_EmitTrainerSlideBack,
   DPAD_DOWN,
   DPAD_UP,
-  HandleBattleWindow,
   JOY_NEW,
   BtlController_EmitChoosePokemon,
   BtlController_EmitLinkStandbyMsg,
@@ -587,11 +584,6 @@ import {
   TYPE_ROCK,
   TYPE_STEEL,
   TYPE_WATER,
-  WINDOW_CLEAR,
-  YESNOBOX_X_END,
-  YESNOBOX_X_START,
-  YESNOBOX_Y_END,
-  YESNOBOX_Y_START,
   sEnvironmentToType,
   sMovesForbiddenToCopy,
   sNaturePowerMoves,
@@ -13853,4 +13845,62 @@ export function AI_TypeCalc(move: number, targetSpecies: number, targetAbility: 
     ref.flags |= MOVE_RESULT_DOESNT_AFFECT_FOE;
   }
   return ref.flags;
+}
+
+// ─── HandleBattleWindow + curseurs yes/no 1:1 (battle_script_commands.c:10155-10223) ──
+// Rapatriés à l'unification miroir : l'ex-copie `engine/battle/battle-window-frame.ts`
+// (voie FillBgTilemapBufferRect) et l'ex-copie de battle_controllers.ts (écriture
+// tilemap directe, bug latent `flags & 2` pour WINDOW_BG1 au lieu de 1<<7) sont
+// DISSOUTES ici. Les deux écrivaient le même buffer (`rt.gba.bg(n).tilemap`) —
+// FillBgTilemapBufferRect est la voie 1:1 (le décomp passe par bg.c :
+// `CopyToBgTilemapBufferRect_ChangePalette(bg, &var, x, y, 1, 1, 0x11)`).
+import { FillBgTilemapBufferRect as _FillBgTilemapBufferRect_HBW, CopyBgTilemapBufferToVram as _CopyBgTilemapBufferToVram_HBW } from './window';
+import { WINDOW_CLEAR, WINDOW_BG1, YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END } from '../include/battle_script_commands';
+
+/** Écrit une entrée de tilemap décomp-style (`var` = tuile | palette<<12, ex 0x1022).
+ *  1:1 `CopyToBgTilemapBufferRect_ChangePalette(bg, &var, x, y, 1, 1, 0x11)` —
+ *  mode 0x11 > 15 = garder la palette embarquée dans l'entrée. */
+function _writeTilemapVar(bgIdx: number, varEntry: number, x: number, y: number): void {
+  _FillBgTilemapBufferRect_HBW(bgIdx, varEntry & 0x3ff, x, y, 1, 1, (varEntry >> 12) & 0xf);
+}
+
+/** 1:1 décomp `HandleBattleWindow(u8 xStart, u8 yStart, u8 xEnd, u8 yEnd, u8 flags)`
+ *  (battle_script_commands.c:10155). Cadre tuilé (0x1022-0x102A, palette 1) dans le
+ *  tilemap BG (BG1 si WINDOW_BG1=1<<7, sinon BG0). WINDOW_CLEAR → efface (tuile 0). */
+export function HandleBattleWindow(
+  xStart: number, yStart: number, xEnd: number, yEnd: number, flags: number,
+): void {
+  const bgIdx = (flags & WINDOW_BG1) ? 1 : 0;
+  for (let destY = yStart; destY <= yEnd; destY++) {
+    for (let destX = xStart; destX <= xEnd; destX++) {
+      let varEntry: number;
+      if (destY === yStart) {
+        varEntry = destX === xStart ? 0x1022 : destX === xEnd ? 0x1024 : 0x1023; // haut : ╔ ═ ╗
+      } else if (destY === yEnd) {
+        varEntry = destX === xStart ? 0x1028 : destX === xEnd ? 0x102a : 0x1029; // bas : ╚ ═ ╝
+      } else {
+        varEntry = destX === xStart ? 0x1025 : destX === xEnd ? 0x1027 : 0x1026; // milieu : ║ · ║
+      }
+      if (flags & WINDOW_CLEAR) varEntry = 0;
+      _writeTilemapVar(bgIdx, varEntry, destX, destY);
+    }
+  }
+}
+
+/** 1:1 décomp `BattleCreateYesNoCursorAt(u8 cursorPosition)` (battle_script_commands.c:10203,
+ *  version FR) : curseur ► = tuiles 1 puis 2 (palette 0), colonne 0x18=24, lignes 9+2*pos. */
+export function BattleCreateYesNoCursorAt(cursorPosition: number): void {
+  const y = 9 + 2 * cursorPosition;
+  _writeTilemapVar(0, 0x0001, 0x18, y);      // src[0] = 1
+  _writeTilemapVar(0, 0x0002, 0x18, y + 1);  // src[1] = 2
+  _CopyBgTilemapBufferToVram_HBW(0);
+}
+
+/** 1:1 décomp `BattleDestroyYesNoCursorAt(u8 cursorPosition)` (battle_script_commands.c:10214) :
+ *  réécrit la tuile intérieure 0x016 (palette 1) à l'emplacement du curseur. */
+export function BattleDestroyYesNoCursorAt(cursorPosition: number): void {
+  const y = 9 + 2 * cursorPosition;
+  _writeTilemapVar(0, 0x1016, 0x18, y);      // src[0] = 0x1016
+  _writeTilemapVar(0, 0x1016, 0x18, y + 1);  // src[1] = 0x1016
+  _CopyBgTilemapBufferToVram_HBW(0);
 }

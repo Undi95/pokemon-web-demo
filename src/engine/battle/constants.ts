@@ -478,16 +478,13 @@ export const MSG_DISPLAY      = 7;
 export const B_WIN_MSG   = 0;
 export const B_WIN_YESNO = 12;
 
-// ─── Battle window flags (battle_script_commands.h:7-8) — 1:1 décomp ──────
-export const WINDOW_CLEAR = 1 << 0;
-export const WINDOW_BG1   = 1 << 7;
-
-// ─── YESNOBOX_X_Y (battle_script_commands.h:11) — 1:1 décomp ───────────────
-// Macro expands to `23, 8, 29, 13` (= 4-arg list for HandleBattleWindow xStart yStart xEnd yEnd).
-export const YESNOBOX_X_START = 23;
-export const YESNOBOX_Y_START = 8;
-export const YESNOBOX_X_END   = 29;
-export const YESNOBOX_Y_END   = 13;
+// ─── Battle window flags + YESNOBOX (battle_script_commands.h:7-11) ────────
+// Source unique : include/battle_script_commands.ts (header-miroir). Ré-exports
+// pour les importeurs existants de ce fourre-tout (à re-router à sa dissolution).
+export {
+  WINDOW_CLEAR, WINDOW_BG1,
+  YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END,
+} from '../../../include/battle_script_commands';
 
 // ─── B_COMM_TO_CONTROLLER (battle_controllers.h:115, enum BattleBufferCommands) ──
 export const B_COMM_TO_CONTROLLER = 0;
