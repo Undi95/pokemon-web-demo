@@ -70,7 +70,7 @@ import { getSpeciesNameFr, loadTextTables, type TextTables } from '../harness/ru
 /** Type local (ex-voie V, supprimee) : l'ancien flow Birch ne retourne plus rien. */
 type BattleFlow = { tick(): boolean };
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
-import { StartFirstBattle } from './engine/battle/battle-setup-helpers';
+import { StartFirstBattle } from './battle_setup';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import {

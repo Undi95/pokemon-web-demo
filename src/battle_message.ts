@@ -54,7 +54,7 @@ import { getString } from './engine/ui/gba-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
 // -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).
-import { GetTrainerALoseText, getTrainerADefeatSpeech } from './engine/battle/battle-setup-helpers';
+import { GetTrainerALoseText, getTrainerADefeatSpeech } from './battle_setup';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import type { BattleMsgData } from './engine/battle/battle-event-queue';
 import { getMoveName as _getMoveNameFr } from './engine/data/game-data';

@@ -461,7 +461,12 @@ import { SYMBOLS_TABLE } from '../decomp-data/auto-asm-bytecode/_symbols-table';
 // Auto-init au module load (= chaque instance HMR/dyn-import a son SYMBOLS_BY_ID
 // populé directement). Sinon : opcodes natifs setbyte/addbyte etc. trouvent
 // SYMBOLS_BY_ID vide → write no-op silent → loops infinis Intimidate etc.
-initMemoryMap();
+// ⚠️ via queueMicrotask : l'appel SYNCHRONE lisait BATTLE_STRING_ID_TABLES
+// (battle_message.ts, const) pendant un CYCLE d'éval ESM → TDZ au boot
+// (réordonnancement unification lot 8b). Le microtask s'exécute après l'éval
+// complète du graphe (bien avant tout opcode runtime) ; initMemoryMap reste
+// idempotent si un consommateur l'appelle avant.
+queueMicrotask(initMemoryMap);
 
 // Expose battler refs for debug.
 void gBattleMons;

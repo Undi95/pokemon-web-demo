@@ -31,7 +31,10 @@ import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { loadTileBin } from '../harness/gba/png-loader';
 import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from '../include/constants/songs';
-import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './fieldmap';
+import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './fieldmap';
+// NUM_TILES_TOTAL : depuis le header-miroir (leaf) — la const de src/fieldmap.ts
+// arrivait APRÈS field_door dans le cycle d'éval ESM (TDZ boot, unification lot 8b).
+import { NUM_TILES_TOTAL } from '../include/fieldmap';
 import { MB_ANIMATED_DOOR } from './engine/field/tilemap-loader';
 import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from './field_camera';
 import {

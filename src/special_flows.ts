@@ -8,7 +8,7 @@
  * sinon → invokeSpecial/callSpecial (special classique). Zéro divergence au swap Phase 5.
  */
 
-import { StartFirstBattle } from './engine/battle/battle-setup-helpers';
+import { StartFirstBattle } from './battle_setup';
 
 /** Poll d'overlay : ouvre l'UI (async) puis attend sa fermeture (= _runUIOverlay décomp). */
 function overlayPoll(open: () => Promise<{ isOpen: () => boolean }>): () => boolean {

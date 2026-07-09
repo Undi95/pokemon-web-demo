@@ -179,17 +179,14 @@ export class PaletteBuffer {
 }
 
 /** Helper : résout RGB(r, g, b) macro décomp = pack en RGB15. */
-export function RGB(r: number, g: number, b: number): number {
-  return ((b & 0x1F) << 10) | ((g & 0x1F) << 5) | (r & 0x1F);
-}
+import { RGB, RGB_BLACK, RGB_WHITE, RGB_WHITEALPHA } from '../../include/gba/defines';
+export { RGB, RGB_BLACK, RGB_WHITE, RGB_WHITEALPHA };
+// (défs déplacées au leaf include/gba/defines.ts — hotfix TDZ mail.ts, source unique)
 
 /** Helper : résout _RGB(r, g, b) macro = pareil que RGB. */
 export const _RGB = RGB;
 
 /** RGB_BLACK = 0, RGB_WHITE = 0x7FFF, RGB_WHITEALPHA = 0x8000 | 0x7FFF (special). */
-export const RGB_BLACK = 0;
-export const RGB_WHITE = 0x7FFF;
-export const RGB_WHITEALPHA = 0xFFFF;
 
 /** Convertit un RGBA8 (0-255) → RGB15. */
 export const rgba8ToRgb15Helper = rgba8ToRgb15;
@@ -197,7 +194,7 @@ export const rgba8ToRgb15Helper = rgba8ToRgb15;
 // ─── PLTT_SIZE_4BPP / PLTT_SIZE_8BPP / PLTT_SIZEOF / BG_PLTT_ID / OBJ_PLTT_ID ─
 /** 1:1 décomp constants. PLTT_SIZE_4BPP = 16 colors × 2 bytes = 32 bytes.
  *  PLTT_SIZEOF(N) = N × 2 bytes. BG_PLTT_ID(N) = N × 16 (indices). */
-export const PLTT_SIZE_4BPP = 32;
+export { PLTT_SIZE_4BPP } from '../../include/gba/defines';
 export const PLTT_SIZE_8BPP = 512;
 export function PLTT_SIZEOF(n: number): number { return n * 2; }
 

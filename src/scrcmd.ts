@@ -46,7 +46,7 @@ import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
   configureTrainerBattleCore, startTrainerBattleAndGetPoll,
   BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript } from './battle_setup';
 import type { TrainerArgSource } from './battle_setup';
-import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './engine/battle/battle-setup-helpers';
+import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './battle_setup';
 import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
 import { PlaySE, PlayFanfare, getRuntime, FadeInBGM } from '../harness/runtime/decomp-globals';
 import { FadeOutBGMTemporarily, IsBGMPausedOrStopped } from './sound';

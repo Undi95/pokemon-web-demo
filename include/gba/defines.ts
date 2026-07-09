@@ -79,3 +79,17 @@ export const PLTT_SIZE_8BPP_EXPR = "PLTT_SIZEOF(256)";
 export const INCLUDES = [
   'stddef.h',
 ] as const;
+
+// ─── RGB macros 1:1 (gba/defines.h) — ajout unification (hotfix TDZ mail.ts) ──
+// Leaf PUR (zéro import) : les tables top-level (sMailGraphics…) peuvent lire
+// ces constantes quel que soit l'ordre d'éval ESM — decomp-helpers (harness,
+// importe decomp-globals) les RÉ-EXPORTE pour ses importeurs historiques.
+/** 1:1 décomp `RGB(r, g, b)` = r | g<<5 | b<<10. */
+export function RGB(r: number, g: number, b: number): number {
+  return (r | (g << 5) | (b << 10)) & 0xFFFF;
+}
+export const RGB_BLACK = 0;
+export const RGB_WHITE = 0x7FFF;
+export const RGB_WHITEALPHA = 0xFFFF;
+/** 1:1 décomp `PLTT_SIZE_4BPP` = PLTT_SIZEOF(16) = 32 bytes. */
+export const PLTT_SIZE_4BPP = 32;

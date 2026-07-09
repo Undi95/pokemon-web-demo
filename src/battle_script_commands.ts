@@ -11085,7 +11085,9 @@ function _compareJump(caseID: number, lhs: number, rhs: number): boolean {
 }
 
 // Lazy boot memory map (= idempotent).
-initMemoryMap();
+// ⚠️ queueMicrotask : l'appel synchrone lisait BATTLE_STRING_ID_TABLES (battle_message)
+// pendant un cycle d'éval ESM → TDZ boot (cf. memory-map.ts, même fix). Idempotent.
+queueMicrotask(initMemoryMap);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

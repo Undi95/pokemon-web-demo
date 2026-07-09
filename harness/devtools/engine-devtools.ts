@@ -588,7 +588,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
     // VOIE L (depose voie V) : StartFirstBattle = 1:1 CB2_StartFirstBattle.
-    const helpers = await import('../../src/engine/battle/battle-setup-helpers');
+    const helpers = await import('../../src/battle_setup');
     const sbsMod = await import('../../src/engine/save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../../src/pokemon');           // foyer (CreateMon numérique)
@@ -618,7 +618,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     } else {
       speciesId = constMod.resolveDecompConstant('SPECIES_PIKACHU') ?? 0;
     }
-    const helpers = await import('../../src/engine/battle/battle-setup-helpers');
+    const helpers = await import('../../src/battle_setup');
     const sbsMod2 = await import('../../src/engine/save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../../src/pokemon');           // foyer (CreateMon numérique)

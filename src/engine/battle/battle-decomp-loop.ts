@@ -1342,7 +1342,7 @@ export async function harnessBootRivalBattle1(): Promise<void> {
   // 1:1 flux OW : trainerbattle_no_intro TRAINER_MAY_..., Route103_Text_MayDefeated
   // (Route103/scripts.inc:62) pose le lose text — sans ça la fin de combat affiche
   // le placeholder « B TRAINER1 LOSE TEXT » (verdict A/B, combat rival debug).
-  const bsh = await import('./battle-setup-helpers');
+  const bsh = await import('../../battle_setup');
   const scriptMod = await import('../../script');
   bsh.setTrainerADefeatSpeech(scriptMod.getText('Route103_Text_MayDefeated') ?? null);
   bootDecompBattleLoop(true);   // CreateNPCTrainerParty (au boot) genere la party rival depuis gTrainers
