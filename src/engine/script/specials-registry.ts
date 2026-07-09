@@ -125,7 +125,7 @@ import { CheckPartyMonHasHeldItem, HealPlayerParty } from '../../script_pokemon_
 import { GameClear, SetCB2WhiteOut } from '../../post_battle_event_funcs';
 import { SetMauvilleOldManObjEventGfx, GetCurrentMauvilleOldMan } from '../../mauville_old_man';
 import { gGameLanguage } from '../../main';
-import { GetPCBoxToSendMon } from '../pokemon/pc-box';
+import { GetPCBoxToSendMon } from '../../field_specials';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../../map_name_popup';
 import { SetCameraPanning, SetCameraPanningCallback, DrawWholeMapView } from '../../field_camera';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';

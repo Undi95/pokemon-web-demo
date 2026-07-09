@@ -23,7 +23,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from '../save/save-blocks';
 import type { PokemonStorage } from '../save/save-blocks';
 import { VarGet, VarSet, FlagClear } from '../script/script-vars';
-import { SetPCBoxToSendMon, GetPCBoxToSendMon } from '../pokemon/pc-box';
+import { SetPCBoxToSendMon, GetPCBoxToSendMon } from '../../field_specials';
 import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/runtime/decomp-constants';
 // getSpeciesInfo (id→info espèce) : lu par pokemonInstanceToPokemon / CopyMonToPC /
 // les setters de types. resolveDecompConstant/reverseDecompConstant (l.32) = ponts string↔id.

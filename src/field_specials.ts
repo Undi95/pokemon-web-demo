@@ -780,3 +780,18 @@ function _getCurrentPCLocation(): number {
   }
   return v;
 }
+
+// ─── sPCBoxToSendMon 1:1 (field_specials.c:118 + 3405-3413) — ex-pc-box.ts (lot 11b) ──
+
+/** 1:1 décomp `static EWRAM_DATA u8 sPCBoxToSendMon = 0` (field_specials.c:118). */
+let sPCBoxToSendMon = 0;
+
+/** 1:1 décomp `void SetPCBoxToSendMon(u8 boxId)` (field_specials.c:3405-3408). */
+export function SetPCBoxToSendMon(boxId: number): void {
+  sPCBoxToSendMon = boxId & 0xFF;
+}
+
+/** 1:1 décomp `u16 GetPCBoxToSendMon(void)` (field_specials.c:3410-3413). */
+export function GetPCBoxToSendMon(): number {
+  return sPCBoxToSendMon;
+}
