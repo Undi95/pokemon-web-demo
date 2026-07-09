@@ -27,7 +27,7 @@ void getRuntime;
 /** 1:1 décomp `GetOppositeDirection` : ré-exporté depuis la source unique
  *  direction-coords.ts (module de constantes pur). Le doublon local qui évaluait
  *  DIR_SOUTH de field_player_avatar au top-level fermait un cycle ESM/TDZ. */
-export { OPPOSITE_DIR } from '../field/direction-coords';
+export { OPPOSITE_DIR } from '../../event_object_movement';
 
 /** A_BUTTON = 0x01 (= 1:1 décomp gba/key.h). */
 export const A_BUTTON = 0x01;

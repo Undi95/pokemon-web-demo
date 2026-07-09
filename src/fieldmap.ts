@@ -67,7 +67,7 @@ import { GetSaveBlock1 } from './save';
 // Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
 // args (= élimine désync historique cam.x ≠ player.x).
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { DIR_TO_DX, DIR_TO_DY } from './engine/field/direction-coords';
+import { DIR_TO_DX, DIR_TO_DY } from './event_object_movement';
 import { BERRY_TREE_ID_BY_NAME } from '../include/constants/berry';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,

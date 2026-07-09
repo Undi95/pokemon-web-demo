@@ -49,7 +49,7 @@ import {
   COLLISION_VERTICAL_RAIL, COLLISION_HORIZONTAL_RAIL, COLLISION_NONE,
   COLLISION_IMPASSABLE, GetJumpMovementAction,
 } from './event_object_movement';
-import { MoveCoords, GetOppositeDirection } from './engine/field/direction-coords';
+import { MoveCoords, GetOppositeDirection } from './event_object_movement';
 import { MAP_TYPE_INDOOR } from '../include/constants/map_types';
 import { gMapHeader, MapGridGetMetatileBehaviorAt } from './fieldmap';
 import {
@@ -67,7 +67,7 @@ import { gBikeCycling } from './field_specials';
 import { MUS_CYCLING } from '../include/constants/songs';
 import { SE_BIKE_HOP } from '../include/constants/songs';
 import { PlaySE } from '../harness/runtime/decomp-globals';
-import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from './engine/field/direction-coords';
+import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NONE } from '../include/global.fieldmap';
 import { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON } from '../include/gba/io_reg';
 import {
   PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,

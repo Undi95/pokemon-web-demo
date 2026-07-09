@@ -73,7 +73,8 @@ import {
   GetFaceDirectionMovementAction,
   CameraObjectFreeze, ObjectEventClearHeldMovementIfActive, ObjectEventTurn, MoveObjectEventToMapCoords,
 } from './event_object_movement';
-import { MoveCoords, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from './engine/field/direction-coords';
+import { MoveCoords } from './event_object_movement';
+import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../include/global.fieldmap';
 import {
   SetPlayerAvatarStateMask, SetPlayerAvatarFieldMove, PlayerGetDestCoords,
   GetPlayerAvatarGraphicsIdByStateId, PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_STATE_SURFING,

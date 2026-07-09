@@ -105,7 +105,7 @@ import { MapGridGetElevationAt } from './fieldmap';
 import { LOCALID_PLAYER, LOCALID_NONE } from '../include/constants/event_objects';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript, TryRunCoordEventScript } from './script';
-import { DIR_TO_DX, DIR_TO_DY } from './engine/field/direction-coords';
+import { DIR_TO_DX, DIR_TO_DY } from './event_object_movement';
 // ProcessPlayerFieldInput : dispatch warp/rencontre via les helpers PROUVÉS (warp-system +
 // wild-encounter). Ces modules N'IMPORTENT PAS field-control-avatar → pas de nouveau cycle ESM.
 import {

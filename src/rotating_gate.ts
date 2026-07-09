@@ -12,7 +12,7 @@
  */
 
 import { gMapHeader, MapGridGetCollisionAt, MAP_OFFSET } from './fieldmap';
-import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from './engine/field/direction-coords';
+import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../include/global.fieldmap';
 
 // ─── Constants 1:1 décomp rotating_gate.c ──────────────────────────────────
 

@@ -91,10 +91,7 @@ import { gPlayerAvatar, GetPlayerFacingDirection } from './field_player_avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
-  DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
-  GetFaceDirectionAnimNum, GetMoveDirectionAnimNum, GetMoveDirectionFastAnimNum,
-  GetMoveDirectionFasterAnimNum, GetMoveDirectionFastestAnimNum,
-} from './engine/field/direction-coords';
+} from '../include/global.fieldmap';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from './engine/field/field-globals';
 import { FlagGet, FlagSet, VarGet } from './engine/script/script-vars';
 import { Random } from './random';
@@ -136,14 +133,206 @@ export const OBJECT_EVENTS_COUNT = 16;
 const sMovementDelaysMedium = [32, 64, 96, 128];
 const gStandardDirections = [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST];
 
-// Les anim-num getters par direction (GetFaceDirectionAnimNum, GetMoveDirectionAnimNum
-// + Fast/Faster/Fastest) + leurs tables 1:1 décomp (sFace/sMoveDirection*AnimNums,
-// event_object_movement.c:715-769) sont importés depuis `direction-coords.ts` (= fichier
-// foundation autonome, source unique → plus de dup). Appelés au module-load
-// (gMovementActionFuncs + _sDirectionAnimFuncsBySpeed) ; direction-coords n'importe rien
-// → son module est résolu AVANT le corps d'ici → pas de cycle/TDZ. Bonus 1:1 : la version
-// direction-coords couvre les diagonales NW/NE (= FACE_NORTH), là où les copies locales
-// retirées les approximaient en SOUTH via `?? 0`.
+// ─── Direction : vecteurs, opposés, anim nums (rapatriés de direction-coords.ts) ──
+// Unification miroir : dans le décomp ces tables/fonctions vivent DANS
+// event_object_movement.c (sDirectionToVectors :907, sOppositeDirections,
+// sFace/sMoveDirection*AnimNums :715-769, MoveCoords, GetOppositeDirection :4991,
+// Get*AnimNum :4495-4525). Les tables const sont définies ICI, avant leurs call
+// sites top-level (_sDirectionAnimFuncsBySpeed ne fait que RÉFÉRENCER les
+// fonctions hoistées → safe). Exportées : fieldmap/field_control_avatar (tables,
+// dette : le décomp les garde static et passe par MoveCoords) + bike/trainer_see/
+// field_effect_helpers/field_player_avatar (fonctions publiques du .c, 1:1).
+
+/** dx par direction. 1:1 décomp `sDirectionToVectors[N].x` (event_object_movement.c:907). */
+export const DIR_TO_DX: readonly number[] = [
+  /* DIR_NONE      */  0,
+  /* DIR_SOUTH     */  0,
+  /* DIR_NORTH     */  0,
+  /* DIR_WEST      */ -1,
+  /* DIR_EAST      */  1,
+  /* DIR_SOUTHWEST */ -1,
+  /* DIR_SOUTHEAST */  1,
+  /* DIR_NORTHWEST */ -1,
+  /* DIR_NORTHEAST */  1,
+];
+
+/** dy par direction. 1:1 décomp `sDirectionToVectors[N].y` (event_object_movement.c:907). */
+export const DIR_TO_DY: readonly number[] = [
+  /* DIR_NONE      */  0,
+  /* DIR_SOUTH     */  1,
+  /* DIR_NORTH     */ -1,
+  /* DIR_WEST      */  0,
+  /* DIR_EAST      */  0,
+  /* DIR_SOUTHWEST */  1,
+  /* DIR_SOUTHEAST */  1,
+  /* DIR_NORTHWEST */ -1,
+  /* DIR_NORTHEAST */ -1,
+];
+
+/** 1:1 décomp `sOppositeDirections` (event_object_movement.c) — indexé par DIR_*
+ *  directement (le décomp indexe par direction-1, le slot DIR_NONE absorbe l'écart). */
+export const OPPOSITE_DIR: readonly number[] = [
+  /* DIR_NONE      */ DIR_NONE,
+  /* DIR_SOUTH     */ DIR_NORTH,
+  /* DIR_NORTH     */ DIR_SOUTH,
+  /* DIR_WEST      */ DIR_EAST,
+  /* DIR_EAST      */ DIR_WEST,
+  /* DIR_SOUTHWEST */ DIR_NORTHEAST,
+  /* DIR_SOUTHEAST */ DIR_NORTHWEST,
+  /* DIR_NORTHWEST */ DIR_SOUTHEAST,
+  /* DIR_NORTHEAST */ DIR_SOUTHWEST,
+];
+
+/** 1:1 décomp `MoveCoords(direction, x, y)` (event_object_movement.c). */
+export function MoveCoords(direction: number, x: number, y: number): { x: number; y: number } {
+  return {
+    x: x + (DIR_TO_DX[direction] ?? 0),
+    y: y + (DIR_TO_DY[direction] ?? 0),
+  };
+}
+
+/** 1:1 décomp `GetOppositeDirection` (event_object_movement.c:4991-5000) :
+ *  bounds check 1:1 (direction <= DIR_NONE ou > 8 → unchanged). */
+export function GetOppositeDirection(direction: number): number {
+  if (direction <= DIR_NONE || direction > 8) return direction;
+  return OPPOSITE_DIR[direction]!;
+}
+
+/** 1:1 décomp ANIM_STD_* (include/constants/event_object_movement.h). */
+const ANIM_STD_FACE_SOUTH      = 0;
+const ANIM_STD_FACE_NORTH      = 1;
+const ANIM_STD_FACE_WEST       = 2;
+const ANIM_STD_FACE_EAST       = 3;
+const ANIM_STD_GO_SOUTH        = 4;
+const ANIM_STD_GO_NORTH        = 5;
+const ANIM_STD_GO_WEST         = 6;
+const ANIM_STD_GO_EAST         = 7;
+const ANIM_STD_GO_FAST_SOUTH   = 8;
+const ANIM_STD_GO_FAST_NORTH   = 9;
+const ANIM_STD_GO_FAST_WEST    = 10;
+const ANIM_STD_GO_FAST_EAST    = 11;
+const ANIM_STD_GO_FASTER_SOUTH = 12;
+const ANIM_STD_GO_FASTER_NORTH = 13;
+const ANIM_STD_GO_FASTER_WEST  = 14;
+const ANIM_STD_GO_FASTER_EAST  = 15;
+const ANIM_STD_GO_FASTEST_SOUTH = 16;
+const ANIM_STD_GO_FASTEST_NORTH = 17;
+const ANIM_STD_GO_FASTEST_WEST  = 18;
+const ANIM_STD_GO_FASTEST_EAST  = 19;
+// 1:1 décomp ANIM_BUNNY_HOP_BACK_WHEEL_* (= ANIM_STD_COUNT + 0..3 ; ANIM_STD_COUNT = 20).
+const ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH = 20;
+const ANIM_BUNNY_HOP_BACK_WHEEL_NORTH = 21;
+const ANIM_BUNNY_HOP_BACK_WHEEL_WEST  = 22;
+const ANIM_BUNNY_HOP_BACK_WHEEL_EAST  = 23;
+
+/** 1:1 décomp `sFaceDirectionAnimNums[]` (event_object_movement.c:715-725).
+ *  Diagonales NW/NE = FACE_NORTH (1:1). */
+const sFaceDirectionAnimNums: readonly number[] = [
+  ANIM_STD_FACE_SOUTH,  // DIR_NONE → fallback SOUTH
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTH
+  ANIM_STD_FACE_NORTH,  // DIR_NORTH
+  ANIM_STD_FACE_WEST,   // DIR_WEST
+  ANIM_STD_FACE_EAST,   // DIR_EAST
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTHWEST
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTHEAST
+  ANIM_STD_FACE_NORTH,  // DIR_NORTHWEST
+  ANIM_STD_FACE_NORTH,  // DIR_NORTHEAST
+];
+
+/** 1:1 décomp `sMoveDirectionAnimNums[]` (event_object_movement.c:726-736). */
+const sMoveDirectionAnimNums: readonly number[] = [
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_NORTH,
+  ANIM_STD_GO_WEST,
+  ANIM_STD_GO_EAST,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_NORTH,
+  ANIM_STD_GO_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFastAnimNums[]` (event_object_movement.c:737-747). */
+const sMoveDirectionFastAnimNums: readonly number[] = [
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_NORTH,
+  ANIM_STD_GO_FAST_WEST,
+  ANIM_STD_GO_FAST_EAST,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_NORTH,
+  ANIM_STD_GO_FAST_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFasterAnimNums[]`. */
+const sMoveDirectionFasterAnimNums: readonly number[] = [
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_NORTH,
+  ANIM_STD_GO_FASTER_WEST,
+  ANIM_STD_GO_FASTER_EAST,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_NORTH,
+  ANIM_STD_GO_FASTER_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFastestAnimNums[]`. */
+const sMoveDirectionFastestAnimNums: readonly number[] = [
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+  ANIM_STD_GO_FASTEST_WEST,
+  ANIM_STD_GO_FASTEST_EAST,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+];
+
+/** 1:1 décomp `sAcroWheelieDirectionAnimNums[]` (event_object_movement.c:781). */
+const sAcroWheelieDirectionAnimNums: readonly number[] = [
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_NONE
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTH
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTH
+  ANIM_BUNNY_HOP_BACK_WHEEL_WEST,   // DIR_WEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_EAST,   // DIR_EAST
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTHWEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH,  // DIR_SOUTHEAST
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTHWEST
+  ANIM_BUNNY_HOP_BACK_WHEEL_NORTH,  // DIR_NORTHEAST
+];
+
+/** 1:1 décomp `GetFaceDirectionAnimNum` (event_object_movement.c:4495-4498). */
+export function GetFaceDirectionAnimNum(direction: number): number {
+  return sFaceDirectionAnimNums[direction] ?? ANIM_STD_FACE_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionAnimNum` (event_object_movement.c:4500-4503). */
+export function GetMoveDirectionAnimNum(direction: number): number {
+  return sMoveDirectionAnimNums[direction] ?? ANIM_STD_GO_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFastAnimNum` (event_object_movement.c:4505-4508). */
+export function GetMoveDirectionFastAnimNum(direction: number): number {
+  return sMoveDirectionFastAnimNums[direction] ?? ANIM_STD_GO_FAST_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFasterAnimNum`. */
+export function GetMoveDirectionFasterAnimNum(direction: number): number {
+  return sMoveDirectionFasterAnimNums[direction] ?? ANIM_STD_GO_FASTER_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFastestAnimNum`. */
+export function GetMoveDirectionFastestAnimNum(direction: number): number {
+  return sMoveDirectionFastestAnimNums[direction] ?? ANIM_STD_GO_FASTEST_SOUTH;
+}
+
+/** 1:1 décomp `GetAcroWheelieDirectionAnimNum` (event_object_movement.c:4525). */
+export function GetAcroWheelieDirectionAnimNum(direction: number): number {
+  return sAcroWheelieDirectionAnimNums[direction] ?? ANIM_BUNNY_HOP_BACK_WHEEL_SOUTH;
+}
 
 // ─── 1:1 décomp `IsMetatileDirectionallyImpassable` (event_object_movement.c:4715) ───
 // (Rapatrié de l'ex-`metatile-behavior-helpers.ts`, sa vraie maison décomp.)
@@ -4847,13 +5036,9 @@ const ANIM_BUNNY_HOP_BACK_WHEEL = [
   ANIM_STD_COUNT + 2,  // WEST
   ANIM_STD_COUNT + 3,  // EAST
 ];
-const sAcroWheelieDirectionAnimNums: readonly number[] = [
-  ANIM_STD_COUNT + 0,  // DIR_NONE / SOUTH fallback
-  ANIM_STD_COUNT + 0,  // DIR_SOUTH
-  ANIM_STD_COUNT + 1,  // DIR_NORTH
-  ANIM_STD_COUNT + 2,  // DIR_WEST
-  ANIM_STD_COUNT + 3,  // DIR_EAST
-];
+// (sAcroWheelieDirectionAnimNums : défini en tête de fichier avec les autres
+//  tables direction 1:1 — l'ex-doublon local 5 entrées, sans diagonales, a été
+//  dissous à l'unification miroir.)
 
 /** 1:1 décomp ANIM_STANDING_WHEELIE_BACK_WHEEL_X (= ANIM_STD_COUNT + 8..11). */
 const sAcroEndWheelieDirectionAnimNums: readonly number[] = [

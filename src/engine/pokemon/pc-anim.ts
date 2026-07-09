@@ -30,7 +30,7 @@ import {
 import {
   PC_LOCATION_OTHER, PC_LOCATION_BRENDANS_HOUSE, PC_LOCATION_MAYS_HOUSE,
 } from '../../../include/constants/field_specials';
-import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/direction-coords';
+import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../../../include/global.fieldmap';
 
 /** 1:1 décomp `fieldmap.h` : `MAPGRID_IMPASSABLE = MAPGRID_COLLISION_MASK = 0x0C00` (bits 10-11).
  *  AUDIT FIX : était 0x800 (bit 11 seul) → collision=2 au lieu de 3 (impassable complet). */

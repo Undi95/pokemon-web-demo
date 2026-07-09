@@ -29,7 +29,7 @@ import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
 import { GetPlayerNameString } from '../../src/text';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
-import { DIR_SOUTH, DIR_NORTH } from '../../src/engine/field/direction-coords';
+import { DIR_SOUTH, DIR_NORTH } from '../../include/global.fieldmap';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-tables';
 import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount, CopyMonToPC } from '../../src/engine/battle/party-storage';
 import { loadGameData, getSpeciesInfo, getExperienceForLevel } from '../../src/engine/data/game-data';

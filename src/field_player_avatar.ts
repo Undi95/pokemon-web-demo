@@ -106,7 +106,7 @@ import {
 import { Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic } from './overworld';
 import { FlagGet } from './engine/script/script-vars';
 import { B_BUTTON } from '../include/gba/io_reg';
-import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './engine/field/direction-coords';
+import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './event_object_movement';
 import {
   GetPlayerSpeed, Bike_UpdateBikeCounterSpeed, Bike_TryAcroBikeHistoryUpdate,
   BikeClearState, Bike_HandleBumpySlopeJump, MovePlayerOnBike, GetOnOffBike,
@@ -214,12 +214,8 @@ import {
   DIR_NORTH as _DIR_NORTH,
   DIR_WEST as _DIR_WEST,
   DIR_EAST as _DIR_EAST,
-  DIR_TO_DX,
-  DIR_TO_DY,
-  MoveCoords,
-  dirToCameraSpeed as _dirToCameraSpeed,
-  getInputDirection as _getInputDirection,
-} from './engine/field/direction-coords';
+} from '../include/global.fieldmap';
+import { DIR_TO_DX, DIR_TO_DY, MoveCoords } from './event_object_movement';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
 import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS, NUM_GAME_STATS } from '../include/constants/game_stat';
 import {
@@ -917,14 +913,16 @@ export async function InitPlayerAvatar(
   }
 }
 
-// ─── Direction → (dx, dy) helpers depuis direction-coords (= source unique) ─
-//
-// Avant : DIR_TO_DX/DY locaux dupliquaient la table 1:1 décomp `sDirectionToVectors`.
-// Migrate vers direction-coords.ts pour une source unique partagée avec
-// object-events.ts + script-opcodes.ts (= éviter divergence future).
-//
-// `dirToCameraSpeed` re-exporté ici via alias pour back-compat.
-const dirToCameraSpeed = _dirToCameraSpeed;
+// ─── dirToCameraSpeed (helper HARNESS, ex-direction-coords) ──────────────────
+// Adaptation moteur (pas de counterpart décomp — le GBA scrolle via les regs
+// BG) : delta caméra 1 px/frame pour une direction. Consommé par PlayerStep +
+// ExitTask walks. Rapatrié ici (seul consommateur) à l'unification miroir.
+function dirToCameraSpeed(direction: number): { x: number; y: number } {
+  return {
+    x: DIR_TO_DX[direction] ?? 0,
+    y: DIR_TO_DY[direction] ?? 0,
+  };
+}
 
 // [M3] Le rendu du sprite joueur est UNIFIÉ avec son slot object-event (cf.
 // InitPlayerAvatar) : position par UpdateObjectEvents, anim/tile par AnimateSprite
@@ -1541,8 +1539,16 @@ function checkLedgeJump(direction: number): boolean {
 
 // ─── PlayerStep state machine ────────────────────────────────────────────────
 
-/** Alias vers `getInputDirection` du module direction-coords (= source unique). */
-const getInputDirection = _getInputDirection;
+/** Keys GBA → direction (priority order down/up/left/right, 1:1 décomp
+ *  `GetPlayerMovementDirection`). Helper local (ex-direction-coords, seul
+ *  consommateur ici). GBA keys : DOWN=0x80, UP=0x40, LEFT=0x20, RIGHT=0x10. */
+function getInputDirection(heldKeys: number): number {
+  if (heldKeys & 0x80) return _DIR_SOUTH;
+  if (heldKeys & 0x40) return _DIR_NORTH;
+  if (heldKeys & 0x20) return _DIR_WEST;
+  if (heldKeys & 0x10) return _DIR_EAST;
+  return _DIR_NONE;
+}
 
 /** 1:1 décomp `PlayerStep(direction, newKeys, heldKeys)` (field_player_avatar.c:332).
  *  À call une fois par frame depuis le main loop overworld. Drive toute la
