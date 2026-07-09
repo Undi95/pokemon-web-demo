@@ -98,7 +98,7 @@ import {
   ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace,
 } from './pokemon_summary_screen';
 import { getString } from './engine/ui/gba-strings';
-import { MON_ICON_PALETTE_INDICES } from './engine/pokemon/pokemon-icon-palettes';
+import { MON_ICON_PALETTE_INDICES } from './pokemon_icon';
 import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,

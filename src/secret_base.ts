@@ -210,3 +210,232 @@ export function ClearSecretBases(): void {
     ClearSecretBase(gSaveBlock1Ptr.secretBases, i);
   }
 }
+
+
+// ─── sCurSecretBaseId + specials 1:1 (secret_base.c subset) — ex-engine/pokemon/secret-base.ts (lot 12) ──
+// Subset : sCurSecretBaseId (:78) + SetCurSecretBaseId/TrySetCurSecretBaseIndex +
+// IsCurSecretBaseOwnedByAnotherPlayer (specials byte-VM). Le flow EnterSecretBase
+// complet (tasks, décorations) = à transcrire dans CE fichier quand le chantier
+// secret bases s'ouvrira.
+import { registerSpecial as _registerSpecial_SB } from './scrcmd';
+import { GetPlayerNameString as _GetPlayerNameString_SB } from '../include/text';
+import { VarGet as _VarGet_SB, VarSet as _VarSet_SB, gSpecialVar as _gSpecialVar_SB } from './engine/script/script-vars';
+import { gSaveBlock1Ptr as _gSaveBlock1Ptr_SB, gSaveBlock2Ptr as _gSaveBlock2Ptr_SB } from './engine/save/save-block-state';
+import { SECRET_BASES_COUNT as _SECRET_BASES_COUNT_SB, TRAINER_ID_LENGTH as _TRAINER_ID_LENGTH_SB, LANGUAGE_FRENCH as _LANGUAGE_FRENCH_SB } from '../include/constants/global';
+import { gMapHeader as _gMapHeader_SB } from './fieldmap';
+import { resolveDecompConstant as _resolveDecompConstant_SB } from '../harness/runtime/decomp-constants';
+
+/** 1:1 décomp `static EWRAM_DATA u8 sCurSecretBaseId = 0` (secret_base.c:78). */
+let sCurSecretBaseId = 0;
+
+/** Helper export pour secret_base.c callers (= future ports). */
+export function getCurSecretBaseId(): number {
+  return sCurSecretBaseId;
+}
+
+/** Helper export pour secret_base.c callers (= future ports). */
+export function setCurSecretBaseId(v: number): void {
+  sCurSecretBaseId = v & 0xFF;
+}
+
+// ─── Specials registry — secret_base.c ports ───────────────────────────────
+
+/** 1:1 décomp `IsCurSecretBaseOwnedByAnotherPlayer` (secret_base.c:720-726) :
+ *  ```c
+ *  void IsCurSecretBaseOwnedByAnotherPlayer(void) {
+ *      if (_gSaveBlock1Ptr_SB->secretBases[0].secretBaseId != sCurSecretBaseId)
+ *          _gSpecialVar_SB_Result = TRUE;
+ *      else
+ *          _gSpecialVar_SB_Result = FALSE;
+ *  }
+ *  ```
+ *  Compare base[0].id (= player's own base) vs sCurSecretBaseId (= base
+ *  currently entering). Different = entering someone else's base. */
+_registerSpecial_SB('IsCurSecretBaseOwnedByAnotherPlayer', () => {
+  const ownId = _gSaveBlock1Ptr_SB.secretBases?.[0]?.secretBaseId ?? 0;
+  _gSpecialVar_SB.Result = ownId !== sCurSecretBaseId ? 1 : 0;
+});
+
+/** 1:1 décomp `TrySetCurSecretBaseIndex` (secret_base.c:242-256) :
+ *  ```c
+ *  void TrySetCurSecretBaseIndex(void) {
+ *      u16 i;
+ *      _gSpecialVar_SB_Result = FALSE;
+ *      for (i = 0; i < _SECRET_BASES_COUNT_SB; i++) {
+ *          if (sCurSecretBaseId == _gSaveBlock1Ptr_SB->secretBases[i].secretBaseId) {
+ *              _gSpecialVar_SB_Result = TRUE;
+ *              _VarSet_SB(VAR_CURRENT_SECRET_BASE, i);
+ *              break;
+ *          }
+ *      }
+ *  }
+ *  ```
+ *  Find l'index dans secretBases[] qui matche sCurSecretBaseId. Set
+ *  VAR_CURRENT_SECRET_BASE = i si trouvé. */
+_registerSpecial_SB('TrySetCurSecretBaseIndex', () => {
+  _gSpecialVar_SB.Result = 0;
+  for (let i = 0; i < _SECRET_BASES_COUNT_SB; i++) {
+    const baseId = _gSaveBlock1Ptr_SB.secretBases?.[i]?.secretBaseId ?? 0;
+    if (sCurSecretBaseId === baseId) {
+      _gSpecialVar_SB.Result = 1;
+      _VarSet_SB('VAR_CURRENT_SECRET_BASE', i);
+      break;
+    }
+  }
+});
+
+/** 1:1 décomp `SetCurSecretBaseId` (secret_base.c:237-240) — static helper
+ *  appelé par les scripts via gSpecials (= setcursecretbase special).
+ *  ```c
+ *  static void SetCurSecretBaseId(void) {
+ *      sCurSecretBaseId = _gSpecialVar_SB_0x8004;
+ *  }
+ *  ```
+ *  Notre port : enregistré sous le special name `SetCurSecretBaseId`. */
+_registerSpecial_SB('SetCurSecretBaseId', () => {
+  sCurSecretBaseId = _VarGet_SB('VAR_0x8004') & 0xFF;
+});
+
+/** 1:1 décomp `IsSecretBaseRegistered` (secret_base.c:752-758) :
+ *  ```c
+ *  static bool8 IsSecretBaseRegistered(u8 secretBaseIdx) {
+ *      if (_gSaveBlock1Ptr_SB->secretBases[secretBaseIdx].registryStatus) return TRUE;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Helper interne, exporté pour reuse par d'autres specials. */
+function _isSecretBaseRegistered(idx: number): boolean {
+  return !!_gSaveBlock1Ptr_SB.secretBases?.[idx]?.registryStatus;
+}
+
+/** 1:1 décomp `GetNumRegisteredSecretBases` (secret_base.c:868-879) :
+ *  ```c
+ *  static u8 GetNumRegisteredSecretBases(void) {
+ *      s16 i; u8 count = 0;
+ *      for (i = 1; i < _SECRET_BASES_COUNT_SB; i++) {
+ *          if (IsSecretBaseRegistered(i) == TRUE) count++;
+ *      }
+ *      return count;
+ *  }
+ *  ```
+ *  Loop i=1.._SECRET_BASES_COUNT_SB (= 1..20 exclu base[0] qui est player's). */
+function _getNumRegisteredSecretBases(): number {
+  let count = 0;
+  for (let i = 1; i < _SECRET_BASES_COUNT_SB; i++) {
+    if (_isSecretBaseRegistered(i)) count++;
+  }
+  return count;
+}
+
+/** 1:1 décomp `GetCurSecretBaseRegistrationValidity` (secret_base.c:881-889) :
+ *  ```c
+ *  void GetCurSecretBaseRegistrationValidity(void) {
+ *      if (IsSecretBaseRegistered(_VarGet_SB(VAR_CURRENT_SECRET_BASE)) == TRUE)
+ *          _gSpecialVar_SB_Result = 1;
+ *      else if (GetNumRegisteredSecretBases() >= 10)
+ *          _gSpecialVar_SB_Result = 2;
+ *      else
+ *          _gSpecialVar_SB_Result = 0;
+ *  }
+ *  ```
+ *  Result : 1 = already registered, 2 = max 10 atteint, 0 = peut register. */
+_registerSpecial_SB('GetCurSecretBaseRegistrationValidity', () => {
+  const idx = _VarGet_SB('VAR_CURRENT_SECRET_BASE');
+  if (_isSecretBaseRegistered(idx)) {
+    _gSpecialVar_SB.Result = 1;
+  } else if (_getNumRegisteredSecretBases() >= 10) {
+    _gSpecialVar_SB.Result = 2;
+  } else {
+    _gSpecialVar_SB.Result = 0;
+  }
+});
+
+/** 1:1 décomp `PrepSecretBaseBattleFlags` (secret_base.c:1164-1168) :
+ *  ```c
+ *  void PrepSecretBaseBattleFlags(void) {
+ *      TryGainNewFanFromCounter(FANCOUNTER_BATTLED_AT_BASE);
+ *      gTrainerBattleOpponent_A = TRAINER_SECRET_BASE;
+ *      gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_SECRET_BASE;
+ *  }
+ *  ```
+ *  Dette R3 partielle : TryGainNewFanFromCounter cascade fan club. Notre
+ *  port set juste gTrainerBattleOpponent_A + gBattleTypeFlags via globalThis
+ *  bridge (= battle state mutators).
+ *  TRAINER_SECRET_BASE = 0x400 (= include/constants/trainers.h).
+ *  BATTLE_TYPE_TRAINER = 0x8, BATTLE_TYPE_SECRET_BASE = 0x80000. */
+_registerSpecial_SB('PrepSecretBaseBattleFlags', () => {
+  const bridge = (globalThis as { __battleStateMutators?: {
+    setTrainerBattleOpponentA?: (v: number) => void;
+    setBattleTypeFlags?: (v: number) => void;
+  } }).__battleStateMutators;
+  if (bridge?.setTrainerBattleOpponentA) bridge.setTrainerBattleOpponentA(0x400);
+  if (bridge?.setBattleTypeFlags) bridge.setBattleTypeFlags(0x8 | 0x80000);
+  // TryGainNewFanFromCounter : dette R3 (= cascade FANCOUNTER_BATTLED_AT_BASE
+  // pas porté).
+});
+
+/** 1:1 décomp `SetSecretBaseOwnerGfxId` (secret_base.c:654-657) :
+ *  ```c
+ *  void SetSecretBaseOwnerGfxId(void) {
+ *      _VarSet_SB(VAR_OBJ_GFX_ID_F, sSecretBaseOwnerGfxIds[GetSecretBaseOwnerType(_VarGet_SB(VAR_CURRENT_SECRET_BASE))]);
+ *  }
+ *  ```
+ *  sSecretBaseOwnerGfxIds 1:1 décomp secret_base.c:162-176 — table[10] : male
+ *  0..4 = YOUNGSTER/BUG_CATCHER/RICH_BOY/CAMPER/MAN_3, female 5..9 = LASS/
+ *  GIRL_3/WOMAN_2/PICNICKER/WOMAN_5. GetSecretBaseOwnerType (= already
+ *  inline B22) = (trainerId[0] % 5) + (gender * 5). */
+_registerSpecial_SB('SetSecretBaseOwnerGfxId', () => {
+  const sSecretBaseOwnerGfxIds: ReadonlyArray<number> = [
+    35, 36, 15, 31, 33,  // Male : YOUNGSTER/BUG_CATCHER/RICH_BOY/CAMPER/MAN_3
+    47, 14, 20, 32, 34,  // Female : LASS/GIRL_3/WOMAN_2/PICNICKER/WOMAN_5
+  ];
+  const idx = _VarGet_SB('VAR_CURRENT_SECRET_BASE');
+  const base = _gSaveBlock1Ptr_SB.secretBases?.[idx];
+  if (!base) return;
+  // 1:1 décomp `GetSecretBaseOwnerType` (secret_base.c:1133).
+  const ownerType = ((base.trainerId?.[0] ?? 0) % 5) + ((base.gender ?? 0) * 5);
+  _VarSet_SB('VAR_OBJ_GFX_ID_F', sSecretBaseOwnerGfxIds[ownerType] ?? 0);
+});
+
+/** 1:1 décomp `SetPlayerSecretBase` (secret_base.c:365-377) :
+ *  ```c
+ *  void SetPlayerSecretBase(void) {
+ *      u16 i;
+ *      _gSaveBlock1Ptr_SB->secretBases[0].secretBaseId = sCurSecretBaseId;
+ *      for (i = 0; i < _TRAINER_ID_LENGTH_SB; i++)
+ *          _gSaveBlock1Ptr_SB->secretBases[0].trainerId[i] = _gSaveBlock2Ptr_SB->playerTrainerId[i];
+ *      _VarSet_SB(VAR_CURRENT_SECRET_BASE, 0);
+ *      StringCopyN(_gSaveBlock1Ptr_SB->secretBases[0].trainerName,
+ *                  _gSaveBlock2Ptr_SB->playerName, GetNameLength(playerName));
+ *      _gSaveBlock1Ptr_SB->secretBases[0].gender = _gSaveBlock2Ptr_SB->playerGender;
+ *      _gSaveBlock1Ptr_SB->secretBases[0].language = GAME_LANGUAGE;
+ *      _VarSet_SB(VAR_SECRET_BASE_MAP, _gMapHeader_SB.regionMapSectionId);
+ *  }
+ *  ```
+ *  Setup player's secret base avec données player + cur map.
+ *  Cascade R3 : mapSec stored numeric ; nous resolve via reverseDecompConstant
+ *  (= notre regionMapSectionId est MAPSEC_* string). GetNameLength inline. */
+_registerSpecial_SB('SetPlayerSecretBase', () => {
+  const base = _gSaveBlock1Ptr_SB.secretBases?.[0];
+  if (!base) return;
+  base.secretBaseId = sCurSecretBaseId;
+  // 1:1 décomp loop _TRAINER_ID_LENGTH_SB=4 copy.
+  if (!base.trainerId) base.trainerId = [0, 0, 0, 0];
+  for (let i = 0; i < _TRAINER_ID_LENGTH_SB; i++) {
+    base.trainerId[i] = _gSaveBlock2Ptr_SB.playerTrainerId?.[i] ?? 0;
+  }
+  _VarSet_SB('VAR_CURRENT_SECRET_BASE', 0);
+  // 1:1 décomp StringCopyN + GetNameLength (= EOS=0xFF search).
+  const playerName = _GetPlayerNameString_SB();
+  base.trainerName = playerName;
+  base.gender = _gSaveBlock2Ptr_SB.playerGender ?? 0;
+  base.language = _LANGUAGE_FRENCH_SB;  // 1:1 décomp GAME_LANGUAGE = _LANGUAGE_FRENCH_SB=3 (FR).
+  // 1:1 décomp _VarSet_SB(VAR_SECRET_BASE_MAP, _gMapHeader_SB.regionMapSectionId).
+  const mapsecName = _gMapHeader_SB?.regionMapSectionId;
+  if (mapsecName) {
+    const numericId = _resolveDecompConstant_SB(mapsecName);
+    if (numericId !== undefined) {
+      _VarSet_SB('VAR_SECRET_BASE_MAP', numericId);
+    }
+  }
+});

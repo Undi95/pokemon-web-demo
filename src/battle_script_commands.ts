@@ -10540,7 +10540,7 @@ import {
   lvlUpBoxOpenPage1 as _lvlUpBoxOpenPage1BSC, lvlUpBoxDrawPage2 as _lvlUpBoxDrawPage2BSC,
   lvlUpBoxClose as _lvlUpBoxCloseBSC,
 } from './engine/battle/battle-levelup-box';
-import { MON_ICON_PALETTE_INDICES as _MON_ICON_PALETTE_INDICES_BSC } from './engine/pokemon/pokemon-icon-palettes';
+import { MON_ICON_PALETTE_INDICES as _MON_ICON_PALETTE_INDICES_BSC } from './pokemon_icon';
 import { reverseDecompConstant as _reverseDecompConstantBSC } from '../harness/runtime/decomp-constants';
 
 /** PlaySE via le hook global (même mécanisme que les anims — pas d'import BGM/SE). */

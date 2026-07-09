@@ -229,7 +229,7 @@ import '../../src/engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
 import '../../src/pokemon_size_record';
 // Side-effect import : registers secret_base specials (cur base helpers).
-import '../../src/engine/pokemon/secret-base';
+import '../../src/secret_base';
 import { ShowMapNamePopup, preloadMapNames } from '../../src/map_name_popup';
 import { loadGameData, installDexDevtools } from '../../src/engine/data/game-data';
 import {
