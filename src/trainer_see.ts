@@ -57,7 +57,7 @@ function _setMovingNpcId(id: number): void {
 }
 import { gFieldEffectArguments, FieldEffectStop, FieldEffectStart } from './field_effect';
 import { setFieldEffectAnims } from './field_effect_helpers';
-import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListContains } from './field_effect';
 import { MoveCoords, GetOppositeDirection } from './engine/field/direction-coords';
 import { CreateTask, DestroyTask, SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc } from './task';
 import { getRuntime } from '../harness/runtime/decomp-globals';

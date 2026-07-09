@@ -17,7 +17,7 @@ import { BeginNormalPaletteFade } from './palette';
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
-import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './field_effect';
 import { SetWeatherScreenFadeOut, SetWeatherPalStateIdle } from './field_weather';
 import { SweetScentWildEncounter } from './wild_encounter';
 import { GetPlayerAvatarSpriteId } from './field_player_avatar';

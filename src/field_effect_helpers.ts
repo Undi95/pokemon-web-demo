@@ -82,7 +82,7 @@ import {
 } from './field_player_avatar';
 import { gPlayerFacingPosition } from './fldeff_misc';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script';
-import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListContains } from './field_effect';
 import { DestroyTask } from './task';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
@@ -114,7 +114,7 @@ import { gPaletteFade } from './palette';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart, FieldEffectFreeGraphicsResources,
 } from './field_effect';
-import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './field_effect';
 
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :

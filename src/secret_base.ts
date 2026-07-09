@@ -32,7 +32,7 @@ import {
   MB_SLIDE_SOUTH,
 } from '../include/constants/metatile_behaviors';
 import { PopSecretBaseBalloon, ShatterSecretBaseBreakableDoor } from './fldeff_misc';
-import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListContains } from './field_effect';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { emptySecretBase } from './engine/save/save-blocks';
 import type { SecretBase } from './engine/save/save-blocks';

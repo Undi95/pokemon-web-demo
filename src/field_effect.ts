@@ -2,11 +2,6 @@
  * field_effect.ts — Port 1:1 strict `field_effect.c` minimal (= dispatcher
  * FieldEffectStart + gFieldEffectArguments + helpers communs).
  *
- * NB anti-cycle : `sActiveList[32]` + FieldEffectActiveList* (field_effect.c:846-886)
- * restent dans le leaf `engine/field/field-effect-active-list.ts` (zéro import) car
- * field_effect_helpers les consomme — les fusionner ici créerait field_effect ↔
- * field_effect_helpers (même logique que direction-coords gardé en foundation).
- *
  * Source : D:/Projet 1/decomps/pokeemeraude/src/field_effect.c.
  *
  * Le décomp a un système complet de ~50 field effects avec scripts bytecode
@@ -35,7 +30,6 @@
 
 import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
-import { FieldEffectActiveListRemove, FieldEffectActiveListAdd } from './engine/field/field-effect-active-list';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag, TAG_NONE, DestroySprite } from './sprite';
 import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from './trainer_see';
 import {
@@ -337,4 +331,52 @@ export function FieldEffectStart(id: number): number {
 /** Reset les arguments à 0 — call par certains handlers post-exec. */
 export function ClearFieldEffectArguments(): void {
   for (let i = 0; i < 8; i++) gFieldEffectArguments[i] = 0;
+}
+
+// ─── Active list 1:1 décomp (field_effect.c:236 + 846-886) ──────────────────
+// Rapatrié de `engine/field/field-effect-active-list.ts` (unification miroir) :
+// dans le décomp, sActiveList vit DANS field_effect.c. Le cycle ESM
+// field_effect ↔ field_effect_helpers est inoffensif ici : les `function`
+// declarations sont hoistées et sActiveList n'est lu qu'à runtime.
+
+/** 1:1 décomp `static u8 sActiveList[32]` (field_effect.c:236). 0xFF = slot vide. */
+const FIELD_EFFECT_COUNT = 32;
+const sActiveList = new Uint8Array(FIELD_EFFECT_COUNT).fill(0xFF);
+
+/** 1:1 décomp `FieldEffectActiveListClear` (field_effect.c:846-851). */
+export function FieldEffectActiveListClear(): void {
+  for (let i = 0; i < sActiveList.length; i++) {
+    sActiveList[i] = 0xFF;
+  }
+}
+
+/** 1:1 décomp `FieldEffectActiveListAdd` (field_effect.c:853-864) : insert dans
+ *  le premier slot 0xFF trouvé. Si list pleine (32 effects actifs), silently
+ *  dropped (= décomp behavior). */
+export function FieldEffectActiveListAdd(id: number): void {
+  for (let i = 0; i < sActiveList.length; i++) {
+    if (sActiveList[i] === 0xFF) {
+      sActiveList[i] = id;
+      return;
+    }
+  }
+}
+
+/** 1:1 décomp `FieldEffectActiveListRemove` (field_effect.c:866-877) : retire la
+ *  PREMIÈRE occurrence de id (= décomp behavior, pas de compact array). */
+export function FieldEffectActiveListRemove(id: number): void {
+  for (let i = 0; i < sActiveList.length; i++) {
+    if (sActiveList[i] === id) {
+      sActiveList[i] = 0xFF;
+      return;
+    }
+  }
+}
+
+/** 1:1 décomp `FieldEffectActiveListContains` (field_effect.c:879-886). */
+export function FieldEffectActiveListContains(id: number): boolean {
+  for (let i = 0; i < sActiveList.length; i++) {
+    if (sActiveList[i] === id) return true;
+  }
+  return false;
 }

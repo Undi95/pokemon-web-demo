@@ -13,7 +13,7 @@
  *
  * 1:1 décomp scrcmd.c:1973-2003 (dofieldeffect/setfieldeffectargument/waitfieldeffect).
  */
-import { FieldEffectActiveListContains } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListContains } from './field_effect';
 
 /** 1:1 décomp `sFieldEffectScriptId` (scrcmd.c:50). */
 let _sFieldEffectScriptId = 0;

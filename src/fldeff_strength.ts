@@ -11,7 +11,7 @@
  */
 
 import { CreateFieldMoveTask } from './field_effect_helpers';
-import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './field_effect';
 import { ScriptContext_Enable, ScriptContext_SetupScript } from './script';
 import { GetMonData, gPlayerParty } from './pokemon';
 import { MON_DATA_NICKNAME } from '../include/pokemon';

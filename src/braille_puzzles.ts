@@ -17,7 +17,7 @@ import { MAP_OFFSET } from '../include/fieldmap';
 import { MON_DATA_SPECIES_OR_EGG } from '../include/pokemon';
 import { PlaySE } from './battle_controllers';
 import { GetMonData } from './engine/battle/party-storage';
-import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './field_effect';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { FlagClear, FlagGet, FlagSet, VarGet, VarSet } from './event_data';
 import { DrawWholeMapView, InstallCameraPanAheadCallback, SetCameraPanning, SetCameraPanningCallback } from './field_camera';

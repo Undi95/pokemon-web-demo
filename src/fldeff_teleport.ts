@@ -22,7 +22,7 @@ import { Overworld_ResetStateAfterTeleport } from './overworld';
 import { setPendingWarp } from './engine/field/warp-system';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { GetHealLocationByName } from './heal_location';
-import { FieldEffectActiveListRemove } from './engine/field/field-effect-active-list';
+import { FieldEffectActiveListRemove } from './field_effect';
 import { FadeScreen, FADE_TO_BLACK } from './field_weather';
 
 /** 1:1 décomp `FLDEFF_USE_TELEPORT = 63` (include/constants/field_effects.h). */
