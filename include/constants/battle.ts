@@ -1,5 +1,5 @@
-// AUTO-GENERATED from include/constants/battle.h by extract-decomp-all.mjs
-// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+// EX-AUTO-GENERATED (générateur disparu — complété manuellement) from include/constants/battle.h by extract-decomp-all.mjs
+// Compléments manuels autorisés (aucun script ne régénère include/ depuis avril 2026).
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/include/constants/battle.h
 // Generated: 2026-04-26
@@ -445,3 +445,34 @@ export const ENUM_BattlerId = {
   B_BATTLER_3: 3,
   MAX_BATTLERS_COUNT: 4,
 } as const;
+
+// ─── Compléments (unification lot 7, 2026-07-10) — #define constants/que l'ancien extracteur sautait (1<<N/composites), rapatriés de engine/battle/constants.ts ───
+// Audit session 134 N7 : ancien fichier avait PURSUIT_TRAP/IGNORE_SAFEGUARD/
+// WAKE_UP_CLEAR à des bits faux. Vraies valeurs décomp :
+export const HITMARKER_WAKE_UP_CLEAR         = 1 << 4;  // cleared waking up (never set/checked)
+export const HITMARKER_IGNORE_BIDE           = 1 << 5;
+export const HITMARKER_DESTINYBOND           = 1 << 6;
+export const HITMARKER_NO_ANIMATIONS         = 1 << 7;
+export const HITMARKER_IGNORE_SUBSTITUTE     = 1 << 8;
+export const HITMARKER_NO_ATTACKSTRING       = 1 << 9;
+export const HITMARKER_ATTACKSTRING_PRINTED  = 1 << 10;
+export const HITMARKER_NO_PPDEDUCT           = 1 << 11;
+export const HITMARKER_SWAP_ATTACKER_TARGET  = 1 << 12;
+export const HITMARKER_STATUS_ABILITY_EFFECT = 1 << 13;
+export const HITMARKER_SYNCHRONIZE_EFFECT    = 1 << 14;  // décomp orth. Z (pas S)
+export const HITMARKER_RUN                   = 1 << 15;
+export const HITMARKER_IGNORE_ON_AIR         = 1 << 16;
+export const HITMARKER_IGNORE_UNDERGROUND    = 1 << 17;
+export const HITMARKER_IGNORE_UNDERWATER     = 1 << 18;
+export const HITMARKER_UNABLE_TO_USE_MOVE    = 1 << 19;
+export const HITMARKER_PASSIVE_HP_UPDATE     = 1 << 20;
+export const HITMARKER_DISOBEDIENT_MOVE      = 1 << 21;
+export const HITMARKER_PLAYER_FAINTED        = 1 << 22;
+export const HITMARKER_ALLOW_NO_PP           = 1 << 23;
+export const HITMARKER_GRUDGE                = 1 << 24;
+export const HITMARKER_OBEYS                 = 1 << 25;  // set after obedience check
+export const HITMARKER_NEVER_SET             = 1 << 26;
+export const HITMARKER_CHARGING              = 1 << 27;
+import { STATUS1_SLEEP, STATUS1_POISON, STATUS1_BURN, STATUS1_FREEZE, STATUS1_PARALYSIS, STATUS1_TOXIC_POISON } from '../battle';
+export const STATUS1_ANY = STATUS1_SLEEP | STATUS1_POISON | STATUS1_BURN | STATUS1_FREEZE | STATUS1_PARALYSIS | STATUS1_TOXIC_POISON;
+export const CASTFORM_SUBSTITUTE = 1 << 7;

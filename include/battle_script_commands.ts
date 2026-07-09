@@ -19,3 +19,6 @@ export const YESNOBOX_X_START = 23;
 export const YESNOBOX_Y_START = 8;
 export const YESNOBOX_X_END   = 29;
 export const YESNOBOX_Y_END   = 13;
+
+// ─── Compléments (unification lot 7, 2026-07-10) — #define que l'ancien extracteur sautait (1<<N/composites), rapatriés de engine/battle/constants.ts ───
+export const SWITCH_IGNORE_ESCAPE_PREVENTION = 1 << 7;

@@ -1,5 +1,5 @@
-// AUTO-GENERATED from include/constants/pokemon.h by extract-decomp-all.mjs
-// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+// EX-AUTO-GENERATED (générateur disparu — complété manuellement) from include/constants/pokemon.h by extract-decomp-all.mjs
+// Compléments manuels autorisés (aucun script ne régénère include/ depuis avril 2026).
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/include/constants/pokemon.h
 // Generated: 2026-04-26
@@ -234,3 +234,11 @@ export const BATTLE_ALIVE_ATK_SIDE = 1;
 export const BATTLE_ALIVE_DEF_SIDE = 2;
 /** Raw expr: `(1 << 7)` */
 export const SKIP_FRONT_ANIM_EXPR = "(1 << 7)";
+
+// ─── Compléments (unification lot 7, 2026-07-10) — #define constants/que l'ancien extracteur sautait (1<<N/composites), rapatriés de engine/battle/constants.ts ───
+export const NUM_BATTLE_STATS = 8;
+export const FLAG_MAKES_CONTACT        = 1 << 0;
+export const FLAG_MAGIC_COAT_AFFECTED  = 1 << 2;
+export const FLAG_SNATCH_AFFECTED      = 1 << 3;
+export const FLAG_MIRROR_MOVE_AFFECTED = 1 << 4;
+export const FLAG_KINGS_ROCK_AFFECTED  = 1 << 5;

@@ -1,5 +1,5 @@
-// AUTO-GENERATED from include/constants/global.h by extract-decomp-all.mjs
-// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+// EX-AUTO-GENERATED (générateur disparu — complété manuellement) from include/constants/global.h by extract-decomp-all.mjs
+// Compléments manuels autorisés (aucun script ne régénère include/ depuis avril 2026).
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/include/constants/global.h
 // Generated: 2026-04-26
@@ -134,3 +134,7 @@ export const CONNECTION_WEST = 3;
 export const CONNECTION_EAST = 4;
 export const CONNECTION_DIVE = 5;
 export const CONNECTION_EMERGE = 6;
+
+// ─── Compléments (unification lot 7, 2026-07-10) — #define constants/que l'ancien extracteur sautait (1<<N/composites), rapatriés de engine/battle/constants.ts ───
+export const PARTY_SIZE_CONST = 6;
+export const MULTI_PARTY_SIZE = 3;
