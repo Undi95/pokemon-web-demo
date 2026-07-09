@@ -607,3 +607,176 @@ export function SpawnCameraObject(): number { return 0; }
 /** 1:1 décomp `RemoveCameraObject` (field_specials.c:1263-...) : retire l'object event CAMERA.
  *  DÉFÉRÉ no-op (object event CAMERA non porté). */
 export function RemoveCameraObject(): void { /* no-op — object event CAMERA non porté */ }
+
+
+// ─── PC turn on/off 1:1 (field_specials.c:986-1111) — ex-pc-anim.ts (lot 11) ──
+// DoPCTurnOnEffect flicker le metatile PC 5 fois. Adaptation moteur conservée :
+// state machine tickée (TickPCAnim depuis la main loop harness) au lieu des
+// tasks décomp (PCTurnOnEffect_0/1) — re-transcription task-based = raffinement.
+// DoPCTurnOffEffect embarque le reload tileset anti-damier-magenta (CAS 3,
+// cf. mémoire diag-pc-center-magenta a1a04117).
+import {
+  MapGridSetMetatileIdAt as _MapGridSetMetatileIdAt_PCA, MAP_OFFSET as _MAP_OFFSET_PCA,
+  gMapHeader as _gMapHeader_PCA, CopyMapTilesetsToVram as _CopyMapTilesetsToVram_PCA,
+} from './fieldmap';
+import { GetPlayerFacingDirection as _GetPlayerFacingDirection_PCA } from './field_player_avatar';
+import { gSaveBlock1Ptr as _gSaveBlock1Ptr_PCA } from './engine/save/save-block-state';
+import { VarGet as _VarGet_PCA } from './engine/script/script-vars';
+import { DrawWholeMapView as _DrawWholeMapView_PCA } from './field_camera';
+import {
+  METATILE_Building_PC_On as _MT_PC_On_PCA, METATILE_Building_PC_Off as _MT_PC_Off_PCA,
+  METATILE_BrendansMaysHouse_BrendanPC_On as _MT_BPC_On_PCA,
+  METATILE_BrendansMaysHouse_BrendanPC_Off as _MT_BPC_Off_PCA,
+  METATILE_BrendansMaysHouse_MayPC_On as _MT_MPC_On_PCA,
+  METATILE_BrendansMaysHouse_MayPC_Off as _MT_MPC_Off_PCA,
+} from '../include/constants/metatile_labels';
+import {
+  PC_LOCATION_OTHER as _PC_LOC_OTHER_PCA, PC_LOCATION_BRENDANS_HOUSE as _PC_LOC_BH_PCA,
+  PC_LOCATION_MAYS_HOUSE as _PC_LOC_MH_PCA,
+} from '../include/constants/field_specials';
+import { DIR_NORTH as _DIR_NORTH_PCA, DIR_WEST as _DIR_WEST_PCA, DIR_EAST as _DIR_EAST_PCA } from '../include/global.fieldmap';
+
+/** 1:1 décomp `fieldmap.h` : `MAPGRID_IMPASSABLE = MAPGRID_COLLISION_MASK = 0x0C00` (bits 10-11).
+ *  AUDIT FIX : était 0x800 (bit 11 seul) → collision=2 au lieu de 3 (impassable complet). */
+const MAPGRID_IMPASSABLE = 0x0C00;
+
+interface PCAnimState {
+  active: boolean;
+  flickerCount: number;
+  timer: number;
+  isScreenOn: boolean;
+}
+
+const _state: PCAnimState = {
+  active: false,
+  flickerCount: 0,
+  timer: 0,
+  isScreenOn: false,
+};
+
+/** 1:1 décomp `DoPCTurnOnEffect` (field_specials.c:986-997). */
+export function StartPCTurnOnEffect(): void {
+  if (_state.active) return;  // 1:1 FuncIsActiveTask check (already running)
+  _state.active = true;
+  _state.flickerCount = 0;
+  _state.timer = 0;
+  _state.isScreenOn = false;
+}
+
+export function IsPCAnimRunning(): boolean {
+  return _state.active;
+}
+
+/** 1:1 décomp `Task_PCTurnOnEffect` (field_specials.c:999-1004) + `PCTurnOnEffect`
+ *  (1006-1044). Ticked chaque frame. Toggle metatile every 6 frames pendant 5
+ *  flickers, finit sur ON. */
+export function TickPCAnim(): void {
+  if (!_state.active) return;
+  if (_state.timer === 6) {
+    _state.timer = 0;
+
+    const dxdy = _computeDxDy();
+    if (!dxdy) {
+      // Direction non-supportée (= player faces SOUTH?). Skip frame.
+      return;
+    }
+    const { dx, dy } = dxdy;
+    _setPCMetatile(_state.isScreenOn, dx, dy);
+    // 1:1 décomp `_DrawWholeMapView_PCA()` (field_specials.c:1035) — re-render le BG
+    // overworld après la modif metatile. Signature 1:1 = no args (lit
+    // _gSaveBlock1Ptr_PCA->pos.x/y + _gMapHeader_PCA.mapLayout internally). Avant on
+    // passait `gPlayerAvatar.x/y` → décalage 1 case visuel quand player ≠
+    // camera focus (user-flag "Utiliser le PC nous bouge temporairement d'une
+    // case a droite" 2026-05-21).
+    _DrawWholeMapView_PCA();
+
+    _state.isScreenOn = !_state.isScreenOn;
+    _state.flickerCount++;
+    if (_state.flickerCount === 5) {
+      _state.active = false;
+    }
+  }
+  _state.timer++;
+}
+
+/** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111). Pas de flicker.
+ *  Refresh BG via DrawWholeMapView (= 1:1 décomp _DrawWholeMapView_PCA() post setMetatile). */
+export function DoPCTurnOffEffect(): void {
+  const dxdy = _computeDxDy();
+  if (!dxdy) return;
+  const { dx, dy } = dxdy;
+  _setPCMetatileToOff(dx, dy);
+  // 🩸 Adaptation moteur (SYMPTÔME, pas 1:1 — cf. mémoire diag-pc-center-magenta) : les fenêtres du
+  // PC (menu / multichoice « Quel PC? » / écran boîtes) écrivent dans la zone VRAM du tileset field
+  // (charBase 0 partagé) et corrompent la tile 513 (border), révélant le damier magenta BG3 hors-map
+  // sur les petites maps (PC Center 14×9 < écran). On RECHARGE le tileset field ici : DoPCTurnOffEffect
+  // est le hook commun à TOUS les PC (EventScript_TurnOffPC : déconnexion ET MULTI_B_PRESSED, + PC
+  // chambre via TurnOffPlayerPC). Complète le fix Task_PCMainMenu STATE_FADE_IN (retour écran boîtes).
+  _CopyMapTilesetsToVram_PCA(_gMapHeader_PCA?.mapLayout ?? null);
+  _DrawWholeMapView_PCA();
+}
+
+// ─── Internal helpers ──────────────────────────────────────────────────────
+
+/** 1:1 décomp `PCTurnOnEffect` (lines 1015-1031) : compute dx/dy depuis player dir. */
+function _computeDxDy(): { dx: number; dy: number } | null {
+  const facing = _GetPlayerFacingDirection_PCA();
+  if (facing === _DIR_NORTH_PCA) return { dx: 0, dy: -1 };
+  if (facing === _DIR_WEST_PCA)  return { dx: -1, dy: -1 };
+  if (facing === _DIR_EAST_PCA)  return { dx: 1, dy: -1 };
+  // DIR_SOUTH ou autres : décomp pas de case → dx=0, dy=0 (= modifie le tile player).
+  // 1:1 décomp : dx=0 dy=0 par défaut (= initial values du switch sans match).
+  return { dx: 0, dy: 0 };
+}
+
+function _setPCMetatile(isScreenOn: boolean, dx: number, dy: number): void {
+  // 1:1 décomp `PCTurnOnEffect_SetMetatile` (lines 1046-1070).
+  const pcLocation = _getCurrentPCLocation();
+  let metatileId = 0;
+  if (isScreenOn) {
+    // Currently ON, set to OFF
+    if (pcLocation === _PC_LOC_OTHER_PCA)            metatileId = _MT_PC_Off_PCA;
+    else if (pcLocation === _PC_LOC_BH_PCA) metatileId = _MT_BPC_Off_PCA;
+    else if (pcLocation === _PC_LOC_MH_PCA)  metatileId = _MT_MPC_Off_PCA;
+  } else {
+    // Currently OFF, set to ON
+    if (pcLocation === _PC_LOC_OTHER_PCA)            metatileId = _MT_PC_On_PCA;
+    else if (pcLocation === _PC_LOC_BH_PCA) metatileId = _MT_BPC_On_PCA;
+    else if (pcLocation === _PC_LOC_MH_PCA)  metatileId = _MT_MPC_On_PCA;
+  }
+  // 1:1 décomp : x + dx + _MAP_OFFSET_PCA, y + dy + _MAP_OFFSET_PCA.
+  _MapGridSetMetatileIdAt_PCA(
+    _gSaveBlock1Ptr_PCA.pos.x + dx + _MAP_OFFSET_PCA,
+    _gSaveBlock1Ptr_PCA.pos.y + dy + _MAP_OFFSET_PCA,
+    metatileId | MAPGRID_IMPASSABLE,
+  );
+}
+
+function _setPCMetatileToOff(dx: number, dy: number): void {
+  const pcLocation = _getCurrentPCLocation();
+  let metatileId = 0;
+  if (pcLocation === _PC_LOC_OTHER_PCA)            metatileId = _MT_PC_Off_PCA;
+  else if (pcLocation === _PC_LOC_BH_PCA) metatileId = _MT_BPC_Off_PCA;
+  else if (pcLocation === _PC_LOC_MH_PCA)  metatileId = _MT_MPC_Off_PCA;
+  _MapGridSetMetatileIdAt_PCA(
+    _gSaveBlock1Ptr_PCA.pos.x + dx + _MAP_OFFSET_PCA,
+    _gSaveBlock1Ptr_PCA.pos.y + dy + _MAP_OFFSET_PCA,
+    metatileId | MAPGRID_IMPASSABLE,
+  );
+}
+
+/** Read VAR_0x8004 = PC_LOCATION_*. Le décomp lit gSpecialVar_0x8004 que le
+ *  script setvar avant le special. Pour PlayerPC (= 0 / OTHER) le script setvar
+ *  pas (= default 0). */
+function _getCurrentPCLocation(): number {
+  // Le script setvar VAR_0x8004 just before special DoPCTurnOnEffect.
+  // Lecture via gameState.getVar.
+  const v = _VarGet_PCA('VAR_0x8004');
+  // Fallback : si non-set explicitly, regarde la mapId pour deviner.
+  if (v === 0) {
+    const mapId = _gMapHeader_PCA?.id ?? '';
+    if (mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F') return _PC_LOC_BH_PCA;
+    if (mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_2F') return _PC_LOC_MH_PCA;
+  }
+  return v;
+}

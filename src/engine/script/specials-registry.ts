@@ -399,7 +399,7 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
  *
  *  PC est TOUJOURS au-dessus du player (dy = -1) selon la direction face. */
 registerSpecial('DoPCTurnOnEffect', () => {
-  void import('../pokemon/pc-anim').then(({ StartPCTurnOnEffect }) => {
+  void import('../../field_specials').then(({ StartPCTurnOnEffect }) => {
     StartPCTurnOnEffect();
   });
 });
@@ -443,7 +443,7 @@ registerSpecial('ScriptMenu_CreatePCMultichoice', () => {
 /** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
  *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
 registerSpecial('DoPCTurnOffEffect', () => {
-  void import('../pokemon/pc-anim').then(({ DoPCTurnOffEffect }) => {
+  void import('../../field_specials').then(({ DoPCTurnOffEffect }) => {
     DoPCTurnOffEffect();
   });
 });
