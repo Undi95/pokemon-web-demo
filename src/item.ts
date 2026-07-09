@@ -116,3 +116,127 @@ export function GetItemPocket(itemId: number | string): string {
   const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
   return _getItem(itemKey)?.pocket ?? '';
 }
+
+// ─── Poches du sac 1:1 (item.c:590-640) — ex-`engine/bag/bag-pockets.ts` ────
+// Adaptateur `gBagPockets` 1:1 (option (b), validée user) : la décomp
+// `struct BagPocket gBagPockets[5]` = `{ ItemSlot{u16 itemId,u16 quantity}
+// itemSlots[]; u8 capacity }`. Notre persistance (gSaveBlock1Ptr.bag, bag.ts)
+// stocke les poches en `ItemSlot{itemKey:string, quantity}[]` ('' = vide).
+// Cette section matérialise la shape décomp : item_menu lit `itemSlots[i]` /
+// `capacity` EXACTEMENT comme la décomp ; la traduction itemKey↔itemId est
+// CONFINÉE ici (slotItemId = sens inverse de GetBagItemKey ci-dessus).
+// 1:1-sém assumé : `GetBagItemQuantity` dé-XOR (encryptionKey) ; notre modèle
+// stocke la quantité EN CLAIR (acté bag.ts) → `_qty(slot) = slot.quantity`.
+import { gBagPockets, ITEMS_POCKET } from './engine/bag/bag';
+import { getItemId as _getItemId } from '../harness/runtime/data-tables';
+import type { ItemSlot } from './engine/bag/bag';
+
+/** pocketId décomp (0..4) → tableau live `ItemSlot[]` du pocket. 1:1 strict
+ *  `&gBagPockets[pocketId].itemSlots` (mutations en place = persistées). */
+export function getBagPocketSlots(pocketId: number): ItemSlot[] {
+  const idx = (pocketId >= 0 && pocketId < 5) ? pocketId : ITEMS_POCKET;
+  return gBagPockets[idx].itemSlots;
+}
+
+/** capacity 1:1 `gBagPockets[pocketId].capacity`. */
+export function getBagPocketCapacity(pocketId: number): number {
+  return getBagPocketSlots(pocketId).length;
+}
+
+/** itemId canonique 1:1 d'un slot (`slot->itemId`). '' → ITEM_NONE(0).
+ *  TM/HM move-named (`ITEM_TM_FOCUS_PUNCH`) → enum numéroté via l'ordre 1:1
+ *  sTMHMMoves (50 TM puis 8 HM) → itemId canonique. */
+export function slotItemId(slot: ItemSlot): number {
+  const k = slot.itemKey;
+  if (!k) return 0;
+  if (k.startsWith('ITEM_TM_') || k.startsWith('ITEM_HM_')) {
+    const moveKey = 'MOVE_' + k.slice(8); // après "ITEM_TM_" / "ITEM_HM_"
+    const idx = _sTMHMMoves.indexOf(moveKey);
+    if (idx >= 0) {
+      const numbered = idx < 50
+        ? `ITEM_TM${String(idx + 1).padStart(2, '0')}`
+        : `ITEM_HM${String(idx - 50 + 1).padStart(2, '0')}`;
+      return _getItemId(numbered);
+    }
+  }
+  return _getItemId(k);
+}
+
+/** 1:1-sém `GetBagItemQuantity(&slot.quantity)` (quantité en clair). */
+function _qty(slot: ItemSlot): number {
+  return slot.quantity;
+}
+
+/** 1:1 décomp `MoveItemSlotInList(itemSlots, from, to)` (item.c:640) :
+ *  save firstSlot ; si to>from → to-- puis shift gauche ; sinon shift droite ;
+ *  slots[to]=firstSlot. Utilisé par item_menu / player_pc (swap SELECT). */
+export function MoveItemSlotInList(slots: ItemSlot[], from: number, to_: number): void {
+  let to = to_;
+  if (from === to) return;
+  const firstSlot: ItemSlot = { itemKey: slots[from].itemKey, quantity: slots[from].quantity };
+  if (to > from) {
+    to--;
+    for (let i = from; i < to; i++) {
+      slots[i].itemKey = slots[i + 1].itemKey;
+      slots[i].quantity = slots[i + 1].quantity;
+    }
+  } else {
+    for (let i = from; i > to; i--) {
+      slots[i].itemKey = slots[i - 1].itemKey;
+      slots[i].quantity = slots[i - 1].quantity;
+    }
+  }
+  slots[to].itemKey = firstSlot.itemKey;
+  slots[to].quantity = firstSlot.quantity;
+}
+
+/** 1:1 décomp `SwapItemSlots` (item.c:600) : SWAP(*a,*b,temp). */
+function SwapItemSlots(slots: ItemSlot[], a: number, b: number): void {
+  const tKey = slots[a].itemKey, tQty = slots[a].quantity;
+  slots[a].itemKey = slots[b].itemKey; slots[a].quantity = slots[b].quantity;
+  slots[b].itemKey = tKey; slots[b].quantity = tQty;
+}
+
+/** 1:1 décomp `CompactItemsInBagPocket` (item.c:606-618) : slots vides en fin
+ *  de poche (bubble O(n²) exact). */
+export function CompactItemsInBagPocket(pocketId: number): void {
+  const slots = getBagPocketSlots(pocketId);
+  const capacity = slots.length;
+  let i: number, j: number;
+  for (i = 0; i < capacity - 1; i++) {
+    for (j = i + 1; j < capacity; j++) {
+      if (_qty(slots[i]) === 0)
+        SwapItemSlots(slots, i, j);
+    }
+  }
+}
+
+/** 1:1 décomp `SortBerriesOrTMHMs` (item.c:620-638) : tri par itemId croissant
+ *  des slots non-vides + vides en fin (sélection O(n²) exact). */
+export function SortBerriesOrTMHMs(pocketId: number): void {
+  const slots = getBagPocketSlots(pocketId);
+  const capacity = slots.length;
+  let i: number, j: number;
+  for (i = 0; i < capacity - 1; i++) {
+    for (j = i + 1; j < capacity; j++) {
+      if (_qty(slots[i]) !== 0) {
+        if (_qty(slots[j]) === 0)
+          continue;
+        if (slotItemId(slots[i]) <= slotItemId(slots[j]))
+          continue;
+      }
+      SwapItemSlots(slots, i, j);
+    }
+  }
+}
+
+/** 1:1 décomp `BagGetItemIdByPocketPosition` (item.c:590) :
+ *  `return gBagPockets[pocketId - 1].itemSlots[pocketPos].itemId;`. */
+export function BagGetItemIdByPocketPosition(pocketId: number, pocketPos: number): number {
+  return slotItemId(getBagPocketSlots(pocketId - 1)[pocketPos]);
+}
+
+/** 1:1 décomp `BagGetQuantityByPocketPosition` (item.c:595). */
+export function BagGetQuantityByPocketPosition(pocketId: number, pocketPos: number): number {
+  return _qty(getBagPocketSlots(pocketId - 1)[pocketPos]);
+}

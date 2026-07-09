@@ -9,7 +9,7 @@
 import { getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL, assetCache, PlaySE } from '../harness/runtime/decomp-globals';
 import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
 import { ListMenuLoadStdPalAt, DrawDialogFrameWithCustomTileAndPalette } from './menu';
-import { getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList, CompactItemsInBagPocket, SortBerriesOrTMHMs, BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition } from './engine/bag/bag-pockets';
+import { getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList, CompactItemsInBagPocket, SortBerriesOrTMHMs, BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition } from './item';
 import { SetCursorWithinListBounds, SetCursorScrollWithinListBounds, MenuHelpers_IsLinkActive, type ListPos } from './menu_helpers';
 import { gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL, CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND, gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor, ListMenuSetTemplateField, type ListMenuTemplate, type ListMenu } from './list_menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../harness/runtime/data-tables';
