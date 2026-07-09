@@ -17,7 +17,7 @@
  *   dev.bridge.scanCallsTo(file)            // analyse callsTo d'un fichier auto
  *   dev.bridge.report()                     // dump complet → console.log + window.__bridgeReport
  *
- * Cf. `memory/helper-bridge-manifest.md`.
+ * Cf. `audit-reports/helper-bridge-manifest.md`.
  */
 
 import { __bridgedHelpers__, __notImplementedHelpers__ } from '../runtime/decomp-bridge';
@@ -310,7 +310,7 @@ const bridge: DevBridge = {
       timestamp: new Date().toISOString(),
       bridgedCount: __bridgedHelpers__.size,
       notImplementedCount: __notImplementedHelpers__.size,
-      manifestPath: 'memory/helper-bridge-manifest.md',
+      manifestPath: 'audit-reports/helper-bridge-manifest.md',
       coverage,
     };
     (window as unknown as { __bridgeReport?: unknown }).__bridgeReport = result;

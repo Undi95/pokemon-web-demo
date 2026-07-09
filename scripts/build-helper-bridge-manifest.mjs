@@ -10,7 +10,7 @@
  *   - "external helpers" : fonctions appelées MAIS PAS définies dans le décomp
  *     (= probablement libc / hardware regs / macros). Need manual TS impl.
  *
- * Output : `memory/helper-bridge-manifest.md` avec une liste structurée par
+ * Output : `audit-reports/helper-bridge-manifest.md` avec une liste structurée par
  * catégorie + par fréquence d'usage. Permet de prioriser les helpers à
  * implémenter en TS.
  */
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const inDir = resolve(projectRoot, 'public', 'decomp', 'em', 'extracted-all');
-const outPath = resolve(projectRoot, 'memory', 'helper-bridge-manifest.md');
+const outPath = resolve(projectRoot, 'audit-reports', 'helper-bridge-manifest.md');
 
 // ─── Collect all defined function names + all callsTo ────────────────────────
 

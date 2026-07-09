@@ -184,7 +184,7 @@ const report = {
   },
 };
 
-const outPath = join(projectRoot, 'audit-coverage.json');
+const outPath = join(projectRoot, 'audit-reports', 'audit-coverage.json');
 writeFileSync(outPath, JSON.stringify(report, null, 2));
 console.log(`Audit written → ${outPath}`);
 console.log(`\nSummary:`);
