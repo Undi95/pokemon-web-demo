@@ -24,7 +24,7 @@ import {
 import { VarGet, VarSet, GetVarPointer, FlagSet, FlagClear, FlagGet } from './event_data';
 import { VAR_0x8000, VAR_0x8001, VAR_0x8002, VAR_0x8004 } from '../include/constants/vars';
 import { RtcInitLocalTimeOffset, RtcCalcLocalTime, gLocalTime } from './rtc';
-import { AddPCItem, CheckPCHasItem } from './engine/pokemon/pc-items';
+import { AddPCItem, CheckPCHasItem } from './item';
 import { DecorationRemove, CheckHasDecoration } from './decoration_inventory';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';

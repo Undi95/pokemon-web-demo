@@ -240,3 +240,161 @@ export function BagGetItemIdByPocketPosition(pocketId: number, pocketPos: number
 export function BagGetQuantityByPocketPosition(pocketId: number, pocketPos: number): number {
   return _qty(getBagPocketSlots(pocketId - 1)[pocketPos]);
 }
+
+
+// ─── PC items 1:1 (item.c:443-558) — ex-engine/pokemon/pc-items.ts (lot 11c) ──
+// gSaveBlock1Ptr->pcItems : 50 slots, max 999/slot, flat (pas de pockets),
+// quantité en clair. itemKey string = ITEM_NONE quand ''.
+import { gSaveBlock1Ptr as _gSaveBlock1Ptr_PCI } from './engine/save/save-block-state';
+
+/** 1:1 décomp `include/constants/global.h:PC_ITEMS_COUNT`. */
+export const PC_ITEMS_COUNT = 50;
+
+/** 1:1 décomp `include/constants/items.h:MAX_PC_ITEM_CAPACITY`. */
+export const MAX_PC_ITEM_CAPACITY = 999;
+
+/** 1:1 décomp `static u16 GetPCItemQuantity(u16 *quantity)`. Pas d'XOR pour le PC. */
+function _getPCItemQuantity(slot: ItemSlot): number {
+  return slot.quantity;
+}
+
+/** 1:1 décomp `static void SetPCItemQuantity(u16 *quantity, u16 newValue)`. */
+function _setPCItemQuantity(slot: ItemSlot, value: number): void {
+  slot.quantity = value;
+}
+
+/** 1:1 décomp `static s32 FindFreePCItemSlot(void)` (item.c:454-464) :
+ *    for (i = 0; i < PC_ITEMS_COUNT; i++)
+ *        if (_gSaveBlock1Ptr_PCI->pcItems[i].itemId == ITEM_NONE)
+ *            return i;
+ *    return -1;
+ */
+function _findFreePCItemSlot(): number {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    if (!pcItems[i].itemKey) return i;
+  }
+  return -1;
+}
+
+/** 1:1 décomp `u8 CountUsedPCItemSlots(void)` (item.c:466-477). */
+export function CountUsedPCItemSlots(): number {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  let used = 0;
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    if (pcItems[i].itemKey) used++;
+  }
+  return used;
+}
+
+/** 1:1 décomp `bool8 CheckPCHasItem(u16 itemId, u16 count)` (item.c:479-489). */
+export function CheckPCHasItem(itemKey: string, count: number): boolean {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    if (pcItems[i].itemKey === itemKey && _getPCItemQuantity(pcItems[i]) >= count) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `bool8 AddPCItem(u16 itemId, u16 count)` (item.c:491-546).
+ *
+ *  Algorithme :
+ *    1. Copie temporaire des pcItems (= newItems)
+ *    2. Pour chaque slot avec ce itemId : add count jusqu'à MAX_PC_ITEM_CAPACITY,
+ *       déborde au slot suivant
+ *    3. Si count > 0 après, trouve un slot vide et y met le remaining
+ *    4. Si pas de slot vide → return FALSE (= échec)
+ *    5. Commit la copie temporaire vers pcItems et return TRUE
+ *
+ *  Notre port utilise itemKey (string) au lieu de u16 itemId. Empty string = ITEM_NONE.
+ */
+export function AddPCItem(itemKey: string, count: number): boolean {
+  // 1:1 décomp : AllocZeroed + memcpy pour stage la modif. En TS on stage
+  // dans un array local + commit à la fin.
+  const newItems: ItemSlot[] = _gSaveBlock1Ptr_PCI.pcItems.map((s: ItemSlot) => ({
+    itemKey: s.itemKey,
+    quantity: s.quantity,
+  }));
+
+  // Use any item slots that already contain this item.
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    if (newItems[i].itemKey === itemKey) {
+      const ownedCount = _getPCItemQuantity(newItems[i]);
+      if (ownedCount + count <= MAX_PC_ITEM_CAPACITY) {
+        _setPCItemQuantity(newItems[i], ownedCount + count);
+        _commitPCItems(newItems);
+        return true;
+      }
+      count += ownedCount - MAX_PC_ITEM_CAPACITY;
+      _setPCItemQuantity(newItems[i], MAX_PC_ITEM_CAPACITY);
+      if (count === 0) {
+        _commitPCItems(newItems);
+        return true;
+      }
+    }
+  }
+
+  // Put any remaining items into a new item slot.
+  if (count > 0) {
+    // Trouver via newItems (= stage), pas via gameState (= avant commit).
+    let freeSlot = -1;
+    for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+      if (!newItems[i].itemKey) { freeSlot = i; break; }
+    }
+    if (freeSlot === -1) {
+      // 1:1 décomp : Free(newItems) + return FALSE — pas de slot libre.
+      return false;
+    }
+    newItems[freeSlot].itemKey = itemKey;
+    _setPCItemQuantity(newItems[freeSlot], count);
+  }
+
+  _commitPCItems(newItems);
+  return true;
+}
+
+/** 1:1 décomp `void RemovePCItem(u8 index, u16 count)` (item.c:548-556). */
+export function RemovePCItem(index: number, count: number): void {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  pcItems[index].quantity -= count;
+  if (pcItems[index].quantity === 0) {
+    pcItems[index].itemKey = '';  // = ITEM_NONE
+    CompactPCItems();
+  }
+}
+
+/** 1:1 décomp `void CompactPCItems(void)` (item.c:558-575). Compacte les slots
+ *  en poussant les ITEM_NONE à la fin. */
+export function CompactPCItems(): void {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  for (let i = 0; i < PC_ITEMS_COUNT - 1; i++) {
+    for (let j = i + 1; j < PC_ITEMS_COUNT; j++) {
+      if (!pcItems[i].itemKey) {
+        const temp = pcItems[i];
+        pcItems[i] = pcItems[j];
+        pcItems[j] = temp;
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `void ClearItemSlots(struct ItemSlot *itemSlots, u8 itemCount)`
+ *  (item.c:443-452). */
+export function ClearPCItems(): void {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    pcItems[i].itemKey = '';
+    pcItems[i].quantity = 0;
+  }
+}
+
+/** Helper internal : commit staging array → _gSaveBlock1Ptr_PCI.pcItems. */
+function _commitPCItems(newItems: ItemSlot[]): void {
+  const pcItems = _gSaveBlock1Ptr_PCI.pcItems;
+  for (let i = 0; i < PC_ITEMS_COUNT; i++) {
+    pcItems[i].itemKey = newItems[i].itemKey;
+    pcItems[i].quantity = newItems[i].quantity;
+  }
+}

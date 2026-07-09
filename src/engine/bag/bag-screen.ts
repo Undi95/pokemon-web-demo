@@ -2691,7 +2691,7 @@ function _tickItemPCDepositQty(newKeys: number, KEY_A: number, KEY_B: number, KE
 
 /** 1:1 décomp `TryDepositItem` (item_menu.c:2248-2274). */
 async function _tryDepositItem(): Promise<void> {
-  const { AddPCItem } = await import('../pokemon/pc-items');
+  const { AddPCItem } = await import('../../item');
   if (AddPCItem(_depositItemKey, _depositQtySelected)) {
     // success → remove from bag (= 1:1 RemoveBagItem qui retire du pocket courant).
     const slots = _getBagPocketSlots();

@@ -44,7 +44,7 @@ import { ClearPlayerLinkBattleRecords } from './battle_records';
 import { InitSeedotSizeRecord, InitLotadSizeRecord } from './pokemon_size_record';
 import { ClearRoamerData, ClearRoamerLocationData } from './roamer';
 import { ClearBag } from './engine/bag/bag';
-import { NewGameInitPCItems } from './engine/pokemon/pc-items';
+import { NewGameInitPCItems } from './player_pc';
 import { ClearPokeblocks, ResetPokeblockScrollPositions } from './pokeblock';
 import { ClearDecorationInventories } from './decoration_inventory';
 import { InitEasyChatPhrases } from './easy_chat';

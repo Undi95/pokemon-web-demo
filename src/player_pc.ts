@@ -63,7 +63,8 @@ import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import * as Songs from '../include/constants/songs';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
-} from './engine/pokemon/pc-items';
+  ClearPCItems as _ClearPCItems_NG,
+} from './item';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
@@ -2238,3 +2239,31 @@ function _tickMsgWait(newKeys: number): void {
     }
   }
 }
+
+// ─── NewGameInitPCItems 1:1 (player_pc.c:225-229 + 358-371) — ex-pc-items.ts (lot 11c) ──
+/** 1:1 décomp `static const u16 sNewGamePCItems[][2]` (player_pc.c:225-229) :
+ *    { ITEM_POTION, 1 },
+ *    { ITEM_NONE, 0 } */
+const sNewGamePCItems: ReadonlyArray<readonly [string, number]> = [
+  ['ITEM_POTION', 1],
+];
+
+/** 1:1 décomp `void NewGameInitPCItems(void)` (player_pc.c:358-371) :
+ *    ClearItemSlots(gSaveBlock1Ptr->pcItems, PC_ITEMS_COUNT);
+ *    while (TRUE) {
+ *        if (sNewGamePCItems[i][0] == ITEM_NONE || sNewGamePCItems[i][1] == 0)
+ *            break;
+ *        if (AddPCItem(sNewGamePCItems[i][0], sNewGamePCItems[i][1]) != TRUE)
+ *            break;
+ *        i++;
+ *    }
+ *  Appelé par NewGameInitData (new_game.c:187). */
+export function NewGameInitPCItems(): void {
+  _ClearPCItems_NG();
+  for (let i = 0; i < sNewGamePCItems.length; i++) {
+    const [itemKey, qty] = sNewGamePCItems[i];
+    if (!itemKey || qty === 0) break;
+    if (!AddPCItem(itemKey, qty)) break;
+  }
+}
+
