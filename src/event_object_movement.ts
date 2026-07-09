@@ -9055,3 +9055,129 @@ export function GetBaseOamForDimensions(frameWidth: number, frameHeight: number)
   if (frameWidth === 48 && frameHeight === 48) return gObjectEventBaseOam_16x32;
   return gObjectEventBaseOam_16x32;  // fallback
 }
+
+
+// ─── Virtual objects 1:1 (event_object_movement.c CreateVirtualObject & co) ──
+// Ex-engine/field/virtual-objects.ts (lot 14). Adaptation conservée : sprites
+// posés via CreateObjectGraphicsSprite, pas auto-camera-tracked (cutscenes
+// stationnaires). _directionToAnimIdx_VO = la table sFaceDirectionAnimNums
+// (définie plus haut dans CE fichier) en switch — dédoublonnage = raffinement.
+import { CreateObjectGraphicsSprite as _CreateObjectGraphicsSprite_VO, loadObjectEventGraphicsInfo as _loadOEGI_VO } from './engine/field/object-event-graphics';
+import { getRuntime as _getRuntime_VO } from '../harness/runtime/decomp-globals';
+import { DestroySprite as _DestroySprite_VO } from './sprite';
+import { gFieldCamera as _gFieldCamera_VO } from './field_camera';
+import { DIR_SOUTH as _DIR_SOUTH_VO, DIR_NORTH as _DIR_NORTH_VO, DIR_WEST as _DIR_WEST_VO, DIR_EAST as _DIR_EAST_VO } from '../include/constants/global';
+
+/** 1:1 décomp `sFaceDirectionAnimNums` (event_object_movement.c). */
+function _directionToAnimIdx_VO(direction: number): number {
+  // ANIM_STD_FACE_SOUTH = 0, NORTH = 1, WEST = 2, EAST = 3.
+  switch (direction) {
+    case _DIR_SOUTH_VO: return 0;
+    case _DIR_NORTH_VO: return 1;
+    case _DIR_WEST_VO: return 2;
+    case _DIR_EAST_VO: return 3;
+    default: return 0;
+  }
+}
+
+// ─── Virtual object state ────────────────────────────────────────────────────
+
+interface VirtualObject_VO {
+  spriteId: number;
+  graphicsId: number;
+  mapX: number;
+  mapY: number;
+  elevation: number;
+  direction: number;
+}
+
+const _gVirtualObjects_VO: Map<number, VirtualObject_VO> = new Map();
+
+const TILE_SIZE_VO = 16;
+
+/** Convert map tile coords → screen pixel coords using current camera offset.
+ *  1:1 décomp `gSpriteCoordOffsetX/Y` = camera tile offset in pixels. */
+function _mapToScreenX_VO(mapX: number): number {
+  return (mapX - _gFieldCamera_VO.x) * TILE_SIZE_VO + TILE_SIZE_VO / 2;
+}
+
+function _mapToScreenY_VO(mapY: number): number {
+  return (mapY - _gFieldCamera_VO.y) * TILE_SIZE_VO + TILE_SIZE_VO / 2;
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+/** 1:1 décomp `CreateVirtualObject` (event_object_movement.c) :
+ *    spriteId = CreateSprite(template, x, y, 0) ;
+ *    sprite->subspriteTableNum = elevation < 16 ? elevation : 0 ;
+ *    StartSpriteAnim(sprite, sFacingDirection[direction]) ;
+ *    sVirtualObjectIds[virtualObjId] = spriteId ;
+ *  Async wrapper qui gère le load gfx si pas déjà loaded. */
+export async function CreateVirtualObject(
+  graphicsId: number,
+  virtualObjId: number,
+  mapX: number,
+  mapY: number,
+  elevation: number,
+  direction: number,
+): Promise<number> {
+  const rt = _getRuntime_VO();
+  if (!rt) return -1;
+  // Cleanup existing vobj at this id (= 1:1 décomp behavior, ré-create override).
+  RemoveVirtualObject(virtualObjId);
+  // Load gfx async si pas déjà loaded.
+  await _loadOEGI_VO(rt, graphicsId);
+  const screenX = _mapToScreenX_VO(mapX);
+  const screenY = _mapToScreenY_VO(mapY);
+  const animIdx = _directionToAnimIdx_VO(direction);
+  const spriteId = _CreateObjectGraphicsSprite_VO(
+    graphicsId, null, screenX, screenY,
+    2 /* subPriority middle */, animIdx,
+  );
+  if (spriteId < 0) return -1;
+  _gVirtualObjects_VO.set(virtualObjId, {
+    spriteId, graphicsId, mapX, mapY, elevation, direction,
+  });
+  // Expose pour debug
+  (globalThis as Record<string, unknown>).gVirtualObjects = _gVirtualObjects_VO;
+  return spriteId;
+}
+
+/** 1:1 décomp `TurnVirtualObject(virtualObjId, direction)` :
+ *    spriteId = sVirtualObjectIds[virtualObjId] ;
+ *    StartSpriteAnim(&gSprites[spriteId], sFacingDirection[direction]) ;
+ */
+export function TurnVirtualObject(virtualObjId: number, direction: number): void {
+  const vobj = _gVirtualObjects_VO.get(virtualObjId);
+  if (!vobj) return;
+  vobj.direction = direction;
+  const rt = _getRuntime_VO();
+  if (!rt) return;
+  const animIdx = _directionToAnimIdx_VO(direction);
+  // 1:1 décomp StartSpriteAnim : update sprite anim state.
+  rt.StartSpriteAnim?.(vobj.spriteId, animIdx);
+}
+
+/** Remove a virtual object (= cleanup le sprite). Appelé au map switch ou par
+ *  `removeobject` opcode si vobj id matché. */
+export function RemoveVirtualObject(virtualObjId: number): void {
+  const vobj = _gVirtualObjects_VO.get(virtualObjId);
+  if (!vobj) return;
+  const rt = _getRuntime_VO();
+  if (rt && vobj.spriteId >= 0) {
+    _DestroySprite_VO(vobj.spriteId);
+  }
+  _gVirtualObjects_VO.delete(virtualObjId);
+}
+
+/** Clear tous les vobjs. Appelé au map switch. */
+export function ClearAllVirtualObjects(): void {
+  for (const [id] of _gVirtualObjects_VO) {
+    RemoveVirtualObject(id);
+  }
+}
+
+// Auto-register sur globalThis pour script-opcodes.
+(globalThis as { __virtualObjects?: Record<string, unknown> }).__virtualObjects = {
+  CreateVirtualObject, TurnVirtualObject, RemoveVirtualObject, ClearAllVirtualObjects,
+};

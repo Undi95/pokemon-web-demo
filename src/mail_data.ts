@@ -80,13 +80,17 @@ export const SPECIES_BULBASAUR = 1;
 export const SPECIES_UNOWN = 201;
 /** 1:1 décomp pokemon.h:362 `#define NUM_UNOWN_FORMS 28`. */
 export const NUM_UNOWN_FORMS = 28;
-export const NUM_SPECIES = 412;
+// NUM_SPECIES : source unique include/constants/species.ts (miroir header).
+import { NUM_SPECIES } from '../include/constants/species';
+export { NUM_SPECIES };
 
 /** 1:1 décomp easy_chat.h:1129 `#define EC_EMPTY_WORD 0xFFFF`. */
 export const EC_EMPTY_WORD = 0xFFFF;
 
 /** 1:1 décomp string.h `#define EOS 0xFF`. */
-export const EOS = 0xFF;
+// EOS : source unique include/constants/characters.ts (miroir header).
+import { EOS } from '../include/constants/characters';
+export { EOS };
 
 /** 1:1 décomp string.h `#define CHAR_SPACE 0x00`. */
 export const CHAR_SPACE = 0x00;

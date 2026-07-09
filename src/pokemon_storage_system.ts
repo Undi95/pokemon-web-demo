@@ -95,7 +95,9 @@ import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from
 import { GetItemName, GetItemDescription } from './item';
 import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
 import { getString } from './engine/ui/gba-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
-import { ItemIsMail, EOS } from './mail_data';
+import { ItemIsMail } from './mail_data';
+// EOS : depuis le header-miroir (leaf characters.h) — TDZ boot sinon (cycle mail_data).
+import { EOS } from '../include/constants/characters';
 import { AddBagItem, RemoveBagItem } from './engine/bag/bag';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { OBJ_PLTT_ID } from '../harness/runtime/decomp-runtime';

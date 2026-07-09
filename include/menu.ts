@@ -19,6 +19,11 @@ export const MENU_CURSOR_DELTA_DOWN = 1;
 export const MENU_CURSOR_DELTA_LEFT = -1;
 export const MENU_CURSOR_DELTA_RIGHT = 1;
 
+// ─── DLG_WINDOW_* 1:1 (include/menu.h:9-10) — hotfix TDZ field_message_box ──
+// (lu au top-level par FRAME_PALETTE_FLAT_IDX ; littéraux ICI = init sûre en cycle)
+export const DLG_WINDOW_PALETTE_NUM = 15;
+export const DLG_WINDOW_BASE_TILE_NUM = 0x200;
+
 // Fonctions menu.c (re-export depuis src/menu — APRÈS les littéraux pour l'ordre eval sûr).
 export {
   GetPlayerTextSpeed, GetPlayerTextSpeedDelay, RunTextPrintersAndIsPrinter0Active,

@@ -1356,8 +1356,7 @@ import '../gba/flash-mask';
 // money box (money.ts) + coins box (coins.ts) auto-register __moneyBoxUI à leur chargement
 // (importés par scrcmd qui porte les opcodes show/hide/update money&coins) → import explicite
 // inutile ici (1:1 : money.c/coins.c portent ces fns ; lues par scrcmd via globalThis lazy).
-// virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
-import '../../src/engine/field/virtual-objects';
+// __virtualObjects (createvobject/turnvobject) : auto-register au chargement de src/event_object_movement.ts (lot 14).
 // __mapLayoutSwap (setmaplayoutindex) : auto-register au chargement de src/fieldmap.ts (lot 13).
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */

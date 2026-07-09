@@ -420,6 +420,8 @@ export const SPECIES_CHIMECHO = 411;
 export const SPECIES_EGG = 412;
 /** Raw expr: `SPECIES_EGG` */
 export const NUM_SPECIES_EXPR = "SPECIES_EGG";
+// Macro résolue (species.h `#define NUM_SPECIES SPECIES_EGG`) — hotfix TDZ pokemon_icon.
+export const NUM_SPECIES = SPECIES_EGG;
 /** Raw expr: `(NUM_SPECIES + 1)` */
 export const SPECIES_UNOWN_B_EXPR = "(NUM_SPECIES + 1)";
 /** Raw expr: `(SPECIES_UNOWN_B + 1)` */

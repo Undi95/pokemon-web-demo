@@ -12,7 +12,10 @@ import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag, _freeSpriteTileRangeByTag, DestroySprite, IndexOfSpritePaletteTag } from './sprite';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
-import { MailSpeciesToSpecies, NUM_SPECIES, SPECIES_UNOWN } from './mail_data';
+import { MailSpeciesToSpecies, SPECIES_UNOWN } from './mail_data';
+// NUM_SPECIES : depuis le header-miroir (leaf) — la const de mail_data.ts arrivait
+// APRÈS pokemon_icon dans le cycle d'éval (TDZ boot, lot 12b/14).
+import { NUM_SPECIES } from '../include/constants/species';
 
 // ─── 1:1 décomp constantes ───────────────────────────────────────────────────
 const SPECIES_UNOWN_B = NUM_SPECIES + 1;       // species.h:422 (NUM_SPECIES + 1)

@@ -178,8 +178,9 @@ export function AddTextPrinterWithCallbackForMessage(
 
 // Exportés (le hub gba-window-system les ré-expose pour field-message-box /
 // start-menu / bedroom-pc qui les importaient depuis l'engine).
-export const DLG_WINDOW_PALETTE_NUM = 15;
-export const DLG_WINDOW_BASE_TILE_NUM = 0x200;
+// DLG_WINDOW_* : source unique include/menu.ts (miroir header, hotfix TDZ).
+import { DLG_WINDOW_PALETTE_NUM, DLG_WINDOW_BASE_TILE_NUM } from '../include/menu';
+export { DLG_WINDOW_PALETTE_NUM, DLG_WINDOW_BASE_TILE_NUM };
 const STD_WINDOW_PALETTE_NUM = 14;
 /** 1:1 `PLTT_SIZEOF(n)` (palette.h) = n couleurs × sizeof(u16). */
 const STD_WINDOW_PALETTE_SIZE = 10 * 2;
