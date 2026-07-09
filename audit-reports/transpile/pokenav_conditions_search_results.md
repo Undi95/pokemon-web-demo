@@ -1,0 +1,102 @@
+# transpile pokenav_conditions_search_results.c → src\pokenav_conditions_search_results.ts
+
+stats: {"fns":36,"data":9,"defines":0,"flags":56,"unresolved":36,"gtext":1,"mergeSkipped":0}
+
+## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
+- `AllocSubstruct` ()
+- `CreateLoopedTask` ()
+- `GetSelectedConditionSearch` ()
+- `GetSubstructPtr` ()
+- `FreePokenavSubstruct` ()
+- `IsLoopedTaskActive` ()
+- `PokenavList_GetSelectedIndex` ()
+- `CheckBoxMonSanityAt` ()
+- `GetBoxMonDataAt` ()
+- `DestroyPokenavList` ()
+- `InitBgTemplates` ()
+- `gConditionSearchResultTiles` ()
+- `DecompressAndCopyTileDataToVram` ()
+- `SetBgTilemapBuffer` ()
+- `gConditionSearchResultTilemap` ()
+- `gConditionSearchResultFramePal` ()
+- `CopyPaletteIntoBufferUnfaded` ()
+- `FreeTempTileDataBuffersIfPossible` ()
+- `IsCreatePokenavListTaskActive` ()
+- `PrintHelpBarText` ()
+- `LoadLeftHeaderGfxForIndex` ()
+- `ShowLeftHeaderGfx` ()
+- `PokenavFadeScreen` ()
+- `IsPaletteFadeActive` ()
+- `AreLeftHeaderSpritesMoving` ()
+- `LT_SET_STATE` ()
+- `PokenavList_MoveCursorUp` ()
+- `PokenavList_IsMoveWindowTaskActive` ()
+- `PokenavList_MoveCursorDown` ()
+- `PokenavList_PageUp` ()
+- `PokenavList_PageDown` ()
+- `SlideMenuHeaderDown` ()
+- `MainMenuLoopedTaskIsBusy` ()
+- `SetLeftHeaderSpritesInvisibility` ()
+- `CreatePokenavList` ()
+- `GetBoxMonData` ()
+
+## Flags TRANSPILER-TODO
+- :81 **incbin** — `sListBg_Pal ← graphics/pokenav/condition/search_results_list.pal`
+- :132 **sizeof** — `sizeof(struct Pokenav_SearchResults)`
+- :136 **sizeof** — `sizeof(struct PokenavMonList)`
+- :150 **sizeof** — `sizeof(struct Pokenav_SearchResults)`
+- :385 **sizeof** — `sizeof(struct Pokenav_SearchResultsGfx)`
+- :396 **sizeof** — `sizeof(struct Pokenav_SearchResultsGfx)`
+- :456 **sizeof** — `sizeof(sListBg_Pal)`
+- :673 **assign-intranspilable** — `*gStringVar1 = EOS`
+- :683 **struct-local** — `struct PokenavListTemplate template`
+- :687 **sizeof** — `sizeof(struct PokenavListItem)`
+- :739 **deref** — `*s++`
+- :739 **ptr-arith** — `s++`
+- :739 **assign-intranspilable** — `*s++ = CHAR_SLASH`
+- :740 **deref** — `*s++`
+- :740 **ptr-arith** — `s++`
+- :740 **assign-intranspilable** — `*s++ = CHAR_EXTRA_SYMBOL`
+- :741 **deref** — `*s++`
+- :741 **ptr-arith** — `s++`
+- :741 **assign-intranspilable** — `*s++ = CHAR_LV_2`
+- :0 **import-ambigu** — `MON_DATA_COOL ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_BEAUTY ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_CUTE ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SMART ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_TOUGH ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `encodeOwText ← src/text.ts | include/text.ts (choisi src/text.ts)`
+- :0 **import-ambigu** — `DPAD_UP ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_REPEAT ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `DPAD_DOWN ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DPAD_LEFT ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_NEW ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `DPAD_RIGHT ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `B_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `A_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `PARTY_SIZE ← src/engine/battle/party-storage.ts | src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `gPlayerParty ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SANITY_HAS_SPECIES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `GetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/engine/battle/party-storage.ts)`
+- :0 **import-ambigu** — `MON_DATA_SANITY_IS_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `PLTT_SIZE_4BPP ← src/sprite.ts | harness/runtime/decomp-bridge.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `BG_PLTT_ID ← src/palette.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `SE_SELECT ← src/battle_controllers.ts | include/constants/songs.ts (choisi include/constants/songs.ts)`
+- :0 **import-ambigu** — `PlaySE ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `gStringVar1 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `EOS ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `gStringVar2 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `FONT_NORMAL ← src/engine/battle/battle-windows.ts | src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `TEXT_SKIP_DRAW ← src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `STR_CONV_MODE_RIGHT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+- :0 **import-ambigu** — `ConvertIntToDecimalStringN ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_NICKNAME ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `gStringVar3 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `StringGet_Nickname ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_MALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `MON_FEMALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `StringCopy ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `STR_CONV_MODE_LEFT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+
+## gText_* transformés en getString() — vérifier encodeOwText aux sites printer
+- :674 gText_NumberIndex

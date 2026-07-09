@@ -1,0 +1,183 @@
+# transpile pokenav_conditions.c → src\pokenav_conditions.ts
+
+stats: {"fns":32,"data":0,"defines":1,"flags":155,"unresolved":17,"gtext":2,"mergeSkipped":0}
+
+## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
+- `AllocSubstruct` ()
+- `ConditionGraph_Init` ()
+- `gKeyRepeatStartDelay` ()
+- `GetSubstructPtr` ()
+- `HandleMonMarkingsMenuInput` ()
+- `GetMonMarkingsData` ()
+- `SetBoxMonDataAt` ()
+- `FreePokenavSubstruct` ()
+- `ConditionGraph_SetNewPositions` ()
+- `GetBoxOrPartyMonData` ()
+- `GetBoxNamePtr` ()
+- `GET_NUM_CONDITION_SPARKLES` ()
+- `ConditionGraph_CalcPositions` ()
+- `gMonFrontPicTable` ()
+- `LoadSpecialPokePic` ()
+- `GetMonSpritePalFromSpeciesAndPersonality` ()
+- `LZ77UnCompWram` ()
+
+## Flags TRANSPILER-TODO
+- :52 **sizeof** — `sizeof(struct Pokenav_ConditionMenu)`
+- :66 **sizeof** — `sizeof(struct Pokenav_ConditionMenu)`
+- :326 **deref** — `*src++`
+- :326 **deref** — `*dst++`
+- :326 **assign-intranspilable** — `*dst++ = *src++`
+- :329 **deref** — `*dst++`
+- :329 **assign-intranspilable** — `*dst++ = CHAR_SPACE`
+- :344 **deref** — `*(str++)`
+- :344 **ptr-arith** — `str++`
+- :344 **assign-intranspilable** — `*(str++) = EXT_CTRL_CODE_BEGIN`
+- :345 **deref** — `*(str++)`
+- :345 **ptr-arith** — `str++`
+- :345 **assign-intranspilable** — `*(str++) = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW`
+- :346 **deref** — `*(str++)`
+- :346 **ptr-arith** — `str++`
+- :346 **assign-intranspilable** — `*(str++) = TEXT_COLOR_BLUE`
+- :347 **deref** — `*(str++)`
+- :347 **ptr-arith** — `str++`
+- :347 **assign-intranspilable** — `*(str++) = TEXT_COLOR_TRANSPARENT`
+- :348 **deref** — `*(str++)`
+- :348 **ptr-arith** — `str++`
+- :348 **assign-intranspilable** — `*(str++) = TEXT_COLOR_LIGHT_BLUE`
+- :373 **ptr-arith** — `str_++`
+- :375 **deref** — `*(str_++)`
+- :375 **ptr-arith** — `str_++`
+- :375 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :376 **deref** — `*(str_++)`
+- :376 **ptr-arith** — `str_++`
+- :376 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_SKIP`
+- :377 **deref** — `*(str_++)`
+- :377 **ptr-arith** — `str_++`
+- :377 **assign-intranspilable** — `*(str_++) = 60`
+- :381 **deref** — `*(str_++)`
+- :381 **ptr-arith** — `str_++`
+- :381 **assign-intranspilable** — `*(str_++) = CHAR_SPACER`
+- :384 **deref** — `*(str_++)`
+- :384 **ptr-arith** — `str_++`
+- :384 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :385 **deref** — `*(str_++)`
+- :385 **ptr-arith** — `str_++`
+- :385 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_COLOR`
+- :386 **deref** — `*(str_++)`
+- :386 **ptr-arith** — `str_++`
+- :386 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_RED`
+- :387 **deref** — `*(str_++)`
+- :387 **ptr-arith** — `str_++`
+- :387 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :388 **deref** — `*(str_++)`
+- :388 **ptr-arith** — `str_++`
+- :388 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_SHADOW`
+- :389 **deref** — `*(str_++)`
+- :389 **ptr-arith** — `str_++`
+- :389 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_LIGHT_RED`
+- :390 **deref** — `*(str_++)`
+- :390 **ptr-arith** — `str_++`
+- :390 **assign-intranspilable** — `*(str_++) = CHAR_MALE`
+- :393 **deref** — `*(str_++)`
+- :393 **ptr-arith** — `str_++`
+- :393 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :394 **deref** — `*(str_++)`
+- :394 **ptr-arith** — `str_++`
+- :394 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_COLOR`
+- :395 **deref** — `*(str_++)`
+- :395 **ptr-arith** — `str_++`
+- :395 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_GREEN`
+- :396 **deref** — `*(str_++)`
+- :396 **ptr-arith** — `str_++`
+- :396 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :397 **deref** — `*(str_++)`
+- :397 **ptr-arith** — `str_++`
+- :397 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_SHADOW`
+- :398 **deref** — `*(str_++)`
+- :398 **ptr-arith** — `str_++`
+- :398 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_LIGHT_GREEN`
+- :399 **deref** — `*(str_++)`
+- :399 **ptr-arith** — `str_++`
+- :399 **assign-intranspilable** — `*(str_++) = CHAR_FEMALE`
+- :403 **deref** — `*(str_++)`
+- :403 **ptr-arith** — `str_++`
+- :403 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_BEGIN`
+- :404 **deref** — `*(str_++)`
+- :404 **ptr-arith** — `str_++`
+- :404 **assign-intranspilable** — `*(str_++) = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW`
+- :405 **deref** — `*(str_++)`
+- :405 **ptr-arith** — `str_++`
+- :405 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_BLUE`
+- :406 **deref** — `*(str_++)`
+- :406 **ptr-arith** — `str_++`
+- :406 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_TRANSPARENT`
+- :407 **deref** — `*(str_++)`
+- :407 **ptr-arith** — `str_++`
+- :407 **assign-intranspilable** — `*(str_++) = TEXT_COLOR_LIGHT_BLUE`
+- :408 **deref** — `*(str_++)`
+- :408 **ptr-arith** — `str_++`
+- :408 **assign-intranspilable** — `*(str_++) = CHAR_SLASH`
+- :409 **deref** — `*(str_++)`
+- :409 **ptr-arith** — `str_++`
+- :409 **assign-intranspilable** — `*(str_++) = CHAR_EXTRA_SYMBOL`
+- :410 **deref** — `*(str_++)`
+- :410 **ptr-arith** — `str_++`
+- :410 **assign-intranspilable** — `*(str_++) = CHAR_LV_2`
+- :414 **deref** — `*(str_++)`
+- :414 **ptr-arith** — `str_++`
+- :414 **assign-intranspilable** — `*(str_++) = CHAR_SPACE`
+- :419 **deref** — `*(str_++)`
+- :419 **ptr-arith** — `str_++`
+- :419 **assign-intranspilable** — `*(str_++) = CHAR_SPACE`
+- :442 **adresse-element** — `&menu->locationText[loadId][5]`
+- :444 **adresse-element** — `&menu->locationText[loadId][5]`
+- :462 **sizeof** — `sizeof(struct PokenavMonList)`
+- :537 **adresse-element** — `&gMonFrontPicTable[species]`
+- :0 **import-ambigu** — `B_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_NEW ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `SE_SELECT ← src/battle_controllers.ts | include/constants/songs.ts (choisi include/constants/songs.ts)`
+- :0 **import-ambigu** — `PlaySE ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `A_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `gPlayerParty ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MARKINGS ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `SetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `DPAD_UP ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_HELD ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `DPAD_DOWN ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `EOS ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `CHAR_SPACE ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_BLUE ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_TRANSPARENT ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_BLUE ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `MON_DATA_IS_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `POKEMON_NAME_LENGTH ← src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `StringCopyPadded ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_NICKNAME ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `StringGet_Nickname ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_SPECIES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_LEVEL ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `GetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/engine/battle/party-storage.ts)`
+- :0 **import-ambigu** — `StringCompare ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_GENDERLESS ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `MON_MALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_RED ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_RED ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `MON_FEMALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_GREEN ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_GREEN ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `STR_CONV_MODE_LEFT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+- :0 **import-ambigu** — `ConvertIntToDecimalStringN ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `CalculatePlayerPartyCount ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_COOL ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_TOUGH ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SMART ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_CUTE ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_BEAUTY ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SHEEN ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SPECIES_OR_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_OT_ID ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_PERSONALITY ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+
+## gText_* transformés en getString() — vérifier encodeOwText aux sites printer
+- :351 gText_EggNickname
+- :442 gText_InParty

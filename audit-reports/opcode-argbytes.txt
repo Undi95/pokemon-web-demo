@@ -1,0 +1,36 @@
+Handlers analysés : 216 | OK : 201 | MISMATCH : 14 | short-circuit ScriptRead : 0 | sans totalBytes table : 1
+
+=== ❌ MISMATCH octets lus ≠ cmd-table (= désalignement potentiel) ===
+  ScrCmd_nop1: lu 0 ≠ table 2
+      false
+  ScrCmd_warp: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_warpsilent: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_setwarp: lu 0 ≠ table 7
+      { (globalThis as Record<string, unknown>).gSavedWarp = readWarp(ctx); return false; }
+  ScrCmd_setdivewarp: lu 0 ≠ table 7
+      { (globalThis as Record<string, unknown>).gDiveWarp = readWarp(ctx); return false; }
+  ScrCmd_setholewarp: lu 0 ≠ table 7
+      { (globalThis as Record<string, unknown>).gHoleWarp = readWarp(ctx); return false; }
+  ScrCmd_setescapewarp: lu 0 ≠ table 7
+      { const w = readWarp(ctx); (globalThis as Record<string, unknown>).__escapeWarp = { mapName: w.destMap.replace(/^MAP_/, ''), x: w.x, y: w.y 
+  ScrCmd_setdynamicwarp: lu 0 ≠ table 7
+      { const w = readWarp(ctx); SetDynamicWarp(w.destMap, w.x, w.y); return false; }
+  ScrCmd_warpdoor: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_warpmossdeepgym: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_warpspinenter: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_warpwhitefade: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_warpteleport: lu 0 ≠ table 7
+      { const { destMap, warpId, x, y } = readWarp(ctx); setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step'); return false; }
+  ScrCmd_hidemoneybox: lu 0 ≠ table 2
+      { _moneyUI()?.HideMoneyBox?.(); return false; }
+
+=== ⚠️ ScriptRead dans optional-chaining (court-circuitable = bug playfanfare) ===
+
+=== (handlers sans totalBytes dans la table, à ignorer ou vérifier : 1) ===
+  ScrCmd_trainerbattle

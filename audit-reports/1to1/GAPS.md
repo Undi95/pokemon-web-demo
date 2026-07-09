@@ -1,19 +1,18 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-06-05T16:00:38.819Z
+Généré : 2026-06-25T22:50:39.580Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
 
 ## `src/party_menu.c`
 
-Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **111/354 (31%)** — 243 GAPS · 27 citation(s) fichier-niveau (sans `:ligne`)
 
 - `InitPartyMenu` @ L489-534
 - `CB2_UpdatePartyMenu` @ L535-543
 - `VBlankCB_PartyMenu` @ L544-550
 - `CB2_InitPartyMenu` @ L551-559
-- `ShowPartyMenu` @ L560-683
 - `ExitPartyMenu` @ L684-691
 - `Task_ExitPartyMenu` @ L692-701
 - `ResetPartyMenu` @ L702-709
@@ -41,7 +40,6 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `GetPartyMenuType` @ L1254-1258
 - `GetCurrentPartySlotPtr` @ L1284-1291
 - `IsSelectedMonNotEgg` @ L1368-1377
-- `HandleChooseMonCancel` @ L1378-1407
 - `DisplayCancelChooseMonYesNo` @ L1408-1426
 - `Task_CancelChooseMonYesNo` @ L1427-1435
 - `Task_HandleCancelChooseMonYesNoInput` @ L1436-1454
@@ -64,7 +62,6 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `ResetHPTaskData` @ L1874-1908
 - `GetAilmentFromStatus` @ L1909-1923
 - `SetPartyMonsAllowedInMinigame` @ L1938-1960
-- `IsMonAllowedInPokemonJump` @ L1961-1968
 - `IsMonAllowedInDodrioBerryPicking` @ L1969-1975
 - `IsMonAllowedInMinigame` @ L1976-1982
 - `TryEnterMonForMinigame` @ L1983-1999
@@ -82,15 +79,11 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `DisplayPartyPokemonGenderNidoranCheck` @ L2323-2332
 - `DisplayPartyPokemonHPCheck` @ L2356-2366
 - `DisplayPartyPokemonMaxHPCheck` @ L2377-2387
-- `DisplayPartyPokemonMaxHP` @ L2388-2395
 - `DisplayPartyPokemonHPBarCheck` @ L2396-2401
 - `DisplayPartyPokemonDescriptionText` @ L2436-2447
 - `PartyMenuRemoveWindow` @ L2448-2458
 - `ShouldUseChooseMonText` @ L2505-2523
 - `PrintMessage` @ L2566-2572
-- `PartyMenuDisplayYesNoMenu` @ L2573-2577
-- `CreateLevelUpStatsWindow` @ L2578-2584
-- `RemoveLevelUpStatsWindow` @ L2585-2590
 - `SetPartyMonSelectionActions` @ L2591-2606
 - `GetPartyMenuActionsType` @ L2639-2695
 - `CreateSelectionWindow` @ L2696-2730
@@ -133,17 +126,8 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `CursorCb_Trade2` @ L3647-3675
 - `Task_SpinTradeYesNo` @ L3676-3685
 - `Task_HandleSpinTradeYesNoInput` @ L3686-3701
-- `DisplayFieldMoveExitAreaMessage` @ L3782-3787
-- `Task_FieldMoveExitAreaYesNo` @ L3788-3796
 - `Task_HandleFieldMoveExitAreaYesNoInput` @ L3797-3815
-- `FieldCallback_PrepareFadeInFromMenu` @ L3816-3822
-- `Task_FieldMoveWaitForFade` @ L3823-3832
-- `GetFieldMoveMonSpecies` @ L3833-3837
 - `Task_CancelAfterAorBPress` @ L3838-3843
-- `DisplayCantUseFlashMessage` @ L3844-3851
-- `FieldCallback_Surf` @ L3852-3857
-- `SetUpFieldMove_Surf` @ L3858-3868
-- `DisplayCantUseSurfMessage` @ L3869-3876
 - `SetUpFieldMove_Fly` @ L3877-3884
 - `CB2_ReturnToPartyMenuFromFlyMap` @ L3885-3889
 - `FieldCallback_Waterfall` @ L3890-3895
@@ -195,11 +179,6 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `Task_HandleStopLearningMoveYesNoInput` @ L4915-4948
 - `Task_TryLearningNextMoveAfterText` @ L4949-4954
 - `UpdateMonDisplayInfoAfterRareCandy` @ L4996-5008
-- `Task_DisplayLevelUpStatsPg1` @ L5009-5018
-- `Task_DisplayLevelUpStatsPg2` @ L5019-5028
-- `DisplayLevelUpStatsPg1` @ L5029-5038
-- `DisplayLevelUpStatsPg2` @ L5039-5047
-- `Task_TryLearnNewMoves` @ L5048-5074
 - `Task_TryLearningNextMove` @ L5075-5094
 - `PartyMenuTryEvolution` @ L5095-5112
 - `DisplayMonNeedsToReplaceMove` @ L5113-5123
@@ -239,17 +218,11 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `ChooseMonForMoveTutor` @ L5755-5759
 - `ChooseMonForWirelessMinigame` @ L5760-5764
 - `GetPartyLayoutFromBattleType` @ L5765-5773
+- `ChooseMonForInBattleItem` @ L5781-5787
 - `GetPartyMenuActionsTypeInBattle` @ L5788-5799
-- `TrySwitchInPokemon` @ L5800-5858
 - `BufferBattlePartyCurrentOrder` @ L5859-5863
-- `BufferBattlePartyOrder` @ L5864-5917
-- `BufferBattlePartyCurrentOrderBySide` @ L5918-5923
 - `BufferBattlePartyOrderBySide` @ L5924-5989
 - `SwitchPartyOrderLinkMulti` @ L5990-6026
-- `GetPartyIdFromBattleSlot` @ L6027-6039
-- `SetPartyIdAtBattleSlot` @ L6040-6050
-- `SwitchPartyMonSlots` @ L6051-6057
-- `GetPartyIdFromBattlePartyId` @ L6058-6077
 - `UpdatePartyToBattleOrder` @ L6078-6088
 - `UpdatePartyToFieldOrder` @ L6089-6099
 - `SwitchAliveMonIntoLeadSlot` @ L6100-6118
@@ -279,11 +252,10 @@ Couverture fonctions : **83/354 (23%)** — 271 GAPS · 16 citation(s) fichier-n
 - `BufferMoveDeleterNicknameAndMove` @ L6359-6367
 - `MoveDeleterForgetMove` @ L6368-6377
 - `ShiftMoveSlot` @ L6378-6398
-- `IsSelectedMonEgg` @ L6399-6406
 
 ## `src/pokemon_summary_screen.c`
 
-Couverture fonctions : **7/140 (5%)** — 133 GAPS · 2 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **7/140 (5%)** — 133 GAPS · 6 citation(s) fichier-niveau (sans `:ligne`)
 
 - `void` @ L730-737
 - `ShowPokemonSummaryScreen` @ L1100-1141
@@ -421,34 +393,18 @@ Couverture fonctions : **7/140 (5%)** — 133 GAPS · 2 citation(s) fichier-nive
 
 ## `src/item_menu.c`
 
-Couverture fonctions : **79/122 (65%)** — 43 GAPS · 29 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **97/122 (80%)** — 25 GAPS · 37 citation(s) fichier-niveau (sans `:ligne`)
 
 - `GetItemListPosition` @ L1160-1164
-- `DisplayItemMessage` @ L1165-1174
-- `CloseItemMessage` @ L1175-1192
 - `AddItemQuantityWindow` @ L1193-1202
 - `PrintContextMenuItems` @ L1678-1683
 - `IsValidContextMenuPos` @ L1773-1783
-- `AskTossItems` @ L1838-1849
-- `CancelToss` @ L1850-1858
-- `Task_ChooseHowManyToToss` @ L1859-1881
-- `ConfirmToss` @ L1882-1895
-- `Task_RemoveItemFromBag` @ L1896-1915
 - `PrintThereIsNoPokemon` @ L1958-1962
 - `PrintItemCantBeHeld` @ L1963-1969
 - `HandleErrorMessage` @ L1970-1978
 - `Task_ItemContext_GiveToParty` @ L2011-2033
 - `Task_ItemContext_GiveToPC` @ L2034-2045
 - `UseRegisteredKeyItemOnField` @ L2046-2077
-- `Task_ItemContext_Sell` @ L2078-2104
-- `DisplaySellItemPriceAndConfirm` @ L2105-2113
-- `AskSellItems` @ L2114-2118
-- `CancelSell` @ L2119-2128
-- `InitSellHowManyInput` @ L2129-2138
-- `Task_ChooseHowManyToSell` @ L2139-2163
-- `ConfirmSell` @ L2164-2173
-- `SellItem` @ L2174-2192
-- `WaitAfterItemSell` @ L2193-2202
 - `WaitDepositErrorMessage` @ L2276-2288
 - `PrepareBagForWallyTutorial` @ L2296-2313
 - `RestoreBagAfterWallyTutorial` @ L2314-2328
@@ -461,19 +417,14 @@ Couverture fonctions : **79/122 (65%)** — 43 GAPS · 29 citation(s) fichier-ni
 - `ItemMenu_ConfirmQuizLady` @ L2408-2414
 - `CB2_QuizLadyExitBagMenu` @ L2415-2420
 - `BagMenu_GetWindowId` @ L2481-2485
-- `AddItemMessageWindow` @ L2511-2518
-- `RemoveItemMessageWindow` @ L2519-2532
 - `BagMenu_YesNo` @ L2533-2537
 - `DisplayCurrentMoneyWindow` @ L2538-2544
 - `RemoveMoneyWindow` @ L2545-2550
 
 ## `src/item_use.c`
 
-Couverture fonctions : **32/74 (43%)** — 42 GAPS · 4 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **34/74 (46%)** — 40 GAPS · 6 citation(s) fichier-niveau (sans `:ligne`)
 
-- `SetUpItemUseOnFieldCallback` @ L117-129
-- `FieldCB_UseItemOnField` @ L130-135
-- `Task_CallItemUseOnFieldCallback` @ L136-141
 - `DisplayCannotUseItemMessage` @ L142-157
 - `DisplayDadsAdviceCannotUseItemMessage` @ L158-162
 - `DisplayCannotDismountBikeMessage` @ L163-167
@@ -481,10 +432,7 @@ Couverture fonctions : **32/74 (43%)** — 42 GAPS · 4 citation(s) fichier-nive
 - `CheckIfItemIsTMHMOrEvolutionStone` @ L176-186
 - `CB2_CheckMail` @ L187-193
 - `ItemUseOutOfBattle_Mail` @ L194-199
-- `ItemUseOnFieldCB_Bike` @ L226-236
 - `CanFish` @ L237-266
-- `ItemUseOutOfBattle_Rod` @ L267-279
-- `ItemUseOnFieldCB_Rod` @ L280-285
 - `Task_UseItemfinder` @ L309-345
 - `Task_CloseItemfinderMessage` @ L346-353
 - `ItemfinderCheckForHiddenItems` @ L354-384
@@ -511,20 +459,25 @@ Couverture fonctions : **32/74 (43%)** — 42 GAPS · 4 citation(s) fichier-nive
 - `Task_UseDigEscapeRopeOnField` @ L907-913
 - `ItemUseOnFieldCB_EscapeRope` @ L914-921
 - `CanUseDigOrEscapeRopeOnCurMap` @ L922-929
+- `Task_CloseStatIncreaseMessage` @ L969-979
+- `Task_UseStatIncreaseItem` @ L980-993
+- `ItemUseInBattle_ShowPartyMenu` @ L1012-1025
+- `ItemUseInBattle_SacredAsh` @ L1033-1038
 - `ItemUseInBattle_EnigmaBerry` @ L1107-1133
 - `ItemUseOutOfBattle_CannotUse` @ L1134-1140
 
 ## `src/item.c`
 
-Couverture fonctions : **29/52 (56%)** — 23 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **28/52 (54%)** — 24 GAPS · 20 citation(s) fichier-niveau (sans `:ligne`)
 
+- `SetBagItemQuantity` @ L31-35
 - `GetPCItemQuantity` @ L36-40
 - `SetPCItemQuantity` @ L41-45
 - `ApplyNewEncryptionKeyToBagItems` @ L46-55
 - `ApplyNewEncryptionKeyToBagItems_` @ L56-60
 - `CopyItemNameHandlePlural` @ L84-106
+- `IsBagPocketNonEmpty` @ L122-133
 - `ClearBag` @ L666-675
-- `CountTotalItemQuantityInBag` @ L676-690
 - `CheckPyramidBagHasItem` @ L691-712
 - `CheckPyramidBagHasSpace` @ L713-734
 - `AddPyramidBagItem` @ L735-807

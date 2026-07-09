@@ -1,0 +1,523 @@
+# transpile pokemon_storage_system.c → C:\Users\Undi\AppData\Local\Temp\claude\D--Projet-1-pokemon-web-demo\007430ff-932f-431c-bd7e-46636088760f\scratchpad\pc-transpiled.ts
+
+stats: {"fns":380,"data":104,"defines":7,"flags":386,"unresolved":107,"gtext":14,"mergeSkipped":0}
+
+## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
+- `AFFINEANIMCMD_FRAME` ()
+- `AFFINEANIMCMD_END` ()
+- `sArrow_Gfx` ()
+- `Dma3FillLarge16_` ()
+- `gFieldCallback` ()
+- `GetBoxMonData` ()
+- `template` ()
+- `CpuCopy32` ()
+- `DoScheduledBgTilemapCopiesToVram` ()
+- `ClearDma3Requests` ()
+- `gReservedSpriteTileCount` ()
+- `gKeyRepeatStartDelay` ()
+- `newFunc` ()
+- `InitMonMarkingsMenu` ()
+- `BufferMonMarkingsMenuTiles` ()
+- `ComputerScreenOpenEffect` ()
+- `IsComputerScreenOpenEffectActive` ()
+- `OpenMonMarkingsMenu` ()
+- `HandleMonMarkingsMenuInput` ()
+- `FreeMonMarkingsMenu` ()
+- `ComputerScreenCloseEffect` ()
+- `IsComputerScreenCloseEffectActive` ()
+- `ShowPokemonSummaryScreenHandleDeoxys` ()
+- `ShowPokemonSummaryScreen` ()
+- `DecompressAndLoadBgGfxUsingHeap` ()
+- `gStorageSystemMenu_Gfx` ()
+- `LZ77UnCompWram` ()
+- `SetBgTilemapBuffer` ()
+- `CreateMonMarkingComboSprite` ()
+- `gMonFrontPicTable` ()
+- `LoadSpecialPokePic` ()
+- `UpdateMonMarkingTiles` ()
+- `gStorageSystemPartyMenu_Tilemap` ()
+- `gStorageSystemPartyMenu_Pal` ()
+- `LoadMonIconPalettes` ()
+- `GetMonIconTiles` ()
+- `GetIconSpecies` ()
+- `gMonIconPaletteIndices` ()
+- `RequestDma3Fill` ()
+- `CheckForSpaceForDma3Request` ()
+- `sWallpapers` ()
+- `malloc_and_decompress` ()
+- `sWaldaWallpapers` ()
+- `sWaldaWallpaperIcons` ()
+- `sBoxTitleColors` ()
+- `MAP_GROUPS_COUNT` ()
+- `gLastViewedMonIndex` ()
+- `GetMonFrontSpritePal` ()
+- `GetMonSpritePalFromSpeciesAndPersonality` ()
+- `gPCText_Cancel` ()
+- `gPCText_Store` ()
+- `gPCText_Withdraw` ()
+- `gPCText_Move` ()
+- `gPCText_Shift` ()
+- `gPCText_Place` ()
+- `gPCText_Summary` ()
+- `gPCText_Release` ()
+- `gPCText_Mark` ()
+- `gPCText_Jump` ()
+- `gPCText_Wallpaper` ()
+- `gPCText_Name` ()
+- `gPCText_Take` ()
+- `gPCText_Give` ()
+- `gPCText_Switch` ()
+- `gPCText_Bag` ()
+- `gPCText_Info` ()
+- `gPCText_Scenery1` ()
+- `gPCText_Scenery2` ()
+- `gPCText_Scenery3` ()
+- `gPCText_Etcetera` ()
+- `gPCText_Friends` ()
+- `gPCText_Forest` ()
+- `gPCText_City` ()
+- `gPCText_Desert` ()
+- `gPCText_Savanna` ()
+- `gPCText_Crag` ()
+- `gPCText_Volcano` ()
+- `gPCText_Snow` ()
+- `gPCText_Cave` ()
+- `gPCText_Beach` ()
+- `gPCText_Seafloor` ()
+- `gPCText_River` ()
+- `gPCText_Sky` ()
+- `gPCText_PolkaDot` ()
+- `gPCText_Pokecenter` ()
+- `gPCText_Machine` ()
+- `gPCText_Simple` ()
+- `AddWindow8Bit` ()
+- `TryLoadAllMonIconPalettesAtOffset` ()
+- `FillWindowPixelBuffer8Bit` ()
+- `CopyWindowToVram8Bit` ()
+- `Q_8_8` ()
+- `abs` ()
+- `SWAP` ()
+- `GetMonIconPtr` ()
+- `GetValidMonIconPalIndex` ()
+- `BlitBitmapRectToWindow4BitTo8Bit` ()
+- `FillWindowPixelRect8Bit` ()
+- `min` ()
+- `CpuFastCopy` ()
+- `GetItemIconPicOrPalette` ()
+- `AddTextPrinterParameterized5` ()
+- `GetBgAttribute` ()
+- `WriteSequenceToBgTilemapBuffer` ()
+- `gPokemonStoragePtr` ()
+- `SetBoxMonData` ()
+- `CopyToBgTilemapBufferRect` ()
+
+## Flags TRANSPILER-TODO
+- :949 **incbin** — `sChooseBoxMenu_Pal ← graphics/pokemon_storage/box_selection_popup.pal`
+- :950 **incbin** — `sChooseBoxMenuCenter_Gfx ← graphics/pokemon_storage/box_selection_popup_center.png`
+- :951 **incbin** — `sChooseBoxMenuSides_Gfx ← graphics/pokemon_storage/box_selection_popup_sides.png`
+- :952 **incbin** — `sScrollingBg_Gfx ← graphics/pokemon_storage/scrolling_bg.png`
+- :953 **incbin** — `sScrollingBg_Tilemap ← graphics/pokemon_storage/scrolling_bg.bin`
+- :954 **incbin** — `sDisplayMenu_Pal ← graphics/pokemon_storage/display_menu.pal`
+- :955 **incbin** — `sDisplayMenu_Tilemap ← graphics/pokemon_storage/display_menu.bin`
+- :956 **incbin** — `sPkmnData_Tilemap ← graphics/pokemon_storage/pkmn_data.bin`
+- :958 **incbin** — `sInterface_Pal ← graphics/pokemon_storage/interface.pal`
+- :959 **incbin** — `sPkmnDataGray_Pal ← graphics/pokemon_storage/pkmn_data_gray.pal`
+- :960 **incbin** — `sScrollingBg_Pal ← graphics/pokemon_storage/scrolling_bg.pal`
+- :961 **incbin** — `sScrollingBgMoveItems_Pal ← graphics/pokemon_storage/scrolling_bg_move_items.pal`
+- :962 **incbin** — `sCloseBoxButton_Tilemap ← graphics/pokemon_storage/close_box_button.bin`
+- :963 **incbin** — `sPartySlotFilled_Tilemap ← graphics/pokemon_storage/party_slot_filled.bin`
+- :964 **incbin** — `sPartySlotEmpty_Tilemap ← graphics/pokemon_storage/party_slot_empty.bin`
+- :965 **incbin** — `sWaveform_Pal ← graphics/pokemon_storage/waveform.png`
+- :966 **incbin** — `sWaveform_Gfx ← graphics/pokemon_storage/waveform.png`
+- :967 **incbin** — `sUnused_Pal ← graphics/pokemon_storage/unused.pal`
+- :968 **incbin** — `sTextWindows_Pal ← graphics/pokemon_storage/text_windows.pal`
+- :973 **designator** — `[WIN_DISPLAY_INFO] = {
+        .bg = 1,
+        .t`
+- :982 **designator** — `[WIN_MESSAGE] = {
+        .bg = 0,
+        .tilema`
+- :991 **designator** — `[WIN_ITEM_DESC] = {
+        .bg = 0,
+        .tile`
+- :1050 **sizeof** — `sizeof(sWaveform_Gfx)`
+- :1067 **designator** — `[MSG_EXIT_BOX]             = {gText_ExitFromBox,  `
+- :1068 **designator** — `[MSG_WHAT_YOU_DO]          = {gText_WhatDoYouWantT`
+- :1069 **designator** — `[MSG_PICK_A_THEME]         = {gText_PleasePickAThe`
+- :1070 **designator** — `[MSG_PICK_A_WALLPAPER]     = {gText_PickTheWallpap`
+- :1071 **designator** — `[MSG_IS_SELECTED]          = {gText_PkmnIsSelected`
+- :1072 **designator** — `[MSG_JUMP_TO_WHICH_BOX]    = {gText_JumpToWhichBox`
+- :1073 **designator** — `[MSG_DEPOSIT_IN_WHICH_BOX] = {gText_DepositInWhich`
+- :1074 **designator** — `[MSG_WAS_DEPOSITED]        = {gText_PkmnWasDeposit`
+- :1075 **designator** — `[MSG_BOX_IS_FULL]          = {gText_BoxIsFull2,   `
+- :1076 **designator** — `[MSG_RELEASE_POKE]         = {gText_ReleaseThisPok`
+- :1077 **designator** — `[MSG_WAS_RELEASED]         = {gText_PkmnWasRelease`
+- :1078 **designator** — `[MSG_BYE_BYE]              = {gText_ByeByePkmn,   `
+- :1079 **designator** — `[MSG_MARK_POKE]            = {gText_MarkYourPkmn, `
+- :1080 **designator** — `[MSG_LAST_POKE]            = {gText_ThatsYourLastP`
+- :1081 **designator** — `[MSG_PARTY_FULL]           = {gText_YourPartysFull`
+- :1082 **designator** — `[MSG_HOLDING_POKE]         = {gText_YoureHoldingAP`
+- :1083 **designator** — `[MSG_WHICH_ONE_WILL_TAKE]  = {gText_WhichOneWillYo`
+- :1084 **designator** — `[MSG_CANT_RELEASE_EGG]     = {gText_YouCantRelease`
+- :1085 **designator** — `[MSG_CONTINUE_BOX]         = {gText_ContinueBoxOpe`
+- :1086 **designator** — `[MSG_CAME_BACK]            = {gText_PkmnCameBack, `
+- :1087 **designator** — `[MSG_WORRIED]              = {gText_WasItWorriedAb`
+- :1088 **designator** — `[MSG_SURPRISE]             = {gText_FourEllipsesEx`
+- :1089 **designator** — `[MSG_PLEASE_REMOVE_MAIL]   = {gText_PleaseRemoveTh`
+- :1090 **designator** — `[MSG_IS_SELECTED2]         = {gText_PkmnIsSelected`
+- :1091 **designator** — `[MSG_GIVE_TO_MON]          = {gText_GiveToAPkmn,  `
+- :1092 **designator** — `[MSG_PLACED_IN_BAG]        = {gText_PlacedItemInBa`
+- :1093 **designator** — `[MSG_BAG_FULL]             = {gText_BagIsFull2,   `
+- :1094 **designator** — `[MSG_PUT_IN_BAG]           = {gText_PutItemInBag, `
+- :1095 **designator** — `[MSG_ITEM_IS_HELD]         = {gText_ItemIsNowHeld,`
+- :1096 **designator** — `[MSG_CHANGED_TO_ITEM]      = {gText_ChangedToNewIt`
+- :1097 **designator** — `[MSG_CANT_STORE_MAIL]      = {gText_MailCantBeStor`
+- :1244 **sizeof** — `sizeof(sArrow_Gfx)`
+- :1318 **incbin** — `sHandCursor_Pal ← graphics/pokemon_storage/hand_cursor.png`
+- :1319 **incbin** — `sHandCursor_Gfx ← graphics/pokemon_storage/hand_cursor.png`
+- :1320 **incbin** — `sHandCursorShadow_Gfx ← graphics/pokemon_storage/hand_cursor_shadow.png`
+- :1482 **ptr-arith** — `str++`
+- :1835 **struct-local** — `struct SpriteTemplate template`
+- :1839 **compound-literal** — `(struct SpriteTemplate){
+        0, 0, &oamData, gDummySprit`
+- :1931 **sizeof** — `sizeof(template)`
+- :1931 **memset** — `memset(&template, 0, sizeof(template))`
+- :2002 **sizeof** — `sizeof(*sStorage)`
+- :2002 **alloc** — `Alloc(sizeof(*sStorage))`
+- :2022 **sizeof** — `sizeof(*sStorage)`
+- :2022 **alloc** — `Alloc(sizeof(*sStorage))`
+- :3850 **sizeof** — `sizeof(sInterface_Pal)`
+- :3851 **sizeof** — `sizeof(sPkmnDataGray_Pal)`
+- :3852 **sizeof** — `sizeof(sTextWindows_Pal)`
+- :3854 **sizeof** — `sizeof(sScrollingBg_Pal)`
+- :3856 **sizeof** — `sizeof(sScrollingBgMoveItems_Pal)`
+- :3977 **adresse-element** — `&gMonFrontPicTable[species]`
+- :4298 **deref** — `*(txtPtr - 1)`
+- :4299 **ptr-arith** — `txtPtr--`
+- :4968 **adresse-element** — `&sStorage->partySprites[position]`
+- :4970 **adresse-element** — `&sStorage->boxMonsSprites[position]`
+- :4984 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4988 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4988 **assign-intranspilable** — `(*sStorage->shiftMonSpritePtr)->x2 = gSineTable[sStorage->shiftTimer *`
+- :4992 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4993 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4994 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4994 **assign-intranspilable** — `(*sStorage->shiftMonSpritePtr)->oam.priority = GetMonIconPriorityByCur`
+- :4995 **deref** — `*sStorage->shiftMonSpritePtr`
+- :4995 **assign-intranspilable** — `(*sStorage->shiftMonSpritePtr)->subpriority = 7`
+- :5001 **deref** — `*sStorage->shiftMonSpritePtr`
+- :5002 **deref** — `*sStorage->shiftMonSpritePtr`
+- :5002 **assign-intranspilable** — `*sStorage->shiftMonSpritePtr = sprite`
+- :5005 **deref** — `*sStorage->shiftMonSpritePtr`
+- :5005 **assign-intranspilable** — `(*sStorage->shiftMonSpritePtr)->callback = SpriteCallbackDummy`
+- :5016 **adresse-element** — `&sStorage->partySprites[position]`
+- :5019 **adresse-element** — `&sStorage->boxMonsSprites[position]`
+- :5028 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5030 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5031 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5031 **assign-intranspilable** — `(*sStorage->releaseMonSpritePtr)->oam.affineMode = ST_OAM_AFFINE_NORMA`
+- :5032 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5032 **assign-intranspilable** — `(*sStorage->releaseMonSpritePtr)->affineAnims = sAffineAnims_ReleaseMo`
+- :5033 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5039 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5040 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5043 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5044 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5044 **assign-intranspilable** — `(*sStorage->releaseMonSpritePtr)->invisible = TRUE`
+- :5051 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5053 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5054 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5055 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5055 **assign-intranspilable** — `*sStorage->releaseMonSpritePtr = NULL`
+- :5061 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5063 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5063 **assign-intranspilable** — `(*sStorage->releaseMonSpritePtr)->invisible = FALSE`
+- :5064 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5073 **deref** — `*sStorage->releaseMonSpritePtr`
+- :5204 **sizeof** — `sizeof(sStorage->wallpaperBgTilemapBuffer)`
+- :5376 **adresse-element** — `&sWallpapers[wallpaperId]`
+- :5383 **adresse-element** — `&gPlttBufferUnfaded[BG_PLTT_ID(4) + BG_PLTT_ID(sStorage->wal`
+- :5390 **adresse-element** — `&sWaldaWallpapers[GetWaldaWallpaperPatternId()]`
+- :5395 **adresse-element** — `&sStorage->wallpaperTilemap[1]`
+- :5396 **adresse-element** — `&sStorage->wallpaperTilemap[17]`
+- :5401 **adresse-element** — `&gPlttBufferUnfaded[BG_PLTT_ID(4) + BG_PLTT_ID(sStorage->wal`
+- :5454 **deref** — `*dest++`
+- :5454 **ptr-arith** — `dest++`
+- :5454 **assign-intranspilable** — `*dest++ = 0`
+- :5548 **sizeof** — `sizeof(sBoxTitleColors[0])`
+- :5616 **adresse-element** — `&gPlttBufferUnfaded[sStorage->boxTitlePalOffset]`
+- :5618 **adresse-element** — `&gPlttBufferUnfaded[sStorage->boxTitleAltPalOffset]`
+- :6135 **static-local** — `static bool8 (*const placeChangeFuncs[])(void) =`
+- :6944 **deref** — `*(txtPtr)++`
+- :6944 **assign-intranspilable** — `*(txtPtr)++ = CHAR_SLASH`
+- :6948 **deref** — `*(txtPtr)++`
+- :6948 **assign-intranspilable** — `*(txtPtr)++ = EXT_CTRL_CODE_BEGIN`
+- :6949 **deref** — `*(txtPtr)++`
+- :6949 **assign-intranspilable** — `*(txtPtr)++ = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW`
+- :6953 **deref** — `*(txtPtr)++`
+- :6953 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_RED`
+- :6954 **deref** — `*(txtPtr)++`
+- :6954 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_WHITE`
+- :6955 **deref** — `*(txtPtr)++`
+- :6955 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_LIGHT_RED`
+- :6956 **deref** — `*(txtPtr)++`
+- :6956 **assign-intranspilable** — `*(txtPtr)++ = CHAR_MALE`
+- :6959 **deref** — `*(txtPtr)++`
+- :6959 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_GREEN`
+- :6960 **deref** — `*(txtPtr)++`
+- :6960 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_WHITE`
+- :6961 **deref** — `*(txtPtr)++`
+- :6961 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_LIGHT_GREEN`
+- :6962 **deref** — `*(txtPtr)++`
+- :6962 **assign-intranspilable** — `*(txtPtr)++ = CHAR_FEMALE`
+- :6965 **deref** — `*(txtPtr)++`
+- :6965 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_DARK_GRAY`
+- :6966 **deref** — `*(txtPtr)++`
+- :6966 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_WHITE`
+- :6967 **deref** — `*(txtPtr)++`
+- :6967 **assign-intranspilable** — `*(txtPtr)++ = TEXT_COLOR_LIGHT_GRAY`
+- :6968 **deref** — `*(txtPtr)++`
+- :6968 **assign-intranspilable** — `*(txtPtr)++ = CHAR_SPACER`
+- :6972 **deref** — `*(txtPtr++)`
+- :6972 **ptr-arith** — `txtPtr++`
+- :6972 **assign-intranspilable** — `*(txtPtr++) = EXT_CTRL_CODE_BEGIN`
+- :6973 **deref** — `*(txtPtr++)`
+- :6973 **ptr-arith** — `txtPtr++`
+- :6973 **assign-intranspilable** — `*(txtPtr++) = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW`
+- :6974 **deref** — `*(txtPtr++)`
+- :6974 **ptr-arith** — `txtPtr++`
+- :6974 **assign-intranspilable** — `*(txtPtr++) = TEXT_COLOR_DARK_GRAY`
+- :6975 **deref** — `*(txtPtr++)`
+- :6975 **ptr-arith** — `txtPtr++`
+- :6975 **assign-intranspilable** — `*(txtPtr++) = TEXT_COLOR_WHITE`
+- :6976 **deref** — `*(txtPtr++)`
+- :6976 **ptr-arith** — `txtPtr++`
+- :6976 **assign-intranspilable** — `*(txtPtr++) = TEXT_COLOR_LIGHT_GRAY`
+- :6977 **deref** — `*(txtPtr++)`
+- :6977 **ptr-arith** — `txtPtr++`
+- :6977 **assign-intranspilable** — `*(txtPtr++) = CHAR_SPACE`
+- :6978 **deref** — `*(txtPtr++)`
+- :6978 **ptr-arith** — `txtPtr++`
+- :6978 **assign-intranspilable** — `*(txtPtr++) = CHAR_EXTRA_SYMBOL`
+- :6979 **deref** — `*(txtPtr++)`
+- :6979 **ptr-arith** — `txtPtr++`
+- :6979 **assign-intranspilable** — `*(txtPtr++) = CHAR_LV_2`
+- :7753 **static-local** — `static const struct OamData sOamData_Cursor =`
+- :7759 **static-local** — `static const struct OamData sOamData_CursorShadow =`
+- :7766 **static-local** — `static const union AnimCmd sAnim_Cursor_Bouncing[] =`
+- :7772 **static-local** — `static const union AnimCmd sAnim_Cursor_Still[] =`
+- :7777 **static-local** — `static const union AnimCmd sAnim_Cursor_Open[] =`
+- :7782 **static-local** — `static const union AnimCmd sAnim_Cursor_Fist[] =`
+- :7788 **static-local** — `static const union AnimCmd *const sAnims_Cursor[] =`
+- :7790 **designator** — `[CURSOR_ANIM_BOUNCE] = sAnim_Cursor_Bouncing`
+- :7791 **designator** — `[CURSOR_ANIM_STILL]  = sAnim_Cursor_Still`
+- :7792 **designator** — `[CURSOR_ANIM_OPEN]   = sAnim_Cursor_Open`
+- :7793 **designator** — `[CURSOR_ANIM_FIST]   = sAnim_Cursor_Fist`
+- :7796 **static-local** — `static const struct SpriteTemplate sSpriteTemplate_Cursor =`
+- :7807 **static-local** — `static const struct SpriteTemplate sSpriteTemplate_CursorSha`
+- :7981 **adresse-element** — `&sStorage->menuItems[sStorage->menuItemsCount]`
+- :8111 **sizeof** — `sizeof(*sMultiMove)`
+- :8111 **alloc** — `Alloc(sizeof(*sMultiMove))`
+- :8561 **adresse-element** — `&sMultiMove->boxMons[monArrayId]`
+- :8582 **adresse-element** — `&sMultiMove->boxMons[monArrayId]`
+- :8583 **adresse-element** — `&sMultiMove->boxMons[monArrayId]`
+- :8617 **adresse-element** — `&sMultiMove->boxMons[monArrayId]`
+- :8636 **incbin** — `sItemInfoFrame_Gfx ← graphics/pokemon_storage/item_info_frame.png`
+- :8731 **struct-local** — `struct SpriteTemplate spriteTemplate`
+- :9098 **adresse-element** — `&sStorage->tileBuffer[i * 0x60]`
+- :9098 **adresse-element** — `&sStorage->itemIconBuffer[i * 0x80]`
+- :9418 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9426 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9442 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9451 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9452 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9464 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9470 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9484 **assign-intranspilable** — `*dst = gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9491 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9503 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9509 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9515 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9555 **adresse-element** — `&boxMons[i]`
+- :9563 **adresse-element** — `&boxMons[i]`
+- :9564 **adresse-element** — `&boxMons[i]`
+- :9580 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9592 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9593 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9594 **adresse-element** — `&gPokemonStoragePtr->boxes[boxId][boxPosition]`
+- :9609 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9610 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9627 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9628 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9645 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9646 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9647 **adresse-element** — `&gPokemonStoragePtr->boxes[i][j]`
+- :9776 **sizeof** — `sizeof(*sTilemapUtil)`
+- :9776 **alloc** — `Alloc(sizeof(*sTilemapUtil) * count)`
+- :9997 **adresse-element** — `&sUnkUtil->data[i]`
+- :10011 **adresse-element** — `&sUnkUtil->data[sUnkUtil->numActive++]`
+- :10041 **adresse-element** — `&sUnkUtil->data[sUnkUtil->numActive++]`
+- :0 **import-ambigu** — `TEXT_COLOR_RED ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_DYNAMIC_COLOR_6 ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_DYNAMIC_COLOR_5 ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `encodeOwText ← src/text.ts | include/text.ts (choisi src/text.ts)`
+- :0 **import-ambigu** — `ST_OAM_AFFINE_OFF ← include/sprite.ts | harness/runtime/decomp-helpers.ts (choisi include/sprite.ts)`
+- :0 **import-ambigu** — `PIXEL_FILL ← src/engine/battle/battle-windows.ts | harness/runtime/decomp-globals.ts (choisi src/engine/battle/battle-windows.ts)`
+- :0 **import-ambigu** — `TILE_SIZE_4BPP ← src/sprite.ts | src/tileset_anims.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_TRANSPARENT ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `FONT_NORMAL ← src/engine/battle/battle-windows.ts | src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `TEXT_SKIP_DRAW ← src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `AddTextPrinterParameterized4 ← src/menu.ts | harness/runtime/decomp-globals.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `StringLength_Multibyte ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_SPECIES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `SPECIES_NONE ← src/mail_data.ts | include/constants/species.ts (choisi include/constants/species.ts)`
+- :0 **import-ambigu** — `PARTY_SIZE ← src/engine/battle/party-storage.ts | src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `gPlayerParty ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `GetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/engine/battle/party-storage.ts)`
+- :0 **import-ambigu** — `MON_DATA_IS_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_HP ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `VarGet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `StringCopy ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `CHAR_SPACE ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `EOS ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `LoadMessageBoxAndBorderGfx ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `DrawDialogueFrame ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_DARK_GRAY ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_WHITE ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_GRAY ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `AddTextPrinterParameterized2 ← src/menu.ts | harness/runtime/decomp-globals.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `DPAD_UP ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_NEW ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `DPAD_DOWN ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `ClearStdWindowAndFrame ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `A_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `B_BUTTON ← src/battle_controllers.ts | src/engine/script/script-opcodes-helpers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `Menu_GetCursorPos ← src/menu.ts | harness/runtime/decomp-globals.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `SetVBlankCallback ← src/main.ts | harness/runtime/decomp-bridge.ts (choisi src/main.ts)`
+- :0 **import-ambigu** — `DrawStdWindowFrame ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **variante-repo** — `CB2_ReturnToField → CB2_ReturnToField_Manual`
+- :0 **import-ambigu** — `STR_CONV_MODE_LEFT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+- :0 **import-ambigu** — `ConvertIntToDecimalStringN ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `LoadSpritePalette ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `FreeSpriteTilesByTag ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `SE_SELECT ← src/battle_controllers.ts | include/constants/songs.ts (choisi include/constants/songs.ts)`
+- :0 **import-ambigu** — `PlaySE ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `DPAD_LEFT ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DPAD_RIGHT ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `GetStringCenterAlignXOffset ← src/international_string_util.ts | src/text.ts | include/text.ts (choisi src/international_string_util.ts)`
+- :0 **import-ambigu** — `AddTextPrinterParameterized3 ← src/menu.ts | harness/runtime/decomp-globals.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `STR_CONV_MODE_RIGHT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+- :0 **import-ambigu** — `StringAppend ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `GetSpriteTileStartByTag ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `LoadOam ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `ProcessSpriteCopyRequests ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG2HOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `AnimateSprites ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `BuildOamBuffer ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `ITEM_NONE ← src/mail_data.ts | include/constants/items.ts (choisi include/constants/items.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG0HOFS ← src/scanline_effect.ts | include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG0VOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG1HOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG1VOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG2VOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG3HOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG3VOFS ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `FreeSpriteTileRanges ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `FreeAllSpritePalettes ← src/sprite.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BLDCNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BLDALPHA ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `BLDALPHA_BLEND ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_DISPCNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DISPCNT_OBJ_ON ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DISPCNT_BG_ALL_ON ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DISPCNT_OBJ_1D_MAP ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `VRAM ← include/gba/defines.ts | harness/runtime/decomp-globals.ts (choisi include/gba/defines.ts)`
+- :0 **import-ambigu** — `BG_PLTT_ID ← src/palette.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `LoadUserWindowBorderGfx ← src/text_window.ts | include/text_window.ts (choisi src/text_window.ts)`
+- :0 **import-ambigu** — `PALETTES_ALL ← src/palette.ts | harness/runtime/decomp-globals.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `UpdatePaletteFade ← src/palette.ts | harness/runtime/decomp-globals.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `CalculatePlayerPartyCount ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `Menu_ProcessInputNoWrapClearOnChoose ← src/menu.ts | harness/runtime/decomp-globals.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `DoNamingScreen ← src/main_menu.ts | src/naming_screen.ts (choisi src/naming_screen.ts)`
+- :0 **import-ambigu** — `MON_DATA_HELD_ITEM ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `SetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG3CNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `BGCNT_PRIORITY ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `BGCNT_CHARBASE ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `BGCNT_16COLOR ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `BGCNT_SCREENBASE ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `BG_SCREEN_ADDR ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG1CNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_MOSAIC ← include/gba/io_reg.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `MAX_SPRITES ← src/item_icon.ts | src/sprite.ts | include/sprite.ts | harness/runtime/decomp-runtime.ts (choisi include/sprite.ts)`
+- :0 **import-ambigu** — `OBJ_PLTT_ID ← src/palette.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `PLTT_SIZE_4BPP ← src/sprite.ts | harness/runtime/decomp-bridge.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `FONT_SHORT ← src/engine/battle/battle-windows.ts | src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `FONT_SMALL ← src/engine/battle/battle-windows.ts | src/text.ts | include/text.ts (choisi include/text.ts)`
+- :0 **import-ambigu** — `FlagClear ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `VarSet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG0CNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `DrawTextBorderOuter ← src/text_window.ts | include/text_window.ts (choisi src/text_window.ts)`
+- :0 **import-ambigu** — `ClearStdWindowAndFrameToTransparent ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `MON_DATA_PERSONALITY ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SPECIES_OR_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `DISPLAY_HEIGHT ← include/gba/defines.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/defines.ts)`
+- :0 **import-ambigu** — `gSineTable ← src/trig.ts | include/trig.ts | harness/runtime/decomp-helpers.ts (choisi src/trig.ts)`
+- :0 **import-ambigu** — `ST_OAM_AFFINE_NORMAL ← include/sprite.ts | harness/runtime/decomp-helpers.ts (choisi include/sprite.ts)`
+- :0 **import-ambigu** — `REG_OFFSET_BG2CNT ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `BGCNT_TXT512x256 ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `gPlttBufferUnfaded ← src/palette.ts | harness/runtime/decomp-globals.ts (choisi src/palette.ts)`
+- :0 **import-ambigu** — `LoadSpritePalettes ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `IndexOfSpritePaletteTag ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `StringCopyPadded ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `DISPLAY_WIDTH ← include/gba/defines.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/defines.ts)`
+- :0 **import-ambigu** — `PLTT_SIZEOF ← harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi harness/runtime/decomp-globals.ts)`
+- :0 **import-ambigu** — `GetStringWidth ← src/text.ts | include/text.ts (choisi src/text.ts)`
+- :0 **import-ambigu** — `MOVE_DIVE ← src/engine/battle/constants.ts | include/constants/moves.ts (choisi include/constants/moves.ts)`
+- :0 **import-ambigu** — `gSaveBlock1Ptr ← src/engine/save/save-block-state.ts | src/save.ts | harness/runtime/decomp-globals.ts (choisi src/engine/save/save-block-state.ts)`
+- :0 **import-ambigu** — `MOVES_COUNT ← src/engine/battle/constants.ts | include/constants/moves.ts (choisi include/constants/moves.ts)`
+- :0 **import-ambigu** — `MON_DATA_KNOWN_MOVES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SANITY_HAS_SPECIES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MARKINGS ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_MALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SANITY_IS_BAD_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_NICKNAME ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `StringGet_Nickname ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_LEVEL ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_OT_ID ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `GetGenderFromSpeciesAndPersonality ← src/engine/battle/data/species-runtime.ts | src/pokemon.ts | include/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `StringFill ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_GENDERLESS ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_RED ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `MON_FEMALE ← src/engine/battle/constants.ts | include/constants/pokemon.ts (choisi include/constants/pokemon.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_GREEN ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `TEXT_COLOR_LIGHT_GREEN ← src/engine/battle/battle-windows.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `JOY_REPEAT ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `START_BUTTON ← src/battle_controllers.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `gSaveBlock2Ptr ← src/engine/save/save-block-state.ts | src/save.ts | harness/runtime/decomp-globals.ts (choisi src/engine/save/save-block-state.ts)`
+- :0 **import-ambigu** — `L_BUTTON ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `JOY_HELD ← src/battle_controllers.ts | harness/runtime/decomp-globals.ts (choisi src/battle_controllers.ts)`
+- :0 **import-ambigu** — `R_BUTTON ← src/battle_controllers.ts | src/list_menu.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `SELECT_BUTTON ← src/battle_controllers.ts | include/gba/io_reg.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `StringLength ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `DrawStdFrameWithCustomTileAndPalette ← src/menu.ts | src/window.ts (choisi src/menu.ts)`
+- :0 **import-ambigu** — `BGCNT_256COLOR ← include/gba/io_reg.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/io_reg.ts)`
+- :0 **import-ambigu** — `GetTextWindowPalette ← src/text_window.ts | include/text_window.ts (choisi src/text_window.ts)`
+- :0 **import-ambigu** — `CreateBoxMon ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SANITY_IS_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+
+## gText_* transformés en getString() — vérifier encodeOwText aux sites printer
+- :884 gText_WithdrawPokemon
+- :884 gText_WithdrawMonDescription
+- :885 gText_DepositPokemon
+- :885 gText_DepositMonDescription
+- :886 gText_MovePokemon
+- :886 gText_MoveMonDescription
+- :887 gText_MoveItems
+- :887 gText_MoveItemsDescription
+- :888 gText_SeeYa
+- :888 gText_SeeYaDescription
+- :1589 gText_PartyFull
+- :1596 gText_JustOnePkmn
+- :1741 gText_Box
+- :6930 gText_EggNickname

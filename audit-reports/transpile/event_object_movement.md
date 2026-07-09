@@ -1,0 +1,362 @@
+# transpile event_object_movement.c → src\event_object_movement.ts
+
+stats: {"fns":590,"data":64,"defines":44,"flags":196,"unresolved":156,"gtext":0,"mergeSkipped":174}
+
+## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
+- `MovementType_None` ()
+- `MovementType_LookAround` ()
+- `MovementType_WanderAround` ()
+- `MovementType_WanderUpAndDown` ()
+- `MovementType_WanderLeftAndRight` ()
+- `MovementType_FaceDirection` ()
+- `MovementType_Player` ()
+- `MovementType_FaceDownAndUp` ()
+- `MovementType_FaceLeftAndRight` ()
+- `MovementType_FaceUpAndLeft` ()
+- `MovementType_FaceUpAndRight` ()
+- `MovementType_FaceDownAndLeft` ()
+- `MovementType_FaceDownAndRight` ()
+- `MovementType_FaceDownUpAndLeft` ()
+- `MovementType_FaceDownUpAndRight` ()
+- `MovementType_FaceUpRightAndLeft` ()
+- `MovementType_FaceDownRightAndLeft` ()
+- `MovementType_RotateCounterclockwise` ()
+- `MovementType_RotateClockwise` ()
+- `MovementType_WalkBackAndForth` ()
+- `MovementType_WalkSequenceUpRightLeftDown` ()
+- `MovementType_WalkSequenceRightLeftDownUp` ()
+- `MovementType_WalkSequenceDownUpRightLeft` ()
+- `MovementType_WalkSequenceLeftDownUpRight` ()
+- `MovementType_WalkSequenceUpLeftRightDown` ()
+- `MovementType_WalkSequenceLeftRightDownUp` ()
+- `MovementType_WalkSequenceDownUpLeftRight` ()
+- `MovementType_WalkSequenceRightDownUpLeft` ()
+- `MovementType_WalkSequenceLeftUpDownRight` ()
+- `MovementType_WalkSequenceUpDownRightLeft` ()
+- `MovementType_WalkSequenceRightLeftUpDown` ()
+- `MovementType_WalkSequenceDownRightLeftUp` ()
+- `MovementType_WalkSequenceRightUpDownLeft` ()
+- `MovementType_WalkSequenceUpDownLeftRight` ()
+- `MovementType_WalkSequenceLeftRightUpDown` ()
+- `MovementType_WalkSequenceDownLeftRightUp` ()
+- `MovementType_WalkSequenceUpLeftDownRight` ()
+- `MovementType_WalkSequenceDownRightUpLeft` ()
+- `MovementType_WalkSequenceLeftDownRightUp` ()
+- `MovementType_WalkSequenceRightUpLeftDown` ()
+- `MovementType_WalkSequenceUpRightDownLeft` ()
+- `MovementType_WalkSequenceDownLeftUpRight` ()
+- `MovementType_WalkSequenceLeftUpRightDown` ()
+- `MovementType_WalkSequenceRightDownLeftUp` ()
+- `MovementType_CopyPlayer` ()
+- `MovementType_CopyPlayerInGrass` ()
+- `MovementType_WalkInPlace` ()
+- `MovementType_JogInPlace` ()
+- `MovementType_RunInPlace` ()
+- `MovementType_Invisible` ()
+- `MovementType_WalkSlowlyInPlace` ()
+- `gObjectEventPal_Npc1` ()
+- `gObjectEventPal_Npc2` ()
+- `gObjectEventPal_Npc3` ()
+- `gObjectEventPal_Npc4` ()
+- `gObjectEventPal_Npc1Reflection` ()
+- `gObjectEventPal_Npc2Reflection` ()
+- `gObjectEventPal_Npc3Reflection` ()
+- `gObjectEventPal_Npc4Reflection` ()
+- `gObjectEventPal_Brendan` ()
+- `gObjectEventPal_BrendanReflection` ()
+- `gObjectEventPal_BridgeReflection` ()
+- `gObjectEventPal_PlayerUnderwater` ()
+- `gObjectEventPal_QuintyPlump` ()
+- `gObjectEventPal_QuintyPlumpReflection` ()
+- `gObjectEventPal_Truck` ()
+- `gObjectEventPal_Vigoroth` ()
+- `gObjectEventPal_EnemyZigzagoon` ()
+- `gObjectEventPal_May` ()
+- `gObjectEventPal_MayReflection` ()
+- `gObjectEventPal_MovingBox` ()
+- `gObjectEventPal_CableCar` ()
+- `gObjectEventPal_SSTidal` ()
+- `gObjectEventPal_Kyogre` ()
+- `gObjectEventPal_KyogreReflection` ()
+- `gObjectEventPal_Groudon` ()
+- `gObjectEventPal_GroudonReflection` ()
+- `gObjectEventPal_SubmarineShadow` ()
+- `gObjectEventPal_Poochyena` ()
+- `gObjectEventPal_RedLeaf` ()
+- `gObjectEventPal_Deoxys` ()
+- `gObjectEventPal_BirthIslandStone` ()
+- `gObjectEventPal_HoOh` ()
+- `gObjectEventPal_Lugia` ()
+- `gObjectEventPal_RubySapphireBrendan` ()
+- `gObjectEventPal_RubySapphireMay` ()
+- `ClearLinkPlayerObjectEvents` ()
+- `gFieldEffectObjectTemplatePointers` ()
+- `CreateSpriteAtEnd` ()
+- `CurrentBattlePyramidLocation` ()
+- `GetNumBattlePyramidObjectEvents` ()
+- `InTrainerHill` ()
+- `gLinkPlayerObjectEvents` ()
+- `GetPlayerAvatarGenderByGraphicsId` ()
+- `ITEM_TO_BERRY` ()
+- `gBerryTreeObjectEventGraphicsIdTablePointers` ()
+- `gBerryTreePicTablePointers` ()
+- `gBerryTreePaletteSlotTablePointers` ()
+- `objectEvent` ()
+- `sprite` ()
+- `directions` ()
+- `gGetVectorDirectionFuncs` ()
+- `gUpAndDownDirections` ()
+- `gLeftAndRightDirections` ()
+- `gMovementTypeFuncs_BerryTreeGrowth` ()
+- `gUpAndLeftDirections` ()
+- `gUpAndRightDirections` ()
+- `gDownAndLeftDirections` ()
+- `gDownAndRightDirections` ()
+- `gDownUpAndLeftDirections` ()
+- `gDownUpAndRightDirections` ()
+- `gUpLeftAndRightDirections` ()
+- `gDownLeftAndRightDirections` ()
+- `gCounterclockwiseDirections` ()
+- `gClockwiseDirections` ()
+- `gUpRightLeftDownDirections` ()
+- `gRightLeftDownUpDirections` ()
+- `gDownUpRightLeftDirections` ()
+- `gLeftDownUpRightDirections` ()
+- `gUpLeftRightDownDirections` ()
+- `gLeftRightDownUpDirections` ()
+- `gRightDownUpLeftDirections` ()
+- `gLeftUpDownRightDirections` ()
+- `gUpDownRightLeftDirections` ()
+- `gRightLeftUpDownDirections` ()
+- `gDownRightLeftUpDirections` ()
+- `gRightUpDownLeftDirections` ()
+- `gUpDownLeftRightDirections` ()
+- `gLeftRightUpDownDirections` ()
+- `gDownLeftRightUpDirections` ()
+- `gUpLeftDownRightDirections` ()
+- `gDownRightUpLeftDirections` ()
+- `gLeftDownRightUpDirections` ()
+- `gRightUpLeftDownDirections` ()
+- `gUpRightDownLeftDirections` ()
+- `gDownLeftUpRightDirections` ()
+- `gLeftUpRightDownDirections` ()
+- `gRightDownLeftUpDirections` ()
+- `gCopyPlayerMovementFuncs` ()
+- `PlayerGetCopyableMovement` ()
+- `tileCallback` ()
+- `GetSlideMovementAction` ()
+- `gMovementTypeFuncs_Buried` ()
+- `GetWalkInPlaceFasterMovementAction` ()
+- `gTotalCameraPixelOffsetX` ()
+- `gTotalCameraPixelOffsetY` ()
+- `callback` ()
+- `u8` ()
+- `functions` ()
+- `sDirectionAnimFuncsBySpeed` ()
+- `sJumpInitDisplacements` ()
+- `sJumpDisplacements` ()
+- `StartSpriteAffineAnimIfDifferent` ()
+- `ChangeSpriteAffineAnimIfDifferent` ()
+- `gSpriteCoordOffsetX` ()
+- `gSpriteCoordOffsetY` ()
+
+## Flags TRANSPILER-TODO
+- :484 **init-positionnel** — `{gObjectEventPal_Npc3,                  `
+- :485 **init-positionnel** — `{gObjectEventPal_Npc4,                  `
+- :486 **init-positionnel** — `{gObjectEventPal_Npc1Reflection,        `
+- :487 **init-positionnel** — `{gObjectEventPal_Npc2Reflection,        `
+- :488 **init-positionnel** — `{gObjectEventPal_Npc3Reflection,        `
+- :489 **init-positionnel** — `{gObjectEventPal_Npc4Reflection,        `
+- :490 **init-positionnel** — `{gObjectEventPal_Brendan,               `
+- :491 **init-positionnel** — `{gObjectEventPal_BrendanReflection,     `
+- :492 **init-positionnel** — `{gObjectEventPal_BridgeReflection,      `
+- :493 **init-positionnel** — `{gObjectEventPal_PlayerUnderwater,      `
+- :494 **init-positionnel** — `{gObjectEventPal_QuintyPlump,           `
+- :495 **init-positionnel** — `{gObjectEventPal_QuintyPlumpReflection, `
+- :496 **init-positionnel** — `{gObjectEventPal_Truck,                 `
+- :497 **init-positionnel** — `{gObjectEventPal_Vigoroth,              `
+- :498 **init-positionnel** — `{gObjectEventPal_EnemyZigzagoon,        `
+- :499 **init-positionnel** — `{gObjectEventPal_May,                   `
+- :500 **init-positionnel** — `{gObjectEventPal_MayReflection,         `
+- :501 **init-positionnel** — `{gObjectEventPal_MovingBox,             `
+- :502 **init-positionnel** — `{gObjectEventPal_CableCar,              `
+- :503 **init-positionnel** — `{gObjectEventPal_SSTidal,               `
+- :504 **init-positionnel** — `{gObjectEventPal_Kyogre,                `
+- :505 **init-positionnel** — `{gObjectEventPal_KyogreReflection,      `
+- :506 **init-positionnel** — `{gObjectEventPal_Groudon,               `
+- :507 **init-positionnel** — `{gObjectEventPal_GroudonReflection,     `
+- :508 **init-positionnel** — `{gObjectEventPal_SubmarineShadow,       `
+- :509 **init-positionnel** — `{gObjectEventPal_Poochyena,             `
+- :510 **init-positionnel** — `{gObjectEventPal_RedLeaf,               `
+- :511 **init-positionnel** — `{gObjectEventPal_Deoxys,                `
+- :512 **init-positionnel** — `{gObjectEventPal_BirthIslandStone,      `
+- :513 **init-positionnel** — `{gObjectEventPal_HoOh,                  `
+- :514 **init-positionnel** — `{gObjectEventPal_Lugia,                 `
+- :515 **init-positionnel** — `{gObjectEventPal_RubySapphireBrendan,   `
+- :516 **init-positionnel** — `{gObjectEventPal_RubySapphireMay,       `
+- :520 **init-positionnel** — `{}`
+- :1184 **compound-literal** — `(struct ObjectEvent){}`
+- :1184 **assign-intranspilable** — `*objectEvent = (struct ObjectEvent){}`
+- :1350 **adresse-element** — `&gSaveBlock1Ptr->objectEventTemplates[i]`
+- :1451 **deref** — `*(u16 *)&spriteTemplate->paletteTag`
+- :1451 **assign-intranspilable** — `*(u16 *)&spriteTemplate->paletteTag = TAG_NONE`
+- :1481 **struct-local** — `struct SpriteTemplate spriteTemplate`
+- :1554 **assign-intranspilable** — `*subspriteTables = graphicsInfo->subspriteTables`
+- :1575 **sizeof** — `sizeof(struct SpriteTemplate)`
+- :1575 **alloc** — `Alloc(sizeof(struct SpriteTemplate))`
+- :1604 **struct-local** — `struct SpriteTemplate spriteTemplate`
+- :1610 **deref** — `*(u16 *)&spriteTemplate.paletteTag`
+- :1610 **assign-intranspilable** — `*(u16 *)&spriteTemplate.paletteTag = TAG_NONE`
+- :1734 **struct-local** — `struct SpriteTemplate spriteTemplate`
+- :1752 **deref** — `*(u16 *)&spriteTemplate.paletteTag`
+- :1752 **assign-intranspilable** — `*(u16 *)&spriteTemplate.paletteTag = TAG_NONE`
+- :1767 **deref** — `*(u16 *)&spriteTemplate.paletteTag`
+- :1767 **assign-intranspilable** — `*(u16 *)&spriteTemplate.paletteTag = TAG_NONE`
+- :1949 **deref** — `*(u8 *)(localId)`
+- :1949 **assign-intranspilable** — `*(u8 *)(localId) = objectEvent->localId`
+- :1950 **deref** — `*(u8 *)(mapNum)`
+- :1950 **assign-intranspilable** — `*(u8 *)(mapNum) = objectEvent->mapNum`
+- :1951 **deref** — `*(u8 *)(mapGroup)`
+- :1951 **assign-intranspilable** — `*(u8 *)(mapGroup) = objectEvent->mapGroup`
+- :2457 **adresse-element** — `&templates[i]`
+- :3225 **sizeof** — `sizeof gUpAndDownDirections`
+- :3225 **memcpy** — `memcpy(directions, gUpAndDownDirections, sizeof gUpAndDownDi`
+- :3275 **sizeof** — `sizeof gLeftAndRightDirections`
+- :3275 **memcpy** — `memcpy(directions, gLeftAndRightDirections, sizeof gLeftAndR`
+- :3325 **sizeof** — `sizeof gUpAndLeftDirections`
+- :3325 **memcpy** — `memcpy(directions, gUpAndLeftDirections, sizeof gUpAndLeftDi`
+- :3375 **sizeof** — `sizeof gUpAndRightDirections`
+- :3375 **memcpy** — `memcpy(directions, gUpAndRightDirections, sizeof gUpAndRight`
+- :3425 **sizeof** — `sizeof gDownAndLeftDirections`
+- :3425 **memcpy** — `memcpy(directions, gDownAndLeftDirections, sizeof gDownAndLe`
+- :3475 **sizeof** — `sizeof gDownAndRightDirections`
+- :3475 **memcpy** — `memcpy(directions, gDownAndRightDirections, sizeof gDownAndR`
+- :3525 **sizeof** — `sizeof gDownUpAndLeftDirections`
+- :3525 **memcpy** — `memcpy(directions, gDownUpAndLeftDirections, sizeof gDownUpA`
+- :3575 **sizeof** — `sizeof gDownUpAndRightDirections`
+- :3575 **memcpy** — `memcpy(directions, gDownUpAndRightDirections, sizeof gDownUp`
+- :3625 **sizeof** — `sizeof gUpLeftAndRightDirections`
+- :3625 **memcpy** — `memcpy(directions, gUpLeftAndRightDirections, sizeof gUpLeft`
+- :3675 **sizeof** — `sizeof gDownLeftAndRightDirections`
+- :3675 **memcpy** — `memcpy(directions, gDownLeftAndRightDirections, sizeof gDown`
+- :3715 **sizeof** — `sizeof gCounterclockwiseDirections`
+- :3715 **memcpy** — `memcpy(directions, gCounterclockwiseDirections, sizeof gCoun`
+- :3755 **sizeof** — `sizeof gClockwiseDirections`
+- :3755 **memcpy** — `memcpy(directions, gClockwiseDirections, sizeof gClockwiseDi`
+- :3873 **sizeof** — `sizeof(gUpRightLeftDownDirections)`
+- :3874 **sizeof** — `sizeof(gUpRightLeftDownDirections)`
+- :3874 **memcpy** — `memcpy(directions, gUpRightLeftDownDirections, sizeof(gUpRig`
+- :3885 **sizeof** — `sizeof(gRightLeftDownUpDirections)`
+- :3886 **sizeof** — `sizeof(gRightLeftDownUpDirections)`
+- :3886 **memcpy** — `memcpy(directions, gRightLeftDownUpDirections, sizeof(gRight`
+- :3897 **sizeof** — `sizeof(gDownUpRightLeftDirections)`
+- :3898 **sizeof** — `sizeof(gDownUpRightLeftDirections)`
+- :3898 **memcpy** — `memcpy(directions, gDownUpRightLeftDirections, sizeof(gDownU`
+- :3909 **sizeof** — `sizeof(gLeftDownUpRightDirections)`
+- :3910 **sizeof** — `sizeof(gLeftDownUpRightDirections)`
+- :3910 **memcpy** — `memcpy(directions, gLeftDownUpRightDirections, sizeof(gLeftD`
+- :3921 **sizeof** — `sizeof(gUpLeftRightDownDirections)`
+- :3922 **sizeof** — `sizeof(gUpLeftRightDownDirections)`
+- :3922 **memcpy** — `memcpy(directions, gUpLeftRightDownDirections, sizeof(gUpLef`
+- :3933 **sizeof** — `sizeof(gLeftRightDownUpDirections)`
+- :3934 **sizeof** — `sizeof(gLeftRightDownUpDirections)`
+- :3934 **memcpy** — `memcpy(directions, gLeftRightDownUpDirections, sizeof(gLeftR`
+- :3945 **sizeof** — `sizeof(gStandardDirections)`
+- :3946 **sizeof** — `sizeof(gStandardDirections)`
+- :3946 **memcpy** — `memcpy(directions, gStandardDirections, sizeof(gStandardDire`
+- :3957 **sizeof** — `sizeof(gRightDownUpLeftDirections)`
+- :3958 **sizeof** — `sizeof(gRightDownUpLeftDirections)`
+- :3958 **memcpy** — `memcpy(directions, gRightDownUpLeftDirections, sizeof(gRight`
+- :3969 **sizeof** — `sizeof(gLeftUpDownRightDirections)`
+- :3970 **sizeof** — `sizeof(gLeftUpDownRightDirections)`
+- :3970 **memcpy** — `memcpy(directions, gLeftUpDownRightDirections, sizeof(gLeftU`
+- :3981 **sizeof** — `sizeof(gUpDownRightLeftDirections)`
+- :3982 **sizeof** — `sizeof(gUpDownRightLeftDirections)`
+- :3982 **memcpy** — `memcpy(directions, gUpDownRightLeftDirections, sizeof(gUpDow`
+- :3993 **sizeof** — `sizeof(gRightLeftUpDownDirections)`
+- :3994 **sizeof** — `sizeof(gRightLeftUpDownDirections)`
+- :3994 **memcpy** — `memcpy(directions, gRightLeftUpDownDirections, sizeof(gRight`
+- :4005 **sizeof** — `sizeof(gDownRightLeftUpDirections)`
+- :4006 **sizeof** — `sizeof(gDownRightLeftUpDirections)`
+- :4006 **memcpy** — `memcpy(directions, gDownRightLeftUpDirections, sizeof(gDownR`
+- :4017 **sizeof** — `sizeof(gRightUpDownLeftDirections)`
+- :4018 **sizeof** — `sizeof(gRightUpDownLeftDirections)`
+- :4018 **memcpy** — `memcpy(directions, gRightUpDownLeftDirections, sizeof(gRight`
+- :4029 **sizeof** — `sizeof(gUpDownLeftRightDirections)`
+- :4030 **sizeof** — `sizeof(gUpDownLeftRightDirections)`
+- :4030 **memcpy** — `memcpy(directions, gUpDownLeftRightDirections, sizeof(gUpDow`
+- :4041 **sizeof** — `sizeof(gLeftRightUpDownDirections)`
+- :4042 **sizeof** — `sizeof(gLeftRightUpDownDirections)`
+- :4042 **memcpy** — `memcpy(directions, gLeftRightUpDownDirections, sizeof(gLeftR`
+- :4053 **sizeof** — `sizeof(gDownLeftRightUpDirections)`
+- :4054 **sizeof** — `sizeof(gDownLeftRightUpDirections)`
+- :4054 **memcpy** — `memcpy(directions, gDownLeftRightUpDirections, sizeof(gDownL`
+- :4065 **sizeof** — `sizeof(gUpLeftDownRightDirections)`
+- :4066 **sizeof** — `sizeof(gUpLeftDownRightDirections)`
+- :4066 **memcpy** — `memcpy(directions, gUpLeftDownRightDirections, sizeof(gUpLef`
+- :4077 **sizeof** — `sizeof(gDownRightUpLeftDirections)`
+- :4078 **sizeof** — `sizeof(gDownRightUpLeftDirections)`
+- :4078 **memcpy** — `memcpy(directions, gDownRightUpLeftDirections, sizeof(gDownR`
+- :4089 **sizeof** — `sizeof(gLeftDownRightUpDirections)`
+- :4090 **sizeof** — `sizeof(gLeftDownRightUpDirections)`
+- :4090 **memcpy** — `memcpy(directions, gLeftDownRightUpDirections, sizeof(gLeftD`
+- :4101 **sizeof** — `sizeof(gRightUpLeftDownDirections)`
+- :4102 **sizeof** — `sizeof(gRightUpLeftDownDirections)`
+- :4102 **memcpy** — `memcpy(directions, gRightUpLeftDownDirections, sizeof(gRight`
+- :4113 **sizeof** — `sizeof(gUpRightDownLeftDirections)`
+- :4114 **sizeof** — `sizeof(gUpRightDownLeftDirections)`
+- :4114 **memcpy** — `memcpy(directions, gUpRightDownLeftDirections, sizeof(gUpRig`
+- :4125 **sizeof** — `sizeof(gDownLeftUpRightDirections)`
+- :4126 **sizeof** — `sizeof(gDownLeftUpRightDirections)`
+- :4126 **memcpy** — `memcpy(directions, gDownLeftUpRightDirections, sizeof(gDownL`
+- :4137 **sizeof** — `sizeof(gLeftUpRightDownDirections)`
+- :4138 **sizeof** — `sizeof(gLeftUpRightDownDirections)`
+- :4138 **memcpy** — `memcpy(directions, gLeftUpRightDownDirections, sizeof(gLeftU`
+- :4149 **sizeof** — `sizeof(gRightDownLeftUpDirections)`
+- :4150 **sizeof** — `sizeof(gRightDownLeftUpDirections)`
+- :4150 **memcpy** — `memcpy(directions, gRightDownLeftUpDirections, sizeof(gRight`
+- :4361 **adresse-element** — `&gFieldEffectArguments[0]`
+- :4361 **adresse-element** — `&gFieldEffectArguments[1]`
+- :4361 **adresse-element** — `&gFieldEffectArguments[2]`
+- :4382 **adresse-element** — `&gFieldEffectArguments[0]`
+- :4382 **adresse-element** — `&gFieldEffectArguments[1]`
+- :4382 **adresse-element** — `&gFieldEffectArguments[2]`
+- :4574 **ptr-arith** — `stepTable++`
+- :5103 **deref** — `*functions[ARRAY_COUNT(sDirectionAnimFuncsBySpeed)]`
+- :5105 **sizeof** — `sizeof sDirectionAnimFuncsBySpeed`
+- :5105 **memcpy** — `memcpy(functions, sDirectionAnimFuncsBySpeed, sizeof sDirect`
+- :5433 **sizeof** — `sizeof sJumpInitDisplacements`
+- :5433 **memcpy** — `memcpy(displacements, sJumpInitDisplacements, sizeof sJumpIn`
+- :5462 **sizeof** — `sizeof sJumpDisplacements`
+- :5462 **memcpy** — `memcpy(displacements, sJumpDisplacements, sizeof sJumpDispla`
+- :6481 **adresse-element** — `&gFieldEffectArguments[0]`
+- :6481 **adresse-element** — `&gFieldEffectArguments[1]`
+- :6481 **adresse-element** — `&gFieldEffectArguments[2]`
+- :6489 **adresse-element** — `&gFieldEffectArguments[0]`
+- :6489 **adresse-element** — `&gFieldEffectArguments[1]`
+- :6489 **adresse-element** — `&gFieldEffectArguments[2]`
+- :6497 **adresse-element** — `&gFieldEffectArguments[0]`
+- :6497 **adresse-element** — `&gFieldEffectArguments[1]`
+- :6497 **adresse-element** — `&gFieldEffectArguments[2]`
+- :7666 **static-local** — `static bool8 (*const ledgeBehaviorFuncs[])(u8) = {`
+- :8643 **deref** — `*graphicsInfo->oam`
+- :8816 **sizeof** — `sizeof(struct LockedAnimObjectEvents)`
+- :8902 **adresse-element** — `&task->data[0]`
+- :8913 **adresse-element** — `&task->data[0]`
+- :8930 **adresse-element** — `&task->data[0]`
+- :0 **import-ambigu** — `TAG_NONE ← src/engine/field/object-event-graphics-info.ts | src/sprite.ts | include/sprite.ts (choisi include/sprite.ts)`
+- :0 **import-ambigu** — `ANIM_STD_GO_SOUTH ← src/engine/field/object-event-graphics.ts | include/constants/event_object_movement.ts (choisi include/constants/event_object_movement.ts)`
+- :0 **import-ambigu** — `ANIM_STD_GO_NORTH ← src/engine/field/object-event-graphics.ts | include/constants/event_object_movement.ts (choisi include/constants/event_object_movement.ts)`
+- :0 **import-ambigu** — `ANIM_STD_GO_WEST ← src/engine/field/object-event-graphics.ts | include/constants/event_object_movement.ts (choisi include/constants/event_object_movement.ts)`
+- :0 **import-ambigu** — `ANIM_STD_GO_EAST ← src/engine/field/object-event-graphics.ts | include/constants/event_object_movement.ts (choisi include/constants/event_object_movement.ts)`
+- :0 **import-ambigu** — `CreateWarpArrowSprite ← src/field_effect_helpers.ts | src/field_player_avatar.ts (choisi src/field_effect_helpers.ts)`
+- :0 **import-ambigu** — `VarGetObjectEventGraphicsId ← src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `IndexOfSpritePaletteTag ← src/sprite.ts | harness/runtime/decomp-globals.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `PLTT_SIZE_4BPP ← src/sprite.ts | harness/runtime/decomp-bridge.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `CalcCenterToCornerVec ← src/sprite.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-helpers.ts (choisi src/sprite.ts)`
+- :0 **import-ambigu** — `DISPLAY_WIDTH ← include/gba/defines.ts | harness/runtime/decomp-globals.ts | harness/runtime/decomp-runtime.ts (choisi include/gba/defines.ts)`
+- :0 **import-ambigu** — `StoreWordInTwoHalfwords ← src/util.ts | include/util.ts (choisi src/util.ts)`
+- :0 **import-ambigu** — `LoadWordFromTwoHalfwords ← src/util.ts | include/util.ts (choisi src/util.ts)`
+
+## gText_* transformés en getString() — vérifier encodeOwText aux sites printer
+(aucun)

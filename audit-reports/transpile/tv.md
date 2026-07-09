@@ -1,0 +1,328 @@
+# transpile tv.c → src\tv.ts
+
+stats: {"fns":207,"data":55,"defines":3,"flags":246,"unresolved":28,"gtext":45}
+
+## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
+- `GetNicknameLanguage` ()
+- `gContestMonPartyIndex` ()
+- `gLinkPlayers` ()
+- `gContestMons` ()
+- `gNumLinkContestPlayers` ()
+- `GetCurrentBattleTowerWinStreak` ()
+- `gMartPurchaseHistory` ()
+- `BufferContestLadyLanguage` ()
+- `BufferContestLadyPlayerName` ()
+- `BufferContestLadyMonName` ()
+- `GetContestLadyPokeblockState` ()
+- `SWAP` ()
+- `CopyCurSecretBaseOwnerName_StrVar1` ()
+- `gStdStrings` ()
+- `InitializeEasyChatWordArray` ()
+- `CB2_ReturnToFieldContinueScriptPlayMapMusic` ()
+- `GetBoxedMonPtr` ()
+- `GetBoxMonData` ()
+- `SetBoxMonNickAt` ()
+- `RemoveObjectEventByLocalIdAndMap` ()
+- `rmBuffer2` ()
+- `rmBuffer` ()
+- `GetLinkPlayerCount` ()
+- `GetLinkPlayerTrainerId` ()
+- `BufferContestName` ()
+- `LAYOUT_SS_TIDAL_CORRIDOR` ()
+- `LAYOUT_SS_TIDAL_LOWER_DECK` ()
+- `LAYOUT_SS_TIDAL_ROOMS` ()
+
+## Flags TRANSPILER-TODO
+- :799 **adresse-element** — `&gSaveBlock1Ptr->tvShows[j]`
+- :905 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :1136 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1172 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1203 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1244 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1247 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1278 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1319 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1344 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8006]`
+- :1371 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1379 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1387 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1395 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1403 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1426 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1429 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1452 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1465 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1481 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1518 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1546 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1565 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :1588 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1602 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1613 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1624 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1643 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1665 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1727 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :1776 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1799 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1814 **adresse-element** — `&gSaveBlock1Ptr->tvShows[LAST_TVSHOW_IDX]`
+- :1820 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1846 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1885 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1904 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :1957 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2110 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2130 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2193 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2213 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2242 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2260 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2331 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2392 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2425 **adresse-element** — `&gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.select`
+- :2426 **adresse-element** — `&gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.select`
+- :2444 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2492 **adresse-element** — `&gSaveBlock1Ptr->tvShows[sCurTVShowSlot]`
+- :2781 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :3456 **sizeof** — `sizeof(TVShow)`
+- :3456 **alloc** — `Alloc(MAX_LINK_PLAYERS * TV_SHOWS_COUNT * sizeof(TVShow))`
+- :3460 **sizeof** — `sizeof((*rmBuffer2)[i])`
+- :3460 **memcpy** — `memcpy((*rmBuffer2)[i], src + i * size, sizeof((*rmBuffer2)[`
+- :3502 **struct-array-local** — `tvShows`
+- :3529 **adresse-element** — `&tvShows[(i + j + 1) % sTVShowMixingNumPlayers][0]`
+- :3529 **adresse-element** — `&tvShows[i][0]`
+- :3551 **adresse-element** — `&tv1[sCurTVShowSlot]`
+- :3551 **adresse-element** — `&tv2[sTVShowMixingCurSlot]`
+- :3554 **adresse-element** — `&tv1[sCurTVShowSlot]`
+- :3554 **adresse-element** — `&tv2[sTVShowMixingCurSlot]`
+- :3557 **adresse-element** — `&tv1[sCurTVShowSlot]`
+- :3557 **adresse-element** — `&tv2[sTVShowMixingCurSlot]`
+- :3582 **assign-intranspilable** — `*dest = *src`
+- :3603 **assign-intranspilable** — `*dest = *src`
+- :3620 **assign-intranspilable** — `*dest = *src`
+- :3649 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3651 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3655 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3657 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3661 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3665 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3669 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3673 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3675 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3679 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3683 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3685 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3689 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3693 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3695 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3699 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3703 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3705 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3709 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3711 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3715 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3719 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3721 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3725 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3727 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3730 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3746 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3750 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3752 **adresse-element** — `&gSaveBlock1Ptr->tvShows[i]`
+- :3841 **sizeof** — `sizeof(PokeNews)`
+- :3841 **alloc** — `Alloc(MAX_LINK_PLAYERS * POKE_NEWS_COUNT * sizeof(PokeNews))`
+- :3845 **sizeof** — `sizeof((*rmBuffer2)[i])`
+- :3845 **memcpy** — `memcpy((*rmBuffer2)[i], src + i * size, sizeof((*rmBuffer2)[`
+- :3874 **struct-array-local** — `pokeNews`
+- :3885 **deref** — `*pokeNews[j]`
+- :3890 **deref** — `*pokeNews[(j + k + 1) % sTVShowNewsMixingNumPlayers]`
+- :3971 **sizeof** — `sizeof(TVShow *)`
+- :3971 **alloc** — `AllocZeroed(sizeof(TVShow *) * 11)`
+- :3978 **adresse-element** — `&show[i]`
+- :3982 **adresse-element** — `&show[i]`
+- :3987 **adresse-element** — `&show[i]`
+- :3992 **adresse-element** — `&show[i]`
+- :3996 **adresse-element** — `&show[i]`
+- :4001 **adresse-element** — `&show[i]`
+- :4006 **adresse-element** — `&show[i]`
+- :4011 **adresse-element** — `&show[i]`
+- :4015 **adresse-element** — `&show[i]`
+- :4019 **adresse-element** — `&show[i]`
+- :4023 **adresse-element** — `&show[i]`
+- :4036 **ptr-arith** — `curShow++`
+- :4042 **sizeof** — `sizeof(TVShow)`
+- :4042 **memset** — `memset(curShow, 0, sizeof(TVShow))`
+- :4051 **ptr-arith** — `curShow++`
+- :4072 **ptr-arith** — `curShow++`
+- :4187 **adresse-element** — `&shows[i]`
+- :4187 **sizeof** — `sizeof(TVShow)`
+- :4187 **memset** — `memset(&shows[i], 0, sizeof(TVShow))`
+- :4191 **adresse-element** — `&shows[i]`
+- :4191 **sizeof** — `sizeof(TVShow)`
+- :4191 **memset** — `memset(&shows[i], 0, sizeof(TVShow))`
+- :4309 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4384 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4479 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4575 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4661 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4731 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4777 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4830 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4865 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4902 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :4921 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5263 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5335 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5486 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5516 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5546 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5665 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5713 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5759 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5829 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :5924 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6004 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6026 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6090 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6148 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6235 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6341 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6489 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6602 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6679 **stmt-inconnu** — `ERROR: SBSECRETS_STATE_BASE_INTEREST_LOW ...`
+- :6696 **stmt-inconnu** — `ERROR: SBSECRETS_STATE_USED_CHAIR ...`
+- :6710 **stmt-inconnu** — `ERROR: ... SBSECRETS_NUM_STATES`
+- :6722 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :6793 **adresse-element** — `&gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004]`
+- :0 **import-ambigu** — `MOVE_BIDE ← src/engine/battle/constants.ts | include/constants/moves.ts (choisi include/constants/moves.ts)`
+- :0 **import-ambigu** — `MOVE_SOLAR_BEAM ← src/engine/battle/constants.ts | include/constants/moves.ts (choisi include/constants/moves.ts)`
+- :0 **import-ambigu** — `gStringVar1 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `gStringVar2 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `gStringVar3 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `gSaveBlock1Ptr ← src/engine/save/save-block-state.ts | src/save.ts | harness/runtime/decomp-globals.ts (choisi src/engine/save/save-block-state.ts)`
+- :0 **import-ambigu** — `Random ← src/engine/battle/script-interpreter.ts | src/random.ts | include/random.ts (choisi src/random.ts)`
+- :0 **import-ambigu** — `SPECIES_NONE ← src/mail_data.ts | include/constants/species.ts (choisi include/constants/species.ts)`
+- :0 **import-ambigu** — `FlagSet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `PLAYERS_HOUSE_TV_LATI ← src/tv.ts | include/constants/tv.ts (choisi include/constants/tv.ts)`
+- :0 **import-ambigu** — `PLAYERS_HOUSE_TV_MOVIE ← src/tv.ts | include/constants/tv.ts (choisi include/constants/tv.ts)`
+- :0 **import-ambigu** — `FlagGet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `FlagClear ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `VarGet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `MOVE_NONE ← src/engine/battle/constants.ts | include/constants/moves.ts (choisi include/constants/moves.ts)`
+- :0 **import-ambigu** — `POKEBALL_COUNT ← include/pokeball.ts | harness/runtime/decomp-globals.ts (choisi include/pokeball.ts)`
+- :0 **import-ambigu** — `EC_EMPTY_WORD ← src/easy_chat.ts | src/mail_data.ts (choisi src/easy_chat.ts)`
+- :0 **import-ambigu** — `VarSet ← src/engine/script/script-vars.ts | src/event_data.ts | include/event_data.ts (choisi src/event_data.ts)`
+- :0 **import-ambigu** — `StringCompare ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `gSaveBlock2Ptr ← src/engine/save/save-block-state.ts | src/save.ts | harness/runtime/decomp-globals.ts (choisi src/engine/save/save-block-state.ts)`
+- :0 **import-ambigu** — `StringCopy ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `StripExtCtrlCodes ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_MON_FLED ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_WON ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `gPlayerParty ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SPECIES ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `GetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/engine/battle/party-storage.ts)`
+- :0 **import-ambigu** — `MON_DATA_NICKNAME ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_LANGUAGE ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `SMARTSHOPPER_NUM_ITEMS ← src/engine/save/save-blocks.ts | include/constants/tv.ts (choisi include/constants/tv.ts)`
+- :0 **import-ambigu** — `StringLength ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_FRIENDSHIP ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `DECOR_MAX_SECRET_BASE ← src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `PARTY_SIZE ← src/engine/battle/party-storage.ts | src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `MON_DATA_IS_EGG ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_LEVEL ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MOVE1 ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MOVE2 ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MOVE3 ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MOVE4 ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_LOST ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_DREW ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_CAUGHT ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_RAN ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_PLAYER_TELEPORTED ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `B_OUTCOME_MON_TELEPORTED ← src/engine/battle/constants.ts | include/constants/battle.ts (choisi include/constants/battle.ts)`
+- :0 **import-ambigu** — `MAX_MON_MOVES ← src/engine/battle/constants.ts | src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `MON_DATA_COOL_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_BEAUTY_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_CUTE_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SMART_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_TOUGH_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_CHAMPION_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_WINNING_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_VICTORY_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_ARTIST_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_EFFORT_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_MARINE_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_LAND_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_SKY_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_COUNTRY_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_NATIONAL_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_EARTH_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_WORLD_RIBBON ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `EOS ← src/mail_data.ts | include/constants/characters.ts (choisi include/constants/characters.ts)`
+- :0 **import-ambigu** — `POKE_NEWS_COUNT ← src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `STR_CONV_MODE_LEFT_ALIGN ← src/battle_message.ts | include/string_util.ts (choisi include/string_util.ts)`
+- :0 **import-ambigu** — `ConvertIntToDecimalStringN ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `ITEM_NONE ← src/mail_data.ts | include/constants/items.ts (choisi include/constants/items.ts)`
+- :0 **import-ambigu** — `StringGet_Nickname ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `SpeciesToNationalPokedexNum ← src/engine/data/game-data.ts | src/engine/ui/pokedex-flags.ts (choisi src/engine/data/game-data.ts)`
+- :0 **import-ambigu** — `POKEMON_NAME_LENGTH ← src/engine/save/save-blocks.ts | include/constants/global.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `ConvertInternationalString ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `MON_DATA_PERSONALITY ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `DoNamingScreen ← src/main_menu.ts | src/naming_screen.ts (choisi src/naming_screen.ts)`
+- :0 **import-ambigu** — `SetMonData ← src/engine/battle/party-storage.ts | src/pokemon.ts (choisi src/pokemon.ts)`
+- :0 **import-ambigu** — `MON_DATA_OT_ID ← src/engine/battle/party-storage.ts | include/pokemon.ts (choisi include/pokemon.ts)`
+- :0 **import-ambigu** — `PLAYERS_HOUSE_TV_NONE ← src/tv.ts | include/constants/tv.ts (choisi include/constants/tv.ts)`
+- :0 **import-ambigu** — `MALE ← include/constants/global.ts | harness/runtime/decomp-globals.ts (choisi include/constants/global.ts)`
+- :0 **import-ambigu** — `IsStringJapanese ← src/string_util.ts | include/string_util.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `GetMapName ← src/engine/field/region-map-data.ts | src/region_map.ts (choisi src/region_map.ts)`
+- :0 **import-ambigu** — `gStringVar4 ← src/string_util.ts | include/string_util.ts | harness/runtime/decomp-globals.ts (choisi src/string_util.ts)`
+- :0 **import-ambigu** — `gDecorations ← src/data/decoration/header.ts | src/decoration_inventory.ts (choisi src/data/decoration/header.ts)`
+- :0 **flat-union-reset** — `gSaveBlock1Ptr.tvShows[i].data[j] = 0;`
+- :0 **flat-union-reset** — `shows[idx].data[i] = 0;`
+
+## gText_* transformés en getString() — vérifier encodeOwText aux sites printer
+- :3395 gText_Mom
+- :3403 gText_Mom
+- :3410 gText_Mom
+- :3414 gText_Dad
+- :3420 gText_Mom
+- :3422 gText_Dad
+- :3431 gText_Mom
+- :3436 gText_Dad
+- :4401 gText_Lv50
+- :4403 gText_OpenLevel
+- :5041 gText_Cool
+- :5044 gText_Beauty
+- :5047 gText_Cute
+- :5050 gText_Smart
+- :5053 gText_Tough
+- :5285 gText_Single
+- :5289 gText_Double
+- :5351 gText_Spicy2
+- :5354 gText_Dry2
+- :5357 gText_Sweet2
+- :5360 gText_Bitter2
+- :5363 gText_Sour2
+- :5368 gText_Excellent
+- :5372 gText_VeryGood
+- :5376 gText_Good
+- :5389 gText_Spicy2
+- :5392 gText_Dry2
+- :5395 gText_Sweet2
+- :5398 gText_Bitter2
+- :5401 gText_Sour2
+- :5406 gText_SoSo
+- :5408 gText_Bad
+- :5410 gText_TheWorst
+- :5769 gText_Slots
+- :5772 gText_Roulette
+- :5785 gText_Slots
+- :5788 gText_Roulette
+- :5798 gText_Slots
+- :5801 gText_Roulette
+- :5812 gText_Roulette
+- :5815 gText_Slots
+- :6009 gText_Jackpot
+- :6011 gText_First
+- :6013 gText_Second
+- :6015 gText_Third
