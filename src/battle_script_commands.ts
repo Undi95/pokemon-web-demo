@@ -141,15 +141,9 @@ import {
 import {
   AddMoney as _AddMoneyFull,
 } from './money';
-import {
-  FLAG_GET_CAUGHT,
-  FLAG_SET_CAUGHT,
-  FLAG_SET_SEEN,
-  GetSetPokedexFlag,
-  GetSetPokedexFlag as _GetSetPokedexFlagHBT,
-  HandleSetPokedexFlag,
-  SpeciesToNationalPokedexNum,
-} from './engine/ui/pokedex-flags';
+import { GetSetPokedexFlag, GetSetPokedexFlag as _GetSetPokedexFlagHBT } from './pokedex';
+import { HandleSetPokedexFlag, SpeciesToNationalPokedexNum } from './pokemon';
+import { FLAG_GET_CAUGHT, FLAG_SET_CAUGHT, FLAG_SET_SEEN } from '../include/pokedex';
 import {
   ABILITYEFFECT_ABSORBING,
   ABILITYEFFECT_ATK_SYNCHRONIZE,

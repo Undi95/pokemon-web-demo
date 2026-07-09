@@ -140,7 +140,8 @@ import { gSpeciesNames, gMoveNames } from './engine/data/game-data';
 // ─── Bridges (flags/pokedex/random/vars/tasks/palette) ────────────────────────
 import { Random } from './random';
 import { FlagGet, FlagSet, IsNationalPokedexEnabled } from './event_data';
-import { GetNationalPokedexCount, GetSetPokedexFlag, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
+import { GetNationalPokedexCount, GetSetPokedexFlag } from './pokedex';
+import { SpeciesToNationalPokedexNum } from './pokemon';
 import { TrySetTrendyPhrase } from './dewford_trend';
 import {
   ResetTasks, JOY_NEW, JOY_REPEAT, BlendPalettes, FreeAllSpritePalettes,

@@ -63,11 +63,10 @@ import {
 } from './pokedex_cry_screen';
 import { pauseBgm, resumeBgm } from '../harness/runtime/decomp-globals';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
-import {
-  GetSetPokedexFlag, GetHoennPokedexCount as DexGetHoennCount,
-  NationalToHoennOrder, HoennToNationalOrder, NationalPokedexNumToSpecies,
-  HOENN_DEX_COUNT, NATIONAL_DEX_COUNT,
-} from './engine/ui/pokedex-flags';
+// (GetSetPokedexFlag / Get*PokedexCount / GetPokedexHeightWeight : définis en
+//  fin de fichier — rapatriés de l'ex-pokedex-flags.ts, leur .c = pokedex.c.)
+import { NationalToHoennOrder, HoennToNationalOrder, NationalPokedexNumToSpecies } from './pokemon';
+import { HOENN_DEX_COUNT, NATIONAL_DEX_COUNT } from '../include/pokedex';
 import { gSpeciesNames, getSpeciesInfo } from './engine/data/game-data';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { DisableNationalPokedex, IsNationalPokedexEnabled } from './event_data';
@@ -75,7 +74,6 @@ import { GetOverworldTextboxPalettePtr } from './text_window';
 import {
   gPokedexOrder_Alphabetical, gPokedexOrder_Weight, gPokedexOrder_Height,
 } from './data/pokedex_orders';
-import { GetNationalPokedexCount } from './engine/ui/pokedex-flags';
 import {
   SE_PC_OFF, SE_DEX_SCROLL, SE_DEX_PAGE, SE_PIN, SE_FAILURE, SE_SELECT,
   SE_PC_LOGIN, SE_BALL, SE_DEX_SEARCH, SE_SUCCESS, SE_TRUCK_DOOR,
@@ -91,8 +89,7 @@ const PAGE_AREA = 5;
 const PAGE_CRY = 6;
 const PAGE_SIZE = 7;
 
-const DEX_MODE_HOENN = 0;
-const DEX_MODE_NATIONAL = 1;
+// DEX_MODE_* : import include/pokedex (miroir header), cf. fin des imports.
 const ORDER_NUMERICAL = 0;
 const ORDER_ALPHABETICAL = 1;
 const ORDER_HEAVIEST = 2;
@@ -106,8 +103,8 @@ const CRY_SCREEN = 1;
 const SIZE_SCREEN = 2;
 const CANCEL_SCREEN = 3;
 const SCREEN_COUNT = 4;
-const FLAG_GET_SEEN = 0;
-const FLAG_GET_CAUGHT = 1;
+// FLAG_GET_* : import include/pokedex (miroir header).
+import { DEX_MODE_HOENN, DEX_MODE_NATIONAL, FLAG_GET_SEEN, FLAG_GET_CAUGHT } from '../include/pokedex';
 
 // Fiche info (JALON 2). MON_PAGE = position cible du mon sur la fiche (pokedex.c:115).
 const MON_PAGE_X = 48;
@@ -1208,9 +1205,9 @@ function CreateInterfaceSprites(page: number): void {
       anim(CreateSprite(sHoennNationalTextSpriteTemplate, 17, 55, 1), 1);
       CreateSprite(sHoennNationalTextSpriteTemplate, 17, 81, 1);
       anim(CreateSprite(sHoennNationalTextSpriteTemplate, 17, 91, 1), 1);
-      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, DexGetHoennCount(FLAG_GET_SEEN), 40, 45, 8);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, GetHoennPokedexCount(FLAG_GET_SEEN), 40, 45, 8);
       drawCount(sNationalDexSeenOwnNumberSpriteTemplate, sPokedexView.seenCount, 40, 55, 8);
-      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, DexGetHoennCount(FLAG_GET_CAUGHT), 40, 81, 8);
+      drawCount(sNationalDexSeenOwnNumberSpriteTemplate, GetHoennPokedexCount(FLAG_GET_CAUGHT), 40, 81, 8);
       drawCount(sNationalDexSeenOwnNumberSpriteTemplate, sPokedexView.ownCount, 40, 91, 8);
     }
     id = CreateSprite(sDexListStartMenuCursorSpriteTemplate, 136, 96, 1);
@@ -1259,8 +1256,8 @@ export function CB2_OpenPokedex(): void {
       v.pokeBallRotation = sPokeBallRotation;
       v.selectedScreen = AREA_SCREEN;
       if (!IsNationalPokedexEnabled()) {
-        v.seenCount = DexGetHoennCount(FLAG_GET_SEEN);
-        v.ownCount = DexGetHoennCount(FLAG_GET_CAUGHT);
+        v.seenCount = GetHoennPokedexCount(FLAG_GET_SEEN);
+        v.ownCount = GetHoennPokedexCount(FLAG_GET_CAUGHT);
       } else {
         v.seenCount = GetNationalPokedexCount(FLAG_GET_SEEN);
         v.ownCount = GetNationalPokedexCount(FLAG_GET_CAUGHT);
@@ -3915,3 +3912,152 @@ function SpriteCB_SlideCaughtMonToCenter(sprite: DecompSprite): void {
   if (sprite.y > 80) sprite.y -= 1;
 }
 
+
+// ─── Cœur seen/caught 1:1 (pokedex.c:4194-4329) ─────────────────────────────
+// Rapatrié de l'ex-`engine/ui/pokedex-flags.ts` (unification miroir) : ces
+// fonctions vivent dans pokedex.c. Bitfield `gSaveBlock2.pokedex.{seen,owned}`
+// + redondance anti-triche `gSaveBlock1.{seen1,seen2}` (triple écriture 1:1).
+import { GetSaveBlock1 as _GetSaveBlock1_DEX, GetSaveBlock2 as _GetSaveBlock2_DEX } from './save';
+import {
+  FLAG_GET_SEEN as _FLAG_GET_SEEN_DEX, FLAG_GET_CAUGHT as _FLAG_GET_CAUGHT_DEX,
+  FLAG_SET_SEEN as _FLAG_SET_SEEN_DEX, FLAG_SET_CAUGHT as _FLAG_SET_CAUGHT_DEX,
+  NATIONAL_DEX_COUNT as _NATIONAL_DEX_COUNT_DEX, KANTO_DEX_COUNT as _KANTO_DEX_COUNT_DEX,
+  HOENN_DEX_COUNT as _HOENN_DEX_COUNT_DEX,
+} from '../include/pokedex';
+import { HoennToNationalOrder as _HoennToNationalOrder_DEX } from './pokemon';
+
+/** 1:1 décomp `s8 GetSetPokedexFlag(u16 nationalDexNo, u8 caseID)` (pokedex.c:4207-4263).
+ *  `nationalDexNo--` AVANT index/bit (off-by-one 1:1). GET : cross-check
+ *  anti-triche (mismatch → clear TOUT + 0, NE PAS simplifier). SET_SEEN :
+ *  triple écriture seen/seen1/seen2 ; SET_CAUGHT : owned seul. */
+export function GetSetPokedexFlag(nationalDexNo: number, caseID: number): number {
+  let retVal = 0;
+
+  nationalDexNo--;                       // 1:1 :4214
+  const index = (nationalDexNo / 8) | 0; // 1:1 :4215 (division entière u16)
+  const bit = nationalDexNo % 8;         // 1:1 :4216
+  const mask = 1 << bit;                 // 1:1 :4217
+
+  const sb2 = _GetSaveBlock2_DEX();
+  const sb1 = _GetSaveBlock1_DEX();
+  const seen = sb2.pokedex.seen;
+  const owned = sb2.pokedex.owned;
+  const seen1 = sb1.seen1;
+  const seen2 = sb1.seen2;
+
+  switch (caseID) {
+    case _FLAG_GET_SEEN_DEX: // 1:1 :4221-4235
+      if (seen[index] & mask) {
+        if ((seen[index] & mask) === (seen1[index] & mask)
+          && (seen[index] & mask) === (seen2[index] & mask)) {
+          retVal = 1;
+        } else {
+          seen[index] &= ~mask;
+          seen1[index] &= ~mask;
+          seen2[index] &= ~mask;
+          retVal = 0;
+        }
+      }
+      break;
+    case _FLAG_GET_CAUGHT_DEX: // 1:1 :4236-4252
+      if (owned[index] & mask) {
+        if ((owned[index] & mask) === (seen[index] & mask)
+          && (owned[index] & mask) === (seen1[index] & mask)
+          && (owned[index] & mask) === (seen2[index] & mask)) {
+          retVal = 1;
+        } else {
+          owned[index] &= ~mask;
+          seen[index] &= ~mask;
+          seen1[index] &= ~mask;
+          seen2[index] &= ~mask;
+          retVal = 0;
+        }
+      }
+      break;
+    case _FLAG_SET_SEEN_DEX: // 1:1 :4253-4257
+      seen[index] |= mask;
+      seen1[index] |= mask;
+      seen2[index] |= mask;
+      break;
+    case _FLAG_SET_CAUGHT_DEX: // 1:1 :4258-4260
+      owned[index] |= mask;
+      break;
+  }
+  return retVal;
+}
+
+/** 1:1 décomp `u16 GetNationalPokedexCount(u8 caseID)` (pokedex.c:4265-4285). */
+export function GetNationalPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < _NATIONAL_DEX_COUNT_DEX; i++) {
+    switch (caseID) {
+      case _FLAG_GET_SEEN_DEX:
+        if (GetSetPokedexFlag(i + 1, _FLAG_GET_SEEN_DEX)) count++;
+        break;
+      case _FLAG_GET_CAUGHT_DEX:
+        if (GetSetPokedexFlag(i + 1, _FLAG_GET_CAUGHT_DEX)) count++;
+        break;
+    }
+  }
+  return count;
+}
+
+/** 1:1 décomp `u16 GetHoennPokedexCount(u8 caseID)` (pokedex.c:4287-4307). */
+export function GetHoennPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < _HOENN_DEX_COUNT_DEX; i++) {
+    switch (caseID) {
+      case _FLAG_GET_SEEN_DEX:
+        if (GetSetPokedexFlag(_HoennToNationalOrder_DEX(i + 1), _FLAG_GET_SEEN_DEX)) count++;
+        break;
+      case _FLAG_GET_CAUGHT_DEX:
+        if (GetSetPokedexFlag(_HoennToNationalOrder_DEX(i + 1), _FLAG_GET_CAUGHT_DEX)) count++;
+        break;
+    }
+  }
+  return count;
+}
+
+/** 1:1 décomp `u16 GetKantoPokedexCount(u8 caseID)` (pokedex.c:4309-4329). */
+export function GetKantoPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < _KANTO_DEX_COUNT_DEX; i++) {
+    switch (caseID) {
+      case _FLAG_GET_SEEN_DEX:
+        if (GetSetPokedexFlag(i + 1, _FLAG_GET_SEEN_DEX)) count++;
+        break;
+      case _FLAG_GET_CAUGHT_DEX:
+        if (GetSetPokedexFlag(i + 1, _FLAG_GET_CAUGHT_DEX)) count++;
+        break;
+    }
+  }
+  return count;
+}
+
+/** 1:1 décomp `u16 GetPokedexHeightWeight(u16 dexNum, u8 data)` (pokedex.c:4194-4205).
+ *  data 0=height (décimètres), 1=weight (hectogrammes) ; default → 1. */
+export function GetPokedexHeightWeight(dexNum: number, data: number): number {
+  switch (data) {
+    case 0: // height
+      return gPokedexEntries[dexNum].height;
+    case 1: // weight
+      return gPokedexEntries[dexNum].weight;
+    default:
+      return 1;
+  }
+}
+
+// Pont lazy pour les specials byte-VM (HasAllHoennMons / ScriptGetPokedexInfo,
+// specials-registry lit `globalThis.__game_pokedex` pour éviter un cycle ESM).
+// 🐛 Ce pont n'était posé par PERSONNE (specials silencieusement no-op) —
+// réparé à l'unification : posé ici au chargement du miroir pokedex.ts.
+import { IsNationalPokedexEnabled as _IsNatDexEnabled_DEX } from './event_data';
+(globalThis as Record<string, unknown>).__game_pokedex = {
+  HOENN_DEX_COUNT: _HOENN_DEX_COUNT_DEX,
+  NATIONAL_DEX_COUNT: _NATIONAL_DEX_COUNT_DEX,
+  HoennToNationalOrder: _HoennToNationalOrder_DEX,
+  GetSetPokedexFlag,
+  GetHoennPokedexCount,
+  GetNationalPokedexCount,
+  IsNationalPokedexEnabled: _IsNatDexEnabled_DEX,
+};

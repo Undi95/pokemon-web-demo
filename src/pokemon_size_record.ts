@@ -29,7 +29,8 @@ import {
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
 import { gSpeciesNames } from './engine/data/game-data';
-import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './engine/ui/pokedex-flags';
+import { GetPokedexHeightWeight } from './pokedex';
+import { SpeciesToNationalPokedexNum } from './pokemon';
 import { STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, StringAppend, gStringVar1, gStringVar2, gStringVar3 } from '../include/string_util';
 import { encodeOwText, setStringVar, GetPlayerNameString } from '../include/text';
 import {

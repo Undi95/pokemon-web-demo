@@ -8,7 +8,8 @@
 
 import { SPECIES_DEOXYS, SPECIES_JIRACHI } from '../include/constants/species';
 import { SpeciesToNationalPokedexNum } from './engine/data/game-data';
-import { FLAG_GET_CAUGHT, FLAG_GET_SEEN, GetHoennPokedexCount, GetNationalPokedexCount, GetSetPokedexFlag, HOENN_DEX_COUNT } from './engine/ui/pokedex-flags';
+import { GetHoennPokedexCount, GetNationalPokedexCount, GetSetPokedexFlag } from './pokedex';
+import { FLAG_GET_CAUGHT, FLAG_GET_SEEN, HOENN_DEX_COUNT } from '../include/pokedex';
 import { IsNationalPokedexEnabled, VarGet, VarSet } from './event_data';
 import { ShowFieldMessage } from './field_message_box';
 import { getText } from './script';

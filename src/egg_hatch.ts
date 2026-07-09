@@ -61,7 +61,9 @@ import {
   CreateMon, CopyMon, CalculateMonStats, MonRestorePP, GetMonAbility, GetMonGender,
   CalculatePlayerPartyCount,
 } from './pokemon';
-import { GetSetPokedexFlag, SpeciesToNationalPokedexNum, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from './engine/ui/pokedex-flags';
+import { GetSetPokedexFlag } from './pokedex';
+import { SpeciesToNationalPokedexNum } from './pokemon';
+import { FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../include/pokedex';
 import { OT_ID_PLAYER_ID, SHINY_ODDS } from '../include/constants/pokemon';
 import { GET_SHINY_VALUE } from '../include/pokemon';
 import { LANGUAGE_FRENCH } from '../include/constants/global';

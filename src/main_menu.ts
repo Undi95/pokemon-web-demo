@@ -32,7 +32,8 @@ import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-imp
 import { SetPlayerName, GetPlayerNameString } from '../include/text';
 import { Random } from './random';
 import { IsNationalPokedexEnabled } from './event_data';
-import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
+import { GetNationalPokedexCount, GetHoennPokedexCount } from './pokedex';
+import { FLAG_GET_CAUGHT } from '../include/pokedex';
 import { GetWindowFrameTilesPal } from './text_window';
 import { EXT_CTRL_CODE_PAUSE } from '../include/constants/characters';
 import {

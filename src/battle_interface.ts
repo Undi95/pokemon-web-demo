@@ -895,7 +895,8 @@ import { getExpForLevel } from './engine/battle/data/experience-tables';
 import { getSpeciesGrowthRate, GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
 import { GetBattlerPosition } from './engine/battle/util';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_WALLY_TUTORIAL } from './engine/battle/constants';
-import { GetSetPokedexFlag, FLAG_GET_CAUGHT } from './engine/ui/pokedex-flags';
+import { GetSetPokedexFlag } from './pokedex';
+import { FLAG_GET_CAUGHT } from '../include/pokedex';
 import { SpeciesToNationalPokedexNum } from './engine/data/game-data';
 
 /** Type du paramètre mon de GetMonData (= Pokemon). Évite d'importer le type

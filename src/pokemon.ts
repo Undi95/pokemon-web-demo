@@ -2289,3 +2289,84 @@ export function IsHMMove2(move: number): boolean {
 
 // Exposition dev (sonde déterministe IsHMMove2), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__IsHMMove2 = IsHMMove2;
+
+// ─── Ordres Pokédex 1:1 (pokemon.c:5628-5680) + HandleSetPokedexFlag (:6929) ──
+// Rapatriés de l'ex-`engine/ui/pokedex-flags.ts` (unification miroir) : ces
+// fonctions vivent dans pokemon.c. `NUM_SPECIES - 1` décomp = `.length` des
+// tables extraites 1:1 (pokedex_order_tables, LEN 412).
+import {
+  sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
+} from './data/pokemon/pokedex_order_tables';
+import { SPECIES_UNOWN as _SPECIES_UNOWN_PDX, SPECIES_SPINDA as _SPECIES_SPINDA_PDX } from '../include/constants/species';
+import { FLAG_SET_SEEN as _FLAG_SET_SEEN_PDX, FLAG_GET_SEEN as _FLAG_GET_SEEN_PDX, FLAG_GET_CAUGHT as _FLAG_GET_CAUGHT_PDX } from '../include/pokedex';
+import { GetSetPokedexFlag as _GetSetPokedexFlag_PDX } from './pokedex';
+import { GetSaveBlock2 as _GetSaveBlock2_PDX } from './save';
+
+/** 1:1 décomp `u16 SpeciesToNationalPokedexNum(u16 species)` (pokemon.c:5664). */
+export function SpeciesToNationalPokedexNum(species: number): number {
+  if (!species)
+    return 0;
+  return sSpeciesToNationalPokedexNum[species - 1];
+}
+
+/** 1:1 décomp `u16 SpeciesToHoennPokedexNum(u16 species)` (pokemon.c:5672). */
+export function SpeciesToHoennPokedexNum(species: number): number {
+  if (!species)
+    return 0;
+  return sSpeciesToHoennPokedexNum[species - 1];
+}
+
+/** 1:1 décomp `u16 HoennToNationalOrder(u16 hoennNum)` (pokemon.c:5680). */
+export function HoennToNationalOrder(hoennNum: number): number {
+  if (!hoennNum)
+    return 0;
+  return sHoennToNationalOrder[hoennNum - 1];
+}
+
+/** 1:1 décomp `u16 NationalToHoennOrder(u16 nationalNum)` (pokemon.c:5646-5662). */
+export function NationalToHoennOrder(nationalNum: number): number {
+  if (!nationalNum)
+    return 0;
+
+  let hoennNum = 0;
+  const len = sHoennToNationalOrder.length; // = NUM_SPECIES - 1
+
+  while (hoennNum < len && sHoennToNationalOrder[hoennNum] !== nationalNum)
+    hoennNum++;
+
+  if (hoennNum === len)
+    return 0;
+
+  return hoennNum + 1;
+}
+
+/** 1:1 décomp `u16 NationalPokedexNumToSpecies(u16 nationalNum)` (pokemon.c:5628-5644). */
+export function NationalPokedexNumToSpecies(nationalNum: number): number {
+  if (!nationalNum)
+    return 0;
+
+  let species = 0;
+  const len = sSpeciesToNationalPokedexNum.length; // = NUM_SPECIES - 1
+
+  while (species < len && sSpeciesToNationalPokedexNum[species] !== nationalNum)
+    species++;
+
+  if (species === len)
+    return 0;
+
+  return species + 1;
+}
+
+/** 1:1 décomp `void HandleSetPokedexFlag(u16 nationalNum, u8 caseId, u32 personality)`
+ *  (pokemon.c:6929-6940) : set seulement si pas déjà set + stocke la personality
+ *  Unown/Spinda (variation sprite dex). */
+export function HandleSetPokedexFlag(nationalNum: number, caseId: number, personality: number): void {
+  const getFlagCaseId = (caseId === _FLAG_SET_SEEN_PDX) ? _FLAG_GET_SEEN_PDX : _FLAG_GET_CAUGHT_PDX;
+  if (!_GetSetPokedexFlag_PDX(nationalNum, getFlagCaseId)) { // don't set if it's already set
+    _GetSetPokedexFlag_PDX(nationalNum, caseId);
+    if (NationalPokedexNumToSpecies(nationalNum) === _SPECIES_UNOWN_PDX)
+      _GetSaveBlock2_PDX().pokedex.unownPersonality = personality;
+    if (NationalPokedexNumToSpecies(nationalNum) === _SPECIES_SPINDA_PDX)
+      _GetSaveBlock2_PDX().pokedex.spindaPersonality = personality;
+  }
+}

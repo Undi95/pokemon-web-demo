@@ -45,7 +45,8 @@ import {
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetPlayerNameString, encodeOwText } from '../include/text';
 import { AddTextPrinterParameterized3 } from './menu';
-import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT, FLAG_GET_SEEN } from './engine/ui/pokedex-flags';
+import { GetNationalPokedexCount, GetHoennPokedexCount } from './pokedex';
+import { FLAG_GET_CAUGHT, FLAG_GET_SEEN } from '../include/pokedex';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
 import { IsNationalPokedexEnabled } from './event_data';
 // 1:1 décomp start_menu.c:584-587 ShowStartMenu : FreezeObjectEvents + PlayerFreeze + StopPlayerAvatar.

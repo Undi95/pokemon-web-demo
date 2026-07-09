@@ -72,9 +72,9 @@ import {
   CopyMon, CalculatePlayerPartyCount, CalculateMonStats, EvolutionRenameMon,
   MonTryLearningNewMove, IsHMMove2, RemoveMonPPBonus, SetMonMoveSlot,
 } from './pokemon';
-import {
-  GetSetPokedexFlag, SpeciesToNationalPokedexNum, FLAG_SET_SEEN, FLAG_SET_CAUGHT,
-} from './engine/ui/pokedex-flags';
+import { GetSetPokedexFlag } from './pokedex';
+import { SpeciesToNationalPokedexNum } from './pokemon';
+import { FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../include/pokedex';
 import { IncrementGameStat } from './field_player_avatar';
 import { GAME_STAT_EVOLVED_POKEMON } from '../include/constants/game_stat';
 import { ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace } from './pokemon_summary_screen';

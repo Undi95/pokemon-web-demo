@@ -34,7 +34,9 @@ import { loadItemsTable, getAllItemKeys, type ItemDef } from '../runtime/data-ta
 import { createTestMon, GiveMonToPlayer, CalculatePlayerPartyCount, CopyMonToPC } from '../../src/engine/battle/party-storage';
 import { loadGameData, getSpeciesInfo, getExperienceForLevel } from '../../src/engine/data/game-data';
 import { resolveDecompConstant } from '../runtime/decomp-constants';
-import { SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../src/engine/ui/pokedex-flags';
+import { GetSetPokedexFlag } from '../../src/pokedex';
+import { SpeciesToNationalPokedexNum } from '../../src/pokemon';
+import { FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../../include/pokedex';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 

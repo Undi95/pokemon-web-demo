@@ -3420,7 +3420,7 @@ import {
   B_ACTION_FINISHED as _B_ACTION_FINISHED_BSE,
 } from './engine/battle/constants';
 import { getSpeciesInfo } from './engine/data/game-data';
-import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from './engine/ui/pokedex-flags';
+import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from './pokemon';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
 import {

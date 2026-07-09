@@ -23,9 +23,9 @@ import { CreateMon, createEmptyPokemon } from './pokemon';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import { CreateEgg } from './daycare';
-import {
-  SpeciesToNationalPokedexNum, GetSetPokedexFlag, FLAG_SET_SEEN, FLAG_SET_CAUGHT,
-} from './engine/ui/pokedex-flags';
+import { GetSetPokedexFlag } from './pokedex';
+import { SpeciesToNationalPokedexNum } from './pokemon';
+import { FLAG_SET_SEEN, FLAG_SET_CAUGHT } from '../include/pokedex';
 import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { SPECIES_NONE, SPECIES_EGG } from '../include/constants/species';
 import {
