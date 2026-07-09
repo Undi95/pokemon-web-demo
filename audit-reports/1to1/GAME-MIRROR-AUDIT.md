@@ -11,21 +11,18 @@
 ### Divergences dans game/ (fn au nom non-décomp — à justifier : glu M3 ? mal nommé ?)
 
 
-## 🟢 CANDIDATS migration → game/ (2) — engine/, purs, .c existe
+## 🟢 CANDIDATS migration → game/ (0) — engine/, purs, .c existe
 
 | fichier engine | → game/ | nos fn | match | pureté | complét. | divergence |
 |---|---|---|---|---|---|---|
-| `engine/field/direction-coords.ts` | `game/event_object_movement.ts` | 10 | 8/726 | 80% | 1% | 2 |
-| `engine/battle/battle-window-frame.ts` | `game/battle_script_commands.ts` | 4 | 3/287 | 75% | 1% | 1 |
 
-## 🟡 Partiels (8) — décomp-nommés mais dispersés/hybrides (évaluer au cas par cas)
+## 🟡 Partiels (7) — décomp-nommés mais dispersés/hybrides (évaluer au cas par cas)
 
 | fichier engine | best .c | nos fn | match partout | pureté(p) | divergence |
 |---|---|---|---|---|---|
 | `engine/battle/battle-link-end.ts` | `battle_main.c` | 42 | 37 | 88% | 5 |
 | `engine/battle/battle-setup-helpers.ts` | `battle_setup.c` | 29 | 22 | 76% | 7 |
 | `engine/battle/constants.ts` | `—` | 22 | 22 | 100% | 0 |
-| `engine/ui/pokedex-flags.ts` | `pokemon.c` | 11 | 11 | 100% | 0 |
 | `engine/battle/data/experience-tables.ts` | `—` | 11 | 8 | 73% | 3 |
 | `engine/bag/bag-pockets.ts` | `item.c` | 10 | 6 | 60% | 4 |
 | `engine/script/script-vars.ts` | `event_data.c` | 9 | 6 | 67% | 3 |
