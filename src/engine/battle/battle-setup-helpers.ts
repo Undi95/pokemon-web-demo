@@ -21,17 +21,8 @@
  *   - decomp-data : SPECIES_ZIGZAGOON, OT_ID_PLAYER_ID
  */
 
-import {
-  gActionSelectionCursor, gMoveSelectionCursor,
-  gBattleTypeFlags, setBattleTypeFlags,
-  setBattleControllerExecFlags, setActiveBattler,
-  MAX_BATTLERS_COUNT,
-  gBattlerControllerFuncs,
-} from './state';
+import { setBattleTypeFlags } from './state';
 import { BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_TRAINER } from './constants';
-// Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
-import * as _stateNs from './state';
-import { gBattlerPositions } from './util';
 // E1 : MetatileBehavior_Is* sont des fonctions PURES (metatile-behavior.ts
 // n'importe que des constantes MB_*, ZÉRO cycle avec battle). Import direct safe.
 import {
@@ -54,8 +45,6 @@ import { bootDecompBattleLoop } from './battle-decomp-loop';
 import { StringExpandPlaceholders } from '../../string_util';
 import { getText } from '../../script';
 import { ENUM_B_1 as B_TRANSITION } from '../../../include/battle_transition';
-// SPECIES_ZIGZAGOON (= 288) depuis le leaf auto-extrait (règle [[feedback-no-hardcoded-decomp-values]]).
-import { SPECIES_ZIGZAGOON } from '../../../include/constants/species';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -94,127 +83,6 @@ const MAP_TYPE_SECRET_BASE = 9;
 
 /** 1:1 décomp `MON_DATA_HELD_ITEM` = 22. */
 const MON_DATA_HELD_ITEM = 22;
-
-// ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
-
-/** 1:1 décomp `BattleControllerDummy` (battle_controllers.c). No-op callback.
- *  Posé dans la table partagée `gBattlerControllerFuncs` (state.ts) par
- *  SetUpBattleVarsAndBirchZigzagoon, remplacé ensuite par SetControllerTo* . */
-function BattleControllerDummy(): void {
-  // 1:1 : callback no-op (le battler n'a pas encore de controller assigné).
-}
-
-/** 1:1 décomp `HandleLinkBattleSetup()`. */
-function HandleLinkBattleSetup(): void {
-  // Dette R3 : link battle handshake. Notre port : noop (no link battle).
-}
-
-/** 1:1 décomp `ClearBattleAnimationVars()`. Wire vers battle-anim-interpreter K1. */
-function ClearBattleAnimationVars(): void {
-  const ba = (globalThis as Record<string, unknown>).__battleAnim as {
-    ClearBattleAnimationVars?: () => void;
-  } | undefined;
-  ba?.ClearBattleAnimationVars?.();
-}
-
-/** 1:1 décomp `ClearBattleMonForms()`. */
-function ClearBattleMonForms(): void {
-  // Dette R3 : per-battler form tracker (Castform weather / Unown letter).
-}
-
-/** 1:1 décomp : battle_controllers.c inclut battle_ai_script_commands.h — le VRAI
- *  BattleAI_HandleItemUseBeforeAISetup (battle_ai_script_commands.ts:1714) remplit
- *  gBattleHistory.trainerItems depuis gTrainers[opponent].items. L'ancien stub local
- *  vide ici court-circuitait TOUTE la chaîne objets IA (ShouldUseItem ne trouvait
- *  jamais d'item → l'IA dresseur n'utilisait aucune potion). Import direct = cycle
- *  TDZ (boot mort vérifié) → pont __battleAi (même surface que AI_TrySwitchOrUseItem). */
-function BattleAI_HandleItemUseBeforeAISetup(itemMask: number): void {
-  const m = (globalThis as { __battleAi?: { BattleAI_HandleItemUseBeforeAISetup?: (mask: number) => void } }).__battleAi;
-  m?.BattleAI_HandleItemUseBeforeAISetup?.(itemMask);
-}
-
-/** 1:1 décomp `ZeroEnemyPartyMons()`. */
-function _ZeroEnemyPartyMons(): void {
-  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
-  if (stateMod.gEnemyParty) {
-    for (let i = 0; i < 6; i++) {
-      stateMod.gEnemyParty[i] = null;
-    }
-  }
-}
-
-/** 1:1 décomp `CreateMon(...)`. */
-function _CreateMon(
-  monSlot: number, species: number, level: number, _fixedIV: number,
-  _useRandomIvs: number, _personality: number, _otIdType: number, _otIdNum: number,
-): void {
-  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
-  if (stateMod.gEnemyParty) {
-    stateMod.gEnemyParty[monSlot] = {
-      species, level,
-      moves: [0, 0, 0, 0], pp: [0, 0, 0, 0],
-      heldItem: 0,
-    };
-  }
-}
-
-/** 1:1 décomp `SetMonData(mon, field, value)`. */
-function _SetMonData(monSlot: number, field: number, value: number): void {
-  const stateMod = _stateNs as unknown as { gEnemyParty?: Array<{ heldItem?: number }> };
-  if (stateMod.gEnemyParty?.[monSlot] && field === MON_DATA_HELD_ITEM) {
-    stateMod.gEnemyParty[monSlot].heldItem = value;
-  }
-}
-
-// ─── SetUpBattleVarsAndBirchZigzagoon (battle_controllers.c:43-79) ─────────
-
-/** 1:1 décomp `SetUpBattleVarsAndBirchZigzagoon()` (battle_controllers.c:43-79).
- *  Setup initial des vars battle + spawn Zigzagoon LV2 si tutorial Birch.
- *
- *  Appelé par CB2_InitBattleInternal (= battle_main.c:684). */
-export function SetUpBattleVarsAndBirchZigzagoon(): void {
-  // 1:1 décomp l. 47 : gBattleMainFunc = BeginBattleIntroDummy.
-  const bmf = (globalThis as Record<string, unknown>).__battleMainFunctions as {
-    setBattleMainFunc?: (fn: () => void) => void;
-    BeginBattleIntroDummy?: () => void;
-  } | undefined;
-  if (bmf?.setBattleMainFunc && bmf.BeginBattleIntroDummy) {
-    bmf.setBattleMainFunc(bmf.BeginBattleIntroDummy);
-  }
-
-  // 1:1 décomp ll. 49-55 : init controller funcs + positions + UI cursors.
-  for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
-    gBattlerControllerFuncs[i] = BattleControllerDummy;
-    gBattlerPositions[i] = 0xFF;
-    gActionSelectionCursor[i] = 0;
-    gMoveSelectionCursor[i] = 0;
-  }
-
-  HandleLinkBattleSetup();
-  setBattleControllerExecFlags(0);
-  ClearBattleAnimationVars();
-  ClearBattleMonForms();
-
-  // 1:1 décomp ll. 61-65 : UBFIX active = reset gActiveBattler = 0.
-  setActiveBattler(0);
-
-  BattleAI_HandleItemUseBeforeAISetup(0xF);
-
-  // 1:1 décomp ll. 68-74 : Birch tutorial = spawn Zigzagoon LV 2.
-  // ZeroEnemyPartyMons + CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS,...) +
-  // SetMonData(HELD_ITEM, 0). Voie L : mon PLEIN via createPokemonInstance (= CreateMon réel :
-  // stats/moves/IVs) dans le gEnemyParty que LIT la voie L (party-storage, = chemin wild prouvé).
-  // L'ancien _CreateMon (state ns, simplifié sans stats/moves) = combat injouable en voie L.
-  if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) {
-    // 1:1 décomp : CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
-    const zig = createEmptyPokemon();
-    CreateMon(zig, SPECIES_ZIGZAGOON, 2, 32 /* USE_RANDOM_IVS */, false, 0, 0 /* OT_ID_PLAYER_ID */, 0);
-    setupEnemyPartyForBattle([zig]);
-  }
-
-  // 1:1 décomp ll. 77-78 : unused vars (never read).
-  // gUnusedFirstBattleVar1 = 0; gUnusedFirstBattleVar2 = 0;
-}
 
 // ─── Scripted wild battle (battle_setup.c + scrcmd.c) — DORMANT (#suppr voie V) ──
 // Port strict 1:1 des entrees scripted-wild de la voie L. DORMANT : pas encore
@@ -543,8 +411,8 @@ export function GetTrainerBattleTransition(): number {
 
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
-(globalThis as Record<string, unknown>).__battleSetupHelpers = {
-  SetUpBattleVarsAndBirchZigzagoon, BattleSetup_GetEnvironmentId,
+Object.assign(((globalThis as Record<string, unknown>).__battleSetupHelpers ??= {}) as object, {
+  BattleSetup_GetEnvironmentId,
   BATTLE_ENVIRONMENT_GRASS, BATTLE_ENVIRONMENT_LONG_GRASS,
   BATTLE_ENVIRONMENT_SAND, BATTLE_ENVIRONMENT_UNDERWATER,
   BATTLE_ENVIRONMENT_WATER, BATTLE_ENVIRONMENT_POND,
@@ -553,6 +421,6 @@ export function GetTrainerBattleTransition(): number {
   // Sélection de transition (Phase 4) — exposé pour vérif harness déterministe.
   GetWildBattleTransition, GetBattleTransitionTypeByMap, GetSumOfPlayerPartyLevel,
   GetTrainerBattleTransition, GetSumOfEnemyPartyLevel,
-};
+});
 
 void MAP_TYPE_UNKNOWN;

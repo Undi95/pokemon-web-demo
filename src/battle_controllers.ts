@@ -1437,3 +1437,117 @@ export { gBattleScripting };
   BattleCreateYesNoCursorAt: _BattleCreateYesNoCursorAt_BSC,
   BattleDestroyYesNoCursorAt: _BattleDestroyYesNoCursorAt_BSC,
 };
+
+// ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
+
+/** 1:1 décomp `BattleControllerDummy` (battle_controllers.c). No-op callback.
+ *  Posé dans la table partagée `gBattlerControllerFuncs` (state.ts) par
+ *  SetUpBattleVarsAndBirchZigzagoon, remplacé ensuite par SetControllerTo* . */
+function BattleControllerDummy(): void {
+  // 1:1 : callback no-op (le battler n'a pas encore de controller assigné).
+}
+
+/** 1:1 décomp `HandleLinkBattleSetup()`. */
+function HandleLinkBattleSetup(): void {
+  // Dette R3 : link battle handshake. Notre port : noop (no link battle).
+}
+
+/** 1:1 décomp `ClearBattleAnimationVars()`. Wire vers battle-anim-interpreter K1. */
+function ClearBattleAnimationVars(): void {
+  const ba = (globalThis as Record<string, unknown>).__battleAnim as {
+    ClearBattleAnimationVars?: () => void;
+  } | undefined;
+  ba?.ClearBattleAnimationVars?.();
+}
+
+/** 1:1 décomp `ClearBattleMonForms()`. */
+function ClearBattleMonForms(): void {
+  // Dette R3 : per-battler form tracker (Castform weather / Unown letter).
+}
+
+/** 1:1 décomp : battle_controllers.c inclut battle_ai_script_commands.h — le VRAI
+ *  BattleAI_HandleItemUseBeforeAISetup (battle_ai_script_commands.ts:1714) remplit
+ *  gBattleHistory.trainerItems depuis gTrainers[opponent].items. L'ancien stub local
+ *  vide ici court-circuitait TOUTE la chaîne objets IA (ShouldUseItem ne trouvait
+ *  jamais d'item → l'IA dresseur n'utilisait aucune potion). Import direct = cycle
+ *  TDZ (boot mort vérifié) → pont __battleAi (même surface que AI_TrySwitchOrUseItem). */
+function BattleAI_HandleItemUseBeforeAISetup(itemMask: number): void {
+  const m = (globalThis as { __battleAi?: { BattleAI_HandleItemUseBeforeAISetup?: (mask: number) => void } }).__battleAi;
+  m?.BattleAI_HandleItemUseBeforeAISetup?.(itemMask);
+}
+
+// ─── SetUpBattleVarsAndBirchZigzagoon 1:1 (battle_controllers.c:43-79) ──────
+// Rapatrié de l'ex-engine/battle/battle-setup-helpers.ts (unification lot 8a) :
+// cette fonction et ses privés (BattleControllerDummy & co, plus haut dans le
+// même .c) vivent dans battle_controllers.c. Les 3 helpers state-ns simplifiés
+// (_ZeroEnemyPartyMons/_CreateMon/_SetMonData) étaient MORTS → supprimés.
+import {
+  gActionSelectionCursor as _gActionSelectionCursor_SBV,
+  gMoveSelectionCursor as _gMoveSelectionCursor_SBV,
+  gBattleTypeFlags as _gBattleTypeFlags_SBV,
+  setBattleControllerExecFlags as _setBattleControllerExecFlags_SBV,
+  setActiveBattler as _setActiveBattler_SBV,
+  MAX_BATTLERS_COUNT as _MAX_BATTLERS_COUNT_SBV,
+  gBattlerControllerFuncs as _gBattlerControllerFuncs_SBV,
+} from './engine/battle/state';
+import { BATTLE_TYPE_FIRST_BATTLE as _BATTLE_TYPE_FIRST_BATTLE_SBV } from '../include/battle';
+import { gBattlerPositions as _gBattlerPositions_SBV } from './engine/battle/util';
+import {
+  createEmptyPokemon as _createEmptyPokemon_SBV, CreateMon as _CreateMon_SBV,
+  setupEnemyPartyForBattle as _setupEnemyPartyForBattle_SBV,
+} from './engine/battle/party-storage';
+import { SPECIES_ZIGZAGOON as _SPECIES_ZIGZAGOON_SBV } from '../include/constants/species';
+
+/** 1:1 décomp `SetUpBattleVarsAndBirchZigzagoon()` (battle_controllers.c:43-79).
+ *  Setup initial des vars battle + spawn Zigzagoon LV2 si tutorial Birch.
+ *
+ *  Appelé par CB2_InitBattleInternal (= battle_main.c:684). */
+export function SetUpBattleVarsAndBirchZigzagoon(): void {
+  // 1:1 décomp l. 47 : gBattleMainFunc = BeginBattleIntroDummy.
+  const bmf = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    setBattleMainFunc?: (fn: () => void) => void;
+    BeginBattleIntroDummy?: () => void;
+  } | undefined;
+  if (bmf?.setBattleMainFunc && bmf.BeginBattleIntroDummy) {
+    bmf.setBattleMainFunc(bmf.BeginBattleIntroDummy);
+  }
+
+  // 1:1 décomp ll. 49-55 : init controller funcs + positions + UI cursors.
+  for (let i = 0; i < _MAX_BATTLERS_COUNT_SBV; i++) {
+    _gBattlerControllerFuncs_SBV[i] = BattleControllerDummy;
+    _gBattlerPositions_SBV[i] = 0xFF;
+    _gActionSelectionCursor_SBV[i] = 0;
+    _gMoveSelectionCursor_SBV[i] = 0;
+  }
+
+  HandleLinkBattleSetup();
+  _setBattleControllerExecFlags_SBV(0);
+  ClearBattleAnimationVars();
+  ClearBattleMonForms();
+
+  // 1:1 décomp ll. 61-65 : UBFIX active = reset gActiveBattler = 0.
+  _setActiveBattler_SBV(0);
+
+  BattleAI_HandleItemUseBeforeAISetup(0xF);
+
+  // 1:1 décomp ll. 68-74 : Birch tutorial = spawn Zigzagoon LV 2.
+  // ZeroEnemyPartyMons + CreateMon(&gEnemyParty[0], _SPECIES_ZIGZAGOON_SBV, 2, USE_RANDOM_IVS,...) +
+  // SetMonData(HELD_ITEM, 0). Voie L : mon PLEIN via createPokemonInstance (= CreateMon réel :
+  // stats/moves/IVs) dans le gEnemyParty que LIT la voie L (party-storage, = chemin wild prouvé).
+  // L'ancien _CreateMon (state ns, simplifié sans stats/moves) = combat injouable en voie L.
+  if (_gBattleTypeFlags_SBV & _BATTLE_TYPE_FIRST_BATTLE_SBV) {
+    // 1:1 décomp : CreateMon(&gEnemyParty[0], _SPECIES_ZIGZAGOON_SBV, 2, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0).
+    const zig = _createEmptyPokemon_SBV();
+    _CreateMon_SBV(zig, _SPECIES_ZIGZAGOON_SBV, 2, 32 /* USE_RANDOM_IVS */, false, 0, 0 /* OT_ID_PLAYER_ID */, 0);
+    _setupEnemyPartyForBattle_SBV([zig]);
+  }
+
+  // 1:1 décomp ll. 77-78 : unused vars (never read).
+  // gUnusedFirstBattleVar1 = 0; gUnusedFirstBattleVar2 = 0;
+}
+
+
+// Pont battle_main (_SetUpBattleVarsAndBirchZigzagoon lit __battleSetupHelpers) —
+// Object.assign : le helper résiduel pose le SIEN via Object.assign aussi (pas d'écrasement).
+Object.assign(((globalThis as Record<string, unknown>).__battleSetupHelpers ??= {}) as object,
+  { SetUpBattleVarsAndBirchZigzagoon });
