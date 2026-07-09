@@ -2013,3 +2013,44 @@ export function LoadMapTilesetPalettes(mapLayout: MapLayout | null): void {
 // RedrawMapSlice* / MapPosToBgTilemapOffset y étaient déjà. GetMapConnection est
 // passé dans `game/overworld.ts` (overworld.c:740). Ce fichier ne garde donc plus
 // QUE fieldmap.c (+ glu de chargement async maison) → futur `game/fieldmap.ts`.
+
+
+// ─── SetCurrentMapLayout 1:1 (fieldmap.c) — ex-engine/field/map-layout-swap.ts (lot 13) ──
+// ⚠️ DETTE : _LAYOUT_IDX_TO_ID est VIDE (mapping idx → layoutId à extraire de
+// include/constants/layouts.h) → setmaplayoutindex warn et no-op. gMapHeader et
+// loadLayout sont locaux à ce fichier (imports de l'ex-module supprimés).
+/** Tableau idx → layoutId pour Em (= 1:1 data/layouts/layouts.h enum order).
+ *  Extraction TODO : générer ce mapping depuis le décomp `include/constants/layouts.h`
+ *  via une étape build. Pour l'instant : empty (= future). */
+const _LAYOUT_IDX_TO_ID: ReadonlyMap<number, string> = new Map();
+
+/** 1:1 décomp `SetCurrentMapLayout(layoutId)` (fieldmap.c).
+ *  Swap le layout courant + trigger BG re-render. */
+export async function SetCurrentMapLayout(layoutIdx: number): Promise<void> {
+  // Store demand request — field scene poll cette valeur.
+  (globalThis as Record<string, unknown>).gPendingMapLayoutIndex = layoutIdx;
+
+  const layoutId = _LAYOUT_IDX_TO_ID.get(layoutIdx);
+  if (!layoutId) {
+    console.warn(`[map-layout-swap] layoutIdx ${layoutIdx} not in _LAYOUT_IDX_TO_ID — TODO extract from decomp layouts.h`);
+    return;
+  }
+
+  try {
+    const newLayout = await loadLayout(layoutId);
+    // 1:1 décomp : update gMapHeader.mapLayout in place. Le scene field
+    // detect la changé via gPendingMapLayoutIndex flag et re-render BG.
+    (gMapHeader as unknown as { mapLayout: unknown }).mapLayout = newLayout;
+    (gMapHeader as unknown as { mapLayoutId: string }).mapLayoutId = layoutId;
+    console.log(`[map-layout-swap] swapped to layout '${layoutId}' (idx=${layoutIdx})`);
+    // Signal au scene field qu'il faut re-render.
+    (globalThis as Record<string, unknown>).gMapLayoutReloadRequested = true;
+  } catch (e) {
+    console.warn(`[map-layout-swap] failed to load layout '${layoutId}':`, e);
+  }
+}
+
+// Auto-register sur globalThis pour script-opcode.
+(globalThis as { __mapLayoutSwap?: Record<string, unknown> }).__mapLayoutSwap = {
+  SetCurrentMapLayout,
+};

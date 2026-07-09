@@ -1358,8 +1358,7 @@ import '../gba/flash-mask';
 // inutile ici (1:1 : money.c/coins.c portent ces fns ; lues par scrcmd via globalThis lazy).
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
 import '../../src/engine/field/virtual-objects';
-// map-layout-swap.ts auto-register __mapLayoutSwap pour setmaplayoutindex opcode.
-import '../../src/engine/field/map-layout-swap';
+// __mapLayoutSwap (setmaplayoutindex) : auto-register au chargement de src/fieldmap.ts (lot 13).
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;
