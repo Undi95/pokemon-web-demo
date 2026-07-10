@@ -1,19 +1,22 @@
 /**
- * battle/data/move-name-resolve.ts — résolution nom-de-move runtime → enum/id
+ * harness/runtime/move-name-resolve.ts — résolution nom-de-move runtime → enum/id
  * décomp, 100% via données auto-extraites (= include/constants/moves.h).
  *
- * Module FEUILLE (leaf) : n'importe QUE `moves-data` (auto-extrait) +
- * `decomp-constants`. Aucune dépendance Showdown (@pkmn/dex). Source de
- * vérité UNIQUE partagée par party-storage / wire-bytecode-bridge /
- * pokemon.ts (= évite la duplication + le cycle pokemon↔party-storage).
+ * INFRA HARNESS (résolveur de strings runtime, pas un miroir décomp — le décomp
+ * n'a pas de dexIds textuels) : rangé ici à côté de decomp-constants/decomp-strings
+ * (lot 27, même verdict que gba-strings → decomp-strings au lot 19).
+ *
+ * Module FEUILLE (leaf) : n'importe QUE `include/constants/moves` (auto-extrait) +
+ * `decomp-constants`. Aucune dépendance Showdown (@pkmn/dex). Source de vérité
+ * UNIQUE partagée par party-storage (qui la ré-exporte pour les call-sites battle).
  *
  * Problème résolu : les ids runtime sont sans séparateur ("defensecurl")
  * alors que les enums décomp sont underscore-segmentés ("MOVE_DEFENSE_CURL").
  * La conversion naïve `'MOVE_'+id.toUpperCase()` échoue sur les noms composés.
  */
 
-import { resolveDecompConstant } from '../../../../harness/runtime/decomp-constants';
-import * as MOVES_DATA from '../../../../include/constants/moves';
+import { resolveDecompConstant } from './decomp-constants';
+import * as MOVES_DATA from '../../include/constants/moves';
 
 /** Map normalisée : nom sans séparateur minuscule ("defensecurl") → enum
  *  décomp ("MOVE_DEFENSE_CURL"). Construite lazy depuis les constantes

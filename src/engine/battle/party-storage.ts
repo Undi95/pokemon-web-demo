@@ -28,10 +28,10 @@ import { resolveDecompConstant, reverseDecompConstant } from '../../../harness/r
 // getSpeciesInfo (id→info espèce) : lu par pokemonInstanceToPokemon / CopyMonToPC /
 // les setters de types. resolveDecompConstant/reverseDecompConstant (l.32) = ponts string↔id.
 import { getSpeciesInfo } from '../data/game-data';
-// Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
-// pour les call-sites existants (wire-bytecode-bridge).
-import { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
-export { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
+// Résolution nom-de-move (leaf infra harness, zéro @pkmn/dex — lot 27). Re-export
+// pour les call-sites existants (wire-bytecode-bridge, battle-devtools).
+import { moveDexIdToEnum, resolveMoveDexId } from '../../../harness/runtime/move-name-resolve';
+export { moveDexIdToEnum, resolveMoveDexId } from '../../../harness/runtime/move-name-resolve';
 // AUDIT BUG FIX : import direct gBattleMons depuis state.ts (= même instance
 // singleton que bytecode runtime). Avant : globalThis.__battleState lookup
 // retournait une instance ESM différente → battle mons setup invisible aux
