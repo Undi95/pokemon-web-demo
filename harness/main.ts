@@ -166,7 +166,7 @@ void initStringsFromDecomp();
 import { loadBattleMoves } from '../src/engine/battle/data/battle-moves';
 import { loadBattleScriptBytecode } from '../src/engine/battle/script-interpreter';
 import { loadAiScriptBytecode } from '../src/engine/battle/ai/ai-state';
-import { loadItemHoldEffects } from '../src/engine/battle/data/item-hold-effects';
+import { loadItemHoldEffects } from '../src/item';
 import { loadItemEffects } from '../src/engine/battle/data/item-effects';
 import { loadGameData } from '../src/engine/data/game-data';
 void loadBattleMoves();

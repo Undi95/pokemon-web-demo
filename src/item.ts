@@ -7,6 +7,7 @@ import {
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
 } from '../harness/runtime/data-tables';
+import { resolveDecompConstant as _resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { sTMHMMoves as _sTMHMMoves } from './data/party_menu';
 
 /** items.json key d'un itemId numérique (= modèle move-named du projet :
@@ -116,6 +117,74 @@ export function GetItemPocket(itemId: number | string): string {
   const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
   return _getItem(itemKey)?.pocket ?? '';
 }
+
+// ─── Hold effects 1:1 (item.c:895-905) — ex-`engine/battle/data/item-hold-effects` ──
+// Équivalent `gItems[].holdEffect`/`holdEffectParam` : arrays précalculés
+// indexés par u16 itemId (hot path combat — GetItemHoldEffect est appelé à
+// chaque check d'objet tenu), peuplés une fois au boot depuis items.json
+// (= data/items.h extrait) par `loadItemHoldEffects` (harness/main.ts).
+
+interface _RawItemHoldData {
+  holdEffect?: string;
+  holdEffectParam?: number;
+}
+
+let _holdEffects: number[] = [];
+let _holdEffectParams: number[] = [];
+let _holdEffectsLoaded = false;
+
+/** 1:1 décomp `u8 GetItemHoldEffect(u16 itemId)` (item.c:895) :
+ *    return gItems[SanitizeItemId(itemId)].holdEffect; */
+export function GetItemHoldEffect(itemId: number): number {
+  return _holdEffects[itemId] ?? 0;
+}
+
+/** 1:1 décomp `u8 GetItemHoldEffectParam(u16 itemId)` (item.c:~900) :
+ *    return gItems[SanitizeItemId(itemId)].holdEffectParam; */
+export function GetItemHoldEffectParam(itemId: number): number {
+  return _holdEffectParams[itemId] ?? 0;
+}
+
+/** Peuple les arrays holdEffect/holdEffectParam depuis public/decomp/em/items.json
+ *  (HOLD_EFFECT_* résolus via decomp-constants). Appelé au boot (harness/main.ts). */
+export async function loadItemHoldEffects(): Promise<void> {
+  if (_holdEffectsLoaded) return;
+  try {
+    const resp = await fetch('/decomp/em/items.json');
+    if (!resp.ok) {
+      console.warn(`[item-hold-effects] fetch failed : ${resp.status}`);
+      return;
+    }
+    const raw = await resp.json() as Record<string, _RawItemHoldData>;
+    const maxId = 378; // ITEM_ENIGMA_BERRY est l'un des derniers, marge.
+    _holdEffects = new Array(maxId).fill(0);
+    _holdEffectParams = new Array(maxId).fill(0);
+    for (const [itemName, data] of Object.entries(raw)) {
+      const id = _resolveDecompConstant(itemName);
+      if (typeof id !== 'number' || id < 0 || id >= maxId) continue;
+      if (data.holdEffect) {
+        const eff = _resolveDecompConstant(data.holdEffect);
+        if (typeof eff === 'number') _holdEffects[id] = eff;
+      }
+      if (data.holdEffectParam !== undefined) {
+        _holdEffectParams[id] = data.holdEffectParam;
+      }
+    }
+    _holdEffectsLoaded = true;
+    console.log(`[item-hold-effects] loaded ${Object.keys(raw).length} items`);
+  } catch (e) {
+    console.error('[item-hold-effects] load failed', e);
+  }
+}
+
+/** Expose pour devtools. */
+(globalThis as Record<string, unknown>).__itemHoldEffectsData = {
+  get: (itemId: number) => ({
+    holdEffect: GetItemHoldEffect(itemId),
+    holdEffectParam: GetItemHoldEffectParam(itemId),
+  }),
+  isLoaded: () => _holdEffectsLoaded,
+};
 
 // ─── Poches du sac 1:1 (item.c:590-640) — ex-`engine/bag/bag-pockets.ts` ────
 // Adaptateur `gBagPockets` 1:1 (option (b), validée user) : la décomp

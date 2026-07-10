@@ -609,7 +609,7 @@ import {
   GetItemHoldEffectParam as _GetItemHoldEffectParamFull,
   GetItemHoldEffectParam as _GetItemHoldEffectParamN22,
   GetItemHoldEffectParam as _ghep21,
-} from './engine/battle/data/item-hold-effects';
+} from './item';
 import {
   GetGenderFromSpeciesAndPersonality as _GetGenderFull,
   getSpeciesEvYield,
@@ -998,7 +998,7 @@ import {
 
 // ─── Helpers internes ───────────────────────────────────────────────────────
 
-// 1:1 décomp `GetItemHoldEffect` / `GetItemHoldEffectParam` — wired via item-hold-effects.
+// 1:1 décomp `GetItemHoldEffect` / `GetItemHoldEffectParam` — importés du foyer src/item.ts (item.c:895).
 
 function _getHoldEffect(itemId: number): number { return _GetItemHoldEffectFull(itemId); }
 function _getHoldEffectParam(itemId: number): number { return _GetItemHoldEffectParamFull(itemId); }
@@ -6525,7 +6525,7 @@ void gLastUsedAbility;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-// 1:1 décomp `GetItemHoldEffect/Param` (item.c) — wired vers data/item-hold-effects.
+// 1:1 décomp `GetItemHoldEffect/Param` (item.c:895) — importés du foyer src/item.ts.
 
 function _getItemHoldEffect__b21(item: number): number { return _ghe21(item); }
 function _getItemHoldEffectParam__b21(item: number): number { return _ghep21(item); }

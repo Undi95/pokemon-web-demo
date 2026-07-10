@@ -181,7 +181,7 @@ import {
   STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF,
   MAX_STAT_STAGE, SET_STATCHANGER, NUM_STATS,
 } from './engine/battle/constants';
-import { GetItemHoldEffectParam } from './engine/battle/data/item-hold-effects';
+import { GetItemHoldEffectParam } from './item';
 import { GetFlavorRelationByPersonality } from './pokemon';
 import {
   gEnemyParty, SetMonData, MON_DATA_MOVE1, MON_DATA_PP1,
@@ -1247,7 +1247,7 @@ import {
   TYPE_FLYING, TYPE_STEEL,
 } from './engine/battle/constants';
 import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../include/constants/hold_effects';
-import { GetItemHoldEffect } from './engine/battle/data/item-hold-effects';
+import { GetItemHoldEffect } from './item';
 // ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER : défini localement (corps AbilityBattleEffects absorbé).
 
 // ─── BATTLE_RUN_* return codes (= constants/battle.h) ──────────────────────
