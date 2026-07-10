@@ -51,7 +51,7 @@ import {
   setSpriteAnims as _setSpriteAnims_1to1,
 } from '../../sprite';
 import { loadGbaPal, loadTileBin } from '../../../harness/gba/png-loader';
-import { PALSLOT_NPC_SPECIAL } from './object-event-graphics-info';
+import { PALSLOT_NPC_SPECIAL } from '../../../include/event_object_movement';
 
 // ─── OBJ_EVENT_GFX_* constants (= subset; 1:1 décomp include/event_object_movement.h) ─
 

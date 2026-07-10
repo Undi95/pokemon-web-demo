@@ -95,3 +95,32 @@ export const FUNCTIONS = [
   { name: 'ClearSpriteCopyRequests', ret: "void", arity: 0, params: "void" },
   { name: 'ResetAffineAnimData', ret: "void", arity: 0, params: "void" },
 ] as const;
+
+// ─── Compléments (unification lot 17a, 2026-07-10) — rapatriés de engine/field/object-event-graphics-info.ts ───
+
+/** 1:1 décomp `struct SpriteFrameImage` (sprite.h:26-30) :
+ *      const void *data;  u16 size;
+ *  `data` = bytes raw 4bpp (1 frame d'animation) ; `size` = bytes
+ *  (= width_tiles * height_tiles * 32, ou via `overworld_frame`). */
+export interface SpriteFrameImage {
+  data: Uint8Array;
+  size: number;
+}
+
+/** 1:1 décomp macro `overworld_frame(ptr, width, height, frame)` (sprite.h:34) :
+ *    .data = (u8 *)ptr + (width * height * frame * 64)/2,
+ *    .size = (width * height * 64)/2
+ *  width/height en TILES (2x4 = 16x32 px) ; 64/2 = 32 bytes par tile 4bpp. */
+export function overworld_frame(
+  ptr: Uint8Array,
+  widthTiles: number,
+  heightTiles: number,
+  frameIdx: number,
+): SpriteFrameImage {
+  const frameSize = (widthTiles * heightTiles * 64) / 2;  // bytes
+  const offset = frameSize * frameIdx;
+  return {
+    data: ptr.subarray(offset, offset + frameSize),
+    size: frameSize,
+  };
+}

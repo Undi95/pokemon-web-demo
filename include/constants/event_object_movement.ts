@@ -352,3 +352,17 @@ export const COPY_MOVE_JUMP = 7;
 export const COPY_MOVE_JUMP2 = 8;
 export const COPY_MOVE_EMPTY_1 = 9;
 export const COPY_MOVE_EMPTY_2 = 10;
+
+// ─── Compléments (unification lot 17a, 2026-07-10) — rapatriés de engine/field/object-event-graphics-info.ts ───
+
+/** 1:1 décomp `include/constants/event_object_movement.h` SHADOW_SIZE_*. */
+export const SHADOW_SIZE_S = 0;
+export const SHADOW_SIZE_M = 1;
+export const SHADOW_SIZE_L = 2;
+export const SHADOW_SIZE_XL = 3;
+
+/** 1:1 décomp TRACKS_*. */
+export const TRACKS_NONE = 0;
+export const TRACKS_FOOT = 1;
+export const TRACKS_BIKE_TIRE = 2;
+export const TRACKS_SLITHER = 3;

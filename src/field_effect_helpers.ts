@@ -99,9 +99,10 @@ import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevati
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
   MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,
   MetatileBehavior_IsWaterfall } from './metatile_behavior';
-// 1:1 décomp : constantes de slot/tag palette (object-event-graphics-info). Utilisées par
+// 1:1 décomp : constantes de slot/tag palette (include/event_object_movement + EOM). Utilisées par
 // la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
-import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE, gReflectionEffectPaletteMap } from './engine/field/object-event-graphics-info';
+import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../include/event_object_movement';
+import { gReflectionEffectPaletteMap } from './event_object_movement';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas

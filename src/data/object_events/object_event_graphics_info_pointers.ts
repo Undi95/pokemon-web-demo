@@ -3,10 +3,10 @@
  * Source : D:/Projet 1/decomps/pokeemeraude/src/data/object_events/object_event_graphics_info_pointers.h
  * gObjectEventGraphicsInfoPointers : graphicsId (string enum) -> factory.
  */
-import type { ObjectEventGraphicsInfo, SpriteFrameImage } from '../../engine/field/object-event-graphics-info';
+import type { ObjectEventGraphicsInfo } from '../../../include/global.fieldmap';
+import type { SpriteFrameImage } from '../../../include/sprite';
+import { overworld_frame, TAG_NONE } from '../../../include/sprite';
 import {
-  overworld_frame,
-  TAG_NONE,
   OBJ_EVENT_PAL_TAG_BRENDAN,
   OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION,
   OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION,
@@ -50,6 +50,8 @@ import {
   PALSLOT_NPC_3,
   PALSLOT_NPC_4,
   PALSLOT_NPC_SPECIAL,
+} from '../../../include/event_object_movement';
+import {
   SHADOW_SIZE_S,
   SHADOW_SIZE_M,
   SHADOW_SIZE_L,
@@ -58,7 +60,7 @@ import {
   TRACKS_FOOT,
   TRACKS_BIKE_TIRE,
   TRACKS_SLITHER,
-} from '../../engine/field/object-event-graphics-info';
+} from '../../../include/constants/event_object_movement';
 import {
   gObjectEventBaseOam_16x16,
   gObjectEventBaseOam_16x32,

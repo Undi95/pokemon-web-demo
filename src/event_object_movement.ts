@@ -55,13 +55,18 @@ import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyReques
 // GetObjectEventGraphicsInfo (event_object_movement.c:1538) est défini en bas de CE fichier (1:1 décomp).
 import { gObjectEventGraphicsInfoPointers } from './data/object_events/object_event_graphics_info_pointers';
 import { gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './data/object_events/berry_tree_graphics_tables';
-import type { ObjectEventGraphicsInfo } from './engine/field/object-event-graphics-info';
-// 1:1 décomp : constantes PALSLOT_* + OBJ_EVENT_PAL_TAG_* (event_object_movement.c:435-471
-// + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
-// reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
+import type { ObjectEventGraphicsInfo } from '../include/global.fieldmap';
+// 1:1 décomp : PALSLOT_* (include/event_object_movement.h:11-26) + OBJ_EVENT_PAL_TAG_*
+// (enum event_object_movement.c:435-471, hébergé au header-miroir LEAF anti-cycle —
+// cf. include/event_object_movement.ts). Utilisées par la chaîne palette des reflets
+// (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
 import {
-  PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_PALSLOT_COUNT, gReflectionEffectPaletteMap,
+  PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_PALSLOT_COUNT,
   PALSLOT_NPC_1, PALSLOT_NPC_2, PALSLOT_NPC_3, PALSLOT_NPC_4,
+  PALSLOT_PLAYER_REFLECTION,
+  PALSLOT_NPC_1_REFLECTION, PALSLOT_NPC_2_REFLECTION,
+  PALSLOT_NPC_3_REFLECTION, PALSLOT_NPC_4_REFLECTION,
+  PALSLOT_NPC_SPECIAL_REFLECTION,
   OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION,
   OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION,
   OBJ_EVENT_PAL_TAG_PLAYER_UNDERWATER, OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION,
@@ -74,7 +79,27 @@ import {
   OBJ_EVENT_PAL_TAG_GROUDON, OBJ_EVENT_PAL_TAG_GROUDON_REFLECTION,
   OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW, OBJ_EVENT_PAL_TAG_RED_LEAF,
   OBJ_EVENT_PAL_TAG_NONE,
-} from './engine/field/object-event-graphics-info';
+} from '../include/event_object_movement';
+
+/** 1:1 STRICT décomp `gReflectionEffectPaletteMap[16]` (event_object_movement.c:182).
+ *  Mappe le slot palette MAIN d'un object event → son slot palette REFLET.
+ *  (Rapatrié de engine/field/object-event-graphics-info.ts, unification lot 17a.) */
+export const gReflectionEffectPaletteMap: ReadonlyArray<number> = (() => {
+  const m = new Array<number>(16).fill(0);
+  m[PALSLOT_PLAYER] = PALSLOT_PLAYER_REFLECTION;
+  m[PALSLOT_PLAYER_REFLECTION] = PALSLOT_PLAYER_REFLECTION;
+  m[PALSLOT_NPC_1] = PALSLOT_NPC_1_REFLECTION;
+  m[PALSLOT_NPC_2] = PALSLOT_NPC_2_REFLECTION;
+  m[PALSLOT_NPC_3] = PALSLOT_NPC_3_REFLECTION;
+  m[PALSLOT_NPC_4] = PALSLOT_NPC_4_REFLECTION;
+  m[PALSLOT_NPC_1_REFLECTION] = PALSLOT_NPC_1_REFLECTION;
+  m[PALSLOT_NPC_2_REFLECTION] = PALSLOT_NPC_2_REFLECTION;
+  m[PALSLOT_NPC_3_REFLECTION] = PALSLOT_NPC_3_REFLECTION;
+  m[PALSLOT_NPC_4_REFLECTION] = PALSLOT_NPC_4_REFLECTION;
+  m[PALSLOT_NPC_SPECIAL] = PALSLOT_NPC_SPECIAL_REFLECTION;
+  m[PALSLOT_NPC_SPECIAL_REFLECTION] = PALSLOT_NPC_SPECIAL_REFLECTION;
+  return m;
+})();
 import {
   type ObjectEventTemplate,
   type MapHeader,

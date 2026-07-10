@@ -171,7 +171,7 @@ import {
   ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
 } from '../../src/overworld';
 import { MAP_CONSTANTS } from '../../include/constants/map_groups';
-import { OBJ_PALSLOT_COUNT } from '../../src/engine/field/object-event-graphics-info';
+import { OBJ_PALSLOT_COUNT } from '../../include/event_object_movement';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../../src/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
