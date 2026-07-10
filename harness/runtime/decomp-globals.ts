@@ -872,6 +872,7 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
   // 4e slot ; ces SE passent par le path PlaySE/noise en pratique).
   const player = getSongMusicPlayer(songName);
   const slot = player === 0 ? 'bgm' : player === 1 ? 'se1' : 'se2';
+  console.log(`[m4a-trace] start id=${songId} ${songName} slot=${slot} loop=${loop}`);
   if (slot === 'bgm') _currentSongId = songId;
   _lastSongIdBySlot[slot] = songId;
   // STOP IMMÉDIAT et SYNC du slot CIBLE uniquement (= 1:1 MPlayStart remplace

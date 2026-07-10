@@ -9,6 +9,10 @@
 let _ctx: AudioContext | null = null;
 let _masterGain: GainNode | null = null;
 let _reverbNode: { dry: GainNode; wet: GainNode; delay: DelayNode; feedback: GainNode } | null = null;
+// Gain d'arbitrage multi-instance (audio-arbiter.ts) : dernier étage avant
+// destination, coupé quand UNE AUTRE instance du jeu a pris le focus.
+let _arbiterGain: GainNode | null = null;
+let _arbiterMuted = false;
 
 /** Initialise (ou retourne) l'AudioContext singleton. À appeler après un user gesture. */
 export function getAudioContext(): AudioContext {
@@ -73,10 +77,23 @@ export function getAudioContext(): AudioContext {
   feedback.connect(delay);    // feedback loop
   delay.connect(wet);
   wet.connect(limiter);
-  limiter.connect(_ctx.destination);
+  _arbiterGain = _ctx.createGain();
+  _arbiterGain.gain.value = _arbiterMuted ? 0 : 1;
+  limiter.connect(_arbiterGain);
+  _arbiterGain.connect(_ctx.destination);
 
   _reverbNode = { dry, wet, delay, feedback };
   return _ctx;
+}
+
+/** Mute/unmute d'arbitrage multi-instance (audio-arbiter.ts). Indépendant du
+ *  master volume du jeu ; l'état survit si l'AudioContext n'existe pas encore. */
+export function setArbiterMuted(muted: boolean): void {
+  _arbiterMuted = muted;
+  if (!_arbiterGain || !_ctx) return;
+  // Rampe courte anti-clic.
+  _arbiterGain.gain.cancelScheduledValues(_ctx.currentTime);
+  _arbiterGain.gain.setTargetAtTime(muted ? 0 : 1, _ctx.currentTime, 0.02);
 }
 
 /** Set reverb value (0-127, 1:1 décomp `m4aSoundMode(songHeader->reverb)`).

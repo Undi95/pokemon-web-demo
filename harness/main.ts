@@ -43,6 +43,7 @@ import './util/remap-modal'; // exposes window.openRemapModal for the topbar but
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
 import './devtools/dev-cheat';
 import { setMasterVolume } from './m4a/audio-context';
+import { installAudioArbiter } from './m4a/audio-arbiter';
 
 // 1:1 décomp main.c `LoadGameSave` au boot AVANT que MainMenu se launch.
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
@@ -292,6 +293,9 @@ mountDevtoolsV2();
 // Pas de pause sur visibilitychange : retiré sur demande. L'onglet en arrière-plan
 // laisse tourner game + musique. Si le MIDI loop boucle pendant que tab masqué,
 // no big deal (acceptable comportement web).
+// MAIS entre PLUSIEURS instances (pane Browser de l'app + onglet du user),
+// une seule sonne à la fois : la dernière focusée (cf. audio-arbiter.ts).
+installAudioArbiter();
 
 // ─── Zoom pixel-perfect DPR-aware ──────────────────────────────────────────
 // Le canvas RENDU reste à la résolution NATIVE GBA (240×160). On ne touche QUE

@@ -20,6 +20,13 @@ function claudeDevHelpersPlugin(): Plugin {
     name: 'claude-dev-helpers',
     apply: 'serve',
     configureServer(server) {
+      // Relay « quelle instance du jeu a le focus » (harness/m4a/audio-arbiter.ts).
+      // BroadcastChannel ne traverse pas deux navigateurs (pane app ⟷ Chrome
+      // user) → le serveur rebroadcast à TOUS les clients HMR ; l'émetteur
+      // s'auto-filtre par id. Bug « 2 BGM » : deux instances sonnaient ensemble.
+      server.ws.on('m4a:audio-focus', (data) => {
+        server.ws.send('m4a:audio-focus', data);
+      });
       server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next();
 

@@ -90,6 +90,21 @@ interface SlotState {
 const _slots: Partial<Record<SlotKind, SlotState>> = {};
 const _slotInitPromises: Partial<Record<SlotKind, Promise<SlotState>>> = {};
 
+// Registre debug de TOUS les Sequencer créés (diag « 2 BGM » : un séquenceur
+// zombie dont currentTime avance encore = doublon audible, invisible depuis
+// state.sequencer qui ne garde que le dernier). Audit : __m4aSeqAudit().
+const _allSequencers: { slot: SlotKind; seq: Sequencer; n: number }[] = [];
+let _seqCounter = 0;
+(globalThis as Record<string, unknown>).__m4aSeqAudit = async () => {
+  const t0 = _allSequencers.map((e) => e.seq.currentTime);
+  await new Promise((r) => setTimeout(r, 1000));
+  return _allSequencers.map((e, i) => ({
+    n: e.n, slot: e.slot, paused: e.seq.paused,
+    t: Number(e.seq.currentTime.toFixed(2)),
+    advancing: Math.abs(e.seq.currentTime - t0[i]) > 0.05,
+  }));
+};
+
 async function ensureSlotState(slot: SlotKind): Promise<SlotState> {
   const existing = _slots[slot];
   if (existing) return existing;
@@ -242,11 +257,13 @@ export async function playSong(
   // (scripts/fix-se-banks.mjs) pour que le CC 0 (bank MSB) soit inline sur
   // la track avec program change, garantissant la propagation cross-track.
   const seq = new Sequencer(state.synth);
+  _allSequencers.push({ slot, seq, n: ++_seqCounter });
   // loadNewSongList prend un tableau de MIDI. On joue 1 song à la fois.
   // Le clone .slice(0) protège le buffer partagé entre playSong successifs.
   seq.loadNewSongList([{ binary: bufferForSeq.slice(0), fileName: 'song.mid' }]);
   seq.loopCount = loop ? Infinity : 0;
   seq.play();
+  console.log(`[m4a-trace] play slot=${slot} gen=${myGen} loop=${loop} dur=${song.duration.toFixed(1)}s`);
 
   // Master volume scaling : appliqué via le synth's master gain (1:1 décomp masterVolume).
   // spessasynth ne gère pas un volume per-sequencer ; on règle au synth-level.
@@ -285,6 +302,7 @@ const _slotNoiseWorklets: Partial<Record<SlotKind, { node: AudioWorkletNode; env
 export function stopSong(slot: SlotKind = 'bgm'): void {
   const state = _slots[slot];
   if (!state) return;
+  console.log(`[m4a-trace] stop slot=${slot} hadSeq=${!!state.sequencer}`);
   state.generation++;
   // 1:1 décomp m4a.c : m4aMPlayStart override le state du slot, ce qui implicitement
   // cancel tout fade-out en cours. Notre fade utilise un setInterval orphelin qui
