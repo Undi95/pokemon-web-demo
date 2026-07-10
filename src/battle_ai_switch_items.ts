@@ -89,13 +89,10 @@ import {
   STATUS1_FREEZE,
   STATUS1_PARALYSIS,
 } from './engine/battle/constants';
+import { gTypeEffectiveness } from './battle_main';
 import {
-  gTypeEffectiveness,
-  TYPE_FORESIGHT,
-  TYPE_ENDTABLE,
-  TYPE_MUL_NORMAL,
-  TYPE_MUL_NO_EFFECT,
-} from './engine/battle/data/type-effectiveness';
+  TYPE_FORESIGHT, TYPE_ENDTABLE, TYPE_MUL_NORMAL, TYPE_MUL_NO_EFFECT,
+} from '../include/battle_main';
 import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from './battle_script_commands';
 import {
   gPlayerParty,

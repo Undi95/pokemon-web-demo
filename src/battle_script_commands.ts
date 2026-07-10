@@ -619,17 +619,13 @@ import {
   speciesNumberToEnum as _speciesNumberToEnumPK,
   speciesNumberToEnum as speciesNumberToEnumBU,
 } from './engine/battle/data/species-runtime';
-// gTrainerMoneyTable : foyer battle_main.ts (bm.c:474-532) depuis le lot 24 —
-// lue uniquement à l'exécution (getTrainerMoneyValue ci-dessous) → cycle bénin.
-import { gTrainerMoneyTable } from './battle_main';
+// gTrainerMoneyTable (bm.c:474) + gTypeEffectiveness (bm.c:335) : foyer
+// battle_main.ts (lots 24-25) — lues uniquement à l'exécution → cycle bénin.
+import { gTrainerMoneyTable, gTypeEffectiveness } from './battle_main';
 import {
-  TYPE_ENDTABLE,
-  TYPE_FORESIGHT,
-  TYPE_MUL_NOT_EFFECTIVE,
-  TYPE_MUL_NO_EFFECT,
-  TYPE_MUL_SUPER_EFFECTIVE,
-  gTypeEffectiveness,
-} from './engine/battle/data/type-effectiveness';
+  TYPE_ENDTABLE, TYPE_FORESIGHT,
+  TYPE_MUL_NOT_EFFECTIVE, TYPE_MUL_NO_EFFECT, TYPE_MUL_SUPER_EFFECTIVE,
+} from '../include/battle_main';
 import {
   applyDisobedienceCheck,
 } from './battle_util';

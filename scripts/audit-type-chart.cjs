@@ -3,7 +3,7 @@
  * audit-type-chart.cjs — ORACLE de fidélité de la TABLE DES TYPES (combat).
  *
  * Confronte la table RUNTIME utilisée par TypeCalc — `gTypeEffectiveness`
- * (src/engine/battle/data/type-effectiveness.ts, 336 éléments avec marqueurs
+ * (src/battle_main.ts, au foyer miroir depuis le lot 25 ; 336 éléments avec marqueurs
  * TYPE_FORESIGHT/TYPE_ENDTABLE + section foresight NORMAL/FIGHTING→GHOST) — au décomp
  * `gTypeEffectiveness[336]` (battle_main.c:335). Token-par-token (mêmes noms TYPE_* /
  * TYPE_MUL_* des deux côtés). Tout écart = efficacité de type fausse = dégâts faux.
@@ -19,7 +19,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DECOMP_C = 'D:/Projet 1/decomps/pokeemeraude/src/battle_main.c';
-const TS_F = path.join(ROOT, 'src/engine/battle/data/type-effectiveness.ts');
+const TS_F = path.join(ROOT, 'src/battle_main.ts');
 
 // Extrait le corps d'un tableau entre un marqueur d'ouverture et le 1er délimiteur de fin.
 const sliceBody = (src, startMarker, open, close) => {
