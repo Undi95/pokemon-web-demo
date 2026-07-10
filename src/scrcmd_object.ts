@@ -14,7 +14,10 @@
  * addobject / showobjectat / hideobjectat.
  */
 
-import { findNpcByLocalId, resolveObjectLocalIdRaw, findTemplateByLocalId } from './engine/script/script-opcodes-helpers';
+// Helpers partagés : foyer scrcmd.ts (cycle scrcmd ↔ scrcmd_object bénin, functions
+// hoistées) + findTemplateByLocalId = adaptation GetBaseTemplateForObjectEvent (EOM).
+import { findNpcByLocalId, resolveObjectLocalIdRaw } from './scrcmd';
+import { findTemplateByLocalId } from './event_object_movement';
 import { VarGet, FlagSet, FlagClear } from './engine/script/script-vars';
 import { MAP_OFFSET, gMapHeader } from './fieldmap';
 import { SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, gObjectEvents } from './event_object_movement';

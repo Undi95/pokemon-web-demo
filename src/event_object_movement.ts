@@ -8157,6 +8157,35 @@ export function PrepareObjectEventGraphics(graphicsId: string): Uint8Array[] | n
   return pics;
 }
 
+// ─── GetBaseTemplateForObjectEvent — adaptation byte-VM (ex script-opcodes-helpers, lot 18) ──
+import { GetCurrentMap as _GetCurrentMap_EOM } from './load_save';
+
+/** ADAPTATION du 1:1 décomp `GetBaseTemplateForObjectEvent` (event_object_movement.c:2462,
+ *  itère `gSaveBlock1Ptr->objectEventTemplates` par localId) : nos scripts byte-VM
+ *  transportent le localIdRaw STRING ('LOCALID_X') → match par localIdRaw d'abord,
+ *  fallback numérique (= le match décomp `template->localId == localId`). Le saveblock
+ *  est populé au map switch par `LoadObjEventTemplatesFromHeader`, puis muté par
+ *  setobjectxyperm/setobjectmovementtype/copyobjectxytoperm. */
+export function findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
+  if (!arg) return null;
+  const currentMapId = gMapHeader?.id ?? _GetCurrentMap_EOM()?.name ?? '';
+  const block1 = GetSaveBlock1();
+  for (const t of block1.objectEventTemplates) {
+    if ((t as { mapId?: string }).mapId !== currentMapId) continue;
+    if ((t as { localIdRaw?: string }).localIdRaw === arg) return t as unknown as ObjectEventTemplate;
+  }
+  // Fallback numérique (= 1:1 décomp `TryOverrideObjectEventTemplateCoords` matche
+  // par `template->localId == localId`) : requis quand le byte-VM passe `String(localId)`.
+  const n = parseInt(arg, 10);
+  if (!Number.isNaN(n)) {
+    for (const t of block1.objectEventTemplates) {
+      if ((t as { mapId?: string }).mapId !== currentMapId) continue;
+      if ((t as { localId?: number }).localId === n) return t as unknown as ObjectEventTemplate;
+    }
+  }
+  return null;
+}
+
 // ─── [Déviation M3] Snapshot de rendu du gfx NORMAL joueur (feuille combinée réservée) ──────
 //
 // Le décomp `ObjectEventSetGraphicsId` repointe simplement `sprite->images` vers la table ROM du

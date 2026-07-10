@@ -52,7 +52,7 @@ import {
   MUS_ENCOUNTER_RICH, MUS_ENCOUNTER_SUSPICIOUS,
 } from '../include/constants/songs';
 import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
-import { parseValue } from './engine/script/script-opcodes-helpers';
+import { parseValue } from './scrcmd';
 import { ShowFieldMessage } from './field_message_box';
 import { resolveTrainerNumId, ensureGTrainersLoaded } from './engine/battle/battle-trainer-data-bridge';
 import {

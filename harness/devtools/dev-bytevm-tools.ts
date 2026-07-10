@@ -40,7 +40,7 @@ import { WEATHER_RAIN, WEATHER_SUNNY } from '../../include/constants/weather';
 import { MapGridGetMetatileBehaviorAt } from '../../src/fieldmap';
 import { MB_ANIMATED_DOOR } from '../../src/engine/field/tilemap-loader';
 import { isDoorAnimationStopped } from '../../src/scrcmd_door';
-import { findTemplateByLocalId } from '../../src/engine/script/script-opcodes-helpers';
+import { findTemplateByLocalId } from '../../src/event_object_movement';
 import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
 import { GetBerryTypeByBerryTreeId } from '../../src/berry';

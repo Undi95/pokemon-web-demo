@@ -35,19 +35,22 @@ import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
 import { GetCoins, AddCoins, RemoveCoins } from './coins';
 import { VAR_RESULT } from '../include/constants/vars';
-import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field_message_box';
 // Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
-import { getSelectedNpc } from './engine/script/script-opcodes-helpers';
-import { gSelectedObjectEvent } from './engine/script/script-vars';
-import { ObjectEventClearHeldMovementIfFinished, gObjectEvents } from './event_object_movement';
+// VarGetByName = bridge nom→id de script-vars (les helpers byte-VM reçoivent des
+// tokens 'VAR_X' string) ; le VarGet 1:1 numérique vient d'event_data (ligne 24).
+import { gSelectedObjectEvent, VarGet as VarGetByName } from './engine/script/script-vars';
+import { ObjectEventClearHeldMovementIfFinished, gObjectEvents, type ObjectEvent } from './event_object_movement';
 import { gPlayerAvatar, IncrementGameStat } from './field_player_avatar';
 import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
   configureTrainerBattleCore, startTrainerBattleAndGetPoll,
   BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript } from './battle_setup';
 import type { TrainerArgSource } from './battle_setup';
 import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './battle_setup';
-import { MALE_GENDER, FEMALE_GENDER, isAOrBNewlyPressed } from './engine/script/script-opcodes-helpers';
+// 1:1 décomp include/constants/global.h (MALE=0/FEMALE=1) + gba/io_reg (touches).
+import { MALE, FEMALE } from '../include/constants/global';
+import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import { PlaySE, PlayFanfare, getRuntime, FadeInBGM } from '../harness/runtime/decomp-globals';
 import { FadeOutBGMTemporarily, IsBGMPausedOrStopped } from './sound';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
@@ -63,6 +66,138 @@ import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObj
 import { Overworld_SetSavedMusic } from './overworld';
 import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
 import * as Songs from '../include/constants/songs';
+
+// ─── Helpers partagés des opcodes (ex engine/script/script-opcodes-helpers, lot 18) ──
+// ADAPTATION byte-VM : nos scripts transportent des TOKENS STRING (le décomp
+// compile les constantes en u8/u16 dans le bytecode) → parseurs d'args partagés
+// entre les ScrCmd_* de ce fichier, scrcmd_object et battle_setup (macros
+// trainerbattle). Aucun side-effect à l'import.
+
+/** Retourne le NPC sélectionné par le script courant (= `&gObjectEvents[gSelectedObjectEvent]`
+ *  inline du décomp scrcmd.c), ou null si l'index est invalide ou inactif. */
+export function getSelectedNpc(): ObjectEvent | null {
+  const idx = gSelectedObjectEvent.index;
+  if (idx < 0 || idx >= gObjectEvents.length) return null;
+  const npc = gObjectEvents[idx];
+  if (!npc.active) return null;
+  return npc;
+}
+
+/** True ssi le frame courant a vu un nouveau press de A ou B
+ *  (= `gMain.newKeys & (A_BUTTON | B_BUTTON)` inline du décomp). */
+export function isAOrBNewlyPressed(): boolean {
+  const rt = getRuntime();
+  if (!rt) return false;
+  return (rt.gMain.newKeys & (A_BUTTON | B_BUTTON)) !== 0;
+}
+
+/** Parse un arg de bytecode comme nombre. Si VAR_*, lit la value courante. Si
+ *  LOCALID_X, résout via les templates de la map courante. Si MALE/FEMALE/autres
+ *  constantes connues, retourne le numeric value 1:1 décomp.
+ *  Pour les constantes inconnues, return 0 (= safe default). */
+export function parseValue(arg: string | undefined): number {
+  if (!arg) return 0;
+  if (/^-?\d+$/.test(arg)) return parseInt(arg, 10);
+  if (/^0x[0-9a-fA-F]+$/.test(arg)) return parseInt(arg, 16);
+  if (arg.startsWith('VAR_')) return VarGetByName(arg);
+  // 1:1 décomp constants : MALE = 0, FEMALE = 1 (= include/constants/global.h).
+  if (arg === 'MALE') return MALE;
+  if (arg === 'FEMALE') return FEMALE;
+  // 1:1 décomp asm/macros/event.inc:1932-1933 : YES = 1, NO = 0 (convention FIELD
+  // yesnobox, stocke dans VAR_RESULT). ⚠️ FIX inversion : YES/NO ne sont PAS dans les
+  // namespaces include/constants de decomp-constants.ts -> resolveDecompConstant renvoie
+  // undefined -> fallback `return 0` -> `goto_if_eq VAR_RESULT, YES` matchait quand
+  // Result=0 (NON) -> OUI/NON inverses (tuto Birch : OUI repete, NON avance). TRUE/FALSE
+  // ajoutes par coherence (global.h). Corrobore src/script_menu.c:241 (case 0 -> Result=1).
+  if (arg === 'YES' || arg === 'TRUE') return 1;
+  if (arg === 'NO' || arg === 'FALSE') return 0;
+  // 1:1 décomp asm/macros/event.inc : STR_VAR_1/2/3 = index du buffer string
+  // destination (sScriptStringVars, 0-indexé décomp). Notre setStringVar est
+  // 1-indexé (1→gStringVar1) → on mappe STR_VAR_N → N. Sans ça, parseValue
+  // renvoyait 0 → tous les `buffernumberstring STR_VAR_2/3` écrivaient gStringVar1
+  // (via `|| 1`) en laissant gStringVar2/3 vierges → `{STR_VAR_2}` gelait (boucle
+  // StringCopy sur buffer non terminé).
+  if (arg === 'STR_VAR_1') return 1;
+  if (arg === 'STR_VAR_2') return 2;
+  if (arg === 'STR_VAR_3') return 3;
+  // 1:1 décomp LOCALID_X : look up index dans les templates de la map courante.
+  // LOCALID_PLAYER = 255, LOCALID_NONE = 0, LOCALID_CAMERA = 127.
+  if (arg === 'LOCALID_PLAYER') return 255;
+  if (arg === 'LOCALID_NONE') return 0;
+  if (arg === 'LOCALID_CAMERA') return 127;
+  if (arg.startsWith('LOCALID_')) {
+    const templates = gMapHeader?.events?.objectEvents ?? [];
+    const idx = templates.findIndex(t => t.localIdRaw === arg);
+    if (idx >= 0) return idx + 1;  // 1-based, matches localId assigned au load.
+    console.warn(`[parseValue] LOCALID '${arg}' not found in map templates`);
+    return 0;
+  }
+  // 1:1 décomp constants lookup (= OBJ_EVENT_GFX_*, ITEM_*, MOVE_*, SPECIES_*,
+  // TRAINER_*, FLAG_* numeric ID etc.). Cf. decomp-constants.ts pour list des
+  // namespaces couverts. Sans ça, setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_RIVAL_*
+  // stockait 0 → rival NPC sprite wrong (= toujours Brendan = 0).
+  const constValue = resolveDecompConstant(arg);
+  if (constValue !== undefined) return constValue;
+  return 0;
+}
+
+/** Helper : match NPC par localIdRaw (= string, ex 'LOCALID_PLAYERS_HOUSE_1F_MOM').
+ *  Supporte aussi VAR_X (= lit la value, match par localId number) et
+ *  numeric arg (= match par localId number). */
+export function findNpcByLocalId(arg: string): ObjectEvent | null {
+  if (!arg) return null;
+  // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
+  if (arg.startsWith('VAR_')) {
+    const n = VarGetByName(arg);
+    for (const npc of gObjectEvents) {
+      if (npc.active && npc.localId === n) return npc;
+    }
+    return null;
+  }
+  // Match par localIdRaw (= string) en priorité.
+  for (const npc of gObjectEvents) {
+    if (npc.active && npc.localIdRaw === arg) return npc;
+  }
+  // Fallback : parseInt (= si arg est numérique).
+  const n = parseInt(arg, 10);
+  if (!Number.isNaN(n)) {
+    for (const npc of gObjectEvents) {
+      if (npc.active && npc.localId === n) return npc;
+    }
+  }
+  return null;
+}
+
+/** Helper : resolve un identifier d'objet en `localIdRaw` (= string LOCALID_*).
+ *
+ *  Audit session 126 fix Mom invisible 2F : le décomp `ScrCmd_addobject` fait
+ *  `objectId = VarGetByName(...)` (= number), puis match template par `objectId` numérique.
+ *  Notre impl matchait par `localIdRaw` (string), ce qui marche pour les
+ *  literals `LOCALID_X` mais PAS pour les VAR_0x8008 que les scripts comme
+ *  `PlayersHouse_2F_EventScript_MomComesUpstairsFemale` utilisent :
+ *      setvar VAR_0x8008, LOCALID_PLAYERS_HOUSE_2F_MOM
+ *      addobject VAR_0x8008
+ *  Avant : `addobject VAR_0x8008` était traité comme localIdRaw = "VAR_0x8008"
+ *  → template introuvable → no-op → Mom invisible.
+ *  Maintenant : si arg starts with `VAR_`, on VarGet → number, puis on resolve
+ *  via `reverseDecompConstant(num, 'LOCALID_')` pour retrouver le LOCALID_X. */
+export function resolveObjectLocalIdRaw(arg: string): string {
+  if (arg.startsWith('LOCALID_')) return arg;
+  if (arg.startsWith('VAR_') || /^-?\d+$/.test(arg) || /^0x[0-9a-fA-F]+$/.test(arg)) {
+    const num = VarGetByName(arg);
+    // Match par numeric localId dans la map COURANTE d'ABORD (= match EXACT 1:1 décomp : localId
+    // est l'index 1-based de l'object event de CETTE map). Prioritaire sur reverseDecompConstant
+    // qui est AMBIGU (chaque map a ses propres LOCALID_X = 1, 2, … → renvoie le 1er trouvé global,
+    // souvent le mauvais objet). Avec le localIdRaw synthétique `__LOCALID_<n>` (map-loader), ce
+    // lookup retourne toujours un localIdRaw non vide → removeobject/applymovement matchent l'objet.
+    const tplByLocalId = gMapHeader?.events?.objectEvents?.find(t => t.localId === num);
+    if (tplByLocalId?.localIdRaw) return tplByLocalId.localIdRaw;
+    // Fallback (objet hors map courante) : reverseDecompConstant.
+    const resolved = reverseDecompConstant(num, 'LOCALID_');
+    if (resolved) return resolved;
+  }
+  return arg;
+}
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 // Tables de noms FR (= adaptation de gSpeciesNames/gMoveNames/gItems[].name/gTrainers[]
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
@@ -727,7 +862,7 @@ const ScrCmd_delay: ScrCmdFunc = (ctx) => {
 };
 const ScrCmd_waitbuttonpress: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => isAOrBNewlyPressed()); return true; };
 const ScrCmd_incrementgamestat: ScrCmdFunc = (ctx) => { IncrementGameStat(ScriptReadByte(ctx)); return false; };
-const ScrCmd_checkplayergender: ScrCmdFunc = () => { setResult(gPlayerAvatar.gender === 'MALE' ? MALE_GENDER : FEMALE_GENDER); return false; };
+const ScrCmd_checkplayergender: ScrCmdFunc = () => { setResult(gPlayerAvatar.gender === 'MALE' ? MALE : FEMALE); return false; };
 const ScrCmd_checktrainerflag: ScrCmdFunc = (ctx) => { const i = VarGet(ScriptReadHalfword(ctx)); (ctx as ScriptContext).comparisonResult = HasTrainerBeenFought(i) ? 1 : 0; return false; };
 const ScrCmd_settrainerflag: ScrCmdFunc = (ctx) => { SetTrainerFlag(VarGet(ScriptReadHalfword(ctx))); return false; };
 const ScrCmd_cleartrainerflag: ScrCmdFunc = (ctx) => { ClearTrainerFlag(VarGet(ScriptReadHalfword(ctx))); return false; };

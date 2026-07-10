@@ -21,16 +21,20 @@
  *    chantier P2.3) ;
  *  - `UnionRoom_UnlockPlayerAndChatPartner` (Union Room / link non porté).
  */
-import { getSelectedNpc, OPPOSITE_DIR, isPlayerStepFinished } from './engine/script/script-opcodes-helpers';
+// getSelectedNpc = helper partagé des opcodes (foyer scrcmd.ts depuis le lot 18 —
+// cycle scrcmd ↔ event_object_lock préexistant, functions hoistées = bénin).
+import { getSelectedNpc } from './scrcmd';
 import { gSelectedObjectEvent } from './engine/script/script-vars';
 import {
   FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventClearHeldMovementIfFinished,
   ObjectEventClearHeldMovementIfActive, ObjectEventSetHeldMovement, gObjectEvents,
   FreezeObjectEvents, FreezeObjectEventsExceptOne,
+  OPPOSITE_DIR,
 } from './event_object_movement';
 import {
   GetPlayerFacingDirection, gPlayerAvatar, PlayerFreeze, StopPlayerAvatar,
   DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
+  T_TILE_TRANSITION,
 } from './field_player_avatar';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { CreateTask, DestroyTask } from './task';
@@ -53,11 +57,15 @@ function faceAction(dir: number): number {
 
 /** 1:1 décomp `IsPlayerStandingStill` (event_object_lock.c:11) :
  *    return gPlayerAvatar.tileTransitionState != T_TILE_TRANSITION.
- *  Adaptation ASSUMÉE : notre gate `isPlayerStepFinished()` = tileTransitionState
- *  != T_TILE_TRANSITION + gate `forceMovement === 0` (stand-in du door-walk — NE PAS
- *  régresser les portes). */
+ *  Adaptation ASSUMÉE (+ gate `forceMovement === 0`, stand-in du door-walk — NE PAS
+ *  régresser les portes). Corps rapatrié de l'ex script-opcodes-helpers (lot 18) :
+ *  depuis la ré-écriture 1:1 de `PlayerStep`, la source de vérité est
+ *  `tileTransitionState`, maintenu par `UpdatePlayerAvatarTransitionState` depuis
+ *  le held — exactement ce que lit le décomp. T_TILE_TRANSITION couvre
+ *  walk/dash/turn/collide/ledge-jump (held actif et pas centré). */
 export function IsPlayerStandingStill(): boolean {
-  return isPlayerStepFinished();
+  return gPlayerAvatar.tileTransitionState !== T_TILE_TRANSITION
+      && gPlayerAvatar.forceMovement === 0;  // DIR_NONE
 }
 
 /** 1:1 décomp `Task_FreezePlayer` (event_object_lock.c:20) :
