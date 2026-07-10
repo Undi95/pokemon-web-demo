@@ -37,7 +37,9 @@ local function discover()
     if guard > 16 then return false end
   end
   bgmInfo = mp
-  bgmTracks = u32(mp + 0x30)
+  -- MusicPlayerInfo : tracks @0x2C (0x30 = tone/voicegroup ROM — piégé une fois :
+  -- la trace sortait des constantes ROM, adresse 0x08xxxxxx dans le log).
+  bgmTracks = u32(mp + 0x2C)
   trackCount = u8(mp + 0x08)
   return bgmTracks ~= 0 and trackCount > 0 and trackCount <= 16
 end
