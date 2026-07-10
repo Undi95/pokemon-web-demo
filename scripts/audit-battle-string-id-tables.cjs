@@ -19,7 +19,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DECOMP = 'D:/Projet 1/decomps/pokeemeraude';
 const C_MSG = path.join(DECOMP, 'src/battle_message.c');
-const TS_TBL = path.join(ROOT, 'src/engine/decomp-data/battle-string-id-tables.ts');
+const TS_TBL = path.join(ROOT, 'src/battle_message.ts');  // BATTLE_STRING_ID_TABLES au foyer (consolidation famille battle_message)
 
 // ── résolveur #define (B_MSG_*, STRINGID_*) ──────────────────────────────────
 function evalExpr(expr, scope) {
@@ -37,7 +37,10 @@ const decomp = {};
     if (e.isDirectory()) defs(p);
     else if (e.name.endsWith('.h')) {
       const t = fs.readFileSync(p, 'utf8'); const pend = [];
-      for (const m of t.matchAll(/^#define\s+([A-Z_][A-Z0-9_]*)\s+(.+?)\s*$/gm)) pend.push([m[1], m[2]]);
+      // [ \t]+ (PAS \s+) entre nom et valeur : \s traverse les newlines → la garde
+      // `#define GUARD_X_H` (sans valeur) avalait le 1er vrai define du fichier
+      // (bug historique : WEATHER_NONE jamais chargé, gWeatherStartsStringIds « non résolue »).
+      for (const m of t.matchAll(/^#define[ \t]+([A-Z_][A-Z0-9_]*)[ \t]+(.+?)\s*$/gm)) pend.push([m[1], m[2]]);
       let c = 1, ps = 0;
       while (c && ps++ < 6) { c = 0; for (const [n, ex] of pend) { if (n in decomp) continue; try { decomp[n] = evalExpr(ex, decomp); c = 1; } catch {} } }
     }
@@ -111,7 +114,7 @@ for (const name of Object.keys(portTables)) {
 }
 
 console.log(`Tables d'IDs de messages de combat confrontées : ${checkedTables} (${checkedVals} valeurs) vs décomp battle_message.c.`);
-if (unresolved.length) console.log(`  (note : ${unresolved.length} table(s) décomp non résolue(s) — ignorées : ${[...new Set(unresolved.map((u) => u.split(':')[0]))].join(', ')})`);
+if (unresolved.length) console.log(`  (note : ${unresolved.length} table(s) décomp non résolue(s) — détail : ${[...new Set(unresolved)].join(' · ')})`);
 if (findings.length === 0) { console.log('✅ Tables d\'IDs de messages FIDÈLES au décomp (valeurs STRINGID 1:1).'); process.exit(0); }
 console.log(`❌ ${findings.length} écart(s) :\n`);
 for (const f of findings.slice(0, 60)) console.log('  ' + f);
