@@ -65,7 +65,7 @@ import { CB2_GoToSellMenu, _setSellMenuExitCallback } from './item_menu';
 import { GetMoney, IsEnoughMoney, RemoveMoney, AddMoneyLabelObject, RemoveMoneyLabelObject, PreloadMoneyLabelAsset, PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './money';
 import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, DisplayMessageAndContinueTask, type IntRef, type YesNoFuncTable } from './menu_helpers';
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { setStringVar } from '../include/text';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './field_weather';
 import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';

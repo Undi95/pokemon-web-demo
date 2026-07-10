@@ -43,7 +43,7 @@ import { ScriptContext_Stop, ScriptContext_Enable } from './script';
 import { VarSet } from './engine/script/script-vars';
 import { gStringVar1, StringCopy } from './string_util';
 import { encodeOwText } from './text';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 
 // ─── Constantes 1:1 décomp ───────────────────────────────────────────────────
 

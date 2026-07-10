@@ -94,7 +94,7 @@ import { BeginNormalPaletteFade, UpdatePaletteFade, BG_PLTT_ID } from './palette
 import { loadIndexedPngStrict, loadIndexedPng, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { GetItemName, GetItemDescription } from './item';
 import { GetItemIconPicById, GetItemIconPaletteById, preloadItemIconAssets } from './item_icon';
-import { getString } from './engine/ui/gba-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
+import { getString } from '../harness/runtime/decomp-strings';  // résolution 1:1 des gText_*/gPCText_* depuis strings.json
 import { ItemIsMail } from './mail_data';
 // EOS : depuis le header-miroir (leaf characters.h) — TDZ boot sinon (cycle mail_data).
 import { EOS } from '../include/constants/characters';

@@ -18,7 +18,7 @@ import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PlaySE } from './battle_controllers';
 import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './engine/battle/battle-windows';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { SetGpuReg } from './gpu_regs';
 import { AddTextPrinterParameterized3 } from './menu';
 import { BG_PLTT_ID, BeginNormalPaletteFade, GET_B, GET_G, GET_R, OBJ_PLTT_ID, PALETTES_ALL, RGB2, gPaletteFade, gPlttBufferFaded, gPlttBufferUnfaded } from './palette';

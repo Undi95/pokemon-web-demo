@@ -25,7 +25,7 @@ import { GetMonData } from './engine/battle/party-storage';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { TOTAL_BOXES_COUNT } from './engine/save/save-blocks';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { GetStringCenterAlignXOffset } from './international_string_util';
 import { AddTextPrinterParameterized3 } from './menu';
 import { BG_PLTT_ID } from './palette';

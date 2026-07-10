@@ -54,7 +54,7 @@ import {
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../../overworld';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../../field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../../../harness/gba/png-loader';
-import { getString } from '../ui/gba-strings';
+import { getString } from '../../../harness/runtime/decomp-strings';
 import { gSineTable, SetOamMatrix } from '../../../harness/runtime/decomp-helpers';
 import type { DecompTask } from '../../../harness/runtime/decomp-runtime';
 
@@ -92,7 +92,7 @@ const STD_FRAME_PAL = 14;
 
 /** Pocket display order — 1:1 décomp items_pocket.c sBagPockets.
  *  Labels = 1:1 décomp src/strings.c gText_*Pocket via getString() (= chargé
- *  depuis /decomp/em/strings.json par gba-strings.ts au boot).
+ *  depuis /decomp/em/strings.json par decomp-strings.ts au boot).
  *  Pas hardcoded → si le décomp change un texte, on suit automatiquement. */
 const POCKETS: ReadonlyArray<{
   key: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems';

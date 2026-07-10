@@ -56,7 +56,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from '../include/string_util';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from './engine/battle/party-storage';
@@ -264,7 +264,7 @@ const MOVE_SELECTOR_SPRITES_COUNT = 10;
 
 // ⚠️ ZÉRO HARDCODE (user : projet public/moddable). TOUTES les strings
 // viennent de `/decomp/em/strings.json` (extract-strings.mjs depuis
-// strings.c + data/text) via `getString(label)` (gba-strings.ts, chargé au
+// strings.c + data/text) via `getString(label)` (decomp-strings.ts, chargé au
 // boot). Un moddeur qui édite strings.c → re-extract → tout se met à jour
 // sans toucher au code. `_initSummaryStrings()` (appelé au CB2 init, après
 // le chargement boot des strings) remplit ces `let` depuis getString().
@@ -322,7 +322,7 @@ let gText_FemaleSymbol = '';
 let _summaryStringsReady = false;
 
 /** Remplit les strings depuis le décomp extrait (strings.json via
- *  gba-strings.ts, chargé au boot). 1:1, zéro hardcode. Idempotent. */
+ *  decomp-strings.ts, chargé au boot). 1:1, zéro hardcode. Idempotent. */
 function _initSummaryStrings(): void {
   S_MEMO_NATURE_TEXT_COLOR = getString('sMemoNatureTextColor');
   S_MEMO_MISC_TEXT_COLOR = getString('sMemoMiscTextColor');

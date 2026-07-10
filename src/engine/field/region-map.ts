@@ -45,7 +45,7 @@ function SignalWaitState(): void {
   ((globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined)?.();
 }
 import { getMapNameFr } from '../../data/map-names-fr';
-import { getString } from '../ui/gba-strings';
+import { getString } from '../../../harness/runtime/decomp-strings';
 import { getRuntime, getAsset, PlaySE } from '../../../harness/runtime/decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../../script';
 import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from '../ui/bitmap-font';

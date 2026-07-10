@@ -14,7 +14,7 @@ import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PIXEL_FILL } from './engine/battle/battle-windows';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { FillWindowTilesByRow } from './international_string_util';
 import { AddTextPrinterParameterized3 } from './menu';
 import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, gDummySpriteAffineAnimTable, gDummySpriteAnimTable, gSprites } from './sprite';

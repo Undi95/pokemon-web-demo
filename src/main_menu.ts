@@ -123,7 +123,7 @@ import { IsWirelessAdapterConnected } from './link';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './window';
 import { GetStringRightAlignXOffset, sTextColor_MenuInfo } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { FlagGet } from './engine/script/script-vars';
 import { SE_SELECT as _SE_SELECT } from '../include/constants/songs';
 

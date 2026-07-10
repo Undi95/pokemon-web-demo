@@ -58,7 +58,7 @@ import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { AddTextPrinterParameterized3 } from './menu';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './window';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from './sprite';

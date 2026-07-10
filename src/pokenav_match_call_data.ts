@@ -13,7 +13,7 @@ import { MAPSEC_DEWFORD_TOWN, MAPSEC_EVER_GRANDE_CITY, MAPSEC_FORTREE_CITY, MAPS
 import { FACILITY_CLASS_BRENDAN, FACILITY_CLASS_MAY, FACILITY_CLASS_STEVEN } from '../include/constants/trainers';
 import { CountBattledRematchTeams, gRematchTable } from './battle_setup';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';

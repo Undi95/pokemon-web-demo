@@ -20,7 +20,7 @@ import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr } from './dynamic_placeholder_text_util';
 import { GetMonData } from './engine/battle/party-storage';
 import { IN_BOX_COUNT, TOTAL_BOXES_COUNT } from './engine/save/save-blocks';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { GetStringClearToWidth } from './international_string_util';
 import { BG_PLTT_ID } from './palette';
 import { GetBoxMonGender, GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonGender, gPlayerParty } from './pokemon';

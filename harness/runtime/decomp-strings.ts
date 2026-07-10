@@ -1,6 +1,8 @@
 /**
- * gba-strings.ts
- * --------------
+ * decomp-strings.ts (ex src/engine/ui/gba-strings.ts, unification lot 19)
+ * ----------------------------------------------------------------------
+ * LOADER harness (pas de counterpart .c : strings.c du decomp = les DEFINITIONS,
+ * ici extraites en data /decomp/em/strings.json ; ce module = le fetch + getString).
  * Strings globales utilisées par les callbacks auto-générés du main menu / Birch
  * speech / etc. Les callbacks référencent `gText_XXX` comme des variables globales.
  *
@@ -24,7 +26,7 @@ const strings: Record<string, string> = {};
 export async function initStringsFromDecomp(): Promise<void> {
   const resp = await fetch('/decomp/em/strings.json');
   if (!resp.ok) {
-    console.error('[gba-strings] failed to fetch /decomp/em/strings.json:', resp.status);
+    console.error('[decomp-strings] failed to fetch /decomp/em/strings.json:', resp.status);
     return;
   }
   const data = await resp.json() as Record<string, string>;
@@ -34,7 +36,7 @@ export async function initStringsFromDecomp(): Promise<void> {
     (globalThis as Record<string, unknown>)[key] = value;
     count++;
   }
-  console.log(`[gba-strings] loaded ${count} strings from /decomp/em/strings.json`);
+  console.log(`[decomp-strings] loaded ${count} strings from /decomp/em/strings.json`);
 }
 
 /** Lookup helper pour TS code qui voudrait accéder explicitement. */

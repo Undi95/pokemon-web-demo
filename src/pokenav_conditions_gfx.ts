@@ -16,7 +16,7 @@ import { MAX_SPRITES, SPRITE_NONE } from '../include/sprite';
 import { STR_CONV_MODE_RIGHT_ALIGN } from '../include/string_util';
 import { FONT_NORMAL } from '../include/text';
 import { MON_PIC_SIZE } from './battle_gfx_sfx_util';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { SetGpuReg } from './gpu_regs';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
 import { ScanlineEffect_InitHBlankDmaTransfer } from './scanline_effect';

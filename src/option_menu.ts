@@ -150,7 +150,7 @@ export async function preloadOptionMenuAssets(): Promise<void> {
   // gText_* strings (= si pas déjà loadés par un autre boot path comme
   // GameScene/BirchRuntime). Les modes test type `?nointro=1` n'en font pas.
   if (typeof (globalThis as { gText_Option?: string }).gText_Option === 'undefined') {
-    const { initStringsFromDecomp } = await import('./engine/ui/gba-strings');
+    const { initStringsFromDecomp } = await import('../harness/runtime/decomp-strings');
     tasks.push(initStringsFromDecomp());
   }
   await Promise.all(tasks);

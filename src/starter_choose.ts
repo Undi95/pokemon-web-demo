@@ -65,7 +65,7 @@ import { CopyMapTilesetsToVram, gMapHeader } from './fieldmap';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset_anims';
 import { setFieldCameraSuspended, flushOverworldTilemaps } from './field_camera';
 import { setObjectEventsSuspended } from './event_object_movement';
-import { getString, initStringsFromDecomp } from './engine/ui/gba-strings';
+import { getString, initStringsFromDecomp } from '../harness/runtime/decomp-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from '../harness/runtime/data-tables';
 /** Type local (ex-voie V, supprimee) : l'ancien flow Birch ne retourne plus rien. */
 type BattleFlow = { tick(): boolean };

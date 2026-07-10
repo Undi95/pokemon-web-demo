@@ -78,7 +78,7 @@ import {
 // item_menu→item_use→party_menu (évite un edge direct item_menu→party_menu = cycle).
 export { CB2_ChooseMonToGiveItem };
 import { GetMonLevelUpWindowStats } from './menu_specialized';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';

@@ -65,7 +65,7 @@ import { TRAINER_CLASS_LEADER, TRAINER_CLASS_RIVAL, TRAINER_CLASS_RS_PROTAG, TRA
 import * as _trainersConstants from '../include/constants/trainers';
 import { FONT_NORMAL } from '../include/text';
 import { gPokedexEntries } from './data/pokemon/pokedex_entries';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { ConvertPixelWidthToTileWidth } from './script_menu';
 import { StringCompare, StringCopyN } from './string_util';
 import { GetStringWidth } from './text';

@@ -87,7 +87,7 @@ export function registerIntroSpriteCallbacks(rt: DecompRuntime): void {
  *  CB2 décomp. Idempotent côté assets (les preload sont cachés). */
 export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   // Strings FR 1:1 décomp AVANT toute Task qui référence gText_* (main menu, Birch…).
-  const { initStringsFromDecomp } = await import('../../src/engine/ui/gba-strings');
+  const { initStringsFromDecomp } = await import('../runtime/decomp-strings');
   await initStringsFromDecomp();
 
   // Side-effect : option_menu helpers sur globalThis (requis avant CB2_InitOptionMenu).

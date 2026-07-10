@@ -35,7 +35,7 @@ import { gBattleOutcome, gBattleResults, gBattleTypeFlags, gLastUsedItem } from 
 import { SpeciesToNationalPokedexNum, gMoveNames, gSpeciesNames } from './engine/data/game-data';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { PokeNews, TVShow, TV_SHOWS_COUNT } from './engine/save/save-blocks';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { GetHoennPokedexCount, GetNationalPokedexCount, GetSetPokedexFlag } from './pokedex';
 import { FLAG_GET_CAUGHT, FLAG_GET_SEEN } from '../include/pokedex';
 import { FlagClear, FlagGet, FlagSet, IsNationalPokedexEnabled, VarGet, VarSet } from './event_data';

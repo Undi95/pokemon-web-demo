@@ -90,7 +90,7 @@ import { OpenBagScreen } from './item_menu';
 import { OpenPartyScreen, TickPartyScreen } from './party_menu';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
 import { OpenPokedexFromStartMenu } from './pokedex';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { FadeScreen, FADE_TO_BLACK } from './field_weather';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
 // pour éviter le globalThis lookup qui pourrait résoudre vers la version

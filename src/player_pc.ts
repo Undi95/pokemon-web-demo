@@ -57,7 +57,7 @@ import { ReadMail } from './mail';
 import { CB2_ReturnToField_Manual } from './overworld';
 import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { setStringVar, encodeOwText, decodeOwBytes } from '../include/text';
 import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import * as Songs from '../include/constants/songs';

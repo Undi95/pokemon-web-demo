@@ -77,7 +77,7 @@ import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy, StringE
 import { TVShowConvertInternationalString } from './international_string_util';
 import { encodeOwText } from './text';
 import { IsTextPrinterActive, DeactivateAllTextPrinters, TEXT_SKIP_DRAW } from './text';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { AddTextPrinterParameterized4, CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { MENU_B_PRESSED } from '../include/menu';
 import { LoadUserWindowBorderGfx } from './text_window';

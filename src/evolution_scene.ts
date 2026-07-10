@@ -80,7 +80,7 @@ import { GAME_STAT_EVOLVED_POKEMON } from '../include/constants/game_stat';
 import { ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace } from './pokemon_summary_screen';
 import { PlayBGM, PlayNewMapMusic, StopMapMusic } from './sound';
 import { Overworld_PlaySpecialMapMusic } from './overworld';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import {
   gStringVar1, gStringVar2, gStringVar4,
   StringExpandPlaceholders, StringCopy, StringCopy_Nickname,

@@ -54,7 +54,7 @@ import {
 } from './engine/battle/party-storage';
 import type { Pokemon } from './engine/battle/party-storage';
 import { gSpeciesInfo, getEggMoves as getEggMovesData, getEvolutions } from './engine/data/game-data';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { encodeOwText, GetPlayerName } from './text';
 import { FONT_NORMAL, TEXT_SKIP_DRAW, AddTextPrinter, gTextFlags, GetStringRightAlignXOffset } from './text';
 import {

@@ -264,7 +264,7 @@ import { SPECIES_ZIGZAGOON, SPECIES_SKITTY, SPECIES_POOCHYENA, SPECIES_KECLEON, 
 import { sContestNames } from './contest_strings';
 import { CopyEasyChatWord, EC_EMPTY_WORD, IsEasyChatAnswerUnlocked, ShowEasyChatScreen } from './easy_chat';
 import { RemoveBagItem } from './engine/bag/bag';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { VarGet, VarSet } from './event_data';
 import { GetItemName, GetBagItemKey } from './item';
 import { FavorLadyOpenBagMenu, QuizLadyOpenBagMenu } from './item_menu';

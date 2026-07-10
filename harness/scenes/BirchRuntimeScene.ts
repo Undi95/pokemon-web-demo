@@ -133,7 +133,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
   private async bootBirch(): Promise<void> {
     try {
       // 1. Strings FR (= gText_Birch_Welcome, gText_ThisIsAPokemon, etc.)
-      const { initStringsFromDecomp } = await import('../../src/engine/ui/gba-strings');
+      const { initStringsFromDecomp } = await import('../runtime/decomp-strings');
       await initStringsFromDecomp();
 
       // 2. Side-effect import : naming-screen-impl pose DoNamingScreen +

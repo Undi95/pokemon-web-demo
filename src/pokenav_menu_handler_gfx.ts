@@ -20,7 +20,7 @@ import { PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './engine/battle/battle-windows';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { gMapHeader } from './fieldmap';
 import { SetGpuReg } from './gpu_regs';
 import { AddTextPrinterParameterized3 } from './menu';

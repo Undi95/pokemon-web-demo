@@ -97,7 +97,7 @@ import {
   OpenSummaryScreen, GetSummaryLastMonIndex,
   ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace,
 } from './pokemon_summary_screen';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { MON_ICON_PALETTE_INDICES } from './pokemon_icon';
 import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
 

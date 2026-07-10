@@ -20,7 +20,7 @@ import { ItemIsMail } from './mail_data';
 import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
 import { setStringVar, encodeOwText } from '../include/text';
 import { gStringVar4 } from '../include/string_util';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap, ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates, ScheduleBgCopyTilemapToVram, FillWindowPixelRect, FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow, AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty, ClearWindowTilemap, BlitBitmapRectToWindow, type WindowTemplate } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { DeactivateAllTextPrinters, FONT_NARROW, FONT_NORMAL, GetMenuCursorDimensionByFont, GetStringRightAlignXOffset, TEXT_SKIP_DRAW } from './text';

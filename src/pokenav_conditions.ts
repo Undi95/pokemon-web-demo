@@ -19,7 +19,7 @@ import { JOY_HELD, JOY_NEW, PlaySE } from './battle_controllers';
 import { GetMonData } from './engine/battle/party-storage';
 import { gSpeciesNames } from './engine/data/game-data';
 import { BOX_NAME_LENGTH, TOTAL_BOXES_COUNT } from './engine/save/save-blocks';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { CalculatePlayerPartyCount, GetBoxMonGender, GetLevelFromBoxMonExp, GetMonGender, SetMonData, gPlayerParty } from './pokemon';
 import { GetBoxedMonPtr } from './pokemon_storage_system';
 import { ConvertIntToDecimalStringN, StringCompare, StringCopyPadded, StringGet_Nickname } from './string_util';

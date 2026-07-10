@@ -50,7 +50,7 @@ import {
 } from '../include/battle_message';
 
 import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../include/constants/battle_string_ids';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
 // -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).

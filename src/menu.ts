@@ -36,7 +36,7 @@ import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from '../harness/r
 import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from './text_window';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
 } from '../include/gba/io_reg';

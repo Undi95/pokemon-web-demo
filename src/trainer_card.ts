@@ -53,7 +53,7 @@ import {
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).

@@ -149,7 +149,7 @@ import {
 import { LoadMessageBoxGfx } from './text_window';
 import { AddTextPrinterParameterized, RunTextPrinters, IsTextPrinterActive } from './text';
 import { AddTextPrinterParameterized2 } from './menu';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { Random as _RandomFishing } from './random';
 import {
   FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,

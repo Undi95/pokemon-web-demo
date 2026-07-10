@@ -19,7 +19,7 @@ import { SetMainCallback2 } from './main';
 import { CB2_ReturnToField_Manual, CB2_ReturnToFieldContinueScript_Manual } from './overworld';
 import { RunScriptImmediately, ScriptContext_SetupScript, ScriptContext_Stop } from './script';
 import { ConvertIntToDecimalStringN, StringCopy, gStringVar1, gStringVar2 } from './string_util';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { encodeOwText } from './text';
 import type { Pokeblock } from './engine/save/save-blocks';
 

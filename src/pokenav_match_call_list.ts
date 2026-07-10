@@ -14,7 +14,7 @@ import { FONT_NARROW } from '../include/text';
 import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { gRematchTable } from './battle_setup';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { FlagGet } from './event_data';
 import { gMapHeader } from './fieldmap';
 import { GetStringClearToWidth, GetTrainerClassNameGenderSpecific } from './international_string_util';

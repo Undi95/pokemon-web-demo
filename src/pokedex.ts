@@ -51,7 +51,7 @@ import { loadTileBin, loadTilemapBin, loadGbaPal, loadIndexedPngRawIndices, load
 import { CreateMonPicSprite_Affine, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { CopyMonCategoryText, GetStringCenterAlignXOffset } from './international_string_util';
 import { CopyToWindowPixelBuffer } from './window';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { gPokedexEntries } from './data/pokemon/pokedex_entries';
 import { FONT_NORMAL } from '../include/text';
 import { EOS, CHAR_SPACER, CHAR_0, CHAR_COMMA } from '../include/constants/characters';

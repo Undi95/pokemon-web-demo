@@ -27,7 +27,7 @@ import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
 
 // 1:1 décomp pokenav.h POKENAV_MENU_* (entrées du menu principal, base).
-// Libellés FR statiques (les gText_Pokenav* ne sont pas dans gba-strings —
+// Libellés FR statiques (les gText_Pokenav* ne sont pas dans decomp-strings (harness) —
 // à remplacer par les vraies strings au port des subscreens).
 const sMainMenuLabels = ['CARTE DE HOENN', 'CONDITION', 'MATCH CALL', 'RUBANS', 'ETEINDRE'];
 

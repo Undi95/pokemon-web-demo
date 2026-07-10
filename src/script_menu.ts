@@ -17,7 +17,7 @@
 
 import { getText } from './script';  // bytes charmap (migration texte)
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
-import { getString } from './engine/ui/gba-strings';
+import { getString } from '../harness/runtime/decomp-strings';
 import { CreateYesNoMenu, GetYesNoWindowId, InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { AddTextPrinterParameterized3 } from './menu';
 import { AddWindow, ClearStdWindowAndFrame, CopyWindowToVram, SetStandardWindowBorderStyle, PutWindowTilemap, RemoveWindow } from './window';
@@ -89,7 +89,7 @@ export function getMultichoiceList(multichoiceId: number, multichoiceName?: stri
     return [];
   }
   // Resolve gText_X labels → FR strings via 2 sources :
-  // 1. `getString` (= `strings.json` via gba-strings.ts) pour les `gText_*`
+  // 1. `getString` (= `strings.json` via decomp-strings.ts) pour les `gText_*`
   //    définis dans `src/strings.c` (e.g. gText_Exit = "ANNULER", gText_Yes,
   //    gText_Petalburg, etc).
   // 2. `getText` (= `_common.json` via script-runtime.ts) fallback pour les
