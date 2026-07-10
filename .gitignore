@@ -53,3 +53,4 @@ ROADMAP.md
 # Les synthèses .md/.txt restent trackées ; les .json se régénèrent à la demande.
 audit-reports/**/*.json
 audit-coverage.json
+scripts/m4a-oracle/*.jsonl
