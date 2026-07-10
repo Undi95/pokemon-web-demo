@@ -1,5 +1,11 @@
 /**
- * TestGbaScene — PoC end-to-end de l'engine GBA-compat.
+ * TestGbaScene — ⚠️ ARCHIVE (chemin legacy 3-scènes, accessible via `?no-un` ;
+ * servait d'écran « press A » = audio unlock avant GameScene). Le boot PAR
+ * DÉFAUT est le HOST UNIFIÉ (TestOverworldScene introMode, user 2026-07-10),
+ * qui prime l'audio au premier input sans écran dédié. Conservée fonctionnelle
+ * (PoC engine + accessible via ESC depuis l'OW).
+ *
+ * PoC end-to-end de l'engine GBA-compat.
  *
  * Affiche le copyright screen (assets décomp `public/decomp/em/intro/copyright.{png,bin}`)
  * via le nouvel engine Gba (Canvas 2D 240×160 pixel-perfect) plutôt que via

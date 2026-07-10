@@ -241,37 +241,22 @@ const config: Phaser.Types.Core.GameConfig = {
   //     à chaque refresh).
   // Les autres scènes restent dispo via game.scene.start() dans la chain.
   scene: (() => {
-    if (typeof window === 'undefined') return [TestGbaScene];
+    if (typeof window === 'undefined') return [TestOverworldScene, TestGbaScene, GameScene];
     const params = new URLSearchParams(window.location.search);
-    // Chantier « c » Step 2.2 (gated) : ?unified = teste le HOST UNIFIÉ. TestOverworldScene
-    // boote l'intro dans SON runtime (Copyright→Title→MainMenu→Birch) puis enchaîne l'OW via
-    // SetMainCallback2 dans le MÊME runtime (sans scene.start = 1:1 AgbMain). Le défaut +
-    // ?nointro restent sur le chemin GameScene (sûr) tant que le merge n'est pas validé/par défaut.
-    if (params.has('unified')) return [TestOverworldScene];
-    // ?nointro → skip title screen + resume save existante.
-    // ?debug → preset complet (tous items, all flags) + spawn Bourg.
-    // Les 2 skip le title screen (cf. boot-mode.ts decideBootMode).
-    const noIntro = params.has('nointro') || params.has('debug') || params.has('clock');
-    // ?truck → dev shortcut pour tester la cinematic intro (= reset save + truck) — DEV ONLY.
-    const truckTest = params.has('truck');
-    // Phase 4.10 user request session 121 : NE PLUS auto-skip title sur save
-    // existante. L'intro joue toujours, l'utilisateur choisit "Continuer" dans
-    // le MainMenu pour charger sa save (= 1:1 décomp Pokémon classique flow).
-    // Le save load lui-même est fait au boot par LoadGameSave (cf. main.ts).
-    const hasResumableSave = false;
-    try {
-      // Legacy compat (= ancienne save v1) — pas utilisé pour skipTitle mais
-      // on évite de foutre en l'air si la migration v1→v2 a déjà eu lieu.
-      const raw = localStorage.getItem('em_save_v1');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        void (!!(parsed && parsed.playerName && parsed.map && parsed.map.name));
-      }
-    } catch { /* localStorage may be disabled — fallback to title */ }
-    const skipTitle = noIntro || truckTest || hasResumableSave;
-    return skipTitle
-      ? [TestOverworldScene, TestGbaScene, GameScene]
-      : [TestGbaScene, GameScene, TestOverworldScene];
+    // ?no-un → chemin LEGACY 3 scènes, ARCHIVÉ mais dispo (décision user 2026-07-10) :
+    // TestGbaScene (press A = audio unlock) → GameScene (chaîne intro dans SON runtime)
+    // → scene.start(TestOverworldScene) pour l'OW. Chaque scène recrée un runtime →
+    // RNG/seed/état de boot PERDUS aux transitions — c'est pour ça que le défaut est
+    // désormais le host unifié ci-dessous.
+    if (params.has('no-un')) return [TestGbaScene, GameScene, TestOverworldScene];
+    // DÉFAUT = HOST UNIFIÉ (ex-?unified du chantier « c », basculé par défaut —
+    // user 2026-07-10) : TestOverworldScene boote TOUT dans UN SEUL runtime
+    // 1:1 AgbMain (Copyright → intro → Title → MainMenu → Birch → OW via
+    // SetMainCallback2, ZÉRO scene.start ; RNG/seed/état boot continus).
+    // Les presets dev (?nointro/?debug/?clock/?truck) prennent la même scène en
+    // boot direct OW (introMode=false — cf. TestOverworldScene.create).
+    // TestGbaScene/GameScene restent ENREGISTRÉES (dispo via ESC / ?no-un).
+    return [TestOverworldScene, TestGbaScene, GameScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to

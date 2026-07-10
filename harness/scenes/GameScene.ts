@@ -1,5 +1,9 @@
 /**
- * GameScene — host unique de la "ROM" Pokemon Émeraude.
+ * GameScene — ⚠️ ARCHIVE (chemin legacy 3-scènes, accessible via `?no-un`).
+ * Le boot PAR DÉFAUT est le HOST UNIFIÉ (TestOverworldScene introMode, décision
+ * user 2026-07-10) : cette scène fait l'intro dans SON runtime puis scene.start
+ * l'OW dans un runtime NEUF → RNG/seed/état de boot perdus à la transition
+ * (pas 1:1). Conservée fonctionnelle comme chemin de secours/comparaison.
  *
  * 1:1 décomp `AgbMain` (src/main.c) :
  *   while (1) {

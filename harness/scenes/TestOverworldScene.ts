@@ -20,7 +20,7 @@ import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-r
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../runtime/decomp-globals';
 import { ResetSpriteData } from '../../src/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/overworld';
-// Chantier « c » Step 2.2 : boot intro réutilisable (host unifié intro+OW, gated ?unified).
+// Boot intro réutilisable (host unifié intro+OW — LE boot par défaut depuis 2026-07-10).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
 import {
@@ -290,9 +290,10 @@ export class TestOverworldScene extends Phaser.Scene {
     FieldUpdateBgTilemapScroll(this.rt);
     TransferTilesetAnimsBuffer(this.rt);
   };
-  /** Chantier « c » Step 2.2 (gated ?unified) : mode hôte unifié. true = boote l'intro
-   *  dans CE runtime (Copyright→Title→MainMenu→Birch) puis entre l'OW via CB2_NewGame/
-   *  Continue dans le MÊME runtime (1:1 SetMainCallback2, sans scene.start). */
+  /** Mode hôte unifié (LE boot par défaut, ex-chantier « c » ?unified). true = boote
+   *  l'intro dans CE runtime (Copyright→Title→MainMenu→Birch) puis entre l'OW via
+   *  CB2_NewGame/Continue dans le MÊME runtime (1:1 SetMainCallback2, sans scene.start).
+   *  false = presets dev (?nointro/?debug/?clock/?truck) et chemin legacy ?no-un. */
   private introMode = false;
   /** Set true au 1er tick où CB2_NewGame/Continue fire (post-Birch) — anti double-fire. */
   private overworldTransitionStarted = false;
@@ -393,16 +394,30 @@ export class TestOverworldScene extends Phaser.Scene {
       this.scene.start('TestGbaScene');
     });
 
-    // Chantier « c » Step 2.2 (gated ?unified) : mode hôte unifié.
-    //  - ?unified : boote l'INTRO dans ce runtime (Copyright→Title→MainMenu→Birch),
-    //    puis update() détecte CB2_NewGame/Continue → enterOverworld dans CE runtime.
-    //  - sinon : boot OW direct (?nointro/?debug/?truck, ou via scene.start GameScene).
-    this.introMode = new URLSearchParams(window.location.search).has('unified');
+    // HOST UNIFIÉ PAR DÉFAUT (user 2026-07-10, ex-chantier « c » gated ?unified) :
+    // boote l'INTRO dans CE runtime (Copyright→logo→Title→MainMenu→Birch), puis
+    // update() détecte CB2_NewGame/Continue → enterOverworld dans CE MÊME runtime
+    // (1:1 AgbMain : transitions par SetMainCallback2, zéro scene.start —
+    // RNG/seed/état de boot CONTINUS du power-on à l'OW).
+    // introMode=false UNIQUEMENT pour :
+    //  - les presets dev ?nointro/?debug/?clock/?truck (boot direct OW, save posée) ;
+    //  - le chemin legacy ?no-un (GameScene fait l'intro puis scene.start ici → OW direct).
+    const bootParams = new URLSearchParams(window.location.search);
+    this.introMode = !(bootParams.has('nointro') || bootParams.has('debug')
+      || bootParams.has('clock') || bootParams.has('truck') || bootParams.has('no-un'));
     if (this.introMode) {
+      // AUDIO UNLOCK (autoplay policy) : plus d'écran « press A » (TestGbaScene) en
+      // amont pour primer l'audio au geste — one-shot sur le premier input, même
+      // primer (primeAudio → getAudioContext().resume()).
+      const unlockAudio = (): void => {
+        import('../m4a/music').then((m) => m.primeAudio()).catch((e) => console.error('[audio-unlock]', e));
+      };
+      this.input.keyboard?.once('keydown', unlockAudio);
+      this.input.once('pointerdown', unlockAudio);
       registerIntroSpriteCallbacks(this.rt);
-      void bootIntroSequence(this.rt);
+      bootIntroSequence(this.rt).catch((e) => console.error('[unified-boot] intro', e));
     } else {
-      void this.bootOverworld();
+      this.bootOverworld().catch((e) => console.error('[unified-boot] overworld', e));
     }
   }
 

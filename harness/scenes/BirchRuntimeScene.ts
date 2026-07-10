@@ -1,5 +1,7 @@
 /**
- * BirchRuntimeScene — host Phaser pour le flow Birch sur le runtime décomp natif.
+ * BirchRuntimeScene — ⚠️ ARCHIVE (host MORT, dé-enregistré du config Phaser
+ * depuis le chantier « c » ; le flow Birch vit dans la chaîne CB2 native du
+ * host unifié). Conservée comme référence historique.
  *
  * Pourquoi cette scène existe :
  *   La précédente `BirchSpeechScene.ts` était une réimplémentation Phaser parallèle
