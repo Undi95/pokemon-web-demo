@@ -47,12 +47,17 @@ import { loadGbaPal, loadTileBin, loadTilemapBin } from '../harness/gba/png-load
 import { GetIconSpeciesNoPersonality, PreloadMonIcon, IsMonIconLoaded, LoadMonIconPalette, CreateMonIconNoPersonality } from './pokemon_icon';
 import type { DecompSprite, DecompTask } from '../harness/runtime/decomp-runtime';
 import { gKeyRepeat } from '../harness/runtime/decomp-runtime';
+// Icône joueur : flux 1:1 EOM (unification lot 17b — l'ex mini-moteur
+// engine/field/object-event-graphics à ids/anims DIVERGENTS est dissous).
+import { ANIM_STD_GO_SOUTH } from '../include/constants/event_object_movement';
 import {
-  OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
-  ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,
-  GetRivalAvatarGraphicsIdByStateIdAndGender,
-  loadObjectEventGraphicsInfo, CreateObjectGraphicsSprite,
-} from './engine/field/object-event-graphics';
+  GetRivalAvatarGraphicsIdByStateIdAndGender, PLAYER_AVATAR_STATE_NORMAL,
+} from './field_player_avatar';
+import {
+  PreloadObjectEventGraphics, PrepareObjectEventGraphics,
+  CreateObjectGraphicsSprite, ObjectEventGfxIdToKey,
+} from './event_object_movement';
+import { StartSpriteAnim } from './sprite';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //
@@ -648,18 +653,18 @@ async function loadNamingScreenAssets(): Promise<void> {
     console.warn('[naming-screen] loadNamingScreenAssets sprite sheets failed:', e);
   }
 
-  // ─── PLAYER trainer icon assets (= via object_event_graphics framework) ───
+  // ─── PLAYER trainer icon assets (= flux 1:1 EOM, unification lot 17b) ───
   // 1:1 décomp src/naming_screen.c:1397-1406 NamingScreen_CreatePlayerIcon
-  // utilise CreateObjectGraphicsSprite(rivalGfxId, ...) qui passe par le
-  // framework `gObjectEventGraphicsInfoPointers[gfxId]` → gfxInfo → loaded
-  // tile sheet + palette via le framework helper. La logique de repack
-  // frame-major est centralisée dans `loadObjectEventGraphicsInfo` pour TOUS
-  // les overworld sprites (= naming screen + Phase 4 NPCs + futur).
+  // utilise CreateObjectGraphicsSprite(rivalGfxId, ...) →
+  // gObjectEventGraphicsInfoPointers[gfxId] (les VRAIES data 245 entrées).
+  // Adaptation asset : les PNG (walking + running, la factory rival prend
+  // 2 pics) se préchargent ici (state machine CB2_LoadNamingScreen), la
+  // création du sprite reste sync (PrepareObjectEventGraphics au create).
   try {
-    await loadObjectEventGraphicsInfo(rt, OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL);
-    await loadObjectEventGraphicsInfo(rt, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL);
+    await PreloadObjectEventGraphics('OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL');
+    await PreloadObjectEventGraphics('OBJ_EVENT_GFX_RIVAL_MAY_NORMAL');
   } catch (e) {
-    console.warn('[naming-screen] PLAYER trainer assets failed:', e);
+    console.error('[naming-screen] PLAYER trainer assets failed:', e);
   }
 
   // ─── BG tile graphics + tilemaps (= 1:1 décomp:1873-1876 LoadGfx + 623-626 DrawBgTilemap) ─
@@ -1792,23 +1797,35 @@ function NamingScreen_CreateMonIcon(): void {
 //
 // Gender source : `sNamingScreen.monSpecies` (= décomp réutilise ce field
 // comme gender pour PLAYER context, cf. main_menu.c:1606 DoNamingScreen call
-// où arg3 = playerGender).
-//
-// Le framework `object-event-graphics.ts` :
-//   - Resolve gfxId via sRivalAvatarGfxIds[NORMAL][gender]
-//   - Loads gfx + palette via loadObjectEventGraphicsInfo (= preloaded au state 5)
-//   - Creates sprite via CreateSpriteAtOam avec dimensions de gObjectEventGraphicsInfo_*
-//   - Register dans spriteAnimStates → tickSpriteAnims cycle frames 0/1/0/2 chaque 8f.
+// où arg3 = playerGender). Flux 1:1 EOM depuis l'unification lot 17b :
+// vrais IDs (100/105), vraie sAnimTable_Standard (ANIM_STD_GO_SOUTH = 4),
+// assets préchargés au state 5 (PreloadObjectEventGraphics).
 function NamingScreen_CreatePlayerIcon(): void {
   if (!sNamingScreen) return;
+  const rt = getRuntime();
+  if (!rt) return;
   const gender = sNamingScreen.monSpecies & 0xFF;
+  // 1:1 décomp:1402 : rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(NORMAL, gender).
   const rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, gender);
+  const gfxKey = ObjectEventGfxIdToKey(rivalGfxId);
+  const pics = gfxKey ? PrepareObjectEventGraphics(gfxKey) : null;
+  if (!pics) {
+    console.error('[naming-screen] CreatePlayerIcon : gfx non préchargé', rivalGfxId, gfxKey);
+    return;
+  }
   // 1:1 décomp:1403 : CreateObjectGraphicsSprite(rivalGfxId, SpriteCallbackDummy, 56, 37, 0).
-  // Le 3eme arg `subPriority=0` mappe vers OAM priority via le framework.
-  // Anim default = ANIM_STD_GO_SOUTH (= 4-step cycle south-stand/walk1/stand/walk2).
-  const spriteId = CreateObjectGraphicsSprite(rivalGfxId, null, 56, 37, 3, ANIM_STD_GO_SOUTH);
+  const spriteId = CreateObjectGraphicsSprite(rivalGfxId, null, 56, 37, 0, pics);
   if (spriteId < 0) {
-    console.warn('[naming-screen] CreatePlayerIcon : framework returned -1 for gender', gender);
+    console.error('[naming-screen] CreatePlayerIcon : échec sprite pour gender', gender);
+    return;
+  }
+  const sprite = rt.gSprites[spriteId];
+  if (sprite) {
+    // 1:1 décomp:1404 : gSprites[spriteId].oam.priority = 3.
+    (sprite as unknown as { priority: number }).priority = 3;
+    // 1:1 décomp:1405 : StartSpriteAnim(&gSprites[spriteId], ANIM_STD_GO_SOUTH) — = 4
+    // dans la vraie table (0-3 = FACE_*), l'icône marche sur place face sud.
+    StartSpriteAnim(sprite as Parameters<typeof StartSpriteAnim>[0], ANIM_STD_GO_SOUTH);
   }
 }
 

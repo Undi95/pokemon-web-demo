@@ -8122,6 +8122,41 @@ export async function PreloadObjectEventGraphics(graphicsId: string): Promise<vo
   if (sec) await loadNpcPng(`${BASE}/${sec}`);
 }
 
+/** ADAPTATION port (unification lot 17b) : prépare les pics FRAME-MAJOR + la
+ *  palette d'un graphicsId PRÉCHARGÉ (PreloadObjectEventGraphics) pour
+ *  `CreateObjectGraphicsSprite`. Rôle décomp équivalent : les INCBIN
+ *  `gObjectEventPic_*` (déjà frame-major en ROM, ici PNG row-major →
+ *  pngTo1dObjLayout) + `sObjectEventSpritePalettes` (la palette du PNG,
+ *  enregistrée sous le paletteTag du graphicsInfo via LoadSpritePalette —
+ *  dette documentée sur LoadObjectEventPalette). Retourne null si le gfx
+ *  n'est pas préchargé (le caller HURLE, règle 3). */
+export function PrepareObjectEventGraphics(graphicsId: string): Uint8Array[] | null {
+  const g = _graphicsCatalog?.[graphicsId];
+  if (!g || !g.png) return null;
+  const repack = (path: string): Uint8Array | null => {
+    const png = _npcPngCache.get(path);
+    if (!png) return null;
+    const frameW = g.frameWidth || 16, frameH = g.frameHeight || 32;
+    const frames = Math.max(1, Math.floor((png.widthTiles * 8) / frameW) * Math.floor((png.heightTiles * 8) / frameH));
+    return pngTo1dObjLayout(png.charData, frames, png.widthTiles, frameW, frameH);
+  };
+  const main = repack(`${BASE}/${g.png}`);
+  if (!main) return null;
+  const pics: Uint8Array[] = [main];
+  const sec = MULTI_PNG_SECONDARY_PATHS[graphicsId];
+  if (sec) {
+    const secPic = repack(`${BASE}/${sec}`);
+    if (secPic) pics.push(secPic);
+  }
+  // Palette du PNG sous le paletteTag du graphicsInfo (= sObjectEventSpritePalettes).
+  const info = GetObjectEventGraphicsInfo(graphicsId, ...pics);
+  if (info && info.paletteTag !== TAG_NONE_EOM && _IndexOfSpritePaletteTag_EOM(info.paletteTag) === 0xFF) {
+    const png = _npcPngCache.get(`${BASE}/${g.png}`);
+    if (png) LoadSpritePalette_EOM({ tag: info.paletteTag, data: png.palette });
+  }
+  return pics;
+}
+
 // ─── [Déviation M3] Snapshot de rendu du gfx NORMAL joueur (feuille combinée réservée) ──────
 //
 // Le décomp `ObjectEventSetGraphicsId` repointe simplement `sprite->images` vers la table ROM du
@@ -9068,6 +9103,8 @@ import * as _EventObjectsNS from '../include/constants/event_objects';
 import {
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_EOM,
   CreateSprite as CreateSprite_EOM,
+  LoadSpritePalette as LoadSpritePalette_EOM,
+  StartSpriteAnim as StartSpriteAnim_EOM,
 } from './sprite';
 import { TAG_NONE as TAG_NONE_EOM } from '../include/sprite';
 
@@ -9156,9 +9193,17 @@ export function CreateObjectGraphicsSprite(
   }
   const spriteId = CreateSprite_EOM(spriteTemplate, x, y, subpriority);
   if (spriteId >= 0 && spriteId < 64 && subspriteTables) {
-    // Même forme que sOamTable_48x48 passée plus haut au même SetSubspriteTables ;
-    // le champ vient des data typé `unknown[]` (port différé du struct).
-    SetSubspriteTables(spriteId, subspriteTables as Parameters<typeof SetSubspriteTables>[1]);
+    // Les data (sOamTables_16x32…) = tableau de `SubspriteTable {subspriteCount,
+    // subsprites}` indexé par subspriteTableNum (décomp) ; notre SetSubspriteTables
+    // (adaptation) prend le tableau PLAT de subsprites déjà résolu. 1:1 sémantique
+    // décomp : subspriteTableNum = 0 après CreateSprite, et sprite.c
+    // AddSubspritesToOamBuffer rend NORMALEMENT quand subspriteCount == 0
+    // (la table 0 des sOamTables_* est le placeholder vide `{}`) → on ne pose
+    // les subsprites que si la table 0 en a.
+    const table0 = (subspriteTables as ReadonlyArray<{ subspriteCount: number; subsprites: unknown[] }>)[0];
+    if (table0 && table0.subspriteCount > 0) {
+      SetSubspriteTables(spriteId, table0.subsprites as Parameters<typeof SetSubspriteTables>[1]);
+    }
     // sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY : porté par SetSubspriteTables
     // côté port (cf. son impl plus haut dans ce fichier).
   }
@@ -9190,10 +9235,10 @@ export function GetBaseOamForDimensions(frameWidth: number, frameHeight: number)
 
 // ─── Virtual objects 1:1 (event_object_movement.c CreateVirtualObject & co) ──
 // Ex-engine/field/virtual-objects.ts (lot 14). Adaptation conservée : sprites
-// posés via CreateObjectGraphicsSprite, pas auto-camera-tracked (cutscenes
-// stationnaires). _directionToAnimIdx_VO = la table sFaceDirectionAnimNums
-// (définie plus haut dans CE fichier) en switch — dédoublonnage = raffinement.
-import { CreateObjectGraphicsSprite as _CreateObjectGraphicsSprite_VO, loadObjectEventGraphicsInfo as _loadOEGI_VO } from './engine/field/object-event-graphics';
+// posés via CreateObjectGraphicsSprite (le 1:1 de CE fichier depuis le lot 17b —
+// le mini-moteur engine/field/object-event-graphics est DISSOUS), pas
+// auto-camera-tracked (cutscenes stationnaires). _directionToAnimIdx_VO = la
+// table sFaceDirectionAnimNums (définie plus haut dans CE fichier) en switch.
 import { getRuntime as _getRuntime_VO } from '../harness/runtime/decomp-globals';
 import { DestroySprite as _DestroySprite_VO } from './sprite';
 import { gFieldCamera as _gFieldCamera_VO } from './field_camera';
@@ -9256,16 +9301,28 @@ export async function CreateVirtualObject(
   if (!rt) return -1;
   // Cleanup existing vobj at this id (= 1:1 décomp behavior, ré-create override).
   RemoveVirtualObject(virtualObjId);
-  // Load gfx async si pas déjà loaded.
-  await _loadOEGI_VO(rt, graphicsId);
+  // Load gfx async si pas déjà loaded (assets PNG, adaptation port).
+  const gfxKey = ObjectEventGfxIdToKey(graphicsId);
+  if (!gfxKey) {
+    console.error(`[CreateVirtualObject] gfxId 0x${graphicsId.toString(16)} sans clé OBJ_EVENT_GFX_*`);
+    return -1;
+  }
+  await PreloadObjectEventGraphics(gfxKey);
+  const pics = PrepareObjectEventGraphics(gfxKey);
+  if (!pics) {
+    console.error(`[CreateVirtualObject] assets introuvables pour ${gfxKey}`);
+    return -1;
+  }
   const screenX = _mapToScreenX_VO(mapX);
   const screenY = _mapToScreenY_VO(mapY);
-  const animIdx = _directionToAnimIdx_VO(direction);
-  const spriteId = _CreateObjectGraphicsSprite_VO(
-    graphicsId, null, screenX, screenY,
-    2 /* subPriority middle */, animIdx,
-  );
+  const spriteId = CreateObjectGraphicsSprite(graphicsId, null, screenX, screenY, 2, pics);
   if (spriteId < 0) return -1;
+  // 1:1 décomp CreateVirtualObject : StartSpriteAnim(sprite, sFaceDirectionAnimNums[direction])
+  // — avec la VRAIE sAnimTable_Standard (data), 0-3 = ANIM_STD_FACE_* (l'ex mini-moteur
+  // jouait GO_* = marche sur place, divergence corrigée par la dissolution).
+  const animIdx = _directionToAnimIdx_VO(direction);
+  const vobjSprite = rt.gSprites[spriteId];
+  if (vobjSprite) StartSpriteAnim_EOM(vobjSprite as Parameters<typeof StartSpriteAnim_EOM>[0], animIdx);
   _gVirtualObjects_VO.set(virtualObjId, {
     spriteId, graphicsId, mapX, mapY, elevation, direction,
   });
@@ -9285,8 +9342,10 @@ export function TurnVirtualObject(virtualObjId: number, direction: number): void
   const rt = _getRuntime_VO();
   if (!rt) return;
   const animIdx = _directionToAnimIdx_VO(direction);
-  // 1:1 décomp StartSpriteAnim : update sprite anim state.
-  rt.StartSpriteAnim?.(vobj.spriteId, animIdx);
+  // 1:1 décomp StartSpriteAnim(&gSprites[spriteId], sFaceDirectionAnimNums[direction])
+  // — moteur d'anim du template (sprite.anims, voie images), cf. CreateVirtualObject.
+  const spr = rt.gSprites[vobj.spriteId];
+  if (spr) StartSpriteAnim_EOM(spr as Parameters<typeof StartSpriteAnim_EOM>[0], animIdx);
 }
 
 /** Remove a virtual object (= cleanup le sprite). Appelé au map switch ou par

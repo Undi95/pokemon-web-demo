@@ -87,9 +87,8 @@ import {
   DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
 } from '../include/gba/io_reg';
 
-import {
-  CreateObjectGraphicsSprite,
-} from './engine/field/object-event-graphics';
+// (interview TODO : CreateObjectGraphicsSprite viendra de './event_object_movement'
+//  — le 1:1 EOM.c:1568 porté au lot 17b ; l'ex mini-moteur est dissous.)
 
 import {
   TEXT_COLOR_TRANSPARENT,

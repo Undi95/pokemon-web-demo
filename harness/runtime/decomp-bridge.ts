@@ -73,7 +73,6 @@ import { gSineTable as _gSineTable } from './decomp-helpers';
 // les re-exports `// (ré-exports morts retirés depuis '../../src/engine/xxx' — sweep)` situés plus bas dans ce fichier.
 
 import { Random as _Random } from '../../src/random';
-import { getObjectEventGraphicsInfo as _getOEGI } from '../../src/engine/field/object-event-graphics';
 import { getRuntime as _getRT } from './decomp-globals';
 import { gBattleMons as _gBattleMonsBridge } from '../../src/engine/battle/state';
 export const PLTT_SIZE_4BPP = 32;

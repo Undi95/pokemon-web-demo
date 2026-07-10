@@ -225,6 +225,15 @@ import {
   OBJ_EVENT_GFX_BRENDAN_SURFING, OBJ_EVENT_GFX_BRENDAN_UNDERWATER,
   OBJ_EVENT_GFX_MAY_NORMAL, OBJ_EVENT_GFX_MAY_MACH_BIKE, OBJ_EVENT_GFX_MAY_ACRO_BIKE,
   OBJ_EVENT_GFX_MAY_SURFING, OBJ_EVENT_GFX_MAY_UNDERWATER,
+  // sRivalAvatarGfxIds (fpa.c:234, rapatriée unification lot 17b) :
+  OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_BRENDAN_MACH_BIKE,
+  OBJ_EVENT_GFX_RIVAL_BRENDAN_ACRO_BIKE, OBJ_EVENT_GFX_RIVAL_BRENDAN_SURFING,
+  OBJ_EVENT_GFX_RIVAL_BRENDAN_FIELD_MOVE,
+  OBJ_EVENT_GFX_RIVAL_MAY_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_MACH_BIKE,
+  OBJ_EVENT_GFX_RIVAL_MAY_ACRO_BIKE, OBJ_EVENT_GFX_RIVAL_MAY_SURFING,
+  OBJ_EVENT_GFX_RIVAL_MAY_FIELD_MOVE,
+  OBJ_EVENT_GFX_BRENDAN_FISHING, OBJ_EVENT_GFX_MAY_FISHING,
+  OBJ_EVENT_GFX_BRENDAN_WATERING, OBJ_EVENT_GFX_MAY_WATERING,
 } from '../include/constants/event_objects';
 // 1:1 décomp field_player_avatar.c — #define NUM_ACRO_BIKE_COLLISIONS. (Le reste
 // de decomp-data/src/field_player_avatar-data.ts = scaffold auto-gen importé par
@@ -1851,7 +1860,7 @@ export function PlayerUseAcroBikeOnBumpySlope(direction: number): void {
 // preuve : slot préservé), et explicitement stagée pour les états vélo/surf.
 
 /** 1:1 décomp `enum PLAYER_AVATAR_STATE_*` (global.fieldmap.h) — index de sPlayerAvatarTransitionFuncs. */
-const PLAYER_AVATAR_STATE_NORMAL     = 0;
+export const PLAYER_AVATAR_STATE_NORMAL     = 0;
 export const PLAYER_AVATAR_STATE_MACH_BIKE  = 1;
 export const PLAYER_AVATAR_STATE_ACRO_BIKE  = 2;
 export const PLAYER_AVATAR_STATE_SURFING = 3;
@@ -1859,6 +1868,29 @@ const PLAYER_AVATAR_STATE_UNDERWATER = 4;
 const PLAYER_AVATAR_STATE_FIELD_MOVE = 5;
 export const PLAYER_AVATAR_STATE_FISHING    = 6;
 const PLAYER_AVATAR_STATE_WATERING   = 7;
+
+/** 1:1 STRICT décomp `sRivalAvatarGfxIds[][GENDER_COUNT]` (field_player_avatar.c:234) —
+ *  u8 réels (include/constants/event_objects). Rapatriée du mini-moteur
+ *  engine/field/object-event-graphics.ts (unification lot 17b, qui n'avait que
+ *  NORMAL avec des ids INVENTÉS 0xF8/0xF9). Consommée par le naming screen
+ *  (NamingScreen_CreatePlayerIcon → CreateObjectGraphicsSprite, EOM). */
+const sRivalAvatarGfxIds: ReadonlyArray<readonly [number, number]> = [
+  /* PLAYER_AVATAR_STATE_NORMAL     */ [OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL,     OBJ_EVENT_GFX_RIVAL_MAY_NORMAL],
+  /* PLAYER_AVATAR_STATE_MACH_BIKE  */ [OBJ_EVENT_GFX_RIVAL_BRENDAN_MACH_BIKE,  OBJ_EVENT_GFX_RIVAL_MAY_MACH_BIKE],
+  /* PLAYER_AVATAR_STATE_ACRO_BIKE  */ [OBJ_EVENT_GFX_RIVAL_BRENDAN_ACRO_BIKE,  OBJ_EVENT_GFX_RIVAL_MAY_ACRO_BIKE],
+  /* PLAYER_AVATAR_STATE_SURFING    */ [OBJ_EVENT_GFX_RIVAL_BRENDAN_SURFING,    OBJ_EVENT_GFX_RIVAL_MAY_SURFING],
+  /* PLAYER_AVATAR_STATE_UNDERWATER */ [OBJ_EVENT_GFX_BRENDAN_UNDERWATER,       OBJ_EVENT_GFX_MAY_UNDERWATER],
+  /* PLAYER_AVATAR_STATE_FIELD_MOVE */ [OBJ_EVENT_GFX_RIVAL_BRENDAN_FIELD_MOVE, OBJ_EVENT_GFX_RIVAL_MAY_FIELD_MOVE],
+  /* PLAYER_AVATAR_STATE_FISHING    */ [OBJ_EVENT_GFX_BRENDAN_FISHING,          OBJ_EVENT_GFX_MAY_FISHING],
+  /* PLAYER_AVATAR_STATE_WATERING   */ [OBJ_EVENT_GFX_BRENDAN_WATERING,         OBJ_EVENT_GFX_MAY_WATERING],
+];
+
+/** 1:1 STRICT décomp `GetRivalAvatarGraphicsIdByStateIdAndGender` (field_player_avatar.c:1219) :
+ *    return sRivalAvatarGfxIds[state][gender];
+ *  gender = u8 décomp (0 = MALE, 1 = FEMALE). */
+export function GetRivalAvatarGraphicsIdByStateIdAndGender(state: number, gender: number): number {
+  return sRivalAvatarGfxIds[state][gender];
+}
 
 /** 1:1 STRICT décomp `sPlayerAvatarGfxToStateFlag[GENDER_COUNT][5]` (field_player_avatar.c:270).
  *  Map graphicsId → flag d'état. Indexé par genre (notre `gPlayerAvatar.gender` = string). */
