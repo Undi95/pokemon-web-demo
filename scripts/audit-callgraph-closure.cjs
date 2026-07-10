@@ -31,9 +31,11 @@ const DECOMP = process.env.DECOMP_ROOT || 'D:/Projet 1/decomps/pokeemeraude';
 const REPO = path.resolve(__dirname, '..');
 const OUT_JSON = path.join(REPO, 'audit-reports', 'callgraph-closure.json');
 
-// Libs hardware exemptes (voir memory hardware-non-1to1-exemptions : son/save/RTC)
+// Libs hardware exemptes (voir memory hardware-non-1to1-exemptions : save/RTC).
+// src/m4a.c RETIRÉ (2026-07-11) : moteur son 1:1 transcrit (src/m4a.ts +
+// src/m4a_1.ts), certifié sample-exact vs mGBA et câblé (chantier-son-m4a).
 const EXEMPT_FILES = new Set([
-  'src/m4a.c', 'src/agb_flash.c', 'src/agb_flash_1m.c', 'src/agb_flash_le.c',
+  'src/agb_flash.c', 'src/agb_flash_1m.c', 'src/agb_flash_le.c',
   'src/agb_flash_mx.c', 'src/siirtc.c', 'src/libisagbprn.c',
   'src/malloc.c', // Alloc/Free = GC côté TS (exemption structurelle)
 ]);
