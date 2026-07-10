@@ -1718,9 +1718,19 @@ export function _CreateSpriteAtTemplate(rt: DecompRuntime, template: SpriteTempl
       return MAX_SPRITES;  // = échec 1:1 décomp (return MAX_SPRITES)
     }
     if (img0) rt._writeToObjVram(img0.data, tileStart * TILE_SIZE_4BPP);
+    // 1:1 décomp sprite.c:615-618 (CreateSpriteAt) : si le template porte un
+    // paletteTag, oam.paletteNum = IndexOfSpritePaletteTag(tag) — pour TOUTES les
+    // voies, y compris tiles inline (TAG_NONE tileTag). Sans ça l'icône joueur du
+    // naming screen (CreateObjectGraphicsSprite → voie images) rendait avec le
+    // bank 0 = palette UI du clavier (bug « sprite corrompu, mauvaise palette »).
+    let inlinePaletteBank = template.oam.paletteNum ?? 0;
+    if (template.paletteTag !== undefined && template.paletteTag !== TAG_NONE) {
+      const palIdx = IndexOfSpritePaletteTag(template.paletteTag);
+      if (palIdx !== 0xFF) inlinePaletteBank = palIdx;
+    }
     const { spriteId } = CreateSpriteAtOam(rt, {
       tileId: tileStart,
-      paletteBank: template.oam.paletteNum ?? 0,
+      paletteBank: inlinePaletteBank,
       x, y,
       shape: template.oam.shape, size: template.oam.size,
       priority: template.oam.priority ?? 1,
