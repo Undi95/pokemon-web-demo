@@ -54,6 +54,7 @@ import { M4A_NATIVE, initM4aNative, startM4aNativeAudio } from '../m4a/native';
 import {
   m4aSongNumStart as _m4aSongNumStartNative,
   m4aMPlayAllStop as _m4aMPlayAllStopNative,
+  gMPlayInfo_BGM as _gMPlayInfo_BGM_native,
 } from '../../src/m4a';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
@@ -2665,11 +2666,20 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
  *  via setMasterParameter('masterGain') en N steps, puis stopSong à la fin
  *  pour libérer le slot. */
 export function FadeOutBGM(speed: number): void {
+  if (M4A_NATIVE) {
+    // Foyer 1:1 sound.c:290 → m4aMPlayFadeOut natif (bridge anti-cycle).
+    (globalThis as { __soundFadeOutBGM?: (s: number) => void }).__soundFadeOutBGM?.(speed);
+    return;
+  }
   void import('../m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
 }
 
 /** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
 export function FadeInBGM(speed: number): void {
+  if (M4A_NATIVE) {
+    (globalThis as { __soundFadeInBGM?: (s: number) => void }).__soundFadeInBGM?.(speed);
+    return;
+  }
   void import('../m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
 }
 /** 1:1 STRICT décomp `CanResetRTC()` (event_data.c:156-162) :
@@ -2689,9 +2699,14 @@ export let gBattle_BG1_Y = 0;
 // 1:1 décomp `gMPlayInfo_BGM` (= struct MusicPlayerInfo). Le décomp lit
 // `gMPlayInfo_BGM.status & 0xFFFF == 0` pour détecter la fin de song
 // (= ex. Task_TitleScreenPhase3 demo loop quand MUS_TITLE finit).
-// Getter dynamique : returns 1 si BGM joue, 0 si finie/stoppée.
+// Natif : délègue au VRAI player BGM du moteur (🩸 payé : la struct shim
+// figée à 0 en mode natif faisait « finir » MUS_TITLE instantanément →
+// retour intro immédiat au title screen). Legacy : 1 si le slot shim joue.
 export const gMPlayInfo_BGM = {
-  get status(): number { return _staticIsPlaying('bgm') ? 1 : 0; },
+  get status(): number {
+    if (M4A_NATIVE) return _gMPlayInfo_BGM_native.status >>> 0;
+    return _staticIsPlaying('bgm') ? 1 : 0;
+  },
 };
 
 // Synchronise les mutable exports sur globalThis pour que les modules auto-générés

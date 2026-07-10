@@ -699,6 +699,8 @@ export function SetPokemonCryStereo(selection: number): void {
 // decomp-globals, l'inverse passe par globalThis).
 (globalThis as Record<string, unknown>).__soundPlayBGM = PlayBGM;
 (globalThis as Record<string, unknown>).__soundSetDisableMusic = (v: boolean) => { gDisableMusic = v; };
+(globalThis as Record<string, unknown>).__soundFadeOutBGM = FadeOutBGM;
+(globalThis as Record<string, unknown>).__soundFadeInBGM = FadeInBGM;
 (globalThis as Record<string, unknown>).__soundPlayFanfare = PlayFanfare;
 (globalThis as Record<string, unknown>).__soundPlayFanfareByFanfareNum = PlayFanfareByFanfareNum;
 (globalThis as Record<string, unknown>).__soundWaitFanfare = WaitFanfare;

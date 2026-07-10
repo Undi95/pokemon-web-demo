@@ -129,6 +129,19 @@ export async function startM4aNativeAudio(): Promise<void> {
   };
   _node.onprocessorerror = (e) => console.error('[m4a-native] processor error', e);
   _node.connect(getMasterGain());
+
+  // Autoplay policy : le contexte peut naître SUSPENDU (reload sans media
+  // engagement — payé : silence permanent chez le user, « recliquer ne fait
+  // rien »). Le resume vivait dans m4aPrime(), un chemin du SHIM que le
+  // dispatch natif ne traverse plus → on résume ici sur chaque geste humain.
+  const resumeOnGesture = (): void => {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch((e) => console.error('[m4a-native] resume', e));
+    }
+  };
+  window.addEventListener('pointerdown', resumeOnGesture);
+  window.addEventListener('keydown', resumeOnGesture);
+  resumeOnGesture();
   produceFrames(8); // pré-remplissage (~134 ms)
 }
 
