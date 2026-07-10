@@ -2,8 +2,8 @@
 /**
  * audit-trainer-money-table.cjs — ORACLE de fidélité de la table de PRIME des dresseurs.
  *
- * Confronte `src/engine/battle/data/trainer-money-table.ts` (gTrainerMoneyTable) au décomp
- * `gTrainerMoneyTable[]` (battle_main.c:474). C'est la base de la prime de combat dresseur :
+ * Confronte `src/battle_main.ts` (gTrainerMoneyTable, au foyer miroir depuis le lot 24)
+ * au décomp `gTrainerMoneyTable[]` (battle_main.c:474). Base de la prime de combat dresseur :
  * `moneyReward = 4 × niveau_dernier_mon × multiplicateur × value[classe]` (Cmd_getmoneyreward).
  * Une value fausse = prime fausse pour toute une classe de dresseurs.
  *
@@ -17,7 +17,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DECOMP = 'D:/Projet 1/decomps/pokeemeraude/src/battle_main.c';
-const OURS = path.join(ROOT, 'src/engine/battle/data/trainer-money-table.ts');
+const OURS = path.join(ROOT, 'src/battle_main.ts');
 
 /** Extrait la séquence [{class, value}] de la table décomp (entre `gTrainerMoneyTable[] =` et `};`). */
 function parseDecomp(src) {

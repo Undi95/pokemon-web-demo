@@ -619,10 +619,9 @@ import {
   speciesNumberToEnum as _speciesNumberToEnumPK,
   speciesNumberToEnum as speciesNumberToEnumBU,
 } from './engine/battle/data/species-runtime';
-import {
-  gTrainerMoneyTable,
-  getTrainerMoneyValue,
-} from './engine/battle/data/trainer-money-table';
+// gTrainerMoneyTable : foyer battle_main.ts (bm.c:474-532) depuis le lot 24 —
+// lue uniquement à l'exécution (getTrainerMoneyValue ci-dessous) → cycle bénin.
+import { gTrainerMoneyTable } from './battle_main';
 import {
   TYPE_ENDTABLE,
   TYPE_FORESIGHT,
@@ -7750,6 +7749,21 @@ function Cmd_trycastformdatachange(ctx: BattleScriptContext): boolean {
 const F_TRAINER_PARTY_CUSTOM_MOVESET = 1 << 0;
 const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
 
+/** Adaptation de la boucle inline de Cmd_getmoneyreward (battle_script_commands.c:
+ *  5621-5625) : `for (; gTrainerMoneyTable[i].classId != 0xFF; i++) if (match) break;`
+ *  puis lecture de `gTrainerMoneyTable[i].value` (la sentinelle 0xFF = default 5).
+ *  Table au foyer battle_main.ts (bm.c:474-532). */
+function getTrainerMoneyValue(trainerClass: number): number {
+  let i = 0;
+  while (gTrainerMoneyTable[i].classId !== 0xFF) {
+    if (gTrainerMoneyTable[i].classId === trainerClass) {
+      return gTrainerMoneyTable[i].value;
+    }
+    i++;
+  }
+  return gTrainerMoneyTable[i].value;  // sentinelle default = 5.
+}
+
 // id numérique (gTrainerBattleOpponent_A) → clé 'TRAINER_X' OPPONENT depuis
 // opponents-data. PAS reverseDecompConstant(id,'TRAINER_') : le préfixe 'TRAINER_'
 // est AMBIGU (matche aussi TRAINER_CLASS_/TRAINER_PIC_/TRAINER_BACK_PIC_/
@@ -7801,7 +7815,6 @@ function _getTrainerMoneyToGive(trainerId: number): number {
   void F_TRAINER_PARTY_CUSTOM_MOVESET; void F_TRAINER_PARTY_HELD_ITEM;
 
   const value = getTrainerMoneyValue(trainerClass);
-  void gTrainerMoneyTable;  // suppress unused warning for the import.
 
   // 1:1 décomp : BATTLE_TYPE_DOUBLE × 2 multiplier, BATTLE_TYPE_TWO_OPPONENTS pas.
   // Reference battle_script_commands.c:5627-5632.
