@@ -325,19 +325,75 @@ if (diffCount === 0) {
   for (const [f, n] of perFile) console.log(`   ${f}: ${n}`);
 }
 
-// ---------------- émission optionnelle ----------------
+// ---------------- émission du blob TOTAL (région + songs) ----------------
+// Les séquences des 531 songs suivent immédiatement la région (mus_dummy
+// header = fin de région, vérifié). Le blob total couvre [base, maxSongEnd) ;
+// chaque song est régénéré depuis son .mid (déjà validés un à un par
+// validate-songs.cjs) et posé à son adresse ROM. Le diff final de TOUT
+// l'intervalle vaut preuve de couverture : un trou non couvert resterait à
+// zéro et divergerait de la ROM.
 const argv = process.argv.slice(2);
 if (argv[0] === '--emit' && diffCount === 0) {
-  const blobPath = argv[1] || 'public/assets/m4a/sound-region.bin';
-  const indexPath = argv[2] || 'public/assets/m4a/sound-region.json';
-  fs.writeFileSync(blobPath, blob);
+  const { mid2agb } = require('./mid2agb.cjs');
+  const { assemble } = require('./mplay-assembler.cjs');
+  const mplayDefText = fs.readFileSync(path.join(DECOMP, 'sound/MPlayDef.s'), 'utf8');
+
+  // midi.cfg (extension .mid optionnelle — coquille ligne 103)
+  const cfg = new Map();
+  for (const raw of fs.readFileSync(path.join(DECOMP, 'sound/songs/midi/midi.cfg'), 'utf8').split('\n')) {
+    const m = raw.trim().match(/^([A-Za-z0-9_]+?)(?:\.mid)?:\s*(.*)$/);
+    if (m) cfg.set(m[1], m[2].trim().split(/\s+/).filter(Boolean));
+  }
+
+  // fin du blob = fin du dernier song (header + 8 + 4*NumTrks)
+  let end = base + blob.length;
+  for (const [, headerAddr] of externs) {
+    const n = rom[headerAddr - ROM_BASE];
+    end = Math.max(end, headerAddr + 8 + 4 * n);
+  }
+
+  const total = Buffer.alloc(end - base);
+  blob.copy(total, 0);
+
+  for (const [label, headerAddr] of externs) {
+    if (label === 'dummy_song_header') continue; // dans la région déjà
+    const options = cfg.get(label);
+    const sText = mid2agb(path.join(DECOMP, 'sound/songs/midi', `${label}.mid`), options, `${label}.s`);
+    let voiceGroup = '_dummy';
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].startsWith('-G'))
+        voiceGroup = options[i].length > 2 ? options[i].slice(2) : options[++i];
+    }
+    const groupAddr = rom.readUInt32LE(headerAddr - ROM_BASE + 4);
+    const r = assemble(sText, { mplayDefText, headerAddr, externs: { [`voicegroup${voiceGroup}`]: groupAddr } });
+    r.bytes.copy(total, r.base - base);
+  }
+
+  let totalDiff = 0;
+  let totalFirst = -1;
+  for (let i = 0; i < total.length; i++) {
+    if (total[i] !== rom[romStart + i]) {
+      totalDiff++;
+      if (totalFirst < 0) totalFirst = i;
+    }
+  }
+  if (totalDiff !== 0) {
+    console.log(`❌ blob total : ${totalDiff} octets divergent, 1er @+0x${totalFirst.toString(16)} — PAS émis`);
+    process.exit(1);
+  }
+  console.log(`🏆 BLOB TOTAL BYTE-EXACT : ${total.length} octets (0x${base.toString(16)}–0x${end.toString(16)})`);
+
+  const outDir = argv[1] || 'public/decomp/em/m4a';
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, 'sound-data.bin'), total);
   const index = {
-    base, size: blob.length,
+    base, size: total.length,
     gSongTable: G_SONG_TABLE_ADDR,
     numSongs: 610,
+    voicegroup000: base + labels.get('voicegroup_dummy'),
     labels: Object.fromEntries([...labels].map(([k, v]) => [k, base + v])),
     songs: Object.fromEntries(externs),
   };
-  fs.writeFileSync(indexPath, JSON.stringify(index));
-  console.log(`émis : ${blobPath} (${blob.length} o) + ${indexPath}`);
+  fs.writeFileSync(path.join(outDir, 'sound-data.json'), JSON.stringify(index));
+  console.log(`émis : ${outDir}/sound-data.bin (${total.length} o) + sound-data.json`);
 }
