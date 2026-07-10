@@ -91,14 +91,11 @@ import {
 //  — le 1:1 EOM.c:1568 porté au lot 17b ; l'ex mini-moteur est dissous.)
 
 import {
-  TEXT_COLOR_TRANSPARENT,
-  TEXT_COLOR_DARK_GRAY,
-  TEXT_COLOR_LIGHT_GRAY,
-  TEXT_COLOR_WHITE,
-  TEXT_COLOR_LIGHT_RED,
-  FONT_NORMAL,
-  PIXEL_FILL,
-} from './engine/battle/battle-windows';
+  TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
+  TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_RED,
+} from '../include/constants/characters';
+import { FONT_NORMAL } from '../include/text';
+import { PIXEL_FILL } from './window';
 
 import {
   CHAR_HYPHEN,

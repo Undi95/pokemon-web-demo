@@ -20,7 +20,7 @@ import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr } from './dynamic_placeholder_text_util';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { GetMonData } from './engine/battle/party-storage';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';

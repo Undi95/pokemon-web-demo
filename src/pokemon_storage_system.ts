@@ -39,7 +39,7 @@ import {
   type WindowTemplate,
 } from './window';
 import { GetStringWidth, AddTextPrinterParameterized, GetStringCenterAlignXOffset } from './text';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { gSpeciesNames } from './engine/data/game-data';
 import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './text_window';
 import { SE_PC_LOGIN } from '../include/constants/songs';

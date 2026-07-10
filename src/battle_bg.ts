@@ -33,7 +33,11 @@ import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
 } from './window';
-import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './engine/battle/battle-windows';
+// Header window.h depuis le LEAF include/window (pas './window') : ce module est
+// dans un cycle ESM passant par window (window → decomp-globals → … → battle_bg)
+// et sStandardBattleWindowTemplates lit DUMMY_WIN_TEMPLATE au top-level → TDZ sinon.
+import { DUMMY_WIN_TEMPLATE, type WindowTemplate } from '../include/window';
+import { B_WIN_TYPE_NORMAL, B_WIN_ACTION_MENU } from '../include/constants/battle';
 import { DeactivateAllTextPrinters } from './text';
 
 /** 1:1 décomp `gPPTextPalette` (graphics/battle_interface/text_pp.pal, 16 u16).
@@ -507,15 +511,72 @@ export const gBattleBgTemplates: BgTemplate[] = [
   { bg: 3, charBaseIndex: 2, mapBaseIndex: 26, screenSize: 1, paletteMode: 0, priority: 3, baseTile: 0 },
 ];
 
+/** 1:1 décomp `static const struct WindowTemplate sStandardBattleWindowTemplates[]`
+ *  (battle_bg.c:163-382, données vérifiées ligne-par-ligne 2026-05-17). Index ==
+ *  B_WIN_* 0..23 (designated initializers du .c = ordre B_WIN_*), terminé par la
+ *  sentinelle DUMMY_WIN_TEMPLATE (1:1 : InitWindows arrête l'allocation au premier
+ *  bg == 0xFF). baseBlock en décimal (144=0x90, 448=0x1C0, …). Le window ID alloué
+ *  == index B_WIN_*. width=27 sur B_WIN_MSG = « French Difference » du .c.
+ *  Exporté (static dans le .c) : Cmd_drawlvlupbox (battle_script_commands.ts) relit
+ *  le template B_WIN_LEVEL_UP_BOX (adaptation lot 20).
+ *
+ *  NOTE architecture : le BG0 battle est screenSize=2 (32×64 tiles, cf.
+ *  gBattleBgTemplates[0] ci-dessus). MSG (top=15), ACTION_PROMPT/MENU (top=35),
+ *  MOVE_* (top=55/57) sont à des Y différents dans ce tilemap 64-tall ;
+ *  `gBattle_BG0_Y` (battle_main.c:2091 SetGpuReg(REG_OFFSET_BG0VOFS)) scroll
+ *  0 / 160 / 320 px pour révéler la section voulue au même endroit écran.
+ *  La couleur ROUGE du dialog : gBattleWindowTextPalette (text.pal) à BG_PLTT_ID(5)
+ *  (LoadBattleMenuWindowGfx ci-dessous), idx 15 = rouge ; B_WIN_MSG a
+ *  fillValue=PIXEL_FILL(0xF) + bgColor=TEXT_DYNAMIC_COLOR_6=15 (cf.
+ *  sTextOnWindowsInfo_Normal, battle_message.ts). */
+export const sStandardBattleWindowTemplates: WindowTemplate[] = [
+  { bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 27, height: 4, paletteNum: 0, baseBlock: 144 },
+  { bg: 0, tilemapLeft: 1, tilemapTop: 35, width: 14, height: 4, paletteNum: 0, baseBlock: 448 },
+  { bg: 0, tilemapLeft: 17, tilemapTop: 35, width: 12, height: 4, paletteNum: 5, baseBlock: 400 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 768 },
+  { bg: 0, tilemapLeft: 11, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 784 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 800 },
+  { bg: 0, tilemapLeft: 11, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 816 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 656 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 0, height: 0, paletteNum: 5, baseBlock: 664 },
+  { bg: 0, tilemapLeft: 25, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 664 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 672 },
+  { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 8, height: 4, paletteNum: 5, baseBlock: 688 },
+  { bg: 0, tilemapLeft: 25, tilemapTop: 9, width: 4, height: 4, paletteNum: 5, baseBlock: 256 },
+  { bg: 1, tilemapLeft: 19, tilemapTop: 8, width: 10, height: 11, paletteNum: 5, baseBlock: 256 },
+  { bg: 2, tilemapLeft: 18, tilemapTop: 0, width: 12, height: 3, paletteNum: 6, baseBlock: 366 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 3, width: 6, height: 2, paletteNum: 5, baseBlock: 32 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 3, width: 6, height: 2, paletteNum: 5, baseBlock: 64 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 2, width: 6, height: 2, paletteNum: 5, baseBlock: 32 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 2, width: 6, height: 2, paletteNum: 5, baseBlock: 64 },
+  { bg: 1, tilemapLeft: 2, tilemapTop: 6, width: 6, height: 2, paletteNum: 5, baseBlock: 96 },
+  { bg: 2, tilemapLeft: 2, tilemapTop: 6, width: 6, height: 2, paletteNum: 5, baseBlock: 128 },
+  { bg: 0, tilemapLeft: 12, tilemapTop: 2, width: 6, height: 2, paletteNum: 0, baseBlock: 160 },
+  { bg: 0, tilemapLeft: 4, tilemapTop: 2, width: 7, height: 2, paletteNum: 0, baseBlock: 160 },
+  { bg: 0, tilemapLeft: 19, tilemapTop: 2, width: 7, height: 2, paletteNum: 0, baseBlock: 176 },
+  DUMMY_WIN_TEMPLATE,
+];
+
+/** 1:1 décomp `const struct WindowTemplate *const gBattleWindowTemplates[]`
+ *  (battle_bg.c:596-600) : [B_WIN_TYPE_NORMAL] = sStandardBattleWindowTemplates,
+ *  [B_WIN_TYPE_ARENA] = sBattleArenaWindowTemplates. Arena non porté (Battle
+ *  Frontier hors scope) → seul NORMAL est présent. */
+export const gBattleWindowTemplates: WindowTemplate[][] = [
+  sStandardBattleWindowTemplates,
+];
+
 /** 1:1 décomp `BattleInitBgsAndWindows` (battle_bg.c:713-731) — NORMAL only
  *  (pas BATTLE_TYPE_ARENA). C'est ÇA qui remplace le windowing overworld par
- *  le windowing battle : InitWindows(getBattleWindowTemplates()) =
- *  FreeAllWindowBuffers + AddWindow chaque template → window ID == B_WIN_*. */
+ *  le windowing battle : InitWindows(gBattleWindowTemplates[windowsType]) =
+ *  FreeAllWindowBuffers + AddWindow chaque template → window ID == B_WIN_*.
+ *  Décomp : `InitWindows(gBattleWindowTemplates[gBattleScripting.windowsType])` ;
+ *  Arena non porté → windowsType = B_WIN_TYPE_NORMAL constant (évite l'arête
+ *  battle_bg → engine/battle/state pour un champ toujours NORMAL). */
 export function BattleInitBgsAndWindows(): void {
   ResetBgsAndClearDma3BusyFlags(0);
   InitBgsFromTemplates(0, gBattleBgTemplates, gBattleBgTemplates.length);
   // gBattleScripting.windowsType = B_WIN_TYPE_NORMAL (combats wild/trainer).
-  InitWindows(getBattleWindowTemplates());
+  InitWindows(gBattleWindowTemplates[B_WIN_TYPE_NORMAL]);
   DeactivateAllTextPrinters();
 }
 

@@ -112,15 +112,15 @@ export function copyWindowToCanvas(w: Window, palette: ReadonlyArray<readonly [n
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface WindowTemplate {
-  bg: number;
-  tilemapLeft: number;
-  tilemapTop: number;
-  width: number;
-  height: number;
-  paletteNum: number;
-  baseBlock: number;
-}
+// PIXEL_FILL / DUMMY_WIN_TEMPLATE / WindowTemplate : foyer = include/window.ts
+// (miroir window.h, leaf anti-TDZ). Re-export indirect (résolu au LINKING ESM,
+// pas à l'éval du corps) → safe même pour les importeurs pris dans un cycle
+// passant par ce module. Les sites qui LISENT ces valeurs au top-level d'un
+// module en cycle (battle_bg, battle_message) importent '../include/window'
+// directement (modèle .c → .h).
+export { PIXEL_FILL, DUMMY_WIN_TEMPLATE } from '../include/window';
+export type { WindowTemplate } from '../include/window';
+import type { WindowTemplate } from '../include/window';
 
 export interface BgTemplate {
   bg: number;

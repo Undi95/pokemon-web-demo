@@ -2703,7 +2703,4 @@ export const DoMonFrontSpriteAnimation = _DoMonFrontSpriteAnimation;
 // runtime (= TODO future, utilisé par Birch player shrink + battle anims).
 export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine anims */ }
 
-/** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */
-export function PIXEL_FILL(value: number): number {
-  return value | (value << 4);
-}
+// PIXEL_FILL : dissous → foyer 1:1 `src/window.ts` (window.h:6), lot battle-windows.

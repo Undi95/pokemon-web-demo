@@ -17,7 +17,7 @@ import { ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PlaySE } from './battle_controllers';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';

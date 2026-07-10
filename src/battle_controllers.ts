@@ -22,7 +22,8 @@ import { FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram } from './win
 import { AddTextPrinterParameterized4 } from './menu';
 import { gTextFlags } from './text';
 import { GetPlayerTextSpeedDelay } from './menu';
-import { getBattleTextOnWindowsInfo, B_WIN_COPYTOVRAM, B_WIN_MSG } from './engine/battle/battle-windows';
+import { getBattleTextOnWindowsInfo } from './battle_message';
+import { B_WIN_COPYTOVRAM, B_WIN_MSG } from '../include/constants/battle';
 import { gBitTable } from '../include/util';
 
 // ── depuis battle-controllers-ipc.ts ──────────────────────────────────────────

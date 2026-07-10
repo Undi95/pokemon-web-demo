@@ -19,7 +19,7 @@ import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
 import { JOY_HELD } from './battle_controllers';
 import { MON_PIC_SIZE } from './battle_gfx_sfx_util';
-import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './engine/battle/battle-windows';
+import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './window';
 import { SpeciesToNationalPokedexNum } from './engine/data/game-data';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { GetSetPokedexFlag } from './pokedex';

@@ -13,7 +13,7 @@ import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED, TEXT_COLOR_
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { getString } from '../harness/runtime/decomp-strings';
 import { FillWindowTilesByRow } from './international_string_util';
 import { AddTextPrinterParameterized3 } from './menu';

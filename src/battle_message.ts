@@ -29,8 +29,21 @@
  */
 
 import { encodeStringForFont } from './text';
-import { EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR } from '../include/constants/characters';
-import { GetPlayerNameString } from '../include/text';
+import {
+  EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
+  TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_GREEN,
+  TEXT_DYNAMIC_COLOR_2, TEXT_DYNAMIC_COLOR_3, TEXT_DYNAMIC_COLOR_4, TEXT_DYNAMIC_COLOR_5, TEXT_DYNAMIC_COLOR_6,
+} from '../include/constants/characters';
+import { GetPlayerNameString, FONT_NORMAL, FONT_NARROW } from '../include/text';
+// Header window.h depuis le LEAF include/window : sTextOnWindowsInfo_Normal
+// appelle PIXEL_FILL au top-level (anti-TDZ, même raison que battle_bg).
+import { PIXEL_FILL } from '../include/window';
+import {
+  B_WIN_MSG, B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU,
+  B_WIN_MOVE_NAME_1, B_WIN_MOVE_NAME_2, B_WIN_MOVE_NAME_3, B_WIN_MOVE_NAME_4,
+  B_WIN_PP, B_WIN_DUMMY, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE, B_WIN_SWITCH_PROMPT,
+  B_WIN_YESNO, B_WIN_LEVEL_UP_BOX, B_WIN_LEVEL_UP_BANNER,
+} from '../include/constants/battle';
 import {
   B_TXT_BUFF1, B_TXT_BUFF2, B_TXT_BUFF3, B_TXT_COPY_VAR_1, B_TXT_COPY_VAR_2, B_TXT_COPY_VAR_3,
   B_TXT_PLAYER_MON1_NAME, B_TXT_OPPONENT_MON1_NAME, B_TXT_PLAYER_MON2_NAME, B_TXT_OPPONENT_MON2_NAME,
@@ -2250,4 +2263,58 @@ export function getBattleStringId(tableName: string, index: number): number | nu
   const t = BATTLE_STRING_ID_TABLES[tableName];
   if (!t || index < 0 || index >= t.length) return null;
   return t[index];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Windowing battle — texte-sur-window (foyer battle_message.c, ex battle-windows.ts)
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `struct BattleWindowText` (battle_message.c:33-45).
+ *  Ordre exact des champs : fillValue, fontId, x, y, letterSpacing,
+ *  lineSpacing, speed, fgColor, bgColor, shadowColor. */
+export interface BattleWindowText {
+  fillValue: number;     // PIXEL_FILL(x) = (x | (x << 4))
+  fontId: number;        // enum FONT_* (FONT_NORMAL=1, FONT_NARROW=7)
+  x: number;
+  y: number;
+  letterSpacing: number;
+  lineSpacing: number;
+  speed: number;
+  fgColor: number;
+  bgColor: number;
+  shadowColor: number;
+}
+
+/** 1:1 décomp `static const struct BattleWindowText sTextOnWindowsInfo_Normal[]`
+ *  (battle_message.c:1479-1630), cross-validé contre static-tables/battle_message.json.
+ *  Indexé par B_WIN_* (0..14). Les champs non initialisés dans le .c
+ *  (letterSpacing, lineSpacing) valent 0 (C designated initializers).
+ *  La couleur ROUGE du dialog (B_WIN_MSG) = bgColor=TEXT_DYNAMIC_COLOR_6(15) +
+ *  fillValue=PIXEL_FILL(0xF), résolus via text.pal chargée à BG_PLTT_ID(5)
+ *  (LoadBattleMenuWindowGfx, battle_bg.ts) → idx 15 = rouge, texte blanc. */
+const sTextOnWindowsInfo_Normal: Record<number, BattleWindowText> = {
+  [B_WIN_MSG]:             { fillValue: PIXEL_FILL(0xF), fontId: FONT_NORMAL, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 1, fgColor: TEXT_COLOR_WHITE,     bgColor: TEXT_DYNAMIC_COLOR_6, shadowColor: TEXT_COLOR_GREEN },
+  [B_WIN_ACTION_PROMPT]:   { fillValue: PIXEL_FILL(0xF), fontId: FONT_NORMAL, x: 1,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_COLOR_WHITE,     bgColor: TEXT_DYNAMIC_COLOR_6, shadowColor: TEXT_COLOR_GREEN },
+  [B_WIN_ACTION_MENU]:     { fillValue: PIXEL_FILL(0xE), fontId: FONT_NORMAL, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_MOVE_NAME_1]:     { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_MOVE_NAME_2]:     { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_MOVE_NAME_3]:     { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_MOVE_NAME_4]:     { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_PP]:              { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_3, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_2 },
+  [B_WIN_DUMMY]:           { fillValue: PIXEL_FILL(0xE), fontId: FONT_NORMAL, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_PP_REMAINING]:    { fillValue: PIXEL_FILL(0xE), fontId: FONT_NORMAL, x: 2,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_3, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_2 },
+  [B_WIN_MOVE_TYPE]:       { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_SWITCH_PROMPT]:   { fillValue: PIXEL_FILL(0xE), fontId: FONT_NARROW, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_YESNO]:           { fillValue: PIXEL_FILL(0xE), fontId: FONT_NORMAL, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_LEVEL_UP_BOX]:    { fillValue: PIXEL_FILL(0xE), fontId: FONT_NORMAL, x: 0,  y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_DYNAMIC_COLOR_4, bgColor: TEXT_DYNAMIC_COLOR_5, shadowColor: TEXT_DYNAMIC_COLOR_6 },
+  [B_WIN_LEVEL_UP_BANNER]: { fillValue: PIXEL_FILL(0),   fontId: FONT_NORMAL, x: 32, y: 1, letterSpacing: 0, lineSpacing: 0, speed: 0, fgColor: TEXT_COLOR_WHITE,     bgColor: TEXT_COLOR_TRANSPARENT, shadowColor: TEXT_COLOR_DARK_GRAY },
+};
+
+/** 1:1 décomp `sBattleTextOnWindowsInfo[gBattleScripting.windowsType]`
+ *  (battle_message.c:1957-1961 : [NORMAL] = sTextOnWindowsInfo_Normal,
+ *  [ARENA] = sTextOnWindowsInfo_Arena). Arena non porté → NORMAL only.
+ *  Consommé par BattlePutTextOnWindow (battle_message.c:3009, porté dans
+ *  battle_controllers.ts — dette : à re-héberger ici au chantier cœur battle). */
+export function getBattleTextOnWindowsInfo(winId: number): BattleWindowText {
+  return sTextOnWindowsInfo_Normal[winId];
 }

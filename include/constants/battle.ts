@@ -426,8 +426,10 @@ export const ARENA_WIN_SKILL = 19;
 export const ARENA_WIN_BODY = 20;
 export const ARENA_WIN_JUDGMENT_TITLE = 21;
 export const ARENA_WIN_JUDGMENT_TEXT = 22;
-/** Raw expr: `(1 << 7)` */
-export const B_WIN_COPYTOVRAM_EXPR = "(1 << 7)";
+/** 1:1 battle.h:381 `#define B_WIN_COPYTOVRAM (1 << 7)` — flag OR'd dans windowId
+ *  pour skip le FillWindowPixelBuffer initial (ex-artefact `_EXPR` string résolu,
+ *  lot battle-windows). */
+export const B_WIN_COPYTOVRAM = 1 << 7;
 export const HP_EMPTY_SLOT = 65535;
 
 // ─── Enums ───────────────────────────────────────────────────────────────────

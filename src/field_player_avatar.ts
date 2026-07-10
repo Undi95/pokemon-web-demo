@@ -151,9 +151,9 @@ import { AddTextPrinterParameterized, RunTextPrinters, IsTextPrinterActive } fro
 import { AddTextPrinterParameterized2 } from './menu';
 import { getString } from '../harness/runtime/decomp-strings';
 import { Random as _RandomFishing } from './random';
-import {
-  FONT_NORMAL, PIXEL_FILL, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY,
-} from './engine/battle/battle-windows';
+import { FONT_NORMAL } from '../include/text';
+import { PIXEL_FILL } from './window';
+import { TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY } from '../include/constants/characters';
 import { IsRunningDisallowed } from './bike';
 import {
   MetatileBehavior_IsBumpySlope,

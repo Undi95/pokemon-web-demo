@@ -6,7 +6,8 @@
  * 4 constantes dupliquées (ITEMMENULOCATION_BATTLE/FIELD, RGB_BLACK, WINDOW_NONE,
  * value-identiques) dédupliquées (gardées depuis bag-menu). Source : src/item_menu.c.
  */
-import { getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL, assetCache, PlaySE } from '../harness/runtime/decomp-globals';
+import { getRuntime, ResetPaletteFade, ResetTasks, FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, assetCache, PlaySE } from '../harness/runtime/decomp-globals';
+import { PIXEL_FILL } from './window';
 import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
 import { ListMenuLoadStdPalAt, DrawDialogFrameWithCustomTileAndPalette } from './menu';
 import { getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList, CompactItemsInBagPocket, SortBerriesOrTMHMs, BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition } from './item';

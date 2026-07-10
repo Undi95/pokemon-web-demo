@@ -79,7 +79,7 @@ import {
 import {
   B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU, B_WIN_MSG,
   B_WIN_MOVE_NAME_1, B_WIN_PP, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE,
-} from './engine/battle/battle-windows';
+} from '../include/constants/battle';
 import { SELECT_BUTTON } from './battle_controllers';
 import {
   GetBattlerPosition, GetBattlerAtPosition,

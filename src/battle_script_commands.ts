@@ -10534,7 +10534,8 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
 } from './sprite';
 import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from '../harness/runtime/decomp-globals';
-import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC, B_WIN_LEVEL_UP_BOX as _B_WIN_LEVEL_UP_BOX_BSC } from './engine/battle/battle-windows';
+import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from './battle_bg';
+import { B_WIN_LEVEL_UP_BOX as _B_WIN_LEVEL_UP_BOX_BSC } from '../include/constants/battle';
 import {
   GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC,
   DrawLevelUpWindowPg1 as _DrawLevelUpWindowPg1BSC, DrawLevelUpWindowPg2 as _DrawLevelUpWindowPg2BSC,

@@ -20,7 +20,7 @@ import { TASK_NONE } from '../include/task';
 import { FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { JOY_HELD, PlaySE } from './battle_controllers';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { getString } from '../harness/runtime/decomp-strings';
 import { GetGameStat } from './field_player_avatar';
 import { GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './international_string_util';

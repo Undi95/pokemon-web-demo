@@ -17,7 +17,7 @@ import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PlaySE } from './battle_controllers';
-import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './engine/battle/battle-windows';
+import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './window';
 import { getString } from '../harness/runtime/decomp-strings';
 import { SetGpuReg } from './gpu_regs';
 import { AddTextPrinterParameterized3 } from './menu';

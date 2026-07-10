@@ -16,7 +16,7 @@ import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { JOY_NEW, PlaySE } from './battle_controllers';
-import { PIXEL_FILL } from './engine/battle/battle-windows';
+import { PIXEL_FILL } from './window';
 import { MAPSECTYPE_BATTLE_FRONTIER, MAPSECTYPE_CITY_CANFLY, MAPSECTYPE_CITY_CANTFLY, MAPSECTYPE_NONE, MAPSECTYPE_ROUTE } from './engine/field/region-map-data';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gMapHeader } from './fieldmap';

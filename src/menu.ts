@@ -30,7 +30,7 @@ import {
   CallWindowFunction, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, ClearWindowTilemap,
   CopyWindowToVram, FillBgTilemapBufferRect, GetWindowAttribute, WINDOW_PALETTE_NUM,
   AddWindow, RemoveWindow, InitWindows, FreeAllWindowBuffers, ChangeBgX, ChangeBgY,
-  COPYWIN_FULL, COPYWIN_GFX, type WindowTemplate,
+  COPYWIN_FULL, COPYWIN_GFX, PIXEL_FILL, type WindowTemplate,
 } from './window';
 import { LoadPalette, getAsset, JOY_NEW, JOY_REPEAT, PlaySE } from '../harness/runtime/decomp-globals';
 import { PLTT_SIZE_4BPP } from '../harness/runtime/decomp-bridge';
@@ -186,8 +186,7 @@ const STD_WINDOW_PALETTE_NUM = 14;
 const STD_WINDOW_PALETTE_SIZE = 10 * 2;
 const STD_WINDOW_BASE_TILE_NUM = 0x214;
 
-/** 1:1 `blit.h PIXEL_FILL(n)` = `((n) | ((n) << 4))` (les 2 nibbles d'un byte). */
-const PIXEL_FILL = (n: number): number => (n | (n << 4)) & 0xFF;
+// PIXEL_FILL : importé de './window' (foyer window.h:6) — ex-doublon local dissous.
 /** 1:1 `bg.h BG_TILE_V_FLIP(n)` = `((n) | (1 << 11))` (bit vflip de l'entry tilemap). */
 const BG_TILE_V_FLIP = (n: number): number => n | (1 << 11);
 /** 1:1 `bg.h` — mode "set" (vs ADD/SUB) pour ChangeBgX/ChangeBgY. */

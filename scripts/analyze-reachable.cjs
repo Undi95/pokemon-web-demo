@@ -76,7 +76,7 @@ for (const c of crit) {
   console.log(`  ${c.padEnd(30)} ${hit ? (visited.has(hit) ? 'VIVANT ✓' : '*** MORT (BUG resolver !) ***') : 'introuvable'}`);
 }
 console.log('--- atteignabilité chaîne combat (debug battle_bg-data) ---');
-for (const cf of ['engine/battle/battle-script-commands.ts','engine/battle/battle-windows.ts',
+for (const cf of ['engine/battle/battle-script-commands.ts',
   'engine/battle/battle-bg.ts','engine/battle/battle-levelup-box.ts','engine/battle/battle-decomp-loop.ts',
   'engine/battle/battle-setup-helpers.ts','engine/battle/battle-controllers.ts','game/battle_main.ts',
   'game/battle_controller_player.ts']) {
