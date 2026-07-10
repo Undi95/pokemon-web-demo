@@ -22,6 +22,12 @@ const MY_ID = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toSt
 let _lastClaimAt = 0;
 let _muted = false;
 
+// ?mute=1 : instance muette au boot, et SEULE une interaction humaine réelle
+// (pointerdown/keydown) la rend sonore — pas les focus programmatiques. Posé
+// par Claude sur le pane Browser de l'app : sa policy autoplay permissive le
+// faisait sonner chez le user à chaque reload de vérification.
+const START_MUTED = new URLSearchParams(window.location.search).has('mute');
+
 function setMuted(muted: boolean, why: string): void {
   if (muted === _muted) return;
   _muted = muted;
@@ -37,16 +43,20 @@ function claimFocus(): void {
 
 /** À appeler une fois au boot du harness (main.ts). */
 export function installAudioArbiter(): void {
+  if (START_MUTED) setMuted(true, 'boot ?mute=1');
   if (!import.meta.hot) return;
   import.meta.hot.on('m4a:audio-focus', (data: unknown) => {
     const { id, at } = data as { id?: string; at?: number };
     if (!id || id === MY_ID) return;
     if ((at ?? 0) >= _lastClaimAt) setMuted(true, 'autre instance du jeu active');
   });
-  window.addEventListener('focus', claimFocus);
   window.addEventListener('pointerdown', claimFocus);
-  document.addEventListener('visibilitychange', () => {
+  window.addEventListener('keydown', claimFocus);
+  if (!START_MUTED) {
+    window.addEventListener('focus', claimFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && document.hasFocus()) claimFocus();
+    });
     if (document.visibilityState === 'visible' && document.hasFocus()) claimFocus();
-  });
-  if (document.visibilityState === 'visible' && document.hasFocus()) claimFocus();
+  }
 }
