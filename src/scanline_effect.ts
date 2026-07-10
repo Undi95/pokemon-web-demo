@@ -235,7 +235,11 @@ function _battleBgOffset(regOffset: number): number {
 // 1:1 scanline_effect.c:126-195
 function TaskFunc_UpdateWavePerFrame(taskId: number): void {
   const r = rt();
-  const task = r?.gTasks?.get?.(taskId);  // HW-emu : rt.gTasks = Map
+  // rt.gTasks est un ARRAY indexé (1:1 gTasks[taskId], comme InitWave:306 et tout
+  // le repo). L'ancien `.get?.(taskId)` supposait une Map → undefined silencieux →
+  // la wave task ne mettait JAMAIS à jour les buffers = vagues scanline FIGÉES
+  // (fond lave/bulles de l'intro légendaires immobile, bug user 2026-07-10).
+  const task = r?.gTasks?.[taskId];
   if (!task) return;
   const data: number[] = task.data;
   let value = 0;
