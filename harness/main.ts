@@ -28,7 +28,10 @@ if (!import.meta.env.PROD) {
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
-import { mountDevtoolsPanel } from './devtools/devtools-panel';
+// Devtools v2 (2026-07-10) : sidebar F2 générée du registre de commandes unique
+// (parité console/UI, cf. harness/devtools/registry.ts). Remplace devtools-panel
+// v1 ET util/audio-devtool (absorbé en catégorie Audio) — fichiers archivés.
+import { mountDevtoolsV2 } from './devtools/panel-v2';
 // Chantier « c » Step 0 (2026-06-22) : BirchRuntimeScene = host MORT (jamais
 // `scene.start`'d ; le flow Birch tourne dans GameScene via la chaîne CB2 main menu,
 // cf. docs/RUNTIME-MERGE-PLAN.md). Dé-enregistré du scene array. Fichier conservé
@@ -36,21 +39,10 @@ import { mountDevtoolsPanel } from './devtools/devtools-panel';
 // import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 // import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
 import { TestOverworldScene } from './scenes/TestOverworldScene';
-import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
 import './devtools/dev-cheat';
 import { setMasterVolume } from './m4a/audio-context';
-
-// Audio devtool panel (top-right corner). Dev only. Disable via
-// localStorage.setItem('audioDevtool', 'off').
-if (typeof window !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => createAudioDevtool());
-  } else {
-    createAudioDevtool();
-  }
-}
 
 // 1:1 décomp main.c `LoadGameSave` au boot AVANT que MainMenu se launch.
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
@@ -290,10 +282,12 @@ const game = new Phaser.Game(config);
 // Lance l'overlay debug en parallèle sur toutes les scènes
 void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);
 
-// Panneau DEVTOOLS A/B (DOM overlay, toggle F2 ou bouton flottant 🛠). Observe l'état
-// live via globalThis.__rt — n'altère le runtime que via les leviers devtools prévus
-// (rt.paused/stepBudget/speedMultiplier) + le harness combat. Idempotent.
-mountDevtoolsPanel();
+// DEVTOOLS V2 (sidebar droite, toggle F2 ou bouton flottant 🛠) : générée du
+// registre de commandes unique — parité console (dev.cmd/dev.cmds) / UI. Pousse
+// le layout (padding-right body) au lieu de recouvrir le canvas. Observe l'état
+// live via globalThis.__rt — n'altère le runtime que via les leviers devtools
+// prévus (rt.paused/stepBudget/speedMultiplier) + le harness combat. Idempotent.
+mountDevtoolsV2();
 
 // Pas de pause sur visibilitychange : retiré sur demande. L'onglet en arrière-plan
 // laisse tourner game + musique. Si le MIDI loop boucle pendant que tab masqué,

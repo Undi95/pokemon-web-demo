@@ -1,4 +1,9 @@
 /**
+ * ⚠️ ARCHIVE (2026-07-10) — panneau audio REMPLACÉ par la catégorie Audio de la
+ * sidebar devtools v2 (harness/devtools/registrations.ts : pickers BGM/SE,
+ * volume master sync topbar, monitor). Plus importé par main.ts ; conservé en
+ * référence. Il chevauchait le bas du jeu — grief explicite du mandat user.
+ *
  * Floating audio devtool panel.
  *
  * Layout (sous le canvas Phaser dans le flow body) :

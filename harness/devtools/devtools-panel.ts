@@ -1,4 +1,10 @@
 /**
+ * ⚠️ ARCHIVE (2026-07-10) — panel v1 REMPLACÉ par devtools v2 (registry.ts +
+ * panel-v2.ts + registrations.ts, mandat user « parité console/UI, ne cache pas
+ * le jeu »). Plus importé par main.ts ; conservé en référence comme les scènes
+ * legacy. Toutes ses sections (téléport, cheats, scénarios, easy chat, palettes,
+ * OAM, BG/blend, battle, audio, studio) ont été migrées au registre.
+ *
  * DEVTOOLS A/B — panneau visuel overlay (DOM) pour le port web d'Émeraude.
  *
  * BUT : rendre TRIVIAL le A/B « ce que notre code rend » vs « ce que la ROM rend »,
