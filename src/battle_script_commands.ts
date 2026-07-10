@@ -10534,12 +10534,13 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
 } from './sprite';
 import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC, getRuntime as _getRuntimeBSC } from '../harness/runtime/decomp-globals';
-import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from './engine/battle/battle-windows';
-import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from './menu_specialized';
+import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC, B_WIN_LEVEL_UP_BOX as _B_WIN_LEVEL_UP_BOX_BSC } from './engine/battle/battle-windows';
 import {
-  lvlUpBoxOpenPage1 as _lvlUpBoxOpenPage1BSC, lvlUpBoxDrawPage2 as _lvlUpBoxDrawPage2BSC,
-  lvlUpBoxClose as _lvlUpBoxCloseBSC,
-} from './engine/battle/battle-levelup-box';
+  GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC,
+  DrawLevelUpWindowPg1 as _DrawLevelUpWindowPg1BSC, DrawLevelUpWindowPg2 as _DrawLevelUpWindowPg2BSC,
+} from './menu_specialized';
+import { FillWindowPixelBuffer as _FillWindowPixelBufferBSC } from './window';
+import { REG_OFFSET_BG1HOFS as _REG_BG1HOFS_BSC, REG_OFFSET_BG1VOFS as _REG_BG1VOFS_BSC } from '../harness/runtime/decomp-runtime';
 import { MON_ICON_PALETTE_INDICES as _MON_ICON_PALETTE_INDICES_BSC } from './pokemon_icon';
 import { reverseDecompConstant as _reverseDecompConstantBSC } from '../harness/runtime/decomp-constants';
 
@@ -10553,6 +10554,117 @@ const LEVEL_UP_BANNER_START = 416;
 const LEVEL_UP_BANNER_END = 512;
 /** 1:1 décomp `TAG_LVLUP_BANNER_MON_ICON` (battle_script_commands.c:62). */
 const TAG_LVLUP_BANNER_MON_ICON = 55130;
+
+// ─── Box de stats level-up (1:1 Cmd_drawlvlupbox cases 3-8, bsc.c:5927-6042) ──
+// Rapatriée de engine/battle/battle-levelup-box.ts (unification lot 20) : l'API
+// inline lvlUpBox* = les cases box de la state machine (le cadre via
+// HandleBattleWindow — défini plus bas dans CE fichier — + DrawLevelUpWindowPg1/2
+// PARTAGÉES, foyer menu_specialized.c:1523-1626).
+
+/** 1:1 décomp couleurs COMBAT (characters.h:247-249) passées à
+ *  DrawLevelUpWindowPg1/2 par Cmd_drawlvlupbox : bgClr = TEXT_DYNAMIC_COLOR_5
+ *  (0xE), fgClr = TEXT_DYNAMIC_COLOR_4 (0xD), shadowClr = TEXT_DYNAMIC_COLOR_6
+ *  (0xF). (Le menu d'équipe, lui, passe WHITE/DARK_GRAY/LIGHT_GRAY.) */
+const LVLUP_BG_CLR = 0xe;
+const LVLUP_FG_CLR = 0xd;
+const LVLUP_SHADOW_CLR = 0xf;
+
+let _lvlUpBoxWinId = -1;
+// État BG0/BG1 avant l'ouverture (BG1 est désactivé hors level-up dans notre scène
+// combat) — restauré à la fermeture.
+let _prevBg0Priority = 0;
+let _prevBg1Visible = false;
+let _prevBg1Priority = 1;
+let _prevBg1CharBase = 0;
+
+/** 1:1 décomp Cmd_drawlvlupbox case 3+5 : BG0 priorité 1 + BG1 priorité 0 (la box
+ *  passe AU-DESSUS du message) + active BG1 (ShowBg) + scroll 0 pour révéler la box.
+ *  Sans la priorité BG0=1, le message (BG0) couvre les 3 lignes du bas de la box.
+ *  BG1 est `visible=false` hors level-up → sans ShowBg, la box (rendue dans le
+ *  VRAM/tilemap de BG1) ne s'affiche pas du tout.
+ *  charBase : 1:1 sBattleBgTemplates BG1.charBaseIndex = 0 (le cadre 0x12/0x22 +
+ *  le contenu de la box vivent au charblock 0 partagé). Notre scène combat laisse
+ *  BG1 à charBase 1 (zone des anims monbg — la décomp y bascule PENDANT l'anim
+ *  puis restaure) → sans le poser à 0 ici, le cadre rend les tiles d'anim
+ *  (hachures, bug user 2026-06-12). Restauré à la fermeture. */
+function _showLevelUpBg(): void {
+  const rt = _getRuntimeBSC();
+  if (!rt) return;
+  const bg0 = rt.gba.bg(0);
+  const bg1 = rt.gba.bg(1);
+  _prevBg0Priority = bg0.config.priority;
+  _prevBg1Visible = bg1.config.visible;
+  _prevBg1Priority = bg1.config.priority;
+  _prevBg1CharBase = bg1.config.charBaseIndex;
+  bg0.config.priority = 1; // 1:1 décomp : message sous la box.
+  bg1.config.visible = true;
+  bg1.config.priority = 0; // 1:1 décomp : BG1 (box) priorité 0 = au-dessus.
+  bg1.config.charBaseIndex = 0; // 1:1 sBattleBgTemplates (cadre + box au charblock 0).
+  rt.SetGpuReg(_REG_BG1HOFS_BSC, 0); // gBattle_BG1_X = 0
+  rt.SetGpuReg(_REG_BG1VOFS_BSC, 0); // gBattle_BG1_Y = 0 (box révélée)
+}
+
+/** Restaure l'état BG0/BG1 d'avant la box (1:1 décomp case 10). */
+function _hideLevelUpBg(): void {
+  const rt = _getRuntimeBSC();
+  if (!rt) return;
+  rt.gba.bg(0).config.priority = _prevBg0Priority;
+  const bg1 = rt.gba.bg(1);
+  bg1.config.visible = _prevBg1Visible;
+  bg1.config.priority = _prevBg1Priority;
+  bg1.config.charBaseIndex = (_prevBg1CharBase & 3) as 0 | 1 | 2 | 3;
+}
+
+/** Coords du CADRE de la box (1:1 décomp Cmd_drawlvlupbox : HandleBattleWindow(18,7,29,19)).
+ *  Le cadre entoure la fenêtre B_WIN_LEVEL_UP_BOX (tuiles 19,8 → 28,18). */
+const LVLUP_FRAME_X1 = 18, LVLUP_FRAME_Y1 = 7, LVLUP_FRAME_X2 = 29, LVLUP_FRAME_Y2 = 19;
+
+/** Ouvre la box + dessine la page 1 (deltas). `before`/`after` = stats
+ *  STAT_-indexées. 1:1 décomp case 3+4 (HandleBattleWindow cadre +
+ *  DrawLevelUpWindow1 + CopyWindowToVram) + ShowBg(1). */
+function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
+  if (_lvlUpBoxWinId >= 0) lvlUpBoxClose();
+  // 1:1 décomp case 3 : l'état BG (priorités + ShowBg + charBase 0) est posé AVANT
+  // le dessin du case 4. CRITIQUE chez nous : CopyWindowToVram écrit via la VUE
+  // bg(1).vram au charBase COURANT → basculer à 0 d'abord, sinon le contenu part
+  // au charblock des anims (1) et la box lit du vide.
+  _showLevelUpBg();
+  const tpl = _sStandardBattleWindowTemplatesBSC[_B_WIN_LEVEL_UP_BOX_BSC];
+  _lvlUpBoxWinId = _AddWindowBSC(tpl);
+  // 1:1 décomp case 3 : dessine le cadre AVANT le texte (PutWindowTilemap écrase
+  // ensuite l'intérieur avec les tuiles de texte de la fenêtre).
+  // 1:1 décomp Cmd_drawlvlupbox : HandleBattleWindow(18, 7, 29, 19, WINDOW_BG1).
+  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, WINDOW_BG1);
+  _PutWindowTilemapBSC(_lvlUpBoxWinId);
+  _DrawLevelUpWindowPg1BSC(_lvlUpBoxWinId, before, after, LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR);
+  _CopyWindowToVramBSC(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
+}
+
+/** Re-dessine la page 2 (totaux). 1:1 décomp case 6 (DrawLevelUpWindow2 + CopyWindowToVram). */
+function lvlUpBoxDrawPage2(after: number[]): void {
+  if (_lvlUpBoxWinId < 0) return;
+  _DrawLevelUpWindowPg2BSC(_lvlUpBoxWinId, after, LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR);
+  _CopyWindowToVramBSC(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
+}
+
+/** Ferme la box (clear + remove). 1:1 décomp case 8/9 (HandleBattleWindow CLEAR
+ *  + ClearWindowTilemap + CopyWindowToVram). */
+function lvlUpBoxClose(): void {
+  if (_lvlUpBoxWinId < 0) return;
+  _FillWindowPixelBufferBSC(_lvlUpBoxWinId, 0);
+  _ClearWindowTilemapBSC(_lvlUpBoxWinId);
+  _CopyWindowToVramBSC(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
+  // 1:1 décomp case 8 : HandleBattleWindow(18, 7, 29, 19, WINDOW_BG1 | WINDOW_CLEAR).
+  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, WINDOW_BG1 | WINDOW_CLEAR);
+  _RemoveWindowBSC(_lvlUpBoxWinId);
+  _lvlUpBoxWinId = -1;
+  _hideLevelUpBg();
+}
+
+// Devtools (repris du fichier dissous — sondes de la box hors combat réel).
+(globalThis as Record<string, unknown>).__battleLevelupBox = {
+  lvlUpBoxOpenPage1, lvlUpBoxDrawPage2, lvlUpBoxClose,
+};
 
 // État module bannière : window + assets (fetch one-shot, cache module).
 let _lvlUpBannerWinId = -1;
@@ -10747,7 +10859,7 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
       // 1:1 décomp case 3+4 via l'API box existante (cadre + page 1 + priorités BG).
       const monStats: number[] = [0, 0, 0, 0, 0, 0];
       _GetMonLevelUpWindowStatsBSC(gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as never, monStats);
-      _lvlUpBoxOpenPage1BSC(_beforeLvlUpStats.slice(), monStats);
+      lvlUpBoxOpenPage1(_beforeLvlUpStats.slice(), monStats);
       bs.drawlvlupboxState = 5;  // (case 4 = dessin page 1, fait par OpenPage1)
       break;
     }
@@ -10762,7 +10874,7 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
         _PlaySE_BSC(5 /* SE_SELECT */);
         const monStats: number[] = [0, 0, 0, 0, 0, 0];
         _GetMonLevelUpWindowStatsBSC(gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as never, monStats);
-        _lvlUpBoxDrawPage2BSC(monStats);
+        lvlUpBoxDrawPage2(monStats);
         bs.drawlvlupboxState++;
       }
       break;
@@ -10770,7 +10882,7 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
       // 1:1 décomp : attendre un appui → SE + fermer la box.
       if (rt && rt.gMain.newKeys !== 0) {
         _PlaySE_BSC(5 /* SE_SELECT */);
-        _lvlUpBoxCloseBSC();
+        lvlUpBoxClose();
         bs.drawlvlupboxState++;
       }
       break;
