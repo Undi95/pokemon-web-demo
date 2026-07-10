@@ -123,7 +123,7 @@ import {
 import { gBitTable } from './battle_controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { FlagGet } from './engine/script/script-vars';
-import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
 import { gStatStageRatios } from '../include/pokemon';
 import { CheckMoveLimitations } from './battle_util';
 import {

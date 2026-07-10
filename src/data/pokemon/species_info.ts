@@ -1,18 +1,17 @@
 /**
- * battle/data/species-runtime.ts — Helpers pour résoudre runtime species
- * number → expYield / growthRate (= 1:1 décomp `gSpeciesInfo[speciesId]`).
+ * src/data/pokemon/species_info.ts — accesseurs 1:1 de `gSpeciesInfo[speciesId]`
+ * (miroir-adaptateur de `src/data/pokemon/species_info.h`, inclus par pokemon.c).
  *
- * Pont entre :
- *  - Notre engine utilise species comme number (= 0..NUM_SPECIES).
- *  - Notre data layer game-data.ts utilise species comme string ('SPECIES_X').
- *
- * On build un mapping reverse number → enum string au boot via les constants
- * auto-extracted, puis on look up gSpeciesInfo via game-data.
+ * ADAPTATION ASSUMÉE du data layer : gSpeciesInfo vit dans game-data.ts keyed par
+ * string ('SPECIES_X') alors que l'engine manipule des numbers (0..NUM_SPECIES) —
+ * ce module fait le pont (speciesNumberToEnum, mapping reverse bâti lazy depuis
+ * include/constants/species) puis résout les champs du struct
+ * (growthRate/expYield/types/evYield/genderRatio) en numérique décomp.
  */
 
-import { getSpeciesInfo } from '../../data/game-data';
-import * as SpeciesConsts from '../../../../include/constants/species';
-import { GROWTH_MEDIUM_FAST } from '../../../data/pokemon/experience_tables';
+import { getSpeciesInfo } from '../../engine/data/game-data';
+import * as SpeciesConsts from '../../../include/constants/species';
+import { GROWTH_MEDIUM_FAST } from './experience_tables';
 
 /** 1:1 décomp constants/pokemon_types.h — TYPE_* enum. */
 const _typeNameToNumber: Record<string, number> = {
@@ -117,7 +116,6 @@ export function getSpeciesGenderRatio(species: number): number {
   return 0x00;  // fallback safe
 }
 
-// 1:1 décomp `GetGenderFromSpeciesAndPersonality` → consolidé sur le miroir
-// `src/game/pokemon.ts` (source unique ; il importe `getSpeciesGenderRatio` ci-dessus
-// = `gSpeciesInfo[species].genderRatio`). Re-export pour les callers de ce module.
-export { GetGenderFromSpeciesAndPersonality } from '../../../../include/pokemon';
+// GetGenderFromSpeciesAndPersonality : vit au foyer pokemon.ts (surface header
+// include/pokemon) — l'ex re-export d'ici est DISSOUS (lot 30), les consommateurs
+// importent '../include/pokemon' directement.

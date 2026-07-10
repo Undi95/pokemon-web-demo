@@ -114,7 +114,7 @@ import {
   B_WEATHER_SUN, B_WEATHER_SUN_PERMANENT,
   BIT_SIDE, BIT_FLANK,
 } from './engine/battle/constants';
-import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_ABE,

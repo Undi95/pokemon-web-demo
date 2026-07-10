@@ -892,7 +892,8 @@ import {
 } from './engine/battle/party-storage';
 import { gBattlerPartyIndexes } from './engine/battle/state';
 import { getExpForLevel } from './data/pokemon/experience_tables';
-import { getSpeciesGrowthRate, GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { getSpeciesGrowthRate } from './data/pokemon/species_info';
+import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
 import { GetBattlerPosition } from './engine/battle/util';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_WALLY_TUTORIAL } from './engine/battle/constants';
 import { GetSetPokedexFlag } from './pokedex';

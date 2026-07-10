@@ -23,7 +23,7 @@ import {
   gActionSelectionCursor, gMoveSelectionCursor,
   gBattleResourcesFlags,
 } from './state';
-import { getSpeciesTypes } from './data/species-runtime';
+import { getSpeciesTypes } from '../../data/pokemon/species_info';
 import { STATUS2_DESTINY_BOND, STATUS3_GRUDGE } from './constants';
 import {
   STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_BIDE, STATUS2_LOCK_CONFUSE,

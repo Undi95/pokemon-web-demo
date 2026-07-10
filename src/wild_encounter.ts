@@ -53,7 +53,7 @@ import { bootDecompBattleLoop } from './engine/battle/battle-decomp-loop';
 // CreateMon NUMÉRIQUE 1:1 importé VIA party-storage (re-export du foyer) — PAS en edge direct
 // vers le foyer (évite le réordonnancement d'init ESM qui casse decomp-globals `_rt`).
 import { setupEnemyPartyForBattle, GetMonData, GetMonAbility, gPlayerParty, gEnemyParty, SetMonMoveSlot, createEmptyPokemon, CreateMon, MON_DATA_SANITY_IS_EGG, MON_DATA_HP, MON_DATA_LEVEL, MON_DATA_IS_EGG, MON_DATA_HELD_ITEM, MON_DATA_PERSONALITY, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from './engine/battle/state';
 import { BATTLE_TYPE_TRAINER, ABILITY_HUSTLE, ABILITY_VITAL_SPIRIT, ABILITY_PRESSURE, ABILITY_MAGNET_PULL, ABILITY_STATIC, ABILITY_KEEN_EYE, ABILITY_INTIMIDATE, ABILITY_STENCH, ABILITY_ILLUMINATE, ABILITY_WHITE_SMOKE, ABILITY_ARENA_TRAP, ABILITY_SAND_VEIL, ABILITY_SYNCHRONIZE, ABILITY_CUTE_CHARM, MON_MALE, MON_FEMALE, TYPE_STEEL, TYPE_ELECTRIC, MAX_MON_MOVES } from './engine/battle/constants';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';

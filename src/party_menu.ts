@@ -77,7 +77,7 @@ import { BeginEvolutionScene, SetCB2AfterEvolution } from './evolution_scene';
 import { gMoveToLearn } from './engine/battle/state';
 import { PlayFanfare } from '../harness/runtime/decomp-globals';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag, FreeAllSpritePalettes, ResetSpriteData } from './sprite';
-import { GetGenderFromSpeciesAndPersonality } from './engine/battle/data/species-runtime';
+import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
 import { MON_MALE, MON_FEMALE } from '../include/constants/pokemon';
 import { PARTY_SIZE } from '../include/constants/global';
 import {

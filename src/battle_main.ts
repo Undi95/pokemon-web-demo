@@ -1535,7 +1535,7 @@ interface FaintSprite {
  *  data absente. Cascade : pokemon_front_pic_coords data dans
  *  decomp-data/auto-data/. */
 function _getMonFrontPicYOffset(species: number): number {
-  // Wire vers species-runtime si disponible (= getMonFrontPicCoords data).
+  // Wire vers data/pokemon/mon_pic_coords si disponible (= getMonFrontPicCoords data).
   // Pour now : default 8 (= middle des 8 steps).
   void species;
   return 8;
@@ -1719,7 +1719,7 @@ import {
 } from './engine/battle/constants';
 import { ClearBattlerMoveHistory, ClearBattlerAbilityHistory } from './battle_ai_script_commands';
 import { CancelMultiTurnMoves, AreAllMovesUnusable } from './battle_util';
-import { getSpeciesTypes } from './engine/battle/data/species-runtime';
+import { getSpeciesTypes } from './data/pokemon/species_info';
 
 /** 1:1 décomp `void FaintClearSetData(void)` (battle_main.c:3270-3355) : reset
  *  complet du battler actif au KO — stat stages, status2/3, effets croisés

@@ -7,8 +7,8 @@
  * (PokemonInstance→BoxMon, qui se fera AVEC l'A/B user). Les fns qui touchent
  * `struct Pokemon`/`gPlayerParty` (GetMonData/SetMonData/CalculateMonStats/GetNature/
  * GetGenderFromSpeciesAndPersonality…) restent dans `engine/battle/party-storage` /
- * `engine/battle/data/species-runtime` en attendant (elles délèguent ici pour la
- * logique pure ; cf. ledger).
+ * `data/pokemon/species_info` (ex species-runtime, lot 30) en attendant (elles
+ * délèguent ici pour la logique pure ; cf. ledger).
  *
  * Constantes data (NUM_NATURES, STAT_*) = réutilisées depuis `decomp-data` (extraction
  * vérifiée) tant que `data.c` / `constants/pokemon.h` ne sont pas portés en miroir.
@@ -40,7 +40,7 @@ import {
 } from '../include/constants/moves';
 // `gSpeciesInfo[species].genderRatio` via le pont data number→info (en attendant le
 // port de `data.c`/species_info.h ; dans le décomp gSpeciesInfo est inclus DANS pokemon.c).
-import { getSpeciesGenderRatio, speciesNumberToEnum } from './engine/battle/data/species-runtime';
+import { getSpeciesGenderRatio, speciesNumberToEnum } from './data/pokemon/species_info';
 // Macro `GET_SHINY_VALUE` du header miroir (cycle impl↔header fonction-seulement = bénin).
 import { GET_SHINY_VALUE } from '../include/pokemon';
 // ─── CalculateBaseDamage (pokemon.c:3107-3373) — imports absorbés depuis

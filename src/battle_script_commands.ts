@@ -610,15 +610,15 @@ import {
   GetItemHoldEffectParam as _GetItemHoldEffectParamN22,
   GetItemHoldEffectParam as _ghep21,
 } from './item';
+import { GetGenderFromSpeciesAndPersonality as _GetGenderFull } from '../include/pokemon';
 import {
-  GetGenderFromSpeciesAndPersonality as _GetGenderFull,
   getSpeciesEvYield,
   getSpeciesExpYield,
   getSpeciesGrowthRate,
   speciesNumberToEnum as _speciesNumberToEnumHBT,
   speciesNumberToEnum as _speciesNumberToEnumPK,
   speciesNumberToEnum as speciesNumberToEnumBU,
-} from './engine/battle/data/species-runtime';
+} from './data/pokemon/species_info';
 // gTrainerMoneyTable (bm.c:474) + gTypeEffectiveness (bm.c:335) : foyer
 // battle_main.ts (lots 24-25) — lues uniquement à l'exécution → cycle bénin.
 import { gTrainerMoneyTable, gTypeEffectiveness } from './battle_main';
@@ -8046,8 +8046,8 @@ function Cmd_givepaydaymoney(ctx: BattleScriptContext): boolean {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-// 1:1 décomp `GetGenderFromSpeciesAndPersonality` — full port via species-runtime
-// (= utilise gSpeciesInfo[species].genderRatio + personality lo byte 1:1).
+// 1:1 décomp `GetGenderFromSpeciesAndPersonality` — foyer pokemon.ts (surface include/pokemon)
+// (= utilise gSpeciesInfo[species].genderRatio via data/pokemon/species_info + personality lo byte 1:1).
 
 function _getGenderFromSpeciesAndPersonality(species: number, personality: number): number {
   return _GetGenderFull(species, personality);
