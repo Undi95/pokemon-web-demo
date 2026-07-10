@@ -9058,6 +9058,112 @@ export function GetObjectEventGraphicsInfo(
   if (!factory) return null;
   return factory(...pics);
 }
+
+// ─── CreateObjectGraphicsSprite (1:1 EOM.c:1543-1591) — INERTE, lot 17b ──────
+// Transcrit ce tour, câblage des consommateurs (naming_screen/easy_chat/virtual
+// objects, aujourd'hui sur le mini-moteur DIVERGENT engine/field/
+// object-event-graphics.ts) = suite du lot. Règle CLAUDE.md : partie complète
+// inerte > testable improvisé.
+import * as _EventObjectsNS from '../include/constants/event_objects';
+import {
+  IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_EOM,
+  CreateSprite as CreateSprite_EOM,
+} from './sprite';
+import { TAG_NONE as TAG_NONE_EOM } from '../include/sprite';
+
+/** ADAPTATION port : reverse-index valeur OBJ_EVENT_GFX_* → clé string (les
+ *  data/object_events sont indexées par clé 'OBJ_EVENT_GFX_*', les scripts et
+ *  field_player_avatar véhiculent le u16 décomp). Lazy-construit depuis le
+ *  header-miroir include/constants/event_objects. */
+let _objEventGfxIdToKey: Map<number, string> | null = null;
+export function ObjectEventGfxIdToKey(gfxId: number): string | undefined {
+  if (!_objEventGfxIdToKey) {
+    _objEventGfxIdToKey = new Map();
+    for (const [k, v] of Object.entries(_EventObjectsNS)) {
+      if (k.startsWith('OBJ_EVENT_GFX_') && typeof v === 'number' && !_objEventGfxIdToKey.has(v)) {
+        _objEventGfxIdToKey.set(v, k);
+      }
+    }
+  }
+  return _objEventGfxIdToKey.get(gfxId);
+}
+
+/** 1:1 décomp `CopyObjectGraphicsInfoToSpriteTemplate` (EOM.c:1543-1556).
+ *  Adaptations port : graphicsId = clé string + `pics` (PNG décompressés,
+ *  consommés par la factory data pour construire `images` — le décomp lit la
+ *  ROM en place) ; le out-param `*subspriteTables` devient une valeur de retour. */
+function CopyObjectGraphicsInfoToSpriteTemplate(
+  graphicsId: string,
+  callback: ((sprite: unknown) => void) | null,
+  spriteTemplate: Record<string, unknown>,
+  pics: Uint8Array[],
+): { subspriteTables: unknown[] | null } {
+  const graphicsInfo = GetObjectEventGraphicsInfo(graphicsId, ...pics);
+  if (!graphicsInfo) {
+    console.error(`[EOM] CopyObjectGraphicsInfoToSpriteTemplate : graphicsId inconnu '${graphicsId}'`);
+    return { subspriteTables: null };
+  }
+  spriteTemplate.tileTag = graphicsInfo.tileTag;
+  spriteTemplate.paletteTag = graphicsInfo.paletteTag;
+  spriteTemplate.oam = graphicsInfo.oam;
+  spriteTemplate.anims = graphicsInfo.anims;
+  spriteTemplate.images = graphicsInfo.images;
+  spriteTemplate.affineAnims = graphicsInfo.affineAnims;
+  spriteTemplate.callback = callback;
+  return { subspriteTables: graphicsInfo.subspriteTables };
+}
+
+/** 1:1 décomp `LoadObjectEventPalette` (EOM.c:2014-2025, branche BUGFIX).
+ *  ⚠️ DETTE annotée : `sObjectEventSpritePalettes[]` (table tag → .pal INCBIN)
+ *  n'est pas portée — nos palettes NPC arrivent par les PNG (chargées via
+ *  LoadSpritePalette sous le même tag par le préchargeur). Ici : si le tag est
+ *  déjà enregistré → no-op (= LoadSpritePaletteIfTagExists) ; sinon on HURLE
+ *  (règle 3 : un gate asset qui échoue ne se tait pas). */
+function LoadObjectEventPalette(paletteTag: number): void {
+  if (_IndexOfSpritePaletteTag_EOM(paletteTag) !== 0xFF) return;  // déjà chargé
+  console.error(`[EOM] LoadObjectEventPalette : tag 0x${paletteTag.toString(16)} absent — précharger la palette (LoadSpritePalette) avant CreateObjectGraphicsSprite`);
+}
+
+/** 1:1 décomp `CreateObjectGraphicsSprite` (EOM.c:1568-1591) :
+ *    spriteTemplate = Alloc(...); CopyObjectGraphicsInfoToSpriteTemplate(...);
+ *    if (paletteTag != TAG_NONE) LoadObjectEventPalette(paletteTag);
+ *    spriteId = CreateSprite(spriteTemplate, x, y, subpriority); Free(...);
+ *    if (spriteId != MAX_SPRITES && subspriteTables != NULL) {
+ *        SetSubspriteTables(sprite, subspriteTables);
+ *        sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;
+ *    }
+ *  Adaptation port : `pics` = PNG décompressés du graphics (asset async chargé
+ *  par le caller, cf. GetObjectEventGraphicsInfo). graphicsId accepte le u16
+ *  décomp (résolu via ObjectEventGfxIdToKey) ou la clé string directe. */
+export function CreateObjectGraphicsSprite(
+  graphicsId: number | string,
+  callback: ((sprite: unknown) => void) | null,
+  x: number,
+  y: number,
+  subpriority: number,
+  pics: Uint8Array[] = [],
+): number {
+  const key = typeof graphicsId === 'number' ? ObjectEventGfxIdToKey(graphicsId) : graphicsId;
+  if (!key) {
+    console.error(`[EOM] CreateObjectGraphicsSprite : gfxId 0x${(graphicsId as number).toString(16)} sans clé OBJ_EVENT_GFX_*`);
+    return -1;
+  }
+  const spriteTemplate: Record<string, unknown> = {};
+  const { subspriteTables } = CopyObjectGraphicsInfoToSpriteTemplate(key, callback, spriteTemplate, pics);
+  if (spriteTemplate.tileTag === undefined) return -1;  // graphicsId inconnu (erreur déjà hurlée)
+  if (spriteTemplate.paletteTag !== TAG_NONE_EOM) {
+    LoadObjectEventPalette(spriteTemplate.paletteTag as number);
+  }
+  const spriteId = CreateSprite_EOM(spriteTemplate, x, y, subpriority);
+  if (spriteId >= 0 && spriteId < 64 && subspriteTables) {
+    // Même forme que sOamTable_48x48 passée plus haut au même SetSubspriteTables ;
+    // le champ vient des data typé `unknown[]` (port différé du struct).
+    SetSubspriteTables(spriteId, subspriteTables as Parameters<typeof SetSubspriteTables>[1]);
+    // sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY : porté par SetSubspriteTables
+    // côté port (cf. son impl plus haut dans ce fichier).
+  }
+  return spriteId;
+}
 // ─── GetBaseOamForDimensions (helper PORT non-1:1) ──────────────────────────
 /** Mappe (frameWidth, frameHeight) → base OAM template 1:1 décomp.
  *  Le décomp ne fait PAS ce mapping (= chaque graphicsInfo référence son
