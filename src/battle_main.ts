@@ -437,15 +437,7 @@ function _FreeAllWindowBuffers(): void {
   // Dette R3 : window buffer cleanup.
 }
 
-/** 1:1 décomp `ZeroEnemyPartyMons()`. */
-function _ZeroEnemyPartyMons(): void {
-  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
-  if (stateMod.gEnemyParty) {
-    for (let i = 0; i < 6; i++) {
-      stateMod.gEnemyParty[i] = null;
-    }
-  }
-}
+// (_ZeroEnemyPartyMons : définition unique co-localisée avec CreateNPCTrainerParty, lot 22.)
 
 /** 1:1 décomp `SetMainCallback2(cb)` : installe le callback2 sur le runtime
  *  (= gMain.callback2, ticked chaque frame par CallCallbacks). */
@@ -709,13 +701,312 @@ function _getCB2_HandleStartBattle(): () => void {
   } | undefined;
   return m?.CB2_HandleStartBattle ?? ((): void => { /* noop */ });
 }
-/** Wire vers CreateNPCTrainerParty (battle-trainer-party.ts). */
-function _CreateNPCTrainerParty(party: unknown, trainerNum: number, firstTrainer: boolean): number {
-  const m = (globalThis as Record<string, unknown>).__battleTrainerParty as {
-    CreateNPCTrainerParty?: (party: unknown, trainerNum: number, firstTrainer: boolean) => number;
-  } | undefined;
-  return m?.CreateNPCTrainerParty?.(party, trainerNum, firstTrainer) ?? 0;
+// ─── CreateNPCTrainerParty (1:1 bm.c:1960-2076, ex battle-trainer-party.ts, lot 22) ──
+// Imports du bloc CreateNPCTrainerParty (ex battle-trainer-party.ts, lot 22) :
+import {
+  BATTLE_TYPE_FRONTIER as _BTP_FRONTIER, BATTLE_TYPE_EREADER_TRAINER as _BTP_EREADER,
+  BATTLE_TYPE_TRAINER_HILL as _BTP_HILL, BATTLE_TYPE_TWO_OPPONENTS as _BTP_TWO_OPP,
+} from './engine/battle/constants';
+import { MAX_PER_STAT_IVS as _BTP_MAX_IVS } from '../include/constants/pokemon';
+import { TRAINER_SECRET_BASE as _BTP_SECRET_BASE } from '../include/constants/trainers';
+// Voie L (note anti-TDZ conservee) : CreateMon NUMERIQUE 1:1 importe VIA party-storage
+// (re-export du foyer) - PAS en edge direct (reordonnancement init ESM casse decomp-globals _rt).
+import { CreateMon as _BTP_CreateMon, setupEnemyPartyForBattle as _BTP_setupEnemyParty,
+  createEmptyPokemon as _BTP_createEmptyMon, SetMonData as _BTP_SetMonData,
+  SetMonMoveSlot as _BTP_SetMonMoveSlot, type Pokemon as _BTP_Pokemon } from './engine/battle/party-storage';
+
+// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
+
+/** 1:1 décomp `_BTP_PARTY_SIZE` = 6. */
+const _BTP_PARTY_SIZE = 6;
+
+/** 1:1 décomp `_BTP_MAX_MON_MOVES` = 4. */
+const _BTP_MAX_MON_MOVES = 4;
+
+/** 1:1 décomp `_BTP_F_TRAINER_FEMALE` (= bit 7 du encounterMusic_gender). */
+const _BTP_F_TRAINER_FEMALE = 0x80;
+
+/** 1:1 décomp `_BTP_F_TRAINER_PARTY_CUSTOM_MOVESET` (= bit 0). */
+const _BTP_F_TRAINER_PARTY_CUSTOM_MOVESET = 1;
+
+/** 1:1 décomp `_BTP_F_TRAINER_PARTY_HELD_ITEM` (= bit 1). */
+const _BTP_F_TRAINER_PARTY_HELD_ITEM = 2;
+
+/** 1:1 décomp `_BTP_OT_ID_RANDOM_NO_SHINY` (pokemon.c). Magic flag pour CreateMon. */
+const _BTP_OT_ID_RANDOM_NO_SHINY = 2;
+
+/** 1:1 décomp `_BTP_EOS` = 0xFF (end of string sentinel). */
+const _BTP_EOS = 0xFF;
+
+/** 1:1 décomp `MON_DATA_*` field IDs. */
+const _BTP_MON_DATA_MOVE1 = 13;
+const _BTP_MON_DATA_PP1 = 17;
+const _BTP_MON_DATA_HELD_ITEM = 22;
+
+// ─── Trainer party member types 1:1 décomp ─────────────────────────────────
+
+/** 1:1 décomp `struct TrainerMonNoItemDefaultMoves` (data/trainers.h). */
+interface TrainerMonNoItemDefaultMoves {
+  iv: number;
+  lvl: number;
+  species: number;
 }
+
+/** 1:1 décomp `struct TrainerMonNoItemCustomMoves`. */
+interface TrainerMonNoItemCustomMoves extends TrainerMonNoItemDefaultMoves {
+  moves: number[];  // [4]
+}
+
+/** 1:1 décomp `struct TrainerMonItemDefaultMoves`. */
+interface TrainerMonItemDefaultMoves extends TrainerMonNoItemDefaultMoves {
+  heldItem: number;
+}
+
+/** 1:1 décomp `struct TrainerMonItemCustomMoves`. */
+interface TrainerMonItemCustomMoves extends TrainerMonItemDefaultMoves {
+  moves: number[];
+}
+
+/** 1:1 décomp `union party_t` dans `struct Trainer`. */
+type TrainerPartyData = {
+  NoItemDefaultMoves?: TrainerMonNoItemDefaultMoves[];
+  NoItemCustomMoves?: TrainerMonNoItemCustomMoves[];
+  ItemDefaultMoves?: TrainerMonItemDefaultMoves[];
+  ItemCustomMoves?: TrainerMonItemCustomMoves[];
+};
+
+/** 1:1 décomp `struct Trainer` (= entries dans gTrainers[]). */
+interface TrainerData {
+  partyFlags: number;
+  trainerClass: number;
+  encounterMusic_gender: number;
+  trainerPic: number;
+  trainerName: number[];
+  items: number[];
+  doubleBattle: boolean;
+  aiFlags: number;
+  partySize: number;
+  party: TrainerPartyData;
+}
+
+// ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
+
+/** 1:1 décomp `gTrainers[trainerNum]` lookup. */
+function _getTrainerData(trainerNum: number): TrainerData | null {
+  // Cascade : auto-extracted trainer data depuis decomp-data/trainer-parties.json.
+  // Pour now : lazy lookup via globalThis si disponible, sinon null.
+  const trainers = (globalThis as { __gTrainers?: Record<number, TrainerData> }).__gTrainers;
+  return trainers?.[trainerNum] ?? null;
+}
+
+/** 1:1 décomp `gSpeciesNames[species]` (data/text/species_names.h). */
+function _getSpeciesName(species: number): number[] {
+  // Dette R3 : full species names table. Pour now : empty array.
+  void species;
+  return [];
+}
+
+/** 1:1 décomp `gBattleMoves[moveId].pp` (data/battle_moves.h). */
+function _getMovePp(moveId: number): number {
+  // Lazy lookup via window data.
+  const moves = (globalThis as { __battleMovesData?: Array<{ pp?: number }> }).__battleMovesData;
+  return moves?.[moveId]?.pp ?? 0;
+}
+
+/** 1:1 décomp `_BTP_CreateMon(party, species, level, iv, useRandomIvs, personality, otIdType, otIdNum)`
+ *  (pokemon.c). Generator complet d'un mon (= stats, ability, moves auto). */
+function __BTP_CreateMon(
+  monSlot: { species: number; level: number; iv: number; personality: number; moves: number[]; pp: number[]; heldItem: number },
+  species: number, level: number, fixedIV: number,
+  _useRandomIvs: boolean, personality: number, _otIdType: number, _otIdNum: number,
+): void {
+  // Dette R3 : full CreateMon avec stats calc + ability + moveset auto.
+  // Pour now : minimal field set.
+  monSlot.species = species;
+  monSlot.level = level;
+  monSlot.iv = fixedIV;
+  monSlot.personality = personality;
+  // Cascade : SetBoxMonPokerusStatus, CalculateMonStats, ApplyEvolution items.
+}
+
+/** 1:1 décomp `_BTP_SetMonData(mon, field, data)` (pokemon.c). */
+function __BTP_SetMonData(
+  monSlot: { moves: number[]; pp: number[]; heldItem?: number },
+  field: number, value: number,
+): void {
+  if (field >= _BTP_MON_DATA_MOVE1 && field < _BTP_MON_DATA_MOVE1 + 4) {
+    monSlot.moves[field - _BTP_MON_DATA_MOVE1] = value;
+  } else if (field >= _BTP_MON_DATA_PP1 && field < _BTP_MON_DATA_PP1 + 4) {
+    monSlot.pp[field - _BTP_MON_DATA_PP1] = value;
+  } else if (field === _BTP_MON_DATA_HELD_ITEM) {
+    monSlot.heldItem = value;
+  }
+}
+
+/** 1:1 décomp `ZeroEnemyPartyMons()`. Clear gEnemyParty[6] = 0. */
+function _ZeroEnemyPartyMons(): void {
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
+  if (stateMod.gEnemyParty) {
+    for (let i = 0; i < _BTP_PARTY_SIZE; i++) {
+      stateMod.gEnemyParty[i] = {
+        species: 0, level: 0, iv: 0, personality: 0,
+        moves: [0, 0, 0, 0], pp: [0, 0, 0, 0],
+        heldItem: 0,
+      };
+    }
+  }
+}
+
+/** 1:1 décomp `_BTP_CreateMon(&party[i], species, lvl, fixedIV, TRUE, personality, _BTP_OT_ID_RANDOM_NO_SHINY, 0)`
+ *  (battle_main.c:2014) via notre générateur BATTLE-READY. `personality` IMPOSÉ
+ *  (pokemon.ts:412 ne consomme PAS le RNG pour le PID) → nature/ability-slot/gender/shiny
+ *  dérivés du PID 1:1. `fixedIV` appliqué aux 6 IVs (= CreateMon `fixedIV`). Sans `moves`
+ *  → pickLevelUpMoves = moveset de niveau natif (= CreateMon default-moves 1:1). */
+function _makeTrainerMon(
+  species: number, lvl: number, fixedIV: number, personality: number,
+  moves?: number[], heldItem?: number,
+): _BTP_Pokemon {
+  // 1:1 décomp battle_main.c:2014 : _BTP_CreateMon(&party[i], species, lvl, fixedIV, TRUE, personality,
+  // _BTP_OT_ID_RANDOM_NO_SHINY, 0). personality IMPOSÉ (PID = nature/ability-slot/gender/shiny 1:1) ;
+  // _BTP_OT_ID_RANDOM_NO_SHINY = OT id aléatoire non-shiny (≠ joueur → IsOtherTrainer = true, 1:1).
+  const mon = _BTP_createEmptyMon();
+  _BTP_CreateMon(mon, species, lvl, fixedIV, true, personality >>> 0, _BTP_OT_ID_RANDOM_NO_SHINY, 0);
+  if (moves && moves.length) {
+    // 1:1 ll.2028-2032 : moveset custom → set les 4 slots (move + PP de base via _BTP_SetMonMoveSlot ;
+    // slot vide = move 0). Override du moveset level-up posé par CreateMon.
+    for (let j = 0; j < 4 /* _BTP_MAX_MON_MOVES */; j++) _BTP_SetMonMoveSlot(mon, moves[j] ?? 0, j);
+  }
+  if (heldItem) _BTP_SetMonData(mon, _BTP_MON_DATA_HELD_ITEM, heldItem);
+  return mon;
+}
+
+// ─── CreateNPCTrainerParty (battle_main.c:1960) — 1:1 strict ───────────────
+
+/** 1:1 décomp `CreateNPCTrainerParty(party, trainerNum, firstTrainer)`
+ *  (battle_main.c:1960-2076). Load la party d'un trainer depuis gTrainers[].
+ *
+ *  Returns gTrainers[trainerNum].partySize (= nombre de mons), 0 si
+ *  _BTP_SECRET_BASE (= geré ailleurs). */
+export function CreateNPCTrainerParty(
+  party: Array<{
+    species: number; level: number; iv: number; personality: number;
+    moves: number[]; pp: number[]; heldItem: number;
+  }> | null,
+  trainerNum: number, firstTrainer: boolean,
+): number {
+  let nameHash = 0;
+  let personalityValue: number;
+  let fixedIV: number;
+  let i: number, j: number;
+  let monsCount: number;
+
+  // 1:1 décomp ll. 1968-1969 : _BTP_SECRET_BASE = handled ailleurs.
+  if (trainerNum === _BTP_SECRET_BASE) return 0;
+
+  const trainerData = _getTrainerData(trainerNum);
+  if (!trainerData) {
+    console.warn(`[battle-trainer-party] No trainer data for ID ${trainerNum} (dette R3)`);
+    return 0;
+  }
+
+  // 1:1 décomp ll. 1971-1973 : skip si Frontier/Ereader/Trainer Hill.
+  if ((_stateNs.gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+      && !(_stateNs.gBattleTypeFlags & (_BTP_FRONTIER
+                               | _BTP_EREADER
+                               | _BTP_HILL))) {
+    // 1:1 décomp l. 1975-1976 : zero party au premier trainer.
+    if (firstTrainer) {
+      _ZeroEnemyPartyMons();
+    }
+
+    // 1:1 décomp ll. 1978-1988 : monsCount = trainerData.partySize, capped à
+    // _BTP_PARTY_SIZE/2 pour TWO_OPPONENTS.
+    if (_stateNs.gBattleTypeFlags & _BTP_TWO_OPP) {
+      monsCount = trainerData.partySize > Math.floor(_BTP_PARTY_SIZE / 2)
+        ? Math.floor(_BTP_PARTY_SIZE / 2)
+        : trainerData.partySize;
+    } else {
+      monsCount = trainerData.partySize;
+    }
+
+    // Voie L : on ACCUMULE les mons BATTLE-READY puis UN seul _BTP_setupEnemyParty (qui zero les
+    // 6 slots = ZeroEnemyPartyMons + remplit). Un appel par mon ecraserait les precedents.
+    // DETTE (hors scope single) : multi-dresseur (TWO_OPPONENTS, firstTrainer=false) ecraserait la
+    // party du 1er dresseur -> a gerer avec un accumulateur persistant quand le double sera porte.
+    const acc: _BTP_Pokemon[] = [];
+    for (i = 0; i < monsCount; i++) {
+      // 1:1 décomp ll. 1993-1998 : personality init selon gender flag.
+      if (trainerData.doubleBattle) {
+        personalityValue = 0x80;
+      } else if (trainerData.encounterMusic_gender & _BTP_F_TRAINER_FEMALE) {
+        personalityValue = 0x78;  // skew female
+      } else {
+        personalityValue = 0x88;  // skew male
+      }
+
+      // 1:1 décomp ll. 2000-2001 : trainerName hash sum. ⚠️ nameHash N'EST PAS reset par mon
+      // (scope FONCTION dans la décomp, accumulé à travers les mons).
+      for (j = 0; trainerData.trainerName[j] !== _BTP_EOS && j < trainerData.trainerName.length; j++) {
+        nameHash += trainerData.trainerName[j];
+      }
+
+      // 1:1 décomp ll. 2003-2069 : switch sur partyFlags (4 variants). Mon battle-ready via _makeTrainerMon.
+      switch (trainerData.partyFlags) {
+        case 0: {
+          const partyData = trainerData.party.NoItemDefaultMoves;
+          if (!partyData || !partyData[i]) break;
+          const speciesName = _getSpeciesName(partyData[i].species);
+          for (j = 0; speciesName[j] !== _BTP_EOS && j < speciesName.length; j++) nameHash += speciesName[j];
+          personalityValue += nameHash << 8;
+          fixedIV = Math.floor(partyData[i].iv * _BTP_MAX_IVS / 255);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue));
+          break;
+        }
+        case _BTP_F_TRAINER_PARTY_CUSTOM_MOVESET: {
+          const partyData = trainerData.party.NoItemCustomMoves;
+          if (!partyData || !partyData[i]) break;
+          const speciesName = _getSpeciesName(partyData[i].species);
+          for (j = 0; speciesName[j] !== _BTP_EOS && j < speciesName.length; j++) nameHash += speciesName[j];
+          personalityValue += nameHash << 8;
+          fixedIV = Math.floor(partyData[i].iv * _BTP_MAX_IVS / 255);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, partyData[i].moves));
+          break;
+        }
+        case _BTP_F_TRAINER_PARTY_HELD_ITEM: {
+          const partyData = trainerData.party.ItemDefaultMoves;
+          if (!partyData || !partyData[i]) break;
+          const speciesName = _getSpeciesName(partyData[i].species);
+          for (j = 0; speciesName[j] !== _BTP_EOS && j < speciesName.length; j++) nameHash += speciesName[j];
+          personalityValue += nameHash << 8;
+          fixedIV = Math.floor(partyData[i].iv * _BTP_MAX_IVS / 255);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, undefined, partyData[i].heldItem));
+          break;
+        }
+        case _BTP_F_TRAINER_PARTY_CUSTOM_MOVESET | _BTP_F_TRAINER_PARTY_HELD_ITEM: {
+          const partyData = trainerData.party.ItemCustomMoves;
+          if (!partyData || !partyData[i]) break;
+          const speciesName = _getSpeciesName(partyData[i].species);
+          for (j = 0; speciesName[j] !== _BTP_EOS && j < speciesName.length; j++) nameHash += speciesName[j];
+          personalityValue += nameHash << 8;
+          fixedIV = Math.floor(partyData[i].iv * _BTP_MAX_IVS / 255);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, partyData[i].moves, partyData[i].heldItem));
+          break;
+        }
+      }
+    }
+
+    // 1:1 : ecrit gEnemyParty (party-storage) = l array LU par la voie L. (= ZeroEnemyPartyMons + CreateMon×n)
+    _BTP_setupEnemyParty(acc);
+
+    // 1:1 décomp l. 2072 : OR le doubleBattle flag dans _stateNs.gBattleTypeFlags.
+    if (trainerData.doubleBattle) {
+      _stateNs.setBattleTypeFlags(_stateNs.gBattleTypeFlags | 1 /* BATTLE_TYPE_DOUBLE */);
+    }
+  }
+
+  return trainerData.partySize;
+}
+
 // CB2_HandleStartMulti* / PreInit* — non portés (Dette R3 multi/partner).
 function _CB2_HandleStartMultiPartnerBattle(): void { /* Dette R3 multi */ }
 function _CB2_HandleStartMultiBattle(): void { /* Dette R3 multi */ }
@@ -858,9 +1149,9 @@ export function CB2_InitBattleInternal(): void {
 
   // 1:1 décomp ll. 695-701 : trainer party load + wild held item.
   if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED))) {
-    _CreateNPCTrainerParty(null /* gEnemyParty[0] */, gTrainerBattleOpponent_A, true);
+    CreateNPCTrainerParty(null /* gEnemyParty[0] */, gTrainerBattleOpponent_A, true);
     if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
-      _CreateNPCTrainerParty(null /* gEnemyParty[PARTY_SIZE/2] */, gTrainerBattleOpponent_B, false);
+      CreateNPCTrainerParty(null /* gEnemyParty[PARTY_SIZE/2] */, gTrainerBattleOpponent_B, false);
     }
     SetWildMonHeldItem();
   }
@@ -983,7 +1274,7 @@ function _SwapPartyPokemonBySlots(a: number, b: number): void {
 // fichier mort engine/battle/battle-switch.ts est supprimé (lot 21). DETTE : re-héberger
 // ici (foyer .c) au chantier cœur battle ; ancienne version : git show <lot21>^:src/engine/battle/battle-switch.ts
 // (FaintClearSetData + TurnValuesCleanUp : CONSOLIDÉS ci-dessous, section C2.)
-export { CreateNPCTrainerParty } from './engine/battle/battle-trainer-party';
+// (CreateNPCTrainerParty : LOCAL depuis le lot 22 — static dans bm.c, plus de ré-export.)
 // ═══ SECTION battle-faint-anim — CONSOLIDÉE PHYSIQUEMENT (C1, 2026-06-10) ════
 // Port 1:1 strict des callbacks faint sprite (battle_main.c:2744-2891) :
 //   - SpriteCB_FaintOpponentMon (2744-2786) — entry faint pour opp mon
