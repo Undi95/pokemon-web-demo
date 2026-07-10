@@ -12,6 +12,14 @@ export const BERRY_STAGE_FLOWERING = 4;
 export const BERRY_STAGE_BERRIES = 5;
 export const BERRY_STAGE_SPARKLING = 255;
 
+// ─── Saveurs (FLAVOR_*, berry.h:13-18) ──────────────────────────────────────
+export const FLAVOR_SPICY = 0;
+export const FLAVOR_DRY = 1;
+export const FLAVOR_SWEET = 2;
+export const FLAVOR_BITTER = 3;
+export const FLAVOR_SOUR = 4;
+export const FLAVOR_COUNT = 5;
+
 // ─── Divers ─────────────────────────────────────────────────────────────────
 export const BERRY_TREES_COUNT = 128;
 

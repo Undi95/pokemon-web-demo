@@ -17,7 +17,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DECOMP = 'D:/Projet 1/decomps/pokeemeraude/src/pokeblock.c';
-const OURS = path.join(ROOT, 'src/engine/battle/data/flavor-compat.ts');
+const OURS = path.join(ROOT, 'src/pokeblock.ts');  // table au foyer miroir depuis le lot 26
 
 /** Extrait les entiers de la 1re accolade `{…}`/`[…]` après le marqueur, commentaires retirés
  *  (nos commentaires `// 0 Hardy` contiennent l'index nature → fausseraient le parse). */

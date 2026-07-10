@@ -599,7 +599,7 @@ import {
 } from './data/pokemon/experience_tables';
 import {
   GetNatureFromPersonality as _getNatureFromPersonalityN34,
-} from './engine/battle/data/flavor-compat';
+} from '../include/pokemon';
 import {
   GetItemHoldEffect,
   GetItemHoldEffect as _GetItemHoldEffectFull,

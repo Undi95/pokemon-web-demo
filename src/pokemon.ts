@@ -54,6 +54,9 @@ import {
 } from './engine/battle/state';
 import { getBattleMove } from './engine/battle/data/battle-moves';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from './engine/battle/data/item-hold-effects';
+// Table des saveurs au foyer pokeblock.c:136 (lot 26) — lue en corps de fonction → cycle bénin.
+import { gPokeblockFlavorCompatibilityTable } from './pokeblock';
+import { FLAVOR_COUNT } from '../include/constants/berry';
 import {
   HOLD_EFFECT_CHOICE_BAND as _HOLD_EFFECT_CHOICE_BAND,
   HOLD_EFFECT_SOUL_DEW as _HOLD_EFFECT_SOUL_DEW,
@@ -1672,6 +1675,23 @@ export function GetNature(mon: Pokemon): number {
 
 // Exposition dev (sonde déterministe GetNature), sans effet sur le jeu.
 (globalThis as Record<string, unknown>).__GetNature = GetNature;
+
+/** 1:1 décomp `s8 GetMonFlavorRelation(struct Pokemon *mon, u8 flavor)` (pokemon.c:6558) :
+ *    nature = GetNature(mon); return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
+ *  Table au foyer src/pokeblock.ts (pokeblock.c:136), lue à l'exécution → cycle bénin. */
+export function GetMonFlavorRelation(mon: Pokemon, flavor: number): number {
+  const nature = GetNature(mon);
+  return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor] ?? 0;
+}
+
+/** 1:1 décomp `s8 GetFlavorRelationByPersonality(u32 personality, u8 flavor)` (pokemon.c:6564) :
+ *    nature = GetNatureFromPersonality(personality);
+ *    return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
+ *  Consommé par les CONFUSE_FOOD_BERRIES (Figy/Wiki/Mago/Aguav/Iapapa, battle_util). */
+export function GetFlavorRelationByPersonality(personality: number, flavor: number): number {
+  const nature = GetNatureFromPersonality(personality);
+  return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor] ?? 0;
+}
 
 /** 1:1 décomp `u16 ModifyStatByNature(u8 nature, u16 stat, u8 statIndex)`
  *  (pokemon.c:5865-5899). statIndex est 1-based (STAT_ATK=1 … STAT_SPDEF=5) ; HP

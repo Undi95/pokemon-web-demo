@@ -182,7 +182,7 @@ import {
   MAX_STAT_STAGE, SET_STATCHANGER, NUM_STATS,
 } from './engine/battle/constants';
 import { GetItemHoldEffectParam } from './engine/battle/data/item-hold-effects';
-import { GetFlavorRelationByPersonality } from './engine/battle/data/flavor-compat';
+import { GetFlavorRelationByPersonality } from './pokemon';
 import {
   gEnemyParty, SetMonData, MON_DATA_MOVE1, MON_DATA_PP1,
 } from './engine/battle/party-storage';
