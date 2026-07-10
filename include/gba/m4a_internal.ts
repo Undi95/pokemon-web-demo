@@ -66,9 +66,14 @@ export const WAVE_DATA_OFF_FREQ = 4;
 export const WAVE_DATA_OFF_LOOP_START = 8;
 export const WAVE_DATA_OFF_SIZE = 12; // number of samples
 export const WAVE_DATA_HEADER_SIZE = 16; // data s8[] starts here
+// m4a_constants.inc:35 — testé par tst sur le byte flags (@3, byte haut de status).
+export const WAVE_DATA_OFF_FLAGS = 3;
+export const WAVE_DATA_FLAG_LOOP = 0xc0;
 
 export const TONEDATA_TYPE_CGB = 0x07;
 export const TONEDATA_TYPE_FIX = 0x08;
+export const TONEDATA_TYPE_REV = 0x10; // reverse playback (m4a_constants.inc:13)
+export const TONEDATA_TYPE_CMP = 0x20; // compressed DPCM (m4a_constants.inc:14)
 export const TONEDATA_TYPE_SPL = 0x40; // key split
 export const TONEDATA_TYPE_RHY = 0x80; // rhythm
 
@@ -114,6 +119,7 @@ export class ToneData {
 
 export const SOUND_CHANNEL_SF_START = 0x80;
 export const SOUND_CHANNEL_SF_STOP = 0x40;
+export const SOUND_CHANNEL_SF_SPECIAL = 0x20; // m4a_constants.inc:22 — canal CMP/REV initialisé (Unk1)
 export const SOUND_CHANNEL_SF_LOOP = 0x10;
 export const SOUND_CHANNEL_SF_IEC = 0x04;
 export const SOUND_CHANNEL_SF_ENV = 0x03;

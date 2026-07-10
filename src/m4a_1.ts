@@ -6,7 +6,9 @@
  * prio/tempo/keysh/voice/vol/pan/bend/bendr/lfodl/modt/tune/port · MPlayMain ·
  * TrackStop · ChnVolSetAsm · ply_note · ply_endtie · clear_modM · ply_lfos ·
  * ply_mod.
- * LOT 2 (mixeur PCM) : SoundMain · SoundMainRAM (+_Unk1/_Unk2) · m4aSoundVSync.
+ * LOT 2 (mixeur PCM, en bas de fichier) : SoundMain · SoundMainRAM
+ * (+_Unk1/_Unk2, reverb, enveloppes DS, fixed/resampling/DPCM/reverse) ·
+ * m4aSoundVSync.
  *
  * Adaptations moteur (documentées, cf. include/gba/m4a_internal.ts) :
  * - `gSoundMemory` = l'espace d'adressage unique des données son (cmdPtr, wav,
@@ -34,19 +36,34 @@ import {
   MPT_FLG_VOLCHG,
   MusicPlayerInfo,
   MusicPlayerTrack,
+  PCM_DMA_BUF_SIZE,
   SOUND_CHANNEL_SF_ENV,
+  SOUND_CHANNEL_SF_ENV_ATTACK,
+  SOUND_CHANNEL_SF_ENV_DECAY,
+  SOUND_CHANNEL_SF_IEC,
+  SOUND_CHANNEL_SF_LOOP,
   SOUND_CHANNEL_SF_ON,
+  SOUND_CHANNEL_SF_SPECIAL,
   SOUND_CHANNEL_SF_START,
   SOUND_CHANNEL_SF_STOP,
   SoundChannel,
   SoundInfo,
   TONEDATA_P_S_PAN,
   TONEDATA_TYPE_CGB,
+  TONEDATA_TYPE_CMP,
+  TONEDATA_TYPE_FIX,
+  TONEDATA_TYPE_REV,
   TONEDATA_TYPE_RHY,
   TONEDATA_TYPE_SPL,
+  WAVE_DATA_FLAG_LOOP,
+  WAVE_DATA_HEADER_SIZE,
+  WAVE_DATA_OFF_FLAGS,
+  WAVE_DATA_OFF_LOOP_START,
+  WAVE_DATA_OFF_SIZE,
+  WAVE_DATA_OFF_TYPE,
 } from '../include/gba/m4a_internal';
-import { REG_OFFSET_SOUND1CNT_L } from '../include/gba/io_reg';
-import { gClockTable, gMPlayJumpTableTemplate } from './m4a_tables';
+import { REG_OFFSET_SOUND1CNT_L, REG_OFFSET_VCOUNT } from '../include/gba/io_reg';
+import { gClockTable, gDeltaEncodingTable, gMPlayJumpTableTemplate } from './m4a_tables';
 import { FadeOutBody, MidiKeyToFreq, TrkVolPitSet } from './m4a';
 
 // ─── Espace d'adressage son + registres émulés ────────────────────────────────
@@ -79,6 +96,9 @@ export function SOUND_INFO_PTR(): SoundInfo {
 // Helpers de lecture gSoundMemory (little-endian, 1:1 ldrb/ldr).
 function rdU8(off: number): number {
   return gSoundMemory[off];
+}
+function rdU16(off: number): number {
+  return gSoundMemory[off] | (gSoundMemory[off + 1] << 8);
 }
 function rdU32(off: number): number {
   return (gSoundMemory[off] | (gSoundMemory[off + 1] << 8) | (gSoundMemory[off + 2] << 16) | (gSoundMemory[off + 3] << 24)) >>> 0;
@@ -753,4 +773,558 @@ export function ply_lfos(mplayInfo: MusicPlayerInfo, track: MusicPlayerTrack): v
 export function ply_mod(mplayInfo: MusicPlayerInfo, track: MusicPlayerTrack): void {
   track.mod = ld_r3_tp_adr_i(track);
   if (track.mod === 0) clear_modM(mplayInfo, track);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LOT 2 — MIXEUR PCM (m4a_1.s:20-86 SoundMain, 88-466 SoundMainRAM,
+// 469-709 SoundMainRAM_Unk1/_Unk2, 1070-1127 m4aSoundVSync).
+//
+// Modèle : les accumulations « 4 samples par mot 32-bit tournant » de l'ARM
+// (add r6, r1, r6 ror 8 + compteur dans les bits 30-31 de r5) sont transcrites
+// PAR OCTET : chaque octet du produit (vol*sample)>>8 s'additionne modulo 256
+// dans pcmBuffer (Int8Array) — les retenues inter-octets sont perdues dans le
+// mot ARM (l'octet accumulé est toujours en position 24-31, la retenue sort au
+// bit 32), l'effet mémoire est donc STRICTEMENT identique ; le « flush partiel
+// du mot » des sorties _081DD174/_081DD4F4 devient un no-op. Le duff-device stm
+// du zéro-fill NoReverb (lsrs/bcc + 4×stm) écrit exactement samplesPerVBlank
+// octets par moitié → buf.fill équivalent. Même esprit que « registres →
+// gSoundIoRam » (adaptations d'en-tête de fichier).
+// ═════════════════════════════════════════════════════════════════════════════
+
+// gba_constants.inc:51-52 (deadline scanline de SoundMain — chemin mort tant
+// que soundInfo.maxLines = 0, REG_VCOUNT n'avance jamais dans gSoundIoRam).
+const VCOUNT_VBLANK = 160;
+const TOTAL_SCANLINES = 228;
+
+/** sDecodingBuffer (EWRAM, m4a.c) : le bloc DPCM de 64 samples décodé courant. */
+const sDecodingBuffer = new Uint8Array(0x40);
+
+/** 1:1 `SoundMain` (m4a_1.s:20-86) : le point d'entrée par frame du driver —
+ *  séquenceur (MPlayMain sur la tête de chaîne), CgbSound, puis mixage PCM de
+ *  la tranche courante du double buffer (sélectionnée par pcmDmaCounter). */
+export function SoundMain(): void {
+  const soundInfo = SOUND_INFO_PTR();
+  if (soundInfo.ident !== ID_NUMBER) return;
+  soundInfo.ident++; // lock (SoundMainRAM le relâche en sortie, _081DD24A)
+
+  // maxLines → deadline scanline ([sp,0x14]) ; 0 = pas de maximum.
+  let deadline = soundInfo.maxLines;
+  if (deadline !== 0) {
+    let vcount = gSoundIoRam[REG_OFFSET_VCOUNT];
+    if (vcount < VCOUNT_VBLANK) vcount += TOTAL_SCANLINES;
+    deadline += vcount;
+  }
+
+  if (soundInfo.MPlayMainHead !== null) {
+    soundInfo.MPlayMainHead(soundInfo.musicPlayerHead as MusicPlayerInfo);
+  }
+  // bx r3 inconditionnel (l.58-59) : CgbSound est posé par MPlayExtender avant
+  // tout SoundMain — null ⇒ TypeError, fidèle au crash GBA.
+  (soundInfo.CgbSound as () => void)();
+
+  const samplesPerVBlank = soundInfo.pcmSamplesPerVBlank; // r8
+  let cur = 0; // r5 : offset de la tranche courante dans pcmBuffer
+  const dmaCounter = soundInfo.pcmDmaCounter; // r4
+  if (dmaCounter - 1 > 0) {
+    cur += samplesPerVBlank * ((soundInfo.pcmDmaPeriod - (dmaCounter - 1)) | 0);
+  }
+  SoundMainRAM(soundInfo, dmaCounter, cur, samplesPerVBlank, deadline);
+}
+
+/** 1:1 `SoundMainRAM` (m4a_1.s:88-466) : reverb OU zéro-fill de la tranche,
+ *  puis par canal DirectSound : enveloppe ADSR + pseudo-écho, et mixage
+ *  (fixed / resampling interpolé / DPCM / reverse via _Unk1). */
+export function SoundMainRAM(
+  soundInfo: SoundInfo,
+  dmaCounter: number,
+  cur: number,
+  samplesPerVBlank: number,
+  deadline: number,
+): void {
+  const buf = soundInfo.pcmBuffer;
+  const reverbLvl = soundInfo.reverb; // r3
+
+  if (reverbLvl !== 0) {
+    // ── SoundMainRAM_Reverb (ARM, l.96-118) : mélange la tranche avec la
+    // tranche « suivante » (ou le début du buffer quand dmaCounter == 2).
+    let r7 = dmaCounter === 2 ? 0 : cur + samplesPerVBlank;
+    let r5 = cur;
+    for (let n = samplesPerVBlank; n > 0; n--) {
+      let s = buf[r5 + PCM_DMA_BUF_SIZE] + buf[r5] + buf[r7 + PCM_DMA_BUF_SIZE] + buf[r7];
+      r7++;
+      s = Math.imul(s, reverbLvl) >> 9;
+      if (s & 0x80) s += 1; // arrondi asymétrique du .s (tst 0x80 / addne 1)
+      buf[r5 + PCM_DMA_BUF_SIZE] = s;
+      buf[r5] = s;
+      r5++;
+    }
+  } else {
+    // ── SoundMainRAM_NoReverb (l.120-145) : zéro-fill des deux moitiés.
+    buf.fill(0, cur, cur + samplesPerVBlank);
+    buf.fill(0, cur + PCM_DMA_BUF_SIZE, cur + PCM_DMA_BUF_SIZE + samplesPerVBlank);
+  }
+
+  // _081DCF36
+  const divFreq = soundInfo.divFreq; // r12
+  const maxChans = soundInfo.maxChans;
+
+  chanLoop:
+  for (let chanIdx = 0; chanIdx < maxChans; chanIdx++) {
+    const chan = soundInfo.chans[chanIdx]; // r4
+    const wav = chan.wav; // r3
+
+    // Deadline scanline (l.156-167) — morte tant que maxLines == 0.
+    if (deadline !== 0) {
+      let vcount = gSoundIoRam[REG_OFFSET_VCOUNT];
+      if (vcount < VCOUNT_VBLANK) vcount += TOTAL_SCANLINES;
+      if (vcount >= deadline) break; // b _081DD24A
+    }
+
+    let status = chan.statusFlags; // r6
+    if (!(status & SOUND_CHANNEL_SF_ON)) continue; // _081DD240
+
+    // ── Enveloppe ADSR + pseudo-écho (l.177-263) ──
+    let envVol: number; // r5
+    let doAttack = false;
+    if (status & SOUND_CHANNEL_SF_START) {
+      if (status & SOUND_CHANNEL_SF_STOP) { // _081DCFB0 : kill avant démarrage
+        chan.statusFlags = 0;
+        continue;
+      }
+      status = SOUND_CHANNEL_SF_ENV_ATTACK;
+      chan.statusFlags = status;
+      chan.currentPointer = (wav + WAVE_DATA_HEADER_SIZE + chan.count) >>> 0;
+      chan.count = (rdU32(wav + WAVE_DATA_OFF_SIZE) - chan.count) | 0;
+      envVol = 0;
+      chan.envelopeVolume = 0;
+      chan.fw = 0;
+      if (rdU8(wav + WAVE_DATA_OFF_FLAGS) & WAVE_DATA_FLAG_LOOP) {
+        status |= SOUND_CHANNEL_SF_LOOP;
+        chan.statusFlags = status;
+      }
+      doAttack = true; // b _081DCFF8
+    } else {
+      envVol = chan.envelopeVolume;
+      if (status & SOUND_CHANNEL_SF_IEC) {
+        // pseudo-écho en cours (l.210-213) : bhi sur (length - 1).
+        const before = chan.pseudoEchoLength;
+        chan.pseudoEchoLength = (before - 1) & 0xff;
+        if (before - 1 <= 0) { // _081DCFB0
+          chan.statusFlags = 0;
+          continue;
+        }
+      } else if (status & SOUND_CHANNEL_SF_STOP) {
+        // release (l.218-227)
+        envVol = (envVol * chan.release) >> 8;
+        if (envVol <= chan.pseudoEchoVolume) {
+          // _081DCFC8 : bascule pseudo-écho
+          envVol = chan.pseudoEchoVolume;
+          if (envVol === 0) {
+            chan.statusFlags = 0;
+            continue;
+          }
+          status |= SOUND_CHANNEL_SF_IEC;
+          chan.statusFlags = status;
+        }
+      } else if ((status & SOUND_CHANNEL_SF_ENV) === SOUND_CHANNEL_SF_ENV_DECAY) {
+        // decay (l.236-251)
+        envVol = (envVol * chan.decay) >> 8;
+        const sustain = chan.sustain;
+        if (envVol <= sustain) {
+          envVol = sustain;
+          if (envVol === 0) {
+            // _081DCFC8 : sustain nul → pseudo-écho direct
+            envVol = chan.pseudoEchoVolume;
+            if (envVol === 0) {
+              chan.statusFlags = 0;
+              continue;
+            }
+            status |= SOUND_CHANNEL_SF_IEC;
+            chan.statusFlags = status;
+          } else {
+            status = (status - 1) & 0xff; // DECAY → SUSTAIN
+            chan.statusFlags = status;
+          }
+        }
+      } else if ((status & SOUND_CHANNEL_SF_ENV) === SOUND_CHANNEL_SF_ENV_ATTACK) {
+        doAttack = true; // _081DCFF8
+      }
+      // SUSTAIN : envVol inchangé.
+    }
+    if (doAttack) {
+      envVol += chan.attack;
+      if (envVol >= 0xff) {
+        envVol = 0xff;
+        status = (status - 1) & 0xff; // ATTACK → DECAY
+        chan.statusFlags = status;
+      }
+    }
+
+    // _081DD006 : volumes effectifs. Le .s lit [soundInfo +
+    // o_SoundChannel_release(=7)] = o_SoundInfo_masterVolume (coïncidence
+    // d'offsets exploitée par l'asm) → masterVolume.
+    chan.envelopeVolume = envVol & 0xff;
+    envVol = ((soundInfo.masterVolume + 1) * envVol) >> 4;
+    chan.envelopeVolumeRight = ((chan.rightVolume * envVol) >> 8) & 0xff;
+    chan.envelopeVolumeLeft = ((chan.leftVolume * envVol) >> 8) & 0xff;
+
+    // Info de boucle ([sp,0x10]/[sp,0xC], l.278-289).
+    let loopLen = status & SOUND_CHANNEL_SF_LOOP;
+    let loopStartPtr = 0;
+    if (loopLen !== 0) {
+      const ls = rdU32(wav + WAVE_DATA_OFF_LOOP_START);
+      loopStartPtr = (wav + WAVE_DATA_HEADER_SIZE + ls) >>> 0;
+      loopLen = (rdU32(wav + WAVE_DATA_OFF_SIZE) - ls) | 0;
+    }
+
+    // ── Mixage (ARM _081DD044-) ──
+    let r5 = cur; // [sp,0x8] : base de la tranche pour ce canal
+    let count = chan.count | 0; // r2
+    let ptr = chan.currentPointer >>> 0; // r3
+    let fw = chan.fw >>> 0; // r9
+    const volR = chan.envelopeVolumeRight; // r10
+    const volL = chan.envelopeVolumeLeft; // r11
+
+    if (chan.type & (TONEDATA_TYPE_CMP | TONEDATA_TYPE_REV)) {
+      const r = SoundMainRAM_Unk1(
+        chan, buf, cur, samplesPerVBlank, divFreq, loopLen, volR, volL, fw, count, ptr,
+      );
+      chan.fw = r.fw >>> 0; // b _081DD228 : fw puis count/currentPointer
+      chan.count = r.count | 0;
+      chan.currentPointer = r.ptr >>> 0;
+      continue;
+    }
+
+    let r8local = samplesPerVBlank; // r8 : samples restants de la frame
+    let sub = 0;
+    const mix = (s: number): void => {
+      buf[r5 + sub] += (volR * s) >> 8;
+      buf[r5 + sub + PCM_DMA_BUF_SIZE] += (volL * s) >> 8;
+    };
+
+    if (chan.type & TONEDATA_TYPE_FIX) {
+      // ── _081DD07C : fréquence fixe (1 sample source = 1 sample sortie) ──
+      fixedOuter:
+      while (true) {
+        if (count > 4) {
+          count = (count - r8local) | 0;
+          let rel = 0; // r9 réutilisé : reliquat de frame après fin de wave
+          if (count <= 0) {
+            rel = r8local;
+            count = (count + r8local) | 0;
+            r8local = count - 4;
+            rel = rel - r8local;
+            count &= 3;
+            if (count === 0) count = 4;
+          }
+          do { // _081DD0A8 : blocs de 4 samples sans test de fin
+            for (sub = 0; sub < 4; sub++) mix(s8(gSoundMemory[ptr + sub]));
+            ptr = (ptr + 4) >>> 0;
+            r5 += 4;
+            r8local -= 4;
+          } while (r8local > 0);
+          r8local += rel;
+          if (r8local === 0) break; // → _081DD22C
+        }
+        // _081DD0EC : queue sample par sample (fin de wave possible)
+        while (true) {
+          for (sub = 0; sub < 4; sub++) {
+            mix(s8(gSoundMemory[ptr]));
+            ptr = (ptr + 1) >>> 0;
+            count = (count - 1) | 0;
+            if (count === 0) {
+              if (loopLen !== 0) { // _081DD164 : boucle
+                count = loopLen;
+                ptr = loopStartPtr;
+              } else { // _081DD174 : stop (flush par-octet : no-op)
+                chan.statusFlags = 0;
+                continue chanLoop; // sans stores (b _081DD234)
+              }
+            }
+          }
+          r5 += 4;
+          r8local -= 4;
+          if (r8local > 0) continue fixedOuter; // bgt _081DD07C
+          break fixedOuter; // → _081DD22C
+        }
+      }
+      chan.count = count | 0; // _081DD22C (fw non stocké en fixed)
+      chan.currentPointer = ptr >>> 0;
+      continue;
+    }
+
+    // ── _081DD19C : resampling avec interpolation linéaire ──
+    const step = Math.imul(divFreq, chan.frequency) >>> 0; // mul r4, r12, r1
+    let cur0 = s8(gSoundMemory[ptr]); // ldrsb r0, [r3]
+    ptr = (ptr + 1) >>> 0;
+    let delta = s8(gSoundMemory[ptr]) - cur0; // r1 = next - cur
+    resampOuter:
+    while (true) { // _081DD1B4
+      for (sub = 0; sub < 4; sub++) { // _081DD1BC
+        const interp = (cur0 + (Math.imul(fw, delta) >> 23)) | 0;
+        mix(interp);
+        fw = (fw + step) >>> 0;
+        const adv = fw >>> 23;
+        if (adv !== 0) {
+          fw = (fw & ~0x3f800000) >>> 0; // bic bits 23-29
+          count = (count - adv) | 0;
+          if (count <= 0) {
+            // _081DD134 : fin de wave
+            if (loopLen === 0) { // _081DD158 → _081DD174 : stop
+              chan.statusFlags = 0;
+              continue chanLoop;
+            }
+            let lr = (0 - count) | 0; // rsb lr, r2, 0
+            while (true) { // _081DD148
+              count = (count + loopLen) | 0;
+              if (count > 0) break;
+              lr = (lr - loopLen) | 0;
+            }
+            // b _081DD1FC (Z=0 ⇒ ldrsbne exécuté) :
+            ptr = (loopStartPtr + lr) >>> 0;
+            cur0 = s8(gSoundMemory[ptr]);
+            ptr = (ptr + 1) >>> 0;
+            delta = s8(gSoundMemory[ptr]) - cur0;
+          } else {
+            let a = adv - 1; // subs lr, 1
+            if (a === 0) {
+              cur0 = (cur0 + delta) | 0; // addeq r0, r0, r1 (ldrsbne sauté)
+            } else { // _081DD1FC
+              ptr = (ptr + a) >>> 0;
+              cur0 = s8(gSoundMemory[ptr]);
+            }
+            ptr = (ptr + 1) >>> 0;
+            delta = s8(gSoundMemory[ptr]) - cur0;
+          }
+        }
+      }
+      r5 += 4;
+      r8local -= 4;
+      if (r8local <= 0) break; // bgt _081DD1B4
+    }
+    ptr = (ptr - 1) >>> 0; // sub r3, 1 (r3 pointait sur next)
+    chan.fw = fw >>> 0; // _081DD228
+    chan.count = count | 0; // _081DD22C
+    chan.currentPointer = ptr >>> 0;
+  }
+
+  // _081DD24A : unlock.
+  soundInfo.ident = ID_NUMBER;
+}
+
+/** 1:1 `SoundMainRAM_Unk1` (m4a_1.s:469-667) : mixage des canaux DPCM
+ *  compressés (TONEDATA_TYPE_CMP) et/ou joués à l'envers (TONEDATA_TYPE_REV).
+ *  Retourne les registres que l'appelant stocke (b _081DD228 : fw/count/ptr). */
+export function SoundMainRAM_Unk1(
+  chan: SoundChannel,
+  buf: Int8Array,
+  cur: number,
+  samplesPerVBlank: number,
+  divFreq: number,
+  loopLen: number,
+  volR: number,
+  volL: number,
+  fw: number,
+  count: number,
+  ptr: number,
+): { fw: number; count: number; ptr: number } {
+  const wav = chan.wav; // ldr r6, [r4, wav]
+  let status = chan.statusFlags;
+  if (!(status & SOUND_CHANNEL_SF_SPECIAL)) {
+    // Première frame du canal : conversions de pointeur (l.475-491).
+    status |= SOUND_CHANNEL_SF_SPECIAL;
+    chan.statusFlags = status;
+    if (chan.type & TONEDATA_TYPE_REV) {
+      // ptr miroir depuis la fin : wav*2 + size + 0x20 - ptr.
+      ptr = ((rdU32(wav + WAVE_DATA_OFF_SIZE) + (wav << 1) + 0x20) - ptr) >>> 0;
+      chan.currentPointer = ptr;
+    }
+    if (rdU16(wav + WAVE_DATA_OFF_TYPE) !== 0) {
+      // compressé : le pointeur devient un OFFSET dans les samples décodés.
+      ptr = (ptr - wav - 0x10) >>> 0;
+      chan.currentPointer = ptr;
+    }
+  }
+  // push {r8,r12,lr} ; les lsl 16 des volumes sont absorbés par le modèle
+  // par-octet (cf. bandeau LOT 2).
+  let step: number;
+  if (chan.type & TONEDATA_TYPE_FIX) step = 0x800000;
+  else step = Math.imul(divFreq, chan.frequency) >>> 0;
+
+  let remaining = samplesPerVBlank; // [sp] (slot du push) : compteur de frame
+  let r5 = cur;
+  let sub = 0;
+  const mix = (s: number): void => {
+    buf[r5 + sub] += (volR * s) >> 8;
+    buf[r5 + sub + PCM_DMA_BUF_SIZE] += (volL * s) >> 8;
+  };
+  const stop = (): { fw: number; count: number; ptr: number } => {
+    // _081DD4F4 : stop + flush partiel (no-op par-octet).
+    chan.statusFlags = 0;
+    return { fw, count, ptr };
+  };
+
+  if (rdU16(wav + WAVE_DATA_OFF_TYPE) !== 0) {
+    // ── samples COMPRESSÉS : lectures via SoundMainRAM_Unk2 ──
+    // str 32-bit sur o_SoundChannel_xpi : couvre xpi+xpc ; xpi porte ici la
+    // valeur u32 entière (numéro de bloc, 0xFF000000 = cache invalide).
+    chan.xpi = 0xff000000;
+    if (!(chan.type & TONEDATA_TYPE_REV)) {
+      // _081DD308 : forward
+      let cur0 = SoundMainRAM_Unk2(chan, ptr);
+      ptr = (ptr + 1) >>> 0;
+      let delta = SoundMainRAM_Unk2(chan, ptr) - cur0;
+      while (true) {
+        for (sub = 0; sub < 4; sub++) { // _081DD310
+          const interp = (cur0 + (Math.imul(fw, delta) >> 23)) | 0;
+          mix(interp);
+          fw = (fw + step) >>> 0;
+          const adv = fw >>> 23;
+          if (adv !== 0) {
+            fw = (fw & ~0x3f800000) >>> 0;
+            count = (count - adv) | 0;
+            if (count <= 0) {
+              // _081DD398 : fin de wave
+              if (loopLen === 0) return stop(); // [sp,0x1C] == 0 → _081DD4F4
+              let lr = (0 - count) | 0;
+              while (true) { // _081DD3B0
+                count = (count + loopLen) | 0;
+                if (count > 0) break;
+                lr = (lr - loopLen) | 0;
+              }
+              // → _081DD358 : offset loopStart + lr, relecture cur/next.
+              ptr = (rdU32(wav + WAVE_DATA_OFF_LOOP_START) + lr) >>> 0;
+              cur0 = SoundMainRAM_Unk2(chan, ptr);
+              ptr = (ptr + 1) >>> 0; // _081DD364
+              delta = SoundMainRAM_Unk2(chan, ptr) - cur0;
+            } else {
+              const a = adv - 1; // subs lr, 1
+              if (a === 0) {
+                cur0 = (cur0 + delta) | 0; // add r0, r1 ; b _081DD364
+              } else { // _081DD358
+                ptr = (ptr + a) >>> 0;
+                cur0 = SoundMainRAM_Unk2(chan, ptr);
+              }
+              ptr = (ptr + 1) >>> 0; // _081DD364
+              delta = SoundMainRAM_Unk2(chan, ptr) - cur0;
+            }
+          }
+        }
+        r5 += 4;
+        remaining -= 4;
+        if (remaining <= 0) { // bgt _081DD308
+          ptr = (ptr - 1) >>> 0; // sub r3, 1
+          return { fw, count, ptr }; // _081DD4F0
+        }
+      }
+    }
+    // _081DD3C0 : reverse compressé (pas de boucle de loop)
+    ptr = (ptr - 1) >>> 0;
+    let cur0 = SoundMainRAM_Unk2(chan, ptr);
+    ptr = (ptr - 1) >>> 0;
+    let delta = SoundMainRAM_Unk2(chan, ptr) - cur0;
+    while (true) {
+      for (sub = 0; sub < 4; sub++) { // _081DD3E0
+        const interp = (cur0 + (Math.imul(fw, delta) >> 23)) | 0;
+        mix(interp);
+        fw = (fw + step) >>> 0;
+        const adv = fw >>> 23;
+        if (adv !== 0) {
+          fw = (fw & ~0x3f800000) >>> 0;
+          count = (count - adv) | 0;
+          if (count <= 0) return stop(); // ble _081DD4F4
+          const a = adv - 1;
+          if (a === 0) {
+            cur0 = (cur0 + delta) | 0; // add r0, r1 ; b _081DD434
+          } else { // _081DD428
+            ptr = (ptr - a) >>> 0;
+            cur0 = SoundMainRAM_Unk2(chan, ptr);
+          }
+          ptr = (ptr - 1) >>> 0; // _081DD434
+          delta = SoundMainRAM_Unk2(chan, ptr) - cur0;
+        }
+      }
+      r5 += 4;
+      remaining -= 4;
+      if (remaining <= 0) { // bgt _081DD3D8
+        ptr = (ptr + 2) >>> 0; // add r3, 2
+        return { fw, count, ptr };
+      }
+    }
+  }
+
+  // _081DD468 : non compressé — seul le reverse arrive ici (Unk1 ⇒ CMP|REV).
+  if (!(chan.type & TONEDATA_TYPE_REV)) return { fw, count, ptr }; // beq _081DD4F0
+
+  ptr = (ptr - 1) >>> 0; // ldrsb r0, [r3, -1]!
+  let cur0 = s8(gSoundMemory[ptr]);
+  let delta = s8(gSoundMemory[ptr - 1]) - cur0; // ldrsb r1, [r3, -1] (sans wb)
+  while (true) { // _081DD480
+    for (sub = 0; sub < 4; sub++) { // _081DD488
+      const interp = (cur0 + (Math.imul(fw, delta) >> 23)) | 0;
+      mix(interp);
+      fw = (fw + step) >>> 0;
+      const adv = fw >>> 23;
+      if (adv !== 0) {
+        fw = (fw & ~0x3f800000) >>> 0;
+        count = (count - adv) | 0;
+        if (count <= 0) return stop(); // ble _081DD4F4
+        ptr = (ptr - adv) >>> 0; // ldrsb r0, [r3, -lr]!
+        cur0 = s8(gSoundMemory[ptr]);
+        delta = s8(gSoundMemory[ptr - 1]) - cur0;
+      }
+    }
+    r5 += 4;
+    remaining -= 4;
+    if (remaining <= 0) { // bgt _081DD480
+      ptr = (ptr + 1) >>> 0; // add r3, 1
+      return { fw, count, ptr };
+    }
+  }
+}
+
+/** 1:1 `SoundMainRAM_Unk2` (m4a_1.s:670-709) : lit le sample DPCM à l'offset
+ *  `pos` — décode le bloc de 64 (1 sample brut + 63 deltas nibble via
+ *  gDeltaEncodingTable, 0x21 octets/bloc) dans sDecodingBuffer si le cache
+ *  (chan.xpi = numéro de bloc) ne le tient pas déjà. */
+export function SoundMainRAM_Unk2(chan: SoundChannel, pos: number): number {
+  const blockNum = pos >>> 6;
+  if (blockNum !== chan.xpi) {
+    chan.xpi = blockNum;
+    let src = (chan.wav + 0x10 + blockNum * 0x21) >>> 0;
+    let out = 0;
+    let acc = gSoundMemory[src]; // 1er sample brut
+    src = (src + 1) >>> 0;
+    sDecodingBuffer[out++] = acc;
+    let byteVal = gSoundMemory[src];
+    src = (src + 1) >>> 0;
+    let n = 0x40; // r7
+    while (true) { // b _081DD57C : nibble BAS du 1er byte, puis haut/bas
+      acc = (acc + gDeltaEncodingTable[byteVal & 0xf]) & 0xff;
+      sDecodingBuffer[out++] = acc;
+      n -= 2;
+      if (n <= 0) break; // bgt _081DD568
+      byteVal = gSoundMemory[src];
+      src = (src + 1) >>> 0;
+      acc = (acc + gDeltaEncodingTable[byteVal >> 4]) & 0xff;
+      sDecodingBuffer[out++] = acc;
+    }
+  }
+  return s8(sDecodingBuffer[pos & 0x3f]); // ldrsb
+}
+
+/** 1:1 `m4aSoundVSync` (m4a_1.s:1070-1127) : décompte du double buffer DMA.
+ *  Appelé chaque VCount intr (main.c:386, VCountIntr) — quand le compteur
+ *  tombe à 0, recharge pcmDmaPeriod. Le réarmement DMA1/DMA2 FIFO (REG_DMA*)
+ *  est du hardware pur : le worklet consommera pcmBuffer directement (lot
+ *  worklet), rien d'autre à émuler ici. */
+export function m4aSoundVSync(): void {
+  const soundInfo = _soundInfoPtr;
+  if (!soundInfo) return;
+  // ident ∈ {ID_NUMBER, ID_NUMBER+1} : accepte le lock posé par SoundMain.
+  if (((soundInfo.ident - ID_NUMBER) >>> 0) > 1) return;
+  const before = soundInfo.pcmDmaCounter;
+  soundInfo.pcmDmaCounter = (before - 1) & 0xff;
+  if (before - 1 > 0) return; // bgt Done
+  soundInfo.pcmDmaCounter = soundInfo.pcmDmaPeriod;
 }

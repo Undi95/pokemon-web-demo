@@ -137,6 +137,7 @@ import {
   RealClearChain,
   setSoundInfoPtr,
   SOUND_INFO_PTR,
+  SoundMain,
   SoundMainBTM,
   TrackStop,
   umul3232H32,
@@ -560,6 +561,11 @@ export function MPlayStart(mplayInfo: MusicPlayerInfo, songHeader: number): void
 
     mplayInfo.ident = ID_NUMBER;
   }
+}
+
+/** 1:1 `m4aSoundMain` (m4a.c:102-105) — appelé chaque VBlank (main.c:355). */
+export function m4aSoundMain(): void {
+  SoundMain();
 }
 
 export function m4aMPlayStop(mplayInfo: MusicPlayerInfo): void {

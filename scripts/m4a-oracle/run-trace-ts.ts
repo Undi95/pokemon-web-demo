@@ -36,15 +36,15 @@ import {
   gPokemonCryMusicPlayers,
   gPokemonCryTracks,
   gSoundInfo,
+  m4aSoundMain,
   m4aSoundMode,
   MPlayExtender,
   MPlayOpen,
   MPlayStart,
   SoundInit,
 } from '../../src/m4a';
-import { MPlayMain, setSoundMemory } from '../../src/m4a_1';
+import { m4aSoundVSync, setSoundMemory } from '../../src/m4a_1';
 import {
-  MusicPlayerInfo,
   MusicPlayerTrack,
   SOUND_MODE_DA_BIT_8,
   SOUND_MODE_FREQ_13379,
@@ -124,10 +124,13 @@ function dumpFrame(f: number): string {
   return `{"f":${f},"sh":${sh},"st":${st},"tr":[${parts.join(',')}]}`;
 }
 
+// Flux réel par frame vidéo : VCountIntr (main.c:386) → m4aSoundVSync, puis
+// VBlankIntr (main.c:355) → m4aSoundMain (= SoundMain : MPlayMain(tête) +
+// CgbSound + SoundMainRAM sur la tranche pcmDmaCounter du double buffer).
 const lines: string[] = [dumpFrame(0)];
-const head = gSoundInfo.musicPlayerHead as MusicPlayerInfo;
 for (let f = 1; f <= FRAMES; f++) {
-  MPlayMain(head);
+  m4aSoundVSync();
+  m4aSoundMain();
   lines.push(dumpFrame(f));
 }
 writeFileSync(OUT_PATH, lines.join('\n') + '\n');
