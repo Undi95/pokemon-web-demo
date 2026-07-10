@@ -11,9 +11,11 @@
  * m4aMPlayModDepthSet · m4aMPlayLFOSpeedSet · ply_memacc · ply_xcmd · ply_x* ·
  * DummyFunc · SetPokemonCry* · IsPokemonCryPlaying + les globals COMMON_DATA.
  *
- * LOT 2 (mixeur) : m4aSoundInit · m4aSoundMain (→ SoundMain du .s).
- * LOT DONNÉES (gMPlayTable/gSongTable extraits) : m4aSongNumStart/StartOrChange/
- * StartOrContinue/Stop/Continue · m4aMPlayAllStop · m4aMPlayAllContinue.
+ * Complété (lot 2 + lot données) : m4aSoundInit · m4aSoundMain ·
+ * m4aSongNumStart/StartOrChange/StartOrContinue/Stop/Continue ·
+ * m4aMPlayAllStop · m4aMPlayAllContinue — gMPlayTable vit dans
+ * src/music_player_table.ts (miroir .inc), gSongTable dans src/song_table.ts
+ * (offset gSoundMemory posé par le chargeur de données).
  *
  * Adaptations (mêmes que m4a_1.ts) : registres → gSoundIoRam ; « adresses » de
  * données → offsets gSoundMemory ; SoundMainRAM_Buffer (copie du code mixeur en
@@ -62,6 +64,7 @@ import {
   MusicPlayerTrack,
   MUSICPLAYER_STATUS_PAUSE,
   MUSICPLAYER_STATUS_TRACK,
+  NUM_MUSIC_PLAYERS,
   SONG_HEADER_OFF_PART,
   SONG_HEADER_OFF_PRIORITY,
   SONG_HEADER_OFF_REVERB,
@@ -77,6 +80,7 @@ import {
   SOUND_CHANNEL_SF_START,
   SOUND_CHANNEL_SF_STOP,
   SOUND_MODE_DA_BIT,
+  SOUND_MODE_DA_BIT_8,
   SOUND_MODE_FREQ,
   SOUND_MODE_FREQ_13379,
   SOUND_MODE_MASVOL,
@@ -143,6 +147,8 @@ import {
   umul3232H32,
 } from './m4a_1';
 import { gXcmdTable as gXcmdTableRef } from './m4a_tables';
+import { gMPlayTable } from './music_player_table';
+import { gSongTable, SONG_OFF_HEADER, SONG_OFF_MS, SONG_TABLE_ENTRY_SIZE } from './song_table';
 
 // ─── Zone « RAM audio » de gSoundMemory (cf. m4a_internal.ts) ────────────────
 // gPokemonCrySongs (2×52 bytes) + gPokemonCrySong (52) y vivent : la séquence
@@ -176,6 +182,9 @@ function rdU32(off: number): number {
 }
 function wrU8(off: number, v: number): void {
   gSoundMemory[off] = v & 0xff;
+}
+function rdU16(off: number): number {
+  return gSoundMemory[off] | (gSoundMemory[off + 1] << 8);
 }
 function wrU16(off: number, v: number): void {
   gSoundMemory[off] = v & 0xff;
@@ -563,9 +572,106 @@ export function MPlayStart(mplayInfo: MusicPlayerInfo, songHeader: number): void
   }
 }
 
+/** Offset gSoundMemory de voicegroup000 (voicegroup « dummy » des cris),
+ *  posé par le chargeur de données. 0 = cris inertes (template pointé sur du
+ *  vide — inoffensif tant que SetPokemonCry* n'est pas appelé). */
+export let gVoicegroup000 = 0;
+export function setGVoicegroup000(off: number): void {
+  gVoicegroup000 = off >>> 0;
+}
+
+/** 1:1 `m4aSoundInit` (m4a.c:70-100). La CpuCopy32 de SoundMainRAM vers la RAM
+ *  GBA est N/A (le code est résident, cf. m4a_1.ts LOT 2). Le memcpy
+ *  gPokemonCrySongTemplate → gPokemonCrySong devient initPokemonCrySongRam
+ *  (écrit le template DANS gSoundMemory, zone RAM audio). */
+export function m4aSoundInit(): void {
+  SoundInit(gSoundInfo);
+  MPlayExtender(gCgbChans);
+  m4aSoundMode(
+    SOUND_MODE_DA_BIT_8 | SOUND_MODE_FREQ_13379
+    | (12 << SOUND_MODE_MASVOL_SHIFT) | (5 << SOUND_MODE_MAXCHN_SHIFT),
+  );
+
+  for (let i = 0; i < NUM_MUSIC_PLAYERS; i++) {
+    const mplayInfo = gMPlayTable[i].info;
+    MPlayOpen(mplayInfo, gMPlayTable[i].track, gMPlayTable[i].numTracks);
+    mplayInfo.unk_B = gMPlayTable[i].unk_A;
+    // memAccArea : ply_memacc lit gMPlayMemAccArea directement (zone unique
+    // partagée, comme sur GBA) — le champ reste 0, adaptation documentée.
+  }
+
+  initPokemonCrySongRam(gVoicegroup000);
+
+  for (let i = 0; i < MAX_POKEMON_CRIES; i++) {
+    const mplayInfo = gPokemonCryMusicPlayers[i];
+    const track = gPokemonCryTracks[i * 2];
+    MPlayOpen(mplayInfo, [gPokemonCryTracks[i * 2], gPokemonCryTracks[i * 2 + 1]], 2);
+    track.chan = null;
+  }
+}
+
 /** 1:1 `m4aSoundMain` (m4a.c:102-105) — appelé chaque VBlank (main.c:355). */
 export function m4aSoundMain(): void {
   SoundMain();
+}
+
+/** 1:1 `m4aSongNumStart` (m4a.c:107-115). gSongTable : entrées de 8 octets
+ *  {header u32, ms u16, me u16} dans gSoundMemory (src/song_table.ts). */
+export function m4aSongNumStart(n: number): void {
+  const song = gSongTable + n * SONG_TABLE_ENTRY_SIZE;
+  const mplay = gMPlayTable[rdU16(song + SONG_OFF_MS)];
+  MPlayStart(mplay.info, rdU32(song + SONG_OFF_HEADER));
+}
+
+/** 1:1 `m4aSongNumStartOrChange` (m4a.c:117-136). */
+export function m4aSongNumStartOrChange(n: number): void {
+  const song = gSongTable + n * SONG_TABLE_ENTRY_SIZE;
+  const mplay = gMPlayTable[rdU16(song + SONG_OFF_MS)];
+  const header = rdU32(song + SONG_OFF_HEADER);
+  if (mplay.info.songHeader !== header) {
+    MPlayStart(mplay.info, header);
+  } else if (
+    (mplay.info.status & MUSICPLAYER_STATUS_TRACK) === 0
+    || (mplay.info.status & MUSICPLAYER_STATUS_PAUSE) !== 0
+  ) {
+    MPlayStart(mplay.info, header);
+  }
+}
+
+/** 1:1 `m4aSongNumStartOrContinue` (m4a.c:138-151, UNUSED dans le décomp). */
+export function m4aSongNumStartOrContinue(n: number): void {
+  const song = gSongTable + n * SONG_TABLE_ENTRY_SIZE;
+  const mplay = gMPlayTable[rdU16(song + SONG_OFF_MS)];
+  const header = rdU32(song + SONG_OFF_HEADER);
+  if (mplay.info.songHeader !== header) MPlayStart(mplay.info, header);
+  else if ((mplay.info.status & MUSICPLAYER_STATUS_TRACK) === 0) MPlayStart(mplay.info, header);
+  else if (mplay.info.status & MUSICPLAYER_STATUS_PAUSE) MPlayContinue(mplay.info);
+}
+
+/** 1:1 `m4aSongNumStop` (m4a.c:153-162). */
+export function m4aSongNumStop(n: number): void {
+  const song = gSongTable + n * SONG_TABLE_ENTRY_SIZE;
+  const mplay = gMPlayTable[rdU16(song + SONG_OFF_MS)];
+  if (mplay.info.songHeader === rdU32(song + SONG_OFF_HEADER)) m4aMPlayStop(mplay.info);
+}
+
+/** 1:1 `m4aSongNumContinue` (m4a.c:164-173, UNUSED dans le décomp). */
+export function m4aSongNumContinue(n: number): void {
+  const song = gSongTable + n * SONG_TABLE_ENTRY_SIZE;
+  const mplay = gMPlayTable[rdU16(song + SONG_OFF_MS)];
+  if (mplay.info.songHeader === rdU32(song + SONG_OFF_HEADER)) MPlayContinue(mplay.info);
+}
+
+/** 1:1 `m4aMPlayAllStop` (m4a.c:175-184). */
+export function m4aMPlayAllStop(): void {
+  for (let i = 0; i < NUM_MUSIC_PLAYERS; i++) m4aMPlayStop(gMPlayTable[i].info);
+  for (let i = 0; i < MAX_POKEMON_CRIES; i++) m4aMPlayStop(gPokemonCryMusicPlayers[i]);
+}
+
+/** 1:1 `m4aMPlayAllContinue` (m4a.c:191-200). */
+export function m4aMPlayAllContinue(): void {
+  for (let i = 0; i < NUM_MUSIC_PLAYERS; i++) MPlayContinue(gMPlayTable[i].info);
+  for (let i = 0; i < MAX_POKEMON_CRIES; i++) MPlayContinue(gPokemonCryMusicPlayers[i]);
 }
 
 export function m4aMPlayStop(mplayInfo: MusicPlayerInfo): void {

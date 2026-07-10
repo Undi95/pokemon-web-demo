@@ -419,3 +419,5 @@ export class Song {
 }
 
 export const MAX_POKEMON_CRIES = 2;
+
+export const NUM_MUSIC_PLAYERS = 4; // BGM, SE1, SE2, SE3 (gMPlayTable)

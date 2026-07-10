@@ -28,30 +28,14 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import {
-  gCgbChans,
   gMPlayInfo_BGM,
-  gMPlayInfo_SE1,
-  gMPlayInfo_SE2,
-  gMPlayInfo_SE3,
-  gPokemonCryMusicPlayers,
-  gPokemonCryTracks,
   gSoundInfo,
+  m4aSoundInit,
   m4aSoundMain,
-  m4aSoundMode,
-  MPlayExtender,
-  MPlayOpen,
   MPlayStart,
-  SoundInit,
 } from '../../src/m4a';
 import { m4aSoundVSync, setSoundMemory } from '../../src/m4a_1';
-import {
-  MusicPlayerTrack,
-  PCM_DMA_BUF_SIZE,
-  SOUND_MODE_DA_BIT_8,
-  SOUND_MODE_FREQ_13379,
-  SOUND_MODE_MASVOL_SHIFT,
-  SOUND_MODE_MAXCHN_SHIFT,
-} from '../../include/gba/m4a_internal';
+import { MusicPlayerTrack, PCM_DMA_BUF_SIZE } from '../../include/gba/m4a_internal';
 
 const ROM_PATH = 'D:/Projet 1/rom/pokeemerald_us.gba';
 const OUT_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-bgm.jsonl';
@@ -68,48 +52,11 @@ const mem = new Uint8Array(0x08000000 + rom.length);
 mem.set(rom, 0x08000000);
 setSoundMemory(mem);
 
-// ── m4aSoundInit (m4a.c:70-100), CpuCopy32 du mixeur exclue ─────────────────
-SoundInit(gSoundInfo);
-MPlayExtender(gCgbChans);
-m4aSoundMode(
-  SOUND_MODE_DA_BIT_8 | SOUND_MODE_FREQ_13379
-  | (12 << SOUND_MODE_MASVOL_SHIFT) | (5 << SOUND_MODE_MAXCHN_SHIFT),
-);
-
-// gMPlayTable (sound/music_player_table.inc) : {info, track, numTracks, unk_A}.
-// Les gMPlayTrack_* n'existent pas encore côté données (lot données) → créés
-// ICI dans l'ordre du .inc : addrOrder croît BGM < SE1 < SE2 < SE3, fidèle aux
-// adresses GBA (gMPlayTrack_BGM @0x03001340 mesuré). Les gPokemonCryTracks du
-// module m4a.ts ont des addrOrder PLUS BAS — sans effet sur cette trace : les
-// cris ne jouent jamais, aucun canal ne pointe sur leurs tracks (à re-vérifier
-// contre le link réel au câblage, cf. mémoire chantier-son-m4a).
-const mkTracks = (n: number): MusicPlayerTrack[] =>
-  Array.from({ length: n }, () => new MusicPlayerTrack());
-const gMPlayTable = [
-  { info: gMPlayInfo_BGM, track: mkTracks(10), numTracks: 10, unk_A: 0 },
-  { info: gMPlayInfo_SE1, track: mkTracks(3), numTracks: 3, unk_A: 1 },
-  { info: gMPlayInfo_SE2, track: mkTracks(9), numTracks: 9, unk_A: 1 },
-  { info: gMPlayInfo_SE3, track: mkTracks(1), numTracks: 1, unk_A: 0 },
-];
-// Zone memacc : m4aSoundInit fait memAccArea = gMPlayMemAccArea (pointeur) ;
-// côté port c'est un OFFSET gSoundMemory → 0x40 dans la RAM audio basse
-// (libre : crySongs @0x100+). Jamais lu tant que ply_memacc ne tire pas.
-const MEMACC_RAM_OFF = 0x40;
-for (const mp of gMPlayTable) {
-  MPlayOpen(mp.info, mp.track, mp.numTracks);
-  mp.info.unk_B = mp.unk_A;
-  mp.info.memAccArea = MEMACC_RAM_OFF;
-}
-// memcpy(&gPokemonCrySong, &gPokemonCrySongTemplate) : N/A ici (cris muets) ;
-// l'OUVERTURE des 2 cry players, elle, participe à la chaîne MPlayMain → 1:1.
-for (let i = 0; i < 2; i++) {
-  MPlayOpen(
-    gPokemonCryMusicPlayers[i],
-    [gPokemonCryTracks[i * 2], gPokemonCryTracks[i * 2 + 1]],
-    2,
-  );
-  gPokemonCryTracks[i * 2].chan = null; // track->chan = 0 (m4a.c:98)
-}
+// ── Init 1:1 : m4aSoundInit transcrit (m4a.c:70-100) — tracks et gMPlayTable
+// viennent de src/music_player_table.ts ; l'ordre d'évaluation ESM (la table
+// AVANT le corps de m4a.ts) donne des addrOrder fidèles au link décomp :
+// BGM < SE1 < SE2 < SE3 < gPokemonCryTracks.
+m4aSoundInit();
 
 // ── MPlayStart + boucle frames ──────────────────────────────────────────────
 MPlayStart(gMPlayInfo_BGM, SONG_HEADER);
