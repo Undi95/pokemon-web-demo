@@ -46,6 +46,7 @@ import {
 import { m4aSoundVSync, setSoundMemory } from '../../src/m4a_1';
 import {
   MusicPlayerTrack,
+  PCM_DMA_BUF_SIZE,
   SOUND_MODE_DA_BIT_8,
   SOUND_MODE_FREQ_13379,
   SOUND_MODE_MASVOL_SHIFT,
@@ -54,6 +55,8 @@ import {
 
 const ROM_PATH = 'D:/Projet 1/rom/pokeemerald_us.gba';
 const OUT_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-bgm.jsonl';
+const PCM_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-pcm.bin';
+const WAV_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-bgm.wav';
 
 // sh observé dans la trace mGBA (MUS_INTRO : 0x0892D0F8, adresse ROM du SongHeader).
 const SONG_HEADER = Number(process.argv[2] ?? 143841656) >>> 0;
@@ -127,12 +130,58 @@ function dumpFrame(f: number): string {
 // Flux réel par frame vidéo : VCountIntr (main.c:386) → m4aSoundVSync, puis
 // VBlankIntr (main.c:355) → m4aSoundMain (= SoundMain : MPlayMain(tête) +
 // CgbSound + SoundMainRAM sur la tranche pcmDmaCounter du double buffer).
+// Étage B : chaque frame, on dumpe pcmBuffer au format de trace-m4a-pcm.lua
+// et on concatène la tranche écrite (flux audio continu) pour le WAV témoin.
 const lines: string[] = [dumpFrame(0)];
+const pcmChunks: Buffer[] = [];
+const wavL: number[] = [];
+const wavR: number[] = [];
+const spv = gSoundInfo.pcmSamplesPerVBlank;
+pcmChunks.push((() => {
+  const h = Buffer.alloc(8);
+  h.writeUInt32LE(0x5041344d, 0); // "M4AP"
+  h.writeUInt8(1, 4);
+  h.writeUInt8(gSoundInfo.pcmDmaPeriod, 5);
+  h.writeUInt16LE(spv, 6);
+  return h;
+})());
 for (let f = 1; f <= FRAMES; f++) {
   m4aSoundVSync();
   m4aSoundMain();
   lines.push(dumpFrame(f));
+  const rec = Buffer.alloc(12 + PCM_DMA_BUF_SIZE * 2);
+  rec.writeUInt32LE(f, 0);
+  rec.writeUInt32LE(gMPlayInfo_BGM.songHeader >>> 0, 4);
+  rec.writeUInt8(gSoundInfo.pcmDmaCounter, 8); // inchangé par SoundMain : celui qu'il a utilisé
+  rec.writeUInt8(gSoundInfo.reverb, 9);
+  Buffer.from(gSoundInfo.pcmBuffer.buffer, gSoundInfo.pcmBuffer.byteOffset, PCM_DMA_BUF_SIZE * 2).copy(rec, 12);
+  pcmChunks.push(rec);
+  // Tranche écrite cette frame (même formule que SoundMain) → flux WAV.
+  const dc = gSoundInfo.pcmDmaCounter;
+  const cur = dc - 1 > 0 ? spv * (gSoundInfo.pcmDmaPeriod - (dc - 1)) : 0;
+  for (let i = 0; i < spv; i++) {
+    wavR.push(gSoundInfo.pcmBuffer[cur + i]);
+    wavL.push(gSoundInfo.pcmBuffer[cur + i + PCM_DMA_BUF_SIZE]);
+  }
 }
 writeFileSync(OUT_PATH, lines.join('\n') + '\n');
+writeFileSync(PCM_PATH, Buffer.concat(pcmChunks));
+
+// WAV témoin : stéréo 8-bit unsigned, pcmFreq réelle du driver.
+const nSamples = wavL.length;
+const wav = Buffer.alloc(44 + nSamples * 2);
+const freq = gSoundInfo.pcmFreq || 13379;
+wav.write('RIFF', 0); wav.writeUInt32LE(36 + nSamples * 2, 4); wav.write('WAVE', 8);
+wav.write('fmt ', 12); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20);
+wav.writeUInt16LE(2, 22); wav.writeUInt32LE(freq, 24); wav.writeUInt32LE(freq * 2, 28);
+wav.writeUInt16LE(2, 32); wav.writeUInt16LE(8, 34);
+wav.write('data', 36); wav.writeUInt32LE(nSamples * 2, 40);
+for (let i = 0; i < nSamples; i++) {
+  wav.writeUInt8((wavL[i] + 128) & 0xff, 44 + i * 2);
+  wav.writeUInt8((wavR[i] + 128) & 0xff, 45 + i * 2);
+}
+writeFileSync(WAV_PATH, wav);
+
 console.log(`m4a-oracle TS: ${FRAMES} frames (+ancre f0) -> ${OUT_PATH}`);
+console.log(`  pcm: ${PCM_PATH} · wav témoin: ${WAV_PATH} (${(nSamples / freq).toFixed(1)} s @${freq} Hz)`);
 console.log(`  sh=0x${SONG_HEADER.toString(16).toUpperCase()} trackCount=${gMPlayInfo_BGM.trackCount}`);

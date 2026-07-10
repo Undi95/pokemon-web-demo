@@ -54,3 +54,5 @@ ROADMAP.md
 audit-reports/**/*.json
 audit-coverage.json
 scripts/m4a-oracle/*.jsonl
+scripts/m4a-oracle/*.bin
+scripts/m4a-oracle/*.wav
