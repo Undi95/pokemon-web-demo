@@ -591,7 +591,7 @@ import {
   getBattleMove,
   getBattleMove as _gbmN1,
   getBattleMove as getBattleMoveBU,
-} from './engine/battle/data/battle-moves';
+} from './data/battle_moves';
 import {
   MAX_LEVEL,
   getLevelFromExp,

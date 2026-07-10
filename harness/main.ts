@@ -163,7 +163,7 @@ void initStringsFromDecomp();
 // trouvait pas ses labels (= scriptPtr=-1 partout). Toutes les opcodes battle
 // qui appellent `getBattleMove(...).flags & FLAG_MAKES_CONTACT` fail silent
 // (= secondary effects/ability triggers/etc. ne marchent jamais).
-import { loadBattleMoves } from '../src/engine/battle/data/battle-moves';
+import { loadBattleMoves } from '../src/data/battle_moves';
 import { loadBattleScriptBytecode } from '../src/engine/battle/script-interpreter';
 import { loadAiScriptBytecode } from '../src/engine/battle/ai/ai-state';
 import { loadItemHoldEffects } from '../src/item';

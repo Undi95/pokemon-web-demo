@@ -65,7 +65,7 @@ import { gBitTable } from './battle_controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './engine/battle/util';
-import { getBattleMove } from './engine/battle/data/battle-moves';
+import { getBattleMove } from './data/battle_moves';
 import { gEnemyParty, gPlayerParty, GetMonData, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_SPECIES, SetBattleMonDataFromBuffer } from './engine/battle/party-storage';
 import { SetBattleBarStruct, MoveBattleBar, HEALTH_BAR } from './battle_interface';
 // Party summary (barre + 6 balls, 1:1 battle_interface.c party-summary slice).

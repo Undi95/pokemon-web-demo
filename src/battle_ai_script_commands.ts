@@ -85,7 +85,7 @@ import {
   aiReadPtr,
 } from './engine/battle/ai/ai-state';
 import { TypeCalc, AI_CalcDmg } from './battle_script_commands';
-import { getBattleMove } from './engine/battle/data/battle-moves';
+import { getBattleMove } from './data/battle_moves';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from './item';
 import {
   HOLD_EFFECT_MACHO_BRACE,

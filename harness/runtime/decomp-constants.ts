@@ -142,7 +142,7 @@ _mergeConstantsIfAbsent(berryConstants);
 
 // Manual constants — auto-extraction stocke ces FLAG_* comme `_EXPR` strings
 // (= "(1 << 0)") qui ne résolvent pas en number. On force-load les valeurs
-// numeric ici pour que battle-moves.ts puisse résoudre `flags: "FLAG_MAKES_CONTACT | ..."`.
+// numeric ici pour que src/data/battle_moves.ts puisse résoudre `flags: "FLAG_MAKES_CONTACT | ..."`.
 // Source : `decomps/pokeemeraude/include/constants/pokemon.h:208-213`.
 _constantsTable['FLAG_MAKES_CONTACT']        = 1 << 0;
 _constantsTable['FLAG_PROTECT_AFFECTED']     = 1 << 1;

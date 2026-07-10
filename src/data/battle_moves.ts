@@ -1,17 +1,19 @@
 /**
- * battle/data/battle-moves.ts — 1:1 décomp `data/battle_moves.h` (= `gBattleMoves[]`).
+ * src/data/battle_moves.ts — miroir 1:1 de `src/data/battle_moves.h`
+ * (= `const struct BattleMove gBattleMoves[MOVES_COUNT]`, inclus par battle_main.c).
  *
  * Source : `public/decomp/em/moves-data.json` (= extracted by extract-decomp-all.mjs
  * from `data/battle_moves.h`). 354 moves (MOVE_NONE..MOVE_PSYCHO_BOOST), keyed
  * par symbolic name "MOVE_X".
  *
- * Notre port reconstruit l'array indexé par u16 id (= 1:1 décomp `gBattleMoves[MOVE_X]`).
+ * Notre port reconstruit l'array indexé par u16 id (= 1:1 décomp `gBattleMoves[MOVE_X]`),
+ * lu via l'accesseur `getBattleMove` (chargement async → pas de lecture avant boot).
  *
- * Charged au boot via `loadBattleMoves()` (async fetch). Avant load : retourne
+ * Chargé au boot via `loadBattleMoves()` (harness/main.ts). Avant load : retourne
  * default empty entry (= power 0, type 0, accuracy 0).
  */
 
-import { resolveDecompConstant } from '../../../../harness/runtime/decomp-constants';
+import { resolveDecompConstant } from '../../harness/runtime/decomp-constants';
 
 /** 1:1 décomp `struct BattleMove` (include/pokemon.h). */
 export interface BattleMove {

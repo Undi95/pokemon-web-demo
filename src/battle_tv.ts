@@ -24,7 +24,7 @@ import { TypeCalc } from './battle_script_commands';
 import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_MULTI, BATTLE_TYPE_PALACE, BATTLE_TYPE_PIKE, BATTLE_TYPE_PYRAMID, BATTLE_TYPE_RECORDED_LINK, B_WEATHER_HAIL, B_WEATHER_RAIN, B_WEATHER_SANDSTORM, B_WEATHER_SUN, GET_BATTLER_SIDE, IS_TYPE_PHYSICAL, MOVE_RESULT_NO_EFFECT, MULTI_PARTY_SIZE, STATUS3_CHARGED_UP } from './engine/battle/constants';
 import { GetMonData } from './engine/battle/party-storage';
 import { gBattleMons, gBattleMoveDamage, gBattleStruct, gBattleTypeFlags, gBattlerAttacker, gBattlerPartyIndexes, gBattlerTarget, gCurrentMove, gEffectBattler, gMoveSelectionCursor, gProtectStructs, gSideStatuses, gStatuses3 } from './engine/battle/state';
-import { getBattleMove } from './engine/battle/data/battle-moves';
+import { getBattleMove } from './data/battle_moves';
 const GetBattlerSide = GET_BATTLER_SIDE; // 1:1 battle_util.c:GetBattlerSide = battler & BIT_SIDE
 const SHRT_MAX = 32767; // 1:1 limits.h
 // DETTE LINK (exemption hardware) : TryPutLinkBattleTvShowOnAir = link multi only.

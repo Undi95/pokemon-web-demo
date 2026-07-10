@@ -72,7 +72,7 @@ import {
   B_POSITION_OPPONENT_LEFT, B_POSITION_OPPONENT_RIGHT,
 } from './engine/battle/util';
 import { RecordAbilityBattle } from './battle_ai_script_commands';
-import { getBattleMove } from './engine/battle/data/battle-moves';
+import { getBattleMove } from './data/battle_moves';
 // 1:1 décomp battle_util.c:1942-1945 — HandleFaintedMonActions case 6 applique les
 // effets de switch-in (Intimidate/Trace/Forecast + items). Import direct (= pas de
 // cycle : ability/item-battle-effects n'importent pas handle-action) ; même pattern

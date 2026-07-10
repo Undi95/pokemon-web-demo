@@ -70,7 +70,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, createTestMon, PARTY_SIZE as _PARTY_SIZE, type Pokemon } from './party-storage';
 import { CalculateBaseDamage as _cbd } from '../../pokemon';
-import { getBattleMove as _gbm } from './data/battle-moves';
+import { getBattleMove as _gbm } from '../../data/battle_moves';
 import * as _MOVES_ENUM from '../../../include/constants/moves';
 import {
   TYPE_MYSTERY as _TYPE_MYSTERY,

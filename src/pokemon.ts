@@ -52,7 +52,7 @@ import {
   gBattleResourcesFlags as gBattleResourcesFlagsDC,
   setMoveToLearn,
 } from './engine/battle/state';
-import { getBattleMove } from './engine/battle/data/battle-moves';
+import { getBattleMove } from './data/battle_moves';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from './item';
 // Table des saveurs au foyer pokeblock.c:136 (lot 26) — lue en corps de fonction → cycle bénin.
 import { gPokeblockFlavorCompatibilityTable } from './pokeblock';
