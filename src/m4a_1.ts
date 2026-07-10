@@ -76,6 +76,23 @@ export function setSoundMemory(mem: Uint8Array): void {
   gSoundMemory = mem;
 }
 
+/** Translation d'adresses ROM GBA → index gSoundMemory (adaptation moteur,
+ *  pendant navigateur de l'identité d'adressage du runner oracle) : le blob
+ *  audio (sound-data.bin, byte-exact ROM) garde ses pointeurs ROM authentiques
+ *  (0x08xxxxxx) ; plutôt qu'un tableau de 0x08000000+ octets (runner node),
+ *  le jeu pose le blob à SOUND_RAM_SIZE et replie chaque accès :
+ *  idx = addr - (base_blob - SOUND_RAM_SIZE). translate=0 (défaut) = identité.
+ *  La zone « RAM audio » [0, SOUND_RAM_SIZE) n'est jamais translatée. */
+let _memTranslate = 0;
+
+export function setSoundMemoryTranslate(t: number): void {
+  _memTranslate = t;
+}
+
+export function adr(a: number): number {
+  return a >= 0x08000000 ? a - _memTranslate : a;
+}
+
 /** Registres IO son émulés, indexés par REG_OFFSET_* (io_reg.ts). Le worklet
  *  PSG lira ce bloc ; ply_port/CgbSound/MPlayExtender y écrivent. 0x400 couvre
  *  toute la zone IO 0x04000000-0x040003FF (les regs son : 0x60-0xA8). */
@@ -93,15 +110,18 @@ export function SOUND_INFO_PTR(): SoundInfo {
   return _soundInfoPtr;
 }
 
-// Helpers de lecture gSoundMemory (little-endian, 1:1 ldrb/ldr).
+// Helpers de lecture gSoundMemory (little-endian, 1:1 ldrb/ldr) — chaque
+// accès passe par adr() (repli blob, cf. bandeau translation).
 function rdU8(off: number): number {
-  return gSoundMemory[off];
+  return gSoundMemory[adr(off)];
 }
 function rdU16(off: number): number {
-  return gSoundMemory[off] | (gSoundMemory[off + 1] << 8);
+  const i = adr(off);
+  return gSoundMemory[i] | (gSoundMemory[i + 1] << 8);
 }
 function rdU32(off: number): number {
-  return (gSoundMemory[off] | (gSoundMemory[off + 1] << 8) | (gSoundMemory[off + 2] << 16) | (gSoundMemory[off + 3] << 24)) >>> 0;
+  const i = adr(off);
+  return (gSoundMemory[i] | (gSoundMemory[i + 1] << 8) | (gSoundMemory[i + 2] << 16) | (gSoundMemory[i + 3] << 24)) >>> 0;
 }
 /** s8 (ldrsb). */
 function s8(v: number): number {
@@ -268,7 +288,7 @@ export function ply_voice(mplayInfo: MusicPlayerInfo, track: MusicPlayerTrack): 
   const n = rdU8(track.cmdPtr);
   track.cmdPtr = (track.cmdPtr + 1) >>> 0;
   const toneOff = (mplayInfo.tone + n * 12) >>> 0;
-  track.tone.readFromMemory(gSoundMemory, toneOff);
+  track.tone.readFromMemory(gSoundMemory, adr(toneOff));
 }
 
 /** 1:1 `ply_vol`. */
@@ -1021,7 +1041,7 @@ export function SoundMainRAM(
             if (count === 0) count = 4;
           }
           do { // _081DD0A8 : blocs de 4 samples sans test de fin
-            for (sub = 0; sub < 4; sub++) mix(s8(gSoundMemory[ptr + sub]));
+            for (sub = 0; sub < 4; sub++) mix(s8(gSoundMemory[adr(ptr + sub)]));
             ptr = (ptr + 4) >>> 0;
             r5 += 4;
             r8local -= 4;
@@ -1032,7 +1052,7 @@ export function SoundMainRAM(
         // _081DD0EC : queue sample par sample (fin de wave possible)
         while (true) {
           for (sub = 0; sub < 4; sub++) {
-            mix(s8(gSoundMemory[ptr]));
+            mix(s8(gSoundMemory[adr(ptr)]));
             ptr = (ptr + 1) >>> 0;
             count = (count - 1) | 0;
             if (count === 0) {
@@ -1058,9 +1078,9 @@ export function SoundMainRAM(
 
     // ── _081DD19C : resampling avec interpolation linéaire ──
     const step = Math.imul(divFreq, chan.frequency) >>> 0; // mul r4, r12, r1
-    let cur0 = s8(gSoundMemory[ptr]); // ldrsb r0, [r3]
+    let cur0 = s8(gSoundMemory[adr(ptr)]); // ldrsb r0, [r3]
     ptr = (ptr + 1) >>> 0;
-    let delta = s8(gSoundMemory[ptr]) - cur0; // r1 = next - cur
+    let delta = s8(gSoundMemory[adr(ptr)]) - cur0; // r1 = next - cur
     resampOuter:
     while (true) { // _081DD1B4
       for (sub = 0; sub < 4; sub++) { // _081DD1BC
@@ -1085,19 +1105,19 @@ export function SoundMainRAM(
             }
             // b _081DD1FC (Z=0 ⇒ ldrsbne exécuté) :
             ptr = (loopStartPtr + lr) >>> 0;
-            cur0 = s8(gSoundMemory[ptr]);
+            cur0 = s8(gSoundMemory[adr(ptr)]);
             ptr = (ptr + 1) >>> 0;
-            delta = s8(gSoundMemory[ptr]) - cur0;
+            delta = s8(gSoundMemory[adr(ptr)]) - cur0;
           } else {
             let a = adv - 1; // subs lr, 1
             if (a === 0) {
               cur0 = (cur0 + delta) | 0; // addeq r0, r0, r1 (ldrsbne sauté)
             } else { // _081DD1FC
               ptr = (ptr + a) >>> 0;
-              cur0 = s8(gSoundMemory[ptr]);
+              cur0 = s8(gSoundMemory[adr(ptr)]);
             }
             ptr = (ptr + 1) >>> 0;
-            delta = s8(gSoundMemory[ptr]) - cur0;
+            delta = s8(gSoundMemory[adr(ptr)]) - cur0;
           }
         }
       }
@@ -1260,8 +1280,8 @@ export function SoundMainRAM_Unk1(
   if (!(chan.type & TONEDATA_TYPE_REV)) return { fw, count, ptr }; // beq _081DD4F0
 
   ptr = (ptr - 1) >>> 0; // ldrsb r0, [r3, -1]!
-  let cur0 = s8(gSoundMemory[ptr]);
-  let delta = s8(gSoundMemory[ptr - 1]) - cur0; // ldrsb r1, [r3, -1] (sans wb)
+  let cur0 = s8(gSoundMemory[adr(ptr)]);
+  let delta = s8(gSoundMemory[adr(ptr - 1)]) - cur0; // ldrsb r1, [r3, -1] (sans wb)
   while (true) { // _081DD480
     for (sub = 0; sub < 4; sub++) { // _081DD488
       const interp = (cur0 + (Math.imul(fw, delta) >> 23)) | 0;
@@ -1273,8 +1293,8 @@ export function SoundMainRAM_Unk1(
         count = (count - adv) | 0;
         if (count <= 0) return stop(); // ble _081DD4F4
         ptr = (ptr - adv) >>> 0; // ldrsb r0, [r3, -lr]!
-        cur0 = s8(gSoundMemory[ptr]);
-        delta = s8(gSoundMemory[ptr - 1]) - cur0;
+        cur0 = s8(gSoundMemory[adr(ptr)]);
+        delta = s8(gSoundMemory[adr(ptr - 1)]) - cur0;
       }
     }
     r5 += 4;
@@ -1296,10 +1316,10 @@ export function SoundMainRAM_Unk2(chan: SoundChannel, pos: number): number {
     chan.xpi = blockNum;
     let src = (chan.wav + 0x10 + blockNum * 0x21) >>> 0;
     let out = 0;
-    let acc = gSoundMemory[src]; // 1er sample brut
+    let acc = gSoundMemory[adr(src)]; // 1er sample brut
     src = (src + 1) >>> 0;
     sDecodingBuffer[out++] = acc;
-    let byteVal = gSoundMemory[src];
+    let byteVal = gSoundMemory[adr(src)];
     src = (src + 1) >>> 0;
     let n = 0x40; // r7
     while (true) { // b _081DD57C : nibble BAS du 1er byte, puis haut/bas
@@ -1307,7 +1327,7 @@ export function SoundMainRAM_Unk2(chan: SoundChannel, pos: number): number {
       sDecodingBuffer[out++] = acc;
       n -= 2;
       if (n <= 0) break; // bgt _081DD568
-      byteVal = gSoundMemory[src];
+      byteVal = gSoundMemory[adr(src)];
       src = (src + 1) >>> 0;
       acc = (acc + gDeltaEncodingTable[byteVal >> 4]) & 0xff;
       sDecodingBuffer[out++] = acc;

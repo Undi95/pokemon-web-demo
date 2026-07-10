@@ -130,6 +130,7 @@ import {
   writePokemonCrySongTemplate,
 } from './m4a_tables';
 import {
+  adr,
   gSoundIoRam,
   gSoundMemory,
   MPlayJumpTableCopy,
@@ -173,28 +174,34 @@ export const gPokemonCryTracks: MusicPlayerTrack[] =
 export const gMPlayMemAccArea = new Uint8Array(0x10);
 export const gMPlayInfo_SE3 = new MusicPlayerInfo();
 
-// Helpers mémoire locaux (little-endian).
+// Helpers mémoire locaux (little-endian) — accès via adr() (repli blob,
+// cf. bandeau translation de m4a_1.ts). Les écritures ne visent que la zone
+// RAM audio (< 0x08000000, jamais translatée) ; adr() y est l'identité.
 function rdU8(off: number): number {
-  return gSoundMemory[off];
+  return gSoundMemory[adr(off)];
 }
 function rdU32(off: number): number {
-  return (gSoundMemory[off] | (gSoundMemory[off + 1] << 8) | (gSoundMemory[off + 2] << 16) | (gSoundMemory[off + 3] << 24)) >>> 0;
+  const i = adr(off);
+  return (gSoundMemory[i] | (gSoundMemory[i + 1] << 8) | (gSoundMemory[i + 2] << 16) | (gSoundMemory[i + 3] << 24)) >>> 0;
 }
 function wrU8(off: number, v: number): void {
-  gSoundMemory[off] = v & 0xff;
+  gSoundMemory[adr(off)] = v & 0xff;
 }
 function rdU16(off: number): number {
-  return gSoundMemory[off] | (gSoundMemory[off + 1] << 8);
+  const i = adr(off);
+  return gSoundMemory[i] | (gSoundMemory[i + 1] << 8);
 }
 function wrU16(off: number, v: number): void {
-  gSoundMemory[off] = v & 0xff;
-  gSoundMemory[off + 1] = (v >>> 8) & 0xff;
+  const i = adr(off);
+  gSoundMemory[i] = v & 0xff;
+  gSoundMemory[i + 1] = (v >>> 8) & 0xff;
 }
 function wrU32(off: number, v: number): void {
-  gSoundMemory[off] = v & 0xff;
-  gSoundMemory[off + 1] = (v >>> 8) & 0xff;
-  gSoundMemory[off + 2] = (v >>> 16) & 0xff;
-  gSoundMemory[off + 3] = (v >>> 24) & 0xff;
+  const i = adr(off);
+  gSoundMemory[i] = v & 0xff;
+  gSoundMemory[i + 1] = (v >>> 8) & 0xff;
+  gSoundMemory[i + 2] = (v >>> 16) & 0xff;
+  gSoundMemory[i + 3] = (v >>> 24) & 0xff;
 }
 function s8(v: number): number {
   return (v << 24) >> 24;
@@ -935,7 +942,7 @@ export function CgbSound(): void {
                 gSoundIoRam[nrx0off] = 0x40;
                 // REG_WAVE_RAM0-3 ← les 16 octets du wave pattern (gSoundMemory).
                 for (let k = 0; k < 16; k++) {
-                  gSoundIoRam[0x90 + k] = gSoundMemory[channels.wavePointer + k];
+                  gSoundIoRam[0x90 + k] = gSoundMemory[adr(channels.wavePointer + k)];
                 }
                 channels.currentPointer = channels.wavePointer;
               }

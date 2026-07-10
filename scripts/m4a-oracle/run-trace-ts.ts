@@ -34,7 +34,8 @@ import {
   m4aSoundMain,
   MPlayStart,
 } from '../../src/m4a';
-import { m4aSoundVSync, setSoundMemory } from '../../src/m4a_1';
+import { m4aSoundVSync, setSoundMemory, setSoundMemoryTranslate } from '../../src/m4a_1';
+import { SOUND_RAM_SIZE } from '../../src/m4a';
 import { MusicPlayerTrack, PCM_DMA_BUF_SIZE } from '../../include/gba/m4a_internal';
 
 const ROM_PATH = 'D:/Projet 1/rom/pokeemerald_us.gba';
@@ -81,11 +82,24 @@ function serializeChan(b: Buffer, off: number, c: import('../../include/gba/m4a_
 const SONG_HEADER = Number(process.argv[2] ?? 143841656) >>> 0;
 const FRAMES = Number(process.argv[3] ?? 1500);
 
-// ── gSoundMemory = identité d'adressage GBA ─────────────────────────────────
-const rom = readFileSync(ROM_PATH);
-const mem = new Uint8Array(0x08000000 + rom.length);
-mem.set(rom, 0x08000000);
-setSoundMemory(mem);
+// ── gSoundMemory : identité d'adressage GBA (défaut) ou mode --blob ────────
+// --blob : le blob du lot données (sound-data.bin, byte-exact ROM) posé à
+// SOUND_RAM_SIZE + translation d'adresses — EXACTEMENT le modèle mémoire du
+// jeu. Les traces produites doivent rester identiques au mode ROM : c'est la
+// certification de la translation.
+if (process.argv.includes('--blob')) {
+  const blob = readFileSync('D:/Projet 1/pokemon-web-demo/public/decomp/em/m4a/sound-data.bin');
+  const index = JSON.parse(readFileSync('D:/Projet 1/pokemon-web-demo/public/decomp/em/m4a/sound-data.json', 'utf8'));
+  const mem = new Uint8Array(SOUND_RAM_SIZE + blob.length);
+  mem.set(blob, SOUND_RAM_SIZE);
+  setSoundMemory(mem);
+  setSoundMemoryTranslate(index.base - SOUND_RAM_SIZE);
+} else {
+  const rom = readFileSync(ROM_PATH);
+  const mem = new Uint8Array(0x08000000 + rom.length);
+  mem.set(rom, 0x08000000);
+  setSoundMemory(mem);
+}
 
 // ── Init 1:1 : m4aSoundInit transcrit (m4a.c:70-100) — tracks et gMPlayTable
 // viennent de src/music_player_table.ts ; l'ordre d'évaluation ESM (la table
