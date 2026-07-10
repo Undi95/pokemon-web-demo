@@ -129,32 +129,62 @@ const EASY_CHAT_TYPES: ReadonlyArray<{ t: number; label: string }> = [
 ];
 
 // ─── Autoboot scénarios combat (repris v1 : refresh PUIS boot) ────────────────
+// ⚠️ Host unifié (50ad420a) : un reload nu rejoue l'intro + écran titre → sans
+// appuis touches l'overworld n'arrive JAMAIS, et les proxies « ready » du v1
+// (playerX number, __decompBattleLoop présent) sont déjà vraies PENDANT l'intro
+// → le combat bootait par-dessus l'intro et se faisait écraser par ses
+// SetMainCallback2 (bug user 2026-07-10). Le scénario recharge donc en
+// `?nointro` (resume direct de la save ; boot-mode verrouille la SRAM = la
+// vraie save est protégée de la party de test) et le poll attend le VRAI
+// overworld : gMain.callback2 = MainCB2_Overworld (TestOverworldScene.ts:617 ;
+// préfixe, car le bundler peut suffixer le nom : « MainCB2_Overworld2 »).
 
 const AUTOBOOT_KEY = '__dvtAutoboot';
 
 function queueAutoboot(type: 'wild' | 'rival'): void {
-  try { sessionStorage.setItem(AUTOBOOT_KEY, type); } catch { /* défensif */ }
-  window.location.reload();
+  const url = new URL(window.location.href);
+  const keep = url.searchParams.has('nointro'); // déjà en ?nointro → URL du user inchangée
+  try { sessionStorage.setItem(AUTOBOOT_KEY, JSON.stringify({ t: type, keep })); } catch { /* défensif */ }
+  if (keep) { window.location.reload(); return; }
+  url.searchParams.append('nointro', '1');
+  window.location.href = url.toString();
 }
 
 function resumeAutobootIfPending(): void {
-  let type: string | null = null;
-  try { type = sessionStorage.getItem(AUTOBOOT_KEY); } catch { return; }
-  if (type !== 'wild' && type !== 'rival') return;
+  let raw: string | null = null;
+  try { raw = sessionStorage.getItem(AUTOBOOT_KEY); } catch { return; }
+  if (!raw) return;
   try { sessionStorage.removeItem(AUTOBOOT_KEY); } catch { /* défensif */ }
+  let type = ''; let keep = true;
+  try {
+    const j = JSON.parse(raw) as { t?: string; keep?: boolean };
+    type = j.t ?? ''; keep = !!j.keep;
+  } catch { type = raw; } // legacy : valeur nue 'wild'/'rival' d'un onglet pré-fix
+  if (type !== 'wild' && type !== 'rival') return;
   let tries = 0;
   const poll = window.setInterval(() => {
     tries++;
     const r = rt();
     const dl = g().__decompBattleLoop;
     const player = g().__gObjectEvents?.[0];
+    const cb2 = (r?.gMain as unknown as { callback2?: { name?: string } } | undefined)
+      ?.callback2?.name ?? '';
     const ready = !!r && !!dl?.harnessSetupParties && !!dl.bootDecompBattleLoop
-      && !(r.gMain as unknown as { inBattle?: boolean }).inBattle
+      && cb2.startsWith('MainCB2_Overworld')
+      && !(r!.gMain as unknown as { inBattle?: boolean }).inBattle
       && typeof player?.currentCoordsX === 'number';
     if (ready) {
       window.clearInterval(poll);
+      if (!keep) {
+        // Rendre son URL au user : le prochain F5 manuel repart sur le boot officiel.
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('nointro');
+          window.history.replaceState(null, '', url.toString());
+        } catch { /* défensif */ }
+      }
       bootScenario(type as 'wild' | 'rival');
-    } else if (tries > 80) { // ~20 s
+    } else if (tries > 120) { // ~30 s (boot ?nointro à froid)
       window.clearInterval(poll);
       console.warn('[devtools v2] autoboot abandonné : overworld pas prêt');
     }
@@ -454,20 +484,36 @@ function registerScripts(): void {
         return `easy chat type ${Number(type)}`;
       },
     },
+    // ⚠️ Les launch* du byte-VM exigent l'image script chargée (cmdIdOf/
+    // getScriptOffset) → `await load()` d'abord, comme scripts.launch — sans ça :
+    // « Error: cmdId introuvable pour ScrCmd_yesnobox » (bug user 2026-07-10).
     {
       id: 'scripts.multichoice', category: 'scripts', label: '☰ Multichoice (démo)',
-      description: '__byteVm.launchMultichoice() — écran à choix de test',
-      run: () => { requireFn(bv().launchMultichoice, '__byteVm.launchMultichoice')(); return 'multichoice lancé'; },
+      description: '__byteVm.launchMultichoice(id) — menu multichoice réel (4 = MULTI_CONTEST_TYPE, 6 choix)',
+      args: [{ name: 'id', kind: 'number', default: 4, placeholder: '4 = MULTI_CONTEST_TYPE' }],
+      run: async ({ id }) => {
+        const b = bv();
+        await (b.load as (() => Promise<unknown>) | undefined)?.();
+        return requireFn(b.launchMultichoice, '__byteVm.launchMultichoice')(Number(id) as never);
+      },
     },
     {
       id: 'scripts.yesno', category: 'scripts', label: '❓ Oui/Non (démo)',
       description: '__byteVm.launchYesNo() — boîte OUI/NON de test',
-      run: () => { requireFn(bv().launchYesNo, '__byteVm.launchYesNo')(); return 'yes/no lancé'; },
+      run: async () => {
+        const b = bv();
+        await (b.load as (() => Promise<unknown>) | undefined)?.();
+        return requireFn(b.launchYesNo, '__byteVm.launchYesNo')();
+      },
     },
     {
       id: 'scripts.pokemart', category: 'scripts', label: '🛒 Pokémart (démo)',
-      description: '__byteVm.launchPokemart() — boutique de test',
-      run: () => { requireFn(bv().launchPokemart, '__byteVm.launchPokemart')(); return 'pokemart lancé'; },
+      description: '__byteVm.launchPokemart() — boutique de test (mart d\'Oldale)',
+      run: async () => {
+        const b = bv();
+        await (b.load as (() => Promise<unknown>) | undefined)?.();
+        return requireFn(b.launchPokemart, '__byteVm.launchPokemart')();
+      },
     },
     {
       id: 'scripts.diag', category: 'scripts', label: '🩺 Diag byte-VM',

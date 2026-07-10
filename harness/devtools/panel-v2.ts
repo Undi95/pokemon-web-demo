@@ -85,7 +85,20 @@ export function mountDevtoolsV2(): void {
   // Réouverture persistée (confort : F5 garde la sidebar ouverte).
   let wasOpen = false;
   try { wasOpen = localStorage.getItem(LS_OPEN) === '1'; } catch { /* défensif */ }
-  if (wasOpen) setVisible(true);
+  if (wasOpen) {
+    setVisible(true);
+    // Au boot, le canvas Phaser puis le zoom initial (READY → applyPixelPerfectZoom,
+    // main.ts:324) arrivent APRÈS ce mount : le fitZoomToSpace de setVisible tombe
+    // dans le vide → la sidebar restaurée recouvrait le jeu (constat 2026-07-10).
+    // Poll borné (pattern resumeAutobootIfPending) ; fitZoomToSpace est idempotent
+    // (no-op dès que ça tient), donc re-l'appeler ne « lutte » avec personne.
+    let tries = 0;
+    const poll = window.setInterval(() => {
+      tries++;
+      if (!_visible || tries > 40) { window.clearInterval(poll); return; } // ~10 s
+      fitZoomToSpace();
+    }, 250);
+  }
 
   requestAnimationFrame(loop);
 }
