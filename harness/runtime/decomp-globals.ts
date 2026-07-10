@@ -48,6 +48,13 @@ import { setReverb as _staticSetReverb } from '../m4a/audio-context';
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
 import { stopSong as _staticStopSong, stopAllSongs as _staticStopAllSongs, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
+// Moteur m4a NATIF (1:1 certifié sample-exact) : dispatch M4A_NATIVE dans les
+// fonctions son ci-dessous ; `?m4a-legacy` = shim spessasynth historique.
+import { M4A_NATIVE, initM4aNative, startM4aNativeAudio } from '../m4a/native';
+import {
+  m4aSongNumStart as _m4aSongNumStartNative,
+  m4aMPlayAllStop as _m4aMPlayAllStopNative,
+} from '../../src/m4a';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
 // Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
@@ -854,7 +861,39 @@ export function getCurrentSongId(): number | null { return _currentSongId; }
 // différents ne doivent pas s'annuler — 1:1 GBA : players indépendants).
 const _lastSongIdBySlot: Record<string, number> = {};
 
+// ─── Moteur natif : init lazy + rejouage de la commande ratée pendant le
+// fetch du blob (adaptation chargement asynchrone web : la ROM GBA est mappée
+// d'office, notre blob arrive par le réseau — la DERNIÈRE song demandée est
+// rejouée au ready, sémantique MPlayStart-remplace) ────────────────────────
+let _nativeEngineReady = false;
+let _nativeInitKicked = false;
+let _pendingNativeSongId: number | null = null;
+
+function ensureNativeEngine(): boolean {
+  if (!_nativeInitKicked) {
+    _nativeInitKicked = true;
+    initM4aNative().then((ok) => {
+      _nativeEngineReady = ok;
+      if (ok && _pendingNativeSongId !== null) {
+        const id = _pendingNativeSongId;
+        _pendingNativeSongId = null;
+        _m4aSongNumStartNative(id);
+      }
+    }).catch((e) => console.error('[m4a-native] init', e));
+    startM4aNativeAudio().catch((e) => console.error('[m4a-native] audio', e));
+  }
+  return _nativeEngineReady;
+}
+
 export function m4aSongNumStart(songId: number, loop: boolean = false): void {
+  if (M4A_NATIVE) {
+    // MUS_NONE (0xFFFF) lirait gSongTable hors blob (le GBA lit la ROM
+    // voisine sans broncher, JS non) — même skip que PlayBGM ne l'émet jamais.
+    if (songId === 0xFFFF) return;
+    if (ensureNativeEngine()) _m4aSongNumStartNative(songId);
+    else _pendingNativeSongId = songId;
+    return;
+  }
   // 1:1 décomp : MUS_NONE (= 0xFFFF) et 0 = no music. Silent skip pour éviter
   // spam warnings sur les maps sans music (= MAP_INSIDE_OF_TRUCK et autres).
   if (songId === 0xFFFF || songId === 0) return;
@@ -929,6 +968,11 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
  *  « plus de musique » au 2e combat (bug user 2026-06-12). Ordre strict 1:1 ROM :
  *  PlayBattleBGM = m4aMPlayAllStop PUIS PlayBGM. */
 export function m4aMPlayAllStop(): void {
+  if (M4A_NATIVE) {
+    if (_nativeEngineReady) _m4aMPlayAllStopNative();
+    _pendingNativeSongId = null;
+    return;
+  }
   _staticStopAllSongs();
 }
 
@@ -1010,6 +1054,11 @@ let _fanfareGen = 0;
  *  `_markAudioSlotActive('fanfare', …)` garde IsFanfareTaskInactive()/WaitFanfare
  *  exacts (l'opcode waitfanfare bloque pendant la fanfare). */
 export function PlayFanfare(songNum: number): void {
+  if (M4A_NATIVE) {
+    // Foyer 1:1 sound.c:213 (sFanfares + Task_Fanfare) via globalThis (anti-cycle).
+    (globalThis as { __soundPlayFanfare?: (n: number) => void }).__soundPlayFanfare?.(songNum);
+    return;
+  }
   const name = SONG_ID_TO_NAME[songNum];
   if (!name) {
     console.warn(`[PlayFanfare] song ${songNum} not mapped`);
@@ -1049,8 +1098,15 @@ export function PlayFanfare(songNum: number): void {
   })();
 }
 
-/** 1:1 décomp `PlayFanfareByFanfareNum` — alias avec id différent (= identique). */
-export function PlayFanfareByFanfareNum(num: number): void { PlayFanfare(num); }
+/** 1:1 décomp `PlayFanfareByFanfareNum` — natif : foyer sound.c:180 (index de
+ *  sFanfares, PAS un song id) ; legacy : l'alias historique. */
+export function PlayFanfareByFanfareNum(num: number): void {
+  if (M4A_NATIVE) {
+    (globalThis as { __soundPlayFanfareByFanfareNum?: (n: number) => void }).__soundPlayFanfareByFanfareNum?.(num);
+    return;
+  }
+  PlayFanfare(num);
+}
 
 // Note : IsFanfareTaskInactive est ré-exporté plus bas avec real tracking
 // (= IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive section).
@@ -1065,6 +1121,10 @@ export function PlayFanfareByFanfareNum(num: number): void { PlayFanfare(num); }
  *  Le décomp `stop` arg (= force stop) wired vers _staticStopSong('bgm') si
  *  user demande arrêt forcé. */
 export function WaitFanfare(stop: boolean = false): boolean {
+  if (M4A_NATIVE) {
+    const f = (globalThis as { __soundWaitFanfare?: (s: boolean) => boolean }).__soundWaitFanfare;
+    return f ? f(stop) : true;
+  }
   if (_audioEndTimeMs.fanfare > performance.now()) {
     return false;  // 1:1 décomp : sFanfareCounter > 0 → return FALSE.
   }
@@ -1109,6 +1169,12 @@ export function isBgmPaused(): boolean {
  *  Voicegroup résolu via song-voicegroups.json (rs_sfx_1 / rs_sfx_2 / frlg_sfx). */
 let _seSlotToggle: 'se1' | 'se2' = 'se1';
 export function PlaySE(seId: number): void {
+  if (M4A_NATIVE) {
+    // 1:1 sound.c:572 : PlaySE = m4aSongNumStart — le routage SE1/SE2/SE3
+    // vient de gSongTable (colonne ms), lu par le driver natif.
+    m4aSongNumStart(seId);
+    return;
+  }
   const name = SONG_ID_TO_NAME[seId];
   if (!name) {
     console.warn(`[PlaySE] SE id ${seId} not mapped — songs.h missing entry?`);
@@ -1247,6 +1313,12 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
 export function PlayCryInternal(
   species: number, _pan: number, _volume: number, _priority: number, _mode: number,
 ): void {
+  if (M4A_NATIVE) {
+    if (!_nativeEngineReady) { ensureNativeEngine(); return; } // cri du boot perdu, comme un SE
+    (globalThis as { __soundPlayCryInternal?: (s: number, p: number, v: number, pr: number, m: number) => void })
+      .__soundPlayCryInternal?.(species, _pan, _volume, _priority, _mode);
+    return;
+  }
   const name = SPECIES_NAMES[species];
   console.log('[PlayCryInternal] species=', species, 'name=', name, 'loaded=', _speciesNamesLoaded);
   if (!name) {
@@ -1303,6 +1375,10 @@ export function _markAudioSlotActive(slot: 'se1' | 'se2' | 'cry' | 'bgm' | 'fanf
  *  encore en train de jouer.
  */
 export function IsSEPlaying(): boolean {
+  if (M4A_NATIVE) {
+    const f = (globalThis as { __soundIsSEPlaying?: () => boolean }).__soundIsSEPlaying;
+    return f ? f() : false;
+  }
   const now = performance.now();
   if (_audioEndTimeMs.se1 > now || _audioEndTimeMs.se2 > now) return true;
   // Fallback : check via player.ts isPlaying (= spessasynth sequencer state)
@@ -1322,6 +1398,10 @@ export function IsSEPlaying(): boolean {
  *    return IsPokemonCryPlaying(gMPlay_PokemonCry) ? TRUE : FALSE;
  *  Notre version : end time tracker. Set par PlayCryInternal + music.playCry. */
 export function IsCryPlaying(): boolean {
+  if (M4A_NATIVE) {
+    const f = (globalThis as { __soundIsCryPlaying?: () => boolean }).__soundIsCryPlaying;
+    return f ? f() : false;
+  }
   return _audioEndTimeMs.cry > performance.now();
 }
 
@@ -1330,6 +1410,10 @@ export function IsCryPlaying(): boolean {
  *    else { ClearPokemonCrySongs(); return TRUE; }
  *  Notre version : returns !IsCryPlaying. */
 export function IsCryFinished(): boolean {
+  if (M4A_NATIVE) {
+    const f = (globalThis as { __soundIsCryFinished?: () => boolean }).__soundIsCryFinished;
+    return f ? f() : true;
+  }
   return !IsCryPlaying();
 }
 
@@ -1338,6 +1422,12 @@ export function IsCryFinished(): boolean {
  *    return TRUE;
  *  Notre version : check fanfare end time + m4a slot. */
 export function IsFanfareTaskInactive(): boolean {
+  if (M4A_NATIVE) {
+    // Foyer 1:1 (FuncIsActiveTask(Task_Fanfare)) — via globalThis anti-cycle ;
+    // le foyer ne rappelle PAS ce shim en mode natif (garde M4A_NATIVE).
+    const f = (globalThis as { __soundIsFanfareTaskInactive?: () => boolean }).__soundIsFanfareTaskInactive;
+    return f ? f() : true;
+  }
   if (_audioEndTimeMs.fanfare > performance.now()) return false;
   return true;
 }

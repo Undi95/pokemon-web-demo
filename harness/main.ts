@@ -297,6 +297,14 @@ mountDevtoolsV2();
 // une seule sonne à la fois : la dernière focusée (cf. audio-arbiter.ts).
 installAudioArbiter();
 
+// Moteur son m4a NATIF : précharge le blob de données (3,3 Mo byte-exact ROM)
+// dès le boot pour que la première musique parte sans retard. Le worklet et
+// le dispatch vivent dans decomp-globals (ensureNativeEngine) ; `?m4a-legacy`
+// = shim historique (initM4aNative n'est alors jamais consommé).
+import('./m4a/native')
+  .then(({ M4A_NATIVE, initM4aNative }) => { if (M4A_NATIVE) return initM4aNative().then(() => undefined); })
+  .catch((e) => console.error('[m4a-native] preload', e));
+
 // ─── Zoom pixel-perfect DPR-aware ──────────────────────────────────────────
 // Le canvas RENDU reste à la résolution NATIVE GBA (240×160). On ne touche QUE
 // la taille CSS pour que les PIXELS PHYSIQUES = 240×z (multiple ENTIER) →

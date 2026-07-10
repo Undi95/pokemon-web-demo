@@ -61,3 +61,15 @@ export function SeedRngAndSetTrainerId(): void {
 export function GetGeneratedTrainerIdLower(): number {
   return sTrainerId;
 }
+
+// ─── 1:1 main.c:433 ClearPokemonCrySongs (câblage son m4a) ───────────────────
+import { gSoundMemory as _gSoundMemory_CRY } from './m4a_1';
+import { CRYSONG_RAM_OFF as _CRYSONG_RAM_OFF } from './m4a';
+import { CRYSONG_SIZE as _CRYSONG_SIZE, MAX_POKEMON_CRIES as _MAX_POKEMON_CRIES } from '../include/gba/m4a_internal';
+
+/** 1:1 décomp `void ClearPokemonCrySongs(void)` (main.c:433-436) :
+ *  CpuFill16(0, gPokemonCrySongs, MAX_POKEMON_CRIES * sizeof(struct PokemonCrySong)).
+ *  gPokemonCrySongs vit dans la RAM audio de gSoundMemory (CRYSONG_RAM_OFF). */
+export function ClearPokemonCrySongs(): void {
+  _gSoundMemory_CRY.fill(0, _CRYSONG_RAM_OFF, _CRYSONG_RAM_OFF + _MAX_POKEMON_CRIES * _CRYSONG_SIZE);
+}

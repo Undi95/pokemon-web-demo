@@ -2478,3 +2478,18 @@ export function HandleSetPokedexFlag(nationalNum: number, caseId: number, person
       _GetSaveBlock2_PDX().pokedex.spindaPersonality = personality;
   }
 }
+
+// ─── 1:1 pokemon.c:5688 SpeciesToCryId (câblage son m4a) ─────────────────────
+import { SPECIES_CELEBI as _SPECIES_CELEBI_CRY, SPECIES_TREECKO as _SPECIES_TREECKO_CRY, SPECIES_UNOWN as _SPECIES_UNOWN_CRY } from '../include/constants/species';
+import { gSpeciesIdToCryId } from './data/pokemon/cry_ids';
+
+/** 1:1 décomp `u16 SpeciesToCryId(u16 species)` (pokemon.c:5688-5697). */
+export function SpeciesToCryId(species: number): number {
+  if (species <= _SPECIES_CELEBI_CRY - 1)
+    return species;
+
+  if (species < _SPECIES_TREECKO_CRY - 1)
+    return _SPECIES_UNOWN_CRY - 1;
+
+  return gSpeciesIdToCryId[species - (_SPECIES_TREECKO_CRY - 1)];
+}
