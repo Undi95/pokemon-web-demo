@@ -576,17 +576,16 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
             if (isWhiteout) {
               void Promise.all([
                 import('../../heal_location'),
-                import('../field/warp-system'),
                 import('../save/save-block-state'),
                 import('../../overworld'),
-              ]).then(([hl, ws, sb, ow]) => {
+              ]).then(([hl, sb, ow]) => {
                 // 1:1 décomp `Overworld_ResetStateAfterWhiteOut()` (DoWhiteOut, AVANT le warp) :
                 // remet l'avatar à pied + coupe surf/strength/flash/vélo (sinon respawn en surfant).
                 ow.Overworld_ResetStateAfterWhiteOut();
                 const respawn = (sb.gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation;
                 const heal = hl.GetHealLocationByName(respawn);
                 if (heal) {
-                  ws.setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+                  ow.setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
                   console.log(`[whiteout] respawn warp → ${heal.map} (${heal.x},${heal.y})`);
                 } else {
                   console.warn('[whiteout] respawnLocation non résolue:', respawn);

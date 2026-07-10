@@ -10,6 +10,9 @@ import { FadeScreen, FADE_FROM_BLACK, IsWeatherNotFadingIn } from './field_weath
 import { FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { CreateTask, DestroyTask } from './task';
 import { LockPlayerFieldControls, ScriptContext_Enable } from './script';
+import { MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor } from './metatile_behavior';
+import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './fieldmap';
+import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 // SignalWaitState : pont globalThis anti-cycle (posé par scrcmd.ts) — l'import statique
 // tirait le byte-VM entier dans le sous-arbre d'éval de field_player_avatar (TDZ).
 function SignalWaitState(): void {
@@ -59,4 +62,53 @@ export function FieldCB_ContinueScriptHandleMusic(): void {
   // Adaptateur : le runtime passe l'OBJET task au callback (convention TS), la fn 1:1
   // attend le taskId (pattern evolution_scene.ts:173).
   CreateTask((t: { taskId: number }) => Task_WaitForFadeAndEnableScriptCtx(t.taskId), 10);
+}
+
+// ─── SetUpWarpExitTask (1:1 field_screen_effect.c:256) ───────────────────────
+// Rapatrié de engine/field/warp-system.ts (unification lot 16).
+
+/** Type d'exit task à run au load de la dest map. ADAPTATION port de
+ *  `SetUpWarpExitTask` (field_screen_effect.c:256) : le décomp CRÉE la task
+ *  (sExitDoorTaskFunc/sExitNonAnimDoorTaskFunc/sExitNonDoorTaskFunc) ; notre
+ *  executeWarp (scène MainCB2, harness) consomme ce kind et joue les tasks
+ *  Task_ExitDoor / Task_ExitNonAnimDoor / Task_ExitNonDoor. */
+export type ExitTaskKind =
+  | 'door'        // MetatileBehavior_IsDoor (= MB_PETALBURG_GYM_DOOR | MB_ANIMATED_DOOR)
+                  //   → Task_ExitDoor : door open + walk-down + door close
+  | 'non_anim'    // MetatileBehavior_IsNonAnimDoor (= MB_NON_ANIMATED_DOOR | MB_WATER_DOOR | MB_DEEP_SOUTH_WARP)
+                  //   → Task_ExitNonAnimDoor : juste walk-down
+  | 'none';       // Else → Task_ExitNonDoor : no walk-down, juste unlock
+
+/** 1:1 décomp `SetUpWarpExitTask` (field_screen_effect.c:256) — partie dispatch.
+ *
+ *  Body décomp :
+ *  ```c
+ *  static u8 SetUpWarpExitTask(void) {
+ *      s16 x, y;
+ *      u8 behavior;
+ *      const TaskFunc *func;
+ *      PlayerGetDestCoords(&x, &y);
+ *      behavior = MapGridGetMetatileBehaviorAt(x, y);
+ *      if (MetatileBehavior_IsDoor(behavior) == TRUE)
+ *          func = sExitDoorTaskFunc;       // = Task_ExitDoor
+ *      else if (MetatileBehavior_IsNonAnimDoor(behavior) == TRUE)
+ *          func = sExitNonAnimDoorTaskFunc; // = Task_ExitNonAnimDoor
+ *      else
+ *          func = sExitNonDoorTaskFunc;    // = Task_ExitNonDoor
+ *      return CreateTask(*func, 0);
+ *  }
+ *  ```
+ *
+ *  Délégué aux helpers 1:1 strict `MetatileBehavior_IsDoor` / `IsNonAnimDoor`. */
+export function getExitTaskKindFor(behavior: number): ExitTaskKind {
+  if (MetatileBehavior_IsDoor(behavior)) return 'door';
+  if (MetatileBehavior_IsNonAnimDoor(behavior)) return 'non_anim';
+  return 'none';
+}
+
+/** Read le metatile_behavior à la position courante du player (= le
+ *  `PlayerGetDestCoords + MapGridGetMetatileBehaviorAt` de SetUpWarpExitTask).
+ *  Helper pour scene executeWarp post-load → dispatch exit task. */
+export function getMetatileBehaviorAtPlayerPos(): number {
+  return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
 }

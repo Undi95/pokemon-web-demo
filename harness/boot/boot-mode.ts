@@ -19,7 +19,7 @@
 import { SetSaveLocked } from '../../src/save';
 import { FlagSet, VarSet } from '../../src/engine/script/script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from '../../src/save';
-import { SetDynamicWarp } from '../../src/engine/field/warp-system';
+import { SetDynamicWarp } from '../../src/overworld';
 import { GetCurrentMap } from '../../src/load_save';
 import { SetObjEventTemplateCoords } from '../../src/load_save';
 import { UseContinueGameWarp, ClearContinueGameWarpStatus } from '../../src/load_save';

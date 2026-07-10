@@ -23,7 +23,7 @@
  * curseur peut se poser n'importe où (le préfixe le confirme → no-op si non visitée).
  */
 
-import { setPendingWarp } from './warp-system';
+import { setPendingWarp } from '../../overworld';
 import { GetHealLocationByName } from '../../heal_location';
 import { FlagGet } from '../script/script-vars';
 import { LockPlayerFieldControls } from '../../script';

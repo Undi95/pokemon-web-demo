@@ -126,16 +126,17 @@ import {
   ProcessPlayerFieldInput,
   type FieldInput,
 } from '../../src/field_control_avatar';
+// Mécanisme pending-warp + helpers warp : dissous dans leurs miroirs 1:1
+// (unification lot 16) — overworld.ts / field_screen_effect.ts / field_control_avatar.ts.
 import {
   getPendingWarp,
   setPendingWarp,
-  getExitTaskKindFor,
-  getMetatileBehaviorAtPlayerPos,
   getPlayerCoordsFromWarp,
   GetAdjustedInitialDirection,
   GetDynamicWarp,
-} from '../../src/engine/field/warp-system';
-import type { WarpKind } from '../../src/engine/field/warp-system';
+} from '../../src/overworld';
+import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos } from '../../src/field_screen_effect';
+import type { WarpKind } from '../../src/field_control_avatar';
 import {
   GetDoorSoundEffect,
   FieldAnimateDoorOpen,

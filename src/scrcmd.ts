@@ -30,7 +30,7 @@ import { PARTY_SIZE, MAX_MON_MOVES } from '../include/constants/global';
 import { MonKnowsMove, SetMonMoveSlot } from './engine/battle/party-storage';
 import { DoTimeBasedEvents } from './clock';
 import { InitRotatingTilePuzzle, FreeRotatingTilePuzzle, MoveRotatingTileObjects, TurnRotatingTileObjects } from './rotating_tile_puzzle';
-import { setPendingWarp, SetDynamicWarp, getPendingWarp } from './engine/field/warp-system';
+import { setPendingWarp, SetDynamicWarp, getPendingWarp } from './overworld';
 import { AddMoney, RemoveMoney, IsEnoughMoney } from './money';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './engine/bag/bag';
 import { GetCoins, AddCoins, RemoveCoins } from './coins';

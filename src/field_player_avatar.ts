@@ -189,6 +189,8 @@ import {
   // 1:1 décomp `sArrowWarpMetatileBehaviorChecks2[]` (field_player_avatar.c:294) — HideShowWarpArrow.
   MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsNorthArrowWarp,
   MetatileBehavior_IsWestArrowWarp, MetatileBehavior_IsEastArrowWarp,
+  // Check arrow-warp (foyer décomp = static field_control_avatar.c:767, transcrit ici) :
+  IsArrowWarpMetatileBehavior,
 } from './metatile_behavior';
 import { CheckStandardWildEncounter } from './wild_encounter';
 import {
@@ -204,10 +206,9 @@ import {
   sSpritePaletteTags, sSpriteTileRangeTags, sSpriteTileRanges, sSpriteTileAllocBitmap,
 } from './sprite';
 import { SE_WALL_HIT, SE_LEDGE, SE_BIKE_HOP } from '../include/constants/songs';
-import {
-  getWarpKindFor,
-  isArrowWarpMetatileBehavior,
-} from './engine/field/warp-system';
+// getWarpKindFor : classifieur warp (foyer field_control_avatar.ts depuis l'unification
+// lot 16). Cycle fca ↔ fpa bénin : function declarations hoistées, appel runtime only.
+import { getWarpKindFor } from './field_control_avatar';
 import {
   DIR_NONE as _DIR_NONE,
   DIR_SOUTH as _DIR_SOUTH,
@@ -1499,7 +1500,7 @@ function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
     ? slot.currentMetatileBehavior
     : MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
   // 1:1 décomp `sArrowWarpMetatileBehaviorChecks[direction-1]` (field_player_avatar.c:226).
-  if (isArrowWarpMetatileBehavior(playerBehavior, direction)) return;
+  if (IsArrowWarpMetatileBehavior(playerBehavior, direction)) return;
   // 1:1 décomp : check warp door au north uniquement.
   if (direction === DIR_NORTH) {
     const pos = PlayerGetDestCoords();  // INTERNAL coords (= 1:1 décomp).

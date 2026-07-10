@@ -101,7 +101,7 @@ import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../../../includ
 import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../../../include/constants/flags';
 import { MOVE_NONE } from '../../../include/constants/moves';
 import { gLocalTime, RtcCalcLocalTime } from '../../rtc';
-import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../../overworld';
 // time_events.c — foyer 1:1 des fonctions ci-dessous (gSpecials[] les référence).
 import { IsMirageIslandPresent, UpdateShoalTideFlag, InitBirchState } from '../../time_events';
 import { ShowFieldMessage } from '../../field_message_box';
@@ -3006,7 +3006,7 @@ registerSpecial('SetRoute123Weather', SetRoute123Weather);  // impl 1:1 → src/
  *  ```
  *  Marée Shoal Cave : low tide 03:00-08:00 + 15:00-20:00, sinon high tide.
  *  B4 refactor débloqué : helpers GetLastUsedWarpMapType + IsMapTypeOutdoors
- *  portés dans warp-system.ts. Foyer 1:1 = time_events.ts (gSpecials[] référence). */
+ *  portés dans overworld.ts. Foyer 1:1 = time_events.ts (gSpecials[] référence). */
 registerSpecial('UpdateShoalTideFlag', UpdateShoalTideFlag);
 
 // `GenerateGiddyLine` (mauville_old_man.c:282-315) — dette R3 cascade :

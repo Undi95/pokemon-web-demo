@@ -19,7 +19,7 @@
 
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { Overworld_ResetStateAfterTeleport } from './overworld';
-import { setPendingWarp } from './engine/field/warp-system';
+import { setPendingWarp } from './overworld';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { GetHealLocationByName } from './heal_location';
 import { FieldEffectActiveListRemove } from './field_effect';

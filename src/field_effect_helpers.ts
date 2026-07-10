@@ -4850,7 +4850,7 @@ export function StartFlyOutThenWarp(monSlot: number): void {
   void preloadFlyBirdEffect().then(() => {
     // Warp RÉEL vers Oldale (comme le vrai flux) pour tester TOUTE la séquence : fly-out → warp → fly-in.
     (globalThis as Record<string, unknown>).__flyDoWarp = () => {
-      void Promise.all([import('./engine/field/warp-system'), import('./heal_location')]).then(([ws, hl]) => {
+      void Promise.all([import('./overworld'), import('./heal_location')]).then(([ws, hl]) => {
         const heal = (hl as { GetHealLocationByName: (n: string) => { map: string; x: number; y: number } | null }).GetHealLocationByName('HEAL_LOCATION_OLDALE_TOWN');
         if (heal) (ws as { setPendingWarp: (w: unknown, k: string) => void }).setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
       });

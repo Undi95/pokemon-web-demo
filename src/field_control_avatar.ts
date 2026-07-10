@@ -94,7 +94,17 @@ import {
   MetatileBehavior_IsWaterfall,
   MetatileBehavior_IsDiveable,
   MetatileBehavior_IsUnableToEmerge,
+  // getWarpKindFor (rapatrié de warp-system, unification lot 16) :
+  MetatileBehavior_IsNorthArrowWarp,
+  MetatileBehavior_IsSouthArrowWarp,
+  MetatileBehavior_IsEastArrowWarp,
+  MetatileBehavior_IsWestArrowWarp,
+  MetatileBehavior_IsCrackedFloorHole,
+  MetatileBehavior_IsNonAnimDoor,
+  MetatileBehavior_IsLadder,
 } from './metatile_behavior';
+// Header-miroir (leaf) : valeurs 1:1 include/constants/metatile_behaviors.h.
+import { MB_UP_ESCALATOR, MB_DOWN_ESCALATOR } from '../include/constants/metatile_behaviors';
 import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,
@@ -106,17 +116,15 @@ import { LOCALID_PLAYER, LOCALID_NONE } from '../include/constants/event_objects
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript, TryRunCoordEventScript } from './script';
 import { DIR_TO_DX, DIR_TO_DY } from './event_object_movement';
-// ProcessPlayerFieldInput : dispatch warp/rencontre via les helpers PROUVÉS (warp-system +
-// wild-encounter). Ces modules N'IMPORTENT PAS field-control-avatar → pas de nouveau cycle ESM.
+// ProcessPlayerFieldInput : dispatch warp via le mécanisme pending-warp (overworld.ts,
+// consommé par MainCB2_Overworld::getPendingWarp) + wild-encounter. overworld.ts
+// n'importe ce fichier qu'en TYPE-only (WarpKind) → pas de cycle ESM runtime.
 import {
-  findWarpEventAt,
   setPendingWarp,
-  getWarpKindFor,
-  isArrowWarpMetatileBehavior,
   SetDiveWarpDive,
   SetDiveWarpEmerge,
   DoDiveWarp,
-} from './engine/field/warp-system';
+} from './overworld';
 import { CheckStandardWildEncounter, UpdateRepelCounter } from './wild_encounter';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
@@ -261,12 +269,13 @@ export function FieldGetPlayerInput(input: FieldInput, newKeys: number, heldKeys
  *  qui fait fire les events de step-end au BON moment (remplace l'ancien déclenchement par
  *  `stepFramesLeft === 0` dans PlayerStep).
  *
- *  ⚠️ Le dispatch warp réutilise les helpers PROUVÉS `findWarpEventAt`/`getWarpKindFor`/
- *  `setPendingWarp` (mécanisme warp-system, récupéré par `MainCB2_Overworld::getPendingWarp`),
- *  PAS les `TryArrowWarp`/`TryStartWarpEventScript` de ce fichier (lookup différent, jamais
- *  activé en jeu). `CheckForTrainersWantingBattle` = PORTÉ (P2.3, aggro dresseurs). Non encore
- *  portés (gérés ailleurs ou sous-système dédié absent) : `TryRunOnFrameMapScript` (appelé par
- *  la scène), dive emerge/down, start menu (`TickStartMenu`), select item, misc/step-count/repel. */
+ *  ⚠️ Le dispatch warp = lookup 1:1 `GetWarpEventAtMapPosition`/`SetupWarp` + classifieur
+ *  `getWarpKindFor` → `setPendingWarp` (mécanisme pending-warp d'overworld.ts, récupéré par
+ *  `MainCB2_Overworld::getPendingWarp`), PAS les wrappers `TryArrowWarp`/`TryStartWarpEventScript`
+ *  de ce fichier (jamais activés en jeu — même lookup en interne). `CheckForTrainersWantingBattle`
+ *  = PORTÉ (P2.3, aggro dresseurs). Non encore portés (gérés ailleurs ou sous-système dédié
+ *  absent) : `TryRunOnFrameMapScript` (appelé par la scène), start menu (`TickStartMenu`),
+ *  select item, misc walking. */
 export function ProcessPlayerFieldInput(input: FieldInput): boolean {
   gSpecialVar.LastTalked = LOCALID_NONE;
   gSelectedObjectEvent.index = 0;
@@ -296,7 +305,9 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
       return true;
     }
     // `TryStartWarpEventScript(position, mb)` — step-on warp (door/ladder/escalator/…), PAS arrow.
-    const stepWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+    // Lookup 1:1 : warpEventId = GetWarpEventAtMapPosition(&gMapHeader, position) → SetupWarp.
+    const stepWarpId = GetWarpEventAtMapPosition(gMapHeader, position);
+    const stepWarp = stepWarpId !== -1 ? SetupWarp(gMapHeader, stepWarpId, position) : null;
     if (stepWarp) {
       const kind = getWarpKindFor(metatileBehavior);
       if (kind && kind !== 'arrow') {
@@ -317,8 +328,9 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
 
   // input->heldDirection && dpad == facing : 1:1 décomp `TryArrowWarp` (arrow warp pré-step).
   if (input.heldDirection && input.dpadDirection === playerDirection) {
-    if (isArrowWarpMetatileBehavior(metatileBehavior, playerDirection)) {
-      const arrowWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+    if (IsArrowWarpMetatileBehavior(metatileBehavior, playerDirection)) {
+      const arrowWarpId = GetWarpEventAtMapPosition(gMapHeader, position);
+      const arrowWarp = arrowWarpId !== -1 ? SetupWarp(gMapHeader, arrowWarpId, position) : null;
       if (arrowWarp) {
         setPendingWarp(arrowWarp, 'arrow');
         return true;
@@ -340,7 +352,8 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
     if (playerDirection === DIR_NORTH) {
       const kind = getWarpKindFor(metatileBehavior);
       if (kind === 'door') {
-        const doorWarp = findWarpEventAt(position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+        const doorWarpId = GetWarpEventAtMapPosition(gMapHeader, position);
+        const doorWarp = doorWarpId !== -1 ? SetupWarp(gMapHeader, doorWarpId, position) : null;
         if (doorWarp) {
           setPendingWarp(doorWarp, kind);
           return true;
@@ -468,7 +481,8 @@ export function GetWarpEventAtMapPosition(
  *  if (warpEvent->mapNum == MAP_DYNAMIC) → SetWarpDestinationToDynamicWarp.
  *  else → SetWarpDestinationToMapWarp(warpEvent->mapGroup, ...);
  *  ```
- *  Notre impl : utiliser warp-system `setPendingWarp` à la place. */
+ *  Notre impl : retourne le WarpEvent ; le caller le pousse via `setPendingWarp`
+ *  (mécanisme pending-warp, overworld.ts). */
 export function SetupWarp(
   mapHeader: typeof gMapHeader,
   warpEventId: number,
@@ -482,6 +496,92 @@ export function SetupWarp(
 }
 
 // ─── Warp dispatch helpers 1:1 décomp ──────────────────────────────────────
+
+/** Type de warp détecté (rapatrié de engine/field/warp-system.ts, unification
+ *  lot 16). Dispatché par executeWarp dans la scène (harness).
+ *  1:1 décomp branches dans `TryStartWarpEventScript` (field_control_avatar.c:702)
+ *  + `TryDoorWarp` (line 833) + `TryArrowWarp` (line 688).
+ *
+ *  Chaque kind correspond à un `Do*Warp` du décomp `field_screen_effect.c` :
+ *    - door         → `DoDoorWarp` (= door open SE + anim + walk-up + warp).
+ *    - step         → `DoWarp` (= step on non_anim door / water door / deep south).
+ *    - ladder       → `DoWarp` (= no walk-down, preserves facing).
+ *    - arrow        → `DoWarp` (= arrow direction match + held).
+ *    - fall         → `DoFallWarp` (= cracked floor hole fall anim).
+ *    - mt_pyre_hole → `ScriptContext_SetupScript(EventScript_FallDownHoleMtPyre)`
+ *                     (= 1:1 décomp Mt Pyre fall via script, PAS DoFallWarp).
+ *    - aqua_teleport→ `DoTeleportTileWarp` (= spin enter anim).
+ *    - union_room   → `DoSpinExitWarp` (= union room spin exit).
+ *    - escalator_up / escalator_down → `DoEscalatorWarp(metatileBehavior)`.
+ *    - lavaridge_b1f→ `DoLavaridgeGymB1FWarp` (= fire pop anim).
+ *    - lavaridge_1f → `DoLavaridgeGym1FWarp` (= hole drop anim).
+ *    - mossdeep_gym → `DoMossdeepGymWarp` (= specific Mossdeep effect).
+ *    - secret_base  → `WarpIntoSecretBase` (= push NORTH sur secret base ouvert).
+ */
+export type WarpKind =
+  | 'door'         // MB_ANIMATED_DOOR (= TryDoorWarp push NORTH)
+  | 'step'         // MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP (= TryStartWarpEventScript step)
+  | 'ladder'       // MB_LADDER (= preserve facing)
+  | 'arrow'        // MB_*_ARROW_WARP (= TryArrowWarp held direction match)
+  | 'fall'         // MB_CRACKED_FLOOR_HOLE (= DoFallWarp post-cracked-floor step)
+  | 'mt_pyre_hole' // MB_MT_PYRE_HOLE (= script EventScript_FallDownHoleMtPyre)
+  | 'aqua_teleport'// MB_AQUA_HIDEOUT_WARP (= DoTeleportTileWarp spin enter)
+  | 'union_room'   // MB_BRIDGE_OVER_OCEAN reused (= DoSpinExitWarp)
+  | 'escalator_up' // MB_UP_ESCALATOR (= DoEscalatorWarp up direction)
+  | 'escalator_down'// MB_DOWN_ESCALATOR (= DoEscalatorWarp down direction)
+  | 'lavaridge_b1f'// MB_LAVARIDGE_GYM_B1F_WARP (= fire pop to F1)
+  | 'lavaridge_1f' // MB_LAVARIDGE_GYM_1F_WARP (= hole drop to B1F)
+  | 'mossdeep_gym' // MB_MOSSDEEP_GYM_WARP (= Mossdeep specific spin)
+  | 'secret_base'; // IsOpenSecretBaseDoor (= push NORTH WarpIntoSecretBase)
+
+/** Classifier le metatile en WarpKind. 1:1 décomp dispatch ordre de
+ *  `TryStartWarpEventScript` (field_control_avatar.c:702-749) + `TryDoorWarp`
+ *  (line 833) + `TryArrowWarp` (line 688).
+ *
+ *  Important : l'ordre du dispatch décomp est SIGNIFICATIF — certains tiles
+ *  peuvent matcher plusieurs helpers (= e.g. door tile matche aussi
+ *  `IsWarpMetatileBehavior` qui inclut `IsWarpDoor`). On retourne le PREMIER
+ *  match en suivant l'ordre décomp.
+ *
+ *  Returns null si pas un warp. */
+export function getWarpKindFor(behavior: number): WarpKind | null {
+  // 1. Secret base door (= TryDoorWarp push NORTH branch décomp:839-843).
+  //    Premier check parce que `IsOpenSecretBaseDoor` overlap pas avec autres.
+  if (MetatileBehavior_IsOpenSecretBaseDoor(behavior)) return 'secret_base';
+
+  // 2. Door warp (= TryDoorWarp décomp:845-855, MB_ANIMATED_DOOR).
+  if (MetatileBehavior_IsWarpDoor(behavior)) return 'door';
+
+  // 3. Arrow warps (= TryArrowWarp décomp:688-700). Direction-spécifique mais
+  //    le classifier ici n'a pas la direction → retourne 'arrow' générique,
+  //    le caller check IsArrowWarpMetatileBehavior(behavior, direction) avant
+  //    d'invoquer.
+  if (MetatileBehavior_IsNorthArrowWarp(behavior)
+   || MetatileBehavior_IsSouthArrowWarp(behavior)
+   || MetatileBehavior_IsEastArrowWarp(behavior)
+   || MetatileBehavior_IsWestArrowWarp(behavior)) return 'arrow';
+
+  // 4. Special warps (= TryStartWarpEventScript dispatch ordre 1:1).
+  //    `IsEscalator` retourné split UP/DOWN pour permettre dispatch correct.
+  if (behavior === MB_UP_ESCALATOR) return 'escalator_up';
+  if (behavior === MB_DOWN_ESCALATOR) return 'escalator_down';
+  if (MetatileBehavior_IsLavaridgeB1FWarp(behavior)) return 'lavaridge_b1f';
+  if (MetatileBehavior_IsLavaridge1FWarp(behavior)) return 'lavaridge_1f';
+  if (MetatileBehavior_IsAquaHideoutWarp(behavior)) return 'aqua_teleport';
+  if (MetatileBehavior_IsUnionRoomWarp(behavior)) return 'union_room';
+  if (MetatileBehavior_IsMtPyreHole(behavior)) return 'mt_pyre_hole';
+  if (MetatileBehavior_IsMossdeepGymWarp(behavior)) return 'mossdeep_gym';
+
+  // 5. Cracked floor hole (= fall warp, dispatch via player step). Pas couvert
+  //    par `IsWarpMetatileBehavior` du décomp (= géré par player collision).
+  if (MetatileBehavior_IsCrackedFloorHole(behavior)) return 'fall';
+
+  // 6. Non-anim door + ladder (= TryStartWarpEventScript fallback DoWarp).
+  if (MetatileBehavior_IsNonAnimDoor(behavior)) return 'step';
+  if (MetatileBehavior_IsLadder(behavior)) return 'ladder';
+
+  return null;
+}
 
 /** 1:1 décomp `TryArrowWarp` (field_control_avatar.c:688-700).
  *

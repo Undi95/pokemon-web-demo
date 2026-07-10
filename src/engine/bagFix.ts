@@ -29,7 +29,7 @@
  *   - `gSaveBlock1Ptr` / `gSaveBlock2Ptr` (save-block-state.ts)
  *   - `FlagSet/FlagClear/FlagGet/VarSet/VarGet` (script-vars.ts)
  *   - `GetCurrentMap/SetCurrentMap` (load_save.ts)
- *   - `GetDynamicWarp/SetDynamicWarp` (warp-system.ts)
+ *   - `GetDynamicWarp/SetDynamicWarp` (overworld.ts)
  *   - `SaveGame/LoadGameSave/ResetSaveBlocks/HasValidSave` (save-system.ts)
  *   - `GiveMonToPlayer` (pokemon.ts)
  *   - `gBagPockets` + AddBagItem/RemoveBagItem/etc. (bag.ts) ← sac réel
@@ -48,7 +48,8 @@ import '../save';
 import '../load_save';
 import './save/save-block-state';
 import './script/script-vars';
-import './field/warp-system';
+// (ex `./field/warp-system` : dissous dans src/overworld.ts — unification lot 16 ;
+//  overworld est déjà dans la chaîne eager principale, plus rien à tirer ici.)
 
 import { gSaveBlock1Ptr } from './save/save-block-state';
 import type { ItemSlot, Bag } from './bag/bag';

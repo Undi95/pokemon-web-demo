@@ -27,7 +27,7 @@ import { ISO_RANDOMIZE2 } from '../include/random';
 import { PARTY_SIZE } from '../include/constants/global';
 import { gPlayerParty, GetMonData as _GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
 import { gLocalTime, RtcCalcLocalTime } from './rtc';
-import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './overworld';
 import { IsWeatherChangeComplete } from './field_weather';
 import { ScriptContext_Enable } from './script';
 import { CreateTask, DestroyTask } from './task';

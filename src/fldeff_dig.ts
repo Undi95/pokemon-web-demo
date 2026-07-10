@@ -15,7 +15,7 @@
 
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { Overworld_ResetStateAfterDigEscRope } from './overworld';
-import { setPendingWarp } from './engine/field/warp-system';
+import { setPendingWarp } from './overworld';
 import { FieldEffectActiveListRemove } from './field_effect';
 import { FadeScreen, FADE_TO_BLACK } from './field_weather';
 import { gMapHeader } from './fieldmap';

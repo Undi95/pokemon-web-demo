@@ -16,7 +16,7 @@ import {
 } from '../../src/script';
 import { GetMartItemList, IsShopMenuOpen } from '../../src/shop';
 import type { ScriptPtr } from '../../src/script';
-import { setPendingWarp, getPendingWarp } from '../../src/engine/field/warp-system';
+import { setPendingWarp, getPendingWarp } from '../../src/overworld';
 import { GetMoney, AddMoney, RemoveMoney } from '../../src/money';
 import { CheckBagHasItem, RemoveBagItem } from '../../src/engine/bag/bag';
 import { MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET } from '../../src/fieldmap';

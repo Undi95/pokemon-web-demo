@@ -24,7 +24,7 @@
 | `engine/script/script-vars.ts` | `event_data.c` | 9 | 6 | 67% | 3 |
 | `engine/field/region-map-data.ts` | `region_map.c` | 8 | 5 | 63% | 3 |
 
-## 🔴 Harness/maison (53) — reste en engine/ (peu/pas de noms décomp)
+## 🔴 Harness/maison (45) — reste en engine/ (peu/pas de noms décomp)
 
 - `engine/bag/bag-item-effects.ts` (12 fn, 2 décomp-nommées)
 - `engine/bag/bag-screen.ts` (89 fn, 1 décomp-nommées)
@@ -58,19 +58,11 @@
 - `engine/data/game-data.ts` (34 fn, 2 décomp-nommées)
 - `engine/field/field-globals.ts` (7 fn, 0 décomp-nommées)
 - `engine/field/fly-field-move.ts` (3 fn, 0 décomp-nommées)
-- `engine/field/map-layout-swap.ts` (1 fn, 1 décomp-nommées)
 - `engine/field/movement-system.ts` (5 fn, 0 décomp-nommées)
 - `engine/field/object-event-graphics-info.ts` (5 fn, 2 décomp-nommées)
 - `engine/field/object-event-graphics.ts` (10 fn, 2 décomp-nommées)
 - `engine/field/region-map.ts` (21 fn, 1 décomp-nommées)
 - `engine/field/tilemap-loader.ts` (9 fn, 0 décomp-nommées)
-- `engine/field/virtual-objects.ts` (7 fn, 2 décomp-nommées)
-- `engine/field/warp-system.ts` (24 fn, 11 décomp-nommées)
-- `engine/pokemon/pc-anim.ts` (8 fn, 1 décomp-nommées)
-- `engine/pokemon/pc-box.ts` (2 fn, 2 décomp-nommées)
-- `engine/pokemon/pc-items.ts` (11 fn, 6 décomp-nommées)
-- `engine/pokemon/secret-base.ts` (4 fn, 0 décomp-nommées)
-- `engine/pokemon/tmhm-moves.ts` (1 fn, 1 décomp-nommées)
 - `engine/save/new-game-flags.ts` (1 fn, 0 décomp-nommées)
 - `engine/save/save-block-state.ts` (4 fn, 0 décomp-nommées)
 - `engine/save/save-blocks.ts` (25 fn, 0 décomp-nommées)

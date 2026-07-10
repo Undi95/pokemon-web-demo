@@ -9,7 +9,7 @@
 
 import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { gMapHeader, getCachedMapHeader, type MapConnection } from './fieldmap';
+import { gMapHeader, getCachedMapHeader, type MapConnection, type WarpEvent, type MapHeader } from './fieldmap';
 import {
   getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
@@ -46,7 +46,10 @@ import {
   FadeOutAndFadeInNewMapMusic, ResetMapMusic, FadeOutMapMusic,
   IsNotWaitingForBGMStop,
 } from './sound';
-import { MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE } from '../include/constants/map_types';
+import {
+  MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE,
+  MAP_TYPE_TOWN, MAP_TYPE_CITY, MAP_TYPE_ROUTE, MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
+} from '../include/constants/map_types';
 import { MAP_CONSTANTS } from '../include/constants/map_groups';
 import { GetSavedWeather } from './field_weather_effect';
 import { WEATHER_SANDSTORM } from '../include/constants/weather';
@@ -54,6 +57,19 @@ import { FlagGet, FlagClear, VarGet, VarSet } from './engine/script/script-vars'
 import { GetHealLocationByName } from './heal_location';
 import { GetMoney, SetMoney } from './money';
 import { HealPlayerParty } from './script_pokemon_util';
+// Bloc warp (unification lot 16, ex engine/field/warp-system.ts) : leafs include/*
+// pour les constantes de header ; GetPlayerFacingDirection = function hoistée
+// (cycle overworld ↔ field_player_avatar bénin) ; WarpKind = import TYPE-only
+// (effacé à la compile → pas d'arête runtime overworld → field_control_avatar).
+import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../include/constants/global';
+import { DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../include/global.fieldmap';
+import {
+  MetatileBehavior_IsDeepSouthWarp, MetatileBehavior_IsNonAnimDoor, MetatileBehavior_IsDoor,
+  MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsNorthArrowWarp,
+  MetatileBehavior_IsWestArrowWarp, MetatileBehavior_IsEastArrowWarp, MetatileBehavior_IsLadder,
+} from './metatile_behavior';
+import { GetPlayerFacingDirection } from './field_player_avatar';
+import type { WarpKind } from './field_control_avatar';
 
 /** 1:1 décomp `enum { BG_COORD_SET, BG_COORD_ADD }` (bg.h:26) → BG_COORD_SET = 0.
  *  Const locale (pas d'enum bg.h porté côté valeur). */
@@ -223,8 +239,9 @@ export function SetContinueGameWarpToHealLocation(healLocationId: string): void 
  *  WarpIntoMap();
  *  ```
  *  ADAPTATIONS : warp = pending-warp name-based via respawnLocation (même mécanisme
- *  que le whiteout combat, battle-decomp-loop.ts) ; RunScriptImmediately + warp-system
- *  en import dynamique (anti-cycle script/warp-system ↔ overworld). */
+ *  que le whiteout combat, battle-decomp-loop.ts) ; RunScriptImmediately en import
+ *  dynamique (anti-cycle script ↔ overworld) ; setPendingWarp = LOCAL depuis
+ *  l'unification lot 16 (ex warp-system dissous ici). */
 export function DoWhiteOut(): void {
   void import('./script').then((m) => {
     try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[DoWhiteOut] EventScript_WhiteOut KO', e); }
@@ -235,10 +252,8 @@ export function DoWhiteOut(): void {
   const respawn = (gSaveBlock1Ptr as { respawnLocation?: string }).respawnLocation;
   const heal = GetHealLocationByName(respawn);
   if (heal) {
-    void import('./engine/field/warp-system').then((ws) => {
-      ws.setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
-      console.log(`[DoWhiteOut] respawn warp → ${heal.map} (${heal.x},${heal.y})`);
-    });
+    setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
+    console.log(`[DoWhiteOut] respawn warp → ${heal.map} (${heal.x},${heal.y})`);
   } else {
     console.warn('[DoWhiteOut] respawnLocation non résolue :', respawn);
   }
@@ -280,7 +295,7 @@ export function Overworld_ClearSavedMusic(): void {
 /** 1:1 décomp `EWRAM_DATA static struct WarpData sWarpDestination = {0};`
  *  (overworld.c:194) — destination du prochain warp. Posée par
  *  `SetWarpDestination*` (sites : executeWarp harness = SetupWarp/Do*Warp,
- *  SetDiveWarp warp-system.ts, handleConnectionTransition =
+ *  SetDiveWarp ci-dessous, handleConnectionTransition =
  *  LoadMapFromCameraTransition:788) ; consommée par GetWarpDestinationMusic,
  *  GetDestinationWarpMapHeader/GetMapMusicFadeoutSpeed, TryFadeOutOldMapMusic
  *  et ApplyCurrentWarp. */
@@ -305,7 +320,7 @@ export function SetWarpDestination(mapGroup: number, mapNum: number, warpId: num
 /** ADAPTATION port (modèle warp name-based) : résout 'MAP_*' → (group, num) via
  *  MAP_CONSTANTS puis SetWarpDestination 1:1. Consommé par les call-sites décomp
  *  qui chez nous transportent le NOM de map (executeWarp, SetDiveWarp
- *  warp-system.ts, handleConnectionTransition). Map inconnue → (-1, -1)
+ *  ci-dessous, handleConnectionTransition). Map inconnue → (-1, -1)
  *  (≈ MAP_UNDEFINED) : GetLocationMusic retombera sur le header vide (music 0). */
 export function SetWarpDestinationFromMapName(mapName: string, warpId: number, x: number, y: number): void {
   const packed = MAP_CONSTANTS[mapName];
@@ -328,15 +343,240 @@ export function GetDestinationWarpMapHeader(): any {
  *    gSaveBlock1Ptr->location = sWarpDestination;
  *    sFixedDiveWarp = sDummyWarpData;
  *    sFixedHoleWarp = sDummyWarpData;
- *  `gLastUsedWarp` a son foyer dans warp-system.ts (qui importe overworld →
- *  cycle ESM) → pont `globalThis.__setLastUsedWarp` posé par warp-system.
+ *  `gLastUsedWarp` vit désormais ici (unification lot 16 — l'ex-pont
+ *  `globalThis.__setLastUsedWarp` anti-cycle warp-system↔overworld est dissous).
  *  `sFixedDiveWarp`/`sFixedHoleWarp` : statics non portés (dette dive/hole fixe
- *  documentée dans warp-system.ts SetDiveWarp) → les 2 clears sont sans objet. */
+ *  documentée sur SetDiveWarp ci-dessous) → les 2 clears sont sans objet. */
 export function ApplyCurrentWarp(): void {
-  const setLast = (globalThis as Record<string, unknown>).__setLastUsedWarp as
-    ((w: WarpData) => void) | undefined;
-  setLast?.(gSaveBlock1Ptr.location as WarpData);
+  setLastUsedWarp(gSaveBlock1Ptr.location as WarpData);
   gSaveBlock1Ptr.location = { ...sWarpDestination };
+}
+
+// ─── Pending warp + dynamic/dive warp + map types (unification lot 16) ───────
+// Rapatrié de engine/field/warp-system.ts — foyer 1:1 overworld.c (sauf mention).
+
+/** ADAPTATION port (modèle pending-warp) : équivalent du couple
+ *  `sWarpDestination` + déclencheur. Le décomp enchaîne SetupWarp → DoWarp() →
+ *  CreateTask(Task_WarpAndLoadMap) → SetMainCallback2(CB2_LoadMap) ; notre scène
+ *  (MainCB2_Overworld, harness TestOverworldScene) consomme le warp posé ici via
+ *  `getPendingWarp()` → executeWarp (fade 1:1 + load dest + exit task selon la
+ *  tuile d'arrivée). La dest transite PAR VALEUR ({destMap, x, y, warpId}) au
+ *  lieu du static sWarpDestination — même chemin que __devGotoMap. */
+let _gPendingWarp: WarpEvent | null = null;
+let _gPendingWarpKind: WarpKind | null = null;
+
+export function setPendingWarp(warp: WarpEvent | null, kind: WarpKind | null = null): void {
+  _gPendingWarp = warp;
+  _gPendingWarpKind = kind;
+}
+
+export function getPendingWarp(): { warp: WarpEvent; kind: WarpKind } | null {
+  if (!_gPendingWarp || !_gPendingWarpKind) return null;
+  return { warp: _gPendingWarp, kind: _gPendingWarpKind };
+}
+
+/** 1:1 décomp `GetAdjustedInitialDirection` (overworld.c:929-952). Détermine
+ *  la direction du facing du player après le load de la dest map, selon le
+ *  metatile_behavior à la position post-warp + son ancien facing.
+ *
+ *  Décomp appelé via `GetInitialPlayerAvatarState()` → `InitObjectEventsLocal`
+ *  → `InitPlayerAvatar(x, y, direction, gender)` au spawn dans la dest map.
+ *  Donc le facing est défini AVANT que `FieldCB_DefaultWarpExit` ne lance
+ *  `Task_ExitNonAnimDoor` qui lit `GetPlayerFacingDirection()` pour walker
+ *  dans cette direction (= push 1 case).
+ *
+ *  Skipped (dette documentée, à porter si besoin) :
+ *  - FLAG_SYS_CRUISE_MODE + MAP_TYPE_OCEAN_ROUTE → DIR_EAST
+ *  - underwater/surfing transition flags
+ *  - MetatileBehavior_IsWaterDoor → traitée comme MB_NON_ANIMATED_DOOR
+ *    (= notre classifier IsNonAnimDoor inclut MB_WATER_DOOR, c'est cohérent). */
+export function GetAdjustedInitialDirection(
+  metatileBehavior: number,
+  previousDirection: number,
+): number {
+  // 1:1 décomp branches (= overworld.c:929-952, ordre conservé pour priorité
+  // identique).
+  if (MetatileBehavior_IsDeepSouthWarp(metatileBehavior)) return DIR_NORTH;
+  if (MetatileBehavior_IsNonAnimDoor(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsDoor(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsSouthArrowWarp(metatileBehavior)) return DIR_NORTH;
+  if (MetatileBehavior_IsNorthArrowWarp(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsWestArrowWarp(metatileBehavior)) return DIR_EAST;
+  if (MetatileBehavior_IsEastArrowWarp(metatileBehavior)) return DIR_WEST;
+  if (MetatileBehavior_IsLadder(metatileBehavior)) return previousDirection;
+  // Default 1:1 décomp ligne 951 : DIR_SOUTH.
+  return DIR_SOUTH;
+}
+
+/** 1:1 décomp `SetPlayerCoordsFromWarp` (overworld.c:603) — résout les coords
+ *  du player dans la map dest depuis warp.warpId.
+ *
+ *  Comportement 1:1 décomp : préserve le facing courant ; c'est la scène
+ *  executeWarp qui override DIR_SOUTH pour les exit tasks door/non_anim
+ *  (Task_ExitDoor/Task_ExitNonAnimDoor = walk-down), et les ladders/arrows/
+ *  escalators gardent leur facing (GetAdjustedInitialDirection ci-dessus).
+ *
+ *  @returns { x, y, facing } pour spawn dans la dest map. */
+export function getPlayerCoordsFromWarp(
+  destMapHeader: MapHeader,
+  destWarpId: number,
+): { x: number; y: number; facing: number } {
+  const warps = destMapHeader.events.warps;
+  const id = (destWarpId >= 0 && destWarpId < warps.length) ? destWarpId : 0;
+  if (id !== destWarpId) {
+    console.warn(`[overworld] destWarpId ${destWarpId} out of range (${warps.length} warps), fallback 0`);
+  }
+  const dest = warps[id];
+  if (!dest) {
+    return {
+      x: Math.floor(destMapHeader.mapLayout.width / 2),
+      y: Math.floor(destMapHeader.mapLayout.height / 2),
+      facing: GetPlayerFacingDirection(),  // = preserve current facing
+    };
+  }
+  return { x: dest.x, y: dest.y, facing: GetPlayerFacingDirection() };
+}
+
+/** 1:1 décomp `ScrCmd_setdynamicwarp` (scrcmd.c) :
+ *    SetDynamicWarp(mapGroup, mapNum, warpId);
+ *  Stocke dans `gSaveBlock1Ptr->dynamicWarp` la prochaine destination MAP_DYNAMIC.
+ *  Notre port : mapId est string (= conversion mapGroup/mapNum → name déférée),
+ *  stocké dans `__dynamicWarpMapId` overlay. */
+export function SetDynamicWarp(mapId: string, x: number, y: number): void {
+  gSaveBlock1Ptr.dynamicWarp = { mapGroup: 0, mapNum: 0, warpId: -1, x, y };
+  (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId = mapId;
+}
+
+/** 1:1 décomp `GetDynamicWarp` accessor : lit gSaveBlock1Ptr->dynamicWarp.
+ *  Retourne undefined si pas set. */
+export function GetDynamicWarp(): { mapId: string; x: number; y: number } | undefined {
+  const w = gSaveBlock1Ptr.dynamicWarp as { x: number; y: number } | undefined;
+  const mapId = (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId;
+  if (!mapId || !w) return undefined;
+  return { mapId, x: w.x, y: w.y };
+}
+
+// ─── Dive warp (1:1 overworld.c:740-781 + field_screen_effect.c:495) ─────────
+//
+// Le décomp stocke la destination dans `sWarpDestination` (consommé par
+// WarpIntoMap au chargement). Notre modèle pending-warp transporte la dest DANS
+// l'objet (destMap/x/y, warpId:-1 = coords directes — même chemin que
+// __devGotoMap, PROUVÉ : une map underwater charge bien). On stocke donc la dest
+// dans `_sDiveWarpDest` puis `DoDiveWarp` la pousse via setPendingWarp.
+
+/** Destination du prochain warp Dive, posée par SetDiveWarp, consommée par DoDiveWarp. */
+let _sDiveWarpDest: { destMap: string; x: number; y: number } | null = null;
+
+/** 1:1 STRICT décomp `SetDiveWarp(u8 dir, u16 x, u16 y)` (overworld.c:756) :
+ *    connection = GetMapConnection(dir);
+ *    if (connection != NULL) SetWarpDestination(connection->mapGroup, mapNum, WARP_ID_NONE, x, y);
+ *    else { RunOnDiveWarpMapScript(); if (IsDummyWarp(&sFixedDiveWarp)) return FALSE; SetWarpDestinationToDiveWarp(); }
+ *    return TRUE;
+ *  (x, y) = coords LOCALES du joueur. Branche connexion = cas commun (Route124→Underwater).
+ *  ⚠️ DETTE : la branche `sFixedDiveWarp` (maps à dive warp fixe via opcode `setdivewarp` :
+ *  Marine Cave, Sealed Chamber…) n'est pas portée → on retourne FALSE s'il n'y a pas de
+ *  connexion (= "pas de dive ici", comportement honnête, pas un stub qui fait semblant). */
+function SetDiveWarp(dir: number, x: number, y: number): boolean {
+  const connection = GetMapConnection(dir);
+  if (connection !== null) {
+    // 1:1 décomp `SetWarpDestination(connection->mapGroup, connection->mapNum,
+    // WARP_ID_NONE, x, y)` (overworld.c:762) : pose sWarpDestination — consommée
+    // par TryFadeOutOldMapMusic/GetWarpDestinationMusic + ApplyCurrentWarp au
+    // moment du warp.
+    SetWarpDestinationFromMapName(connection.destMap, -1, x, y);
+    // Modèle pending-warp du port : la dest transite AUSSI par _sDiveWarpDest
+    // (consommée par DoDiveWarp → setPendingWarp).
+    _sDiveWarpDest = { destMap: connection.destMap, x, y };
+    return true;
+  }
+  // Branche fixed-dive-warp non portée (dette documentée).
+  return false;
+}
+
+/** 1:1 STRICT décomp `SetDiveWarpEmerge(u16 x, u16 y)` (overworld.c:774). */
+export function SetDiveWarpEmerge(x: number, y: number): boolean {
+  return SetDiveWarp(CONNECTION_EMERGE, x, y);
+}
+
+/** 1:1 STRICT décomp `SetDiveWarpDive(u16 x, u16 y)` (overworld.c:779). */
+export function SetDiveWarpDive(x: number, y: number): boolean {
+  return SetDiveWarp(CONNECTION_DIVE, x, y);
+}
+
+/** 1:1 décomp `DoDiveWarp(void)` — ⚠️ foyer décomp = field_screen_effect.c:495 ;
+ *  hébergé ici (overworld.ts) par le canal `_sDiveWarpDest` de l'adaptation
+ *  pending-warp — à déplacer quand Task_WarpAndLoadMap & co seront transcrits
+ *  dans field_screen_effect.ts. Décomp :
+ *    LockPlayerFieldControls(); TryFadeOutOldMapMusic(); WarpFadeOutScreen();
+ *    PlayRainStoppingSoundEffect(); gFieldCallback = FieldCB_DefaultWarpExit;
+ *    CreateTask(Task_WarpAndLoadMap, 10);
+ *  Adaptation port : le warp = `setPendingWarp(dest, 'step')` (la scène MainCB2 le
+ *  consomme → executeWarp = LockPlayerFieldControls + TryFadeOutOldMapMusic +
+ *  fade + Task_WarpAndLoadMap + exit task selon la tuile dest, comme
+ *  __devGotoMap). La dest doit avoir été posée par SetDiveWarpDive/Emerge
+ *  (qui pose aussi sWarpDestination ci-dessus). */
+export function DoDiveWarp(): void {
+  if (!_sDiveWarpDest) return;
+  setPendingWarp(
+    { destMap: _sDiveWarpDest.destMap, x: _sDiveWarpDest.x, y: _sDiveWarpDest.y, elevation: 0, warpId: -1 },
+    'step',
+  );
+}
+
+// ─── Map type helpers (1:1 décomp overworld.c:193 + 1334-1364) ───────────────
+
+/** 1:1 décomp `EWRAM_DATA struct WarpData gLastUsedWarp = {0}` (overworld.c:193).
+ *  Mémorise la map source d'où le player vient d'arriver. Set par ApplyCurrentWarp
+ *  (overworld.c:542) AVANT le swap location → dest.
+ *
+ *  Notre port : à jour via setLastUsedWarp() (appelé par ApplyCurrentWarp).
+ *  Dette R3 documentée : wire setLastUsedWarp dans tous les flow Do*Warp. */
+export const gLastUsedWarp: WarpData = { mapGroup: 0, mapNum: 0, warpId: 0, x: 0, y: 0 };
+
+/** 1:1 décomp ApplyCurrentWarp prelude (overworld.c:542) :
+ *  `gLastUsedWarp = gSaveBlock1Ptr->location;`. Doit être appelé AVANT que
+ *  gSaveBlock1Ptr.location soit overwrite par le swap warp. */
+export function setLastUsedWarp(w: WarpData): void {
+  gLastUsedWarp.mapGroup = w.mapGroup;
+  gLastUsedWarp.mapNum = w.mapNum;
+  gLastUsedWarp.warpId = w.warpId;
+  gLastUsedWarp.x = w.x;
+  gLastUsedWarp.y = w.y;
+}
+
+/** 1:1 décomp `u8 GetMapTypeByGroupAndId(s8 mapGroup, s8 mapNum)` (overworld.c:1334) :
+ *  `return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapType;`. */
+export function GetMapTypeByGroupAndId(mapGroup: number, mapNum: number): number {
+  const hdr = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+  return (hdr?.mapType ?? 0) & 0xFF;
+}
+
+/** 1:1 décomp `u8 GetMapTypeByWarpData(struct WarpData *warp)` (overworld.c:1339) :
+ *  `return GetMapTypeByGroupAndId(warp->mapGroup, warp->mapNum);`. */
+export function GetMapTypeByWarpData(warp: WarpData): number {
+  return GetMapTypeByGroupAndId(warp.mapGroup, warp.mapNum);
+}
+
+/** 1:1 décomp `u8 GetCurrentMapType(void)` (overworld.c:1344) :
+ *  `return GetMapTypeByWarpData(&gSaveBlock1Ptr->location);`. */
+export function GetCurrentMapType(): number {
+  return GetMapTypeByWarpData(gSaveBlock1Ptr.location);
+}
+
+/** 1:1 décomp `u8 GetLastUsedWarpMapType(void)` (overworld.c:1349) :
+ *  `return GetMapTypeByWarpData(&gLastUsedWarp);`. */
+export function GetLastUsedWarpMapType(): number {
+  return GetMapTypeByWarpData(gLastUsedWarp);
+}
+
+/** 1:1 décomp `bool8 IsMapTypeOutdoors(u8 mapType)` (overworld.c:1354) :
+ *  `return mapType == ROUTE || TOWN || UNDERWATER || CITY || OCEAN_ROUTE;`. */
+export function IsMapTypeOutdoors(mapType: number): boolean {
+  return mapType === MAP_TYPE_ROUTE
+      || mapType === MAP_TYPE_TOWN
+      || mapType === MAP_TYPE_UNDERWATER
+      || mapType === MAP_TYPE_CITY
+      || mapType === MAP_TYPE_OCEAN_ROUTE;
 }
 
 // ─── Résolution musique de map (1:1 overworld.c:1010-1205) ───────────────────
@@ -520,7 +760,7 @@ export function Overworld_ResetMapMusic(): void {
  *  (re)lance si différente de la musique courante. Appelé à l'entrée de map
  *  (field_screen_effect.c:128) et par la scène d'évolution post-jingle.
  *  ADAPTATION : check UNDERWATER via gMapHeader.mapType (STRING dans le port,
- *  cf Overworld_MapTypeAllowsTeleportAndFly) — GetCurrentMapType (warp-system)
+ *  cf Overworld_MapTypeAllowsTeleportAndFly) — GetCurrentMapType (ci-dessus)
  *  = cycle ESM connu avec overworld. */
 export function Overworld_PlaySpecialMapMusic(): void {
   let music = GetCurrLocationDefaultMusic();

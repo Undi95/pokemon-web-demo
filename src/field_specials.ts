@@ -36,7 +36,7 @@ import { GetPlayerNameString, setStringVar } from '../include/text';
 import { VarGet, VarSet, FlagSet, FlagGet, FlagClear } from './engine/script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gLocalTime } from './rtc';
-import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './engine/field/warp-system';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './overworld';
 import { Random } from './random';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
 import { SetCameraPanning, SetCameraPanningCallback } from './field_camera';

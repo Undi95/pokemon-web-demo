@@ -144,7 +144,7 @@ export function CB2_EndSafariBattle(): void {
     // import dynamique anti-cycle).
     const saved = (globalThis as { gSavedWarp?: { destMap: string; warpId: number; x: number; y: number } }).gSavedWarp;
     if (saved) {
-      void import('./engine/field/warp-system').then((ws) => {
+      void import('./overworld').then((ws) => {
         ws.setPendingWarp({ destMap: saved.destMap, x: saved.x, y: saved.y, elevation: 0, warpId: saved.warpId }, 'step');
       });
     }
