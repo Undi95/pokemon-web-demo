@@ -587,7 +587,10 @@ export function ply_note(noteCmd: number, mplayInfo: MusicPlayerInfo, track: Mus
       if (ps & 0x80) rhythmPan = ((ps - TONEDATA_P_S_PAN) << 1) & 0xff;
       key = rdU8(subToneOff + 1); // la clé jouée = tone.key du percussif
     } else {
-      key = note;
+      // Key-split : la valeur de table (`note`) n'est QUE l'index du sous-tone ;
+      // la clé jouée RESTE track.key (m4a_1.s:1585 — r3 jamais réécrit en SPL).
+      // 🩸 Payé à l'oracle A-bis : key=2 (l'index) → basse fantôme à 234 Hz.
+      key = track.key;
     }
     toneType = subType;
     tonePanSweep = rdU8(subToneOff + 3);

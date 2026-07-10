@@ -41,6 +41,41 @@ const ROM_PATH = 'D:/Projet 1/rom/pokeemerald_us.gba';
 const OUT_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-bgm.jsonl';
 const PCM_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-pcm.bin';
 const WAV_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-bgm.wav';
+const CHANS_PATH = 'D:/Projet 1/pokemon-web-demo/scripts/m4a-oracle/trace-ts-chans.bin';
+
+/** Sérialise un SoundChannel au layout GBA exact (64 bytes, m4a_constants.inc)
+ *  pour le diff binaire avec trace-m4a-chans.lua. Les pointeurs RAM
+ *  (track/prev/next) sont normalisés en présence 0/1. */
+function serializeChan(b: Buffer, off: number, c: import('../../include/gba/m4a_internal').SoundChannel): void {
+  b.writeUInt8(c.statusFlags & 0xff, off + 0x00);
+  b.writeUInt8(c.type & 0xff, off + 0x01);
+  b.writeUInt8(c.rightVolume & 0xff, off + 0x02);
+  b.writeUInt8(c.leftVolume & 0xff, off + 0x03);
+  b.writeUInt8(c.attack & 0xff, off + 0x04);
+  b.writeUInt8(c.decay & 0xff, off + 0x05);
+  b.writeUInt8(c.sustain & 0xff, off + 0x06);
+  b.writeUInt8(c.release & 0xff, off + 0x07);
+  b.writeUInt8(c.key & 0xff, off + 0x08);
+  b.writeUInt8(c.envelopeVolume & 0xff, off + 0x09);
+  b.writeUInt8(c.envelopeVolumeRight & 0xff, off + 0x0a);
+  b.writeUInt8(c.envelopeVolumeLeft & 0xff, off + 0x0b);
+  b.writeUInt8(c.pseudoEchoVolume & 0xff, off + 0x0c);
+  b.writeUInt8(c.pseudoEchoLength & 0xff, off + 0x0d);
+  b.writeUInt8(c.gateTime & 0xff, off + 0x10);
+  b.writeUInt8(c.midiKey & 0xff, off + 0x11);
+  b.writeUInt8(c.velocity & 0xff, off + 0x12);
+  b.writeUInt8(c.priority & 0xff, off + 0x13);
+  b.writeUInt8(c.rhythmPan & 0xff, off + 0x14);
+  b.writeUInt32LE(c.count >>> 0, off + 0x18);
+  b.writeUInt32LE(c.fw >>> 0, off + 0x1c);
+  b.writeUInt32LE(c.frequency >>> 0, off + 0x20);
+  b.writeUInt32LE(c.wav >>> 0, off + 0x24);
+  b.writeUInt32LE(c.currentPointer >>> 0, off + 0x28);
+  b.writeUInt32LE(c.track ? 1 : 0, off + 0x2c);
+  b.writeUInt32LE(0, off + 0x30);
+  b.writeUInt32LE(c.nextChannelPointer ? 1 : 0, off + 0x34);
+  b.writeUInt32LE(c.xpi >>> 0, off + 0x3c);
+}
 
 // sh observé dans la trace mGBA (MUS_INTRO : 0x0892D0F8, adresse ROM du SongHeader).
 const SONG_HEADER = Number(process.argv[2] ?? 143841656) >>> 0;
@@ -81,6 +116,7 @@ function dumpFrame(f: number): string {
 // et on concatène la tranche écrite (flux audio continu) pour le WAV témoin.
 const lines: string[] = [dumpFrame(0)];
 const pcmChunks: Buffer[] = [];
+const chanChunks: Buffer[] = [];
 const wavL: number[] = [];
 const wavR: number[] = [];
 const spv = gSoundInfo.pcmSamplesPerVBlank;
@@ -88,6 +124,14 @@ pcmChunks.push((() => {
   const h = Buffer.alloc(8);
   h.writeUInt32LE(0x5041344d, 0); // "M4AP"
   h.writeUInt8(1, 4);
+  h.writeUInt8(gSoundInfo.pcmDmaPeriod, 5);
+  h.writeUInt16LE(spv, 6);
+  return h;
+})());
+chanChunks.push((() => {
+  const h = Buffer.alloc(8);
+  h.writeUInt32LE(0x4341344d, 0); // "M4AC"
+  h.writeUInt8(2, 4);
   h.writeUInt8(gSoundInfo.pcmDmaPeriod, 5);
   h.writeUInt16LE(spv, 6);
   return h;
@@ -103,6 +147,12 @@ for (let f = 1; f <= FRAMES; f++) {
   rec.writeUInt8(gSoundInfo.reverb, 9);
   Buffer.from(gSoundInfo.pcmBuffer.buffer, gSoundInfo.pcmBuffer.byteOffset, PCM_DMA_BUF_SIZE * 2).copy(rec, 12);
   pcmChunks.push(rec);
+  // Étage A-bis : les 5 SoundChannels au layout GBA + le pcm (format M4AC v2).
+  const crec = Buffer.alloc(12 + 5 * 64 + PCM_DMA_BUF_SIZE * 2);
+  rec.copy(crec, 0, 0, 12);
+  for (let ci = 0; ci < 5; ci++) serializeChan(crec, 12 + ci * 64, gSoundInfo.chans[ci]);
+  rec.copy(crec, 12 + 5 * 64, 12);
+  chanChunks.push(crec);
   // Tranche écrite cette frame (même formule que SoundMain) → flux WAV.
   const dc = gSoundInfo.pcmDmaCounter;
   const cur = dc - 1 > 0 ? spv * (gSoundInfo.pcmDmaPeriod - (dc - 1)) : 0;
@@ -113,6 +163,7 @@ for (let f = 1; f <= FRAMES; f++) {
 }
 writeFileSync(OUT_PATH, lines.join('\n') + '\n');
 writeFileSync(PCM_PATH, Buffer.concat(pcmChunks));
+writeFileSync(CHANS_PATH, Buffer.concat(chanChunks));
 
 // WAV témoin : stéréo 8-bit unsigned, pcmFreq réelle du driver.
 const nSamples = wavL.length;

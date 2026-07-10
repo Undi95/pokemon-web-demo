@@ -63,15 +63,22 @@ while (last + 1 < seg.length && seg[last + 1].sh === shWanted) last++;
 seg = seg.slice(first, last + 1);
 console.log(`mGBA: plage sh=0x${shWanted.toString(16).toUpperCase()} → ${seg.length} frames`);
 
-// Tranche écrite par la frame (même formule que SoundMain).
-function slice(rec, half) {
+// Tranche écrite par la frame. TS : formule de SoundMain (dc dumpé = celui
+// qu'il a utilisé). mGBA : le dc capturé par le callback "frame" est DÉJÀ
+// décrémenté pour la frame suivante → tranche = period - dc (validé
+// empiriquement par cartographie d'énergie du ring).
+function sliceTs(rec, half) {
   const c = rec.dc - 1 > 0 ? spv * (ts.period - (rec.dc - 1)) : 0;
+  return rec.buf.subarray(c + half, c + half + spv);
+}
+function sliceGba(rec, half) {
+  const c = spv * ((ts.period - rec.dc) % ts.period);
   return rec.buf.subarray(c + half, c + half + spv);
 }
 function sliceEq(a, b) {
   for (const half of [0, HALF]) {
-    const sa = slice(a, half);
-    const sb = slice(b, half);
+    const sa = sliceGba(a, half);
+    const sb = sliceTs(b, half);
     for (let i = 0; i < spv; i++) if (sa[i] !== sb[i]) return false;
   }
   return true;
@@ -80,14 +87,13 @@ function sliceEq(a, b) {
 // Alignement : offset qui maximise les tranches égales sur les 60 premières.
 let bestO = 0;
 let bestScore = -1;
-for (let o = -10; o <= 10; o++) {
+for (let o = -5; o <= 5; o++) {
   let score = 0;
   let n = 0;
   for (let k = 0; k < ts.frames.length && n < 60; k++) {
     const j = k + o;
     if (j < 0 || j >= seg.length) continue;
-    if (ts.frames[k].dc !== seg[j].dc) { n++; continue; } // phase buffer désalignée
-    if (sliceEq(ts.frames[k], seg[j])) score++;
+    if (sliceEq(seg[j], ts.frames[k])) score++;
     n++;
   }
   if (score > bestScore) { bestScore = score; bestO = o; }
@@ -97,7 +103,7 @@ console.log(`Alignement: offset ${bestO} (${bestScore}/60 tranches égales en t�
 // Diff complet.
 let compared = 0;
 let equal = 0;
-let dcMismatch = 0;
+const dcMismatch = 0;
 const divergentFrames = [];
 let firstDiff = null;
 for (let k = 0; k < ts.frames.length; k++) {
@@ -106,13 +112,12 @@ for (let k = 0; k < ts.frames.length; k++) {
   const a = ts.frames[k];
   const b = seg[j];
   compared++;
-  if (a.dc !== b.dc) { dcMismatch++; continue; }
-  if (sliceEq(a, b)) { equal++; continue; }
+  if (sliceEq(b, a)) { equal++; continue; }
   divergentFrames.push(a.f);
   if (!firstDiff) {
     for (const [half, name] of [[0, 'R'], [HALF, 'L']]) {
-      const sa = slice(a, half);
-      const sb = slice(b, half);
+      const sa = sliceTs(a, half);
+      const sb = sliceGba(b, half);
       for (let i = 0; i < spv; i++) {
         if (sa[i] !== sb[i]) {
           firstDiff = `fTS=${a.f}/fGBA=${b.f} ${name}[${i}] TS=${sa[i] << 24 >> 24} mGBA=${sb[i] << 24 >> 24} (dc=${a.dc})`;
@@ -125,7 +130,7 @@ for (let k = 0; k < ts.frames.length; k++) {
 }
 
 console.log(`\n=== ${compared} frames comparées ===`);
-console.log(`tranches identiques: ${equal} · divergentes: ${divergentFrames.length} · phase dc désalignée: ${dcMismatch}`);
+console.log(`tranches identiques: ${equal} · divergentes: ${divergentFrames.length}`);
 if (firstDiff) console.log(`Première divergence: ${firstDiff}`);
 if (divergentFrames.length) {
   const ranges = [];
