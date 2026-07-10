@@ -22,8 +22,7 @@
  *   d'action (battle-action-selection) · l'ordre/dispatch de tour
  *   (battle-turn-helpers/-dispatch) · les SpriteCB_* (battle-sprite-callbacks +
  *   battle-faint-anim) · CB2_HandleStartBattle (battle-link-start) ·
- *   CreateNPCTrainerParty (battle-trainer-party) · SwitchInClearSetData
- *   (battle-switch) · FaintClearSetData/TurnValuesCleanUp (util).
+ *   CreateNPCTrainerParty (battle-trainer-party) · FaintClearSetData/TurnValuesCleanUp (util).
  * NON ATTEIGNABLES (link/multi/recorded — pas de re-export, gates 1:1) :
  *   CB2_PreInitMultiBattle · CB2_PreInitIngamePlayerPartnerBattle ·
  *   CB2_HandleStartMultiPartnerBattle · CB2_HandleStartMultiBattle ·
@@ -979,7 +978,10 @@ function _SwapPartyPokemonBySlots(a: number, b: number): void {
 
 // Boot link-start + données de combat (cleanup) + party dresseur.
 // (CB2_HandleStartBattle + FindLinkBattleMaster : CONSOLIDÉS ci-dessous, section C8.)
-export { SwitchInClearSetData } from './engine/battle/battle-switch';
+// SwitchInClearSetData (battle_main.c:3152) : le port VIVANT = _switchInClearSetData
+// PRIVÉ de battle_script_commands.ts:~8838 (chemin combat réel) — l'ex ré-export du
+// fichier mort engine/battle/battle-switch.ts est supprimé (lot 21). DETTE : re-héberger
+// ici (foyer .c) au chantier cœur battle ; ancienne version : git show <lot21>^:src/engine/battle/battle-switch.ts
 // (FaintClearSetData + TurnValuesCleanUp : CONSOLIDÉS ci-dessous, section C2.)
 export { CreateNPCTrainerParty } from './engine/battle/battle-trainer-party';
 // ═══ SECTION battle-faint-anim — CONSOLIDÉE PHYSIQUEMENT (C1, 2026-06-10) ════
