@@ -57,6 +57,10 @@ import { GetItemHoldEffect, GetItemHoldEffectParam } from './item';
 // Table des saveurs au foyer pokeblock.c:136 (lot 26) — lue en corps de fonction → cycle bénin.
 import { gPokeblockFlavorCompatibilityTable } from './pokeblock';
 import { FLAVOR_COUNT } from '../include/constants/berry';
+// gItemEffectTable au foyer data/pokemon/item_effects (lot 31) — lue en corps → bénin.
+// (ITEM_ENIGMA_BERRY : déjà importé plus bas avec les hold_effects.)
+import { getItemEffectBytes } from './data/pokemon/item_effects';
+import { ITEM_EFFECT_ARG_START, ITEM4_PP_UP, ITEM4_REVIVE } from '../include/constants/item_effects';
 import {
   HOLD_EFFECT_CHOICE_BAND as _HOLD_EFFECT_CHOICE_BAND,
   HOLD_EFFECT_SOUL_DEW as _HOLD_EFFECT_SOUL_DEW,
@@ -1692,6 +1696,90 @@ export function GetFlavorRelationByPersonality(personality: number, flavor: numb
   const nature = GetNatureFromPersonality(personality);
   return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor] ?? 0;
 }
+
+/** 1:1 décomp `gEnigmaBerries[battler].itemEffect` — la Baie Mystère (Enigma
+ *  Berry) est une fonctionnalité câble/event jamais configurée dans ce port →
+ *  SaveBlock vierge = itemEffect tout-à-zéro. GetItemEffectParamOffset ne lit
+ *  que [4]/[5] → résultat identique 1:1 (effectFlags=0 → boucle sautée). */
+const _enigmaBerryItemEffect: number[] = new Array(18).fill(0);
+
+/** 1:1 décomp `u8 GetItemEffectParamOffset(u16 itemId, u8 effectByte, u8 effectBit)`
+ *  (pokemon.c:5311-5423) : offset (≥ ITEM_EFFECT_ARG_START) de l'argument associé
+ *  au bit `effectBit` du byte `effectByte` de l'effet de `itemId`, ou 0 si absent.
+ *  La table gItemEffectTable = data/pokemon/item_effects (lue en corps → cycle bénin). */
+export function GetItemEffectParamOffset(
+  itemId: number,
+  effectByte: number,
+  effectBit: number,
+): number {
+  let offset = ITEM_EFFECT_ARG_START;
+
+  let temp = getItemEffectBytes(itemId);
+  if (!temp && itemId !== ITEM_ENIGMA_BERRY) return 0;
+  if (itemId === ITEM_ENIGMA_BERRY) temp = _enigmaBerryItemEffect;
+  const itemEffect = temp as number[];
+
+  let j: number;
+  let effectFlags: number;
+
+  for (let i = 0; i < ITEM_EFFECT_ARG_START; i++) {
+    switch (i) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+        if (i === effectByte) return 0;
+        break;
+      case 4:
+        effectFlags = itemEffect[4] | 0;
+        if (effectFlags & ITEM4_PP_UP) effectFlags &= ~ITEM4_PP_UP & 0xFF;
+        j = 0;
+        while (effectFlags) {
+          if (effectFlags & 1) {
+            // 1:1 décomp : case 2 nettoie le bit REVIVE puis FALLTHROUGH
+            // vers le corps commun de case 0/1/2/3 (test offset).
+            if (j === 2) {
+              if (effectFlags & (ITEM4_REVIVE >> 2)) {
+                effectFlags &= ~(ITEM4_REVIVE >> 2) & 0xFF;
+              }
+            }
+            if (j === 0 || j === 1 || j === 2 || j === 3) {
+              if (i === effectByte && (effectFlags & effectBit)) return offset;
+              offset++;
+            } else if (j === 7) { // ITEM4_EVO_STONE
+              if (i === effectByte) return 0;
+            }
+          }
+          j++;
+          effectFlags = (effectFlags >> 1) & 0xFF;
+          if (i === effectByte) effectBit = (effectBit >> 1) & 0xFF;
+        }
+        break;
+      case 5:
+        effectFlags = itemEffect[5] | 0;
+        j = 0;
+        while (effectFlags) {
+          if (effectFlags & 1) {
+            if (j >= 0 && j <= 6) {
+              if (i === effectByte && (effectFlags & effectBit)) return offset;
+              offset++;
+            } else if (j === 7) { // ITEM5_FRIENDSHIP_HIGH
+              if (i === effectByte) return 0;
+            }
+          }
+          j++;
+          effectFlags = (effectFlags >> 1) & 0xFF;
+          if (i === effectByte) effectBit = (effectBit >> 1) & 0xFF;
+        }
+        break;
+    }
+  }
+
+  return offset;
+}
+
+// Sonde dev (pattern __GetNature) : GetItemEffectParamOffset appelable console.
+(globalThis as Record<string, unknown>).__GetItemEffectParamOffset = GetItemEffectParamOffset;
 
 /** 1:1 décomp `u16 ModifyStatByNature(u8 nature, u16 stat, u8 statIndex)`
  *  (pokemon.c:5865-5899). statIndex est 1-based (STAT_ATK=1 … STAT_SPDEF=5) ; HP

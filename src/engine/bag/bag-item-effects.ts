@@ -22,7 +22,8 @@ import { type Pokemon, CalculateMonStats, CalculatePPWithBonus } from '../battle
 import { GetEvolutionTargetSpecies } from '../../pokemon';
 import { BeginEvolutionScene } from '../../evolution_scene';
 import { gBattleMoves, gSpeciesInfo, getExperienceForLevel } from '../data/game-data';
-import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
+import { getItemEffectBytes } from '../../data/pokemon/item_effects';
+import { GetItemEffectParamOffset } from '../../pokemon';
 import {
   ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM0_INFATUATION,
   ITEM1_X_DEFEND, ITEM1_X_SPEED,

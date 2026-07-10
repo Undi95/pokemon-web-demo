@@ -167,7 +167,7 @@ import { loadBattleMoves } from '../src/data/battle_moves';
 import { loadBattleScriptBytecode } from '../src/engine/battle/script-interpreter';
 import { loadAiScriptBytecode } from '../src/engine/battle/ai/ai-state';
 import { loadItemHoldEffects } from '../src/item';
-import { loadItemEffects } from '../src/engine/battle/data/item-effects';
+import { loadItemEffects } from '../src/data/pokemon/item_effects';
 import { loadGameData } from '../src/engine/data/game-data';
 void loadBattleMoves();
 void loadBattleScriptBytecode();

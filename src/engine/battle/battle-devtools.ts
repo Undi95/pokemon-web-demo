@@ -104,7 +104,7 @@ import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueu
 import { aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
 import { gAiThinkingStruct, gBattleHistory, setBattlerAI } from '../../battle_ai_script_commands';
 import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from '../../battle_ai_switch_items';
-import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
+import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from '../../data/pokemon/item_effects';
 import { gTypeEffectiveness as _gTypeEff } from '../../battle_main';
 import { TYPE_FORESIGHT as _TYPE_FORESIGHT, TYPE_ENDTABLE as _TYPE_ENDTABLE } from '../../../include/battle_main';
 import { SeedRng } from '../../random';

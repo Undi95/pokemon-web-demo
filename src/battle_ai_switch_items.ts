@@ -118,7 +118,8 @@ import {
   ABILITYEFFECT_FIELD_SPORT,
 } from './battle_util';
 import { getBattleMove } from './data/battle_moves';
-import { getItemEffectBytes, GetItemEffectParamOffset } from './engine/battle/data/item-effects';
+import { getItemEffectBytes } from './data/pokemon/item_effects';
+import { GetItemEffectParamOffset } from './pokemon';
 import { gBattleHistory } from './battle_ai_script_commands';
 import {
   ITEM_NONE,
