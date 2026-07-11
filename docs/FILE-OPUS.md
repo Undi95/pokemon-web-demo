@@ -26,6 +26,32 @@
    · `npx tsc --noEmit` · `__e2e.run('boot-overworld')` pour les régressions boot ·
    test EN JEU par Undi = seul verdict final.
 
+## 0. CHEMIN CRITIQUE — les 4 lots entre nous et le Panthéon (carte 2026-07-11)
+
+Audit complet des ~42 jalons obligatoires : **CS toutes portées et réelles**
+(Coupe/Surf/Force/Éclate-Roc/Cascade/Plongée/Flash/Vol), ~20 items d'histoire =
+vrais handlers, évolution/aggro OK. Restent EXACTEMENT :
+
+1. **`ShakeCamera` hang (fix EN VOL 2026-07-11)** — field_specials.ts:600 no-op
+   sans signal waitstate → 4 scènes obligatoires suspendues à vie : Groudon
+   (MagmaHideout_4F), Kyogre (SeafloorCavern_Room9), réveil Rayquaza
+   (SkyPillar_Top), climax Sootopolis ×10 (ouvre GYM 8). 1 fix = tout l'endgame.
+   Même famille (cosmétique) : SpawnCameraObject/RemoveCameraObject no-op.
+2. **Puzzles d'arènes (fix EN VOL)** — Mauville badge 3 : MauvilleGymPressSwitch/
+   SetDefaultBarriers/DeactivatePuzzle JAMAIS implémentés. Fortree badge 6 :
+   RotatingGate_InitPuzzle(AndGraphics) EXISTENT (rotating_gate.ts:357/378)
+   mais CLOBBERÉS par stub-loop :1483 → dé-clobber.
+3. **Combats spéciaux** — multi Steven Space Center (DoSpecialTrainerBattle
+   :1025, ChooseHalfPartyForBattle :1041, Save/LoadPlayerParty :725/726 no-op) ;
+   double obligatoire Lévy & Tatia GYM 7 (data ✅, moteur = chantier A en cours).
+4. **Scènes climax** (après le lot 1 : plus un hang, du visuel manquant) —
+   rayquaza_scene.c ~120 fns (cat.B) + météo orbes (DoOrbEffect/WaitWeather stub).
+
+Non bloquants notés : entrées party-menu Coupe/Éclate-Roc/Cascade/Plongée
+absentes (voie overworld A fonctionne), coupe-sur-herbe, Cable Car (Jagged Pass
+alternatif), setdivewarp fixe (post-game), BattleSetup_StartLegendaryBattle stub
+(TOUS les légendaires capturables = post-Panthéon).
+
 ## A. DOUBLES — finir le premier-de-série (EN COURS, prioritaire)
 
 État : intro complète ✅ (commits `8a4eb15f`, `ad3d0591`, `1a6bcd29`). Test :
