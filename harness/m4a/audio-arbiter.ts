@@ -35,7 +35,11 @@ function setMuted(muted: boolean, why: string): void {
   console.log(`[m4a-arbiter] ${muted ? 'muet' : 'sonore'} (${why})`);
 }
 
-function claimFocus(): void {
+function claimFocus(ev?: Event): void {
+  // 🩸 Les événements SYNTHÉTIQUES (dispatchEvent des sondes/tests du pane)
+  // ne doivent JAMAIS claim : un keydown simulé dans le pane ?mute=1 volait
+  // le son de l'onglet du user en plein test.
+  if (ev && !ev.isTrusted) return;
   _lastClaimAt = Date.now();
   setMuted(false, 'focus sur cette instance');
   import.meta.hot?.send('m4a:audio-focus', { id: MY_ID, at: _lastClaimAt });

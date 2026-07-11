@@ -891,8 +891,10 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
     // MUS_NONE (0xFFFF) lirait gSongTable hors blob (le GBA lit la ROM
     // voisine sans broncher, JS non) — même skip que PlayBGM ne l'émet jamais.
     if (songId === 0xFFFF) return;
-    if (ensureNativeEngine()) _m4aSongNumStartNative(songId);
+    const ready = ensureNativeEngine();
+    if (ready) _m4aSongNumStartNative(songId);
     else _pendingNativeSongId = songId;
+    console.log(`[m4a-native] start id=${songId} ready=${ready} bgmSt=0x${(_gMPlayInfo_BGM_native.status >>> 0).toString(16)}`);
     return;
   }
   // 1:1 décomp : MUS_NONE (= 0xFFFF) et 0 = no music. Silent skip pour éviter

@@ -54,6 +54,9 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
     this.needSent = false;
     this.underruns = 0;
     this.lastApplied = -1; // dernière frame dont les regs ont été appliqués
+    this.psgEnergy = 0; // diagnostics (remis à zéro à chaque stats)
+    this.dsEnergy = 0;
+    this.triggers = 0;
 
     // État PSG (hardware) — 2 squares, wave, noise.
     this.sq = [
@@ -83,7 +86,12 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
         this.port.postMessage({
           t: 'stats', wr: this.wr, rd: this.rd, underruns: this.underruns,
           srcPos: this.srcPos, step: this.step, sampleRate,
+          psgEnergy: this.psgEnergy, dsEnergy: this.dsEnergy, triggers: this.triggers,
+          psgOn: [this.sq[0].on, this.sq[1].on, this.wave.on, this.noise.on],
+          psgVol: [this.sq[0].vol, this.sq[1].vol, this.noise.vol],
         });
+        this.psgEnergy = 0;
+        this.dsEnergy = 0;
       } else if (m.t === 'reset') {
         this.rd = this.wr;
         this.srcPos = 0;
@@ -110,6 +118,7 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       s.freq = nrx3 | ((nrx4 & 0x07) << 8);
       s.lenOn = !!(nrx4 & 0x40);
       if (nrx4 & 0x80) { // trigger : enveloppe/length rechargées, duty CONSERVÉ
+        this.triggers++;
         s.on = true;
         s.vol = nrx2 >> 4;
         s.envDir = (nrx2 >> 3) & 1;
@@ -310,6 +319,8 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       // Full scale ±0x200 : FIFO s8 ×4 (100 %), PSG déjà en unités hardware.
       chL[i] = (dsL * 4 + pL) / 512;
       chR[i] = (dsR * 4 + pR) / 512;
+      this.psgEnergy += Math.abs(pL) + Math.abs(pR);
+      this.dsEnergy += Math.abs(dsL) + Math.abs(dsR);
     }
 
     // Refill : demander quand on passe sous le seuil.

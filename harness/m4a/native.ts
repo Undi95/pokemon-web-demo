@@ -38,7 +38,10 @@ export const M4A_NATIVE = typeof location !== 'undefined'
 
 const BLOB_URL = '/decomp/em/m4a/sound-data.bin';
 const INDEX_URL = '/decomp/em/m4a/sound-data.json';
-const PROCESSOR_URL = '/m4a-native-processor.js';
+// ⚠️ Fichier de public/ servi statique : SANS cache-bust, le navigateur peut
+// garder un processor PÉRIMÉ à travers les éditions (payé : comportements
+// fantômes chez le user pendant que le pane teste la version fraîche).
+const PROCESSOR_URL = `/m4a-native-processor.js?v=${encodeURIComponent(import.meta.env?.DEV ? Date.now() : '1')}`;
 
 const REG_BASE = 0x60; // snapshot gSoundIoRam[0x60..0xB0) (NRxx + bias + WAVE_RAM)
 const REG_LEN = 0x50;
@@ -186,7 +189,24 @@ export function resetM4aNativeAudio(): void {
   _state.node?.port.postMessage({ t: 'reset' });
 }
 
+/** Test d'écoute guidé (console user) : joue chaque famille de sons espacée,
+ *  loggue ce qui DOIT s'entendre — permet de localiser une famille muette. */
+function m4aTest(): void {
+  const g = globalThis as unknown as Record<string, ((...a: number[]) => void) | undefined>;
+  const step = (ms: number, label: string, fn: () => void): void => {
+    setTimeout(() => { console.log(`[m4a-test] 🔊 ${label}`); fn(); }, ms);
+  };
+  console.log('[m4a-test] séquence de 20 s — dis-moi ce que tu entends/manque :');
+  step(0, '1. MUS_TITLE (musique du titre, DirectSound)', () => g.__soundPlayBGM?.(413));
+  step(5000, '2. SE_INTRO_BLAST (laser Rayquaza, PSG square+noise)', () => g.__soundPlaySE?.(103));
+  step(8000, '3. se_select (bip menu, PSG)', () => g.__soundPlaySE?.(5));
+  step(10000, '4. Cri de Bulbasaur (DirectSound compressé)', () => g.__soundPlayCryInternal?.(1, 0, 120, 10, 0));
+  step(13000, '5. Fanfare level-up (pause BGM + reprise)', () => g.__soundPlayFanfare?.(367));
+  step(19000, '6. Retour MUS_TITLE', () => g.__soundPlayBGM?.(413));
+}
+
 // Sondes dev (lecture uniquement).
+(globalThis as Record<string, unknown>).__m4aTest = m4aTest;
 (globalThis as Record<string, unknown>).__m4aNative = {
   init: initM4aNative,
   start: startM4aNativeAudio,
