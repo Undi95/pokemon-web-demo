@@ -37,7 +37,7 @@ import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { gBattlerPartyIndexes, gActiveBattler, gBattlerTarget, gBattleTypeFlags, setBattlerTarget, setGDoingBattleAnim } from './engine/battle/state';
 import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPECIES } from './engine/battle/party-storage';
-import { PlayCry_ByMode, PlayCry_ReleaseDouble } from './sound';
+import { PlayCry_ByMode, PlayCry_Normal, PlayCry_ReleaseDouble } from './sound';
 import { CRY_MODE_NORMAL, CRY_MODE_WEAK, CRY_MODE_DOUBLES, CRY_MODE_WEAK_DOUBLES } from '../include/constants/sound';
 import { ShouldPlayNormalMonCry } from './battle_gfx_sfx_util';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
@@ -954,11 +954,13 @@ function SpriteCB_ReleasedMonFlyOut_Birch(sprite: DecompSprite, runtime: DecompR
     // foundation `pokemon-animation.ts` qui handle cry + 2-frame switch +
     // idle anim launch. panModeAnimFlag=0 (= pan -25, default Birch).
     if (speciesForCry > 0) {
-      // 1:1 décomp sound.c PlayCry_Normal : PlayCryInternal(species, pan,
-      // CRY_VOLUME=120, 10, CRY_MODE_NORMAL=0). (Ex-(100,2) : cri trop faible,
-      // retour user au Birch speech.)
+      // 1:1 décomp pokemon.c DoMonFrontSpriteAnimation → PlayCry_Normal(species, pan) :
+      // le DUCKING BGM (m4aMPlayVolumeControl 85/256 + restore) fait partie de l'appel.
+      // 🩸 payé (« cri du Lotad pas fort ») : l'ex-PlayCryInternal direct sautait le
+      // duck → cri (niveau une-voix, peak 45 = 1:1 prouvé à l'oracle) noyé sous la
+      // BGM à 256. L'audit chiffré du moteur : audit-reports + topic chantier-son.
       DoMonFrontSpriteAnimation(runtime, m, speciesForCry, false, 0,
-        (sp, pan) => PlayCryInternal(sp, pan, 120, 10, 0));
+        (sp, pan) => PlayCry_Normal(sp, pan));
     }
     // ball callback = SpriteCallbackDummy (= no-op idle, ball est déjà invisible).
     ball.callback = SpriteCallbackDummy;
