@@ -68,6 +68,7 @@ interface M4aNativeState {
   starting: boolean;
   fallbackClock: number | null;
   fallbackDriving: boolean;
+  lastAliveAt: number; // dernier heartbeat du processor (performance.now)
 }
 const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNativeState ??= {
   ready: null,
@@ -76,6 +77,7 @@ const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNat
   starting: false,
   fallbackClock: null,
   fallbackDriving: false,
+  lastAliveAt: 0,
 }) as M4aNativeState;
 
 /** Charge le blob de données + initialise le moteur (m4aSoundInit). Idempotent.
@@ -125,13 +127,24 @@ export async function startM4aNativeAudio(): Promise<void> {
     outputChannelCount: [2],
   });
   _state.node = _node;
+  _state.lastAliveAt = performance.now(); // bénéfice du doute jusqu'au 1er heartbeat
   _node.port.onmessage = (e: MessageEvent) => {
-    const m = e.data as { t: string; n?: number };
+    const m = e.data as { t: string; n?: number; msg?: string };
+    if (m.t === 'alive') {
+      _state.lastAliveAt = performance.now();
+      return;
+    }
+    if (m.t === 'error') {
+      logAudio('ERREUR processor', (m.msg ?? '').slice(0, 200));
+      console.error('[m4a-native] processor:', m.msg);
+      return;
+    }
     if (m.t === 'stats') {
       (globalThis as Record<string, unknown>).__m4aStats = m;
       return;
     }
     if (m.t === 'need') {
+      _state.lastAliveAt = performance.now();
       (globalThis as { __m4aNeedCount?: number }).__m4aNeedCount =
         ((globalThis as { __m4aNeedCount?: number }).__m4aNeedCount ?? 0) + 1;
       produceFrames(Math.min(m.n ?? 8, 32));
@@ -215,7 +228,11 @@ function installFallbackClock(): void {
   _state.fallbackClock = window.setInterval(() => {
     const now = performance.now();
     const ctx = _state.node?.context as AudioContext | undefined;
-    const audioDrives = !!ctx && ctx.state === 'running';
+    // L'audio ne cadence que si le ctx tourne ET que le processor donne
+    // signe de vie (heartbeat ~10 Hz) : un processor mort avec un ctx
+    // « running » figeait tout (🩸 « silence infini, titre 1 frame »).
+    const workletAlive = now - _state.lastAliveAt < 1000;
+    const audioDrives = !!ctx && ctx.state === 'running' && workletAlive;
     _state.fallbackDriving = !audioDrives;
     if (audioDrives) {
       last = now;

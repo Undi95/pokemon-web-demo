@@ -296,6 +296,29 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs, outputs) {
+    // Blindage : une exception dans process() TUE le processor sans bruit
+    // (onprocessorerror) et fige toute la chaîne (🩸 payé : « silence infini
+    // après le blast, titre 1 frame »). Ici : on remonte l'erreur au pont
+    // (journal devtools) et on SURVIT (silence ce quantum seulement).
+    try {
+      this.processInner(_inputs, outputs);
+    } catch (e) {
+      if (this.errCount === undefined) this.errCount = 0;
+      if (this.errCount++ < 8) {
+        this.port.postMessage({ t: 'error', msg: String(e && e.stack || e) });
+      }
+    }
+    // Heartbeat (~10 Hz) : le pont sait que le processor est VIVANT — sinon
+    // l'horloge de secours reprend la cadence du moteur.
+    this.hbCount = (this.hbCount || 0) + 1;
+    if (this.hbCount >= 32) {
+      this.hbCount = 0;
+      this.port.postMessage({ t: 'alive', rd: this.rd, wr: this.wr });
+    }
+    return true;
+  }
+
+  processInner(_inputs, outputs) {
     const out = outputs[0];
     const chL = out[0];
     const chR = out.length > 1 ? out[1] : out[0];
@@ -345,8 +368,6 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       this.needSent = true;
       this.port.postMessage({ t: 'need', n: RING_FRAMES - level });
     }
-
-    return true;
   }
 }
 
