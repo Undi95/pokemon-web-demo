@@ -65,12 +65,14 @@ interface M4aNativeState {
   node: AudioWorkletNode | null;
   producing: boolean;
   starting: boolean;
+  fallbackClock: number | null;
 }
 const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNativeState ??= {
   ready: null,
   node: null,
   producing: false,
   starting: false,
+  fallbackClock: null,
 }) as M4aNativeState;
 
 /** Charge le blob de données + initialise le moteur (m4aSoundInit). Idempotent.
@@ -96,6 +98,7 @@ export function initM4aNative(): Promise<boolean> {
     const { setGCryTables } = await import('../../src/sound');
     setGCryTables(index.labels.gCryTable, index.labels.gCryTable_Reverse);
     m4aSoundInit();
+    installFallbackClock(); // le moteur tourne dès l'init, audio autorisé ou non
     console.log(`[m4a-native] moteur initialisé — blob ${blob.length} octets @0x${index.base.toString(16)} (byte-exact ROM)`);
     return true;
   })();
@@ -150,11 +153,12 @@ export async function startM4aNativeAudio(): Promise<void> {
 
 /** Produit n frames GBA : moteur + tranche PCM écrite (formule certifiée par
  *  l'oracle B) + snapshot des registres PSG. */
-function produceFrames(n: number): void {
-  if (_state.producing || !_state.node) return; // ré-entrance (need pendant produce)
+function produceFrames(n: number, post: boolean = true): void {
+  if (_state.producing) return; // ré-entrance (need pendant produce)
+  if (post && !_state.node) return;
   _state.producing = true;
   try {
-    produceFramesInner(n);
+    produceFramesInner(n, post);
   } catch (e) {
     console.error('[m4a-native] produceFrames', e);
   } finally {
@@ -162,7 +166,7 @@ function produceFrames(n: number): void {
   }
 }
 
-function produceFramesInner(n: number): void {
+function produceFramesInner(n: number, post: boolean): void {
   {
     const spv = gSoundInfo.pcmSamplesPerVBlank;
     const period = gSoundInfo.pcmDmaPeriod;
@@ -180,8 +184,41 @@ function produceFramesInner(n: number): void {
       regs.set(gSoundIoRam.subarray(REG_BASE, REG_BASE + REG_LEN), f * REG_LEN);
       for (const r of TRIGGER_REGS) gSoundIoRam[r] &= 0x7f; // trigger consommé
     }
-    _state.node!.port.postMessage({ t: 'frames', n, pcm: pcm.buffer, regs: regs.buffer }, [pcm.buffer, regs.buffer]);
+    if (post) {
+      _state.node!.port.postMessage({ t: 'frames', n, pcm: pcm.buffer, regs: regs.buffer }, [pcm.buffer, regs.buffer]);
+    }
   }
+}
+
+/** Horloge de secours — 1:1 sémantique GBA : le driver tourne sur VBlank,
+ *  TOUJOURS, que le son sorte ou non. Sans elle, un AudioContext suspendu
+ *  (autoplay sans geste) figeait le MOTEUR entier : MUS_TITLE restait à
+ *  « 0 piste » → le demo-loop du titre (status & 0xFFFF == 0) rebootait
+ *  l'intro instantanément, et WaitFanfare/IsSEPlaying gelaient (🩸 payé :
+ *  « ça reboot sans input, ça tient avec »). Produit à 59,7275 Hz par
+ *  accumulateur temps-réel, SANS poster au worklet (le ring reste vide :
+ *  au resume, le son repart frais, sans latence accumulée). */
+function installFallbackClock(): void {
+  if (_state.fallbackClock) return;
+  let last = performance.now();
+  let acc = 0;
+  _state.fallbackClock = window.setInterval(() => {
+    const now = performance.now();
+    const ctx = _state.node?.context as AudioContext | undefined;
+    const audioDrives = !!ctx && ctx.state === 'running';
+    if (audioDrives) {
+      last = now;
+      acc = 0;
+      return; // le worklet cadence (need-driven)
+    }
+    acc += (now - last) * (59.7275 / 1000);
+    last = now;
+    const frames = Math.floor(acc);
+    if (frames > 0) {
+      acc -= frames;
+      produceFrames(Math.min(frames, 8), false);
+    }
+  }, 16);
 }
 
 /** Vide le ring du worklet (transitions dures type reset de jeu). */
@@ -217,4 +254,5 @@ function m4aTest(): void {
   se2: () => gMPlayInfo_SE2,
   node: () => _state.node,
   stats: () => { _state.node?.port.postMessage({ t: 'stats' }); },
+  psgGain: (v: number) => { _state.node?.port.postMessage({ t: 'psgGain', v }); },
 };

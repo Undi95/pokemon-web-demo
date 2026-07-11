@@ -42,6 +42,14 @@ const DUTY = [
 // NR32 bits 5-6 → volume wave (×[0, 1, 0.5, 0.25]) ; bit 7 = force 75 %.
 const WAVE_VOL = [0, 1, 0.5, 0.25];
 
+// Gain PSG : le calibrage GBATEK strict (chaque canal ≤ ±0x20, le quart de
+// range partagé par 4) rendait le PSG quasi inaudible face au DirectSound
+// réel (~-36 dBFS mesuré sur SE_INTRO_BLAST — 🩸 « laser muet »). Les
+// émulateurs mixent nettement plus haut. ×4 par défaut (un canal plein =
+// quart du full scale), RÉGLABLE LIVE : port {t:'psgGain', v} — verdict
+// oreille user.
+let PSG_GAIN = 16; // unités par pas de volume (GBATEK strict = 4)
+
 class M4aNativeProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -92,6 +100,8 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
         });
         this.psgEnergy = 0;
         this.dsEnergy = 0;
+      } else if (m.t === 'psgGain') {
+        PSG_GAIN = m.v;
       } else if (m.t === 'reset') {
         this.rd = this.wr;
         this.srcPos = 0;
@@ -248,8 +258,8 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       }
       const nrx1 = this.curRegs[(i === 0 ? 0x62 : 0x68) - REG_BASE];
       const bit = DUTY[nrx1 >> 6][s.dutyPos];
-      // Unipolaire 0..vol, centré : ±vol/2, échelle ±0x20 max → ×4.
-      add(1 << i, ((bit ? s.vol : 0) - s.vol / 2) * 4);
+      // Unipolaire 0..vol, centré : ±vol/2 × PSG_GAIN.
+      add(1 << i, ((bit ? s.vol : 0) - s.vol / 2) * PSG_GAIN);
     }
 
     // Wave : period (2048-f)×2 cycles par nibble.
@@ -265,7 +275,7 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       const nib = (w.pos & 1) ? (byte & 0xf) : (byte >> 4);
       const nr32 = this.curRegs[0x73 - REG_BASE];
       const wv = (nr32 & 0x80) ? 0.75 : WAVE_VOL[(nr32 >> 5) & 3];
-      add(4, (nib - 7.5) * wv * 4);
+      add(4, (nib - 7.5) * wv * (PSG_GAIN / 2));
     }
 
     // Noise : LFSR.
@@ -279,7 +289,7 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
         if (n.width7) n.lfsr = (n.lfsr & ~0x40) | (x << 6);
       }
       const bit = (~n.lfsr) & 1;
-      add(8, ((bit ? n.vol : 0) - n.vol / 2) * 4);
+      add(8, ((bit ? n.vol : 0) - n.vol / 2) * PSG_GAIN);
     }
 
     return [L * volL, R * volR];
