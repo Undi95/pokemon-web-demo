@@ -9,7 +9,11 @@
 
 import { SetGpuReg } from './gpu_regs';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { gMapHeader, getCachedMapHeader, type MapConnection, type WarpEvent, type MapHeader } from './fieldmap';
+import {
+  gMapHeader, getCachedMapHeader, SetGMapHeader,
+  InitBattlePyramidMap, InitTrainerHillMap, InitMapFromSavedGame,
+  type MapConnection, type WarpEvent, type MapHeader,
+} from './fieldmap';
 import {
   getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
@@ -44,7 +48,7 @@ import * as SongsTable from '../include/constants/songs';
 import {
   PlayNewMapMusic, GetCurrentMapMusic, FadeOutAndPlayNewMapMusic,
   FadeOutAndFadeInNewMapMusic, ResetMapMusic, FadeOutMapMusic,
-  IsNotWaitingForBGMStop,
+  IsNotWaitingForBGMStop, StopMapMusic,
 } from './sound';
 import {
   MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE,
@@ -61,15 +65,74 @@ import { HealPlayerParty } from './script_pokemon_util';
 // pour les constantes de header ; GetPlayerFacingDirection = function hoistée
 // (cycle overworld ↔ field_player_avatar bénin) ; WarpKind = import TYPE-only
 // (effacé à la compile → pas d'arête runtime overworld → field_control_avatar).
-import { CONNECTION_DIVE, CONNECTION_EMERGE } from '../include/constants/global';
+import { CONNECTION_DIVE, CONNECTION_EMERGE, OBJECT_EVENT_TEMPLATES_COUNT } from '../include/constants/global';
 import { DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from '../include/global.fieldmap';
 import {
   MetatileBehavior_IsDeepSouthWarp, MetatileBehavior_IsNonAnimDoor, MetatileBehavior_IsDoor,
   MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsNorthArrowWarp,
   MetatileBehavior_IsWestArrowWarp, MetatileBehavior_IsEastArrowWarp, MetatileBehavior_IsLadder,
 } from './metatile_behavior';
-import { GetPlayerFacingDirection } from './field_player_avatar';
+import { GetPlayerFacingDirection, PLAYER_AVATAR_FLAG_ON_FOOT } from './field_player_avatar';
 import type { WarpKind } from './field_control_avatar';
+
+// ─── Dépendances des corps CB2_NewGame / CB2_ContinueSavedGame : LAZY (anti-TDZ) ──
+// overworld.ts est évalué TRÈS TÔT au boot. Importer STATIQUEMENT ces ~15 modules
+// UI-connectés (field_specials→party_menu→item_menu, load_save, tv, event_object_
+// movement…) réordonne l'éval ESM et fait EXPLOSER le cycle latent item_menu↔text
+// (`FONT_NARROW before initialization`, item_menu.ts top-level) — bombe TDZ
+// documentée ([[find-import-cycle]] : « nouvelle arête d'import tôt = réordonne
+// l'éval »). Ces fns ne sont appelées qu'au CALL-TIME des corps CB2 (New Game /
+// Continue, bien après le boot) → résolution PARESSEUSE via `import()` dynamique
+// (chunks séparés, aucune arête d'éval) préchargée par `primeFieldInitDeps()` que le
+// harness `await` avant d'exécuter les corps. NB : sound/fieldmap/field_player_avatar
+// sont DÉJÀ importés statiquement plus haut (StopMapMusic, InitMapFromSavedGame,
+// InitBattlePyramidMap, InitTrainerHillMap, SetGMapHeader, PLAYER_AVATAR_FLAG_ON_FOOT)
+// → pas de nouvelle arête, restés en import direct.
+let _fieldInitDeps: {
+  safari: typeof import('./safari_zone');
+  newGame: typeof import('./new_game');
+  playTime: typeof import('./play_time');
+  script: typeof import('./script');
+  trainerHill: typeof import('./trainer_hill');
+  battlePyramid: typeof import('./battle_pyramid');
+  eom: typeof import('./event_object_movement');
+  clock: typeof import('./clock');
+  matchCall: typeof import('./match_call');
+  loadSave: typeof import('./load_save');
+  tv: typeof import('./tv');
+  frontier: typeof import('./frontier_util');
+  mapPopup: typeof import('./map_name_popup');
+  fieldSpecials: typeof import('./field_specials');
+  save: typeof import('./save');
+} | null = null;
+
+/** Précharge (call-time, chunks séparés) les modules-deps des corps CB2 field-init.
+ *  À `await` par le harness AVANT d'appeler CB2_NewGame / CB2_ContinueSavedGame.
+ *  Idempotent. Anti-TDZ : cf. note ci-dessus. */
+export async function primeFieldInitDeps(): Promise<void> {
+  if (_fieldInitDeps) return;
+  const [
+    safari, newGame, playTime, script, trainerHill, battlePyramid, eom, clock,
+    matchCall, loadSave, tv, frontier, mapPopup, fieldSpecials, save,
+  ] = await Promise.all([
+    import('./safari_zone'), import('./new_game'), import('./play_time'), import('./script'),
+    import('./trainer_hill'), import('./battle_pyramid'), import('./event_object_movement'),
+    import('./clock'), import('./match_call'), import('./load_save'), import('./tv'),
+    import('./frontier_util'), import('./map_name_popup'), import('./field_specials'), import('./save'),
+  ]);
+  _fieldInitDeps = {
+    safari, newGame, playTime, script, trainerHill, battlePyramid, eom, clock,
+    matchCall, loadSave, tv, frontier, mapPopup, fieldSpecials, save,
+  };
+}
+
+function fieldInitDeps(): NonNullable<typeof _fieldInitDeps> {
+  if (!_fieldInitDeps) {
+    throw new Error('[overworld] primeFieldInitDeps() doit être await AVANT CB2_NewGame/'
+      + 'CB2_ContinueSavedGame (harness bootOverworld)');
+  }
+  return _fieldInitDeps;
+}
 
 /** 1:1 décomp `enum { BG_COORD_SET, BG_COORD_ADD }` (bg.h:26) → BG_COORD_SET = 0.
  *  Const locale (pas d'enum bg.h porté côté valeur). */
@@ -350,6 +413,94 @@ export function GetDestinationWarpMapHeader(): any {
 export function ApplyCurrentWarp(): void {
   setLastUsedWarp(gSaveBlock1Ptr.location as WarpData);
   gSaveBlock1Ptr.location = { ...sWarpDestination };
+}
+
+/** 1:1 décomp `EWRAM_DATA static u8 sLastMapSectionId`. Écrit par LoadCurrentMapData
+ *  (regionMapSectionId de l'ancienne map, pour la transition du popup de nom de map).
+ *  Notre `regionMapSectionId` est une string → static string. */
+let sLastMapSectionId: string | number = 0;
+
+/** 1:1 décomp `static void ClearDiveAndHoleWarps(void)` (overworld.c:548-552) :
+ *    sFixedDiveWarp = sDummyWarpData; sFixedHoleWarp = sDummyWarpData;
+ *  `sFixedDiveWarp`/`sFixedHoleWarp` = statics NON portés (dette dive/hole fixe
+ *  déjà documentée sur ApplyCurrentWarp/SetDiveWarp) → no-op 1:1. */
+function ClearDiveAndHoleWarps(): void {
+  // sFixedDiveWarp = sDummyWarpData; sFixedHoleWarp = sDummyWarpData; (statics non portés)
+}
+
+/** 1:1 décomp `static void LoadCurrentMapData(void)` (overworld.c:589-595) :
+ *    sLastMapSectionId = gMapHeader.regionMapSectionId;
+ *    gMapHeader = *Overworld_GetMapHeaderByGroupAndId(location.mapGroup, location.mapNum);
+ *    gSaveBlock1Ptr->mapLayoutId = gMapHeader.mapLayoutId;
+ *    gMapHeader.mapLayout = GetMapLayout();
+ *
+ *  ADAPTATION ROM→fetch : header servi par le cache map-loader
+ *  (`Overworld_GetMapHeaderByGroupAndId` = cache sync, cf. overworld.ts:130),
+ *  préchargé par le harness AVANT l'appel du corps (cf. executeWarp). JAMAIS de fetch ici.
+ *  - `gSaveBlock1Ptr->mapLayoutId = gMapHeader.mapLayoutId` : vestigial dans le port
+ *    (mapLayoutId saveblock = number, header = string 'LAYOUT_*' ; le port ne porte pas
+ *    `gMapLayouts` — le layout est résolu au fetch et vit dans `header.mapLayout`).
+ *  - `gMapHeader.mapLayout = GetMapLayout()` : no-op (le header du cache porte déjà
+ *    son `.mapLayout`, peuplé depuis le JSON au load). */
+function LoadCurrentMapData(): void {
+  if (gMapHeader) sLastMapSectionId = gMapHeader.regionMapSectionId;
+  SetGMapHeader(Overworld_GetMapHeaderByGroupAndId(
+    gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum));
+}
+
+/** 1:1 décomp `static void LoadSaveblockMapHeader(void)` (overworld.c:597-601) :
+ *    gMapHeader = *Overworld_GetMapHeaderByGroupAndId(location.mapGroup, location.mapNum);
+ *    gMapHeader.mapLayout = GetMapLayout();
+ *  Même ADAPTATION ROM→fetch que LoadCurrentMapData (header servi par le cache
+ *  map-loader préchargé par le harness ; l'assignation `.mapLayout = GetMapLayout()`
+ *  est un no-op — le header du cache porte déjà son layout). */
+function LoadSaveblockMapHeader(): void {
+  SetGMapHeader(Overworld_GetMapHeaderByGroupAndId(
+    gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum));
+}
+
+/** 1:1 décomp `static void SetPlayerCoordsFromWarp(void)` (overworld.c:603-624) —
+ *  variante MUTEUSE : résout `gSaveBlock1Ptr->pos` depuis `location.warpId` +
+ *  `gMapHeader`. NB : distincte de `getPlayerCoordsFromWarp` (variante RETOURNANTE
+ *  ci-dessous) — cette dernière prend le header dest en paramètre et n'a PAS la
+ *  branche médiane `location.x/y valides` ; sémantiques différentes → transcription
+ *  directe (pas de réutilisation). */
+function SetPlayerCoordsFromWarp(): void {
+  const loc = gSaveBlock1Ptr.location;
+  const warps = gMapHeader?.events?.warps ?? [];
+  if (loc.warpId >= 0 && loc.warpId < warps.length) {
+    // warpId valide pour cette map → coords de ce warp.
+    gSaveBlock1Ptr.pos.x = warps[loc.warpId].x;
+    gSaveBlock1Ptr.pos.y = warps[loc.warpId].y;
+  } else if (loc.x >= 0 && loc.y >= 0) {
+    // warpId invalide mais coords valides (WARP_ID_NONE arrive ici volontairement).
+    gSaveBlock1Ptr.pos.x = loc.x;
+    gSaveBlock1Ptr.pos.y = loc.y;
+  } else {
+    // warpId ET coords invalides → centre de la map.
+    gSaveBlock1Ptr.pos.x = Math.floor((gMapHeader?.mapLayout?.width ?? 0) / 2);
+    gSaveBlock1Ptr.pos.y = Math.floor((gMapHeader?.mapLayout?.height ?? 0) / 2);
+  }
+}
+
+/** 1:1 décomp `void WarpIntoMap(void)` (overworld.c:626-631) :
+ *    ApplyCurrentWarp(); LoadCurrentMapData(); SetPlayerCoordsFromWarp(); */
+export function WarpIntoMap(): void {
+  ApplyCurrentWarp();
+  LoadCurrentMapData();
+  SetPlayerCoordsFromWarp();
+}
+
+/** 1:1 décomp `static void SetWarpDestinationToContinueGameWarp(void)`
+ *  (overworld.c:718-721) : `sWarpDestination = gSaveBlock1Ptr->continueGameWarp;`.
+ *  Mutation par champ (sWarpDestination gardé par référence — GetLocationMusic le lit). */
+function SetWarpDestinationToContinueGameWarp(): void {
+  const cgw = gSaveBlock1Ptr.continueGameWarp as WarpData;
+  sWarpDestination.mapGroup = cgw.mapGroup;
+  sWarpDestination.mapNum = cgw.mapNum;
+  sWarpDestination.warpId = cgw.warpId;
+  sWarpDestination.x = cgw.x;
+  sWarpDestination.y = cgw.y;
 }
 
 // ─── Pending warp + dynamic/dive warp + map types (unification lot 16) ───────
@@ -1210,20 +1361,168 @@ export function CB2_ReturnToFieldContinueScript_Manual(): void {
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
 
+// ─── Helpers field-init (1:1 décomp overworld.c, appelés par les CB2 ci-dessous) ──
+
+/** 1:1 décomp `EWRAM_DATA static struct { u8 direction; u8 transitionFlags; }
+ *  sInitialPlayerAvatarState`. Utilisé par (Store|Reset|Get)InitialPlayerAvatarState. */
+const sInitialPlayerAvatarState: { direction: number; transitionFlags: number } = {
+  direction: DIR_SOUTH, transitionFlags: PLAYER_AVATAR_FLAG_ON_FOOT,
+};
+
+/** 1:1 décomp `void ResetInitialPlayerAvatarState(void)` (overworld.c:877-881). */
+export function ResetInitialPlayerAvatarState(): void {
+  sInitialPlayerAvatarState.direction = DIR_SOUTH;
+  sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;
+}
+
+/** 1:1 décomp `static void ResetSafariZoneFlag_(void)` (overworld.c:1425-1428) :
+ *    ResetSafariZoneFlag(); (wrapper du vrai flag clear de safari_zone.c:84). */
+function ResetSafariZoneFlag_(): void {
+  fieldInitDeps().safari.ResetSafariZoneFlag();
+}
+
+/** 1:1 décomp `void LoadSaveblockObjEventScripts(void)` (overworld.c:480-488) :
+ *    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+ *        savObjTemplates[i].script = mapHeaderObjTemplates[i].script;
+ *  (les `if (t)` gardent les arrays port de longueur variable, cf. le pattern
+ *  GetBaseTemplateForObjectEvent event_object_movement.ts:6703). */
+export function LoadSaveblockObjEventScripts(): void {
+  const mapHeaderObjTemplates = gMapHeader?.events?.objectEvents ?? [];
+  const savObjTemplates = gSaveBlock1Ptr.objectEventTemplates;
+  for (let i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++) {
+    if (savObjTemplates[i] && mapHeaderObjTemplates[i])
+      savObjTemplates[i].script = mapHeaderObjTemplates[i].script;
+  }
+}
+
+/** 1:1 décomp `static void UpdateMiscOverworldStates(void)` (overworld.c:416-423).
+ *  ChooseAmbientCrySpecies / UpdateLocationHistoryForRoamer / RoamerMoveToOtherLocationSet
+ *  NON portés (subsystems ambient cry + roamer) → laissés INERTES (commentés 1:1). */
+function UpdateMiscOverworldStates(): void {
+  FlagClear('FLAG_SYS_SAFARI_MODE');
+  // ChooseAmbientCrySpecies();               // non porté (ambient cry)
+  fieldInitDeps().fieldSpecials.ResetCyclingRoadChallengeData();
+  // UpdateLocationHistoryForRoamer();         // non porté (roamer)
+  // RoamerMoveToOtherLocationSet();           // non porté (roamer)
+}
+
+/** 1:1 décomp `static void FieldCB_FadeTryShowMapPopup(void)` (overworld.c:1698-1703) :
+ *    if (gMapHeader.showMapName == TRUE && SecretBaseMapPopupEnabled() == TRUE)
+ *        ShowMapNamePopup();
+ *    FieldCB_WarpExitFadeFromBlack();
+ *  - SecretBaseMapPopupEnabled() : non porté (subsystem Secret Base) → assumé TRUE
+ *    (le popup s'affiche hors base secrète) — condition commentée 1:1.
+ *  - FieldCB_WarpExitFadeFromBlack() : fade-in FROM_BLACK + warp-exit-task RÉALISÉ
+ *    par le harness au resume (FillPalBufferBlack + FadeScreen FADE_FROM_BLACK, cf.
+ *    bootOverworld branche resume) → délégué. */
+function FieldCB_FadeTryShowMapPopup(): void {
+  if (gMapHeader?.showMapName === true /* && SecretBaseMapPopupEnabled() (non porté → TRUE) */)
+    fieldInitDeps().mapPopup.ShowMapNamePopup();
+  // FieldCB_WarpExitFadeFromBlack(); — délégué au harness (resume fade-in).
+}
+
+/** 1:1 décomp `LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR` (constants/layouts.h). Le
+ *  port clé les layouts par NOM string (cf. fieldmap.ts:288 `mapLayoutId: string`,
+ *  trainer_hill.ts:9) → la constante = le nom du layout. */
+const LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR = 'LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR';
+/** 1:1 décomp `TRAINER_HILL_ENTRANCE` (constants/trainer_hill.h = 6). Non exporté par
+ *  trainer_hill.ts (const locale là-bas) → const locale 1:1 ici. */
+const TRAINER_HILL_ENTRANCE = 6;
+
 // ─── Entrées de scène overworld (1:1 décomp overworld.c) ─────────────────────
 //
-// CB2_NewGame (overworld.c:1144) et CB2_ContinueSavedGame (overworld.c:1705) sont
+// CB2_NewGame (overworld.c:1532) et CB2_ContinueSavedGame (overworld.c:1705) sont
 // les points d'entrée field-init du jeu (truck cinematic neuf / load de la map
-// sauvegardée). L'engine overworld complet (DoMapLoadLoop / InitMapFromSavedGame /
-// WarpIntoMap / object-event scripts…) n'est PAS encore porté → ces deux fns servent
-// de SENTINELLES D'IDENTITÉ : le runtime de scène (TestOverworldScene.update,
-// GameScene, BirchRuntimeScene) détecte `gMain.callback2 === CB2_NewGame |
-// CB2_ContinueSavedGame`, null-out le callback AVANT que le body tourne, et effectue
-// la vraie entrée OW côté scène (`transitionToOverworld('newgame'|'continue')`).
-// Body volontairement vide : il ne s'exécute jamais — et un no-op est plus sûr que
-// l'ancien body transpilé (ex-`overworld-callbacks-auto.ts`, dissous) qui crashait
-// sur les refs engine non-portées. Quand l'engine overworld sera porté, remplacer
-// par les vrais corps 1:1. Les ~18 autres CB2_* transpilés de ce fichier étaient
-// MORTS (zéro importeur), superséchés par les `CB2_ReturnToField*_Manual` ci-dessus.
-export const CB2_NewGame = (): void => { /* sentinelle d'identité — voir note ci-dessus */ };
-export const CB2_ContinueSavedGame = (): void => { /* sentinelle d'identité — voir note ci-dessus */ };
+// sauvegardée). Les scènes (TestOverworldScene.update, GameScene, BirchRuntimeScene)
+// détectent `gMain.callback2 === CB2_NewGame | CB2_ContinueSavedGame` par IDENTITÉ,
+// null-out le callback AVANT qu'il tourne, puis :
+//   - GameScene / BirchRuntimeScene (legacy ?no-un) : délèguent à decideBootMode
+//     (le corps ne tourne JAMAIS chez eux — juste un jeton d'identité).
+//   - TestOverworldScene (host unifié par défaut) : APPELLE le vrai corps 1:1
+//     ci-dessous (transitionToOverworld → bootOverworld), le harness ne réalisant
+//     que le chargement async d'assets (ADAPTATION ROM→fetch documentée dans chaque
+//     corps, précédent = executeWarp → loadAndInitMap pour les warps de porte).
+
+/** 1:1 décomp `void CB2_NewGame(void)` (overworld.c:1532-1548). Corps réel jusqu'à
+ *  `gFieldCallback2 = NULL`. NewGameInitData() enchaîne WarpToTruck() qui pose
+ *  gSaveBlock1Ptr.location = MAP_INSIDE_OF_TRUCK — le harness charge ENSUITE cette map.
+ *  ADAPTATIONS :
+ *   - FieldClearVBlankHBlankCallbacks() : link/interrupts/VBlank-HBlank hardware
+ *     ([[hardware-non-1to1-exemptions]]) — le harness a déjà neutralisé VBlank/HBlank
+ *     au boot, pas de link web → no-op documenté.
+ *   - gFieldCallback = ExecuteTruckSequence : le runner gFieldCallback du port appelle
+ *     BARE (sans rt) alors qu'ExecuteTruckSequence(rt) exige le runtime → la cinématique
+ *     du camion est RÉALISÉE par le harness (ExecuteTruckSequence(rt) après le load async
+ *     de la map, cf. bootOverworld) ; on ne pose donc que gFieldCallback2 = NULL.
+ *   - DoMapLoadLoop / SetFieldVBlankCallback / SetMainCallback1(CB1_Overworld) /
+ *     SetMainCallback2(CB2_Overworld) : DÉLÉGUÉS au harness (loadAndInitMap async, qui
+ *     enchaîne VBlank + CB1/CB2 overworld) → RETURN ici. */
+export function CB2_NewGame(): void {
+  const d = fieldInitDeps();
+  // FieldClearVBlankHBlankCallbacks(); — hardware link/interrupts/VBlank (no-op, cf. en-tête)
+  StopMapMusic();
+  ResetSafariZoneFlag_();
+  d.newGame.NewGameInitData();
+  ResetInitialPlayerAvatarState();
+  d.playTime.PlayTimeCounter_Start();
+  d.script.ScriptContext_Init();
+  d.script.UnlockPlayerFieldControls();
+  // gFieldCallback = ExecuteTruckSequence; — réalisé par le harness (cf. en-tête)
+  (globalThis as Record<string, unknown>).gFieldCallback2 = null;
+  // DoMapLoadLoop + SetFieldVBlankCallback + SetMainCallback1/2 → délégués au harness (RETURN).
+}
+
+/** 1:1 décomp `void CB2_ContinueSavedGame(void)` (overworld.c:1705-1754). Corps réel
+ *  complet. ADAPTATIONS :
+ *   - FieldClearVBlankHBlankCallbacks() : hardware (no-op, cf. CB2_NewGame).
+ *   - InitMapFromSavedGame() exige la layout data de la map courante déjà chargée →
+ *     le harness PRÉCHARGE la map de la save (loadMapByName) AVANT d'appeler ce corps.
+ *   - à la place de SetMainCallback2(CB2_LoadMap) / SetMainCallback1(CB1_Overworld)+
+ *     CB2_ReturnToField() : DISCRIMINANT `'warp' | 'resume'` rendu au harness, qui
+ *     exécute la queue async (CB2_LoadMap = load frais / CB2_ReturnToField = resume). */
+export function CB2_ContinueSavedGame(): 'warp' | 'resume' {
+  const d = fieldInitDeps();
+  // FieldClearVBlankHBlankCallbacks(); — hardware link/interrupts/VBlank (no-op)
+  StopMapMusic();
+  ResetSafariZoneFlag_();
+  if (d.save.gSaveFileStatus === d.save.SAVE_STATUS_ERROR)
+    d.frontier.ResetWinStreaks();
+
+  LoadSaveblockMapHeader();
+  ClearDiveAndHoleWarps();
+  const trainerHillMapId = d.trainerHill.GetCurrentTrainerHillMapId();
+  if (gMapHeader?.mapLayoutId === LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
+    d.battlePyramid.LoadBattlePyramidFloorObjectEventScripts();
+  else if (trainerHillMapId !== 0 && trainerHillMapId !== TRAINER_HILL_ENTRANCE)
+    d.trainerHill.LoadTrainerHillFloorObjectEventScripts();
+  else
+    LoadSaveblockObjEventScripts();
+
+  d.eom.UnfreezeObjectEvents();
+  d.clock.DoTimeBasedEvents();
+  UpdateMiscOverworldStates();
+  if (gMapHeader?.mapLayoutId === LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
+    InitBattlePyramidMap(true);
+  else if (trainerHillMapId !== 0)
+    InitTrainerHillMap();
+  else
+    InitMapFromSavedGame();
+
+  d.playTime.PlayTimeCounter_Start();
+  d.script.ScriptContext_Init();
+  d.script.UnlockPlayerFieldControls();
+  d.matchCall.InitMatchCallCounters();
+  if (d.loadSave.UseContinueGameWarp() === true) {
+    d.loadSave.ClearContinueGameWarpStatus();
+    SetWarpDestinationToContinueGameWarp();
+    WarpIntoMap();
+    d.tv.TryPutTodaysRivalTrainerOnAir();
+    // SetMainCallback2(CB2_LoadMap) → discriminant (harness = load frais de la dest).
+    return 'warp';
+  } else {
+    d.tv.TryPutTodaysRivalTrainerOnAir();
+    (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_FadeTryShowMapPopup;
+    // SetMainCallback1(CB1_Overworld) + CB2_ReturnToField() → discriminant (harness = resume).
+    return 'resume';
+  }
+}

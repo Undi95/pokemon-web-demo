@@ -20,6 +20,8 @@ import {
 } from './fieldmap';
 import { RunOnLoadMapScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
+import { OBJECT_EVENT_TEMPLATES_COUNT } from '../include/constants/global';
+import { OBJ_EVENT_GFX_ITEM_BALL } from '../include/constants/event_objects';
 
 // ─── Constantes (1:1 décomp) ─────────────────────────────────────────────────
 /** include/constants/battle_pyramid.h:20-22. */
@@ -90,6 +92,23 @@ const sPyramidFloorTemplateOptions: readonly (readonly [number, number])[] = [
 
 /** 1:1 décomp `sFloorTemplateOffsets[FRONTIER_STAGES_PER_CHALLENGE]` (battle_pyramid.c:284-287). */
 const sFloorTemplateOffsets: readonly number[] = [0, 4, 9, 14, 19, 24, 29];
+
+/** 1:1 décomp `void LoadBattlePyramidFloorObjectEventScripts(void)` (battle_pyramid.c:1622-1634) :
+ *  assigne à chaque template d'objet du saveblock le script de combat de dresseur, sauf les
+ *  Poké Balls (OBJ_EVENT_GFX_ITEM_BALL) qui reçoivent le script de ramassage d'objet. Appelé
+ *  par CB2_ContinueSavedGame quand la map courante est un étage de la Pyramide de Combat.
+ *  `BattlePyramid_TrainerBattle` / `BattlePyramid_FindItemBall` = labels de script byte-VM
+ *  (contenu post-game Battle Pyramid). */
+export function LoadBattlePyramidFloorObjectEventScripts(): void {
+  const events = gSaveBlock1Ptr.objectEventTemplates;
+  for (let i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++) {
+    if (!events[i]) continue;
+    if (events[i].graphicsId !== OBJ_EVENT_GFX_ITEM_BALL)
+      events[i].script = 'BattlePyramid_TrainerBattle';
+    else
+      events[i].script = 'BattlePyramid_FindItemBall';
+  }
+}
 
 // ─── gMapLayouts (adaptateur étage pyramide) ─────────────────────────────────
 // 1:1 décomp : `gMapLayouts[offset + LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR]`.

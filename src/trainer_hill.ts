@@ -84,6 +84,19 @@ function FreeDataStruct(): void {
   sHillData = null;
 }
 
+/** 1:1 décomp `bool32 LoadTrainerHillFloorObjectEventScripts(void)` (trainer_hill.c:664-670) :
+ *    SetUpDataStruct();
+ *    // Something may have been dummied here
+ *    FreeDataStruct();
+ *    return TRUE;
+ *  Appelé par CB2_ContinueSavedGame quand la map courante est un étage de Trainer Hill. */
+export function LoadTrainerHillFloorObjectEventScripts(): boolean {
+  SetUpDataStruct();
+  // Something may have been dummied here
+  FreeDataStruct();
+  return true;
+}
+
 /** 1:1 STRICT décomp `GetMapDataForFloor(u8 floorId, u32 x, u32 y, u32 floorWidth)`
  *  (trainer_hill.c:672-683). */
 function GetMapDataForFloor(floorId: number, x: number, y: number, floorWidth: number): number {

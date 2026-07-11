@@ -20,7 +20,7 @@ import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-r
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../runtime/decomp-globals';
 import { startM4aNativeAudio } from '../m4a/native';
 import { ResetSpriteData } from '../../src/sprite';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/overworld';
+import { CB2_NewGame, CB2_ContinueSavedGame, primeFieldInitDeps } from '../../src/overworld';
 // Boot intro réutilisable (host unifié intro+OW — LE boot par défaut depuis 2026-07-10).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
@@ -81,7 +81,7 @@ import {
 } from '../../src/field_player_avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../../src/event_object_movement';
-import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../../src/load_save';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap, GetCurrentMap, LoadObjEventTemplatesFromHeader } from '../../src/load_save';
 import {
   SpawnObjectEventsOnMap,
   SpawnObjectEventsOnReturnToField,
@@ -469,12 +469,15 @@ export class TestOverworldScene extends Phaser.Scene {
     // clears ad-hoc ici : le chemin de map load pose lui-même l'état GPU correct (1:1 décomp),
     // ce qui écrase l'ombre résiduelle (mode-3/BLDY) au passage intro→OW.
     // Entre l'OW dans CE runtime (= 1:1 SetMainCallback2(CB2_Overworld)). bootOverworld
-    // re-run decideBootMode (post-Birch → newgame/truck ; ou resume/saved map).
-    await this.bootOverworld();
+    // exécute le VRAI corps CB2_NewGame / CB2_ContinueSavedGame pour ce `mode`.
+    await this.bootOverworld(mode);
   }
 
-  /** Async boot : load map + init BG + draw + go. */
-  private async bootOverworld(): Promise<void> {
+  /** Async boot : load map + init BG + draw + go.
+   *  @param bootMode 'newgame'|'continue' (host unifié → exécute le corps 1:1 du CB2
+   *    correspondant) ; undefined (boot direct : presets ?debug/?nointro/?clock/?truck +
+   *    legacy ?no-un) → decideBootMode. */
+  private async bootOverworld(bootMode?: 'newgame' | 'continue'): Promise<void> {
     try {
       // 1. Configure les 4 BG layers 1:1 décomp `sOverworldBgTemplates`
       //    (overworld.c:266-304). BG1/2/3 partagent charBase 0 (= tileset
@@ -541,12 +544,68 @@ export class TestOverworldScene extends Phaser.Scene {
       // = le VRAI script décomp (159 setflag + ResetAllBerries) — il faut l'image
       // bytecode + les handlers installés. Idempotent (no-op si déjà chargé).
       await (await import('../../src/bytevm-boot')).loadByteVmEngine();
-      const boot = decideBootMode();
+
+      // ─── Dispatch boot (host unifié : VRAIS corps 1:1 CB2_* ; presets : decideBootMode) ──
+      // Host unifié (intro → New Game / Continue) : exécute le corps 1:1 CB2_NewGame /
+      // CB2_ContinueSavedGame (overworld.ts) ; le harness ne réalise QUE le chargement
+      // async d'assets (ADAPTATION ROM→fetch, précédent = executeWarp → loadAndInitMap).
+      // Presets dev (?debug/?nointro/?clock/?truck) + legacy ?no-un : decideBootMode.
+      let boot: { mode: string; mapId: string; x: number; y: number; facing: number };
+      let initFromSavedGame = false;
+      // Précharge (chunks séparés, call-time) les deps des corps CB2 field-init AVANT
+      // de les exécuter — cf. overworld.primeFieldInitDeps (anti-TDZ). Uniquement pour
+      // le host unifié (les presets/decideBootMode n'exécutent pas les corps CB2).
+      if (bootMode) await primeFieldInitDeps();
+      if (bootMode === 'newgame') {
+        // 1:1 décomp CB2_NewGame → NewGameInitData → WarpToTruck pose
+        // gSaveBlock1Ptr.location = MAP_INSIDE_OF_TRUCK (2, 2). On charge ENSUITE cette map.
+        CB2_NewGame();
+        const cur = GetCurrentMap();
+        boot = { mode: 'newgame', mapId: cur?.name ?? 'MAP_INSIDE_OF_TRUCK',
+                 x: cur?.x ?? 2, y: cur?.y ?? 2, facing: DIR_SOUTH };
+      } else if (bootMode === 'continue') {
+        // La save est déjà chargée (transitionToOverworld). PRÉCHARGER la map data de la
+        // save (loadMapByName = cache + gMapHeader, SANS init visuelle) AVANT le corps :
+        // CB2_ContinueSavedGame → LoadSaveblockMapHeader + InitMapFromSavedGame exigent
+        // gMapHeader résolu (⚠️ InitMapFromSavedGame est re-réalisé par loadAndInitMap
+        // ci-dessous — cf. rapport, doublon idempotent assumé).
+        const saved = GetCurrentMap();
+        if (saved) {
+          await loadMapByName(saved.name);
+          // Aligne location.mapGroup/mapNum AVANT le corps : SetCurrentMapLocation les pose
+          // à (0,0) stale (l'identité de map vit dans __mapId), or CB2_ContinueSavedGame →
+          // LoadSaveblockMapHeader résout le header par (group,num) via
+          // Overworld_GetMapHeaderByGroupAndId. Même alignement que loadAndInitMap (ci-dessous).
+          const packed = MAP_CONSTANTS[saved.name];
+          if (packed !== undefined) {
+            gSaveBlock1Ptr.location.mapGroup = packed >> 8;
+            gSaveBlock1Ptr.location.mapNum = packed & 0xFF;
+          }
+        }
+        const disc = CB2_ContinueSavedGame();
+        if (disc === 'warp') {
+          // UseContinueGameWarp : WarpIntoMap a posé location = continueGameWarp + pos.
+          // Le mapId string vit dans l'overlay __continueGameWarpMapId (cf.
+          // boot-mode.tryContinueGameWarpSpawn). Load FRAIS de la dest (= CB2_LoadMap).
+          const b1 = gSaveBlock1Ptr as { __continueGameWarpMapId?: string; pos: { x: number; y: number } };
+          boot = { mode: 'warp', mapId: b1.__continueGameWarpMapId ?? GetCurrentMap()?.name ?? 'MAP_LITTLEROOT_TOWN',
+                   x: b1.pos.x, y: b1.pos.y, facing: DIR_SOUTH };
+          initFromSavedGame = false;
+        } else {
+          const cur = GetCurrentMap();
+          boot = { mode: 'resume', mapId: cur?.name ?? 'MAP_LITTLEROOT_TOWN',
+                   x: cur?.x ?? 0, y: cur?.y ?? 0, facing: cur?.facing ?? DIR_SOUTH };
+          initFromSavedGame = true;  // → InitMapFromSavedGame (LoadSavedMapView)
+        }
+      } else {
+        boot = decideBootMode();
+        initFromSavedGame = boot.mode === 'resume';
+      }
       console.log(`[TestOverworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
       // Étape 5 : resume save → InitMapFromSavedGame (LoadSavedMapView). Les
-      // autres modes (newgame/nointro) → InitMap normal (= 1:1 décomp).
+      // autres modes (newgame/nointro/warp) → InitMap normal (= 1:1 décomp).
       const header = await this.loadAndInitMap(
-        boot.mapId, boot.x, boot.y, boot.facing, boot.mode === 'resume',
+        boot.mapId, boot.x, boot.y, boot.facing, initFromSavedGame,
       );
 
       // 1:1 décomp `VBlankCB_Field` (overworld.c:1784-1792) :
@@ -579,7 +638,7 @@ export class TestOverworldScene extends Phaser.Scene {
       if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
         const { ExecuteTruckSequence } = await import('../../src/field_special_scene');
         ExecuteTruckSequence(this.rt);
-      } else if (boot.mode === 'resume') {
+      } else if (boot.mode === 'resume' || boot.mode === 'warp') {
         // 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1750) :
         //   gFieldCallback = FieldCB_FadeTryShowMapPopup;
         // → RunFieldCallback → FieldCB_WarpExitFadeFromBlack (field_screen_effect.c:289) :

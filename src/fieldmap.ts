@@ -791,6 +791,17 @@ export async function loadMapByName(mapId: string): Promise<MapHeader> {
   return header;
 }
 
+/** ADAPTATION ROM→fetch : setter pour `gMapHeader`. En ROM, `LoadCurrentMapData` /
+ *  `LoadSaveblockMapHeader` (overworld.c) font `gMapHeader = *Overworld_GetMapHeader...`
+ *  (copie de struct sync) ; `gMapHeader` étant un export `let`, un autre module ne peut
+ *  pas le réassigner directement en ESM. Ce setter réplique le pattern interne de
+ *  `loadMapByName` (`gMapHeader = h` + miroir globalThis) et est consommé par les deux
+ *  fonctions ci-dessus sur un header DÉJÀ préchargé par le harness (cf. executeWarp). */
+export function SetGMapHeader(header: MapHeader): void {
+  gMapHeader = header;
+  (globalThis as Record<string, unknown>).gMapHeader = header;
+}
+
 // ─── 1:1 décomp fieldmap.c InitMap pipeline ─────────────────────────────────
 // (_runOnLoadMapScriptHook + setOnLoadMapScriptHook sont HOISTÉS en tête de
 //  module — cf. juste après les imports — pour éviter une TDZ : étape 5 a
