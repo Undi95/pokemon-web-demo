@@ -890,7 +890,7 @@ import {
   MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS,
   MON_DATA_SPECIES, MON_DATA_NICKNAME,
 } from './engine/battle/party-storage';
-import { gBattlerPartyIndexes } from './engine/battle/state';
+import { gBattlerPartyIndexes, gBattlersCount } from './engine/battle/state';
 import { getExpForLevel } from './data/pokemon/experience_tables';
 import { getSpeciesGrowthRate } from './data/pokemon/species_info';
 import { GetGenderFromSpeciesAndPersonality } from '../include/pokemon';
@@ -919,6 +919,30 @@ const HEALTHBOX_STATUS_ICON = 9;
  *  -1 = pas encore créé. Lu par les controllers via `__battleHealthbox.gHealthboxSpriteIds`. */
 export const gHealthboxSpriteIds: number[] = [-1, -1, -1, -1];
 
+/** 1:1 décomp `IsDoubleBattle()` (battle_util.c) : gBattleTypeFlags & BATTLE_TYPE_DOUBLE.
+ *  TOUS les chemins DOUBLE de ce module sont gatés dessus → single byte-identique. */
+function IsDoubleBattle(): boolean {
+  return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0;
+}
+
+// ─── 1:1 décomp `gBattleSpritesDataPtr->battlerData[b].hpNumbersNoBars:1` ────────
+/** État par-battler : afficher les CHIFFRES PV au lieu des barres (toggle START en
+ *  DOUBLE, 1:1 `SwapHpBarsWithHpText` battle_interface.c:1389). Reste 0 partout hors
+ *  double (jamais togglé en single : le gate de SwapHpBars skippe les 2 battlers) →
+ *  les gardes `!hpNumbersNoBars` valent TRUE en single = chemin single INCHANGÉ.
+ *  Stocké ICI ("battle_interface local", cf. step 2 ; précédent = battlerData harness
+ *  engine/battle/battle-sprites-data.ts pour behindSubstitute/invisible) car les 2
+ *  LECTEURS (UpdateHpTextInHealthboxInDoubles, UpdateStatusIconInHealthbox) vivent
+ *  dans ce module ; le WRITER _SwapHpBarsWithHpText (battle_controller_player.ts) y
+ *  accède via le hook __battleHealthbox (comme gHealthboxSpriteIds). */
+const _hpNumbersNoBars: number[] = [0, 0, 0, 0];
+/** 1:1 lecture `gBattleSpritesDataPtr->battlerData[b].hpNumbersNoBars`. */
+export function isHpNumbersNoBars(battler: number): boolean { return (_hpNumbersNoBars[battler] | 0) !== 0; }
+/** 1:1 `hpNumbersNoBars ^= 1` (SwapHpBarsWithHpText:1389). Retourne la nouvelle valeur. */
+export function toggleHpNumbersNoBars(battler: number): number { return (_hpNumbersNoBars[battler] ^= 1); }
+/** Reset par combat (= alloc fraîche de gBattleSpritesDataPtr). */
+export function resetHpNumbersNoBars(): void { for (let i = 0; i < _hpNumbersNoBars.length; i++) _hpNumbersNoBars[i] = 0; }
+
 /** Side d'un battler (1:1 `GetBattlerSide` : position & BIT_SIDE). Single :
  *  position pair (0/2) = joueur, impair (1/3) = adversaire. */
 function _sideOf(battler: number): 'player' | 'opponent' {
@@ -939,13 +963,33 @@ function _handleFromSpriteId(healthboxSpriteId: number): HealthboxHandle | null 
   const left = rt.gSprites[healthboxSpriteId];
   if (!left || !left.data) return null;
   const battler = left.data[6] | 0;
+  const side = _sideOf(battler);
+  const barSpriteId = left.data[5] | 0;
+  // 1:1 décomp : les fns de rendu adressent via `gSprites[healthboxSpriteId].oam.tileNum
+  // * TILE_SIZE_4BPP` (box) et `gSprites[healthBarSpriteId].oam.tileNum * TILE_SIZE_4BPP`
+  // (barre). Le runtime nomme le champ `oam.tileId` (= décomp `oam.tileNum`). On lit donc
+  // la base PAR POSITION directement depuis l'OAM du sprite (step 3). Fallback = constante
+  // side single si l'OAM est absent → garantit le single INCHANGÉ même en cas de lecture
+  // ratée. Preuve single : le box left est créé avec tileId = HEALTHBOX_{PLAYER,OPPONENT}_VRAM/32
+  // → oam.tileId*32 == la constante ; idem barre = HPBAR_{PLAYER,OPP}_LEFT_VRAM.
+  const leftOam = rt.gba.oam[left.oamIndex];
+  const barSprite = rt.gSprites[barSpriteId];
+  const barOam = barSprite ? rt.gba.oam[barSprite.oamIndex] : null;
+  const baseVram = leftOam
+    ? (leftOam.tileId | 0) * TILE_BYTES
+    : (side === 'player' ? HEALTHBOX_PLAYER_VRAM : HEALTHBOX_OPPONENT_VRAM);
+  const barBaseVram = barOam
+    ? (barOam.tileId | 0) * TILE_BYTES
+    : (side === 'player' ? HPBAR_PLAYER_LEFT_VRAM : HPBAR_OPP_LEFT_VRAM);
   return {
     leftSpriteId: healthboxSpriteId,
     rightSpriteId: left.data[7] | 0,
-    healthbarSpriteId: left.data[5] | 0,
-    side: _sideOf(battler),
+    healthbarSpriteId: barSpriteId,
+    side,
     centerX: left.x,
     centerY: left.y,
+    baseVram,
+    barBaseVram,
   };
 }
 
@@ -988,10 +1032,12 @@ export async function CreateBattlerHealthboxSprites(battler: number): Promise<nu
   const rt = getRuntime();
   if (!rt) return -1;
   const side = _sideOf(battler);
-  const handle = await createBattlerHealthboxSprites(side);
+  const handle = await createBattlerHealthboxSprites(side, battler);
   if (!handle) return -1;
 
-  const data6 = side === 'player' ? 0 : 2;  // 1:1 décomp single (player=0, opp=2)
+  // 1:1 décomp `hBar_Data6` : player single=0 (l.871), player DOUBLE=1 (l.915), opp=2
+  // (single l.895 / double l.928). data6 pilote SpriteCB_HealthBar.x : 0/1→+16, 2→+8.
+  const data6 = side === 'player' ? (IsDoubleBattle() ? 1 : 0) : 2;
   const left = rt.gSprites[handle.leftSpriteId];
   const right = rt.gSprites[handle.rightSpriteId];
   const bar = rt.gSprites[handle.healthbarSpriteId];
@@ -1190,7 +1236,10 @@ export function UpdateHealthboxAttribute(healthboxSpriteId: number, monRaw: unkn
       SetBattleBarStruct(battler, healthboxSpriteId, maxHp, currHp, 0);
       MoveBattleBar(battler, healthboxSpriteId, HEALTH_BAR, 0);  // → MoveBattleBarGraphically (hook)
     }
-    if (elementId === HEALTHBOX_EXP_BAR || elementId === HEALTHBOX_ALL) {
+    if (!IsDoubleBattle() && (elementId === HEALTHBOX_EXP_BAR || elementId === HEALTHBOX_ALL)) {
+      // 1:1 décomp l.2190 : `!isDoubles && (EXP_BAR || ALL)` — la barre EXP n'existe QUE
+      // sur la grande box player single (la petite box double n'a pas la zone exp → écrire
+      // aux offsets 0x24/0xB80 déborderait la région 0x800). Single : INCHANGÉ.
       // 1:1 décomp ll. 2197-2205 : currExpBarValue = exp - currLevelExp ;
       // maxExpBarValue = nextLevelExp - currLevelExp (via gExperienceTables).
       const species = GetMonData(mon, MON_DATA_SPECIES) as number;
@@ -1300,7 +1349,11 @@ export function initAllHealthboxes(): boolean {
     // _syncSubspriteOam (appelé chaque frame dans decomp-runtime:2360 après syncSpritesToOam).
     // On l'enregistre pour le combat (= 1:1 le pattern naming-screen-impl.ts:756).
     (globalThis as Record<string, unknown>)._syncSubspriteOam = syncSubspriteOam;
-    void Promise.all([initBattlerHealthbox(0), initBattlerHealthbox(1)])
+    // 1:1 décomp BattleInitAllSprites : crée la healthbox de TOUS les battlers (gBattlersCount
+    // = 2 single, 4 double). Single INCHANGÉ (boucle 0,1). Double → 4 petites boxes.
+    const _hbInits: Promise<void>[] = [];
+    for (let b = 0; b < gBattlersCount; b++) _hbInits.push(initBattlerHealthbox(b));
+    void Promise.all(_hbInits)
       .then(async () => {
         // 1:1 décomp BattleInitAllSprites case 6 (battle_gfx_sfx_util.c:899-903) :
         // healthboxes (case 5) PUIS LoadAndCreateEnemyShadowSprites. Le callback
@@ -1326,6 +1379,8 @@ export function resetHealthboxL(): void {
   for (let i = 0; i < gHealthboxSpriteIds.length; i++) gHealthboxSpriteIds[i] = -1;
   for (let i = 0; i < _healthboxSlideInStarted.length; i++) _healthboxSlideInStarted[i] = false;
   _hbInitState = 0;
+  resetHpNumbersNoBars();        // step 2 : hpNumbersNoBars = 0 par combat (1:1 alloc fraîche).
+  resetDoublesHealthboxAssets(); // re-alloc/re-blit des régions doubles au prochain combat double.
   // Reset la machine BattleInitAllSprites du miroir gfx_sfx (refs gBattleCommunication
   // 1:1) — hook global (import statique = cycle, gfx_sfx importe déjà ce module).
   (globalThis as { __battleGfxSfxUtil?: { resetBattleInitAllSpritesState?: () => void } })
@@ -1350,6 +1405,51 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: number, value: number
   updateHealthboxHpDigits(handle, currHp, maxHp);
 }
 
+// ─── Primitives spriteId pour SwapHpBarsWithHpText (battle_controller_player.ts) ──
+
+/** 1:1 : `gSprites[healthboxSpriteId].callback == SpriteCallbackDummy` (box AU REPOS,
+ *  = pas en slide-in). Le gate de SwapHpBarsWithHpText (l.1383) exige cet état. */
+function isHealthboxAtRest(healthboxSpriteId: number): boolean {
+  const rt = getRuntime();
+  const sp = rt?.gSprites[healthboxSpriteId];
+  if (!sp) return false;
+  return sp.callback === (SpriteCallbackDummy as never) || sp.callback == null;
+}
+
+/** 1:1 : `CpuFill32(0, OBJ_VRAM0 + healthBar.oam.tileNum*32, 0x100)` — efface les 8 tuiles
+ *  de la barre HP (bars → text). barBaseVram = région barre par position (step 3). */
+function clearHealthbarTiles(healthboxSpriteId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const handle = _handleFromSpriteId(healthboxSpriteId);
+  if (!handle) return;
+  rt.gba.objVram.fill(0, handle.barBaseVram, handle.barBaseVram + 0x100);
+}
+
+/** 1:1 : `CpuCopy32(GetHealthboxElementGfxPtr(HEALTHBOX_GFX_FRAME_END_BAR), OBJ_VRAM0 + 0x680
+ *  + box.oam.tileNum*32, 32)` (text → bars, l.1410). Asset = healthbox_doubles_frameend_bar.png. */
+function copyFrameEndBarToHealthbox(healthboxSpriteId: number): void {
+  const rt = getRuntime();
+  if (!rt || !_frameEndBarDblTile) return;
+  const handle = _handleFromSpriteId(healthboxSpriteId);
+  if (!handle) return;
+  rt.gba.objVram.set(_frameEndBarDblTile, handle.baseVram + 0x680);
+}
+
+/** Wrapper spriteId de `UpdateStatusIconInHealthbox` (+ pokéball owned côté opp, 1:1 la
+ *  cascade UpdateHealthboxAttribute STATUS_ICON). Utilisé par SwapHpBarsWithHpText (text→bars). */
+function UpdateStatusIconInHealthboxById(healthboxSpriteId: number): void {
+  const handle = _handleFromSpriteId(healthboxSpriteId);
+  if (!handle) return;
+  const rt = getRuntime();
+  const left = rt?.gSprites[healthboxSpriteId];
+  const battler = left?.data ? (left.data[6] | 0) : 0;
+  const mon = _partyMon(battler);
+  const st = _statusString(mon);
+  UpdateStatusIconInHealthbox(handle, st);
+  if (handle.side !== 'player') TryAddPokeballIconToHealthbox(battler, !st);
+}
+
 // ─── Enregistrement global (lu par les controllers via __battleHealthbox) ───────
 (globalThis as Record<string, unknown>).__battleHealthbox = {
   gHealthboxSpriteIds,
@@ -1365,6 +1465,15 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: number, value: number
   UpdateHpTextInHealthbox,
   StartHealthboxSlideIn,
   ShowHealthboxOnSendOut,
+  // ── Surface SwapHpBarsWithHpText (step 5) + états hpNumbersNoBars (step 2) ──
+  isHpNumbersNoBars,
+  toggleHpNumbersNoBars,
+  UpdateHpTextInHealthboxInDoubles,
+  UpdateStatusIconInHealthboxById,
+  isHealthboxAtRest,
+  clearHealthbarTiles,
+  copyFrameEndBarToHealthbox,
+  HEALTHBOX_HEALTH_BAR,   // 1:1 constante (= 5) pour UpdateHealthboxAttribute(HEALTH_BAR).
 };
 
 // 1:1 décomp : MoveBattleBar appelle MoveBattleBarGraphically. En TS, MoveBattleBar
@@ -1417,7 +1526,7 @@ import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSprit
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle_interface → ui/*).
 import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from './window';
-import { FONT_SMALL, TEXT_SKIP_DRAW } from './text';
+import { FONT_SMALL, TEXT_SKIP_DRAW, FONT_BOLD, RenderTextHandleBold, encodeStringForFont, getOwCharmap } from './text';
 import { AddTextPrinterParameterized4 } from './menu';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
@@ -1524,6 +1633,39 @@ let HPBAR_PLAYER_LEFT_VRAM   = 0x2000;  // = AllocSpriteTiles(8) * 32
 let HPBAR_PLAYER_RIGHT_VRAM  = 0x2080;  // = LEFT + 0x80
 let HPBAR_OPP_LEFT_VRAM      = 0x2100;  // = AllocSpriteTiles(9) * 32
 let HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // = LEFT + 0x80
+
+// ─── VRAM DOUBLE (step 3/4) : 4 régions box de 0x800 (= 64 tiles) 1:1 décomp ────
+// `sSpriteSheets_Doubles{Player,Opponent}Healthbox[2]` (battle_gfx_sfx_util.c:55-64,
+// 0x800 chacune, tags PLAYER1/PLAYER2/OPPONENT1/OPPONENT2) + 4 barres (une par
+// battler, comme les 4 `sSpriteSheets_HealthBar[gBattlerPositions[i]]`). Position →
+// région : PLAYER_LEFT(0)→PLAYER1, PLAYER_RIGHT(2)→PLAYER2, OPPONENT_LEFT(1)→OPP1,
+// OPPONENT_RIGHT(3)→OPP2. Allouées par `ensureDoublesHealthboxAssets` (gated
+// IsDoubleBattle) — 0 hors double (jamais lues en single). La box double = 64×32
+// (PETITE box, PAS le carré 64×64 single) → 0x800 (2 sprites 64×32 = 32+32 tiles).
+let HEALTHBOX_DBL_PLAYER1_VRAM = 0;   // battler position 0 (B_POSITION_PLAYER_LEFT)
+let HEALTHBOX_DBL_PLAYER2_VRAM = 0;   // battler position 2 (B_POSITION_PLAYER_RIGHT)
+let HEALTHBOX_DBL_OPP1_VRAM    = 0;   // battler position 1 (B_POSITION_OPPONENT_LEFT)
+let HEALTHBOX_DBL_OPP2_VRAM    = 0;   // battler position 3 (B_POSITION_OPPONENT_RIGHT)
+// 4 barres double (indexées par battler 0..3). Barre = 8 tiles (player) / 9 (opp).
+const HPBAR_DBL_VRAM: number[] = [0, 0, 0, 0];
+// Tags allocateur double (1:1 tags décomp distincts).
+const TAG_HB_DBL_PLAYER1 = 'BATTLE_HB_DBL_P1';
+const TAG_HB_DBL_PLAYER2 = 'BATTLE_HB_DBL_P2';
+const TAG_HB_DBL_OPP1    = 'BATTLE_HB_DBL_O1';
+const TAG_HB_DBL_OPP2    = 'BATTLE_HB_DBL_O2';
+const TAG_HPBAR_DBL = ['BATTLE_HPBAR_DBL0', 'BATTLE_HPBAR_DBL1', 'BATTLE_HPBAR_DBL2', 'BATTLE_HPBAR_DBL3'];
+const HEALTHBOX_DBL_TILE_COUNT = 0x800 / 32;  // 64 tiles
+// PNG doubles (128×32 = 16×4 = 64 tiles = 0x800), 1:1 gHealthboxDoubles{Player,Opponent}Gfx.
+const HEALTHBOX_DBL_PLAYER_PNG   = '/decomp/em/battle_interface/healthbox_doubles_player.png';
+const HEALTHBOX_DBL_OPPONENT_PNG = '/decomp/em/battle_interface/healthbox_doubles_opponent.png';
+// HEALTHBOX_GFX_FRAME_END / FRAME_END_BAR doubles (8×8 = 1 tile), consommés par
+// UpdateHpTextInHealthboxInDoubles (FRAME_END) et _SwapHpBarsWithHpText (FRAME_END_BAR).
+const HEALTHBOX_DBL_FRAMEEND_PNG     = '/decomp/em/battle_interface/healthbox_doubles_frameend.png';
+const HEALTHBOX_DBL_FRAMEEND_BAR_PNG = '/decomp/em/battle_interface/healthbox_doubles_frameend_bar.png';
+let _hbDblPlayerTiles: Uint8Array | null = null;
+let _hbDblOppTiles: Uint8Array | null = null;
+let _frameEndDblTile: Uint8Array | null = null;      // HEALTHBOX_GFX_FRAME_END
+let _frameEndBarDblTile: Uint8Array | null = null;   // HEALTHBOX_GFX_FRAME_END_BAR
 
 // ─── OBJ palette slots ──────────────────────────────────────────────────────
 
@@ -1948,6 +2090,14 @@ export interface HealthboxHandle {
    *  Player : (158, 88). Opp : (44, 30). */
   centerX: number;
   centerY: number;
+  /** Base OBJ VRAM (byte) de la box LEFT = 1:1 décomp `gSprites[healthboxSpriteId].oam.tileNum
+   *  * TILE_SIZE_4BPP`. Les fns d'update écrivent à `baseVram + offset` (au lieu d'une
+   *  constante side-keyée) → VRAM PAR POSITION (step 3). Single : player = HEALTHBOX_PLAYER_VRAM,
+   *  opp = HEALTHBOX_OPPONENT_VRAM (prouvé inchangé) ; double : région PLAYER1/2 / OPP1/2. */
+  baseVram: number;
+  /** Base OBJ VRAM (byte) du sprite BARRE = 1:1 `gSprites[healthBarSpriteId].oam.tileNum
+   *  * TILE_SIZE_4BPP`. Single : HPBAR_PLAYER_LEFT_VRAM / HPBAR_OPP_LEFT_VRAM. */
+  barBaseVram: number;
 }
 
 // ─── Sprite creation 1:1 décomp ─────────────────────────────────────────────
@@ -1960,7 +2110,15 @@ export interface HealthboxHandle {
  *    - Opponent single : (44, 30) */
 export async function createBattlerHealthboxSprites(
   side: 'player' | 'opponent',
+  battler?: number,
 ): Promise<HealthboxHandle | null> {
+  // 1:1 décomp CreateBattlerHealthboxSprites (battle_interface.c:902-930) : en DOUBLE,
+  // la box est créée avec le template[GetBattlerPosition/2] SANS l'override SQUARE (reste
+  // 64×32 = la PETITE box) et right.tileNum += 32 (vs 64 single). Branche dédiée (gated
+  // IsDoubleBattle → single INCHANGÉ, dispatch no-op en single).
+  if (battler !== undefined && IsDoubleBattle()) {
+    return _createDoublesHealthboxSprites(side, battler);
+  }
   await ensureHealthboxAssets();
   const rt = getRuntime();
   if (!rt) return null;
@@ -2035,6 +2193,10 @@ export async function createBattlerHealthboxSprites(
       healthbarSpriteId: bar.spriteId,
       side: 'player',
       centerX, centerY,
+      // 1:1 : la box left est créée avec tileId = HEALTHBOX_PLAYER_VRAM/32 → baseVram
+      // == HEALTHBOX_PLAYER_VRAM (= la valeur side-keyée single AVANT step 3, INCHANGÉE).
+      baseVram: HEALTHBOX_PLAYER_VRAM,
+      barBaseVram: HPBAR_PLAYER_LEFT_VRAM,
     };
   } else {
     // 1:1 décomp ll. 890-896 opponent single :
@@ -2081,8 +2243,174 @@ export async function createBattlerHealthboxSprites(
       healthbarSpriteId: bar.spriteId,
       side: 'opponent',
       centerX, centerY,
+      baseVram: HEALTHBOX_OPPONENT_VRAM,   // 1:1 : tileId = HEALTHBOX_OPPONENT_VRAM/32 → INCHANGÉ.
+      barBaseVram: HPBAR_OPP_LEFT_VRAM,
     };
   }
+}
+
+// ─── DOUBLE : assets + création box 1:1 (step 4) ────────────────────────────
+
+let _dblAssetsLoaded = false;
+let _hbDblBaseBlitted = false;
+
+/** 1:1 décomp `BattleLoadAllHealthBoxesGfx` branche DOUBLE (battle_gfx_sfx_util.c:800-820)
+ *  + `sSpriteSheets_Doubles*Healthbox`. Alloue les 4 régions box (PLAYER1/2/OPP1/2, 0x800)
+ *  + 4 barres (une par battler), charge/blitte les gfx doubles + frameend doubles. Réutilise
+ *  les caches partagés (status/numbers/misc/hpbar labels) + palettes chargés par
+ *  ensureHealthboxAssets (PLTE identique aux singles). GATED : appelé uniquement par la
+ *  branche double de createBattlerHealthboxSprites → 0 impact single.
+ *  DETTE : ensureHealthboxAssets alloue AUSSI les régions single (inutilisées en double,
+ *  ~273 tiles) — à factoriser si le budget OBJ VRAM serre (mons doubles = 256 tiles). */
+async function ensureDoublesHealthboxAssets(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Caches partagés (status/numbers/misc/hpbar) + palettes HEALTHBOX/HEALTHBAR + slots.
+  await ensureHealthboxAssets();
+  // 1:1 décomp : UpdateHealthboxAttribute HEALTH_BAR appelle LoadBattleBarGfx(0) → barFontGfx
+  // (font des chiffres PV doubles, consommée par UpdateHpTextInHealthboxInDoubles). On la
+  // charge ici (au boot double) pour qu'elle soit prête au 1er rendu. Via le hook global.
+  const _mg = (globalThis as { __monSpritesGfx?: { LoadBattleBarGfx?: (u: number) => Promise<void> } }).__monSpritesGfx;
+  await _mg?.LoadBattleBarGfx?.(0)?.catch?.((e: unknown) => console.error('[healthbox-dbl] LoadBattleBarGfx', e));
+
+  // ─── Allocation VRAM double (1× par combat, critère = tag absent, 1:1 single). ──
+  if (GetSpriteTileStartByTag(TAG_HB_DBL_PLAYER1) === 0xFFFF) {
+    const p1 = AllocSpriteTiles(HEALTHBOX_DBL_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_DBL_PLAYER1, p1, HEALTHBOX_DBL_TILE_COUNT);
+    HEALTHBOX_DBL_PLAYER1_VRAM = p1 * TILE_BYTES;
+    const p2 = AllocSpriteTiles(HEALTHBOX_DBL_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_DBL_PLAYER2, p2, HEALTHBOX_DBL_TILE_COUNT);
+    HEALTHBOX_DBL_PLAYER2_VRAM = p2 * TILE_BYTES;
+    const o1 = AllocSpriteTiles(HEALTHBOX_DBL_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_DBL_OPP1, o1, HEALTHBOX_DBL_TILE_COUNT);
+    HEALTHBOX_DBL_OPP1_VRAM = o1 * TILE_BYTES;
+    const o2 = AllocSpriteTiles(HEALTHBOX_DBL_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_DBL_OPP2, o2, HEALTHBOX_DBL_TILE_COUNT);
+    HEALTHBOX_DBL_OPP2_VRAM = o2 * TILE_BYTES;
+    // 4 barres double : 1:1 `sSpriteSheets_HealthBar[gBattlerPositions[i]]` (player 8, opp 9).
+    for (let b = 0; b < 4; b++) {
+      const cnt = (GetBattlerPosition(b) & 1) === 0 ? HPBAR_PLAYER_TILE_COUNT : HPBAR_OPP_TILE_COUNT;
+      const s = AllocSpriteTiles(cnt);
+      AllocSpriteTileRange(TAG_HPBAR_DBL[b], s, cnt);
+      HPBAR_DBL_VRAM[b] = s * TILE_BYTES;
+    }
+    _hbDblBaseBlitted = false;
+  }
+
+  // ─── Chargement PNG doubles (128×32 = 16×4 tiles = 0x800 ; metatile 8×4 comme opp single). ──
+  if (!_dblAssetsLoaded) {
+    const playerPng = await loadIndexedPngStrict(HEALTHBOX_DBL_PLAYER_PNG, 4);
+    _hbDblPlayerTiles = _rearrangeToMetatileOrder(playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 4);
+    const oppPng = await loadIndexedPngStrict(HEALTHBOX_DBL_OPPONENT_PNG, 4);
+    _hbDblOppTiles = _rearrangeToMetatileOrder(oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4);
+    const feEnd = await loadIndexedPngStrict(HEALTHBOX_DBL_FRAMEEND_PNG, 4);
+    _frameEndDblTile = feEnd.charData.subarray(0, TILE_BYTES);
+    const feBar = await loadIndexedPngStrict(HEALTHBOX_DBL_FRAMEEND_BAR_PNG, 4);
+    _frameEndBarDblTile = feBar.charData.subarray(0, TILE_BYTES);
+    _dblAssetsLoaded = true;
+  }
+
+  // ─── Blit base (box + barres) 1× par cycle d'allocation (comme ensureHealthboxAssets). ──
+  if (!_hbDblBaseBlitted) {
+    if (_hbDblPlayerTiles) {
+      rt.gba.objVram.set(_hbDblPlayerTiles, HEALTHBOX_DBL_PLAYER1_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_DBL_PLAYER1_VRAM, _hbDblPlayerTiles.length);
+      rt.gba.objVram.set(_hbDblPlayerTiles, HEALTHBOX_DBL_PLAYER2_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_DBL_PLAYER2_VRAM, _hbDblPlayerTiles.length);
+    }
+    if (_hbDblOppTiles) {
+      rt.gba.objVram.set(_hbDblOppTiles, HEALTHBOX_DBL_OPP1_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_DBL_OPP1_VRAM, _hbDblOppTiles.length);
+      rt.gba.objVram.set(_hbDblOppTiles, HEALTHBOX_DBL_OPP2_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_DBL_OPP2_VRAM, _hbDblOppTiles.length);
+    }
+    if (_hpBarTilesGreen && _hpBarBaseTiles) {
+      const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES);
+      for (let b = 0; b < 4; b++) {
+        const base = HPBAR_DBL_VRAM[b] | 0;
+        if (!base) continue;
+        for (let i = 2; i < 8; i++) rt.gba.objVram.set(fullGreen, base + i * TILE_BYTES);
+        rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), base);
+        if ((GetBattlerPosition(b) & 1) !== 0)  // opp : 9e tile = slot ball, transparent.
+          rt.gba.objVram.fill(0, base + 8 * TILE_BYTES, base + 9 * TILE_BYTES);
+        MarkObjTilesAllocated(base, ((GetBattlerPosition(b) & 1) === 0 ? 8 : 9) * TILE_BYTES);
+      }
+    }
+    _hbDblBaseBlitted = true;
+  }
+}
+
+/** Position → région box double (1:1 map tags PLAYER1/2/OPP1/2, cf. template[pos/2]). */
+function _doublesBoxVram(position: number): number {
+  switch (position) {
+    case 0: return HEALTHBOX_DBL_PLAYER1_VRAM;  // B_POSITION_PLAYER_LEFT
+    case 2: return HEALTHBOX_DBL_PLAYER2_VRAM;  // B_POSITION_PLAYER_RIGHT
+    case 1: return HEALTHBOX_DBL_OPP1_VRAM;     // B_POSITION_OPPONENT_LEFT
+    case 3: return HEALTHBOX_DBL_OPP2_VRAM;     // B_POSITION_OPPONENT_RIGHT
+    default: return HEALTHBOX_DBL_PLAYER1_VRAM;
+  }
+}
+
+/** 1:1 décomp `CreateBattlerHealthboxSprites` DOUBLE (battle_interface.c:902-930).
+ *  Box = template[GetBattlerPosition/2], PETITE box 64×32 (PAS d'override ST_OAM_SQUARE
+ *  → reste WIDE), right.tileNum += 32 (vs 64 single). La position home est posée ensuite
+ *  par InitBattlerHealthboxCoords (branche double déjà 1:1) → on crée à un provisoire. */
+async function _createDoublesHealthboxSprites(
+  side: 'player' | 'opponent',
+  battler: number,
+): Promise<HealthboxHandle | null> {
+  await ensureDoublesHealthboxAssets();
+  const rt = getRuntime();
+  if (!rt) return null;
+  const position = GetBattlerPosition(battler);
+  const boxVram = _doublesBoxVram(position);
+  const barVram = HPBAR_DBL_VRAM[battler] | 0;
+  const isPlayer = side === 'player';
+  const centerX = isPlayer ? 159 : 44;   // provisoire (écrasé par InitBattlerHealthboxCoords).
+  const centerY = isPlayer ? 76 : 19;
+  // 1:1 ll.906-907/919-920 : left = CreateSprite(template[pos/2]) — WIDE 64×32, PAS de
+  // forceSquareKeepWideCtcv (= la PETITE box double, PAS le carré 64×64 single).
+  const left = rt.CreateSpriteAtOam({
+    tileId: boxVram / 32,
+    paletteBank: HEALTHBOX_PALETTE_SLOT,
+    x: centerX, y: centerY,
+    shape: 1, size: 3,   // WIDE 64×32
+    priority: 1, subpriority: 1,
+  });
+  // 1:1 ll.912/925 : right.tileNum += 32 (double) — vs += 64 (single).
+  const right = rt.CreateSpriteAtOam({
+    tileId: boxVram / 32 + 32,
+    paletteBank: HEALTHBOX_PALETTE_SLOT,
+    x: centerX + 64, y: centerY,
+    shape: 1, size: 3,
+    priority: 1, subpriority: 1,
+  });
+  // Barre 1:1 : SpriteCB_HealthBar la reposera via data6 (player double=1 → +16 ; opp=2 → +8).
+  const bar = rt.CreateSpriteAtOam({
+    tileId: barVram / 32,
+    paletteBank: HEALTHBAR_PALETTE_SLOT,
+    x: centerX + (isPlayer ? 16 : 8), y: centerY,
+    shape: 1, size: 1,
+    priority: 1, subpriority: 0,
+  });
+  const barSp = rt.gSprites[bar.spriteId];
+  if (barSp) barSp.tileBase = barVram / 32;
+  SetSubspriteTables(bar.spriteId, isPlayer ? HEALTHBAR_SUBSPRITES_PLAYER : HEALTHBAR_SUBSPRITES_OPPONENT);
+  return {
+    leftSpriteId: left.spriteId,
+    rightSpriteId: right.spriteId,
+    healthbarSpriteId: bar.spriteId,
+    side,
+    centerX, centerY,
+    baseVram: boxVram,
+    barBaseVram: barVram,
+  };
+}
+
+/** Reset des assets doubles (= re-alloc/re-blit au prochain combat double). */
+export function resetDoublesHealthboxAssets(): void {
+  _dblAssetsLoaded = false;
+  _hbDblBaseBlitted = false;
 }
 
 /** Sprite IDs d'un healthbox handle (3 gSprites = box left/right + barre). Les
@@ -2263,8 +2591,9 @@ export function updateHealthboxHpBar(handle: HealthboxHandle, currHp: number, ma
   // `barTileNumStart + 2 + i`. tileNumStart = OBJ VRAM byte / 32.
   // For our 2-sprite bar layout, tiles 0..3 are in HPBAR_*_LEFT_VRAM,
   // tiles 4..7 are in HPBAR_*_RIGHT_VRAM (which is contiguous from LEFT + 4 tiles).
-  // So we just write to (HPBAR_*_LEFT_VRAM + (2 + i) * 32) for all i=0..5.
-  const baseVram = handle.side === 'player' ? HPBAR_PLAYER_LEFT_VRAM : HPBAR_OPP_LEFT_VRAM;
+  // So we just write to (barBaseVram + (2 + i) * 32) for all i=0..5. barBaseVram =
+  // handle.barBaseVram (step 3, par position) ; single = HPBAR_{PLAYER,OPP}_LEFT_VRAM.
+  const baseVram = handle.barBaseVram;
   for (let i = 0; i < 6; i++) {
     const pixels = array[i];
     const srcOffset = pixels * TILE_BYTES;
@@ -2403,10 +2732,11 @@ export function UpdateLvlInHealthbox(handle: HealthboxHandle, level: number): vo
   const xPos = 5 * (3 - lvStr.length);  // 1:1 décomp l.1117.
   const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, xPos, 3, 2);
   const windowData = _windowTextDataTo4bpp(winId);
-  // 1:1 décomp ll.1122-1134 : player += 0x820, opp += 0x400.
+  // 1:1 décomp ll.1122-1134 : base = spriteTileNum (= handle.baseVram, step 3 par position) ;
+  // player single += 0x820, player DOUBLE += 0x420, opp (single ET double) += 0x400.
   const destOff = handle.side === 'player'
-    ? HEALTHBOX_PLAYER_VRAM + 0x820
-    : HEALTHBOX_OPPONENT_VRAM + 0x400;
+    ? handle.baseVram + (IsDoubleBattle() ? 0x420 : 0x820)
+    : handle.baseVram + 0x400;
   _textIntoHealthboxObject(destOff, windowData, 0, 3);
   RemoveWindow(winId);
 }
@@ -2443,9 +2773,13 @@ export function UpdateStatusIconInHealthbox(handle: HealthboxHandle, status: str
   const rt = getRuntime();
   if (!rt || !_statusTiles) return;
 
-  // 1:1 décomp ll. 2007-2015 : tile offsets différents par side.
-  const baseVram = handle.side === 'player' ? HEALTHBOX_PLAYER_VRAM : HEALTHBOX_OPPONENT_VRAM;
-  const tileNumAdder = handle.side === 'player' ? 0x1A : 0x11;
+  // battler = 1:1 `gSprites[healthboxSpriteId].hMain_Battler` (data[6]) — pour hpNumbersNoBars.
+  const leftSp = rt.gSprites[handle.leftSpriteId];
+  const battler = leftSp?.data ? (leftSp.data[6] | 0) : 0;
+  // 1:1 décomp ll. 2004-2015 : base = handle.baseVram (step 3, par position) ; tileNumAdder
+  // player single = 0x1A, player DOUBLE = 0x12, opp (single/double) = 0x11.
+  const baseVram = handle.baseVram;
+  const tileNumAdder = handle.side === 'player' ? (IsDoubleBattle() ? 0x12 : 0x1A) : 0x11;
   const destVram = baseVram + tileNumAdder * TILE_BYTES;
 
   // 1:1 décomp ll. 2018-2055 : status → tile offset dans status.png.
@@ -2476,11 +2810,11 @@ export function UpdateStatusIconInHealthbox(handle: HealthboxHandle, status: str
         rt.gba.objVram.set(blankWindowTile, destVram + i * TILE_BYTES);
       }
       // 1:1 décomp ll. 2050-2051 : no-status → restaure le label "PV" (HEALTHBOX_GFX_1,
-      // 2 tiles, CpuCopy32 64B) sur les tiles 0-1 de la BARRE (l'icône status l'avait
-      // remplacé par noir+frame-end côté adverse). hpNumbersNoBars=0 en single.
-      if (_hpBarBaseTiles) {
-        const barBase = handle.side === 'player' ? HPBAR_PLAYER_LEFT_VRAM : HPBAR_OPP_LEFT_VRAM;
-        rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), barBase);
+      // 2 tiles, CpuCopy32 64B) sur les tiles 0-1 de la BARRE (handle.barBaseVram, step 3),
+      // GATED `!hpNumbersNoBars` (en double, si les chiffres sont affichés, PAS de label).
+      // hpNumbersNoBars=0 en single → restauration TOUJOURS = chemin single INCHANGÉ.
+      if (!isHpNumbersNoBars(battler) && _hpBarBaseTiles) {
+        rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), handle.barBaseVram);
       }
       return;
     }
@@ -2494,8 +2828,10 @@ export function UpdateStatusIconInHealthbox(handle: HealthboxHandle, status: str
   // battler + 12 → index 12 (player) / 13 (opponent), SÉPARÉS pour permettre 2
   // status simultanés de couleurs différentes. Côté adverse on remap donc le gfx
   // 12→13 pour matcher l'entrée 13 (sinon il lirait l'entrée 12 = couleur joueur).
-  const battlerIndex = handle.side === 'player' ? 0 : 1;
-  const palColorIndex = 12 + battlerIndex;  // index LOCAL dans slot 5 (12 player / 13 opp)
+  // 1:1 décomp l.2058 : pltAdder += battler + 12 → index LOCAL (12 + battler). Single :
+  // player battler=0 → 12, opp battler=1 → 13 (= l'ancien side-keyé, INCHANGÉ). Double :
+  // 12..15 (1 entrée couleur par battler → 4 statuts simultanés possibles).
+  const palColorIndex = 12 + battler;
 
   let tileData: Uint8Array = _statusTiles.subarray(
     statusTileStart * TILE_BYTES, (statusTileStart + 3) * TILE_BYTES,
@@ -2514,12 +2850,13 @@ export function UpdateStatusIconInHealthbox(handle: HealthboxHandle, status: str
   // Copy 3 tiles consécutifs (= 96 bytes = 3 × 32) à OBJ VRAM.
   rt.gba.objVram.set(tileData, destVram);
 
-  // 1:1 décomp ll. 2063-2070 : avec status, côté ADVERSE (ou doubles) → l'icône
-  // recouvre la zone du label "PV" de la barre → remplace les tiles 0-1 de la barre
-  // par HEALTHBOX_GFX_0 (section noire) + HEALTHBOX_GFX_65 (frame end).
-  if (handle.side !== 'player' && _hpBarBaseTiles && _frameEndTile) {
-    rt.gba.objVram.set(_hpBarBaseTiles.subarray(0, TILE_BYTES), HPBAR_OPP_LEFT_VRAM);             // GFX_0
-    rt.gba.objVram.set(_frameEndTile.subarray(0, TILE_BYTES), HPBAR_OPP_LEFT_VRAM + TILE_BYTES);  // GFX_65
+  // 1:1 décomp ll. 2063-2070 : `IsDoubleBattle() || side == OPPONENT` (= adverse single/double
+  // OU tout battler en double) ET `!hpNumbersNoBars` → l'icône recouvre la zone label "PV" de
+  // la barre → GFX_0 (section noire) + GFX_65 (frame end) sur handle.barBaseVram (step 3).
+  // Single player : condition FALSE (IsDoubleBattle=0, side=player) → INCHANGÉ.
+  if ((IsDoubleBattle() || handle.side !== 'player') && !isHpNumbersNoBars(battler) && _hpBarBaseTiles && _frameEndTile) {
+    rt.gba.objVram.set(_hpBarBaseTiles.subarray(0, TILE_BYTES), handle.barBaseVram);             // GFX_0
+    rt.gba.objVram.set(_frameEndTile.subarray(0, TILE_BYTES), handle.barBaseVram + TILE_BYTES);  // GFX_65
   }
 
   // FillPalette (= 1:1 décomp FillPalette + CpuCopy16 sur OBJ_PLTT) : 1 couleur.
@@ -2595,7 +2932,7 @@ export function updateHealthboxExpBar(
   //         i=5 → 0xB80 + 5*32 = 0xC20
   //         i=6 → 0xC40
   //         i=7 → 0xC60
-  const baseVram = HEALTHBOX_PLAYER_VRAM;
+  const baseVram = handle.baseVram;  // step 3 : single player = HEALTHBOX_PLAYER_VRAM (INCHANGÉ).
   for (let i = 0; i < 8; i++) {
     const pixels = array[i];
     const srcOffset = pixels * TILE_BYTES;
@@ -2613,8 +2950,11 @@ export function updateHealthboxExpBar(
  *  Rend "cur/max" via la police (RIGHT_ALIGN 3 + CHAR_SLASH) puis copie dans l'OBJ
  *  VRAM. Opp single n'affiche PAS le PV numérique (= juste bar + status). */
 export function updateHealthboxHpDigits(handle: HealthboxHandle, currHp: number, maxHp: number): void {
-  if (handle.side !== 'player') return;  // 1:1 décomp l.1146 : player single only.
-  const baseVram = HEALTHBOX_PLAYER_VRAM;
+  // 1:1 décomp l.1146 : `side == PLAYER && !IsDoubleBattle()` (= digits PV dans la box).
+  // En DOUBLE, le PV joueur passe par UpdateHpTextInHealthboxInDoubles (chemin hpNumbersNoBars,
+  // rien par défaut) → ce primitive box-digits est no-op. Single player : INCHANGÉ.
+  if (handle.side !== 'player' || IsDoubleBattle()) return;
+  const baseVram = handle.baseVram;  // step 3 : single player = HEALTHBOX_PLAYER_VRAM (INCHANGÉ).
   // ── HP courant : 1:1 décomp ll.1158-1170 (RIGHT_ALIGN 3 + CHAR_SLASH, x=4). ──
   {
     const text = `${_convIntRightAlign(currHp, 3)}/`;
@@ -2649,12 +2989,83 @@ export function UpdateNickInHealthbox(handle: HealthboxHandle, nickname: string,
   const winId = _addTextPrinterAndCreateWindowOnHealthbox(str, 0, 3, 2);
   const windowData = _windowTextDataTo4bpp(winId);
   if (handle.side === 'player') {
-    // 1:1 décomp ll.1954-1960 : player single (6 tiles @ 0x40 + 1 tile @ 0x800).
-    _textIntoHealthboxObject(HEALTHBOX_PLAYER_VRAM + 0x40, windowData, 0, 6);
-    _textIntoHealthboxObject(HEALTHBOX_PLAYER_VRAM + 0x800, windowData, 0xC0, 1);
+    // 1:1 décomp ll.1952-1960 : player 6 tiles @ base+0x40 ; puis 1 tile @ base + (single
+    // 0x800 / DOUBLE 0x400), windowData+0xC0. base = handle.baseVram (step 3, par position).
+    _textIntoHealthboxObject(handle.baseVram + 0x40, windowData, 0, 6);
+    _textIntoHealthboxObject(handle.baseVram + (IsDoubleBattle() ? 0x400 : 0x800), windowData, 0xC0, 1);
   } else {
-    // 1:1 décomp l.1964 : opponent single (7 tiles @ 0x20).
-    _textIntoHealthboxObject(HEALTHBOX_OPPONENT_VRAM + 0x20, windowData, 0, 7);
+    // 1:1 décomp l.1964 : opponent (single/double) 7 tiles @ base+0x20.
+    _textIntoHealthboxObject(handle.baseVram + 0x20, windowData, 0, 7);
   }
   RemoveWindow(winId);
+}
+
+/** 1:1 décomp `UpdateHpTextInHealthboxInDoubles` (battle_interface.c:1216-1309).
+ *  Rend les CHIFFRES PV en combat DOUBLE (uniquement quand `hpNumbersNoBars` du battler
+ *  est set = après le toggle START). Deux branches :
+ *   - PLAYER : rend via le pipeline window (AddTextPrinter → HpTextIntoHealthboxObject) dans
+ *     la région BARRE (handle.barBaseVram, 1:1 `gSprites[data[5]].oam.tileNum`) + FRAME_END
+ *     double dans la box (baseVram + 0x680).
+ *   - OPPONENT : rend via `barFontGfx` + `RenderTextHandleBold(FONT_BOLD)` puis copie les
+ *     tuiles BAS des glyphes dans la région barre (1:1 ll.1275-1306).
+ *  Prend le healthboxSpriteId (1:1 signature décomp) → reconstruit le handle. No-op si
+ *  hpNumbersNoBars=0 (= JAMAIS en single : SwapHpBars ne toggle pas les battlers single). */
+export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: number, value: number, maxOrCurrent: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const handle = _handleFromSpriteId(healthboxSpriteId);
+  if (!handle) return;
+  const left = rt.gSprites[healthboxSpriteId];
+  const battler = left?.data ? (left.data[6] | 0) : 0;
+  const boxBase = handle.baseVram;        // 1:1 gSprites[healthboxSpriteId].oam.tileNum * 32
+  const barBase = handle.barBaseVram;     // 1:1 gSprites[data[5]].oam.tileNum * 32 (= BAR sprite)
+
+  if (handle.side === 'player') {
+    // 1:1 ll.1223-1250 : gated hpNumbersNoBars du battler (data[6]).
+    if (!isHpNumbersNoBars(battler)) return;
+    if (maxOrCurrent !== HP_CURRENT) {  // max HP
+      const text = _convIntRightAlign(value, 3);
+      const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, 0, 5, 0);
+      const windowData = _windowTextDataTo4bpp(winId);
+      _hpTextIntoHealthboxObject(barBase + 0xC0, windowData, 0, 2);  // 1:1 l.1234
+      RemoveWindow(winId);
+      // 1:1 ll.1236-1238 : CpuCopy32(GFX_FRAME_END, box tileNum*32 + 0x680, 0x20).
+      if (_frameEndDblTile) rt.gba.objVram.set(_frameEndDblTile, boxBase + 0x680);
+    } else {  // current HP ("cur/")
+      const text = `${_convIntRightAlign(value, 3)}/`;  // 1:1 : digits + CHAR_SLASH
+      const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, 4, 5, 0);
+      const windowData = _windowTextDataTo4bpp(winId);
+      rt.gba.objVram.fill(0, barBase, barBase + 3 * TILE_BYTES);  // 1:1 l.1246 FillHealthboxObject(barBase,0,3)
+      _hpTextIntoHealthboxObject(barBase + 0x60, windowData, 0, 3);  // 1:1 l.1247
+      RemoveWindow(winId);
+    }
+    return;
+  }
+
+  // ── OPPONENT (1:1 ll.1252-1307) : rendu via barFontGfx + RenderTextHandleBold ──
+  if (!isHpNumbersNoBars(battler)) return;
+  const mg = (globalThis as { __monSpritesGfx?: { getBarFontGfx?: () => Uint8Array | null } }).__monSpritesGfx;
+  const barFontGfx = mg?.getBarFontGfx?.() ?? null;
+  if (!barFontGfx) return;  // barFontGfx pas encore chargée (LoadBattleBarGfx) → retry au prochain update.
+  // 1:1 ll.1256/1270-1272 : text = sEmptyWhiteText_TransparentHighlight + digits. Le slash est
+  // ajouté quand `!maxOrCurrent` (HP_CURRENT==0 → true : slash ; HP_MAX==1 → false : pas de slash).
+  const digits = _convIntRightAlign(value, 3);
+  const withSlash = maxOrCurrent === HP_CURRENT ? `${digits}/` : digits;
+  const encoded = encodeStringForFont(`{COLOR WHITE}{HIGHLIGHT TRANSPARENT}${withSlash}`, getOwCharmap() ?? {});
+  RenderTextHandleBold(barFontGfx, FONT_BOLD, encoded);
+  const barTileNum = (barBase / TILE_BYTES) | 0;   // 1:1 gSprites[r7].oam.tileNum
+  const varOff = maxOrCurrent === HP_CURRENT ? 0 : 4;  // 1:1 l.1261/1266-1267
+  for (let i = varOff; i < varOff + 3; i++) {
+    // 1:1 ll.1275-1288 : copie le tuile BAS (offset +32) du glyphe (i-var) dans la barre.
+    const src = ((i - varOff) * 64) + 32;
+    const dstTile = i < 3 ? (1 + barTileNum + i) : (i + barTileNum);
+    const dstByte = (i < 3 ? 0 : 0x20) + 32 * dstTile;
+    rt.gba.objVram.set(barFontGfx.subarray(src, src + TILE_BYTES), dstByte);
+  }
+  if (maxOrCurrent === HP_CURRENT) {
+    // 1:1 ll.1291-1297 : slash (barFontGfx[224] = tuile bas du 4e glyphe) @ tileNum+4 ; fill @ tileNum.
+    rt.gba.objVram.set(barFontGfx.subarray(224, 224 + TILE_BYTES), (barTileNum + 4) * TILE_BYTES);
+    rt.gba.objVram.fill(0, barTileNum * TILE_BYTES, barTileNum * TILE_BYTES + TILE_BYTES);
+  }
+  // 1:1 ll.1298-1306 : l'autre branche (side==PLAYER) est UNREACHABLE ici (battler adverse).
 }

@@ -1608,6 +1608,134 @@ export function blitGlyphToWindow(
   w.needsFlush = true;
 }
 
+// ─── 1:1 décomp `RenderTextHandleBold` (text.c:1500-1607) ────────────────────
+//
+// Rendeur bas-niveau des CHIFFRES PV en combat DOUBLE — consommé par
+// UpdateHpTextInHealthboxInDoubles (battle_interface.c:1216). Contrairement à
+// RenderText (qui blit dans une window via blitGlyphToWindow), il écrit des
+// TUILES 4bpp BRUTES dans un buffer `pixels` fourni par l'appelant (=
+// gMonSpritesGfxPtr->barFontGfx) : pour chaque glyphe IMPRIMABLE il pousse
+// 2 tuiles (haut 0x20 + bas 0x20) puis avance de 0x40 — exactement comme le
+// décomp (CpuCopy32(gfxBufferTop, pixels, 0x20) ; CpuCopy32(gfxBufferBottom,
+// pixels + 0x20, 0x20) ; pixels += 0x40, ll.1597-1599). Les codes de contrôle
+// (COLOR/HIGHLIGHT/SHADOW/FONT/…) pilotent l'état couleur SANS consommer de
+// tuile (1:1 `continue`).
+//
+// FRONTIÈRE HW/asset (même émulation que CopyGlyphToWindow) : notre latfont est
+// pré-décodé en pixels idx 0/1/2/3, donc DecompressGlyph_Bold/Normal +
+// DecompressGlyphTile (text.c:526) sont émulés en PACKANT gCurGlyph.gfxBuffer
+// (haut = lignes 0-7, bas = lignes 8-15) avec le mapping couleur de
+// GenerateFontHalfRowLookupTable (text.c:363 : 0→bg, 1→fg, 2→shadow, 3→bg, cf.
+// blitGlyphToWindow). FONT_BOLD (= sFontBoldJapaneseGlyphs décomp) n'est PAS
+// chargé côté port (FONT_NAMES n'a pas d'entrée 9 → fallback FONT_NORMAL) :
+// dette d'asset COSMÉTIQUE du chemin DOUBLE (INERTE tant que l'intro double
+// n'est pas câblée). Le flux + les offsets tuiles sont 1:1.
+
+/** Mappe une valeur de pixel glyphe 2-bit → index couleur 4bpp (1:1
+ *  GenerateFontHalfRowLookupTable : 0→bg, 1→fg, 2→shadow, 3→bg — sFontHalfRowOffsets[3]==[0]). */
+function _mapGlyphColorIndex(v: number, fg: number, bg: number, shadow: number): number {
+  switch (v) {
+    case 1:  return fg & 0xF;
+    case 2:  return shadow & 0xF;
+    default: return bg & 0xF;  // 0 et 3 → bg
+  }
+}
+
+/** Packe un demi-glyphe (8×8, lignes [rowStart..rowStart+8[) en 1 tuile 4bpp
+ *  (32 bytes, 4 bytes/ligne, nibble bas = pixel gauche — cf. LoadBattleBarGfx /
+ *  _windowTextDataTo4bpp) dans `dest` à `destOff`. `glyph` = cellule 16×16 pré-décodée. */
+function _packGlyphHalfTile(
+  glyph: number[] | null, rowStart: number, dest: Uint8Array, destOff: number,
+  fg: number, bg: number, shadow: number,
+): void {
+  for (let row = 0; row < 8; row++) {
+    const gy = (rowStart + row) * 16;  // stride 16 (= cellule glyphe, cf. blitGlyphToWindow GLYPH_W)
+    for (let pc = 0; pc < 4; pc++) {
+      const v1 = glyph ? (glyph[gy + pc * 2] ?? 0) : 0;
+      const v2 = glyph ? (glyph[gy + pc * 2 + 1] ?? 0) : 0;
+      dest[destOff + row * 4 + pc] =
+        _mapGlyphColorIndex(v1, fg, bg, shadow) | (_mapGlyphColorIndex(v2, fg, bg, shadow) << 4);
+    }
+  }
+}
+
+/** 1:1 décomp `u8 RenderTextHandleBold(u8 *pixels, u8 fontId, u8 *str)` (text.c:1500).
+ *  `str` = chaîne ENCODÉE (bytes charmap + codes EXT_CTRL_CODE), comme le `u8 *str`
+ *  décomp. Écrit les tuiles glyphes dans `pixels` ; retourne 1 (1:1). */
+export function RenderTextHandleBold(pixels: Uint8Array, fontId: number, str: Uint8Array): number {
+  // 1:1 ll.1511-1517 : SaveTextColors + GenerateFontHalfRowLookupTable(WHITE,
+  // TRANSPARENT, LIGHT_GRAY). Le port n'a pas de sFontHalfRowLookupTable GLOBAL
+  // (émulé par pixels pré-décodés) → l'état couleur est LOCAL à la fonction ;
+  // Save/Restore/Generate deviennent le suivi (fg,bg,shadow) local appliqué au
+  // packing de chaque glyphe. Défauts 1:1.
+  let fgColor: number = TEXT_COLOR.WHITE;
+  let bgColor: number = TEXT_COLOR.TRANSPARENT;
+  let shadowColor: number = TEXT_COLOR.LIGHT_GRAY;
+  let strPos = 0;
+  let pixOff = 0;
+  let temp = 0;
+
+  do {
+    temp = str[strPos++] ?? EOS;
+    switch (temp) {
+      case EXT_CTRL_CODE_BEGIN: {
+        const temp2 = str[strPos++] ?? EOS;
+        switch (temp2) {
+          case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW:  // 1:1 ll.1530-1535
+            fgColor = str[strPos++] ?? fgColor;
+            bgColor = str[strPos++] ?? bgColor;
+            shadowColor = str[strPos++] ?? shadowColor;
+            continue;
+          case EXT_CTRL_CODE_COLOR:      fgColor = str[strPos++] ?? fgColor; continue;      // ll.1536-1539
+          case EXT_CTRL_CODE_HIGHLIGHT:  bgColor = str[strPos++] ?? bgColor; continue;      // ll.1540-1543
+          case EXT_CTRL_CODE_SHADOW:     shadowColor = str[strPos++] ?? shadowColor; continue; // ll.1544-1547
+          case EXT_CTRL_CODE_FONT:       fontId = str[strPos++] ?? fontId; break;            // ll.1548-1550
+          case EXT_CTRL_CODE_PLAY_BGM:                                                        // ll.1551-1553
+          case EXT_CTRL_CODE_PLAY_SE:
+            strPos++;   // 1:1 fallthrough : consomme 1 byte de PLUS…
+            strPos++;   // …puis tombe dans le groupe ci-dessous (+1 byte). Net = +2.
+            break;
+          case EXT_CTRL_CODE_PALETTE:            // 1:1 ll.1554-1564 : codes à 1 byte d'arg → skip.
+          case EXT_CTRL_CODE_PAUSE:
+          case EXT_CTRL_CODE_ESCAPE:
+          case EXT_CTRL_CODE_SHIFT_RIGHT:
+          case EXT_CTRL_CODE_SHIFT_DOWN:
+          case EXT_CTRL_CODE_CLEAR:
+          case EXT_CTRL_CODE_SKIP:
+          case EXT_CTRL_CODE_CLEAR_TO:
+          case EXT_CTRL_CODE_MIN_LETTER_SPACING:
+            strPos++;
+            break;
+          default:  // 1:1 ll.1565-1572 : RESET_FONT/PAUSE_UNTIL_PRESS/WAIT_SE/FILL_WINDOW/JPN/ENG/default → continue.
+            continue;
+        }
+        break;
+      }
+      case CHAR_DYNAMIC:        // 1:1 ll.1575-1580 : codes à 1 byte d'arg → skip.
+      case CHAR_KEYPAD_ICON:
+      case CHAR_EXTRA_SYMBOL:
+      case PLACEHOLDER_BEGIN:
+        strPos++;
+        break;
+      case CHAR_PROMPT_SCROLL:  // 1:1 ll.1581-1585 : pas d'arg, pas de glyphe.
+      case CHAR_PROMPT_CLEAR:
+      case CHAR_NEWLINE:
+      case EOS:
+        break;
+      default: {  // 1:1 ll.1586-1600 : décompresse le glyphe (bold/normal) → 2 tuiles, avance 0x40.
+        _fillCurGlyph(fontId === FONT_BOLD ? FONT_BOLD : FONT_NORMAL, temp);
+        const glyph = gCurGlyph.gfxBuffer;
+        _packGlyphHalfTile(glyph, 0, pixels, pixOff, fgColor, bgColor, shadowColor);        // gfxBufferTop
+        _packGlyphHalfTile(glyph, 8, pixels, pixOff + 0x20, fgColor, bgColor, shadowColor);  // gfxBufferBottom
+        pixOff += 0x40;
+        break;
+      }
+    }
+  } while (temp !== EOS);
+
+  return 1;  // 1:1 l.1606 : RestoreTextColors (no-op : état local) ; return 1.
+}
+
 /**
  * Encode une JS string en bytes pour le moteur, via charmap.
  * (Pas de \p / \l ici — gérés en amont par paginate, mais escapes traités.)

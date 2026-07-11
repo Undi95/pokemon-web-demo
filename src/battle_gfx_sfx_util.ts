@@ -296,6 +296,18 @@ export async function LoadBattleBarGfx(_unused: number): Promise<void> {
   }
 }
 
+// ─── Exposition globalThis de barFontGfx (= gMonSpritesGfxPtr->barFontGfx) ──────
+// Lu par battle_interface.ts::UpdateHpTextInHealthboxInDoubles (rendu des chiffres PV
+// DOUBLES via RenderTextHandleBold). Via globalThis (PAS import statique) car
+// battle_gfx_sfx_util IMPORTE battle_interface → un import inverse ferait un cycle ESM/TDZ.
+(globalThis as Record<string, unknown>).__monSpritesGfx = Object.assign(
+  ((globalThis as Record<string, unknown>).__monSpritesGfx as Record<string, unknown> | undefined) ?? {},
+  {
+    getBarFontGfx: (): Uint8Array | null => gMonSpritesGfxPtr.barFontGfx,
+    LoadBattleBarGfx,
+  },
+);
+
 // ─── Transform / Substitute 1:1 (:935-:1093) — DORMANTS structurels ─────────
 // (Transform/Substitute = moves non câblés tant que le chantier anims n'émet pas
 // B_ANIM_TRANSFORM/SUBSTITUTE ; la STRUCTURE complète est portée, branchée sur

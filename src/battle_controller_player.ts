@@ -51,6 +51,7 @@ import {
 } from './engine/battle/state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI, BATTLE_TYPE_PALACE,
+  BATTLE_TYPE_SAFARI,
   B_ACTION_USE_MOVE, B_ACTION_USE_ITEM, B_ACTION_SWITCH, B_ACTION_RUN,
   B_ACTION_CANCEL_PARTNER, B_ACTION_EXEC_SCRIPT,
 } from './engine/battle/constants';
@@ -381,14 +382,66 @@ function _BattleStringExpandPlaceholdersToDisplayedString(src: string): string {
   return src;
 }
 
-/** 1:1 décomp `SwapHpBarsWithHpText()` (battle_interface.c:1376-1448). Toggle
- *  HP bar ↔ HP texte (START en combat). Le gate décomp ligne 1383 :
- *  `side != B_SIDE_OPPONENT && (IsDoubleBattle() || side != B_SIDE_PLAYER)`
- *  → en combat SINGLE les deux battlers sont SKIPPÉS = NO-OP TOTAL. Ce stub vide
- *  est donc COMPORTEMENTALEMENT 1:1 en single ; le corps (hpNumbersNoBars toggle +
- *  re-render) ne sera porté qu'avec les DOUBLES (non atteignables aujourd'hui). */
+/** 1:1 `hMain_Data7` (= data[7] décomp) : le port réutilise data[7] du sprite box LEFT
+ *  pour le RIGHT sprite id (le runtime n'a pas d'oam.affineParam-u8), donc data[7] ne DOIT
+ *  pas être touché. hMain_Data7 est WRITE-ONLY partout dans le décomp (jamais lu) → toggle
+ *  sur un stockage parallèle par battler, 1:1 comportemental. */
+const _hMainData7: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `SwapHpBarsWithHpText()` (battle_interface.c:1376-1442). Toggle HP bar ↔
+ *  chiffres PV (touche START en combat). Gate l.1383-1385 :
+ *  `box au repos (callback==SpriteCallbackDummy) && side != OPPONENT && (double || side != PLAYER)`
+ *  → en SINGLE aucun battler ne passe (side != OPP && side != PLAYER = impossible) = NO-OP total
+ *  (comportement single INCHANGÉ). En DOUBLE : réduit à side == PLAYER. Les primitives healthbox
+ *  passent par le hook __battleHealthbox (où vivent les internals VRAM, step 3/4/5). */
 function _SwapHpBarsWithHpText(): void {
-  // No-op 1:1 en single (cf. doc) — corps doubles différé.
+  const hb = (globalThis as { __battleHealthbox?: {
+    gHealthboxSpriteIds?: number[];
+    isHealthboxAtRest?: (id: number) => boolean;
+    toggleHpNumbersNoBars?: (b: number) => number;
+    clearHealthbarTiles?: (id: number) => void;
+    UpdateHpTextInHealthboxInDoubles?: (id: number, v: number, hp: number) => void;
+    UpdateStatusIconInHealthboxById?: (id: number) => void;
+    UpdateHealthboxAttribute?: (id: number, mon: unknown, el: number) => void;
+    copyFrameEndBarToHealthbox?: (id: number) => void;
+    HEALTHBOX_HEALTH_BAR?: number;
+  } }).__battleHealthbox;
+  if (!hb || !hb.gHealthboxSpriteIds) return;
+  const ids = hb.gHealthboxSpriteIds;
+  const HP_CURRENT = 0, HP_MAX = 1;                       // 1:1 battle_interface.h
+  const HEALTHBOX_HEALTH_BAR = hb.HEALTHBOX_HEALTH_BAR ?? 5;
+  const isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0;
+
+  for (let i = 0; i < gBattlersCount; i++) {              // 1:1 l.1381
+    const side = GET_BATTLER_SIDE(i);
+    // 1:1 gate l.1383-1385 : box au repos && side != B_SIDE_OPPONENT(1) && (double || side != B_SIDE_PLAYER(0)).
+    if (!(hb.isHealthboxAtRest?.(ids[i])
+          && side !== 1
+          && (isDouble || side !== 0))) continue;
+
+    // 1:1 l.1389-1390 : gBattleSpritesDataPtr->battlerData[i].hpNumbersNoBars ^= 1.
+    const noBars = (hb.toggleHpNumbersNoBars?.(i) ?? 0) !== 0;
+
+    if (side === 0 /* B_SIDE_PLAYER — seul cas atteignable ici */) {   // 1:1 l.1391
+      if (!isDouble) continue;                              // 1:1 l.1393-1394
+      if (gBattleTypeFlags & BATTLE_TYPE_SAFARI) continue;  // 1:1 l.1395-1396
+      const mon = gPlayerParty[gBattlerPartyIndexes[i]];
+      if (noBars) {  // 1:1 l.1398-1405 : bars → text
+        hb.clearHealthbarTiles?.(ids[i]);  // 1:1 l.1402 CpuFill32(0, bar, 0x100)
+        hb.UpdateHpTextInHealthboxInDoubles?.(ids[i], GetMonData(mon, MON_DATA_HP) as number, HP_CURRENT);
+        hb.UpdateHpTextInHealthboxInDoubles?.(ids[i], GetMonData(mon, MON_DATA_MAX_HP) as number, HP_MAX);
+      } else {  // 1:1 l.1406-1411 : text → bars
+        hb.UpdateStatusIconInHealthboxById?.(ids[i]);
+        hb.UpdateHealthboxAttribute?.(ids[i], mon, HEALTHBOX_HEALTH_BAR);
+        hb.copyFrameEndBarToHealthbox?.(ids[i]);  // 1:1 l.1410 GFX_FRAME_END_BAR → box+0x680
+      }
+    }
+    // 1:1 l.1413-1438 : la branche `else` (OPPONENT) est UNREACHABLE — le gate exige
+    // side != B_SIDE_OPPONENT. Le décomp la conserve (bars↔text adverse + PrintSafariMonInfo)
+    // mais elle n'exécute JAMAIS → non transcrite (dépendrait de PrintSafariMonInfo non porté).
+
+    _hMainData7[i] ^= 1;   // 1:1 l.1439 (write-only, cf. _hMainData7).
+  }
 }
 
 /** 1:1 décomp `IsDma3ManagerBusyWithBgCopy()` (dma3_manager.c). GBA-specific
