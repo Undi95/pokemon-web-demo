@@ -150,10 +150,15 @@ function _UnpackSelectedBattlePalettes(selector: number): number {
     getAttacker?: () => number; getTarget?: () => number;
   };
   let sel = 0;
+  const atk = itf?.getAttacker?.() ?? 0;
+  const tgt = itf?.getTarget?.() ?? 1;
   if (selector & 1) sel = 0xE; // F_PAL_BG : palettes BG 1,2,3
-  if ((selector >> 1) & 1) sel |= 1 << ((itf?.getAttacker?.() ?? 0) + 16);
-  if ((selector >> 2) & 1) sel |= 1 << ((itf?.getTarget?.() ?? 1) + 16);
-  // partners (bits 3-4) : non exerces en single ; anim pals (bits 5-6) : dette douce.
+  if ((selector >> 1) & 1) sel |= 1 << (atk + 16);
+  if ((selector >> 2) & 1) sel |= 1 << (tgt + 16);
+  // 1:1 — bits 3/4 = partenaire attaquant/cible (BATTLE_PARTNER = ^2) s'il est
+  // visible (aucun bit en single) ; anim pals (bits 5-6) : dette douce (BG anim).
+  if (((selector >> 3) & 1) && _IsBattlerSpriteVisible(atk ^ 2)) sel |= 1 << ((atk ^ 2) + 16);
+  if (((selector >> 4) & 1) && _IsBattlerSpriteVisible(tgt ^ 2)) sel |= 1 << ((tgt ^ 2) + 16);
   return sel >>> 0;
 }
 
@@ -235,18 +240,34 @@ function _DestroyAnimSpriteAfterTimer(sprite: AnimSprite): void {
 
 /** 1:1 `GetAnimBattlerSpriteId` (battle_anim_mons.c:373) : ANIM_ATTACKER(0)/
  *  ANIM_TARGET(1) → spriteId du mon si présent, sinon -1 (≙ SPRITE_NONE).
- *  Partners (2/3) : non exercés en single → -1 (dette douce double). */
+ *  ANIM_ATK_PARTNER(2)/ANIM_DEF_PARTNER(3) → sprite du PARTENAIRE (BATTLE_PARTNER
+ *  = ^2) s'il est visible, sinon -1 (:401-414). */
 function _GetAnimBattlerSpriteId(animBattler: number): number {
   const itf = _itf();
-  let battler: number;
-  if (animBattler === 0) battler = itf.getAttacker?.() ?? 0;
-  else if (animBattler === 1) battler = itf.getTarget?.() ?? 1;
-  else return -1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  const resolve = (b: number): number => {
+    const id = co?.getBattlerMonSpriteId?.(b);
+    return id !== undefined && id >= 0 ? id : -1;
+  };
+  if (animBattler === 0) return resolve(itf.getAttacker?.() ?? 0);
+  if (animBattler === 1) return resolve(itf.getTarget?.() ?? 1);
+  const base = animBattler === 2 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  return _IsBattlerSpriteVisible(base ^ 2) ? resolve(base ^ 2) : -1;
+}
+
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite du
+ *  battler présent (enregistré) et pas invisible. Single : le partenaire (2/3)
+ *  n'a pas de sprite → false ; double : présent et visible → true. */
+function _IsBattlerSpriteVisible(battler: number): boolean {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
     getBattlerMonSpriteId?: (b: number) => number;
   } | undefined;
   const id = co?.getBattlerMonSpriteId?.(battler);
-  return id !== undefined && id >= 0 ? id : -1;
+  if (id === undefined || id < 0) return false;
+  const sp = _rt()?.gSprites?.[id] as { invisible?: boolean; inUse?: boolean } | undefined;
+  return !!sp && sp.inUse !== false && !sp.invisible;
 }
 
 /** Lecture `gPaletteFade.active` (même mécanisme que _SimplePaletteBlend_Step). */

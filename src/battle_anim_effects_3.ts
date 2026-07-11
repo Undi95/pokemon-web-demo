@@ -408,12 +408,23 @@ function _battlerSpriteId(battler: number): number {
   const id = co?.getBattlerMonSpriteId?.(battler);
   return (id === undefined || id === null || id < 0) ? 0xFF : id;
 }
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite présent
+ *  et pas invisible (partenaire absent en single → false). */
+function _IsBattlerSpriteVisible(battler: number): boolean {
+  const sid = _battlerSpriteId(battler);
+  if (sid === 0xFF) return false;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean; inUse?: boolean } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[sid];
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
 /** 1:1 `GetAnimBattlerSpriteId(animBattler)` (battle_anim_mons.c:373) —
- *  ANIM_ATTACKER=0 / ANIM_TARGET=1 (partners doubles = dette douce). */
+ *  ANIM_ATTACKER=0 / ANIM_TARGET=1 ; ANIM_ATK_PARTNER=2 / ANIM_DEF_PARTNER=3 →
+ *  sprite du PARTENAIRE (^2) s'il est visible, sinon SPRITE_NONE (:401-414). */
 function _GetAnimBattlerSpriteId(animBattler: number): number {
   if (animBattler === 0) return _battlerSpriteId(_vItf().getAttacker?.() ?? 0);
   if (animBattler === 1) return _battlerSpriteId(_vItf().getTarget?.() ?? 1);
-  return 0xFF;
+  const base = animBattler === 2 ? (_vItf().getAttacker?.() ?? 0) : (_vItf().getTarget?.() ?? 1);
+  return _IsBattlerSpriteVisible(base ^ 2) ? _battlerSpriteId(base ^ 2) : 0xFF;
 }
 // 1:1 battle_util.c — IsDoubleBattle() = gBattleTypeFlags & BATTLE_TYPE_DOUBLE.
 function _IsDoubleBattle(): boolean { return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0; }

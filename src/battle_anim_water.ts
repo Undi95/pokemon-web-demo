@@ -25,6 +25,8 @@ import {
 
 import { registerAnimCallbacks } from './battle_anim';
 import { Sin } from './trig';
+import { gBattleTypeFlags } from './engine/battle/state';
+import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 
 export const ANIM_TAG_BUBBLE = 10146;
 const sSheet = { data: 'gAnimGfx_Bubble', size: 384, tag: ANIM_TAG_BUBBLE };
@@ -131,16 +133,24 @@ function _getBattlerSpriteSubpriority(battler: number): number {
   else if (position === 1) return 40;  // B_POSITION_OPPONENT_LEFT
   else return 50;                      // B_POSITION_OPPONENT_RIGHT
 }
-/** 1:1 `GetBattlerPosition` — singles : position == battler (doubles = dette douce). */
+/** 1:1 `GetBattlerPosition` — position == battler (mapping identité en single ET
+ *  en double standard 2v2 ; seuls les combats multi/shuffle divergent, hors-scope). */
 function _getBattlerPosition(battler: number): number { return battler; }
-/** 1:1 `SetAverageBattlerPositions` (battle_anim_mons.c:2289) — singles :
- *  IsDoubleBattle()=false → partner = battler lui-même (moyenne = lui). */
+/** 1:1 battle_util.c `IsDoubleBattle()` = gBattleTypeFlags & BATTLE_TYPE_DOUBLE. */
+function _isDoubleBattle(): boolean { return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0; }
+/** 1:1 `SetAverageBattlerPositions` (battle_anim_mons.c:2289) : moyenne des coords
+ *  du battler et de son PARTENAIRE (BATTLE_PARTNER = ^2) en double, sinon lui-même
+ *  (:2308-2317, IsContest()=false ici). */
 function _setAverageBattlerPositions(battler: number, respectMonPicOffsets: boolean): { x: number; y: number } {
   const xCoordType = !respectMonPicOffsets ? 0 /* X */ : 2 /* X_2 */;
   const yCoordType = !respectMonPicOffsets ? 1 /* Y */ : 3 /* Y_PIC_OFFSET */;
   const battlerX = GetBattlerSpriteCoord(battler, xCoordType);
   const battlerY = GetBattlerSpriteCoord(battler, yCoordType);
-  const partnerX = battlerX, partnerY = battlerY; // singles
+  let partnerX = battlerX, partnerY = battlerY;
+  if (_isDoubleBattle()) {
+    partnerX = GetBattlerSpriteCoord(battler ^ 2, xCoordType);
+    partnerY = GetBattlerSpriteCoord(battler ^ 2, yCoordType);
+  }
   return { x: Math.trunc((battlerX + partnerX) / 2), y: Math.trunc((battlerY + partnerY) / 2) };
 }
 /** Sprite id d'un battler (résolution validée capture — battle_anim_mon_movement). */
@@ -151,12 +161,22 @@ function _battlerSpriteId(battler: number): number {
   const id = co?.getBattlerMonSpriteId?.(battler);
   return (id === undefined || id === null || id < 0) ? 0xFF : id;
 }
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite présent
+ *  et pas invisible (le partenaire n'existe pas en single → false). */
+function _isBattlerSpriteVisible(battler: number): boolean {
+  const sid = _battlerSpriteId(battler);
+  if (sid === 0xFF) return false;
+  const sp = _wRt().gSprites?.[sid] as { invisible?: boolean; inUse?: boolean } | undefined;
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
 /** 1:1 `GetAnimBattlerSpriteId(animBattler)` (battle_anim_mons.c:373) —
- *  ANIM_ATTACKER=0 / ANIM_TARGET=1 (partners doubles = dette douce). */
+ *  ANIM_ATTACKER=0 / ANIM_TARGET=1 ; ANIM_ATK_PARTNER=2 / ANIM_DEF_PARTNER=3 →
+ *  sprite du PARTENAIRE (^2) s'il est visible, sinon SPRITE_NONE (:401-414). */
 function _getAnimBattlerSpriteId(animBattler: number): number {
   if (animBattler === 0) return _battlerSpriteId(_wItf().getAttacker?.() ?? 0);
   if (animBattler === 1) return _battlerSpriteId(_wItf().getTarget?.() ?? 1);
-  return 0xFF;
+  const base = animBattler === 2 ? (_wItf().getAttacker?.() ?? 0) : (_wItf().getTarget?.() ?? 1);
+  return _isBattlerSpriteVisible(base ^ 2) ? _battlerSpriteId(base ^ 2) : 0xFF;
 }
 
 // ─── Bulles simples (Bubble/BubbleBeam/Clamp/Whirlpool…) ────────────────────

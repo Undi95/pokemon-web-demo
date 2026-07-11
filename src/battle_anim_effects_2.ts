@@ -213,9 +213,17 @@ function _IsDoubleBattle(): boolean { return (gBattleTypeFlags & BATTLE_TYPE_DOU
 /** 1:1 macro battle.h `BATTLE_PARTNER(battler)` = battler ^ BIT_FLANK (2). */
 function _BATTLE_PARTNER(battler: number): number { return battler ^ 2; }
 
-/** `IsBattlerSpriteVisible(BATTLE_PARTNER(x))` — runtime SINGLES : le partenaire
- *  n'existe jamais → false (les branches doubles retombent sur le else du C). */
-function _IsBattlerSpriteVisible(_battler: number): boolean { return false; }
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite du battler
+ *  présent (enregistré) et pas invisible. Single : le partenaire (2/3) n'a pas de
+ *  sprite → false (branches doubles = else du C) ; double : présent → true. */
+function _IsBattlerSpriteVisible(battler: number): boolean {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const id = co?.getBattlerMonSpriteId?.(battler);
+  if (id === undefined || id < 0) return false;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean; inUse?: boolean } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[id];
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
 
 /** 1:1 sprite.c `StartSpriteAnim(sprite, n)` : champs PLATS du runtime. */
 function _StartSpriteAnim(sprite: unknown, n: number): void {

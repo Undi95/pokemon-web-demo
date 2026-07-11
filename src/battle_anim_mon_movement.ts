@@ -16,7 +16,7 @@
  *   — portage par vagues avec les moves qui les consomment.
  */
 import { Sin, Cos } from './trig';
-import { PrepareBattlerSpriteForRotScale, SetSpriteRotScale, ResetSpriteRotScale } from './battle_anim_mons';
+import { PrepareBattlerSpriteForRotScale, SetSpriteRotScale, ResetSpriteRotScale, GetBattlerAtPosition } from './battle_anim_mons';
 import {
   registerAnimTasks, registerAnimTemplates,
 } from './engine/battle/battle-anim-registry';
@@ -57,14 +57,27 @@ function _battlerSpriteId(battler: number): number {
   return (id === undefined || id === null || id < 0) ? 0xFF : id;
 }
 
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite du
+ *  battler présent (enregistré) et pas invisible. Single : le partenaire (2/3)
+ *  n'a pas de sprite → false ; double : présent et visible → true. */
+function _IsBattlerSpriteVisible(battler: number): boolean {
+  const sid = _battlerSpriteId(battler);
+  if (sid === 0xFF) return false;
+  const sp = _sprites()?.[sid] as { invisible?: boolean; inUse?: boolean } | undefined;
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
+
 /** 1:1 `GetAnimBattlerSpriteId(animBattler)` (battle_anim_mons.c:373) —
- *  ANIM_ATTACKER=0 / ANIM_TARGET=1 (partners = dette doubles). */
+ *  ANIM_ATTACKER=0 / ANIM_TARGET=1 ; ANIM_ATK_PARTNER=2 / ANIM_DEF_PARTNER=3
+ *  résolvent le PARTENAIRE (BATTLE_PARTNER = ^2) s'il est visible (:401-414). */
 function GetAnimBattlerSpriteId(animBattler: number): number {
   const atk = _atk();
   const tgt = _itf()?.getTarget() ?? 1;
   if (animBattler === 0) return _battlerSpriteId(atk);
   if (animBattler === 1) return _battlerSpriteId(tgt);
-  return 0xFF; // partners (doubles) = dette
+  if (animBattler === 2 /* ANIM_ATK_PARTNER */)
+    return _IsBattlerSpriteVisible(atk ^ 2) ? _battlerSpriteId(atk ^ 2) : 0xFF;
+  return _IsBattlerSpriteVisible(tgt ^ 2) ? _battlerSpriteId(tgt ^ 2) : 0xFF; // ANIM_DEF_PARTNER
 }
 
 // ─── StoreSpriteCallbackInData6 / SetCallbackToStoredInData6 (battle_anim_mons.c) ──
@@ -151,14 +164,28 @@ function AnimTask_ShakeMon_Step(task: AnimTask): void {
 // ─── AnimTask_ShakeMon2 (:156) — alterne +/- les offsets ───────────────────
 function AnimTask_ShakeMon2(task: AnimTask): void {
   let spriteId: number;
-  if (_args()[0] < 4) {
+  let abort = false;
+  if (_args()[0] < 4 /* MAX_BATTLERS_COUNT */) {
     spriteId = GetAnimBattlerSpriteId(_args()[0]);
     if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
+  } else if (_args()[0] !== 8 /* ANIM_ATTACKER_FORCE */) {
+    // 1:1 :171-193 — position fixe (ANIM_PLAYER_LEFT..OPPONENT_RIGHT), abort si
+    // le battler à cette position n'est pas visible.
+    let battler: number;
+    switch (_args()[0]) {
+      case 4 /* ANIM_PLAYER_LEFT   */: battler = GetBattlerAtPosition(0 /* B_POSITION_PLAYER_LEFT   */); break;
+      case 5 /* ANIM_PLAYER_RIGHT  */: battler = GetBattlerAtPosition(2 /* B_POSITION_PLAYER_RIGHT  */); break;
+      case 6 /* ANIM_OPPONENT_LEFT */: battler = GetBattlerAtPosition(1 /* B_POSITION_OPPONENT_LEFT */); break;
+      case 7 /* ANIM_OPPONENT_RIGHT*/:
+      default:                         battler = GetBattlerAtPosition(3 /* B_POSITION_OPPONENT_RIGHT*/); break;
+    }
+    if (!_IsBattlerSpriteVisible(battler)) abort = true;
+    spriteId = _battlerSpriteId(battler);
   } else {
-    // ANIM_PLAYER_LEFT/RIGHT etc. (doubles) = dette → attaquant.
+    // ANIM_ATTACKER_FORCE : l'attaquant, sans test de visibilité (:195-197).
     spriteId = _battlerSpriteId(_atk());
-    if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
   }
+  if (abort) { DestroyAnimVisualTask(task.taskId); return; }
   const sp = _sprites()?.[spriteId];
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 = _args()[1];

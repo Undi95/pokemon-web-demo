@@ -133,11 +133,17 @@ function _GetBattlerSpriteBGPriority(battler: number): number {
   return (position === 0 /* PLAYER_LEFT */ || position === 3 /* OPPONENT_RIGHT */) ? 1 : 0;
 }
 
-/** `IsBattlerSpriteVisible(BATTLE_PARTNER(x))` — runtime SINGLES : le
- *  partenaire n'existe jamais → false (les branches partner retombent sur
- *  attacker/target, exactement le else du C). */
-function _IsBattlerSpriteVisible(_battler: number): boolean {
-  return false;
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite du battler
+ *  présent (enregistré) et pas invisible. Single : le partenaire n'existe pas →
+ *  false (les branches partner retombent sur attacker/target = else du C) ; double :
+ *  présent → true. */
+function _IsBattlerSpriteVisible(battler: number): boolean {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const id = co?.getBattlerMonSpriteId?.(battler);
+  if (id === undefined || id < 0) return false;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean; inUse?: boolean } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[id];
+  return !!sp && sp.inUse !== false && !sp.invisible;
 }
 
 // ─── callbacks 1:1 (ordre du .c) ─────────────────────────────────────────────

@@ -8,6 +8,8 @@
  * blend start→target par pas de 1 tous les delay frames).
  */
 import { registerAnimTasks } from './engine/battle/battle-anim-registry';
+import { gBattleTypeFlags } from './engine/battle/state';
+import { BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { DestroySprite } from './sprite';
 // Import DIRECT sprite.ts (élimination __sprite, 2026-06-30).
 import { IndexOfSpritePaletteTag as _spr_IndexOfSpritePaletteTag } from './sprite';
@@ -28,7 +30,10 @@ function GetBattlePalettesMask(bg: boolean, attacker: boolean, target: boolean, 
   if (bg) sel = 0xE; // palettes BG 1, 2, 3 (1:1 non-contest)
   if (attacker) sel |= 1 << (atk + 16);
   if (target) sel |= 1 << (tgt + 16);
-  void atkPartner; void tgtPartner; // doubles non exercés (hors-scope single)
+  // 1:1 :1424-1438 — bits palette du PARTENAIRE (attaquant/cible) s'il est visible
+  // (BATTLE_PARTNER = ^2). En single le partenaire n'existe pas → aucun bit.
+  if (atkPartner && _scIsBattlerSpriteVisible(atk ^ 2)) sel |= 1 << ((atk ^ 2) + 16);
+  if (tgtPartner && _scIsBattlerSpriteVisible(tgt ^ 2)) sel |= 1 << ((tgt ^ 2) + 16);
   return sel >>> 0;
 }
 
@@ -847,6 +852,29 @@ function _scMonSpriteId(battler: number): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
   return co?.getBattlerMonSpriteId?.(battler) ?? -1;
 }
+/** 1:1 battle_util.c `IsDoubleBattle()` = gBattleTypeFlags & BATTLE_TYPE_DOUBLE. */
+function _scIsDoubleBattle(): boolean { return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0; }
+/** 1:1-net `IsBattlerSpriteVisible(battler)` (battle_anim.c:649) : sprite présent
+ *  et pas invisible (le partenaire n'existe pas en single → false). */
+function _scIsBattlerSpriteVisible(battler: number): boolean {
+  const sid = _scMonSpriteId(battler);
+  if (sid < 0) return false;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ invisible?: boolean; inUse?: boolean } | undefined> } | undefined;
+  const sp = rt?.gSprites?.[sid];
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
+/** Ajuste la priorité OAM du sprite `spriteId` de `delta` (via gba.oam[oamIndex] —
+ *  pattern repo, `.oam.priority` direct n'existe pas dans notre runtime). */
+function _scBumpOamPriority(spriteId: number, delta: number): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam?: Array<{ priority?: number }> } } | undefined;
+  const sp = spriteId >= 0 ? rt?.gSprites?.[spriteId] : undefined;
+  const oam = sp ? rt?.gba?.oam?.[sp.oamIndex] : undefined;
+  if (oam && typeof oam.priority === 'number') oam.priority += delta;
+}
+/** Idem, à partir d'un battler (résout son sprite mon puis ajuste). */
+function _scBumpBattlerOamPriority(battler: number, delta: number): void {
+  _scBumpOamPriority(_scMonSpriteId(battler), delta);
+}
 
 /** 1:1 `InitStatsChangeAnimation` (battle_anim_utility_funcs.c:415). */
 export function InitStatsChangeAnimation(task: AnimTask): void {
@@ -863,9 +891,9 @@ function StatsChangeAnimation_Step1(task: AnimTask): void {
   const itf = _itf();
   sc.battler1 = !sc.data[2] ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
   sc.battler2 = sc.battler1 ^ 2; // BATTLE_PARTNER
-  // 1:1 :434 — runtime SINGLES : IsBattlerSpriteVisible(partner) = false →
-  // aMultipleBattlers retombe à FALSE.
-  if (sc.data[3]) sc.data[3] = 0;
+  // 1:1 :434 — IsContest()=false ; aMultipleBattlers (toujours 0 côté script)
+  // retombe à FALSE si le partenaire n'est pas visible.
+  if (sc.data[3] && !_scIsBattlerSpriteVisible(sc.battler2)) sc.data[3] = 0;
   const g = globalThis as Record<string, unknown>;
   g.gBattle_WIN0H = 0;
   g.gBattle_WIN0V = 0;
@@ -878,7 +906,19 @@ function StatsChangeAnimation_Step1(task: AnimTask): void {
   // 1:1 :444-447 SetAnimBgAttribute(1, PRIORITY 0, SCREEN_SIZE 0, CHAR_BASE 1)
   const cfg = rt.gba?.bg(1)?.config;
   if (cfg) { cfg.priority = 0; cfg.screenSize = 0; cfg.charBaseIndex = 1; }
-  // :449-462 doubles (pousser battler2 hors anim) — hors-scope single, hidBattler2 reste false.
+  // 1:1 :449-462 — en double, si le battler animé est à OPPONENT_RIGHT/PLAYER_LEFT
+  // et son partenaire visible : pousse le partenaire d'un cran (OAM priority--) pour
+  // qu'il NE reçoive PAS l'overlay stat, et met BG1 priority=1. Gate IsDoubleBattle
+  // → single strictement inchangé (hidBattler2 reste false).
+  if (_scIsDoubleBattle() && !sc.data[3]) {
+    const pos = sc.battler1; // GetBattlerPosition — identité en double standard
+    if ((pos === 3 /* B_POSITION_OPPONENT_RIGHT */ || pos === 0 /* B_POSITION_PLAYER_LEFT */)
+      && _scIsBattlerSpriteVisible(sc.battler2)) {
+      _scBumpBattlerOamPriority(sc.battler2, -1);
+      if (cfg) cfg.priority = 1; // SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1)
+      sc.hidBattler2 = true;
+    }
+  }
   // :470-473 species du battler1 (party réelle, par side).
   const idx = _scPartyIdx[sc.battler1] ?? 0;
   const mon = (sc.battler1 & 1) !== 0 ? _scEnemyParty[idx] : _scPlayerParty[idx];
@@ -897,11 +937,18 @@ function StatsChangeAnimation_Step2(task: AnimTask): void {
   const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
     CreateInvisibleSpriteCopy?: (battler: number, spriteId: number, species: number) => number;
   } | undefined;
-  const spriteId2 = 0; // aMultipleBattlers = false en single (:488-492 non exercé)
+  let spriteId2 = 0;
   const battlerSpriteId = _scMonSpriteId(sc.battler1);
   const spriteId = battlerSpriteId >= 0
     ? (mons?.CreateInvisibleSpriteCopy?.(sc.battler1, battlerSpriteId, sc.species) ?? -1)
     : -1;
+  // 1:1 :488-492 — en double avec aMultipleBattlers, copie invisible du battler2.
+  if (sc.data[3]) {
+    const b2SpriteId = _scMonSpriteId(sc.battler2);
+    spriteId2 = b2SpriteId >= 0
+      ? (mons?.CreateInvisibleSpriteCopy?.(sc.battler2, b2SpriteId, sc.species) ?? -1)
+      : -1;
+  }
   const bgData = _scBgData();
   _scLoadTilemap(bgData.bgId, !sc.data[0] ? 'gStatAnim_Increase_Tilemap' : 'gStatAnim_Decrease_Tilemap');
   _scLoadGfx(bgData.bgId, 'gStatAnim_Gfx', bgData.tilesOffset);
@@ -983,7 +1030,9 @@ function StatsChangeAnimation_Step3(task: AnimTask): void {
       rt.SetGpuReg?.(0x52, 0);
       if (task.data[0] >= 0) DestroySprite(task.data[0]);
       if (task.data[2] && task.data[3] >= 0) DestroySprite(task.data[3]);
-      // :622-623 restaure la priorité du battler2 — hors-scope single (tHidBattler2=0).
+      // 1:1 :622-623 — restaure la priorité OAM du battler2 poussé en arrière
+      // (tHidBattler2 = data[6], tBattler2SpriteId = data[7]).
+      if (task.data[6] === 1) _scBumpOamPriority(task.data[7], 1);
       sAnimStatsChangeData = null; // FREE_AND_SET_NULL
       _itf().DestroyAnimVisualTask?.(task.taskId);
       break;
@@ -1044,7 +1093,7 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker(task: AnimTask): void {
   const itf = _itf();
   const atk = itf.getAttacker?.() ?? 0;
   const g = globalThis as Record<string, unknown>;
-  const var0 = 0; // IsDoubleBattle() : partner-priority — single = 0 (doubles dette)
+  let var0 = 0; // 1:1 :286/:307-320 — hidBattler2 (partner-priority) : 0 en single
   g.gBattle_WIN0H = 0;
   g.gBattle_WIN0V = 0;
   rt.SetGpuReg?.(0x48, 0x3F3F); // WININ all+CLR ×2 (1:1 :290)
@@ -1057,6 +1106,18 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker(task: AnimTask): void {
   // convention du BG1 anim chez nous, posée par l'infra _scBgData/monbg).
   const bg1 = (rt as { gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } } }).gba?.bg(1)?.config;
   if (bg1) { bg1.priority = 0; bg1.screenSize = 0; bg1.charBaseIndex = 1; }
+  // 1:1 :307-320 — en double, si l'attaquant est à OPPONENT_RIGHT/PLAYER_LEFT et son
+  // partenaire visible : pousse le partenaire (OAM priority--) + BG1 priority=1, var0=1.
+  // Gate IsDoubleBattle → single strictement inchangé (var0 reste 0).
+  if (_scIsDoubleBattle()) {
+    const pos = atk; // GetBattlerPosition — identité en double standard
+    if ((pos === 3 /* B_POSITION_OPPONENT_RIGHT */ || pos === 0 /* B_POSITION_PLAYER_LEFT */)
+      && _scIsBattlerSpriteVisible(atk ^ 2)) {
+      _scBumpBattlerOamPriority(atk ^ 2, -1);
+      if (bg1) bg1.priority = 1;
+      var0 = 1;
+    }
+  }
   // species du battler attaquant (party-storage par side, 1:1 :323-333)
   const idx0 = _scPartyIdx[atk] ?? 0;
   const mon0 = (atk & 1) !== 0 ? _scEnemyParty[idx0] : _scPlayerParty[idx0];
@@ -1108,6 +1169,8 @@ function AnimTask_DrawFallingWhiteLinesOnAttacker_Step(task: AnimTask): void {
       if (sid >= 0) { DestroySprite(sid); if (rt2.gSprites) rt2.gSprites[sid] = undefined; }
       const bgData = _scBgData();
       _scClearAnimBg(bgData.bgId);
+      // 1:1 :385-386 — restaure la priorité OAM du partenaire poussé (data[6]==1).
+      if (task.data[6] === 1) _scBumpBattlerOamPriority((_itf().getAttacker?.() ?? 0) ^ 2, 1);
       g.gBattle_BG1_Y = 0;
       _itf().DestroyAnimVisualTask?.(task.taskId);
     }
