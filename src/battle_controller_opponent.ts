@@ -42,7 +42,7 @@ import {
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE,
   BATTLE_TYPE_TRAINER, BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_SAFARI,
-  BATTLE_TYPE_ROAMER,
+  BATTLE_TYPE_ROAMER, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS,
   B_ACTION_EXEC_SCRIPT, B_ACTION_RUN,
   B_ACTION_SAFARI_WATCH_CAREFULLY,
   MOVE_TARGET_USER, MOVE_TARGET_USER_OR_SELECTED, MOVE_TARGET_BOTH,
@@ -1662,6 +1662,22 @@ function Task_StartSendOutAnim(task: DecompTask, rt: DecompRuntime): void {
   // getBattlerMonSpriteId + l'emerge (POKEBALL_OPPONENT_SENDOUT : SpriteCB_OpponentMonSendOut 15f
   // -> SpriteCB_ReleaseMonFromBall -> SpriteCB_OpponentMonFromBall, chain pokeball.ts #22).
   DoPokeballSendOutAnimation(0, POKEBALL_OPPONENT_SENDOUT);
+  // 1:1 ll.1912-1920 : en DOUBLE non-multi ET non-two-opponents, LE MÊME ball-throw envoie AUSSI
+  // le partenaire (BATTLE_PARTNER). Le décomp n'émet le IntroTrainerBallThrow qu'à UN battler par
+  // côté — battle_main.c BattleIntroOpponent1SendsOutMonAnimation:3674 ne passe à Opponent2 QUE si
+  // (MULTI | TWO_OPPONENTS) ; le flanc 3 est donc sorti ICI, par ce même task.
+  if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      && !(gBattleTypeFlags & BATTLE_TYPE_MULTI)
+      && !(gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)) {
+    const partner = battler ^ 2;   // 1:1 l.1916 gActiveBattler ^= BIT_FLANK (BATTLE_PARTNER)
+    setActiveBattler(partner);
+    gBattleBufferA[partner][1] = gBattlerPartyIndexes[partner];   // 1:1 l.1917
+    // 1:1 l.1918 StartSendOutAnim(partner, FALSE) = notre _StartSendOutAnim_Opponent : load gfx +
+    // CreateSprite (front-pic, INVISIBLE via deferReveal) + ball adverse. Il pré-pose ballAnimActive
+    // SYNC (:650) → _OpponentIntroSendOutWait phase 1 ne révèle pas le mon avant son throw.
+    _StartSendOutAnim_Opponent(partner, false);
+    setActiveBattler(battler);   // 1:1 l.1919 gActiveBattler ^= BIT_FLANK (retour à l'actif)
+  }
   // 1:1 l.1921 : gBattlerControllerFuncs = Intro_TryShinyAnimShowHealthbox (= notre wait chain).
   _oppSendOutPhase = 1;
   _setBattlerControllerFunc(battler, _OpponentIntroSendOutWait);
@@ -1683,8 +1699,20 @@ function _OpponentIntroSendOutWait(): void {
   const rt = getRuntime();
   switch (_oppSendOutPhase) {
     case 1: {  // 1:1 Intro_TryShinyAnimShowHealthbox : attend la fin de l'anim ball (ballAnimActive==FALSE)
-      if (isBallAnimActive(battler) === false) {
+      // 1:1 :310 : en DOUBLE (non-multi, non-two-opponents), attend que LES DEUX balls du côté
+      // soient finies avant de montrer les healthboxes.
+      const isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0
+        && (gBattleTypeFlags & BATTLE_TYPE_MULTI) === 0
+        && (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) === 0;
+      const partner = battler ^ 2;
+      const ballsDone = isBallAnimActive(battler) === false && (!isDouble || isBallAnimActive(partner) === false);
+      if (ballsDone) {
         setBattlerDeferReveal(battler, false);    // le mon est deja revele par HandleBallAnimEnd
+        // 1:1 :314-319 : en double, montre AUSSI le healthbox du partenaire (BATTLE_PARTNER).
+        if (isDouble) {
+          setBattlerDeferReveal(partner, false);
+          _ShowHealthboxOnSendOut(partner);
+        }
         _ShowHealthboxOnSendOut(battler);         // healthbox slide-in QUAND la ball est finie
         _oppSendOutHbFrames = 0;
         _oppSendOutPhase = 2;
@@ -1693,20 +1721,33 @@ function _OpponentIntroSendOutWait(): void {
     }
     case 2: {  // 1:1 Intro_WaitForShinyAnimAndHealthbox : attend la fin du slide healthbox
       _oppSendOutHbFrames++;
+      // 1:1 :236-238 (twoMons) : en double, slide fini quand LES DEUX healthboxes du côté ont
+      // repris SpriteCallbackDummy (callback != SpriteCB_HealthboxSlideIn).
+      const isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0
+        && (gBattleTypeFlags & BATTLE_TYPE_MULTI) === 0
+        && (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) === 0;
       const hb = (globalThis as Record<string, unknown>).__battleHealthbox as { gHealthboxSpriteIds?: number[] } | undefined;
-      const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
-      const hbSpr = hbId >= 0 ? rt?.gSprites?.[hbId] : null;
-      const cbName = (hbSpr?.callback as { name?: string } | null | undefined)?.name;
-      const slideDone = !hbSpr || cbName !== 'SpriteCB_HealthboxSlideIn';
+      const hbSlideDone = (b: number): boolean => {
+        const id = hb?.gHealthboxSpriteIds?.[b] ?? -1;
+        const spr = id >= 0 ? rt?.gSprites?.[id] : null;
+        const nm = (spr?.callback as { name?: string } | null | undefined)?.name;
+        return !spr || nm !== 'SpriteCB_HealthboxSlideIn';
+      };
+      const slideDone = hbSlideDone(battler) && (!isDouble || hbSlideDone(battler ^ 2));
       if (slideDone || _oppSendOutHbFrames > 40) {
         // 1:1 décomp Intro_WaitForShinyAnimAndHealthbox (battle_controller_opponent.c) :
         // SetBattlerShadowSpriteCallback(battler, species) APRÈS le send-out (le mon
         // existe) — active l'ombre si l'espèce a une élévation (gEnemyMonElevation).
+        // 1:1 :371-372 : en double, l'ombre du partenaire (BATTLE_PARTNER) aussi.
         {
           const gfx = (globalThis as { __battleGfxSfxUtil?: { SetBattlerShadowSpriteCallback?: (b: number, s: number) => void } }).__battleGfxSfxUtil;
           const ep = (globalThis as { __gEnemyParty?: Array<{ species?: number }> }).__gEnemyParty;
-          const species = ep?.[gBattlerPartyIndexes[battler] ?? 0]?.species ?? 0;
-          gfx?.SetBattlerShadowSpriteCallback?.(battler, species);
+          const shadowFor = (b: number): void => {
+            const species = ep?.[gBattlerPartyIndexes[b] ?? 0]?.species ?? 0;
+            gfx?.SetBattlerShadowSpriteCallback?.(b, species);
+          };
+          if (isDouble) shadowFor(battler ^ 2);
+          shadowFor(battler);
         }
         _oppIntroEndDelay = 4;   // 1:1 introEndDelay=3 (+1 pour le pre-decrement)
         _oppSendOutPhase = 3;

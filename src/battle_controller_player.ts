@@ -141,7 +141,7 @@ import { DoPokeballSendOutAnimation } from './pokeball';
 import { POKEBALL_PLAYER_SENDOUT } from '../include/pokeball';
 import { StartSpriteAnim } from './sprite';
 import type { DecompTask, DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runtime';
-import { isBallAnimActive } from './engine/battle/battle-sprites-data';
+import { isBallAnimActive, setBallAnimActive } from './engine/battle/battle-sprites-data';
 import { reverseDecompConstant as _reverseDecompConstantPlayer } from '../harness/runtime/decomp-constants';
 import { getMoveName as _getMoveNameFrFromData } from './engine/data/game-data';
 import { getBattleMove } from './data/battle_moves';
@@ -2464,6 +2464,30 @@ function Task_StartSendOutAnim(task: DecompTask, rt: DecompRuntime): void {
   setActiveBattler(battler);
   // 1:1 l. 3007 StartSendOutAnim(battler, FALSE) : la ball part + déclenche l'émergence du mon.
   DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT);
+  // 1:1 ll.3009-3018 : en DOUBLE non-multi, LE MÊME ball-throw envoie AUSSI le partenaire
+  // (BATTLE_PARTNER). Le décomp n'émet le IntroTrainerBallThrow qu'à UN battler par côté —
+  // battle_main.c BattleIntroPlayer1SendsOutMonAnimation:3799 ne passe à Player2 QUE si
+  // BATTLE_TYPE_MULTI ; le flanc 2 est donc sorti ICI, par ce même task.
+  if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && !(gBattleTypeFlags & BATTLE_TYPE_MULTI)) {
+    const partner = battler ^ 2;   // 1:1 l.3013 gActiveBattler ^= BIT_FLANK (BATTLE_PARTNER)
+    setActiveBattler(partner);
+    gBattleBufferA[partner][1] = gBattlerPartyIndexes[partner];   // 1:1 l.3014
+    // 1:1 ll.3015-3016 BattleLoadPlayerMonSpriteGfx(partner) + StartSendOutAnim(partner, FALSE) :
+    // crée le sprite du partenaire (back-pic, INVISIBLE via deferReveal) puis lance SA ball.
+    // Load gfx ASYNC (plateforme L) → DoPokeballSendOutAnimation dans le .then quand le sprite
+    // existe. ballAnimActive pré-posé SYNC (setBallAnimActive) : sinon _PlayerIntroSendOutWait
+    // (phase 1) verrait ballAnimActive[partner]=false AVANT le throw et révélerait le mon trop
+    // tôt — même garde que _StartSendOutAnim_Opponent (battle_controller_opponent.ts:650).
+    setBattlerDeferReveal(partner, true);
+    setBallAnimActive(partner, true);
+    void _loadAndCreateBattlerMonSprite(partner, false).then(() => {
+      const s2 = gActiveBattler;
+      setActiveBattler(partner);
+      DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT);
+      setActiveBattler(s2);
+    }).catch((e) => console.error('[Task_StartSendOutAnim partner]', e));
+    setActiveBattler(battler);   // 1:1 l.3017 gActiveBattler ^= BIT_FLANK (retour à l'actif)
+  }
   // 1:1 l. 3019 gBattlerControllerFuncs = Intro_TryShinyAnimShowHealthbox (= notre chaîne phases 1-3).
   _sendOutPhase = 1;
   gBattlerControllerFuncs[battler] = _PlayerIntroSendOutWait;
@@ -2487,8 +2511,19 @@ function _PlayerIntroSendOutWait(): void {
   const rt = getRuntime();
   switch (_sendOutPhase) {
     case 1: {  // 1:1 Intro_TryShinyAnimShowHealthbox : attend la fin de l'anim ball (ballAnimActive==FALSE)
-      if (isBallAnimActive(battler) === false) {
+      // 1:1 :310 : en DOUBLE non-multi, attend que LES DEUX balls du côté soient finies
+      // (!ballAnimActive[active] && !ballAnimActive[partner]) avant de montrer les healthboxes.
+      const isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0 && (gBattleTypeFlags & BATTLE_TYPE_MULTI) === 0;
+      const partner = battler ^ 2;
+      const ballsDone = isBallAnimActive(battler) === false && (!isDouble || isBallAnimActive(partner) === false);
+      if (ballsDone) {
         setBattlerDeferReveal(battler, false);    // révèle le mon (émergé de la ball)
+        // 1:1 :314-322 : en double non-multi, montre AUSSI le healthbox du partenaire
+        // (BATTLE_PARTNER) — UpdateHealthboxAttribute + StartHealthboxSlideIn + SetVisible.
+        if (isDouble) {
+          setBattlerDeferReveal(partner, false);
+          _ShowHealthboxOnSendOut(partner);
+        }
         // 1:1 Intro_TryShinyAnimShowHealthbox : healthbox slide-in QUAND la ball est finie.
         _ShowHealthboxOnSendOut(battler);
         _sendOutHbFrames = 0;
@@ -2498,11 +2533,17 @@ function _PlayerIntroSendOutWait(): void {
     }
     case 2: {  // 1:1 Intro_WaitForShinyAnimAndHealthbox : attend la fin du slide healthbox
       _sendOutHbFrames++;
+      // 1:1 :236-238 (twoMons) : en double, le slide est fini quand LES DEUX healthboxes du
+      // côté ont repris SpriteCallbackDummy (callback != SpriteCB_HealthboxSlideIn).
+      const isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0 && (gBattleTypeFlags & BATTLE_TYPE_MULTI) === 0;
       const hb = (globalThis as Record<string, unknown>).__battleHealthbox as { gHealthboxSpriteIds?: number[] } | undefined;
-      const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
-      const hbSpr = hbId >= 0 ? rt?.gSprites?.[hbId] : null;
-      const cbName = (hbSpr?.callback as { name?: string } | null | undefined)?.name;
-      const slideDone = !hbSpr || cbName !== 'SpriteCB_HealthboxSlideIn';
+      const hbSlideDone = (b: number): boolean => {
+        const id = hb?.gHealthboxSpriteIds?.[b] ?? -1;
+        const spr = id >= 0 ? rt?.gSprites?.[id] : null;
+        const nm = (spr?.callback as { name?: string } | null | undefined)?.name;
+        return !spr || nm !== 'SpriteCB_HealthboxSlideIn';
+      };
+      const slideDone = hbSlideDone(battler) && (!isDouble || hbSlideDone(battler ^ 2));
       if (slideDone || _sendOutHbFrames > 40) {
         _introEndDelay = 4;   // 1:1 introEndDelay=3 (+1 pour le pré-décrément du décomp)
         _sendOutPhase = 3;
