@@ -60,6 +60,7 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
     this.srcPos = 0; // position fractionnaire dans la frame courante [0, SPV)
     this.step = GBA_RATE / sampleRate;
     this.needSent = false;
+    this.needSince = 0; // quanta écoulés depuis un need resté sans réponse
     this.underruns = 0;
     this.lastApplied = -1; // dernière frame dont les regs ont été appliqués
     this.psgEnergy = 0; // diagnostics (remis à zéro à chaque stats)
@@ -90,6 +91,7 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
           this.wr++;
         }
         this.needSent = false;
+        this.needSince = 0;
       } else if (m.t === 'stats') {
         this.port.postMessage({
           t: 'stats', wr: this.wr, rd: this.rd, underruns: this.underruns,
@@ -366,7 +368,14 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
     const level = this.wr - this.rd;
     if (level < LOW_WATER && !this.needSent) {
       this.needSent = true;
+      this.needSince = 0;
       this.port.postMessage({ t: 'need', n: RING_FRAMES - level });
+    } else if (this.needSent && ++this.needSince >= 86) {
+      // 🩸 payé (« silence définitif après le blast ») : un need dont les
+      // frames n'arrivent JAMAIS (exception pompe main-thread) laissait
+      // needSent pendu À VIE → plus aucune demande. Re-demande ~250 ms.
+      this.needSince = 0;
+      this.port.postMessage({ t: 'need', n: RING_FRAMES - (this.wr - this.rd) });
     }
   }
 }

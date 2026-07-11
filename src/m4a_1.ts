@@ -550,6 +550,15 @@ export function ChnVolSetAsm(chan: SoundChannel | CgbChannel, track: MusicPlayer
 
 // ─── ply_note — allocation et démarrage de canal ─────────────────────────────
 
+/** 1:1 m4a_1.s:1658-1668/1690-1712 : les départages d'ancienneté comparent les
+ *  ADRESSES des tracks (cmp/bcs non signé). Un canal détaché en release
+ *  (ply_fine → ClearChain) a `track = NULL` = adresse 0, plus petite que toute
+ *  vraie track. `addrOrder` est notre ordinal d'adresse → NULL ↦ −1.
+ *  🩸 payé (« silence définitif après le blast » user) : le déréférencement nu
+ *  `track.addrOrder` crashait ply_note pile quand le blast finissait (canaux
+ *  release track=null) pendant la pénurie INTRO_BATTLE+MUS_TITLE. */
+const trackAddr = (t: MusicPlayerTrack | null): number => (t === null ? -1 : t.addrOrder);
+
 /** 1:1 `ply_note` (m4a_1.s:1538) : note_cmd = cmd − 0xCF (0 = TIE).
  *  Lit key/velocity/gtp optionnels, résout key-split/rhythm, choisit le canal
  *  (CGB fixe ou DirectSound par priorité), le chaîne au track et l'arme. */
@@ -647,7 +656,7 @@ export function ply_note(noteCmd: number, mplayInfo: MusicPlayerInfo, track: Mus
     const cgbChan = soundInfo.cgbChans[cgbType - 1];
     if ((cgbChan.statusFlags & SOUND_CHANNEL_SF_ON) && !(cgbChan.statusFlags & SOUND_CHANNEL_SF_STOP)) {
       if (cgbChan.priority > priority) return;
-      if (cgbChan.priority === priority && (cgbChan.track as MusicPlayerTrack).addrOrder < track.addrOrder) return;
+      if (cgbChan.priority === priority && trackAddr(cgbChan.track) < track.addrOrder) return;
     }
     chan = cgbChan;
   } else {
@@ -667,7 +676,7 @@ export function ply_note(noteCmd: number, mplayInfo: MusicPlayerInfo, track: Mus
         if (foundReleasing === 0) {
           foundReleasing = 1;
           bestPriority = c.priority;
-          bestTrackOrder = (c.track as MusicPlayerTrack).addrOrder;
+          bestTrackOrder = trackAddr(c.track);
           candidate = c;
           continue;
         }
@@ -676,11 +685,11 @@ export function ply_note(noteCmd: number, mplayInfo: MusicPlayerInfo, track: Mus
       }
       if (c.priority < bestPriority) {
         bestPriority = c.priority;
-        bestTrackOrder = (c.track as MusicPlayerTrack).addrOrder;
+        bestTrackOrder = trackAddr(c.track);
         candidate = c;
       } else if (c.priority === bestPriority) {
-        if ((c.track as MusicPlayerTrack).addrOrder >= bestTrackOrder) {
-          bestTrackOrder = (c.track as MusicPlayerTrack).addrOrder;
+        if (trackAddr(c.track) >= bestTrackOrder) {
+          bestTrackOrder = trackAddr(c.track);
           candidate = c;
         }
       }
