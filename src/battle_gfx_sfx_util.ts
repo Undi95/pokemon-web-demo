@@ -7,8 +7,9 @@
  *      (:96) · BattleLoadOpponentMonSpriteGfx (:577) · BattleLoadPlayerMonSpriteGfx
  *      (:630, + branche transformSpecies 1:1) · DecompressTrainerFrontPic (:701) ·
  *      DecompressTrainerBackPic (:710) · FreeTrainerFrontPicPalette (:732) ·
- *      BattleLoadAllHealthBoxesGfxAtOnce (:738) · LoadBattleBarGfx (:826, dette
- *      asset doubles) · BattleInitAllSprites (:831, AUX COMMANDES des boots) ·
+ *      BattleLoadAllHealthBoxesGfxAtOnce (:738) · LoadBattleBarGfx (:826, asset
+ *      battle_bar.json extrait ; consommateur RenderTextHandleBold à porter) ·
+ *      BattleInitAllSprites (:831, AUX COMMANDES des boots) ·
  *      CopyAllBattleSpritesInvisibilities (:922) · CopyBattleSpriteInvisibility
  *      (:930) · HandleSpeciesGfxDataChange (:935, Transform single — dormant) ·
  *      BattleLoadSubstituteOrMonSpriteGfx (:1034, doll = dette asset) ·
@@ -99,7 +100,8 @@ export const MON_PIC_SIZE = 0x800;
 export const gMonSpritesGfxPtr: {
   sprites: { ptr: (Uint8Array | null)[] };
   /** 1:1 `barFontGfx` (AllocZeroed 0x1000) — font des digits HP opp DOUBLES
-   *  (chargée par LoadBattleBarGfx ; null tant que l'asset n'est pas extrait). */
+   *  (chargée par LoadBattleBarGfx depuis battle_bar.json ; null tant que
+   *  LoadBattleBarGfx n'a pas tourné). */
   barFontGfx: Uint8Array | null;
 } = {
   sprites: { ptr: [null, null, null, null] },
@@ -254,15 +256,42 @@ export function FreeTrainerFrontPicPalette(frontPicEnum: string): void {
 
 /** 1:1 décomp `void LoadBattleBarGfx(u8 unused)` : LZDecompressWram(
  *  gBattleInterfaceGfx_BattleBar → gMonSpritesGfxPtr->barFontGfx). Consommateur
- *  unique = rendu des digits HP adverses en DOUBLES (battle_interface barFontGfx)
- *  — non atteignable en single. Asset = graphics/battle_interface/battle_bar.png
- *  (pas encore extrait → barFontGfx reste null + warn, dette asset doubles). */
+ *  unique = rendu des digits HP adverses en DOUBLES (battle_interface barFontGfx,
+ *  via RenderTextHandleBold — encore à porter) — non atteignable en single.
+ *
+ *  Asset : `battle_bar.4bpp` = concat(hpbar_anim_unused, numbers1, numbers2) (=41
+ *  tuiles = 0x520 octets, cf. graphics_file_rules.mk:89), pré-extrait en
+ *  `battle_bar.json` par scripts/extract-battle-bar.mjs (indices 4bpp finaux, même
+ *  structure que keypad_icons.json). LZDecompressWram décompresse dans un buffer
+ *  AllocZeroed(0x1000) → on réplique : 0x1000 octets, les 41 tuiles en [0..0x520[,
+ *  le reste à 0 (scratch de rendu texte). */
+let _barFontJsonCache: { width: number; height: number; pixels: number[][] } | null = null;
 export async function LoadBattleBarGfx(_unused: number): Promise<void> {
   if (gMonSpritesGfxPtr.barFontGfx) return;
   try {
-    gMonSpritesGfxPtr.barFontGfx = await loadTileBin('/decomp/em/battle_interface/battle_bar.png', 4);
-  } catch {
-    console.warn('[gfx_sfx_util] LoadBattleBarGfx: asset battle_bar absent (doubles-only, dette)');
+    if (!_barFontJsonCache) {
+      const resp = await fetch('/decomp/em/battle_interface/battle_bar.json');
+      _barFontJsonCache = await resp.json() as { width: number; height: number; pixels: number[][] };
+    }
+    const { width, height, pixels } = _barFontJsonCache;
+    // Pack indices → 4bpp tuilé (tile-major, low nibble = pixel gauche), 1:1 gbagfx.
+    const widthTiles = width / 8, heightTiles = height / 8;
+    const buf = new Uint8Array(0x1000); // = AllocZeroed(0x1000), reste = 0
+    for (let ty = 0; ty < heightTiles; ty++) {
+      for (let tx = 0; tx < widthTiles; tx++) {
+        const tileBase = (ty * widthTiles + tx) * 32;
+        for (let row = 0; row < 8; row++) {
+          for (let pc = 0; pc < 4; pc++) {
+            const p1 = pixels[ty * 8 + row][tx * 8 + pc * 2] & 0xf;
+            const p2 = pixels[ty * 8 + row][tx * 8 + pc * 2 + 1] & 0xf;
+            buf[tileBase + row * 4 + pc] = p1 | (p2 << 4);
+          }
+        }
+      }
+    }
+    gMonSpritesGfxPtr.barFontGfx = buf;
+  } catch (e) {
+    console.warn('[gfx_sfx_util] LoadBattleBarGfx: battle_bar.json illisible', e);
     gMonSpritesGfxPtr.barFontGfx = null;
   }
 }
