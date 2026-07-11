@@ -8,10 +8,11 @@ import { gActiveBattler, gBattlersCount, gBattleTypeFlags, gBattlerPartyIndexes 
 import { BATTLE_TYPE_LINK, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS } from './engine/battle/constants';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { setBattlersCount, setBattlerControllerFunc } from './engine/battle/state';
-import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_SAFARI, BATTLE_TYPE_WALLY_TUTORIAL } from './engine/battle/constants';
+import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_SAFARI, BATTLE_TYPE_WALLY_TUTORIAL, BATTLE_TYPE_INGAME_PARTNER } from './engine/battle/constants';
 import { gBattlerPositions, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT } from './engine/battle/util';
 import { SetControllerToPlayer } from './battle_controller_player';
 import { SetControllerToOpponent } from './battle_controller_opponent';
+import { SetControllerToPlayerPartner } from './battle_controller_player_partner';
 import { setBattleMainFunc, BeginBattleIntro } from './engine/battle/battle-main-functions';
 import { MAX_BATTLERS_COUNT, gBattleScripting, setBattleControllerExecFlags, gBattleControllerExecFlags, setActiveBattler, gBattlerAttacker, gBattlerTarget, gCurrentMove, gChosenMove, gBattleOutcome, gBattleStruct, gBattleWeather, gBattleMons, gPotentialItemEffectBattler, gLastUsedItem, gLastUsedAbility, type DisableStruct } from './engine/battle/state';
 import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from '../include/battle_message';
@@ -387,12 +388,48 @@ function _BufferBattlePartyCurrentOrderBySide(battler: number, flankId: number):
  *  Pose gBattleMainFunc = BeginBattleIntro + installe les controllers par
  *  battler selon le type (single / double).
  *
- *  Couvre 1:1 : single standard (player vs opponent), double (×4). Les chemins
- *  SAFARI / WALLY_TUTORIAL / INGAME_PARTNER / RECORDED nécessitent des
- *  controllers spécialisés non encore portés (`SetControllerToSafari/Wally/...`)
- *  → fallback `SetControllerToPlayer` + dette R3 explicite. */
+ *  Couvre 1:1 : INGAME_PARTNER (combat multi à partenaire IA — Steven multi),
+ *  single standard (player vs opponent), double (×4). Les chemins SAFARI /
+ *  WALLY_TUTORIAL / RECORDED nécessitent des controllers spécialisés non encore
+ *  portés (`SetControllerToSafari/Wally/RecordedPlayer`) → fallback
+ *  `SetControllerToPlayer` + dette R3 explicite. */
 function InitSinglePlayerBtlControllers(): void {
-  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+  // 1:1 décomp ll. 117-161 : combat MULTI à partenaire IA (Steven multi / tag
+  // Frontier). B0=joueur, B1=adverse GAUCHE, B2=PARTENAIRE IA (PlayerPartner,
+  // côté joueur DROIT), B3=adverse DROIT. gBattlersCount = MAX_BATTLERS_COUNT.
+  if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+    setBattleMainFunc(BeginBattleIntro);
+
+    // 1:1 ll. 121-134 : sous-chemin RECORDED (B0 = SetControllerToRecordedPlayer)
+    // = dette R3 offline (RecordedPlayer non porté) → on pose le chemin non-recorded
+    // 1:1 ll. 135-148 (SetControllerToPlayer sur B0), identique sauf B0.
+    setBattlerControllerFunc(B_BATTLER_0, SetControllerToPlayer);
+    gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;
+
+    setBattlerControllerFunc(B_BATTLER_1, SetControllerToOpponent);
+    gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;
+
+    setBattlerControllerFunc(B_BATTLER_2, SetControllerToPlayerPartner);
+    gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;
+
+    setBattlerControllerFunc(B_BATTLER_3, SetControllerToOpponent);
+    gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;
+
+    setBattlersCount(MAX_BATTLERS_COUNT);
+
+    // 1:1 ll. 152-155 : ordre d'affichage du party menu par côté.
+    _BufferBattlePartyCurrentOrderBySide(0, 0);
+    _BufferBattlePartyCurrentOrderBySide(1, 0);
+    _BufferBattlePartyCurrentOrderBySide(2, 1);
+    _BufferBattlePartyCurrentOrderBySide(3, 1);
+
+    // 1:1 ll. 157-160 : {0,0,3,3} (MULTI_PARTY_SIZE = 3 → le partenaire occupe les
+    // slots 3-5 de gPlayerParty ; son 1er mon envoyé = index 3).
+    gBattlerPartyIndexes[0] = 0;
+    gBattlerPartyIndexes[1] = 0;
+    gBattlerPartyIndexes[2] = 3;
+    gBattlerPartyIndexes[3] = 3;
+  } else if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
     // 1:1 décomp ll. 162-216 : single battle.
     setBattleMainFunc(BeginBattleIntro);
 
