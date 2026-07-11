@@ -4469,10 +4469,13 @@ function SetMainCallback2(cb: (() => void) | null): void {
   getRuntime()?.SetMainCallback2?.(cb as never);
 }
 
-/** 1:1 décomp `gTrainers[id].trainerClass` (trainers data). */
-function _getTrainerClass(_trainerId: number): number {
-  // Dette R3 : trainers data table. Pour now : default 0.
-  return 0;
+/** 1:1 décomp `gTrainers[id].trainerClass` (trainers data). Lit le miroir __gTrainers
+ *  (battle-trainer-data-bridge, classe résolue string→id), comme _getTrainerClassBgm.
+ *  Feed le switch victory-BGM local (battle_main.c:4996). 0 (=TRAINER_CLASS_PKMN_TRAINER_1)
+ *  si le bridge n'est pas encore chargé. */
+function _getTrainerClass(trainerId: number): number {
+  return (globalThis as { __gTrainers?: Record<number, { trainerClass?: number }> })
+    .__gTrainers?.[trainerId]?.trainerClass ?? 0;
 }
 
 /** 1:1 décomp `gTrainerBattleOpponent_A`. */

@@ -19,8 +19,9 @@
  *     mais != ROM exact -> la NATURE (pid%25) peut diverger ; ability/gender/shiny
  *     restent corrects (derives de la base 0x88/0x78, byte-exacte). cf. blueprint S3.
  *   - `partyFlags` re-derive depuis la string `partyType` (data.h:67-70 / trainers.h:375).
- *   - champs non lus par CreateNPCTrainerParty (trainerClass/trainerPic/items/aiFlags)
- *     = poses a 0/[] (consommes ailleurs : sprite intro / AI, hors scope T1).
+ *   - trainerClass RÉSOLU (l.116, string→id) : consommé HORS CreateNPCTrainerParty par
+ *     GetBattleBGM (_getTrainerClassBgm), GetTrainerBattleTransition, victory-BGM
+ *     (_getTrainerClass). trainerPic (via _trainerPicByNumId), items/aiFlags encore 0/[].
  *   - modes REMATCH/PYRAMID/HILL (gTrainerBattleOpponent_A reecrit) = hors scope.
  */
 
@@ -113,7 +114,7 @@ function _buildTrainer(j: JsonTrainer): BridgeTrainer {
   }
   return {
     partyFlags,
-    trainerClass: 0,                  // non lu par CreateNPCTrainerParty
+    trainerClass: resolveDecompConstant(j.trainerClass ?? '') ?? 0,  // 1:1 gTrainers[].trainerClass : "TRAINER_CLASS_X"→id (même pattern que moves/heldItem l.97-98)
     encounterMusic_gender,
     trainerPic: 0,                    // non lu ici
     trainerName: _nameBytes(j.name ?? j.trainerName ?? ''),
