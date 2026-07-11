@@ -1215,10 +1215,79 @@ export function CreateNPCTrainerParty(
 }
 
 // CB2_HandleStartMulti* / PreInit* — non portés (Dette R3 multi/partner).
-function _CB2_HandleStartMultiPartnerBattle(): void { /* Dette R3 multi */ }
+/** 1:1 décomp `CB2_HandleStartMultiPartnerBattle()` (battle_main.c:1161-1408).
+ *  BRANCHE NON-LINK SEULE (offline solo, chemin 0 → 1(else) → 13 → 16). Les cases 2-15
+ *  (SendBlock / GetBlockReceived / RNG-seed / Shedinja link) = LINK non porté, hors
+ *  périmètre solo (link non porté). Mirror EXACT du CB2_HandleStartBattle offline du port
+ *  (même idiomes _ShowBg/_BattleInitAllSprites/_setMainCallback1). InitBattleControllers
+ *  branchera la voie INGAME_PARTNER (contrôleur partenaire = agent L3). */
+function _CB2_HandleStartMultiPartnerBattle(): void {
+  const playerMultiplayerId = _GetMultiplayerId();
+  gBattleScripting.multiplayerId = playerMultiplayerId;
+  // 1:1 :1172 partnerMultiplayerId = playerMultiplayerId ^ BIT_SIDE — utilisé par le LINK seul (omis).
+
+  _RunTasks();
+  _AnimateSprites();
+  _BuildOamBuffer();
+
+  switch (gBattleCommunication[MULTIUSE_STATE]) {
+    case 0:
+      // 1:1 :1176-1188.
+      if (!_IsDma3ManagerBusyWithBgCopy()) {
+        _ShowBg(0); _ShowBg(1); _ShowBg(2); _ShowBg(3);
+        _FillAroundBattleWindows();
+        gBattleCommunication[MULTIUSE_STATE] = 1;
+      }
+      if (_getWirelessCommType()) _LoadWirelessStatusIndicatorSpriteGfx();
+      // 1:1 :1188 fall through.
+      /* falls through */
+    case 1:
+      // 1:1 :1189-1228 : la branche LINK (if BATTLE_TYPE_LINK) = link non porté, hors
+      //   périmètre solo. On garde le `else` offline (:1222-1228).
+      if (!(gBattleTypeFlags & BATTLE_TYPE_LINK)) {
+        if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED)) {
+          setBattleTypeFlags(gBattleTypeFlags | BATTLE_TYPE_IS_MASTER);
+        }
+        gBattleCommunication[MULTIUSE_STATE] = 13;
+        _SetAllPlayersBerryData();
+      }
+      break;
+    case 13:
+      // 1:1 :1367-1376.
+      _InitBattleControllers();
+      _RecordedBattle_SetTrainerInfo();
+      gBattleCommunication[SPRITES_INIT_STATE1] = 0;
+      gBattleCommunication[SPRITES_INIT_STATE2] = 0;
+      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+        gBattleCommunication[MULTIUSE_STATE] = 14;
+      else
+        gBattleCommunication[MULTIUSE_STATE] = 16;
+      break;
+    case 16:
+      // 1:1 :1395-1406 : finish, start battle. (TrySetLinkBattleTowerEnemyPartyLevel =
+      //   link/tower, non porté solo ; la LINK_IN_BATTLE flag = gate link.)
+      if (_BattleInitAllSprites(SPRITES_INIT_STATE1, SPRITES_INIT_STATE2)) {
+        _setMainCallback1(_BattleMainCB1);
+        _SetMainCallback2(_BattleMainCB2);
+        if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+          setBattleTypeFlags(gBattleTypeFlags | BATTLE_TYPE_LINK_IN_BATTLE);
+      }
+      break;
+  }
+}
 function _CB2_HandleStartMultiBattle(): void { /* Dette R3 multi */ }
 function _CB2_PreInitMultiBattle(): void { /* Dette R3 multi */ }
-function _CB2_PreInitIngamePlayerPartnerBattle(): void { /* Dette R3 partner */ }
+/** 1:1 décomp `CB2_PreInitIngamePlayerPartnerBattle()` (battle_main.c:1528-1562).
+ *  VERSION 1:1 SIMPLIFIÉE : le .c (case 0) alloue sMultiPartnerPartyBuffer +
+ *  SetMultiPartnerMenuParty + sauve callback/flags + ShowPartyMenuToShowcaseMultiBattleParty
+ *  (party menu cosmétique qui PRÉSENTE l'équipe multi), puis (case 1) attend la fin du fade
+ *  et va à CB2_InitBattleInternal en restaurant flags/callback. On OMET le showcase
+ *  (party_menu.c non porté) ET le save/restore (inutile sans le party menu qui les
+ *  modifierait) → on va DIRECTEMENT à CB2_InitBattleInternal, le pas final de la machine.
+ *  FILE-OPUS : porter ShowPartyMenuToShowcaseMultiBattleParty (showcase). */
+function _CB2_PreInitIngamePlayerPartnerBattle(): void {
+  CB2_InitBattleInternal();
+}
 
 // ─── CB2_InitBattle (battle_main.c:588-617) ────────────────────────────────
 

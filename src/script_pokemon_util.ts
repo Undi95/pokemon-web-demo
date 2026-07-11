@@ -19,7 +19,9 @@ import {
 import type { Pokemon } from './engine/battle/party-storage';
 // CreateMon NUMÉRIQUE 1:1 (foyer pokemon.c) — remplace la convenience legacy
 // engine/pokemon/pokemon:CreateMon(speciesEnum, opts). createEmptyPokemon = la struct cible.
-import { CreateMon, createEmptyPokemon } from './pokemon';
+// CopyMon = 1:1 memcpy(dest, src) (deep : moves/pp indépendants).
+import { CreateMon, createEmptyPokemon, CopyMon } from './pokemon';
+import { MAX_FRONTIER_PARTY_SIZE } from './engine/save/save-blocks';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import { CreateEgg } from './daycare';
@@ -148,4 +150,39 @@ export function ScriptSetMonMoveSlot(monIndex: number, move: number, slot: numbe
     monIndex = CalculatePlayerPartyCount() - 1;
   }
   SetMonMoveSlot(gPlayerParty[monIndex], move, slot);
+}
+
+/** 1:1 décomp `gSelectedOrderFromParty[MAX_FRONTIER_PARTY_SIZE]` (party_menu.c:228,
+ *  EWRAM_DATA `= {0}`). Foyer décomp = party_menu.c ; party_menu pas encore porté, on
+ *  héberge le global ici (LU par `ReducePlayerPartyToSelectedMons` ci-dessous, ÉCRIT par
+ *  `ChooseHalfPartyForBattle` auto-select v1 dans specials-registry). Ordre 1-based des
+ *  slots party sélectionnés (0 = fin de sélection). FILE-OPUS : migrer vers party_menu.ts. */
+export const gSelectedOrderFromParty: number[] = [0, 0, 0, 0];
+
+/**
+ * 1:1 décomp `void ReducePlayerPartyToSelectedMons(void)` (script_pokemon_util.c:209-228).
+ * Compacte `gPlayerParty` sur les seuls mons choisis (via `gSelectedOrderFromParty`), dans
+ * l'ordre de sélection, puis recompte la party. Utilisé par le combat multi (Steven) : le
+ * joueur choisit ≤ MAX_FRONTIER_PARTY_SIZE mons, on les ramène en tête de party.
+ */
+export function ReducePlayerPartyToSelectedMons(): void {
+  // 1:1 :211-214 : struct Pokemon party[MAX_FRONTIER_PARTY_SIZE]; CpuFill32(0, party, sizeof party).
+  const party: Pokemon[] = [];
+  for (let i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++) party.push(createEmptyPokemon());
+
+  // 1:1 :216-219 : copie les Pokémon sélectionnés selon l'ordre (index 1-based).
+  for (let i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++) {
+    if (gSelectedOrderFromParty[i]) {  // tant que l'ordre continue (1, 2 ou 3 mons choisis ?)
+      CopyMon(party[i], gPlayerParty[gSelectedOrderFromParty[i] - 1]);  // index 0-based
+    }
+  }
+
+  // 1:1 :221 CpuFill32(0, gPlayerParty, sizeof gPlayerParty) — zéro les PARTY_SIZE slots.
+  for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], createEmptyPokemon());
+
+  // 1:1 :223-225 : réécrit les MAX_FRONTIER_PARTY_SIZE premiers avec l'ordre copié.
+  for (let i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++) CopyMon(gPlayerParty[i], party[i]);
+
+  // 1:1 :227 CalculatePlayerPartyCount().
+  CalculatePlayerPartyCount();
 }

@@ -98,10 +98,10 @@ import {
 } from '../../tv';
 import { ShowPokedexRatingMessage as _ShowPokedexRatingMessage } from '../../birch_pc';
 import { setStringVar, GetPlayerNameString } from '../../../include/text';
-import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../../../include/constants/species';
+import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO, SPECIES_NONE } from '../../../include/constants/species';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../../../include/constants/items';
 import { OBJ_EVENT_GFX_BARD } from '../../../include/constants/event_objects';
-import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../../../include/constants/global';
+import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE, MULTI_PARTY_SIZE } from '../../../include/constants/global';
 import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../../../include/constants/battle_frontier';
 import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../../../include/constants/flags';
 import { MOVE_NONE } from '../../../include/constants/moves';
@@ -126,7 +126,8 @@ import {
 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
-import { CheckPartyMonHasHeldItem, HealPlayerParty } from '../../script_pokemon_util';
+import { CheckPartyMonHasHeldItem, HealPlayerParty, ReducePlayerPartyToSelectedMons, gSelectedOrderFromParty } from '../../script_pokemon_util';
+import { DoSpecialTrainerBattle } from '../../battle_tower';
 import { GameClear, SetCB2WhiteOut } from '../../post_battle_event_funcs';
 import { SetMauvilleOldManObjEventGfx, GetCurrentMauvilleOldMan } from '../../mauville_old_man';
 import { gGameLanguage } from '../../main';
@@ -1027,7 +1028,9 @@ registerSpecial('SetBattledOwnerFromResult', () => {
   const base = gSaveBlock1Ptr.secretBases?.[idx];
   if (base) base.battledOwnerToday = gSpecialVar.Result;
 });
-registerSpecial('DoSpecialTrainerBattle', () => 0);
+// DoSpecialTrainerBattle — porté 1:1 (case SPECIAL_BATTLE_STEVEN) dans src/battle_tower.ts
+// (jalon multi Steven). Rebranché sur la vraie fn (retiré du stub `() => 0`).
+registerSpecial('DoSpecialTrainerBattle', DoSpecialTrainerBattle);
 registerSpecial('BattleSetup_StartLegendaryBattle', () => 0);
 // 'PlayTrainerEncounterMusic' — porté 1:1 (battle_setup.c:1440) dans battle_setup.ts
 // (routage song table). No-op RETIRÉ (double registration = clobber).
@@ -1043,7 +1046,28 @@ registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
 
 /** Battle Frontier party. */
 registerSpecial('ChoosePartyForBattleFrontier', () => 0);
-registerSpecial('ChooseHalfPartyForBattle', () => 0);
+/** 1:1 décomp `ChooseHalfPartyForBattle` (party_menu.c:5560) : ouvre le menu de sélection
+ *  de ≤ MULTI_PARTY_SIZE mons pour un combat multi (Steven), pose leur ordre dans
+ *  `gSelectedOrderFromParty` + VAR_RESULT (0 = annulé).
+ *
+ *  ⚠️ ADAPTATION v1 (PAS un stub silencieux — choix documenté, FILE-OPUS) : le menu
+ *  ½-party (party_menu.c:5566 `InitChooseHalfPartyForBattle` + CB2 associés) n'est pas
+ *  encore porté → AUTO-SELECT en attendant : on prend les MULTI_PARTY_SIZE (3) premiers
+ *  mons VALIDES (espèce présente, non-œuf), ordre 1-based (= décomp `slotId + 1`), et
+ *  VAR_RESULT = 1 (sélection confirmée). Câblage 1:1 du menu = chantier party_menu. */
+registerSpecial('ChooseHalfPartyForBattle', () => {
+  for (let i = 0; i < gSelectedOrderFromParty.length; i++) gSelectedOrderFromParty[i] = 0;
+  let count = 0;
+  for (let i = 0; i < PARTY_SIZE && count < MULTI_PARTY_SIZE; i++) {
+    const species = _GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+    const isEgg = _GetMonData(gPlayerParty[i], MON_DATA_IS_EGG) as number;
+    if (species !== SPECIES_NONE && !isEgg) {
+      gSelectedOrderFromParty[count] = i + 1;  // 1-based (décomp party_menu : gPartyMenu.slotId + 1)
+      count++;
+    }
+  }
+  VarSet('VAR_RESULT', count > 0 ? 1 : 0);
+});
 
 /** 1:1 décomp `HasEnoughMonsForDoubleBattle` (script_pokemon_util.c:99-113) :
  *    switch (GetMonsStateToDoubles()) { case X: gSpecialVar_Result = X; ... }
@@ -1500,7 +1524,9 @@ const _STUB_RETURN_0_SPECIALS = [
   'DoOrbEffect', 'FadeOutOrbEffect',
   // 'MauvilleGymDeactivatePuzzle' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'GetWeekCount' — porté 1:1 décomp field_specials.c:940 ci-bas.
-  'ReducePlayerPartyToSelectedMons', 'CableCarWarp', 'CableCar',
+  // 'ReducePlayerPartyToSelectedMons' — porté 1:1 script_pokemon_util.ts:209 (jalon multi Steven),
+  //   registerSpecial vers la vraie fn ci-bas (retiré de la stub-loop = anti-clobber).
+  'CableCarWarp', 'CableCar',
   'LoopWingFlapSE',
   // 'GetDaysUntilPacifidlogTMAvailable' — porté 1:1 décomp field_specials.c:1555 ci-bas.
   // 'SetPacifidlogTMReceivedDay' — porté 1:1 décomp field_specials.c:1566 ci-bas.
@@ -1512,6 +1538,11 @@ const _STUB_RETURN_0_SPECIALS = [
 for (const name of _STUB_RETURN_0_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// ReducePlayerPartyToSelectedMons — porté 1:1 (script_pokemon_util.c:209) dans
+// src/script_pokemon_util.ts (jalon multi Steven). Compacte gPlayerParty sur les mons
+// choisis via gSelectedOrderFromParty. Rebranché sur la vraie fn (retiré du stub-loop).
+registerSpecial('ReducePlayerPartyToSelectedMons', ReducePlayerPartyToSelectedMons);
 
 // ─── Session A2.27 batch — time/clock specials 1:1 strict ───────────────────
 

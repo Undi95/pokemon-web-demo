@@ -45,6 +45,7 @@ import { getRuntime } from '../runtime/decomp-globals';
 import { FadeScreen } from '../../src/field_weather';
 import { GetBerryTypeByBerryTreeId } from '../../src/berry';
 import { gBattleMons, gBattleOutcome, gBattleTypeFlags, gTrainerBattleOpponent_A, setTrainerBattleOpponentA } from '../../src/engine/battle/state';
+import { SPECIAL_BATTLE_STEVEN } from '../../include/constants/battle_frontier';
 import { gEnemyParty, gPlayerParty } from '../../src/engine/battle/party-storage';
 import { GetMonData as _GetMonData, MON_DATA_SPECIES as _MON_DATA_SPECIES, MON_DATA_HP as _MON_DATA_HP, MON_DATA_LEVEL as _MON_DATA_LEVEL, MON_DATA_MET_LOCATION as _MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER as _MON_DATA_MODERN } from '../../src/engine/battle/party-storage';
 
@@ -1149,6 +1150,31 @@ export function launchTB(trainerId: number): string {
   return `byte-VM dotrainerbattle lancé vs trainer ${trainerId}`;
 }
 
+/** Lance le COMBAT MULTI STEVEN (Mossdeep Space Center) — BYPASS du menu ½-party.
+ *  Mime MossdeepCity_SpaceCenter_2F_EventScript_DoStevenMultiBattle (scripts.inc:237-252) :
+ *    ChooseHalfPartyForBattle (auto-select v1 : 3 premiers mons valides) →
+ *    ReducePlayerPartyToSelectedMons (compacte la party) → setvar VAR_0x8004=SPECIAL_BATTLE_STEVEN →
+ *    special DoSpecialTrainerBattle (pose flags MULTI/INGAME_PARTNER + FillPartnerParty(Steven) +
+ *    ConfigureTrainerBattle Maxie/Tabitha + boot combat).
+ *  Après : gPlayerParty[0..2] = tes mons, [3..5] = équipe Steven ; gEnemyParty = Maxie+Tabitha.
+ *  ⚠️ La party joueur est COMPACTÉE (ReducePlayer…) → recharge (reload) pour retrouver l'équipe
+ *  d'origine après le test. Vérifier ensuite battleState() + screenshot. */
+export function launchStevenMulti(): string {
+  // 1:1 script :242 special ChooseHalfPartyForBattle (auto-select v1 → gSelectedOrderFromParty + VAR_RESULT).
+  invokeSpecial('ChooseHalfPartyForBattle');
+  const selected = getVar('VAR_RESULT');
+  if (selected === 0) return 'byte-VM Steven multi : aucun mon sélectionnable (party vide ?)';
+  // 1:1 script :248 special ReducePlayerPartyToSelectedMons (party joueur → mons choisis en tête).
+  invokeSpecial('ReducePlayerPartyToSelectedMons');
+  // 1:1 script :250-251 setvar VAR_0x8004, SPECIAL_BATTLE_STEVEN ; setvar VAR_0x8005, 0.
+  setVar('VAR_0x8004', SPECIAL_BATTLE_STEVEN);
+  setVar('VAR_0x8005', 0);
+  // 1:1 script :252 special DoSpecialTrainerBattle → boot du combat multi (même chemin que __byteVm.special).
+  const before = _cb2Name();
+  const r = invokeSpecial('DoSpecialTrainerBattle');
+  return `byte-VM Steven multi lancé (SPECIAL_BATTLE_STEVEN=${SPECIAL_BATTLE_STEVEN}, ${selected ? 'party sélectionnée' : ''}) → ${r} | CB2 ${before} → ${_cb2Name()}`;
+}
+
 /** Exécute un script de l'image par label (contexte immédiat) — debug A/B. */
 export function run(label: string): boolean {
   if (!isByteVmLoaded()) { console.warn('[byte-vm] image non chargée (appelle __byteVm.load())'); return false; }
@@ -1230,4 +1256,4 @@ export async function openEasyChat(type = 9): Promise<string> {
 }
 
 // Expose pour la console / A/B.
-(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, launchScript, run, VarGet, getVar, setVar, special, sb1, openEasyChat, openEasyChatDemo, getScriptOffset };
+(globalThis as Record<string, unknown>).__byteVm = { load: loadAndInstall, test, testSpecials, testDialogue, testNpc, testMovement, testWarp, testMoney, testItem, testMetatile, testObject, testBuffers, testPlayer, testWeather, testDoor, testFieldEffect, testVobject, testObjectMovement, testFade, testLongTail1, testLongTail2, testWarpVariants, testLongTail3, testLongTail4, testFlash, testGiveMon, testTrainerbattleArgs, testWildbattle, testLongTail5, testLongTail6, testLongTail7, testPokemart, battleState, diag, launchTB, launchWild, launchStevenMulti, launchMultichoice, launchYesNo, launchPokemart, launchSpecial, launchScript, run, VarGet, getVar, setVar, special, sb1, openEasyChat, openEasyChatDemo, getScriptOffset };
