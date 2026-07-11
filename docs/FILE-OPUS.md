@@ -135,6 +135,15 @@ gabarits) ; toute valeur magique renderer = précédent cité sinon STOP.
 - Flèche de sélection de cible (SpriteCB_ShowAsMoveTarget) = stubs no-op R3
   cosmétiques (bcp.ts:694 + HandleInputChooseTarget) — rendre la flèche 1:1.
 - `SetDynamicWarp` 3-arg (port) vs 4-arg (décomp) — réconcilier au câblage Frontier.
+- 🩸 **`gTrainers[].trainerClass` codé en dur à 0** (battle-trainer-data-bridge.ts:116,
+  champ « déféré ») — neutralise le switch GetBattleBGM (porté entier `127565ce`),
+  GetTrainerBattleTransition et _getTrainerClass. Peupler depuis
+  gameDataTrainers[key].trainerClass (string→id) + re-valider transitions/noms.
+- Whitelist body-parity à poser (audit-reports/body-parity-whitelist.json :
+  link|multi|recorded_battle|battle_tower/factory/tent/palace) → le top devient
+  pure dette solo. + BufferFanClubTrainerName (field_specials, était verrouillé).
+- SpawnCameraObject/RemoveCameraObject : exige SpawnSpecialObjectEventParameterized
+  (field_specials.c:1253) non porté — pans caméra scriptés cosmétiques.
 
 ## Protocole de reprise (chaque session)
 
