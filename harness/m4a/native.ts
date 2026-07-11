@@ -128,10 +128,22 @@ export async function startM4aNativeAudio(): Promise<void> {
   });
   _state.node = _node;
   _state.lastAliveAt = performance.now(); // bénéfice du doute jusqu'au 1er heartbeat
+  let _lastRd = -1;
   _node.port.onmessage = (e: MessageEvent) => {
-    const m = e.data as { t: string; n?: number; msg?: string };
+    const m = e.data as { t: string; n?: number; msg?: string; rd?: number; wr?: number };
     if (m.t === 'alive') {
-      _state.lastAliveAt = performance.now();
+      // Vivant = il CONSOMME (rd avance) ou son ring est vide (rien à
+      // consommer — pas sa faute). Un processor dont processInner crashe en
+      // boucle a un heartbeat qui bat mais un rd FIGÉ avec du stock → il est
+      // MALADE : on ne rafraîchit pas lastAliveAt, l'horloge de secours
+      // reprend le moteur en ≤ 1 s (🩸 2e blast-gate : le blindage v1
+      // croyait « process appelé » = « sain »).
+      const rd = m.rd ?? -1;
+      const wr = m.wr ?? -1;
+      if (rd !== _lastRd || rd === wr) {
+        _lastRd = rd;
+        _state.lastAliveAt = performance.now();
+      }
       return;
     }
     if (m.t === 'error') {
