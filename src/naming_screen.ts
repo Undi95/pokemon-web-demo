@@ -38,7 +38,7 @@ import {
   MultiplyInvertedPaletteRGBComponents,
   BlendPalettes,
   SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables,
-  CpuFill32, CpuFill16,
+  CpuFill32, CpuFill16, LoadOam,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
 } from '../harness/runtime/decomp-globals';
@@ -58,6 +58,12 @@ import {
   CreateObjectGraphicsSprite, ObjectEventGfxIdToKey,
 } from './event_object_movement';
 import { StartSpriteAnim } from './sprite';
+// DrawMonTextEntryBox : gStringVar1 buffer + species name → expanded title.
+import { gSpeciesNames } from './engine/data/game-data';
+// Gender symbols (♂/♀) = getString(strings.json), cf. daycare.ts precedent.
+import { getString } from '../harness/runtime/decomp-strings';
+import { encodeOwText } from './text';
+import { StringCopy, StringExpandPlaceholders, gStringVar1 } from './string_util';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //
@@ -98,6 +104,17 @@ const sPageToKeyboardId: readonly number[] = [
   /* KBPAGE_LETTERS_UPPER */ KEYBOARD_LETTERS_UPPER,
   /* KBPAGE_LETTERS_LOWER */ KEYBOARD_LETTERS_LOWER,
 ];
+
+// 1:1 décomp src/naming_screen.c:606-609
+function PageToNextGfxId(page: number): number {
+  return sPageToNextGfxId[page];
+}
+
+// 1:1 décomp src/naming_screen.c:611-614
+function CurrentPageToNextKeyboardId(): number {
+  if (!sNamingScreen) return 0;
+  return sPageToNextKeyboardId[sNamingScreen.currentPage];
+}
 
 // 1:1 décomp KEY_ROLE_* enum (l.107-112)
 const KEY_ROLE_CHAR = 0;
@@ -145,6 +162,11 @@ const NAMING_SCREEN_BOX = 1;
 // const NAMING_SCREEN_CAUGHT_MON = 2;
 // const NAMING_SCREEN_NICKNAME = 3;
 // const NAMING_SCREEN_WALDA = 4;
+
+// 1:1 décomp include/constants/pokemon.h:170-171 + global.h:95
+const MON_FEMALE = 0xFE;
+const MON_GENDERLESS = 0xFF;
+const POKEMON_NAME_LENGTH = 10;
 
 // 1:1 décomp WIN_* enum (l.75-82)
 const WIN_KB_PAGE_1 = 0;
@@ -780,6 +802,7 @@ function CB2_LoadNamingScreen(): void {
 
   switch (rt.gMain.state) {
     case 0:
+      ResetVHBlank();  // 1:1 décomp:424
       NamingScreen_Init();
       rt.gMain.state++;
       break;
@@ -958,22 +981,9 @@ function CB2_NamingScreen(): void {
   // Subsprite OAM sync (= notre extension pour SetSubspriteTables)
   syncSubspriteOam();
   rt.UpdatePaletteFade();
-
-  // 1:1 décomp src/naming_screen.c:2033-2044 VBlankCB_NamingScreen — sync
-  // bg1vOffset/bg2vOffset + bg1Priority/bg2Priority depuis sNamingScreen state
-  // vers les GPU registers chaque frame. Critical pour :
-  //   - Reset BG offsets au démarrage (= sinon BG1 vOFS=64 hOFS=3 lingering
-  //     depuis Birch fade slide → keyboard shifted)
-  //   - Page swap animation : Sin wave anime bg1vOffset/bg2vOffset frame-par-
-  //     frame, BG affiché doit suivre.
-  //   - Page swap priority swap : à mid-anim, BG1<->BG2 priority flip pour
-  //     révéler la nouvelle page (= deck → front).
-  if (sNamingScreen) {
-    rt.SetGpuReg(0x016, sNamingScreen.bg1vOffset & 0x1FF);  // BG1VOFS
-    rt.SetGpuReg(0x01A, sNamingScreen.bg2vOffset & 0x1FF);  // BG2VOFS
-    rt.gba.bg(1).config.priority = (sNamingScreen.bg1Priority & 3) as 0 | 1 | 2 | 3;
-    rt.gba.bg(2).config.priority = (sNamingScreen.bg2Priority & 3) as 0 | 1 | 2 | 3;
-  }
+  // La sync bg1vOffset/bg2vOffset + priority → GPU regs est faite par
+  // VBlankCB_NamingScreen (1:1 décomp:2033-2044), installé via SetVBlank()
+  // au STATE_FADE_IN (comme le décomp), plus ResetVHBlank() au boot CB2_Load.
 }
 
 // ─── Task_NamingScreen 1:1 décomp src/naming_screen.c:544-582 ────────────────
@@ -984,6 +994,7 @@ function Task_NamingScreen(_task: DecompTask): void {
     case STATE_FADE_IN:
       MainState_FadeIn();
       SetSpritesVisible();
+      SetVBlank();  // 1:1 décomp:551
       break;
     case STATE_WAIT_FADE_IN:
       MainState_WaitFadeIn();
@@ -1051,10 +1062,10 @@ function MainState_FadeIn(): void {
   DrawTextEntryBox();
   DrawTextEntry();
   PrintControls();
-  // Keyboard text glyphs : OnFront = WIN_KB_PAGE_1 (= currentPage UPPER) +
-  // OnDeck = WIN_KB_PAGE_2 (= LOWER, ready to swap).
-  PrintKeyboardKeysOnDeck();
-  PrintKeyboardKeysOnFront();
+  // 1:1 décomp:627-628 — WIN_KB_PAGE_2 = LOWER (on-deck), WIN_KB_PAGE_1 = UPPER
+  // (front = currentPage). Ordre décomp : PAGE_2 puis PAGE_1.
+  PrintKeyboardKeys(sNamingScreen.windows[WIN_KB_PAGE_2], KEYBOARD_LETTERS_LOWER);
+  PrintKeyboardKeys(sNamingScreen.windows[WIN_KB_PAGE_1], KEYBOARD_LETTERS_UPPER);
 
   // Begin fade in (= 1:1 décomp BlendPalettes(ALL, 16, 0); BeginNormalPaletteFade(ALL, 0, 16, 0, BLACK)).
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
@@ -1157,16 +1168,11 @@ function MainState_WaitPageSwap(): void {
     // 1:1 décomp src/naming_screen.c:786 MainState_WaitPageSwap :
     //   DrawKeyboardPageOnDeck();
     //
-    // ⚠️ Bug fix : notre version ancien appelait `PrintKeyboardKeysOnFront()`
-    // ICI APRÈS DrawKeyboardPageOnDeck. PrintKeyboardKeysOnFront était
-    // hardcodé sur `WIN_KB_PAGE_1` (= n'inverse pas avec les swaps). Ça
-    // overwrite les glyphs SYMBOLS qui viennent d'être dessinés par
-    // DrawKeyboardPageOnDeck dans WIN_KB_PAGE_1 (quand bg1Priority>bg2Priority,
-    // = le on-deck est BG1) avec les glyphs LOWER → user voit DEUX pages
-    // LOWER au lieu de LOWER+SYMBOLS lors du 2e SELECT swap.
-    // Le décomp ne fait QUE DrawKeyboardPageOnDeck — la "front" reste comme
-    // elle était (= elle a été dessinée par le précédent DrawKeyboardPageOnDeck
-    // quand elle était on-deck).
+    // ⚠️ Le décomp ne fait QUE DrawKeyboardPageOnDeck — il NE redessine PAS la
+    // page "front". Elle reste comme elle était (= dessinée par le précédent
+    // DrawKeyboardPageOnDeck quand elle était on-deck). Redessiner la front ici
+    // (sur un WIN_KB_PAGE_x fixe) overwrite les glyphs SYMBOLS fraîchement posés
+    // → user voit DEUX pages LOWER au 2e SELECT swap. Ne pas réintroduire.
     DrawKeyboardPageOnDeck();
 
     SetInputState(INPUT_STATE_ENABLED);
@@ -1190,8 +1196,8 @@ function DrawKeyboardPageOnDeck(): void {
   }
   DrawBgTilemap(bg, getNextKeyboardTilemap(sNamingScreen.currentPage));
   if (windowId >= 0) {
-    const kbId = sPageToNextKeyboardId[sNamingScreen.currentPage];
-    drawKeyboardWindow(windowId, kbId);
+    // 1:1 décomp:1999 — PrintKeyboardKeys(windowId, CurrentPageToNextKeyboardId())
+    PrintKeyboardKeys(windowId, CurrentPageToNextKeyboardId());
   }
 }
 
@@ -1554,7 +1560,7 @@ function PageSwapSprite_Init(sprite: DecompSprite): boolean {
   const text = rt.gSprites[sprite.data[6]];
   const button = rt.gSprites[sprite.data[7]];
   if (text && button) {
-    SetPageSwapButtonGfx(sPageToNextGfxId[sNamingScreen.currentPage], text, button);
+    SetPageSwapButtonGfx(PageToNextGfxId(sNamingScreen.currentPage), text, button);
   }
   sprite.data[0]++;  // → Idle
   return false;
@@ -1576,7 +1582,7 @@ function PageSwapSprite_SlideOff(sprite: DecompSprite): boolean {
     sprite.data[0]++;  // → SlideOn
     text.y2 = -4;
     text.invisible = true;
-    SetPageSwapButtonGfx(sPageToNextGfxId[(sprite.data[1] + 1) % KBPAGE_COUNT], text, button);
+    SetPageSwapButtonGfx(PageToNextGfxId((sprite.data[1] + 1) % KBPAGE_COUNT), text, button);
   }
   return false;
 }
@@ -2304,14 +2310,94 @@ function SaveInputText(): void {
 
 // ─── Drawing helpers (= window text printer for keyboard chars + entry) ─────
 
-function DrawTextEntryBox(): void {
+// 1:1 décomp src/naming_screen.c:1705-1710 DrawNormalTextEntryBox.
+// Adaptation renderer : coords/couleur = précédent in-file VALIDÉ (x=24, y=0,
+// [WHITE,DARK_GRAY,LIGHT_GRAY], TEXT_SKIP_DRAW, + CopyWindowToVram) plutôt que le
+// décomp pur `AddTextPrinterParameterized(win, FONT_NORMAL, title, 8, 1, 0, 0)`
+// (couleur par défaut de la font). L'écran est validé œil user sur ce rendu.
+function DrawNormalTextEntryBox(): void {
   if (!sNamingScreen) return;
   const winTextBox = sNamingScreen.windows[WIN_TEXT_ENTRY_BOX];
   if (winTextBox < 0) return;
-  FillWindowPixelBuffer(winTextBox, 0x11);
+  FillWindowPixelBuffer(winTextBox, 0x11);  // PIXEL_FILL(1)
   AddTextPrinterParameterized3(winTextBox, 1, 24, 0, [1, 2, 3], 255, sNamingScreen.template.title);
   PutWindowTilemap(winTextBox);
   CopyWindowToVram(winTextBox, 3);
+}
+
+// 1:1 décomp src/naming_screen.c:1717-1726 DrawMonTextEntryBox.
+// « French Difference » : gStringVar1 sert de buffer (species name), le title
+// (potentiellement {STR_VAR_1}) est expansé dedans. Coords/couleur = même
+// précédent in-file que DrawNormalTextEntryBox. INERTE : les templates mon
+// (CAUGHT_MON/NICKNAME) ne sont pas encore câblés (templateNum ∈ {PLAYER,BOX}).
+function DrawMonTextEntryBox(): void {
+  if (!sNamingScreen) return;
+  const winTextBox = sNamingScreen.windows[WIN_TEXT_ENTRY_BOX];
+  if (winTextBox < 0) return;
+  const buffer = new Uint8Array(48);
+  StringCopy(gStringVar1, encodeOwText(gSpeciesNames[sNamingScreen.monSpecies] ?? ''));
+  StringExpandPlaceholders(buffer, sNamingScreen.template.title);
+  FillWindowPixelBuffer(winTextBox, 0x11);  // PIXEL_FILL(1)
+  AddTextPrinterParameterized3(winTextBox, 1, 24, 0, [1, 2, 3], 255, buffer);
+  PutWindowTilemap(winTextBox);
+  CopyWindowToVram(winTextBox, 3);
+}
+
+// 1:1 décomp src/naming_screen.c:1728-1735
+const sDrawTextEntryBoxFuncs: ReadonlyArray<() => void> = [
+  /* NAMING_SCREEN_PLAYER     */ DrawNormalTextEntryBox,
+  /* NAMING_SCREEN_BOX        */ DrawNormalTextEntryBox,
+  /* NAMING_SCREEN_CAUGHT_MON */ DrawMonTextEntryBox,
+  /* NAMING_SCREEN_NICKNAME   */ DrawMonTextEntryBox,
+  /* NAMING_SCREEN_WALDA      */ DrawNormalTextEntryBox,
+];
+
+// 1:1 décomp src/naming_screen.c:1737-1740
+function DrawTextEntryBox(): void {
+  if (!sNamingScreen) return;
+  sDrawTextEntryBoxFuncs[sNamingScreen.templateNum]();
+}
+
+// 1:1 décomp src/naming_screen.c:1761-1765 sGenderColors[2][3].
+// [TEXT_COLOR_TRANSPARENT, LIGHT_x, x] — bg transparent, fg light, shadow.
+const sGenderColors: ReadonlyArray<readonly number[]> = [
+  /* male   */ [0x0, 0x9, 0x8],  // TRANSPARENT, LIGHT_BLUE, BLUE
+  /* female */ [0x0, 0x5, 0x4],  // TRANSPARENT, LIGHT_RED, RED
+];
+
+// 1:1 décomp src/naming_screen.c:1767-1782 DrawGenderIcon.
+// Symbols ♂/♀ = getString(strings.json) (cf. daycare.ts), passés en string au
+// text printer (= précédent clavier sNamingScreenKeyboardText ♂/♀ inline).
+// INERTE tant que addGenderIcon=1 (CAUGHT_MON/NICKNAME) n'est pas câblé.
+function DrawGenderIcon(): void {
+  if (!sNamingScreen) return;
+  const winTextEntry = sNamingScreen.windows[WIN_TEXT_ENTRY];
+  if (winTextEntry < 0) return;
+  let text = getString('gText_MaleSymbol');
+  let isFemale = 0;
+  if (sNamingScreen.monGender !== MON_GENDERLESS) {
+    if (sNamingScreen.monGender === MON_FEMALE) {
+      text = getString('gText_FemaleSymbol');
+      isFemale = 1;
+    }
+    AddTextPrinterParameterized3(winTextEntry, 1, (POKEMON_NAME_LENGTH * 4) + 64, 1, sGenderColors[isFemale], 255, text);
+  }
+}
+
+// 1:1 décomp src/naming_screen.c:1756-1759 (corps vide)
+function DummyGenderIcon(): void {
+}
+
+// 1:1 décomp src/naming_screen.c:1745-1749
+const sDrawGenderIconFuncs: ReadonlyArray<() => void> = [
+  /* [FALSE] */ DummyGenderIcon,
+  /* [TRUE]  */ DrawGenderIcon,
+];
+
+// 1:1 décomp src/naming_screen.c:1751-1754
+function TryDrawGenderIcon(): void {
+  if (!sNamingScreen) return;
+  sDrawGenderIconFuncs[sNamingScreen.template.addGenderIcon]();
 }
 
 function DrawTextEntry(): void {
@@ -2335,8 +2421,13 @@ function DrawTextEntry(): void {
   for (let i = 0; i < maxChars; i++) {
     const c = sNamingScreen.textBuffer[i];
     const ch = (c && c !== ' ') ? c : ' ';
-    AddTextPrinterParameterized3(winText, 1, i * 8 + baseX, 1, [1, 2, 3], 255, ch);
+    // 1:1 décomp:1918 — extraWidth = (IsWideLetter(temp[0]) == TRUE) ? 2 : 0.
+    // IsWideLetter retourne TOUJOURS FALSE → extraWidth toujours 0 (no-op).
+    const extraWidth = IsWideLetter(ch.charCodeAt(0)) === 1 ? 2 : 0;
+    AddTextPrinterParameterized3(winText, 1, i * 8 + baseX + extraWidth, 1, [1, 2, 3], 255, ch);
   }
+  // 1:1 décomp:1923 — TryDrawGenderIcon() avant le flush window.
+  TryDrawGenderIcon();
   PutWindowTilemap(winText);
   CopyWindowToVram(winText, 3);
 }
@@ -2359,24 +2450,6 @@ function PrintControls(): void {
   AddTextPrinterParameterized3(winBanner, 1, 4, 1, [0xF, 0x1, 0x2], 255, '+DEPL.  A OK  B RET.');
   PutWindowTilemap(winBanner);
   CopyWindowToVram(winBanner, 3);
-}
-
-function PrintKeyboardKeysOnFront(): void {
-  if (!sNamingScreen) return;
-  // Front = WIN_KB_PAGE_1 si bg1Priority < bg2Priority, sinon WIN_KB_PAGE_2.
-  // Initialement bg1Priority=1 < bg2Priority=2 → WIN_KB_PAGE_1 front.
-  const win = sNamingScreen.windows[WIN_KB_PAGE_1];
-  if (win < 0) return;
-  const kbId = sPageToKeyboardId[sNamingScreen.currentPage];
-  drawKeyboardWindow(win, kbId);
-}
-
-function PrintKeyboardKeysOnDeck(): void {
-  if (!sNamingScreen) return;
-  const win = sNamingScreen.windows[WIN_KB_PAGE_2];
-  if (win < 0) return;
-  const kbId = sPageToNextKeyboardId[sNamingScreen.currentPage];
-  drawKeyboardWindow(win, kbId);
 }
 
 // 1:1 décomp src/text_input_strings.c:9-21 sNamingScreenKeyboardText[KBPAGE][KBROW].
@@ -2439,8 +2512,9 @@ const sKeyboardTextColors: ReadonlyArray<readonly number[]> = [
   /* KEYBOARD_SYMBOLS       = 2 */ [0xF, 0x1, 0x2],  // DYNAMIC_6, WHITE, DARK_GRAY
 ];
 
-function drawKeyboardWindow(win: number, kbId: number): void {
-  // 1:1 décomp src/naming_screen.c:1956-1966 PrintKeyboardKeys :
+// 1:1 décomp src/naming_screen.c:1956-1966 PrintKeyboardKeys(u8 window, u8 page).
+function PrintKeyboardKeys(win: number, kbId: number): void {
+  // Corps 1:1 :
   //   FillWindowPixelBuffer(window, sFillValues[page]);
   //   for (i = 0; i < KBROW_COUNT; i++)
   //     AddTextPrinterParameterized3(window, FONT_NORMAL, 0, i * 16 + 1,
@@ -2461,6 +2535,52 @@ function drawKeyboardWindow(win: number, kbId: number): void {
   }
   PutWindowTilemap(win);
   CopyWindowToVram(win, 3);
+}
+
+// ─── V/HBlank (1:1 décomp) ───────────────────────────────────────────────────
+
+// 1:1 décomp src/naming_screen.c:2022-2026 ResetVHBlank.
+// SetHBlankCallback(NULL) omis : le naming screen n'installe pas de HBlank cb.
+function ResetVHBlank(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetVBlankCallback(null);
+}
+
+// 1:1 décomp src/naming_screen.c:2028-2031 SetVBlank.
+function SetVBlank(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetVBlankCallback(VBlankCB_NamingScreen);
+}
+
+// 1:1 décomp src/naming_screen.c:2033-2044 VBlankCB_NamingScreen.
+// LoadOam ← décomp. ProcessSpriteCopyRequests/TransferPlttBuffer = internes au
+// runtime (compositeur), cf. précédent egg_hatch.ts:407-411 VBlankCB_EggHatch.
+// BG1/2 VOFS + priority : sync sNamingScreen state → GPU regs chaque VBlank
+// (offsets = anim page swap Sin wave ; priority = swap deck↔front). Idiome
+// gba.bg(n).config.priority = ex-inline CB2_NamingScreen (établi in-file).
+function VBlankCB_NamingScreen(): void {
+  const rt = getRuntime();
+  if (!rt || !sNamingScreen) return;
+  LoadOam();
+  rt.SetGpuReg(0x016, sNamingScreen.bg1vOffset & 0x1FF);  // REG_OFFSET_BG1VOFS
+  rt.SetGpuReg(0x01A, sNamingScreen.bg2vOffset & 0x1FF);  // REG_OFFSET_BG2VOFS
+  rt.gba.bg(1).config.priority = (sNamingScreen.bg1Priority & 3) as 0 | 1 | 2 | 3;
+  rt.gba.bg(2).config.priority = (sNamingScreen.bg2Priority & 3) as 0 | 1 | 2 | 3;
+}
+
+// 1:1 décomp src/naming_screen.c:198 (table lue par IsWideLetter).
+const sText_AlphabetUpperLower = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!';
+
+// 1:1 décomp src/naming_screen.c:2054-2065. Toujours FALSE (présumément pour les
+// langues non-latines) : les DEUX branches retournent FALSE → no-op.
+function IsWideLetter(character: number): number {
+  for (let i = 0; i < sText_AlphabetUpperLower.length; i++) {
+    if (character === sText_AlphabetUpperLower.charCodeAt(i))
+      return 0;  // FALSE
+  }
+  return 0;  // FALSE
 }
 
 function CreateHelperTasks(): void {
