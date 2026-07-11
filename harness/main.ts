@@ -25,7 +25,6 @@ if (!import.meta.env.PROD) {
   };
 }
 
-import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 // Devtools v2 (2026-07-10) : sidebar F2 générée du registre de commandes unique
@@ -204,15 +203,16 @@ export const GAME_H = MAP_H * TILE_SIZE; // 160
 
 const DEFAULT_ZOOM = 4;
 
-// La "ROM" Pokemon Émeraude tourne intégralement dans GameScene
-// (= 1:1 décomp `AgbMain` boot loop). TestGbaScene reste en 1ère position pour
-// tester l'engine GBA + audio sans déclencher la chaîne de scènes.
+// La "ROM" Pokemon Émeraude tourne intégralement dans GameScene (= 1:1 décomp
+// `AgbMain` boot loop), OU dans TestOverworldScene (host unifié, défaut).
+// TestGbaScene (ancien launcher « press A » du lecteur MIDI legacy) a été retiré
+// avec la dissolution du shim son (2026-07-11).
 //
 // Boot flow :
-//   TestGbaScene (1er) → click/key → GameScene
-//   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
-//             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule
-//             (Copyright → Intro → Title → Main Menu native).
+//   TestOverworldScene (défaut, host unifié) → boote intro + OW dans UN runtime.
+//   GameScene (legacy, ?no-un) → init Gba + DecompRuntime + audio →
+//             SetMainCallback2(CB2_InitCopyrightScreenAfterBootup) → tickFixed 60Hz
+//             → chaîne CB2/Task décomp (Copyright → Intro → Title → Main Menu native).
 //   (BirchRuntimeScene + OverworldScene = hosts MORTS dé-enregistrés, cf. chantier « c ».)
 //   DebugOverlayScene : overlay global (fps / frame / tasks / sprites) sur toutes les scènes.
 const config: Phaser.Types.Core.GameConfig = {
@@ -224,32 +224,28 @@ const config: Phaser.Types.Core.GameConfig = {
   pixelArt: true,
   backgroundColor: '#000000',
   // Boot scene order :
-  //   - Default : TestGbaScene en 1ère position (= Lotad sprite spinning au
-  //     centre, palette + audio test). User appuie sur A → GameScene qui run
-  //     l'intro complète via CB2_InitCopyrightScreenAfterBootup :
-  //       Copyright → Anim1 → Anim2 → Anim3 → TitleScreen → MainMenu (New
-  //       Game) → Birch intro (Lotad pokeball + naming).
-  //   - `?nointro` ou `?nointro=1` : skip direct vers TestOverworldScene
-  //     (= dev shortcut pour tester l'overworld sans repasser par l'intro
-  //     à chaque refresh).
+  //   - Default : TestOverworldScene en 1ère position (host unifié — boote l'intro
+  //     complète puis l'OW dans un seul runtime : Copyright → Anim1/2/3 →
+  //     TitleScreen → MainMenu (New Game) → Birch intro (Lotad pokeball + naming)).
+  //   - `?nointro`/`?debug`/… : TestOverworldScene en boot direct OW (introMode=false).
+  //   - `?no-un` : chemin legacy GameScene (intro dans son runtime) puis OW.
   // Les autres scènes restent dispo via game.scene.start() dans la chain.
   scene: (() => {
-    if (typeof window === 'undefined') return [TestOverworldScene, TestGbaScene, GameScene];
+    if (typeof window === 'undefined') return [TestOverworldScene, GameScene];
     const params = new URLSearchParams(window.location.search);
-    // ?no-un → chemin LEGACY 3 scènes, ARCHIVÉ mais dispo (décision user 2026-07-10) :
-    // TestGbaScene (press A = audio unlock) → GameScene (chaîne intro dans SON runtime)
-    // → scene.start(TestOverworldScene) pour l'OW. Chaque scène recrée un runtime →
-    // RNG/seed/état de boot PERDUS aux transitions — c'est pour ça que le défaut est
-    // désormais le host unifié ci-dessous.
-    if (params.has('no-un')) return [TestGbaScene, GameScene, TestOverworldScene];
+    // ?no-un → chemin LEGACY 2 scènes, ARCHIVÉ mais dispo (décision user 2026-07-10) :
+    // GameScene (chaîne intro dans SON runtime) → scene.start(TestOverworldScene) pour
+    // l'OW. Chaque scène recrée un runtime → RNG/seed/état de boot PERDUS aux
+    // transitions — c'est pour ça que le défaut est désormais le host unifié ci-dessous.
+    if (params.has('no-un')) return [GameScene, TestOverworldScene];
     // DÉFAUT = HOST UNIFIÉ (ex-?unified du chantier « c », basculé par défaut —
     // user 2026-07-10) : TestOverworldScene boote TOUT dans UN SEUL runtime
     // 1:1 AgbMain (Copyright → intro → Title → MainMenu → Birch → OW via
     // SetMainCallback2, ZÉRO scene.start ; RNG/seed/état boot continus).
     // Les presets dev (?nointro/?debug/?clock/?truck) prennent la même scène en
     // boot direct OW (introMode=false — cf. TestOverworldScene.create).
-    // TestGbaScene/GameScene restent ENREGISTRÉES (dispo via ESC / ?no-un).
-    return [TestOverworldScene, TestGbaScene, GameScene];
+    // GameScene reste ENREGISTRÉE (dispo via ESC / ?no-un).
+    return [TestOverworldScene, GameScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to

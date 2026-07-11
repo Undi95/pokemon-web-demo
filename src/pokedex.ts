@@ -62,6 +62,8 @@ import {
   IsCryPlaying, FreeCryScreen, setDexCryScreenState,
 } from './pokedex_cry_screen';
 import { m4aMPlayStop, m4aMPlayContinue, gMPlayInfo_BGM } from './m4a';
+import { PlayCry_Normal, PlayCry_NormalNoDucking } from './sound';
+import { CRY_VOLUME_RS, CRY_PRIORITY_NORMAL } from '../include/constants/sound';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 // (GetSetPokedexFlag / Get*PokedexCount / GetPokedexHeightWeight : définis en
 //  fin de fichier — rapatriés de l'ex-pokedex-flags.ts, leur .c = pokedex.c.)
@@ -1832,9 +1834,9 @@ function Task_LoadInfoScreen(task: DecompTask): void {
       if (!rt.gPaletteFade.active) {
         rt.gMain.state++;
         if (!task.data[3]) {
-          // 1:1 StopCryAndClearCrySongs + PlayCry_NormalNoDucking(species). Cri = WAV pré-extrait.
-          const sp = reverseDecompConstant(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), 'SPECIES_') ?? 'SPECIES_NONE';
-          void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
+          // 1:1 pokedex.c:3337-3338 : StopCryAndClearCrySongs (dette) +
+          // PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL).
+          PlayCry_NormalNoDucking(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
         } else {
           rt.gMain.state++;
         }
@@ -3854,9 +3856,8 @@ function Task_DisplayCaughtMonDexPage(task: DecompTask): void {
       break;
     case 6:
       if (!rt.gPaletteFade.active) {
-        // 1:1 PlayCry_Normal(NationalPokedexNumToSpecies(dexNum), 0) — WAV pré-extrait.
-        const sp = reverseDecompConstant(NationalPokedexNumToSpecies(dexNum), 'SPECIES_') ?? 'SPECIES_NONE';
-        void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cri absent */ });
+        // 1:1 pokedex.c:4039 : PlayCry_Normal(NationalPokedexNumToSpecies(dexNum), 0).
+        PlayCry_Normal(NationalPokedexNumToSpecies(dexNum), 0);
         task.data[2] = 0;
         task.func = Task_HandleCaughtMonPageInput;
       }

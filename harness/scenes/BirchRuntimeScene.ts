@@ -110,10 +110,10 @@ export class BirchRuntimeScene extends Phaser.Scene {
       frameImg.setPosition((GAME_W - 240) / 2, (GAME_H - 160) / 2);
     }
 
-    // Skip vers TestGba (= debug) si ESC.
+    // Skip vers GameScene (= debug reboot ROM) si ESC.
     this.input.keyboard?.on('keydown-ESC', () => {
-      console.log('[BirchRuntime] ESC → TestGbaScene');
-      this.scene.start('TestGbaScene');
+      console.log('[BirchRuntime] ESC → GameScene');
+      this.scene.start('GameScene');
     });
 
     // Real keyboard → rt.gMain.heldKeys via handler global partagé.

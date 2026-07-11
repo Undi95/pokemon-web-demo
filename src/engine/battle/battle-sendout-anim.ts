@@ -39,6 +39,9 @@ import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../../../harness/runtime/decom
 import { loadTileBin, loadGbaPal } from '../../../harness/gba/png-loader';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../../sprite';
 import { setActiveBattler } from './state';
+import { PlayCry_ByMode } from '../../sound';
+import { CRY_MODE_NORMAL } from '../../../include/constants/sound';
+import { resolveDecompConstant } from '../../../harness/runtime/decomp-constants';
 import { DoPokeballSendOutAnimation } from '../../pokeball';
 import { POKEBALL_PLAYER_SENDOUT } from '../../../include/pokeball';
 // Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance
@@ -364,10 +367,14 @@ export function tickSendOut(): void {
       BeginAffineAnim(mon, rt);   // applique frame 0 immédiatement (évite 1-frame 0×0)
       mon.data[1] = 0x1000;
       mon.y2 = mon.data[1] >> 8;   // 1:1 : le mon démarre +16px plus bas (au sol) → émerge du BAS
-      // Cri du mon (1:1 Task_PlayCryWhenReleasedFromBall) — via le playCry prouvé
-      // (INTRO_TEXT l'utilise). SE_BALL_OPEN/THROW différés (audio fragile, consigne user).
-      const sp = _so.species;
-      void import('../../../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => {});
+      // Cri du mon — 1:1 pokeball.c:683-686 PlayCry_ByMode(species, pan, mode).
+      // pan = GetBattlerSide (joueur -25 / adverse +25). ⚠️ DETTE : ce state ad-hoc
+      // ne porte PAS le Pokemon party → mode NORMAL fixe (la branche WEAK
+      // ShouldPlayNormalMonCry(mon) sur les HP exigerait de plomber un ref mon
+      // via startSendOut/opts — chantier séparé).
+      const crySpecies = resolveDecompConstant(_so.species) ?? 0;
+      const cryPan = _so.side === 'player' ? -25 : 25;
+      if (crySpecies) PlayCry_ByMode(crySpecies, cryPan, CRY_MODE_NORMAL);
       // La ball disparaît (1:1 HandleBallAnimEnd → ball invisible une fois ouverte).
       if (ball) ball.invisible = true;
       _so.phase = 3; _so.frame = 0;

@@ -58,7 +58,7 @@ import { loadIndexedPngStrict, extractPngPlte, loadTileBin, loadGbaPal } from '.
 import { GetBattlerSpriteCoord, GetBattlerElevation } from './battle_anim_mons';
 import { GET_BATTLER_SIDE, B_SIDE_PLAYER } from './engine/battle/constants';
 import { GetBattlerPosition } from './engine/battle/util';
-import { GetMonData, MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
+import { GetMonData, MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
 import {
   isBehindSubstitute, setBehindSubstitute, ClearSpritesHealthboxAnimData,
   isBattlerDataInvisible, setBattlerDataInvisible,
@@ -401,6 +401,23 @@ export function GetMonHPBarLevel(mon: unknown): number {
   return GetHPBarLevel(hp, maxHP);
 }
 
+/** 1:1 décomp `bool32 ShouldPlayNormalMonCry(struct Pokemon *mon)`
+ *  (battle_gfx_sfx_util.c:1332-1348) : cri NORMAL, sauf statut majeur / toxic
+ *  counter, ou barre HP <= jaune → cri WEAK (FALSE). */
+export function ShouldPlayNormalMonCry(mon: unknown): boolean {
+  if ((GetMonData(mon as never, MON_DATA_STATUS) as number) & (STATUS1_ANY | STATUS1_TOXIC_COUNTER))
+    return false;
+
+  const hp = GetMonData(mon as never, MON_DATA_HP) as number;
+  const maxHP = GetMonData(mon as never, MON_DATA_MAX_HP) as number;
+
+  const barLevel = GetHPBarLevel(hp, maxHP);
+  if (barLevel <= HP_BAR_YELLOW)
+    return false;
+
+  return true;
+}
+
 /** 1:1 décomp `void TrySetBehindSubstituteSpriteBit(u8 battler, u16 move)` (:1083) :
  *  if (move == MOVE_SUBSTITUTE) behindSubstitute = TRUE. (MOVE_SUBSTITUTE = 164.) */
 export function TrySetBehindSubstituteSpriteBit(battler: number, move: number): void {
@@ -639,6 +656,7 @@ import {
   BattleLoadAllHealthBoxesGfx as _BLAHBG,
   gHealthboxSpriteIds as _gHbIds,
   GetHPBarLevel,
+  HP_BAR_YELLOW,
 } from './battle_interface';
 import { gPlayerParty as _gPP, gEnemyParty as _gEP } from './engine/battle/party-storage';
 import { gBattlerPartyIndexes as _gBPI } from './engine/battle/state';
@@ -764,6 +782,7 @@ import {
   STATUS1_BURN as _S1_BRN, STATUS1_SLEEP as _S1_SLP, STATUS1_PARALYSIS as _S1_PRZ,
   STATUS2_INFATUATION as _S2_INF, STATUS2_CONFUSION as _S2_CNF, STATUS2_CURSED as _S2_CRS,
   STATUS2_NIGHTMARE as _S2_NGT, STATUS2_WRAPPED as _S2_WRP,
+  STATUS1_ANY, STATUS1_TOXIC_COUNTER,
 } from './engine/battle/constants';
 
 // 1:1 battle_anim.h:391-400.

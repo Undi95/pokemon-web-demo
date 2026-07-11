@@ -37,6 +37,9 @@ import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
 import { gBattlerPartyIndexes, gActiveBattler, gBattlerTarget, gBattleTypeFlags, setBattlerTarget, setGDoingBattleAnim } from './engine/battle/state';
 import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BATTLE_TYPE_DOUBLE } from './engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { PlayCry_ByMode, PlayCry_ReleaseDouble } from './sound';
+import { CRY_MODE_NORMAL, CRY_MODE_WEAK, CRY_MODE_DOUBLES, CRY_MODE_WEAK_DOUBLES } from '../include/constants/sound';
+import { ShouldPlayNormalMonCry } from './battle_gfx_sfx_util';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from './sprite';
 import { ST_OAM_AFFINE_DOUBLE } from '../include/sprite';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache, PlaySE, PlayCryInternal, LoadSpritePalette, LoadCompressedSpriteSheet } from '../harness/runtime/decomp-globals';
@@ -554,11 +557,12 @@ function HandleBallAnimEnd(sprite: DecompSprite, rt: DecompRuntime): void {
  *  le seul effet retenu = lever waitForCry + DestroyTask au bon moment (anti-blocage). */
 function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): void {
   const taskId = task.taskId;
+  const species = task.data[0];     // tCryTaskSpecies
+  const pan = task.data[1];         // tCryTaskPan
   const wantedCry = task.data[2];   // tCryTaskWantedCry
   const battler = task.data[3];     // tCryTaskBattler
   const monSpriteId = task.data[4]; // tCryTaskMonSpriteId
-  // mon (ref via Map) — utilise par ShouldPlayNormalMonCry (cri differe) :
-  // const mon = _cryTaskMon.get(taskId);
+  const mon = _cryTaskMon.get(taskId); // tCryTaskMonPtr1/2 (ref via Map annexe)
 
   switch (task.data[15]) {          // tCryTaskState
     case 0:
@@ -569,11 +573,12 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
       break;
     }
     case 1: {
-      // 1:1 PlayCry_ByMode(species, pan, NORMAL/WEAK). On garde le CRI du mon via playCry (mecanisme
-      // prouve = ce que l'ad-hoc jouait) pour ne pas regresser en silence ; SE/BGM restent differes.
+      // 1:1 pokeball.c:683-686 : PlayCry_ByMode(species, pan, NORMAL/WEAK).
       // Timing 1:1 : apres affineAnimEnded (case 0 -> state 1 = fin de l'emergence).
-      const nm = reverseDecompConstant(task.data[0] /* tCryTaskSpecies */, 'SPECIES_');
-      if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => {});
+      if (ShouldPlayNormalMonCry(mon) === true)
+        PlayCry_ByMode(species, pan, CRY_MODE_NORMAL);
+      else
+        PlayCry_ByMode(species, pan, CRY_MODE_WEAK);
       setWaitForCry(battler, false);
       _cryTaskMon.delete(taskId);
       rt.DestroyTask(taskId);
@@ -586,7 +591,11 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
       break;
     case 20:
       if (task.data[10] === 0) {
-        // 1:1 PlayCry_ReleaseDouble(species, pan, DOUBLES/WEAK_DOUBLES) — DIFFERE.
+        // 1:1 pokeball.c:698-702 : PlayCry_ReleaseDouble(species, pan, DOUBLES/WEAK_DOUBLES).
+        if (ShouldPlayNormalMonCry(mon) === true)
+          PlayCry_ReleaseDouble(species, pan, CRY_MODE_DOUBLES);
+        else
+          PlayCry_ReleaseDouble(species, pan, CRY_MODE_WEAK_DOUBLES);
         setWaitForCry(battler, false);
         _cryTaskMon.delete(taskId);
         rt.DestroyTask(taskId);
@@ -614,7 +623,11 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
       break;
     case 32:
       if (task.data[10] !== 0) { task.data[10]--; break; }
-      // 1:1 PlayCry_ReleaseDouble(species, pan, NORMAL/WEAK) — DIFFERE.
+      // 1:1 pokeball.c:738-742 : PlayCry_ReleaseDouble(species, pan, NORMAL/WEAK).
+      if (ShouldPlayNormalMonCry(mon) === true)
+        PlayCry_ReleaseDouble(species, pan, CRY_MODE_NORMAL);
+      else
+        PlayCry_ReleaseDouble(species, pan, CRY_MODE_WEAK);
       setWaitForCry(battler, false);
       _cryTaskMon.delete(taskId);
       rt.DestroyTask(taskId);

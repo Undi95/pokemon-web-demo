@@ -29,6 +29,8 @@
 
 import { CreateSprite } from './sprite';
 import { DestroySprite, AllocOamMatrix } from './sprite';
+import { PlayCry_ByMode } from './sound';
+import { CRY_MODE_FAINT } from '../include/constants/sound';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -1565,14 +1567,13 @@ function OpponentHandlePlaySE(): void {
 
 /** Décomp = PlayBGM/fanfare (m4a) — infra BGM/SE = NE PAS TOUCHER (règle) ; dette doc. */
 function OpponentHandlePlayFanfareOrBGM(): void { OpponentBufferExecCompleted(); }
-/** 1:1 décomp `OpponentHandleFaintingCry()` : PlayCry_ByMode(species, 25, CRY_MODE_FAINT).
- *  Cri via le mécanisme prouvé `playCry` (= pokeball.ts:551) ; pan +25 (côté adverse)
- *  et le pitch-down FAINT = dette du mécanisme cri (même dette que le send-out). */
+/** 1:1 décomp `OpponentHandleFaintingCry()` (battle_controller_opponent.c:1852-1858) :
+ *  PlayCry_ByMode(species, 25, CRY_MODE_FAINT). Le `if (species)` protège le
+ *  moteur natif (PlayCryInternal fait `species--` → -1 sur species 0). */
 function OpponentHandleFaintingCry(): void {
   const mon = gEnemyParty[gBattlerPartyIndexes[gActiveBattler] ?? 0];
   const species = mon ? (GetMonData(mon as never, MON_DATA_SPECIES) as number) : 0;
-  const nm = species ? reverseDecompConstant(species, 'SPECIES_') : null;
-  if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => {});
+  if (species) PlayCry_ByMode(species, 25, CRY_MODE_FAINT);
   OpponentBufferExecCompleted();
 }
 /** 1:1 décomp `OpponentHandleIntroSlide()` : HandleIntroSlide(bufferA[1]) +

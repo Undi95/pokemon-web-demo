@@ -37,6 +37,8 @@ import './battle_message';
 // (que _gHealthboxSpriteId / _UpdateHealthboxAttribute lisent) + branche le hook MoveBattleBarGraphically.
 import './battle_interface'; // side-effect miroir (ex-shim battle-healthbox-l)
 import { DestroySprite } from './sprite';
+import { PlayCry_ByMode } from './sound';
+import { CRY_MODE_FAINT } from '../include/constants/sound';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -2350,14 +2352,13 @@ function PlayerHandlePlayFanfareOrBGM(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleFaintingCry()` : PlayCry_ByMode(species, -25, CRY_MODE_FAINT).
- *  Cri via le mécanisme prouvé `playCry` (= pokeball.ts:551) ; pan -25 (côté joueur)
- *  et le pitch-down FAINT = dette du mécanisme cri (même dette que le send-out). */
+/** 1:1 décomp `PlayerHandleFaintingCry()` (battle_controller_player.c:2925-2931) :
+ *  PlayCry_ByMode(species, -25, CRY_MODE_FAINT). Le `if (species)` protège le
+ *  moteur natif (PlayCryInternal fait `species--` → -1 sur species 0). */
 function PlayerHandleFaintingCry(): void {
   const mon = gPlayerParty[gBattlerPartyIndexes[gActiveBattler] ?? 0];
   const species = mon ? (GetMonData(mon as never, MON_DATA_SPECIES) as number) : 0;
-  const nm = species ? reverseDecompConstant(species, 'SPECIES_') : null;
-  if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => {});
+  if (species) PlayCry_ByMode(species, -25, CRY_MODE_FAINT);
   PlayerBufferExecCompleted();
 }
 

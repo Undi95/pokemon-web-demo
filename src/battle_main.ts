@@ -43,6 +43,9 @@
  */
 
 import './pokemon_animation';
+import { m4aMPlayStop, m4aSongNumStop, gMPlayInfo_SE1, gMPlayInfo_SE2 } from './m4a';
+import { PlayCry_Normal } from './sound';
+import { SE_LOW_HEALTH } from '../include/constants/songs';
 import {
   ResetPaletteFade as ResetPaletteFade_rt,
   getRuntime, BlendPalettes, PALETTES_ALL, setReservedSpritePaletteCount,
@@ -591,25 +594,6 @@ function _ResetPaletteFadeControl(): void {
   // Dette R3 : palette fade reset.
 }
 
-/** 1:1 décomp `m4aMPlayStop(playerInfo)`. Wire vers m4a/player stopSong. */
-function _m4aMPlayStop(playerInfo: unknown): void {
-  // 1:1 décomp : stop le music player (= BGM ou SE1/SE2 selon ptr passé).
-  void playerInfo;
-  void import('../harness/m4a/player').then(({ stopSong }) => {
-    stopSong('se1' as never);
-    stopSong('se2' as never);
-  });
-}
-
-/** 1:1 décomp `m4aSongNumStop(songId)`. Wire vers m4a/player stopSong. */
-function _m4aSongNumStop(_songId: number): void {
-  // 1:1 décomp : stop song par songId. SE_LOW_HEALTH = 287.
-  void import('../harness/m4a/player').then(({ stopSong }) => {
-    stopSong('se1' as never);
-    stopSong('se2' as never);
-  });
-}
-
 /** 1:1 décomp `FreeMonSpritesGfx()`. */
 function _FreeMonSpritesGfx(): void {
   // Dette R3 : noop pour notre runtime web.
@@ -704,7 +688,7 @@ export function FreeRestoreBattleData(): void {
   getRuntime().gMain.inBattle = false;   // symetrie 1:1 (battle_main.c:1885) — sinon true au 2e combat.
 
   _ZeroEnemyPartyMons();
-  _m4aSongNumStop(287 /* SE_LOW_HEALTH */);
+  m4aSongNumStop(SE_LOW_HEALTH);
   _FreeMonSpritesGfx();
   _FreeBattleSpritesData();
   _FreeBattleResources();
@@ -718,8 +702,8 @@ export function CB2_QuitRecordedBattle(): void {
   _UpdatePaletteFade();
   const rt = getRuntime();
   if (!rt?.gPaletteFade?.active) {
-    _m4aMPlayStop(null /* gMPlayInfo_SE1 */);
-    _m4aMPlayStop(null /* gMPlayInfo_SE2 */);
+    m4aMPlayStop(gMPlayInfo_SE1);
+    m4aMPlayStop(gMPlayInfo_SE2);
     FreeRestoreBattleData();
     _FreeAllWindowBuffers();
 
@@ -3396,7 +3380,7 @@ function _StartSpriteAnimIfDifferent(sprite: BattleSprite, animNum: number): voi
  *  bounce/shake par species — cf. pokemon-anims.json déjà extrait) = chantier dédié. */
 let _shinyTriedThisBattle = false;
 export function resetShinyTried(): void { _shinyTriedThisBattle = false; }
-function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry: boolean, _panMode: number): void {
+function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry: boolean, panMode: number): void {
   const rt = getRuntime();
   if (!rt) return;
   // 1:1-net (goal T5, timing user « les etoiles arrivent DES l'apparition ») :
@@ -3416,11 +3400,15 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
       shiny.TryShinyAnimation(1, mon);
     }
   }
-  // 1:1 :6796-6800 : PlayCry_Normal(species, pan) — le cri du mon à l'apparition.
-  if (!noCry && species) {
-    const nm = reverseDecompConstant(species, 'SPECIES_');
-    if (nm) void import('../harness/m4a/music').then(({ playCry }) => playCry(nm)).catch(() => { /* asset */ });
+  // 1:1 pokemon.c:6783-6795 (DoMonFrontSpriteAnimation) : pan selon panMode
+  // (0 = joueur -25, 1 = adverse +25, autre = 0) puis PlayCry_Normal(species, pan).
+  let pan: number;
+  switch (panMode & ~0x80 /* ~SKIP_FRONT_ANIM : masque le bit d'anim */) {
+    case 0: pan = -25; break;
+    case 1: pan = 25; break;
+    default: pan = 0; break;
   }
+  if (!noCry && species) PlayCry_Normal(species, pan);
   // 1:1 :6798-6799 : HasTwoFramesAnimation → StartSpriteAnim(sprite, 1).
   const s = sprite as unknown as { spriteId?: number; tileBase?: number; monFrontAnimTable?: string; callback: unknown };
   if (!noCry && _HasTwoFramesAnimation(species) && s.monFrontAnimTable && s.spriteId !== undefined) {
@@ -3435,7 +3423,7 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
   // du mon adverse en combat DRESSEUR (noCry=true car le cri vient de la cry-task
   // de la ball) : bug user 2026-06-12. Seul SKIP_FRONT_ANIM (0x80, posé par
   // BattleAnimateFrontSprite :6773 quand HITMARKER_NO_ANIMATIONS) la saute.
-  const skipFrontAnim = (_panMode & 0x80) !== 0
+  const skipFrontAnim = (panMode & 0x80) !== 0
     || ((gHitMarker & HITMARKER_NO_ANIMATIONS) !== 0
         && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)));
   if (!skipFrontAnim && species) {
@@ -4136,22 +4124,11 @@ function FadeOutMapMusic(speed: number): void {
   _FadeOutBGM_rt(speed);
 }
 
-/** 1:1 décomp `m4aSongNumStop(songId)` (m4a.c). Stop le SE/BGM specified.
- *  Wire vers m4a/player stopSong selon mapping songId → slot. */
-function m4aSongNumStop(songId: number): void {
-  // 1:1 décomp : songId 287 = SE_LOW_HEALTH (= loop SE). Stop SE1/SE2.
-  // Pour BGM (songId variant), stop 'bgm' slot.
-  void songId;
-  void import('../harness/m4a/player').then(({ stopSong }) => {
-    stopSong('se1' as never);
-    stopSong('se2' as never);
-  });
-}
-
-/** 1:1 décomp `BattleStopLowHpSound()` (battle_main.c). Stop le low-HP
- *  SE_LOW_HEALTH qui boucle quand un mon en bas HP. */
+/** 1:1 décomp `BattleStopLowHpSound()` (battle_gfx_sfx_util.c:1124-1133) : arrête
+ *  le SE_LOW_HEALTH bouclé via le vrai `m4aSongNumStop` (src/m4a). Dette : les
+ *  flags `lowHpSong` par battler ne sont pas portés ici (le SE natif est coupé). */
 function BattleStopLowHpSound(): void {
-  m4aSongNumStop(287 /* SE_LOW_HEALTH */);
+  m4aSongNumStop(SE_LOW_HEALTH);
 }
 
 /** 1:1 décomp `UpdateRoamerHPStatus(mon)` (roamer.c). */
@@ -5704,7 +5681,7 @@ export function ReturnFromBattleToOverworld(): void {
     }
   }
 
-  m4aSongNumStop(287 /* SE_LOW_HEALTH */);
+  m4aSongNumStop(SE_LOW_HEALTH);
   SetMainCallback2(_gMain_savedCallback);
 }
 

@@ -57,6 +57,7 @@ import { GetOverworldTextboxPalettePtr } from './text_window';
 // engine/pokemon/pokemon:CreateMon(speciesEnum, opts). createEmptyPokemon = la struct cible.
 import { CreateMon, createEmptyPokemon } from './pokemon';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { PlayCry_Normal } from './sound';
 import { OT_ID_PLAYER_ID } from '../include/constants/pokemon';
 import { GiveMonToPlayer } from './engine/battle/party-storage';
 import { VarSet } from './engine/script/script-vars';
@@ -659,16 +660,11 @@ function Task_WaitForStarterSprite(taskId: number): void {
 // ─── Task_AskConfirmStarter (= 1:1 décomp C:528-536) ────────────────────
 function Task_AskConfirmStarter(taskId: number): void {
   const task = getTask(taskId);
-  // PlayCry_Normal(GetStarterPokemon(...), 0); — 1:1 décomp cry pokemon sélectionné.
-  // playCry attend le species name lowercase sans préfixe SPECIES_ (= cries/torchic.wav).
-  void (async () => {
-    try {
-      const { playCry } = await import('../harness/m4a/music');
-      const speciesEnum = GetStarterPokemon(task.data[T_STARTER_SELECTION]);
-      const speciesName = speciesEnum.replace(/^SPECIES_/, '');
-      playCry(speciesName);
-    } catch (e) { void e; }
-  })();
+  // 1:1 décomp starter_choose.c:530 : PlayCry_Normal(GetStarterPokemon(tStarterSelection), 0).
+  // GetStarterPokemon rend le NOM d'espèce (sStarterMon = string[]) → resolveDecompConstant
+  // pour obtenir le species NUMBER attendu par le moteur natif.
+  const starterSpecies = resolveDecompConstant(GetStarterPokemon(task.data[T_STARTER_SELECTION])) ?? 0;
+  if (starterSpecies) PlayCry_Normal(starterSpecies, 0);
   // FillWindowPixelBuffer(0, PIXEL_FILL(1));
   FillWindowPixelBuffer(sStarterChooseWindowId, 0x11);
   // AddTextPrinterParameterized(0, FONT_NORMAL, gText_ConfirmStarterChoice, 0, 1, 0, NULL);

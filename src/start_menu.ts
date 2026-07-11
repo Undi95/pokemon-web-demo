@@ -1011,7 +1011,7 @@ function _tickSaveDone(newKeys: number): void {
   //      frames d'attente si SE_SAVE prend plus de 60 frames à finir → fenêtre
   //      "prend bien trop de temps à disparaître". Décomp 1:1 a la même quirk
   //      mais c'est rarement triggered car SE_SAVE GBA est court (~30 frames).
-  //      Notre SE_SAVE.mid via spessasynth peut être plus long → wrap visible.
+  //      Notre SE_SAVE natif peut différer légèrement en durée → wrap théoriquement visible.
   //   2. Retire le JOY_HELD(A) PlaySE(SE_SELECT) + skip. User-flag :
   //      "les contrôles doivent être bloqués pendant la pause exprès".
   //      La pause anti-corruption doit être SILENCIEUSE et non-skippable.

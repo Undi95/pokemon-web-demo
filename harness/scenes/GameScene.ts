@@ -238,10 +238,10 @@ export class GameScene extends Phaser.Scene {
     //   }
     // });
 
-    // Skip via input
+    // Skip via input (reboot ROM = restart GameScene)
     this.input.keyboard?.on('keydown-ESC', () => {
-      console.log('[GameScene] ESC → TestGbaScene');
-      this.scene.start('TestGbaScene');
+      console.log('[GameScene] ESC → GameScene (reboot)');
+      this.scene.start('GameScene');
     });
     this.input.on('pointerdown', () => {
       console.log('[GameScene] click | tasks:', this.rt.GetTaskCount(),

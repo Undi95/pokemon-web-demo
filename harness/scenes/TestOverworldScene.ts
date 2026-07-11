@@ -18,6 +18,7 @@ import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, FreeAllSpritePalettes } from '../runtime/decomp-globals';
+import { startM4aNativeAudio } from '../m4a/native';
 import { ResetSpriteData } from '../../src/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../../src/overworld';
 // Boot intro réutilisable (host unifié intro+OW — LE boot par défaut depuis 2026-07-10).
@@ -390,8 +391,8 @@ export class TestOverworldScene extends Phaser.Scene {
 
     // Skip → TestGba si ESC.
     this.input.keyboard?.on('keydown-ESC', () => {
-      console.log('[TestOverworld] ESC → TestGbaScene');
-      this.scene.start('TestGbaScene');
+      console.log('[TestOverworld] ESC → GameScene');
+      this.scene.start('GameScene');
     });
 
     // HOST UNIFIÉ PAR DÉFAUT (user 2026-07-10, ex-chantier « c » gated ?unified) :
@@ -410,7 +411,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // amont pour primer l'audio au geste — one-shot sur le premier input, même
       // primer (primeAudio → getAudioContext().resume()).
       const unlockAudio = (): void => {
-        import('../m4a/music').then((m) => m.primeAudio()).catch((e) => console.error('[audio-unlock]', e));
+        startM4aNativeAudio().catch((e) => console.error('[m4a-native]', e));
       };
       this.input.keyboard?.once('keydown', unlockAudio);
       this.input.once('pointerdown', unlockAudio);

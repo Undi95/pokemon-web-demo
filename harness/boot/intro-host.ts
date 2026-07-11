@@ -105,15 +105,9 @@ export async function bootIntroSequence(rt: DecompRuntime): Promise<void> {
   const { loadSpeciesNamesAsync } = await import('../runtime/decomp-globals');
   await loadSpeciesNamesAsync();
 
-  // Préchargement MIDIs intro/title + cris légendaires (élimine le gap silence aux
-  // transitions m4aSongNumStart). 1:1 ROM-équivalent : tous les sons « déjà là ».
-  const { loadMidi } = await import('../m4a/player');
-  void Promise.all([
-    loadMidi('/decomp/em/music/mus_intro.mid').catch(() => {}),
-    loadMidi('/decomp/em/music/mus_intro_battle.mid').catch(() => {}),
-    loadMidi('/decomp/em/music/mus_title.mid').catch(() => {}),
-    loadMidi('/decomp/em/music/se_intro_blast.mid').catch(() => {}),
-  ]);
+  // Préchargement des cris légendaires (warm cache HTTP avant l'intro). Les BGM/SE
+  // n'ont plus de préchargement : le moteur m4a NATIF charge le blob ROM
+  // (sound-data.bin) à l'init — plus de .mid à précharger.
   void Promise.all([
     fetch('/decomp/em/cries/groudon.wav').catch(() => {}),
     fetch('/decomp/em/cries/kyogre.wav').catch(() => {}),

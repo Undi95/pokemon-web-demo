@@ -60,6 +60,9 @@ import { getString } from '../harness/runtime/decomp-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../harness/gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from './engine/battle/party-storage';
+import { PlayCry_ByMode } from './sound';
+import { CRY_MODE_NORMAL, CRY_MODE_WEAK } from '../include/constants/sound';
+import { ShouldPlayNormalMonCry } from './battle_gfx_sfx_util';
 import { IsShinyOtIdPersonality, GetGenderFromSpeciesAndPersonality } from './pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
 
@@ -2140,8 +2143,11 @@ function _playMonCryOnce(): void {
   // 1:1 décomp `PlayMonCry` (pokemon_summary_screen.c:3963) : `if (!summary
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
-    const sp = (reverseDecompConstant(sMon.currentMon.species, 'SPECIES_') ?? 'SPECIES_NONE').replace('SPECIES_', '');
-    void import('../harness/m4a/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+    // 1:1 pokemon_summary_screen.c:3968-3971 : PlayCry_ByMode(species2, 0, NORMAL/WEAK).
+    if (ShouldPlayNormalMonCry(sMon.currentMon) === true)
+      PlayCry_ByMode(sMon.summary.species2, 0, CRY_MODE_NORMAL);
+    else
+      PlayCry_ByMode(sMon.summary.species2, 0, CRY_MODE_WEAK);
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).

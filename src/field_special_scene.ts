@@ -59,7 +59,6 @@
  */
 import type { DecompRuntime, DecompTask } from '../harness/runtime/decomp-runtime';
 import { PlaySE, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
-import { stopPrerenderedSE, preloadPrerenderedSEs } from '../harness/m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
@@ -316,17 +315,11 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
     if (_truckGlobal.taskId >= 0) {
       try { rt.DestroyTask(_truckGlobal.taskId); } catch { /* ignore */ }
     }
-    stopPrerenderedSE('se1');
-    stopPrerenderedSE('se2');
     _truckGlobal.active = false;
     _truckGlobal.taskId = -1;
   }
   _truckGlobal.active = true;
   _rtRef = rt;
-
-  // Session 124 Bug 2 : pre-load tous les SE truck pour qu'ils soient cachés
-  // en mémoire AVANT que les state transitions les jouent.
-  void preloadPrerenderedSEs(['se_truck_move', 'se_truck_stop', 'se_truck_unload', 'se_truck_door']);
 
   // 1:1 décomp lines 262-264 : 3 metatile changes pour mettre la door en
   // "closed floor" (= cinematic démarre avec porte fermée).

@@ -42,7 +42,7 @@ import {
 import { gSineTable as G_SINE_TABLE } from '../../src/trig';
 import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
 // Moteur m4a NATIF (1:1 certifié sample-exact) — SEUL chemin son depuis la
-// dissolution du shim spessasynth (2026-07-11 : plus de dispatch M4A_NATIVE).
+// dissolution du shim son legacy (2026-07-11 : plus de dispatch M4A_NATIVE).
 import { initM4aNative, startM4aNativeAudio } from '../m4a/native';
 import {
   m4aSongNumStart as _m4aSongNumStartNative,
@@ -788,8 +788,8 @@ export function CycleSceneryPalette(mode: number): void {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUDIO M4A WIRING (Phase 1 Action 4 #1)
-// 1:1 décomp `m4aSongNumStart(MUS_X)` → playMidiLoop('/decomp/em/music/mus_x.mid')
-// Mapping song ID → URL via include/constants/songs.h.
+// 1:1 décomp `m4aSongNumStart(MUS_X)` → moteur m4a NATIF (src/m4a.ts, gSongTable ROM).
+// Mapping song ID via include/constants/songs (song-table extraite).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** Constants 1:1 décomp `include/constants/songs.h`. Re-exportés depuis la
@@ -800,8 +800,8 @@ export const MUS_INTRO = 414;          // mus_intro
 export const MUS_INTRO_BATTLE = 442;   // mus_intro_battle
 export const MUS_TITLE = 413;          // mus_title
 
-// (Priming legacy spessasynth dissous 2026-07-11 : l'init lazy SF2 + mapping
-//  voicegroup retirés — le moteur natif s'initialise via ensureNativeEngine.)
+// (Priming legacy dissous 2026-07-11 : l'init lazy SF2 + mapping voicegroup
+//  retirés — le moteur natif s'initialise via ensureNativeEngine.)
 
 // Expose pour debug console
 if (typeof globalThis !== 'undefined') {
@@ -811,7 +811,7 @@ if (typeof globalThis !== 'undefined') {
 
 /** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song via le moteur m4a
  *  NATIF (src/m4a.ts). Le `loop` est encodé dans gSongTable côté ROM. */
-// _currentSongId : posé UNIQUEMENT par l'ancien dispatch spessasynth (dissous
+// _currentSongId : posé UNIQUEMENT par l'ancien dispatch legacy (dissous
 // 2026-07-11) → reste null en natif. getCurrentSongId est un best-effort lu par
 // battle-decomp-loop (restore BGM OW) et les devtools — jamais critique.
 let _currentSongId: number | null = null;
@@ -1014,7 +1014,7 @@ export function PlayCryInternal(
 // ─── 1:1 décomp IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive ─
 // Délégué au foyer src/sound.ts (gMPlayInfo_SE1/2/3.status du moteur natif) via
 // globalThis __sound* (anti-cycle harness↔src). L'ancien tracking par end-times
-// du shim spessasynth est dissous.
+// du shim son legacy est dissous.
 
 /** 1:1 décomp `IsSEPlaying` (sound.c:606) — foyer src/sound.ts. */
 export function IsSEPlaying(): boolean {
@@ -1062,8 +1062,9 @@ import '../gba/flash-mask';
 export const SPECIES_GROUDON = 405;
 export const SPECIES_KYOGRE = 404;
 export const SPECIES_RAYQUAZA = 406;
-export const CRY_PRIORITY_NORMAL = 2;
-export const CRY_MODE_NORMAL = 0;
+// 🩸 valait 2 ici (faux — sound.h:41 dit 10) : inoffensif avec le shim qui
+// ignorait la priorité, FAUX avec le vrai driver → ré-export de la canonique.
+export { CRY_PRIORITY_NORMAL, CRY_MODE_NORMAL } from '../../include/constants/sound';
 
 /** 1:1 décomp `SE_INTRO_BLAST` — sound effect ID 103 (cf. songs.h:109).
  *  Fix critique : avant cette session la valeur était 0x14 (= 20 = se_bang),
