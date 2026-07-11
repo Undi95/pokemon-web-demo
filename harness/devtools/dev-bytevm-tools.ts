@@ -68,8 +68,12 @@ export async function loadAndInstall(): Promise<number> {
 }
 
 function cmdIdOf(handler: string): number {
-  const e = _enum.find((x) => x.handler === handler);
-  if (!e) throw new Error(`cmdId introuvable pour ${handler}`);
+  const e = _enum?.find((x) => x.handler === handler);
+  if (!e) {
+    throw new Error(_enum?.length
+      ? `cmdId introuvable pour ${handler}`
+      : `table des commandes pas chargée — appelle d'abord : await __byteVm.load()`);
+  }
   return e.cmdId;
 }
 const lo = (v: number) => v & 0xFF, hi = (v: number) => (v >> 8) & 0xFF;
