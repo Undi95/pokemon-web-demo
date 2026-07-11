@@ -121,11 +121,14 @@ import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, Menu_ProcessInpu
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN } from '../include/gba/io_reg';
 import { IsWirelessAdapterConnected } from './link';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './window';
-import { GetStringRightAlignXOffset, sTextColor_MenuInfo } from './text';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame, CallWindowFunction } from './window';
+import { GetStringRightAlignXOffset, sTextColor_MenuInfo, GetPlayerName } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { getString } from '../harness/runtime/decomp-strings';
 import { FlagGet } from './engine/script/script-vars';
+import { ConvertIntToDecimalStringN } from './string_util';
+import { STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_LEADING_ZEROS } from '../include/string_util';
+import { FLAG_SYS_POKEDEX_GET, FLAG_BADGE01_GET, NUM_BADGES } from '../include/constants/flags';
 import { SE_SELECT as _SE_SELECT } from '../include/constants/songs';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
@@ -399,97 +402,77 @@ export function HighlightSelectedMainMenuItem(
 
 // ─── Misc main menu stubs ────────────────────────────────────────────────────
 
-/** 1:1 décomp `MainMenu_FormatSavegameText` (main_menu.c:2132-2138) +
- *  4 sous-fonctions (Player/Time/Pokedex/Badges). Affiche le contenu de la
- *  fenêtre Continue (= window 2) avec :
+/** 1:1 décomp `MainMenu_FormatSavegameText` (main_menu.c:2132-2138). Dispatch
+ *  vers les 4 sous-fonctions dans l'ORDRE EXACT du décomp : Player, Pokedex,
+ *  Time, Badges. Remplit la fenêtre Continue (= window 2) :
  *
- *    [JOUEUR  Brendan]   [DUREE JEU  12h45]
+ *    [JOUEUR  Brendan]   [DUREE JEU  12:45]
  *    [POKéDEX  XX]       [BADGES  X]
  *
- *  Layout 1:1 décomp :
- *    - Player label (x=0, y=17) + name right-aligned vers x=100
- *    - Time label (x=0x6C=108, y=17) + HH:MM right-aligned vers x=0xD0=208
- *    - Pokedex label (x=0, y=33) + count right-aligned vers x=100
- *      (only si FLAG_SYS_POKEDEX_GET)
- *    - Badges label (x=0x6C=108, y=33) + count right-aligned vers x=0xD0=208
- *
- *  Strings FR (= strings.c:1363-1366) : "JOUEUR", "DUREE JEU", "POKéDEX", "BADGES".
- *  NUM_BADGES = 8 (FLAG_BADGE01..08). */
+ *  Textes via getString('gText_ContinueMenu*') = strings.json (jamais hardcodés). */
 export function MainMenu_FormatSavegameText(): void {
-  // 1:1 décomp : lit gSaveBlock2Ptr (= déjà importé statiquement plus haut),
-  // FlagGet (= script-vars), GetStringRightAlignXOffset (= gba-text-system).
-  // Tous imports ESM statiques (pas de require() — bug session 122 fix).
-  const sb2 = gSaveBlock2Ptr as Record<string, unknown>;
-  const playerName = GetPlayerNameString() || '???';
-  const playTimeHours = Number(sb2.playTimeHours ?? 0);
-  const playTimeMinutes = Number(sb2.playTimeMinutes ?? 0);
-
-  // 1:1 décomp main_menu.c:411 sTextColor_MenuInfo = [TEXT_DYNAMIC_COLOR_1=0xA,
-  // TEXT_COLOR_WHITE=0x1, TEXT_DYNAMIC_COLOR_3=0xC] = [10, 1, 12]. Imported
-  // depuis gba-text-system (= source unique). NE JAMAIS approximer [1,2,3] ←
-  // était mon bug : palette[15*16+1] est chargée dynamiquement avec BLUE par
-  // le cursor highlight, donc bg derrière le texte rendait BLEU au lieu du
-  // white attendu.
-  const colorMenuInfo = sTextColor_MenuInfo as unknown as readonly number[];
-  const FONT_NORMAL = 1;
-  const TEXT_SKIP_DRAW = 255;
-  const WIN_CONTINUE = 2;
-
-  // (1) Player line — JOUEUR <nom>
-  // Label at x=0, name right-aligned vers x=100.
-  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'JOUEUR');
-  AddTextPrinterParameterized3(
-    WIN_CONTINUE, FONT_NORMAL,
-    GetStringRightAlignXOffset(playerName, 100), 17,
-    colorMenuInfo, TEXT_SKIP_DRAW, playerName,
-  );
-
-  // (2) Time line — DUREE JEU HH:MM
-  // Label at x=0x6C=108, time right-aligned vers x=0xD0=208.
-  // Format : `<H>:<MM>` (= 1:1 décomp ConvertIntToDecimalStringN with 0xF0 separator = ":").
-  const timeStr = `${playTimeHours}:${String(playTimeMinutes).padStart(2, '0')}`;
-  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'DUREE JEU');
-  AddTextPrinterParameterized3(
-    WIN_CONTINUE, FONT_NORMAL,
-    GetStringRightAlignXOffset(timeStr, 0xD0), 17,
-    colorMenuInfo, TEXT_SKIP_DRAW, timeStr,
-  );
-
-  // (3) Pokedex line (conditional sur FLAG_SYS_POKEDEX_GET)
-  if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
-    const dexCount = _countCaughtPokedexFlags();
-    const dexStr = String(dexCount);
-    AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, getString('gText_ContinueMenuPokedex'));
-    AddTextPrinterParameterized3(
-      WIN_CONTINUE, FONT_NORMAL,
-      GetStringRightAlignXOffset(dexStr, 100), 33,
-      colorMenuInfo, TEXT_SKIP_DRAW, dexStr,
-    );
-  }
-
-  // (4) Badges line — BADGES X
-  // 1:1 décomp : `for (i = FLAG_BADGE01_GET; i < FLAG_BADGE01_GET + NUM_BADGES; i++) if (FlagGet(i)) badgeCount++`.
-  const badgeFlagNames = ['FLAG_BADGE01_GET','FLAG_BADGE02_GET','FLAG_BADGE03_GET','FLAG_BADGE04_GET',
-                          'FLAG_BADGE05_GET','FLAG_BADGE06_GET','FLAG_BADGE07_GET','FLAG_BADGE08_GET'];
-  let badgeCount = 0;
-  for (const fname of badgeFlagNames) if (FlagGet(fname)) badgeCount++;
-  const badgeStr = String(badgeCount);
-  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'BADGES');
-  AddTextPrinterParameterized3(
-    WIN_CONTINUE, FONT_NORMAL,
-    GetStringRightAlignXOffset(badgeStr, 0xD0), 33,
-    colorMenuInfo, TEXT_SKIP_DRAW, badgeStr,
-  );
+  MainMenu_FormatSavegamePlayer();
+  MainMenu_FormatSavegamePokedex();
+  MainMenu_FormatSavegameTime();
+  MainMenu_FormatSavegameBadges();
 }
 
-/** 1:1 décomp MainMenu_FormatSavegamePokedex (main_menu.c:2163-2175) — branche comptage :
- *  `IsNationalPokedexEnabled() ? GetNationalPokedexCount(FLAG_GET_CAUGHT)
- *                              : GetHoennPokedexCount(FLAG_GET_CAUGHT)`.
- *  (Ex-stub `return 0` — l'écran Continue affichait toujours « Pokédex : 0 ».) */
-function _countCaughtPokedexFlags(): number {
-  return IsNationalPokedexEnabled()
-    ? GetNationalPokedexCount(FLAG_GET_CAUGHT)
-    : GetHoennPokedexCount(FLAG_GET_CAUGHT);
+/** 1:1 décomp `MainMenu_FormatSavegamePlayer` (main_menu.c:2140-2145).
+ *  `gSaveBlock2Ptr->playerName` = `GetPlayerName()` (buffer charmap bytes, 1:1). */
+function MainMenu_FormatSavegamePlayer(): void {
+  StringExpandPlaceholders(gStringVar4, getString('gText_ContinueMenuPlayer'));
+  AddTextPrinterParameterized3(2, FONT_NORMAL, 0, 17, sTextColor_MenuInfo, TEXT_SKIP_DRAW, gStringVar4);
+  AddTextPrinterParameterized3(2, FONT_NORMAL, GetStringRightAlignXOffset(GetPlayerName(), 100), 17, sTextColor_MenuInfo, TEXT_SKIP_DRAW, GetPlayerName());
+}
+
+/** 1:1 décomp `MainMenu_FormatSavegameTime` (main_menu.c:2147-2158).
+ *  `*ptr = 0xF0` = séparateur ":" du charmap, écrit dans le buffer partagé
+ *  (ConvertIntToDecimalStringN retourne un subarray de `str`). */
+function MainMenu_FormatSavegameTime(): void {
+  const str = new Uint8Array(0x20);
+  let ptr: Uint8Array;
+
+  StringExpandPlaceholders(gStringVar4, getString('gText_ContinueMenuTime'));
+  AddTextPrinterParameterized3(2, FONT_NORMAL, 0x6C, 17, sTextColor_MenuInfo, TEXT_SKIP_DRAW, gStringVar4);
+  ptr = ConvertIntToDecimalStringN(str, gSaveBlock2Ptr.playTimeHours, STR_CONV_MODE_LEFT_ALIGN, 3);
+  ptr[0] = 0xF0;
+  ConvertIntToDecimalStringN(ptr.subarray(1), gSaveBlock2Ptr.playTimeMinutes, STR_CONV_MODE_LEADING_ZEROS, 2);
+  AddTextPrinterParameterized3(2, FONT_NORMAL, GetStringRightAlignXOffset(str, 0xD0), 17, sTextColor_MenuInfo, TEXT_SKIP_DRAW, str);
+}
+
+/** 1:1 décomp `MainMenu_FormatSavegamePokedex` (main_menu.c:2160-2176). */
+function MainMenu_FormatSavegamePokedex(): void {
+  const str = new Uint8Array(0x20);
+  let dexCount: number;
+
+  if (FlagGet(FLAG_SYS_POKEDEX_GET)) {
+    if (IsNationalPokedexEnabled())
+      dexCount = GetNationalPokedexCount(FLAG_GET_CAUGHT);
+    else
+      dexCount = GetHoennPokedexCount(FLAG_GET_CAUGHT);
+    StringExpandPlaceholders(gStringVar4, getString('gText_ContinueMenuPokedex'));
+    AddTextPrinterParameterized3(2, FONT_NORMAL, 0, 33, sTextColor_MenuInfo, TEXT_SKIP_DRAW, gStringVar4);
+    ConvertIntToDecimalStringN(str, dexCount, STR_CONV_MODE_LEFT_ALIGN, 3);
+    AddTextPrinterParameterized3(2, FONT_NORMAL, GetStringRightAlignXOffset(str, 100), 33, sTextColor_MenuInfo, TEXT_SKIP_DRAW, str);
+  }
+}
+
+/** 1:1 décomp `MainMenu_FormatSavegameBadges` (main_menu.c:2178-2193).
+ *  Boucle numérique `for (i = FLAG_BADGE01_GET; i < FLAG_BADGE01_GET + NUM_BADGES; i++)`
+ *  (FlagGet accepte un id numérique dans ce repo). */
+function MainMenu_FormatSavegameBadges(): void {
+  const str = new Uint8Array(0x20);
+  let badgeCount = 0;
+  let i: number;
+
+  for (i = FLAG_BADGE01_GET; i < FLAG_BADGE01_GET + NUM_BADGES; i++) {
+    if (FlagGet(i))
+      badgeCount++;
+  }
+  StringExpandPlaceholders(gStringVar4, getString('gText_ContinueMenuBadges'));
+  AddTextPrinterParameterized3(2, FONT_NORMAL, 0x6C, 33, sTextColor_MenuInfo, TEXT_SKIP_DRAW, gStringVar4);
+  ConvertIntToDecimalStringN(str, badgeCount, STR_CONV_MODE_LEADING_ZEROS, 1);
+  AddTextPrinterParameterized3(2, FONT_NORMAL, GetStringRightAlignXOffset(str, 0xD0), 33, sTextColor_MenuInfo, TEXT_SKIP_DRAW, str);
 }
 
 /** 1:1 décomp main_menu.c:2121-2130 CreateMainMenuErrorWindow.
@@ -582,25 +565,25 @@ export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVr
   }
 }
 
-/** 1:1 décomp main_menu.c:2233-2240 NewGameBirchSpeech_ClearGenderWindow.
- *    CallWindowFunction(windowId, ClearStdWindowAndFrameToTransparent);
- *    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
- *    ClearWindowTilemap(windowId);
- *    if (copyToVram == TRUE) CopyWindowToVram(windowId, COPYWIN_GFX);
- *
- *  Bug session 89 fix : avant on clearait juste le pixel buffer → le frame
- *  border BG tilemap entries restaient visibles → "boite vide" leftover après
- *  gender select. Maintenant ClearStdWindowAndFrame clear ET le frame border
- *  BG tilemap ET le pixel buffer (cf. gba-window-system.ts:437). */
+/** 1:1 décomp `NewGameBirchSpeech_ClearGenderWindowTilemap` (main_menu.c:2228-2231).
+ *  `x + 255` / `y + 255` = `x - 1` / `y - 1` (wraparound u8 du décomp) : efface
+ *  le rect BG tilemap incluant le cadre (1 tuile autour de la fenêtre) avec la
+ *  tuile 0. Signature = callback CallWindowFunction (bg,x,y,width,height,unused). */
+function NewGameBirchSpeech_ClearGenderWindowTilemap(bg: number, x: number, y: number, width: number, height: number, unused: number): void {
+  FillBgTilemapBufferRect(bg, 0, x + 255, y + 255, width + 2, height + 2, 2);
+}
+
+/** 1:1 décomp `NewGameBirchSpeech_ClearGenderWindow` (main_menu.c:2233-2240).
+ *  CallWindowFunction extrait (bg, left, top, width, height, palNum) du template
+ *  du windowId et appelle NewGameBirchSpeech_ClearGenderWindowTilemap. Le flush
+ *  BG tilemap→VRAM du cadre effacé suit la même voie per-frame que
+ *  NewGameBirchSpeech_ShowDialogueWindow (qui dessine son cadre sans flush). */
 export function NewGameBirchSpeech_ClearGenderWindow(windowId: number, copyToVram: boolean): void {
-  // 1:1 décomp ligne 2235 : CallWindowFunction(windowId, ClearStdWindowAndFrameToTransparent).
-  // Notre ClearStdWindowAndFrame fait fill pixel buffer 0 + clear BG tilemap rect frame.
-  ClearStdWindowAndFrame(windowId, true);
-  // 1:1 décomp ligne 2236-2237 : FillWindowPixelBuffer + ClearWindowTilemap (déjà fait
-  // par ClearStdWindowAndFrame). Re-fill explicite pour 1:1 fidélité.
-  FillWindowPixelBuffer(windowId, 0x00);  // PIXEL_FILL(0) = transparent.
+  CallWindowFunction(windowId, NewGameBirchSpeech_ClearGenderWindowTilemap);
+  FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+  ClearWindowTilemap(windowId);
   if (copyToVram) {
-    CopyWindowToVram(windowId, 2);  // COPYWIN_GFX
+    CopyWindowToVram(windowId, 3);  // COPYWIN_FULL
   }
 }
 
