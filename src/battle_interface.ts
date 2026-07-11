@@ -414,7 +414,7 @@ import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByT
 import { LoadSpriteSheet, LoadSpritePalette, FreeSpritePaletteByTag } from './sprite';
 import { loadIndexedPngStrict, extractPngPlte } from '../harness/gba/png-loader';
 import { gBattleTypeFlags } from './engine/battle/state';
-import { GET_BATTLER_SIDE, B_SIDE_PLAYER, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS } from './engine/battle/constants';
+import { GET_BATTLER_SIDE, B_SIDE_PLAYER, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS } from './engine/battle/constants';
 import {
   setPartyStatusSummaryShown, incSummaryBarsActive, decSummaryBarsActive, getSummaryBarsActive,
 } from './engine/battle/battle-sprites-data';
@@ -1020,8 +1020,10 @@ export async function CreateBattlerHealthboxSprites(battler: number): Promise<nu
 }
 
 // ─── 1:1 décomp `InitBattlerHealthboxCoords` (battle_interface.c:1072-1103) ──────
-/** Pose la position du healthbox (single : player (158,88) / opp (44,30)). La
- *  création place déjà les sprites à ces coords ; cette fonction les ré-affirme 1:1. */
+/** Pose la position home du healthbox. 1:1 : single = player (158,88) / opp (44,30) ;
+ *  DOUBLE = 4 colonnes distinctes par position (PLAYER_LEFT 159,76 · PLAYER_RIGHT
+ *  171,101 · OPPONENT_LEFT 44,19 · OPPONENT_RIGHT 32,44). Sans la branche double, les
+ *  flancs (battlers 2/3) restaient posés aux coords single → empilés sur 0/1 = invisibles. */
 export function InitBattlerHealthboxCoords(battler: number): void {
   const rt = getRuntime();
   if (!rt) return;
@@ -1029,9 +1031,23 @@ export function InitBattlerHealthboxCoords(battler: number): void {
   if (spriteId < 0) return;
   const left = rt.gSprites[spriteId];
   if (!left) return;
-  const isPlayer = _sideOf(battler) === 'player';
-  left.x = isPlayer ? 158 : 44;
-  left.y = isPlayer ? 88 : 30;
+  let x = 0, y = 0;
+  if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) === 0) {   // 1:1 !IsDoubleBattle()
+    if (_sideOf(battler) !== 'player') { x = 44; y = 30; }
+    else { x = 158; y = 88; }
+  } else {
+    // 1:1 décomp l.1085-1099 : switch (GetBattlerPosition(battler)).
+    switch (GetBattlerPosition(battler)) {
+      case 0: x = 159; y = 76; break;   // B_POSITION_PLAYER_LEFT
+      case 2: x = 171; y = 101; break;  // B_POSITION_PLAYER_RIGHT
+      case 1: x = 44; y = 19; break;    // B_POSITION_OPPONENT_LEFT
+      case 3: x = 32; y = 44; break;    // B_POSITION_OPPONENT_RIGHT
+    }
+  }
+  // 1:1 décomp l.1102 : UpdateSpritePos(gHealthboxSpriteIds[battler], x, y). Le port
+  // pose la position home sur le sprite LEFT ; right/bar la suivent via leurs SpriteCB.
+  left.x = x;
+  left.y = y;
 }
 
 // ─── 1:1 décomp `SetHealthboxSpriteVisible/Invisible` (ll. 1024-1036) ───────────

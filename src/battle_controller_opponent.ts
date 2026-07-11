@@ -106,6 +106,7 @@ import { SetUpForReleaseAffineAnim, TryShinyAnimation, isShinyAnimFinished, hasT
 import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   SetSpritePrimaryCoordsFromSecondaryCoords, GetBattlerElevation,
+  GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y,
 } from './battle_anim_mons';
 import { DoPokeballSendOutAnimation } from './pokeball';
 import { POKEBALL_OPPONENT_SENDOUT } from '../include/pokeball';
@@ -310,18 +311,7 @@ function TryShinyAnimAfterMonAnim(): void {
   }
 }
 
-/** 1:1 décomp `sBattlerCoords[Single][position]` (battle_anim_mons.c:38-45). */
-const _sBattlerCoordsSingle: ReadonlyArray<readonly [number, number]> = [
-  [72, 80],   // B_POSITION_PLAYER_LEFT
-  [176, 40],  // B_POSITION_OPPONENT_LEFT
-  [48, 40],   // B_POSITION_PLAYER_RIGHT
-  [112, 80],  // B_POSITION_OPPONENT_RIGHT
-];
-/** 1:1 `GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2)` (single battle). */
-function _GetBattlerSpriteCoordX(battler: number): number {
-  return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[0] ?? 176;
-}
-/** 1:1 décomp `GetBattlerSpriteSubpriority(battler)` (battle_anim_mons.c:2035, single battle).
+/** 1:1 décomp `GetBattlerSpriteSubpriority(battler)` (battle_anim_mons.c:2035).
  *  PLAYER_LEFT=30, PLAYER_RIGHT=20, OPPONENT_LEFT=40, OPPONENT_RIGHT=50. Plus BAS = devant.
  *  Le mon adverse (OPPONENT_LEFT=40) rend donc DERRIÈRE le dresseur/mon joueur (PLAYER_LEFT=30),
  *  à oam.priority égal (=2, gOamData_BattleSprite{Player,Opponent}Side, battle_main.c:284/299). */
@@ -393,7 +383,12 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // (ennemi front.yOffset - elevation ; elevation=0 sauf gros mons = dette R3).
     const coords = await _loadMonPicCoords();
     const c = coords[enumName];
-    const baseY = _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[1] ?? 40;
+    // 1:1 GetBattlerSpriteDefault_Y (battle_anim_mons.c:269/327) : la LIGNE de base y =
+    // sBattlerCoords[IS_DOUBLE_BATTLE()][position].y (BATTLER_COORD_Y). En DOUBLE, les
+    // flancs (PLAYER_RIGHT/OPPONENT_RIGHT) ont une colonne distincte → le lookup single
+    // les posait aux coords single (flancs empilés/mal placés). GetBattlerSpriteCoord
+    // gère IS_DOUBLE_BATTLE 1:1 ; en single il rend la MÊME valeur (sBattlerCoords[0]).
+    const baseY = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
     // 1:1 GetBattlerSpriteFinal_Y (battle_anim_mons.c:269) : côté ADVERSE, l'offset =
     // yOffset - GetBattlerElevation (les volants/flotteurs sont DÉCALÉS VERS LE HAUT,
     // l'ombre elliptique reste au sol — signalé user 2026-06-10). Côté joueur : pas
@@ -426,7 +421,9 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       // dès que l'anim 2-frames bascule (bug user #2b, + le shiny Grahyena en stock).
       images: [{ data: frame0, size: frame0.length }],
       callback: null,
-    }, _GetBattlerSpriteCoordX(battler), y, _GetBattlerSpriteSubpriority(battler));
+      // 1:1 décomp CreateSprite X = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2)
+      // (battle_controller_opponent.c:1180 / battle_controller_player.c:2208) — double-aware.
+    }, GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2), y, _GetBattlerSpriteSubpriority(battler));
     _registerBattlerMonSprite(battler, spriteId);
     // 1:1 décomp gBattlerSpriteTemplates[position].affineAnims =
     // gAffineAnims_BattleSpriteOpponentSide/PlayerSide (battle_main.c:305-330) —
