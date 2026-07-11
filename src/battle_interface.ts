@@ -1731,11 +1731,16 @@ let _hbBaseBlitted = false;
  *  (comme le décomp), il reprend les tiles bas et les mons s'allouent APRÈS.
  *
  *  La ré-allocation est automatique : le ResetSpriteData de la case 3 a purgé
- *  sSpriteTileRangeTags → ensureHealthboxAssets voit TAG_HB_PLAYER absent →
- *  ré-alloue les 4 régions + re-blitte la base (même critère qu'un boot de combat).
- *  @body-parity-ok délègue ensureHealthboxAssets (:1709), alloc 4 régions VRAM 1:1 bgsu.c:747-760 */
+ *  sSpriteTileRangeTags → l'ensure* voit le tag absent → ré-alloue + re-blitte la base
+ *  (même critère qu'un boot de combat).
+ *
+ *  1:1 décomp : `BattleLoadAllHealthBoxesGfx` (bgsu.c:763-820) DISPATCHE single/double via
+ *  IsDoubleBattle() — single (:774-798) = 2 grandes régions 0x1000, double (:800-820) =
+ *  4 régions 0x800. On reproduit ce dispatch : sinon un reshow en double n'allouerait
+ *  AUCUNE région (ensureHealthboxAssets self-gate IsDoubleBattle) → mons sur tiles bas. */
 export async function BattleLoadAllHealthBoxesGfx(): Promise<void> {
-  await ensureHealthboxAssets();
+  if (IsDoubleBattle()) await ensureDoublesHealthboxAssets();
+  else await ensureHealthboxAssets();
 }
 
 // Cache des 2 palettes OBJ healthbox (vues 16-color). Ré-appliquées à CHAQUE
@@ -1839,24 +1844,133 @@ function _rearrangeToMetatileOrder(
   return out;
 }
 
-/** Charge tous les assets healthbox 1 fois (= LoadBattleHealthboxGfx pattern).
+/** (A) COMMUN single & double : fetch + conversion des PNG healthbox en caches module
+ *  + chargement des 2 palettes OBJ (HEALTHBOX/HEALTHBAR). Idempotent (`_assetsLoaded`).
  *
- *  À appeler une fois au début du battle scene SPAWN. Idempotent.
+ *  1:1 : les sprite sheets ET les palettes sont les MÊMES données en single et double ;
+ *  SEULE l'ALLOCATION OBJ VRAM diffère (2 grandes régions 0x1000 single vs 4 petites
+ *  0x800 doubles, cf. `BattleLoadAllHealthBoxesGfxAtOnce` if/else, battle_gfx_sfx_util.c:745).
+ *  Cette fonction NE touche donc PAS la VRAM → réutilisable par `ensureDoublesHealthboxAssets`
+ *  SANS réserver les ~273 tiles single inutiles en double (= root cause de l'OBJ VRAM saturé).
+ *
+ *  Cache-hit : ré-applique juste les PALETTES (les banks OBJ peuvent être effacées entre
+ *  scènes) ; c'est l'appelant (single/double) qui (re)blitte SA région VRAM selon son alloc. */
+async function _ensureHealthboxSharedAssets(): Promise<void> {
+  if (!getRuntime()) return;
+
+  if (_assetsLoaded) {
+    if (_hbPalette) HEALTHBOX_PALETTE_SLOT = LoadSpritePalette({ data: _hbPalette, tag: TAG_HEALTHBOX_PAL });
+    if (_hbarPalette) HEALTHBAR_PALETTE_SLOT = LoadSpritePalette({ data: _hbarPalette, tag: TAG_HEALTHBAR_PAL });
+    return;
+  }
+
+  // ─── Player healthbox tile data ─────────────────────────────────────────
+  // PNG 64×128 = 8w × 16t tiles. `-mwidth 8 -mheight 8` → 2 metatiles 8×8.
+  // Comme metaW (8) === widthTiles (8), row-major == metatile order, no-op.
+  // CRITIQUE : `loadIndexedPngStrict` lit la PLTE PNG (palette canonique partagée
+  // avec ball_status_bar.png) ; `loadIndexedPng` reconstruirait via canvas → mismatch.
+  const playerPng = await loadIndexedPngStrict(HEALTHBOX_PLAYER_PNG, 4);
+  _hbPlayerTiles = _rearrangeToMetatileOrder(
+    playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 8,
+  );
+
+  // ─── Opponent healthbox tile data ───────────────────────────────────────
+  // PNG 128×32 = 16w × 4t tiles. `-mwidth 8 -mheight 4` → 2 metatiles 8×4 (transposer).
+  const oppPng = await loadIndexedPngStrict(HEALTHBOX_OPPONENT_PNG, 4);
+  _hbOppTiles = _rearrangeToMetatileOrder(
+    oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4,
+  );
+
+  // ─── HP bar widget tile data ────────────────────────────────────────────
+  // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358) : sous-blocs cachés :
+  //   - hpbar.png tiles 0..2     = "black bg" + "H" + "P" labels (= 3 tiles)
+  //   - hpbar.png tiles 3..11    = GREEN bar 0..8 pixels remplis (= 9 tiles)
+  //   - hpbar_anim.png tiles 0..8 = YELLOW bar 0..8 pixels (= 9 tiles)
+  //   - hpbar_anim.png tiles 9..17 = RED bar 0..8 pixels (= 9 tiles)
+  const hpbarPng = await loadIndexedPngStrict(HPBAR_PNG, 4);
+  const hpbarAnimPng = await loadIndexedPngStrict(HPBAR_ANIM_PNG, 4);
+  _hpBarBaseTiles  = hpbarPng.charData.subarray(0, 3 * TILE_BYTES);              // tiles 0..2
+  _hpBarTilesGreen = hpbarPng.charData.subarray(3 * TILE_BYTES, 12 * TILE_BYTES); // tiles 3..11
+  _hpBarTilesYellow = hpbarAnimPng.charData.subarray(0, 9 * TILE_BYTES);          // tiles 0..8
+  _hpBarTilesRed    = hpbarAnimPng.charData.subarray(9 * TILE_BYTES, 18 * TILE_BYTES); // tiles 9..17
+
+  // ─── Numbers tile sets (= digits 0..9 pour Lv + HP display) ─────────────
+  // 1:1 graphics_file_rules.mk:90-91 : numbers1.4bpp (player) / numbers2.4bpp (opp).
+  // PNG mode "L" (grayscale) sans PLTE → `loadIndexedPng` (reconstruct depuis pixels).
+  const numbers1Png = await loadIndexedPng(NUMBERS1_PNG);
+  const numbers2Png = await loadIndexedPng(NUMBERS2_PNG);
+  _numbers1Tiles = numbers1Png.charData;  // 11 tiles
+  _numbers2Tiles = numbers2Png.charData;  // 12 tiles
+
+  // ─── Status icons tile data ─────────────────────────────────────────────
+  // 1:1 `status.4bpp` (24×40 = 15 tiles : 5 status × 3). Multi-sub-palette (PLTE
+  // 80-color, 5 sub-pal) → lire avec indices LOCAUX `% 16` via _loadMultiSubPalTiles.
+  _statusTiles = await _loadMultiSubPalTiles(STATUS_PNG);
+
+  // ─── misc tile data (= GFX_36..46) ──────────────────────────────────────
+  // 1:1 `misc.4bpp` (88×8 = 11 tiles). Tile 3 (= HEALTHBOX_GFX_39) = fond "no status"
+  // recopié par UpdateStatusIconInHealthbox quand pas de status.
+  const miscPng = await loadIndexedPngStrict(MISC_PNG, 4);
+  _miscTiles = miscPng.charData;
+
+  // ─── EXP bar tile data ──────────────────────────────────────────────────
+  // 1:1 `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
+  const expbarPng = await loadIndexedPngStrict(EXPBAR_PNG, 4);
+  _expBarTiles = expbarPng.charData;
+
+  // ─── Ball "caught" indicator + frame end ────────────────────────────────
+  // 1:1 `HEALTHBOX_GFX_STATUS_BALL_CAUGHT` (1 tile) + HEALTHBOX_GFX_65 "hp bar frame end".
+  const ballCaughtPng = await loadIndexedPngStrict(BALL_CAUGHT_INDICATOR_PNG, 4);
+  _ballCaughtTiles = ballCaughtPng.charData;
+  const frameEndPng = await loadIndexedPngStrict(MISC_FRAMEEND_PNG, 4);
+  _frameEndTile = frameEndPng.charData;
+
+  // ─── Palettes ───────────────────────────────────────────────────────────
+  // CRITIQUE : `extractPngPlte` lit la PLTE PNG raw (16 colors, ordre canonique),
+  // comme le décomp `INCGFX_U16("ball_status_bar.png", ".gbapal")`.
+  const ballStatusBarPlte = await extractPngPlte(BALL_STATUS_BAR_PNG);
+  if (!ballStatusBarPlte) throw new Error(`PLTE missing: ${BALL_STATUS_BAR_PNG}`);
+  _hbPalette = ballStatusBarPlte.subarray(0, 16);
+  HEALTHBOX_PALETTE_SLOT = LoadSpritePalette({ data: _hbPalette, tag: TAG_HEALTHBOX_PAL });
+
+  const ballDisplayPlte = await extractPngPlte(BALL_DISPLAY_PNG);
+  if (!ballDisplayPlte) throw new Error(`PLTE missing: ${BALL_DISPLAY_PNG}`);
+  _hbarPalette = ballDisplayPlte.subarray(0, 16);
+  HEALTHBAR_PALETTE_SLOT = LoadSpritePalette({ data: _hbarPalette, tag: TAG_HEALTHBAR_PAL });
+
+  _assetsLoaded = true;
+}
+
+/** Charge tous les assets healthbox + alloue/blitte la VRAM OBJ **SINGLE**. 1:1 décomp
+ *  `BattleLoadAllHealthBoxesGfxAtOnce` (battle_gfx_sfx_util.c:738) branche `!IsDoubleBattle()`
+ *  (:745-749) : 2 grandes régions 0x1000 (player/opp box) + 2 barres. Idempotent, appelé
+ *  per-battler en single (createBattlerHealthboxSprites) + reshow single.
  *
  *  Mappings 1:1 décomp :
- *    - sSpriteSheet_SinglesPlayerHealthbox = (gHealthboxSinglesPlayerGfx, 0x1000, TAG_HEALTHBOX_PLAYER1_TILE)
- *    - sSpriteSheet_SinglesOpponentHealthbox = (gHealthboxSinglesOpponentGfx, 0x1000, TAG_HEALTHBOX_OPPONENT1_TILE)
- *    - sSpriteSheets_HealthBar[0] = (gBlankGfxCompressed, 0x100, TAG_HEALTHBAR_PLAYER1_TILE) → updated dynamically par UpdateHpBar
- *    - sSpriteSheets_HealthBar[1] = (gBlankGfxCompressed, 0x120, TAG_HEALTHBAR_OPPONENT1_TILE)
+ *    - sSpriteSheet_SinglesPlayerHealthbox = (…, 0x1000, TAG_HEALTHBOX_PLAYER1_TILE)
+ *    - sSpriteSheet_SinglesOpponentHealthbox = (…, 0x1000, TAG_HEALTHBOX_OPPONENT1_TILE)
+ *    - sSpriteSheets_HealthBar[0] = (…, 0x100, TAG_HEALTHBAR_PLAYER1_TILE)
+ *    - sSpriteSheets_HealthBar[1] = (…, 0x120, TAG_HEALTHBAR_OPPONENT1_TILE)
  *    - sSpritePalettes_HealthBoxHealthBar = palettes HEALTHBOX + HEALTHBAR */
 export async function ensureHealthboxAssets(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
 
-  // ─── Allocation VRAM healthbox (1× PAR COMBAT) ──────────────────────────
-  // 1:1 décomp : LoadBattleSpritesGfx charge les sprite sheets healthbox via
-  // LoadCompressedSpriteSheet → le tile allocator OBJ (AllocSpriteTiles). On
-  // réplique : on alloue les 4 régions et on fixe les byte offsets dynamiques.
+  // (A) Chargement COMMUN (caches tuiles + palettes), partagé single & double.
+  await _ensureHealthboxSharedAssets();
+
+  // (B) GATE STRICT 1:1 `BattleLoadAllHealthBoxesGfxAtOnce` (:745) : les sheets healthbox
+  //     SINGLE (0x1000×2 + 2 barres) ne sont alloués/blittés QUE hors double. En double
+  //     c'est la branche `else` (:751) — 4 régions 0x800 — via `ensureDoublesHealthboxAssets`.
+  //     Sans ce gate on allouait AUSSI les ~273 tiles single, inutilisées en double →
+  //     OBJ VRAM saturé, les 4 sprites mon (256 tiles) ne trouvaient plus de place → mons
+  //     ennemis non spawnés (AllocSpriteTiles échoué depuis _loadAndCreateBattlerMonSprite,
+  //     bug launchTB(51)). En single, IsDoubleBattle()===false → tout ce qui suit s'exécute
+  //     exactement comme avant (comportement single INCHANGÉ).
+  if (IsDoubleBattle()) return;
+
+  // ─── Allocation VRAM healthbox SINGLE (1× PAR COMBAT) ───────────────────
+  // 1:1 décomp : LoadCompressedSpriteSheet → le tile allocator OBJ (AllocSpriteTiles).
   // Ordre décomp (battle_gfx_sfx_util.c:747-760) : player box → opp box →
   // HealthBar[player] → HealthBar[opp].
   // Critère « déjà alloué ce cycle » 1:1 décomp : l'état de l'ALLOCATEUR PAR TAG
@@ -1888,184 +2002,42 @@ export async function ensureHealthboxAssets(): Promise<void> {
     _hbBaseBlitted = false;   // nouvelle alloc → la base doit être (re)blittée ce cycle
   }
 
-  if (_assetsLoaded) {
-    // Cache hit : on a déjà fetch+converti les PNG (= pas de re-fetch). La VRAM OBJ NE
-    // SURVIT PAS entre combats (battle-init wipe + allocateur OBJ reset) → on doit
-    // RE-BLITTER la base healthbox à CHAQUE (ré)allocation. MAIS PAS à chaque appel :
-    // ensureHealthboxAssets est appelé per-battler (createBattlerHealthboxSprites), et
-    // la base joueur écraserait alors le contenu (nom/HP/barre) déjà dessiné par
-    // UpdateHealthboxAttribute du battler précédent → healthbox joueur VIDE après
-    // reshow. On re-blitte donc UNE FOIS par cycle d'allocation (_hbBaseBlitted), 1:1
-    // décomp (BattleLoadAllHealthBoxesGfx une fois, pas par sprite créé).
-    // Les PALETTES, elles, sont ré-appliquées à chaque appel (sans risque : ça
-    // n'écrase pas les tiles de contenu ; les banks OBJ peuvent être effacées entre scènes).
-    if (_hbPalette) HEALTHBOX_PALETTE_SLOT = LoadSpritePalette({ data: _hbPalette, tag: TAG_HEALTHBOX_PAL });
-    if (_hbarPalette) HEALTHBAR_PALETTE_SLOT = LoadSpritePalette({ data: _hbarPalette, tag: TAG_HEALTHBAR_PAL });
-    if (!_hbBaseBlitted) {
-      if (_hbPlayerTiles) {
-        rt.gba.objVram.set(_hbPlayerTiles, HEALTHBOX_PLAYER_VRAM);
-        MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, _hbPlayerTiles.length);
-      }
-      if (_hbOppTiles) {
-        rt.gba.objVram.set(_hbOppTiles, HEALTHBOX_OPPONENT_VRAM);
-        MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, _hbOppTiles.length);
-      }
-      if (_hpBarTilesGreen && _hpBarBaseTiles) {
-        const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES);
-        for (let i = 2; i < 8; i++) {
-          rt.gba.objVram.set(fullGreen, HPBAR_PLAYER_LEFT_VRAM + i * TILE_BYTES);
-          rt.gba.objVram.set(fullGreen, HPBAR_OPP_LEFT_VRAM + i * TILE_BYTES);
-        }
-        rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
-        rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
-        // Tile 8 opp = slot ball "owned" (3e subsprite) : RE-ZÉROTER à chaque re-blit —
-        // 1:1 décomp : le sheet healthbar opp (0x120 = 9 tiles) est rechargé ENTIER au
-        // reshow, sa 9e tile est transparente. Sans ça : le party screen (scene swap)
-        // réutilise cette VRAM pour les icônes mons → au retour, si le mon adverse n'est
-        // pas capturé, TryAddPokeballIconToHealthbox early-return SANS écrire → fragment
-        // d'icône (triangle orange) rendu au slot status (A/B user 2026-06-09).
-        rt.gba.objVram.fill(0, HPBAR_OPP_LEFT_VRAM + 8 * TILE_BYTES, HPBAR_OPP_LEFT_VRAM + 9 * TILE_BYTES);
-        MarkObjTilesAllocated(HPBAR_PLAYER_LEFT_VRAM, 8 * TILE_BYTES);
-        MarkObjTilesAllocated(HPBAR_OPP_LEFT_VRAM, 9 * TILE_BYTES);
-      }
-      _hbBaseBlitted = true;
+  // ─── Blit base SINGLE 1× par cycle d'allocation (depuis les caches partagés) ──
+  // La VRAM OBJ NE SURVIT PAS entre combats (battle-init wipe + allocateur OBJ reset)
+  // → on re-blitte à CHAQUE (ré)allocation, MAIS PAS à chaque appel per-battler (sinon la
+  // base joueur écrase le contenu nom/HP/barre déjà dessiné par UpdateHealthboxAttribute
+  // du battler précédent → healthbox VIDE après reshow). 1× par cycle via `_hbBaseBlitted`,
+  // 1:1 décomp (BattleLoadAllHealthBoxesGfx une fois, pas par sprite créé). Les tiles
+  // proviennent des caches partagés remplis par _ensureHealthboxSharedAssets ci-dessus.
+  if (!_hbBaseBlitted) {
+    if (_hbPlayerTiles) {
+      rt.gba.objVram.set(_hbPlayerTiles, HEALTHBOX_PLAYER_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, _hbPlayerTiles.length);
     }
-    return;
+    if (_hbOppTiles) {
+      rt.gba.objVram.set(_hbOppTiles, HEALTHBOX_OPPONENT_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, _hbOppTiles.length);
+    }
+    if (_hpBarTilesGreen && _hpBarBaseTiles) {
+      const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES);
+      for (let i = 2; i < 8; i++) {
+        rt.gba.objVram.set(fullGreen, HPBAR_PLAYER_LEFT_VRAM + i * TILE_BYTES);
+        rt.gba.objVram.set(fullGreen, HPBAR_OPP_LEFT_VRAM + i * TILE_BYTES);
+      }
+      rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
+      rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
+      // Tile 8 opp = slot ball "owned" (3e subsprite) : RE-ZÉROTER à chaque re-blit —
+      // 1:1 décomp : le sheet healthbar opp (0x120 = 9 tiles) est rechargé ENTIER au
+      // reshow, sa 9e tile est transparente. Sans ça : le party screen (scene swap)
+      // réutilise cette VRAM pour les icônes mons → au retour, si le mon adverse n'est
+      // pas capturé, TryAddPokeballIconToHealthbox early-return SANS écrire → fragment
+      // d'icône (triangle orange) rendu au slot status (A/B user 2026-06-09).
+      rt.gba.objVram.fill(0, HPBAR_OPP_LEFT_VRAM + 8 * TILE_BYTES, HPBAR_OPP_LEFT_VRAM + 9 * TILE_BYTES);
+      MarkObjTilesAllocated(HPBAR_PLAYER_LEFT_VRAM, 8 * TILE_BYTES);
+      MarkObjTilesAllocated(HPBAR_OPP_LEFT_VRAM, 9 * TILE_BYTES);
+    }
+    _hbBaseBlitted = true;
   }
-
-  // ─── Player healthbox tile data ─────────────────────────────────────────
-  // PNG 64×128 = 8w × 16t tiles. `-mwidth 8 -mheight 8` → 2 metatiles 8×8.
-  // Comme metaW (8) === widthTiles (8), row-major == metatile order, no-op.
-  //
-  // CRITIQUE : utilise `loadIndexedPngStrict` qui lit la PLTE PNG (= palette
-  // canonique partagée avec ball_status_bar.png). Sinon `loadIndexedPng`
-  // reconstruct palette via canvas pixel order qui peut diverger de la PLTE
-  // originale → mismatch entre tile data indices + palette colors → corruption.
-  const playerPng = await loadIndexedPngStrict(HEALTHBOX_PLAYER_PNG, 4);
-  const playerTiles = _rearrangeToMetatileOrder(
-    playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 8,
-  );
-  rt.gba.objVram.set(playerTiles, HEALTHBOX_PLAYER_VRAM);
-  _hbPlayerTiles = playerTiles;  // cache pour re-blit cache-hit (cf. ensureHealthboxAssets)
-  // 1:1 STRICT bitmap allocator sync : ces tiles healthbox sont hardcodées
-  // au début d'OBJ VRAM (= 0x0000..) → si on ne marque pas, AllocSpriteTiles
-  // les voit free et les re-attribue (= corruption).
-  MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, playerTiles.length);
-
-  // ─── Opponent healthbox tile data ───────────────────────────────────────
-  // PNG 128×32 = 16w × 4t tiles. `-mwidth 8 -mheight 4` → 2 metatiles 8×4
-  // arrangés horizontalement (16 cols / 8 = 2 metatile cols).
-  // metaW (8) !== widthTiles (16), donc on DOIT transposer.
-  const oppPng = await loadIndexedPngStrict(HEALTHBOX_OPPONENT_PNG, 4);
-  const oppTiles = _rearrangeToMetatileOrder(
-    oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4,
-  );
-  rt.gba.objVram.set(oppTiles, HEALTHBOX_OPPONENT_VRAM);
-  _hbOppTiles = oppTiles;  // cache pour re-blit cache-hit (cf. ensureHealthboxAssets)
-  MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, oppTiles.length);
-
-  // ─── HP bar widget tile data ────────────────────────────────────────────
-  // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358) concatène
-  // plusieurs .4bpp files. Nous cachons les sous-blocs :
-  //   - hpbar.png tiles 0..2     = "black bg" + "H" + "P" labels (= 3 tiles)
-  //   - hpbar.png tiles 3..11    = GREEN bar 0..8 pixels remplis (= 9 tiles)
-  //   - hpbar_anim.png tiles 0..8 = YELLOW bar 0..8 pixels (= 9 tiles)
-  //   - hpbar_anim.png tiles 9..17 = RED bar 0..8 pixels (= 9 tiles)
-  const hpbarPng = await loadIndexedPngStrict(HPBAR_PNG, 4);
-  const hpbarAnimPng = await loadIndexedPngStrict(HPBAR_ANIM_PNG, 4);
-  _hpBarBaseTiles  = hpbarPng.charData.subarray(0, 3 * TILE_BYTES);              // tiles 0..2
-  _hpBarTilesGreen = hpbarPng.charData.subarray(3 * TILE_BYTES, 12 * TILE_BYTES); // tiles 3..11
-  _hpBarTilesYellow = hpbarAnimPng.charData.subarray(0, 9 * TILE_BYTES);          // tiles 0..8
-  _hpBarTilesRed    = hpbarAnimPng.charData.subarray(9 * TILE_BYTES, 18 * TILE_BYTES); // tiles 9..17
-
-  // Initial state : bar pleine GREEN (= 8 pixels par tile, tile data GREEN+8).
-  // updateHealthboxHpBar override this dès qu'on a un mon avec HP/maxHp.
-  const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES); // tile = 8 pixels filled
-  // Bar layout (= 8 tiles per side, but only middle 6 tiles utilized for fill).
-  // tiles 0..1 reserved pour "H/P" labels (= ne pas remplir avec fill data).
-  // tiles 2..7 = les 6 fill tiles (= updated by updateHealthboxHpBar).
-  for (let i = 2; i < 8; i++) {
-    rt.gba.objVram.set(fullGreen, HPBAR_PLAYER_LEFT_VRAM + i * TILE_BYTES);
-    rt.gba.objVram.set(fullGreen, HPBAR_OPP_LEFT_VRAM + i * TILE_BYTES);
-  }
-  // tiles 0..1 = labels "H" "P" depuis hpbar.png tile 1 + 2 (= "H" + "P").
-  rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
-  rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
-  // Tile 8 opp = slot ball "owned" (3e subsprite, tileOffset 8) : transparent (zéros)
-  // par défaut — 1:1 décomp TryAddPokeballIconToHealthbox CpuFill32(0) quand vide.
-  rt.gba.objVram.fill(0, HPBAR_OPP_LEFT_VRAM + 8 * TILE_BYTES, HPBAR_OPP_LEFT_VRAM + 9 * TILE_BYTES);
-  // 1:1 STRICT bitmap allocator sync : HP bars couvrent 8 tiles continus côté
-  // player, 9 côté opp (la 9e = slot ball, 1:1 sheet 0x120).
-  MarkObjTilesAllocated(HPBAR_PLAYER_LEFT_VRAM, 8 * TILE_BYTES);
-  MarkObjTilesAllocated(HPBAR_OPP_LEFT_VRAM, 9 * TILE_BYTES);
-
-  // ─── Numbers tile sets (= digits 0..9 pour Lv + HP display) ─────────────
-  // 1:1 décomp graphics_file_rules.mk:90-91 :
-  //   numbers1.4bpp = digits player (white)
-  //   numbers2.4bpp = digits opp (yellow/contrast)
-  // numbers1.png / numbers2.png sont en mode "L" (grayscale) sans PLTE chunk.
-  // Utilise `loadIndexedPng` (= reconstruct palette depuis pixel order).
-  // Les indices résultants correspondront aux grayscale levels du PNG (= 0..N).
-  // L'usage dans le décomp suppose que ces indices matchent les colors de la
-  // palette HEALTHBAR (= ball_display.png .gbapal). Tile data sera readable
-  // avec cette palette.
-  const numbers1Png = await loadIndexedPng(NUMBERS1_PNG);
-  const numbers2Png = await loadIndexedPng(NUMBERS2_PNG);
-  _numbers1Tiles = numbers1Png.charData;  // 11 tiles
-  _numbers2Tiles = numbers2Png.charData;  // 12 tiles
-
-  // ─── Status icons tile data ─────────────────────────────────────────────
-  // 1:1 décomp `status.4bpp` (= 24×40 = 15 tiles : 5 status × 3 tiles each).
-  // Used pour player single + opp single (= even though decomp has status2/3/4
-  // pour battler 1/2/3 doubles, en single ils utilisent tous status.png).
-  // status.png = multi-sub-palette (PLTE 80-color, 5 sub-pal). Lire avec
-  // indices LOCAUX `% 16` (= 1:1 décomp status.4bpp). loadIndexedPngStrict
-  // ne prendrait que sub-pal 0 → 439 px (sub-pal 1..4) unmapped → transparent.
-  _statusTiles = await _loadMultiSubPalTiles(STATUS_PNG);
-
-  // ─── misc tile data (= GFX_36..46) ──────────────────────────────────────
-  // 1:1 décomp `misc.4bpp` (88×8 = 11 tiles, palette HEALTHBOX simple 16-color).
-  // On a besoin du tile 3 (= HEALTHBOX_GFX_39) pour le "no status" fill (cf.
-  // UpdateStatusIconInHealthbox). loadIndexedPngStrict suffit (PNG mono-sub-palette).
-  const miscPng = await loadIndexedPngStrict(MISC_PNG, 4);
-  _miscTiles = miscPng.charData;
-
-  // ─── EXP bar tile data ──────────────────────────────────────────────────
-  // 1:1 décomp `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
-  const expbarPng = await loadIndexedPngStrict(EXPBAR_PNG, 4);
-  _expBarTiles = expbarPng.charData;
-
-  // ─── Ball "caught" indicator (= pokéball "owned" à côté du nom adverse) ─────
-  // 1:1 décomp `HEALTHBOX_GFX_STATUS_BALL_CAUGHT` (gHealthboxElementsGfx idx 111),
-  // extrait en ball_caught_indicator.png (1 tile). Rendu dans le healthbar sprite
-  // (palette HEALTHBAR). Utilisé par TryAddPokeballIconToHealthbox (battle-healthbox-l).
-  const ballCaughtPng = await loadIndexedPngStrict(BALL_CAUGHT_INDICATOR_PNG, 4);
-  _ballCaughtTiles = ballCaughtPng.charData;
-  // HEALTHBOX_GFX_65 "hp bar frame end" (1 tile) : swap label bar quand status adverse.
-  const frameEndPng = await loadIndexedPngStrict(MISC_FRAMEEND_PNG, 4);
-  _frameEndTile = frameEndPng.charData;
-
-  // ─── Palettes ───────────────────────────────────────────────────────────
-  // CRITIQUE : utilise `extractPngPlte` qui lit la PLTE PNG raw (= 16 colors
-  // dans l'ordre canonique). Le décomp utilise `INCGFX_U16("ball_status_bar.png", ".gbapal")`
-  // qui extract la même PLTE. C'est CETTE palette qui doit être loadée dans
-  // OBJ palette slot 5, et les tile data des healthboxes utilisent les indices
-  // correspondants à cette palette.
-  //
-  // HEALTHBOX palette = ball_status_bar.png .gbapal (= 16 colors).
-  const ballStatusBarPlte = await extractPngPlte(BALL_STATUS_BAR_PNG);
-  if (!ballStatusBarPlte) throw new Error(`PLTE missing: ${BALL_STATUS_BAR_PNG}`);
-  _hbPalette = ballStatusBarPlte.subarray(0, 16);
-  HEALTHBOX_PALETTE_SLOT = LoadSpritePalette({ data: _hbPalette, tag: TAG_HEALTHBOX_PAL });
-
-  // HEALTHBAR palette = ball_display.png .gbapal.
-  const ballDisplayPlte = await extractPngPlte(BALL_DISPLAY_PNG);
-  if (!ballDisplayPlte) throw new Error(`PLTE missing: ${BALL_DISPLAY_PNG}`);
-  _hbarPalette = ballDisplayPlte.subarray(0, 16);
-  HEALTHBAR_PALETTE_SLOT = LoadSpritePalette({ data: _hbarPalette, tag: TAG_HEALTHBAR_PAL });
-
-  _assetsLoaded = true;
-  _hbBaseBlitted = true;   // ce chemin a déjà blitté la base ce cycle
 }
 
 /** Pour test/devtools : reset le cache (= force re-load). */
@@ -2258,15 +2230,18 @@ let _hbDblBaseBlitted = false;
  *  + `sSpriteSheets_Doubles*Healthbox`. Alloue les 4 régions box (PLAYER1/2/OPP1/2, 0x800)
  *  + 4 barres (une par battler), charge/blitte les gfx doubles + frameend doubles. Réutilise
  *  les caches partagés (status/numbers/misc/hpbar labels) + palettes chargés par
- *  ensureHealthboxAssets (PLTE identique aux singles). GATED : appelé uniquement par la
- *  branche double de createBattlerHealthboxSprites → 0 impact single.
- *  DETTE : ensureHealthboxAssets alloue AUSSI les régions single (inutilisées en double,
- *  ~273 tiles) — à factoriser si le budget OBJ VRAM serre (mons doubles = 256 tiles). */
+ *  `_ensureHealthboxSharedAssets` (PLTE identique aux singles). GATED : appelé uniquement
+ *  par la branche double de createBattlerHealthboxSprites → 0 impact single.
+ *  1:1 budget OBJ VRAM : le COMMUN passe par _ensureHealthboxSharedAssets (0 VRAM) → SEULES
+ *  les 4 régions doubles (0x800×4 + 4 barres) sont allouées ici ; les ~273 tiles single ne
+ *  le sont JAMAIS en double (fix saturation OBJ VRAM, launchTB(51)). */
 async function ensureDoublesHealthboxAssets(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
-  // Caches partagés (status/numbers/misc/hpbar) + palettes HEALTHBOX/HEALTHBAR + slots.
-  await ensureHealthboxAssets();
+  // Caches partagés (status/numbers/misc/hpbar) + palettes HEALTHBOX/HEALTHBAR + slots —
+  // COMMUN seul (0 VRAM single). L'alloc double (4×0x800 + barres) suit ci-dessous, 1:1
+  // `BattleLoadAllHealthBoxesGfxAtOnce` branche `else` (battle_gfx_sfx_util.c:751-758).
+  await _ensureHealthboxSharedAssets();
   // 1:1 décomp : UpdateHealthboxAttribute HEALTH_BAR appelle LoadBattleBarGfx(0) → barFontGfx
   // (font des chiffres PV doubles, consommée par UpdateHpTextInHealthboxInDoubles). On la
   // charge ici (au boot double) pour qu'elle soit prête au 1er rendu. Via le hook global.
