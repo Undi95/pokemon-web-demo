@@ -44,6 +44,7 @@ import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
 // Moteur m4a NATIF (1:1 certifié sample-exact) — SEUL chemin son depuis la
 // dissolution du shim son legacy (2026-07-11 : plus de dispatch M4A_NATIVE).
 import { initM4aNative, startM4aNativeAudio } from '../m4a/native';
+import { logAudio } from '../m4a/audio-log';
 import {
   m4aSongNumStart as _m4aSongNumStartNative,
   m4aMPlayAllStop as _m4aMPlayAllStopNative,
@@ -850,12 +851,17 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
   const ready = ensureNativeEngine();
   if (ready) _m4aSongNumStartNative(songId);
   else _pendingNativeSongId = songId;
+  // Journal (ring 64, sort dans le dump audio.status) : la SÉQUENCE des starts
+  // est le fil du diag « silence » — un start absent accuse le jeu, présent
+  // avec st=0 accuse le moteur.
+  logAudio(`start ${songId}${ready ? '' : ' (pending)'}`);
   console.log(`[m4a-native] start id=${songId} ready=${ready} bgmSt=0x${(_gMPlayInfo_BGM_native.status >>> 0).toString(16)}`);
 }
 
 /** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE) via le
  *  moteur natif. Ordre strict 1:1 ROM : PlayBattleBGM = m4aMPlayAllStop PUIS PlayBGM. */
 export function m4aMPlayAllStop(): void {
+  logAudio('allstop');
   if (_nativeEngineReady) _m4aMPlayAllStopNative();
   _pendingNativeSongId = null;
 }

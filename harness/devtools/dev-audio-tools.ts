@@ -21,7 +21,13 @@ interface M4aStats {
   psgEnergy: number; dsEnergy: number; triggers: number;
 }
 
-interface NativeState { node: AudioWorkletNode | null; fallbackDriving: boolean }
+interface NativeState {
+  node: AudioWorkletNode | null;
+  fallbackDriving: boolean;
+  framesProduced?: number;
+  pumpErrors?: number;
+  lastPumpError?: string;
+}
 
 function nativeState(): NativeState | null {
   return ((globalThis as Record<string, unknown>).__m4aNativeState as NativeState) ?? null;
@@ -58,6 +64,13 @@ function audioStatus(): Record<string, unknown> {
     worklet: ns?.node ? 'monté' : 'absent',
     horloge: ns?.fallbackDriving ? 'SECOURS (audio off)' : 'audio-drive',
     ring: s ? { level: s.wr - s.rd, underruns: s.underruns } : null,
+    // frames n'avance plus entre deux dumps = pompe morte ; erreurs>0 = la
+    // panne exacte est dans `panne` (et au journal « PANNE POMPE »).
+    pompe: {
+      frames: ns?.framesProduced ?? 0,
+      erreurs: ns?.pumpErrors ?? 0,
+      ...(ns?.lastPumpError ? { panne: ns.lastPumpError } : {}),
+    },
     energies: s ? { psg: Math.round(s.psgEnergy), ds: Math.round(s.dsEnergy) } : null,
     players: {
       bgm: { st: (gMPlayInfo_BGM.status >>> 0).toString(16), sh: (gMPlayInfo_BGM.songHeader >>> 0).toString(16) },

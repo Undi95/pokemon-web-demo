@@ -69,6 +69,10 @@ interface M4aNativeState {
   fallbackClock: number | null;
   fallbackDriving: boolean;
   lastAliveAt: number; // dernier heartbeat du processor (performance.now)
+  framesProduced: number; // frames GBA produites — un dump où ça n'avance plus = pompe morte
+  pumpErrors: number; // exceptions produceFrames (répétées = moteur corrompu)
+  lastPumpError: string;
+  lastPostedProduceAt: number; // dernière production POSTÉE au worklet (performance.now)
 }
 const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNativeState ??= {
   ready: null,
@@ -78,6 +82,10 @@ const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNat
   fallbackClock: null,
   fallbackDriving: false,
   lastAliveAt: 0,
+  framesProduced: 0,
+  pumpErrors: 0,
+  lastPumpError: '',
+  lastPostedProduceAt: 0,
 }) as M4aNativeState;
 
 /** Charge le blob de données + initialise le moteur (m4aSoundInit). Idempotent.
@@ -195,6 +203,15 @@ function produceFrames(n: number, post: boolean = true): void {
   try {
     produceFramesInner(n, post);
   } catch (e) {
+    // 🩸 payé (dump user « silence total, journal VIDE ») : une panne moteur
+    // répétée à chaque need ne vivait qu'en console F12 — le journal du dump
+    // audio.status doit la porter, avec la ligne fautive, sinon diag aveugle.
+    _state.pumpErrors = (_state.pumpErrors ?? 0) + 1;
+    if (_state.pumpErrors === 1 || _state.pumpErrors % 600 === 0) {
+      const at = e instanceof Error ? (e.stack ?? '').split('\n')[1]?.trim() : '';
+      _state.lastPumpError = `${e instanceof Error ? e.message : String(e)}${at ? ` @ ${at}` : ''}`;
+      logAudio(`PANNE POMPE ×${_state.pumpErrors}`, _state.lastPumpError.slice(0, 220));
+    }
     console.error('[m4a-native] produceFrames', e);
   } finally {
     _state.producing = false;
@@ -221,9 +238,11 @@ function produceFramesInner(n: number, post: boolean): void {
       }
       regs.set(gSoundIoRam.subarray(REG_BASE, REG_BASE + REG_LEN), f * REG_LEN);
       for (const r of TRIGGER_REGS) gSoundIoRam[r] &= 0x7f; // trigger consommé
+      _state.framesProduced = (_state.framesProduced ?? 0) + 1;
     }
     if (post) {
       _state.node!.port.postMessage({ t: 'frames', n, pcm: pcm.buffer, regs: regs.buffer }, [pcm.buffer, regs.buffer]);
+      _state.lastPostedProduceAt = performance.now();
     }
   }
 }
@@ -246,8 +265,13 @@ function installFallbackClock(): void {
     // L'audio ne cadence que si le ctx tourne ET que le processor donne
     // signe de vie (heartbeat ~10 Hz) : un processor mort avec un ctx
     // « running » figeait tout (🩸 « silence infini, titre 1 frame »).
+    // 🩸 3e blast-gate (dump user : bgm st=0 STRICT figé, journal vide) : le
+    // heartbeat « ring vide = vivant » mentait quand la POMPE ne postait plus
+    // (need muet ou exception) → l'invariante est désormais LA PRODUCTION
+    // POSTÉE : sans post depuis >1 s, la secours reprend, quoi qu'il arrive.
     const workletAlive = now - _state.lastAliveAt < 1000;
-    const audioDrives = !!ctx && ctx.state === 'running' && workletAlive;
+    const pumpFlows = now - (_state.lastPostedProduceAt ?? 0) < 1000;
+    const audioDrives = !!ctx && ctx.state === 'running' && workletAlive && pumpFlows;
     _state.fallbackDriving = !audioDrives;
     if (audioDrives) {
       last = now;
