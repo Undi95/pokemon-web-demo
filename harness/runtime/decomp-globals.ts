@@ -1005,9 +1005,22 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
 export function PlayCryInternal(
   species: number, pan: number, volume: number, priority: number, mode: number,
 ): void {
-  if (!_nativeEngineReady) { ensureNativeEngine(); return; } // cri du boot perdu, comme un SE
-  (globalThis as { __soundPlayCryInternal?: (s: number, p: number, v: number, pr: number, m: number) => void })
-    .__soundPlayCryInternal?.(species, pan, volume, priority, mode);
+  // 🩸 payé (« cri du Lotad muet au Birch speech ») : l'ancien gate
+  // `if (!_nativeEngineReady) return;` DROPPAIT EN SILENCE — le flag est local à
+  // CE module, et l'appel arrivait avec un flag froid alors que le moteur (global
+  // __soundPlayCryInternal, posé par src/sound.ts) était vivant et sonore depuis
+  // des minutes. Le global EST le témoin de vie du foyer 1:1 : s'il existe, on
+  // délègue, point. S'il manque, on kick l'init et on HURLE (règle repo : un gate
+  // qui perd un asset ne se tait jamais).
+  const fn = (globalThis as { __soundPlayCryInternal?: (s: number, p: number, v: number, pr: number, m: number) => void })
+    .__soundPlayCryInternal;
+  if (!fn) {
+    ensureNativeEngine();
+    logAudio(`cri PERDU sp=${species} (moteur pas prêt)`);
+    console.error('[m4a-native] PlayCryInternal : cri perdu, moteur pas prêt', { species, pan, volume, priority, mode });
+    return;
+  }
+  fn(species, pan, volume, priority, mode);
 }
 
 // Canal cris des anims combat : battle_anim_sound_tasks (_playCryOf → GROWL/ROAR/

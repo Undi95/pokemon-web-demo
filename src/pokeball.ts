@@ -954,8 +954,11 @@ function SpriteCB_ReleasedMonFlyOut_Birch(sprite: DecompSprite, runtime: DecompR
     // foundation `pokemon-animation.ts` qui handle cry + 2-frame switch +
     // idle anim launch. panModeAnimFlag=0 (= pan -25, default Birch).
     if (speciesForCry > 0) {
+      // 1:1 décomp sound.c PlayCry_Normal : PlayCryInternal(species, pan,
+      // CRY_VOLUME=120, 10, CRY_MODE_NORMAL=0). (Ex-(100,2) : cri trop faible,
+      // retour user au Birch speech.)
       DoMonFrontSpriteAnimation(runtime, m, speciesForCry, false, 0,
-        (sp, pan) => PlayCryInternal(sp, pan, 100, 2, 0));
+        (sp, pan) => PlayCryInternal(sp, pan, 120, 10, 0));
     }
     // ball callback = SpriteCallbackDummy (= no-op idle, ball est déjà invisible).
     ball.callback = SpriteCallbackDummy;
