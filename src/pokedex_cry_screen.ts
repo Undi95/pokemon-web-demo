@@ -5,10 +5,10 @@
  * BG0, 32×7 tiles) + VU-mètre à aiguille affine (fenêtre WIN_VU_METER + sprite
  * needle 64×64).
  *
- * Adaptation source audio : le C lit `gSoundInfo.pcmBuffer` (mixage DirectSound
- * live) — chez nous le cri = WAV WebAudio → `getCryWaveformSamples(16)` lit les
- * samples du buffer décodé à la position de lecture réelle (music.ts). Même
- * cadence (16 samples s8 ×2 par frame, 1 sample sur 2), même pipeline dessin.
+ * Source audio 1:1 (depuis le câblage son natif) : comme le C, on lit
+ * `gSoundInfo.pcmBuffer` (le mixage DirectSound LIVE du moteur) à la tranche
+ * jouée (gPcmDmaCounter, main.c:353) — l'ancienne adaptation WAV
+ * (getCryWaveformSamples du shim) est morte.
  *
  * Adaptation dessin : le C écrit le tiledata 4bpp de la fenêtre via des offsets
  * précalculés (sWaveformOffsets) + masques nybble — notre fenêtre = pixelBuffer
@@ -21,8 +21,11 @@ import { gSineTable } from './trig';
 import { loadTileBin, loadGbaPal } from '../harness/gba/png-loader';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { CopyToWindowPixelBuffer, CopyWindowToVram, GetWindowAttribute, GetWindowPixelBuffer, WINDOW_BG } from './window';
-import { getCryWaveformSamples, isCryPlaying, playCry, stopCry } from '../harness/m4a/music';
+import { isCryPlaying, playCry, stopCry } from '../harness/m4a/music';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { gSoundInfo } from './m4a';
+import { gPcmDmaCounter } from './main';
+import { PCM_DMA_BUF_SIZE } from '../include/gba/m4a_internal';
 
 const MIN_NEEDLE_POS = 32;
 const MAX_NEEDLE_POS = -32;
@@ -180,14 +183,20 @@ function AdvancePlayhead(windowId: number): void {
   for (let i = 0; i < 7; i++) _stampBgTile(offset, i);
 }
 
-/** 1:1 `BufferCryWaveformSegment` : 16 samples s8 ×2 depuis la lecture courante. */
+/** 1:1 `BufferCryWaveformSegment` (pokedex_cry_screen.c:353-367) : lit la
+ *  tranche jouée du pcmBuffer du MOTEUR (moitié gauche @+PCM_DMA_BUF_SIZE,
+ *  1 sample sur 2, ×2 — l'Int8Array wrappe comme le s8 du C). */
 function BufferCryWaveformSegment(): void {
   if (!sDexCryScreen) return;
-  const samples = getCryWaveformSamples(16);
-  for (let i = 0; i < 16; i++) {
-    const s = samples ? samples[i] : 0;
-    sDexCryScreen.cryWaveformBuffer[i] = Math.max(-128, Math.min(127, s * 2));
-  }
+  let baseBuffer: number;
+  if (gPcmDmaCounter < 2)
+    baseBuffer = 0;
+  else
+    baseBuffer = (gSoundInfo.pcmDmaPeriod + 1 - gPcmDmaCounter) * gSoundInfo.pcmSamplesPerVBlank;
+
+  const buffer = baseBuffer + PCM_DMA_BUF_SIZE;
+  for (let i = 0; i < sDexCryScreen.cryWaveformBuffer.length; i++)
+    sDexCryScreen.cryWaveformBuffer[i] = gSoundInfo.pcmBuffer[buffer + i * 2] * 2;
 }
 
 function DrawWaveformFlatline(): void {

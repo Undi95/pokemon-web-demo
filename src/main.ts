@@ -73,3 +73,12 @@ import { CRYSONG_SIZE as _CRYSONG_SIZE, MAX_POKEMON_CRIES as _MAX_POKEMON_CRIES 
 export function ClearPokemonCrySongs(): void {
   _gSoundMemory_CRY.fill(0, _CRYSONG_RAM_OFF, _CRYSONG_RAM_OFF + _MAX_POKEMON_CRIES * _CRYSONG_SIZE);
 }
+
+// ─── 1:1 main.c:70 gPcmDmaCounter (câblage son m4a) ──────────────────────────
+/** 1:1 décomp `COMMON_DATA s8 gPcmDmaCounter` — copie de
+ *  gSoundInfo.pcmDmaCounter prise par VBlankIntr (main.c:353) AVANT
+ *  m4aSoundMain, lue par BufferCryWaveformSegment (pokedex_cry_screen.c:359). */
+export let gPcmDmaCounter = 0;
+export function setGPcmDmaCounter(v: number): void {
+  gPcmDmaCounter = (v << 24) >> 24;
+}

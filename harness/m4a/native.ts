@@ -27,6 +27,7 @@ import {
   setSoundMemoryTranslate,
 } from '../../src/m4a_1';
 import { gMPlayInfo_BGM, gMPlayInfo_SE1, gMPlayInfo_SE2, gSoundInfo, m4aSoundInit, m4aSoundMain, setGVoicegroup000, SOUND_RAM_SIZE } from '../../src/m4a';
+import { setGPcmDmaCounter } from '../../src/main';
 import { setGSongTable } from '../../src/song_table';
 import { PCM_DMA_BUF_SIZE } from '../../include/gba/m4a_internal';
 import { getAudioContext, getNativeOut } from './audio-context';
@@ -197,6 +198,9 @@ function produceFramesInner(n: number, post: boolean): void {
     const regs = new Uint8Array(n * REG_LEN);
     for (let f = 0; f < n; f++) {
       m4aSoundVSync();
+      // 1:1 main.c:353 (VBlankIntr) : gPcmDmaCounter copié AVANT m4aSoundMain
+      // — lu par BufferCryWaveformSegment (écran cri du Pokédex).
+      setGPcmDmaCounter(gSoundInfo.pcmDmaCounter);
       m4aSoundMain();
       const dc = gSoundInfo.pcmDmaCounter;
       const cur = dc - 1 > 0 ? spv * (period - (dc - 1)) : 0;
