@@ -3919,7 +3919,7 @@ import { FreeMonSpritesGfx, BeginFastPaletteFade } from '../harness/runtime/deco
 import {
   stepBattleScriptCommand, gBattleScriptContext, getBattleScriptOffset,
 } from './engine/battle/script-interpreter';
-import { fillActiveBattleMonsForBattleStart } from './engine/battle/party-storage';
+import { fillBattleMonFromParty } from './engine/battle/party-storage';
 import {
   B_ACTION_TRY_FINISH as _B_ACTION_TRY_FINISH_BSE,
   B_ACTION_FINISHED as _B_ACTION_FINISHED_BSE,
@@ -4303,15 +4303,23 @@ function HandleSetPokedexFlag(nationalDexNum: number, caseId: number, personalit
  *  Cette fonction simule le buffer en cas où le wire n'est pas encore complet. */
 function _readBattleMonFromBuffer(battler: number): void {
   // 1:1-observable : le décomp désérialise gBattleBufferB (struct BattlePokemon
-  // sérialisée par CopyPlayerMonData) → gBattleMons[battler]. En single-player
-  // LOCAL, le buffer IPC (multi-CPU/link) est inutile : on remplit gBattleMons
-  // directement depuis le party (gPlayerParty/gEnemyParty) via le MÊME helper que
-  // la voie V — `fillActiveBattleMonsForBattleStart` (idempotent, remplit tous les
-  // battlers actifs). Résultat IDENTIQUE au décomp ; la dérivation types/ability/
-  // stat-stages qui suit l'appel (BattleIntro state) finalise gBattleMons[battler].
-  // (Voie L flag-ON : sans ça, gBattleMons reste à 0 car _CopyPlayerMonData est stub.)
-  void battler;
-  fillActiveBattleMonsForBattleStart();
+  // sérialisée par le controller en réponse à EmitGetMonData REQUEST_ALL_BATTLE)
+  // → gBattleMons[gActiveBattler] (battle_main.c:3414-3416). Le controller a lu
+  // party[gBattlerPartyIndexes[battler]] du BON côté (gPlayerParty côté joueur,
+  // gEnemyParty côté adverse). En single-player LOCAL le buffer IPC est stub → on
+  // remplit gBattleMons[battler] DIRECTEMENT depuis CE mapping party (MÊME source
+  // + MÊME index que le décomp), pour CE battler seul — pas seulement 0/1 : en
+  // double (gBattlersCount=4) les battlers 2/3 doivent aussi être peuplés, sinon
+  // gBattleMons[2/3].species=0 → GetAbilityBySpecies lit gSpeciesInfo[SPECIES_NONE]
+  // .abilities (undefined) → crash BattleMainCB1 (roll infini des dresseurs).
+  // gBattlerPartyIndexes est posé 1:1 par SetBattlePartyIds (InitBattleControllers,
+  // CB2_HandleStartBattle case 15) AVANT cet état — pour un double standard :
+  // [0]=0,[1]=0 (mons de gauche), [2]=1,[3]=1 (mons de droite). La dérivation
+  // types/ability/stat-stages qui suit l'appel (BattleIntro state) finalise.
+  const stateMod = _stateNs as unknown as { gBattlerPartyIndexes: number[] };
+  const partyIdx = stateMod.gBattlerPartyIndexes[battler] ?? 0;
+  const partySource = GET_BATTLER_SIDE(battler) === B_SIDE_PLAYER ? 'player' : 'enemy';
+  fillBattleMonFromParty(battler, partySource, partyIdx);
 }
 
 /** 1:1 décomp `ResetSentPokesToOpponentValue()` (battle_util.c:900-913). */
