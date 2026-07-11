@@ -1179,7 +1179,8 @@ function Cmd_damagecalc(_ctx: BattleScriptContext): boolean {
 // ─── Cmd_typecalc (0x06) ────────────────────────────────────────────────────
 
 /** 1:1 décomp `Cmd_typecalc` (battle_script_commands.c:1355-1424).
- *  Delegated to type-calc.ts module. */
+ *  Delegated to type-calc.ts module.
+ *  @body-parity-ok délègue TypecalcImpl (:12799), 1:1 prouvé par probe-typecalc-1to1.mjs (STAB + table 336/336) */
 function Cmd_typecalc(_ctx: BattleScriptContext): boolean {
   return TypecalcImpl();
 }

@@ -245,7 +245,8 @@ function OpponentHandleGetMonData(): void {
  *  est du code mort — complete direct = même comportement observable. */
 function OpponentHandleGetRawMonData(): void { OpponentBufferExecCompleted(); }
 /** 1:1 décomp `SetOpponentMonData(monId)` : désérialise gBattleBufferA[active] + applique au
- *  mon `monId` de gEnemyParty via SetMonData (round-trip bufferA, plus de side-channel). */
+ *  mon `monId` de gEnemyParty via SetMonData (round-trip bufferA, plus de side-channel).
+ *  @body-parity-ok même helper _applySetMonData que SetPlayerMonData */
 function _SetOpponentMonData(monId: number): void {
   SetBattleMonDataFromBuffer(monId, gBattleBufferA[gActiveBattler], gActiveBattler);
 }

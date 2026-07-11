@@ -452,7 +452,8 @@ export function ExpandBattleTextBuffPlaceholders(src: Uint8Array, dst: Uint8Arra
  *  Itère le template (bytes) ; sur PLACEHOLDER_BEGIN(0xFD) résout le code
  *  B_TXT_* en bytes (via _resolveToCpy) et les copie ; sinon copie le byte
  *  littéral. Trainer lose/win text → append PAUSE_UNTIL_PRESS. EOS final.
- *  Retourne la longueur écrite (sans l'EOS). */
+ *  Retourne la longueur écrite (sans l'EOS).
+ *  @body-parity-ok itérateur 1:1 ; switch B_TXT_* dans _resolveToCpy (:345) ; double/link/win-text différés */
 export function BattleStringExpandPlaceholders(src: Uint8Array, dst: Uint8Array, msgData: BattleMsgData): number {
   let dstID = 0;
   let i = 0;

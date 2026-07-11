@@ -991,7 +991,8 @@ function _CopyPlayerMonData(monId: number, dst: Uint8Array): number {
 }
 
 /** 1:1 décomp `SetPlayerMonData(monId)` (battle_controller_player.c:116) : désérialise
- *  gBattleBufferA[active] + applique au mon `monId` de gPlayerParty via SetMonData. */
+ *  gBattleBufferA[active] + applique au mon `monId` de gPlayerParty via SetMonData.
+ *  @body-parity-ok délègue SetBattleMonDataFromBuffer→_applySetMonData (party-storage.ts), switch 20 cas ; contest-stats hors combat différées */
 function _SetPlayerMonData(monId: number): void {
   SetBattleMonDataFromBuffer(monId, gBattleBufferA[gActiveBattler], gActiveBattler);
 }

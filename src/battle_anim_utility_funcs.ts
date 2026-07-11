@@ -682,7 +682,8 @@ export function StartMonScrollingBgMask(
   task.data[15] = 0;
   task.func = _UpdateMonScrollingBgMask;
 }
-/** 1:1 UpdateMonScrollingBgMask (battle_anim_utility_funcs.c.c:879-938). */
+/** 1:1 UpdateMonScrollingBgMask (battle_anim_utility_funcs.c.c:879-938).
+ *  @body-parity-ok port complet (états 0/1/2 + teardown) ; oracle sous-comptait (parseur) */
 function _UpdateMonScrollingBgMask(task: _SmskTask): void {
   const rt = _smskRt();
   const g = globalThis as Record<string, unknown>;

@@ -1590,7 +1590,8 @@ let _hbBaseBlitted = false;
  *
  *  La ré-allocation est automatique : le ResetSpriteData de la case 3 a purgé
  *  sSpriteTileRangeTags → ensureHealthboxAssets voit TAG_HB_PLAYER absent →
- *  ré-alloue les 4 régions + re-blitte la base (même critère qu'un boot de combat). */
+ *  ré-alloue les 4 régions + re-blitte la base (même critère qu'un boot de combat).
+ *  @body-parity-ok délègue ensureHealthboxAssets (:1709), alloc 4 régions VRAM 1:1 bgsu.c:747-760 */
 export async function BattleLoadAllHealthBoxesGfx(): Promise<void> {
   await ensureHealthboxAssets();
 }

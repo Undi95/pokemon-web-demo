@@ -25,12 +25,30 @@ import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPal
 import { DestroySprite } from '../../sprite';
 import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
-import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
+import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags, gTrainerBattleOpponent_A } from './state';
 import { getRecentOpcodes } from './script-interpreter';
-import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK, BATTLE_TYPE_FIRST_BATTLE } from './constants';
+import {
+  BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK, BATTLE_TYPE_FIRST_BATTLE,
+  BATTLE_TYPE_KYOGRE_GROUDON, BATTLE_TYPE_REGI, BATTLE_TYPE_RECORDED_LINK,
+  BATTLE_TYPE_FRONTIER, BATTLE_TYPE_TRAINER_HILL,
+} from './constants';
+// TRAINER_CLASS_* (switch GetBattleBGM 1:1 pokemon.c:6419) + getString (nom Wally).
+import {
+  TRAINER_CLASS_AQUA_LEADER, TRAINER_CLASS_MAGMA_LEADER, TRAINER_CLASS_TEAM_AQUA,
+  TRAINER_CLASS_TEAM_MAGMA, TRAINER_CLASS_AQUA_ADMIN, TRAINER_CLASS_MAGMA_ADMIN,
+  TRAINER_CLASS_LEADER, TRAINER_CLASS_CHAMPION, TRAINER_CLASS_RIVAL,
+  TRAINER_CLASS_ELITE_FOUR, TRAINER_CLASS_SALON_MAIDEN, TRAINER_CLASS_DOME_ACE,
+  TRAINER_CLASS_PALACE_MAVEN, TRAINER_CLASS_ARENA_TYCOON, TRAINER_CLASS_FACTORY_HEAD,
+  TRAINER_CLASS_PIKE_QUEEN, TRAINER_CLASS_PYRAMID_KING, TRAINER_CLASS_EXPERT,
+} from '../../../include/constants/trainers';
+import { getString } from '../../../harness/runtime/decomp-strings';
 // (Le miroir src/game/battle_transition.ts est chargé par la scène — import ici
 //  = cycle ESM TDZ au boot froid, BG_SCREEN_SIZE before initialization.)
-import { MUS_VS_WILD, MUS_VS_TRAINER } from '../../../include/constants/songs';
+import {
+  MUS_VS_WILD, MUS_VS_TRAINER, MUS_VS_KYOGRE_GROUDON, MUS_VS_REGI,
+  MUS_VS_AQUA_MAGMA_LEADER, MUS_VS_AQUA_MAGMA, MUS_VS_GYM_LEADER, MUS_VS_CHAMPION,
+  MUS_VS_RIVAL, MUS_VS_ELITE_FOUR, MUS_VS_FRONTIER_BRAIN,
+} from '../../../include/constants/songs';
 // Transitions (flash/Slice/WhiteBars/PokeballsTrail) : MIROIR src/game/
 // battle_transition.ts, consommé via la surface __battleTransitionMirror
 // (déplacement condition C — l'import statique du miroir = cycle TDZ).
@@ -122,14 +140,98 @@ function _setMainSavedCallback(cb: (() => void) | null): void {
 /** Chanson OW sauvée avant le combat, pour la reprendre au retour. */
 let _savedOwSong: number | null = null;
 
-/** 1:1 décomp `GetBattleBGM()` (pokemon.c:6394) : BGM selon gBattleTypeFlags.
- *  Wild → MUS_VS_WILD ; dresseur/link → MUS_VS_TRAINER (défaut ; les variantes
- *  leader/champion par trainerClass = raffinement quand gTrainers sera câblé voie
- *  L). Branches légendaires (Kyogre/Groudon/Regi) omises tant que ces combats
- *  n'existent pas. */
+/** 1:1 décomp `gTrainers[gTrainerBattleOpponent_A].trainerClass` (pokemon.c:6417).
+ *  Lit le miroir __gTrainers (battle-trainer-data-bridge). ⚠️ DETTE SYSTÉMIQUE : le
+ *  bridge pose trainerClass=0 (déféré, cf. bridge:116 « non lu par CreateNPCTrainerParty »)
+ *  → aujourd'hui TOUS les dresseurs tombent sur `default → MUS_VS_TRAINER` (=
+ *  comportement actuel préservé). Le switch ci-dessous est 1:1 et s'allumera
+ *  (leader/champion/rival/team → leur musique, assets présents) dès que le bridge
+ *  peuplera la classe — MÊME dette qui neutralise les branches classe de
+ *  GetTrainerBattleTransition (battle_setup.ts:1599) et _getTrainerClass
+ *  (battle_main.ts:4379). `gameDataTrainers[key].trainerClass` porte la classe réelle
+ *  (string) si un chantier veut câbler la population de __gTrainers. */
+function _getTrainerClassBgm(trainerId: number): number {
+  return (globalThis as { __gTrainers?: Record<number, { trainerClass?: number }> })
+    .__gTrainers?.[trainerId]?.trainerClass ?? 0;
+}
+
+/** 1:1 décomp `StringCompare(gTrainers[id].trainerName, gText_<key>)` : 0 si égal.
+ *  Port : trainerName = char codes FR de __gTrainers (dette encodage bridge:18) ;
+ *  gText via getString (FR aussi) → comparaison de chaînes cohérente. Branche RIVAL
+ *  inatteignable tant que trainerClass=0 (cf. dette ci-dessus). */
+function _trainerNameCompareBgm(trainerId: number, textKey: string): number {
+  const t = (globalThis as { __gTrainers?: Record<number, { trainerName?: number[] }> })
+    .__gTrainers?.[trainerId];
+  const name = t?.trainerName ? String.fromCharCode(...t.trainerName) : '';
+  return name === getString(textKey) ? 0 : 1;
+}
+
+/** 1:1 décomp `GetFrontierOpponentClass(u16)` (battle_tower.c) — NON PORTÉ (Battle
+ *  Frontier hors périmètre solo-core). REF-THROW NOMMÉE : la branche appelante
+ *  `if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)` n'est JAMAIS vraie en combat
+ *  principal → inatteignable. À transcrire avec le socle battle_tower/frontier_util. */
+function GetFrontierOpponentClass(_trainerId: number): number {
+  throw new Error('[GetBattleBGM] GetFrontierOpponentClass non porté (Battle Frontier hors scope solo-core)');
+}
+
+/** 1:1 décomp `u16 GetBattleBGM(void)` (pokemon.c:6394-6457) : BGM de combat selon
+ *  gBattleTypeFlags puis (dresseur) la classe du dresseur. Kyogre/Groudon, Regi,
+ *  link/recorded, wild = branches par FLAG (live). Le switch trainerClass est 1:1 ;
+ *  cf. _getTrainerClassBgm pour la dette trainerClass=0 (→ default MUS_VS_TRAINER
+ *  aujourd'hui). Aucun test d'espèce ici (le décomp détecte les légendaires via les
+ *  FLAGS posés en amont par battle_setup, PAS via GetMonData). */
 function _getBattleBGM(): number {
-  if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_LINK)) return MUS_VS_TRAINER;
-  return MUS_VS_WILD;
+  if (gBattleTypeFlags & BATTLE_TYPE_KYOGRE_GROUDON) {
+    return MUS_VS_KYOGRE_GROUDON;
+  } else if (gBattleTypeFlags & BATTLE_TYPE_REGI) {
+    return MUS_VS_REGI;
+  } else if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
+    return MUS_VS_TRAINER;
+  } else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
+    let trainerClass: number;
+
+    if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
+      trainerClass = GetFrontierOpponentClass(gTrainerBattleOpponent_A);
+    else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
+      trainerClass = TRAINER_CLASS_EXPERT;
+    else
+      trainerClass = _getTrainerClassBgm(gTrainerBattleOpponent_A);
+
+    switch (trainerClass) {
+      case TRAINER_CLASS_AQUA_LEADER:
+      case TRAINER_CLASS_MAGMA_LEADER:
+        return MUS_VS_AQUA_MAGMA_LEADER;
+      case TRAINER_CLASS_TEAM_AQUA:
+      case TRAINER_CLASS_TEAM_MAGMA:
+      case TRAINER_CLASS_AQUA_ADMIN:
+      case TRAINER_CLASS_MAGMA_ADMIN:
+        return MUS_VS_AQUA_MAGMA;
+      case TRAINER_CLASS_LEADER:
+        return MUS_VS_GYM_LEADER;
+      case TRAINER_CLASS_CHAMPION:
+        return MUS_VS_CHAMPION;
+      case TRAINER_CLASS_RIVAL:
+        if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
+          return MUS_VS_RIVAL;
+        if (!_trainerNameCompareBgm(gTrainerBattleOpponent_A, 'gText_BattleWallyName'))
+          return MUS_VS_TRAINER;
+        return MUS_VS_RIVAL;
+      case TRAINER_CLASS_ELITE_FOUR:
+        return MUS_VS_ELITE_FOUR;
+      case TRAINER_CLASS_SALON_MAIDEN:
+      case TRAINER_CLASS_DOME_ACE:
+      case TRAINER_CLASS_PALACE_MAVEN:
+      case TRAINER_CLASS_ARENA_TYCOON:
+      case TRAINER_CLASS_FACTORY_HEAD:
+      case TRAINER_CLASS_PIKE_QUEEN:
+      case TRAINER_CLASS_PYRAMID_KING:
+        return MUS_VS_FRONTIER_BRAIN;
+      default:
+        return MUS_VS_TRAINER;
+    }
+  } else {
+    return MUS_VS_WILD;
+  }
 }
 
 /** 1:1 décomp `PlayBattleBGM()` (pokemon.c:6459) : stop la musique OW (ResetMapMusic

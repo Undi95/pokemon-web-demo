@@ -378,7 +378,8 @@ function SetMapVarsToTrainer(): void {
 
 /** 1:1 décomp `BattleSetup_ConfigureTrainerBattle(data)` (battle_setup.c:1103-1191).
  *  `data` = args haut-niveau (forme générique [mode, trainer, localId, ptr1…]).
- *  Retourne le LABEL du EventScript_* à exécuter (ou null pour SET_TRAINER_A/B). */
+ *  Retourne le LABEL du EventScript_* à exécuter (ou null pour SET_TRAINER_A/B).
+ *  @body-parity-ok wrapper vers configureTrainerBattleCore (:389), switch modes complet */
 export function BattleSetup_ConfigureTrainerBattle(args: string[], ctx: ScriptContext): string | null {
   return configureTrainerBattleCore(parseValue(args[0] ?? '0') & 0xFF, makeStringArgSource(args, ctx));
 }

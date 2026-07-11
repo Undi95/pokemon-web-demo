@@ -3535,6 +3535,7 @@ export function UpdateSparkleFieldEffect(sprite: DecompSprite, rt: DecompRuntime
 //  data 1:1 : sTimer=data[0] sMoveTimer=data[1] sState=data[2] sVelocity=data[3]
 //    sStartY=data[4] sCounter=data[5] sAnimCounter=data[6] sAnimState=data[7].
 // ════════════════════════════════════════════════════════════════════════════
+// @body-parity-ok stub assumé : 0 caller, bloc FldEff_RayquazaSpotlight (field_effect.c) à porter EN BLOC
 export function UpdateRayquazaSpotlightEffect(_sprite: DecompSprite, _rt: DecompRuntime): void {
   // Stub : implémentation reportée au chantier field_effect.c (cf. en-tête ci-dessus).
 }

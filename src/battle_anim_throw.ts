@@ -84,6 +84,17 @@ import { setGDoingBattleAnim } from './engine/battle/state';
 import {
   gLastUsedItem, gBattleStruct,
 } from './engine/battle/state';
+// AnimTask_SwapMonSpriteToFromSubstitute (2113) : swap gfx mon↔substitut via
+// LoadBattleMonGfxAndAnimate (async chez nous → jeton, cf. battle_anim_effects_3.ts:4042).
+import { LoadBattleMonGfxAndAnimate } from './battle_gfx_sfx_util';
+import { GET_BATTLER_SIDE, B_SIDE_PLAYER } from './engine/battle/constants';
+
+const DISPLAY_WIDTH = 240;  // include/gba/defines.h
+
+/** Jetons d'attente du load async pour AnimTask_SwapMonSpriteToFromSubstitute
+ *  (case 1). Même mécanisme que battle_anim_effects_3.ts (_stToken/_stDone). */
+let _swapSubToken = 0;
+const _swapSubDone = new Set<number>();
 
 // ─── BALL_* enum (= include/pokeball.h:4-19) ───────────────────────────────
 
@@ -478,11 +489,83 @@ export function AnimTask_SwitchOutBallEffect(taskId: number): void {
 // ─── AnimTask_SwapMonSpriteToFromSubstitute (battle_anim_throw.c:2113) ─────
 
 /** 1:1 décomp `AnimTask_SwapMonSpriteToFromSubstitute(taskId)` (2113-2169).
- *  Swap sprite gfx entre mon original et substitute doll. */
+ *  arg0 (data[11]) : TRUE → swap vers le mon, FALSE → vers le substitut.
+ *  case 0 : glisse le sprite hors écran (x2, sens selon le côté) jusqu'à ce que
+ *  x > DISPLAY_WIDTH+64 ; case 1 : LoadBattleMonGfxAndAnimate (swap du gfx pendant
+ *  que le sprite est masqué hors écran) ; case 2 : ré-glisse le sprite en place
+ *  jusqu'à x2==0 puis DestroyAnimVisualTask. Le swap gfx VRAM lui-même est fait par
+ *  LoadBattleMonGfxAndAnimate (battle_gfx_sfx_util.ts:367, BattleLoadSubstituteOrMonSpriteGfx).
+ *  Async chez nous → jeton d'attente en case 1 (précédent battle_anim_effects_3.ts:4042-4052). */
 export function AnimTask_SwapMonSpriteToFromSubstitute(taskId: number): void {
-  // Dette R3 : memcpy sprite gfx VRAM tile swap + paletteNum swap.
-  void taskId;
-  DestroyAnimVisualTask(taskId);
+  const attacker = _getAnimState().attacker;
+  const task = _gTasks(taskId);
+  const spriteId = _getBattlerSpriteId(attacker);
+  const rt = getRuntime();
+  const sp = (rt && spriteId >= 0)
+    ? (rt.gSprites?.[spriteId] as unknown as { x: number; x2: number } | undefined)
+    : undefined;
+  if (!sp) { DestroyAnimVisualTask(taskId); return; }
+
+  switch (task.data[10]) {
+    case 0:
+      task.data[11] = getAnimArg(0);
+      task.data[0] += 0x500;
+      if (GET_BATTLER_SIDE(attacker) !== B_SIDE_PLAYER)
+        sp.x2 += task.data[0] >> 8;
+      else
+        sp.x2 -= task.data[0] >> 8;
+
+      task.data[0] &= 0xFF;
+      {
+        const x = sp.x + sp.x2 + 32;
+        if (x > DISPLAY_WIDTH + 64)
+          task.data[10]++;
+      }
+      break;
+    case 1: {
+      // 1:1 :2136 LoadBattleMonGfxAndAnimate(attacker, data[11], spriteId).
+      // Async chez nous → jeton (le sprite est hors écran, l'échange gfx est invisible).
+      if ((task.data[14] | 0) === 0) {
+        const token = ++_swapSubToken;
+        task.data[14] = token;
+        void LoadBattleMonGfxAndAnimate(attacker, task.data[11] !== 0, spriteId)
+          .then(() => { _swapSubDone.add(token); })
+          .catch((e) => console.error('[AnimTask_SwapMonSpriteToFromSubstitute]', e));
+        break;
+      }
+      if (!_swapSubDone.has(task.data[14])) break;  // load en vol
+      _swapSubDone.delete(task.data[14]);
+      task.data[14] = 0;
+      task.data[10]++;
+      break;
+    }
+    case 2: {
+      task.data[0] += 0x500;
+      if (GET_BATTLER_SIDE(attacker) !== B_SIDE_PLAYER)
+        sp.x2 -= task.data[0] >> 8;
+      else
+        sp.x2 += task.data[0] >> 8;
+
+      task.data[0] &= 0xFF;
+      let done = false;
+      if (GET_BATTLER_SIDE(attacker) !== B_SIDE_PLAYER) {
+        if (sp.x2 <= 0) {
+          sp.x2 = 0;
+          done = true;
+        }
+      } else {
+        if (sp.x2 >= 0) {
+          sp.x2 = 0;
+          done = true;
+        }
+      }
+
+      if (done)
+        DestroyAnimVisualTask(taskId);
+
+      break;
+    }
+  }
 }
 
 // ─── AnimTask_SubstituteFadeToInvisible (battle_anim_throw.c:2171) ─────────

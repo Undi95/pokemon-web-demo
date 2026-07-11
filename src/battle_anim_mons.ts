@@ -1462,7 +1462,8 @@ function _hl2RevConst(v: number, p: string): string | undefined {
 /** 1:1 `CreateAdditionalMonSpriteForMoveAnim` (battle_anim_mons.c.c:2089) — async plateforme.
  *  Retourne le spriteId (ou -1). Le pic (frame 0, 0x800) est chargé en alloc
  *  inline (AllocSpriteTiles via CreateSpriteInline) ; palette species écrite
- *  dans un slot AllocSpritePalette(tag dédié id). */
+ *  dans un slot AllocSpritePalette(tag dédié id).
+ *  @body-parity-ok port async complet ; oracle sous-comptait (signature multi-ligne) */
 export async function CreateAdditionalMonSpriteForMoveAnim(
   species: number, isBackpic: boolean, id: number,
   x: number, y: number, subpriority: number,

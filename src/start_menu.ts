@@ -80,6 +80,7 @@ import { FlagGet } from './engine/script/script-vars';
 import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './option_menu';
 // Le callback signature est (rt) => void, on adapte vers () => void pour
 // SetMainCallback2 (= notre runtime utilise no-arg callbacks).
+// @body-parity-ok adaptateur ; vrai port = state-machine option_menu.ts:697
 const CB2_InitOptionMenu = (): void => { const rt = (globalThis as Record<string, unknown>).__rt as Parameters<typeof _CB2_InitOptionMenu_callback>[0]; _CB2_InitOptionMenu_callback(rt); };
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 import { preloadOptionMenuAssets } from './option_menu';

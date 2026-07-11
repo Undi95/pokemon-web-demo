@@ -1452,6 +1452,13 @@ function _GetImprisonedMovesCount(battlerId: number, move: number): number {
   return imprisonedMoves;
 }
 
+/** Export canonique 1:1 `GetImprisonedMovesCount` (battle_util.c:1129) pour les
+ *  call-sites externes (TrySetCantSelectMoveBattleScript, battle_main.ts). Délègue
+ *  au local `_GetImprisonedMovesCount` (absorbé depuis move-limitations.ts). */
+export function GetImprisonedMovesCount(battlerId: number, move: number): number {
+  return _GetImprisonedMovesCount(battlerId, move);
+}
+
 /** 1:1 décomp `CheckMoveLimitations(battlerId, unusableMoves, check)` (battle_util.c:1069).
  *  Dette : ITEM_ENIGMA_BERRY path (Frontier) skippé → GetItemHoldEffect direct. */
 export function CheckMoveLimitations(battlerId: number, unusableMoves: number, check: number): number {

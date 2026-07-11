@@ -1702,8 +1702,13 @@ import {
   GET_BATTLER_SIDE,
 } from './engine/battle/constants';
 import { ClearBattlerMoveHistory, ClearBattlerAbilityHistory } from './battle_ai_script_commands';
-import { CancelMultiTurnMoves, AreAllMovesUnusable } from './battle_util';
+import { CancelMultiTurnMoves, AreAllMovesUnusable, GetImprisonedMovesCount } from './battle_util';
 import { getSpeciesTypes } from './data/pokemon/species_info';
+// ── Imports 1:1 pour TrySetCantSelectMoveBattleScript (battle_util.c:963) ──
+import { getBattleMove } from './data/battle_moves';
+import { GetItemHoldEffect } from './item';
+import { setCurrentMove, setPotentialItemEffectBattler } from './engine/battle/state';
+import { HOLD_EFFECT_CHOICE_BAND, STATUS2_TORMENT, MOVE_STRUGGLE, MOVE_UNAVAILABLE } from './engine/battle/constants';
 
 /** 1:1 décomp `void FaintClearSetData(void)` (battle_main.c:3270-3355) : reset
  *  complet du battler actif au KO — stat stages, status2/3, effets croisés
@@ -2703,9 +2708,99 @@ function _AreAllMovesUnusable(): boolean {
   return AreAllMovesUnusable();
 }
 
-/** 1:1 décomp `TrySetCantSelectMoveBattleScript()`. */
-function _TrySetCantSelectMoveBattleScript(): boolean {
-  return false;
+/** 1:1 décomp `u8 TrySetCantSelectMoveBattleScript(void)` (battle_util.c:963-1067).
+ *  Vérifie si le move sélectionné (gBattleBufferB[active][2]) est INTERDIT
+ *  (Disable / Torment / Taunt / Imprison / objet Choice / PP=0). Si oui : pose
+ *  gSelectionBattleScripts[active] = le battle script du message idoine et
+ *  incrémente `limitations` ; le caller (STATE_WAIT_ACTION_CASE_CHOSEN, l.3051)
+ *  bascule en STATE_SELECTION_SCRIPT (affiche le message) puis re-demande l'action.
+ *  Retourne le nombre de limitations (0 = move sélectionnable).
+ *
+ *  Home battle_main (≠ décomp battle_util) car accède aux tableaux LOCAUX
+ *  gSelectionBattleScripts / gPalaceSelectionBattleScripts + _getBattleScriptOffset,
+ *  idiome identique aux cases voisines (ex. l.2917 ActionSelectionItemsCantBeUsed).
+ *  Éviter un import battle_util→battle_main (= cycle ESM/TDZ). ENIGMA_BERRY skippé
+ *  comme le frère CheckMoveLimitations (battle_util.ts:1457, dette Frontier).
+ *  AUDIT FIX : l'ancien stub `return false` laissait sélectionner un move
+ *  Disable/Provoc/Tourment/PP=0 sans message ni re-prompt (non-1:1). */
+function _TrySetCantSelectMoveBattleScript(): number {
+  let limitations = 0;
+  const active = gActiveBattler;
+  const move = gBattleMons[active].moves[_getBattleBufferB(active, 2)];
+  const choicedMove = gBattleStruct.choicedMove[active];
+
+  if (gDisableStructs[active].disabledMove === move && move !== MOVE_NONE) {
+    gBattleScripting.battler = active;
+    setCurrentMove(move);
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gPalaceSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingDisabledMoveInPalace');
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingDisabledMove');
+      limitations = 1;
+    }
+  }
+
+  if (move === gLastMoves[active] && move !== MOVE_STRUGGLE && (gBattleMons[active].status2 & STATUS2_TORMENT)) {
+    CancelMultiTurnMoves(active);
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gPalaceSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingTormentedMoveInPalace');
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingTormentedMove');
+      limitations++;
+    }
+  }
+
+  if (gDisableStructs[active].tauntTimer !== 0 && getBattleMove(move).power === 0) {
+    setCurrentMove(move);
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gPalaceSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingNotAllowedMoveTauntInPalace');
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingNotAllowedMoveTaunt');
+      limitations++;
+    }
+  }
+
+  if (GetImprisonedMovesCount(active, move)) {
+    setCurrentMove(move);
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gPalaceSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingImprisonedMoveInPalace');
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingImprisonedMove');
+      limitations++;
+    }
+  }
+
+  // 1:1 : item == ENIGMA_BERRY → gEnigmaBerries[].holdEffect ; sinon GetItemHoldEffect.
+  // Web port : chemin ENIGMA_BERRY (Frontier) skippé comme CheckMoveLimitations
+  // (battle_util.ts:1457-1458) → GetItemHoldEffect direct.
+  const holdEffect = GetItemHoldEffect(gBattleMons[active].item);
+  setPotentialItemEffectBattler(active);
+
+  if (holdEffect === HOLD_EFFECT_CHOICE_BAND && choicedMove !== MOVE_NONE && choicedMove !== MOVE_UNAVAILABLE && choicedMove !== move) {
+    setCurrentMove(choicedMove);
+    setLastUsedItem(gBattleMons[active].item);
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingNotAllowedMoveChoiceItem');
+      limitations++;
+    }
+  }
+
+  if (gBattleMons[active].pp[_getBattleBufferB(active, 2)] === 0) {
+    if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+      gProtectStructs[active].palaceUnableToUseMove = 1;
+    } else {
+      gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_SelectingMoveWithNoPP');
+      limitations++;
+    }
+  }
+
+  return limitations;
 }
 
 /** Délègue au canonique 1:1 `CalculatePPWithBonus` (party-storage). Source unique
@@ -6410,7 +6505,8 @@ function _SetCloseLinkCallback(): void {
   // Dette R3.
 }
 
-/** 1:1 décomp `LoadChosenBattleElement(i)`. */
+/** 1:1 décomp `LoadChosenBattleElement(i)`.
+ *  @body-parity-ok stub assumé : cascade link _BLE, hors périmètre solo */
 function _LoadChosenBattleElement(_i: number): void {
   // Dette R3 : battle element load (= BG / tilemap / palette).
 }
@@ -6448,7 +6544,8 @@ function _ResetTasks_BLE(): void {
   r?.ResetTasks();
 }
 
-/** 1:1 décomp `DrawBattleEntryBackground()`. */
+/** 1:1 décomp `DrawBattleEntryBackground()`.
+ *  @body-parity-ok stub assumé : cascade link _BLE, hors périmètre solo */
 function _DrawBattleEntryBackground(): void {
   // Dette R3 : battle entry BG draw.
 }

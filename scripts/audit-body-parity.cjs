@@ -234,9 +234,20 @@ function compare(cM, tsM, markers) {
 // Familles couvertes : (A) déclarations `function`, (B) méthodes de classe,
 // (C) const flèche à bloc `const Name = (...) => { … }`. Indices calculés sur le
 // texte STRIPPÉ (stripTs préserve la longueur ⇒ mêmes offsets que le brut).
-const TS_METHOD_RE = /^[ \t]+(?:public[ \t]+|private[ \t]+|protected[ \t]+|static[ \t]+|async[ \t]+|readonly[ \t]+)*([A-Za-z_$][\w$]*)[ \t]*\(([^;{}]*?)\)[ \t]*(?::[^;{}]*)?\{/gm;
+// Méthode de classe : on matche seulement la TÊTE jusqu'au `(` des args (nom + modifiers
+// + generic simple), puis on équilibre les parenthèses (matchParen, multi-ligne) et on
+// délègue le repérage du corps à findBodyBrace. L'ancienne version terminait sur `\{` avec
+// des args/rettype en `[^;{}]` : elle CASSAIT sur un type-retour objet `): { a: b } {` (le
+// `{` de l'objet était pris pour le corps → sous-comptage) et sur les args multi-lignes
+// contenant `{}`. findBodyBrace + le guard `;`/`{` de `add` filtrent les appels-statement.
+const TS_METHOD_HEAD = /^[ \t]+(?:(?:public|private|protected|static|async|readonly|override|get|set)[ \t]+)*([A-Za-z_$][\w$]*)[ \t]*(?:<[^<>{};]*>[ \t]*)?\(/gm;
 const TS_FN_HEAD = /(?:^|[^\w$.])(?:export[ \t]+)?(?:async[ \t]+)?function[ \t]+([A-Za-z_$][\w$]*)[ \t]*\(/g;
-const TS_ARROW_HEAD = /(?:^|[^\w$.])(?:export[ \t]+)?const[ \t]+([A-Za-z_$][\w$]*)[ \t]*=[ \t]*(?:async[ \t]+)?\(/g;
+// Arrow-const : tolère une ANNOTATION DE TYPE entre le nom et `=` (`const X: T = (…) =>`).
+// Le type est borné par le `=` d'affectation (`[^=;{}]` s'arrête au 1er `=`) → couvre les
+// formes courantes `: Foo`, `: Foo<Bar>`, `: A | B[]` ; les object-types `{…}` et
+// function-types (`=>`) en position de type restent hors champ (rares). Sans ce groupe,
+// une arrow-const typée n'était PAS extraite → l'oracle retombait sur une homonyme mince.
+const TS_ARROW_HEAD = /(?:^|[^\w$.])(?:export[ \t]+)?const[ \t]+([A-Za-z_$][\w$]*)[ \t]*(?::[^=;{}]+)?=[ \t]*(?:async[ \t]+)?\(/g;
 
 function extractTsFns(raw) {
   const s = stripTs(raw);
@@ -260,10 +271,14 @@ function extractTsFns(raw) {
     const brace = findBodyBrace(s, close + 1);
     add(m[1], m.index, brace);
   }
-  // (B) class methods
-  TS_METHOD_RE.lastIndex = 0;
-  while ((m = TS_METHOD_RE.exec(s))) {
-    add(m[1], m.index, m.index + m[0].length - 1);
+  // (B) class methods — tête → matchParen(args) → findBodyBrace (mêmes briques que A).
+  TS_METHOD_HEAD.lastIndex = 0;
+  while ((m = TS_METHOD_HEAD.exec(s))) {
+    const paren = TS_METHOD_HEAD.lastIndex - 1;
+    const close = matchParen(s, paren);
+    if (close < 0) continue;
+    const brace = findBodyBrace(s, close + 1);
+    add(m[1], m.index, brace);
   }
   // (C) block-arrow consts
   TS_ARROW_HEAD.lastIndex = 0;
@@ -292,6 +307,16 @@ function matchAngle(s, open) { // saute <...> équilibré (position de type)
   return -1;
 }
 function matchBracket(s, open) { let d = 0; for (let i = open; i < s.length; i++) { const c = s[i]; if (c === '[') d++; else if (c === ']') { d--; if (d === 0) return i; } } return -1; }
+// On scanne le type de retour token par token DEPUIS le `)` des ARGS (fourni par
+// l'appelant via `from`, équilibré par matchParen), en suivant un drapeau `typeExpected` :
+//   · `true`  juste après `:` / `|` / `&` / `=>` → un token de type est ATTENDU, donc un
+//             `{` rencontré ici est un type-OBJET (`: { a: b } {`) → on le saute ;
+//   · `false` dès qu'un token de type complet a été consommé (identifiant, `<…>`, `[…]`,
+//             `(…)`) → le prochain `{` est le CORPS, on le renvoie.
+// Cela remplace l'ancienne heuristique de look-ahead (« un `{` suit le `}` ⇒ c'était un
+// type ») qui se trompait quand un VRAI corps était immédiatement suivi d'un bloc `{…}`
+// sans rapport (IIFE de surface / bloc nu) — SOUS-COMPTAGE payé sur
+// UpdateMonScrollingBgMask et CreateAdditionalMonSpriteForMoveAnim.
 function findBodyBrace(s, from) {
   let i = skipWs(s, from);
   if (s[i] !== ':') {
@@ -300,25 +325,28 @@ function findBodyBrace(s, from) {
     return -1;
   }
   i++; // passe le `:`
+  let typeExpected = true; // juste après `:` un token de type est attendu
   let guard = 0;
   while (i < s.length && guard++ < 8000) {
     i = skipWs(s, i);
     const c = s[i];
     if (c === undefined) return -1;
     if (c === '{') {
-      const close = matchBrace(s, i);
-      const after = skipWs(s, close + 1);
-      const nc = s[after];
-      // Après un type-objet vient soit le corps `{`, soit une continuation `|`/`&`.
-      if (nc === '{') { i = close + 1; continue; }        // c'était le type ; le suivant est le corps
-      if (nc === '|' || nc === '&') { i = after + 1; continue; } // union/intersection → encore du type
-      return i; // pas de suite de type → CE `{` est le corps
+      if (!typeExpected) return i;                 // type déjà complet → CE `{` est le corps
+      const close = matchBrace(s, i);              // sinon = type-OBJET en position de type
+      i = close + 1; typeExpected = false; continue;
     }
-    if (c === '<') { const e = matchAngle(s, i); if (e < 0) return -1; i = e + 1; continue; } // générique
-    if (c === '[') { const e = matchBracket(s, i); if (e < 0) return -1; i = e + 1; continue; } // tuple
-    if (c === '(') { const e = matchParen(s, i); if (e < 0) return -1; i = e + 1; continue; }  // type-fonction params
+    if (c === '<') { const e = matchAngle(s, i); if (e < 0) return -1; i = e + 1; typeExpected = false; continue; } // générique
+    if (c === '[') { const e = matchBracket(s, i); if (e < 0) return -1; i = e + 1; typeExpected = false; continue; } // tuple
+    if (c === '(') { const e = matchParen(s, i); if (e < 0) return -1; i = e + 1; typeExpected = false; continue; }  // type-fonction params
+    if (c === '|' || c === '&') { typeExpected = true; i++; continue; }            // union/intersection → type attendu
+    if (c === '=' && s[i + 1] === '>') { typeExpected = true; i += 2; continue; }   // `=>` d'un type-fonction → type attendu
     if (c === ';') return -1;
-    i++; // token de type ordinaire
+    if (/[A-Za-z_$0-9.]/.test(c)) {                // identifiant / nom qualifié = token de type complet
+      while (i < s.length && /[A-Za-z_$0-9.]/.test(s[i])) i++;
+      typeExpected = false; continue;
+    }
+    i++; // autre ponctuation de type
   }
   return -1;
 }
@@ -488,7 +516,61 @@ if (selftest) {
       console.log(`         marqueurs corps : ${[...tsm.markers.strong, ...tsm.markers.soft].join(', ')}`);
     console.log('');
   }
-  console.log(allPass ? 'CALIBRATION OK — les 2 cas sont flagués.' : 'CALIBRATION INCOMPLÈTE — voir ci-dessus.');
+  // ─── Fixtures PARSEUR (2 angles morts d'EXTRACTION corrigés) ────────────────
+  // Contrairement aux 2 cas ci-dessus (calibration du COMPARATEUR sur des corps
+  // historiques), ceux-ci valident l'EXTRACTION elle-même : sans les fixes, la
+  // fonction n'est pas extraite (a) ou son corps est sous-compté à ~1 ligne (b).
+  console.log('=== PARSEUR — extraction sur 2 angles morts (arrow-const typée, sig multi-ligne) ===\n');
+  const fixtures = [
+    { // (a) arrow-const TYPÉE : `const X: Type = (…) => {` — l'ancienne regex arrow
+      //     s'arrêtait au `:` et ne matchait pas → fonction NON extraite.
+      label: 'arrow-const typée `const X: T = (…) => {`',
+      name: 'TypedArrowFixture',
+      src: [
+        'const before = 1;',
+        'const TypedArrowFixture: MoveHandler = (n: number): void => {',
+        '  if (n > 0) { doA(); } else { doB(); }',
+        '  for (let i = 0; i < n; i++) { step(i); }',
+        '  const r = compute(n);',
+        '  return finalize(r);',
+        '};',
+      ].join('\n'),
+      minLines: 3,
+    },
+    { // (b) signature MULTI-LIGNE + type-retour OBJET + bloc IIFE suiveur : l'ancien
+      //     findBodyBrace prenait le `{` de `{ ok: boolean }` OU (via look-ahead) le
+      //     bloc `{…}` suiveur pour le corps → sous-comptage à ~1 ligne.
+      label: 'sig multi-ligne + type-retour objet + bloc `{…}` suiveur',
+      name: 'MultiLineFixture',
+      src: [
+        'export async function MultiLineFixture(',
+        '  a: number, b: number,',
+        '  c: number,',
+        '): { ok: boolean } {',
+        '  if (a > b) { alpha(); } else { beta(); }',
+        '  switch (c) { case 0: gamma(); break; default: delta(); }',
+        '  const v = await load(a, b, c);',
+        '  return { ok: v > 0 };',
+        '}',
+        '{',
+        '  registerSurface(MultiLineFixture);',
+        '}',
+      ].join('\n'),
+      minLines: 3,
+    },
+  ];
+  for (const fx of fixtures) {
+    const { fns, stripped } = extractTsFns(fx.src);
+    const f = fns.find((x) => x.name === fx.name);
+    const lines = f ? bodyMetrics(stripped.slice(f.bodyStart, f.bodyEnd + 1)).lines : 0;
+    const ok = !!f && lines >= fx.minLines;
+    if (!ok) allPass = false;
+    console.log(`  [${ok ? 'EXTRAIT ✓' : 'RATÉ ✗'}] ${fx.label}`);
+    console.log(`         corps mesuré : ${lines} lignes utiles (attendu ≥ ${fx.minLines})${f ? '' : '  — FONCTION NON EXTRAITE'}`);
+    console.log('');
+  }
+
+  console.log(allPass ? 'CALIBRATION OK — 2 cas comparateur + 2 fixtures parseur.' : 'CALIBRATION INCOMPLÈTE — voir ci-dessus.');
   process.exit(allPass ? 0 : 1);
 }
 
