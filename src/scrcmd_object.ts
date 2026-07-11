@@ -43,7 +43,16 @@ export function doSetObjectXY(localIdArg: string, x: number, y: number): void {
 /** 1:1 décomp `ScrCmd_setobjectxyperm` → SetObjEventTemplateCoords (persistant). */
 export function doSetObjectXYPerm(localIdArg: string, x: number, y: number): void {
   const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
-  SetObjEventTemplateCoords(currentMapId, localIdArg, x, y);
+  // 1:1 décomp `SetObjEventTemplateCoords(localId, x, y)` matche `template->localId == localId`
+  // (NUMÉRIQUE). Le byte-VM (`ScrCmd_setobjectxyperm`) passe `String(localId)` : sans cette
+  // conversion, SetObjEventTemplateCoords tentait un match par `localIdRaw` (jamais égal à
+  // "<num>") → append d'un template BIDON (localId 0) au lieu de muter le vrai template. Le
+  // spawn map-load (SpawnObjectEventsOnMap itère le saveblock) posait alors le NPC aux coords
+  // ROM. Ex. LittlerootTown_BrendansHouse_1F OnTransition `MoveMomToDoor`
+  // (setobjectxyperm MOM 9,8) était ignoré → Maman spawn à sa case ROM (2,6) au lieu de la
+  // porte à l'emménagement. Fix : resoudre l'id numérique pour le match template 1:1.
+  const idForTemplate: number | string = /^-?\d+$/.test(localIdArg) ? parseInt(localIdArg, 10) : localIdArg;
+  SetObjEventTemplateCoords(currentMapId, idForTemplate, x, y);
   const npc = findNpcByLocalId(localIdArg);
   if (npc) {
     npc.initialCoordsX = x + MAP_OFFSET;
