@@ -566,11 +566,14 @@ export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVr
 }
 
 /** 1:1 décomp `NewGameBirchSpeech_ClearGenderWindowTilemap` (main_menu.c:2228-2231).
- *  `x + 255` / `y + 255` = `x - 1` / `y - 1` (wraparound u8 du décomp) : efface
- *  le rect BG tilemap incluant le cadre (1 tuile autour de la fenêtre) avec la
- *  tuile 0. Signature = callback CallWindowFunction (bg,x,y,width,height,unused). */
+ *  Efface le rect BG tilemap incluant le cadre (1 tuile autour de la fenêtre)
+ *  avec la tuile 0. Signature = callback CallWindowFunction (bg,x,y,w,h,unused).
+ *  🩸 Le décomp écrit `x + 255` / `y + 255` = `x − 1` / `y − 1` en arithmétique
+ *  u8 (wraparound mod 256). JS n'a PAS d'arithmétique u8 : transcrit littéral,
+ *  256+ sortait du tilemap → AUCUNE tuile effacée (cadre genre fantôme après le
+ *  choix, payé en jeu). → −1 direct ; tileMapIndex clippe si x=0. */
 function NewGameBirchSpeech_ClearGenderWindowTilemap(bg: number, x: number, y: number, width: number, height: number, unused: number): void {
-  FillBgTilemapBufferRect(bg, 0, x + 255, y + 255, width + 2, height + 2, 2);
+  FillBgTilemapBufferRect(bg, 0, x - 1, y - 1, width + 2, height + 2, 2);
 }
 
 /** 1:1 décomp `NewGameBirchSpeech_ClearGenderWindow` (main_menu.c:2233-2240).
