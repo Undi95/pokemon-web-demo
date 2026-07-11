@@ -425,15 +425,62 @@ function GetFontWidthFunc(fontId: number): GlyphWidthFunc | null {
   return null;
 }
 
-/** 1:1 décomp `src/text.c:1630 GetKeypadIconWidth` = `sKeypadIcons[id].width`
- *  (text.c:100-115). Table de largeurs (8/16/24 px) indexée par CHAR_*_BUTTON. */
-const sKeypadIconWidths: Readonly<Record<number, number>> = {
-  0x50: 8, 0x51: 8, 0x52: 16, 0x53: 16, 0x54: 24, 0x55: 24,  // A/B/L/R/START/SELECT
-  0x56: 8, 0x57: 8, 0x58: 8, 0x59: 8,                          // DPAD up/down/left/right
-  0x5A: 8, 0x5B: 8, 0x5C: 8,                                   // DPAD updown/leftright/none
-};
+/** 1:1 décomp `src/text.c:100-115 sKeypadIcons[]` — table {tileOffset,width,height}
+ *  indexée par CHAR_* (id = 2ᵉ octet après CHAR_KEYPAD_ICON, cf. charmap.txt:1001-1013
+ *  A_BUTTON=F8 00 … DPAD_NONE=F8 0C). Le `tileOffset` (index tuile 16/rangée dans
+ *  keypad_icons.png) sert au build offline (extract-keypad-icons.mjs) qui crop déjà
+ *  les pixels ; au runtime on lit `keypadIconPixels` + `width` (8/16/24 px, h=12). */
+const sKeypadIcons: ReadonlyArray<{ tileOffset: number; width: number; height: number }> = [
+  { tileOffset: 0x00, width: 8,  height: 12 }, // CHAR_A_BUTTON
+  { tileOffset: 0x01, width: 8,  height: 12 }, // CHAR_B_BUTTON
+  { tileOffset: 0x02, width: 16, height: 12 }, // CHAR_L_BUTTON
+  { tileOffset: 0x04, width: 16, height: 12 }, // CHAR_R_BUTTON
+  { tileOffset: 0x06, width: 24, height: 12 }, // CHAR_START_BUTTON
+  { tileOffset: 0x09, width: 24, height: 12 }, // CHAR_SELECT_BUTTON
+  { tileOffset: 0x0C, width: 8,  height: 12 }, // CHAR_DPAD_UP
+  { tileOffset: 0x0D, width: 8,  height: 12 }, // CHAR_DPAD_DOWN
+  { tileOffset: 0x0E, width: 8,  height: 12 }, // CHAR_DPAD_LEFT
+  { tileOffset: 0x0F, width: 8,  height: 12 }, // CHAR_DPAD_RIGHT
+  { tileOffset: 0x20, width: 8,  height: 12 }, // CHAR_DPAD_UPDOWN
+  { tileOffset: 0x21, width: 8,  height: 12 }, // CHAR_DPAD_LEFTRIGHT
+  { tileOffset: 0x22, width: 8,  height: 12 }, // CHAR_DPAD_NONE
+];
+/** 1:1 décomp `src/text.c:1630 GetKeypadIconWidth` = `sKeypadIcons[id].width`. */
 function GetKeypadIconWidth(keypadIconId: number): number {
-  return sKeypadIconWidths[keypadIconId] ?? 0;
+  return sKeypadIcons[keypadIconId]?.width ?? 0;
+}
+
+/** Pixels pré-croppés des 13 icônes keypad (keypad_icons.png → keypad_icons.json via
+ *  extract-keypad-icons.mjs), indexés par CHAR_* id. null avant `loadFontData`.
+ *  = `sKeypadIconTiles` (text.c:117), mais décodé/croppé offline (même voie que
+ *  down_arrow.json / `downArrowPixels`). */
+let keypadIconPixels: ReadonlyArray<{ width: number; height: number; pixels: number[][] }> | null = null;
+
+/** 1:1 décomp `src/text.c:1609 DrawKeypadIcon` — blit l'icône `keypadIconId` (A/B/L/R/
+ *  START/SELECT/DPAD) dans la window à (x, y), retourne sa largeur. Décomp :
+ *  `BlitBitmapRectToWindow(...)` → `BlitBitmapRect4Bit(..., colorKey=0)` (blit.c:56) =
+ *  branche else « skip pixels == colorKey » → idx 0 transparent, indices bruts (PAS de
+ *  remap fg/shadow, contrairement aux glyphes de font). MÊME chemin que `blitArrowAt`
+ *  (down arrow, colorKey 0). Le tileOffset (sKeypadIcons) est déjà appliqué au crop. */
+function DrawKeypadIcon(w: Window, keypadIconId: number, x: number, y: number): number {
+  const icon = keypadIconPixels?.[keypadIconId];
+  if (!icon) return GetKeypadIconWidth(keypadIconId); // pas encore chargé : avance quand même
+  for (let py = 0; py < icon.height; py++) {
+    const dstRowY = y + py;
+    if (dstRowY < 0 || dstRowY >= w.heightPx) continue;
+    const srcRow = icon.pixels[py];
+    if (!srcRow) continue;
+    const rowStart = dstRowY * w.widthPx;
+    for (let px = 0; px < icon.width; px++) {
+      const srcIdx = srcRow[px] ?? 0;
+      if (srcIdx === 0) continue; // colorKey 0 = transparent (1:1 BlitBitmapRect4Bit else)
+      const colX = x + px;
+      if (colX < 0 || colX >= w.widthPx) continue;
+      w.pixelBuffer[rowStart + colX] = srcIdx & 0x0F;
+    }
+  }
+  w.needsFlush = true;
+  return icon.width;
 }
 
 /**
@@ -914,6 +961,29 @@ function renderHandleChar(printer: TextPrinter): number {
       continue;
     }
 
+    // 1:1 décomp text.c:1114-1118 CHAR_KEYPAD_ICON — icône bouton (A/B/L/R/START/
+    // SELECT/DPAD) via DrawKeypadIcon : chemin SÉPARÉ du glyphe de font (pas de
+    // DecompressGlyph — l'icône vient de keypad_icons.png, indices bruts). Décomp :
+    // `currentX += gCurGlyph.width + letterSpacing` (text.c:1117) — on ajoute bien
+    // letterSpacing ici (≠ divergence latine l.953 où la largeur inclut déjà l'espace ;
+    // les icônes ne sont pas des glyphes latins). Frame semantics = MÊME que le glyphe
+    // (instantPath → continue ; sinon RENDER_PRINT, 1:1 décomp `return RENDER_PRINT`).
+    if (byte === CHAR_KEYPAD_ICON) {
+      const keypadIconId = printer.encodedString[printer.printerTemplate.currentChar + 1] ?? 0;
+      printer.printerTemplate.currentChar += 2;
+      gCurGlyph.width = DrawKeypadIcon(
+        printer.window, keypadIconId,
+        printer.printerTemplate.currentX, printer.printerTemplate.currentY,
+      );
+      printer.printerTemplate.currentX += gCurGlyph.width + printer.printerTemplate.letterSpacing;
+      if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_KEYPAD_ICON);
+      if (!printer.instantPath) {
+        printer.delayCounter = printer.textSpeed;
+        return RENDER_PRINT;
+      }
+      continue;
+    }
+
     // 1:1 décomp text.c:1110-1166 — glyphe (char normal OU CHAR_EXTRA_SYMBOL).
     // EXTRA_SYMBOL = glyphId `0x100 | sym` (text.c:1110-1112) puis MÊME chemin de
     // rendu (DecompressGlyph_<font> → CopyGlyphToWindow → avance), pas un cas à part.
@@ -1202,12 +1272,13 @@ let glyphWidthsByFont: Record<string, Uint8Array> | null = null;
 
 async function loadFontData(): Promise<void> {
   if (glyphData) return;
-  const [fontRes, widthsRes, charmapRes, arrowRes, arrowAltRes] = await Promise.all([
+  const [fontRes, widthsRes, charmapRes, arrowRes, arrowAltRes, keypadRes] = await Promise.all([
     fetch('/decomp/em/ui/fonts/latin.latfont.json').then((r) => r.json()),
     fetch('/decomp/em/ui/font-widths.json').then((r) => r.json()),
     fetch('/decomp/em/ui/charmap.json').then((r) => r.json()),
     fetch('/decomp/em/ui/fonts/down_arrow.json').then((r) => r.json()),
     fetch('/decomp/em/ui/fonts/down_arrow_alt.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/fonts/keypad_icons.json').then((r) => r.json()),
   ]);
   // 1:1 décomp : load TOUS les fonts (normal, short, narrow, small, smallnarrow).
   // sItemListMenu.fontId = FONT_NARROW (=7) → glyph data différent de FONT_NORMAL.
@@ -1229,6 +1300,9 @@ async function loadFontData(): Promise<void> {
   downArrowPixels = arrow.pixels;
   const arrowAlt = arrowAltRes as { width: number; height: number; pixels: number[][] };
   darkDownArrowPixels = arrowAlt.pixels;
+  // sKeypadIconTiles (text.c:117) pré-décodé/croppé par icône (extract-keypad-icons.mjs).
+  const keypad = keypadRes as { icons: Array<{ width: number; height: number; pixels: number[][] }> };
+  keypadIconPixels = keypad.icons;
 }
 
 /** Charmap OW (char→byte), chargée au boot par loadFontData. null avant. Utilisée
@@ -1370,6 +1444,16 @@ export const EXTRA_SYMBOL: Readonly<Record<string, number>> = Object.freeze({
   CIRCLE_6: 0x0F, CIRCLE_7: 0x10, CIRCLE_8: 0x11, CIRCLE_9: 0x12,
   ROUND_LEFT_PAREN: 0x13, ROUND_RIGHT_PAREN: 0x14, CIRCLE_DOT: 0x15,
   TRIANGLE: 0x16, BIG_MULT_X: 0x17,
+});
+
+/** Keypad icons (1:1 décomp `charmap.txt:1001-1013`). Le render fait
+ *  `CHAR_KEYPAD_ICON(0xF8) + id` → `DrawKeypadIcon(id)` (blit keypad_icons.png).
+ *  id = 2ᵉ octet ; parallèle exact d'EXTRA_SYMBOL mais chemin de rendu séparé. */
+export const KEYPAD_ICON: Readonly<Record<string, number>> = Object.freeze({
+  A_BUTTON: 0x00, B_BUTTON: 0x01, L_BUTTON: 0x02, R_BUTTON: 0x03,
+  START_BUTTON: 0x04, SELECT_BUTTON: 0x05, DPAD_UP: 0x06, DPAD_DOWN: 0x07,
+  DPAD_LEFT: 0x08, DPAD_RIGHT: 0x09, DPAD_UPDOWN: 0x0A, DPAD_LEFTRIGHT: 0x0B,
+  DPAD_NONE: 0x0C,
 });
 
 /** sFontInfos[FONT_NORMAL] (text.c:131) — couleurs par défaut text dialog */
@@ -1615,6 +1699,15 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
         const sym = EXTRA_SYMBOL[inner as keyof typeof EXTRA_SYMBOL];
         if (sym !== undefined) {
           bytes.push(CHAR_EXTRA_SYMBOL, sym);
+          i = closeIdx + 1;
+          continue;
+        }
+        // 1:1 décomp charmap.txt:1001-1013 keypad icons `{A_BUTTON}` `{DPAD_NONE}` etc
+        // → CHAR_KEYPAD_ICON(0xF8) + id. Rendu par DrawKeypadIcon (RenderText), rendant
+        // fonctionnels tous les textes strings.json à icônes (naming, PC, options…).
+        const keypadId = KEYPAD_ICON[inner as keyof typeof KEYPAD_ICON];
+        if (keypadId !== undefined) {
+          bytes.push(CHAR_KEYPAD_ICON, keypadId);
           i = closeIdx + 1;
           continue;
         }

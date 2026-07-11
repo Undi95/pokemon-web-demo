@@ -2446,8 +2446,15 @@ function PrintControls(): void {
   // grayscale → banner sortait noir au lieu de bleu (= user feedback session 96).
   // Color triplet [DYNAMIC_6=15, WHITE=1, DARK_GRAY=2] : bg = idx 15 (= match
   // PIXEL_FILL = invisible glyph "ghost"), fg = white, shadow = dark gray.
+  //
+  // String = getString('gText_MoveOkBack') 1:1 ("{DPAD_NONE}DEPL. {A_BUTTON}OK
+  // {B_BUTTON}RET.", strings.json) — les glyphes keypad {DPAD_NONE}/{A_BUTTON}/
+  // {B_BUTTON} sont rendus par text.ts DrawKeypadIcon (plus de hardcode "+DEPL. A OK…").
+  // Divergence PRÉ-EXISTANTE conservée (structure existante, cf. contrat point 1) :
+  // fontId=1(NORMAL)/x=4/speed=255 ici vs décomp FONT_SMALL(0)/x=2/speed=0 — à
+  // revalider en jeu si on veut aligner la taille de police sur le décomp.
   FillWindowPixelBuffer(winBanner, 0xFF);
-  AddTextPrinterParameterized3(winBanner, 1, 4, 1, [0xF, 0x1, 0x2], 255, '+DEPL.  A OK  B RET.');
+  AddTextPrinterParameterized3(winBanner, 1, 4, 1, [0xF, 0x1, 0x2], 255, getString('gText_MoveOkBack'));
   PutWindowTilemap(winBanner);
   CopyWindowToVram(winBanner, 3);
 }
