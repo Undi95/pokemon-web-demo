@@ -17,6 +17,7 @@
  */
 
 import { setArbiterMuted } from './audio-context';
+import { logAudio } from './audio-log';
 
 const MY_ID = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 let _lastClaimAt = 0;
@@ -32,7 +33,24 @@ function setMuted(muted: boolean, why: string): void {
   if (muted === _muted) return;
   _muted = muted;
   setArbiterMuted(muted);
+  logAudio(muted ? 'arbitre → MUET' : 'arbitre → sonore', why);
   console.log(`[m4a-arbiter] ${muted ? 'muet' : 'sonore'} (${why})`);
+}
+
+/** État lisible par le devtool audio. */
+export function isArbiterMuted(): boolean {
+  return _muted;
+}
+
+/** Sauvetage (devtool « unmute ») : reprend le son quoi qu'il arrive. */
+export function forceClaimFocus(): void {
+  logAudio('unmute forcé (devtool)');
+  claimFocus();
+}
+
+/** Coupe cette instance (devtool — symétrique de forceClaimFocus). */
+export function forceMute(): void {
+  setMuted(true, 'mute forcé (devtool)');
 }
 
 function claimFocus(ev?: Event): void {
@@ -52,10 +70,13 @@ export function installAudioArbiter(): void {
   import.meta.hot.on('m4a:audio-focus', (data: unknown) => {
     const { id, at } = data as { id?: string; at?: number };
     if (!id || id === MY_ID) return;
+    logAudio('claim reçu', `instance ${id}${(at ?? 0) >= _lastClaimAt ? ' (plus récent → je me tais)' : ' (plus vieux, ignoré)'}`);
     if ((at ?? 0) >= _lastClaimAt) setMuted(true, 'autre instance du jeu active');
   });
-  window.addEventListener('pointerdown', claimFocus);
-  window.addEventListener('keydown', claimFocus);
+  // capture:true : le canvas Phaser peut stopPropagation — on veut voir CHAQUE
+  // geste réel avant lui.
+  window.addEventListener('pointerdown', claimFocus, { capture: true });
+  window.addEventListener('keydown', claimFocus, { capture: true });
   if (!START_MUTED) {
     window.addEventListener('focus', claimFocus);
     document.addEventListener('visibilitychange', () => {

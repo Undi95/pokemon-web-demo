@@ -13,6 +13,12 @@ let _reverbNode: { dry: GainNode; wet: GainNode; delay: DelayNode; feedback: Gai
 // destination, coupé quand UNE AUTRE instance du jeu a pris le focus.
 let _arbiterGain: GainNode | null = null;
 let _arbiterMuted = false;
+// Sortie du moteur NATIF : gain dédié → arbiterGain, SANS traverser l'étage
+// shim (dacFilter ×2 + reverb WebAudio + limiter) — le moteur 1:1 fait déjà
+// DAC (ZOH 13379 Hz), reverb (SoundMainRAM) et saturation (clip hardware
+// ±0x200 dans le processor). 🩸 payé : double reverb + double lowpass.
+let _nativeOut: GainNode | null = null;
+let _masterVolume = 1.0;
 
 /** Initialise (ou retourne) l'AudioContext singleton. À appeler après un user gesture. */
 export function getAudioContext(): AudioContext {
@@ -131,13 +137,40 @@ export async function primeAudioContext(): Promise<void> {
   await new Promise(r => setTimeout(r, 60));
 }
 
-/** Volume master 0.0 - 1.0. */
+/** Volume master 0.0 - 1.0 (s'applique au shim ET à la sortie native). */
 export function setMasterVolume(v: number): void {
   if (!_masterGain) getAudioContext();
-  _masterGain!.gain.value = Math.max(0, Math.min(1, v));
+  _masterVolume = Math.max(0, Math.min(1, v));
+  _masterGain!.gain.value = _masterVolume;
+  if (_nativeOut) _nativeOut.gain.value = _masterVolume;
 }
 
 /** Currently primed ? */
 export function isAudioReady(): boolean {
   return _ctx !== null && _ctx.state === 'running';
+}
+
+/** Point de branchement du worklet natif : gain volume → arbiterGain →
+ *  destination (bypass complet de l'étage shim, cf. bandeau _nativeOut). */
+export function getNativeOut(): GainNode {
+  const ctx = getAudioContext();
+  if (!_nativeOut) {
+    _nativeOut = ctx.createGain();
+    _nativeOut.gain.value = _masterVolume;
+    _nativeOut.connect(_arbiterGain!);
+  }
+  return _nativeOut;
+}
+
+/** État du graphe de sortie pour le devtool audio (diagnostic live). */
+export function getAudioDebugState(): {
+  ctxState: string; sampleRate: number; masterVolume: number; arbiterGain: number; arbiterMuted: boolean;
+} {
+  return {
+    ctxState: _ctx ? _ctx.state : 'non créé',
+    sampleRate: _ctx ? _ctx.sampleRate : 0,
+    masterVolume: _masterVolume,
+    arbiterGain: _arbiterGain ? _arbiterGain.gain.value : -1,
+    arbiterMuted: _arbiterMuted,
+  };
 }

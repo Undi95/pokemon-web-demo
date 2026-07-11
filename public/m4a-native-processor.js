@@ -326,9 +326,15 @@ class M4aNativeProcessor extends AudioWorkletProcessor {
       }
 
       const [pL, pR] = this.psgSample(dt);
-      // Full scale ±0x200 : FIFO s8 ×4 (100 %), PSG déjà en unités hardware.
-      chL[i] = (dsL * 4 + pL) / 512;
-      chR[i] = (dsR * 4 + pR) / 512;
+      // Full scale ±0x200 : FIFO s8 ×4 (100 %), PSG en unités hardware.
+      // Saturation 1:1 : le bias 10 bits du GBA CLIPPE la somme à ±0x200 —
+      // c'est le « limiteur » du hardware (et une partie de sa sonorité).
+      let mL = dsL * 4 + pL;
+      let mR = dsR * 4 + pR;
+      if (mL > 511) mL = 511; else if (mL < -512) mL = -512;
+      if (mR > 511) mR = 511; else if (mR < -512) mR = -512;
+      chL[i] = mL / 512;
+      chR[i] = mR / 512;
       this.psgEnergy += Math.abs(pL) + Math.abs(pR);
       this.dsEnergy += Math.abs(dsL) + Math.abs(dsR);
     }

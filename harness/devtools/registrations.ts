@@ -26,6 +26,7 @@ import {
   tpToRandomFeebasTile, tpToAlteringCave, cycleAlteringCaveTable,
   getAlteringCaveTable, alteringCaveLabel, loadAlteringCaveSpecies,
 } from './dev-encounter-tools';
+import { registerNativeAudioDevtools } from './dev-audio-tools';
 
 // ─── Accès runtime + helpers (repris du panel v1) ─────────────────────────────
 
@@ -1137,6 +1138,7 @@ export function registerAllDevtools(): void {
   registerScripts();
   registerGfx();
   registerAudio();
+  registerNativeAudioDevtools();
   registerSave();
   registerSys();
   // Reprend les responsabilités de boot du panel v1 / audio-devtool :

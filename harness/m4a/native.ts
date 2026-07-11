@@ -29,7 +29,8 @@ import {
 import { gMPlayInfo_BGM, gMPlayInfo_SE1, gMPlayInfo_SE2, gSoundInfo, m4aSoundInit, m4aSoundMain, setGVoicegroup000, SOUND_RAM_SIZE } from '../../src/m4a';
 import { setGSongTable } from '../../src/song_table';
 import { PCM_DMA_BUF_SIZE } from '../../include/gba/m4a_internal';
-import { getAudioContext, getMasterGain } from './audio-context';
+import { getAudioContext, getNativeOut } from './audio-context';
+import { logAudio } from './audio-log';
 
 /** Mode moteur : NATIF par défaut ; `?m4a-legacy` = shim historique
  *  (spessasynth). Constant au boot — le dispatch vit dans decomp-globals. */
@@ -66,6 +67,7 @@ interface M4aNativeState {
   producing: boolean;
   starting: boolean;
   fallbackClock: number | null;
+  fallbackDriving: boolean;
 }
 const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNativeState ??= {
   ready: null,
@@ -73,6 +75,7 @@ const _state: M4aNativeState = ((globalThis as Record<string, unknown>).__m4aNat
   producing: false,
   starting: false,
   fallbackClock: null,
+  fallbackDriving: false,
 }) as M4aNativeState;
 
 /** Charge le blob de données + initialise le moteur (m4aSoundInit). Idempotent.
@@ -99,6 +102,7 @@ export function initM4aNative(): Promise<boolean> {
     setGCryTables(index.labels.gCryTable, index.labels.gCryTable_Reverse);
     m4aSoundInit();
     installFallbackClock(); // le moteur tourne dès l'init, audio autorisé ou non
+    logAudio('moteur initialisé', `blob ${blob.length} o`);
     console.log(`[m4a-native] moteur initialisé — blob ${blob.length} octets @0x${index.base.toString(16)} (byte-exact ROM)`);
     return true;
   })();
@@ -134,7 +138,9 @@ export async function startM4aNativeAudio(): Promise<void> {
     }
   };
   _node.onprocessorerror = (e) => console.error('[m4a-native] processor error', e);
-  _node.connect(getMasterGain());
+  // Sortie DIRECTE (volume → arbitre → destination) : pas l'étage shim
+  // (double lowpass + reverb WebAudio) — le moteur 1:1 fait déjà tout ça.
+  _node.connect(getNativeOut());
 
   // Autoplay policy : le contexte peut naître SUSPENDU (reload sans media
   // engagement — payé : silence permanent chez le user, « recliquer ne fait
@@ -142,12 +148,16 @@ export async function startM4aNativeAudio(): Promise<void> {
   // dispatch natif ne traverse plus → on résume ici sur chaque geste humain.
   const resumeOnGesture = (): void => {
     if (ctx.state === 'suspended') {
+      logAudio('ctx.resume() tenté (geste)');
       ctx.resume().catch((e) => console.error('[m4a-native] resume', e));
     }
   };
-  window.addEventListener('pointerdown', resumeOnGesture);
-  window.addEventListener('keydown', resumeOnGesture);
+  // capture:true : voir le geste AVANT un éventuel stopPropagation du canvas.
+  window.addEventListener('pointerdown', resumeOnGesture, { capture: true });
+  window.addEventListener('keydown', resumeOnGesture, { capture: true });
   resumeOnGesture();
+  ctx.addEventListener('statechange', () => logAudio(`ctx → ${ctx.state}`));
+  logAudio('worklet monté', `ctx=${ctx.state} sampleRate=${ctx.sampleRate}`);
   produceFrames(8); // pré-remplissage (~134 ms)
 }
 
@@ -206,6 +216,7 @@ function installFallbackClock(): void {
     const now = performance.now();
     const ctx = _state.node?.context as AudioContext | undefined;
     const audioDrives = !!ctx && ctx.state === 'running';
+    _state.fallbackDriving = !audioDrives;
     if (audioDrives) {
       last = now;
       acc = 0;
