@@ -103,6 +103,11 @@ gabarits) ; toute valeur magique renderer = précédent cité sinon STOP.
 - Warns png-loader `.bin absents` (battle_anims sprites-src) : extraire les .bin
   ou baisser le log — fallback PNG fonctionnel, cosmétique.
 - `initAllHealthboxes` fallback câblé 0/1 (chemin mort) — boucle gBattlersCount.
+- `GetBattlerAtPosition` (battle_anim_mons.ts:57) retourne 0 au lieu de
+  gBattlersCount sur no-match (décomp) — navigation cible avec battler KO/absent
+  pourrait viser 0 au lieu de sauter. Fichier largement importé : chantier dédié.
+- Flèche de sélection de cible (SpriteCB_ShowAsMoveTarget) = stubs no-op R3
+  cosmétiques (bcp.ts:694 + HandleInputChooseTarget) — rendre la flèche 1:1.
 - `SetDynamicWarp` 3-arg (port) vs 4-arg (décomp) — réconcilier au câblage Frontier.
 
 ## Protocole de reprise (chaque session)
