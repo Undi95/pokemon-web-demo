@@ -188,13 +188,19 @@ async function runScenario(id: string): Promise<E2eReport> {
 
   const ctx: E2eCtx = {
     rt: getRt,
-    frames: async (n, timeoutMs = Math.max(5000, n * 40)) => {
-      const rt = getRt();
-      const start = rt.gIntroFrameCounter;
-      const t = performance.now();
+    frames: async (n, stallMs = 4000) => {
+      // Échec = GEL (aucune frame pendant stallMs), pas lenteur : le pane
+      // Browser throttle le rAF à quelques fps — le jeu y est lent mais sain.
+      const start = getRt().gIntroFrameCounter;
+      let lastSeen = start;
+      let lastChangeAt = performance.now();
       while (getRt().gIntroFrameCounter - start < n) {
-        if (performance.now() - t > timeoutMs) {
-          throw new Error(`frames(${n}) : ${getRt().gIntroFrameCounter - start} frames en ${timeoutMs} ms (jeu figé ?)`);
+        const cur = getRt().gIntroFrameCounter;
+        if (cur !== lastSeen) {
+          lastSeen = cur;
+          lastChangeAt = performance.now();
+        } else if (performance.now() - lastChangeAt > stallMs) {
+          throw new Error(`frames(${n}) : figé à ${cur - start}/${n} (aucune frame en ${stallMs} ms)`);
         }
         await new Promise((r) => setTimeout(r, 20));
       }

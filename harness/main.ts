@@ -299,11 +299,17 @@ installAudioArbiter();
 
 // Moteur son m4a NATIF : précharge le blob de données (3,3 Mo byte-exact ROM)
 // dès le boot pour que la première musique parte sans retard. Le worklet et
-// le dispatch vivent dans decomp-globals (ensureNativeEngine) ; `?m4a-legacy`
-// = shim historique (initM4aNative n'est alors jamais consommé).
+// le dispatch vivent dans decomp-globals (ensureNativeEngine).
 import('./m4a/native')
   .then(({ M4A_NATIVE, initM4aNative }) => { if (M4A_NATIVE) return initM4aNative().then(() => undefined); })
   .catch((e) => console.error('[m4a-native] preload', e));
+
+// Harnais E2E (plan fin-de-budget) : scénarios de jeu scriptés + rapport
+// JSON objectif — console : __e2e.run('boot-overworld') / __e2e.list().
+import('./e2e/scenarios')
+  .then(() => import('./e2e/runner'))
+  .then(({ installE2e }) => installE2e())
+  .catch((e) => console.error('[e2e] install', e));
 
 // ─── Zoom pixel-perfect DPR-aware ──────────────────────────────────────────
 // Le canvas RENDU reste à la résolution NATIVE GBA (240×160). On ne touche QUE
