@@ -39,7 +39,9 @@ import { gLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './overworld';
 import { Random } from './random';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
-import { SetCameraPanning, SetCameraPanningCallback } from './field_camera';
+import { SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
+import { CreateTask, DestroyTask, gTasks } from './task';
+import { SE_M_STRENGTH } from '../include/constants/songs';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -593,11 +595,53 @@ export function OffsetCameraForBattle(): void {
   SetCameraPanning(8, 0);
 }
 
+// Task data for Task_ShakeCamera (1:1 field_specials.c:1463-1468) :
+//   data[0] tHorizontalPan · data[1] tDelayCounter · data[2] tNumShakes · data[3] tDelay · data[4] tVerticalPan
 /** 1:1 décomp `ShakeCamera` (field_specials.c:1470-1480) : crée Task_ShakeCamera (oscille
  *  SetCameraPanning(±tH, ±tV) toutes les tDelay frames, tNumShakes fois) + PlaySE(SE_M_STRENGTH).
- *  ⚠️ DÉFÉRÉ no-op : le port réel appelle ScriptContext_Enable (StopCameraShake) → croiserait le
- *  cycle field_specials→script→scrcmd→specials-registry→field_specials (à faire via bridge globalThis). */
-export function ShakeCamera(): void { /* no-op — port Task réel différé (cycle script) */ }
+ *  Débloque les cinématiques légendaires (Groudon/Kyogre/Rayquaza/Sootopolis) qui font
+ *  `special ShakeCamera` + `waitstate` : StopCameraShake réactive le contexte à la fin. */
+export function ShakeCamera(): void {
+  // Revue transpiler : pattern task runtime OBLIGATOIRE (t)=>fn(t.taskId) (cf. braille_puzzles).
+  const taskId = CreateTask((t: { taskId: number }) => Task_ShakeCamera(t.taskId), 9);
+  gTasks[taskId].data[0] /* tHorizontalPan */ = VarGet('VAR_0x8005');
+  gTasks[taskId].data[1] /* tDelayCounter */ = 0;
+  gTasks[taskId].data[2] /* tNumShakes */ = VarGet('VAR_0x8006');
+  gTasks[taskId].data[3] /* tDelay */ = VarGet('VAR_0x8007');
+  gTasks[taskId].data[4] /* tVerticalPan */ = VarGet('VAR_0x8004');
+  SetCameraPanningCallback(null);
+  // 1:1 PlaySE(SE_M_STRENGTH) — via pont __PlaySE (pas d'arête ESM field_specials→sound).
+  (globalThis as { __PlaySE?: (n: number) => void }).__PlaySE?.(SE_M_STRENGTH);
+}
+
+/** 1:1 décomp `Task_ShakeCamera` (field_specials.c:1482-1500). */
+function Task_ShakeCamera(taskId: number): void {
+  const task = gTasks[taskId];
+  task.data[1] /* tDelayCounter */++;
+  if (task.data[1] /* tDelayCounter */ % task.data[3] /* tDelay */ == 0)
+  {
+    task.data[1] /* tDelayCounter */ = 0;
+    task.data[2] /* tNumShakes */--;
+    task.data[0] /* tHorizontalPan */ = -task.data[0] /* tHorizontalPan */;
+    task.data[4] /* tVerticalPan */ = -task.data[4] /* tVerticalPan */;
+    SetCameraPanning(task.data[0] /* tHorizontalPan */, task.data[4] /* tVerticalPan */);
+    if (task.data[2] /* tNumShakes */ == 0)
+    {
+      StopCameraShake(taskId);
+      InstallCameraPanAheadCallback();
+    }
+  }
+}
+
+/** 1:1 décomp `StopCameraShake` (field_specials.c:1502-1506) : DestroyTask + ScriptContext_Enable.
+ *  ScriptContext_Enable réactivé via pont globalThis (anti-cycle field_specials→script) ; on
+ *  émet aussi __SignalWaitState — notre byte-VM `waitstate` reprend sur ce signal (pattern
+ *  braille_puzzles Task_SealedChamberShakingEffect). */
+function StopCameraShake(taskId: number): void {
+  DestroyTask(taskId);
+  (globalThis as { __ScriptContext_Enable?: () => void }).__ScriptContext_Enable?.();
+  (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
+}
 
 /** 1:1 décomp `SpawnCameraObject` (field_specials.c:1251-...) : crée l'object event CAMERA que la
  *  caméra suit (TrySpawnObjectEvent OBJ_EVENT_GFX_CAMERA + CameraObject_Init). DÉFÉRÉ no-op
@@ -779,6 +823,191 @@ function _getCurrentPCLocation(): number {
     if (mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_2F') return _PC_LOC_MH_PCA;
   }
   return v;
+}
+
+// ─── Mauville Gym puzzle 1:1 (field_specials.c:611-782) — barrières électriques (arène badge 3) ──
+// Les métatiles écrites (MapGridSetMetatileIdAt) sont ré-affichées par le special DrawWholeMapView
+// que le script enchaîne (specials-registry). MAPGRID_IMPASSABLE = const locale 0x0C00 ci-dessus.
+import { MapGridSetMetatileIdAt, MapGridGetMetatileIdAt, MAP_OFFSET } from './fieldmap';
+import {
+  METATILE_MauvilleGym_PressedSwitch, METATILE_MauvilleGym_RaisedSwitch,
+  METATILE_MauvilleGym_GreenBeamH1_On, METATILE_MauvilleGym_GreenBeamH1_Off,
+  METATILE_MauvilleGym_GreenBeamH2_On, METATILE_MauvilleGym_GreenBeamH2_Off,
+  METATILE_MauvilleGym_GreenBeamH3_On, METATILE_MauvilleGym_GreenBeamH3_Off,
+  METATILE_MauvilleGym_GreenBeamH4_On, METATILE_MauvilleGym_GreenBeamH4_Off,
+  METATILE_MauvilleGym_RedBeamH1_On, METATILE_MauvilleGym_RedBeamH1_Off,
+  METATILE_MauvilleGym_RedBeamH2_On, METATILE_MauvilleGym_RedBeamH2_Off,
+  METATILE_MauvilleGym_RedBeamH3_On, METATILE_MauvilleGym_RedBeamH3_Off,
+  METATILE_MauvilleGym_RedBeamH4_On, METATILE_MauvilleGym_RedBeamH4_Off,
+  METATILE_MauvilleGym_GreenBeamV1_On, METATILE_MauvilleGym_GreenBeamV2_On,
+  METATILE_MauvilleGym_RedBeamV1_On, METATILE_MauvilleGym_RedBeamV2_On,
+  METATILE_MauvilleGym_PoleBottom_On, METATILE_MauvilleGym_PoleBottom_Off,
+  METATILE_MauvilleGym_PoleTop_On, METATILE_MauvilleGym_PoleTop_Off,
+  METATILE_MauvilleGym_FloorTile,
+} from '../include/constants/metatile_labels';
+
+/** 1:1 décomp `static const struct UCoords8 sMauvilleGymSwitchCoords[]` (field_specials.c:611-617). */
+const sMauvilleGymSwitchCoords: readonly { x: number; y: number }[] = [
+  { x: 0 + MAP_OFFSET, y: 15 + MAP_OFFSET },
+  { x: 4 + MAP_OFFSET, y: 12 + MAP_OFFSET },
+  { x: 3 + MAP_OFFSET, y:  9 + MAP_OFFSET },
+  { x: 8 + MAP_OFFSET, y:  9 + MAP_OFFSET },
+];
+
+/** 1:1 décomp `MauvilleGymPressSwitch` (field_specials.c:619-630) : presse le switch foulé
+ *  (gSpecialVar_0x8004 = index) et relève les autres. */
+export function MauvilleGymPressSwitch(): void {
+  for (let i = 0; i < sMauvilleGymSwitchCoords.length; i++) {
+    if (i == VarGet('VAR_0x8004'))
+      MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_PressedSwitch);
+    else
+      MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_RaisedSwitch);
+  }
+}
+
+/** 1:1 décomp `MauvilleGymSetDefaultBarriers` (field_specials.c:632-724) : remet les barrières à
+ *  leur état par défaut (leur état alternatif est géré par EventScript_SetAltBarriers). */
+export function MauvilleGymSetDefaultBarriers(): void {
+  // All switches/barriers are within these coord ranges
+  for (let y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++) {
+    for (let x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++) {
+      switch (MapGridGetMetatileIdAt(x, y)) {
+        case METATILE_MauvilleGym_GreenBeamH1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH3_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH4_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH1_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_On);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH2_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_On);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH3_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH4_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_RedBeamH1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH3_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH4_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH1_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_On);
+          break;
+        case METATILE_MauvilleGym_RedBeamH2_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_On);
+          break;
+        case METATILE_MauvilleGym_RedBeamH3_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_RedBeamH4_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_GreenBeamV1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_GreenBeamV2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+          break;
+        case METATILE_MauvilleGym_RedBeamV1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_RedBeamV2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+          break;
+        case METATILE_MauvilleGym_PoleBottom_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV1_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_FloorTile:
+          if (MapGridGetMetatileIdAt(x, y - 1) == METATILE_MauvilleGym_GreenBeamV1_On)
+            MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV2_On | MAPGRID_IMPASSABLE);
+          else
+            MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV2_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_PoleBottom_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV1_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_PoleTop_Off:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_PoleTop_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);
+          break;
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `MauvilleGymDeactivatePuzzle` (field_specials.c:726-782) : presse tous les switchs
+ *  et désactive toutes les barrières. */
+export function MauvilleGymDeactivatePuzzle(): void {
+  // 1:1 : `const struct UCoords8 *switchCoords = sMauvilleGymSwitchCoords;` puis `switchCoords++`
+  // (i décompte, le pointeur avance → coords[0..3] toutes pressées).
+  let switchCoords = 0;
+  for (let i = sMauvilleGymSwitchCoords.length - 1; i >= 0; i--) {
+    MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[switchCoords].x, sMauvilleGymSwitchCoords[switchCoords].y, METATILE_MauvilleGym_PressedSwitch);
+    switchCoords++;
+  }
+  for (let y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++) {
+    for (let x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++) {
+      switch (MapGridGetMetatileIdAt(x, y)) {
+        case METATILE_MauvilleGym_GreenBeamH1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH3_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamH4_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH3_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);
+          break;
+        case METATILE_MauvilleGym_RedBeamH4_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);
+          break;
+        case METATILE_MauvilleGym_GreenBeamV1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_RedBeamV1_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);
+          break;
+        case METATILE_MauvilleGym_GreenBeamV2_On:
+        case METATILE_MauvilleGym_RedBeamV2_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+          break;
+        case METATILE_MauvilleGym_PoleTop_On:
+          MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);
+          break;
+      }
+    }
+  }
 }
 
 // ─── sPCBoxToSendMon 1:1 (field_specials.c:118 + 3405-3413) — ex-pc-box.ts (lot 11b) ──

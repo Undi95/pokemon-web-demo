@@ -50,7 +50,12 @@ import {
   BufferVarsForIVRater, GetBattleTowerSinglesStreak, GetSecretBaseNearbyMapName,
   ScriptCheckFreePokemonStorageSpace, ShouldShowBoxWasFullMessage,
   OffsetCameraForBattle, ShakeCamera, SpawnCameraObject, RemoveCameraObject,
+  MauvilleGymPressSwitch, MauvilleGymSetDefaultBarriers, MauvilleGymDeactivatePuzzle,
 } from '../../field_specials';
+// Puzzle portes tournantes (arène Fortree, badge 6) — impl 1:1 src/rotating_gate.ts (hooks
+// collision déjà câblés field_player_avatar). Ces specials étaient CLOBBERÉS en ()=>0 par la
+// stub-loop ; on les enregistre vers les vraies fns (dédup last-wins → registerSpecial gagne).
+import { RotatingGate_InitPuzzle, RotatingGate_InitPuzzleAndGraphics } from '../../rotating_gate';
 import { IsPokemonJumpSpeciesInParty } from '../../pokemon_jump';
 import { ResetLotteryCorner, RetrieveLotteryNumber, PickLotteryCornerTicket } from '../../lottery_corner';
 import { IsTrendyPhraseBoring, GetDewfordHallPaintingNameIndex } from '../../dewford_trend';
@@ -1360,7 +1365,14 @@ registerSpecial('CloseFrontierExchangeCornerItemIconWindow', () => { /* no-op */
  *  Retourne le bucket de friendship du lead mon (= 7 valeurs 0..6 → enum). */
 registerSpecial('GetLeadMonFriendshipScore', GetLeadMonFriendshipScore);  // impl 1:1 → src/field_specials.ts
 registerSpecial('WaitWeather', () => 0);
-registerSpecial('MauvilleGymPressSwitch', () => { /* no-op */ });
+// ─── Puzzles d'arènes obligatoires — impls 1:1 (anti-clobber : retirés des stub-loops ci-dessus) ──
+// Mauville (badge 3) : bascule des métatiles de barrières (field_specials.ts, 1:1 field_specials.c).
+registerSpecial('MauvilleGymPressSwitch', MauvilleGymPressSwitch);
+registerSpecial('MauvilleGymSetDefaultBarriers', MauvilleGymSetDefaultBarriers);
+registerSpecial('MauvilleGymDeactivatePuzzle', MauvilleGymDeactivatePuzzle);
+// Fortree (badge 6) : init du puzzle de portes tournantes (rotating_gate.ts, 1:1 rotating_gate.c).
+registerSpecial('RotatingGate_InitPuzzle', RotatingGate_InitPuzzle);
+registerSpecial('RotatingGate_InitPuzzleAndGraphics', RotatingGate_InitPuzzleAndGraphics);
 registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
 /** 1:1 décomp `ShowFieldMessageStringVar4` (field_specials.c:890-893) :
  *  ```c
@@ -1480,11 +1492,13 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
   // 'GameClear' — porté 1:1 décomp post_battle_event_funcs.c:12 ci-haut (2026-07-02).
   // 'SetMewAboveGrass' — porté 1:1 faraway_island.ts (transpilé), handler ci-bas.
-  'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics',
+  // 'RotatingGate_InitPuzzle' / 'RotatingGate_InitPuzzleAndGraphics' — portés 1:1 rotating_gate.ts,
+  //   registerSpecial vers les vraies fns ci-bas (retirés de la stub-loop = anti-clobber).
   // 'ShouldDoBrailleRegicePuzzle' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
-  'DoOrbEffect', 'FadeOutOrbEffect', 'MauvilleGymDeactivatePuzzle',
+  'DoOrbEffect', 'FadeOutOrbEffect',
+  // 'MauvilleGymDeactivatePuzzle' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'GetWeekCount' — porté 1:1 décomp field_specials.c:940 ci-bas.
   'ReducePlayerPartyToSelectedMons', 'CableCarWarp', 'CableCar',
   'LoopWingFlapSE',
@@ -2085,7 +2099,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'LinkContestTryShowWirelessIndicator' — porté 1:1 décomp contest_util.c:2741 ci-bas (= no link).
   // 'LostSecretBaseBattle' — porté 1:1 décomp secret_base.c:1866 ci-bas.
   'LinkContestWaitForConnection', 'LoadPlayerBag',
-  'MauvilleGymSetDefaultBarriers',
+  // 'MauvilleGymSetDefaultBarriers' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
   'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',

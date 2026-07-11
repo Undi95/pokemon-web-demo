@@ -319,6 +319,11 @@ export function ScriptContext_Enable(): void {
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
   LockPlayerFieldControls();
 }
+// Pont anti-cycle : field_specials (StopCameraShake, 1:1 field_specials.c:1505) réactive le
+// contexte script via ce pont plutôt qu'un import statique `./script` — une nouvelle arête
+// depuis field_specials (module éval tôt) réordonnerait l'éval ESM → TDZ. Même philosophie que
+// `__SignalWaitState` (scrcmd.ts) et le no-op ShakeCamera historique qui prescrivait ce pont.
+(globalThis as Record<string, unknown>).__ScriptContext_Enable = ScriptContext_Enable;
 
 // ─── Snapshot / Restore du ScriptContext global ──────────────────────────────
 // Préserve le contexte SUSPENDU (scriptPtr + nativePtr + pile + data + status) à travers
