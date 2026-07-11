@@ -100,10 +100,10 @@ import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   gPlayerParty, GetMonData,
   MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS, MON_DATA_IS_EGG,
-  MON_DATA_EXP, MON_DATA_SPECIES,
+  MON_DATA_EXP, MON_DATA_SPECIES, MON_DATA_MOVE1,
   SetBattleMonDataFromBuffer,
 } from './engine/battle/party-storage';
-import { gBattlerPartyIndexes, setActiveBattler } from './engine/battle/state';
+import { gBattlerPartyIndexes, setActiveBattler, gBattlersCount } from './engine/battle/state';
 import { HandleIntroSlide } from './battle_intro';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
@@ -399,9 +399,122 @@ function _IsDma3ManagerBusyWithBgCopy(): boolean {
 }
 
 /** 1:1 décomp `HandleInputChooseTarget()` (battle_controller_player.c:339-468).
- *  Dette R3 Phase B : double battles target selection. Single battle = pas appelé. */
+ *  Sélection de la cible en combat DOUBLE : installé par HandleInputChooseMove
+ *  (:685) quand `canSelectTarget`. Lit les inputs 1:1 :
+ *    - A → valide la cible (Emit B_ACTION_EXEC_SCRIPT moveIdx | target<<8).
+ *    - B / hold-59 → retour HandleInputChooseMove.
+ *    - DPAD LEFT|UP / RIGHT|DOWN → déplace le curseur cible (sTargetIdentities).
+ *  Adaptation : les `gSprites[gBattlerSpriteIds[X]].callback = SpriteCB_*` du
+ *  décomp deviennent `_SpriteCB_Show/HideAsMoveTarget(X)` (même dette R3 cosmétique
+ *  que HandleInputChooseMove :694 ; la flèche cible n'est pas encore rendue).
+ *  AVANT (2026-07-11) : corps VIDE (stub « Dette R3 ») → une fois installé, aucune
+ *  touche lue et jamais de PlayerBufferExecCompleted → FREEZE input en double. */
 function HandleInputChooseTarget(): void {
-  // Dette R3 : double battle target selection (= Phase B post-L1).
+  let i: number;
+  const identities = sTargetIdentities; // memcpy local (lecture seule) 1:1.
+
+  DoBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX, 15, 1);
+
+  // what a weird loop (commentaire décomp) : EndBounce sur tous SAUF la cible.
+  i = 0;
+  if (gBattlersCount !== 0) {
+    do {
+      if (i !== gMultiUsePlayerCursor) EndBounceEffect(i, BOUNCE_HEALTHBOX);
+      i++;
+    } while (i < gBattlersCount);
+  }
+
+  if (JOY_HELD(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode === OPTIONS_BUTTON_MODE_L_EQUALS_A) {
+    incPlayerDpadHoldFrames();
+  } else {
+    setPlayerDpadHoldFrames(0);
+  }
+
+  if (JOY_NEW(A_BUTTON)) {
+    PlaySE(SE_SELECT);
+    _SpriteCB_HideAsMoveTarget(gMultiUsePlayerCursor);
+    BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
+    EndBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX);
+    PlayerBufferExecCompleted();
+  } else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59) {
+    PlaySE(SE_SELECT);
+    _SpriteCB_HideAsMoveTarget(gMultiUsePlayerCursor);
+    gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
+    DoBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX, 7, 1);
+    DoBounceEffect(gActiveBattler, BOUNCE_MON, 7, 1);
+    EndBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX);
+  } else if (JOY_NEW(DPAD_LEFT | DPAD_UP)) {
+    PlaySE(SE_SELECT);
+    _SpriteCB_HideAsMoveTarget(gMultiUsePlayerCursor);
+
+    do {
+      const currSelIdentity = GetBattlerPosition(gMultiUsePlayerCursor);
+
+      for (i = 0; i < MAX_BATTLERS_COUNT; i++) {
+        if (currSelIdentity === identities[i]) break;
+      }
+      do {
+        // UBFIX (include/config.h:58 défini dans ce décomp) : wrap circulaire au
+        // dernier index. Le chemin non-UBFIX lit identities[MAX_BATTLERS_COUNT]
+        // (OOB stack) — non reproductible en JS.
+        if (--i < 0) i = MAX_BATTLERS_COUNT - 1;
+        setMultiUsePlayerCursor(GetBattlerAtPosition(identities[i]));
+      } while (gMultiUsePlayerCursor === gBattlersCount);
+
+      i = 0;
+      switch (GetBattlerPosition(gMultiUsePlayerCursor)) {
+        case B_POSITION_PLAYER_LEFT:
+        case B_POSITION_PLAYER_RIGHT:
+          if (gActiveBattler !== gMultiUsePlayerCursor) {
+            i++;
+          } else if (_getMoveTarget(GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler]) as number) & MOVE_TARGET_USER_OR_SELECTED) {
+            i++;
+          }
+          break;
+        case B_POSITION_OPPONENT_LEFT:
+        case B_POSITION_OPPONENT_RIGHT:
+          i++;
+          break;
+      }
+
+      if (gAbsentBattlerFlags & gBitTable[gMultiUsePlayerCursor]) i = 0;
+    } while (i === 0);
+    _SpriteCB_ShowAsMoveTarget(gMultiUsePlayerCursor);
+  } else if (JOY_NEW(DPAD_RIGHT | DPAD_DOWN)) {
+    PlaySE(SE_SELECT);
+    _SpriteCB_HideAsMoveTarget(gMultiUsePlayerCursor);
+
+    do {
+      const currSelIdentity = GetBattlerPosition(gMultiUsePlayerCursor);
+
+      for (i = 0; i < MAX_BATTLERS_COUNT; i++) {
+        if (currSelIdentity === identities[i]) break;
+      }
+      do {
+        if (++i > 3) i = 0;
+        setMultiUsePlayerCursor(GetBattlerAtPosition(identities[i]));
+      } while (gMultiUsePlayerCursor === gBattlersCount);
+
+      i = 0;
+      switch (GetBattlerPosition(gMultiUsePlayerCursor)) {
+        case B_POSITION_PLAYER_LEFT:
+        case B_POSITION_PLAYER_RIGHT:
+          if (gActiveBattler !== gMultiUsePlayerCursor) {
+            i++;
+          } else if (_getMoveTarget(GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler]) as number) & MOVE_TARGET_USER_OR_SELECTED) {
+            i++;
+          }
+          break;
+        case B_POSITION_OPPONENT_LEFT:
+        case B_POSITION_OPPONENT_RIGHT:
+          i++;
+          break;
+      }
+
+      if (gAbsentBattlerFlags & gBitTable[gMultiUsePlayerCursor]) i = 0;
+    } while (i === 0);
+    _SpriteCB_ShowAsMoveTarget(gMultiUsePlayerCursor);
+  }
 }
 
 // ─── L2 — Move Selection helpers (battle_controller_player.c) ──────────────
@@ -829,10 +942,29 @@ function HandleMoveSwitching(): void {
 const B_POSITION_OPPONENT_LEFT = 1;
 const B_POSITION_OPPONENT_RIGHT = 3;
 
+/** 1:1 décomp `MAX_BATTLERS_COUNT` (include/constants/battle.h). */
+const MAX_BATTLERS_COUNT = 4;
+
+/** 1:1 décomp `sTargetIdentities[MAX_BATTLERS_COUNT]` (battle_controller_player.c:184).
+ *  Ordre de parcours du curseur de cible en double battle :
+ *  {PLAYER_LEFT, PLAYER_RIGHT, OPPONENT_RIGHT, OPPONENT_LEFT}. */
+const sTargetIdentities = [
+  B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
+  B_POSITION_OPPONENT_RIGHT, B_POSITION_OPPONENT_LEFT,
+];
+
 /** 1:1 décomp `SpriteCB_ShowAsMoveTarget(battler)`. Dette R3 : target sprite
  *  highlight via gSprites[gBattlerSpriteIds[battler]].callback. */
 function _SpriteCB_ShowAsMoveTarget(_battler: number): void {
   // Dette R3 : sprite callback highlight target.
+}
+
+/** 1:1 décomp `SpriteCB_HideAsMoveTarget(battler)`. Dette R3 : masque la flèche
+ *  de cible (gSprites[gBattlerSpriteIds[battler]].callback dans le décomp). No-op
+ *  tant que la flèche n'est pas rendue — même dette cosmétique que
+ *  _SpriteCB_ShowAsMoveTarget ; n'affecte PAS le flux d'input de ChooseTarget. */
+function _SpriteCB_HideAsMoveTarget(_battler: number): void {
+  // Dette R3 : sprite callback hide target.
 }
 
 /** 1:1 décomp `CountAliveMonsInBattle(caseId)` local port pour HandleInput
