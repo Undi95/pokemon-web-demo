@@ -21,8 +21,8 @@ import { gSineTable } from './trig';
 import { loadTileBin, loadGbaPal } from '../harness/gba/png-loader';
 import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { CopyToWindowPixelBuffer, CopyWindowToVram, GetWindowAttribute, GetWindowPixelBuffer, WINDOW_BG } from './window';
-import { isCryPlaying, playCry, stopCry } from '../harness/m4a/music';
-import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { IsCryPlaying, StopCry, PlayCry_NormalNoDucking } from './sound';
+import { CRY_VOLUME_RS, CRY_PRIORITY_NORMAL } from '../include/constants/sound';
 import { gSoundInfo } from './m4a';
 import { gPcmDmaCounter } from './main';
 import { PCM_DMA_BUF_SIZE } from '../include/gba/m4a_internal';
@@ -279,7 +279,7 @@ export function UpdateCryWaveformWindow(windowId: number): void {
     // Adaptation : le WAV décode en ASYNC (~2-6 frames) — le C joue instantané.
     // Grace period le temps que la lecture démarre réellement (sinon cryState
     // retombe à 0 avant le premier sample et la courbe ne se dessine jamais).
-    if (!isCryPlaying()) {
+    if (!IsCryPlaying()) {
       if (_cryStartGrace > 0) {
         _cryStartGrace--;
         sDexCryScreen.cryState = 1;
@@ -308,8 +308,8 @@ export function CryScreenPlayButton(species: number): void {
   if (!sDexCryScreen.cryOverrideCountdown) {
     if (!sDexCryScreen.cryRepeatDelay) {
       sDexCryScreen.cryRepeatDelay = 4;
-      if (isCryPlaying()) {
-        stopCry();
+      if (IsCryPlaying()) {
+        StopCry();
         sDexCryScreen.species = species;
         sDexCryScreen.cryOverrideCountdown = 2;
       } else {
@@ -321,16 +321,17 @@ export function CryScreenPlayButton(species: number): void {
 
 let _cryStartGrace = 0;
 
-/** 1:1 `PlayCryScreenCry` : PlayCry_NormalNoDucking + cryState=1. */
+/** 1:1 `PlayCryScreenCry` (pokedex_cry_screen.c:347-351) :
+ *  PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL) +
+ *  cryState=1. Cri via le MOTEUR natif → écrit gSoundInfo.pcmBuffer (lu par
+ *  BufferCryWaveformSegment) : la waveform ne fonctionne QUE par ce chemin. */
 function PlayCryScreenCry(species: number): void {
-  const key = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
-  playCry(key);
-  _cryStartGrace = 30;   // le temps du fetch+decode WAV (adaptation async)
+  PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
   sDexCryScreen!.cryState = 1;
 }
 
 /** Re-export pour pokedex.ts (IsCryPlaying du C). */
-export { isCryPlaying as IsCryPlaying };
+export { IsCryPlaying };
 
 /** 1:1 `bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)`. */
 export function LoadCryMeter(window: CryScreenWindow, windowId: number): boolean {
@@ -388,7 +389,7 @@ export function FreeCryScreen(): void {
   void FreeAllSpritePalettes;   // FreeSpritePaletteByTag : slots fixes chez nous
   sDexCryScreen = null;
   sCryMeterNeedle = null;
-  stopCry();
+  StopCry();
 }
 
 /** 1:1 `SpriteCB_CryMeterNeedle` : rotation affine vers la cible (amplitude). */

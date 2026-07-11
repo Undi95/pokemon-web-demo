@@ -40,24 +40,15 @@ import {
 // G_SINE_TABLE pour garder les usages bridge (BgAffineSet, globalThis pour
 // pokeball-effects/sprite) inchangés. Le scaffold decomp-data/src/sine-table a été retiré.
 import { gSineTable as G_SINE_TABLE } from '../../src/trig';
-import { SONG_ID_TO_NAME, getSongConfig } from '../../src/engine/decomp-data/src/song-table';
-import { getSongMusicPlayer } from '../../src/engine/decomp-data/src/song-players';
 import { MUS_NONE as _MUS_NONE } from '../../include/constants/songs';
-import { setReverb as _staticSetReverb } from '../m4a/audio-context';
-// Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
-// SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
-// laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, stopAllSongs as _staticStopAllSongs, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
-// Moteur m4a NATIF (1:1 certifié sample-exact) : dispatch M4A_NATIVE dans les
-// fonctions son ci-dessous ; `?m4a-legacy` = shim spessasynth historique.
-import { M4A_NATIVE, initM4aNative, startM4aNativeAudio } from '../m4a/native';
+// Moteur m4a NATIF (1:1 certifié sample-exact) — SEUL chemin son depuis la
+// dissolution du shim spessasynth (2026-07-11 : plus de dispatch M4A_NATIVE).
+import { initM4aNative, startM4aNativeAudio } from '../m4a/native';
 import {
   m4aSongNumStart as _m4aSongNumStartNative,
   m4aMPlayAllStop as _m4aMPlayAllStopNative,
   gMPlayInfo_BGM as _gMPlayInfo_BGM_native,
 } from '../../src/m4a';
-import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
-import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
 // Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
 // in the affine extras registry consumed by sprite-engine-impl. Required for
 // EVERY mon release/return/emerge across battles, Birch, eggs, evolutions.
@@ -809,38 +800,8 @@ export const MUS_INTRO = 414;          // mus_intro
 export const MUS_INTRO_BATTLE = 442;   // mus_intro_battle
 export const MUS_TITLE = 413;          // mus_title
 
-// State du M4A engine maison (notre `src/engine/m4a/`). Init lazy via m4aPrime().
-let _m4aPrimed = false;
-type VgLookupFn = (name: string) => unknown;
-let _vgLookup: VgLookupFn | null = null;
-let _songVoicegroups: Record<string, string> | null = null;
-
-/** Init audio engine (spessasynth_lib + emerald.sf2). Lazy au premier
- *  m4aSongNumStart. Idempotent. Précharge les 3 synth slots en parallèle pour
- *  que les premiers PlaySE n'aient PAS de latence cold-init (~1-2s SF2 load). */
-async function m4aPrime(): Promise<void> {
-  if (_m4aPrimed) return;
-  const { getAudioContext } = await import('../m4a/audio-context');
-  const { preloadAllSlots } = await import('../m4a/player');
-  const { lookupVoicegroup } = await import('../m4a/voicegroups-data/_all-voicegroups-index');
-  // Init AudioContext (requires user gesture — déjà eu via click TestGba→GameScene)
-  getAudioContext();
-  // Load song → voicegroup mapping (gardé pour les warnings PlaySE qui filtrent
-  // les slots, même si spessasynth ne consomme plus le voicegroup data lui-même).
-  const resp = await fetch('/decomp/em/music/song-voicegroups.json');
-  _songVoicegroups = await resp.json() as Record<string, string>;
-  _vgLookup = lookupVoicegroup as VgLookupFn;
-  // Précharge les 3 synth slots (BGM + SE1 + SE2) en parallèle. Le SF2 buffer
-  // est fetch 1 fois et partagé via slice() entre les 3 instances.
-  await preloadAllSlots();
-  // Pre-load the list of pre-rendered SE so first PlaySE() is correctly routed
-  await preloadPrerenderedList();
-  // Warm-up AudioContext + DAC pour éviter "PTCH" sur le 1er SE après page load.
-  const { primeAudioContext } = await import('../m4a/audio-context');
-  await primeAudioContext();
-  _m4aPrimed = true;
-  console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
-}
+// (Priming legacy spessasynth dissous 2026-07-11 : l'init lazy SF2 + mapping
+//  voicegroup retirés — le moteur natif s'initialise via ensureNativeEngine.)
 
 // Expose pour debug console
 if (typeof globalThis !== 'undefined') {
@@ -848,19 +809,13 @@ if (typeof globalThis !== 'undefined') {
 (globalThis as Record<string, unknown>).__m4aSongNumStart = m4aSongNumStart;
 }
 
-/** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle via NOTRE
- *  M4A engine maison (`src/engine/m4a/`). Pas SpessaSynth ni emerald.sf2.
- *  Async fire-and-forget : await m4aPrime() puis playSong().
- *  Le voicegroup est résolu via `song-voicegroups.json` (extracted décomp). */
-// Song ID courante du slot BGM (= dernière song PLAYER 0 passée à
-// m4aSongNumStart). Utilisée par le handler visibilitychange dans main.ts pour
-// replay au retour de focus — les jingles SE2 n'y touchent PAS (sinon le
-// retour de focus rejouerait le jingle au lieu du BGM).
+/** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song via le moteur m4a
+ *  NATIF (src/m4a.ts). Le `loop` est encodé dans gSongTable côté ROM. */
+// _currentSongId : posé UNIQUEMENT par l'ancien dispatch spessasynth (dissous
+// 2026-07-11) → reste null en natif. getCurrentSongId est un best-effort lu par
+// battle-decomp-loop (restore BGM OW) et les devtools — jamais critique.
 let _currentSongId: number | null = null;
 export function getCurrentSongId(): number | null { return _currentSongId; }
-// Garde anti-course PAR SLOT (2 m4aSongNumStart concurrents sur des players
-// différents ne doivent pas s'annuler — 1:1 GBA : players indépendants).
-const _lastSongIdBySlot: Record<string, number> = {};
 
 // ─── Moteur natif : init lazy + rejouage de la commande ratée pendant le
 // fetch du blob (adaptation chargement asynchrone web : la ROM GBA est mappée
@@ -887,96 +842,22 @@ function ensureNativeEngine(): boolean {
 }
 
 export function m4aSongNumStart(songId: number, loop: boolean = false): void {
-  if (M4A_NATIVE) {
-    // MUS_NONE (0xFFFF) lirait gSongTable hors blob (le GBA lit la ROM
-    // voisine sans broncher, JS non) — même skip que PlayBGM ne l'émet jamais.
-    if (songId === 0xFFFF) return;
-    const ready = ensureNativeEngine();
-    if (ready) _m4aSongNumStartNative(songId);
-    else _pendingNativeSongId = songId;
-    console.log(`[m4a-native] start id=${songId} ready=${ready} bgmSt=0x${(_gMPlayInfo_BGM_native.status >>> 0).toString(16)}`);
-    return;
-  }
-  // 1:1 décomp : MUS_NONE (= 0xFFFF) et 0 = no music. Silent skip pour éviter
-  // spam warnings sur les maps sans music (= MAP_INSIDE_OF_TRUCK et autres).
-  if (songId === 0xFFFF || songId === 0) return;
-  const songName = SONG_ID_TO_NAME[songId];
-  if (!songName) {
-    console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
-    return;
-  }
-  // 1:1 gSongTable (sound/song_table.inc, colonne ms) : chaque song joue sur
-  // SON music player — BGM=0, SE1=1, SE2=2, SE3=3. 🐛 fix 2026-07-02 (verdict
-  // A/B) : les jingles MUS_* (mus_evolved, mus_level_up, mus_obtain_item… tous
-  // PLAYER_SE2) jouent PAR-DESSUS le BGM sans le couper — avant, tout partait
-  // sur le slot 'bgm' → PlayBGM(MUS_EVOLVED) REMPLAÇAIT MUS_EVOLUTION → silence
-  // net à la fin du jingle. SE3 (7 sons météo/low-health) → slot 'se2' (pas de
-  // 4e slot ; ces SE passent par le path PlaySE/noise en pratique).
-  const player = getSongMusicPlayer(songName);
-  const slot = player === 0 ? 'bgm' : player === 1 ? 'se1' : 'se2';
-  console.log(`[m4a-trace] start id=${songId} ${songName} slot=${slot} loop=${loop}`);
-  if (slot === 'bgm') _currentSongId = songId;
-  _lastSongIdBySlot[slot] = songId;
-  // STOP IMMÉDIAT et SYNC du slot CIBLE uniquement (= 1:1 MPlayStart remplace
-  // la song de CE player, les autres continuent). Static imports (top of file)
-  // garantissent disponibilité immédiate. Critique pour éviter le micro-replay
-  // de loop entre 2 BGMs.
-  _staticStopSong(slot);
-  void (async () => {
-    try {
-      await m4aPrime();
-      const url = `/decomp/em/music/${songName}.mid`;
-      const vgName = _songVoicegroups![songName];
-      if (!vgName) {
-        console.warn(`[m4aSongNumStart] no voicegroup mapping for ${songName}`);
-        return;
-      }
-      const voicegroup = _vgLookup!(vgName);
-      if (!voicegroup) {
-        console.warn(`[m4aSongNumStart] voicegroup '${vgName}' not found in lookup`);
-        return;
-      }
-      const midi = await _staticLoadMidi(url);
-      // Re-vérification : si une autre m4aSongNumStart est passée entre-temps
-      // SUR CE SLOT, skip pour ne pas écraser la nouvelle.
-      if (_lastSongIdBySlot[slot] !== songId) return;
-      // Reverb + volume par-song 1:1 décomp `sound/songs/midi/midi.cfg` (mid2agb args).
-      // Ex : mus_intro = R50 V90 (overworld léger), mus_cave_of_origin = R90 (cavernes).
-      const cfg = getSongConfig(songName);
-      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
-      const songVol = cfg?.volume ?? null;
-      // 1:1 GBA : LOOP encodé dans le .mid via markers `[` / `]` (mid2agb →
-      // ply_goto vs ply_fine). On lit `BasicMIDI.loop` qui parse ces markers
-      // et utilise loopCount=Infinity quand `loop.start !== loop.end`.
-      // MUS_INTRO n'a PAS ces markers → loop.start === loop.end → one-shot.
-      // L'arg `loop` explicite force le mode (pour dev tool / cas spécifiques).
-      const midiLoop = (midi as { loop?: { start: number; end: number } }).loop;
-      const hasLoopMarkers = !!midiLoop && midiLoop.start !== midiLoop.end;
-      const useLoop = loop || hasLoopMarkers;
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, useLoop, slot, songVol,
-      );
-      console.log(`[m4aSongNumStart] playing ${url} (vg=${vgName}) slot=${slot} V=${songVol ?? 'default'} loop=${useLoop}${hasLoopMarkers ? ' (auto-detected)' : ''}`);
-    } catch (e) {
-      console.error('[m4aSongNumStart] failed:', e);
-    }
-  })();
+  // MUS_NONE (0xFFFF) lirait gSongTable hors blob (le GBA lit la ROM voisine
+  // sans broncher, JS non) — même skip que PlayBGM ne l'émet jamais. Le `loop`
+  // est encodé dans gSongTable (ply markers ROM) côté natif → ignoré ici.
+  void loop;
+  if (songId === 0xFFFF) return;
+  const ready = ensureNativeEngine();
+  if (ready) _m4aSongNumStartNative(songId);
+  else _pendingNativeSongId = songId;
+  console.log(`[m4a-native] start id=${songId} ready=${ready} bgmSt=0x${(_gMPlayInfo_BGM_native.status >>> 0).toString(16)}`);
 }
 
-/** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE).
- *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2).
- *  SYNC obligatoire (import statique) : la version `import().then()` différait le
- *  stop APRÈS le playSong d'un m4aSongNumStart appelé juste ensuite quand le .mid
- *  était déjà en cache (combat 2+) → tuait la BGM de combat fraîchement lancée =
- *  « plus de musique » au 2e combat (bug user 2026-06-12). Ordre strict 1:1 ROM :
- *  PlayBattleBGM = m4aMPlayAllStop PUIS PlayBGM. */
+/** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE) via le
+ *  moteur natif. Ordre strict 1:1 ROM : PlayBattleBGM = m4aMPlayAllStop PUIS PlayBGM. */
 export function m4aMPlayAllStop(): void {
-  if (M4A_NATIVE) {
-    if (_nativeEngineReady) _m4aMPlayAllStopNative();
-    _pendingNativeSongId = null;
-    return;
-  }
-  _staticStopAllSongs();
+  if (_nativeEngineReady) _m4aMPlayAllStopNative();
+  _pendingNativeSongId = null;
 }
 
 /** 1:1 décomp `FillPalBufferBlack()` (field_screen_effect.c:69-72) :
@@ -1040,227 +921,29 @@ export function getDisableMusic(): boolean { return _gDisableMusic; }
 
 /** Jeton anti-chevauchement des fanfares : seule la DERNIÈRE fanfare a le droit
  *  de reprendre le BGM (1:1 sFanfareCounter écrasé par la fanfare suivante). */
-let _fanfareGen = 0;
-
-/** 1:1 décomp `PlayFanfare(songNum)` (sound.c:217 → PlayFanfareByFanfareNum:171) :
- *    m4aMPlayStop(&gMPlayInfo_BGM);   // PAUSE le player BGM (position conservée)
- *    m4aSongNumStart(fanfare);        // la fanfare joue sur SON player
- *    … Task_Fanfare (fin du compteur sFanfares[].duration) :
- *    m4aMPlayContinue(&gMPlayInfo_BGM);  // REPREND le BGM où il en était
- *
- *  Notre port : pauseSong('bgm') + fanfare sur le slot DÉDIÉ 'fanfare' +
- *  resumeSong('bgm') à la durée réelle du .mid. (L'ancien code jouait la
- *  fanfare SUR le slot bgm = écrasait la BGM (fanfare de victoire incluse)
- *  sans jamais la reprendre — bug user 2026-06-12 « le SE de la barre d'exp
- *  ne remet pas le BGM ».)
- *
- *  `_markAudioSlotActive('fanfare', …)` garde IsFanfareTaskInactive()/WaitFanfare
- *  exacts (l'opcode waitfanfare bloque pendant la fanfare). */
+/** 1:1 décomp `PlayFanfare(songNum)` (sound.c:213) — délègue au foyer 1:1
+ *  src/sound.ts (sFanfares + Task_Fanfare) via globalThis (anti-cycle). */
 export function PlayFanfare(songNum: number): void {
-  if (M4A_NATIVE) {
-    // Foyer 1:1 sound.c:213 (sFanfares + Task_Fanfare) via globalThis (anti-cycle).
-    (globalThis as { __soundPlayFanfare?: (n: number) => void }).__soundPlayFanfare?.(songNum);
-    return;
-  }
-  const name = SONG_ID_TO_NAME[songNum];
-  if (!name) {
-    console.warn(`[PlayFanfare] song ${songNum} not mapped`);
-    return;
-  }
-  const gen = ++_fanfareGen;
-  // 1:1 m4aMPlayStop(&gMPlayInfo_BGM) — pause, position conservée.
-  _staticPauseSong('bgm');
-  // Provisoire (raffiné par la durée réelle du .mid une fois chargé).
-  _markAudioSlotActive('fanfare', 3000);
-  void (async () => {
-    const resume = (): void => { if (gen === _fanfareGen) _staticResumeSong('bgm'); };
-    try {
-      await m4aPrime();
-      const vgName = _songVoicegroups![name];
-      const voicegroup = vgName ? _vgLookup!(vgName) : null;
-      if (!voicegroup) {
-        console.warn(`[PlayFanfare] voicegroup KO pour ${name}`);
-        resume();
-        return;
-      }
-      const midi = await _staticLoadMidi(`/decomp/em/music/${name}.mid`);
-      if (gen !== _fanfareGen) return;  // une autre fanfare a pris la main
-      const cfg = getSongConfig(name);
-      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
-      const durMs = Math.max(500, ((midi as { duration?: number }).duration ?? 2.5) * 1000);
-      _markAudioSlotActive('fanfare', durMs);
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, 'fanfare', cfg?.volume ?? null,
-      );
-      // 1:1 Task_Fanfare : à la fin de la fanfare → m4aMPlayContinue(BGM).
-      setTimeout(resume, durMs);
-    } catch (e) {
-      console.warn('[PlayFanfare] KO', e);
-      resume();
-    }
-  })();
+  (globalThis as { __soundPlayFanfare?: (n: number) => void }).__soundPlayFanfare?.(songNum);
 }
 
-/** 1:1 décomp `PlayFanfareByFanfareNum` — natif : foyer sound.c:180 (index de
- *  sFanfares, PAS un song id) ; legacy : l'alias historique. */
+/** 1:1 décomp `PlayFanfareByFanfareNum` (sound.c:180) — foyer src/sound.ts
+ *  (index de sFanfares, PAS un song id) via globalThis (anti-cycle). */
 export function PlayFanfareByFanfareNum(num: number): void {
-  if (M4A_NATIVE) {
-    (globalThis as { __soundPlayFanfareByFanfareNum?: (n: number) => void }).__soundPlayFanfareByFanfareNum?.(num);
-    return;
-  }
-  PlayFanfare(num);
+  (globalThis as { __soundPlayFanfareByFanfareNum?: (n: number) => void }).__soundPlayFanfareByFanfareNum?.(num);
 }
 
-// Note : IsFanfareTaskInactive est ré-exporté plus bas avec real tracking
-// (= IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive section).
-// L'ancien stub `return true` est remplacé par check `_audioEndTimeMs.fanfare`.
-
-/** 1:1 STRICT décomp `WaitFanfare(stop)` (sound.c:189-203) :
- *    if (sFanfareCounter) { sFanfareCounter--; return FALSE; }
- *    else { m4aMPlayContinue/m4aSongNumStart ; return TRUE; }
- *
- *  Notre port : utilise `_audioEndTimeMs.fanfare` pour tracker la durée
- *  restante. Si encore en cours → return false (pas done). Sinon return true.
- *  Le décomp `stop` arg (= force stop) wired vers _staticStopSong('bgm') si
- *  user demande arrêt forcé. */
+/** 1:1 STRICT décomp `WaitFanfare(stop)` (sound.c:189-203) — foyer src/sound.ts
+ *  (sFanfareCounter + m4aMPlayContinue) via globalThis (anti-cycle). */
 export function WaitFanfare(stop: boolean = false): boolean {
-  if (M4A_NATIVE) {
-    const f = (globalThis as { __soundWaitFanfare?: (s: boolean) => boolean }).__soundWaitFanfare;
-    return f ? f(stop) : true;
-  }
-  if (_audioEndTimeMs.fanfare > performance.now()) {
-    return false;  // 1:1 décomp : sFanfareCounter > 0 → return FALSE.
-  }
-  if (stop) {
-    // 1:1 décomp : m4aSongNumStart(MUS_DUMMY) = stop bgm. Notre équivalent.
-    _staticStopSong('bgm');
-  }
-  // Sinon : m4aMPlayContinue(&gMPlayInfo_BGM) — bgm resume si paused.
-  // Notre archi : bgm continue de jouer naturellement quand fanfare end.
-  return true;  // 1:1 décomp : sFanfareCounter == 0 → return TRUE.
+  const f = (globalThis as { __soundWaitFanfare?: (s: boolean) => boolean }).__soundWaitFanfare;
+  return f ? f(stop) : true;
 }
 
-/** 1:1 décomp `StopFanfare` — stoppe le fanfare en cours. MVP : stop bgm slot. */
-export function StopFanfare(): void { _staticStopSong('bgm'); }
-
-/** Pause la BGM courante sans la détruire. resumeBgm() reprend depuis la pause.
- *  Cf. devtool Play/Pause toggle. À ne PAS confondre avec m4aMPlayAllStop qui
- *  détruit la Sequencer (= bug de relance même MIDI après destruction). */
-export function pauseBgm(): void {
-  _staticPauseSong('bgm');
-}
-
-/** Resume la BGM précédemment pausée via pauseBgm(). */
-export function resumeBgm(): void {
-  _staticResumeSong('bgm');
-}
-
-/** True si la BGM est dans un état pausé (= playing puis paused, pas stopped). */
-export function isBgmPaused(): boolean {
-  return _staticIsPaused('bgm');
-}
-
-/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot.
- *
- *  ARCHITECTURE 1:1 GBA : la décomp utilise des slots `gMPlayInfo_SE1` et
- *  `gMPlayInfo_SE2` SÉPARÉS du `gMPlayInfo_BGM` (cf src/m4a.c:13-21). Ainsi
- *  un SE et la BGM coexistent. Notre player.ts a maintenant la même
- *  architecture : 3 slots `bgm`/`se1`/`se2` indépendants avec leurs propres
- *  generations + activeNotes + scheduledTimers.
- *
- *  Mapping seId → song name via la table complète extraite de songs.h.
- *  Voicegroup résolu via song-voicegroups.json (rs_sfx_1 / rs_sfx_2 / frlg_sfx). */
-let _seSlotToggle: 'se1' | 'se2' = 'se1';
+/** 1:1 décomp `PlaySE(seId)` (sound.c:572) : PlaySE = m4aSongNumStart — le
+ *  routage SE1/SE2/SE3 vient de gSongTable (colonne ms), lu par le driver natif. */
 export function PlaySE(seId: number): void {
-  if (M4A_NATIVE) {
-    // 1:1 sound.c:572 : PlaySE = m4aSongNumStart — le routage SE1/SE2/SE3
-    // vient de gSongTable (colonne ms), lu par le driver natif.
-    m4aSongNumStart(seId);
-    return;
-  }
-  const name = SONG_ID_TO_NAME[seId];
-  if (!name) {
-    console.warn(`[PlaySE] SE id ${seId} not mapped — songs.h missing entry?`);
-    return;
-  }
-  // 1:1 décomp sound.c `PlaySE(songNum) = m4aSongNumStart(&gMPlay_SE1/2, songNum)` :
-  // le routage vers le player SE vient de la SONG TABLE, pas du nom — la décomp
-  // joue AUSSI des jingles MUS_* en SE (ex. evolution_scene.c:678
-  // PlaySE(MUS_EVOLUTION_INTRO), gaté ensuite par IsSEPlaying). Le guard ne
-  // rejette donc que les vraies BGM de map (mus_* AVEC loop markers = jamais
-  // passées à PlaySE dans la décomp) ; les jingles one-shot mus_* passent par
-  // le path spessasynth slot SE ci-dessous (durée trackée → IsSEPlaying 1:1).
-  if (!name.startsWith('se_') && !name.startsWith('ph_') && !name.startsWith('mus_')) {
-    console.warn(`[PlaySE] id ${seId} = ${name} is NOT a SE/PH/MUS — use m4aSongNumStart instead`);
-    return;
-  }
-  // Alterne entre se1 et se2 (= 1:1 décomp src/sound.c:577-598 : si SE1
-  // occupé, utilise SE2). Permet 2 SE simultanés.
-  const slot: 'se1' | 'se2' = _seSlotToggle;
-  _seSlotToggle = slot === 'se1' ? 'se2' : 'se1';
-
-  // CRITICAL : await m4aPrime AVANT de check hasPrerenderedSE.
-  // Sinon le 1er PlaySE après page load voit la list pas encore loaded,
-  // hasPrerenderedSE return false, on tombe sur le path runtime LFSR/spessasynth
-  // au lieu du pre-rendered WAV → garbage au 1er play, OK au 2ème (bug observé).
-  void (async () => {
-    try {
-      await m4aPrime();  // = await la list de pre-rendered + audio prime
-
-      // Now safe to check : SE pré-rendus prennent priorité
-      if (hasPrerenderedSE(name)) {
-        const cfg = getSongConfig(name);
-        if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
-        const seSongVol = cfg?.volume ?? null;
-        _staticStopSong(slot);  // = sécurité, stop any spessasynth song
-        // 1:1 décomp : track end time pour IsSEPlaying (= waitse opcode).
-        // Durée connue via getPrerenderedSEDuration si déjà cached (sinon ~600ms default).
-        const { getPrerenderedSEDuration } = await import('../m4a/se-noise-prerendered');
-        const durSec = getPrerenderedSEDuration(name);
-        _markAudioSlotActive(slot, (durSec ?? 0.6) * 1000);
-        await playPrerenderedSE(name, slot, seSongVol);
-        return;
-      }
-
-      // Fallback : spessasynth path pour les SE non-pre-rendus
-      const url = `/decomp/em/music/${name}.mid`;
-      const vgName = _songVoicegroups![name];
-      if (!vgName) {
-        console.warn(`[PlaySE] no voicegroup for ${name}`);
-        return;
-      }
-      const voicegroup = _vgLookup!(vgName);
-      if (!voicegroup) {
-        console.warn(`[PlaySE] voicegroup '${vgName}' not in lookup`);
-        return;
-      }
-      const midi = await _staticLoadMidi(url);
-      // 1:1 décomp : track end time pour IsSEPlaying. Pour spessasynth path :
-      // utilise midi.duration si disponible, sinon ~800ms default (= SE moyenne).
-      const midiDur = (midi as { duration?: number }).duration ?? 0.8;
-      _markAudioSlotActive(slot, midiDur * 1000);
-      // Reverb + volume par-song : si midi.cfg a des valeurs, on les respecte.
-      // Sinon on hérite du reverb BGM courant (= comportement 1:1 GBA m4aSoundMode).
-      const cfg = getSongConfig(name);
-      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
-      const seSongVol = cfg?.volume ?? null;
-      // APPROCHE HYBRIDE : si la SE utilise une noise voice (Type 12 = LFSR PSG
-      // hardware GBA), spessasynth/SF2 reproduit MAL (pitch-shift d'un sample
-      // au lieu du LFSR pseudo-random). On route vers le custom synth pre-P8
-      // (white noise + biquad) qui sonne plus authentique pour les SE crash/blast.
-      // SE = spessasynth pour tous (= unifié avec BGM, pas d'hybrid Phase 8).
-      // Le hybrid LFSR custom utilisait noise-engine.ts du Phase 8 abandonné
-      // (sessions 75-77 bisect : bug systémique). Quand on l'utilisait pour SE
-      // noise, ça déconnait (bruit blanc fort). Cf. memory project_audio_engine_status.
-      // Compromis : SE noise (intro_blast etc) sonne 'Bird Tweet'-ish via SF2
-      // pitch-shift au lieu d'un crash LFSR authentique. Acceptable pour MVP.
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, slot, seSongVol,
-      );
-    } catch (e) {
-      console.error('[PlaySE] failed:', e);
-    }
-  })();
+  m4aSongNumStart(seId);
 }
 
 /** Map species ID → species name (= cri filename `cries/<name>.wav`).
@@ -1310,38 +993,15 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
   return _speciesNamesLoadingPromise;
 }
 
-/** 1:1 décomp `PlayCryInternal(species, pan, volume, priority, mode)` — joue
- *  le cri d'un Pokémon via WAV pré-extrait. Phase 7 minimal : ignore pan/volume/
- *  priority/mode (le décomp ajuste pitch/pan via m4a, ici on joue le WAV direct). */
+/** 1:1 décomp `PlayCryInternal(species, pan, volume, priority, mode)` — délègue
+ *  au foyer 1:1 src/sound.ts (SetPokemonCryTone + gCryTable → moteur natif) via
+ *  globalThis (anti-cycle). Le cri écrit gSoundInfo.pcmBuffer (1:1 DirectSound). */
 export function PlayCryInternal(
-  species: number, _pan: number, _volume: number, _priority: number, _mode: number,
+  species: number, pan: number, volume: number, priority: number, mode: number,
 ): void {
-  if (M4A_NATIVE) {
-    if (!_nativeEngineReady) { ensureNativeEngine(); return; } // cri du boot perdu, comme un SE
-    (globalThis as { __soundPlayCryInternal?: (s: number, p: number, v: number, pr: number, m: number) => void })
-      .__soundPlayCryInternal?.(species, _pan, _volume, _priority, _mode);
-    return;
-  }
-  const name = SPECIES_NAMES[species];
-  console.log('[PlayCryInternal] species=', species, 'name=', name, 'loaded=', _speciesNamesLoaded);
-  if (!name) {
-    // Si pas encore chargé, fire async load + skip cry pour ce frame
-    if (!_speciesNamesLoaded) {
-      console.warn('[PlayCryInternal] SPECIES_NAMES not loaded, kicking async load');
-      void loadSpeciesNamesAsync();
-    } else {
-      console.warn('[PlayCryInternal] no name for species', species, '(loaded but missing entry)');
-    }
-    return;
-  }
-  // 1:1 décomp : track cry end time pour IsCryPlaying / IsCryFinished /
-  // waitmoncry. Durée approximée à 1 sec par défaut (= moy. cri Émeraude),
-  // overridée par la vraie durée du WAV via _markCryActive depuis music.playCry.
-  _audioEndTimeMs.cry = performance.now() + 1000;
-  void import('../m4a/music').then(({ playCry }) => {
-    console.log('[PlayCryInternal] calling playCry(', name, ')');
-    playCry(name);
-  }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
+  if (!_nativeEngineReady) { ensureNativeEngine(); return; } // cri du boot perdu, comme un SE
+  (globalThis as { __soundPlayCryInternal?: (s: number, p: number, v: number, pr: number, m: number) => void })
+    .__soundPlayCryInternal?.(species, pan, volume, priority, mode);
 }
 
 // Canal cris des anims combat : battle_anim_sound_tasks (_playCryOf → GROWL/ROAR/
@@ -1352,87 +1012,32 @@ export function PlayCryInternal(
   PlayCryInternal(species, pan ?? 0, 0, 0, 0);
 
 // ─── 1:1 décomp IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive ─
-// Source : src/sound.c. Décomp utilise gMPlayInfo_SE1/2.status (= hardware m4a
-// state). Notre port utilise spessasynth + raw AudioBufferSource → on tracke
-// les end times et le state des slots m4a/player.ts.
+// Délégué au foyer src/sound.ts (gMPlayInfo_SE1/2/3.status du moteur natif) via
+// globalThis __sound* (anti-cycle harness↔src). L'ancien tracking par end-times
+// du shim spessasynth est dissous.
 
-/** Track des fin-of-audio timestamps en ms (performance.now). Décrémenté
- *  passivement (= no setTimeout, just check now() > endTimeMs). Utilisé par
- *  waitse / waitmoncry / waitfanfare opcodes pour real tracking. */
-const _audioEndTimeMs: { se1: number; se2: number; cry: number; bgm: number; fanfare: number } = {
-  se1: 0, se2: 0, cry: 0, bgm: 0, fanfare: 0,
-};
-
-/** Appelé par PlaySE (et autres entrées audio) pour marquer un slot actif.
- *  durationMs = durée estimée de la SE/cry/etc. Si pas connu, default ~600ms. */
-export function _markAudioSlotActive(slot: 'se1' | 'se2' | 'cry' | 'bgm' | 'fanfare', durationMs: number): void {
-  _audioEndTimeMs[slot] = performance.now() + durationMs;
-}
-
-/** 1:1 décomp `IsSEPlaying` (sound.c:577) :
- *    if ((gMPlayInfo_SE1.status & PAUSE) && (gMPlayInfo_SE2.status & PAUSE)) return FALSE;
- *    if (!(gMPlayInfo_SE1.status & TRACK) && !(gMPlayInfo_SE2.status & TRACK)) return FALSE;
- *    return TRUE;
- *  Notre version : check soit slot m4a (sequencer), soit slot prerendered
- *  (BufferSourceNode active), soit end time tracker. TRUE si au moins un est
- *  encore en train de jouer.
- */
+/** 1:1 décomp `IsSEPlaying` (sound.c:606) — foyer src/sound.ts. */
 export function IsSEPlaying(): boolean {
-  if (M4A_NATIVE) {
-    const f = (globalThis as { __soundIsSEPlaying?: () => boolean }).__soundIsSEPlaying;
-    return f ? f() : false;
-  }
-  const now = performance.now();
-  if (_audioEndTimeMs.se1 > now || _audioEndTimeMs.se2 > now) return true;
-  // Fallback : check via player.ts isPlaying (= spessasynth sequencer state)
-  try {
-    const { isPlaying } = require('./m4a/player') as { isPlaying: (slot: string) => boolean };
-    if (isPlaying('se1') || isPlaying('se2')) return true;
-  } catch { /* skip */ }
-  // Fallback : check prerendered BufferSourceNode pool
-  try {
-    const { isPrerenderedSlotActive } = require('./m4a/se-noise-prerendered') as { isPrerenderedSlotActive: (slot: string) => boolean };
-    if (isPrerenderedSlotActive('se1') || isPrerenderedSlotActive('se2')) return true;
-  } catch { /* skip */ }
-  return false;
+  const f = (globalThis as { __soundIsSEPlaying?: () => boolean }).__soundIsSEPlaying;
+  return f ? f() : false;
 }
 
-/** 1:1 décomp `IsCryPlaying` (sound.c) :
- *    return IsPokemonCryPlaying(gMPlay_PokemonCry) ? TRUE : FALSE;
- *  Notre version : end time tracker. Set par PlayCryInternal + music.playCry. */
+/** 1:1 décomp `IsCryPlaying` (sound.c:534) — foyer src/sound.ts. */
 export function IsCryPlaying(): boolean {
-  if (M4A_NATIVE) {
-    const f = (globalThis as { __soundIsCryPlaying?: () => boolean }).__soundIsCryPlaying;
-    return f ? f() : false;
-  }
-  return _audioEndTimeMs.cry > performance.now();
+  const f = (globalThis as { __soundIsCryPlaying?: () => boolean }).__soundIsCryPlaying;
+  return f ? f() : false;
 }
 
-/** 1:1 décomp `IsCryFinished` (sound.c:566) :
- *    if (FuncIsActiveTask(Task_DuckBGMForPokemonCry) == TRUE) return FALSE;
- *    else { ClearPokemonCrySongs(); return TRUE; }
- *  Notre version : returns !IsCryPlaying. */
+/** 1:1 décomp `IsCryFinished` (sound.c:497) — foyer src/sound.ts. */
 export function IsCryFinished(): boolean {
-  if (M4A_NATIVE) {
-    const f = (globalThis as { __soundIsCryFinished?: () => boolean }).__soundIsCryFinished;
-    return f ? f() : true;
-  }
-  return !IsCryPlaying();
+  const f = (globalThis as { __soundIsCryFinished?: () => boolean }).__soundIsCryFinished;
+  return f ? f() : true;
 }
 
-/** 1:1 décomp `IsFanfareTaskInactive` (sound.c) :
- *    if (FuncIsActiveTask(Task_Fanfare) == TRUE) return FALSE;
- *    return TRUE;
- *  Notre version : check fanfare end time + m4a slot. */
+/** 1:1 décomp `IsFanfareTaskInactive` (sound.c:232) — foyer src/sound.ts. */
 export function IsFanfareTaskInactive(): boolean {
-  if (M4A_NATIVE) {
-    // Foyer 1:1 (FuncIsActiveTask(Task_Fanfare)) — via globalThis anti-cycle ;
-    // le foyer ne rappelle PAS ce shim en mode natif (garde M4A_NATIVE).
-    const f = (globalThis as { __soundIsFanfareTaskInactive?: () => boolean }).__soundIsFanfareTaskInactive;
-    return f ? f() : true;
-  }
-  if (_audioEndTimeMs.fanfare > performance.now()) return false;
-  return true;
+  const f = (globalThis as { __soundIsFanfareTaskInactive?: () => boolean }).__soundIsFanfareTaskInactive;
+  return f ? f() : true;
 }
 
 // ─── Expose audio state functions sur globalThis pour script-opcodes ────────
@@ -2664,25 +2269,15 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
   runtime.gPlttBufferFaded.set(slot, color);
 }
 /** 1:1 décomp src/sound.c:290 — `m4aMPlayFadeOut(&gMPlayInfo_BGM, speed)`.
- *  speed = nb de frames pour le fade complet (= unité décomp m4a). On simule
- *  via setMasterParameter('masterGain') en N steps, puis stopSong à la fin
- *  pour libérer le slot. */
+ *  Foyer 1:1 src/sound.ts (m4aMPlayFadeOut natif) via globalThis (anti-cycle). */
 export function FadeOutBGM(speed: number): void {
-  if (M4A_NATIVE) {
-    // Foyer 1:1 sound.c:290 → m4aMPlayFadeOut natif (bridge anti-cycle).
-    (globalThis as { __soundFadeOutBGM?: (s: number) => void }).__soundFadeOutBGM?.(speed);
-    return;
-  }
-  void import('../m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
+  (globalThis as { __soundFadeOutBGM?: (s: number) => void }).__soundFadeOutBGM?.(speed);
 }
 
-/** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
+/** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`.
+ *  Foyer 1:1 src/sound.ts via globalThis (anti-cycle). */
 export function FadeInBGM(speed: number): void {
-  if (M4A_NATIVE) {
-    (globalThis as { __soundFadeInBGM?: (s: number) => void }).__soundFadeInBGM?.(speed);
-    return;
-  }
-  void import('../m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
+  (globalThis as { __soundFadeInBGM?: (s: number) => void }).__soundFadeInBGM?.(speed);
 }
 /** 1:1 STRICT décomp `CanResetRTC()` (event_data.c:156-162) :
  *    if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
@@ -2701,13 +2296,11 @@ export let gBattle_BG1_Y = 0;
 // 1:1 décomp `gMPlayInfo_BGM` (= struct MusicPlayerInfo). Le décomp lit
 // `gMPlayInfo_BGM.status & 0xFFFF == 0` pour détecter la fin de song
 // (= ex. Task_TitleScreenPhase3 demo loop quand MUS_TITLE finit).
-// Natif : délègue au VRAI player BGM du moteur (🩸 payé : la struct shim
-// figée à 0 en mode natif faisait « finir » MUS_TITLE instantanément →
-// retour intro immédiat au title screen). Legacy : 1 si le slot shim joue.
+// Délègue au VRAI player BGM du moteur natif (🩸 payé : une struct figée à 0
+// faisait « finir » MUS_TITLE instantanément → retour intro immédiat au titre).
 export const gMPlayInfo_BGM = {
   get status(): number {
-    if (M4A_NATIVE) return _gMPlayInfo_BGM_native.status >>> 0;
-    return _staticIsPlaying('bgm') ? 1 : 0;
+    return _gMPlayInfo_BGM_native.status >>> 0;
   },
 };
 

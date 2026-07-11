@@ -6,25 +6,14 @@
  *
  * Driver : les fonctions m4a fines (m4aMPlayStop/Continue/FadeIn/…,
  * SetPokemonCry*) viennent DIRECTEMENT de src/m4a.ts (moteur 1:1 certifié
- * sample-exact) ; m4aSongNumStart passe par decomp-globals qui DISPATCH
- * natif/legacy (`?m4a-legacy`). En mode legacy, les chemins natifs sont
- * inertes (gSongTable=0) et les fonctions marquées [legacy] ci-dessous
- * délèguent au shim historique (harness/m4a/player) — comportement inchangé.
+ * sample-exact) ; m4aSongNumStart passe par decomp-globals. Le shim legacy
+ * spessasynth a été dissous (2026-07-11) : le moteur natif est le seul chemin.
  *
  * gCryTable/gCryTable_Reverse : offsets gSoundMemory (adresses ROM du blob),
  * posés par harness/m4a/native.ts depuis sound-data.json (sound.c les déclare
  * `extern struct ToneData[]` — elles vivent dans sound_data.s).
  */
-import { m4aSongNumStart, FuncIsActiveTask, IsFanfareTaskInactive as shimIsFanfareTaskInactive } from '../harness/runtime/decomp-globals';
-import {
-  fadeOutBgmTemporarily as legacyFadeOutBgmTemporarily,
-  isBgmPausedOrStopped as legacyIsBgmPausedOrStopped,
-  stopSong as legacyStopSong,
-  isPlaying as legacyIsPlaying,
-  fadeOutBgm as legacyFadeOutBgm,
-  fadeInBgm as legacyFadeInBgm,
-} from '../harness/m4a/player';
-import { M4A_NATIVE } from '../harness/m4a/native';
+import { m4aSongNumStart, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
 import { ClearPokemonCrySongs } from './main';
 import {
   gMPlayInfo_BGM,
@@ -289,10 +278,8 @@ export function PlayFanfare(songNum: number): void {
   CreateFanfareTask();
 }
 
-/** 1:1 décomp `bool8 IsFanfareTaskInactive(void)` (sound.c:232-237).
- *  [legacy] : le shim tracke SA fanfare (durée réelle du .mid) — délégué. */
+/** 1:1 décomp `bool8 IsFanfareTaskInactive(void)` (sound.c:232-237). */
 export function IsFanfareTaskInactive(): boolean {
-  if (!M4A_NATIVE) return shimIsFanfareTaskInactive();
   if (FuncIsActiveTask(Task_Fanfare) === true) return false;
   return true;
 }
@@ -316,17 +303,10 @@ function CreateFanfareTask(): void {
 // ─── Fades BGM (1:1 sound.c:258-300) ────────────────────────────────────────
 
 /** 1:1 décomp `void FadeInNewBGM(u16 songNum, u8 speed)` (sound.c:258-269) :
- *  pré-charge (start → ImmInit → volume 0 → stop) puis m4aMPlayFadeIn.
- *  [legacy] : start + fade-in du gain (shim). */
+ *  pré-charge (start → ImmInit → volume 0 → stop) puis m4aMPlayFadeIn. */
 export function FadeInNewBGM(songNum: number, speed: number): void {
   if (gDisableMusic) songNum = 0;
   if (songNum === MUS_NONE) songNum = 0;
-  if (!M4A_NATIVE) {
-    if (songNum === 0) { legacyStopSong('bgm'); return; }
-    m4aSongNumStart(songNum);
-    legacyFadeInBgm(speed);
-    return;
-  }
   m4aSongNumStart(songNum);
   m4aMPlayImmInit(gMPlayInfo_BGM);
   m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0);
@@ -336,13 +316,11 @@ export function FadeInNewBGM(songNum: number, speed: number): void {
 
 /** 1:1 décomp `void FadeOutBGMTemporarily(u8 speed)` (sound.c:271-274). */
 export function FadeOutBGMTemporarily(speed: number): void {
-  if (!M4A_NATIVE) { legacyFadeOutBgmTemporarily(speed); return; }
   m4aMPlayFadeOutTemporarily(gMPlayInfo_BGM, speed);
 }
 
 /** 1:1 décomp `bool8 IsBGMPausedOrStopped(void)` (sound.c:276-283). */
 export function IsBGMPausedOrStopped(): boolean {
-  if (!M4A_NATIVE) return legacyIsBgmPausedOrStopped();
   if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE) return true;
   if (!(gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK)) return true;
   return false;
@@ -350,19 +328,16 @@ export function IsBGMPausedOrStopped(): boolean {
 
 /** 1:1 décomp `void FadeInBGM(u8 speed)` (sound.c:285-288). */
 export function FadeInBGM(speed: number): void {
-  if (!M4A_NATIVE) { legacyFadeInBgm(speed); return; }
   m4aMPlayFadeIn(gMPlayInfo_BGM, speed);
 }
 
 /** 1:1 décomp `void FadeOutBGM(u8 speed)` (sound.c:290-293). */
 export function FadeOutBGM(speed: number): void {
-  if (!M4A_NATIVE) { legacyFadeOutBgm(speed); return; }
   m4aMPlayFadeOut(gMPlayInfo_BGM, speed);
 }
 
 /** 1:1 décomp `bool8 IsBGMStopped(void)` (sound.c:295-300). */
 export function IsBGMStopped(): boolean {
-  if (!M4A_NATIVE) return !legacyIsPlaying('bgm');
   if (!(gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK)) return true;
   return false;
 }
@@ -603,13 +578,10 @@ function RestoreBGMVolumeAfterPokemonCry(): void {
 // ─── BGM / SE (1:1 sound.c:563-631) ─────────────────────────────────────────
 
 /** 1:1 décomp `void PlayBGM(u16 songNum)` (sound.c:563-570).
- *  [legacy] : m4aSongNumStart(0) shim = « not mapped, skip » → stop explicite
- *  du slot (fix bug 4 évolution 2026-07-02). En natif, jouer MUS_DUMMY (0)
- *  EST le silence 1:1. */
+ *  Natif : jouer MUS_DUMMY (0) EST le silence 1:1. */
 export function PlayBGM(songNum: number): void {
   if (gDisableMusic) songNum = 0;
   if (songNum === MUS_NONE) songNum = 0;
-  if (!M4A_NATIVE && songNum === 0) { legacyStopSong('bgm'); return; }
   m4aSongNumStart(songNum);
 }
 
@@ -672,17 +644,15 @@ export function IsSpecialSEPlaying(): boolean {
 
 // ─── Helpers harness (hors sound.c) ─────────────────────────────────────────
 
-/** [harness] true si STEREO (gSaveBlock2Ptr.optionsSound) — consommé par le
- *  shim legacy ; le natif passe par SetPokemonCryStereo/soundInfo.mode. */
+/** [harness] true si STEREO (gSaveBlock2Ptr.optionsSound). */
 export function IsStereoSound(): boolean {
   return ((gSaveBlock2Ptr.optionsSound ?? OPTIONS_SOUND_MONO) | 0) === OPTIONS_SOUND_STEREO;
 }
 
-/** 1:1 m4a.c `SetPokemonCryStereo(u32 val)` — natif : soundInfo.mode ;
- *  [legacy] : miroir des options save lu par IsStereoSound (shim). */
+/** 1:1 m4a.c `SetPokemonCryStereo(u32 val)` — natif : soundInfo.mode. */
 export function SetPokemonCryStereo(selection: number): void {
   gSaveBlock2Ptr.optionsSound = selection | 0;
-  if (M4A_NATIVE) m4aSetPokemonCryStereo(selection);
+  m4aSetPokemonCryStereo(selection);
 }
 
 // Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck) + le tick

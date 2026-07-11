@@ -61,7 +61,7 @@ import {
   LoadCryWaveformWindow, LoadCryMeter, UpdateCryWaveformWindow, CryScreenPlayButton,
   IsCryPlaying, FreeCryScreen, setDexCryScreenState,
 } from './pokedex_cry_screen';
-import { pauseBgm, resumeBgm } from '../harness/runtime/decomp-globals';
+import { m4aMPlayStop, m4aMPlayContinue, gMPlayInfo_BGM } from './m4a';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './overworld';
 // (GetSetPokedexFlag / Get*PokedexCount / GetPokedexHeightWeight : définis en
 //  fin de fichier — rapatriés de l'ex-pokedex-flags.ts, leur .c = pokedex.c.)
@@ -1953,7 +1953,7 @@ function Task_LoadCryScreen(task: DecompTask): void {
     case 0:
     default:
       if (!rt.gPaletteFade.active) {
-        pauseBgm();   // m4aMPlayStop(&gMPlayInfo_BGM)
+        m4aMPlayStop(gMPlayInfo_BGM);   // 1:1 sound.c pauseBgm
         sPokedexView.currentPage = PAGE_CRY;
         rt.SetVBlankCallback(null);
         ResetOtherVideoRegisters(DISPCNT_BG1_ON);
@@ -2053,7 +2053,7 @@ function Task_HandleCryScreenInput(task: DecompTask): void {
   } else if (!rt.gPaletteFade.active) {
     if (rt.gMain.newKeys & B_BUTTON) {
       BeginNormalPaletteFade((~0x14) >>> 0, 0, 0, 0x10, RGB_BLACK);
-      resumeBgm();   // m4aMPlayContinue(&gMPlayInfo_BGM)
+      m4aMPlayContinue(gMPlayInfo_BGM);   // m4aMPlayContinue(&gMPlayInfo_BGM)
       sPokedexView.screenSwitchState = 1;
       task.func = Task_SwitchScreensFromCryScreen;
       PlaySE(SE_PC_OFF);
@@ -2061,7 +2061,7 @@ function Task_HandleCryScreenInput(task: DecompTask): void {
     }
     if (rt.gMain.newKeys & DPAD_LEFT) {
       BeginNormalPaletteFade((~0x14) >>> 0, 0, 0, 0x10, RGB_BLACK);
-      resumeBgm();
+      m4aMPlayContinue(gMPlayInfo_BGM);
       sPokedexView.screenSwitchState = 2;
       task.func = Task_SwitchScreensFromCryScreen;
       PlaySE(SE_DEX_PAGE);
@@ -2072,7 +2072,7 @@ function Task_HandleCryScreenInput(task: DecompTask): void {
         PlaySE(SE_FAILURE);
       } else {
         BeginNormalPaletteFade((~0x14) >>> 0, 0, 0, 0x10, RGB_BLACK);
-        resumeBgm();
+        m4aMPlayContinue(gMPlayInfo_BGM);
         sPokedexView.screenSwitchState = 3;
         task.func = Task_SwitchScreensFromCryScreen;
         PlaySE(SE_DEX_PAGE);

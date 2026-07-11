@@ -17,7 +17,8 @@ import {
 } from './registry';
 import type { DecompRuntime } from '../runtime/decomp-runtime';
 import { MAX_SPRITES } from '../runtime/decomp-runtime';
-import { getCurrentSongId, getRuntime, m4aSongNumStart, PlaySE, m4aMPlayAllStop, pauseBgm, resumeBgm } from '../runtime/decomp-globals';
+import { getRuntime, m4aSongNumStart, PlaySE, m4aMPlayAllStop } from '../runtime/decomp-globals';
+import { m4aMPlayStop, m4aMPlayContinue, gMPlayInfo_BGM } from '../../src/m4a';
 import { setMasterVolume } from '../m4a/audio-context';
 import { SONG_ID_TO_NAME } from '../../src/engine/decomp-data/src/song-table';
 // Enum 1:1 des transitions de combat (include leaf, import statique sans risque de cycle).
@@ -884,7 +885,12 @@ function registerAudio(): void {
     update: (el) => {
       wireSeMonitor(); // __PlaySE peut être (re)posé après le boot
       let bgm = '—';
-      try { const s = getCurrentSongId(); bgm = s == null ? '(aucun)' : String(s); } catch { /* défensif */ }
+      // Statut natif : status + songHeader du player BGM (gMPlayInfo_BGM du moteur
+      // m4a) — le shim getCurrentSongId (song id legacy) a été dissous.
+      try {
+        const st = gMPlayInfo_BGM.status >>> 0;
+        bgm = (st & 0xffff) === 0 ? '(aucun)' : `0x${st.toString(16)} sh=0x${(gMPlayInfo_BGM.songHeader >>> 0).toString(16)}`;
+      } catch { /* défensif */ }
       let se = '', cry = '';
       try {
         const dg = g().__decompGlobals;
@@ -939,8 +945,8 @@ function registerAudio(): void {
           label: '▶⏸', title: 'Play / Pause / Resume',
           onClick: (id) => {
             const same = activeId === id;
-            if (playState === 'playing' && same) { pauseBgm(); playState = 'paused'; }
-            else if (playState === 'paused' && same) { resumeBgm(); playState = 'playing'; }
+            if (playState === 'playing' && same) { m4aMPlayStop(gMPlayInfo_BGM); playState = 'paused'; }
+            else if (playState === 'paused' && same) { m4aMPlayContinue(gMPlayInfo_BGM); playState = 'playing'; }
             else { m4aMPlayAllStop(); m4aSongNumStart(id); activeId = id; playState = 'playing'; }
           },
         },

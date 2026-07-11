@@ -33,10 +33,9 @@ import { PCM_DMA_BUF_SIZE } from '../../include/gba/m4a_internal';
 import { getAudioContext, getNativeOut } from './audio-context';
 import { logAudio } from './audio-log';
 
-/** Mode moteur : NATIF par défaut ; `?m4a-legacy` = shim historique
- *  (spessasynth). Constant au boot — le dispatch vit dans decomp-globals. */
-export const M4A_NATIVE = typeof location !== 'undefined'
-  && !new URLSearchParams(location.search).has('m4a-legacy');
+/** Mode moteur : NATIF (le seul). legacy spessasynth dissous (2026-07-11) —
+ *  flag conservé à `true` pour les signatures/imports restants. */
+export const M4A_NATIVE = true;
 
 const BLOB_URL = '/decomp/em/m4a/sound-data.bin';
 const INDEX_URL = '/decomp/em/m4a/sound-data.json';

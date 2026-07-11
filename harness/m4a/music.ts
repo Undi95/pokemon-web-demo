@@ -202,11 +202,6 @@ export function playCry(species: string): void {
       src.connect(gain).connect(getMasterGain());
       src.start();
       _currentCry = { buffer: audioBuf, startedAt: ctx.currentTime, ctx };
-      // 1:1 décomp : track cry end time pour IsCryPlaying. Override le 1s
-      // default set par PlayCryInternal avec la vraie durée du WAV.
-      void import('../runtime/decomp-globals').then(({ _markAudioSlotActive }) => {
-        _markAudioSlotActive('cry', audioBuf.duration * 1000);
-      });
     })
     .catch(e => console.warn('[music] cry fail', species, e));
 }
