@@ -191,6 +191,53 @@ async function _cachedFetch(key: string, init: RequestInit | undefined, silent: 
   }
 }
 
+// ── Préchargement en fond du JEU ENTIER (idle trickle) ───────────────────────
+// « Précharge les ressources petit à petit pour le futur » (directive user) : on
+// trickle le manifeste des assets runtime (public/decomp/asset-manifest.json, généré
+// par scripts/gen-decomp-manifest.cjs) pendant les temps morts → après quelques minutes
+// de jeu, TOUT est en cache, y compris la 1re visite d'une map/combat. Back-off dès que
+// le jeu charge activement (warp/combat) pour ne pas lui voler la bande passante.
+// Best-effort : un asset absent du manifeste reste fetché à la demande normalement.
+// Désactivable : ?noprefetch. Observable : window.__decompNet.prefetchProgress().
+const _prefetchState = { total: 0, done: 0, active: false, started: false };
+const IDLE_BATCH = 6;            // URLs lancées par créneau idle
+const IDLE_INFLIGHT_BACKOFF = 5; // si ≥ N requêtes en vol (jeu qui charge) → on attend
+
+function _scheduleIdle(fn: () => void, delayMs: number): void {
+  const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+  if (delayMs > 0 || !ric) setTimeout(() => (ric ? ric(fn, { timeout: 2000 }) : fn()), Math.max(0, delayMs));
+  else ric(fn, { timeout: 2000 });
+}
+
+async function _startIdlePrefetch(): Promise<void> {
+  if (_prefetchState.started || _bypass) return;
+  if (location.search.includes('noprefetch')) return;
+  _prefetchState.started = true;
+  let urls: string[] = [];
+  try {
+    const resp = await _cachedFetch('/decomp/asset-manifest.json', undefined, true);
+    const m = (await resp.json()) as { urls?: unknown };
+    urls = Array.isArray(m.urls) ? (m.urls as string[]) : [];
+  } catch { return; } // pas de manifeste = pas de prefetch (le jeu fetch à la demande)
+  _prefetchState.total = urls.length;
+  _prefetchState.active = true;
+  let i = 0;
+  const step = (): void => {
+    // Back-off si le jeu charge activement (beaucoup d'in-flight = warp/combat en cours).
+    if (_inflight.size >= IDLE_INFLIGHT_BACKOFF) { _scheduleIdle(step, 600); return; }
+    let launched = 0;
+    while (i < urls.length && launched < IDLE_BATCH) {
+      const u = urls[i++];
+      void _cachedFetch(u, undefined, true).catch(() => { /* best-effort */ });
+      launched++;
+    }
+    _prefetchState.done = i;
+    if (i < urls.length) _scheduleIdle(step, 0);
+    else _prefetchState.active = false;
+  };
+  _scheduleIdle(step, 0);
+}
+
 /** Installe l'intercepteur. À appeler UNE fois, AVANT que le jeu ne fetch (début de main). */
 export function installDecompAssetNet(): void {
   if (_installed) return;
@@ -238,8 +285,15 @@ export function installDecompAssetNet(): void {
       triggersAppris: Object.keys(_manifests).length,
       inflight: _inflight.size,
       triggersPrechargesCetteSession: _prefetchedTriggers.size,
+      prefetchFond: { ..._prefetchState },
     }),
     manifests: (): Record<string, string[]> => _manifests,
     prefetch: (urls: string[]): Promise<void> => _prefetch(urls),
+    prefetchAll: (): Promise<void> => _startIdlePrefetch(),
+    prefetchProgress: (): Record<string, unknown> => ({ ..._prefetchState }),
   };
+
+  // Démarre le préchargement en fond du jeu entier, DIFFÉRÉ (laisse le boot + la 1re
+  // scène se poser d'abord — le trickle back-off ensuite pendant les chargements actifs).
+  _scheduleIdle(() => void _startIdlePrefetch(), 4000);
 }
