@@ -44,7 +44,7 @@
 
 import './pokemon_animation';
 import { m4aMPlayStop, m4aSongNumStop, gMPlayInfo_SE1, gMPlayInfo_SE2 } from './m4a';
-import { PlayCry_Normal } from './sound';
+import { PlayCry_Normal, FadeOutMapMusic as _FadeOutMapMusic_sound } from './sound';
 import { SE_LOW_HEALTH } from '../include/constants/songs';
 import {
   ResetPaletteFade as ResetPaletteFade_rt,
@@ -3089,7 +3089,7 @@ export function HandleTurnActionSelectionState(): void {
             }
           } else if (chosenAction === B_ACTION_SWITCH) {
             // 1:1 décomp ll. 4240-4267 : switch ability check (Shadow Tag/Arena Trap/Magnet Pull).
-            gBattleStruct.battlerPartyIndexes[active] = active /* gBattlerPartyIndexes[active] */;
+            gBattleStruct.battlerPartyIndexes[active] = gBattlerPartyIndexes[active]; // 1:1 bm.c:4241
 
             if ((gBattleMons[active].status2 & (STATUS2_WRAPPED | STATUS2_ESCAPE_PREVENTION))
                 || (gBattleTypeFlags & BATTLE_TYPE_ARENA)
@@ -4074,7 +4074,7 @@ import {
   consumeAbilityWantedScript,
 } from './battle_util';
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './battle_util';
-import { DoFieldEndTurnEffects, DoBattlerEndTurnEffects, HandleWishPerishSongOnTurnEnd } from './battle_util';
+import { DoFieldEndTurnEffects, DoBattlerEndTurnEffects, HandleWishPerishSongOnTurnEnd, HandleFaintedMonActions } from './battle_util';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   OPTIONS_BATTLE_SCENE_ON, OPTIONS_BATTLE_SCENE_OFF, OPTIONS_BATTLE_STYLE_SHIFT,
@@ -4091,7 +4091,7 @@ import {
 import { getSpeciesInfo } from './engine/data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from './pokemon';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
-import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
+import { PlayBGM as _PlayBGM_rt } from '../harness/runtime/decomp-globals';
 import {
   GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty, AdjustFriendship, SetWildMonHeldItem,
   GetAbilityBySpecies, restoreOwPartyAfterTest,
@@ -4282,10 +4282,15 @@ function FreeBattleSpritesData(): void {
 // pokemon.c:6072-6209) : consolidée vers le foyer pokemon.c (src/pokemon.ts, à côté de
 // CheckPartyPokerus/UpdatePartyPokerusTime). Importée pour les appels post-combat ci-dessous.
 
-/** 1:1 décomp `FadeOutMapMusic(speed)` (sound.c). Wire vers FadeOutBGM existing.
- *  Notre runtime supporte FadeOutBGM(speed) (= m4aMPlayFadeOut sound.c:290). */
+/** 1:1 décomp `FadeOutMapMusic(speed)` (sound.c:134-141). Délègue à la fonction
+ *  FIDÈLE de sound.ts : FadeOutBGM(speed) MAIS AUSSI reset de l'état map-music
+ *  (sCurrentMapMusic=0, sNextMapMusic=0, sMapMusicState=5). L'ancien wire ne
+ *  faisait QUE FadeOutBGM → sCurrentMapMusic restait = musique de map → au retour
+ *  OW, Overworld_PlaySpecialMapMusic (gate `music !== GetCurrentMapMusic()`) voyait
+ *  le tracker encore égal à la map → PAS de relance → SILENCE post-combat (signalé
+ *  en double, bug BUG 3). */
 function FadeOutMapMusic(speed: number): void {
-  _FadeOutBGM_rt(speed);
+  _FadeOutMapMusic_sound(speed);
 }
 
 /** 1:1 décomp `BattleStopLowHpSound()` (battle_gfx_sfx_util.c:1124-1133) : arrête
@@ -5420,8 +5425,13 @@ function _BattleTurnPassed(): void {
     const b = DoBattlerEndTurnEffects();                      // 1:1 :3965
     if (b) { BattleScriptExecute(b.scriptLabel); return; }    // 1:1 :3966
   }
-  // 1:1 :3968-3969 HandleFaintedMonActions — NON PORTÉ dans ce flux (comme l'ancienne rafale) :
-  // les faints sont gérés par le state-machine (HandleAction_*). TODO 1:1 : porter + re-router ici.
+  // 1:1 :3968-3969 : HandleFaintedMonActions gère AUSSI les faints de FIN DE TOUR
+  // (poison/brûlure/… qui tombent un mon via Do*EndTurnEffects) — EXP + « K.O. » +
+  // switch-in + checkteamslost, exactement comme le site HandleAction_TryFinish
+  // (battle_util.ts). Le state-machine `faintedActionsState` est ré-entrant : quand
+  // un script est lancé (BattleScriptExecute interne) la fn renvoie true → return,
+  // la callback-stack re-rentre _BattleTurnPassed au frame suivant → étape suivante.
+  if (HandleFaintedMonActions()) return;                      // 1:1 :3968-3969
   gBattleStruct.faintedActionsState = 0;                      // 1:1 :3970
   const w = HandleWishPerishSongOnTurnEnd();                  // 1:1 :3971
   if (w) { BattleScriptExecute(w.scriptLabel); return; }      // 1:1 :3972

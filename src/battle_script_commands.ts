@@ -732,7 +732,6 @@ import {
   readByte,
   readHalfword,
   readWord,
-  gBattleScriptContext,
 } from './engine/battle/script-interpreter';
 import { SwitchPartyOrder } from './engine/battle/battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './engine/battle/constants';
@@ -944,6 +943,7 @@ import {
   WEATHER_HAS_EFFECT as _weatherHasEffect,
   getBattlerForBattleScript,
   getBattlerForBattleScript as _utilGetBattler,
+  HasNoMonsToSwitch,
 } from './battle_util';
 
 // ════════════ Batch 01 ════════════
@@ -1372,28 +1372,6 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** Condition de fin 1:1 décomp `Cmd_checkteamslost` (battle_script_commands.c:3557-3580) :
- *  somme les HP de TOUTE la party d'un côté (mons species != 0, non-œuf) et retourne
- *  TRUE si le total vaut 0 (= côté ENTIÈREMENT K.O. — les DEUX battlers actifs ET les
- *  mons en réserve).
- *
- *  Le vrai `Cmd_tryfaintmon` NE pose PAS l'outcome : c'est `checkteamslost` (dans
- *  BattleScript_HandleFaintedMon, après GiveExp) qui le fait, sur la party COMPLÈTE.
- *  L'échafaudage voie V de Cmd_tryfaintmon doit donc exiger la MÊME condition — sinon
- *  en double la victoire/défaite tombe au 1er mon K.O. alors qu'il reste un battler
- *  actif OU une réserve vivante (bug 2v2 : Magnéti adverse encore vivant → victoire
- *  prématurée). La party HP est déjà flushée par le controller (datahpupdate →
- *  SetMonData REQUEST_HP_BATTLE) avant que le stepper n'atteigne tryfaintmon. */
-function _sideFullyFaintedForOutcome(party: typeof _gEnemyPartyCTL): boolean {
-  let hpCount = 0;
-  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
-    const species = _GetMonDataCTL(party[i], _MON_DATA_SPECIES_CTL) as number;
-    const isEgg = _GetMonDataCTL(party[i], _MON_DATA_IS_EGG_CTL) as number;
-    if (species !== 0 && !isEgg) hpCount += _GetMonDataCTL(party[i], _MON_DATA_HP_CTL) as number;
-  }
-  return hpCount === 0;
-}
-
 // ─── Cmd_tryfaintmon (0x19) ─────────────────────────────────────────────────
 
 /** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-3050).
@@ -1465,17 +1443,12 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
         gBattleResults.playerFaintCounter++;
       }
       _adjustFriendshipOnFaintTFM(activeBattler);
-      // ⚠️ Non-1:1 (échafaudage voie V) : le vrai Cmd_tryfaintmon NE pose PAS
-      // l'outcome — c'est `checkteamslost` (dans BattleScript_HandleFaintedMon,
-      // APRÈS GiveExp) qui le fait. En voie L (ctx persistant), on laisse le flux
-      // 1:1 poser l'outcome ; sinon RunTurnActionsFunctions court-circuiterait
-      // HandleFaintedMonActions (EXP + « K.O. » sautés).
-      // FIX 2v2 : n'imposer LOST que si TOUTE la party joueur est K.O. (condition
-      // checkteamslost 1:1), pas seulement le battler qui vient de tomber — sinon
-      // défaite prématurée en double dès le 1er mon joueur K.O.
-      if (ctx !== gBattleScriptContext && _sideFullyFaintedForOutcome(_gPlayerPartyCTL)) {
-        setBattleOutcome(gBattleOutcome | B_OUTCOME_LOST);
-      }
+      // 1:1 décomp : Cmd_tryfaintmon NE pose PAS l'outcome. C'est `checkteamslost`
+      // (1er opcode de BattleScript_HandleFaintedMon, exécuté par HandleFaintedMonActions
+      // APRÈS GiveExp) qui décide LOST/WON sur la party COMPLÈTE. L'échafaudage voie-V
+      // qui posait l'outcome ici (gaté ctx !== gBattleScriptContext) a été RETIRÉ :
+      // en voie L (jeu live) il était inerte, et il causait des outcomes prématurés
+      // hors flux 1:1. cf. BUG 1 (victoire prématurée en double).
     } else {
       if (gBattleResults.opponentFaintCounter < 255) {
         gBattleResults.opponentFaintCounter++;
@@ -1486,14 +1459,8 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
         gBattleResults.lastOpponentSpecies =
           GetMonData_TFM(gEnemyParty_TFM[partyIdx], MON_DATA_SPECIES_TFM) as number;
       }
-      // ⚠️ Non-1:1 (échafaudage voie V) : idem — la voie L laisse checkteamslost
-      // (dans HandleFaintedMon, après GiveExp) poser WON.
-      // FIX 2v2 : n'imposer WON que si TOUTE la party ennemie est K.O. (condition
-      // checkteamslost 1:1) — sinon victoire prématurée en double (Magnéti adverse
-      // encore vivant après le K.O. du 1er ennemi gauche).
-      if (ctx !== gBattleScriptContext && _sideFullyFaintedForOutcome(_gEnemyPartyCTL)) {
-        setBattleOutcome(gBattleOutcome | B_OUTCOME_WON);
-      }
+      // 1:1 décomp : outcome WON posé par `checkteamslost` (via HandleFaintedMonActions),
+      // PAS ici. Échafaudage voie-V retiré (cf. bloc joueur ci-dessus, BUG 1).
     }
 
     // 1:1 décomp ll.3020-3026 : Destiny Bond.
@@ -10147,7 +10114,7 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   }
 
   // 1:1 décomp 5109-5115 : HasNoMonsToSwitch → set absent + jump.
-  const hasNone = _hasNoMonsToSwitch_HBT(battler, 6, 6);
+  const hasNone = HasNoMonsToSwitch(battler, 6 /* PARTY_SIZE */, 6 /* PARTY_SIZE */);
   if (hasNone) {
     setActiveBattler(battler);
     {
@@ -10209,27 +10176,9 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 1:1 STRICT décomp `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
- *  (battle_util.c). Itère le party, retourne TRUE si aucun mon switchable
- *  (= species != 0 + hp > 0 + !isEgg). 1:1 strict porté. */
-function _hasNoMonsToSwitch_HBT(battler: number, p1: number, p2: number): boolean {
-  // 1:1 décomp HasNoMonsToSwitch : scan le party côté `battler`, TRUE si aucun mon
-  // switchable (species != 0, hp > 0, !isEgg), en excluant les 2 slots on-field
-  // (p1, p2). BUG CORRIGÉ : lisait `__battleState.gEnemyParty` qui n'est PAS exposé
-  // (→ undefined → `return true` à tort → faint→switch cassé : "plus de mon" alors
-  // qu'il en reste, le 2e mon dresseur n'entrait jamais). Lit le VRAI party via les
-  // alias _CTL (= ceux que Cmd_checkteamslost utilise, qui marchent).
-  const side = battler & 1;  // 0 player, 1 opponent.
-  const party = side === 0 ? _gPlayerPartyCTL : _gEnemyPartyCTL;
-  for (let i = 0; i < 6; i++) {
-    if (i === p1 || i === p2) continue;
-    const sp = _GetMonDataCTL(party[i], _MON_DATA_SPECIES_CTL) as number;
-    const hp = _GetMonDataCTL(party[i], _MON_DATA_HP_CTL) as number;
-    const isEgg = _GetMonDataCTL(party[i], _MON_DATA_IS_EGG_CTL) as number;
-    if (sp !== 0 && hp > 0 && !isEgg) return false;
-  }
-  return true;
-}
+// (HasNoMonsToSwitch : porté 1:1 STRICT dans battle_util.ts — battle_util.c:2262-2377 —
+//  et importé ci-dessus ; l'ancienne ré-impl locale `_hasNoMonsToSwitch_HBT`, qui
+//  n'excluait AUCUN mon on-field, est retirée [FIX A].)
 
 // ─── 0x51 switchhandleorder ───────────────────────────────────────────────
 

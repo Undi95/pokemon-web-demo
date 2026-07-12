@@ -56,6 +56,7 @@ import {
   MOVE_NONE, MOVE_STRUGGLE,
   MOVE_TARGET_SELECTED, MOVE_TARGET_USER, MOVE_TARGET_RANDOM,
   BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA, BATTLE_TYPE_SAFARI,
+  BATTLE_TYPE_TWO_OPPONENTS, BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_MULTI, MULTI_PARTY_SIZE,
   GET_BATTLER_SIDE, B_SIDE_PLAYER,
   BATTLE_OPPOSITE,
   ABILITY_LIGHTNING_ROD,
@@ -255,7 +256,7 @@ import {
 } from './engine/battle/constants';
 import { SPECIES_MEW, SPECIES_DEOXYS } from '../include/constants/species';
 import { CalculateBaseDamage } from './pokemon';
-import { gPlayerParty, GetMonData, MON_DATA_SPECIES } from './engine/battle/party-storage';
+import { gPlayerParty, GetMonData, MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_IS_EGG, PARTY_SIZE } from './engine/battle/party-storage';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet } from './engine/script/script-vars';
 // ─── AtkCanceler_UnableToUseMove (battle_util.c:1985-2270) — absorbé au miroir
@@ -967,7 +968,6 @@ export function HandleAction_TryFinish(_ctx?: BattleScriptContext): void {
 
 /** 1:1 décomp `FAINTED_ACTIONS_MAX_CASE` = 7 (battle_util.c). */
 const _FAINTED_ACTIONS_MAX_CASE = 7;
-const _PARTY_SIZE_HFM = 6;
 
 /** `BattleScriptExecute(label)` via le hook globalThis (= évite le cycle
  *  handle-action ↔ battle-main-functions ; même pattern que turn-dispatch). */
@@ -978,20 +978,80 @@ function _BattleScriptExecuteHFM(label: string): void {
   else console.warn('[handle-action] BattleScriptExecute hook absent (battle-main-functions pas chargé)');
 }
 
-/** 1:1 inline `HasNoMonsToSwitch(battler, …)` (battle_util.c) — true si AUCUN
- *  autre mon vivant dans le party du battler. (= ne peut pas remplacer.) */
-function _HasNoMonsToSwitchHFM(battler: number): boolean {
-  const partyIdx = gBattlerPartyIndexes[battler] ?? 0;
-  const party = (battler & 1) === 0
-    ? (globalThis as { gPlayerParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gPlayerParty
-    : (globalThis as { gEnemyParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gEnemyParty;
-  if (!party) return true;
-  for (let j = 0; j < _PARTY_SIZE_HFM; j++) {
-    if (j === partyIdx) continue;
-    const m = party[j];
-    if (m?.species && (m.hp ?? 0) > 0 && !m.isEgg) return false;
+/** 1:1 inline du prédicat de `HasNoMonsToSwitch` : mon vivant (hp != 0), existant
+ *  (species != SPECIES_NONE) et non-œuf — même triplet que Cmd_checkteamslost. */
+function _monIsSwitchable(mon: Parameters<typeof GetMonData>[0]): boolean {
+  return (GetMonData(mon, MON_DATA_HP) as number) !== 0
+      && (GetMonData(mon, MON_DATA_SPECIES) as number) !== 0
+      && !(GetMonData(mon, MON_DATA_IS_EGG) as number);
+}
+
+/** 1:1 STRICT décomp `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
+ *  (battle_util.c:2262-2377). TRUE = AUCUN mon switchable côté `battler`.
+ *
+ *  !DOUBLE → FALSE (:2268 — en single la question ne se pose pas). En double, EXCLUT
+ *  les 2 mons ON-FIELD (soi + PARTENAIRE, résolus depuis gBattlerPartyIndexes quand
+ *  l'arg vaut le sentinel PARTY_SIZE) ET les mons déjà en file d'envoi
+ *  (monToSwitchIntoId). Les ré-impls ad-hoc antérieures comptaient le mon du partenaire
+ *  comme dispo → party-screen pour un remplaçant inexistant (prompt parasite/softlock).
+ *  MULTI (link) = hors périmètre solo → throw. */
+export function HasNoMonsToSwitch(
+  battler: number, partyIdBattlerOn1: number, partyIdBattlerOn2: number,
+): boolean {
+  let playerId: number;
+  let flankId: number;
+  let party: typeof gPlayerParty;
+  let i: number;
+
+  // 1:1 :2268-2269
+  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) return false;
+
+  // 1:1 :2271-2287 (INGAME_PARTNER — combat multi Steven, offline).
+  if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+    party = GET_BATTLER_SIDE(battler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+    playerId = ((battler & BIT_FLANK) / 2) | 0;
+    for (i = playerId * MULTI_PARTY_SIZE; i < playerId * MULTI_PARTY_SIZE + MULTI_PARTY_SIZE; i++) {
+      if (_monIsSwitchable(party[i])) break;
+    }
+    return i === playerId * MULTI_PARTY_SIZE + MULTI_PARTY_SIZE;
+  } else if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+    // 1:1 :2288-2326 (MULTI link) — GetBattlerMultiplayerId/GetLinkTrainerFlankId non
+    // portés (link hors périmètre solo). Ne doit jamais être atteint offline.
+    throw new Error('[battle_util] HasNoMonsToSwitch: BATTLE_TYPE_MULTI (link) non porté (hors périmètre solo)');
+  } else if ((gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) && GET_BATTLER_SIDE(battler) === B_SIDE_OPPONENT) {
+    // 1:1 :2328-2344 (TWO_OPPONENTS, côté adverse).
+    party = gEnemyParty;
+    playerId = battler === 1 ? 0 : MULTI_PARTY_SIZE;
+    for (i = playerId; i < playerId + MULTI_PARTY_SIZE; i++) {
+      if (_monIsSwitchable(party[i])) break;
+    }
+    return i === playerId + 3;
+  } else {
+    // 1:1 :2346-2376 (double standard).
+    if (GET_BATTLER_SIDE(battler) === B_SIDE_OPPONENT) {
+      flankId = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+      playerId = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
+      party = gEnemyParty;
+    } else {
+      flankId = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+      playerId = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
+      party = gPlayerParty;
+    }
+
+    // 1:1 :2361-2364 : résout le sentinel PARTY_SIZE vers le slot party ON-FIELD.
+    if (partyIdBattlerOn1 === PARTY_SIZE) partyIdBattlerOn1 = gBattlerPartyIndexes[flankId];
+    if (partyIdBattlerOn2 === PARTY_SIZE) partyIdBattlerOn2 = gBattlerPartyIndexes[playerId];
+
+    for (i = 0; i < PARTY_SIZE; i++) {
+      // 1:1 :2366-2373 — le quirk C `playerId[gBattleStruct->monToSwitchIntoId]` =
+      // `monToSwitchIntoId[playerId]` (arithmétique de pointeur commutative).
+      if (_monIsSwitchable(party[i])
+          && i !== partyIdBattlerOn1 && i !== partyIdBattlerOn2
+          && i !== gBattleStruct.monToSwitchIntoId[flankId]
+          && i !== gBattleStruct.monToSwitchIntoId[playerId]) break;
+    }
+    return i === PARTY_SIZE;
   }
-  return true;
 }
 
 /** 1:1 inline `OpponentSwitchInResetSentPokesToOpponentValue(battler)`
@@ -1021,7 +1081,7 @@ export function HandleFaintedMonActions(): boolean {
         gBattleStruct.faintedActionsBattlerId = 0;
         gBattleStruct.faintedActionsState = 1;
         for (let i = 0; i < gBattlersCount; i++) {
-          if ((gAbsentBattlerFlags & gBitTable[i]) && !_HasNoMonsToSwitchHFM(i)) {
+          if ((gAbsentBattlerFlags & gBitTable[i]) && !HasNoMonsToSwitch(i, PARTY_SIZE, PARTY_SIZE)) {
             setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[i]);
           }
         }
