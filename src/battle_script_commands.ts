@@ -1372,6 +1372,28 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
   return false;
 }
 
+/** Condition de fin 1:1 décomp `Cmd_checkteamslost` (battle_script_commands.c:3557-3580) :
+ *  somme les HP de TOUTE la party d'un côté (mons species != 0, non-œuf) et retourne
+ *  TRUE si le total vaut 0 (= côté ENTIÈREMENT K.O. — les DEUX battlers actifs ET les
+ *  mons en réserve).
+ *
+ *  Le vrai `Cmd_tryfaintmon` NE pose PAS l'outcome : c'est `checkteamslost` (dans
+ *  BattleScript_HandleFaintedMon, après GiveExp) qui le fait, sur la party COMPLÈTE.
+ *  L'échafaudage voie V de Cmd_tryfaintmon doit donc exiger la MÊME condition — sinon
+ *  en double la victoire/défaite tombe au 1er mon K.O. alors qu'il reste un battler
+ *  actif OU une réserve vivante (bug 2v2 : Magnéti adverse encore vivant → victoire
+ *  prématurée). La party HP est déjà flushée par le controller (datahpupdate →
+ *  SetMonData REQUEST_HP_BATTLE) avant que le stepper n'atteigne tryfaintmon. */
+function _sideFullyFaintedForOutcome(party: typeof _gEnemyPartyCTL): boolean {
+  let hpCount = 0;
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const species = _GetMonDataCTL(party[i], _MON_DATA_SPECIES_CTL) as number;
+    const isEgg = _GetMonDataCTL(party[i], _MON_DATA_IS_EGG_CTL) as number;
+    if (species !== 0 && !isEgg) hpCount += _GetMonDataCTL(party[i], _MON_DATA_HP_CTL) as number;
+  }
+  return hpCount === 0;
+}
+
 // ─── Cmd_tryfaintmon (0x19) ─────────────────────────────────────────────────
 
 /** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-3050).
@@ -1448,7 +1470,12 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
       // APRÈS GiveExp) qui le fait. En voie L (ctx persistant), on laisse le flux
       // 1:1 poser l'outcome ; sinon RunTurnActionsFunctions court-circuiterait
       // HandleFaintedMonActions (EXP + « K.O. » sautés).
-      if (ctx !== gBattleScriptContext) setBattleOutcome(B_OUTCOME_LOST);
+      // FIX 2v2 : n'imposer LOST que si TOUTE la party joueur est K.O. (condition
+      // checkteamslost 1:1), pas seulement le battler qui vient de tomber — sinon
+      // défaite prématurée en double dès le 1er mon joueur K.O.
+      if (ctx !== gBattleScriptContext && _sideFullyFaintedForOutcome(_gPlayerPartyCTL)) {
+        setBattleOutcome(gBattleOutcome | B_OUTCOME_LOST);
+      }
     } else {
       if (gBattleResults.opponentFaintCounter < 255) {
         gBattleResults.opponentFaintCounter++;
@@ -1461,7 +1488,12 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
       }
       // ⚠️ Non-1:1 (échafaudage voie V) : idem — la voie L laisse checkteamslost
       // (dans HandleFaintedMon, après GiveExp) poser WON.
-      if (ctx !== gBattleScriptContext) setBattleOutcome(B_OUTCOME_WON);
+      // FIX 2v2 : n'imposer WON que si TOUTE la party ennemie est K.O. (condition
+      // checkteamslost 1:1) — sinon victoire prématurée en double (Magnéti adverse
+      // encore vivant après le K.O. du 1er ennemi gauche).
+      if (ctx !== gBattleScriptContext && _sideFullyFaintedForOutcome(_gEnemyPartyCTL)) {
+        setBattleOutcome(gBattleOutcome | B_OUTCOME_WON);
+      }
     }
 
     // 1:1 décomp ll.3020-3026 : Destiny Bond.

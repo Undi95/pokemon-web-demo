@@ -67,7 +67,7 @@ import { getString } from '../harness/runtime/decomp-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
 // -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).
-import { GetTrainerALoseText, getTrainerADefeatSpeech } from './battle_setup';
+import { GetTrainerALoseText } from './battle_setup';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import type { BattleMsgData } from './engine/battle/battle-event-queue';
 import { getMoveName as _getMoveNameFr } from './engine/data/game-data';
@@ -385,17 +385,22 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     // Cas dresseur 2 / lose-win text / link / frontier : data par-dresseur ou
     // modes non supportés (double/link) → marqueur déféré (= comportement du
     // décodeur actuel, battle-string-decoder:552). Le {B_X} reste visible = signal.
-    // 1:1 décomp battle_message.c:2680 : B_TXT_TRAINER1_LOSE_TEXT -> GetTrainerALoseText()
-    // (= StringExpandPlaceholders(sTrainerADefeatSpeech)). Voie L : sTrainerADefeatSpeech pose au
-    // setup (BattleSetup_StartTrainerBattle). Fallback marqueur si null (voie V / non pose) -> 0 regression.
-    case B_TXT_TRAINER1_LOSE_TEXT: {
-      if (getTrainerADefeatSpeech()) return GetTrainerALoseText();
-      return encodeChars('[B_TRAINER1_LOSE_TEXT]');
-    }
-    case B_TXT_TRAINER2_CLASS: case B_TXT_TRAINER2_NAME:
+    // 1:1 décomp battle_message.c:2667-2682 : B_TXT_TRAINER1_LOSE_TEXT -> GetTrainerALoseText()
+    // (= StringExpandPlaceholders(gStringVar4, sTrainerADefeatSpeech)). TOUJOURS résolu :
+    // GetTrainerALoseText() gère sTrainerADefeatSpeech==NULL -> chaîne vide (EOS), donc AUCUN
+    // marqueur cru « [B_TRAINER1_LOSE_TEXT] » ni warning charmap [ _ ] à la victoire dresseur.
+    // (Frontier/Trainer Hill = CopyFrontier/HillTrainerText, différés hors scope.)
+    case B_TXT_TRAINER1_LOSE_TEXT:
+      return GetTrainerALoseText();
+    // 1:1 décomp battle_message.c:2740-2771 : trainer B (2-opponent doubles) = gTrainers[opponent_B].
+    case B_TXT_TRAINER2_CLASS: return encodeChars(_resolveTrainerClassNameFr(_getTrainerOpponentB()));
+    case B_TXT_TRAINER2_NAME:  return encodeChars(_resolveTrainerNameFr(_getTrainerOpponentB()));
+    // Win-text (frontier/hill only en décomp → toCpy non posé en combat normal) + trainer B
+    // lose-text (sTrainerBDefeatSpeech non porté) : différés → chaîne VIDE (pas de marqueur cru
+    // → aucun warning charmap si jamais émis).
     case B_TXT_TRAINER1_WIN_TEXT:
     case B_TXT_TRAINER2_LOSE_TEXT: case B_TXT_TRAINER2_WIN_TEXT:
-      return encodeChars('[B_' + (_CODE_TO_B_TXT_NAME[code] ?? code) + ']');
+      return encodeChars('');
     default:
       return encodeChars('{B_?' + code + '}');
   }
