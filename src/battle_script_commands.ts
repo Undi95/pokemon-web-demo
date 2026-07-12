@@ -8329,6 +8329,17 @@ function _updateSentPokesToOpponentValue(battler: number): void {
  *  Décomp gère aussi : ability switch-in triggers, weather messages,
  *  status1 sleep/poison ticks — partial port ici (Spikes seulement). */
 function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
+  // 1:1 décomp battle_script_commands.c:5226 : `gActiveBattler =
+  // GetBattlerForBattleScript(gBattlescriptCurrInstr[1])` NE fait PAS avancer
+  // gBattlescriptCurrInstr. Les BattleScriptPushCursor des branches spikes/ability/
+  // item poussent donc le curseur SUR switchineffects → au BattleScriptPop l'opcode
+  // se RÉ-EXÉCUTE (2e passage : l'effet ne re-trigge plus → branche no-effect →
+  // gActionsByTurnOrder[slot] = B_ACTION_CANCEL_PARTNER). Sans cette ré-exécution,
+  // l'action du remplaçant n'est jamais neutralisée → il exécute un move fantôme
+  // (bug double « Léviator lance Surf à l'arrivée » quand il a une ability d'entrée
+  // comme Intimidation). Le stepper a déjà consommé l'opcode (scriptPtr++,
+  // script-interpreter.ts:631) → l'opcode 0x52 est à ctx.scriptPtr - 1.
+  const _opStart = ctx.scriptPtr - 1;
   const arg = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
@@ -8351,7 +8362,9 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
     setBattleMoveDamage(dmg);
     gBattleScripting.battler = active;
     // 1:1 décomp : BattleScriptPushCursor + jump à BattleScript_SpikesOnTarget/Attacker.
-    ctx.scriptPtrStack.push(ctx.scriptPtr);
+    // Push _opStart (pas ctx.scriptPtr) → switchineffects se ré-exécute au retour
+    // (2e passage : SPIKES_DAMAGED est set → branche no-effect → CANCEL_PARTNER).
+    ctx.scriptPtrStack.push(_opStart);
     const labelName = arg === BS_TARGET ? 'BattleScript_SpikesOnTarget'
       : arg === BS_ATTACKER ? 'BattleScript_SpikesOnAttacker'
       : 'BattleScript_SpikesOnFaintedBattler';
@@ -8377,7 +8390,10 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
       if (label) {
         const off = getBattleScriptOffset(label);
         if (off >= 0) {
-          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          // Push _opStart : ré-exécute switchineffects après le script d'ability
+          // (2e passage : ON_SWITCHIN ne re-trigge plus → CANCEL_PARTNER). Fix bug
+          // switch double « remplaçant attaque » (ex. Intimidation → Surf fantôme).
+          ctx.scriptPtrStack.push(_opStart);
           ctx.scriptPtr = off;
         }
       }
@@ -8389,7 +8405,9 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
       if (label) {
         const off = getBattleScriptOffset(label);
         if (off >= 0) {
-          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          // Push _opStart : ré-exécute switchineffects après le script d'item
+          // (2e passage : ON_SWITCH_IN ne re-trigge plus → CANCEL_PARTNER).
+          ctx.scriptPtrStack.push(_opStart);
           ctx.scriptPtr = off;
         }
       }
