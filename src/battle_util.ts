@@ -364,6 +364,17 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
 
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
 
+  // ── SONDE bug switch double (gated __probeSwitch) — retirer après diag ──────
+  if ((globalThis as Record<string, unknown>).__probeSwitch) {
+    const _pos = gBattleStruct.chosenMovePositions?.[gBattlerAttacker];
+    console.log('[probe:usemove] ATTACKER=', gBattlerAttacker,
+      '| actionN=', gCurrentTurnActionNumber,
+      '| movePos=', _pos,
+      '| chosenMove=', gChosenMoveByBattler[gBattlerAttacker],
+      '| moveAtPos=', gBattleMons[gBattlerAttacker]?.moves?.[_pos ?? 0],
+      '| species=', gBattleMons[gBattlerAttacker]?.species);
+  }
+
   // Skip si absent.
   if (gBattleStruct.absentBattlerFlags & gBitTable[gBattlerAttacker]) {
     setCurrentActionFuncId(B_ACTION_FINISHED);
