@@ -373,6 +373,9 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
       '| chosenMove=', gChosenMoveByBattler[gBattlerAttacker],
       '| moveAtPos=', gBattleMons[gBattlerAttacker]?.moves?.[_pos ?? 0],
       '| species=', gBattleMons[gBattlerAttacker]?.species);
+    if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
+      console.log('[probe:usemove-caller]\n' + (new Error().stack?.split('\n').slice(2, 9).join('\n') ?? '?'));
+    }
   }
 
   // Skip si absent.
