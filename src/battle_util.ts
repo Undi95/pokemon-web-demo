@@ -364,6 +364,16 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
 
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
 
+  // ── SONDE #10 Surf ×2 (gated __probeSurf) — retirer après diag ──────────────
+  // Une 2e entrée pour le MÊME turnN/attaquant = relance fantôme de l'action move.
+  if ((globalThis as Record<string, unknown>).__probeSurf) {
+    const _p = gBattleStruct.chosenMovePositions?.[gBattlerAttacker];
+    console.log('[probe:um] turnN=', gCurrentTurnActionNumber, '| attacker=', gBattlerAttacker,
+      '| move=', gBattleMons[gBattlerAttacker]?.moves?.[_p ?? 0],
+      '| curTarget=', gBattlerTarget, '| species=', gBattleMons[gBattlerAttacker]?.species,
+      '\n' + (new Error().stack?.split('\n').slice(2, 8).join('\n') ?? '?'));
+  }
+
   // Skip si absent.
   if (gBattleStruct.absentBattlerFlags & gBitTable[gBattlerAttacker]) {
     setCurrentActionFuncId(B_ACTION_FINISHED);
