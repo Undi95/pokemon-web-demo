@@ -952,16 +952,7 @@ export function setDynamicMoveType(v: number) { gDynamicMoveType = v; }
 export function setBattleMovePower(v: number) { gBattleMovePower = v; }
 export function setBattleControllerExecFlags(v: number) { gBattleControllerExecFlags = v; }
 export function setPauseCounterBattle(v: number) { gPauseCounterBattle = v; }
-export function setCurrentActionFuncId(v: number) {
-  // ── SONDE bug switch double (gated __probeSwitch) — retirer après diag ──────
-  // Log quand on met USE_MOVE(0) pendant un slot de switch (actionN < 2) = anomalie.
-  if ((globalThis as Record<string, unknown>).__probeSwitch && v === 0 && gCurrentTurnActionNumber < 2) {
-    console.log('[probe:setfuncid=0] @actionN=', gCurrentTurnActionNumber,
-      '| actions=', [gActionsByTurnOrder[0], gActionsByTurnOrder[1], gActionsByTurnOrder[2], gActionsByTurnOrder[3]],
-      '\n' + (new Error().stack?.split('\n').slice(2, 8).join('\n') ?? '?'));
-  }
-  gCurrentActionFuncId = v;
-}
+export function setCurrentActionFuncId(v: number) { gCurrentActionFuncId = v; }
 export function setCurrentTurnActionNumber(v: number) { gCurrentTurnActionNumber = v; }
 export function setLastUsedAbility(v: number) { gLastUsedAbility = v; }
 export function setLastUsedItem(v: number) { gLastUsedItem = v; }

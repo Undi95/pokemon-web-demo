@@ -2170,14 +2170,6 @@ export function SwitchPartyOrder(battler: number): void {
 export function SetActionsAndBattlersTurnOrder(): void {
   let turnOrderId = 0;
 
-  // ── SONDE bug switch double (gated __probeSwitch) — retirer après diag ──────
-  if ((globalThis as Record<string, unknown>).__probeSwitch) {
-    console.log('[probe:select] chosenAction=',
-      [gChosenActionByBattler[0], gChosenActionByBattler[1], gChosenActionByBattler[2], gChosenActionByBattler[3]],
-      '| movePos=', [0, 1, 2, 3].map((i) => gBattleStruct.chosenMovePositions?.[i]),
-      '| chosenMove=', [0, 1, 2, 3].map((i) => gChosenMoveByBattler[i]));
-  }
-
   if (gBattleTypeFlags & BATTLE_TYPE_SAFARI) {
     // 1:1 décomp ll. 4762-4768 : Safari = order battler natural.
     for (let active = 0; active < gBattlersCount; active++) {
@@ -2261,13 +2253,6 @@ export function SetActionsAndBattlersTurnOrder(): void {
         }
       }
     }
-  }
-  // ── SONDE ordre trié (gated __probeSwitch) — retirer après diag ────────────
-  if ((globalThis as Record<string, unknown>).__probeSwitch) {
-    console.log('[probe:order] actionsByTurnOrder=',
-      [gActionsByTurnOrder[0], gActionsByTurnOrder[1], gActionsByTurnOrder[2], gActionsByTurnOrder[3]],
-      '| battlerByTurnOrder=',
-      [gBattlerByTurnOrder[0], gBattlerByTurnOrder[1], gBattlerByTurnOrder[2], gBattlerByTurnOrder[3]]);
   }
   // 1:1 décomp (battle_main.c, fin de SetActionsAndBattlersTurnOrder) :
   //   gBattleStruct->focusPunchBattlerId = 0;
