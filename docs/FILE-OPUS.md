@@ -147,9 +147,33 @@ gabarits) ; toute valeur magique renderer = précédent cité sinon STOP.
 
 ## E. CÂBLAGES (premiers-de-série restants — design humain puis agents)
 
-1. **Pokénav** : 100 % transpilé, 0 % câblé. Entrée : menu START → POKéNAV
-   (CB2_InitPokeNav) ; commencer par le menu principal + Hoenn map, sous-écrans
-   ensuite. Gros nœud : le loop UI (LoopedTask) — chercher le pattern déjà transcrit.
+1. **Pokénav** (dossier complet 2026-07-12) : 100 % transpilé, 0 % câblé — **409
+   sentinelles `__wireTodo` / 13 fichiers** (menu_handler 10 · handler_gfx 40 ·
+   main_menu 19 · list 15 · region_map 48 · match_call data 5/list 21/gfx 67 ·
+   conditions 17+66+36 · ribbons 35+30). Entrée START **DÉJÀ câblée**
+   (start_menu.ts:558, gated FLAG_SYS_POKENAV_GET → StartMenu_OpenPokenav →
+   CB2_InitPokeNav) mais ouvre le SQUELETTE pokenav.ts (écrit main, 0 sentinelle)
+   — À JETER et réécrire en orchestrateur réel. Assets : DÉJÀ extraits
+   (public/decomp/em/pokenav/**, 224 fichiers ; mapping symboles gfx→binaires =
+   micro-tâche L1).
+   **L1 (SOCLE)** : moteur `CreateLoopedTask`/`IsLoopedTaskActive`/`Task_RunLoopedTask`
+   (pokenav.c:210-313, décode LT_INC/PAUSE/CONTINUE/FINISH, ⚠ id packé
+   (taskId,seqId) à reproduire exactement) + allocateur substruct
+   (gPokenavResources->substructPtrs, pokenav.h:72-93) + Task_Pokenav (:434) +
+   table PokenavMenuCallbacks (:55-205) + CB2_InitPokeNav (:315) → puis câbler
+   main_menu+menu_handler(+gfx). Sentinelles bg/DMA probablement aliasables aux
+   helpers existants — vérifier avant de porter. Test : START → POKéNAV →
+   bandeau+icônes, D-pad, Éteindre/B = CB2_ReturnToFieldWithOpenMenu.
+   **L2 carte Hoenn** ⚠ plus gros qu'annoncé : le MOTEUR region_map.c entier est
+   à porter (region_map.ts actuel = shim noms FR ; le Vol passe par fldeff_fly).
+   **L3 Match Call** : le mieux loti (match_call.ts porté, data 5 sentinelles) —
+   travail = UI list/gfx.
+   **L4 Condition+Rubans** : ~184 sentinelles, post-passation.
+   Pièges (mémoires) : ResetSpriteData+FreeAllSpritePalettes à l'init ·
+   RunTasks→AnimateSprites→BuildOamBuffer→UpdatePaletteFade + VBlank
+   TransferPlttBuffer→LoadOam→ProcessSpriteCopyRequests · baseBlock InitWindows
+   sans chevauchement (précédent option_menu/naming) · nit : start_menu utilise
+   gText_MenuOptionPokenav vs décomp gText_MenuPokenav.
 2. **Contests** : contest_effect prêt (`c9bedba6`, dispatch exporté) ; il faut
    contest.ts (l'état eContestantStatus réel) + l'UI (cat.B) + les scripts.
 3. **Frontier** : facilities transpilées inertes ; câblage après socle B.
