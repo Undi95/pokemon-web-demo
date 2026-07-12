@@ -76,6 +76,45 @@ alternatif), setdivewarp fixe (post-game), BattleSetup_StartLegendaryBattle stub
   double, EXP split. Puis un dresseur double RÉEL sur route (données
   `trainers.json` doubleBattle + approche 2 dresseurs `FreezeForApproachingTrainers`).
 
+## A-bis. RENDU COMBAT — audit complet décomp↔port (2026-07-12, 7 symptômes user)
+
+### Lot A (gameplay/lisibilité)
+- **A1 clignotement de cible (~15 l, EN VOL)** : SpriteCB_ShowAsMoveTarget/BlinkVisible/
+  HideAsMoveTarget DÉJÀ portés (battle_main.ts:3770/3777/3786) mais orphelins — les
+  stubs _SpriteCB_* (bcp.ts:1011-1021) doivent poser les callbacks 1:1 (bcp.c:367-540).
+- **A2 garde doubles level-up (~35 l, EN VOL)** : UpdateHpTextInHealthbox (bi.ts:1396)
+  sans la garde `side==PLAYER && !IsDoubleBattle()` (bi.c:1146) → gros digits single
+  dessinés en double ; router vers UpdateHpTextInHealthboxInDoubles (:2987, déjà 1:1).
+- **A3 restauration OBJ post-monbg + team-attack doubles (~90 l)** : Cmd_clearmonbg
+  restaure via getBattlerMonSpriteId (0xFF → reste invisible) ; Cmd_teamattack_
+  movefwd/moveback quasi-stubs (C21→TS3, ba.c:1770/1807) ; IsBattlerSpriteVisible
+  à réaligner (ba.c:649). = les « sprites qui disparaissent ».
+- **A4 barres de PV stables (~50 l)** : MoveBattleBarGraphically (bi.ts:1178) tronque
+  le Q24.8 (realHp :1189) + redraw complet au lieu du CpuCopy32 de 6 tuiles
+  persistantes (bi.c:2298-2307) = saccade+flicker.
+
+### Lot B (fidélité)
+- **B1 retrait-ball ancré bas (~30 l + audit renderer)** : GetBattlerYDeltaFromSpriteId
+  non porté → SetBattlerSpriteYOffsetFromYScale hardcode v=64 (bam.ts:703/726 vs
+  bam.c:1873). ⚠️ vérifier D'ABORD que le renderer honore sprite.y2 sous affine.
+- **B2 assets PokeballsTrail** : la transition dresseur NORMAL portée mais assets KO
+  → fade-noir ~3 s (battle_transition.ts:100-116). Pipeline assets, petit.
+- **B3 registry anims long tail** : Cmd_createvisualtask/createsprite skip silencieux
+  (ba.ts:1450-1476/:1288) + objMode Blend jeté (battle-anim-registry.ts:30-33).
+
+### Lot C (polish)
+- Transitions spécifiques (BIG_POKEBALL, GRID_SQUARES, CLOCKWISE_WIPE, RIPPLE, WAVE,
+  mugshots E4 — fallback SLICE gracieux aujourd'hui) · GetBattlerSpriteCoordAttr
+  (C86→TS15) placement pixel-exact des particules.
+
+### Top corps creux battle_* (oracle, à épaissir au fil de l'eau)
+UpdateHpTextInHealthbox 50→9 · MoveBattleBarGraphically 44→12 · GetBattlerYDelta
+50→9 · GetBattlerSpriteCoordAttr 86→15 · HandleSpeciesGfxDataChange 65→28 ·
+MoveBattlerSpriteToBG 53→42 · UpdateNickInHealthbox 39→13 · BattleLoad*MonSpriteGfx
+37/32→11 · Cmd_monbg_static 29→15 · UpdateLvlInHealthbox 22→10.
+⚠️ Nuance oracle : battle_transition.c ~90 « absents » = structure custom
+name-mismatch, 7 transitions réellement portées — ne pas surévaluer.
+
 ## B. VAGUE C — lots restants (catégorie A, fichiers neufs inertes)
 
 Commande : `node scripts/transpile-c.cjs --file X.c` (ou `--batch a.c,b.c`).
