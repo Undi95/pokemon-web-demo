@@ -65,22 +65,44 @@ const includeExempt = argv.includes('--include-exempt');
 const strict = argv.includes('--strict');
 
 // --- Helpers texte ---
-function blank(m) { return m.replace(/[^\n]/g, ' '); }
-function stripC(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, blank)
-    .replace(/\/\/[^\n]*/g, blank)
-    .replace(/"(?:[^"\\\n]|\\.)*"/g, blank)
-    .replace(/'(?:[^'\\\n]|\\.)*'/g, blank);
+// Scanner UN-PASSE (repris À L'IDENTIQUE de audit-body-parity.cjs). L'ancienne
+// chaîne de regex appliquait le retrait des blocs `/* */` AVANT les lignes `//`.
+// Or le décomp contient des commentaires `//*dest = *ptr;` : le `/*` interne (dans
+// `//*`) était alors lu comme un DÉBUT de bloc et engloutissait tout jusqu'au
+// prochain `*/` — avalant des centaines de lignes (matchBrace overrun → dépendances
+// fantômes dans le call-graph). Ce scanner reconnaît `//` AVANT de pouvoir
+// interpréter un `/*`, gère aussi chaînes/char-literals, et préserve longueur +
+// sauts de ligne (indices alignés avec le brut, comme les regex d'origine).
+function stripCode(src, allowTemplate) {
+  const out = src.split('');
+  const n = src.length;
+  let i = 0;
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === '/' && d === '/') { let j = i; while (j < n && src[j] !== '\n') out[j++] = ' '; i = j; continue; }
+    if (c === '/' && d === '*') {
+      out[i] = out[i + 1] = ' '; let j = i + 2;
+      while (j < n && !(src[j] === '*' && src[j + 1] === '/')) { if (src[j] !== '\n') out[j] = ' '; j++; }
+      if (j < n) { out[j] = out[j + 1] = ' '; j += 2; }
+      i = j; continue;
+    }
+    if (c === '"' || c === "'" || (allowTemplate && c === '`')) {
+      out[i] = ' '; let j = i + 1;
+      while (j < n) {
+        if (src[j] === '\\') { if (src[j] !== '\n') out[j] = ' '; if (src[j + 1] !== '\n') out[j + 1] = ' '; j += 2; continue; }
+        if (src[j] === c) { out[j] = ' '; j++; break; }
+        if (c !== '`' && src[j] === '\n') break; // chaîne "/' non terminée en fin de ligne
+        if (src[j] !== '\n') out[j] = ' ';
+        j++;
+      }
+      i = j; continue;
+    }
+    i++;
+  }
+  return out.join('');
 }
-function stripTs(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, blank)
-    .replace(/\/\/[^\n]*/g, blank)
-    .replace(/`(?:[^`\\]|\\[\s\S])*`/g, blank)
-    .replace(/"(?:[^"\\\n]|\\.)*"/g, blank)
-    .replace(/'(?:[^'\\\n]|\\.)*'/g, blank);
-}
+function stripC(src) { return stripCode(src, false); }
+function stripTs(src) { return stripCode(src, true); }
 function makeLineLookup(text) {
   const starts = [0];
   for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) starts.push(i + 1);
