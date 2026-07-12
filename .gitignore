@@ -31,9 +31,9 @@ public/decomp/em/rom.gba
 public/decomp/**/rom.gba
 public/decomp/**/*.gba
 
-# byte-VM : bytecode compilé = artefact régénérable (node scripts/compile-scripts.cjs)
-# format encore en évolution (Phase 3) → non commité pour l'instant.
-public/decomp/em/script-bytecode.json
+# byte-VM : bytecode compilé (node scripts/compile-scripts.cjs). COMMITÉ (plus ignoré) pour
+# que le clone du repo boote SANS le décomp — cf partage à un pote (2026-07-12). Régénérable
+# à la demande ; re-gitignorer après le partage si le churn de diffs gêne.
 
 # External reference docs (PDFs/random)
 *.pdf
