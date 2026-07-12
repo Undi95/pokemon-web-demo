@@ -1006,18 +1006,36 @@ const sTargetIdentities = [
   B_POSITION_OPPONENT_RIGHT, B_POSITION_OPPONENT_LEFT,
 ];
 
-/** 1:1 décomp `SpriteCB_ShowAsMoveTarget(battler)`. Dette R3 : target sprite
- *  highlight via gSprites[gBattlerSpriteIds[battler]].callback. */
-function _SpriteCB_ShowAsMoveTarget(_battler: number): void {
-  // Dette R3 : sprite callback highlight target.
+/** 1:1 décomp `gSprites[gBattlerSpriteIds[battler]].callback = SpriteCB_ShowAsMoveTarget`
+ *  (battle_controller_player.c:425,467,540,860). Installe le blink de cible : SpriteCB_ShowAsMoveTarget
+ *  pose data[3]=8 + callback=SpriteCB_BlinkVisible qui toggle sprite.invisible tous les 8 frames
+ *  (porté 1:1 battle_main.c:2814-2828). Le callback est tické chaque frame par
+ *  AnimateSprites→RunSpriteCallbacks ; le compositor honore sprite.invisible.
+ *  Résolution du sprite = getRuntime().gSprites[getBattlerMonSpriteId(battler)] (registre voie-L
+ *  gBattlerSpriteIds, précédent opponent.ts:_startOpponentFaintAnim :1053). La fonction est pontée
+ *  via __battleSpriteCallbacks (bridge globalThis existant, battle_main.ts:3965) — bcp n'importe
+ *  PAS battle_main : pas de nouvelle arête statique (→ pas de bombe TDZ à l'init). */
+function _SpriteCB_ShowAsMoveTarget(battler: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(battler)];
+  if (!sprite) return;
+  const cb = (globalThis as { __battleSpriteCallbacks?: { SpriteCB_ShowAsMoveTarget?: (s: DecompSprite) => void } })
+    .__battleSpriteCallbacks?.SpriteCB_ShowAsMoveTarget;
+  if (cb) sprite.callback = cb;
 }
 
-/** 1:1 décomp `SpriteCB_HideAsMoveTarget(battler)`. Dette R3 : masque la flèche
- *  de cible (gSprites[gBattlerSpriteIds[battler]].callback dans le décomp). No-op
- *  tant que la flèche n'est pas rendue — même dette cosmétique que
- *  _SpriteCB_ShowAsMoveTarget ; n'affecte PAS le flux d'input de ChooseTarget. */
-function _SpriteCB_HideAsMoveTarget(_battler: number): void {
-  // Dette R3 : sprite callback hide target.
+/** 1:1 décomp `gSprites[gBattlerSpriteIds[battler]].callback = SpriteCB_HideAsMoveTarget`
+ *  (battle_controller_player.c:367,375,384,430,494,501,538). Restaure l'invisibilité initiale
+ *  (SpriteCB_HideAsMoveTarget : sprite.invisible = data[4]; callback = SpriteCallbackDummy_2 —
+ *  1:1 battle_main.c:2830-2835) → arrête le blink. Même résolution sprite + même pont
+ *  __battleSpriteCallbacks que _SpriteCB_ShowAsMoveTarget. */
+function _SpriteCB_HideAsMoveTarget(battler: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.[getBattlerMonSpriteId(battler)];
+  if (!sprite) return;
+  const cb = (globalThis as { __battleSpriteCallbacks?: { SpriteCB_HideAsMoveTarget?: (s: DecompSprite) => void } })
+    .__battleSpriteCallbacks?.SpriteCB_HideAsMoveTarget;
+  if (cb) sprite.callback = cb;
 }
 
 /** 1:1 décomp `CountAliveMonsInBattle(caseId)` local port pour HandleInput

@@ -1387,22 +1387,40 @@ export function resetHealthboxL(): void {
     .__battleGfxSfxUtil?.resetBattleInitAllSpritesState?.();
 }
 
-// ─── 1:1 décomp `UpdateHpTextInHealthbox` (battle_interface.c:1139-1172) ─────────
+// ─── 1:1 décomp `UpdateHpTextInHealthbox` (battle_interface.c:1139-1213) ─────────
 const HP_CURRENT = 0, HP_MAX = 1;  // 1:1 battle_interface.h
-/** Met à jour les digits PV du healthbox (player single ; l'adversaire n'en a pas).
- *  hpId = HP_CURRENT/HP_MAX. Utilisé par CompleteOnHealthbarDone pour animer les
- *  digits AVEC la barre pendant le drain (value = valeur courante de MoveBattleBar).
- *  L'autre valeur (max si on update current, et inverse) vient du mon. */
+/** Met à jour les digits PV du healthbox. Routage 1:1 complet (bi.c:1139-1213) :
+ *   - single player (side==PLAYER && !IsDoubleBattle, l.1146) → gros digits dans la
+ *     grande box (updateHealthboxHpDigits) ;
+ *   - double (player OU opponent) OU opponent single (l.1179-1182 :
+ *     `IsDoubleBattle() || side==OPPONENT`) → UpdateHpTextInHealthboxInDoubles (petites
+ *     boxes ; no-op en single opponent car hpNumbersNoBars=0).
+ *  La 3e branche décomp (ll.1184-1212, barFontGfx via side(data[6])==PLAYER hors double)
+ *  est UNREACHABLE (GetBattlerSide ∈ {PLAYER,OPPONENT}).
+ *  hpId = HP_CURRENT/HP_MAX. Utilisé par CompleteOnHealthbarDone pour animer les digits
+ *  AVEC la barre pendant le drain (value = valeur courante de MoveBattleBar) ; l'autre
+ *  valeur (max/current) vient du mon. AVANT : garde `side==PLAYER` sans `!IsDoubleBattle`
+ *  → en double le PV joueur ne routait JAMAIS vers la fonction doubles (petites boxes non
+ *  mises à jour au level-up/drain). battler = gSprites[id].hMain_Battler (= data[6], 1:1). */
 export function UpdateHpTextInHealthbox(healthboxSpriteId: number, value: number, hpId: number): void {
-  const handle = _handleFromSpriteId(healthboxSpriteId);
-  if (!handle || handle.side !== 'player') return;
   const rt = getRuntime();
   const left = rt?.gSprites[healthboxSpriteId];
-  const battler = left?.data ? (left.data[6] | 0) : 0;
-  const mon = _partyMon(battler);
-  const currHp = hpId === HP_CURRENT ? value : (GetMonData(mon, MON_DATA_HP) as number);
-  const maxHp = hpId === HP_MAX ? value : (GetMonData(mon, MON_DATA_MAX_HP) as number);
-  updateHealthboxHpDigits(handle, currHp, maxHp);
+  const battler = left?.data ? (left.data[6] | 0) : 0;   // 1:1 gSprites[id].hMain_Battler
+
+  if (GET_BATTLER_SIDE(battler) === B_SIDE_PLAYER && !IsDoubleBattle()) {
+    const handle = _handleFromSpriteId(healthboxSpriteId);
+    if (!handle) return;
+    const mon = _partyMon(battler);
+    const currHp = hpId === HP_CURRENT ? value : (GetMonData(mon, MON_DATA_HP) as number);
+    const maxHp = hpId === HP_MAX ? value : (GetMonData(mon, MON_DATA_MAX_HP) as number);
+    updateHealthboxHpDigits(handle, currHp, maxHp);
+    return;
+  }
+
+  // 1:1 l.1179-1182 : double (des deux côtés) OU opponent single → petites boxes.
+  if (IsDoubleBattle() || GET_BATTLER_SIDE(battler) !== B_SIDE_PLAYER) {
+    UpdateHpTextInHealthboxInDoubles(healthboxSpriteId, value, hpId);
+  }
 }
 
 // ─── Primitives spriteId pour SwapHpBarsWithHpText (battle_controller_player.ts) ──
