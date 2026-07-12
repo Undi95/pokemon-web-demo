@@ -764,6 +764,13 @@ export function GetAbilityBySpecies(species: number, abilityNum: number): number
   if (!speciesEnum) return 0;
   const info = getSpeciesInfo(speciesEnum);
   if (!info) return 0;
+  // SPECIES_NONE (index 0) : le décomp `gSpeciesInfo[SPECIES_NONE]` est un struct zéro
+  // COMPLET → `.abilities = {ABILITY_NONE, ABILITY_NONE}`. Notre record SPECIES_NONE est
+  // un stub partiel (pas de champ `abilities`) : un slot battler VIDE (espèce 0 — normal
+  // en double 1-mon, ou pendant l'init) atteignait `info.abilities[x]` sur undefined et
+  // crashait le combat (fillBattleMonFromParty → BattleIntro). On rend ABILITY_NONE comme
+  // le zéro-struct décomp plutôt que de planter. 1:1 comportement (GetAbilityBySpecies).
+  if (!info.abilities) return 0 /* ABILITY_NONE (gSpeciesInfo[SPECIES_NONE].abilities[x] = 0) */;
   const abilityStr = info.abilities[abilityNum & 1] || info.abilities[0] || '';
   if (!abilityStr || abilityStr === 'ABILITY_NONE') return 0;
   const id = resolveDecompConstant(abilityStr);

@@ -100,6 +100,12 @@ export function getSpeciesGenderRatio(species: number): number {
   const info = getSpeciesInfo(enumName);
   if (!info) return 0x00 /* MON_MALE */;
   const raw = info.genderRatio;
+  // SPECIES_NONE (index 0) : le décomp `gSpeciesInfo[SPECIES_NONE]` est un struct zéro
+  // COMPLET → `.genderRatio = 0 = MON_MALE`. Notre record SPECIES_NONE est un stub partiel
+  // (pas de champ `genderRatio`) : un slot battler VIDE (espèce 0) atteignait ce getter
+  // avec raw=undefined et crashait sur `.match` (UpdateHealthboxAttribute → BattleInit).
+  // On rend MON_MALE comme le zéro-struct décomp plutôt que de planter. 1:1 comportement.
+  if (typeof raw !== 'string') return 0x00 /* MON_MALE (gSpeciesInfo[SPECIES_NONE].genderRatio = 0) */;
   // String sentinel cases.
   if (raw === 'MON_MALE') return 0x00;
   if (raw === 'MON_FEMALE') return 0xFE;
