@@ -115,6 +115,24 @@ MoveBattlerSpriteToBG 53→42 · UpdateNickInHealthbox 39→13 · BattleLoad*Mon
 ⚠️ Nuance oracle : battle_transition.c ~90 « absents » = structure custom
 name-mismatch, 7 transitions réellement portées — ne pas surévaluer.
 
+## A-ter. DOUBLES — LOGIQUE DU TOUR : différentiel complet (2026-07-12)
+
+**Verdict : ~95 % 1:1.** Confrontés et FIDÈLES : HandleTurnActionSelectionState
+(cancel-partner, absents), SetActionsAndBattlersTurnOrder (switch/objets d'abord,
+tri 4 battlers), GetWhoStrikesFirst, Pursuit (2 opcodes), redirection cible morte
+(follow-me/Lightning Rod/RANDOM/absent→partenaire, bu.c:78-261), HandleFainted
+MonActions, MOVEEND_NEXT_TARGET, EXP split double (getexp c:3255-3428),
+checkteamslost, outcomes/textes doubles, IA ChooseMoveOrAction_Doubles (0/112
+deps suspectes). Seuls écarts (fixes intégrés au lot fin-de-combat EN VOL) :
+- **HasNoMonsToSwitch** : 2 ré-impl ad-hoc n'excluent pas les mons ON-FIELD ni
+  monToSwitchIntoId (bu.c:2262-2377) → prompt de remplaçant inexistant/softlock
+  quand banc vide + partenaire vivant ; branche TWO_OPPONENTS absente.
+- battlerPartyIndexes pré-switch : `= active` au lieu de `= gBattlerPartyIndexes
+  [active]` (bm.c:4241) → Soin Naturel réécrit le mauvais slot.
+Secondaires NON double-spécifiques (dette générale) : Cmd_switchindataupdate
+mince · forcerandomswitch branches link + _SwitchPartyMonSlots · TryClearRage
+Statuses stub.
+
 ## B. VAGUE C — lots restants (catégorie A, fichiers neufs inertes)
 
 Commande : `node scripts/transpile-c.cjs --file X.c` (ou `--batch a.c,b.c`).
