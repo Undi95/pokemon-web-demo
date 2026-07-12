@@ -1,5 +1,77 @@
 # FILE-OPUS — la file d'exécution « jeu complet par Opus, dirigé »
 
+# ⓪ DÉMARRE PILE ICI (passation Fable 5 → Opus, 2026-07-12)
+
+**État au moment de la passation** : quête principale câblée de bout en bout
+(boot officiel, CS, puzzles gyms, ShakeCamera, multi Steven lançable) ; combats
+simples validés de longue date ; **doubles : logique 1:1 à ~95 % (différentiel
+§A-ter), rendu en chantier (§A-bis)** ; dernier test user `launchTB(51)` = le
+combat se joue mais bugs frais ci-dessous. Vague C 292/330 fns. Pokénav : dossier
+§E.1 prêt. **Protocole par étape** : agent Opus sur spec fermée → `npx tsc
+--noEmit`=0 → oracles (callgraph/body-parity/E2E) → review du rapport → commit
+français signé du modèle actif → **test EN JEU par Undi sur GO explicite**
+(jamais pendant qu'un agent écrit). JAMAIS push. Contrat CLAUDE.md = loi.
+
+## ÉTAPE 1 — bugs frais du dernier test (logique double résiduelle) [D'ABORD]
+1.1 **Le remplaçant exécute l'attaque du mon sorti** (« j'ai switché mes 2 mons ;
+    Léviator fait Surf DÈS qu'il arrive ») : l'action `B_ACTION_USE_MOVE` du
+    battler n'est pas remplacée/consommée par le switch. Tracer le scénario
+    « 2 switches le même tour » pas à pas : HandleTurnActionSelectionState
+    (bm.c:4129 — quand l'action passe de move→switch, gChosenMove/gBattleStruct
+    ->chosenMovePositions doivent suivre), HandleAction_Switch (bu.c:294) et la
+    re-liaison des actions après send-out. Vérifier AUSSI que le fix
+    HasNoMonsToSwitch `1204283dc` est bien actif (le test user date d'AVANT ?
+    re-tester d'abord, la corruption expliquait des symptômes similaires).
+1.2 **Pacing** : « le temps de pause n'est pas respecté entre les attaques » —
+    comparer les opcodes pause/waitmessage/B_WAIT_TIME du script interpreter
+    (battle_script_commands.c Cmd_pause/Cmd_waitmessage/Cmd_waitstate + les
+    délais des printstring) au port : chercher les waits court-circuités
+    (delay compté en frames moteur vs réel ?).
+1.3 **Valider en jeu les fixes `1204283dc`** (victoire au dernier mon, musique
+    au retour) — pas encore confirmés par Undi.
+1.4 Transition d'entrée = §A-bis B2 (assets PokeballsTrail) — la seule erreur
+    console restante du boot combat.
+
+## ÉTAPE 2 — rendu combat (§A-bis, dans l'ordre) : A3 sprites qui disparaissent
+    (monbg/teamattack) → A4 barres PV stables (Q24.8 + CpuCopy32) → B2 assets
+    PokeballsTrail → B1 retrait-ball ancré bas (⚠ vérifier renderer y2 d'abord)
+    → B3 registry anims long tail. Test après chaque lot : launchTB(51) +
+    combat simple témoin (zéro régression single).
+
+## ÉTAPE 3 — outillage (déblocants) :
+3.1 **Chip user conservé : fix `stripC` avale `//*ptr` dans
+    audit-callgraph-closure.cjs** (le commentaire `//*dest = *ptr;` ouvre un
+    faux bloc → engloutit des centaines de lignes → dépendances fantômes).
+    Le fix existe déjà dans audit-body-parity.cjs (scanner un-passe) — le
+    reporter à l'identique. Puis relancer l'oracle global (les stats bougent).
+3.2 **`--merge` pour transpile-c.cjs** (§C) : LE déblocant des 168 fichiers
+    partiels. S'appuyer sur body-parity pour savoir quoi émettre.
+3.3 Whitelist body-parity (§F) : link|multi|recorded|tower/factory/tent/palace
+    → le top devient pure dette solo à consommer au fil de l'eau.
+
+## ÉTAPE 4 — vague C : lots 10-12 (mystery_gift srv/cli 32 fns, bard/braille 6,
+    reliquats) puis socle frontier ciblé (les refs-throw des lots 6-8) via
+    --merge ou transcription manuelle (§B).
+
+## ÉTAPE 5 — POKÉNAV (§E.1, priorité user) : L1 socle LoopedTask+substruct+
+    orchestrateur (jeter le squelette) → test bandeau/icônes → L3 Match Call
+    (le mieux loti) → L2 carte Hoenn (gros : moteur region_map.c entier) →
+    L4 Condition/Rubans en dernier.
+
+## ÉTAPE 6 — chemin critique, fermeture : valider en jeu multi Steven
+    (`launchStevenMulti()`) et le vrai double Lévy & Tatia (arène 7) ; scènes
+    climax §0.4 : rayquaza_scene.c (~120 fns, cat.B — après --merge) + météo
+    orbes (DoOrbEffect/WaitWeather) ; dettes visuelles Steven (back-pic).
+
+## ÉTAPE 7 — contenu : Contests (§E.2 : contest.ts état réel + UI cat.B —
+    contest_effect déjà prêt) puis Frontier (§E.3, après socle battle_tower).
+
+## ÉTAPE 8 — dettes §F au fil de l'eau + polish §A-bis C.
+
+**Critère de FIN : un run complet new game → Panthéon joué par Undi sans
+blocage ni « visiblement faux », E2E boot-overworld + double-battle verts,
+oracle body-parity sans dette solo-core non annotée.**
+
 > Rédigé par Fable 5 (2026-07-11, ~15 % de quota restant). Ce document transforme le
 > reste du chantier en **file exécutable par agents Opus** : chaque entrée = un
 > périmètre fermé + un prompt-type + ses oracles + ses critères d'arrêt.
