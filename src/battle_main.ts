@@ -5902,6 +5902,7 @@ export function ReturnFromBattleToOverworld(): void {
   TryEvolvePokemon, WaitForEvoSceneToFinish, ReturnFromBattleToOverworld,
   getBattleMainFunc, setBattleMainFunc,
   BattleScriptExecute, RunBattleScriptCommands_PopCallbacksStack,
+  BattleScriptPushCursorAndCallback, RunBattleScriptCommands,
   // Famille callback1 / inBattle / savedCallback : requise par battle-link-start
   // (_setMainCallback1 case 18), battle-cb2 (FreeRestoreBattleData) et battle-init
   // (setMainInBattle). setMainCallback1 écrit le runtime (gMain.callback1) → c'est

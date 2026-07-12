@@ -992,6 +992,21 @@ function _BattleScriptExecuteHFM(label: string): void {
   else console.warn('[handle-action] BattleScriptExecute hook absent (battle-main-functions pas chargé)');
 }
 
+/** 1:1 décomp `BattleScriptPushCursorAndCallback(label)` via le hook globalThis.
+ *  Contrairement à BattleScriptExecute, NE touche PAS gCurrentActionFuncId — requis
+ *  pour les abilities de switch-in (Intimidation/Trace/Forecast) dont le script finit
+ *  par `end3` : leur lanceur doit préserver l'action courante (B_ACTION_TRY_FINISH),
+ *  sinon au retour sous RunTurnActionsFunctions l'action reste USE_MOVE=0 → move
+ *  fantôme (bug double « le remplaçant attaque à l'arrivée »). Réf décomp
+ *  battle_util.c:2993 (INTIMIDATE1) / :3046 (TRACE) / :2946 (FORECAST) via
+ *  BattleScriptPushCursorAndCallback (:3192), à opposer à BattleScriptExecute (:3184). */
+function _BattleScriptPushCursorAndCallbackHFM(label: string): void {
+  const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as
+    { BattleScriptPushCursorAndCallback?: (l: string) => void } | undefined;
+  if (bm?.BattleScriptPushCursorAndCallback) bm.BattleScriptPushCursorAndCallback(label);
+  else console.warn('[handle-action] BattleScriptPushCursorAndCallback hook absent');
+}
+
 /** 1:1 inline du prédicat de `HasNoMonsToSwitch` : mon vivant (hp != 0), existant
  *  (species != SPECIES_NONE) et non-œuf — même triplet que Cmd_checkteamslost. */
 function _monIsSwitchable(mon: Parameters<typeof GetMonData>[0]): boolean {
@@ -1170,12 +1185,15 @@ export function HandleFaintedMonActions(): boolean {
         // le `return TRUE` (= le caller re-appelle au frame suivant).
         if (AbilityBattleEffects(ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0) !== 0) {
           const label = consumeAbilityWantedScript();
-          if (label) _BattleScriptExecuteHFM(label);
+          // 1:1 décomp battle_util.c:2993 : INTIMIDATE1 lance via
+          // BattleScriptPushCursorAndCallback (funcId préservé), script fini par end3.
+          if (label) _BattleScriptPushCursorAndCallbackHFM(label);
           return true;
         }
         if (AbilityBattleEffects(ABILITYEFFECT_TRACE, 0, 0, 0, 0) !== 0) {
           const label = consumeAbilityWantedScript();
-          if (label) _BattleScriptExecuteHFM(label);
+          // 1:1 décomp battle_util.c:3046 : TRACE via BattleScriptPushCursorAndCallback (end3).
+          if (label) _BattleScriptPushCursorAndCallbackHFM(label);
           return true;
         }
         if (ItemBattleEffects(ITEMEFFECT_NORMAL, 0, true) !== 0) {
@@ -1185,7 +1203,8 @@ export function HandleFaintedMonActions(): boolean {
         }
         if (AbilityBattleEffects(ABILITYEFFECT_FORECAST, 0, 0, 0, 0) !== 0) {
           const label = consumeAbilityWantedScript();
-          if (label) _BattleScriptExecuteHFM(label);
+          // 1:1 décomp battle_util.c:2946 : FORECAST via BattleScriptPushCursorAndCallback (end3).
+          if (label) _BattleScriptPushCursorAndCallbackHFM(label);
           return true;
         }
         gBattleStruct.faintedActionsState++;
