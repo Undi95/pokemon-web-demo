@@ -639,7 +639,18 @@ async function _ensureOppTrainerAsset(picEnum: string): Promise<void> {
   if (!entry) { console.warn('[sendout] trainer pic introuvable:', picEnum); return; }
   try {
     // 1:1 décomp : alloue des tiles LIBRES puis charge le front pic dedans.
+    // FIX garble reappear (2026-07-13) : nos healthboxes JOUEUR utilisent des tiles OBJ FIXES
+    // bas (0,32,64… ≈0-300) NON marqués au bitmap d'alloc → `AllocSpriteTiles` first-fit donnait
+    // tile 0 au dresseur RÉAPPARU en fin de combat, écrasant la box PV joueur (garble 1-2 frames,
+    // root-cause 2026-07-13 : trainer id13 tile==arckoBox id0 tile==0). On réserve la zone fixe
+    // (0x140, MÊME valeur établie que battle-decomp-loop.ts:569 « protège la zone healthbox/mons »)
+    // le temps de CETTE alloc UNIQUEMENT, puis on restaure : en fin de combat les anims sont finies
+    // → aucune régression du budget tuiles anim (≠ marquage permanent, qui re-casserait les anims).
+    const _gRT = globalThis as Record<string, unknown>;
+    const _savedReservedTiles = (_gRT.gReservedSpriteTileCount as number) ?? 0;
+    _gRT.gReservedSpriteTileCount = 0x140;
     _oppTrainerTileStart = AllocSpriteTiles(OPP_TRAINER_TILE_COUNT);
+    _gRT.gReservedSpriteTileCount = _savedReservedTiles;
     if (_oppTrainerTileStart < 0) { console.warn('[sendout] pas de tiles VRAM libres pour le dresseur adverse'); return; }
     AllocSpriteTileRange(TAG_OPP_TRAINER, _oppTrainerTileStart, OPP_TRAINER_TILE_COUNT);
     const loaded = await rt.LoadCompressedSpriteSheet('/decomp/em/' + entry.png, _oppTrainerTileStart * 32);
