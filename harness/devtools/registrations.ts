@@ -305,6 +305,19 @@ function registerJeu(): void {
       id: 'jeu.refresh', category: 'jeu', label: '⟳ Recharger la page',
       run: () => { window.location.reload(); },
     },
+    {
+      // Remplace CTRL+ALT+R : vide TOUTES les Cache API (decomp-net + packs, toutes versions)
+      // puis recharge. À utiliser quand le cache d'assets sert de vieux octets après régé.
+      id: 'jeu.cacherefresh', category: 'jeu', label: '🗑 Vide cache + recharger',
+      run: async () => {
+        const dn = (window as unknown as { __decompNet?: { clear?: () => Promise<unknown> } }).__decompNet;
+        try { if (dn?.clear) await dn.clear(); } catch { /* noop */ }
+        if ('caches' in window) {
+          try { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); } catch { /* noop */ }
+        }
+        window.location.reload();
+      },
+    },
   ]);
 }
 
