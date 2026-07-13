@@ -26,7 +26,8 @@ import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
 import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
 import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources, gPokenavResources } from './pokenav_resources';
-import { IsActiveMenuLoopTaskActive } from './pokenav_main_menu';
+import { IsActiveMenuLoopTaskActive, InitPokenavMainMenu, PokenavMainMenuLoopedTaskIsActive, ShutdownPokenav, WaitForPokenavShutdownFade, SetActiveMenuLoopTasks, RunMainMenuLoopedTask } from './pokenav_main_menu';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 // ─── Table PokenavMenuCallbacks[15] (pokenav.c:52) : les 59 callbacks des 7 familles de menus,
 //     tous déjà portés dans les subscreens. Imports 1:1 par fichier. ─────────────────────────
 import { GetMenuHandlerCallback, FreeMenuHandlerSubstruct1, PokenavCallback_Init_ConditionMenu, PokenavCallback_Init_ConditionSearchMenu, PokenavCallback_Init_MainMenuCursorOnMap, PokenavCallback_Init_MainMenuCursorOnMatchCall, PokenavCallback_Init_MainMenuCursorOnRibbons } from './pokenav_menu_handler';
@@ -243,10 +244,99 @@ export function InitKeys_(): void {
   if (rt) InitKeys(rt);
 }
 
-// ─── À PORTER (Opus) — noms 1:1 pokenav.c, oracle callgraph pour la liste ────
-// Task_Pokenav (:434 state machine) · SetActivePokenavMenu (:506) — les 2 tirent la
-// table PokenavMenuCallbacks[15] (:52 → callbacks pokenav_menu_handler.c/subscreens) = LE crux.
-// CB2_Pokenav/VBlankCB_Pokenav réels (:417/:425)
+/** 1:1 `#define POKENAV_MENU_IDS_START 100000` (pokenav.h:116) + `POKENAV_MAIN_MENU` (:119). */
+const POKENAV_MENU_IDS_START = 100000;
+const POKENAV_MAIN_MENU = POKENAV_MENU_IDS_START;
+/** 1:1 `#define POKENAV_MENU_FUNC_EXIT -1` (pokenav.h:269). */
+const POKENAV_MENU_FUNC_EXIT = -1;
+
+/** 1:1 décomp `static bool32 SetActivePokenavMenu(u32 menuId)` (pokenav.c:506) : active le menu
+ *  `menuId` (init → open → pose loop tasks + callback courant). Retourne false si init/open échoue. */
+export function SetActivePokenavMenu(menuId: number): boolean {
+  const index = menuId - POKENAV_MENU_IDS_START;
+
+  InitKeys_();
+  if (!PokenavMenuCallbacks[index].init())
+    return false;
+  if (!PokenavMenuCallbacks[index].open())
+    return false;
+
+  SetActiveMenuLoopTasks(PokenavMenuCallbacks[index].createLoopTask, PokenavMenuCallbacks[index].isLoopTaskActive);
+  gPokenavResources!.currentMenuCb1 = PokenavMenuCallbacks[index].callback;
+  gPokenavResources!.currentMenuIndex = index;
+  return true;
+}
+
+/** 1:1 décomp `static void Task_Pokenav(u8 taskId)` (pokenav.c:434) : la state machine principale
+ *  (`tState` = `data[0]`). ADAPTATION MOTEUR : task = objet (`task.data`) ; retour field = import
+ *  dynamique overworld (évite le cycle pokenav↔overworld, même pattern que CB2_Pokenav). INERTE
+ *  tant que le vrai CB2_InitPokeNav ne fait pas `CreateTask(Task_Pokenav)`. */
+export function Task_Pokenav(task: DecompTask): void {
+  let menuId: number;
+  const data = task.data;
+
+  switch (data[0]) {
+  case 0:
+    InitPokenavMainMenu();
+    data[0] = 1;
+    break;
+  case 1:
+    // Wait for LoopedTask_InitPokenavMenu to finish
+    if (PokenavMainMenuLoopedTaskIsActive())
+      break;
+    SetActivePokenavMenu(POKENAV_MAIN_MENU);
+    data[0] = 4;
+    break;
+  case 2:
+    if (IsActiveMenuLoopTaskActive())
+      break;
+    data[0] = 3;
+    // fallthrough 1:1 (pas de break après case 2 dans le décomp)
+  case 3:
+    menuId = GetCurrentMenuCB();
+    if (menuId === POKENAV_MENU_FUNC_EXIT) {
+      ShutdownPokenav();
+      data[0] = 5;
+    } else if (menuId >= POKENAV_MENU_IDS_START) {
+      PokenavMenuCallbacks[gPokenavResources!.currentMenuIndex].free2();
+      PokenavMenuCallbacks[gPokenavResources!.currentMenuIndex].free1();
+      if (SetActivePokenavMenu(menuId)) {
+        data[0] = 4;
+      } else {
+        ShutdownPokenav();
+        data[0] = 5;
+      }
+    } else if (menuId !== 0) {
+      RunMainMenuLoopedTask(menuId);
+      if (IsActiveMenuLoopTaskActive())
+        data[0] = 2;
+    }
+    break;
+  case 4:
+    if (!IsActiveMenuLoopTaskActive_())
+      data[0] = 3;
+    break;
+  case 5:
+    if (!WaitForPokenavShutdownFade()) {
+      const calledFromScript = (gPokenavResources!.mode !== POKENAV_MODE_NORMAL);
+
+      FreeMenuHandlerSubstruct1();
+      FreePokenavResources();
+      const rt = getRuntime();
+      void import('./overworld').then((m) => {
+        const cb = calledFromScript ? m.CB2_ReturnToFieldContinueScript_Manual : m.CB2_ReturnToFieldWithOpenMenu_Manual;
+        if (rt && cb) rt.SetMainCallback2(cb as never);
+      }).catch((e) => console.error('[pokenav Task_Pokenav return-field]', e));
+    }
+    break;
+  }
+}
+
+// ─── À PORTER (Opus) — noms 1:1 pokenav.c ────
+// Le vrai CB2_InitPokeNav (:315 : crée gPokenavResources via InitPokenavResources +
+// CreateTask(Task_Pokenav) + gfx) remplaçant le squelette — BLOQUÉ par les stubs gfx/assets
+// de InitPokenavMainMenu (pokenav_main_menu.c : DecompressAndCopyTileDataToVram, gPokenavHeader_*).
+// CB2_Pokenav/VBlankCB_Pokenav réels (:417/:425).
 // pokenav_main_menu.c ENTIER (bandeau/icônes) · pokenav_menu_handler_1/2.c (navigation) ·
 // subscreens region_map/conditions/match_call/ribbons. JOY_NEW/dpad : cf. option_menu.ts.
 void JOY_NEW;
