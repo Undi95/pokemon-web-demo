@@ -25,6 +25,12 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
 import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
+import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources } from './pokenav_resources';
+import { gPlayerParty, GetMonData, PARTY_SIZE } from './engine/battle/party-storage';
+import { MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG, MON_DATA_RIBBON_COUNT } from '../include/pokemon';
+import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
+import { CheckBoxMonSanityAt, GetBoxMonDataAt } from './pokemon_storage_system';
+import { InitKeys } from '../harness/runtime/decomp-runtime';
 
 // 1:1 décomp pokenav.h POKENAV_MENU_* (entrées du menu principal, base).
 // Libellés FR statiques (les gText_Pokenav* ne sont pas dans decomp-strings (harness) —
@@ -106,10 +112,61 @@ export function StartMenu_OpenPokenav(): void {
   if (rt) rt.SetMainCallback2(CB2_InitPokeNav as never);
 }
 
+// ─── Lifecycle des ressources (pokenav.c) — transcription 1:1 (inerte tant que le vrai
+//     CB2_InitPokeNav/Task_Pokenav n'appelle pas encore InitPokenavResources) ──────────
+
+/** 1:1 décomp pokenav.h:67 `POKENAV_MODE_NORMAL` (Pokénav ouvert depuis le Start menu). */
+const POKENAV_MODE_NORMAL = 0;
+
+/** 1:1 décomp `static bool32 AnyMonHasRibbon(void)` (pokenav.c:388) : un mon (équipe ou boîte
+ *  PC) porte-t-il au moins un ruban ? (`as number` = convention repo pour GetMonData). */
+export function AnyMonHasRibbon(): boolean {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if ((GetMonData(gPlayerParty[i], MON_DATA_SANITY_HAS_SPECIES) as number)
+      && !(GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_EGG) as number)
+      && (GetMonData(gPlayerParty[i], MON_DATA_RIBBON_COUNT) as number) !== 0) {
+      return true;
+    }
+  }
+
+  for (let j = 0; j < TOTAL_BOXES_COUNT; j++) {
+    for (let i = 0; i < IN_BOX_COUNT; i++) {
+      if (CheckBoxMonSanityAt(j, i)
+        && GetBoxMonDataAt(j, i, MON_DATA_RIBBON_COUNT) !== 0) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/** 1:1 décomp `static void InitPokenavResources(struct PokenavResources *resources)` (pokenav.c:375). */
+export function InitPokenavResources(resources: PokenavResources): void {
+  for (let i = 0; i < POKENAV_SUBSTRUCT_COUNT; i++)
+    resources.substructPtrs[i] = null;
+
+  resources.mode = POKENAV_MODE_NORMAL;
+  resources.currentMenuIndex = 0;
+  resources.hasAnyRibbons = AnyMonHasRibbon();
+  resources.currentMenuCb1 = null;
+}
+
+/** 1:1 décomp `static void FreePokenavResources(void)` (pokenav.c:364) : libère les substructs +
+ *  `FREE_AND_SET_NULL(gPokenavResources)` (= `_setGPokenavResources(null)`) + `InitKeys()`. */
+export function FreePokenavResources(): void {
+  for (let i = 0; i < POKENAV_SUBSTRUCT_COUNT; i++)
+    FreePokenavSubstruct(i);
+
+  _setGPokenavResources(null);
+  // ADAPTATION MOTEUR : le port passe `rt` à InitKeys (cf. CB2_InitPokeNav:44, scenes InitKeys(this.rt)).
+  const rt = getRuntime();
+  if (rt) InitKeys(rt);
+}
+
 // ─── À PORTER (Opus) — noms 1:1 pokenav.c, oracle callgraph pour la liste ────
-// InitPokenavResources (:352) · FreePokenavResources (:369) · Task_Pokenav (:428)
-// GetCurrentMenuCB (:527) · CreateLoopedTask/IsLoopedTaskActive (:250-290)
-// SetActivePokenavMenu (:487) · pokenav_main_menu.c ENTIER (bandeau/icônes)
-// pokenav_menu_handler_1/2.c (navigation) · subscreens region_map/conditions/
-// match_call/ribbons. JOY_NEW/dpad : cf. option_menu.ts pattern.
+// Task_Pokenav (:434 state machine) · GetCurrentMenuCB (:527) · SetActivePokenavMenu (:506)
+// IsActiveMenuLoopTaskActive_ (:522) · CB2_Pokenav/VBlankCB_Pokenav réels (:417/:425)
+// pokenav_main_menu.c ENTIER (bandeau/icônes) · pokenav_menu_handler_1/2.c (navigation) ·
+// subscreens region_map/conditions/match_call/ribbons. JOY_NEW/dpad : cf. option_menu.ts.
 void JOY_NEW;
