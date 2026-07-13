@@ -25,7 +25,8 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
 import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
-import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources } from './pokenav_resources';
+import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources, gPokenavResources } from './pokenav_resources';
+import { IsActiveMenuLoopTaskActive } from './pokenav_main_menu';
 import { gPlayerParty, GetMonData, PARTY_SIZE } from './engine/battle/party-storage';
 import { MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG, MON_DATA_RIBBON_COUNT } from '../include/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
@@ -164,9 +165,28 @@ export function FreePokenavResources(): void {
   if (rt) InitKeys(rt);
 }
 
+/** 1:1 décomp `static u32 IsActiveMenuLoopTaskActive_(void)` (pokenav.c:522) : wrapper
+ *  sur `IsActiveMenuLoopTaskActive` (pokenav_main_menu.c). */
+export function IsActiveMenuLoopTaskActive_(): number {
+  return IsActiveMenuLoopTaskActive();
+}
+
+/** 1:1 décomp `static u32 GetCurrentMenuCB(void)` (pokenav.c:527) : appelle le callback du menu
+ *  courant (`currentMenuCb1`, posé par SetActivePokenavMenu — inerte tant que non porté). */
+export function GetCurrentMenuCB(): number {
+  return gPokenavResources!.currentMenuCb1!();
+}
+
+/** 1:1 décomp `static void InitKeys_(void)` (pokenav.c:532). ADAPTATION MOTEUR : `rt` via getRuntime. */
+export function InitKeys_(): void {
+  const rt = getRuntime();
+  if (rt) InitKeys(rt);
+}
+
 // ─── À PORTER (Opus) — noms 1:1 pokenav.c, oracle callgraph pour la liste ────
-// Task_Pokenav (:434 state machine) · GetCurrentMenuCB (:527) · SetActivePokenavMenu (:506)
-// IsActiveMenuLoopTaskActive_ (:522) · CB2_Pokenav/VBlankCB_Pokenav réels (:417/:425)
+// Task_Pokenav (:434 state machine) · SetActivePokenavMenu (:506) — les 2 tirent la
+// table PokenavMenuCallbacks[15] (:52 → callbacks pokenav_menu_handler.c/subscreens) = LE crux.
+// CB2_Pokenav/VBlankCB_Pokenav réels (:417/:425)
 // pokenav_main_menu.c ENTIER (bandeau/icônes) · pokenav_menu_handler_1/2.c (navigation) ·
 // subscreens region_map/conditions/match_call/ribbons. JOY_NEW/dpad : cf. option_menu.ts.
 void JOY_NEW;
