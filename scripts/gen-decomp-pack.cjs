@@ -35,6 +35,13 @@ const OUT_DIR = path.join(PUB, 'packs');
 const GROUPS = ['field_effects', 'door_anims', 'object_events', 'map_popup'];
 // Categories de tilesets dont CHAQUE sous-dossier devient 1 pack.
 const TILESET_CATS = ['primary', 'secondary'];
+// Sous-dossiers CIBLES d'un parent (cherry-pick : evite les sous-dossiers source/sur-fetch).
+// Mesure en jeu (cache boot) : battle_anims/backgrounds=90/97 charges (showmon), sprites=battle-time,
+// ui/text_window=20/23. EXCLUS : battle_anims/sprites-src (SOURCE, 0 runtime), ui/fonts (4/21 = sur-fetch).
+const SUBFOLDER_PACKS = [
+  { parent: 'battle_anims', subs: ['backgrounds', 'sprites'] },
+  { parent: 'ui', subs: ['text_window'] },
+];
 
 /** Chemin absolu -> URL decomp ('/decomp/…', separateurs POSIX). */
 function toDecompUrl(abs) {
@@ -89,6 +96,10 @@ function main() {
     for (const sub of fs.readdirSync(catDir, { withFileTypes: true })) {
       if (sub.isDirectory()) log(`tilesets/${cat}/${sub.name}`, packFolder(path.join(catDir, sub.name), `tilesets_${cat}_${sub.name}`, packs));
     }
+  }
+
+  for (const { parent, subs } of SUBFOLDER_PACKS) {
+    for (const sub of subs) log(`${parent}/${sub}`, packFolder(path.join(EM, parent, sub), `${parent}_${sub}`, packs));
   }
 
   fs.writeFileSync(path.join(PUB, 'packs.json'), JSON.stringify({ version: 2, generated: 'gen-decomp-pack.cjs', packs }));
