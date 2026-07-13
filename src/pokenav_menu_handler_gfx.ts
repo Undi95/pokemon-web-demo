@@ -1133,16 +1133,17 @@ function AreMenuOptionSpritesMoving(): boolean {
 
 /** 1:1 `static void StartOptionSlide(struct Sprite **sprites, s32 startX, s32 endX, s32 time)` (pokenav_menu_handler_gfx.c:990-1004). */
 function StartOptionSlide(sprites: any, startX: number, endX: number, time: number): void {
-  let i = 0;
-  for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
-  {
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->x = startX */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sSlideTime = time */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sSlideAccel = 16 * (endX - startX) / time */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sSlideSpeed = 16 * startX */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sSlideEndX = endX */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->callback = SpriteCB_OptionSlide */;
-    sprites++ /* TRANSPILER-TODO ptr-arith */;
+  // 1:1 fix transpileur (deref ptr-de-ptr + ptr-arith laissés en `void 0`). sprites = tableau de subsprites.
+  // sSlideTime=data[0] · sSlideAccel=data[1] · sSlideSpeed=data[2] · sSlideEndX=data[7] (cf. SpriteCB_OptionSlide).
+  for (let i = 0; i < NUM_OPTION_SUBSPRITES; i++) {
+    const s = sprites && sprites[i];
+    if (!s) continue;
+    s.x = startX;
+    s.data[0] = time;
+    s.data[1] = Math.trunc(16 * (endX - startX) / time);
+    s.data[2] = 16 * startX;
+    s.data[7] = endX;
+    s.callback = SpriteCB_OptionSlide;
   }
 }
 
@@ -1193,12 +1194,10 @@ function StartOptionZoom(sprites: any): void {
 
 /** 1:1 `static void SetOptionInvisibility(struct Sprite **sprites, bool32 invisible)` (pokenav_menu_handler_gfx.c:1044-1053). */
 function SetOptionInvisibility(sprites: any, invisible: boolean): void {
-  let i = 0;
-  for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
-  {
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->invisible = invisible */;
-    sprites++ /* TRANSPILER-TODO ptr-arith */;
-  }
+  // 1:1 `(*sprites)->invisible = invisible; sprites++` — sprites = tableau de subsprites (struct Sprite**),
+  // le transpileur avait laissé l'assign en `void 0` (no-op) + `sprites++` → les icônes restaient invisibles.
+  for (let i = 0; i < NUM_OPTION_SUBSPRITES; i++)
+    if (sprites && sprites[i]) sprites[i].invisible = invisible;
 }
 
 /** 1:1 `static void SpriteCB_OptionSlide(struct Sprite *sprite)` (pokenav_menu_handler_gfx.c:1055-1068). */
