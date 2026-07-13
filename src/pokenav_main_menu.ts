@@ -38,19 +38,27 @@ import { CreateLoopedTask } from './pokenav_looped_task'; // câblé (ex-__wireT
 /** 1:1 `bg.c DecompressAndCopyTileDataToVram(bg, src, size, offset, mode)` — ADAPTATION MOTEUR
  *  (template mail.ts:1060) : l'asset est déjà décompressé (raw 4bpp) → copy direct en VRAM @
  *  charBase*0x4000 du BG. `src == null` (asset pas encore wiré) = no-op. */
-function DecompressAndCopyTileDataToVram(bg: number, src: Uint8Array | null, _size: number, _offset: number, _mode: number): void {
+export function DecompressAndCopyTileDataToVram(bg: number, src: Uint8Array | Uint16Array | null, _size: number, _offset: number, mode: number): void {
   if (!src) return;
   const rt = getRuntime();
   if (!rt) return;
-  const bgTmpl = gPokenavMainMenuBgTemplates[bg];
-  if (!bgTmpl) return;
-  const dest = bgTmpl.charBaseIndex * 0x4000;
-  rt.gba.vram.set(src.subarray(0, Math.min(src.length, rt.gba.vram.length - dest)), dest);
+  if (!mode) {
+    // mode 0 = TUILES → char VRAM au charBase DU bg (lu depuis SON config posé par InitBgFromTemplate).
+    // AVANT (bug) : `gPokenavMainMenuBgTemplates[bg]` n'a que le bg 0 (bandeau) → undefined sur bg 1/2/3
+    // (message/device/dots du menu-handler) → return no-op → tuiles JAMAIS uploadées = couleurs fausses.
+    const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
+    const dest = (cfg.charBaseIndex ?? 0) * 0x4000;
+    const bytes = src as Uint8Array;
+    rt.gba.vram.set(bytes.subarray(0, Math.min(bytes.length, rt.gba.vram.length - dest)), dest);
+  } else {
+    // mode != 0 = TILEMAP → buffer tilemap du bg (1:1 comme CopyToBgTilemapBuffer, lu par le compositor).
+    CopyToBgTilemapBuffer(bg, src as Uint16Array, 0, 0);
+  }
 }
 const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
 /** 1:1 `bg.c FreeTempTileDataBuffersIfPossible()` — ADAPTATION MOTEUR (mail.ts:1050) : upload
  *  synchrone (pas de defer queue) → toujours « done » → FALSE. */
-function FreeTempTileDataBuffersIfPossible(): boolean {
+export function FreeTempTileDataBuffersIfPossible(): boolean {
   return false;
 }
 /** 1:1 `u32 GetBgY(u8 bg)` (bg.c:GetBgY, renvoie `sGpuBgConfigs2[bg].bg_y` en Q_8_8).
@@ -75,7 +83,7 @@ const ResetBldCnt_: any = __wireTodo('ResetBldCnt_');
 /** 1:1 `bg.c SetBgTilemapBuffer(bg, buffer)` — ADAPTATION MOTEUR (mail.ts:1018) : le buffer tilemap
  *  du BG est géré direct par le moteur (copy via CopyBgTilemapBufferToVram), donc no-op (équiv 1:1,
  *  pas de pointer-stash). */
-function SetBgTilemapBuffer(_bg: number, _buffer: Uint8Array): void {
+export function SetBgTilemapBuffer(_bg: number, _buffer: Uint8Array): void {
   /* no-op */
 }
 const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
@@ -615,10 +623,10 @@ export function FadeToBlackExceptPrimary(): void {
 }
 
 /** 1:1 `void InitBgTemplates(const struct BgTemplate *templates, int count)` (pokenav_main_menu.c:542-548). */
-export function InitBgTemplates(templates: BgTemplate, count: number): void {
+export function InitBgTemplates(templates: BgTemplate[], count: number): void {
   let i = 0;
   for (i = 0; i < count; i++)
-    InitBgFromTemplate(templates++ /* TRANSPILER-TODO ptr-arith */);
+    InitBgFromTemplate(templates[i]); // 1:1 décomp `InitBgFromTemplate(templates++)` = i-ème template (fix bug transpileur ptr-arith)
 }
 
 /** 1:1 `static void InitHelpBar(void)` (pokenav_main_menu.c:550-559). */
@@ -776,6 +784,11 @@ function LoadLeftHeaderGfxForMenu(menuGfxId: number): void {
   let size = 0;
   let tag = 0;
   if (menuGfxId >= POKENAV_GFX_SUBMENUS_START)
+    return;
+  // ADAPTATION MOTEUR : la table sMenuLeftHeaderSpriteSheets n'est câblée que pour hoenn_map (L1) —
+  // les autres entrées catégorie (main_menu/condition/match_call/ribbons) = assets left_headers/* à
+  // câbler (chantier suivant). Skip proprement si absente (sinon `.tag` de undefined → crash + re-run).
+  if (!sMenuLeftHeaderSpriteSheets[menuGfxId])
     return;
   menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
   tag = sMenuLeftHeaderSpriteSheets[menuGfxId].tag;

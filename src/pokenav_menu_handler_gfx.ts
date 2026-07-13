@@ -43,41 +43,26 @@ import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 import { GetWordTaskArg, SetWordTaskArg } from './task';
+import { AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, HideMainOrSubMenuLeftHeader, InitBgTemplates, IsPaletteFadeActive, LoadLeftHeaderGfxForIndex, PokenavCopyPalette, PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ShowLeftHeaderGfx, SlideMenuHeaderUp, WaitForHelpBar, DecompressAndCopyTileDataToVram, FreeTempTileDataBuffersIfPossible, SetBgTilemapBuffer } from './pokenav_main_menu';
+import { GetCurrentMenuItemId, GetHelpBarTextId, GetPokenavCursorPos, GetPokenavMenuType } from './pokenav_menu_handler';
+import { GetMatchTableMapSectionId, IsRematchEntryRegistered } from './pokenav_match_call_list';
+import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+import { getRuntime } from '../harness/runtime/decomp-globals';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 // 1:1 include/sprite.h:130,136 — builders `union AffineAnimCmd` (défaut local, à consolider include/).
 const AFFINEANIMCMD_END = { type: 0x7FFF /* AFFINEANIMCMDTYPE_END */ };
 const AFFINEANIMCMD_FRAME = (xScale: number, yScale: number, rotation: number, duration: number) => ({ frame: { xScale, yScale, rotation, duration } });
-const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
 const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetCurrentMenuItemId: any = __wireTodo('GetCurrentMenuItemId');
-const GetHelpBarTextId: any = __wireTodo('GetHelpBarTextId');
-const GetMatchTableMapSectionId: any = __wireTodo('GetMatchTableMapSectionId');
-const GetPokenavCursorPos: any = __wireTodo('GetPokenavCursorPos');
-const GetPokenavMenuType: any = __wireTodo('GetPokenavMenuType');
-const HideMainOrSubMenuLeftHeader: any = __wireTodo('HideMainOrSubMenuLeftHeader');
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const IsRematchEntryRegistered: any = __wireTodo('IsRematchEntryRegistered');
-const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
-const PokenavCopyPalette: any = __wireTodo('PokenavCopyPalette');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
 const REG_WIN0H: any = __wireTodo('REG_WIN0H');
-const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
 const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
-const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
-const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
-const SlideMenuHeaderUp: any = __wireTodo('SlideMenuHeaderUp');
-const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
-const gPokenavMessageBox_Gfx: any = __wireTodo('gPokenavMessageBox_Gfx');
-const gPokenavMessageBox_Pal: any = __wireTodo('gPokenavMessageBox_Pal');
-const gPokenavMessageBox_Tilemap: any = __wireTodo('gPokenavMessageBox_Tilemap');
-const gPokenavOptions_Gfx: any = __wireTodo('gPokenavOptions_Gfx');
-const gPokenavOptions_Pal: any = __wireTodo('gPokenavOptions_Pal');
+// 1:1 wrapper pokénav `static void SetVBlankCallback_(IntrCallback cb) { SetVBlankCallback(cb); }`
+// (suffixe `_` = wrapper pokénav autour de la fn globale, cf. InitKeys_).
+function SetVBlankCallback_(cb: any): void { getRuntime()?.SetVBlankCallback(cb); }
+let gPokenavMessageBox_Gfx: any = null; // ADAPTATION : asset chargé async (chantier menu-content L2)
+let gPokenavMessageBox_Pal: any = null; // ADAPTATION : asset chargé async (chantier menu-content L2)
+let gPokenavMessageBox_Tilemap: any = null; // ADAPTATION : asset chargé async (chantier menu-content L2)
+let gPokenavOptions_Gfx: any = null; // ADAPTATION : asset chargé async (chantier menu-content L2)
+let gPokenavOptions_Pal: any = new Uint16Array(0x100); // placeholder (zéros) — asset réel chargé en STEP B (chantier menu-content L2)
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const REMATCH_TABLE_ENTRIES = 78; // 1:1 include/constants/rematches.h:0 (à consolider dans include/)
@@ -224,19 +209,19 @@ const sPokenavOptionsSpriteSheets = [
 /** 1:1 (pokenav_menu_handler_gfx.c:166) */
 const sPokenavOptionsSpritePalettes = [
   {
-    data: gPokenavOptions_Pal[0x00] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    data: gPokenavOptions_Pal.subarray(0x00) /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
     tag: PALTAG_OPTIONS_DEFAULT },
   {
-    data: gPokenavOptions_Pal[0x10] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    data: gPokenavOptions_Pal.subarray(0x10) /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
     tag: PALTAG_OPTIONS_BLUE },
   {
-    data: gPokenavOptions_Pal[0x20] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    data: gPokenavOptions_Pal.subarray(0x20) /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
     tag: PALTAG_OPTIONS_PINK },
   {
-    data: gPokenavOptions_Pal[0x30] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    data: gPokenavOptions_Pal.subarray(0x30) /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
     tag: PALTAG_OPTIONS_BEIGE },
   {
-    data: gPokenavOptions_Pal[0x40] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    data: gPokenavOptions_Pal.subarray(0x40) /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
     tag: PALTAG_OPTIONS_RED },
   {
     data: sMatchCallBlueLightPal,
@@ -564,11 +549,63 @@ function GetCurrentLoopedTaskActive(): boolean {
   return IsLoopedTaskActive(gfx.loopedTaskId);
 }
 
+// ─── ADAPTATION MOTEUR : modèle sprite PLAT (pas de `sprite.oam` nested) — `.oam.tileNum` = tileBase/
+//     sheetTileStart + tuile OAM, `.oam.paletteNum` = paletteBank via oamIndex (cf. battle_anim + note
+//     mémoire « .oam.paletteNum n'existe pas → paletteBank via oamIndex »). ───
+function _spriteOamTileNumSet(sprite: any, v: number): void {
+  if (!sprite) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam) oam.tileId = v;
+  sprite.tileBase = v;
+  sprite.sheetTileStart = v;
+}
+function _spriteOamPaletteNumSet(sprite: any, n: number): void {
+  if (!sprite) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam) oam.paletteBank = n;
+}
+
+// ─── ADAPTATION MOTEUR : chargement async des assets du menu (« mapping gfx→binaires », micro-tâche L1
+//     §E.1). La ROM les a en INCBIN ; ici on fetch message/device/dots/options/blue_light depuis
+//     public/decomp/em/pokenav/ puis on peuple les statics + reconstruit les 2 structures sprite/palette
+//     (qui capturaient null/placeholder au module-load). Gate LT_PAUSE en case 0 (comme le bandeau). ───
+let _pokenavMenuGfxLoaded = false;
+function _pokenavLoadMenuGraphics(): void {
+  if (_pokenavMenuGfxLoaded) return;
+  const B = '/decomp/em/pokenav/';
+  void (async () => {
+    try {
+      const [mGfx, mPal, mTm, dGfx, dPal, dTm, bGfx, bPal, bTm, oGfx, oPal, blGfx] = await Promise.all([
+        loadTileBin(B + 'message.png', 4), extractPngPlte(B + 'message.png'), loadTilemapBin(B + 'message.bin'),
+        loadTileBin(B + 'device_outline.png', 4), extractPngPlte(B + 'device_outline.png'), loadTilemapBin(B + 'device_outline_map.bin'),
+        loadTileBin(B + 'bg_dots.png', 4), extractPngPlte(B + 'bg_dots.png'), loadTilemapBin(B + 'bg_dots.bin'),
+        loadTileBin(B + 'options/options.bin', 4), loadGbaPal(B + 'options/options.pal'),
+        loadTileBin(B + 'blue_light.png', 4),
+      ]);
+      gPokenavMessageBox_Gfx = mGfx; gPokenavMessageBox_Pal = mPal; gPokenavMessageBox_Tilemap = mTm;
+      sPokenavDeviceBgTiles = dGfx; sPokenavDeviceBgPal = dPal; sPokenavDeviceBgTilemap = dTm;
+      sPokenavBgDotsTiles = bGfx; sPokenavBgDotsPal = bPal; sPokenavBgDotsTilemap = bTm;
+      gPokenavOptions_Gfx = oGfx; gPokenavOptions_Pal = oPal; sMatchCallBlueLightTiles = blGfx;
+      // reconstruire les structures qui capturaient les assets au module-load :
+      (sPokenavOptionsSpriteSheets[0] as any).data = oGfx;
+      (sPokenavOptionsSpriteSheets[1] as any).data = blGfx;
+      for (let i = 0; i < sPokenavOptionsSpritePalettes.length; i++)
+        (sPokenavOptionsSpritePalettes[i] as any).data = oPal.subarray(i * 0x10);
+    } catch (e) {
+      console.error('[pokenav menu gfx load]', e);
+    } finally {
+      _pokenavMenuGfxLoaded = true;
+    }
+  })();
+}
+
 /** 1:1 `static u32 LoopedTask_OpenMenu(s32 state)` (pokenav_menu_handler_gfx.c:448-555). */
 function LoopedTask_OpenMenu(state: number): number {
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
   switch (state) {
     case 0:
+      // ADAPTATION MOTEUR : attendre le chargement async des assets menu (la ROM les a inline).
+      if (!_pokenavMenuGfxLoaded) { _pokenavLoadMenuGraphics(); return LT_PAUSE; }
       InitBgTemplates(sPokenavMainMenuBgTemplates, sPokenavMainMenuBgTemplates.length);
       DecompressAndCopyTileDataToVram(1, gPokenavMessageBox_Gfx, 0, 0, 0);
       SetBgTilemapBuffer(1, gfx.bg1TilemapBuffer);
@@ -926,6 +963,10 @@ function CreateMenuOptionSprites(): void {
   let i = 0;
   let j = 0;
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
+  // Adaptation moteur : substruct alloué `{}` (AllocSubstruct, pas calloc) → init explicite du 2D
+  // `struct Sprite *iconSprites[MAX_POKENAV_MENUITEMS][NUM_OPTION_SUBSPRITES]` (zéro-init 1:1 calloc).
+  gfx.iconSprites = Array.from({ length: MAX_POKENAV_MENUITEMS }, () => new Array(NUM_OPTION_SUBSPRITES).fill(null));
+  gfx.iconVisible = new Array(MAX_POKENAV_MENUITEMS).fill(0); // idem `u8 iconVisible[MAX_POKENAV_MENUITEMS]` (zéro-init calloc)
   for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
   {
     for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
@@ -966,16 +1007,19 @@ function DrawOptionLabelGfx(optionGfx: any, yPos: number, deltaY: number): void 
   let baseTile = GetSpriteTileStartByTag(GFXTAG_OPTIONS);
   for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
   {
-    if (optionGfx /* TRANSPILER-TODO deref */ != null)
+    // 1:1 `const u16 *const *optionGfx` : `optionGfx[i]` = i-ème paire [tileOffset, palOffset]
+    // (le `optionGfx++` du décomp = passage à l'entrée suivante ; fix bugs transpileur ptr-of-ptr + deref).
+    if (optionGfx[i] != null)
     {
       for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
       {
-        gfx.iconSprites[i][j].oam.tileNum = (optionGfx /* TRANSPILER-TODO deref */)[0] + baseTile + 8 * j;
-        gfx.iconSprites[i][j].oam.paletteNum = IndexOfSpritePaletteTag((optionGfx /* TRANSPILER-TODO deref */)[1] + PALTAG_OPTIONS_START);
-        gfx.iconSprites[i][j].invisible = true;
-        gfx.iconSprites[i][j].y = yPos;
-        gfx.iconSprites[i][j].x = OPTION_DEFAULT_X;
-        gfx.iconSprites[i][j].x2 = 32 * j;
+        const s = gfx.iconSprites[i][j];
+        _spriteOamTileNumSet(s, optionGfx[i][0] + baseTile + 8 * j);
+        _spriteOamPaletteNumSet(s, IndexOfSpritePaletteTag(optionGfx[i][1] + PALTAG_OPTIONS_START));
+        s.invisible = true;
+        s.y = yPos;
+        s.x = OPTION_DEFAULT_X;
+        s.x2 = 32 * j;
       }
       gfx.iconVisible[i] = 1;
     }
@@ -985,7 +1029,6 @@ function DrawOptionLabelGfx(optionGfx: any, yPos: number, deltaY: number): void 
         gfx.iconSprites[i][j].invisible = true;
       gfx.iconVisible[i] = 0;
     }
-    optionGfx++ /* TRANSPILER-TODO ptr-arith */;
     yPos += deltaY;
   }
 }
