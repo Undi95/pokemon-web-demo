@@ -2040,10 +2040,12 @@ function Cmd_clearmonbg_static(): void {
   // clear (la « tête d'Arcko » flottante, sondes BG2 2026-06-12).
   {
     const rt = getRuntime();
-    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-    const sid = co?.getBattlerMonSpriteId?.(battler);
-    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites[sid] : undefined;
-    if (sprite) (sprite as { invisible?: boolean }).invisible = false;
+    // 1:1 décomp Cmd_clearmonbg_static (battle_anim.c:979-982) : restaure le sprite du `battler`
+    // ET, en doubles, celui du PARTENAIRE (Cmd_monbg_static cache les deux) — le port ne restaurait
+    // que `battler` (même bug que Cmd_clearmonbg, cf. d53dd8377). Garde IsBattlerSpriteVisible comme
+    // le décomp (stub-true côté port → restaure toujours ; suffisant pour ne plus perdre le partenaire).
+    if (IsBattlerSpriteVisible(battler)) { const s = _monSpriteOf(battler); if (s) s.invisible = false; }
+    if (animBattlerId > 1 && IsBattlerSpriteVisible(BATTLE_PARTNER(battler))) { const s = _monSpriteOf(BATTLE_PARTNER(battler)); if (s) s.invisible = false; }
     const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
     const g = globalThis as Record<string, unknown>;
     for (const bgId of [1, 2]) {
