@@ -18,7 +18,7 @@ import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PlaySE } from './battle_controllers';
-import { DUMMY_WIN_TEMPLATE, PIXEL_FILL } from './window';
+import { DUMMY_WIN_TEMPLATE, PIXEL_FILL, ChangeBgX, ChangeBgY } from './window';
 import { getString } from '../harness/runtime/decomp-strings';
 import { SetGpuReg } from './gpu_regs';
 import { AddTextPrinterParameterized3 } from './menu';
@@ -58,7 +58,11 @@ import { GetSubstructPtr } from './pokenav_resources'; // câblé (ex-__wireTodo
 import { IsLoopedTaskActive } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
-const ResetBgPositions: any = __wireTodo('ResetBgPositions');
+/** 1:1 `void ResetBgPositions(void)` (menu.c:1898) : remet les 4 BG à (0,0). BG_COORD_SET défini + bas. */
+function ResetBgPositions(): void {
+  ChangeBgX(0, 0, BG_COORD_SET); ChangeBgX(1, 0, BG_COORD_SET); ChangeBgX(2, 0, BG_COORD_SET); ChangeBgX(3, 0, BG_COORD_SET);
+  ChangeBgY(0, 0, BG_COORD_SET); ChangeBgY(1, 0, BG_COORD_SET); ChangeBgY(2, 0, BG_COORD_SET); ChangeBgY(3, 0, BG_COORD_SET);
+}
 const ResetBldCnt_: any = __wireTodo('ResetBldCnt_');
 /** 1:1 `bg.c SetBgTilemapBuffer(bg, buffer)` — ADAPTATION MOTEUR (mail.ts:1018) : le buffer tilemap
  *  du BG est géré direct par le moteur (copy via CopyBgTilemapBufferToVram), donc no-op (équiv 1:1,
@@ -167,16 +171,12 @@ export const gPokenavMainMenuBgTemplates = [
 ];
 
 /** 1:1 (pokenav_main_menu.c:73) */
-const sHelpBarWindowTemplate = {
-  bg: {
-    bg: 0,
-    tilemapLeft: 1,
-    tilemapTop: 22,
-    width: 16,
-    height: 2,
-    paletteNum: 0,
-    baseBlock: 0x36 },
-  tilemapLeft: DUMMY_WIN_TEMPLATE };
+// 1:1 `static const struct WindowTemplate sHelpBarWindowTemplate[]` — corrige un mangling transpileur
+// (le tableau était devenu un objet aux clés `bg`/`tilemapLeft`). = 1 fenêtre + terminateur DUMMY.
+const sHelpBarWindowTemplate = [
+  { bg: 0, tilemapLeft: 1, tilemapTop: 22, width: 16, height: 2, paletteNum: 0, baseBlock: 0x36 },
+  DUMMY_WIN_TEMPLATE,
+];
 
 /** 1:1 (pokenav_main_menu.c:87) */
 const sHelpBarTexts = Uint8Array.from([
@@ -602,7 +602,7 @@ export function InitBgTemplates(templates: BgTemplate, count: number): void {
 /** 1:1 `static void InitHelpBar(void)` (pokenav_main_menu.c:550-559). */
 function InitHelpBar(): void {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
-  InitWindows(sHelpBarWindowTemplate[0]);
+  InitWindows(sHelpBarWindowTemplate);
   menu.helpBarWindowId = 0;
   DrawHelpBar(menu.helpBarWindowId);
   PutWindowTilemap(menu.helpBarWindowId);
