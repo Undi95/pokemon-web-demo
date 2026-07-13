@@ -9,7 +9,7 @@
 
 import { CpuCopy16 } from '../harness/runtime/decomp-bridge';
 import { BlendPalettes, CpuFill16, GetDecompressedDataSize, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
-import { loadTileBin, extractPngPlte, loadTilemapBin } from '../harness/gba/png-loader';
+import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { RGB_BLACK, ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_RED, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { SE_POKENAV_OFF } from '../include/constants/songs';
@@ -93,14 +93,27 @@ function _pokenavLoadHeaderGraphics(): void {
   if (_pokenavHeaderLoaded) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap] = await Promise.all([
+      const [gfx, pal, tilemap, navGfx, navPal, hoennGfx, lhPal] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/header.png', 4),
         extractPngPlte('/decomp/em/pokenav/header.png'),
         loadTilemapBin('/decomp/em/pokenav/header.bin'),
+        loadTileBin('/decomp/em/pokenav/nav_icon.png', 4),           // sSpinningPokenav_Gfx
+        extractPngPlte('/decomp/em/pokenav/nav_icon.png'),           // sSpinningPokenav_Pal
+        loadTileBin('/decomp/em/pokenav/left_headers/hoenn_map.png', 4), // gPokenavLeftHeaderHoennMap_Gfx (1re entête)
+        loadGbaPal('/decomp/em/pokenav/left_headers/palette.pal'),   // gPokenavLeftHeader_Pal (palette partagée)
       ]);
       gPokenavHeader_Gfx = gfx;
       gPokenavHeader_Pal = pal;
       gPokenavHeader_Tilemap = tilemap;
+      // ── icône « spinning pokenav » (nav_icon.png) : les const arrays capturaient null au module-load ──
+      sSpinningPokenav_Gfx = navGfx;
+      sSpinningPokenav_Pal = navPal;
+      sSpinningPokenavSpriteSheet[0].data = navGfx;
+      (sSpinningNavgearPalettes[0] as { data: unknown }).data = navPal;
+      // ── left-header « Hoenn map » (1re entête listée) + palette partagée ──
+      gPokenavLeftHeaderHoennMap_Gfx = hoennGfx;
+      gPokenavLeftHeader_Pal = lhPal;
+      sMenuLeftHeaderSpriteSheet.data = hoennGfx;
     } catch (e) {
       console.error('[pokenav header gfx load]', e);
     } finally {
@@ -108,8 +121,9 @@ function _pokenavLoadHeaderGraphics(): void {
     }
   })();
 }
-const gPokenavLeftHeaderHoennMap_Gfx: any = __wireTodo('gPokenavLeftHeaderHoennMap_Gfx');
-const gPokenavLeftHeader_Pal: any = __wireTodo('gPokenavLeftHeader_Pal');
+// ← left_headers/hoenn_map.png + left_headers/palette.pal (chargés async par _pokenavLoadHeaderGraphics).
+let gPokenavLeftHeaderHoennMap_Gfx: any = null;
+let gPokenavLeftHeader_Pal: any = null;
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_MAIN_MENU = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
