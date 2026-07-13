@@ -70,6 +70,17 @@ function _cache(): Promise<Cache> | null {
 // ── Déduplication in-flight ──────────────────────────────────────────────────
 const _inflight = new Map<string, Promise<Response>>();
 
+// ── Packs (regroupement d'assets : 1 requête réseau sert tout un dossier) ─────
+// Généré par scripts/gen-decomp-pack.cjs → public/decomp/packs.json + *.pack.
+// Réduit le burst à froid (boot map ~500 req → ~180). Le jeu fetch toujours ses
+// URLs 1:1 ; on les sert depuis la tranche du pack (0 fichier de jeu touché).
+const PACKS_JSON = '/decomp/packs.json';
+/** clé asset relative → [packUrl, offset, length]. Peuplé par _loadPacks(). */
+const _packIndex = new Map<string, [string, number, number]>();
+/** packUrl → ArrayBuffer (mémoïsé : 1 fetch de pack, réutilisé pour ses tranches). */
+const _packBuffers = new Map<string, Promise<ArrayBuffer>>();
+let _packsReady: Promise<void> = Promise.resolve();
+
 // ── Apprentissage de contextes (burst → manifeste), persisté localStorage ────
 let _manifests: Record<string, string[]> = {};
 let _burst: string[] = [];
@@ -170,6 +181,19 @@ async function _cachedFetch(key: string, init: RequestInit | undefined, silent: 
     if (hit) return hit; // Cache.match rend une Response fraîche à chaque appel
   }
 
+  // Pack : sert la tranche (exclut packs.json et les .pack eux-mêmes → pas de récursion).
+  if (key !== PACKS_JSON && !key.endsWith('.pack')) {
+    await _packsReady;
+    const pe = _packIndex.get(key);
+    if (pe) {
+      const existingPk = _inflight.get(key);
+      if (existingPk) return existingPk.then((r) => r.clone());
+      const pp = _serveFromPack(key, pe);
+      _inflight.set(key, pp);
+      try { return (await pp).clone(); } finally { _inflight.delete(key); }
+    }
+  }
+
   const existing = _inflight.get(key);
   if (existing) return existing.then((r) => r.clone());
 
@@ -189,6 +213,42 @@ async function _cachedFetch(key: string, init: RequestInit | undefined, silent: 
   } finally {
     _inflight.delete(key);
   }
+}
+
+// ── Service depuis pack ──────────────────────────────────────────────────────
+/** Content-Type par extension (le slice binaire n'a pas d'en-tête serveur). */
+function _contentType(key: string): string {
+  if (key.endsWith('.png')) return 'image/png';
+  if (key.endsWith('.json')) return 'application/json';
+  return 'application/octet-stream'; // .bin / .4bpp.bin / .pal / .gbapal
+}
+
+/** Sert un asset depuis SA tranche du pack : fetch du pack 1× (mémoïsé + Cache API),
+ *  puis slice. Met l'asset individuel en cache pour les accès directs suivants. */
+async function _serveFromPack(key: string, entry: [string, number, number]): Promise<Response> {
+  const [packUrl, offset, length] = entry;
+  let bufP = _packBuffers.get(packUrl);
+  if (!bufP) {
+    // Le pack est sous /decomp/ → cachable : _cachedFetch (Cache API + dédup in-flight).
+    bufP = _cachedFetch(packUrl, undefined, true).then((r) => r.arrayBuffer());
+    _packBuffers.set(packUrl, bufP);
+  }
+  const buf = await bufP;
+  const slice = buf.slice(offset, offset + length);
+  const resp = new Response(slice, { status: 200, headers: { 'Content-Type': _contentType(key) } });
+  const cacheP = _cache();
+  if (cacheP) { try { await (await cacheP).put(key, resp.clone()); } catch { /* best-effort */ } }
+  return resp;
+}
+
+/** Charge l'index des packs (packs.json). Silencieux si absent (= fetch individuel normal). */
+async function _loadPacks(): Promise<void> {
+  try {
+    const resp = await _cachedFetch(PACKS_JSON, undefined, true);
+    if (!resp.ok) return;
+    const j = (await resp.json()) as { entries?: Record<string, [string, number, number]> };
+    if (j.entries) for (const [k, v] of Object.entries(j.entries)) _packIndex.set(k, v);
+  } catch { /* pas de packs */ }
 }
 
 // ── Préchargement en fond du JEU ENTIER (idle trickle) ───────────────────────
@@ -252,6 +312,9 @@ export function installDecompAssetNet(): void {
     if (_hasCaches) caches.delete(CACHE_NAME).catch(() => { /* noop */ });
   }
 
+  // Index des packs prêt AVANT les 1res requêtes du jeu (petit JSON, mis en cache).
+  if (!_bypass) _packsReady = _loadPacks();
+
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     try {
       const raw = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url);
@@ -276,6 +339,7 @@ export function installDecompAssetNet(): void {
       _cacheP = null;
       _manifests = {};
       _prefetchedTriggers.clear();
+      _packBuffers.clear(); // force le re-fetch des packs (l'index reste, il est statique)
       try { localStorage.removeItem(MANIFEST_KEY); } catch { /* noop */ }
       return 'decomp-net : cache + manifestes purgés';
     },
@@ -285,6 +349,8 @@ export function installDecompAssetNet(): void {
       triggersAppris: Object.keys(_manifests).length,
       inflight: _inflight.size,
       triggersPrechargesCetteSession: _prefetchedTriggers.size,
+      packs: _packIndex.size,
+      packsCharges: _packBuffers.size,
       prefetchFond: { ..._prefetchState },
     }),
     manifests: (): Record<string, string[]> => _manifests,
