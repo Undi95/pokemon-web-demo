@@ -246,8 +246,17 @@ async function _loadPacks(): Promise<void> {
   try {
     const resp = await _cachedFetch(PACKS_JSON, undefined, true);
     if (!resp.ok) return;
-    const j = (await resp.json()) as { entries?: Record<string, [string, number, number]> };
-    if (j.entries) for (const [k, v] of Object.entries(j.entries)) _packIndex.set(k, v);
+    const j = (await resp.json()) as {
+      packs?: Array<{ url: string; base: string; files: Array<[string, number, number]> }>;
+      entries?: Record<string, [string, number, number]>;
+    };
+    if (Array.isArray(j.packs)) {
+      // v2 compact : base partagée par pack → clé = base + relName.
+      for (const p of j.packs) for (const [name, off, len] of p.files) _packIndex.set(p.base + name, [p.url, off, len]);
+    } else if (j.entries) {
+      // v1 : index plat {clé → [packUrl, offset, length]}.
+      for (const [k, v] of Object.entries(j.entries)) _packIndex.set(k, v);
+    }
   } catch { /* pas de packs */ }
 }
 
