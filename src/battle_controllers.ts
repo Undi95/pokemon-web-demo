@@ -145,8 +145,12 @@ export function SetBattlePartyIds(): void {
   if (gBattleTypeFlags & BATTLE_TYPE_MULTI) return;
 
   const playerParty = gSaveBlock1Ptr.playerParty ?? [];
-  // Get gEnemyParty depuis state.
-  const enemyParty = ((globalThis as { __battleState?: { gEnemyParty?: unknown[] } }).__battleState?.gEnemyParty) ?? [];
+  // gEnemyParty = party-storage (source RÉELLE remplie par CreateNPCTrainerParty, comme
+  // le décomp lit `gEnemyParty` direct). `__battleState.gEnemyParty` n'existe pas (lecteur
+  // globalThis sans écrivain → party vide → l'index ennemi restait au défaut 0 : en single
+  // 0=slot correct par coïncidence, mais en DOUBLE le partenaire ennemi dupliquait le slot 0
+  // → 2e mon jamais envoyé → victoire prématurée).
+  const enemyParty = _gEnemyParty_SBV;
 
   for (let i = 0; i < gBattlersCount; i++) {
     for (let j = 0; j < PARTY_SIZE; j++) {
@@ -1533,6 +1537,7 @@ import { gBattlerPositions as _gBattlerPositions_SBV } from './engine/battle/uti
 import {
   createEmptyPokemon as _createEmptyPokemon_SBV, CreateMon as _CreateMon_SBV,
   setupEnemyPartyForBattle as _setupEnemyPartyForBattle_SBV,
+  gEnemyParty as _gEnemyParty_SBV,
 } from './engine/battle/party-storage';
 import { SPECIES_ZIGZAGOON as _SPECIES_ZIGZAGOON_SBV } from '../include/constants/species';
 
