@@ -53,7 +53,15 @@ const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
 function FreeTempTileDataBuffersIfPossible(): boolean {
   return false;
 }
-const GetBgY: any = __wireTodo('GetBgY');
+/** 1:1 `u32 GetBgY(u8 bg)` (bg.c:GetBgY, renvoie `sGpuBgConfigs2[bg].bg_y` en Q_8_8).
+ *  Adaptation moteur : le port stocke `vofs = bg_y >> 8` dans `cfg.vofs` (cf. ChangeBgY window.ts:875)
+ *  → on reconstitue `bg_y` par `<<8` (exact pour le seul appelant, SpriteCB_SpinningPokenav, qui fait `/256`). */
+function GetBgY(bg: number): number {
+  const rt = getRuntime();
+  if (!rt) return 0;
+  const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
+  return ((cfg.vofs ?? 0) & 0x1ff) << 8;
+}
 import { GetSubstructPtr } from './pokenav_resources'; // câblé (ex-__wireTodo)
 import { IsLoopedTaskActive } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
@@ -131,8 +139,8 @@ interface Pokenav_MainMenu {
   helpBarWindowId: number;
   palettes: number;
   spinningPokenav: DecompSprite | null;
-  leftHeaderSprites: DecompSprite | null;
-  submenuLeftHeaderSprites: DecompSprite | null;
+  leftHeaderSprites: (DecompSprite | null)[];      // 1:1 `struct Sprite *leftHeaderSprites[2]` (bug transpileur « arrays dim 1 »)
+  submenuLeftHeaderSprites: (DecompSprite | null)[]; // 1:1 `struct Sprite *submenuLeftHeaderSprites[2]`
   tilemapBuffer: Uint8Array;
 }
 
@@ -678,6 +686,11 @@ function CreateLeftHeaderSprites(): void {
   let i = 0;
   let spriteId = 0;
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
+  // Adaptation moteur : le substruct est alloué `{}` (AllocSubstruct, pas calloc) → les champs
+  // arrays `struct Sprite *[2]` sont undefined ; on les initialise `[null,null]` comme le ferait
+  // le zéro-init calloc du décomp (sinon `menu.leftHeaderSprites.length` → crash undefined.length).
+  menu.leftHeaderSprites = [null, null];
+  menu.submenuLeftHeaderSprites = [null, null];
   LoadCompressedSpriteSheet(sMenuLeftHeaderSpriteSheet);
   AllocSpritePalette(1);
   AllocSpritePalette(2);
