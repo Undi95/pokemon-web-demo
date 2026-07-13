@@ -982,7 +982,7 @@ function BackupPokemonStorage(): void { /* //*dest = *gPokemonStoragePtr; */ }
 /** 1:1 `void UNUSED RestorePokemonStorage(void)` (:9398) — corps vide (leftover FRLG). */
 function RestorePokemonStorage(): void { /* //*gPokemonStoragePtr = *src; */ }
 /** 1:1 `u32 GetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request)` (:9415). */
-function GetBoxMonDataAt(boxId: number, boxPosition: number, request: number): number {
+export function GetBoxMonDataAt(boxId: number, boxPosition: number, request: number): number {
   if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
     const mon = _boxMonAt(boxId, boxPosition);
     return mon ? (GetMonData(mon as never, request) as number) : 0;
@@ -1090,7 +1090,7 @@ function AdvanceStorageMonIndex(boxMons: (Pokemon | null)[], currIndex: number, 
   return -1;
 }
 /** 1:1 `bool32 CheckBoxMonSanityAt(u32 boxId, u32 boxPosition)` (:9588). */
-function CheckBoxMonSanityAt(boxId: number, boxPosition: number): boolean {
+export function CheckBoxMonSanityAt(boxId: number, boxPosition: number): boolean {
   if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
     const mon = _boxMonAt(boxId, boxPosition);
     return !!(mon && GetMonData(mon as never, MON_DATA_SANITY_HAS_SPECIES)

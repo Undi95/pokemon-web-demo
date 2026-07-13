@@ -58,7 +58,7 @@ const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBoxMonData: any = __wireTodo('GetBoxMonData');
-const GetBoxMonDataAt: any = __wireTodo('GetBoxMonDataAt');
+import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
 const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
 const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');

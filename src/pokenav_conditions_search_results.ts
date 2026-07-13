@@ -37,7 +37,7 @@ import { __wireTodo } from './engine/wire-todo';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-const CheckBoxMonSanityAt: any = __wireTodo('CheckBoxMonSanityAt');
+import { CheckBoxMonSanityAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
 const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
 const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
 const CreatePokenavList: any = __wireTodo('CreatePokenavList');
@@ -46,7 +46,7 @@ const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
 const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBoxMonData: any = __wireTodo('GetBoxMonData');
-const GetBoxMonDataAt: any = __wireTodo('GetBoxMonDataAt');
+import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
 const GetSelectedConditionSearch: any = __wireTodo('GetSelectedConditionSearch');
 const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
