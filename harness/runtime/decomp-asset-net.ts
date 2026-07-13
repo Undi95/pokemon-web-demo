@@ -371,4 +371,12 @@ export function installDecompAssetNet(): void {
   // Démarre le préchargement en fond du jeu entier, DIFFÉRÉ (laisse le boot + la 1re
   // scène se poser d'abord — le trickle back-off ensuite pendant les chargements actifs).
   _scheduleIdle(() => void _startIdlePrefetch(), 4000);
+
+  // Service Worker : couvre le chemin img/Phaser (que window.fetch NE voit PAS) en servant
+  // l'img depuis les MÊMES packs, + persistance. Best-effort : indisponible (pas de SW /
+  // contexte non sécurisé) → l'intercepteur fetch suffit. Escape dev : ?nosw. Skip si bypass.
+  const _nav = (globalThis as { navigator?: { serviceWorker?: { register: (u: string) => Promise<unknown> } } }).navigator;
+  if (_nav?.serviceWorker && !_bypass && !location.search.includes('nosw')) {
+    _nav.serviceWorker.register('/decomp-sw.js').catch((e) => console.warn('[decomp-net] SW register échec', e));
+  }
 }
