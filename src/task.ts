@@ -36,3 +36,28 @@ export function SetTaskFuncWithFollowupFunc(taskId: number, func: any, followupF
 export function SwitchTaskToFollowupFunc(taskId: number): void {
   getRuntime().SwitchTaskToFollowupFunc(taskId);
 }
+
+/** 1:1 décomp `NUM_TASK_DATA` (include/global.h) : gTasks[].data[16]. */
+const NUM_TASK_DATA = 16;
+
+/** 1:1 décomp `src/task.c:189 SetWordTaskArg(taskId, dataElem, value)` — stocke un
+ *  u32 sur 2 slots data[] consécutifs (bas 16 bits, puis haut 16 bits ; chaque slot
+ *  est un s16 → on tronque). Utilisé par le port miroir/transpilé pour empiler un
+ *  argument 32-bit (masques de palette, etc.). ⚠️ NE convient PAS aux pointeurs de
+ *  fonction (LoopedTask) : côté web une fonction n'est pas un entier → adaptation
+ *  runtime dédiée (cf. SetTaskFuncWithFollowupFunc). */
+export function SetWordTaskArg(taskId: number, dataElem: number, value: number): void {
+  if (dataElem < NUM_TASK_DATA - 1) {
+    gTasks[taskId].data[dataElem] = value & 0xFFFF;
+    gTasks[taskId].data[dataElem + 1] = (value >>> 16) & 0xFFFF;
+  }
+}
+
+/** 1:1 décomp `src/task.c:198 GetWordTaskArg(taskId, dataElem)` — relit le u32 empilé
+ *  par SetWordTaskArg : `(u16)data[dataElem] | (data[dataElem+1] << 16)`. */
+export function GetWordTaskArg(taskId: number, dataElem: number): number {
+  if (dataElem < NUM_TASK_DATA - 1) {
+    return ((gTasks[taskId].data[dataElem] & 0xFFFF) | ((gTasks[taskId].data[dataElem + 1] & 0xFFFF) << 16)) >>> 0;
+  }
+  return 0;
+}
