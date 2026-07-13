@@ -40,6 +40,9 @@ import './devtools/rng-debug'; // enregistre window.rng au boot
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
 import './devtools/dev-audit-tools';
+// Side-effect import : pose window.__testDamage (banc déterministe du calcul de dégâts,
+// diag « Arcko encaisse Surf de Léviator » sans piloter un combat). Cf. dev-damage-probe.ts.
+import './devtools/dev-damage-probe';
 // Side-effect import : pose window.dev.breakpoint.* helpers (= pause-on-event
 // pour debugging frame-precise : fade-out/fade-in/map-change/palette-leak/etc.).
 import './devtools/dev-breakpoint-tools';
