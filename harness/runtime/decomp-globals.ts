@@ -1652,7 +1652,13 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   // dst calculé. Utilisé par LoadBallGfx pour overwrite les "open" frames
   // tile 8-11 du poke.png par open.png (cf. pokeball.c:1327).
   const r = rt();
-  const charData = getAsset(sheet.data);
+  // ADAPTATION MOTEUR : `sheet.data` peut être soit une CLÉ string (gfx pré-enregistré, voie
+  // décomp INCBIN classique) soit des TILES BRUTS déjà décompressés (Uint8Array/Uint16Array —
+  // ex. assets chargés par loadTileBin, comme Pokénav nav_icon/left_headers). Dans ce dernier cas
+  // on court-circuite getAsset (sinon « ASSET MISSING » → tiles hors OBJ VRAM → sprites garbage).
+  const charData: Uint8Array | Uint16Array | null = (typeof sheet.data === 'string')
+    ? getAsset(sheet.data)
+    : (sheet.data as unknown as Uint8Array | Uint16Array);
   if (!charData) {
     // ⚠️ ASSET MANQUANT : explicitement loud — sans ça flicker random du logo
     // (sIntroDropsLogo_Gfx pas chargé à temps → tile data garbage en OAM VRAM).

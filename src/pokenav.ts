@@ -25,7 +25,9 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes } from './sprite';
 import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
-import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources, gPokenavResources } from './pokenav_resources';
+import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources, gPokenavResources, newPokenavResources } from './pokenav_resources';
+import { CreateTask } from './task';
+import { LoadOam, ProcessSpriteCopyRequests, TransferPlttBuffer } from '../harness/runtime/decomp-globals';
 import { IsActiveMenuLoopTaskActive, InitPokenavMainMenu, PokenavMainMenuLoopedTaskIsActive, ShutdownPokenav, WaitForPokenavShutdownFade, SetActiveMenuLoopTasks, RunMainMenuLoopedTask } from './pokenav_main_menu';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 // ─── Table PokenavMenuCallbacks[15] (pokenav.c:52) : les 59 callbacks des 7 familles de menus,
@@ -104,53 +106,32 @@ const WIN_MENU = 1;
 
 let _active = false;
 
-/** 1:1 décomp `CB2_InitPokeNav` (pokenav.c:315) — SQUELETTE : init vidéo +
- *  fenêtres + titre + entrées (statiques). InitPokenavResources/Task_Pokenav
- *  réels = à porter (Opus). */
+/** 1:1 décomp `void CB2_InitPokeNav(void)` (pokenav.c:315) : alloue gPokenavResources, l'initialise,
+ *  crée Task_Pokenav (la state-machine qui pilote InitPokenavMainMenu → bandeau/icônes) et installe
+ *  les callbacks. ADAPTATION MOTEUR : `Alloc(sizeof(*gPokenavResources))` = `newPokenavResources()`
+ *  (jamais null en TS → la branche d'échec reste 1:1 mais inatteignable) ; retour field = import
+ *  dynamique overworld (évite le cycle) ; CreateTask via l'adaptateur objet-task 1:1. */
 export function CB2_InitPokeNav(): void {
   const rt = getRuntime();
   if (!rt) return;
-  rt.SetMainCallback2(null);
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
-  // Clear VRAM + palettes BG (résidus start menu — pattern option_menu case 1).
-  DmaClearLarge16(3, VRAM, VRAM_SIZE, 0x1000);
-  DmaClear16(3, 0x05000000, 0x400);
-  ResetBgsAndClearDma3BusyFlags(0);
-  const bgTemplates = [
-    { bg: 0, charBaseIndex: 2, mapBaseIndex: 31, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 },
-  ];
-  InitBgsFromTemplates(0, bgTemplates, bgTemplates.length);
-  ResetPaletteFade();
-  ResetSpriteData();
-  FreeAllSpritePalettes();
-  ResetTasks();
-  DeactivateAllTextPrinters();
-  InitWindows([
-    { bg: 0, tilemapLeft: 2, tilemapTop: 1, width: 26, height: 2, paletteNum: 15, baseBlock: 1 },
-    { bg: 0, tilemapLeft: 4, tilemapTop: 5, width: 22, height: 12, paletteNum: 15, baseBlock: 1 + 26 * 2 },
-  ]);
-  // Palette texte standard (blanc/gris) slot 15 + fond sombre backdrop.
-  LoadPalette(new Uint16Array([0x1483, 0x7FFF, 0x2529, 0x39CE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0842]), 15 * 16, 32);
-  FillWindowPixelBuffer(WIN_TITLE, 0x00);
-  FillWindowPixelBuffer(WIN_MENU, 0x00);
-  AddTextPrinterParameterized3(WIN_TITLE, 1, 4, 2, [0, 1, 2], 255, 'POKéNAV');
-  for (let i = 0; i < sMainMenuLabels.length; i++) {
-    AddTextPrinterParameterized3(WIN_MENU, 1, 8, 4 + i * 18, [0, 1, 2], 255, sMainMenuLabels[i]);
+  _setGPokenavResources(newPokenavResources());
+  if (gPokenavResources == null) {
+    void import('./overworld').then((m) => {
+      const cb = m.CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
+      if (cb) rt.SetMainCallback2(cb as never);
+    }).catch((e) => console.error('[pokenav CB2_InitPokeNav alloc-fail]', e));
+  } else {
+    InitPokenavResources(gPokenavResources);
+    ResetTasks();
+    rt.SetVBlankCallback(null);
+    CreateTask((t: DecompTask) => Task_Pokenav(t), 0);
+    rt.SetMainCallback2(CB2_Pokenav as never);
+    rt.SetVBlankCallback(VBlankCB_Pokenav as never);
+    _active = true;
   }
-  AddTextPrinterParameterized3(WIN_MENU, 0, 8, 4 + sMainMenuLabels.length * 18 + 8, [0, 3, 2], 255, '(squelette — B : RETOUR)');
-  PutWindowTilemap(WIN_TITLE);
-  PutWindowTilemap(WIN_MENU);
-  CopyWindowToVram(WIN_TITLE, 3);
-  CopyWindowToVram(WIN_MENU, 3);
-  ShowBg(0);
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0x0100 /* BG0_ON */);
-  BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0x0000);
-  _active = true;
-  rt.SetMainCallback2(CB2_Pokenav as never);
 }
 
-/** 1:1 décomp `CB2_Pokenav` (pokenav.c:395 : RunTasks+AnimateSprites+…) —
- *  SQUELETTE : poll B → retour field avec start menu. */
+/** 1:1 décomp `static void CB2_Pokenav(void)` (pokenav.c:417). */
 export function CB2_Pokenav(): void {
   const rt = getRuntime();
   if (!rt || !_active) return;
@@ -158,14 +139,13 @@ export function CB2_Pokenav(): void {
   rt.animateSprites?.();
   rt.buildOamBuffer?.();
   rt.UpdatePaletteFade?.();
-  if (gMain.newKeys & B_BUTTON) {
-    _active = false;
-    FreeAllWindowBuffers();
-    void import('./overworld').then((m) => {
-      const cb = (m as Record<string, unknown>).CB2_ReturnToFieldWithOpenMenu_Manual as (() => void) | undefined;
-      if (cb) cb();
-    });
-  }
+}
+
+/** 1:1 décomp `static void VBlankCB_Pokenav(void)` (pokenav.c:425). */
+export function VBlankCB_Pokenav(): void {
+  LoadOam();
+  ProcessSpriteCopyRequests();
+  TransferPlttBuffer();
 }
 
 /** Câblage start menu (remplace le fallback message). */

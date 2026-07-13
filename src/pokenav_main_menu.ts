@@ -649,6 +649,30 @@ function DrawHelpBar(windowId: number): void {
   FillWindowPixelRect(windowId, PIXEL_FILL(5), 0, 0, 0x80, 1);
 }
 
+// ─── ADAPTATION MOTEUR : le modèle sprite du port est PLAT (pas de `sprite.oam` nested) ───
+// Le décomp fait `sprite->oam.tileNum`/`->oam.priority` ; chez nous ces champs sont plats
+// (`tileBase`/`sheetTileStart` + la tuile OAM via `oamIndex`), cf. `_oamTileNumAdd` (battle_anim_*)
+// et la note « .oam.paletteNum via oamIndex ». Ces 3 helpers reproduisent l'écriture 1:1.
+function _spriteOamTileNumAdd(sprite: any, n: number): void {
+  if (!sprite || !n) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam && typeof oam.tileId === 'number') oam.tileId += n;
+  if (typeof sprite.tileBase === 'number') sprite.tileBase += n;
+  if (typeof sprite.sheetTileStart === 'number') sprite.sheetTileStart += n;
+}
+function _spriteOamTileNumSet(sprite: any, v: number): void {
+  if (!sprite) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam) oam.tileId = v;
+  sprite.tileBase = v;
+  sprite.sheetTileStart = v;
+}
+function _spriteOamPrioritySet(sprite: any, p: number): void {
+  if (!sprite) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam) oam.priority = p;
+}
+
 /** 1:1 `static void InitPokenavMainMenuResources(void)` (pokenav_main_menu.c:580-593). */
 function InitPokenavMainMenuResources(): void {
   let i = 0;
@@ -691,7 +715,7 @@ export function HideSpinningPokenavSprite(): void {
   menu.spinningPokenav.y = 12;
   menu.spinningPokenav.callback = SpriteCB_SpinningPokenav;
   menu.spinningPokenav.invisible = false;
-  menu.spinningPokenav.oam.priority = 0;
+  _spriteOamPrioritySet(menu.spinningPokenav, 0);
   menu.spinningPokenav.subpriority = 0;
 }
 
@@ -721,7 +745,7 @@ function CreateLeftHeaderSprites(): void {
     menu.submenuLeftHeaderSprites[i].invisible = true;
     menu.submenuLeftHeaderSprites[i].x2 = i * 32;
     menu.submenuLeftHeaderSprites[i].y2 = 18;
-    menu.submenuLeftHeaderSprites[i].oam.tileNum += (i * 8) + 64;
+    _spriteOamTileNumAdd(menu.submenuLeftHeaderSprites[i], (i * 8) + 64);
   }
 }
 
@@ -737,9 +761,9 @@ export function LoadLeftHeaderGfxForIndex(menuGfxId: number): void {
 export function UpdateRegionMapRightHeaderTiles(menuGfxId: number): void {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
   if (menuGfxId == POKENAV_GFX_MAP_MENU_ZOOMED_OUT)
-    menu.leftHeaderSprites[1].oam.tileNum = GetSpriteTileStartByTag(2) + 32;
+    _spriteOamTileNumSet(menu.leftHeaderSprites[1], GetSpriteTileStartByTag(2) + 32);
   else
-    menu.leftHeaderSprites[1].oam.tileNum = GetSpriteTileStartByTag(2) + 64;
+    _spriteOamTileNumSet(menu.leftHeaderSprites[1], GetSpriteTileStartByTag(2) + 64);
 }
 
 /**
@@ -759,7 +783,7 @@ function LoadLeftHeaderGfxForMenu(menuGfxId: number): void {
   LoadPalette(gPokenavLeftHeader_Pal[tag * 16] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, OBJ_PLTT_ID(IndexOfSpritePaletteTag(1)), PLTT_SIZE_4BPP);
   LZ77UnCompWram(sMenuLeftHeaderSpriteSheets[menuGfxId].data, gDecompressionBuffer);
   RequestDma3Copy(gDecompressionBuffer, OBJ_VRAM0 + (GetSpriteTileStartByTag(2) * 32), size, 1);
-  menu.leftHeaderSprites[1].oam.tileNum = GetSpriteTileStartByTag(2) + sMenuLeftHeaderSpriteSheets[menuGfxId].size;
+  _spriteOamTileNumSet(menu.leftHeaderSprites[1], GetSpriteTileStartByTag(2) + sMenuLeftHeaderSpriteSheets[menuGfxId].size);
   menu.leftHeaderSprites[1].x2 = 64;
 }
 
