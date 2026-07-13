@@ -1213,7 +1213,11 @@ function _freeMonSpriteAndHideHealthbox(battler: number): void {
   const spriteId = getBattlerMonSpriteId(battler);
   const sprite = rt?.gSprites?.[spriteId];
   if (sprite && rt) {
-    sprite.inUse = false;
+    // 1:1 décomp : DestroySprite AVEC sprite.inUse ENCORE vrai → il libère les tuiles OBJ
+    // (FREE_SPRITE_TILE) + masque l'OAM. L'ancien `sprite.inUse = false` ici faisait
+    // early-return DestroySprite (`if (!inUse) return`) → tuiles JAMAIS libérées = fuite VRAM
+    // → pool OBJ 1024 tuiles saturé après quelques switchs → mons non spawnés (disparaissent)
+    // ou tuiles poubelle. Retiré (divergence non-1:1). callback=null = inoffensif (ResetSprite le fait).
     sprite.callback = null;
     DestroySprite(spriteId);
   }
