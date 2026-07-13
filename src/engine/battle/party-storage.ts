@@ -197,10 +197,20 @@ export function loadTestPlayerParty(player: Pokemon[]): void {
 
 /** Remplit gEnemyParty depuis des mons NUMÉRIQUES (= CreateMon : wild/trainer/scripted).
  *  Appelé au début de chaque combat. Les slots vides sont reset via `createEmptyPokemon`. */
-export function setupEnemyPartyForBattle(enemy: Pokemon[]): void {
-  for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
-  for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
-    Object.assign(gEnemyParty[i], enemy[i]);
+export function setupEnemyPartyForBattle(enemy: Pokemon[], firstTrainer = true): void {
+  // 1:1 décomp CreateNPCTrainerParty : ZeroEnemyPartyMons UNIQUEMENT au 1er dresseur (firstTrainer),
+  // puis écrit à l'offset gEnemyParty[0] (1er dresseur) ou gEnemyParty[PARTY_SIZE/2] (2e dresseur,
+  // TWO_OPPONENTS) → les 2 dresseurs COEXISTENT (ex: Gabby slots 0-2, Ty slots 3-5).
+  // 🐛 L'ancien code zéro-remplissait TOUJOURS depuis l'index 0 → le 2e appel (Ty, firstTrainer=false)
+  // EFFAÇAIT le 1er dresseur (Gabby) → gEnemyParty tronquée à UN dresseur → le check de victoire
+  // (Cmd_checkteamslost, qui somme la party ENTIÈRE) atteignait 0 en tuant le seul dresseur présent
+  // = VICTOIRE PRÉMATURÉE (l'autre mon on-field encore vivant). Cf. décomp battle_main.c:697-699,1975-1976.
+  const offset = firstTrainer ? 0 : Math.floor(PARTY_SIZE / 2);
+  if (firstTrainer) {
+    for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
+  }
+  for (let i = 0; i < enemy.length && offset + i < PARTY_SIZE; i++) {
+    Object.assign(gEnemyParty[offset + i], enemy[i]);
   }
 }
 

@@ -1202,8 +1202,9 @@ export function CreateNPCTrainerParty(
       }
     }
 
-    // 1:1 : ecrit gEnemyParty (party-storage) = l array LU par la voie L. (= ZeroEnemyPartyMons + CreateMon×n)
-    _BTP_setupEnemyParty(acc);
+    // 1:1 : ecrit gEnemyParty (party-storage) a l'offset du dresseur (0 si firstTrainer, sinon
+    // PARTY_SIZE/2) SANS re-zeroter au 2e dresseur → les 2 parties (TWO_OPPONENTS) coexistent.
+    _BTP_setupEnemyParty(acc, firstTrainer);
 
     // 1:1 décomp l. 2072 : OR le doubleBattle flag dans _stateNs.gBattleTypeFlags.
     if (trainerData.doubleBattle) {
