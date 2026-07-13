@@ -8,7 +8,7 @@
  */
 
 import { CpuCopy16 } from '../harness/runtime/decomp-bridge';
-import { BlendPalettes, CpuFill16, GetDecompressedDataSize, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy } from '../harness/runtime/decomp-globals';
+import { BlendPalettes, CpuFill16, GetDecompressedDataSize, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
 import { RGB_BLACK, ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_RED, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { SE_POKENAV_OFF } from '../include/constants/songs';
@@ -34,9 +34,24 @@ import { __wireTodo } from './engine/wire-todo';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 import { AllocSubstruct } from './pokenav_resources'; // câblé (ex-__wireTodo)
 import { CreateLoopedTask } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
+/** 1:1 `bg.c DecompressAndCopyTileDataToVram(bg, src, size, offset, mode)` — ADAPTATION MOTEUR
+ *  (template mail.ts:1060) : l'asset est déjà décompressé (raw 4bpp) → copy direct en VRAM @
+ *  charBase*0x4000 du BG. `src == null` (asset pas encore wiré) = no-op. */
+function DecompressAndCopyTileDataToVram(bg: number, src: Uint8Array | null, _size: number, _offset: number, _mode: number): void {
+  if (!src) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  const bgTmpl = gPokenavMainMenuBgTemplates[bg];
+  if (!bgTmpl) return;
+  const dest = bgTmpl.charBaseIndex * 0x4000;
+  rt.gba.vram.set(src.subarray(0, Math.min(src.length, rt.gba.vram.length - dest)), dest);
+}
 const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
+/** 1:1 `bg.c FreeTempTileDataBuffersIfPossible()` — ADAPTATION MOTEUR (mail.ts:1050) : upload
+ *  synchrone (pas de defer queue) → toujours « done » → FALSE. */
+function FreeTempTileDataBuffersIfPossible(): boolean {
+  return false;
+}
 const GetBgY: any = __wireTodo('GetBgY');
 import { GetSubstructPtr } from './pokenav_resources'; // câblé (ex-__wireTodo)
 import { IsLoopedTaskActive } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
@@ -44,7 +59,12 @@ const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
 const ResetBgPositions: any = __wireTodo('ResetBgPositions');
 const ResetBldCnt_: any = __wireTodo('ResetBldCnt_');
-const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
+/** 1:1 `bg.c SetBgTilemapBuffer(bg, buffer)` — ADAPTATION MOTEUR (mail.ts:1018) : le buffer tilemap
+ *  du BG est géré direct par le moteur (copy via CopyBgTilemapBufferToVram), donc no-op (équiv 1:1,
+ *  pas de pointer-stash). */
+function SetBgTilemapBuffer(_bg: number, _buffer: Uint8Array): void {
+  /* no-op */
+}
 const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
 const gPokenavHeader_Gfx: any = __wireTodo('gPokenavHeader_Gfx');
 const gPokenavHeader_Pal: any = __wireTodo('gPokenavHeader_Pal');
