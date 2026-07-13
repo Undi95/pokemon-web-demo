@@ -27,19 +27,15 @@ import type { BgTemplate, WindowTemplate } from './window';
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import type { OamData } from '../include/gba/types';
 import { __wireTodo } from './engine/wire-todo';
+import { CreateLoopedTask, FuncIsActiveLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const BgDmaFill: any = __wireTodo('BgDmaFill');
 const ClearRematchPokeballIcon: any = __wireTodo('ClearRematchPokeballIcon');
 const CopyWindowRectToVram: any = __wireTodo('CopyWindowRectToVram');
 const CpuFastFill8: any = __wireTodo('CpuFastFill8');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
-const FuncIsActiveLoopedTask: any = __wireTodo('FuncIsActiveLoopedTask');
 const GetBgY: any = __wireTodo('GetBgY');
 const GetMatchCallFlavorText: any = __wireTodo('GetMatchCallFlavorText');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
-const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
 const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
 const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
 const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');

@@ -16,13 +16,11 @@ import { FlagGet } from './event_data';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const CanViewRibbonsMenu: any = __wireTodo('CanViewRibbonsMenu');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const GetPokenavMode: any = __wireTodo('GetPokenavMode');
 const GetSelectedConditionSearch: any = __wireTodo('GetSelectedConditionSearch');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const MAX_POKENAV_MENUITEMS: any = __wireTodo('MAX_POKENAV_MENUITEMS');
 const POKENAV_MENU_FUNC_EXIT: any = __wireTodo('POKENAV_MENU_FUNC_EXIT');
 const SetPokenavMode: any = __wireTodo('SetPokenavMode');

@@ -26,18 +26,16 @@ import { ConvertIntToDecimalStringN, StringCompare, StringCopyPadded, StringGet_
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const ConditionGraph_CalcPositions: any = __wireTodo('ConditionGraph_CalcPositions');
 const ConditionGraph_Init: any = __wireTodo('ConditionGraph_Init');
 const ConditionGraph_SetNewPositions: any = __wireTodo('ConditionGraph_SetNewPositions');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const GET_NUM_CONDITION_SPARKLES: any = __wireTodo('GET_NUM_CONDITION_SPARKLES');
 const GetBoxNamePtr: any = __wireTodo('GetBoxNamePtr');
 const GetBoxOrPartyMonData: any = __wireTodo('GetBoxOrPartyMonData');
 const GetMonMarkingsData: any = __wireTodo('GetMonMarkingsData');
 const GetMonSpritePalFromSpeciesAndPersonality: any = __wireTodo('GetMonSpritePalFromSpeciesAndPersonality');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const HandleMonMarkingsMenuInput: any = __wireTodo('HandleMonMarkingsMenuInput');
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 const LoadSpecialPokePic: any = __wireTodo('LoadSpecialPokePic');

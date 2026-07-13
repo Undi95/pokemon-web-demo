@@ -34,24 +34,21 @@ import type { WindowTemplate } from './window';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
 import { CheckBoxMonSanityAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
 const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
 const CreatePokenavList: any = __wireTodo('CreatePokenavList');
 const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
 const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBoxMonData: any = __wireTodo('GetBoxMonData');
 import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
 const GetSelectedConditionSearch: any = __wireTodo('GetSelectedConditionSearch');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
 const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
-const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
 const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
 const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
 const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');

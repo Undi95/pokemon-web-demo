@@ -23,12 +23,10 @@ import { gStringVar4 } from './string_util';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+import { CreateLoopedTask } from './pokenav_looped_task';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const GetPokenavMode: any = __wireTodo('GetPokenavMode');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const GetTrainerIdxByRematchIdx: any = __wireTodo('GetTrainerIdxByRematchIdx');
 const MatchCall_GetEnabled: any = __wireTodo('MatchCall_GetEnabled');
 const MatchCall_GetMapSec: any = __wireTodo('MatchCall_GetMapSec');

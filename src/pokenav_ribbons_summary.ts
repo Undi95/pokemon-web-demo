@@ -44,24 +44,21 @@ import type { WindowTemplate } from './window';
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import type { OamData } from '../include/gba/types';
 import { __wireTodo } from './engine/wire-todo';
+import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const AFFINEANIMCMD_END: any = __wireTodo('AFFINEANIMCMD_END');
 const AFFINEANIMCMD_FRAME: any = __wireTodo('AFFINEANIMCMD_FRAME');
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const BgDmaFill: any = __wireTodo('BgDmaFill');
 const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
 const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
 const CreateMonPicSprite_HandleDeoxys: any = __wireTodo('CreateMonPicSprite_HandleDeoxys');
 const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBoxMonData: any = __wireTodo('GetBoxMonData');
 import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
 const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
 const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
 const PokenavFillPalette: any = __wireTodo('PokenavFillPalette');

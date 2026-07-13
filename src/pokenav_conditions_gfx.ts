@@ -30,8 +30,9 @@ import type { WindowTemplate } from './window';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
 const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
 const BgDmaFill: any = __wireTodo('BgDmaFill');
 const BufferMonMarkingsMenuTiles: any = __wireTodo('BufferMonMarkingsMenuTiles');
@@ -46,14 +47,12 @@ const ConditionMenu_UpdateMonExit: any = __wireTodo('ConditionMenu_UpdateMonExit
 const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
 const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
 const CreateConditionSparkleSprites: any = __wireTodo('CreateConditionSparkleSprites');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
 const CreateMonMarkingAllCombosSprite: any = __wireTodo('CreateMonMarkingAllCombosSprite');
 const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
 const DestroyConditionSparkleSprites: any = __wireTodo('DestroyConditionSparkleSprites');
 const DmaCopy16Defvars: any = __wireTodo('DmaCopy16Defvars');
 const FreeConditionSparkles: any = __wireTodo('FreeConditionSparkles');
 const FreeMonMarkingsMenu: any = __wireTodo('FreeMonMarkingsMenu');
-const FreePokenavSubstruct: any = __wireTodo('FreePokenavSubstruct');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetConditionGraphCurrentListIndex: any = __wireTodo('GetConditionGraphCurrentListIndex');
 const GetConditionGraphMenuCurrentLoadIndex: any = __wireTodo('GetConditionGraphMenuCurrentLoadIndex');
@@ -65,11 +64,9 @@ const GetConditionMonPal: any = __wireTodo('GetConditionMonPal');
 const GetConditionMonPicGfx: any = __wireTodo('GetConditionMonPicGfx');
 const GetMonListCount: any = __wireTodo('GetMonListCount');
 const GetNumConditionMonSparkles: any = __wireTodo('GetNumConditionMonSparkles');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
 const InitMonMarkingsMenu: any = __wireTodo('InitMonMarkingsMenu');
 const IsConditionMenuSearchMode: any = __wireTodo('IsConditionMenuSearchMode');
-const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
 const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
 const LoadConditionGraphMenuGfx: any = __wireTodo('LoadConditionGraphMenuGfx');
 const LoadConditionMonPicTemplate: any = __wireTodo('LoadConditionMonPicTemplate');
