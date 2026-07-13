@@ -9,6 +9,7 @@
 
 import { CpuCopy16 } from '../harness/runtime/decomp-bridge';
 import { BlendPalettes, CpuFill16, GetDecompressedDataSize, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
+import { loadTileBin, extractPngPlte, loadTilemapBin } from '../harness/gba/png-loader';
 import { RGB_BLACK, ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_RED, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { SE_POKENAV_OFF } from '../include/constants/songs';
@@ -66,9 +67,35 @@ function SetBgTilemapBuffer(_bg: number, _buffer: Uint8Array): void {
   /* no-op */
 }
 const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
-const gPokenavHeader_Gfx: any = __wireTodo('gPokenavHeader_Gfx');
-const gPokenavHeader_Pal: any = __wireTodo('gPokenavHeader_Pal');
-const gPokenavHeader_Tilemap: any = __wireTodo('gPokenavHeader_Tilemap');
+// ─── Assets du bandeau (graphics/pokenav/header.png + header.bin) — ADAPTATION MOTEUR : la ROM a
+//     les données inline (INCGFX) ; le web les charge async depuis /decomp/em/pokenav/ (servis) puis
+//     LoopedTask_InitPokenavMenu case 1 attend le gate `_pokenavHeaderLoaded` (cf. mail.ts). ───────
+let gPokenavHeader_Gfx: Uint8Array | null = null;      // header.png .4bpp (décompressé)
+let gPokenavHeader_Pal: Uint16Array | null = null;     // header.png .gbapal (palette PLTE)
+let gPokenavHeader_Tilemap: Uint16Array | null = null; // header.bin (tilemap)
+let _pokenavHeaderLoaded = false;
+
+/** Charge les 3 assets du bandeau (async, une fois). Le gate est relâché même en cas d'échec
+ *  (fallback = pas de fond, jamais de freeze — Règle 3). */
+function _pokenavLoadHeaderGraphics(): void {
+  if (_pokenavHeaderLoaded) return;
+  void (async () => {
+    try {
+      const [gfx, pal, tilemap] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/header.png', 4),
+        extractPngPlte('/decomp/em/pokenav/header.png'),
+        loadTilemapBin('/decomp/em/pokenav/header.bin'),
+      ]);
+      gPokenavHeader_Gfx = gfx;
+      gPokenavHeader_Pal = pal;
+      gPokenavHeader_Tilemap = tilemap;
+    } catch (e) {
+      console.error('[pokenav header gfx load]', e);
+    } finally {
+      _pokenavHeaderLoaded = true;
+    }
+  })();
+}
 const gPokenavLeftHeaderHoennMap_Gfx: any = __wireTodo('gPokenavLeftHeaderHoennMap_Gfx');
 const gPokenavLeftHeader_Pal: any = __wireTodo('gPokenavLeftHeader_Pal');
 
@@ -331,6 +358,7 @@ export function InitPokenavMainMenu(): boolean {
     return false;
   ResetSpriteData();
   FreeAllSpritePalettes();
+  _pokenavLoadHeaderGraphics(); // ADAPTATION MOTEUR : lance le chargement async des assets bandeau.
   menu.currentTaskId = CreateLoopedTask(LoopedTask_InitPokenavMenu, 1);
   return true;
 }
@@ -373,6 +401,8 @@ function LoopedTask_InitPokenavMenu(state: number): number {
       ResetTempTileDataBuffers();
       return LT_INC_AND_CONTINUE;
     case 1:
+      // ADAPTATION MOTEUR : attendre le chargement async des assets bandeau (la ROM les a inline).
+      if (!_pokenavHeaderLoaded) return LT_PAUSE;
       menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
       DecompressAndCopyTileDataToVram(0, gPokenavHeader_Gfx, 0, 0, 0);
       SetBgTilemapBuffer(0, menu.tilemapBuffer);
