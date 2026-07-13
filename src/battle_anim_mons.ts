@@ -700,12 +700,24 @@ export function PrepareAffineAnimInTaskData(task: _TaskLike, spriteId: number, c
 
 /** 1:1 `SetBattlerSpriteYOffsetFromYScale(spriteId)` (battle_anim_mons.c.c) : y2 compense la
  *  réduction verticale (le mon « s'écrase » au sol, pas au centre). */
+/** 1:1 decomp `static u16 GetBattlerYDeltaFromSpriteId(u8 spriteId)` (battle_anim_mons.c:1897).
+ *  battler = gSprites[spriteId].data[0] (l.1900) → délègue à GetBattlerYDelta (déjà 1:1, back/front
+ *  + Unown/Castform). Corrige la « dette douce species delta » (B1) : l'ancrage retrait-ball était
+ *  fixé à MON_PIC_HEIGHT sans le y_offset par-espèce. */
+function GetBattlerYDeltaFromSpriteId(spriteId: number): number {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.[spriteId] as { data?: number[] } | undefined;
+  if (!sprite || !sprite.data) return 0;
+  const battler = sprite.data[0];
+  return GetBattlerYDelta(battler, _battlerSpecies(battler));
+}
+
 export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
   const rt = getRuntime();
   const sprite = rt?.gSprites?.[spriteId] as { y2: number; oamIndex: number } | undefined;
   if (!rt || !sprite) return;
   const MON_PIC_HEIGHT = 64;
-  const v = MON_PIC_HEIGHT; // GetBattlerYDeltaFromSpriteId ≈ 0 (dette douce species delta)
+  const v = MON_PIC_HEIGHT - GetBattlerYDeltaFromSpriteId(spriteId) * 2; // 1:1 decomp :1875
   const m = (rt as unknown as { gOamMatrices?: Array<{ d: number }> }).gOamMatrices;
   const oam = (rt as unknown as { gba: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } }).gba.oam[sprite.oamIndex];
   const d = m?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0]?.d ?? 0x100;
@@ -718,12 +730,12 @@ export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
  *  (battle_anim_mons.c:1886) — y2 = déplacement induit par la matrice de
  *  spriteId (échelle Y), base 64px (même dette douce species-delta que
  *  SetBattlerSpriteYOffsetFromYScale : GetBattlerYDeltaFromSpriteId ≈ 0). */
-export function SetBattlerSpriteYOffsetFromOtherYScale(spriteId: number, _otherSpriteId: number): void {
+export function SetBattlerSpriteYOffsetFromOtherYScale(spriteId: number, otherSpriteId: number): void {
   const rt = getRuntime();
   const sprite = rt?.gSprites?.[spriteId] as { y2: number; oamIndex: number } | undefined;
   if (!rt || !sprite) return;
   const MON_PIC_HEIGHT = 64;
-  const v = MON_PIC_HEIGHT; // - GetBattlerYDeltaFromSpriteId(other)*2 (≈ 0)
+  const v = MON_PIC_HEIGHT - GetBattlerYDeltaFromSpriteId(otherSpriteId) * 2; // 1:1 decomp :1888
   const m = (rt as unknown as { gOamMatrices?: Array<{ d: number }> }).gOamMatrices;
   const oam = (rt as unknown as { gba: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } }).gba.oam[sprite.oamIndex];
   const d = m?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0]?.d ?? 0x100;
