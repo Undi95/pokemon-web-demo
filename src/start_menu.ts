@@ -572,7 +572,9 @@ function buildItems(): MenuItem[] {
  *  SQUELETTE UI (pokenav.ts) : le menu s'ouvre, entrées affichées, B = retour ;
  *  subscreens à porter (docs/REPRISE-OPUS-48.md §7.5). */
 function pokenavAction(): boolean {
-  void import('./pokenav').then((m) => m.StartMenu_OpenPokenav());
+  // Règle 3 : .catch OBLIGATOIRE — sans lui, un throw au chargement de pokenav.ts (ex : stub
+  // module-level) était avalé silencieusement (POKéNAV = no-op sans erreur visible).
+  void import('./pokenav').then((m) => m.StartMenu_OpenPokenav()).catch((e) => console.error('[start menu pokenav]', e));
   return true;
 }
 

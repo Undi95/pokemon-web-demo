@@ -47,8 +47,9 @@ import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AFFINEANIMCMD_END: any = __wireTodo('AFFINEANIMCMD_END');
-const AFFINEANIMCMD_FRAME: any = __wireTodo('AFFINEANIMCMD_FRAME');
+// 1:1 include/sprite.h:130,136 — builders `union AffineAnimCmd` (défaut local, à consolider include/).
+const AFFINEANIMCMD_END = { type: 0x7FFF /* AFFINEANIMCMDTYPE_END */ };
+const AFFINEANIMCMD_FRAME = (xScale: number, yScale: number, rotation: number, duration: number) => ({ frame: { xScale, yScale, rotation, duration } });
 const BgDmaFill: any = __wireTodo('BgDmaFill');
 const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
 const CopyToBgTilemapBufferRect: any = __wireTodo('CopyToBgTilemapBufferRect');
