@@ -1712,15 +1712,16 @@ function Cmd_clearmonbg(): void {
   if (animBattlerId === ANIM_ATTACKER) animBattlerId = ANIM_ATK_PARTNER;
   else if (animBattlerId === ANIM_TARGET) animBattlerId = ANIM_DEF_PARTNER;
   const battler = (animBattlerId === ANIM_ATTACKER || animBattlerId === ANIM_ATK_PARTNER) ? gBattleAnimAttacker : gBattleAnimTarget;
-  // 1:1 Task_ClearMonBg (net, single) : re-montrer le sprite du battler
-  // (les anims type DefensiveWall le cachent via la copie BG), vider le BG
-  // anime + scroll. (chantier monbg 2026-06-11 — la version etait deferred.)
+  // 1:1 Task_ClearMonBg : re-montrer les sprites cachés par monbg, vider le BG anime + scroll.
   {
     const rt = getRuntime();
-    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
-    const sid = co?.getBattlerMonSpriteId?.(battler);
-    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites[sid] : undefined;
-    if (sprite) (sprite as { invisible?: boolean }).invisible = false;
+    // 1:1 décomp Cmd_clearmonbg (battle_anim.c:871-874) : restaure le sprite du `battler` ET,
+    // en doubles, celui du PARTENAIRE — Cmd_monbg (:625-642) cache les DEUX mons du côté (chacun
+    // via MoveBattlerSpriteToBG + Task_InitUpdateMonBg qui pose _sMonAnimTaskIdArray[0]/[1]).
+    // Le port ne restaurait que `battler` → le partenaire (ex ARCKO quand LEVEINARD attaque en
+    // double) restait INVISIBLE (bug user 2026-07-13, confirmé sonde : battler 0 invisible=true).
+    if (_sMonAnimTaskIdArray[0] !== TASK_NONE) { const s = _monSpriteOf(battler); if (s) s.invisible = false; }
+    if (animBattlerId > 1 && _sMonAnimTaskIdArray[1] !== TASK_NONE) { const s = _monSpriteOf(BATTLE_PARTNER(battler)); if (s) s.invisible = false; }
     // 1:1 Task_ClearMonBg : detruire les Task_UpdateMonBg actives (sinon elles
     // continuent d'ecraser le scroll BG apres le demontage)
     for (let i = 0; i < 2; i++) {
