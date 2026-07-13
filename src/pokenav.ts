@@ -27,11 +27,71 @@ import { B_BUTTON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { BeginNormalPaletteFade } from './palette';
 import { PokenavResources, POKENAV_SUBSTRUCT_COUNT, FreePokenavSubstruct, _setGPokenavResources, gPokenavResources } from './pokenav_resources';
 import { IsActiveMenuLoopTaskActive } from './pokenav_main_menu';
+// ─── Table PokenavMenuCallbacks[15] (pokenav.c:52) : les 59 callbacks des 7 familles de menus,
+//     tous déjà portés dans les subscreens. Imports 1:1 par fichier. ─────────────────────────
+import { GetMenuHandlerCallback, FreeMenuHandlerSubstruct1, PokenavCallback_Init_ConditionMenu, PokenavCallback_Init_ConditionSearchMenu, PokenavCallback_Init_MainMenuCursorOnMap, PokenavCallback_Init_MainMenuCursorOnMatchCall, PokenavCallback_Init_MainMenuCursorOnRibbons } from './pokenav_menu_handler';
+import { CreateMenuHandlerLoopedTask, FreeMenuHandlerSubstruct2, IsMenuHandlerLoopedTaskActive, OpenPokenavMenuInitial, OpenPokenavMenuNotInitial } from './pokenav_menu_handler_gfx';
+import { CreateRegionMapLoopedTask, FreeRegionMapSubstruct1, FreeRegionMapSubstruct2, GetRegionMapCallback, IsRegionMapLoopedTaskActive, OpenPokenavRegionMap, PokenavCallback_Init_RegionMap } from './pokenav_region_map';
+import { FreeConditionGraphMenuSubstruct1, GetConditionGraphMenuCallback, PokenavCallback_Init_ConditionGraph_Party, PokenavCallback_Init_ConditionGraph_Search } from './pokenav_conditions';
+import { CreateConditionGraphMenuLoopedTask, FreeConditionGraphMenuSubstruct2, IsConditionGraphMenuLoopedTaskActive, OpenConditionGraphMenu } from './pokenav_conditions_gfx';
+import { CreateSearchResultsLoopedTask, FreeSearchResultSubstruct1, FreeSearchResultSubstruct2, GetConditionSearchResultsCallback, IsSearchResultLoopedTaskActive, OpenConditionSearchListFromGraph, OpenConditionSearchResults, PokenavCallback_Init_ConditionSearch, PokenavCallback_Init_ReturnToMonSearchList } from './pokenav_conditions_search_results';
+import { CreateMatchCallLoopedTask, FreeMatchCallSubstruct2, IsMatchCallLoopedTaskActive, OpenMatchCall } from './pokenav_match_call_gfx';
+import { FreeMatchCallSubstruct1, GetMatchCallCallback, PokenavCallback_Init_MatchCall } from './pokenav_match_call_list';
+import { CreateRibbonsMonListLoopedTask, FreeRibbonsMonList, FreeRibbonsMonMenu, GetRibbonsMonListCallback, IsRibbonsMonListLoopedTaskActive, OpenRibbonsMonList, OpenRibbonsMonListFromRibbonsSummary, PokenavCallback_Init_MonRibbonList, PokenavCallback_Init_RibbonsMonListFromSummary } from './pokenav_ribbons_list';
+import { CreateRibbonsSummaryLoopedTask, FreeRibbonsSummaryScreen1, FreeRibbonsSummaryScreen2, GetRibbonsSummaryMenuCallback, IsRibbonsSummaryLoopedTaskActive, OpenRibbonsSummaryMenu, PokenavCallback_Init_RibbonsSummaryMenu } from './pokenav_ribbons_summary';
 import { gPlayerParty, GetMonData, PARTY_SIZE } from './engine/battle/party-storage';
 import { MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG, MON_DATA_RIBBON_COUNT } from '../include/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
 import { CheckBoxMonSanityAt, GetBoxMonDataAt } from './pokemon_storage_system';
 import { InitKeys } from '../harness/runtime/decomp-runtime';
+
+/** 1:1 `struct PokenavCallbacks` (pokenav.c:27). bool32/u32 → number (permissif : les 59 ports
+ *  varient entre `boolean` et `number` pour bool32). */
+interface PokenavCallbacks {
+  init: () => boolean | number;
+  callback: () => number;
+  open: () => boolean | number;
+  createLoopTask: (state: number) => void;
+  isLoopTaskActive: () => boolean | number;
+  free1: () => void;
+  free2: () => void;
+}
+
+/** 1:1 `const struct PokenavCallbacks PokenavMenuCallbacks[15]` (pokenav.c:52). Indexé par
+ *  `menuId - POKENAV_MENU_IDS_START` ; entrées dans l'ordre de l'enum POKENAV_* (0..14). */
+const PokenavMenuCallbacks: PokenavCallbacks[] = [
+  // [0] POKENAV_MAIN_MENU
+  { init: PokenavCallback_Init_MainMenuCursorOnMap, callback: GetMenuHandlerCallback, open: OpenPokenavMenuInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [1] POKENAV_MAIN_MENU_CURSOR_ON_MAP
+  { init: PokenavCallback_Init_MainMenuCursorOnMap, callback: GetMenuHandlerCallback, open: OpenPokenavMenuNotInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [2] POKENAV_CONDITION_MENU
+  { init: PokenavCallback_Init_ConditionMenu, callback: GetMenuHandlerCallback, open: OpenPokenavMenuNotInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [3] POKENAV_CONDITION_SEARCH_MENU
+  { init: PokenavCallback_Init_ConditionSearchMenu, callback: GetMenuHandlerCallback, open: OpenPokenavMenuNotInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [4] POKENAV_MAIN_MENU_CURSOR_ON_MATCH_CALL
+  { init: PokenavCallback_Init_MainMenuCursorOnMatchCall, callback: GetMenuHandlerCallback, open: OpenPokenavMenuNotInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [5] POKENAV_MAIN_MENU_CURSOR_ON_RIBBONS
+  { init: PokenavCallback_Init_MainMenuCursorOnRibbons, callback: GetMenuHandlerCallback, open: OpenPokenavMenuNotInitial, createLoopTask: CreateMenuHandlerLoopedTask, isLoopTaskActive: IsMenuHandlerLoopedTaskActive, free1: FreeMenuHandlerSubstruct1, free2: FreeMenuHandlerSubstruct2 },
+  // [6] POKENAV_REGION_MAP
+  { init: PokenavCallback_Init_RegionMap, callback: GetRegionMapCallback, open: OpenPokenavRegionMap, createLoopTask: CreateRegionMapLoopedTask, isLoopTaskActive: IsRegionMapLoopedTaskActive, free1: FreeRegionMapSubstruct1, free2: FreeRegionMapSubstruct2 },
+  // [7] POKENAV_CONDITION_GRAPH_PARTY
+  { init: PokenavCallback_Init_ConditionGraph_Party, callback: GetConditionGraphMenuCallback, open: OpenConditionGraphMenu, createLoopTask: CreateConditionGraphMenuLoopedTask, isLoopTaskActive: IsConditionGraphMenuLoopedTaskActive, free1: FreeConditionGraphMenuSubstruct1, free2: FreeConditionGraphMenuSubstruct2 },
+  // [8] POKENAV_CONDITION_SEARCH_RESULTS
+  { init: PokenavCallback_Init_ConditionSearch, callback: GetConditionSearchResultsCallback, open: OpenConditionSearchResults, createLoopTask: CreateSearchResultsLoopedTask, isLoopTaskActive: IsSearchResultLoopedTaskActive, free1: FreeSearchResultSubstruct1, free2: FreeSearchResultSubstruct2 },
+  // [9] POKENAV_CONDITION_GRAPH_SEARCH
+  { init: PokenavCallback_Init_ConditionGraph_Search, callback: GetConditionGraphMenuCallback, open: OpenConditionGraphMenu, createLoopTask: CreateConditionGraphMenuLoopedTask, isLoopTaskActive: IsConditionGraphMenuLoopedTaskActive, free1: FreeConditionGraphMenuSubstruct1, free2: FreeConditionGraphMenuSubstruct2 },
+  // [10] POKENAV_RETURN_CONDITION_SEARCH
+  { init: PokenavCallback_Init_ReturnToMonSearchList, callback: GetConditionSearchResultsCallback, open: OpenConditionSearchListFromGraph, createLoopTask: CreateSearchResultsLoopedTask, isLoopTaskActive: IsSearchResultLoopedTaskActive, free1: FreeSearchResultSubstruct1, free2: FreeSearchResultSubstruct2 },
+  // [11] POKENAV_MATCH_CALL
+  { init: PokenavCallback_Init_MatchCall, callback: GetMatchCallCallback, open: OpenMatchCall, createLoopTask: CreateMatchCallLoopedTask, isLoopTaskActive: IsMatchCallLoopedTaskActive, free1: FreeMatchCallSubstruct1, free2: FreeMatchCallSubstruct2 },
+  // [12] POKENAV_RIBBONS_MON_LIST
+  { init: PokenavCallback_Init_MonRibbonList, callback: GetRibbonsMonListCallback, open: OpenRibbonsMonList, createLoopTask: CreateRibbonsMonListLoopedTask, isLoopTaskActive: IsRibbonsMonListLoopedTaskActive, free1: FreeRibbonsMonList, free2: FreeRibbonsMonMenu },
+  // [13] POKENAV_RIBBONS_SUMMARY_SCREEN
+  { init: PokenavCallback_Init_RibbonsSummaryMenu, callback: GetRibbonsSummaryMenuCallback, open: OpenRibbonsSummaryMenu, createLoopTask: CreateRibbonsSummaryLoopedTask, isLoopTaskActive: IsRibbonsSummaryLoopedTaskActive, free1: FreeRibbonsSummaryScreen1, free2: FreeRibbonsSummaryScreen2 },
+  // [14] POKENAV_RIBBONS_RETURN_TO_MON_LIST
+  { init: PokenavCallback_Init_RibbonsMonListFromSummary, callback: GetRibbonsMonListCallback, open: OpenRibbonsMonListFromRibbonsSummary, createLoopTask: CreateRibbonsMonListLoopedTask, isLoopTaskActive: IsRibbonsMonListLoopedTaskActive, free1: FreeRibbonsMonList, free2: FreeRibbonsMonMenu },
+];
+void PokenavMenuCallbacks; // inerte tant que SetActivePokenavMenu/Task_Pokenav ne l'utilisent pas (prochain cycle)
 
 // 1:1 décomp pokenav.h POKENAV_MENU_* (entrées du menu principal, base).
 // Libellés FR statiques (les gText_Pokenav* ne sont pas dans decomp-strings (harness) —
