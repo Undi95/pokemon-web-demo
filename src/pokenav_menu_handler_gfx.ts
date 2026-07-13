@@ -624,14 +624,14 @@ function LoopedTask_OpenMenu(state: number): number {
         return LT_PAUSE;
       DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTiles, 0, 0, 0);
       DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTilemap, 0, 0, 1);
-      CopyPaletteIntoBufferUnfaded(sPokenavDeviceBgPal, BG_PLTT_ID(2), sPokenavDeviceBgPal.length /* TRANSPILER-TODO sizeof */);
+      CopyPaletteIntoBufferUnfaded(sPokenavDeviceBgPal, BG_PLTT_ID(2), sPokenavDeviceBgPal.length * 2 /* sizeof = octets (u16 count * 2) */);
       return LT_INC_AND_PAUSE;
     case 2:
       if (FreeTempTileDataBuffersIfPossible())
         return LT_PAUSE;
       DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTiles, 0, 0, 0);
       DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTilemap, 0, 0, 1);
-      CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal, BG_PLTT_ID(3), sPokenavBgDotsPal.length /* TRANSPILER-TODO sizeof */);
+      CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal, BG_PLTT_ID(3), sPokenavBgDotsPal.length * 2 /* sizeof = octets (u16 count * 2) */);
       if (GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION || GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION_SEARCH)
         ChangeBgDotsColorToPurple();
       return LT_INC_AND_PAUSE;

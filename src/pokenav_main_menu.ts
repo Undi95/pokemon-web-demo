@@ -527,7 +527,15 @@ function LoopedTask_SlideMenuHeaderDown(state: number): number {
 
 /** 1:1 `void CopyPaletteIntoBufferUnfaded(const u16 *palette, u32 bufferOffset, u32 size)` (pokenav_main_menu.c:444-447). */
 export function CopyPaletteIntoBufferUnfaded(palette: Uint16Array, bufferOffset: number, size: number): void {
-  CpuCopy16(palette, gPlttBufferUnfaded[bufferOffset] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, size);
+  // 1:1 décomp `CpuCopy16(palette, &gPlttBufferUnfaded[bufferOffset], size)`. Le transpileur avait rendu
+  // `&gPlttBufferUnfaded[offset]` (POINTEUR destination) en `gPlttBufferUnfaded[offset]` (SCALAIRE = valeur)
+  // → CpuCopy16 écrivait dans le vide → AUCUNE palette bg pokénav ne chargeait (bandeau/device/dots stale).
+  // gPlttBufferUnfaded est un Proxy : on écrit via `.set(i, v)` comme LoadPalette (decomp-globals:315). size=OCTETS.
+  const rt = getRuntime();
+  if (!rt || !palette) return;
+  const n = size >> 1;
+  for (let i = 0; i < n && i < palette.length; i++)
+    rt.gPlttBufferUnfaded.set(bufferOffset + i, palette[i]);
 }
 
 /** 1:1 `void Pokenav_AllocAndLoadPalettes(const struct SpritePalette *palettes)` (pokenav_main_menu.c:449-467). */
