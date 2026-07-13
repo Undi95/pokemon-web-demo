@@ -35,7 +35,7 @@ import type { WindowTemplate } from './window';
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
-import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
+import { AllocSubstruct, FreePokenavSubstruct, GetSelectedConditionSearch, GetSubstructPtr } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
 import { CheckBoxMonSanityAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
@@ -46,7 +46,6 @@ const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBoxMonData: any = __wireTodo('GetBoxMonData');
 import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const GetSelectedConditionSearch: any = __wireTodo('GetSelectedConditionSearch');
 const InitBgTemplates: any = __wireTodo('InitBgTemplates');
 const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
 const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');

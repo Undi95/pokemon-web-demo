@@ -24,9 +24,8 @@ import { gStringVar4 } from './string_util';
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask } from './pokenav_looped_task';
-import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
+import { AllocSubstruct, FreePokenavSubstruct, GetPokenavMode, GetSubstructPtr, SetPokenavMode } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const GetPokenavMode: any = __wireTodo('GetPokenavMode');
 const GetTrainerIdxByRematchIdx: any = __wireTodo('GetTrainerIdxByRematchIdx');
 const MatchCall_GetEnabled: any = __wireTodo('MatchCall_GetEnabled');
 const MatchCall_GetMapSec: any = __wireTodo('MatchCall_GetMapSec');
@@ -39,7 +38,6 @@ const MatchCall_HasCheckPage: any = __wireTodo('MatchCall_HasCheckPage');
 const MatchCall_HasRematchId: any = __wireTodo('MatchCall_HasRematchId');
 const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
 const SelectMatchCallMessage: any = __wireTodo('SelectMatchCallMessage');
-const SetPokenavMode: any = __wireTodo('SetPokenavMode');
 const gFacilityClassToPicIndex: any = __wireTodo('gFacilityClassToPicIndex');
 const gMatchCallFlavorTexts: any = __wireTodo('gMatchCallFlavorTexts');
 const gTrainers: any = __wireTodo('gTrainers');

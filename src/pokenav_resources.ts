@@ -62,3 +62,35 @@ export function GetSubstructPtr(index: number): Record<string, unknown> | null {
 export function FreePokenavSubstruct(index: number): void {
   gPokenavResources!.substructPtrs[index] = null;
 }
+
+// 1:1 include/pokenav.h:158,162 — bornes d'items du menu recherche condition (défaut local, à consolider include/).
+const POKENAV_MENUITEM_CONDITION_SEARCH_COOL = 8;
+const POKENAV_MENUITEM_CONDITION_SEARCH_TOUGH = 12;
+
+/** 1:1 décomp `u32 GetPokenavMode(void)` (pokenav.c:563). */
+export function GetPokenavMode(): number {
+  return gPokenavResources!.mode;
+}
+
+/** 1:1 décomp `void SetPokenavMode(u16 mode)` (pokenav.c:568). */
+export function SetPokenavMode(mode: number): void {
+  gPokenavResources!.mode = mode;
+}
+
+/** 1:1 décomp `void SetSelectedConditionSearch(u32 cursorPos)` (pokenav.c:573). */
+export function SetSelectedConditionSearch(cursorPos: number): void {
+  let searchId = cursorPos;
+  if (searchId > POKENAV_MENUITEM_CONDITION_SEARCH_TOUGH - POKENAV_MENUITEM_CONDITION_SEARCH_COOL)
+    searchId = 0;
+  gPokenavResources!.conditionSearchId = searchId;
+}
+
+/** 1:1 décomp `u32 GetSelectedConditionSearch(void)` (pokenav.c:582). */
+export function GetSelectedConditionSearch(): number {
+  return gPokenavResources!.conditionSearchId;
+}
+
+/** 1:1 décomp `bool32 CanViewRibbonsMenu(void)` (pokenav.c:587). */
+export function CanViewRibbonsMenu(): boolean {
+  return gPokenavResources!.hasAnyRibbons;
+}
