@@ -571,7 +571,9 @@ export class DecompRuntime {
    *  indexé par SLOT 0-63 (`undefined` = slot libre, vs dummy sprite côté décomp).
    *  Accès `gSprites[i]` (1:1). CreateSprite scanne le 1er slot libre, DestroySprite
    *  remet `undefined`. Façade Map transitionnelle retirée (Lot 3b keystone E1). */
-  gSprites: (DecompSprite | undefined)[] = new Array(MAX_SPRITES);
+  // 1:1 décomp `struct Sprite gSprites[MAX_SPRITES + 1]` (sprite.c:280) : le 65e slot (index
+  // MAX_SPRITES) est la sentinelle « poubelle » des allocations échouées (posée par ResetSpriteData).
+  gSprites: (DecompSprite | undefined)[] = new Array(MAX_SPRITES + 1);
   /** 1:1 décomp `gSpriteCoordOffsetX/Y` (EWRAM, sprite.c:289-290). Offset caméra
    *  ajouté par `UpdateOamCoords` aux sprites `coordOffsetEnabled` (= overworld).
    *  Écrit chaque frame par `UpdateCameraPanning` (field-camera.ts), lu par

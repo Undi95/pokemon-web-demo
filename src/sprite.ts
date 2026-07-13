@@ -1454,6 +1454,39 @@ export function DestroySprite(spriteId: number): void {
  *  le harness `DecompRuntime.ResetSpriteData` y délègue (13 call-sites).
  *  E2.3b : accède aux arrays `sSpriteTile*` EN DIRECT (statics du MÊME module = 1:1
  *  décomp) au lieu du hack `globalThis.__sprite`, et `setReservedSpriteTileCount(0)`. */
+/** Sentinelle « poubelle » = 1:1 décomp `gSprites[MAX_SPRITES]` (sprite.c:280 : `struct Sprite
+ *  gSprites[MAX_SPRITES + 1]`). Les allocations échouées (`CreateSprite` → renvoie `MAX_SPRITES`
+ *  quand OAM/slots épuisés, cf. :1622) y écrivent SANS effet — c'est le sprite « trash » du décomp.
+ *  Le port allouait `new Array(MAX_SPRITES)` (64 slots, pas d'index 64) → `gSprites[64].invisible = …`
+ *  crashait (ex. CreateLeftHeaderSprites → boucle de re-run → fuite de sprites). Fraîche à chaque reset. */
+function _makeTrashSprite(): DecompSprite {
+  return {
+    oamIndex: -1, data: new Int16Array(16) as unknown as number[], invisible: true,
+    inUse: false,
+    x: 0, y: 0, x2: 0, y2: 0,
+    hFlip: false, vFlip: false,
+    matrixNum: 0,
+    centerToCornerVecX: 0, centerToCornerVecY: 0,
+    animEnded: false, affineAnimEnded: false,
+    callback: null,
+    spriteId: MAX_SPRITES, tileBase: 0,
+    objMode: 0,
+    affineAnimsTableName: null,
+    affineAnimNum: 0, affineAnimCmdIndex: 0, affineAnimDelayCounter: 0,
+    xScale: 0x100, yScale: 0x100, rotation: 0,
+    affineAnimBeginning: false, affineAnimPaused: false,
+    shape: 0, size: 0,
+    affineMode: 0,
+    subpriority: 0xFF,
+    animNum: 0, animCmdIndex: 0, animDelayCounter: 0, animLoopCounter: 0,
+    animBeginning: false,
+    animPaused: false,
+    images: null, anims: null,
+    usingSheet: false, sheetTileStart: 0,
+    subspriteMode: 'off',
+  };
+}
+
 export function ResetSpriteData(): void {
   const rt = _rt();
   // ⚠️ Fix 2026-05-24 : avant de clear gSprites + OAMs, notifier les modules qui
@@ -1469,6 +1502,7 @@ export function ResetSpriteData(): void {
   }
   for (let i = 0; i < 128; i++) rt.gba.oam[i].visible = false;
   rt.gSprites.fill(undefined);
+  rt.gSprites[MAX_SPRITES] = _makeTrashSprite(); // sentinelle 1:1 décomp (re-posée après le fill)
   rt.nextOamSlot = 0;
   rt.nextSpriteId = 0;
   // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM).
