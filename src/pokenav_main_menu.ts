@@ -32,14 +32,14 @@ import type { BgTemplate } from './window';
 import type { OamData } from '../include/gba/types';
 import { __wireTodo } from './engine/wire-todo';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AllocSubstruct: any = __wireTodo('AllocSubstruct');
-const CreateLoopedTask: any = __wireTodo('CreateLoopedTask');
+import { AllocSubstruct } from './pokenav_resources'; // câblé (ex-__wireTodo)
+import { CreateLoopedTask } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
 const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
 const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
 const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
 const GetBgY: any = __wireTodo('GetBgY');
-const GetSubstructPtr: any = __wireTodo('GetSubstructPtr');
-const IsLoopedTaskActive: any = __wireTodo('IsLoopedTaskActive');
+import { GetSubstructPtr } from './pokenav_resources'; // câblé (ex-__wireTodo)
+import { IsLoopedTaskActive } from './pokenav_looped_task'; // câblé (ex-__wireTodo)
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
 const ResetBgPositions: any = __wireTodo('ResetBgPositions');
