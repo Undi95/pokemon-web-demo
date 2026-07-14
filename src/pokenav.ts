@@ -148,6 +148,13 @@ export function VBlankCB_Pokenav(): void {
   TransferPlttBuffer();
 }
 
+/** 1:1 décomp `void SetPokenavVBlankCallback(void)` (pokenav.c:542) = SetVBlankCallback(VBlankCB_Pokenav).
+ *  Appelée par les subscreens/glow (menu_handler_gfx, conditions_gfx, region_map) pour restaurer le
+ *  VBlank Pokénav après un effet scanline. */
+export function SetPokenavVBlankCallback(): void {
+  getRuntime()?.SetVBlankCallback(VBlankCB_Pokenav as never);
+}
+
 /** Câblage start menu (remplace le fallback message). */
 export function StartMenu_OpenPokenav(): void {
   const rt = getRuntime();
