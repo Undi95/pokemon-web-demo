@@ -7,7 +7,7 @@
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 
-import { LoadCompressedSpriteSheet, SpriteCallbackDummy } from '../harness/runtime/decomp-globals';
+import { LoadCompressedSpriteSheet, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
 import { ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
@@ -698,14 +698,15 @@ function EraseListEntry(listWindow: PokenavListMenuWindow, offset: number, entri
 /** 1:1 `static void SetListMarginTile(struct PokenavListMenuWindow *listWindow, bool32 draw)` (pokenav_list.c:695-708). */
 function SetListMarginTile(listWindow: PokenavListMenuWindow, draw: boolean): void {
   let var_ = 0;
-  let tilemapBuffer = GetBgTilemapBuffer(GetWindowAttribute(listWindow.windowId, WINDOW_BG));
-  tilemapBuffer += (listWindow.unkA << 6) + listWindow.x - 1;
+  const tilemapBuffer = GetBgTilemapBuffer(GetWindowAttribute(listWindow.windowId, WINDOW_BG));
+  // 1:1 `tilemapBuffer += (listWindow->unkA << 6) + listWindow->x - 1;` — ptr u16* C → offset d'indexation JS.
+  const p = (listWindow.unkA << 6) + listWindow.x - 1;
   if (draw)
     var_ = (listWindow.fillValue << 12) | (listWindow.tileOffset + 1);
   else
     var_ = (listWindow.fillValue << 12) | (listWindow.tileOffset);
-  tilemapBuffer[0] = var_;
-  tilemapBuffer[0x20] = var_;
+  tilemapBuffer[p + 0] = var_;
+  tilemapBuffer[p + 0x20] = var_;
 }
 
 // Print the trainer's name and title at the top of their check page
@@ -857,6 +858,15 @@ function LoadListArrowGfx(): void {
 }
 
 /** 1:1 `static void CreateListArrowSprites(struct PokenavListWindowState *windowState, struct PokenavListSub *list)` (pokenav_list.c:852-871). */
+// Modèle sprite FLAT (pas de `sprite.oam` imbriqué) : `sprite->oam.tileNum += N`
+// se traduit en bump de `tileBase` (relu par le render) + de l'entrée OAM live.
+// Précédent validé : _addOamTile (battle_anim_fight.ts:172-179).
+function _bumpArrowOamTile(sprite: any, delta: number): void {
+  if (typeof sprite.tileBase === 'number') sprite.tileBase += delta;
+  const oam = sprite.oamIndex !== undefined ? getRuntime()?.gba?.oam?.[sprite.oamIndex] : undefined;
+  if (oam) oam.tileId += delta;
+}
+
 function CreateListArrowSprites(windowState: PokenavListWindowState, list: PokenavListSub): void {
   let spriteId = 0;
   let x = 0;
@@ -866,11 +876,11 @@ function CreateListArrowSprites(windowState: PokenavListWindowState, list: Poken
   x = list.listWindow.x * 8 + (list.listWindow.width - 1) * 4;
   spriteId = CreateSprite(sSpriteTemplate_UpDownArrow, x, list.listWindow.y * 8 + windowState.entriesOnscreen * 16, 7);
   list.downArrow = gSprites[spriteId];
-  list.downArrow.oam.tileNum += 2;
+  _bumpArrowOamTile(list.downArrow, 2); // 1:1 list->downArrow->oam.tileNum += 2
   list.downArrow.callback = SpriteCB_DownArrow;
   spriteId = CreateSprite(sSpriteTemplate_UpDownArrow, x, list.listWindow.y * 8, 7);
   list.upArrow = gSprites[spriteId];
-  list.upArrow.oam.tileNum += 4;
+  _bumpArrowOamTile(list.upArrow, 4); // 1:1 list->upArrow->oam.tileNum += 4
   list.upArrow.callback = SpriteCB_UpArrow;
 }
 

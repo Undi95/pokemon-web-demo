@@ -938,27 +938,30 @@ const POKEBALL_ICON_EMPTY = 20482;
 /** 1:1 `static void TryDrawRematchPokeballIcon(u16 windowId, u32 rematchId, u32 tileOffset)` (pokenav_match_call_gfx.c:931-946). */
 function TryDrawRematchPokeballIcon(windowId: number, rematchId: number, tileOffset: number): void {
   let bg = GetWindowAttribute(windowId, WINDOW_BG);
-  let tilemap = GetBgTilemapBuffer(bg);
-  tilemap += tileOffset * 64 + 0x1D;
+  const tilemap = GetBgTilemapBuffer(bg);
+  // 1:1 `tilemap += tileOffset * 64 + 0x1D;` — arithmétique de pointeur u16* C → offset d'indexation JS
+  // (Uint16Array : `+= N` le stringifierait, cf. pièges pointer-walk).
+  const p = tileOffset * 64 + 0x1D;
   if (ShouldDrawRematchPokeballIcon(rematchId))
   {
-    tilemap[0] = POKEBALL_ICON_TOP;
-    tilemap[0x20] = POKEBALL_ICON_BOTTOM;
+    tilemap[p + 0] = POKEBALL_ICON_TOP;
+    tilemap[p + 0x20] = POKEBALL_ICON_BOTTOM;
   }
   else
   {
-    tilemap[0] = POKEBALL_ICON_EMPTY;
-    tilemap[0x20] = POKEBALL_ICON_EMPTY;
+    tilemap[p + 0] = POKEBALL_ICON_EMPTY;
+    tilemap[p + 0x20] = POKEBALL_ICON_EMPTY;
   }
 }
 
 /** 1:1 `void ClearRematchPokeballIcon(u16 windowId, u32 tileOffset)` (pokenav_match_call_gfx.c:948-955). */
 export function ClearRematchPokeballIcon(windowId: number, tileOffset: number): void {
   let bg = GetWindowAttribute(windowId, WINDOW_BG);
-  let tilemap = GetBgTilemapBuffer(bg);
-  tilemap += tileOffset * 64 + 0x1D;
-  tilemap[0] = POKEBALL_ICON_EMPTY;
-  tilemap[0x20] = POKEBALL_ICON_EMPTY;
+  const tilemap = GetBgTilemapBuffer(bg);
+  // 1:1 `tilemap += tileOffset * 64 + 0x1D;` — arithmétique de pointeur u16* C → offset d'indexation JS.
+  const p = tileOffset * 64 + 0x1D;
+  tilemap[p + 0] = POKEBALL_ICON_EMPTY;
+  tilemap[p + 0x20] = POKEBALL_ICON_EMPTY;
 }
 
 /** 1:1 `static void DrawMatchCallLeftColumnWindows(struct Pokenav_MatchCallGfx *gfx)` (pokenav_match_call_gfx.c:957-966). */
