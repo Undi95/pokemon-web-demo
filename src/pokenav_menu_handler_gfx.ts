@@ -1197,23 +1197,28 @@ function StartOptionSlide(sprites: any, startX: number, endX: number, time: numb
 
 /** 1:1 `static void StartOptionZoom(struct Sprite **sprites)` (pokenav_menu_handler_gfx.c:1019-1042). */
 function StartOptionZoom(sprites: any): void {
-  let i = 0;
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
-  let taskId = 0;
-  for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
+  // 1:1 décomp : `sprites` = struct Sprite** (les NUM_OPTION_SUBSPRITES subsprites de l'option
+  // sélectionnée). Le décomp itère via `(*sprites)` + `sprites++` ; le transpileur avait laissé
+  // les 6 assigns en `void 0` (no-op) ET `sprites++` sur un tableau JS → `sprites` devenait NaN
+  // dès i=1 → `sprites[0]` undefined → InitSpriteAffineAnim(undefined) crash `affineAnimNum`.
+  // Rétabli en itération indexée `sprites[i]`.
+  for (let i = 0; i < NUM_OPTION_SUBSPRITES; i++)
   {
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->oam.objMode = ST_OAM_OBJ_BLEND */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->oam.affineMode = ST_OAM_AFFINE_DOUBLE */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->callback = SpriteCB_OptionZoom */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sZoomDelay = 8 */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sZoomSetAffine = FALSE */;
-    void 0 /* TRANSPILER-TODO ASSIGN: (*sprites)->sZoomSubspriteId = i */;
-    InitSpriteAffineAnim(sprites[0]);
-    StartSpriteAffineAnim(sprites[0], 0);
-    sprites++ /* TRANSPILER-TODO ptr-arith */;
+    const s = sprites[i];
+    // Modèle sprite PLAT (pas de `.oam` nesté ; sonde : hasOam=false, champs objMode/affineMode
+    // directs). Le sync `sprite.objMode → gba.oam[oamIndex]` se fait au render (decomp-runtime:1444).
+    s.objMode = ST_OAM_OBJ_BLEND;
+    s.affineMode = ST_OAM_AFFINE_DOUBLE;
+    s.callback = SpriteCB_OptionZoom;
+    s.data[0] /* sZoomDelay */ = 8;
+    s.data[1] /* sZoomSetAffine */ = 0; // FALSE
+    s.data[7] /* sZoomSubspriteId */ = i;
+    InitSpriteAffineAnim(s);
+    StartSpriteAffineAnim(s, 0);
   }
   SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));
-  taskId = CreateTask((t: { taskId: number }) => Task_OptionBlend(t.taskId), 3);
+  const taskId = CreateTask((t: { taskId: number }) => Task_OptionBlend(t.taskId), 3);
   gTasks[taskId].data[0] /* tBlendDelay */ = 8;
   gfx.numIconsBlending++;
 }
@@ -1279,10 +1284,18 @@ function SpriteCB_OptionZoom(sprite: DecompSprite): void {
       if (sprite.affineAnimEnded)
       {
         sprite.invisible = true;
-        FreeOamMatrix(sprite.oam.matrixNum);
-        CalcCenterToCornerVec(sprite, sprite.oam.shape, sprite.oam.size, ST_OAM_AFFINE_OFF);
-        sprite.oam.affineMode = ST_OAM_AFFINE_OFF;
-        sprite.oam.objMode = ST_OAM_OBJ_NORMAL;
+        FreeOamMatrix(sprite.matrixNum);
+        // ADAPTATION MOTEUR : port `CalcCenterToCornerVec(shape, size, affineMode)` RETOURNE le
+        // vecteur (≠ décomp qui modifie le sprite) ; shape/size viennent de l'OAM shadow
+        // rt.gba.oam[oamIndex] (modèle plat, cf. l.564 + battle_anim_mons.ts:472-479).
+        {
+          const _oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+          const _v = CalcCenterToCornerVec(_oam?.shape ?? 0, _oam?.size ?? 0, ST_OAM_AFFINE_OFF);
+          sprite.centerToCornerVecX = _v.centerToCornerVecX;
+          sprite.centerToCornerVecY = _v.centerToCornerVecY;
+        }
+        sprite.affineMode = ST_OAM_AFFINE_OFF;
+        sprite.objMode = ST_OAM_OBJ_NORMAL;
         sprite.callback = SpriteCallbackDummy;
       }
     }
