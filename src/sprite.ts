@@ -1412,9 +1412,15 @@ export function SeekSpriteAnim(rt: DecompRuntime, sprite: AnimDispatchSprite, an
  *  l'OAM, marque le slot libre (inUse=false), retire le callback. NE remet PAS
  *  `gSprites[id] = undefined` — 1:1 décomp, le slot reste jusqu'à réallocation
  *  (les sprites enfants lisent encore `gSprites[parentId].data`). */
-export function DestroySprite(spriteId: number): void {
+// Décomp `void DestroySprite(struct Sprite *sprite)` : prend un POINTEUR. Le code
+// transcrit passe donc des objets (`DestroySprite(list->rightArrow)`) ; les sites
+// harness historiques passent des IDs. Accepter les deux — un objet passé à
+// `rt.gSprites[obj]` rendait undefined → no-op SILENCIEUX (flèches pokenav_list
+// orphelines → leur callback lisait le substruct libéré → throw chaque frame →
+// runSpriteCallbacks tué → menu principal sans options au retour du Match Call).
+export function DestroySprite(spriteOrId: number | DecompSprite | null | undefined): void {
   const rt = _rt();
-  const sprite = rt.gSprites[spriteId];
+  const sprite = typeof spriteOrId === 'number' ? rt.gSprites[spriteOrId] : spriteOrId;
   if (!sprite) return;
   // 1:1 STRICT décomp sprite.c:618-631 :
   //   void DestroySprite(struct Sprite *sprite) {
