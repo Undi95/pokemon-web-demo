@@ -322,17 +322,21 @@ const sSpinningPokenavSpriteOam = {
 };
 
 /** 1:1 (pokenav_main_menu.c:213) */
-const sSpinningPokenavAnims = {
-  type: ANIMCMD_FRAME(0, 8),
-  frame: ANIMCMD_FRAME(16, 8),
-  loop: ANIMCMD_FRAME(32, 8),
-  jump: ANIMCMD_FRAME(48, 8),
-  f100: ANIMCMD_FRAME(64, 8), /* TRANSPILER-TODO champ */
-  f101: ANIMCMD_FRAME(80, 8), /* TRANSPILER-TODO champ */
-  f102: ANIMCMD_FRAME(96, 8), /* TRANSPILER-TODO champ */
-  f103: ANIMCMD_FRAME(112, 8), /* TRANSPILER-TODO champ */
-  f104: ANIMCMD_JUMP(0), /* TRANSPILER-TODO champ */
-};
+// 1:1 `static const union AnimCmd sSpinningPokenavAnims[]` = TABLEAU de commandes d'anim (8 frames de
+// rotation, tuiles 0→112 par pas de 16, puis ANIMCMD_JUMP(0) pour boucler). ⚠️ le transpileur l'avait
+// rendu en OBJET (champs type/frame/loop/jump/f100…) → `sprite.anims[0]` non-itérable → tickSpriteAnims
+// figeait l'icône (animBeginning restait vrai). Tableau = l'anim de frames cycle → l'icône tourne.
+const sSpinningPokenavAnims = [
+  ANIMCMD_FRAME(0, 8),
+  ANIMCMD_FRAME(16, 8),
+  ANIMCMD_FRAME(32, 8),
+  ANIMCMD_FRAME(48, 8),
+  ANIMCMD_FRAME(64, 8),
+  ANIMCMD_FRAME(80, 8),
+  ANIMCMD_FRAME(96, 8),
+  ANIMCMD_FRAME(112, 8),
+  ANIMCMD_JUMP(0),
+];
 
 /** 1:1 (pokenav_main_menu.c:226) */
 const sSpinningPokenavAnimTable = [
