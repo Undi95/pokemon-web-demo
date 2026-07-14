@@ -12,7 +12,7 @@ import { ClearGpuRegBits, RGB, ST_OAM_4BPP, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
 import { TEXT_COLOR_BLUE, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_GREEN } from '../include/constants/characters';
 import { SE_FAILURE, SE_POKENAV_ON, SE_SELECT } from '../include/constants/songs';
 import { DISPLAY_HEIGHT } from '../include/gba/defines';
-import { DISPCNT_WIN0_ON, DMA_DEST_RELOAD, DMA_ENABLE, DMA_REPEAT, DMA_START_HBLANK, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT } from '../include/gba/io_reg';
+import { DISPCNT_WIN0_ON, DMA_DEST_RELOAD, DMA_ENABLE, DMA_REPEAT, DMA_START_HBLANK, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
@@ -1523,6 +1523,16 @@ function SetMenuOptionGlow(): void {
   CpuFill16(0, gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
   CpuFill16(RGB(16, 23, 28), gScanlineEffectRegBuffers[0][r4] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, 0x20);
   CpuFill16(RGB(16, 23, 28), gScanlineEffectRegBuffers[1][r4] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, 0x20);
+  // ADAPTATION MOTEUR : le décomp module REG_WIN0H PAR LIGNE via un effet scanline (HBlank DMA) pour créer
+  // une box (options x=114..240 = la valeur RGB(16,23,28) mise dans le buffer) × (ligne sélectionnée
+  // r4..r4+0x20). Le renderer du port ne réplique PAS la DMA HBlank par-ligne (WIN0H reste statique →
+  // TOUS les OBJ clignotaient). On pose donc la MÊME box en fenêtre STATIQUE : WIN0H = la valeur du buffer,
+  // WIN0V = la ligne du curseur. Le blend LIGHTEN-OBJ n'agit que dans WIN0 → seule la cellule sélectionnée
+  // glow (résultat visuel identique au décomp ; mis à jour à chaque nav car SetMenuOptionGlow y est rappelé).
+  // Hauteur = 16 scanlines : le décomp fait `CpuFill16(RGB, &buffer[r4], 0x20)` où 0x20 est en OCTETS
+  // (CpuFill16 compte en octets) = 0x20/2 = 0x10 = 16 entrées u16 = 16 scanlines. (Box = r4 .. r4+0x10.)
+  SetGpuReg(REG_OFFSET_WIN0H, RGB(16, 23, 28));
+  SetGpuReg(REG_OFFSET_WIN0V, ((r4 << 8) | ((r4 + 0x10) & 0xFF)) & 0xFFFF);
 }
 
 /** 1:1 `void ResetBldCnt_(void)` (pokenav_menu_handler_gfx.c:1377-1380). */
