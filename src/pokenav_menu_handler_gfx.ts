@@ -569,28 +569,47 @@ function _spriteOamPaletteNumSet(sprite: any, n: number): void {
 //     §E.1). La ROM les a en INCBIN ; ici on fetch message/device/dots/options/blue_light depuis
 //     public/decomp/em/pokenav/ puis on peuple les statics + reconstruit les 2 structures sprite/palette
 //     (qui capturaient null/placeholder au module-load). Gate LT_PAUSE en case 0 (comme le bandeau). ───
+// Ordre de concaténation des 13 gfx d'options = build décomp `graphics_file_rules.mk:338`
+// (`options.4bpp: cat hoenn_map.4bpp condition.4bpp … cancel.4bpp`). Chaque PNG = 32×64 = 0x20 tiles
+// → colle aux offsets `sOptionsLabelGfx_*` (0x000, 0x020, …). ⚠️ `options.bin` (72 o) est le TILEMAP
+// `gPokenavOptions_Tilemap` (utilisé par le sous-écran Condition, pokenav_conditions_gfx.c:226), PAS le gfx.
+const OPTION_GFX_FILES = ['hoenn_map', 'condition', 'match_call', 'ribbons', 'switch_off', 'party', 'search', 'cool', 'beauty', 'cute', 'smart', 'tough', 'cancel'];
+/** Reconstruit gPokenavOptions_Gfx (416 tiles = 0x3400 o) = concat des 13 .4bpp individuels (le `@cat` du Makefile). */
+async function _loadPokenavOptionsGfx(B: string): Promise<Uint8Array> {
+  const parts = await Promise.all(OPTION_GFX_FILES.map((n) => loadTileBin(B + 'options/' + n + '.png', 4)));
+  let total = 0;
+  for (const p of parts) total += p.length;
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) { out.set(p, off); off += p.length; }
+  return out;
+}
+
 let _pokenavMenuGfxLoaded = false;
 function _pokenavLoadMenuGraphics(): void {
   if (_pokenavMenuGfxLoaded) return;
   const B = '/decomp/em/pokenav/';
   void (async () => {
     try {
-      const [mGfx, mPal, mTm, dGfx, dPal, dTm, bGfx, bPal, bTm, oGfx, oPal, blGfx] = await Promise.all([
+      const [mGfx, mPal, mTm, dGfx, dPal, dTm, bGfx, bPal, bTm, oGfx, oPal, blGfx, blPal] = await Promise.all([
         loadTileBin(B + 'message.png', 4), extractPngPlte(B + 'message.png'), loadTilemapBin(B + 'message.bin'),
         loadTileBin(B + 'device_outline.png', 4), extractPngPlte(B + 'device_outline.png'), loadTilemapBin(B + 'device_outline_map.bin'),
         loadTileBin(B + 'bg_dots.png', 4), extractPngPlte(B + 'bg_dots.png'), loadTilemapBin(B + 'bg_dots.bin'),
-        loadTileBin(B + 'options/options.bin', 4), loadGbaPal(B + 'options/options.pal'),
-        loadTileBin(B + 'blue_light.png', 4),
+        _loadPokenavOptionsGfx(B), loadGbaPal(B + 'options/options.pal'),
+        loadTileBin(B + 'blue_light.png', 4), extractPngPlte(B + 'blue_light.png'),
       ]);
       gPokenavMessageBox_Gfx = mGfx; gPokenavMessageBox_Pal = mPal; gPokenavMessageBox_Tilemap = mTm;
       sPokenavDeviceBgTiles = dGfx; sPokenavDeviceBgPal = dPal; sPokenavDeviceBgTilemap = dTm;
       sPokenavBgDotsTiles = bGfx; sPokenavBgDotsPal = bPal; sPokenavBgDotsTilemap = bTm;
-      gPokenavOptions_Gfx = oGfx; gPokenavOptions_Pal = oPal; sMatchCallBlueLightTiles = blGfx;
+      gPokenavOptions_Gfx = oGfx; gPokenavOptions_Pal = oPal; sMatchCallBlueLightTiles = blGfx; sMatchCallBlueLightPal = blPal;
       // reconstruire les structures qui capturaient les assets au module-load :
       (sPokenavOptionsSpriteSheets[0] as any).data = oGfx;
       (sPokenavOptionsSpriteSheets[1] as any).data = blGfx;
-      for (let i = 0; i < sPokenavOptionsSpritePalettes.length; i++)
+      // [0..4] = les 5 sous-palettes d'options (gPokenavOptions_Pal[0x00..0x40]) ; [5] = BLUE_LIGHT ;
+      // [6] = terminateur `[]` — NE PAS écraser sa `.data` (sinon Pokenav_AllocAndLoadPalettes ne s'arrête plus).
+      for (let i = 0; i < 5; i++)
         (sPokenavOptionsSpritePalettes[i] as any).data = oPal.subarray(i * 0x10);
+      (sPokenavOptionsSpritePalettes[5] as any).data = blPal;
     } catch (e) {
       console.error('[pokenav menu gfx load]', e);
     } finally {

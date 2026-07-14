@@ -540,10 +540,19 @@ export function CopyPaletteIntoBufferUnfaded(palette: Uint16Array, bufferOffset:
 
 /** 1:1 `void Pokenav_AllocAndLoadPalettes(const struct SpritePalette *palettes)` (pokenav_main_menu.c:449-467). */
 export function Pokenav_AllocAndLoadPalettes(palettes: any): void {
-  let current: any = null;
   let index = 0;
-  for (current = palettes; current.data != null; current++ /* TRANSPILER-TODO ptr-arith */)
+  // 1:1 `for (current = palettes; current->data != NULL; current++)` — le décomp itère un
+  // tableau de SpritePalette null-terminé. Côté JS `palettes` EST le tableau ; la transcription
+  // littérale (`current = palettes; current.data`) lisait `tableau.data` = undefined → boucle
+  // jamais entrée → AUCUNE palette allouée (IndexOfSpritePaletteTag = 0xFF, sprites en pal 255).
+  // On itère par index ; le terminateur décomp `{}` est ici l'élément vide `[]` (data undefined → break).
+  for (let i = 0; i < palettes.length; i++)
   {
+    const current = palettes[i];
+    if (current == null || current.data == null)
+    {
+      break;
+    }
     index = AllocSpritePalette(current.tag);
     if (index == 0xFF)
     {
