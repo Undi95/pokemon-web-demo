@@ -143,6 +143,7 @@ export function CreatePokenavList(bgTemplate: BgTemplate, listTemplate: any, til
   list.listWindow = {};
   list.windowState = {};
   list.tilemapBuffer = new Uint8Array(0x800); // BG_SCREEN_SIZE
+  list.itemTextBuffer = new Uint8Array(64); // 1:1 `u8 itemTextBuffer[64]` (pokenav_list.c:57)
   InitPokenavListWindowState(list.windowState, listTemplate);
   if (!CopyPokenavListMenuTemplate(list.sub, bgTemplate, listTemplate, tileOffset))
     return false;
@@ -229,7 +230,10 @@ function InitListItems(windowState: PokenavListWindowState, subPtr: PokenavListS
 function PrintListItems(listPtr: any, topIndex: number, numItems: number, itemSize: number, printStart: number, list: PokenavListSub): void {
   if (numItems == 0)
     return;
-  list.listPtr = listPtr + topIndex * itemSize;
+  // 1:1 décomp `list->listPtr = listPtr + topIndex * itemSize` = arithmétique de POINTEUR (avance
+  // au topIndex-ème item). En JS `listPtr` est un TABLEAU d'entrées → on garde le tableau base et on
+  // indexe par `printIndex` (= topIndex, incrémenté) dans LoopedTask_PrintListItems (pas d'arithmétique).
+  list.listPtr = listPtr;
   list.itemSize = itemSize;
   list.listWindow.numPrinted = 0;
   list.listWindow.numToPrint = numItems;
@@ -250,7 +254,9 @@ function LoopedTask_PrintListItems(state: number): number {
   switch (state) {
     case 0:
       row = (listSub.listWindow.unkA + listSub.listWindow.numPrinted + listSub.printStart) & 0xF;
-      listSub.bufferItemFunc(listSub.listPtr, listSub.itemTextBuffer);
+      // 1:1 : `bufferItemFunc(listPtr, ...)` où listPtr POINTE l'entrée courante ; ici listPtr = tableau
+      // base, l'entrée courante = listPtr[printIndex] (émulation JS de l'arithmétique de pointeur).
+      listSub.bufferItemFunc(listSub.listPtr[listSub.printIndex], listSub.itemTextBuffer);
       if (listSub.iconDrawFunc != null)
         listSub.iconDrawFunc(listSub.listWindow.windowId, listSub.printIndex, row);
       //!< French Difference
@@ -267,7 +273,7 @@ function LoopedTask_PrintListItems(state: number): number {
       }
       else
       {
-        listSub.listPtr += listSub.itemSize;
+        // (listPtr reste le tableau base ; le walk vers l'entrée suivante = printIndex++)
         listSub.printIndex++;
         return LT_CONTINUE;
       }
@@ -711,7 +717,7 @@ function PrintCheckPageTrainerName(state: PokenavListWindowState, list: PokenavL
   TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_RED,
 ]);
-  list.bufferItemFunc(state.listPtr + state.listItemSize * state.windowTopIndex, list.itemTextBuffer);
+  list.bufferItemFunc(state.listPtr[state.windowTopIndex], list.itemTextBuffer); // 1:1 : listPtr[base]+itemSize*topIndex = entrée topIndex (émulation JS array indexé)
   list.iconDrawFunc(list.listWindow.windowId, state.windowTopIndex, list.listWindow.unkA);
   FillWindowPixelRect(list.listWindow.windowId, PIXEL_FILL(4), 0, list.listWindow.unkA * 16, list.listWindow.width * 8, 16);
   //!< French Difference
@@ -724,7 +730,7 @@ function PrintCheckPageTrainerName(state: PokenavListWindowState, list: PokenavL
 
 /** 1:1 `static void PrintMatchCallListTrainerName(struct PokenavListWindowState *state, struct PokenavListSub *list)` (pokenav_list.c:725-733). */
 function PrintMatchCallListTrainerName(state: PokenavListWindowState, list: PokenavListSub): void {
-  list.bufferItemFunc(state.listPtr + state.listItemSize * state.windowTopIndex, list.itemTextBuffer);
+  list.bufferItemFunc(state.listPtr[state.windowTopIndex], list.itemTextBuffer); // 1:1 : listPtr[base]+itemSize*topIndex = entrée topIndex (émulation JS array indexé)
   FillWindowPixelRect(list.listWindow.windowId, PIXEL_FILL(1), 0, list.listWindow.unkA * 16, list.listWindow.width * 8, 16);
   //!< French Difference
   AddTextPrinterParameterized(list.listWindow.windowId, list.listWindow.fontId, list.itemTextBuffer, 10, list.listWindow.unkA * 16 + 1, TEXT_SKIP_DRAW, null);
