@@ -941,6 +941,12 @@ export function AllocSpriteTiles(tileCount: number): number {
  *  Retourne tile start (= tileNum), ou 0 si VRAM saturée. */
 export function LoadSpriteSheet(sheet: { data: Uint8Array, size: number, tag: string | number }): number {
   const tileCount = sheet.size / TILE_SIZE_4BPP;
+  // 🩸 GUARD : size 0 (asset pas porté) → AllocSpriteTiles(0) = « libérer tout le
+  // bitmap » (sémantique décomp réservée à ResetSpriteData). Jamais voulu ici.
+  if (tileCount <= 0) {
+    console.error(`[LoadSpriteSheet] sheet tag='${String(sheet.tag)}' size=0 — chargement refusé (AllocSpriteTiles(0) viderait le bitmap OBJ entier).`);
+    return 0;
+  }
   const tileStart = AllocSpriteTiles(tileCount);
   if (tileStart < 0) return 0;
   AllocSpriteTileRange(sheet.tag, tileStart, tileCount);

@@ -1665,6 +1665,7 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   // dst calculé. Utilisé par LoadBallGfx pour overwrite les "open" frames
   // tile 8-11 du poke.png par open.png (cf. pokeball.c:1327).
   const r = rt();
+  if ((globalThis as Record<string, unknown>).__traceSheets) console.log('[LCSS]', String(sheet?.tag), typeof sheet?.data, sheet?.data ? (sheet.data as any).length ?? 'key' : 'NULL', 'target=', sheet?.targetTileBase);
   // ADAPTATION MOTEUR : `sheet.data` peut être soit une CLÉ string (gfx pré-enregistré, voie
   // décomp INCBIN classique) soit des TILES BRUTS déjà décompressés (Uint8Array/Uint16Array —
   // ex. assets chargés par loadTileBin, comme Pokénav nav_icon/left_headers). Dans ce dernier cas
@@ -1729,6 +1730,16 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   if (_GetSpriteTileStartByTag_1to1(sheet.tag) !== 0xFFFF) return;
   const needed = bytes.length;
   const tileCount = needed >> 5;  // bytes / 32 = tiles 4bpp
+  // 🩸 GUARD (2026-07-14) : une sheet à data VIDE (asset pas porté, ex. trainer-pic
+  // Match Call tag 8) donnait tileCount=0 → AllocSpriteTiles(0) = sémantique décomp
+  // « libérer TOUT le bitmap » (réservé à ResetSpriteData) → toutes les réservations
+  // vivantes (spinning 0-127, headers 128+) perdues → les rechargements suivants
+  // s'allouaient par-dessus = tiles corrompues spinning/ETEINDRE au retour MC→menu.
+  // Dans la ROM ce cas n'existe pas (INCBIN jamais vide) → refuser, fort.
+  if (tileCount <= 0) {
+    console.error(`[LoadCompressedSpriteSheet] sheet tag='${tagStr}' a une data VIDE (asset non porté ?) — chargement refusé (AllocSpriteTiles(0) viderait le bitmap OBJ entier).`);
+    return;
+  }
   // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet :
   //   tileStart = AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP);
   //   if (tileStart < 0) return 0;
