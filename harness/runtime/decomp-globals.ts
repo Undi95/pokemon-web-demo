@@ -328,6 +328,19 @@ export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, dest
   // Note : tile cache invalidation handled par compositor's per-frame clear.
 }
 
+/** 1:1 décomp `void BgDmaFill(u32 bg, u8 value, int offset, int size)` (menu.c:1910) :
+ *  remplit `size` tiles du char data de `bg` avec l'octet `value`, à baseTile+offset.
+ *  Le décomp passe par `RequestDma3Fill` (queue DMA hardware) ; adaptation moteur : le port
+ *  n'émule pas la queue DMA → écriture char VRAM SYNCHRONE via `LoadBgTiles` avec un buffer
+ *  rempli de `value`. bytesPerTile=32 (4bpp — les BG fenêtres pokénav sont 4bpp) ; baseTile
+ *  supposé 0 (cas courant des templates concernés ; à raffiner via GetBgAttribute si un BG
+ *  8bpp/baseTile≠0 l'utilise). */
+export function BgDmaFill(bg: number, value: number, offset: number, size: number): void {
+  const bytesPerTile = 32;
+  const buf = new Uint8Array(size * bytesPerTile).fill(value & 0xFF);
+  LoadBgTiles(bg, buf, size * bytesPerTile, offset);
+}
+
 /** 1:1 décomp `DmaClear16(channel, dest, size)` — clear memory via DMA.
  *
  *  Phase 1 Action 2 : maintenant que VRAM est unifié (rt.gba.vram 96KB), on

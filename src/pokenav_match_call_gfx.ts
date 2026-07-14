@@ -47,9 +47,9 @@ import { AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAnd
 import { BufferMatchCallNameAndDesc, GetIndexDeltaOfNextCheckPageDown, GetIndexDeltaOfNextCheckPageUp, GetMatchCallList, GetMatchCallMapSec, GetMatchCallMessageText, GetMatchCallOptionCursorPos, GetMatchCallOptionId, GetMatchCallTrainerPic, GetNumberRegistered, IsMatchCallListInitFinished, ShouldDrawRematchPokeballIcon } from './pokenav_match_call_list';
 import { CreatePokenavList, DestroyPokenavList, IsCreatePokenavListTaskActive, PokenavList_DrawCurrentItemIcon, PokenavList_EraseListForCheckPage, PokenavList_GetSelectedIndex, PokenavList_GetTopIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_IsTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp, PokenavList_ReshowListFromCheckPage, PokenavList_ToggleVerticalArrows, PrintCheckPageInfo } from './pokenav_list';
 import { LT_SET_STATE } from './pokenav_looped_task';
-import { loadTileBin, extractPngPlte, loadTilemapBin } from '../harness/gba/png-loader';
+import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+import { BgDmaFill } from '../harness/runtime/decomp-globals';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const BgDmaFill: any = __wireTodo('BgDmaFill');
 const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
 const CpuCopy32: any = __wireTodo('CpuCopy32');
 const DecompressPicFromTable: any = __wireTodo('DecompressPicFromTable');
@@ -68,14 +68,22 @@ function _loadMatchCallUiGfx(): void {
   if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap] = await Promise.all([
+      const [gfx, pal, tilemap, callPal, listPal, pokeballPal, pokeballGfx] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/match_call/ui.png', 4),
         extractPngPlte('/decomp/em/pokenav/match_call/ui.png'),
         loadTilemapBin('/decomp/em/pokenav/match_call/ui.bin'),
+        loadGbaPal('/decomp/em/pokenav/match_call/call_window.pal'),   // sCallWindow_Pal
+        loadGbaPal('/decomp/em/pokenav/match_call/list_window.pal'),   // sListWindow_Pal
+        loadGbaPal('/decomp/em/pokenav/match_call/pokeball.pal'),      // sPokeball_Pal
+        loadTileBin('/decomp/em/pokenav/match_call/pokeball.png', 4),  // sPokeball_Gfx
       ]);
       gMatchCallUI_Gfx = gfx;
       gMatchCallUI_Pal = pal;
       gMatchCallUI_Tilemap = tilemap;
+      sCallWindow_Pal = callPal;
+      sListWindow_Pal = listPal;
+      sPokeball_Pal = pokeballPal;
+      sPokeball_Gfx = pokeballGfx;
     } catch (e) { console.error('[match call ui gfx load]', e); }
     finally { _matchCallUiLoaded = true; }
   })();

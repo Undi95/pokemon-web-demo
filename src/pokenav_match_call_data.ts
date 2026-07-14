@@ -1090,29 +1090,36 @@ const sWallaceMatchCallHeader = {
 };
 
 /** 1:1 (pokenav_match_call_data.c:598) */
-const sMatchCallHeaders = {
-  /* TRANSPILER-TODO [MC_HEADER_MR_STONE]   = {.npc    = &sMrStoneMatch */
-  /* TRANSPILER-TODO [MC_HEADER_PROF_BIRCH] = {.birch  = &sProfBirchMat */
-  /* TRANSPILER-TODO [MC_HEADER_BRENDAN]    = {.rival  = &sBrendanMatch */
-  /* TRANSPILER-TODO [MC_HEADER_MAY]        = {.rival  = &sMayMatchCall */
-  /* TRANSPILER-TODO [MC_HEADER_WALLY]      = {.wally  = &sWallyMatchCa */
-  /* TRANSPILER-TODO [MC_HEADER_NORMAN]     = {.leader = &sNormanMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_MOM]        = {.npc    = &sMomMatchCall */
-  /* TRANSPILER-TODO [MC_HEADER_STEVEN]     = {.npc    = &sStevenMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_SCOTT]      = {.npc    = &sScottMatchCa */
-  /* TRANSPILER-TODO [MC_HEADER_ROXANNE]    = {.leader = &sRoxanneMatch */
-  /* TRANSPILER-TODO [MC_HEADER_BRAWLY]     = {.leader = &sBrawlyMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_WATTSON]    = {.leader = &sWattsonMatch */
-  /* TRANSPILER-TODO [MC_HEADER_FLANNERY]   = {.leader = &sFlanneryMatc */
-  /* TRANSPILER-TODO [MC_HEADER_WINONA]     = {.leader = &sWinonaMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_TATE_LIZA]  = {.leader = &sTateLizaMatc */
-  /* TRANSPILER-TODO [MC_HEADER_JUAN]       = {.leader = &sJuanMatchCal */
-  /* TRANSPILER-TODO [MC_HEADER_SIDNEY]     = {.leader = &sSidneyMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_PHOEBE]     = {.leader = &sPhoebeMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_GLACIA]     = {.leader = &sGlaciaMatchC */
-  /* TRANSPILER-TODO [MC_HEADER_DRAKE]      = {.leader = &sDrakeMatchCa */
-  /* TRANSPILER-TODO [MC_HEADER_WALLACE]    = {.leader = &sWallaceMatch */
-};
+// 1:1 décomp pokenav_match_call_data.c:595 `static const match_call_t sMatchCallHeaders[]`.
+// Tableau à init-désignés, indices MC_HEADER_* CONTIGUS 0..20. `match_call_t` = UNION de pointeurs
+// (common/npc/trainer/wally/birch/rival/leader) qui aliasent tous le MÊME header struct → en JS on
+// émule via `_mc(h)` = tous les champs pointent sur h. Le transpileur avait TOUT commenté (objet
+// vide → sMatchCallHeaders[idx] = undefined → crash MatchCallGetFunctionIndex). Reconstruit en array
+// (l'ordre = MC_HEADER_*, cf décomp) : rétablit `.length` (garde idx) + l'accès `[idx]`.
+const _mc = (h: any) => ({ common: h, npc: h, trainer: h, wally: h, birch: h, rival: h, leader: h });
+const sMatchCallHeaders = [
+  _mc(sMrStoneMatchCallHeader),    // MC_HEADER_MR_STONE (0)
+  _mc(sProfBirchMatchCallHeader),  // MC_HEADER_PROF_BIRCH (1)
+  _mc(sBrendanMatchCallHeader),    // MC_HEADER_BRENDAN (2)
+  _mc(sMayMatchCallHeader),        // MC_HEADER_MAY (3)
+  _mc(sWallyMatchCallHeader),      // MC_HEADER_WALLY (4)
+  _mc(sNormanMatchCallHeader),     // MC_HEADER_NORMAN (5)
+  _mc(sMomMatchCallHeader),        // MC_HEADER_MOM (6)
+  _mc(sStevenMatchCallHeader),     // MC_HEADER_STEVEN (7)
+  _mc(sScottMatchCallHeader),      // MC_HEADER_SCOTT (8)
+  _mc(sRoxanneMatchCallHeader),    // MC_HEADER_ROXANNE (9)
+  _mc(sBrawlyMatchCallHeader),     // MC_HEADER_BRAWLY (10)
+  _mc(sWattsonMatchCallHeader),    // MC_HEADER_WATTSON (11)
+  _mc(sFlanneryMatchCallHeader),   // MC_HEADER_FLANNERY (12)
+  _mc(sWinonaMatchCallHeader),     // MC_HEADER_WINONA (13)
+  _mc(sTateLizaMatchCallHeader),   // MC_HEADER_TATE_LIZA (14)
+  _mc(sJuanMatchCallHeader),       // MC_HEADER_JUAN (15)
+  _mc(sSidneyMatchCallHeader),     // MC_HEADER_SIDNEY (16)
+  _mc(sPhoebeMatchCallHeader),     // MC_HEADER_PHOEBE (17)
+  _mc(sGlaciaMatchCallHeader),     // MC_HEADER_GLACIA (18)
+  _mc(sDrakeMatchCallHeader),      // MC_HEADER_DRAKE (19)
+  _mc(sWallaceMatchCallHeader),    // MC_HEADER_WALLACE (20)
+];
 
 /** 1:1 (pokenav_match_call_data.c:622) */
 const sMatchCallGetEnabledFuncs: Array<(...args: any[]) => any> = [
@@ -1253,7 +1260,7 @@ export function GetRematchIdxByTrainerIdx(trainerIdx: number): number {
 
 /** 1:1 `bool32 MatchCall_GetEnabled(u32 idx)` (pokenav_match_call_data.c:753-763). */
 export function MatchCall_GetEnabled(idx: number): boolean {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return false;
@@ -1299,7 +1306,7 @@ function MatchCall_GetEnabled_Birch(matchCall: match_call_t): boolean {
 
 /** 1:1 `mapsec_u8_t MatchCall_GetMapSec(u32 idx)` (pokenav_match_call_data.c:800-810). */
 export function MatchCall_GetMapSec(idx: number): number {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return 0;
@@ -1341,7 +1348,7 @@ function MatchCall_GetMapSec_Birch(matchCall: match_call_t): number {
 
 /** 1:1 `bool32 MatchCall_IsRematchable(u32 idx)` (pokenav_match_call_data.c:844-854). */
 export function MatchCall_IsRematchable(idx: number): boolean {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return false;
@@ -1379,7 +1386,7 @@ function MatchCall_IsRematchable_Birch(matchCall: match_call_t): boolean {
 
 /** 1:1 `bool32 MatchCall_HasCheckPage(u32 idx)` (pokenav_match_call_data.c:883-900). */
 export function MatchCall_HasCheckPage(idx: number): boolean {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return false;
@@ -1422,7 +1429,7 @@ function MatchCall_HasCheckPage_Birch(matchCall: match_call_t): boolean {
 
 /** 1:1 `u32 MatchCall_GetRematchTableIdx(u32 idx)` (pokenav_match_call_data.c:927-937). */
 export function MatchCall_GetRematchTableIdx(idx: number): number {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return REMATCH_TABLE_ENTRIES;
@@ -1458,7 +1465,7 @@ function MatchCall_GetRematchTableIdx_Birch(matchCall: match_call_t): number {
 
 /** 1:1 `void MatchCall_GetMessage(u32 idx, u8 *dest)` (pokenav_match_call_data.c:964-974). */
 export function MatchCall_GetMessage(idx: number, dest: Uint8Array): void {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return;
@@ -1556,7 +1563,7 @@ function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx: number
 
 /** 1:1 `void MatchCall_GetNameAndDesc(u32 idx, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1062-1072). */
 export function MatchCall_GetNameAndDesc(idx: number, desc: any, name: any): void {
-  const matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any };
+  let matchCall = { common: null as any, npc: null as any, trainer: null as any, wally: null as any, birch: null as any, rival: null as any, leader: null as any }; // 1:1 décomp `match_call_t matchCall;` (non-init, réassigné) → let (le transpileur avait mis const)
   let i = 0;
   if (idx >= sMatchCallHeaders.length)
     return;
