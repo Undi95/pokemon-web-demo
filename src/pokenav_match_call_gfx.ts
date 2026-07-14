@@ -245,11 +245,11 @@ const sMatchCallInfoBoxWindowTemplate = {
   baseBlock: 38 };
 
 /** 1:1 (pokenav_match_call_gfx.c:198) */
-const sMatchCallOptionTexts = Uint8Array.from([
+const sMatchCallOptionTexts = [
   getString('gText_Call'), // [MATCH_CALL_OPTION_CALL]
   getString('gText_Check'), // [MATCH_CALL_OPTION_CHECK]
   getString('gText_Cancel6'), // [MATCH_CALL_OPTION_CANCEL]
-]);
+];
 
 // The series of 5 dots that appear when someone is called with Match Call
 

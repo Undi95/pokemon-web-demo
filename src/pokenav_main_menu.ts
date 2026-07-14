@@ -209,7 +209,9 @@ const sHelpBarWindowTemplate = [
 ];
 
 /** 1:1 (pokenav_main_menu.c:87) */
-const sHelpBarTexts = Uint8Array.from([
+// 1:1 tableau de POINTEURS string (pokenav_main_menu.c:87) — pas des octets ; `Uint8Array.from`
+// coerçait chaque string en NaN→0 (help bar vide). Tableau JS simple.
+const sHelpBarTexts = [
   getString('gText_Pokenav_ClearButtonList'), // [HELPBAR_NONE]
   getString('gText_PokenavMap_ZoomedOutButtons'), // [HELPBAR_MAP_ZOOMED_OUT]
   getString('gText_PokenavMap_ZoomedInButtons'), // [HELPBAR_MAP_ZOOMED_IN]
@@ -222,7 +224,7 @@ const sHelpBarTexts = Uint8Array.from([
   getString('gText_PokenavRibbons_MonListButtons'), // [HELPBAR_RIBBONS_MON_LIST]
   getString('gText_PokenavRibbons_RibbonListButtons'), // [HELPBAR_RIBBONS_LIST]
   getString('gText_PokenavRibbons_RibbonCheckButtons'), // [HELPBAR_RIBBONS_CHECK]
-]);
+];
 
 /** 1:1 (pokenav_main_menu.c:103) */
 const sHelpBarTextColors = Uint8Array.from([

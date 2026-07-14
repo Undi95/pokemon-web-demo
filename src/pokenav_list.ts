@@ -723,11 +723,11 @@ function PrintMatchCallListTrainerName(state: PokenavListWindowState, list: Poke
 
 /** 1:1 `static void PrintMatchCallFieldNames(struct PokenavListSub *list, u32 fieldId)` (pokenav_list.c:735-749). */
 function PrintMatchCallFieldNames(list: PokenavListSub, fieldId: number): void {
-  const fieldNames = Uint8Array.from([
+  const fieldNames = [
   getString('gText_PokenavMatchCall_Strategy'),
   getString('gText_PokenavMatchCall_TrainerPokemon'),
   getString('gText_PokenavMatchCall_SelfIntroduction'),
-]);
+];
   const colors = Uint8Array.from([
   TEXT_COLOR_WHITE,
   TEXT_COLOR_RED,

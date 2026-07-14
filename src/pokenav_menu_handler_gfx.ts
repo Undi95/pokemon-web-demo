@@ -372,7 +372,10 @@ const sOptionDescWindowTemplate = {
   baseBlock: 8 };
 
 /** 1:1 (pokenav_menu_handler_gfx.c:268) */
-const sPageDescriptions = Uint8Array.from([
+// 1:1 `static const u8 *const sPageDescriptions[]` = tableau de POINTEURS string (pas des octets).
+// Le transpileur l'avait mis en `Uint8Array.from([...])` → chaque string coercée en NaN→0 → descriptions
+// VIDES. Tableau JS simple (chaque élément = le retour de getString).
+const sPageDescriptions = [
   getString('gText_CheckMapOfHoenn'), // [POKENAV_MENUITEM_MAP]
   getString('gText_CheckPokemonInDetail'), // [POKENAV_MENUITEM_CONDITION]
   getString('gText_CallRegisteredTrainer'), // [POKENAV_MENUITEM_MATCH_CALL]
@@ -387,7 +390,7 @@ const sPageDescriptions = Uint8Array.from([
   getString('gText_FindSmartPokemon'), // [POKENAV_MENUITEM_CONDITION_SEARCH_SMART]
   getString('gText_FindToughPokemon'), // [POKENAV_MENUITEM_CONDITION_SEARCH_TOUGH]
   getString('gText_ReturnToConditionMenu'), // [POKENAV_MENUITEM_CONDITION_SEARCH_CANCEL]
-]);
+];
 
 /** 1:1 (pokenav_menu_handler_gfx.c:286) */
 const sOptionDescTextColors = Uint8Array.from([
