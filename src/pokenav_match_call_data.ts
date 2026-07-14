@@ -14,6 +14,7 @@ import { FACILITY_CLASS_BRENDAN, FACILITY_CLASS_MAY, FACILITY_CLASS_STEVEN } fro
 import { CountBattledRematchTeams, gRematchTable } from './battle_setup';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';
+import { encodeOwText, isOwCharmapReady } from './text';
 import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';
@@ -40,6 +41,18 @@ const May = 'May';
 // Runtime-only (pas top-level) → laissés en stub, à câbler au parcours d'exécution.
 const BufferPokedexRatingForMatchCall: any = __wireTodo('BufferPokedexRatingForMatchCall');
 const gTrainers: any = __wireTodo('gTrainers');
+
+/** Décomp : les headers stockent des POINTEURS vers bytes GBA (`const u8 *desc/name`).
+ *  getString rend un string JS → StringCopy/GetStringWidth (scan EOS 0xFF) bouclent à
+ *  l'infini dessus. Représentation 1:1 = buffer GBA encodé ; précédent :
+ *  GetTrainerClassNameGenderSpecific (international_string_util.ts:289) fait déjà
+ *  `encodeOwText(getString(...))`. Charmap OW chargée au boot ; module lazy-load
+ *  (pokenav) → prête ici. Garde-fou hurlant sinon (règle 3). */
+function _gbaText(key: string): Uint8Array {
+  if (!isOwCharmapReady())
+    console.error(`[pokenav_match_call_data] charmap OW pas prête — «${key}» encodé en espaces`);
+  return encodeOwText(getString(key));
+}
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const REMATCH_NORMAN = 69; // 1:1 include/constants/rematches.h:0 (à consolider dans include/)
@@ -274,8 +287,8 @@ const sMrStoneMatchCallHeader = {
   type: MC_TYPE_NPC,
   mapSec: MAPSEC_RUSTBORO_CITY,
   flag: 0xFFFF,
-  desc: getString('gText_MrStoneMatchCallDesc'),
-  name: getString('gText_MrStoneMatchCallName'),
+  desc: _gbaText('gText_MrStoneMatchCallDesc'),
+  name: _gbaText('gText_MrStoneMatchCallName'),
   textData: sMrStoneTextScripts,
 };
 
@@ -335,8 +348,8 @@ const sNormanMatchCallHeader = {
   mapSec: MAPSEC_PETALBURG_CITY,
   flag: FLAG_ENABLE_NORMAN_MATCH_CALL,
   rematchTableIdx: REMATCH_NORMAN,
-  desc: getString('gText_NormanMatchCallDesc'),
-  name: getString('gText_NormanMatchCallName'),
+  desc: _gbaText('gText_NormanMatchCallDesc'),
+  name: _gbaText('gText_NormanMatchCallName'),
   textData: sNormanTextScripts,
 };
 
@@ -345,8 +358,8 @@ const sProfBirchMatchCallHeader = {
   type: MC_TYPE_BIRCH,
   mapSec: 0,
   flag: FLAG_ENABLE_PROF_BIRCH_MATCH_CALL,
-  desc: getString('gText_ProfBirchMatchCallDesc'),
-  name: getString('gText_ProfBirchMatchCallName'),
+  desc: _gbaText('gText_ProfBirchMatchCallDesc'),
+  name: _gbaText('gText_ProfBirchMatchCallName'),
 };
 
 /** 1:1 (pokenav_match_call_data.c:238) */
@@ -374,8 +387,8 @@ const sMomMatchCallHeader = {
   type: MC_TYPE_NPC,
   mapSec: MAPSEC_LITTLEROOT_TOWN,
   flag: FLAG_ENABLE_MOM_MATCH_CALL,
-  desc: getString('gText_MomMatchCallDesc'),
-  name: getString('gText_MomMatchCallName'),
+  desc: _gbaText('gText_MomMatchCallDesc'),
+  name: _gbaText('gText_MomMatchCallName'),
   textData: sMomTextScripts,
 };
 
@@ -424,8 +437,8 @@ const sStevenMatchCallHeader = {
   type: MC_TYPE_NPC,
   mapSec: MAPSEC_NONE,
   flag: FLAG_REGISTERED_STEVEN_POKENAV,
-  desc: getString('gText_StevenMatchCallDesc'),
-  name: getString('gText_StevenMatchCallName'),
+  desc: _gbaText('gText_StevenMatchCallDesc'),
+  name: _gbaText('gText_StevenMatchCallName'),
   textData: sStevenTextScripts,
 };
 
@@ -514,9 +527,9 @@ const sMayMatchCallHeader = {
   type: MC_TYPE_RIVAL,
   playerGender: MALE,
   flag: FLAG_ENABLE_RIVAL_MATCH_CALL,
-  desc: getString('gText_MayMatchCallDesc'),
+  desc: _gbaText('gText_MayMatchCallDesc'),
   //!< French Difference
-  name: getString('gText_ExpandedPlaceholder_May'),
+  name: _gbaText('gText_ExpandedPlaceholder_May'),
   textData: sMayTextScripts,
 };
 
@@ -605,9 +618,9 @@ const sBrendanMatchCallHeader = {
   type: MC_TYPE_RIVAL,
   playerGender: FEMALE,
   flag: FLAG_ENABLE_RIVAL_MATCH_CALL,
-  desc: getString('gText_BrendanMatchCallDesc'),
+  desc: _gbaText('gText_BrendanMatchCallDesc'),
   //!< French Difference
-  name: getString('gText_ExpandedPlaceholder_Brendan'),
+  name: _gbaText('gText_ExpandedPlaceholder_Brendan'),
   textData: sBrendanTextScripts,
 };
 
@@ -677,7 +690,7 @@ const sWallyMatchCallHeader = {
   mapSec: 0,
   flag: FLAG_ENABLE_WALLY_MATCH_CALL,
   rematchTableIdx: REMATCH_WALLY_VR,
-  desc: getString('gText_WallyMatchCallDesc'),
+  desc: _gbaText('gText_WallyMatchCallDesc'),
   textData: sWallyTextScripts,
   locationData: sWallyLocationData,
 };
@@ -727,8 +740,8 @@ const sScottMatchCallHeader = {
   type: 0,
   mapSec: MAPSEC_NONE,
   flag: FLAG_ENABLE_SCOTT_MATCH_CALL,
-  desc: getString('gText_ScottMatchCallDesc'),
-  name: getString('gText_ScottMatchCallName'),
+  desc: _gbaText('gText_ScottMatchCallDesc'),
+  name: _gbaText('gText_ScottMatchCallName'),
   textData: sScottTextScripts,
 };
 
@@ -763,7 +776,7 @@ const sRoxanneMatchCallHeader = {
   mapSec: MAPSEC_RUSTBORO_CITY,
   flag: FLAG_ENABLE_ROXANNE_MATCH_CALL,
   rematchTableIdx: REMATCH_ROXANNE,
-  desc: getString('gText_RoxanneMatchCallDesc'),
+  desc: _gbaText('gText_RoxanneMatchCallDesc'),
   name: null,
   textData: sRoxanneTextScripts,
 };
@@ -799,7 +812,7 @@ const sBrawlyMatchCallHeader = {
   mapSec: MAPSEC_DEWFORD_TOWN,
   flag: FLAG_ENABLE_BRAWLY_MATCH_CALL,
   rematchTableIdx: REMATCH_BRAWLY,
-  desc: getString('gText_BrawlyMatchCallDesc'),
+  desc: _gbaText('gText_BrawlyMatchCallDesc'),
   name: null,
   textData: sBrawlyTextScripts,
 };
@@ -835,7 +848,7 @@ const sWattsonMatchCallHeader = {
   mapSec: MAPSEC_MAUVILLE_CITY,
   flag: FLAG_ENABLE_WATTSON_MATCH_CALL,
   rematchTableIdx: REMATCH_WATTSON,
-  desc: getString('gText_WattsonMatchCallDesc'),
+  desc: _gbaText('gText_WattsonMatchCallDesc'),
   name: null,
   textData: sWattsonTextScripts,
 };
@@ -871,7 +884,7 @@ const sFlanneryMatchCallHeader = {
   mapSec: MAPSEC_LAVARIDGE_TOWN,
   flag: FLAG_ENABLE_FLANNERY_MATCH_CALL,
   rematchTableIdx: REMATCH_FLANNERY,
-  desc: getString('gText_FlanneryMatchCallDesc'),
+  desc: _gbaText('gText_FlanneryMatchCallDesc'),
   name: null,
   textData: sFlanneryTextScripts,
 };
@@ -907,7 +920,7 @@ const sWinonaMatchCallHeader = {
   mapSec: MAPSEC_FORTREE_CITY,
   flag: FLAG_ENABLE_WINONA_MATCH_CALL,
   rematchTableIdx: REMATCH_WINONA,
-  desc: getString('gText_WinonaMatchCallDesc'),
+  desc: _gbaText('gText_WinonaMatchCallDesc'),
   name: null,
   textData: sWinonaTextScripts,
 };
@@ -943,7 +956,7 @@ const sTateLizaMatchCallHeader = {
   mapSec: MAPSEC_MOSSDEEP_CITY,
   flag: FLAG_ENABLE_TATE_AND_LIZA_MATCH_CALL,
   rematchTableIdx: REMATCH_TATE_AND_LIZA,
-  desc: getString('gText_TateLizaMatchCallDesc'),
+  desc: _gbaText('gText_TateLizaMatchCallDesc'),
   name: null,
   textData: sTateLizaTextScripts,
 };
@@ -979,7 +992,7 @@ const sJuanMatchCallHeader = {
   mapSec: MAPSEC_SOOTOPOLIS_CITY,
   flag: FLAG_ENABLE_JUAN_MATCH_CALL,
   rematchTableIdx: REMATCH_JUAN,
-  desc: getString('gText_JuanMatchCallDesc'),
+  desc: _gbaText('gText_JuanMatchCallDesc'),
   name: null,
   textData: sJuanTextScripts,
 };
@@ -1000,7 +1013,7 @@ const sSidneyMatchCallHeader = {
   mapSec: MAPSEC_EVER_GRANDE_CITY,
   flag: FLAG_REGISTERED_SIDNEY,
   rematchTableIdx: REMATCH_SIDNEY,
-  desc: getString('gText_EliteFourMatchCallDesc'),
+  desc: _gbaText('gText_EliteFourMatchCallDesc'),
   name: null,
   textData: sSidneyTextScripts,
 };
@@ -1021,7 +1034,7 @@ const sPhoebeMatchCallHeader = {
   mapSec: MAPSEC_EVER_GRANDE_CITY,
   flag: FLAG_REGISTERED_PHOEBE,
   rematchTableIdx: REMATCH_PHOEBE,
-  desc: getString('gText_EliteFourMatchCallDesc'),
+  desc: _gbaText('gText_EliteFourMatchCallDesc'),
   name: null,
   textData: sPhoebeTextScripts,
 };
@@ -1042,7 +1055,7 @@ const sGlaciaMatchCallHeader = {
   mapSec: MAPSEC_EVER_GRANDE_CITY,
   flag: FLAG_REGISTERED_GLACIA,
   rematchTableIdx: REMATCH_GLACIA,
-  desc: getString('gText_EliteFourMatchCallDesc'),
+  desc: _gbaText('gText_EliteFourMatchCallDesc'),
   name: null,
   textData: sGlaciaTextScripts,
 };
@@ -1063,7 +1076,7 @@ const sDrakeMatchCallHeader = {
   mapSec: MAPSEC_EVER_GRANDE_CITY,
   flag: FLAG_REGISTERED_DRAKE,
   rematchTableIdx: REMATCH_DRAKE,
-  desc: getString('gText_EliteFourMatchCallDesc'),
+  desc: _gbaText('gText_EliteFourMatchCallDesc'),
   name: null,
   textData: sDrakeTextScripts,
 };
@@ -1084,7 +1097,7 @@ const sWallaceMatchCallHeader = {
   mapSec: MAPSEC_EVER_GRANDE_CITY,
   flag: FLAG_REGISTERED_WALLACE,
   rematchTableIdx: REMATCH_WALLACE,
-  desc: getString('gText_ChampionMatchCallDesc'),
+  desc: _gbaText('gText_ChampionMatchCallDesc'),
   name: null,
   textData: sWallaceTextScripts,
 };
@@ -1574,8 +1587,8 @@ export function MatchCall_GetNameAndDesc(idx: number, desc: any, name: any): voi
 
 /** 1:1 `static void MatchCall_GetNameAndDesc_NPC(match_call_t matchCall, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1074-1078). */
 function MatchCall_GetNameAndDesc_NPC(matchCall: match_call_t, desc: any, name: any): void {
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = matchCall.npc->desc */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *name = matchCall.npc->name */;
+  desc.value = matchCall.npc.desc; // 1:1 `*desc = matchCall.npc->desc` (out-param u8** → ref {value})
+  name.value = matchCall.npc.name; // 1:1 `*name = matchCall.npc->name`
 }
 
 /** 1:1 `static void MatchCall_GetNameAndDesc_Trainer(match_call_t matchCall, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1080-1088). */
@@ -1584,26 +1597,26 @@ function MatchCall_GetNameAndDesc_Trainer(matchCall: match_call_t, desc: any, na
   if (_matchCall.trainer.name == null)
     MatchCall_GetNameAndDescByRematchIdx(_matchCall.trainer.rematchTableIdx, desc, name);
   else
-    void 0 /* TRANSPILER-TODO ASSIGN: *name = _matchCall.trainer->name */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = _matchCall.trainer->desc */;
+    name.value = _matchCall.trainer.name; // 1:1 `*name = matchCall.trainer->name`
+  desc.value = _matchCall.trainer.desc;   // 1:1 `*desc = matchCall.trainer->desc`
 }
 
 /** 1:1 `static void MatchCall_GetNameAndDesc_Wally(match_call_t matchCall, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1090-1094). */
 function MatchCall_GetNameAndDesc_Wally(matchCall: match_call_t, desc: any, name: any): void {
   MatchCall_GetNameAndDescByRematchIdx(matchCall.wally.rematchTableIdx, desc, name);
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = matchCall.wally->desc */;
+  desc.value = matchCall.wally.desc; // 1:1 `*desc = matchCall.wally->desc`
 }
 
 /** 1:1 `static void MatchCall_GetNameAndDesc_Rival(match_call_t matchCall, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1096-1100). */
 function MatchCall_GetNameAndDesc_Rival(matchCall: match_call_t, desc: any, name: any): void {
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = matchCall.rival->desc */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *name = matchCall.rival->name */;
+  desc.value = matchCall.rival.desc; // 1:1 `*desc = matchCall.rival->desc`
+  name.value = matchCall.rival.name; // 1:1 `*name = matchCall.rival->name`
 }
 
 /** 1:1 `static void MatchCall_GetNameAndDesc_Birch(match_call_t matchCall, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1102-1106). */
 function MatchCall_GetNameAndDesc_Birch(matchCall: match_call_t, desc: any, name: any): void {
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = matchCall.birch->desc */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *name = matchCall.birch->name */;
+  desc.value = matchCall.birch.desc; // 1:1 `*desc = matchCall.birch->desc`
+  name.value = matchCall.birch.name; // 1:1 `*name = matchCall.birch->name`
 }
 
 /**
@@ -1612,9 +1625,11 @@ function MatchCall_GetNameAndDesc_Birch(matchCall: match_call_t, desc: any, name
 
 /** 1:1 `static void MatchCall_GetNameAndDescByRematchIdx(u32 idx, const u8 **desc, const u8 **name)` (pokenav_match_call_data.c:1111-1116). */
 function MatchCall_GetNameAndDescByRematchIdx(idx: number, desc: any, name: any): void {
-  let trainer = gTrainers + GetTrainerIdxByRematchIdx(idx);
-  void 0 /* TRANSPILER-TODO ASSIGN: *desc = GetTrainerClassNameGenderSpecific(trainer->trainerClass, trainer->encounterMusic_g */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *name = trainer->trainerName */;
+  // 1:1 `const struct Trainer *trainer = gTrainers + GetTrainerIdxByRematchIdx(idx);`
+  // — arithmétique de pointeur C → indexation JS (ptr-walk `obj + n` = NaN/string).
+  const trainer = gTrainers[GetTrainerIdxByRematchIdx(idx)];
+  desc.value = GetTrainerClassNameGenderSpecific(trainer.trainerClass, trainer.encounterMusic_gender, trainer.trainerName); // 1:1 *desc = ...
+  name.value = trainer.trainerName; // 1:1 `*name = trainer->trainerName`
 }
 
 /** 1:1 `const u8 *MatchCall_GetOverrideFlavorText(u32 idx, u32 offset)` (pokenav_match_call_data.c:1118-1133). */

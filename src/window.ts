@@ -864,31 +864,50 @@ export function HideBg(bg: number): void {
   rt.gba.bg(bg as 0 | 1 | 2 | 3).config.visible = false;
 }
 
-export function ChangeBgY(bg: number, value: number, mode: number): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
-  if (mode === 0) {
-    // BG_COORD_SET — 1:1 bg.c: bg_y = value (Q_8_8) puis registre VOFS = bg_y >> 8.
-    // (avant : `value & 0x1FF` OMETTAIT le >>8 → ChangeBgY(0,-1024,SET) donnait 0 au lieu
-    //  de -4, désalignant le window 8bpp de MultiMove. Tous les autres appelants SET passent 0.)
-    cfg.vofs = (value >> 8) & 0x1FF;
-  } else {
-    // BG_COORD_ADD
-    cfg.vofs = (cfg.vofs + (value >> 8)) & 0x1FF; // value est souvent Q_8_8
+// 1:1 bg.c `sGpuBgConfigs2[bg].bg_x/bg_y` : coordonnées BG persistantes en Q8.8 (s32).
+// Nécessaire car ChangeBgX/Y RETOURNENT la coord (les LoopedTask Pokénav comparent
+// `ChangeBgY(0,384,ADD) >= 0x2000` — avec void, le slide bouclait à l'infini) et
+// GetBgX/GetBgY la relisent (pokenav_list MoveListWindow). Les registres HOFS/VOFS
+// n'en gardent que `>>8 & 0x1FF` (9 bits hardware).
+const sBgCoords: { x: number; y: number }[] = [
+  { x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 },
+];
+
+/** 1:1 `u32 ChangeBgY(u8 bg, s32 value, u8 op)` (bg.c:698) — mode texte (VOFS) ;
+ *  BG_COORD_SET=0 / ADD=1 / SUB=2 ; retourne bg_y (Q8.8). Checks IsInvalidBg32/
+ *  VISIBLE du décomp non portés (harness sans ces attributs ; appelants passent des bg valides). */
+export function ChangeBgY(bg: number, value: number, mode: number): number {
+  switch (mode) {
+    case 0: sBgCoords[bg].y = value; break;        // BG_COORD_SET
+    case 1: sBgCoords[bg].y += value; break;       // BG_COORD_ADD
+    case 2: sBgCoords[bg].y -= value; break;       // BG_COORD_SUB
   }
+  const rt = getRuntime();
+  if (rt) rt.gba.bg(bg as 0 | 1 | 2 | 3).config.vofs = (sBgCoords[bg].y >> 8) & 0x1FF;
+  return sBgCoords[bg].y;
 }
 
-export function ChangeBgX(bg: number, value: number, mode: number): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
-  if (mode === 0) {
-    // BG_COORD_SET — 1:1 bg.c: bg_x = value (Q_8_8) puis registre HOFS = bg_x >> 8 (cf. ChangeBgY).
-    cfg.hofs = (value >> 8) & 0x1FF;
-  } else {
-    cfg.hofs = (cfg.hofs + (value >> 8)) & 0x1FF;
+/** 1:1 `s32 GetBgY(u8 bg)` (bg.c:762) : retourne sGpuBgConfigs2[bg].bg_y (Q8.8). */
+export function GetBgY(bg: number): number {
+  return sBgCoords[bg].y;
+}
+
+/** 1:1 `s32 GetBgX(u8 bg)` (bg.c:750) : retourne sGpuBgConfigs2[bg].bg_x (Q8.8). */
+export function GetBgX(bg: number): number {
+  return sBgCoords[bg].x;
+}
+
+/** 1:1 `u32 ChangeBgX(u8 bg, s32 value, u8 op)` (bg.c:646) — mode texte (HOFS) ;
+ *  SET=0 / ADD=1 / SUB=2 ; retourne bg_x (Q8.8). Cf. ChangeBgY pour sBgCoords. */
+export function ChangeBgX(bg: number, value: number, mode: number): number {
+  switch (mode) {
+    case 0: sBgCoords[bg].x = value; break;        // BG_COORD_SET
+    case 1: sBgCoords[bg].x += value; break;       // BG_COORD_ADD
+    case 2: sBgCoords[bg].x -= value; break;       // BG_COORD_SUB
   }
+  const rt = getRuntime();
+  if (rt) rt.gba.bg(bg as 0 | 1 | 2 | 3).config.hofs = (sBgCoords[bg].x >> 8) & 0x1FF;
+  return sBgCoords[bg].x;
 }
 
 export function ResetBgsAndClearDma3BusyFlags(_mode: number): void {

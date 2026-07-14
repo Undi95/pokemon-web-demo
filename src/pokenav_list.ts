@@ -19,7 +19,7 @@ import { FillWindowTilesByRow } from './international_string_util';
 import { AddTextPrinterParameterized3 } from './menu';
 import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, gDummySpriteAffineAnimTable, gDummySpriteAnimTable, gSprites } from './sprite';
 import { AddTextPrinterParameterized } from './text';
-import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, GetBgTilemapBuffer, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WINDOW_BG } from './window';
+import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, GetBgTilemapBuffer, GetBgY, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WINDOW_BG } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 import type { BgTemplate, WindowTemplate } from './window';
@@ -37,7 +37,6 @@ import { Pokenav_AllocAndLoadPalettes, SetBgTilemapBuffer } from './pokenav_main
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const CopyWindowRectToVram: any = __wireTodo('CopyWindowRectToVram');
 const CpuFastFill8: any = __wireTodo('CpuFastFill8');
-const GetBgY: any = __wireTodo('GetBgY');
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_LIST = 17; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const LT_PAUSE = 2; // 1:1 include/pokenav.h:60 (à consolider dans include/)

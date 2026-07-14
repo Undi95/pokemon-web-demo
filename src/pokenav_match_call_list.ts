@@ -428,7 +428,13 @@ export function BufferMatchCallNameAndDesc(matchCallEntry: any, str: Uint8Array)
   }
   else
   {
-    MatchCall_GetNameAndDesc(matchCallEntry.headerId, className, trainerName);
+    // 1:1 `MatchCall_GetNameAndDesc(headerId, &className, &trainerName)` — out-params
+    // `const u8 **` → refs {value} (JS n'a pas d'adresse-de).
+    const classNameRef: any = { value: null };
+    const trainerNameRef: any = { value: null };
+    MatchCall_GetNameAndDesc(matchCallEntry.headerId, classNameRef, trainerNameRef);
+    className = classNameRef.value;
+    trainerName = trainerNameRef.value;
   }
   if (className && trainerName)
   {
