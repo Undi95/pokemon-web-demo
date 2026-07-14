@@ -1379,7 +1379,10 @@ function PrintCurrentOptionDescription(): void {
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
   let menuItem = GetCurrentMenuItemId();
   let desc = sPageDescriptions[menuItem];
-  let width = GetStringWidth(FONT_NORMAL, desc, -1);
+  // ADAPTATION : le port réordonne `GetStringWidth(str, fontId, spacing)` (fontId a un défaut) vs l'ordre
+  // décomp `(fontId, str, spacing)`. Le transpileur avait gardé l'ordre décomp → str=FONT_NORMAL (nombre)
+  // → encode du vide → renvoie 0 → `(192-0)/2=96` → texte non centré, débordé à droite (« HOENN. » coupé).
+  let width = GetStringWidth(desc, FONT_NORMAL, -1);
   FillWindowPixelBuffer(gfx.optionDescWindowId, PIXEL_FILL(6));
   AddTextPrinterParameterized3(gfx.optionDescWindowId, FONT_NORMAL, Math.trunc((192 - width) / 2), 1, sOptionDescTextColors, 0, desc);
 }
@@ -1392,7 +1395,7 @@ function PrintCurrentOptionDescription(): void {
 function PrintNoRibbonWinners(): void {
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
   let s = getString('gText_NoRibbonWinners');
-  let width = GetStringWidth(FONT_NORMAL, s, -1);
+  let width = GetStringWidth(s, FONT_NORMAL, -1); // ADAPTATION : ordre du port (str, fontId, spacing)
   FillWindowPixelBuffer(gfx.optionDescWindowId, PIXEL_FILL(6));
   AddTextPrinterParameterized3(gfx.optionDescWindowId, FONT_NORMAL, Math.trunc((192 - width) / 2), 1, sOptionDescTextColors2, 0, s);
 }
