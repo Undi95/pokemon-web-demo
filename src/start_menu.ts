@@ -568,14 +568,27 @@ function buildItems(): MenuItem[] {
   return items;
 }
 
-/** 1:1 décomp `StartMenu_Pokenav` (start_menu.c) → CB2_InitPokeNav.
- *  SQUELETTE UI (pokenav.ts) : le menu s'ouvre, entrées affichées, B = retour ;
- *  subscreens à porter (docs/REPRISE-OPUS-48.md §7.5). */
+/** 1:1 décomp `HandleStartMenuInput` (:623 `FadeScreen(FADE_TO_BLACK, 0)`) +
+ *  `StartMenuPokeNavCallback` (start_menu.c:685) :
+ *      if (!gPaletteFade.active) {
+ *          PlayRainStoppingSoundEffect(); RemoveExtraStartMenuWindows();
+ *          CleanupOverworldWindowsAndTilemaps();
+ *          SetMainCallback2(CB2_InitPokeNav);  // = StartMenu_OpenPokenav()
+ *      }
+ *  Le fondu-au-noir DOIT finir AVANT `CB2_InitPokeNav`. Sinon l'écran est encore
+ *  lumineux quand `LoopedTask_InitPokenavMenu` (pokenav_main_menu.c:333) fait
+ *  `ShowBg(0)` (bandeau) → le bandeau "pop" brillant AVANT que `PokenavFadeScreen`
+ *  (FROM_BLACK) ne le noircisse → FLASH frame 3 (feedback user). Pattern
+ *  identique au sac/party/pokédex (fade-to-black + sPendingScreenAction). */
 function pokenavAction(): boolean {
+  FadeScreen(FADE_TO_BLACK, 0);
   // Règle 3 : .catch OBLIGATOIRE — sans lui, un throw au chargement de pokenav.ts (ex : stub
   // module-level) était avalé silencieusement (POKéNAV = no-op sans erreur visible).
-  void import('./pokenav').then((m) => m.StartMenu_OpenPokenav()).catch((e) => console.error('[start menu pokenav]', e));
-  return true;
+  sPendingScreenAction = () => {
+    void import('./pokenav').then((m) => m.StartMenu_OpenPokenav()).catch((e) => console.error('[start menu pokenav]', e));
+  };
+  sSubState = 'fading_to_screen';
+  return false;  // ne pas close start menu yet ; on attend fade fini (écran noir).
 }
 
 /** Spawn la window principale du start menu et la draw avec items + cursor.
