@@ -556,6 +556,16 @@ export function FreeOamMatrix(matrixNum: number): void {
   if (m) { m.pa = 0x100; m.pb = 0; m.pc = 0; m.pd = 0x100; }
 }
 
+/** 1:1 `void FreeSpriteOamMatrix(struct Sprite *sprite)` (sprite.c). Modèle plat : lit
+ *  `sprite.affineMode`/`matrixNum` (≠ `sprite->oam.*` du décomp). No-op pour les sprites
+ *  NON-affines (affineMode 0, ex. les sprites d'options Pokénav) → sûr au cleanup général. */
+export function FreeSpriteOamMatrix(sprite: DecompSprite): void {
+  if (sprite.affineMode & 1 /* ST_OAM_AFFINE_ON_MASK (bit 0 = affine on), cf. sprite.c:1189 */) {
+    FreeOamMatrix(sprite.matrixNum);
+    sprite.affineMode = 0; // ST_OAM_AFFINE_OFF
+  }
+}
+
 /** Slot matrix OAM alloué ? (lit `gOamMatrixAllocBitmap`, 1:1 décomp). Utilisé par
  *  `DestroySprite` pour ne libérer que les matrices réellement allouées. */
 function _isOamMatrixAllocated(matrixNum: number): boolean {

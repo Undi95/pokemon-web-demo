@@ -13,7 +13,7 @@ import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harn
 import { RGB_BLACK, ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_RED, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { SE_POKENAV_OFF } from '../include/constants/songs';
-import { DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
+import { DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, REG_OFFSET_DISPCNT, REG_OFFSET_BLDCNT } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
@@ -55,7 +55,10 @@ export function DecompressAndCopyTileDataToVram(bg: number, src: Uint8Array | Ui
     CopyToBgTilemapBuffer(bg, src as Uint16Array, 0, 0);
   }
 }
-const FreeMenuHandlerSubstruct2: any = __wireTodo('FreeMenuHandlerSubstruct2');
+// FreeMenuHandlerSubstruct2 = 1:1 pokenav_menu_handler_gfx.c:430 (déjà porté+exporté dans _gfx).
+// Importé depuis _gfx (arête runtime : appelé seulement par WaitForPokenavShutdownFade au shutdown,
+// jamais au module-init → pas de TDZ). Remplace le stub __wireTodo qui faisait throw la SORTIE.
+import { FreeMenuHandlerSubstruct2 } from './pokenav_menu_handler_gfx';
 /** 1:1 `bg.c FreeTempTileDataBuffersIfPossible()` — ADAPTATION MOTEUR (mail.ts:1050) : upload
  *  synchrone (pas de defer queue) → toujours « done » → FALSE. */
 export function FreeTempTileDataBuffersIfPossible(): boolean {
@@ -79,7 +82,13 @@ function ResetBgPositions(): void {
   ChangeBgX(0, 0, BG_COORD_SET); ChangeBgX(1, 0, BG_COORD_SET); ChangeBgX(2, 0, BG_COORD_SET); ChangeBgX(3, 0, BG_COORD_SET);
   ChangeBgY(0, 0, BG_COORD_SET); ChangeBgY(1, 0, BG_COORD_SET); ChangeBgY(2, 0, BG_COORD_SET); ChangeBgY(3, 0, BG_COORD_SET);
 }
-const ResetBldCnt_: any = __wireTodo('ResetBldCnt_');
+/** 1:1 `void ResetBldCnt_(void)` → `ResetBldCnt()` (pokenav_menu_handler_gfx.c:1377/1342) =
+ *  SetGpuReg(REG_OFFSET_BLDCNT, 0). ⚠️ était __wireTodo (stub) → ShutdownPokenav (donc la SORTIE B/
+ *  ÉTEINDRE) throwait. ADAPTATION : inliné ici (le décomp l'a dans _gfx) pour NE PAS créer une arête
+ *  d'import circulaire pokenav_main_menu ↔ pokenav_menu_handler_gfx (piège TDZ, cf. MAX_POKENAV_MENUITEMS). */
+function ResetBldCnt_(): void {
+  SetGpuReg(REG_OFFSET_BLDCNT, 0);
+}
 /** 1:1 `bg.c SetBgTilemapBuffer(bg, buffer)` — ADAPTATION MOTEUR (mail.ts:1018) : le buffer tilemap
  *  du BG est géré direct par le moteur (copy via CopyBgTilemapBufferToVram), donc no-op (équiv 1:1,
  *  pas de pointer-stash). */

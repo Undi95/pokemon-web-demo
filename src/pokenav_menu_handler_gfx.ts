@@ -52,9 +52,17 @@ import { getRuntime } from '../harness/runtime/decomp-globals';
 // 1:1 include/sprite.h:130,136 — builders `union AffineAnimCmd` (défaut local, à consolider include/).
 const AFFINEANIMCMD_END = { type: 0x7FFF /* AFFINEANIMCMDTYPE_END */ };
 const AFFINEANIMCMD_FRAME = (xScale: number, yScale: number, rotation: number, duration: number) => ({ frame: { xScale, yScale, rotation, duration } });
-const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
+// FreeSpriteOamMatrix : porté 1:1 dans sprite.ts (sa maison décomp) → importé (remplace le stub qui
+// faisait throw DestroyMenuOptionSprites au shutdown Pokénav). No-op sur les sprites d'options (non-affines).
+import { FreeSpriteOamMatrix } from './sprite';
 const REG_WIN0H: any = __wireTodo('REG_WIN0H');
-const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
+// SetPokenavVBlankCallback (pokenav.c:542) = SetVBlankCallback(VBlankCB_Pokenav). VBlankCB_Pokenav vit dans
+// pokenav.ts. Import RUNTIME-ONLY : le cycle pokenav.ts↔_gfx est sûr car _gfx n'accède PAS ce binding au
+// module-init (seulement dans cette fn, appelée au runtime — shutdown/nav du glow). Remplace le stub qui throwait.
+import { VBlankCB_Pokenav } from './pokenav';
+function SetPokenavVBlankCallback(): void {
+  getRuntime()?.SetVBlankCallback(VBlankCB_Pokenav as never);
+}
 // 1:1 wrapper pokénav `static void SetVBlankCallback_(IntrCallback cb) { SetVBlankCallback(cb); }`
 // (suffixe `_` = wrapper pokénav autour de la fn globale, cf. InitKeys_).
 function SetVBlankCallback_(cb: any): void { getRuntime()?.SetVBlankCallback(cb); }

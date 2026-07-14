@@ -18,7 +18,10 @@ import { FlagGet } from './event_data';
 import { __wireTodo } from './engine/wire-todo';
 import { AllocSubstruct, CanViewRibbonsMenu, FreePokenavSubstruct, GetPokenavMode, GetSelectedConditionSearch, GetSubstructPtr, SetPokenavMode, SetSelectedConditionSearch } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const MAX_POKENAV_MENUITEMS: any = __wireTodo('MAX_POKENAV_MENUITEMS');
+const MAX_POKENAV_MENUITEMS = 6; // 1:1 include/pokenav.h:167. ⚠️ était __wireTodo (stub) → dans sMenuItems
+// `Array.from({ length: MAX_POKENAV_MENUITEMS - 2 })` faisait `Array.from({length: NaN}) = []` → les lignes
+// étaient tronquées (ex. [MAP, CONDITION] au lieu de 6) → sMenuItems[type][cursorPos>=len] = undefined →
+// currMenuItem undefined → PrintCurrentOptionDescription throw chaque frame → GEL total de la navigation.
 const POKENAV_MENU_FUNC_EXIT = -1; // 1:1 include/pokenav.h:269 (était __wireTodo → B ne sortait jamais : le handler renvoyait le sentinelle, pas -1)
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
