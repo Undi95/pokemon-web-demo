@@ -19,7 +19,7 @@ import { __wireTodo } from './engine/wire-todo';
 import { AllocSubstruct, CanViewRibbonsMenu, FreePokenavSubstruct, GetPokenavMode, GetSelectedConditionSearch, GetSubstructPtr, SetPokenavMode, SetSelectedConditionSearch } from './pokenav_resources';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const MAX_POKENAV_MENUITEMS: any = __wireTodo('MAX_POKENAV_MENUITEMS');
-const POKENAV_MENU_FUNC_EXIT: any = __wireTodo('POKENAV_MENU_FUNC_EXIT');
+const POKENAV_MENU_FUNC_EXIT = -1; // 1:1 include/pokenav.h:269 (était __wireTodo → B ne sortait jamais : le handler renvoyait le sentinelle, pas -1)
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_MENUITEM_MAP = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
