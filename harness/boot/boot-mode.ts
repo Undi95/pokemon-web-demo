@@ -227,6 +227,13 @@ function applyNoIntroPreset(): void {
   // FLAG_SYS_POKEDEX_GET set par Prof Birch après combat zigzagton.
   FlagSet('FLAG_SYS_POKEMON_GET');
   FlagSet('FLAG_SYS_POKEDEX_GET');
+  // ⚠️ DEBUG ONLY : POKéNAV COMPLET (user 2026-07-14) — pokénav dans le START menu + ses 2 onglets à flag.
+  // FLAG_SYS_POKENAV_GET (0x862) = entrée POKéNAV dans le menu START. FLAG_ADDED_MATCH_CALL_TO_POKENAV
+  // (0x130) = onglet MATCH CALL (menuType UNLOCK_MC). FLAG_SYS_RIBBON_GET (0x89B) = onglet RUBANS
+  // (UNLOCK_MC_RIBBONS). 1:1 GetPokenavMainMenuType (pokenav_menu_handler.c:84).
+  FlagSet('FLAG_SYS_POKENAV_GET');
+  FlagSet('FLAG_ADDED_MATCH_CALL_TO_POKENAV');
+  FlagSet('FLAG_SYS_RIBBON_GET');
   // ⚠️ DEBUG ONLY : les 8 badges d'arène (FLAG_BADGE01..08_GET). Débloque les CS
   // gatées par badge (Surf=BADGE05, Strength=BADGE03, Waterfall=BADGE08, Dive=BADGE07,
   // Rock Smash=BADGE03, Cut=BADGE01, Fly=BADGE03, Flash=BADGE01) pour pouvoir tester
