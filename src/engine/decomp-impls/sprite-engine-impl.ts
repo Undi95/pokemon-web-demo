@@ -371,7 +371,12 @@ export function tickAllAffineAnims(rt: DecompRuntime): void {
     const effectiveAffineMode = (oam?.affineMode ?? 0) | sprite.affineMode;
     if (!(effectiveAffineMode & ST_OAM_AFFINE_ON_MASK)) continue;
     // Sync sprite.affineMode from OAM si l'OAM a été set externe (= auto callback).
-    if ((oam?.affineMode ?? 0) !== sprite.affineMode) {
+    // ⚠️ Direction UNIQUE (allumer) : ne JAMAIS éteindre le sprite depuis un OAM
+    // encore OFF — le code 1:1 pose sprite.affineMode d'abord (ex. StartOptionZoom
+    // Pokénav) et l'OAM n'est poussé qu'au syncSpritesToOam de FIN de frame ; le
+    // sync bidirectionnel écrasait l'affine naissant (3→0) → zoom d'option jamais
+    // joué + bits matrixNum réinterprétés hflip/vflip en mode normal (texte flippé).
+    if (((oam?.affineMode ?? 0) & ST_OAM_AFFINE_ON_MASK) && (oam?.affineMode ?? 0) !== sprite.affineMode) {
       sprite.affineMode = (oam?.affineMode ?? 0) as 0 | 1 | 2 | 3;
     }
     if (sprite.affineAnimBeginning) {

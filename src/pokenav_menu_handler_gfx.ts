@@ -19,6 +19,7 @@ import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './window';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
+import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';
 import { gMapHeader } from './fieldmap';
@@ -426,22 +427,26 @@ const sOamData_MenuOption = {
   paletteNum: 0, /* :4 */
 };
 
-/** 1:1 (pokenav_menu_handler_gfx.c:303) */
-const sAffineAnim_MenuOption_Normal = {
-  type: AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),
-  frame: AFFINEANIMCMD_END };
-
-/** 1:1 (pokenav_menu_handler_gfx.c:309) */
-const sAffineAnim_MenuOption_Zoom = {
-  type: AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),
-  frame: AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0x12),
-  loop: AFFINEANIMCMD_END };
-
-/** 1:1 (pokenav_menu_handler_gfx.c:316) */
-const sAffineAnims_MenuOption = [
-  sAffineAnim_MenuOption_Normal,
-  sAffineAnim_MenuOption_Zoom,
-];
+/** 1:1 (pokenav_menu_handler_gfx.c:303-320) — le transpileur avait mangé les tables
+ *  AffineAnimCmd en objets difformes ; le moteur affine résout par NOM enregistré
+ *  (convention harness, précédent : sAffineAnims_HitSplat battle_anim_normal.ts:81-85).
+ *  duration=0 → SET absolu ; duration>0 → DELTAS par frame (= sémantique décomp). */
+registerAffineAnim('sAffineAnim_MenuOption_Normal', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }],
+  terminator: 'END',
+});
+registerAffineAnim('sAffineAnim_MenuOption_Zoom', {
+  frames: [
+    { xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 },
+    { xScale: 0x10, yScale: 0x10, rotation: 0, duration: 0x12 },
+  ],
+  terminator: 'END',
+});
+registerAffineAnimTable('sAffineAnims_MenuOption', {
+  affineAnims: ['sAffineAnim_MenuOption_Normal', 'sAffineAnim_MenuOption_Zoom'],
+});
+/** Le template référence la table par NOM (le moteur ne résout que les strings). */
+const sAffineAnims_MenuOption = 'sAffineAnims_MenuOption';
 
 /** 1:1 (pokenav_menu_handler_gfx.c:322) */
 const sMenuOptionSpriteTemplate = {
