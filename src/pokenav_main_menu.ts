@@ -101,7 +101,7 @@ function _pokenavLoadHeaderGraphics(): void {
   if (_pokenavHeaderLoaded) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap, navGfx, navPal, hoennGfx, lhPal] = await Promise.all([
+      const [gfx, pal, tilemap, navGfx, navPal, hoennGfx, lhPal, mmGfx, cGfx, rGfx, mcGfx] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/header.png', 4),
         extractPngPlte('/decomp/em/pokenav/header.png'),
         loadTilemapBin('/decomp/em/pokenav/header.bin'),
@@ -109,6 +109,10 @@ function _pokenavLoadHeaderGraphics(): void {
         extractPngPlte('/decomp/em/pokenav/nav_icon.png'),           // sSpinningPokenav_Pal
         loadTileBin('/decomp/em/pokenav/left_headers/hoenn_map.png', 4), // gPokenavLeftHeaderHoennMap_Gfx (1re entête)
         loadGbaPal('/decomp/em/pokenav/left_headers/palette.pal'),   // gPokenavLeftHeader_Pal (palette partagée)
+        loadTileBin('/decomp/em/pokenav/left_headers/main_menu.png', 4),  // gPokenavLeftHeaderMainMenu_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/condition.png', 4),  // gPokenavLeftHeaderCondition_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/ribbons.png', 4),    // gPokenavLeftHeaderRibbons_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/match_call.png', 4), // gPokenavLeftHeaderMatchCall_Gfx
       ]);
       gPokenavHeader_Gfx = gfx;
       gPokenavHeader_Pal = pal;
@@ -122,6 +126,17 @@ function _pokenavLoadHeaderGraphics(): void {
       gPokenavLeftHeaderHoennMap_Gfx = hoennGfx;
       gPokenavLeftHeader_Pal = lhPal;
       sMenuLeftHeaderSpriteSheet.data = hoennGfx;
+      // bandeaux catégorie : globals + repeupler .data de la table (avait capturé null au module-load)
+      gPokenavLeftHeaderMainMenu_Gfx = mmGfx;
+      gPokenavLeftHeaderCondition_Gfx = cGfx;
+      gPokenavLeftHeaderRibbons_Gfx = rGfx;
+      gPokenavLeftHeaderMatchCall_Gfx = mcGfx;
+      sMenuLeftHeaderSpriteSheets[0].data = mmGfx;    // POKENAV_GFX_MAIN_MENU
+      sMenuLeftHeaderSpriteSheets[1].data = cGfx;     // POKENAV_GFX_CONDITION_MENU
+      sMenuLeftHeaderSpriteSheets[2].data = rGfx;     // POKENAV_GFX_RIBBONS_MENU
+      sMenuLeftHeaderSpriteSheets[3].data = mcGfx;    // POKENAV_GFX_MATCH_CALL_MENU
+      sMenuLeftHeaderSpriteSheets[4].data = hoennGfx; // POKENAV_GFX_MAP_MENU_ZOOMED_OUT
+      sMenuLeftHeaderSpriteSheets[5].data = hoennGfx; // POKENAV_GFX_MAP_MENU_ZOOMED_IN
     } catch (e) {
       console.error('[pokenav header gfx load]', e);
     } finally {
@@ -132,6 +147,12 @@ function _pokenavLoadHeaderGraphics(): void {
 // ← left_headers/hoenn_map.png + left_headers/palette.pal (chargés async par _pokenavLoadHeaderGraphics).
 let gPokenavLeftHeaderHoennMap_Gfx: any = null;
 let gPokenavLeftHeader_Pal: any = null;
+// left_headers/{main_menu,condition,ribbons,match_call}.png (bandeaux catégorie, chargés async par
+// _pokenavLoadHeaderGraphics) — null au module-load, le .data de sMenuLeftHeaderSpriteSheets est repeuplé au load.
+let gPokenavLeftHeaderMainMenu_Gfx: any = null;
+let gPokenavLeftHeaderCondition_Gfx: any = null;
+let gPokenavLeftHeaderRibbons_Gfx: any = null;
+let gPokenavLeftHeaderMatchCall_Gfx: any = null;
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_MAIN_MENU = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -259,20 +280,17 @@ const sMenuLeftHeaderSpriteSheet = {
   tag: 2 };
 
 /** 1:1 (pokenav_main_menu.c:133) */
-const sMenuLeftHeaderSpriteSheets = {
-  /* TRANSPILER-TODO [POKENAV_GFX_MAIN_MENU] = {
-        .data = gPoken */
-  /* TRANSPILER-TODO [POKENAV_GFX_CONDITION_MENU] = {
-        .data = g */
-  /* TRANSPILER-TODO [POKENAV_GFX_RIBBONS_MENU] = {
-        .data = gPo */
-  /* TRANSPILER-TODO [POKENAV_GFX_MATCH_CALL_MENU] = {
-        .data =  */
-  /* TRANSPILER-TODO [POKENAV_GFX_MAP_MENU_ZOOMED_OUT] = {
-        .dat */
-  /* TRANSPILER-TODO [POKENAV_GFX_MAP_MENU_ZOOMED_IN] = {
-        .data */
-};
+// 1:1 (pokenav_main_menu.c:133) — indexé par menuGfxId. `.size` = nb de TILES (offset du 2e sprite,
+// pas des octets), `.tag` = sous-index palette dans gPokenavLeftHeader_Pal. `.data` = tuiles BRUTES
+// (peuplées par _pokenavLoadHeaderGraphics ; null au module-load, d'où le repeuplement au load).
+const sMenuLeftHeaderSpriteSheets: any[] = [
+  { data: gPokenavLeftHeaderMainMenu_Gfx, size: 0x20, tag: 3 },   // [POKENAV_GFX_MAIN_MENU]
+  { data: gPokenavLeftHeaderCondition_Gfx, size: 0x20, tag: 1 },  // [POKENAV_GFX_CONDITION_MENU]
+  { data: gPokenavLeftHeaderRibbons_Gfx, size: 0x20, tag: 2 },    // [POKENAV_GFX_RIBBONS_MENU]
+  { data: gPokenavLeftHeaderMatchCall_Gfx, size: 0x20, tag: 4 },  // [POKENAV_GFX_MATCH_CALL_MENU]
+  { data: gPokenavLeftHeaderHoennMap_Gfx, size: 0x20, tag: 0 },   // [POKENAV_GFX_MAP_MENU_ZOOMED_OUT]
+  { data: gPokenavLeftHeaderHoennMap_Gfx, size: 0x40, tag: 0 },   // [POKENAV_GFX_MAP_MENU_ZOOMED_IN]
+];
 
 /** 1:1 (pokenav_main_menu.c:167) */
 const sPokenavSubMenuLeftHeaderSpriteSheets = {
@@ -804,18 +822,27 @@ function LoadLeftHeaderGfxForMenu(menuGfxId: number): void {
   let tag = 0;
   if (menuGfxId >= POKENAV_GFX_SUBMENUS_START)
     return;
-  // ADAPTATION MOTEUR : la table sMenuLeftHeaderSpriteSheets n'est câblée que pour hoenn_map (L1) —
-  // les autres entrées catégorie (main_menu/condition/match_call/ribbons) = assets left_headers/* à
-  // câbler (chantier suivant). Skip proprement si absente (sinon `.tag` de undefined → crash + re-run).
-  if (!sMenuLeftHeaderSpriteSheets[menuGfxId])
+  const sheet = sMenuLeftHeaderSpriteSheets[menuGfxId];
+  if (!sheet || !sheet.data)  // .data null tant que _pokenavLoadHeaderGraphics n'a pas fini (async)
     return;
   menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
-  tag = sMenuLeftHeaderSpriteSheets[menuGfxId].tag;
-  size = GetDecompressedDataSize(sMenuLeftHeaderSpriteSheets[menuGfxId].data);
-  LoadPalette(gPokenavLeftHeader_Pal[tag * 16] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, OBJ_PLTT_ID(IndexOfSpritePaletteTag(1)), PLTT_SIZE_4BPP);
-  LZ77UnCompWram(sMenuLeftHeaderSpriteSheets[menuGfxId].data, gDecompressionBuffer);
-  RequestDma3Copy(gDecompressionBuffer, OBJ_VRAM0 + (GetSpriteTileStartByTag(2) * 32), size, 1);
-  _spriteOamTileNumSet(menu.leftHeaderSprites[1], GetSpriteTileStartByTag(2) + sMenuLeftHeaderSpriteSheets[menuGfxId].size);
+  tag = sheet.tag;
+  size = GetDecompressedDataSize(sheet.data);
+  LoadPalette(gPokenavLeftHeader_Pal.subarray(tag * 16), OBJ_PLTT_ID(IndexOfSpritePaletteTag(1)), PLTT_SIZE_4BPP);
+  // ADAPTATION MOTEUR : `sheet.data` = tuiles BRUTES (PNG loadTileBin), pas LZ. Le décomp fait
+  // LZ77UnCompWram(data, gDecompressionBuffer) + RequestDma3Copy(buffer, OBJ_VRAM0 + tileStart*32, size) ;
+  // ici écriture directe des tuiles au tile-start du tag 2 (précédent = voie targetTileBase de
+  // LoadCompressedSpriteSheet, decomp-globals : `r.gba.objVram.set(bytes, byteOffset)`).
+  {
+    const rt = getRuntime();
+    const tileStart = GetSpriteTileStartByTag(2);
+    if (rt && tileStart >= 0) {
+      const d = sheet.data;
+      const bytes: Uint8Array = d instanceof Uint16Array ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength) : d;
+      rt.gba.objVram.set(bytes.subarray(0, Math.min(size, bytes.length)), tileStart * 32);
+    }
+  }
+  _spriteOamTileNumSet(menu.leftHeaderSprites[1], GetSpriteTileStartByTag(2) + sheet.size);
   menu.leftHeaderSprites[1].x2 = 64;
 }
 
