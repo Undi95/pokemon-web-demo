@@ -20,11 +20,25 @@ import { StringExpandPlaceholders } from './string_util';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import { __wireTodo } from './engine/wire-todo';
+
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const Brendan: any = __wireTodo('Brendan');
+// 1:1 pokenav.h:229 `#define MCFLAVOR(name)` = check-page flavor texts, array indexé
+// CHECK_PAGE_{STRATEGY,POKEMON,INTRO_1,INTRO_2} (enum pokenav.h:221, ordre 0..3). Le token
+// `name` = suffixe du symbole `gText_MatchCall<name>_<champ>` (strings.c / match_call_messages.h).
+// getString est sûr (retourne `[MISSING:key]` si la string n'est pas extraite, pas de throw).
+function MCFLAVOR(name: string): string[] {
+  return [
+    getString(`gText_MatchCall${name}_Strategy`),
+    getString(`gText_MatchCall${name}_Pokemon`),
+    getString(`gText_MatchCall${name}_Intro1`),
+    getString(`gText_MatchCall${name}_Intro2`),
+  ];
+}
+// 1:1 : dans le décomp, MCFLAVOR(Brendan)/(May) passent le TOKEN nom (concat `##`) → ici la string.
+const Brendan = 'Brendan';
+const May = 'May';
+// Runtime-only (pas top-level) → laissés en stub, à câbler au parcours d'exécution.
 const BufferPokedexRatingForMatchCall: any = __wireTodo('BufferPokedexRatingForMatchCall');
-const MCFLAVOR: any = __wireTodo('MCFLAVOR');
-const May: any = __wireTodo('May');
 const gTrainers: any = __wireTodo('gTrainers');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
