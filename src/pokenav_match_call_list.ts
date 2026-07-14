@@ -97,6 +97,11 @@ export function PokenavCallback_Init_MatchCall(): boolean {
   let state = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_MatchCallMenu) */);
   if (!state)
     return false;
+  // 1:1 décomp : champ `struct PokenavMatchCallEntry matchCallEntries[MAX_REMATCH_ENTRIES - 1]`
+  // (tableau FIXE zéro-init en C). En JS le substruct est un objet vide → on pré-alloue les 99
+  // entrées {headerId, isSpecialTrainer, mapSec} ; LoopedTask_BuildMatchCallList les remplit par
+  // index state.numRegistered (sinon `state.matchCallEntries[0]` = undefined → crash).
+  state.matchCallEntries = Array.from({ length: 100 - 1 /* MAX_REMATCH_ENTRIES - 1 */ }, () => ({ headerId: 0, isSpecialTrainer: false, mapSec: 0 }));
   state.callback = CB2_HandleMatchCallInput;
   state.headerId = 0;
   state.initFinished = false;

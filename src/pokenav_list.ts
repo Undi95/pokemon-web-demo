@@ -29,17 +29,15 @@ import type { OamData } from '../include/gba/types';
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, FuncIsActiveLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
+import { BgDmaFill } from '../harness/runtime/decomp-globals';
+import { ClearRematchPokeballIcon } from './pokenav_match_call_gfx';
+import { GetMatchCallFlavorText } from './pokenav_match_call_list';
+import { LT_SET_STATE } from './pokenav_looped_task';
+import { Pokenav_AllocAndLoadPalettes, SetBgTilemapBuffer } from './pokenav_main_menu';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const BgDmaFill: any = __wireTodo('BgDmaFill');
-const ClearRematchPokeballIcon: any = __wireTodo('ClearRematchPokeballIcon');
 const CopyWindowRectToVram: any = __wireTodo('CopyWindowRectToVram');
 const CpuFastFill8: any = __wireTodo('CpuFastFill8');
 const GetBgY: any = __wireTodo('GetBgY');
-const GetMatchCallFlavorText: any = __wireTodo('GetMatchCallFlavorText');
-const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
-const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
-const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
-
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_LIST = 17; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const LT_PAUSE = 2; // 1:1 include/pokenav.h:60 (à consolider dans include/)
@@ -132,6 +130,19 @@ export function CreatePokenavList(bgTemplate: BgTemplate, listTemplate: any, til
   let list = AllocSubstruct(POKENAV_SUBSTRUCT_LIST, 0 /* TRANSPILER-TODO sizeof(struct PokenavList) */);
   if (list == null)
     return false;
+  // 1:1 décomp `struct PokenavList { PokenavListSub sub; u8 tilemapBuffer[BG_SCREEN_SIZE];
+  // PokenavListWindowState windowState; ... }` — champs structs imbriqués zéro-init en C. En JS le
+  // substruct est un objet vide → on crée les sous-objets/buffer (sinon list.windowState = undefined
+  // → crash InitPokenavListWindowState). Les champs de sub.listWindow sont remplis par CopyPokenavListMenuTemplate.
+  // 1:1 C type-punning : `struct PokenavListSub sub` est le PREMIER champ de `struct PokenavList`
+  // (offset 0), donc `GetSubstructPtr(LIST)` casté en `PokenavListSub*` == `&list` (même adresse).
+  // Plusieurs fonctions (LoopedTask_PrintListItems, InitPokenavListWindow...) accèdent `list->X`
+  // comme le SUB (list.listWindow, list.printStart...). En JS on émule via self-ref `list.sub = list`
+  // → `list.listWindow` ≡ `list.sub.listWindow` (les 2 patterns d'accès pointent le même objet).
+  list.sub = list;
+  list.listWindow = {};
+  list.windowState = {};
+  list.tilemapBuffer = new Uint8Array(0x800); // BG_SCREEN_SIZE
   InitPokenavListWindowState(list.windowState, listTemplate);
   if (!CopyPokenavListMenuTemplate(list.sub, bgTemplate, listTemplate, tileOffset))
     return false;

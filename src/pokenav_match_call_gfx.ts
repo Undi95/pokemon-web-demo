@@ -48,14 +48,22 @@ import { BufferMatchCallNameAndDesc, GetIndexDeltaOfNextCheckPageDown, GetIndexD
 import { CreatePokenavList, DestroyPokenavList, IsCreatePokenavListTaskActive, PokenavList_DrawCurrentItemIcon, PokenavList_EraseListForCheckPage, PokenavList_GetSelectedIndex, PokenavList_GetTopIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_IsTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp, PokenavList_ReshowListFromCheckPage, PokenavList_ToggleVerticalArrows, PrintCheckPageInfo } from './pokenav_list';
 import { LT_SET_STATE } from './pokenav_looped_task';
 import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
-import { BgDmaFill } from '../harness/runtime/decomp-globals';
+import { BgDmaFill, LoadBgTiles } from '../harness/runtime/decomp-globals';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
 const CpuCopy32: any = __wireTodo('CpuCopy32');
 const DecompressPicFromTable: any = __wireTodo('DecompressPicFromTable');
 const DrawMatchCallTextBoxBorder: any = __wireTodo('DrawMatchCallTextBoxBorder');
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
-const LoadMatchCallWindowGfx: any = __wireTodo('LoadMatchCallWindowGfx');
+// Assets fenêtre message — 1:1 décomp match_call.c:1197-1198 (window.png .4bpp + .gbapal),
+// chargés async (cf _loadMatchCallUiGfx). `LoadMatchCallWindowGfx` = 1:1 match_call.c:2102.
+let sMatchCallWindow_Gfx: Uint8Array | null = null;
+let sMatchCallWindow_Pal: Uint16Array | null = null;
+function LoadMatchCallWindowGfx(windowId: number, destOffset: number, paletteId: number): void {
+  const bg = GetWindowAttribute(windowId, WINDOW_BG);
+  LoadBgTiles(bg, sMatchCallWindow_Gfx as any, 0x100, destOffset);
+  LoadPalette(sMatchCallWindow_Pal as any, BG_PLTT_ID(paletteId), (sMatchCallWindow_Pal?.length ?? 0) * 2 /* sizeof(u16[]) */);
+}
 const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
 // Assets UI match call — 1:1 décomp graphics.c:1613-1615 (graphics/pokenav/match_call/ui.png
 // + ui.bin), chargés async depuis public/decomp/em/pokenav/match_call/ comme gPokenavHeader_*
@@ -68,7 +76,7 @@ function _loadMatchCallUiGfx(): void {
   if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap, callPal, listPal, pokeballPal, pokeballGfx] = await Promise.all([
+      const [gfx, pal, tilemap, callPal, listPal, pokeballPal, pokeballGfx, winGfx, winPal] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/match_call/ui.png', 4),
         extractPngPlte('/decomp/em/pokenav/match_call/ui.png'),
         loadTilemapBin('/decomp/em/pokenav/match_call/ui.bin'),
@@ -76,6 +84,8 @@ function _loadMatchCallUiGfx(): void {
         loadGbaPal('/decomp/em/pokenav/match_call/list_window.pal'),   // sListWindow_Pal
         loadGbaPal('/decomp/em/pokenav/match_call/pokeball.pal'),      // sPokeball_Pal
         loadTileBin('/decomp/em/pokenav/match_call/pokeball.png', 4),  // sPokeball_Gfx
+        loadTileBin('/decomp/em/pokenav/match_call/window.png', 4),    // sMatchCallWindow_Gfx
+        extractPngPlte('/decomp/em/pokenav/match_call/window.png'),    // sMatchCallWindow_Pal
       ]);
       gMatchCallUI_Gfx = gfx;
       gMatchCallUI_Pal = pal;
@@ -84,6 +94,8 @@ function _loadMatchCallUiGfx(): void {
       sListWindow_Pal = listPal;
       sPokeball_Pal = pokeballPal;
       sPokeball_Gfx = pokeballGfx;
+      sMatchCallWindow_Gfx = winGfx;
+      sMatchCallWindow_Pal = winPal;
     } catch (e) { console.error('[match call ui gfx load]', e); }
     finally { _matchCallUiLoaded = true; }
   })();
