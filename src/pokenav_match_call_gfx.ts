@@ -47,6 +47,7 @@ import { AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAnd
 import { BufferMatchCallNameAndDesc, GetIndexDeltaOfNextCheckPageDown, GetIndexDeltaOfNextCheckPageUp, GetMatchCallList, GetMatchCallMapSec, GetMatchCallMessageText, GetMatchCallOptionCursorPos, GetMatchCallOptionId, GetMatchCallTrainerPic, GetNumberRegistered, IsMatchCallListInitFinished, ShouldDrawRematchPokeballIcon } from './pokenav_match_call_list';
 import { CreatePokenavList, DestroyPokenavList, IsCreatePokenavListTaskActive, PokenavList_DrawCurrentItemIcon, PokenavList_EraseListForCheckPage, PokenavList_GetSelectedIndex, PokenavList_GetTopIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_IsTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp, PokenavList_ReshowListFromCheckPage, PokenavList_ToggleVerticalArrows, PrintCheckPageInfo } from './pokenav_list';
 import { LT_SET_STATE } from './pokenav_looped_task';
+import { loadTileBin, extractPngPlte, loadTilemapBin } from '../harness/gba/png-loader';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const BgDmaFill: any = __wireTodo('BgDmaFill');
 const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
@@ -56,9 +57,29 @@ const DrawMatchCallTextBoxBorder: any = __wireTodo('DrawMatchCallTextBoxBorder')
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 const LoadMatchCallWindowGfx: any = __wireTodo('LoadMatchCallWindowGfx');
 const RequestDma3Copy: any = __wireTodo('RequestDma3Copy');
-const gMatchCallUI_Gfx: any = __wireTodo('gMatchCallUI_Gfx');
-const gMatchCallUI_Pal: any = __wireTodo('gMatchCallUI_Pal');
-const gMatchCallUI_Tilemap: any = __wireTodo('gMatchCallUI_Tilemap');
+// Assets UI match call — 1:1 décomp graphics.c:1613-1615 (graphics/pokenav/match_call/ui.png
+// + ui.bin), chargés async depuis public/decomp/em/pokenav/match_call/ comme gPokenavHeader_*
+// du menu principal (pokenav_main_menu.ts:_pokenavLoadHeaderGraphics). Gate = case 0 attend.
+let gMatchCallUI_Gfx: Uint8Array | null = null;
+let gMatchCallUI_Pal: Uint16Array | null = null;
+let gMatchCallUI_Tilemap: Uint16Array | null = null;
+let _matchCallUiLoaded = false;
+function _loadMatchCallUiGfx(): void {
+  if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
+  void (async () => {
+    try {
+      const [gfx, pal, tilemap] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/match_call/ui.png', 4),
+        extractPngPlte('/decomp/em/pokenav/match_call/ui.png'),
+        loadTilemapBin('/decomp/em/pokenav/match_call/ui.bin'),
+      ]);
+      gMatchCallUI_Gfx = gfx;
+      gMatchCallUI_Pal = pal;
+      gMatchCallUI_Tilemap = tilemap;
+    } catch (e) { console.error('[match call ui gfx load]', e); }
+    finally { _matchCallUiLoaded = true; }
+  })();
+}
 const gTrainerFrontPicPaletteTable: any = __wireTodo('gTrainerFrontPicPaletteTable');
 const gTrainerFrontPicTable: any = __wireTodo('gTrainerFrontPicTable');
 
@@ -334,6 +355,12 @@ function LoopedTask_OpenMatchCall(state: number): number {
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_OPEN);
   switch (state) {
     case 0:
+      // Gate async assets UI (adaptation moteur : le décomp a les assets en ROM = instantané ;
+      // le port les fetch → on attend leur chargement avant de les copier en VRAM, comme le
+      // menu principal gate sur _pokenavHeaderLoaded).
+      _loadMatchCallUiGfx();
+      if (!gMatchCallUI_Gfx || !gMatchCallUI_Tilemap || !gMatchCallUI_Pal)
+        return LT_PAUSE;
       InitBgTemplates(sMatchCallBgTemplates, sMatchCallBgTemplates.length);
       ChangeBgX(2, 0, BG_COORD_SET);
       ChangeBgY(2, 0, BG_COORD_SET);
