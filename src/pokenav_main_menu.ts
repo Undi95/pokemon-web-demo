@@ -46,8 +46,11 @@ export function DecompressAndCopyTileDataToVram(bg: number, src: Uint8Array | Ui
     // mode 0 = TUILES → char VRAM au charBase DU bg (lu depuis SON config posé par InitBgFromTemplate).
     // AVANT (bug) : `gPokenavMainMenuBgTemplates[bg]` n'a que le bg 0 (bandeau) → undefined sur bg 1/2/3
     // (message/device/dots du menu-handler) → return no-op → tuiles JAMAIS uploadées = couleurs fausses.
+    // + 1:1 bg.c : l'écriture tuiles ajoute le baseTile du template (cf. LoadBgTiles bg.c:382) —
+    // Match Call bg2 baseTile=0x80 : ui.bin référence les tiles à 0x80+n (fix 2026-07-14).
     const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config;
-    const dest = (cfg.charBaseIndex ?? 0) * 0x4000;
+    const baseTile = (cfg as { baseTile?: number }).baseTile ?? 0;
+    const dest = (cfg.charBaseIndex ?? 0) * 0x4000 + baseTile * 32;
     const bytes = src as Uint8Array;
     rt.gba.vram.set(bytes.subarray(0, Math.min(bytes.length, rt.gba.vram.length - dest)), dest);
   } else {

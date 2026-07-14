@@ -321,8 +321,13 @@ export function LoadPalette(srcSymbol: string | Uint16Array | number, offset: nu
  *  Simplified: ignores baseTile (assumed 0) and paletteMode. */
 export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, destOffset: number): void {
   const r = rt();
-  const vram = r.gba.bg(bg as 0 | 1 | 2 | 3).vram;
-  const offset = destOffset * 32; // each tile = 32 bytes in 4bpp
+  const bgObj = r.gba.bg(bg as 0 | 1 | 2 | 3);
+  const vram = bgObj.vram;
+  // 1:1 bg.c:382 `tileOffset = (sGpuBgConfigs2[bg].baseTile + destOffset) * 0x20;`
+  // — le baseTile du template s'AJOUTE (les tilemaps ROM référencent les tiles à
+  // baseTile+n : Match Call bg2 ui.bin → 0x80+n, PC storage bg1 → 0x100+n).
+  const baseTile = (bgObj.config as { baseTile?: number }).baseTile ?? 0;
+  const offset = (baseTile + destOffset) * 32; // each tile = 32 bytes in 4bpp
   const end = Math.min(offset + sizeBytes, vram.length);
   vram.set(src.subarray(0, end - offset), offset);
   // Note : tile cache invalidation handled par compositor's per-frame clear.

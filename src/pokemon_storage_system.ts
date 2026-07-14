@@ -2182,9 +2182,9 @@ function LoadPokeStorageMenuGfx(): void {
   const rt = getRuntime(); const a = sStorageAssets; if (!rt || !a) return;
   InitBgsFromTemplates(0, sBgTemplates, sBgTemplates.length);
   // bg.c GBA : LoadBgTiles ajoute le baseTile du template (BG1 baseTile=0x100, sBgTemplates :1021)
-  // → display_menu.bin référence les tiles du menu à 0x100+n. Notre LoadBgTiles ne connaît pas le
-  // template : offset explicite.
-  LoadBgTiles(1, a.menuGfx, a.menuGfx.length, 0x100);
+  // → display_menu.bin référence les tiles du menu à 0x100+n. LoadBgTiles est désormais 1:1
+  // (ajoute config.baseTile lui-même, fix Match Call 2026-07-14) → destOffset 0 comme le décomp.
+  LoadBgTiles(1, a.menuGfx, a.menuGfx.length, 0);
   // LZ77UnCompWram(sDisplayMenu_Tilemap → displayMenuTilemapBuffer) + SetBgTilemapBuffer(1) :
   // adaptation moteur (précédent easy_chat) : écrire direct la tilemap BG1 du moteur.
   GetBgTilemapBuffer(1).set(a.displayMenuTilemap.subarray(0, GetBgTilemapBuffer(1).length));
