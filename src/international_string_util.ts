@@ -300,3 +300,13 @@ export function GetTrainerClassNameGenderSpecific(trainerClassId: number, traine
   }
   return _gTrainerClassName(trainerClassId);
 }
+
+// ═══ Pont pour pokemon.ts (FONDATIONAL) ════════════════════════════════════
+// pokemon.ts porte GetTrainerClassNameFromId / GetTrainerNameFromId (pokemon.c:6945-6957)
+// mais ne peut importer NI ce module NI ./text sans fermer un cycle TDZ
+// (pokemon→text→window→decomp-globals→pokemon_animation→party-storage→pokemon). Il lit
+// donc GetTrainerClassNameGenderSpecific + encodeOwText via ce pont lazy à l'exécution,
+// exactement comme il lit __rtc (rtc.ts). Posé au chargement du module (runtime, jamais
+// avant le boot des écrans/combats qui en ont besoin).
+(globalThis as { __intlStr?: { GetTrainerClassNameGenderSpecific: typeof GetTrainerClassNameGenderSpecific; encodeOwText: typeof encodeOwText } })
+  .__intlStr = { GetTrainerClassNameGenderSpecific, encodeOwText };

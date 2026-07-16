@@ -28,9 +28,9 @@ export function getSpeciesNameFr(species: string): string {
 export function getMoveNameFr(move: string): string {
   return textTables?.moves[move] ?? move.replace(/^MOVE_/, '');
 }
-export function getTrainerClassNameFr(cls: string): string {
-  return textTables?.trainer_classes[cls] ?? cls.replace(/^TRAINER_CLASS_/, '');
-}
+// getTrainerClassNameFr SUPPRIMÉ (lot C1) : la classe de dresseur passe désormais par
+// le 1:1 GetTrainerClassNameFromId → GetTrainerClassNameGenderSpecific (pokemon.ts /
+// international_string_util.ts), qui gère les classes FR ♀ + CHAMPION LEVY&TATIA.
 export function getNatureNameFr(nature: string): string {
   return textTables?.natures[nature] ?? nature.replace(/^NATURE_/, '');
 }
@@ -135,9 +135,8 @@ export function loadTrainersTable(t: Record<string, TrainerDef>): void { trainer
 export function getTrainer(trainerId: string): TrainerDef | undefined {
   return trainersTable?.[trainerId];
 }
-export function getTrainerNameFr(trainerId: string): string {
-  return trainersTable?.[trainerId]?.name ?? trainerId.replace(/^TRAINER_/, '');
-}
+// getTrainerNameFr SUPPRIMÉ (lot C1) : le nom de dresseur passe désormais par le 1:1
+// GetTrainerNameFromId (pokemon.ts) = gTrainers[id].trainerName.
 
 // ----- Wild encounters (wild-encounters.json) -----
 export interface WildEncounterMon {

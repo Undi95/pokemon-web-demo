@@ -2486,6 +2486,78 @@ export function HandleSetPokedexFlag(nationalNum: number, caseId: number, person
   }
 }
 
+// ═══ 1:1 pokemon.c:6942-6957 — GetTrainerClassNameFromId / GetTrainerNameFromId ══
+// « French Difference » (commentaire décomp). gTrainers[] (data/trainers.h) : la table
+// dresseur du port vit dans globalThis.__gTrainers (peuplée par ensureGTrainersLoaded,
+// engine/battle/battle-trainer-data-bridge.ts) — MÊME source que le Proxy gTrainers de
+// pokenav_match_call_data.ts:59, et que l'accès __gTrainers déjà fait en l.1327.
+// Accès via globalThis + pont __intlStr (posé par international_string_util.ts) car
+// pokemon.ts est FONDATIONAL : un import statique de ./international_string_util ou ./text
+// fermerait le cycle pokemon→text→window→decomp-globals→pokemon_animation→battle_anim_mons
+// →party-storage→pokemon (bombe TDZ). Même discipline que le pont __rtc (l.22-27).
+import { TRAINER_NONE, TRAINERS_COUNT } from '../include/constants/opponents';
+import { EOS as _EOS_TRAINER } from '../include/constants/characters';
+
+type _IntlStrBridge = {
+  GetTrainerClassNameGenderSpecific: (classId: number, gender: number, name: Uint8Array | null) => Uint8Array;
+  encodeOwText: (src: string) => Uint8Array;
+};
+const _intlStr = (): _IntlStrBridge | undefined => (globalThis as { __intlStr?: _IntlStrBridge }).__intlStr;
+
+type _GTrainerView = { trainerClass: number; encounterMusic_gender: number; trainerName: Uint8Array };
+/** Vue `gTrainers[i]` : lit globalThis.__gTrainers (numId → data bridge). trainerName y
+ *  est stocké en charCodes ASCII SANS EOS (sert au nameHash combat) → ré-encodé bytes
+ *  GBA + EOS via encodeOwText, sinon StringCopy/StringCompare bouclent (précédent
+ *  pokenav_match_call_data.ts:77). Défaut hurlant (Règle 3) si data/pont pas prêt. */
+function _gTrainer(trainerId: number): _GTrainerView {
+  const intl = _intlStr();
+  const raw = (globalThis as { __gTrainers?: Record<number, { trainerClass?: number; encounterMusic_gender?: number; trainerName?: number[] }> }).__gTrainers?.[trainerId];
+  if (!intl) {
+    console.error('[gTrainers] pont __intlStr absent (international_string_util non chargé) — trainerId', trainerId);
+    return { trainerClass: 0, encounterMusic_gender: 0, trainerName: new Uint8Array([_EOS_TRAINER]) };
+  }
+  if (!raw) {
+    console.error('[gTrainers] __gTrainers non chargée (ensureGTrainersLoaded) — trainerId', trainerId);
+    return { trainerClass: 0, encounterMusic_gender: 0, trainerName: intl.encodeOwText('') };
+  }
+  return {
+    trainerClass: raw.trainerClass ?? 0,
+    encounterMusic_gender: raw.encounterMusic_gender ?? 0,
+    trainerName: intl.encodeOwText(String.fromCharCode(...(raw.trainerName ?? []))),
+  };
+}
+
+/** 1:1 décomp `gTrainers[]` (data/trainers.h) — adapté au port (globalThis.__gTrainers).
+ *  Sibling du Proxy pokenav (pokenav_match_call_data.ts:59) ; dupliqué car pokemon.ts
+ *  (fondational) ne peut PAS importer le module pokenav (cycle + lazy-load). Indexation
+ *  numérique uniquement (les call-sites solo passent un numId gTrainers). */
+export const gTrainers: Record<number, _GTrainerView> = new Proxy({} as Record<number, _GTrainerView>, {
+  get(_t, prop) {
+    if (typeof prop === 'symbol') return undefined;
+    const id = Number(prop);
+    if (!Number.isFinite(id)) return undefined;
+    return _gTrainer(id);
+  },
+});
+
+/**
+ * French Difference
+ */
+export function GetTrainerClassNameFromId(trainerId: number): Uint8Array {
+  if (trainerId >= TRAINERS_COUNT)
+    trainerId = TRAINER_NONE;
+  const intl = _intlStr();
+  const t = _gTrainer(trainerId);
+  if (!intl) return t.trainerName; // scream déjà émis par _gTrainer ; dégrade au nom
+  return intl.GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender, t.trainerName);
+}
+
+export function GetTrainerNameFromId(trainerId: number): Uint8Array {
+  if (trainerId >= TRAINERS_COUNT)
+    trainerId = TRAINER_NONE;
+  return _gTrainer(trainerId).trainerName;
+}
+
 // ─── 1:1 pokemon.c:5688 SpeciesToCryId (câblage son m4a) ─────────────────────
 import { SPECIES_CELEBI as _SPECIES_CELEBI_CRY, SPECIES_TREECKO as _SPECIES_TREECKO_CRY, SPECIES_UNOWN as _SPECIES_UNOWN_CRY } from '../include/constants/species';
 import { gSpeciesIdToCryId } from './data/pokemon/cry_ids';

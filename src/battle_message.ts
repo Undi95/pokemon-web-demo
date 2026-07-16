@@ -28,7 +28,7 @@
  * jusqu'à son retrait. Ce module sert la voie L.
  */
 
-import { encodeStringForFont } from './text';
+import { encodeStringForFont, decodeOwBytes } from './text';
 import {
   EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_GREEN,
@@ -77,7 +77,8 @@ import { gBattleMons, gBattleScripting, gBattleStruct } from './engine/battle/st
 // 1:1 décomp : battle_message.c inclut pokemon.h — les décodeurs B_BUFF_MON_NICK[_WITH_PREFIX]
 // lisent la PARTY à l'index encodé dans le buffer (src[+2]), PAS gBattleMons (le mon annoncé
 // peut ne pas encore être au combat, ex. STRINGID_ENEMYABOUTTOSWITCHPKMN).
-import { gPlayerParty, gEnemyParty, GetMonData } from './pokemon';
+import { gPlayerParty, gEnemyParty, GetMonData, gTrainers } from './pokemon';
+import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { MON_DATA_NICKNAME } from '../include/pokemon';
 import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_MULTI, BATTLE_TYPE_LEGENDARY, BATTLE_TYPE_WALLY_TUTORIAL, BATTLE_TYPE_TWO_OPPONENTS, BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_TOWER_LINK_MULTI, BATTLE_TYPE_RECORDED, BATTLE_TYPE_RECORDED_LINK } from './engine/battle/constants';
 
@@ -375,8 +376,12 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     case B_TXT_SCR_ACTIVE_ABILITY: return encodeChars(_abilityName(_ABILITY_OF(msgData, md.scrActive)));
     case B_TXT_EFF_ABILITY:  return encodeChars(_abilityName(_ABILITY_OF(msgData, gEffectBattler)));
     case B_TXT_PLAYER_NAME:  return encodeChars(GetPlayerNameString() || 'Joueur');
-    case B_TXT_TRAINER1_CLASS: return encodeChars(_resolveTrainerClassNameFr(gTrainerBattleOpponent_A));
-    case B_TXT_TRAINER1_NAME:  return encodeChars(_resolveTrainerNameFr(gTrainerBattleOpponent_A));
+    // 1:1 décomp battle_message.c:2583-2605 : GetTrainerClassNameGenderSpecific(gTrainers[A].
+    // trainerClass, gTrainers[A].encounterMusic_gender & 0x7F, gTrainers[A].trainerName)
+    // — retour u8* déjà encodé (pas de encodeChars). Masque 0x7F EXACT (≠ GetTrainerClass-
+    // NameFromId qui passe le champ entier, pokemon.c:6949).
+    case B_TXT_TRAINER1_CLASS: { const t = gTrainers[gTrainerBattleOpponent_A]; return GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender & 0x7F, t.trainerName); }
+    case B_TXT_TRAINER1_NAME:  return gTrainers[gTrainerBattleOpponent_A].trainerName; // 1:1 c:2643
     case B_TXT_PC_CREATOR_NAME: return encodeChars('BILL');
     case B_TXT_ATK_PREFIX1: case B_TXT_ATK_PREFIX2: case B_TXT_ATK_PREFIX3:
       return encodeChars((md.battlerAttacker & 1) === 0 ? 'ami' : 'ennemi');
@@ -393,8 +398,8 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     case B_TXT_TRAINER1_LOSE_TEXT:
       return GetTrainerALoseText();
     // 1:1 décomp battle_message.c:2740-2771 : trainer B (2-opponent doubles) = gTrainers[opponent_B].
-    case B_TXT_TRAINER2_CLASS: return encodeChars(_resolveTrainerClassNameFr(_getTrainerOpponentB()));
-    case B_TXT_TRAINER2_NAME:  return encodeChars(_resolveTrainerNameFr(_getTrainerOpponentB()));
+    case B_TXT_TRAINER2_CLASS: { const t = gTrainers[_getTrainerOpponentB()]; return GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender & 0x7F, t.trainerName); }
+    case B_TXT_TRAINER2_NAME:  return gTrainers[_getTrainerOpponentB()].trainerName;
     // Win-text (frontier/hill only en décomp → toCpy non posé en combat normal) + trainer B
     // lose-text (sTrainerBDefeatSpeech non porté) : différés → chaîne VIDE (pas de marqueur cru
     // → aucun warning charmap si jamais émis).
@@ -611,48 +616,9 @@ const TRAINER_LINK_OPPONENT = 2048;
 // 1:1 décomp `B_SIDE_PLAYER` / `B_SIDE_OPPONENT` : (battler & 1) → 0 = PLAYER, 1 = OPPONENT.
 function _getBattlerSide(battler: number): number { return battler & 1; }
 
-// ─── Trainer name/class resolvers (1:1 décomp gTrainers[id].trainerClass/Name) ─
-//     Reverse cache trainerId number → "TRAINER_X" key, built lazy depuis
-//     constants/opponents-data.ts. Lookup name/class FR via data-tables.ts
-//     (= trainers.json + trainer-class-names-fr.json).
-
-let _trainerIdToKey: Map<number, string> | null = null;
-async function _buildTrainerIdCache(): Promise<void> {
-  if (_trainerIdToKey) return;
-  _trainerIdToKey = new Map();
-  try {
-    const mod = await import('../include/constants/opponents');
-    for (const [key, val] of Object.entries(mod)) {
-      if (key.startsWith('TRAINER_') && typeof val === 'number') {
-        if (!_trainerIdToKey.has(val)) _trainerIdToKey.set(val, key);
-      }
-    }
-  } catch {
-    /* boot ordering edge — cache stays empty until next call */
-  }
-}
-// Fire async load (= populate cache by time first battle starts).
-void _buildTrainerIdCache();
-
-function _resolveTrainerKey(trainerId: number): string {
-  return _trainerIdToKey?.get(trainerId) ?? `TRAINER_${trainerId}`;
-}
-
-function _resolveTrainerNameFr(trainerId: number): string {
-  const key = _resolveTrainerKey(trainerId);
-  const dt = (globalThis as { gameDataTrainers?: Record<string, { trainerName?: string; name?: string }> }).gameDataTrainers;
-  const t = dt?.[key];
-  return t?.trainerName ?? t?.name ?? key.replace(/^TRAINER_/, '');
-}
-
-function _resolveTrainerClassNameFr(trainerId: number): string {
-  const key = _resolveTrainerKey(trainerId);
-  const dt = (globalThis as { gameDataTrainers?: Record<string, { trainerClass?: string }> }).gameDataTrainers;
-  const trainerClass = dt?.[key]?.trainerClass;
-  if (!trainerClass) return 'DRESSEUR';
-  const classMap = (globalThis as { gameDataTrainerClassesFr?: Record<string, string> }).gameDataTrainerClassesFr;
-  return classMap?.[trainerClass] ?? trainerClass.replace(/^TRAINER_CLASS_/, '');
-}
+// Résolveurs maison _resolveTrainer{Name,ClassName}Fr SUPPRIMÉS (lot C1) : remplacés par
+// le 1:1 gTrainers[]/GetTrainerClassNameGenderSpecific aux cases B_TXT_TRAINER1/2_* et
+// dans le décodeur {B_X}. Le cache reverse _trainerIdToKey n'a plus d'usage.
 
 function _getTrainerOpponentB(): number {
   // 1:1 décomp state.ts gTrainerBattleOpponent_B (= 2-opponent doubles).
@@ -1049,7 +1015,6 @@ export function buildMoveBuff(moveId: number): Uint8Array {
 export {
   _moveName, _abilityName, _itemName, _typeName, _speciesName,
   _monNickname, _monNicknameWithPrefix, STAT_NAMES_FR,
-  _resolveTrainerNameFr, _resolveTrainerClassNameFr,
   _getBattlerSide, _getTrainerOpponentB,
   _resolveIntroMsgStringName, _resolveIntroSendoutStringName,
   _resolveReturnmonStringName, _resolveSwitchinmonStringName,
@@ -1104,15 +1069,21 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         // 1:1 décomp `gSaveBlock2Ptr->playerName`.
         return GetPlayerNameString() || 'Joueur';
       }
-      case 'TRAINER1_CLASS':
-        return _resolveTrainerClassNameFr(gTrainerBattleOpponent_A);
+      // 1:1 décomp battle_message.c:2583-2643 (opponent_A) — u8* décodé en string JS
+      // (frontière décodeur {B_X}), masque `& 0x7F` EXACT.
+      case 'TRAINER1_CLASS': {
+        const t = gTrainers[gTrainerBattleOpponent_A];
+        return decodeOwBytes(GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender & 0x7F, t.trainerName));
+      }
       case 'TRAINER1_NAME':
-        return _resolveTrainerNameFr(gTrainerBattleOpponent_A);
-      case 'TRAINER2_CLASS':
+        return decodeOwBytes(gTrainers[gTrainerBattleOpponent_A].trainerName);
+      case 'TRAINER2_CLASS': {
         // 1:1 décomp : `BATTLE_TYPE_TWO_OPPONENTS` → opponent_B.
-        return _resolveTrainerClassNameFr(_getTrainerOpponentB());
+        const t = gTrainers[_getTrainerOpponentB()];
+        return decodeOwBytes(GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender & 0x7F, t.trainerName));
+      }
       case 'TRAINER2_NAME':
-        return _resolveTrainerNameFr(_getTrainerOpponentB());
+        return decodeOwBytes(gTrainers[_getTrainerOpponentB()].trainerName);
       case 'PARTNER_CLASS':
       case 'PARTNER_NAME':
         // Partner trainer (Steven multi battle) Phase 1.4 K — wire post Frontier port.

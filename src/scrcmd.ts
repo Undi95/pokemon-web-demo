@@ -201,7 +201,8 @@ export function resolveObjectLocalIdRaw(arg: string): string {
 import { applyMovement, isMovementDone, isAllMovementsDone } from './engine/field/movement-system';
 // Tables de noms FR (= adaptation de gSpeciesNames/gMoveNames/gItems[].name/gTrainers[]
 // — source unique partagée avec le moteur parsé, donc zéro divergence sur le formatage).
-import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainer, getTrainerNameFr, getTrainerClassNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
+import { getSpeciesNameFr, getMoveNameFr, getItemNameFr, GetPocketByItemId } from '../harness/runtime/data-tables';
+import { GetTrainerClassNameFromId, GetTrainerNameFromId } from './pokemon';
 import { setStringVar, decodeOwBytes } from './text';
 import { getString } from '../harness/runtime/decomp-strings';
 import { CalculatePlayerPartyCount, GetMonData, SetMonData, MON_DATA_SPECIES, MON_DATA_IS_EGG, MON_DATA_NICKNAME, MON_DATA_MET_LOCATION, MON_DATA_MODERN_FATEFUL_ENCOUNTER, gPlayerParty } from './engine/battle/party-storage';
@@ -1100,14 +1101,17 @@ const ScrCmd_bufferstring: ScrCmdFunc = (ctx) => {                           // 
 const ScrCmd_buffertrainerclassname: ScrCmdFunc = (ctx) => {                 // :2272
   const idx = ScriptReadByte(ctx);
   const trainerId = VarGet(ScriptReadHalfword(ctx));
-  const t = getTrainer(constOf(trainerId, 'TRAINER_'));
-  setStringVar(idx + 1, t ? getTrainerClassNameFr(t.trainerClass) : '');
+  // 1:1 scrcmd.c:2277 StringCopy(sScriptStringVars[i], GetTrainerClassNameFromId(id)).
+  // Pont u8*→string JS au call-site (décomp = StringCopy dans un buffer), précédent
+  // ScrCmd_bufferstring (setStringVar attend un string JS ; decodeOwBytes = frontière).
+  setStringVar(idx + 1, decodeOwBytes(GetTrainerClassNameFromId(trainerId)));
   return false;
 };
 const ScrCmd_buffertrainername: ScrCmdFunc = (ctx) => {                      // :2281
   const idx = ScriptReadByte(ctx);
   const trainerId = VarGet(ScriptReadHalfword(ctx));
-  setStringVar(idx + 1, getTrainerNameFr(constOf(trainerId, 'TRAINER_')));
+  // 1:1 scrcmd.c:2286 StringCopy(sScriptStringVars[i], GetTrainerNameFromId(id)).
+  setStringVar(idx + 1, decodeOwBytes(GetTrainerNameFromId(trainerId)));
   return false;
 };
 
