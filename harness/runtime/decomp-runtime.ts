@@ -774,6 +774,27 @@ export class DecompRuntime {
   // GetGpuReg / SetGpuReg — wrapper qui dispatch sur le bon gba.* selon REG_OFFSET
   // ============================================================================
 
+  /** Garde moteur B.2 — HURLE (dédupliqué par (kind,offset)) sur un registre GPU non
+   *  modélisé, SANS changer le comportement (GetGpuReg rend toujours 0, SetGpuReg n'écrit
+   *  toujours rien). `kind` : 'r' = lecture (GetGpuReg default), 'w' = écriture (SetGpuReg
+   *  offset non routé). Compteur GLOBAL cumulé dans __gpuRegGapCount (toutes occurrences) ;
+   *  1 SEUL console.error par (kind,offset) et par session (dédup dans __gpuRegGapSeen). */
+  private _logGpuRegGap(kind: 'r' | 'w', offset: number, value?: number): void {
+    const g = globalThis as any;
+    g.__gpuRegGapCount = (g.__gpuRegGapCount ?? 0) + 1;
+    const seen: Set<string> = g.__gpuRegGapSeen ?? (g.__gpuRegGapSeen = new Set<string>());
+    const key = kind + ':' + offset;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const hex = '0x' + (offset & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+    if (kind === 'r') {
+      console.error(`[GetGpuReg] registre ${hex} non modélisé → 0`);
+    } else {
+      const vhex = '0x' + ((value ?? 0) & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+      console.error(`[SetGpuReg] écriture registre ${hex} non routée (val=${vhex})`);
+    }
+  }
+
   GetGpuReg(reg: number): number {
     switch (reg) {
       case REG_OFFSET_DISPCNT: {
@@ -831,6 +852,11 @@ export class DecompRuntime {
              | ((this.gba.mosaic.objH & 0xF) << 8)
              | ((this.gba.mosaic.objV & 0xF) << 12);
       default:
+        // Garde moteur B.2 : offset non modélisé par ce GetGpuReg. Comportement 1:1
+        // inchangé (on rend toujours 0) — on HURLE juste (dédup par offset) pour
+        // qu'une lecture d'un registre non-géré (ex. affine 0x20-0x3E, ou HW) sorte
+        // du silence. Cf audit-reports/engine/fix-b2-gardes.md pour la liste routés/non.
+        this._logGpuRegGap('r', reg);
         return 0;
     }
   }
@@ -899,6 +925,14 @@ export class DecompRuntime {
       case REG_OFFSET_BG3X_H: this._bgRefXH[3] = value & 0xFFFF; this._updateBgRef(3); break;
       case REG_OFFSET_BG3Y_L: this._bgRefYL[3] = value & 0xFFFF; this._updateBgRef(3); break;
       case REG_OFFSET_BG3Y_H: this._bgRefYH[3] = value & 0xFFFF; this._updateBgRef(3); break;
+      // Garde moteur B.2 : le switch n'avait AUCUN default → toute écriture vers un
+      // offset non routé ci-dessus était avalée SILENCIEUSEMENT. Comportement 1:1
+      // inchangé (on n'écrit toujours rien — aucun registre n'est modélisé pour ces
+      // offsets, ex. DISPSTAT/VCOUNT = HW interruptions/scanline non émulés), on HURLE
+      // juste (dédup par offset). Cf audit-reports/engine/fix-b2-gardes.md.
+      default:
+        this._logGpuRegGap('w', reg, value);
+        break;
     }
   }
 
@@ -1828,6 +1862,39 @@ export class DecompRuntime {
     if (task.followupFunc) task.func = task.followupFunc;
   }
 
+  /** Garde moteur B.2 — politique de log DÉDUPLIQUÉE pour les throws de tasks/callbacks.
+   *  Ne tue NI ne désactive la task (comportement d'exécution 1:1 STRICTEMENT inchangé) :
+   *  seule la POLITIQUE DE LOG change. 1re occurrence d'un message → console.error complet
+   *  (objet Error = stack complet) + mention `[voir __taskErrors]`. Occurrences suivantes →
+   *  compteur silencieux + re-log court `(xN depuis frame F)` au plus 1×/300 frames par clé.
+   *  Clé de dédup = message (les stacks des répétitions sont identiques → inutile de les
+   *  relogger). Toutes les erreurs UNIQUES sont conservées dans globalThis.__taskErrors
+   *  (ring 50 : {frame, fn, message, stack} — stack complet pour le diagnostic post-mortem). */
+  private _logTaskError(tag: string, err: unknown, fnName?: string): void {
+    const frame = this.gMain?.vblankCounter1 ?? -1;
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? (err.stack ?? '') : '';
+    const fn = fnName && fnName.length ? fnName : '?';
+    const g = globalThis as any;
+    const seen: Map<string, { count: number; firstFrame: number; lastLoggedFrame: number }> =
+      g.__taskErrorSeen ?? (g.__taskErrorSeen = new Map());
+    const prev = seen.get(message);
+    if (!prev) {
+      seen.set(message, { count: 1, firstFrame: frame, lastLoggedFrame: frame });
+      const ring: Array<{ frame: number; fn: string; message: string; stack: string }> =
+        g.__taskErrors ?? (g.__taskErrors = []);
+      ring.push({ frame, fn, message, stack });
+      if (ring.length > 50) ring.shift();
+      console.error(`${tag} (frame ${frame}, fn=${fn}) — [voir __taskErrors] :`, err);
+    } else {
+      prev.count++;
+      if (frame - prev.lastLoggedFrame >= 300) {
+        prev.lastLoggedFrame = frame;
+        console.error(`${tag} (x${prev.count} depuis frame ${prev.firstFrame})`);
+      }
+    }
+  }
+
   /** 1:1 décomp `task.c:110 RunTasks` — exécute les tasks dans l'ORDRE DE PRIORITÉ.
    *  FindFirstActiveTask (tête de liste) puis suit la chaîne `.next` jusqu'à
    *  TAIL_SENTINEL. Une task qui se crée/détruit pendant l'itération est gérée 1:1
@@ -1846,7 +1913,7 @@ export class DecompRuntime {
       let guard = 0;
       do {
         const t = this.gTasks[taskId];
-        try { t.func?.(t); } catch (e) { console.error('[runTasks] task threw:', e); }
+        try { t.func?.(t); } catch (e) { this._logTaskError('[runTasks] task threw', e, t.func?.name); }
         taskId = this.gTasks[taskId].next;
       } while (taskId !== TAIL_SENTINEL && ++guard < NUM_TASKS * 4);
     }

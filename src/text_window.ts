@@ -107,7 +107,7 @@ export function LoadMessageBoxGfx(windowId: number, destOffset: number, palOffse
   if (pal instanceof Uint16Array) {
     writePalette(pal, palOffset);
   } else {
-    console.warn('[LoadMessageBoxGfx] gMessageBox_Pal not preloaded — fallback hardcoded grey palette');
+    console.error('[LoadMessageBoxGfx] gMessageBox_Pal not preloaded — fallback hardcoded grey palette — RENDU FAUX, précharger via decomp-asset-net');
     // Fallback : 4 couleurs basiques (préserve l'ancien comportement) si l'asset
     // n'est pas chargé. Ne devrait pas arriver en flow normal.
     const white = (31) | (31 << 5) | (31 << 10);
