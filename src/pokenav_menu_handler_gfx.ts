@@ -1449,11 +1449,17 @@ function Task_MoveBgDots(taskId: number): void {
   ChangeBgX(3, 0x80, BG_COORD_ADD);
 }
 
+// ADAPTATION pointeur→Map (précédent pokenav_looped_task.ts:108) : le décomp stocke
+// (uintptr_t)(sPokenavBgDotsPal + N) dans les word-args ; en JS `array + N` = garbage
+// (c'était le crash « Cannot create property 'v' on number '0' » qui tuait le graphe
+// CONDITION). La Map porte les OFFSETS ; la task relit sPokenavBgDotsPal au tick
+// (asset chargé async) et passe des vues subarray(off) — sémantique C identique.
+const _bgDotsPalArgs = new Map<number, { srcOff: number; destOff: number }>();
+
 /** 1:1 `static void CreateBgDotPurplePalTask(void)` (pokenav_menu_handler_gfx.c:1266-1271). */
 function CreateBgDotPurplePalTask(): void {
   let taskId = CreateTask((t: { taskId: number }) => Task_UpdateBgDotsPalette(t.taskId), 3);
-  SetWordTaskArg(taskId, 1, (sPokenavBgDotsPal + 1));
-  SetWordTaskArg(taskId, 3, (sPokenavBgDotsPal + 7));
+  _bgDotsPalArgs.set(taskId, { srcOff: 1, destOff: 7 }); // ≡ SetWordTaskArg(taskId,1,pal+1) / (taskId,3,pal+7)
 }
 
 /** 1:1 `static void ChangeBgDotsColorToPurple(void)` (pokenav_menu_handler_gfx.c:1273-1276). */
@@ -1464,8 +1470,7 @@ function ChangeBgDotsColorToPurple(): void {
 /** 1:1 `static void CreateBgDotLightBluePalTask(void)` (pokenav_menu_handler_gfx.c:1278-1283). */
 function CreateBgDotLightBluePalTask(): void {
   let taskId = CreateTask((t: { taskId: number }) => Task_UpdateBgDotsPalette(t.taskId), 3);
-  SetWordTaskArg(taskId, 1, (sPokenavBgDotsPal + 7));
-  SetWordTaskArg(taskId, 3, (sPokenavBgDotsPal + 1));
+  _bgDotsPalArgs.set(taskId, { srcOff: 7, destOff: 1 }); // ≡ SetWordTaskArg(taskId,1,pal+7) / (taskId,3,pal+1)
 }
 
 /** 1:1 `static bool32 IsTaskActive_UpdateBgDotsPalette(void)` (pokenav_menu_handler_gfx.c:1285-1288). */
@@ -1473,16 +1478,25 @@ function IsTaskActive_UpdateBgDotsPalette(): boolean {
   return FuncIsActiveTask(Task_UpdateBgDotsPalette);
 }
 
-/** 1:1 `static void Task_UpdateBgDotsPalette(u8 taskId)` (pokenav_menu_handler_gfx.c:1290-1301). */
+/** 1:1 `static void Task_UpdateBgDotsPalette(u8 taskId)` (pokenav_menu_handler_gfx.c:1290-1301).
+ *  pal1/pal2 = word-args pointeurs du décomp → Map d'offsets + subarray (cf. _bgDotsPalArgs). */
 function Task_UpdateBgDotsPalette(taskId: number): void {
   const sp8 = new Uint16Array(2);
   let data = gTasks[taskId].data;
-  let pal1 = GetWordTaskArg(taskId, 1);
-  let pal2 = GetWordTaskArg(taskId, 3);
-  PokenavCopyPalette(pal1, pal2, 2, 12, ++data[0], sp8);
-  LoadPalette(sp8, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));
-  if (data[0] == 12)
+  const args = _bgDotsPalArgs.get(taskId);
+  const basePal = sPokenavBgDotsPal;
+  if (!args || !basePal || typeof basePal.subarray !== 'function') {
+    console.error('[pokenav_menu_handler_gfx] Task_UpdateBgDotsPalette : args/palette indisponibles (args=', !!args, ', pal=', !!basePal, ')');
+    _bgDotsPalArgs.delete(taskId);
     DestroyTask(taskId);
+    return;
+  }
+  PokenavCopyPalette(basePal.subarray(args.srcOff), basePal.subarray(args.destOff), 2, 12, ++data[0], sp8);
+  LoadPalette(sp8, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));
+  if (data[0] == 12) {
+    _bgDotsPalArgs.delete(taskId);
+    DestroyTask(taskId);
+  }
 }
 
 /** 1:1 `static void VBlankCB_PokenavMainMenu(void)` (pokenav_menu_handler_gfx.c:1303-1309). */

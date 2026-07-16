@@ -600,15 +600,18 @@ export function PokenavFillPalette(palIndex: number, fillValue: number): void {
   CpuFill16(fillValue, gPlttBufferFaded[OBJ_PLTT_ID(palIndex)] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, PLTT_SIZE_4BPP);
 }
 
-/** 1:1 `void PokenavCopyPalette(const u16 *src, const u16 *dest, int size, int a3, int a4, u16 *palette)` (pokenav_main_menu.c:474-508). */
-export function PokenavCopyPalette(src: { v: number }, dest: { v: number }, size: number, a3: number, a4: number, palette: { v: number }): void {
+/** 1:1 `void PokenavCopyPalette(const u16 *src, const u16 *dest, int size, int a3, int a4, u16 *palette)` (pokenav_main_menu.c:474-508).
+ *  ADAPTATION pointer-walk → index local (précédent `&text[5]` → `subarray(5)` du repo) :
+ *  les u16* deviennent des vues Uint16Array (l'appelant passe pal.subarray(off)) et
+ *  src++/dest++/palette++ deviennent un index i partagé — sémantique C identique. */
+export function PokenavCopyPalette(src: ArrayLike<number>, dest: ArrayLike<number>, size: number, a3: number, a4: number, palette: Uint16Array): void {
   if (a4 == 0)
   {
-    CpuCopy16(src.v, palette.v, size * 2);
+    CpuCopy16(src, palette, size * 2);
   }
   else if (a4 >= a3)
   {
-    CpuCopy16(dest.v, palette.v, size * 2);
+    CpuCopy16(dest, palette, size * 2);
   }
   else
   {
@@ -618,21 +621,21 @@ export function PokenavCopyPalette(src: { v: number }, dest: { v: number }, size
     let r1 = 0;
     let g1 = 0;
     let b1 = 0;
+    let i = 0;
     while (size--)
     {
-      r = GET_R(src.v);
-      g = GET_G(src.v);
-      b = GET_B(src.v);
-      r1 = ((Math.trunc(((GET_R(dest.v) << 8) - (r << 8)) / a3)) * a4) >> 8;
-      g1 = ((Math.trunc(((GET_G(dest.v) << 8) - (g << 8)) / a3)) * a4) >> 8;
-      b1 = ((Math.trunc(((GET_B(dest.v) << 8) - (b << 8)) / a3)) * a4) >> 8;
+      r = GET_R(src[i]);
+      g = GET_G(src[i]);
+      b = GET_B(src[i]);
+      r1 = ((Math.trunc(((GET_R(dest[i]) << 8) - (r << 8)) / a3)) * a4) >> 8;
+      g1 = ((Math.trunc(((GET_G(dest[i]) << 8) - (g << 8)) / a3)) * a4) >> 8;
+      b1 = ((Math.trunc(((GET_B(dest[i]) << 8) - (b << 8)) / a3)) * a4) >> 8;
       r = (r + r1) & 0x1F;
       //_RGB(r + r1, g + g1, b + b1); doesn't match
       g = (g + g1) & 0x1F;
       b = (b + b1) & 0x1F;
-      palette.v = RGB2(r, g, b);
-      (src.v++, dest.v++);
-      palette.v++;
+      palette[i] = RGB2(r, g, b);
+      i++;
     }
   }
 }
