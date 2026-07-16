@@ -51,7 +51,17 @@ import { LockPlayerFieldControls, ScriptContext_Enable } from './script';
 import { MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor } from './metatile_behavior';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './fieldmap';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { Overworld_PlaySpecialMapMusic } from './overworld';
+// ── ANTI-TDZ : l'import STATIQUE de './overworld' fermait un cycle ESM (pokemon_storage_system
+// → field_screen_effect → overworld → … → TDZ PLAYER_AVATAR_FLAG_ON_FOOT au top-level
+// d'overworld.ts:1397 → boot entier mort). Import DIFFÉRÉ (précédents : pokenav.ts:120,
+// region_map.ts anti-TDZ) — Overworld_PlaySpecialMapMusic n'est appelée qu'à l'exécution (:555).
+let _owPlaySpecialMapMusic: (() => void) | null = null;
+import('./overworld').then((m) => { _owPlaySpecialMapMusic = m.Overworld_PlaySpecialMapMusic; })
+  .catch((e) => console.error('[field_screen_effect] import overworld (anti-TDZ) a échoué', e));
+function Overworld_PlaySpecialMapMusic(): void {
+  if (!_owPlaySpecialMapMusic) { console.error('[field_screen_effect] Overworld_PlaySpecialMapMusic appelée avant résolution de l\'import overworld'); return; }
+  _owPlaySpecialMapMusic();
+}
 import { SetGpuReg, GetGpuReg } from './gpu_regs';
 import { SetGpuRegBits, ClearGpuRegBits } from '../harness/runtime/decomp-helpers';
 import { ScheduleBgCopyTilemapToVram } from './window';

@@ -440,6 +440,15 @@ export const ENUM_BattlerPosition = {
   B_POSITION_OPPONENT_RIGHT: 3,
   MAX_POSITION_COUNT: 4,
 } as const;
+// Bindings plats 1:1 (constants/battle.h:26-32 enum) — FOYER de ces constantes
+// (anti-TDZ : module quasi-feuille, jamais dans le cycle src/ ; les défs vivaient
+// dans battle_anim_mons.ts:39 au cœur du cycle → sTargetIdentities top-level de
+// battle_controller_player crashait le boot selon l'ordre d'évaluation ESM).
+// battle_anim_mons RE-EXPORTE (compat importeurs existants).
+export const B_POSITION_PLAYER_LEFT    = 0;
+export const B_POSITION_OPPONENT_LEFT  = 1;
+export const B_POSITION_PLAYER_RIGHT   = 2;
+export const B_POSITION_OPPONENT_RIGHT = 3;
 export const ENUM_BattlerId = {
   B_BATTLER_0: 0,
   B_BATTLER_1: 1,

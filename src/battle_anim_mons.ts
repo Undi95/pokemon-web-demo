@@ -36,10 +36,16 @@ import { Sin } from './trig';
 
 // ─── gBattlerPositions + GetBattlerAtPosition/GetBattlerPosition (battle_anim_mons.c:858-859)
 //     — 1:1 décomp, absorbé depuis ex-engine/battle/util.ts (grab-bag) 2026-06-13. ───
-export const B_POSITION_PLAYER_LEFT    = 0;
-export const B_POSITION_OPPONENT_LEFT  = 1;
-export const B_POSITION_PLAYER_RIGHT   = 2;
-export const B_POSITION_OPPONENT_RIGHT = 3;
+// DÉFS déplacées vers include/constants/battle.ts (foyer 1:1 = constants/battle.h:26,
+// anti-TDZ : ce module est au cœur du cycle ESM src/ — re-export compat).
+import {
+  B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
+} from '../include/constants/battle';
+export {
+  B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
+};
 
 /** 1:1 décomp `gBattlerPositions[MAX_BATTLERS_COUNT]` (single battle : identity). */
 export const gBattlerPositions: number[] = [

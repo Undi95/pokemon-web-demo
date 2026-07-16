@@ -72,7 +72,12 @@ import {
   MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsNorthArrowWarp,
   MetatileBehavior_IsWestArrowWarp, MetatileBehavior_IsEastArrowWarp, MetatileBehavior_IsLadder,
 } from './metatile_behavior';
-import { GetPlayerFacingDirection, PLAYER_AVATAR_FLAG_ON_FOOT } from './field_player_avatar';
+import { GetPlayerFacingDirection } from './field_player_avatar';
+// ANTI-TDZ : PLAYER_AVATAR_FLAG_ON_FOOT depuis son foyer 1:1 (include/global.fieldmap.ts,
+// module FEUILLE) — l'import via field_player_avatar (en cycle ESM avec ce module) laissait
+// le binding en TDZ quand overworld s'évaluait en premier → sInitialPlayerAvatarState:1397
+// crashait TOUT le boot (ReferenceError avant le moindre rendu).
+import { PLAYER_AVATAR_FLAG_ON_FOOT } from '../include/global.fieldmap';
 import type { WarpKind } from './field_control_avatar';
 
 // ─── Dépendances des corps CB2_NewGame / CB2_ContinueSavedGame : LAZY (anti-TDZ) ──

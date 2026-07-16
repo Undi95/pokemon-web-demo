@@ -84,10 +84,11 @@ import {
   B_WIN_MOVE_NAME_1, B_WIN_PP, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE,
 } from '../include/constants/battle';
 import { SELECT_BUTTON } from './battle_controllers';
-import {
-  GetBattlerPosition, GetBattlerAtPosition,
-  B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
-} from './engine/battle/util';
+import { GetBattlerPosition, GetBattlerAtPosition } from './engine/battle/util';
+// ANTI-TDZ : B_POSITION_* depuis leur foyer 1:1 (include/constants/battle.ts, quasi-feuille)
+// — via engine/battle/util (en cycle), le binding restait en TDZ quand ce module s'évaluait
+// en premier → la table top-level sTargetIdentities (:1003, bcp.c:184) crashait le boot.
+import { B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT } from '../include/constants/battle';
 import { GetDefaultMoveTarget } from './pokemon';
 import {
   TYPE_GHOST, MOVE_NONE, MAX_MON_MOVES, MOVE_CURSE,

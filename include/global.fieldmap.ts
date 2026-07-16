@@ -19,6 +19,20 @@ export const DIR_SOUTHEAST = 6;
 export const DIR_NORTHWEST = 7;
 export const DIR_NORTHEAST = 8;
 
+// ─── PLAYER_AVATAR_FLAG_* (1:1 global.fieldmap.h:288-295) ────────────────────
+// Foyer 1:1 de ces flags (le header décomp, PAS field_player_avatar.c) — rapatriés
+// ici depuis field_player_avatar.ts:974 (anti-TDZ : module FEUILLE sans imports de
+// code → jamais dans un cycle ESM ; overworld.ts:1397 les consomme au top-level).
+// field_player_avatar.ts les RE-EXPORTE (compat importeurs existants).
+export const PLAYER_AVATAR_FLAG_ON_FOOT      = 1 << 0;
+export const PLAYER_AVATAR_FLAG_MACH_BIKE    = 1 << 1;
+export const PLAYER_AVATAR_FLAG_ACRO_BIKE    = 1 << 2;
+export const PLAYER_AVATAR_FLAG_SURFING      = 1 << 3;
+export const PLAYER_AVATAR_FLAG_UNDERWATER   = 1 << 4;
+export const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
+export const PLAYER_AVATAR_FLAG_FORCED_MOVE  = 1 << 6;
+export const PLAYER_AVATAR_FLAG_DASH         = 1 << 7;
+
 // ─── struct ObjectEventGraphicsInfo (1:1 global.fieldmap.h:257-275) ──────────
 // Rapatrié de engine/field/object-event-graphics-info.ts (unification lot 17a).
 

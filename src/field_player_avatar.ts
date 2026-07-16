@@ -968,17 +968,22 @@ const COLLISION_ISOLATED_HORIZONTAL_RAIL   = 11;
 const COLLISION_VERTICAL_RAIL              = 12;
 const COLLISION_HORIZONTAL_RAIL            = 13;
 
-/** 1:1 décomp `PLAYER_AVATAR_FLAG_*` (global.fieldmap.h:49-56). Bitmask de l'état
+/** 1:1 décomp `PLAYER_AVATAR_FLAG_*` (global.fieldmap.h:288-295). Bitmask de l'état
  *  du joueur, lu/écrit par la machine de mouvement (npc_clear_strange_bits clear
- *  DASH au début de chaque pas, PlayerNotOnBikeMoving set DASH, etc.). */
-export const PLAYER_AVATAR_FLAG_ON_FOOT     = 1 << 0;
-export const PLAYER_AVATAR_FLAG_MACH_BIKE   = 1 << 1;
-export const PLAYER_AVATAR_FLAG_ACRO_BIKE   = 1 << 2;
-export const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
-export const PLAYER_AVATAR_FLAG_UNDERWATER  = 1 << 4;
-const PLAYER_AVATAR_FLAG_CONTROLLABLE = 1 << 5;
-export const PLAYER_AVATAR_FLAG_FORCED_MOVE = 1 << 6;
-export const PLAYER_AVATAR_FLAG_DASH        = 1 << 7;
+ *  DASH au début de chaque pas, PlayerNotOnBikeMoving set DASH, etc.).
+ *  DÉFINIS dans include/global.fieldmap.ts (leur foyer 1:1 = le header, module
+ *  feuille anti-TDZ — le boot crashait : overworld.ts:1397 consomme ON_FOOT au
+ *  top-level pendant le cycle ESM overworld⇄field_player_avatar). Re-export compat. */
+import {
+  PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,
+  PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER, PLAYER_AVATAR_FLAG_CONTROLLABLE,
+  PLAYER_AVATAR_FLAG_FORCED_MOVE, PLAYER_AVATAR_FLAG_DASH,
+} from '../include/global.fieldmap';
+export {
+  PLAYER_AVATAR_FLAG_ON_FOOT, PLAYER_AVATAR_FLAG_MACH_BIKE, PLAYER_AVATAR_FLAG_ACRO_BIKE,
+  PLAYER_AVATAR_FLAG_SURFING, PLAYER_AVATAR_FLAG_UNDERWATER,
+  PLAYER_AVATAR_FLAG_FORCED_MOVE, PLAYER_AVATAR_FLAG_DASH,
+};
 
 /** 1:1 décomp `enum` (bike.h:21-24). `PLAYER_SPEED_FASTEST = 4` (STANDING=0, NORMAL=1,
  *  FAST=2, FASTER=3, FASTEST=4). Lue par `ForcedMovement_MuddySlope` : à pied GetPlayerSpeed
