@@ -1310,6 +1310,16 @@ function SpriteCB_OptionZoom(sprite: DecompSprite): void {
         }
         sprite.affineMode = ST_OAM_AFFINE_OFF;
         sprite.objMode = ST_OAM_OBJ_NORMAL;
+        // ADAPTATION MOTEUR (bug payé : sous-menu CONDITION chevauché) : le décomp écrit
+        // `sprite->oam.affineMode = OFF` (son OAM local). Chez nous, tickAllAffineAnims
+        // re-copie OAM→sprite quand l'OAM shadow est « allumé » (sprite-engine-impl.ts:602)
+        // → si on n'éteint QUE le champ flat, l'OAM encore à DOUBLE le rallume au tick
+        // suivant et le reset ne prend JAMAIS (résidu AFFINE_DOUBLE → bbox doublée →
+        // barres du sous-menu décalées/chevauchées). Éteindre LES DEUX = 1:1 exact.
+        {
+          const _oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+          if (_oam) { _oam.affineMode = ST_OAM_AFFINE_OFF; _oam.objMode = ST_OAM_OBJ_NORMAL; }
+        }
         sprite.callback = SpriteCallbackDummy;
       }
     }
@@ -1464,7 +1474,14 @@ function CreateBgDotPurplePalTask(): void {
 
 /** 1:1 `static void ChangeBgDotsColorToPurple(void)` (pokenav_menu_handler_gfx.c:1273-1276). */
 function ChangeBgDotsColorToPurple(): void {
-  CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal + 7, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));
+  // 1:1 c:1275 `sPokenavBgDotsPal + 7` → subarray (pointer-arith : `array + 7` JS = garbage →
+  // écrivait du NOIR aux slots 49-50 = fond pois noir au RETOUR du graphe ; même famille que
+  // le fix des tasks _bgDotsPalArgs ci-dessus). Garde : palette pas encore chargée → skip hurlant.
+  if (!sPokenavBgDotsPal || typeof sPokenavBgDotsPal.subarray !== 'function') {
+    console.error('[pokenav_menu_handler_gfx] ChangeBgDotsColorToPurple : sPokenavBgDotsPal indisponible');
+    return;
+  }
+  CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal.subarray(7), BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));
 }
 
 /** 1:1 `static void CreateBgDotLightBluePalTask(void)` (pokenav_menu_handler_gfx.c:1278-1283). */
