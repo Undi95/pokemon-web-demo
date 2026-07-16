@@ -50,12 +50,21 @@ function snakeToPascal(snake) {
   return snake.split('_').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join('');
 }
 
+// Symboles décomp dont la casse/le nom ne suit pas snakeToPascal (trainers.h) :
+// COOLTRAINER_M → gTrainerFrontPic_CoolTrainerM (T interne), RS_* → RubySapphire*.
+const SUFFIX_EXCEPTIONS = {
+  COOLTRAINER_M: 'CoolTrainerM',
+  COOLTRAINER_F: 'CoolTrainerF',
+  RS_BRENDAN: 'RubySapphireBrendan',
+  RS_MAY: 'RubySapphireMay',
+};
+
 const manifest = {};
 let copied = 0, notFound = 0;
 for (const [picName] of Object.entries(picMap)) {
-  const suffix = snakeToPascal(picName);
+  const suffix = SUFFIX_EXCEPTIONS[picName] ?? snakeToPascal(picName);
   const pngFile = graphicsMap[suffix];
-  if (!pngFile) { notFound++; continue; }
+  if (!pngFile) { notFound++; console.warn(`  [not-found] TRAINER_PIC_${picName} (suffix essayé: ${suffix})`); continue; }
   try {
     copyFileSync(join(srcDir, pngFile), join(outDir, pngFile));
     manifest[`TRAINER_PIC_${picName}`] = { png: `trainer_pics/${pngFile}` };

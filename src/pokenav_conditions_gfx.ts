@@ -22,7 +22,7 @@ import { BG_PLTT_ID, OBJ_PLTT_ID } from './palette';
 import { ScanlineEffect_InitHBlankDmaTransfer } from './scanline_effect';
 import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, IndexOfSpritePaletteTag, LoadOam, LoadSpritePalette, LoadSpriteSheet, LoadSpriteSheets, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, StartSpriteAnim, gSprites } from './sprite';
 import { ConvertIntToDecimalStringN, StringCopy } from './string_util';
-import { AddTextPrinterParameterized, DeactivateAllTextPrinters } from './text';
+import { AddTextPrinterParameterized, DeactivateAllTextPrinters, encodeOwText } from './text';
 import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { SpriteTemplate } from './sprite';
@@ -621,7 +621,7 @@ function LoopedTask_CloseMonMarkingsWindow(state: number): number {
 /** 1:1 `static u8 *UnusedPrintNumberString(u8 *dst, u16 num)` (pokenav_conditions_gfx.c:551-557). */
 function UnusedPrintNumberString(dst: Uint8Array, num: number): Uint8Array | null {
   let txtPtr = ConvertIntToDecimalStringN(dst, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
-  txtPtr = StringCopy(txtPtr, getString('gText_Number2'));
+  txtPtr = StringCopy(txtPtr, encodeOwText(getString('gText_Number2')));
   return txtPtr;
 }
 
@@ -653,9 +653,10 @@ function UpdateConditionGraphMenuWindows(mode: number, bufferIndex: number, winM
         text[2] = TEXT_COLOR_BLUE;
         text[3] = TEXT_COLOR_TRANSPARENT;
         text[4] = TEXT_COLOR_LIGHT_BLUE;
-        StringCopy(text[5] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, getString('gText_Number2'));
+        // 1:1 `StringCopy(&text[5], gText_Number2)` — &élément = vue subarray (offset 5).
+        StringCopy(text.subarray(5), encodeOwText(getString('gText_Number2')));
         AddTextPrinterParameterized(menu.listIndexWindowId, FONT_NORMAL, text, 4, 1, 0, null);
-        ConvertIntToDecimalStringN(text[5] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, GetConditionMonDataBuffer(), STR_CONV_MODE_RIGHT_ALIGN, 4);
+        ConvertIntToDecimalStringN(text.subarray(5), GetConditionMonDataBuffer(), STR_CONV_MODE_RIGHT_ALIGN, 4);
         AddTextPrinterParameterized(menu.listIndexWindowId, FONT_NORMAL, text, 28, 1, 0, null);
       }
       break;

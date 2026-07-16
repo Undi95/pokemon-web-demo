@@ -613,7 +613,6 @@ function LoopedTask_ReshowListFromCheckPage(state: number): number {
   let windowState: any = null;
   let subPtr: any = null;
   let r5 = 0;
-  let ptr: any = null;
   if (IsDma3ManagerBusyWithBgCopy())
     return LT_PAUSE;
   list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);
@@ -626,13 +625,16 @@ function LoopedTask_ReshowListFromCheckPage(state: number): number {
       PrintMatchCallListTrainerName(windowState, subPtr);
       return LT_INC_AND_PAUSE;
     case 1:
-      ptr = list.eraseIndex;
-      if (++(ptr[0] /* *ptr */) < list.windowState.entriesOnscreen)
+      // 1:1 `s32 *ptr = &list->eraseIndex` (pokenav_list.c:607) : le pointeur C vise le
+      // CHAMP de la struct — `*ptr` ≡ `list.eraseIndex`, accès directs ici (le transpilé
+      // prenait la VALEUR → `ptr[0]` sur un number → TypeError chaque frame → soft freeze
+      // au retour de check page en bas de liste, constat user 2026-07-16).
+      if (++list.eraseIndex < list.windowState.entriesOnscreen)
       {
-        EraseListEntry(subPtr.listWindow, ptr[0] /* *ptr */, 1);
+        EraseListEntry(subPtr.listWindow, list.eraseIndex, 1);
         return LT_PAUSE;
       }
-      ptr[0] /* *ptr */ = 0;
+      list.eraseIndex = 0;
       if (windowState.listLength <= windowState.entriesOnscreen)
       {
         if (windowState.windowTopIndex != 0)
@@ -641,7 +643,7 @@ function LoopedTask_ReshowListFromCheckPage(state: number): number {
           r5 = -r4;
           EraseListEntry(subPtr.listWindow, r5, r4);
           windowState.selectedIndexOffset = r4;
-          ptr[0] /* *ptr */ = r5;
+          list.eraseIndex = r5;
           return LT_INC_AND_PAUSE;
         }
       }
@@ -653,7 +655,7 @@ function LoopedTask_ReshowListFromCheckPage(state: number): number {
           r5 = -r4;
           EraseListEntry(subPtr.listWindow, r5, r4);
           windowState.selectedIndexOffset = r4;
-          ptr[0] /* *ptr */ = r5;
+          list.eraseIndex = r5;
           return LT_INC_AND_PAUSE;
         }
       }

@@ -57,7 +57,17 @@ export function Task_RunLoopedTask(task: DecompTask): void {
   if (!loopedTask) return; // garde moteur : fn absente
   // 1:1 : `bool32 exitLoop = FALSE; while (!exitLoop)` — exitLoop n'est JAMAIS mis à true
   // (vestige décomp) → boucle qui ne sort que par return / DestroyTask.
+  // ADAPTATION DEV (garde moteur) : sur GBA une LoopedTask qui rend LT_CONTINUE/LT_SET_STATE
+  // sans converger fige la console ; ici on THROW avec le nom pour diagnostiquer (Règle 3 :
+  // jamais de blocage silencieux). 100k itérations dans UNE frame = toujours un bug.
+  let _iter = 0;
   for (;;) {
+    if (++_iter > 100_000) {
+      const msg = `[LoopedTask] boucle infinie détectée : ${loopedTask.name || '(anonyme)'} state=${task.data[0]}`;
+      console.error(msg);
+      _loopedTaskFns.delete(taskId); DestroyTask(taskId);
+      throw new Error(msg);
+    }
     const action = loopedTask(task.data[0]);
     switch (action) {
       case LT_INC_AND_CONTINUE: task.data[0]++; break;

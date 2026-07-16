@@ -119,8 +119,15 @@ export function StringCopy_PlayerName(dest: Uint8Array, src: Uint8Array): Uint8A
 
 /** 1:1 décomp `u8 *StringCopy(u8 *dest, const u8 *src)` (string_util.c:75). */
 export function StringCopy(dest: Uint8Array, src: Uint8Array): Uint8Array {
+  // GARDE MOTEUR (Règle 3) : en ROM une string a TOUJOURS un EOS ; ici une string JS
+  // (getString non encodé) ou un buffer sans EOS ferait boucler `src[s] !== EOS` à
+  // l'infini = freeze dur du navigateur (2 fois payé). On hurle au lieu de figer.
+  if (!(src instanceof Uint8Array))
+    throw new Error(`[StringCopy] src n'est pas un buffer GBA (${typeof src}) — encoder via encodeOwText()`);
   let d = 0, s = 0;
   while (src[s] !== EOS) {
+    if (s >= src.length)
+      throw new Error(`[StringCopy] src sans EOS (len=${src.length}) — buffer malformé`);
     dest[d] = src[s];
     d++;
     s++;

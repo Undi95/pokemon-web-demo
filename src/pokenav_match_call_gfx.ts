@@ -1087,7 +1087,9 @@ function PrintMatchCallLocation(gfx: Pokenav_MatchCallGfx, delta: number): void 
   if (mapSec != MAPSEC_NONE)
     GetMapName(mapName, mapSec, 0);
   else
-    StringCopy(mapName, getString('gText_Unknown'));
+    // 1:1 `StringCopy(mapName, gText_Unknown)` — getString rend une string JS : encoder
+    // en bytes GBA+EOS sinon StringCopy ne trouve jamais l'EOS (boucle infinie, freeze dur).
+    StringCopy(mapName, encodeOwText(getString('gText_Unknown')));
   x = GetStringCenterAlignXOffset(FONT_NARROW, mapName, 88);
   FillWindowPixelBuffer(gfx.locWindowId, PIXEL_FILL(1));
   AddTextPrinterParameterized(gfx.locWindowId, FONT_NARROW, mapName, x, 1, 0, null);

@@ -240,6 +240,32 @@ function applyNoIntroPreset(): void {
   // (REMATCH_TABLE_ENTRIES) ; + FLAG_HAS_MATCH_CALL (0x12F) = feature match call active.
   FlagSet(0x12F);
   for (let i = 0; i < 78; i++) FlagSet(0x15C + i);
+  // ⚠️ DEBUG ONLY : contacts Match Call SPÉCIAUX (sMatchCallHeaders, pokenav_match_call_data.c:598).
+  // 1:1 MatchCall_GetEnabled_* = FlagGet(header.flag) — sans ces flags scénario, rival/champions/
+  // Scott/Norman/maman/Steven/Élite 4 n'apparaissent jamais dans la liste (constat user 2026-07-16).
+  // Le rival reste filtré par genre (MatchCall_GetEnabled_Rival, data.c:786-793) : un seul des deux.
+  for (const f of [
+    'FLAG_ENABLE_MR_STONE_POKENAV',
+    'FLAG_ENABLE_PROF_BIRCH_MATCH_CALL',
+    'FLAG_ENABLE_RIVAL_MATCH_CALL',
+    'FLAG_ENABLE_WALLY_MATCH_CALL',
+    'FLAG_ENABLE_NORMAN_MATCH_CALL',
+    'FLAG_ENABLE_MOM_MATCH_CALL',
+    'FLAG_REGISTERED_STEVEN_POKENAV',
+    'FLAG_ENABLE_SCOTT_MATCH_CALL',
+    'FLAG_ENABLE_ROXANNE_MATCH_CALL',
+    'FLAG_ENABLE_BRAWLY_MATCH_CALL',
+    'FLAG_ENABLE_WATTSON_MATCH_CALL',
+    'FLAG_ENABLE_FLANNERY_MATCH_CALL',
+    'FLAG_ENABLE_WINONA_MATCH_CALL',
+    'FLAG_ENABLE_TATE_AND_LIZA_MATCH_CALL',
+    'FLAG_ENABLE_JUAN_MATCH_CALL',
+    'FLAG_REGISTERED_SIDNEY',
+    'FLAG_REGISTERED_PHOEBE',
+    'FLAG_REGISTERED_GLACIA',
+    'FLAG_REGISTERED_DRAKE',
+    'FLAG_REGISTERED_WALLACE',
+  ]) FlagSet(f);
   // ⚠️ DEBUG ONLY : les 8 badges d'arène (FLAG_BADGE01..08_GET). Débloque les CS
   // gatées par badge (Surf=BADGE05, Strength=BADGE03, Waterfall=BADGE08, Dive=BADGE07,
   // Rock Smash=BADGE03, Cut=BADGE01, Fly=BADGE03, Flash=BADGE01) pour pouvoir tester
