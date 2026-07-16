@@ -1024,10 +1024,18 @@ function renderHandleChar(printer: TextPrinter): number {
       default: DecompressGlyph_Normal(glyphId, printer.japanese); break;
     }
 
-    // 1:1 décomp text.c:1147 CopyGlyphToWindow. Garde engine : skip si renderedByte 0
-    // (espace) — divergence whitespace documentée (évite "mots collés" ; le décomp
-    // blit le glyphe d'espace blanc, ici on préserve le buffer rempli).
-    if (renderedByte !== 0) CopyGlyphToWindow(printer);
+    // 1:1 décomp text.c:1147 : CopyGlyphToWindow INCONDITIONNEL — y compris l'espace
+    // (char 0). Le glyphe d'espace = boîte de pixels de FOND (valeur 0) ; blitté avec
+    // bgColor != 0 (ex. liste Match Call FONT_NARROW bgColor=1, text.c:191-199) il
+    // ÉCRASE l'ancien texte sous l'espace, car GLYPH_COPY (text.c:585) écrit tout
+    // pixel dont l'index mappé != 0. L'ancien garde `renderedByte !== 0` sautait ce
+    // blit → RÉSIDUS de l'ancien texte sous les espaces au re-print SANS erase (liste
+    // MC au scroll, LoopedTask_PrintListItems pokenav_list.c:228 réimprime par-dessus).
+    // Sûr pour les dialogues : bgColor==0 (texte transparent) → blitGlyphToWindow saute
+    // les pixels de fond (index 0), résultat identique au skip ; bgColor==1 sur fond
+    // déjà rempli PIXEL_FILL(1) → blanc-sur-blanc = no-op visuel. L'avance curseur
+    // (ci-dessous, +gCurGlyph.width) est INDÉPENDANTE du blit → aucun "mot collé".
+    CopyGlyphToWindow(printer);
 
     // 1:1 décomp text.c:1149-1165 — avance curseur (minLetterSpacing / japanese / latin).
     // ⚠️ latin (FR/OW) : avance = gCurGlyph.width SEUL (PAS + letterSpacing : la
