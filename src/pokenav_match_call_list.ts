@@ -25,12 +25,12 @@ import { gStringVar4 } from './string_util';
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetPokenavMode, GetSubstructPtr, SetPokenavMode } from './pokenav_resources';
-import { GetTrainerIdxByRematchIdx, MatchCall_GetEnabled, MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetOverrideFlavorText, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage, MatchCall_HasRematchId, MatchCall_GetMessage, gTrainers } from './pokenav_match_call_data';
+import { ensureMatchCallLookups, matchCallLookupsReady, getMapSecByMapKey, gFacilityClassToPicIndex, gMatchCallFlavorTexts, GetTrainerIdxByRematchIdx, MatchCall_GetEnabled, MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetOverrideFlavorText, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage, MatchCall_HasRematchId, MatchCall_GetMessage, gTrainers } from './pokenav_match_call_data';
 import { PokenavList_GetSelectedIndex } from './pokenav_list';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 import { SelectMatchCallMessage } from './match_call';
-const gFacilityClassToPicIndex: any = __wireTodo('gFacilityClassToPicIndex');
-const gMatchCallFlavorTexts: any = __wireTodo('gMatchCallFlavorTexts');
+// gFacilityClassToPicIndex/gMatchCallFlavorTexts : portés dans pokenav_match_call_data
+// (table MCFLAVOR générée du décomp + lookup facility→pic JSON).
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const MATCH_CALL_OPTION_CALL = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -60,7 +60,8 @@ const LT_INC_AND_CONTINUE = 1; // 1:1 include/pokenav.h:59 (à consolider dans i
 const MC_HEADER_COUNT = 21; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const LT_CONTINUE = 3; // 1:1 include/pokenav.h:61 (à consolider dans include/)
 const REMATCH_TABLE_ENTRIES = 78; // 1:1 include/constants/rematches.h:0 (à consolider dans include/)
-const LT_FINISH = 4; // 1:1 include/pokenav.h:62 (à consolider dans include/)
+const LT_FINISH = 4;
+const LT_PAUSE = 2; // 1:1 include/pokenav.h:60 // 1:1 include/pokenav.h:62 (à consolider dans include/)
 const MATCH_CALL_OPTION_COUNT = 3; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const MC_HEADER_WATTSON = 11; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 
@@ -237,6 +238,12 @@ function LoopedTask_BuildMatchCallList(taskState: number): number {
   let state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);
   switch (taskState) {
     case 0:
+      // Gate async lookups (adaptation moteur : map-mapsecs/facility fetch — le décomp
+      // lit gMapGroups en ROM). La CONSTRUCTION stocke mapSec (1:1) → il faut les données
+      // AVANT de bâtir les entrées, pas seulement avant l'affichage.
+      ensureMatchCallLookups().catch((e) => console.error('[match call lookups]', e));
+      if (!matchCallLookupsReady())
+        return LT_PAUSE;
       state.headerId = 0;
       state.numRegistered = 0;
       return LT_INC_AND_CONTINUE;
@@ -447,10 +454,14 @@ export function BufferMatchCallNameAndDesc(matchCallEntry: any, str: Uint8Array)
 }
 
 /** 1:1 `mapsec_u8_t GetMatchTableMapSectionId(int rematchIndex)` (pokenav_match_call_list.c:430-435). */
-export function GetMatchTableMapSectionId(rematchIndex: number): number {
-  let mapGroup = gRematchTable[rematchIndex].mapGroup;
-  let mapNum = gRematchTable[rematchIndex].mapNum;
-  return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum).regionMapSectionId;
+export function GetMatchTableMapSectionId(rematchIndex: number): number | string {
+  // 1:1 `Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId` —
+  // notre gRematchTable porte la clé `map` ('MAP_ROUTE118') au lieu de group/num ;
+  // le mapsec vient de map-mapsecs.json (gaté au case 0 d'OpenMatchCall). Avant :
+  // lookup (undefined, undefined) → header vide → mapsec 0 = « BOURG-EN-VOL » partout.
+  const entry = gRematchTable[rematchIndex];
+  if (entry && typeof entry.map === 'string') return getMapSecByMapKey(entry.map);
+  return Overworld_GetMapHeaderByGroupAndId(entry?.mapGroup, entry?.mapNum).regionMapSectionId;
 }
 
 /** 1:1 `int GetIndexDeltaOfNextCheckPageDown(int index)` (pokenav_match_call_list.c:437-452). */

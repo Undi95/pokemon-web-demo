@@ -7,7 +7,7 @@
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 
-import { FindTaskIdByFunc, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy } from '../harness/runtime/decomp-globals';
+import { FindTaskIdByFunc, LoadCompressedSpriteSheet, LoadPalette, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
 import { ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { GAME_STAT_TRAINER_BATTLES } from '../include/constants/game_stat';
 import { MAPSEC_NONE } from '../include/constants/region_map_sections';
@@ -51,10 +51,13 @@ import { LT_SET_STATE } from './pokenav_looped_task';
 import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { BgDmaFill, LoadBgTiles } from '../harness/runtime/decomp-globals';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
+// Adaptation moteur : les copies « DMA » du port sont synchrones → une requête est
+// toujours prête (le décomp attend la fin de RequestDma3Copy ; data[7]=-1 chez nous).
+const CheckForSpaceForDma3Request = (_cursor: number): number => 0;
 const CpuCopy32: any = __wireTodo('CpuCopy32');
 const DecompressPicFromTable: any = __wireTodo('DecompressPicFromTable');
 import { DrawMatchCallTextBoxBorder } from './match_call';
+import { ensureMatchCallLookups, matchCallLookupsReady } from './pokenav_match_call_data';
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 // Assets fenêtre message — 1:1 décomp match_call.c:1197-1198 (window.png .4bpp + .gbapal),
 // chargés async (cf _loadMatchCallUiGfx). `LoadMatchCallWindowGfx` = 1:1 match_call.c:2102.
@@ -73,6 +76,7 @@ let gMatchCallUI_Gfx: Uint8Array | null = null;
 let gMatchCallUI_Pal: Uint16Array | null = null;
 let gMatchCallUI_Tilemap: Uint16Array | null = null;
 let _matchCallUiLoaded = false;
+let _trainerPicMap: Record<string, { png: string }> | null = null;
 function _loadMatchCallUiGfx(): void {
   if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
   void (async () => {
@@ -100,6 +104,9 @@ function _loadMatchCallUiGfx(): void {
       sMatchCallWindow_Gfx = winGfx;
       sMatchCallWindow_Pal = winPal;
       sOptionsCursor_Gfx = curGfx; sOptionsCursor_Pal = curPal;
+      // map trainer pics (= gTrainerFrontPicTable, monnaie enum → png)
+      try { _trainerPicMap = await (await fetch('/decomp/em/trainer-pics.json')).json(); }
+      catch (e) { console.error('[match call] trainer-pics.json', e); _trainerPicMap = {}; }
       // réinjecter dans les structs qui capturaient null au module-load :
       (sOptionsCursorSpriteSheets[0] as any).data = curGfx;
       (sOptionsCursorSpritePalettes[0] as any).data = curPal;
@@ -389,8 +396,9 @@ function LoopedTask_OpenMatchCall(state: number): number {
       // + gate data trainers (la liste imprime les dresseurs normaux via gTrainers ;
       // table JSON du bridge combat, fetch async — même pattern que les assets).
       ensureGTrainersLoaded().catch((e) => console.error('[match call gTrainers]', e));
+      ensureMatchCallLookups().catch((e) => console.error('[match call lookups]', e));
       if (!gMatchCallUI_Gfx || !gMatchCallUI_Tilemap || !gMatchCallUI_Pal
-          || !(globalThis as { __gTrainers?: unknown }).__gTrainers)
+          || !(globalThis as { __gTrainers?: unknown }).__gTrainers || !matchCallLookupsReady())
         return LT_PAUSE;
       InitBgTemplates(sMatchCallBgTemplates, sMatchCallBgTemplates.length);
       ChangeBgX(2, 0, BG_COORD_SET);
@@ -927,17 +935,43 @@ function SetPokeballIconsFlashing(active: boolean): void {
     gTasks[taskId].data[15] /* tActive */ = active;
 }
 
-/** 1:1 `static void Task_FlashPokeballIcons(u8 taskId)` (pokenav_match_call_gfx.c:907-919). */
+/** 1:1 `static void Task_FlashPokeballIcons(u8 taskId)` (pokenav_match_call_gfx.c:907-919).
+ *  `PokenavCopyPalette(sPokeball_Pal, &sPokeball_Pal[0x10], 0x10, 0x10, tSinVal,
+ *  &gPlttBufferUnfaded[BG_PLTT_ID(5)])` (pokenav_main_menu.c:474-508) est INLINÉ :
+ *  les pointeurs u16* deviennent des offsets, et nos buffers palette s'accèdent par
+ *  l'API PaletteBuffer get/set (pas d'écriture par index sur le Proxy). pokeball.pal
+ *  = 32 entrées (palette de base 0..15 + variante flash 16..31, 1:1 pokeball.pal). */
 function Task_FlashPokeballIcons(taskId: number): void {
+  const rt = getRuntime();
   let data = gTasks[taskId].data;
-  if (data[15] /* tActive */)
+  if (data[15] /* tActive */ && rt && sPokeball_Pal)
   {
     data[0] /* tSinIdx */ += 4;
     data[0] /* tSinIdx */ &= 0x7F;
     data[1] /* tSinVal */ = gSineTable[data[0] /* tSinIdx */] >> 4;
-    PokenavCopyPalette(sPokeball_Pal, sPokeball_Pal[0x10] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, 0x10, 0x10, data[1] /* tSinVal */, gPlttBufferUnfaded[BG_PLTT_ID(5)] /* TRANSPILER-TODO &élément scalaire (out-param ?) */);
-    if (!gPaletteFade.active)
-      CpuCopy32(gPlttBufferUnfaded[BG_PLTT_ID(5)] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, gPlttBufferFaded[BG_PLTT_ID(5)] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, PLTT_SIZE_4BPP);
+    const a3 = 0x10, a4 = data[1];
+    const base = BG_PLTT_ID(5);
+    for (let i = 0; i < 0x10; i++) {
+      const s = sPokeball_Pal[i] ?? 0;          // *src
+      const d = sPokeball_Pal[0x10 + i] ?? 0;   // *dest (&sPokeball_Pal[0x10])
+      let out: number;
+      if (a4 === 0) out = s;
+      else if (a4 >= a3) out = d;
+      else {
+        let r = s & 0x1F, g = (s >> 5) & 0x1F, b = (s >> 10) & 0x1F;
+        const r1 = ((((((d & 0x1F) << 8) - (r << 8)) / a3) | 0) * a4) >> 8;
+        const g1 = (((((((d >> 5) & 0x1F) << 8) - (g << 8)) / a3) | 0) * a4) >> 8;
+        const b1 = (((((((d >> 10) & 0x1F) << 8) - (b << 8)) / a3) | 0) * a4) >> 8;
+        r = (r + r1) & 0x1F; g = (g + g1) & 0x1F; b = (b + b1) & 0x1F;
+        out = r | (g << 5) | (b << 10);
+      }
+      rt.gPlttBufferUnfaded.set(base + i, out);
+    }
+    if (!gPaletteFade.active) {
+      // 1:1 CpuCopy32(&Unfaded[BG_PLTT_ID(5)], &Faded[BG_PLTT_ID(5)], PLTT_SIZE_4BPP)
+      for (let i = 0; i < 0x10; i++)
+        rt.gPlttBufferFaded.set(base + i, rt.gPlttBufferUnfaded.get(base + i));
+    }
   }
 }
 
@@ -1195,11 +1229,15 @@ function AllocMatchCallSprites(): void {
     LoadCompressedSpriteSheet(sOptionsCursorSpriteSheets[i]);
   Pokenav_AllocAndLoadPalettes(sOptionsCursorSpritePalettes);
   gfx.optionsCursorSprite = null;
-  // Load trainer pic gfx
+  // Load trainer pic gfx — 1:1 struct field `u8 trainerPicGfx[0x800]` (64x64 4bpp) :
+  // réserve le slot sheet tag 8 avec un buffer zéro (le pic est décompressé dedans
+  // au LoadCheckPageTrainerPic). trainerPicGfxPtr = OFFSET BYTE dans objVram
+  // (le décomp stocke l'adresse OBJ_VRAM0+n ; notre VRAM est un Uint8Array).
+  gfx.trainerPicGfx = new Uint8Array(0x800);
   spriteSheet.data = gfx.trainerPicGfx;
-  spriteSheet.size = 0 /* TRANSPILER-TODO sizeof(gfx->trainerPicGfx) */;
+  spriteSheet.size = 0x800;
   spriteSheet.tag = GFXTAG_TRAINER_PIC;
-  gfx.trainerPicGfxPtr = OBJ_VRAM0 + LoadSpriteSheet(spriteSheet) * 0x20;
+  gfx.trainerPicGfxPtr = LoadSpriteSheet(spriteSheet) * 0x20;
   paletteNum = AllocSpritePalette(PALTAG_TRAINER_PIC);
   gfx.trainerPicPalOffset = OBJ_PLTT_ID(paletteNum);
   gfx.trainerPicSprite = CreateTrainerPicSprite();
@@ -1257,17 +1295,33 @@ function CreateTrainerPicSprite(): DecompSprite | null {
 
 /** 1:1 `static void LoadCheckPageTrainerPic(struct Pokenav_MatchCallGfx *gfx)` (pokenav_match_call_gfx.c:1243-1257). */
 function LoadCheckPageTrainerPic(gfx: Pokenav_MatchCallGfx): void {
-  let cursor = 0;
-  let trainerPic = GetMatchCallTrainerPic(PokenavList_GetSelectedIndex());
-  if (trainerPic >= 0)
+  // ADAPTATION ASSETS (décomp : DecompressPicFromTable + LZ77 palette + RequestDma3Copy
+  // depuis la ROM = synchrone) : notre monnaie pic = enum 'TRAINER_PIC_X'
+  // (gTrainerFrontPicTable ≡ /decomp/em/trainer-pics.json, même indexation) → fetch
+  // PNG+PLTE (précédent : DecompressTrainerFrontPic battle_gfx_sfx_util.ts:219), écrit
+  // les tiles au slot sheet tag 8 (trainerPicGfxPtr) + palette au slot alloué, PUIS pose
+  // le callback slide (data[7]=-1 : pas de queue DMA, le CB case 0 passe direct).
+  const trainerPic = GetMatchCallTrainerPic(PokenavList_GetSelectedIndex());
+  if (trainerPic && trainerPic !== -1 && gfx.trainerPicSprite)
   {
-    DecompressPicFromTable(gTrainerFrontPicTable[trainerPic] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, gfx.trainerPicGfx, SPECIES_NONE);
-    LZ77UnCompWram(gTrainerFrontPicPaletteTable[trainerPic].data, gfx.trainerPicPal);
-    cursor = RequestDma3Copy(gfx.trainerPicGfx, gfx.trainerPicGfxPtr, 0 /* TRANSPILER-TODO sizeof(gfx->trainerPicGfx) */, 1);
-    LoadPalette(gfx.trainerPicPal, gfx.trainerPicPalOffset, 0 /* TRANSPILER-TODO sizeof(gfx->trainerPicPal) */);
-    gfx.trainerPicSprite.data[0] = 0;
-    gfx.trainerPicSprite.data[7] = cursor;
-    gfx.trainerPicSprite.callback = SpriteCB_TrainerPicSlideOnscreen;
+    void (async () => {
+      try {
+        const entry = _trainerPicMap?.[trainerPic as unknown as string];
+        if (!entry) { console.error('[match call] trainer pic inconnu:', trainerPic); return; }
+        const [tiles, plte] = await Promise.all([
+          loadTileBin('/decomp/em/' + entry.png, 4),
+          extractPngPlte('/decomp/em/' + entry.png),
+        ]);
+        const rt = getRuntime();
+        if (!rt) return;
+        gfx.trainerPicGfx.set(tiles.subarray(0, 0x800));
+        rt.gba.objVram.set(gfx.trainerPicGfx, gfx.trainerPicGfxPtr);
+        LoadPalette(plte.subarray(0, 16), gfx.trainerPicPalOffset, 32);
+        gfx.trainerPicSprite.data[0] = 0;
+        gfx.trainerPicSprite.data[7] = -1;
+        gfx.trainerPicSprite.callback = SpriteCB_TrainerPicSlideOnscreen;
+      } catch (e) { console.error('[match call] trainer pic load', e); }
+    })();
   }
 }
 

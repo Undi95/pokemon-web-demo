@@ -16,6 +16,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';
 import { encodeOwText, isOwCharmapReady } from './text';
 import * as _OPPONENTS from '../include/constants/opponents';
+import { getTrainerPicEnum } from './engine/battle/battle-trainer-data-bridge';
 import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';
@@ -28,14 +29,21 @@ import { __wireTodo } from './engine/wire-todo';
 // CHECK_PAGE_{STRATEGY,POKEMON,INTRO_1,INTRO_2} (enum pokenav.h:221, ordre 0..3). Le token
 // `name` = suffixe du symbole `gText_MatchCall<name>_<champ>` (strings.c / match_call_messages.h).
 // getString est sûr (retourne `[MISSING:key]` si la string n'est pas extraite, pas de throw).
-function MCFLAVOR(name: string): string[] {
+function MCFLAVOR(name: string): Uint8Array[] {
+  // _gbaText = buffers GBA PARESSEUX (résolus au 1er accès post-boot — leçon bombe
+  // lazy : ce module est dans la chaîne de boot via match_call.ts/new_game).
   return [
-    getString(`gText_MatchCall${name}_Strategy`),
-    getString(`gText_MatchCall${name}_Pokemon`),
-    getString(`gText_MatchCall${name}_Intro1`),
-    getString(`gText_MatchCall${name}_Intro2`),
+    _gbaText(`gText_MatchCall${name}_Strategy`),
+    _gbaText(`gText_MatchCall${name}_Pokemon`),
+    _gbaText(`gText_MatchCall${name}_Intro1`),
+    _gbaText(`gText_MatchCall${name}_Intro2`),
   ];
 }
+
+// 1:1 `const u8 *const gMatchCallFlavorTexts[REMATCH_TABLE_ENTRIES][CHECK_PAGE_ENTRY_COUNT]`
+// (data/text/match_call_messages.h:391) — ordre généré depuis le décomp (scratchpad/gen-flavor.cjs).
+const _FLAVOR_NAMES: (string | null)[] = ["AromaLady_Rose","RuinManiac_Andres","RuinManiac_Dusty","Tuber_Lola","Tuber_Ricky","SisAndBro_LilaAndRoy","Cooltrainer_Cristin","Cooltrainer_Brooke","Cooltrainer_Wilton","HexManiac_Valerie","Lady_Cindy","Beauty_Thalia","Beauty_Jessica","RichBoy_Winston","PokeManiac_Steve","Swimmer_Tony","BlackBelt_Nob","BlackBelt_Koji","Guitarist_Fernando","Guitarist_Dalton","Kindler_Bernie","Camper_Ethan","OldCouple_JohnAndJay","BugManiac_Jeffrey","Psychic_Cameron","Psychic_Jacki","Gentleman_Walter","SchoolKid_Karen","SchoolKid_Jerry","SrAndJr_AnnaAndMeg","Pokefan_Isabel","Pokefan_Miguel","Expert_Timothy","Expert_Shelby","Youngster_Calvin","Fisherman_Elliot","Triathlete_Isaiah","Triathlete_Maria","Triathlete_Abigail","Triathlete_Dylan","Triathlete_Katelyn","Triathlete_Benjamin","Triathlete_Pablo","DragonTamer_Nicolas","BirdKeeper_Robert","NinjaBoy_Lao","BattleGirl_Cyndy","ParasolLady_Madeline","Swimmer_Jenny","Picnicker_Diana","Twins_AmyAndLiv","Sailor_Ernest","Sailor_Cory","Collector_Edwin","PkmnBreeder_Lydia","PkmnBreeder_Isaac","PkmnBreeder_Gabrielle","PkmnRanger_Catherine","PkmnRanger_Jackson","Lass_Haley","BugCatcher_James","Hiker_Trent","Hiker_Sawyer","YoungCouple_LoisAndHal","PkmnTrainer_Wally","RockinWhiz_Roxanne","TheBigHit_Brawly","SwellShock_Wattson","PassionBurn_Flannery","ReliableOne_Dad","SkyTamer_Winona","MysticDuo_TateAndLiza","DandyCharm_Juan","EliteFour_Sidney","EliteFour_Phoebe","EliteFour_Glacia","EliteFour_Drake","Champion_Wallace"];
+export const gMatchCallFlavorTexts: (Uint8Array[] | null)[] = _FLAVOR_NAMES.map((n) => (n ? MCFLAVOR(n) : null));
 // 1:1 : dans le décomp, MCFLAVOR(Brendan)/(May) passent le TOKEN nom (concat `##`) → ici la string.
 const Brendan = 'Brendan';
 const May = 'May';
@@ -64,7 +72,9 @@ export const gTrainers: any = new Proxy({}, {
     const raw = (globalThis as { __gTrainers?: Record<number, { trainerName?: number[] }> }).__gTrainers?.[idx];
     if (!raw) return undefined;
     const name = String.fromCharCode(...(raw.trainerName ?? []));
-    const view = { ...raw, trainerName: encodeOwText(name) };
+    // trainerPic : le bridge stocke l'enum 'TRAINER_PIC_X' à part (getTrainerPicEnum) —
+    // notre monnaie pic (= l'index gTrainerFrontPicTable du décomp).
+    const view = { ...raw, trainerName: encodeOwText(name), trainerPic: getTrainerPicEnum(idx) };
     _mcTrainerViewCache.set(idx, view);
     return view;
   },
@@ -1252,10 +1262,10 @@ const sCheckPageOverrides = [
     facilityClass: FACILITY_CLASS_STEVEN,
     flag: 0xFFFF,
     flavorTexts: [
-      getString('gText_MatchCallSteven_Strategy'), // [CHECK_PAGE_STRATEGY]
-      getString('gText_MatchCallSteven_Pokemon'), // [CHECK_PAGE_POKEMON]
-      getString('gText_MatchCallSteven_Intro1_BeforeMeteorFallsBattle'), // [CHECK_PAGE_INTRO_1]
-      getString('gText_MatchCallSteven_Intro2_BeforeMeteorFallsBattle'), // [CHECK_PAGE_INTRO_2]
+      _gbaText('gText_MatchCallSteven_Strategy'), // [CHECK_PAGE_STRATEGY]
+      _gbaText('gText_MatchCallSteven_Pokemon'), // [CHECK_PAGE_POKEMON]
+      _gbaText('gText_MatchCallSteven_Intro1_BeforeMeteorFallsBattle'), // [CHECK_PAGE_INTRO_1]
+      _gbaText('gText_MatchCallSteven_Intro2_BeforeMeteorFallsBattle'), // [CHECK_PAGE_INTRO_2]
     ],
   },
   {
@@ -1263,10 +1273,10 @@ const sCheckPageOverrides = [
     facilityClass: FACILITY_CLASS_STEVEN,
     flag: FLAG_DEFEATED_MOSSDEEP_GYM,
     flavorTexts: [
-      getString('gText_MatchCallSteven_Strategy'), // [CHECK_PAGE_STRATEGY]
-      getString('gText_MatchCallSteven_Pokemon'), // [CHECK_PAGE_POKEMON]
-      getString('gText_MatchCallSteven_Intro1_AfterMeteorFallsBattle'), // [CHECK_PAGE_INTRO_1]
-      getString('gText_MatchCallSteven_Intro2_AfterMeteorFallsBattle'), // [CHECK_PAGE_INTRO_2]
+      _gbaText('gText_MatchCallSteven_Strategy'), // [CHECK_PAGE_STRATEGY]
+      _gbaText('gText_MatchCallSteven_Pokemon'), // [CHECK_PAGE_POKEMON]
+      _gbaText('gText_MatchCallSteven_Intro1_AfterMeteorFallsBattle'), // [CHECK_PAGE_INTRO_1]
+      _gbaText('gText_MatchCallSteven_Intro2_AfterMeteorFallsBattle'), // [CHECK_PAGE_INTRO_2]
     ],
   },
   {
@@ -1739,3 +1749,53 @@ export function SetMatchCallRegisteredFlag(): void {
   if (index >= 0)
     FlagSet(TRAINER_REGISTERED_FLAGS_START + index);
 }
+
+
+// ─── gFacilityClassToPicIndex (1:1 include/data.h — table facility class → trainer pic) ───
+// Adaptation data : /decomp/em/trainer-class-lookups.json (clés 'FACILITY_CLASS_X' →
+// 'TRAINER_PIC_Y') ; nos facility class côté headers = constantes numériques → reverse-lookup
+// via include/constants/trainers (même pattern que _mapsecKeyFromId). Fetch async gaté par
+// ensureMatchCallLookups() (case 0 de LoopedTask_OpenMatchCall).
+import * as _TRAINER_CONSTS from '../include/constants/trainers';
+let _facilityToPic: Record<string, string> | null = null;
+let _facilityLookupPromise: Promise<void> | null = null;
+export function ensureMatchCallLookups(): Promise<void> {
+  if (!_facilityLookupPromise) {
+    _facilityLookupPromise = (async () => {
+      try {
+        const resp = await fetch('/decomp/em/trainer-class-lookups.json');
+        const j = await resp.json() as { facilityClassToPic?: Record<string, string> };
+        _facilityToPic = j.facilityClassToPic ?? {};
+      } catch (e) { console.error('[match call] trainer-class-lookups.json', e); _facilityToPic = {}; }
+      try {
+        // mapsec par clé MAP_* (= gMapGroups[g][n].regionMapSectionId ; précédent
+        // pokedex_area_screen.ts:128) — pour GetMatchTableMapSectionId (localisation).
+        _mapSecByMapKey = await (await fetch('/decomp/em/map-mapsecs.json')).json() as Record<string, string>;
+      } catch (e) { console.error('[match call] map-mapsecs.json', e); _mapSecByMapKey = {}; }
+    })();
+  }
+  return _facilityLookupPromise;
+}
+export function matchCallLookupsReady(): boolean { return _facilityToPic !== null && _mapSecByMapKey !== null; }
+let _mapSecByMapKey: Record<string, string> | null = null;
+/** mapsec ('MAPSEC_X') d'une clé map ('MAP_X') — GetMapName (region_map.ts) accepte les clés. */
+export function getMapSecByMapKey(mapKey: string): string {
+  return _mapSecByMapKey?.[mapKey] ?? 'MAPSEC_NONE';
+}
+let _facilityIdToKey: Map<number, string> | null = null;
+function _facilityKeyFromId(id: number): string {
+  if (!_facilityIdToKey) {
+    _facilityIdToKey = new Map();
+    for (const [k, v] of Object.entries(_TRAINER_CONSTS as Record<string, unknown>)) {
+      if (typeof v === 'number' && k.startsWith('FACILITY_CLASS_') && !_facilityIdToKey.has(v)) _facilityIdToKey.set(v, k);
+    }
+  }
+  return _facilityIdToKey.get(id) ?? `FACILITY_CLASS_${id}`;
+}
+export const gFacilityClassToPicIndex: any = new Proxy({}, {
+  get(_t, prop) {
+    const id = Number(prop);
+    if (!Number.isFinite(id)) return undefined;
+    return _facilityToPic?.[_facilityKeyFromId(id)] ?? '';
+  },
+});
