@@ -392,8 +392,16 @@ function applyNoIntroPreset(): void {
     // ⚠️ DEBUG ONLY : statut BRÛLÉ pour tester l'anim slide fenêtre STATUT
     // du résumé (MED2, 1:1 PositionStatusSlidingWindow). STATUS1_BURN = 1<<4.
     arcko.status = (resolveDecompConstant('STATUS1_BURN') as number | undefined) ?? 0x10;
+    // ⚠️ DEBUG ONLY (user 2026-07-16) : conditions de concours + sheen + rubans sur Arcko
+    // au boot ?debug → le radar CONDITION du Pokénav est garni (polygone asymétrique),
+    // les sparkles du sheen scintillent, et l'entrée RUBANS du menu apparaît d'office
+    // (hasAnyRibbons). Valeurs volontairement inégales pour un pentagone parlant.
+    Object.assign(arcko, {
+      cool: 255, beauty: 180, cute: 120, smart: 90, tough: 200, sheen: 255,
+      coolRibbon: 4, beautyRibbon: 2, cuteRibbon: 1, effortRibbon: 1, championRibbon: 1,
+    });
     GiveMonToPlayer(arcko);
-    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.hp}/${arcko.maxHP}) held=${arcko.heldItem}`);
+    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.hp}/${arcko.maxHP}) held=${arcko.heldItem} + conditions/sheen/rubans (radar+RUBANS garnis)`);
     // ŒUF (Poussifeu) RETIRÉ du preset (user 2026-07-03 : l'éclosion ~2 pas gênait
     // les tests d'aggro dresseurs). Pour re-tester l'éclosion P2.2, remettre :
     //   const egg = CreateEgg('SPECIES_TORCHIC', false); egg.friendship = 0;
