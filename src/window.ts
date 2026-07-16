@@ -999,20 +999,29 @@ export function ResetAllBgsCoordinates(): void {
 }
 
 // ─── BG affine (bg.c:244-283 SetBgAffineInternal / bg.c:772 SetBgAffine) ──────
-// INERTE : le seul appelant SOLO du décomp est rayquaza_scene.c (climax légendaire),
-// PAS encore porté → ces fonctions ne sont câblées nulle part. Transcrites 1:1 pour
-// que le futur port de rayquaza_scene les trouve prêtes (tsc vert, boot sain). NON
-// testées en jeu (aucun appelant) — cf. audit-reports/engine/fix-bg.md.
+// Transcrites 1:1 (double write BG2PA bg.c:274+278 inclus). Le seul appelant SOLO
+// du décomp est rayquaza_scene.c (climax légendaire), pas encore porté — mais la
+// chaîne complète est CÂBLÉE et exercée par l'outil harness `dev.gfx.affineTest`
+// (dev-gfx-tools.ts) : SetBgAffine → gate mode vidéo (GetGpuReg DISPCNT & 7 ≡
+// GetBgMode bg.c:64, le port n'a pas le staging bgVisibilityAndMode) → BgAffineSet
+// → 8 écritures SetGpuReg BG2PA..BG2Y_H → compositor branche affine (fix-affine-bg.md).
 
 interface BgAffineSrcData { texX: number; texY: number; scrX: number; scrY: number; sx: number; sy: number; alpha: number; }
 interface BgAffineDstData { pa: number; pb: number; pc: number; pd: number; dx: number; dy: number; }
 
-/** 1:1 BIOS `BgAffineSet(src, dst, count)` (libagbsyscall) — calcule la matrice affine
- *  BG (pa/pb/pc/pd) + point de référence (dx/dy) depuis centre texture (texX/texY, 28.8),
- *  centre écran (scrX/scrY), échelles (sx/sy, Q8.8) et angle (alpha, u16 0..0xFFFF).
- *  Math = MÊME routine déjà validée dans le port : PanFadeAndZoomScreen
- *  (decomp-globals.ts:1117 — gSineTable Q8.8, index alpha>>8, shift >>8), généralisée
- *  ici à sx/sy séparés (pa/pb ← sx ; pc/pd ← sy), conforme au BIOS. */
+/** 1:1 BIOS `BgAffineSet(src, dst, count)` (SWI 0x0E, libagbsyscall) — calcule la
+ *  matrice affine BG (pa/pb/pc/pd, s16 Q8.8) + point de référence (dx/dy, s32 28.8)
+ *  depuis centre texture (texX/texY, 28.8), centre écran (scrX/scrY, s16), échelles
+ *  (sx/sy, Q8.8 : 256 = 1 texel/pixel) et angle (alpha, u16 : 0x10000 = tour complet,
+ *  seuls les bits 8-15 comptent — GBATEK « BgAffineSet ... theta 8bit fractional »).
+ *  Semantics BIOS (GBATEK SWI 0Eh) : pa=sx·cos, pb=−sx·sin, pc=sy·sin, pd=sy·cos ;
+ *  dx = texX − (pa·scrX + pb·scrY), dy = texY − (pc·scrX + pd·scrY) — dx/dy calculés
+ *  depuis les coefficients DÉJÀ tronqués s16 (= BIOS réel, cf. HLE NanoBoyAdvance).
+ *  Arrondi/précision = PRÉCÉDENT DU PORT (trig.c Q8.8) : PanFadeAndZoomScreen
+ *  (decomp-globals.ts:1117) + ObjAffineSet (pokemon_animation.ts:142) — gSineTable
+ *  Q8.8 index alpha>>8, négation AVANT le shift arithmétique `(-sin*sx)>>8` (= vrai
+ *  BIOS, troncature vers −∞), au lieu de la table BIOS Q1.14 (>>14) : écart ≤ 1/256
+ *  par coefficient, assumé (même choix que les 2 précédents cités). */
 function BgAffineSet(src: BgAffineSrcData, dest: BgAffineDstData, count: number): void {
   for (let i = 0; i < count; i++) {
     const sinIdx = (src.alpha >> 8) & 0xFF;
@@ -1073,7 +1082,8 @@ function SetBgAffineInternal(
 
 /** 1:1 décomp `void SetBgAffine(u8 bg, s32 srcCenterX, s32 srcCenterY, s16 dispCenterX,
  *  s16 dispCenterY, s16 scaleX, s16 scaleY, u16 rotationAngle)` (bg.c:772-775) —
- *  wrapper de SetBgAffineInternal. INERTE (appelant rayquaza_scene non porté). */
+ *  wrapper de SetBgAffineInternal. Appelant décomp solo = rayquaza_scene.c (à porter) ;
+ *  exercé en attendant par `dev.gfx.affineTest` (chaîne complète, cf. bloc ci-dessus). */
 export function SetBgAffine(
   bg: number, srcCenterX: number, srcCenterY: number,
   dispCenterX: number, dispCenterY: number,

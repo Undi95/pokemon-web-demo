@@ -18,6 +18,8 @@
  *   dev.gfx.film(opts?)        → mosaïque de N frames rAF en overlay (transitions !)
  *   dev.gfx.filmClear()        → retire l'overlay film
  *   dev.gfx.findColor(rgb,tol) → où une couleur apparaît sur le canvas (géométrie)
+ *   dev.gfx.affineTest(start?) → exerciseur BG AFFINE (mode 1 + SetBgAffine animé,
+ *                                rotation+zoom ; affineTest(false) stoppe + restaure)
  *
  * Recettes éprouvées :
  *   - Transition qui glitche → dev.gfx.film({frames: 12, every: 2}) PUIS déclencher
@@ -262,13 +264,190 @@ function filmClear(): void {
   document.getElementById(FILM_ID)?.remove();
 }
 
+// ─── Test d'exercice BG AFFINE — dev.gfx.affineTest(start?) ──────────────────
+// OUTILLAGE (pas du 1:1) : exerce la chaîne AFFINE COMPLÈTE du moteur telle que
+// le jeu l'emprunte : SetBgMode(1) réel (RMW DISPCNT bits 0-2) → BG2CNT 8bpp
+// wraparound → pattern 8bpp + tilemap affine générés en code → animation
+// rotation+zoom poussée CHAQUE frame par le VRAI `SetBgAffine` (src/window.ts,
+// bg.c:772) = gate mode vidéo + BgAffineSet BIOS + 8× SetGpuReg BG2PA..BG2Y_H →
+// branche affine du compositor (internal reference registers GBATEK).
+// Usage : lancer sur un écran stable (overworld idle), filmer via dev.gfx.film,
+// puis dev.gfx.affineTest(false) restaure TOUT (DISPCNT, config BG2, VRAM,
+// palette BG, matrice + refs). ⚠️ un changement de scène pendant le test peut
+// réécrire VRAM/palette sous le pattern — relancer sur écran calme.
+
+interface AffineTestSaved {
+  dispcnt: number;
+  bg2cfg: Record<string, unknown>;
+  refX: number;
+  refY: number;
+  matrix: { pa: number; pb: number; pc: number; pd: number };
+  vramChar: Uint8Array;   // 16 KB @ charBase AT_CHAR_BASE
+  vramMap: Uint8Array;    // 2 KB @ screenbase AT_MAP_BASE
+  palFaded: Uint16Array;  // gPlttBufferFaded BG 0..255
+  palUnfaded: Uint16Array;
+}
+
+const AT_CHAR_BASE = 1;    // charBase 1 = VRAM 0x4000 (16 KB = pile 256 tiles 8bpp de 64 B)
+const AT_MAP_BASE = 30;    // screenbase 30 = VRAM 0xF000 (2 KB)
+const AT_SCREEN_SIZE = 1;  // affine size 1 = 32×32 tiles = 256×256 px (GBATEK BGxCNT bits 14-15)
+
+let _affineTestCb: (() => void) | null = null;
+let _affineTestSaved: AffineTestSaved | null = null;
+let _affineTestFrame = 0;
+let _affineTestStarting = false;
+
+function affineTest(start = true): string {
+  const r = rt();
+  if (!r) return 'runtime introuvable (__rt) — jeu pas booté ?';
+  if (!start) return _affineTestStop(r);
+  if (_affineTestCb || _affineTestStarting) return 'déjà actif — dev.gfx.affineTest(false) pour stopper';
+  _affineTestStarting = true;
+  // Résolution LAZY du VRAI src/window.ts : pas d'arête d'import statique tôt
+  // depuis les devtools (bombes TDZ), le module est déjà dans le graphe → même
+  // instance canonique. On n'y LIT aucun état (fonctions pures sur getRuntime()).
+  import('../../src/window')
+    .then((win) => { _affineTestStart(r, win); })
+    .catch((e) => console.error('[affineTest] import src/window échoué :', e))
+    .finally(() => { _affineTestStarting = false; });
+  return 'démarrage… (logs [affineTest] à suivre ; dev.gfx.affineTest(false) = stop+restore)';
+}
+
+function _affineTestStart(r: Rt, win: typeof import('../../src/window')): void {
+  const gba = r.gba;
+  const cfg = gba.bg(2).config as unknown as Record<string, unknown> & {
+    affineRefX: number; affineRefY: number;
+  };
+
+  // 1. Sauvegarde COMPLÈTE de ce qu'on va toucher.
+  const palFaded = new Uint16Array(256);
+  const palUnfaded = new Uint16Array(256);
+  for (let i = 0; i < 256; i++) {
+    palFaded[i] = r.gPlttBufferFaded.get(i);
+    palUnfaded[i] = r.gPlttBufferUnfaded.get(i);
+  }
+  _affineTestSaved = {
+    dispcnt: r.GetGpuReg(0x00),
+    bg2cfg: { ...cfg },
+    refX: cfg.affineRefX,
+    refY: cfg.affineRefY,
+    matrix: { ...(gba as { bgAffineMatrices: Array<{ pa: number; pb: number; pc: number; pd: number }> }).bgAffineMatrices[0] },
+    vramChar: gba.vram.slice(AT_CHAR_BASE * 0x4000, AT_CHAR_BASE * 0x4000 + 0x4000),
+    vramMap: gba.vram.slice(AT_MAP_BASE * 0x800, AT_MAP_BASE * 0x800 + 0x800),
+    palFaded,
+    palUnfaded,
+  };
+
+  // 2. Mode vidéo 1 via le VRAI SetBgMode du jeu (RMW DISPCNT bits 0-2, bg.c) —
+  //    c'est LE test de persistance : les RMW suivants ne doivent PAS le perdre.
+  win.SetBgMode(1);
+  // BG2CNT (GBATEK "BGxCNT") : priorité 0 (bits 0-1) · charBase (bits 2-3) ·
+  // 8bpp (bit 7, obligatoire en affine) · screenbase (bits 8-12) · wraparound
+  // (bit 13 "Display Area Overflow") · size (bits 14-15).
+  r.SetGpuReg(0x0C, (AT_CHAR_BASE << 2) | 0x80 | (AT_MAP_BASE << 8) | 0x2000 | (AT_SCREEN_SIZE << 14));
+  // DISPCNT RMW : BG2 ON, BG0/1/3 OFF (lisibilité du pattern), OBJ/fenêtres
+  // inchangés. Ce RMW relit GetGpuReg(0) → il RE-TESTE que le mode 1 a tenu.
+  r.SetGpuReg(0x00, (r.GetGpuReg(0x00) & ~(0x100 | 0x200 | 0x800)) | 0x400);
+
+  // 3. Palette de test 256 couleurs BG, par le chemin jeu-visible (gPlttBuffer* ;
+  //    flush immédiat vers gba.palette au cas où vblankCallback est NULL).
+  const pal = new Uint16Array(256);
+  for (let i = 0; i < 256; i++) {
+    const r5 = (i & 0xF) * 2;          // dégradé rouge sur x du macro-bloc
+    const g5 = ((i >> 4) & 0xF) * 2;   // dégradé vert sur y
+    pal[i] = r5 | (g5 << 5) | (20 << 10); // bleu constant (RGB15)
+  }
+  pal[0] = 0;         // index 0 = transparent (backdrop)
+  pal[254] = 0;       // diagonale noire (lisibilité de l'angle)
+  pal[255] = 0x7FFF;  // grille blanche (bord des tuiles = lisibilité du zoom)
+  r.gPlttBufferFaded.setRange(0, pal);
+  r.gPlttBufferUnfaded.setRange(0, pal);
+  gba.palette.loadBgRange(0, pal);
+
+  // 4. 256 tuiles 8bpp générées : tuile t = aplat couleur t + bord blanc (255)
+  //    + diagonale noire (254). 64 B/tuile (8bpp), 256 × 64 = 16 KB = charBase entier.
+  const tiles = new Uint8Array(0x4000);
+  for (let t = 0; t < 256; t++) {
+    const off = t * 64;
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        tiles[off + y * 8 + x] = (x === 0 || y === 0) ? 255 : (x === y ? 254 : t);
+      }
+    }
+  }
+  gba.vram.set(tiles, AT_CHAR_BASE * 0x4000);
+
+  // 5. Tilemap AFFINE 32×32 (= 256×256 px) : entrée = tile number 8 bits
+  //    (convention du port : 1 entrée u8 par u16 de la vue, cf. renderBgAffineScanline
+  //    `& 0xFF` + gba.ts AFFINE_TILEMAP_ENTRIES). Dégradé 2D 16×16 répété 2×2 →
+  //    rotation, zoom ET wraparound lisibles d'un coup d'œil.
+  const tm = gba.bg(2).tilemap;
+  for (let ty = 0; ty < 32; ty++) {
+    for (let tx = 0; tx < 32; tx++) {
+      tm[ty * 32 + tx] = ((ty & 15) << 4) | (tx & 15);
+    }
+  }
+
+  // 6. Animation rotation+zoom : hook frame (vblank moteur) qui pousse CHAQUE
+  //    frame par le VRAI SetBgAffine (chaîne complète du jeu, pas de poke direct).
+  _affineTestFrame = 0;
+  const step = (): void => {
+    const f = _affineTestFrame++;
+    const angle = (f * 128) & 0xFFFF; // u16 : 0x10000 = 1 tour → 1 tour / 512 frames ≈ 8,5 s
+    // Zoom Q8.8 : 256 = 1:1 ; anime 128..384 (±50 %), période 240 frames = 4 s.
+    const scale = 256 + Math.round(128 * Math.sin((f * Math.PI) / 120));
+    // srcCenter = centre de la map 256×256 en 28.8 (128 px << 8) ; dispCenter = centre écran.
+    win.SetBgAffine(2, 128 << 8, 128 << 8, 120, 80, scale, scale, angle);
+    if ((f % 120) === 0 && (r.GetGpuReg(0x00) & 7) !== 1) {
+      console.error(`[affineTest] mode vidéo PERDU (DISPCNT=0x${r.GetGpuReg(0x00).toString(16).toUpperCase()}) — le RMW SetBgMode ne tient pas !`);
+    }
+  };
+  _affineTestCb = step;
+  gba.addVBlankCallback(step);
+  step(); // pose PA..PD + X/Y avant le prochain rendu (pas de frame identité)
+  console.log(
+    `[affineTest] ACTIF — mode 1, BG2 affine 256×256 wraparound ; rotation 1 tour/8,5 s + zoom ±50 %/4 s. `
+    + `DISPCNT=0x${r.GetGpuReg(0x00).toString(16).toUpperCase()} (bits 0-2 attendus = 1). `
+    + `Filmer : dev.gfx.film({every:15, seconds:2}). Stop+restore : dev.gfx.affineTest(false)`,
+  );
+}
+
+function _affineTestStop(r: Rt): string {
+  if (!_affineTestCb) return 'affineTest pas actif';
+  const gba = r.gba;
+  gba.removeVBlankCallback(_affineTestCb);
+  _affineTestCb = null;
+  const s = _affineTestSaved;
+  _affineTestSaved = null;
+  if (!s) return 'stoppé (aucun état sauvegardé ?)';
+  // Restauration inverse : VRAM, palettes, config BG2, DISPCNT (mode/visibilités/
+  // forced blank re-dérivés par applyDispCnt), puis matrice + refs PAR LES REGISTRES
+  // (garde les shadows runtime _bgRefXL/H… cohérents avec l'état restauré).
+  gba.vram.set(s.vramChar, AT_CHAR_BASE * 0x4000);
+  gba.vram.set(s.vramMap, AT_MAP_BASE * 0x800);
+  r.gPlttBufferFaded.setRange(0, s.palFaded);
+  r.gPlttBufferUnfaded.setRange(0, s.palUnfaded);
+  gba.palette.loadBgRange(0, s.palFaded);
+  Object.assign(gba.bg(2).config, s.bg2cfg);
+  r.SetGpuReg(0x00, s.dispcnt);
+  r.SetGpuReg(0x20, s.matrix.pa & 0xFFFF);
+  r.SetGpuReg(0x22, s.matrix.pb & 0xFFFF);
+  r.SetGpuReg(0x24, s.matrix.pc & 0xFFFF);
+  r.SetGpuReg(0x26, s.matrix.pd & 0xFFFF);
+  r.SetGpuReg(0x28, s.refX & 0xFFFF);
+  r.SetGpuReg(0x2A, (s.refX >> 16) & 0xFFFF);
+  r.SetGpuReg(0x2C, s.refY & 0xFFFF);
+  r.SetGpuReg(0x2E, (s.refY >> 16) & 0xFFFF);
+  return `[affineTest] stoppé — état restauré (DISPCNT=0x${r.GetGpuReg(0x00).toString(16).toUpperCase()})`;
+}
+
 // ─── Installation sur window.dev.gfx ─────────────────────────────────────────
 
 export function installGfxTools(): void {
   const w = globalThis as unknown as { dev?: Record<string, unknown> };
   w.dev ??= {};
   w.dev.gfx = {
-    oam, tile, objTile, bgRow, palBank, lum, findColor, film, filmClear,
+    oam, tile, objTile, bgRow, palBank, lum, findColor, film, filmClear, affineTest,
     help(): string {
       return [
         'dev.gfx — sondes graphiques (voir en-tête dev-gfx-tools.ts pour les recettes)',
@@ -282,6 +461,8 @@ export function installGfxTools(): void {
         '  film({frames,every}) mosaïque de frames rAF (transitions)',
         '  film({every,seconds}) mode précis : 1/every rAF pendant S secondes',
         '  filmClear()          retire la mosaïque',
+        '  affineTest(start?)   exerciseur BG AFFINE : mode 1 + rotation/zoom via',
+        '                       le VRAI SetBgAffine — affineTest(false) = restore',
       ].join('\n');
     },
   };

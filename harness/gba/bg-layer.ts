@@ -154,22 +154,30 @@ const AFFINE_SCREEN_TILES: Record<0 | 1 | 2 | 3, number> = {
 /**
  * Render une scanline d'un BG affine (BG2/BG3).
  *
- * Affine BG specs (1:1 GBA hardware) :
- *   - Tilemap = 1 byte par tile (juste tileId 0-255, pas de flip ni palette)
- *   - Toujours 8bpp (256 colors palette globale BG)
- *   - Sizes : 16/32/64/128 tiles carré
- *   - Wraparound : si activé, le BG répète indéfiniment ; sinon clipping
+ * Affine BG specs (1:1 GBATEK "LCD VRAM BG Screen Data / Character Data" +
+ * "BG Rotation/Scaling") :
+ *   - Tilemap = 1 byte par tile (« one byte per tile » : tile number 0-255,
+ *     PAS de flip flags ni palette bank — contrairement au texte u16)
+ *   - Toujours 8bpp (« rotation/scaling BG : 256 colors ») — palette BG complète
+ *   - Sizes (BGxCNT bits 14-15) : 0=128×128 px (16×16 tiles), 1=256×256,
+ *     2=512×512, 3=1024×1024
+ *   - Overflow (BGxCNT bit 13, « Display Area Overflow ») : wraparound si set,
+ *     sinon transparent hors zone
  *
- * Pour chaque pixel screen (sx, sy) sur la scanline :
- *   texX = (refX + pa × sx + pb × sy) >> 8       // 28.8 → integer
- *   texY = (refY + pc × sx + pd × sy) >> 8
- *
- * (refX, refY sont en 28.8 fixed dans BgConfig.)
+ * Modèle GBATEK « Internal Reference Point Registers » : refX/refY reçus ici
+ * sont le POINT INTERNE de CETTE scanline (28.8), maintenu par composeFrame
+ * (rechargé depuis BG2X/Y au début de frame + à chaque écriture, avancé de
+ * (PB, PD) après chaque scanline). Le long de la ligne, le point avance de
+ * (PA, PC) par pixel — d'où, pour le pixel écran sx :
+ *   texX = (refX + pa × sx) >> 8       // 28.8 → texel (troncature hardware)
+ *   texY = (refY + pc × sx) >> 8
+ * (PB/PD ne participent PLUS ici : leur avance verticale est DANS refX/refY.)
  */
 export function renderBgAffineScanline(
-  scanline: number,
   config: BgConfig,
   matrix: AffineMatrix,
+  refX: number,            // point interne X de la scanline (28.8 signé)
+  refY: number,            // point interne Y de la scanline (28.8 signé)
   vram256: Uint8Array,
   tilemap: Uint16Array,    // utilisé en u8 implicite (lit tilemap[i] & 0xFF)
   palette: PaletteBanks,
@@ -184,21 +192,17 @@ export function renderBgAffineScanline(
   const screenTiles = AFFINE_SCREEN_TILES[config.screenSize];
   const screenSizePx = screenTiles * 8;
 
-  // refX/refY sont en 28.8 fixed = ×256
-  const refX = config.affineRefX;
-  const refY = config.affineRefY;
-  const sy = scanline;
   // Sign-extend matrix elements (= s16 GBA hardware mais stockés u16 chez nous).
   // Without : matrix.pa = 65470 lu comme +65470 au lieu de -66 → texX explose.
   const pa = matrix.pa > 0x7FFF ? matrix.pa - 0x10000 : matrix.pa;
-  const pb = matrix.pb > 0x7FFF ? matrix.pb - 0x10000 : matrix.pb;
   const pc = matrix.pc > 0x7FFF ? matrix.pc - 0x10000 : matrix.pc;
-  const pd = matrix.pd > 0x7FFF ? matrix.pd - 0x10000 : matrix.pd;
 
   for (let sx = 0; sx < SCREEN_W; sx++) {
-    // Apply matrix : (texX, texY) en 28.8 fixed → integer pixel via >> 8
-    let texX = (refX + pa * sx + pb * sy) >> 8;
-    let texY = (refY + pc * sx + pd * sy) >> 8;
+    // Apply matrix : (texX, texY) en 28.8 fixed → integer texel via >> 8
+    // (shift arithmétique = troncature vers −∞, identique au hardware qui prend
+    // les bits entiers du compteur 28.8 — GBATEK « fractional portion ignored »).
+    let texX = (refX + pa * sx) >> 8;
+    let texY = (refY + pc * sx) >> 8;
 
     // Wrap or clip
     if (config.wraparound) {
@@ -238,12 +242,9 @@ export function renderBgAffineScanline(
     }
 
     const colorIdx = tilePixels[subY * 8 + subX];
-    // Palette BG bank ignorée en 8bpp (paletteMode=1 implicit)
-    const [r, g, b, a] = palette.getBgRgba(0, colorIdx, 1);
-    const off = sx * 4;
-    out[off] = r;
-    out[off + 1] = g;
-    out[off + 2] = b;
-    out[off + 3] = a;
+    // Palette BG bank ignorée en 8bpp (paletteMode=1 implicit). Hot path :
+    // writeBgRgbaTo (même plomberie que renderBgScanline:132 — pas d'alloc/px ;
+    // idx 0 → alpha 0 = transparent, identique à l'ancien getBgRgba).
+    palette.writeBgRgbaTo(0, colorIdx, 1, out, sx * 4);
   }
 }

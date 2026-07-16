@@ -95,6 +95,57 @@ const _oamSortedIndices: number[] = [];
 // manquant ne se masque plus silencieusement (bug historique zoom Pokénav).
 const _missingAffineSlots = new Set<number>();
 
+// ─── BG affine : « Internal Reference Point Registers » (GBATEK) ─────────────
+// 1:1 GBATEK "BG Rotation/Scaling — Internal Reference Point Registers" :
+//   « The above reference points are automatically copied to internal registers
+//     during each vblank, specifying the origin for the first scanline. The
+//     internal registers are then incremented by dmx [PB] and dmy [PD] after
+//     each scanline. » ; et « Writing to a reference point register by software
+//     outside of the Vblank period does immediately copy the new value to the
+//     corresponding internal register », le nouveau point valant pour la
+//     scanline COURANTE.
+// Modélisation frame-entière → scanline-exacte (même principe que le HBlank cb
+// scanline_effect, compositor appelé AVANT chaque ligne) :
+//   - latch externe→interne en tête de composeFrame (= copie VBlank) ;
+//   - reload mid-frame PAR AXE détecté par les compteurs `config.affineRefXGen`
+//     / `affineRefYGen` (bumpés par decomp-runtime._updateBgRef à chaque
+//     écriture BG2X resp. BG2Y, y compris via le HBlank cb des effets
+//     scanline) — écrire X ne recharge PAS l'interne Y (GBATEK « the
+//     corresponding internal register »), il continue d'avancer de PD ;
+//   - avance de (PB, PD) en FIN de chaque scanline, que le BG soit visible ou
+//     non (le compteur hardware tourne indépendamment du bit BG-on).
+// Le rendu d'une ligne consomme le point interne + (PA, PC) le long de la ligne
+// (cf. renderBgAffineScanline). Indexé par bg 0-3 (seuls 2/3 servent).
+const _bgIntRefX = [0, 0, 0, 0];
+const _bgIntRefY = [0, 0, 0, 0];
+const _bgRefXGenSeen = [0, 0, 0, 0];
+const _bgRefYGenSeen = [0, 0, 0, 0];
+// Mosaic vertical BG affine : le bloc de (bgV+1) lignes répète la ligne du HAUT
+// du bloc → on latch le point interne au top de bloc et on rend avec ce point
+// (les registres internes CONTINUENT d'avancer normalement pendant ce temps).
+const _bgMosRefX = [0, 0, 0, 0];
+const _bgMosRefY = [0, 0, 0, 0];
+
+/** Sign-extend s16 (les matrices BG sont des s16 hardware ; SetGpuReg les stocke
+ *  déjà signées, garde défensive identique à renderBgAffineScanline). */
+function _s16(v: number): number {
+  return v > 0x7FFF ? v - 0x10000 : v;
+}
+
+/** Reload interne←externe PAR AXE si BG2X (resp. BG2Y) a été écrit depuis le
+ *  dernier check (GBATEK : copie immédiate sur écriture vers « the corresponding
+ *  internal register », origine de la scanline courante). */
+function _reloadBgRefIfWritten(bgIdx: number, config: BgConfig): void {
+  if (config.affineRefXGen !== _bgRefXGenSeen[bgIdx]) {
+    _bgRefXGenSeen[bgIdx] = config.affineRefXGen;
+    _bgIntRefX[bgIdx] = config.affineRefX;
+  }
+  if (config.affineRefYGen !== _bgRefYGenSeen[bgIdx]) {
+    _bgRefYGenSeen[bgIdx] = config.affineRefYGen;
+    _bgIntRefY[bgIdx] = config.affineRefY;
+  }
+}
+
 /** 1:1 décomp SortSprites (sprite.c:382-411) : clé Y du tri de sprites. L'OAM y est un u8
  *  hardware (`sprite->oam.y`, bitfield 8 bits) puis « déroulé » : les gros sprites
  *  AFFINE_DOUBLE(3)+SIZE_3 square/vrect basculent à Y-256 dès Y>128 (tri par le centre du
@@ -169,6 +220,17 @@ export function composeFrame(
   // au pire (= 240 décodes max × 3 BG = 720 décodes/frame). Bug a0a6aff2 fix.
   for (const cache of _tileCachesCache) cache.clear();
 
+  // Latch VBlank des points de référence affine (GBATEK : « automatically
+  // copied to internal registers during each vblank, specifying the origin
+  // for the first scanline »). Cf. bloc _bgIntRefX ci-dessus.
+  for (let i = 0; i < bgs.length && i < 4; i++) {
+    const cfg = bgs[i].config;
+    _bgIntRefX[i] = cfg.affineRefX;
+    _bgIntRefY[i] = cfg.affineRefY;
+    _bgRefXGenSeen[i] = cfg.affineRefXGen;
+    _bgRefYGenSeen[i] = cfg.affineRefYGen;
+  }
+
   // 1:1 décomp BuildSpritePriorities + SortSprites (sprite.c:325-450).
   //   priority = subpriority | (oam.priority << 8)
   //   sort ASC by priority, tie-break by Y DESC (= larger Y at lower index).
@@ -224,20 +286,47 @@ export function composeFrame(
       // hardware). Même convention +1 que l'OBJ (renderOamSpriteNormal:466) et
       // l'horizontal (applyMosaicHorizontal blockSize=factor+1). Seulement si CE
       // BG a le bit mosaic (bg.config.mosaic) ET bgV>0.
-      const mosaicSrcY = (bg.config.mosaic && mosaic && mosaic.bgV > 0)
-        ? y - (y % (mosaic.bgV + 1))
-        : y;
+      const bgMosV = (bg.config.mosaic && mosaic) ? mosaic.bgV : 0;
+      const mosaicSrcY = bgMosV > 0 ? y - (y % (bgMosV + 1)) : y;
       if (bg.config.isAffine && bgAffineMatrices) {
-        // Affine BG : utilise bgAffineMatrices[affineMatrixIndex]
+        // Affine BG : utilise bgAffineMatrices[affineMatrixIndex] + le point de
+        // référence INTERNE de cette scanline (cf. bloc _bgIntRefX en tête).
         const matIdx = Math.min(1, Math.max(0, bg.config.affineMatrixIndex));
         const matrix = bgAffineMatrices[matIdx];
-        renderBgAffineScanline(mosaicSrcY, bg.config, matrix, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
+        // Écriture BG2X/Y depuis le dernier check (HBlank cb de CETTE ligne ou
+        // logique mid-frame) → le nouveau point vaut pour la ligne courante.
+        _reloadBgRefIfWritten(i, bg.config);
+        // Mosaic vertical affine : le top de bloc latch son point interne ; les
+        // lignes suivantes du bloc re-rendent AVEC ce point (répétition de la
+        // ligne du haut), pendant que le point interne continue d'avancer.
+        if (bgMosV === 0 || y % (bgMosV + 1) === 0) {
+          _bgMosRefX[i] = _bgIntRefX[i];
+          _bgMosRefY[i] = _bgIntRefY[i];
+        }
+        renderBgAffineScanline(bg.config, matrix, _bgMosRefX[i], _bgMosRefY[i],
+          bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       } else {
         renderBgScanline(mosaicSrcY, bg.config, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       }
       // Apply mosaic horizontal sur la scanline si bg.config.mosaic && mosaic.bgH > 0
       if (bg.config.mosaic && mosaic && mosaic.bgH > 0) {
         applyMosaicHorizontal(scanlineBufs[i], mosaic.bgH);
+      }
+    }
+
+    // Fin de scanline BG affine : avance des points internes de (PB, PD) — 1:1
+    // GBATEK « incremented by dmx and dmy after each scanline ». Tourne pour
+    // TOUT BG affine, visible ou non (compteur hardware indépendant du bit
+    // BG-on). Reload d'abord si BG2X/Y a été écrit et que le BG (invisible)
+    // n'est pas passé par la branche de rendu ci-dessus (idempotent sinon).
+    if (bgAffineMatrices) {
+      for (let i = 0; i < bgs.length && i < 4; i++) {
+        const cfg = bgs[i].config;
+        if (!cfg.isAffine) continue;
+        _reloadBgRefIfWritten(i, cfg);
+        const matrix = bgAffineMatrices[Math.min(1, Math.max(0, cfg.affineMatrixIndex))];
+        _bgIntRefX[i] += _s16(matrix.pb);
+        _bgIntRefY[i] += _s16(matrix.pd);
       }
     }
 

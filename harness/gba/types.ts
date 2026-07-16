@@ -107,10 +107,21 @@ export interface BgConfig {
    *  Le tilemap est en u8 (1 byte par tile = tileId 0-255), les flips/palette ignorés.
    *  Toujours 8bpp. */
   isAffine: boolean;
-  /** Reference point X (28.8 fixed). Position de la matrice affine. */
+  /** Reference point X (28.8 fixed) = registre EXTERNE BG2X/BG3X (GBATEK
+   *  "BG2X_L/H - BG2 Reference Point X-Coordinate", 28 bits signés, 8 fractionnaires). */
   affineRefX: number;
-  /** Reference point Y (28.8 fixed). */
+  /** Reference point Y (28.8 fixed) = registre EXTERNE BG2Y/BG3Y. */
   affineRefY: number;
+  /** Compteurs de génération des écritures BG2X (resp. BG2Y) — bumpés par
+   *  decomp-runtime `_updateBgRef` à CHAQUE écriture d'une moitié L/H de l'axe.
+   *  1:1 GBATEK "Internal Reference Point Registers" : « Writing to a reference
+   *  point register by software outside of the Vblank period does immediately
+   *  copy the new value to the CORRESPONDING internal register » — le reload est
+   *  PAR AXE (écrire BG2X ne recharge pas l'interne Y, qui continue d'avancer
+   *  de PD par scanline). Le compositor compare ces compteurs par scanline pour
+   *  recharger son point interne en cours de frame (effets Mode7 par HBlank DMA). */
+  affineRefXGen: number;
+  affineRefYGen: number;
   /** Index dans Gba.bgAffineMatrices[2] (BG2 = 0, BG3 = 1 typiquement). */
   affineMatrixIndex: 0 | 1;
 }
@@ -230,6 +241,8 @@ export function defaultBgConfig(): BgConfig {
     isAffine: false,
     affineRefX: 0,
     affineRefY: 0,
+    affineRefXGen: 0,
+    affineRefYGen: 0,
     affineMatrixIndex: 0,
   };
 }

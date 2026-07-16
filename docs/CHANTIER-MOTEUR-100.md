@@ -60,11 +60,33 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
    stub local PSS:125, pipeline tile-data ×3 copies (dont 2 divergentes pokenav/mail),
    CreateInvisibleSpriteWithCallback local battle_main, helpers maison scrcmd.ts:1100/1107 +
    battle_message.ts:648 (chaîne FR classes dresseurs → GetTrainerClassNameFromId/GetTrainerNameFromId
-   pokemon.c:6945 à porter), _resolveTrainerClassNameFr, émulations locales oam.affineParam ×3.
+   pokemon.c:6945 à porter), _resolveTrainerClassNameFr, émulations locales oam.affineParam ×3,
+   IsDma3ManagerBusyWithBgCopy logée dans battle_bg.ts:661 (compteur ad-hoc `_bgCopiesInFlight` +
+   2 wrappers locaux battle_controller_player/battle_main + imports croisés depuis pokenav_ribbons_*
+   et pokenav_region_map → à reloger dans un src/dma3_manager.ts miroir, compteur = requêtes réelles),
+   GetBgAttribute stub local `return 0` pokemon_storage_system.ts:116 alors que l'impl 1:1 EXISTE
+   (window.ts:810, bg.c:504-545) → rediriger les call-sites PSS:1936/1949.
+   Hors dédup, noté au passage : SpawnCameraObject/RemoveCameraObject no-op différés
+   (field_specials.ts:649) = scènes cinématiques overworld (climax) à porter un jour.
 2. Par lot : porter la fonction décomp 1:1 dans le .ts miroir du .c d'origine → rediriger TOUS les
    call-sites → SUPPRIMER la copie locale → tsc → test en jeu de l'écran touché.
 3. Purge des rustines listées section « RUSTINES À PURGER » de chaque rapport d'audit (12 listes).
 4. Re-test global : `__e2e.run('boot-overworld')` + `('double-battle')` + engine-sweep + screenshots.
+
+## GRANDE PASSE DE VALIDATION (à dérouler au retour des 4 agents en vol — 2026-07-16 soir)
+Agents : affine-BG (Fable : compositor/decomp-runtime/window/dev-gfx) · region_map (Fable :
+region_map.ts/pokenav_region_map.ts/extraction+packs) · conditions (Fable : conditions_gfx/
+search_results/module graphe/text.ts COLOR_HIGHLIGHT_SHADOW) · ribbons (Opus : ribbons_list/summary).
+1. Review de CHAQUE diff (git diff fichiers du lot) → commit par lot. `npx tsc --noEmit` global = 0.
+2. Reload `?debug` + DÉSENREGISTRER le SW (packs régénérés par region_map) : serviceWorker.getRegistrations→unregister + reload.
+3. Baseline : `await __e2e.run('engine-sweep')` → `window.__engineSweepReport` (11 écrans, 0 régression attendue).
+4. Affine : `dev.gfx.affineTest(true)` + `dev.gfx.film({every:3,seconds:1})` → rotation lissée ; `affineTest(false)` → état restauré (re-screenshot overworld sain).
+5. Carte de Hoenn : START→POKéNAV→A : carte affichée (BG2 affine), curseur+icône joueur, flèches, zoom A, B retour. Screenshot.
+6. CONDITION → graphe party : radar tracé + sprite mon + navigation gauche/droite, B. Screenshot.
+7. RUBANS : donner un ruban (commande debug du rapport fix-ribbons.md) → rouvrir Pokénav → entrée RUBANS visible → liste → summary. Screenshot.
+8. Combat `launchTB(333)` : intro « [CLASSE] [NOM] » = chemin C1 byte-level (plus de résolveur maison) ; victoire → FAST_FADE (déjà validé, non-régression).
+9. Gardes B.2 en conditions réelles : lire `__taskErrors`/`__wireTodoHits`/`__gpuRegGapCount` après tout le parcours — doivent être VIDES (ou expliqués).
+10. Si un écran neuf échoue : sonde live d'abord (__probe/dev.gfx), 1er stack dans __taskErrors, PAS d'archéologie.
 
 ## Suivi
 - Fixes déjà livrés : Random() VBlank `bb6de4d5d` · blend OBJ semi-transparent hors fenêtre `11a6436b5` ·
@@ -80,8 +102,12 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
   APRÈS free2/free1) laisse currentMenuCb1 sur le handler libéré → re-throw CHAQUE frame
   (1176 en 4 s) → la cause racine sort du ring buffer console. Les gardes B.2 doivent dédupliquer
   (1er throw complet conservé + compteur) et/ou tuer la task fautive.
-- 🐛 MOTEUR (constat sonde) : GetGpuReg(DISPCNT) reconstruit la valeur SANS mémoriser les bits 0-2
-  (mode vidéo) → le RMW 1:1 de SetBgMode (`(GetGpuReg(0) & ~7) | mode`) perd le mode au premier
-  SetGpuReg(DISPCNT) suivant. À fixer avec la branche AFFINE tilemaps (l'écran carte en dépend).
+- ✅ SOLDÉ (agent affine 2026-07-16) : l'hypothèse « GetGpuReg(DISPCNT) perd les bits 0-2 » était
+  FAUSSE (bits déjà mémorisés ; le 0x1F00 sondé = SetBgMode(1) jamais atteint, throw wireTodo en
+  amont). Vraie asymétrie trouvée et fixée : bit 7 forced blank absent de la reconstruction.
+  Rendu BG AFFINE complet livré (latch refs internes par axe GBATEK, mosaic V affine, wraparound) +
+  PanFadeAndZoomScreen recâblé sur les 8 SetGpuReg 1:1 + `dev.gfx.affineTest()`. Restes notés :
+  SetBgAffineStruct/DoBgAffineSet (util.c, contest/battle_anim) non câblés ; mosaic-vs-transfo
+  non certifié pixel-exact.
 - Mémoire : `chantier-audit-moteur-complet.md` (agents=Opus, Fable vérifie).
 - Validation finale par phase : test EN JEU + screenshot (jamais « fini » sans preuve).

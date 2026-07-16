@@ -170,6 +170,14 @@ export class Gba {
    *  pendant les transitions de scène (corruption verdict A/B éclosion). */
   objEnabled = true;
 
+  /** 1:1 GBA DISPCNT bits 0-2 (BG Mode, GBATEK "DISPCNT - LCD Control") : mode
+   *  vidéo courant. Source de VÉRITÉ UNIQUE du mode — posée par applyDispCnt
+   *  (decomp-runtime), INCLUSE dans la reconstruction GetGpuReg(DISPCNT) pour que
+   *  le RMW 1:1 de SetBgMode (bg.c) le préserve. Émeraude n'utilise que 0/1/2
+   *  (mode 1 = BG2 affine, mode 2 = BG2+BG3 affine — GBATEK ; modes 3-5 bitmap
+   *  jamais posés par le jeu, grep décomp = 0). Default 0 (4 BG texte). */
+  videoMode = 0;
+
   /** 1:1 GBA DISPCNT bit 7 (DISPCNT_FORCED_BLANK=0x80) : quand set, le PPU affiche
    *  un écran BLANC et ne lit ni VRAM/Palette/OAM (accès rapide pendant les inits).
    *  ⚠️ TRIGGER À CÂBLER : `applyDispCnt` (decomp-runtime.ts) doit poser
@@ -236,5 +244,6 @@ export class Gba {
     this.vblankCbs.clear();
     this.frameCounter = 0;
     this.forcedBlank = false;
+    this.videoMode = 0;
   }
 }

@@ -686,8 +686,9 @@ export class DecompRuntime {
   private _animateSpritesCalledThisFrame = false;
   private _buildOamCalledThisFrame = false;
 
-  /** Mode vidéo courant (bits 0-2 de DISPCNT). Utilisé pour déterminer isAffine. */
-  private _dispCntMode = 0;
+  // Mode vidéo (bits 0-2 DISPCNT) : source de vérité UNIQUE = `this.gba.videoMode`
+  // (état gba, resettable par gba.reset(), lisible par le compositor et les sondes).
+  // L'ex-champ privé `_dispCntMode` est dissous — il dupliquait cet état ici.
 
   // ─── Affine ref point temp storage (BG2 = 0, BG3 = 1) ─────────────────────
   // Affine reg low/high storage par bg index (= 2 ou 3, BG affine modes 1+).
@@ -698,14 +699,23 @@ export class DecompRuntime {
   private _bgRefYL = [0, 0, 0, 0];
   private _bgRefYH = [0, 0, 0, 0];
 
-  private _updateBgRef(bgIdx: 2 | 3): void {
+  private _updateBgRef(bgIdx: 2 | 3, axis: 'x' | 'y'): void {
     const xRaw = (this._bgRefXH[bgIdx] << 16) | this._bgRefXL[bgIdx];
     const yRaw = (this._bgRefYH[bgIdx] << 16) | this._bgRefYL[bgIdx];
     // Sign-extend 32-bit (= JS bit ops keep 32-bit signed).
     const x = xRaw >= 0x80000000 ? xRaw - 0x100000000 : xRaw;
     const y = yRaw >= 0x80000000 ? yRaw - 0x100000000 : yRaw;
-    this.gba.bg(bgIdx).config.affineRefX = x;
-    this.gba.bg(bgIdx).config.affineRefY = y;
+    const cfg = this.gba.bg(bgIdx).config;
+    cfg.affineRefX = x;
+    cfg.affineRefY = y;
+    // 1:1 GBATEK "Internal Reference Point Registers" : toute écriture BG2X (resp.
+    // BG2Y) recopie IMMÉDIATEMENT la valeur dans le registre interne CORRESPONDANT
+    // du PPU (« does immediately copy the new value to the corresponding internal
+    // register ») — PAR AXE : écrire X ne recharge pas l'interne Y (qui continue
+    // d'avancer de PD). Le compositor détecte ce bump par scanline → reload
+    // mid-frame (Mode7).
+    if (axis === 'x') cfg.affineRefXGen = (cfg.affineRefXGen + 1) | 0;
+    else cfg.affineRefYGen = (cfg.affineRefYGen + 1) | 0;
   }
 
   // Phase A3 cleanup : Maps secondaires `paletteTagToSlot` / `spriteSheet
@@ -798,7 +808,11 @@ export class DecompRuntime {
   GetGpuReg(reg: number): number {
     switch (reg) {
       case REG_OFFSET_DISPCNT: {
-        let v = this._dispCntMode;
+        // Reconstruction 1:1 : TOUT état DISPCNT modélisé doit figurer ici, sinon
+        // le premier RMW `SetGpuReg(0, GetGpuReg(0) | bits)` (pattern décomp, ex.
+        // SetBgMode bg.c / SetTextModeAndHideBgs bg.c:239) EFFACE le bit manquant.
+        let v = this.gba.videoMode; // bits 0-2 (mode vidéo — source de vérité gba)
+        if (this.gba.forcedBlank) v |= DISPCNT_FORCED_BLANK; // bit 7 (sinon les RMW l'effacent)
         if (this.gba.bg(0).config.visible) v |= DISPCNT_BG0_ON;
         if (this.gba.bg(1).config.visible) v |= DISPCNT_BG1_ON;
         if (this.gba.bg(2).config.visible) v |= DISPCNT_BG2_ON;
@@ -911,20 +925,20 @@ export class DecompRuntime {
       case REG_OFFSET_BG2PC: this.gba.bgAffineMatrices[0].pc = (value << 16) >> 16; break;
       case REG_OFFSET_BG2PD: this.gba.bgAffineMatrices[0].pd = (value << 16) >> 16; break;
       // Affine ref point BG2 (28.8 fixed, reconstructed from L/H halves)
-      case REG_OFFSET_BG2X_L: this._bgRefXL[2] = value & 0xFFFF; this._updateBgRef(2); break;
-      case REG_OFFSET_BG2X_H: this._bgRefXH[2] = value & 0xFFFF; this._updateBgRef(2); break;
-      case REG_OFFSET_BG2Y_L: this._bgRefYL[2] = value & 0xFFFF; this._updateBgRef(2); break;
-      case REG_OFFSET_BG2Y_H: this._bgRefYH[2] = value & 0xFFFF; this._updateBgRef(2); break;
+      case REG_OFFSET_BG2X_L: this._bgRefXL[2] = value & 0xFFFF; this._updateBgRef(2, 'x'); break;
+      case REG_OFFSET_BG2X_H: this._bgRefXH[2] = value & 0xFFFF; this._updateBgRef(2, 'x'); break;
+      case REG_OFFSET_BG2Y_L: this._bgRefYL[2] = value & 0xFFFF; this._updateBgRef(2, 'y'); break;
+      case REG_OFFSET_BG2Y_H: this._bgRefYH[2] = value & 0xFFFF; this._updateBgRef(2, 'y'); break;
       // Affine matrix BG3
       case REG_OFFSET_BG3PA: this.gba.bgAffineMatrices[1].pa = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PB: this.gba.bgAffineMatrices[1].pb = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PC: this.gba.bgAffineMatrices[1].pc = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PD: this.gba.bgAffineMatrices[1].pd = (value << 16) >> 16; break;
       // Affine ref point BG3
-      case REG_OFFSET_BG3X_L: this._bgRefXL[3] = value & 0xFFFF; this._updateBgRef(3); break;
-      case REG_OFFSET_BG3X_H: this._bgRefXH[3] = value & 0xFFFF; this._updateBgRef(3); break;
-      case REG_OFFSET_BG3Y_L: this._bgRefYL[3] = value & 0xFFFF; this._updateBgRef(3); break;
-      case REG_OFFSET_BG3Y_H: this._bgRefYH[3] = value & 0xFFFF; this._updateBgRef(3); break;
+      case REG_OFFSET_BG3X_L: this._bgRefXL[3] = value & 0xFFFF; this._updateBgRef(3, 'x'); break;
+      case REG_OFFSET_BG3X_H: this._bgRefXH[3] = value & 0xFFFF; this._updateBgRef(3, 'x'); break;
+      case REG_OFFSET_BG3Y_L: this._bgRefYL[3] = value & 0xFFFF; this._updateBgRef(3, 'y'); break;
+      case REG_OFFSET_BG3Y_H: this._bgRefYH[3] = value & 0xFFFF; this._updateBgRef(3, 'y'); break;
       // Garde moteur B.2 : le switch n'avait AUCUN default → toute écriture vers un
       // offset non routé ci-dessus était avalée SILENCIEUSEMENT. Comportement 1:1
       // inchangé (on n'écrit toujours rien — aucun registre n'est modélisé pour ces
@@ -938,7 +952,20 @@ export class DecompRuntime {
 
   private applyDispCnt(value: number): void {
     const mode = value & 7;
-    this._dispCntMode = mode;
+    this.gba.videoMode = mode;
+    // Modes 3-5 = bitmap (GBATEK "BG Mode 3-5") — JAMAIS utilisés par Émeraude
+    // (grep décomp DISPCNT_MODE_[345] = 0) et non modélisés par le compositor.
+    // Mode 6-7 = invalides hardware. On HURLE (une fois par mode) au lieu de
+    // masquer : les BG retombent proprement en rendu texte (isAffine=false
+    // ci-dessous, dérivé UNIQUEMENT de mode 1/2).
+    if (mode >= 3) {
+      const g = globalThis as Record<string, unknown>;
+      const seen = (g.__dispCntBitmapModeSeen ?? (g.__dispCntBitmapModeSeen = new Set<number>())) as Set<number>;
+      if (!seen.has(mode)) {
+        seen.add(mode);
+        console.error(`[applyDispCnt] mode vidéo ${mode} (bitmap/invalide) non modélisé — rendu texte fallback`);
+      }
+    }
 
     // Bits 8-11 : BG0-3 enable
     this.gba.bg(0).config.visible = !!(value & DISPCNT_BG0_ON);
@@ -995,10 +1022,10 @@ export class DecompRuntime {
     // On met à jour ici aussi au cas où applyBgCnt serait appelé avant applyDispCnt
     // dans un batch de SetGpuReg, mais la source de vérité reste DISPCNT.
     if (bgIdx === 2) {
-      cfg.isAffine = (this._dispCntMode === 1 || this._dispCntMode === 2);
+      cfg.isAffine = (this.gba.videoMode === 1 || this.gba.videoMode === 2);
       cfg.affineMatrixIndex = 0;
     } else if (bgIdx === 3) {
-      cfg.isAffine = (this._dispCntMode === 2);
+      cfg.isAffine = (this.gba.videoMode === 2);
       cfg.affineMatrixIndex = 1;
     } else {
       cfg.isAffine = false;

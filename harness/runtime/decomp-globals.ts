@@ -1154,17 +1154,18 @@ export function PanFadeAndZoomScreen(screenX: number, screenY: number, zoom: num
   // dest.dx = src.texX - (scrX * pa + scrY * pb). Pas de shift << 8 supplémentaire !
   const dx = texX - (screenX * pa + screenY * pb);
   const dy = texY - (screenX * pc + screenY * pd);
-  // Set BG2 affine matrix index 0 (= bg(2).config.affineMatrixIndex)
-  if (r.gba.bgAffineMatrices && r.gba.bgAffineMatrices[0]) {
-    const m = r.gba.bgAffineMatrices[0] as { pa: number; pb: number; pc: number; pd: number };
-    m.pa = pa & 0xFFFF;
-    m.pb = pb & 0xFFFF;
-    m.pc = pc & 0xFFFF;
-    m.pd = pd & 0xFFFF;
-  }
-  // Sign-extend pour BG2X/Y (28-bit signed)
-  r.gba.bg(2).config.affineRefX = dx;
-  r.gba.bg(2).config.affineRefY = dy;
+  // 1:1 décomp intro.c:2823-2830 : push par SetGpuReg BG2PA..BG2Y_H (chemin
+  // registre UNIQUE — routé decomp-runtime, sign-extend s16 + refs 28.8 par
+  // moitiés L/H + bump affineRefGen pour le reload interne du compositor).
+  // Remplace les pokes directs bgAffineMatrices/config (pré-dataient le routage).
+  r.SetGpuReg(0x20 /* BG2PA */, pa & 0xFFFF);
+  r.SetGpuReg(0x22 /* BG2PB */, pb & 0xFFFF);
+  r.SetGpuReg(0x24 /* BG2PC */, pc & 0xFFFF);
+  r.SetGpuReg(0x26 /* BG2PD */, pd & 0xFFFF);
+  r.SetGpuReg(0x28 /* BG2X_L */, dx & 0xFFFF);
+  r.SetGpuReg(0x2A /* BG2X_H */, (dx >> 16) & 0xFFFF);
+  r.SetGpuReg(0x2C /* BG2Y_L */, dy & 0xFFFF);
+  r.SetGpuReg(0x2E /* BG2Y_H */, (dy >> 16) & 0xFFFF);
 }
 
 /** 1:1 décomp `SAFE_DIV(x, y)` macro = (y == 0) ? 0 : (x / y). */
