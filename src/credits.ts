@@ -249,38 +249,40 @@ const sMonSpritePos: number[][] = [
   ],
 ];
 
-/** 1:1 (credits.c:154) */
-const sAnim_Player_Slow = {
-  type: ANIMCMD_FRAME(0, 8),
-  frame: ANIMCMD_FRAME(64, 8),
-  loop: ANIMCMD_FRAME(128, 8),
-  jump: ANIMCMD_FRAME(192, 8),
-  end: ANIMCMD_JUMP(0), /* TRANSPILER-TODO champ */
-};
+/** 1:1 `sAnim_Player_Slow` (credits.c:154-161) — tableau d'AnimCmd (forme saine, cf. starter_choose.ts:177). */
+const sAnim_Player_Slow = [
+  ANIMCMD_FRAME(0, 8),
+  ANIMCMD_FRAME(64, 8),
+  ANIMCMD_FRAME(128, 8),
+  ANIMCMD_FRAME(192, 8),
+  ANIMCMD_JUMP(0),
+];
 
-/** 1:1 (credits.c:163) */
-const sAnim_Player_Fast = {
-  type: ANIMCMD_FRAME(0, 4),
-  frame: ANIMCMD_FRAME(64, 4),
-  loop: ANIMCMD_FRAME(128, 4),
-  jump: ANIMCMD_FRAME(192, 4),
-  end: ANIMCMD_JUMP(0), /* TRANSPILER-TODO champ */
-};
+/** 1:1 `sAnim_Player_Fast` (credits.c:163-170). */
+const sAnim_Player_Fast = [
+  ANIMCMD_FRAME(0, 4),
+  ANIMCMD_FRAME(64, 4),
+  ANIMCMD_FRAME(128, 4),
+  ANIMCMD_FRAME(192, 4),
+  ANIMCMD_JUMP(0),
+];
 
-/** 1:1 (credits.c:172) */
-const sAnim_Player_LookBack = {
-  type: ANIMCMD_FRAME(256, 4),
-  frame: ANIMCMD_FRAME(320, 4),
-  loop: ANIMCMD_FRAME(384, 4),
-  jump: ANIMCMD_END };
+/** 1:1 `sAnim_Player_LookBack` (credits.c:172-178). */
+const sAnim_Player_LookBack = [
+  ANIMCMD_FRAME(256, 4),
+  ANIMCMD_FRAME(320, 4),
+  ANIMCMD_FRAME(384, 4),
+  ANIMCMD_END,
+];
 
-/** 1:1 (credits.c:180) */
-const sAnim_Player_LookForward = {
-  type: ANIMCMD_FRAME(384, 30),
-  frame: ANIMCMD_FRAME(320, 30),
-  loop: ANIMCMD_FRAME(256, 30),
-  jump: ANIMCMD_FRAME(256, 30),
-  /* TRANSPILER-TODO champ ? */ ANIMCMD_END };
+/** 1:1 `sAnim_Player_LookForward` (credits.c:180-187). */
+const sAnim_Player_LookForward = [
+  ANIMCMD_FRAME(384, 30),
+  ANIMCMD_FRAME(320, 30),
+  ANIMCMD_FRAME(256, 30),
+  ANIMCMD_FRAME(256, 30),
+  ANIMCMD_END,
+];
 
 /** 1:1 (credits.c:189) */
 const sAnims_Player = [
@@ -290,28 +292,29 @@ const sAnims_Player = [
   sAnim_Player_LookForward,
 ];
 
-/** 1:1 (credits.c:197) */
-const sAnim_Rival_Slow = {
-  type: ANIMCMD_FRAME(0, 8),
-  frame: ANIMCMD_FRAME(64, 8),
-  loop: ANIMCMD_FRAME(128, 8),
-  jump: ANIMCMD_FRAME(192, 8),
-  end: ANIMCMD_JUMP(0), /* TRANSPILER-TODO champ */
-};
+/** 1:1 `sAnim_Rival_Slow` (credits.c:197-204). */
+const sAnim_Rival_Slow = [
+  ANIMCMD_FRAME(0, 8),
+  ANIMCMD_FRAME(64, 8),
+  ANIMCMD_FRAME(128, 8),
+  ANIMCMD_FRAME(192, 8),
+  ANIMCMD_JUMP(0),
+];
 
-/** 1:1 (credits.c:206) */
-const sAnim_Rival_Fast = {
-  type: ANIMCMD_FRAME(0, 4),
-  frame: ANIMCMD_FRAME(64, 4),
-  loop: ANIMCMD_FRAME(128, 4),
-  jump: ANIMCMD_FRAME(192, 4),
-  end: ANIMCMD_JUMP(0), /* TRANSPILER-TODO champ */
-};
+/** 1:1 `sAnim_Rival_Fast` (credits.c:206-213). */
+const sAnim_Rival_Fast = [
+  ANIMCMD_FRAME(0, 4),
+  ANIMCMD_FRAME(64, 4),
+  ANIMCMD_FRAME(128, 4),
+  ANIMCMD_FRAME(192, 4),
+  ANIMCMD_JUMP(0),
+];
 
-/** 1:1 (credits.c:215) */
-const sAnim_Rival_Still = {
-  type: ANIMCMD_FRAME(0, 4),
-  frame: ANIMCMD_END };
+/** 1:1 `sAnim_Rival_Still` (credits.c:215-219). */
+const sAnim_Rival_Still = [
+  ANIMCMD_FRAME(0, 4),
+  ANIMCMD_END,
+];
 
 /** 1:1 (credits.c:221) */
 const sAnims_Rival = [
@@ -361,20 +364,23 @@ const sOamData_MonBg = {
   paletteNum: 0, /* :4 */
   affineParam: 0 };
 
-/** 1:1 (credits.c:255) */
-const sAnim_MonBg_Yellow = {
-  type: ANIMCMD_FRAME(0, 8),
-  frame: ANIMCMD_END };
+/** 1:1 `sAnim_MonBg_Yellow` (credits.c:255-259). */
+const sAnim_MonBg_Yellow = [
+  ANIMCMD_FRAME(0, 8),
+  ANIMCMD_END,
+];
 
-/** 1:1 (credits.c:261) */
-const sAnim_MonBg_Red = {
-  type: ANIMCMD_FRAME(64, 8),
-  frame: ANIMCMD_END };
+/** 1:1 `sAnim_MonBg_Red` (credits.c:261-265). */
+const sAnim_MonBg_Red = [
+  ANIMCMD_FRAME(64, 8),
+  ANIMCMD_END,
+];
 
-/** 1:1 (credits.c:267) */
-const sAnim_MonBg_Blue = {
-  type: ANIMCMD_FRAME(128, 8),
-  frame: ANIMCMD_END };
+/** 1:1 `sAnim_MonBg_Blue` (credits.c:267-271). */
+const sAnim_MonBg_Blue = [
+  ANIMCMD_FRAME(128, 8),
+  ANIMCMD_END,
+];
 
 /** 1:1 (credits.c:273) */
 const sAnims_MonBg = [
@@ -600,13 +606,24 @@ function Task_LoadShowMons(taskId: number): void {
         gReservedSpritePaletteCount = 8;
         LZ77UnCompVram(gBirchBagGrass_Gfx, VRAM);
         LZ77UnCompVram(gBirchGrassTilemap, (BG_SCREEN_ADDR(7)));
-        LoadPalette(gBirchBagGrass_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(2 * 16 - 1));
+        // 1:1 credits.c:506 — `gBirchBagGrass_Pal + 1` = offset d'1 u16 (skip couleur 0),
+        // vers BG_PLTT_ID(0)+1 (skip slot 0). Pointer-arith palette → `.subarray(1)` (précédent
+        // pokenav sPokenavBgDotsPal.subarray(7) / gPokenavOptions_Pal.subarray(...) — fix c9d56188f).
+        // gBirchBagGrass_Pal est lié eager (Uint16Array) par _bindCreditsAssets() AVANT CB2 ;
+        // s'il manque (null), HURLE et skip (Règle 3 — `.subarray` sur null = crash dur).
+        if (gBirchBagGrass_Pal)
+          LoadPalette(gBirchBagGrass_Pal.subarray(1), BG_PLTT_ID(0) + 1, PLTT_SIZEOF(2 * 16 - 1));
+        else
+          console.error('[credits] gBirchBagGrass_Pal absent — LoadPalette skip (preloadCreditsAssets() AVANT CB2 ?)');
         for (i = 0; i < MON_PIC_SIZE; i++)
           gDecompressionBuffer[i] = 0x11;
+        // 1:1 credits.c:510-513 — `(gDecompressionBuffer + MON_PIC_SIZE)[i]` = écriture indexée
+        // dans le MÊME buffer : remplit les 2e/3e copies du pic buffer (fonds mon-bg jaune/rouge/bleu,
+        // MON_PIC_SIZE octets chacun). Pointer-arith → index `[MON_PIC_SIZE + i]` / `[MON_PIC_SIZE*2 + i]`.
         for (i = 0; i < MON_PIC_SIZE; i++)
-          (gDecompressionBuffer + MON_PIC_SIZE)[i] = 0x22;
+          gDecompressionBuffer[MON_PIC_SIZE + i] = 0x22;
         for (i = 0; i < MON_PIC_SIZE; i++)
-          (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = 0x33;
+          gDecompressionBuffer[MON_PIC_SIZE * 2 + i] = 0x33;
         temp = (gDecompressionBuffer[MONBG_OFFSET] /* TRANSPILER-TODO &élément scalaire (out-param ?) */);
         temp[0] = RGB_BLACK;
         temp[1] = RGB(31, 31, 20);
