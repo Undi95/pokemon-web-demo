@@ -1808,6 +1808,41 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
   return MAX_SPRITES;
 }
 
+/** 1:1 décomp `u8 CreateInvisibleSpriteWithCallback(void (*callback)(struct Sprite *))`
+ *  (util.c:119-125) :
+ *  ```c
+ *  u8 sprite = CreateSprite(&sInvisibleSpriteTemplate, DISPLAY_WIDTH+8, DISPLAY_HEIGHT+8, 14);
+ *  gSprites[sprite].invisible = TRUE; gSprites[sprite].callback = callback; return sprite;
+ *  ```
+ *  Crée un sprite « ticker » invisible hors écran (rendu nul), ticke chaque frame par
+ *  AnimateSprites (runSpriteCallbacks). Moteur de SpriteCB_BounceEffect (bob mon/healthbox),
+ *  SpriteCB_WaitForBattlerBallReleaseAnim, etc.
+ *
+ *  HOME = couche sprite : `util.ts:6` diffère explicitement cette fonction de util.c ici
+ *  (couplée à CreateSprite/gSprites). ADAPTATION substrat : le décomp fait
+ *  `CreateSprite(&sInvisibleSpriteTemplate, …)` (template dummy `tileTag=0`) ; comme le
+ *  sprite est immédiatement invisible (aucune tuile affichée), on alloue directement le
+ *  slot via `CreateSpriteAtOam` (tileId/paletteBank 0) — ce qui évite le warning « sheet
+ *  tag 0 non chargée » que déclencherait le dispatcher `CreateSprite`. Précédent consolidé :
+ *  la copie locale `_CreateInvisibleSpriteWithCallback` de battle_main.ts (mêmes valeurs).
+ *  `callback` typé `(sprite: any)` : les callbacks combat utilisent le type structurel
+ *  local `BattleSprite` (≠ DecompSprite) → pont de type, comportement 1:1. */
+export function CreateInvisibleSpriteWithCallback(callback: (sprite: any) => void): number {
+  const rt = _rt();
+  const { spriteId } = CreateSpriteAtOam(rt, {
+    tileId: 0, paletteBank: 0,
+    x: 248 /* DISPLAY_WIDTH + 8 */, y: 168 /* DISPLAY_HEIGHT + 8 */,
+    shape: 0, size: 0, priority: 0, subpriority: 14,
+  });
+  if (spriteId < 0 || spriteId >= MAX_SPRITES) return -1;
+  const s = rt.gSprites[spriteId];
+  if (s) {
+    s.invisible = true;
+    s.callback = callback as DecompSprite['callback'];
+  }
+  return spriteId;
+}
+
 /** 1:1 décomp `CreateSprite` inline/by-tag creator (sprite.c:502+540 fusionnés via
  *  `CreateSpriteAtOam`). Branche sur `tileTag` :
  *    • `tileTag == TAG_NONE` (template avec `images`) → tiles inline (AllocSpriteTiles + write OBJ VRAM).

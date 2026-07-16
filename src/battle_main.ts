@@ -69,7 +69,7 @@ import {
 } from './engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from './text';
 import { tickBattlerMonReveals } from './battle_controller_opponent';
-import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl, setSpriteAnims } from './sprite';
+import { FreeAllSpritePalettes, ResetSpriteData as _ResetSpriteDataImpl, DestroySprite as _DestroySpriteImpl, setSpriteAnims, CreateInvisibleSpriteWithCallback } from './sprite';
 import {
   gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   SCANLINE_EFFECT_DMACNT_16BIT,
@@ -3663,33 +3663,10 @@ function _Sin(index: number, amplitude: number): number {
   return (gSineTable(index & 0xFF) * amplitude) >> 8;
 }
 
-/** 1:1 décomp `CreateInvisibleSpriteWithCallback(cb)` (util.c) :
- *  ```c
- *  u8 sprite = CreateSprite(&sInvisibleSpriteTemplate, DISPLAY_WIDTH+8, DISPLAY_HEIGHT+8, 14);
- *  gSprites[sprite].invisible = TRUE; gSprites[sprite].callback = callback; return sprite;
- *  ```
- *  Cree un sprite "ticker" hors-ecran (rendu nul), ticke chaque frame par AnimateSprites
- *  (runSpriteCallbacks). Sert de moteur a SpriteCB_BounceEffect (bob du mon/healthbox).
- *  Sans ca (-1), aucun ticker -> SpriteCB_BounceEffect ne tournait jamais = pas de bob. */
-function _CreateInvisibleSpriteWithCallback(cb: (sprite: BattleSprite) => void): number {
-  const rt = getRuntime();
-  if (!rt) return -1;
-  // sInvisibleSpriteTemplate = dummy (tileTag TAG_NONE) ; on alloue le slot via CreateSpriteAtOam
-  // (data Int16Array(16) + ajout a gSprites) puis invisible+callback (1:1 util.c).
-  const created = rt.CreateSpriteAtOam({
-    tileId: 0, paletteBank: 0,
-    x: 248 /* DISPLAY_WIDTH+8 */, y: 168 /* DISPLAY_HEIGHT+8 */,
-    shape: 0, size: 0, priority: 0, subpriority: 14,
-  });
-  const id = created.spriteId;
-  if (id < 0 || id >= 64) return -1;
-  const s = rt.gSprites[id];
-  if (s) {
-    s.invisible = true;
-    (s as { callback: unknown }).callback = cb;
-  }
-  return id;
-}
+// `CreateInvisibleSpriteWithCallback` (util.c:119) : dédupliqué → importé de
+// './sprite' (home = couche sprite, cf. util.ts:6). L'ancienne copie locale
+// `_CreateInvisibleSpriteWithCallback` (voie CreateSpriteAtOam) a été consolidée
+// là à l'identique.
 
 /** 1:1 décomp `DestroySprite(sprite)` (sprite.c) : libere le slot gSprites + l'OAM. */
 function _DestroySprite(sprite: BattleSprite): void {
@@ -3863,7 +3840,7 @@ export function DoBounceEffect(battler: number, which: number, delta: number, am
     }
   }
 
-  const invisibleSpriteId = _CreateInvisibleSpriteWithCallback(SpriteCB_BounceEffect);
+  const invisibleSpriteId = CreateInvisibleSpriteWithCallback(SpriteCB_BounceEffect);
   let bouncerSpriteId: number;
 
   if (which === BOUNCE_HEALTHBOX) {

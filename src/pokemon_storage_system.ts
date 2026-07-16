@@ -34,6 +34,7 @@ import {
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, CopyBgTilemapBufferToVram,
   GetBgTilemapBuffer, ScheduleBgCopyTilemapToVram, PutWindowTilemap, ClearWindowTilemap, InitWindows,
   ExtractWindowTiles4bpp, tileMapIndex, ChangeBgX, ChangeBgY, SetBgAttribute, BG_ATTR_PALETTEMODE,
+  GetBgAttribute, BG_ATTR_BASETILE,
   FillWindowPixelBuffer8Bit, CopyWindowToVram8Bit, BlitBitmapRectToWindow4BitTo8Bit, FillWindowPixelRect8Bit,
   COPYWIN_GFX,
   type WindowTemplate,
@@ -110,10 +111,12 @@ import { ITEM_NONE } from '../include/constants/items';
 const TILE_SIZE_4BPP = 32;
 
 // ─── Adaptations bg tilemap (item info window) — helpers bg.c non encore dans window.ts. ───
-const BG_ATTR_BASETILE = 8;  // include/gba/types.h — attribut « baseTile » d'un BgTemplate.
-/** 1:1-sém `GetBgAttribute(bg, BG_ATTR_BASETILE)` : baseTile du BG (0 dans notre moteur — les
- *  tuiles item_info_frame sont chargées à l'offset absolu 0x13A). */
-function GetBgAttribute(_bg: number, _attr: number): number { return 0; }
+// `GetBgAttribute` + `BG_ATTR_BASETILE` : dédupliqués → importés du miroir 1:1
+// `window.ts` (bg.c:504-545). Le stub local rendait 0 ; PREUVE de no-op de
+// comportement : les 2 call-sites (:1942/:1955) appellent `GetBgAttribute(0, …)`
+// et le BG 0 des sBgTemplates a `baseTile = 0` (:698) → la vraie fonction rend 0.
+// (⚠️ l'ancien stub déclarait BG_ATTR_BASETILE=8 ; la vraie valeur décomp/window.ts
+//  est 10 — sans effet ici car le stub ignorait son argument.)
 /** 1:1-sém `WriteSequenceToBgTilemapBuffer(bg, firstTileNum, x, y, width, height, palNum, tileStep)`
  *  (bg.c) : remplit un rect du tilemap avec une séquence de tuiles incrémentées de `tileStep`. */
 function WriteSequenceToBgTilemapBuffer(bg: number, firstTileNum: number, x: number, y: number, width: number, height: number, palNum: number, tileStep: number): void {
@@ -735,8 +738,9 @@ function CountMonsInBox(boxId: number): number {
 function _boxMonAt(boxId: number, pos: number): Pokemon | null {
   return GetPokemonStorage().boxes[boxId]?.[pos] ?? null;
 }
-/** 1:1 `u8 *GetBoxNamePtr(u8 boxId)` (:9520) — nos noms = strings JS du save block. */
-function GetBoxNamePtr(boxId: number): string {
+/** 1:1 `u8 *GetBoxNamePtr(u8 boxId)` (:9520) — nos noms = strings JS du save block.
+ *  (export : consommé par pokenav_conditions.ts — frontière string JS → encodeOwText côté appelant.) */
+export function GetBoxNamePtr(boxId: number): string {
   return GetPokemonStorage().boxNames?.[boxId] ?? `BOITE ${boxId + 1}`;
 }
 /** 1:1 `u8 GetBoxWallpaper(u8 boxId)` / `void SetBoxWallpaper(...)` (:9530-9545). */
@@ -989,8 +993,9 @@ export function GetBoxMonDataAt(boxId: number, boxPosition: number, request: num
   }
   return 0;
 }
-/** 1:1 `void SetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, const void *value)` (:9423). */
-function SetBoxMonDataAt(boxId: number, boxPosition: number, request: number, value: unknown): void {
+/** 1:1 `void SetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, const void *value)` (:9423).
+ *  (export : consommé par pokenav_conditions.ts — OpenMarkingsMenu écrit MON_DATA_MARKINGS.) */
+export function SetBoxMonDataAt(boxId: number, boxPosition: number, request: number, value: unknown): void {
   if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
     const mon = _boxMonAt(boxId, boxPosition);
     if (mon) SetMonData(mon as never, request, value as never);
@@ -1004,8 +1009,11 @@ function GetCurrentBoxMonData(boxPosition: number, request: number): number {
 function SetCurrentBoxMonData(boxPosition: number, request: number, value: unknown): void {
   SetBoxMonDataAt(StorageGetCurrentBox(), boxPosition, request, value);
 }
-/** 1:1 pokemon.c `GetBoxMonData(&boxMon, req)` sur notre modèle unifié (mon objet | null). */
-function GetBoxMonData(mon: Pokemon | null, field: number): number {
+/** 1:1 pokemon.c `GetBoxMonData(&boxMon, req)` sur notre modèle unifié (mon objet | null).
+ *  (export : consommé par pokenav_conditions_search_results.ts — BufferSearchMonListItem.)
+ *  ⚠️ 2 args : le décomp 3-args (dst) pour NICKNAME/OT_NAME n'écrit PAS dst ici (nickname =
+ *  string JS) — frontière encodeOwText côté appelant (garde strings JS vs buffers GBA). */
+export function GetBoxMonData(mon: Pokemon | null, field: number): number {
   return mon ? (GetMonData(mon as never, field) as number) : 0;
 }
 /** 1:1 `void GetBoxMonNickAt(u8 boxId, u8 boxPosition, u8 *dst)` (:9439) — nick = string (JS). */
@@ -1024,8 +1032,9 @@ function GetBoxMonLevelAt(boxId: number, boxPosition: number): number {
   }
   return 0;
 }
-/** 1:1 `u32 GetAndCopyBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, void *dst)` (:9467). */
-function GetAndCopyBoxMonDataAt(boxId: number, boxPosition: number, request: number, dst: unknown): number {
+/** 1:1 `u32 GetAndCopyBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, void *dst)` (:9467).
+ *  (export : consommé par menu_specialized.ts — GetBoxOrPartyMonData.) */
+export function GetAndCopyBoxMonDataAt(boxId: number, boxPosition: number, request: number, dst: unknown): number {
   if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT) {
     const mon = _boxMonAt(boxId, boxPosition);
     return mon ? (GetMonData(mon as never, request, dst as never) as number) : 0;

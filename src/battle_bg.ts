@@ -33,6 +33,7 @@ import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
 } from './window';
+import { markBgCopyStarted, markBgCopyDone } from './dma3_manager';
 // Header window.h depuis le LEAF include/window (pas './window') : ce module est
 // dans un cycle ESM passant par window (window → decomp-globals → … → battle_bg)
 // et sStandardBattleWindowTemplates lit DUMMY_WIN_TEMPLATE au top-level → TDZ sinon.
@@ -642,23 +643,24 @@ export async function loadBattleTextboxAndBackground1to1(
   env: number = BATTLE_ENVIRONMENT_GRASS,
 ): Promise<void> {
   _lastBattleEnv = env;
-  _bgCopiesInFlight++;
+  markBgCopyStarted();
   try {
     await loadBattleTextbox();
     await LoadBattleMenuWindowGfx();
     await drawMainBattleBackground(env);
   } finally {
-    _bgCopiesInFlight--;
+    markBgCopyDone();
   }
 }
 
-// 1:1 décomp `IsDma3ManagerBusyWithBgCopy()` (dma3_manager.c) : TRUE tant que des
-// copies BG sont en attente. Plateforme : nos « copies » = les chargements ASYNC
-// tiles/tilemap/palettes du boot (fire-and-forget de CB2_InitBattleInternal) → la
-// case 0 de CB2_HandleStartBattle (ShowBg ×4 + FillAroundBattleWindows) doit
-// attendre, sinon le fill est écrasé par le tileset qui finit de se charger.
-let _bgCopiesInFlight = 0;
-export function IsDma3ManagerBusyWithBgCopy(): boolean { return _bgCopiesInFlight > 0; }
+// `IsDma3ManagerBusyWithBgCopy` + le compteur « bg copies in flight » sont relogés
+// dans le miroir `dma3_manager.ts` (décomp bg.c:440 ; nos « copies » = chargements
+// ASYNC tiles/tilemap/palettes du boot, fire-and-forget de CB2_InitBattleInternal →
+// la case 0 de CB2_HandleStartBattle doit attendre leur fin). Ré-export 1:1 pour les
+// importeurs existants (pokenav_*, battle_main, battle_script_commands, PSS…) ; la
+// redirection finale de leurs imports vers './dma3_manager' = lot ultérieur. La voie
+// V incrémente le compteur via markBgCopyStarted/markBgCopyDone ci-dessus.
+export { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 
 /** Dernier environnement passé à loadBattleTextboxAndBackground1to1 (= le
  *  gBattleEnvironment du combat courant). Pour les rechargements mid-combat
