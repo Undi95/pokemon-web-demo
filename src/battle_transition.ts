@@ -44,6 +44,22 @@ import {
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
 } from '../harness/runtime/decomp-runtime';
 import { DISPLAY_HEIGHT } from '../include/gba/defines';
+// ── CHARPENTE 1:1 (foyer réel Task_BattleTransition) — imports additionnels ──
+// Modules coeur/feuilles (task/palette/trig/gpu_regs/field_camera/field_weather) :
+// battle_transition est un module lazy (side-effect import battle_controller_opponent
+// :119), aucune arête de cycle vers lui → pas de bombe TDZ (vérifié find-import-cycle).
+import { CreateTask, DestroyTask, gTasks } from './task';
+import { FindTaskIdByFunc, gMain } from '../harness/runtime/decomp-globals';
+import { TASK_NONE } from '../include/task';
+import { Cos } from './trig';
+import { BeginNormalPaletteFade, gPaletteFade } from './palette';
+import { SetVBlankCallback } from './main';
+import { SetGpuReg } from './gpu_regs';
+import { EnableInterrupts } from '../harness/runtime/decomp-helpers';
+import { REG_OFFSET_MOSAIC } from '../harness/runtime/decomp-runtime';
+import { ENUM_B_1 } from '../include/battle_transition';
+import { GetCameraOffsetWithPan } from './field_camera';
+import { SetWeatherScreenFadeOut } from './field_weather';
 
 /** SetSpriteRotScale via la surface __battleAnimMons (anti-cycle ESM : un import
  *  statique de battle_anim_mons depuis ce module → TDZ BG_SCREEN_SIZE au boot). */
@@ -997,3 +1013,856 @@ export function stopBattleTransitionShuffle(): void {
 Object.assign((globalThis as Record<string, unknown>).__battleTransitionMirror as Record<string, unknown>, {
   startBattleTransitionShuffle, tickBattleTransitionShuffle, stopBattleTransitionShuffle,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// ██ CHARPENTE 1:1 — foyer réel de battle_transition.c (2026-07-17, PHASE 1) ██
+//
+// Transcription ligne-à-ligne du COEUR du fichier décomp : la vraie machine à
+// tâches (Task_BattleTransition), l'intro flash, les helpers communs, les tables
+// sTasks_*/sTaskHandlers, et les Task_* des transitions du jeu solo courant.
+//
+// ⚠️ INERTE en phase 1 : ce foyer n'est PAS câblé dans battle-decomp-loop. Le
+// chemin bespoke ci-dessus (startBattleTransitionX/tickBattleTransitionX consommés
+// par _makeBattleStartTransitionCB2) reste le SEUL branché → zéro régression combat.
+// Voir « POINT DE BASCULE » en fin de section pour la ligne à changer.
+//
+// Adaptations moteur (précédents cités depuis le bloc bespoke de CE fichier) :
+//   • DMA HBlank-repeat (DmaSet →REG_WIN0H/REG_BG0HOFS) → rt.gba.setHBlankCallback
+//     lisant gScanlineEffectRegBuffers[1] (précédent Slice bespoke:348, Swirl:879).
+//   • DmaCopy16 buffers[0]→[1] → copie JS littérale (précédent bespoke:418).
+//   • REG_VCOUNT (lu par les HBlankCB décomp) → paramètre `y` du callback runtime.
+//   • struct TransitionData `s16 data[11]` (wipe) → sTransitionData.wipe (BlackWipeData)
+//     réutilisant InitBlackWipe/UpdateBlackWipe déjà 1:1 (ci-dessus :618/:632).
+// ════════════════════════════════════════════════════════════════════════════
+
+// ─── Constantes locales (constants/rgb.h + gba/io_reg.h) ─────────────────────
+const RGB_BLACK = 0x0000;
+const RGB_WHITE = 0x7FFF;
+const INTR_FLAG_VBLANK = 1 << 0;
+const INTR_FLAG_HBLANK = 1 << 1;
+const WININ_WIN0_ALL = 0x3F;
+
+// ─── struct TransitionData (battle_transition.c:55-76) ───────────────────────
+// `data[11]` (le champ wipe) est porté comme `wipe: BlackWipeData` (cf. adaptation).
+interface CoreTransitionData {
+  VBlank_DMA: number;
+  WININ: number; WINOUT: number; WIN0H: number; WIN0V: number;
+  BLDCNT: number; BLDALPHA: number; BLDY: number;
+  cameraX: number; cameraY: number;
+  BG0HOFS_Lower: number; BG0HOFS_Upper: number; BG0VOFS: number;
+  counter: number;
+  wipe: BlackWipeData;
+}
+/** 1:1 `EWRAM_DATA static struct TransitionData *sTransitionData` (:296). */
+let sTransitionData: CoreTransitionData | null = null;
+function _allocTransitionData(): CoreTransitionData {
+  return {
+    VBlank_DMA: 0, WININ: 0, WINOUT: 0, WIN0H: 0, WIN0V: 0,
+    BLDCNT: 0, BLDALPHA: 0, BLDY: 0, cameraX: 0, cameraY: 0,
+    BG0HOFS_Lower: 0, BG0HOFS_Upper: 0, BG0VOFS: 0, counter: 0,
+    wipe: { startX: 0, startY: 0, currX: 0, currY: 0, endX: 0, endY: 0, xMove: 0, yMove: 0, xDist: 0, yDist: 0, temp: 0 },
+  };
+}
+function _zeroTransitionData(d: CoreTransitionData): void {
+  d.VBlank_DMA = 0; d.WININ = 0; d.WINOUT = 0; d.WIN0H = 0; d.WIN0V = 0;
+  d.BLDCNT = 0; d.BLDALPHA = 0; d.BLDY = 0; d.cameraX = 0; d.cameraY = 0;
+  d.BG0HOFS_Lower = 0; d.BG0HOFS_Upper = 0; d.BG0VOFS = 0; d.counter = 0;
+  const w = d.wipe;
+  w.startX = 0; w.startY = 0; w.currX = 0; w.currY = 0; w.endX = 0; w.endY = 0;
+  w.xMove = 0; w.yMove = 0; w.xDist = 0; w.yDist = 0; w.temp = 0;
+}
+
+// ─── Accès runtime (surface gba/vram/win/blend), typé souplement (cf. bespoke) ─
+interface CoreRt {
+  gba: {
+    bg: (n: number) => { vram: Uint8Array; tilemap: Uint16Array; config: { hofs: number; vofs: number; mosaic?: boolean } };
+    windows: { win0: { x1: number; x2: number; enabled?: boolean } };
+    blend: { brightness: number };
+    setHBlankCallback: (cb: ((y: number) => void) | null) => void;
+  };
+  gPlttBufferFaded?: Uint16Array;
+  gPlttBufferUnfaded?: Uint16Array;
+}
+function _coreRt(): CoreRt | null { return (getRuntime() as unknown as CoreRt) ?? null; }
+function _setHBlank(cb: ((y: number) => void) | null): void { _coreRt()?.gba.setHBlankCallback(cb); }
+
+// ─── Helper task (wrapper (t)=>fn(t.taskId) + tag funcRef) ────────────────────
+// 1:1 avec le pattern field_screen_effect.ts:118 : le runtime passe l'objet task,
+// nos fonctions décomp prennent le taskId ; funcRef permet à FindTaskIdByFunc de
+// retrouver la fonction d'origine.
+type CoreTaskFn = (taskId: number) => void;
+function _coreCreateTask(fn: CoreTaskFn, priority: number): number {
+  const id = CreateTask((t: { taskId: number }) => fn(t.taskId), priority);
+  (gTasks[id] as unknown as { funcRef?: unknown }).funcRef = fn;
+  return id;
+}
+
+//-----------------------------------
+// General transition functions (:4046-4144)
+//-----------------------------------
+
+/** 1:1 `InitTransitionData` (:4050) : memset 0 + GetCameraOffsetWithPan. */
+function InitTransitionData(): void {
+  if (!sTransitionData) sTransitionData = _allocTransitionData();
+  else _zeroTransitionData(sTransitionData);
+  const cam = GetCameraOffsetWithPan();
+  sTransitionData.cameraX = cam.x;
+  sTransitionData.cameraY = cam.y;
+}
+
+/** 1:1 `VBlankCB_BattleTransition` (:4056) : LoadOam/ProcessSpriteCopyRequests/
+ *  TransferPlttBuffer. Notre moteur effectue OAM+palette au frame boundary ; on
+ *  route vers les équivalents runtime s'ils existent (no-op sinon — à valider au
+ *  bascule). */
+function VBlankCB_BattleTransition(): void {
+  const rt = getRuntime() as unknown as {
+    LoadOam?: () => void; ProcessSpriteCopyRequests?: () => void; TransferPlttBuffer?: () => void;
+  };
+  rt?.LoadOam?.();
+  rt?.ProcessSpriteCopyRequests?.();
+  rt?.TransferPlttBuffer?.();
+}
+
+/** 1:1 `FadeScreenBlack` (:4082). (Déjà porté ici sous `_fadeScreenBlack` :195 —
+ *  BlendPalettes(PALETTES_ALL,16,RGB_BLACK).) */
+function FadeScreenBlack(): void { _fadeScreenBlack(); }
+
+/** 1:1 `SetCircularMask(buffer, centerX, centerY, radius)` (:4094). */
+function SetCircularMask(buffer: { [i: number]: number }, centerX: number, centerY: number, radius: number): void {
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) buffer[i] = 0x0A0A;   // memset(buffer, 10, DISPLAY_HEIGHT * sizeof(u16))
+  for (let i = 0; i < 64; i++) {
+    let sinResult = _swSin(i, radius);
+    let cosResult = Cos(i, radius);
+    let drawXLeft = centerX - sinResult;
+    let drawX = centerX + sinResult;
+    let drawYTop = centerY - cosResult;
+    let drawYBott = centerY + cosResult;
+    if (drawXLeft < 0) drawXLeft = 0;
+    if (drawX > DISPLAY_WIDTH) drawX = DISPLAY_WIDTH;
+    if (drawYTop < 0) drawYTop = 0;
+    if (drawYBott > DISPLAY_HEIGHT - 1) drawYBott = DISPLAY_HEIGHT - 1;
+    drawX |= (drawXLeft << 8);
+    buffer[drawYTop] = drawX;
+    buffer[drawYBott] = drawX;
+    cosResult = Cos(i + 1, radius);
+    let drawYTopNext = centerY - cosResult;
+    let drawYBottNext = centerY + cosResult;
+    if (drawYTopNext < 0) drawYTopNext = 0;
+    if (drawYBottNext > DISPLAY_HEIGHT - 1) drawYBottNext = DISPLAY_HEIGHT - 1;
+    while (drawYTop > drawYTopNext) buffer[--drawYTop] = drawX;
+    while (drawYTop < drawYTopNext) buffer[++drawYTop] = drawX;
+    while (drawYBott > drawYBottNext) buffer[--drawYBott] = drawX;
+    while (drawYBott < drawYBottNext) buffer[++drawYBott] = drawX;
+    void sinResult;
+  }
+}
+
+/** Copie palette 1:1 `CpuCopy32(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE)`
+ *  (Transition_StartIntro :1071). PLTT_SIZE=0x400 octets = 0x200 u16. */
+function _cpuCopyPlttFadedToUnfaded(): void {
+  const rt = _coreRt();
+  const f = rt?.gPlttBufferFaded, u = rt?.gPlttBufferUnfaded;
+  if (f && u) { for (let i = 0; i < 0x200; i++) u[i] = f[i]; }
+  else console.error('[battle_transition] gPlttBuffer{Faded,Unfaded} runtime absents — copie intro skip (à valider au bascule)');
+}
+
+//---------------------------
+// Main transition functions (:993-1127)
+//---------------------------
+
+/** 1:1 `BattleTransition_StartOnField(transitionId)` (:1026). */
+export function BattleTransition_StartOnField(transitionId: number): void {
+  // gMain.callback2 = CB2_OverworldBasic (résolu via surface globale ; à câbler au bascule).
+  const cb = (globalThis as { CB2_OverworldBasic?: (...a: unknown[]) => void }).CB2_OverworldBasic;
+  if (cb) (gMain as unknown as { callback2?: unknown }).callback2 = cb;
+  else console.error('[battle_transition] CB2_OverworldBasic absent — StartOnField ne pose pas callback2 (bascule)');
+  LaunchBattleTransitionTask(transitionId);
+}
+
+/** 1:1 `BattleTransition_Start(transitionId)` (:1032). */
+export function BattleTransition_Start(transitionId: number): void {
+  LaunchBattleTransitionTask(transitionId);
+}
+
+// #define tTransitionId   data[1]
+// #define tTransitionDone data[15]
+
+/** 1:1 `IsBattleTransitionDone()` (:1041). */
+export function IsBattleTransitionDone(): boolean {
+  const taskId = FindTaskIdByFunc(Task_BattleTransition);
+  if (taskId === TASK_NONE) return false;   // garde (le .c indexe gTasks[TASK_NONE] : on l'évite)
+  if (gTasks[taskId].data[15]) {
+    DestroyTask(taskId);
+    sTransitionData = null;   // FREE_AND_SET_NULL(sTransitionData)
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 `LaunchBattleTransitionTask(transitionId)` (:1056). */
+function LaunchBattleTransitionTask(transitionId: number): void {
+  const taskId = _coreCreateTask(Task_BattleTransition, 2);
+  gTasks[taskId].data[1] = transitionId;   // tTransitionId
+  sTransitionData = _allocTransitionData(); // AllocZeroed(sizeof(*sTransitionData))
+}
+
+/** 1:1 `Task_BattleTransition` (:1063). */
+function Task_BattleTransition(taskId: number): void {
+  while (sTaskHandlers[gTasks[taskId].data[0]](taskId));
+}
+
+/** 1:1 `Transition_StartIntro` (:1068). */
+function Transition_StartIntro(taskId: number): boolean {
+  SetWeatherScreenFadeOut();
+  _cpuCopyPlttFadedToUnfaded();
+  const d = gTasks[taskId].data;
+  if (sTasks_Intro[d[1]] != null) {
+    _coreCreateTask(sTasks_Intro[d[1]]!, 4);
+    d[0]++;
+    return false;
+  } else {
+    d[0] = 2;
+    return true;
+  }
+}
+
+/** 1:1 `Transition_WaitForIntro` (:1085). */
+function Transition_WaitForIntro(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (FindTaskIdByFunc(sTasks_Intro[d[1]]!) === TASK_NONE) {
+    d[0]++;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 `Transition_StartMain` (:1098). */
+function Transition_StartMain(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const mainFn = sTasks_Main[d[1]];
+  if (mainFn == null) {
+    // Phase 1 : transition non encore portée en Task_* réel → done immédiat + warn.
+    console.error(`[battle_transition] sTasks_Main[${d[1]}] non porté (phase 2) → transition done immédiat`);
+    d[15] = 1;
+    d[0]++;
+    return false;
+  }
+  _coreCreateTask(mainFn, 0);
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Transition_WaitForMain` (:1105). */
+function Transition_WaitForMain(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  d[15] = 0;   // tTransitionDone = FALSE
+  const mainFn = sTasks_Main[d[1]];
+  if (mainFn == null || FindTaskIdByFunc(mainFn) === TASK_NONE) d[15] = 1;
+  return false;
+}
+
+/** 1:1 `Task_Intro` (:1116). */
+function Task_Intro(taskId: number): void {
+  const d = gTasks[taskId].data;
+  if (d[0] === 0) {
+    d[0]++;
+    CreateIntroTask(0, 0, 3, 2, 2);
+  } else if (IsIntroTaskDone()) {
+    DestroyTask(taskId);
+  }
+}
+
+//-----------------------------------
+// Transition intro (:3956-4044)
+//-----------------------------------
+// #define tFadeToGrayDelay data[1] · tFadeFromGrayDelay data[2] · tNumFades data[3]
+// tFadeToGrayIncrement data[4] · tFadeFromGrayIncrement data[5] · tDelayTimer data[6]
+// tBlend data[7]
+
+/** 1:1 `CreateIntroTask(...)` (:3968). */
+function CreateIntroTask(fadeToGrayDelay: number, fadeFromGrayDelay: number, numFades: number, fadeToGrayIncrement: number, fadeFromGrayIncrement: number): void {
+  const taskId = _coreCreateTask(Task_BattleTransition_Intro, 3);
+  const d = gTasks[taskId].data;
+  d[1] = fadeToGrayDelay;
+  d[2] = fadeFromGrayDelay;
+  d[3] = numFades;
+  d[4] = fadeToGrayIncrement;
+  d[5] = fadeFromGrayIncrement;
+  d[6] = fadeToGrayDelay;   // tDelayTimer = fadeToGrayDelay
+}
+
+/** 1:1 `IsIntroTaskDone()` (:3979). */
+function IsIntroTaskDone(): boolean {
+  return FindTaskIdByFunc(Task_BattleTransition_Intro) === TASK_NONE;
+}
+
+/** 1:1 `Task_BattleTransition_Intro` (:3987). */
+function Task_BattleTransition_Intro(taskId: number): void {
+  while (sTransitionIntroFuncs[gTasks[taskId].data[0]](taskId));
+}
+
+/** 1:1 `TransitionIntro_FadeToGray` (:3992). RGB(11,11,11) = RGB_INTRO_GRAY (:305). */
+function TransitionIntro_FadeToGray(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[6] === 0 || --d[6] === 0) {
+    d[6] = d[1];
+    d[7] += d[4];
+    if (d[7] > 16) d[7] = 16;
+    BlendPalettes(PALETTES_ALL, d[7], RGB_INTRO_GRAY);
+  }
+  if (d[7] >= 16) {
+    d[0]++;
+    d[6] = d[2];
+  }
+  return false;
+}
+
+/** 1:1 `TransitionIntro_FadeFromGray` (:4011). */
+function TransitionIntro_FadeFromGray(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[6] === 0 || --d[6] === 0) {
+    d[6] = d[2];
+    d[7] -= d[5];
+    if (d[7] < 0) d[7] = 0;
+    BlendPalettes(PALETTES_ALL, d[7], RGB_INTRO_GRAY);
+  }
+  if (d[7] === 0) {
+    if (--d[3] === 0) {
+      DestroyTask(FindTaskIdByFunc(Task_BattleTransition_Intro));
+    } else {
+      d[6] = d[1];
+      d[0] = 0;
+    }
+  }
+  return false;
+}
+
+//--------------------
+// B_TRANSITION_BLUR (:1129-1180)
+//--------------------
+// #define tDelay data[1] · tCounter data[2]
+
+function Task_Blur(taskId: number): void { while (sBlur_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Blur_Init` (:1141). BGCNT_MOSAIC → bg().config.mosaic (précédent bespoke:787). */
+function Blur_Init(taskId: number): boolean {
+  SetGpuReg(REG_OFFSET_MOSAIC, 0);
+  const rt = _coreRt();
+  if (rt) for (const n of [1, 2, 3] as const) rt.gba.bg(n).config.mosaic = true;
+  gTasks[taskId].data[0]++;
+  return true;
+}
+
+/** 1:1 `Blur_Main` (:1151). */
+function Blur_Main(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] !== 0) {
+    d[1]--;
+  } else {
+    d[1] = 4;
+    if (++d[2] === 10) BeginNormalPaletteFade(0xFFFFFFFF, -1, 0, 16, RGB_BLACK);
+    SetGpuReg(REG_OFFSET_MOSAIC, (d[2] & 15) * 17);
+    if (d[2] > 14) d[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `Blur_End` (:1169). (mosaïque OFF = sûreté hors-.c, précédent bespoke:823 —
+ *  au cas où l'init combat ne réinitialise pas le bit BGCNT_MOSAIC.) */
+function Blur_End(taskId: number): boolean {
+  if (!gPaletteFade.active) {
+    const rt = _coreRt();
+    if (rt) for (const n of [1, 2, 3] as const) rt.gba.bg(n).config.mosaic = false;
+    DestroyTask(FindTaskIdByFunc(Task_Blur));
+  }
+  return false;
+}
+
+//--------------------
+// B_TRANSITION_SWIRL (:1182-1244)
+//--------------------
+// #define tSinIndex data[1] · tAmplitude data[2]
+
+function Task_Swirl(taskId: number): void { while (sSwirl_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Swirl_Init` (:1194). */
+function Swirl_Init(taskId: number): boolean {
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);
+  _setSinWave(gScanlineEffectRegBuffers[1], sTransitionData!.cameraX, 0, 2, 0, DISPLAY_HEIGHT);
+  SetVBlankCallback(VBlankCB_Swirl);
+  _setHBlank(HBlankCB_Swirl);
+  EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_HBLANK);
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `Swirl_End` (:1210). */
+function Swirl_End(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  d[1] += 4;
+  d[2] += 8;
+  _setSinWave(gScanlineEffectRegBuffers[0], sTransitionData!.cameraX, d[1], 2, d[2], DISPLAY_HEIGHT);
+  if (!gPaletteFade.active) DestroyTask(FindTaskIdByFunc(Task_Swirl));
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `VBlankCB_Swirl` (:1228). */
+function VBlankCB_Swirl(): void {
+  VBlankCB_BattleTransition();
+  // DmaCopy16(..., DISPLAY_HEIGHT*2 OCTETS) = 160 u16 = DISPLAY_HEIGHT entrées.
+  if (sTransitionData && sTransitionData.VBlank_DMA) {
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  }
+}
+
+/** 1:1 `HBlankCB_Swirl` (:1235). REG_VCOUNT → y. */
+function HBlankCB_Swirl(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const v = gScanlineEffectRegBuffers[1][y];
+  const rt = _coreRt(); if (!rt) return;
+  rt.gba.bg(1).config.hofs = v; rt.gba.bg(2).config.hofs = v; rt.gba.bg(3).config.hofs = v;
+}
+
+//----------------------
+// B_TRANSITION_SHUFFLE (:1246-1315)
+//----------------------
+// #define tSinVal data[1] · tAmplitude data[2]
+
+function Task_Shuffle(taskId: number): void { while (sShuffle_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Shuffle_Init` (:1258). memset(buffers[1], cameraY, H*2) : cameraY est un
+ *  octet répété → chaque u16 = cameraY | (cameraY<<8). */
+function Shuffle_Init(taskId: number): boolean {
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);
+  // memset(buffers[1], cameraY, DISPLAY_HEIGHT*2 OCTETS) = 160 u16, chacun = cameraY*0x0101.
+  const camByte = sTransitionData!.cameraY & 0xFF;
+  const fill = camByte | (camByte << 8);
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = fill;
+  SetVBlankCallback(VBlankCB_Shuffle);
+  _setHBlank(HBlankCB_Shuffle);
+  EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_HBLANK);
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `Shuffle_End` (:1275). */
+function Shuffle_End(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  let sinVal = d[1] & 0xFFFF;
+  const amplitude = (d[2] >> 8) & 0xFFFF;
+  d[1] = (d[1] + 4224) & 0xFFFF;   // u16 tSinVal
+  d[2] += 384;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++, sinVal = (sinVal + 4224) & 0xFFFF) {
+    const sinIndex = (sinVal / 256) | 0;
+    gScanlineEffectRegBuffers[0][i] = sTransitionData!.cameraY + _swSin(sinIndex & 0xFF, amplitude);
+  }
+  if (!gPaletteFade.active) DestroyTask(FindTaskIdByFunc(Task_Shuffle));
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `VBlankCB_Shuffle` (:1299). */
+function VBlankCB_Shuffle(): void {
+  VBlankCB_BattleTransition();
+  // DmaCopy16(..., DISPLAY_HEIGHT*2 OCTETS) = 160 u16 = DISPLAY_HEIGHT entrées.
+  if (sTransitionData && sTransitionData.VBlank_DMA) {
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  }
+}
+
+/** 1:1 `HBlankCB_Shuffle` (:1306). REG_VCOUNT → y. */
+function HBlankCB_Shuffle(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const v = gScanlineEffectRegBuffers[1][y];
+  const rt = _coreRt(); if (!rt) return;
+  rt.gba.bg(1).config.vofs = v; rt.gba.bg(2).config.vofs = v; rt.gba.bg(3).config.vofs = v;
+}
+
+//------------------------------
+// B_TRANSITION_POKEBALLS_TRAIL (:1758-1873)
+//------------------------------
+// Réutilise l'adaptation fldeff validée de CE fichier (_fldEffPokeballTrail :210,
+// SpriteCB_FldEffPokeballTrail :249, _activeTrailBalls :90, _ensureTrailAssets :69)
+// car le registre fldeff générique (FLDEFF_POKEBALL_TRAIL) n'est pas porté pour
+// cet effet. La machine à états Init/Main/End est 1:1.
+
+function Task_PokeballsTrail(taskId: number): void { while (sPokeballsTrail_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `PokeballsTrail_Init` (:1771). */
+function PokeballsTrail_Init(taskId: number): boolean {
+  if (!_assetsReady) {
+    // Adaptation : le CpuSet décomp est SYNC (gfx embarqués) ; nos assets fetchent →
+    // on reste dans l'état Init tant qu'ils ne sont pas prêts (le tick suivant ré-entre).
+    // (La session de bascule ajoutera un garde-fou anti-soft-lock si le fetch échoue,
+    //  cf. _pokeballsTrailInit bespoke:106.)
+    _ensureTrailAssets().catch((e) => console.error('[battle_transition] assets PokeballsTrail KO', e));
+    return false;
+  }
+  const rt = _coreRt();
+  if (rt) {
+    const bg0 = rt.gba.bg(0);
+    if (_trailTile) bg0.vram.set(_trailTile.subarray(0, 64), 0);   // CpuSet tileset 0x20 u16 = 2 tiles
+    bg0.tilemap.fill(0);                                            // CpuFill32 BG_SCREEN_SIZE
+    const rtPal = (getRuntime() as unknown as { gPlttBufferFaded?: Uint16Array }).gPlttBufferFaded;
+    if (rtPal && _ballPal) rtPal.set(_ballPal.subarray(0, 16), 15 * 16);   // LoadPalette BG 15
+  }
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `PokeballsTrail_Main` (:1784). */
+function PokeballsTrail_Main(taskId: number): boolean {
+  _activeTrailBalls = 0;
+  let side = Random() & 1;
+  for (let i = 0; i < NUM_POKEBALL_TRAILS; i++, side ^= 1) {
+    _fldEffPokeballTrail(
+      sPokeballsTrail_StartXCoords[side],   // x
+      i * 32 + 16,                          // y
+      side,
+      sPokeballsTrail_Delays[i],
+    );
+  }
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `PokeballsTrail_End` (:1809). Ticke aussi les SpriteCB (cf. bespoke :167 —
+ *  AnimateSprites ne tourne pas dans notre CB2 de transition). */
+function PokeballsTrail_End(taskId: number): boolean {
+  _tickTrailSprites();
+  if (_activeTrailBalls === 0) {
+    FadeScreenBlack();
+    DestroyTask(FindTaskIdByFunc(Task_PokeballsTrail));
+  }
+  return false;
+}
+
+//--------------------
+// B_TRANSITION_WAVE (:2155-2240)
+//--------------------
+// #define tX data[1] · tSinIndex data[2]
+
+function Task_Wave(taskId: number): void { while (sWave_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Wave_Init` (:2168). */
+function Wave_Init(taskId: number): boolean {
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  sTransitionData!.WININ = WININ_WIN0_ALL;
+  sTransitionData!.WINOUT = 0;
+  sTransitionData!.WIN0H = DISPLAY_WIDTH;
+  sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = DISPLAY_WIDTH + 2;
+  SetVBlankCallback(VBlankCB_Wave);
+  _coreEnableWin0();
+  gTasks[taskId].data[0]++;
+  return true;
+}
+
+/** 1:1 `Wave_Main` (:2189). */
+function Wave_Main(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  let sinIndex = d[2] & 0xFF;   // u8
+  d[2] += 16;
+  d[1] += 8;
+  let finished = true;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++, sinIndex = (sinIndex + 4) & 0xFF) {
+    let x = d[1] + _swSin(sinIndex, 40);
+    if (x < 0) x = 0;
+    if (x > DISPLAY_WIDTH) x = DISPLAY_WIDTH;
+    gScanlineEffectRegBuffers[0][i] = (x << 8) | (DISPLAY_WIDTH + 1);
+    if (x < DISPLAY_WIDTH) finished = false;
+  }
+  if (finished) d[0]++;
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Wave_End` (:2219). */
+function Wave_End(taskId: number): boolean {
+  void taskId;
+  _setHBlank(null);   // DmaStop(0)
+  FadeScreenBlack();
+  DestroyTask(FindTaskIdByFunc(Task_Wave));
+  return false;
+}
+
+/** 1:1 `VBlankCB_Wave` (:2227). DmaSet WIN0H ← buffers[1] par-scanline → HBlank. */
+function VBlankCB_Wave(): void {
+  VBlankCB_BattleTransition();
+  if (sTransitionData && sTransitionData.VBlank_DMA) {
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  }
+  if (sTransitionData) {
+    SetGpuReg(REG_OFFSET_WININ, sTransitionData.WININ);
+    SetGpuReg(REG_OFFSET_WINOUT, sTransitionData.WINOUT);
+    SetGpuReg(REG_OFFSET_WIN0V, sTransitionData.WIN0V);
+  }
+  _setHBlank(HBlankCB_Wave);   // = DmaSet(0, buffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS)
+}
+
+/** WIN0H par-scanline (adaptation du DmaSet HBlank-repeat de VBlankCB_Wave). */
+function HBlankCB_Wave(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const win0h = gScanlineEffectRegBuffers[1][y];
+  const rt = _coreRt(); if (!rt) return;
+  rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+  rt.gba.windows.win0.x2 = win0h & 0xFF;
+}
+
+//--------------------
+// B_TRANSITION_SLICE (:2716-2830)
+//--------------------
+// #define tEffectX data[1] · tSpeed data[2] · tAccel data[3]
+
+function Task_Slice(taskId: number): void { while (sSlice_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Slice_Init` (:2728). */
+function Slice_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  d[2] = 1 << 8;   // tSpeed
+  d[3] = 1;        // tAccel
+  sTransitionData!.WININ = WININ_WIN0_ALL;
+  sTransitionData!.WINOUT = 0;
+  sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+  sTransitionData!.VBlank_DMA = 0;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[1][i] = sTransitionData!.cameraX;
+    gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;
+  }
+  EnableInterrupts(INTR_FLAG_HBLANK);
+  // SetGpuRegBits(REG_OFFSET_DISPSTAT, DISPSTAT_HBLANK_INTR) → assuré par setHBlankCallback.
+  SetVBlankCallback(VBlankCB_Slice);
+  _setHBlank(HBlankCB_Slice);
+  _coreEnableWin0();
+  d[0]++;
+  return true;
+}
+
+/** 1:1 `Slice_Main` (:2758). */
+function Slice_Main(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  d[1] += (d[2] >> 8);
+  if (d[1] > DISPLAY_WIDTH) d[1] = DISPLAY_WIDTH;
+  if (d[2] <= 0xFFF) d[2] += d[3];
+  if (d[3] < 128) d[3] <<= 1;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    if (i % 2) {
+      gScanlineEffectRegBuffers[0][i] = sTransitionData!.cameraX + d[1];
+      gScanlineEffectRegBuffers[0][i + DISPLAY_HEIGHT] = DISPLAY_WIDTH - d[1];
+    } else {
+      gScanlineEffectRegBuffers[0][i] = sTransitionData!.cameraX - d[1];
+      gScanlineEffectRegBuffers[0][i + DISPLAY_HEIGHT] = (d[1] << 8) | (DISPLAY_WIDTH + 1);
+    }
+  }
+  if (d[1] >= DISPLAY_WIDTH) d[0]++;
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Slice_End` (:2797). */
+function Slice_End(taskId: number): boolean {
+  void taskId;
+  _setHBlank(null);   // DmaStop(0)
+  FadeScreenBlack();
+  DestroyTask(FindTaskIdByFunc(Task_Slice));
+  return false;
+}
+
+/** 1:1 `VBlankCB_Slice` (:2805) + `HBlankCB_Slice` (:2817) fusionnés côté HBlank. */
+function VBlankCB_Slice(): void {
+  VBlankCB_BattleTransition();
+  if (sTransitionData) {
+    SetGpuReg(REG_OFFSET_WININ, sTransitionData.WININ);
+    SetGpuReg(REG_OFFSET_WINOUT, sTransitionData.WINOUT);
+    SetGpuReg(REG_OFFSET_WIN0V, sTransitionData.WIN0V);
+    if (sTransitionData.VBlank_DMA) {
+      for (let i = 0; i < DISPLAY_HEIGHT * 2; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+    }
+  }
+  _setHBlank(HBlankCB_Slice);   // = DmaSet(0, &buffers[1][H], &REG_WIN0H, ...)
+}
+
+/** HOFS BG1-3 (HBlankCB_Slice) + WIN0H (DmaSet) par-scanline. */
+function HBlankCB_Slice(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const rt = _coreRt(); if (!rt) return;
+  const hofs = gScanlineEffectRegBuffers[1][y];
+  rt.gba.bg(1).config.hofs = hofs; rt.gba.bg(2).config.hofs = hofs; rt.gba.bg(3).config.hofs = hofs;
+  const win0h = gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + y];
+  rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+  rt.gba.windows.win0.x2 = win0h & 0xFF;
+}
+
+//-----------------------------
+// B_TRANSITION_ANGLED_WIPES (:3818-3954)
+//-----------------------------
+// #define tWipeId data[1] · tDir data[2] · tDelay data[3]
+
+function Task_AngledWipes(taskId: number): void { while (sAngledWipes_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `AngledWipes_Init` (:3834). */
+function AngledWipes_Init(taskId: number): boolean {
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  sTransitionData!.WININ = WININ_WIN0_ALL;
+  sTransitionData!.WINOUT = 0;
+  sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[0][i] = DISPLAY_WIDTH;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];   // CpuSet H
+  SetVBlankCallback(VBlankCB_AngledWipes);
+  _coreEnableWin0();
+  gTasks[taskId].data[0]++;
+  return true;
+}
+
+/** 1:1 `AngledWipes_SetWipeData` (:3855). Le wipe vit dans sTransitionData.wipe. */
+function AngledWipes_SetWipeData(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const md = sAngledWipes_MoveData[d[1]];
+  InitBlackWipe(sTransitionData!.wipe, md[0], md[1], md[2], md[3], 1, 1);
+  d[2] = md[4];   // tDir
+  d[0]++;
+  return true;
+}
+
+/** 1:1 `AngledWipes_DoWipe` (:3868). */
+function AngledWipes_DoWipe(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const w = sTransitionData!.wipe;
+  sTransitionData!.VBlank_DMA = 0;
+  let finished = false;
+  for (let i = 0; i < 16; i++) {
+    let r3 = gScanlineEffectRegBuffers[0][w.currY] >> 8;
+    let r4 = gScanlineEffectRegBuffers[0][w.currY] & 0xFF;
+    if (d[2] === 0) {
+      if (r3 < w.currX) r3 = w.currX;
+      if (r3 > r4) r3 = r4;
+    } else {
+      if (r4 > w.currX) r4 = w.currX;
+      if (r4 <= r3) r4 = r3;
+    }
+    gScanlineEffectRegBuffers[0][w.currY] = (r4 | (r3 << 8)) & 0xFFFF;
+    if (finished) { d[0]++; break; }
+    finished = UpdateBlackWipe(w, true, true);
+  }
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `AngledWipes_TryEnd` (:3908). */
+function AngledWipes_TryEnd(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (++d[1] < NUM_ANGLED_WIPES) {
+    d[0]++;
+    d[3] = sAngledWipes_EndDelays[d[1] - 1];
+    return true;
+  } else {
+    _setHBlank(null);   // DmaStop(0)
+    FadeScreenBlack();
+    DestroyTask(FindTaskIdByFunc(Task_AngledWipes));
+    return false;
+  }
+}
+
+/** 1:1 `AngledWipes_StartNext` (:3927). */
+function AngledWipes_StartNext(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (--d[3] === 0) {
+    d[0] = 1;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 `VBlankCB_AngledWipes` (:3939). WIN0H ← buffers[1] par-scanline → HBlank. */
+function VBlankCB_AngledWipes(): void {
+  VBlankCB_BattleTransition();
+  if (sTransitionData) {
+    if (sTransitionData.VBlank_DMA) {
+      for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+    }
+    SetGpuReg(REG_OFFSET_WININ, sTransitionData.WININ);
+    SetGpuReg(REG_OFFSET_WINOUT, sTransitionData.WINOUT);
+    SetGpuReg(REG_OFFSET_WIN0V, sTransitionData.WIN0V);
+  }
+  _setHBlank(HBlankCB_AngledWipes);
+}
+
+/** WIN0H par-scanline (buffers[1][y] = left<<8|right). */
+function HBlankCB_AngledWipes(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const win0h = gScanlineEffectRegBuffers[1][y];
+  const rt = _coreRt(); if (!rt) return;
+  rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+  rt.gba.windows.win0.x2 = win0h & 0xFF;
+}
+
+/** WIN0 ON (DISPCNT) — l'OW ne l'a pas toujours ; précédent bespoke Slice:347. */
+function _coreEnableWin0(): void {
+  const rt = getRuntime();
+  if (rt) rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+}
+
+// ─── Tables (battle_transition.c:340-399) ────────────────────────────────────
+const sTransitionIntroFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  TransitionIntro_FadeToGray,
+  TransitionIntro_FadeFromGray,
+];
+const sTaskHandlers: ReadonlyArray<(taskId: number) => boolean> = [
+  Transition_StartIntro,
+  Transition_WaitForIntro,
+  Transition_StartMain,
+  Transition_WaitForMain,
+];
+const sBlur_Funcs: ReadonlyArray<(taskId: number) => boolean> = [Blur_Init, Blur_Main, Blur_End];
+const sSwirl_Funcs: ReadonlyArray<(taskId: number) => boolean> = [Swirl_Init, Swirl_End];
+const sShuffle_Funcs: ReadonlyArray<(taskId: number) => boolean> = [Shuffle_Init, Shuffle_End];
+const sPokeballsTrail_Funcs: ReadonlyArray<(taskId: number) => boolean> = [PokeballsTrail_Init, PokeballsTrail_Main, PokeballsTrail_End];
+const sWave_Funcs: ReadonlyArray<(taskId: number) => boolean> = [Wave_Init, Wave_Main, Wave_End];
+const sSlice_Funcs: ReadonlyArray<(taskId: number) => boolean> = [Slice_Init, Slice_Main, Slice_End];
+const sAngledWipes_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  AngledWipes_Init, AngledWipes_SetWipeData, AngledWipes_DoWipe, AngledWipes_TryEnd, AngledWipes_StartNext,
+];
+
+/** 1:1 `sTasks_Intro[B_TRANSITION_COUNT]` (:340) — toutes = Task_Intro. */
+const sTasks_Intro: ReadonlyArray<CoreTaskFn | null> = new Array(ENUM_B_1.B_TRANSITION_COUNT).fill(Task_Intro);
+
+/** 1:1 `sTasks_Main[B_TRANSITION_COUNT]` (:347) — PHASE 1 : entrées portées ci-
+ *  dessous ; le reste (null) = phase 2 (BigPokeball/PatternWeave, ClockwiseWipe,
+ *  Ripple, WhiteBarsFade[sprites invisibles], GridSquares, ShredSplit, Blackhole,
+ *  RectangularSpiral, Elite Four/légendaires/frontier/mugshots). */
+const sTasks_Main: Array<CoreTaskFn | null> = new Array(ENUM_B_1.B_TRANSITION_COUNT).fill(null);
+sTasks_Main[ENUM_B_1.B_TRANSITION_BLUR] = Task_Blur;
+sTasks_Main[ENUM_B_1.B_TRANSITION_SWIRL] = Task_Swirl;
+sTasks_Main[ENUM_B_1.B_TRANSITION_SHUFFLE] = Task_Shuffle;
+sTasks_Main[ENUM_B_1.B_TRANSITION_POKEBALLS_TRAIL] = Task_PokeballsTrail;
+sTasks_Main[ENUM_B_1.B_TRANSITION_WAVE] = Task_Wave;
+sTasks_Main[ENUM_B_1.B_TRANSITION_SLICE] = Task_Slice;
+sTasks_Main[ENUM_B_1.B_TRANSITION_ANGLED_WIPES] = Task_AngledWipes;
+
+// ─── Surface pour le bascule (le foyer réel, INERTE tant que non câblé) ───────
+// ██ POINT DE BASCULE ██ (à faire par la session principale, testé EN JEU) :
+//   Dans src/engine/battle/battle-decomp-loop.ts :740, remplacer
+//     getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb, transition));
+//   par un CB2 réel qui : (1) appelle BattleTransition_StartOnField(transition)
+//   [ou LaunchBattleTransitionTask], (2) tourne RunTasks()/AnimateSprites()/
+//   BuildOamBuffer()/UpdatePaletteFade() par frame, (3) quand IsBattleTransitionDone()
+//   → CleanupOverworld + SetMainCallback2(cb). Vérifier que le runtime invoque le
+//   VBlank callback posé par SetVBlankCallback (sinon router la copie buffers[0]→[1]
+//   dans le tick). Le bloc bespoke ci-dessus reste le fallback jusqu'à validation A/B.
+(globalThis as Record<string, unknown>).__battleTransitionCore = {
+  BattleTransition_Start, BattleTransition_StartOnField, IsBattleTransitionDone,
+  // (LaunchBattleTransitionTask/Task_BattleTransition/sTasks_Main internes.)
+};
