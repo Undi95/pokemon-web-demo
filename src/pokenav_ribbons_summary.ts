@@ -1025,7 +1025,12 @@ function PrintCurrentMonRibbonCount(menu: Pokenav_RibbonsSummaryMenu): void {
   ConvertIntToDecimalStringN(gStringVar1, GetCurrMonRibbonCount(), STR_CONV_MODE_LEFT_ALIGN, 2);
   DynamicPlaceholderTextUtil_Reset();
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
-  DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, getString('gText_RibbonsF700'));
+  // 1:1 pokenav_ribbons_summary.c:811 `DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_RibbonsF700)`.
+  // gText_RibbonsF700 = `const u8[]` (buffer EOS-terminé) ; getString rend une STRING JS. Le helper scanne
+  // `while (src[s] !== EOS)` (EOS = 0xFF numérique) → sur une string JS, src[s] (char/undefined) n'est JAMAIS
+  // === 0xFF → BOUCLE INFINIE synchrone (freeze dur, sans throw). encodeOwText encode {DYNAMIC 0}→[0xF7,0x00]
+  // et termine par EOS. Précédent : pokemon_summary_screen.ts:1167 (`encodeOwText(text)`).
+  DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_RibbonsF700')));
   FillWindowPixelBuffer(menu.ribbonCountWindowId, PIXEL_FILL(4));
   AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, 1, color, TEXT_SKIP_DRAW, gStringVar4);
   CopyWindowToVram(menu.ribbonCountWindowId, COPYWIN_GFX);
