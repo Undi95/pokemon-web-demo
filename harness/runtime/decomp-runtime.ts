@@ -51,6 +51,7 @@ import {
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../../src/engine/decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../../src/engine/save/save-block-state';
+import { Random } from '../../src/random'; // module leaf (LCG pur) — pas de risque TDZ
 
 // oamShapeSizeFromWH SUPPRIMÉ (2026-06-30) : n'était lu que par CreateSpriteFromTemplate (dissous).
 
@@ -2075,6 +2076,16 @@ export class DecompRuntime {
     if (typeof scanlineTick === 'function') scanlineTick();
     this.gIntroFrameCounter++;
     this.gMain.vblankCounter1++; // 1:1 décomp VBlank free-running counter (jamais reset).
+    // 1:1 décomp main.c:358-359 (VBlankIntr) : le RNG AVANCE à chaque VBlank sauf en
+    // combat link/frontier/recorded — c'est l'entropie frame-timing de TOUT le jeu solo
+    // (rencontres, IA, captures dépendent du MOMENT d'appui). Manquait → RNG figé entre
+    // deux tirages logiques (audit moteur 2026-07-16, runtime-core.md + misc-engine.md).
+    // BATTLE_TYPE_LINK|FRONTIER|RECORDED = 0x2|0x80000|0x1000000 (battle.h).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const btf = ((globalThis as any).gBattleTypeFlags ?? 0) as number;
+    if (!this.gMain.inBattle || !(btf & 0x1080002)) {
+      Random();
+    }
     // Devtools : auto-pause condition poll (= dev.pauseAt). Cheap noop si non-armé.
     // Posé sur globalThis par engine-devtools.ts pour fonctionner partout.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
