@@ -464,6 +464,22 @@ export async function loadIndexedPngRawIndices(
 export async function loadIndexedPngStrict(url: string, bpp: 4 | 8 = 4): Promise<LoadedPng> {
   // 1. Extract PLTE pour avoir la palette canonique du PNG
   const fullPlte = await extractPngPlte(url);
+  if (!fullPlte && bpp === 4) {
+    // PNG SANS PLTE = grayscale gbagfx (colorType 0 — ex. pokenav/condition/
+    // pokeball_placeholder.png, grayscale DANS le décomp même). Règle payée
+    // (pitfall-gbagfx-grayscale-invert ; tools/gbagfx/gfx.c:167 `invertColors =
+    // !hasPalette`) : index = 15 - (gray >> 4). Astuce : une palette canonique
+    // RAMPE INVERSÉE (entry i = gris (15-i)*17) fait produire cette inversion
+    // au lookup par couleur de loadIndexedPngWithPal — mêmes chemins, zéro code
+    // de décodage dupliqué. La VRAIE palette vient du .pal sibling chargé par
+    // le consommateur (la rampe retournée n'est qu'un placeholder de contrat).
+    const invertedRamp = new Uint16Array(16);
+    for (let i = 0; i < 16; i++) {
+      const g = (15 - i) * 17;
+      invertedRamp[i] = rgba8ToRgb15(g, g, g);
+    }
+    return loadIndexedPngWithPal(url, invertedRamp);
+  }
   if (!fullPlte) throw new Error(`PNG ${url} : no PLTE chunk (not indexed)`);
   // Pour 4bpp on prend les 16 premières entries (= ce qu'un PNG 4-bit utilise réellement
   // = sub-pal 0 only; pour multi-sub-pal, voir doc ci-dessus + loadGbaPal).
