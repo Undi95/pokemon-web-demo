@@ -106,7 +106,7 @@ function _pokenavLoadHeaderGraphics(): void {
   if (_pokenavHeaderLoaded) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap, navGfx, navPal, hoennGfx, lhPal, mmGfx, cGfx, rGfx, mcGfx] = await Promise.all([
+      const [gfx, pal, tilemap, navGfx, navPal, hoennGfx, lhPal, mmGfx, cGfx, rGfx, mcGfx, partyGfx, searchGfx, coolGfx, beautyGfx, cuteGfx, smartGfx, toughGfx] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/header.png', 4),
         extractPngPlte('/decomp/em/pokenav/header.png'),
         loadTilemapBin('/decomp/em/pokenav/header.bin'),
@@ -118,6 +118,14 @@ function _pokenavLoadHeaderGraphics(): void {
         loadTileBin('/decomp/em/pokenav/left_headers/condition.png', 4),  // gPokenavLeftHeaderCondition_Gfx
         loadTileBin('/decomp/em/pokenav/left_headers/ribbons.png', 4),    // gPokenavLeftHeaderRibbons_Gfx
         loadTileBin('/decomp/em/pokenav/left_headers/match_call.png', 4), // gPokenavLeftHeaderMatchCall_Gfx
+        // Sous-menus (1:1 sPokenavSubMenuLeftHeaderSpriteSheets, pokenav_main_menu.c:167-197) — tuiles BRUTES.
+        loadTileBin('/decomp/em/pokenav/left_headers/party.png', 4),   // gPokenavLeftHeaderParty_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/search.png', 4),  // gPokenavLeftHeaderSearch_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/cool.png', 4),    // gPokenavLeftHeaderCool_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/beauty.png', 4),  // gPokenavLeftHeaderBeauty_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/cute.png', 4),    // gPokenavLeftHeaderCute_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/smart.png', 4),   // gPokenavLeftHeaderSmart_Gfx
+        loadTileBin('/decomp/em/pokenav/left_headers/tough.png', 4),   // gPokenavLeftHeaderTough_Gfx
       ]);
       gPokenavHeader_Gfx = gfx;
       gPokenavHeader_Pal = pal;
@@ -142,6 +150,21 @@ function _pokenavLoadHeaderGraphics(): void {
       sMenuLeftHeaderSpriteSheets[3].data = mcGfx;    // POKENAV_GFX_MATCH_CALL_MENU
       sMenuLeftHeaderSpriteSheets[4].data = hoennGfx; // POKENAV_GFX_MAP_MENU_ZOOMED_OUT
       sMenuLeftHeaderSpriteSheets[5].data = hoennGfx; // POKENAV_GFX_MAP_MENU_ZOOMED_IN
+      // bandeaux SOUS-MENU (1:1 sPokenavSubMenuLeftHeaderSpriteSheets, c:167-197) : globals + repeuple .data.
+      gPokenavLeftHeaderParty_Gfx = partyGfx;
+      gPokenavLeftHeaderSearch_Gfx = searchGfx;
+      gPokenavLeftHeaderCool_Gfx = coolGfx;
+      gPokenavLeftHeaderBeauty_Gfx = beautyGfx;
+      gPokenavLeftHeaderCute_Gfx = cuteGfx;
+      gPokenavLeftHeaderSmart_Gfx = smartGfx;
+      gPokenavLeftHeaderTough_Gfx = toughGfx;
+      sPokenavSubMenuLeftHeaderSpriteSheets[0].data = partyGfx;  // [POKENAV_GFX_PARTY_MENU  - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[1].data = searchGfx; // [POKENAV_GFX_SEARCH_MENU - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[2].data = coolGfx;   // [POKENAV_GFX_COOL_MENU   - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[3].data = beautyGfx; // [POKENAV_GFX_BEAUTY_MENU - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[4].data = cuteGfx;   // [POKENAV_GFX_CUTE_MENU   - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[5].data = smartGfx;  // [POKENAV_GFX_SMART_MENU  - START]
+      sPokenavSubMenuLeftHeaderSpriteSheets[6].data = toughGfx;  // [POKENAV_GFX_TOUGH_MENU  - START]
     } catch (e) {
       console.error('[pokenav header gfx load]', e);
     } finally {
@@ -158,6 +181,15 @@ let gPokenavLeftHeaderMainMenu_Gfx: any = null;
 let gPokenavLeftHeaderCondition_Gfx: any = null;
 let gPokenavLeftHeaderRibbons_Gfx: any = null;
 let gPokenavLeftHeaderMatchCall_Gfx: any = null;
+// left_headers/{party,search,cool,beauty,cute,smart,tough}.png (bandeaux sous-menu, chargés async par
+// _pokenavLoadHeaderGraphics) — null au module-load, le .data de sPokenavSubMenuLeftHeaderSpriteSheets est repeuplé.
+let gPokenavLeftHeaderParty_Gfx: any = null;
+let gPokenavLeftHeaderSearch_Gfx: any = null;
+let gPokenavLeftHeaderCool_Gfx: any = null;
+let gPokenavLeftHeaderBeauty_Gfx: any = null;
+let gPokenavLeftHeaderCute_Gfx: any = null;
+let gPokenavLeftHeaderSmart_Gfx: any = null;
+let gPokenavLeftHeaderTough_Gfx: any = null;
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_MAIN_MENU = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -297,16 +329,18 @@ const sMenuLeftHeaderSpriteSheets: any[] = [
   { data: gPokenavLeftHeaderHoennMap_Gfx, size: 0x40, tag: 0 },   // [POKENAV_GFX_MAP_MENU_ZOOMED_IN]
 ];
 
-/** 1:1 (pokenav_main_menu.c:167) */
-const sPokenavSubMenuLeftHeaderSpriteSheets = {
-  /* TRANSPILER-TODO [POKENAV_GFX_PARTY_MENU - POKENAV_GFX_SUBMENUS_STA */
-  /* TRANSPILER-TODO [POKENAV_GFX_SEARCH_MENU - POKENAV_GFX_SUBMENUS_ST */
-  /* TRANSPILER-TODO [POKENAV_GFX_COOL_MENU - POKENAV_GFX_SUBMENUS_STAR */
-  /* TRANSPILER-TODO [POKENAV_GFX_BEAUTY_MENU - POKENAV_GFX_SUBMENUS_ST */
-  /* TRANSPILER-TODO [POKENAV_GFX_CUTE_MENU - POKENAV_GFX_SUBMENUS_STAR */
-  /* TRANSPILER-TODO [POKENAV_GFX_SMART_MENU - POKENAV_GFX_SUBMENUS_STA */
-  /* TRANSPILER-TODO [POKENAV_GFX_TOUGH_MENU - POKENAV_GFX_SUBMENUS_STA */
-};
+/** 1:1 `struct CompressedSpriteSheetNoSize sPokenavSubMenuLeftHeaderSpriteSheets[]` (pokenav_main_menu.c:167-197).
+ *  Indexé par `menuGfxId - POKENAV_GFX_SUBMENUS_START` (PARTY=0 … TOUGH=6). `.tag` = sous-index palette dans
+ *  gPokenavLeftHeader_Pal ; `.data` = tuiles BRUTES (null au module-load, repeuplé par _pokenavLoadHeaderGraphics). */
+const sPokenavSubMenuLeftHeaderSpriteSheets: any[] = [
+  { data: gPokenavLeftHeaderParty_Gfx, tag: 1 },  // [POKENAV_GFX_PARTY_MENU  - START]
+  { data: gPokenavLeftHeaderSearch_Gfx, tag: 1 }, // [POKENAV_GFX_SEARCH_MENU - START]
+  { data: gPokenavLeftHeaderCool_Gfx, tag: 4 },   // [POKENAV_GFX_COOL_MENU   - START]
+  { data: gPokenavLeftHeaderBeauty_Gfx, tag: 1 }, // [POKENAV_GFX_BEAUTY_MENU - START]
+  { data: gPokenavLeftHeaderCute_Gfx, tag: 2 },   // [POKENAV_GFX_CUTE_MENU   - START]
+  { data: gPokenavLeftHeaderSmart_Gfx, tag: 0 },  // [POKENAV_GFX_SMART_MENU  - START]
+  { data: gPokenavLeftHeaderTough_Gfx, tag: 0 },  // [POKENAV_GFX_TOUGH_MENU  - START]
+];
 
 /** 1:1 (pokenav_main_menu.c:199) */
 const sSpinningPokenavSpriteOam = {
@@ -864,11 +898,25 @@ function LoadLeftHeaderGfxForSubMenu(menuGfxId: number): void {
   let tag = 0;
   if (menuGfxId >= POKENAV_GFX_MENUS_END - POKENAV_GFX_SUBMENUS_START)
     return;
-  tag = sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].tag;
-  size = GetDecompressedDataSize(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data);
-  LoadPalette(gPokenavLeftHeader_Pal[tag * 16] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, OBJ_PLTT_ID(IndexOfSpritePaletteTag(2)), PLTT_SIZE_4BPP);
-  LZ77UnCompWram(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data, gDecompressionBuffer[0x1000] /* TRANSPILER-TODO &élément scalaire (out-param ?) */);
-  RequestDma3Copy(gDecompressionBuffer[0x1000] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, OBJ_VRAM0 + 0x800 + (GetSpriteTileStartByTag(2) * 32), size, 1);
+  const sheet = sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId];
+  if (!sheet || !sheet.data)  // .data null tant que _pokenavLoadHeaderGraphics n'a pas fini (async) — cf. LoadLeftHeaderGfxForMenu:838
+    return;
+  tag = sheet.tag;
+  size = GetDecompressedDataSize(sheet.data);
+  // 1:1 `LoadPalette(&gPokenavLeftHeader_Pal[tag*16], …)` (c:706) : &élément scalaire = subarray (cf. LoadLeftHeaderGfxForMenu:843).
+  LoadPalette(gPokenavLeftHeader_Pal.subarray(tag * 16), OBJ_PLTT_ID(IndexOfSpritePaletteTag(2)), PLTT_SIZE_4BPP);
+  // ADAPTATION MOTEUR (identique à LoadLeftHeaderGfxForMenu:844-856) : sheet.data = tuiles BRUTES (loadTileBin), pas LZ.
+  // Le décomp fait LZ77UnCompWram(data, &gDecompressionBuffer[0x1000]) + RequestDma3Copy(buffer,
+  // OBJ_VRAM0 + 0x800 + GetSpriteTileStartByTag(2)*32, size, 1) ; ici écriture directe des tuiles au même offset (+0x800).
+  {
+    const rt = getRuntime();
+    const tileStart = GetSpriteTileStartByTag(2);
+    if (rt && tileStart >= 0) {
+      const d = sheet.data;
+      const bytes: Uint8Array = d instanceof Uint16Array ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength) : d;
+      rt.gba.objVram.set(bytes.subarray(0, Math.min(size, bytes.length)), 0x800 + (tileStart * 32));
+    }
+  }
 }
 
 /** 1:1 `void ShowLeftHeaderGfx(u32 menuGfxId, bool32 isMain, bool32 isOnRightSide)` (pokenav_main_menu.c:711-724). */

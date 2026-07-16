@@ -785,10 +785,14 @@ function SpriteCB_PartyPokeball(sprite: DecompSprite): void {
 
 /** 1:1 `void HighlightCurrentPartyIndexPokeball(struct Sprite *sprite)` (pokenav_conditions_gfx.c:644-650). */
 export function HighlightCurrentPartyIndexPokeball(sprite: DecompSprite): void {
+  // ADAPTATION MOTEUR : DecompSprite n'a pas de `.oam` (cf. note « .oam.paletteNum n'existe pas →
+  // paletteBank via oamIndex » ; précédent list_menu.ts:1530, event_object_movement.ts:7004).
+  const rt = getRuntime();
+  if (!rt) return;
   if (GetConditionGraphCurrentListIndex() == GetMonListCount() - 1)
-    sprite.oam.paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_BALL);
+    rt.gba.oam[sprite.oamIndex].paletteBank = IndexOfSpritePaletteTag(TAG_CONDITION_BALL);
   else
-    sprite.oam.paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_CANCEL);
+    rt.gba.oam[sprite.oamIndex].paletteBank = IndexOfSpritePaletteTag(TAG_CONDITION_CANCEL);
 }
 
 /** 1:1 `void MonMarkingsCallback(struct Sprite *sprite)` (pokenav_conditions_gfx.c:652-655). */
@@ -806,6 +810,11 @@ function CreateMonMarkingsOrPokeballIndicators(): void {
   let i = 0;
   let spriteId = 0;
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX);
+  // ADAPTATION MOTEUR : le décomp écrit `sprite->oam.size/shape/priority` ; DecompSprite n'a pas
+  // de `.oam` → écriture de l'OAM hardware via rt.gba.oam[oamIndex] (précédent intro.ts:593-594,
+  // event_object_movement.ts:7002-7004). Sans ça : « Cannot set properties of undefined (setting 'size') ».
+  const rt = getRuntime();
+  if (!rt) return;
   LoadConditionSelectionIcons(sprSheets, sprTemplate, sprPals);
   if (IsConditionMenuSearchMode() == 1)
   {
@@ -815,7 +824,7 @@ function CreateMonMarkingsOrPokeballIndicators(): void {
     InitMonMarkingsMenu(menu.marksMenu);
     BufferMonMarkingsMenuTiles();
     sprite = CreateMonMarkingAllCombosSprite(TAG_CONDITION_MON_MARKINGS, TAG_CONDITION_MON_MARKINGS, sMonMarkings_Pal);
-    sprite.oam.priority = 3;
+    rt.gba.oam[sprite.oamIndex].priority = 3; // 1:1 `sprite->oam.priority = 3` (c:676)
     sprite.x = 192;
     sprite.y = 32;
     sprite.callback = MonMarkingsCallback;
@@ -851,7 +860,7 @@ function CreateMonMarkingsOrPokeballIndicators(): void {
       if (spriteId != MAX_SPRITES)
       {
         menu.partyPokeballSpriteIds[i] = spriteId;
-        gSprites[spriteId].oam.size = 0;
+        rt.gba.oam[gSprites[spriteId].oamIndex].size = 0; // 1:1 `gSprites[spriteId].oam.size = 0` (c:714)
       }
       else
       {
@@ -865,8 +874,8 @@ function CreateMonMarkingsOrPokeballIndicators(): void {
     if (spriteId != MAX_SPRITES)
     {
       menu.partyPokeballSpriteIds[i] = spriteId;
-      gSprites[spriteId].oam.shape = 1;
-      gSprites[spriteId].oam.size = 2;
+      rt.gba.oam[gSprites[spriteId].oamIndex].shape = 1; // 1:1 `gSprites[spriteId].oam.shape = SPRITE_SHAPE(32x16)` (c:729)
+      rt.gba.oam[gSprites[spriteId].oamIndex].size = 2;  // 1:1 `gSprites[spriteId].oam.size = SPRITE_SIZE(32x16)` (c:730)
     }
     else
     {
