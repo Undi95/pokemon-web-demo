@@ -68,6 +68,20 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 
 ## Suivi
 - Fixes déjà livrés : Random() VBlank `bb6de4d5d` · blend OBJ semi-transparent hors fenêtre `11a6436b5` ·
-  glyphe espace `0473ab8a9` · StringCopy/LoopedTask gardes + MC data `bd6ee7f31`.
+  glyphe espace `0473ab8a9` · StringCopy/LoopedTask gardes + MC data `bd6ee7f31` · vague A `7e208c94e`.
+- Phase B.1 FAITE : `scripts/audit-engine-stubs.cjs` + `audit-reports/engine/STUBS-INVENTORY.md`
+  (1786 findings : MOTEUR 205 / HORS-MOTEUR 1581 ; 219 wireTodo dont pokenav_conditions_gfx 59,
+  pokenav_region_map 39, ribbons 27×2, credits 22 ; 2 default-silencieux GetGpuReg).
+- Re-tests vague A (2026-07-16) : ✅ FAST_FADE fin de combat validé en jeu (timeline y 31→0 pas 2,
+  RGB −2/frame, handoff fade-in normal overworld, 0 erreur). ❌ Carte Pokénav = écran NON CÂBLÉ
+  (pas une régression A2) : `PokenavCallback_Init_RegionMap` → throw wireTodo `IsEventIslandMapSecId`
+  → chantier câblage region_map.c + pokenav_region_map.ts (39 symboles).
+- 🐛 ROBUSTESSE (Phase B.2) : un throw dans init()/open() d'un menu Pokénav (Task_Pokenav case 3,
+  APRÈS free2/free1) laisse currentMenuCb1 sur le handler libéré → re-throw CHAQUE frame
+  (1176 en 4 s) → la cause racine sort du ring buffer console. Les gardes B.2 doivent dédupliquer
+  (1er throw complet conservé + compteur) et/ou tuer la task fautive.
+- 🐛 MOTEUR (constat sonde) : GetGpuReg(DISPCNT) reconstruit la valeur SANS mémoriser les bits 0-2
+  (mode vidéo) → le RMW 1:1 de SetBgMode (`(GetGpuReg(0) & ~7) | mode`) perd le mode au premier
+  SetGpuReg(DISPCNT) suivant. À fixer avec la branche AFFINE tilemaps (l'écran carte en dépend).
 - Mémoire : `chantier-audit-moteur-complet.md` (agents=Opus, Fable vérifie).
 - Validation finale par phase : test EN JEU + screenshot (jamais « fini » sans preuve).
