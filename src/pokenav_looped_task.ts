@@ -50,11 +50,24 @@ const _loopedTaskFns = new Map<number, LoopedTask>();
 /** 1:1 `Overworld_IsRecvQueueAtMax()` — file link saturée ; solo = link inactif → jamais. */
 function Overworld_IsRecvQueueAtMax(): boolean { return false; }
 
+/** GARDE MOTEUR (Règle 3) : une LT bloquée en LT_PAUSE pendant des centaines de frames =
+ *  gate silencieux (bug payé 2×: carte région + A-sur-mon des résultats de recherche —
+ *  l'écran gèle SANS throw et le diagnostic coûte une session). On HURLE le nom + l'état
+ *  toutes les 600 frames (dédup par taskId, reset dès que la LT progresse). */
+const _ltPauseStreak = new Map<number, { frames: number; lastState: number }>();
+
 /** 1:1 décomp `Task_RunLoopedTask(taskId)` (pokenav.c:251). Reçoit l'objet task (adaptation 1). */
 export function Task_RunLoopedTask(task: DecompTask): void {
   const taskId = task.taskId;
   const loopedTask = _loopedTaskFns.get(taskId);
-  if (!loopedTask) return; // garde moteur : fn absente
+  if (!loopedTask) {
+    // GARDE MOTEUR (Règle 3) : fn absente = task fantôme qui resterait « active » à
+    // jamais (IsLoopedTaskActive → true) et gèlerait la state machine appelante SANS
+    // le moindre signal. On HURLE + on la tue (le no-op silencieux gelait l'écran).
+    console.error(`[LoopedTask] fn ABSENTE pour taskId=${taskId} (data[3]=${task.data[3]}) — task fantôme détruite [voir _loopedTaskFns]`);
+    DestroyTask(taskId);
+    return;
+  }
   // 1:1 : `bool32 exitLoop = FALSE; while (!exitLoop)` — exitLoop n'est JAMAIS mis à true
   // (vestige décomp) → boucle qui ne sort que par return / DestroyTask.
   // ADAPTATION DEV (garde moteur) : sur GBA une LoopedTask qui rend LT_CONTINUE/LT_SET_STATE
@@ -71,10 +84,20 @@ export function Task_RunLoopedTask(task: DecompTask): void {
     const action = loopedTask(task.data[0]);
     switch (action) {
       case LT_INC_AND_CONTINUE: task.data[0]++; break;
-      case LT_INC_AND_PAUSE: task.data[0]++; return;
-      case LT_FINISH: _loopedTaskFns.delete(taskId); DestroyTask(taskId); return;
+      case LT_INC_AND_PAUSE: task.data[0]++; _ltPauseStreak.delete(taskId); return;
+      case LT_FINISH: _loopedTaskFns.delete(taskId); _ltPauseStreak.delete(taskId); DestroyTask(taskId); return;
       case LT_CONTINUE: break;
-      case LT_PAUSE: return;
+      case LT_PAUSE: {
+        // Garde LT_PAUSE éternel (cf. _ltPauseStreak) : compte les frames consécutives
+        // en pause SUR LE MÊME state ; hurle toutes les 600 (≈10 s) avec le NOM.
+        const st = _ltPauseStreak.get(taskId);
+        if (!st || st.lastState !== task.data[0]) {
+          _ltPauseStreak.set(taskId, { frames: 1, lastState: task.data[0] });
+        } else if (++st.frames % 600 === 0) {
+          console.error(`[LoopedTask] ${loopedTask.name || '(anonyme)'} en LT_PAUSE depuis ${st.frames} frames au state=${task.data[0]} — gate probablement coincé`);
+        }
+        return;
+      }
       default: task.data[0] = LOOPED_TASK_DECODE_STATE(action); break; // LT_SET_STATE
     }
   }
@@ -99,6 +122,9 @@ export function Task_RunLoopedTask_LinkMode(task: DecompTask): void {
 
 /** 1:1 décomp `CreateLoopedTask(loopedTask, priority)` (pokenav.c:210). */
 export function CreateLoopedTask(loopedTask: LoopedTask, priority: number): number {
+  // GARDE MOTEUR (Règle 3) : créer une LT avec une fn falsy = task fantôme (l'écran gèle).
+  // Capture À LA SOURCE avec stack — le point aval (Task_RunLoopedTask) ne voit plus l'appelant.
+  if (!loopedTask) console.error('[LoopedTask] CreateLoopedTask(fn FALSY) — table[funcId] undefined ? stack :', new Error().stack);
   let taskId: number;
   if (!IsOverworldLinkActive())
     taskId = CreateTask(Task_RunLoopedTask, priority);
