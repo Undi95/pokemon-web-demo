@@ -317,9 +317,15 @@ export function composeFrame(
         }
       }
 
-      // Apply blend selon mode (gated par windows.blendAllowed)
+      // Apply blend selon mode (gated par windows.blendAllowed) — SAUF l'OBJ
+      // Semi-Transparent (objMode=1) : sur hardware il force l'alpha blend même
+      // dans une région fenêtre au bit 5 (special effects) éteint. Référence :
+      // zoom d'option Pokénav réel = fondu LISSE alors que WIN0 (glow) ne couvre
+      // que la boîte de base et WINOUT=0x1F (effets off dehors) — vérifié vs
+      // cartouche (user 2026-07-16) ; avant ce fix, le sprite zoomé rendait
+      // opaque hors boîte (tranches) et fondu dedans (fantôme).
       let r = r1, g = g1, b = b1;
-      if (blendAllowed && blend) {
+      if (blend && (blendAllowed || layer1ObjBlend)) {
         const top1Mask = 1 << layer1;
         // OBJ_BLEND : sprite Semi-Transparent force alpha blend en target1
         // INDÉPENDAMMENT du blend.mode + BLDCNT_TGT1. GBATEK : "Mode 1 OBJ
