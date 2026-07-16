@@ -85,6 +85,17 @@ export function GetItemFieldFunc(itemId: number | string): string | null {
   return _getItem(itemKey)?.fieldUseFunc ?? null;
 }
 
+/** 1:1 décomp `src/item.c:941 GetItemBattleFunc(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].battleUseFunc;
+ *  Miroir EXACT de `GetItemFieldFunc` : retourne le NOM du handler (string
+ *  items.json = le pointeur de fonction `battleUseFunc` côté décomp). Le
+ *  dispatcher `ItemMenu_UseInBattle` (item_menu.ts) route ce nom vers l'impl TS
+ *  (`ItemUseInBattle_*` de item_use.ts). null = pas d'usage en combat. */
+export function GetItemBattleFunc(itemId: number | string): string | null {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.battleUseFunc ?? null;
+}
+
 /** 1:1 décomp `src/item.c GetItemType(itemId)` :
  *    return gItems[SanitizeItemId(itemId)].type;
  *  Notre TS retourne le NOM du type (= string `ITEM_USE_PARTY_MENU` etc.). */

@@ -54,12 +54,16 @@ import {
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from './engine/bag/bag-item-effects';
 import { getItem as _getItem } from '../harness/runtime/data-tables';
-import { GetItemType, GetBagItemKey } from './item';
+import { GetItemType, GetBagItemKey, GetItemName, GetItemPocket } from './item';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
   GoToBagMenu,
   ITEMMENULOCATION_LAST,
+  DisplayItemMessage,
+  CloseItemMessage,
+  UpdatePocketItemList,
+  UpdatePocketListPosition,
 } from './item_menu';
 import {
   OpenPartyScreenForItemUse,
@@ -83,12 +87,22 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import { CB2_ReturnToField_Manual } from './overworld';
-import { gPlayerParty } from './engine/battle/party-storage';
+import { gPlayerParty, IsPlayerPartyAndPokemonStorageFull } from './engine/battle/party-storage';
 import { gMoveNames } from './engine/data/game-data';
 import { RemoveBagItem } from './engine/bag/bag';
 import { SE_USE_ITEM, SE_SELECT } from '../include/constants/songs';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+// ─── Deps combat (usage d'objet EN COMBAT — ItemUseInBattle_*) ───────────────
+// Globals battle : state.ts = feuille (n'importe pas item_use/item_menu/party_menu) → pas de cycle.
+import { gBattlerPartyIndexes, gBattlerInMenuId, gBattleTypeFlags } from './engine/battle/state';
+import { BATTLE_TYPE_TRAINER } from './engine/battle/constants';
+import { FONT_NORMAL } from './text';
+import { JOY_NEW } from '../harness/runtime/decomp-globals';
+import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
+import { encodeOwText, setStringVar } from '../include/text';
+import { gStringVar4, StringExpandPlaceholders } from '../include/string_util';
+import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from '../include/constants/item';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`
@@ -528,6 +542,180 @@ export { ItemUseCB_EvolutionStone };
 // complet YesNo → summary select-move → Task_PartyMenuReplaceMove). Re-export
 // ici pour l'edge existant item_menu → item_use (UseTMHM pose gItemUseCB).
 export { ItemUseCB_TMHM };
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Usage d'objet EN COMBAT (item_use.c:949-1061) — foyer 1:1, INERTE (Lot 2)
+// ═══════════════════════════════════════════════════════════════════════════
+// Ces fonctions sont le pointeur `gItems[].battleUseFunc` (dispatché par
+// `ItemMenu_UseInBattle`, item_menu.c:1997 → GetItemBattleFunc). AUCUN call-site
+// ne les appelle encore : le sac de combat passe par le clone bag-screen.ts
+// jusqu'au Lot 5 (câblage battle_controller_player.ts + reshow). PORT 1:1 INERTE.
+//
+// Adaptations documentées (Règle 1 — transcrire, jamais improviser) :
+//  · Battle Pyramid (gPyramidBagMenu, CloseBattlePyramidBag, DisplayItemMessage-
+//    InBattlePyramid) = HORS-SOLO (battle_pyramid_bag.c non porté) ; en solo
+//    `CurrentBattlePyramidLocation()` (battle_util.c:1362) vaut TOUJOURS
+//    PYRAMID_LOCATION_NONE → SEULE la branche NONE est active. La branche pyramide
+//    est notée mais non transcrite (déféral honnête, cf. mémoire "frontier hors-solo").
+//  · `ExecuteTableBasedItemEffect(mon,item,i,0)` = `PokemonUseItemEffects(...,gMain.inBattle)`
+//    → notre port auto-détecte inBattle (gBattleTypeFlags) ; retour cannotUse identique.
+//  · `UseStatIncreaseItem` (foyer pokemon.c:5433, hors item_use) + `ChooseMonForInBattleItem`
+//    (foyer party_menu.c, hors item_use) = ponts globalThis (câblage Lots 4/5).
+
+/** 1:1 décomp `ItemUseInBattle_PokeBall(u8 taskId)` (item_use.c:949) : place libre
+ *  (équipe/PC) ? RemoveBagItem + fermeture du sac (l'anim de lancer suit côté moteur
+ *  combat) ; sinon → "Les BOÎTES sont pleines." + retour liste. */
+export function ItemUseInBattle_PokeBall(task: DecompTask): void {
+  if (IsPlayerPartyAndPokemonStorageFull() === false) { // have room for mon?
+    _removeOneFromBag(gSpecialVar.ItemId);              // 1:1 :953 RemoveBagItem(item, 1)
+    // 1:1 :954-957 solo : CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE.
+    Task_FadeAndCloseBagMenu(task);
+  } else {
+    // 1:1 :959-962 party+box pleins (solo) → DisplayItemMessage(gText_BoxFull, CloseItemMessage).
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(getString('gText_BoxFull')), CloseItemMessage);
+  }
+}
+
+/** 1:1 décomp `Task_CloseStatIncreaseMessage(u8 taskId)` (item_use.c:969) : A/B → fermeture. */
+function Task_CloseStatIncreaseMessage(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON | B_BUTTON)) {
+    // solo : CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE.
+    Task_FadeAndCloseBagMenu(task);
+  }
+}
+
+/** 1:1 décomp `Task_UseStatIncreaseItem(u8 taskId)` (item_use.c:980) : après 8 frames (>7),
+ *  SE + RemoveBagItem + message UseStatIncreaseItem → Task_CloseStatIncreaseMessage.
+ *  data[8] = compteur de frames (1:1 gTasks[taskId].data[8]). */
+function Task_UseStatIncreaseItem(task: DecompTask): void {
+  if (++task.data[8] > 7) {
+    PlaySE(SE_USE_ITEM);                    // 1:1 :984
+    _removeOneFromBag(gSpecialVar.ItemId);  // 1:1 :985 RemoveBagItem(item, 1)
+    // 1:1 :986-989 solo : DisplayItemMessage(UseStatIncreaseItem(item), Task_CloseStatIncreaseMessage).
+    DisplayItemMessage(task.taskId, FONT_NORMAL, _useStatIncreaseItemMessage(gSpecialVar.ItemId), Task_CloseStatIncreaseMessage);
+  }
+}
+
+/** Pont vers `UseStatIncreaseItem(itemId)` (foyer pokemon.c:5433 = message "X, ATTAQUE+!" via
+ *  BufferStatRoseMessage — hors item_use). Câblage réel `__UseStatIncreaseItem` = Lot 5. */
+function _useStatIncreaseItemMessage(itemId: number): string | Uint8Array {
+  const fn = (globalThis as Record<string, unknown>).__UseStatIncreaseItem as ((id: number) => string | Uint8Array) | undefined;
+  if (fn) return fn(itemId);
+  console.error('[item-use-battle] __UseStatIncreaseItem absent (pokemon.ts non câblé — Lot 5)');
+  return encodeOwText(getString('gText_WontHaveEffect'));
+}
+
+/** 1:1 décomp `ItemUseInBattle_StatIncrease(u8 taskId)` (item_use.c:994) : applique l'effet
+ *  table (X Attaque / Défense Spéciale / Détecteur…) sur le MON ACTIF du menu ; échec (aucun
+ *  effet) → message + close ; succès → Task_UseStatIncreaseItem. */
+export function ItemUseInBattle_StatIncrease(task: DecompTask): void {
+  const partyId = gBattlerPartyIndexes[gBattlerInMenuId]; // 1:1 :996
+  // 1:1 :998 ExecuteTableBasedItemEffect(&gPlayerParty[partyId], item, partyId, 0) — APPLIQUE
+  // l'effet, retourne cannotUse (TRUE = aucun effet). inBattle auto-détecté (gBattleTypeFlags).
+  const result = PokemonUseItemEffects(gPlayerParty[partyId], gSpecialVar.ItemId, partyId, 0, false);
+  if (result.cannotUse) {
+    // 1:1 :1000-1001 solo : "Ça n'aura aucun effet." + CloseItemMessage.
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_WontHaveEffect')));
+    DisplayItemMessage(task.taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
+  } else {
+    // 1:1 :1007-1008 func = Task_UseStatIncreaseItem ; data[8] = 0.
+    task.func = Task_UseStatIncreaseItem;
+    task.data[8] = 0;
+  }
+}
+
+/** 1:1 décomp `ItemUseInBattle_ShowPartyMenu(u8 taskId)` (item_use.c:1012) :
+ *  `gBagMenu->newScreenCallback = ChooseMonForInBattleItem ; Task_FadeAndCloseBagMenu(taskId);`
+ *  → le sac se ferme VERS le party-menu (choisir le mon cible). `ChooseMonForInBattleItem`
+ *  (foyer party_menu.c) résolu par pont globalThis (câblage party_menu.ts, Lot 4/5 ; plan §5.a
+ *  = réutiliser OpenPartyScreenForItemUse avec retour combat). */
+function ItemUseInBattle_ShowPartyMenu(task: DecompTask): void {
+  // solo : CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE (branche gPyramidBagMenu hors-solo).
+  if (gBagMenu) gBagMenu.newScreenCallback = _ChooseMonForInBattleItem;
+  Task_FadeAndCloseBagMenu(task);
+}
+
+/** Pont anti-cycle vers `ChooseMonForInBattleItem` (party_menu.c). Câblage réel = Lot 4/5. */
+function _ChooseMonForInBattleItem(): void {
+  const cb = (globalThis as Record<string, unknown>).__ChooseMonForInBattleItem as (() => void) | undefined;
+  if (cb) { cb(); return; }
+  console.error('[item-use-battle] __ChooseMonForInBattleItem absent (party_menu.ts non câblé — Lot 4/5)');
+}
+
+/** 1:1 décomp `ItemUseInBattle_Medicine(u8 taskId)` (item_use.c:1026). */
+export function ItemUseInBattle_Medicine(task: DecompTask): void {
+  setItemUseCB(ItemUseCB_Medicine);       // 1:1 :1028 gItemUseCB = ItemUseCB_Medicine
+  ItemUseInBattle_ShowPartyMenu(task);     // 1:1 :1029
+}
+
+/** 1:1 décomp `ItemUseInBattle_PPRecovery(u8 taskId)` (item_use.c:1039). */
+export function ItemUseInBattle_PPRecovery(task: DecompTask): void {
+  setItemUseCB(ItemUseCB_PPRecovery);      // 1:1 :1041 gItemUseCB = ItemUseCB_PPRecovery
+  ItemUseInBattle_ShowPartyMenu(task);     // 1:1 :1042
+}
+
+/** GetItemPocket (item.ts, retourne le NOM POCKET_*) → id 0-indexé (ITEMS_POCKET..KEYITEMS_POCKET),
+ *  = ce qu'attend UpdatePocketItemList/UpdatePocketListPosition. Le décomp GetItemPocket rend
+ *  directement l'enum numérique ; notre data-table stocke la string. */
+function _pocketIdForItem(itemId: number): number {
+  switch (GetItemPocket(itemId)) {
+    case 'POCKET_POKE_BALLS': return BALLS_POCKET;
+    case 'POCKET_TM_HM':      return TMHM_POCKET;
+    case 'POCKET_BERRIES':    return BERRIES_POCKET;
+    case 'POCKET_KEY_ITEMS':  return KEYITEMS_POCKET;
+    default:                  return ITEMS_POCKET; // POCKET_ITEMS
+  }
+}
+
+/** 1:1 décomp `RemoveUsedItem(void)` (item_use.c:824) : retire l'objet du sac, construit
+ *  gStringVar4 = "{PLAYER} utilise {objet}." et rafraîchit la poche courante. */
+function RemoveUsedItem(): void {
+  const itemId = gSpecialVar.ItemId;
+  _removeOneFromBag(itemId);                                  // 1:1 :826 RemoveBagItem(item, 1)
+  setStringVar(2, GetItemName(itemId));                       // 1:1 :827 CopyItemName(item, gStringVar2)
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_PlayerUsedVar2'))); // 1:1 :828
+  // 1:1 :829-833 solo : CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE.
+  const pocketId = _pocketIdForItem(itemId);                  // GetItemPocket(item)
+  UpdatePocketItemList(pocketId);
+  UpdatePocketListPosition(pocketId);
+}
+
+/** 1:1 décomp `DisplayCannotUseItemMessage(taskId, isUsingRegisteredKeyItemOnField, str)`
+ *  (item_use.c:142) : branche NON-field (combat/menu, solo) → DisplayItemMessage + CloseItemMessage.
+ *  La branche field-registered (DisplayItemMessageOnField) n'est PAS atteinte depuis le combat
+ *  (tUsingRegisteredKeyItem == 0 en combat) → déférée (field infra, hors périmètre). */
+function DisplayCannotUseItemMessage(taskId: number, isUsingRegisteredKeyItemOnField: boolean, strKey: string): void {
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString(strKey))); // 1:1 :144
+  if (!isUsingRegisteredKeyItemOnField) {
+    // solo : DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage) (1:1 :148).
+    DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
+  } else {
+    // 1:1 :153 DisplayItemMessageOnField + Task_CloseCantUseKeyItemMessage (field-registered)
+    // — non atteint depuis le combat (câblage field hors périmètre). Déféral honnête.
+    console.error('[item-use-battle] DisplayCannotUseItemMessage branche field-registered non portée (non atteinte en combat)');
+  }
+}
+
+/** 1:1 décomp `DisplayDadsAdviceCannotUseItemMessage(taskId, isUsingRegisteredKeyItemOnField)`
+ *  (item_use.c:158) : "…chaque chose en son temps!" (gText_DadsAdvice). */
+function DisplayDadsAdviceCannotUseItemMessage(taskId: number, isUsingRegisteredKeyItemOnField: boolean): void {
+  DisplayCannotUseItemMessage(taskId, isUsingRegisteredKeyItemOnField, 'gText_DadsAdvice');
+}
+
+/** 1:1 décomp `ItemUseInBattle_Escape(u8 taskId)` (item_use.c:1046) : Poké Poupée / Queue
+ *  Peluche. Combat sauvage → RemoveUsedItem + message + fermeture (le moteur joue la fuite) ;
+ *  dresseur → refus (conseil de papa). */
+export function ItemUseInBattle_Escape(task: DecompTask): void {
+  if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) === 0) {
+    RemoveUsedItem();
+    // 1:1 :1052-1053 solo : DisplayItemMessage(gStringVar4, Task_FadeAndCloseBagMenu).
+    DisplayItemMessage(task.taskId, FONT_NORMAL, gStringVar4, Task_FadeAndCloseBagMenu);
+  } else {
+    // 1:1 :1059 DisplayDadsAdviceCannotUseItemMessage(taskId, tUsingRegisteredKeyItem).
+    // tUsingRegisteredKeyItem = data[3] (item_use.c:78) — 0 en combat.
+    DisplayDadsAdviceCannotUseItemMessage(task.taskId, task.data[3] === 1);
+  }
+}
 
 // Expose globals (= gItemUseCB lookup par party-screen, etc.).
 {

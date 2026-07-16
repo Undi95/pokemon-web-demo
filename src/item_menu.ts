@@ -16,11 +16,11 @@ import { gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL, CURSOR
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../harness/runtime/data-tables';
 import { ItemIdToBattleMoveId } from './party_menu';
 import { getMoveName, getMove } from './engine/data/game-data';
-import { GetItemName, GetItemDescription, GetItemImportance } from './item';
+import { GetItemName, GetItemDescription, GetItemImportance, GetItemBattleFunc, AddPCItem, GetBagItemKey } from './item';
 import { ItemIsMail } from './mail_data';
-import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
+import { STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, STR_CONV_MODE_LEFT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
 import { setStringVar, encodeOwText } from '../include/text';
-import { gStringVar4 } from '../include/string_util';
+import { gStringVar4, gStringVar2 } from '../include/string_util';
 import { getString } from '../harness/runtime/decomp-strings';
 import { ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap, ResetVramOamAndBgCntRegs, ResetAllBgsCoordinates, ScheduleBgCopyTilemapToVram, FillWindowPixelRect, FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow, AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty, ClearWindowTilemap, BlitBitmapRectToWindow, type WindowTemplate } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
@@ -66,6 +66,9 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getItem as _getItem } from '../harness/runtime/data-tables';
 import { ApplyMedicineEffect } from './engine/bag/bag-item-effects';
 import { setItemUseCB, SetUpItemUseCallback, setItemUseOnFieldCB, SetUpItemUseOnFieldCallback, ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp, ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh, ItemUseCB_EvolutionStone, ItemUseCB_TMHM, CB2_ChooseMonToGiveItem } from './item_use';
+// Handlers d'usage d'objet EN COMBAT (item_use.c → item_use.ts, Lot 2) dispatchés
+// par ItemMenu_UseInBattle_1to1 (foyer 1:1 item_menu.c:1997). INERTE (Lot 5 = câblage).
+import { ItemUseInBattle_PokeBall, ItemUseInBattle_StatIncrease, ItemUseInBattle_Medicine, ItemUseInBattle_PPRecovery, ItemUseInBattle_Escape } from './item_use';
 import { GetSaveBlock1, GetSaveBlock2 } from './save';
 import { gMapHeader } from './fieldmap';
 import { GetItemEffectType, ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP, ITEM_EFFECT_CURE_BURN, ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS, ITEM_EFFECT_CURE_ALL_STATUS, ITEM_EFFECT_HP_EV, ITEM_EFFECT_ATK_EV, ITEM_EFFECT_DEF_EV, ITEM_EFFECT_SPEED_EV, ITEM_EFFECT_SPATK_EV, ITEM_EFFECT_SPDEF_EV, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_PP_UP, ITEM_EFFECT_PP_MAX, ITEM_EFFECT_HEAL_PP } from './engine/bag/bag-item-effects';
@@ -782,7 +785,7 @@ let _sListBuffer2: { name: (string | Uint8Array)[] } | null = null;
 /** 1:1 décomp `UpdatePocketItemList` (item_menu.c:1105) : Sort/Compact la
  *  poche puis compte les slots non-vides → numItemStacks (+1 CLOSE BAG si
  *  !hideCloseBagText) ; numShownItems = min(numItemStacks, MAX). */
-function UpdatePocketItemList(pocketId: number): void {
+export function UpdatePocketItemList(pocketId: number): void {
   if (!gBagMenu) return;
   switch (pocketId) {
     case TMHM_POCKET:
@@ -815,7 +818,7 @@ function UpdatePocketItemLists(): void {
 /** 1:1 décomp `UpdatePocketListPosition` (item_menu.c:1142) : SetCursor
  *  WithinListBounds(&scroll[p], &cursor[p], numShownItems, numItemStacks).
  *  Sémantique pointeur → ListPos copié/réécrit (menu-helpers.ts). */
-function UpdatePocketListPosition(pocketId: number): void {
+export function UpdatePocketListPosition(pocketId: number): void {
   if (!gBagMenu) return;
   const pos: ListPos = {
     scroll: gBagPosition.scrollPosition[pocketId],
@@ -2037,6 +2040,12 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
         // 1:1 sContextMenuFuncs[ITEMMENULOCATION_PCBOX] = Task_ItemContext_GiveToPC
         // (item_menu.c:356) — DONNER un objet du SAC à un mon du PC → valide + fade-close (retour PC).
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_GiveToPC, Task_BagMenu_HandleInput);
+      } else if (gBagPosition.location === ITEMMENULOCATION_ITEMPC) {
+        // 1:1 sContextMenuFuncs[ITEMMENULOCATION_ITEMPC] = Task_ItemContext_Deposit
+        // (item_menu.c:351) — A sur un objet du SAC en mode ITEMPC → DÉPOSE dans le PC
+        // (pas de menu Use/Give/Toss). INERTE : aucun call-site n'ouvre encore le sac en
+        // ITEMPC (player_pc.ts appelle le clone jusqu'au Lot 3).
+        SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Deposit, Task_BagMenu_HandleInput);
       } else {
         SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
       }
@@ -3037,6 +3046,106 @@ function CancelTossYesNo(): void {
 /** 1:1 décomp `sYesNoTossFunctions` (item_menu.c:359) = {ConfirmToss, CancelToss}. */
 const sYesNoTossFunctions = { yesFunc: ConfirmToss, noFunc: CancelTossYesNo };
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  ItemPC — DÉPÔT d'objets du sac vers le PC (item_menu.c:593, 2203-2287) — INERTE
+// ═══════════════════════════════════════════════════════════════════════════
+// `sContextMenuFuncs[ITEMMENULOCATION_ITEMPC] = Task_ItemContext_Deposit` (item_menu.c:351,
+// branche ajoutée ci-dessus dans Task_BagMenu_HandleInput). AUCUN call-site n'ouvre encore
+// le sac en mode ITEMPC : player_pc.ts appelle le clone bag-screen.ts jusqu'au Lot 3. PORT 1:1.
+
+/** 1:1 décomp `#define MAX_ITEM_DIGITS BERRY_CAPACITY_DIGITS` (include/constants/items.h:458). */
+const MAX_ITEM_DIGITS = BERRY_CAPACITY_DIGITS;
+
+/** 1:1 décomp `void CB2_GoToItemDepositMenu(void)` (item_menu.c:593) :
+ *  `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`.
+ *  Ouvre le sac en mode ITEMPC (choisir un objet DU SAC à déposer dans le PC).
+ *  L'exitCallback `CB2_PlayerPCExitBagMenu` vit dans player_pc.ts (foyer player_pc.c:571,
+ *  hors périmètre Lots 1/2) → résolu par pont globalThis (pattern CB2_FavorLadyExitBagMenu :3489).
+ *  Câblage réel (player_pc.ts expose __CB2_PlayerPCExitBagMenu) = Lot 2/3. */
+export function CB2_GoToItemDepositMenu(): void {
+  GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, _CB2_PlayerPCExitBagMenu);
+}
+function _CB2_PlayerPCExitBagMenu(): void {
+  const cb = (globalThis as Record<string, unknown>).__CB2_PlayerPCExitBagMenu as (() => void) | undefined;
+  if (cb) { cb(); return; }
+  console.error('[item-deposit] __CB2_PlayerPCExitBagMenu absent (player_pc.ts non câblé — Lot 2/3)');
+}
+
+/** 1:1 décomp `Task_ItemContext_Deposit(u8 taskId)` (item_menu.c:2203) : qty==1 → dépôt direct
+ *  (TryDepositItem) ; sinon → "Vous voulez en déposer combien?" + fenêtre quantité. */
+function Task_ItemContext_Deposit(task: DecompTask): void {
+  task.data[T_ITEM_COUNT] = 1; // 1:1 :2207 tItemCount = 1
+  if (task.data[T_QUANTITY] === 1) {
+    TryDepositItem(task); // 1:1 :2210
+  } else {
+    // 1:1 :2214-2217 CopyItemName(item, gStringVar1) + StringExpandPlaceholders(gStringVar4,
+    // gText_DepositHowManyVar1) + FillWindowPixelBuffer(WIN_DESCRIPTION) + BagMenu_Print.
+    setStringVar(1, CopyItemName(gSpecialVar.ItemId));
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_DepositHowManyVar1')));
+    FillWindowPixelBuffer(_win(WIN_DESCRIPTION), PIXEL_FILL(0));
+    BagMenu_Print(_win(WIN_DESCRIPTION), FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
+    // 1:1 :2218 AddItemQuantityWindow(ITEMWIN_QUANTITY) = BagMenu_AddWindow + PrintItemQuantity(...,1).
+    const qWid = BagMenu_AddWindow(ITEMWIN_QUANTITY);
+    _CtxPrintQuantityInWindow(qWid, 1);
+    task.func = Task_ChooseHowManyToDeposit; // 1:1 :2219
+  }
+}
+
+/** 1:1 décomp `Task_ChooseHowManyToDeposit(u8 taskId)` (item_menu.c:2223) : DPad ajuste le
+ *  compte, A dépose (TryDepositItem), B annule (retour liste). */
+function Task_ChooseHowManyToDeposit(task: DecompTask): void {
+  const ref = { value: task.data[T_ITEM_COUNT] };
+  if (AdjustQuantityAccordingToDPadInput(ref, task.data[T_QUANTITY])) {
+    // 1:1 :2230 PrintItemQuantity(windowIds[ITEMWIN_QUANTITY], tItemCount, 0).
+    task.data[T_ITEM_COUNT] = ref.value;
+    _CtxPrintQuantityInWindow(gBagMenu!.windowIds[ITEMWIN_QUANTITY], ref.value);
+  } else if (JOY_NEW(A_BUTTON)) {
+    // 1:1 :2232-2236 A → dépose.
+    PlaySE(SE_SELECT);
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
+    TryDepositItem(task);
+  } else if (JOY_NEW(B_BUTTON)) {
+    // 1:1 :2238-2244 B → annule : PrintItemDescription + BagMenu_PrintCursor(NORMAL) +
+    // BagMenu_RemoveWindow + ReturnToItemList — folés dans _CtxReturnToList (comme CancelToss).
+    PlaySE(SE_SELECT);
+    BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
+    _CtxReturnToList(task.taskId);
+  }
+}
+
+/** 1:1 décomp `TryDepositItem(u8 taskId)` (item_menu.c:2248) : refuse les objets importants,
+ *  sinon AddPCItem → succès (Task_RemoveItemFromBag retire du sac) ou PC plein (erreur). */
+function TryDepositItem(task: DecompTask): void {
+  FillWindowPixelBuffer(_win(WIN_DESCRIPTION), PIXEL_FILL(0)); // 1:1 :2252
+  if (GetItemImportance(gSpecialVar.ItemId)) {
+    // 1:1 :2253-2257 objets importants non-déposables.
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_CantStoreImportantItems')));
+    BagMenu_Print(_win(WIN_DESCRIPTION), FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
+    task.func = WaitDepositErrorMessage;
+  } else if (AddPCItem(GetBagItemKey(gSpecialVar.ItemId), task.data[T_ITEM_COUNT]) === true) {
+    // 1:1 :2259-2266 dépôt réussi : "{item}:\ndéposé {N}." puis Task_RemoveItemFromBag.
+    setStringVar(1, CopyItemName(gSpecialVar.ItemId)); // CopyItemName(item, gStringVar1)
+    ConvertIntToDecimalStringN(gStringVar2, task.data[T_ITEM_COUNT], STR_CONV_MODE_LEFT_ALIGN, MAX_ITEM_DIGITS);
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_DepositedVar2Var1s')));
+    BagMenu_Print(_win(WIN_DESCRIPTION), FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
+    task.func = Task_RemoveItemFromBag;
+  } else {
+    // 1:1 :2268-2272 PC plein.
+    StringExpandPlaceholders(gStringVar4, encodeOwText(getString('gText_NoRoomForItems')));
+    BagMenu_Print(_win(WIN_DESCRIPTION), FONT_NORMAL, gStringVar4, 3, 1, 0, 0, 0, COLORID_NORMAL);
+    task.func = WaitDepositErrorMessage;
+  }
+}
+
+/** 1:1 décomp `WaitDepositErrorMessage(u8 taskId)` (item_menu.c:2276) : A/B → retour liste
+ *  (PrintItemDescription + BagMenu_PrintCursor(NORMAL) + ReturnToItemList, folés dans _CtxReturnToList). */
+function WaitDepositErrorMessage(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON | B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    _CtxReturnToList(task.taskId);
+  }
+}
+
 // ─── Vraie message box du sac (item_menu.c) — ITEMWIN_MESSAGE encadrée ────────
 
 /** 1:1 décomp `AddItemMessageWindow(windowType)` (item_menu.c:2511) : ajoute
@@ -3063,7 +3172,7 @@ function RemoveItemMessageWindow(windowType: number): void {
 /** 1:1 décomp `DisplayItemMessage(taskId, fontId, str, callback)` (item_menu.c:1165) :
  *  vraie fenêtre message ENCADRÉE (ITEMWIN_MESSAGE) + message ANIMÉ + callback à la
  *  fin d'impression (DisplayMessageAndContinueTask, tile=10 pal=13). */
-function DisplayItemMessage(taskId: number, fontId: number, str: string | Uint8Array, callback: (task: DecompTask) => void): void {
+export function DisplayItemMessage(taskId: number, fontId: number, str: string | Uint8Array, callback: (task: DecompTask) => void): void {
   const wid = AddItemMessageWindow(ITEMWIN_MESSAGE);
   FillWindowPixelBuffer(wid, PIXEL_FILL(1));
   DisplayMessageAndContinueTask(taskId, wid, 10, 13, fontId, GetPlayerTextSpeedDelay(), str, callback);
@@ -3072,7 +3181,7 @@ function DisplayItemMessage(taskId: number, fontId: number, str: string | Uint8A
 
 /** 1:1 décomp `CloseItemMessage(taskId)` (item_menu.c:1175) : retire la fenêtre
  *  message + reconstruit la liste + retour navigation. */
-function CloseItemMessage(task: DecompTask): void {
+export function CloseItemMessage(task: DecompTask): void {
   RemoveItemMessageWindow(ITEMWIN_MESSAGE);
   _CtxReturnToListWithRebuild(task.taskId);
 }
@@ -3448,6 +3557,31 @@ function ItemMenu_Cancel(task: DecompTask): void {
 function ItemMenu_UseInBattle(task: DecompTask): void {
   RemoveContextWindow();
   Task_FadeAndCloseBagMenu(task);
+}
+
+/** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) — VERSION 1:1 COMPLÈTE, INERTE :
+ *  `if (GetItemBattleFunc(item)) { RemoveContextWindow(); GetItemBattleFunc(item)(taskId); }`.
+ *  GetItemBattleFunc (item.ts) rend le NOM du handler (string items.json) → dispatch vers les
+ *  ItemUseInBattle_* (item_use.ts), EXACTEMENT comme ItemMenu_UseOutOfBattle route GetItemFieldFunc.
+ *  NON câblée dans sItemMenuActions (le sac de combat passe encore par le clone bag-screen.ts) :
+ *  le remplacement de l'ItemMenu_UseInBattle simplifié ci-dessus + le câblage reshow = Lot 5.
+ *  Exportée pour que le Lot 5 la branche (et supprime la version simplifiée). */
+export function ItemMenu_UseInBattle_1to1(task: DecompTask): void {
+  const item = gSpecialVar.ItemId;
+  const battleFunc = GetItemBattleFunc(item); // = gItems[item].battleUseFunc (nom du handler)
+  if (battleFunc) {
+    RemoveContextWindow();
+    // 1:1 :2002 GetItemBattleFunc(item)(taskId) — dispatch nom → impl item_use.ts.
+    switch (battleFunc) {
+      case 'ItemUseInBattle_PokeBall':     ItemUseInBattle_PokeBall(task); break;
+      case 'ItemUseInBattle_StatIncrease': ItemUseInBattle_StatIncrease(task); break;
+      case 'ItemUseInBattle_Medicine':     ItemUseInBattle_Medicine(task); break;
+      case 'ItemUseInBattle_PPRecovery':   ItemUseInBattle_PPRecovery(task); break;
+      case 'ItemUseInBattle_Escape':       ItemUseInBattle_Escape(task); break;
+      default:
+        console.error('[item-menu] battleUseFunc non porté (INERTE):', battleFunc);
+    }
+  }
 }
 
 /** 1:1 décomp `ItemMenu_CheckTag(u8 taskId)` (item_menu.c:1979) — dette R3
