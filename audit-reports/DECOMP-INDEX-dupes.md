@@ -7,21 +7,21 @@
 > C'est la matière première de la **dédup Phase C** : chaque ligne est un candidat
 > « quelle implémentation garde-t-on, laquelle devient re-export/meurt ».
 
-**1362 symboles en doublon** — vraies dupes (2+ déclarations dans le MIRROIR 
-`src/`+`include/`) : **1220** · miroir + harness (adaptation moteur, moins grave) : 
+**1365 symboles en doublon** — vraies dupes (2+ déclarations dans le MIRROIR 
+`src/`+`include/`) : **1223** · miroir + harness (adaptation moteur, moins grave) : 
 **141** · harness uniquement : **1**.
 
-## 1. VRAIES DUPES — 2+ déclarations dans des fichiers MIROIR (`src/` + `include/`) — 1220
+## 1. VRAIES DUPES — 2+ déclarations dans des fichiers MIROIR (`src/` + `include/`) — 1223
 
 Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quelle version tourne ? ».
 
-### Fonctions / globals / labels (231) — l'or de la dédup
+### Fonctions / globals / labels (234) — l'or de la dédup
 
 | symbole | kind décomp | décomp | déclarations TS |
 |---|---|---|---|
 | `AnimItemSteal` | function | `src/battle_anim_effects_1.c:3105` | `src/battle_anim_effects_1.ts:948` · `src/battle_anim_effects_1b.ts:313` |
 | `AnimPresent` | function | `src/battle_anim_effects_1.c:3016` | `src/battle_anim_effects_1.ts:893` · `src/battle_anim_effects_1b.ts:289` |
-| `AnimTravelDiagonally` | function | `src/battle_anim_mons.c:1591` | `src/battle_anim_fight.ts:690` · `src/battle_anim_mons.ts:1024` |
+| `AnimTravelDiagonally` | function | `src/battle_anim_mons.c:1591` | `src/battle_anim_fight.ts:690` · `src/battle_anim_mons.ts:1030` |
 | `BattleAI_HandleItemUseBeforeAISetup` | function | `src/battle_ai_script_commands.c:283` | `src/battle_ai_script_commands.ts:1715` · `src/battle_controllers.ts:1516` |
 | `BufferContestLadyLanguage` | function | `src/lilycove_lady.c:715` | `src/lilycove_lady.ts:854` · `src/tv.ts:137` |
 | `BufferContestLadyMonName` | function | `src/lilycove_lady.c:702` | `src/lilycove_lady.ts:841` · `src/tv.ts:139` |
@@ -38,24 +38,24 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `Cmd_nop` | function | `src/battle_anim.c:468` · `src/battle_script_commands.c:6799` | `src/battle_anim.ts:1537` · `src/battle_script_commands.ts:7192` |
 | `Cmd_playse` | function | `src/battle_anim.c:530` · `src/battle_script_commands.c:5313` | `src/battle_anim.ts:1602` · `src/battle_script_commands.ts:3739` |
 | `Compare` | function | `src/scrcmd.c:381` | `src/engine/script/script-vars.ts:111` · `src/scrcmd.ts:309` |
-| `CompleteOnFinishedBattleAnimation` | function | `src/battle_controller_link_opponent.c:512` · `src/battle_controller_link_partner.c:418` · `src/battle_controller_opponent.c:521` · `src/battle_controller_player.c:1566` · `…` | `src/battle_controller_opponent.ts:754` · `src/battle_controller_player.ts:1418` · `src/battle_controller_player_partner.ts:418` |
-| `CompleteOnFinishedStatusAnimation` | function | `src/battle_controller_link_opponent.c:506` · `src/battle_controller_link_partner.c:412` · `src/battle_controller_opponent.c:515` · `src/battle_controller_player.c:1560` · `…` | `src/battle_controller_player.ts:2423` · `src/battle_controller_player_partner.ts:413` |
-| `CompleteOnHealthbarDone` | function | `src/battle_controller_link_opponent.c:386` · `src/battle_controller_link_partner.c:271` · `src/battle_controller_opponent.c:403` · `src/battle_controller_player.c:1126` · `…` | `src/battle_controller_player.ts:2292` · `src/battle_controller_player_partner.ts:390` |
-| `CompleteOnInactiveTextPrinter2` | function | `src/battle_controller_player.c:1339` · `src/battle_controller_player_partner.c:497` | `src/battle_controller_player.ts:1729` · `src/battle_controller_player_partner.ts:402` |
+| `CompleteOnFinishedBattleAnimation` | function | `src/battle_controller_link_opponent.c:512` · `src/battle_controller_link_partner.c:418` · `src/battle_controller_opponent.c:521` · `src/battle_controller_player.c:1566` · `…` | `src/battle_controller_opponent.ts:754` · `src/battle_controller_player.ts:1419` · `src/battle_controller_player_partner.ts:418` |
+| `CompleteOnFinishedStatusAnimation` | function | `src/battle_controller_link_opponent.c:506` · `src/battle_controller_link_partner.c:412` · `src/battle_controller_opponent.c:515` · `src/battle_controller_player.c:1560` · `…` | `src/battle_controller_player.ts:2424` · `src/battle_controller_player_partner.ts:413` |
+| `CompleteOnHealthbarDone` | function | `src/battle_controller_link_opponent.c:386` · `src/battle_controller_link_partner.c:271` · `src/battle_controller_opponent.c:403` · `src/battle_controller_player.c:1126` · `…` | `src/battle_controller_player.ts:2293` · `src/battle_controller_player_partner.ts:390` |
+| `CompleteOnInactiveTextPrinter2` | function | `src/battle_controller_player.c:1339` · `src/battle_controller_player_partner.c:497` | `src/battle_controller_player.ts:1730` · `src/battle_controller_player_partner.ts:402` |
 | `ConfigureAndSetUpOneTrainerBattle` | function | `src/battle_setup.c:1193` | `src/battle_setup.ts:658` · `src/trainer_see.ts:89` |
 | `ConfigureTwoTrainersBattle` | function | `src/battle_setup.c:1202` | `src/battle_setup.ts:668` · `src/trainer_see.ts:92` |
 | `ConvertInternationalPlayerName` | function | `src/international_string_util.c:152` | `src/international_string_util.ts:172` · `src/mail.ts:1130` |
 | `CopyItemName` | function | `src/item.c:79` | `src/battle_palace.ts:57` · `src/battle_tent.ts:81` · `src/item_menu.ts:989` |
 | `CopyToBgTilemapBufferRect` | function | `src/bg.c:907` | `src/easy_chat.ts:816` · `src/pokemon_storage_system.ts:833` · `src/window.ts:1378` |
-| `CorrectSpecialMapSecId` | function | `src/region_map.c:1289` | `src/engine/field/region-map-data.ts:198` · `src/region_map.ts:1451` |
+| `CorrectSpecialMapSecId` | function | `src/region_map.c:1289` | `src/engine/field/region-map-data.ts:198` · `src/region_map.ts:1472` |
 | `CreateCloudSprites` | function | `src/dodrio_berry_picking.c:4299` · `src/field_weather_effect.c:173` · `src/intro_credits_graphics.c:1088` | `src/credits.ts:1744` · `src/field_weather_effect.ts:377` · `src/intro_credits_graphics.ts:276` |
 | `CreateHouseSprites` | function | `src/intro_credits_graphics.c:1098` | `src/credits.ts:1752` · `src/intro_credits_graphics.ts:292` |
 | `CreateMarkingComboSprite` | function | `src/mon_markings.c:585` · `src/pokemon_storage_system.c:3865` | `src/mon_markings.ts:151` · `src/pokemon_storage_system.ts:2234` |
 | `CreateMovingScenerySprites` | function | `src/intro_credits_graphics.c:1064` | `src/credits.ts:1723` · `src/intro_credits_graphics.ts:253` |
 | `CreateTask` | function | `src/task.c:27` | `src/starter_choose.ts:241` · `src/task.ts:17` |
 | `CreateTreeSprites` | function | `src/intro_credits_graphics.c:1093` | `src/credits.ts:1748` · `src/intro_credits_graphics.ts:284` |
-| `CreateWarpArrowSprite` | function | `src/field_effect_helpers.c:175` | `src/field_effect_helpers.ts:274` · `src/field_player_avatar.ts:3212` |
-| `DecompressAndCopyTileDataToVram` | function | `src/menu.c:1780` | `src/mail.ts:1060` · `src/pokenav_main_menu.ts:41` · `src/region_map.ts:2163` |
+| `CreateWarpArrowSprite` | function | `src/field_effect_helpers.c:175` | `src/field_effect_helpers.ts:274` · `src/field_player_avatar.ts:3217` |
+| `DecompressAndCopyTileDataToVram` | function | `src/menu.c:1780` | `src/mail.ts:1060` · `src/pokenav_main_menu.ts:41` · `src/region_map.ts:2184` |
 | `DecorationAdd` | function | `src/decoration_inventory.c:67` | `src/decoration.ts:26` · `src/decoration_inventory.ts:169` |
 | `DecorationCheckSpace` | function | `src/decoration_inventory.c:82` | `src/decoration.ts:41` · `src/decoration_inventory.ts:185` |
 | `DecorationRemove` | function | `src/decoration_inventory.c:91` | `src/decoration.ts:33` · `src/decoration_inventory.ts:196` |
@@ -66,8 +66,8 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `DoBattleFactorySelectScreen` | function | `src/battle_factory_screen.c:1108` | `src/battle_factory.ts:117` · `src/battle_tent.ts:73` |
 | `DoBattleFactorySwapScreen` | function | `src/battle_factory_screen.c:3268` | `src/battle_factory.ts:120` · `src/battle_tent.ts:76` |
 | `DoNamingScreen` | function | `src/naming_screen.c:396` | `src/main_menu.ts:1022` · `src/naming_screen.ts:732` |
-| `DoSwitchOutAnimation` | function | `src/battle_controller_link_opponent.c:1197` · `src/battle_controller_link_partner.c:1086` · `src/battle_controller_opponent.c:1217` · `src/battle_controller_player.c:2244` · `…` | `src/battle_controller_player.ts:1232` · `src/battle_controller_player_partner.ts:618` |
-| `EndDrawPartyStatusSummary` | function | `src/battle_controller_link_opponent.c:1779` · `src/battle_controller_link_partner.c:1626` · `src/battle_controller_opponent.c:1959` · `src/battle_controller_player.c:3048` · `…` | `src/battle_controller_player.ts:2806` · `src/battle_controller_player_partner.ts:1188` |
+| `DoSwitchOutAnimation` | function | `src/battle_controller_link_opponent.c:1197` · `src/battle_controller_link_partner.c:1086` · `src/battle_controller_opponent.c:1217` · `src/battle_controller_player.c:2244` · `…` | `src/battle_controller_player.ts:1233` · `src/battle_controller_player_partner.ts:618` |
+| `EndDrawPartyStatusSummary` | function | `src/battle_controller_link_opponent.c:1779` · `src/battle_controller_link_partner.c:1626` · `src/battle_controller_opponent.c:1959` · `src/battle_controller_player.c:3048` · `…` | `src/battle_controller_player.ts:2807` · `src/battle_controller_player_partner.ts:1188` |
 | `EvolutionScene` | function | `src/evolution_scene.c:209` | `src/battle_main.ts:4498` · `src/evolution_scene.ts:414` |
 | `FadeOutMapMusic` | function | `src/sound.c:134` | `src/battle_main.ts:4271` · `src/sound.ts:191` |
 | `FlagClear` | function | `src/event_data.c:214` | `src/engine/script/script-vars.ts:42` · `src/event_data.ts:104` |
@@ -77,16 +77,16 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `FreeAndDestroyMonPicSprite` | function | `src/trainer_pokemon_sprites.c:349` | `src/main_menu.ts:1048` · `src/trainer_pokemon_sprites.ts:244` |
 | `FreeBallGfx` | function | `src/pokeball.c:1332` | `src/battle_anim_throw.ts:214` · `src/pokeball.ts:218` |
 | `FreeBattleSpritesData` | function | `src/battle_gfx_sfx_util.c:96` | `src/battle_gfx_sfx_util.ts:86` · `src/battle_main.ts:4256` |
-| `FreeMonSpriteAfterSwitchOutAnim` | function | `src/battle_controller_link_opponent.c:407` · `src/battle_controller_link_partner.c:302` · `src/battle_controller_opponent.c:422` · `src/battle_controller_player.c:1328` · `…` | `src/battle_controller_player.ts:1252` · `src/battle_controller_player_partner.ts:447` |
+| `FreeMonSpriteAfterSwitchOutAnim` | function | `src/battle_controller_link_opponent.c:407` · `src/battle_controller_link_partner.c:302` · `src/battle_controller_opponent.c:422` · `src/battle_controller_player.c:1328` · `…` | `src/battle_controller_player.ts:1253` · `src/battle_controller_player_partner.ts:447` |
 | `FreeSpriteOamMatrix` | function | `src/sprite.c:884` | `src/battle_main.ts:1600` · `src/sprite.ts:562` |
 | `FreeSpritePaletteByTag` | function | `src/sprite.c:1652` | `src/item_menu_icons.ts:68` · `src/sprite.ts:377` |
 | `FreeSpriteTilesByTag` | function | `src/sprite.c:1509` | `harness/runtime/decomp-globals.ts:1804` · `src/item_menu_icons.ts:58` · `src/sprite.ts:881` |
-| `FreeTempTileDataBuffersIfPossible` | function | `src/menu.c:1760` | `src/mail.ts:1050` · `src/pokenav_main_menu.ts:67` · `src/region_map.ts:2184` |
+| `FreeTempTileDataBuffersIfPossible` | function | `src/menu.c:1760` | `src/mail.ts:1050` · `src/pokenav_main_menu.ts:67` · `src/region_map.ts:2205` |
 | `FrontierSpeechToString` | function | `src/battle_tower.c:1924` | `src/battle_palace.ts:48` · `src/battle_pike.ts:238` · `src/battle_tent.ts:61` |
 | `GenerateInitialRentalMons` | function | `src/battle_factory.c:509` · `src/battle_tent.c:289` | `src/battle_factory.ts:796` · `src/battle_tent.ts:345` |
 | `GenerateOpponentMons` | function | `src/battle_factory.c:303` · `src/battle_tent.c:352` | `src/battle_factory.ts:616` · `src/battle_tent.ts:406` |
-| `GetBattlePalettesMask` | function | `src/battle_anim_mons.c:1402` | `src/battle_anim_mons.ts:1296` · `src/battle_anim_utility_funcs.ts:26` |
-| `GetBattlerSide` | function | `src/battle_anim_mons.c:849` | `src/battle_anim.ts:128` · `src/battle_anim_mon_movement.ts:38` · `src/battle_anim_mons.ts:267` · `src/battle_tv.ts:28` · `src/pokeball.ts:254` |
+| `GetBattlePalettesMask` | function | `src/battle_anim_mons.c:1402` | `src/battle_anim_mons.ts:1302` · `src/battle_anim_utility_funcs.ts:26` |
+| `GetBattlerSide` | function | `src/battle_anim_mons.c:849` | `src/battle_anim.ts:128` · `src/battle_anim_mon_movement.ts:38` · `src/battle_anim_mons.ts:273` · `src/battle_tv.ts:28` · `src/pokeball.ts:254` |
 | `GetBgY` | function | `src/bg.c:762` | `src/pokenav_main_menu.ts:73` · `src/window.ts:923` |
 | `GetChosenApproachingTrainerObjectEventId` | function | `src/trainer_see.c:784` | `src/scrcmd_trainer.ts:44` · `src/trainer_see.ts:842` |
 | `GetContestLadyPokeblockState` | function | `src/lilycove_lady.c:727` | `src/lilycove_lady.ts:867` · `src/tv.ts:140` |
@@ -96,12 +96,13 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `GetGpuReg` | function | `src/gpu_regs.c:131` | `harness/runtime/decomp-helpers.ts:244` · `src/battle_intro.ts:90` · `src/gpu_regs.ts:13` |
 | `GetLRKeysPressed` | function | `src/menu_helpers.c:252` | `src/item_menu.ts:1654` · `src/menu_helpers.ts:119` |
 | `GetLeadMonIndex` | function | `src/field_specials.c:1531` | `src/field_specials.ts:60` · `src/scrcmd.ts:1037` |
-| `GetMapName` | function | `src/region_map.c:1568` | `src/engine/field/region-map-data.ts:97` · `src/region_map.ts:1700` |
-| `GetMapSecIdAt` | function | `src/region_map.c:957` | `src/engine/field/region-map-data.ts:77` · `src/region_map.ts:1127` |
-| `GetMapsecType` | function | `src/region_map.c:1175` | `src/engine/field/region-map-data.ts:144` · `src/region_map.ts:1350` |
-| `GetPositionOfCursorWithinMapSec` | function | `src/region_map.c:1294` | `src/engine/field/region-map-data.ts:211` · `src/region_map.ts:1456` |
+| `GetMapName` | function | `src/region_map.c:1568` | `src/engine/field/region-map-data.ts:97` · `src/region_map.ts:1721` |
+| `GetMapSecIdAt` | function | `src/region_map.c:957` | `src/engine/field/region-map-data.ts:77` · `src/region_map.ts:1148` |
+| `GetMapTypeByGroupAndId` | function | `src/overworld.c:1334` | `src/overworld.ts:704` · `src/region_map.ts:113` |
+| `GetMapsecType` | function | `src/region_map.c:1175` | `src/engine/field/region-map-data.ts:144` · `src/region_map.ts:1371` |
+| `GetPositionOfCursorWithinMapSec` | function | `src/region_map.c:1294` | `src/engine/field/region-map-data.ts:211` · `src/region_map.ts:1477` |
 | `GetRandomScaledFrontierTrainerId` | function | `src/battle_tower.c:1106` | `src/battle_factory.ts:97` · `src/battle_pike.ts:230` |
-| `GetRegionMapSecIdAt` | function | `src/region_map.c:1222` | `src/pokedex_area_screen.ts:272` · `src/region_map.ts:1396` |
+| `GetRegionMapSecIdAt` | function | `src/region_map.c:1222` | `src/pokedex_area_screen.ts:272` · `src/region_map.ts:1417` |
 | `GetStringCenterAlignXOffset` | function | `src/international_string_util.c:15` | `src/international_string_util.ts:77` · `src/text.ts:607` |
 | `GetStringRightAlignXOffset` | function | `src/international_string_util.c:20` | `src/international_string_util.ts:82` · `src/text.ts:601` |
 | `GetUnownLetterByPersonality` | function | `src/pokemon_icon.c:1096` | `src/mail_data.ts:403` · `src/pokemon_icon.ts:218` |
@@ -115,10 +116,10 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `InitMenu` | function | `src/menu.c:902` · `src/pokemon_storage_system.c:7924` | `src/menu.ts:534` · `src/pokemon_storage_system.ts:4439` |
 | `InitPoisonGasCloudAnim` | function | `src/battle_anim_ice.c:1194` | `src/battle_anim_ice.ts:1163` · `src/battle_anim_poison.ts:239` |
 | `InsertMonListItem` | function | `src/pokenav_conditions_search_results.c:363` · `src/pokenav_ribbons_list.c:323` | `src/pokenav_conditions_search_results.ts:453` · `src/pokenav_ribbons_list.ts:362` |
-| `IsContest` | function | `src/battle_anim.c:1102` | `src/battle_anim.ts:134` · `src/battle_anim_mons.ts:272` |
+| `IsContest` | function | `src/battle_anim.c:1102` | `src/battle_anim.ts:134` · `src/battle_anim_mons.ts:278` |
 | `IsDma3ManagerBusyWithBgCopy` | function | `src/bg.c:440` | `src/dma3_manager.ts:261` · `src/easy_chat.ts:812` · `src/pokemon_storage_system.ts:5366` |
 | `IsDma3ManagerBusyWithBgCopy_` | function | `src/pokenav_menu_handler_gfx.c:1244` · `src/pokenav_region_map.c:571` | `src/pokenav_menu_handler_gfx.ts:1431` · `src/pokenav_region_map.ts:719` |
-| `IsDoubleBattle` | function | `src/battle_anim_mons.c:902` | `src/battle_anim.ts:123` · `src/battle_anim_mons.ts:263` · `src/battle_interface.ts:924` · `src/pokeball.ts:252` |
+| `IsDoubleBattle` | function | `src/battle_anim_mons.c:902` | `src/battle_anim.ts:123` · `src/battle_anim_mons.ts:269` · `src/battle_interface.ts:924` · `src/pokeball.ts:252` |
 | `IsSEPlaying` | function | `src/sound.c:606` | `harness/runtime/decomp-globals.ts:1078` · `src/battle_anim.ts:654` · `src/sound.ts:623` |
 | `IsTextPrinterActive` | function | `src/text.c:347` | `src/evolution_scene.ts:210` · `src/text.ts:1244` |
 | `IsWaldaPhraseEmpty` | function | `src/pokemon_storage_system.c:9724` | `src/pokemon_storage_system.ts:5362` · `src/walda_phrase.ts:358` |
@@ -127,7 +128,9 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `LoadOam` | function | `src/sprite.c:640` | `harness/runtime/decomp-globals.ts:1447` · `src/battle_main.ts:307` · `src/mail.ts:1085` · `src/sprite.ts:747` |
 | `MainCB2` | function | `src/diploma.c:94` · `src/option_menu.c:137` · `src/pokemon_summary_screen.c:1154` · `src/title_screen.c:677` | `src/option_menu.ts:806` · `src/title_screen.ts:423` |
 | `MovePoisonGasCloud` | function | `src/battle_anim_ice.c:1241` | `src/battle_anim_ice.ts:1195` · `src/battle_anim_poison.ts:281` |
+| `Overworld_GetMapHeaderByGroupAndId` | function | `src/overworld.c:579` | `src/overworld.ts:176` · `src/region_map.ts:117` |
 | `Overworld_IsRecvQueueAtMax` | function | `src/overworld.c:2845` | `src/mail.ts:1141` · `src/pokenav_looped_task.ts:51` |
+| `Overworld_PlaySpecialMapMusic` | function | `src/overworld.c:1142` | `src/field_screen_effect.ts:61` · `src/overworld.ts:920` |
 | `PlayBGM` | function | `src/sound.c:563` | `harness/runtime/decomp-globals.ts:945` · `src/battle_main.ts:4541` · `src/sound.ts:582` |
 | `PlayCry_Normal` | function | `src/sound.c:302` | `src/evolution_scene.ts:234` · `src/sound.ts:348` |
 | `PlaySE` | function | `src/sound.c:572` | `harness/runtime/decomp-globals.ts:990` · `src/battle_controller_player.ts:75` · `src/battle_controller_player_partner.ts:183` · `src/battle_controllers.ts:1398` · `src/sound.ts:589` |
@@ -146,13 +149,13 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `SelectInitialRentalMons` | function | `src/battle_factory.c:287` · `src/battle_tent.c:272` | `src/battle_factory.ts:600` · `src/battle_tent.ts:329` |
 | `SetBattleFacilityTrainerGfxId` | function | `src/battle_tower.c:1163` | `src/battle_factory.ts:93` · `src/battle_palace.ts:44` · `src/battle_pike.ts:226` · `src/battle_tent.ts:57` |
 | `SetBgTilemapBuffer` | function | `src/bg.c:848` | `src/easy_chat.ts:796` · `src/mail.ts:1018` · `src/pokenav_conditions_gfx.ts:83` · `src/pokenav_main_menu.ts:91` · `src/window.ts:1420` |
-| `SetCallbackToStoredInData6` | function | `src/battle_anim_mons.c:423` | `src/battle_anim_mon_movement.ts:88` · `src/battle_anim_mons.ts:168` |
-| `SetDynamicWarp` | function | `src/overworld.c:643` | `src/battle_factory.ts:127` · `src/battle_palace.ts:64` · `src/battle_tent.ts:88` · `src/overworld.ts:596` |
-| `SetFlyMapCallback` | function | `src/region_map.c:1754` | `src/engine/field/region-map.ts:320` · `src/region_map.ts:1928` |
+| `SetCallbackToStoredInData6` | function | `src/battle_anim_mons.c:423` | `src/battle_anim_mon_movement.ts:88` · `src/battle_anim_mons.ts:174` |
+| `SetDynamicWarp` | function | `src/overworld.c:643` | `src/battle_factory.ts:127` · `src/battle_palace.ts:64` · `src/battle_tent.ts:88` · `src/overworld.ts:600` |
+| `SetFlyMapCallback` | function | `src/region_map.c:1754` | `src/engine/field/region-map.ts:320` · `src/region_map.ts:1949` |
 | `SetGpuReg` | function | `src/gpu_regs.c:66` | `src/battle_intro.ts:89` · `src/gpu_regs.ts:8` |
 | `SetMainCallback2` | function | `src/main.c:190` | `src/battle_main.ts:4521` · `src/easy_chat.ts:4395` · `src/mail.ts:999` · `src/main.ts:22` |
 | `SetPokemonCryStereo` | function | `src/m4a.c:1758` | `src/m4a.ts:1462` · `src/sound.ts:653` |
-| `SetSpriteRotScale` | function | `src/battle_anim_mons.c:1260` | `src/battle_anim_mons.ts:422` · `src/battle_transition.ts:50` |
+| `SetSpriteRotScale` | function | `src/battle_anim_mons.c:1260` | `src/battle_anim_mons.ts:428` · `src/battle_transition.ts:50` |
 | `SetUpTwoTrainersBattle` | function | `src/battle_setup.c:1209` | `src/battle_setup.ts:676` · `src/trainer_see.ts:95` |
 | `SetVBlankCallback_` | function | `src/pokenav.c:537` | `src/pokenav.ts:165` · `src/pokenav_menu_handler_gfx.ts:69` · `src/pokenav_region_map.ts:63` |
 | `SetWaldaPhrase` | function | `src/pokemon_storage_system.c:9719` | `src/pokemon_storage_system.ts:5360` · `src/walda_phrase.ts:353` |
@@ -165,22 +168,22 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `SpriteCB_Cursor` | function | `src/easy_chat.c:4647` · `src/mon_markings.c:562` · `src/naming_screen.c:1022` | `src/easy_chat.ts:859` · `src/mon_markings.ts:404` · `src/naming_screen.ts:1418` |
 | `SpriteCB_MovingScenery` | function | `src/intro_credits_graphics.c:1037` | `src/credits.ts:1633` · `src/intro_credits_graphics.ts:88` |
 | `SpriteCB_Player` | function | `src/cable_car.c:604` · `src/credits.c:1301` · `src/intro_credits_graphics.c:1103` | `src/credits.ts:1325` · `src/intro_credits_graphics.ts:132` |
-| `SpriteCB_TrainerSlideIn` | function | `src/battle_gfx_sfx_util.c:396` | `src/battle_controller_opponent.ts:854` · `src/battle_controller_player.ts:1270` |
-| `SpriteCB_TrainerSlideVertical` | function | `src/battle_gfx_sfx_util.c:412` | `src/battle_controller_opponent.ts:867` · `src/battle_controller_player.ts:1260` |
+| `SpriteCB_TrainerSlideIn` | function | `src/battle_gfx_sfx_util.c:396` | `src/battle_controller_opponent.ts:854` · `src/battle_controller_player.ts:1271` |
+| `SpriteCB_TrainerSlideVertical` | function | `src/battle_gfx_sfx_util.c:412` | `src/battle_controller_opponent.ts:867` · `src/battle_controller_player.ts:1261` |
 | `SpriteCallbackDummy` | function | `src/sprite.c:781` | `harness/runtime/decomp-globals.ts:189` · `src/battle_interface.ts:1125` · `src/mail.ts:1119` |
 | `StartSpriteAnim` | function | `src/sprite.c:1346` | `src/battle_main.ts:1644` · `src/sprite.ts:1409` |
 | `StopCryAndClearCrySongs` | function | `src/sound.c:510` | `src/battle_main.ts:4317` · `src/sound.ts:531` |
-| `StoreSpriteCallbackInData6` | function | `src/battle_anim_mons.c:417` | `src/battle_anim_mon_movement.ts:85` · `src/battle_anim_mons.ts:162` |
+| `StoreSpriteCallbackInData6` | function | `src/battle_anim_mons.c:417` | `src/battle_anim_mon_movement.ts:85` · `src/battle_anim_mons.ts:168` |
 | `StringAppend` | function | `src/string_util.c:88` | `src/easy_chat.ts:721` · `src/string_util.ts:140` |
 | `StringCopy` | function | `src/string_util.c:75` | `src/easy_chat.ts:703` · `src/string_util.ts:121` |
 | `StringLength` | function | `src/string_util.c:114` | `src/easy_chat.ts:728` · `src/string_util.ts:164` |
 | `SwapRentalMons` | function | `src/battle_factory.c:293` · `src/battle_tent.c:278` | `src/battle_factory.ts:606` · `src/battle_tent.ts:335` |
-| `SwitchIn_HandleSoundAndEnd` | function | `src/battle_controller_link_opponent.c:455` · `src/battle_controller_opponent.c:469` · `src/battle_controller_player.c:1087` · `src/battle_controller_recorded_opponent.c:438` | `src/battle_controller_opponent.ts:744` · `src/battle_controller_player.ts:1396` |
+| `SwitchIn_HandleSoundAndEnd` | function | `src/battle_controller_link_opponent.c:455` · `src/battle_controller_opponent.c:469` · `src/battle_controller_player.c:1087` · `src/battle_controller_recorded_opponent.c:438` | `src/battle_controller_opponent.ts:744` · `src/battle_controller_player.ts:1397` |
 | `SwitchIn_ShowHealthbox` | function | `src/battle_controller_link_opponent.c:468` · `src/battle_controller_link_partner.c:359` · `src/battle_controller_opponent.c:482` · `src/battle_controller_player_partner.c:543` · `…` | `src/battle_controller_opponent.ts:687` · `src/battle_controller_player_partner.ts:571` |
 | `SwitchIn_ShowSubstitute` | function | `src/battle_controller_link_opponent.c:444` · `src/battle_controller_link_partner.c:338` · `src/battle_controller_opponent.c:459` · `src/battle_controller_player_partner.c:522` · `…` | `src/battle_controller_opponent.ts:734` · `src/battle_controller_player_partner.ts:581` |
 | `SwitchIn_TryShinyAnim` | function | `src/battle_controller_link_opponent.c:489` · `src/battle_controller_link_partner.c:380` · `src/battle_controller_opponent.c:500` · `src/battle_controller_player_partner.c:564` · `…` | `src/battle_controller_opponent.ts:671` · `src/battle_controller_player_partner.ts:560` |
-| `Task_StartSendOutAnim` | function | `src/battle_controller_link_opponent.c:1715` · `src/battle_controller_link_partner.c:1575` · `src/battle_controller_opponent.c:1897` · `src/battle_controller_player.c:2993` · `…` | `src/battle_controller_opponent.ts:1657` · `src/battle_controller_player.ts:2668` · `src/battle_controller_player_partner.ts:1105` |
-| `TestPlayerAvatarFlags` | function | `src/field_player_avatar.c:1186` | `src/field_player_avatar.ts:2385` · `src/overworld.ts:751` |
+| `Task_StartSendOutAnim` | function | `src/battle_controller_link_opponent.c:1715` · `src/battle_controller_link_partner.c:1575` · `src/battle_controller_opponent.c:1897` · `src/battle_controller_player.c:2993` · `…` | `src/battle_controller_opponent.ts:1657` · `src/battle_controller_player.ts:2669` · `src/battle_controller_player_partner.ts:1105` |
+| `TestPlayerAvatarFlags` | function | `src/field_player_avatar.c:1186` | `src/field_player_avatar.ts:2390` · `src/overworld.ts:755` |
 | `TransferPlttBuffer` | function | `src/palette.c:103` | `harness/runtime/decomp-globals.ts:1436` · `src/battle_main.ts:317` · `src/mail.ts:1103` |
 | `TryPutBreakingNewsOnAir` | function | `src/tv.c:2121` | `src/battle_main.ts:4306` · `src/tv.ts:2230` |
 | `TryPutPokemonTodayOnAir` | function | `src/tv.c:1105` | `src/battle_main.ts:4302` · `src/tv.ts:1230` |
@@ -200,7 +203,7 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `gFrontierTempParty` | global | `include/battle_tower.h:48` · `src/battle_tower.c:48` | `src/battle_factory.ts:82` · `src/battle_tent.ts:51` |
 | `gHasHallOfFameRecords` | global | `include/credits.h:4` · `src/credits.c:85` | `src/credits.ts:195` · `src/post_battle_event_funcs.ts:28` |
 | `gHeap` | global | `include/malloc.h:14` · `src/malloc.c:7` | `src/credits.ts:74` · `src/intro.ts:162` |
-| `gMaxFlashLevel` | global | `include/field_screen_effect.h:4` · `src/field_screen_effect.c:54` | `src/field_screen_effect.ts:130` · `src/overworld.ts:143` · `src/scrcmd_flash.ts:15` |
+| `gMaxFlashLevel` | global | `include/field_screen_effect.h:4` · `src/field_screen_effect.c:54` | `src/field_screen_effect.ts:141` · `src/overworld.ts:148` · `src/scrcmd_flash.ts:15` |
 | `gNoOfApproachingTrainers` | global | `include/trainer_see.h:15` · `src/trainer_see.c:55` | `src/scrcmd_trainer.ts:48` · `src/trainer_see.ts:295` |
 | `gNumSafariBalls` | global | `include/safari_zone.h:4` · `src/safari_zone.c:31` | `src/battle_util.ts:796` · `src/safari_zone.ts:58` |
 | `gPlttBufferFaded` | global | `include/palette.h:59` · `src/palette.c:62` | `src/field_weather.ts:113` · `src/palette.ts:114` |
@@ -227,7 +230,7 @@ Deux implémentations concurrentes dans l'arbre 1:1 : la classe de bugs « quell
 | `sDefaultBattleStartWords` | global | `src/easy_chat.c:1247` | `src/data/easy-chat-data.ts:86` · `src/easy_chat.ts:3413` |
 | `sDefaultBattleWonWords` | global | `src/easy_chat.c:1256` | `src/data/easy-chat-data.ts:87` · `src/easy_chat.ts:3423` |
 | `sDefaultProfileWords` | global | `src/easy_chat.c:1240` | `src/data/easy-chat-data.ts:85` · `src/easy_chat.ts:3405` |
-| `sMapHealLocations` | global | `src/region_map.c:289` | `src/engine/field/fly-field-move.ts:33` · `src/region_map.ts:573` |
+| `sMapHealLocations` | global | `src/region_map.c:289` | `src/engine/field/fly-field-move.ts:33` · `src/region_map.ts:594` |
 | `sMatchCallWindow_Gfx` | global | `src/match_call.c:1198` | `src/match_call.ts:1879` · `src/pokenav_match_call_gfx.ts:64` |
 | `sMatchCallWindow_Pal` | global | `src/match_call.c:1197` | `src/match_call.ts:1876` · `src/pokenav_match_call_gfx.ts:65` |
 | `sMenu` | global | `src/menu.c:65` · `src/mon_markings.c:288` · `src/use_pokeblock.c:172` | `src/menu.ts:526` · `src/mon_markings.ts:43` |
@@ -324,10 +327,10 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `BATTLER_COORD_ATTR_LEFT` | enum_member | `include/battle_anim.h:176` | `src/battle_anim_effects_1b.ts:128` · `src/battle_anim_effects_3.ts:479` |
 | `BATTLER_COORD_ATTR_RIGHT` | enum_member | `include/battle_anim.h:177` | `src/battle_anim_effects_1b.ts:127` · `src/battle_anim_effects_3.ts:478` |
 | `BATTLER_COORD_ATTR_TOP` | enum_member | `include/battle_anim.h:174` | `src/battle_anim_effects_1b.ts:126` · `src/battle_anim_effects_3.ts:476` |
-| `BATTLER_COORD_X` | enum_member | `include/battle_anim.h:163` | `src/battle_anim_mons.ts:198` · `src/battle_gfx_sfx_util.ts:506` · `src/pokeball.ts:239` |
-| `BATTLER_COORD_X_2` | enum_member | `include/battle_anim.h:165` | `src/battle_anim_mons.ts:200` · `src/pokeball.ts:241` |
-| `BATTLER_COORD_Y` | enum_member | `include/battle_anim.h:164` | `src/battle_anim_mons.ts:199` · `src/battle_gfx_sfx_util.ts:507` · `src/pokeball.ts:240` |
-| `BATTLER_COORD_Y_PIC_OFFSET` | enum_member | `include/battle_anim.h:166` | `src/battle_anim_mons.ts:201` · `src/pokeball.ts:242` |
+| `BATTLER_COORD_X` | enum_member | `include/battle_anim.h:163` | `src/battle_anim_mons.ts:204` · `src/battle_gfx_sfx_util.ts:506` · `src/pokeball.ts:239` |
+| `BATTLER_COORD_X_2` | enum_member | `include/battle_anim.h:165` | `src/battle_anim_mons.ts:206` · `src/pokeball.ts:241` |
+| `BATTLER_COORD_Y` | enum_member | `include/battle_anim.h:164` | `src/battle_anim_mons.ts:205` · `src/battle_gfx_sfx_util.ts:507` · `src/pokeball.ts:240` |
+| `BATTLER_COORD_Y_PIC_OFFSET` | enum_member | `include/battle_anim.h:166` | `src/battle_anim_mons.ts:207` · `src/pokeball.ts:242` |
 | `BATTLESTRINGS_COUNT` | define | `include/constants/battle_string_ids.h:382` | `include/constants/battle_string_ids.ts:383` · `src/battle_message.ts:1422` |
 | `BATTLE_ALIVE_DEF_SIDE` | define | `include/constants/pokemon.h:279` | `include/constants/pokemon.ts:234` · `src/pokemon.ts:2041` |
 | `BATTLE_COMMUNICATION_ENTRIES_COUNT` | define | `include/constants/battle_script_commands.h:297` | `include/constants/battle_script_commands.ts:72` · `src/battle_main.ts:4126` |
@@ -373,11 +376,11 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `BGCNT_WRAP` | define | `include/gba/io_reg.h:539` | `harness/runtime/decomp-runtime.ts:116` · `include/gba/io_reg.ts:777` · `src/intro.ts:173` |
 | `BG_ATTR_CHARBASEINDEX` | enum_member | `include/bg.h:6` | `src/battle_intro.ts:67` · `src/window.ts:797` |
 | `BG_COORD_ADD` | enum_member | `include/bg.h:27` | `src/easy_chat.ts:324` · `src/main_menu.ts:143` · `src/match_call.ts:96` · `src/pokemon_summary_screen.ts:395` · `src/pokenav_list.ts:59` · `src/pokenav_main_menu.ts:168` · `src/pokenav_menu_handler_gfx.ts:94` · `src/pokenav_region_map.ts:195` |
-| `BG_COORD_SET` | enum_member | `include/bg.h:26` | `src/easy_chat.ts:323` · `src/main_menu.ts:142` · `src/match_call.ts:95` · `src/menu.ts:193` · `src/option_menu.ts:539` · `src/overworld.ts:139` · `src/pokemon_storage_system.ts:5464` · `src/pokemon_summary_screen.ts:394` · `src/pokenav_conditions_gfx.ts:160` · `src/pokenav_conditions_search_results.ts:102` · `src/pokenav_list.ts:56` · `src/pokenav_main_menu.ts:169` · `src/pokenav_match_call_gfx.ts:130` · `src/pokenav_menu_handler_gfx.ts:79` · `src/pokenav_region_map.ts:194` · `src/pokenav_ribbons_list.ts:66` · `src/pokenav_ribbons_summary.ts:81` |
+| `BG_COORD_SET` | enum_member | `include/bg.h:26` | `src/easy_chat.ts:323` · `src/main_menu.ts:142` · `src/match_call.ts:95` · `src/menu.ts:193` · `src/option_menu.ts:539` · `src/overworld.ts:144` · `src/pokemon_storage_system.ts:5464` · `src/pokemon_summary_screen.ts:394` · `src/pokenav_conditions_gfx.ts:160` · `src/pokenav_conditions_search_results.ts:102` · `src/pokenav_list.ts:56` · `src/pokenav_main_menu.ts:169` · `src/pokenav_match_call_gfx.ts:130` · `src/pokenav_menu_handler_gfx.ts:79` · `src/pokenav_region_map.ts:194` · `src/pokenav_ribbons_list.ts:66` · `src/pokenav_ribbons_summary.ts:81` |
 | `BG_COORD_SUB` | enum_member | `include/bg.h:28` | `src/main_menu.ts:144` · `src/match_call.ts:97` · `src/pokemon_summary_screen.ts:396` · `src/pokenav_list.ts:57` · `src/pokenav_main_menu.ts:170` · `src/pokenav_region_map.ts:196` |
 | `BG_SCREEN_SIZE` | define | `include/gba/defines.h:44` | `include/gba/defines.ts:47` · `src/battle_intro.ts:44` |
 | `BIT_SIDE` | define | `include/constants/battle.h:55` | `include/constants/battle.ts:13` · `src/battle_main.ts:5937` |
-| `BLDALPHA_BLEND` | func_macro | `include/gba/io_reg.h:613` | `harness/runtime/decomp-globals.ts:2229` · `harness/runtime/decomp-helpers.ts:219` · `src/battle_intro.ts:94` · `src/field_screen_effect.ts:91` |
+| `BLDALPHA_BLEND` | func_macro | `include/gba/io_reg.h:613` | `harness/runtime/decomp-globals.ts:2229` · `harness/runtime/decomp-helpers.ts:219` · `src/battle_intro.ts:94` · `src/field_screen_effect.ts:102` |
 | `BLDCNT_EFFECT_DARKEN` | define | `include/gba/io_reg.h:601` | `harness/runtime/decomp-runtime.ts:143` · `src/main_menu.ts:1228` · `src/option_menu.ts:544` |
 | `BLDCNT_EFFECT_LIGHTEN` | define | `include/gba/io_reg.h:600` | `harness/runtime/decomp-runtime.ts:142` · `src/intro.ts:174` · `src/title_screen.ts:75` |
 | `BLDCNT_TGT2_ALL` | define | `include/gba/io_reg.h:610` | `src/battle_anim_effects_2.ts:189` · `src/battle_anim_psychic.ts:68` · `src/pokenav_menu_handler_gfx.ts:93` · `src/title_screen.ts:76` |
@@ -410,10 +413,10 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `B_OUTCOME_FORFEITED` | define | `include/constants/battle.h:108` | `include/constants/battle.ts:93` · `src/battle_main.ts:4093` |
 | `B_OUTCOME_MON_FLED` | define | `include/constants/battle.h:105` | `include/constants/battle.ts:90` · `src/battle_main.ts:2338` |
 | `B_OUTCOME_NO_SAFARI_BALLS` | define | `include/constants/battle.h:107` | `include/constants/battle.ts:92` · `src/battle_main.ts:2340` |
-| `B_POSITION_OPPONENT_LEFT` | enum_member | `include/constants/battle.h:29` | `src/battle_anim_mons.ts:40` · `src/battle_controller_player.ts:995` · `src/pokeball.ts:235` |
-| `B_POSITION_OPPONENT_RIGHT` | enum_member | `include/constants/battle.h:31` | `src/battle_anim_mons.ts:42` · `src/battle_controller_player.ts:996` · `src/battle_controllers.ts:367` · `src/pokeball.ts:237` |
-| `B_POSITION_PLAYER_LEFT` | enum_member | `include/constants/battle.h:28` | `src/battle_anim_mons.ts:39` · `src/pokeball.ts:234` |
-| `B_POSITION_PLAYER_RIGHT` | enum_member | `include/constants/battle.h:30` | `src/battle_anim_mons.ts:41` · `src/battle_controllers.ts:366` · `src/battle_interface.ts:1122` · `src/pokeball.ts:236` |
+| `B_POSITION_OPPONENT_LEFT` | enum_member | `include/constants/battle.h:29` | `include/constants/battle.ts:449` · `src/battle_controller_player.ts:996` · `src/pokeball.ts:235` |
+| `B_POSITION_OPPONENT_RIGHT` | enum_member | `include/constants/battle.h:31` | `include/constants/battle.ts:451` · `src/battle_controller_player.ts:997` · `src/battle_controllers.ts:367` · `src/pokeball.ts:237` |
+| `B_POSITION_PLAYER_LEFT` | enum_member | `include/constants/battle.h:28` | `include/constants/battle.ts:448` · `src/pokeball.ts:234` |
+| `B_POSITION_PLAYER_RIGHT` | enum_member | `include/constants/battle.h:30` | `include/constants/battle.ts:450` · `src/battle_controllers.ts:366` · `src/battle_interface.ts:1122` · `src/pokeball.ts:236` |
 | `B_SIDE_OPPONENT` | define | `include/constants/battle.h:49` | `include/constants/battle.ts:9` · `src/battle_anim_effects_2.ts:186` |
 | `B_SIDE_PLAYER` | define | `include/constants/battle.h:48` | `include/constants/battle.ts:8` · `src/battle_anim_effects_2.ts:185` · `src/battle_anim_psychic.ts:78` · `src/battle_controllers.ts:82` |
 | `B_WIN_MSG` | define | `include/constants/battle.h:345` | `include/constants/battle.ts:397` · `src/battle_main.ts:4152` |
@@ -456,64 +459,64 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `CONTEST_RANK_MASTER` | define | `include/constants/contest.h:18` | `src/contest.ts:24` · `src/tv.ts:90` |
 | `CONTEST_RANK_NORMAL` | define | `include/constants/contest.h:15` | `src/contest.ts:21` · `src/tv.ts:87` |
 | `CONTEST_RANK_SUPER` | define | `include/constants/contest.h:16` | `src/contest.ts:22` · `src/tv.ts:88` |
-| `CONTROLLER_23` | enum_member | `include/battle_controllers.h:209` | `src/battle_controller_opponent.ts:150` · `src/battle_controller_player.ts:200` · `src/battle_controller_player_partner.ts:123` · `src/engine/battle/battle-event-queue.ts:73` |
-| `CONTROLLER_32` | enum_member | `include/battle_controllers.h:218` | `src/battle_controller_opponent.ts:159` · `src/battle_controller_player.ts:209` · `src/battle_controller_player_partner.ts:132` · `src/engine/battle/battle-event-queue.ts:82` |
-| `CONTROLLER_BALLTHROWANIM` | enum_member | `include/battle_controllers.h:199` | `src/battle_controller_opponent.ts:140` · `src/battle_controller_player.ts:190` · `src/battle_controller_player_partner.ts:113` · `src/engine/battle/battle-event-queue.ts:63` |
-| `CONTROLLER_BATTLEANIMATION` | enum_member | `include/battle_controllers.h:238` | `src/battle_controller_opponent.ts:179` · `src/battle_controller_player.ts:229` · `src/battle_controller_player_partner.ts:152` · `src/engine/battle/battle-event-queue.ts:102` |
-| `CONTROLLER_CANTSWITCH` | enum_member | `include/battle_controllers.h:228` | `src/battle_controller_opponent.ts:169` · `src/battle_controller_player.ts:219` · `src/battle_controller_player_partner.ts:142` · `src/engine/battle/battle-event-queue.ts:92` |
-| `CONTROLLER_CHOOSEACTION` | enum_member | `include/battle_controllers.h:204` | `src/battle_controller_opponent.ts:145` · `src/battle_controller_player.ts:195` · `src/battle_controller_player_partner.ts:118` · `src/battle_main.ts:2598` · `src/engine/battle/battle-event-queue.ts:68` |
-| `CONTROLLER_CHOOSEMOVE` | enum_member | `include/battle_controllers.h:206` | `src/battle_controller_opponent.ts:147` · `src/battle_controller_player.ts:197` · `src/battle_controller_player_partner.ts:120` · `src/battle_main.ts:2599` · `src/engine/battle/battle-event-queue.ts:70` |
-| `CONTROLLER_CHOOSEPOKEMON` | enum_member | `include/battle_controllers.h:208` | `src/battle_controller_opponent.ts:149` · `src/battle_controller_player.ts:199` · `src/battle_controller_player_partner.ts:122` · `src/battle_main.ts:2601` · `src/engine/battle/battle-event-queue.ts:72` |
-| `CONTROLLER_CHOSENMONRETURNVALUE` | enum_member | `include/battle_controllers.h:220` | `src/battle_controller_opponent.ts:161` · `src/battle_controller_player.ts:211` · `src/battle_controller_player_partner.ts:134` · `src/engine/battle/battle-event-queue.ts:84` |
-| `CONTROLLER_CLEARUNKFLAG` | enum_member | `include/battle_controllers.h:225` | `src/battle_controller_opponent.ts:166` · `src/battle_controller_player.ts:216` · `src/battle_controller_player_partner.ts:139` · `src/engine/battle/battle-event-queue.ts:89` |
-| `CONTROLLER_CLEARUNKVAR` | enum_member | `include/battle_controllers.h:223` | `src/battle_controller_opponent.ts:164` · `src/battle_controller_player.ts:214` · `src/battle_controller_player_partner.ts:137` · `src/engine/battle/battle-event-queue.ts:87` |
-| `CONTROLLER_CMDS_COUNT` | enum_member | `include/battle_controllers.h:244` | `src/battle_controller_opponent.ts:123` · `src/battle_controller_player.ts:168` · `src/battle_controller_player_partner.ts:95` |
-| `CONTROLLER_DATATRANSFER` | enum_member | `include/battle_controllers.h:215` | `src/battle_controller_opponent.ts:156` · `src/battle_controller_player.ts:206` · `src/battle_controller_player_partner.ts:129` · `src/engine/battle/battle-event-queue.ts:79` |
-| `CONTROLLER_DMA3TRANSFER` | enum_member | `include/battle_controllers.h:216` | `src/battle_controller_opponent.ts:157` · `src/battle_controller_player.ts:207` · `src/battle_controller_player_partner.ts:130` · `src/engine/battle/battle-event-queue.ts:80` |
-| `CONTROLLER_DRAWPARTYSTATUSSUMMARY` | enum_member | `include/battle_controllers.h:234` | `src/battle_controller_opponent.ts:175` · `src/battle_controller_player.ts:225` · `src/battle_controller_player_partner.ts:148` · `src/engine/battle/battle-event-queue.ts:98` |
-| `CONTROLLER_DRAWTRAINERPIC` | enum_member | `include/battle_controllers.h:193` | `src/battle_controller_opponent.ts:134` · `src/battle_controller_player.ts:184` · `src/battle_controller_player_partner.ts:107` · `src/engine/battle/battle-event-queue.ts:57` |
-| `CONTROLLER_ENDBOUNCE` | enum_member | `include/battle_controllers.h:236` | `src/battle_controller_opponent.ts:177` · `src/battle_controller_player.ts:227` · `src/battle_controller_player_partner.ts:150` · `src/engine/battle/battle-event-queue.ts:100` |
-| `CONTROLLER_ENDLINKBATTLE` | enum_member | `include/battle_controllers.h:241` | `src/battle_controller_opponent.ts:182` · `src/battle_controller_player.ts:232` · `src/battle_controller_player_partner.ts:155` · `src/engine/battle/battle-event-queue.ts:105` |
-| `CONTROLLER_EXPUPDATE` | enum_member | `include/battle_controllers.h:211` | `src/battle_controller_opponent.ts:152` · `src/battle_controller_player.ts:202` · `src/battle_controller_player_partner.ts:125` · `src/engine/battle/battle-event-queue.ts:75` |
-| `CONTROLLER_FAINTANIMATION` | enum_member | `include/battle_controllers.h:196` | `src/battle_controller_opponent.ts:137` · `src/battle_controller_player.ts:187` · `src/battle_controller_player_partner.ts:110` · `src/engine/battle/battle-event-queue.ts:60` |
-| `CONTROLLER_FAINTINGCRY` | enum_member | `include/battle_controllers.h:231` | `src/battle_controller_opponent.ts:172` · `src/battle_controller_player.ts:222` · `src/battle_controller_player_partner.ts:145` · `src/engine/battle/battle-event-queue.ts:95` |
-| `CONTROLLER_GETMONDATA` | enum_member | `include/battle_controllers.h:186` | `src/battle_controller_opponent.ts:127` · `src/battle_controller_player.ts:177` · `src/battle_controller_player_partner.ts:100` · `src/engine/battle/battle-event-queue.ts:50` |
-| `CONTROLLER_GETRAWMONDATA` | enum_member | `include/battle_controllers.h:187` | `src/battle_controller_opponent.ts:128` · `src/battle_controller_player.ts:178` · `src/battle_controller_player_partner.ts:101` · `src/engine/battle/battle-event-queue.ts:51` |
-| `CONTROLLER_HEALTHBARUPDATE` | enum_member | `include/battle_controllers.h:210` | `src/battle_controller_opponent.ts:151` · `src/battle_controller_player.ts:201` · `src/battle_controller_player_partner.ts:124` · `src/engine/battle/battle-event-queue.ts:74` |
-| `CONTROLLER_HIDEPARTYSTATUSSUMMARY` | enum_member | `include/battle_controllers.h:235` | `src/battle_controller_opponent.ts:176` · `src/battle_controller_player.ts:226` · `src/battle_controller_player_partner.ts:149` · `src/engine/battle/battle-event-queue.ts:99` |
-| `CONTROLLER_HITANIMATION` | enum_member | `include/battle_controllers.h:227` | `src/battle_controller_opponent.ts:168` · `src/battle_controller_player.ts:218` · `src/battle_controller_player_partner.ts:141` · `src/engine/battle/battle-event-queue.ts:91` |
-| `CONTROLLER_INTROSLIDE` | enum_member | `include/battle_controllers.h:232` | `src/battle_controller_opponent.ts:173` · `src/battle_controller_player.ts:223` · `src/battle_controller_player_partner.ts:146` · `src/engine/battle/battle-event-queue.ts:96` |
-| `CONTROLLER_INTROTRAINERBALLTHROW` | enum_member | `include/battle_controllers.h:233` | `src/battle_controller_opponent.ts:174` · `src/battle_controller_player.ts:224` · `src/battle_controller_player_partner.ts:147` · `src/engine/battle/battle-event-queue.ts:97` |
-| `CONTROLLER_LINKSTANDBYMSG` | enum_member | `include/battle_controllers.h:239` | `src/battle_controller_opponent.ts:180` · `src/battle_controller_player.ts:230` · `src/battle_controller_player_partner.ts:153` · `src/battle_main.ts:2602` · `src/engine/battle/battle-event-queue.ts:103` |
-| `CONTROLLER_LOADMONSPRITE` | enum_member | `include/battle_controllers.h:190` | `src/battle_controller_opponent.ts:131` · `src/battle_controller_player.ts:181` · `src/battle_controller_player_partner.ts:104` · `src/engine/battle/battle-event-queue.ts:54` |
-| `CONTROLLER_MOVEANIMATION` | enum_member | `include/battle_controllers.h:201` | `src/battle_controller_opponent.ts:142` · `src/battle_controller_player.ts:192` · `src/battle_controller_player_partner.ts:115` · `src/engine/battle/battle-event-queue.ts:65` |
-| `CONTROLLER_ONERETURNVALUE` | enum_member | `include/battle_controllers.h:221` | `src/battle_controller_opponent.ts:162` · `src/battle_controller_player.ts:212` · `src/battle_controller_player_partner.ts:135` · `src/battle_controllers.ts:268` · `src/engine/battle/battle-event-queue.ts:85` |
-| `CONTROLLER_ONERETURNVALUE_DUPLICATE` | enum_member | `include/battle_controllers.h:222` | `src/battle_controller_opponent.ts:163` · `src/battle_controller_player.ts:213` · `src/battle_controller_player_partner.ts:136` · `src/engine/battle/battle-event-queue.ts:86` |
-| `CONTROLLER_OPENBAG` | enum_member | `include/battle_controllers.h:207` | `src/battle_controller_opponent.ts:148` · `src/battle_controller_player.ts:198` · `src/battle_controller_player_partner.ts:121` · `src/battle_main.ts:2600` · `src/engine/battle/battle-event-queue.ts:71` |
-| `CONTROLLER_PALETTEFADE` | enum_member | `include/battle_controllers.h:197` | `src/battle_controller_opponent.ts:138` · `src/battle_controller_player.ts:188` · `src/battle_controller_player_partner.ts:111` · `src/engine/battle/battle-event-queue.ts:61` |
-| `CONTROLLER_PAUSE` | enum_member | `include/battle_controllers.h:200` | `src/battle_controller_opponent.ts:141` · `src/battle_controller_player.ts:191` · `src/battle_controller_player_partner.ts:114` · `src/engine/battle/battle-event-queue.ts:64` |
-| `CONTROLLER_PLAYBGM` | enum_member | `include/battle_controllers.h:217` | `src/battle_controller_opponent.ts:158` · `src/battle_controller_player.ts:208` · `src/battle_controller_player_partner.ts:131` · `src/engine/battle/battle-event-queue.ts:81` |
-| `CONTROLLER_PLAYFANFAREORBGM` | enum_member | `include/battle_controllers.h:230` | `src/battle_controller_opponent.ts:171` · `src/battle_controller_player.ts:221` · `src/battle_controller_player_partner.ts:144` · `src/engine/battle/battle-event-queue.ts:94` |
-| `CONTROLLER_PLAYSE` | enum_member | `include/battle_controllers.h:229` | `src/battle_controller_opponent.ts:170` · `src/battle_controller_player.ts:220` · `src/battle_controller_player_partner.ts:143` · `src/engine/battle/battle-event-queue.ts:93` |
-| `CONTROLLER_PRINTSTRING` | enum_member | `include/battle_controllers.h:202` | `src/battle_controller_opponent.ts:143` · `src/battle_controller_player.ts:193` · `src/battle_controller_player_partner.ts:116` · `src/engine/battle/battle-event-queue.ts:66` |
-| `CONTROLLER_PRINTSTRINGPLAYERONLY` | enum_member | `include/battle_controllers.h:203` | `src/battle_controller_opponent.ts:144` · `src/battle_controller_player.ts:194` · `src/battle_controller_player_partner.ts:117` · `src/engine/battle/battle-event-queue.ts:67` |
-| `CONTROLLER_RESETACTIONMOVESELECTION` | enum_member | `include/battle_controllers.h:240` | `src/battle_controller_opponent.ts:181` · `src/battle_controller_player.ts:231` · `src/battle_controller_player_partner.ts:154` · `src/engine/battle/battle-event-queue.ts:104` |
-| `CONTROLLER_RETURNMONTOBALL` | enum_member | `include/battle_controllers.h:192` | `src/battle_controller_opponent.ts:133` · `src/battle_controller_player.ts:183` · `src/battle_controller_player_partner.ts:106` · `src/engine/battle/battle-event-queue.ts:56` |
-| `CONTROLLER_SETMONDATA` | enum_member | `include/battle_controllers.h:188` | `src/battle_controller_opponent.ts:129` · `src/battle_controller_player.ts:179` · `src/battle_controller_player_partner.ts:102` · `src/engine/battle/battle-event-queue.ts:52` |
-| `CONTROLLER_SETRAWMONDATA` | enum_member | `include/battle_controllers.h:189` | `src/battle_controller_opponent.ts:130` · `src/battle_controller_player.ts:180` · `src/battle_controller_player_partner.ts:103` · `src/engine/battle/battle-event-queue.ts:53` |
-| `CONTROLLER_SETUNKVAR` | enum_member | `include/battle_controllers.h:224` | `src/battle_controller_opponent.ts:165` · `src/battle_controller_player.ts:215` · `src/battle_controller_player_partner.ts:138` · `src/engine/battle/battle-event-queue.ts:88` |
-| `CONTROLLER_SPRITEINVISIBILITY` | enum_member | `include/battle_controllers.h:237` | `src/battle_controller_opponent.ts:178` · `src/battle_controller_player.ts:228` · `src/battle_controller_player_partner.ts:151` · `src/engine/battle/battle-event-queue.ts:101` |
-| `CONTROLLER_STATUSANIMATION` | enum_member | `include/battle_controllers.h:213` | `src/battle_controller_opponent.ts:154` · `src/battle_controller_player.ts:204` · `src/battle_controller_player_partner.ts:127` · `src/engine/battle/battle-event-queue.ts:77` |
-| `CONTROLLER_STATUSICONUPDATE` | enum_member | `include/battle_controllers.h:212` | `src/battle_controller_opponent.ts:153` · `src/battle_controller_player.ts:203` · `src/battle_controller_player_partner.ts:126` · `src/engine/battle/battle-event-queue.ts:76` |
-| `CONTROLLER_STATUSXOR` | enum_member | `include/battle_controllers.h:214` | `src/battle_controller_opponent.ts:155` · `src/battle_controller_player.ts:205` · `src/battle_controller_player_partner.ts:128` · `src/engine/battle/battle-event-queue.ts:78` |
-| `CONTROLLER_SUCCESSBALLTHROWANIM` | enum_member | `include/battle_controllers.h:198` | `src/battle_controller_opponent.ts:139` · `src/battle_controller_player.ts:189` · `src/battle_controller_player_partner.ts:112` · `src/engine/battle/battle-event-queue.ts:62` |
-| `CONTROLLER_SWITCHINANIM` | enum_member | `include/battle_controllers.h:191` | `src/battle_controller_opponent.ts:132` · `src/battle_controller_player.ts:182` · `src/battle_controller_player_partner.ts:105` · `src/engine/battle/battle-event-queue.ts:55` |
-| `CONTROLLER_TERMINATOR_NOP` | enum_member | `include/battle_controllers.h:243` | `src/battle_controller_opponent.ts:124` · `src/battle_controller_player.ts:171` · `src/battle_controller_player_partner.ts:97` |
-| `CONTROLLER_TOGGLEUNKFLAG` | enum_member | `include/battle_controllers.h:226` | `src/battle_controller_opponent.ts:167` · `src/battle_controller_player.ts:217` · `src/battle_controller_player_partner.ts:140` · `src/engine/battle/battle-event-queue.ts:90` |
-| `CONTROLLER_TRAINERSLIDE` | enum_member | `include/battle_controllers.h:194` | `src/battle_controller_opponent.ts:135` · `src/battle_controller_player.ts:185` · `src/battle_controller_player_partner.ts:108` · `src/engine/battle/battle-event-queue.ts:58` |
-| `CONTROLLER_TRAINERSLIDEBACK` | enum_member | `include/battle_controllers.h:195` | `src/battle_controller_opponent.ts:136` · `src/battle_controller_player.ts:186` · `src/battle_controller_player_partner.ts:109` · `src/engine/battle/battle-event-queue.ts:59` |
-| `CONTROLLER_TWORETURNVALUES` | enum_member | `include/battle_controllers.h:219` | `src/battle_controller_opponent.ts:160` · `src/battle_controller_player.ts:210` · `src/battle_controller_player_partner.ts:133` · `src/battle_controllers.ts:247` · `src/engine/battle/battle-event-queue.ts:83` |
-| `CONTROLLER_YESNOBOX` | enum_member | `include/battle_controllers.h:205` | `src/battle_controller_opponent.ts:146` · `src/battle_controller_player.ts:196` · `src/battle_controller_player_partner.ts:119` |
+| `CONTROLLER_23` | enum_member | `include/battle_controllers.h:209` | `src/battle_controller_opponent.ts:150` · `src/battle_controller_player.ts:201` · `src/battle_controller_player_partner.ts:123` · `src/engine/battle/battle-event-queue.ts:73` |
+| `CONTROLLER_32` | enum_member | `include/battle_controllers.h:218` | `src/battle_controller_opponent.ts:159` · `src/battle_controller_player.ts:210` · `src/battle_controller_player_partner.ts:132` · `src/engine/battle/battle-event-queue.ts:82` |
+| `CONTROLLER_BALLTHROWANIM` | enum_member | `include/battle_controllers.h:199` | `src/battle_controller_opponent.ts:140` · `src/battle_controller_player.ts:191` · `src/battle_controller_player_partner.ts:113` · `src/engine/battle/battle-event-queue.ts:63` |
+| `CONTROLLER_BATTLEANIMATION` | enum_member | `include/battle_controllers.h:238` | `src/battle_controller_opponent.ts:179` · `src/battle_controller_player.ts:230` · `src/battle_controller_player_partner.ts:152` · `src/engine/battle/battle-event-queue.ts:102` |
+| `CONTROLLER_CANTSWITCH` | enum_member | `include/battle_controllers.h:228` | `src/battle_controller_opponent.ts:169` · `src/battle_controller_player.ts:220` · `src/battle_controller_player_partner.ts:142` · `src/engine/battle/battle-event-queue.ts:92` |
+| `CONTROLLER_CHOOSEACTION` | enum_member | `include/battle_controllers.h:204` | `src/battle_controller_opponent.ts:145` · `src/battle_controller_player.ts:196` · `src/battle_controller_player_partner.ts:118` · `src/battle_main.ts:2598` · `src/engine/battle/battle-event-queue.ts:68` |
+| `CONTROLLER_CHOOSEMOVE` | enum_member | `include/battle_controllers.h:206` | `src/battle_controller_opponent.ts:147` · `src/battle_controller_player.ts:198` · `src/battle_controller_player_partner.ts:120` · `src/battle_main.ts:2599` · `src/engine/battle/battle-event-queue.ts:70` |
+| `CONTROLLER_CHOOSEPOKEMON` | enum_member | `include/battle_controllers.h:208` | `src/battle_controller_opponent.ts:149` · `src/battle_controller_player.ts:200` · `src/battle_controller_player_partner.ts:122` · `src/battle_main.ts:2601` · `src/engine/battle/battle-event-queue.ts:72` |
+| `CONTROLLER_CHOSENMONRETURNVALUE` | enum_member | `include/battle_controllers.h:220` | `src/battle_controller_opponent.ts:161` · `src/battle_controller_player.ts:212` · `src/battle_controller_player_partner.ts:134` · `src/engine/battle/battle-event-queue.ts:84` |
+| `CONTROLLER_CLEARUNKFLAG` | enum_member | `include/battle_controllers.h:225` | `src/battle_controller_opponent.ts:166` · `src/battle_controller_player.ts:217` · `src/battle_controller_player_partner.ts:139` · `src/engine/battle/battle-event-queue.ts:89` |
+| `CONTROLLER_CLEARUNKVAR` | enum_member | `include/battle_controllers.h:223` | `src/battle_controller_opponent.ts:164` · `src/battle_controller_player.ts:215` · `src/battle_controller_player_partner.ts:137` · `src/engine/battle/battle-event-queue.ts:87` |
+| `CONTROLLER_CMDS_COUNT` | enum_member | `include/battle_controllers.h:244` | `src/battle_controller_opponent.ts:123` · `src/battle_controller_player.ts:169` · `src/battle_controller_player_partner.ts:95` |
+| `CONTROLLER_DATATRANSFER` | enum_member | `include/battle_controllers.h:215` | `src/battle_controller_opponent.ts:156` · `src/battle_controller_player.ts:207` · `src/battle_controller_player_partner.ts:129` · `src/engine/battle/battle-event-queue.ts:79` |
+| `CONTROLLER_DMA3TRANSFER` | enum_member | `include/battle_controllers.h:216` | `src/battle_controller_opponent.ts:157` · `src/battle_controller_player.ts:208` · `src/battle_controller_player_partner.ts:130` · `src/engine/battle/battle-event-queue.ts:80` |
+| `CONTROLLER_DRAWPARTYSTATUSSUMMARY` | enum_member | `include/battle_controllers.h:234` | `src/battle_controller_opponent.ts:175` · `src/battle_controller_player.ts:226` · `src/battle_controller_player_partner.ts:148` · `src/engine/battle/battle-event-queue.ts:98` |
+| `CONTROLLER_DRAWTRAINERPIC` | enum_member | `include/battle_controllers.h:193` | `src/battle_controller_opponent.ts:134` · `src/battle_controller_player.ts:185` · `src/battle_controller_player_partner.ts:107` · `src/engine/battle/battle-event-queue.ts:57` |
+| `CONTROLLER_ENDBOUNCE` | enum_member | `include/battle_controllers.h:236` | `src/battle_controller_opponent.ts:177` · `src/battle_controller_player.ts:228` · `src/battle_controller_player_partner.ts:150` · `src/engine/battle/battle-event-queue.ts:100` |
+| `CONTROLLER_ENDLINKBATTLE` | enum_member | `include/battle_controllers.h:241` | `src/battle_controller_opponent.ts:182` · `src/battle_controller_player.ts:233` · `src/battle_controller_player_partner.ts:155` · `src/engine/battle/battle-event-queue.ts:105` |
+| `CONTROLLER_EXPUPDATE` | enum_member | `include/battle_controllers.h:211` | `src/battle_controller_opponent.ts:152` · `src/battle_controller_player.ts:203` · `src/battle_controller_player_partner.ts:125` · `src/engine/battle/battle-event-queue.ts:75` |
+| `CONTROLLER_FAINTANIMATION` | enum_member | `include/battle_controllers.h:196` | `src/battle_controller_opponent.ts:137` · `src/battle_controller_player.ts:188` · `src/battle_controller_player_partner.ts:110` · `src/engine/battle/battle-event-queue.ts:60` |
+| `CONTROLLER_FAINTINGCRY` | enum_member | `include/battle_controllers.h:231` | `src/battle_controller_opponent.ts:172` · `src/battle_controller_player.ts:223` · `src/battle_controller_player_partner.ts:145` · `src/engine/battle/battle-event-queue.ts:95` |
+| `CONTROLLER_GETMONDATA` | enum_member | `include/battle_controllers.h:186` | `src/battle_controller_opponent.ts:127` · `src/battle_controller_player.ts:178` · `src/battle_controller_player_partner.ts:100` · `src/engine/battle/battle-event-queue.ts:50` |
+| `CONTROLLER_GETRAWMONDATA` | enum_member | `include/battle_controllers.h:187` | `src/battle_controller_opponent.ts:128` · `src/battle_controller_player.ts:179` · `src/battle_controller_player_partner.ts:101` · `src/engine/battle/battle-event-queue.ts:51` |
+| `CONTROLLER_HEALTHBARUPDATE` | enum_member | `include/battle_controllers.h:210` | `src/battle_controller_opponent.ts:151` · `src/battle_controller_player.ts:202` · `src/battle_controller_player_partner.ts:124` · `src/engine/battle/battle-event-queue.ts:74` |
+| `CONTROLLER_HIDEPARTYSTATUSSUMMARY` | enum_member | `include/battle_controllers.h:235` | `src/battle_controller_opponent.ts:176` · `src/battle_controller_player.ts:227` · `src/battle_controller_player_partner.ts:149` · `src/engine/battle/battle-event-queue.ts:99` |
+| `CONTROLLER_HITANIMATION` | enum_member | `include/battle_controllers.h:227` | `src/battle_controller_opponent.ts:168` · `src/battle_controller_player.ts:219` · `src/battle_controller_player_partner.ts:141` · `src/engine/battle/battle-event-queue.ts:91` |
+| `CONTROLLER_INTROSLIDE` | enum_member | `include/battle_controllers.h:232` | `src/battle_controller_opponent.ts:173` · `src/battle_controller_player.ts:224` · `src/battle_controller_player_partner.ts:146` · `src/engine/battle/battle-event-queue.ts:96` |
+| `CONTROLLER_INTROTRAINERBALLTHROW` | enum_member | `include/battle_controllers.h:233` | `src/battle_controller_opponent.ts:174` · `src/battle_controller_player.ts:225` · `src/battle_controller_player_partner.ts:147` · `src/engine/battle/battle-event-queue.ts:97` |
+| `CONTROLLER_LINKSTANDBYMSG` | enum_member | `include/battle_controllers.h:239` | `src/battle_controller_opponent.ts:180` · `src/battle_controller_player.ts:231` · `src/battle_controller_player_partner.ts:153` · `src/battle_main.ts:2602` · `src/engine/battle/battle-event-queue.ts:103` |
+| `CONTROLLER_LOADMONSPRITE` | enum_member | `include/battle_controllers.h:190` | `src/battle_controller_opponent.ts:131` · `src/battle_controller_player.ts:182` · `src/battle_controller_player_partner.ts:104` · `src/engine/battle/battle-event-queue.ts:54` |
+| `CONTROLLER_MOVEANIMATION` | enum_member | `include/battle_controllers.h:201` | `src/battle_controller_opponent.ts:142` · `src/battle_controller_player.ts:193` · `src/battle_controller_player_partner.ts:115` · `src/engine/battle/battle-event-queue.ts:65` |
+| `CONTROLLER_ONERETURNVALUE` | enum_member | `include/battle_controllers.h:221` | `src/battle_controller_opponent.ts:162` · `src/battle_controller_player.ts:213` · `src/battle_controller_player_partner.ts:135` · `src/battle_controllers.ts:268` · `src/engine/battle/battle-event-queue.ts:85` |
+| `CONTROLLER_ONERETURNVALUE_DUPLICATE` | enum_member | `include/battle_controllers.h:222` | `src/battle_controller_opponent.ts:163` · `src/battle_controller_player.ts:214` · `src/battle_controller_player_partner.ts:136` · `src/engine/battle/battle-event-queue.ts:86` |
+| `CONTROLLER_OPENBAG` | enum_member | `include/battle_controllers.h:207` | `src/battle_controller_opponent.ts:148` · `src/battle_controller_player.ts:199` · `src/battle_controller_player_partner.ts:121` · `src/battle_main.ts:2600` · `src/engine/battle/battle-event-queue.ts:71` |
+| `CONTROLLER_PALETTEFADE` | enum_member | `include/battle_controllers.h:197` | `src/battle_controller_opponent.ts:138` · `src/battle_controller_player.ts:189` · `src/battle_controller_player_partner.ts:111` · `src/engine/battle/battle-event-queue.ts:61` |
+| `CONTROLLER_PAUSE` | enum_member | `include/battle_controllers.h:200` | `src/battle_controller_opponent.ts:141` · `src/battle_controller_player.ts:192` · `src/battle_controller_player_partner.ts:114` · `src/engine/battle/battle-event-queue.ts:64` |
+| `CONTROLLER_PLAYBGM` | enum_member | `include/battle_controllers.h:217` | `src/battle_controller_opponent.ts:158` · `src/battle_controller_player.ts:209` · `src/battle_controller_player_partner.ts:131` · `src/engine/battle/battle-event-queue.ts:81` |
+| `CONTROLLER_PLAYFANFAREORBGM` | enum_member | `include/battle_controllers.h:230` | `src/battle_controller_opponent.ts:171` · `src/battle_controller_player.ts:222` · `src/battle_controller_player_partner.ts:144` · `src/engine/battle/battle-event-queue.ts:94` |
+| `CONTROLLER_PLAYSE` | enum_member | `include/battle_controllers.h:229` | `src/battle_controller_opponent.ts:170` · `src/battle_controller_player.ts:221` · `src/battle_controller_player_partner.ts:143` · `src/engine/battle/battle-event-queue.ts:93` |
+| `CONTROLLER_PRINTSTRING` | enum_member | `include/battle_controllers.h:202` | `src/battle_controller_opponent.ts:143` · `src/battle_controller_player.ts:194` · `src/battle_controller_player_partner.ts:116` · `src/engine/battle/battle-event-queue.ts:66` |
+| `CONTROLLER_PRINTSTRINGPLAYERONLY` | enum_member | `include/battle_controllers.h:203` | `src/battle_controller_opponent.ts:144` · `src/battle_controller_player.ts:195` · `src/battle_controller_player_partner.ts:117` · `src/engine/battle/battle-event-queue.ts:67` |
+| `CONTROLLER_RESETACTIONMOVESELECTION` | enum_member | `include/battle_controllers.h:240` | `src/battle_controller_opponent.ts:181` · `src/battle_controller_player.ts:232` · `src/battle_controller_player_partner.ts:154` · `src/engine/battle/battle-event-queue.ts:104` |
+| `CONTROLLER_RETURNMONTOBALL` | enum_member | `include/battle_controllers.h:192` | `src/battle_controller_opponent.ts:133` · `src/battle_controller_player.ts:184` · `src/battle_controller_player_partner.ts:106` · `src/engine/battle/battle-event-queue.ts:56` |
+| `CONTROLLER_SETMONDATA` | enum_member | `include/battle_controllers.h:188` | `src/battle_controller_opponent.ts:129` · `src/battle_controller_player.ts:180` · `src/battle_controller_player_partner.ts:102` · `src/engine/battle/battle-event-queue.ts:52` |
+| `CONTROLLER_SETRAWMONDATA` | enum_member | `include/battle_controllers.h:189` | `src/battle_controller_opponent.ts:130` · `src/battle_controller_player.ts:181` · `src/battle_controller_player_partner.ts:103` · `src/engine/battle/battle-event-queue.ts:53` |
+| `CONTROLLER_SETUNKVAR` | enum_member | `include/battle_controllers.h:224` | `src/battle_controller_opponent.ts:165` · `src/battle_controller_player.ts:216` · `src/battle_controller_player_partner.ts:138` · `src/engine/battle/battle-event-queue.ts:88` |
+| `CONTROLLER_SPRITEINVISIBILITY` | enum_member | `include/battle_controllers.h:237` | `src/battle_controller_opponent.ts:178` · `src/battle_controller_player.ts:229` · `src/battle_controller_player_partner.ts:151` · `src/engine/battle/battle-event-queue.ts:101` |
+| `CONTROLLER_STATUSANIMATION` | enum_member | `include/battle_controllers.h:213` | `src/battle_controller_opponent.ts:154` · `src/battle_controller_player.ts:205` · `src/battle_controller_player_partner.ts:127` · `src/engine/battle/battle-event-queue.ts:77` |
+| `CONTROLLER_STATUSICONUPDATE` | enum_member | `include/battle_controllers.h:212` | `src/battle_controller_opponent.ts:153` · `src/battle_controller_player.ts:204` · `src/battle_controller_player_partner.ts:126` · `src/engine/battle/battle-event-queue.ts:76` |
+| `CONTROLLER_STATUSXOR` | enum_member | `include/battle_controllers.h:214` | `src/battle_controller_opponent.ts:155` · `src/battle_controller_player.ts:206` · `src/battle_controller_player_partner.ts:128` · `src/engine/battle/battle-event-queue.ts:78` |
+| `CONTROLLER_SUCCESSBALLTHROWANIM` | enum_member | `include/battle_controllers.h:198` | `src/battle_controller_opponent.ts:139` · `src/battle_controller_player.ts:190` · `src/battle_controller_player_partner.ts:112` · `src/engine/battle/battle-event-queue.ts:62` |
+| `CONTROLLER_SWITCHINANIM` | enum_member | `include/battle_controllers.h:191` | `src/battle_controller_opponent.ts:132` · `src/battle_controller_player.ts:183` · `src/battle_controller_player_partner.ts:105` · `src/engine/battle/battle-event-queue.ts:55` |
+| `CONTROLLER_TERMINATOR_NOP` | enum_member | `include/battle_controllers.h:243` | `src/battle_controller_opponent.ts:124` · `src/battle_controller_player.ts:172` · `src/battle_controller_player_partner.ts:97` |
+| `CONTROLLER_TOGGLEUNKFLAG` | enum_member | `include/battle_controllers.h:226` | `src/battle_controller_opponent.ts:167` · `src/battle_controller_player.ts:218` · `src/battle_controller_player_partner.ts:140` · `src/engine/battle/battle-event-queue.ts:90` |
+| `CONTROLLER_TRAINERSLIDE` | enum_member | `include/battle_controllers.h:194` | `src/battle_controller_opponent.ts:135` · `src/battle_controller_player.ts:186` · `src/battle_controller_player_partner.ts:108` · `src/engine/battle/battle-event-queue.ts:58` |
+| `CONTROLLER_TRAINERSLIDEBACK` | enum_member | `include/battle_controllers.h:195` | `src/battle_controller_opponent.ts:136` · `src/battle_controller_player.ts:187` · `src/battle_controller_player_partner.ts:109` · `src/engine/battle/battle-event-queue.ts:59` |
+| `CONTROLLER_TWORETURNVALUES` | enum_member | `include/battle_controllers.h:219` | `src/battle_controller_opponent.ts:160` · `src/battle_controller_player.ts:211` · `src/battle_controller_player_partner.ts:133` · `src/battle_controllers.ts:247` · `src/engine/battle/battle-event-queue.ts:83` |
+| `CONTROLLER_YESNOBOX` | enum_member | `include/battle_controllers.h:205` | `src/battle_controller_opponent.ts:146` · `src/battle_controller_player.ts:197` · `src/battle_controller_player_partner.ts:119` |
 | `COPYWIN_FULL` | enum_member | `include/window.h:24` | `src/battle_controllers.ts:1242` · `src/easy_chat.ts:319` · `src/mail.ts:115` · `src/main_menu.ts:1229` · `src/option_menu.ts:541` · `src/pokemon_storage_system.ts:3732` · `src/window.ts:501` |
 | `COPYWIN_GFX` | enum_member | `include/window.h:23` | `src/easy_chat.ts:320` · `src/list_menu.ts:419` · `src/main_menu.ts:1230` · `src/option_menu.ts:540` · `src/window.ts:500` |
 | `COPYWIN_MAP` | enum_member | `include/window.h:22` | `src/list_menu.ts:420` · `src/window.ts:499` |
@@ -548,11 +551,11 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `DISPCNT_BG0_ON` | define | `include/gba/io_reg.h:514` | `harness/runtime/decomp-runtime.ts:122` · `harness/scenes/TestOverworldScene.ts:267` · `include/gba/io_reg.ts:759` · `src/pokedex.ts:130` |
 | `DISPCNT_OBJWIN_ON` | define | `include/gba/io_reg.h:522` | `include/gba/io_reg.ts:767` · `src/battle_anim_effects_3.ts:383` · `src/battle_intro.ts:32` · `src/title_screen.ts:78` |
 | `DISPCNT_WIN0_ON` | define | `include/gba/io_reg.h:520` | `harness/runtime/decomp-runtime.ts:129` · `include/gba/io_reg.ts:765` · `src/fldeff_misc.ts:120` |
-| `DISPCNT_WIN1_ON` | define | `include/gba/io_reg.h:521` | `harness/runtime/decomp-runtime.ts:127` · `include/gba/io_reg.ts:766` · `src/field_screen_effect.ts:80` |
-| `DISPLAY_HEIGHT` | define | `include/gba/defines.h:72` | `harness/runtime/decomp-runtime.ts:177` · `include/gba/defines.ts:61` · `src/battle_anim_effects_1b.ts:64` · `src/battle_anim_effects_2.ts:184` · `src/battle_anim_flying.ts:68` · `src/battle_controller_player.ts:1799` · `src/battle_intro.ts:43` · `src/battle_main.ts:797` · `src/event_object_movement.ts:5981` · `src/field_effect_helpers.ts:164` · `src/field_screen_effect.ts:95` · `src/pokedex.ts:959` · `src/pokemon_storage_system.ts:2457` · `src/scanline_effect.ts:34` |
-| `DISPLAY_TILE_HEIGHT` | define | `include/gba/defines.h:76` | `src/field_screen_effect.ts:97` · `src/mail.ts:112` · `src/main_menu.ts:1231` |
-| `DISPLAY_TILE_WIDTH` | define | `include/gba/defines.h:75` | `src/credits.ts:104` · `src/field_screen_effect.ts:96` · `src/mail.ts:111` · `src/main_menu.ts:1232` |
-| `DISPLAY_WIDTH` | define | `include/gba/defines.h:71` | `harness/runtime/decomp-runtime.ts:176` · `include/gba/defines.ts:60` · `src/battle_anim_effects_1b.ts:63` · `src/battle_anim_effects_2.ts:183` · `src/battle_anim_effects_3.ts:374` · `src/battle_anim_flying.ts:67` · `src/battle_anim_poison.ts:45` · `src/battle_anim_throw.ts:92` · `src/battle_intro.ts:42` · `src/battle_main.ts:796` · `src/battle_transition.ts:59` · `src/engine/battle/battle-sendout-anim.ts:703` · `src/field_effect_helpers.ts:163` · `src/field_screen_effect.ts:94` · `src/fldeff_misc.ts:123` |
+| `DISPCNT_WIN1_ON` | define | `include/gba/io_reg.h:521` | `harness/runtime/decomp-runtime.ts:127` · `include/gba/io_reg.ts:766` · `src/field_screen_effect.ts:91` |
+| `DISPLAY_HEIGHT` | define | `include/gba/defines.h:72` | `harness/runtime/decomp-runtime.ts:177` · `include/gba/defines.ts:61` · `src/battle_anim_effects_1b.ts:64` · `src/battle_anim_effects_2.ts:184` · `src/battle_anim_flying.ts:68` · `src/battle_controller_player.ts:1800` · `src/battle_intro.ts:43` · `src/battle_main.ts:797` · `src/event_object_movement.ts:5981` · `src/field_effect_helpers.ts:164` · `src/field_screen_effect.ts:106` · `src/pokedex.ts:959` · `src/pokemon_storage_system.ts:2457` · `src/scanline_effect.ts:34` |
+| `DISPLAY_TILE_HEIGHT` | define | `include/gba/defines.h:76` | `src/field_screen_effect.ts:108` · `src/mail.ts:112` · `src/main_menu.ts:1231` |
+| `DISPLAY_TILE_WIDTH` | define | `include/gba/defines.h:75` | `src/credits.ts:104` · `src/field_screen_effect.ts:107` · `src/mail.ts:111` · `src/main_menu.ts:1232` |
+| `DISPLAY_WIDTH` | define | `include/gba/defines.h:71` | `harness/runtime/decomp-runtime.ts:176` · `include/gba/defines.ts:60` · `src/battle_anim_effects_1b.ts:63` · `src/battle_anim_effects_2.ts:183` · `src/battle_anim_effects_3.ts:374` · `src/battle_anim_flying.ts:67` · `src/battle_anim_poison.ts:45` · `src/battle_anim_throw.ts:92` · `src/battle_intro.ts:42` · `src/battle_main.ts:796` · `src/battle_transition.ts:59` · `src/engine/battle/battle-sendout-anim.ts:703` · `src/field_effect_helpers.ts:163` · `src/field_screen_effect.ts:105` · `src/fldeff_misc.ts:123` |
 | `DLG_WINDOW_PALETTE_NUM` | define | `src/menu.c:23` | `include/menu.ts:24` · `src/start_menu.ts:162` |
 | `DMG_CHANGE_SIGN` | define | `include/constants/battle_script_commands.h:363` | `include/constants/battle_script_commands.ts:130` · `src/battle_script_commands.ts:3824` |
 | `DMG_DOUBLED` | define | `include/constants/battle_script_commands.h:365` | `include/constants/battle_script_commands.ts:132` · `src/battle_script_commands.ts:3826` |
@@ -674,13 +677,13 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `HELPBAR_MAP_ZOOMED_OUT` | enum_member | `include/pokenav.h:172` | `src/pokenav_menu_handler.ts:53` · `src/pokenav_region_map.ts:191` |
 | `HELPBAR_MC_TRAINER_LIST` | enum_member | `include/pokenav.h:177` | `src/pokenav_match_call_gfx.ts:137` · `src/pokenav_menu_handler.ts:57` |
 | `HELPBAR_RIBBONS_MON_LIST` | enum_member | `include/pokenav.h:180` | `src/pokenav_menu_handler.ts:59` · `src/pokenav_ribbons_list.ts:67` |
-| `HITMARKER_GRUDGE` | define | `include/constants/battle.h:201` | `include/constants/battle.ts:474` · `src/battle_util.ts:3963` |
-| `HITMARKER_IGNORE_BIDE` | define | `include/constants/battle.h:182` | `include/constants/battle.ts:455` · `src/battle_util.ts:3964` |
+| `HITMARKER_GRUDGE` | define | `include/constants/battle.h:201` | `include/constants/battle.ts:483` · `src/battle_util.ts:3963` |
+| `HITMARKER_IGNORE_BIDE` | define | `include/constants/battle.h:182` | `include/constants/battle.ts:464` · `src/battle_util.ts:3964` |
 | `HP_EMPTY_SLOT` | define | `include/constants/battle.h:384` | `include/constants/battle.ts:433` · `src/battle_interface.ts:426` · `src/battle_main.ts:4085` |
 | `INPUT_NONE` | enum_member | `src/naming_screen.c:34` · `src/pokemon_storage_system.c:157` | `src/naming_screen.ts:132` · `src/pokemon_storage_system.ts:187` |
 | `INPUT_SELECT` | enum_member | `src/easy_chat.c:370` · `src/naming_screen.c:42` | `src/easy_chat.ts:261` · `src/naming_screen.ts:140` |
 | `INPUT_START` | enum_member | `src/easy_chat.c:369` · `src/naming_screen.c:43` | `src/easy_chat.ts:260` · `src/naming_screen.ts:141` |
-| `INSTANT_HP_BAR_DROP` | define | `include/battle_controllers.h:149` | `src/battle_controller_opponent.ts:1431` · `src/battle_controller_player.ts:2244` · `src/engine/battle/constants.ts:1523` |
+| `INSTANT_HP_BAR_DROP` | define | `include/battle_controllers.h:149` | `src/battle_controller_opponent.ts:1431` · `src/battle_controller_player.ts:2245` · `src/engine/battle/constants.ts:1523` |
 | `INTROCRED_SCENERY_FROZEN` | enum_member | `include/intro_credits_graphics.h:8` | `src/credits.ts:64` · `src/intro.ts:186` · `src/intro_credits_graphics.ts:45` |
 | `INTROCRED_SCENERY_NORMAL` | enum_member | `include/intro_credits_graphics.h:6` | `src/credits.ts:107` · `src/intro_credits_graphics.ts:46` |
 | `IS_BATTLER_OF_TYPE` | func_macro | `include/battle.h:471` | `src/battle_ai_script_commands.ts:492` · `src/battle_ai_switch_items.ts:157` · `src/battle_util.ts:1373` · `src/engine/battle/constants.ts:1372` |
@@ -760,27 +763,27 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `MAIL_NONE` | define | `include/constants/items.h:447` | `include/constants/items.ts:431` · `src/mail_data.ts:69` |
 | `MAIL_WORDS_COUNT` | define | `include/constants/global.h:98` | `include/constants/global.ts:87` · `src/easy_chat.ts:355` · `src/engine/save/save-blocks.ts:84` |
 | `MALE` | define | `include/constants/global.h:113` | `harness/runtime/decomp-globals.ts:1682` · `include/constants/global.ts:100` · `src/easy_chat.ts:371` · `src/field_specials.ts:47` |
-| `MAPCURSOR_X_MAX` | define | `src/region_map.c:45` | `src/engine/field/region-map.ts:68` · `src/region_map.ts:147` |
-| `MAPCURSOR_X_MIN` | define | `src/region_map.c:43` | `src/engine/field/region-map.ts:66` · `src/region_map.ts:145` |
-| `MAPCURSOR_Y_MAX` | define | `src/region_map.c:46` | `src/engine/field/region-map.ts:69` · `src/region_map.ts:148` |
-| `MAPCURSOR_Y_MIN` | define | `src/region_map.c:44` | `src/engine/field/region-map.ts:67` · `src/region_map.ts:146` |
+| `MAPCURSOR_X_MAX` | define | `src/region_map.c:45` | `src/engine/field/region-map.ts:68` · `src/region_map.ts:168` |
+| `MAPCURSOR_X_MIN` | define | `src/region_map.c:43` | `src/engine/field/region-map.ts:66` · `src/region_map.ts:166` |
+| `MAPCURSOR_Y_MAX` | define | `src/region_map.c:46` | `src/engine/field/region-map.ts:69` · `src/region_map.ts:169` |
+| `MAPCURSOR_Y_MIN` | define | `src/region_map.c:44` | `src/engine/field/region-map.ts:67` · `src/region_map.ts:167` |
 | `MAPGRID_COLLISION_MASK` | define | `include/global.fieldmap.h:8` | `src/fieldmap.ts:145` · `src/window.ts:21` |
 | `MAPGRID_COLLISION_SHIFT` | define | `include/global.fieldmap.h:11` | `src/fieldmap.ts:148` · `src/trainer_hill.ts:35` |
 | `MAPGRID_ELEVATION_MASK` | define | `include/global.fieldmap.h:9` | `src/fieldmap.ts:146` · `src/window.ts:22` |
 | `MAPGRID_ELEVATION_SHIFT` | define | `include/global.fieldmap.h:12` | `src/fieldmap.ts:149` · `src/trainer_hill.ts:36` |
 | `MAPGRID_IMPASSABLE` | define | `include/global.fieldmap.h:34` | `src/field_specials.ts:685` · `src/fieldmap.ts:151` |
 | `MAPGRID_METATILE_ID_MASK` | define | `include/global.fieldmap.h:7` | `src/fieldmap.ts:144` · `src/window.ts:20` |
-| `MAPSECTYPE_BATTLE_FRONTIER` | enum_member | `include/region_map.h:24` | `src/engine/field/region-map-data.ts:115` · `src/region_map.ts:139` |
-| `MAPSECTYPE_CITY_CANFLY` | enum_member | `include/region_map.h:22` | `src/engine/field/region-map-data.ts:113` · `src/region_map.ts:137` |
-| `MAPSECTYPE_CITY_CANTFLY` | enum_member | `include/region_map.h:23` | `src/engine/field/region-map-data.ts:114` · `src/region_map.ts:138` |
-| `MAPSECTYPE_NONE` | enum_member | `include/region_map.h:20` | `src/engine/field/region-map-data.ts:111` · `src/region_map.ts:135` |
-| `MAPSECTYPE_ROUTE` | enum_member | `include/region_map.h:21` | `src/engine/field/region-map-data.ts:112` · `src/region_map.ts:136` |
-| `MAP_GROUP` | func_macro | `include/constants/maps.h:15` | `include/constants/map_groups.ts:1054` · `src/overworld.ts:741` |
-| `MAP_HEIGHT` | define | `src/region_map.c:42` | `src/engine/field/region-map.ts:65` · `src/region_map.ts:144` |
-| `MAP_INPUT_A_BUTTON` | enum_member | `include/region_map.h:15` | `src/pokenav_region_map.ts:176` · `src/region_map.ts:131` |
-| `MAP_INPUT_B_BUTTON` | enum_member | `include/region_map.h:16` | `src/pokenav_region_map.ts:179` · `src/region_map.ts:132` |
-| `MAP_INPUT_MOVE_END` | enum_member | `include/region_map.h:14` | `src/pokenav_region_map.ts:174` · `src/region_map.ts:130` |
-| `MAP_NUM` | enum_member, func_macro | `include/constants/maps.h:16` · `src/roamer.c:14` | `include/constants/map_groups.ts:1055` · `src/overworld.ts:742` · `src/roamer.ts:19` |
+| `MAPSECTYPE_BATTLE_FRONTIER` | enum_member | `include/region_map.h:24` | `src/engine/field/region-map-data.ts:115` · `src/region_map.ts:160` |
+| `MAPSECTYPE_CITY_CANFLY` | enum_member | `include/region_map.h:22` | `src/engine/field/region-map-data.ts:113` · `src/region_map.ts:158` |
+| `MAPSECTYPE_CITY_CANTFLY` | enum_member | `include/region_map.h:23` | `src/engine/field/region-map-data.ts:114` · `src/region_map.ts:159` |
+| `MAPSECTYPE_NONE` | enum_member | `include/region_map.h:20` | `src/engine/field/region-map-data.ts:111` · `src/region_map.ts:156` |
+| `MAPSECTYPE_ROUTE` | enum_member | `include/region_map.h:21` | `src/engine/field/region-map-data.ts:112` · `src/region_map.ts:157` |
+| `MAP_GROUP` | func_macro | `include/constants/maps.h:15` | `include/constants/map_groups.ts:1054` · `src/overworld.ts:745` |
+| `MAP_HEIGHT` | define | `src/region_map.c:42` | `src/engine/field/region-map.ts:65` · `src/region_map.ts:165` |
+| `MAP_INPUT_A_BUTTON` | enum_member | `include/region_map.h:15` | `src/pokenav_region_map.ts:176` · `src/region_map.ts:152` |
+| `MAP_INPUT_B_BUTTON` | enum_member | `include/region_map.h:16` | `src/pokenav_region_map.ts:179` · `src/region_map.ts:153` |
+| `MAP_INPUT_MOVE_END` | enum_member | `include/region_map.h:14` | `src/pokenav_region_map.ts:174` · `src/region_map.ts:151` |
+| `MAP_NUM` | enum_member, func_macro | `include/constants/maps.h:16` · `src/roamer.c:14` | `include/constants/map_groups.ts:1055` · `src/overworld.ts:746` · `src/roamer.ts:19` |
 | `MAP_OFFSET` | define | `include/fieldmap.h:18` | `include/fieldmap.ts:16` · `src/fieldmap.ts:138` |
 | `MAP_TYPE_CITY` | define | `include/constants/map_types.h:6` | `include/constants/map_types.ts:10` · `src/battle_setup.ts:1282` |
 | `MAP_TYPE_INDOOR` | define | `include/constants/map_types.h:12` | `include/constants/map_types.ts:16` · `src/battle_setup.ts:1288` |
@@ -791,11 +794,11 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `MAP_TYPE_UNDERGROUND` | define | `include/constants/map_types.h:8` | `include/constants/map_types.ts:12` · `src/battle_setup.ts:1284` |
 | `MAP_TYPE_UNDERWATER` | define | `include/constants/map_types.h:9` | `include/constants/map_types.ts:13` · `src/battle_setup.ts:1285` |
 | `MAP_TYPE_UNKNOWN` | define | `include/constants/map_types.h:11` | `include/constants/map_types.ts:15` · `src/battle_setup.ts:1287` |
-| `MAP_WIDTH` | define | `src/region_map.c:41` | `src/engine/field/region-map.ts:64` · `src/region_map.ts:143` |
+| `MAP_WIDTH` | define | `src/region_map.c:41` | `src/engine/field/region-map.ts:64` · `src/region_map.ts:164` |
 | `MATCH_CALL_OPTION_COUNT` | enum_member | `include/pokenav.h:217` | `src/pokenav_match_call_gfx.ts:141` · `src/pokenav_match_call_list.ts:65` |
 | `MAUVILLE_MAN_TRADER` | define | `include/constants/mauville_old_man.h:6` | `src/mauville_old_man.ts:28` · `src/trader.ts:39` |
 | `MAX_BAG_ITEM_CAPACITY` | define | `include/constants/items.h:452` | `include/constants/items.ts:434` · `src/engine/bag/bag.ts:166` · `src/shop.ts:149` |
-| `MAX_BATTLERS_COUNT` | enum_member | `include/constants/battle.h:41` | `src/battle_controller_player.ts:999` · `src/battle_gfx_sfx_util.ts:504` · `src/battle_main.ts:783` · `src/engine/battle/state.ts:20` · `src/pokeball.ts:245` · `src/pokemon_animation.ts:112` |
+| `MAX_BATTLERS_COUNT` | enum_member | `include/constants/battle.h:41` | `src/battle_controller_player.ts:1000` · `src/battle_gfx_sfx_util.ts:504` · `src/battle_main.ts:783` · `src/engine/battle/state.ts:20` · `src/pokeball.ts:245` · `src/pokemon_animation.ts:112` |
 | `MAX_BERRY_CAPACITY` | define | `include/constants/items.h:454` | `include/constants/items.ts:436` · `src/engine/bag/bag.ts:168` |
 | `MAX_GIFT_RIBBON` | define | `include/constants/pokemon.h:143` | `include/constants/pokemon.ts:126` · `src/give_gift_ribbon_to_party.ts:27` |
 | `MAX_ITEMS_SHOWN` | define | `src/item_menu.c:68` · `src/shop.c:45` | `src/item_menu.ts:705` · `src/shop.ts:147` |
@@ -806,7 +809,7 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `MAX_POKENAV_MENUITEMS` | define | `include/pokenav.h:167` | `src/pokenav_menu_handler.ts:21` · `src/pokenav_menu_handler_gfx.ts:92` |
 | `MAX_REMATCH_ENTRIES` | define | `include/constants/global.h:61` | `include/constants/global.ts:58` · `src/engine/save/save-blocks.ts:49` |
 | `MAX_SHEEN` | define | `include/constants/pokemon.h:197` | `include/constants/pokemon.ts:165` · `src/menu_specialized.ts:214` |
-| `MAX_SPRITES` | define | `include/sprite.h:5` | `harness/runtime/decomp-runtime.ts:606` · `include/sprite.ts:9` · `src/event_object_movement.ts:837` · `src/field_effect_helpers.ts:160` · `src/field_player_avatar.ts:3187` · `src/field_weather_effect.ts:88` · `src/intro.ts:187` · `src/item_icon.ts:36` · `src/mon_markings.ts:184` · `src/sprite.ts:83` · `src/trainer_see.ts:98` |
+| `MAX_SPRITES` | define | `include/sprite.h:5` | `harness/runtime/decomp-runtime.ts:606` · `include/sprite.ts:9` · `src/event_object_movement.ts:837` · `src/field_effect_helpers.ts:160` · `src/field_player_avatar.ts:3192` · `src/field_weather_effect.ts:88` · `src/intro.ts:187` · `src/item_icon.ts:36` · `src/mon_markings.ts:184` · `src/sprite.ts:83` · `src/trainer_see.ts:98` |
 | `MAX_STAMP_CARD_STAMPS` | define | `include/constants/global.h:111` | `include/constants/global.ts:99` · `src/engine/save/save-blocks.ts:87` |
 | `MAX_TRAINER_ITEMS` | define | `include/data.h:8` | `src/battle_ai_script_commands.ts:1654` · `src/battle_ai_switch_items.ts:611` |
 | `MB_ANIMATED_DOOR` | enum_member | `include/constants/metatile_behaviors.h:110` | `include/constants/metatile_behaviors.ts:131` · `src/engine/field/tilemap-loader.ts:87` |
@@ -960,7 +963,7 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `OBJ_PLTT_ID` | func_macro | `include/palette.h:24` | `src/list_menu.ts:1047` · `src/palette.ts:58` |
 | `OBJ_VRAM0` | define | `include/gba/defines.h:54` | `src/credits.ts:63` · `src/pokenav_main_menu.ts:177` · `src/pokenav_match_call_gfx.ts:142` |
 | `OLD_ROD` | define | `include/constants/items.h:461` | `include/constants/items.ts:441` · `src/wild_encounter.ts:656` |
-| `OPTIONS_BUTTON_MODE_L_EQUALS_A` | define | `include/constants/global.h:125` | `include/constants/global.ts:110` · `src/battle_controller_player.ts:290` |
+| `OPTIONS_BUTTON_MODE_L_EQUALS_A` | define | `include/constants/global.h:125` | `include/constants/global.ts:110` · `src/battle_controller_player.ts:291` |
 | `OPTIONS_TEXT_SPEED_FAST` | define | `include/constants/global.h:129` | `include/constants/global.ts:113` · `src/menu.ts:50` |
 | `OPTIONS_TEXT_SPEED_MID` | define | `include/constants/global.h:128` | `include/constants/global.ts:112` · `src/menu.ts:49` |
 | `OPTIONS_TEXT_SPEED_SLOW` | define | `include/constants/global.h:127` | `include/constants/global.ts:111` · `src/menu.ts:48` |
@@ -975,15 +978,15 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `PARTY_ACTION_CHOOSE_MON` | define | `include/constants/party_menu.h:68` | `include/constants/party_menu.ts:67` · `src/battle_main.ts:2580` |
 | `PARTY_SIZE` | define | `include/constants/global.h:33` | `include/constants/global.ts:31` · `src/battle_controllers.ts:76` · `src/battle_interface.ts:424` · `src/battle_main.ts:781` · `src/engine/battle/party-storage.ts:95` · `src/engine/save/save-blocks.ts:38` |
 | `PC_ITEMS_COUNT` | define | `include/constants/global.h:50` | `include/constants/global.ts:47` · `src/engine/save/save-blocks.ts:41` · `src/item.ts:320` |
-| `PIXEL_FILL` | func_macro | `include/window.h:6` | `include/window.ts:20` · `src/field_screen_effect.ts:93` · `src/list_menu.ts:408` · `src/menu_specialized.ts:92` |
+| `PIXEL_FILL` | func_macro | `include/window.h:6` | `include/window.ts:20` · `src/field_screen_effect.ts:104` · `src/list_menu.ts:408` · `src/menu_specialized.ts:92` |
 | `PLACEHOLDER_BEGIN` | define | `include/constants/characters.h:178` | `include/constants/characters.ts:172` · `src/battle_message.ts:90` |
-| `PLAYER_AVATAR_FLAG_ACRO_BIKE` | define | `include/global.fieldmap.h:290` | `src/field_player_avatar.ts:976` · `src/overworld.ts:749` |
-| `PLAYER_AVATAR_FLAG_CONTROLLABLE` | define | `include/global.fieldmap.h:293` | `src/field_effect_helpers.ts:1166` · `src/field_player_avatar.ts:979` |
-| `PLAYER_AVATAR_FLAG_MACH_BIKE` | define | `include/global.fieldmap.h:289` | `src/field_player_avatar.ts:975` · `src/overworld.ts:748` |
-| `PLAYER_AVATAR_FLAG_SURFING` | define | `include/global.fieldmap.h:291` | `src/field_player_avatar.ts:977` · `src/overworld.ts:750` |
-| `PLAYER_AVATAR_STATE_FIELD_MOVE` | enum_member | `include/global.fieldmap.h:283` | `src/field_effect_helpers.ts:1164` · `src/field_player_avatar.ts:1868` |
+| `PLAYER_AVATAR_FLAG_ACRO_BIKE` | define | `include/global.fieldmap.h:290` | `include/global.fieldmap.ts:29` · `src/overworld.ts:753` |
+| `PLAYER_AVATAR_FLAG_CONTROLLABLE` | define | `include/global.fieldmap.h:293` | `include/global.fieldmap.ts:32` · `src/field_effect_helpers.ts:1166` |
+| `PLAYER_AVATAR_FLAG_MACH_BIKE` | define | `include/global.fieldmap.h:289` | `include/global.fieldmap.ts:28` · `src/overworld.ts:752` |
+| `PLAYER_AVATAR_FLAG_SURFING` | define | `include/global.fieldmap.h:291` | `include/global.fieldmap.ts:30` · `src/overworld.ts:754` |
+| `PLAYER_AVATAR_STATE_FIELD_MOVE` | enum_member | `include/global.fieldmap.h:283` | `src/field_effect_helpers.ts:1164` · `src/field_player_avatar.ts:1873` |
 | `PLAYER_HAS_TWO_USABLE_MONS` | define | `include/constants/pokemon.h:156` | `include/constants/pokemon.ts:135` · `src/trainer_see.ts:273` |
-| `PLAYER_SPEED_FASTEST` | enum_member | `include/bike.h:24` | `src/field_control_avatar.ts:201` · `src/field_player_avatar.ts:986` |
+| `PLAYER_SPEED_FASTEST` | enum_member | `include/bike.h:24` | `src/field_control_avatar.ts:201` · `src/field_player_avatar.ts:991` |
 | `PLTT_SIZE_4BPP` | define | `include/gba/defines.h:90` | `harness/runtime/decomp-bridge.ts:78` · `include/gba/defines.ts:95` · `src/sprite.ts:87` · `src/text_window.ts:53` |
 | `POCKETS_COUNT` | define | `include/constants/item.h:17` | `include/constants/item.ts:19` · `src/engine/bag/bag-types.ts:43` |
 | `POCKET_NONE` | define | `include/constants/item.h:5` | `include/constants/item.ts:8` · `src/item_menu_icons.ts:51` |
@@ -1020,17 +1023,17 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `REG_OFFSET_BG2VOFS` | define | `include/gba/io_reg.h:20` | `harness/runtime/decomp-runtime.ts:72` · `include/gba/io_reg.ts:21` · `src/battle_main.ts:295` · `src/pokedex.ts:134` |
 | `REG_OFFSET_BG3HOFS` | define | `include/gba/io_reg.h:21` | `harness/runtime/decomp-runtime.ts:73` · `include/gba/io_reg.ts:22` · `src/battle_main.ts:296` · `src/pokedex.ts:125` |
 | `REG_OFFSET_BG3VOFS` | define | `include/gba/io_reg.h:22` | `harness/runtime/decomp-runtime.ts:74` · `include/gba/io_reg.ts:23` · `src/battle_main.ts:297` · `src/pokedex.ts:126` |
-| `REG_OFFSET_BLDALPHA` | define | `include/gba/io_reg.h:51` | `harness/runtime/decomp-runtime.ts:99` · `include/gba/io_reg.ts:52` · `src/battle_anim_effects_2.ts:188` · `src/battle_anim_effects_3.ts:381` · `src/battle_anim_ghost.ts:65` · `src/field_screen_effect.ts:75` · `src/pokedex.ts:142` |
-| `REG_OFFSET_BLDCNT` | define | `include/gba/io_reg.h:50` | `harness/runtime/decomp-runtime.ts:98` · `include/gba/io_reg.ts:51` · `src/battle_anim_effects_2.ts:187` · `src/battle_anim_effects_3.ts:380` · `src/battle_anim_ghost.ts:64` · `src/field_screen_effect.ts:74` · `src/pokedex.ts:141` · `src/pokemon_storage_system.ts:1340` |
+| `REG_OFFSET_BLDALPHA` | define | `include/gba/io_reg.h:51` | `harness/runtime/decomp-runtime.ts:99` · `include/gba/io_reg.ts:52` · `src/battle_anim_effects_2.ts:188` · `src/battle_anim_effects_3.ts:381` · `src/battle_anim_ghost.ts:65` · `src/field_screen_effect.ts:86` · `src/pokedex.ts:142` |
+| `REG_OFFSET_BLDCNT` | define | `include/gba/io_reg.h:50` | `harness/runtime/decomp-runtime.ts:98` · `include/gba/io_reg.ts:51` · `src/battle_anim_effects_2.ts:187` · `src/battle_anim_effects_3.ts:380` · `src/battle_anim_ghost.ts:64` · `src/field_screen_effect.ts:85` · `src/pokedex.ts:141` · `src/pokemon_storage_system.ts:1340` |
 | `REG_OFFSET_BLDY` | define | `include/gba/io_reg.h:52` | `harness/runtime/decomp-runtime.ts:100` · `include/gba/io_reg.ts:53` · `src/pokedex.ts:143` |
-| `REG_OFFSET_DISPCNT` | define | `include/gba/io_reg.h:8` | `harness/runtime/decomp-runtime.ts:62` · `include/gba/io_reg.ts:9` · `src/battle_anim_effects_3.ts:376` · `src/field_screen_effect.ts:73` · `src/pokedex.ts:133` |
+| `REG_OFFSET_DISPCNT` | define | `include/gba/io_reg.h:8` | `harness/runtime/decomp-runtime.ts:62` · `include/gba/io_reg.ts:9` · `src/battle_anim_effects_3.ts:376` · `src/field_screen_effect.ts:84` · `src/pokedex.ts:133` |
 | `REG_OFFSET_MOSAIC` | define | `include/gba/io_reg.h:49` | `harness/runtime/decomp-runtime.ts:97` · `include/gba/io_reg.ts:50` · `src/battle_main.ts:799` |
-| `REG_OFFSET_WIN0H` | define | `include/gba/io_reg.h:43` | `harness/runtime/decomp-runtime.ts:91` · `include/gba/io_reg.ts:44` · `src/battle_anim_effects_3.ts:377` · `src/battle_main.ts:298` · `src/field_screen_effect.ts:76` · `src/pokedex.ts:137` |
+| `REG_OFFSET_WIN0H` | define | `include/gba/io_reg.h:43` | `harness/runtime/decomp-runtime.ts:91` · `include/gba/io_reg.ts:44` · `src/battle_anim_effects_3.ts:377` · `src/battle_main.ts:298` · `src/field_screen_effect.ts:87` · `src/pokedex.ts:137` |
 | `REG_OFFSET_WIN0V` | define | `include/gba/io_reg.h:45` | `harness/runtime/decomp-runtime.ts:93` · `include/gba/io_reg.ts:46` · `src/battle_anim_effects_3.ts:378` · `src/battle_main.ts:299` · `src/pokedex.ts:138` |
 | `REG_OFFSET_WIN1H` | define | `include/gba/io_reg.h:44` | `harness/runtime/decomp-runtime.ts:92` · `include/gba/io_reg.ts:45` · `src/battle_main.ts:300` · `src/pokedex.ts:139` |
 | `REG_OFFSET_WIN1V` | define | `include/gba/io_reg.h:46` | `harness/runtime/decomp-runtime.ts:94` · `include/gba/io_reg.ts:47` · `src/battle_main.ts:301` · `src/pokedex.ts:140` |
-| `REG_OFFSET_WININ` | define | `include/gba/io_reg.h:47` | `harness/runtime/decomp-runtime.ts:95` · `include/gba/io_reg.ts:48` · `src/battle_main.ts:800` · `src/field_screen_effect.ts:77` · `src/pokedex.ts:135` |
-| `REG_OFFSET_WINOUT` | define | `include/gba/io_reg.h:48` | `harness/runtime/decomp-runtime.ts:96` · `include/gba/io_reg.ts:49` · `src/battle_anim_effects_3.ts:379` · `src/battle_main.ts:801` · `src/field_screen_effect.ts:78` · `src/pokedex.ts:136` |
+| `REG_OFFSET_WININ` | define | `include/gba/io_reg.h:47` | `harness/runtime/decomp-runtime.ts:95` · `include/gba/io_reg.ts:48` · `src/battle_main.ts:800` · `src/field_screen_effect.ts:88` · `src/pokedex.ts:135` |
+| `REG_OFFSET_WINOUT` | define | `include/gba/io_reg.h:48` | `harness/runtime/decomp-runtime.ts:96` · `include/gba/io_reg.ts:49` · `src/battle_anim_effects_3.ts:379` · `src/battle_main.ts:801` · `src/field_screen_effect.ts:89` · `src/pokedex.ts:136` |
 | `REMATCH_BRAWLY` | enum_member | `include/constants/rematches.h:71` | `src/gym_leader_rematch.ts:17` · `src/pokenav_match_call_data.ts:119` |
 | `REMATCH_ELITE_FOUR_ENTRIES` | define | `include/constants/rematches.h:87` | `src/battle_setup.ts:770` · `src/pokenav_match_call_data.ts:139` |
 | `REMATCH_FLANNERY` | enum_member | `include/constants/rematches.h:73` | `src/gym_leader_rematch.ts:19` · `src/pokenav_match_call_data.ts:121` |
@@ -1047,8 +1050,8 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `RESOURCE_FLAG_FLASH_FIRE` | define | `include/battle.h:68` | `include/battle.ts:44` · `src/battle_ai_script_commands.ts:1438` · `src/battle_util.ts:2878` |
 | `RGB` | func_macro | `include/constants/rgb.h:8` | `include/gba/defines.ts:88` · `src/pokemon_animation.ts:40` |
 | `RGB_BLACK` | define | `include/constants/rgb.h:15` | `include/gba/defines.ts:91` · `src/battle_main.ts:6443` · `src/easy_chat.ts:539` · `src/item_menu.ts:1156` · `src/pokedex.ts:150` · `src/pokedex_area_screen.ts:635` · `src/pokemon_animation.ts:41` · `src/pokemon_storage_system.ts:1343` |
-| `RGB_BLUE` | define | `include/constants/rgb.h:19` | `src/field_screen_effect.ts:100` · `src/pokemon_animation.ts:44` |
-| `RGB_RED` | define | `include/constants/rgb.h:17` | `src/field_screen_effect.ts:99` · `src/fldeff_sweetscent.ts:31` · `src/image_processing_effects.ts:55` · `src/pokemon_animation.ts:42` |
+| `RGB_BLUE` | define | `include/constants/rgb.h:19` | `src/field_screen_effect.ts:111` · `src/pokemon_animation.ts:44` |
+| `RGB_RED` | define | `include/constants/rgb.h:17` | `src/field_screen_effect.ts:110` · `src/fldeff_sweetscent.ts:31` · `src/image_processing_effects.ts:55` · `src/pokemon_animation.ts:42` |
 | `RGB_WHITE` | define | `include/constants/rgb.h:16` | `harness/boot/copyright-boot.ts:30` · `include/gba/defines.ts:92` · `src/battle_anim_effects_1.ts:671` · `src/battle_anim_effects_1b.ts:148` |
 | `RGB_WHITEALPHA` | define | `include/constants/rgb.h:23` | `include/gba/defines.ts:93` · `src/pokemon_storage_system.ts:5364` |
 | `ROTATE_CLOCKWISE` | define, enum_member | `src/rotating_tile_puzzle.c:12` · `src/rotating_gate.c:172` | `src/rotating_gate.ts:61` · `src/rotating_tile_puzzle.ts:25` |
@@ -1101,11 +1104,11 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `SPRITES_INIT_STATE1` | define | `include/constants/battle_script_commands.h:290` | `include/constants/battle_script_commands.ts:65` · `src/battle_main.ts:4122` |
 | `SPRITES_INIT_STATE2` | define | `include/constants/battle_script_commands.h:291` | `include/constants/battle_script_commands.ts:66` · `src/battle_main.ts:5942` |
 | `SPRITE_NONE` | define | `include/sprite.h:6` | `include/sprite.ts:10` · `src/item_menu.ts:176` · `src/item_menu_icons.ts:37` · `src/main_menu.ts:1249` · `src/player_pc.ts:246` |
-| `SS_TIDAL_LOCATION_CURRENTS` | define | `include/constants/field_specials.h:10` | `include/constants/field_specials.ts:11` · `src/region_map.ts:1286` |
-| `SS_TIDAL_LOCATION_LILYCOVE` | define | `include/constants/field_specials.h:12` | `include/constants/field_specials.ts:13` · `src/region_map.ts:1288` |
-| `SS_TIDAL_LOCATION_ROUTE124` | define | `include/constants/field_specials.h:13` | `include/constants/field_specials.ts:14` · `src/region_map.ts:1289` |
-| `SS_TIDAL_LOCATION_ROUTE131` | define | `include/constants/field_specials.h:14` | `include/constants/field_specials.ts:15` · `src/region_map.ts:1290` |
-| `SS_TIDAL_LOCATION_SLATEPORT` | define | `include/constants/field_specials.h:11` | `include/constants/field_specials.ts:12` · `src/region_map.ts:1287` |
+| `SS_TIDAL_LOCATION_CURRENTS` | define | `include/constants/field_specials.h:10` | `include/constants/field_specials.ts:11` · `src/region_map.ts:1307` |
+| `SS_TIDAL_LOCATION_LILYCOVE` | define | `include/constants/field_specials.h:12` | `include/constants/field_specials.ts:13` · `src/region_map.ts:1309` |
+| `SS_TIDAL_LOCATION_ROUTE124` | define | `include/constants/field_specials.h:13` | `include/constants/field_specials.ts:14` · `src/region_map.ts:1310` |
+| `SS_TIDAL_LOCATION_ROUTE131` | define | `include/constants/field_specials.h:14` | `include/constants/field_specials.ts:15` · `src/region_map.ts:1311` |
+| `SS_TIDAL_LOCATION_SLATEPORT` | define | `include/constants/field_specials.h:11` | `include/constants/field_specials.ts:12` · `src/region_map.ts:1308` |
 | `START_BUTTON` | define | `include/gba/io_reg.h:702` | `include/gba/io_reg.ts:960` · `src/battle_controllers.ts:1447` · `src/easy_chat.ts:530` · `src/title_screen.ts:85` |
 | `STAT_ANIM_MINUS1` | define | `include/battle_anim.h:197` | `include/battle_anim.ts:11` · `src/battle_script_commands.ts:2439` |
 | `STAT_ANIM_MINUS2` | define | `include/battle_anim.h:198` | `include/battle_anim.ts:12` · `src/battle_script_commands.ts:2440` |
@@ -1160,7 +1163,7 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `TRAINER_BATTLE_DOUBLE` | define | `include/constants/battle_setup.h:8` | `src/battle_setup.ts:70` · `src/trainer_see.ts:268` |
 | `TRAINER_BATTLE_REMATCH_DOUBLE` | define | `include/constants/battle_setup.h:11` | `src/battle_setup.ts:73` · `src/trainer_see.ts:269` |
 | `TRAINER_FLAGS_START` | define | `include/constants/flags.h:1343` | `include/constants/flags.ts:1211` · `src/battle_setup.ts:81` |
-| `TRAINER_HILL_ENTRANCE` | define | `include/constants/trainer_hill.h:9` | `src/overworld.ts:1459` · `src/trainer_hill.ts:26` |
+| `TRAINER_HILL_ENTRANCE` | define | `include/constants/trainer_hill.h:9` | `src/overworld.ts:1463` · `src/trainer_hill.ts:26` |
 | `TRAINER_ID_LENGTH` | define | `include/constants/global.h:81` | `include/constants/global.ts:71` · `src/engine/save/save-blocks.ts:37` |
 | `TRAINER_LINK_OPPONENT` | define | `include/constants/trainers.h:15` | `include/constants/trainers.ts:15` · `src/battle_message.ts:614` |
 | `TRAINER_STEVEN_PARTNER` | define | `include/constants/trainers.h:17` | `include/constants/trainers.ts:17` · `src/battle_intro.ts:85` · `src/battle_main.ts:790` |
@@ -1207,7 +1210,7 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `VAR_POKELOT_RND2` | define | `include/constants/vars.h:96` | `include/constants/vars.ts:84` · `src/lottery_corner.ts:38` |
 | `VERSION_EMERALD` | define | `include/constants/global.h:10` | `include/constants/global.ts:10` · `src/battle_main.ts:5946` |
 | `VERSION_RUBY` | define | `include/constants/global.h:9` | `include/constants/global.ts:9` · `src/battle_intro.ts:86` |
-| `WARP_ID_NONE` | define | `include/constants/maps.h:28` | `src/battle_factory.ts:51` · `src/battle_palace.ts:24` · `src/battle_tent.ts:23` · `src/region_map.ts:1788` |
+| `WARP_ID_NONE` | define | `include/constants/maps.h:28` | `src/battle_factory.ts:51` · `src/battle_palace.ts:24` · `src/battle_tent.ts:23` · `src/region_map.ts:1809` |
 | `WEATHER_ABNORMAL` | define | `include/constants/weather.h:19` | `include/constants/weather.ts:23` · `src/field_weather_effect.ts:83` |
 | `WEATHER_DOWNPOUR` | define | `include/constants/weather.h:17` | `include/constants/weather.ts:21` · `src/field_weather.ts:72` · `src/field_weather_effect.ts:81` |
 | `WEATHER_DROUGHT` | define | `include/constants/weather.h:16` | `include/constants/weather.ts:20` · `src/field_weather.ts:71` · `src/field_weather_effect.ts:80` |
@@ -1229,13 +1232,13 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `WINDOW_NONE` | define | `include/window.h:43` | `src/item_menu.ts:177` · `src/match_call.ts:94` · `src/menu.ts:195` · `src/player_pc.ts:244` · `src/pokemon_summary_screen.ts:132` · `src/pokenav_list.ts:65` |
 | `WININ_WIN0_ALL` | define | `include/gba/io_reg.h:557` | `src/battle_intro.ts:50` · `src/fldeff_misc.ts:121` · `src/intro.ts:208` · `src/pokenav_menu_handler_gfx.ts:95` |
 | `WININ_WIN0_BG0` | define | `include/gba/io_reg.h:550` | `src/easy_chat.ts:305` · `src/main_menu.ts:1251` · `src/option_menu.ts:542` |
-| `WININ_WIN0_BG_ALL` | define | `include/gba/io_reg.h:554` | `harness/runtime/decomp-globals.ts:1587` · `src/battle_intro.ts:47` · `src/easy_chat.ts:309` · `src/field_screen_effect.ts:81` |
-| `WININ_WIN0_CLR` | define | `include/gba/io_reg.h:556` | `src/easy_chat.ts:311` · `src/field_screen_effect.ts:83` |
-| `WININ_WIN0_OBJ` | define | `include/gba/io_reg.h:555` | `harness/runtime/decomp-globals.ts:1588` · `src/easy_chat.ts:310` · `src/field_screen_effect.ts:82` |
+| `WININ_WIN0_BG_ALL` | define | `include/gba/io_reg.h:554` | `harness/runtime/decomp-globals.ts:1587` · `src/battle_intro.ts:47` · `src/easy_chat.ts:309` · `src/field_screen_effect.ts:92` |
+| `WININ_WIN0_CLR` | define | `include/gba/io_reg.h:556` | `src/easy_chat.ts:311` · `src/field_screen_effect.ts:94` |
+| `WININ_WIN0_OBJ` | define | `include/gba/io_reg.h:555` | `harness/runtime/decomp-globals.ts:1588` · `src/easy_chat.ts:310` · `src/field_screen_effect.ts:93` |
 | `WINOUT_WIN01_BG0` | define | `include/gba/io_reg.h:567` | `harness/runtime/decomp-globals.ts:1592` · `src/easy_chat.ts:312` · `src/main_menu.ts:1252` |
-| `WINOUT_WIN01_BG1` | define | `include/gba/io_reg.h:568` | `src/easy_chat.ts:313` · `src/field_screen_effect.ts:84` · `src/option_menu.ts:543` |
-| `WINOUT_WIN01_BG3` | define | `include/gba/io_reg.h:570` | `src/easy_chat.ts:314` · `src/field_screen_effect.ts:86` |
-| `WINOUT_WIN01_OBJ` | define | `include/gba/io_reg.h:572` | `harness/runtime/decomp-globals.ts:1593` · `src/battle_intro.ts:53` · `src/easy_chat.ts:315` · `src/field_screen_effect.ts:87` |
+| `WINOUT_WIN01_BG1` | define | `include/gba/io_reg.h:568` | `src/easy_chat.ts:313` · `src/field_screen_effect.ts:95` · `src/option_menu.ts:543` |
+| `WINOUT_WIN01_BG3` | define | `include/gba/io_reg.h:570` | `src/easy_chat.ts:314` · `src/field_screen_effect.ts:97` |
+| `WINOUT_WIN01_OBJ` | define | `include/gba/io_reg.h:572` | `harness/runtime/decomp-globals.ts:1593` · `src/battle_intro.ts:53` · `src/easy_chat.ts:315` · `src/field_screen_effect.ts:98` |
 | `WIN_ITEM_LIST` | enum_member | `src/item_menu.c:95` · `src/shop.c:55` | `src/item_menu.ts:153` · `src/shop.ts:168` |
 | `WIN_MESSAGE` | enum_member | `src/item_menu.c:100` · `src/pokemon_storage_system.c:338` · `src/shop.c:59` | `src/item_menu.ts:158` · `src/shop.ts:180` |
 | `WIN_MSG` | enum_member | `src/battle_pyramid_bag.c:46` · `src/berry_blender.c:112` · `src/easy_chat.c:387` · `src/mystery_event_menu.c:24` · `…` | `src/easy_chat.ts:274` · `src/wallclock.ts:83` |
@@ -1245,7 +1248,7 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 | `WONDER_CARD_TEXT_LENGTH` | define | `include/constants/global.h:103` | `include/constants/global.ts:92` · `src/engine/save/save-blocks.ts:88` |
 | `WONDER_NEWS_BODY_TEXT_LINES` | define | `include/constants/global.h:106` | `include/constants/global.ts:95` · `src/engine/save/save-blocks.ts:91` |
 | `WONDER_NEWS_TEXT_LENGTH` | define | `include/constants/global.h:104` | `include/constants/global.ts:93` · `src/engine/save/save-blocks.ts:89` |
-| `WarpData` | struct | `include/global.h:587` | `src/engine/save/save-blocks.ts:114` · `src/overworld.ts:760` |
+| `WarpData` | struct | `include/global.h:587` | `src/engine/save/save-blocks.ts:114` · `src/overworld.ts:764` |
 | `_RGB` | func_macro | `include/constants/rgb.h:10` | `harness/runtime/decomp-helpers.ts:193` · `src/battle_anim_effects_1b.ts:147` · `src/battle_anim_throw.ts:2093` |
 
 ## 2. MIROIR + HARNESS — 1 déclaration miroir + 1+ harness (adaptation moteur) — 141
@@ -1414,12 +1417,12 @@ dédup moins urgente mais source de désynchronisation de valeurs.
 |---|---|---|---|
 | `EnableInterrupts` | function | `src/gpu_regs.c:166` | `harness/runtime/decomp-globals.ts:1465` · `harness/runtime/decomp-helpers.ts:261` |
 
-## 4. HORS-DÉCOMP — 281 symboles TS déclarés dans 2+ fichiers dont le nom N'EXISTE PAS dans la décomp
+## 4. HORS-DÉCOMP — 279 symboles TS déclarés dans 2+ fichiers dont le nom N'EXISTE PAS dans la décomp
 
 Noms inventés côté port (adaptations moteur) ou wrappers locaux. Un nom inventé déclaré
 dans 2 fichiers = même classe de risque qu'une vraie dupe (ex. `MainCB2_BagMenuRun`).
 
-### 4a. Noms pleins inventés (100) — à examiner comme les vraies dupes
+### 4a. Noms pleins inventés (98) — à examiner comme les vraies dupes
 
 | symbole | déclarations TS |
 |---|---|
@@ -1451,7 +1454,7 @@ dans 2 fichiers = même classe de risque qu'une vraie dupe (ex. `MainCB2_BagMenu
 | `INCLUDES` | `include/battle.ts:56` · `include/battle_anim.ts:187` · `include/constants/battle_frontier.ts:171` · `include/constants/event_objects.ts:307` · `include/constants/trainers.ts:368` · `include/fieldmap.ts:55` · `include/gba/defines.ts:79` · `include/item_menu.ts:90` |
 | `LABELS` | `src/engine/decomp-data/auto-asm-bytecode/data/battle_ai_scripts-bytecode.ts:8` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_anim_scripts-bytecode.ts:8` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_scripts_1-bytecode.ts:8` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_scripts_2-bytecode.ts:8` |
 | `LZ77UnCompVram` | `harness/runtime/decomp-globals.ts:259` · `src/pokenav_conditions_gfx.ts:73` |
-| `LZ77UnCompWram` | `src/pokenav_region_map.ts:90` · `src/region_map.ts:2191` |
+| `LZ77UnCompWram` | `src/pokenav_region_map.ts:90` · `src/region_map.ts:2212` |
 | `MAPSEC_SLATEPORT_CITY` | `include/constants/region_map_sections.ts:16` · `src/battle_tent.ts:32` |
 | `METLOC_SPECIAL_EGG` | `include/constants/region_map_sections.ts:225` · `src/daycare.ts:135` |
 | `MULTISTRING_CHOOSER_IDX` | `src/battle_script_commands.ts:13190` · `src/battle_util.ts:2883` |
@@ -1462,14 +1465,12 @@ dans 2 fichiers = même classe de risque qu'une vraie dupe (ex. `MainCB2_BagMenu
 | `ResetAllMonAnimations` | `harness/runtime/decomp-globals.ts:2474` · `src/pokemon_animation.ts:2178` |
 | `Rt` | `harness/devtools/dev-breakpoint-tools.ts:28` · `harness/devtools/dev-gfx-tools.ts:33` · `harness/e2e/runner.ts:62` |
 | `S` | `harness/e2e/engine-sweep.ts:67` · `src/pokemon_animation.ts:135` |
-| `SCREEN_H` | `harness/gba/flash-mask.ts:24` · `harness/gba/types.ts:16` |
-| `SCREEN_W` | `harness/gba/flash-mask.ts:23` · `harness/gba/types.ts:15` |
 | `STATS` | `src/engine/decomp-data/auto-asm-bytecode/data/battle_ai_scripts-bytecode.ts:569` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_anim_scripts-bytecode.ts:672` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_scripts_1-bytecode.ts:633` · `src/engine/decomp-data/auto-asm-bytecode/data/battle_scripts_2-bytecode.ts:40` |
 | `STD_FRAME_PAL` | `src/engine/bag/bag-screen.ts:91` · `src/party_menu.ts:124` · `src/shop.ts:119` · `src/trainer_card.ts:64` · `src/wallclock.ts:92` |
 | `STD_FRAME_TILE` | `src/engine/bag/bag-screen.ts:90` · `src/party_menu.ts:123` · `src/shop.ts:118` · `src/trainer_card.ts:63` · `src/wallclock.ts:91` |
 | `SYMBOL_MARKER` | `src/engine/battle/battle-anim-registry.ts:60` · `src/engine/battle/memory-map.ts:371` · `src/engine/decomp-data/auto-asm-bytecode/_symbols-table.ts:94` |
 | `SYMBOL_MASK` | `src/engine/battle/memory-map.ts:372` · `src/engine/decomp-data/auto-asm-bytecode/_symbols-table.ts:95` |
-| `SignalWaitState` | `src/engine/field/region-map.ts:44` · `src/field_screen_effect.ts:67` · `src/scrcmd.ts:258` |
+| `SignalWaitState` | `src/engine/field/region-map.ts:44` · `src/field_screen_effect.ts:78` · `src/scrcmd.ts:258` |
 | `Spr` | `src/battle_gfx_sfx_util.ts:510` · `src/battle_interface.ts:437` |
 | `StopMonFrontSpriteAnimation` | `harness/runtime/decomp-globals.ts:2475` · `src/pokemon_animation.ts:2171` |
 | `SubState` | `src/player_pc.ts:179` · `src/start_menu.ts:110` |
@@ -1487,7 +1488,7 @@ dans 2 fichiers = même classe de risque qu'une vraie dupe (ex. `MainCB2_BagMenu
 | `esc` | `harness/devtools/dev-audio-tools.ts:40` · `harness/devtools/devtools-panel.ts:91` · `harness/devtools/panel-v2.ts:52` · `harness/devtools/registrations.ts:75` |
 | `g` | `harness/devtools/devtools-panel.ts:74` · `harness/devtools/registrations.ts:61` · `harness/e2e/engine-sweep.ts:76` · `harness/e2e/runner.ts:79` |
 | `gameCanvas` | `harness/devtools/dev-gfx-tools.ts:50` · `harness/devtools/devtools-panel.ts:322` |
-| `getBattlerControllerFunc` | `src/battle_controller_player.ts:240` · `src/engine/battle/state.ts:136` |
+| `getBattlerControllerFunc` | `src/battle_controller_player.ts:241` · `src/engine/battle/state.ts:136` |
 | `getContestMove` | `src/engine/data/game-data.ts:424` · `src/pokemon_summary_screen.ts:77` |
 | `getItemNameFr` | `harness/runtime/data-tables.ts:111` · `src/engine/data/game-data.ts:450` |
 | `getMove` | `src/engine/data/game-data.ts:349` · `src/pokemon_summary_screen.ts:74` |
@@ -1522,7 +1523,7 @@ dans 2 fichiers = même classe de risque qu'une vraie dupe (ex. `MainCB2_BagMenu
 | `socleFrontierRef` | `src/battle_factory.ts:72` · `src/battle_palace.ts:35` · `src/battle_pike.ts:215` · `src/battle_tent.ts:41` |
 | `step` | `harness/devtools/devtools-panel.ts:844` · `harness/devtools/panel-v2.ts:294` |
 | `syncPlayerPosBeforeBoot` | `harness/devtools/devtools-panel.ts:498` · `harness/devtools/registrations.ts:196` |
-| `toS16` | `src/battle_anim_mons.ts:71` · `src/pokeball.ts:250` |
+| `toS16` | `src/battle_anim_mons.ts:77` · `src/pokeball.ts:250` |
 
 ### 4b. Wrappers locaux `_Nom` d'un symbole décomp (77) — pattern transpileur assumé (liste compacte)
 
@@ -1609,17 +1610,17 @@ importés : dupes VOLONTAIRES par fichier, à résorber seulement lors des passe
 
 ### 4c. Helpers port `_xxx` sans homonyme décomp (104) — liste compacte
 
-- `_AnimItf` × 2 (battle_controller_player.ts:1571, battle_controller_player_partner.ts:748)
-- `_CompleteOnExpBarDone` × 2 (battle_controller_player.ts:2351, battle_controller_player_partner.ts:960)
+- `_AnimItf` × 2 (battle_controller_player.ts:1572, battle_controller_player_partner.ts:748)
+- `_CompleteOnExpBarDone` × 2 (battle_controller_player.ts:2352, battle_controller_player_partner.ts:960)
 - `_DUMMY_TASK` × 2 (battle_anim.ts:161, battle_anim_throw.ts:139)
 - `_DestroyAnimSpriteCb` × 5 (battle_anim_dark.ts:129, battle_anim_electric.ts:61, battle_anim_fire.ts:79, …)
 - `_ESprite` × 2 (battle_anim_effects_1.ts:652, battle_anim_effects_1b.ts:48)
 - `_Rt` × 3 (battle_anim_effects_2.ts:171, battle_anim_electric.ts:44, battle_anim_flying.ts:56)
 - `_RtOam` × 3 (battle_anim_effects_2.ts:170, battle_anim_electric.ts:43, battle_anim_flying.ts:55)
-- `_ShowHealthboxOnSendOut` × 3 (battle_controller_opponent.ts:1425, battle_controller_player.ts:2284, battle_controller_player_partner.ts:198)
+- `_ShowHealthboxOnSendOut` × 3 (battle_controller_opponent.ts:1425, battle_controller_player.ts:2285, battle_controller_player_partner.ts:198)
 - `_SpTask` × 2 (battle_anim_effects_2.ts:1301, battle_anim_water.ts:905)
 - `_VSprite` × 12 (battle_anim_bug.ts:37, battle_anim_dragon.ts:31, battle_anim_effects_2.ts:64, …)
-- `_animItf` × 2 (battle_controller_player.ts:1580, battle_controller_player_partner.ts:757)
+- `_animItf` × 2 (battle_controller_player.ts:1581, battle_controller_player_partner.ts:757)
 - `_applyFrame` × 2 (battle_anim_effects_3.ts:117, pokemon_animation.ts:1988)
 - `_args` × 2 (battle_anim_effects_2.ts:197, battle_anim_mon_movement.ts:32)
 - `_ashInit` × 2 (field_effect_helpers.ts:2960, field_weather_effect.ts:735)
@@ -1647,33 +1648,33 @@ importés : dupes VOLONTAIRES par fichier, à résorber seulement lors des passe
 - `_ensureOwnMatrix` × 2 (battle_anim_electric.ts:105, battle_anim_flying.ts:162)
 - `_findSpriteId` × 2 (battle_transition.ts:285, egg_hatch.ts:837)
 - `_flItf` × 2 (battle_anim_flying.ts:827, battle_anim_utility_funcs.ts:439)
-- `_freeMonSpriteAndHideHealthbox` × 2 (battle_controller_player.ts:1211, battle_controller_player_partner.ts:438)
+- `_freeMonSpriteAndHideHealthbox` × 2 (battle_controller_player.ts:1212, battle_controller_player_partner.ts:438)
 - `_g` × 2 (devtools, engine)
-- `_gHealthboxSpriteId` × 3 (battle_controller_opponent.ts:1418, battle_controller_player.ts:2258, battle_controller_player_partner.ts:193)
+- `_gHealthboxSpriteId` × 3 (battle_controller_opponent.ts:1418, battle_controller_player.ts:2259, battle_controller_player_partner.ts:193)
 - `_getBattlerMonSpriteId` × 2 (battle_anim_electric.ts:438, battle_anim_flying.ts:148)
 - `_getBattlerSpriteId` × 2 (battle_anim_throw.ts:679, battle_main.ts:3495)
-- `_getHealthBoxAnimationState` × 3 (battle_controller_opponent.ts:1013, battle_controller_player.ts:1434, battle_controller_player_partner.ts:262)
-- `_getMoveType` × 2 (battle_controller_player.ts:721, battle_util.ts:2853)
+- `_getHealthBoxAnimationState` × 3 (battle_controller_opponent.ts:1013, battle_controller_player.ts:1435, battle_controller_player_partner.ts:262)
+- `_getMoveType` × 2 (battle_controller_player.ts:722, battle_util.ts:2853)
 - `_getTrainerData` × 2 (battle_ai_script_commands.ts:295, battle_main.ts:1003)
 - `_graphicsLoading` × 3 (party_menu.ts:491, pokemon_summary_screen.ts:509, trainer_card.ts:154)
 - `_graphicsReady` × 3 (party_menu.ts:490, pokemon_summary_screen.ts:508, trainer_card.ts:153)
 - `_gs` × 4 (intro.ts:216, intro_credits_graphics.ts:81, main_menu.ts:1270, …)
 - `_gt` × 5 (intro.ts:217, intro_credits_graphics.ts:82, main_menu.ts:1271, …)
-- `_healthBoxAnimStateWired` × 3 (battle_controller_opponent.ts:1023, battle_controller_player.ts:1441, battle_controller_player_partner.ts:258)
+- `_healthBoxAnimStateWired` × 3 (battle_controller_opponent.ts:1023, battle_controller_player.ts:1442, battle_controller_player_partner.ts:258)
 - `_inputTaskId` × 2 (party_menu.ts:440, pokemon_summary_screen.ts:507)
 - `_installed` × 3 (devtools, runtime, bytevm-boot.ts:15)
-- `_introEndDelay` × 2 (battle_controller_player.ts:2604, battle_controller_player_partner.ts:1141)
-- `_isBehindSubstitute` × 3 (battle_controller_opponent.ts:1027, battle_controller_player.ts:1449, battle_controller_player_partner.ts:252)
+- `_introEndDelay` × 2 (battle_controller_player.ts:2605, battle_controller_player_partner.ts:1141)
+- `_isBehindSubstitute` × 3 (battle_controller_opponent.ts:1027, battle_controller_player.ts:1450, battle_controller_player_partner.ts:252)
 - `_isOpen` × 5 (engine, party_menu.ts:346, pokedex.ts:3691, …)
-- `_isSpecialAnimActive` × 3 (battle_controller_opponent.ts:1031, battle_controller_player.ts:1453, battle_controller_player_partner.ts:242)
+- `_isSpecialAnimActive` × 3 (battle_controller_opponent.ts:1031, battle_controller_player.ts:1454, battle_controller_player_partner.ts:242)
 - `_itf` × 8 (battle_anim_dark.ts:45, battle_anim_effects_1.ts:45, battle_anim_effects_3.ts:72, …)
 - `_loadAssets` × 6 (engine, party_menu.ts:495, pokedex.ts:296, …)
 - `_loadPromise` × 3 (engine)
 - `_loaded` × 3 (data, script.ts:410)
 - `_menuGfx` × 2 (mon_markings.ts:209, naming_screen.ts:447)
 - `_monSprite` × 2 (battle_anim_dark.ts:48, battle_anim_ground.ts:40)
-- `_moveAnimMove` × 2 (battle_controller_player.ts:1570, battle_controller_player_partner.ts:747)
-- `_moveAnimState` × 2 (battle_controller_player.ts:1569, battle_controller_player_partner.ts:746)
+- `_moveAnimMove` × 2 (battle_controller_player.ts:1571, battle_controller_player_partner.ts:747)
+- `_moveAnimState` × 2 (battle_controller_player.ts:1570, battle_controller_player_partner.ts:746)
 - `_msgWid` × 2 (party_menu.ts:438, wallclock.ts:254)
 - `_oamOf` × 2 (battle_anim_effects_3.ts:395, battle_anim_poison.ts:129)
 - `_oamTileNumAdd` × 2 (battle_anim_effects_2.ts:303, battle_anim_electric.ts:91)
@@ -1689,16 +1690,16 @@ importés : dupes VOLONTAIRES par fichier, à résorber seulement lors des passe
 - `_s8` × 2 (battle_ai_script_commands.ts:248, rtc.ts:104)
 - `_seLog` × 2 (devtools)
 - `_selectedSpriteId` × 2 (devtools)
-- `_setHealthBoxAnimationState` × 3 (battle_controller_opponent.ts:1017, battle_controller_player.ts:1445, battle_controller_player_partner.ts:266)
-- `_setMonToSwitchIntoId` × 3 (battle_controller_opponent.ts:621, battle_controller_player.ts:2147, battle_controller_player_partner.ts:325)
+- `_setHealthBoxAnimationState` × 3 (battle_controller_opponent.ts:1017, battle_controller_player.ts:1446, battle_controller_player_partner.ts:266)
+- `_setMonToSwitchIntoId` × 3 (battle_controller_opponent.ts:621, battle_controller_player.ts:2148, battle_controller_player_partner.ts:325)
 - `_setTaskFunc` × 2 (evolution_graphics.ts:43, evolution_scene.ts:167)
 - `_shadowTileStart` × 2 (battle_gfx_sfx_util.ts:537, field_effect_helpers.ts:3958)
 - `_showObj` × 2 (devtools)
 - `_side` × 2 (battle_anim_effects_1b.ts:68, battle_anim_effects_3.ts:336)
-- `_speciesName` × 2 (battle_anim_mons.ts:276, battle_message.ts:667)
+- `_speciesName` × 2 (battle_anim_mons.ts:282, battle_message.ts:667)
 - `_spr` × 4 (battle_gfx_sfx_util.ts:516, battle_interface.ts:448, mon_markings.ts:231, …)
 - `_spriteIdOf` × 2 (battle_anim_bug.ts:134, battle_anim_throw.ts:763)
-- `_spriteOamTileNumSet` × 3 (pokenav_main_menu.ts:717, pokenav_menu_handler_gfx.ts:576, pokenav_region_map.ts:163)
+- `_spriteOamTileNumSet` × 3 (pokenav_main_menu.ts:720, pokenav_menu_handler_gfx.ts:576, pokenav_region_map.ts:163)
 - `_sprites` × 2 (devtools, battle_anim_mon_movement.ts:47)
 - `_startAnim` × 2 (battle_anim_fight.ts:26, battle_anim_throw.ts:774)
 - `_state` × 7 (m4a, battle_transition.ts:89, data, …)
@@ -1709,10 +1710,10 @@ importés : dupes VOLONTAIRES par fichier, à résorber seulement lors des passe
 - `_toS8` × 2 (battle_interface.ts:346, list_menu.ts:917)
 - `_trainerPicMap` × 2 (battle_gfx_sfx_util.ts:201, pokenav_match_call_gfx.ts:79)
 - `_trainerSee` × 2 (battle_setup.ts:142, scrcmd_trainer.ts:30)
-- `_triggerFaintSlideAnim` × 2 (battle_controller_player.ts:1482, battle_controller_player_partner.ts:729)
+- `_triggerFaintSlideAnim` × 2 (battle_controller_player.ts:1483, battle_controller_player_partner.ts:729)
 - `_vItf` × 13 (battle_anim_bug.ts:38, battle_anim_dragon.ts:32, battle_anim_effects_1b.ts:56, …)
 - `_visible` × 2 (devtools)
 - `_visiblesOnly` × 2 (devtools)
 
 ---
-_1362 doublons décomp + 281 hors-décomp — régénération : `node scripts/decomp-index.cjs` · requête : `--dupes`._
+_1365 doublons décomp + 279 hors-décomp — régénération : `node scripts/decomp-index.cjs` · requête : `--dupes`._

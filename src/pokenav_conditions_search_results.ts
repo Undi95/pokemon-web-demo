@@ -755,7 +755,9 @@ function PrintSearchResultListMenuItems(gfx: Pokenav_SearchResultsGfx): void {
   DynamicPlaceholderTextUtil_Reset();
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
   gStringVar1[0] = EOS; // 1:1 `*gStringVar1 = EOS`
-  DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar2, getString('gText_NumberIndex'));
+  // décomp strings.c:994 `const u8 gText_NumberIndex[] = _("Nº {DYNAMIC 0}")` → encoder : une
+  // string JS nue ferait boucler à l'infini le scan EOS de ExpandPlaceholders (freeze a49d8f6e9).
+  DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar2, encodeOwText(getString('gText_NumberIndex')));
   AddTextPrinterParameterized(gfx.winid, FONT_NORMAL, gStringVar2, 4, 1, TEXT_SKIP_DRAW, null);
   ConvertIntToDecimalStringN(gStringVar1, rank, STR_CONV_MODE_RIGHT_ALIGN, 3);
   AddTextPrinterParameterized(gfx.winid, FONT_NORMAL, gStringVar1, 34, 1, TEXT_SKIP_DRAW, null);

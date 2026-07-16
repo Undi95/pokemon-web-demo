@@ -37,6 +37,7 @@ import { GetSetPokedexFlag } from './pokedex';
 import { CompactPartySlots } from './pokemon_storage_system';
 import { InitScriptContext, RunScriptCommand, RunScriptImmediately, ScriptReadByte, ScriptReadHalfword, ScriptReadWord, SetupBytecodeScript, StopScript } from './script';
 import { StringCompare, StringCopyN, StringExpandPlaceholders, gStringVar1, gStringVar2, gStringVar4 } from './string_util';
+import { encodeOwText } from './text';
 import { CalcByteArraySum, CalcCRC16 } from './util';
 import type { Pokemon } from './pokemon';
 import type { Mail } from './engine/save/save-blocks';
@@ -370,9 +371,12 @@ export function MEScrCmd_givepokemon(ctx: ScriptContext): boolean {
   pokemon = pokemonPtr as unknown as Pokemon;
   species = GetMonData(pokemon, MON_DATA_SPECIES_OR_EGG) as number;
   if (species == SPECIES_EGG)
-    StringCopyN(gStringVar1, getString('gText_EggNickname') as unknown as Uint8Array, POKEMON_NAME_LENGTH + 1);
+    // décomp strings.c:21 `const u8 gText_EggNickname[] = _("OEUF")` → encoder : la string JS
+    // castée en Uint8Array copiait du garbage (0x00) dans gStringVar1, sans EOS.
+    StringCopyN(gStringVar1, encodeOwText(getString('gText_EggNickname')), POKEMON_NAME_LENGTH + 1);
   else
-    StringCopyN(gStringVar1, getString('gText_Pokemon') as unknown as Uint8Array, POKEMON_NAME_LENGTH + 1);
+    // décomp strings.c:22 `const u8 gText_Pokemon[] = _("POKéMON")` → encoder (idem ci-dessus).
+    StringCopyN(gStringVar1, encodeOwText(getString('gText_Pokemon')), POKEMON_NAME_LENGTH + 1);
   if (gPlayerPartyCount == PARTY_SIZE)
   {
     StringExpandPlaceholders(gStringVar4, getString('gText_MysteryEventFullParty'));

@@ -88,7 +88,13 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 5. Fly map : câbler les 6 sentinelles wireTodo restantes (GetSSTidalLocation, SetWarpDestination ×2,
    ReturnToFieldFromFlyMapSelect, CB2_ReturnToPartyMenuFromFlyMap, CB2_ReturnToFieldWithOpenMenu)
    → la carte de VOL devient jouable (HM02 field move).
-6. 🚨 Pépites DECOMP-INDEX-dupes (oracle `node scripts/decomp-index.cjs --dupes`) — à investiguer :
+6. 🧨 MOTEUR affine : la re-copie OAM→sprite de tickAllAffineAnims (sprite-engine-impl.ts:602,
+   « direction unique allumer ») rend TOUTE extinction d'affine fragile : un reset 1:1 qui n'éteint
+   que le champ flat est rallumé par l'OAM shadow résiduel au tick suivant (bug payé : sous-menus
+   CONDITION chevauchés, fixé localement `c9d56188f` en éteignant les DEUX champs dans
+   SpriteCB_OptionZoom). Consolider : auditer les resets affine des autres écrans (send-out ball,
+   minimize, growth) OU changer la sémantique du tick (source de vérité unique).
+7. 🚨 Pépites DECOMP-INDEX-dupes (oracle `node scripts/decomp-index.cjs --dupes`) — à investiguer :
    ① gBattleTypeFlags DÉCLARÉ 2× (battle_intro.ts:106 + engine/battle/state.ts:184) = deux vérités
    possibles sur le flag central du combat — VÉRIFIER si les deux instances divergent au runtime.
    ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué). ③ DestroySprite
