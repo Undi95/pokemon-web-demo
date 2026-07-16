@@ -10,9 +10,9 @@
  *
  * `SetUpFieldMove_Flash` (condition cave + flag) est dans party-screen.ts
  * (anti-cycle ESM). Il pose `gPostMenuFieldCallback = __FieldCallback_Flash`
- * (exposé ci-dessous sur globalThis). La pénombre de grotte (sFlashLevelToRadius
- * + masque circulaire) + les opcodes animateflash/setflashlevel existent déjà
- * (flash-mask.ts + script-opcodes-screen-fx.ts).
+ * (exposé ci-dessous sur globalThis). La pénombre de grotte (fenêtre WIN0 par-scanline,
+ * sFlashLevelToRadius) + les opcodes animateflash (→ AnimateFlash REEL) / setflashlevel
+ * vivent dans field_screen_effect.ts + scrcmd.ts.
  */
 
 import { CreateFieldMoveTask } from './field_effect_helpers';
@@ -26,8 +26,8 @@ const FLAG_SYS_USE_FLASH = 2184;
  *    PlaySE(SE_M_REFLECT);                              // audio skip (règle BGM/SE)
  *    FlagSet(FLAG_SYS_USE_FLASH);
  *    ScriptContext_SetupScript(EventScript_UseFlash);   // ["animateflash 1","setflashlevel 1","end"]
- *  Le script anime l'ouverture du rayon (gFlashLevel 8→1 via animateflash) → la
- *  grotte s'éclaire (flash-mask.ts rend le masque circulaire). */
+ *  Le script anime l'ouverture du rayon (via animateflash → AnimateFlash, effet
+ *  scanline WIN0) → la grotte s'éclaire (cercle de vision agrandi). */
 function FldEff_UseFlash(): void {
   // PlaySE(SE_M_REFLECT) : skip (audio non demandé).
   FlagSet(FLAG_SYS_USE_FLASH);

@@ -64,7 +64,7 @@ import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE, gMapHeader } fr
 // Voie A : logique object-event partagée avec le moteur parsé (source unique).
 import { doSetObjectXY, doSetObjectXYPerm, doAddObject, doRemoveObject, doSetObjectInvisibility, doTurnObject, doCopyObjectXYToPerm, doSetObjectMovementType, doSetObjectSubpriority, doResetObjectSubpriority } from './scrcmd_object';
 import { Overworld_SetSavedMusic } from './overworld';
-import { SetFlashLevel, makeAnimateFlashPoll } from './scrcmd_flash';
+import { SetFlashLevel } from './scrcmd_flash';
 import * as Songs from '../include/constants/songs';
 
 // ─── Helpers partagés des opcodes (ex engine/script/script-opcodes-helpers, lot 18) ──
@@ -737,7 +737,19 @@ const ScrCmd_braillemessage: ScrCmdFunc = (ctx) => { ScriptReadWord(ctx); return
 const ScrCmd_closebraillemessage: ScrCmdFunc = () => false;
 // flash (voie A — scrcmd_flash) : setflashlevel(VarGet u16) ; animateflash(u8) + wait.
 const ScrCmd_setflashlevel: ScrCmdFunc = (ctx) => { SetFlashLevel(VarGet(ScriptReadHalfword(ctx)) & 0xF); return false; };  // :612
-const ScrCmd_animateflash: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, makeAnimateFlashPoll(ScriptReadByte(ctx) & 0xF)); return true; };  // :605
+// 1:1 décomp `ScrCmd_animateflash` (scrcmd.c:605) : `AnimateFlash(level); ScriptContext_Stop();`.
+// AnimateFlash (field_screen_effect.ts, effet scanline WIN0 REEL — remplace la rustine
+// flash-mask) lance UpdateFlashLevelEffect + Task_WaitForFlashUpdate. Port : le wait du
+// script est porté par le poll natif (mécanisme éprouvé) qui attend la fin de la task ;
+// timing observable identique au décomp (ScriptContext_Stop + reprise ScriptContext_Enable).
+// Ponts globalThis anti-cycle (un import scrcmd→field_screen_effect = arête d'éval tôt → TDZ).
+const ScrCmd_animateflash: ScrCmdFunc = (ctx) => {
+  const level = ScriptReadByte(ctx) & 0xF;
+  const g = globalThis as Record<string, unknown>;
+  (g.__AnimateFlash as ((l: number) => void) | undefined)?.(level);
+  SetupNativeScript(ctx, () => !((g.__IsAnimateFlashActive as (() => boolean) | undefined)?.() ?? false));
+  return true;
+};  // :605
 
 // ─── givemon / giveegg (1:1 scrcmd.c:1681-1700) — ScriptGiveMon/Egg en import dynamique
 //     (anti-cycle ESM script_pokemon_util→pokemon, = moteur parsé). VAR_RESULT async. ──

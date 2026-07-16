@@ -1108,8 +1108,8 @@ export function IsFanfareTaskInactive(): boolean {
 };
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
-// flash-mask.ts (harness) auto-register __applyFlashMask pour phaser-bridge post-process.
-import '../gba/flash-mask';
+// (Ex-rustine flash-mask.ts supprimée : pénombre de grotte rendue 1:1 par WIN0
+//  scanline — field_screen_effect.ts::InitCurrentFlashLevelScanlineEffect + AnimateFlash.)
 // money box (money.ts) + coins box (coins.ts) auto-register __moneyBoxUI à leur chargement
 // (importés par scrcmd qui porte les opcodes show/hide/update money&coins) → import explicite
 // inutile ici (1:1 : money.c/coins.c portent ces fns ; lues par scrcmd via globalThis lazy).

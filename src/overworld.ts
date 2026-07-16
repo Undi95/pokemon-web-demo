@@ -327,16 +327,15 @@ export function DoWhiteOut(): void {
  *    else if (FlagGet(FLAG_SYS_USE_FLASH)) gSaveBlock1Ptr->flashLevel = 1;    // grand cercle (Flash utilisé)
  *    else                            gSaveBlock1Ptr->flashLevel = gMaxFlashLevel - 1;  // = 7 (petit cercle, grotte sombre)
  *  Appelé au map load (overworld.c:805, juste avant RunOnTransitionMapScript) →
- *  une grotte (cave = json.requires_flash) sans CS Flash s'affiche en pénombre
- *  (masque circulaire flash-mask.ts). `SetFlashLevel` pose `globalThis.gFlashLevel`
- *  (source du masque) + `_gFlashLevel` (niveau de départ d'`animateflash`). */
+ *  une grotte (cave = json.requires_flash) sans CS Flash s'affiche en pénombre.
+ *  `SetFlashLevel` pose `gSaveBlock1Ptr->flashLevel` — lu par `GetFlashLevel()` et
+ *  `InitCurrentFlashLevelScanlineEffect` (arme la fenêtre WIN0 par-scanline du flash). */
 export function SetDefaultFlashLevel(): void {
   let level: number;
   if (!gMapHeader || !gMapHeader.cave) level = 0;
   else if (FlagGet('FLAG_SYS_USE_FLASH')) level = 1;
   else level = gMaxFlashLevel - 1;  // = 7
-  // SetFlashLevel via globalThis (anti-cycle ESM) — pose globalThis.gFlashLevel
-  // (masque) + _gFlashLevel (départ animateflash).
+  // SetFlashLevel via globalThis (anti-cycle ESM) — pose gSaveBlock1Ptr->flashLevel.
   const setFlash = (globalThis as Record<string, unknown>).__SetFlashLevel as ((l: number) => void) | undefined;
   setFlash?.(level);
 }
@@ -1163,6 +1162,35 @@ export function InitOverworldGraphicsRegisters(): void {
   ShowBg(2);
   ShowBg(3);
   InitFieldMessageBox();
+}
+
+/** 1:1 STRICT décomp `static void InitCurrentFlashLevelScanlineEffect(void)` (overworld.c:1794).
+ *  Arme l'effet scanline WIN0H de la pénombre de grotte au map load (appelé par
+ *  InitViewGraphics juste avant InitOverworldGraphicsRegisters). Remplace l'ex-rustine
+ *  harness/gba/flash-mask.ts : le cercle de vision est désormais rendu par la fenêtre
+ *  WIN0 (le compositor la clippe par-scanline). Les fns du flash (WriteFlashScanline
+ *  EffectBuffer / ScanlineEffect_SetParams(sFlashEffectParams)) vivent dans
+ *  field_screen_effect.ts (foyer 1:1) et sont appelées via ponts globalThis — un import
+ *  statique overworld→field_screen_effect (qui importe déjà overworld) fermerait un
+ *  cycle ESM à risque TDZ (cf. [[feedback-map-loader-var-tdz]]).
+ *
+ *  `InBattlePyramid_()` (solo : Battle Frontier hors scope) → lu paresseusement, false
+ *  par défaut. `flashLevel` = `GetFlashLevel()` (overworld.c:988 = gSaveBlock1Ptr->flashLevel,
+ *  posé au map load par SetDefaultFlashLevel). */
+export function InitCurrentFlashLevelScanlineEffect(): void {
+  const g = globalThis as Record<string, unknown>;
+  const setupParams = g.__SetupFlashScanlineParams as (() => void) | undefined;
+  const inPyramid = (g.InBattlePyramid_ as (() => boolean) | undefined)?.() ?? false;
+  if (inPyramid) {
+    (g.__WriteBattlePyramidViewScanlineEffectBuffer as (() => void) | undefined)?.();
+    setupParams?.();
+  } else {
+    const flashLevel = gSaveBlock1Ptr.flashLevel & 0xF;
+    if (flashLevel) {
+      (g.__WriteFlashScanlineEffectBuffer as ((l: number) => void) | undefined)?.(flashLevel);
+      setupParams?.();
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

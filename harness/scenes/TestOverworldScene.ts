@@ -167,6 +167,7 @@ import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSp
 import { setReservedSpritePaletteCount } from '../../src/sprite';
 import {
   SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters,
+  InitCurrentFlashLevelScanlineEffect,
   Overworld_PlaySpecialMapMusic, TransitionMapMusic,
   TryFadeOutOldMapMusic, BGMusicStopped, SetWarpDestinationFromMapName,
   ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
@@ -1300,8 +1301,8 @@ export class TestOverworldScene extends Phaser.Scene {
     SetSavedWeatherFromCurrMapHeader();
     // 1:1 décomp `SetDefaultFlashLevel()` (overworld.c:805, juste avant
     // RunOnTransitionMapScript) : une grotte (cave) sans CS Flash s'affiche en
-    // pénombre (gFlashLevel = 7 → masque circulaire). OnTransition peut ensuite
-    // override via setflashlevel. Sans ça les grottes étaient pleinement éclairées.
+    // pénombre (gSaveBlock1->flashLevel = 7 → cercle WIN0 armé plus bas par
+    // InitCurrentFlashLevelScanlineEffect). OnTransition peut override via setflashlevel.
     SetDefaultFlashLevel();
     RunOnTransitionMapScript();
 
@@ -1495,6 +1496,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // + config BG (InitOverworldBgs). C'est ce qui ÉCRASE l'état WIN/BLD/MOSAIC laissé
     // par l'écran précédent (intro/titre) → plus besoin des clears ad-hoc en
     // transitionToOverworld (l'ombre de la fenêtre de dialogue disparaît proprement).
+    //
+    // 1:1 décomp `InitViewGraphics` (overworld.c:2088) : InitCurrentFlashLevelScanline
+    // Effect() PUIS InitOverworldGraphicsRegisters(). Le 1er arme la fenêtre WIN0
+    // par-scanline de la pénombre de grotte (si gSaveBlock1->flashLevel != 0, posé par
+    // SetDefaultFlashLevel ci-dessus) — remplace l'ex-rustine flash-mask.ts.
+    InitCurrentFlashLevelScanlineEffect();
     InitOverworldGraphicsRegisters();
 
     // 1:1 décomp `ShowMapNamePopup()` (overworld.c:1947 LoadMapInStepsLocal case 11).

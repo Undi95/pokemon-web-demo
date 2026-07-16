@@ -52,13 +52,11 @@ export class GbaPhaserBridge {
   /** Tick : render la frame GBA + update la texture Phaser. */
   tick(): void {
     this.gba.tick();
-    // 1:1 décomp `fldeff_flash.c` : applique le mask noir circulaire si Flash HM
-    // est actif dans la map courante. Lit gFlashLevel (set par setflashlevel
-    // opcode). Cf. flash-mask.ts pour détails. Coût négligeable (< 0.5ms),
-    // safe early-return si level=0.
+    // Pénombre de grotte (Flash) : rendue 1:1 par la fenêtre WIN0 par-scanline du
+    // compositor (field_screen_effect.ts::InitCurrentFlashLevelScanlineEffect +
+    // AnimateFlash → REG_WIN0H par HBlank). L'ex-rustine post-process flash-mask.ts
+    // (masque circulaire noir sur le frame buffer) a été supprimée.
     const fb = this.gba.getFrameBuffer();
-    const flashMask = (globalThis as { __applyFlashMask?: (fb: Uint8ClampedArray) => boolean }).__applyFlashMask;
-    if (flashMask) flashMask(fb);
     // Copy frame buffer GBA → ImageData → Canvas
     this.imageData.data.set(fb);
     this.ctx.putImageData(this.imageData, 0, 0);

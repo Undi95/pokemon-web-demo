@@ -1521,7 +1521,9 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'ShouldDoBrailleRegicePuzzle' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
-  'DoOrbEffect', 'FadeOutOrbEffect',
+  // 'DoOrbEffect' / 'FadeOutOrbEffect' — portés 1:1 field_screen_effect.ts (effet Orbe
+  //   Groudon/Kyogre), registerSpecial vers les vraies fns ci-bas (retirés du stub-loop
+  //   = anti-clobber).
   // 'MauvilleGymDeactivatePuzzle' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'GetWeekCount' — porté 1:1 décomp field_specials.c:940 ci-bas.
   // 'ReducePlayerPartyToSelectedMons' — porté 1:1 script_pokemon_util.ts:209 (jalon multi Steven),
@@ -1538,6 +1540,19 @@ const _STUB_RETURN_0_SPECIALS = [
 for (const name of _STUB_RETURN_0_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// DoOrbEffect / FadeOutOrbEffect — 1:1 field_screen_effect.c:1207/1236 (réveil Groudon/
+// Kyogre, Orbe Rouge/Bleu). Via ponts globalThis (__DoOrbEffect/__FadeOutOrbEffect posés
+// par field_screen_effect.ts) — un import statique specials-registry→field_screen_effect
+// = arête d'éval tôt à risque TDZ. DoOrbEffect lance Task_OrbEffect (le script fait ensuite
+// `waitstate` ; Task_OrbEffect state 2 réactive le contexte). FadeOutOrbEffect passe la task
+// en state 6 (fondu de sortie).
+registerSpecial('DoOrbEffect', () => {
+  ((globalThis as Record<string, unknown>).__DoOrbEffect as (() => void) | undefined)?.();
+});
+registerSpecial('FadeOutOrbEffect', () => {
+  ((globalThis as Record<string, unknown>).__FadeOutOrbEffect as (() => void) | undefined)?.();
+});
 
 // ReducePlayerPartyToSelectedMons — porté 1:1 (script_pokemon_util.c:209) dans
 // src/script_pokemon_util.ts (jalon multi Steven). Compacte gPlayerParty sur les mons
