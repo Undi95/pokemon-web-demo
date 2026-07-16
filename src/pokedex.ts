@@ -3749,7 +3749,7 @@ function _preloadNewEntryMonPic(dexNum: number): void {
 /** 1:1 décomp `CreateMonSpriteFromNationalDexNumber(nationalNum, x, y, paletteSlot)`
  *  (pokedex.c) : NationalPokedexNumToSpecies → CreateMonPicSprite_HandleDeoxys(
  *  species, SHINY_ODDS, 0, TRUE=MON_PIC_AFFINE_FRONT, x, y, paletteSlot, TAG_NONE). */
-function CreateMonSpriteFromNationalDexNumber(dexNum: number, x: number, y: number, paletteSlot: number): number {
+export function CreateMonSpriteFromNationalDexNumber(dexNum: number, x: number, y: number, paletteSlot: number): number {
   const species = NationalPokedexNumToSpecies(dexNum);
   const enumName = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
   return CreateMonPicSprite_Affine(enumName, 8 /* SHINY_ODDS */, 0, MON_PIC_AFFINE_FRONT, x, y, paletteSlot, 0xFFFF /* TAG_NONE */);

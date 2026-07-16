@@ -734,3 +734,91 @@ async function loadGPrefixedExtras(): Promise<void> {
     }
   }));
 }
+
+/** Pré-charge TOUS les assets de la séquence CREDITS (générique de fin, atteint après le
+ *  Panthéon). 1:1 décomp : credits.c + intro_credits_graphics.c (scènes vélo partagées) +
+ *  starter_choose.c (BG interludes Pokémon) + graphics.c (écran THE END).
+ *
+ *  Doit être appelé AVANT `CB2_StartCreditsSequence` : celle-ci (+ LoadBikeScene /
+ *  Task_LoadShowMons / LoadTheEndScreen) fait des `LZ77UnCompVram`/`LoadPalette` SYNCHRONES
+ *  qui lookupent l'assetCache — pas de gate async possible dans le CB2 (piège FREEZE).
+ *  Tout asset absent → le loader HURLE en console (console.warn/error) SANS figer. */
+export async function preloadCreditsAssets(): Promise<void> {
+  type Entry = { symbol: string; url: string; type: 'gfx4' | 'gfx8' | 'pal' | 'tilemap' | 'palfromgfx' };
+  const assets: Entry[] = [
+    // ── Scènes vélo (intro_credits_graphics.c LoadCreditsSceneGraphics) ────────
+    // Sol (grass) + variantes palettes matin/couchant/nuit.
+    { symbol: 'sGrass_Gfx', url: '/decomp/em/intro/scene_2/grass.png', type: 'gfx4' },
+    { symbol: 'sGrass_Tilemap', url: '/decomp/em/intro/scene_2/grass_map.bin', type: 'tilemap' },
+    { symbol: 'sGrass_Pal', url: '/decomp/em/intro/scene_2/grass.png', type: 'palfromgfx' },
+    { symbol: 'sGrassSunset_Pal', url: '/decomp/em/intro/scene_2/grass_sunset.pal', type: 'pal' },
+    { symbol: 'sGrassNight_Pal', url: '/decomp/em/intro/scene_2/grass_night.pal', type: 'pal' },
+    // Nuages BG (SCENE_OCEAN_MORNING / SUNSET).
+    { symbol: 'sCloudsBg_Gfx', url: '/decomp/em/intro/scene_2/clouds_bg.png', type: 'gfx4' },
+    { symbol: 'sCloudsBg_Tilemap', url: '/decomp/em/intro/scene_2/clouds_bg_map.bin', type: 'tilemap' },
+    { symbol: 'sCloudsBg_Pal', url: '/decomp/em/intro/scene_2/clouds_bg.pal', type: 'pal' },
+    { symbol: 'sCloudsBgSunset_Pal', url: '/decomp/em/intro/scene_2/clouds_bg_sunset.pal', type: 'pal' },
+    // Nuages sprites (OBJ) + variante couchant.
+    { symbol: 'sClouds_Gfx', url: '/decomp/em/intro/scene_2/clouds.png', type: 'gfx4' },
+    { symbol: 'sClouds_Pal', url: '/decomp/em/intro/scene_2/clouds.gbapal', type: 'pal' },
+    { symbol: 'sCloudsSunset_Pal', url: '/decomp/em/intro/scene_2/clouds_sunset.pal', type: 'pal' },
+    // Arbres (SCENE_FOREST_*).
+    { symbol: 'sTrees_Gfx', url: '/decomp/em/intro/scene_2/trees.png', type: 'gfx4' },
+    { symbol: 'sTrees_Tilemap', url: '/decomp/em/intro/scene_2/trees_map.bin', type: 'tilemap' },
+    { symbol: 'sTreesSunset_Pal', url: '/decomp/em/intro/scene_2/trees_sunset.pal', type: 'pal' },
+    { symbol: 'sTreesSmall_Gfx', url: '/decomp/em/intro/scene_2/trees_small.png', type: 'gfx4' },
+    { symbol: 'sTreesSmall_Pal', url: '/decomp/em/intro/scene_2/trees_small.png', type: 'palfromgfx' },
+    // Maisons (SCENE_CITY_NIGHT).
+    { symbol: 'sHouses_Gfx', url: '/decomp/em/intro/scene_2/houses.png', type: 'gfx4' },
+    { symbol: 'sHouses_Tilemap', url: '/decomp/em/intro/scene_2/houses_map.bin', type: 'tilemap' },
+    { symbol: 'sHouses_Pal', url: '/decomp/em/intro/scene_2/houses.pal', type: 'pal' },
+    { symbol: 'sHouseSilhouette_Gfx', url: '/decomp/em/intro/scene_2/house_silhouette.png', type: 'gfx4' },
+    { symbol: 'sHouseSilhouette_Pal', url: '/decomp/em/intro/scene_2/house_silhouette.png', type: 'palfromgfx' },
+    // ── Sprites vélo credits (Brendan/May grandes feuilles 0x3800 + rival 0x2000) ─
+    { symbol: 'sBrendanCredits_Gfx', url: '/decomp/em/intro/scene_2/brendan_credits.png', type: 'gfx4' },
+    { symbol: 'sBrendanCredits_Pal', url: '/decomp/em/intro/scene_2/brendan_credits.png', type: 'palfromgfx' },
+    { symbol: 'sMayCredits_Gfx', url: '/decomp/em/intro/scene_2/may_credits.png', type: 'gfx4' },
+    { symbol: 'sMayCredits_Pal', url: '/decomp/em/intro/scene_2/may_credits.png', type: 'palfromgfx' },
+    { symbol: 'sBicycle_Gfx', url: '/decomp/em/intro/scene_2/bicycle.png', type: 'gfx4' },
+    { symbol: 'sLatios_Pal', url: '/decomp/em/intro/scene_2/latios.gbapal', type: 'pal' },
+    { symbol: 'sLatias_Pal', url: '/decomp/em/intro/scene_2/latias.gbapal', type: 'pal' },
+    // ── Interludes Pokémon (Task_LoadShowMons — BG birch bag/grass, starter_choose.c) ─
+    { symbol: 'gBirchBagGrass_Gfx', url: '/decomp/em/starter_choose/tiles.png', type: 'gfx4' },
+    { symbol: 'gBirchBagGrass_Pal', url: '/decomp/em/starter_choose/tiles.gbapal', type: 'pal' },
+    { symbol: 'gBirchGrassTilemap', url: '/decomp/em/starter_choose/birch_grass.bin', type: 'tilemap' },
+    // ── Écran THE END (graphics.c gCreditsCopyrightEnd_*, credits.c LoadTheEndScreen) ─
+    { symbol: 'gCreditsCopyrightEnd_Gfx', url: '/decomp/em/credits/the_end_copyright.png', type: 'gfx4' },
+    { symbol: 'gCreditsCopyrightEnd_Tilemap', url: '/decomp/em/credits/the_end_copyright.bin', type: 'tilemap' },
+    { symbol: 'sCredits_Pal', url: '/decomp/em/credits/credits.pal', type: 'pal' },
+    // gIntroCopyright_Pal : normalement préchargée par preloadScene1Assets (copyright screen) ;
+    // rechargée ici (idempotent) pour un lancement credits À FROID (sans passer par l'intro).
+    { symbol: 'gIntroCopyright_Pal', url: '/decomp/em/intro/copyright.png', type: 'palfromgfx' },
+  ];
+
+  await Promise.all(assets.map(async ({ symbol, url, type }) => {
+    if (assetCache.has(symbol)) return;  // idempotent (grass/trees/bicycle déjà en cache via Scene 2)
+    try {
+      if (type === 'gfx4') {
+        assetCache.set(symbol, await loadTileBin(url, 4));
+        const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          const png = await loadIndexedPngStrict(url, 4);
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'gfx8') {
+        assetCache.set(symbol, await loadTileBin(url, 8));
+      } else if (type === 'palfromgfx') {
+        const png = await loadIndexedPngStrict(url, 4);
+        assetCache.set(symbol, png.palette);
+      } else if (type === 'pal') {
+        assetCache.set(symbol, await loadGbaPal(url));
+      } else if (type === 'tilemap') {
+        assetCache.set(symbol, await loadTilemapBin(url));
+      }
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Credits load failed for ${symbol}:`, e);
+    }
+  }));
+
+  console.log(`[intro-asset-loader] Credits preload done (${assetCache.size} symbols total cached)`);
+}

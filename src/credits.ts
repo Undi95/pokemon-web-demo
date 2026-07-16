@@ -14,7 +14,7 @@ import { MALE } from '../include/constants/global';
 import { MUS_CREDITS, MUS_END } from '../include/constants/songs';
 import { VAR_STARTER_MON } from '../include/constants/vars';
 import { BG_SCREEN_SIZE, DISPLAY_HEIGHT, DISPLAY_WIDTH, OAM, OAM_SIZE, PLTT, VRAM, VRAM_SIZE } from '../include/gba/defines';
-import { BGCNT_16COLOR, BGCNT_TXT256x256, B_BUTTON, DISPCNT_BG0_ON, DISPCNT_BG3_ON, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
+import { BGCNT_16COLOR, BGCNT_TXT256x256, B_BUTTON, DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
 import { JOY_HELD } from './battle_controllers';
@@ -27,13 +27,21 @@ import { FLAG_GET_CAUGHT, NATIONAL_DEX_COUNT } from '../include/pokedex';
 import { VarGet } from './event_data';
 import { SetGpuReg } from './gpu_regs';
 import { GetStringCenterAlignXOffsetWithLetterSpacing } from './international_string_util';
-import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite } from './intro_credits_graphics';
+// 1:1 décomp intro_credits_graphics.c — versions game-form (signature décomp, sans `rt`)
+// vivant dans decomp-globals (= celles que l'intro utilise LIVE). Le transpileur avait choisi
+// les doublons rt-first de src/intro_credits_graphics.ts (mauvaise résolution) → re-pointé.
+import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite, assetCache } from '../harness/runtime/decomp-globals';
+import { BG_CHAR_ADDR } from '../harness/runtime/decomp-runtime';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
+import { sCreditsEntryPointerTable } from './data/credits';
+import { CreateMonSpriteFromNationalDexNumber } from './pokedex';
+import { GetStarterPokemon } from './starter_choose';
 import { SetMainCallback2, SetVBlankCallback } from './main';
 import { AddTextPrinterParameterized4 } from './menu';
-import { BG_PLTT_ID, BeginNormalPaletteFade, PALETTES_ALL, UpdatePaletteFade, gPaletteFade } from './palette';
+import { BG_PLTT_ID, BeginNormalPaletteFade, OBJ_PLTT_ID, PALETTES_ALL, UpdatePaletteFade, gPaletteFade } from './palette';
 import { Random } from './random';
 import { FadeOutBGM } from './sound';
-import { ANIMCMD_END, ANIMCMD_FRAME, ANIMCMD_JUMP, AnimateSprites, BuildOamBuffer, CreateSprite, DestroySprite, FreeAllSpritePalettes, LoadOam, LoadSpritePalette, LoadSpritePalettes, LoadSpriteSheet, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, ResetSpriteData, SetOamMatrix, StartSpriteAnimIfDifferent, gDummySpriteAffineAnimTable, gSprites } from './sprite';
+import { ANIMCMD_END, ANIMCMD_FRAME, ANIMCMD_JUMP, AnimateSprites, BuildOamBuffer, CalcCenterToCornerVec, CreateSprite, DestroySprite, FreeAllSpritePalettes, LoadOam, LoadSpritePalette, LoadSpritePalettes, LoadSpriteSheet, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, ResetSpriteData, SetOamMatrix, StartSpriteAnim, StartSpriteAnimIfDifferent, gDummySpriteAffineAnimTable, gSprites } from './sprite';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { DeactivateAllTextPrinters } from './text';
 import { FreeAndDestroyMonPicSprite, ResetAllPicSprites } from './trainer_pokemon_sprites';
@@ -42,32 +50,55 @@ import { COPYWIN_FULL, COPYWIN_GFX, CopyWindowToVram, FillWindowPixelBuffer, Fre
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import type { OamData } from '../include/gba/types';
-import { __wireTodo } from './engine/wire-todo';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const CreateMonSpriteFromNationalDexNumber: any = __wireTodo('CreateMonSpriteFromNationalDexNumber');
-const GetStarterPokemon: any = __wireTodo('GetStarterPokemon');
-const InitHeap: any = __wireTodo('InitHeap');
-const LoadCreditsSceneGraphics: any = __wireTodo('LoadCreditsSceneGraphics');
-const SetCreditsSceneBgCnt: any = __wireTodo('SetCreditsSceneBgCnt');
-const SoftReset: any = __wireTodo('SoftReset');
-const data: any = __wireTodo('data');
-const gBirchBagGrass_Gfx: any = __wireTodo('gBirchBagGrass_Gfx');
-const gBirchBagGrass_Pal: any = __wireTodo('gBirchBagGrass_Pal');
-const gBirchGrassTilemap: any = __wireTodo('gBirchGrassTilemap');
-const gCreditsCopyrightEnd_Gfx: any = __wireTodo('gCreditsCopyrightEnd_Gfx');
-const gCreditsCopyrightEnd_Tilemap: any = __wireTodo('gCreditsCopyrightEnd_Tilemap');
-const gDecompressionBuffer: any = __wireTodo('gDecompressionBuffer');
-const gHeap: any = __wireTodo('gHeap');
-const gIntroCopyright_Pal: any = __wireTodo('gIntroCopyright_Pal');
-const gSpritePalettes_Credits: any = __wireTodo('gSpritePalettes_Credits');
-const gSpriteSheet_CreditsBicycle: any = __wireTodo('gSpriteSheet_CreditsBicycle');
-const gSpriteSheet_CreditsBrendan: any = __wireTodo('gSpriteSheet_CreditsBrendan');
-const gSpriteSheet_CreditsMay: any = __wireTodo('gSpriteSheet_CreditsMay');
-const gSpriteSheet_CreditsRivalBrendan: any = __wireTodo('gSpriteSheet_CreditsRivalBrendan');
-const gSpriteSheet_CreditsRivalMay: any = __wireTodo('gSpriteSheet_CreditsRivalMay');
-const sCreditsEntryPointerTable: any = __wireTodo('sCreditsEntryPointerTable');
+
+// ═══ CÂBLAGE des 22 ex-__wireTodo (cf. audit-reports/engine/fix-credits.md) ═══
+// - CreateMonSpriteFromNationalDexNumber, GetStarterPokemon, sCreditsEntryPointerTable,
+//   CreateBicycleBgAnimationTask/CreateIntroBrendanSprite/CreateIntroMaySprite → importés en tête.
+// - LoadCreditsSceneGraphics, SetCreditsSceneBgCnt, gSpriteSheet_Credits*, gSpritePalettes_Credits,
+//   système « moving scenery » → transcrits 1:1 depuis intro_credits_graphics.c EN BAS de ce fichier.
+// - `data` (artefact transpileur du #define tTaskId_X data[N]) → SUPPRIMÉ + accès `.tTaskId_X`
+//   expansés en `.data[N]` (finalisation de l'expansion d'alias).
+
+const OBJ_VRAM0 = VRAM + 0x10000; // 1:1 include/gba/defines.h (VRAM sprite base)
+const INTROCRED_SCENERY_FROZEN = 2; // 1:1 include/intro_credits_graphics.h
+
+// gDecompressionBuffer 1:1 décomp src/decompress.c (EWRAM u8[0x4000]) — scratch WRAM partagé.
+// Vrai buffer (les écritures indexées + LoadSpriteSheet ne crashent pas). ⚠ l'arithmétique de
+// pointeur (gDecompressionBuffer + MON_PIC_SIZE ; &gDecompressionBuffer[MONBG_OFFSET]) reste
+// TRANSPILER-TODO → le fond coloré des mons (mon-bg) est dégradé (cf. rapport), non-figeant.
+const gDecompressionBuffer: Uint8Array = new Uint8Array(0x4000);
+
+// InitHeap/gHeap 1:1 malloc.h — EXEMPTION matérielle (heap GBA vs GC JS) : no-op.
+// SoftReset 1:1 syscall.h — reset BIOS non reproductible sur web : HURLE en console (exemption).
+const gHeap: unknown = null;
+const InitHeap = (_heap: unknown, _size: number): void => { /* heap = GC JS : no-op 1:1 (exemption) */ };
+const SoftReset = (_resetFlags: number): void => {
+  console.warn('[credits] SoftReset : reset matériel GBA non 1:1 sur web (exemption) — fin du générique.');
+};
+
+// Assets préchargés par preloadCreditsAssets() AVANT CB2 (lookup assetCache). Liés tardivement
+// (_bindCreditsAssets, au 1er appel de CB2) pour être robustes à l'ordre d'import.
+let gBirchBagGrass_Gfx: any = null;
+let gBirchBagGrass_Pal: any = null;
+let gBirchGrassTilemap: any = null;
+let gCreditsCopyrightEnd_Gfx: any = null;
+let gCreditsCopyrightEnd_Tilemap: any = null;
+let gIntroCopyright_Pal: any = null;
+
+// 1:1 décomp intro_credits_graphics.c:639-718 — feuilles sprite + palettes credits (scène vélo).
+// data = clé assetCache (résolue par LoadCompressedSpriteSheet), tag STRING = clé catalogue OBJ.
+const gSpriteSheet_CreditsBrendan = { data: 'sBrendanCredits_Gfx', size: 0x3800, tag: 'TAG_BRENDAN' };
+const gSpriteSheet_CreditsMay = { data: 'sMayCredits_Gfx', size: 0x3800, tag: 'TAG_MAY' };
+const gSpriteSheet_CreditsBicycle = { data: 'sBicycle_Gfx', size: 0x1000, tag: 'TAG_BICYCLE' };
+const gSpriteSheet_CreditsRivalBrendan = { data: 'sBrendanCredits_Gfx', size: 0x2000, tag: 'TAG_BRENDAN' };
+const gSpriteSheet_CreditsRivalMay = { data: 'sMayCredits_Gfx', size: 0x2000, tag: 'TAG_MAY' };
+const gSpritePalettes_Credits = [
+  { data: 'sBrendanCredits_Pal', tag: 'TAG_BRENDAN' },
+  { data: 'sMayCredits_Pal', tag: 'TAG_MAY' },
+  { data: 'sLatios_Pal', tag: 'TAG_FLYGON_LATIOS' },
+  { data: 'sLatias_Pal', tag: 'TAG_FLYGON_LATIAS' },
+];
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const DISPLAY_TILE_WIDTH = 30; // 1:1 include/gba/defines.h:75 (à consolider dans include/)
@@ -104,15 +135,12 @@ const MODE_SHOW_MONS = 2;
 
 // #define tState data[0]  (alias — expansé aux usages)
 
-// Task data for the main Credits tasks
-
-const tTaskId_BgScenery = data[0] // ID for Task_BicycleBgAnimation (created by CreateBicycleBgAnimationTask); // 1:1 credits.c:47
-
-const tTaskId_BikeScene = data[1] // ID for Task_BikeScene; // 1:1 credits.c:48
-
-const tTaskId_SceneryPal = data[2] // ID for Task_CycleSceneryPalette; // 1:1 credits.c:49
-
-const tTaskId_ShowMons = data[3] // ID for Task_ShowMons; // 1:1 credits.c:50
+// Task data for the main Credits tasks (1:1 credits.c:47-60 #define tX data[N]).
+// Les alias tTaskId_BgScenery/BikeScene/SceneryPal/ShowMons/UpdatePage sont expansés
+// DIRECTEMENT aux usages en `.data[0/1/2/3/15]` (le transpileur les avait laissés en
+// property-access `.tTaskId_X` non résolus → finalisation manuelle de l'expansion) :
+//   tTaskId_BgScenery=data[0] · tTaskId_BikeScene=data[1] · tTaskId_SceneryPal=data[2]
+//   tTaskId_ShowMons=data[3] · tTaskId_UpdatePage=data[15]
 
 // #define tEndCredits data[4]  (alias — expansé aux usages)
 
@@ -176,7 +204,8 @@ let sCreditsData: CreditsData | null = [
   0,
 ];
 
-// TRANSPILER-TODO INCGFX : sCredits_Pal ← graphics/credits/credits.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
+// 1:1 credits.c:89 sCredits_Pal ← INCGFX_U16("graphics/credits/credits.pal"). Préchargé par
+// preloadCreditsAssets() (clé 'sCredits_Pal') + lié tardivement dans _bindCreditsAssets().
 let sCredits_Pal: any = null;
 
 /** 1:1 (credits.c:122) */
@@ -435,6 +464,7 @@ export function CB2_StartCreditsSequence(): void {
   let taskId = 0;
   let bikeTaskId = 0;
   let pageTaskId = 0;
+  _bindCreditsAssets(); // lie les assets préchargés (assetCache) aux globals — AVANT tout LoadX sync
   ResetGpuAndVram();
   SetVBlankCallback(null);
   InitHeap(gHeap, HEAP_SIZE);
@@ -451,7 +481,7 @@ export function CB2_StartCreditsSequence(): void {
     if (LoadBikeScene(SCENE_OCEAN_MORNING, taskId))
       break;
   }
-  bikeTaskId = gTasks[taskId].tTaskId_BikeScene;
+  bikeTaskId = gTasks[taskId].data[1] /* tTaskId_BikeScene */;
   gTasks[bikeTaskId].data[0] /* tState */ = 40;
   SetGpuReg(REG_OFFSET_BG0VOFS, 0xFFFC);
   pageTaskId = CreateTask((t: { taskId: number }) => Task_UpdatePage(t.taskId), 0);
@@ -463,7 +493,15 @@ export function CB2_StartCreditsSequence(): void {
   m4aSongNumStart(MUS_CREDITS);
   SetMainCallback2(CB2_Credits);
   sUsedSpeedUp = false;
-  sCreditsData = ({} as any) /* TRANSPILER-TODO AllocZeroed */;
+  // 1:1 credits.c:405 AllocZeroed(sizeof(struct CreditsData)) — struct réelle (typed arrays)
+  // car DeterminePokemonToShow écrit caughtMonIds[]/monToShow[] (AllocZeroed du bridge rend {}).
+  sCreditsData = {
+    monToShow: new Uint16Array(NUM_MON_SLIDES),
+    imgCounter: 0, nextImgPos: 0, currShownMon: 0, numMonToShow: 0,
+    caughtMonIds: new Uint16Array(NATIONAL_DEX_COUNT),
+    numCaughtMon: 0,
+    unused: new Uint16Array(7),
+  } as any;
   DeterminePokemonToShow();
   sCreditsData!.imgCounter = 0;
   sCreditsData!.nextImgPos = POS_LEFT;
@@ -471,18 +509,26 @@ export function CB2_StartCreditsSequence(): void {
   sSavedTaskId = taskId;
 }
 
-/** 1:1 `static void Task_WaitPaletteFade(u8 taskId)` (credits.c:416-420). */
+/** 1:1 `static void Task_WaitPaletteFade(u8 taskId)` (credits.c:416-420).
+ *  ADAPTATION runtime : `.func` = RÉFÉRENCE NUE Task_CreditsMain (pas d'arrow wrapper),
+ *  pour que les 3 comparaisons d'identité `gTasks[x].func == Task_CreditsMain` (CB2_Credits,
+ *  Task_UpdatePage case 2, Task_ShowMons case 2) fonctionnent 1:1 décomp. Le runtime appelle
+ *  `func(taskObj)` (cf. decomp-runtime runTasks `t.func?.(t)`) → Task_CreditsMain normalise
+ *  l'arg objet→taskId. Les autres tasks (jamais comparées) gardent les arrows du transpileur. */
 function Task_WaitPaletteFade(taskId: number): void {
   if (!gPaletteFade.active)
-    gTasks[taskId].func = (t: { taskId: number }) => Task_CreditsMain(t.taskId);
+    gTasks[taskId].func = Task_CreditsMain as any;
 }
 
 /** 1:1 `static void Task_CreditsMain(u8 taskId)` (credits.c:422-455). */
-function Task_CreditsMain(taskId: number): void {
+function Task_CreditsMain(taskId: any): void {
+  // Le runtime appelle func(taskObj) ; les comparaisons d'identité exigent une réf nue
+  // (cf. Task_WaitPaletteFade) → on normalise l'objet-task en son taskId ici.
+  if (typeof taskId === 'object' && taskId !== null) taskId = taskId.taskId;
   let mode = 0;
   if (gTasks[taskId].data[4] /* tEndCredits */)
   {
-    let bikeTaskId = gTasks[taskId].tTaskId_BikeScene;
+    let bikeTaskId = gTasks[taskId].data[1] /* tTaskId_BikeScene */;
     gTasks[bikeTaskId].data[0] /* tState */ = 30;
     gTasks[taskId].data[12] /* tTheEndDelay */ = 256;
     gTasks[taskId].func = (t: { taskId: number }) => Task_CreditsTheEnd1(t.taskId);
@@ -575,10 +621,10 @@ function Task_LoadShowMons(taskId: number): void {
         break;
       }
     case 1:
-      gTasks[taskId].tTaskId_ShowMons = CreateTask((t: { taskId: number }) => Task_ShowMons(t.taskId), 0);
-      gTasks[gTasks[taskId].tTaskId_ShowMons].data[0] /* tState */ = 1;
-      gTasks[gTasks[taskId].tTaskId_ShowMons].data[2] /* tMainTaskId */ = taskId;
-      gTasks[gTasks[taskId].tTaskId_ShowMons].data[2] = gTasks[taskId].data[7] /* tSceneNum */;
+      gTasks[taskId].data[3] /* tTaskId_ShowMons */ = CreateTask((t: { taskId: number }) => Task_ShowMons(t.taskId), 0);
+      gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[0] /* tState */ = 1;
+      gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[2] /* tMainTaskId */ = taskId;
+      gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[2] = gTasks[taskId].data[7] /* tSceneNum */;
       // data[2] never read
       BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
       SetGpuReg(REG_OFFSET_BG3HOFS, 0);
@@ -1002,7 +1048,7 @@ function Task_CycleSceneryPalette(taskId: number): void {
       {
         if (gTasks[gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[15] /* tTaskId_UpdatePage */].data[2] /* tCurrentPage */ == 2)
         {
-          gTasks[gTasks[gTasks[taskId].data[2] /* tMainTaskId */].tTaskId_BikeScene].data[0] /* tState */ = 20;
+          gTasks[gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[1] /* tTaskId_BikeScene */].data[0] /* tState */ = 20;
           gTasks[taskId].data[1] /* tTimer */ = TIMER_STOP;
         }
       }
@@ -1014,7 +1060,7 @@ function Task_CycleSceneryPalette(taskId: number): void {
     case SCENE_FOREST_RIVAL_ARRIVE:
       if (gTasks[taskId].data[1] /* tTimer */ != TIMER_STOP)
       {
-        bikeTaskId = gTasks[gTasks[taskId].data[2] /* tMainTaskId */].tTaskId_BikeScene;
+        bikeTaskId = gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[1] /* tTaskId_BikeScene */;
         // Floor to multiple of 128
         if ((gTasks[bikeTaskId].data[5] /* tSinIdx */ & -128) == 640)
         {
@@ -1029,7 +1075,7 @@ function Task_CycleSceneryPalette(taskId: number): void {
       {
         if (gTasks[taskId].data[1] /* tTimer */ == 620)
         {
-          gTasks[gTasks[gTasks[taskId].data[2] /* tMainTaskId */].tTaskId_BikeScene].data[0] /* tState */ = 10;
+          gTasks[gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[1] /* tTaskId_BikeScene */].data[0] /* tState */ = 10;
           gTasks[taskId].data[1] /* tTimer */ = TIMER_STOP;
         }
         else
@@ -1057,7 +1103,7 @@ function SetBikeScene(scene: number, taskId: number): void {
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].y = 46;
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].data[0] = 0;
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].data[0] = 0;
-      gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
+      gTasks[taskId].data[0] /* tTaskId_BgScenery */ = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
       break;
     case SCENE_OCEAN_SUNSET:
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].invisible = false;
@@ -1068,7 +1114,7 @@ function SetBikeScene(scene: number, taskId: number): void {
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].y = 46;
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].data[0] = 0;
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].data[0] = 0;
-      gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
+      gTasks[taskId].data[0] /* tTaskId_BgScenery */ = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
       break;
     case SCENE_FOREST_RIVAL_ARRIVE:
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].invisible = false;
@@ -1079,7 +1125,7 @@ function SetBikeScene(scene: number, taskId: number): void {
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].y = 46;
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].data[0] = 0;
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].data[0] = 0;
-      gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
+      gTasks[taskId].data[0] /* tTaskId_BgScenery */ = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
       break;
     case SCENE_FOREST_CATCH_RIVAL:
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].invisible = false;
@@ -1090,7 +1136,7 @@ function SetBikeScene(scene: number, taskId: number): void {
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].y = 46;
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].data[0] = 0;
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].data[0] = 0;
-      gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
+      gTasks[taskId].data[0] /* tTaskId_BgScenery */ = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
       break;
     case SCENE_CITY_NIGHT:
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].invisible = false;
@@ -1101,22 +1147,22 @@ function SetBikeScene(scene: number, taskId: number): void {
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].y = 46;
       gSprites[gTasks[taskId].data[5] /* tPlayerSpriteId */].data[0] = 0;
       gSprites[gTasks[taskId].data[6] /* tRivalSpriteId */].data[0] = 0;
-      gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(2, 0x2000, 0x200, 8);
+      gTasks[taskId].data[0] /* tTaskId_BgScenery */ = CreateBicycleBgAnimationTask(2, 0x2000, 0x200, 8);
       break;
   }
-  gTasks[taskId].tTaskId_SceneryPal = CreateTask((t: { taskId: number }) => Task_CycleSceneryPalette(t.taskId), 0);
-  gTasks[gTasks[taskId].tTaskId_SceneryPal].data[0] /* tState */ = scene;
-  gTasks[gTasks[taskId].tTaskId_SceneryPal].data[1] /* tTimer */ = 0;
-  gTasks[gTasks[taskId].tTaskId_SceneryPal].data[2] /* tMainTaskId */ = taskId;
-  gTasks[taskId].tTaskId_BikeScene = CreateTask((t: { taskId: number }) => Task_BikeScene(t.taskId), 0);
-  gTasks[gTasks[taskId].tTaskId_BikeScene].data[0] /* tState */ = 0;
-  gTasks[gTasks[taskId].tTaskId_BikeScene].data[1] = taskId;
+  gTasks[taskId].data[2] /* tTaskId_SceneryPal */ = CreateTask((t: { taskId: number }) => Task_CycleSceneryPalette(t.taskId), 0);
+  gTasks[gTasks[taskId].data[2] /* tTaskId_SceneryPal */].data[0] /* tState */ = scene;
+  gTasks[gTasks[taskId].data[2] /* tTaskId_SceneryPal */].data[1] /* tTimer */ = 0;
+  gTasks[gTasks[taskId].data[2] /* tTaskId_SceneryPal */].data[2] /* tMainTaskId */ = taskId;
+  gTasks[taskId].data[1] /* tTaskId_BikeScene */ = CreateTask((t: { taskId: number }) => Task_BikeScene(t.taskId), 0);
+  gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[0] /* tState */ = 0;
+  gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[1] = taskId;
   // data[1] is never read
-  gTasks[gTasks[taskId].tTaskId_BikeScene].data[2] /* tPlayer */ = gTasks[taskId].data[5] /* tPlayerSpriteId */;
-  gTasks[gTasks[taskId].tTaskId_BikeScene].data[3] /* tRival */ = gTasks[taskId].data[6] /* tRivalSpriteId */;
-  gTasks[gTasks[taskId].tTaskId_BikeScene].data[4] /* tDelay */ = 0;
+  gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[2] /* tPlayer */ = gTasks[taskId].data[5] /* tPlayerSpriteId */;
+  gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[3] /* tRival */ = gTasks[taskId].data[6] /* tRivalSpriteId */;
+  gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[4] /* tDelay */ = 0;
   if (scene == SCENE_FOREST_RIVAL_ARRIVE)
-    gTasks[gTasks[taskId].tTaskId_BikeScene].data[5] /* tSinIdx */ = 69;
+    gTasks[gTasks[taskId].data[1] /* tTaskId_BikeScene */].data[5] /* tSinIdx */ = 69;
 }
 
 /** 1:1 `static bool8 LoadBikeScene(u8 scene, u8 taskId)` (credits.c:1136-1207). */
@@ -1190,28 +1236,28 @@ function LoadBikeScene(scene: number, taskId: number): boolean {
 /** 1:1 `static void ResetCreditsTasks(u8 taskId)` (credits.c:1209-1240). */
 function ResetCreditsTasks(taskId: number): void {
   // Destroy Task_BicycleBgAnimation, if running
-  if (gTasks[taskId].tTaskId_BgScenery != 0)
+  if (gTasks[taskId].data[0] /* tTaskId_BgScenery */ != 0)
   {
-    DestroyTask(gTasks[taskId].tTaskId_BgScenery);
-    gTasks[taskId].tTaskId_BgScenery = 0;
+    DestroyTask(gTasks[taskId].data[0] /* tTaskId_BgScenery */);
+    gTasks[taskId].data[0] /* tTaskId_BgScenery */ = 0;
   }
   // Destroy Task_BikeScene, if running
-  if (gTasks[taskId].tTaskId_BikeScene != 0)
+  if (gTasks[taskId].data[1] /* tTaskId_BikeScene */ != 0)
   {
-    DestroyTask(gTasks[taskId].tTaskId_BikeScene);
-    gTasks[taskId].tTaskId_BikeScene = 0;
+    DestroyTask(gTasks[taskId].data[1] /* tTaskId_BikeScene */);
+    gTasks[taskId].data[1] /* tTaskId_BikeScene */ = 0;
   }
   // Destroy Task_CycleSceneryPalette, if running
-  if (gTasks[taskId].tTaskId_SceneryPal != 0)
+  if (gTasks[taskId].data[2] /* tTaskId_SceneryPal */ != 0)
   {
-    DestroyTask(gTasks[taskId].tTaskId_SceneryPal);
-    gTasks[taskId].tTaskId_SceneryPal = 0;
+    DestroyTask(gTasks[taskId].data[2] /* tTaskId_SceneryPal */);
+    gTasks[taskId].data[2] /* tTaskId_SceneryPal */ = 0;
   }
   // Destroy Task_ShowMons, if running
-  if (gTasks[taskId].tTaskId_ShowMons != 0)
+  if (gTasks[taskId].data[3] /* tTaskId_ShowMons */ != 0)
   {
-    DestroyTask(gTasks[taskId].tTaskId_ShowMons);
-    gTasks[taskId].tTaskId_ShowMons = 0;
+    DestroyTask(gTasks[taskId].data[3] /* tTaskId_ShowMons */);
+    gTasks[taskId].data[3] /* tTaskId_ShowMons */ = 0;
   }
   gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_DESTROY;
 }
@@ -1467,7 +1513,10 @@ function SpriteCB_CreditsMonBg(sprite: DecompSprite): void {
 
 /** 1:1 `static void DeterminePokemonToShow(void)` (credits.c:1505-1587). */
 function DeterminePokemonToShow(): void {
-  let starter = SpeciesToNationalPokedexNum(GetStarterPokemon(VarGet(VAR_STARTER_MON)));
+  // 1:1 credits.c:1507 : u16 starter = SpeciesToNationalPokedexNum(GetStarterPokemon(VarGet(VAR_STARTER_MON))).
+  // Le port de GetStarterPokemon rend le NOM d'espèce (string) → resolveDecompConstant → id numérique
+  // (SpeciesToNationalPokedexNum attend un u16), pour restaurer la valeur décomp.
+  let starter = SpeciesToNationalPokedexNum(resolveDecompConstant(GetStarterPokemon(VarGet(VAR_STARTER_MON))) ?? 0);
   let page = 0;
   let dexNum = 0;
   let j = 0;
@@ -1540,4 +1589,224 @@ function DeterminePokemonToShow(): void {
     }
   }
   sCreditsData!.numMonToShow = NUM_MON_SLIDES;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HÔTE 1:1 intro_credits_graphics.c — chargement des scènes vélo (grass + clouds/trees/
+// houses) + « moving scenery » sprites + SetCreditsSceneBgCnt. Placé ici (credits.ts,
+// @ts-nocheck, convention globale directe) car : (a) consommé UNIQUEMENT par credits.ts ;
+// (b) la version rt-first de src/intro_credits_graphics.ts est du code MORT à réconcilier
+// (scenery = `declare const` stubs jamais portés). NB : les Create* joueur/vélo/Flygon +
+// CreateBicycleBgAnimationTask + CycleSceneryPalette vivent, eux, dans decomp-globals.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const TAG_MOVING_SCENERY = 2000; // 1:1 intro_credits_graphics.c:27
+const TAG_NONE = 0xFFFF;         // 1:1 include/sprite.h
+
+/** Lie les assets préchargés (assetCache, cf. preloadCreditsAssets) aux globals credits.
+ *  Les symboles consommés par LZ77UnCompVram attendent une CLÉ string (résolue au call) ;
+ *  ceux consommés par LoadPalette (+ .length) attendent le tableau u16 brut. */
+function _bindCreditsAssets(): void {
+  gBirchBagGrass_Gfx = 'gBirchBagGrass_Gfx';               // → LZ77UnCompVram (clé)
+  gBirchGrassTilemap = 'gBirchGrassTilemap';               // → LZ77UnCompVram (clé)
+  gCreditsCopyrightEnd_Gfx = 'gCreditsCopyrightEnd_Gfx';   // → LZ77UnCompVram (clé)
+  gCreditsCopyrightEnd_Tilemap = 'gCreditsCopyrightEnd_Tilemap'; // → LZ77UnCompVram (clé)
+  gBirchBagGrass_Pal = assetCache.get('gBirchBagGrass_Pal') ?? null; // → LoadPalette (u16)
+  gIntroCopyright_Pal = assetCache.get('gIntroCopyright_Pal') ?? null; // → LoadPalette + .length
+  sCredits_Pal = assetCache.get('sCredits_Pal') ?? null;   // → LoadPalette (u16)
+  const checks: Array<[string, unknown]> = [
+    ['gBirchBagGrass_Gfx', assetCache.get('gBirchBagGrass_Gfx')],
+    ['gBirchGrassTilemap', assetCache.get('gBirchGrassTilemap')],
+    ['gCreditsCopyrightEnd_Gfx', assetCache.get('gCreditsCopyrightEnd_Gfx')],
+    ['gCreditsCopyrightEnd_Tilemap', assetCache.get('gCreditsCopyrightEnd_Tilemap')],
+    ['gBirchBagGrass_Pal', gBirchBagGrass_Pal], ['gIntroCopyright_Pal', gIntroCopyright_Pal],
+    ['sCredits_Pal', sCredits_Pal],
+  ];
+  for (const [k, v] of checks) {
+    if (!v) console.error(`[credits] asset manquant — appeler preloadCreditsAssets() AVANT CB2_StartCreditsSequence : ${k}`);
+  }
+}
+
+// ─── Moving scenery (clouds/trees/houses) 1:1 intro_credits_graphics.c ───────────
+// data[0]=tHasVerticalMove, data[1]=tXOffset, data[2]=tXPos (c:1033-1035).
+/** 1:1 `SpriteCB_MovingScenery` (intro_credits_graphics.c:1037-1062). */
+function SpriteCB_MovingScenery(sprite: DecompSprite): void {
+  let x = 0;
+  const state = gIntroCredits_MovingSceneryState;
+  if (state != INTROCRED_SCENERY_FROZEN)
+  {
+    switch (state) {
+      default: // INTROCRED_SCENERY_DESTROY
+        DestroySprite(sprite);
+        break;
+      case INTROCRED_SCENERY_NORMAL:
+        x = ((sprite.x << 16) | (sprite.data[2] & 0xFFFF)) + (sprite.data[1] & 0xFFFF);
+        sprite.x = x >> 16;
+        sprite.data[2] = x;
+        if (sprite.x > 255)
+          sprite.x = -32;
+        if (sprite.data[0])
+          sprite.y2 = -(gIntroCredits_MovingSceneryVBase + gIntroCredits_MovingSceneryVOffset);
+        else
+          sprite.y2 = -gIntroCredits_MovingSceneryVBase;
+        break;
+    }
+  }
+}
+
+/** 1:1 `sSpriteTemplate_MovingScenery` (intro_credits_graphics.c:79). oam/anims dummy
+ *  (écrasés par metadata[i].shape/size + anims dans la boucle). */
+const sSpriteTemplate_MovingScenery = {
+  tileTag: 'TAG_MOVING_SCENERY',
+  paletteTag: TAG_NONE,
+  oam: { shape: 0, size: 0, priority: 3 },
+  anims: null,
+  images: null,
+  affineAnims: gDummySpriteAffineAnimTable,
+  callback: SpriteCB_MovingScenery,
+};
+
+// 1:1 sSpriteSheet_Clouds/TreesSmall/HouseSilhouette (intro_credits_graphics.c:90/217/364).
+const sSpriteSheet_Clouds = { data: 'sClouds_Gfx', size: 0x400, tag: 'TAG_MOVING_SCENERY' };
+const sSpriteSheet_TreesSmall = { data: 'sTreesSmall_Gfx', size: 0x400, tag: 'TAG_MOVING_SCENERY' };
+const sSpriteSheet_HouseSilhouette = { data: 'sHouseSilhouette_Gfx', size: 0x400, tag: 'TAG_MOVING_SCENERY' };
+
+// 1:1 sAnims_Clouds/Trees/HouseSilhouette (intro_credits_graphics.c:100-383).
+const sAnims_Clouds = [
+  [ANIMCMD_FRAME(0, 30), ANIMCMD_END], [ANIMCMD_FRAME(16, 30), ANIMCMD_END],
+  [ANIMCMD_FRAME(20, 30), ANIMCMD_END], [ANIMCMD_FRAME(22, 30), ANIMCMD_END],
+];
+const sAnims_Trees = [
+  [ANIMCMD_FRAME(0, 30), ANIMCMD_END], [ANIMCMD_FRAME(16, 30), ANIMCMD_END],
+  [ANIMCMD_FRAME(24, 30), ANIMCMD_END],
+];
+const sAnims_HouseSilhouette = [[ANIMCMD_FRAME(0, 30), ANIMCMD_END]];
+
+// 1:1 sSpriteMetadata_* (intro_credits_graphics.c:132/252/385).
+// { animNum, shape, size, x, y, subpriority, xOff } — SPRITE_SHAPE/SIZE : 32x32=(0,2)
+// 16x16=(0,1) 16x8=(1,0) 16x32=(2,2).
+const sSpriteMetadata_Clouds = [
+  { animNum: 0, shape: 0, size: 2, x: 72, y: 32, subpriority: 100, xOff: 0xc00 },
+  { animNum: 0, shape: 0, size: 2, x: 158, y: 32, subpriority: 100, xOff: 0xc00 },
+  { animNum: 1, shape: 0, size: 1, x: 192, y: 40, subpriority: 101, xOff: 0x800 },
+  { animNum: 1, shape: 0, size: 1, x: 56, y: 40, subpriority: 101, xOff: 0x800 },
+  { animNum: 2, shape: 1, size: 0, x: 100, y: 44, subpriority: 102, xOff: 0x400 },
+  { animNum: 2, shape: 1, size: 0, x: 152, y: 44, subpriority: 102, xOff: 0x400 },
+  { animNum: 3, shape: 1, size: 0, x: 8, y: 46, subpriority: 103, xOff: 0x100 },
+  { animNum: 3, shape: 1, size: 0, x: 56, y: 46, subpriority: 103, xOff: 0x100 },
+  { animNum: 3, shape: 1, size: 0, x: 240, y: 46, subpriority: 103, xOff: 0x100 },
+];
+const sSpriteMetadata_Trees = [
+  { animNum: 0, shape: 0, size: 2, x: 16, y: 88, subpriority: 100, xOff: 0x2000 },
+  { animNum: 0, shape: 0, size: 2, x: 80, y: 88, subpriority: 100, xOff: 0x2000 },
+  { animNum: 0, shape: 0, size: 2, x: 144, y: 88, subpriority: 100, xOff: 0x2000 },
+  { animNum: 0, shape: 0, size: 2, x: 208, y: 88, subpriority: 100, xOff: 0x2000 },
+  { animNum: 1, shape: 2, size: 2, x: 40, y: 88, subpriority: 101, xOff: 0x1000 },
+  { animNum: 1, shape: 2, size: 2, x: 104, y: 88, subpriority: 101, xOff: 0x1000 },
+  { animNum: 1, shape: 2, size: 2, x: 168, y: 88, subpriority: 101, xOff: 0x1000 },
+  { animNum: 1, shape: 2, size: 2, x: 232, y: 88, subpriority: 101, xOff: 0x1000 },
+  { animNum: 2, shape: 2, size: 2, x: 56, y: 88, subpriority: 102, xOff: 0x800 },
+  { animNum: 2, shape: 2, size: 2, x: 120, y: 88, subpriority: 102, xOff: 0x800 },
+  { animNum: 2, shape: 2, size: 2, x: 184, y: 88, subpriority: 102, xOff: 0x800 },
+  { animNum: 2, shape: 2, size: 2, x: 248, y: 88, subpriority: 102, xOff: 0x800 },
+];
+const sSpriteMetadata_HouseSilhouette = [
+  { animNum: 0, shape: 0, size: 2, x: 24, y: 88, subpriority: 100, xOff: 0x1000 },
+  { animNum: 0, shape: 0, size: 2, x: 64, y: 88, subpriority: 100, xOff: 0x1000 },
+  { animNum: 0, shape: 0, size: 2, x: 104, y: 88, subpriority: 100, xOff: 0x1000 },
+  { animNum: 0, shape: 0, size: 2, x: 144, y: 88, subpriority: 100, xOff: 0x1000 },
+  { animNum: 0, shape: 0, size: 2, x: 184, y: 88, subpriority: 100, xOff: 0x1000 },
+  { animNum: 0, shape: 0, size: 2, x: 224, y: 88, subpriority: 100, xOff: 0x1000 },
+];
+
+/** 1:1 `CreateMovingScenerySprites` (intro_credits_graphics.c:1064-1082). */
+function CreateMovingScenerySprites(hasVerticalMove: number, metadata: any[], anims: any, numSprites: number): void {
+  let i = 0;
+  for (i = 0; i < numSprites; i++)
+  {
+    const sprite = CreateSprite(sSpriteTemplate_MovingScenery, metadata[i].x, metadata[i].y, metadata[i].subpriority);
+    const ctc = CalcCenterToCornerVec(metadata[i].shape, metadata[i].size, ST_OAM_AFFINE_OFF);
+    gSprites[sprite].centerToCornerVecX = ctc.centerToCornerVecX;
+    gSprites[sprite].centerToCornerVecY = ctc.centerToCornerVecY;
+    gSprites[sprite].oam.priority = 3;
+    gSprites[sprite].oam.shape = metadata[i].shape;
+    gSprites[sprite].oam.size = metadata[i].size;
+    gSprites[sprite].oam.paletteNum = 0;
+    gSprites[sprite].anims = anims;
+    StartSpriteAnim(gSprites[sprite], metadata[i].animNum);
+    gSprites[sprite].data[0] = hasVerticalMove; // tHasVerticalMove
+    gSprites[sprite].data[1] = metadata[i].xOff; // tXOffset
+    gSprites[sprite].data[2] = 0; // tXPos
+  }
+}
+
+/** 1:1 `CreateCloudSprites` (intro_credits_graphics.c:1088). */
+function CreateCloudSprites(): void {
+  CreateMovingScenerySprites(0, sSpriteMetadata_Clouds, sAnims_Clouds, 9);
+}
+/** 1:1 `CreateTreeSprites` (intro_credits_graphics.c:1093). */
+function CreateTreeSprites(): void {
+  CreateMovingScenerySprites(1, sSpriteMetadata_Trees, sAnims_Trees, 12);
+}
+/** 1:1 `CreateHouseSprites` (intro_credits_graphics.c:1098). */
+function CreateHouseSprites(): void {
+  CreateMovingScenerySprites(1, sSpriteMetadata_HouseSilhouette, sAnims_HouseSilhouette, 6);
+}
+
+/** 1:1 `void LoadCreditsSceneGraphics(u8 scene)` (intro_credits_graphics.c:838-887). */
+function LoadCreditsSceneGraphics(scene: number): void {
+  LZ77UnCompVram('sGrass_Gfx', BG_CHAR_ADDR(1));
+  LZ77UnCompVram('sGrass_Tilemap', BG_SCREEN_ADDR(15));
+  switch (scene) {
+    case SCENE_OCEAN_MORNING:
+    default:
+      LoadPalette('sGrass_Pal', BG_PLTT_ID(15), 32);
+      LZ77UnCompVram('sCloudsBg_Gfx', VRAM);
+      LZ77UnCompVram('sCloudsBg_Tilemap', BG_SCREEN_ADDR(6));
+      LoadPalette('sCloudsBg_Pal', BG_PLTT_ID(0), 32);
+      LoadCompressedSpriteSheet(sSpriteSheet_Clouds);
+      LZ77UnCompVram('sClouds_Gfx', OBJ_VRAM0);
+      LoadPalette('sClouds_Pal', OBJ_PLTT_ID(0), 32);
+      CreateCloudSprites();
+      break;
+    case SCENE_OCEAN_SUNSET:
+      LoadPalette('sGrassSunset_Pal', BG_PLTT_ID(15), 32);
+      LZ77UnCompVram('sCloudsBg_Gfx', VRAM);
+      LZ77UnCompVram('sCloudsBg_Tilemap', BG_SCREEN_ADDR(6));
+      LoadPalette('sCloudsBgSunset_Pal', BG_PLTT_ID(0), 32);
+      LoadCompressedSpriteSheet(sSpriteSheet_Clouds);
+      LZ77UnCompVram('sClouds_Gfx', OBJ_VRAM0);
+      LoadPalette('sCloudsSunset_Pal', OBJ_PLTT_ID(0), 32);
+      CreateCloudSprites();
+      break;
+    case SCENE_FOREST_RIVAL_ARRIVE:
+    case SCENE_FOREST_CATCH_RIVAL:
+      LoadPalette('sGrassSunset_Pal', BG_PLTT_ID(15), 32);
+      LZ77UnCompVram('sTrees_Gfx', VRAM);
+      LZ77UnCompVram('sTrees_Tilemap', BG_SCREEN_ADDR(6));
+      LoadPalette('sTreesSunset_Pal', BG_PLTT_ID(0), 32);
+      LoadCompressedSpriteSheet(sSpriteSheet_TreesSmall);
+      LoadPalette('sTreesSunset_Pal', OBJ_PLTT_ID(0), 32);
+      CreateTreeSprites();
+      break;
+    case SCENE_CITY_NIGHT:
+      LoadPalette('sGrassNight_Pal', BG_PLTT_ID(15), 32);
+      LZ77UnCompVram('sHouses_Gfx', VRAM);
+      LZ77UnCompVram('sHouses_Tilemap', BG_SCREEN_ADDR(6));
+      LoadPalette('sHouses_Pal', BG_PLTT_ID(0), 32);
+      LoadCompressedSpriteSheet(sSpriteSheet_HouseSilhouette);
+      LoadPalette('sHouseSilhouette_Pal', OBJ_PLTT_ID(0), 32);
+      CreateHouseSprites();
+      break;
+  }
+  gReservedSpritePaletteCount = 8;
+  gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;
+}
+
+/** 1:1 `void SetCreditsSceneBgCnt(u8 scene)` (intro_credits_graphics.c:889-910). scene unused. */
+function SetCreditsSceneBgCnt(_scene: number): void {
+  SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(0) | BGCNT_16COLOR | BGCNT_SCREENBASE(6) | BGCNT_TXT256x256);
+  SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(0) | BGCNT_16COLOR | BGCNT_SCREENBASE(7) | BGCNT_TXT256x256);
+  SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(1) | BGCNT_16COLOR | BGCNT_SCREENBASE(15) | BGCNT_TXT256x256);
+  SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | (DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON) | DISPCNT_OBJ_ON);
 }

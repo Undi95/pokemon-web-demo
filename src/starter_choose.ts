@@ -290,7 +290,7 @@ let _starterPokeballSpriteIds: number[] = [];
 let _starterHandSpriteId = -1;
 
 // ─── GetStarterPokemon (= 1:1 décomp C:351-356) ─────────────────────────
-function GetStarterPokemon(chosenStarterId: number): string {
+export function GetStarterPokemon(chosenStarterId: number): string {
   if (chosenStarterId > STARTER_MON_COUNT) chosenStarterId = 0;
   return sStarterMon[chosenStarterId];
 }
