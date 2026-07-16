@@ -15,7 +15,7 @@
  *   - InitTilesetAnimations()    : Reset buffer + Init primary + secondary
  *   - UpdateTilesetAnimations()  : Per-frame tick counter + dispatch callback
  *   - TransferTilesetAnimsBuffer(rt) : Flush DMA buffer → VRAM (au VBlank)
- *   - appendTilesetAnimToBuffer() : Helper interne pour queuer un write VRAM
+ *   - AppendTilesetAnimToBuffer() : Helper interne pour queuer un write VRAM
  *
  * Mapping tileset name → callback (= 1:1 décomp tileset struct .callback field) :
  *   Primary :
@@ -44,7 +44,8 @@
  *     "mauville_gym"   → InitTilesetAnim_MauvilleGym   (stub)
  *     "bike_shop"      → InitTilesetAnim_BikeShop       (stub)
  *     "battle_pyramid" → InitTilesetAnim_BattlePyramid  (stub)
- *     "battle_dome"    → InitTilesetAnim_BattleDome     (stub)
+ *     "battle_dome"    → InitTilesetAnim_BattleDome     (palette-blend 1:1 ; switchover
+ *                        BattleDome2 inerte car Task_BattleTransition_Intro non exporté)
  *
  * Wire dans TestOverworldScene.ts MainCB2_Overworld :
  *   UpdateTilesetAnimations();
@@ -56,6 +57,10 @@
 
 import { loadTileBin } from '../harness/gba/png-loader';
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
+// Battle Dome floor-light palette blend (1:1 décomp:1168-1188) — accès palette
+// via les Proxies module-level (palette.ts = anti-cycle par design) + BlendPalette.
+import { gPlttBufferUnfaded, gPaletteFade, BG_PLTT_ID } from './palette';
+import { BlendPalette } from '../harness/runtime/decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -140,6 +145,52 @@ async function preloadTiles(urls: string[]): Promise<void> {
  *  Synchrone — les tiles doivent avoir été préchargés au boot. */
 function getTiles(url: string): Uint8Array | null {
   return sTileCache.get(url) ?? null;
+}
+
+// ─── Palette asset cache (Battle Dome floor lights) ──────────────────────────
+// Les anims Battle Dome ne copient PAS des tiles (comme les autres) mais BLENDENT
+// une palette 16-couleurs dans gPlttBufferUnfaded[BG_PLTT_ID(8)]. Ces palettes
+// (= gTilesetAnims_BattleDomePals0_0..3) vivent dans graphics/battle_frontier/
+// dome_anim{1..4}.pal ; extraites côté port en /decomp/em/battle_frontier/.
+
+/** Cache URL → Uint16Array (16 couleurs BGR555) des .pal JASC-PAL d'animation. */
+const sPalCache = new Map<string, Uint16Array>();
+
+/** Parse un .pal JASC-PAL (16 couleurs) → Uint16Array BGR555.
+ *  1:1 forme de `fieldmap.ts:parseJascPal` (RGB888 → RGB15, top 5 bits/canal). */
+function parseJascPal16(text: string): Uint16Array {
+  const lines = text.split(/\r?\n/);
+  const n = parseInt(lines[2], 10);
+  const out = new Uint16Array(Number.isFinite(n) && n > 0 ? n : 16);
+  for (let i = 0; i < out.length; i++) {
+    const parts = (lines[3 + i] ?? '').trim().split(/\s+/);
+    const r = parseInt(parts[0], 10) | 0;
+    const g = parseInt(parts[1], 10) | 0;
+    const b = parseInt(parts[2], 10) | 0;
+    out[i] = ((b & 0xF8) << 7) | ((g & 0xF8) << 2) | ((r & 0xF8) >> 3);
+  }
+  return out;
+}
+
+/** Précharge des palettes .pal et les met en cache (HURLE en console si échec). */
+async function preloadPals(urls: string[]): Promise<void> {
+  await Promise.all(urls.map(async (url) => {
+    if (sPalCache.has(url)) return;
+    try {
+      const text = await fetch(url).then((r) => {
+        if (!r.ok) throw new Error(`${url} → HTTP ${r.status}`);
+        return r.text();
+      });
+      sPalCache.set(url, parseJascPal16(text));
+    } catch (e) {
+      console.error('[tileset-anims] pal preload failed:', url, e);
+    }
+  }));
+}
+
+/** Retourne la palette depuis le cache, ou null si pas encore chargée. */
+function getPal(url: string): Uint16Array | null {
+  return sPalCache.get(url) ?? null;
 }
 
 // ─── Asset URLs ───────────────────────────────────────────────────────────────
@@ -238,6 +289,13 @@ const SECONDARY_URLS = {
   },
 };
 
+/** 1:1 décomp `sTilesetAnims_BattleDomeFloorLightPals[]` (tileset_anims.c:540-545) :
+ *  gTilesetAnims_BattleDomePals0_0..3 = graphics/battle_frontier/dome_anim{1..4}.pal
+ *  (INCGFX_U16 .gbapal, cf. graphics.c:968-971). Extraits port : JASC-PAL 16 couleurs. */
+const BATTLE_DOME_FLOOR_LIGHT_PAL_URLS = [1, 2, 3, 4].map(
+  i => `/decomp/em/battle_frontier/dome_anim${i}.pal`,
+);
+
 // ─── Frame sequences (= 1:1 décomp const-array shuffled frame ordering) ──────
 
 /** 1:1 décomp `gTilesetAnims_Mauville_Flower1[]` (= 12 entries cycle). */
@@ -291,7 +349,7 @@ export function setSecondaryTilesetAnimCallback(tilesetName: string): void {
 
 /** Réinitialise le buffer de transfert VRAM.
  *  1:1 décomp `ResetTilesetAnimBuffer`. */
-function resetTilesetAnimBuffer(): void {
+function ResetTilesetAnimBuffer(): void {
   sTilesetDMA3TransferBufferSize = 0;
   // Pas besoin de clear les entries elles-mêmes (= overwritten avant use).
 }
@@ -300,9 +358,9 @@ function resetTilesetAnimBuffer(): void {
  *  Reset buffer + init primary + secondary.
  *  Appelé au map load (après CopyMapTilesetsToVram). */
 export function InitTilesetAnimations(): void {
-  resetTilesetAnimBuffer();
-  _initPrimaryTilesetAnimation();
-  _initSecondaryTilesetAnimation();
+  ResetTilesetAnimBuffer();
+  _InitPrimaryTilesetAnimation();
+  _InitSecondaryTilesetAnimation();
 }
 
 /** Pause les tileset animations overworld (= no-op le dispatch per-frame).
@@ -313,27 +371,27 @@ export function InitTilesetAnimations(): void {
 export function pauseTilesetAnimations(): void {
   sPrimaryTilesetAnimCallback = null;
   sSecondaryTilesetAnimCallback = null;
-  resetTilesetAnimBuffer();
+  ResetTilesetAnimBuffer();
 }
 
 /** Restaure les tileset animations overworld (= re-init depuis les init
  *  callbacks gPrimary/SecondaryTilesetInitCallback qui restent set). */
 export function resumeTilesetAnimations(): void {
-  _initPrimaryTilesetAnimation();
-  _initSecondaryTilesetAnimation();
+  _InitPrimaryTilesetAnimation();
+  _InitSecondaryTilesetAnimation();
 }
 
 /** 1:1 décomp `InitSecondaryTilesetAnimation(void)`.
  *  Re-init seulement le secondaire (ex: after indoor/outdoor transition). */
 export function InitSecondaryTilesetAnimation(): void {
-  _initSecondaryTilesetAnimation();
+  _InitSecondaryTilesetAnimation();
 }
 
 /** 1:1 décomp `UpdateTilesetAnimations(void)`.
  *  Per-frame : reset buffer + tick compteurs + dispatch callbacks.
  *  Appelé dans MainCB2_Overworld à chaque frame. */
 export function UpdateTilesetAnimations(): void {
-  resetTilesetAnimBuffer();
+  ResetTilesetAnimBuffer();
 
   // 1:1 décomp : increment + wrap à Max.
   if (sPrimaryTilesetAnimCounterMax > 0) {
@@ -408,7 +466,7 @@ export function TransferTilesetAnimsBuffer(rt: DecompRuntime): void {
  *  @param destByteOff Byte offset dans gba.vram (= TILE_OFFSET_4BPP(N)).
  *  @param sizeBytes   Nombre de bytes à copier.
  */
-function appendTilesetAnimToBuffer(
+function AppendTilesetAnimToBuffer(
   src: Uint8Array,
   destByteOff: number,
   sizeBytes: number,
@@ -425,7 +483,7 @@ function appendTilesetAnimToBuffer(
 // ─── Init helpers 1:1 décomp ─────────────────────────────────────────────────
 
 /** 1:1 décomp `_InitPrimaryTilesetAnimation(void)`. */
-function _initPrimaryTilesetAnimation(): void {
+function _InitPrimaryTilesetAnimation(): void {
   sPrimaryTilesetAnimCounter = 0;
   sPrimaryTilesetAnimCounterMax = 0;
   sPrimaryTilesetAnimCallback = null;
@@ -435,7 +493,7 @@ function _initPrimaryTilesetAnimation(): void {
 }
 
 /** 1:1 décomp `_InitSecondaryTilesetAnimation(void)`. */
-function _initSecondaryTilesetAnimation(): void {
+function _InitSecondaryTilesetAnimation(): void {
   sSecondaryTilesetAnimCounter = 0;
   sSecondaryTilesetAnimCounterMax = 0;
   sSecondaryTilesetAnimCallback = null;
@@ -679,11 +737,15 @@ function InitTilesetAnim_BattlePyramid(): void {
 }
 
 /** 1:1 décomp `InitTilesetAnim_BattleDome(void)` (tileset_anims.c:830-835).
- *  Note : utilise palette blend, pas tile copy → pas de preload tiles. */
+ *  Note : utilise palette blend, pas tile copy → précharge les 4 palettes
+ *  floor-light (pas de tiles). */
 function InitTilesetAnim_BattleDome(): void {
   sSecondaryTilesetAnimCounter = 0;
   sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;
   sSecondaryTilesetAnimCallback = TilesetAnim_BattleDome;
+  preloadPals(BATTLE_DOME_FLOOR_LIGHT_PAL_URLS).catch(
+    (e) => console.error('[tileset-anims] BattleDome pal preload', e),
+  );
 }
 
 // ─── Tileset name → init callback maps ───────────────────────────────────────
@@ -735,11 +797,11 @@ const SECONDARY_INIT_MAP: Record<string, () => void> = {
  *    4 → LandWaterEdge (10 tiles @ TILE_OFFSET_4BPP(480))
  */
 function TilesetAnim_General(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_General_Flower(timer / 16 | 0);
-  if (timer % 16 === 1) queueAnimTiles_General_Water(timer / 16 | 0);
-  if (timer % 16 === 2) queueAnimTiles_General_SandWaterEdge(timer / 16 | 0);
-  if (timer % 16 === 3) queueAnimTiles_General_Waterfall(timer / 16 | 0);
-  if (timer % 16 === 4) queueAnimTiles_General_LandWaterEdge(timer / 16 | 0);
+  if (timer % 16 === 0) QueueAnimTiles_General_Flower(timer / 16 | 0);
+  if (timer % 16 === 1) QueueAnimTiles_General_Water(timer / 16 | 0);
+  if (timer % 16 === 2) QueueAnimTiles_General_SandWaterEdge(timer / 16 | 0);
+  if (timer % 16 === 3) QueueAnimTiles_General_Waterfall(timer / 16 | 0);
+  if (timer % 16 === 4) QueueAnimTiles_General_LandWaterEdge(timer / 16 | 0);
 }
 
 /** 1:1 décomp `QueueAnimTiles_General_Flower(u16 timer)` (tileset_anims.c:652-656).
@@ -747,13 +809,13 @@ function TilesetAnim_General(timer: number): void {
  *  Frame sequence [0,1,0,2] = gTilesetAnims_General_Flower[].
  *  4 tiles × 32 bytes = 128 bytes.
  *  Dest : TILE_OFFSET_4BPP(508) = 508 * 32 = 16256 bytes dans BG_VRAM. */
-function queueAnimTiles_General_Flower(timer: number): void {
+function QueueAnimTiles_General_Flower(timer: number): void {
   const seqLen = FLOWER_FRAME_SEQ.length;    // 4
   const frameIdx = FLOWER_FRAME_SEQ[timer % seqLen];
   const url = GENERAL_URLS.flower[frameIdx];
   const data = getTiles(url);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(508), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(508), 4 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_General_Water(u16 timer)` (tileset_anims.c:658-662).
@@ -761,11 +823,11 @@ function queueAnimTiles_General_Flower(timer: number): void {
  *  8 frames cycliques (0-7).
  *  30 tiles × 32 bytes = 960 bytes.
  *  Dest : TILE_OFFSET_4BPP(432). */
-function queueAnimTiles_General_Water(timer: number): void {
+function QueueAnimTiles_General_Water(timer: number): void {
   const frameIdx = timer % GENERAL_URLS.water.length;    // % 8
   const data = getTiles(GENERAL_URLS.water[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(432), 30 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(432), 30 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_General_SandWaterEdge(u16 timer)` (tileset_anims.c:664-668).
@@ -773,12 +835,12 @@ function queueAnimTiles_General_Water(timer: number): void {
  *  Frame sequence [0,1,2,3,4,5,6,0] = gTilesetAnims_General_SandWaterEdge[].
  *  10 tiles × 32 bytes = 320 bytes.
  *  Dest : TILE_OFFSET_4BPP(464). */
-function queueAnimTiles_General_SandWaterEdge(timer: number): void {
+function QueueAnimTiles_General_SandWaterEdge(timer: number): void {
   const seqLen = SAND_WATER_EDGE_FRAME_SEQ.length;    // 8
   const frameIdx = SAND_WATER_EDGE_FRAME_SEQ[timer % seqLen];
   const data = getTiles(GENERAL_URLS.sand_water_edge[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(464), 10 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(464), 10 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_General_Waterfall(u16 timer)` (tileset_anims.c:670-674).
@@ -786,11 +848,11 @@ function queueAnimTiles_General_SandWaterEdge(timer: number): void {
  *  4 frames cycliques (0-3).
  *  6 tiles × 32 bytes = 192 bytes.
  *  Dest : TILE_OFFSET_4BPP(496). */
-function queueAnimTiles_General_Waterfall(timer: number): void {
+function QueueAnimTiles_General_Waterfall(timer: number): void {
   const frameIdx = timer % GENERAL_URLS.waterfall.length;    // % 4
   const data = getTiles(GENERAL_URLS.waterfall[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(496), 6 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(496), 6 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_General_LandWaterEdge(u16 timer)` (tileset_anims.c:958-962).
@@ -798,11 +860,11 @@ function queueAnimTiles_General_Waterfall(timer: number): void {
  *  4 frames cycliques (0-3).
  *  10 tiles × 32 bytes = 320 bytes.
  *  Dest : TILE_OFFSET_4BPP(480). */
-function queueAnimTiles_General_LandWaterEdge(timer: number): void {
+function QueueAnimTiles_General_LandWaterEdge(timer: number): void {
   const frameIdx = timer % GENERAL_URLS.land_water_edge.length;    // % 4
   const data = getTiles(GENERAL_URLS.land_water_edge[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(480), 10 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(480), 10 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Building — IMPLÉMENTÉ 1:1 décomp ────────────────────────────
@@ -813,7 +875,7 @@ function queueAnimTiles_General_LandWaterEdge(timer: number): void {
  *    timer % 8 === 0 → TVTurnedOn (2 frames, 4 tiles @ TILE_OFFSET_4BPP(496))
  */
 function TilesetAnim_Building(timer: number): void {
-  if (timer % 8 === 0) queueAnimTiles_Building_TVTurnedOn(timer / 8 | 0);
+  if (timer % 8 === 0) QueueAnimTiles_Building_TVTurnedOn(timer / 8 | 0);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Building_TVTurnedOn(u16 timer)` (tileset_anims.c:1113-1117).
@@ -821,16 +883,16 @@ function TilesetAnim_Building(timer: number): void {
  *  2 frames cycliques (0-1).
  *  4 tiles × 32 bytes = 128 bytes.
  *  Dest : TILE_OFFSET_4BPP(496). */
-function queueAnimTiles_Building_TVTurnedOn(timer: number): void {
+function QueueAnimTiles_Building_TVTurnedOn(timer: number): void {
   const frameIdx = timer % BUILDING_URLS.tv_turned_on.length;    // % 2
   const data = getTiles(BUILDING_URLS.tv_turned_on[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(496), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(496), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── SECONDARY tileset callbacks 1:1 décomp — IMPLÉMENTÉ ─────────────────────
 // Pattern : chaque TilesetAnim_X dispatche selon `timer % N` vers
-// queueAnimTiles_X_Y (= write VRAM via appendTilesetAnimToBuffer).
+// QueueAnimTiles_X_Y (= write VRAM via AppendTilesetAnimToBuffer).
 // Source 1:1 : `D:/Projet 1/decomps/pokeemeraude/src/tileset_anims.c:837-1166`.
 
 // ─── TilesetAnim_Rustboro (1:1 décomp:837-858) ───────────────────────────────
@@ -838,64 +900,64 @@ function queueAnimTiles_Building_TVTurnedOn(timer: number): void {
 /** 1:1 décomp `TilesetAnim_Rustboro` (tileset_anims.c:837-858). */
 function TilesetAnim_Rustboro(timer: number): void {
   if (timer % 8 === 0) {
-    queueAnimTiles_Rustboro_WindyWater(timer >> 3, 0);
-    queueAnimTiles_Rustboro_Fountain(timer >> 3);
+    QueueAnimTiles_Rustboro_WindyWater(timer >> 3, 0);
+    QueueAnimTiles_Rustboro_Fountain(timer >> 3);
   }
   for (let i = 1; i < 8; i++) {
-    if (timer % 8 === i) queueAnimTiles_Rustboro_WindyWater(timer >> 3, i);
+    if (timer % 8 === i) QueueAnimTiles_Rustboro_WindyWater(timer >> 3, i);
   }
 }
 
 /** 1:1 décomp `QueueAnimTiles_Rustboro_WindyWater` (tileset_anims.c:1008-1014).
  *  Note : timer_div -= timer_mod (= synchronise les 8 cells malgré décalage).
  *  4 tiles à VDest[mod] (= TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 128..156)). */
-function queueAnimTiles_Rustboro_WindyWater(timer_div: number, timer_mod: number): void {
+function QueueAnimTiles_Rustboro_WindyWater(timer_div: number, timer_mod: number): void {
   const adjusted = (timer_div - timer_mod);
   const i = ((adjusted % 8) + 8) % 8;
   const data = getTiles(SECONDARY_URLS.rustboro.windy_water[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, RUSTBORO_WINDY_WATER_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, RUSTBORO_WINDY_WATER_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Rustboro_Fountain` (tileset_anims.c:1016-1020).
  *  4 tiles à TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 448). */
-function queueAnimTiles_Rustboro_Fountain(timer: number): void {
+function QueueAnimTiles_Rustboro_Fountain(timer: number): void {
   const i = timer % SECONDARY_URLS.rustboro.fountain.length;  // % 2
   const data = getTiles(SECONDARY_URLS.rustboro.fountain[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 448), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 448), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Dewford (1:1 décomp:860-864) ────────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_Dewford` (tileset_anims.c:860-864). */
 function TilesetAnim_Dewford(timer: number): void {
-  if (timer % 8 === 0) queueAnimTiles_Dewford_Flag(timer >> 3);
+  if (timer % 8 === 0) QueueAnimTiles_Dewford_Flag(timer >> 3);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Dewford_Flag` (tileset_anims.c:1042-1046).
  *  6 tiles à TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 170). */
-function queueAnimTiles_Dewford_Flag(timer: number): void {
+function QueueAnimTiles_Dewford_Flag(timer: number): void {
   const i = timer % SECONDARY_URLS.dewford.flag.length;  // % 4
   const data = getTiles(SECONDARY_URLS.dewford.flag[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 170), 6 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 170), 6 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Slateport (1:1 décomp:866-870) ──────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_Slateport` (tileset_anims.c:866-870). */
 function TilesetAnim_Slateport(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_Slateport_Balloons(timer >> 4);
+  if (timer % 16 === 0) QueueAnimTiles_Slateport_Balloons(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Slateport_Balloons` (tileset_anims.c:1060-1064).
  *  4 tiles à TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 224). */
-function queueAnimTiles_Slateport_Balloons(timer: number): void {
+function QueueAnimTiles_Slateport_Balloons(timer: number): void {
   const i = timer % SECONDARY_URLS.slateport.balloons.length;  // % 4
   const data = getTiles(SECONDARY_URLS.slateport.balloons[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 224), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 224), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Mauville (1:1 décomp:872-890) ───────────────────────────────
@@ -903,7 +965,7 @@ function queueAnimTiles_Slateport_Balloons(timer: number): void {
 /** 1:1 décomp `TilesetAnim_Mauville` (tileset_anims.c:872-890). */
 function TilesetAnim_Mauville(timer: number): void {
   for (let i = 0; i < 8; i++) {
-    if (timer % 8 === i) queueAnimTiles_Mauville_Flowers(timer >> 3, i);
+    if (timer % 8 === i) QueueAnimTiles_Mauville_Flowers(timer >> 3, i);
   }
 }
 
@@ -911,7 +973,7 @@ function TilesetAnim_Mauville(timer: number): void {
  *  Note : 2 séquences possibles selon timer_div — la "long" cycle (12 frames
  *  de Flower1+Flower2 cycliques) si timer_div < 12, sinon la "B" cycle (4
  *  frames de Flower1_B+Flower2_B). 1:1 décomp logic préservée. */
-function queueAnimTiles_Mauville_Flowers(timer_div: number, timer_mod: number): void {
+function QueueAnimTiles_Mauville_Flowers(timer_div: number, timer_mod: number): void {
   const adjusted = timer_div - timer_mod;
   // 1:1 décomp condition : `if (timer_div < min(12, 12))` = always 12.
   if (adjusted < MAUVILLE_FLOWER_SEQ.length) {
@@ -920,8 +982,8 @@ function queueAnimTiles_Mauville_Flowers(timer_div: number, timer_mod: number): 
     const f2 = MAUVILLE_FLOWER_SEQ[i];
     const d1 = getTiles(SECONDARY_URLS.mauville.flower_1[f1]);
     const d2 = getTiles(SECONDARY_URLS.mauville.flower_2[f2]);
-    if (d1) appendTilesetAnimToBuffer(d1, MAUVILLE_FLOWER1_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
-    if (d2) appendTilesetAnimToBuffer(d2, MAUVILLE_FLOWER2_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+    if (d1) AppendTilesetAnimToBuffer(d1, MAUVILLE_FLOWER1_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+    if (d2) AppendTilesetAnimToBuffer(d2, MAUVILLE_FLOWER2_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
   } else {
     // B cycle (= rare, fallback).
     const i = ((adjusted % MAUVILLE_FLOWER_B_SEQ.length) + MAUVILLE_FLOWER_B_SEQ.length) % MAUVILLE_FLOWER_B_SEQ.length;
@@ -929,8 +991,8 @@ function queueAnimTiles_Mauville_Flowers(timer_div: number, timer_mod: number): 
     const f2 = MAUVILLE_FLOWER_B_SEQ[i];
     const d1 = getTiles(SECONDARY_URLS.mauville.flower_1[f1]);
     const d2 = getTiles(SECONDARY_URLS.mauville.flower_2[f2]);
-    if (d1) appendTilesetAnimToBuffer(d1, MAUVILLE_FLOWER1_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
-    if (d2) appendTilesetAnimToBuffer(d2, MAUVILLE_FLOWER2_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+    if (d1) AppendTilesetAnimToBuffer(d1, MAUVILLE_FLOWER1_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+    if (d2) AppendTilesetAnimToBuffer(d2, MAUVILLE_FLOWER2_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
   }
 }
 
@@ -938,29 +1000,29 @@ function queueAnimTiles_Mauville_Flowers(timer_div: number, timer_mod: number): 
 
 /** 1:1 décomp `TilesetAnim_Lavaridge` (tileset_anims.c:892-898). */
 function TilesetAnim_Lavaridge(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_Lavaridge_Steam(timer >> 4);
-  if (timer % 16 === 1) queueAnimTiles_Lavaridge_Lava(timer >> 4);
+  if (timer % 16 === 0) QueueAnimTiles_Lavaridge_Steam(timer >> 4);
+  if (timer % 16 === 1) QueueAnimTiles_Lavaridge_Lava(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Lavaridge_Steam` (tileset_anims.c:964-971).
  *  2 dests à 4 tiles each, frame offset (timer + 2) % 4 sur le 2ème. */
-function queueAnimTiles_Lavaridge_Steam(timer: number): void {
+function QueueAnimTiles_Lavaridge_Steam(timer: number): void {
   const len = SECONDARY_URLS.lavaridge.steam.length;
   const i1 = timer % len;
   const i2 = (timer + 2) % len;
   const d1 = getTiles(SECONDARY_URLS.lavaridge.steam[i1]);
   const d2 = getTiles(SECONDARY_URLS.lavaridge.steam[i2]);
-  if (d1) appendTilesetAnimToBuffer(d1, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 288), 4 * TILE_SIZE_4BPP);
-  if (d2) appendTilesetAnimToBuffer(d2, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 292), 4 * TILE_SIZE_4BPP);
+  if (d1) AppendTilesetAnimToBuffer(d1, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 288), 4 * TILE_SIZE_4BPP);
+  if (d2) AppendTilesetAnimToBuffer(d2, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 292), 4 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Lavaridge_Lava` (tileset_anims.c:1022-1026).
  *  Note : utilise les 4 frames du tileset cave/anim/lava (= shared). */
-function queueAnimTiles_Lavaridge_Lava(timer: number): void {
+function QueueAnimTiles_Lavaridge_Lava(timer: number): void {
   const i = timer % SECONDARY_URLS.cave.lava.length;  // % 4
   const data = getTiles(SECONDARY_URLS.cave.lava[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 160), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 160), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_EverGrande (1:1 décomp:900-918) ─────────────────────────────
@@ -968,66 +1030,66 @@ function queueAnimTiles_Lavaridge_Lava(timer: number): void {
 /** 1:1 décomp `TilesetAnim_EverGrande` (tileset_anims.c:900-918). */
 function TilesetAnim_EverGrande(timer: number): void {
   for (let i = 0; i < 8; i++) {
-    if (timer % 8 === i) queueAnimTiles_EverGrande_Flowers(timer >> 3, i);
+    if (timer % 8 === i) QueueAnimTiles_EverGrande_Flowers(timer >> 3, i);
   }
 }
 
 /** 1:1 décomp `QueueAnimTiles_EverGrande_Flowers` (tileset_anims.c:1028-1034). */
-function queueAnimTiles_EverGrande_Flowers(timer_div: number, timer_mod: number): void {
+function QueueAnimTiles_EverGrande_Flowers(timer_div: number, timer_mod: number): void {
   const adjusted = timer_div - timer_mod;
   const i = ((adjusted % 8) + 8) % 8;
   const data = getTiles(SECONDARY_URLS.ever_grande.flowers[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, EVER_GRANDE_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, EVER_GRANDE_VDESTS[timer_mod], 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Pacifidlog (1:1 décomp:920-926) ─────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_Pacifidlog` (tileset_anims.c:920-926). */
 function TilesetAnim_Pacifidlog(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_Pacifidlog_LogBridges(timer >> 4);
-  if (timer % 16 === 1) queueAnimTiles_Pacifidlog_WaterCurrents(timer >> 4);
+  if (timer % 16 === 0) QueueAnimTiles_Pacifidlog_LogBridges(timer >> 4);
+  if (timer % 16 === 1) QueueAnimTiles_Pacifidlog_WaterCurrents(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Pacifidlog_LogBridges` (tileset_anims.c:973-977).
  *  Frame seq [0,1,2,1] (= 4 entries depuis 3 frames). 30 tiles. */
-function queueAnimTiles_Pacifidlog_LogBridges(timer: number): void {
+function QueueAnimTiles_Pacifidlog_LogBridges(timer: number): void {
   const i = timer % PACIFIDLOG_LOG_BRIDGES_SEQ.length;
   const frameIdx = PACIFIDLOG_LOG_BRIDGES_SEQ[i];
   const data = getTiles(SECONDARY_URLS.pacifidlog.log_bridges[frameIdx]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464), 30 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464), 30 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Pacifidlog_WaterCurrents` (tileset_anims.c:985-989).
  *  8 frames cycliques. 8 tiles. */
-function queueAnimTiles_Pacifidlog_WaterCurrents(timer: number): void {
+function QueueAnimTiles_Pacifidlog_WaterCurrents(timer: number): void {
   const i = timer % SECONDARY_URLS.pacifidlog.water_currents.length;  // % 8
   const data = getTiles(SECONDARY_URLS.pacifidlog.water_currents[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 8 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 8 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Sootopolis (1:1 décomp:928-932) ─────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_Sootopolis` (tileset_anims.c:928-932). */
 function TilesetAnim_Sootopolis(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_Sootopolis_StormyWater(timer >> 4);
+  if (timer % 16 === 0) QueueAnimTiles_Sootopolis_StormyWater(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Sootopolis_StormyWater` (tileset_anims.c:1150-1154).
  *  Note : décomp = INCBIN_U16 concat de _kyogre.4bpp + _groudon.4bpp = 96 tiles
  *  (= 48+48). Notre impl split en 2 appends (= 48 tiles each à dest+0 et dest+48). */
-function queueAnimTiles_Sootopolis_StormyWater(timer: number): void {
+function QueueAnimTiles_Sootopolis_StormyWater(timer: number): void {
   const i = timer % SECONDARY_URLS.sootopolis.stormy_water_kyogre.length;  // % 8
   const dKyogre = getTiles(SECONDARY_URLS.sootopolis.stormy_water_kyogre[i]);
   const dGroudon = getTiles(SECONDARY_URLS.sootopolis.stormy_water_groudon[i]);
   if (dKyogre) {
-    appendTilesetAnimToBuffer(dKyogre,
+    AppendTilesetAnimToBuffer(dKyogre,
       TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 240), 48 * TILE_SIZE_4BPP);
   }
   if (dGroudon) {
-    appendTilesetAnimToBuffer(dGroudon,
+    AppendTilesetAnimToBuffer(dGroudon,
       TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 240 + 48), 48 * TILE_SIZE_4BPP);
   }
 }
@@ -1036,62 +1098,62 @@ function queueAnimTiles_Sootopolis_StormyWater(timer: number): void {
 
 /** 1:1 décomp `TilesetAnim_BattleFrontierOutsideWest` (tileset_anims.c:946-950). */
 function TilesetAnim_BattleFrontierOutsideWest(timer: number): void {
-  if (timer % 8 === 0) queueAnimTiles_BattleFrontierOutsideWest_Flag(timer >> 3);
+  if (timer % 8 === 0) QueueAnimTiles_BattleFrontierOutsideWest_Flag(timer >> 3);
 }
 
 /** 1:1 décomp `QueueAnimTiles_BattleFrontierOutsideWest_Flag` (tileset_anims.c:1048-1052). */
-function queueAnimTiles_BattleFrontierOutsideWest_Flag(timer: number): void {
+function QueueAnimTiles_BattleFrontierOutsideWest_Flag(timer: number): void {
   const urls = SECONDARY_URLS.battle_frontier_outside_west.flag;
   const i = timer % urls.length;  // % 4
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218), 6 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218), 6 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_BattleFrontierOutsideEast (1:1 décomp:952-956) ──────────────
 
 /** 1:1 décomp `TilesetAnim_BattleFrontierOutsideEast` (tileset_anims.c:952-956). */
 function TilesetAnim_BattleFrontierOutsideEast(timer: number): void {
-  if (timer % 8 === 0) queueAnimTiles_BattleFrontierOutsideEast_Flag(timer >> 3);
+  if (timer % 8 === 0) QueueAnimTiles_BattleFrontierOutsideEast_Flag(timer >> 3);
 }
 
 /** 1:1 décomp `QueueAnimTiles_BattleFrontierOutsideEast_Flag` (tileset_anims.c:1054-1058).
  *  Note : même dest que West (= 218) car installé dans des maps différentes. */
-function queueAnimTiles_BattleFrontierOutsideEast_Flag(timer: number): void {
+function QueueAnimTiles_BattleFrontierOutsideEast_Flag(timer: number): void {
   const urls = SECONDARY_URLS.battle_frontier_outside_east.flag;
   const i = timer % urls.length;  // % 4
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218), 6 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218), 6 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_Underwater (1:1 décomp:934-938) ─────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_Underwater` (tileset_anims.c:934-938). */
 function TilesetAnim_Underwater(timer: number): void {
-  if (timer % 16 === 0) queueAnimTiles_Underwater_Seaweed(timer >> 4);
+  if (timer % 16 === 0) QueueAnimTiles_Underwater_Seaweed(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Underwater_Seaweed` (tileset_anims.c:979-983).
  *  4 tiles à TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496). */
-function queueAnimTiles_Underwater_Seaweed(timer: number): void {
+function QueueAnimTiles_Underwater_Seaweed(timer: number): void {
   const urls = SECONDARY_URLS.underwater.seaweed;
   const i = timer % urls.length;  // % 4
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_SootopolisGym (1:1 décomp:1072-1076) ────────────────────────
 
 /** 1:1 décomp `TilesetAnim_SootopolisGym` (tileset_anims.c:1072-1076). */
 function TilesetAnim_SootopolisGym(timer: number): void {
-  if (timer % 8 === 0) queueAnimTiles_SootopolisGym_Waterfalls(timer >> 3);
+  if (timer % 8 === 0) QueueAnimTiles_SootopolisGym_Waterfalls(timer >> 3);
 }
 
 /** 1:1 décomp `QueueAnimTiles_SootopolisGym_Waterfalls` (tileset_anims.c:1119-1124).
  *  side : 12 tiles à dest+496 ; front : 20 tiles à dest+464. */
-function queueAnimTiles_SootopolisGym_Waterfalls(timer: number): void {
+function QueueAnimTiles_SootopolisGym_Waterfalls(timer: number): void {
   const sideUrls = SECONDARY_URLS.sootopolis_gym.side_waterfall;
   const frontUrls = SECONDARY_URLS.sootopolis_gym.front_waterfall;
   const len = Math.min(sideUrls.length, frontUrls.length);  // 3
@@ -1099,10 +1161,10 @@ function queueAnimTiles_SootopolisGym_Waterfalls(timer: number): void {
   const dSide = getTiles(sideUrls[i]);
   const dFront = getTiles(frontUrls[i]);
   if (dSide) {
-    appendTilesetAnimToBuffer(dSide, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 12 * TILE_SIZE_4BPP);
+    AppendTilesetAnimToBuffer(dSide, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 12 * TILE_SIZE_4BPP);
   }
   if (dFront) {
-    appendTilesetAnimToBuffer(dFront, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464), 20 * TILE_SIZE_4BPP);
+    AppendTilesetAnimToBuffer(dFront, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464), 20 * TILE_SIZE_4BPP);
   }
 }
 
@@ -1110,16 +1172,16 @@ function queueAnimTiles_SootopolisGym_Waterfalls(timer: number): void {
 
 /** 1:1 décomp `TilesetAnim_Cave` (tileset_anims.c:940-944). */
 function TilesetAnim_Cave(timer: number): void {
-  if (timer % 16 === 1) queueAnimTiles_Cave_Lava(timer >> 4);
+  if (timer % 16 === 1) QueueAnimTiles_Cave_Lava(timer >> 4);
 }
 
 /** 1:1 décomp `QueueAnimTiles_Cave_Lava` (tileset_anims.c:1036-1040).
  *  Même asset que Lavaridge_Lava mais dest différente (= 416 vs 160). */
-function queueAnimTiles_Cave_Lava(timer: number): void {
+function QueueAnimTiles_Cave_Lava(timer: number): void {
   const i = timer % SECONDARY_URLS.cave.lava.length;  // % 4
   const data = getTiles(SECONDARY_URLS.cave.lava[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 416), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 416), 4 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_EliteFour (1:1 décomp:1078-1084) ────────────────────────────
@@ -1127,62 +1189,62 @@ function queueAnimTiles_Cave_Lava(timer: number): void {
 /** 1:1 décomp `TilesetAnim_EliteFour` (tileset_anims.c:1078-1084).
  *  2 sub-anims : ground_lights (timer%64==1) + wall_lights (timer%8==1). */
 function TilesetAnim_EliteFour(timer: number): void {
-  if (timer % 64 === 1) queueAnimTiles_EliteFour_GroundLights(timer >> 6);
-  if (timer % 8 === 1) queueAnimTiles_EliteFour_WallLights(timer >> 3);
+  if (timer % 64 === 1) QueueAnimTiles_EliteFour_GroundLights(timer >> 6);
+  if (timer % 8 === 1) QueueAnimTiles_EliteFour_WallLights(timer >> 3);
 }
 
 /** 1:1 décomp `QueueAnimTiles_EliteFour_GroundLights` (tileset_anims.c:1132-1136).
  *  2 frames cycliques (= floor_light/0,1). 4 tiles. */
-function queueAnimTiles_EliteFour_GroundLights(timer: number): void {
+function QueueAnimTiles_EliteFour_GroundLights(timer: number): void {
   const urls = SECONDARY_URLS.elite_four.floor_light;
   const i = timer % urls.length;  // % 2
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 480), 4 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 480), 4 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_EliteFour_WallLights` (tileset_anims.c:1126-1130).
  *  4 frames cycliques. 1 tile (= 32 bytes). */
-function queueAnimTiles_EliteFour_WallLights(timer: number): void {
+function QueueAnimTiles_EliteFour_WallLights(timer: number): void {
   const urls = SECONDARY_URLS.elite_four.wall_lights;
   const i = timer % urls.length;  // % 4
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 504), 1 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 504), 1 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_MauvilleGym (1:1 décomp:1066-1070) ──────────────────────────
 
 /** 1:1 décomp `TilesetAnim_MauvilleGym` (tileset_anims.c:1066-1070). */
 function TilesetAnim_MauvilleGym(timer: number): void {
-  if (timer % 2 === 0) queueAnimTiles_MauvilleGym_ElectricGates(timer >> 1);
+  if (timer % 2 === 0) QueueAnimTiles_MauvilleGym_ElectricGates(timer >> 1);
 }
 
 /** 1:1 décomp `QueueAnimTiles_MauvilleGym_ElectricGates` (tileset_anims.c:1138-1142).
  *  2 frames cycliques. 16 tiles à dest+144. */
-function queueAnimTiles_MauvilleGym_ElectricGates(timer: number): void {
+function QueueAnimTiles_MauvilleGym_ElectricGates(timer: number): void {
   const urls = SECONDARY_URLS.mauville_gym.electric_gates;
   const i = timer % urls.length;  // % 2
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 144), 16 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 144), 16 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_BikeShop (1:1 décomp:1086-1090) ─────────────────────────────
 
 /** 1:1 décomp `TilesetAnim_BikeShop` (tileset_anims.c:1086-1090). */
 function TilesetAnim_BikeShop(timer: number): void {
-  if (timer % 4 === 0) queueAnimTiles_BikeShop_BlinkingLights(timer >> 2);
+  if (timer % 4 === 0) QueueAnimTiles_BikeShop_BlinkingLights(timer >> 2);
 }
 
 /** 1:1 décomp `QueueAnimTiles_BikeShop_BlinkingLights` (tileset_anims.c:1144-1148).
  *  2 frames cycliques. 9 tiles à dest+496. */
-function queueAnimTiles_BikeShop_BlinkingLights(timer: number): void {
+function QueueAnimTiles_BikeShop_BlinkingLights(timer: number): void {
   const urls = SECONDARY_URLS.bike_shop.blinking_lights;
   const i = timer % urls.length;  // % 2
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 9 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496), 9 * TILE_SIZE_4BPP);
 }
 
 // ─── TilesetAnim_BattlePyramid (1:1 décomp:1092-1099) ────────────────────────
@@ -1190,47 +1252,88 @@ function queueAnimTiles_BikeShop_BlinkingLights(timer: number): void {
 /** 1:1 décomp `TilesetAnim_BattlePyramid` (tileset_anims.c:1092-1099). */
 function TilesetAnim_BattlePyramid(timer: number): void {
   if (timer % 8 === 0) {
-    queueAnimTiles_BattlePyramid_Torch(timer >> 3);
-    queueAnimTiles_BattlePyramid_StatueShadow(timer >> 3);
+    QueueAnimTiles_BattlePyramid_Torch(timer >> 3);
+    QueueAnimTiles_BattlePyramid_StatueShadow(timer >> 3);
   }
 }
 
 /** 1:1 décomp `QueueAnimTiles_BattlePyramid_Torch` (tileset_anims.c:1156-1160).
  *  3 frames cycliques. 8 tiles à dest+151. */
-function queueAnimTiles_BattlePyramid_Torch(timer: number): void {
+function QueueAnimTiles_BattlePyramid_Torch(timer: number): void {
   const urls = SECONDARY_URLS.battle_pyramid.torch;
   const i = timer % urls.length;  // % 3
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 151), 8 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 151), 8 * TILE_SIZE_4BPP);
 }
 
 /** 1:1 décomp `QueueAnimTiles_BattlePyramid_StatueShadow` (tileset_anims.c:1162-1166).
  *  3 frames cycliques. 8 tiles à dest+135. */
-function queueAnimTiles_BattlePyramid_StatueShadow(timer: number): void {
+function QueueAnimTiles_BattlePyramid_StatueShadow(timer: number): void {
   const urls = SECONDARY_URLS.battle_pyramid.statue_shadow;
   const i = timer % urls.length;  // % 3
   const data = getTiles(urls[i]);
   if (data === null) return;
-  appendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 135), 8 * TILE_SIZE_4BPP);
+  AppendTilesetAnimToBuffer(data, TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 135), 8 * TILE_SIZE_4BPP);
 }
 
-// ─── TilesetAnim_BattleDome (1:1 décomp:1101-1105) ───────────────────────────
+// ─── TilesetAnim_BattleDome (1:1 décomp:1101-1188) ───────────────────────────
+// Battle Dome = seule anim par BLEND DE PALETTE (pas copie de tiles). Copie une des
+// 4 palettes floor-light dans gPlttBufferUnfaded[BG_PLTT_ID(8)] puis BlendPalette avec
+// l'état de fade courant. Inerte tant que les .pal ne sont pas chargées (preload async
+// dans InitTilesetAnim_BattleDome) et tant qu'aucune map n'utilise le tileset
+// `battle_dome` (Battle Frontier, hors-solo) → zéro effet sur l'overworld solo.
 
-/** 1:1 décomp `TilesetAnim_BattleDome` (tileset_anims.c:1101-1105).
- *
- *  Note : utilise palette blend (= `BlendAnimPalette_BattleDome_FloorLights`),
- *  PAS tile copy. La décomp copie sTilesetAnims_BattleDomeFloorLightPals[i%4]
- *  (= 4 palettes 16-color) dans gPlttBufferUnfaded[BG_PLTT_ID(8)] puis call
- *  BlendPalette avec gPaletteFade.y + blendColor.
- *
- *  Implémentation actuelle : NO-OP. Battle Dome non testé Phase 4.7.
- *  TODO Phase 4.8+ : wire palette copy + blend (= besoin gPlttBufferUnfaded
- *  + gPaletteFade access via rt). Décomp data : `data/tilesets/secondary/
- *  battle_dome/anim/floor_light_pals_*.gbapal`.
- */
-function TilesetAnim_BattleDome(_timer: number): void {
-  // Stub : palette blend non encore implémenté. Map Battle Dome rendering OK
-  // sans cette anim (= tile rendering normal, juste pas de pulse de lights).
+/** ADAPTATION du check `FindTaskIdByFunc(Task_BattleTransition_Intro) != TASK_NONE`.
+ *  `Task_BattleTransition_Intro` n'est pas exporté par battle_transition.ts (tasks
+ *  anonymes côté port) et l'exporter est hors-scope de ce fichier → ce prédicat renvoie
+ *  false : le switchover FloorLights→NoBlend (variante jouée pendant le wipe d'entrée en
+ *  combat) reste INERTE. En overworld normal, la décomp ne prend pas non plus cette
+ *  branche (aucune transition ne tourne). À compléter = exporter le task +
+ *  `import { FindTaskIdByFunc }` de decomp-globals. */
+function battleTransitionIntroTaskActive(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `TilesetAnim_BattleDome` (tileset_anims.c:1101-1105). */
+function TilesetAnim_BattleDome(timer: number): void {
+  if (timer % 4 === 0) BlendAnimPalette_BattleDome_FloorLights(timer >> 2);
+}
+
+/** 1:1 décomp `TilesetAnim_BattleDome2` (tileset_anims.c:1107-1111).
+ *  Variante activée par le switchover de FloorLights (INERTE, cf.
+ *  battleTransitionIntroTaskActive). */
+function TilesetAnim_BattleDome2(timer: number): void {
+  if (timer % 4 === 0) BlendAnimPalette_BattleDome_FloorLightsNoBlend(timer >> 2);
+}
+
+/** 1:1 décomp `BlendAnimPalette_BattleDome_FloorLights` (tileset_anims.c:1168-1177).
+ *  CpuCopy16(pals[timer%4], &gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP) puis
+ *  BlendPalette. PLTT_SIZE_4BPP = 32 octets = 16 couleurs. */
+function BlendAnimPalette_BattleDome_FloorLights(timer: number): void {
+  const urls = BATTLE_DOME_FLOOR_LIGHT_PAL_URLS;
+  const pal = getPal(urls[timer % urls.length]);
+  if (pal === null) return;  // palettes pas encore chargées → inerte
+  const base = BG_PLTT_ID(8);
+  for (let i = 0; i < 16; i++) gPlttBufferUnfaded[base + i] = pal[i] ?? 0;
+  BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y as number, (gPaletteFade.blendColor as number) & 0x7FFF);
+  if (battleTransitionIntroTaskActive()) {
+    sSecondaryTilesetAnimCallback = TilesetAnim_BattleDome2;
+    sSecondaryTilesetAnimCounterMax = 32;
+  }
+}
+
+/** 1:1 décomp `BlendAnimPalette_BattleDome_FloorLightsNoBlend` (tileset_anims.c:1179-1188). */
+function BlendAnimPalette_BattleDome_FloorLightsNoBlend(timer: number): void {
+  const urls = BATTLE_DOME_FLOOR_LIGHT_PAL_URLS;
+  const pal = getPal(urls[timer % urls.length]);
+  if (pal === null) return;
+  const base = BG_PLTT_ID(8);
+  for (let i = 0; i < 16; i++) gPlttBufferUnfaded[base + i] = pal[i] ?? 0;
+  // 1:1 décomp : `== TASK_NONE` (pas de transition) → blend + décrément du compteur.
+  if (!battleTransitionIntroTaskActive()) {
+    BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y as number, (gPaletteFade.blendColor as number) & 0x7FFF);
+    if (--sSecondaryTilesetAnimCounterMax === 0) sSecondaryTilesetAnimCallback = null;
+  }
 }
 
