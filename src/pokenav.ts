@@ -36,13 +36,13 @@ import { GetMenuHandlerCallback, FreeMenuHandlerSubstruct1, PokenavCallback_Init
 import { CreateMenuHandlerLoopedTask, FreeMenuHandlerSubstruct2, IsMenuHandlerLoopedTaskActive, OpenPokenavMenuInitial, OpenPokenavMenuNotInitial } from './pokenav_menu_handler_gfx';
 import { CreateRegionMapLoopedTask, FreeRegionMapSubstruct1, FreeRegionMapSubstruct2, GetRegionMapCallback, IsRegionMapLoopedTaskActive, OpenPokenavRegionMap, PokenavCallback_Init_RegionMap, PrefetchPokenavRegionMapAssets } from './pokenav_region_map';
 import { FreeConditionGraphMenuSubstruct1, GetConditionGraphMenuCallback, PokenavCallback_Init_ConditionGraph_Party, PokenavCallback_Init_ConditionGraph_Search } from './pokenav_conditions';
-import { CreateConditionGraphMenuLoopedTask, FreeConditionGraphMenuSubstruct2, IsConditionGraphMenuLoopedTaskActive, OpenConditionGraphMenu } from './pokenav_conditions_gfx';
-import { CreateSearchResultsLoopedTask, FreeSearchResultSubstruct1, FreeSearchResultSubstruct2, GetConditionSearchResultsCallback, IsSearchResultLoopedTaskActive, OpenConditionSearchListFromGraph, OpenConditionSearchResults, PokenavCallback_Init_ConditionSearch, PokenavCallback_Init_ReturnToMonSearchList } from './pokenav_conditions_search_results';
+import { CreateConditionGraphMenuLoopedTask, FreeConditionGraphMenuSubstruct2, IsConditionGraphMenuLoopedTaskActive, OpenConditionGraphMenu, PrefetchConditionGraphAssets } from './pokenav_conditions_gfx';
+import { CreateSearchResultsLoopedTask, FreeSearchResultSubstruct1, FreeSearchResultSubstruct2, GetConditionSearchResultsCallback, IsSearchResultLoopedTaskActive, OpenConditionSearchListFromGraph, OpenConditionSearchResults, PokenavCallback_Init_ConditionSearch, PokenavCallback_Init_ReturnToMonSearchList, PrefetchConditionSearchResultsAssets } from './pokenav_conditions_search_results';
 import { PrefetchListArrowAssets } from './pokenav_list';
 import { CreateMatchCallLoopedTask, FreeMatchCallSubstruct2, IsMatchCallLoopedTaskActive, OpenMatchCall, PrefetchMatchCallAssets } from './pokenav_match_call_gfx';
 import { FreeMatchCallSubstruct1, GetMatchCallCallback, PokenavCallback_Init_MatchCall } from './pokenav_match_call_list';
-import { CreateRibbonsMonListLoopedTask, FreeRibbonsMonList, FreeRibbonsMonMenu, GetRibbonsMonListCallback, IsRibbonsMonListLoopedTaskActive, OpenRibbonsMonList, OpenRibbonsMonListFromRibbonsSummary, PokenavCallback_Init_MonRibbonList, PokenavCallback_Init_RibbonsMonListFromSummary } from './pokenav_ribbons_list';
-import { CreateRibbonsSummaryLoopedTask, FreeRibbonsSummaryScreen1, FreeRibbonsSummaryScreen2, GetRibbonsSummaryMenuCallback, IsRibbonsSummaryLoopedTaskActive, OpenRibbonsSummaryMenu, PokenavCallback_Init_RibbonsSummaryMenu } from './pokenav_ribbons_summary';
+import { CreateRibbonsMonListLoopedTask, FreeRibbonsMonList, FreeRibbonsMonMenu, GetRibbonsMonListCallback, IsRibbonsMonListLoopedTaskActive, OpenRibbonsMonList, OpenRibbonsMonListFromRibbonsSummary, PokenavCallback_Init_MonRibbonList, PokenavCallback_Init_RibbonsMonListFromSummary, PrefetchRibbonsListAssets } from './pokenav_ribbons_list';
+import { CreateRibbonsSummaryLoopedTask, FreeRibbonsSummaryScreen1, FreeRibbonsSummaryScreen2, GetRibbonsSummaryMenuCallback, IsRibbonsSummaryLoopedTaskActive, OpenRibbonsSummaryMenu, PokenavCallback_Init_RibbonsSummaryMenu, PrefetchRibbonsSummaryAssets } from './pokenav_ribbons_summary';
 import { gPlayerParty, GetMonData, PARTY_SIZE } from './engine/battle/party-storage';
 import { MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG, MON_DATA_RIBBON_COUNT } from '../include/pokemon';
 import { TOTAL_BOXES_COUNT, IN_BOX_COUNT } from './engine/save/save-blocks';
@@ -129,6 +129,10 @@ export function CB2_InitPokeNav(): void {
     PrefetchMatchCallAssets();
     PrefetchListArrowAssets();
     PrefetchPokenavRegionMapAssets();
+    PrefetchConditionGraphAssets();
+    PrefetchConditionSearchResultsAssets();
+    PrefetchRibbonsListAssets();
+    PrefetchRibbonsSummaryAssets();
     ResetTasks();
     rt.SetVBlankCallback(null);
     CreateTask((t: DecompTask) => Task_Pokenav(t), 0);
@@ -153,6 +157,13 @@ export function VBlankCB_Pokenav(): void {
   LoadOam();
   ProcessSpriteCopyRequests();
   TransferPlttBuffer();
+}
+
+/** 1:1 décomp `void SetVBlankCallback_(IntrCallback callback)` (pokenav.c:537-540) —
+ *  wrapper SetVBlankCallback exposé aux subscreens (conditions_gfx, menu_handler_gfx,
+ *  region_map installent leur VBlank custom par ici). */
+export function SetVBlankCallback_(callback: (() => void) | null): void {
+  getRuntime()?.SetVBlankCallback(callback as never);
 }
 
 /** 1:1 décomp `void SetPokenavVBlankCallback(void)` (pokenav.c:542) = SetVBlankCallback(VBlankCB_Pokenav).

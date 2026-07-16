@@ -924,6 +924,16 @@ function renderHandleChar(printer: TextPrinter): number {
         printer.printerTemplate.currentChar += 3;
         continue;
       }
+      // COLOR_HIGHLIGHT_SHADOW : les 3 couleurs d'un coup (fg, bg, shadow). text.c:995-1003.
+      // (BEGIN + sub + 3 args = 5 bytes ; sans ce case le défaut n'avançait que de 3 →
+      // bg/shadow rendus comme glyphes. Utilisé par le Pokénav CONDITION, pokenav_conditions.c:454.)
+      if (subCode === EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW) {
+        printer.printerTemplate.fgColor = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? printer.printerTemplate.fgColor;
+        printer.printerTemplate.bgColor = printer.encodedString[printer.printerTemplate.currentChar + 3] ?? printer.printerTemplate.bgColor;
+        printer.printerTemplate.shadowColor = printer.encodedString[printer.printerTemplate.currentChar + 4] ?? printer.printerTemplate.shadowColor;
+        printer.printerTemplate.currentChar += 5;
+        continue;
+      }
       // CLEAR : EFFACE n px (ClearTextSpan) puis avance currentX. text.c:1063-1072.
       // (Avant : avançait sans effacer → résidus des anciens textes plus longs au
       // re-print par-dessus — noms mélangés dans la liste Match Call au scroll.)

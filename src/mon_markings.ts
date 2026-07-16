@@ -125,8 +125,30 @@ export function CreateMonMarkingComboSprite(tileTag: number | string, paletteTag
   return CreateMarkingComboSprite(tileTag, paletteTag, palette, 1);
 }
 
-/** 1:1 `static struct Sprite *CreateMarkingComboSprite(tileTag, paletteTag, palette, size)` (:585). */
-function CreateMarkingComboSprite(tileTag: number | string, paletteTag: number | string, palette: Uint16Array | null, size: number): number {
+/** 1:1 `sAnims_MarkingCombo` (mon_markings.c:172-283) — 16 combos, FRAME(combo*4, 5).
+ *  Consommé par StartSpriteAnim(sprite, markings) (MonMarkingsCallback du Pokénav /
+ *  summary screen). */
+const sAnims_MarkingCombo: AnimCmd[][] = Array.from({ length: 16 }, (_, combo) => [
+  ANIMCMD_FRAME(combo * 4, 5),
+  ANIMCMD_END,
+]);
+
+// Creates a mon marking combination sprite with a spritesheet that holds every possible combination, used by the summary screen / Pokénav
+/** 1:1 `struct Sprite *CreateMonMarkingAllCombosSprite(u16 tileTag, u16 paletteTag, const u16 *palette)`
+ *  (mon_markings.c:570-575) — sheet des 16 combos (size = 1 << NUM_MON_MARKINGS).
+ *  Renvoie le POINTEUR sprite (1:1 `&gSprites[spriteId]`), null si MAX_SPRITES —
+ *  contra CreateMonMarkingComboSprite (id) : le consommateur Pokénav écrit
+ *  sprite.oam.priority/x/y/callback directement. */
+export function CreateMonMarkingAllCombosSprite(tileTag: number | string, paletteTag: number | string, palette: Uint16Array | null) {
+  const spriteId = CreateMarkingComboSprite(tileTag, paletteTag, palette, 1 << NUM_MON_MARKINGS, sAnims_MarkingCombo);
+  const rt = getRuntime();
+  return spriteId >= 0 && rt ? rt.gSprites[spriteId] ?? null : null;
+}
+
+/** 1:1 `static struct Sprite *CreateMarkingComboSprite(tileTag, paletteTag, palette, size)` (:585).
+ *  `anims` : sAnims_MarkingCombo dans le template décomp ; passé par l'appelant AllCombos
+ *  (le sheet size=1 du PC n'anime jamais → null conservé pour lui). */
+function CreateMarkingComboSprite(tileTag: number | string, paletteTag: number | string, palette: Uint16Array | null, size: number, anims: AnimCmd[][] | null = null): number {
   _loadMarkingsGfx();
   const gfx = _markingsGfx ?? new Uint8Array(size * 0x80);       // asset absent → tiles vides (warn loggué)
   const pal = palette ?? _markingsPal ?? new Uint16Array(16);    // sMonMarkings_Pal par défaut
@@ -135,7 +157,7 @@ function CreateMarkingComboSprite(tileTag: number | string, paletteTag: number |
   const spriteId = CreateSprite({
     tileTag, paletteTag,
     oam: { shape: 1, size: 1, priority: 0 },  // sOamData_MarkingCombo : SPRITE_SHAPE/SIZE(32x8) — 4 marques EN LIGNE (mon_markings.c:162)
-    anims: null, callback: null,
+    anims, callback: null,
   }, 0, 0, 0);
   return spriteId === 64 /* MAX_SPRITES */ ? -1 : spriteId;
 }

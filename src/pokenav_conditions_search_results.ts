@@ -32,40 +32,60 @@ import { AddWindow, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilema
 import type { Pokemon } from './engine/battle/party-storage';
 import type { WindowTemplate } from './window';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
-import { __wireTodo } from './engine/wire-todo';
-import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+// ═══ wire-transpiled : imports résolus (câblage 2026-07-16, chantier écran CONDITION) ═══
+import { CreateLoopedTask, IsLoopedTaskActive, LT_SET_STATE } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSelectedConditionSearch, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-import { CheckBoxMonSanityAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreatePokenavList: any = __wireTodo('CreatePokenavList');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetBoxMonData: any = __wireTodo('GetBoxMonData');
-import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
-const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
-const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
-const PokenavList_IsMoveWindowTaskActive: any = __wireTodo('PokenavList_IsMoveWindowTaskActive');
-const PokenavList_MoveCursorDown: any = __wireTodo('PokenavList_MoveCursorDown');
-const PokenavList_MoveCursorUp: any = __wireTodo('PokenavList_MoveCursorUp');
-const PokenavList_PageDown: any = __wireTodo('PokenavList_PageDown');
-const PokenavList_PageUp: any = __wireTodo('PokenavList_PageUp');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
-const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
-const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
-const gConditionSearchResultFramePal: any = __wireTodo('gConditionSearchResultFramePal');
-const gConditionSearchResultTilemap: any = __wireTodo('gConditionSearchResultTilemap');
-const gConditionSearchResultTiles: any = __wireTodo('gConditionSearchResultTiles');
+import { CheckBoxMonSanityAt, GetBoxMonData, GetBoxMonDataAt } from './pokemon_storage_system';
+// Chrome Pokénav partagé (main menu / liste).
+import {
+  AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram,
+  FreeTempTileDataBuffersIfPossible, InitBgTemplates, IsPaletteFadeActive,
+  LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PokenavFadeScreen, PrintHelpBarText,
+  SetLeftHeaderSpritesInvisibility, ShowLeftHeaderGfx, SlideMenuHeaderDown,
+} from './pokenav_main_menu';
+import {
+  CreatePokenavList, DestroyPokenavList, IsCreatePokenavListTaskActive,
+  PokenavList_GetSelectedIndex, PokenavList_IsMoveWindowTaskActive,
+  PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp,
+} from './pokenav_list';
+import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+
+// ─── ADAPTATION ASSETS (1:1 INCGFX graphics.c:1618-1620 + pokenav_conditions_search_results.c:81 —
+//     pattern PrefetchMatchCallAssets) : search_results.png (.4bpp.lz + .gbapal) +
+//     search_results.bin(.lz) + search_results_list.pal, fetch async + gate au case 0. ───
+let gConditionSearchResultFramePal: Uint16Array | null = null;
+let gConditionSearchResultTilemap: Uint16Array | null = null;
+let gConditionSearchResultTiles: Uint8Array | null = null;
+let _searchResultsGfxLoadStarted = false;
+
+/** Préchauffe les assets de la liste de résultats (appelé dès CB2_InitPokeNav).
+ *  Idempotent ; HURLE en console si un fetch échoue. */
+export function PrefetchConditionSearchResultsAssets(): void {
+  if (_searchResultsGfxLoadStarted) return;
+  _searchResultsGfxLoadStarted = true;
+  void (async () => {
+    try {
+      const [tiles, framePal, tilemap, listPal] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/condition/search_results.png', 4),
+        extractPngPlte('/decomp/em/pokenav/condition/search_results.png'),
+        loadTilemapBin('/decomp/em/pokenav/condition/search_results.bin'),
+        loadGbaPal('/decomp/em/pokenav/condition/search_results_list.pal'),
+      ]);
+      gConditionSearchResultTiles = tiles;
+      gConditionSearchResultFramePal = framePal;
+      gConditionSearchResultTilemap = tilemap;
+      sListBg_Pal = listPal;
+    } catch (e) {
+      console.error('[pokenav search results] chargement assets ÉCHOUÉ (le gate du looped-task va attendre) :', e);
+    }
+  })();
+}
+
+/** Gate assets (adaptation, précédent LoopedTask_OpenMatchCall case 0). */
+function SearchResultsAssetsReady(): boolean {
+  return !!(gConditionSearchResultTiles && gConditionSearchResultFramePal
+    && gConditionSearchResultTilemap && sListBg_Pal);
+}
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS = 7; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -135,7 +155,8 @@ const sConditionSearchLoopedTaskFuncs = [
   ConvertConditionsToListRanks,
 ];
 
-// TRANSPILER-TODO INCGFX : sListBg_Pal ← graphics/pokenav/condition/search_results_list.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
+// 1:1 INCGFX (pokenav_conditions_search_results.c:81) : search_results_list.pal —
+// chargé async par PrefetchConditionSearchResultsAssets (gate au case 0).
 let sListBg_Pal: any = null;
 
 /** 1:1 (pokenav_conditions_search_results.c:83) */
@@ -193,12 +214,18 @@ const sText_NoGenderSymbol = encodeOwText("{UNK_SPACER}");
 
 /** 1:1 `bool32 PokenavCallback_Init_ConditionSearch(void)` (pokenav_conditions_search_results.c:130-145). */
 export function PokenavCallback_Init_ConditionSearch(): boolean {
-  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_SearchResults) */);
+  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, 0 /* sizeof(struct Pokenav_SearchResults) */);
   if (menu == null)
     return false;
-  menu.monList = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, 0 /* TRANSPILER-TODO sizeof(struct PokenavMonList) */);
+  menu.monList = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, 0 /* sizeof(struct PokenavMonList) */);
   if (menu.monList == null)
     return false;
+  // ADAPTATION MOTEUR (Alloc zéroé → matérialisation, précédent match-call) :
+  // 1:1 `struct PokenavMonListItem monData[TOTAL_BOXES_COUNT * IN_BOX_COUNT + PARTY_SIZE]`
+  // (pokenav.h:50-55) — objets DISTINCTS par slot (jamais de refs partagées).
+  menu.monList.monData = Array.from({ length: TOTAL_BOXES_COUNT * IN_BOX_COUNT + PARTY_SIZE }, () => ({ boxId: 0, monId: 0, data: 0 }));
+  menu.monList.listCount = 0;
+  menu.monList.currIndex = 0;
   menu.callback = HandleConditionSearchInput_WaitSetup;
   menu.loopedTaskId = CreateLoopedTask(GetConditionSearchLoopedTask, 1);
   menu.returnFromGraph = false;
@@ -437,7 +464,9 @@ function InsertMonListItem(menu: Pokenav_SearchResults, item: any): void {
   }
   for (right = menu.monList.listCount; right > insertionIdx; right--)
     menu.monList.monData[right] = menu.monList.monData[right - 1];
-  menu.monList.monData[insertionIdx] = item /* TRANSPILER-TODO deref */;
+  // 1:1 `*ptr = *item` = copie PAR VALEUR (l'appelant réutilise `item` à chaque tour :
+  // une ref partagée écraserait toutes les entrées — piège ptr-arrays du transpileur).
+  menu.monList.monData[insertionIdx] = { boxId: item.boxId, monId: item.monId, data: item.data };
   menu.monList.listCount++;
 }
 
@@ -495,6 +524,10 @@ function LoopedTask_OpenConditionSearchResults(state: number): number {
   let gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);
   switch (state) {
     case 0:
+      // Gate async assets (adaptation moteur, précédent LoopedTask_OpenMatchCall case 0).
+      PrefetchConditionSearchResultsAssets();
+      if (!SearchResultsAssetsReady())
+        return LT_PAUSE;
       InitBgTemplates(sConditionSearchResultBgTemplates, sConditionSearchResultBgTemplates.length);
       //!< French Difference
       DecompressAndCopyTileDataToVram(1, gConditionSearchResultTiles, 0, 0, 0);
@@ -513,7 +546,8 @@ function LoopedTask_OpenConditionSearchResults(state: number): number {
     case 2:
       if (FreeTempTileDataBuffersIfPossible())
         return LT_PAUSE;
-      CopyPaletteIntoBufferUnfaded(sListBg_Pal, BG_PLTT_ID(2), sListBg_Pal.length /* TRANSPILER-TODO sizeof */);
+      // 1:1 `sizeof(sListBg_Pal)` = taille en OCTETS (u16[16] = 32) → length*2.
+      CopyPaletteIntoBufferUnfaded(sListBg_Pal, BG_PLTT_ID(2), sListBg_Pal.length * 2);
       CreateSearchResultsList();
       return LT_INC_AND_PAUSE;
     case 3:
@@ -720,7 +754,7 @@ function PrintSearchResultListMenuItems(gfx: Pokenav_SearchResultsGfx): void {
   let rank = GetSearchResultsSelectedMonRank();
   DynamicPlaceholderTextUtil_Reset();
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
-  void 0 /* TRANSPILER-TODO ASSIGN: *gStringVar1 = EOS */;
+  gStringVar1[0] = EOS; // 1:1 `*gStringVar1 = EOS`
   DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar2, getString('gText_NumberIndex'));
   AddTextPrinterParameterized(gfx.winid, FONT_NORMAL, gStringVar2, 4, 1, TEXT_SKIP_DRAW, null);
   ConvertIntToDecimalStringN(gStringVar1, rank, STR_CONV_MODE_RIGHT_ALIGN, 3);
@@ -760,14 +794,18 @@ function BufferSearchMonListItem(item: any, dest: Uint8Array): void {
     let mon = gPlayerParty[item.monId];
     gender = GetMonGender(mon);
     level = GetLevelFromMonExp(mon);
-    GetMonData(mon, MON_DATA_NICKNAME, gStringVar3);
+    // ADAPTATION frontière strings : GetMonData(NICKNAME) renvoie une string JS et
+    // n'écrit PAS dst (pokemon.ts:1363) — le décomp copie dans gStringVar3. encodeOwText
+    // + StringCopy à la frontière (garde bd6ee7f31 ; précédent field_poison.ts:96).
+    StringCopy(gStringVar3, encodeOwText(String(GetMonData(mon, MON_DATA_NICKNAME) ?? '')));
   }
   else
   {
     let mon = GetBoxedMonPtr(item.boxId, item.monId);
     gender = GetBoxMonGender(mon);
     level = GetLevelFromBoxMonExp(mon);
-    GetBoxMonData(mon, MON_DATA_NICKNAME, gStringVar3);
+    // ADAPTATION frontière strings — idem branche party (GetBoxMonData 2-args).
+    StringCopy(gStringVar3, encodeOwText(String(GetBoxMonData(mon, MON_DATA_NICKNAME) ?? '')));
   }
   StringGet_Nickname(gStringVar3);
   dest = GetStringClearToWidth(dest, FONT_NORMAL, gStringVar3, 60);
@@ -783,9 +821,11 @@ function BufferSearchMonListItem(item: any, dest: Uint8Array): void {
       break;
   }
   s = StringCopy(gStringVar1, genderStr);
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_SLASH */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_EXTRA_SYMBOL */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_LV_2 */;
-  ConvertIntToDecimalStringN(s, level, STR_CONV_MODE_LEFT_ALIGN, 3);
+  // 1:1 `*(s++) = X` — StringCopy renvoie la vue avancée (≡ ptr) → index-walk sp.
+  let sp = 0;
+  s[sp++] = CHAR_SLASH;
+  s[sp++] = CHAR_EXTRA_SYMBOL;
+  s[sp++] = CHAR_LV_2;
+  ConvertIntToDecimalStringN(s.subarray(sp), level, STR_CONV_MODE_LEFT_ALIGN, 3);
   GetStringClearToWidth(dest, FONT_NORMAL, gStringVar1, 40);
 }

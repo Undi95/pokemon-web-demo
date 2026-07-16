@@ -7,7 +7,9 @@
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 
-import { BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG2, BLDCNT_TGT2_BG3, CpuFill32, LZ77UnCompVram, LoadPalette, SpriteCallbackDummy, TransferPlttBuffer } from '../harness/runtime/decomp-globals';
+// NB : LZ77UnCompVram/CpuFill32/SetBgTilemapBuffer/DmaCopy16Defvars = versions LOCALES
+// (adaptations documentées plus bas) — pas celles de decomp-globals/window.
+import { BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG2, BLDCNT_TGT2_BG3, LoadPalette, SpriteCallbackDummy, TransferPlttBuffer, getRuntime } from '../harness/runtime/decomp-globals';
 import { EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW, TEXT_COLOR_BLUE, TEXT_COLOR_LIGHT_BLUE, TEXT_COLOR_TRANSPARENT } from '../include/constants/characters';
 import { PARTY_SIZE } from '../include/constants/global';
 import { BG_SCREEN_SIZE, BG_VRAM_SIZE, VRAM } from '../include/gba/defines';
@@ -23,75 +25,133 @@ import { ScanlineEffect_InitHBlankDmaTransfer } from './scanline_effect';
 import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, IndexOfSpritePaletteTag, LoadOam, LoadSpritePalette, LoadSpriteSheet, LoadSpriteSheets, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, StartSpriteAnim, gSprites } from './sprite';
 import { ConvertIntToDecimalStringN, StringCopy } from './string_util';
 import { AddTextPrinterParameterized, DeactivateAllTextPrinters, encodeOwText } from './text';
-import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer, ShowBg } from './window';
+import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
-import { __wireTodo } from './engine/wire-todo';
+// ═══ wire-transpiled : imports résolus (câblage 2026-07-16, chantier écran CONDITION) ═══
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-const BgDmaFill: any = __wireTodo('BgDmaFill');
-const BufferMonMarkingsMenuTiles: any = __wireTodo('BufferMonMarkingsMenuTiles');
-const ConditionGraph_Draw: any = __wireTodo('ConditionGraph_Draw');
-const ConditionGraph_InitResetScanline: any = __wireTodo('ConditionGraph_InitResetScanline');
-const ConditionGraph_InitWindow: any = __wireTodo('ConditionGraph_InitWindow');
-const ConditionGraph_ResetScanline: any = __wireTodo('ConditionGraph_ResetScanline');
-const ConditionGraph_SetNewPositions: any = __wireTodo('ConditionGraph_SetNewPositions');
-const ConditionGraph_TryUpdate: any = __wireTodo('ConditionGraph_TryUpdate');
-const ConditionMenu_UpdateMonEnter: any = __wireTodo('ConditionMenu_UpdateMonEnter');
-const ConditionMenu_UpdateMonExit: any = __wireTodo('ConditionMenu_UpdateMonExit');
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreateConditionSparkleSprites: any = __wireTodo('CreateConditionSparkleSprites');
-const CreateMonMarkingAllCombosSprite: any = __wireTodo('CreateMonMarkingAllCombosSprite');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const DestroyConditionSparkleSprites: any = __wireTodo('DestroyConditionSparkleSprites');
-const DmaCopy16Defvars: any = __wireTodo('DmaCopy16Defvars');
-const FreeConditionSparkles: any = __wireTodo('FreeConditionSparkles');
-const FreeMonMarkingsMenu: any = __wireTodo('FreeMonMarkingsMenu');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetConditionGraphCurrentListIndex: any = __wireTodo('GetConditionGraphCurrentListIndex');
-const GetConditionGraphMenuCurrentLoadIndex: any = __wireTodo('GetConditionGraphMenuCurrentLoadIndex');
-const GetConditionGraphPtr: any = __wireTodo('GetConditionGraphPtr');
-const GetConditionMonDataBuffer: any = __wireTodo('GetConditionMonDataBuffer');
-const GetConditionMonLocationText: any = __wireTodo('GetConditionMonLocationText');
-const GetConditionMonNameText: any = __wireTodo('GetConditionMonNameText');
-const GetConditionMonPal: any = __wireTodo('GetConditionMonPal');
-const GetConditionMonPicGfx: any = __wireTodo('GetConditionMonPicGfx');
-const GetMonListCount: any = __wireTodo('GetMonListCount');
-const GetNumConditionMonSparkles: any = __wireTodo('GetNumConditionMonSparkles');
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const InitMonMarkingsMenu: any = __wireTodo('InitMonMarkingsMenu');
-const IsConditionMenuSearchMode: any = __wireTodo('IsConditionMenuSearchMode');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const LoadConditionGraphMenuGfx: any = __wireTodo('LoadConditionGraphMenuGfx');
-const LoadConditionMonPicTemplate: any = __wireTodo('LoadConditionMonPicTemplate');
-const LoadConditionSelectionIcons: any = __wireTodo('LoadConditionSelectionIcons');
-const LoadConditionSparkle: any = __wireTodo('LoadConditionSparkle');
-const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
-const LoadNextConditionMenuMonData: any = __wireTodo('LoadNextConditionMenuMonData');
-const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
-const MoveConditionMonOffscreen: any = __wireTodo('MoveConditionMonOffscreen');
-const OpenMonMarkingsMenu: any = __wireTodo('OpenMonMarkingsMenu');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const PokenavFillPalette: any = __wireTodo('PokenavFillPalette');
-const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const ResetConditionSparkleSprites: any = __wireTodo('ResetConditionSparkleSprites');
-const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
-const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
-const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
-const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
-const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
-const TryGetMonMarkId: any = __wireTodo('TryGetMonMarkId');
-const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
-const gPokenavCondition_Gfx: any = __wireTodo('gPokenavCondition_Gfx');
-const gPokenavCondition_Pal: any = __wireTodo('gPokenavCondition_Pal');
-const gPokenavCondition_Tilemap: any = __wireTodo('gPokenavCondition_Tilemap');
-const gPokenavOptions_Tilemap: any = __wireTodo('gPokenavOptions_Tilemap');
+// Module graphe partagé + sparkles + icônes — miroir menu_specialized.c (section B).
+import {
+  ConditionGraph_Draw, ConditionGraph_InitResetScanline, ConditionGraph_InitWindow,
+  ConditionGraph_ResetScanline, ConditionGraph_SetNewPositions, ConditionGraph_TryUpdate,
+  ConditionMenu_UpdateMonEnter, ConditionMenu_UpdateMonExit, MoveConditionMonOffscreen,
+  CreateConditionSparkleSprites, DestroyConditionSparkleSprites, FreeConditionSparkles,
+  LoadConditionSparkle, ResetConditionSparkleSprites, LoadConditionSelectionIcons,
+  LoadConditionMonPicTemplate, PrefetchConditionSpriteAssets, ConditionSpriteAssetsReady,
+} from './menu_specialized';
+// Logique de l'écran — miroir pokenav_conditions.c (arête 1:1 via pokenav.h).
+import {
+  GetConditionGraphCurrentListIndex, GetConditionGraphMenuCurrentLoadIndex,
+  GetConditionGraphPtr, GetConditionMonDataBuffer, GetConditionMonLocationText,
+  GetConditionMonNameText, GetConditionMonPal, GetConditionMonPicGfx, GetMonListCount,
+  GetNumConditionMonSparkles, IsConditionMenuSearchMode, LoadConditionGraphMenuGfx,
+  LoadNextConditionMenuMonData, TryGetMonMarkId, IsConditionMonPicLoaded,
+} from './pokenav_conditions';
+// Chrome Pokénav partagé (main menu / list / VBlank).
+import {
+  AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram,
+  FreeTempTileDataBuffersIfPossible, InitBgTemplates, IsPaletteFadeActive,
+  LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PokenavFadeScreen, PokenavFillPalette,
+  Pokenav_AllocAndLoadPalettes, PrintHelpBarText, SetLeftHeaderSpritesInvisibility,
+  ShowLeftHeaderGfx, SlideMenuHeaderDown, WaitForHelpBar,
+} from './pokenav_main_menu';
+import { SetPokenavVBlankCallback, SetVBlankCallback_ } from './pokenav';
+import { BgDmaFill } from '../harness/runtime/decomp-globals';
+// Menu MARQUER (mon_markings.c).
+import { BufferMonMarkingsMenuTiles, CreateMonMarkingAllCombosSprite, FreeMonMarkingsMenu, InitMonMarkingsMenu, OpenMonMarkingsMenu, EnsureMonMarkingsGfxLoaded, EnsureMonMarkingsMenuGfxLoaded } from './mon_markings';
+import { loadTileBin, extractPngPlte, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
+
+// ─── ADAPTATIONS MOTEUR LOCALES (primitives dont la sémantique harness diffère) ───
+
+/** 1:1 `LZ77UnCompVram(src, dest)` où dest = BUFFER RAM du struct (tilemapBuffers[i]) —
+ *  la version decomp-globals prend (symbol, adresse VRAM) : ici le décomp décompresse
+ *  vers la RAM puis SetBgTilemapBuffer pointe dessus. Nos assets sont déjà décompressés
+ *  (loadTilemapBin) → copie src→dest. */
+function LZ77UnCompVram(src: Uint16Array | null, dest: Uint16Array): void {
+  if (!src) { console.error('[pokenav condition] LZ77UnCompVram : asset tilemap null (gate raté ?)'); return; }
+  dest.set(src.subarray(0, Math.min(src.length, dest.length)));
+}
+
+/** 1:1 `SetBgTilemapBuffer(bg, buffer)` — window.ts:1420 est no-op (le compositor lit
+ *  rt.gba.bg(bg).tilemap directement) : on MATÉRIALISE le « pointage » en copiant le
+ *  buffer dans le tilemap live du BG (≡ CopyBgTilemapBufferToVram immédiat ; les writes
+ *  suivants passent par CopyToBgTilemapBuffer*(bg,…) qui écrivent le tilemap live, comme
+ *  le décomp écrit le buffer pointé). Précédent : CopyToBgTilemapBuffer (window.ts:1211). */
+function SetBgTilemapBuffer(bg: number, buffer: Uint16Array): void {
+  CopyToBgTilemapBuffer(bg, buffer, 0, 0);
+}
+
+/** 1:1 `CpuFill32(0, buffer, size)` sur un buffer RAM (decomp-globals attend une ADRESSE). */
+function CpuFill32(value: number, dest: Uint16Array, _sizeBytes: number): void {
+  dest.fill(value & 0xFFFF);
+}
+
+/** 1:1 gba/macro.h `DmaCopy16Defvars(dmaNum, src, dest, size)` — dest = adresse OBJ VRAM
+ *  absolue (VRAM + BG_VRAM_SIZE + tile*32, posée par CreateConditionMonPic) → offset byte
+ *  dans rt.gba.objVram (précédent match-call rt.gba.objVram.set(gfx, ptr), pokenav_match_call_gfx.ts:1328). */
+function DmaCopy16Defvars(_dmaNum: number, src: Uint8Array, dest: number, size: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const off = dest - (VRAM + BG_VRAM_SIZE);
+  if (off < 0) { console.error('[pokenav condition] DmaCopy16Defvars : dest hors OBJ VRAM', dest); return; }
+  rt.gba.objVram.set(src.subarray(0, size), off);
+}
+
+// ─── ADAPTATION ASSETS (1:1 INCGFX graphics.c:1287-1291 — pattern PrefetchMatchCallAssets) ───
+// gPokenavCondition_* : graph.png (.4bpp.lz + .gbapal) + graph.bin (.lz) ;
+// gPokenavOptions_Tilemap : options/options.bin (INCBIN_U16 brut).
+let gPokenavCondition_Gfx: Uint8Array | null = null;
+let gPokenavCondition_Pal: Uint16Array | null = null;
+let gPokenavCondition_Tilemap: Uint16Array | null = null;
+let gPokenavOptions_Tilemap: Uint16Array | null = null;
+let _conditionMenuGfxLoadStarted = false;
+
+/** Préchauffe les assets de l'écran CONDITION (BG + sprites partagés + menu MARQUER).
+ *  Appelé dès CB2_InitPokeNav (comme PrefetchMatchCallAssets) ; idempotent ; le
+ *  looped-task d'ouverture gate dessus. HURLE en console si un fetch échoue. */
+export function PrefetchConditionGraphAssets(): void {
+  PrefetchConditionSpriteAssets();
+  EnsureMonMarkingsGfxLoaded().catch((e) => console.error('[pokenav condition] mon_markings gfx', e));
+  EnsureMonMarkingsMenuGfxLoaded().catch((e) => console.error('[pokenav condition] mon_markings menu gfx', e));
+  if (_conditionMenuGfxLoadStarted) return;
+  _conditionMenuGfxLoadStarted = true;
+  void (async () => {
+    try {
+      const [gfx, pal, tilemap, optionsTilemap, graphDataPal, textPal, graphDataGfx, graphDataTilemap, monMarkingsPal] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/condition/graph.png', 4),
+        extractPngPlte('/decomp/em/pokenav/condition/graph.png'),
+        loadTilemapBin('/decomp/em/pokenav/condition/graph.bin'),
+        loadTilemapBin('/decomp/em/pokenav/options/options.bin'),
+        loadGbaPal('/decomp/em/pokenav/condition/graph_data.pal'),
+        loadGbaPal('/decomp/em/pokenav/condition/text.pal'),
+        loadTileBin('/decomp/em/pokenav/condition/graph_data.png', 4),
+        loadTilemapBin('/decomp/em/pokenav/condition/graph_data.bin'),
+        loadGbaPal('/decomp/em/pokenav/condition/mon_markings.pal'),
+      ]);
+      gPokenavCondition_Gfx = gfx;
+      gPokenavCondition_Pal = pal;
+      gPokenavCondition_Tilemap = tilemap;
+      gPokenavOptions_Tilemap = optionsTilemap;
+      gConditionGraphData_Pal = graphDataPal;
+      gConditionText_Pal = textPal;
+      sConditionGraphData_Gfx = graphDataGfx;
+      sConditionGraphData_Tilemap = graphDataTilemap;
+      sMonMarkings_Pal = monMarkingsPal;
+    } catch (e) {
+      console.error('[pokenav condition] chargement assets BG ÉCHOUÉ (le gate du looped-task va attendre) :', e);
+    }
+  })();
+}
+
+/** Gate assets BG (adaptation, précédent LoopedTask_OpenMatchCall case 0). */
+function ConditionMenuBgAssetsReady(): boolean {
+  return !!(gPokenavCondition_Gfx && gPokenavCondition_Pal && gPokenavCondition_Tilemap
+    && gPokenavOptions_Tilemap && gConditionGraphData_Pal && gConditionText_Pal
+    && sConditionGraphData_Gfx && sConditionGraphData_Tilemap && sMonMarkings_Pal);
+}
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX = 12; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -124,20 +184,13 @@ let sInitialLoadId = 0;
 
 // Never read
 
-// TRANSPILER-TODO INCGFX : gConditionGraphData_Pal ← graphics/pokenav/condition/graph_data.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
-let gConditionGraphData_Pal: any = null;
-
-// TRANSPILER-TODO INCGFX : gConditionText_Pal ← graphics/pokenav/condition/text.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
-let gConditionText_Pal: any = null;
-
-// TRANSPILER-TODO INCGFX : sConditionGraphData_Gfx ← graphics/pokenav/condition/graph_data.png (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
-let sConditionGraphData_Gfx: any = null;
-
-// TRANSPILER-TODO INCGFX : sConditionGraphData_Tilemap ← graphics/pokenav/condition/graph_data.bin (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
-let sConditionGraphData_Tilemap: any = null;
-
-// TRANSPILER-TODO INCGFX : sMonMarkings_Pal ← graphics/pokenav/condition/mon_markings.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
-let sMonMarkings_Pal: any = null;
+// 1:1 INCGFX (pokenav_conditions_gfx.c:27-31) — chargés async par PrefetchConditionGraphAssets
+// (gate ConditionMenuBgAssetsReady au case 0 du looped-task d'ouverture).
+let gConditionGraphData_Pal: any = null;      // graph_data.pal (.gbapal)
+let gConditionText_Pal: any = null;           // text.pal (.gbapal)
+let sConditionGraphData_Gfx: any = null;      // graph_data.png (.4bpp.lz)
+let sConditionGraphData_Tilemap: any = null;  // graph_data.bin (.lz)
+let sMonMarkings_Pal: any = null;             // mon_markings.pal (.gbapal)
 
 /** 1:1 (pokenav_conditions_gfx.c:33) */
 const sMenuBgTemplates = [
@@ -228,11 +281,11 @@ const sLoopedTaskFuncs = [
 /** 1:1 `struct Pokenav_ConditionMenuGfx` (pokenav_conditions_gfx.c:121). */
 interface Pokenav_ConditionMenuGfx {
   loopedTaskId: number;
-  tilemapBuffers: any[];
+  tilemapBuffers: Uint16Array[];              // TilemapBuffer [3]
   filler: Uint8Array;
   partyPokeballSpriteIds: Uint8Array;
   callback: ((...args: any[]) => any) | null;
-  monTransitionX: number;
+  monTransitionX: { v: number };              // s16 (&x pris → box, cf. OpenConditionGraphMenu)
   monPicSpriteId: number;
   monPalIndex: number;
   monGfxTileStart: number;
@@ -243,7 +296,7 @@ interface Pokenav_ConditionMenuGfx {
   unusedWindowId2: number;
   marksMenu: any;
   monMarksSprite: DecompSprite | null;
-  conditionSparkleSprites: DecompSprite | null;
+  conditionSparkleSprites: (DecompSprite | null)[]; // struct Sprite *[MAX_CONDITION_SPARKLES]
   windowModeState: number;
   filler2: Uint8Array;
 }
@@ -252,9 +305,21 @@ interface Pokenav_ConditionMenuGfx {
 
 /** 1:1 `bool32 OpenConditionGraphMenu(void)` (pokenav_conditions_gfx.c:158-170). */
 export function OpenConditionGraphMenu(): boolean {
-  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_ConditionMenuGfx) */);
+  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX, 0 /* sizeof(struct Pokenav_ConditionMenuGfx) */);
   if (menu == null)
     return false;
+  // ADAPTATION MOTEUR (Alloc zéroé → matérialisation ; précédent match-call
+  // `gfx.trainerPicGfx = new Uint8Array(0x800)`) : champs-tableaux du struct
+  // Pokenav_ConditionMenuGfx (pokenav_conditions_gfx.c:121-142).
+  menu.tilemapBuffers = [new Uint16Array(0x400), new Uint16Array(0x400), new Uint16Array(0x400)]; // TilemapBuffer [3] (BG_SCREEN_SIZE octets = 0x400 u16)
+  menu.partyPokeballSpriteIds = new Uint8Array(PARTY_SIZE + 1);   // u8 [PARTY_SIZE+1]
+  menu.marksMenu = {};                                            // struct MonMarkingsMenu
+  menu.conditionSparkleSprites = new Array(10).fill(null);        // struct Sprite *[MAX_CONDITION_SPARKLES]
+  // s16 monTransitionX : &x est pris par ConditionMenu_UpdateMon*/MoveConditionMon*
+  // → box { v } (convention repo pointer-walks C → refs).
+  menu.monTransitionX = { v: 0 };
+  menu.monGfxPtr = 0; menu.monGfxTileStart = 0; menu.monPalIndex = 0;
+  menu.monMarksSprite = null;
   menu.monPicSpriteId = SPRITE_NONE;
   menu.loopedTaskId = CreateLoopedTask(LoopedTask_OpenConditionGraphMenu, 1);
   menu.callback = GetConditionGraphMenuLoopedTaskActive;
@@ -286,6 +351,11 @@ function LoopedTask_OpenConditionGraphMenu(state: number): number {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX);
   switch (state) {
     case 0:
+      // Gate async assets (adaptation moteur, précédent LoopedTask_OpenMatchCall case 0 :
+      // le décomp lit la ROM = instantané ; le port fetch → on attend avant tout upload).
+      PrefetchConditionGraphAssets();
+      if (!ConditionMenuBgAssetsReady() || !ConditionSpriteAssetsReady())
+        return LT_PAUSE;
       if (LoadConditionGraphMenuGfx() != 1)
         return LT_PAUSE;
       return LT_INC_AND_PAUSE;
@@ -317,7 +387,7 @@ function LoopedTask_OpenConditionGraphMenu(state: number): number {
       CopyBgTilemapBufferToVram(3);
       CopyPaletteIntoBufferUnfaded(gPokenavCondition_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
       CopyPaletteIntoBufferUnfaded(gConditionText_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-      menu.monTransitionX = -80;
+      menu.monTransitionX.v = -80; // 1:1 `menu->monTransitionX = -80` (box, cf. OpenConditionGraphMenu)
       return LT_INC_AND_PAUSE;
     case 4:
       if (FreeTempTileDataBuffersIfPossible())
@@ -347,6 +417,10 @@ function LoopedTask_OpenConditionGraphMenu(state: number): number {
       DeactivateAllTextPrinters();
       return LT_INC_AND_PAUSE;
     case 7:
+      // Gate async pic mon (adaptation, cf. ConditionGraphDrawMonPic pokenav_conditions.ts) :
+      // le décomp a décompressé le pic en RAM (sync) ; ici on attend l'arrivée du fetch.
+      if (!IsConditionMonPicLoaded(0))
+        return LT_PAUSE;
       CreateConditionMonPic(0);
       return LT_INC_AND_PAUSE;
     case 8:
@@ -474,6 +548,10 @@ function LoopedTask_TransitionMons(state: number): number {
     case 4:
       if (!MoveConditionMonOffscreen(menu.monTransitionX))
       {
+        // Gate async pic mon (adaptation, cf. ConditionGraphDrawMonPic) — le slot du
+        // nouveau mon courant doit être arrivé avant l'upload OBJ VRAM.
+        if (!IsConditionMonPicLoaded(GetConditionGraphMenuCurrentLoadIndex()))
+          return LT_PAUSE;
         CreateConditionMonPic(GetConditionGraphMenuCurrentLoadIndex());
         return LT_INC_AND_CONTINUE;
       }
@@ -520,6 +598,9 @@ function LoopedTask_MoveCursorNoTransition(state: number): number {
       LoadNextConditionMenuMonData(CONDITION_LOAD_MON_PIC);
       return LT_INC_AND_CONTINUE;
     case 3:
+      // Gate async pic mon (adaptation, cf. ConditionGraphDrawMonPic).
+      if (!IsConditionMonPicLoaded(GetConditionGraphMenuCurrentLoadIndex()))
+        return LT_PAUSE;
       CreateConditionMonPic(GetConditionGraphMenuCurrentLoadIndex());
       return LT_INC_AND_CONTINUE;
     case 4:
@@ -850,7 +931,7 @@ export function FreeConditionGraphMenuSubstruct2(): void {
 /** 1:1 `void MonPicGfxSpriteCallback(struct Sprite *sprite)` (pokenav_conditions_gfx.c:798-802). */
 export function MonPicGfxSpriteCallback(sprite: DecompSprite): void {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX);
-  sprite.x = menu.monTransitionX + 38;
+  sprite.x = menu.monTransitionX.v + 38; // 1:1 menu->monTransitionX (box, cf. OpenConditionGraphMenu)
 }
 
 /** 1:1 `static void CreateConditionMonPic(u8 id)` (pokenav_conditions_gfx.c:804-840). */

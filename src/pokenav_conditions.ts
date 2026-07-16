@@ -23,25 +23,32 @@ import { getString } from '../harness/runtime/decomp-strings';
 import { CalculatePlayerPartyCount, GetBoxMonGender, GetLevelFromBoxMonExp, GetMonGender, SetMonData, gPlayerParty } from './pokemon';
 import { GetBoxedMonPtr } from './pokemon_storage_system';
 import { ConvertIntToDecimalStringN, StringCompare, StringCopyPadded, StringGet_Nickname } from './string_util';
+import { encodeOwText } from './text';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
-import { __wireTodo } from './engine/wire-todo';
+// ═══ wire-transpiled : imports résolus (câblage 2026-07-16, chantier écran CONDITION) ═══
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const ConditionGraph_CalcPositions: any = __wireTodo('ConditionGraph_CalcPositions');
-const ConditionGraph_Init: any = __wireTodo('ConditionGraph_Init');
-const ConditionGraph_SetNewPositions: any = __wireTodo('ConditionGraph_SetNewPositions');
-const GET_NUM_CONDITION_SPARKLES: any = __wireTodo('GET_NUM_CONDITION_SPARKLES');
-const GetBoxNamePtr: any = __wireTodo('GetBoxNamePtr');
-const GetBoxOrPartyMonData: any = __wireTodo('GetBoxOrPartyMonData');
-const GetMonMarkingsData: any = __wireTodo('GetMonMarkingsData');
-const GetMonSpritePalFromSpeciesAndPersonality: any = __wireTodo('GetMonSpritePalFromSpeciesAndPersonality');
-const HandleMonMarkingsMenuInput: any = __wireTodo('HandleMonMarkingsMenuInput');
-const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
-const LoadSpecialPokePic: any = __wireTodo('LoadSpecialPokePic');
-const SetBoxMonDataAt: any = __wireTodo('SetBoxMonDataAt');
-const gKeyRepeatStartDelay: any = __wireTodo('gKeyRepeatStartDelay');
-const gMonFrontPicTable: any = __wireTodo('gMonFrontPicTable');
+// Module graphe partagé — miroir menu_specialized.c (cf. menu_specialized.ts section B).
+import {
+  ConditionGraph_CalcPositions, ConditionGraph_Init, ConditionGraph_SetNewPositions,
+  GET_NUM_CONDITION_SPARKLES, GetBoxOrPartyMonData, NewConditionGraph,
+  CONDITION_COOL, CONDITION_TOUGH, CONDITION_SMART, CONDITION_CUTE, CONDITION_BEAUTY,
+  CONDITION_COUNT, CONDITION_GRAPH_CENTER_X, CONDITION_GRAPH_CENTER_Y,
+} from './menu_specialized';
+import { GetBoxNamePtr, SetBoxMonDataAt } from './pokemon_storage_system';
+import { HandleMonMarkingsMenuInput } from './mon_markings';
+// Arête retour conditions_gfx → conditions (1:1 décomp : les 2 .c s'appellent via pokenav.h).
+// Cycle ESM runtime-only : aucun des deux ne déréférence l'autre au module-init (pas de TDZ).
+import { GetMonMarkingsData } from './pokenav_conditions_gfx';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
+import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
+import { MON_PIC_SIZE } from './battle_gfx_sfx_util';
+import { SPECIES_NONE } from '../include/constants/species';
+
+/** ADAPTATION MOTEUR : `gKeyRepeatStartDelay = 20` (main.c) — le key-repeat est géré
+ *  par le harness input (précédent pokemon_storage_system.ts:1401). Variable locale
+ *  pour conserver la ligne transpilée 1:1 ; sans effet moteur. */
+let gKeyRepeatStartDelay = 0;
+void gKeyRepeatStartDelay;
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU = 11; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -58,14 +65,9 @@ const CONDITION_FUNC_SLIDE_MON_IN = 1; // 1:1 include/pokenav.h:0 (à consolider
 const CONDITION_LOAD_MON_INFO = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const CONDITION_LOAD_GRAPH = 1; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const CONDITION_LOAD_MON_PIC = 2; // 1:1 include/pokenav.h:0 (à consolider dans include/)
-const CONDITION_COOL = 0; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_TOUGH = 1; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_SMART = 2; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_CUTE = 3; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_BEAUTY = 4; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_COUNT = 5; // 1:1 include/menu_specialized.h:0 (à consolider dans include/)
-const CONDITION_GRAPH_CENTER_X = 155; // 1:1 include/menu_specialized.h:52 (à consolider dans include/)
-const CONDITION_GRAPH_CENTER_Y = 91.5; // 1:1 include/menu_specialized.h:53 (à consolider dans include/)
+// CONDITION_* / CONDITION_GRAPH_CENTER_X/Y : importés de menu_specialized.ts (foyer miroir).
+// ⚠️ fix transpileur : l'inline CENTER_Y valait 91.5 (division JS) — la division C entière
+// donne 91 (cf. menu_specialized.ts). Consolidé via l'import.
 
 const CONDITION_MONS_LOADED = 3; // 1:1 pokenav_conditions.c:16
 
@@ -90,11 +92,32 @@ interface Pokenav_ConditionMenu {
   state: number;
 }
 
+const CONDITION_MONS_LOADED_ = 3; // = CONDITION_MONS_LOADED (évite le doublon avec :70)
+
+/** ADAPTATION MOTEUR (précédent match-call `gfx.trainerPicGfx = new Uint8Array(0x800)`,
+ *  pokenav_match_call_gfx.ts:1246) : Alloc(sizeof(struct Pokenav_ConditionMenu)) rend la
+ *  mémoire ZÉROÉE du struct (pokenav_conditions.c:18-37) ; AllocSubstruct JS rend {} →
+ *  on matérialise les champs-tableaux ici. Tailles 1:1 du struct. */
+function _materializeConditionMenu(menu: any): void {
+  menu.monPal = Array.from({ length: CONDITION_MONS_LOADED_ }, () => new Uint16Array(16));          // u32 monPal[3][0x20] (palette 16 couleurs décompressée)
+  menu.monPicGfx = Array.from({ length: CONDITION_MONS_LOADED_ }, () => new Uint8Array(MON_PIC_SIZE)); // u32 monPicGfx[3][MON_PIC_SIZE]
+  menu.locationText = Array.from({ length: CONDITION_MONS_LOADED_ }, () => new Uint8Array(24));     // u8 [3][24]
+  menu.nameText = Array.from({ length: CONDITION_MONS_LOADED_ }, () => new Uint8Array(64));         // u8 [3][64]
+  menu.graph = NewConditionGraph();                                                                  // struct ConditionGraph
+  menu.numSparkles = new Uint8Array(CONDITION_MONS_LOADED_);
+  menu.monMarks = new Uint8Array(CONDITION_MONS_LOADED_);
+  menu.loadId = 0; menu.nextLoadIdDown = 0; menu.nextLoadIdUp = 0; menu.toLoadId = 0;
+  menu.toLoadListIndex = 0; menu.state = 0; menu.inSearchMode = false;
+  // ADAPTATION assets (hors struct décomp) : readiness des pics mon (fetch async).
+  menu.monPicLoaded = [false, false, false];
+}
+
 /** 1:1 `bool32 PokenavCallback_Init_ConditionGraph_Party(void)` (pokenav_conditions.c:50-62). */
 export function PokenavCallback_Init_ConditionGraph_Party(): boolean {
-  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_ConditionMenu) */);
+  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0 /* sizeof(struct Pokenav_ConditionMenu) */);
   if (menu == null)
     return false;
+  _materializeConditionMenu(menu);
   ConditionGraph_Init(menu.graph);
   InitPartyConditionListParameters();
   gKeyRepeatStartDelay = 20;
@@ -104,9 +127,10 @@ export function PokenavCallback_Init_ConditionGraph_Party(): boolean {
 
 /** 1:1 `bool32 PokenavCallback_Init_ConditionGraph_Search(void)` (pokenav_conditions.c:64-76). */
 export function PokenavCallback_Init_ConditionGraph_Search(): boolean {
-  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_ConditionMenu) */);
+  let menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0 /* sizeof(struct Pokenav_ConditionMenu) */);
   if (menu == null)
     return false;
+  _materializeConditionMenu(menu);
   ConditionGraph_Init(menu.graph);
   InitSearchResultsConditionList();
   gKeyRepeatStartDelay = 20;
@@ -171,10 +195,12 @@ function OpenMarkingsMenu(menu: Pokenav_ConditionMenu): number {
     boxId = monListPtr.monData[monListPtr.currIndex].boxId;
     monId = monListPtr.monData[monListPtr.currIndex].monId;
     markings.v = menu.monMarks[menu.loadId];
+    // 1:1 `SetMonData(..., &markings)` : notre SetMonData prend la VALEUR (pokemon.ts:1516,
+    // un objet {v} serait silencieusement lu 0) → .v au call site.
     if (boxId == TOTAL_BOXES_COUNT)
-      SetMonData(gPlayerParty[monId], MON_DATA_MARKINGS, markings);
+      SetMonData(gPlayerParty[monId], MON_DATA_MARKINGS, markings.v);
     else
-      SetBoxMonDataAt(boxId, monId, MON_DATA_MARKINGS, markings);
+      SetBoxMonDataAt(boxId, monId, MON_DATA_MARKINGS, markings.v);
     menu.callback = HandleConditionMenuInput;
     ret = CONDITION_FUNC_CLOSE_MARKINGS;
   }
@@ -341,17 +367,27 @@ export function LoadNextConditionMenuMonData(mode: number): boolean {
   return false;
 }
 
-/** 1:1 `u8 *CopyStringLeftAlignedToConditionData(u8 *dst, const u8 *src, s16 n)` (pokenav_conditions.c:323-333). */
-export function CopyStringLeftAlignedToConditionData(dst: { v: number }, src: { v: number }, n: number): Uint8Array | null {
-  while (src.v != EOS)
-    (void 0 /* TRANSPILER-TODO ASSIGN: *dst++ = *src++ */, n--);
+/** 1:1 `u8 *CopyStringLeftAlignedToConditionData(u8 *dst, const u8 *src, s16 n)` (pokenav_conditions.c:323-333).
+ *  Revue transpileur : les `*dst++ = *src++` (TRANSPILER-TODO ASSIGN) sont rendus en
+ *  index-walk (convention pointer-walks C → refs/index) — l'original transpilé ne
+ *  consommait jamais src = boucle infinie. Retour = vue sur la fin (≡ ptr décomp). */
+export function CopyStringLeftAlignedToConditionData(dst: Uint8Array, src: Uint8Array, n: number): Uint8Array {
+  let d = 0, s = 0;
+  while (src[s] != EOS)
+  {
+    dst[d++] = src[s++];
+    n--;
+  }
   while (n-- > 0)
-    void 0 /* TRANSPILER-TODO ASSIGN: *dst++ = CHAR_SPACE */;
-  dst.v = EOS;
-  return dst.v;
+    dst[d++] = CHAR_SPACE;
+  dst[d] = EOS;
+  return dst.subarray(d);
 }
 
-/** 1:1 `static u8 *CopyConditionMonNameGender(u8 *str, u16 listId, bool8 skipPadding)` (pokenav_conditions.c:335-424). */
+/** 1:1 `static u8 *CopyConditionMonNameGender(u8 *str, u16 listId, bool8 skipPadding)` (pokenav_conditions.c:335-424).
+ *  Revue transpileur : tous les `*(str++) = X` (TRANSPILER-TODO ASSIGN) sont rendus en
+ *  index-walk `p` sur le buffer (pointer-walks C → refs/index). Frontières strings JS
+ *  (gText_EggNickname / gSpeciesNames) → encodeOwText (garde bd6ee7f31). */
 function CopyConditionMonNameGender(str: Uint8Array, listId: number, skipPadding: boolean): Uint8Array | null {
   let boxId = 0;
   let monId = 0;
@@ -360,20 +396,19 @@ function CopyConditionMonNameGender(str: Uint8Array, listId: number, skipPadding
   let level = 0;
   let lvlDigits = 0;
   let boxMon: any = null;
-  let txtPtr: any = null;
-  let str_: any = null;
   let monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);
+  let p = 0; // walk de `str` (u8 *)
   boxId = monListPtr.monData[listId].boxId;
   monId = monListPtr.monData[listId].monId;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = EXT_CTRL_CODE_BEGIN */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = TEXT_COLOR_BLUE */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = TEXT_COLOR_TRANSPARENT */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = TEXT_COLOR_LIGHT_BLUE */;
+  str[p++] = EXT_CTRL_CODE_BEGIN;
+  str[p++] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
+  str[p++] = TEXT_COLOR_BLUE;
+  str[p++] = TEXT_COLOR_TRANSPARENT;
+  str[p++] = TEXT_COLOR_LIGHT_BLUE;
   if (GetBoxOrPartyMonData(boxId, monId, MON_DATA_IS_EGG, null))
-    return StringCopyPadded(str, getString('gText_EggNickname'), CHAR_SPACE, POKEMON_NAME_LENGTH + 2);
-  GetBoxOrPartyMonData(boxId, monId, MON_DATA_NICKNAME, str);
-  StringGet_Nickname(str);
+    return StringCopyPadded(str.subarray(p), encodeOwText(getString('gText_EggNickname')), CHAR_SPACE, POKEMON_NAME_LENGTH + 2);
+  GetBoxOrPartyMonData(boxId, monId, MON_DATA_NICKNAME, str.subarray(p));
+  StringGet_Nickname(str.subarray(p));
   species = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SPECIES, null);
   if (boxId == TOTAL_BOXES_COUNT)
   {
@@ -386,59 +421,61 @@ function CopyConditionMonNameGender(str: Uint8Array, listId: number, skipPadding
     gender = GetBoxMonGender(boxMon);
     level = GetLevelFromBoxMonExp(boxMon);
   }
-  if ((species == SPECIES_NIDORAN_F || species == SPECIES_NIDORAN_M) && !StringCompare(str, gSpeciesNames[species]))
+  if ((species == SPECIES_NIDORAN_F || species == SPECIES_NIDORAN_M) && !StringCompare(str.subarray(p), encodeOwText(gSpeciesNames[species] ?? '')))
     gender = MON_GENDERLESS;
-  str_ = str;
-  // For some reason, a variable is needed to match.
-  while (str_[0] /* *ptr */ != EOS)
-    (str_++ /* TRANSPILER-TODO ptr-arith */);
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_SKIP */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = 60 */;
+  // For some reason, a variable is needed to match. (walk jusqu'à l'EOS du surnom)
+  while (str[p] != EOS)
+    p++;
+  str[p++] = EXT_CTRL_CODE_BEGIN;
+  str[p++] = EXT_CTRL_CODE_SKIP;
+  str[p++] = 60;
   switch (gender) {
     default:
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_SPACER */;
+      str[p++] = CHAR_SPACER;
       // Genderless
       break;
     case MON_MALE:
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_COLOR */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_RED */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_SHADOW */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_LIGHT_RED */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_MALE */;
+      str[p++] = EXT_CTRL_CODE_BEGIN;
+      str[p++] = EXT_CTRL_CODE_COLOR;
+      str[p++] = TEXT_COLOR_RED;
+      str[p++] = EXT_CTRL_CODE_BEGIN;
+      str[p++] = EXT_CTRL_CODE_SHADOW;
+      str[p++] = TEXT_COLOR_LIGHT_RED;
+      str[p++] = CHAR_MALE;
       break;
     case MON_FEMALE:
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_COLOR */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_GREEN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_SHADOW */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_LIGHT_GREEN */;
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_FEMALE */;
+      str[p++] = EXT_CTRL_CODE_BEGIN;
+      str[p++] = EXT_CTRL_CODE_COLOR;
+      str[p++] = TEXT_COLOR_GREEN;
+      str[p++] = EXT_CTRL_CODE_BEGIN;
+      str[p++] = EXT_CTRL_CODE_SHADOW;
+      str[p++] = TEXT_COLOR_LIGHT_GREEN;
+      str[p++] = CHAR_FEMALE;
       break;
   }
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_BEGIN */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_BLUE */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_TRANSPARENT */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = TEXT_COLOR_LIGHT_BLUE */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_SLASH */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_EXTRA_SYMBOL */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_LV_2 */;
-  txtPtr = str_;
-  str_ = ConvertIntToDecimalStringN(str_, level, STR_CONV_MODE_LEFT_ALIGN, 3);
-  lvlDigits = str_ - txtPtr;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_SPACE */;
+  str[p++] = EXT_CTRL_CODE_BEGIN;
+  str[p++] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
+  str[p++] = TEXT_COLOR_BLUE;
+  str[p++] = TEXT_COLOR_TRANSPARENT;
+  str[p++] = TEXT_COLOR_LIGHT_BLUE;
+  str[p++] = CHAR_SLASH;
+  str[p++] = CHAR_EXTRA_SYMBOL;
+  str[p++] = CHAR_LV_2;
+  // 1:1 `txtPtr = str_; str_ = ConvertIntToDecimalStringN(...); lvlDigits = str_ - txtPtr;`
+  // → diff d'offsets des vues (même buffer sous-jacent).
+  const txtOffset = p;
+  const endView = ConvertIntToDecimalStringN(str.subarray(p), level, STR_CONV_MODE_LEFT_ALIGN, 3);
+  p = endView.byteOffset - str.byteOffset;
+  lvlDigits = p - txtOffset;
+  str[p++] = CHAR_SPACE;
   if (!skipPadding)
   {
     lvlDigits = 3 - lvlDigits;
     while (lvlDigits-- != 0)
-      void 0 /* TRANSPILER-TODO ASSIGN: *(str_++) = CHAR_SPACE */;
+      str[p++] = CHAR_SPACE;
   }
-  str_[0] /* *ptr */ = EOS;
-  return str_;
+  str[p] = EOS;
+  return str.subarray(p);
 }
 
 /** 1:1 `static void CopyMonNameGenderLocation(s16 listId, u8 loadId)` (pokenav_conditions.c:426-456). */
@@ -456,10 +493,12 @@ function CopyMonNameGenderLocation(listId: number, loadId: number): void {
     menu.locationText[loadId][2] = TEXT_COLOR_BLUE;
     menu.locationText[loadId][3] = TEXT_COLOR_TRANSPARENT;
     menu.locationText[loadId][4] = TEXT_COLOR_LIGHT_BLUE;
+    // 1:1 `&menu->locationText[loadId][5]` = vue subarray(5) (précédent pokenav_conditions_gfx.ts:654).
+    // Frontières strings JS (getString / GetBoxNamePtr) → encodeOwText (garde bd6ee7f31).
     if (boxId == TOTAL_BOXES_COUNT)
-      CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, getString('gText_InParty'), BOX_NAME_LENGTH);
+      CopyStringLeftAlignedToConditionData(menu.locationText[loadId].subarray(5), encodeOwText(getString('gText_InParty')), BOX_NAME_LENGTH);
     else
-      CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, GetBoxNamePtr(boxId), BOX_NAME_LENGTH);
+      CopyStringLeftAlignedToConditionData(menu.locationText[loadId].subarray(5), encodeOwText(GetBoxNamePtr(boxId)), BOX_NAME_LENGTH);
   }
   else
   {
@@ -477,7 +516,13 @@ function InitPartyConditionListParameters(): void {
   let i = 0;
   let count = 0;
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);
-  let monListPtr = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, 0 /* TRANSPILER-TODO sizeof(struct PokenavMonList) */);
+  let monListPtr = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, 0 /* sizeof(struct PokenavMonList) */);
+  // ADAPTATION MOTEUR (Alloc zéroé → matérialisation, cf. _materializeConditionMenu) :
+  // 1:1 `struct PokenavMonListItem monData[TOTAL_BOXES_COUNT * IN_BOX_COUNT + PARTY_SIZE]`
+  // (pokenav.h:50-55) — objets DISTINCTS par slot (jamais de refs partagées).
+  monListPtr.monData = Array.from({ length: TOTAL_BOXES_COUNT * 30 /* IN_BOX_COUNT */ + 6 /* PARTY_SIZE */ }, () => ({ boxId: 0, monId: 0, data: 0 }));
+  monListPtr.listCount = 0;
+  monListPtr.currIndex = 0;
   menu.inSearchMode = false;
   for ((i = 0, count = 0); i < CalculatePlayerPartyCount(); i++)
   {
@@ -536,7 +581,12 @@ function GetMonConditionGraphData(listId: number, loadId: number): void {
   }
 }
 
-/** 1:1 `static void ConditionGraphDrawMonPic(s16 listId, u8 loadId)` (pokenav_conditions.c:522-539). */
+/** 1:1 `static void ConditionGraphDrawMonPic(s16 listId, u8 loadId)` (pokenav_conditions.c:522-539).
+ *  ADAPTATION ASSETS (LoadSpecialPokePic + LZ77UnCompWram lisent la ROM = synchrone ;
+ *  précédent EXACT : PreloadDisplayMonPic, pokemon_storage_system.ts:1348) : fetch async
+ *  de anim_front.png (frame 0, MON_PIC_SIZE) + normal.pal écrits DANS les buffers struct
+ *  menu.monPicGfx/monPal[loadId] (refs stables) ; menu.monPicLoaded[loadId] = gate lu par
+ *  le looped-task gfx (poll, jamais d'await dans un LT). Échec = console.error (Règle 3). */
 function ConditionGraphDrawMonPic(listId: number, loadId: number): void {
   let boxId = 0;
   let monId = 0;
@@ -546,14 +596,42 @@ function ConditionGraphDrawMonPic(listId: number, loadId: number): void {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);
   let monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);
   if (listId == (IsConditionMenuSearchMode() ? monListPtr.listCount : monListPtr.listCount - 1))
+  {
+    // Entrée Cancel : rien à charger — slot « prêt » (le décomp garde l'ancien buffer ;
+    // sans ça, le gate IsConditionMonPicLoaded gèlerait sur une équipe 100 % œufs).
+    menu.monPicLoaded[loadId] = true;
     return;
+  }
   boxId = monListPtr.monData[listId].boxId;
   monId = monListPtr.monData[listId].monId;
   species = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SPECIES_OR_EGG, null);
   tid = GetBoxOrPartyMonData(boxId, monId, MON_DATA_OT_ID, null);
   personality = GetBoxOrPartyMonData(boxId, monId, MON_DATA_PERSONALITY, null);
-  LoadSpecialPokePic(gMonFrontPicTable[species] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, menu.monPicGfx[loadId], species, personality, true);
-  LZ77UnCompWram(GetMonSpritePalFromSpeciesAndPersonality(species, tid, personality), menu.monPal[loadId]);
+  void tid; void personality; // 1:1 signature (shiny non résolu ici : normal.pal, comme PC storage)
+  // ≡ LoadSpecialPokePic(&gMonFrontPicTable[species], menu.monPicGfx[loadId], species, personality, TRUE)
+  //   + LZ77UnCompWram(GetMonSpritePalFromSpeciesAndPersonality(species, tid, personality), menu.monPal[loadId])
+  menu.monPicLoaded[loadId] = false;
+  const picGfx: Uint8Array = menu.monPicGfx[loadId];
+  const pal: Uint16Array = menu.monPal[loadId];
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const dexId = species === SPECIES_NONE ? 'egg' : speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+  void (async () => {
+    const png = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/anim_front.png`, 4)
+      .catch(() => loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/front.png`, 4)); // fallback 1-frame
+    const palData = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`).catch(() => png.palette);
+    picGfx.set(png.charData.subarray(0, MON_PIC_SIZE));
+    pal.set(palData.subarray(0, 16));
+    // Toujours le MÊME substruct ? (l'écran a pu être fermé/réouvert pendant le fetch)
+    const cur = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);
+    if (cur === menu) cur.monPicLoaded[loadId] = true;
+  })().catch((e) => console.error('[pokenav condition] front pic', dexId, e));
+}
+
+/** ADAPTATION assets (gate du looped-task gfx, précédent LoopedTask_OpenMatchCall case 0) :
+ *  le pic du slot loadId est-il arrivé dans menu.monPicGfx/monPal ? */
+export function IsConditionMonPicLoaded(loadId: number): boolean {
+  const menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);
+  return !!menu?.monPicLoaded?.[loadId];
 }
 
 /** 1:1 `u16 GetMonListCount(void)` (pokenav_conditions.c:541-545). */
