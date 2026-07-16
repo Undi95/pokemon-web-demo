@@ -28,7 +28,7 @@ import { AllocSubstruct, FreePokenavSubstruct, GetPokenavMode, GetSubstructPtr, 
 import { GetTrainerIdxByRematchIdx, MatchCall_GetEnabled, MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetOverrideFlavorText, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage, MatchCall_HasRematchId, MatchCall_GetMessage, gTrainers } from './pokenav_match_call_data';
 import { PokenavList_GetSelectedIndex } from './pokenav_list';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const SelectMatchCallMessage: any = __wireTodo('SelectMatchCallMessage');
+import { SelectMatchCallMessage } from './match_call';
 const gFacilityClassToPicIndex: any = __wireTodo('gFacilityClassToPicIndex');
 const gMatchCallFlavorTexts: any = __wireTodo('gMatchCallFlavorTexts');
 

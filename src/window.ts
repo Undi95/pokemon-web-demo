@@ -792,6 +792,25 @@ export const BG_ATTR_METRIC = 8;
 export const BG_ATTR_TYPE = 9;
 export const BG_ATTR_BASETILE = 10;
 
+/** 1:1 décomp `u16 GetBgAttribute(u8 bg, u8 attributeId)` (bg.c:504-545) — lit la
+ *  config du BG (les cases METRIC/TYPE du décomp, non consommés par le port, rendent -1). */
+export function GetBgAttribute(bg: number, attributeId: number): number {
+  const rt = getRuntime();
+  if (!rt) return 0xFFFF;
+  const cfg = rt.gba.bg(bg as 0 | 1 | 2 | 3).config as unknown as Record<string, unknown>;
+  switch (attributeId) {
+    case BG_ATTR_CHARBASEINDEX: return (cfg.charBaseIndex as number) ?? 0;
+    case BG_ATTR_MAPBASEINDEX: return (cfg.mapBaseIndex as number) ?? 0;
+    case BG_ATTR_SCREENSIZE: return (cfg.screenSize as number) ?? 0;
+    case BG_ATTR_PALETTEMODE: return (cfg.paletteMode as number) ?? 0;
+    case BG_ATTR_PRIORITY: return (cfg.priority as number) ?? 0;
+    case BG_ATTR_MOSAIC: return cfg.mosaic ? 1 : 0;
+    case BG_ATTR_WRAPAROUND: return cfg.wraparound ? 1 : 0;
+    case BG_ATTR_BASETILE: return (cfg.baseTile as number) ?? 0;
+    default: return 0xFFFF;
+  }
+}
+
 /** 1:1 décomp `SetBgControlAttributes` (bg.c:99-143) : écrit champ-par-champ la
  *  config du BG, sentinelle 0xFF = « ne pas toucher ». Le .c termine par
  *  `sGpuBgConfigs.configs[bg].visible = 1` — fidèle ici ; comme sur GBA, la

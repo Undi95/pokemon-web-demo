@@ -76,10 +76,30 @@ export const gTrainers: any = new Proxy({}, {
  *  GetTrainerClassNameGenderSpecific (international_string_util.ts:289) fait déjà
  *  `encodeOwText(getString(...))`. Charmap OW chargée au boot ; module lazy-load
  *  (pokenav) → prête ici. Garde-fou hurlant sinon (règle 3). */
+/** PARESSEUX : depuis que match_call.ts (importé par new_game au BOOT) importe ce
+ *  module, les headers s'évaluent AVANT le chargement de strings.json/charmap →
+ *  un encodage top-level rendrait des buffers d'espaces (0x00) → liste Match Call
+ *  aux specials vides. Le Proxy résout au PREMIER ACCÈS (toujours post-boot via le
+ *  Pokénav) et ne met en cache qu'une résolution valide. `instanceof Uint8Array`
+ *  reste vrai (prototype du target conservé). */
 function _gbaText(key: string): Uint8Array {
-  if (!isOwCharmapReady())
-    console.error(`[pokenav_match_call_data] charmap OW pas prête — «${key}» encodé en espaces`);
-  return encodeOwText(getString(key));
+  let real: Uint8Array | null = null;
+  const resolve = (): Uint8Array => {
+    if (real) return real;
+    const s = getString(key);
+    const b = encodeOwText(s);
+    if (isOwCharmapReady() && !s.startsWith('[MISSING')) real = b;
+    else console.error(`[pokenav_match_call_data] «${key}» lu avant strings/charmap — encodage best-effort non caché`);
+    return b;
+  };
+  return new Proxy(new Uint8Array(0), {
+    get(_t, p) {
+      const r = resolve() as unknown as Record<string | symbol, unknown>;
+      const v = r[p];
+      return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(r) : v;
+    },
+    has(_t, p) { return p in (resolve() as object); },
+  }) as Uint8Array;
 }
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
@@ -1283,9 +1303,16 @@ function MatchCallGetFunctionIndex(matchCall: match_call_t): number {
   }
 }
 
-/** 1:1 `u32 GetTrainerIdxByRematchIdx(u32 rematchIdx)` (pokenav_match_call_data.c:736-739). */
+/** 1:1 `u32 GetTrainerIdxByRematchIdx(u32 rematchIdx)` (pokenav_match_call_data.c:736-739).
+ *  Le décomp rend un u16 (index gTrainers) ; notre gRematchTable porte des clés
+ *  'TRAINER_*' → résolution via include/constants/opponents (même sémantique). */
 export function GetTrainerIdxByRematchIdx(rematchIdx: number): number {
-  return gRematchTable[rematchIdx].trainerIds[0];
+  const id = gRematchTable[rematchIdx].trainerIds[0];
+  if (typeof id === 'string') {
+    const v = (_OPPONENTS as Record<string, unknown>)[id];
+    return typeof v === 'number' ? v : 0;
+  }
+  return id;
 }
 
 /** 1:1 `s32 GetRematchIdxByTrainerIdx(s32 trainerIdx)` (pokenav_match_call_data.c:741-751). */

@@ -54,7 +54,7 @@ import { BgDmaFill, LoadBgTiles } from '../harness/runtime/decomp-globals';
 const CheckForSpaceForDma3Request: any = __wireTodo('CheckForSpaceForDma3Request');
 const CpuCopy32: any = __wireTodo('CpuCopy32');
 const DecompressPicFromTable: any = __wireTodo('DecompressPicFromTable');
-const DrawMatchCallTextBoxBorder: any = __wireTodo('DrawMatchCallTextBoxBorder');
+import { DrawMatchCallTextBoxBorder } from './match_call';
 const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
 // Assets fenêtre message — 1:1 décomp match_call.c:1197-1198 (window.png .4bpp + .gbapal),
 // chargés async (cf _loadMatchCallUiGfx). `LoadMatchCallWindowGfx` = 1:1 match_call.c:2102.
@@ -1147,7 +1147,11 @@ function WaitForTrainerIsCloseByText(gfx: Pokenav_MatchCallGfx): boolean {
 /** 1:1 `static void PrintMatchCallMessage(struct Pokenav_MatchCallGfx *gfx)` (pokenav_match_call_gfx.c:1138-1144). */
 function PrintMatchCallMessage(gfx: Pokenav_MatchCallGfx): void {
   let index = PokenavList_GetSelectedIndex();
-  let str = GetMatchCallMessageText(index, gfx.newRematchRequest);
+  // 1:1 `GetMatchCallMessageText(index, &gfx->newRematchRequest)` — out-param bool8*
+  // → ref {v} (JS n'a pas d'adresse-de) puis réassignation.
+  const rematchRef = { v: gfx.newRematchRequest ?? false } as { v: boolean };
+  let str = GetMatchCallMessageText(index, rematchRef as any);
+  gfx.newRematchRequest = rematchRef.v;
   let speed = GetPlayerTextSpeedDelay();
   AddTextPrinterParameterized(gfx.msgBoxWindowId, FONT_NORMAL, str, 32, 1, speed, null);
 }

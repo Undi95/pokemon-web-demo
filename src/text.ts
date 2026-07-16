@@ -725,6 +725,9 @@ function CopyGlyphToWindow(printer: TextPrinter): void {
  *  rect (currentX, currentY, width, gCurGlyph.height) en bgColor (padding du
  *  MIN_LETTER_SPACING). HW = fillWindowPixelRect. */
 function ClearTextSpan(printer: TextPrinter, width: number): void {
+  if ((globalThis as { __noClearSpan?: boolean }).__noClearSpan) return; // sonde bisect (temporaire)
+  if ((globalThis as { __traceClearSpan?: boolean }).__traceClearSpan)
+    console.log('[ClearTextSpan]', 'win', printer.printerTemplate.windowId, 'x', printer.printerTemplate.currentX, 'y', printer.printerTemplate.currentY, 'w', width, 'h', gCurGlyph.height);
   if (printer.printerTemplate.bgColor !== 0) {
     fillWindowPixelRect(printer.window, printer.printerTemplate.bgColor, printer.printerTemplate.currentX, printer.printerTemplate.currentY, width, gCurGlyph.height);
   }
@@ -1156,6 +1159,8 @@ export function AddTextPrinter(
   // Byte-entry : bytes charmap pré-encodés passés directement ; sinon encode.
   const encoded = (template.str instanceof Uint8Array) ? template.str : encodeStringForFont(template.str, getOwCharmap() ?? {});
   _logPrintedText(template.str, encoded);
+  if ((globalThis as { __traceATP?: boolean }).__traceATP && template.windowId === 3)
+    console.log('[ATP w3]', 'x', template.x, 'y', template.y, 'font', template.fontId, 'head', Array.from(encoded.slice(0, 6)).join(','));
   const opts: AddTextPrinterOpts = {
     window: win,
     encodedString: encoded,
