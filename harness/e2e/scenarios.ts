@@ -15,6 +15,8 @@ import { e2e, registerScenario, type E2eCtx } from './runner';
 // module réelle du byte-VM (consigne : importer la fonction, jamais via window.__byteVm
 // — même singleton que le jeu, déjà évalué au boot par les panneaux devtools).
 import { loadAndInstall, launchTB } from '../devtools/dev-bytevm-tools';
+// engine-sweep (Phase B.3 CHANTIER-MOTEUR-100) : exerciseur anti-stub multi-écrans.
+import { engineSweepScenario } from './engine-sweep';
 
 registerScenario({
   id: 'boot-overworld',
@@ -74,13 +76,13 @@ registerScenario({
       run: async (ctx) => {
         // Ordre du menu : Pokédex, Pokémon, SAC… (selon les flags de la save).
         // Descente robuste : on cherche le CB2 du sac en essayant les positions.
-        for (let i = 0; i < 6 && e2e.cb2Name() !== 'CB2_BagMenuRun'; i++) {
+        for (let i = 0; i < 6 && e2e.cb2Name() !== 'MainCB2_BagMenuRun'; i++) {
           await ctx.press('down');
           await ctx.frames(6);
           await ctx.press('a');
           await ctx.until('transition', () => true, 100);
           await ctx.frames(30);
-          if (e2e.cb2Name() === 'CB2_BagMenuRun') break;
+          if (e2e.cb2Name() === 'MainCB2_BagMenuRun') break;
           // Pas le sac : si on a quitté l'overworld pour un autre écran, B pour revenir.
           if (e2e.cb2Name() !== 'MainCB2_Overworld2') {
             await ctx.press('b');
@@ -89,7 +91,7 @@ registerScenario({
             await ctx.frames(20);
           }
         }
-        ctx.assert(e2e.cb2Name() === 'CB2_BagMenuRun', `sac non ouvert (cb2=${e2e.cb2Name()})`);
+        ctx.assert(e2e.cb2Name() === 'MainCB2_BagMenuRun', `sac non ouvert (cb2=${e2e.cb2Name()})`);
         ctx.assert(e2e.screenNotBlack(), 'écran sac noir');
       },
     },
@@ -406,3 +408,6 @@ registerScenario((() => {
     ],
   };
 })());
+
+// engine-sweep : câblage minimal (le scénario complet vit dans ./engine-sweep.ts).
+registerScenario(engineSweepScenario);
