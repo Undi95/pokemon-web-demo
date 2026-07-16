@@ -85,7 +85,6 @@ import { loadTileBin, loadGbaPal, loadAffineTilemapBin, extractPngPlte } from '.
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet, VarGet } from './event_data';
 import { gMapHeader } from './fieldmap';
-import { GetMapTypeByGroupAndId, Overworld_GetMapHeaderByGroupAndId } from './overworld';
 import { gSineTable } from './trig';
 import { SetGpuReg } from './gpu_regs';
 import { SetGpuRegBits, RGB_BLACK } from '../harness/runtime/decomp-helpers';
@@ -97,6 +96,28 @@ import {
   ScheduleBgCopyTilemapToVram, ClearScheduledBgCopiesToVram, PIXEL_FILL,
 } from './window';
 import type { BgTemplate, WindowTemplate } from './window';
+
+// ── ANTI-TDZ (boot entier crashait) : l'import STATIQUE de './overworld' fermait le cycle ESM
+// party_menu → region_map → overworld → field_specials → party_menu, et overworld.ts:1397
+// consomme PLAYER_AVATAR_FLAG_ON_FOOT au top-level → ReferenceError TDZ à l'évaluation.
+// Import DIFFÉRÉ (précédent : pokenav.ts:120, même pattern) : ces 2 fonctions ne sont
+// appelées qu'à l'OUVERTURE de la carte (secondes après le boot) — les wrappers locaux
+// gardent les noms 1:1 pour que les call-sites restent identiques au .c, et HURLENT si
+// l'import n'est pas encore résolu (jamais observé : résolution en ms au boot).
+let _owGetMapTypeByGroupAndId: ((g: number, n: number) => number) | null = null;
+let _owGetMapHeaderByGroupAndId: ((g: number, n: number) => typeof gMapHeader) | null = null;
+import('./overworld').then((m) => {
+  _owGetMapTypeByGroupAndId = m.GetMapTypeByGroupAndId;
+  _owGetMapHeaderByGroupAndId = m.Overworld_GetMapHeaderByGroupAndId as (g: number, n: number) => typeof gMapHeader;
+}).catch((e) => console.error('[region_map] import overworld (anti-TDZ) a échoué', e));
+function GetMapTypeByGroupAndId(mapGroup: number, mapNum: number): number {
+  if (!_owGetMapTypeByGroupAndId) { console.error('[region_map] GetMapTypeByGroupAndId appelée avant résolution de l\'import overworld'); return 0; }
+  return _owGetMapTypeByGroupAndId(mapGroup, mapNum);
+}
+function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: number): typeof gMapHeader {
+  if (!_owGetMapHeaderByGroupAndId) { console.error('[region_map] Overworld_GetMapHeaderByGroupAndId appelée avant résolution de l\'import overworld'); return gMapHeader; }
+  return _owGetMapHeaderByGroupAndId(mapGroup, mapNum);
+}
 import {
   LoadSpriteSheet, LoadSpritePalette, CreateSprite, DestroySprite, FreeSpriteTilesByTag,
   FreeSpritePaletteByTag, IndexOfSpritePaletteTag, StartSpriteAnim, MAX_SPRITES, gSprites,
