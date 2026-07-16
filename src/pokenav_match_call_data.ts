@@ -15,6 +15,7 @@ import { CountBattledRematchTeams, gRematchTable } from './battle_setup';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';
 import { encodeOwText, isOwCharmapReady } from './text';
+import * as _OPPONENTS from '../include/constants/opponents';
 import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';
@@ -40,7 +41,34 @@ const Brendan = 'Brendan';
 const May = 'May';
 // Runtime-only (pas top-level) → laissés en stub, à câbler au parcours d'exécution.
 const BufferPokedexRatingForMatchCall: any = __wireTodo('BufferPokedexRatingForMatchCall');
-const gTrainers: any = __wireTodo('gTrainers');
+/** Adaptateur `gTrainers[i]` → table JSON du bridge combat (`globalThis.__gTrainers`,
+ *  peuplée par ensureGTrainersLoaded() — gate au case 0 de LoopedTask_OpenMatchCall).
+ *  Le bridge stocke `trainerName` en charCodes ASCII SANS EOS (il sert au nameHash
+ *  combat, ne pas y toucher) ; les fns string 1:1 (StringCopy/GetStringWidth) scannent
+ *  l'EOS 0xFF → freeze sur de l'ASCII nu. On sert donc des VUES (cachées) avec
+ *  trainerName ré-encodé bytes GBA + EOS (encodeOwText, précédent _gbaText). */
+const _mcTrainerViewCache = new Map<number, unknown>();
+export const gTrainers: any = new Proxy({}, {
+  get(_t, prop) {
+    // gRematchTable[].trainerIds du port = clés 'TRAINER_*' (strings) ; la table
+    // bridge est indexée par numId → résoudre via include/constants/opponents.
+    let idx: number;
+    if (typeof prop === 'string' && prop.startsWith('TRAINER_')) {
+      const v = (_OPPONENTS as Record<string, unknown>)[prop];
+      idx = typeof v === 'number' ? v : NaN;
+    } else {
+      idx = Number(prop);
+    }
+    if (!Number.isFinite(idx)) return undefined;
+    if (_mcTrainerViewCache.has(idx)) return _mcTrainerViewCache.get(idx);
+    const raw = (globalThis as { __gTrainers?: Record<number, { trainerName?: number[] }> }).__gTrainers?.[idx];
+    if (!raw) return undefined;
+    const name = String.fromCharCode(...(raw.trainerName ?? []));
+    const view = { ...raw, trainerName: encodeOwText(name) };
+    _mcTrainerViewCache.set(idx, view);
+    return view;
+  },
+});
 
 /** Décomp : les headers stockent des POINTEURS vers bytes GBA (`const u8 *desc/name`).
  *  getString rend un string JS → StringCopy/GetStringWidth (scan EOS 0xFF) bouclent à

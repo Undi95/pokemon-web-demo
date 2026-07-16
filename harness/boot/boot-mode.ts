@@ -234,6 +234,12 @@ function applyNoIntroPreset(): void {
   FlagSet('FLAG_SYS_POKENAV_GET');
   FlagSet('FLAG_ADDED_MATCH_CALL_TO_POKENAV');
   FlagSet('FLAG_SYS_RIBBON_GET');
+  // ⚠️ DEBUG ONLY : TOUS les contacts Match Call (user 2026-07-14 : « pour ?debug,
+  // déverrouille tous les contacts »). 1:1 GetNumRegisteredTrainers (match_call.c:1118)
+  // boucle FlagGet(TRAINER_REGISTERED_FLAGS_START + i) : START=0x15C, 78 entrées
+  // (REMATCH_TABLE_ENTRIES) ; + FLAG_HAS_MATCH_CALL (0x12F) = feature match call active.
+  FlagSet(0x12F);
+  for (let i = 0; i < 78; i++) FlagSet(0x15C + i);
   // ⚠️ DEBUG ONLY : les 8 badges d'arène (FLAG_BADGE01..08_GET). Débloque les CS
   // gatées par badge (Surf=BADGE05, Strength=BADGE03, Waterfall=BADGE08, Dive=BADGE07,
   // Rock Smash=BADGE03, Cut=BADGE01, Fly=BADGE03, Flash=BADGE01) pour pouvoir tester

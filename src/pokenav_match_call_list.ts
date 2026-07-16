@@ -25,13 +25,12 @@ import { gStringVar4 } from './string_util';
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetPokenavMode, GetSubstructPtr, SetPokenavMode } from './pokenav_resources';
-import { GetTrainerIdxByRematchIdx, MatchCall_GetEnabled, MatchCall_GetMapSec, MatchCall_GetMessage, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetOverrideFlavorText, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage, MatchCall_HasRematchId } from './pokenav_match_call_data';
+import { GetTrainerIdxByRematchIdx, MatchCall_GetEnabled, MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetOverrideFlavorText, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage, MatchCall_HasRematchId, MatchCall_GetMessage, gTrainers } from './pokenav_match_call_data';
 import { PokenavList_GetSelectedIndex } from './pokenav_list';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 const SelectMatchCallMessage: any = __wireTodo('SelectMatchCallMessage');
 const gFacilityClassToPicIndex: any = __wireTodo('gFacilityClassToPicIndex');
 const gMatchCallFlavorTexts: any = __wireTodo('gMatchCallFlavorTexts');
-const gTrainers: any = __wireTodo('gTrainers');
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const MATCH_CALL_OPTION_CALL = 0; // 1:1 include/pokenav.h:0 (à consolider dans include/)

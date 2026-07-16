@@ -8,6 +8,7 @@
  */
 
 import { LoadCompressedSpriteSheet, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
+import { loadTileBin, extractPngPlte } from '../harness/gba/png-loader';
 import { ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
@@ -19,7 +20,7 @@ import { FillWindowTilesByRow } from './international_string_util';
 import { AddTextPrinterParameterized3 } from './menu';
 import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, gDummySpriteAffineAnimTable, gDummySpriteAnimTable, gSprites } from './sprite';
 import { AddTextPrinterParameterized } from './text';
-import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, GetBgTilemapBuffer, GetBgY, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WINDOW_BG } from './window';
+import { AddWindow, COPYWIN_FULL, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, GetBgTilemapBuffer, GetBgY, GetWindowAttribute, GetWindowPixelBuffer, MarkWindowDirty, PutWindowTilemap, RemoveWindow, WINDOW_BG } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 import type { BgTemplate, WindowTemplate } from './window';
@@ -35,8 +36,17 @@ import { GetMatchCallFlavorText } from './pokenav_match_call_list';
 import { LT_SET_STATE } from './pokenav_looped_task';
 import { Pokenav_AllocAndLoadPalettes, SetBgTilemapBuffer } from './pokenav_main_menu';
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const CopyWindowRectToVram: any = __wireTodo('CopyWindowRectToVram');
-const CpuFastFill8: any = __wireTodo('CpuFastFill8');
+/** 1:1 `CpuFastFill8(value, dest, size)` (gba/macro.h = memset 8-bit). Les call-sites
+ *  décomp font de l'arithmétique de pointeur (`buf + n`) → passer `buf.subarray(n)`. */
+function CpuFastFill8(value: number, dest: Uint8Array, size: number): void {
+  dest.fill(value & 0xFF, 0, Math.min(size, dest.length));
+}
+/** Adaptation moteur `CopyWindowRectToVram(windowId, mode, x, y, w, h)` (window.c:585) :
+ *  le décomp copie un RECT du window buffer en VRAM (optimisation DMA) ; le port
+ *  re-copie le window entier — mêmes données, même rendu (rect ⊂ full). */
+function CopyWindowRectToVram(windowId: number, mode: number, _x: number, _y: number, _w: number, _h: number): void {
+  CopyWindowToVram(windowId, mode);
+}
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_LIST = 17; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const LT_PAUSE = 2; // 1:1 include/pokenav.h:60 (à consolider dans include/)
@@ -180,7 +190,9 @@ function LoopedTask_CreatePokenavList(state: number): number {
       InitListItems(list.windowState, list.sub);
       return LT_INC_AND_PAUSE;
     case 3:
-      if (IsPrintListItemsTaskActive())
+      // Gate async asset flèches (adaptation moteur, cf. _loadListArrowAssets).
+      _loadListArrowAssets();
+      if (IsPrintListItemsTaskActive() || !_arrowGfxLoaded)
       {
         return LT_PAUSE;
       }
@@ -352,8 +364,11 @@ function LoopedTask_MoveListWindow(state: number): number {
         if ((oldY > subPtr.endBgY || oldY <= subPtr.startBgY) && newY <= subPtr.endBgY)
           finished = true;
       }
-      else
-        // BG_COORD_ADD
+      else // BG_COORD_ADD — branche PERDUE par le transpileur (le `if (finished)` était
+      {    // devenu le corps du else → LT_FINISH jamais atteint = scroll infini).
+        if ((oldY < subPtr.endBgY || oldY >= subPtr.startBgY) && newY >= subPtr.endBgY)
+          finished = true;
+      }
       if (finished)
       {
         subPtr.listWindow.unkA = (subPtr.listWindow.unkA + subPtr.moveDelta) & 0xF;
@@ -669,22 +684,29 @@ function LoopedTask_ReshowListFromCheckPage(state: number): number {
   return LT_FINISH;
 }
 
-/** 1:1 `static void EraseListEntry(struct PokenavListMenuWindow *listWindow, s32 offset, s32 entries)` (pokenav_list.c:667-692). */
+/** 1:1 `static void EraseListEntry(struct PokenavListMenuWindow *listWindow, s32 offset, s32 entries)` (pokenav_list.c:667-692).
+ *  ADAPTATION LAYOUT : le décomp adresse le tile-data 4bpp (1 entrée liste = 2 tile-rows
+ *  = width*64 bytes) ; notre window = pixelBuffer row-major 1 byte/pixel
+ *  (GetWindowPixelBuffer, window.ts:355) → 1 entrée = 16 rows × width*8 px = width*128.
+ *  Arithmétique de pointeur `tileData + n` → subarray(n) (vue = pointeur C). */
 function EraseListEntry(listWindow: PokenavListMenuWindow, offset: number, entries: number): void {
-  let tileData = GetWindowAttribute(listWindow.windowId, WINDOW_TILE_DATA);
-  let width = listWindow.width * 64;
+  const tileData = GetWindowPixelBuffer(listWindow.windowId);
+  if (!tileData) return;
+  let width = listWindow.width * 128;
   offset = (listWindow.unkA + offset) & 0xF;
   if (offset + entries <= 16)
   {
-    CpuFastFill8(PIXEL_FILL(1), tileData + offset * width, entries * width);
+    CpuFastFill8(PIXEL_FILL(1), tileData.subarray(offset * width), entries * width);
+    MarkWindowDirty(listWindow.windowId);
     CopyWindowToVram(listWindow.windowId, COPYWIN_GFX);
   }
   else
   {
     let v3 = 16 - offset;
     let v4 = entries - v3;
-    CpuFastFill8(PIXEL_FILL(1), tileData + offset * width, v3 * width);
+    CpuFastFill8(PIXEL_FILL(1), tileData.subarray(offset * width), v3 * width);
     CpuFastFill8(PIXEL_FILL(1), tileData, v4 * width);
+    MarkWindowDirty(listWindow.windowId);
     CopyWindowToVram(listWindow.windowId, COPYWIN_GFX);
   }
   for (entries--; entries != -1; (offset = (offset + 1) & 0xF, entries--))
@@ -847,12 +869,37 @@ const sSpriteTemplate_UpDownArrow = {
   affineAnims: gDummySpriteAffineAnimTable,
   callback: SpriteCallbackDummy };
 
+/** ADAPTATION MOTEUR : charge list_arrows.png (le décomp l'a en ROM INCGFX = instantané ;
+ *  le port fetch → gate au case 3 de LoopedTask_CreatePokenavList, même pattern que
+ *  _pokenavLoadMenuGraphics). Réinjecte data dans les structs qui capturaient null. */
+let _arrowGfxLoaded = false;
+let _arrowGfxLoadStarted = false;
+function _loadListArrowAssets(): void {
+  if (_arrowGfxLoaded || _arrowGfxLoadStarted) return;
+  _arrowGfxLoadStarted = true;
+  void (async () => {
+    try {
+      const [gfx, pal] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/list_arrows.png', 4),
+        extractPngPlte('/decomp/em/pokenav/list_arrows.png'),
+      ]);
+      sListArrow_Gfx = gfx; sListArrow_Pal = pal;
+      (sListArrowSpriteSheets[0] as any).data = gfx;
+      (sListArrowPalettes[0] as any).data = pal;
+      _arrowGfxLoaded = true;
+    } catch (e) {
+      console.error('[pokenav_list] chargement list_arrows.png ÉCHOUÉ (flèches invisibles)', e);
+    }
+  })();
+}
+
 /** 1:1 `static void LoadListArrowGfx(void)` (pokenav_list.c:841-850). */
 function LoadListArrowGfx(): void {
   let i = 0;
-  let ptr: any = null;
-  for ((i = 0, ptr = sListArrowSpriteSheets); i < sListArrowSpriteSheets.length; (ptr++ /* TRANSPILER-TODO ptr-arith */, i++))
-    LoadCompressedSpriteSheet(ptr);
+  // 1:1 `for (i=0, ptr=sheets; i<N; ptr++, i++) LoadCompressedSpriteSheet(ptr)` —
+  // ptr-arith C → indexation (le transpileur passait l'ARRAY entier = ASSET MISSING tag=undefined).
+  for (i = 0; i < sListArrowSpriteSheets.length; i++)
+    LoadCompressedSpriteSheet(sListArrowSpriteSheets[i]);
   Pokenav_AllocAndLoadPalettes(sListArrowPalettes);
 }
 

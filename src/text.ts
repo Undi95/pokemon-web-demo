@@ -921,9 +921,12 @@ function renderHandleChar(printer: TextPrinter): number {
         printer.printerTemplate.currentChar += 3;
         continue;
       }
-      // CLEAR : avance currentX de N px. text.c:1063-1072.
+      // CLEAR : EFFACE n px (ClearTextSpan) puis avance currentX. text.c:1063-1072.
+      // (Avant : avançait sans effacer → résidus des anciens textes plus longs au
+      // re-print par-dessus — noms mélangés dans la liste Match Call au scroll.)
       if (subCode === EXT_CTRL_CODE_CLEAR) {
         const n = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
+        if (n > 0) ClearTextSpan(printer, n);
         printer.printerTemplate.currentX += n;
         printer.printerTemplate.currentChar += 3;
         continue;
@@ -935,11 +938,15 @@ function renderHandleChar(printer: TextPrinter): number {
         printer.printerTemplate.currentChar += 3;
         continue;
       }
-      // CLEAR_TO : pad jusqu'à x + N. text.c:1077-1090.
+      // CLEAR_TO : EFFACE jusqu'à x + N (ClearTextSpan sur la distance). text.c:1077-1090.
       if (subCode === EXT_CTRL_CODE_CLEAR_TO) {
         const n = printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0;
         const target = printer.printerTemplate.x + n;
-        if (printer.printerTemplate.currentX < target) printer.printerTemplate.currentX = target;
+        const span = target - printer.printerTemplate.currentX;
+        if (span > 0) {
+          ClearTextSpan(printer, span);
+          printer.printerTemplate.currentX = target;
+        }
         printer.printerTemplate.currentChar += 3;
         continue;
       }

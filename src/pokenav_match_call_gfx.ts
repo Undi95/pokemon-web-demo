@@ -42,6 +42,7 @@ import type { WindowTemplate } from './window';
 import type { OamData } from '../include/gba/types';
 import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
+import { ensureGTrainersLoaded } from './engine/battle/battle-trainer-data-bridge';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
 import { AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram, FadeToBlackExceptPrimary, FreeTempTileDataBuffersIfPossible, GetSpinningPokenavSprite, HideSpinningPokenavSprite, InitBgTemplates, IsPaletteFadeActive, LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PokenavCopyPalette, PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShowLeftHeaderGfx, SlideMenuHeaderDown, WaitForHelpBar } from './pokenav_main_menu';
 import { BufferMatchCallNameAndDesc, GetIndexDeltaOfNextCheckPageDown, GetIndexDeltaOfNextCheckPageUp, GetMatchCallList, GetMatchCallMapSec, GetMatchCallMessageText, GetMatchCallOptionCursorPos, GetMatchCallOptionId, GetMatchCallTrainerPic, GetNumberRegistered, IsMatchCallListInitFinished, ShouldDrawRematchPokeballIcon } from './pokenav_match_call_list';
@@ -379,7 +380,11 @@ function LoopedTask_OpenMatchCall(state: number): number {
       // le port les fetch → on attend leur chargement avant de les copier en VRAM, comme le
       // menu principal gate sur _pokenavHeaderLoaded).
       _loadMatchCallUiGfx();
-      if (!gMatchCallUI_Gfx || !gMatchCallUI_Tilemap || !gMatchCallUI_Pal)
+      // + gate data trainers (la liste imprime les dresseurs normaux via gTrainers ;
+      // table JSON du bridge combat, fetch async — même pattern que les assets).
+      ensureGTrainersLoaded().catch((e) => console.error('[match call gTrainers]', e));
+      if (!gMatchCallUI_Gfx || !gMatchCallUI_Tilemap || !gMatchCallUI_Pal
+          || !(globalThis as { __gTrainers?: unknown }).__gTrainers)
         return LT_PAUSE;
       InitBgTemplates(sMatchCallBgTemplates, sMatchCallBgTemplates.length);
       ChangeBgX(2, 0, BG_COORD_SET);
