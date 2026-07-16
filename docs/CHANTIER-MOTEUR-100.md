@@ -73,7 +73,52 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 3. Purge des rustines listées section « RUSTINES À PURGER » de chaque rapport d'audit (12 listes).
 4. Re-test global : `__e2e.run('boot-overworld')` + `('double-battle')` + engine-sweep + screenshots.
 
-## GRANDE PASSE DE VALIDATION (à dérouler au retour des 4 agents en vol — 2026-07-16 soir)
+## FILE DE CONSOLIDATION POST-AGENTS (petits lots à faire après la grande passe)
+1. `PutWindowRectTilemap` : window.ts a un THROW à cet endroit (audit window.md) ; l'agent region_map
+   a posé une impl locale 1:1 dans pokenav_region_map.ts (window.ts était gelé) → migrer l'impl dans
+   window.ts + rediriger + supprimer la locale.
+2. 🔎 FINDING MOTEUR (agent region_map) : `CpuFill16` du harness NO-OPAIT avec une dest buffer
+   (fond BG1 carte jamais posé) → il a posé un CpuFill16 local buffer-dest. Examiner le CpuFill16
+   harness (decomp-globals ?), le fixer pour les dest buffers, rediriger, supprimer le local.
+3. Divergence data : UNDERWATER_125→ROUTE_129 en VANILLA dans region_map.ts vs BUGFIX dans
+   l'ancienne table field — trancher (contrat = décomp vanilla) et aligner les deux écrans.
+4. Redirection finale des imports IsDma3ManagerBusyWithBgCopy (pokenav_ribbons_*, pokenav_region_map,
+   battle_main, battle_script_commands → src/dma3_manager) une fois le lot dupes-fondations committé
+   (battle_bg garde le ré-export de compat en attendant).
+5. Fly map : câbler les 6 sentinelles wireTodo restantes (GetSSTidalLocation, SetWarpDestination ×2,
+   ReturnToFieldFromFlyMapSelect, CB2_ReturnToPartyMenuFromFlyMap, CB2_ReturnToFieldWithOpenMenu)
+   → la carte de VOL devient jouable (HM02 field move).
+6. 🚨 Pépites DECOMP-INDEX-dupes (oracle `node scripts/decomp-index.cjs --dupes`) — à investiguer :
+   ① gBattleTypeFlags DÉCLARÉ 2× (battle_intro.ts:106 + engine/battle/state.ts:184) = deux vérités
+   possibles sur le flag central du combat — VÉRIFIER si les deux instances divergent au runtime.
+   ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué). ③ DestroySprite
+   battle_main.ts:1606 vs sprite.ts. ④ CB2_ReturnToField implanté safari_zone+walda_phrase, absent
+   d'overworld.ts (foyer réel). ⑤ Compare byte-VM ×2 (scrcmd.ts:309 + script-vars.ts:111).
+   ⑥ AddTextPrinterParameterized5 à reloger PSS → text.ts (text.ts libéré). + 1 217 vraies dupes
+   miroir dans le rapport complet — dépiler par gravité aux prochains lots C.
+
+## ✅ GRANDE PASSE FAITE (2026-07-16 soir) — résultats
+- ✅ Boot sain APRÈS 3 fixes TDZ (`69e283f9c` : constantes de headers → include/ feuilles ;
+  leçon systémique consignée dans le commit). ✅ tsc global = 0.
+- ✅ engine-sweep : 11/11 écrans s'ouvrent, combat complet inclus. 4 « KO » = warns bénins
+  (fallbacks PNG .4bpp.bin jamais extraits) + asserts de scénario stricts → RECALIBRER le
+  sweep (séparer warn/error ; KO seulement sur throw/assert).
+- ✅ AFFINE : dev.gfx.affineTest au film = rotation+zoom lissés, wraparound, restauration
+  propre. ✅ CARTE DE HOENN (1re fois) : vue générale, localisations (ALGATIA), icône joueur,
+  ZOOM affine + city maps (CENTRE POKéMON), videoMode=1 TIENT, 0 erreur.
+- ✅ RUBANS liste (1re fois) : 1/1, compteur 6 rubans EXACT. ✅ Combat dresseur complet +
+  retour overworld 0 erreur = chemin C1 dresseurs validé. ✅ Mosaic PSS + FAST_FADE (matin).
+- ❌ CONDITION graphe : gate infini IDENTIFIÉ par le hurleur —
+  `/decomp/em/pokenav/condition/pokeball_placeholder.png : no PLTE chunk (not indexed)`
+  (PNG extrait en RGB, pitfall gbagfx) → RÉGÉNÉRER l'asset en PNG indexé, l'écran doit
+  s'ouvrir ensuite. Le crash bg-dots (word-args pointeurs) est FIXÉ `87236a0e6`.
+- ❌ RUBANS summary : FREEZE DUR (boucle synchrone infinie) à l'ouverture (A sur le mon) —
+  renderer mort, tab zombie. Piste : boucle transpilée du summary (anim affine gros ruban ?
+  print du nom ?). Reproduire : ruban debug → RUBANS → A. Liste OK, seul le summary fige.
+- Non testés (recettes dans les rapports) : Flash grotte (fix-field-screen-effect.md),
+  Task_OrbEffect, credits (fix-credits.md), fade-in barre verte MC post-lots.
+
+## GRANDE PASSE DE VALIDATION (checklist d'origine — à dérouler au retour des 4 agents en vol — 2026-07-16 soir)
 Agents : affine-BG (Fable : compositor/decomp-runtime/window/dev-gfx) · region_map (Fable :
 region_map.ts/pokenav_region_map.ts/extraction+packs) · conditions (Fable : conditions_gfx/
 search_results/module graphe/text.ts COLOR_HIGHLIGHT_SHADOW) · ribbons (Opus : ribbons_list/summary).
