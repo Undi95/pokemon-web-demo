@@ -219,7 +219,7 @@ let sBattleFrontierStreakInfo = {
 const TEXT_ID = (topic: number, id: number) => (((topic) << 8) | ((id) & 0xFF)); // 1:1 macro match_call.c:169
 
 /** 1:1 (match_call.c:171) */
-const sMatchCallTrainers = [
+export const sMatchCallTrainers = [
   {
     trainerId: TRAINER_ROSE_1,
     unused: 0,

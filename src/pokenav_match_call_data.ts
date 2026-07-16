@@ -1573,40 +1573,48 @@ function MatchCall_GetMessage_Birch(matchCall: match_call_t, dest: Uint8Array): 
 }
 
 /** 1:1 `static void MatchCall_BufferCallMessageText(const match_call_text_data_t *textData, u8 *dest)` (pokenav_match_call_data.c:1005-1021). */
+// Les textScripts du port = TUPLES [cléTexte, availabilityFlag, flagToSetOnCompletion]
+// (décomp `match_call_text_data_t` ; MATCH_CALL_TEXT_END = [null, ...]). Le transpilé
+// lisait `.text/.availabilityFlag` (objets) → undefined → StringExpandPlaceholders(undefined)
+// throw chaque frame = FREEZE de l'appel des contacts scénario. Accesseurs :
+const _tdText = (e: any): string | null => (Array.isArray(e) ? e[0] : e?.text) ?? null;
+const _tdAvail = (e: any): number => (Array.isArray(e) ? e[1] : e?.availabilityFlag) ?? ALWAYS_AVAILABLE;
+const _tdDone = (e: any): number => (Array.isArray(e) ? e[2] : e?.flagToSetOnCompletion) ?? NO_FLAG_TO_SET;
+
 function MatchCall_BufferCallMessageText(textData: any, dest: Uint8Array): void {
   let i = 0;
-  for (i = 0; textData[i].text != null; i++)
+  for (i = 0; _tdText(textData[i]) != null; i++)
     ;
   if (i)
     i--;
   while (i)
   {
-    if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && FlagGet(textData[i].availabilityFlag))
+    if (_tdAvail(textData[i]) != ALWAYS_AVAILABLE && FlagGet(_tdAvail(textData[i])))
       break;
     i--;
   }
-  if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
-    FlagSet(textData[i].flagToSetOnCompletion);
-  StringExpandPlaceholders(dest, textData[i].text);
+  if (_tdDone(textData[i]) != NO_FLAG_TO_SET)
+    FlagSet(_tdDone(textData[i]));
+  StringExpandPlaceholders(dest, getString(_tdText(textData[i]) as string)); // clé → texte FR
 }
 
 /** 1:1 `static void MatchCall_BufferCallMessageTextByRematchTeam(const match_call_text_data_t *textData, u16 idx, u8 *dest)` (pokenav_match_call_data.c:1023-1060). */
 function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx: number, dest: Uint8Array): void {
   let i = 0;
-  for (i = 0; textData[i].text != null; i++)
+  for (i = 0; _tdText(textData[i]) != null; i++)
   {
-    if (textData[i].availabilityFlag == REMATCH_CALL_START)
+    if (_tdAvail(textData[i]) == REMATCH_CALL_START)
       break;
-    if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && !FlagGet(textData[i].availabilityFlag))
+    if (_tdAvail(textData[i]) != ALWAYS_AVAILABLE && !FlagGet(_tdAvail(textData[i])))
       break;
   }
-  if (textData[i].availabilityFlag != REMATCH_CALL_START)
+  if (_tdAvail(textData[i]) != REMATCH_CALL_START)
   {
     if (i)
       i--;
-    if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
-      FlagSet(textData[i].flagToSetOnCompletion);
-    StringExpandPlaceholders(dest, textData[i].text);
+    if (_tdDone(textData[i]) != NO_FLAG_TO_SET)
+      FlagSet(_tdDone(textData[i]));
+    StringExpandPlaceholders(dest, getString(_tdText(textData[i]) as string));
   }
   else
   {
@@ -1625,7 +1633,7 @@ function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx: number
       while (0);
     }
     // If the game hasn't been cleared yet, the index remains on the basic "preparing for rematch" call.
-    StringExpandPlaceholders(dest, textData[i].text);
+    StringExpandPlaceholders(dest, getString(_tdText(textData[i]) as string));
   }
 }
 

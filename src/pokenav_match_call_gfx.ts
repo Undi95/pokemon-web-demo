@@ -77,7 +77,7 @@ function _loadMatchCallUiGfx(): void {
   if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
   void (async () => {
     try {
-      const [gfx, pal, tilemap, callPal, listPal, pokeballPal, pokeballGfx, winGfx, winPal] = await Promise.all([
+      const [gfx, pal, tilemap, callPal, listPal, pokeballPal, pokeballGfx, winGfx, winPal, curGfx, curPal] = await Promise.all([
         loadTileBin('/decomp/em/pokenav/match_call/ui.png', 4),
         extractPngPlte('/decomp/em/pokenav/match_call/ui.png'),
         loadTilemapBin('/decomp/em/pokenav/match_call/ui.bin'),
@@ -87,6 +87,8 @@ function _loadMatchCallUiGfx(): void {
         loadTileBin('/decomp/em/pokenav/match_call/pokeball.png', 4),  // sPokeball_Gfx
         loadTileBin('/decomp/em/pokenav/match_call/window.png', 4),    // sMatchCallWindow_Gfx
         extractPngPlte('/decomp/em/pokenav/match_call/window.png'),    // sMatchCallWindow_Pal
+        loadTileBin('/decomp/em/pokenav/match_call/options_cursor.png', 4), // sOptionsCursor_Gfx
+        extractPngPlte('/decomp/em/pokenav/match_call/options_cursor.png'), // sOptionsCursor_Pal
       ]);
       gMatchCallUI_Gfx = gfx;
       gMatchCallUI_Pal = pal;
@@ -97,6 +99,10 @@ function _loadMatchCallUiGfx(): void {
       sPokeball_Gfx = pokeballGfx;
       sMatchCallWindow_Gfx = winGfx;
       sMatchCallWindow_Pal = winPal;
+      sOptionsCursor_Gfx = curGfx; sOptionsCursor_Pal = curPal;
+      // réinjecter dans les structs qui capturaient null au module-load :
+      (sOptionsCursorSpriteSheets[0] as any).data = curGfx;
+      (sOptionsCursorSpritePalettes[0] as any).data = curPal;
     } catch (e) { console.error('[match call ui gfx load]', e); }
     finally { _matchCallUiLoaded = true; }
   })();
@@ -251,7 +257,7 @@ const sMatchCallOptionTexts = [
 // The series of 5 dots that appear when someone is called with Match Call
 
 /** 1:1 (pokenav_match_call_gfx.c:206) */
-const sText_CallingDots = encodeOwText("·{PAUSE 4}·{PAUSE 4}·{PAUSE 4}·{PAUSE 4}·\p");
+const sText_CallingDots = encodeOwText("·{PAUSE 4}·{PAUSE 4}·{PAUSE 4}·{PAUSE 4}·\\p");
 
 /** 1:1 (pokenav_match_call_gfx.c:208) */
 const sCallMsgBoxWindowTemplate = {
