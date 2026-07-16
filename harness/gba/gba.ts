@@ -170,17 +170,32 @@ export class Gba {
    *  pendant les transitions de scène (corruption verdict A/B éclosion). */
   objEnabled = true;
 
+  /** 1:1 GBA DISPCNT bit 7 (DISPCNT_FORCED_BLANK=0x80) : quand set, le PPU affiche
+   *  un écran BLANC et ne lit ni VRAM/Palette/OAM (accès rapide pendant les inits).
+   *  ⚠️ TRIGGER À CÂBLER : `applyDispCnt` (decomp-runtime.ts) doit poser
+   *  `this.gba.forcedBlank = !!(value & DISPCNT_FORCED_BLANK)` — NON fait ici car
+   *  decomp-runtime.ts est édité en //. Tant que le trigger n'est pas posé, ce champ
+   *  reste false → tick() se comporte comme avant (aucune régression). Cf.
+   *  audit-reports/engine/fix-scanline-ppu.md (Fix 5). */
+  forcedBlank = false;
+
   /** Render une frame complète + run VBLANK callbacks.
    *  À appeler à 60fps. */
   tick(): void {
-    // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine + mosaic)
-    composeFrame(
-      this.frameBuffer, this.bgWrappers, this.palette,
-      this.objEnabled ? this.oam : undefined, this.objVram,
-      this.blend, this.windows, this.affineParams,
-      this.bgAffineMatrices, this.mosaic,
-      this.hblankCb ?? undefined,
-    );
+    // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine + mosaic).
+    //    Forced blank (DISPCNT bit 7) : l'écran est BLANC, le PPU ne composite rien
+    //    (1:1 GBATEK "Forced Blank … screen becomes white"). On remplit RGBA=255.
+    if (this.forcedBlank) {
+      this.frameBuffer.fill(255);
+    } else {
+      composeFrame(
+        this.frameBuffer, this.bgWrappers, this.palette,
+        this.objEnabled ? this.oam : undefined, this.objVram,
+        this.blend, this.windows, this.affineParams,
+        this.bgAffineMatrices, this.mosaic,
+        this.hblankCb ?? undefined,
+      );
+    }
 
     // 2. Run VBLANK callbacks
     for (const cb of this.vblankCbs) {
@@ -220,5 +235,6 @@ export class Gba {
     this.hblankCb = null;
     this.vblankCbs.clear();
     this.frameCounter = 0;
+    this.forcedBlank = false;
   }
 }

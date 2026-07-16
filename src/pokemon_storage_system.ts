@@ -2262,15 +2262,20 @@ function StartDisplayMonMosaicEffect(): void {
   RefreshDisplayMonData();
   const spr = _spr(s.displayMonSprite);
   if (rt && spr) {
-    rt.gba.oam[spr.oamIndex].mosaic = true;
+    // 1:1 `sStorage->displayMonSprite->oam.mosaic = TRUE` (PSS.c:3901). On pose le
+    // bit sur LE SPRITE (propagé à l'OAM par syncSpritesToOam) — pas d'écriture OAM
+    // directe, sinon la sync (`oam.mosaic = sprite.mosaic`) l'écraserait chaque frame.
+    (spr as { mosaic?: boolean }).mosaic = true;
     spr.data[0] = 10; spr.data[1] = 1;
     spr.callback = SpriteCB_DisplayMonMosaic;
     rt.SetGpuReg(REG_OFFSET_MOSAIC, (spr.data[0] << 12) | (spr.data[0] << 8));
   }
 }
 function IsDisplayMosaicActive(): boolean {
+  // 1:1 `return sStorage->displayMonSprite->oam.mosaic` (PSS.c:3911) — lit le bit
+  // sur le sprite (source de vérité), pas l'OAM shadow.
   const rt = getRuntime(); const spr = _spr(sStorage!.displayMonSprite);
-  return !!(rt && spr && rt.gba.oam[spr.oamIndex].mosaic);
+  return !!(rt && spr && (spr as { mosaic?: boolean }).mosaic);
 }
 function SpriteCB_DisplayMonMosaic(sprite: { data: number[]; oamIndex: number; callback: unknown }): void {
   const rt = getRuntime(); if (!rt) return;
@@ -2278,7 +2283,8 @@ function SpriteCB_DisplayMonMosaic(sprite: { data: number[]; oamIndex: number; c
   if (sprite.data[0] < 0) sprite.data[0] = 0;
   rt.SetGpuReg(REG_OFFSET_MOSAIC, (sprite.data[0] << 12) | (sprite.data[0] << 8));
   if (sprite.data[0] === 0) {
-    rt.gba.oam[sprite.oamIndex].mosaic = false;
+    // 1:1 `sprite->oam.mosaic = FALSE` (PSS.c:3922) — sur le sprite, propagé par la sync.
+    (sprite as { mosaic?: boolean }).mosaic = false;
     sprite.callback = null;
   }
 }

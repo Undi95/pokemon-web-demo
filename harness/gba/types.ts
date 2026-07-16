@@ -26,9 +26,12 @@ export function rgb15ToRgba8(rgb15: Rgb15): Rgba8 {
   const r = (rgb15 & 0x1F);
   const g = ((rgb15 >> 5) & 0x1F);
   const b = ((rgb15 >> 10) & 0x1F);
-  // ×8 + (×8 / 32) approx pour étendre 5-bit → 8-bit (formule GBATEK).
-  // En pratique simple ×8 marche : 31 × 8 = 248, déjà très clair.
-  return [r * 8, g * 8, b * 8, 255];
+  // Expansion EXACTE 5-bit → 8-bit par réplication de bits `(x << 3) | (x >> 2)`
+  // (= formule des émulateurs de référence : mGBA `mColorFrom555`, higan/ares ;
+  // GBATEK "each of the 5 bits is duplicated into the low bits"). x=31 → 255
+  // (blanc vrai, pas 248), x=0 → 0, monotone, sans arrondi flottant. L'ancien
+  // `×8` plafonnait à 248 (léger voile gris sur les blancs/couleurs saturées).
+  return [(r << 3) | (r >> 2), (g << 3) | (g >> 2), (b << 3) | (b >> 2), 255];
 }
 
 /** Encode 3 canaux 0-255 → Rgb15 GBA. */

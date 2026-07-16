@@ -23,6 +23,7 @@ import { DecompRuntime, MAX_SPRITES, type DecompSprite } from '../../../harness/
 import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../../../harness/runtime/decomp-helpers';
 import {
   getExtraAffineAnim, getExtraAffineAnimTable,
+  type AffineAnim, type AffineAnimCmd,
 } from './sprite-affine-extras';
 
 interface AffineAnimFrameCmd {
@@ -35,7 +36,7 @@ interface AffineAnimFrameCmd {
 /** Lookup affine anim entries — checks the EXTRA registry first
  *  (= sprite-affine-extras.ts, holds battler/release/etc.), falls back to the
  *  auto-generated `SPRITE_AFFINE_ANIM_TABLES` / `SPRITE_AFFINE_ANIMS`. */
-function getAffineAnim(sprite: DecompSprite): { frames: ReadonlyArray<AffineAnimFrameCmd>, terminator: string } | null {
+function getAffineAnim(sprite: DecompSprite): AffineAnim | null {
   if (!sprite.affineAnimsTableName) return null;
   // Registre EXTRA = source UNIQUE (sprite-system.ts SPRITE_AFFINE_* dissous : tous les
   // consommateurs — battler/ballrotate/bag/starter/gamefreak/playershrink — enregistrent en extra).
@@ -47,21 +48,23 @@ function getAffineAnim(sprite: DecompSprite): { frames: ReadonlyArray<AffineAnim
   return anim ?? null;
 }
 
-/** 1:1 décomp AffineAnimStateReset(matrixNum). État stocké dans sprite. */
+/** 1:1 décomp AffineAnimStateReset(matrixNum) (sprite.c:1271-1280). État stocké dans sprite. */
 export function AffineAnimStateReset(sprite: DecompSprite): void {
   sprite.affineAnimNum = 0;
   sprite.affineAnimCmdIndex = 0;
   sprite.affineAnimDelayCounter = 0;
+  sprite.affineAnimLoopCounter = 0;  // 1:1 décomp l.1276 : loopCounter = 0.
   sprite.xScale = 0x0100;
   sprite.yScale = 0x0100;
   sprite.rotation = 0;
 }
 
-/** 1:1 décomp AffineAnimStateStartAnim(matrixNum, animNum). */
+/** 1:1 décomp AffineAnimStateStartAnim(matrixNum, animNum) (sprite.c:1260-1269). */
 export function AffineAnimStateStartAnim(sprite: DecompSprite, animNum: number): void {
   sprite.affineAnimNum = animNum;
   sprite.affineAnimCmdIndex = 0;
   sprite.affineAnimDelayCounter = 0;
+  sprite.affineAnimLoopCounter = 0;  // 1:1 décomp l.1265 : loopCounter = 0.
   sprite.xScale = 0x0100;
   sprite.yScale = 0x0100;
   sprite.rotation = 0;
@@ -148,6 +151,70 @@ function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): vo
   const pc =  (yScale * sin) >> 8;
   const pd =  (yScale * cos) >> 8;
   SetOamMatrix(rt.gba, sprite.matrixNum, pa, pb, pc, pd);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANCHOR-MATRIX (sprite.c:1206-1244) — décale x2/y2 pendant le scaling affine pour
+// que le sprite reste ancré à un coin (utilisé UNIQUEMENT par minigame_countdown.c:448
+// SetSpriteMatrixAnchor(sprite, NO_ANCHOR, 26) → les chiffres 3/2/1 ne glissent pas en
+// se compressant). Inerte pour tout sprite non-ancré (anchored ≠ true).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp include/sprite.h:10 `#define NO_ANCHOR 0x800`. */
+export const NO_ANCHOR = 0x800;
+
+/** 1:1 décomp src/sprite.c:220-243 `sOamDimensions32[3][4]` : {width, height} en px
+ *  par [shape][size]. Utilisée UNIQUEMENT par UpdateSpriteMatrixAnchorPos. */
+const sOamDimensions32: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
+  // ST_OAM_SQUARE
+  [[8, 8], [16, 16], [32, 32], [64, 64]],
+  // ST_OAM_H_RECTANGLE
+  [[16, 8], [32, 8], [32, 16], [64, 32]],
+  // ST_OAM_V_RECTANGLE
+  [[8, 16], [8, 32], [16, 32], [32, 64]],
+];
+
+/** 1:1 décomp src/sprite.c:1213-1223 :
+ *  ```c
+ *  static s32 GetAnchorCoord(s32 a0, s32 a1, s32 coord) {
+ *      s32 subResult = a1 - a0, var1;
+ *      if (subResult < 0) var1 = -(subResult) >> 9;
+ *      else               var1 = -(subResult >> 9);
+ *      return coord - ((u32)(coord * a1) / (u32)(a0) + var1);
+ *  }
+ *  ```
+ *  `Math.imul` + `>>> 0` reproduit `(u32)(coord * a1)` (produit s32 tronqué puis u32) ;
+ *  `a0 >>> 0` = `(u32)a0`. Division entière non-signée = Math.floor. */
+function GetAnchorCoord(a0: number, a1: number, coord: number): number {
+  const subResult = (a1 - a0) | 0;
+  let var1: number;
+  if (subResult < 0) var1 = (-subResult) >> 9;   // -(subResult) >> 9
+  else               var1 = -(subResult >> 9);   // -(subResult >> 9)
+  const prod = Math.imul(coord, a1) >>> 0;        // (u32)(coord * a1)
+  const div = Math.floor(prod / (a0 >>> 0));      // / (u32)a0
+  return (coord - (div + var1)) | 0;
+}
+
+/** 1:1 décomp src/sprite.c:1225-1244 `UpdateSpriteMatrixAnchorPos(sprite, x, y)`.
+ *  Décale sprite.x2/y2 selon le scale courant (gOamMatrices[matrixNum].a/.d = pa/pd).
+ *  x/y = coords d'ancrage (data[6]/data[7]) ; NO_ANCHOR skippe l'axe. Division signée
+ *  `(dimension << 16) / pa` → Math.trunc (pa/pd toujours >0 pour un scale pur). */
+export function UpdateSpriteMatrixAnchorPos(sprite: DecompSprite, x: number, y: number, rt: DecompRuntime): void {
+  const matrixNum = sprite.matrixNum;
+  const m = rt.gba.affineParams[matrixNum];
+  if (!m) return;
+  if (x !== NO_ANCHOR) {
+    const dimension = sOamDimensions32[sprite.shape & 3]?.[sprite.size & 3]?.[0] ?? 0;
+    const var1 = (dimension << 8);
+    const var2 = Math.trunc((dimension << 16) / m.pa);
+    sprite.x2 = GetAnchorCoord(var1, var2, x);
+  }
+  if (y !== NO_ANCHOR) {
+    const dimension = sOamDimensions32[sprite.shape & 3]?.[sprite.size & 3]?.[1] ?? 0;
+    const var1 = (dimension << 8);
+    const var2 = Math.trunc((dimension << 16) / m.pd);
+    sprite.y2 = GetAnchorCoord(var1, var2, y);
+  }
 }
 
 /** 1:1 décomp src/sprite.c:ApplyAffineAnimFrame (l.1330-1344) :
@@ -237,7 +304,15 @@ export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
   const effective = (oam?.affineMode ?? 0) | sprite.affineMode;
   if (!(effective & ST_OAM_AFFINE_ON_MASK)) return;
   const anim = getAffineAnim(sprite);
-  if (!anim || anim.frames.length === 0) return;
+  if (!anim) return;
+  // Chemin command-array complet (LOOP(0)/LOOP(n) intercalés) si l'anim fournit `cmds`.
+  // 1:1 décomp check l.1069 : affineAnims[0][0].type != END (anim non vide). INERTE.
+  if (anim.cmds) {
+    if (anim.cmds.length === 0 || anim.cmds[0]?.kind === 'end') return;
+    beginAffineAnimCmds(sprite, anim, rt);
+    return;
+  }
+  if (anim.frames.length === 0) return;
   // 1:1 décomp AffineAnimStateRestartAnim (l.1253-1258) : reset cmdIndex,
   // delayCounter, loopCounter. NB: animNum NOT reset here (differs from
   // AffineAnimStateStartAnim used by StartSpriteAffineAnim).
@@ -259,6 +334,9 @@ export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
   ApplyAffineAnimFrame(sprite, frameCmd, rt);
   // 1:1 décomp l.1078 : delayCounter = frameCmd.duration (post-décrément par ApplyAffineAnimFrame).
   sprite.affineAnimDelayCounter = frameCmd.duration;
+  // 1:1 décomp l.1079-1080 : if (anchored) UpdateSpriteMatrixAnchorPos(sprite, sAnchorX, sAnchorY).
+  // sAnchorX/Y = data[6]/data[7] (sprite.c:8-9). Inerte si non-ancré.
+  if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
 }
 
 /** 1:1 décomp ContinueAffineAnim(sprite) (l.1084-1112).
@@ -297,6 +375,11 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
   const effective = (oam?.affineMode ?? 0) | sprite.affineMode;
   if (!(effective & ST_OAM_AFFINE_ON_MASK)) return;
 
+  const anim = getAffineAnim(sprite);
+  // Chemin command-array complet (LOOP(0)/LOOP(n) intercalés) si l'anim fournit `cmds`. INERTE.
+  // Tolère anim null (optional chaining) → le reste conserve les null-guards par-branche du legacy.
+  if (anim?.cmds) { continueAffineAnimCmds(sprite, anim, rt); return; }
+
   // 1:1 décomp l.1090 : `if (delayCounter)` = if delayCounter != 0.
   if (sprite.affineAnimDelayCounter !== 0) {
     // 1:1 décomp AffineAnimDelay (l.1114-1122) :
@@ -304,20 +387,20 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
     //   only decrements if !paused. Then if !paused, re-applies frame relative.
     if (!sprite.affineAnimPaused) {
       sprite.affineAnimDelayCounter--;
-      const anim = getAffineAnim(sprite);
       if (anim && sprite.affineAnimCmdIndex < anim.frames.length) {
         const frame = anim.frames[sprite.affineAnimCmdIndex];
         ApplyAffineAnimFrameRelative(sprite, frame, rt);
       }
     }
+    // 1:1 décomp l.1109-1110 : anchor APRÈS la branche delay (jamais après le return paused).
+    if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
     return;
   }
 
   // delayCounter == 0 path (l.1094-1107)
-  if (sprite.affineAnimPaused) return;
+  if (sprite.affineAnimPaused) return;  // 1:1 décomp l.1096 : return SANS anchor.
 
   sprite.affineAnimCmdIndex++;
-  const anim = getAffineAnim(sprite);
   if (!anim) return;
 
   if (sprite.affineAnimCmdIndex >= anim.frames.length) {
@@ -331,10 +414,32 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
       // Apply dummy frame relative (= just re-write matrix). State unchanged.
       const dummy: AffineAnimFrameCmd = { xScale: 0, yScale: 0, rotation: 0, duration: 0 };
       ApplyAffineAnimFrameRelative(sprite, dummy, rt);
+      if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
       return;
     }
-    if (anim.terminator === 'LOOP' || anim.terminator === 'JUMP') {
-      sprite.affineAnimCmdIndex = 0;
+    if (anim.terminator === 'JUMP') {
+      // 1:1 décomp AffineAnimCmd_jump (sprite.c:1163-1170) : cmdIndex = jump.target
+      // (target ≠ 0 supporté ; défaut 0 = ancien comportement). La cible indexe frames[].
+      sprite.affineAnimCmdIndex = anim.jumpTarget ?? 0;
+    } else if (anim.terminator === 'LOOP') {
+      // 1:1 décomp AffineAnimCmd_loop (sprite.c:1124) : compteur de boucle. Modèle normalisé
+      // (frames[] seul, top = index 0 = comportement décomp du loop SANS marqueur préc.) :
+      // boucle loopCount fois puis fall-through END. Les anims à MARQUEURS LOOP(0)/LOOP(n)
+      // intercalés passent par le chemin `cmds` (aucune anim 'LOOP' enregistrée → inerte).
+      if ((sprite.affineAnimLoopCounter ?? 0) === 0) {
+        sprite.affineAnimLoopCounter = anim.loopCount ?? 0;   // BeginAffineAnimLoop (l.1134)
+      } else {
+        sprite.affineAnimLoopCounter = (sprite.affineAnimLoopCounter ?? 0) - 1;  // ContinueAffineAnimLoop (l.1141)
+      }
+      if ((sprite.affineAnimLoopCounter ?? 0) !== 0) {
+        sprite.affineAnimCmdIndex = 0;                        // JumpToTopOfAffineAnimLoop → top
+      } else {
+        sprite.affineAnimEnded = true;                        // compteur épuisé → END
+        sprite.affineAnimCmdIndex--;
+        ApplyAffineAnimFrameRelative(sprite, { xScale: 0, yScale: 0, rotation: 0, duration: 0 }, rt);
+        if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
+        return;
+      }
     }
   }
 
@@ -351,6 +456,121 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
     ApplyAffineAnimFrame(sprite, frameCmd, rt);
     sprite.affineAnimDelayCounter = frameCmd.duration;
   }
+  // 1:1 décomp l.1109-1110 : anchor après le dispatch frame/jump/loop.
+  if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHEMIN COMMAND-ARRAY 1:1 (anim.cmds présent) — transcription LITTÉRALE de
+// sprite.c:1084-1186 : ContinueAffineAnim + AffineAnimCmd_{loop,jump,end,frame} +
+// BeginAffineAnimLoop + ContinueAffineAnimLoop + JumpToTopOfAffineAnimLoop, avec le
+// compteur de boucle (sprite.affineAnimLoopCounter) et les marqueurs LOOP intercalés.
+// INERTE tant qu'aucune anim n'enregistre `cmds` (toutes les anims actuelles = modèle
+// legacy frames[]+terminator) → dette : non exercé en jeu, à valider au 1er consommateur.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp GetAffineAnimFrame (sprite.c:1322-1328) pour un cmd command-array. */
+function getAffineAnimFrameFromCmd(cmd: AffineAnimCmd | undefined): AffineAnimFrameCmd {
+  if (cmd && cmd.kind === 'frame') {
+    return { xScale: cmd.xScale, yScale: cmd.yScale, rotation: cmd.rotation, duration: cmd.duration };
+  }
+  return { xScale: 0, yScale: 0, rotation: 0, duration: 0 };
+}
+
+/** 1:1 décomp JumpToTopOfAffineAnimLoop (sprite.c:1146-1161) : rembobine cmdIndex au cmd
+ *  suivant le marqueur LOOP précédent (kind==='loop'), uniquement si loopCounter != 0. */
+function jumpToTopOfAffineAnimLoopCmds(sprite: DecompSprite, cmds: ReadonlyArray<AffineAnimCmd>): void {
+  if ((sprite.affineAnimLoopCounter ?? 0) !== 0) {
+    sprite.affineAnimCmdIndex--;
+    while (cmds[sprite.affineAnimCmdIndex - 1]?.kind !== 'loop') {
+      if (sprite.affineAnimCmdIndex === 0) break;
+      sprite.affineAnimCmdIndex--;
+    }
+    sprite.affineAnimCmdIndex--;
+  }
+}
+
+/** 1:1 décomp AffineAnimCmd_loop (sprite.c:1124-1130) + Begin/ContinueAffineAnimLoop
+ *  (l.1132-1144) : Begin pose loopCounter = LOOP.count, Continue le décrémente ; les
+ *  deux rembobinent au top puis re-dispatchent ContinueAffineAnim (récursion 1:1). */
+function affineAnimCmdLoopCmds(sprite: DecompSprite, anim: AffineAnim, rt: DecompRuntime): void {
+  const cmds = anim.cmds as ReadonlyArray<AffineAnimCmd>;
+  const cmd = cmds[sprite.affineAnimCmdIndex];
+  if ((sprite.affineAnimLoopCounter ?? 0) !== 0) {
+    sprite.affineAnimLoopCounter = (sprite.affineAnimLoopCounter ?? 0) - 1;  // ContinueAffineAnimLoop
+  } else {
+    sprite.affineAnimLoopCounter = (cmd && cmd.kind === 'loop') ? cmd.count : 0;  // BeginAffineAnimLoop
+  }
+  jumpToTopOfAffineAnimLoopCmds(sprite, cmds);
+  continueAffineAnimCmds(sprite, anim, rt);
+}
+
+/** 1:1 décomp BeginAffineAnim (sprite.c:1067-1082) pour le modèle command-array. */
+function beginAffineAnimCmds(sprite: DecompSprite, anim: AffineAnim, rt: DecompRuntime): void {
+  const cmds = anim.cmds as ReadonlyArray<AffineAnimCmd>;
+  // AffineAnimStateRestartAnim (l.1253-1258) : cmdIndex/delay/loop = 0.
+  sprite.affineAnimCmdIndex = 0;
+  sprite.affineAnimDelayCounter = 0;
+  sprite.affineAnimLoopCounter = 0;
+  sprite.affineAnimBeginning = false;
+  sprite.affineAnimEnded = false;
+  const frameCmd = getAffineAnimFrameFromCmd(cmds[0]);
+  ApplyAffineAnimFrame(sprite, frameCmd, rt);
+  sprite.affineAnimDelayCounter = frameCmd.duration;
+  if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
+}
+
+/** 1:1 décomp ContinueAffineAnim (sprite.c:1084-1112) pour le modèle command-array. */
+function continueAffineAnimCmds(sprite: DecompSprite, anim: AffineAnim, rt: DecompRuntime): void {
+  const cmds = anim.cmds as ReadonlyArray<AffineAnimCmd>;
+  if (sprite.affineAnimDelayCounter !== 0) {
+    // AffineAnimDelay (l.1114-1122)
+    if (!sprite.affineAnimPaused) {
+      sprite.affineAnimDelayCounter--;
+      const frameCmd = getAffineAnimFrameFromCmd(cmds[sprite.affineAnimCmdIndex]);
+      ApplyAffineAnimFrameRelative(sprite, frameCmd, rt);
+    }
+  } else if (sprite.affineAnimPaused) {
+    return;  // 1:1 décomp l.1096 : return SANS anchor.
+  } else {
+    sprite.affineAnimCmdIndex++;
+    const cmd = cmds[sprite.affineAnimCmdIndex];
+    const kind = cmd?.kind ?? 'end';
+    if (kind === 'loop') {
+      affineAnimCmdLoopCmds(sprite, anim, rt);
+      return;  // le loop re-dispatch (récursif) gère déjà l'anchor.
+    } else if (kind === 'jump') {
+      // AffineAnimCmd_jump (l.1163-1170)
+      sprite.affineAnimCmdIndex = (cmd && cmd.kind === 'jump') ? cmd.target : 0;
+      const frameCmd = getAffineAnimFrameFromCmd(cmds[sprite.affineAnimCmdIndex]);
+      ApplyAffineAnimFrame(sprite, frameCmd, rt);
+      sprite.affineAnimDelayCounter = frameCmd.duration;
+    } else if (kind === 'end') {
+      // AffineAnimCmd_end (l.1172-1178)
+      sprite.affineAnimEnded = true;
+      sprite.affineAnimCmdIndex--;
+      ApplyAffineAnimFrameRelative(sprite, { xScale: 0, yScale: 0, rotation: 0, duration: 0 }, rt);
+    } else {
+      // AffineAnimCmd_frame (l.1180-1186)
+      const frameCmd = getAffineAnimFrameFromCmd(cmd);
+      ApplyAffineAnimFrame(sprite, frameCmd, rt);
+      sprite.affineAnimDelayCounter = frameCmd.duration;
+    }
+  }
+  // 1:1 décomp l.1109-1110 : anchor après delay OU dispatch.
+  if (sprite.anchored) UpdateSpriteMatrixAnchorPos(sprite, sprite.data[6], sprite.data[7], rt);
+}
+
+/** 1:1 décomp `EWRAM_DATA bool8 gAffineAnimsDisabled = FALSE` (sprite.c:292). Quand TRUE,
+ *  AnimateSprite (sprite.c:905) NE tick PAS les anims affines → elles gèlent (posé pendant
+ *  le link trade, hors solo). Modélisé sur globalThis (même substrat que gOamMatrixAllocBitmap)
+ *  pour que ResetAffineAnimData/ResetSpriteData (sprite.ts) le remette FALSE sans nouvelle
+ *  arête d'import (évite un cycle TDZ sprite.ts → engine). */
+export function AreAffineAnimsDisabled(): boolean {
+  return !!(globalThis as Record<string, unknown>).gAffineAnimsDisabled;
+}
+export function SetAffineAnimsDisabled(v: boolean): void {
+  (globalThis as Record<string, unknown>).gAffineAnimsDisabled = v;
 }
 
 /** Tick à appeler chaque frame depuis runtime.tickFixed.
@@ -363,6 +583,8 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
  *  couvrir les deux call patterns (= callbacks transcrits qui set oam
  *  uniquement, ET impl manuels qui set sprite.affineMode). */
 export function tickAllAffineAnims(rt: DecompRuntime): void {
+  // 1:1 décomp AnimateSprite (sprite.c:905) : `if (!gAffineAnimsDisabled)` gèle l'affine tick.
+  if ((globalThis as Record<string, unknown>).gAffineAnimsDisabled) return;
   for (let i = 0; i < MAX_SPRITES; i++) {
     const sprite = rt.gSprites[i];
     if (sprite === undefined) continue;

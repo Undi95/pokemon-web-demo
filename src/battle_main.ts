@@ -589,9 +589,10 @@ function _RecordedBattle_CanStopPlayback(): boolean {
   return false;
 }
 
-/** 1:1 décomp `ResetPaletteFadeControl()`. */
+/** 1:1 décomp `ResetPaletteFadeControl()` — délègue à la vraie impl 1:1
+ *  (src/palette.ts, palette.c:363-381). Purge de la rustine « Dette R3 ». */
 function _ResetPaletteFadeControl(): void {
-  // Dette R3 : palette fade reset.
+  ResetPaletteFadeControl();
 }
 
 /** 1:1 décomp `FreeMonSpritesGfx()`. */
@@ -4080,7 +4081,7 @@ import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   OPTIONS_BATTLE_SCENE_ON, OPTIONS_BATTLE_SCENE_OFF, OPTIONS_BATTLE_STYLE_SHIFT,
 } from '../include/constants/global';
-import { FreeMonSpritesGfx, BeginFastPaletteFade } from '../harness/runtime/decomp-globals';
+import { FreeMonSpritesGfx, BeginFastPaletteFade, ResetPaletteFadeControl, LoadCompressedPalette } from '../harness/runtime/decomp-globals';
 import {
   stepBattleScriptCommand, gBattleScriptContext, getBattleScriptOffset,
 } from './engine/battle/script-interpreter';
@@ -6610,9 +6611,16 @@ function _InitBattleBgsVideo_BLE(): void {
   // Dette R3 : battle BG setup.
 }
 
-/** 1:1 décomp `LoadCompressedPalette` + `LoadBattleMenuWindowGfx`. */
-function _LoadCompressedPalette(_data: unknown, _offset: number, _size: number): void {
-  // Dette R3.
+/** 1:1 décomp `LoadCompressedPalette(gBattleTextboxPalette, BG_PLTT_ID(0),
+ *  2 * PLTT_SIZE_4BPP)` (battle_bg.c:864). Purge de la rustine « Dette R3 » :
+ *  délègue à la VRAIE fonction moteur (src/palette.ts). Le call-site passe `null`
+ *  (l'asset décomp `gBattleTextboxPalette` est chargé de façon ASYNC ailleurs —
+ *  battle_bg.ts loadBattleTextbox — alors que cette voie link `CB2_InitEndLinkBattle`
+ *  est synchrone), on résout donc le symbole décomp. Si le registre d'assets ne le
+ *  connaît pas (voie link hors solo-core), la vraie fonction no-op proprement au lieu
+ *  du faux stub. */
+function _LoadCompressedPalette(data: unknown, offset: number, size: number): void {
+  LoadCompressedPalette((data as Uint8Array | string) ?? 'gBattleTextboxPalette', offset, size);
 }
 function _LoadBattleMenuWindowGfx(): void {
   // Dette R3.

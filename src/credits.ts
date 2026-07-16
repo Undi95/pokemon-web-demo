@@ -38,7 +38,7 @@ import { CreateTask, DestroyTask, gTasks } from './task';
 import { DeactivateAllTextPrinters } from './text';
 import { FreeAndDestroyMonPicSprite, ResetAllPicSprites } from './trainer_pokemon_sprites';
 import { Sin } from './trig';
-import { COPYWIN_FULL, COPYWIN_GFX, CopyWindowToVram, FillWindowPixelBuffer, FreeAllWindowBuffers, GetBgTilemapBuffer, InitBgsFromTemplates, InitWindows, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ShowBg } from './window';
+import { COPYWIN_FULL, COPYWIN_GFX, CopyWindowToVram, FillWindowPixelBuffer, FreeAllWindowBuffers, GetBgTilemapBuffer, InitBgsFromTemplates, InitWindows, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, SetBgTilemapBuffer, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 
@@ -50,7 +50,6 @@ const CreateMonSpriteFromNationalDexNumber: any = __wireTodo('CreateMonSpriteFro
 const GetStarterPokemon: any = __wireTodo('GetStarterPokemon');
 const InitHeap: any = __wireTodo('InitHeap');
 const LoadCreditsSceneGraphics: any = __wireTodo('LoadCreditsSceneGraphics');
-const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
 const SetCreditsSceneBgCnt: any = __wireTodo('SetCreditsSceneBgCnt');
 const SoftReset: any = __wireTodo('SoftReset');
 const data: any = __wireTodo('data');

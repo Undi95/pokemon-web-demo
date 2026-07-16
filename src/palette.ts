@@ -319,6 +319,51 @@ export function UpdatePaletteFade(): boolean {
   return _rt().UpdatePaletteFade();
 }
 
+/** 1:1 décomp src/palette.c:363-381 :
+ *  ```c
+ *  void ResetPaletteFadeControl(void) {
+ *      gPaletteFade.multipurpose1 = 0;
+ *      gPaletteFade.multipurpose2 = 0;
+ *      gPaletteFade.delayCounter = 0;
+ *      gPaletteFade.y = 0;
+ *      gPaletteFade.targetY = 0;
+ *      gPaletteFade.blendColor = 0;
+ *      gPaletteFade.active = FALSE;
+ *      gPaletteFade.multipurpose2 = 0; // assign same value twice
+ *      gPaletteFade.yDec = 0;
+ *      gPaletteFade.bufferTransferDisabled = FALSE;
+ *      gPaletteFade.shouldResetBlendRegisters = FALSE;
+ *      gPaletteFade.hardwareFadeFinishing = FALSE;
+ *      gPaletteFade.softwareFadeFinishing = FALSE;
+ *      gPaletteFade.softwareFadeFinishingCounter = 0;
+ *      gPaletteFade.objPaletteToggle = 0;
+ *      gPaletteFade.deltaY = 2;
+ *  }
+ *  ```
+ *  Sous-ensemble de ResetPaletteFade (qui l'appelle après PaletteStruct_Reset ×16).
+ *  Écrit via les alias 1:1 posés sur la classe PaletteFade (decomp-runtime.ts) :
+ *  y→brightness, targetY→endY, delayCounter→delayRemaining, blendColor→targetR/G/B,
+ *  multipurpose1↔selectedPalettes, multipurpose2↔delayPerStep. */
+export function ResetPaletteFadeControl(): void {
+  const f = _rt().gPaletteFade;
+  f.multipurpose1 = 0;
+  f.multipurpose2 = 0;
+  f.delayCounter = 0;
+  f.y = 0;
+  f.targetY = 0;
+  f.blendColor = 0;
+  f.active = false;
+  f.multipurpose2 = 0; // 1:1 décomp : "assign same value twice"
+  f.yDec = false;
+  f.bufferTransferDisabled = false;
+  f.shouldResetBlendRegisters = false;
+  f.hardwareFadeFinishing = false;
+  f.softwareFadeFinishing = false;
+  f.softwareFadeFinishingCounter = 0;
+  f.objPaletteToggle = false;
+  f.deltaY = 2;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // FAST PALETTE FADE (palette.c:550-728)
 // ═══════════════════════════════════════════════════════════════════════════════

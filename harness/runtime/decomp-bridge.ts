@@ -386,7 +386,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'IndexOfSpritePaletteTag', 'GetSpriteTileStartByTag',
   'LoadCompressedSpriteSheetUsingHeap',
   'LoadCompressedSpritePaletteUsingHeap', 'LoadSpritePalettes',
-  'LoadBgTiles',
+  'LoadBgTiles', 'LoadBgTilemap',
   'PIXEL_FILL', 'BLDALPHA_BLEND',
   'PlaySE', 'PlayBGM', 'PlayFanfare', 'IsFanfareTaskInactive', 'WaitFanfare',
   'm4aSongNumStart', 'm4aMPlayAllStop',

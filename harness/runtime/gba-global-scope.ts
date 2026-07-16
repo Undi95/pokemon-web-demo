@@ -118,6 +118,7 @@ const symbolsToExpose: Record<string, unknown> = {
   LZDecompressVram: dg.LZDecompressVram,
   LoadPalette: dg.LoadPalette,
   LoadBgTiles: dg.LoadBgTiles,
+  LoadBgTilemap: dg.LoadBgTilemap,
   DmaFill16: dg.DmaFill16,
   DmaFill32: dg.DmaFill32,
   DmaClear16: dg.DmaClear16,

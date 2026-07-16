@@ -9,6 +9,7 @@
 import { CreateSprite as _CreateSpriteByTemplate } from './sprite';
 import { CreateTask, DestroyTask as _DestroyTaskRaw } from './task';
 import { getRuntime, FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';
+import { BeginHardwarePaletteFade, gPaletteFade } from './palette';
 import { TASK_NONE } from '../include/task';
 import { MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap, DestroySprite, AllocOamMatrix, FreeOamMatrix } from './sprite';
@@ -1032,15 +1033,19 @@ function Task_WaitAndPlaySE(taskId: number): void {
 // PALETTE FADE STUB WRAPPERS (= cascade vers notre runtime)
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Stub : BeginHardwarePaletteFade pour Task_FadeToBg. */
-function _beginHardwarePaletteFade(_selectedPalettes: number, _delay: number, _startY: number, _targetY: number, _direction: number): void {
-  // Cascade : palette.c BeginNormalPaletteFade. Pour now stub-noop sync car le
-  // tick continue immédiatement à state 2 (= load BG) puis state 3 (= done).
+/** 1:1 décomp `BeginHardwarePaletteFade(blendCnt, delay, y, targetY, shouldResetBlendRegisters)`
+ *  (appelé par Task_FadeToBg, battle_anim.c:1148-1183). Purge de la rustine no-op :
+ *  délègue à la VRAIE fonction moteur (src/palette.ts:472). Le mode HARDWARE_FADE est
+ *  désormais tické par UpdatePaletteFade (decomp-runtime) qui écrit BLDCNT/BLDY → le
+ *  compositor assombrit l'écran (fondu réel du changement de décor des anims de move,
+ *  même voie que le reshow de combat déjà validé). */
+function _beginHardwarePaletteFade(blendCnt: number, delay: number, y: number, targetY: number, shouldResetBlendRegisters: number): void {
+  BeginHardwarePaletteFade(blendCnt, delay, y, targetY, shouldResetBlendRegisters);
 }
 
-/** Stub : gPaletteFade.active. */
+/** 1:1 décomp `gPaletteFade.active`. Purge de la rustine `return false` en dur. */
 function _paletteFadeActive(): boolean {
-  return false;
+  return !!gPaletteFade.active;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

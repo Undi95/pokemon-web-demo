@@ -20,6 +20,7 @@
  */
 import { Cos2 } from './trig';
 import { SetBgAttribute } from './window';
+import { LoadBgTilemap } from '../harness/runtime/decomp-globals';
 import { gScanlineEffect, gScanlineEffectRegBuffers } from './scanline_effect';
 import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
@@ -533,5 +534,7 @@ export function DrawBattlerOnBg(
       offset++;
     }
   }
-  r.LoadBgTilemap?.(bgId, tilemap, BG_SCREEN_SIZE, 0);
+  // 1:1 décomp bg.c:404 (LoadBgTilemap) — appel DIRECT (ex-`r.LoadBgTilemap?.()` = no-op
+  // silencieux : la fn n'existe pas sur le runtime instance, cf. decomp-globals.ts).
+  LoadBgTilemap(bgId, tilemap, BG_SCREEN_SIZE, 0);
 }

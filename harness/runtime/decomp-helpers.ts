@@ -42,11 +42,17 @@ export function Q_8_8_TO_INT(v: number): number {
 }
 
 // ─── Affine matrix slots (gba.affineParams[0..31]) ───────────────────────────
-/** 1:1 décomp SetOamMatrix(idx, a, b, c, d) — écrit dans les affine params slots. */
+/** 1:1 décomp SetOamMatrix(idx, a, b, c, d) (sprite.c:674) — écrit dans les affine
+ *  params slots. ⚠️ 1:1 UNIFIÉ (Lot A4) : valeurs SIGNÉES (s16), JAMAIS `& 0xFFFF` (le
+ *  compositor lit pa/pb/pc/pd signés — pa<0 masqué u16 casserait les matrices rotées/miroir).
+ *  Impl MOTEUR (param `gba`) consommée par sprite-engine-impl + bag/pokemon_animation/
+ *  wallclock/event_object_movement. MIROIR strict de `src/sprite.ts:SetOamMatrix` (via _rt,
+ *  pour les call-sites `./sprite`). Les deux doivent rester signées ; pas de délégation
+ *  croisée (cycle d'import TDZ). */
 export function SetOamMatrix(gba: Gba, matrixNum: number, a: number, b: number, c: number, d: number): void {
   if (matrixNum < 0 || matrixNum >= 32) return;
   const m = gba.affineParams[matrixNum];
-  m.pa = a;
+  m.pa = a;  // SIGNÉ (s16), pas de mask u16.
   m.pb = b;
   m.pc = c;
   m.pd = d;

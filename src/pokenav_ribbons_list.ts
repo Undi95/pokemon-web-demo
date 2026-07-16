@@ -26,7 +26,7 @@ import { GetBoxedMonPtr } from './pokemon_storage_system';
 import { PLTT_SIZE_4BPP } from './sprite';
 import { ConvertIntToDecimalStringN, StringCopy, StringGet_Nickname, gStringVar1, gStringVar3 } from './string_util';
 import { AddTextPrinterParameterized, encodeOwText } from './text';
-import { AddWindow, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, HideBg, PutWindowTilemap, RemoveWindow, ShowBg } from './window';
+import { AddWindow, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, HideBg, PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer, ShowBg } from './window';
 import type { Pokemon } from './engine/battle/party-storage';
 import type { WindowTemplate } from './window';
 
@@ -58,7 +58,6 @@ const PokenavList_MoveCursorUp: any = __wireTodo('PokenavList_MoveCursorUp');
 const PokenavList_PageDown: any = __wireTodo('PokenavList_PageDown');
 const PokenavList_PageUp: any = __wireTodo('PokenavList_PageUp');
 const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const SetBgTilemapBuffer: any = __wireTodo('SetBgTilemapBuffer');
 const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
 const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
 const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');

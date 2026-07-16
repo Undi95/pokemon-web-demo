@@ -91,28 +91,22 @@ export const gScanlineEffect: ScanlineEffect = {
 
 let sShouldStopWaveTask = false;
 
-// ─── HW-emu : écrit une valeur de buffer dans le registre BGnH/VOFS ─────────
-// (= ce que le DMA fait vers REG_ADDR_BGnHOFS). dmaDest est un REG_OFFSET absolu.
+// ─── HW-emu : écrit `value` dans le registre vidéo à l'offset dmaDest ───────
+// (= ce que le DMA HBlank fait vers REG_ADDR_<reg>). dmaDest est un REG_OFFSET
+// absolu (io_reg.h). On route par le MÊME switch que SetGpuReg (le wrapper
+// GetGpuReg/SetGpuReg du runtime, decomp-runtime.ts:707/782) → routage 1:1 pour
+// TOUS les registres, pas seulement BGnH/VOFS :
+//   0x10..0x1E BGnH/VOFS · 0x20..0x3E BG2/BG3 affine (PA-PD + ref X/Y) ·
+//   0x40 WIN0H · 0x42 WIN1H · 0x44 WIN0V · 0x46 WIN1V · 0x48 WININ · 0x4A WINOUT ·
+//   0x50 BLDCNT · 0x52 BLDALPHA · 0x54 BLDY (io_reg.h:15-52).
+// Avant : tout dmaDest ≠ BGnH/VOFS (ex. REG_WIN0H=0x40) tombait dans la branche
+// BG-offset (off=0x30 → bg(3).hofs) = CORRUPTION SILENCIEUSE. Les effets scanline
+// peuvent désormais animer les fenêtres (glow Pokénav, Flash grotte, rideaux
+// combat) et le blend par-ligne. SetGpuReg applique le masque exact par registre
+// (WIN0H → win0.x1/x2, BLDALPHA → alpha1/2 [identique à l'ancien cas 0x52],
+// BGnHOFS → &0x1FF [≡ &0xFFFF après le modulo positif du compositor]).
 function _applyRegFromValue(dmaDest: number, value: number): void {
-  // REG_BLDALPHA par scanline (vague F83 — Surf/Muddy Water) : le compositor
-  // lit gba.blend.alpha1/2 PENDANT la boucle scanline → le HBlank cb qui les
-  // modifie ici fait varier l'alpha PAR BANDE de lignes (1:1 dmaDest=&REG_BLDALPHA).
-  if (dmaDest === 0x52) {
-    const g = rt()?.gba as unknown as { blend?: { alpha1: number; alpha2: number } } | undefined;
-    if (g?.blend) {
-      g.blend.alpha1 = value & 0x1F;
-      g.blend.alpha2 = (value >> 8) & 0x1F;
-    }
-    return;
-  }
-  const off = dmaDest - REG_OFFSET_BG0HOFS;           // 0x00..0x0E
-  const bgIndex = Math.min(3, Math.max(0, Math.floor(off / 4)));
-  const isVofs = (off % 4) === 2;
-  const bg = rt()?.gba?.bg(bgIndex);
-  if (!bg) return;
-  // Le compositor fait un modulo positif (screenSize) → 0xFF10 ≡ -240, etc.
-  if (isVofs) bg.config.vofs = value & 0xFFFF;
-  else bg.config.hofs = value & 0xFFFF;
+  rt()?.SetGpuReg?.(dmaDest, value);
 }
 
 // ─── ScanlineEffect_Stop (1:1 scanline_effect.c:21-30) ──────────────────────

@@ -566,6 +566,24 @@ export function FreeSpriteOamMatrix(sprite: DecompSprite): void {
   }
 }
 
+/** 1:1 décomp src/sprite.c:1206-1211 :
+ *  ```c
+ *  void SetSpriteMatrixAnchor(struct Sprite *sprite, s16 x, s16 y) {
+ *      sprite->sAnchorX = x;   // data[6]
+ *      sprite->sAnchorY = y;   // data[7]
+ *      sprite->anchored = TRUE;
+ *  }
+ *  ```
+ *  Ancre le sprite à un coin pendant le scaling affine (minigame_countdown.c:448) :
+ *  Begin/ContinueAffineAnim (sprite-engine-impl) rappellent alors
+ *  UpdateSpriteMatrixAnchorPos. `x`/`y` peuvent valoir NO_ANCHOR (0x800) pour skipper
+ *  un axe. data = Int16Array (s16) → wrap 1:1. */
+export function SetSpriteMatrixAnchor(sprite: DecompSprite, x: number, y: number): void {
+  sprite.data[6] = x;  // sAnchorX
+  sprite.data[7] = y;  // sAnchorY
+  sprite.anchored = true;
+}
+
 /** Slot matrix OAM alloué ? (lit `gOamMatrixAllocBitmap`, 1:1 décomp). Utilisé par
  *  `DestroySprite` pour ne libérer que les matrices réellement allouées. */
 function _isOamMatrixAllocated(matrixNum: number): boolean {
@@ -607,13 +625,20 @@ export function ResetOamMatrices(): void {
  *      gOamMatrices[matrixNum].d = d;
  *  }
  *  ```
- */
+ *  ⚠️ 1:1 UNIFIÉ (Lot A4) : les valeurs sont écrites SIGNÉES (s16), JAMAIS `& 0xFFFF` —
+ *  le compositor lit pa/pb/pc/pd en signé pour les matrices rotées/miroir (une matrice à
+ *  pa<0 masquée u16 → texX explose, cf. bg-layer.ts:192). MIROIR de l'impl moteur
+ *  `harness/runtime/decomp-helpers.ts:SetOamMatrix(gba, …)` (même corps, signé) : cette
+ *  version-ci (sans param gba, via `_rt()`) sert les call-sites `./sprite` (battle_anim_*,
+ *  credits, evolution_graphics…) ; l'autre sert le moteur affine (sprite-engine-impl,
+ *  bag/pokemon_animation/wallclock/event_object_movement). Les DEUX doivent rester signées.
+ *  Pas de délégation croisée (éviterait un cycle d'import TDZ sprite.ts↔helpers↔globals). */
 export function SetOamMatrix(matrixNum: number, a: number, b: number, c: number, d: number): void {
   if (matrixNum < 0 || matrixNum >= OAM_MATRIX_COUNT) return;
   const r = _rt();
   const m = r.gba.affineParams[matrixNum];
   if (!m) return;
-  m.pa = a; m.pb = b; m.pc = c; m.pd = d;
+  m.pa = a; m.pb = b; m.pc = c; m.pd = d;  // SIGNÉ (s16), pas de mask u16.
 }
 
 /** 1:1 décomp src/sprite.c:1188-1194 :
@@ -1535,9 +1560,41 @@ export function ResetSpriteData(): void {
   sSpriteTileRanges.fill(0);
   sSpriteTileAllocBitmap.fill(0);
   setReservedSpriteTileCount(0);
-  // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release toutes les matrix OAM
-  // (reset du bitmap d'alloc ; ex-`_matrixUsed.clear()`, consolidé sur l'état unique E2.3c).
+  // 1:1 décomp ResetAffineAnimData (sprite.c:299 → 1414-1425) :
+  //   gAffineAnimsDisabled = FALSE; gOamMatrixAllocBitmap = 0; ResetOamMatrices();
+  //   for (i<32) AffineAnimStateReset(i);
+  // Le reset des 32 AffineAnimState est MOOT ici (gSprites.fill(undefined) ci-dessus a
+  // effacé l'état affine porté SUR chaque sprite) ; on ajoute ResetOamMatrices (identité
+  // sur les 32 slots affineParams — MANQUAIT, audit sprite.md 🟠) + gAffineAnimsDisabled=FALSE
+  // (Lot A4 : flag modélisé sur globalThis, cf. sprite-engine-impl:AreAffineAnimsDisabled).
+  (globalThis as Record<string, unknown>).gAffineAnimsDisabled = false;
   (globalThis as Record<string, unknown>).gOamMatrixAllocBitmap = 0;
+  ResetOamMatrices();
+}
+
+/** 1:1 décomp src/sprite.c:824-834 `CopyFromSprites(u8 *dest)` + 836-846 `CopyToSprites(u8 *src)`.
+ *  ADAPTATION MODÈLE PLAT (exemption de REPRÉSENTATION, cf. hardware-non-1to1) : le décomp
+ *  fait un memcpy byte-à-byte de `sizeof(struct Sprite) * MAX_SPRITES` (sérialisation d'un
+ *  savestate). Notre `gSprites` = tableau d'OBJETS DecompSprite, SANS layout binaire de
+ *  struct → un memcpy de bytes n'a pas de sens 1:1. On transcrit l'EFFET (snapshot/restore
+ *  de l'état de TOUS les sprites) par deep-clone (data = Int16Array répliqué → wrap s16
+ *  conservé). Le savestate web réel emprunte un autre chemin JS ; ces fns sont INERTES
+ *  (aucun call-site), fournies pour la complétude 1:1 du miroir sprite.c. */
+export function CopyFromSprites(): Array<DecompSprite | undefined> {
+  const rt = _rt();
+  const out: Array<DecompSprite | undefined> = [];
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = rt.gSprites[i];
+    out.push(s === undefined ? undefined : { ...s, data: Int16Array.from(s.data) as unknown as number[] });
+  }
+  return out;
+}
+export function CopyToSprites(src: ReadonlyArray<DecompSprite | undefined>): void {
+  const rt = _rt();
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    const s = src[i];
+    rt.gSprites[i] = s === undefined ? undefined : { ...s, data: Int16Array.from(s.data) as unknown as number[] };
+  }
 }
 
 /** 1:1-net : crée un sprite à partir de champs OAM résolus (cfg). Primitive M3
@@ -1914,6 +1971,13 @@ export function syncSpritesToOam(rt: DecompRuntime): void {
     oam.affineParamIndex = sprite.matrixNum;
     oam.objMode = sprite.objMode as 0 | 1 | 2;
     oam.subpriority = sprite.subpriority;
+    // 1:1 décomp `BuildOamBuffer` copie `sprite->oam` EN ENTIER (mosaic:1 inclus,
+    // sprite.h). Le compositor mosaïque déjà PAR SPRITE (renderOamSpriteNormal:465-466,
+    // testé via oam.mosaic) mais le bit n'arrivait jamais → mon d'évolution/contest
+    // (bit porté par le template OAM) inerte. `sprite.mosaic` optionnel (le champ
+    // n'est pas déclaré sur DecompSprite — decomp-runtime.ts édité en // ; même
+    // motif de cast que animHFlip ci-dessus). Défaut false = pas de mosaïque.
+    oam.mosaic = (sprite as { mosaic?: boolean }).mosaic ?? false;
     const merged = (sprite.affineMode | (oam.affineMode ?? 0)) as 0 | 1 | 2 | 3;
     if (sprite.affineMode === 0 && sprite.matrixNum === 0) {
       oam.affineMode = 0;

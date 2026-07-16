@@ -33,7 +33,7 @@ import {
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
 } from '../gba/png-loader';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
-import { BG_PLTT_ID, OBJ_PLTT_ID } from '../../src/palette';
+import { BG_PLTT_ID, OBJ_PLTT_ID, UpdateFastPaletteFade as _UpdateFastPaletteFade } from '../../src/palette';
 import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline, CreateSpriteAtOam as _CreateSpriteAtOam_1to1, runSpriteCallbacks as _runSpriteCallbacks_1to1, syncSpritesToOam as _syncSpritesToOam_1to1, tickSpriteAnims as _tickSpriteAnims_1to1 } from '../../src/sprite';
 // Imports DIRECTS sprite.ts (Phase B élimination __sprite) : decomp-runtime importe déjà sprite.ts
 // ci-dessus (sprite.ts → decomp-runtime en TYPE only → ZÉRO cycle ESM). Ces helpers/arrays
@@ -208,8 +208,9 @@ export class PaletteFade {
   targetRgb15 = 0;
   /** Delay restant avant qu'une frame de fade soit appliquée. Décomp : `delayCounter:6`. */
   delayRemaining = 0;
-  /** Delay entre 2 steps */
-  delayPerStep = 0;
+  // `delayPerStep` (delai entre 2 steps du fade normal) : voir l'accesseur alias
+  // en bas de classe — c'est `multipurpose2` (= décomp `gPaletteFade_delay`, union
+  // palette.h:6). Champ retiré pour unifier le stockage 1:1 (union réelle).
   /** startY (brightness initial) */
   startY = 0;
   /** endY (brightness final). Décomp : `targetY:5`. */
@@ -218,10 +219,11 @@ export class PaletteFade {
   targetR = 31;
   targetG = 31;
   targetB = 31;
-  /** 1:1 décomp `gPaletteFade_selectedPalettes` u32 mask : bits 0-15 = BG palettes,
-   *  bits 16-31 = OBJ palettes. Only selected palettes are blended each frame.
-   *  Default 0xFFFFFFFF = all (matches BeginNormalPaletteFade default with PALETTES_ALL). */
-  selectedPalettes = 0xFFFFFFFF;
+  // `selectedPalettes` (u32 mask : bits 0-15 = BG palettes, 16-31 = OBJ) : voir
+  // l'accesseur alias en bas de classe — c'est `multipurpose1` (= décomp
+  // `gPaletteFade_selectedPalettes`, union palette.h:4). Champ retiré pour unifier
+  // le stockage 1:1. Boot = 0 (comme le C `gPaletteFade = {0}`) ; BeginNormalPaletteFade
+  // le pose avant d'activer le fade, donc le défaut n'est jamais lu tel quel.
   /** 1:1 décomp `gPaletteFade.bufferTransferDisabled` — quand true, `TransferPlttBuffer()`
    *  skip la DMA Faded→PLTT. Pokemon Emerald set ça pendant des effects HBlank/scanline
    *  particuliers (= weather palette shifts).
@@ -267,6 +269,61 @@ export class PaletteFade {
   multipurpose1 = 0;
   /** 1:1 décomp `multipurpose2:6` — usage similaire à multipurpose1, secondaire. */
   multipurpose2 = 0;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ALIAS 1:1 des champs `struct PaletteFadeControl` (include/palette.h:35-53).
+  // Le port a renommé certains champs (y→brightness, targetY→endY,
+  // delayCounter→delayRemaining, blendColor→targetR/G/B) et éclaté deux unions
+  // (multipurpose1/selectedPalettes, multipurpose2/delayPerStep). Ces accesseurs
+  // exposent les NOMS EXACTS du décomp pour que TOUT code transpilé lise/écrive le
+  // bon stockage sans lire `undefined` en silence. Les deux noms COEXISTENT : le
+  // code porté à la main garde brightness/endY/… , le futur transpilé peut écrire
+  // `gPaletteFade.y` / `.targetY` / `.blendColor` / `.delayCounter` / `.multipurpose1`.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** 1:1 décomp `y:5` (blend coefficient). Alias de `brightness`. */
+  get y(): number { return this.brightness; }
+  set y(v: number) { this.brightness = v; }
+
+  /** 1:1 décomp `targetY:5` (target blend coefficient). Alias de `endY`. */
+  get targetY(): number { return this.endY; }
+  set targetY(v: number) { this.endY = v; }
+
+  /** 1:1 décomp `delayCounter:6`. Alias de `delayRemaining`. */
+  get delayCounter(): number { return this.delayRemaining; }
+  set delayCounter(v: number) { this.delayRemaining = v; }
+
+  /** 1:1 décomp `blendColor:15` (RGB15). Le port éclate la couleur cible en
+   *  targetR/G/B (5 bits chacun) ; cet accesseur recompose (get) / décompose (set)
+   *  vers le format packé RGB15 du décomp. */
+  get blendColor(): number {
+    return (this.targetR & 0x1F) | ((this.targetG & 0x1F) << 5) | ((this.targetB & 0x1F) << 10);
+  }
+  set blendColor(v: number) {
+    this.targetR = v & 0x1F;
+    this.targetG = (v >> 5) & 0x1F;
+    this.targetB = (v >> 10) & 0x1F;
+  }
+
+  /** 1:1 décomp union `multipurpose1` (palette.h:4-5) : en NORMAL/FAST fade c'est
+   *  `gPaletteFade_selectedPalettes` (masque des palettes fadées), en HARDWARE fade
+   *  c'est `gPaletteFade_blendCnt` (valeur BLDCNT). Le port stockait `selectedPalettes`
+   *  dans un champ SÉPARÉ de multipurpose1 (union brisée) → un transpilé lisant
+   *  `multipurpose1` pendant un fade normal aurait lu 0. Ici `selectedPalettes` ALIAS
+   *  `multipurpose1` (stockage unique = union réelle). Sûr : NORMAL et HARDWARE sont
+   *  mutuellement exclusifs (`mode` unique), blendCnt et selectedPalettes ne
+   *  coexistent jamais. Effet 1:1 bonus : ResetPaletteFadeControl `multipurpose1=0`
+   *  remet aussi selectedPalettes à 0 (comme l'union C), corrige palette.md ligne 22. */
+  get selectedPalettes(): number { return this.multipurpose1; }
+  set selectedPalettes(v: number) { this.multipurpose1 = v; }
+
+  /** 1:1 décomp union `multipurpose2` (palette.h:6-7) : `gPaletteFade_delay`
+   *  (NORMAL/HARDWARE) = `gPaletteFade_submode` (FAST). Le port stockait la cadence
+   *  du fade normal dans `delayPerStep` (séparé de multipurpose2) → union brisée.
+   *  Ici `delayPerStep` ALIAS `multipurpose2`. Sûr (modes exclusifs). NB : distinct de
+   *  `delayCounter`/`delayRemaining` (compteur courant), qui est un champ à part en C. */
+  get delayPerStep(): number { return this.multipurpose2; }
+  set delayPerStep(v: number) { this.multipurpose2 = v; }
 }
 
 // ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
@@ -412,6 +469,16 @@ export interface DecompSprite {
   /** Affine anim flags. */
   affineAnimBeginning: boolean;
   affineAnimPaused: boolean;
+  /** 1:1 décomp `sAffineAnimStates[matrixNum].loopCounter` (sprite.c:273, struct
+   *  AffineAnimState) — compteur AFFINEANIMCMD_LOOP. Reset par AffineAnimStateReset/
+   *  StartAnim (sprite.c:1257/1265). Optionnel (undefined ≡ 0). */
+  affineAnimLoopCounter?: number;
+  /** 1:1 décomp `sprite->anchored` (sprite.h) + `#define sAnchorX/Y data[6]/data[7]`
+   *  (sprite.c:8-9). Posé par SetSpriteMatrixAnchor (sprite.c:1206, minigame countdown) :
+   *  quand true, Begin/ContinueAffineAnim rappellent UpdateSpriteMatrixAnchorPos pour
+   *  décaler x2/y2 pendant le scaling (les chiffres ne glissent pas). Optionnel
+   *  (undefined ≡ false ≡ inerte pour tous les sprites non-ancrés). */
+  anchored?: boolean;
   /** Sprite shape/size pour CalcCenterToCornerVec (= valeurs OAM_DATAS shape/size). */
   shape: 0 | 1 | 2;
   size: 0 | 1 | 2 | 3;
@@ -849,6 +916,11 @@ export class DecompRuntime {
     // manquait → OAM stale visible pendant les inits de scène, verdict éclosion).
     this.gba.objEnabled = !!(value & DISPCNT_OBJ_ON);
 
+    // Bit 7 : forced blank (1:1 hardware — écran BLANC tant que le bit est set ;
+    // les inits d'écran décomp le posent pour masquer le chargement). Rendu par
+    // le compositor via gba.forcedBlank (lot A3, fix-scanline-ppu.md).
+    this.gba.forcedBlank = !!(value & 0x80);
+
     // Bits 13-15 : Win0/Win1/WinObj enable
     this.gba.windows.win0.enabled = !!(value & DISPCNT_WIN0_ON);
     this.gba.windows.win1.enabled = !!(value & DISPCNT_WIN1_ON);
@@ -1193,9 +1265,26 @@ export class DecompRuntime {
     this._paletteFadeCalledThisFrame = false;
     this.UpdatePaletteFade();
     this._paletteFadeCalledThisFrame = wasFlagged;
-    // 1:1 décomp l.193-199 : flush gPlttBufferFaded → PLTT direct (DMA copy
-    // immédiate). Notre engine fait via gPlttBufferFaded.flushTo() au prochain
-    // VBlank tick — équivalent fonctionnel.
+    // 1:1 décomp palette.c:193-199 : flush IMMÉDIAT gPlttBufferFaded → PLTT
+    // (`CpuCopy32(gPlttBufferFaded, PLTT, PLTT_SIZE)`), bufferTransferDisabled
+    // temporairement forcé à FALSE. Rend le 1er step du fade visible DÈS ce frame
+    // même si aucun VBlankCB ne draine encore (= anti-flash à l'init d'écran, cf.
+    // palette.md MANQUE #4). Avant : le flush n'arrivait qu'au prochain VBlank ET
+    // uniquement si `gMain.vblankCallback != null` (runOneFrame l.2070) → un Begin
+    // pendant vblankCallback==null n'affichait pas son startY (PLTT figé).
+    const temp = this.gPaletteFade.bufferTransferDisabled;
+    this.gPaletteFade.bufferTransferDisabled = false;
+    this.gPlttBufferFaded.flushTo();  // = CpuCopy32(Faded → PLTT) ; flushTo ignore bufferTransferDisabled (le gate est chez l'appelant)
+    // 1:1 décomp l.196 : sPlttBufferTransferPending = FALSE (notre équivalent =
+    //  idempotence `_paletteFadeCalledThisFrame`, déjà géré).
+    if (this.gPaletteFade.mode === HARDWARE_FADE && this.gPaletteFade.active) {
+      // 1:1 décomp l.197-198 : UpdateBlendRegisters() si HARDWARE_FADE actif.
+      // INERTE ici (BeginNormalPaletteFade pose toujours mode=NORMAL_FADE l.1110),
+      // mais transcrit pour fidélité au corps C (BLDCNT=0x050, BLDY=0x054).
+      this.SetGpuReg(0x050, this.gPaletteFade.multipurpose1 & 0xFFFF);
+      this.SetGpuReg(0x054, this.gPaletteFade.brightness);
+    }
+    this.gPaletteFade.bufferTransferDisabled = temp;
   }
 
   /** @deprecated audit V2 — utiliser _applyPaletteFadeStepHalf. Kept pour les
@@ -1293,6 +1382,22 @@ export class DecompRuntime {
         f.brightness = 0;
         f.active = false;
       }
+      return f.active;
+    }
+
+    // ─── 1:1 décomp FAST_FADE (palette.c:124-129 dispatch) ───────────────────
+    // Avant : seul HARDWARE_FADE était routé ; FAST_FADE tombait dans le chemin
+    // NORMAL avec `selectedPalettes` résiduel (=0 après le fade précédent) → ZÉRO
+    // write palette, ~30 frames brûlées puis active=false → les BeginFastPaletteFade(3)
+    // de fin de combat (battle_main.ts:5743, battle_script_commands.ts:9910) ne
+    // produisaient AUCUN fondu. UpdateFastPaletteFade (src/palette.ts, corps 1:1)
+    // fait ses PROPRES gardes `!active` + IsSoftwarePaletteFadeFinishing (comme le C),
+    // et pose mode=NORMAL_FADE + softwareFadeFinishing quand y atteint 0 → le tick
+    // suivant reprend le chemin NORMAL pour la rampe de fin. Idempotence par frame
+    // conservée : `_paletteFadeCalledThisFrame` est déjà posé en tête d'appel, et
+    // UpdateFastPaletteFade ne ré-appelle jamais UpdatePaletteFade (pas de récursion).
+    if (f.mode === FAST_FADE) {
+      _UpdateFastPaletteFade();
       return f.active;
     }
 

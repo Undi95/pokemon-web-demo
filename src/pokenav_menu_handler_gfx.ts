@@ -26,7 +26,7 @@ import { gMapHeader } from './fieldmap';
 import { SetGpuReg } from './gpu_regs';
 import { AddTextPrinterParameterized3 } from './menu';
 import { BG_PLTT_ID } from './palette';
-import { ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop, gScanlineEffectRegBuffers } from './scanline_effect';
+import { SCANLINE_EFFECT_DMACNT_16BIT, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop, gScanlineEffectRegBuffers } from './scanline_effect';
 import { CalcCenterToCornerVec, CreateSprite, DestroySprite, FreeOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, LoadOam, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, gDummySpriteAffineAnimTable, gDummySpriteAnimTable, gSprites } from './sprite';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { GetStringWidth } from './text';
@@ -56,7 +56,11 @@ const AFFINEANIMCMD_FRAME = (xScale: number, yScale: number, rotation: number, d
 // FreeSpriteOamMatrix : porté 1:1 dans sprite.ts (sa maison décomp) → importé (remplace le stub qui
 // faisait throw DestroyMenuOptionSprites au shutdown Pokénav). No-op sur les sprites d'options (non-affines).
 import { FreeSpriteOamMatrix } from './sprite';
-const REG_WIN0H: any = __wireTodo('REG_WIN0H');
+// 1:1 `&REG_WIN0H` (dmaDest de sPokenavMainMenuScanlineEffectParams). HW-emu :
+// dmaDest = REG_OFFSET (io_reg.h REG_OFFSET_WIN0H = 0x40) ; _applyRegFromValue le
+// route par SetGpuReg → win0.x1/x2 PAR SCANLINE. (Ex-`__wireTodo` stub → le glow
+// tombait sur une fenêtre statique ; câblé au Lot A3 scanline/PPU.)
+const REG_WIN0H = REG_OFFSET_WIN0H;
 // SetPokenavVBlankCallback : porté 1:1 dans pokenav.ts (sa maison décomp pokenav.c:542) → importé.
 // Import RUNTIME-ONLY : le cycle pokenav.ts ↔ _gfx est sûr (_gfx n'accède PAS ce binding au module-init).
 import { SetPokenavVBlankCallback } from './pokenav';
@@ -484,10 +488,15 @@ const sMatchCallBlueLightSpriteTemplate = {
   affineAnims: gDummySpriteAffineAnimTable,
   callback: SpriteCallbackDummy };
 
-/** 1:1 (pokenav_menu_handler_gfx.c:358) */
+/** 1:1 (pokenav_menu_handler_gfx.c:358). Le littéral décomp `((DMA_ENABLE |
+ *  DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1` = un transfert
+ *  HBlank 16-bit (pas de DMA_32BIT) → marqueur HW-emu SCANLINE_EFFECT_DMACNT_16BIT
+ *  (scanline_effect.ts:39, sur lequel ScanlineEffect_SetParams dispatche 16 vs 32-bit ;
+ *  le littéral brut ≠ marqueur tombait par erreur dans la branche 32-bit → WIN0H/WIN1H
+ *  entrelacés faux). dmaDest = REG_WIN0H (0x40) animé par scanline. */
 const sPokenavMainMenuScanlineEffectParams = {
   dmaDest: REG_WIN0H,
-  dmaControl: ((DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
+  dmaControl: SCANLINE_EFFECT_DMACNT_16BIT,
   initState: 1,
   unused9: 0 };
 
@@ -1537,20 +1546,20 @@ function SetMenuOptionGlow(): void {
   let menuType = GetPokenavMenuType();
   let cursorPos = GetPokenavCursorPos();
   let r4 = sPokenavMenuOptionLabelGfx[menuType].deltaY * cursorPos + sPokenavMenuOptionLabelGfx[menuType].yStart - 8;
-  CpuFill16(0, gScanlineEffectRegBuffers[0], DISPLAY_HEIGHT * 2);
-  CpuFill16(0, gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
-  CpuFill16(RGB(16, 23, 28), gScanlineEffectRegBuffers[0][r4] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, 0x20);
-  CpuFill16(RGB(16, 23, 28), gScanlineEffectRegBuffers[1][r4] /* TRANSPILER-TODO &élément scalaire (out-param ?) */, 0x20);
-  // ADAPTATION MOTEUR : le décomp module REG_WIN0H PAR LIGNE via un effet scanline (HBlank DMA) pour créer
-  // une box (options x=114..240 = la valeur RGB(16,23,28) mise dans le buffer) × (ligne sélectionnée
-  // r4..r4+0x20). Le renderer du port ne réplique PAS la DMA HBlank par-ligne (WIN0H reste statique →
-  // TOUS les OBJ clignotaient). On pose donc la MÊME box en fenêtre STATIQUE : WIN0H = la valeur du buffer,
-  // WIN0V = la ligne du curseur. Le blend LIGHTEN-OBJ n'agit que dans WIN0 → seule la cellule sélectionnée
-  // glow (résultat visuel identique au décomp ; mis à jour à chaque nav car SetMenuOptionGlow y est rappelé).
-  // Hauteur = 16 scanlines : le décomp fait `CpuFill16(RGB, &buffer[r4], 0x20)` où 0x20 est en OCTETS
-  // (CpuFill16 compte en octets) = 0x20/2 = 0x10 = 16 entrées u16 = 16 scanlines. (Box = r4 .. r4+0x10.)
-  SetGpuReg(REG_OFFSET_WIN0H, RGB(16, 23, 28));
-  SetGpuReg(REG_OFFSET_WIN0V, ((r4 << 8) | ((r4 + 0x10) & 0xFF)) & 0xFFFF);
+  // 1:1 pokenav_menu_handler_gfx.c:1371-1374 :
+  //   CpuFill16(0, buffer, DISPLAY_HEIGHT*2)       → clear 160 scanlines (DISPLAY_HEIGHT entrées u16)
+  //   CpuFill16(RGB(16,23,28), &buffer[r4], 0x20)  → 0x20 OCTETS = 0x10 = 16 entrées u16 (16 scanlines)
+  // gScanlineEffectRegBuffers = array EWRAM ÉMULÉ (pas memory-mapped) → `.fill()` direct,
+  // comme ScanlineEffect_Clear/GenerateWave (CpuFill16 address-based ne cible pas cet array).
+  // WIN0H PAR SCANLINE (dmaDest=REG_WIN0H via sPokenavMainMenuScanlineEffectParams) : lignes
+  // [r4, r4+16) → RGB(16,23,28)=0x72F0 (x1=0x72=114, x2=0xF0=240 = zone labels d'options),
+  // ailleurs 0 (fenêtre vide). WIN0V reste plein écran (SetupPokenavMenuScanlineEffects) →
+  // box glow = [114,240) × [r4, r4+16). = le VRAI chemin scanline 1:1 (l'ancienne fenêtre
+  // STATIQUE + les CpuFill16 no-op sont retirés ; câblé par le Lot A3, _applyRegFromValue→WIN0H).
+  gScanlineEffectRegBuffers[0].fill(0, 0, DISPLAY_HEIGHT);
+  gScanlineEffectRegBuffers[1].fill(0, 0, DISPLAY_HEIGHT);
+  gScanlineEffectRegBuffers[0].fill(RGB(16, 23, 28), r4, r4 + 0x10);
+  gScanlineEffectRegBuffers[1].fill(RGB(16, 23, 28), r4, r4 + 0x10);
 }
 
 /** 1:1 `void ResetBldCnt_(void)` (pokenav_menu_handler_gfx.c:1377-1380). */

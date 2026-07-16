@@ -92,6 +92,7 @@ export {
   InvertPlttBuffer, TintPlttBuffer, UnfadePlttBuffer,
   BeginFastPaletteFade, BeginHardwarePaletteFade,
   UpdateFastPaletteFade, UpdateHardwarePaletteFade, UpdateBlendRegisters,
+  ResetPaletteFadeControl,
   IsSoftwarePaletteFadeFinishing,
   TintPalette_GrayScale, TintPalette_GrayScale2, TintPalette_SepiaTone, TintPalette_CustomTone,
   BlendPalettesGradually,
@@ -333,6 +334,24 @@ export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, dest
   const end = Math.min(offset + sizeBytes, vram.length);
   vram.set(src.subarray(0, end - offset), offset);
   // Note : tile cache invalidation handled par compositor's per-frame clear.
+}
+
+/** 1:1 décomp `u16 LoadBgTilemap(u8 bg, const void *src, u16 size, u16 destOffset)`
+ *  (bg.c:404-416) : copie une tilemap `src` (size OCTETS = size/2 entrées u16) vers le
+ *  screenblock du BG — décomp = LoadBgVram mode 2 (DISPCNT_MODE_2 = map base), byte
+ *  offset `destOffset*2`. Dans le port, `bg.tilemap` EST la vue u16 du screenblock
+ *  (mapBase) lue chaque frame par le compositor → on y écrit à l'index u16 `destOffset`
+ *  (= octet destOffset*2 / 2). Curseur DMA renvoyé factice (copie synchrone ; le port
+ *  modélise IsDma3ManagerBusyWithBgCopy = jamais busy). 🐛 avant : call-site
+ *  battle_intro.ts:536 `r.LoadBgTilemap?.()` = no-op silencieux (fn absente du runtime). */
+export function LoadBgTilemap(bg: number, src: Uint16Array, sizeBytes: number, destOffset: number): number {
+  const r = rt();
+  const tilemap = r.gba.bg(bg as 0 | 1 | 2 | 3).tilemap;
+  const numEntries = sizeBytes >> 1;
+  for (let i = 0; i < numEntries && (destOffset + i) < tilemap.length && i < src.length; i++) {
+    tilemap[destOffset + i] = src[i];
+  }
+  return 0;
 }
 
 /** 1:1 décomp `void BgDmaFill(u32 bg, u8 value, int offset, int size)` (menu.c:1910) :
@@ -1975,8 +1994,13 @@ export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArr
     oam.size = sub.size;
     oam.priority = sub.priority;
     oam.paletteMode = r.gba.oam[sprite.oamIndex].paletteMode;
-    oam.affineMode = 0;
-    oam.affineParamIndex = 0;
+    // 1:1 décomp `AddSubspritesToOamBuffer` (sprite.c:1746 `destOam[i] = *oam`) : le child
+    // HÉRITE l'affineMode + le matrixNum (affineParamIndex) du PARENT, puis seuls shape/size/
+    // x/y/tileNum/priority sont surchargés → un sprite AFFINE à SubspriteTable rend ses pièces
+    // avec la transfo (avant : forcé non-affine `=0`). Additif : tous les sprites à subsprites
+    // actuels (naming/healthbars/camion) ont un parent NON-affine → child hérite 0 = inchangé.
+    oam.affineMode = r.gba.oam[sprite.oamIndex].affineMode;
+    oam.affineParamIndex = r.gba.oam[sprite.oamIndex].affineParamIndex;
     oam.flipH = false;
     oam.flipV = false;
     childOamIndices.push(oamIdx);
@@ -2043,6 +2067,11 @@ export function syncSubspriteOam(): void {
       // 1:1 décomp `destOam[i] = *oam` : le child hérite du objMode du parent
       // (= ST_OAM_OBJ_BLEND pendant le fade du party-summary).
       oam.objMode = primaryOam.objMode;
+      // 1:1 décomp `destOam[i] = *oam` (sprite.c:1746) : le child hérite AUSSI de l'affineMode
+      // + du matrixNum (affineParamIndex) du parent, reconstruit CHAQUE frame (BuildOamBuffer).
+      // Additif : les parents actuels à subsprites sont non-affine (affineMode 0) → inchangé.
+      oam.affineMode = primaryOam.affineMode;
+      oam.affineParamIndex = primaryOam.affineParamIndex;
       // Re-hide primary OAM (defense against syncSpritesToOam reactivating).
       primaryOam.visible = false;
     }

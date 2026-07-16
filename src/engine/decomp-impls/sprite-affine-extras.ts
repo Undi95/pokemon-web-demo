@@ -25,9 +25,32 @@ interface AffineAnimFrameCmd {
   duration: number;
 }
 
+/** 1:1 décomp `union AffineAnimCmd` (include/sprite.h:110-160) — commande d'anim
+ *  affine sous forme command-array COMPLÈTE. Alternative au couple frames[]+terminator :
+ *  nécessaire pour les anims à marqueurs LOOP(0)/LOOP(n) INTERCALÉS (battle_anim_*,
+ *  object_event_anims, slot_machine) que le modèle normalisé frames[]+terminator ne peut
+ *  pas représenter (le terminator est unique et en fin). Optionnelle : si `cmds` absent,
+ *  l'engine utilise le chemin legacy frames[]+terminator (= toutes les anims actuelles). */
+export type AffineAnimCmd =
+  | { kind: 'frame'; xScale: number; yScale: number; rotation: number; duration: number }
+  | { kind: 'loop'; count: number }
+  | { kind: 'jump'; target: number }
+  | { kind: 'end' };
+
 export interface AffineAnim {
   frames: ReadonlyArray<AffineAnimFrameCmd>;
   terminator: 'END' | 'LOOP' | 'JUMP';
+  /** 1:1 décomp AFFINEANIMCMD_JUMP(target) (sprite.c:1163) : `cmdIndex = jump.target`.
+   *  Défaut 0 (= l'ancien comportement « jump index 0 »). Pour les anims simples
+   *  `FRAME* JUMP(n)` (26× JUMP(1), JUMP(2), JUMP(3) dans le décomp). */
+  jumpTarget?: number;
+  /** 1:1 décomp AFFINEANIMCMD_LOOP(count) (sprite.c:1132) : nb de boucles pour le cas
+   *  simple (frames[] bouclées, top = index 0). Marqueurs mid-séquence → utiliser `cmds`. */
+  loopCount?: number;
+  /** Représentation command-array complète (cf. AffineAnimCmd). Si présente, l'engine
+   *  la dispatche 1:1 (LOOP/JUMP/END/FRAME + compteur de boucle) au lieu de
+   *  frames[]+terminator. INERTE tant qu'aucune anim ne l'enregistre. */
+  cmds?: ReadonlyArray<AffineAnimCmd>;
 }
 
 export interface AffineAnimTable {

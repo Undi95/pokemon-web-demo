@@ -83,7 +83,7 @@ import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 import { ConvertIntToDecimalStringN, StringCopy, StringExpandPlaceholders, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from './string_util';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { AddTextPrinter, IsTextPrinterActive, RunTextPrinters, encodeOwText, gTextFlags } from './text';
-import { AddWindow, BG_ATTR_BASETILE, GetBgAttribute, COPYWIN_GFX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WINDOW_BG, WINDOW_HEIGHT, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH } from './window';
+import { AddWindow, BG_ATTR_BASETILE, GetBgAttribute, COPYWIN_GFX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetWindowAttribute, PutWindowTilemap, RemoveWindow, WriteSequenceToBgTilemapBuffer, WINDOW_BG, WINDOW_HEIGHT, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH } from './window';
 import type { MapHeader } from './fieldmap';
 import type { TextPrinterTemplate } from './text';
 import type { WindowTemplate } from './window';

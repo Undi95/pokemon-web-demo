@@ -89,6 +89,29 @@ const _oamTileCache = new Map<number, TilePixels>();
 // (= on top). Same y → higher OAM idx first (= sprite 0 wins ties = 1:1 GBA).
 const _oamSortedIndices: number[] = [];
 
+// Garde hurlante (Règle 3) : slots de matrice affine demandés mais NON alloués.
+// Dédup PAR FRAME (clear en tête de composeFrame) → un console.error par slot/frame,
+// pas de spam 60 Hz. Le rendu reste inchangé (fallback identité) mais le slot
+// manquant ne se masque plus silencieusement (bug historique zoom Pokénav).
+const _missingAffineSlots = new Set<number>();
+
+/** 1:1 décomp SortSprites (sprite.c:382-411) : clé Y du tri de sprites. L'OAM y est un u8
+ *  hardware (`sprite->oam.y`, bitfield 8 bits) puis « déroulé » : les gros sprites
+ *  AFFINE_DOUBLE(3)+SIZE_3 square/vrect basculent à Y-256 dès Y>128 (tri par le centre du
+ *  bbox doublé) ; les autres dès Y>=DISPLAY_HEIGHT(160). Les 2 étapes décomp (>=160 puis
+ *  >128) fusionnent : pour l'affine-double, `if(y0>=160)y-=256; if(y1>128)y-=256;` ≡
+ *  `let y=y0&0xFF; if(y>128)y-=256;` (une seule soustraction, cf. fix-sprite.md). Notre oam.y
+ *  est signé → `& 0xFF` reproduit le stockage u8 (les négatifs round-trippent : -40→216→-40).
+ *  Manquait avant (audit sprite.md 🟡) → z-order des 64px affine-double pouvait diverger. */
+function _spriteSortY(oam: OamEntry): number {
+  const y = oam.y & 0xFF;  // stockage OAM u8 (hardware)
+  if (oam.affineMode === 3 /* ST_OAM_AFFINE_DOUBLE */ && oam.size === 3 /* ST_OAM_SIZE_3 */
+      && (oam.shape === 0 /* SQUARE */ || oam.shape === 2 /* V_RECTANGLE */)) {
+    return y > 128 ? y - 256 : y;
+  }
+  return y >= 160 /* DISPLAY_HEIGHT */ ? y - 256 : y;
+}
+
 export function composeFrame(
   frameBuffer: Uint8ClampedArray,
   bgs: ReadonlyArray<BgLayerData>,
@@ -135,6 +158,8 @@ export function composeFrame(
   // Clear OAM tile cache au début de chaque frame (= objVram peut changer
   // entre frames, ex. player walk animation cycle change tileId).
   _oamTileCache.clear();
+  // Reset la dédup de la garde affine (un warn par slot manquant PAR FRAME).
+  _missingAffineSlots.clear();
 
   // Clear BG tile caches au début de chaque frame également (= bg.vram peut
   // changer entre frames via LZ77UnCompVram, CpuCopy16, DmaCopy16, etc.).
@@ -168,8 +193,10 @@ export function composeFrame(
       const pb = (sb.subpriority ?? 0xFF) | (sb.priority << 8);
       if (pa !== pb) return pb - pa;  // higher priority first → ends drawn LAST = on top
       // Tie-break : Y ASC (= higher Y on screen drawn last = on top, matches
-      // décomp `sprite1Y < sprite2Y → swap` insertion sort).
-      if (sa.y !== sb.y) return sa.y - sb.y;
+      // décomp `sprite1Y < sprite2Y → swap` insertion sort). Y = clé ajustée 1:1
+      // SortSprites (u8-wrap + décalage AFFINE_DOUBLE+SIZE_3, cf. _spriteSortY).
+      const ya = _spriteSortY(sa), yb = _spriteSortY(sb);
+      if (ya !== yb) return ya - yb;
       // Secondary tie-break : OAM idx DESC (= sprite 0 wins for same y).
       return b - a;
     });
@@ -191,23 +218,28 @@ export function composeFrame(
         sl.fill(0);
         continue;
       }
+      // Mosaic vertical BG (REG_MOSAIC bits 4-7) : 1:1 GBATEK — chaque bloc de
+      // (bgV+1) lignes affiche le contenu de sa ligne du HAUT. On rend donc la
+      // scanline SOURCE `y - (y % (bgV+1))` au lieu de `y` (tracking inter-scanline
+      // hardware). Même convention +1 que l'OBJ (renderOamSpriteNormal:466) et
+      // l'horizontal (applyMosaicHorizontal blockSize=factor+1). Seulement si CE
+      // BG a le bit mosaic (bg.config.mosaic) ET bgV>0.
+      const mosaicSrcY = (bg.config.mosaic && mosaic && mosaic.bgV > 0)
+        ? y - (y % (mosaic.bgV + 1))
+        : y;
       if (bg.config.isAffine && bgAffineMatrices) {
         // Affine BG : utilise bgAffineMatrices[affineMatrixIndex]
         const matIdx = Math.min(1, Math.max(0, bg.config.affineMatrixIndex));
         const matrix = bgAffineMatrices[matIdx];
-        renderBgAffineScanline(y, bg.config, matrix, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
+        renderBgAffineScanline(mosaicSrcY, bg.config, matrix, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       } else {
-        renderBgScanline(y, bg.config, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
+        renderBgScanline(mosaicSrcY, bg.config, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       }
       // Apply mosaic horizontal sur la scanline si bg.config.mosaic && mosaic.bgH > 0
       if (bg.config.mosaic && mosaic && mosaic.bgH > 0) {
         applyMosaicHorizontal(scanlineBufs[i], mosaic.bgH);
       }
     }
-    
-
-    // Mosaic vertical BG : si bgV > 0, repeat la scanline précédente sur N+1 lignes
-    // Pour MVP simple : skip mosaic vertical (rare effet, demande tracking entre scanlines)
 
     // Render OAM sprites pour cette scanline (par priority)
     if (oam && objVram) {
@@ -343,14 +375,18 @@ export function composeFrame(
           }
         } else if (blend.mode > 0 && (blend.target1 & top1Mask)) {
           if (blend.mode === 2) {
-            // Brightness inc : pixel + (white - pixel) × (BLDY/16)
-            const w = blend.brightness / 16;
+            // Brightness inc : pixel + (white - pixel) × (BLDY/16).
+            // Clamp EVY ≤ 16 (1:1 GBATEK : BLDY bits 0-4 valides 0..16, 17..31
+            // se comportent comme 16 = blanc total). runtime écrit `value & 0x1F`
+            // (0..31) → sans ce clamp, w > 1 sur-éclaircirait (sauvé partiellement
+            // par Uint8ClampedArray mais faux sur les composantes non saturées).
+            const w = Math.min(blend.brightness, 16) / 16;
             r = r1 + (255 - r1) * w;
             g = g1 + (255 - g1) * w;
             b = b1 + (255 - b1) * w;
           } else if (blend.mode === 3) {
-            // Brightness dec : pixel × (1 - BLDY/16)
-            const w = 1 - blend.brightness / 16;
+            // Brightness dec : pixel × (1 - BLDY/16). Clamp EVY ≤ 16 (idem GBATEK).
+            const w = 1 - Math.min(blend.brightness, 16) / 16;
             r = r1 * w;
             g = g1 * w;
             b = b1 * w;
@@ -553,7 +589,22 @@ function renderOamSpriteAffine(
   const localBboxY = scanline - bboxYTop;
   if (localBboxY < 0 || localBboxY >= bboxH) return;
 
-  const matrix = affineParams[sprite.affineParamIndex] ?? { pa: 256, pb: 0, pc: 0, pd: 256 };
+  // Garde hurlante (Règle 3) : un slot de matrice affine non alloué était
+  // MASQUÉ par le fallback identité silencieux (a caché le bug zoom Pokénav :
+  // affineParamIndex pointant sur un slot vide). On garde le fallback (rendu
+  // inchangé) mais on HURLE une fois par slot/frame.
+  let matrix = affineParams[sprite.affineParamIndex];
+  if (!matrix) {
+    if (!_missingAffineSlots.has(sprite.affineParamIndex)) {
+      _missingAffineSlots.add(sprite.affineParamIndex);
+      console.error(
+        `[compositor] renderOamSpriteAffine: matrice affine slot ${sprite.affineParamIndex} NON alloué `
+        + `(sprite tileId=${sprite.tileId}, ${wPx}x${hPx}) — fallback identité. `
+        + `Vérifier InitSpriteAffineAnim / AllocOamMatrix en amont.`,
+      );
+    }
+    matrix = { pa: 256, pb: 0, pc: 0, pd: 256 };
+  }
   const wTiles = wPx / 8;
 
   // Centre de la bounding box (= centre du sprite dans le bbox)

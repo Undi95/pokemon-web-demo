@@ -7,6 +7,19 @@
  * l'engine GBA hardware (VRAM + tilemap) pour rendu par le compositor.
  */
 import { getRuntime, assetCache, LoadBgTiles } from '../harness/runtime/decomp-globals';
+import { gSineTable } from './trig';
+import {
+  REG_OFFSET_BG2PA, REG_OFFSET_BG2PB, REG_OFFSET_BG2PC, REG_OFFSET_BG2PD,
+  REG_OFFSET_BG2X_L, REG_OFFSET_BG2X_H, REG_OFFSET_BG2Y_L, REG_OFFSET_BG2Y_H,
+} from '../include/gba/io_reg';
+
+// 1:1 décomp `include/global.fieldmap.h:7-9` — masques métatile utilisés par
+// WriteSequenceToBgTilemapBuffer (bg.c:1054). Définis localement (et non importés
+// de ./fieldmap) pour éviter d'introduire une arête d'import lourde dans ce module
+// fondation (risque cycle/TDZ au boot) ; valeurs = mêmes littéraux que fieldmap.ts:144-146.
+const MAPGRID_METATILE_ID_MASK = 0x03FF; // bits 0-9
+const MAPGRID_COLLISION_MASK = 0x0C00;   // bits 10-11
+const MAPGRID_ELEVATION_MASK = 0xF000;   // bits 12-15
 // ─── Struct window.c (Window pixel-buffer + primitives) ──────────────────────
 // Rapatrié depuis gba-text-printer (dissolution MIRROR text.c Stage 2). Le struct
 // + createWindow/scrollWindow/fillWindowPixelBuffer/Rect/copyWindowToCanvas sont
@@ -985,6 +998,90 @@ export function ResetAllBgsCoordinates(): void {
   ChangeBgX(3, 0, 0); ChangeBgY(3, 0, 0);
 }
 
+// ─── BG affine (bg.c:244-283 SetBgAffineInternal / bg.c:772 SetBgAffine) ──────
+// INERTE : le seul appelant SOLO du décomp est rayquaza_scene.c (climax légendaire),
+// PAS encore porté → ces fonctions ne sont câblées nulle part. Transcrites 1:1 pour
+// que le futur port de rayquaza_scene les trouve prêtes (tsc vert, boot sain). NON
+// testées en jeu (aucun appelant) — cf. audit-reports/engine/fix-bg.md.
+
+interface BgAffineSrcData { texX: number; texY: number; scrX: number; scrY: number; sx: number; sy: number; alpha: number; }
+interface BgAffineDstData { pa: number; pb: number; pc: number; pd: number; dx: number; dy: number; }
+
+/** 1:1 BIOS `BgAffineSet(src, dst, count)` (libagbsyscall) — calcule la matrice affine
+ *  BG (pa/pb/pc/pd) + point de référence (dx/dy) depuis centre texture (texX/texY, 28.8),
+ *  centre écran (scrX/scrY), échelles (sx/sy, Q8.8) et angle (alpha, u16 0..0xFFFF).
+ *  Math = MÊME routine déjà validée dans le port : PanFadeAndZoomScreen
+ *  (decomp-globals.ts:1117 — gSineTable Q8.8, index alpha>>8, shift >>8), généralisée
+ *  ici à sx/sy séparés (pa/pb ← sx ; pc/pd ← sy), conforme au BIOS. */
+function BgAffineSet(src: BgAffineSrcData, dest: BgAffineDstData, count: number): void {
+  for (let i = 0; i < count; i++) {
+    const sinIdx = (src.alpha >> 8) & 0xFF;
+    const cosIdx = (sinIdx + 64) & 0xFF;
+    const sin = gSineTable[sinIdx];
+    const cos = gSineTable[cosIdx];
+    dest.pa = (cos * src.sx) >> 8;
+    dest.pb = (-sin * src.sx) >> 8;
+    dest.pc = (sin * src.sy) >> 8;
+    dest.pd = (cos * src.sy) >> 8;
+    dest.dx = src.texX - (src.scrX * dest.pa + src.scrY * dest.pb);
+    dest.dy = src.texY - (src.scrX * dest.pc + src.scrY * dest.pd);
+  }
+}
+
+/** 1:1 décomp `static void SetBgAffineInternal(u8 bg, s32 srcCenterX, s32 srcCenterY,
+ *  s16 dispCenterX, s16 dispCenterY, s16 scaleX, s16 scaleY, u16 rotationAngle)`
+ *  (bg.c:244-283). Garde mode/bg (`bgVisibilityAndMode & 7` → notre DISPCNT mode via
+ *  GetGpuReg), BgAffineSet, puis pousse BG2PA-PD + BG2X/Y via SetGpuReg. Le double
+ *  write BG2PA (bg.c:274 puis :278) est transcrit fidèlement. */
+function SetBgAffineInternal(
+  bg: number, srcCenterX: number, srcCenterY: number,
+  dispCenterX: number, dispCenterY: number,
+  scaleX: number, scaleY: number, rotationAngle: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  switch (rt.GetGpuReg(0x00 /* DISPCNT */) & 0x7) {
+    default:
+    case 0:
+      return;
+    case 1:
+      if (bg !== 2) return;
+      break;
+    case 2:
+      if (bg !== 2 && bg !== 3) return;
+      break;
+  }
+
+  const src: BgAffineSrcData = {
+    texX: srcCenterX, texY: srcCenterY,
+    scrX: dispCenterX, scrY: dispCenterY,
+    sx: scaleX, sy: scaleY, alpha: rotationAngle,
+  };
+  const dest: BgAffineDstData = { pa: 0, pb: 0, pc: 0, pd: 0, dx: 0, dy: 0 };
+  BgAffineSet(src, dest, 1);
+
+  rt.SetGpuReg(REG_OFFSET_BG2PA, dest.pa);
+  rt.SetGpuReg(REG_OFFSET_BG2PB, dest.pb);
+  rt.SetGpuReg(REG_OFFSET_BG2PC, dest.pc);
+  rt.SetGpuReg(REG_OFFSET_BG2PD, dest.pd);
+  rt.SetGpuReg(REG_OFFSET_BG2PA, dest.pa);
+  rt.SetGpuReg(REG_OFFSET_BG2X_L, dest.dx & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_BG2X_H, (dest.dx >> 16) & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_BG2Y_L, dest.dy & 0xFFFF);
+  rt.SetGpuReg(REG_OFFSET_BG2Y_H, (dest.dy >> 16) & 0xFFFF);
+}
+
+/** 1:1 décomp `void SetBgAffine(u8 bg, s32 srcCenterX, s32 srcCenterY, s16 dispCenterX,
+ *  s16 dispCenterY, s16 scaleX, s16 scaleY, u16 rotationAngle)` (bg.c:772-775) —
+ *  wrapper de SetBgAffineInternal. INERTE (appelant rayquaza_scene non porté). */
+export function SetBgAffine(
+  bg: number, srcCenterX: number, srcCenterY: number,
+  dispCenterX: number, dispCenterY: number,
+  scaleX: number, scaleY: number, rotationAngle: number,
+): void {
+  SetBgAffineInternal(bg, srcCenterX, srcCenterY, dispCenterX, dispCenterY, scaleX, scaleY, rotationAngle);
+}
+
 // ─── Window helpers ──────────────────────────────────────────────────────────
 
 /** 1:1 décomp `bg.c CreateWindowTemplate(bg, left, top, width, height, paletteNum, baseBlock)`.
@@ -1226,6 +1323,98 @@ export function CopyRectToBgTilemapBufferRect(
     }
     srcPtr += srcWidth - rectWidth;
   }
+}
+
+/** 1:1 décomp `void WriteSequenceToBgTilemapBuffer(u8 bg, u16 firstTileNum, u8 x,
+ *  u8 y, u8 width, u8 height, u8 paletteSlot, s16 tileNumDelta)` (bg.c:1033-1071),
+ *  branche BG_TYPE_NORMAL. Écrit un rect width×height de tuiles à partir de
+ *  `firstTileNum`, incrémenté de `tileNumDelta` par case — MAIS avec la sémantique
+ *  métatile-mask du décomp (bg.c:1054) : on préserve les bits collision+élévation et
+ *  on n'incrémente que l'ID sur 10 bits. Chaque entrée passe par CopyTileMapEntry
+ *  (paletteSlot 17 = copie verbatim, garde les bits palette embarqués dans firstTileNum ;
+ *  cf. les 2 call-sites match_call.c:1285/1452 qui passent `... | (pal<<12)` / `| ~0xFFF`).
+ *  `tileMapIndex(x,y,screenSize)` = notre GetTileMapIndexFromCoords (même précédent que
+ *  CopyRectToBgTilemapBufferRect). La branche AFFINE (tilemap u8) n'est pas représentée
+ *  dans le port (comme FillBgTilemapBufferRect/CopyRectToBgTilemapBufferRect : NORMAL only). */
+export function WriteSequenceToBgTilemapBuffer(
+  bg: number, firstTileNum: number, x: number, y: number,
+  width: number, height: number, paletteSlot: number, tileNumDelta: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const gbaBg = rt.gba.bg(bg as 0 | 1 | 2 | 3);
+  const tilemap = gbaBg.tilemap;
+  const screenSize = gbaBg.config.screenSize;
+  let tileNum = firstTileNum;
+  for (let y16 = y; y16 < y + height; y16++) {
+    for (let x16 = x; x16 < x + width; x16++) {
+      const index = tileMapIndex(x16, y16, screenSize);
+      if (index >= 0 && index < tilemap.length) {
+        CopyTileMapEntry(tileNum, tilemap, index, paletteSlot, 0, 0);
+      }
+      tileNum = (tileNum & (MAPGRID_COLLISION_MASK | MAPGRID_ELEVATION_MASK))
+              + ((tileNum + tileNumDelta) & MAPGRID_METATILE_ID_MASK);
+    }
+  }
+}
+
+/** 1:1 décomp `void CopyToBgTilemapBufferRect(u8 bg, const void *src, u8 destX,
+ *  u8 destY, u8 width, u8 height)` (bg.c:907-944), branche BG_TYPE_NORMAL : copie un
+ *  rect width×height d'entrées u16 CONTIGUËS depuis `src` dans la tilemap du BG à
+ *  (destX,destY), stride 0x20 (hardcodé décomp — les BG concernés sont screenSize 0).
+ *  ≠ CopyRectToBgTilemapBufferRect (pas de remap palette, src strictement linéaire).
+ *  Précédent 1:1 = easy_chat.ts:816 (impl locale identique). La branche AFFINE
+ *  (tilemap u8) n'est pas représentée dans le port. */
+export function CopyToBgTilemapBufferRect(
+  bg: number, src: Uint16Array,
+  destX: number, destY: number, width: number, height: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tilemap = rt.gba.bg(bg as 0 | 1 | 2 | 3).tilemap;
+  let srcIdx = 0;
+  for (let destY16 = destY; destY16 < destY + height; destY16++) {
+    for (let destX16 = destX; destX16 < destX + width; destX16++) {
+      const di = destY16 * 0x20 + destX16;
+      if (di >= 0 && di < tilemap.length && srcIdx < src.length) {
+        tilemap[di] = src[srcIdx];
+      }
+      srcIdx++;
+    }
+  }
+}
+
+/** 1:1 décomp `void SetBgMode(u8 bgMode)` → `SetBgModeInternal` (bg.c:370/58) : pose
+ *  les bits 0-2 (mode vidéo) de l'état BG. Le décomp les stocke dans
+ *  `sGpuBgConfigs.bgVisibilityAndMode` (poussé vers DISPCNT par ShowBg/HideBg via
+ *  SyncBgVisibilityAndMode) ; le port n'a pas ce staging (ShowBg ne passe pas par le
+ *  registre, cf. window.ts ShowBg) → on écrit DIRECTEMENT DISPCNT bits 0-2 en RMW,
+ *  autres bits préservés (GetGpuReg reconstruit BG-on/OBJ/win depuis les configs). Le
+ *  MÊME RMW-sur-DISPCNT est utilisé par le décomp lui-même : bg.c:239
+ *  SetTextModeAndHideBgs `SetGpuReg(DISPCNT, GetGpuReg(DISPCNT) & ~...)`. applyDispCnt
+ *  en re-dérive isAffine (mode 1/2 → BG2/BG3 affine). */
+export function SetBgMode(bgMode: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x00 /* REG_OFFSET_DISPCNT */, (rt.GetGpuReg(0x00) & ~0x7) | (bgMode & 0x7));
+}
+
+/** 1:1 décomp `void SetBgTilemapBuffer(u8 bg, void *tilemap)` (bg.c:848) : le décomp
+ *  stocke le pointeur `sGpuBgConfigs2[bg].tilemap`. ADAPTATION MOTEUR CENTRALISÉE
+ *  (précédent mail.ts:1018, pokenav_main_menu.ts:91) : le tilemap du BG est une VUE
+ *  VRAM persistante lue chaque frame par le compositor (pas de pointeur WRAM
+ *  réassignable), et la copie se fait via CopyBgTilemapBufferToVram → no-op net.
+ *  (⚠️ un écran qui décompresse dans un buffer PUIS SetBgTilemapBuffer sans écrire la
+ *  vue VRAM directement — conditions/credits — n'affichera pas ce buffer tant qu'il
+ *  n'est pas re-câblé façon easy_chat.ts:799 [alias buffer↔vue] ; hors périmètre A2). */
+export function SetBgTilemapBuffer(_bg: number, _tilemap: unknown): void {
+  /* no-op : le tilemap est la vue VRAM persistante du compositor (cf. mail.ts:1018) */
+}
+
+/** 1:1 décomp `void UnsetBgTilemapBuffer(u8 bg)` (bg.c:856) : met le pointeur à NULL.
+ *  Pendant du SetBgTilemapBuffer ci-dessus → no-op. */
+export function UnsetBgTilemapBuffer(_bg: number): void {
+  /* no-op : pendant de SetBgTilemapBuffer */
 }
 
 /** 1:1 décomp `ScheduleBgCopyTilemapToVram(u8 bg)` (bg.c) : planifie une copie
