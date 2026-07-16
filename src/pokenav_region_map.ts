@@ -7,7 +7,7 @@
  * Politique préproc : build vanilla FR (NDEBUG/FRENCH définis, BUGFIX/UBFIX absents).
  */
 
-import { CpuFill16, FuncIsActiveTask, LoadCompressedSpriteSheet, TransferPlttBuffer } from '../harness/runtime/decomp-globals';
+import { FuncIsActiveTask, LoadCompressedSpriteSheet, TransferPlttBuffer } from '../harness/runtime/decomp-globals';
 import { RGB_BLACK, ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helpers';
 import { CHAR_SPACE } from '../include/constants/characters';
 import { SE_SELECT } from '../include/constants/songs';
@@ -17,7 +17,7 @@ import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
 import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
 import { JOY_NEW, PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './window';
-import { MAPSECTYPE_BATTLE_FRONTIER, MAPSECTYPE_CITY_CANFLY, MAPSECTYPE_CITY_CANTFLY, MAPSECTYPE_NONE, MAPSECTYPE_ROUTE } from './engine/field/region-map-data';
+import { MAPSECTYPE_BATTLE_FRONTIER, MAPSECTYPE_CITY_CANFLY, MAPSECTYPE_CITY_CANTFLY, MAPSECTYPE_NONE, MAPSECTYPE_ROUTE } from './region_map';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gMapHeader } from './fieldmap';
 import { GetLandmarkName } from './landmark';
@@ -27,56 +27,146 @@ import { StringCopyPadded, gStringVar1 } from './string_util';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { AddTextPrinterParameterized } from './text';
 import { DrawTextBorderOuter, LoadUserWindowBorderGfx_ } from './text_window';
-import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, SetBgMode, SetBgTilemapBuffer, ShowBg } from './window';
+import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetBgAttribute, BG_ATTR_BASETILE, GetBgY, GetWindowAttribute, HideBg, PutWindowTilemap, RemoveWindow, SetBgMode, SetBgTilemapBuffer, ShowBg, WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_PALETTE_NUM, WINDOW_BASE_BLOCK, WriteSequenceToBgTilemapBuffer } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
 
 // ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
 import type { OamData } from '../include/gba/types';
-import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, FuncIsActiveLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-const BgDmaFill: any = __wireTodo('BgDmaFill');
-const BlendRegionMap: any = __wireTodo('BlendRegionMap');
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreateRegionMapCursor: any = __wireTodo('CreateRegionMapCursor');
-const CreateRegionMapPlayerIcon: any = __wireTodo('CreateRegionMapPlayerIcon');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const DoRegionMapInputCallback: any = __wireTodo('DoRegionMapInputCallback');
-const FadeToBlackExceptPrimary: any = __wireTodo('FadeToBlackExceptPrimary');
-const FreeRegionMapIconResources: any = __wireTodo('FreeRegionMapIconResources');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetBgY: any = __wireTodo('GetBgY');
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const InitRegionMapData: any = __wireTodo('InitRegionMapData');
-const IsEventIslandMapSecId: any = __wireTodo('IsEventIslandMapSecId');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const IsRegionMapZoomed: any = __wireTodo('IsRegionMapZoomed');
-const LZ77UnCompWram: any = __wireTodo('LZ77UnCompWram');
-const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
-const LoadRegionMapGfx: any = __wireTodo('LoadRegionMapGfx');
-const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const PutWindowRectTilemap: any = __wireTodo('PutWindowRectTilemap');
-const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
-const SetPokenavVBlankCallback: any = __wireTodo('SetPokenavVBlankCallback');
-const SetRegionMapDataForZoom: any = __wireTodo('SetRegionMapDataForZoom');
-const SetVBlankCallback_: any = __wireTodo('SetVBlankCallback_');
-const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
-const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
-const TrySetPlayerIconBlink: any = __wireTodo('TrySetPlayerIconBlink');
-const UpdateRegionMapRightHeaderTiles: any = __wireTodo('UpdateRegionMapRightHeaderTiles');
-const UpdateRegionMapVideoRegs: any = __wireTodo('UpdateRegionMapVideoRegs');
-const UpdateRegionMapZoom: any = __wireTodo('UpdateRegionMapZoom');
-const WaitForHelpBar: any = __wireTodo('WaitForHelpBar');
-const gRegionMapCityZoomText_Gfx: any = __wireTodo('gRegionMapCityZoomText_Gfx');
-const gRegionMapCityZoomTiles_Pal: any = __wireTodo('gRegionMapCityZoomTiles_Pal');
-const sPokenavCityMaps: any = __wireTodo('sPokenavCityMaps');
+// ─── CÂBLAGE (ex-WIRE-TODO, 2026-07-16) : foyers réels ───────────────────────────
+import {
+  AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram,
+  FadeToBlackExceptPrimary, FreeTempTileDataBuffersIfPossible, InitBgTemplates,
+  IsPaletteFadeActive, LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PokenavFadeScreen,
+  Pokenav_AllocAndLoadPalettes, PrintHelpBarText, SetLeftHeaderSpritesInvisibility,
+  ShowLeftHeaderGfx, SlideMenuHeaderDown, UpdateRegionMapRightHeaderTiles, WaitForHelpBar,
+} from './pokenav_main_menu';
+// SetPokenavVBlankCallback : porté 1:1 dans pokenav.ts (sa maison décomp pokenav.c:542) —
+// arête runtime-only tolérée (précédent pokenav_menu_handler_gfx.ts:66).
+import { SetPokenavVBlankCallback } from './pokenav';
+import {
+  BlendRegionMap, CreateRegionMapCursor, CreateRegionMapPlayerIcon, DoRegionMapInputCallback,
+  FreeRegionMapIconResources, InitRegionMapData, IsEventIslandMapSecId, IsRegionMapZoomed,
+  LoadRegionMapGfx, PrefetchRegionMapAssets, RegionMapAssetsReady, SetRegionMapDataForZoom,
+  TrySetPlayerIconBlink, UpdateRegionMapVideoRegs, UpdateRegionMapZoom,
+} from './region_map';
+import { sPokenavCityMaps } from './data/region_map/city_map_entries';
+import { CityMapTilemapsReady, PrefetchCityMapTilemaps } from './data/region_map/city_map_tilemaps';
+import { BgDmaFill, getRuntime } from '../harness/runtime/decomp-globals';
+import { loadTileBin, loadGbaPal, extractPngPlte } from '../harness/gba/png-loader';
+
+// 1:1 wrapper pokénav `static void SetVBlankCallback_(IntrCallback cb) { SetVBlankCallback(cb); }`
+// (pokenav.c:537) — précédent : pokenav_menu_handler_gfx.ts:67-69 (wrapper local identique).
+function SetVBlankCallback_(cb: any): void { getRuntime()?.SetVBlankCallback(cb); }
+
+/** 1:1 `void PutWindowRectTilemap(u8 windowId, u8 x, u8 y, u8 width, u8 height)` (window.c:371)
+ *  — window.ts (gelé pour ce chantier) ne l'exporte pas encore ; impl locale 1:1 sur ses
+ *  briques exportées (GetWindowAttribute/GetBgAttribute/WriteSequenceToBgTilemapBuffer). */
+function PutWindowRectTilemap(windowId: number, x: number, y: number, width: number, height: number): void {
+  const bg = GetWindowAttribute(windowId, WINDOW_BG);
+  const winWidth = GetWindowAttribute(windowId, WINDOW_WIDTH);
+  let currentRow = GetWindowAttribute(windowId, WINDOW_BASE_BLOCK) + (y * winWidth) + x + GetBgAttribute(bg, BG_ATTR_BASETILE);
+  for (let i = 0; i < height; ++i) {
+    WriteSequenceToBgTilemapBuffer(
+      bg,
+      currentRow,
+      GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT) + x,
+      GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP) + y + i,
+      width,
+      1,
+      GetWindowAttribute(windowId, WINDOW_PALETTE_NUM),
+      1);
+    currentRow += winWidth;
+  }
+}
+
+/** 1:1 `LZ77UnCompWram(src, dest)` (agbcc) — ADAPTATION MOTEUR : les tilemaps de ville
+ *  extraits sont déjà décompressés (Uint16Array 10×10) → copie directe (précédent
+ *  region_map.ts LZ77UnCompWram / pokenav_main_menu.ts LoadLeftHeaderGfxForMenu).
+ *  HURLE si l'asset n'est pas chargé (Règle 3). */
+function LZ77UnCompWram(src: Uint16Array | null, dest: Uint16Array): void {
+  if (!src) {
+    console.error('[pokenav region map] LZ77UnCompWram : tilemap ville pas chargé — PrefetchCityMapTilemaps a-t-il tourné ?');
+    return;
+  }
+  dest.set(src.subarray(0, Math.min(src.length, dest.length)));
+}
+
+/** 1:1 `CpuFill16(value, dest, size)` — variante locale BUFFER-dest : le CpuFill16 harness ne
+ *  gère que les ADRESSES GBA (decomp-globals) et no-opait silencieusement sur un typed array →
+ *  le fond de la carte (tile 0x1040 sur BG1) n'était jamais posé. `state.tilemapBuffer` est la
+ *  VUE LIVE de la tilemap BG1 (cf. OpenPokenavRegionMap), remplie ici 1:1. size = OCTETS. */
+function CpuFill16(value: number, dest: Uint16Array, sizeBytes: number): void {
+  if (!dest) return;
+  const n = Math.min(sizeBytes >> 1, dest.length);
+  for (let i = 0; i < n; i++) dest[i] = value & 0xFFFF;
+}
+
+// ─── graphics.c INCBIN (gRegionMapCityZoom*) + INCGFX locaux — chargés async par
+//     PrefetchPokenavRegionMapAssets (précédent match_call_gfx gMatchCallUI_*) ───
+let gRegionMapCityZoomText_Gfx: Uint8Array | null = null;   // graphics.c:1318 city_zoom_text.png (.4bpp.lz)
+let gRegionMapCityZoomTiles_Pal: Uint16Array | null = null; // graphics.c:1317 zoom_tiles.png (.gbapal)
+let _pokenavRegionMapGfxLoaded = false;
+let _pokenavRegionMapGfxLoading = false;
+
+/** Préchauffe TOUS les assets de l'écran carte Pokénav (idempotent) : ceux de region_map.c
+ *  (PrefetchRegionMapAssets), les tilemaps de ville, et les INCGFX de ce fichier.
+ *  Appelé dès CB2_InitPokeNav (pokenav.ts, à côté de PrefetchMatchCallAssets). */
+export function PrefetchPokenavRegionMapAssets(): void {
+  PrefetchRegionMapAssets();
+  PrefetchCityMapTilemaps();
+  if (_pokenavRegionMapGfxLoaded || _pokenavRegionMapGfxLoading) return;
+  _pokenavRegionMapGfxLoading = true;
+  const base = '/decomp/em/pokenav/region_map';
+  void (async () => {
+    try {
+      const [infoPal, zoomGfx, zoomPal, cityTextGfx] = await Promise.all([
+        loadGbaPal(`${base}/info_window.pal`),          // sMapSecInfoWindow_Pal
+        loadTileBin(`${base}/zoom_tiles.png`, 4),       // sRegionMapCityZoomTiles_Gfx
+        extractPngPlte(`${base}/zoom_tiles.png`),       // gRegionMapCityZoomTiles_Pal
+        loadTileBin(`${base}/city_zoom_text.png`, 4),   // gRegionMapCityZoomText_Gfx
+      ]);
+      sMapSecInfoWindow_Pal = infoPal;
+      sRegionMapCityZoomTiles_Gfx = zoomGfx;
+      gRegionMapCityZoomTiles_Pal = zoomPal;
+      gRegionMapCityZoomText_Gfx = cityTextGfx;
+      // Réinjecter dans les structs qui capturaient null au module-load (précédent
+      // match_call_gfx:119 sOptionsCursorSpriteSheets).
+      (sCityZoomTextSpriteSheet[0] as any).data = cityTextGfx;
+      (sCityZoomTilesSpritePalette[0] as any).data = zoomPal;
+      _pokenavRegionMapGfxLoaded = true;
+    } catch (e) {
+      _pokenavRegionMapGfxLoading = false; // permet un retry au prochain open
+      console.error('[pokenav region map] PrefetchPokenavRegionMapAssets ÉCHOUÉ — l\'écran carte restera en pause :', e);
+    }
+  })();
+}
+
+/** Gate du LoopedTask_OpenRegionMap case 0 (précédent pokenav_main_menu.ts:464). */
+function PokenavRegionMapAssetsReady(): boolean {
+  return RegionMapAssetsReady() && CityMapTilemapsReady() && _pokenavRegionMapGfxLoaded;
+}
+
+// ─── Helpers OAM (le sprite du port n'a PAS de sous-struct `.oam` — MEMORY
+//     « .oam.paletteNum n'existe pas → via oamIndex » ; précédent
+//     _spriteOamTileNumSet pokenav_main_menu.ts:717) ────────────────────────────
+/** `sprite->oam.tileNum` (lecture) 1:1 via l'entrée OAM réelle. */
+function _spriteOamTileNumGet(sprite: any): number {
+  const oam = getRuntime()?.gba?.oam?.[sprite?.oamIndex ?? -1];
+  return oam ? oam.tileId : 0;
+}
+/** `sprite->oam.tileNum = v` 1:1 — écrit l'OAM ET tileBase/sheetTileStart (le tick anim
+ *  recalcule tileId = sheetTileStart + frame ; même triple-écriture que pokenav_main_menu). */
+function _spriteOamTileNumSet(sprite: any, v: number): void {
+  if (!sprite) return;
+  const oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
+  if (oam) oam.tileId = v;
+  sprite.tileBase = v;
+  sprite.sheetTileStart = v;
+}
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_REGION_MAP_STATE = 3; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -135,10 +225,12 @@ interface CityMapEntry {
   tilemap: Uint32Array;
 }
 
-// TRANSPILER-TODO INCGFX : sMapSecInfoWindow_Pal ← graphics/pokenav/region_map/info_window.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
+// INCGFX câblé : sMapSecInfoWindow_Pal ← graphics/pokenav/region_map/info_window.pal
+// (rempli async par PrefetchPokenavRegionMapAssets — gate au case 0 du LoopedTask).
 let sMapSecInfoWindow_Pal: any = null;
 
-// TRANSPILER-TODO INCGFX : sRegionMapCityZoomTiles_Gfx ← graphics/pokenav/region_map/zoom_tiles.png (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
+// INCGFX câblé : sRegionMapCityZoomTiles_Gfx ← graphics/pokenav/region_map/zoom_tiles.png
+// (rempli async par PrefetchPokenavRegionMapAssets — gate au case 0 du LoopedTask).
 let sRegionMapCityZoomTiles_Gfx: any = null;
 
 /** 1:1 (pokenav_region_map.c:85) */
@@ -306,6 +398,17 @@ export function OpenPokenavRegionMap(): boolean {
   let state = AllocSubstruct(POKENAV_SUBSTRUCT_REGION_MAP_ZOOM, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_RegionMapGfx) */);
   if (!state)
     return false;
+  // ADAPTATION MOTEUR (wire) : la ROM caste Alloc() brut → struct (les tableaux embarqués
+  // pokenav_region_map.c:32-40 font partie du bloc) ; AllocSubstruct rend {} → matérialiser.
+  // tilemapBuffer = getter VUE LIVE de la tilemap BG1 (SetBgTilemapBuffer est no-op,
+  // window.ts:1420) : CpuFill16 1:1 remplit ainsi la vraie tilemap du compositor, et le getter
+  // relit la view APRÈS l'InitBgTemplates du case 0 (une capture à l'open serait périmée).
+  state.cityZoomTextSprites = [null, null, null];                                  // struct Sprite *[3]
+  Object.defineProperty(state, 'tilemapBuffer', {                                  // u8[BG_SCREEN_SIZE]
+    configurable: true,
+    get: () => getRuntime()?.gba.bg(1).tilemap ?? null,
+  });
+  state.cityZoomPics = Array.from({ length: NUM_CITY_MAPS }, () => new Uint16Array(100)); // u8[22][200]
   state.loopTaskId = CreateLoopedTask(LoopedTask_OpenRegionMap, 1);
   state.isTaskActiveCB = GetCurrentLoopedTaskActive;
   return true;
@@ -364,6 +467,11 @@ function LoopedTask_OpenRegionMap(taskState: number): number {
   let state = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP_ZOOM);
   switch (taskState) {
     case 0:
+      // GATE ASSETS (adaptation moteur — précédent pokenav_main_menu.ts:464 `_pokenavHeaderLoaded`) :
+      // PAUSE tant que le prefetch (PrefetchPokenavRegionMapAssets, lancé à CB2_InitPokeNav) n'a
+      // pas fini ; les loaders HURLENT en console si un fetch a échoué (Règle 3).
+      if (!PokenavRegionMapAssetsReady())
+        return LT_PAUSE;
       SetVBlankCallback_(null);
       HideBg(1);
       HideBg(2);
@@ -550,7 +658,9 @@ function LoadPokenavRegionMapGfx(state: Pokenav_RegionMapGfx): void {
   FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
   PutWindowTilemap(state.infoWindowId);
   CopyWindowToVram(state.infoWindowId, COPYWIN_FULL);
-  CopyPaletteIntoBufferUnfaded(sMapSecInfoWindow_Pal, BG_PLTT_ID(1), sMapSecInfoWindow_Pal.length /* TRANSPILER-TODO sizeof */);
+  // sizeof(sMapSecInfoWindow_Pal) = OCTETS (CopyPaletteIntoBufferUnfaded fait size>>1) →
+  // byteLength (le `.length` transpilé = entrées u16 = ne copiait que la moitié de la palette).
+  CopyPaletteIntoBufferUnfaded(sMapSecInfoWindow_Pal, BG_PLTT_ID(1), sMapSecInfoWindow_Pal.byteLength);
   CopyPaletteIntoBufferUnfaded(gRegionMapCityZoomTiles_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
   if (!IsRegionMapZoomed())
     ChangeBgY(1, -0x6000, BG_COORD_SET);
@@ -710,10 +820,10 @@ function CreateCityZoomTextSprites(): void {
     sprite = gSprites[spriteId];
     sprite.data[0] = 0;
     sprite.data[1] = i * 4;
-    sprite.data[2] = sprite.oam.tileNum;
+    sprite.data[2] = _spriteOamTileNumGet(sprite); // 1:1 `= sprite->oam.tileNum` (helper OAM, cf. wire)
     sprite.data[3] = 150;
     sprite.data[4] = i * 4;
-    sprite.oam.tileNum += i * 4;
+    _spriteOamTileNumSet(sprite, _spriteOamTileNumGet(sprite) + i * 4); // 1:1 `sprite->oam.tileNum += i * 4`
     state.cityZoomTextSprites[i] = sprite;
   }
 }
@@ -731,7 +841,7 @@ function SpriteCB_CityZoomText(sprite: DecompSprite): void {
     sprite.data[0] = 0;
   if (++sprite.data[1] > 60)
     sprite.data[1] = 0;
-  sprite.oam.tileNum = sprite.data[2] + sprite.data[1];
+  _spriteOamTileNumSet(sprite, sprite.data[2] + sprite.data[1]); // 1:1 `sprite->oam.tileNum = data[2]+data[1]`
   if (sprite.data[5] < 4)
   {
     if (sprite.data[0] == 0)

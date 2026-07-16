@@ -34,7 +34,7 @@ import type { DecompTask } from '../harness/runtime/decomp-runtime';
 //     tous déjà portés dans les subscreens. Imports 1:1 par fichier. ─────────────────────────
 import { GetMenuHandlerCallback, FreeMenuHandlerSubstruct1, PokenavCallback_Init_ConditionMenu, PokenavCallback_Init_ConditionSearchMenu, PokenavCallback_Init_MainMenuCursorOnMap, PokenavCallback_Init_MainMenuCursorOnMatchCall, PokenavCallback_Init_MainMenuCursorOnRibbons } from './pokenav_menu_handler';
 import { CreateMenuHandlerLoopedTask, FreeMenuHandlerSubstruct2, IsMenuHandlerLoopedTaskActive, OpenPokenavMenuInitial, OpenPokenavMenuNotInitial } from './pokenav_menu_handler_gfx';
-import { CreateRegionMapLoopedTask, FreeRegionMapSubstruct1, FreeRegionMapSubstruct2, GetRegionMapCallback, IsRegionMapLoopedTaskActive, OpenPokenavRegionMap, PokenavCallback_Init_RegionMap } from './pokenav_region_map';
+import { CreateRegionMapLoopedTask, FreeRegionMapSubstruct1, FreeRegionMapSubstruct2, GetRegionMapCallback, IsRegionMapLoopedTaskActive, OpenPokenavRegionMap, PokenavCallback_Init_RegionMap, PrefetchPokenavRegionMapAssets } from './pokenav_region_map';
 import { FreeConditionGraphMenuSubstruct1, GetConditionGraphMenuCallback, PokenavCallback_Init_ConditionGraph_Party, PokenavCallback_Init_ConditionGraph_Search } from './pokenav_conditions';
 import { CreateConditionGraphMenuLoopedTask, FreeConditionGraphMenuSubstruct2, IsConditionGraphMenuLoopedTaskActive, OpenConditionGraphMenu } from './pokenav_conditions_gfx';
 import { CreateSearchResultsLoopedTask, FreeSearchResultSubstruct1, FreeSearchResultSubstruct2, GetConditionSearchResultsCallback, IsSearchResultLoopedTaskActive, OpenConditionSearchListFromGraph, OpenConditionSearchResults, PokenavCallback_Init_ConditionSearch, PokenavCallback_Init_ReturnToMonSearchList } from './pokenav_conditions_search_results';
@@ -128,6 +128,7 @@ export function CB2_InitPokeNav(): void {
     // ramène les transitions vers les ~0.2 s GBA (au lieu de gates async visibles).
     PrefetchMatchCallAssets();
     PrefetchListArrowAssets();
+    PrefetchPokenavRegionMapAssets();
     ResetTasks();
     rt.SetVBlankCallback(null);
     CreateTask((t: DecompTask) => Task_Pokenav(t), 0);
