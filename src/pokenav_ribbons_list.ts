@@ -30,40 +30,27 @@ import { AddWindow, COPYWIN_GFX, COPYWIN_MAP, ChangeBgX, ChangeBgY, CopyBgTilema
 import type { Pokemon } from './engine/battle/party-storage';
 import type { WindowTemplate } from './window';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
-import { __wireTodo } from './engine/wire-todo';
+// ═══ wire-transpiled (auto) : imports résolus par l'index ═══
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
-const AreLeftHeaderSpritesMoving: any = __wireTodo('AreLeftHeaderSpritesMoving');
-import { CheckBoxMonSanityAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreatePokenavList: any = __wireTodo('CreatePokenavList');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const DestroyPokenavList: any = __wireTodo('DestroyPokenavList');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetBoxMonData: any = __wireTodo('GetBoxMonData');
-import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const IsCreatePokenavListTaskActive: any = __wireTodo('IsCreatePokenavListTaskActive');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const LT_SET_STATE: any = __wireTodo('LT_SET_STATE');
-const LoadLeftHeaderGfxForIndex: any = __wireTodo('LoadLeftHeaderGfxForIndex');
-const MainMenuLoopedTaskIsBusy: any = __wireTodo('MainMenuLoopedTaskIsBusy');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const PokenavList_GetSelectedIndex: any = __wireTodo('PokenavList_GetSelectedIndex');
-const PokenavList_IsMoveWindowTaskActive: any = __wireTodo('PokenavList_IsMoveWindowTaskActive');
-const PokenavList_MoveCursorDown: any = __wireTodo('PokenavList_MoveCursorDown');
-const PokenavList_MoveCursorUp: any = __wireTodo('PokenavList_MoveCursorUp');
-const PokenavList_PageDown: any = __wireTodo('PokenavList_PageDown');
-const PokenavList_PageUp: any = __wireTodo('PokenavList_PageUp');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const SetLeftHeaderSpritesInvisibility: any = __wireTodo('SetLeftHeaderSpritesInvisibility');
-const ShowLeftHeaderGfx: any = __wireTodo('ShowLeftHeaderGfx');
-const SlideMenuHeaderDown: any = __wireTodo('SlideMenuHeaderDown');
-const gMonRibbonListFramePal: any = __wireTodo('gMonRibbonListFramePal');
-const gMonRibbonListFrameTilemap: any = __wireTodo('gMonRibbonListFrameTilemap');
-const gMonRibbonListFrameTiles: any = __wireTodo('gMonRibbonListFrameTiles');
+// ─── Câblage (ex-__wireTodo) : helpers déjà portés ailleurs dans le repo ───
+import { AreLeftHeaderSpritesMoving, CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram, FreeTempTileDataBuffersIfPossible, InitBgTemplates, IsPaletteFadeActive, LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PokenavFadeScreen, PrintHelpBarText, SetLeftHeaderSpritesInvisibility, ShowLeftHeaderGfx, SlideMenuHeaderDown } from './pokenav_main_menu';
+import { CreatePokenavList, DestroyPokenavList, IsCreatePokenavListTaskActive, PokenavList_GetSelectedIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp } from './pokenav_list';
+import { LT_SET_STATE } from './pokenav_looped_task';
+import { CheckBoxMonSanityAt, GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
+import { loadTileBin, loadTilemapBin, extractPngPlte, loadGbaPal } from '../harness/gba/png-loader';
+
+// 1:1 décomp `GetBoxMonData` (pokemon.c) : notre modèle unifie BoxPokemon→Pokemon, donc GetMonData
+//  couvre les champs box (NICKNAME/RIBBONS…). Alias (précédent mail_data.ts:43).
+const GetBoxMonData = GetMonData;
+
+// ── Assets (INCGFX) : le décomp a tout en ROM (instantané) ; le port fetch async (preload au fade
+//    d'ouverture, cf. PrefetchListArrowAssets). gMonRibbonListFrame* = frame bg du list screen
+//    (graphics.c:1623-1625). Populés par _loadRibbonsListAssets() ; DecompressAndCopyTileDataToVram
+//    / CopyToBgTilemapBuffer / CopyPaletteIntoBufferUnfaded no-op proprement si encore null. ──
+let gMonRibbonListFrameTiles: Uint8Array | null = null;    // list_bg.png .4bpp.lz (décompressé)
+let gMonRibbonListFrameTilemap: Uint16Array | null = null; // list_bg.bin.lz (décompressé)
+let gMonRibbonListFramePal: Uint16Array | null = null;     // list_bg.png .gbapal
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_RIBBONS_MON_LIST = 9; // 1:1 include/pokenav.h:0 (à consolider dans include/)
@@ -183,6 +170,11 @@ export function PokenavCallback_Init_MonRibbonList(): boolean {
   list.monList = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, 0 /* TRANSPILER-TODO sizeof(struct PokenavMonList) */);
   if (list.monList == null)
     return false;
+  // ADAPTATION MOTEUR : `struct PokenavMonList { PokenavMonListItem monData[]; s32 listCount; s32 currIndex; }`
+  // zéro-init en C ; AllocSubstruct rend un objet vide → init explicite (sinon monData[i]= crash).
+  list.monList.monData = [];
+  list.monList.listCount = 0;
+  list.monList.currIndex = 0;
   list.callback = HandleRibbonsMonListInput_WaitListInit;
   list.loopedTaskId = CreateLoopedTask(GetMonRibbonListLoopTaskFunc, 1);
   list.changeBgs = 0;
@@ -381,7 +373,9 @@ function InsertMonListItem(list: Pokenav_RibbonsMonList, item: any): void {
   }
   for (right = list.monList.listCount; right > insertionIdx; right--)
     list.monList.monData[right] = list.monList.monData[right - 1];
-  list.monList.monData[insertionIdx] = item /* TRANSPILER-TODO deref */;
+  // 1:1 `monData[insertionIdx] = *item` : COPIE par valeur (le caller réutilise le même `item`
+  // local à chaque itération → stocker la référence ferait pointer toutes les entrées sur le dernier).
+  list.monList.monData[insertionIdx] = { boxId: item.boxId, monId: item.monId, data: item.data };
   list.monList.listCount++;
 }
 
@@ -417,6 +411,7 @@ export function OpenRibbonsMonList(): boolean {
   let menu = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_MON_MENU, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_RibbonsMonMenu) */);
   if (menu == null)
     return false;
+  menu.buff = new Uint8Array(0x800); // 1:1 `u8 buff[BG_SCREEN_SIZE]` — init explicite (AllocSubstruct rend {}).
   menu.loopedTaskId = CreateLoopedTask(LoopedTask_OpenRibbonsMonList, 1);
   menu.callback = GetRibbonsMonCurrentLoopedTaskActive;
   menu.fromSummary = false;
@@ -428,6 +423,7 @@ export function OpenRibbonsMonListFromRibbonsSummary(): boolean {
   let menu = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_MON_MENU, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_RibbonsMonMenu) */);
   if (menu == null)
     return false;
+  menu.buff = new Uint8Array(0x800); // 1:1 `u8 buff[BG_SCREEN_SIZE]` — init explicite (AllocSubstruct rend {}).
   menu.loopedTaskId = CreateLoopedTask(LoopedTask_OpenRibbonsMonList, 1);
   menu.callback = GetRibbonsMonCurrentLoopedTaskActive;
   menu.fromSummary = true;
@@ -466,6 +462,10 @@ function LoopedTask_OpenRibbonsMonList(state: number): number {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_RIBBONS_MON_MENU);
   switch (state) {
     case 0:
+      // ADAPTATION MOTEUR (async asset) : le décomp a la frame bg en ROM (instantané). Le port
+      // fetch → on gate le case 0 tant que list_bg n'est pas fetché (sanctionné, cf. pokenav_list
+      // case 3). `_settled` (loaded OU 404) débloque même si l'asset manque (jamais de freeze dur).
+      if (!_ribbonsListAssetsSettled) { _loadRibbonsListAssets(); return LT_PAUSE; }
       InitBgTemplates(sMonRibbonListBgTemplates, sMonRibbonListBgTemplates.length);
       //!< Global variables in the French Version
       DecompressAndCopyTileDataToVram(1, gMonRibbonListFrameTiles, 0, 0, 0);
@@ -486,7 +486,7 @@ function LoopedTask_OpenRibbonsMonList(state: number): number {
     case 2:
       if (FreeTempTileDataBuffersIfPossible())
         return LT_PAUSE;
-      CopyPaletteIntoBufferUnfaded(sMonRibbonListUi_Pal, BG_PLTT_ID(2), sMonRibbonListUi_Pal.length /* TRANSPILER-TODO sizeof */);
+      CopyPaletteIntoBufferUnfaded(sMonRibbonListUi_Pal, BG_PLTT_ID(2), sMonRibbonListUi_Pal ? sMonRibbonListUi_Pal.length * 2 : 0 /* sizeof = octets */);
       CreateRibbonMonsList();
       return LT_INC_AND_PAUSE;
     case 3:
@@ -700,7 +700,7 @@ function DrawListIndexNumber(windowId: number, index: number, max: number): void
   let x = 0;
   let ptr = strbuf;
   ptr = ConvertIntToDecimalStringN(ptr, index, STR_CONV_MODE_RIGHT_ALIGN, 3);
-  void 0 /* TRANSPILER-TODO ASSIGN: *ptr++ = CHAR_SLASH */;
+  ptr[0] = CHAR_SLASH; ptr = ptr.subarray(1); // 1:1 `*ptr++ = CHAR_SLASH` (ptr = pointeur EOS)
   ConvertIntToDecimalStringN(ptr, max, STR_CONV_MODE_RIGHT_ALIGN, 3);
   x = GetStringCenterAlignXOffset(FONT_NORMAL, strbuf, 56);
   AddTextPrinterParameterized(windowId, FONT_NORMAL, strbuf, x, 1, TEXT_SKIP_DRAW, null);
@@ -764,10 +764,41 @@ function BufferRibbonMonInfoText(listItem: any, dest: Uint8Array): void {
       break;
   }
   s = StringCopy(gStringVar1, genderStr);
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_SLASH */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_EXTRA_SYMBOL */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *s++ = CHAR_LV_2 */;
+  s[0] = CHAR_SLASH; s = s.subarray(1);         // 1:1 `*s++ = CHAR_SLASH`
+  s[0] = CHAR_EXTRA_SYMBOL; s = s.subarray(1);  // 1:1 `*s++ = CHAR_EXTRA_SYMBOL`
+  s[0] = CHAR_LV_2; s = s.subarray(1);          // 1:1 `*s++ = CHAR_LV_2`
   ConvertIntToDecimalStringN(s, level, STR_CONV_MODE_LEFT_ALIGN, 3);
   dest = GetStringClearToWidth(dest, FONT_NORMAL, gStringVar1, 54);
   ConvertIntToDecimalStringN(dest, item.data, STR_CONV_MODE_RIGHT_ALIGN, 2);
+}
+
+// ─── Préchargement assets (INCGFX) — 1:1 côté ROM = INCGFX instantané ; ici fetch async au fade
+//     d'ouverture (précédent PrefetchListArrowAssets). Réinjecte dans les module-vars capturées null. ──
+let _ribbonsListAssetsLoaded = false;
+let _ribbonsListAssetsSettled = false;  // loaded OU échec (404) — débloque le gate même en cas de manque
+let _ribbonsListAssetsLoadStarted = false;
+/** Préchauffe la frame bg (list_bg) + la palette UI (list_ui) du list screen (idempotent). */
+export function PrefetchRibbonsListAssets(): void { _loadRibbonsListAssets(); }
+function _loadRibbonsListAssets(): void {
+  if (_ribbonsListAssetsLoadStarted) return;
+  _ribbonsListAssetsLoadStarted = true;
+  void (async () => {
+    try {
+      const [tiles, tilemap, framePal, uiPal] = await Promise.all([
+        loadTileBin('/decomp/em/pokenav/ribbons/list_bg.png', 4),
+        loadTilemapBin('/decomp/em/pokenav/ribbons/list_bg.bin'),
+        extractPngPlte('/decomp/em/pokenav/ribbons/list_bg.png'),
+        loadGbaPal('/decomp/em/pokenav/ribbons/list_ui.pal'),
+      ]);
+      gMonRibbonListFrameTiles = tiles;
+      gMonRibbonListFrameTilemap = tilemap;
+      gMonRibbonListFramePal = framePal;
+      sMonRibbonListUi_Pal = uiPal;
+      _ribbonsListAssetsLoaded = true;
+    } catch (e) {
+      console.error('[pokenav_ribbons_list] chargement assets ribbons/list_bg ÉCHOUÉ (frame invisible)', e);
+    } finally {
+      _ribbonsListAssetsSettled = true;
+    }
+  })();
 }

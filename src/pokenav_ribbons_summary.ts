@@ -31,52 +31,48 @@ import { AddTextPrinterParameterized3 } from './menu';
 import { BG_PLTT_ID } from './palette';
 import { GetBoxMonGender, GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonGender, gPlayerParty } from './pokemon';
 import { GetBoxedMonPtr } from './pokemon_storage_system';
-import { CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, PLTT_SIZE_4BPP, gDummySpriteAnimTable, gSprites } from './sprite';
+import { CreateSprite, DestroySprite, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, PLTT_SIZE_4BPP, gDummySpriteAnimTable, gSprites } from './sprite';
 import { ConvertIntToDecimalStringN, StringCopy, StringGet_Nickname, gStringVar1, gStringVar3, gStringVar4 } from './string_util';
 import { AddTextPrinterParameterized, encodeOwText } from './text';
-import { FreeAndDestroyMonPicSprite, ResetAllPicSprites } from './trainer_pokemon_sprites';
+import { CreateMonPicSprite_HandleDeoxys, FreeAndDestroyMonPicSprite, ResetAllPicSprites, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { AddWindow, COPYWIN_GFX, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, HideBg, PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer, ShowBg } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type { Pokemon } from './engine/battle/party-storage';
 import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
+// ═══ wire-transpiled (auto) : imports résolus par l'index ═══
 import type { OamData } from '../include/gba/types';
-import { __wireTodo } from './engine/wire-todo';
 import { CreateLoopedTask, IsLoopedTaskActive } from './pokenav_looped_task';
 import { AllocSubstruct, FreePokenavSubstruct, GetSubstructPtr } from './pokenav_resources';
-// ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
+// ─── Câblage (ex-__wireTodo) ───
 // 1:1 include/sprite.h:130,136 — builders `union AffineAnimCmd` (défaut local, à consolider include/).
 const AFFINEANIMCMD_END = { type: 0x7FFF /* AFFINEANIMCMDTYPE_END */ };
 const AFFINEANIMCMD_FRAME = (xScale: number, yScale: number, rotation: number, duration: number) => ({ frame: { xScale, yScale, rotation, duration } });
-const BgDmaFill: any = __wireTodo('BgDmaFill');
-const CopyPaletteIntoBufferUnfaded: any = __wireTodo('CopyPaletteIntoBufferUnfaded');
-const CreateMonPicSprite_HandleDeoxys: any = __wireTodo('CreateMonPicSprite_HandleDeoxys');
-const DecompressAndCopyTileDataToVram: any = __wireTodo('DecompressAndCopyTileDataToVram');
-const FreeSpriteOamMatrix: any = __wireTodo('FreeSpriteOamMatrix');
-const FreeTempTileDataBuffersIfPossible: any = __wireTodo('FreeTempTileDataBuffersIfPossible');
-const GetBoxMonData: any = __wireTodo('GetBoxMonData');
+// helpers déjà portés (pokenav_main_menu / decomp-globals / decomp-runtime / png-loader)
+import { CopyPaletteIntoBufferUnfaded, DecompressAndCopyTileDataToVram, FreeTempTileDataBuffersIfPossible, InitBgTemplates, IsPaletteFadeActive, PokenavFadeScreen, PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintHelpBarText } from './pokenav_main_menu';
+import { BgDmaFill } from '../harness/runtime/decomp-globals';
+import { gKeyRepeat } from '../harness/runtime/decomp-runtime';
+import { loadTileBin, loadTilemapBin, extractPngPlte, loadGbaPal, loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { GetBoxMonDataAt } from './pokemon_storage_system'; // câblé (ex-__wireTodo)
-const InitBgTemplates: any = __wireTodo('InitBgTemplates');
-const IsPaletteFadeActive: any = __wireTodo('IsPaletteFadeActive');
-const PokenavFadeScreen: any = __wireTodo('PokenavFadeScreen');
-const PokenavFillPalette: any = __wireTodo('PokenavFillPalette');
-const Pokenav_AllocAndLoadPalettes: any = __wireTodo('Pokenav_AllocAndLoadPalettes');
-const PrintHelpBarText: any = __wireTodo('PrintHelpBarText');
-const gGiftRibbonDescriptionPointers: any = __wireTodo('gGiftRibbonDescriptionPointers');
-const gKeyRepeatContinueDelay: any = __wireTodo('gKeyRepeatContinueDelay');
-const gKeyRepeatStartDelay: any = __wireTodo('gKeyRepeatStartDelay');
-const gPokenavRibbonsSummaryBg_Gfx: any = __wireTodo('gPokenavRibbonsSummaryBg_Gfx');
-const gPokenavRibbonsSummaryBg_Pal: any = __wireTodo('gPokenavRibbonsSummaryBg_Pal');
-const gPokenavRibbonsSummaryBg_Tilemap: any = __wireTodo('gPokenavRibbonsSummaryBg_Tilemap');
-const gRibbonDescriptionPointers: any = __wireTodo('gRibbonDescriptionPointers');
+
+// 1:1 décomp `GetBoxMonData` (pokemon.c) : modèle unifié BoxPokemon→Pokemon → GetMonData couvre
+//  les champs box (NICKNAME/SPECIES/RIBBONS…). Alias (précédent mail_data.ts:43).
+const GetBoxMonData = GetMonData;
+
+// ── Assets bg (INCGFX graphics.c:1497-1499) — le décomp a tout en ROM ; le port fetch async
+//    (preload au fade d'ouverture). Populés par _loadRibbonsSummaryAssets(). ──
+let gPokenavRibbonsSummaryBg_Gfx: Uint8Array | null = null;     // summary_bg.png .4bpp.lz (décompressé)
+let gPokenavRibbonsSummaryBg_Tilemap: Uint16Array | null = null; // summary_bg.bin.lz (décompressé)
+let gPokenavRibbonsSummaryBg_Pal: Uint16Array | null = null;     // summary_bg.png .gbapal
 
 // ─── constantes décomp inlinées (headers pas encore dans include/) ───
 const POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST = 13; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const POKENAV_SUBSTRUCT_MON_LIST = 18; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const POKENAV_RIBBONS_RETURN_TO_MON_LIST = 100014; // 1:1 include/pokenav.h:0 (à consolider dans include/)
-const FIRST_GIFT_RIBBON = 25; // 1:1 include/constants/pokemon.h:130 (à consolider dans include/)
+const FIRST_GIFT_RIBBON = 25; // 1:1 include/constants/pokemon.h:130 (= MARINE_RIBBON) (à consolider include/)
+const NUM_GIFT_RIBBONS = 7;   // 1:1 include/constants/pokemon.h:132 (= 1 + WORLD_RIBBON - MARINE_RIBBON)
 const POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_MENU = 14; // 1:1 include/pokenav.h:0 (à consolider dans include/)
 const LT_INC_AND_PAUSE = 0; // 1:1 include/pokenav.h:58 (à consolider dans include/)
 const LT_PAUSE = 2; // 1:1 include/pokenav.h:60 (à consolider dans include/)
@@ -110,7 +106,7 @@ const PALTAG_RIBBON_ICONS_5 = 19; // 1:1 pokenav_ribbons_summary.c:33
 
 const RIBBONS_PER_ROW = 9; // 1:1 pokenav_ribbons_summary.c:35
 
-const GIFT_RIBBON_ROW = (1 + (FIRST_GIFT_RIBBON / RIBBONS_PER_ROW)) // Gift ribbons start on a new row after the normal ribbons.; // 1:1 pokenav_ribbons_summary.c:36
+const GIFT_RIBBON_ROW = (1 + Math.trunc(FIRST_GIFT_RIBBON / RIBBONS_PER_ROW)); // Gift ribbons start on a new row after the normal ribbons. — division ENTIÈRE C (25/9=2) ; 1:1 pokenav_ribbons_summary.c:36
 
 const GIFT_RIBBON_START_POS = (RIBBONS_PER_ROW * GIFT_RIBBON_ROW); // 1:1 pokenav_ribbons_summary.c:37
 
@@ -156,110 +152,194 @@ let sRibbonDraw_Total = 0;
 /** 1:1 (pokenav_ribbons_summary.c:73) */
 let sRibbonDraw_Current = 0;
 
-/** 1:1 (pokenav_ribbons_summary.c:123) */
+/** 1:1 struct RibbonData `{ u8 numBits; u8 numRibbons; u8 ribbonId; bool8 isGiftRibbon; }`
+ *  (pokenav_ribbons_summary.c:117-142). numBits = bits pour représenter numRibbons ; numRibbons
+ *  jamais lu (contest = 4, autres = 1). */
 export const sRibbonData = [
-  [
-    1,
-    1,
-    CHAMPION_RIBBON,
-    false,
-  ],
-  [
-    3,
-    4,
-    COOL_RIBBON_NORMAL,
-    false,
-  ],
-  [
-    3,
-    4,
-    BEAUTY_RIBBON_NORMAL,
-    false,
-  ],
-  [
-    3,
-    4,
-    CUTE_RIBBON_NORMAL,
-    false,
-  ],
-  [
-    3,
-    4,
-    SMART_RIBBON_NORMAL,
-    false,
-  ],
-  [
-    3,
-    4,
-    TOUGH_RIBBON_NORMAL,
-    false,
-  ],
-  [
-    1,
-    1,
-    WINNING_RIBBON,
-    false,
-  ],
-  [
-    1,
-    1,
-    VICTORY_RIBBON,
-    false,
-  ],
-  [
-    1,
-    1,
-    ARTIST_RIBBON,
-    false,
-  ],
-  [
-    1,
-    1,
-    EFFORT_RIBBON,
-    false,
-  ],
-  [
-    1,
-    1,
-    MARINE_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    LAND_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    SKY_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    COUNTRY_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    NATIONAL_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    EARTH_RIBBON,
-    true,
-  ],
-  [
-    1,
-    1,
-    WORLD_RIBBON,
-    true,
-  ],
+  { numBits: 1, numRibbons: 1, ribbonId: CHAMPION_RIBBON,      isGiftRibbon: false },
+  { numBits: 3, numRibbons: 4, ribbonId: COOL_RIBBON_NORMAL,   isGiftRibbon: false },
+  { numBits: 3, numRibbons: 4, ribbonId: BEAUTY_RIBBON_NORMAL, isGiftRibbon: false },
+  { numBits: 3, numRibbons: 4, ribbonId: CUTE_RIBBON_NORMAL,   isGiftRibbon: false },
+  { numBits: 3, numRibbons: 4, ribbonId: SMART_RIBBON_NORMAL,  isGiftRibbon: false },
+  { numBits: 3, numRibbons: 4, ribbonId: TOUGH_RIBBON_NORMAL,  isGiftRibbon: false },
+  { numBits: 1, numRibbons: 1, ribbonId: WINNING_RIBBON,       isGiftRibbon: false },
+  { numBits: 1, numRibbons: 1, ribbonId: VICTORY_RIBBON,       isGiftRibbon: false },
+  { numBits: 1, numRibbons: 1, ribbonId: ARTIST_RIBBON,        isGiftRibbon: false },
+  { numBits: 1, numRibbons: 1, ribbonId: EFFORT_RIBBON,        isGiftRibbon: false },
+  { numBits: 1, numRibbons: 1, ribbonId: MARINE_RIBBON,        isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: LAND_RIBBON,          isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: SKY_RIBBON,           isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: COUNTRY_RIBBON,       isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: NATIONAL_RIBBON,      isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: EARTH_RIBBON,         isGiftRibbon: true },
+  { numBits: 1, numRibbons: 1, ribbonId: WORLD_RIBBON,         isGiftRibbon: true },
+];
+
+// ═══ 1:1 data/text/ribbon_descriptions.h (inclus dans pokenav_ribbons_summary.c:144) ═══
+const gRibbonDescriptionPart1_Champion = encodeOwText("RUBAN d'appartenance");
+const gRibbonDescriptionPart2_Champion = encodeOwText("au PANTHEON");
+const gRibbonDescriptionPart1_CoolContest = encodeOwText("CONCOURS DE SANG-FROID");
+const gRibbonDescriptionPart1_BeautyContest = encodeOwText("CONCOURS DE BEAUTE");
+const gRibbonDescriptionPart1_CuteContest = encodeOwText("CONCOURS DE GRACE");
+const gRibbonDescriptionPart1_SmartContest = encodeOwText("CONCOURS D'INTEL.");
+const gRibbonDescriptionPart1_ToughContest = encodeOwText("CONCOURS DE ROBUS.");
+const gRibbonDescriptionPart2_NormalRank = encodeOwText("Gagnant catég. NORMAL!");
+const gRibbonDescriptionPart2_SuperRank = encodeOwText("Gagnant catég. SUPER!");
+const gRibbonDescriptionPart2_HyperRank = encodeOwText("Gagnant catég. HYPER!");
+const gRibbonDescriptionPart2_MasterRank = encodeOwText("Gagnant catég. MASTER!");
+const gRibbonDescriptionPart1_Winning = encodeOwText("RUBAN de victoire N.50");
+const gRibbonDescriptionPart2_Winning = encodeOwText("à la TOUR DE COMBAT.");
+const gRibbonDescriptionPart1_Victory = encodeOwText("RUBAN de Niveau libre");
+const gRibbonDescriptionPart2_Victory = encodeOwText("à la TOUR DE COMBAT.");
+const gRibbonDescriptionPart1_Artist = encodeOwText("RUBAN pour les modèles");
+const gRibbonDescriptionPart2_Artist = encodeOwText("exposés au musée.");
+const gRibbonDescriptionPart1_Effort = encodeOwText("RUBAN pour récompenser");
+const gRibbonDescriptionPart2_Effort = encodeOwText("un dur travail.");
+
+/** 1:1 `const u8 *const gRibbonDescriptionPointers[][2]` (ribbon_descriptions.h:21). Indexé par ribbon id (0..24). */
+const gRibbonDescriptionPointers = [
+  [gRibbonDescriptionPart1_Champion,      gRibbonDescriptionPart2_Champion],   // [CHAMPION_RIBBON]
+  [gRibbonDescriptionPart1_CoolContest,   gRibbonDescriptionPart2_NormalRank], // [COOL_RIBBON_NORMAL]
+  [gRibbonDescriptionPart1_CoolContest,   gRibbonDescriptionPart2_SuperRank],  // [COOL_RIBBON_SUPER]
+  [gRibbonDescriptionPart1_CoolContest,   gRibbonDescriptionPart2_HyperRank],  // [COOL_RIBBON_HYPER]
+  [gRibbonDescriptionPart1_CoolContest,   gRibbonDescriptionPart2_MasterRank], // [COOL_RIBBON_MASTER]
+  [gRibbonDescriptionPart1_BeautyContest, gRibbonDescriptionPart2_NormalRank], // [BEAUTY_RIBBON_NORMAL]
+  [gRibbonDescriptionPart1_BeautyContest, gRibbonDescriptionPart2_SuperRank],  // [BEAUTY_RIBBON_SUPER]
+  [gRibbonDescriptionPart1_BeautyContest, gRibbonDescriptionPart2_HyperRank],  // [BEAUTY_RIBBON_HYPER]
+  [gRibbonDescriptionPart1_BeautyContest, gRibbonDescriptionPart2_MasterRank], // [BEAUTY_RIBBON_MASTER]
+  [gRibbonDescriptionPart1_CuteContest,   gRibbonDescriptionPart2_NormalRank], // [CUTE_RIBBON_NORMAL]
+  [gRibbonDescriptionPart1_CuteContest,   gRibbonDescriptionPart2_SuperRank],  // [CUTE_RIBBON_SUPER]
+  [gRibbonDescriptionPart1_CuteContest,   gRibbonDescriptionPart2_HyperRank],  // [CUTE_RIBBON_HYPER]
+  [gRibbonDescriptionPart1_CuteContest,   gRibbonDescriptionPart2_MasterRank], // [CUTE_RIBBON_MASTER]
+  [gRibbonDescriptionPart1_SmartContest,  gRibbonDescriptionPart2_NormalRank], // [SMART_RIBBON_NORMAL]
+  [gRibbonDescriptionPart1_SmartContest,  gRibbonDescriptionPart2_SuperRank],  // [SMART_RIBBON_SUPER]
+  [gRibbonDescriptionPart1_SmartContest,  gRibbonDescriptionPart2_HyperRank],  // [SMART_RIBBON_HYPER]
+  [gRibbonDescriptionPart1_SmartContest,  gRibbonDescriptionPart2_MasterRank], // [SMART_RIBBON_MASTER]
+  [gRibbonDescriptionPart1_ToughContest,  gRibbonDescriptionPart2_NormalRank], // [TOUGH_RIBBON_NORMAL]
+  [gRibbonDescriptionPart1_ToughContest,  gRibbonDescriptionPart2_SuperRank],  // [TOUGH_RIBBON_SUPER]
+  [gRibbonDescriptionPart1_ToughContest,  gRibbonDescriptionPart2_HyperRank],  // [TOUGH_RIBBON_HYPER]
+  [gRibbonDescriptionPart1_ToughContest,  gRibbonDescriptionPart2_MasterRank], // [TOUGH_RIBBON_MASTER]
+  [gRibbonDescriptionPart1_Winning,       gRibbonDescriptionPart2_Winning],    // [WINNING_RIBBON]
+  [gRibbonDescriptionPart1_Victory,       gRibbonDescriptionPart2_Victory],    // [VICTORY_RIBBON]
+  [gRibbonDescriptionPart1_Artist,        gRibbonDescriptionPart2_Artist],     // [ARTIST_RIBBON]
+  [gRibbonDescriptionPart1_Effort,        gRibbonDescriptionPart2_Effort],     // [EFFORT_RIBBON]
+];
+
+// ═══ 1:1 data/text/gift_ribbon_descriptions.h (inclus :145) ═══
+const gGiftRibbonDescriptionPart1_2003RegionalTourney = encodeOwText("TOURNOI REGIONAL 2003");
+const gGiftRibbonDescriptionPart2_Champion = encodeOwText("RUBAN MAITRE");
+const gGiftRibbonDescriptionPart1_2003NationalTourney = encodeOwText("TOURNOI NATIONAL 2003");
+const gGiftRibbonDescriptionPart1_2003GlobalCup = encodeOwText("COUPE GLOBALE 2003");
+const gGiftRibbonDescriptionPart2_RunnerUp = encodeOwText("RUBAN 2{SUPER_E} place");
+const gGiftRibbonDescriptionPart2_Semifinalist = encodeOwText("RUBAN demi-finaliste");
+const gGiftRibbonDescriptionPart1_2004RegionalTourney = encodeOwText("TOURNOI REGIONAL 2004");
+const gGiftRibbonDescriptionPart1_2004NationalTourney = encodeOwText("TOURNOI NATIONAL 2004");
+const gGiftRibbonDescriptionPart1_2004GlobalCup = encodeOwText("COUPE GLOBALE 2004");
+const gGiftRibbonDescriptionPart1_2005RegionalTourney = encodeOwText("TOURNOI REGIONAL 2005");
+const gGiftRibbonDescriptionPart1_2005NationalTourney = encodeOwText("TOURNOI NATIONAL 2005");
+const gGiftRibbonDescriptionPart1_2005GlobalCup = encodeOwText("COUPE GLOBALE 2005");
+const gGiftRibbonDescriptionPart1_PokemonBattleCup = encodeOwText("COUPE COMBAT POKéMON");
+const gGiftRibbonDescriptionPart2_Participation = encodeOwText("RUBAN de participation");
+const gGiftRibbonDescriptionPart1_PokemonLeague = encodeOwText("LIGUE POKéMON");
+const gGiftRibbonDescriptionPart1_AdvanceCup = encodeOwText("COUPE ADVANCE");
+const gGiftRibbonDescriptionPart1_PokemonTournament = encodeOwText("Tournoi POKéMON");
+const gGiftRibbonDescriptionPart2_Participation2 = encodeOwText("RUBAN de participation");
+const gGiftRibbonDescriptionPart1_PokemonEvent = encodeOwText("Evènement POKéMON");
+const gGiftRibbonDescriptionPart1_PokemonFestival = encodeOwText("Festival POKéMON");
+const gGiftRibbonDescriptionPart1_DifficultyClearing = encodeOwText("RUBAN commémoratif pour");
+const gGiftRibbonDescriptionPart2_Commemorative = encodeOwText("avoir tout réussi.");
+const gGiftRibbonDescriptionPart1_ClearingAllChallenges = encodeOwText("RUBAN pour le triomphe");
+const gGiftRibbonDescriptionPart2_ClearingAllChallenges = encodeOwText("face aux difficultés.");
+const gGiftRibbonDescriptionPart1_100StraightWin = encodeOwText("100 victoires à la suite");
+const gGiftRibbonDescriptionPart1_DarknessTower = encodeOwText("Succès TOUR OBSCURE");
+const gGiftRibbonDescriptionPart1_RedTower = encodeOwText("Succès TOUR ROUGE");
+const gGiftRibbonDescriptionPart1_BlackironTower = encodeOwText("Succès TOUR FER NOIR");
+const gGiftRibbonDescriptionPart1_FinalTower = encodeOwText("Succès TOUR FINALE");
+const gGiftRibbonDescriptionPart1_LegendMaking = encodeOwText("A contribué à la légende");
+const gGiftRibbonDescriptionPart1_PokemonCenterTokyo = encodeOwText("CENTRE POKéMON TOKYO");
+const gGiftRibbonDescriptionPart1_PokemonCenterOsaka = encodeOwText("CENTRE POKéMON OSAKA");
+const gGiftRibbonDescriptionPart1_PokemonCenterNagoya = encodeOwText("CENTRE POKéMON NAGOYA");
+const gGiftRibbonDescriptionPart1_PokemonCenterNY = encodeOwText("CENTRE POKéMON NY");
+const gGiftRibbonDescriptionPart1_SummerHolidays = encodeOwText("RUBAN vacances d'été");
+const gGiftRibbonDescriptionPart2_EmptyString = encodeOwText("");
+const gGiftRibbonDescriptionPart1_WinterHolidays = encodeOwText("RUBAN vacances d'hiver");
+const gGiftRibbonDescriptionPart1_SpringHolidays = encodeOwText("RUBAN vac. de printemps");
+const gGiftRibbonDescriptionPart1_Evergreen = encodeOwText("RUBAN feuilles persist.");
+const gGiftRibbonDescriptionPart1_SpecialHoliday = encodeOwText("RUBAN vac. spéciales");
+const gGiftRibbonDescriptionPart1_HardWorker = encodeOwText("RUBAN travailleur");
+const gGiftRibbonDescriptionPart1_LotsOfFriends = encodeOwText("RUBAN amitié");
+const gGiftRibbonDescriptionPart1_FullOfEnergy = encodeOwText("RUBAN énergie");
+const gGiftRibbonDescriptionPart1_LovedPokemon = encodeOwText("RUBAN souvenir pour");
+const gGiftRibbonDescriptionPart2_LovedPokemon = encodeOwText("un POKéMON bien-aimé.");
+const gGiftRibbonDescriptionPart1_LoveForPokemon = encodeOwText("RUBAN qui montre l'amour");
+const gGiftRibbonDescriptionPart2_LoveForPokemon = encodeOwText("porté à un POKéMON.");
+
+/** 1:1 `const u8 *const gGiftRibbonDescriptionPointers[MAX_GIFT_RIBBON][2]` (gift_ribbon_descriptions.h:49). */
+const gGiftRibbonDescriptionPointers = [
+  [gGiftRibbonDescriptionPart1_2003RegionalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2003NationalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2003GlobalCup,         gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2003RegionalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2003NationalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2003GlobalCup,         gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2003RegionalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2003NationalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2003GlobalCup,         gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2004RegionalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2004NationalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2004GlobalCup,         gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2004RegionalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2004NationalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2004GlobalCup,         gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2004RegionalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2004NationalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2004GlobalCup,         gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2005RegionalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2005NationalTourney,   gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2005GlobalCup,         gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_2005RegionalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2005NationalTourney,   gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2005GlobalCup,         gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_2005RegionalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2005NationalTourney,   gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_2005GlobalCup,         gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_PokemonBattleCup,      gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_PokemonBattleCup,      gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_PokemonBattleCup,      gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_PokemonBattleCup,      gGiftRibbonDescriptionPart2_Participation],
+  [gGiftRibbonDescriptionPart1_PokemonLeague,         gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_PokemonLeague,         gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_PokemonLeague,         gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_PokemonLeague,         gGiftRibbonDescriptionPart2_Participation],
+  [gGiftRibbonDescriptionPart1_AdvanceCup,            gGiftRibbonDescriptionPart2_Champion],
+  [gGiftRibbonDescriptionPart1_AdvanceCup,            gGiftRibbonDescriptionPart2_RunnerUp],
+  [gGiftRibbonDescriptionPart1_AdvanceCup,            gGiftRibbonDescriptionPart2_Semifinalist],
+  [gGiftRibbonDescriptionPart1_AdvanceCup,            gGiftRibbonDescriptionPart2_Participation],
+  [gGiftRibbonDescriptionPart1_PokemonTournament,     gGiftRibbonDescriptionPart2_Participation2],
+  [gGiftRibbonDescriptionPart1_PokemonEvent,          gGiftRibbonDescriptionPart2_Participation2],
+  [gGiftRibbonDescriptionPart1_PokemonFestival,       gGiftRibbonDescriptionPart2_Participation2],
+  [gGiftRibbonDescriptionPart1_DifficultyClearing,    gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_ClearingAllChallenges, gGiftRibbonDescriptionPart2_ClearingAllChallenges],
+  [gGiftRibbonDescriptionPart1_100StraightWin,        gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_DarknessTower,         gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_RedTower,              gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_BlackironTower,        gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_FinalTower,            gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_LegendMaking,          gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_PokemonCenterTokyo,    gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_PokemonCenterOsaka,    gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_PokemonCenterNagoya,   gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_PokemonCenterNY,       gGiftRibbonDescriptionPart2_Commemorative],
+  [gGiftRibbonDescriptionPart1_SummerHolidays,        gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_WinterHolidays,        gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_SpringHolidays,        gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_Evergreen,             gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_SpecialHoliday,        gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_HardWorker,            gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_LotsOfFriends,         gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_FullOfEnergy,          gGiftRibbonDescriptionPart2_EmptyString],
+  [gGiftRibbonDescriptionPart1_LovedPokemon,          gGiftRibbonDescriptionPart2_LovedPokemon],
+  [gGiftRibbonDescriptionPart1_LoveForPokemon,        gGiftRibbonDescriptionPart2_LoveForPokemon],
 ];
 
 // TRANSPILER-TODO INCGFX : sRibbonIcons1_Pal ← graphics/pokenav/ribbons/icons1.pal (pipeline assets : loadTileBin/loadGbaPal('/decomp/em/…'))
@@ -325,13 +405,20 @@ export function PokenavCallback_Init_RibbonsSummaryMenu(): boolean {
   let list = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_RibbonsSummaryList) */);
   if (list == null)
     return false;
+  // ADAPTATION MOTEUR : `u32 ribbonIds[FIRST_GIFT_RIBBON]` / `giftRibbonIds[NUM_GIFT_RIBBONS]` sont des
+  // arrays inline zéro-init en C ; AllocSubstruct rend {} → init explicite (sinon ribbonIds[i]= crash).
+  list.ribbonIds = new Uint32Array(FIRST_GIFT_RIBBON);   // 25
+  list.giftRibbonIds = new Uint32Array(NUM_GIFT_RIBBONS); // 7
   list.monList = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);
   if (list.monList == null)
     return false;
   GetMonRibbons(list);
   list.callback = RibbonsSummaryHandleInput;
-  gKeyRepeatContinueDelay = 3;
-  gKeyRepeatStartDelay = 10;
+  gKeyRepeat.continueDelay = 3; // 1:1 `gKeyRepeatContinueDelay = 3` (global mutable → conteneur gKeyRepeat)
+  gKeyRepeat.startDelay = 10;   // 1:1 `gKeyRepeatStartDelay = 10`
+  // ADAPTATION MOTEUR (async asset) : préchauffe la front pic du mon courant (ROM sync côté décomp) —
+  // gate au case 6 de LoopedTask_OpenRibbonsSummaryMenu (cf. pokenav_list case 3).
+  _prefetchRibbonsSummaryMonPic(list);
   return true;
 }
 
@@ -640,6 +727,9 @@ export function OpenRibbonsSummaryMenu(): boolean {
   let menu = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_MENU, 0 /* TRANSPILER-TODO sizeof(struct Pokenav_RibbonsSummaryMenu) */);
   if (menu == null)
     return false;
+  // ADAPTATION MOTEUR : `u8 tilemapBuffers[2][BG_SCREEN_SIZE]` inline zéro-init en C ; AllocSubstruct
+  // rend {} → init explicite des 2 buffers tilemap (sinon SetBgTilemapBuffer(2, menu.tilemapBuffers[0]) NaN).
+  menu.tilemapBuffers = [new Uint8Array(0x800), new Uint8Array(0x800)];
   menu.loopedTaskId = CreateLoopedTask(LoopedTask_OpenRibbonsSummaryMenu, 1);
   menu.callback = GetCurrentLoopedTaskActive;
   return true;
@@ -689,6 +779,9 @@ function LoopedTask_OpenRibbonsSummaryMenu(state: number): number {
   let menu = GetSubstructPtr(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_MENU);
   switch (state) {
     case 0:
+      // ADAPTATION MOTEUR (async asset) : summary_bg + icons en ROM côté décomp ; le port fetch →
+      // gate le case 0 tant que non fetché (sanctionné, cf. pokenav_list case 3). `_settled` = loaded OU 404.
+      if (!_ribbonsSummaryAssetsSettled) { _loadRibbonsSummaryAssets(); return LT_PAUSE; }
       InitBgTemplates(sBgTemplates, sBgTemplates.length);
       DecompressAndCopyTileDataToVram(2, gPokenavRibbonsSummaryBg_Gfx, 0, 0, 0);
       SetBgTilemapBuffer(2, menu.tilemapBuffers[0]);
@@ -704,7 +797,7 @@ function LoopedTask_OpenRibbonsSummaryMenu(state: number): number {
         SetBgTilemapBuffer(1, menu.tilemapBuffers[1]);
         FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, 32, 20);
         CopyPaletteIntoBufferUnfaded(sRibbonIcons1_Pal, BG_PLTT_ID(2), 5 * PLTT_SIZE_4BPP);
-        CopyPaletteIntoBufferUnfaded(sMonInfo_Pal, BG_PLTT_ID(10), sMonInfo_Pal.length /* TRANSPILER-TODO sizeof */);
+        CopyPaletteIntoBufferUnfaded(sMonInfo_Pal, BG_PLTT_ID(10), sMonInfo_Pal ? sMonInfo_Pal.length * 2 : 0 /* sizeof = octets */);
         CopyBgTilemapBufferToVram(1);
         return LT_INC_AND_PAUSE;
       }
@@ -740,6 +833,9 @@ function LoopedTask_OpenRibbonsSummaryMenu(state: number): number {
     case 6:
       if (!IsDma3ManagerBusyWithBgCopy())
       {
+        // ADAPTATION MOTEUR (async asset) : la front pic du mon est fetchée async → gate jusqu'à
+        // ce que son chargement soit réglé (loaded OU 404) avant de dessiner (jamais de crash/freeze).
+        if (!_isRibbonsSummaryMonPicSettled()) return LT_PAUSE;
         ResetSpritesAndDrawMonFrontPic(menu);
         return LT_INC_AND_CONTINUE;
       }
@@ -791,6 +887,9 @@ function LoopedTask_SwitchRibbonsSummaryMon(state: number): number {
   switch (state) {
     case 0:
       PlaySE(SE_SELECT);
+      // ADAPTATION MOTEUR (async asset) : préchauffe la front pic du NOUVEAU mon (currIndex déjà mis à
+      // jour par RibbonsSummaryHandleInput) pendant le slide-off — gate au case 5 (SlideMonSpriteOn).
+      _prefetchRibbonsSummaryMonPic(GetSubstructPtr(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST) as any);
       SlideMonSpriteOff(menu);
       return LT_INC_AND_PAUSE;
     case 1:
@@ -812,6 +911,7 @@ function LoopedTask_SwitchRibbonsSummaryMon(state: number): number {
     case 5:
       if (!IsDma3ManagerBusyWithBgCopy())
       {
+        if (!_isRibbonsSummaryMonPicSettled()) return LT_PAUSE; // gate async asset (front pic du nouveau mon)
         SlideMonSpriteOn(menu);
         return LT_INC_AND_PAUSE;
       }
@@ -1012,9 +1112,9 @@ function PrintRibbbonsSummaryMonInfo(menu: Pokenav_RibbonsSummaryMenu): void {
       break;
   }
   txtPtr = StringCopy(gStringVar1, genderTxt);
-  void 0 /* TRANSPILER-TODO ASSIGN: *(txtPtr++) = CHAR_SLASH */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(txtPtr++) = CHAR_EXTRA_SYMBOL */;
-  void 0 /* TRANSPILER-TODO ASSIGN: *(txtPtr++) = CHAR_LV_2 */;
+  txtPtr[0] = CHAR_SLASH; txtPtr = txtPtr.subarray(1);         // 1:1 `*(txtPtr++) = CHAR_SLASH`
+  txtPtr[0] = CHAR_EXTRA_SYMBOL; txtPtr = txtPtr.subarray(1);  // 1:1 `*(txtPtr++) = CHAR_EXTRA_SYMBOL`
+  txtPtr[0] = CHAR_LV_2; txtPtr = txtPtr.subarray(1);          // 1:1 `*(txtPtr++) = CHAR_LV_2`
   ConvertIntToDecimalStringN(txtPtr, level.v, STR_CONV_MODE_LEFT_ALIGN, 3);
   AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, 60, 1, TEXT_SKIP_DRAW, null);
   CopyWindowToVram(windowId, COPYWIN_GFX);
@@ -1050,7 +1150,7 @@ function PrintRibbonsMonListIndex(menu: Pokenav_RibbonsSummaryMenu): void {
   let id = GetRibbonsSummaryCurrentIndex() + 1;
   let count = GetRibbonsSummaryMonListCount();
   txtPtr = ConvertIntToDecimalStringN(gStringVar1, id, STR_CONV_MODE_RIGHT_ALIGN, 3);
-  void 0 /* TRANSPILER-TODO ASSIGN: *(txtPtr++) = CHAR_SLASH */;
+  txtPtr[0] = CHAR_SLASH; txtPtr = txtPtr.subarray(1); // 1:1 `*(txtPtr++) = CHAR_SLASH`
   ConvertIntToDecimalStringN(txtPtr, count, STR_CONV_MODE_RIGHT_ALIGN, 3);
   x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar1, 56);
   AddTextPrinterParameterized(menu.listIdxWindowId, FONT_NORMAL, gStringVar1, x, 1, TEXT_SKIP_DRAW, null);
@@ -1087,13 +1187,17 @@ function DrawRibbonsMonFrontPic(x: number, y: number): number {
   const otId = { v: 0 }; // TRANSPILER: &otId pris → box
   GetMonSpeciesPersonalityOtId(species, personality, otId);
   spriteId = CreateMonPicSprite_HandleDeoxys(species.v, otId.v, personality.v, true, MON_SPRITE_X_ON, MON_SPRITE_Y, 15, TAG_NONE);
-  gSprites[spriteId].oam.priority = 0;
+  // ADAPTATION MOTEUR (async asset) : la ROM garantit un spriteId valide (DecompressPic sync) ; notre
+  // front pic est fetchée async → 0xFFFF si absente/404. Garde le déréférencement (jamais de crash).
+  if (spriteId !== 0xFFFF && gSprites[spriteId])
+    gSprites[spriteId].oam.priority = 0;
   return spriteId;
 }
 
 /** 1:1 `static void SlideMonSpriteOff(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:971-974). */
 function SlideMonSpriteOff(menu: Pokenav_RibbonsSummaryMenu): void {
-  StartMonSpriteSlide(gSprites[menu.monSpriteId], MON_SPRITE_X_ON, MON_SPRITE_X_OFF, 6);
+  const s = gSprites[menu.monSpriteId]; // garde async asset : sprite absent (0xFFFF) → no-op (jamais de crash)
+  if (s) StartMonSpriteSlide(s, MON_SPRITE_X_ON, MON_SPRITE_X_OFF, 6);
 }
 
 /** 1:1 `static void SlideMonSpriteOn(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:976-984). */
@@ -1102,14 +1206,16 @@ function SlideMonSpriteOn(menu: Pokenav_RibbonsSummaryMenu): void {
   FreeAndDestroyMonPicSprite(menu.monSpriteId);
   menu.monSpriteId = DrawRibbonsMonFrontPic(MON_SPRITE_X_OFF, MON_SPRITE_Y);
   // Slide on
-  StartMonSpriteSlide(gSprites[menu.monSpriteId], MON_SPRITE_X_OFF, MON_SPRITE_X_ON, 6);
+  const s = gSprites[menu.monSpriteId]; // garde async asset : sprite absent (0xFFFF) → no-op
+  if (s) StartMonSpriteSlide(s, MON_SPRITE_X_OFF, MON_SPRITE_X_ON, 6);
 }
 
 // Is Pokémon summary sprite still sliding off/on
 
 /** 1:1 `static bool32 IsMonSpriteAnimating(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:987-990). */
 function IsMonSpriteAnimating(menu: Pokenav_RibbonsSummaryMenu): boolean {
-  return (gSprites[menu.monSpriteId].callback != SpriteCallbackDummy);
+  const s = gSprites[menu.monSpriteId]; // garde async asset : sprite absent → « pas en anim » (débloque le task)
+  return s ? (s.callback != SpriteCallbackDummy) : false;
 }
 
 // #define sCurrX data[0]  (alias — expansé aux usages)
@@ -1152,14 +1258,17 @@ function SpriteCB_MonSpriteSlide(sprite: DecompSprite): void {
 
 /** 1:1 `static void DrawAllRibbonsSmall(struct Pokenav_RibbonsSummaryMenu *menu)` (pokenav_ribbons_summary.c:1034-1049). */
 function DrawAllRibbonsSmall(menu: Pokenav_RibbonsSummaryMenu): void {
+  void menu;
   let ribbonIds: any = null;
+  let ri = 0;                // 1:1 parcours pointeur `*ribbonIds++`
+  const size = { v: 0 };     // 1:1 `&sRibbonDraw_Total` (out-param) → box, recopié dans le global
   ClearRibbonsSummaryBg();
-  ribbonIds = GetNormalRibbonIds(sRibbonDraw_Total);
-  for (sRibbonDraw_Current = 0; sRibbonDraw_Current < sRibbonDraw_Total; sRibbonDraw_Current++)
-    DrawRibbonSmall(sRibbonDraw_Current, (ribbonIds++ /* TRANSPILER-TODO ptr-arith */) /* TRANSPILER-TODO deref */);
-  ribbonIds = GetGiftRibbonIds(sRibbonDraw_Total);
-  for (sRibbonDraw_Current = 0; sRibbonDraw_Current < sRibbonDraw_Total; sRibbonDraw_Current++)
-    DrawRibbonSmall(sRibbonDraw_Current + GIFT_RIBBON_START_POS, (ribbonIds++ /* TRANSPILER-TODO ptr-arith */) /* TRANSPILER-TODO deref */);
+  ribbonIds = GetNormalRibbonIds(size); sRibbonDraw_Total = size.v;
+  for (ri = 0, sRibbonDraw_Current = 0; sRibbonDraw_Current < sRibbonDraw_Total; sRibbonDraw_Current++)
+    DrawRibbonSmall(sRibbonDraw_Current, ribbonIds[ri++]); // 1:1 `*ribbonIds++`
+  ribbonIds = GetGiftRibbonIds(size); sRibbonDraw_Total = size.v;
+  for (ri = 0, sRibbonDraw_Current = 0; sRibbonDraw_Current < sRibbonDraw_Total; sRibbonDraw_Current++)
+    DrawRibbonSmall(sRibbonDraw_Current + GIFT_RIBBON_START_POS, ribbonIds[ri++]); // 1:1 `*ribbonIds++`
   CopyBgTilemapBufferToVram(1);
 }
 
@@ -1197,136 +1306,40 @@ const RIBBONGFX_GIFT_3 = 11;
 
 const TO_PAL_OFFSET = (palNum: number) => ((palNum) - PALTAG_RIBBON_ICONS_1); // 1:1 macro pokenav_ribbons_summary.c:1083
 
-/** 1:1 (pokenav_ribbons_summary.c:1089) */
+/** 1:1 struct `{ u16 tileNumOffset; u16 palNumOffset; }` sRibbonGfxData[] (pokenav_ribbons_summary.c:1085-1123). */
 export const sRibbonGfxData = [
-  [
-    RIBBONGFX_CHAMPION,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [CHAMPION_RIBBON]
-  [
-    RIBBONGFX_CONTEST_NORMAL,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [COOL_RIBBON_NORMAL]
-  [
-    RIBBONGFX_CONTEST_SUPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [COOL_RIBBON_SUPER]
-  [
-    RIBBONGFX_CONTEST_HYPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [COOL_RIBBON_HYPER]
-  [
-    RIBBONGFX_CONTEST_MASTER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [COOL_RIBBON_MASTER]
-  [
-    RIBBONGFX_CONTEST_NORMAL,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [BEAUTY_RIBBON_NORMAL]
-  [
-    RIBBONGFX_CONTEST_SUPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [BEAUTY_RIBBON_SUPER]
-  [
-    RIBBONGFX_CONTEST_HYPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [BEAUTY_RIBBON_HYPER]
-  [
-    RIBBONGFX_CONTEST_MASTER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [BEAUTY_RIBBON_MASTER]
-  [
-    RIBBONGFX_CONTEST_NORMAL,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3),
-  ], // [CUTE_RIBBON_NORMAL]
-  [
-    RIBBONGFX_CONTEST_SUPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3),
-  ], // [CUTE_RIBBON_SUPER]
-  [
-    RIBBONGFX_CONTEST_HYPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3),
-  ], // [CUTE_RIBBON_HYPER]
-  [
-    RIBBONGFX_CONTEST_MASTER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3),
-  ], // [CUTE_RIBBON_MASTER]
-  [
-    RIBBONGFX_CONTEST_NORMAL,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [SMART_RIBBON_NORMAL]
-  [
-    RIBBONGFX_CONTEST_SUPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [SMART_RIBBON_SUPER]
-  [
-    RIBBONGFX_CONTEST_HYPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [SMART_RIBBON_HYPER]
-  [
-    RIBBONGFX_CONTEST_MASTER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [SMART_RIBBON_MASTER]
-  [
-    RIBBONGFX_CONTEST_NORMAL,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [TOUGH_RIBBON_NORMAL]
-  [
-    RIBBONGFX_CONTEST_SUPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [TOUGH_RIBBON_SUPER]
-  [
-    RIBBONGFX_CONTEST_HYPER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [TOUGH_RIBBON_HYPER]
-  [
-    RIBBONGFX_CONTEST_MASTER,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [TOUGH_RIBBON_MASTER]
-  [
-    RIBBONGFX_WINNING,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [WINNING_RIBBON]
-  [
-    RIBBONGFX_VICTORY,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [VICTORY_RIBBON]
-  [
-    RIBBONGFX_ARTIST,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [ARTIST_RIBBON]
-  [
-    RIBBONGFX_EFFORT,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3),
-  ], // [EFFORT_RIBBON]
-  [
-    RIBBONGFX_GIFT_1,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [MARINE_RIBBON]
-  [
-    RIBBONGFX_GIFT_1,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [LAND_RIBBON]
-  [
-    RIBBONGFX_GIFT_1,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [SKY_RIBBON]
-  [
-    RIBBONGFX_GIFT_2,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4),
-  ], // [COUNTRY_RIBBON]
-  [
-    RIBBONGFX_GIFT_2,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5),
-  ], // [NATIONAL_RIBBON]
-  [
-    RIBBONGFX_GIFT_3,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1),
-  ], // [EARTH_RIBBON]
-  [
-    RIBBONGFX_GIFT_3,
-    TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2),
-  ], // [WORLD_RIBBON]
+  { tileNumOffset: RIBBONGFX_CHAMPION,       palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [CHAMPION_RIBBON]
+  { tileNumOffset: RIBBONGFX_CONTEST_NORMAL, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [COOL_RIBBON_NORMAL]
+  { tileNumOffset: RIBBONGFX_CONTEST_SUPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [COOL_RIBBON_SUPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_HYPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [COOL_RIBBON_HYPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_MASTER, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [COOL_RIBBON_MASTER]
+  { tileNumOffset: RIBBONGFX_CONTEST_NORMAL, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [BEAUTY_RIBBON_NORMAL]
+  { tileNumOffset: RIBBONGFX_CONTEST_SUPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [BEAUTY_RIBBON_SUPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_HYPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [BEAUTY_RIBBON_HYPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_MASTER, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [BEAUTY_RIBBON_MASTER]
+  { tileNumOffset: RIBBONGFX_CONTEST_NORMAL, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3) }, // [CUTE_RIBBON_NORMAL]
+  { tileNumOffset: RIBBONGFX_CONTEST_SUPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3) }, // [CUTE_RIBBON_SUPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_HYPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3) }, // [CUTE_RIBBON_HYPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_MASTER, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3) }, // [CUTE_RIBBON_MASTER]
+  { tileNumOffset: RIBBONGFX_CONTEST_NORMAL, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [SMART_RIBBON_NORMAL]
+  { tileNumOffset: RIBBONGFX_CONTEST_SUPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [SMART_RIBBON_SUPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_HYPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [SMART_RIBBON_HYPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_MASTER, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [SMART_RIBBON_MASTER]
+  { tileNumOffset: RIBBONGFX_CONTEST_NORMAL, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [TOUGH_RIBBON_NORMAL]
+  { tileNumOffset: RIBBONGFX_CONTEST_SUPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [TOUGH_RIBBON_SUPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_HYPER,  palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [TOUGH_RIBBON_HYPER]
+  { tileNumOffset: RIBBONGFX_CONTEST_MASTER, palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [TOUGH_RIBBON_MASTER]
+  { tileNumOffset: RIBBONGFX_WINNING,        palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [WINNING_RIBBON]
+  { tileNumOffset: RIBBONGFX_VICTORY,        palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [VICTORY_RIBBON]
+  { tileNumOffset: RIBBONGFX_ARTIST,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [ARTIST_RIBBON]
+  { tileNumOffset: RIBBONGFX_EFFORT,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3) }, // [EFFORT_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_1,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [MARINE_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_1,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [LAND_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_1,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [SKY_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_2,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_4) }, // [COUNTRY_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_2,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_5) }, // [NATIONAL_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_3,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1) }, // [EARTH_RIBBON]
+  { tileNumOffset: RIBBONGFX_GIFT_3,         palNumOffset: TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2) }, // [WORLD_RIBBON]
 ];
 
 /** 1:1 `static void BufferSmallRibbonGfxData(u16 *dst, u32 ribbonId)` (pokenav_ribbons_summary.c:1127-1136). */
@@ -1478,4 +1491,105 @@ function SpriteCB_WaitForRibbonAnimation(sprite: DecompSprite): void {
     sprite.invisible = sprite.data[0] /* sInvisibleWhenDone */;
     sprite.callback = SpriteCallbackDummy;
   }
+}
+
+// ═══ ADAPTATION MOTEUR (async assets) — le décomp a tout en ROM (INCGFX instantané) ; le port
+//     fetch async au fade d'ouverture. Gate sur `_settled` (loaded OU 404) dans les looped tasks
+//     (jamais de freeze). Réinjecte les data dans les structs sprite capturées null au module-init. ══
+
+let _ribbonsSummaryAssetsLoaded = false;
+let _ribbonsSummaryAssetsSettled = false;  // loaded OU échec (404) — débloque le gate même en cas de manque
+let _ribbonsSummaryAssetsLoadStarted = false;
+/** Préchauffe summary_bg + icons (small/big) + les 6 palettes (idempotent). */
+export function PrefetchRibbonsSummaryAssets(): void { _loadRibbonsSummaryAssets(); }
+function _loadRibbonsSummaryAssets(): void {
+  if (_ribbonsSummaryAssetsLoadStarted) return;
+  _ribbonsSummaryAssetsLoadStarted = true;
+  void (async () => {
+    try {
+      const base = '/decomp/em/pokenav/ribbons/';
+      const [bgGfx, bgTilemap, bgPal, iconsSmall, iconsBig, p1, p2, p3, p4, p5, monInfo] = await Promise.all([
+        loadTileBin(base + 'summary_bg.png', 4),
+        loadTilemapBin(base + 'summary_bg.bin'),
+        extractPngPlte(base + 'summary_bg.png'),
+        loadTileBin(base + 'icons.png', 4),
+        loadTileBin(base + 'icons_big.png', 4),
+        loadGbaPal(base + 'icons1.pal'),
+        loadGbaPal(base + 'icons2.pal'),
+        loadGbaPal(base + 'icons3.pal'),
+        loadGbaPal(base + 'icons4.pal'),
+        loadGbaPal(base + 'icons5.pal'),
+        loadGbaPal(base + 'mon_info.pal'),
+      ]);
+      gPokenavRibbonsSummaryBg_Gfx = bgGfx;
+      gPokenavRibbonsSummaryBg_Tilemap = bgTilemap;
+      gPokenavRibbonsSummaryBg_Pal = bgPal;
+      sRibbonIconsSmall_Gfx = iconsSmall;
+      sRibbonIconsBig_Gfx = iconsBig;
+      // 1:1 ROM : les 5 pals icons sont CONTIGUËS ; le bg copy (case 1) lit 5*PLTT_SIZE_4BPP depuis
+      // sRibbonIcons1_Pal → concat en 80 couleurs (le sprite pal tag 1 n'en lit que les 16 premières = icons1).
+      const combined = new Uint16Array(80);
+      combined.set(p1.subarray(0, 16), 0);
+      combined.set(p2.subarray(0, 16), 16);
+      combined.set(p3.subarray(0, 16), 32);
+      combined.set(p4.subarray(0, 16), 48);
+      combined.set(p5.subarray(0, 16), 64);
+      sRibbonIcons1_Pal = combined;
+      sRibbonIcons2_Pal = p2.subarray(0, 16);
+      sRibbonIcons3_Pal = p3.subarray(0, 16);
+      sRibbonIcons4_Pal = p4.subarray(0, 16);
+      sRibbonIcons5_Pal = p5.subarray(0, 16);
+      sMonInfo_Pal = monInfo;
+      // réinjecte dans les structs sprite (data = null au module-init, cf. pokenav_list).
+      (sSpriteSheet_RibbonIconsBig as any).data = sRibbonIconsBig_Gfx;
+      (sSpritePalettes_RibbonIcons[0] as any).data = sRibbonIcons1_Pal;
+      (sSpritePalettes_RibbonIcons[1] as any).data = sRibbonIcons2_Pal;
+      (sSpritePalettes_RibbonIcons[2] as any).data = sRibbonIcons3_Pal;
+      (sSpritePalettes_RibbonIcons[3] as any).data = sRibbonIcons4_Pal;
+      (sSpritePalettes_RibbonIcons[4] as any).data = sRibbonIcons5_Pal;
+      _ribbonsSummaryAssetsLoaded = true;
+    } catch (e) {
+      console.error('[pokenav_ribbons_summary] chargement assets ribbons ÉCHOUÉ', e);
+    } finally {
+      _ribbonsSummaryAssetsSettled = true;
+    }
+  })();
+}
+
+// ── Préchargement front pic du mon (= ROM `DecompressPic` sync côté décomp) ──
+let _monPicLoadingKey = '';                       // clé (enumName) en cours de fetch ('' = aucun → réglé)
+const _monPicSettledKeys = new Set<string>();     // clés dont le substrat est prêt (ou 404)
+/** Préchauffe le substrat mon-pic (tiles + palette) du mon courant de la summary list. */
+function _prefetchRibbonsSummaryMonPic(list: Pokenav_RibbonsSummaryList): void {
+  if (list == null || list.monList == null) return;
+  const mons = list.monList;
+  const monInfo = mons.monData[mons.currIndex];
+  if (monInfo == null) return;
+  let species = 0;
+  if (monInfo.boxId == TOTAL_BOXES_COUNT)
+    species = GetMonData(gPlayerParty[monInfo.monId], MON_DATA_SPECIES) as number;
+  else
+    species = GetBoxMonDataAt(monInfo.boxId, monInfo.monId, MON_DATA_SPECIES) as number;
+  const key = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  if (_monPicSettledKeys.has(key) || _monPicLoadingKey === key) return;
+  _monPicLoadingKey = key;
+  const folder = key.replace('SPECIES_', '').toLowerCase();
+  void (async () => {
+    try {
+      const [front, pal] = await Promise.all([
+        loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4),
+        loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`),
+      ]);
+      _registerMonPicSubstrate(key, front.charData, pal.subarray(0, 16));
+    } catch (e) {
+      console.error('[pokenav_ribbons_summary] front pic préload KO', key, e);
+    } finally {
+      _monPicSettledKeys.add(key);
+      if (_monPicLoadingKey === key) _monPicLoadingKey = '';
+    }
+  })();
+}
+/** true quand aucun fetch de front pic n'est en cours (loaded OU 404 → jamais de freeze). */
+function _isRibbonsSummaryMonPicSettled(): boolean {
+  return _monPicLoadingKey === '';
 }

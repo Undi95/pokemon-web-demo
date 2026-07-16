@@ -31,6 +31,7 @@ import {
   TAG_NONE, MAX_SPRITES, type SpriteTemplate,
 } from './sprite';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
+import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 /** 1:1 décomp `#define PICS_COUNT 8` (trainer_pokemon_sprites.c:12). */
@@ -249,6 +250,89 @@ export function FreeAndDestroyTrainerPicSprite(spriteId: number): number {
   return FreeAndDestroyPicSpriteInternal(spriteId);
 }
 
-// NOTE mirror : CreateTrainerPicSprite / CreateTrainerCard* / CreateMonPicSprite_HandleDeoxys
-// (voie isFrontPic + window blit) restent à porter quand un écran les utilisera (substrat
-// trainer-pic non câblé). Squelette 1:1 conservé ci-dessus pour le free path partagé.
+// ─── CreatePicSprite (voie NON-affine) + wrappers (1:1 décomp c:165-347) ─────
+/**
+ * 1:1 décomp `static u16 CreatePicSprite(u16 species, u32 otId, u32 personality, bool8 isFrontPic,
+ *   s16 x, s16 y, u8 paletteSlot, u16 paletteTag, bool8 isTrainer, bool8 ignoreDeoxys)`
+ * (trainer_pokemon_sprites.c:165-206) — voie NON-affine (sOamData_Normal, DummyPicSpriteCallback,
+ * AssignSpriteAnimsTable). Parallèle strict à `CreateMonPicSprite_Affine` (type MON_PIC_AFFINE_NONE)
+ * mais SANS matrice OAM. Substrat sync (= ROM `DecompressPic`) : le caller doit avoir pré-rempli
+ * `_monPicSubstrate` (preload async) AVANT cet appel. `species` accepte l'id numérique décomp
+ * (converti en clé enumName via reverseDecompConstant) ou directement la clé enumName.
+ */
+function CreatePicSprite(
+  species: number | string, _otId: number, _personality: number, _isFrontPic: boolean,
+  x: number, y: number, paletteSlot: number, paletteTag: number, _isTrainer: boolean, _ignoreDeoxys: boolean,
+): number {
+  const rt: DecompRuntime = getRuntime();
+  const key = typeof species === 'number' ? (reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE') : species;
+
+  // 1:1 décomp c:172-178 : find free sSpritePics slot.
+  let i = 0;
+  for (; i < PICS_COUNT; i++) if (!sSpritePics[i].active) break;
+  if (i === PICS_COUNT) return 0xFFFF;
+
+  // 1:1 décomp DecompressPic (substrat sync). Absent = pic pas encore fetché → 0xFFFF (le caller
+  // gère l'échec comme la ROM gère un decompress KO : return 0xFFFF, cf. c:180-184).
+  const sub = _monPicSubstrate.get(key);
+  if (!sub) {
+    console.warn(`[trainer_pokemon_sprites] CreatePicSprite: no substrate for ${key} (preload manquant)`);
+    return 0xFFFF;
+  }
+  const framePics = sub.tileData;
+
+  // 1:1 décomp c:185-195 : images[] + template inline (tileTag=TAG_NONE, sOamData_Normal, dummy anims).
+  const frameSize = Math.min(MON_PIC_SIZE, framePics.length);
+  const images: Array<{ data: Uint8Array; size: number }> = [{ data: framePics, size: frameSize }];
+  const template: SpriteTemplate = {
+    oam: { shape: 0, size: 3, priority: 1, affineMode: 0, paletteNum: paletteSlot },
+    images,
+    anims: null,
+    affineAnims: null,
+    callback: null,
+  };
+
+  // 1:1 décomp c:196 LoadPicPaletteByTagOrSlot (!isTrainer) : slot direct (TAG_NONE) ou tag system.
+  if (paletteTag === TAG_NONE) {
+    DoLoadSpritePalette(sub.palette, paletteSlot * 16);
+  } else {
+    LoadSpritePalette({ data: sub.palette, tag: paletteTag });
+  }
+
+  // 1:1 décomp c:197-199 : CreateSprite (voie inline) + paletteNum = paletteSlot si TAG_NONE.
+  const spriteId = _CreateSpriteAtTemplate(rt, template, x, y, 0);
+  if (spriteId < 0 || spriteId >= MAX_SPRITES) return 0xFFFF;
+  const sprite = rt.gSprites[spriteId];
+  if (sprite && paletteTag === TAG_NONE) {
+    rt.gba.oam[sprite.oamIndex].paletteBank = paletteSlot;
+  }
+
+  // 1:1 décomp c:200-205 : register sSpritePics.
+  sSpritePics[i].frames = framePics;
+  sSpritePics[i].images = images;
+  sSpritePics[i].paletteTag = paletteTag;
+  sSpritePics[i].spriteId = spriteId;
+  sSpritePics[i].active = true;
+  return spriteId;
+}
+
+/** 1:1 décomp `static u16 CreateMonPicSprite(u16 species, u32 otId, u32 personality, bool8 isFrontPic,
+ *  s16 x, s16 y, u8 paletteSlot, u16 paletteTag, bool8 ignoreDeoxys)` (c:339-342). */
+function CreateMonPicSprite(
+  species: number | string, otId: number, personality: number, isFrontPic: boolean,
+  x: number, y: number, paletteSlot: number, paletteTag: number, ignoreDeoxys: boolean,
+): number {
+  return CreatePicSprite(species, otId, personality, isFrontPic, x, y, paletteSlot, paletteTag, false, ignoreDeoxys);
+}
+
+/** 1:1 décomp `u16 CreateMonPicSprite_HandleDeoxys(u16 species, u32 otId, u32 personality,
+ *  bool8 isFrontPic, s16 x, s16 y, u8 paletteSlot, u16 paletteTag)` (c:344-347). */
+export function CreateMonPicSprite_HandleDeoxys(
+  species: number | string, otId: number, personality: number, isFrontPic: boolean,
+  x: number, y: number, paletteSlot: number, paletteTag: number,
+): number {
+  return CreateMonPicSprite(species, otId, personality, isFrontPic, x, y, paletteSlot, paletteTag, false);
+}
+
+// NOTE mirror : CreateTrainerPicSprite / CreateTrainerCard* (voie window blit) restent à porter
+// quand un écran les utilisera (substrat trainer-pic non câblé). Squelette 1:1 conservé ci-dessus.
