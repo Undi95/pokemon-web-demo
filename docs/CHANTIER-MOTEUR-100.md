@@ -108,13 +108,16 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
   ZOOM affine + city maps (CENTRE POKéMON), videoMode=1 TIENT, 0 erreur.
 - ✅ RUBANS liste (1re fois) : 1/1, compteur 6 rubans EXACT. ✅ Combat dresseur complet +
   retour overworld 0 erreur = chemin C1 dresseurs validé. ✅ Mosaic PSS + FAST_FADE (matin).
-- ❌ CONDITION graphe : gate infini IDENTIFIÉ par le hurleur —
-  `/decomp/em/pokenav/condition/pokeball_placeholder.png : no PLTE chunk (not indexed)`
-  (PNG extrait en RGB, pitfall gbagfx) → RÉGÉNÉRER l'asset en PNG indexé, l'écran doit
-  s'ouvrir ensuite. Le crash bg-dots (word-args pointeurs) est FIXÉ `87236a0e6`.
-- ❌ RUBANS summary : FREEZE DUR (boucle synchrone infinie) à l'ouverture (A sur le mon) —
-  renderer mort, tab zombie. Piste : boucle transpilée du summary (anim affine gros ruban ?
-  print du nom ?). Reproduire : ruban debug → RUBANS → A. Liste OK, seul le summary fige.
+- ✅ CONDITION graphe : **S'AFFICHE COMPLET** (radar 5 axes + pastilles + sprite mon +
+  pokéballs équipe + left header, 0 erreur — screenshot 2026-07-16 soir) après 3 fixes en
+  chaîne : crash bg-dots `87236a0e6` → gate PNG grayscale au loader `a7aeadc9f` (le PNG est
+  grayscale DANS le décomp ; inversion gbagfx 15-index par rampe inversée) → OAM via
+  oamIndex + table left headers matérialisée `d72497ecb`. LE POKÉNAV EST 5/5 ÉCRANS VIVANTS.
+- ✅→🔶 RUBANS summary : le FREEZE DUR est FIXÉ `a49d8f6e9` (getString nu → scan EOS infini
+  dans ExpandPlaceholders ; encodeOwText posé) — vérifié en jeu : l'écran s'ouvre, B répond.
+  RESTES rendu : fond rempli d'un tile ruban répété (tilemap summary pas posée) + 1 throw
+  `writeWindowTilemap: reading 'tilemap' of undefined` (window du summary pas allouée au
+  moment du PutWindowTilemap) + anim gros ruban inerte (sAffineAnim_* transpilées en objets).
 - Non testés (recettes dans les rapports) : Flash grotte (fix-field-screen-effect.md),
   Task_OrbEffect, credits (fix-credits.md), fade-in barre verte MC post-lots.
 
