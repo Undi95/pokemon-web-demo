@@ -77,6 +77,14 @@ let gMatchCallUI_Pal: Uint16Array | null = null;
 let gMatchCallUI_Tilemap: Uint16Array | null = null;
 let _matchCallUiLoaded = false;
 let _trainerPicMap: Record<string, { png: string }> | null = null;
+/** Préchauffe tous les assets/data du Match Call (idempotent). Appelé dès CB2_InitPokeNav :
+ *  le décomp a tout en ROM (instantané) ; précharger pendant le fade d'ouverture rapproche
+ *  la transition des ~0.2 s GBA (avant : ~5 s de gates async, flèches visibles sur le noir). */
+export function PrefetchMatchCallAssets(): void {
+  _loadMatchCallUiGfx();
+  ensureGTrainersLoaded().catch((e) => console.error('[match call prefetch gTrainers]', e));
+  ensureMatchCallLookups().catch((e) => console.error('[match call prefetch lookups]', e));
+}
 function _loadMatchCallUiGfx(): void {
   if (_matchCallUiLoaded || gMatchCallUI_Gfx) return;
   void (async () => {

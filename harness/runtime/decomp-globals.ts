@@ -169,6 +169,8 @@ export {
   GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   WIN_RANGE,
 } from './decomp-helpers';
+import { CalcCenterToCornerVec } from './decomp-helpers';
+import { AllocOamMatrix as _AllocOamMatrix_1to1 } from '../../src/sprite';
 
 // ─── Constants utilisées par intro-callbacks-auto sans être importées ─────────
 // (résolues par le constant resolver du transpileur, mais redéclarées ici pour
@@ -2454,9 +2456,30 @@ export const DoMonFrontSpriteAnimation = _DoMonFrontSpriteAnimation;
 // main-menu-impl.ts (= consolidation thématique). Ici ne reste que les
 // helpers sprite GENERIQUES (= utilisés dans plusieurs scenes).
 //
-// 1:1 décomp src/sprite.c InitSpriteAffineAnim — init affine animation state
-// pour un sprite. Stub no-op : notre engine n'a pas encore d'affine animation
-// runtime (= TODO future, utilisé par Birch player shrink + battle anims).
-export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine anims */ }
+// 1:1 décomp `void InitSpriteAffineAnim(struct Sprite *sprite)` (sprite.c:1463-1473) :
+// alloue une matrice OAM, RECALCULE centerToCornerVec pour le mode affine COURANT
+// (ST_OAM_AFFINE_DOUBLE → vec ×2 : le bbox de rendu passe p.ex. 32→64 px et le coin
+// OAM recule d'autant — sans ce recalcul, le zoom d'option Pokénav rendait des bbox
+// décalés de +16 px = bandes de tiles manquantes), pose matrixNum + affineAnimBeginning.
+// AffineAnimStateReset(matrixNum) : notre état d'anim vit SUR le sprite (modèle plat).
+export function InitSpriteAffineAnim(sprite: {
+  oamIndex?: number; affineMode?: number; matrixNum?: number;
+  centerToCornerVecX?: number; centerToCornerVecY?: number;
+  affineAnimBeginning?: boolean; xScale?: number; yScale?: number; rotation?: number;
+}): void {
+  if (!sprite) return;
+  const matrixNum = _AllocOamMatrix_1to1();
+  if (matrixNum !== 0xFF) {
+    const r = rt();
+    const oam = sprite.oamIndex !== undefined ? r.gba.oam[sprite.oamIndex] : undefined;
+    const vec = CalcCenterToCornerVec(oam?.shape ?? 0, oam?.size ?? 0, sprite.affineMode ?? 0);
+    sprite.centerToCornerVecX = vec.centerToCornerVecX;
+    sprite.centerToCornerVecY = vec.centerToCornerVecY;
+    sprite.matrixNum = matrixNum;
+    if (oam) oam.affineParamIndex = matrixNum;
+    sprite.affineAnimBeginning = true;
+    sprite.xScale = 0x100; sprite.yScale = 0x100; sprite.rotation = 0;
+  }
+}
 
 // PIXEL_FILL : dissous → foyer 1:1 `src/window.ts` (window.h:6), lot battle-windows.

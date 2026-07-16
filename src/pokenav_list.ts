@@ -872,6 +872,8 @@ const sSpriteTemplate_UpDownArrow = {
 /** ADAPTATION MOTEUR : charge list_arrows.png (le décomp l'a en ROM INCGFX = instantané ;
  *  le port fetch → gate au case 3 de LoopedTask_CreatePokenavList, même pattern que
  *  _pokenavLoadMenuGraphics). Réinjecte data dans les structs qui capturaient null. */
+/** Préchauffe la gfx des flèches (idempotent — cf. PrefetchMatchCallAssets). */
+export function PrefetchListArrowAssets(): void { _loadListArrowAssets(); }
 let _arrowGfxLoaded = false;
 let _arrowGfxLoadStarted = false;
 function _loadListArrowAssets(): void {

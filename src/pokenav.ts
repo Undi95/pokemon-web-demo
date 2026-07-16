@@ -38,7 +38,8 @@ import { CreateRegionMapLoopedTask, FreeRegionMapSubstruct1, FreeRegionMapSubstr
 import { FreeConditionGraphMenuSubstruct1, GetConditionGraphMenuCallback, PokenavCallback_Init_ConditionGraph_Party, PokenavCallback_Init_ConditionGraph_Search } from './pokenav_conditions';
 import { CreateConditionGraphMenuLoopedTask, FreeConditionGraphMenuSubstruct2, IsConditionGraphMenuLoopedTaskActive, OpenConditionGraphMenu } from './pokenav_conditions_gfx';
 import { CreateSearchResultsLoopedTask, FreeSearchResultSubstruct1, FreeSearchResultSubstruct2, GetConditionSearchResultsCallback, IsSearchResultLoopedTaskActive, OpenConditionSearchListFromGraph, OpenConditionSearchResults, PokenavCallback_Init_ConditionSearch, PokenavCallback_Init_ReturnToMonSearchList } from './pokenav_conditions_search_results';
-import { CreateMatchCallLoopedTask, FreeMatchCallSubstruct2, IsMatchCallLoopedTaskActive, OpenMatchCall } from './pokenav_match_call_gfx';
+import { PrefetchListArrowAssets } from './pokenav_list';
+import { CreateMatchCallLoopedTask, FreeMatchCallSubstruct2, IsMatchCallLoopedTaskActive, OpenMatchCall, PrefetchMatchCallAssets } from './pokenav_match_call_gfx';
 import { FreeMatchCallSubstruct1, GetMatchCallCallback, PokenavCallback_Init_MatchCall } from './pokenav_match_call_list';
 import { CreateRibbonsMonListLoopedTask, FreeRibbonsMonList, FreeRibbonsMonMenu, GetRibbonsMonListCallback, IsRibbonsMonListLoopedTaskActive, OpenRibbonsMonList, OpenRibbonsMonListFromRibbonsSummary, PokenavCallback_Init_MonRibbonList, PokenavCallback_Init_RibbonsMonListFromSummary } from './pokenav_ribbons_list';
 import { CreateRibbonsSummaryLoopedTask, FreeRibbonsSummaryScreen1, FreeRibbonsSummaryScreen2, GetRibbonsSummaryMenuCallback, IsRibbonsSummaryLoopedTaskActive, OpenRibbonsSummaryMenu, PokenavCallback_Init_RibbonsSummaryMenu } from './pokenav_ribbons_summary';
@@ -122,6 +123,11 @@ export function CB2_InitPokeNav(): void {
     }).catch((e) => console.error('[pokenav CB2_InitPokeNav alloc-fail]', e));
   } else {
     InitPokenavResources(gPokenavResources);
+    // ADAPTATION MOTEUR : préchauffe les assets/data des sous-menus (idempotent) —
+    // le décomp a tout en ROM ; lancer les fetches pendant le fade d'ouverture
+    // ramène les transitions vers les ~0.2 s GBA (au lieu de gates async visibles).
+    PrefetchMatchCallAssets();
+    PrefetchListArrowAssets();
     ResetTasks();
     rt.SetVBlankCallback(null);
     CreateTask((t: DecompTask) => Task_Pokenav(t), 0);
