@@ -88,11 +88,8 @@ void loadMultichoiceLists();
 import { installScopeDevtools } from './devtools/dev-scope';
 installScopeDevtools();
 
-// Session 127 : preload bag screen graphics (sprite sac + dots + button).
-// Async, idempotent. Au 1er Open du bag, les assets sont déjà cached.
-import { preloadBagAssets, initItemIconMap } from '../src/engine/bag/bag-screen';
-preloadBagAssets();
-void initItemIconMap();
+// (Lot 6 dissolution bag-screen : le preload du CLONE a été retiré avec lui —
+// item_menu.ts charge ses assets lazy dans SetupBagMenu→LoadBagMenu_Graphics.)
 
 // Session 127 : preload text-tables.json AU BOOT (= species/moves/items/abilities
 // FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen
