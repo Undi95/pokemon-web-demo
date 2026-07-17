@@ -49,6 +49,7 @@ import {
   Menu_MoveCursor, Menu_GetCursorPos, LoadMessageBoxAndBorderGfx, DrawDialogueFrame,
   ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, DrawStdFrameWithCustomTileAndPalette,
   AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
+  AddTextPrinterParameterized5,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, Menu_MoveCursorNoWrapAround,
 } from './menu';
 import { FadeInFromBlack } from './field_screen_effect';
@@ -124,10 +125,8 @@ function WriteSequenceToBgTilemapBuffer(bg: number, firstTileNum: number, x: num
   for (let ty = 0; ty < height; ty++)
     for (let tx = 0; tx < width; tx++) { FillBgTilemapBufferRect(bg, tile, x + tx, y + ty, 1, 1, palNum); tile += tileStep; }
 }
-/** 1:1-sém `AddTextPrinterParameterized5` (text.c) — adaptation via AddTextPrinterParameterized. */
-function AddTextPrinterParameterized5(windowId: number, fontId: number, str: string, x: number, y: number, _speed: number, _cb: unknown, _letterSpacing: number, _lineSpacing: number): void {
-  AddTextPrinterParameterized(windowId, fontId, str, x, y, 0);
-}
+// AddTextPrinterParameterized5 : locale d'adaptation DISSOUTE (item 7-⑥) → la vraie
+// transcription 1:1 vit dans son foyer menu.ts (menu.c:1959), importée ci-dessus.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSCRIPTION 1:1 pokemon_storage_system.c — FONDATIONS

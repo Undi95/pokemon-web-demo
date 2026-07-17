@@ -131,6 +131,26 @@ export function AddTextPrinterParameterized4(
   );
 }
 
+/** 1:1 décomp `src/menu.c:1959 AddTextPrinterParameterized5` : letterSpacing/
+ *  lineSpacing EXPLICITES, couleurs = attributs de la font (≠ la 4 qui reçoit
+ *  color[]), callback transmis. */
+export function AddTextPrinterParameterized5(
+  windowId: number, fontId: number, str: string | Uint8Array,
+  left: number, top: number, speed: number,
+  callback: ((printer: TextPrinter, lastByte: number) => void) | null,
+  letterSpacing: number, lineSpacing: number,
+): boolean {
+  return AddTextPrinter(
+    {
+      str, windowId, fontId, x: left, y: top, letterSpacing, lineSpacing,
+      fgColor: GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND),
+      bgColor: GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND),
+      shadowColor: GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW),
+    },
+    speed, callback,
+  );
+}
+
 /** 1:1 décomp `src/menu.c:191 AddTextPrinterForMessage` : window 0, gStringVar4,
  *  vitesse = option joueur, couleurs dialogue (DARK_GRAY/WHITE/LIGHT_GRAY). */
 export function AddTextPrinterForMessage(allowSkippingDelayWithButtonPress: boolean): void {
@@ -845,8 +865,14 @@ export function PrintMenuActionTextsInUpperLeftCorner(windowId: number, itemCoun
   CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// ⚠️ `PrintMenuActionTextsWithSpacing` (menu.c:1109, UNUSED) DIFFÉRÉ : dépend de
-//    `AddTextPrinterParameterized5` (text.c, pas encore porté).
+/** 1:1 décomp `menu.c:1109 PrintMenuActionTextsWithSpacing` (static UNUSED — porté
+ *  pour la complétude du fichier ; la 5 vit désormais ici, menu.c:1959). */
+function PrintMenuActionTextsWithSpacing(windowId: number, fontId: number, left: number, top: number, lineHeight: number, itemCount: number, menuActions: readonly MenuAction[], letterSpacing: number, lineSpacing: number): void {
+  for (let i = 0; i < itemCount; i++)
+    AddTextPrinterParameterized5(windowId, fontId, menuActions[i].text, left, (lineHeight * i) + top, TEXT_SKIP_DRAW, null, letterSpacing, lineSpacing);
+  CopyWindowToVram(windowId, COPYWIN_GFX);
+}
+void PrintMenuActionTextsWithSpacing;  // UNUSED 1:1 (référence morte assumée, pas d'export)
 
 /** 1:1 décomp `menu.c:1225 PrintMenuActionGridText` (static). */
 function PrintMenuActionGridText(windowId: number, fontId: number, left: number, top: number, width: number, height: number, columns: number, rows: number, menuActions: readonly MenuAction[]): void {
