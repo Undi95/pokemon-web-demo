@@ -3559,18 +3559,17 @@ function SetUpFieldMove_Teleport(): boolean {
  *  ⚠️ déviation port : le décomp pose `gPartyMenu.exitCallback = CB2_OpenFlyMap` (swap CB2) ;
  *  notre carte région est un OVERLAY au-dessus de l'OW → on passe par gPostMenuFieldCallback
  *  (comme Téléport) qui ouvre l'overlay au retour-field. Résultat identique (carte Fly affichée). */
+/** 1:1 décomp `SetUpFieldMove_Fly` (party_menu.c:3877-3883) : CHECK SEUL
+ *  (Overworld_MapTypeAllowsTeleportAndFly). Le décomp ne pose AUCUN callback ici —
+ *  le case FIELD_MOVE_FLY du dispatch (:3752-3755) ferme le party DIRECTEMENT vers
+ *  CB2_OpenFlyMap (consolidation item 5 : l'ancienne voie gPostMenuFieldCallback →
+ *  __FieldCallback_Fly / OpenRegionMap('FLY') est dissoute). */
 function SetUpFieldMove_Fly(): boolean {
   const g = globalThis as Record<string, unknown>;
   const hdr = g.gMapHeader as { mapType?: string } | null | undefined;
   const mt = hdr?.mapType;
-  const allows = mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN'
+  return mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN'
     || mt === 'MAP_TYPE_OCEAN_ROUTE' || mt === 'MAP_TYPE_CITY';
-  if (allows) {
-    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
-    g.gPostMenuFieldCallback = g.__FieldCallback_Fly as (() => void) | undefined;
-    return true;
-  }
-  return false;
 }
 
 /** 1:1 décomp `sPartyMenuYesNoWindowTemplate` (party_menu.h:518) : boîte Oui/Non
@@ -3886,6 +3885,17 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
         // 1:1 décomp : « Fuir d'ici et retourner à {STR_VAR_1}? » ({STR_VAR_1} =
         // nom FR du lieu d'évasion) + Oui/Non. Sur OUI → FieldCallback_Dig → warp escapeWarp.
         _displayFieldMoveExitAreaMessage('gText_EscapeFromHere', _escapeDestFriendlyName());
+        break;
+      case FIELD_MOVE_FLY:
+        // 1:1 :3752-3755 : gPartyMenu.exitCallback = CB2_OpenFlyMap;
+        // Task_ClosePartyMenu — le party se ferme DIRECTEMENT vers la fly map 1:1
+        // (region_map.ts). Import dynamique (pattern _OpenBagAndChooseItem :
+        // l'arête statique party_menu→region_map serait un cycle TDZ) ; le close
+        // part au then (1 frame, imperceptible — précédent bag lot 5).
+        void import('./region_map').then((rm) => {
+          _partyTransientExitCb = rm.CB2_OpenFlyMap;
+          ClosePartyScreen();
+        }).catch((e) => console.error('[party_menu] FLY → CB2_OpenFlyMap', e));
         break;
       default:
         // 1:1 décomp : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.

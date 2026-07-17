@@ -1373,6 +1373,11 @@ export function CB2_ReturnToFieldWithOpenMenu_Manual(): void {
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
 
+// Ponts fly map 1:1 (lus par region_map.CB_ExitFlyMap — un import statique
+// region_map→overworld serait une arête TDZ dans le graphe eager) :
+(globalThis as Record<string, unknown>).__CB2_ReturnToFieldLocal = CB2_ReturnToFieldLocal_Manual;
+(globalThis as Record<string, unknown>).__CB2_ReturnToFieldWithOpenMenu = CB2_ReturnToFieldWithOpenMenu_Manual;
+
 /** 1:1 décomp `void CB2_ReturnToField(void)` (overworld.c:1657, branche non-link).
  *  SANS poser gFieldCallback2 : l'appelant (SetUpFieldMove_X party menu) a DÉJÀ posé
  *  gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu (party_menu.c:3757). */

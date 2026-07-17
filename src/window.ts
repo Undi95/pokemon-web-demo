@@ -798,7 +798,14 @@ export function ScrollWindow(
 
 // ─── BG Template API ─────────────────────────────────────────────────────────
 
-export function InitBgsFromTemplates(bg: number, templates: readonly BgTemplate[], _count: number): void {
+export function InitBgsFromTemplates(bgMode: number, templates: readonly BgTemplate[], _count: number): void {
+  // 1:1 bg.c:326 `SetBgModeInternal(bgMode)` : le PREMIER paramètre est le mode
+  // vidéo (DISPCNT bits 0-2 — mode 1 = BG2 affine, mode 2 = BG2+BG3 affines).
+  // L'ancien port l'IGNORAIT → tout écran affine initialisé par templates restait
+  // rendu en mode texte (fly map : carte 64×64 8bpp entrelacée en bandes,
+  // consolidation item 5). SetBgMode = RMW DISPCNT, idempotent pour les écrans
+  // qui le posaient déjà explicitement (pokenav_region_map).
+  SetBgMode(bgMode);
   for (const t of templates) {
     InitBgFromTemplate(t);
   }

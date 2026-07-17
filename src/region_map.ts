@@ -84,6 +84,21 @@ import { getString } from '../harness/runtime/decomp-strings';
 import { loadTileBin, loadGbaPal, loadAffineTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet, VarGet } from './event_data';
+// Câblage fly map (consolidation item 5) — leaves sûres (heal_location = data pur,
+// include/constants = feuilles) :
+import { GetHealLocationByName } from './heal_location';
+import {
+  SS_TIDAL_BOARD_SLATEPORT, SS_TIDAL_DEPART_SLATEPORT, SS_TIDAL_HALFWAY_LILYCOVE,
+  SS_TIDAL_LAND_LILYCOVE, SS_TIDAL_BOARD_LILYCOVE, SS_TIDAL_DEPART_LILYCOVE,
+  SS_TIDAL_HALFWAY_SLATEPORT, SS_TIDAL_LAND_SLATEPORT, SS_TIDAL_EXIT_CURRENTS_RIGHT,
+  SS_TIDAL_EXIT_CURRENTS_LEFT,
+} from '../include/constants/field_specials';
+import { VAR_CRUISE_STEP_COUNT, VAR_SS_TIDAL_STATE } from '../include/constants/vars';
+// 1:1 map_groups.h : MAP_x = (num | (group << 8)) — via MAP_CONSTANTS (importé plus
+// bas dans ce fichier ; les imports ESM sont hoistés, la lecture est sûre).
+const MAP_ROUTE132 = MAP_CONSTANTS.MAP_ROUTE132;
+const MAP_ROUTE133 = MAP_CONSTANTS.MAP_ROUTE133;
+const MAP_ROUTE134 = MAP_CONSTANTS.MAP_ROUTE134;
 import { gMapHeader } from './fieldmap';
 import { gSineTable } from './trig';
 import { SetGpuReg } from './gpu_regs';
@@ -1311,10 +1326,55 @@ const SS_TIDAL_LOCATION_ROUTE124 = 3;
 const SS_TIDAL_LOCATION_ROUTE131 = 4;
 void SS_TIDAL_LOCATION_CURRENTS;
 
-/** field_specials.c `GetSSTidalLocation(&mapGroup, &mapNum, &x, &y)` : PAS ENCORE PORTÉ dans le
- *  repo (grep 2026-07-16) — sentinelle wireTodo (throw à l'appel ; atteignable UNIQUEMENT si le
- *  joueur ouvre la carte À BORD du S.S. Tidal, hors périmètre solo actuel — cf. rapport). */
-const GetSSTidalLocation: (...args: unknown[]) => number = __wireTodo('GetSSTidalLocation');
+/** 1:1 `u8 GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y)`
+ *  (field_specials.c — transcrit, consolidation item 5) : position du S.S. Tidal
+ *  selon VAR_SS_TIDAL_STATE ; en PLEINE MER (currents), la route (132/133/134) et
+ *  le x dérivent de VAR_CRUISE_STEP_COUNT. Out-params C → objet muté (comme le
+ *  consumer RegionMap_InitializeStateBasedOnSSTidalLocation). */
+function GetSSTidalLocation(out: { mapGroup: number; mapNum: number; xOnMap: number; yOnMap: number }): number {
+  const cruiseStepCount = VarGet(VAR_CRUISE_STEP_COUNT);
+  switch (VarGet(VAR_SS_TIDAL_STATE)) {
+    case SS_TIDAL_BOARD_SLATEPORT:
+    case SS_TIDAL_LAND_SLATEPORT:
+      return SS_TIDAL_LOCATION_SLATEPORT;
+    case SS_TIDAL_HALFWAY_LILYCOVE:
+    case SS_TIDAL_EXIT_CURRENTS_RIGHT:
+      return SS_TIDAL_LOCATION_ROUTE131;
+    case SS_TIDAL_LAND_LILYCOVE:
+    case SS_TIDAL_BOARD_LILYCOVE:
+      return SS_TIDAL_LOCATION_LILYCOVE;
+    case SS_TIDAL_DEPART_LILYCOVE:
+    case SS_TIDAL_EXIT_CURRENTS_LEFT:
+      return SS_TIDAL_LOCATION_ROUTE124;
+    case SS_TIDAL_DEPART_SLATEPORT:
+      if (cruiseStepCount < 60) {
+        out.mapNum = MAP_ROUTE134 & 0xFF;        // 1:1 MAP_NUM(MAP_ROUTE134)
+        out.xOnMap = cruiseStepCount + 19;
+      } else if (cruiseStepCount < 140) {
+        out.mapNum = MAP_ROUTE133 & 0xFF;
+        out.xOnMap = cruiseStepCount - 60;
+      } else {
+        out.mapNum = MAP_ROUTE132 & 0xFF;
+        out.xOnMap = cruiseStepCount - 140;
+      }
+      break;
+    case SS_TIDAL_HALFWAY_SLATEPORT:
+      if (cruiseStepCount < 66) {
+        out.mapNum = MAP_ROUTE132 & 0xFF;
+        out.xOnMap = 65 - cruiseStepCount;
+      } else if (cruiseStepCount < 146) {
+        out.mapNum = MAP_ROUTE133 & 0xFF;
+        out.xOnMap = 145 - cruiseStepCount;
+      } else {
+        out.mapNum = MAP_ROUTE134 & 0xFF;
+        out.xOnMap = 224 - cruiseStepCount;
+      }
+      break;
+  }
+  out.mapGroup = (MAP_ROUTE132 >> 8) & 0xFF;     // 1:1 MAP_GROUP(MAP_ROUTE132)
+  out.yOnMap = 20;
+  return SS_TIDAL_LOCATION_CURRENTS;
+}
 
 /** 1:1 `static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)` (region_map.c:1123). */
 function RegionMap_InitializeStateBasedOnSSTidalLocation(): void {
@@ -1797,16 +1857,91 @@ export function IsEventIslandMapSecId(mapSecId: number | string): boolean {
 }
 
 // ═══════════════════════ FLY MAP (region_map.c:1647-2027) ═══════════════════════
-// Transcrite COMPLÈTE mais INERTE : CB2_OpenFlyMap n'est câblé nulle part (le Vol
-// in-game passe encore par engine/field/region-map.ts mode 'FLY'). Les 4 dépendances
-// warp/retour absentes du repo sont des sentinelles wireTodo (throw à l'appel).
+// CÂBLÉE (consolidation item 5, 2026-07-17) : le case FIELD_MOVE_FLY du party menu
+// ferme vers CB2_OpenFlyMap (1:1 party_menu.c:3752-3755) ; les sorties (warp/retours)
+// sont câblées ci-dessous sur les briques du port (heal_location, ponts overworld/
+// party_menu, envol field_effect_helpers). L'ancienne voie engine/field/region-map
+// mode 'FLY' (fly-field-move) est DISSOUTE.
 
-const SetWarpDestinationToHealLocation: (healLocation: string) => void = __wireTodo('SetWarpDestinationToHealLocation');
-const SetWarpDestinationToMapWarp: (mapGroup: number, mapNum: number, warpId: number) => void = __wireTodo('SetWarpDestinationToMapWarp');
-const ReturnToFieldFromFlyMapSelect: () => void = __wireTodo('ReturnToFieldFromFlyMapSelect');
-const CB2_ReturnToPartyMenuFromFlyMap: () => void = __wireTodo('CB2_ReturnToPartyMenuFromFlyMap');
-const CB2_ReturnToFieldWithOpenMenu: () => void = __wireTodo('CB2_ReturnToFieldWithOpenMenu');
+// ── Sorties fly map CÂBLÉES 1:1 (consolidation item 5, 2026-07-17) — les ponts
+// globalThis (__CB2_ReturnToFieldLocal / __CB2_ReturnToFieldWithOpenMenu /
+// OpenPartyScreen) sont posés par overworld.ts et party_menu.ts (un import
+// statique region_map→overworld/party_menu = arête TDZ dans le graphe eager).
+
 const WARP_ID_NONE = -1; // 1:1 include/constants/global.h
+/** Destination posée par SetWarpDestination* et consommée par
+ *  ReturnToFieldFromFlyMapSelect (le warp-system du port pose le warp différé
+ *  au décollage — ≙ le gWarpDestination du décomp). */
+let _flyWarpDest: { map: string; x: number; y: number } | null = null;
+
+/** 1:1 `SetWarpDestinationToHealLocation(u8 healLocationId)` (overworld.c) :
+ *  GetHealLocation → SetWarpDestination(group, map, WARP_ID_NONE, x, y).
+ *  Port : heal locations par NOM (GetHealLocationByName, table 1:1). */
+function SetWarpDestinationToHealLocation(healLocation: string): void {
+  const heal = GetHealLocationByName(healLocation);
+  if (!heal) { console.error('[fly map] heal location inconnue :', healLocation); return; }
+  _flyWarpDest = { map: heal.map, x: heal.x, y: heal.y };
+}
+
+/** 1:1 `SetWarpDestinationToMapWarp(g, n, w)` = SetWarpDestination(g, n, w, -1, -1)
+ *  (overworld.c). Branche atteinte SEULEMENT pour un mapsec CANFLY sans heal
+ *  location — AUCUN en solo (les 16 villes + Southern/Frontier ont toutes une
+ *  heal) → filet HURLANT, pas de résolution silencieuse. */
+function SetWarpDestinationToMapWarp(mapGroup: number, mapNum: number, warpId: number): void {
+  console.error('[fly map] SetWarpDestinationToMapWarp non résolu (mapsec CANFLY sans heal location ?)', mapGroup, mapNum, warpId);
+}
+
+/** 1:1 `ReturnToFieldFromFlyMapSelect` (field_effect.c:1339-1343) :
+ *  SetMainCallback2(CB2_ReturnToField) + gFieldCallback = FieldCallback_UseFly.
+ *  FieldCallback_UseFly (:1345-1352) = FadeInFromBlack + CreateTask(Task_UseFly)
+ *  + LockPlayerFieldControls + FreezeObjectEvents → Task_UseFly lance
+ *  FLDEFF_USE_FLY puis warpe. Port : retour-field = pont __CB2_ReturnToFieldLocal
+ *  (fade-in inclus) ; le field callback (gFieldCallback2, surface consommée par
+ *  le retour-field, overworld.ts:1245) déclenche l'envol 1:1 EXISTANT
+ *  (preloadFlyBirdEffect + StartFlyOutThenWarp, field_effect_helpers) avec le
+ *  warp différé __flyDoWarp — MÊMES briques que la voie Vol historique
+ *  (fly-field-move._flyWarp), imports dynamiques (jamais per-frame). */
+function ReturnToFieldFromFlyMapSelect(): void {
+  const dest = _flyWarpDest;
+  _flyWarpDest = null;
+  const g = globalThis as Record<string, unknown>;
+  g.gFieldCallback2 = () => {
+    void Promise.all([import('./script'), import('./overworld'), import('./field_effect_helpers')])
+      .then(([script, ow, fx]) => {
+        script.LockPlayerFieldControls();          // 1:1 :1349
+        g.__flyDoWarp = () => {
+          if (!dest) { console.error('[fly map] envol sans destination'); return; }
+          ow.setPendingWarp({ destMap: dest.map, x: dest.x, y: dest.y, elevation: 0, warpId: -1 }, 'step');
+          console.log(`[fly map] warp → ${dest.map} (${dest.x},${dest.y})`);
+        };
+        return fx.preloadFlyBirdEffect().then(() => fx.StartFlyOutThenWarp(0));
+      })
+      .catch((e) => console.error('[fly map] envol', e));
+    return true;
+  };
+  const cb2 = g.__CB2_ReturnToFieldLocal as (() => void) | undefined;
+  if (!cb2) { console.error('[fly map] pont __CB2_ReturnToFieldLocal absent (overworld pas chargé ?)'); return; }
+  getRuntime()?.SetMainCallback2(cb2 as never);
+}
+
+/** 1:1 `CB2_ReturnToPartyMenuFromFlyMap` (party_menu.c) : InitPartyMenu(FIELD,
+ *  SINGLE, CHOOSE_MON, keepCursorPos=TRUE, MSG CHOOSE_MON,
+ *  Task_HandleChooseMonInput, CB2_ReturnToFieldWithOpenMenu). Port : pont
+ *  OpenPartyScreen (party_menu — MÊME InitPartyMenu, exit = retour start menu).
+ *  ÉCART port : keepCursorPos non transmis (curseur au slot 0, pas sur le mon VOL). */
+function CB2_ReturnToPartyMenuFromFlyMap(): void {
+  const open = (globalThis as Record<string, unknown>).OpenPartyScreen as (() => void) | undefined;
+  if (!open) { console.error('[fly map] pont OpenPartyScreen absent (party_menu pas chargé ?)'); return; }
+  open();
+}
+
+/** 1:1 `CB2_ReturnToFieldWithOpenMenu` (overworld.c:1670) — pont overworld
+ *  (CB2_ReturnToFieldWithOpenMenu_Manual : gFieldCallback2 = ré-ouvre le start menu). */
+function CB2_ReturnToFieldWithOpenMenu(): void {
+  const cb = (globalThis as Record<string, unknown>).__CB2_ReturnToFieldWithOpenMenu as (() => void) | undefined;
+  if (!cb) { console.error('[fly map] pont __CB2_ReturnToFieldWithOpenMenu absent'); return; }
+  cb();
+}
 
 /** bg.c `DoScheduledBgTilemapCopiesToVram` — moteur : copies tilemap directes
  *  (CopyWindowToVram/CopyBgTilemapBufferToVram), pas de defer queue → no-op

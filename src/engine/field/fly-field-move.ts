@@ -1,6 +1,12 @@
 /**
  * fly-field-move.ts — CS/move Vol (Fly). GLU MAISON (pas un miroir décomp).
  *
+ * 🪦 VOIE DISSOUTE (2026-07-17, consolidation item 5) : le case FIELD_MOVE_FLY du
+ * party menu ferme désormais DIRECTEMENT vers `region_map.CB2_OpenFlyMap` (1:1
+ * party_menu.c:3752-3755) — SetUpFieldMove_Fly ne pose plus gPostMenuFieldCallback,
+ * donc `FieldCallback_Fly` ci-dessous n'est PLUS APPELÉ. Conservé provisoirement
+ * (doc du flux historique) — à supprimer au prochain nettoyage si le VOL 1:1 tient.
+ *
  * ⚠️ PAS DE `fldeff_fly.c` dans le décomp : ce fichier est de la glu maison qui AMALGAME +
  * SIMPLIFIE la chaîne Fly répartie sur 2 fichiers décomp (region_map.c CB2_OpenFlyMap +
  * field_effect.c ReturnToFieldFromFlyMapSelect). Il reste donc en `engine/` (non-1:1) tant que

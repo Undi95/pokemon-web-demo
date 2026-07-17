@@ -96,9 +96,14 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
 4. Redirection finale des imports IsDma3ManagerBusyWithBgCopy (pokenav_ribbons_*, pokenav_region_map,
    battle_main, battle_script_commands → src/dma3_manager) une fois le lot dupes-fondations committé
    (battle_bg garde le ré-export de compat en attendant).
-5. Fly map : câbler les 6 sentinelles wireTodo restantes (GetSSTidalLocation, SetWarpDestination ×2,
-   ReturnToFieldFromFlyMapSelect, CB2_ReturnToPartyMenuFromFlyMap, CB2_ReturnToFieldWithOpenMenu)
-   → la carte de VOL devient jouable (HM02 field move).
+5. 🟡 CÂBLÉE (2026-07-17) Fly map : les 6 sentinelles câblées 1:1 (GetSSTidalLocation TRANSCRIT,
+   SetWarpDestinationToHealLocation via heal_location, ReturnToFieldFromFlyMapSelect → envol
+   field_effect_helpers + gFieldCallback2, retours party/start-menu par ponts) + le case
+   FIELD_MOVE_FLY ferme vers CB2_OpenFlyMap (1:1 :3752) — l'ancienne voie fly-field-move DISSOUTE.
+   + FIX MOTEUR : InitBgsFromTemplates IGNORAIT le param bgMode (bg.c:326 SetBgModeInternal) →
+   tout écran affine par templates rendait en mode texte. Testé : VOL → carte 1:1 propre → choix →
+   retour field → warp posé. RESTE (finitions) : icônes villes (asset fly_target_icons manquant →
+   billes roses fallback), damier de bordure hors-carte, vérifier envol one-shot + fly-in arrivée.
 6. 🧨 MOTEUR affine : la re-copie OAM→sprite de tickAllAffineAnims (sprite-engine-impl.ts:602,
    « direction unique allumer ») rend TOUTE extinction d'affine fragile : un reset 1:1 qui n'éteint
    que le champ flat est rallumé par l'OAM shadow résiduel au tick suivant (bug payé : sous-menus
