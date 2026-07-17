@@ -1856,48 +1856,77 @@ function Task_ClosePartyMenu(task: DecompTask): void {
   _inputTaskId = -1;
 }
 
+// 1:1 décomp MENU_DIR_* (menu.h) + boutons GBA renvoyés par PartyMenuButtonHandler.
+const MENU_DIR_UP = -1, MENU_DIR_DOWN = 1, MENU_DIR_LEFT = -2, MENU_DIR_RIGHT = 2;
+const A_BUTTON = 0x0001, B_BUTTON = 0x0002, START_BUTTON = 0x0008;
+
+/** 1:1 décomp `s8 *slotPtr` : accès (get/set) au slot courant. Voir
+ *  GetCurrentPartySlotPtr pour la sémantique port (curseur = toujours `_slotId`). */
+interface PartySlotPtr {
+  get(): number;
+  set(v: number): void;
+}
+
 /** 1:1 décomp `UpdatePartySelectionSingleLayout` (party_menu.c:1523).
  *  Layout single (= notre cas) : slotId values 0..5 (mons), 7 (Cancel).
- *  Confirm (slot 6) pas utilisé en single layout (= chooseHalf=false). */
-function _updateSlotIdSingle(dir: number): void {
+ *  Confirm (slot 6) + sous-branches `chooseHalf` = hors-solo (double layout /
+ *  frontier) → omis (comportement solo inchangé). */
+function UpdatePartySelectionSingleLayout(slotPtr: PartySlotPtr, dir: number): void {
   const partyCount = CalculatePlayerPartyCount();
-  const PARTY_SIZE = 6;
   const CANCEL = PARTY_SIZE + 1;  // = 7
+  let s = slotPtr.get();
   switch (dir) {
     case MENU_DIR_UP:
-      if (_slotId === 0) _slotId = CANCEL;
-      else if (_slotId === CANCEL) _slotId = partyCount - 1;
-      else _slotId--;
+      if (s === 0) s = CANCEL;
+      else if (s === CANCEL) s = partyCount - 1;
+      else s--;
       break;
     case MENU_DIR_DOWN:
-      if (_slotId === CANCEL) _slotId = 0;
-      else if (_slotId === partyCount - 1) _slotId = CANCEL;
-      else _slotId++;
+      if (s === CANCEL) s = 0;
+      else if (s === partyCount - 1) s = CANCEL;
+      else s++;
       break;
     case MENU_DIR_RIGHT:
-      if (partyCount !== 1 && _slotId === 0) {
-        _slotId = _lastSelectedSlot === 0 ? 1 : _lastSelectedSlot;
+      if (partyCount !== 1 && s === 0) {
+        s = _lastSelectedSlot === 0 ? 1 : _lastSelectedSlot;
       }
       break;
     case MENU_DIR_LEFT:
-      if (_slotId !== 0 && _slotId !== PARTY_SIZE && _slotId !== CANCEL) {
-        _lastSelectedSlot = _slotId;
-        _slotId = 0;
+      if (s !== 0 && s !== PARTY_SIZE && s !== CANCEL) {
+        _lastSelectedSlot = s;
+        s = 0;
       }
       break;
   }
+  slotPtr.set(s);
 }
 
-/** 1:1 décomp `PartyMenuButtonHandler` (party_menu.c:1455).
- *  Reads gMain.newAndRepeatedKeys for DPAD, JOY_NEW for A/B/START.
- *  Returns A_BUTTON / B_BUTTON / START_BUTTON / 0. */
-const MENU_DIR_UP = -1, MENU_DIR_DOWN = 1, MENU_DIR_LEFT = -2, MENU_DIR_RIGHT = 2;
-function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
+/** 1:1 décomp `UpdateCurrentPartySelection` (party_menu.c:1505) : route
+ *  single/double layout puis, si le slot a bougé, PlaySE(SE_SELECT) +
+ *  AnimatePartySlot(ancien, 0) + AnimatePartySlot(nouveau, 1). Port = single
+ *  seul ; UpdatePartySelectionDoubleLayout (:1588) = hors-scope (double layout). */
+function UpdateCurrentPartySelection(slotPtr: PartySlotPtr, dir: number): void {
+  const newSlotId = slotPtr.get();          // 1:1 :1507 s8 newSlotId = *slotPtr;
+  // 1:1 :1510-1513 layout SINGLE → UpdatePartySelectionSingleLayout ; sinon
+  //   UpdatePartySelectionDoubleLayout (hors-solo, non porté).
+  UpdatePartySelectionSingleLayout(slotPtr, dir);
+  if (slotPtr.get() !== newSlotId) {        // 1:1 :1515
+    PlaySE(5);                              // 1:1 :1517 SE_SELECT
+    AnimatePartySlot(newSlotId, 0);         // 1:1 :1518
+    AnimatePartySlot(slotPtr.get(), 1);     // 1:1 :1519
+  }
+}
+
+/** 1:1 décomp `PartyMenuButtonHandler` (party_menu.c:1455). Lit
+ *  gMain.newAndRepeatedKeys (DPAD/L/R) + JOY_NEW (A/B/START). Retourne
+ *  START_BUTTON / A_BUTTON / B_BUTTON / 0. */
+function PartyMenuButtonHandler(slotPtr: PartySlotPtr): number {
+  const rt = getRuntime();
   if (!rt) return 0;
-  const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
+  const CANCEL = PARTY_SIZE + 1;
   const newRepKeys = rt.gMain.newAndRepeatedKeys ?? rt.gMain.newKeys;
   const newKeys = rt.gMain.newKeys;
-  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
+  const KEY_L = 0x0200, KEY_R = 0x0100;
   const DPAD_UP = 0x40, DPAD_DOWN = 0x80, DPAD_LEFT = 0x20, DPAD_RIGHT = 0x10;
   let dir = 0;
   switch (newRepKeys & (DPAD_UP | DPAD_DOWN | DPAD_LEFT | DPAD_RIGHT)) {
@@ -1906,29 +1935,223 @@ function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
     case DPAD_LEFT:  dir = MENU_DIR_LEFT;  break;
     case DPAD_RIGHT: dir = MENU_DIR_RIGHT; break;
   }
-  // 1:1 décomp PartyMenuButtonHandler :1473-1486 : `default` (aucun DPAD) →
-  // GetLRKeysPressedAndHeld : L_PRESSED → MENU_DIR_UP, R_PRESSED → DOWN.
+  // 1:1 :1473-1486 `default` (aucun DPAD) → GetLRKeysPressedAndHeld :
+  //   L_PRESSED → MENU_DIR_UP, R_PRESSED → MENU_DIR_DOWN.
   if (dir === 0) {
-    const KEY_L = 0x0200, KEY_R = 0x0100;
     if (newRepKeys & KEY_L) dir = MENU_DIR_UP;
     else if (newRepKeys & KEY_R) dir = MENU_DIR_DOWN;
   }
-  if (newKeys & KEY_START) return KEY_START;
+  if (newKeys & START_BUTTON) return START_BUTTON;   // 1:1 :1489
   if (dir !== 0) {
-    const prev = _slotId;
-    _updateSlotIdSingle(dir);
-    if (_slotId !== prev) {
-      PlaySE(5);  // SE_SELECT
-      // 1:1 décomp UpdateCurrentPartySelection (party_menu.c:1505) :
-      // AnimatePartySlot(oldSlot, 0); AnimatePartySlot(newSlot, 1);
-      AnimatePartySlot(prev, 0);
-      AnimatePartySlot(_slotId, 1);
-    }
-    return 0;
+    UpdateCurrentPartySelection(slotPtr, dir);       // 1:1 :1494
+    return 0;                                         // 1:1 :1495
   }
-  // Pressed A on Cancel = treat as B (= close)
-  if ((newKeys & KEY_A) && _slotId === CANCEL) return KEY_B;
-  return newKeys & (KEY_A | KEY_B);
+  // 1:1 :1499-1500 A sur Cancel (slot 7) = traité comme B (fermeture).
+  if ((newKeys & A_BUTTON) && slotPtr.get() === CANCEL) return B_BUTTON;
+  return newKeys & (A_BUTTON | B_BUTTON);             // 1:1 :1502
+}
+
+/** 1:1 décomp `GetCurrentPartySlotPtr` (party_menu.c:1284). Décomp : renvoie
+ *  &slotId2 si action == SWITCH || SOFTBOILED, sinon &slotId.
+ *
+ *  ⚠️ DIVERGENCE port (déjà documentée party_menu.ts:3405-3407 / :3442 / :3497) :
+ *  le port INVERSE les rôles slotId/slotId2. Décomp : slotId = mon FIXE (1er choisi
+ *  / donneur softboiled), slotId2 = curseur MOBILE en SWITCH/SOFTBOILED. Port :
+ *  `_slotId` = curseur MOBILE dans TOUS les modes, `_slotId2` = mon fixe. Donc
+ *  l'équivalent port du « pointeur sur le slot courant » (= le curseur) est
+ *  TOUJOURS `_slotId`. Renvoyer `_slotId2` pour SWITCH (calque littéral) inverserait
+ *  la navigation et casserait CursorCb_Switch / _switchSelectedMons /
+ *  _finishTwoMonAction (intouchables ce lot). Reconciliation = lot re-transcrivant
+ *  SWITCH/SOFTBOILED aux rôles décomp ; comportement actuel préservé (contrat lot 4). */
+function GetCurrentPartySlotPtr(): PartySlotPtr {
+  return {
+    get: () => _slotId,
+    set: (v: number) => { _slotId = v; },
+  };
+}
+
+/** 1:1 décomp `Task_HandleChooseMonInput` (party_menu.c:1259). Dispatch input
+ *  choix-mon : A → HandleChooseMonSelection, B → HandleChooseMonCancel, START →
+ *  (chooseHalf) MoveCursorToConfirm (hors-solo).
+ *
+ *  DIVERGENCE port : le décomp gate sur `!gPaletteFade.active &&
+ *  MenuHelpers_ShouldWaitForLinkRecv() != TRUE` (:1261) ; le port ne gate pas
+ *  (l'input 'open' tournait déjà chaque frame — comportement actuel préservé). */
+function Task_HandleChooseMonInput(taskId: number): void {
+  const slotPtr = GetCurrentPartySlotPtr();        // 1:1 :1263
+  switch (PartyMenuButtonHandler(slotPtr)) {       // 1:1 :1265
+    case A_BUTTON:                                  // 1:1 :1267 (mon sélectionné)
+      HandleChooseMonSelection(taskId, slotPtr);   // 1:1 :1268
+      break;
+    case B_BUTTON:                                  // 1:1 :1270 (Cancel / press B)
+      HandleChooseMonCancel(taskId, slotPtr);      // 1:1 :1271
+      break;
+    case START_BUTTON:                             // 1:1 :1273
+      // 1:1 :1274-1278 if (chooseHalf) { PlaySE(SE_SELECT); MoveCursorToConfirm(); }
+      //   chooseHalf = hors-solo (frontier/contest, jamais single layout) → no-op.
+      break;
+  }
+}
+
+/** 1:1 décomp `IsSelectedMonNotEgg` (party_menu.c:1368) : œuf → PlaySE(SE_FAILURE)
+ *  + FALSE ; sinon TRUE. Port : prend l'index de slot déréférencé (= *slotPtr).
+ *  Adaptation port : slot vide (mon absent du tableau) → FALSE SANS SE (le tableau
+ *  party JS peut avoir des trous ; le décomp suppose gPlayerParty[6] fixe). */
+function IsSelectedMonNotEgg(slot: number): boolean {
+  const mon = _party()[slot];
+  if (!mon) return false;                                // slot vide → skip silencieux (adaptation port)
+  if (mon.isEgg) { PlaySE(SE_FAILURE); return false; }   // 1:1 :1370-1374
+  return true;                                           // 1:1 :1375
+}
+
+/** 1:1 décomp `HandleChooseMonSelection` (party_menu.c:1292). *slotPtr == PARTY_SIZE
+ *  (Confirm) → gPartyMenu.task (hors-solo single) ; sinon switch(action). Chaque case
+ *  = le dispatch A DÉPLACÉ VERBATIM depuis Task_PartyMenu_HandleInput (les ponts
+ *  combat globalThis sont CONSERVÉS tels quels — le lot 7 les remplacera). */
+function HandleChooseMonSelection(taskId: number, slotPtr: PartySlotPtr): void {
+  const CANCEL = PARTY_SIZE + 1;  // = 7
+  if (slotPtr.get() === PARTY_SIZE) {
+    // 1:1 :1294 Confirm (slot 6) → gPartyMenu.task(taskId). Single layout solo
+    //   n'atteint jamais Confirm (chooseHalf/double only) → no-op port.
+    return;
+  }
+  switch (_partyAction) {
+    case PARTY_ACTION_SOFTBOILED: {
+      // 1:1 :1302-1307 (décomp : IsSelectedMonNotEgg + PartyMenuRemoveWindow avant
+      //   Task_TryUseSoftboiledOnPartyMon). Port VERBATIM : appelle directement la
+      //   sous-tâche softboiled (l'egg-check inline manque côté port — DIVERGENCE).
+      Task_TryUseSoftboiledOnPartyMon();
+      break;
+    }
+    case PARTY_ACTION_USE_ITEM: {
+      // 1:1 :1309-1317
+      const slot = slotPtr.get();
+      if (slot === CANCEL) {
+        // A sur CANCEL est déjà mappé à B par PartyMenuButtonHandler → chemin
+        //   défensif (le décomp gère Confirm via *slotPtr==PARTY_SIZE → gPartyMenu.task).
+        PlaySE(5);
+        ClosePartyScreen();
+        return;
+      }
+      if (!IsSelectedMonNotEgg(slot)) return;   // 1:1 :1310
+      // 1:1 :1312-1313 (chaînon qui CONSOMME LE TOUR en combat) : en IN_BATTLE,
+      //   exitCallback = CB2_SetUpExitToBattleScreen → le sac ne se rouvre que sur
+      //   annulation B (sinon soin gratuit).
+      if (_inBattleItemUse) _partyTransientExitCb = _CB2_SetUpExitToBattleScreen;
+      const cb = (globalThis as Record<string, unknown>).gItemUseCB as
+        | ((taskId: number, returnTask: ((task: DecompTask) => void) | null) => void)
+        | null
+        | undefined;
+      if (typeof cb === 'function') {
+        cb(taskId, null);  // 1:1 :1316 gItemUseCB(taskId, Task_ClosePartyMenuAfterText)
+      }
+      break;
+    }
+    case PARTY_ACTION_GIVE_ITEM: {
+      // 1:1 :1335-1342 (décomp partage GIVE_ITEM / GIVE_PC_ITEM ; port = GIVE_ITEM).
+      const slot = slotPtr.get();
+      if (slot === CANCEL) {
+        PlaySE(5);
+        ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
+        return;
+      }
+      if (!IsSelectedMonNotEgg(slot)) return;   // 1:1 :1337
+      PlaySE(5);                                 // 1:1 :1340 SE_SELECT
+      TryGiveItemOrMailToSelectedMon();          // 1:1 :1341
+      break;
+    }
+    case PARTY_ACTION_SEND_OUT: {
+      // PONT COMBAT (lot 7) — PARTY_ACTION_SEND_OUT n'est PAS dans le switch décomp
+      //   (SEND_OUT → default = Task_TryCreateSelectionWindow côté décomp). Le port
+      //   court-circuite via globalThis.__battleSwitchResultSlot / __battlePartyOrder
+      //   (switch volontaire / forcé K.O.). Conservé VERBATIM (lot 7 = TrySwitchInPokemon 1:1).
+      const slot = slotPtr.get();
+      if (slot === CANCEL) {
+        if (_battleSwitchAllowCancel) {
+          PlaySE(5);
+          (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
+          ClosePartyScreen();
+        }
+        return;
+      }
+      const party = _party();
+      const mon = party[slot];
+      // Interdit le mon DÉJÀ actif (= slot actif) ou K.O. → reste sur la sélection.
+      if (slot === _battleSwitchActiveSlot || !mon || mon.hp <= 0) {
+        PlaySE(5);
+        return;
+      }
+      PlaySE(5);
+      // 1:1 TrySwitchInPokemon (party_menu.c:5851-5856) : capture l'id FIELD du mon
+      //   choisi puis swap (le choisi prend le slot affiché de l'actif).
+      {
+        const po2 = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+          chooseSwitchSlot?: (displaySlot: number, activePartyId: number) => number;
+        } | undefined;
+        const fieldId = (_battleOrderApplied && po2?.chooseSwitchSlot)
+          ? po2.chooseSwitchSlot(slot, _battleSwitchActivePartyId)
+          : slot;
+        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = fieldId;
+      }
+      ClosePartyScreen();
+      break;
+    }
+    case PARTY_ACTION_SWITCH: {
+      // 1:1 :1344-1347 PlaySE(SE_SELECT) + SwitchSelectedMons.
+      PlaySE(5);
+      _switchSelectedMons();
+      break;
+    }
+    default: {
+      // 1:1 :1358-1363 default / ABILITY_PREVENTS / SWITCHING → PlaySE(SE_SELECT) +
+      //   Task_TryCreateSelectionWindow (ouvre le menu d'action RESUME/OBJET/RETOUR).
+      PlaySE(5);
+      Task_TryCreateSelectionWindow(taskId);
+      break;
+    }
+  }
+}
+
+/** 1:1 décomp `HandleChooseMonCancel` (party_menu.c:1378). Dispatch B par action.
+ *  Corps = le dispatch B DÉPLACÉ VERBATIM depuis Task_PartyMenu_HandleInput.
+ *
+ *  DIVERGENCE décomp : le décomp joue un SE PAR CASE (SEND_OUT → SE_FAILURE :1383,
+ *  autres → SE_SELECT). Le port joue SE_SELECT INCONDITIONNEL en tête (comportement
+ *  actuel préservé) ; à reconcilier lot 7 (combat). Le paramètre `taskId` est là
+ *  pour la fidélité de signature (décomp → Task_ClosePartyMenu) : le port ferme via
+ *  ClosePartyScreen (module). */
+function HandleChooseMonCancel(taskId: number, slotPtr: PartySlotPtr): void {
+  void taskId;
+  PlaySE(5);    // SE_SELECT (port : inconditionnel — cf. divergence ci-dessus)
+  switch (_partyAction) {
+    case PARTY_ACTION_SEND_OUT:
+      // PONT COMBAT (lot 7). 1:1 :1382 (décomp PlaySE(SE_FAILURE)). Port : B annule
+      //   le switch VOLONTAIRE (allowCancel) ; forcé après K.O. → ignoré (SE seul).
+      if (_battleSwitchAllowCancel) {
+        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
+        ClosePartyScreen();
+      }
+      break;
+    case PARTY_ACTION_SWITCH:
+    case PARTY_ACTION_SOFTBOILED:
+      // 1:1 :1385-1389 PlaySE(SE_SELECT) + FinishTwoMonAction. Port : SWITCH →
+      //   _finishTwoMonAction ; SOFTBOILED → Task_FinishSoftboiled (variante port).
+      if (_partyAction === PARTY_ACTION_SOFTBOILED) Task_FinishSoftboiled();
+      else _finishTwoMonAction();
+      break;
+    default:
+      // 1:1 :1394-1404 default : DisplayCancelChooseMonYesNo (CONTEST/CHOOSE_HALF =
+      //   hors-solo, jamais TRUE) → gSpecialVar_0x8004 = *slotPtr = PARTY_SIZE+1 +
+      //   Task_ClosePartyMenu. Port : seul DAYCARE écrit le var (BufferMonSelection
+      //   lit gSpecialVar_0x8004 → PARTY_NOTHING_CHOSEN) ; USE_ITEM/CHOOSE_MON = B →
+      //   ClosePartyScreen (savedCallback = bag / overworld).
+      if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
+        VarSet(0x8004, PARTY_SIZE + 1);   // 1:1 :1399 gSpecialVar_0x8004 = PARTY_SIZE+1
+        slotPtr.set(PARTY_SIZE + 1);      // 1:1 :1401 *slotPtr = PARTY_SIZE + 1
+      }
+      ClosePartyScreen();                 // 1:1 :1402 Task_ClosePartyMenu
+      break;
+  }
 }
 
 /** 1:1 décomp `sMonIconAnims` (pokemon_icon.c:941-983). Chaque AnimCmd =
@@ -2443,8 +2666,16 @@ function CreateSelectionWindow(taskId: number): boolean {
   const mon = gPlayerParty[_slotId];   // &gPlayerParty[gPartyMenu.slotId]
   // 1:1 :2701 GetMonNickname(mon, gStringVar1) : buffer nick — inutile ici, le message
   //   PARTY_MSG_DO_WHAT_WITH_MON du port (gText_DoWhatWithPokemon) est statique (pas de {STR_VAR_1}).
-  // 1:1 :2702 PartyMenuRemoveWindow(&windowId[1]) : retrait de l'ancienne fenêtre message →
-  //   géré par _drawMsg (retire _msgWid avant de redessiner).
+  // 1:1 :2702 PartyMenuRemoveWindow(&windowId[1]) : retrait de l'ancienne fenêtre message
+  //   AVANT de dessiner le menu — l'ordre est CRITIQUE : la msgbox CHOOSE_MON (21 tiles
+  //   + cadre → clear jusqu'à x=23) chevauche le menu d'action (x≥19) ; la retirer APRÈS
+  //   DisplaySelectionWindow trouait le coin bas-gauche du menu (bug user 2026-07-17).
+  if (_msgWid >= 0) {
+    ClearStdWindowAndFrame(_msgWid, false);
+    CopyWindowToVram(_msgWid, 3);
+    RemoveWindow(_msgWid);
+    _msgWid = -1;
+  }
   // 1:1 :2703-2708 branche solo (menuType != PARTY_MENU_TYPE_STORE_PYRAMID_HELD_ITEMS) :
   SetPartyMonSelectionActions(gPlayerParty, _slotId, GetPartyMenuActionsType(mon));
   _actionSubMenu = 'mon';
@@ -4067,157 +4298,12 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     return;
   }
   if (_phase !== 'open') return;
-  const result = _partyMenuButtonHandler(rt);
-  const KEY_A = 0x0001, KEY_B = 0x0002;
-  if (result === KEY_A) {
-    // 1:1 décomp Task_HandleChooseMonInput A_BUTTON : dispatch selon
-    // gPartyMenu.action. PARTY_ACTION_SWITCH (party_menu.c:1344-1347) →
-    // PlaySE(SE_SELECT) + SwitchSelectedMons. Sinon → action menu.
-    if (_partyAction === PARTY_ACTION_SWITCH) {
-      PlaySE(5);  // SE_SELECT (1:1 party_menu.c:1345)
-      _switchSelectedMons();
-    } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
-      // 1:1 décomp HandleChooseMonSelection case PARTY_ACTION_USE_ITEM
-      // (party_menu.c:1309-1317) :
-      //   if (IsSelectedMonNotEgg(slotPtr)) {
-      //       PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[1]);
-      //       gItemUseCB(taskId, Task_ClosePartyMenuAfterText);
-      //   }
-      // Note : slotId = CANCEL (7) → tombe dans `gPartyMenu.task(taskId)`
-      // (party_menu.c:1294-1297) qui pour USE_ITEM = Task_HandleChooseMonInput
-      // (= retour bag implicite via savedCallback). On gère via case KEY_B
-      // ci-dessous pour clarté.
-      const PARTY_SIZE = 6;
-      const CANCEL = PARTY_SIZE + 1; // = 7
-      if (_slotId === CANCEL) {
-        // 1:1 décomp slotPtr==PARTY_SIZE → gPartyMenu.task → cancel/return.
-        PlaySE(5);
-        ClosePartyScreen();
-        return;
-      }
-      // 1:1 décomp IsSelectedMonNotEgg (party_menu.c:1928) : œuf →
-      // PlaySE(SE_FAILURE) + FALSE (= skip). Slot vide = skip silencieux.
-      const party = _party();
-      const mon = party[_slotId];
-      if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
-      if (mon.isEgg) { PlaySE(SE_FAILURE); return; }  // 1:1 IsSelectedMonNotEgg
-      // 1:1 décomp :1312-1313 (le chaînon qui CONSOMME LE TOUR en combat) :
-      //   if (gPartyMenu.menuType == PARTY_MENU_TYPE_IN_BATTLE)
-      //       sPartyMenuInternal->exitCallback = CB2_SetUpExitToBattleScreen;
-      // → le party post-usage ferme DIRECTEMENT vers le reshow combat,
-      // gSpecialVar.ItemId reste = l'objet → CompleteWhenChoseItem l'émet =
-      // tour joué. Le sac ne se rouvre que sur ANNULATION (B, ItemId→0).
-      // Sans ce if : retour au sac + B = émission 0 = soin gratuit (bug).
-      if (_inBattleItemUse) _partyTransientExitCb = _CB2_SetUpExitToBattleScreen;
-      // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
-      const cb = (globalThis as Record<string, unknown>).gItemUseCB as
-        | ((taskId: number, returnTask: ((task: DecompTask) => void) | null) => void)
-        | null
-        | undefined;
-      if (typeof cb === 'function') {
-        const taskId = _inputTaskId;
-        cb(taskId, null);  // 1:1 :1316 gItemUseCB(taskId, Task_ClosePartyMenuAfterText)
-      }
-    } else if (_partyAction === PARTY_ACTION_GIVE_ITEM) {
-      // 1:1 décomp Task_HandleChooseMonInput case PARTY_ACTION_GIVE_ITEM
-      // (party_menu.c:1339-1341) : A sur un mon → TryGiveItemOrMailToSelectedMon.
-      // CANCEL (slot 7) → gPartyMenu.task → retour SAC (savedCallback=CB2_ReturnToBagMenu).
-      const PARTY_SIZE = 6;
-      const CANCEL = PARTY_SIZE + 1; // = 7
-      if (_slotId === CANCEL) {
-        PlaySE(5);
-        ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
-        return;
-      }
-      const party = _party();
-      const mon = party[_slotId];
-      if (!mon) return;              // 1:1 IsSelectedMonNotEgg FALSE = silent skip.
-      if (mon.isEgg) { PlaySE(SE_FAILURE); return; }  // 1:1 IsSelectedMonNotEgg (œuf)
-      PlaySE(5);                     // 1:1 :1340 PlaySE(SE_SELECT)
-      TryGiveItemOrMailToSelectedMon();
-    } else if (_partyAction === PARTY_ACTION_SEND_OUT) {
-      // Étape 4 (combat) : choix du mon à envoyer (switch volontaire / après K.O.).
-      // 1:1 décomp Task_HandleChooseMonInput case PARTY_ACTION_SEND_OUT →
-      // CursorCb_Switch-like : valide le mon puis ferme via gMain.savedCallback.
-      const PARTY_SIZE = 6;
-      const CANCEL = PARTY_SIZE + 1; // = 7
-      if (_slotId === CANCEL) {
-        // CANCEL : autorisé seulement en switch volontaire (pas après K.O.).
-        if (_battleSwitchAllowCancel) {
-          PlaySE(5);
-          (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
-          ClosePartyScreen();
-        }
-        return;
-      }
-      const party = _party();
-      const mon = party[_slotId];
-      // 1:1 : interdit le mon DÉJÀ au combat (= actif) ou un mon K.O. (les messages
-      // FR "déjà en plein combat" / "plus d'énergie" = polish ultérieur ; ici no-op).
-      if (_slotId === _battleSwitchActiveSlot || !mon || mon.hp <= 0) {
-        PlaySE(5);
-        return;  // reste sur la sélection
-      }
-      PlaySE(5);
-      // 1:1 TrySwitchInPokemon (party_menu.c:5851-5856) : capture l'id FIELD du mon
-      // choisi (la réponse moteur) PUIS swap nibbles + swap physique (le choisi prend
-      // le slot affiché de l'actif → il sera EN HAUT à la prochaine ouverture).
-      {
-        const po2 = (globalThis as Record<string, unknown>).__battlePartyOrder as {
-          chooseSwitchSlot?: (displaySlot: number, activePartyId: number) => number;
-        } | undefined;
-        const fieldId = (_battleOrderApplied && po2?.chooseSwitchSlot)
-          ? po2.chooseSwitchSlot(_slotId, _battleSwitchActivePartyId)
-          : _slotId;
-        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = fieldId;
-      }
-      ClosePartyScreen();
-    } else if (_partyAction === PARTY_ACTION_SOFTBOILED) {
-      // 1:1 décomp HandleChooseMonSelection case PARTY_ACTION_SOFTBOILED
-      // (party_menu.c:1302) : A sur un mon (≠ CANCEL, mappé à B) → tente le
-      // transfert PV sur le receveur (= _slotId). PlaySE déjà géré par le SE
-      // interne des sous-tâches ; ici on ne re-joue pas SE_SELECT (le décomp
-      // joue SE_USE_ITEM dans Task_TryUse).
-      Task_TryUseSoftboiledOnPartyMon();
-    } else {
-      // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
-      _openActionMenu(rt);
-    }
-  } else if (result === KEY_B) {
-    PlaySE(5);
-    if (_partyAction === PARTY_ACTION_SOFTBOILED) {
-      // 1:1 décomp HandleChooseMonCancel case SOFTBOILED (party_menu.c:1386) :
-      // annule le transfert → retour au choix de mon normal (curseur sur le donneur).
-      Task_FinishSoftboiled();
-    } else if (_partyAction === PARTY_ACTION_SWITCH) {
-      // 1:1 net : B / Cancel pendant SWITCH = annule (= SwitchSelectedMons
-      // slot2==slot1 → FinishTwoMonAction, party_menu.c:2827-2830).
-      _finishTwoMonAction();
-    } else if (_partyAction === PARTY_ACTION_SEND_OUT) {
-      // Étape 4 (combat) : B = annule le switch (volontaire seulement). Après
-      // K.O. (allowCancel=false) le choix est obligatoire → B ignoré (juste SE).
-      if (_battleSwitchAllowCancel) {
-        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
-        ClosePartyScreen();
-      }
-    } else {
-      // 1:1 décomp HandleChooseMonCancel default (party_menu.c:1395-1403) :
-      //   gSpecialVar_0x8004 = PARTY_SIZE + 1; *slotPtr = PARTY_SIZE + 1;
-      //   Task_ClosePartyMenu.
-      // Mode DAYCARE : le slot forcé à PARTY_SIZE+1 fait produire
-      // PARTY_NOTHING_CHOSEN par BufferMonSelection (exitCallback).
-      if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
-        VarSet(0x8004, PARTY_SIZE + 1);  // gSpecialVar_0x8004 = PARTY_SIZE + 1
-        _slotId = PARTY_SIZE + 1;        // *slotPtr = PARTY_SIZE + 1
-      }
-      // PARTY_ACTION_USE_ITEM : B → retour bag via savedCallback
-      // (= CB2_ReturnToBagMenu défini par OpenPartyScreenForItemUse).
-      // PARTY_ACTION_CHOOSE_MON : B → retour overworld via savedCallback
-      // (= CB2_ReturnToFieldWithOpenMenu_Manual). Même flow.
-      ClosePartyScreen();
-    }
-  }
-  // START: en single layout pas de Confirm → no-op
+  // 1:1 décomp : en phase 'open', la task func du décomp EST
+  // Task_HandleChooseMonInput (party_menu.c:1259). Lot 4 = extraction : le dispatch
+  // choix-mon (A/B/START) vit désormais dans Task_HandleChooseMonInput /
+  // HandleChooseMonSelection / HandleChooseMonCancel / PartyMenuButtonHandler /
+  // GetCurrentPartySlotPtr / IsSelectedMonNotEgg (ci-dessus).
+  Task_HandleChooseMonInput(_task.taskId);
 }
 
 export function VBlankCB_PartyMenuRun(): void { /* transferts auto */ }
