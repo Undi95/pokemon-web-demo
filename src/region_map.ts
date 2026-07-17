@@ -81,7 +81,7 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { SE_SELECT } from '../include/constants/songs';
 import { getString } from '../harness/runtime/decomp-strings';
-import { loadTileBin, loadGbaPal, loadAffineTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
+import { loadTileBin, loadTilemapBin, loadGbaPal, loadAffineTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { FlagGet, VarGet } from './event_data';
 // Câblage fly map (consolidation item 5) — leaves sûres (heal_location = data pur,
@@ -313,7 +313,7 @@ let sRegionMapCursorSmallGfxLZ: Uint8Array | null = null;      // cursor_small.p
 let sRegionMapCursorLargeGfxLZ: Uint8Array | null = null;      // cursor_large.png (.4bpp.lz)
 let sRegionMapBg_Pal: Uint16Array | null = null;               // map.pal (.gbapal)
 let sRegionMapBg_GfxLZ: Uint8Array | null = null;              // map.png (.8bpp.lz)
-let sRegionMapBg_TilemapLZ: Uint16Array | null = null;         // map.bin (.lz — affine u8→u16/entrée)
+let sRegionMapBg_TilemapLZ: Uint8Array | null = null;          // map.bin (.lz — affine u8 SERRÉ 1:1, chantier affine-8-bit)
 let sRegionMapPlayerIcon_BrendanPal: Uint16Array | null = null; // brendan_icon.png (.gbapal)
 let sRegionMapPlayerIcon_BrendanGfx: Uint8Array | null = null;  // brendan_icon.png (.4bpp)
 let sRegionMapPlayerIcon_MayPal: Uint16Array | null = null;     // may_icon.png (.gbapal)
@@ -586,7 +586,10 @@ export function PrefetchFlyMapAssets(): void {
       const [framePal, frameGfx, frameTilemap, flyPal, flyGfx] = await Promise.all([
         extractPngPlte(`${base}/frame.png`),
         loadTileBin(`${base}/frame.png`, 4),
-        loadAffineTilemapBin(`${base}/frame.bin`), // NB : frame.bin = tilemap TEXT u16 ? cf. rapport
+        // frame.bin = tilemap TEXT u16 NATIF (le cadre vit sur BG1 text) : loader
+        // text. (L'ancien loadAffineTilemapBin l'EXPANSAIT octet par octet →
+        // cadre corrompu — bug découvert au chantier affine-8-bit 2026-07-17.)
+        loadTilemapBin(`${base}/frame.bin`),
         extractPngPlte(`${base}/fly_target_icons.png`),
         loadTileBin(`${base}/fly_target_icons.png`, 4),
       ]);
@@ -809,12 +812,12 @@ export function LoadRegionMapGfx(): boolean {
           DecompressAndCopyTileDataToVram(sRegionMap.bgNum, sRegionMapBg_TilemapLZ, 0, 0, 1);
       } else {
         // 1:1 `LZ77UnCompVram(sRegionMapBg_TilemapLZ, BG_SCREEN_ADDR(28))` — écriture directe
-        // au mapBase 28 (même adaptation que DecompressAndCopyTileDataToVram mode 1 ci-dessous ;
-        // branche atteinte par la fly map/pokédex, non câblées — INERTE).
+        // au mapBase 28. Chantier affine-8-bit : l'asset est u8 SERRÉ (4 Ko pour un
+        // 64×64) → copie telle quelle, la carte tient dans son bloc (fin de la
+        // collision avec le frame mapBase 30 = le damier de bordure).
         const rt = getRuntime();
         if (rt && sRegionMapBg_TilemapLZ) {
-          const bytes = new Uint8Array(sRegionMapBg_TilemapLZ.buffer, sRegionMapBg_TilemapLZ.byteOffset, sRegionMapBg_TilemapLZ.byteLength);
-          rt.gba.vram.set(bytes.subarray(0, Math.min(bytes.length, rt.gba.vram.length - 28 * 0x800)), 28 * 0x800 /* BG_SCREEN_ADDR(28) */);
+          rt.gba.vram.set(sRegionMapBg_TilemapLZ.subarray(0, Math.min(sRegionMapBg_TilemapLZ.length, rt.gba.vram.length - 28 * 0x800)), 28 * 0x800 /* BG_SCREEN_ADDR(28) */);
         }
       }
       break;

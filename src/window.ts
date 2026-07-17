@@ -266,8 +266,36 @@ export function tileMapIndex(tileX: number, tileY: number, screenSize: number): 
  *  Note décomp : la signature C retourne `bool32` (success/fail), notre TS
  *  retourne directement `number[]` (= IDs) — plus utile au caller. Si on a
  *  besoin du bool, vérifier `result.length === templates.length`. */
+/** BG dont un ÉCRAN possède le tilemap buffer (SetBgTilemapBuffer) — 1:1 la
+ *  première boucle d'InitWindows (window.c:36-43) : `GetBgTilemapBuffer(i) !=
+ *  NULL → DummyWindowBgTilemap` (= « ne pas allouer/zéroer, l'écran gère »). */
+const _bgScreenTilemapOwned = new Set<number>();
+
 export function InitWindows(templates: readonly WindowTemplate[]): number[] {
   FreeAllWindowBuffers();
+  // 1:1 window.c:45-…: pour chaque BG référencé par les templates SANS buffer
+  // d'écran, le décomp `AllocZeroed` un gWindowBgTilemapBuffers[bg] posé comme
+  // tilemap du BG — la PREMIÈRE copie écrase donc le bloc VRAM ENTIER avec des
+  // zéros + les fenêtres. Notre adaptation « vue VRAM directe » sautait ce
+  // blanchiment → les tilemaps de l'écran PRÉCÉDENT survivaient (boîtes du
+  // party menu visibles par-dessus la fly map, bug user 2026-07-17 soir).
+  // Net-effect 1:1 : zéroer ici le bloc tilemap des BG non-ownés.
+  {
+    const rt = getRuntime();
+    if (rt) {
+      const seen = new Set<number>();
+      for (const t of templates) {
+        if (t.bg === 0xFF) break;
+        if (t.bg == null || seen.has(t.bg) || _bgScreenTilemapOwned.has(t.bg)) continue;
+        seen.add(t.bg);
+        const cfg = rt.gba.bg(t.bg as 0 | 1 | 2 | 3).config;
+        const base = (cfg.mapBaseIndex ?? 0) * 0x800;
+        // Taille du tilemap TEXT selon screenSize (0=0x800, 1/2=0x1000, 3=0x2000).
+        const size = cfg.screenSize === 3 ? 0x2000 : cfg.screenSize ? 0x1000 : 0x800;
+        rt.gba.vram.fill(0, base, Math.min(base + size, rt.gba.vram.length));
+      }
+    }
+  }
   const ids: number[] = [];
   for (const t of templates) {
     // 1:1 décomp window.c:51 — la boucle d'allocation s'arrête au premier
@@ -976,6 +1004,9 @@ export function ChangeBgX(bg: number, value: number, mode: number): number {
 export function ResetBgsAndClearDma3BusyFlags(_mode: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 ResetBgs : les pointeurs tilemap des BG sont réinitialisés → plus
+  // aucun BG « owné » par un écran (InitWindows re-blanchira librement).
+  _bgScreenTilemapOwned.clear();
   for (let i = 0; i < 4; i++) {
     const cfg = rt.gba.bg(i as 0 | 1 | 2 | 3).config;
     cfg.visible = false;
@@ -1449,13 +1480,17 @@ export function SetBgMode(bgMode: number): void {
  *  vue VRAM directement — conditions/credits — n'affichera pas ce buffer tant qu'il
  *  n'est pas re-câblé façon easy_chat.ts:799 [alias buffer↔vue] ; hors périmètre A2). */
 export function SetBgTilemapBuffer(_bg: number, _tilemap: unknown): void {
-  /* no-op : le tilemap est la vue VRAM persistante du compositor (cf. mail.ts:1018) */
+  /* no-op copie (le tilemap est la vue VRAM persistante du compositor, cf.
+   * mail.ts:1018) — mais on TRACE l'ownership 1:1 : InitWindows ne blanchit
+   * pas le bloc d'un BG dont l'écran possède le buffer (window.c:36-43). */
+  _bgScreenTilemapOwned.add(_bg);
 }
 
 /** 1:1 décomp `void UnsetBgTilemapBuffer(u8 bg)` (bg.c:856) : met le pointeur à NULL.
  *  Pendant du SetBgTilemapBuffer ci-dessus → no-op. */
 export function UnsetBgTilemapBuffer(_bg: number): void {
-  /* no-op : pendant de SetBgTilemapBuffer */
+  /* no-op copie — démarque l'ownership (pendant de SetBgTilemapBuffer). */
+  _bgScreenTilemapOwned.delete(_bg);
 }
 
 /** 1:1 décomp `ScheduleBgCopyTilemapToVram(u8 bg)` (bg.c) : planifie une copie

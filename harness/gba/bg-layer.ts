@@ -221,14 +221,17 @@ export function renderBgAffineScanline(
     const subY = texY % 8;
     const mapIdx = tileY * screenTiles + tileX;
 
-    if (mapIdx >= tilemap.length) {
+    // 1:1 HARDWARE (chantier affine-8-bit, 2026-07-17) : tilemap affine = 1 OCTET
+    // par entrée, SERRÉ en VRAM (64×64 = 4 Ko — les mapBase décomp comptent
+    // là-dessus). La view reçue est le Uint16Array du mapBase (little-endian) :
+    // entrée paire = low byte, impaire = high byte. (L'ancienne lecture « 1 u8
+    // par u16 » doublait l'empreinte → collision mapBase, damier fly map.)
+    if (mapIdx >= tilemap.length * 2) {
       out[sx * 4 + 3] = 0;
       continue;
     }
-
-    // Affine tilemap = u8 par entry. Notre Uint16Array view stocke 1 u8 par u16
-    // (loadAffineTilemapBin a expandé). Lit le low byte (high = 0 garanti).
-    const tileId = tilemap[mapIdx] & 0xFF;
+    const pair = tilemap[mapIdx >> 1];
+    const tileId = (mapIdx & 1) ? (pair >>> 8) & 0xFF : pair & 0xFF;
 
     // Décode tile 8bpp (cache).
     // Affine tiles are u8 ; encode "affine" namespace via high bit (= 1<<16)

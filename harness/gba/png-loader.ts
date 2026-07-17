@@ -497,15 +497,16 @@ export async function loadIndexedPngStrict(url: string, bpp: 4 | 8 = 4): Promise
  * Variante affine : .bin = 1 byte par entry (tileId 0-255 sans flip ni palette bank).
  * Utilisé pour BG2/BG3 en mode affine (Mode 1/2 GBA).
  *
- * Notre engine BG.tilemap est Uint16Array → on étend chaque u8 source en u16
- * avec high byte=0. Le BG affine renderer ignore les bits 8-15 de chaque entry.
+ * 1:1 HARDWARE (chantier affine-8-bit, 2026-07-17) : renvoie les u8 BRUTS —
+ * en VRAM un tilemap affine occupe 1 octet/entrée (64×64 = 4 Ko, PAS 8).
+ * L'ancienne expansion u8→u16 (1 entrée par u16) DOUBLAIT l'empreinte VRAM :
+ * les mapBase du décomp (calculés pour du 8-bit) se chevauchaient — damier de
+ * bordure fly map (carte mapBase 28 débordant sur le frame 30). Le renderer
+ * affine (bg-layer.ts) lit désormais l'octet serré.
  */
-export async function loadAffineTilemapBin(url: string): Promise<Uint16Array> {
+export async function loadAffineTilemapBin(url: string): Promise<Uint8Array> {
   const buf = await fetchAssetArrayBuffer(url);
-  const u8 = new Uint8Array(buf);
-  const u16 = new Uint16Array(u8.length);
-  for (let i = 0; i < u8.length; i++) u16[i] = u8[i];
-  return u16;
+  return new Uint8Array(buf);
 }
 
 /**
