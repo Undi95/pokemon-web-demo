@@ -5181,10 +5181,8 @@ export function ClosePartyScreen(): void {
   rt.CreateTask(Task_FadeAndClosePartyMenu, 0);
 }
 
-/** Stub kept pour start-menu sub-state compat. CB2 swap take over. */
-export function TickPartyScreen(_newKeys: number): void {
-  void _newKeys;
-}
+// (LOT 9 : TickPartyScreen SUPPRIMÉ — stub vide, l'état start-menu 'party_screen'
+// qui l'appelait n'était plus jamais posé.)
 
 // Expose to globalThis.
 {

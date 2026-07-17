@@ -291,7 +291,13 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
 - **Test EN JEU** : ouverture party, screenshot pixel-compare (nickname/Lv/PV/barre/genre/statut/objet/icône).
 - **Critère** : le rendu passe par les structs `sPartyMenuBoxes` ; helpers `_draw*`/`_spawn*` supprimés.
 
-### LOT 9 — Nettoyage adaptation morte
+### LOT 9 — Nettoyage adaptation morte ✅ PARTIEL (2026-07-17)
+> TickPartyScreen (stub vide) + état start-menu 'party_screen' (jamais posé) +
+> import SUPPRIMÉS ; aller-retour start→party→overworld vérifié en jeu, 0 erreur.
+> ⚠️ RESTE (lot final séparé, PAS un nettoyage) : dissoudre le squelette `_phase`
+> (104 occ., transitions annotées `= gTasks[].func`) en VRAIES gTasks — grep
+> `_phase` = 0 n'est atteignable qu'après ce passage ; les tableaux par-slot
+> attendent la migration sPartyMenuBoxes (plan écrit au lot 8).
 - **Fichiers** : `src/party_menu.ts`, `src/start_menu.ts`.
 - Supprimer `TickPartyScreen` (party_menu.ts:4503) + la branche `'party_screen'` morte
   (start_menu.ts:787-789) + l'état `'party_screen'` (start_menu.ts:121) si plus référencé.

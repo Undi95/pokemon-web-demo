@@ -88,7 +88,7 @@ import { preloadOptionMenuAssets } from './option_menu';
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
 import { OpenBagScreen } from './item_menu';
-import { OpenPartyScreen, TickPartyScreen } from './party_menu';
+import { OpenPartyScreen } from './party_menu';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer_card';
 import { OpenPokedexFromStartMenu } from './pokedex';
 import { getString } from '../harness/runtime/decomp-strings';
@@ -118,7 +118,6 @@ type SubState =
   | 'save_saving_msg'       // showing "SAUVEGARDE EN COURS…" ; printer done → gameState.save() + show "X a sauvegardé."
   | 'save_done'             // showing "X a sauvegardé." ; printer done → PlaySE(SE_SAVE) + wait SE done → close
   | 'bag_screen'            // session 127 : bag UI ouvert, drive via TickBagScreen
-  | 'party_screen'          // session 127 : party UI ouvert, drive via TickPartyScreen
   | 'trainer_card_screen'   // session 127 : trainer card UI ouvert
   | 'pokedex_screen'        // session 127 : pokédex UI ouvert
   | 'fading_to_screen';     // 1:1 décomp HandleStartMenuInput : fade-to-black actif,
@@ -784,9 +783,9 @@ export function TickStartMenu(): void {
       sSubState = 'menu';
       _spawnMenuWindow();
       break;
-    case 'party_screen':
-      TickPartyScreen(newKeys);
-      break;
+    // (LOT 9 party : l'état 'party_screen' + TickPartyScreen SUPPRIMÉS — le party
+    // menu a son propre CB2 (CB2_InitPartyMenu/MainCB2_PartyMenuRun), l'état
+    // n'était plus jamais posé.)
     case 'trainer_card_screen':
       TickTrainerCardScreen(newKeys);
       break;
