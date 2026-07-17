@@ -46,7 +46,7 @@ import {
 } from './window';
 import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from './text_window';
 import { GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './text';
-import { AddTextPrinterParameterized3 } from './menu';
+import { AddTextPrinterParameterized3, LoadMessageBoxAndBorderGfx } from './menu';
 import { InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap, CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose } from './menu';
 import { getRuntime, PlaySE } from '../harness/runtime/decomp-globals';
 import { SignalWaitState } from './scrcmd';
@@ -54,7 +54,9 @@ import { ScriptContext_SetupScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';
-import { CB2_ReturnToField_Manual } from './overworld';
+import { CB2_ReturnToField_Manual, CleanupOverworldWindowsAndTilemaps } from './overworld';
+import { FadeScreen, FADE_TO_BLACK, IsWeatherNotFadingIn } from './field_weather';
+import { FadeInFromBlack } from './field_screen_effect';
 import { ITEM_NONE, ClearMail } from './mail_data';
 import { FEMALE } from '../harness/runtime/decomp-globals';
 import { getString } from '../harness/runtime/decomp-strings';
@@ -96,6 +98,12 @@ const STD_WINDOW_BASE_TILE_NUM = 0x214;
 // 1:1 décomp menu.c Menu_ProcessInputNoWrap return values.
 const MENU_NOTHING_CHOSEN = -2;
 const MENU_B_PRESSED = -1;
+
+// 1:1 décomp player_pc.c:41-47 « Item storage menu options ».
+const MENU_WITHDRAW = 0;
+const MENU_DEPOSIT = 1;
+const MENU_TOSS = 2;
+const MENU_EXIT = 3;
 
 // 1:1 décomp player_pc.c:239-268 sWindowTemplates_MainMenus :
 //   WIN_MAIN_MENU         { bg=0, left=1, top=1, w=9, h=6, palette=15, baseBlock=1 } (= PlayerPC, 3 options)
@@ -188,7 +196,8 @@ type SubState =
   | 'mailbox_options'  // 1:1 décomp Mailbox_MailOptionsProcessInput (LIRE/AU SAC/DONNER/RETOUR)
   | 'mailbox_confirm_movetobag' // 1:1 décomp Mailbox_HandleConfirmMoveToBag (YesNo)
   | 'decoration_menu'  // 1:1 décomp HandleDecorationActionsMenuInput (DECORER/RANGER/JETER/SORTIR)
-  | 'deposit_list'     // 1:1 décomp CB2_GoToItemDepositMenu : list bag items + select → AddPCItem
+  | 'deposit_fade_wait'         // 1:1 décomp Task_ItemStorage_Deposit (player_pc.c:561) : attend la fin du fade-to-black avant de basculer sur le bag-menu (CB2_GoToItemDepositMenu)
+  | 'itemstorage_return_wait'   // 1:1 décomp ItemStorage_HandleReturnToProcessInput (player_pc.c:585) : attend IsWeatherNotFadingIn après retour du bag-menu
   | 'msg_wait'         // showing "No items"/"No mail" message ; A press → return prev
   | 'closing';         // cleanup en cours
 
@@ -426,7 +435,8 @@ export function TickBedroomPC(): void {
     case 'mailbox_options': _tickMailboxOptions(newKeys); break;
     case 'mailbox_confirm_movetobag': _tickMailboxConfirmMoveToBag(newKeys); break;
     case 'decoration_menu': _tickDecorationMenu(newKeys); break;
-    case 'deposit_list':    _tickDepositList(newKeys); break;
+    case 'deposit_fade_wait':       Task_ItemStorage_Deposit(); break;
+    case 'itemstorage_return_wait': ItemStorage_HandleReturnToProcessInput(newKeys); break;
     case 'msg_wait':        _tickMsgWait(newKeys); break;
     case 'closing':         _tickClosing(); break;
   }
@@ -540,12 +550,28 @@ function _tickMainMenu(_newKeys: number): void {
 
 // ─── Actions main menu options ──────────────────────────────────────────────
 
-/** 1:1 décomp `PlayerPC_ItemStorage` (player_pc.c:451) :
- *    InitItemStorageMenu(taskId, MENU_WITHDRAW);
- *    gTasks[taskId].func = ItemStorageMenuProcessInput;
+/** 1:1 décomp `sItemStorage_OptionDescriptions[]` (player_pc.c:184-189) :
+ *      [MENU_WITHDRAW] = gText_TakeOutItemsFromPC,
+ *      [MENU_DEPOSIT]  = gText_StoreItemsInPC,
+ *      [MENU_TOSS]     = gText_ThrowAwayItemsInPC. */
+function _sItemStorage_OptionDescriptions(i: number): string {
+  switch (i) {
+    case MENU_WITHDRAW: return getString('gText_TakeOutItemsFromPC');
+    case MENU_DEPOSIT:  return getString('gText_StoreItemsInPC');
+    case MENU_TOSS:     return getString('gText_ThrowAwayItemsInPC');
+    default:            return getString('gText_TakeOutItemsFromPC');
+  }
+}
+
+/** 1:1 décomp `InitItemStorageMenu(u8 taskId, u8 var)` (player_pc.c:508-522) :
+ *    AddWindow(sWindowTemplates_MainMenus[WIN_ITEM_STORAGE_MENU]) + SetStandardWindowBorderStyle
+ *    + PrintMenuTable(sItemStorage_MenuActions) + InitMenuInUpperLeftCornerNormal(.., var)
+ *    + ItemStorageMenuPrint(sItemStorage_OptionDescriptions[var]).
  *
+ *  Appelé par `PlayerPC_ItemStorage` (player_pc.c:451, var=MENU_WITHDRAW) et par
+ *  `ItemStorage_ReshowAfterBagMenu` (player_pc.c:581, var=MENU_DEPOSIT au retour du dépôt).
  *  Open sub-menu RETIRER/DEPOSER/JETER/SORTIR. */
-function _openItemStorage(): void {
+function _openItemStorage(initialPos: number = MENU_WITHDRAW): void {
   sSubState = 'item_storage';
   sSubWindowId = AddWindow(WIN_ITEM_STORAGE_MENU);
   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
@@ -559,10 +585,9 @@ function _openItemStorage(): void {
     { label: getString('gText_Cancel'),        action: _itemStorageExit },
   ];
   _printMenuOptions(sSubWindowId, subOpts);
-  InitMenuInUpperLeftCornerNormal(sSubWindowId, subOpts.length, 0);
-  // Update sticky dialogue with the description of the first option (=
-  // 1:1 décomp `ItemStorageMenuPrint(sItemStorage_OptionDescriptions[MENU_WITHDRAW])`).
-  _showSticky(getString('gText_TakeOutItemsFromPC'));
+  InitMenuInUpperLeftCornerNormal(sSubWindowId, subOpts.length, initialPos);
+  // 1:1 décomp `ItemStorageMenuPrint(sItemStorage_OptionDescriptions[var])`.
+  _showSticky(_sItemStorage_OptionDescriptions(initialPos));
 }
 
 /** 1:1 décomp `ItemStorage_Withdraw` (player_pc.c:591-607) :
@@ -579,255 +604,96 @@ function _itemStorageWithdraw(): void {
   _itemStorageEnter(false);
 }
 
-/** 1:1 décomp `ItemStorage_Deposit` (player_pc.c:555-569) :
+/** 1:1 décomp `static void ItemStorage_Deposit(u8 taskId)` (player_pc.c:555-559) :
  *    gTasks[taskId].func = Task_ItemStorage_Deposit;
  *    FadeScreen(FADE_TO_BLACK, 0);
- *  Puis Task_ItemStorage_Deposit : CleanupOverworldWindowsAndTilemaps() +
- *  CB2_GoToItemDepositMenu(). CB2 swap vers bag-menu en mode DEPOSIT.
  *
- *  Notre port : inline DEPOSIT UI (= list bag items + select → AddPCItem +
- *  RemoveBagItem). Réutilise pattern ItemStorage UI (= list-menu + desc). */
-/** 1:1 décomp `ItemStorage_Deposit` (player_pc.c:555-559) :
- *    gTasks[taskId].func = Task_ItemStorage_Deposit;
- *    FadeScreen(FADE_TO_BLACK, 0);
- *  Puis `Task_ItemStorage_Deposit` (561-569) après fade :
- *    CleanupOverworldWindowsAndTilemaps();
- *    CB2_GoToItemDepositMenu();   ← bascule sur le BAG MENU en mode ItemPC
- *    DestroyTask(taskId);
- *  Le `CB2_GoToItemDepositMenu` ouvre le bag complet (= GoToBagMenu(
- *  ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)) qui
- *  permet de choisir un item depuis le sac, prompt qty, deposit, return PC.
- *
- *  Notre port (honest min) : ferme le PC + ouvre le bag overworld. Le
- *  context menu deposit complet (= "DEPOSER" + qty rolling depuis le bag)
- *  reste à câbler dans `bag-screen.ts` sous le flag mode `ITEM_PC`. */
+ *  Overlay : `PlaySE(SE_SELECT)` est déjà joué par `_tickItemStorage` (= 1:1
+ *  `ItemStorageMenuProcessInput` default case, player_pc.c:549). On passe en état
+ *  `deposit_fade_wait` (= gTasks[taskId].func = Task_ItemStorage_Deposit) + fade. */
 function _itemStorageDeposit(): void {
-  PlaySE(Songs.SE_SELECT);
-  // 1:1 décomp : ferme le PC entièrement avant d'ouvrir le bag.
-  // Cleanup state.
+  sSubState = 'deposit_fade_wait';
+  FadeScreen(FADE_TO_BLACK, 0);
+}
+
+/** 1:1 décomp `static void Task_ItemStorage_Deposit(u8 taskId)` (player_pc.c:561-569) :
+ *    if (!gPaletteFade.active) {
+ *        CleanupOverworldWindowsAndTilemaps();
+ *        CB2_GoToItemDepositMenu();
+ *        DestroyTask(taskId);
+ *    }
+ *
+ *  Overlay : `DestroyTask` = fermer l'overlay (`sIsOpen = false`) pour que
+ *  `TickBedroomPC` cesse d'être polled ; le sac (CB2_Bag) prend la main via
+ *  `SetMainCallback2`, l'OW n'étant plus le CB2 actif. Le retour repasse par
+ *  `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu` (ci-dessous).
+ *
+ *  `CB2_GoToItemDepositMenu` vit dans item_menu.ts (foyer item_menu.c:593) → import
+ *  DIFFÉRÉ (pont anti-cycle ESM, précédent src/pokenav.ts + l'ancien appel clone ici).
+ *  Le fade FADE_TO_BLACK a déjà noirci l'écran → cleanup + swap async invisible. */
+function Task_ItemStorage_Deposit(): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  // Fade terminé : tear down l'overlay (fenêtres sous-menu + dialogue) + bascule bag.
   _removeSubWindow();
   _clearSticky();
-  _removePCWindows();
-  _itemStorageEraseItemIcon();
-  if (sPCListTaskId >= 0) {
-    DestroyListMenuTask(sPCListTaskId);
-    sPCListTaskId = -1;
-  }
-  sIsOpen = false;
-  // Open bag en mode ITEMPC (= 1:1 décomp `CB2_GoToItemDepositMenu` →
-  // `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`).
-  // Le exitCallback = re-open PC menu après close du bag (= 1:1 décomp
-  // `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu`).
-  void import('./engine/bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
-    OpenBagScreen(undefined, BAG_LOCATION_ITEMPC, () => {
-      // Re-open le PC menu — switch directement vers RETIRER (= user-flag
-      // "dès qu'on depose on est switch vers le retrait").
-      void import('./player_pc').then(({ OpenBedroomPC }) => {
-        // isBedroom=true → re-ouvre le PC dans la bedroom (= chambre joueur).
-        // 1:1 décomp `ItemStorage_ReshowAfterBagMenu` reload le state PlayerPC
-        // tel qu'il était à l'open (= bedroom). PC de Centre Pokémon = isBedroom=false.
-        OpenBedroomPC(true);
-        // Auto-switch vers item_storage RETIRER pour cohérence flow user.
-        // Use timeout pour laisser le main menu se draw d'abord.
-        setTimeout(() => {
-          if (sIsOpen && sSubState === 'main_menu') {
-            // Simulate user pressing A on "STOCKAGE OBJ.": _openItemStorage.
-            // Direct call to _itemStorageEnter(false) puis bypass main_menu.
-          }
-        }, 100);
-      });
-    });
-  });
+  sIsOpen = false;             // = DestroyTask (stoppe le poll TickBedroomPC)
+  sSubState = 'main_menu';     // état neutre pour la prochaine ouverture
+  void import('./item_menu').then(({ CB2_GoToItemDepositMenu }) => {
+    CleanupOverworldWindowsAndTilemaps();
+    CB2_GoToItemDepositMenu();
+  }).catch((e) => console.error('[player_pc] ItemStorage_Deposit → item_menu', e));
 }
 
-// ─── DEPOSIT bag → PC UI ────────────────────────────────────────────────────
-
-let sDepositListItems: ListMenuItem[] = [];
-let sDepositBagSlotIndices: number[] = [];  // map listIndex → bag.items[slotIdx]
-
-/** Ouvre la list-menu des items du bag (= pocket ITEMS uniquement, comme décomp).
- *  1:1 décomp : ItemDeposit_OpenBagMenu → liste les items pocket "Items" du bag. */
-function _depositOpenList(): void {
-  // Setup 3 windows : TITLE / MESSAGE / LIST (= même layout que ItemStorage).
-  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
-  sPCTitleWindowId = AddWindow(WIN_PC_TITLE);
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCTitleWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
-  sPCMessageWindowId = AddWindow(WIN_PC_MESSAGE);
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
-  sPCListWindowId = AddWindow(WIN_PC_LIST);
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
-  // Title centered "DEPOSER OBJET".
-  const titleText = getString('gText_DepositItem');
-  AddTextPrinterParameterized3(
-    sPCTitleWindowId, FONT_NORMAL,
-    GetStringCenterAlignXOffset(titleText, WIN_PC_TITLE.width * 8),
-    1, [1, 2, 3], TEXT_SKIP_DRAW, titleText,
-  );
-  // Build list-items depuis bag.items (pocket Items uniquement, 1:1 décomp DEPOSIT
-  // ne dépose que les pocket Items).
-  sDepositListItems = [];
-  sDepositBagSlotIndices = [];
-  const bagItems = gBagPockets[ITEMS_POCKET].itemSlots;
-  for (let i = 0; i < bagItems.length; i++) {
-    if (bagItems[i].itemKey) {
-      sDepositListItems.push({
-        name: getItemNameFr(bagItems[i].itemKey),
-        id: sDepositListItems.length,
-      });
-      sDepositBagSlotIndices.push(i);
-    }
-  }
-  // Cancel entry à la fin.
-  sDepositListItems.push({ name: getString('gText_Cancel2'), id: -2 });
-  // Build list-menu.
-  const template: ListMenuTemplate = {
-    items: sDepositListItems,
-    moveCursorFunc: _depositMoveCursor,
-    itemPrintFunc: _depositPrintMenuItem,
-    totalItems: sDepositListItems.length,
-    maxShowed: Math.min(8, sDepositListItems.length),
-    windowId: sPCListWindowId,
-    header_X: 0, item_X: 8, cursor_X: 0,
-    upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
-    lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
-    fontId: 7, cursorKind: 0,
-  };
-  sPCListTaskId = ListMenuInit(template, 0, 0);
-  // Init icon + description.
-  const firstId = sDepositListItems[0]?.id ?? -2;
-  if (firstId === -2) {
-    _itemStorageDrawItemIcon('ITEM_LIST_END');
-  } else {
-    const bagIdx = sDepositBagSlotIndices[firstId];
-    _itemStorageDrawItemIcon(gBagPockets[ITEMS_POCKET].itemSlots[bagIdx].itemKey);
-  }
-  _depositPrintDescription(firstId);
+/** 1:1 décomp `void CB2_PlayerPCExitBagMenu(void)` (player_pc.c:571-575) :
+ *    gFieldCallback = ItemStorage_ReshowAfterBagMenu;
+ *    SetMainCallback2(CB2_ReturnToField);
+ *
+ *  Exit-callback posé par `CB2_GoToItemDepositMenu` (item_menu.c:593) → appelé quand
+ *  le sac se ferme (Task_CloseBagMenu → gBagPosition.exitCallback). Exposé à item_menu.ts
+ *  via le pont globalThis `__CB2_PlayerPCExitBagMenu` (bas du module). `CB2_ReturnToField`
+ *  (≠ …WithOpenMenu) ne rouvre PAS le start menu (plan §7.4). */
+export function CB2_PlayerPCExitBagMenu(): void {
+  (globalThis as Record<string, unknown>).gFieldCallback = ItemStorage_ReshowAfterBagMenu;
+  const rt = getRuntime();
+  if (rt) rt.SetMainCallback2(CB2_ReturnToField_Manual);
 }
 
-function _depositMoveCursor(itemId: number, onInit: boolean, _list: unknown): void {
-  if (!onInit) PlaySE(Songs.SE_SELECT);
-  _itemStorageEraseItemIcon();
-  if (itemId === -2) {
-    _itemStorageDrawItemIcon('ITEM_LIST_END');
-  } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
-    const bagIdx = sDepositBagSlotIndices[itemId];
-    _itemStorageDrawItemIcon(gBagPockets[ITEMS_POCKET].itemSlots[bagIdx].itemKey);
-  }
-  _depositPrintDescription(itemId);
+/** 1:1 décomp `static void ItemStorage_ReshowAfterBagMenu(void)` (player_pc.c:577-583) :
+ *    LoadMessageBoxAndBorderGfx();
+ *    DrawDialogueFrame(0, TRUE);
+ *    InitItemStorageMenu(CreateTask(ItemStorage_HandleReturnToProcessInput, 0), MENU_DEPOSIT);
+ *    FadeInFromBlack();
+ *
+ *  Tourné comme `gFieldCallback` par `RunFieldCallback` pendant la restauration OW
+ *  (overworld.ts ReturnToFieldLocal case 1). Réétablit l'overlay PC : `sIsOpen=true`
+ *  + `_openItemStorage(MENU_DEPOSIT)` (= InitItemStorageMenu, curseur sur DEPOSER +
+ *  description "Range des objets…"), puis attend la fin du fade météo avant de rendre
+ *  la main aux inputs (état `itemstorage_return_wait`). `sIsBedroomMode` persiste
+ *  (module static) → le mode PC (chambre/Centre) est conservé au retour. */
+function ItemStorage_ReshowAfterBagMenu(): void {
+  sIsOpen = true;
+  LoadMessageBoxAndBorderGfx();
+  // DrawDialogueFrame(0, TRUE) : le cadre dialogue est (re)tracé par `_showSticky`
+  // dans `_openItemStorage` (overlay = fenêtre dialogue dédiée sDialogueWindowId).
+  _openItemStorage(MENU_DEPOSIT);
+  sSubState = 'itemstorage_return_wait';
+  FadeInFromBlack();
 }
 
-function _depositPrintMenuItem(windowId: number, itemId: number, yOffset: number): void {
-  if (itemId === -2) return;
-  if (itemId < 0 || itemId >= sDepositBagSlotIndices.length) return;
-  const bagIdx = sDepositBagSlotIndices[itemId];
-  const qty = gBagPockets[ITEMS_POCKET].itemSlots[bagIdx].quantity;
-  const qtyStr = `× ${String(qty).padStart(3, ' ')}`;
-  AddTextPrinterParameterized3(
-    windowId, 7 /* FONT_NARROW */,
-    GetStringRightAlignXOffset(qtyStr, 104), yOffset,
-    [1, 2, 3], TEXT_SKIP_DRAW, qtyStr,
-  );
+/** 1:1 décomp `static void ItemStorage_HandleReturnToProcessInput(u8 taskId)` (player_pc.c:585-589) :
+ *    if (IsWeatherNotFadingIn() == TRUE)
+ *        gTasks[taskId].func = ItemStorageMenuProcessInput;
+ *
+ *  Overlay : `ItemStorageMenuProcessInput` = état `item_storage` (_tickItemStorage). */
+function ItemStorage_HandleReturnToProcessInput(_newKeys: number): void {
+  if (IsWeatherNotFadingIn() === true)
+    sSubState = 'item_storage';
 }
 
-function _depositPrintDescription(itemId: number): void {
-  if (sPCMessageWindowId < 0) return;
-  let description: string;
-  if (itemId === -2) {
-    description = getString('gText_GoBackPrevMenu');
-  } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
-    const bagIdx = sDepositBagSlotIndices[itemId];
-    description = String(GetItemDescription(gBagPockets[ITEMS_POCKET].itemSlots[bagIdx].itemKey));
-  } else {
-    description = '';
-  }
-  DrawStdFrameWithCustomTileAndPalette(
-    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
-  );
-  AddTextPrinterParameterized3(
-    sPCMessageWindowId, FONT_NORMAL, 0, 1,
-    [1, 2, 3], TEXT_SKIP_DRAW, description,
-  );
-}
-
-function _tickDepositList(_newKeys: number): void {
-  const sel = ListMenu_ProcessInput(sPCListTaskId);
-  if (sel === -1) return;
-  if (sel === -2) {
-    PlaySE(Songs.SE_SELECT);
-    _depositExitList();
-    return;
-  }
-  PlaySE(Songs.SE_SELECT);
-  // 1:1 décomp `Task_ItemContext_Deposit` (item_menu.c:2203-2221) :
-  //   tItemCount = 1;
-  //   if (qty == 1) TryDepositItem(taskId);
-  //   else { msg "DepositHowMany" + AddItemQuantityWindow + Task_ChooseHowManyToDeposit }
-  const bagIdx = sDepositBagSlotIndices[sel];
-  const slot = gBagPockets[ITEMS_POCKET].itemSlots[bagIdx];
-  sPCLastActionPos = sel;  // bagIdx via mapping sDepositBagSlotIndices[sel]
-  sPCQuantitySelected = 1;
-  if (slot.quantity === 1) {
-    _depositDoDeposit(bagIdx, 1);
-    return;
-  }
-  // 1:1 décomp : "Déposer combien?" via gText_DepositHowManyVar1.
-  const itemName = getItemNameFr(slot.itemKey);
-  setStringVar(1, itemName);
-  const tpl = getString('gText_DepositHowManyVar1');
-  ItemStorage_PrintMessage(tpl);
-  _itemStorageShowQuantityWindow();
-  // Réutilise pc_qty_rolling via flag sPCInDepositQtyMode (= variant deposit).
-  sSubState = 'pc_qty_rolling';
-  sPCInDepositQtyMode = true;
-}
-
-let sPCInDepositQtyMode = false;
-
-/** 1:1 décomp `TryDepositItem` (item_menu.c:2248-2274) : AddPCItem + remove from bag,
- *  ou error "no room". Sur success → message + switch state vers withdraw (= user-flag :
- *  après dépôt, switch vers RETIRER au lieu de rester dans dépôt). */
-function _depositDoDeposit(bagIdx: number, qty: number): void {
-  const slot = gBagPockets[ITEMS_POCKET].itemSlots[bagIdx];
-  const itemName = getItemNameFr(slot.itemKey);
-  if (AddPCItem(slot.itemKey, qty)) {
-    slot.quantity -= qty;
-    if (slot.quantity === 0) slot.itemKey = '';
-    // 1:1 décomp `gText_DepositedVar2Var1s` = "{STR_VAR_1}:\ndéposé {STR_VAR_2}."
-    setStringVar(1, itemName);
-    setStringVar(2, String(qty));
-    const tpl = getString('gText_DepositedVar2Var1s');
-    ItemStorage_PrintMessage(tpl);
-    sPCActionMsgIsError = false;
-    sPCDepositJustDone = true;  // = switch vers RETIRER au prochain A press
-    sPCLastActionPos = -1;
-    sSubState = 'pc_action_msg';
-  } else {
-    // 1:1 décomp `gText_NoRoomForItems` = "Pas de place pour les objets."
-    _itemStoragePrintWindowMessage(getString('gText_NoRoomForItems') ?? 'Pas de place pour les objets.');
-    sPCActionMsgIsError = true;
-    sSubState = 'pc_action_msg';
-  }
-}
-
-let sPCDepositJustDone = false;
-
-function _depositExitList(): void {
-  _itemStorageEraseItemIcon();
-  if (sPCListTaskId >= 0) {
-    DestroyListMenuTask(sPCListTaskId);
-    sPCListTaskId = -1;
-  }
-  _removePCWindows();
-  sSubState = 'item_storage';
-  _openItemStorage();
-}
-
+// ─── Pont anti-cycle ESM : item_menu.ts (CB2_GoToItemDepositMenu) résout l'exit-callback
+//     `CB2_PlayerPCExitBagMenu` via ce global (foyer player_pc.c:571 ≠ item_menu.c). ────
+(globalThis as Record<string, unknown>).__CB2_PlayerPCExitBagMenu = CB2_PlayerPCExitBagMenu;
 
 /** 1:1 décomp `ItemStorage_Toss` (player_pc.c:609-624) : same flow que Withdraw
  *  mais toss=TRUE. */
@@ -1273,13 +1139,10 @@ function _itemStorageRemoveQuantityWindow(): void {
 /** 1:1 décomp `AdjustQuantityAccordingToDPadInput` (item_menu.c:utility) +
  *  `ItemStorage_HandleQuantityRolling` (player_pc.c:1392-1422). */
 function _tickPCQuantityRolling(newKeys: number): void {
-  // 1:1 décomp `AdjustQuantityAccordingToDPadInput` : qty bounds depend du mode.
-  // Withdraw/Toss : pc slot.quantity (= items dans le PC).
-  // Deposit : bag slot.quantity (= items dans le bag à déposer).
+  // 1:1 décomp `AdjustQuantityAccordingToDPadInput` : qty bounds = pc slot.quantity
+  // (= items dans le PC, pour Withdraw/Toss).
   const pos = sPCLastActionPos;
-  const maxQty = sPCInDepositQtyMode
-    ? gBagPockets[ITEMS_POCKET].itemSlots[sDepositBagSlotIndices[pos]].quantity
-    : gSaveBlock1Ptr.pcItems[pos].quantity;
+  const maxQty = gSaveBlock1Ptr.pcItems[pos].quantity;
   let changed = false;
   // 1:1 décomp DPAD UP / DOWN / LEFT / RIGHT adjust qty (+/- 1, +/- 10).
   if (newKeys & DPAD_UP)    { sPCQuantitySelected = Math.min(maxQty, sPCQuantitySelected + 1); changed = true; }
@@ -1291,14 +1154,10 @@ function _tickPCQuantityRolling(newKeys: number): void {
     return;
   }
   if (newKeys & A_BUTTON) {
-    // 1:1 décomp lines 1405-1411 : qty confirmed → withdraw/toss/deposit.
+    // 1:1 décomp lines 1405-1411 : qty confirmed → withdraw/toss.
     PlaySE(Songs.SE_SELECT);
     _itemStorageRemoveQuantityWindow();
-    if (sPCInDepositQtyMode) {
-      const bagIdx = sDepositBagSlotIndices[pos];
-      sPCInDepositQtyMode = false;
-      _depositDoDeposit(bagIdx, sPCQuantitySelected);
-    } else if (!sPCInTossMode) {
+    if (!sPCInTossMode) {
       _itemStorageDoItemWithdraw(pos, sPCQuantitySelected);
     } else {
       _itemStorageStartToss(pos, sPCQuantitySelected);
@@ -1307,14 +1166,8 @@ function _tickPCQuantityRolling(newKeys: number): void {
     // 1:1 décomp lines 1413-1420 : canceled → restore description + return list.
     PlaySE(Songs.SE_SELECT);
     _itemStorageRemoveQuantityWindow();
-    if (sPCInDepositQtyMode) {
-      sPCInDepositQtyMode = false;
-      _depositPrintDescription(pos);
-      sSubState = 'deposit_list';
-    } else {
-      _itemStoragePrintDescription(pos);
-      sSubState = 'pc_list';
-    }
+    _itemStoragePrintDescription(pos);
+    sSubState = 'pc_list';
   }
 }
 
@@ -1409,27 +1262,7 @@ function _tickPCTossConfirm(_newKeys: number): void {
 function _tickPCActionMsg(newKeys: number): void {
   if (newKeys & (A_BUTTON | B_BUTTON)) {
     PlaySE(Songs.SE_SELECT);
-    // CASE 1 : DEPOSIT just done → switch vers RETIRER (= user-flag :
-    // "dès qu'on depose un item on est switch vers le retrait").
-    // 1:1 décomp `CB2_PlayerPCExitBagMenu` (player_pc.c:571) qui retour au PC
-    // après le bag, ici on simule en cleanup + re-open Withdraw menu.
-    if (sPCDepositJustDone) {
-      sPCDepositJustDone = false;
-      sPCLastActionPos = -1;
-      sPCLastActionQty = 0;
-      // Cleanup deposit list + windows.
-      _itemStorageEraseItemIcon();
-      if (sPCListTaskId >= 0) {
-        DestroyListMenuTask(sPCListTaskId);
-        sPCListTaskId = -1;
-      }
-      _removePCWindows();
-      // Switch vers RETIRER (= _itemStorageWithdraw flow direct).
-      sPCInTossMode = false;
-      _itemStorageEnter(false);
-      return;
-    }
-    // CASE 2 : Withdraw / Toss success → RemovePCItem + refresh list.
+    // Withdraw / Toss success → RemovePCItem + refresh list.
     if (!sPCActionMsgIsError && sPCLastActionPos >= 0) {
       // 1:1 décomp : RemovePCItem + DestroyListMenuTask + ItemStorage_CompactList + RefreshListMenu + ListMenuInit.
       RemovePCItem(sPCLastActionPos, sPCLastActionQty);
