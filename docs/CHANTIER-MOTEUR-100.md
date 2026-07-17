@@ -77,10 +77,14 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 Oracle : `node scripts/decomp-index.cjs --file <x.c>` = le brief d'un chantier. Le TOP des TROUS CHAUDS
 (fonctions RÉFÉRENCÉES par le port sans être déclarées = bugs en puissance), hors link/frontier :
 party_menu 76ref · field_specials 71ref (surtout frontier→triés) · event_object_movement 56ref/457abs ·
-secret_base 35ref (feature entière) · **tileset_anims 33ref (EN COURS — anims de maps = bugs graphiques
-visibles partout)** · contest_util 32ref · **item_use 30ref (EN COURS via plan bag lots 1-2)** ·
-overworld 26ref · player_pc 25ref (plan bag) · **battle_transition 24ref/181abs (EN COURS P1 —
-la transition avant CHAQUE combat)** · field_screen_effect 23ref (Do*Warp à consolider) ·
+secret_base 35ref (feature entière) · ✅ tileset_anims FERMÉ 84/84 (`3b41bf4f2`) ·
+contest_util 32ref · **item_use 30ref (EN COURS via plan bag lots 1-2)** ·
+overworld 26ref · player_pc 25ref (plan bag) · ✅ **battle_transition 12/12 transitions solo
+RÉELLES** (charpente+bascule `241b59198`, phase 2 `0b5193295` — les 5 dernières
+[BigPokeball/PatternWeave, ClockwiseWipe, Ripple, WhiteBarsFade réel, GridSquares]
+transcrites par agent Opus, testées EN JEU aux films 2026-07-18 ; RESTE : purge du bloc
+bespoke l.1-1000 + dispatch fallback decomp-loop en TRIANT les morceaux réutilisés
+[_fldEffPokeballTrail, NUM_WHITE_BARS/FADE_TARGET]) · field_screen_effect 23ref (Do*Warp à consolider) ·
 pokemon_summary_screen 21ref (PssScroll, LoadMonGfx) · start_menu 19ref (InitSave/SaveCallback !) ·
 sprite.c 18ref (moteur, adaptations à réconcilier) · trainer_card 17ref/59abs (l'écran vit ailleurs —
 dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scratchpad top-holes.cjs.
