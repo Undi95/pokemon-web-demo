@@ -2501,6 +2501,7 @@ function GetNumPartySpritesCompacting(): number { return sStorage!.numPartyToCom
 function MovePartySpriteToNextSlot(spriteId: number, partyId: number): void {
   const spr = _spr(spriteId); if (!spr) return;
   spr.data[1] = partyId;
+  spr.data[7] = spriteId;  // véhicule d'ID : le décomp stocke le POINTEUR (partySprites[sPartyId] = sprite), nous des IDs
   let x: number, y: number;
   if (partyId === 0) { x = 104; y = 64; } else { x = 152; y = 8 * (3 * (partyId - 1)) + 16; }
   spr.data[2] = (spr.x & 0xFFFF) * 8;
@@ -2521,6 +2522,14 @@ function SpriteCB_MovePartyMonToNextSlot(sprite: { x: number; y: number; data: n
     if (sprite.data[1] === 0) { sprite.x = 104; sprite.y = 64; }
     else { sprite.x = 152; sprite.y = 8 * (3 * (sprite.data[1] - 1)) + 16; }
     sprite.callback = null;  // SpriteCallbackDummy
+    // 1:1 décomp (fin de SpriteCB_MovePartyMonToNextSlot) : ré-enregistre le sprite
+    // dans son NOUVEAU slot + décrémente le compteur de compactage — ces 2 lignes
+    // manquaient et Task_DepositMenu state 3 attendait numPartyToCompact==0 à jamais
+    // (gel des inputs post-dépôt, bug user 2026-07-17).
+    if (sStorage) {
+      sStorage.partySprites[sprite.data[1]] = sprite.data[7];
+      sStorage.numPartyToCompact--;
+    }
   }
 }
 // :4875 MovePartySprites / :4894 DestroyPartyMonIcon / :4903 DestroyAllPartyMonIcons ───
@@ -5915,6 +5924,13 @@ function Task_InitPokeStorage(taskId: number): void {
       break;
     case 4:
       if (!_boxIconsLoaded(StorageGetCurrentBox()) || !AreMonIconPalettesLoaded()) return;  // gate icônes (adaptation async)
+      // Mode DÉPÔT (sInPartyMenu) : InitSupplementalTilemaps (état 7) crée les icônes
+      // PARTY tout de suite → même gate async que Task_ShowPartyPokemon, sinon
+      // CreateMonIconSprite renvoie 0xFF = slots bleus vides (bug user 2026-07-17).
+      if (sInPartyMenu) {
+        _preloadPartyIcons();
+        if (!_partyIconsLoaded()) return;
+      }
       InitMonIconFields();
       if (!sStorage.isReopening) InitCursor();
       else InitCursorOnReopen();
