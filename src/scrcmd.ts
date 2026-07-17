@@ -40,7 +40,7 @@ import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '
 // Système object-events / joueur (mêmes fns 1:1 que les handlers parsés vérifiés).
 // VarGetByName = bridge nom→id de script-vars (les helpers byte-VM reçoivent des
 // tokens 'VAR_X' string) ; le VarGet 1:1 numérique vient d'event_data (ligne 24).
-import { gSelectedObjectEvent, VarGet as VarGetByName } from './engine/script/script-vars';
+import { gSelectedObjectEvent, VarGet as VarGetByName, Compare } from './engine/script/script-vars';
 import { ObjectEventClearHeldMovementIfFinished, gObjectEvents, type ObjectEvent } from './event_object_movement';
 import { gPlayerAvatar, IncrementGameStat } from './field_player_avatar';
 import { HasTrainerBeenFought, SetTrainerFlag, ClearTrainerFlag,
@@ -305,8 +305,8 @@ const sScriptConditionTable: number[][] = [
 function varDeref(id: number): number { const p = GetVarPointer(id); return p ? p.get() : 0; }
 function varStore(id: number, v: number): void { const p = GetVarPointer(id); if (p) p.set(v & 0xFFFF); }
 
-/** 1:1 scrcmd.c:381-388 `Compare(a, b)` : 0=<, 1==, 2=>. */
-function Compare(a: number, b: number): number { return a < b ? 0 : a === b ? 1 : 2; }
+// (Item 7-⑤ : la locale `Compare` est dissoute — import script-vars.ts:111,
+// même sémantique 1:1 scrcmd.c:381-388 : 0=LT, 1=EQ, 2=GT.)
 
 // gSpecials : id (specials-table.json) → nom → fn de jeu (via invokeSpecial).
 let _specialNames: string[] = [];

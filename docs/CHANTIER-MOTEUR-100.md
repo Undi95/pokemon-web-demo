@@ -121,9 +121,12 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    écrits → 0 permanent, sondé en combat : vérité __battleState=12, getter=0) → les intros
    spéciales (KYOGRE_GROUDON sous-marine, INGAME_PARTNER, FRONTIER) ne se déclenchaient jamais.
    Recâblé sur __battleState avec ?? (0 légitime = sauvage). Non-régression intro dresseur ✓.
-   ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué). ③ DestroySprite
-   battle_main.ts:1606 vs sprite.ts. ④ CB2_ReturnToField implanté safari_zone+walda_phrase, absent
-   d'overworld.ts (foyer réel). ⑤ Compare byte-VM ×2 (scrcmd.ts:309 + script-vars.ts:111).
+   ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué — RESTE, chantier
+   écran starter à retester). ③ VÉRIFIÉ non-dupe : DestroySprite battle_main = adaptateur
+   objet→id qui délègue à _DestroySpriteImpl runtime (fix fantôme 2026-06-10 documenté).
+   ④ VÉRIFIÉ oracle périmé : safari_zone/walda_phrase ALIASENT déjà CB2_ReturnToField_Manual
+   (overworld). ⑤ ✅ FAIT (2026-07-17) Compare : locale scrcmd.ts dissoute → import
+   script-vars.ts:111 (même sémantique 1:1), script PC testé en jeu.
    ⑥ AddTextPrinterParameterized5 à reloger PSS → text.ts (text.ts libéré). + 1 217 vraies dupes
    miroir dans le rapport complet — dépiler par gravité aux prochains lots C.
 
