@@ -8,8 +8,8 @@
 | Famille | P1 | P2 | P3 | Total |
 |---|--:|--:|--:|--:|
 | (a) getString nu → scanner EOS | 0 | 0 | 0 | **0** |
-| (b) pointer-arith sur tables | 4 | 0 | 0 | **4** |
-| (c) tables d'anim en objets | 13 | 0 | 0 | **13** |
+| (b) pointer-arith sur tables | 0 | 0 | 0 | **0** |
+| (c) tables d'anim en objets | 3 | 0 | 0 | **3** |
 | (d) boucles à invariant perdu | 0 | 0 | 0 | **0** |
 
 **Contexte** — deux bugs réels payés le 2026-07-16, même famille transpileur :
@@ -48,22 +48,17 @@ Sévérités : **FREEZE** = scan EOS non borné (boucle infinie synchrone = free
 
 ---
 
-## Famille (b) — pointer-arith C sur tables/buffers — 4 finding(s)
+## Famille (b) — pointer-arith C sur tables/buffers — 0 finding(s)
 
 `<table> + <n>` / `<table>++` où `<table>` est un tableau (suffixe Pal/Tiles/Tilemap/Gfx/Pointers/Table ou déclaré TypedArray
 dans le fichier). En JS `array + 1` = concat string = garbage. `arr[i + 1]` (index) N'est PAS matché. **NE PAS fixer en
 aveugle** : chaque cas exige le `.c` en regard (l'intention est un OFFSET dans la table → Map d'offsets ou `.subarray`, cf. fix `87236a0e6`).
 
-| Prio | Fichier:ligne | Fn hôte (refs) | Expression | Confiance | Signal | Extrait |
-|---|---|---|---|---|---|---|
-| **P1** | `src/credits.ts:603` | `Task_LoadShowMons` (4) | `gBirchBagGrass_Pal + 1` | HAUTE | suffixe table | LoadPalette(gBirchBagGrass_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(2 * 16 - 1)); |
-| **P1** | `src/credits.ts:607` | `Task_LoadShowMons` (4) | `gDecompressionBuffer + MON_PIC_SIZE` | MOYENNE | déclaré TypedArray | (gDecompressionBuffer + MON_PIC_SIZE)[i] = 0x22; |
-| **P1** | `src/credits.ts:609` | `Task_LoadShowMons` (4) | `gDecompressionBuffer + MON_PIC_SIZE` | MOYENNE | déclaré TypedArray | (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = 0x33; |
-| **P1** | `src/pokenav_menu_handler_gfx.ts:1467` | `ChangeBgDotsColorToPurple` (2) | `sPokenavBgDotsPal + 7` | HAUTE | suffixe table | CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal + 7, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2)); |
+*(aucun)*
 
 ---
 
-## Famille (c) — tables d'anim transpilées en OBJETS — 13 finding(s)
+## Famille (c) — tables d'anim transpilées en OBJETS — 3 finding(s)
 
 Forme MALFORMÉE (transpileur, `union AnimCmd sAnim_X[]` → objet) : `const sAnim_X = { type: ANIMCMD_FRAME(...), frame: …, loop: … }`.
 Forme SAINE attendue (cf. `registerAffineAnim('sAffineAnim_StarterPokemon', { frames: [...] })` dans `src/starter_choose.ts:94`,
@@ -72,16 +67,6 @@ Inerte tant que le chemin sprite rejette l'objet, mais **l'anim ne jouera jamais
 
 | Prio | Fichier:ligne | Table | Clés bidon | Contient ANIMCMD | Extrait |
 |---|---|---|---|---|---|
-| **P1** | `src/credits.ts:253` | `sAnim_Player_Slow` | type,frame,loop,jump,end | oui | const sAnim_Player_Slow = { |
-| **P1** | `src/credits.ts:262` | `sAnim_Player_Fast` | type,frame,loop,jump,end | oui | const sAnim_Player_Fast = { |
-| **P1** | `src/credits.ts:271` | `sAnim_Player_LookBack` | type,frame,loop,jump | oui | const sAnim_Player_LookBack = { |
-| **P1** | `src/credits.ts:278` | `sAnim_Player_LookForward` | type,frame,loop,jump | oui | const sAnim_Player_LookForward = { |
-| **P1** | `src/credits.ts:294` | `sAnim_Rival_Slow` | type,frame,loop,jump,end | oui | const sAnim_Rival_Slow = { |
-| **P1** | `src/credits.ts:303` | `sAnim_Rival_Fast` | type,frame,loop,jump,end | oui | const sAnim_Rival_Fast = { |
-| **P1** | `src/credits.ts:312` | `sAnim_Rival_Still` | type,frame | oui | const sAnim_Rival_Still = { |
-| **P1** | `src/credits.ts:365` | `sAnim_MonBg_Yellow` | type,frame | oui | const sAnim_MonBg_Yellow = { |
-| **P1** | `src/credits.ts:370` | `sAnim_MonBg_Red` | type,frame | oui | const sAnim_MonBg_Red = { |
-| **P1** | `src/credits.ts:375` | `sAnim_MonBg_Blue` | type,frame | oui | const sAnim_MonBg_Blue = { |
 | **P1** | `src/pokenav_ribbons_summary.ts:1407` | `sAffineAnim_RibbonIconBig_Normal` | type,frame | oui | const sAffineAnim_RibbonIconBig_Normal = { |
 | **P1** | `src/pokenav_ribbons_summary.ts:1412` | `sAffineAnim_RibbonIconBig_ZoomIn` | type,frame,loop | oui | const sAffineAnim_RibbonIconBig_ZoomIn = { |
 | **P1** | `src/pokenav_ribbons_summary.ts:1418` | `sAffineAnim_RibbonIconBig_ZoomOut` | type,frame,loop | oui | const sAffineAnim_RibbonIconBig_ZoomOut = { |
@@ -98,4 +83,4 @@ de fonction dans la condition. Analyse TEXTUELLE par accolades équilibrées —
 
 ---
 
-_Fin du rapport — 17 findings, généré par `scripts/audit-transpiler-pitfalls.cjs` le 2026-07-16._
+_Fin du rapport — 3 findings, généré par `scripts/audit-transpiler-pitfalls.cjs` le 2026-07-16._

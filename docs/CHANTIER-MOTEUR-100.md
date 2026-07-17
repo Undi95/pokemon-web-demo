@@ -73,6 +73,18 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 3. Purge des rustines listées section « RUSTINES À PURGER » de chaque rapport d'audit (12 listes).
 4. Re-test global : `__e2e.run('boot-overworld')` + `('double-battle')` + engine-sweep + screenshots.
 
+## 🎯 STRATÉGIE « FERMETURE DE FICHIERS » (2026-07-17, directive user : importer ce qu'on sait manquer)
+Oracle : `node scripts/decomp-index.cjs --file <x.c>` = le brief d'un chantier. Le TOP des TROUS CHAUDS
+(fonctions RÉFÉRENCÉES par le port sans être déclarées = bugs en puissance), hors link/frontier :
+party_menu 76ref · field_specials 71ref (surtout frontier→triés) · event_object_movement 56ref/457abs ·
+secret_base 35ref (feature entière) · **tileset_anims 33ref (EN COURS — anims de maps = bugs graphiques
+visibles partout)** · contest_util 32ref · **item_use 30ref (EN COURS via plan bag lots 1-2)** ·
+overworld 26ref · player_pc 25ref (plan bag) · **battle_transition 24ref/181abs (EN COURS P1 —
+la transition avant CHAQUE combat)** · field_screen_effect 23ref (Do*Warp à consolider) ·
+pokemon_summary_screen 21ref (PssScroll, LoadMonGfx) · start_menu 19ref (InitSave/SaveCallback !) ·
+sprite.c 18ref (moteur, adaptations à réconcilier) · trainer_card 17ref/59abs (l'écran vit ailleurs —
+dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scratchpad top-holes.cjs.
+
 ## FILE DE CONSOLIDATION POST-AGENTS (petits lots à faire après la grande passe)
 1. `PutWindowRectTilemap` : window.ts a un THROW à cet endroit (audit window.md) ; l'agent region_map
    a posé une impl locale 1:1 dans pokenav_region_map.ts (window.ts était gelé) → migrer l'impl dans
