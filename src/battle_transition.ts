@@ -1172,10 +1172,18 @@ function _cpuCopyPlttFadedToUnfaded(): void {
 
 /** 1:1 `BattleTransition_StartOnField(transitionId)` (:1026). */
 export function BattleTransition_StartOnField(transitionId: number): void {
-  // gMain.callback2 = CB2_OverworldBasic (résolu via surface globale ; à câbler au bascule).
+  // gMain.callback2 = CB2_OverworldBasic (:1028). ADAPTATION ASSUMÉE (bascule b13c6512b) :
+  // l'appelant réel (CB2_BattleStartTransition_1to1, battle-decomp-loop.ts) EST déjà
+  // l'équivalent fonctionnel de CB2_OverworldBasic pendant la transition (mêmes 4 appels
+  // 1:1 : RunTasks + AnimateSprites + BuildOamBuffer + UpdatePaletteFade, overworld.c) et
+  // reste callback2 — on ne le remplace que si le VRAI CB2_OverworldBasic est porté un jour
+  // (port overworld.c). Warn informatif une fois, pas une erreur : le flux est correct.
   const cb = (globalThis as { CB2_OverworldBasic?: (...a: unknown[]) => void }).CB2_OverworldBasic;
   if (cb) (gMain as unknown as { callback2?: unknown }).callback2 = cb;
-  else console.error('[battle_transition] CB2_OverworldBasic absent — StartOnField ne pose pas callback2 (bascule)');
+  else if (!(globalThis as Record<string, unknown>).__btOwBasicWarned) {
+    (globalThis as Record<string, unknown>).__btOwBasicWarned = true;
+    console.warn('[battle_transition] CB2_OverworldBasic non porté — le CB2 de bascule (équivalent 1:1) reste en place');
+  }
   LaunchBattleTransitionTask(transitionId);
 }
 
