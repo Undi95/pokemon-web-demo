@@ -653,7 +653,7 @@ async function _loadPartyWindowsCb2(rt: ReturnType<typeof getRuntime>): Promise<
  *    for (i, j) : CpuCopy16(GetPartyMenuBgTile(b[x+j + (y+i)*stride]), &pixels[(i*width + j)*32], 32)
  *    BlitBitmapToWindow(wid, pixels, x*8, y*8, width*8, height*8)
  */
-function _blitSlotFrame(
+function BlitBitmapToPartyWindow(
   windowId: number,
   tilemap: Uint8Array, stride: number,
   rx: number, ry: number, rw: number, rh: number,
@@ -670,23 +670,59 @@ function _blitSlotFrame(
   BlitBitmapToWindow(windowId, pixels, rx * 8, ry * 8, rw * 8, rh * 8, rw * 8);
 }
 
-/** Blit slot frame 1:1 décomp `BlitBitmapToPartyWindow_LeftColumn/RightColumn`. */
+/** 1:1 décomp `BlitBitmapToPartyWindow_LeftColumn` (party_menu.c:2167) :
+ *  blitFunc de la box slot 0 (colonne gauche). width/height=0 → défaut 10×7.
+ *  hideHP → variante sSlotTilemap_MainNoHP (= box œuf sans zone PV). */
+function BlitBitmapToPartyWindow_LeftColumn(windowId: number, x: number, y: number, width: number, height: number, hideHP: boolean): void {
+  if (!_assets) return;
+  if (width === 0 && height === 0) { width = 10; height = 7; }
+  if (hideHP === false)
+    BlitBitmapToPartyWindow(windowId, _assets.slotMainTilemap, 10, x, y, width, height);
+  else
+    BlitBitmapToPartyWindow(windowId, _assets.slotMainNoHpTilemap, 10, x, y, width, height);
+}
+
+/** 1:1 décomp `BlitBitmapToPartyWindow_RightColumn` (party_menu.c:2180) :
+ *  blitFunc des box slots 1-5 (colonne droite). width/height=0 → défaut 18×3. */
+function BlitBitmapToPartyWindow_RightColumn(windowId: number, x: number, y: number, width: number, height: number, hideHP: boolean): void {
+  if (!_assets) return;
+  if (width === 0 && height === 0) { width = 18; height = 3; }
+  if (hideHP === false)
+    BlitBitmapToPartyWindow(windowId, _assets.slotWideTilemap, 18, x, y, width, height);
+  else
+    BlitBitmapToPartyWindow(windowId, _assets.slotWideNoHpTilemap, 18, x, y, width, height);
+}
+
+/** 1:1 décomp `DrawEmptySlot` (party_menu.c:2193) :
+ *  BlitBitmapToPartyWindow(windowId, sSlotTilemap_WideEmpty, 18, 0, 0, 18, 3). */
+function DrawEmptySlot(windowId: number): void {
+  if (!_assets) return;
+  BlitBitmapToPartyWindow(windowId, _assets.slotWideEmptyTilemap, 18, 0, 0, 18, 3);
+}
+
+/** ÉCART port : au décomp la blitFunc (LeftColumn slot 0 / RightColumn slots
+ *  1-5) est appelée DANS DisplayPartyPokemonData (:876/881) et DrawEmptySlot
+ *  dans RenderPartyMenuBox (:841). Le port factorise ces appels ici (la paire
+ *  `_drawSlotFrame + _drawSlot` = DisplayPartyPokemonData). Ce dispatcher
+ *  sélectionne la blitFunc / DrawEmptySlot selon slot + état (occupé/œuf/vide),
+ *  exactement comme `infoRects->blitFunc(.,hideHP)` + le check species==NONE. */
 function _drawSlotFrame(slotIdx: number): void {
   if (!_assets) return;
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
   const mon = _slotMon(slotIdx);
   // 1:1 décomp DisplayPartyPokemonData (:876) : un ŒUF blit la variante
-  // NoHP (sSlotTilemap_MainNoHP/_WideNoHP) = box SANS label "PV"/barre.
+  // NoHP (hideHP=TRUE) = box SANS label "PV"/barre.
   const isEgg = !!mon?.isEgg;
   if (slotIdx === 0) {
-    // Slot 0 = LeftColumn : slot_main 10×7 (NoHP si œuf).
-    _blitSlotFrame(wid, isEgg ? _assets.slotMainNoHpTilemap : _assets.slotMainTilemap, 10, 0, 0, 10, 7);
+    // Slot 0 = blitFunc LeftColumn (1:1 sPartyMenuBoxes[0].infoRects = LEFT_COLUMN).
+    BlitBitmapToPartyWindow_LeftColumn(wid, 0, 0, 0, 0, isEgg);
+  } else if (!mon) {
+    // Slot vide 1-5 : 1:1 RenderPartyMenuBox species==NONE → DrawEmptySlot (:841).
+    DrawEmptySlot(wid);
   } else {
-    // Slots 1-5 = RightColumn : slot_wide (occupé) / NoHP (œuf) / empty (vide).
-    const tm = !mon ? _assets.slotWideEmptyTilemap
-      : isEgg ? _assets.slotWideNoHpTilemap : _assets.slotWideTilemap;
-    _blitSlotFrame(wid, tm, 18, 0, 0, 18, 3);
+    // Slots 1-5 occupés : blitFunc RightColumn (hideHP=isEgg).
+    BlitBitmapToPartyWindow_RightColumn(wid, 0, 0, 0, 0, isEgg);
   }
 }
 
@@ -701,7 +737,7 @@ function _drawSlotFrame(slotIdx: number): void {
  *  charmap dans gStringVar1 (foyer 1:1 string_util.ts, plus le bridge JS-string).
  *  TEXT_SKIP_DRAW = rendu synchrone instantané (text.ts:955) → réutilisation de
  *  gStringVar1 entre HP et MaxHP sûre (pas d'aliasing différé). */
-function _displayPartyPokemonHP(wid: number, x: number, y: number, hp: number): void {
+function DisplayPartyPokemonHP(wid: number, x: number, y: number, hp: number): void {
   const strOut = ConvertIntToDecimalStringN(gStringVar1, hp, STR_CONV_MODE_RIGHT_ALIGN, 3);
   strOut[0] = CHAR_SLASH;
   strOut[1] = EOS;
@@ -713,105 +749,106 @@ function _displayPartyPokemonHP(wid: number, x: number, y: number, hp: number): 
  *    StringCopy(gStringVar1, gText_Slash); StringAppend(gStringVar1, gStringVar2);  →  "/{maxhp}".
  *  `gText_Slash` ("/") pas encore porté → on écrit CHAR_SLASH puis ConvertInt dans
  *  gStringVar1.subarray(1) : byte-pour-byte identique à "/{maxhp}". */
-function _displayPartyPokemonMaxHP(wid: number, x: number, y: number, maxhp: number): void {
+function DisplayPartyPokemonMaxHP(wid: number, x: number, y: number, maxhp: number): void {
   gStringVar1[0] = CHAR_SLASH;
   ConvertIntToDecimalStringN(gStringVar1.subarray(1), maxhp, STR_CONV_MODE_RIGHT_ALIGN, 3);
   AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_HP, TEXT_SKIP_DRAW, gStringVar1);
 }
 
-/** Render text for slot N. Positions 1:1 décomp `sPartyBoxInfoRects`
- *  (party_menu.h:32) — Nickname/Level/HP/MaxHP fixed coords per box layout. */
+/** 1:1 décomp `DisplayPartyPokemonNickname` (party_menu.c:2287) : rend le surnom
+ *  (GetMonNickname → un œuf donne gText_EggNickname "OEUF") aux coords
+ *  sPartyBoxInfoRects[col].dimensions[0,1]. ÉCART port : coords hardcodées par
+ *  colonne (slot 0 = LEFT_COLUMN (24,11) / slots 1-5 = RIGHT_COLUMN (22,3)) au
+ *  lieu de la table infoRects ; le paramètre `c` (blitFunc-erase quand c==1)
+ *  n'est pas porté (les appelants du port passent tous c=0). */
+function DisplayPartyPokemonNickname(mon: Pokemon, slotIdx: number): void {
+  const wid = _slotWindowIds[slotIdx];
+  if (wid === undefined) return;
+  // 1:1 GetMonNickname : un œuf → gText_EggNickname ("OEUF", strings.c:21).
+  const nickname = mon.isEgg ? getString('gText_EggNickname') : mon.nickname;
+  const [x, y] = slotIdx === 0 ? [24, 11] : [22, 3];
+  AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_TEXT, TEXT_SKIP_DRAW, nickname);
+}
+
+/** 1:1 décomp `DisplayPartyPokemonLevel` (party_menu.c:2315) : "N.{level}"
+ *  (gText_LevelSymbol + niveau) aux coords dimensions[4,5]. ÉCART port : coords
+ *  hardcodées (slot 0 (32,20) / slots 1-5 (30,12)), symbole "N." littéral. */
+function DisplayPartyPokemonLevel(mon: Pokemon, slotIdx: number): void {
+  const wid = _slotWindowIds[slotIdx];
+  if (wid === undefined) return;
+  const [x, y] = slotIdx === 0 ? [32, 20] : [30, 12];
+  AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+}
+
+/** 1:1 décomp `DisplayPartyPokemonLevelCheck` (party_menu.c:2300) : le NIVEAU
+ *  n'est dessiné QUE si ailment ∈ {AILMENT_NONE(0), AILMENT_PKRS(6)}. Tout autre
+ *  statut (PSN/PAR/SLP/FRZ/BRN) ou K.O. (HP=0=FNT) → pas de niveau, laissant la
+ *  place à l'icône statut 32×8. (c=0 au port → pas de blitFunc-erase.) */
+function DisplayPartyPokemonLevelCheck(mon: Pokemon, slotIdx: number): void {
+  const ailment = _ailmentFromStatus(mon);
+  if (ailment === 0 || ailment === 6) DisplayPartyPokemonLevel(mon, slotIdx);
+}
+
+/** 1:1 décomp `DisplayPartyPokemonGender` (party_menu.c:2333) : charge les 2
+ *  couleurs genderMale/Female aux positions TEXT_DYNAMIC_COLOR_2/3 (0xB/0xC) de
+ *  la sub-pal du slot puis rend le symbole "♂"/"♀" (COLOR_GENDER=[0,0xB,0xC])
+ *  aux coords dimensions[8,9]. ÉCART port : coords hardcodées (slot 0 (64,20) /
+ *  slots 1-5 (62,12)) ; le check Nidoran-M/F dont le surnom == nom d'espèce
+ *  (party_menu.c:2339, qui supprime le symbole) N'EST PAS porté → genre toujours
+ *  affiché. Le chargement palette 0xB/0xC est disjoint de COLOR_TEXT/HP=[0,3,2]
+ *  (nickname/niveau/PV) → l'ordre load↔render des autres champs est indifférent. */
+function DisplayPartyPokemonGender(mon: Pokemon, slotIdx: number): void {
+  const wid = _slotWindowIds[slotIdx];
+  if (wid === undefined) return;
+  const g = GetGenderFromSpeciesAndPersonality(mon.species, mon.personality);
+  const gSym: 'M' | 'F' | null = g === MON_MALE ? 'M' : g === MON_FEMALE ? 'F' : null;
+  if (!gSym) return;  // MON_GENDERLESS → aucune case dans le switch décomp
+  const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
+  _loadGenderColors(slotPalNum, gSym === 'M');
+  const [x, y] = slotIdx === 0 ? [64, 20] : [62, 12];
+  AddTextPrinterParameterized3(wid, FONT_SMALL, x, y, COLOR_GENDER, TEXT_SKIP_DRAW, gSym === 'M' ? '♂' : '♀');
+}
+
+/** ÉCART port : le décomp n'a PAS ce sous-helper — les DisplayPartyPokemon* sont
+ *  appelés inline dans DisplayPartyPokemonData (:872). Le port les factorise ici
+ *  (la moitié « données » de DisplayPartyPokemonData, partagée avec _drawSlotFrame
+ *  via la paire `_drawSlotFrame + _drawSlot` = DisplayPartyPokemonData). Ajoute
+ *  aussi le refresh sprites statut/objet-tenu du slot (SetPartyMonAilmentGfx +
+ *  UpdatePartyMonHeldItemSprite) et le check species==NONE de RenderPartyMenuBox
+ *  (:839) via `!mon`. L'ordre des DisplayPartyPokemon* = 1:1 DisplayPartyPokemonData
+ *  else-branch (:881-887) : Nickname, LevelCheck, Gender, HP, MaxHP, HPBar. */
 function _drawSlot(slotIdx: number): void {
   if (_slotWindowIds[slotIdx] === undefined) return;
   const wid = _slotWindowIds[slotIdx];
   const mon = _slotMon(slotIdx);
-  // 1:1 décomp RenderPartyMenuBox → SetPartyMonAilmentGfx + UpdatePartyMon
-  // HeldItemSprite : rafraîchit icône statut + objet tenu du slot (sprites
-  // slot-pinned, dérivés du mon courant).
+  // Refresh icône statut + objet tenu du slot (sprites slot-pinned).
   _updatePartyMonAilmentGfx(slotIdx);
   _updatePartyMonHeldItem(slotIdx);
   if (!mon) {
-    // Slot vide : no text (= just empty frame déjà blit).
+    // 1:1 RenderPartyMenuBox species==NONE (:839) : slot vide, aucun texte.
     CopyWindowToVram(wid, 3);
     return;
   }
-  // 1:1 décomp `DisplayPartyPokemonData` (party_menu.c:872) : un ŒUF
-  // n'affiche QUE le nickname (= "OEUF", GetMonNickname égg → gText_Egg
-  // Nickname) — PAS de niveau / genre / PV / barre PV (blitFunc(.,TRUE)
-  // blanchit ces zones). Le sprite icône = l'icône d'œuf (cf. _loadSlotIcon).
+  // 1:1 décomp DisplayPartyPokemonData (:872) : un ŒUF n'affiche QUE le nickname
+  // (blitFunc(.,TRUE) a blanchi les zones niveau/genre/PV).
   if (mon.isEgg) {
-    const eggName = getString('gText_EggNickname');  // "OEUF" (strings.c:21)
-    if (slotIdx === 0) {
-      AddTextPrinterParameterized3(wid, FONT_SMALL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, eggName);
-    } else {
-      AddTextPrinterParameterized3(wid, FONT_SMALL, 22, 3, COLOR_TEXT, TEXT_SKIP_DRAW, eggName);
-    }
+    DisplayPartyPokemonNickname(mon, slotIdx);
     CopyWindowToVram(wid, 3);
     return;
   }
-  // 1:1 décomp DisplayPartyPokemonGender (party_menu.c:2333) : symbol "♂"/"♀"
-  // affiché à (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column,
-  // AVEC palette swap genderMale/Female aux positions TEXT_DYNAMIC_COLOR_2/3
-  // de la sub-pal du slot. Color triple stays [0, 0xB, 0xC] for both genders.
-  const _g = GetGenderFromSpeciesAndPersonality(mon.species, mon.personality);
-  const gSym: 'M' | 'F' | null = _g === MON_MALE ? 'M' : _g === MON_FEMALE ? 'F' : null;
-  const genderStr = gSym === 'M' ? '♂' : gSym === 'F' ? '♀' : '';
-  if (genderStr) {
-    const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
-    _loadGenderColors(slotPalNum, gSym === 'M');
-  }
-  // 1:1 décomp DisplayPartyPokemonLevelCheck (party_menu.c:2300-2312) : le
-  // NIVEAU n'est dessiné QUE si ailment ∈ {AILMENT_NONE(0), AILMENT_PKRS(6)}.
-  // Tout autre statut (PSN/PAR/SLP/FRZ/BRN) ou K.O. (HP=0=FNT) → niveau
-  // BLANC, laissant la place à l'icône statut 32×8 (sinon : pixels du
-  // niveau derrière l'icône burn = le bug rapporté). Genre/PV/barre NON
-  // suppressés (1:1 :2323/:2356 — aucun check ailment).
-  const _lvA = _ailmentFromStatus(mon);
-  const showLevel = _lvA === 0 || _lvA === 6;
+  DisplayPartyPokemonNickname(mon, slotIdx);
+  DisplayPartyPokemonLevelCheck(mon, slotIdx);
+  DisplayPartyPokemonGender(mon, slotIdx);
   if (slotIdx === 0) {
-    // 1:1 décomp PARTY_BOX_LEFT_COLUMN (party_menu.h:32) :
-    //   Nickname (24, 11) — width=40
-    //   Level    (32, 20) — "N.X"
-    //   Gender   (64, 20) — width 8x8
-    //   HP       (38, 37)
-    //   MaxHP    (53, 37)
-    // 1:1 décomp DisplayPartyPokemonBarDetail (party_menu.c:2282) :
-    //   AddTextPrinterParameterized3(windowId, FONT_SMALL, ...) — TOUT en FONT_SMALL.
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    if (showLevel) AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
-    if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_SMALL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
-    }
-    // 1:1 décomp DisplayPartyPokemonHP (party_menu.c:2367) + DisplayParty
-    // PokemonMaxHP (:2388) : DEUX AddTextPrinterParameterized3 FONT_SMALL
-    // SÉPARÉS aux coords sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN] (party_
-    // menu.h:42-43) : dimensions[12]=(38,37) HP, dimensions[16]=(53,37) MaxHP.
-    //   HP    = ConvertIntToDecimalStringN(hp,    RIGHT_ALIGN, 3) + "/"
-    //   MaxHP = "/" + ConvertIntToDecimalStringN(maxhp, RIGHT_ALIGN, 3)
-    // L'overlap des 2 "/" (FONT_SMALL widths = ROM exacts : sp 3, digit 5,
-    // '/' 5 — vérifiés vs gFontSmallLatinGlyphWidths fonts.c:40) produit le
-    // visuel ROM 1:1. PLUS de hack 1-string / espaces hardcodés.
-    _displayPartyPokemonHP(wid, 38, 37, mon.hp);
-    _displayPartyPokemonMaxHP(wid, 53, 37, mon.maxHP);
+    // sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN] : HP (38,37), MaxHP (53,37).
+    DisplayPartyPokemonHP(wid, 38, 37, mon.hp);
+    DisplayPartyPokemonMaxHP(wid, 53, 37, mon.maxHP);
   } else {
-    // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
-    //   Nickname (22, 3) — width=40
-    //   Level    (30, 12)
-    //   Gender   (62, 12)
-    //   HP       dimensions[12]=(102, 12)  MaxHP dimensions[16]=(117, 12)
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    if (showLevel) AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
-    if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_SMALL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
-    }
-    // 1:1 décomp DisplayPartyPokemonHP/MaxHP — 2 strings FONT_SMALL séparés
-    // aux coords sPartyBoxInfoRects[PARTY_BOX_RIGHT_COLUMN] (party_menu.h:56-57).
-    _displayPartyPokemonHP(wid, 102, 12, mon.hp);
-    _displayPartyPokemonMaxHP(wid, 117, 12, mon.maxHP);
+    // sPartyBoxInfoRects[PARTY_BOX_RIGHT_COLUMN] : HP (102,12), MaxHP (117,12).
+    DisplayPartyPokemonHP(wid, 102, 12, mon.hp);
+    DisplayPartyPokemonMaxHP(wid, 117, 12, mon.maxHP);
   }
-  // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
-  // red selon HP fraction) avec palette swap aux positions 9-10 de la sub-pal.
-  _drawHpBar(slotIdx, mon);
+  DisplayPartyPokemonHPBar(slotIdx, mon);
   CopyWindowToVram(wid, 3);
 }
 
@@ -840,7 +877,7 @@ function _getHpBarLevel(hp: number, maxhp: number): 'FULL' | 'GREEN' | 'YELLOW' 
  *  - FillWindowPixelRect avec palette idx 9 (top row 1px) + 10 (bottom 2 rows)
  *  - Pour la partie vide (empty), fill avec idx 0x0D et 0x02 (= alternating
  *    fill pattern du décomp). */
-function _drawHpBar(slotIdx: number, mon: Pokemon): void {
+function DisplayPartyPokemonHPBar(slotIdx: number, mon: Pokemon): void {
   if (!_assets) return;
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
@@ -1469,34 +1506,40 @@ function _preparePartyMsg(raw: string, var1?: string, var2?: string): string {
     .replace(/\{STR_VAR_2\}/g, var2 ?? '');
 }
 
-/** 1:1 décomp `CreatePartyMonPokeballSprite` (party_menu.c:4122) :
- *  Spawn une mini-pokeball OAM 32×32 à `menuBox->spriteCoords[6, 7]` pour
- *  chaque slot occupé. Réutilise les tiles + palette du SORTIR pokeball
+/** 1:1 décomp `CreatePartyMonPokeballSprite(mon, menuBox)` (party_menu.c:4122) :
+ *  si species != SPECIES_NONE → menuBox->pokeballSpriteId = CreateSprite(
+ *  &sSpriteTemplate_MenuPokeball, spriteCoords[6], spriteCoords[7], 8).
+ *  Mini-pokeball OAM 32×32 ; réutilise tiles + palette du SORTIR pokeball
  *  (= sSpriteTemplate_MenuPokeball, TAG_POKEBALL shared). */
-function _spawnSlotPokeballOams(): void {
+function CreatePartyMonPokeballSprite(slot: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = _party();
+  const mon = _slotMon(slot);
+  if (!mon) return;
   const POKEBALL_TILE_BASE = 256;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon) continue;
-    const [x, y] = POKEBALL_COORDS[i];
-    const spr = rt.CreateSpriteAtOam({
-      x, y,
-      shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
-      tileId: POKEBALL_TILE_BASE,  // frame 0 (Closed)
-      paletteBank: _pokeballPalSlot,
-      // 1:1 décomp CreatePartyMonPokeballSprite uses default OAM priority=1
-      // (= sSpriteTemplate_MenuPokeball template) + subpriority=8 from
-      // CreateSprite(..., x, y, 8) arg. Icon subpriority=1 → icon RENDU
-      // EN FRONT du pokeball (= ROM behavior, mini-pokeball partly behind icon).
-      priority: 1,
-      subpriority: 8,
-    });
-    _pokeballOamBySlot[i] = spr.spriteId;
-  }
+  const [x, y] = POKEBALL_COORDS[slot];
+  const spr = rt.CreateSpriteAtOam({
+    x, y,
+    shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
+    tileId: POKEBALL_TILE_BASE,  // frame 0 (Closed)
+    paletteBank: _pokeballPalSlot,
+    // 1:1 décomp CreatePartyMonPokeballSprite uses default OAM priority=1
+    // (= sSpriteTemplate_MenuPokeball template) + subpriority=8 from
+    // CreateSprite(..., x, y, 8) arg. Icon subpriority=1 → icon RENDU
+    // EN FRONT du pokeball (= ROM behavior, mini-pokeball partly behind icon).
+    priority: 1,
+    subpriority: 8,
+  });
+  _pokeballOamBySlot[slot] = spr.spriteId;
+}
+
+/** ÉCART port : le décomp crée les 4 sprites d'un slot ensemble (CreatePartyMon
+ *  Sprites :1058, driver CreatePartyMonSpritesLoop) ; le port groupe par TYPE
+ *  pour charger le gfx async par type. Ce driver appelle CreatePartyMonPokeball
+ *  Sprite pour chaque slot. */
+function _spawnSlotPokeballOams(): void {
+  _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
+  for (let i = 0; i < 6; i++) CreatePartyMonPokeballSprite(i);
 }
 
 /** Load pokeball tiles + palette à OBJ VRAM (= shared par SORTIR + slot pokeballs). */
@@ -1524,28 +1567,34 @@ async function _loadStatusIconsGfx(): Promise<void> {
   _partyStatusPalSlot = LoadSpritePalette({ data: st.palette, tag: TAG_PARTY_STATUS_PAL });
 }
 
-/** 1:1 décomp : `menuBox->statusSpriteId = CreateSprite(&sSpriteTemplate_
- *  StatusIcons, spriteCoords[4], spriteCoords[5], 0)` (party_menu.c:4188).
- *  sOamData_StatusCondition = 32×8 (shape1 size1). Créés invisibles ;
- *  `_updatePartyMonAilmentGfx` les rend visibles selon l'ailment. */
-function _spawnStatusOams(): void {
+/** 1:1 décomp `CreatePartyMonStatusSprite(mon, menuBox)` (party_menu.c:4184) :
+ *  si species != SPECIES_NONE → menuBox->statusSpriteId = CreateSprite(
+ *  &sSpriteTemplate_StatusIcons, spriteCoords[4], spriteCoords[5], 0) +
+ *  SetPartyMonAilmentGfx. sOamData_StatusCondition = 32×8 (shape1 size1).
+ *  ÉCART port : créé invisible ; visibilité/frame via le refresh séparé
+ *  `_updatePartyMonAilmentGfx` (= SetPartyMonAilmentGfx→UpdatePartyMonAilmentGfx). */
+function CreatePartyMonStatusSprite(slot: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  const mon = _slotMon(slot);
+  if (!mon) return;
+  const [x, y] = STATUS_COORDS[slot];
+  const spr = rt.CreateSpriteAtOam({
+    x, y,
+    shape: 1, size: 1,                       // sOamData_StatusCondition 32×8
+    tileId: PARTY_STATUS_TILE_BASE,
+    paletteBank: _partyStatusPalSlot,
+    priority: 1, subpriority: 0,
+  });
+  _statusOamBySlot[slot] = spr.spriteId;
+  rt.setSpriteInvisible(spr.spriteId, true); // 1:1 défaut : caché tant que pas d'ailment
+}
+
+/** ÉCART port : driver par TYPE (cf. CreatePartyMonPokeballSprite) — appelle
+ *  CreatePartyMonStatusSprite pour chaque slot. */
+function _spawnStatusOams(): void {
   _statusOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = _party();
-  for (let i = 0; i < 6; i++) {
-    if (!party[i]) continue;
-    const [x, y] = STATUS_COORDS[i];
-    const spr = rt.CreateSpriteAtOam({
-      x, y,
-      shape: 1, size: 1,                       // sOamData_StatusCondition 32×8
-      tileId: PARTY_STATUS_TILE_BASE,
-      paletteBank: _partyStatusPalSlot,
-      priority: 1, subpriority: 0,
-    });
-    _statusOamBySlot[i] = spr.spriteId;
-    rt.setSpriteInvisible(spr.spriteId, true); // 1:1 défaut : caché tant que pas d'ailment
-  }
+  for (let i = 0; i < 6; i++) CreatePartyMonStatusSprite(i);
 }
 
 /** 1:1 décomp `GetMonAilment` (party_menu.c:1924-1936) → AILMENT_* :
@@ -1624,27 +1673,33 @@ async function _loadHeldItemGfx(): Promise<void> {
   _partyHeldItemPalSlot = LoadSpritePalette({ data: pal, tag: TAG_PARTY_HELDITEM_PAL });
 }
 
-/** 1:1 décomp `CreatePartyMonHeldItemSprite` (party_menu.c:4021) :
- *  `CreateSprite(&sSpriteTemplate_HeldItem, spriteCoords[2], spriteCoords[3],
- *  0)` (8×8, sOamData_HeldItem priority=1). Créés invisibles. */
-function _spawnHeldItemOams(): void {
+/** 1:1 décomp `CreatePartyMonHeldItemSprite(mon, menuBox)` (party_menu.c:4021) :
+ *  si species != SPECIES_NONE → menuBox->itemSpriteId = CreateSprite(
+ *  &sSpriteTemplate_HeldItem, spriteCoords[2], spriteCoords[3], 0) +
+ *  UpdatePartyMonHeldItemSprite. 8×8 sOamData_HeldItem priority=1. ÉCART port :
+ *  créé invisible ; frame/visibilité via le refresh séparé `_updatePartyMonHeldItem`. */
+function CreatePartyMonHeldItemSprite(slot: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  const mon = _slotMon(slot);
+  if (!mon) return;
+  const [x, y] = ITEM_COORDS[slot];
+  const spr = rt.CreateSpriteAtOam({
+    x, y,
+    shape: 0, size: 0,                       // sOamData_HeldItem 8×8
+    tileId: PARTY_HELDITEM_TILE_BASE,
+    paletteBank: _partyHeldItemPalSlot,
+    priority: 1, subpriority: 0,
+  });
+  _itemOamBySlot[slot] = spr.spriteId;
+  rt.setSpriteInvisible(spr.spriteId, true);
+}
+
+/** ÉCART port : driver par TYPE (cf. CreatePartyMonPokeballSprite) — appelle
+ *  CreatePartyMonHeldItemSprite pour chaque slot. */
+function _spawnHeldItemOams(): void {
   _itemOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = _party();
-  for (let i = 0; i < 6; i++) {
-    if (!party[i]) continue;
-    const [x, y] = ITEM_COORDS[i];
-    const spr = rt.CreateSpriteAtOam({
-      x, y,
-      shape: 0, size: 0,                       // sOamData_HeldItem 8×8
-      tileId: PARTY_HELDITEM_TILE_BASE,
-      paletteBank: _partyHeldItemPalSlot,
-      priority: 1, subpriority: 0,
-    });
-    _itemOamBySlot[i] = spr.spriteId;
-    rt.setSpriteInvisible(spr.spriteId, true);
-  }
+  for (let i = 0; i < 6; i++) CreatePartyMonHeldItemSprite(i);
 }
 
 /** 1:1 décomp `UpdatePartyMonHeldItemSprite`→`ShowOrHideHeldItemSprite`
@@ -1692,77 +1747,81 @@ async function _spawnCancelButtonOam(): Promise<void> {
   }
 }
 
-/** Spawn Pokémon icon OAM per slot. MVP : just placeholders (= no actual
- *  icon load). Future : load /decomp/em/pokemon/<dexid>/icon.png + .pal. */
-async function _spawnIconOams(): Promise<void> {
+/** 1:1 décomp `CreatePartyMonIconSprite(mon, menuBox, slot)` (party_menu.c:3937) :
+ *  species2 = MON_DATA_SPECIES_OR_EGG → SPECIES_EGG si œuf → gMonIconTable[
+ *  SPECIES_EGG] = icône d'ŒUF (pas l'icône de l'espèce dedans). ÉCART port :
+ *  ASYNC (charge icon.png + la palette d'icône du slot à la volée) et applique
+ *  l'état d'anim initial ICI (reset + UpdateMonIconFrame + décalage sélection),
+ *  car le spawn peut finir APRÈS le case 14 AnimatePartySlot. */
+async function CreatePartyMonIconSprite(slot: number): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
+  const mon = _slotMon(slot);
+  if (!mon) return;
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const dexId = mon.isEgg ? 'egg' : speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+  const iconPalSpecies = mon.isEgg ? 'SPECIES_EGG' : speciesEnum;
+  try {
+    const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
+    // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
+    // 32×32. Une frame = 4×4 tiles = 16 tiles = 512 bytes 4bpp.
+    // Charge LES DEUX frames (= 32 tiles = 1024 bytes) pour idle anim toggle.
+    const BYTES_PER_FRAME = ICON_TILES_PER_FRAME * 32;  // 512
+    const BYTES_PER_SLOT  = ICON_TILES_PER_SLOT  * 32;  // 1024
+    const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + slot * ICON_TILES_PER_SLOT;
+    const slotByteOffset = slotTileBase * 32;
+    // Frames stockées contiguës : tiles [slotTileBase..+15] = frame 0,
+    //   [slotTileBase+16..+31] = frame 1.
+    rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_SLOT), slotByteOffset);
+    // 1:1 STRICT bitmap allocator sync : mark icon tiles allocated.
+    MarkObjTilesAllocated(slotByteOffset, BYTES_PER_SLOT);
+    void BYTES_PER_FRAME;
+    // 1:1 décomp `LoadMonIconPalette(species)` : lookup gMonIconPaletteIndices
+    // pour obtenir l'index 0/1/2, puis load `gMonIconPalettes[index]` (= un
+    // de 3 palettes shared between species). Pas normal.pal (= front sprite
+    // palette, DIFFERENT from icon palette).
+    const palIdx = MON_ICON_PALETTE_INDICES[iconPalSpecies] ?? 0;
+    const iconPal = await loadGbaPal(`/decomp/em/pokemon/icon_palettes/icon_palette_${palIdx}.pal`);
+    const palBank = ICON_OBJ_PAL_BASE + slot;
+    rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
+    // 1:1 décomp `CreateMonIconSprite(template, x, y, ...)` (= sprite center
+    // coords in pixels). Notre `CreateSpriteAtOam` engine applique
+    // CalcCenterToCornerVec INTERNE via le sprite.centerToCornerVec stocké
+    // au create. Passer les coords DÉCOMP direct (= sprite center).
+    const [x, y] = ICON_COORDS[slot];
+    const oamY = y;
+    const spr = rt.CreateSpriteAtOam({
+      x, y,
+      shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
+      tileId: slotTileBase,
+      paletteBank: palBank,
+      // 1:1 décomp `CreatePartyMonIconSpriteParameterized(..., priority=1)`
+      // + CreateMonIcon subpriority=1 → icon EN FRONT du pokeball
+      // (subpriority=8). Lower subpriority = front in OAM rendering.
+      priority: 1,
+      subpriority: 1,
+    });
+    _iconOamBySlot[slot] = spr.spriteId;
+    _iconBaseY[slot] = oamY;
+    // 1:1 décomp : CreateMonIconSprite appelle UpdateMonIconFrame une fois
+    // (pokemon_icon.c:1046 → pose frame 0, delay 6, animCmdIndex 1) PUIS la
+    // CB2 init fait AnimatePartySlot(slot, 0/1). Comme notre spawn est async
+    // (il peut finir APRÈS le case 14), on applique l'état initial ICI : reset
+    // anim + frame 0 + décalage sélection/désélection sur le bon slot.
+    _iconAnimDelay[slot] = 0; _iconAnimCmdIdx[slot] = 0; _iconAnimNum[slot] = 0;
+    _updateMonIconFrame(slot);
+    _animateSelectedPartyIcon(slot, slot === _slotId ? 1 : 0);
+  } catch (e) {
+    console.warn(`[party-screen] icon load failed for ${dexId}:`, e);
+  }
+}
+
+/** ÉCART port : driver par TYPE (cf. CreatePartyMonPokeballSprite) — appelle
+ *  CreatePartyMonIconSprite (async, séquentiel) pour chaque slot. */
+async function _spawnIconOams(): Promise<void> {
   _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
   _iconBaseY = [0, 0, 0, 0, 0, 0];
-  const party = _party();
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon) continue;
-    // 1:1 décomp `CreatePartyMonIconSprite` (party_menu.c:3937) : species2 =
-    // MON_DATA_SPECIES_OR_EGG → SPECIES_EGG si œuf → gMonIconTable[SPECIES_EGG]
-    // = icône d'ŒUF (pas l'icône de l'espèce dedans).
-    const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
-    const dexId = mon.isEgg ? 'egg' : speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
-    const iconPalSpecies = mon.isEgg ? 'SPECIES_EGG' : speciesEnum;
-    try {
-      const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
-      // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
-      // 32×32. Une frame = 4×4 tiles = 16 tiles = 512 bytes 4bpp.
-      // Charge LES DEUX frames (= 32 tiles = 1024 bytes) pour idle anim toggle.
-      const BYTES_PER_FRAME = ICON_TILES_PER_FRAME * 32;  // 512
-      const BYTES_PER_SLOT  = ICON_TILES_PER_SLOT  * 32;  // 1024
-      const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * ICON_TILES_PER_SLOT;
-      const slotByteOffset = slotTileBase * 32;
-      // Frames stockées contiguës : tiles [slotTileBase..+15] = frame 0,
-      //   [slotTileBase+16..+31] = frame 1.
-      rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_SLOT), slotByteOffset);
-      // 1:1 STRICT bitmap allocator sync : mark icon tiles allocated.
-      MarkObjTilesAllocated(slotByteOffset, BYTES_PER_SLOT);
-      void BYTES_PER_FRAME;
-      // 1:1 décomp `LoadMonIconPalette(species)` : lookup gMonIconPaletteIndices
-      // pour obtenir l'index 0/1/2, puis load `gMonIconPalettes[index]` (= un
-      // de 3 palettes shared between species). Pas normal.pal (= front sprite
-      // palette, DIFFERENT from icon palette).
-      const palIdx = MON_ICON_PALETTE_INDICES[iconPalSpecies] ?? 0;
-      const iconPal = await loadGbaPal(`/decomp/em/pokemon/icon_palettes/icon_palette_${palIdx}.pal`);
-      const palBank = ICON_OBJ_PAL_BASE + i;
-      rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
-      // 1:1 décomp `CreateMonIconSprite(template, x, y, ...)` (= sprite center
-      // coords in pixels). Notre `CreateSpriteAtOam` engine applique
-      // CalcCenterToCornerVec INTERNE via le sprite.centerToCornerVec stocké
-      // au create. Passer les coords DÉCOMP direct (= sprite center).
-      const [x, y] = ICON_COORDS[i];
-      const oamY = y;
-      const spr = rt.CreateSpriteAtOam({
-        x, y,
-        shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
-        tileId: slotTileBase,
-        paletteBank: palBank,
-        // 1:1 décomp `CreatePartyMonIconSpriteParameterized(..., priority=1)`
-        // + CreateMonIcon subpriority=1 → icon EN FRONT du pokeball
-        // (subpriority=8). Lower subpriority = front in OAM rendering.
-        priority: 1,
-        subpriority: 1,
-      });
-      _iconOamBySlot[i] = spr.spriteId;
-      _iconBaseY[i] = oamY;
-      // 1:1 décomp : CreateMonIconSprite appelle UpdateMonIconFrame une fois
-      // (pokemon_icon.c:1046 → pose frame 0, delay 6, animCmdIndex 1) PUIS la
-      // CB2 init fait AnimatePartySlot(i, 0/1). Comme notre spawn est async (il
-      // peut finir APRÈS le case 14), on applique l'état initial ICI : reset
-      // anim + frame 0 + décalage sélection/désélection sur le bon slot.
-      _iconAnimDelay[i] = 0; _iconAnimCmdIdx[i] = 0; _iconAnimNum[i] = 0;
-      _updateMonIconFrame(i);
-      _animateSelectedPartyIcon(i, i === _slotId ? 1 : 0);
-    } catch (e) {
-      console.warn(`[party-screen] icon load failed for ${dexId}:`, e);
-    }
-  }
+  for (let i = 0; i < 6; i++) await CreatePartyMonIconSprite(i);
 }
 
 function _freePartyMenu(): void {
@@ -3190,7 +3249,7 @@ let _slideTaskFn: (() => void) | null = null;
  *  (variante NoHP si œuf, = EFFACE la zone) PUIS les text printers. Notre
  *  équivalent exact = _drawSlotFrame + _drawSlot (paire documentée _drawAllSlots
  *  :604). Sans le frame : ancien texte non-effacé + variante œuf périmée. */
-function _displayPartyPokemonData(slot: number): void {
+function DisplayPartyPokemonData(slot: number): void {
   _drawSlotFrame(slot);
   _drawSlot(slot);
 }
@@ -3267,8 +3326,8 @@ function Task_SlideSelectedSlotsOffscreen(): void {
     _t1Dir *= -1;
     _t2Dir *= -1;
     SwitchPartyMon();
-    _displayPartyPokemonData(_slotId);
-    _displayPartyPokemonData(_slotId2);
+    DisplayPartyPokemonData(_slotId);
+    DisplayPartyPokemonData(_slotId2);
     PutWindowTilemap(_slotWindowIds[_slotId]);
     PutWindowTilemap(_slotWindowIds[_slotId2]);
     if (_sSlot1Buf) CopyToBufferFromBgTilemap(0, _sSlot1Buf, _t1Left, _t1Top, _t1W, _t1H);

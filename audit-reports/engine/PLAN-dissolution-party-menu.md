@@ -269,7 +269,19 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
   (mon échangé bien en tête). Vérifier annulation B = pas de tour consommé.
 - **Critère** : le combat ne lit plus `__battleSwitchResultSlot` ; retour via reshow 1:1.
 
-### LOT 8 — Rendu boîte + sprites 1:1 (`[rename]`)
+### LOT 8 — Rendu boîte + sprites 1:1 (`[rename]`) ✅ FAIT (2026-07-17)
+> 16 mappings : renames purs (BlitBitmapToPartyWindow:2150, DisplayPartyPokemonHP/
+> MaxHP:2367/2388, DisplayPartyPokemonHPBar:2402, DisplayPartyPokemonData:872) +
+> extractions famille (BlitBitmapToPartyWindow_Left/RightColumn:2167/2180,
+> DrawEmptySlot:2193, DisplayPartyPokemonNickname/Level/LevelCheck/Gender:2287-2333)
+> + sprites per-slot (CreatePartyMon{Pokeball,Status,HeldItem,Icon}Sprite:4122/4184/
+> 4021/3937), drivers par-type conservés en ÉCART documenté (gfx async).
+> `_drawSlot` PAS renommé RenderPartyMenuBox — mapping démontré faux (c'est la
+> moitié « données » de DisplayPartyPokemonData ; RenderPartyMenuBox:824 =
+> + AnimatePartySlot/PutWindowTilemap que le port fait ailleurs).
+> **sPartyMenuBoxes DIFFÉRÉ** (honnête) : sentinelles undefined→-1 + ~50 sites sur
+> fichier en test live ; plan de migration écrit dans le rapport agent. Vérifié en
+> jeu : party pixel-identique (BRU/genre/barres/icônes/held/pokéball), 0 erreur.
 - **Fichiers** : `src/party_menu.ts`.
 - [rename]+[port] `_drawSlot`→`RenderPartyMenuBox`:824, `_displayPartyPokemonData`→`DisplayPartyPokemonData`:872
   (+ famille `DisplayPartyPokemon*`:2287-2436 selon besoin), `BlitBitmapToPartyWindow`:2150 (rendu barre
