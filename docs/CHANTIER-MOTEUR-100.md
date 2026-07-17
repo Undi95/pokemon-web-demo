@@ -102,8 +102,14 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    FIELD_MOVE_FLY ferme vers CB2_OpenFlyMap (1:1 :3752) — l'ancienne voie fly-field-move DISSOUTE.
    + FIX MOTEUR : InitBgsFromTemplates IGNORAIT le param bgMode (bg.c:326 SetBgModeInternal) →
    tout écran affine par templates rendait en mode texte. Testé : VOL → carte 1:1 propre → choix →
-   retour field → warp posé. RESTE (finitions) : icônes villes (asset fly_target_icons manquant →
-   billes roses fallback), damier de bordure hors-carte, vérifier envol one-shot + fly-in arrivée.
+   retour field → warp posé. RESTE : ① damier bordure = DIAGNOSTIQUÉ (2026-07-17 soir) : le compositor stocke les
+   tilemaps AFFINE en u16 (stride 128/rangée — prouvé par sonde : stride-128 redonne map.bin
+   exact) → la carte 64×64 occupe 8 Ko au lieu de 4 → les mapBase décomp 28 (carte) et
+   30 (frame BG1) COLLISIONNENT ; le haut d'écran (wraparound) montre les rangées écrasées
+   par le frame. Fix candidat : compositor affine 8-bit 1:1 OU décaler le mapBase frame
+   (précédent à chercher côté pokenav_region_map). ② vérifier envol one-shot + fly-in.
+   ③ RÉSOLU-NON-BUG : les icônes villes ROSE PÂLE = VANILLA (PLTE du PNG décomp : les frames
+   CanFly SONT roses, le rouge pur = la frame RED_OUTLINE — confirmé pixel/palette par sonde).
 6. 🧨 MOTEUR affine : la re-copie OAM→sprite de tickAllAffineAnims (sprite-engine-impl.ts:602,
    « direction unique allumer ») rend TOUTE extinction d'affine fragile : un reset 1:1 qui n'éteint
    que le champ flat est rallumé par l'OAM shadow résiduel au tick suivant (bug payé : sous-menus
