@@ -2045,7 +2045,7 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
  *    MENU_SUMMARY (= "RESUME") - gText_Summary5
  *    MENU_ITEM    (= "OBJET")  - gText_Item
  *    MENU_CANCEL1 (= "RETOUR") - gText_Cancel2 */
-/** 1:1 décomp action keys (party_menu.c:76-97) — MENU_* enum values. */
+/** 1:1 décomp action keys (party_menu.c:76-97) — MENU_* enum values (ordre EXACT). */
 const MENU_SUMMARY      = 0;
 const MENU_SWITCH       = 1;  // = "ORDRE" FR (gText_Switch2)
 const MENU_CANCEL1      = 2;
@@ -2056,7 +2056,15 @@ const MENU_MAIL         = 6;
 const MENU_TAKE_MAIL    = 7;
 const MENU_READ         = 8;
 const MENU_CANCEL2      = 9;
+const MENU_SHIFT        = 10;  // combat (ECHANGER) — CursorCb_SendMon, lot 7
+const MENU_SEND_OUT     = 11;  // combat (ENVOYER)  — CursorCb_SendMon, lot 7
+const MENU_ENTER        = 12;  // chooseHalf (INSCRIRE) — hors-solo
+const MENU_NO_ENTRY     = 13;  // chooseHalf (RETIRER)  — hors-solo
 const MENU_STORE        = 14;  // = "DEPOSER" FR (gText_Store) — pension (ACTIONS_STORE)
+const MENU_REGISTER     = 15;  // union room (ENREG.)  — hors-solo
+const MENU_TRADE1       = 16;  // union room (ECHANGE) — hors-solo
+const MENU_TRADE2       = 17;  // union room (ECHANGE) — hors-solo
+const MENU_TOSS         = 18;  // = "JETER" (gMenuText_Toss) — jeter objet tenu, lot 10
 const MENU_FIELD_MOVES  = 19;
 
 /** 1:1 décomp `sFieldMoves[]` (data/party_menu.h:745-764). Notre format :
@@ -2078,20 +2086,115 @@ const sFieldMoves: readonly string[] = [
   'sweetscent',   // FIELD_MOVE_SWEET_SCENT
 ];
 
-const ACTION_MENU_STRINGS_FR: Record<number, string> = {
-  [MENU_SUMMARY]:    'RESUME',
-  [MENU_SWITCH]:     'ORDRE',
-  [MENU_ITEM]:       'OBJET',
-  [MENU_GIVE]:       'DONNER',
-  [MENU_TAKE_ITEM]:  'PRENDRE',
-  [MENU_MAIL]:       'MAIL',
-  [MENU_TAKE_MAIL]:  'PRENDRE',
-  [MENU_READ]:       'LIRE',
-  [MENU_STORE]:      'DEPOSER',  // 1:1 gText_Store (strings.c:197 FR)
-  [MENU_CANCEL1]:    'RETOUR',
-  [MENU_CANCEL2]:    'RETOUR',
-  // MENU_FIELD_MOVES + j (= field move name FR from gMoveNames).
-  // Résolution dynamique dans _renderActionMenuContents (= pas table statique).
+/** 1:1 décomp `struct { const u8 *text; TaskFunc func; } sCursorOptions[]`
+ *  (data/party_menu.h:654-693). `text` = thunk lazy (getString / gMoveNames —
+ *  les strings sont chargées au boot, résolues au render, comme le `const u8 *`
+ *  décomp pointe la data ROM). `func` = la CursorCb_* transcrite, ou `null` si la
+ *  callback n'est pas portée (hors-solo / lot ultérieur) → le dispatch WARN
+ *  (précédent : src/battle_transition.ts entrées null + warn). */
+interface CursorOption {
+  text: () => string;
+  func: ((taskId: number) => void) | null;
+}
+const sCursorOptions: Record<number, CursorOption> = {
+  [MENU_SUMMARY]:   { text: () => getString('gText_Summary5'), func: CursorCb_Summary },   // gText_Summary5 = "RESUME"
+  [MENU_SWITCH]:    { text: () => getString('gText_Switch2'),  func: CursorCb_Switch },    // gText_Switch2 = "ORDRE"
+  [MENU_CANCEL1]:   { text: () => getString('gText_Cancel2'),  func: CursorCb_Cancel1 },   // gText_Cancel2 = "RETOUR"
+  [MENU_ITEM]:      { text: () => getString('gText_Item'),     func: CursorCb_Item },       // gText_Item = "OBJET"
+  [MENU_GIVE]:      { text: () => getString('gMenuText_Give'), func: CursorCb_Give },       // gMenuText_Give = "DONNER"
+  [MENU_TAKE_ITEM]: { text: () => getString('gText_Take'),     func: CursorCb_TakeItem },   // gText_Take = "PRENDR." (≠ ex-FR "PRENDRE")
+  [MENU_MAIL]:      { text: () => getString('gText_Mail'),     func: CursorCb_Mail },        // gText_Mail = "LETTRE" (≠ ex-FR "MAIL") — DETTE R3 (stub)
+  [MENU_TAKE_MAIL]: { text: () => getString('gText_Take2'),    func: null },                 // CursorCb_TakeMail — dette R3 (mail depuis party non porté)
+  [MENU_READ]:      { text: () => getString('gText_Read2'),    func: null },                 // CursorCb_Read — dette R3 (mail depuis party non porté)
+  [MENU_CANCEL2]:   { text: () => getString('gText_Cancel2'),  func: CursorCb_Cancel2 },    // gText_Cancel2 = "RETOUR"
+  [MENU_SHIFT]:     { text: () => getString('gText_Shift'),    func: null },                 // CursorCb_SendMon — combat (lot 7)
+  [MENU_SEND_OUT]:  { text: () => getString('gText_SendOut'),  func: null },                 // CursorCb_SendMon — combat (lot 7)
+  [MENU_ENTER]:     { text: () => getString('gText_Enter'),    func: null },                 // CursorCb_Enter — chooseHalf (hors-solo)
+  [MENU_NO_ENTRY]:  { text: () => getString('gText_NoEntry'),  func: null },                 // CursorCb_NoEntry — chooseHalf (hors-solo)
+  [MENU_STORE]:     { text: () => getString('gText_Store'),    func: CursorCb_Store },       // gText_Store = "DEPOSER"
+  [MENU_REGISTER]:  { text: () => getString('gText_Register'), func: null },                 // CursorCb_Register — union room (hors-solo)
+  [MENU_TRADE1]:    { text: () => getString('gText_Trade4'),   func: null },                 // CursorCb_Trade1 — union room (hors-solo)
+  [MENU_TRADE2]:    { text: () => getString('gText_Trade4'),   func: null },                 // CursorCb_Trade2 — union room (hors-solo)
+  [MENU_TOSS]:      { text: () => getString('gMenuText_Toss'), func: null },                 // CursorCb_Toss — jeter objet tenu (lot 10)
+};
+// 1:1 décomp sCursorOptions[MENU_FIELD_MOVES + FIELD_MOVE_X] = {gMoveNames[MOVE_X],
+// CursorCb_FieldMove} (data/party_menu.h:679-692). Généré depuis sFieldMoves[] (même
+// source data) : le NOM vient de gMoveNames (via _fieldMoveName), la func = CursorCb_FieldMove
+// (déjà portée). L'action >= MENU_FIELD_MOVES encode le field move (fieldMove = action - MENU_FIELD_MOVES).
+for (let _fm = 0; _fm < sFieldMoves.length; _fm++) {
+  const _action = MENU_FIELD_MOVES + _fm;
+  sCursorOptions[_action] = {
+    text: () => _fieldMoveName(_action - MENU_FIELD_MOVES),
+    func: (taskId: number) => CursorCb_FieldMove(getRuntime(), _action),
+  };
+}
+
+/** 1:1 décomp action-list IDs (party_menu.c:100-115) — indexent sPartyMenuActions[]. */
+const ACTIONS_NONE          = 0;
+const ACTIONS_SWITCH        = 1;
+const ACTIONS_SHIFT         = 2;
+const ACTIONS_SEND_OUT      = 3;
+const ACTIONS_ENTER         = 4;
+const ACTIONS_NO_ENTRY      = 5;
+const ACTIONS_STORE         = 6;
+const ACTIONS_SUMMARY_ONLY  = 7;
+const ACTIONS_ITEM          = 8;
+const ACTIONS_MAIL          = 9;
+const ACTIONS_REGISTER      = 10;
+const ACTIONS_TRADE         = 11;
+const ACTIONS_SPIN_TRADE    = 12;
+const ACTIONS_TAKEITEM_TOSS = 13;
+
+// 1:1 décomp sPartyMenuAction_* (data/party_menu.h:695-707).
+const sPartyMenuAction_SummarySwitchCancel  = [MENU_SUMMARY, MENU_SWITCH, MENU_CANCEL1];
+const sPartyMenuAction_ShiftSummaryCancel   = [MENU_SHIFT, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_SendOutSummaryCancel = [MENU_SEND_OUT, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_SummaryCancel        = [MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_EnterSummaryCancel   = [MENU_ENTER, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_NoEntrySummaryCancel = [MENU_NO_ENTRY, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_StoreSummaryCancel   = [MENU_STORE, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_GiveTakeItemCancel   = [MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2];
+const sPartyMenuAction_ReadTakeMailCancel   = [MENU_READ, MENU_TAKE_MAIL, MENU_CANCEL2];
+const sPartyMenuAction_RegisterSummaryCancel = [MENU_REGISTER, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_TradeSummaryCancel1  = [MENU_TRADE1, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_TradeSummaryCancel2  = [MENU_TRADE2, MENU_SUMMARY, MENU_CANCEL1];
+const sPartyMenuAction_TakeItemTossCancel   = [MENU_TAKE_ITEM, MENU_TOSS, MENU_CANCEL1];
+
+/** 1:1 décomp `sPartyMenuActions[]` (data/party_menu.h:709). INERTE : posée pour
+ *  le lot 3 (SetPartyMonSelectionActions la consommera) — personne ne la lit encore. */
+const sPartyMenuActions: Record<number, readonly number[] | null> = {
+  [ACTIONS_NONE]:          null,
+  [ACTIONS_SWITCH]:        sPartyMenuAction_SummarySwitchCancel,
+  [ACTIONS_SHIFT]:         sPartyMenuAction_ShiftSummaryCancel,
+  [ACTIONS_SEND_OUT]:      sPartyMenuAction_SendOutSummaryCancel,
+  [ACTIONS_ENTER]:         sPartyMenuAction_EnterSummaryCancel,
+  [ACTIONS_NO_ENTRY]:      sPartyMenuAction_NoEntrySummaryCancel,
+  [ACTIONS_STORE]:         sPartyMenuAction_StoreSummaryCancel,
+  [ACTIONS_SUMMARY_ONLY]:  sPartyMenuAction_SummaryCancel,
+  [ACTIONS_ITEM]:          sPartyMenuAction_GiveTakeItemCancel,
+  [ACTIONS_MAIL]:          sPartyMenuAction_ReadTakeMailCancel,
+  [ACTIONS_REGISTER]:      sPartyMenuAction_RegisterSummaryCancel,
+  [ACTIONS_TRADE]:         sPartyMenuAction_TradeSummaryCancel1,
+  [ACTIONS_SPIN_TRADE]:    sPartyMenuAction_TradeSummaryCancel2,
+  [ACTIONS_TAKEITEM_TOSS]: sPartyMenuAction_TakeItemTossCancel,
+};
+
+/** 1:1 décomp `sPartyMenuActionCounts[]` (data/party_menu.h:727). INERTE (lot 3). */
+const sPartyMenuActionCounts: Record<number, number> = {
+  [ACTIONS_NONE]:          0,
+  [ACTIONS_SWITCH]:        sPartyMenuAction_SummarySwitchCancel.length,
+  [ACTIONS_SHIFT]:         sPartyMenuAction_ShiftSummaryCancel.length,
+  [ACTIONS_SEND_OUT]:      sPartyMenuAction_SendOutSummaryCancel.length,
+  [ACTIONS_ENTER]:         sPartyMenuAction_EnterSummaryCancel.length,
+  [ACTIONS_NO_ENTRY]:      sPartyMenuAction_NoEntrySummaryCancel.length,
+  [ACTIONS_STORE]:         sPartyMenuAction_StoreSummaryCancel.length,
+  [ACTIONS_SUMMARY_ONLY]:  sPartyMenuAction_SummaryCancel.length,
+  [ACTIONS_ITEM]:          sPartyMenuAction_GiveTakeItemCancel.length,
+  [ACTIONS_MAIL]:          sPartyMenuAction_ReadTakeMailCancel.length,
+  [ACTIONS_REGISTER]:      sPartyMenuAction_RegisterSummaryCancel.length,
+  [ACTIONS_TRADE]:         sPartyMenuAction_TradeSummaryCancel1.length,
+  [ACTIONS_SPIN_TRADE]:    sPartyMenuAction_TradeSummaryCancel2.length,
+  [ACTIONS_TAKEITEM_TOSS]: sPartyMenuAction_TakeItemTossCancel.length,
 };
 
 /** 1:1 décomp `sFieldMoves[]` (data/party_menu.h:745) = les MOVE_* de chaque field move,
@@ -2131,9 +2234,12 @@ function _renderActionMenuContents(): void {
     // Notre rendu garde la même police, mais résout le nom du move FR depuis
     // FIELD_MOVE_NAMES_FR[j] où j = action - MENU_FIELD_MOVES.
     const actionKey = _actionList[i];
-    const str = actionKey >= MENU_FIELD_MOVES
-      ? _fieldMoveName(actionKey - MENU_FIELD_MOVES)
-      : (ACTION_MENU_STRINGS_FR[actionKey] ?? '');
+    // 1:1 décomp DisplaySelectionWindow (party_menu.c:2557) :
+    //   AddTextPrinterParameterized4(.., sCursorOptions[actions[i]].text)
+    // Le libellé vient de la table sCursorOptions (getString / gMoveNames), plus de
+    // Record FR maison : les valeurs ROM justes remplacent l'ancien hardcode
+    // (gText_Take="PRENDR." ≠ "PRENDRE" ; gText_Mail="LETTRE" ≠ "MAIL").
+    const str = sCursorOptions[actionKey]?.text() ?? '';
     const isSelected = i === _actionCursor;
     // Cursor arrow ▶ devant le selected item à x=0, text à x=8 (= cursorDim).
     if (isSelected) {
@@ -2218,7 +2324,7 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
 }
 
 /** Spawn l'action window (fenêtre de sélection à droite) depuis `_actionList`
- *  courant. Partagé par _openActionMenu (menu d'action mon) et _cursorCbItem
+ *  courant. Partagé par _openActionMenu (menu d'action mon) et CursorCb_Item
  *  (sous-menu objet ACTIONS_ITEM). 1:1 décomp `DisplaySelectionWindow`
  *  (party_menu.c:2533) : window sizé par le nombre d'actions. */
 function _spawnActionWindow(): void {
@@ -2259,7 +2365,10 @@ function _removeActionWindow(): void {
 /** 1:1 décomp `CursorCb_Item` (party_menu.c:3074) : remplace le menu d'action
  *  mon par le sous-menu objet ACTIONS_ITEM + message DO_WHAT_WITH_ITEM.
  *  SE_SELECT déjà joué par le dispatch. */
-function _cursorCbItem(): void {
+// NB signature : les CursorCb_* prennent `taskId: number` (1:1 TaskFunc décomp) même
+// quand le port ne l'utilise pas — l'état vit dans les globals module (_slotId/_actionList…),
+// pas dans gTasks[taskId].data. `noUnusedParameters` est off → param inutilisé = tsc OK.
+function CursorCb_Item(taskId: number): void {
   _removeActionWindow();
   _actionList = [MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2];  // ACTIONS_ITEM
   _actionSubMenu = 'item';
@@ -2279,7 +2388,7 @@ function TryTakeMonItem(mon: Pokemon): number {
 /** 1:1 décomp `CursorCb_TakeItem` (party_menu.c:3273) : PRENDRE l'objet tenu →
  *  sac + message selon résultat, puis refresh l'icône + retour choix-mon.
  *  SE_SELECT déjà joué par le dispatch. */
-function _cursorCbTakeItem(): void {
+function CursorCb_TakeItem(taskId: number): void {
   const mon = _slotMon(_slotId);
   if (!mon) return;
   const item = mon.heldItem;  // capturé AVANT TryTakeMonItem (1:1 : item lu en tête)
@@ -2312,7 +2421,9 @@ function _cursorCbTakeItem(): void {
 /** 1:1 décomp `CursorCb_Cancel2` (party_menu.c:3482) : RETOUR du sous-menu objet
  *  → reconstruit le menu d'action mon (GetPartyMenuActionsType = ACTIONS_NONE →
  *  field actions). SE_SELECT déjà joué par le dispatch (→ playSe=false). */
-function _cursorCbCancel2(rt: ReturnType<typeof getRuntime>): void {
+function CursorCb_Cancel2(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
   _removeActionWindow();
   _openActionMenu(rt, false);
 }
@@ -2323,7 +2434,7 @@ function _cursorCbCancel2(rt: ReturnType<typeof getRuntime>): void {
  *  GoToBagMenu(ITEMMENULOCATION_PARTY) → CB2_GiveHoldItem → GiveItemToMon)
  *  demande le handoff CB2 party↔bag en mode give. Reste sur le sous-menu en
  *  attendant ce wire. */
-function _cursorCbGive(): void {
+function CursorCb_Give(taskId: number): void {
   const rt = getRuntime();
   if (!rt) return;
   // 1:1 décomp `CursorCb_Give` (party_menu.c:3086) : exitCallback = CB2_SelectBagItemToGive,
@@ -2589,7 +2700,15 @@ function DisplayItemMustBeRemovedFirstMessage(): void {
   _drawMsg();
 }
 
-function _closeActionMenu(): void {
+/** 1:1 décomp `CursorCb_Cancel1` (party_menu.c:3062-3072) : ferme le menu d'action
+ *  et retourne au choix du mon.
+ *    PlaySE(SE_SELECT);                                     ← joué par le dispatch
+ *    PartyMenuRemoveWindow(&windowId[0]);   → _actionWindowId (fenêtre de sélection)
+ *    PartyMenuRemoveWindow(&windowId[1]);   → fenêtre message (gérée par _drawMsg)
+ *    if (DAYCARE) DisplayPartyMenuStdMessage(CHOOSE_MON_2) else (CHOOSE_MON);  → _drawMsg
+ *    gTasks[taskId].func = Task_HandleChooseMonInput;       → _phase = 'open'
+ *  (_drawMsg gère la variante DAYCARE = gText_ChoosePokemon2, cf. party_menu.ts:1417.) */
+function CursorCb_Cancel1(taskId: number): void {
   if (_actionWindowId >= 0) {
     // 1:1 décomp PartyMenuRemoveWindow : clear frame border avant remove.
     ClearStdWindowAndFrame(_actionWindowId, false);
@@ -2612,8 +2731,8 @@ function _closeActionMenu(): void {
 // décomp sépare elle-même SwitchPartyMon (data) des Task_Slide* (visuel).
 
 /** 1:1 décomp `CursorCb_Switch` (party_menu.c:2797-2807). SE_SELECT déjà
- *  joué au press A dans _handleActionMenuInput (= PlaySE 1:1). */
-function _cursorCbSwitch(): void {
+ *  joué au press A dans Task_HandleSelectionMenuInput (= PlaySE 1:1). */
+function CursorCb_Switch(taskId: number): void {
   _partyAction = PARTY_ACTION_SWITCH;
   // 1:1 PartyMenuRemoveWindow(selection) + PartyMenuRemoveWindow(doWhat) :
   // notre action window (+ msg window via _drawMsg qui retire l'ancien).
@@ -3338,7 +3457,7 @@ function _displayFieldMoveErrorMessage(stringKey: string, cancelOnPress = false)
 function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): void {
   if (!rt) return;
   const fieldMove = action - MENU_FIELD_MOVES;
-  // PlaySE(SE_SELECT) déjà joué par _handleActionMenuInput au press A.
+  // PlaySE(SE_SELECT) déjà joué par Task_HandleSelectionMenuInput au press A.
   const cb = sFieldMoveCursorCallbacks[fieldMove];
   if (!cb || !cb.fieldMoveFunc) {
     // 1:1 décomp : fieldMoveFunc == NULL → return (move pas encore porté en menu).
@@ -3414,10 +3533,67 @@ function CursorCb_FieldMove(rt: ReturnType<typeof getRuntime>, action: number): 
   }
 }
 
-/** Action menu input handler 1:1 décomp `Task_HandleSelectionMenuInput`
- *  (party_menu.c:2740) : UP/DOWN navigate, A select, B = cancel (= action
- *  at index numActions-1 = RETOUR). */
-function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
+/** 1:1 décomp `CursorCb_Summary` (party_menu.c:2770-2775) :
+ *    PlaySE(SE_SELECT);                                      ← joué par le dispatch
+ *    sPartyMenuInternal->exitCallback = CB2_ShowPokemonSummaryScreen;
+ *    Task_ClosePartyMenu(taskId);   // fade-out party PUIS handoff CB2
+ *  Le party menu se ferme ENTIÈREMENT (fade gated → _freePartyMenu → SetMainCallback2)
+ *  AVANT que le résumé s'init = handoff séquentiel identique au décomp (supprime la race
+ *  où OpenSummaryScreen était appelé pendant que le party menu vivait encore →
+ *  CB2_ReturnToFieldWithOpenMenu OW+START bug #4, ou CB2 stomp crash fade bug #3). */
+function CursorCb_Summary(taskId: number): void {
+  const mon = _slotMon(_slotId);
+  if (mon) {
+    _summaryTargetMon = mon;
+    _showSummaryPending = false;
+    _partyTransientExitCb = CB2_ShowPokemonSummaryScreen_Manual;
+    ClosePartyScreen();  // = Task_ClosePartyMenu (fade + handoff séquentiel)
+  } else {
+    // Garde port : slot vide (jamais atteint — le menu d'action ouvre sur un mon valide).
+    CursorCb_Cancel1(taskId);
+  }
+}
+
+/** 1:1 décomp `CursorCb_Store` (party_menu.c:3587-3591) : pension (DEPOSER).
+ *    PlaySE(SE_SELECT);            ← joué par le dispatch
+ *    Task_ClosePartyMenu(taskId);  → exitCallback = BufferMonSelection
+ *  (le slot choisi est capturé par _freePartyMenu → _cursorSelectionMonId). */
+function CursorCb_Store(taskId: number): void {
+  ClosePartyScreen();
+}
+
+/** DETTE R3 — mail depuis party non porté. 1:1 décomp `CursorCb_Mail`
+ *  (party_menu.c:3369) : cascade SetPartyMonSelectionActions(ACTIONS_MAIL) +
+ *  DisplaySelectionWindow(SELECTWINDOW_MAIL) → sous-menu LIRE/PRENDRE (CursorCb_Read /
+ *  CursorCb_TakeMail). Demande l'écran ReadMail + le flux bag-add équivalent (lot 10).
+ *  Stub : ferme le menu d'action → retour choix-mon (comportement actuel conservé). */
+function CursorCb_Mail(taskId: number): void {
+  console.log('[party-screen] MAIL → dette R3 (cascade CursorCb_Mail non portée)');
+  CursorCb_Cancel1(taskId);
+}
+
+/** 1:1 décomp dispatch `sCursorOptions[actions[input]].func(taskId)`
+ *  (party_menu.c:2760/2764). `func == null` = CursorCb hors-solo non portée
+ *  (combat / union-room / chooseHalf / toss / sous-menu mail) → WARN sans crash
+ *  (précédent : src/battle_transition.ts, entrées null + warn). */
+function _dispatchCursorOption(action: number, taskId: number): void {
+  const opt = sCursorOptions[action];
+  if (opt && opt.func) {
+    opt.func(taskId);
+  } else {
+    console.error(`[party_menu] CursorCb non portée: action=${action}`);
+  }
+}
+
+/** 1:1 décomp `Task_HandleSelectionMenuInput` (party_menu.c:2740-2768). La lecture
+ *  d'input du port est conservée (DPAD/A/B lus depuis gMain), mais le dispatch passe
+ *  désormais par la table `sCursorOptions[_actionList[input]].func(taskId)` :
+ *    - A (default décomp:2762-2765) → func de l'action sélectionnée ;
+ *    - B (MENU_B_PRESSED décomp:2757-2761) → func de la DERNIÈRE action (= CANCEL).
+ *  SE_SELECT joué ici au press (convention port : les CursorCb_* ne le rejouent pas —
+ *  cf. commentaires "SE_SELECT déjà joué par le dispatch"). */
+function Task_HandleSelectionMenuInput(taskId: number): void {
+  const rt = getRuntime();
   if (!rt) return;
   const newKeys = rt.gMain.newKeys;
   const newRepKeys = rt.gMain.newAndRepeatedKeys ?? newKeys;
@@ -3428,61 +3604,16 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
   } else if (newRepKeys & DPAD_DOWN) {
     if (_actionCursor < _actionList.length - 1) { _actionCursor++; PlaySE(5); _renderActionMenuContents(); }
   } else if (newKeys & KEY_A) {
+    // 1:1 décomp default (party_menu.c:2762-2765) : dispatch de l'action sélectionnée.
     PlaySE(5);
-    const action = _actionList[_actionCursor];
-    if (action === MENU_CANCEL1 /* RETOUR */) {
-      _closeActionMenu();
-    } else if (action === MENU_SUMMARY /* RESUME */) {
-      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770-2775) :
-      //   PlaySE(SE_SELECT);                                      ← déjà fait
-      //   sPartyMenuInternal->exitCallback = CB2_ShowPokemonSummaryScreen;
-      //   Task_ClosePartyMenu(taskId);   // fade-out party PUIS handoff CB2
-      // Le party menu se ferme ENTIÈREMENT (fade gated → _freePartyMenu →
-      // SetMainCallback2) AVANT que le résumé s'init = handoff séquentiel
-      // identique au décomp. Ça supprime la race où OpenSummaryScreen était
-      // appelé pendant que le party menu vivait encore (tâche de close
-      // survivante → CB2_ReturnToFieldWithOpenMenu = OW+START bug #4, ou
-      // CB2 stomp = crash fade bug #3).
-      const mon = _slotMon(_slotId);
-      if (mon) {
-        _summaryTargetMon = mon;
-        _showSummaryPending = false;
-        _partyTransientExitCb = CB2_ShowPokemonSummaryScreen_Manual;
-        ClosePartyScreen();  // = Task_ClosePartyMenu (fade + handoff séquentiel)
-      } else {
-        _closeActionMenu();
-      }
-    } else if (action === MENU_SWITCH /* ORDRE */) {
-      _cursorCbSwitch();
-    } else if (action === MENU_ITEM /* OBJET */) {
-      // 1:1 décomp `CursorCb_Item` (party_menu.c:3074) : ouvre le sous-menu objet
-      // ACTIONS_ITEM = DONNER/PRENDRE/RETOUR.
-      _cursorCbItem();
-    } else if (action === MENU_STORE /* DEPOSER (pension) */) {
-      // 1:1 décomp `CursorCb_Store` (party_menu.c:3587-3591) :
-      //   PlaySE(SE_SELECT);            ← déjà joué par le dispatch
-      //   Task_ClosePartyMenu(taskId);  → exitCallback = BufferMonSelection
-      // (le slot choisi est capturé par _freePartyMenu → _cursorSelectionMonId).
-      ClosePartyScreen();
-    } else if (action === MENU_GIVE /* DONNER */) {
-      _cursorCbGive();
-    } else if (action === MENU_TAKE_ITEM /* PRENDRE */) {
-      _cursorCbTakeItem();
-    } else if (action === MENU_CANCEL2 /* RETOUR (sous-menu objet) */) {
-      _cursorCbCancel2(rt);
-    } else if (action === MENU_MAIL /* MAIL */) {
-      // Dette R3 documentée : 1:1 décomp `CursorCb_Mail` (party_menu.c:2807)
-      // cascade vers DisplaySelectionWindow(ACTIONS_MAIL) → READ/TAKE_MAIL.
-      // Demande CB2 swap vers ReadMail screen + bag-add flow équivalent.
-      console.log('[party-screen] MAIL → dette R3 (cascade CursorCb_Mail U-tier)');
-      _closeActionMenu();
-    } else if (action >= MENU_FIELD_MOVES) {
-      // 1:1 décomp `CursorCb_FieldMove` (party_menu.c:3702).
-      CursorCb_FieldMove(rt, action);
-    }
+    _dispatchCursorOption(_actionList[_actionCursor], taskId);
   } else if (newKeys & KEY_B) {
+    // 1:1 décomp MENU_B_PRESSED (party_menu.c:2757-2761) : dispatch de la DERNIÈRE
+    // action (actions[numActions - 1]) = CANCEL1 (menu mon) ou CANCEL2 (sous-menu objet).
+    // ÉCART CORRIGÉ : l'ancien port fermait TOUJOURS le menu d'action vers le choix-mon ;
+    // le décomp fait revenir B du sous-menu objet au menu d'action mon (via CursorCb_Cancel2).
     PlaySE(5);
-    _closeActionMenu();
+    _dispatchCursorOption(_actionList[_actionList.length - 1], taskId);
   }
 }
 
@@ -3498,8 +3629,9 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // Task_SlideSelectedSlotsOffscreen/Onscreen (pas le handler input) → input
   // ignoré, on tick uniquement l'anim slide. (party_menu.c:2864/2962)
   if (_phase === 'switching') { _slideTaskFn?.(); return; }
-  // Sub-state action menu : dispatcher différent.
-  if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
+  // Sub-state action menu : 1:1 décomp la task func serait Task_HandleSelectionMenuInput
+  // (party_menu.c:2740) ; ici le _phase reste (lots 4-6 tueront la state-machine).
+  if (_phase === 'action_menu') { Task_HandleSelectionMenuInput(_task.taskId); return; }
   // Sub-state hp_anim : tick l'anim HP bar (= 1:1 PartyMenuModifyHP).
   if (_phase === 'hp_anim') { _tickHpAnim(); return; }
   // Sub-state item used message. 1:1 décomp Task_ClosePartyMenuAfterText
