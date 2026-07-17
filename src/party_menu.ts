@@ -3168,7 +3168,7 @@ function _switchSlotIconGraphics(s1: number, s2: number): void {
 /** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3035) : swap mon1 ↔ mon2
  *  dans gPlayerParty (= gSaveBlock1Ptr.playerParty) + SwitchMenuBoxSprites (pokeball +
  *  icône ; item/statut = window, re-dessinés). */
-function _switchPartyMon(): void {
+function SwitchPartyMon(): void {
   // 1:1 décomp SwitchPartyMon (party_menu.c:3025-3030) : swap le CONTENU des 2
   // slots gPlayerParty (la SOURCE). La façade block1.playerParty (vues sur les
   // objets-slots) reflète le swap automatiquement.
@@ -3282,8 +3282,11 @@ function _slidePartyMenuBoxOneStep(): void {
   ScheduleBgCopyTilemapToVram(0);
 }
 
-/** 1:1 décomp `Task_SlideSelectedSlotsOffscreen` (party_menu.c:2936-2964). */
-function _taskSlideSelectedSlotsOffscreen(): void {
+/** 1:1 décomp `Task_SlideSelectedSlotsOffscreen` (party_menu.c:2936-2964). ÉCART
+ *  port : la task func courante est portée par `_slideTaskFn` (= gTasks[taskId].func
+ *  du décomp) au lieu de gTasks[taskId].func ; signature no-arg (état slide en
+ *  module-scope `_t*`). */
+function Task_SlideSelectedSlotsOffscreen(): void {
   _slidePartyMenuBoxOneStep();
   _slidePartyMenuBoxSpritesOneStep();
   _t1Off += _t1Dir;
@@ -3297,7 +3300,7 @@ function _taskSlideSelectedSlotsOffscreen(): void {
   if (p0 > 33 && p1 > 33) {
     _t1Dir *= -1;
     _t2Dir *= -1;
-    _switchPartyMon();
+    SwitchPartyMon();
     _displayPartyPokemonData(_slotId);
     _displayPartyPokemonData(_slotId2);
     PutWindowTilemap(_slotWindowIds[_slotId]);
@@ -3306,12 +3309,14 @@ function _taskSlideSelectedSlotsOffscreen(): void {
     if (_sSlot2Buf) CopyToBufferFromBgTilemap(0, _sSlot2Buf, _t2Left, _t2Top, _t2W, _t2H);
     ClearWindowTilemap(_slotWindowIds[_slotId]);
     ClearWindowTilemap(_slotWindowIds[_slotId2]);
-    _slideTaskFn = _taskSlideSelectedSlotsOnscreen;
+    _slideTaskFn = Task_SlideSelectedSlotsOnscreen;
   }
 }
 
-/** 1:1 décomp `Task_SlideSelectedSlotsOnscreen` (party_menu.c:2966-2993). */
-function _taskSlideSelectedSlotsOnscreen(): void {
+/** 1:1 décomp `Task_SlideSelectedSlotsOnscreen` (party_menu.c:2966-2993). ÉCART
+ *  port : task func portée par `_slideTaskFn` ; signature no-arg (état slide en
+ *  module-scope `_t*`). */
+function Task_SlideSelectedSlotsOnscreen(): void {
   _slidePartyMenuBoxOneStep();
   _slidePartyMenuBoxSpritesOneStep();
   if (_t1Dir === 0 && _t2Dir === 0) {
@@ -3365,7 +3370,7 @@ function _switchSelectedMons(): void {
   AnimatePartySlot(_slotId2, 1);
   _slidePartyMenuBoxOneStep();
   _phase = 'switching';
-  _slideTaskFn = _taskSlideSelectedSlotsOffscreen;
+  _slideTaskFn = Task_SlideSelectedSlotsOffscreen;
 }
 
 // ─── Field moves party-menu (1:1 décomp party_menu.c:3702+) ──────────────────
@@ -4192,6 +4197,161 @@ function Task_TryLearningNextMoveAfterText(taskId: number): void {
   void taskId;
 }
 
+// ─── LOT 6 : feuilles Task_* sous-états message / yes-no / field-move ─────────
+// Extraction 1:1 des branches `_phase` RESTANTES du méga-handler. Chaque corps
+// inline est déplacé VERBATIM (comportement STRICTEMENT inchangé) vers sa task
+// func décomp ; `taskId` conservé (signature 1:1) même quand le port pilote par
+// `_phase` / module-scope. Divergences port-vs-décomp CONSERVÉES + annotées ÉCART.
+// (`switching`/`hp_anim`/`action_menu` sont déjà des délégations via renames +
+// LOT 2 ; `softboiled_msg` reste dans le méga-handler — cf. commentaire là-bas.)
+
+/** 1:1 `Task_ClosePartyMenuAfterText` (party_menu.c:4472-4480) : attend la fin du
+ *  printer puis ferme le menu. AUCUN press supplémentaire : le A qui lève le
+ *  {PAUSE_UNTIL_PRESS} final du message est consommé par la pause du printer.
+ *  ÉCART port : la logique `if (gPartyMenuUseExitCallback == FALSE)
+ *  sPartyMenuInternal->exitCallback = NULL` + Task_ClosePartyMenu (:4476-4478) est
+ *  encapsulée dans ClosePartyScreen ; `_itemUsedMsgText = null` = cleanup port du
+ *  buffer message. */
+function Task_ClosePartyMenuAfterText(taskId: number): void {
+  if (_isPartyMenuTextPrinterActive()) return;   // 1:1 :4474
+  _itemUsedMsgText = null;
+  ClosePartyScreen();                            // 1:1 :4476-4478 (exitCallback + Task_ClosePartyMenu)
+  void taskId;
+}
+
+/** 1:1 `Task_ReturnToChooseMonAfterText` (party_menu.c:1745-1761) : à la fin du
+ *  printer, efface WIN_MSG puis REVIENT au choix-mon (ne ferme PAS le menu).
+ *  Partagée par `field_move_err` (badge manquant / can't-use : CursorCb_FieldMove a
+ *  déjà retiré l'action window) ET `helditem_msg`. Le {PAUSE_UNTIL_PRESS} final est
+ *  levé DANS le printer par le A du joueur → pas de press supplémentaire ici.
+ *  ÉCARTS port : (a) la branche link `Task_WaitForLinkAndReturnToChooseMon`
+ *  (:1751-1754) est hors-solo (jamais active) ; (b) ClearStdWindowAndFrameToTransparent
+ *  + ClearWindowTilemap(WIN_MSG) + DisplayPartyMenuStdMessage(CHOOSE_MON) +
+ *  func=Task_HandleChooseMonInput (:1749/:1757-1758) = reset action list +
+ *  `_phase='open'` + _drawMsg ; (c) pour `helditem_msg` le décomp est
+ *  Task_UpdateHeldItemSprite (:3255) dont la TÊTE (UpdatePartyMonHeldItemSprite,
+ *  :3261) est faite au site de transition (`_updatePartyMonHeldItem`, ~:2770 /
+ *  switch_items_yesno) ; la QUEUE (:3269 Task_ReturnToChooseMonAfterText) = cette
+ *  feuille. */
+function Task_ReturnToChooseMonAfterText(taskId: number): void {
+  if (_isPartyMenuTextPrinterActive()) return;   // 1:1 :1747
+  _itemUsedMsgText = null;
+  _actionList = [];
+  _actionCursor = 0;
+  _actionSubMenu = 'mon';
+  _phase = 'open';                               // = gTasks[taskId].func = Task_HandleChooseMonInput (:1758)
+  _drawMsg();                                    // 1:1 :1757 DisplayPartyMenuStdMessage(CHOOSE_MON)
+  void taskId;
+}
+
+/** 1:1 `Task_CancelAfterAorBPress` (party_menu.c:3838-3842) : `if (JOY_NEW(A) ||
+ *  JOY_NEW(B)) CursorCb_Cancel1(taskId)`. Messages field-move « Impossible ici. »
+ *  etc. SANS {PAUSE_UNTIL_PRESS} → attend un press A/B puis CursorCb_Cancel1
+ *  (party_menu.c:3062 : PlaySE(SE_SELECT) + PartyMenuRemoveWindow×2 +
+ *  DisplayPartyMenuStdMessage(CHOOSE_MON) + func=Task_HandleChooseMonInput).
+ *  ÉCARTS port : (a) gate printer AJOUTÉ (le décomp Task_CancelAfterAorBPress n'a PAS
+ *  d'IsPartyMenuTextPrinterActive — inoffensif : au moment du press le printer est
+ *  fini) ; (b) CursorCb_Cancel1 inliné (reset action list + `_phase='open'` +
+ *  _drawMsg) ; la variante DAYCARE (CHOOSE_MON_2, :3067-3068) est hors-solo. */
+function Task_CancelAfterAorBPress(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (_isPartyMenuTextPrinterActive()) return;   // ÉCART port : gate AJOUTÉ (absent :3838-3842)
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002;
+  if (newKeys & (KEY_A | KEY_B)) {               // 1:1 :3840 JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)
+    PlaySE(5);  // 1:1 :3064 CursorCb_Cancel1 PlaySE(SE_SELECT)
+    _itemUsedMsgText = null;
+    _actionList = [];
+    _actionCursor = 0;
+    _actionSubMenu = 'mon';
+    _phase = 'open';                             // = gTasks[taskId].func = Task_HandleChooseMonInput (:3071)
+    _drawMsg();                                  // 1:1 :3070 DisplayPartyMenuStdMessage(CHOOSE_MON)
+  }
+  void taskId;
+}
+
+/** 1:1 `Task_HandleFieldMoveExitAreaYesNoInput` (party_menu.c:3797-3814) : Oui/Non
+ *  du field-move exit-area (Téléport « Retourner au dernier lieu de soins? » / Tunnel).
+ *    case 0 (OUI)  : exitCallback = CB2_ReturnToField ; Task_ClosePartyMenu.
+ *    case 1/B (NON): gFieldCallback2=NULL; gPostMenuFieldCallback=NULL; retour choix-mon.
+ *  ÉCARTS port : (a) OUI → `_partyTransientExitCb = CB2_ReturnToField_Manual` (≙
+ *  gPartyMenu.exitCallback = CB2_ReturnToField) + ClosePartyScreen (≙ Task_ClosePartyMenu) ;
+ *  (b) NON/B → le décomp appelle Task_ReturnToChooseMonAfterText(taskId) (:3811) mais
+ *  le port INLINE le retour choix-mon SANS le gate printer et SANS `_actionSubMenu='mon'`
+ *  (comportement conservé verbatim — divergence NON corrigée). */
+function Task_HandleFieldMoveExitAreaYesNoInput(taskId: number): void {
+  const res = Menu_ProcessInputNoWrapClearOnChoose();  // -2 rien, -1 B, 0 OUI, 1 NON
+  if (res === 0) {
+    _itemUsedMsgText = null;
+    _partyTransientExitCb = CB2_ReturnToField_Manual;  // 1:1 :3802 exitCallback = CB2_ReturnToField
+    ClosePartyScreen();                                // 1:1 :3803 Task_ClosePartyMenu
+  } else if (res === 1 || res === -1) {
+    PlaySE(5);  // 1:1 :3806 MENU_B_PRESSED → PlaySE(SE_SELECT), fallthrough
+    _itemUsedMsgText = null;
+    const g = globalThis as Record<string, unknown>;
+    g.gFieldCallback2 = null;                          // 1:1 :3809 gFieldCallback2 = NULL
+    g.gPostMenuFieldCallback = null;                   // 1:1 :3810 gPostMenuFieldCallback = NULL
+    _actionList = [];
+    _actionCursor = 0;
+    _phase = 'open';  // ÉCART : Task_ReturnToChooseMonAfterText (:3811) inliné SANS gate/_actionSubMenu
+    _drawMsg();
+  }
+  void taskId;
+}
+
+/** 1:1 `Task_HandleSwitchItemsYesNoInput` (party_menu.c:3163-3199) : Oui/Non
+ *  « Échanger les deux objets? ». OUI → RemoveBagItem(new) ; si pas de place pour
+ *  rendre l'ancien → rollback + "sac plein" (:3171) ; sinon GiveItemToMon(new) +
+ *  "X a remplacé Y" (:3186). NON/B → garde l'objet (:3195). ÉCART port : embarque
+ *  AUSSI la variante Task_HandleSwitchItemsFromBagYesNoInput (party_menu.c:5478-5513)
+ *  via `_giveFromBag` — les deux ne diffèrent que sur le Task_* de continuation
+ *  (DONNER party→bag = Task_UpdateHeldItemSprite/'helditem_msg' vs GIVE-FROM-BAG =
+ *  Task_UpdateHeldItemSpriteAndClosePartyMenu/'item_used_msg'). Les clés SAC passent
+ *  par GetBagItemKey (TM/HM enum-numbered → move-named). Mail (ItemIsMail, :3179/:5494)
+ *  = hors-scope de ce port (Task_WriteMailToGiveMon*). */
+function Task_HandleSwitchItemsYesNoInput(taskId: number): void {
+  const res = Menu_ProcessInputNoWrapClearOnChoose();  // 0=OUI 1=NON -1=B
+  if (res === 0) {
+    const mon = gPlayerParty[_slotId];
+    RemoveBagItem(GetBagItemKey(_giveNewItem), 1);  // clé SAC (TM/HM enum-numbered → move-named)
+    if (AddBagItem(GetBagItemKey(_giveOldItem), 1) === false) {
+      // 1:1 :3171 pas de place pour rendre l'ancien → rollback (re-add new au sac).
+      AddBagItem(GetBagItemKey(_giveNewItem), 1);
+      _itemUsedMsgText = _preparePartyMsg(getString('gText_BagFullCouldNotRemoveItem') || '');
+    } else if (mon) {
+      // 1:1 :3186 échange : donne le nouveau, message "X a remplacé Y".
+      GiveItemToMon(mon, _giveNewItem);
+      _updatePartyMonHeldItem(_slotId);
+      _itemUsedMsgText = _preparePartyMsg(getString('gText_SwitchedPkmnItem') || '',
+        GetItemName(_giveNewItem), GetItemName(_giveOldItem));
+    }
+    // Continuation : DONNER (party→bag) revient au choix-mon (phase 'helditem_msg') ;
+    // GIVE-FROM-BAG (#12) ferme → SAC (phase 'item_used_msg' = close→savedCallback).
+    // 1:1 : Task_HandleSwitchItemsYesNoInput (3186) vs Task_HandleSwitchItemsFromBag
+    // YesNoInput (5501) diffèrent uniquement sur le Task_* de continuation.
+    _phase = _giveFromBag ? 'item_used_msg' : 'helditem_msg';
+    _drawMsg();
+  } else if (res === 1 || res === -1) {
+    // 1:1 :3199 NON/B → garde l'objet. DONNER : Task_ReturnToChooseMonAfterText → le
+    // message "Echanger les deux objets?" n'a PAS de {PAUSE_UNTIL_PRESS} → revient
+    // IMMÉDIATEMENT au choix-mon (SANS attendre A/B). GIVE-FROM-BAG (#12) : 1:1
+    // Task_HandleSwitchItemsFromBagYesNoInput case 1 → Task_UpdateHeldItemSpriteAnd
+    // ClosePartyMenu = ferme direct → SAC.
+    PlaySE(5);  // 1:1 MENU_B_PRESSED rejoue SE_SELECT
+    _itemUsedMsgText = null;
+    if (_giveFromBag) {
+      ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
+    } else {
+      _actionList = [];
+      _actionCursor = 0;
+      _phase = 'open';
+      _drawMsg();  // → "Choisir un POKéMON"
+    }
+  }
+  void taskId;
+}
+
 /** Input handler 1:1 décomp `Task_HandleChooseMonInput` (party_menu.c:1260) :
  *    A → if cancel slot: close, else: action menu (RESUME/OBJET/RETOUR)
  *    B → close
@@ -4207,57 +4367,16 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // Sub-state action menu : 1:1 décomp la task func serait Task_HandleSelectionMenuInput
   // (party_menu.c:2740) ; ici le _phase reste (lots 4-6 tueront la state-machine).
   if (_phase === 'action_menu') { Task_HandleSelectionMenuInput(_task.taskId); return; }
-  // Sub-state hp_anim : tick l'anim HP bar (= 1:1 PartyMenuModifyHP).
-  if (_phase === 'hp_anim') { _tickHpAnim(); return; }
-  // Sub-state item used message. 1:1 décomp Task_ClosePartyMenuAfterText
-  // (party_menu.c:4472-4480) : `if (IsPartyMenuTextPrinterActive() != TRUE)
-  // Task_ClosePartyMenu(taskId);` — AUCUN press supplémentaire : le A qui lève
-  // le {PAUSE_UNTIL_PRESS} final du message est consommé par la pause du
-  // printer (pendant l'impression, A/B accélère via canABSpeedUpPrint).
-  if (_phase === 'item_used_msg') {
-    if (_isPartyMenuTextPrinterActive()) return;
-    _itemUsedMsgText = null;
-    ClosePartyScreen();
-    return;
-  }
-  // Sub-state message d'erreur field-move (badge manquant / can't use) : attend
-  // A/B → REVIENT au choix du mon (≈ Task_ReturnToChooseMonAfterText /
-  // Task_CancelAfterAorBPress — ne ferme PAS le menu). L'action window a déjà
-  // été retiré par CursorCb_FieldMove → on réaffiche juste "Choisir un POKéMON".
-  // 'helditem_msg' = même pattern : 1:1 décomp Task_UpdateHeldItemSprite →
-  // Task_ReturnToChooseMonAfterText (party_menu.c:3267) — A/B → retour choix-mon.
-  if (_phase === 'field_move_err' || _phase === 'helditem_msg') {
-    // 1:1 décomp Task_ReturnToChooseMonAfterText (party_menu.c:1745) :
-    // `if (IsPartyMenuTextPrinterActive() != TRUE) { … retour choix-mon }` —
-    // pas de press supplémentaire (le {PAUSE_UNTIL_PRESS} final est levé DANS
-    // le printer par le A du joueur).
-    if (_isPartyMenuTextPrinterActive()) return;
-    _itemUsedMsgText = null;
-    _actionList = [];
-    _actionCursor = 0;
-    _actionSubMenu = 'mon';
-    _phase = 'open';
-    _drawMsg();
-    return;
-  }
-  // 1:1 décomp Task_CancelAfterAorBPress (party_menu.c:3838) : messages
-  // « Impossible ici. » etc. SANS {PAUSE_UNTIL_PRESS} → attend un press A/B
-  // puis CursorCb_Cancel1 (= PlaySE(SE_SELECT) + retour choix-mon).
-  if (_phase === 'field_move_cancel') {
-    if (_isPartyMenuTextPrinterActive()) return;
-    const newKeys = rt.gMain.newKeys;
-    const KEY_A = 0x0001, KEY_B = 0x0002;
-    if (newKeys & (KEY_A | KEY_B)) {
-      PlaySE(5);  // SE_SELECT (CursorCb_Cancel1)
-      _itemUsedMsgText = null;
-      _actionList = [];
-      _actionCursor = 0;
-      _actionSubMenu = 'mon';
-      _phase = 'open';
-      _drawMsg();
-    }
-    return;
-  }
+  // Sub-state hp_anim : 1:1 décomp Task_PartyMenuModifyHP (party_menu.c:1839).
+  if (_phase === 'hp_anim') { Task_PartyMenuModifyHP(_task.taskId); return; }
+  // Sub-state item used message : 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472).
+  if (_phase === 'item_used_msg') { Task_ClosePartyMenuAfterText(_task.taskId); return; }
+  // Sub-states message field-move (badge/can't-use = Task_ReturnToChooseMonAfterText
+  // :1745) et held-item (Task_UpdateHeldItemSprite :3255, queue = Task_ReturnTo
+  // ChooseMonAfterText) : A/B → retour choix-mon (ne FERME pas le menu).
+  if (_phase === 'field_move_err' || _phase === 'helditem_msg') { Task_ReturnToChooseMonAfterText(_task.taskId); return; }
+  // Sub-state message field-move sans pause : 1:1 décomp Task_CancelAfterAorBPress (party_menu.c:3838).
+  if (_phase === 'field_move_cancel') { Task_CancelAfterAorBPress(_task.taskId); return; }
   // Sub-state message softboiled (PV restaurés / inutilisable) : A/B → continuation
   // (Task_FinishSoftboiled ou re-choix receveur). 1:1 décomp Task_FinishSoftboiled /
   // Task_ChooseNewMonForSoftboiled (qui attendent !IsPartyMenuTextPrinterActive ;
@@ -4274,73 +4393,10 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     }
     return;
   }
-  // Sub-state Oui/Non field-move (Téléport « Retourner au dernier lieu de soins? »).
-  // 1:1 décomp Task_HandleFieldMoveExitAreaYesNoInput (party_menu.c:3793) :
-  //   case 0 (OUI)  : gPartyMenu.exitCallback = CB2_ReturnToField; Task_ClosePartyMenu.
-  //   case 1/B (NON): gFieldCallback2 = NULL; gPostMenuFieldCallback = NULL; retour choix-mon.
-  if (_phase === 'fieldmove_yesno') {
-    const res = Menu_ProcessInputNoWrapClearOnChoose();  // -2 rien, -1 B, 0 OUI, 1 NON
-    if (res === 0) {
-      _itemUsedMsgText = null;
-      _partyTransientExitCb = CB2_ReturnToField_Manual;
-      ClosePartyScreen();
-    } else if (res === 1 || res === -1) {
-      PlaySE(5);  // SE_SELECT (1:1 : MENU_B_PRESSED rejoue SE_SELECT)
-      _itemUsedMsgText = null;
-      const g = globalThis as Record<string, unknown>;
-      g.gFieldCallback2 = null;
-      g.gPostMenuFieldCallback = null;
-      _actionList = [];
-      _actionCursor = 0;
-      _phase = 'open';
-      _drawMsg();
-    }
-    return;
-  }
-  // 'switch_items_yesno' = 1:1 Task_HandleSwitchItemsYesNoInput (party_menu.c:3164) :
-  //   OUI → RemoveBagItem(new) ; si pas de place pour rendre l'ancien → rollback +
-  //   "sac plein" ; sinon GiveItemToMon(new) + "X a remplacé Y". NON/B → garde l'objet.
-  if (_phase === 'switch_items_yesno') {
-    const res = Menu_ProcessInputNoWrapClearOnChoose();  // 0=OUI 1=NON -1=B
-    if (res === 0) {
-      const mon = gPlayerParty[_slotId];
-      RemoveBagItem(GetBagItemKey(_giveNewItem), 1);  // clé SAC (TM/HM enum-numbered → move-named)
-      if (AddBagItem(GetBagItemKey(_giveOldItem), 1) === false) {
-        // 1:1 :3171 pas de place pour rendre l'ancien → rollback (re-add new au sac).
-        AddBagItem(GetBagItemKey(_giveNewItem), 1);
-        _itemUsedMsgText = _preparePartyMsg(getString('gText_BagFullCouldNotRemoveItem') || '');
-      } else if (mon) {
-        // 1:1 :3186 échange : donne le nouveau, message "X a remplacé Y".
-        GiveItemToMon(mon, _giveNewItem);
-        _updatePartyMonHeldItem(_slotId);
-        _itemUsedMsgText = _preparePartyMsg(getString('gText_SwitchedPkmnItem') || '',
-          GetItemName(_giveNewItem), GetItemName(_giveOldItem));
-      }
-      // Continuation : DONNER (party→bag) revient au choix-mon (phase 'helditem_msg') ;
-      // GIVE-FROM-BAG (#12) ferme → SAC (phase 'item_used_msg' = close→savedCallback).
-      // 1:1 : Task_HandleSwitchItemsYesNoInput (3186) vs Task_HandleSwitchItemsFromBag
-      // YesNoInput (5501) diffèrent uniquement sur le Task_* de continuation.
-      _phase = _giveFromBag ? 'item_used_msg' : 'helditem_msg';
-      _drawMsg();
-    } else if (res === 1 || res === -1) {
-      // 1:1 :3199 NON/B → garde l'objet. DONNER : Task_ReturnToChooseMonAfterText → le
-      // message "Echanger les deux objets?" n'a PAS de {PAUSE_UNTIL_PRESS} → revient
-      // IMMÉDIATEMENT au choix-mon (SANS attendre A/B). GIVE-FROM-BAG (#12) : 1:1
-      // Task_HandleSwitchItemsFromBagYesNoInput case 1 → Task_UpdateHeldItemSpriteAnd
-      // ClosePartyMenu = ferme direct → SAC.
-      PlaySE(5);  // 1:1 MENU_B_PRESSED rejoue SE_SELECT
-      _itemUsedMsgText = null;
-      if (_giveFromBag) {
-        ClosePartyScreen();          // → CB2_ReturnToBagMenu (savedCallback)
-      } else {
-        _actionList = [];
-        _actionCursor = 0;
-        _phase = 'open';
-        _drawMsg();  // → "Choisir un POKéMON"
-      }
-    }
-    return;
-  }
+  // Sub-state Oui/Non field-move exit-area : 1:1 Task_HandleFieldMoveExitAreaYesNoInput (party_menu.c:3797).
+  if (_phase === 'fieldmove_yesno') { Task_HandleFieldMoveExitAreaYesNoInput(_task.taskId); return; }
+  // Sub-state Oui/Non échange d'objet : 1:1 Task_HandleSwitchItemsYesNoInput (party_menu.c:3163).
+  if (_phase === 'switch_items_yesno') { Task_HandleSwitchItemsYesNoInput(_task.taskId); return; }
   // Sub-states level-up / learn-move — 1:1 décomp : chaque `_phase` délègue à sa
   // task func feuille (LOT 5). Le squelette `_phase` (transitions) reste jusqu'au
   // lot final ; les corps 1:1 vivent dans les Task_* ci-dessus (party_menu.c:4789-5093).
@@ -4857,9 +4913,17 @@ export function PartyMenuAnimateHP(
   _drawSlot(slotIdx);
 }
 
-/** Tick frame de l'anim HP bar — appelé par Task_PartyMenu_HandleInput
- *  pendant phase `'hp_anim'`. */
-function _tickHpAnim(): void {
+/** 1:1 décomp `Task_PartyMenuModifyHP` (party_menu.c:1839-1856) : task func qui
+ *  tick le HP bar frame-par-frame (appelée par Task_PartyMenu_HandleInput pendant
+ *  `_phase==='hp_anim'`). ÉCARTS port : (a) l'état vit en module-scope
+ *  (`_hpAnimSlot/_hpAnimDirection/_hpAnimRemaining`) au lieu de gTasks[taskId].data
+ *  (tHP/tHPIncrement/tHPToAdd/tPartyId) → `taskId` inutilisé ; (b) la condition
+ *  de fin est `_hpAnimRemaining <= 0` (le décomp = `tHPToAdd==0 || tHP==0 ||
+ *  tHP==tMaxHP` — clamps équivalents, la cible est déjà clampée à [0,maxHP] par
+ *  l'appelant) ; (c) le buffer « PV récupérés » (ConvertIntToDecimalStringN
+ *  gStringVar2, :1852) est calculé séparément (`_softboiledAmount`) ; (d)
+ *  SwitchTaskToFollowupFunc → callback `_hpAnimOnDone`. */
+function Task_PartyMenuModifyHP(taskId: number): void {
   // 1:1 décomp PartyMenuModifyHP (party_menu.c:1839) : tick chaque frame
   // (= 60Hz / GBA) avec 1 HP/frame fixed. La "smoothness" perçue ROM vient
   // du REDRAW HP bar à 60Hz qui interpole visuellement entre les sauts.
@@ -4886,8 +4950,9 @@ function _tickHpAnim(): void {
   if (_hpAnimRemaining <= 0) {
     const cb = _hpAnimOnDone; _hpAnimOnDone = null;
     _hpAnimSlot = -1;
-    cb?.();
+    cb?.();  // 1:1 :1854 SwitchTaskToFollowupFunc(taskId)
   }
+  void taskId;
 }
 
 /** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :

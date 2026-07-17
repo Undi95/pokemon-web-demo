@@ -221,7 +221,19 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
 - **Test EN JEU** : Super Bonbon → box stats pg1/pg2 → apprend/remplace capacité (les 3 branches).
 - **Critère** : la chaîne level-up/learn n'a plus de `_phase`.
 
-### LOT 6 — Extraire les `Task_*` feuilles (switch-items + softboiled + field-move msgs)
+### LOT 6 — Extraire les `Task_*` feuilles (switch-items + softboiled + field-move msgs) ✅ FAIT (2026-07-17)
+> 6 feuilles extraites (Task_ClosePartyMenuAfterText:4472, Task_ReturnToChooseMonAfterText:1745
+> partagée field_move_err/helditem_msg, Task_CancelAfterAorBPress:3838,
+> Task_HandleFieldMoveExitAreaYesNoInput:3797, Task_HandleSwitchItemsYesNoInput:3163
+> [fusionne la variante FromBag :5478 via `_giveFromBag`], Task_PartyMenuModifyHP:1839)
+> + 4 renames (SwitchPartyMon:3016, Task_SlideSelectedSlotsOffscreen/Onscreen:2936/2966,
+> _tickHpAnim→Task_PartyMenuModifyHP). Méga-handler = shim de délégations.
+> NON extraite (honnête) : `softboiled_msg` — dispatcher générique port dont le callback
+> couvre DEUX waiters décomp distincts (fldeff_softboiled.c:83/:97) ; en nommer un
+> trahirait l'autre → reste inline documenté, à réconcilier avec la famille softboiled.
+> Testé EN JEU : SURF « impossible ici »→retour ; E-Coque anim PV (+8/−8 exact) ;
+> DONNER sur mon tenant un objet → « Echanger? » OUI → compta sac 1:1
+> (POTION 5→4, GRAIN MIRACL rendu) ; ORDRE slide Arcko↔Leveinard. 0 erreur console.
 - **Fichiers** : `src/party_menu.ts`.
 - [extract] `switch_items_yesno`→`Task_HandleSwitchItemsYesNoInput`:3163 (+`…FromBag…`:5478),
   `softboiled_*`→`ChooseMonForSoftboiled`/`Task_TryUseSoftboiledOnPartyMon`/`Task_FinishSoftboiled`
