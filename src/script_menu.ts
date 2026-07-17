@@ -123,6 +123,16 @@ export function getMultichoiceName(multichoiceId: number): string | undefined {
 
 let _multichoiceWindowId = -1;
 
+/** 1:1 décomp `ScriptMenu_AdjustLeftCoordFromWidth` (script_menu.c:748-764) :
+ *  clamp du bord gauche pour que le menu tienne dans MAX_MULTICHOICE_WIDTH (=28,
+ *  importé de include/constants/script_menu). */
+function ScriptMenu_AdjustLeftCoordFromWidth(left: number, width: number): number {
+  if (left + width > MAX_MULTICHOICE_WIDTH) {
+    return MAX_MULTICHOICE_WIDTH - width < 0 ? 0 : MAX_MULTICHOICE_WIDTH - width;
+  }
+  return left;
+}
+
 function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8Array)[], cursorPos: number): void {
   const count = items.length;
   if (count === 0) return;
@@ -134,7 +144,14 @@ function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8
     if (w > maxPixels) maxPixels = w;
   }
   const width = ConvertPixelWidthToTileWidth(maxPixels);
-  const tmpl: WindowTemplate = { bg: 0, tilemapLeft: left, tilemapTop: top, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
+  // 1:1 décomp DrawMultichoiceMenu (script_menu.c:107-108) : clamp à droite PUIS
+  // `CreateWindowFromRect(left, top, …)` (:628) = `CreateWindowTemplate(0, x+1, y+1, …)`.
+  // Le +1/+1 est LA marge du CADRE : DrawStdFrame écrit à (x-1, y-1) — sans lui, un
+  // multichoice script à (0,0) (ex. menu Boîtes du PC, pc.inc) dessine son cadre hors
+  // fenêtre et CORROMPT le tilemap field voisin (bug user 2026-07-17, rayures sous le
+  // menu ; même famille que diag-pc-center-magenta CAS 1 `59ae3a26`, jamais généralisé).
+  const adjLeft = ScriptMenu_AdjustLeftCoordFromWidth(left, width);
+  const tmpl: WindowTemplate = { bg: 0, tilemapLeft: adjLeft + 1, tilemapTop: top + 1, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
   _multichoiceWindowId = AddWindow(tmpl);
   // 1:1 décomp `script_menu.c:109` DrawMultichoiceMenuInternal : `SetStandardWindowBorderStyle(id,
   // FALSE)` dessine le cadre du menu (le gfx du thème `optionsWindowFrameType` est déjà chargé en
@@ -245,10 +262,9 @@ export function ScriptMenu_CreatePCMultichoice(): () => boolean {
   const items: (string | Uint8Array)[] = [someones, players];
   if (FlagGet(FLAG_SYS_GAME_CLEAR)) items.push(getString('gText_HallOfFame'));  // :344-355 champion → PANTHEON
   items.push(getString('gText_LogOff'));  // :356/363 DECONNEXION
-  // 1:1 décomp `CreateWindowFromRect(0, 0, width, …)` (script_menu.c:628-630) =
-  // `CreateWindowTemplate(0, x + 1, y + 1, …)` → le window est à la tuile (1, 1), PAS (0, 0).
-  // Le +1 laisse une tuile de marge pour le CADRE (DrawStdFrame déborde de 1 tuile autour) ;
-  // sans lui le cadre haut/gauche est en (-1, -1) = hors écran (coupé).
-  _spawnMultichoiceMenu(1, 1, items, 0);
+  // 1:1 décomp `CreatePCMultichoice` : `CreateWindowFromRect(0, 0, width, …)` — le +1/+1
+  // de marge cadre est désormais DANS _spawnMultichoiceMenu (généralisation du fix CAS 1
+  // `59ae3a26` à tous les multichoices script) → on repasse les coords BRUTES du décomp.
+  _spawnMultichoiceMenu(0, 0, items, 0);
   return makeMultichoiceTick(items, false);  // InitMultichoiceCheckWrap(FALSE, numChoices, windowId, MULTI_PC)
 }
