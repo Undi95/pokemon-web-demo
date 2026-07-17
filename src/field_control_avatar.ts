@@ -532,7 +532,8 @@ export type WarpKind =
   | 'lavaridge_b1f'// MB_LAVARIDGE_GYM_B1F_WARP (= fire pop to F1)
   | 'lavaridge_1f' // MB_LAVARIDGE_GYM_1F_WARP (= hole drop to B1F)
   | 'mossdeep_gym' // MB_MOSSDEEP_GYM_WARP (= Mossdeep specific spin)
-  | 'secret_base'; // IsOpenSecretBaseDoor (= push NORTH WarpIntoSecretBase)
+  | 'secret_base'  // IsOpenSecretBaseDoor (= push NORTH WarpIntoSecretBase)
+  | 'fly';         // Task_UseFly (field_effect.c:1374) — arrivée = FieldCallback_FlyIntoMap (oiseau qui dépose), pas d'exit-task metatile
 
 /** Classifier le metatile en WarpKind. 1:1 décomp dispatch ordre de
  *  `TryStartWarpEventScript` (field_control_avatar.c:702-749) + `TryDoorWarp`

@@ -208,6 +208,7 @@ import { preloadSurfBlobEffect } from '../../src/field_effect_helpers';
 import { preloadDisguiseEffects } from '../../src/field_effect_helpers';
 import { preloadShadowEffect } from '../../src/field_effect_helpers';
 import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../../src/field_effect_helpers';
+import { FieldCallback_FlyIntoMap } from '../../src/field_effect_helpers';
 import { PlaySE } from '../runtime/decomp-globals';
 import {
   SE_EXIT,
@@ -1654,7 +1655,19 @@ export class TestOverworldScene extends Phaser.Scene {
         }
         TryFadeOutOldMapMusic();
       }
-      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+      if (kind === 'fly') {
+        // 1:1 `Task_UseFly` (field_effect.c:1370-1377) : l'écran est DÉJÀ noir —
+        // WarpFadeOutScreen a été joué PAR le FLDEFF_USE_FLY (FlyOutFieldEffect_
+        // WaitFlyOff) et FlyOutFieldEffect_End gate !gPaletteFade.active. Le décomp
+        // warpe CUT sous le noir (WarpIntoMap + CB2_LoadMap immédiats) — re-lancer
+        // BeginNormalPaletteFade repartirait des couleurs PLEINES → flash + double
+        // fade-out (bug film user 2026-07-17, frames 4.06→4.69s). On garantit juste
+        // le noir (idempotent).
+        FillPalBufferBlack();
+        this.rt.gPlttBufferFaded.flushTo();
+      } else {
+        this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+      }
       // 1:1 décomp `DoWarp` (field_screen_effect.c:484) : PlaySE(SE_EXIT) pour
       // step warps. Pour 'door' : SE déjà joué dans Task_DoDoorWarp.
       // Pour 'aqua_teleport' / 'mossdeep_gym' : SE_WARP_IN (= 1:1 décomp
@@ -1800,7 +1813,11 @@ export class TestOverworldScene extends Phaser.Scene {
       // Si on call FieldSetDoorOpened APRÈS fade in (= dans Phase 5), le user
       // voit door fermée pendant fade in puis pop ouverte, c'est pas 1:1.
       const postWarpBehavior = getMetatileBehaviorAtPlayerPos();
-      const exitKind = getExitTaskKindFor(postWarpBehavior);
+      // kind 'fly' (Task_UseFly, field_effect.c:1374) : l'arrivée n'est PAS un exit
+      // metatile — c'est gFieldCallback = FieldCallback_FlyIntoMap (l'oiseau dépose
+      // le joueur), joué en Phase 5 ci-dessous à la place de l'exit-task.
+      const exitKind: ReturnType<typeof getExitTaskKindFor> | 'fly' =
+        kind === 'fly' ? 'fly' : getExitTaskKindFor(postWarpBehavior);
       console.log(`[executeWarp] exit task kind=${exitKind}`);
       // 1:1 décomp `Task_ExitDoor` case 0 / `Task_ExitNonAnimDoor` case 0 :
       //   SetPlayerVisibility(FALSE);
@@ -1810,6 +1827,18 @@ export class TestOverworldScene extends Phaser.Scene {
       // bougent pas pendant la transition.
       if (exitKind === 'door' || exitKind === 'non_anim') {
         SetPlayerVisibility(this.rt, false);
+        FreezeObjectEvents();
+      }
+      // 1:1 `FieldCallback_FlyIntoMap` (field_effect.c:1382-1387) : le joueur est
+      // INVISIBLE avant le fade-in (l'oiseau le fera réapparaître) + NPCs gelés.
+      // Posé ici (avant Phase 4) pour que le fade-in ne montre jamais le joueur —
+      // même geste que door/non_anim ci-dessus. + hide du SPRITE direct : le freeze
+      // gèle le resync slot→sprite (UpdateObjectEvents skip frozen) → poser le slot
+      // seul laisse le sprite visible pendant le fade-in (bug film user, frame 5.31s).
+      if (exitKind === 'fly') {
+        SetPlayerVisibility(this.rt, false);
+        const _ps = this.rt.gSprites[gPlayerAvatar.spriteId];
+        if (_ps) _ps.invisible = true;
         FreezeObjectEvents();
       }
       if (exitKind === 'door') {
@@ -1915,6 +1944,14 @@ export class TestOverworldScene extends Phaser.Scene {
         // case 2 : IsPlayerStandingStill → case 3 UnfreezeObjectEvents.
         UnfreezeObjectEvents();
       }
+      // 1:1 arrivée VOL (kind 'fly') : gFieldCallback = FieldCallback_FlyIntoMap —
+      // posée par Task_UseFly dans le décomp, jouée ICI par la scène (= le
+      // RunFieldCallback post-CB2_LoadMap, à l'abri du clobber warp-exit).
+      // Task_FlyIntoMap (gTasks, gate fade+asset) lance FLDEFF_FLY_IN : l'oiseau
+      // descend, dépose le joueur (le rend visible) ; unlock/unfreeze à la FIN.
+      else if (exitKind === 'fly') {
+        FieldCallback_FlyIntoMap();
+      }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
       // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404-421) :
       //   case 0 : FreezeObjectEvents + LockPlayerFieldControls
@@ -1933,14 +1970,15 @@ export class TestOverworldScene extends Phaser.Scene {
       console.error('[executeWarp] failed:', e);
       this.statusText?.setText(`WARP ERROR : ${e}`);
     } finally {
-      // Toujours unlock + reset state.
-      UnlockPlayerFieldControls();
+      // Toujours unlock + reset state — SAUF kind 'fly' : Task_FlyIntoMap (gTasks,
+      // async) possède le lock ET la visibilité (1:1 : le joueur reste invisible
+      // jusqu'à la dépose par l'oiseau ; unlock/unfreeze à la fin du FLDEFF_FLY_IN).
+      if (kind !== 'fly') {
+        UnlockPlayerFieldControls();
+        SetPlayerVisibility(this.rt, true);
+      }
       this.warpInProgress = false;
       gPlayerAvatar.forceMovement = DIR_NONE;  // cleanup safety.
-      // Safety : si une exception a interrompu Phase 5 entre SetPlayerVisibility(false)
-      // et SetPlayerVisibility(true), on reset visible TRUE pour pas laisser sprite
-      // invisible bloqué.
-      SetPlayerVisibility(this.rt, true);
       // Safety : si exception entre Phase 3 et Phase 4, bufferTransferDisabled
       // pourrait rester true → palette gel permanent. Reset systématique.
       this.rt.gPaletteFade.bufferTransferDisabled = false;

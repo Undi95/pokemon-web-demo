@@ -243,6 +243,18 @@ export function Overworld_ResetStateAfterTeleport(): void {
   FlagClear('FLAG_SYS_USE_FLASH');
 }
 
+/** 1:1 STRICT décomp `Overworld_ResetStateAfterFly(void)` (overworld.c:370-378) :
+ *    ResetInitialPlayerAvatarState();   // dette mineure (re-spawn avatar), cf. cousins
+ *    FlagClear(FLAG_SYS_CYCLING_ROAD/CRUISE_MODE/SAFARI_MODE/USE_STRENGTH/USE_FLASH);
+ *  Appelée par Task_UseFly (field_effect_helpers) avant le warp d'envol. */
+export function Overworld_ResetStateAfterFly(): void {
+  FlagClear('FLAG_SYS_CYCLING_ROAD');
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+  FlagClear('FLAG_SYS_SAFARI_MODE');
+  FlagClear('FLAG_SYS_USE_STRENGTH');
+  FlagClear('FLAG_SYS_USE_FLASH');
+}
+
 /** 1:1 STRICT décomp `Overworld_ResetStateAfterDigEscRope(void)` (overworld.c) :
  *    ResetInitialPlayerAvatarState();   // dette mineure (re-spawn avatar)
  *    FlagClear(FLAG_SYS_CYCLING_ROAD/CRUISE_MODE/SAFARI_MODE/USE_STRENGTH/USE_FLASH);
@@ -397,6 +409,19 @@ export function SetWarpDestinationFromMapName(mapName: string, warpId: number, x
     return;
   }
   SetWarpDestination(packed >> 8, packed & 0xFF, warpId, x, y);
+}
+
+/** ADAPTATION port (modèle par-valeur du pending-warp, cf. setPendingWarp ci-dessous) :
+ *  lecture de `sWarpDestination` pour les foyers field_effect — Task_UseFly y traduit le
+ *  `WarpIntoMap(); SetMainCallback2(CB2_LoadMap)` du décomp en setPendingWarp(kind 'fly').
+ *  Résout aussi le NOM de map (destMap) depuis (group, num) via le cache fieldmap. */
+export function getWarpDestination(): { destMap: string | null; x: number; y: number; warpId: number } {
+  return {
+    destMap: _mapNameByGroupAndNum(sWarpDestination.mapGroup, sWarpDestination.mapNum) ?? null,
+    x: sWarpDestination.x,
+    y: sWarpDestination.y,
+    warpId: sWarpDestination.warpId,
+  };
 }
 
 /** 1:1 décomp `struct MapHeader const *const GetDestinationWarpMapHeader(void)`

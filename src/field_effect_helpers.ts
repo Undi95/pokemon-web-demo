@@ -56,7 +56,8 @@ import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
-import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK } from './field_weather';
+import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK, IsWeatherNotFadingIn } from './field_weather';
+import { FadeInFromBlack } from './field_screen_effect';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
@@ -94,7 +95,7 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { InitTextBoxGfxAndPrinters } from './menu';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from './sprite';
-import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from './field_camera';
+import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera, DrawWholeMapView, flushOverworldTilemaps } from './field_camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET, gMapHeader } from './fieldmap';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
   MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,
@@ -107,7 +108,7 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
-import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo } from './overworld';
+import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo, Overworld_ResetStateAfterFly, getWarpDestination, setPendingWarp, SetWarpDestinationFromMapName } from './overworld';
 import { MUS_SURF, SE_BALL, MUS_HEAL, SE_M_FLY } from '../include/constants/songs';
 import { Cos, Sin } from './trig';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
@@ -4781,57 +4782,69 @@ export function FldEff_NPCFlyOut(_rt: DecompRuntime): number {
   return spriteId;
 }
 
-/** Garde : le fly-in d'arrivée ne doit tourner qu'UNE fois (2 hooks : gFieldCallback + poll map). */
-let _flyInArmed = false;
-function _fireFlyInOnce(): void {
-  if (!_flyInArmed) return;
-  _flyInArmed = false;
-  // Dev : auto-film du fly-in PILE à l'arrivée (échantillonnage fin), si armé.
-  const dev = (globalThis as Record<string, unknown>).dev as { gfx?: { film?: (o: unknown) => void; filmClear?: () => void } } | undefined;
-  if ((globalThis as Record<string, unknown>).__flyFilmArrival && dev?.gfx?.film) { dev.gfx.filmClear?.(); dev.gfx.film({ every: 4, seconds: 3 }); }
-  FieldCallback_FlyIntoMap();
-}
-
-/** Exposé pour Task_UseFly (orchestration warp dans fly-field-move.ts) : lance le
- *  fly-out (bird carries player) puis, quand FLDEFF_USE_FLY quitte la liste active,
- *  déclenche le warp posé (globalThis.__flyDoWarp). ≈ décomp `Task_UseFly`
- *  (field_effect.c:1354) sans la partie CB2_LoadMap (adaptée au warp-system). */
-export function StartFlyOutThenWarp(monSlot: number): void {
+/** 1:1 `FieldCallback_UseFly` (field_effect.c:1345-1352) — posé comme `gFieldCallback`
+ *  par ReturnToFieldFromFlyMapSelect (region_map) ; RunFieldCallback l'exécute au
+ *  retour field. FadeInFromBlack + CreateTask(Task_UseFly) + lock/freeze.
+ *  ADAPTATION ROM→fetch : recharge l'asset oiseau (Task_UseFly gate dessus,
+ *  symétrique de Task_FlyIntoMap). */
+export function FieldCallback_UseFly(): void {
   const rt = getRuntime();
   if (!rt) return;
+  // Redraw field SYNCHRONE avant le fade-in : le « fini » du restore async peut
+  // précéder de 2-4 frames le flush VBlank réel des tilemaps → le fade-in
+  // éclairait la VRAM fly-map stale (rayures, film user 1.01-1.26s). 1:1
+  // d'intention : le décomp a TOUTE la VRAM field posée sous le noir avant
+  // FadeInFromBlack (InitViewGraphics ← CB2_ReturnToField, puis RunFieldCallback).
+  DrawWholeMapView();
+  flushOverworldTilemaps(rt);
+  FadeInFromBlack();
+  // Pousse le NOIR posé par FadeInFromBlack au PLTT hardware, puis réouvre le
+  // transfert VBlank (gate fermé par ReturnToFieldFromFlyMapSelect) : la VRAM
+  // est garantie propre par le redraw sync ci-dessus.
+  rt.gPlttBufferFaded.flushTo();
+  gPaletteFade.bufferTransferDisabled = false;
+  void preloadFlyBirdEffect();
+  rt.CreateTask(Task_UseFly, 0);
   LockPlayerFieldControls();
-  // Décomp : FreezeObjectEvents() (gèle NPCs pendant l'envol). Adaptation : chez nous
-  // ce freeze gèle AUSSI le joueur (sprite callback → dummy) → son held movement du
-  // fly-out (states 0-1 : field-move pose / face-left) ne tique plus = Task_FlyOut bloqué.
-  // On gèle donc SAUF le joueur — le fly-out le pilote lui-même. Net-effect identique.
+  // 1:1 FreezeObjectEvents() — adaptation held-movement : SAUF le joueur, sinon son
+  // held movement du fly-out (pose field-move / face-left) ne tique plus et
+  // Task_FlyOut bloque. Net-effect identique (le fly-out pilote le joueur).
   FreezeObjectEventsExceptOne(gPlayerAvatar.objectEventId);
-  // 1:1 `Task_UseFly` : gFieldEffectArguments[0] = GetCursorSelectionMonId() (le mon qui connaît VOL,
-  // pas le slot 0). Lu via pont globalThis (party_menu, anti-cycle). Clamp PARTY_SIZE-1.
-  const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
-  const slot = (cur?.() ?? monSlot) & 0xFF;
-  gFieldEffectArguments[0] = slot > 5 ? 0 : slot;
-  const srcLayout = gMapHeader?.mapLayoutId;
-  FieldEffectStart(FLDEFF_USE_FLY);
-  const poll = () => {
-    if (!FieldEffectActiveListContains(FLDEFF_USE_FLY)) {
-      // Arme le fly-in à l'arrivée. Hook DOUBLE gardé : le 'step' warp exécute gFieldCallback de façon
-      // FLAKY (parfois clobbé par le warp-exit → Task_FlyIntoMap jamais créé). On garde gFieldCallback
-      // 1:1 + un poll sur le changement de map ; _flyInArmed garantit UNE seule exécution.
-      _flyInArmed = true;
-      (globalThis as Record<string, unknown>).gFieldCallback = _fireFlyInOnce;
-      const doWarp = (globalThis as Record<string, unknown>).__flyDoWarp as (() => void) | undefined;
-      doWarp?.();
-      const arrPoll = () => {
-        if (!_flyInArmed) return;
-        if (gMapHeader?.mapLayoutId !== srcLayout) { _fireFlyInOnce(); return; }
-        requestAnimationFrame(arrPoll);
-      };
-      requestAnimationFrame(arrPoll);
-      return;
+  (globalThis as Record<string, unknown>).gFieldCallback = null;
+}
+
+/** 1:1 `Task_UseFly` (field_effect.c:1354-1378) — gate météo (+ asset, adaptation),
+ *  lance FLDEFF_USE_FLY (l'oiseau emporte le joueur), puis traduit le bloc warp du
+ *  décomp (`Overworld_ResetStateAfterFly(); WarpIntoMap(); SetMainCallback2(CB2_LoadMap);
+ *  gFieldCallback = FieldCallback_FlyIntoMap; DestroyTask`) dans le modèle
+ *  pending-warp du port : setPendingWarp(kind 'fly') — executeWarp (≙ CB2_LoadMap,
+ *  overworld.ts:513) joue FieldCallback_FlyIntoMap à l'arrivée (= la pose
+ *  gFieldCallback du décomp, à l'abri du clobber warp-exit). Précédent warp
+ *  par-valeur : fldeff_teleport/fldeff_dig ; dest = sWarpDestination posée par
+ *  la fly map (SetWarpDestinationFromMapName). */
+function Task_UseFly(task: DecompTask): void {
+  if (!task.data[0]) {
+    if (!IsWeatherNotFadingIn()) return;
+    if (!_flyBirdReady) return;                                   // asset oiseau (ADAPTATION ROM→fetch)
+    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF) return;   // palette rechargée (cf. Task_FlyIntoMap)
+    // 1:1 : gFieldEffectArguments[0] = GetCursorSelectionMonId() (le mon qui connaît
+    // VOL, pas le slot 0). Pont globalThis (party_menu, anti-cycle). Clamp PARTY_SIZE-1.
+    const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
+    gFieldEffectArguments[0] = (cur?.() ?? 0) & 0xFF;
+    if (gFieldEffectArguments[0] > 5 /* PARTY_SIZE - 1 */) gFieldEffectArguments[0] = 0;
+    FieldEffectStart(FLDEFF_USE_FLY);
+    task.data[0]++;
+  }
+  if (!FieldEffectActiveListContains(FLDEFF_USE_FLY)) {
+    Overworld_ResetStateAfterFly();
+    const d = getWarpDestination();
+    if (!d.destMap) {
+      console.error('[fly] Task_UseFly : destination irrésolue (sWarpDestination)', d);
+    } else {
+      setPendingWarp({ destMap: d.destMap, x: d.x, y: d.y, elevation: 0, warpId: d.warpId }, 'fly');
     }
-    requestAnimationFrame(poll);
-  };
-  requestAnimationFrame(poll);
+    DestroyTask(task.taskId);
+  }
 }
 
 // Pont dev (sonde état held-movement du joueur — diag anim envol).
@@ -4847,45 +4860,14 @@ export function StartFlyOutThenWarp(monSlot: number): void {
   } : null;
 };
 
-// Pont dev (test en jeu de l'anim d'envol sans passer par la carte région ni warper).
-(globalThis as Record<string, unknown>).__flyTest = (monSlot = 0): void => {
-  void preloadFlyBirdEffect().then(() => {
-    // Warp RÉEL vers Oldale (comme le vrai flux) pour tester TOUTE la séquence : fly-out → warp → fly-in.
-    (globalThis as Record<string, unknown>).__flyDoWarp = () => {
-      void Promise.all([import('./overworld'), import('./heal_location')]).then(([ws, hl]) => {
-        const heal = (hl as { GetHealLocationByName: (n: string) => { map: string; x: number; y: number } | null }).GetHealLocationByName('HEAL_LOCATION_OLDALE_TOWN');
-        if (heal) (ws as { setPendingWarp: (w: unknown, k: string) => void }).setPendingWarp({ destMap: heal.map, x: heal.x, y: heal.y, elevation: 0, warpId: -1 }, 'step');
-      });
-    };
-    StartFlyOutThenWarp(monSlot);
-    // Recorder rAF (contexte JEU = pas throttlé) : log l'état du fly-in + l'oiseau frame par frame.
-    (globalThis as Record<string, unknown>).__flyInLog = [];
-    let recN = 0;
-    const rec = () => {
-      const rt2 = getRuntime();
-      recN++;
-      if (rt2) {
-        const flyOut = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyOut');
-        if (flyOut && flyOut.data[0] >= 6 && !(globalThis as Record<string, unknown>).__flyOutZ) {
-          const pa2 = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId: number };
-          const psp = rt2.gSprites[pa2.spriteId];
-          let bz: unknown = null;
-          for (let i = 0; i < rt2.gSprites.length; i++) { const s = rt2.gSprites[i]; if (s && s.inUse && s.callback && /FlyBird/.test(s.callback.name || '')) bz = { sub: s.subpriority, oamP: rt2.gba.oam[s.oamIndex]?.priority, idx: s.oamIndex }; }
-          if (psp) (globalThis as Record<string, unknown>).__flyOutZ = { player: { sub: psp.subpriority, oamP: rt2.gba.oam[psp.oamIndex]?.priority, idx: psp.oamIndex }, bird: bz };
-        }
-        const intoMap = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIntoMap');
-        const flyIn = (rt2.gTasks || []).find((t) => t && t.isActive && t.func && t.func.name === 'Task_FlyIn');
-        if (intoMap || flyIn) {
-          let bird: unknown = null;
-          for (let i = 0; i < rt2.gSprites.length; i++) { const s = rt2.gSprites[i]; if (s && s.inUse && s.callback && /FlyBird/.test(s.callback.name || '')) bird = { cb: s.callback.name, aff: s.affineMode, x: Math.round(s.x), inv: s.invisible }; }
-          const arr = (globalThis as Record<string, unknown>).__flyInLog as Record<string, unknown>[];
-          const e = { im: intoMap ? intoMap.data[0] : -1, fi: flyIn ? flyIn.data[0] : -1, rdy: _flyBirdReady, fade: gPaletteFade.active, bird };
-          const last = arr[arr.length - 1];
-          if (!last || last.im !== e.im || last.fi !== e.fi || last.rdy !== e.rdy || last.fade !== e.fade || JSON.stringify(last.bird) !== JSON.stringify(e.bird)) arr.push(e);
-        }
-      }
-      if (recN < 500) requestAnimationFrame(rec);
-    };
-    requestAnimationFrame(rec);
-  });
+// Pont dev (test en jeu de TOUTE la séquence VOL — fly-out → warp → fly-in — sans
+// passer par la carte région) : pose sWarpDestination (Oldale) puis joue le VRAI
+// FieldCallback_UseFly (même chemin que la fly map).
+(globalThis as Record<string, unknown>).__flyTest = (): void => {
+  void import('./heal_location').then((hl) => {
+    const heal = (hl as { GetHealLocationByName: (n: string) => { map: string; x: number; y: number } | null }).GetHealLocationByName('HEAL_LOCATION_OLDALE_TOWN');
+    if (!heal) { console.error('[__flyTest] heal location introuvable'); return; }
+    SetWarpDestinationFromMapName(heal.map, -1, heal.x, heal.y);
+    FieldCallback_UseFly();
+  }).catch((e) => console.error('[__flyTest]', e));
 };

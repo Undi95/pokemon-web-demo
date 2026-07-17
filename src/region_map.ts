@@ -1896,35 +1896,48 @@ function SetWarpDestinationToMapWarp(mapGroup: number, mapNum: number, warpId: n
 
 /** 1:1 `ReturnToFieldFromFlyMapSelect` (field_effect.c:1339-1343) :
  *  SetMainCallback2(CB2_ReturnToField) + gFieldCallback = FieldCallback_UseFly.
- *  FieldCallback_UseFly (:1345-1352) = FadeInFromBlack + CreateTask(Task_UseFly)
- *  + LockPlayerFieldControls + FreezeObjectEvents → Task_UseFly lance
- *  FLDEFF_USE_FLY puis warpe. Port : retour-field = pont __CB2_ReturnToFieldLocal
- *  (fade-in inclus) ; le field callback (gFieldCallback2, surface consommée par
- *  le retour-field, overworld.ts:1245) déclenche l'envol 1:1 EXISTANT
- *  (preloadFlyBirdEffect + StartFlyOutThenWarp, field_effect_helpers) avec le
- *  warp différé __flyDoWarp — MÊMES briques que la voie Vol historique
- *  (fly-field-move._flyWarp), imports dynamiques (jamais per-frame). */
+ *  Port : retour-field = pont __CB2_ReturnToFieldLocal ; gFieldCallback (one-shot,
+ *  consommé par RunFieldCallback_Manual, overworld.ts:1251) = wrapper qui rejoue la
+ *  pose de sWarpDestination dans le VRAI global overworld (1:1 — l'écart : elle
+ *  transite par valeur jusqu'ici, anti-TDZ region_map→overworld) puis appelle le
+ *  VRAI FieldCallback_UseFly (field_effect_helpers). Imports dynamiques (jamais
+ *  per-frame) — Task_UseFly gate météo+asset absorbe la micro-latence. */
 function ReturnToFieldFromFlyMapSelect(): void {
   const dest = _flyWarpDest;
   _flyWarpDest = null;
   const g = globalThis as Record<string, unknown>;
-  g.gFieldCallback2 = () => {
-    void Promise.all([import('./script'), import('./overworld'), import('./field_effect_helpers')])
-      .then(([script, ow, fx]) => {
-        script.LockPlayerFieldControls();          // 1:1 :1349
-        g.__flyDoWarp = () => {
-          if (!dest) { console.error('[fly map] envol sans destination'); return; }
-          ow.setPendingWarp({ destMap: dest.map, x: dest.x, y: dest.y, elevation: 0, warpId: -1 }, 'step');
-          console.log(`[fly map] warp → ${dest.map} (${dest.x},${dest.y})`);
-        };
-        return fx.preloadFlyBirdEffect().then(() => fx.StartFlyOutThenWarp(0));
+  g.gFieldCallback = () => {
+    // Libère le hold-black (cf. ci-dessous) : FieldCallback_UseFly va reprendre la
+    // main sur les palettes (flushTo noir + réouverture du gate + fade-in).
+    g.__flyReturnHoldBlack = false;
+    void Promise.all([import('./overworld'), import('./field_effect_helpers')])
+      .then(([ow, fx]) => {
+        if (!dest) { console.error('[fly map] envol sans destination'); return; }
+        ow.SetWarpDestinationFromMapName(dest.map, WARP_ID_NONE, dest.x, dest.y);  // 1:1 sWarpDestination
+        fx.FieldCallback_UseFly();
       })
-      .catch((e) => console.error('[fly map] envol', e));
-    return true;
+      .catch((e) => console.error('[fly map] FieldCallback_UseFly', e));
   };
+  const rt = getRuntime();
+  // HOLD-BLACK pendant tout le retour-field (pattern executeWarp Phase 3→4,
+  // TestOverworldScene : gPaletteFade.bufferTransferDisabled) : sans ça, les
+  // LoadPalette+flushTo du restore poussent des couleurs VIVES sur un écran en
+  // pleine reconstruction (tilemap fly-map affine relu en mode texte = RAYURES,
+  // film user frame 1.26s). Le décomp reste NOIR tout CB2_ReturnToField — le
+  // fade-in appartient à FieldCallback_UseFly. ⚠️ ResetPaletteFade (case 0 de
+  // ReturnToFieldLocal_Manual) RÉINITIALISE le flag → on le re-force à CHAQUE
+  // tick via le wrapper CB2, tant que le gFieldCallback n'est pas consommé.
+  g.__flyReturnHoldBlack = true;
+  if (rt) rt.gPaletteFade.bufferTransferDisabled = true;
   const cb2 = g.__CB2_ReturnToFieldLocal as (() => void) | undefined;
   if (!cb2) { console.error('[fly map] pont __CB2_ReturnToFieldLocal absent (overworld pas chargé ?)'); return; }
-  getRuntime()?.SetMainCallback2(cb2 as never);
+  rt?.SetMainCallback2(((): void => {
+    const r = getRuntime();
+    if (r && (globalThis as Record<string, unknown>).__flyReturnHoldBlack) {
+      r.gPaletteFade.bufferTransferDisabled = true;
+    }
+    cb2();
+  }) as never);
 }
 
 /** 1:1 `CB2_ReturnToPartyMenuFromFlyMap` (party_menu.c) : InitPartyMenu(FIELD,
