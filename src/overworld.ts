@@ -38,7 +38,7 @@ import {
 import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange, ResetSpriteData } from './sprite';
 import { InitFieldMessageBox } from './field_message_box';
-import { FreeAllOverworldWindowBuffers } from './menu';
+import { FreeAllOverworldWindowBuffers, InitStandardTextBoxWindows } from './menu';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
 import {
   MUS_DUMMY, MUS_NONE, MUS_ABNORMAL_WEATHER, MUS_ENCOUNTER_MAGMA, MUS_MT_CHIMNEY,
@@ -1079,11 +1079,17 @@ export function ResetScreenForMapLoad(): void {
  *    BG1 charBase 0 mapBase 29 prio 1 ; BG2 mapBase 28 prio 2 ; BG3 mapBase 30 prio 3.
  *
  *  ⚠️ DÉVIATION MODÈLE (documentée) : `SetBgAttribute(BG_ATTR_MOSAIC)` (effet mosaïque
- *  du door-warp, non modélisé per-bg), l'alloc des buffers tilemap (= buffers persistants
- *  du compositor `gOverworldTilemapBuffer`, gérés par clear/flushOverworldTilemaps) et
- *  `InitStandardTextBoxWindows` (fenêtres texte init par le window-system du port) ne
- *  sont pas re-déclenchés ici — ils n'ajoutent rien et risqueraient de wiper le tilemap
- *  déjà dessiné. Le port se limite donc à la CONFIG des 4 BG (= rôle net de la fonction). */
+ *  du door-warp, non modélisé per-bg) et l'alloc des buffers tilemap (= buffers persistants
+ *  du compositor `gOverworldTilemapBuffer`, gérés par clear/flushOverworldTilemaps) ne
+ *  sont pas re-déclenchés ici.
+ *
+ *  `InitStandardTextBoxWindows()` EST appelé (1:1 :1413) : il recrée LA fenêtre 0 field
+ *  (msgbox 27×4 @0x194) à chaque boot/warp/retour-de-menu. Sans lui, la fenêtre 0 du
+ *  décomp n'existait JAMAIS : field_message_box créait un DOUBLON privé au même baseBlock
+ *  0x194, et tous les écrans 1:1 qui écrivent « windowId 0 » (Task_PCMainMenu, player_pc…)
+ *  tombaient sur une fenêtre arbitraire → tiles VRAM 404-511 écrasées en croisé = fenêtres
+ *  fantômes/corrompues du menu PC (bug user 2026-07-17). InitWindows purge gWindows
+ *  (FreeAllWindowBuffers) = la sémantique décomp exacte à ce point du flux. */
 export function InitOverworldBgs(): void {
   const rt = getRuntime();
   // 1:1 sOverworldBgTemplates (overworld.c:266-304) : [bg, charBaseIndex, mapBaseIndex, priority].
@@ -1103,6 +1109,8 @@ export function InitOverworldBgs(): void {
     c.hofs = 0;
     c.vofs = 0;
   }
+  // 1:1 décomp overworld.c:1413 — recrée la fenêtre 0 field (msgbox @0x194).
+  InitStandardTextBoxWindows();
 }
 
 /** 1:1 STRICT décomp `InitOverworldGraphicsRegisters(void)` (overworld.c:2096) :

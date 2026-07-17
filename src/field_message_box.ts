@@ -17,7 +17,6 @@
  */
 
 import {
-  AddWindow,
   ClearDialogWindowAndFrame,
   DrawDialogueFrame,
   DLG_WINDOW_BASE_TILE_NUM,
@@ -47,19 +46,6 @@ const STD_WINDOW_BASE_TILE_NUM = 0x214;
 const STD_WINDOW_PALETTE_NUM = 14;
 export const FIELD_MESSAGE_BOX_AUTO_SCROLL = 2;
 
-/** 1:1 décomp `sStandardTextBox_WindowTemplates[0]` (menu.c:84-94) :
- *  BG0, position (2, 15) tiles, 27×4 tiles, palette 15, baseBlock 0x194.
- *  Avec width=27, frame extends de tile 0 à tile 29 = pleine largeur (= centré). */
-const STANDARD_TEXT_BOX_TEMPLATE = {
-  bg: 0,
-  tilemapLeft: 2,
-  tilemapTop: 15,
-  width: 27,
-  height: 4,
-  paletteNum: 15,
-  baseBlock: 0x194,  // = 404
-} as const;
-
 /** Flat palette index pour LoadMessageBoxGfx (= palette 15 × 16 colors = 240). */
 const FRAME_PALETTE_FLAT_IDX = DLG_WINDOW_PALETTE_NUM * 16;
 
@@ -69,8 +55,12 @@ let sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
 /** State step de Task_DrawFieldMessage (0 = load gfx, 1 = draw frame + start
  *  printer, 2 = wait printer done). */
 let sStateStep = 0;
-/** Window ID alloué la 1ère fois qu'on Show. Réutilisé après. */
-let sWindowId = -1;
+// 1:1 décomp field_message_box.c : la msgbox field EST la fenêtre 0 — celle
+// d'`InitStandardTextBoxWindows` (menu.c:143, template 27×4 @0x194), recréée à
+// chaque InitOverworldBgs (overworld.c:1413). AUCUNE fenêtre privée ici :
+// l'ex-lazy `AddWindow(STANDARD_TEXT_BOX_TEMPLATE)` créait un DOUBLON au même
+// baseBlock 0x194 → deux pixelBuffers flushaient les mêmes tiles VRAM 404-511
+// (fenêtres fantômes/corrompues du menu PC, bug user 2026-07-17).
 
 // ─── Public API 1:1 décomp ───────────────────────────────────────────────────
 
@@ -86,13 +76,7 @@ export async function preloadStandardMenuPalette(): Promise<void> {
  *    gTextFlags.canABSpeedUpPrint = FALSE;
  *    gTextFlags.useAlternateDownArrow = FALSE;
  *    gTextFlags.autoScroll = FALSE;
- *    gTextFlags.forceMidTextSpeed = FALSE;
- *
- *  ⚠️ Reset `sWindowId` AUSSI (= notre extension post-FreeAllWindowBuffers
- *  flow). Sans ce reset : si un sub-menu (bag/options/party) appelle
- *  `InitWindows(...)` qui fait `FreeAllWindowBuffers`, le sWindowId capturé
- *  AVANT pointe vers un slot libéré → AddTextPrinterParameterized3 warn
- *  "window N not found" + dialog invisible. */
+ *    gTextFlags.forceMidTextSpeed = FALSE; */
 export function InitFieldMessageBox(): void {
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
   // 1:1 STRICT décomp : reset gTextFlags.
@@ -101,7 +85,6 @@ export function InitFieldMessageBox(): void {
   gTextFlags.autoScroll = false;
   gTextFlags.forceMidTextSpeed = false;
   sStateStep = 0;
-  sWindowId = -1;
 }
 
 /** 1:1 décomp `ShowFieldMessage(const u8 *str)`. Returns FALSE si déjà en cours.
@@ -133,9 +116,8 @@ export function IsFieldMessageBoxHidden(): boolean {
  *  les 2 colonnes de border de chaque côté) et NON `ClearStdWindowAndFrame`
  *  (= clear seulement 1 col around) car le dialog frame est plus large. */
 export function HideFieldMessageBox(): void {
-  if (sWindowId >= 0) {
-    ClearDialogWindowAndFrame(sWindowId, true);
-  }
+  // 1:1 décomp : ClearDialogWindowAndFrame(0, TRUE) — la fenêtre 0 field.
+  ClearDialogWindowAndFrame(0, true);
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
   sStateStep = 0;
 }
@@ -203,17 +185,13 @@ export function TickFieldMessageBox(): void {
       // invisible (boîte OUI/NON sans bordure). STD_WINDOW_PALETTE_NUM=14, BASE=0x214
       // (menu.c:25-27).
       LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
-      // Lazy-create window au 1er Show (= AddWindow alloue tilemap + pixel buffer).
-      if (sWindowId < 0) {
-        sWindowId = AddWindow(STANDARD_TEXT_BOX_TEMPLATE);
-      }
       sStateStep++;
       break;
     }
     case 1: {
-      // 1:1 décomp `DrawDialogueFrame(0, TRUE)` (= menu.c:216) — réutilise
-      // l'helper foundationnel partagé avec Birch speech + autres scenes.
-      DrawDialogueFrame(sWindowId, true);
+      // 1:1 décomp `DrawDialogueFrame(0, TRUE)` (field_message_box.c:36) — LA
+      // fenêtre 0 field (InitStandardTextBoxWindows), pas une fenêtre privée.
+      DrawDialogueFrame(0, true);
       // 1:1 décomp `AddTextPrinterForMessage(TRUE)` (field_message_box.c) qui lit gStringVar4 :
       //   gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress (= TRUE) ;
       //   AddTextPrinterParameterized2 avec FONT_NORMAL, color=[1,2,3] (= bg/fg/shadow),
@@ -223,18 +201,18 @@ export function TickFieldMessageBox(): void {
       // texte (field + combat, car gTextFlags est global). 1:1 strict = le set ici.
       gTextFlags.canABSpeedUpPrint = true;
       // Notre AddTextPrinterParameterized3 prend speed négatif pour player option.
-      AddTextPrinterParameterized3(sWindowId, 1 /* FONT_NORMAL = 1 */, 0, 1,
+      AddTextPrinterParameterized3(0, 1 /* FONT_NORMAL = 1 */, 0, 1,
         [1, 2, 3], -1 /* = player option speed */, gStringVar4);
       sStateStep++;
       break;
     }
     case 2: {
       // 1:1 décomp `if (RunTextPrintersAndIsPrinter0Active() != TRUE)`
-      // Si le printer du window est plus actif (= text fully rendered),
+      // Si le printer du window 0 n'est plus actif (= text fully rendered),
       // la "task" est done : sFieldMessageBoxMode = HIDDEN.
       // Note : la window/text RESTE visible. ScrCmd_release appellera
       // HideFieldMessageBox plus tard pour clean up.
-      if (!IsTextPrinterActive(sWindowId)) {
+      if (!IsTextPrinterActive(0)) {
         sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
       }
       break;

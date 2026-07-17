@@ -151,7 +151,11 @@ function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8
   // fenêtre et CORROMPT le tilemap field voisin (bug user 2026-07-17, rayures sous le
   // menu ; même famille que diag-pc-center-magenta CAS 1 `59ae3a26`, jamais généralisé).
   const adjLeft = ScriptMenu_AdjustLeftCoordFromWidth(left, width);
-  const tmpl: WindowTemplate = { bg: 0, tilemapLeft: adjLeft + 1, tilemapTop: top + 1, width, height: count * 2, paletteNum: 15, baseBlock: 0x125 };
+  // 1:1 décomp `CreateWindowFromRect` (script_menu.c:628-630) : baseBlock = 100.
+  // (0x125 auparavant = le baseBlock de la YESNO (menu.c:98) → un multichoice ouvert
+  // en même temps qu'une YesNo, ou assez large pour déborder sur la msgbox 0x194,
+  // écrasait les tiles VRAM de l'autre fenêtre.)
+  const tmpl: WindowTemplate = { bg: 0, tilemapLeft: adjLeft + 1, tilemapTop: top + 1, width, height: count * 2, paletteNum: 15, baseBlock: 100 };
   _multichoiceWindowId = AddWindow(tmpl);
   // 1:1 décomp `script_menu.c:109` DrawMultichoiceMenuInternal : `SetStandardWindowBorderStyle(id,
   // FALSE)` dessine le cadre du menu (le gfx du thème `optionsWindowFrameType` est déjà chargé en

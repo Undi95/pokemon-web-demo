@@ -180,11 +180,9 @@ export class Gba {
 
   /** 1:1 GBA DISPCNT bit 7 (DISPCNT_FORCED_BLANK=0x80) : quand set, le PPU affiche
    *  un écran BLANC et ne lit ni VRAM/Palette/OAM (accès rapide pendant les inits).
-   *  ⚠️ TRIGGER À CÂBLER : `applyDispCnt` (decomp-runtime.ts) doit poser
-   *  `this.gba.forcedBlank = !!(value & DISPCNT_FORCED_BLANK)` — NON fait ici car
-   *  decomp-runtime.ts est édité en //. Tant que le trigger n'est pas posé, ce champ
-   *  reste false → tick() se comporte comme avant (aucune régression). Cf.
-   *  audit-reports/engine/fix-scanline-ppu.md (Fix 5). */
+   *  Trigger câblé : `applyDispCnt` (decomp-runtime.ts:983) pose
+   *  `this.gba.forcedBlank = !!(value & 0x80)` et GetGpuReg(DISPCNT) le relit (:815)
+   *  pour que les RMW le préservent. Cf. audit-reports/engine/fix-scanline-ppu.md (Fix 5). */
   forcedBlank = false;
 
   /** Render une frame complète + run VBLANK callbacks.
