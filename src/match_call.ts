@@ -54,7 +54,7 @@ import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import { MON_DATA_SANITY_IS_EGG } from '../include/pokemon';
 import { STR_CONV_MODE_LEFT_ALIGN } from '../include/string_util';
 import { FONT_NORMAL } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_HELD, JOY_NEW, PlaySE } from './battle_controllers';
 import { GetLastBeatenRematchTrainerId, HasTrainerBeenFought, UpdateRematchIfDefeated, gRematchTable } from './battle_setup';
 import { PIXEL_FILL } from './window';

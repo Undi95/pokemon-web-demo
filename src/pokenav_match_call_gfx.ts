@@ -18,7 +18,7 @@ import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { STR_CONV_MODE_LEFT_ALIGN } from '../include/string_util';
 import { TASK_NONE } from '../include/task';
 import { FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_HELD, PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './window';
 import { getString } from '../harness/runtime/decomp-strings';

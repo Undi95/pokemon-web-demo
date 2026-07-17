@@ -5939,7 +5939,7 @@ import { setBattleTypeFlags } from './engine/battle/state';
 import { InitBattleControllers as _InitBattleControllersImpl } from './battle_controllers';
 import { ShowBg } from './window';
 import { FillAroundBattleWindows } from './battle_gfx_sfx_util';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 

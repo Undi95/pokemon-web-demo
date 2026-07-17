@@ -487,14 +487,18 @@ export function SetBattlerSpriteAffineMode(affineMode: number): void {
     const sid = _battlerSpriteId(i);
     if (sid === undefined || sid === 0xFF) continue;
     const sp = _spr(sid);
-    const oam = sp ? (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; matrixNum?: number }> } }).gba?.oam?.[sp.oamIndex] : undefined;
-    if (!oam) continue;
-    oam.affineMode = affineMode;
+    if (!sp) continue;
+    // Cible = champs SPRITE (source unique, item 6) : le C écrit gSprites[..].oam.*
+    // = notre sprite.affineMode/matrixNum ; syncSpritesToOam propage vers l'OAM.
+    // (Avant : écriture oam.affineMode écrasée par le merge du sync + oam.matrixNum
+    // était un champ fantôme — le vrai s'appelle affineParamIndex → la fonction
+    // était un quasi no-op.)
+    sp.affineMode = affineMode as 0 | 1 | 2 | 3;
     if (affineMode === 0 /* ST_OAM_AFFINE_OFF */) {
-      _savedBattlerMatrixNum[i] = oam.matrixNum ?? 0;
-      oam.matrixNum = 0;
+      _savedBattlerMatrixNum[i] = sp.matrixNum;
+      sp.matrixNum = 0;
     } else {
-      oam.matrixNum = _savedBattlerMatrixNum[i];
+      sp.matrixNum = _savedBattlerMatrixNum[i];
     }
   }
 }
@@ -511,6 +515,7 @@ interface Spr {
   spriteId: number; oamIndex: number;
   x: number; y: number; x2: number; y2: number;
   data: number[]; tileBase: number; invisible: boolean; inUse: boolean;
+  affineMode: 0 | 1 | 2 | 3; matrixNum: number;
   callback: ((s: Spr) => void) | null;
 }
 function _spr(id: number): Spr | undefined {

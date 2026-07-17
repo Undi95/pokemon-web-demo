@@ -16,7 +16,7 @@ import { SE_POKENAV_OFF } from '../include/constants/songs';
 import { DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, REG_OFFSET_DISPCNT } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { PlaySE } from './battle_controllers';
 import { DUMMY_WIN_TEMPLATE, PIXEL_FILL, ChangeBgX, ChangeBgY } from './window';
 import { getString } from '../harness/runtime/decomp-strings';

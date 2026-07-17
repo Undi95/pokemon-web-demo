@@ -419,8 +419,8 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
  *  data[1] = centerToCornerVecY (1:1 bug décomp où data[1] est écrasé), puis
  *  bascule vers SpriteCB_Continue. */
 function SpriteCB_SwitchPocketRotatingBallInit(sprite: DecompSprite, rt: DecompRuntime): void {
-  // :514 sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL.
-  rt.gba.oam[sprite.oamIndex].affineMode = 1;
+  // :514 sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL — champ SPRITE = source
+  // unique (item 6), le sync propage vers l'OAM.
   sprite.affineMode = 1;
   // :515-518 : table affine selon data[0].
   sprite.affineAnimsTableName = sprite.data[0] === -1

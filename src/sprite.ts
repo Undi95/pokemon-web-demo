@@ -2013,12 +2013,12 @@ export function syncSpritesToOam(rt: DecompRuntime): void {
     // n'est pas déclaré sur DecompSprite — decomp-runtime.ts édité en // ; même
     // motif de cast que animHFlip ci-dessus). Défaut false = pas de mosaïque.
     oam.mosaic = (sprite as { mosaic?: boolean }).mosaic ?? false;
-    const merged = (sprite.affineMode | (oam.affineMode ?? 0)) as 0 | 1 | 2 | 3;
-    if (sprite.affineMode === 0 && sprite.matrixNum === 0) {
-      oam.affineMode = 0;
-    } else {
-      oam.affineMode = merged;
-    }
+    // Source de vérité UNIQUE (item 6, consolidation extinction affine) : le champ C
+    // `sprite->oam.affineMode` = notre sprite.affineMode ; l'OAM est une SORTIE pure
+    // du sync, 1:1 décomp BuildOamBuffer qui copie sprite->oam ENTIER. (L'ancien
+    // merge `sprite | oam` gardait l'OAM shadow résiduel gagnant → toute extinction
+    // 1:1 côté sprite était rallumée — bug payé : sous-menus CONDITION chevauchés.)
+    oam.affineMode = sprite.affineMode;
   }
 }
 

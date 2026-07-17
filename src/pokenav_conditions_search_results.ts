@@ -15,7 +15,7 @@ import { A_BUTTON, B_BUTTON, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_UP } from '.
 import { MON_DATA_BEAUTY, MON_DATA_COOL, MON_DATA_CUTE, MON_DATA_NICKNAME, MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_EGG, MON_DATA_SMART, MON_DATA_TOUGH } from '../include/pokemon';
 import { STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN } from '../include/string_util';
 import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr } from './dynamic_placeholder_text_util';
 import { GetMonData } from './engine/battle/party-storage';

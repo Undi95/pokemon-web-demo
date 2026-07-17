@@ -15,7 +15,7 @@ import { DISPLAY_HEIGHT } from '../include/gba/defines';
 import { DISPCNT_WIN0_ON, DMA_DEST_RELOAD, DMA_ENABLE, DMA_REPEAT, DMA_START_HBLANK, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NORMAL } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './window';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
@@ -1308,18 +1308,11 @@ function SpriteCB_OptionZoom(sprite: DecompSprite): void {
           sprite.centerToCornerVecX = _v.centerToCornerVecX;
           sprite.centerToCornerVecY = _v.centerToCornerVecY;
         }
+        // 1:1 décomp `sprite->oam.affineMode = OFF` — champs SPRITE = source unique
+        // (item 6) ; syncSpritesToOam propage vers l'OAM shadow. (L'ancien fix local
+        // « éteindre les deux champs » n'est plus nécessaire depuis la consolidation.)
         sprite.affineMode = ST_OAM_AFFINE_OFF;
         sprite.objMode = ST_OAM_OBJ_NORMAL;
-        // ADAPTATION MOTEUR (bug payé : sous-menu CONDITION chevauché) : le décomp écrit
-        // `sprite->oam.affineMode = OFF` (son OAM local). Chez nous, tickAllAffineAnims
-        // re-copie OAM→sprite quand l'OAM shadow est « allumé » (sprite-engine-impl.ts:602)
-        // → si on n'éteint QUE le champ flat, l'OAM encore à DOUBLE le rallume au tick
-        // suivant et le reset ne prend JAMAIS (résidu AFFINE_DOUBLE → bbox doublée →
-        // barres du sous-menu décalées/chevauchées). Éteindre LES DEUX = 1:1 exact.
-        {
-          const _oam = getRuntime()?.gba?.oam?.[sprite.oamIndex ?? -1];
-          if (_oam) { _oam.affineMode = ST_OAM_AFFINE_OFF; _oam.objMode = ST_OAM_OBJ_NORMAL; }
-        }
         sprite.callback = SpriteCallbackDummy;
       }
     }

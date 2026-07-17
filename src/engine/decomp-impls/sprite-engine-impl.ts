@@ -589,18 +589,14 @@ export function tickAllAffineAnims(rt: DecompRuntime): void {
     const sprite = rt.gSprites[i];
     if (sprite === undefined) continue;
     if (!sprite.affineAnimsTableName) continue;
-    const oam = rt.gba.oam[sprite.oamIndex];
-    const effectiveAffineMode = (oam?.affineMode ?? 0) | sprite.affineMode;
-    if (!(effectiveAffineMode & ST_OAM_AFFINE_ON_MASK)) continue;
-    // Sync sprite.affineMode from OAM si l'OAM a été set externe (= auto callback).
-    // ⚠️ Direction UNIQUE (allumer) : ne JAMAIS éteindre le sprite depuis un OAM
-    // encore OFF — le code 1:1 pose sprite.affineMode d'abord (ex. StartOptionZoom
-    // Pokénav) et l'OAM n'est poussé qu'au syncSpritesToOam de FIN de frame ; le
-    // sync bidirectionnel écrasait l'affine naissant (3→0) → zoom d'option jamais
-    // joué + bits matrixNum réinterprétés hflip/vflip en mode normal (texte flippé).
-    if (((oam?.affineMode ?? 0) & ST_OAM_AFFINE_ON_MASK) && (oam?.affineMode ?? 0) !== sprite.affineMode) {
-      sprite.affineMode = (oam?.affineMode ?? 0) as 0 | 1 | 2 | 3;
-    }
+    // Source de vérité UNIQUE (item 6) : sprite.affineMode = miroir du champ C
+    // `sprite->oam.affineMode` ; l'OAM hardware est une sortie pure du sync
+    // (syncSpritesToOam) et ne participe plus au gate. (L'ancien OR oam|sprite +
+    // recopie oam→sprite rallumait toute affine éteinte 1:1 côté sprite : l'OAM
+    // shadow résiduel de la frame N-1 gagnait toujours — bug payé : sous-menus
+    // CONDITION chevauchés. Les allumeurs OAM-only ont été convertis pour poser
+    // sprite.affineMode, cf. intro/main_menu/storage/SetBattlerSpriteAffineMode.)
+    if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) continue;
     if (sprite.affineAnimBeginning) {
       BeginAffineAnim(sprite, rt);
     } else if (!sprite.affineAnimEnded) {

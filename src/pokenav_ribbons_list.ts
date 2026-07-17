@@ -15,7 +15,7 @@ import { A_BUTTON, B_BUTTON, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_UP } from '.
 import { MON_DATA_NICKNAME, MON_DATA_RIBBONS, MON_DATA_RIBBON_COUNT, MON_DATA_SANITY_HAS_SPECIES, MON_DATA_SANITY_IS_BAD_EGG, MON_DATA_SANITY_IS_EGG } from '../include/pokemon';
 import { STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN } from '../include/string_util';
 import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { GetMonData } from './engine/battle/party-storage';
 import { IN_BOX_COUNT, TOTAL_BOXES_COUNT } from './engine/save/save-blocks';

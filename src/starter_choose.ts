@@ -48,7 +48,10 @@ import {
 import { AddTextPrinterParameterized, GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window';
-import { getRuntime, LoadPalette } from '../harness/runtime/decomp-globals';
+import { getRuntime, LoadPalette, ResetTasks, RunTasks } from '../harness/runtime/decomp-globals';
+// 1:1 décomp task.c via le foyer src/task.ts (chantier item 7-② : dissolution du
+// mini task-system local — précédent : egg_hatch.ts:420 `CreateTask((t) => Task_X(t.taskId), n)`).
+import { CreateTask, DestroyTask, gTasks } from './task';
 import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, TAG_NONE, type SpriteTemplate } from './sprite';
 import { CreateMonPicSprite_Affine, FreeAndDestroyMonPicSprite, ResetAllPicSprites, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
@@ -188,10 +191,10 @@ const sAnim_StarterCircle = [ANIMCMD_FRAME(0, 8), ANIMCMD_END];
 const sAnims_Hand: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Hand];
 const sAnims_Pokeball: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_Pokeball_Still, sAnim_Pokeball_Moving];
 const sAnims_StarterCircle: ReadonlyArray<ReadonlyArray<unknown>> = [sAnim_StarterCircle];
-/** 1:1 sSpriteTemplate_Hand (c:317) : callback (s,rt)→SpriteCB_SelectionHand(s, s.spriteId). */
+/** 1:1 sSpriteTemplate_Hand (c:317) : callback = SpriteCB_SelectionHand. */
 const sSpriteTemplate_Hand: SpriteTemplate = {
   tileTag: TAG_POKEBALL_SELECT, paletteTag: TAG_POKEBALL_SELECT, oam: sOam_Hand, anims: sAnims_Hand,
-  affineAnims: null, callback: (s) => SpriteCB_SelectionHand(s as never, (s as { spriteId: number }).spriteId),
+  affineAnims: null, callback: (s) => SpriteCB_SelectionHand(s as never),
 };
 /** 1:1 sSpriteTemplate_Pokeball (c:328). */
 const sSpriteTemplate_Pokeball: SpriteTemplate = {
@@ -225,30 +228,9 @@ let sStarterLabelWindowId = -1;
  *  Notre TS : AddWindow retourne un id dynamique, on le track ici. */
 let sStarterChooseWindowId = -1;
 
-// ─── Task system (= 1:1 décomp gTasks) ──────────────────────────────────
-
-interface DecompTask {
-  data: number[];  // [16] like decomp
-  func: ((taskId: number) => void) | null;
-}
-
-/** 1:1 décomp `gTasks[]` (= task system global). Le décomp utilise un array
- *  global ; nous utilisons une Map local module pour isoler ChooseStarter
- *  tasks (= la global rt.gTasks reste utilisable par autre code). */
-const _tasks = new Map<number, DecompTask>();
-let _nextTaskId = 0;
-
-function CreateTask(func: (taskId: number) => void, _priority: number): number {
-  const id = ++_nextTaskId;
-  _tasks.set(id, { data: new Array(16).fill(0), func });
-  return id;
-}
-
-function getTask(taskId: number): DecompTask {
-  const t = _tasks.get(taskId);
-  if (!t) throw new Error(`Task ${taskId} not found`);
-  return t;
-}
+// ─── Task system : DISSOUS (item 7-②) — les tasks vivent dans le VRAI registre
+// global gTasks (src/task.ts → rt.gTasks), 1:1 décomp. Le mini task-system local
+// (Map module + CreateTask/getTask maison) dupliquait le cœur moteur task.c.
 
 // ─── Task data alias (= 1:1 décomp C:366-368) ───────────────────────────
 const T_STARTER_SELECTION = 0;  // tStarterSelection = data[0]
@@ -258,9 +240,6 @@ const T_CIRCLE_SPRITE_ID = 2;   // tCircleSpriteId = data[2]
 // ─── Sprite data alias (= 1:1 décomp C:371-372) ─────────────────────────
 const S_TASK_ID = 0;  // sTaskId = data[0]
 const S_BALL_ID = 1;  // sBallId = data[1]
-
-// ─── Sprite refs (track for cleanup/access) ─────────────────────────────
-const _spriteRefs = new Map<number, { taskId?: number; ballId?: number }>();
 
 // ─── Asset state ────────────────────────────────────────────────────────
 interface Assets {
@@ -274,9 +253,6 @@ interface Assets {
   messageBoxPalette: Uint16Array;
 }
 let _assets: Assets | null = null;
-
-// ─── Hand bob state (sprite.data[1] in C) ───────────────────────────────
-const _handBobTimers = new Map<number, number>();
 
 // ─── Flow done flag + result + cleanup state ───────────────────────────
 let _done = false;
@@ -435,9 +411,11 @@ async function CB2_ChooseStarter(): Promise<void> {
   LoadUserWindowBorderGfx(0, 0x2A8, BG_PLTT_ID(13));
   // ClearScheduledBgCopiesToVram(); — NOP.
   // ScanlineEffect_Stop(); — NOP.
-  // ResetTasks(); — clear our local tasks.
-  _tasks.clear(); _nextTaskId = 0;
-  _spriteRefs.clear(); _handBobTimers.clear();
+  // ResetTasks(); — 1:1 décomp C:412 (registre gTasks GLOBAL — même geste que tout
+  // écran porté, cf. party_menu.ts:4485 / egg_hatch.ts:470. Les field tasks tuées
+  // sont recréées par le flux post-combat ResumeMap, overworld.ts:1266, comme après
+  // n'importe quel combat — battle_main fait le même ResetTasks à son init).
+  ResetTasks();
   // ResetSpriteData(); — already done via OAM fill above + sprite store cleanup.
   // ResetPaletteFade(); — NOP (runtime manages).
   // FreeAllSpritePalettes() : 1:1 décomp CB2_ChooseStarter (c:415) — libère TOUS les slots
@@ -506,9 +484,9 @@ async function CB2_ChooseStarter(): Promise<void> {
   HideBg(1);
 
   // taskId = CreateTask(Task_StarterChoose, 0);
-  const taskId = CreateTask(Task_StarterChoose, 0);
+  const taskId = CreateTask((t: { taskId: number }) => Task_StarterChoose(t.taskId), 0);
   // gTasks[taskId].tStarterSelection = 1;
-  getTask(taskId).data[T_STARTER_SELECTION] = 1;
+  gTasks[taskId].data[T_STARTER_SELECTION] = 1;
 
   // Create hand sprite : spriteId = CreateSprite(&sSpriteTemplate_Hand, 120, 56, 2);
   const handSpriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_Hand, 120, 56, 2);
@@ -519,8 +497,6 @@ async function CB2_ChooseStarter(): Promise<void> {
     handSprite.data[0] = taskId;
   }
   _starterHandSpriteId = handSpriteId;
-  _spriteRefs.set(handSpriteId, { taskId });
-  _handBobTimers.set(handSpriteId, 0);
 
   // Create 3 Poké Ball sprites (= 1:1 décomp C:450-460)
   _starterPokeballSpriteIds = [];
@@ -534,7 +510,6 @@ async function CB2_ChooseStarter(): Promise<void> {
       sprite.data[S_BALL_ID] = i;
     }
     _starterPokeballSpriteIds.push(spriteId);
-    _spriteRefs.set(spriteId, { taskId, ballId: i });
   }
 
   // sStarterLabelWindowId = WINDOW_NONE;
@@ -552,13 +527,10 @@ async function CB2_ChooseStarter(): Promise<void> {
  *  Notre runtime gère AnimateSprites/BuildOamBuffer/UpdatePaletteFade en main
  *  loop. On run juste les tasks ici. */
 function CB2_StarterChoose(): boolean {
-  // Run all active tasks. Iterate via snapshot pour permettre task.func de
-  // muter _tasks (= setTaskFunc).
-  const taskIds = Array.from(_tasks.keys());
-  for (const tid of taskIds) {
-    const task = _tasks.get(tid);
-    if (task?.func) task.func(tid);
-  }
+  // 1:1 décomp C:467 : RunTasks() sur le registre GLOBAL. La garde idempotente du
+  // runtime (decomp-runtime.ts:1936 `_runTasksCalledThisFrame`) garantit 1 run/frame
+  // même si un autre CB2/scene a déjà pompé ce frame.
+  RunTasks();
   // First battle flow tick (= post-COMMIT chained battle).
   if (_firstBattleFlow && _firstBattleStarted) {
     if (_firstBattleFlow.tick()) {
@@ -571,7 +543,7 @@ function CB2_StarterChoose(): boolean {
 
 // ─── Task_StarterChoose (= 1:1 décomp C:474-482) ────────────────────────
 function Task_StarterChoose(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   CreateStarterPokemonLabel(task.data[T_STARTER_SELECTION]);
   // DrawStdFrameWithCustomTileAndPalette(0, FALSE, 0x2A8, 0xD);
   DrawStdFrameWithCustomTileAndPalette(sStarterChooseWindowId, false, 0x2A8, 0xD);
@@ -586,12 +558,12 @@ function Task_StarterChoose(taskId: number): void {
   // ScheduleBgCopyTilemapToVram(0);
   ScheduleBgCopyTilemapToVram(0);
   // gTasks[taskId].func = Task_HandleStarterChooseInput;
-  task.func = Task_HandleStarterChooseInput;
+  task.func = (t: { taskId: number }) => Task_HandleStarterChooseInput(t.taskId);
 }
 
 // ─── Task_HandleStarterChooseInput (= 1:1 décomp C:484-516) ─────────────
 function Task_HandleStarterChooseInput(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   const selection = task.data[T_STARTER_SELECTION];
   const rt = getRuntime();
   if (!rt) return;
@@ -623,27 +595,27 @@ function Task_HandleStarterChooseInput(taskId: number): void {
       pkmnSprite.callback = (s) => SpriteCB_StarterPokemon(s);
     }
     task.data[T_PKMN_SPRITE_ID] = pkmnId;
-    task.func = Task_WaitForStarterSprite;
+    task.func = (t: { taskId: number }) => Task_WaitForStarterSprite(t.taskId);
   } else if ((newKeys & DPAD_LEFT) && selection > 0) {
     // 1:1 décomp C:506-509.
     task.data[T_STARTER_SELECTION]--;
-    task.func = Task_MoveStarterChooseCursor;
+    task.func = (t: { taskId: number }) => Task_MoveStarterChooseCursor(t.taskId);
   } else if ((newKeys & DPAD_RIGHT) && selection < STARTER_MON_COUNT - 1) {
     // 1:1 décomp C:511-514.
     task.data[T_STARTER_SELECTION]++;
-    task.func = Task_MoveStarterChooseCursor;
+    task.func = (t: { taskId: number }) => Task_MoveStarterChooseCursor(t.taskId);
   }
 }
 
 // ─── Task_WaitForStarterSprite (= 1:1 décomp C:518-526) ─────────────────
 function Task_WaitForStarterSprite(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   const rt = getRuntime();
   if (!rt) return;
   const circleSprite = rt.gSprites[task.data[T_CIRCLE_SPRITE_ID]];
   if (!circleSprite) {
     // Dette R3 : sans circle sprite (= asset load failed), skip wait → confirm directly.
-    task.func = Task_AskConfirmStarter;
+    task.func = (t: { taskId: number }) => Task_AskConfirmStarter(t.taskId);
     return;
   }
   // 1:1 STRICT décomp C:518-526 : le cercle se déplace via SON callback SpriteCB_StarterPokemon
@@ -653,13 +625,13 @@ function Task_WaitForStarterSprite(taskId: number): void {
   if ((circleSprite as { affineAnimEnded?: boolean }).affineAnimEnded
       && circleSprite.x === STARTER_PKMN_POS_X
       && circleSprite.y === STARTER_PKMN_POS_Y) {
-    task.func = Task_AskConfirmStarter;
+    task.func = (t: { taskId: number }) => Task_AskConfirmStarter(t.taskId);
   }
 }
 
 // ─── Task_AskConfirmStarter (= 1:1 décomp C:528-536) ────────────────────
 function Task_AskConfirmStarter(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   // 1:1 décomp starter_choose.c:530 : PlayCry_Normal(GetStarterPokemon(tStarterSelection), 0).
   // GetStarterPokemon rend le NOM d'espèce (sStarterMon = string[]) → resolveDecompConstant
   // pour obtenir le species NUMBER attendu par le moteur natif.
@@ -677,12 +649,12 @@ function Task_AskConfirmStarter(taskId: number): void {
   // CreateYesNoMenu(&sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);
   CreateYesNoMenu(sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);
   // gTasks[taskId].func = Task_HandleConfirmStarterInput;
-  task.func = Task_HandleConfirmStarterInput;
+  task.func = (t: { taskId: number }) => Task_HandleConfirmStarterInput(t.taskId);
 }
 
 // ─── Task_HandleConfirmStarterInput (= 1:1 décomp C:538-563) ────────────
 function Task_HandleConfirmStarterInput(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   const rt = getRuntime();
   if (!rt) return;
   const choice = Menu_ProcessInputNoWrapClearOnChoose();
@@ -733,10 +705,11 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     // 1:1 décomp C:547 : ResetAllPicSprites (clear le registre mon-pic).
     ResetAllPicSprites();
 
-    // Cleanup task — we don't return to ROM callback ; the next CB2 tick will
-    // chain into StartBirchTutorialBattle.
-    task.func = null;
-    _tasks.delete(taskId);
+    // Adaptation flux inline : le décomp swap le CB2 (SetMainCallback2(savedCallback))
+    // ce qui stoppe la task de facto ; chez nous le registre global continue de tourner
+    // jusqu'au ResetTasks du battle-init → destroy explicite pour que la task ne
+    // re-tourne pas entre le COMMIT et le combat.
+    DestroyTask(taskId);
 
     // 1:1 décomp CB2_GiveStarter : PAS de restauration overworld ici. La transition
     // BLUR (pixelisation) capture l'écran starter et fond vers le combat ; l'overworld
@@ -779,14 +752,14 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
       if (s) { try { FreeOamMatrix(s.matrixNum); } catch (e) { void e; } }
       try { DestroySprite(circleId); } catch (e) { void e; }
     }
-    task.func = Task_DeclineStarter;
+    task.func = (t: { taskId: number }) => Task_DeclineStarter(t.taskId);
   }
 }
 
 // ─── Task_DeclineStarter (= 1:1 décomp C:565-568) ───────────────────────
 function Task_DeclineStarter(taskId: number): void {
   // gTasks[taskId].func = Task_StarterChoose;
-  getTask(taskId).func = Task_StarterChoose;
+  gTasks[taskId].func = (t: { taskId: number }) => Task_StarterChoose(t.taskId);
 }
 
 // ─── CreateStarterPokemonLabel (= 1:1 décomp C:570-606) ─────────────────
@@ -875,16 +848,16 @@ function Task_MoveStarterChooseCursor(taskId: number): void {
   // ClearStarterLabel();
   ClearStarterLabel();
   // gTasks[taskId].func = Task_CreateStarterLabel;
-  getTask(taskId).func = Task_CreateStarterLabel;
+  gTasks[taskId].func = (t: { taskId: number }) => Task_CreateStarterLabel(t.taskId);
 }
 
 // ─── Task_CreateStarterLabel (= 1:1 décomp C:625-629) ───────────────────
 function Task_CreateStarterLabel(taskId: number): void {
-  const task = getTask(taskId);
+  const task = gTasks[taskId];
   // CreateStarterPokemonLabel(gTasks[taskId].tStarterSelection);
   CreateStarterPokemonLabel(task.data[T_STARTER_SELECTION]);
   // gTasks[taskId].func = Task_HandleStarterChooseInput;
-  task.func = Task_HandleStarterChooseInput;
+  task.func = (t: { taskId: number }) => Task_HandleStarterChooseInput(t.taskId);
 }
 
 // ─── CreatePokemonFrontSprite (= 1:1 décomp C:631-638) ──────────────────
@@ -908,21 +881,20 @@ function CreatePokemonFrontSprite(species: string, x: number, y: number): number
 }
 
 // ─── SpriteCB_SelectionHand (= 1:1 décomp C:640-647) ────────────────────
-function SpriteCB_SelectionHand(sprite: { x: number; y: number; y2: number; data: number[] }, spriteId: number): void {
+function SpriteCB_SelectionHand(sprite: { x: number; y: number; y2: number; data: number[] }): void {
+  // Adaptation flux inline : le décomp coupe ces callbacks au swap CB2 (COMMIT) ;
+  // chez nous les sprites tickent jusqu'au battle-init → no-op si la task est morte.
+  const task = gTasks[sprite.data[0]];
+  if (!task?.isActive) return;
   // sprite->x = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][0];
   // sprite->y = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][1];
-  const taskId = sprite.data[0];
-  const task = _tasks.get(taskId);
-  if (!task) return;
   const sel = task.data[T_STARTER_SELECTION];
   sprite.x = sCursorCoords[sel][0];
   sprite.y = sCursorCoords[sel][1];
   // sprite->y2 = Sin(sprite->data[1], 8);
-  // sprite->data[1] = (u8)(sprite->data[1]) + 4;
-  let bob = _handBobTimers.get(spriteId) ?? 0;
-  sprite.y2 = Sin(bob, 8);
-  bob = (bob + 4) & 0xFF;
-  _handBobTimers.set(spriteId, bob);
+  sprite.y2 = Sin(sprite.data[1], 8);
+  // sprite->data[1] = (u8)(sprite->data[1]) + 4;  (u8 wrap = & 0xFF)
+  sprite.data[1] = (sprite.data[1] + 4) & 0xFF;
 }
 
 // ─── SpriteCB_Pokeball (= 1:1 décomp C:649-656) ─────────────────────────
@@ -934,8 +906,9 @@ function SpriteCB_Pokeball(sprite: { data: number[]; animNum?: number }, spriteI
   //       StartSpriteAnimIfDifferent(sprite, 0);  // Still
   const taskId = sprite.data[S_TASK_ID];
   const ballId = sprite.data[S_BALL_ID];
-  const task = _tasks.get(taskId);
-  if (!task) return;
+  // Adaptation flux inline : no-op si la task est morte (cf. SpriteCB_SelectionHand).
+  const task = gTasks[taskId];
+  if (!task?.isActive) return;
   const wantAnim = task.data[T_STARTER_SELECTION] === ballId ? 1 : 0;
   if (sprite.animNum !== wantAnim) {
     const rt = getRuntime();

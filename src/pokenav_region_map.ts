@@ -14,7 +14,7 @@ import { SE_SELECT } from '../include/constants/songs';
 import { B_BUTTON } from '../include/gba/io_reg';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_NEW, PlaySE } from './battle_controllers';
 import { PIXEL_FILL } from './window';
 import { MAPSECTYPE_BATTLE_FRONTIER, MAPSECTYPE_CITY_CANFLY, MAPSECTYPE_CITY_CANTFLY, MAPSECTYPE_NONE, MAPSECTYPE_ROUTE } from './region_map';

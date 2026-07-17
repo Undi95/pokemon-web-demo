@@ -1527,7 +1527,7 @@ function CreateItemIconSprites(): void {
       const spr = _itemIconSpr(i);
       if (spr) {
         (spr as { affineAnimsTableName?: string }).affineAnimsTableName = 'sAffineAnims_ItemIcon';
-        rt.gba.oam[spr.oamIndex].affineMode = 1;   // ST_OAM_AFFINE_NORMAL
+        spr.affineMode = 1;   // ST_OAM_AFFINE_NORMAL (source unique sprite, item 6)
         spr.invisible = true;
       }
       s.itemIcons[i].active = false;
@@ -6330,7 +6330,7 @@ function SetReleaseMon(mode: number, position: number): void {
     const spr = _spr(id);
     if (spr) {
       spr.affineAnimsTableName = 'sAffineAnims_ReleaseMon';
-      rt.gba.oam[spr.oamIndex].affineMode = 1;  // ST_OAM_AFFINE_NORMAL
+      spr.affineMode = 1;  // ST_OAM_AFFINE_NORMAL (source unique sprite, item 6)
       rt.StartSpriteAffineAnim(id, RELEASE_ANIM_RELEASE);
     }
   }

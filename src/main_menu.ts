@@ -1924,7 +1924,7 @@ export const Task_NewGameBirchSpeechSub_WaitForLotad: TaskCallback = (task, rt) 
           case 0:
               if (sprite.callback != SpriteCallbackDummy)
                   return;
-              rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_OFF;
+              sprite.affineMode = ST_OAM_AFFINE_OFF;
               break;
           case 1:
               if (_gt(rt, (globalThis as any).sBirchSpeechMainTaskId).data[7] >= 96)
@@ -2294,7 +2294,7 @@ export const Task_NewGameBirchSpeech_ShrinkPlayer: TaskCallback = (task, rt) => 
           if (!RunTextPrintersAndIsPrinter0Active())
           {
               spriteId = task.data[2];
-              rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
+              _gs(rt, spriteId).affineMode = ST_OAM_AFFINE_NORMAL as 0 | 1 | 2 | 3;
               _gs(rt, spriteId).affineAnimsTableName = sSpriteAffineAnimTable_PlayerShrink;
               InitSpriteAffineAnim(_gs(rt, spriteId));
               rt.StartSpriteAffineAnim(spriteId, 0);

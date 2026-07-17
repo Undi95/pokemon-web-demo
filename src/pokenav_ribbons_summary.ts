@@ -17,7 +17,7 @@ import { MON_DATA_NICKNAME, MON_DATA_OT_ID, MON_DATA_PERSONALITY, MON_DATA_RIBBO
 import { ST_OAM_AFFINE_NORMAL, TAG_NONE } from '../include/sprite';
 import { STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN } from '../include/string_util';
 import { FONT_NORMAL, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { JOY_NEW, JOY_REPEAT, PlaySE } from './battle_controllers';
 import { DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr } from './dynamic_placeholder_text_util';
 import { PIXEL_FILL } from './window';

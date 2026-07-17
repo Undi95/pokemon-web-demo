@@ -969,7 +969,7 @@ export const SpriteCB_FlygonSilhouette: SpriteCallback = (sprite, rt) => {
       {
       case 0:
       default:
-          rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
+          sprite.affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
           sprite.matrixNum = 1;
           (() => { const _ctcv = CalcCenterToCornerVec(1, 3, 3); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           sprite.invisible = false;
@@ -1012,7 +1012,7 @@ export const SpriteCB_RayquazaOrb: SpriteCallback = (sprite, rt) => {
       case 0:
       default:
           sprite.invisible = false;
-          rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
+          sprite.affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
           sprite.matrixNum = 18;
           (() => { const _ctcv = CalcCenterToCornerVec(0, 3, 3); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           sprite.data[1] = 0;
@@ -2262,7 +2262,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       _gs(rt, spriteId).data[3] = c;
       _gs(rt, spriteId).data[5] = e;
       _gs(rt, spriteId).data[6] = c;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
+      _gs(rt, spriteId).affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
       _gs(rt, spriteId).matrixNum = d;
       (() => { const _ctcv = CalcCenterToCornerVec(0, 2, 2); _gs(rt, spriteId).centerToCornerVecX = _ctcv.centerToCornerVecX; _gs(rt, spriteId).centerToCornerVecY = _ctcv.centerToCornerVecY; })();
       rt.StartSpriteAnim(spriteId, DROP_ANIM_REFLECTION);
@@ -2277,7 +2277,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       spriteId = _CreateSpriteAtTemplate(rt, sSpriteTemplate_WaterDrop as unknown as SpriteTemplate,  x, y, 1);
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 1;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
+      _gs(rt, spriteId).affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
       _gs(rt, spriteId).matrixNum = d + 1;
       (() => { const _ctcv = CalcCenterToCornerVec(0, 2, 2); _gs(rt, spriteId).centerToCornerVecX = _ctcv.centerToCornerVecX; _gs(rt, spriteId).centerToCornerVecY = _ctcv.centerToCornerVecY; })();
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);
@@ -2287,7 +2287,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 2;
       rt.StartSpriteAnim(spriteId, DROP_ANIM_LOWER_HALF);
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
+      _gs(rt, spriteId).affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
       _gs(rt, spriteId).matrixNum = d + 2;
       (() => { const _ctcv = CalcCenterToCornerVec(0, 2, 2); _gs(rt, spriteId).centerToCornerVecX = _ctcv.centerToCornerVecX; _gs(rt, spriteId).centerToCornerVecY = _ctcv.centerToCornerVecY; })();
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);

@@ -13,7 +13,7 @@ import { ST_OAM_4BPP, ST_OAM_OBJ_NORMAL } from '../harness/runtime/decomp-helper
 import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE } from '../include/constants/characters';
 import { ST_OAM_AFFINE_OFF } from '../include/sprite';
 import { FONT_NARROW, TEXT_SKIP_DRAW } from '../include/text';
-import { IsDma3ManagerBusyWithBgCopy } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { PIXEL_FILL } from './window';
 import { getString } from '../harness/runtime/decomp-strings';
 import { FillWindowTilesByRow } from './international_string_util';

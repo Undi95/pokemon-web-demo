@@ -9771,7 +9771,8 @@ function _flagGet_GC(flag: number): boolean {
 import { BeginFastPaletteFade } from './palette';
 import { ShowBg } from './window';  // (FreeAllWindowBuffers déjà importé par le bloc drawlvlupbox :10561)
 import { GetMonGender } from './pokemon';
-import { battleInitVideo1to1, IsDma3ManagerBusyWithBgCopy, getLastBattleEnvironment } from './battle_bg';
+import { battleInitVideo1to1, getLastBattleEnvironment } from './battle_bg';
+import { IsDma3ManagerBusyWithBgCopy } from './dma3_manager';
 import { DisplayCaughtMonDexPage } from './pokedex';
 import { DoNamingScreen } from './naming_screen';
 
