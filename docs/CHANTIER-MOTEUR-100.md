@@ -117,8 +117,10 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    SpriteCB_OptionZoom). Consolider : auditer les resets affine des autres écrans (send-out ball,
    minimize, growth) OU changer la sémantique du tick (source de vérité unique).
 7. 🚨 Pépites DECOMP-INDEX-dupes (oracle `node scripts/decomp-index.cjs --dupes`) — à investiguer :
-   ① gBattleTypeFlags DÉCLARÉ 2× (battle_intro.ts:106 + engine/battle/state.ts:184) = deux vérités
-   possibles sur le flag central du combat — VÉRIFIER si les deux instances divergent au runtime.
+   ① ✅ FAIT (2026-07-17) gBattleTypeFlags battle_intro : le getter lisait globalThis/rt (JAMAIS
+   écrits → 0 permanent, sondé en combat : vérité __battleState=12, getter=0) → les intros
+   spéciales (KYOGRE_GROUDON sous-marine, INGAME_PARTNER, FRONTIER) ne se déclenchaient jamais.
+   Recâblé sur __battleState avec ?? (0 légitime = sauvage). Non-régression intro dresseur ✓.
    ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué). ③ DestroySprite
    battle_main.ts:1606 vs sprite.ts. ④ CB2_ReturnToField implanté safari_zone+walda_phrase, absent
    d'overworld.ts (foyer réel). ⑤ Compare byte-VM ×2 (scrcmd.ts:309 + script-vars.ts:111).

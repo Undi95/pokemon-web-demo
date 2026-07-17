@@ -103,7 +103,15 @@ function CpuFill32_BgScreen(screenBase: number, sizeBytes: number): void {
 // dispatch `rt()?.SetBgAttribute?.()` était un no-op silencieux (jamais porté).
 
 // ─── globals battle_main (globalThis) : accès typés courts ──────────────────
-function gBattleTypeFlags(): number { return (G.gBattleTypeFlags | 0) || (rt()?.gBattleTypeFlags | 0) || 0; }
+/** Source canonique = state.ts via le pont __battleState (consolidation item 7-① :
+ *  l'ancien getter lisait globalThis.gBattleTypeFlags / rt.gBattleTypeFlags —
+ *  JAMAIS écrits par personne → flags = 0 permanent : les intros spéciales
+ *  (INGAME_PARTNER / KYOGRE_GROUDON sous-marine / FRONTIER) ne se déclenchaient
+ *  jamais. `??` et pas `||` : 0 est un état légitime (combat sauvage). */
+function gBattleTypeFlags(): number {
+  const bs = (globalThis as Record<string, unknown>).__battleState as { gBattleTypeFlags?: number } | undefined;
+  return (bs?.gBattleTypeFlags ?? 0) | 0;
+}
 function setIntroSlideFlagsClearBit0(): void { G.gIntroSlideFlags = (G.gIntroSlideFlags | 0) & ~1; }
 
 // ─── Task helpers (HW-emu via rt.gTasks / rt.CreateTask) ────────────────────
