@@ -105,7 +105,7 @@ import {
   MON_DATA_EXP, MON_DATA_SPECIES, MON_DATA_MOVE1,
   SetBattleMonDataFromBuffer,
 } from './engine/battle/party-storage';
-import { gBattlerPartyIndexes, setActiveBattler, gBattlersCount } from './engine/battle/state';
+import { gBattlerPartyIndexes, setActiveBattler, gBattlersCount, setBattlerInMenuId } from './engine/battle/state';
 import { HandleIntroSlide } from './battle_intro';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
@@ -2115,40 +2115,48 @@ function _OpenPartyMenuToChooseMon(): void {
   if (getRuntime()?.gPaletteFade?.active) return;
   gBattlerControllerFuncs[gActiveBattler] = _WaitForMonSelection;
   const activeSlot = gBattlerPartyIndexes[gActiveBattler];
-  // 1:1 : caseId = action party (bufferA[1]&0xF). PARTY_ACTION_SEND_OUT(=1, remplacement
-  // après K.O.) = non-annulable ; switch volontaire = annulable.
+  // 1:1 : caseId = partyAction (bufferA[1]&0xF) : 0 = CHOOSE_MON (switch volontaire),
+  // 1 = SEND_OUT (forcé K.O.), 2 = CANT_SWITCH, 4 = ABILITY_PREVENTS — passé tel
+  // quel à OpenPartyMenuInBattle (party_menu.c:5774), qui branche 1:1 dessus.
   const caseId = gBattleBufferA[gActiveBattler][1] & 0xF;
-  const allowCancel = caseId !== 1 /* PARTY_ACTION_SEND_OUT */;
-  (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
   (globalThis as Record<string, unknown>).__battleReshowDone = false;
   // Imports dynamiques : évitent le cycle statique controller↔party-screen/reshow
   // (= pattern voie V battle-flow:4655) ; one-shot à l'ouverture (pas per-frame).
+  // Le module party est capturé (_partyModForSwitch) pour que WaitForMonSelection
+  // lise les globals 1:1 gPartyMenuUseExitCallback/gSelectedMonPartyId (LOT 7).
   void Promise.all([
     import('./party_menu'),
     import('./reshow_battle_screen'),
   ]).then(([party, reshow]) => {
+    _partyModForSwitch = party;
     party.OpenPartyScreenForBattleSwitch(reshow.CB2_SetUpReshowBattleScreenAfterMenu, {
-      activeSlot, allowCancel,
+      activeSlot, caseId,
     });
   });
 }
 
-/** 1:1 décomp `WaitForMonSelection` (battle_controller_player.c:1357). Attend que le
- *  reshow soit terminé (équivalent L sync de `gMain.callback2 == BattleMainCB2`, via le
- *  flag `__battleReshowDone` posé par le reshow) ET le fade-in fini, puis émet la
- *  sélection : slot choisi, ou PARTY_SIZE si annulé. */
+/** Module party_menu capturé à l'ouverture du switch (import dynamique one-shot) —
+ *  les exports `let` ESM sont des live bindings : WaitForMonSelection y lit l'état
+ *  1:1 posé par TrySwitchInPokemon. */
+let _partyModForSwitch: typeof import('./party_menu') | null = null;
+
+/** 1:1 décomp `WaitForMonSelection` (battle_controller_player.c:1357-1373). Attend
+ *  que le reshow soit terminé (équivalent L sync de `gMain.callback2 == BattleMainCB2`,
+ *  via le flag `__battleReshowDone` posé par le reshow) ET le fade-in fini, puis :
+ *    gPartyMenuUseExitCallback == TRUE → EmitChosenMonReturnValue(gSelectedMonPartyId)
+ *    sinon (annulation)              → EmitChosenMonReturnValue(PARTY_SIZE)
+ *  (LOT 7 : lit les globals 1:1 du party menu — plus de __battleSwitchResultSlot.) */
 function _WaitForMonSelection(): void {
   const reshowDone = (globalThis as { __battleReshowDone?: boolean }).__battleReshowDone === true;
   if (!reshowDone || getRuntime()?.gPaletteFade?.active) return;
-  const slot = (globalThis as { __battleSwitchResultSlot?: number }).__battleSwitchResultSlot ?? -1;
   let chosenMonId: number;
-  if (slot >= 0) {
-    chosenMonId = slot;
+  if (_partyModForSwitch?.gPartyMenuUseExitCallback === true) {   // 1:1 :1361
+    chosenMonId = _partyModForSwitch.gSelectedMonPartyId ?? 0;    // 1:1 :1362
     // L : l'engine (Cmd_switchhandleorder) lit `monToSwitchIntoId` → on le pose depuis
     // la sélection joueur (en plus de l'émission 1:1 ci-dessous).
     _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
   } else {
-    chosenMonId = _PARTY_SIZE;   // 1:1 : annulation → PARTY_SIZE (else-branch décomp)
+    chosenMonId = _PARTY_SIZE;   // 1:1 :1364 annulation → PARTY_SIZE
   }
   _BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, chosenMonId, _getBattlePartyCurrentOrderSlice());
   PlayerBufferExecCompleted();
@@ -2165,8 +2173,10 @@ function _setMonToSwitchIntoId(battler: number, v: number): void {
 }
 
 function _setBattlerInMenuId(battler: number): void {
-  const g = globalThis as { __battleMenu?: { gBattlerInMenuId?: number } };
-  if (g.__battleMenu) g.__battleMenu.gBattlerInMenuId = battler;
+  // LOT 7 : source canonique = state.gBattlerInMenuId (lue par switchInDeps →
+  // TrySwitchInPokemon 1:1). L'ancien pont __battleMenu.gBattlerInMenuId n'avait
+  // AUCUN lecteur (dual-source éliminée).
+  setBattlerInMenuId(battler);
 }
 
 function _setBattlePartyCurrentOrder(idx: number, val: number): void {

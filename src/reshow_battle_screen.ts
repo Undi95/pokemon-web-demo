@@ -9,7 +9,8 @@
  * (battle_controller_player.c:1550) → `SetMainCallback2(ReshowBattleScreenAfterMenu)`.
  *
  * ⚠️ NE PAS confondre avec le « reshow-pump » ad-hoc de `battle-flow.ts` (voie V,
- *    NON-1:1, `_reshowPumpCB2`/`__battleSwitchResultSlot`). CECI est le VRAI reshow
+ *    NON-1:1, `_reshowPumpCB2` ; les globals switch 1:1 = gPartyMenuUseExitCallback/
+ *    gSelectedMonPartyId, party_menu LOT 7). CECI est le VRAI reshow
  *    décomp, pour la voie L. (User 2026-06-05 : « ne reprends pas V à l'aveugle ».)
  *
  * Divergences V/L assumées + documentées :

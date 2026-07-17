@@ -111,8 +111,9 @@ import { TEXT_SKIP_DRAW } from '../include/text';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM, PARTY_ACTION_GIVE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
-  PARTY_ACTION_SOFTBOILED,
-  PARTY_MENU_TYPE_FIELD, PARTY_MENU_TYPE_DAYCARE, PARTY_NOTHING_CHOSEN,
+  PARTY_ACTION_SOFTBOILED, PARTY_ACTION_CANT_SWITCH, PARTY_ACTION_ABILITY_PREVENTS,
+  PARTY_MENU_TYPE_FIELD, PARTY_MENU_TYPE_IN_BATTLE, PARTY_MENU_TYPE_DAYCARE,
+  PARTY_NOTHING_CHOSEN,
 } from '../include/constants/party_menu';
 // Mode DAYCARE (ChooseMonForDaycare/BufferMonSelection, party_menu.c:6197-6231) :
 // retour au field script-driven (gFieldCallback2 = CB2_FadeFromPartyMenu).
@@ -478,12 +479,11 @@ let _menuType: number = PARTY_MENU_TYPE_FIELD;
  *  StoreSelectedPokemonInDaycare) lisent GetCursorSelectionMonId APRÈS la fermeture
  *  du menu. Notre _freePartyMenu reset _slotId=0 (adaptation) → capture ici. */
 let _cursorSelectionMonId = 0;
-// Étape 4 (switch en combat, mode PARTY_ACTION_SEND_OUT) : slot du mon ACTIF
-// (interdit de le re-choisir) + si l'annulation B est permise (switch volontaire
-// = oui ; choix forcé après K.O. = non). Lus par les handlers A/B SEND_OUT.
-let _battleSwitchActiveSlot = -1;
-let _battleSwitchAllowCancel = true;
-/** Id FIELD du mon actif (pour chooseSwitchSlot 1:1) + flag « ordre battle posé ». */
+// (LOT 7 : _battleSwitchActiveSlot/_battleSwitchAllowCancel SUPPRIMÉS — le blocage
+// « mon déjà actif » et le refus d'annuler = TrySwitchInPokemon/HandleChooseMonCancel
+// 1:1, plus des gardes à la sélection.)
+/** Id FIELD du mon actif (gBattlerPartyIndexes[battler], trace debug) + flag
+ *  « ordre battle posé » (closeBattleOrder au ClosePartyScreen). */
 let _battleSwitchActivePartyId = -1;
 let _battleOrderApplied = false;
 /** 1:1 décomp `gPartyMenu.slotId2` (= 1er mon mémorisé pour la permutation). */
@@ -2053,42 +2053,9 @@ function HandleChooseMonSelection(taskId: number, slotPtr: PartySlotPtr): void {
       TryGiveItemOrMailToSelectedMon();          // 1:1 :1341
       break;
     }
-    case PARTY_ACTION_SEND_OUT: {
-      // PONT COMBAT (lot 7) — PARTY_ACTION_SEND_OUT n'est PAS dans le switch décomp
-      //   (SEND_OUT → default = Task_TryCreateSelectionWindow côté décomp). Le port
-      //   court-circuite via globalThis.__battleSwitchResultSlot / __battlePartyOrder
-      //   (switch volontaire / forcé K.O.). Conservé VERBATIM (lot 7 = TrySwitchInPokemon 1:1).
-      const slot = slotPtr.get();
-      if (slot === CANCEL) {
-        if (_battleSwitchAllowCancel) {
-          PlaySE(5);
-          (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
-          ClosePartyScreen();
-        }
-        return;
-      }
-      const party = _party();
-      const mon = party[slot];
-      // Interdit le mon DÉJÀ actif (= slot actif) ou K.O. → reste sur la sélection.
-      if (slot === _battleSwitchActiveSlot || !mon || mon.hp <= 0) {
-        PlaySE(5);
-        return;
-      }
-      PlaySE(5);
-      // 1:1 TrySwitchInPokemon (party_menu.c:5851-5856) : capture l'id FIELD du mon
-      //   choisi puis swap (le choisi prend le slot affiché de l'actif).
-      {
-        const po2 = (globalThis as Record<string, unknown>).__battlePartyOrder as {
-          chooseSwitchSlot?: (displaySlot: number, activePartyId: number) => number;
-        } | undefined;
-        const fieldId = (_battleOrderApplied && po2?.chooseSwitchSlot)
-          ? po2.chooseSwitchSlot(slot, _battleSwitchActivePartyId)
-          : slot;
-        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = fieldId;
-      }
-      ClosePartyScreen();
-      break;
-    }
+    // (LOT 7) PARTY_ACTION_SEND_OUT / CHOOSE_MON combat : PAS des cases du switch
+    // décomp (:1300) → default = Task_TryCreateSelectionWindow → menu d'action
+    // in-battle (ENVOI/VERS via GetPartyMenuActionsTypeInBattle) → CursorCb_SendMon.
     case PARTY_ACTION_SWITCH: {
       // 1:1 :1344-1347 PlaySE(SE_SELECT) + SwitchSelectedMons.
       PlaySE(5);
@@ -2105,39 +2072,35 @@ function HandleChooseMonSelection(taskId: number, slotPtr: PartySlotPtr): void {
   }
 }
 
-/** 1:1 décomp `HandleChooseMonCancel` (party_menu.c:1378). Dispatch B par action.
- *  Corps = le dispatch B DÉPLACÉ VERBATIM depuis Task_PartyMenu_HandleInput.
- *
- *  DIVERGENCE décomp : le décomp joue un SE PAR CASE (SEND_OUT → SE_FAILURE :1383,
- *  autres → SE_SELECT). Le port joue SE_SELECT INCONDITIONNEL en tête (comportement
- *  actuel préservé) ; à reconcilier lot 7 (combat). Le paramètre `taskId` est là
- *  pour la fidélité de signature (décomp → Task_ClosePartyMenu) : le port ferme via
- *  ClosePartyScreen (module). */
+/** 1:1 décomp `HandleChooseMonCancel` (party_menu.c:1378). Dispatch B par action,
+ *  SE PAR CASE 1:1 (LOT 7) : SEND_OUT → SE_FAILURE (le remplacement forcé après
+ *  K.O. ne s'annule PAS) ; autres → SE_SELECT. Le switch VOLONTAIRE combat =
+ *  PARTY_ACTION_CHOOSE_MON → default → close (gPartyMenuUseExitCallback reste
+ *  FALSE → WaitForMonSelection émet PARTY_SIZE = pas de switch). Le paramètre
+ *  `taskId` est là pour la fidélité de signature (décomp → Task_ClosePartyMenu) :
+ *  le port ferme via ClosePartyScreen (module). */
 function HandleChooseMonCancel(taskId: number, slotPtr: PartySlotPtr): void {
   void taskId;
-  PlaySE(5);    // SE_SELECT (port : inconditionnel — cf. divergence ci-dessus)
   switch (_partyAction) {
     case PARTY_ACTION_SEND_OUT:
-      // PONT COMBAT (lot 7). 1:1 :1382 (décomp PlaySE(SE_FAILURE)). Port : B annule
-      //   le switch VOLONTAIRE (allowCancel) ; forcé après K.O. → ignoré (SE seul).
-      if (_battleSwitchAllowCancel) {
-        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
-        ClosePartyScreen();
-      }
+      PlaySE(SE_FAILURE);    // 1:1 :1383 — B refusé (choix forcé après K.O.)
       break;
     case PARTY_ACTION_SWITCH:
     case PARTY_ACTION_SOFTBOILED:
       // 1:1 :1385-1389 PlaySE(SE_SELECT) + FinishTwoMonAction. Port : SWITCH →
       //   _finishTwoMonAction ; SOFTBOILED → Task_FinishSoftboiled (variante port).
+      PlaySE(5);                            // 1:1 :1386 SE_SELECT
       if (_partyAction === PARTY_ACTION_SOFTBOILED) Task_FinishSoftboiled();
       else _finishTwoMonAction();
       break;
     default:
-      // 1:1 :1394-1404 default : DisplayCancelChooseMonYesNo (CONTEST/CHOOSE_HALF =
-      //   hors-solo, jamais TRUE) → gSpecialVar_0x8004 = *slotPtr = PARTY_SIZE+1 +
-      //   Task_ClosePartyMenu. Port : seul DAYCARE écrit le var (BufferMonSelection
-      //   lit gSpecialVar_0x8004 → PARTY_NOTHING_CHOSEN) ; USE_ITEM/CHOOSE_MON = B →
-      //   ClosePartyScreen (savedCallback = bag / overworld).
+      // 1:1 :1394-1404 default : PlaySE(SE_SELECT) + DisplayCancelChooseMonYesNo
+      //   (CONTEST/CHOOSE_HALF = hors-solo, jamais TRUE) → gSpecialVar_0x8004 =
+      //   *slotPtr = PARTY_SIZE+1 + Task_ClosePartyMenu. Port : seul DAYCARE écrit
+      //   le var (BufferMonSelection lit gSpecialVar_0x8004 → PARTY_NOTHING_CHOSEN) ;
+      //   USE_ITEM/CHOOSE_MON (field OU combat volontaire) = B → ClosePartyScreen
+      //   (savedCallback = bag / overworld / reshow combat).
+      PlaySE(5);                            // 1:1 :1395 SE_SELECT
       if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
         VarSet(0x8004, PARTY_SIZE + 1);   // 1:1 :1399 gSpecialVar_0x8004 = PARTY_SIZE+1
         slotPtr.set(PARTY_SIZE + 1);      // 1:1 :1401 *slotPtr = PARTY_SIZE + 1
@@ -2324,8 +2287,8 @@ const sCursorOptions: Record<number, CursorOption> = {
   [MENU_TAKE_MAIL]: { text: () => getString('gText_Take2'),    func: null },                 // CursorCb_TakeMail — dette R3 (mail depuis party non porté)
   [MENU_READ]:      { text: () => getString('gText_Read2'),    func: null },                 // CursorCb_Read — dette R3 (mail depuis party non porté)
   [MENU_CANCEL2]:   { text: () => getString('gText_Cancel2'),  func: CursorCb_Cancel2 },    // gText_Cancel2 = "RETOUR"
-  [MENU_SHIFT]:     { text: () => getString('gText_Shift'),    func: null },                 // CursorCb_SendMon — combat (lot 7)
-  [MENU_SEND_OUT]:  { text: () => getString('gText_SendOut'),  func: null },                 // CursorCb_SendMon — combat (lot 7)
+  [MENU_SHIFT]:     { text: () => getString('gText_Shift'),    func: CursorCb_SendMon },     // 1:1 table :690
+  [MENU_SEND_OUT]:  { text: () => getString('gText_SendOut'),  func: CursorCb_SendMon },     // 1:1 table :691
   [MENU_ENTER]:     { text: () => getString('gText_Enter'),    func: null },                 // CursorCb_Enter — chooseHalf (hors-solo)
   [MENU_NO_ENTRY]:  { text: () => getString('gText_NoEntry'),  func: null },                 // CursorCb_NoEntry — chooseHalf (hors-solo)
   [MENU_STORE]:     { text: () => getString('gText_Store'),    func: CursorCb_Store },       // gText_Store = "DEPOSER"
@@ -2632,7 +2595,10 @@ function GetPartyMenuActionsType(mon: Pokemon): number {
       if (InMultiPartnerRoom() === true || mon.isEgg) actionType = ACTIONS_SWITCH;
       else actionType = ACTIONS_NONE;
       break;
-    // case PARTY_MENU_TYPE_IN_BATTLE: actionType = GetPartyMenuActionsTypeInBattle(mon); (lot 7)
+    case PARTY_MENU_TYPE_IN_BATTLE:
+      // 1:1 :2651 : combat → ACTIONS_SEND_OUT / ACTIONS_SHIFT / ACTIONS_SUMMARY_ONLY.
+      actionType = GetPartyMenuActionsTypeInBattle(mon);
+      break;
     // case PARTY_MENU_TYPE_CHOOSE_HALF: … (frontier chooseHalf — hors-solo)
     case PARTY_MENU_TYPE_DAYCARE:
       // 1:1 :2669 : œuf → ACTIONS_SUMMARY_ONLY ; sinon ACTIONS_STORE.
@@ -4729,42 +4695,169 @@ function _CB2_SetUpExitToBattleScreen(): void {
   console.error('[party_menu] __CB2_SetUpReshowBattleScreenAfterMenu2 absent (exit item-combat → reshow)');
 }
 
-/** Étape 4 (combat) : ouvre l'écran party en mode PARTY_ACTION_SEND_OUT pour
- *  choisir le Pokémon à envoyer au combat. 1:1 décomp `OpenPartyMenuInBattle` →
- *  `InitPartyMenu(PARTY_MENU_TYPE_IN_BATTLE, …, PARTY_ACTION_SEND_OUT, …,
- *  Task_HandleChooseMonInput, CB2_SetUpReshowBattleScreenAfterMenu)` (party_menu.c:5776).
+// ─── LOT 7 : switch combat 1:1 (party_menu.c:3505/5788/5800) ─────────────────
+
+/** 1:1 décomp `gPartyMenuUseExitCallback` (extern bool8) : TRUE = le party se ferme
+ *  suite à un CHOIX effectif (switch validé / item utilisé) ; FALSE = annulation.
+ *  Lu par `WaitForMonSelection` (battle_controller_player) au retour du reshow. */
+export let gPartyMenuUseExitCallback = false;
+/** 1:1 décomp `gSelectedMonPartyId` (extern u8) : id FIELD du mon choisi au switch. */
+export let gSelectedMonPartyId = 0;
+/** = gStringVar4 bufferisé par TrySwitchInPokemon (message d'erreur) pour CursorCb_SendMon. */
+let _switchInMsg: string | null = null;
+
+/** Forme du pont __battlePartyOrder (battle_main.ts) utilisée par le flux switch —
+ *  les briques 1:1 y vivent (= les `extern` du .c ; import statique = arête TDZ). */
+interface BattlePartyOrderBridge {
+  openBattleOrder(activePartyId: number): number;
+  closeBattleOrder(): void;
+  GetPartyIdFromBattleSlot(slot: number): number;
+  GetPartyIdFromBattlePartyId(battlePartyId: number): number;
+  SwitchPartyMonSlots(slot: number, slot2: number): void;
+  SwapPartyPokemon(a: number, b: number): void;
+  switchInDeps(): {
+    battlersCount: number; partyIndexes: number[]; sides: number[];
+    battlerInMenuId: number; prevSelectedPartySlot: number;
+  };
+}
+function _battlePartyOrderBridge(): BattlePartyOrderBridge | null {
+  return ((globalThis as Record<string, unknown>).__battlePartyOrder as BattlePartyOrderBridge | undefined) ?? null;
+}
+
+/** 1:1 `GetPartyMenuActionsTypeInBattle` (party_menu.c:5788-5798) :
+ *  party[1] non vide && mon pas un œuf → SEND_OUT si action==PARTY_ACTION_SEND_OUT,
+ *  sinon SHIFT (hors BATTLE_TYPE_ARENA — Frontier, hors-solo) ; sinon SUMMARY_ONLY. */
+function GetPartyMenuActionsTypeInBattle(mon: Pokemon): number {
+  const second = _party()[1];
+  if ((second?.species ?? 0) !== 0 && !mon.isEgg) {   // 1:1 :5790
+    if (_partyAction === PARTY_ACTION_SEND_OUT) return ACTIONS_SEND_OUT;  // 1:1 :5792
+    return ACTIONS_SHIFT;   // 1:1 :5794 (!(gBattleTypeFlags & BATTLE_TYPE_ARENA) — solo)
+  }
+  return ACTIONS_SUMMARY_ONLY;                        // 1:1 :5797
+}
+
+/** 1:1 `TrySwitchInPokemon` (party_menu.c:5800-5857), branche SOLO (le bloc
+ *  partenaire multi :5806-5811 est hors-solo : IsMultiBattle() = FALSE).
+ *  Échec → bufferise le message (= gStringVar4) dans `_switchInMsg` et renvoie
+ *  false ; succès → gSelectedMonPartyId + gPartyMenuUseExitCallback + swap
+ *  ordre-combat + swap physique (briques battle_main via le pont). */
+function TrySwitchInPokemon(): boolean {
+  const slot = _slotId;                        // 1:1 :5802 GetCursorSelectionMonId()
+  const mon = _party()[slot];
+  const po = _battlePartyOrderBridge();
+  // 1:1 :5813-5818 : mon K.O. → « {mon} n'a plus d'énergie pour combattre! »
+  if (!mon || (mon.hp ?? 0) === 0) {
+    _switchInMsg = _preparePartyMsg(getString('gText_PkmnHasNoEnergy') || '', mon?.nickname ?? '');
+    return false;
+  }
+  if (!po) { console.error('[party_menu] TrySwitchInPokemon : pont __battlePartyOrder absent'); return false; }
+  const deps = po.switchInDeps();
+  // 1:1 :5819-5827 : mon déjà sur le terrain → « {mon} est déjà au combat! »
+  for (let i = 0; i < deps.battlersCount; i++) {
+    if (deps.sides[i] === 0 /* B_SIDE_PLAYER */ && po.GetPartyIdFromBattleSlot(slot) === deps.partyIndexes[i]) {
+      _switchInMsg = _preparePartyMsg(getString('gText_PkmnAlreadyInBattle') || '', mon.nickname ?? '');
+      return false;
+    }
+  }
+  // 1:1 :5828-5832 : œuf → « Un ŒUF ne se bat pas, voyons! »
+  if (mon.isEgg) {
+    _switchInMsg = _preparePartyMsg(getString('gText_EggCantBattle') || '');
+    return false;
+  }
+  // 1:1 :5833-5837 : déjà sélectionné ce tour (doubles) → « {mon} est déjà sélectionné. »
+  if (po.GetPartyIdFromBattleSlot(slot) === deps.prevSelectedPartySlot) {
+    _switchInMsg = _preparePartyMsg(getString('gText_PkmnAlreadySelected') || '', mon.nickname ?? '');
+    return false;
+  }
+  // 1:1 :5838-5842 : PARTY_ACTION_ABILITY_PREVENTS → SetMonPreventsSwitchingString()
+  // (pokemon.c:6618). DETTE battle_message (placeholders {B_*} non résolus — comme
+  // le flavor X-items) : texte ROM brut en attendant le port de battle_message.
+  if (_partyAction === PARTY_ACTION_ABILITY_PREVENTS) {
+    _switchInMsg = _preparePartyMsg(getString('gText_PkmnsXPreventsSwitching') || '');
+    return false;
+  }
+  // 1:1 :5843-5849 : PARTY_ACTION_CANT_SWITCH → « {battler courant} ne peut pas être échangé! »
+  if (_partyAction === PARTY_ACTION_CANT_SWITCH) {
+    const curNick = _party()[po.GetPartyIdFromBattlePartyId(deps.partyIndexes[deps.battlerInMenuId] ?? 0)]?.nickname ?? '';
+    _switchInMsg = _preparePartyMsg(getString('gText_PkmnCantSwitchOut') || '', curNick);
+    return false;
+  }
+  // 1:1 :5851-5856 : succès.
+  gSelectedMonPartyId = po.GetPartyIdFromBattleSlot(slot);                       // 1:1 :5851
+  gPartyMenuUseExitCallback = true;                                              // 1:1 :5852
+  const newSlot = po.GetPartyIdFromBattlePartyId(deps.partyIndexes[deps.battlerInMenuId] ?? 0);  // 1:1 :5853
+  po.SwitchPartyMonSlots(newSlot, slot);                                         // 1:1 :5854
+  po.SwapPartyPokemon(newSlot, slot);                                            // 1:1 :5855
+  return true;
+}
+
+/** 1:1 `CursorCb_SendMon` (party_menu.c:3505-3520) : PlaySE + retire le menu
+ *  d'action (windowId[0]) ; TrySwitchInPokemon TRUE → Task_ClosePartyMenu (l'exit
+ *  in-battle = reshow via savedCallback) ; FALSE → retire la msgbox (windowId[1]),
+ *  affiche gStringVar4 (= _switchInMsg) et Task_ReturnToChooseMonAfterText. */
+function CursorCb_SendMon(taskId: number): void {
+  PlaySE(5);                                   // 1:1 :3507 SE_SELECT
+  if (_actionWindowId >= 0) {                  // 1:1 :3508 PartyMenuRemoveWindow(&windowId[0])
+    ClearStdWindowAndFrame(_actionWindowId, false);
+    CopyWindowToVram(_actionWindowId, 3);
+    RemoveWindow(_actionWindowId);
+    _actionWindowId = -1;
+  }
+  _actionList = [];
+  _actionCursor = 0;
+  if (TrySwitchInPokemon()) {
+    ClosePartyScreen();                        // 1:1 :3511 Task_ClosePartyMenu
+  } else {
+    // 1:1 :3515-3517 : gStringVar4 = message d'erreur bufferisé par TrySwitchInPokemon.
+    if (_msgWid >= 0) {                        // 1:1 PartyMenuRemoveWindow(&windowId[1])
+      ClearStdWindowAndFrame(_msgWid, false);
+      CopyWindowToVram(_msgWid, 3);
+      RemoveWindow(_msgWid);
+      _msgWid = -1;
+    }
+    _itemUsedMsgText = _switchInMsg;
+    _switchInMsg = null;
+    _actionSubMenu = 'mon';
+    _phase = 'field_move_err';  // = gTasks[taskId].func = Task_ReturnToChooseMonAfterText (:3517)
+    _drawMsg();
+  }
+  void taskId;
+}
+
+/** Étape 4 (combat) : ouvre l'écran party pour le switch. 1:1 décomp
+ *  `OpenPartyMenuInBattle(partyAction)` (party_menu.c:5774) →
+ *  `InitPartyMenu(PARTY_MENU_TYPE_IN_BATTLE, GetPartyLayoutFromBattleType(),
+ *  partyAction, FALSE, PARTY_MSG_CHOOSE_MON, Task_HandleChooseMonInput,
+ *  CB2_SetUpReshowBattleScreenAfterMenu)` + ReshowBattleScreenDummy (no-op)
+ *  + UpdatePartyToBattleOrder.
  *
- *  - `returnCb` = exitCallback (= le combat reconstruit la scène puis reprend).
- *  - `opts.activeSlot` = slot du mon actif (interdit de le re-choisir, 1:1).
- *  - `opts.allowCancel` = B annule (switch volontaire) ou non (choix forcé K.O.).
+ *  - `returnCb` = exitCallback (= CB2_SetUpReshowBattleScreenAfterMenu).
+ *  - `opts.activeSlot` = gBattlerPartyIndexes[battler] (id FIELD de l'actif).
+ *  - `opts.caseId` = partyAction 1:1 (bufferA[1]&0xF) : 0 = CHOOSE_MON (switch
+ *    volontaire, B annule), 1 = SEND_OUT (forcé K.O., B → SE_FAILURE),
+ *    2 = CANT_SWITCH / 4 = ABILITY_PREVENTS (TrySwitchInPokemon affiche l'erreur).
  *
- *  Le slot choisi (ou -1 = annulé) est posé sur `globalThis.__battleSwitchResultSlot`,
- *  lu par le combat au retour (le bridge globalThis évite un cycle d'import). */
+ *  Le résultat est lu par WaitForMonSelection via les globals 1:1
+ *  `gPartyMenuUseExitCallback` / `gSelectedMonPartyId` (exports live-binding). */
 export function OpenPartyScreenForBattleSwitch(
   returnCb: () => void,
-  opts: { activeSlot: number; allowCancel: boolean },
+  opts: { activeSlot: number; caseId: number },
 ): void {
   if (_isOpen) return;
-  // (1:1 décomp = PARTY_MENU_TYPE_IN_BATTLE ; notre port ne branche pas sur ce
-  // type en combat → FIELD, comportement inchangé.)
-  _menuType = PARTY_MENU_TYPE_FIELD;
-  _partyAction = PARTY_ACTION_SEND_OUT;
-  // 1:1 party_menu.c (combat) : le menu vit en ORDRE BATTLE — gPlayerParty est
-  // physiquement réordonnée (UpdatePartyToBattleOrder : l'ACTIF au slot affiché 0,
-  // fix « le mon échangé n'est pas premier » user 2026-06-10) et RESTAURÉE à la
-  // fermeture (closeBattleOrder dans ClosePartyScreen). opts.activeSlot = id FIELD ;
-  // le slot AFFICHÉ interdit = retour d'openBattleOrder.
-  const po = (globalThis as Record<string, unknown>).__battlePartyOrder as {
-    openBattleOrder?: (activePartyId: number) => number;
-  } | undefined;
+  _menuType = PARTY_MENU_TYPE_IN_BATTLE;   // 1:1 :5776 PARTY_MENU_TYPE_IN_BATTLE
+  _partyAction = opts.caseId;              // 1:1 :5776 partyAction = caseId (bufferA[1]&0xF)
+  gPartyMenuUseExitCallback = false;       // 1:1 InitPartyMenu (reset transient)
+  gSelectedMonPartyId = 0;
+  _switchInMsg = null;
+  // 1:1 :5778 UpdatePartyToBattleOrder : le menu vit en ORDRE BATTLE — gPlayerParty
+  // réordonnée physiquement (l'ACTIF au slot affiché 0) et RESTAURÉE à la fermeture
+  // (closeBattleOrder dans ClosePartyScreen). opts.activeSlot = id FIELD.
+  const po = _battlePartyOrderBridge();
   _battleSwitchActivePartyId = opts.activeSlot;
-  if (po?.openBattleOrder) {
-    _battleSwitchActiveSlot = po.openBattleOrder(opts.activeSlot);
+  if (po) {
+    po.openBattleOrder(opts.activeSlot);
     _battleOrderApplied = true;
-  } else {
-    _battleSwitchActiveSlot = opts.activeSlot;
   }
-  _battleSwitchAllowCancel = opts.allowCancel;
   void _loadAssets().then(() => {
     const rt = getRuntime();
     if (!rt) return;

@@ -1508,15 +1508,8 @@ function _SwapPartyPokemonBySlots(a: number, b: number): void {
     UpdatePartyToBattleOrder();
     return _GetPartyIdFromBattlePartyId(activePartyId);
   },
-  /** Choix du switch (1:1 TrySwitchInPokemon party_menu.c:5851-5856) : capture l'id
-   *  FIELD du choisi (la réponse moteur) PUIS swap nibbles + swap physique. */
-  chooseSwitchSlot(displaySlot: number, activePartyId: number): number {
-    const fieldId = GetPartyIdFromBattleSlot(displaySlot);
-    const newSlot = _GetPartyIdFromBattlePartyId(activePartyId);
-    _SwitchPartyMonSlots(newSlot, displaySlot);
-    _SwapPartyPokemonBySlots(newSlot, displaySlot);
-    return fieldId;
-  },
+  // (LOT 7 : chooseSwitchSlot SUPPRIMÉ — le swap vit dans TrySwitchInPokemon 1:1
+  // côté party_menu, qui appelle les briques exposées ci-dessous.)
   /** Fermeture (toutes sorties : choix OU annulation B) : restaure l'ordre FIELD +
    *  persiste les nibbles dans battlerPartyOrders[joueur]. */
   closeBattleOrder(): void {
@@ -1524,6 +1517,32 @@ function _SwapPartyPokemonBySlots(a: number, b: number): void {
     for (let i = 0; i < 3; i++) gBattleStruct.battlerPartyOrders[0][i] = gBattlePartyCurrentOrder[i] ?? 0;
   },
   BufferBattlePartyCurrentOrderBySide,
+  // ── LOT 7 party_menu : briques 1:1 lues par TrySwitchInPokemon (party_menu.c:5800)
+  // via ce pont (= les `extern` du .c ; un import statique party_menu→battle_main
+  // serait une nouvelle arête TDZ dans le graphe de boot — pattern pont validé).
+  GetPartyIdFromBattleSlot,
+  GetPartyIdFromBattlePartyId: _GetPartyIdFromBattlePartyId,
+  SwitchPartyMonSlots: _SwitchPartyMonSlots,
+  SwapPartyPokemon: _SwapPartyPokemonBySlots,
+  /** Deps battle de TrySwitchInPokemon : gBattlersCount, gBattlerPartyIndexes[i],
+   *  GetBattlerSide(i) (= GetBattlerPosition & BIT_SIDE), gBattlerInMenuId (state),
+   *  gBattleStruct.prevSelectedPartySlot. Snapshot à l'appel (pas de refs vivantes). */
+  switchInDeps(): {
+    battlersCount: number; partyIndexes: number[]; sides: number[];
+    battlerInMenuId: number; prevSelectedPartySlot: number;
+  } {
+    const partyIndexes: number[] = [];
+    const sides: number[] = [];
+    for (let i = 0; i < gBattlersCount; i++) {
+      partyIndexes.push(gBattlerPartyIndexes[i] ?? 0);
+      sides.push(GetBattlerPosition(i) & 1);   // 1:1 GetBattlerSide = position & BIT_SIDE
+    }
+    return {
+      battlersCount: gBattlersCount, partyIndexes, sides,
+      battlerInMenuId: _stateNs.gBattlerInMenuId ?? 0,
+      prevSelectedPartySlot: gBattleStruct.prevSelectedPartySlot ?? 0,
+    };
+  },
 };
 
 // ─── RE-EXPORTS nominaux 1:1 (miroir-index — cf. en-tête COUVERTURE) ─────────

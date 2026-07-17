@@ -244,7 +244,20 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
   field move sans badge / « impossible ici ».
 - **Critère** : `Task_PartyMenu_HandleInput` réduit à un shim vide → supprimable ; plus aucun `_phase`.
 
-### LOT 7 — Combat 1:1 (RISQUE n°1) — remplacer les ponts globalThis
+### LOT 7 — Combat 1:1 (RISQUE n°1) — remplacer les ponts globalThis ✅ FAIT (2026-07-17, par Fable)
+> `TrySwitchInPokemon`:5800 + `GetPartyMenuActionsTypeInBattle`:5788 +
+> `CursorCb_SendMon`:3505 transcrits ; menu d'action in-battle 1:1 (ÉCHANGER =
+> ACTIONS_SHIFT volontaire / ENVOYER = ACTIONS_SEND_OUT forcé) ; _menuType =
+> IN_BATTLE ; _partyAction = caseId réel (bufferA[1]&0xF) ; HandleChooseMonCancel
+> SE par case 1:1 (SEND_OUT → SE_FAILURE, B refusé). Résultat lu par
+> WaitForMonSelection via les globals 1:1 gPartyMenuUseExitCallback/
+> gSelectedMonPartyId (module capturé, live bindings) — __battleSwitchResultSlot
+> et chooseSwitchSlot SUPPRIMÉS ; briques battle (GetPartyIdFromBattleSlot etc.)
+> exposées par le pont __battlePartyOrder étendu (battle_main) ; gBattlerInMenuId
+> canonisé sur state (dual-source __battleMenu éliminée, aucun lecteur).
+> Testé EN JEU (launchTB 333) : switch volontaire, « déjà au combat! », B annule
+> sans tour, K.O. → SEND_OUT forcé (B refusé, écran reste), ENVOYER → reprise,
+> ordre field restauré au close (sondé). 0 erreur console.
 - **Fichiers** : `src/party_menu.ts`, `src/battle_main.ts` (ordre déjà là), `src/battle_controller_player.ts`.
 - [port] `ChooseMonForInBattleItem`:5781, `CB2_SetUpExitToBattleScreen`:6119, `TrySwitchInPokemon`:5800,
   `GetPartyMenuActionsTypeInBattle`:5788. Remplacer `__battleSwitchResultSlot`/`__battlePartyOrder`
