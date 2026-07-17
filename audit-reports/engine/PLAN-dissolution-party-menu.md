@@ -171,7 +171,7 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
 - **Test** : `tsc` vert + boot sain (INERTE — rien ne lit encore les structs).
 - **Critère** : structs déclarées ; `gPartyMenu.slotId` renvoie `_slotId`.
 
-### LOT 2 — QUICK-WIN : table `sCursorOptions` + `CursorCb_*` standalone
+### LOT 2 — QUICK-WIN : table `sCursorOptions` + `CursorCb_*` standalone — ✅ FAIT `e0f9d6974` (validé en jeu 2026-07-17 : menu d'actions, sous-menu objet libellés ROM PRENDR./LETTRE, B 1:1 → retour menu d'action, RESUME)
 - **Fichiers** : `src/party_menu.ts` (+ éventuel `src/data/party_menu.ts` pour les tables).
 - [extract] sortir de `_handleActionMenuInput` (3420) les `CursorCb_Summary`:2770, `_Store`:3587,
   `_Cancel1`:3062, `_Cancel2`:3482 en fonctions `CursorCb_X(taskId)` ; [rename] `_cursorCbSwitch/

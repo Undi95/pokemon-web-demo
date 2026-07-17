@@ -303,7 +303,7 @@ Côté `player_pc.ts` (domicile `player_pc.c`) :
 > Invariant à CHAQUE lot : `npx tsc --noEmit` = 0. Le clone RESTE en place et fonctionnel
 > jusqu'au Lot 6 (aucune régression du sac combat/PC pendant les lots préparatoires).
 
-### LOT 1 — Porter le context ItemPC-Deposit dans item_menu.ts (INERTE)
+### LOT 1 — Porter le context ItemPC-Deposit dans item_menu.ts (INERTE) — ✅ FAIT `c55e3f790`
 - **Fichiers** : `src/item_menu.ts`.
 - **Contenu** : transcrire `Task_ItemContext_Deposit` (:2203), `Task_ChooseHowManyToDeposit`
   (:2223), `TryDepositItem` (:2248), `WaitDepositErrorMessage` (:2276) + `CB2_GoToItemDepositMenu`
@@ -314,7 +314,7 @@ Côté `player_pc.ts` (domicile `player_pc.c`) :
 - **Test** : `tsc` vert + boot sain. (Pas de test en jeu — code inerte, Règle 2.)
 - **Critère** : compile, `CB2_GoToItemDepositMenu` exporté.
 
-### LOT 2 — Porter les callbacks retour ItemPC dans player_pc.ts (INERTE)
+### LOT 2 — Porter les callbacks retour ItemPC dans player_pc.ts (INERTE) — ✅ FAIT `a002604b6` (avec le LOT 3, validé en jeu 2026-07-17)
 - **Fichiers** : `src/player_pc.ts`.
 - **Contenu** : transcrire `CB2_PlayerPCExitBagMenu` (player_pc.c:571), `ItemStorage_ReshowAfterBagMenu`
   (:577), `ItemStorage_HandleReturnToProcessInput` (:585). Supprimer le dead code `_depositOpenList`
@@ -322,7 +322,7 @@ Côté `player_pc.ts` (domicile `player_pc.c`) :
 - **Test** : `tsc` vert + boot sain.
 - **Critère** : compile, `CB2_PlayerPCExitBagMenu` prêt à être posé comme exitCallback.
 
-### LOT 3 — Basculer l'ItemPC sur item_menu + SUPPRIMER l'usage clone ITEMPC
+### LOT 3 — Basculer l'ItemPC sur item_menu + SUPPRIMER l'usage clone ITEMPC — ✅ FAIT `a002604b6` (dépôt POTION ×2 validé : sac 5→3, PC 1+2=3, retour curseur DEPOSER, pas de start menu fantôme)
 - **Fichiers** : `src/player_pc.ts`.
 - **Contenu** : remplacer `_itemStorageDeposit` (:604-641) : au lieu de
   `import('./engine/bag/bag-screen')…OpenBagScreen(…ITEMPC…)`, faire (1:1 `Task_ItemStorage_Deposit`)
@@ -333,7 +333,7 @@ Côté `player_pc.ts` (domicile `player_pc.c`) :
   retour PC propre. Non-régression RETIRER/JETER (UI player_pc inchangée).
 - **Critère** : ItemPC ne référence plus `bag-screen`.
 
-### LOT 4 — Porter le battle-use réel (item.ts + item_use.ts) + câbler item_menu.ts
+### LOT 4 — Porter le battle-use réel (item.ts + item_use.ts) + câbler item_menu.ts — ✅ FAIT `c55e3f790` (porté INERTE : GetItemBattleFunc + 7 ItemUseInBattle_* + ItemMenu_UseInBattle_1to1 ; reste le câblage reshow du LOT 5)
 - **Fichiers** : `src/item.ts` (`GetItemBattleFunc`), `src/item_use.ts` (les `ItemUseInBattle_*`),
   `src/item_menu.ts` (+ éventuellement extraction data `battleUsage`).
 - **Contenu** : transcrire `GetItemBattleFunc` (item.c:941) + `ItemUseInBattle_{PokeBall:949,
