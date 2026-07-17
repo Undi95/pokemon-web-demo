@@ -1842,6 +1842,7 @@ function Task_ClosePartyMenu(task: DecompTask): void {
   // (bug #4) / CB2 stomp mid-summary (bug #3).
   const transient = _partyTransientExitCb;
   _partyTransientExitCb = null;
+  _inBattleItemUse = false;  // flag item-combat consommé (usage OU annulation)
   const exitCb = transient ?? rt.gMain.savedCallback;
   if (exitCb) rt.SetMainCallback2(exitCb);
   else rt.SetMainCallback2(null);
@@ -3967,6 +3968,14 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       const mon = party[_slotId];
       if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
       if (mon.isEgg) { PlaySE(SE_FAILURE); return; }  // 1:1 IsSelectedMonNotEgg
+      // 1:1 décomp :1312-1313 (le chaînon qui CONSOMME LE TOUR en combat) :
+      //   if (gPartyMenu.menuType == PARTY_MENU_TYPE_IN_BATTLE)
+      //       sPartyMenuInternal->exitCallback = CB2_SetUpExitToBattleScreen;
+      // → le party post-usage ferme DIRECTEMENT vers le reshow combat,
+      // gSpecialVar.ItemId reste = l'objet → CompleteWhenChoseItem l'émet =
+      // tour joué. Le sac ne se rouvre que sur ANNULATION (B, ItemId→0).
+      // Sans ce if : retour au sac + B = émission 0 = soin gratuit (bug).
+      if (_inBattleItemUse) _partyTransientExitCb = _CB2_SetUpExitToBattleScreen;
       // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
       const cb = (globalThis as Record<string, unknown>).gItemUseCB as
         | ((taskId: number, returnTask: ((task: DecompTask) => void) | null) => void)
@@ -4341,6 +4350,49 @@ export function OpenPartyScreenForItemUse(returnBagCb: () => void): void {
   });
 }
 
+/** 1:1 décomp `ChooseMonForInBattleItem(void)` (party_menu.c:5781) :
+ *    InitPartyMenu(PARTY_MENU_TYPE_IN_BATTLE, GetPartyLayoutFromBattleType(),
+ *                  PARTY_ACTION_USE_ITEM, FALSE, PARTY_MSG_USE_ON_WHICH_MON,
+ *                  Task_HandleChooseMonInput, CB2_ReturnToBagMenu);
+ *    ReshowBattleScreenDummy(); UpdatePartyToBattleOrder();
+ *
+ *  Ouvre l'écran party pour choisir le mon-cible d'un objet utilisé EN COMBAT
+ *  (Medicine / PPRecovery). Posé sur `gBagMenu->newScreenCallback` par
+ *  `ItemUseInBattle_ShowPartyMenu` (item_use.c:1012) → le sac se ferme VERS le
+ *  party-menu ; le retour se fait via `CB2_ReturnToBagMenu` (savedCallback) qui
+ *  rouvre le sac, lequel se referme vers le reshow combat.
+ *
+ *  Réutilise `OpenPartyScreenForItemUse(CB2_ReturnToBagMenu)` = MÊME InitPartyMenu
+ *  (PARTY_ACTION_USE_ITEM, PARTY_MSG_USE_ON_WHICH_MON, Task_HandleChooseMonInput,
+ *  CB2_ReturnToBagMenu) que le chemin FIELD. Divergences déjà actées (idem
+ *  `OpenPartyScreenForBattleSwitch`) : PARTY_MENU_TYPE_FIELD/LAYOUT_SINGLE au lieu de
+ *  IN_BATTLE/GetPartyLayoutFromBattleType (le port ne branche pas sur le type combat) ;
+ *  `ReshowBattleScreenDummy` = corps vide décomp (no-op) ; `UpdatePartyToBattleOrder`
+ *  (réindex ordre-combat) n'est requis que pour le send-out multi/double — en solo la
+ *  cible = slot choisi 1:1 (gPlayerParty non réordonnée hors switch). Résolu via pont
+ *  globalThis `__ChooseMonForInBattleItem` (posé plus bas) pour éviter le cycle
+ *  item_use↔party_menu. */
+export function ChooseMonForInBattleItem(): void {
+  _inBattleItemUse = true;  // = gPartyMenu.menuType = PARTY_MENU_TYPE_IN_BATTLE (structs éclatées)
+  OpenPartyScreenForItemUse(CB2_ReturnToBagMenu);
+}
+
+/** = `gPartyMenu.menuType == PARTY_MENU_TYPE_IN_BATTLE` pour LE flux item-combat
+ *  (le port n'a pas encore la struct gPartyMenu — flag transient équivalent,
+ *  posé par ChooseMonForInBattleItem, reset au close du party). */
+let _inBattleItemUse = false;
+
+/** 1:1 décomp `CB2_SetUpExitToBattleScreen` (party_menu.c:6119) :
+ *  `SetMainCallback2(CB2_SetUpReshowBattleScreenAfterMenu)`. Résolu via le pont
+ *  reshow `__CB2_SetUpReshowBattleScreenAfterMenu2` — posé par
+ *  `_OpenBagAndChooseItem` (battle_controller_player.ts) AVANT l'ouverture du
+ *  sac de combat, donc garanti présent quand ce flux tourne. */
+function _CB2_SetUpExitToBattleScreen(): void {
+  const cb = (globalThis as Record<string, unknown>).__CB2_SetUpReshowBattleScreenAfterMenu2 as (() => void) | undefined;
+  if (cb) { cb(); return; }
+  console.error('[party_menu] __CB2_SetUpReshowBattleScreenAfterMenu2 absent (exit item-combat → reshow)');
+}
+
 /** Étape 4 (combat) : ouvre l'écran party en mode PARTY_ACTION_SEND_OUT pour
  *  choisir le Pokémon à envoyer au combat. 1:1 décomp `OpenPartyMenuInBattle` →
  *  `InitPartyMenu(PARTY_MENU_TYPE_IN_BATTLE, …, PARTY_ACTION_SEND_OUT, …,
@@ -4656,6 +4708,10 @@ export function TickPartyScreen(_newKeys: number): void {
 // posés par le module PROPRIÉTAIRE (party_menu.c est le foyer des deux fns).
 (globalThis as Record<string, unknown>).__ChooseMonForDaycare = ChooseMonForDaycare;
 (globalThis as Record<string, unknown>).__GetCursorSelectionMonId = GetCursorSelectionMonId;
+// Pont anti-cycle item_use→party_menu : `ItemUseInBattle_ShowPartyMenu` (item_use.ts)
+// pose `gBagMenu.newScreenCallback = _ChooseMonForInBattleItem` qui résout ceci
+// (party_menu.c = foyer de ChooseMonForInBattleItem).
+(globalThis as Record<string, unknown>).__ChooseMonForInBattleItem = ChooseMonForInBattleItem;
 
 // ─── ItemIdToBattleMoveId 1:1 (party_menu.c:4688) — ex-tmhm-moves.ts (lot 10) ──
 /** 1:1 décomp `party_menu.c:4688` :

@@ -66,8 +66,8 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getItem as _getItem } from '../harness/runtime/data-tables';
 import { ApplyMedicineEffect } from './engine/bag/bag-item-effects';
 import { setItemUseCB, SetUpItemUseCallback, setItemUseOnFieldCB, SetUpItemUseOnFieldCallback, ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp, ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh, ItemUseCB_EvolutionStone, ItemUseCB_TMHM, CB2_ChooseMonToGiveItem } from './item_use';
-// Handlers d'usage d'objet EN COMBAT (item_use.c → item_use.ts, Lot 2) dispatchés
-// par ItemMenu_UseInBattle_1to1 (foyer 1:1 item_menu.c:1997). INERTE (Lot 5 = câblage).
+// Handlers d'usage d'objet EN COMBAT (item_use.c → item_use.ts) dispatchés par
+// ItemMenu_UseInBattle (foyer 1:1 item_menu.c:1997) via GetItemBattleFunc.
 import { ItemUseInBattle_PokeBall, ItemUseInBattle_StatIncrease, ItemUseInBattle_Medicine, ItemUseInBattle_PPRecovery, ItemUseInBattle_Escape } from './item_use';
 import { GetSaveBlock1, GetSaveBlock2 } from './save';
 import { gMapHeader } from './fieldmap';
@@ -537,8 +537,17 @@ export function CB2_GoToSellMenu(): void {
 // FIELD (START→SAC) : retour terrain + ré-ouverture start menu 1:1 (= décomp
 // CB2_ReturnToFieldWithOpenMenu) — porté option-menu-return.ts, prouvé party.
 const _cb2ReturnToFieldWithOpenMenu: MainCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
-// BATTLE : maillon ultérieur (hors chemin ouvrable Phase 1 ; déferral honnête).
-const _cb2SetUpReshowBattleScreenAfterMenu2: MainCallback = null;
+// BATTLE : 1:1 décomp `CB2_SetUpReshowBattleScreenAfterMenu2` (battle_controller_player.c:1555)
+// = `SetMainCallback2(ReshowBattleScreenAfterMenu)`. Le vrai reshow vit dans
+// reshow_battle_screen.ts (cycle item_menu↔battle_controller_player↔reshow) → résolu par
+// pont globalThis `__CB2_SetUpReshowBattleScreenAfterMenu2` que battle_controller_player.ts
+// pose AVANT d'ouvrir le sac (_OpenBagAndChooseItem). Pattern anti-cycle IDENTIQUE à
+// CB2_FavorLadyExitBagMenu (:3623, lit __FieldCallback_*).
+function _cb2SetUpReshowBattleScreenAfterMenu2(): void {
+  const cb = (globalThis as Record<string, unknown>).__CB2_SetUpReshowBattleScreenAfterMenu2 as (() => void) | undefined;
+  if (cb) { cb(); return; }
+  console.error('[item-menu] __CB2_SetUpReshowBattleScreenAfterMenu2 absent (battle_controller_player non câblé — sac de combat)');
+}
 // BERRY-TREE (Bag_ChooseBerry) : 1:1 décomp `CB2_ReturnToFieldContinueScript`
 // (item_menu.c:579) — restore l'OW + fade FROM_BLACK ; le script de plantation
 // bloqué (waitstate après `special Bag_ChooseBerry`) reprend au retour.
@@ -3549,24 +3558,12 @@ function ItemMenu_Cancel(task: DecompTask): void {
 }
 
 /** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) :
- *  `if (GetItemBattleFunc(item)) { RemoveContextWindow(); GetItemBattleFunc(item)(taskId); }`.
- *  Notre combat tourne INLINE (≠ controller CB2), donc le sac n'a pas à dispatcher
- *  l'effet : il ferme simplement (Task_FadeAndCloseBagMenu → exitCallback), et le
- *  combat lit `gSpecialVar.ItemId` (déjà posé à la sélection A de l'item, bag-menu.ts:1964)
- *  pour appliquer l'effet (capture / soin / X-item) côté battle-flow. */
+ *  `if (GetItemBattleFunc(gSpecialVar_ItemId)) { RemoveContextWindow(); GetItemBattleFunc(gSpecialVar_ItemId)(taskId); }`.
+ *  GetItemBattleFunc (item.ts, foyer item.c:941) rend le NOM du handler `battleUseFunc`
+ *  (string items.json) → dispatch vers les ItemUseInBattle_* (item_use.ts), EXACTEMENT
+ *  comme `ItemMenu_UseOutOfBattle` route `GetItemFieldFunc`. Câblé dans
+ *  sItemMenuActions[ACTION_BATTLE_USE] (:2179). */
 function ItemMenu_UseInBattle(task: DecompTask): void {
-  RemoveContextWindow();
-  Task_FadeAndCloseBagMenu(task);
-}
-
-/** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) — VERSION 1:1 COMPLÈTE, INERTE :
- *  `if (GetItemBattleFunc(item)) { RemoveContextWindow(); GetItemBattleFunc(item)(taskId); }`.
- *  GetItemBattleFunc (item.ts) rend le NOM du handler (string items.json) → dispatch vers les
- *  ItemUseInBattle_* (item_use.ts), EXACTEMENT comme ItemMenu_UseOutOfBattle route GetItemFieldFunc.
- *  NON câblée dans sItemMenuActions (le sac de combat passe encore par le clone bag-screen.ts) :
- *  le remplacement de l'ItemMenu_UseInBattle simplifié ci-dessus + le câblage reshow = Lot 5.
- *  Exportée pour que le Lot 5 la branche (et supprime la version simplifiée). */
-export function ItemMenu_UseInBattle_1to1(task: DecompTask): void {
   const item = gSpecialVar.ItemId;
   const battleFunc = GetItemBattleFunc(item); // = gItems[item].battleUseFunc (nom du handler)
   if (battleFunc) {
@@ -3579,7 +3576,7 @@ export function ItemMenu_UseInBattle_1to1(task: DecompTask): void {
       case 'ItemUseInBattle_PPRecovery':   ItemUseInBattle_PPRecovery(task); break;
       case 'ItemUseInBattle_Escape':       ItemUseInBattle_Escape(task); break;
       default:
-        console.error('[item-menu] battleUseFunc non porté (INERTE):', battleFunc);
+        console.error('[item-menu] battleUseFunc non porté:', battleFunc);
     }
   }
 }

@@ -150,7 +150,10 @@ import { getBattleMove } from './data/battle_moves';
 import { getPPTextPalette } from './battle_bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
-import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from './window';
+import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram, FreeAllWindowBuffers } from './window';
+// gSpecialVar_ItemId : lu par CompleteWhenChoseItem (1:1 bcp.c:1390). script-vars est
+// cycle-safe ici (déjà transitif via battle_util ; save.ts n'importe rien de battle).
+import { gSpecialVar } from './engine/script/script-vars';
 import { getString } from '../harness/runtime/decomp-strings';
 // ANTI-CYCLE ESM (regression T3 : l'import statique de battle_gfx_sfx_util
 // bloquait l'INTRO — meme TDZ que pokeball/ST_OAM_AFFINE_DOUBLE) : lazy.
@@ -2046,34 +2049,45 @@ function _BeginNormalPaletteFade(_palettes: number, _delay: number, _startY: num
 }
 
 function _OpenBagAndChooseItem(): void {
-  // 1:1 decomp OpenBagAndChooseItem (battle_controller_player.c:2640s) : attend
-  // la fin du fade-to-black (PlayerHandleChooseItem), installe
-  // CompleteWhenChoseItem, FreeAllWindowBuffers (plateforme : le swap CB2 du
-  // bag s'en charge), CB2_BagMenuFromBattle -> chez nous l'UI reelle
-  // bag-screen en mode BATTLE avec le reshow decomp en retour (MEME pattern
-  // que _OpenPartyMenuToChooseMon, valide switch).
-  if (getRuntime()?.gPaletteFade?.active) return;
-  gBattlerControllerFuncs[gActiveBattler] = _CompleteWhenChoseItem;
-  (globalThis as Record<string, unknown>).__battleBagResultItemId = 0;
+  // 1:1 décomp `OpenBagAndChooseItem` (battle_controller_player.c:1375) : attend la fin
+  // du fade-to-black (PlayerHandleChooseItem), installe CompleteWhenChoseItem,
+  // ReshowBattleScreenDummy (no-op décomp), FreeAllWindowBuffers, CB2_BagMenuFromBattle.
+  if (getRuntime()?.gPaletteFade?.active) return;                       // 1:1 :1377
+  gBattlerControllerFuncs[gActiveBattler] = _CompleteWhenChoseItem;     // 1:1 :1379
+  // Gate reshow (= « gMain.callback2 == BattleMainCB2 » du décomp) remis à zéro pour CE
+  // sac ; posé à true par ReshowBattleScreenAfterMenu au retour (idiome _WaitForMonSelection).
   (globalThis as Record<string, unknown>).__battleReshowDone = false;
+  // 1:1 :1380-1382 ReshowBattleScreenDummy() [no-op] ; FreeAllWindowBuffers() ;
+  // CB2_BagMenuFromBattle() — bascule LOT 5 : item_menu.ts (miroir 1:1) au lieu du clone
+  // bag-screen.ts. Import différé anti-cycle (item_menu↔bcp, reshow↔bcp ; précédent pokenav.ts).
+  // FreeAllWindowBuffers + CB2_BagMenuFromBattle sont gardés ADJACENTS dans le .then() (comme
+  // le décomp) : sinon libérer les fenêtres combat pendant le gap async (avant que CB2_Bag
+  // prenne la main) laisserait BattleMainCB2 rendre des buffers libérés. Le pont reshow
+  // globalThis est posé AVANT d'ouvrir le sac : _cb2SetUpReshowBattleScreenAfterMenu2
+  // (item_menu.ts) le lit à la fermeture du sac → SetMainCallback2(ReshowBattleScreenAfterMenu).
   void Promise.all([
-    import('./engine/bag/bag-screen'),
+    import('./item_menu'),
     import('./reshow_battle_screen'),
   ]).then(([bag, reshow]) => {
-    bag.OpenBagScreenForBattle(reshow.CB2_SetUpReshowBattleScreenAfterMenu);
-  });
+    (globalThis as Record<string, unknown>).__CB2_SetUpReshowBattleScreenAfterMenu2 = reshow.CB2_SetUpReshowBattleScreenAfterMenu2;
+    FreeAllWindowBuffers();          // 1:1 :1381
+    bag.CB2_BagMenuFromBattle();     // 1:1 :1382
+  }).catch((e) => console.error('[OpenBagAndChooseItem]', e));
 }
 
-/** 1:1 decomp CompleteWhenChoseItem : `callback2 == BattleMainCB2 && !fade ->
- *  EmitOneReturnValue(BUFFER_B, gSpecialVar_ItemId) + completed`. Equivalent L :
- *  reshow termine (__battleReshowDone) + fade fini ; gSpecialVar_ItemId =
- *  bridge __battleBagResultItemId (0 = annule -> la machine C5 re-affiche le
- *  menu, itemValue 0). */
+/** 1:1 décomp `CompleteWhenChoseItem` (battle_controller_player.c:1386) :
+ *  `if (gMain.callback2 == BattleMainCB2 && !gPaletteFade.active) {
+ *      BtlController_EmitOneReturnValue(B_COMM_TO_ENGINE, gSpecialVar_ItemId);
+ *      PlayerBufferExecCompleted(); }`.
+ *  Le check « callback2 == BattleMainCB2 » (= reshow terminé, retour à la boucle combat)
+ *  a pour équivalent L sync/cycle-free `__battleReshowDone` — posé par
+ *  ReshowBattleScreenAfterMenu (reshow_battle_screen.ts:250), MÊME idiome que
+ *  `_WaitForMonSelection`. gSpecialVar.ItemId = objet choisi dans le sac (item_menu.ts:2022)
+ *  ou 0 si annulé B (LIST_CANCEL, item_menu.ts:2008 → la state-machine combat re-prompte). */
 function _CompleteWhenChoseItem(): void {
   const reshowDone = (globalThis as { __battleReshowDone?: boolean }).__battleReshowDone === true;
   if (!reshowDone || getRuntime()?.gPaletteFade?.active) return;
-  const itemId = (globalThis as { __battleBagResultItemId?: number }).__battleBagResultItemId ?? 0;
-  BtlController_EmitOneReturnValue(B_COMM_TO_ENGINE, itemId);
+  BtlController_EmitOneReturnValue(B_COMM_TO_ENGINE, gSpecialVar.ItemId);
   PlayerBufferExecCompleted();
 }
 

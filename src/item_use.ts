@@ -596,12 +596,17 @@ function Task_UseStatIncreaseItem(task: DecompTask): void {
   }
 }
 
-/** Pont vers `UseStatIncreaseItem(itemId)` (foyer pokemon.c:5433 = message "X, ATTAQUE+!" via
- *  BufferStatRoseMessage — hors item_use). Câblage réel `__UseStatIncreaseItem` = Lot 5. */
+/** Pont vers `UseStatIncreaseItem(itemId)` (foyer pokemon.c:5433 = message "ATTAQUE de MON
+ *  augmente!" construit par `BufferStatRoseMessage` → gStatNamesTable + gText_DefendersStatRose
+ *  + BattleStringExpandPlaceholdersToDisplayedString). DÉFÉRÉ hors périmètre Lot 5 : le corps
+ *  dépend de l'infra battle_message NON portée (gStatNamesTable, sStatsToRaise, la variante
+ *  `...ToDisplayedString`, l'accès gItemEffectTable X-stat). ⚠️ L'EFFET est déjà appliqué par
+ *  `PokemonUseItemEffects` dans `ItemUseInBattle_StatIncrease` — seul le message flavor de
+ *  succès retombe sur ce fallback tant que `__UseStatIncreaseItem` n'est pas posé. */
 function _useStatIncreaseItemMessage(itemId: number): string | Uint8Array {
   const fn = (globalThis as Record<string, unknown>).__UseStatIncreaseItem as ((id: number) => string | Uint8Array) | undefined;
   if (fn) return fn(itemId);
-  console.error('[item-use-battle] __UseStatIncreaseItem absent (pokemon.ts non câblé — Lot 5)');
+  console.error('[item-use-battle] __UseStatIncreaseItem non porté (pokemon.c:5433 UseStatIncreaseItem + BufferStatRoseMessage dépendent de battle_message non porté) — fallback message');
   return encodeOwText(getString('gText_WontHaveEffect'));
 }
 
@@ -635,11 +640,13 @@ function ItemUseInBattle_ShowPartyMenu(task: DecompTask): void {
   Task_FadeAndCloseBagMenu(task);
 }
 
-/** Pont anti-cycle vers `ChooseMonForInBattleItem` (party_menu.c). Câblage réel = Lot 4/5. */
+/** Pont anti-cycle vers `ChooseMonForInBattleItem` (party_menu.c:5781) — posé par
+ *  party_menu.ts au top-level (chargé statiquement par item_menu.ts/item_use.ts, donc
+ *  résolu dès que le sac s'ouvre). */
 function _ChooseMonForInBattleItem(): void {
   const cb = (globalThis as Record<string, unknown>).__ChooseMonForInBattleItem as (() => void) | undefined;
   if (cb) { cb(); return; }
-  console.error('[item-use-battle] __ChooseMonForInBattleItem absent (party_menu.ts non câblé — Lot 4/5)');
+  console.error('[item-use-battle] __ChooseMonForInBattleItem absent (party_menu.ts non chargé ?)');
 }
 
 /** 1:1 décomp `ItemUseInBattle_Medicine(u8 taskId)` (item_use.c:1026). */
