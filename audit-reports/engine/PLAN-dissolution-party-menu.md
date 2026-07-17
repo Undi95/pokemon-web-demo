@@ -182,7 +182,7 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
   Screenshot. Non-régression des libellés FR (garder `ACTION_MENU_STRINGS_FR`→`getString` si possible).
 - **Critère** : ~9 fonctions `·`→`✓` ; le dispatch action passe par la table.
 
-### LOT 3 — `SetPartyMonSelectionActions` + `GetPartyMenuActionsType` 1:1
+### LOT 3 — `SetPartyMonSelectionActions` + `GetPartyMenuActionsType` 1:1 — ✅ FAIT `5f3a2317c` (validé en jeu : field moves EN BLEU font-4, ordre 1:1, sous-menu OBJET template 1:1)
 - **Fichiers** : `src/party_menu.ts`.
 - [port] `SetPartyMonSelectionActions`:2591, `SetPartyMonFieldSelectionActions`:2607,
   `GetPartyMenuActionsType`:2639, `CreateSelectionWindow`:2696, `Task_TryCreateSelectionWindow`:2731,
@@ -191,7 +191,7 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
   field moves listés). Screenshot.
 - **Critère** : plus de construction de liste d'actions inline.
 
-### LOT 4 — Dispatch choix-mon 1:1 (`Task_HandleChooseMonInput`)
+### LOT 4 — Dispatch choix-mon 1:1 (`Task_HandleChooseMonInput`) — ✅ FAIT `25965a858` (8 fns extraites, ponts combat conservés pour lot 7, 8 divergences annotées in-code ; + fix ordre PartyMenuRemoveWindow :2702 = trou msgbox du menu d'action, bug user)
 - **Fichiers** : `src/party_menu.ts`.
 - [extract] la branche `_phase==='open'` (3803) → vraie `Task_HandleChooseMonInput`:1259 +
   `GetCurrentPartySlotPtr`:1284 + `HandleChooseMonSelection`:1292 + `HandleChooseMonCancel`:1378 +

@@ -1,9 +1,9 @@
 # transpile blit.c → src\blit.ts
 
-stats: {"fns":5,"data":0,"defines":0,"flags":0,"unresolved":1,"gtext":0}
+stats: {"fns":5,"data":0,"defines":0,"flags":0,"unresolved":0,"gtext":0,"mergeSkipped":0}
 
 ## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
-- `u32` ()
+(aucun)
 
 ## Flags TRANSPILER-TODO
 (aucun)

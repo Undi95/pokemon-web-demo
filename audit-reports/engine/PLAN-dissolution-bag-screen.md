@@ -1,4 +1,4 @@
-# PLAN de dissolution du clone `bag-screen.ts`
+# PLAN de dissolution du clone `bag-screen.ts` — ✅ **SOLDÉ 6/6 le 2026-07-17** (`fd0c04b5b` = suppression du clone, −3219 l.)
 
 Défrichage LECTURE SEULE — préparation Phase C du plan `docs/CHANTIER-MOTEUR-100.md`
 (§PHASE C.1, lignes 56-73 : « bag-screen.ts (clone list_menu, utilisé par sac de
@@ -345,7 +345,7 @@ Côté `player_pc.ts` (domicile `player_pc.c`) :
 - **Test** : `tsc` vert + boot sain.
 - **Critère** : compile ; `ItemMenu_UseInBattle` exécute l'effet 1:1.
 
-### LOT 5 — Basculer le sac de combat sur item_menu + SUPPRIMER l'usage clone BATTLE
+### LOT 5 — Basculer le sac de combat sur item_menu + SUPPRIMER l'usage clone BATTLE — ✅ FAIT `fa3753038` (validé en jeu : annulation B sans tour, Potion multi-écrans + tour consommé via CB2_SetUpExitToBattleScreen — chaînon :1312 ajouté en review)
 - **Fichiers** : `src/battle_controller_player.ts`, `src/item_menu.ts`.
 - **Contenu** : câbler `_cb2SetUpReshowBattleScreenAfterMenu2` (item_menu.ts:538) → reshow réel
   (pont globalThis vers `reshow_battle_screen`). Dans `_OpenBagAndChooseItem` (:2047) : remplacer

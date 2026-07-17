@@ -1,6 +1,6 @@
 # transpile battle_palace.c → src\battle_palace.ts
 
-stats: {"fns":11,"data":5,"defines":0,"flags":6,"unresolved":5,"gtext":0}
+stats: {"fns":11,"data":5,"defines":0,"flags":6,"unresolved":5,"gtext":0,"mergeSkipped":0}
 
 ## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
 - `SetBattleFacilityTrainerGfxId` ()

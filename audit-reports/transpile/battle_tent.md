@@ -1,6 +1,6 @@
 # transpile battle_tent.c → src\battle_tent.ts
 
-stats: {"fns":29,"data":7,"defines":0,"flags":10,"unresolved":15,"gtext":0}
+stats: {"fns":29,"data":7,"defines":0,"flags":10,"unresolved":15,"gtext":0,"mergeSkipped":0}
 
 ## Symboles NON RÉSOLUS (imports à créer / kernel manquant)
 - `SetBattleFacilityTrainerGfxId` ()
