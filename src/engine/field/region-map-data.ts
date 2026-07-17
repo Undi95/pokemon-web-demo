@@ -167,7 +167,9 @@ export function GetMapsecType(mapSecId: string, flagGetter: (flag: string) => bo
 const SPECIAL_PLACE_LOCATIONS: Record<string, string> = {
   MAPSEC_UNDERWATER_105:           'MAPSEC_ROUTE_105',
   MAPSEC_UNDERWATER_124:           'MAPSEC_ROUTE_124',
-  MAPSEC_UNDERWATER_125:           'MAPSEC_ROUTE_125',  // BUGFIX (= notre version)
+  // Politique préproc repo : vanilla (BUGFIX ABSENT) → UNDERWATER_125 pointe ROUTE_129
+  // (bug ROM conservé 1:1, aligné sur region_map.ts:412 — consolidation item 3).
+  MAPSEC_UNDERWATER_125:           'MAPSEC_ROUTE_129',
   MAPSEC_UNDERWATER_126:           'MAPSEC_ROUTE_126',
   MAPSEC_UNDERWATER_127:           'MAPSEC_ROUTE_127',
   MAPSEC_UNDERWATER_128:           'MAPSEC_ROUTE_128',

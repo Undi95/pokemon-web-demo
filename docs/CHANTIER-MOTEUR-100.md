@@ -91,8 +91,8 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
 2. ✅ FAIT (2026-07-17) `CpuFill16` harness (decomp-globals:444) accepte number | Uint16Array
    (fill direct buffer-dest, plus de no-op silencieux) ; locale pokenav_region_map supprimée.
    Vérifié en jeu (fond mer BG1 de la carte posé, 0 erreur).
-3. Divergence data : UNDERWATER_125→ROUTE_129 en VANILLA dans region_map.ts vs BUGFIX dans
-   l'ancienne table field — trancher (contrat = décomp vanilla) et aligner les deux écrans.
+3. ✅ FAIT (2026-07-17) UNDERWATER_125 : tranché VANILLA (bug ROM 1:1, BUGFIX absent du préproc)
+   — region-map-data.ts:170 aligné sur region_map.ts:412 (→ ROUTE_129).
 4. Redirection finale des imports IsDma3ManagerBusyWithBgCopy (pokenav_ribbons_*, pokenav_region_map,
    battle_main, battle_script_commands → src/dma3_manager) une fois le lot dupes-fondations committé
    (battle_bg garde le ré-export de compat en attendant).
