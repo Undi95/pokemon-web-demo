@@ -201,7 +201,15 @@ Autres appels internes au foyer : `CB2_ReturnToBagMenu`:2468, `OpenPartyScreenFo
 - **Test EN JEU** : nav curseur (haut/bas), A (menu), B (retour OW), tous modes (field/give/item/daycare/send-out).
 - **Critère** : `Task_HandleChooseMonInput` déclaré ; le choix-mon ne passe plus par `_phase`.
 
-### LOT 5 — Extraire les `Task_*` feuilles (level-up + learn-move)
+### LOT 5 — Extraire les `Task_*` feuilles (level-up + learn-move) ✅ FAIT (2026-07-17)
+> 14 feuilles `Task_*` extraites + 7 renames `_maison`→noms décomp + fusion
+> `_taskPartyMenuReplaceMove`→`Task_PartyMenuReplaceMove` (gate printer inline 1:1).
+> Le méga-handler ne garde que des délégations 1 ligne ; le squelette `_phase`
+> (transitions) reste jusqu'au lot final, annoté `= gTasks[].func = Task_X (:LIGNE)`.
+> + FIX au test : `ShowLevelUpStatsBox` passait `MUS_LEVEL_UP` à
+> `PlayFanfareByFanfareNum` (index `sFanfares` attendu → crash `.songNum`) →
+> `FANFARE_LEVEL_UP` 1:1 :4984. Testé EN JEU : les 3 branches (direct/remplacer/
+> refuser+rebouclages NON) + pg1 deltas réels + pg2 totaux, 0 erreur console.
 - **Fichiers** : `src/party_menu.ts`.
 - [extract] les `_phase==='levelup_*'`/`'replace_*'`/`'stop_learning_*'`/`'which_move_*'`
   (party_menu.ts:3639-3802) en vraies `gTasks` : `Task_DisplayLevelUpStatsPg1/Pg2`:5009/5019,
