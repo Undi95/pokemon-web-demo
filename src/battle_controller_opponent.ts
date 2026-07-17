@@ -116,7 +116,7 @@ import {
 import { getTrainerPicEnum } from './engine/battle/battle-trainer-data-bridge';
 import { StartSpriteAnim } from './sprite';
 import './battle_main';  // section faint-anim consolidee : pose globalThis.__battleFaintAnim (Trigger/SpriteCB faint).
-import './battle_transition';  // miroir PokeballsTrail : pose __battleTransitionMirror (consommé lazy par battle-decomp-loop).
+import './battle_transition';  // charpente transitions 1:1 : pose __battleTransitionCore (consommé lazy par battle-decomp-loop).
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 

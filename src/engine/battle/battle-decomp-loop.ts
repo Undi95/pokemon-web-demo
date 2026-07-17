@@ -49,22 +49,9 @@ import {
   MUS_VS_AQUA_MAGMA_LEADER, MUS_VS_AQUA_MAGMA, MUS_VS_GYM_LEADER, MUS_VS_CHAMPION,
   MUS_VS_RIVAL, MUS_VS_ELITE_FOUR, MUS_VS_FRONTIER_BRAIN,
 } from '../../../include/constants/songs';
-// Transitions (flash/Slice/WhiteBars/PokeballsTrail) : MIROIR src/game/
-// battle_transition.ts, consommé via la surface __battleTransitionMirror
-// (déplacement condition C — l'import statique du miroir = cycle TDZ).
-type _TransitionMirror = {
-  startBattleIntroFlash?: () => void; tickBattleIntroFlash?: () => boolean;
-  startBattleTransitionSlice?: () => void; tickBattleTransitionSlice?: () => boolean;
-  startBattleTransitionWhiteBarsFade?: () => void; tickBattleTransitionWhiteBarsFade?: () => boolean;
-  startBattleTransitionPokeballsTrail?: () => void; tickBattleTransitionPokeballsTrail?: () => boolean;
-  startBattleTransitionAngledWipes?: () => void; tickBattleTransitionAngledWipes?: () => boolean;
-  startBattleTransitionBlur?: () => void; tickBattleTransitionBlur?: () => boolean;
-  startBattleTransitionSwirl?: () => void; tickBattleTransitionSwirl?: () => boolean;
-  startBattleTransitionShuffle?: () => void; tickBattleTransitionShuffle?: () => boolean;
-};
-function _transitionMirror(): _TransitionMirror {
-  return ((globalThis as Record<string, unknown>).__battleTransitionMirror as _TransitionMirror) ?? {};
-}
+// Transition d'entrée = MIROIR src/battle_transition.ts (charpente 1:1 décomp),
+// consommée via la surface globale __battleTransitionCore (lazy : l'import statique
+// du miroir = cycle ESM TDZ au boot froid). Voir _makeBattleStartTransitionCB2.
 import { ENUM_B_1 as B_TRANSITION } from '../../../include/battle_transition';
 import { ensureBallGfxLoaded, ensureBallParticlesLoaded } from '../../../harness/boot/intro-asset-loader';
 
@@ -250,11 +237,12 @@ function _playBattleBGM(): void {
  *  (battle_transition.c:1063) : la TRANSITION d'entrée tourne en callback2 AVANT
  *  CB2_InitBattle, puis bascule sur CB2_InitBattle quand elle est terminée.
  *
- *  PHASE 1 = flash gris RGB(11,11,11) 3 cycles (`startBattleIntroFlash`), PHASE 2 =
- *  Slice (`startBattleTransitionSlice`) qui découpe l'OW en bandes glissantes puis
- *  `FadeScreenBlack` (écran noir instant). Quand le slice est fini → l'OW a disparu,
- *  l'écran est noir → SetMainCallback2(CB2_InitBattle) (= 1:1 Task_BattleStart state 1 :
- *  IsBattleTransitionDone → CleanupOverworld + SetMainCallback2(CB2_InitBattle)).
+ *  Le CB2 lance la charpente 1:1 via __battleTransitionCore.BattleTransition_StartOnField
+ *  (flash gris CreateIntroTask COMMUN + la transition sélectionnée selon la zone :
+ *  Slice/WhiteBarsFade/PokeballsTrail/…), réplique la boucle overworld par frame, puis
+ *  quand IsBattleTransitionDone() (OW disparu, écran noir via FadeScreenBlack) →
+ *  SetMainCallback2(CB2_InitBattle) (= 1:1 Task_BattleStart state 1 : IsBattleTransitionDone
+ *  → CleanupOverworld + SetMainCallback2(CB2_InitBattle)).
  *
  *  Mirror EXACT du flow voie V (battle-flow.ts:2105-2131). Gaté in-game (returnToOverworld) :
  *  le harness boote CB2_InitBattle direct (pas d'OW à découper). */
@@ -265,84 +253,35 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
     console.log(`[decomp-loop] transition FORCÉE (devtool) : ${forced} (au lieu de ${transition})`);
     transition = forced;
   }
-  // ── BASCULE 1:1 (2026-07-17) : le core battle_transition.ts (charpente décomp + 7
-  //    transitions Task_* réelles, commit 241b59198) prend la main quand il est chargé
-  //    (il l'est : importé par ce module même → __battleTransitionCore posé au boot).
-  //    Le CB2 réplique la boucle overworld pendant la transition (RunTasks + AnimateSprites
-  //    + BuildOamBuffer + UpdatePaletteFade — même ordre que le CB2 bespoke ci-dessous) et
-  //    boote le combat sur IsBattleTransitionDone — MÊME handoff que le bespoke.
-  //    Le dispatch bespoke ci-dessous reste en FALLBACK si le core manque (sécurité A/B).
-  {
-    const core = (globalThis as Record<string, unknown>).__battleTransitionCore as {
-      BattleTransition_StartOnField?: (t: number) => void;
-      IsBattleTransitionDone?: () => boolean;
-    } | undefined;
-    if (core?.BattleTransition_StartOnField && core.IsBattleTransitionDone) {
-      const transitionFinal = transition;
-      let started = false;
-      return function CB2_BattleStartTransition_1to1(): void {
-        const rt = getRuntime();
-        if (!rt) return;
-        if (!started) { started = true; core.BattleTransition_StartOnField!(transitionFinal); }
-        rt.runTasks?.();
-        rt.animateSprites?.();
-        rt.buildOamBuffer?.();
-        rt.UpdatePaletteFade?.();
-        if (core.IsBattleTransitionDone!()) rt.SetMainCallback2?.(cb2InitBattle as never);
-      };
-    }
-    console.warn('[decomp-loop] __battleTransitionCore absent → dispatch bespoke (fallback)');
+  // ── CHARPENTE 1:1 (battle_transition.ts) : le core décomp (Task_BattleTransition +
+  //    12 transitions Task_* réelles) est TOUJOURS chargé (importé par ce module via
+  //    battle_controller_opponent → __battleTransitionCore posé au boot). Le CB2 réplique
+  //    la boucle overworld pendant la transition (RunTasks + AnimateSprites + BuildOamBuffer
+  //    + UpdatePaletteFade) et boote le combat sur IsBattleTransitionDone.
+  const core = (globalThis as Record<string, unknown>).__battleTransitionCore as {
+    BattleTransition_StartOnField?: (t: number) => void;
+    IsBattleTransitionDone?: () => boolean;
+  } | undefined;
+  if (!core?.BattleTransition_StartOnField || !core.IsBattleTransitionDone) {
+    // Filet THÉORIQUE (inatteignable : le core est importé par ce module même). Si l'ordre
+    // de chargement changeait et que le core manquait, on ne soft-lock PAS : on boote le
+    // combat direct (l'OW n'est pas découpé, mais le jeu continue). HURLE en console.
+    console.error('[decomp-loop] __battleTransitionCore absent (ne devrait jamais arriver) → boot combat direct sans transition');
+    return function CB2_BattleStartTransition_NoCore(): void {
+      getRuntime()?.SetMainCallback2?.(cb2InitBattle as never);
+    };
   }
-  let state = 0;  // 0 = lance le flash, 1 = flash en cours, 2 = transition en cours
-  // Dispatch 1:1 `CreateBattleStartTask(transition, …)` (battle_setup.c) : le flash gris
-  // (CreateIntroTask) est COMMUN à toutes les transitions, puis la transition SÉLECTIONNÉE
-  // s'exécute. PORTÉES : SLICE (ennemi < joueur) + WHITE_BARS_FADE (défaut zone normale,
-  // = le cas du combat dev Treecko5/Poochyena5). Les autres (CAVE/WATER/FLASH : WAVE,
-  // GRID_SQUARES, CLOCKWISE_WIPE, BLUR, RIPPLE) font un fallback gracieux SLICE + warn
-  // (= chantier VISUEL/A/B restant). Le warn rend visible quelle transition le jeu veut.
-  const m = _transitionMirror();
-  let startTransition = m.startBattleTransitionSlice ?? ((): void => { /* miroir absent */ });
-  let tickTransition = m.tickBattleTransitionSlice ?? ((): boolean => true);
-  if (transition === B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE && m.startBattleTransitionWhiteBarsFade && m.tickBattleTransitionWhiteBarsFade) {
-    startTransition = m.startBattleTransitionWhiteBarsFade;
-    tickTransition = m.tickBattleTransitionWhiteBarsFade;
-  } else if (transition === B_TRANSITION.B_TRANSITION_POKEBALLS_TRAIL && m.startBattleTransitionPokeballsTrail && m.tickBattleTransitionPokeballsTrail) {
-    startTransition = m.startBattleTransitionPokeballsTrail;
-    tickTransition = m.tickBattleTransitionPokeballsTrail;
-  } else if (transition === B_TRANSITION.B_TRANSITION_ANGLED_WIPES && m.startBattleTransitionAngledWipes && m.tickBattleTransitionAngledWipes) {
-    startTransition = m.startBattleTransitionAngledWipes;
-    tickTransition = m.tickBattleTransitionAngledWipes;
-  } else if (transition === B_TRANSITION.B_TRANSITION_BLUR && m.startBattleTransitionBlur && m.tickBattleTransitionBlur) {
-    startTransition = m.startBattleTransitionBlur;
-    tickTransition = m.tickBattleTransitionBlur;
-  } else if (transition === B_TRANSITION.B_TRANSITION_SWIRL && m.startBattleTransitionSwirl && m.tickBattleTransitionSwirl) {
-    startTransition = m.startBattleTransitionSwirl;
-    tickTransition = m.tickBattleTransitionSwirl;
-  } else if (transition === B_TRANSITION.B_TRANSITION_SHUFFLE && m.startBattleTransitionShuffle && m.tickBattleTransitionShuffle) {
-    startTransition = m.startBattleTransitionShuffle;
-    tickTransition = m.tickBattleTransitionShuffle;
-  } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE && transition !== B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
-    console.warn(`[decomp-loop] transition=${transition} non portée → fallback SLICE (visuel A/B à porter)`);
-  }
-  return function CB2_BattleStartTransition(): void {
-    switch (state) {
-      case 0:
-        _transitionMirror().startBattleIntroFlash?.();
-        state = 1;
-        break;
-      case 1:
-        if (_transitionMirror().tickBattleIntroFlash?.() ?? true) {
-          startTransition();
-          state = 2;
-        }
-        break;
-      case 2:
-        if (tickTransition()) {
-          // Transition terminée (écran noir via FadeScreenBlack) → boot du combat.
-          getRuntime()?.SetMainCallback2?.(cb2InitBattle as never);
-        }
-        break;
-    }
+  const transitionFinal = transition;
+  let started = false;
+  return function CB2_BattleStartTransition_1to1(): void {
+    const rt = getRuntime();
+    if (!rt) return;
+    if (!started) { started = true; core.BattleTransition_StartOnField!(transitionFinal); }
+    rt.runTasks?.();
+    rt.animateSprites?.();
+    rt.buildOamBuffer?.();
+    rt.UpdatePaletteFade?.();
+    if (core.IsBattleTransitionDone!()) rt.SetMainCallback2?.(cb2InitBattle as never);
   };
 }
 
