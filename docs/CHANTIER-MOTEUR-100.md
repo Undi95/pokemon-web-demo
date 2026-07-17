@@ -82,9 +82,12 @@ contest_util 32ref · **item_use 30ref (EN COURS via plan bag lots 1-2)** ·
 overworld 26ref · player_pc 25ref (plan bag) · ✅ **battle_transition 12/12 transitions solo
 RÉELLES** (charpente+bascule `241b59198`, phase 2 `0b5193295` — les 5 dernières
 [BigPokeball/PatternWeave, ClockwiseWipe, Ripple, WhiteBarsFade réel, GridSquares]
-transcrites par agent Opus, testées EN JEU aux films 2026-07-18 ; RESTE : purge du bloc
-bespoke l.1-1000 + dispatch fallback decomp-loop en TRIANT les morceaux réutilisés
-[_fldEffPokeballTrail, NUM_WHITE_BARS/FADE_TARGET]) · field_screen_effect 23ref (Do*Warp à consolider) ·
+transcrites par agent Opus, testées EN JEU aux films 2026-07-18 ; ✅ BESPOKE PURGÉ
+`061f344b1` (−893 l., survivants triés par grep [fldeff trail entier, BlackWipe,
+sAngledWipes_*, _setSinWave…], dispatch fallback decomp-loop supprimé = core
+inconditionnel, re-testé films SLICE+WAVE post-purge). CHANTIER battle_transition
+SOLO CLOS — restent hors-solo : mugshots/légendaires/Frontier [exemptions]) ·
+field_screen_effect 23ref (Do*Warp à consolider) ·
 pokemon_summary_screen 21ref (PssScroll, LoadMonGfx) · start_menu 19ref (InitSave/SaveCallback !) ·
 sprite.c 18ref (moteur, adaptations à réconcilier) · trainer_card 17ref/59abs (l'écran vit ailleurs —
 dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scratchpad top-holes.cjs.
