@@ -114,7 +114,13 @@ function AnimTask_BlendColorCycle(task: AnimTask): void {
 function _BlendColorCycle_Step(task: AnimTask): void {
   if (task.data[9] < task.data[1]) { task.data[9]++; return; }
   task.data[9] = 0;
-  const target = !task.data[6] ? task.data[4] : (task.data[2] === 1 ? 0 : task.data[3]);
+  // 1:1 AnimTask_BlendColorCycleLoop (battle_anim_normal.c:483-484) : au DERNIER
+  // blend (tNumBlends == 1), targetBlendAmount est forcé à 0 QUELLE QUE SOIT la
+  // phase (aller OU retour). Un numBlends IMPAIR finit en phase aller (Doux
+  // Parfum num_blends=5) : l'ancien code n'appliquait le forçage qu'en phase
+  // retour → dernier fade 5→13 au lieu de 5→0 = mon resté ROSE (bug user 2026-07-17).
+  let target = !task.data[6] ? task.data[4] : task.data[3];
+  if (task.data[2] === 1) target = 0;
   // appliquer le blend courant sur le masque
   let selected = UnpackSelectedBattlePalettes(task.data[0]) >>> 0;
   let palOffset = 0;
@@ -742,7 +748,10 @@ function _UpdateMonScrollingBgMask(task: _SmskTask): void {
 function _BlendColorCycleMask_Step(task: AnimTask): void {
   if (task.data[9] < task.data[1]) { task.data[9]++; return; }
   task.data[9] = 0;
-  const target = !task.data[6] ? task.data[4] : (task.data[2] === 1 ? 0 : task.data[3]);
+  // 1:1 :531-532/:617-618 : dernier blend (tNumBlends == 1) → target forcé 0
+  // dans les DEUX phases (cf. _BlendColorCycle_Step — bug rose Doux Parfum).
+  let target = !task.data[6] ? task.data[4] : task.data[3];
+  if (task.data[2] === 1) target = 0;
   let selected = (((task.data[13] & 0xFFFF) << 16) | (task.data[14] & 0xFFFF)) >>> 0;
   let palOffset = 0;
   while (selected !== 0) {
