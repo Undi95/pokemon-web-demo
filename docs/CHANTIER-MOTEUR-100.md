@@ -109,8 +109,16 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    blocs tilemap des BG non-ownés (1:1 window.c AllocZeroed — SetBgTilemapBuffer trace
    l'ownership) → fin des boîtes party fantômes par-dessus la carte. Validé : fly map flux
    party→VOL complet, carte Pokénav, textbox field, intro→titre. ③ RÉSOLU-NON-BUG : icônes
-   villes ROSES = VANILLA (PLTE décomp). Reste micro : valider envol one-shot (logs ×6 =
-   probable accumulation console).
+   villes ROSES = VANILLA (PLTE décomp). ✅ ENVOL RE-TRANSCRIT 1:1 (2026-07-17 soir,
+   `9c494cdf8`, dérive rattrapée par le USER au film) : StartFlyOutThenWarp/__flyDoWarp
+   (rAF polls, hook double flaky) DISSOUS → FieldCallback_UseFly + Task_UseFly 1:1
+   (field_effect.c:1345/1354) + warp kind 'fly' (executeWarp joue FieldCallback_FlyIntoMap
+   à l'arrivée = l'OISEAU REDESCEND et dépose) + hold-black du retour carte→field
+   (redraw sync sous le noir) + Phase 2 sans re-fade (l'écran est déjà noir via le
+   FLDEFF). fly-field-move.ts SUPPRIMÉ. Validé films+sonde 60ms (1 seul cycle de
+   fade par côté). 🔶 À trancher à l'œil nu : 1 frame « rayée » vue au FILM à ~1.2s
+   (retour carte→field) que la sonde structurelle CONTREDIT (tilemaps field en VRAM
+   dès 0.78s, gate fermé, BG invisibles) — suspicion artefact de capture rAF.
 6. ✅ FAIT (2026-07-17 soir, `d55354afc`) — SOURCE DE VÉRITÉ UNIQUE : sprite.affineMode = miroir
    du champ C `sprite->oam.affineMode` ; syncSpritesToOam pousse TEL QUEL (plus de merge) et
    tickAllAffineAnims gate sur le sprite seul (plus de OR ni recopie OAM→sprite). Allumeurs
