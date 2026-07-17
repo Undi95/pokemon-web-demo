@@ -265,6 +265,34 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
     console.log(`[decomp-loop] transition FORCÉE (devtool) : ${forced} (au lieu de ${transition})`);
     transition = forced;
   }
+  // ── BASCULE 1:1 (2026-07-17) : le core battle_transition.ts (charpente décomp + 7
+  //    transitions Task_* réelles, commit 241b59198) prend la main quand il est chargé
+  //    (il l'est : importé par ce module même → __battleTransitionCore posé au boot).
+  //    Le CB2 réplique la boucle overworld pendant la transition (RunTasks + AnimateSprites
+  //    + BuildOamBuffer + UpdatePaletteFade — même ordre que le CB2 bespoke ci-dessous) et
+  //    boote le combat sur IsBattleTransitionDone — MÊME handoff que le bespoke.
+  //    Le dispatch bespoke ci-dessous reste en FALLBACK si le core manque (sécurité A/B).
+  {
+    const core = (globalThis as Record<string, unknown>).__battleTransitionCore as {
+      BattleTransition_StartOnField?: (t: number) => void;
+      IsBattleTransitionDone?: () => boolean;
+    } | undefined;
+    if (core?.BattleTransition_StartOnField && core.IsBattleTransitionDone) {
+      const transitionFinal = transition;
+      let started = false;
+      return function CB2_BattleStartTransition_1to1(): void {
+        const rt = getRuntime();
+        if (!rt) return;
+        if (!started) { started = true; core.BattleTransition_StartOnField!(transitionFinal); }
+        rt.runTasks?.();
+        rt.animateSprites?.();
+        rt.buildOamBuffer?.();
+        rt.UpdatePaletteFade?.();
+        if (core.IsBattleTransitionDone!()) rt.SetMainCallback2?.(cb2InitBattle as never);
+      };
+    }
+    console.warn('[decomp-loop] __battleTransitionCore absent → dispatch bespoke (fallback)');
+  }
   let state = 0;  // 0 = lance le flash, 1 = flash en cours, 2 = transition en cours
   // Dispatch 1:1 `CreateBattleStartTask(transition, …)` (battle_setup.c) : le flash gris
   // (CreateIntroTask) est COMMUN à toutes les transitions, puis la transition SÉLECTIONNÉE
