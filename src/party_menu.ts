@@ -2161,8 +2161,8 @@ const sPartyMenuAction_TradeSummaryCancel1  = [MENU_TRADE1, MENU_SUMMARY, MENU_C
 const sPartyMenuAction_TradeSummaryCancel2  = [MENU_TRADE2, MENU_SUMMARY, MENU_CANCEL1];
 const sPartyMenuAction_TakeItemTossCancel   = [MENU_TAKE_ITEM, MENU_TOSS, MENU_CANCEL1];
 
-/** 1:1 décomp `sPartyMenuActions[]` (data/party_menu.h:709). INERTE : posée pour
- *  le lot 3 (SetPartyMonSelectionActions la consommera) — personne ne la lit encore. */
+/** 1:1 décomp `sPartyMenuActions[]` (data/party_menu.h:709). CONSOMMÉE (lot 3) par
+ *  `SetPartyMonSelectionActions` (action != ACTIONS_NONE → copie de la table). */
 const sPartyMenuActions: Record<number, readonly number[] | null> = {
   [ACTIONS_NONE]:          null,
   [ACTIONS_SWITCH]:        sPartyMenuAction_SummarySwitchCancel,
@@ -2180,7 +2180,8 @@ const sPartyMenuActions: Record<number, readonly number[] | null> = {
   [ACTIONS_TAKEITEM_TOSS]: sPartyMenuAction_TakeItemTossCancel,
 };
 
-/** 1:1 décomp `sPartyMenuActionCounts[]` (data/party_menu.h:727). INERTE (lot 3). */
+/** 1:1 décomp `sPartyMenuActionCounts[]` (data/party_menu.h:727). CONSOMMÉE (lot 3) par
+ *  `SetPartyMonSelectionActions` (numActions = counts[action]). */
 const sPartyMenuActionCounts: Record<number, number> = {
   [ACTIONS_NONE]:          0,
   [ACTIONS_SWITCH]:        sPartyMenuAction_SummarySwitchCancel.length,
@@ -2263,90 +2264,213 @@ function _renderActionMenuContents(): void {
   CopyWindowToVram(_actionWindowId, 3);
 }
 
-function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void {
-  if (!rt) return;
-  // 1:1 décomp : SE_SELECT joué par CursorCb_* à l'ENTRÉE (press A sur le mon).
-  // Au retour du résumé (Task_TryCreateSelectionWindow → CreateSelectionWindow)
-  // aucun SE n'est rejoué → playSe=false.
-  if (playSe) PlaySE(5);  // SE_SELECT
-  // 1:1 décomp `GetPartyMenuActionsType` (party_menu.c:2640-2669) case
-  // PARTY_MENU_TYPE_DAYCARE (:2668) : œuf → ACTIONS_SUMMARY_ONLY
-  // (= sPartyMenuAction_SummaryCancel), sinon ACTIONS_STORE
-  // (= sPartyMenuAction_StoreSummaryCancel, data/party_menu.h:701).
-  if (_menuType === PARTY_MENU_TYPE_DAYCARE) {
-    const dcMon = _slotMon(_slotId);
-    _actionList = dcMon?.isEgg
-      ? [MENU_SUMMARY, MENU_CANCEL1]                // ACTIONS_SUMMARY_ONLY
-      : [MENU_STORE, MENU_SUMMARY, MENU_CANCEL1];   // ACTIONS_STORE
-    _actionSubMenu = 'mon';
-    _spawnActionWindow();
-    return;
+// ─── LOT 3 : liste d'actions + fenêtre de sélection 1:1 (party_menu.c:2524-2738) ───
+// Remplace l'ancien inline _openActionMenu/_spawnActionWindow par les fonctions décomp.
+// Consomme les tables sPartyMenuActions[]/sPartyMenuActionCounts[] (lot 2) + sCursorOptions[].
+
+/** 1:1 décomp SELECTWINDOW_* (include/constants/party_menu.h:129-132). */
+const SELECTWINDOW_ACTIONS = 0;
+const SELECTWINDOW_ITEM     = 1;
+const SELECTWINDOW_MAIL     = 2;
+const SELECTWINDOW_MOVES    = 3;
+
+/** 1:1 décomp MAX_MON_MOVES (include/constants/pokemon.h). */
+const MAX_MON_MOVES = 4;
+
+/** 1:1 décomp `sItemGiveTakeWindowTemplate` (data/party_menu.h:485). */
+const sItemGiveTakeWindowTemplate: WindowTemplate = {
+  bg: 2, tilemapLeft: 23, tilemapTop: 13, width: 6, height: 6, paletteNum: 14, baseBlock: 0x39D,
+};
+/** 1:1 décomp `sMailReadTakeWindowTemplate` (data/party_menu.h:496). */
+const sMailReadTakeWindowTemplate: WindowTemplate = {
+  bg: 2, tilemapLeft: 21, tilemapTop: 13, width: 8, height: 6, paletteNum: 14, baseBlock: 0x39D,
+};
+/** 1:1 décomp `sMoveSelectWindowTemplate` (data/party_menu.h:507). */
+const sMoveSelectWindowTemplate: WindowTemplate = {
+  bg: 2, tilemapLeft: 19, tilemapTop: 11, width: 10, height: 8, paletteNum: 14, baseBlock: 0x2E9,
+};
+
+/** 1:1 décomp `AppendToList` (util.c) : `list[(*pos)++] = value`. Port : le compteur
+ *  `numActions` = `list.length` (l'array grandit ; pas de compteur séparé). */
+function AppendToList(list: number[], value: number): void {
+  list.push(value);
+}
+
+/** 1:1 décomp `InMultiPartnerRoom` (field_specials.c:1663) : TRUE seulement dans la Multi
+ *  Partner Room (frontier Battle Tower multi). Hors-solo → toujours FALSE dans les flux party
+ *  portés (frontier non atteignable). Shim local = évite un import top-level frontier (risque
+ *  méga-cycle ESM/TDZ, CLAUDE.md R3). */
+function InMultiPartnerRoom(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `InBattlePike` (battle_pike.c:1326) : TRUE dans une salle du Battle Pike
+ *  (frontier). Le vrai `InBattlePike` vit dans battle_pike.ts ; shim local ici (FALSE en solo)
+ *  pour éviter l'import top-level (risque méga-cycle ESM/TDZ, CLAUDE.md R3). */
+function InBattlePike(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `DisplaySelectionWindow` (party_menu.c:2524) : crée la fenêtre de sélection
+ *  (template selon windowType), charge/dessine le cadre, imprime les actions. Le RENDU du
+ *  contenu (texte + curseur ▶) reste `_renderActionMenuContents` (curseur manuel re-render par
+ *  Task_HandleSelectionMenuInput, inchangé lot 2). Retourne l'id de fenêtre. */
+function DisplaySelectionWindow(windowType: number): number {
+  let windowTemplate: WindowTemplate;
+  const numActions = _actionList.length;   // = sPartyMenuInternal->numActions
+  switch (windowType) {
+    case SELECTWINDOW_ACTIONS:
+      // 1:1 :2534 SetWindowTemplateFields(bg2, left19, top=19-numActions*2, w10, h=numActions*2, pal14, base0x2E9).
+      windowTemplate = { bg: 2, tilemapLeft: 19, tilemapTop: 19 - numActions * 2, width: 10, height: numActions * 2, paletteNum: 14, baseBlock: 0x2E9 };
+      break;
+    case SELECTWINDOW_ITEM:
+      windowTemplate = { ...sItemGiveTakeWindowTemplate };
+      break;
+    case SELECTWINDOW_MAIL:
+      windowTemplate = { ...sMailReadTakeWindowTemplate };
+      break;
+    default: // SELECTWINDOW_MOVES
+      windowTemplate = { ...sMoveSelectWindowTemplate };
+      break;
   }
-  // 1:1 décomp `SetPartyMonFieldSelectionActions` (party_menu.c:2607) :
-  //   AppendToList(MENU_SUMMARY);
-  //   for each field move: AppendToList(MENU_FIELD_MOVES + j);
-  //   if (party[1].species != NONE) AppendToList(MENU_SWITCH);  ← ORDRE
-  //   if (item is mail) AppendToList(MENU_MAIL); else AppendToList(MENU_ITEM);
-  //   AppendToList(MENU_CANCEL1);
-  _actionList = [MENU_SUMMARY];
-  // 1:1 décomp party_menu.c:2615-2625 : iterate party[slotId].moves (= 4 slots) ;
-  // pour chaque move, chercher dans sFieldMoves[] ; si trouvé : push MENU_FIELD_MOVES + j.
-  const mon = _slotMon(_slotId);  // 1:1 décomp `mons[slotId]` (party_menu.c:2619).
-  if (mon) {
-    for (let i = 0; i < mon.moves.length && i < 4; i++) {
-      const move = mon.moves[i];  // 1:1 id u16 (MON_DATA_MOVE1+i)
-      if (!move) continue;
-      // id → dexId kebab pour matcher sFieldMoves (cf. pokemon.ts:241).
-      const moveEnum = reverseDecompConstant(move, 'MOVE_');
-      if (!moveEnum) continue;
-      const moveDexId = moveEnum.replace(/^MOVE_/, '').toLowerCase().replace(/_/g, '');
-      for (let j = 0; j < sFieldMoves.length; j++) {
-        if (moveDexId === sFieldMoves[j]) {
-          _actionList.push(MENU_FIELD_MOVES + j);
-          break;
-        }
+  // 1:1 :2547-2548 : windowId[0] = AddWindow(&window) ; DrawStdFrameWithCustomTileAndPalette.
+  //   AddWindow (PAS InitWindows qui wipe tout = écran noir). LoadUserWindowBorderGfx charge les
+  //   tiles cadre 0x4F/pal13 avant le 1er DrawStdFrame (fait dans _renderActionMenuContents) —
+  //   sinon menu sans cadre.
+  _actionWindowId = AddWindow(windowTemplate);
+  LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
+  if (windowType === SELECTWINDOW_MOVES) {
+    // 1:1 :2549-2550 : SELECTWINDOW_MOVES → juste le cadre, pas de texte (retour anticipé).
+    DrawStdFrameWithCustomTileAndPalette(_actionWindowId, false, 0x4F, 13);
+    return _actionWindowId;
+  }
+  // 1:1 :2554-2560 : imprime chaque action (font color 4 si field move, sinon 3) +
+  //   InitMenuInUpperLeftCorner(.., 0, ..) = curseur en haut. Port : _renderActionMenuContents
+  //   dessine cadre + texte (sCursorOptions[actions[i]].text) + curseur ▶ ; curseur reset à 0.
+  _actionCursor = 0;
+  _renderActionMenuContents();
+  ScheduleBgCopyTilemapToVram(2);   // 1:1 :2561
+  return _actionWindowId;
+}
+
+/** 1:1 décomp `SetPartyMonFieldSelectionActions` (party_menu.c:2607) : liste d'actions du menu
+ *  de terrain — SUMMARY, puis 1 entrée par field move du mon, puis (hors Battle Pike) SWITCH
+ *  si ≥2 mons + MAIL/ITEM, puis CANCEL1. Écrit `_actionList` (= sPartyMenuInternal->actions,
+ *  length = numActions). */
+function SetPartyMonFieldSelectionActions(mons: Pokemon[], slotId: number): void {
+  // 1:1 :2611-2612 : numActions=0 ; AppendToList(MENU_SUMMARY).
+  _actionList = [];
+  AppendToList(_actionList, MENU_SUMMARY);
+  const mon = mons[slotId];
+  // 1:1 :2615-2625 : pour chaque move du mon, si présent dans sFieldMoves[] → MENU_FIELD_MOVES+j.
+  //   Adaptation représentation : move id (u16) → id kebab pour matcher sFieldMoves kebab (= comment
+  //   le reste du port compare les moves, cf. pokemon.ts:241 ; sFieldMoves kebab a 14 entrées =
+  //   décomp j=0..FIELD_MOVES_COUNT-1, sans la sentinelle terminale).
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    const move = mon.moves[i];   // GetMonData(&mons[slotId], i + MON_DATA_MOVE1)
+    if (!move) continue;
+    const moveEnum = reverseDecompConstant(move, 'MOVE_');
+    if (!moveEnum) continue;
+    const moveDexId = moveEnum.replace(/^MOVE_/, '').toLowerCase().replace(/_/g, '');
+    for (let j = 0; j < sFieldMoves.length; j++) {
+      if (moveDexId === sFieldMoves[j]) {
+        AppendToList(_actionList, MENU_FIELD_MOVES + j);
+        break;
       }
     }
   }
-  // 1:1 décomp :2629-2630 : if (mons[1].species != SPECIES_NONE) push MENU_SWITCH.
-  if (_slotMon(1)) {
-    _actionList.push(MENU_SWITCH);  // ORDRE - si plus de 1 mon
+  // 1:1 :2627-2635 : hors Battle Pike, SWITCH (si mons[1] != SPECIES_NONE) + MAIL/ITEM.
+  if (!InBattlePike()) {
+    if (mons[1].species !== 0) AppendToList(_actionList, MENU_SWITCH);   // party[1] != SPECIES_NONE (ORDRE)
+    if (ItemIsMail(mon.heldItem)) AppendToList(_actionList, MENU_MAIL);   // MON_DATA_HELD_ITEM
+    else AppendToList(_actionList, MENU_ITEM);
   }
-  // 1:1 décomp :2631-2634 : if (ItemIsMail(heldItem)) push MENU_MAIL else MENU_ITEM.
-  const heldItemId = mon?.heldItem ?? 0;  // 1:1 MON_DATA_HELD_ITEM (id u16)
-  if (heldItemId !== 0 && ItemIsMail(heldItemId)) {
-    _actionList.push(MENU_MAIL);
-  } else {
-    _actionList.push(MENU_ITEM);
-  }
-  _actionList.push(MENU_CANCEL1);
-  _actionSubMenu = 'mon';   // menu d'action mon (≠ sous-menu objet)
-  _spawnActionWindow();
+  AppendToList(_actionList, MENU_CANCEL1);
 }
 
-/** Spawn l'action window (fenêtre de sélection à droite) depuis `_actionList`
- *  courant. Partagé par _openActionMenu (menu d'action mon) et CursorCb_Item
- *  (sous-menu objet ACTIONS_ITEM). 1:1 décomp `DisplaySelectionWindow`
- *  (party_menu.c:2533) : window sizé par le nombre d'actions. */
-function _spawnActionWindow(): void {
-  _actionCursor = 0;
-  const numActions = _actionList.length;
-  // 1:1 décomp window template : bg=2 width=10 height=(numActions*2).
-  // ⚠️ AddWindow (= 1:1 decomp AddWindow), PAS InitWindows qui wipe tous les
-  // windows existants (= bug screen-noir si on l'utilisait ici).
-  const tilemapTop = 19 - numActions * 2;
-  _actionWindowId = AddWindow({
-    bg: 2, tilemapLeft: 19, tilemapTop, width: 10, height: numActions * 2,
-    paletteNum: 14, baseBlock: 0x2E9,
-  });
-  // 1:1 décomp : load user window frame tiles à baseTile 0x4F + palette 13.
-  // ⚠️ DrawStdFrameWithCustomTileAndPalette est appelé dans _renderActionMenuContents
-  // (PAS ici) — sinon le PutWindowTilemap suivant écrase le frame border et
-  // le menu apparaît sans cadre.
-  LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
+/** 1:1 décomp `SetPartyMonSelectionActions` (party_menu.c:2591) : ACTIONS_NONE → liste de
+ *  terrain (SetPartyMonFieldSelectionActions) ; sinon copie sPartyMenuActions[action] (lot 2).
+ *  Écrit `_actionList` (= sPartyMenuInternal->actions, length = numActions). */
+function SetPartyMonSelectionActions(mons: Pokemon[], slotId: number, action: number): void {
+  if (action === ACTIONS_NONE) {
+    SetPartyMonFieldSelectionActions(mons, slotId);
+  } else {
+    // 1:1 :2601-2603 : numActions = counts[action] ; actions[i] = sPartyMenuActions[action][i].
+    const src = sPartyMenuActions[action] ?? [];
+    const count = sPartyMenuActionCounts[action] ?? 0;
+    _actionList = [];
+    for (let i = 0; i < count; i++) AppendToList(_actionList, src[i]);
+  }
+}
+
+/** 1:1 décomp `GetPartyMenuActionsType` (party_menu.c:2639) : type de liste d'actions selon
+ *  gPartyMenu.menuType (= _menuType). Cas SOLO atteignables portés ; combat/frontier/union-room/
+ *  chooseHalf laissés en commentaire (hors flux solo — le port garde _menuType =
+ *  PARTY_MENU_TYPE_FIELD hors pension, cf. OpenPartyScreenForItemUse/ForBattleSwitch, lot 7). */
+function GetPartyMenuActionsType(mon: Pokemon): number {
+  let actionType: number;
+  switch (_menuType) {
+    case PARTY_MENU_TYPE_FIELD:
+      // 1:1 :2646 : multi-partner (hors-solo → false) OU œuf → ACTIONS_SWITCH ; sinon
+      // ACTIONS_NONE (liste peuplée par SetPartyMonFieldSelectionActions).
+      if (InMultiPartnerRoom() === true || mon.isEgg) actionType = ACTIONS_SWITCH;
+      else actionType = ACTIONS_NONE;
+      break;
+    // case PARTY_MENU_TYPE_IN_BATTLE: actionType = GetPartyMenuActionsTypeInBattle(mon); (lot 7)
+    // case PARTY_MENU_TYPE_CHOOSE_HALF: … (frontier chooseHalf — hors-solo)
+    case PARTY_MENU_TYPE_DAYCARE:
+      // 1:1 :2669 : œuf → ACTIONS_SUMMARY_ONLY ; sinon ACTIONS_STORE.
+      actionType = mon.isEgg ? ACTIONS_SUMMARY_ONLY : ACTIONS_STORE;
+      break;
+    // case PARTY_MENU_TYPE_UNION_ROOM_REGISTER: ACTIONS_REGISTER;         (hors-solo)
+    // case PARTY_MENU_TYPE_UNION_ROOM_TRADE:    ACTIONS_TRADE;            (hors-solo)
+    // case PARTY_MENU_TYPE_SPIN_TRADE:          ACTIONS_SPIN_TRADE;       (hors-solo)
+    // case PARTY_MENU_TYPE_STORE_PYRAMID_HELD_ITEMS: ACTIONS_TAKEITEM_TOSS; (frontier — hors-solo)
+    // Les autres (CONTEST/CHOOSE_MON/MULTI_SHOWCASE/MOVE_RELEARNER/MINIGAME) sortent
+    // immédiatement à la sélection → pas de liste d'actions (défaut ACTIONS_NONE).
+    default:
+      actionType = ACTIONS_NONE;
+      break;
+  }
+  return actionType;
+}
+
+/** 1:1 décomp `CreateSelectionWindow` (party_menu.c:2696) : (re)construit le menu d'action du
+ *  mon courant. Solo : toujours la branche menuType != STORE_PYRAMID_HELD_ITEMS → renvoie TRUE
+ *  (fenêtre créée). La branche pyramide (FALSE → Task_UpdateHeldItemSprite) est hors-solo. */
+function CreateSelectionWindow(taskId: number): boolean {
+  void taskId;   // 1:1 : taskId sert seulement la branche pyramide (hors-solo, non portée).
+  const mon = gPlayerParty[_slotId];   // &gPlayerParty[gPartyMenu.slotId]
+  // 1:1 :2701 GetMonNickname(mon, gStringVar1) : buffer nick — inutile ici, le message
+  //   PARTY_MSG_DO_WHAT_WITH_MON du port (gText_DoWhatWithPokemon) est statique (pas de {STR_VAR_1}).
+  // 1:1 :2702 PartyMenuRemoveWindow(&windowId[1]) : retrait de l'ancienne fenêtre message →
+  //   géré par _drawMsg (retire _msgWid avant de redessiner).
+  // 1:1 :2703-2708 branche solo (menuType != PARTY_MENU_TYPE_STORE_PYRAMID_HELD_ITEMS) :
+  SetPartyMonSelectionActions(gPlayerParty, _slotId, GetPartyMenuActionsType(mon));
+  _actionSubMenu = 'mon';
   _phase = 'action_menu';
-  _drawMsg();
-  _renderActionMenuContents();
+  DisplaySelectionWindow(SELECTWINDOW_ACTIONS);
+  _drawMsg();   // = DisplayPartyMenuStdMessage(PARTY_MSG_DO_WHAT_WITH_MON)
+  return true;
+}
+
+/** 1:1 décomp `Task_TryCreateSelectionWindow` (party_menu.c:2731) : crée la fenêtre puis passe
+ *  la main à Task_HandleSelectionMenuInput. Port : `data[0]=0xFF` (sentinelle curseur) +
+ *  `func = Task_HandleSelectionMenuInput` sont repris par `_phase='action_menu'` (posé par
+ *  CreateSelectionWindow ; Task_PartyMenu_HandleInput y branche Task_HandleSelectionMenuInput). */
+function Task_TryCreateSelectionWindow(taskId: number): void {
+  CreateSelectionWindow(taskId);
+}
+
+/** Point d'entrée du menu d'action (A sur un mon) — thin wrapper 1:1 :
+ *  `HandleChooseMonSelection` default (party_menu.c:1361) = `PlaySE(SE_SELECT)` +
+ *  `Task_TryCreateSelectionWindow`. Aussi appelé au retour résumé (Task_TryCreateSelectionWindow,
+ *  party_menu.c:2794) et par CursorCb_Cancel2 (party_menu.c:3489) avec playSe=false : le SE est
+ *  déjà joué par le dispatch / non rejoué au reopen. */
+function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void {
+  if (!rt) return;
+  if (playSe) PlaySE(5);   // SE_SELECT
+  Task_TryCreateSelectionWindow(_inputTaskId >= 0 ? _inputTaskId : 0);
 }
 
 // ─── Sous-menu OBJET (cascade CursorCb_Item) — 1:1 décomp party_menu.c ───────
@@ -2370,10 +2494,19 @@ function _removeActionWindow(): void {
 // quand le port ne l'utilise pas — l'état vit dans les globals module (_slotId/_actionList…),
 // pas dans gTasks[taskId].data. `noUnusedParameters` est off → param inutilisé = tsc OK.
 function CursorCb_Item(taskId: number): void {
+  // 1:1 :3077-3078 PartyMenuRemoveWindow(windowId[0]) + windowId[1] : retire la fenêtre de
+  //   sélection (la fenêtre message est retirée+redessinée par _drawMsg).
   _removeActionWindow();
-  _actionList = [MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2];  // ACTIONS_ITEM
+  // 1:1 :3079 SetPartyMonSelectionActions(gPlayerParty, slotId, ACTIONS_ITEM) → table lot 2
+  //   sPartyMenuActions[ACTIONS_ITEM] = {MENU_GIVE, MENU_TAKE_ITEM, MENU_CANCEL2} (DONNER/PRENDR./RETOUR).
+  SetPartyMonSelectionActions(gPlayerParty, _slotId, ACTIONS_ITEM);
   _actionSubMenu = 'item';
-  _spawnActionWindow();
+  _phase = 'action_menu';
+  // 1:1 :3080 DisplaySelectionWindow(SELECTWINDOW_ITEM) : ⚠️ fenêtre à left23/w6/base0x39D
+  //   (≠ ancien rendu qui réutilisait le template ACTIONS left19/w10) — suit le DÉCOMP.
+  DisplaySelectionWindow(SELECTWINDOW_ITEM);
+  // 1:1 :3081 DisplayPartyMenuStdMessage(PARTY_MSG_DO_WHAT_WITH_ITEM) (subMenu 'item').
+  _drawMsg();
 }
 
 /** 1:1 décomp `TryTakeMonItem` (party_menu.c:1813) : retire l'objet tenu vers le
