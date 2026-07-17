@@ -440,9 +440,17 @@ export function DmaClear32(_channel: number, destAddr: number, sizeBytes: number
 }
 
 /** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit.
- *  Supporte VRAM et PLTT (address-based). */
-export function CpuFill16(value: number, destAddr: number, sizeBytes: number): void {
+ *  Supporte VRAM et PLTT (address-based) ET les buffers mémoire (Uint16Array) :
+ *  en C, dest est un pointeur qui couvre les DEUX cas (tilemap buffers EWRAM
+ *  compris) — l'ancienne version no-opait SILENCIEUSEMENT sur un typed array
+ *  (fond BG1 de la carte Pokénav jamais posé, finding agent region_map). */
+export function CpuFill16(value: number, destAddr: number | Uint16Array, sizeBytes: number): void {
   const r = rt();
+  if (destAddr instanceof Uint16Array) {
+    const n = Math.min(sizeBytes >> 1, destAddr.length);
+    for (let i = 0; i < n; i++) destAddr[i] = value & 0xFFFF;
+    return;
+  }
   if (destAddr >= VRAM && destAddr < VRAM + VRAM_SIZE) {
     const offset = destAddr - VRAM;
     const end = Math.min(offset + sizeBytes, VRAM_SIZE);

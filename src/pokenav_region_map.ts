@@ -27,7 +27,7 @@ import { StringCopyPadded, gStringVar1 } from './string_util';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { AddTextPrinterParameterized } from './text';
 import { DrawTextBorderOuter, LoadUserWindowBorderGfx_ } from './text_window';
-import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetBgAttribute, BG_ATTR_BASETILE, GetBgY, GetWindowAttribute, HideBg, PutWindowTilemap, RemoveWindow, SetBgMode, SetBgTilemapBuffer, ShowBg, WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_PALETTE_NUM, WINDOW_BASE_BLOCK, WriteSequenceToBgTilemapBuffer } from './window';
+import { AddWindow, COPYWIN_FULL, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetBgAttribute, BG_ATTR_BASETILE, GetBgY, GetWindowAttribute, HideBg, PutWindowTilemap, PutWindowRectTilemap, RemoveWindow, SetBgMode, SetBgTilemapBuffer, ShowBg, WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_PALETTE_NUM, WINDOW_BASE_BLOCK, WriteSequenceToBgTilemapBuffer } from './window';
 import type { DecompSprite } from '../harness/runtime/decomp-runtime';
 import type {  SpriteTemplate } from './sprite';
 import type { WindowTemplate } from './window';
@@ -55,33 +55,15 @@ import {
 } from './region_map';
 import { sPokenavCityMaps } from './data/region_map/city_map_entries';
 import { CityMapTilemapsReady, PrefetchCityMapTilemaps } from './data/region_map/city_map_tilemaps';
-import { BgDmaFill, getRuntime } from '../harness/runtime/decomp-globals';
+import { BgDmaFill, CpuFill16, getRuntime } from '../harness/runtime/decomp-globals';
 import { loadTileBin, loadGbaPal, extractPngPlte } from '../harness/gba/png-loader';
 
 // 1:1 wrapper pokénav `static void SetVBlankCallback_(IntrCallback cb) { SetVBlankCallback(cb); }`
 // (pokenav.c:537) — précédent : pokenav_menu_handler_gfx.ts:67-69 (wrapper local identique).
 function SetVBlankCallback_(cb: any): void { getRuntime()?.SetVBlankCallback(cb); }
 
-/** 1:1 `void PutWindowRectTilemap(u8 windowId, u8 x, u8 y, u8 width, u8 height)` (window.c:371)
- *  — window.ts (gelé pour ce chantier) ne l'exporte pas encore ; impl locale 1:1 sur ses
- *  briques exportées (GetWindowAttribute/GetBgAttribute/WriteSequenceToBgTilemapBuffer). */
-function PutWindowRectTilemap(windowId: number, x: number, y: number, width: number, height: number): void {
-  const bg = GetWindowAttribute(windowId, WINDOW_BG);
-  const winWidth = GetWindowAttribute(windowId, WINDOW_WIDTH);
-  let currentRow = GetWindowAttribute(windowId, WINDOW_BASE_BLOCK) + (y * winWidth) + x + GetBgAttribute(bg, BG_ATTR_BASETILE);
-  for (let i = 0; i < height; ++i) {
-    WriteSequenceToBgTilemapBuffer(
-      bg,
-      currentRow,
-      GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT) + x,
-      GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP) + y + i,
-      width,
-      1,
-      GetWindowAttribute(windowId, WINDOW_PALETTE_NUM),
-      1);
-    currentRow += winWidth;
-  }
-}
+// (Consolidation item 1 : PutWindowRectTilemap MIGRÉ dans window.ts (:371 1:1) —
+// l'impl locale posée pendant le gel de window.ts est supprimée, import ci-dessus.)
 
 /** 1:1 `LZ77UnCompWram(src, dest)` (agbcc) — ADAPTATION MOTEUR : les tilemaps de ville
  *  extraits sont déjà décompressés (Uint16Array 10×10) → copie directe (précédent
@@ -95,15 +77,9 @@ function LZ77UnCompWram(src: Uint16Array | null, dest: Uint16Array): void {
   dest.set(src.subarray(0, Math.min(src.length, dest.length)));
 }
 
-/** 1:1 `CpuFill16(value, dest, size)` — variante locale BUFFER-dest : le CpuFill16 harness ne
- *  gère que les ADRESSES GBA (decomp-globals) et no-opait silencieusement sur un typed array →
- *  le fond de la carte (tile 0x1040 sur BG1) n'était jamais posé. `state.tilemapBuffer` est la
- *  VUE LIVE de la tilemap BG1 (cf. OpenPokenavRegionMap), remplie ici 1:1. size = OCTETS. */
-function CpuFill16(value: number, dest: Uint16Array, sizeBytes: number): void {
-  if (!dest) return;
-  const n = Math.min(sizeBytes >> 1, dest.length);
-  for (let i = 0; i < n; i++) dest[i] = value & 0xFFFF;
-}
+// (Consolidation item 2 : la variante locale CpuFill16 buffer-dest est supprimée —
+// le CpuFill16 harness (decomp-globals) accepte maintenant number | Uint16Array,
+// import ci-dessus.)
 
 // ─── graphics.c INCBIN (gRegionMapCityZoom*) + INCGFX locaux — chargés async par
 //     PrefetchPokenavRegionMapAssets (précédent match_call_gfx gMatchCallUI_*) ───

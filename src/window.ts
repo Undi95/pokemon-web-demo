@@ -493,6 +493,30 @@ export function ClearWindowTilemap(windowId: number): void {
   writeWindowTilemap(gw, true);
 }
 
+/** 1:1 décomp `void PutWindowRectTilemap(u8 windowId, u8 x, u8 y, u8 width, u8 height)`
+ *  (window.c:371-391) : pose le RECTANGLE (x,y,w,h) de la fenêtre dans le tilemap BG
+ *  (tiles séquentielles depuis baseBlock, ligne à ligne). Impl migrée depuis
+ *  pokenav_region_map.ts (consolidation item 1 — window.ts était gelé au moment du
+ *  chantier region map). */
+export function PutWindowRectTilemap(windowId: number, x: number, y: number, width: number, height: number): void {
+  const bg = GetWindowAttribute(windowId, WINDOW_BG);
+  const winWidth = GetWindowAttribute(windowId, WINDOW_WIDTH);
+  // 1:1 :374 currentRow = baseBlock + (y * width) + x + GetBgAttribute(bg, BG_ATTR_BASETILE)
+  let currentRow = GetWindowAttribute(windowId, WINDOW_BASE_BLOCK) + (y * winWidth) + x + GetBgAttribute(bg, BG_ATTR_BASETILE);
+  for (let i = 0; i < height; ++i) {
+    WriteSequenceToBgTilemapBuffer(
+      bg,
+      currentRow,
+      GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT) + x,
+      GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP) + y + i,
+      width,
+      1,
+      GetWindowAttribute(windowId, WINDOW_PALETTE_NUM),
+      1);
+    currentRow += winWidth;   // 1:1 :389
+  }
+}
+
 /** 1:1 décomp `window.h` — modes de `CopyWindowToVram` (= COPYWIN_MAP | COPYWIN_GFX).
  *  Notre engine traite GFX/MAP/FULL de façon identique (cf. CopyWindowToVram). */
 export const COPYWIN_NONE = 0;

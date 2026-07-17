@@ -86,12 +86,11 @@ sprite.c 18ref (moteur, adaptations à réconcilier) · trainer_card 17ref/59abs
 dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scratchpad top-holes.cjs.
 
 ## FILE DE CONSOLIDATION POST-AGENTS (petits lots à faire après la grande passe)
-1. `PutWindowRectTilemap` : window.ts a un THROW à cet endroit (audit window.md) ; l'agent region_map
-   a posé une impl locale 1:1 dans pokenav_region_map.ts (window.ts était gelé) → migrer l'impl dans
-   window.ts + rediriger + supprimer la locale.
-2. 🔎 FINDING MOTEUR (agent region_map) : `CpuFill16` du harness NO-OPAIT avec une dest buffer
-   (fond BG1 carte jamais posé) → il a posé un CpuFill16 local buffer-dest. Examiner le CpuFill16
-   harness (decomp-globals ?), le fixer pour les dest buffers, rediriger, supprimer le local.
+1. ✅ FAIT (2026-07-17) `PutWindowRectTilemap` : impl 1:1 migrée dans window.ts (:371), locale
+   pokenav_region_map supprimée, import redirigé. Vérifié en jeu (carte Pokénav, 0 erreur).
+2. ✅ FAIT (2026-07-17) `CpuFill16` harness (decomp-globals:444) accepte number | Uint16Array
+   (fill direct buffer-dest, plus de no-op silencieux) ; locale pokenav_region_map supprimée.
+   Vérifié en jeu (fond mer BG1 de la carte posé, 0 erreur).
 3. Divergence data : UNDERWATER_125→ROUTE_129 en VANILLA dans region_map.ts vs BUGFIX dans
    l'ancienne table field — trancher (contrat = décomp vanilla) et aligner les deux écrans.
 4. Redirection finale des imports IsDma3ManagerBusyWithBgCopy (pokenav_ribbons_*, pokenav_region_map,
