@@ -6,11 +6,15 @@
  * VRAIS chemins d'input (menu START + navigation touches, byte-VM pour PC/shop/
  * combat), un par un, chacun dans un try/catch avec timeout individuel. Un hook
  * console.error/console.warn (dédupliqué, cap 20/écran) capture tout ce que les
- * gardes moteur (Phase B.2) hurlent. Un écran qui échoue NE BLOQUE PAS les
- * suivants (le wrapper `runScreen` catch tout et revient à l'overworld par des B
- * répétés). Rapport JSON par écran `{screen, ok, ms, errors[], firstStack?}` +
- * console.table + compteur global `{screens, ok, ko, totalErrors}` (aussi stashé
- * sur `window.__engineSweepReport`). À relancer après CHAQUE lot de fixes.
+ * gardes moteur (Phase B.2) hurlent. POLITIQUE KO : seuls console.error, les
+ * throws et les asserts échoués rendent un écran KO ; les console.warn restent
+ * COLLECTÉS (dans errors[], préfixés [warn]) mais NE FONT PLUS KO (sinon faux-KO
+ * permanents, ex. fallback PNG d'un asset non-critique). Un écran qui échoue NE
+ * BLOQUE PAS les suivants (le wrapper `runScreen` catch tout et revient à
+ * l'overworld par des B répétés). Rapport JSON par écran `{screen, ok, ms,
+ * errors[], nErrors, nWarns, firstStack?}` + console.table + compteur global
+ * `{screens, ok, ko, totalErrors, totalWarns}` (aussi stashé sur
+ * `window.__engineSweepReport`). À relancer après CHAQUE lot de fixes.
  *
  * Le scénario est IDEMPOTENT : chaque run remet à zéro l'état et (ré)installe les
  * hooks proprement (restauration du hook warn en fin de run).
@@ -59,15 +63,22 @@ interface ScreenResult {
   screen: string;
   ok: boolean;
   ms: number;
+  /** Lignes d'affichage fusionnées (THROW + erreurs + warns préfixés [warn]), cap 20. */
   errors: string[];
+  /** Nombre de messages console.error DISTINCTS (+ throw) = causes de KO. */
+  nErrors: number;
+  /** Nombre de messages console.warn DISTINCTS = COLLECTÉS mais NON-KO. */
+  nWarns: number;
   firstStack?: string;
 }
 
 // État privé partagé entre les étapes d'UN run. Reset intégral au boot (idempotence).
+// curErrors = console.error (fait KO) ; curWarns = console.warn (collecté, PAS KO).
 const S = {
   results: [] as ScreenResult[],
   curScreen: '',
   curErrors: new Map<string, number>(),
+  curWarns: new Map<string, number>(),
   curFirstStack: undefined as string | undefined,
   origWarn: null as ((...a: unknown[]) => void) | null,
   hooked: false,
@@ -97,18 +108,22 @@ function cleanOverworld(): boolean { return overworld() && !startMenuOpen() && !
 
 // ─── Hooks console (dédup + firstStack, cap 20/écran) ─────────────────────────
 
-function recordErr(msg: string): void {
-  const prev = S.curErrors.get(msg);
-  if (prev !== undefined) { S.curErrors.set(msg, prev + 1); return; }
-  if (S.curErrors.size >= 20) return; // cap distinct/écran
-  S.curErrors.set(msg, 1);
-  if (!S.curFirstStack) {
+/** Enregistre un message DISTINCT (dédup + comptage) dans `map` (cap 20/écran).
+ *  `captureStack` = alimenter S.curFirstStack (réservé aux erreurs, PAS aux warns :
+ *  un warn ne cause plus de KO → sa stack n'est pas la « cause » du 1er échec). */
+function record(map: Map<string, number>, msg: string, captureStack: boolean): void {
+  const prev = map.get(msg);
+  if (prev !== undefined) { map.set(msg, prev + 1); return; }
+  if (map.size >= 20) return; // cap distinct/écran
+  map.set(msg, 1);
+  if (captureStack && !S.curFirstStack) {
     const st = new Error().stack;
     if (st) S.curFirstStack = st.split('\n').slice(2, 6).join(' | ').slice(0, 400);
   }
 }
 
 /** Chaîne console.error PAR-DESSUS le wrapper du runner + wrappe console.warn.
+ *  console.error → curErrors (fait KO) ; console.warn → curWarns (COLLECTÉ, PAS KO).
  *  Idempotent : restaure un éventuel hook warn laissé par un run précédent. */
 function installHooks(): void {
   const c = console as unknown as Record<string, (...a: unknown[]) => void>;
@@ -119,11 +134,11 @@ function installHooks(): void {
   const fmt = (label: string, a: unknown[]): string =>
     (label + a.map((x) => String(x)).join(' ')).slice(0, 200);
   console.error = ((...a: unknown[]) => {
-    try { recordErr(fmt('', a)); } catch { /* un hook ne throw JAMAIS */ }
+    try { record(S.curErrors, fmt('', a), true); } catch { /* un hook ne throw JAMAIS */ }
     (prevError as (...x: unknown[]) => void)(...a);
   }) as typeof console.error;
   console.warn = ((...a: unknown[]) => {
-    try { recordErr(fmt('[warn] ', a)); } catch { /* idem */ }
+    try { record(S.curWarns, fmt('[warn] ', a), false); } catch { /* idem */ }
     (prevWarn as (...x: unknown[]) => void)(...a);
   }) as typeof console.warn;
   S.hooked = true;
@@ -390,6 +405,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, tag: string): Promise<T> {
 async function runScreen(ctx: E2eCtx, name: string, timeoutMs: number, fn: (c: E2eCtx) => Promise<void>): Promise<void> {
   S.curScreen = name;
   S.curErrors = new Map();
+  S.curWarns = new Map();
   S.curFirstStack = undefined;
   const t0 = performance.now();
   let threw: string | undefined;
@@ -403,13 +419,18 @@ async function runScreen(ctx: E2eCtx, name: string, timeoutMs: number, fn: (c: E
   }
   try { await recoverToOverworld(ctx); } catch { /* best-effort */ }
   const ms = Math.round(performance.now() - t0);
+  // errors[] = affichage fusionné : THROW + console.error + console.warn (préfixés
+  // [warn], COLLECTÉS comme avant). Mais SEULS throw/console.error font KO.
   const errors: string[] = [];
   if (threw) errors.push(`THROW: ${threw}`);
   for (const [m, c] of S.curErrors) errors.push(c > 1 ? `${m} (x${c})` : m);
+  for (const [m, c] of S.curWarns) errors.push(c > 1 ? `${m} (x${c})` : m);
   const capped = errors.slice(0, 20);
-  const ok = !threw && S.curErrors.size === 0;
-  S.results.push({ screen: name, ok, ms, errors: capped, firstStack: S.curFirstStack });
-  ctx.note(`${ok ? 'OK' : 'KO'} ${name} ${ms}ms err=${errors.length}${capped.length ? ' :: ' + capped.slice(0, 3).join(' | ') : ''}`);
+  const nErrors = S.curErrors.size + (threw ? 1 : 0);
+  const nWarns = S.curWarns.size;
+  const ok = !threw && S.curErrors.size === 0; // warns NE font PLUS KO
+  S.results.push({ screen: name, ok, ms, errors: capped, nErrors, nWarns, firstStack: S.curFirstStack });
+  ctx.note(`${ok ? 'OK' : 'KO'} ${name} ${ms}ms err=${nErrors} warn=${nWarns}${capped.length ? ' :: ' + capped.slice(0, 3).join(' | ') : ''}`);
 }
 
 // ─── Enregistrement du scénario ───────────────────────────────────────────────
@@ -444,6 +465,7 @@ export const engineSweepScenario: E2eScenario = {
         S.results = [];
         S.curScreen = '';
         S.curErrors = new Map();
+        S.curWarns = new Map();
         S.curFirstStack = undefined;
         await ctx.until(`cb2 = ${OVERWORLD_CB2}`, () => e2e.cb2Name() === OVERWORLD_CB2, 30000);
         installHooks();
@@ -462,16 +484,19 @@ export const engineSweepScenario: E2eScenario = {
         restoreWarnHook(); // console.error est restauré par le runner lui-même
         const ok = S.results.filter((r) => r.ok).length;
         const ko = S.results.length - ok;
-        const totalErrors = S.results.reduce((sum, r) => sum + r.errors.length, 0);
-        const summary = { screens: S.results.length, ok, ko, totalErrors };
+        // totalErrors = causes de KO (console.error + throw) ; totalWarns = warns
+        // collectés (NON-KO), comptés à part.
+        const totalErrors = S.results.reduce((sum, r) => sum + r.nErrors, 0);
+        const totalWarns = S.results.reduce((sum, r) => sum + r.nWarns, 0);
+        const summary = { screens: S.results.length, ok, ko, totalErrors, totalWarns };
         g().__engineSweepReport = { ...summary, results: S.results };
         try {
           console.table(S.results.map((r) => ({
-            screen: r.screen, ok: r.ok, ms: r.ms, errors: r.errors.length, first: r.errors[0] ?? '',
+            screen: r.screen, ok: r.ok, ms: r.ms, errors: r.nErrors, warns: r.nWarns, first: r.errors[0] ?? '',
           })));
           console.log('[engine-sweep]', JSON.stringify(summary));
         } catch { /* console.table absent */ }
-        ctx.note(`screens=${summary.screens} ok=${ok} ko=${ko} totalErrors=${totalErrors} (détail: window.__engineSweepReport)`);
+        ctx.note(`screens=${summary.screens} ok=${ok} ko=${ko} totalErrors=${totalErrors} totalWarns=${totalWarns} (détail: window.__engineSweepReport)`);
       },
     },
   ],
