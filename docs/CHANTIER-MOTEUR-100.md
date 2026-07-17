@@ -93,9 +93,9 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    Vérifié en jeu (fond mer BG1 de la carte posé, 0 erreur).
 3. ✅ FAIT (2026-07-17) UNDERWATER_125 : tranché VANILLA (bug ROM 1:1, BUGFIX absent du préproc)
    — region-map-data.ts:170 aligné sur region_map.ts:412 (→ ROUTE_129).
-4. Redirection finale des imports IsDma3ManagerBusyWithBgCopy (pokenav_ribbons_*, pokenav_region_map,
-   battle_main, battle_script_commands → src/dma3_manager) une fois le lot dupes-fondations committé
-   (battle_bg garde le ré-export de compat en attendant).
+4. ✅ FAIT (2026-07-17 soir, `d55354afc`) : les 11 importeurs d'IsDma3ManagerBusyWithBgCopy
+   (9 pokenav/match_call + battle_main + battle_script_commands) redirigés sur src/dma3_manager
+   (feuille pure, zéro cycle). battle_bg:663 garde le ré-export documenté (plus aucun importeur).
 5. 🟡 CÂBLÉE (2026-07-17) Fly map : les 6 sentinelles câblées 1:1 (GetSSTidalLocation TRANSCRIT,
    SetWarpDestinationToHealLocation via heal_location, ReturnToFieldFromFlyMapSelect → envol
    field_effect_helpers + gFieldCallback2, retours party/start-menu par ponts) + le case
@@ -111,19 +111,27 @@ dédup) · decoration 117abs (secret bases) · shop 11ref/28abs. Requête : scra
    party→VOL complet, carte Pokénav, textbox field, intro→titre. ③ RÉSOLU-NON-BUG : icônes
    villes ROSES = VANILLA (PLTE décomp). Reste micro : valider envol one-shot (logs ×6 =
    probable accumulation console).
-6. 🧨 MOTEUR affine : la re-copie OAM→sprite de tickAllAffineAnims (sprite-engine-impl.ts:602,
-   « direction unique allumer ») rend TOUTE extinction d'affine fragile : un reset 1:1 qui n'éteint
-   que le champ flat est rallumé par l'OAM shadow résiduel au tick suivant (bug payé : sous-menus
-   CONDITION chevauchés, fixé localement `c9d56188f` en éteignant les DEUX champs dans
-   SpriteCB_OptionZoom). Consolider : auditer les resets affine des autres écrans (send-out ball,
-   minimize, growth) OU changer la sémantique du tick (source de vérité unique).
+6. ✅ FAIT (2026-07-17 soir, `d55354afc`) — SOURCE DE VÉRITÉ UNIQUE : sprite.affineMode = miroir
+   du champ C `sprite->oam.affineMode` ; syncSpritesToOam pousse TEL QUEL (plus de merge) et
+   tickAllAffineAnims gate sur le sprite seul (plus de OR ni recopie OAM→sprite). Allumeurs
+   OAM-only convertis (intro gouttes ×5, main_menu shrink ×2, PSS ×2) ; SetBattlerSpriteAffineMode
+   réellement effectif (écrivait l'OAM écrasé par le merge + oam.matrixNum FANTÔME — le vrai champ
+   est affineParamIndex) → save/restore matrixNum 1:1 réel. Fix local CONDITION réduit au 1:1.
+   Validé : starter (cercle DOUBLE + mon), combat (matrices battlers 1/2 restaurées à l'identique
+   après anim), intro (sonde 33 échantillons aff=3, 3 gouttes mtx 5/6/7). ⚠️ Dette notée :
+   credits.ts:1426/1525 + battle_anim_ice.ts:1246-1248 écrivent `sprite.oam.*` (champ INEXISTANT
+   sur DecompSprite = propriété fantôme) — à convertir quand ces écrans seront testés.
 7. 🚨 Pépites DECOMP-INDEX-dupes (oracle `node scripts/decomp-index.cjs --dupes`) — à investiguer :
    ① ✅ FAIT (2026-07-17) gBattleTypeFlags battle_intro : le getter lisait globalThis/rt (JAMAIS
    écrits → 0 permanent, sondé en combat : vérité __battleState=12, getter=0) → les intros
    spéciales (KYOGRE_GROUDON sous-marine, INGAME_PARTNER, FRONTIER) ne se déclenchaient jamais.
    Recâblé sur __battleState avec ?? (0 légitime = sauvage). Non-régression intro dresseur ✓.
-   ② CreateTask copie locale starter_choose.ts:241 (cœur moteur dupliqué — RESTE, chantier
-   écran starter à retester). ③ VÉRIFIÉ non-dupe : DestroySprite battle_main = adaptateur
+   ② ✅ FAIT (2026-07-17 soir, `d55354afc`) : mini task-system local starter_choose DISSOUS →
+   CreateTask/DestroyTask/gTasks de src/task.ts + ResetTasks() 1:1 (c:412) + RunTasks() dans
+   CB2_StarterChoose (garde idempotente runtime). _spriteRefs mort purgé, _handBobTimers →
+   sprite.data[1] 1:1. Testé flux COMPLET : Route101_EventScript_BirchsBag → écran → navigation
+   (1 press = 1 cran, pas de double-DPAD) → decline → commit → combat Birch chaîné → tour joué.
+   ③ VÉRIFIÉ non-dupe : DestroySprite battle_main = adaptateur
    objet→id qui délègue à _DestroySpriteImpl runtime (fix fantôme 2026-06-10 documenté).
    ④ VÉRIFIÉ oracle périmé : safari_zone/walda_phrase ALIASENT déjà CB2_ReturnToField_Manual
    (overworld). ⑤ ✅ FAIT (2026-07-17) Compare : locale scrcmd.ts dissoute → import
