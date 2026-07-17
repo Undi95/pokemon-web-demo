@@ -452,6 +452,30 @@ function registerCombat(): void {
 function registerScripts(): void {
   const bv = (): NonNullable<GlobalProbe['__byteVm']> => requireFn(g().__byteVm, '__byteVm');
 
+  /** Attend la fin d'un warp __devGotoMap : fade éteint + CB2 overworld. */
+  const waitOverworldSettled = (timeoutMs = 6000): Promise<boolean> =>
+    new Promise((resolve) => {
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        const r = rt();
+        const cb2Name = (r?.gMain as { callback2?: { name?: string } | null } | undefined)?.callback2?.name ?? '';
+        const settled = !!r && !(r.gPaletteFade as { active?: boolean }).active && cb2Name.includes('Overworld');
+        if (settled || Date.now() - t0 > timeoutMs) { clearInterval(iv); resolve(settled); }
+      }, 120);
+    });
+
+  /** TP devant un vrai PC, face NORD (tap up = turn), puis lance le script PC. */
+  const tpFacePcAndLaunch = async (map: string, x: number, y: number, script: string, label: string): Promise<string> => {
+    const b = bv();
+    await (b.load as (() => Promise<unknown>) | undefined)?.();
+    requireFn(g().__devGotoMap, '__devGotoMap')(map, x, y);
+    if (!(await waitOverworldSettled())) return `${label} : warp timeout (fade/cb2)`;
+    (g().scope as { press?: (k: string) => void } | undefined)?.press?.('up');
+    await new Promise((res) => setTimeout(res, 450));
+    requireFn(b.launchScript, '__byteVm.launchScript')(script as never);
+    return `${label} : script ${script} lancé`;
+  };
+
   registerCommands([
     {
       id: 'scripts.launch', category: 'scripts', label: '🚀 Lancer un script',
@@ -472,6 +496,25 @@ function registerScripts(): void {
         const r = requireFn(bv().special, '__byteVm.special')(String(name) as never);
         return r === undefined ? `special ${String(name)} appelé` : r;
       },
+    },
+    // ─── PC (user 2026-07-17) : tp devant le VRAI PC + interaction réelle.
+    //     On ne lance JAMAIS un script PC loin d'un PC : DoPCTurnOnEffect écrit
+    //     le metatile de la case devant le joueur SANS garde (1:1 field_specials
+    //     .c:1046) → à distance, ça poserait un tile PC fantôme impassable. ────
+    {
+      id: 'scripts.pcMaison', category: 'scripts', label: '🛏 PC maison (tp + script)',
+      description: 'TP chambre Littleroot (selon genre) devant le PC + script du PC (menu 4 options)',
+      run: async () => {
+        const female = ((globalThis as { gSaveBlock2Ptr?: { playerGender?: number } }).gSaveBlock2Ptr?.playerGender ?? 0) === 1;
+        return female
+          ? tpFacePcAndLaunch('MAP_LITTLEROOT_TOWN_MAYS_HOUSE_2F', 8, 2, 'LittlerootTown_MaysHouse_2F_EventScript_PC', 'PC maison (May)')
+          : tpFacePcAndLaunch('MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F', 0, 2, 'LittlerootTown_BrendansHouse_2F_EventScript_PC', 'PC maison');
+      },
+    },
+    {
+      id: 'scripts.pcCentre', category: 'scripts', label: '🏥 PC Centre (tp + script)',
+      description: 'TP Centre Pokémon d\'Oldale devant le PC (metatile MB_PC en 10,1) + EventScript_PC',
+      run: () => tpFacePcAndLaunch('MAP_OLDALE_TOWN_POKEMON_CENTER_1F', 10, 2, 'EventScript_PC', 'PC Centre'),
     },
     {
       id: 'scripts.setVar', category: 'scripts', label: '🔧 setVar',
